@@ -31,7 +31,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-#include "../dyno/lib/immediates/prim_data.h"
+#include "../../frontend/lib/immediates/prim_data.h"
 
 static Expr* postFoldNormal(CallExpr* call);
 

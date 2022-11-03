@@ -1,5 +1,5 @@
-error in privateClasses.doc.chpl:1: Can't apply private to types yet
-error in privateClasses.doc.chpl:7: Can't apply private to types yet
-error in privateClasses.doc.chpl:15: Can't apply private to the fields or methods of a class or record yet
-error in privateClasses.doc.chpl:18: Can't apply private to the fields or methods of a class or record yet
+error in privateClasses.doc.chpl:1: can't apply private to types yet
+error in privateClasses.doc.chpl:7: can't apply private to types yet
+error in privateClasses.doc.chpl:15: can't apply private to the fields or methods of a class or record yet
+error in privateClasses.doc.chpl:18: can't apply private to the fields or methods of a class or record yet
 cat: docs/source/modules/privateClasses.doc.rst: No such file or directory

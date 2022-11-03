@@ -51,6 +51,7 @@ module Math {
      It is an error if `x` is less than or equal to -1.
   */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc log1p(x: real(64)): real(64);
 
   /* Returns the natural logarithm of `x` + 1.

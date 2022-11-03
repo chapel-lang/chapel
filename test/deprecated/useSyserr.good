@@ -1,1 +1,0 @@
-useSyserr.chpl:1: warning: 'SysBasic.syserr' has been deprecated; please use 'OS.errorCode' instead.

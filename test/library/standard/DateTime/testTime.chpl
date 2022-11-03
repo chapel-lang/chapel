@@ -97,7 +97,7 @@ proc test_resolution_info() {
 proc test_replace() {
   var args = (1, 2, 3, 4);
   var base = new time((...args));
-  assert(base == base.replace(tzinfo=base.tzinfo));
+  assert(base == base.replace(tz=base.timezone));
 
   var i = 0;
   for (name, newval) in (("hour", 5),
@@ -109,13 +109,13 @@ proc test_replace() {
     var expected = new time((...newargs));
     var got: time;
     if name == "hour" then
-      got = base.replace(hour=newval, tzinfo=base.tzinfo);
+      got = base.replace(hour=newval, tz=base.timezone);
     else if name == "minute" then
-      got = base.replace(minute=newval, tzinfo=base.tzinfo);
+      got = base.replace(minute=newval, tz=base.timezone);
     else if name == "second" then
-      got = base.replace(second=newval, tzinfo=base.tzinfo);
+      got = base.replace(second=newval, tz=base.timezone);
     else if name == "microsecond" then
-      got = base.replace(microsecond=newval, tzinfo=base.tzinfo);
+      got = base.replace(microsecond=newval, tz=base.timezone);
     assert(expected == got);
     i += 1;
   }

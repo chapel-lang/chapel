@@ -1015,7 +1015,7 @@ the existing value in ``A`` when indices overlap.
 
 .. _Predefined_Functions_and_Methods_on_Arrays:
 
-Predefined Functions and Methods on Arrays
-------------------------------------------
+Predefined Routines on Arrays
+-----------------------------
 
 .. include:: ../../builtins/ChapelArray.rst

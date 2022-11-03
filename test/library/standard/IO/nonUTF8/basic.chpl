@@ -1,4 +1,5 @@
 use IO;
+use ChplConfig;
 
 config param useNonUTF8 = true;
 
@@ -14,6 +15,5 @@ const filename1 = s("junkfile1");
 
 var f = open(filename1, iomode.cw);
 var p = f.path;
-writeln("file.path works: ", p == filename1);
+writeln("file.path works: ", p == CHPL_HOME + "/test/library/standard/IO/nonUTF8/" + filename1);
 f.close();
-

@@ -304,8 +304,8 @@ proc Replicated.dsiIndexToLocale(indexx): locale {
 // common redirects
 override proc ReplicatedDom.dsiLow           return whole.lowBound;
 override proc ReplicatedDom.dsiHigh          return whole.highBound;
-override proc ReplicatedDom.dsiAlignedLow    return whole.alignedLow;
-override proc ReplicatedDom.dsiAlignedHigh   return whole.alignedHigh;
+override proc ReplicatedDom.dsiAlignedLow    return whole.low;
+override proc ReplicatedDom.dsiAlignedHigh   return whole.high;
 override proc ReplicatedDom.dsiFirst         return whole.first;
 override proc ReplicatedDom.dsiLast          return whole.last;
 override proc ReplicatedDom.dsiStride        return whole.stride;
@@ -317,7 +317,7 @@ proc ReplicatedDom.dsiDims()        return whole.dims();
 //proc ReplicatedDom.dsiGetIndices()  return whole.getIndices();
 proc ReplicatedDom.dsiMember(i)     return whole.contains(i);
 proc ReplicatedDom.doiToString()    return whole:string;
-proc ReplicatedDom.dsiSerialWrite(x) { x.write(whole); }
+proc ReplicatedDom.dsiSerialWrite(x) { x._write(whole); }
 proc ReplicatedDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
 override proc ReplicatedDom.dsiIndexOrder(i)              return whole.indexOrder(i);
 override proc ReplicatedDom.dsiMyDist()                   return dist;

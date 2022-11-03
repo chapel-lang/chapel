@@ -410,7 +410,7 @@ void chpl_task_stdModulesInitialized(void) {
 }
 
 
-int chpl_task_createCommTask(chpl_fn_p fn, void* arg) {
+int chpl_task_createCommTask(chpl_fn_p fn, void* arg, int cpu) {
   comm_task_fn = fn;
   return chpl_thread_createCommThread(comm_task_wrapper, arg);
 }
@@ -667,7 +667,7 @@ static chpl_taskID_t get_next_task_id(void) {
 
 
 //
-// Get the the thread private data pointer for my thread.
+// Get the thread private data pointer for my thread.
 //
 static inline
 thread_private_data_t* get_thread_private_data(void) {

@@ -26,7 +26,7 @@
 #include "alist.h"
 #include "genret.h"
 
-#include "../dyno/lib/immediates/num.h"
+#include "../../frontend/lib/immediates/num.h"
 
 #include <cstdio>
 #include <map>
@@ -341,11 +341,6 @@ class EnumType final : public Type {
   bool isAbstract();  // is the enum abstract?  (has no associated values)
   bool isConcrete();  // is the enum concrete?  (all have associated values)
   PrimitiveType* getIntegerType();
-
-  void printDocs(std::ostream *file, unsigned int tabs);
-
-private:
-  std::string docsDirective();
 };
 
 
@@ -373,11 +368,6 @@ class PrimitiveType final : public Type {
 
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
   void codegenDef()                                     override;
-
-  void printDocs(std::ostream *file, unsigned int tabs);
-
-private:
-  std::string docsDirective();
 };
 
 
@@ -418,8 +408,6 @@ public:
 
   static TypeSymbol*      buildSym(const char* name, ConstrainedTypeUse use);
   static ConstrainedType* buildType(const char* name, ConstrainedTypeUse use);
-
-  void printDocs(std::ostream *file, unsigned int tabs);
 };
 
 

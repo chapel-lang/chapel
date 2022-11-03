@@ -45,7 +45,7 @@ proc partRedCheckAndCreateResultDimensions(dist, resDimSpec, srcArr, srcDims)
         else if specD.boundedType == BoundedRangeType.boundedNone then
           resDims(dim) = srcDims(dim);
         else
-          compilerError("the range in the the dimension " + dim + " of the shape of the partial reduction is neither fully bounded nor fully unbounded");
+          compilerError("the range in the dimension " + dim + " of the shape of the partial reduction is neither fully bounded nor fully unbounded");
       }
       else {
         compilerError("the dimension " + dim + " of the shape of the partial reduction is neither a range nor an individual index");
@@ -77,7 +77,7 @@ proc fullIdxToReducedIdx(const resDims, const srcDims, const srcIdx)
 
   for param dim in 0..resDims.size-1 do
     if isReducedDim(resDims, srcDims, dim) then
-      resIdx(dim) = resDims(dim).alignedLow;
+      resIdx(dim) = resDims(dim).low;
     else
       resIdx(dim) = srcIdx(dim);
 

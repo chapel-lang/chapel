@@ -262,13 +262,13 @@ module DistributedBag {
 
     pragma "no doc"
     proc writeThis(ch) throws {
-      ch.write("[");
+      ch._write("[");
       var size = this.getSize();
       for (i,iteration) in zip(this, 0..<size) {
-        ch.write(i);
-        if iteration < size-1 then ch.write(", ");
+        ch._write(i);
+        if iteration < size-1 then ch._write(", ");
       }
-      ch.write("]");
+      ch._write("]");
     }
 
     forwarding _value;

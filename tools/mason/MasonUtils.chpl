@@ -70,7 +70,7 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
 
   const actualTest = joinPath(projectHome,'test');
   if isDir(actualTest) {
-    for dir in walkdirs(actualTest) {
+    for dir in walkDirs(actualTest) {
       const internalDir = target+dir.replace(projectHome,"");
       if !isDir(internalDir) {
         mkdir(internalDir);
@@ -362,8 +362,8 @@ proc getChapelVersionInfo(): VersionInfo {
       const split = semver.split(".");
       chplVersionInfo = new VersionInfo(split[0]:int, split[1]:int, split[2]:int);
     } catch e : Error {
-      stderr.writeln("Error while getting Chapel version:");
-      stderr.writeln(e.message());
+      stderr._writeln("Error while getting Chapel version:");
+      stderr._writeln(e.message());
       exit(1);
     }
   }
@@ -439,7 +439,7 @@ proc projectModified(projectHome, projectName, binLocation) : bool {
 
   if isFile(binaryPath) {
     const binModTime = getLastModified(binaryPath);
-    for file in listdir(joinPath(projectHome, "src")) {
+    for file in listDir(joinPath(projectHome, "src")) {
       var srcPath = joinPath(projectHome, "src", file);
       if getLastModified(srcPath) > binModTime {
         return true;
@@ -515,7 +515,7 @@ proc getMasonDependencies(sourceList: list(3*string),
 proc depExists(dependency: string, repo='/src/') {
   var repos = MASON_HOME + repo;
   var exists = false;
-  for dir in listdir(repos) {
+  for dir in listDir(repos) {
     if dir == dependency then
       exists = true;
   }
@@ -547,7 +547,7 @@ proc getDepToml(depName: string, depVersion: string) throws {
   for registry in MASON_CACHED_REGISTRY {
     const searchDir = registry + "/Bricks/";
 
-    for dir in listdir(searchDir, files=false, dirs=true) {
+    for dir in listDir(searchDir, files=false, dirs=true) {
       const name = dir.replace("/", "");
       if pattern.search(name) {
         const ver = findLatest(searchDir + dir);
@@ -582,12 +582,12 @@ proc findLatest(packageDir: string): VersionInfo {
   var ret = new VersionInfo(0, 0, 0);
   const suffix = ".toml";
   const packageName = basename(packageDir);
-  for manifest in listdir(packageDir, files=true, dirs=false) {
+  for manifest in listDir(packageDir, files=true, dirs=false) {
     // Check that it is a valid TOML file
     if !manifest.endsWith(suffix) {
       var warningStr = "File without '.toml' extension encountered - skipping ";
       warningStr += packageName + " " + manifest;
-      stderr.writeln(warningStr);
+      stderr._writeln(warningStr);
       continue;
     }
 
@@ -614,19 +614,19 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
   use Regex;
 
   if brick == nil {
-    stderr.writeln("Error: Unable to parse manifest file");
+    stderr._writeln("Error: Unable to parse manifest file");
     exit(1);
   }
 
   // Assert some expected fields are not nil
   if brick!['name'] == nil || brick!['version'] == nil{
-    stderr.writeln("Error: Unable to parse manifest file");
+    stderr._writeln("Error: Unable to parse manifest file");
     exit(1);
   }
 
   if brick!['chplVersion'] == nil {
     const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
-    stderr.writeln("Brick '", name, "' missing required 'chplVersion' field");
+    stderr._writeln("Brick '", name, "' missing required 'chplVersion' field");
     exit(1);
   }
 
@@ -639,8 +639,8 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
     high = res[1];
   } catch e : Error {
     const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
-    stderr.writeln("Invalid chplVersion in package '", name, "': ", chplVersion);
-    stderr.writeln("Details: ", e.message());
+    stderr._writeln("Invalid chplVersion in package '", name, "': ", chplVersion);
+    stderr._writeln("Details: ", e.message());
     exit(1);
   }
 

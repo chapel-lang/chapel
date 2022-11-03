@@ -343,6 +343,7 @@ Some of these subclasses commonly used within the I/O implementation include:
  * :class:`OS.EofError` - the end of file was reached
  * :class:`OS.UnexpectedEofError` - a read or write only returned part of the requested data
  * :class:`OS.BadFormatError` - data read did not adhere to the requested format
+ * :class:`OS.InsufficientCapacityError` - a read or write operation required more storage than was available
 
 An error code can be converted to a string using the function
 :proc:`OS.errorToString()`.
@@ -420,7 +421,7 @@ module IO {
       -- seems that we'd want some way to cache that...).
 */
 
-import SysBasic.{EFORMAT,fd_t,ENOERR,EEOF};
+import SysBasic.{fd_t, ENOERR};
 import OS.POSIX.{ENOENT, ENOSYS, EINVAL, EILSEQ, EIO, ERANGE};
 import OS.POSIX.{EBADF};
 import OS.{errorCode};
@@ -1096,6 +1097,8 @@ private extern proc qio_channel_unlock(ch:qio_channel_ptr_t);
 private extern proc qio_channel_get_style(ch:qio_channel_ptr_t, ref style:iostyleInternal);
 private extern proc qio_channel_set_style(ch:qio_channel_ptr_t, const ref style:iostyleInternal);
 
+private extern proc qio_channel_get_size(ch: qio_channel_ptr_t):int(64);
+
 private extern proc qio_channel_binary(ch:qio_channel_ptr_t):uint(8);
 private extern proc qio_channel_byteorder(ch:qio_channel_ptr_t):uint(8);
 private extern proc qio_channel_str_style(ch:qio_channel_ptr_t):int(64);
@@ -1631,10 +1634,24 @@ proc file.fsync() throws {
   if err then try ioerror(err, "in file.fsync", this._tryGetPath());
 }
 
+/*
+  A compile-time parameter to control the behavior of :proc:`file.path`
+
+  When 'false', the deprecated behavior is used (i.e., return the shortest of
+  the relative path and the absolute path)
+
+  When 'true', the new behavior is used (i.e., always return the absolute path)
+*/
+config param filePathAbsolute = false;
+
+deprecated "The variant of `file.path` that can return a relative path is deprecated; please compile with `-sfilePathAbsolute=true` to use the strictly absolute variant"
+proc file.path: string throws where !filePathAbsolute {
+  return fileRelPathHelper(this);
+}
 
 /*
 
-Get the path to an open file.
+Get the absolute path to an open file.
 
 Note that not all files have a path (e.g. files opened with :proc:`openmem`),
 and that this function may not work on all operating systems.
@@ -1642,18 +1659,55 @@ and that this function may not work on all operating systems.
 The function :proc:`Path.realPath` is an alternative way
 to get the path to a file.
 
+:returns: the absolute path to the file
+:rtype: ``string``
+
 :throws SystemError: Thrown if the path could not be retrieved.
  */
-proc file.path : string throws {
+proc file.path : string throws where filePathAbsolute {
+  return this._abspath;
+}
+
+// helper for relative-path deprecation
+pragma "no doc"
+proc file._abspath: string throws {
   var ret: string;
   var err:errorCode = ENOERR;
   on this._home {
     try this.checkAssumingLocal();
     var tmp:c_string;
-    var tmp2:c_string;
     err = qio_file_path(_file_internal, tmp);
     if !err {
-      err = qio_shortest_path(_file_internal, tmp2, tmp);
+      ret = createStringWithNewBuffer(tmp,
+                                      policy=decodePolicy.escape);
+    }
+    chpl_free_c_string(tmp);
+  }
+  if err then try ioerror(err, "in file.path");
+  return ret;
+}
+
+// internal version of 'file.path' used to generate error messages in other IO methods
+// produces a relative path when avilible
+pragma "no doc"
+proc file._tryGetPath() : string {
+  try {
+    return fileRelPathHelper(this);
+  } catch {
+    return "unknown";
+  }
+}
+
+private proc fileRelPathHelper(f: file): string throws {
+  var ret: string;
+  var err:errorCode = ENOERR;
+  on f._home {
+    try f.checkAssumingLocal();
+    var tmp:c_string;
+    var tmp2:c_string;
+    err = qio_file_path(f._file_internal, tmp);
+    if !err {
+      err = qio_shortest_path(f._file_internal, tmp2, tmp);
     }
     chpl_free_c_string(tmp);
     if !err {
@@ -1664,15 +1718,6 @@ proc file.path : string throws {
   }
   if err then try ioerror(err, "in file.path");
   return ret;
-}
-
-pragma "no doc"
-proc file._tryGetPath() : string {
-  try {
-    return this.path;
-  } catch {
-    return "unknown";
-  }
 }
 
 /*
@@ -2009,6 +2054,31 @@ proc openmemHelper(style:iostyleInternal = defaultIOStyleInternal()):file throws
   return ret;
 }
 
+/*
+  A parameter to select between the new and deprecated overloads of the
+  :record:`fileWriter` type's `writer` methods.
+
+  These include: :proc:`channel.write`, :proc:`channel.writeln`,
+  :proc:`channel.writebits`, :proc:`channel.writeBytes`, and
+  :proc:`FormattedIO.channel.writef`
+
+  This parameter also toggles the new and deprecated variants of the top-level
+  :proc:`~ChapelIO.writef` method.
+
+  - When `WritersReturnBool=true` the deprecated variants of the writer methods are called
+  - When `WritersReturnBool=false` the new variants of the writer methods are called
+
+  .. note::
+    The only difference between the new and deprecated versions of these methods
+    is the return type. The deprecated overloads return a `bool` which is always
+    ``true``, while the new overloads do not return anything.
+
+    Compiling with this param set to ``true`` will allow you to rely on the
+    return value for the time being; however, the returning methods will be
+    removed in a future release.
+*/
+config param WritersReturnBool=false;
+
 pragma "ignore noinit"
 pragma "no doc"
 record _channel {
@@ -2321,7 +2391,7 @@ record ioNewline {
   pragma "no doc"
   proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
-    f.write("\n");
+    f._write("\n");
   }
 }
 
@@ -2350,7 +2420,7 @@ record ioLiteral {
   var ignoreWhiteSpace: bool = true;
   proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
-    f.write(val);
+    f._write(val);
   }
 }
 
@@ -2373,7 +2443,7 @@ record ioBits {
   pragma "no doc"
   proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
-    f.write(v);
+    f._write(v);
   }
 }
 
@@ -2382,6 +2452,29 @@ inline operator :(x: ioBits, type t:string) {
   const ret = "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
   return ret;
 }
+
+/*
+ EEOF, ESHORT, and EFORMAT are Chapel-specific IO error codes.
+ */
+
+private extern proc chpl_macro_int_EEOF():c_int;
+/* An error code indicating the end of file has been reached (Chapel specific)
+ */
+inline proc EEOF return chpl_macro_int_EEOF():c_int;
+
+private extern proc chpl_macro_int_ESHORT():c_int;
+/* An error code indicating that the end of file or the end of the
+   input was reached before the requested amount of data could be read.
+   (Chapel specific)
+  */
+inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
+
+private extern proc chpl_macro_int_EFORMAT():c_int;
+/* An error code indicating a format error; for example when reading a quoted
+   string literal, this would be returned if we never encountered the
+   opening quote. (Chapel specific)
+  */
+inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
 
 
 pragma "no doc"
@@ -2580,6 +2673,13 @@ inline proc _channel.commit() where this.locking == false {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
+/* Used to control the behavior of the region argument for
+   :proc:`channel.seek`.  When set to ``true``, the region argument will fully
+   specify the bounds of the seek.  When set to ``false``, the region argument
+   will exclude the high bound.  Defaults to ``false``, the original behavior.
+ */
+config param useNewSeekRegionBounds = false;
+
 /*
    Reset a channel to point to a new part of a file.
    This function allows one to jump to a different part of a
@@ -2605,7 +2705,8 @@ inline proc _channel.commit() where this.locking == false {
                          channel is marked.
    :throws IllegalArgumentError: if region argument did not have a lower bound
  */
-proc _channel.seek(region: range(?)) throws {
+proc _channel.seek(region: range(?)) throws where (!region.hasHighBound() ||
+                                                   useNewSeekRegionBounds) {
 
   if this.locking then
     compilerError("Cannot seek on a locking channel");
@@ -2615,7 +2716,8 @@ proc _channel.seek(region: range(?)) throws {
 
   } else {
     if (region.hasHighBound()) {
-      const err = qio_channel_seek(_channel_internal, region.low, region.high);
+      const err = qio_channel_seek(_channel_internal, region.low,
+                                   region.high + 1);
 
       if err then
         throw createSystemError(err);
@@ -2626,6 +2728,20 @@ proc _channel.seek(region: range(?)) throws {
       if err then
         throw createSystemError(err);
     }
+  }
+}
+
+deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewSeekRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+proc _channel.seek(region: range(?)) throws where (region.hasHighBound() &&
+                                                   !useNewSeekRegionBounds) {
+  if (!region.hasLowBound()) {
+    throw new IllegalArgumentError("region", "must have a lower bound");
+
+  } else {
+    const err = qio_channel_seek(_channel_internal, region.low, region.high);
+
+    if err then
+      throw createSystemError(err);
   }
 }
 
@@ -2798,6 +2914,13 @@ proc openreader(path:string,
                           style: iostyleInternal);
 }
 
+/* Used to control the behavior of the region argument for :proc:`openreader`.
+   When set to ``true``, the region argument will fully specify the bounds of
+   the :type:`fileReader`.  When set to ``false``, the region argument will
+   exclude the high bound.  Defaults to ``false``, the original behavior.
+ */
+config param useNewOpenReaderRegionBounds = false;
+
 // We can simply call channel.close() on these, since the underlying file will
 // be closed once we no longer have any references to it (which in this case,
 // since we only will have one reference, will be right after we close this
@@ -2838,7 +2961,17 @@ This function is equivalent to calling :proc:`open` and then
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking) throws {
+    : fileReader(kind, locking) throws where (!region.hasHighBound() ||
+                                              useNewOpenReaderRegionBounds) {
+  return openreaderHelper(path, kind, locking, region, hints);
+}
+
+deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewOpenReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+proc openreader(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                region: range(?) = 0.., hints=ioHintSet.empty)
+    : fileReader(kind, locking) throws where (region.hasHighBound() &&
+                                              !useNewOpenReaderRegionBounds) {
   return openreaderHelper(path, kind, locking, region, hints);
 }
 
@@ -2850,7 +2983,8 @@ private proc openreaderHelper(path:string,
   : fileReader(kind, locking) throws {
 
   var fl:file = try open(path, iomode.r);
-  return try fl.readerHelper(kind, locking, region, hints, style);
+  return try fl.readerHelper(kind, locking, region, hints, style,
+                             fromOpenReader=true);
 }
 
 @unstable "openwriter with a style argument is unstable"
@@ -2913,28 +3047,36 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
   return this.readerHelper(kind, locking, start..end, hints, style: iostyleInternal);
 }
 
+/* Used to control the behavior of the region argument for :proc:`file.reader`.
+   When set to ``true``, the region argument will fully specify the bounds of
+   the :type:`fileReader`.  When set to ``false``, the region argument will
+   exclude the high bound.  Defaults to ``false``, the original behavior.
+ */
+config param useNewFileReaderRegionBounds = false;
+
 /*
-   Create a :record:`channel` that supports reading from a file. See
+   Create a :record:`fileReader` that supports reading from a file. See
    :ref:`about-io-overview`.
 
-   The ``start=`` and ``end=`` arguments define the region of the file that the
-   channel will read from.  These are byte offsets; the beginning of the file is
-   at the offset 0.  The defaults for these arguments enable the channel to
-   access the entire file.
+   The ``region=`` argument defines the portion of the file that the fileReader
+   will read from.  This is a byte offset; the beginning of the file is at the
+   offset 0.  The default for this argument enables the fileReader to access the
+   entire file.
 
-   A channel will never read beyond its maximum end position. In addition,
-   reading from a channel beyond the end of the underlying file will not extend
-   that file.  Reading beyond the end of the file or beyond the end offset of
-   the channel will produce the error ``EEOF`` (and return `false` in many
-   cases such as :proc:`channel.read`) to indicate that the end was reached.
+   A fileReader will never read beyond its maximum end position. In addition,
+   reading from a fileReader beyond the end of the underlying file will not
+   extend that file.  Reading beyond the end of the file or beyond the end
+   offset of the fileReader will produce the error ``EEOF`` (and return `false`
+   in many cases such as :proc:`channel.read`) to indicate that the end was
+   reached.
 
    :arg kind: :type:`iokind` compile-time argument to determine the
-              corresponding parameter of the :record:`channel` type. Defaults
+              corresponding parameter of the :record:`fileReader` type. Defaults
               to ``iokind.dynamic``, meaning that the associated
               :record:`iostyle` controls the formatting choices.
    :arg locking: compile-time argument to determine whether or not the
                  channel should use locking; sets the
-                 corresponding parameter of the :record:`channel` type.
+                 corresponding parameter of the :record:`fileReader` type.
                  Defaults to true, but when safe, setting it to false
                  can improve performance.
    :arg region: zero-based byte offset indicating where in the file the
@@ -2954,14 +3096,28 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
                                  byte 0.
  */
 proc file.reader(param kind=iokind.dynamic, param locking=true,
-                 region: range(?) = 0.., hints = ioHintSet.empty): fileReader(kind, locking) throws {
+                 region: range(?) = 0.., hints = ioHintSet.empty)
+  : fileReader(kind, locking) throws where (!region.hasHighBound() ||
+                                            useNewFileReaderRegionBounds) {
   return this.readerHelper(kind, locking, region, hints);
 }
 
+deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+proc file.reader(param kind=iokind.dynamic, param locking=true,
+                 region: range(?) = 0.., hints = ioHintSet.empty)
+  : fileReader(kind, locking) throws where (region.hasHighBound() &&
+                                            !useNewFileReaderRegionBounds) {
+  return this.readerHelper(kind, locking, region, hints);
+}
+
+// TODO: remove fromOpenReader and fromOpenUrlReader when deprecated versions
+// are removed
 pragma "no doc"
 proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
-                       style:iostyleInternal = this._style): fileReader(kind, locking) throws {
+                       style:iostyleInternal = this._style,
+                       fromOpenReader=false, fromOpenUrlReader=false)
+  : fileReader(kind, locking) throws {
   if (region.hasLowBound() && region.low < 0) {
     throw new IllegalArgumentError("region", "file region's lowest accepted bound is 0");
   }
@@ -2974,14 +3130,47 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
   on this._home {
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      ret = new fileReader(kind, locking, this, err, hints, region.low,
-                           region.high, style);
+      // This is to ensure the user sees consistent behavior and can control it.
+      // - All calls from `openUrlReader` should use the new behavior.
+      // - Only calls from `openreader` that are compiled with the flag that
+      //   controls its region argument should affect its behavior.
+      // - Only calls from `file.reader` that are compiled with the flag that
+      //   controls its region argument should affect its behavior.
+      // Calls from `openreader` should not be impacted by `file.reader`'s flag
+      // and vice versa.
+      if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
+          fromOpenUrlReader ||
+          (!fromOpenReader && useNewFileReaderRegionBounds)) {
+        ret = new fileReader(kind, locking, this, err, hints, region.low,
+                             region.high + 1, style);
+      } else {
+        ret = new fileReader(kind, locking, this, err, hints, region.low,
+                             region.high, style);
+      }
+
     } else if (region.hasLowBound()) {
       ret = new fileReader(kind, locking, this, err, hints, region.low,
                            max(int(64)), style);
+
     } else if (region.hasHighBound()) {
-      ret = new fileReader(kind, locking, this, err, hints, 0, region.high,
-                           style);
+      // This is to ensure the user sees consistent behavior and can control it.
+      // - All calls from `openUrlReader` should use the new behavior.
+      // - Only calls from `openreader` that are compiled with the flag that
+      //   controls its region argument should affect its behavior.
+      // - Only calls from `file.reader` that are compiled with the flag that
+      //   controls its region argument should affect its behavior.
+      // Calls from `openreader` should not be impacted by `file.reader`'s flag
+      // and vice versa.
+      if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
+          fromOpenUrlReader ||
+          (!fromOpenReader && useNewFileReaderRegionBounds)) {
+        ret = new fileReader(kind, locking, this, err, hints, 0,
+                             region.high + 1, style);
+      } else {
+        ret = new fileReader(kind, locking, this, err, hints, 0, region.high,
+                             style);
+      }
+
     } else {
       ret = new fileReader(kind, locking, this, err, hints, 0, max(int(64)),
                            style);
@@ -3000,6 +3189,13 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
                           local_style: iostyleInternal);
 }
 
+/* Used to control the behavior of the region argument for :proc:`file.lines`.
+   When set to ``true``, the region argument will fully specify the bounds that
+   this function would cover.  When set to ``false``, the region argument will
+   exclude the high bound.  Defaults to ``false``, the original behavior.
+ */
+config param useNewLinesRegionBounds = false;
+
 /* Iterate over all of the lines in a file.
 
    :returns: an object which yields strings read from the file
@@ -3007,9 +3203,18 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
    :throws SystemError: Thrown if an object could not be returned.
  */
 proc file.lines(param locking:bool = true, region: range(?) = 0..,
-                hints = ioHintSet.empty) throws {
+                hints = ioHintSet.empty) throws where (!region.hasHighBound() ||
+                                                       useNewLinesRegionBounds) {
   return this.linesHelper(locking, region, hints);
 }
+
+deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewLinesRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+proc file.lines(param locking:bool = true, region: range(?) = 0..,
+                hints = ioHintSet.empty) throws where (region.hasHighBound() &&
+                                                       !useNewLinesRegionBounds) {
+  return this.linesHelper(locking, region, hints);
+}
+
 
 pragma "no doc"
 proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
@@ -3025,14 +3230,29 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
     try this.checkAssumingLocal();
     var ch: fileReader;
     if (region.hasLowBound() && region.hasHighBound()) {
-      ch = new fileReader(kind, locking, this, err, hints, region.low,
-                          region.high, local_style);
+      if (useNewLinesRegionBounds) {
+        ch = new fileReader(kind, locking, this, err, hints, region.low,
+                            region.high + 1, local_style);
+
+      } else {
+        ch = new fileReader(kind, locking, this, err, hints, region.low,
+                            region.high, local_style);
+      }
+
     } else if (region.hasLowBound()) {
       ch = new fileReader(kind, locking, this, err, hints, region.low,
                           max(int(64)), local_style);
+
     } else if (region.hasHighBound()) {
-      ch = new fileReader(kind, locking, this, err, hints, 0, region.high,
-                          local_style);
+      if (useNewLinesRegionBounds) {
+        ch = new fileReader(kind, locking, this, err, hints, 0, region.high + 1,
+                            local_style);
+
+      } else {
+        ch = new fileReader(kind, locking, this, err, hints, 0, region.high,
+                            local_style);
+      }
+
     } else {
       ch = new fileReader(kind, locking, this, err, hints, 0, max(int(64)),
                           local_style);
@@ -3052,42 +3272,51 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
   return this.writerHelper(kind, locking, start..end, hints, style: iostyleInternal);
 }
 
+/* Used to control the behavior of the region argument for :proc:`file.writer`.
+   When set to ``true``, the region argument will fully specify the bounds of
+   the :record:`fileWriter`.  When set to ``false``, the region argument will
+   exclude the high bound.  Defaults to ``false``, the original behavior.
+
+ */
+config param useNewFileWriterRegionBounds = false;
+
 /*
-   Create a :record:`channel` that supports writing to a file. See
+   Create a :record:`fileWriter` that supports writing to a file. See
    :ref:`about-io-overview`.
 
-   The ``start=`` and ``end=`` arguments define the region of the file that the
-   channel will write to.  These are byte offsets; the beginning of the file is
-   at the offset 0.  The defaults for these arguments enable the channel to
-   access the entire file.
+   The ``region=`` argument defines the portion of the file that the fileWriter
+   will write to.  This is a byte offset; the beginning of the file is at the
+   offset 0.  The default for this argument enables the fileWriter to access the
+   entire file.
 
-   When a channel writes to a file, it will replace file data that was
+   When a fileWriter writes to a file, it will replace file data that was
    previously stored at the relevant offset. If the offset is beyond the
    end of the file, the file will be extended.
 
-   A channel will never write beyond its maximum end position.  It will extend
-   the file only as necessary to store data written to the channel. In other
-   words, specifying end here does not impact the file size directly; it
-   impacts only the section of the file that this channel can write to. After
-   all channels to a file are closed, that file will have a size equal to the
-   last position written to by any channel.
+   A fileWriter will never write beyond its maximum end position.  It will
+   extend the file only as necessary to store data written to the fileWriter. In
+   other words, specifying the high bound of the region argument here does not
+   impact the file size directly; it impacts only the section of the file that
+   this fileWriter can write to. After all fileWriters to a file are closed,
+   that file will have a size equal to the last position written to by any
+   fileWriter.
 
    :arg kind: :type:`iokind` compile-time argument to determine the
-              corresponding parameter of the :record:`channel` type. Defaults
+              corresponding parameter of the :record:`fileWriter` type. Defaults
               to ``iokind.dynamic``, meaning that the associated
               :record:`iostyle` controls the formatting choices.
    :arg locking: compile-time argument to determine whether or not the
                  channel should use locking; sets the
-                 corresponding parameter of the :record:`channel` type.
+                 corresponding parameter of the :record:`fileWriter` type.
                  Defaults to true, but when safe, setting it to false
                  can improve performance.
    :arg region: zero-based byte offset indicating where in the file the
-               channel should start and stop writing. Defaults to
+               fileWriter should start and stop writing. Defaults to
                ``0..`` - meaning from the start of the file to no specified end
                point.
    :arg hints: provide hints about the I/O that this channel will perform. See
                :record:`ioHintSet`. The default value of `ioHintSet.empty`
-               will cause the channel to use the hints provided when the
+               will cause the fileWriter to use the hints provided when the
                file was opened.
 
    .. warning::
@@ -3100,14 +3329,24 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
  */
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty):
-                 fileWriter(kind,locking) throws {
+                 fileWriter(kind,locking) throws where (!region.hasHighBound() ||
+                                                        useNewFileWriterRegionBounds) {
+  return this.writerHelper(kind, locking, region, hints);
+}
+
+deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileWriterRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+proc file.writer(param kind=iokind.dynamic, param locking=true,
+                 region: range(?) = 0.., hints = ioHintSet.empty):
+                 fileWriter(kind,locking) throws where (region.hasHighBound() &&
+                                                        !useNewFileWriterRegionBounds) {
   return this.writerHelper(kind, locking, region, hints);
 }
 
 pragma "no doc"
 proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
-                       style:iostyleInternal = this._style):
+                       style:iostyleInternal = this._style,
+                       fromOpenUrlWriter = false):
   fileWriter(kind,locking) throws {
 
   if (region.hasLowBound() && region.low < 0) {
@@ -3123,14 +3362,29 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
   on this._home {
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      ret = new fileWriter(kind, locking, this, err, hints, region.low,
-                           region.high, style);
+      // TODO: remove the fromOpenUrlWriter arg when the deprecated version is
+      // removed
+      if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
+        ret = new fileWriter(kind, locking, this, err, hints, region.low,
+                             region.high + 1, style);
+      } else {
+        ret = new fileWriter(kind, locking, this, err, hints, region.low,
+                             region.high, style);
+      }
+
     } else if (region.hasLowBound()) {
       ret = new fileWriter(kind, locking, this, err, hints, region.low,
                            max(int(64)), style);
+
     } else if (region.hasHighBound()) {
-      ret = new fileWriter(kind, locking, this, err, hints, 0, region.high,
-                           style);
+      if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
+        ret = new fileWriter(kind, locking, this, err, hints, 0,
+                             region.high + 1, style);
+      } else {
+        ret = new fileWriter(kind, locking, this, err, hints, 0, region.high,
+                             style);
+      }
+
     } else {
       ret = new fileWriter(kind, locking, this, err, hints, 0, max(int(64)),
                            style);
@@ -4075,19 +4329,30 @@ proc _channel.writeIt(const x) throws {
     return ret;
   }
 
+  deprecated "The returning variant of ``writeBytes`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
+  proc _channel.writeBytes(x, len:c_ssize_t):bool throws where WritersReturnBool == true {
+    try this._writeBytes(x, len);
+    return true;
+  }
+
   /*
      Write a sequence of bytes.
 
      :throws SystemError: Thrown if the byte sequence could not be written.
-   */
-  proc _channel.writeBytes(x, len:c_ssize_t):bool throws {
+  */
+  proc _channel.writeBytes(x, len:c_ssize_t) throws where WritersReturnBool == false {
+    try this._writeBytes(x, len);
+  }
+
+  // helper for bool-returning deprecation
+  pragma "no doc"
+  proc _channel._writeBytes(x, len:c_ssize_t) throws {
     var err:errorCode = ENOERR;
     on this._home {
       try this.lock(); defer { this.unlock(); }
       err = qio_channel_write_amt(false, _channel_internal, x, len);
     }
     if err then try this._ch_ioerror(err, "in channel.writeBytes()");
-    return true;
   }
 
 /*
@@ -4153,7 +4418,7 @@ proc stringify(const args ...?k):string {
       var w = f.writer(locking=false);
       defer try! w.close();
 
-      w.write((...args));
+      w._write((...args));
 
       var offset = w.offset();
 
@@ -4653,6 +4918,142 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
   return retval;
 }
 
+/*
+  Read the remaining contents of the channel into an instance of the specified type
+
+  :arg t: the type to read into; must be ``string`` or ``bytes``. Defaults to ``bytes`` if not specified.
+  :returns: the contents of the channel as a ``t``
+
+  :throws SystemError: Thrown if data could not be read from the channel
+*/
+proc _channel.readAll(type t=bytes): t throws
+  where t==string || t==bytes
+{
+  if this.writing then compilerError("attempt to read on write-only channel");
+
+  var out_var : t;
+
+  if t == bytes {
+    out_var = b"";
+    this.readAll(out_var);
+  } else {
+    out_var = "";
+    this.readAll(out_var);
+  }
+
+  return out_var;
+}
+
+/*
+  Read the remaining contents of the channel into a ``string``.
+
+  Note that any existing contents of the ``string`` are overwritten.
+
+  :arg s: the ``string`` to read into
+  :returns: the number of codepoints that were stored in ``s``
+  :rtype: int
+
+  :throws SystemError: Thrown if data could not be read from the channel
+*/
+proc _channel.readAll(ref s: string): int throws {
+  if this.writing then compilerError("attempt to read on write-only channel");
+
+  const (err, lenread) = readBytesOrString(this, s, -1);
+
+  if err != ENOERR && err != EEOF {
+    try this._ch_ioerror(err, "in channel.readAll(ref s: string)");
+  }
+
+  return lenread;
+}
+
+/*
+  Read the remaining contents of the channel into a ``bytes``.
+
+  Note that any existing contents of the ``bytes`` are overwritten.
+
+  :arg b: the ``bytes`` to read into
+  :returns: the number of bytes that were stored in ``b``
+  :rtype: int
+
+  :throws SystemError: Thrown if data could not be read from the channel
+*/
+proc _channel.readAll(ref b: bytes): int throws {
+  if this.writing then compilerError("attempt to read on write-only channel");
+
+  const (err, lenread) = readBytesOrString(this, b, -1);
+
+  if err != ENOERR && err != EEOF {
+    try this._ch_ioerror(err, "in channel.readAll(ref b: bytes)");
+  }
+
+  return lenread;
+}
+
+/*
+  Read the remaining contents of the channel into a an array of bytes.
+
+  Note that this routine currently requires a 1D rectangular non-strided array.
+  Additionally, If the remaining contents of the channel exceed the size of
+  ``a``, the first ``a.size`` bytes will be read into ``a``, and then an
+  ``InsufficientCapacityError`` will be thrown.
+
+  :arg a: the array of bytes to read into
+  :returns: the number of bytes that were stored in ``a``
+  :rtype: int
+
+  :throws InsufficientCapacityError: Thrown if the channel's contents do not fit into ``a``
+  :throws SystemError: Thrown if data could not be read from the channel
+*/
+proc _channel.readAll(ref a: [?d] ?t): int throws
+  where (t == uint(8) || t == int(8)) && d.rank == 1 && d.stridable == false
+{
+  if this.writing then compilerError("attempt to read on write-only channel");
+  var i = d.low;
+
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    var got : int;
+
+    while d.contains(i) {
+      // read a byte
+      got = qio_channel_read_byte(false, this._channel_internal);
+
+      if got == -EEOF {
+        // reached EOF, stop reading
+        break;
+      } else if got < 0 {
+        // hit an IO error, throw
+        try this._ch_ioerror((-got):errorCode, "in channel.readAll(ref a: [])");
+      } else {
+        // got a byte, store it
+        a[i] = got:t;
+        i += 1;
+      }
+    }
+
+    // if a is full, but we haven't reached EOF, throw
+    if i-1 == d.high {
+      var has_more = false;
+
+      this._mark();
+      got = qio_channel_read_byte(false, this._channel_internal);
+      has_more = (got >= 0);
+      this._revert();
+
+      if has_more {
+        const sz = qio_channel_get_size(this._channel_internal);
+        const err_msg = "Channel's contents" + (if sz == -1 then " " else " (" + sz:string + " bytes) ") +
+          "exceeded capacity of array argument (" + a.size:string + " bytes) in 'readAll'";
+
+        throw new owned InsufficientCapacityError(err_msg);
+      }
+    }
+  }
+
+  return (i - d.low);
+}
+
 /* read a given number of bytes from a channel
 
    :arg str_out: The string to be read into
@@ -4665,7 +5066,7 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
    :throws SystemError: Thrown if the bytes could not be read from the channel.
  */
 proc _channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
-  var err = readBytesOrString(this, str_out, len);
+  var (err, _) = readBytesOrString(this, str_out, len);
 
   if !err {
     return true;
@@ -4689,7 +5090,7 @@ proc _channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
    :throws SystemError: Thrown if the bytes could not be read from the channel.
  */
 proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
-  var err = readBytesOrString(this, bytes_out, len);
+  var (err, _) = readBytesOrString(this, bytes_out, len);
 
   if !err {
     return true;
@@ -4701,12 +5102,14 @@ proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
   return false;
 }
 
-private proc readBytesOrString(ch: fileReader, ref out_var: ?t,  len: int(64))
-    throws {
+private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : (errorCode, int(64))
+  throws
+{
 
   var err:errorCode = ENOERR;
+  var lenread:int(64);
+
   on ch._home {
-    var lenread:int(64);
     var tx:c_string;
     var lentmp:int(64);
     var actlen:int(64);
@@ -4757,7 +5160,7 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t,  len: int(64))
     }
   }
 
-  return err;
+  return (err, lenread);
 
 }
 
@@ -4789,17 +5192,8 @@ proc _channel.readbits(ref v:integral, nbits:integral):bool throws {
   return ret;
 }
 
-/*
-   Write bits with binary I/O
-
-   :arg v: a value containing *nbits* bits to write the least-significant bits
-   :arg nbits: how many bits to write
-   :returns: `true` if the bits were written without error, `false` on error
-
-   :throws IllegalArgumentError: Thrown if writing more bits than fit into `v`.
-   :throws SystemError: Thrown if the bits could not be written to the channel.
- */
-proc _channel.writebits(v:integral, nbits:integral):bool throws {
+deprecated "The returning variant of ``writebits`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
+proc _channel.writebits(v:integral, nbits:integral):bool throws where WritersReturnBool == true {
   if castChecking {
     // Error if writing more bits than fit into v
     if numBits(v.type) < nbits then
@@ -4810,7 +5204,31 @@ proc _channel.writebits(v:integral, nbits:integral):bool throws {
       throw new owned IllegalArgumentError("nbits", "writebits nbits=" + nbits:string + " < 0");
   }
 
-  return try this.write(new ioBits(v:uint(64), nbits:int(8)));
+  try this._write(new ioBits(v:uint(64), nbits:int(8)));
+  return true;
+}
+
+/*
+   Write bits with binary I/O
+
+   :arg v: a value containing *nbits* bits to write the least-significant bits
+   :arg nbits: how many bits to write
+
+   :throws IllegalArgumentError: Thrown if writing more bits than fit into `v`.
+   :throws SystemError: Thrown if the bits could not be written to the channel.
+ */
+proc _channel.writebits(v:integral, nbits:integral) throws where WritersReturnBool == false {
+  if castChecking {
+    // Error if writing more bits than fit into v
+    if numBits(v.type) < nbits then
+      throw new owned IllegalArgumentError("v, nbits", "writebits nbits=" + nbits:string +
+                                                 " > bits in v:" + v.type:string);
+    // Error if writing negative number of bits
+    if isIntType(nbits.type) && nbits < 0 then
+      throw new owned IllegalArgumentError("nbits", "writebits nbits=" + nbits:string + " < 0");
+  }
+
+  try this._write(new ioBits(v:uint(64), nbits:int(8)));
 }
 
 /*
@@ -5033,6 +5451,12 @@ proc _channel.read(type t ...?numTypes) throws where numTypes > 1 {
   return tupleVal;
 }
 
+deprecated "The returning variant of ``channel.write`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
+inline proc _channel.write(const args ...?k):bool throws where WritersReturnBool == true {
+  try this._write((...args));
+  return true;
+}
+
 /*
    Write values to a channel. The output will be produced atomically -
    the channel lock will be held while writing all of the passed
@@ -5041,11 +5465,17 @@ proc _channel.read(type t ...?numTypes) throws where numTypes > 1 {
    :arg args: a list of arguments to write. Basic types are handled
               internally, but for other types this function will call
               value.writeThis() with the channel as an argument.
-   :returns: `true` if the write succeeded
 
    :throws SystemError: Thrown if the values could not be written to the channel.
  */
-inline proc _channel.write(const args ...?k):bool throws {
+inline proc _channel.write(const args ...?k) throws where WritersReturnBool == false {
+  try this._write((...args));
+}
+
+// helper function for bool-returning deprecation
+pragma "fn exempt instantiation limit"
+pragma "no doc"
+inline proc _channel._write(const args ...?k) throws {
   if !writing then compilerError("write on read-only channel");
 
   const origLocale = this.getLocaleOfIoRequest();
@@ -5055,15 +5485,24 @@ inline proc _channel.write(const args ...?k):bool throws {
       try _writeOne(kind, args(i), origLocale);
     }
   }
-
-  return true;
 }
-
+// helper function for bool-returning deprecation (with deprecated style argument)
+pragma "no doc"
 @unstable "write with a style argument is unstable"
-proc _channel.write(const args ...?k, style:iostyle):bool throws {
+proc _channel._write(const args ...?k, style:iostyle) throws {
   return this.writeHelper((...args), style: iostyleInternal);
 }
 
+@unstable "write with a style argument is unstable"
+proc _channel.write(const args ...?k, style:iostyle):bool throws where WritersReturnBool == true {
+  return this.writeHelper((...args), style: iostyleInternal);
+}
+@unstable "write with a style argument is unstable"
+proc _channel.write(const args ...?k, style:iostyle) throws where WritersReturnBool == false {
+  this.writeHelper((...args), style: iostyleInternal);
+}
+
+// helper function for iostyle deprecation
 pragma "no doc"
 proc _channel.writeHelper(const args ...?k, style:iostyleInternal):bool throws {
   if !writing then compilerError("write on read-only channel");
@@ -5088,8 +5527,25 @@ proc _channel.writeHelper(const args ...?k, style:iostyleInternal):bool throws {
 
 // documented in varargs version
 pragma "no doc"
-proc _channel.writeln():bool throws {
-  return try this.write(new ioNewline());
+deprecated "The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
+proc _channel.writeln():bool throws where WritersReturnBool == true {
+  try this._writeln();
+  return true;
+}
+pragma "no doc"
+proc _channel.writeln() throws where WritersReturnBool == false {
+  try this._writeln();
+}
+// helper for bool-returning deprecation (yes, this is a lot of annoying misdirection, but I'm aiming for a consistent pattern among write(...), writeln() and writeln(...))
+pragma "no doc"
+proc _channel._writeln() throws {
+  try this._write(new ioNewline());
+}
+
+deprecated "The returning variant of ``channel.writeln`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
+proc _channel.writeln(const args ...?k):bool throws where WritersReturnBool == true {
+  try this._writeln((...args));
+  return true;
 }
 
 /*
@@ -5102,24 +5558,40 @@ proc _channel.writeln():bool throws {
               called with zero or more arguments. Basic types are handled
               internally, but for other types this function will call
               value.writeThis() with the channel as an argument.
-   :returns: `true` if the write succeeded
 
    :throws SystemError: Thrown if the values could not be written to the channel.
  */
-proc _channel.writeln(const args ...?k):bool throws {
-  return try this.write((...args), new ioNewline());
+proc _channel.writeln(const args ...?k) throws where WritersReturnBool == false {
+  try this._writeln((...args));
+}
+
+// helper function for bool-returning deprecation
+pragma "fn exempt instantiation limit"
+pragma "no doc"
+proc _channel._writeln(const args ...?k) throws {
+  try this._write((...args), new ioNewline());
+}
+// helper function for bool-returning deprecation (with deprecated style argument)
+pragma "no doc"
+@unstable "writeln with a style argument is unstable"
+proc _channel._writeln(const args ...?k, style:iostyle) throws {
+  this.writelnHelper((...args), style: iostyleInternal);
 }
 
 @unstable "writeln with a style argument is unstable"
-proc _channel.writeln(const args ...?k, style:iostyle):bool throws {
+proc _channel.writeln(const args ...?k, style:iostyle):bool throws where WritersReturnBool == true {
   return this.writelnHelper((...args), style: iostyleInternal);
 }
+@unstable "writeln with a style argument is unstable"
+proc _channel.writeln(const args ...?k, style:iostyle) throws where WritersReturnBool == false {
+  this.writelnHelper((...args), style: iostyleInternal);
+}
 
+// helper function for iostyle deprecation
 pragma "no doc"
 proc _channel.writelnHelper(const args ...?k, style:iostyleInternal):bool throws {
   return try this.writeHelper((...args), new ioNewline(), style=style);
 }
-
 /*
 
   Makes all writes to the channel, if any, available to concurrent viewers
@@ -6588,11 +7060,11 @@ class _channel_regex_info {
     clear();
   }
   override proc writeThis(f) throws {
-    f.write("{hasRegex = " + hasRegex: string);
-    f.write(", matchedRegex = " + matchedRegex: string);
-    f.write(", releaseRegex = " + releaseRegex: string);
-    f.write(", ... capturei = " + capturei: string);
-    f.write(", ncaptures = " + ncaptures: string + "}");
+    f._write("{hasRegex = " + hasRegex: string);
+    f._write(", matchedRegex = " + matchedRegex: string);
+    f._write(", releaseRegex = " + releaseRegex: string);
+    f._write(", ... capturei = " + capturei: string);
+    f._write(", ncaptures = " + ncaptures: string + "}");
   }
 }
 
@@ -7213,6 +7685,14 @@ proc _channel._writefOne(fmtStr, ref arg, i: int,
   }
 }
 
+deprecated "The returning variant of ``channel.writef`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
+proc _channel.writef(fmtStr: ?t, const args ...?k): bool throws
+    where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == true
+{
+  try this._writef(fmtStr, (...args));
+  return true;
+}
+
 /*
 
    Write arguments according to a format. See
@@ -7221,12 +7701,19 @@ proc _channel._writefOne(fmtStr, ref arg, i: int,
    :arg fmt: the format as string or bytes
 
    :arg args: 0 or more arguments to write
-   :returns: true
 
    :throws IllegalArgumentError: if an unsupported argument type is encountered.
    :throws SystemError: if the arguments could not be written.
  */
-proc _channel.writef(fmtStr: ?t, const args ...?k): bool throws
+proc _channel.writef(fmtStr: ?t, const args ...?k) throws
+    where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == false
+{
+  try this._writef(fmtStr, (...args));
+}
+
+// helper function for bool-returning deprecation
+pragma "no doc"
+proc _channel._writef(fmtStr: ?t, const args ...?k) throws
     where isStringType(t) || isBytesType(t) {
 
   if !writing then compilerError("writef on read-only channel");
@@ -7282,11 +7769,27 @@ proc _channel.writef(fmtStr: ?t, const args ...?k): bool throws
   }
 
   if err then try this._ch_ioerror(err, "in channel.writef(fmt:string)");
+}
+
+// documented in varargs version
+deprecated "The returning variant of ``channel.writef`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
+proc _channel.writef(fmtStr:?t): bool throws
+    where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == true
+{
+  try this._writef(fmtStr);
   return true;
 }
 
 // documented in varargs version
-proc _channel.writef(fmtStr:?t): bool throws
+proc _channel.writef(fmtStr:?t) throws
+    where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == false
+{
+  try this._writef(fmtStr);
+}
+
+// helper function for bool-returning deprecation
+pragma "no doc"
+proc _channel._writef(fmtStr:?t) throws
     where isStringType(t) || isBytesType(t) {
 
   if !writing then compilerError("writef on read-only channel");
@@ -7800,7 +8303,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
         w.close();
       } catch { /* ignore deferred close error */ }
     }
-    try w.writef(fmt, (...args));
+    try w._writef(fmt, (...args));
     offset = w.offset();
 
     // close error is thrown instead of ignored
@@ -7854,6 +8357,7 @@ proc _channel._extractMatch(m:regexMatch, ref arg:bytes, ref error:errorCode) {
   var cur:int(64);
   var target = m.byteOffset:int;
   var len = m.numBytes;
+  const oldPosition = qio_channel_offset_unlocked(_channel_internal);
 
   // If there was no match, return the default value of the type
   if !m.matched {
@@ -7888,6 +8392,11 @@ proc _channel._extractMatch(m:regexMatch, ref arg:bytes, ref error:errorCode) {
   } else {
     arg = b"";
   }
+
+  // Put back 'oldPosition' at the top of the mark stack.
+  cur = qio_channel_offset_unlocked(_channel_internal);
+  if oldPosition > cur then
+    qio_channel_advance(false, _channel_internal, oldPosition - cur);
 }
 
 pragma "no doc"
@@ -8230,7 +8739,6 @@ proc _channel.match(re:regex(?), ref captures ...?k):regexMatch throws
 iter _channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
 // TODO: should be throws
 {
-  var m:regexMatch;
   var go = true;
   var i = 0;
   var error:errorCode = ENOERR;
@@ -8243,8 +8751,11 @@ iter _channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
 
   while go && i < maxmatches {
     on this._home {
-      var nm = 1 + captures;
-      var matches = _ddata_allocate(qio_regex_string_piece_t, nm);
+      // todo: create local clones of 'error', 'ret', 'go'
+      var m:regexMatch;
+      // todo: hoist the alloc+free outside the loop, allocating on this._home
+      const matches = _ddata_allocate(qio_regex_string_piece_t, nret);
+
       if ! error {
         error = qio_regex_channel_match(re._regex,
                                  false, _channel_internal, max(int(64)),
@@ -8252,7 +8763,7 @@ iter _channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
                                  /* can_discard */ true,
                                  /* keep_unmatched */ false,
                                  /* keep_whole_pattern */ true,
-                                 matches, nm);
+                                 matches, nret);
       }
       if !error {
         m = _to_regexMatch(matches[0]);
@@ -8262,18 +8773,27 @@ iter _channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
             _extractMatch(m, ret[i], error);
           }
           // Advance to the start of the match.
+          // TODO: avoid duplication with qio_regex_channel_match()
           qio_channel_revert_unlocked(_channel_internal);
           error = qio_channel_mark(false, _channel_internal);
           if !error {
             var cur = qio_channel_offset_unlocked(_channel_internal);
             var target = m.byteOffset:int;
             error = qio_channel_advance(false, _channel_internal, target - cur);
+            // Advance by 1 if the regex matched an empty string.
+            if m.numBytes == 0 {
+              error = qio_channel_advance(false, _channel_internal, 1);
+              if error == EEOF {
+                error = ENOERR;
+                go = false;
+              }
+            }
           }
         } else {
           // Stay at the end of the searched region.
         }
       }
-      _ddata_free(matches, nm);
+      _ddata_free(matches, nret);
       if error then go = false;
     }
     if ! error then yield ret;

@@ -611,9 +611,9 @@ module Map {
           ref tabEntry = table.table[slot];
           ref key = tabEntry.key;
           ref val = tabEntry.val;
-          if ch.writing then ch.write(key); else key = ch.read(key.type);
+          if ch.writing then ch._write(key); else key = ch.read(key.type);
           rwLiteral(": ");
-          if ch.writing then ch.write(val); else val = ch.read(val.type);
+          if ch.writing then ch._write(val); else val = ch.read(val.type);
         }
       }
       rwLiteral("}");
@@ -844,132 +844,6 @@ module Map {
   operator map.!=(const ref a: map(?kt, ?vt, ?ps),
                   const ref b: map(kt, vt, ps)): bool {
     return !(a == b);
-  }
-
-  /* Returns a new map containing the keys and values in either a or b. */
-  deprecated "The `+` operator has been deprecated for map"
-  operator map.+(a: map(?keyType, ?valueType, ?),
-                 b: map(keyType, valueType, ?)) {
-    return a | b;
-  }
-
-  /*
-    Sets the left-hand side map to contain the keys and values in either
-    a or b.
-   */
-  deprecated "The `+=` operator has been deprecated for map"
-  operator map.+=(ref a: map(?keyType, ?valueType, ?),
-                  b: map(keyType, valueType, ?)) {
-    a |= b;
-  }
-
-  /* Returns a new map containing the keys and values in either a or b. */
-  deprecated "The `|` operator has been deprecated for map"
-  operator map.|(a: map(?keyType, ?valueType, ?),
-                 b: map(keyType, valueType, ?)) {
-    var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
-
-    try! { for k in a do newMap.add(k, a.getValue(k)); }
-    try! { for k in b do newMap.add(k, b.getValue(k)); }
-    return newMap;
-  }
-
-  /* Sets the left-hand side map to contain the keys and values in either
-     a or b.
-   */
-  deprecated "The `|=` operator has been deprecated for map"
-  operator map.|=(ref a: map(?keyType, ?valueType, ?),
-                  b: map(keyType, valueType, ?)) {
-    // add keys/values from b to a if they weren't already in a
-    try! { for k in b do a.add(k, b.getValue(k)); }
-  }
-
-  /* Returns a new map containing the keys that are in both a and b. */
-  deprecated "The `&` operator has been deprecated for map"
-  operator map.&(a: map(?keyType, ?valueType, ?),
-                 b: map(keyType, valueType, ?)) {
-    var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
-
-    try! {
-      for k in a.keys() do
-        if b.contains(k) then
-          newMap.add(k, a.getValue(k));
-    }
-
-    return newMap;
-  }
-
-  /* Sets the left-hand side map to contain the keys that are in both a and b.
-   */
-  deprecated "The `&=` operator has been deprecated for map"
-  operator map.&=(ref a: map(?keyType, ?valueType, ?),
-                  b: map(keyType, valueType, ?)) {
-    a = a & b;
-  }
-
-  /* Returns a new map containing the keys that are only in a, but not b. */
-  deprecated "The `-` operator has been deprecated for map"
-  operator map.-(a: map(?keyType, ?valueType, ?),
-                 b: map(keyType, valueType, ?)) {
-    var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
-
-    try! {
-      for ak in a.keys() {
-        if !b.contains(ak) then
-          newMap.add(ak, a.getValue(ak));
-      }
-    }
-
-    return newMap;
-  }
-
-  /* Sets the left-hand side map to contain the keys that are in the
-     left-hand map, but not the right-hand map. */
-  deprecated "The `-=` operator has been deprecated for map"
-  operator map.-=(ref a: map(?keyType, ?valueType, ?),
-                  b: map(keyType, valueType, ?)) {
-    a._enter(); defer a._leave();
-
-    for k in b.keys() {
-      var (found, slot) = a.table.findFullSlot(k);
-      if found {
-        var outKey: keyType, outVal: valueType;
-        a.table.clearSlot(slot, outKey, outVal);
-      }
-    }
-
-    a.table.maybeShrinkAfterRemove();
-  }
-
-  /* Returns a new map containing the keys that are in either a or b, but
-     not both. */
-  deprecated "The `^` operator has been deprecated for map"
-  operator map.^(a: map(?keyType, ?valueType, ?),
-                 b: map(keyType, valueType, ?)) {
-    var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
-
-    try! {
-      for k in a.keys() do
-        if !b.contains(k) then newMap.add(k, a.getValue(k));
-    }
-    try! {
-      for k in b do
-        if !a.contains(k) then newMap.add(k, b.getValue(k));
-    }
-    return newMap;
-  }
-
-  /* Sets the left-hand side map to contain the keys that are in either the
-     left-hand map or the right-hand map, but not both. */
-  deprecated "The `^=` operator has been deprecated for map"
-  operator map.^=(ref a: map(?keyType, ?valueType, ?),
-                  b: map(keyType, valueType, ?)) {
-    try! {
-      for k in b.keys() {
-        if a.contains(k) then a.remove(k);
-        else a.add(k, b.getValue(k));
-      }
-    }
   }
 
   /*

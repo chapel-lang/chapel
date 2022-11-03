@@ -2793,7 +2793,7 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
   }
 }
 
-// Adds conversions for cases where the the lhs and rhs types of
+// Adds conversions for cases where the lhs and rhs types of
 // PRIM_MOVE/PRIM_ASSIGN do not match. The conversions might be implemented
 // with a cast or init=.
 //

@@ -227,7 +227,7 @@ subtype of a type ``T2`` if:
 
  * ``T2`` is a generic type (:ref:`Generic_Types`) and ``T1`` is an
    instantiation that type
- * ``T1`` is a class type that inherits from the the class ``T2``
+ * ``T1`` is a class type that inherits from the class ``T2``
    (:ref:`Inheritance`)
  * ``T1`` is a non-nilable class type (e.g. ``borrowed C``) and ``T2`` is
    the nilable version of the same class type (e.g. ``borrowed C?``)

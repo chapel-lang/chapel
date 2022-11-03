@@ -1035,7 +1035,20 @@ module OS {
 
   private use CTypes;
   private use POSIX;
-  import SysBasic.{EFORMAT,ESHORT,EEOF,ESHUTDOWN,ENOERR};
+  import SysBasic.{ESHUTDOWN,ENOERR};
+
+  /*
+   Private local copies of IO.{EEOF,ESHORT,EFORMAT}, since if we import IO
+   here it modifies module initialization order and causes issues in
+   ChapelLocale.chpl_localeID_to_locale.
+   */
+  private extern proc chpl_macro_int_EEOF():c_int;
+  private extern proc chpl_macro_int_ESHORT():c_int;
+  private extern proc chpl_macro_int_EFORMAT():c_int;
+  private inline proc EEOF return chpl_macro_int_EEOF():c_int;
+  private inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
+  private inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
+
   /*
      :class:`SystemError` is a base class for :class:`Errors.Error` s
      generated from ``errorCode``. It provides factory methods to create
@@ -1067,34 +1080,6 @@ module OS {
         err_msg += " (" + details + ")";
 
       return err_msg;
-    }
-
-    /*
-      Return the matching :class:`SystemError` subtype for a given
-      ``errorCode``, with an optional string containing extra details.
-
-      :arg err: the errorCode to generate from
-      :arg details: extra information to include with the error
-    */
-    pragma "insert line file info"
-    pragma "always propagate line file info"
-    deprecated "'SystemError.fromSyserr' is deprecated. Please use 'createSystemError' instead."
-    proc type fromSyserr(err: errorCode, details: string = "") {
-      return createSystemError(err, details);
-    }
-
-    /*
-      Return the matching :class:`SystemError` subtype for a given error number,
-      with an optional string containing extra details.
-
-      :arg err: the number to generate from
-      :arg details: extra information to include with the error
-    */
-    pragma "insert line file info"
-    pragma "always propagate line file info"
-    deprecated "'SystemError.fromSyserr' is deprecated. Please use 'createSystemError' instead."
-    proc type fromSyserr(err: int, details: string = "") {
-      return createSystemError(err:errorCode, details);
     }
   }
 
@@ -1173,10 +1158,6 @@ module OS {
       super.init(err, details);
     }
   }
-
-  pragma "no doc"
-  deprecated "'BlockingIOError' is deprecated, please use 'BlockingIoError' instead"
-  class BlockingIOError: SystemError {}
 
   /*
      :class:`ChildProcessError` is the subclass of :class:`SystemError`
@@ -1330,13 +1311,9 @@ module OS {
     }
   }
 
-  pragma "no doc"
-  deprecated "'IOError' is deprecated, please use 'IoError' instead"
-  class IOError: SystemError {}
-
   /*
      :class:`EofError` is the subclass of :class:`IoError` corresponding to
-     :const:`SysBasic.EEOF`.
+     :const:`IO.EEOF`.
   */
   class EofError : IoError {
     proc init(details: string = "", err: errorCode = EEOF:errorCode) {
@@ -1344,13 +1321,9 @@ module OS {
     }
   }
 
-  pragma "no doc"
-  deprecated "'EOFError is deprecated, please use 'EofError instead"
-  class EOFError : IoError {}
-
   /*
      :class:`UnexpectedEofError` is the subclass of :class:`IoError`
-     corresponding to :const:`SysBasic.ESHORT`.
+     corresponding to :const:`IO.ESHORT`.
   */
   class UnexpectedEofError : IoError {
     proc init(details: string = "", err: errorCode = ESHORT:errorCode) {
@@ -1358,17 +1331,31 @@ module OS {
     }
   }
 
-  pragma "no doc"
-  deprecated "'UnexpectedEOFError' is deprecated, please use 'UnexpectedEofError' instead"
-  class UnexpectedEOFError : IoError {}
-
   /*
      :class:`BadFormatError` is the subclass of :class:`IoError` corresponding
-     to :const:`SysBasic.EFORMAT`.
+     to :const:`IO.EFORMAT`.
   */
   class BadFormatError : IoError {
     proc init(details: string = "", err: errorCode = EFORMAT:errorCode) {
       super.init(err, details);
+    }
+  }
+
+  /*
+    :class:`InsufficientCapacityError` is a subclass of :class:`IoError`
+    indicating that an IO operation required more storage than was provided
+  */
+  class InsufficientCapacityError: IoError {
+    proc init(details: string = "") {
+      super.init(ERANGE: errorCode, details);
+    }
+
+    override proc message() {
+      return
+        if details.isEmpty() then
+          "Result too large"
+        else
+          details;
     }
   }
 

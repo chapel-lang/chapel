@@ -1,0 +1,1 @@
+DateTimeEnumRename2.chpl:3: error: 'ISODayOfWeek was renamed. Please use 'isoDayOfWeek' instead

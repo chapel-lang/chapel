@@ -61,20 +61,21 @@ always-build-chplspell-venv: FORCE
 test: spectests FORCE
 	cd examples && start_test
 
-dyno-docs: FORCE
-	@cd compiler/dyno && $(MAKE) -f Makefile.help dyno-docs
+frontend-docs: FORCE
+	@cd frontend && $(MAKE) -f Makefile.help frontend-docs
 
-clobber-dyno: FORCE
-	@cd compiler/dyno && $(MAKE) -f Makefile.help clobber-dyno
+clobber-frontend: FORCE
+	@cd frontend && $(MAKE) -f Makefile.help clobber-frontend
 
-test-dyno: dyno FORCE
-	@cd compiler/dyno && $(MAKE) -f Makefile.help test-dyno
+test-frontend: frontend FORCE
+	@cd frontend && $(MAKE) -f Makefile.help test-frontend
 
-dyno-parser: FORCE
-	@cd compiler/dyno && $(MAKE) -f Makefile.help dyno-parser
+test-dyno: test-frontend FORCE
 
-run-dyno-linters: FORCE
-	@cd compiler/dyno && $(MAKE) -f Makefile.help run-dyno-linters
+run-frontend-linters: FORCE
+	@cd frontend && $(MAKE) -f Makefile.help run-frontend-linters
+
+run-dyno-linters: run-frontend-linters FORCE
 
 SPECTEST_DIR = ./test/release/examples/spec
 spectests: FORCE

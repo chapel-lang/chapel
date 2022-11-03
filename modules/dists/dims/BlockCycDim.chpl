@@ -504,14 +504,14 @@ proc BlockCyclic1dom.dsiSetIndices1d(rangeArg: rangeT): void {
   const prevStoragePerCycle = storagePerCycle;
   dsiSetIndicesUnimplementedCase = false;
 
-  // As of this writing, alignedLow/High are valid even for empty ranges
+  // As of this writing, low/high are valid even for empty ranges
   if stridable {
-    wholeR = rangeArg.alignedLow..rangeArg.alignedHigh by rangeArg.stride;
+    wholeR = rangeArg.low..rangeArg.high by rangeArg.stride;
     wholeRstrideAbs = abs(rangeArg.stride): idxType;
     storagePerCycle = (1 + divP2(blockSizePos-1, wholeRstrideAbs:int)): bcdPosInt;
   } else {
     assert(rangeArg.stride == 1); // ensures we can simplify things
-    wholeR = rangeArg.alignedLow..rangeArg.alignedHigh;
+    wholeR = rangeArg.low..rangeArg.high;
     wholeRstrideAbs = 0; // be sure nobody ever reads this
     storagePerCycle = blockSizePos;
   }

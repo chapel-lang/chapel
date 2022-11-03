@@ -80,7 +80,7 @@ proc masonSearch(ref args: list(string)) {
   for registry in MASON_CACHED_REGISTRY {
     const searchDir = registry + "/Bricks/";
 
-    for dir in listdir(searchDir, files=false, dirs=true) {
+    for dir in listDir(searchDir, files=false, dirs=true) {
       const name = dir.replace("/", "");
       if pattern.search(name) {
         if isHidden(name) {
@@ -187,7 +187,7 @@ proc rankResults(results: list(string), query: string): [] string {
 /* Creates an empty cache file if its not found in registry */
 proc touch(pathToReg: string) {
   const fileWriter = open(pathToReg, iomode.cw).writer();
-  fileWriter.write("");
+  fileWriter._write("");
   fileWriter.close();
 }
 

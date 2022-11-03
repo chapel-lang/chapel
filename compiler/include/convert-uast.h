@@ -28,14 +28,10 @@
 #include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Module.h"
 
-// TODO: once chpldoc is implemented as a separate tool on uAST,
-// remove the comment and builderResult arguments here.
 ModuleSymbol*
 convertToplevelModule(chpl::Context* context,
                       const chpl::uast::Module* mod,
-                      ModTag modTag,
-                      const chpl::uast::Comment* comment,
-                      const chpl::uast::BuilderResult& builderResult);
+                      ModTag modTag);
 
 // apply fixups to fix SymExprs to refer to Symbols that
 // might have been created in a different order.

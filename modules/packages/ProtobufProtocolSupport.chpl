@@ -59,7 +59,7 @@ module ProtobufProtocolSupport {
     proc unsignedVarintAppend(val:uint, ch: writingChannel) throws {
       if val == 0 {
         var zero: uint(8);
-        ch.write(zero);
+        ch._write(zero);
         return;
       }
 
@@ -69,7 +69,7 @@ module ProtobufProtocolSupport {
         shiftVal = newVal >> 7;
         var k = if shiftVal != 0 then 0x80 else 0x00;
         var newByte = (newVal & 0x7F | k):uint(8);
-        ch.write(newByte);
+        ch._write(newByte);
         newVal = shiftVal;
       }
     }
@@ -173,7 +173,7 @@ module ProtobufProtocolSupport {
 
     proc bytesAppendBase(val: bytes, ch: writingChannel) throws {
       unsignedVarintAppend((val.size):uint, ch);
-      ch.write(val);
+      ch._write(val);
     }
 
     proc bytesConsumeBase(ch: readingChannel): bytes throws {
@@ -192,7 +192,7 @@ module ProtobufProtocolSupport {
     }
 
     proc fixed32AppendBase(val: uint(32), ch: writingChannel) throws {
-      ch.write(val);
+      ch._write(val);
     }
 
     proc fixed32ConsumeBase(ch: readingChannel): uint(32) throws {
@@ -202,7 +202,7 @@ module ProtobufProtocolSupport {
     }
 
     proc fixed64AppendBase(val: uint(64), ch: writingChannel) throws {
-      ch.write(val);
+      ch._write(val);
     }
 
     proc fixed64ConsumeBase(ch: readingChannel): uint(64) throws {
@@ -291,7 +291,7 @@ module ProtobufProtocolSupport {
      var s: bytes;
      var (payloadLength, _) = unsignedVarintConsume(ch);
      ch.readbytes(s, payloadLength:int);
-     memWriter.write(s);
+     memWriter._write(s);
      memWriter.close();
      messageObj._deserialize(memReader);
    }
@@ -683,7 +683,7 @@ module ProtobufProtocolSupport {
         var memWriter = tmpMem.writer(kind=iokind.little, locking=false);
         var memReader = tmpMem.reader(kind=iokind.little, locking=false);
 
-        memWriter.write(this.value);
+        memWriter._write(this.value);
         memWriter.close();
         messageObj = messageConsume(memReader, messageObj.type);
         tmpMem.close();
@@ -699,7 +699,7 @@ module ProtobufProtocolSupport {
 
       proc _serialize(binCh) throws {
         stringAppend(this.typeUrl, 1, binCh);
-        binCh.write(this.value);
+        binCh._write(this.value);
       }
 
       proc _deserialize(binCh) throws {

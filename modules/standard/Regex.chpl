@@ -958,17 +958,12 @@ record regex {
     const localRegex = if home != here then regexCopy._regex else _regex;
     param nMatches = 1 + numCaptures;
     var matches: c_array(qio_regex_string_piece_t, nMatches);
-    var pos:byteIndex;
-    var endPos:byteIndex;
-    var textLength:int;
-    var localText = text.localize();
-
-    pos = 0;
-    textLength = localText.numBytes;
-    endPos = pos + textLength;
-
+    const localText = text.localize();
+    const textLength = localText.numBytes;
+    const endPos = textLength;
     var nFound = 0;
-    var cur = pos;
+    var cur = 0;
+
     while nFound < maxMatches && cur <= endPos {
       var got = qio_regex_match(localRegex, localText.c_str(), textLength,
                                 cur:int, endPos:int, QIO_REGEX_ANCHOR_UNANCHORED,
@@ -1070,7 +1065,7 @@ record regex {
     }
     // Note -- this is wrong because we didn't quote
     // and there's no way to get the flags
-    f.write("new regex(\"", pattern, "\")");
+    f._write("new regex(\"", pattern, "\")");
   }
 
   pragma "no doc"
@@ -1326,7 +1321,7 @@ iter string.split(pattern: regex(string), maxsplit: int = 0)
 
 
 /*
-   Split the the receiving string by occurrences of the passed regular
+   Split the receiving string by occurrences of the passed regular
    expression by calling :proc:`regex.split`.
 
    :arg sep: the regular expression to use to split
@@ -1352,7 +1347,7 @@ iter bytes.split(pattern: regex(bytes), maxsplit: int = 0)
 
 
 /*
-   Split the the receiving bytes by occurrences of the passed regular
+   Split the receiving bytes by occurrences of the passed regular
    expression by calling :proc:`regex.split`.
 
    :arg sep: the regular expression to use to split

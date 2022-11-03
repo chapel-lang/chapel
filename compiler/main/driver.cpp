@@ -28,7 +28,6 @@
 #include "chpl.h"
 #include "commonFlags.h"
 #include "config.h"
-#include "docsDriver.h"
 #include "files.h"
 #include "library.h"
 #include "log.h"
@@ -305,6 +304,8 @@ bool fPrintAdditionalErrors;
 
 static
 bool fPrintChplSettings = false;
+
+bool fDetailedErrors = false;
 
 bool fDynoCompilerLibrary = false;
 bool fDynoScopeProduction = true;
@@ -1225,6 +1226,8 @@ static ArgumentDescription arg_desc[] = {
  {"warn-tuple-iteration", ' ', NULL, "Enable [disable] warnings for tuple iteration", "n", &fNoWarnTupleIteration, "CHPL_WARN_TUPLE_ITERATION", setWarnTupleIteration},
  {"warn-special", ' ', NULL, "Enable [disable] special warnings", "n", &fNoWarnSpecial, "CHPL_WARN_SPECIAL", setWarnSpecial},
 
+ {"detailed-errors", ' ', NULL, "Enable [disable] detailed error messages", "N", &fDetailedErrors, NULL, NULL},
+
  {"dyno", ' ', NULL, "Enable [disable] using dyno compiler library", "N", &fDynoCompilerLibrary, "CHPL_DYNO_COMPILER_LIBRARY", NULL},
  {"dyno-scope-production", ' ', NULL, "Enable [disable] using both dyno and production scope resolution", "N", &fDynoScopeProduction, "CHPL_DYNO_SCOPE_PRODUCTION", NULL},
  {"dyno-scope-bundled", ' ', NULL, "Enable [disable] using dyno to scope resolve bundled modules", "N", &fDynoScopeBundled, "CHPL_DYNO_SCOPE_BUNDLED", NULL},
@@ -1636,7 +1639,7 @@ static void checkRuntimeBuilt(void) {
       stopBeforeCodegen = true;
     }
   }
-  if (fDocs || no_codegen || stopBeforeCodegen) {
+  if (no_codegen || stopBeforeCodegen) {
     return;
   }
 
@@ -1786,16 +1789,8 @@ int main(int argc, char* argv[]) {
 
     init_args(&sArgState, argv[0], (void*)main);
 
-    fDocs   = (strncmp(sArgState.program_name, "chpldoc", 7)  == 0) ? true : false;
-
-    // Initialize the arguments for argument state. If chpldoc, use the docs
-    // specific arguments. Otherwise, use the regular arguments.
-    if (fDocs) {
-      init_arg_desc(&sArgState, docs_arg_desc);
-    } else {
-      init_arg_desc(&sArgState, arg_desc);
-    }
-
+    // Initialize the arguments for argument state.
+    init_arg_desc(&sArgState, arg_desc);
 
     initFlags();
     initAstrConsts();
@@ -1872,7 +1867,7 @@ int main(int argc, char* argv[]) {
 
   assertSourceFilesFound();
 
-  runPasses(tracker, fDocs);
+  runPasses(tracker);
 
   tracker.StartPhase("driverCleanup");
 

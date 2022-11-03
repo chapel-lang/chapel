@@ -437,11 +437,11 @@ module BytesStringCommon {
 
       // find the byte range of the given codepoint range
       var cpCount = 0;
-      const cpIdxLow = if intR.hasLowBound() && intR.alignedLow:int >= 0
-                          then intR.alignedLow:int
+      const cpIdxLow = if intR.hasLowBound() && intR.low:int >= 0
+                          then intR.low:int
                           else 0;
       const cpIdxHigh = if intR.hasHighBound()
-                           then intR.alignedHigh:int
+                           then intR.high:int
                            else x.buffLen-1;
 
       var byteLow = x.buffLen;  // empty range if bounds outside string

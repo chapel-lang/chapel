@@ -164,7 +164,7 @@ module ChapelTaskTable {
     if (chpldev_taskTable == nil) then return;
 
     for taskID in chpldev_taskTable!.dom {
-      try! stderr.writeln(
+      try! stderr._writeln(
              "- ",
              createStringWithNewBuffer(chpl_lookupFilename(
                                         chpldev_taskTable!.map[taskID].filename)),

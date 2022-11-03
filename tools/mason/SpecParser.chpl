@@ -64,7 +64,7 @@ proc getSpecFields(spec: string) {
                   specInfo[3]);
   }
   catch e: MasonError {
-    stderr.writeln(e.message());
+    stderr._writeln(e.message());
   }
   return specFields;
 }
@@ -156,5 +156,3 @@ private proc parseSpec(ref tokenList: list(string)): 4*string throws {
   }
   return (package, packageVersion, compiler, " ".join(variants.these()).strip());
 }
-
-

@@ -50,16 +50,16 @@ writeln("isLink works: ", isLink(filename1) == false);
 writeln("isMount works: ", isMount(filename1) == false);
 writeln("exists works: ", exists(filename1) == true);
 
-const gid = getGID(filename1);
-const uid = getUID(filename1);
+const gid = getGid(filename1);
+const uid = getUid(filename1);
 const mode = getMode(filename1);
 const size = getFileSize(filename1);
 writeln();
 
 writeln("Creating a copy");
 copy(filename1, filename2);
-writeln("getGID works: ", getGID(filename2) == gid);
-writeln("getUID works: ", getUID(filename2) == uid);
+writeln("getGid works: ", getGid(filename2) == gid);
+writeln("getUid works: ", getUid(filename2) == uid);
 writeln("getMode works: ", getMode(filename2) == mode);
 writeln("getFileSize works: ", getFileSize(filename2) == size);
 writeln();
@@ -107,7 +107,7 @@ writeln();
 writeln("listing the dir contents");
 // the order seems to change from system to system
 var l: list(string);
-for f in listdir(dirname1) {
+for f in listDir(dirname1) {
   l.append(f);
 }
 for f in sorted(l.toArray()) {

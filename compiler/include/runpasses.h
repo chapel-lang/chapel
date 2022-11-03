@@ -23,7 +23,7 @@
 
 class PhaseTracker;
 
-void runPasses(PhaseTracker& tracker, bool isChpldoc);
+void runPasses(PhaseTracker& tracker);
 void initPassesForLogging();
 
 extern int currentPassNo;

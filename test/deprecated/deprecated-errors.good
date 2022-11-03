@@ -1,4 +1,0 @@
-deprecated-errors.chpl:3: warning: 'IOError' is deprecated, please use 'IoError' instead
-deprecated-errors.chpl:4: warning: 'BlockingIOError' is deprecated, please use 'BlockingIoError' instead
-deprecated-errors.chpl:5: warning: 'EOFError is deprecated, please use 'EofError instead
-deprecated-errors.chpl:6: warning: 'UnexpectedEOFError' is deprecated, please use 'UnexpectedEofError' instead

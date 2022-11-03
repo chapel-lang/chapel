@@ -517,7 +517,7 @@ module EpochManager {
       }
 
       proc writeThis(f) throws {
-        f.write("(Vector) {", this.toArray(), "}");
+        f._write("(Vector) {", this.toArray(), "}");
       }
     }
 

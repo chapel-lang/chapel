@@ -59,8 +59,6 @@ public:
 
   void                accept(AstVisitor* visitor) override;
 
-  void                printDocs(std::ostream* file, unsigned int tabs);
-
   bool                        isClass()                                  const;
   bool                        isRecord()                                 const;
   bool                        isUnion()                                  const;

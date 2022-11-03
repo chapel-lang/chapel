@@ -11,11 +11,11 @@ for line in f.lines(region=27..) {
   write(line);
 }
 
-for line in f.lines(region=..53) {
+for line in f.lines(region=..52) {
   write(line);
 }
 
-for line in f.lines(region=27..53) {
+for line in f.lines(region=27..52) {
   write(line);
 }
 

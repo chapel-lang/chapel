@@ -1,0 +1,1 @@
+DateTimeEnumRename1.chpl:3: error: 'DayOfWeek' was renamed. Please use 'dayOfWeek' instead

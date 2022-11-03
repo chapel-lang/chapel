@@ -289,7 +289,7 @@ private proc runTests(show: bool, run: bool, parallel: bool,
         const compilation = runWithStatus(compCommand, !show);
 
         if compilation != 0 {
-          stderr.writeln("compilation failed for " + test);
+          stderr._writeln("compilation failed for " + test);
           var errMsg = test + " failed to compile";
           if !show then
             errMsg += "\nTry running 'mason test --show' for more details";
@@ -317,7 +317,7 @@ private proc runTests(show: bool, run: bool, parallel: bool,
     toParse.close();
   }
   catch e: MasonError {
-    stderr.writeln(e.message());
+    stderr._writeln(e.message());
     exit(1);
   }
 }
@@ -517,7 +517,7 @@ proc testFile(file, ref result, show: bool) throws {
   const compilation = runWithStatus(compCommand, !show);
 
   if compilation != 0 {
-    stderr.writeln("compilation failed for " + fileName);
+    stderr._writeln("compilation failed for " + fileName);
     const errMsg = fileName +" failed to compile";
     result.addError(executable, fileName,  errMsg);
   }

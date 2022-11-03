@@ -59,14 +59,14 @@ help-source:
 
 docs: FORCE
 	@COMP_DOCS_ERROR=0 ; \
-	(cd ../compiler/dyno && $(MAKE) -f Makefile.help dyno-docs) || \
+	(cd ../frontend && $(MAKE) -f Makefile.help frontend-docs) || \
 	 COMP_DOCS_ERROR=1 ; \
 	$(MAKE) html-release && \
 	if [ $$COMP_DOCS_ERROR -ne 0 -o ! -d $(COMPILER_INTERNALS_DOXYGEN) ] ; \
 	  then \
 	  echo ; \
-	  echo " This docs build does not include compiler library API docs" ; \
-	  echo " Try 'make clobber-dyno && make dyno-docs'" ; \
+	  echo " This docs build does not include frontend library API docs" ; \
+	  echo " Try 'make clobber-frontend && make frontend-docs'" ; \
 	fi
 
 
@@ -191,7 +191,7 @@ clean-symlinks: FORCE
 	find $(SOURCEDIR) -type l -delete
 
 clean-doxygen: FORCE
-	cd ../compiler/dyno && $(MAKE) -f Makefile.help clean-dyno-docs
+	cd ../frontend && $(MAKE) -f Makefile.help clean-frontend-docs
 
 FORCE:
 

@@ -11,11 +11,11 @@ var writeChStart = f.writer(region=29..);
 writeChStart.write("us");
 writeChStart.close();
 
-var writeChEnd = f.writer(region=..3);
+var writeChEnd = f.writer(region=..2);
 writeChEnd.write("You");
 writeChEnd.close();
 
-var writeChStartAndEnd = f.writer(region=9..12);
+var writeChStartAndEnd = f.writer(region=9..11);
 writeChStartAndEnd.write("Ned");
 writeChStartAndEnd.close();
 

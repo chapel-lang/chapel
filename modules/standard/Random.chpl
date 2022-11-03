@@ -326,7 +326,7 @@ module Random {
   proc _choiceUniform(stream, X: domain, size: ?sizeType, replace: bool) throws
   {
 
-    const low = X.alignedLow,
+    const low = X.low,
           stride = abs(X.stride);
 
     if isNothingType(sizeType) {
@@ -397,7 +397,7 @@ module Random {
     if prob.size == 0 then
       throw new owned IllegalArgumentError('choice() prob array cannot be empty');
 
-    const low = X.alignedLow,
+    const low = X.low,
           stride = abs(X.stride);
     ref P = prob.reindex(0..<X.sizeAs(idxType));
 
@@ -718,9 +718,9 @@ module Random {
 
     pragma "no doc"
     proc writeThis(f) throws {
-      f.write("RandomStreamInterface(eltType=", eltType:string);
-      f.write(", parSafe=", parSafe);
-      f.write(", seed=", seed, ")");
+      f._write("RandomStreamInterface(eltType=", eltType:string);
+      f._write(", parSafe=", parSafe);
+      f._write(", seed=", seed, ")");
     }
   }
 
@@ -1228,7 +1228,7 @@ module Random {
         if D.rank != 1 then
           compilerError("Shuffle requires 1-D array");
 
-        const low = D.alignedLow,
+        const low = D.low,
               stride = abs(D.stride);
 
         _lock();
@@ -1372,9 +1372,9 @@ module Random {
 
       pragma "no doc"
       override proc writeThis(f) throws {
-        f.write("PCGRandomStream(eltType=", eltType:string);
-        f.write(", parSafe=", parSafe);
-        f.write(", seed=", seed, ")");
+        f._write("PCGRandomStream(eltType=", eltType:string);
+        f._write(", parSafe=", parSafe);
+        f._write(", seed=", seed, ")");
       }
 
       ///////////////////////////////////////////////////////// CLASS PRIVATE //
@@ -2854,9 +2854,9 @@ module Random {
 
       pragma "no doc"
       override proc writeThis(f) throws {
-        f.write("NPBRandomStream(eltType=", eltType:string);
-        f.write(", parSafe=", parSafe);
-        f.write(", seed=", seed, ")");
+        f._write("NPBRandomStream(eltType=", eltType:string);
+        f._write(", parSafe=", parSafe);
+        f._write(", seed=", seed, ")");
       }
 
       ///////////////////////////////////////////////////////// CLASS PRIVATE //

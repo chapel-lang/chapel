@@ -231,7 +231,7 @@ removeUsage $file
 
 ## OwnedObject ##
 file=OwnedObject.rst
-fixTitle "owned" $file
+removeTitle $file
 replace "_owned" "owned" $file
 replace "chpl_t" "t" $file
 removeUsage $file
@@ -239,7 +239,7 @@ removeUsage $file
 
 ## SharedObject ##
 file=SharedObject.rst
-fixTitle "shared" $file
+removeTitle $file
 replace "_owned" "owned" $file
 replace "_shared" "shared" $file
 replace "chpl_t" "t" $file

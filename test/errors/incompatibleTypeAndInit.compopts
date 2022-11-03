@@ -1,0 +1,2 @@
+--detailed-errors # incompatibleTypeAndInit-detailed.good
+--no-detailed-errors # incompatibleTypeAndInit-brief.good

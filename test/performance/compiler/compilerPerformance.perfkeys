@@ -10,7 +10,6 @@
 init :
 parse :
 checkParsed :
-docs :
 readExternC :
 expandExternArrayCalls :
 cleanup :

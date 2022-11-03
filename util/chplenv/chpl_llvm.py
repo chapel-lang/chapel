@@ -172,6 +172,29 @@ def check_llvm_packages(llvm_config):
         s = "Could not find the clang library {0}".format(clang_cpp_lib)
         s += "\nPerhaps you need to install the libclang-cpp-dev package"
 
+    host_platform = chpl_platform.get('host')
+    if host_platform == "darwin":
+        # on Mac OS X with Homebrew, require LLVM 14 or newer
+        # because these LLVM versions fix a problem with
+        # mixing libc++ versions
+        llvm_version, ignored_err = check_llvm_config(llvm_config)
+        llvm_version = llvm_version.strip()
+        bad_vers = ('11', '12', '13')
+        if llvm_version in bad_vers:
+            # compute the set subtraction:
+            #    llvm_versions() - bad_vers
+            # for use in the error message
+            ok_vers = [ ]
+            vers = llvm_versions()
+            for v in vers:
+                if not v in bad_vers:
+                    ok_vers.append(v)
+
+            s = ("LLVM version {0} is not supported on Mac OS X. "
+                 "Please use one of these versions: {1}"
+                 .format(llvm_version, ', '.join(ok_vers)))
+
+
     return (s == '', s)
 
 
@@ -588,32 +611,6 @@ def get_system_llvm_built_sdkroot():
                             return path
     return None
 
-# Returns True if the workaround for issue #19217 should be applied
-# and False otherwise.
-# That workaround adds the Mac OS X system libc++ before the linker
-# search paths so that the system libc++ is used rather than a
-# libc++ that came with the system install of LLVM (e.g. from Homebrew).
-# Whether or not to try the workaround can be controlled by the variable
-#  CHPL_HOST_USE_SYSTEM_LIBCXX
-@memoize
-def use_system_libcxx_workaround():
-    host_platform = chpl_platform.get('host')
-    if host_platform == "darwin":
-        # If the variable for this is set to something other that '0' or 'no'
-        # then do the workaround.
-        # This variable exists to support building the Homebrew formula
-        # from source because during that build, `brew` is not available.
-        override_var = overrides.get('CHPL_HOST_USE_SYSTEM_LIBCXX', '')
-        if override_var != '':
-            return (override_var != "0" and override_var != "no")
-
-        # otherwise, do the workaround if we detect homebrew
-        homebrew_prefix = chpl_platform.get_homebrew_prefix()
-
-        if homebrew_prefix:
-            return True
-
-    return False
 
 # On some systems, we need to give clang some arguments for it to
 # find the correct system headers.
@@ -782,15 +779,6 @@ def get_host_compile_args():
         return (bundled, system)
 
     if llvm_support_val == 'system':
-        # On Mac OS X with Homebrew, apply a workaround for issue #19217.
-        # This avoids finding headers in the libc++ installed by llvm@12 e.g.
-        if use_system_libcxx_workaround():
-            sdkroot = get_system_llvm_built_sdkroot()
-            if sdkroot:
-                system.append("-isysroot")
-                system.append(sdkroot)
-                system.append("-I" + os.path.join(sdkroot, "usr", "include"))
-
         # Ubuntu 16.04 needed -fno-rtti for LLVM 3.7
         # tested on that system after installing
         #   llvm-3.7-dev llvm-3.7 clang-3.7 libclang-3.7-dev libedit-dev
@@ -861,16 +849,6 @@ def get_host_link_args():
         llvm_components = ['support']
 
     if llvm_support_val == 'system':
-        # On Mac OS X with Homebrew, apply a workaround for issue #19217.
-        # This avoids linking with the libc++ installed by llvm@12 e.g.
-        if use_system_libcxx_workaround():
-            sdkroot = get_system_llvm_built_sdkroot()
-            if sdkroot:
-                # Note: -isysroot only affects includes
-                # and -Wl,-syslibroot seems to have no effect
-                system.append("-L" + os.path.join(sdkroot, "usr", "lib"))
-
-
         # For LLVM version 11 and older, there was a problem where
         # 'llvm-config' did not work properly on Mac OS X, so work around
         # that by using static linking.

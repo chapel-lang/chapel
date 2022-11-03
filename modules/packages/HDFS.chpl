@@ -127,7 +127,7 @@ module HDFS {
 
   use IO, OS.POSIX, OS;
   public use CTypes;
-  import SysBasic.{ENOERR,EEOF};
+  import SysBasic.{ENOERR};
 
   require "hdfs.h";
 

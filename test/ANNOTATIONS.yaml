@@ -1487,6 +1487,8 @@ memleaksfull:
     - Skip memleaks testing of DistributedMap (#19629)
   04/24/22:
     - Clean up unmanaged classes in a test (#19695)
+  09/30/22:
+    - Begin the effort of improving Chapel's first-class-function support (#20554)
 # End memleaksfull
 
 meteor:

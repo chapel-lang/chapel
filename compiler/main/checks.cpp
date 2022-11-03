@@ -22,7 +22,6 @@
 
 #include "checks.h"
 
-#include "docsDriver.h"
 #include "driver.h"
 #include "expr.h"
 #include "PartialCopyData.h"
@@ -114,11 +113,6 @@ void check_flattenClasses()
 {
   check_afterEveryPass();
   // Suggestion: Ensure classes have no nested class definitions.
-}
-
-void check_docs()
-{
-  // Docs should not alter the tree, so no checks are required.
 }
 
 void check_normalize()
@@ -607,9 +601,6 @@ static void checkIsIterator() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_YIELD)) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
-      if (!fn && fDocs)
-        // In docs mode some nodes are not in tree, so skip the check.
-        continue;
       // Violations should have caused USR_FATAL_CONT in checkParsed().
       INT_ASSERT(fn && fn->isIterator());
     }

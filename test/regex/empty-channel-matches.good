@@ -1,0 +1,38 @@
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method 'search':
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: `channel.search(re:regex(?), ref error:errorCode)` is deprecated
+  empty-channel-matches.chpl:49: called as (fileReader(dynamic,true)).search(re: regex(string))
+[]  ((matched = true, byteOffset = 0, numBytes = 0),) 0
+[^]  ((matched = true, byteOffset = 0, numBytes = 0),) 0
+[$]  ((matched = true, byteOffset = 0, numBytes = 0),) 0
+[^$]  ((matched = true, byteOffset = 0, numBytes = 0),) 0
+[.*]  ((matched = true, byteOffset = 0, numBytes = 0),) 0
+
+[]  ((matched = true, byteOffset = 0, numBytes = 0),) <> 1
+[]  ((matched = true, byteOffset = 1, numBytes = 0),) <> 2
+[]  ((matched = true, byteOffset = 2, numBytes = 0),) <> 2
+[]  done 2
+[$]  ((matched = true, byteOffset = 2, numBytes = 0),) <> 2
+[$]  done 2
+[^$]  done 1
+[.*]  ((matched = true, byteOffset = 0, numBytes = 2),) <xy> 2
+[.*]  ((matched = true, byteOffset = 2, numBytes = 0),) <> 2
+[.*]  done 2
+[.]  ((matched = true, byteOffset = 0, numBytes = 1),) <x> 1
+[.]  ((matched = true, byteOffset = 1, numBytes = 1),) <y> 2
+[.]  done 2
+[x]  ((matched = true, byteOffset = 0, numBytes = 1),) <x> 1
+[x]  done 2
+[y]  ((matched = true, byteOffset = 1, numBytes = 1),) <y> 2
+[y]  done 2
+
+[]   (matched = true, byteOffset = 0, numBytes = 0) 0
+[^]   (matched = true, byteOffset = 0, numBytes = 0) 0
+[$]   (matched = true, byteOffset = 2, numBytes = 0) 2
+[^$]   (matched = false, byteOffset = -1, numBytes = 0) 1
+[.*]   (matched = true, byteOffset = 0, numBytes = 2) 0
+[.]   (matched = true, byteOffset = 0, numBytes = 1) 0
+[x]   (matched = true, byteOffset = 0, numBytes = 1) 0
+[y]   (matched = true, byteOffset = 1, numBytes = 1) 1
+
+[^$]   (matched = false, byteOffset = -1, numBytes = 0) 1
+[^$]   (matched = false, byteOffset = -1, numBytes = 0) 2

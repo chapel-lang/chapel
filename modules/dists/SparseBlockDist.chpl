@@ -230,16 +230,16 @@ class SparseBlockDom: BaseSparseDomImpl {
   //
   proc dsiSerialWrite(f) {
     if (rank == 1) {
-      f.write("{");
+      f._write("{");
       for locdom in locDoms do {
         // on locdom do {
         if (locdom!.dsiNumIndices) {
-            f.write(" ");
+            f._write(" ");
             locdom!.dsiSerialWrite(f);
           }
           //}
       }
-      f.write("}");
+      f._write("}");
     } else {
       compilerError("Can't write out multidimensional sparse distributed domains yet");
     }
@@ -484,7 +484,7 @@ class SparseBlockArr: BaseSparseArr {
     // Ensure it is legal to invoke the standalone iterator
     // on locA.myElems below.
     __primitive("method call resolves",
-                locArr[locArrDom.alignedLow]!.myElems._value, "these", tag) {
+                locArr[locArrDom.low]!.myElems._value, "these", tag) {
     coforall locA in locArr do on locA {
       // forward to sparse standalone iterator
       forall i in locA!.myElems {
@@ -790,16 +790,16 @@ proc LocSparseBlockArr.this(i) ref {
 //
 proc SparseBlockArr.dsiSerialWrite(f) {
   if (rank == 1) {
-    f.write("[");
+    f._write("[");
     for locarr in locArr do {
       // on locdom do {
       if (locarr!.locDom.dsiNumIndices) {
-        f.write(" ");
+        f._write(" ");
         locarr!.dsiSerialWrite(f);
       }
       // }
     }
-    f.write("]");
+    f._write("]");
   } else {
     compilerError("Can't write out multidimensional sparse distributed arrays yet");
   }

@@ -657,9 +657,49 @@ static void setupAffinity(void) {
     chpl_qt_setenv("AFFINITY", "no", 0);
   }
 
-  // For the binders topo spread threads across sockets instead of packing.
-  // Only impacts binders, but it doesn't hurt to set it for other configs.
-  chpl_qt_setenv("LAYOUT", "BALANCED", 0);
+  // Explicitly bind shepherd threads to cores/PUs when using the
+  // binders topology.
+  if (CHPL_QTHREAD_TOPOLOGY_BINDERS) {
+    int *cpus = NULL;
+    int numCpus;
+    chpl_bool physical;
+    char *unit = chpl_qt_getenv_str("WORKER_UNIT");
+    if ((unit != NULL) && !strcmp(unit, "pu")) {
+        physical = false;
+        numCpus = chpl_topo_getNumCPUsLogical(true);
+    } else {
+        physical = true;
+        numCpus = chpl_topo_getNumCPUsPhysical(true);
+    }
+    int numShepherds = (int) chpl_qt_getenv_num("NUM_SHEPHERDS", numCpus);
+    if (numShepherds < numCpus) {
+        numCpus = numShepherds;
+    }
+    cpus = (int *) chpl_malloc(numCpus * sizeof(*cpus));
+    numCpus = chpl_topo_getCPUs(physical, cpus, numCpus);
+    if (numCpus > 0) {
+      // Determine how much space we need for the string of CPU IDs.
+      // Note: last ':' will be replaced with NULL.
+      int bufSize = 0;
+      for (int i = 0; i < numCpus; i++) {
+        bufSize +=  snprintf(NULL, 0, "%d:", cpus[i]);
+      }
+      char *buf = chpl_malloc(bufSize);
+      int offset = 0;
+      buf[0] = '\0';
+      for (int i = 0; i < numCpus; i++) {
+          offset += snprintf(buf+offset, bufSize - offset, "%d:", cpus[i]);
+      }
+      if (offset > 0) {
+          // remove trailing ':'
+          buf[offset-1] = '\0';
+      }
+      // tell binders which PUs to use
+      chpl_qt_setenv("CPUBIND", buf, 1);
+      chpl_free(buf);
+    }
+    chpl_free(cpus);
+  }
 }
 
 void chpl_task_init(void)
@@ -748,11 +788,21 @@ static aligned_t chapel_wrapper(void *arg)
 typedef struct {
     chpl_fn_p fn;
     void *arg;
+    int cpu;
 } comm_task_wrapper_info_t;
 
 static void *comm_task_wrapper(void *arg)
 {
     comm_task_wrapper_info_t *rarg = arg;
+    if (rarg->cpu >= 0) {
+        int rc = chpl_topo_bindCPU(rarg->cpu);
+        if (rc) {
+            char msg[100];
+            snprintf(msg, sizeof(msg),
+                     "binding comm task to CPU %d failed", rarg->cpu);
+            chpl_warning(msg, 0, 0);
+        }
+    }
     (*(chpl_fn_p)(rarg->fn))(rarg->arg);
     return 0;
 }
@@ -786,7 +836,8 @@ void chpl_task_stdModulesInitialized(void)
 }
 
 int chpl_task_createCommTask(chpl_fn_p fn,
-                             void     *arg)
+                             void     *arg,
+                             int      cpu)
 {
     //
     // The wrapper info must be static because it won't be referred to
@@ -797,6 +848,7 @@ int chpl_task_createCommTask(chpl_fn_p fn,
     static comm_task_wrapper_info_t wrapper_info;
     wrapper_info.fn = fn;
     wrapper_info.arg = arg;
+    wrapper_info.cpu = cpu;
     return pthread_create(&chpl_qthread_comm_pthread,
                           NULL, comm_task_wrapper, &wrapper_info);
 }

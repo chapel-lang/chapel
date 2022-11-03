@@ -509,18 +509,18 @@ module Set {
         _enter(); defer _leave();
 
         var count = 1;
-        ch.write("{");
+        ch._write("{");
 
         for x in this {
           if count <= (_htb.tableNumFullSlots - 1) {
             count += 1;
-            ch.write(x); ch.write(", ");
+            ch._write(x); ch._write(", ");
           } else {
-            ch.write(x);
+            ch._write(x);
           }
         }
 
-        ch.write("}");
+        ch._write("}");
       }
     }
 

@@ -64,7 +64,7 @@ proc runSort(){
         }
         numScanElts = numBlocks;
     } while (numScanElts > 1);
-    // Print the the above vars to see if they match the expected values
+    // Print the above vars to see if they match the expected values
 
     scanBlockSums[level] = new list(uint(32)); // Size of this last list is just 1
 

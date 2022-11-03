@@ -1,7 +1,7 @@
 param-fun-intents.chpl:7: In function 'foo2':
-param-fun-intents.chpl:7: error: Cannot use 'out' intent in a function returning with 'param' intent
-param-fun-intents.chpl:7: error: Cannot use 'out' intent in a function returning with 'param' intent
+param-fun-intents.chpl:7: error: cannot use 'out' intent in a function returning with 'param' intent
+param-fun-intents.chpl:7: error: cannot use 'out' intent in a function returning with 'param' intent
 param-fun-intents.chpl:13: In function 'foo3':
-param-fun-intents.chpl:13: error: Cannot use 'inout' intent in a function returning with 'param' intent
+param-fun-intents.chpl:13: error: cannot use 'inout' intent in a function returning with 'param' intent
 param-fun-intents.chpl:17: In function 'foo4':
-param-fun-intents.chpl:17: error: Cannot use 'out' intent in a function returning with 'type' intent
+param-fun-intents.chpl:17: error: cannot use 'out' intent in a function returning with 'type' intent

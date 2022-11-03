@@ -34,6 +34,7 @@
 module GPU
 {
   pragma "no doc"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_gpu_write(const str : c_string) : void;
 
   /*

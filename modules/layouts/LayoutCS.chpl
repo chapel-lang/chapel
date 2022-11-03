@@ -615,14 +615,14 @@ class CSDom: BaseSparseDomImpl {
   }
 
   proc dsiSerialWrite(f) {
-    f.write("{\n");
+    f._write("{\n");
     if this.compressRows {
       for r in rowRange {
         const lo = startIdx(r),
               hi = stopIdx(r);
         for c in lo..hi {
-          f.write(" (", r, ", ", idx(c), ")");
-          if c == hi then f.write("\n");
+          f._write(" (", r, ", ", idx(c), ")");
+          if c == hi then f._write("\n");
         }
       }
     } else {
@@ -631,12 +631,12 @@ class CSDom: BaseSparseDomImpl {
         const lo = startIdx(c),
               hi = stopIdx(c);
         for r in lo..hi {
-          f.write(" (", idx(r), ", ", c, ")");
-          if r == hi then f.write("\n");
+          f._write(" (", idx(r), ", ", c, ")");
+          if r == hi then f._write("\n");
         }
       }
     }
-    f.write("}\n");
+    f._write("}\n");
   }
 
   override proc dsiSupportsAutoLocalAccess() param {
@@ -732,7 +732,7 @@ class CSArr: BaseSparseArrImpl {
         const lo = dom.startIdx(r);
         const hi = dom.stopIdx(r);
         for c in lo..hi {
-          f.write(data(c), if (c==hi) then "\n" else " ");
+          f._write(data(c), if (c==hi) then "\n" else " ");
         }
       }
     } else {
@@ -740,7 +740,7 @@ class CSArr: BaseSparseArrImpl {
         const lo = dom.startIdx(c);
         const hi = dom.stopIdx(c);
         for r in lo..hi {
-          f.write(data(r), if (r==hi) then "\n" else " ");
+          f._write(data(r), if (r==hi) then "\n" else " ");
         }
       }
     }

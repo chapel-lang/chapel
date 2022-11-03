@@ -145,7 +145,7 @@ if example == 0 || example == 2 {
 // Note: This could be a forall loop to do I/O in parallel!
   for i in 0..#num by -1 {
     var start = 8*i;
-    var r = f.reader(kind=ionative, region=start..#9);
+    var r = f.reader(kind=ionative, region=start..#8);
     var tmp:uint(64);
     r.read(tmp);
     assert(tmp == i:uint(64));
@@ -202,7 +202,7 @@ if example == 0 || example == 3 {
       // When we create the reader, supplying locking=false will do unlocked I/O.
       // That's fine as long as the channel is not shared between tasks;
       // here it's just used as a local variable, so we are O.K.
-      var r = f.reader(kind=ionative, locking=false, region=start..#9);
+      var r = f.reader(kind=ionative, locking=false, region=start..#8);
       var tmp:uint(64);
       r.read(tmp);
       assert(tmp == i:uint(64));

@@ -61,7 +61,7 @@ proc masonExample(args: [] string, checkProj=true) throws {
     parser.parseArgs(args);
   }
   catch ex : ArgumentError {
-    stderr.writeln(ex.message());
+    stderr._writeln(ex.message());
     exit(1);
   }
   var show = showFlag.valueAsBool();
@@ -243,7 +243,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
             const compilation = runWithStatus(compCommand);
 
             if compilation != 0 {
-              stderr.writeln("compilation failed for " + example);
+              stderr._writeln("compilation failed for " + example);
             }
             else {
               if show || !run then writeln("compiled ", example, " successfully");
@@ -271,7 +271,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
     }
   }
   catch e: MasonError {
-    stderr.writeln(e.message());
+    stderr._writeln(e.message());
     exit(1);
   }
 }
@@ -351,7 +351,7 @@ proc printAvailableExamples() {
     writeln("--------------------------");
   }
   catch e: MasonError {
-    stderr.writeln(e.message());
+    stderr._writeln(e.message());
     exit(1);
   }
 }

@@ -135,15 +135,15 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
        "util/setchplenv.sh",
        "util/start_test",
        "util/chpltags",
-       "compiler/dyno/tools/chpldoc/LICENSE",
-       "compiler/dyno/tools/chpldoc/COPYRIGHT",
-       "compiler/dyno/include/chpl/config/config.h.cmake",
+       "tools/chpldoc/COPYRIGHT",
+       "frontend/include/chpl/config/config.h.cmake",
 );
 
 
 # C/C++ sources
 @code_dirs = (
-    "compiler"
+    "compiler",
+    "frontend"
 );
 
 # include these dirs and their entire contents
@@ -164,6 +164,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     "util/config",
     "util/quickstart",
     "util/test",
+    "tools/chpldoc",
     "tools/chplvis",
     "tools/c2chapel",
     "tools/mason"
@@ -224,8 +225,8 @@ print "[gen_release] Removing runtime directories that are not ready for release
 SystemOrDie("cd runtime/src/launch && rm -r dummy");
 SystemOrDie("cd runtime/src/launch && rm -r mpirun");
 
-print "[gen_release] Removing dyno test directory which is not intended for release...\n";
-SystemOrDie("cd compiler/dyno && rm -r test");
+print "[gen_release] Removing frontend test directory which is not intended for release...\n";
+SystemOrDie("cd frontend && rm -r test");
 
 print "[gen_release] Removing third-party directories that are not intended for release...\n";
 SystemOrDie("cd third-party && rm *.devel*");

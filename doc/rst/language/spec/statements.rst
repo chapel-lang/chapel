@@ -444,7 +444,7 @@ The do-while loop is executed as follows:
    statement following the loop.
 
 #. If the expression evaluates to ``true``, control continues to step 1
-   and the the statement is executed again.
+   and the statement is executed again.
 
 In this second form of the loop, note that the statement is executed
 unconditionally the first time.

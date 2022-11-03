@@ -182,12 +182,6 @@ void InterfaceSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
     INT_FATAL(this, "Unexpected case in InterfaceSymbol::replaceChild");
 }
 
-void InterfaceSymbol::printDocs(std::ostream* file, unsigned int tabs) {
-  if (this->noDocGen()) return;
-  INT_FATAL(this, "printDocs is to be implemented");
-}
-
-
 /////////////////////////////////////////////////////////////////////////////
 // IfcConstraint
 //

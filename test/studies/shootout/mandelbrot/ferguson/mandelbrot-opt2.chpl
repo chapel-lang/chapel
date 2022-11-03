@@ -28,7 +28,7 @@ proc main() {
     var start = datastart+ipart*cols;
     var end = datastart+(ipart+1)*cols;
     var writer = f.writer(kind=iokind.native, locking=false,
-                          region=start..end);
+                          region=start..#end);
 
     for rstart in 0..#cols {
 

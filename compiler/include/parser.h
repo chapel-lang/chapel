@@ -26,6 +26,8 @@ class VisibilityStmt;
 
 #include "symbol.h"
 
+extern bool fDetailedErrors;
+
 extern int         chplLineno;
 extern bool        chplParseString;
 extern const char* chplParseStringMsg;
@@ -55,11 +57,6 @@ void               addFlagModulePath(const char* newpath);
 
 void               addModuleToParseList(const char* name,
                                         VisibilityStmt* newUse);
-
-// The new parser does not rely on yyfilename to set locations, so passing
-// in the submodule path allows for overriding that behavior.
-ModuleSymbol*      parseIncludedSubmodule(const char* name,
-                                          const char* path=yyfilename);
 
 void noteParsedIncludedModule(ModuleSymbol* mod, const char* path);
 

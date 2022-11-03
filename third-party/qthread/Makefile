@@ -27,7 +27,7 @@ endif
 ifneq ($(CHPL_MAKE_HWLOC),none)
   # Have Qthreads get its hwloc topology from the Chapel runtime,
   # unless directed not to.
-  TOPOLOGY=hwloc
+  TOPOLOGY=binders
   ifeq (, $(call isTrue, $(CHPL_QTHREAD_DONT_GET_TOPO_FROM_RT)))
     CFLAGS_NEEDS_RT_INCLUDES = y
     CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc-get-topology-function="chpl_topo_getHwlocTopology()"
@@ -48,6 +48,12 @@ ifneq (, $(TOPOLOGY))
 CHPL_QTHREAD_CFG_OPTIONS += --with-topology=$(TOPOLOGY)
 endif
 
+# Used to create qthread-chapel.h
+ifeq ($(TOPOLOGY),binders)
+  USE_TOPOLOGY_BINDERS=1
+else
+  USE_TOPOLOGY_BINDERS=0
+endif
 
 # Have qthreads use Chapel's allocator, unless directed not to
 ifeq (, $(call isTrue, $(CHPL_QTHREAD_NO_CHPL_ALLOC)))
@@ -234,6 +240,9 @@ qthread-chapel-h: FORCE
 	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
 	echo "#define CHPL_QTHREAD_HAVE_GUARD_PAGES" \
 	     $(HAVE_GUARD_PAGES) \
+	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
+	echo "#define CHPL_QTHREAD_TOPOLOGY_BINDERS" \
+	     $(USE_TOPOLOGY_BINDERS) \
 	     >> $(QTHREAD_INSTALL_DIR)/include/qthread-chapel.h
 
 qthread: qthread-config qthread-build qthread-chapel-h
