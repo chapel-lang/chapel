@@ -35,6 +35,7 @@ FRONTEND_RESOLUTION_SRCS =                          \
            scope-queries.cpp                        \
            scope-types.cpp                          \
            split-init.cpp                           \
+           VarScopeVisitor.cpp                      \
 
 
 SRCS = $(FRONTEND_RESOLUTION_SRCS)
