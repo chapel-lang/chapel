@@ -61,11 +61,11 @@ follows, assuming CWD is $CHPL_HOME/third-party/llvm/:
 
 1.  git rm -r llvm-src cmake
 2.  un-tarball the new LLVM version into the directory it specifies,
-    for example llvm-14.0.0.src
+    for example llvm-15.0.0.src
 3.  un-tarball the new Clang version into the directory it specifies,
-    for example clang-14.0.0.src
-4.  mv clang-14.0.0.src llvm-14.0.0.src/tools/clang
-5.  mv llvm-14.0.0.src llvm-src
+    for example clang-15.0.0.src
+4.  mv clang-15.0.0.src llvm-15.0.0.src/tools/clang
+5.  mv llvm-15.0.0.src llvm-src
 6.  rm -r llvm-src/test llvm-src/tools/clang/test
 7.  git add --force llvm-src cmake
     ('--force' is needed to ensure git adds all files in the subdirectory)
