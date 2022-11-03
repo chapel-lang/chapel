@@ -118,6 +118,20 @@ class VarScopeVisitor {
     return scopeStack.back().get();
   }
 
+  /** Assuming that the current frame refers to a Conditional,
+      returns the frame for the 'then' block. */
+  VarFrame* currentThenFrame();
+  /** Assuming that the current frame refers to a Conditional,
+      returns the frame for the 'else' block, or 'nullptr' if there was none. */
+  VarFrame* currentElseFrame();
+
+  /** Assuming that the current frame refers to a Try,
+      returns the number of frames saved for Catch clauses.  */
+  int currentNumCatchFrames();
+  /** Assuming that the current frame refers to a Try,
+      returns the i'th saved Catch frame. */
+  VarFrame* currentCatchFrame(int i);
+
   /** If ast is an Identifier that refers to a VarLikeDecl, return the
       Id of the VarLikeDecl. Otherwise, return an empty ID. */
   ID refersToId(const AstNode* ast, RV& rv);

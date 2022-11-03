@@ -199,13 +199,8 @@ void FindSplitInits::handleInoutFormal(const FnCall* ast, const AstNode* actual,
 // the then/else blocks from the conditional
 void FindSplitInits::handleConditional(const Conditional* cond) {
   VarFrame* frame = currentFrame();
-  assert(frame->subBlocks.size() == 1 || frame->subBlocks.size() == 2);
-
-  VarFrame* thenFrame = frame->subBlocks[0].frame.get();
-  VarFrame* elseFrame = nullptr;
-  if (frame->subBlocks.size() == 2) {
-    elseFrame = frame->subBlocks[1].frame.get();
-  }
+  VarFrame* thenFrame = currentThenFrame();
+  VarFrame* elseFrame = currentElseFrame();
 
   // save results for vars declared in then/else
   // gather the set of variables to consider
@@ -381,9 +376,9 @@ void FindSplitInits::handleConditional(const Conditional* cond) {
 
 void FindSplitInits::handleTry(const Try* t) {
   VarFrame* tryFrame = currentFrame();
-
+  int nCatchFrames = currentNumCatchFrames();
   // if there are no catch clauses, treat it like any other scope
-  if (tryFrame->subBlocks.size() == 0) {
+  if (nCatchFrames == 0) {
     handleScope(t);
     return;
   }
@@ -392,9 +387,9 @@ void FindSplitInits::handleTry(const Try* t) {
 
   // do all of the catch clauses always throw or return?
   bool allThrowOrReturn = true;
-  for (const auto& sub : tryFrame->subBlocks) {
-    VarFrame* subFrame = sub.frame.get();
-    if (!subFrame->returns && !subFrame->throws) {
+  for (int i = 0; i < nCatchFrames; i++) {
+    VarFrame* catchFrame = currentCatchFrame(i);
+    if (!catchFrame->returns && !catchFrame->throws) {
       allThrowOrReturn = false;
     }
   }
@@ -416,10 +411,10 @@ void FindSplitInits::handleTry(const Try* t) {
       bool allowSplitInit = false;
       if (allThrowOrReturn) {
         bool mentionedOrInitedInCatch = false;
-        for (const auto& sub : tryFrame->subBlocks) {
-          VarFrame* subFrame = sub.frame.get();
-          if (subFrame->initedVars.count(id) > 0 ||
-              subFrame->mentionedVars.count(id) > 0) {
+        for (int i = 0; i < nCatchFrames; i++) {
+          VarFrame* catchFrame = currentCatchFrame(i);
+          if (catchFrame->initedVars.count(id) > 0 ||
+              catchFrame->mentionedVars.count(id) > 0) {
             mentionedOrInitedInCatch = true;
             break;
           }
@@ -446,12 +441,12 @@ void FindSplitInits::handleTry(const Try* t) {
   }
 
   // now, update mentionedVars with anything at all mentioned in a catch
-  for (const auto& sub : tryFrame->subBlocks) {
-    VarFrame* subFrame = sub.frame.get();
-    tryMentionedVars.insert(subFrame->initedVars.begin(),
-                            subFrame->initedVars.end());
-    tryMentionedVars.insert(subFrame->mentionedVars.begin(),
-                            subFrame->mentionedVars.end());
+  for (int i = 0; i < nCatchFrames; i++) {
+    VarFrame* catchFrame = currentCatchFrame(i);
+    tryMentionedVars.insert(catchFrame->initedVars.begin(),
+                            catchFrame->initedVars.end());
+    tryMentionedVars.insert(catchFrame->mentionedVars.begin(),
+                            catchFrame->mentionedVars.end());
   }
 
   // swap trySplitInitVars / tryMentionedVars into place

@@ -75,6 +75,42 @@ VarScopeVisitor::process(const uast::AstNode* symbol,
   }
 }
 
+VarFrame* VarScopeVisitor::currentThenFrame() {
+  VarFrame* frame = currentFrame();
+  assert(frame->scopeAst->isConditional());
+  assert(frame->subBlocks.size() == 1 || frame->subBlocks.size() == 2);
+  VarFrame* ret = frame->subBlocks[0].frame.get();
+  assert(ret);
+  return ret;
+}
+VarFrame* VarScopeVisitor::currentElseFrame() {
+  VarFrame* frame = currentFrame();
+  assert(frame->scopeAst->isConditional());
+  assert(frame->subBlocks.size() == 1 || frame->subBlocks.size() == 2);
+  if (frame->subBlocks.size() == 1) {
+    // there was no 'else' clause
+    return nullptr;
+  } else {
+    return frame->subBlocks[1].frame.get();
+  }
+}
+
+int VarScopeVisitor::currentNumCatchFrames() {
+  VarFrame* frame = currentFrame();
+  assert(frame->scopeAst->isTry());
+  int ret = frame->subBlocks.size();
+  assert(frame->scopeAst->toTry()->numHandlers() == ret);
+  return ret;
+}
+VarFrame* VarScopeVisitor::currentCatchFrame(int i) {
+  VarFrame* frame = currentFrame();
+  assert(frame->scopeAst->isTry());
+  assert(0 <= i && (size_t) i < frame->subBlocks.size());
+  VarFrame* ret = frame->subBlocks[i].frame.get();
+  assert(ret);
+  return ret;
+}
+
 ID VarScopeVisitor::refersToId(const AstNode* ast, RV& rv) {
   ID toId;
   if (ast != nullptr && rv.hasAst(ast)) {
