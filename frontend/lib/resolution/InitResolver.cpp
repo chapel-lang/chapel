@@ -401,6 +401,19 @@ void InitResolver::doDetectPossibleAssignmentToField(const OpCall* node) {
   if (node->op() == USTR("=")) isDescendingIntoAssignment_ = true;
 }
 
+static void checkInsideBadTag(Context* context,
+                              Resolver& resolver, const AstNode* node) {
+  if (resolver.isInsideTag(AstTag::START_Loop)) {
+    context->error(node, "cannot initialize fields inside of loops");
+  }
+  if (resolver.isInsideTag(AstTag::Begin)) {
+    context->error(node, "cannot initialize fields inside begin statements");
+  }
+  if (resolver.isInsideTag(AstTag::Cobegin)) {
+    context->error(node, "cannot initialize fields inside cobegin statements");
+  }
+}
+
 bool InitResolver::handleAssignmentToField(const OpCall* node) {
   if (node->op() != USTR("=")) return false;
   assert(node->numActuals() == 2);
@@ -416,6 +429,8 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
 
   bool isAlreadyInitialized = !state->initPointId.isEmpty();
   bool isOutOfOrder = state->ordinalPos < currentFieldIndex_;
+
+  checkInsideBadTag(ctx_, initResolver_, node);
 
   // Implicitly initialize any fields between the current index and this.
   int old = currentFieldIndex_;
