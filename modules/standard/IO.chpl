@@ -7579,7 +7579,7 @@ proc _channel._writefOne(fmtStr, ref arg, i: int,
    :arg args: 0 or more arguments to write
 
    :throws IllegalArgumentError: if an unsupported argument type is encountered.
-   :throws SystemError: if the arguments could not be written. 
+   :throws SystemError: if the arguments could not be written.
  */
 proc _channel.writef(fmtStr: ?t, const args ...?k) throws
   where isStringType(t) || isBytesType(t)
