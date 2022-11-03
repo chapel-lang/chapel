@@ -49,9 +49,7 @@ static pthread_once_t bcastPrintUnstable_once = PTHREAD_ONCE_INIT;
 
 static
 void broadcast_print_unstable(void) {
-  chpl_comm_diags_disable();
   chpl_comm_bcast_rt_private(chpl_gpu_diags_print_unstable);
-  chpl_comm_diags_enable();
 }
 
 
@@ -63,18 +61,14 @@ void chpl_gpu_startVerbose(chpl_bool stacktrace, chpl_bool print_unstable) {
   }
 
   chpl_verbose_gpu = 1;
-  chpl_comm_diags_disable();
   chpl_comm_bcast_rt_private(chpl_verbose_gpu);
   chpl_comm_bcast_rt_private(chpl_verbose_gpu_stacktrace);
-  chpl_comm_diags_enable();
 }
 
 
 void chpl_gpu_stopVerbose(void) {
   chpl_verbose_gpu = 0;
-  chpl_comm_diags_disable();
   chpl_comm_bcast_rt_private(chpl_verbose_gpu);
-  chpl_comm_diags_enable();
 }
 
 
@@ -101,9 +95,7 @@ void chpl_gpu_startDiagnostics(chpl_bool print_unstable) {
   chpl_rmem_consist_release(0, 0);
 
   chpl_gpu_diagnostics = 1;
-  chpl_comm_diags_disable();
   chpl_comm_bcast_rt_private(chpl_gpu_diagnostics);
-  chpl_comm_diags_enable();
 }
 
 
@@ -112,9 +104,7 @@ void chpl_gpu_stopDiagnostics(void) {
   chpl_rmem_consist_release(0, 0);
 
   chpl_gpu_diagnostics = 0;
-  chpl_comm_diags_disable();
   chpl_comm_bcast_rt_private(chpl_gpu_diagnostics);
-  chpl_comm_diags_enable();
 }
 
 

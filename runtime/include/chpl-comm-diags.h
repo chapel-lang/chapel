@@ -96,7 +96,6 @@ typedef struct _chpl_atomic_commDiagnostics {
 } chpl_atomic_commDiagnostics;
 
 extern chpl_atomic_commDiagnostics chpl_comm_diags_counters;
-extern atomic_int_least16_t chpl_comm_diags_disable_flag;
 
 static inline
 void chpl_comm_diags_init(void) {
@@ -104,7 +103,6 @@ void chpl_comm_diags_init(void) {
         atomic_init_uint_least64_t(&chpl_comm_diags_counters.cdv, 0);
   CHPL_COMM_DIAGS_VARS_ALL(_COMM_DIAGS_INIT);
 #undef _COMM_DIAGS_INIT
-  atomic_init_int_least16_t(&chpl_comm_diags_disable_flag, 0);
 }
 
 static inline
@@ -123,25 +121,13 @@ void chpl_comm_diags_copy(chpl_commDiagnostics* cd) {
 #undef _COMM_DIAGS_COPY
 }
 
-static inline
-void chpl_comm_diags_disable(void) {
-  (void) atomic_fetch_add_int_least16_t(&chpl_comm_diags_disable_flag, 1);
-}
-
-static inline
-void chpl_comm_diags_enable(void) {
-  (void) atomic_fetch_add_int_least16_t(&chpl_comm_diags_disable_flag, -1);
-}
-
-static inline
-int chpl_comm_diags_is_enabled(void) {
-  return (atomic_load_int_least16_t(&chpl_comm_diags_disable_flag) <= 0);
-}
+extern chpl_bool chpl_task_setCommDiagsTemporarilyDisabled(chpl_bool);
+extern chpl_bool chpl_task_getCommDiagsTemporarilyDisabled(void);
 
 #define chpl_comm_diags_verbose_printf(is_unstable, format, ...)   \
   do {                                                             \
     if (chpl_verbose_comm                                          \
-        && chpl_comm_diags_is_enabled()                            \
+        && !chpl_task_getCommDiagsTemporarilyDisabled()            \
         && (!is_unstable || chpl_comm_diags_print_unstable)) {     \
       char* stack = NULL;                                          \
       if (chpl_verbose_comm_stacktrace) {                          \
@@ -186,7 +172,8 @@ int chpl_comm_diags_is_enabled(void) {
 
 #define chpl_comm_diags_incr(_ctr)                                           \
   do {                                                                       \
-    if (chpl_comm_diagnostics && chpl_comm_diags_is_enabled()) {             \
+    if (chpl_comm_diagnostics &&                                             \
+        !chpl_task_getCommDiagsTemporarilyDisabled()) {                      \
       atomic_uint_least64_t* ctrAddr = &chpl_comm_diags_counters._ctr;       \
       (void) atomic_fetch_add_explicit_uint_least64_t(ctrAddr, 1,            \
                                                       memory_order_relaxed); \
