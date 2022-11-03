@@ -1847,7 +1847,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
         }
 
         // Mark that scan values are ready
-        coforall (ready, elem) in zip(valIter(outputReady), valIter(elemPerLoc)) do on ready {
+        coforall (_, ready, elem) in zip(targetLocs.domain, valIter(outputReady), valIter(elemPerLoc)) do on ready {
           ready!.writeEF(elem);
         }
 
