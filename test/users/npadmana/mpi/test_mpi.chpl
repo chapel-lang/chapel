@@ -263,7 +263,7 @@ proc test_structure() {
 
   var a : [0.. #10] Particle;
   if worldRank==0 {
-    for (i1, p1) in zip(0.. , a) {
+    for (p1, i1) in zip(a, 0..) {
       p1.x = i1;
       p1.y = -i1;
       p1.z = i1;
