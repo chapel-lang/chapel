@@ -2757,6 +2757,38 @@ void Resolver::exit(const TaskVar* taskVar) {
   }
 }
 
+bool Resolver::enter(const Return* ret) {
+  return true;
+}
+
+void Resolver::exit(const Return* ret) {
+  if (initResolver) {
+    initResolver->checkEarlyReturn(ret);
+  }
+}
+
+bool Resolver::enter(const Throw* node) {
+  return true;
+}
+
+void Resolver::exit(const Throw* node) {
+  if (initResolver) {
+    context->error(node, "initializers are not yet allowed to throw errors");
+  }
+}
+
+bool Resolver::enter(const Try* node) {
+  enterScope(node);
+  return true;
+}
+
+void Resolver::exit(const Try* node) {
+  if (initResolver && node->isTryBang() && node->numHandlers() > 0) {
+    context->error(node, "Only catch-less try! statements are allowed in initializers for now");
+  }
+  exitScope(node);
+}
+
 bool Resolver::enter(const AstNode* ast) {
   enterScope(ast);
 

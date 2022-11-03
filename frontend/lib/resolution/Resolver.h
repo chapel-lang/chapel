@@ -436,6 +436,15 @@ struct Resolver {
   bool enter(const uast::TaskVar* taskVar);
   void exit(const uast::TaskVar* taskVar);
 
+  bool enter(const uast::Return* ret);
+  void exit(const uast::Return* ret);
+
+  bool enter(const uast::Throw* ret);
+  void exit(const uast::Throw* ret);
+
+  bool enter(const uast::Try* ret);
+  void exit(const uast::Try* ret);
+
   // if none of the above is called, fall back on this one
   bool enter(const uast::AstNode* ast);
   void exit(const uast::AstNode* ast);
