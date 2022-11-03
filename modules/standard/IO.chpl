@@ -5293,27 +5293,27 @@ proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
    :throws SystemError: Thrown if an error occurred reading the number.
  */
 
-proc _channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native):bool throws {
-  var e:errorCode = ENOERR;
+// proc _channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native):bool throws {
+//   var e:errorCode = ENOERR;
 
-  select (endian) {
-    when ioendian.native {
-      e = try _read_binary_internal(_channel_internal, iokind.native, arg);
-    }
-    when ioendian.big {
-      e = try _read_binary_internal(_channel_internal, iokind.big, arg);
-    }
-    when ioendian.little {
-      e = try _read_binary_internal(_channel_internal, iokind.little, arg);
-    }
-  }
-  if (e == EEOF) {
-    return false;
-  } else if (e != ENOERR) {
-    throw createSystemError(e);
-  }
-  return true;
-}
+//   select (endian) {
+//     when ioendian.native {
+//       e = try _read_binary_internal(_channel_internal, iokind.native, arg);
+//     }
+//     when ioendian.big {
+//       e = try _read_binary_internal(_channel_internal, iokind.big, arg);
+//     }
+//     when ioendian.little {
+//       e = try _read_binary_internal(_channel_internal, iokind.little, arg);
+//     }
+//   }
+//   if (e == EEOF) {
+//     return false;
+//   } else if (e != ENOERR) {
+//     throw createSystemError(e);
+//   }
+//   return true;
+// }
 
 /*
    Read a binary number from the channel
@@ -5325,23 +5325,151 @@ proc _channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.nativ
 
    :throws SystemError: Thrown if an error occurred reading the number.
  */
-proc _channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
+// proc _channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
+//   var rv: bool = false;
+
+//   select (endian) {
+//     when ioendian.native {
+//       rv = this.readBinary(arg, ioendian.native);
+//     }
+//     when ioendian.big {
+//       rv = this.readBinary(arg, ioendian.big);
+//     }
+//     when ioendian.little {
+//       rv = this.readBinary(arg, ioendian.little);
+//     }
+//   }
+//   return rv;
+// }
+
+/*
+   Read a specified number of codepoints into a :type:`~String.string`
+
+   This method can result in ``s.size < maxSize`` if EOF is reached before
+   reading the specified number of codepoints. Additionally, if nothing
+   is read from the channel, ``s`` will be set to ``""`` and the method will
+   return ``false``.
+
+   .. note::
+
+      This method always uses UTF-8 encoding regaurdless of the channel's
+      configuration
+
+   :arg s: the string to read into — this value is overwritten
+   :arg maxSize: the number of codepoints to read from the channel
+   :returns: `false` if EOF is reached before reading anything, `true` otherwise
+
+   :throws SystemError: Thrown if an error occurred while reading the channel.
+*/
+// proc _channel.readBinary(ref s: string, maxSize: int): bool throws {
+
+// }
+
+/*
+   Read a specified number of bytes into a :type:`~Bytes.bytes`
+
+   This method can result in ``b.size < maxSize`` if EOF is reached before
+   reading the specified number of codepoints. Additionally, if nothing
+   is read from the channel, ``b`` will be set to ``b""`` and the method will
+   return ``false``.
+
+   :arg s: the bytes to read into — this value is overwritten
+   :arg maxSize: the number of codepoints to read from the channel
+   :returns: `false` if EOF is reached before reading anything, `true` otherwise
+
+   :throws SystemError: Thrown if an error occurred while reading the channel.
+*/
+// proc _channel.readBinary(ref b: bytes, maxSize: int): bool throws {
+
+// }
+
+/*
+   Read an array of binary numbers from the channel
+
+   The binary values in ``data`` are read from the channel in order until all
+   of the values have been read. If any of the values cannot be read, or EOF is
+   reached before all of ``data`` has been read, an error will be thrown.
+
+   :arg data: an array of numbers to read from the channel
+   :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
+              to read the numbers. Defaults to ``ioendian.native``.
+   :returns: `false` if EOF is encountered before reading anything, `true` otherwise
+
+   :throws SystemError: Thrown if an error occurred while reading the channel
+*/
+proc _channel.readBinary(ref data: [?d] ?t, param endian = ioendian.native):bool throws
+  where (d.rank == 1 && d.stridable == false) && (
+          t ==  int(8)  || t ==  int(16) || t ==  int(32) || t ==  int(64) ||
+          t == uint(8)  || t == uint(16) || t == uint(32) || t == uint(64) ||
+          t == real(32) || t == real(64) || t == imag(32) || t == imag(64) ||
+          t == complex(32) || t == complex(64))
+{
+  var e : errorCode = ENOERR,
+      readSomething = false;
+
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    for b in data {
+      select (endian) {
+        when ioendian.native {
+          e = try _read_binary_internal(this._channel_internal, iokind.native, b);
+        }
+        when ioendian.big {
+          e = try _read_binary_internal(this._channel_internal, iokind.big,    b);
+        }
+        when ioendian.little {
+          e = try _read_binary_internal(this._channel_internal, iokind.little, b);
+        }
+      }
+
+      if (e == EEOF) {
+        throw new owned UnexpectedEofError("Unable to read entire array of values in 'readBinary'");
+      } else if (e != ENOERR) {
+        throw createSystemError(e);
+      } else {
+        readSomething = true;
+      }
+    }
+  }
+
+  return readSomething;
+}
+
+/*
+   Read an array of binary numbers from the channel
+
+   The binary values in ``data`` are read from the channel until either EOF is
+   reached or all of the values have been read. If any of the values cannot be
+   read, an error is thrown.
+
+   :arg data: an array of numbers to read from the channel
+   :arg endian: :type:`ioendian` specifies the byte order in which
+              to read the number.
+   :returns: `false` if EOF is encountered before reading anything, `true` otherwise
+
+   :throws SystemError: Thrown if an error occurred while reading the channel.
+   :throws BadArgumentError: Thrown if a value cannot be read from the channel.
+*/
+proc _channel.readBinary(ref data: [?d] numeric, endian: ioendian):bool throws
+  where d.rank == 1 && d.stridable == false
+{
   var rv: bool = false;
 
   select (endian) {
     when ioendian.native {
-      rv = this.readBinary(arg, ioendian.native);
+      rv = this.readBinary(data, ioendian.native);
     }
     when ioendian.big {
-      rv = this.readBinary(arg, ioendian.big);
+      rv = this.readBinary(data, ioendian.big);
     }
     when ioendian.little {
-      rv = this.readBinary(arg, ioendian.little);
+      rv = this.readBinary(data, ioendian.little);
     }
   }
+
   return rv;
 }
-
 
 // Documented in the varargs version
 pragma "no doc"
@@ -5349,7 +5477,6 @@ proc _channel.readln():bool throws {
   var nl = new ioNewline();
   return try this.read(nl);
 }
-
 
 /*
 
