@@ -52,30 +52,37 @@ writeln("...");
 writeln();
 
 //
-// This example uses zipper iteration to iterate over the unbounded range ``1..``
-// and the fibonacci iterator with ``n`` set to ten. Ranges, as well as arrays
-// and domains, can be used as iterators in loops.
+// This example uses zippered iteration to iterate over the fibonacci iterator
+// with ``n`` set to ten and the unbounded range ``1..``. Ranges, as well as
+// arrays and domains, can be used as iterators in loops.
 //
-// Zipper iteration means that each iterator is advanced to its next yield
-// and the two yielded values are combined into a tuple.
+// Zippered iteration means that each iterator is advanced to its next yield
+// and the yielded values are combined into a tuple.
 //
-// A zippered loop can have a single index variable, which will be a tuple,
-// or a tuple of variables like ``(i, j)``, each of which is initialized
-// with the value yielded by the corresponding iterator.
+// A zippered loop can have a single index variable, which will be a tuple
+// of the yielded values; or a tuple of variables like ``(i, j)``, each of
+// which is initialized with the value yielded by the corresponding iterator.
+//
+// In zippered loops, the first iterand controls the behavior of the loop,
+// and is referred to as the "leader".  Subsequent iterands must
+// each either match the number of iterations or else be unbounded, as in
+// this example.  When iterating over multidimensional domains and arrays
+// in a zippered iteration, they must match not only in terms of size, but
+// also shape (i.e., the size in each dimension).
 //
 writeln("Fibonacci Numbers");
 
-for (i, j) in zip(1.., fibonacci(10)) {
-  write("The ", i);
+for (i, j) in zip(fibonacci(10), 1..) {
+  write("The ", j);
 
-  select i {
+  select j {
     when 1 do write("st");
     when 2 do write("nd");
     when 3 do write("rd");
     otherwise write("th");
   }
 
-  writeln(" Fibonacci number is ", j);
+  writeln(" Fibonacci number is ", i);
 }
 
 writeln();

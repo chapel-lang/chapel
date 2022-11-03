@@ -484,7 +484,7 @@ class SparseBlockArr: BaseSparseArr {
     // Ensure it is legal to invoke the standalone iterator
     // on locA.myElems below.
     __primitive("method call resolves",
-                locArr[locArrDom.alignedLow]!.myElems._value, "these", tag) {
+                locArr[locArrDom.low]!.myElems._value, "these", tag) {
     coforall locA in locArr do on locA {
       // forward to sparse standalone iterator
       forall i in locA!.myElems {

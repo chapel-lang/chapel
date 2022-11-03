@@ -530,7 +530,7 @@ module ChapelRange {
      .. code-block:: chapel
 
        var r = 1..10 by -2;
-       writeln(r.alignedLow);
+       writeln(r.low);
 
      produces the output
 
@@ -543,18 +543,19 @@ module ChapelRange {
     if !hasLowBound() {
       compilerError("can't query the low bound of a range without one");
     }
-    return this.alignedLow;
+    return chpl_intToIdx(this.alignedLowAsInt);
   }
 
 
   /* Return the range's aligned low bound.  Note that this is a
      synonym for :proc:`range.low`.
   */
+  deprecated "'.alignedLow' is deprecated; please use '.low' instead"
   inline proc range.alignedLow: idxType {
     if !hasLowBound() {
       compilerError("can't query the low bound of a range without one");
     }
-    return chpl_intToIdx(this.alignedLowAsInt);
+    return this.low;
   }
 
   pragma "no doc"
@@ -602,7 +603,7 @@ module ChapelRange {
      .. code-block:: chapel
 
        var r = 1..10 by 2;
-       writeln(r.alignedHigh);
+       writeln(r.high);
 
      produces the output
 
@@ -617,19 +618,8 @@ module ChapelRange {
     if chpl__singleValIdxType(idxType) {
       if _low > _high { // avoid circularity of calling .size which calls .high
         warning("This range is empty and has a single-value idxType, so its high bound isn't trustworthy");
-        return this.alignedLow;
+        return this.low;
       }
-    }
-    return this.alignedHigh;
-  }
-
-
-  /* Return the range's aligned high bound.  Note that this is a
-     synonym for :proc:`range.high`.
-  */
-  inline proc range.alignedHigh: idxType {
-    if !hasHighBound() {
-      compilerError("can't query the high bound of a range without one");
     }
     if chpl__singleValIdxType(idxType) {
       if size == 0 {
@@ -638,6 +628,18 @@ module ChapelRange {
       }
     }
     return chpl_intToIdx(this.alignedHighAsInt);
+  }
+
+
+  /* Return the range's aligned high bound.  Note that this is a
+     synonym for :proc:`range.high`.
+  */
+  deprecated "'.alignedHigh' is deprecated; please use '.high' instead"
+  inline proc range.alignedHigh: idxType {
+    if !hasHighBound() {
+      compilerError("can't query the high bound of a range without one");
+    }
+    return this.high;
   }
 
   pragma "no doc"
@@ -921,10 +923,10 @@ module ChapelRange {
       if r1.stride != r2.stride then return false;
 
       if r1.hasLowBound() then
-        if r1.alignedLow != r2.alignedLow then return false;
+        if r1.low != r2.low then return false;
 
       if r1.hasHighBound() then
-        if r1.alignedHigh != r2.alignedHigh then return false;
+        if r1.high != r2.high then return false;
 
       return true;
     }
@@ -932,6 +934,34 @@ module ChapelRange {
 
   pragma "no doc"
   operator !=(r1: range(?), r2: range(?))  return !(r1 == r2);
+
+  pragma "no doc"
+  operator <(r1: range(?), r2: range(?))
+    where r1.boundedType != BoundedRangeType.bounded ||
+          r2.boundedType != BoundedRangeType.bounded {
+    compilerError("Unbounded ranges don't support comparisons other than '==' and '!='");
+  }
+
+  pragma "no doc"
+  operator >(r1: range(?), r2: range(?))
+    where r1.boundedType != BoundedRangeType.bounded ||
+          r2.boundedType != BoundedRangeType.bounded {
+    compilerError("Unbounded ranges don't support comparisons other than '==' and '!='");
+  }
+
+  pragma "no doc"
+  operator <=(r1: range(?), r2: range(?))
+    where r1.boundedType != BoundedRangeType.bounded ||
+          r2.boundedType != BoundedRangeType.bounded {
+    compilerError("Unbounded ranges don't support comparisons other than '==' and '!='");
+  }
+
+  pragma "no doc"
+  operator >=(r1: range(?), r2: range(?))
+    where r1.boundedType != BoundedRangeType.bounded ||
+          r2.boundedType != BoundedRangeType.bounded {
+    compilerError("Unbounded ranges don't support comparisons other than '==' and '!='");
+  }
 
   proc chpl_ident(r1: range(?), r2: range(?))
     where r1.idxType == r2.idxType &&
@@ -2297,7 +2327,7 @@ operator :(r: range(?), type t: range(?)) {
 
     // This iterator could be split into different cases depending on the
     // stride like the bounded iterators. However, all that gets you is the
-    // ability to use low/alignedLow over first. The additional code isn't
+    // ability to use .low over .first. The additional code isn't
     // worth it just for that.
     var i: intIdxType;
     const start = chpl__idxToInt(this.first);
