@@ -127,15 +127,15 @@ module SharedObject {
     /* attempt to atomically increment the strong reference count
 
      - if the current strong-count does not match 'expected', then 'expected'
-       is updated to whatever the current value is and 'false' is returned
+       is updated to whatever the current value is, and 'false' is returned
      - if they do match, the strong-count is incremented, the total-count is
-       incremented and 'true' is returned.
+       incremented, and 'true' is returned.
 
      This method is used to safely upgrade a 'weakPointer' to a 'shared'
      reference. This is done by calling the method in a while-loop that can
      either fail if the expected value drops to zero (i.e., the last 'shared'
      was dropped by someone else during the upgrade attempt), or loop until
-     the value can be incremented safely (s.t. all there are no conflicts
+     the value can be incremented safely (s.t. there are no conflicts
      between concurrent upgrades)
     */
     proc tryRetainWeak(ref expected: int) {
@@ -724,13 +724,13 @@ module SharedObject {
   module WeakPointer {
     /*
         The weak pointer type is used to provide a reference to a shared class
-        object without forcing it to stay allocated.
+        object without requiring it to stay allocated.
 
-        A "strong" shared reference to the class instance can be obtained by
-        casting the weakPointer to a `shared t` or a `shared t?`. If the
-        underlying class has already been deinitialized, the cast will either
-        throw a `NilClassError` or return `nil` depending on the specified
-        type.
+        A "strong" shared reference to the class instance can be obtained via
+        the :proc:`weakPointer.upgrade` method, or by casting the weakPointer
+        to a ``shared t`` or a ``shared t?``. If the underlying class is not
+        valid (i.e., its shared reference count has dropped to zero and it has
+        been deinitialized) the upgrade attempt will fail.
 
         Weak pointers are implemented using task-safe reference counting.
     */
@@ -887,7 +887,7 @@ module SharedObject {
         }
 
         /*
-          Get the number of shared variables currently pointing at the same
+          Get the number of ``shared`` variables currently pointing at the same
           ``shared`` class as this ``weakPointer``
 
           .. Warning
@@ -906,6 +906,8 @@ module SharedObject {
 
 
     // ---------------- Cast Operators ----------------
+
+    // TODO, add "nil from arg" pragmas where necessary
 
     /*
         Cast a weak pointer to a nilable class type.
@@ -985,7 +987,11 @@ module SharedObject {
     /*
         Assign one existing ``weakPointer`` to an other.
 
-        Decrements the weak-reference count of the ``lhs`` pointer
+        Decrements the weak-reference count of the ``lhs`` pointer.
+
+        This will result in the deinitialization of the ``lhs``'s backing
+        pointer if it is the last ``weakPointer`` or ``shared`` that points
+        to its object.
     */
     inline operator =(ref lhs: weakPointer, rhs: weakPointer)
       where !(isNonNilableClass(lhs) && isNilableClass(rhs))
