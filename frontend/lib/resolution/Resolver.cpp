@@ -1564,6 +1564,10 @@ void Resolver::enterScope(const AstNode* ast) {
   if (auto d = ast->toDecl()) {
     declStack.push_back(d);
   }
+  tagTracker[ast->tag()] += 1;
+  if (ast->isLoop()) {
+    tagTracker[AstTag::START_Loop] += 1;
+  }
 }
 void Resolver::exitScope(const AstNode* ast) {
   if (createsScope(ast->tag())) {
@@ -1574,6 +1578,14 @@ void Resolver::exitScope(const AstNode* ast) {
     assert(!declStack.empty());
     declStack.pop_back();
   }
+  tagTracker[ast->tag()] -= 1;
+  if (ast->isLoop()) {
+    tagTracker[AstTag::START_Loop] -= 1;
+  }
+}
+
+bool Resolver::isInsideTag(uast::asttags::AstTag tag) const {
+  return tagTracker[tag] > 0;
 }
 
 bool Resolver::enter(const uast::Conditional* cond) {
