@@ -759,4 +759,12 @@ void ErrorTaskVarNameNotIdent::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, loc, "expected identifier for task variable name.");
 }
 
+/* lexer errors */
+
+void ErrorStringLiteralEOL::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc,
+             "end-of-line in a string literal without a preceding backslash");
+}
+
 } // end namespace 'chpl'

@@ -24,6 +24,8 @@
 *                                                                           *
 ************************************* | ************************************/
 
+#include "chpl/framework/ErrorBase.h"
+
 #include <algorithm>
 #include <cctype>
 #include <climits>
@@ -32,6 +34,58 @@
 #include <string>
 
 namespace chpl {
+
+
+/**
+  Helper macro(s) to report errors from the lexer, including retrieving the
+  global Context and lexer-specific location adjustments.
+ */
+#define CHPL_LEXER_REPORT(SCANNER__, NLINES__, NCOLS__, NAME__, EINFO__...) \
+  CHPL_LEXER_REPORT_ACTUAL(SCANNER__, NLINES__, NCOLS__,                    \
+                           /* MOVE_TO_END__ */ false, NAME__, ##EINFO__)
+
+// this variant moves the beginning of the reported location to its current end
+#define CHPL_LEXER_REPORT_END(SCANNER__, NLINES__, NCOLS__, NAME__, \
+                              EINFO__...)                           \
+  CHPL_LEXER_REPORT_ACTUAL(SCANNER__, NLINES__, NCOLS__,            \
+                           /* MOVE_TO_END__ */ true, NAME__, ##EINFO__)
+
+#define CHPL_LEXER_REPORT_ACTUAL(SCANNER__, NLINES__, NCOLS__, MOVE_TO_END__, \
+                                 NAME__, EINFO__...)                          \
+  {                                                                           \
+    ParserContext* pContext = yyget_extra(SCANNER__);                         \
+    YYLTYPE loc = *yyget_lloc(SCANNER__);                                     \
+    updateLocation(&loc, NLINES__, NCOLS__);                                  \
+    if (MOVE_TO_END__) loc = pContext->makeLocationAtLast(loc);               \
+    pContext->context()->report(Error##NAME__::get(                           \
+        pContext->context(),                                                  \
+        std::make_tuple(pContext->convertLocation(loc), ##EINFO__)));         \
+  }
+
+static void updateLocation(YYLTYPE* loc, int nLines, int nCols);
+
+static void
+noteErrInString(yyscan_t scanner, int nLines, int nCols, const char* msg,
+                bool moveLocToEnd=false) {
+  ParserContext* context = yyget_extra(scanner);
+  YYLTYPE* loc = yyget_lloc(scanner);
+  YYLTYPE myloc = *loc;
+  updateLocation(&myloc, nLines, nCols);
+  if (moveLocToEnd) myloc = context->makeLocationAtLast(myloc);
+  context->noteError(myloc, msg);
+}
+
+static void
+noteNoteInString(yyscan_t scanner, int nLines, int nCols, const char* msg,
+                bool moveLocToEnd=false) {
+  ParserContext* context = yyget_extra(scanner);
+  YYLTYPE* loc = yyget_lloc(scanner);
+  YYLTYPE myloc = *loc;
+  updateLocation(&myloc, nLines, nCols);
+  if (moveLocToEnd) myloc = context->makeLocationAtLast(myloc);
+  context->noteNote(myloc, msg);
+}
+
 
 static int   getNextYYChar(yyscan_t scanner);
 
@@ -203,28 +257,6 @@ static int processTripleStringLiteral(yyscan_t scanner,
   return type;
 }
 
-static void
-noteErrInString(yyscan_t scanner, int nLines, int nCols, const char* msg,
-                bool moveLocToEnd=false) {
-  ParserContext* context = yyget_extra(scanner);
-  YYLTYPE* loc = yyget_lloc(scanner);
-  YYLTYPE myloc = *loc;
-  updateLocation(&myloc, nLines, nCols);
-  if (moveLocToEnd) myloc = context->makeLocationAtLast(myloc);
-  context->noteError(myloc, msg);
-}
-
-static void
-noteNoteInString(yyscan_t scanner, int nLines, int nCols, const char* msg,
-                bool moveLocToEnd=false) {
-  ParserContext* context = yyget_extra(scanner);
-  YYLTYPE* loc = yyget_lloc(scanner);
-  YYLTYPE myloc = *loc;
-  updateLocation(&myloc, nLines, nCols);
-  if (moveLocToEnd) myloc = context->makeLocationAtLast(myloc);
-  context->noteNote(myloc, msg);
-}
-
 static
 char simpleEscape(int c) {
   if (c == '\'')
@@ -279,7 +311,7 @@ static std::string eatStringLiteral(yyscan_t scanner,
     if (c == '\n') {
       // TODO: string literals with newline after backslash
       // are not documented in the spec
-      noteErrInString(scanner, nLines, nCols, "end-of-line in a string literal without a preceding backslash");
+      CHPL_LEXER_REPORT(scanner, nLines, nCols, StringLiteralEOL);
       isErroneousOut = true;
       s += c;
       nLines++;

@@ -129,3 +129,6 @@ ERROR_CLASS(LabelIneligibleStmt, const Location)
 ERROR_CLASS(VarargNotGrouped, const Location)
 ERROR_CLASS(ArrayReturnInvalidDom, const Location)
 ERROR_CLASS(TaskVarNameNotIdent, const Location)
+
+/* lexer errors */
+ERROR_CLASS(StringLiteralEOL, const Location)
