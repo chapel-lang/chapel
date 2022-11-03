@@ -21,7 +21,7 @@ jobs:
   make_check:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:dev
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -37,7 +37,7 @@ jobs:
   make_doc:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:dev
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -62,7 +62,7 @@ jobs:
   make_mason:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:dev
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -83,7 +83,7 @@ jobs:
   check_compiler_dyno_tests:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:dev
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}
@@ -102,7 +102,7 @@ jobs:
   check_annotations_rt_calls:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:dev
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.github_token }}

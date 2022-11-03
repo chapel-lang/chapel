@@ -46,11 +46,11 @@ jobs:
         with:
           file: ${{ env.DOCKERFILE }}
           # example: ghcr.io/chapel-lang/chapel-github-ci:latest
-          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:dev
       - name: Push Docker Image if on main
-        if: github.repository_owner == 'chapel-lang' && ((github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push'))
+        if: github.repository_owner == 'chapel-lang'
         uses: docker/build-push-action@v3
         with:
           file: ${{ env.DOCKERFILE }}
           push: true
-          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:dev
