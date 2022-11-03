@@ -246,7 +246,7 @@ class Function final : public NamedDecl {
   bool isParenless() const { return parenless_; }
 
   bool isAnonymous() const {
-    auto ret = (kind() == LAMBDA || name() == "proc");
+    bool ret = name().isEmpty() || kind() == LAMBDA;
     return ret;
   }
 

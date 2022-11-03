@@ -23,11 +23,10 @@
 
 #ifdef HAVE_LLVM
 
-#include <utility>
-
 #include "llvmVer.h"
-
 #include "llvm/IR/IRBuilder.h"
+
+#include <utility>
 
 struct PromotedPair {
   llvm::Value* a;

@@ -969,23 +969,32 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
     CallExpr* call = toCallExpr(parent);
 
     if (call == NULL || call->baseExpr != usymExpr) {
-      CallExpr* primFn = NULL;
+      CallExpr* prim = NULL;
 
-      // Avoid duplicate wrapping with PRIM_CAPTURE_FN_*
-      if (call != NULL && (call->isPrimitive(PRIM_CAPTURE_FN_FOR_C) ||
-                           call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL)))
+      // Avoid duplicate wrapping.
+      if (call && (call->isPrimitive(PRIM_CAPTURE_FN) ||
+                   call->isPrimitive(PRIM_CAPTURE_FN_TO_CLOSURE))) {
         return;
-
-      // Wrap the FN in the appropriate way
-      if (call != NULL && call->isNamed("c_ptrTo") == true) {
-        primFn = new CallExpr(PRIM_CAPTURE_FN_FOR_C);
-      } else {
-        primFn = new CallExpr(PRIM_CAPTURE_FN_FOR_CHPL);
       }
 
-      usymExpr->replace(primFn);
+      // Right now we need this primitive because the scope resolver is
+      // not reporting the correct number of lookups for overloaded
+      // function symbols.
+      prim = new CallExpr(PRIM_CAPTURE_FN, usymExpr->copy());
 
-      primFn->insertAtTail(usymExpr);
+      // This business is necessary because of normalizing. If we are the
+      // child of a "c_ptrTo" call, we need to know to do some pattern
+      // matching later. This used to be 'PRIM_CAPTURE_FN_FOR_C', but I've
+      // bundled it into the main capture primitive because the semantics
+      // of capturing C pointers to functions may change (and in general
+      // it's nicer to intercept all the function capture primitives in a
+      // single place during resolution).
+      if (call && call->isNamed("c_ptrTo")) {
+        prim->insertAtTail(new SymExpr(gTrue));
+      }
+
+      INT_ASSERT(prim);
+      usymExpr->replace(prim);
 
     } else {
       updateMethod(usymExpr, sym);

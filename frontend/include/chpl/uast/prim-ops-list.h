@@ -250,8 +250,8 @@ PRIMITIVE_G(PRIVATE_BROADCAST, "_private_broadcast")
 
 PRIMITIVE_G(INT_ERROR, "_internal_error")
 
-PRIMITIVE_R(CAPTURE_FN_FOR_CHPL, "capture fn for chpl")
-PRIMITIVE_R(CAPTURE_FN_FOR_C, "capture fn for C")
+PRIMITIVE_R(CAPTURE_FN, "capture fn")
+PRIMITIVE_R(CAPTURE_FN_TO_CLOSURE, "capture fn to closure")
 PRIMITIVE_R(CREATE_FN_TYPE, "create fn type")
 
 PRIMITIVE_G(STRING_COMPARE, "string_compare")
@@ -267,6 +267,7 @@ PRIMITIVE_G(STRING_COPY, "string_copy")
 PRIMITIVE_G(STRING_SELECT, "string_select")
 
 PRIMITIVE_G(CAST_TO_VOID_STAR, "cast_to_void_star")
+PRIMITIVE_G(CAST_TO_TYPE, "cast_to_type")
 
 PRIMITIVE_G(SLEEP, "sleep")
 PRIMITIVE_G(REAL_TO_INT, "real2int")

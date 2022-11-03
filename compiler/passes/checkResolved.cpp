@@ -24,10 +24,10 @@
 
 #include "astutil.h"
 #include "CatchStmt.h"
+#include "closures.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
 #include "expr.h"
-#include "firstClassFunctions.h"
 #include "iterator.h"
 #include "stmt.h"
 #include "stlUtil.h"
@@ -617,7 +617,7 @@ static bool isErroneousExternExportArgIntent(ArgSymbol* formal) {
   if (valType == dtExternalArray || valType == dtOpaqueArray)
     return false;
 
-  if (valType->symbol->hasFlag(FLAG_FUNCTION_CLASS)) return false;
+  if (valType->symbol->hasFlag(FLAG_CLOSURE_CLASS)) return false;
 
   return isRecord(valType) &&
          (formal->originalIntent == INTENT_BLANK ||

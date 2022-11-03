@@ -121,7 +121,7 @@ void printStatistics(const char* pass) {
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nShadowVarSymbol+nTypeSymbol+nFnSymbol+nInterfaceSymbol+nEnumSymbol+nLabelSymbol+nTemporaryConversionSymbol;
   int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kShadowVarSymbol+kTypeSymbol+kFnSymbol+kInterfaceSymbol+kEnumSymbol+kLabelSymbol+kTemporaryConversionSymbol;
   int nType = nPrimitiveType+nConstrainedType+nEnumType+nAggregateType+nDecoratedClassType;
-  int kType = kPrimitiveType+kConstrainedType+kEnumType+kAggregateType+kDecoratedClassType;
+  int kType = kPrimitiveType+kConstrainedType+kEnumType+kAggregateType+kFunctionType+kDecoratedClassType;
 
   fprintf(stderr, "%7d asts (%6dK) %s\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType, pass);
 
@@ -490,6 +490,7 @@ const char* BaseAST::astTagAsString() const {
     case E_ConstrainedType:    return "ConstrainedType";
     case E_EnumType:           return "EnumType";
     case E_AggregateType:      return "AggregateType";
+    case E_FunctionType:       return "FunctionType";
     case E_DecoratedClassType: return "DecoratedClassType";
     case E_ModuleSymbol:       return "ModuleSymbol";
     case E_VarSymbol:          return "VarSymbol";

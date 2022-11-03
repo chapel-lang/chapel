@@ -1718,32 +1718,6 @@ destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
   }
 }
 
-FnSymbol* buildLambda(FnSymbol *fn) {
-  static unsigned int nextId = 0;
-  char buffer[100];
-
-  /*
-   * The snprintf function is used to prevent a buffer overflow from occurring.
-   * Technically, an overflow can only occur if Chapel is compiled on a machine
-   * where an unsigned integer can represent numbers larger than 10^86, but it
-   * is better to guard against this behavior then leaving someone wondering
-   * why we didn't.
-   */
-  if (snprintf(buffer, 100, "chpl_lambda_%i", nextId++) >= 100) {
-    INT_FATAL("Too many lambdas.");
-  }
-
-  if (!fn) {
-    fn = new FnSymbol(astr(buffer));
-  } else {
-    fn->name = astr(buffer);
-    fn->cname = fn->name;
-  }
-
-  fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
-  return fn;
-}
-
 void setupExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr,
                                    FnSymbol* fn) {
   const char* cname = "";

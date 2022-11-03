@@ -107,6 +107,7 @@ public:
   FnSymbol*       resolvedFunction()                                     const;
   void            setResolvedFunction(FnSymbol* fn);
   FnSymbol*       resolvedOrVirtualFunction()                            const;
+  bool            isIndirectFunctionCall()                               const;
 
   FnSymbol*       theFnSymbol()                                          const;
 
@@ -138,6 +139,7 @@ private:
 
   GenRet          codegenBasicPrimitiveExpr()                            const;
 
+public:
   bool            isRefExternStarTuple(Symbol* formal, Expr* actual)     const;
 };
 
@@ -192,6 +194,13 @@ inline bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) const {
 
 inline bool CallExpr::isPrimitive(const char* primitiveName) const {
   return primitive && !strcmp(primitive->name, primitiveName);
+}
+
+inline bool CallExpr::isIndirectFunctionCall() const {
+  if (!baseExpr) return false;
+  if (resolvedFunction()) return false;
+  if (isFunctionType(baseExpr->qualType().type())) return true;
+  return false;
 }
 
 inline int CallExpr::numActuals() const {

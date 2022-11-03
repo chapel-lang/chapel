@@ -119,6 +119,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_TO_FOLLOWER:
     case PRIM_TO_STANDALONE:
     case PRIM_CAST_TO_VOID_STAR:
+    case PRIM_CAST_TO_TYPE:
     case PRIM_REAL_TO_INT:
     case PRIM_OBJECT_TO_INT:
     case PRIM_COERCE:
@@ -342,8 +343,8 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_REGISTER_GLOBAL_VAR:
     case PRIM_BROADCAST_GLOBAL_VARS:
     case PRIM_PRIVATE_BROADCAST:
-    case PRIM_CAPTURE_FN_FOR_CHPL:
-    case PRIM_CAPTURE_FN_FOR_C:
+    case PRIM_CAPTURE_FN:
+    case PRIM_CAPTURE_FN_TO_CLOSURE:
     case PRIM_CREATE_FN_TYPE:
     case PRIM_GET_USER_LINE:
     case PRIM_GET_USER_FILE:

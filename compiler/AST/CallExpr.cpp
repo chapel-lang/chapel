@@ -489,6 +489,10 @@ QualifiedType CallExpr::qualType(void) {
       }
     }
 
+    if (auto fnType = toFunctionType(se->symbol()->type)) {
+      retType = fnType->returnType();
+    }
+
     retval = QualifiedType(QUAL_UNKNOWN, retType);
 
   } else {

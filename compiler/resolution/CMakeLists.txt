@@ -21,9 +21,9 @@ set(SRCS
     callDestructors.cpp
     callInfo.cpp
     cleanups.cpp
+    closures.cpp
     cullOverReferences.cpp
     expandVarArgs.cpp
-    firstClassFunctions.cpp
     fixupExports.cpp
     functionResolution.cpp
     generics.cpp

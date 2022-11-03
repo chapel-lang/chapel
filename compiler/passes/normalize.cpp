@@ -768,9 +768,9 @@ void checkUseBeforeDefs(FnSymbol* fn) {
         CallExpr* call = toCallExpr(use->parentExpr);
 
         if (call == NULL ||
-            (call->baseExpr                              != use   &&
-             call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) == false &&
-             call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)    == false)) {
+            (call->baseExpr != use &&
+             !call->isPrimitive(PRIM_CAPTURE_FN) &&
+             !call->isPrimitive(PRIM_CAPTURE_FN_TO_CLOSURE))) {
           if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
             const char* name = use->unresolved;
 
@@ -1563,8 +1563,9 @@ Expr* partOfNonNormalizableExpr(Expr* expr) {
   // Anything contained in a non-normalizable expr is non-normalizable.
   for (Expr* node = expr; node; node = node->parentExpr) {
     if (CallExpr* call = toCallExpr(node)) {
-      const bool isResolvePrim = call->isPrimitive(PRIM_RESOLVES);
-      if (isResolvePrim) return node;
+      Expr* root = nullptr;
+      if (call->isPrimitive(PRIM_RESOLVES)) root = call;
+      if (root) return root;
     }
   }
 

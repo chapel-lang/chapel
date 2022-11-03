@@ -1,5 +1,5 @@
-captureGenericFn.chpl:23: error: 'f1' cannot be captured as a value because it is a generic function
-captureGenericFn.chpl:24: error: 'f2' cannot be captured as a value because it is a generic function
-captureGenericFn.chpl:25: error: 'f3' cannot be captured as a value because it is a generic function
-captureGenericFn.chpl:26: error: 'f4' cannot be captured as a value because it is a generic function
+captureGenericFn.chpl:23: error: the proc 'f1' is generic and cannot be captured
+captureGenericFn.chpl:24: error: the proc 'f2' is generic and cannot be captured
+captureGenericFn.chpl:25: error: the proc 'f3' is generic and cannot be captured
+captureGenericFn.chpl:26: error: the proc 'f4' is generic and cannot be captured
 captureGenericFn.chpl:28: error: illegal access of first class function

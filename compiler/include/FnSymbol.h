@@ -21,20 +21,13 @@
 #ifndef _FN_SYMBOL_H_
 #define _FN_SYMBOL_H_
 
+#include "intents.h"
 #include "library.h"
 #include "symbol.h"
 
 class IteratorGroup;     // see iterator.h
 class GenericsCacheInfo; // see caches.h
 void cleanupCacheInfo(FnSymbol* fn);
-
-enum RetTag {
-  RET_VALUE,
-  RET_REF,
-  RET_CONST_REF,
-  RET_PARAM,
-  RET_TYPE
-};
 
 enum TagGenericResult {
   TGR_ALREADY_TAGGED,
@@ -237,6 +230,8 @@ public:
   bool                       isMethodOnClass()                           const;
   bool                       isMethodOnRecord()                          const;
   bool                       isTypeMethod()                              const;
+  bool                       isSignature()                               const;
+  bool                       isAnonymous()                               const;
 
   void                       setMethod(bool value);
 
@@ -259,6 +254,8 @@ public:
   void                       addInterfaceConstraint(IfcConstraint* icon);
 
   Type*                      getReceiverType()                           const;
+
+  FunctionType*              getType()                                   const;
 
   bool                       isIterator()                                const;
 

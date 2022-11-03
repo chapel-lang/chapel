@@ -34,6 +34,7 @@
 #include "resolveIntents.h"
 #include "resolution.h"
 #include "stringutil.h"
+#include "type.h"
 #include "wellknown.h"
 #include "chpl/uast/OpCall.h"
 
@@ -42,6 +43,7 @@
 #include <algorithm>
 #include <regex>
 #include <cstring>
+#include <map>
 
 //
 // The function that represents the compiler-generated entry point
@@ -1197,6 +1199,25 @@ bool isOuterVarOfShadowVar(Expr* expr) {
 *                                                                   *
 *                                                                   *
 ********************************* | ********************************/
+
+#ifdef HAVE_LLVM
+static std::map<FunctionType*, llvm::FunctionType*>
+chapelFunctionTypeToLlvmFunctionType;
+
+bool llvmMapUnderlyingFunctionType(FunctionType* k, llvm::FunctionType* v) {
+  if (chapelFunctionTypeToLlvmFunctionType.count(k)) return false;
+  chapelFunctionTypeToLlvmFunctionType[k] = v;
+  return true;
+}
+
+llvm::FunctionType* llvmGetUnderlyingFunctionType(FunctionType* t) {
+  auto it = chapelFunctionTypeToLlvmFunctionType.find(t);
+  if (it != chapelFunctionTypeToLlvmFunctionType.end()) {
+    return it->second;
+  }
+  return nullptr;
+}
+#endif
 
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),

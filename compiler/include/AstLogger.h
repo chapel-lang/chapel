@@ -47,6 +47,7 @@ public:
   void   exitEnumType        (EnumType*          node) override;
   void   visitConstrainedType(ConstrainedType*   node) override;
   void   visitPrimType       (PrimitiveType*     node) override;
+  void   visitFunctionType   (FunctionType*      node) override;
 
   //
   // The sub-classes of Symbol

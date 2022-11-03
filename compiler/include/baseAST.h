@@ -54,6 +54,7 @@
   macro(ConstrainedType) sep                       \
   macro(EnumType) sep                              \
   macro(AggregateType) sep                         \
+  macro(FunctionType) sep                          \
   macro(DecoratedClassType) sep                    \
                                                    \
   macro(ModuleSymbol) sep                          \
@@ -187,6 +188,7 @@ enum AstTag {
   E_ConstrainedType,
   E_EnumType,
   E_AggregateType,
+  E_FunctionType,
   E_DecoratedClassType
 };
 
@@ -354,6 +356,7 @@ def_is_ast(EnumSymbol)
 def_is_ast(LabelSymbol)
 def_is_ast(TemporaryConversionSymbol)
 def_is_ast(PrimitiveType)
+def_is_ast(FunctionType)
 def_is_ast(ConstrainedType)
 def_is_ast(EnumType)
 def_is_ast(AggregateType)
@@ -412,6 +415,7 @@ def_to_ast(LabelSymbol)
 def_to_ast(TemporaryConversionSymbol)
 def_to_ast(Symbol)
 def_to_ast(PrimitiveType)
+def_to_ast(FunctionType)
 def_to_ast(ConstrainedType)
 def_to_ast(EnumType)
 def_to_ast(AggregateType)

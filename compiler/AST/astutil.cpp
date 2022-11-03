@@ -23,9 +23,9 @@
 #include "baseAST.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "closures.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
-#include "firstClassFunctions.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "IfExpr.h"
@@ -534,7 +534,7 @@ int isDefAndOrUse(SymExpr* se) {
   const int USE = 2;
   const int DEF_USE = 3;
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
-    bool isFirstActual = (call->get(1) == se);
+    bool isFirstActual = (call->numActuals() && call->get(1) == se);
 
     // TODO: PRIM_SET_MEMBER, PRIM_SET_SVEC_MEMBER
 
@@ -844,13 +844,13 @@ bool isExternType(Type* t) {
          ts->hasFlag(FLAG_C_ARRAY) ||
          ts->hasFlag(FLAG_EXTERN) ||
          ts->hasFlag(FLAG_EXPORT) || // these don't exist yet
-         fcfIsValidExternType(t);
+         closures::isClosureValidExternType(t);
 }
 
 bool isExportableType(Type* t) {
 
   // TODO: Exporting will need a different representation of FCF types.
-  if (t->symbol->hasFlag(FLAG_FUNCTION_CLASS)) return false;
+  if (t->symbol->hasFlag(FLAG_CLOSURE_CLASS)) return false;
   if (t == dtString || t == dtBytes) {
     // string/bytes are OK in export functions
     // because they are converted to wrapper

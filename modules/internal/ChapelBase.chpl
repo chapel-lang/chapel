@@ -64,6 +64,13 @@ module ChapelBase {
 
   enum iterKind {leader, follower, standalone};
 
+  // This is a compatability flag to maintain old behavior for applications
+  // that rely on it (e.g., Arkouda). The tests for new features will run
+  // with this set to FALSE. At a certain point the old behavior will be
+  // deprecated, and this flag will be removed.
+  // TODO: Move to a separate module if we add closure stuff to module code.
+  config param legacyFirstClassFunctions = true;
+
   //
   // assignment on primitive types
   //
