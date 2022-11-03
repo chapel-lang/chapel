@@ -759,6 +759,30 @@ void ErrorTaskVarNameNotIdent::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, loc, "expected identifier for task variable name.");
 }
 
+void ErrorBisonMemoryExhausted::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "memory exhausted while parsing.");
+}
+
+void ErrorBisonUnknownError::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto errorMessage = std::get<1>(info);
+  auto nearestToken = std::get<2>(info);
+  wr.heading(kind_, type_, loc,
+             "unknown error from Bison parser: ", errorMessage, ".");
+  wr.note(loc, "Nearest token when error was encountered: ", nearestToken);
+}
+
+void ErrorBisonSyntaxError::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto errorMessage = std::get<1>(info);
+  auto nearestToken = std::get<2>(info);
+  wr.heading(kind_, type_, loc, "unspecified syntax error from Bison parser",
+             (errorMessage.empty() ? ". No error message provided."
+                                     : ": " + errorMessage + "."));
+  wr.note(loc, "Nearest token when error was encountered: ", nearestToken);
+}
+
 /* lexer errors */
 
 void ErrorStringLiteralEOL::write(ErrorWriterBase& wr) const {

@@ -192,11 +192,6 @@ struct ParserContext {
     };
   }
 
-  void noteSyntaxError(ParserError error) {
-    assert(error.kind == ErrorMessage::SYNTAX);
-    errors.push_back(std::move(error));
-  }
-
   void noteComment(YYLTYPE loc, const char* data, long size);
   std::vector<ParserComment>* gatherComments(YYLTYPE location);
   void clearCommentsBefore(YYLTYPE loc);
