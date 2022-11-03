@@ -45,16 +45,56 @@ module Aggregator {
       bufferSize = buffSize;
     }
 
-    // How to avoid race in adding updates to buffer?
-
-    // TODO: impl
+    // TODO: document
     proc update(key: client.keyType) {
-      compilerError("unimplemented");
+      var loc: int = client.getLocaleForKey(key);
+
+      var idx = 0;
+      while (idx < bufferSize) {
+        if buffers[loc][idx].isFull {
+          idx += 1;
+        } else {
+          buffers[loc][idx].writeEF(key);
+          return;
+        }
+      }
+
+      if (idx == bufferSize) {
+        flush();
+        buffers[loc][0].writeEF(key);
+      }
     }
 
-    // TODO: impl
+    // TODO: document
     proc flush() {
-      compilerError("unimplemented");
+      for loc in client.locDom {
+        on loc {
+          client.locks[loc].lock();
+          var max = 0;
+          var arrCopy: [0..<bufferSize] client.keyType;
+          for i in arrCopy.domain {
+            if buffers[loc][i].isFull {
+              arrCopy[i]  = buffers[loc][i].readFE();
+              max = i;
+            }
+          }
+
+          for i in arrCopy.domain {
+            if (i <= max) {
+              if (client.containsUnlocked(arrCopy[i])) {
+                var curVal = try! client.getValueUnlocked(arrCopy[i]);
+                this.updater(arrCopy[i], curVal);
+                client.setUnlocked(arrCopy[i], curVal);
+              } else {
+                var newVal = 1;
+                client.addUnlocked(arrCopy[i], newVal);
+              }
+            }
+          }
+
+          client.locks[loc].unlock();
+        }
+      }
     }
 
     proc deinit() {

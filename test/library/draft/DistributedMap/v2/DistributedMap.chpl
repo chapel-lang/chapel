@@ -758,7 +758,7 @@ module DistributedMap {
     // should be performed on the value stored by the key.  The aggregator
     // will handle putting its contents into the map using a lower-level
     // interface.
-    proc updateAggregator(updater) {
+    proc updateAggregator(in updater) {
       return new aggregator(this, updater);
     }
 
