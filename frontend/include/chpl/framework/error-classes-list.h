@@ -132,7 +132,7 @@ ERROR_CLASS(TaskVarNameNotIdent, const Location)
 // Bison* errors are reported by the Bison parser to yyerror
 ERROR_CLASS(BisonMemoryExhausted, const Location)
 ERROR_CLASS(BisonUnknownError, const Location, std::string, std::string)
-ERROR_CLASS(BisonSyntaxError, const Location, std::string, std::string)
+ERROR_CLASS(BisonSyntaxError, const Location, std::string)
 
 /* lexer errors */
 ERROR_CLASS(StringLiteralEOL, const Location)

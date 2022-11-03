@@ -43,15 +43,15 @@ void yychpl_error(YYLTYPE*       loc,
                   const char*    errorMessage) {
   auto errorKind = determineErrorKind(errorMessage);
   auto nearestToken = std::string(yychpl_get_text(context->scanner));
-  auto err = std::string(errorMessage);
 
   switch (errorKind) {
     case EMPTY_ERROR_MESSAGE:
     case SYNTAX_ERROR:
-      CHPL_PARSER_REPORT(context, BisonSyntaxError, *loc, err, nearestToken);
+      CHPL_PARSER_REPORT(context, BisonSyntaxError, *loc, nearestToken);
       break;
     case UNKNOWN:
-      CHPL_PARSER_REPORT(context, BisonUnknownError, *loc, err, nearestToken);
+      CHPL_PARSER_REPORT(context, BisonUnknownError, *loc,
+                         std::string(errorMessage), nearestToken);
       break;
     case MEMORY_EXHAUSTED:
       CHPL_PARSER_REPORT(context, BisonMemoryExhausted, *loc);
