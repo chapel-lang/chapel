@@ -22,6 +22,7 @@
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/ErrorBase.h"
+#include "chpl/framework/mark-functions.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Comment.h"
@@ -139,6 +140,8 @@ void BuilderResult::mark(Context* context) const {
   for (const Location& loc : commentIdToLocation_) {
     loc.mark(context);
   }
+
+  chpl::mark<decltype(errors_)>{}(context, errors_);
 
   // update the filePathForModuleName query
   BuilderResult::updateFilePaths(context, *this);
