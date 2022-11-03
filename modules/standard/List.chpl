@@ -1730,20 +1730,20 @@ module List {
 
       if isBinary {
         // Write the number of elements
-        ch._write(_size);
+        ch.write(_size);
       } else {
         ch._writeLiteral("[");
       }
 
       for i in 0..(_size - 2) {
-        ch._write(_getRef(i));
+        ch.write(_getRef(i));
         if !isBinary {
           ch._writeLiteral(", ");
         }
       }
 
       if _size > 0 then
-        ch._write(_getRef(_size-1));
+        ch.write(_getRef(_size-1));
 
       if !isBinary {
         ch._writeLiteral("]");

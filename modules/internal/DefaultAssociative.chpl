@@ -109,9 +109,9 @@ module DefaultAssociative {
       const binary = f.binary();
 
       if binary {
-        f._write(dsiNumIndices);
+        f.write(dsiNumIndices);
         for idx in this {
-          f._write(idx);
+          f.write(idx);
         }
       } else {
         var first = true;
@@ -121,7 +121,7 @@ module DefaultAssociative {
             first = false;
           else
             f._writeLiteral(", ");
-          f._write(idx);
+          f.write(idx);
         }
         f._writeLiteral("}");
       }
@@ -661,11 +661,11 @@ module DefaultAssociative {
         else if isjson || ischpl then rwLiteral(", ");
 
         if f.writing && ischpl {
-          f._write(key);
+          f.write(key);
           f._writeLiteral(" => ");
         }
 
-        if f.writing then f._write(val);
+        if f.writing then f.write(val);
         else val = f.read(eltType);
       }
 
@@ -868,11 +868,11 @@ module DefaultAssociative {
       else if isjson || ischpl then rwLiteral(", ");
 
       if f.writing && ischpl {
-        f._write(key);
+        f.write(key);
         f._writeLiteral(" => ");
       }
 
-      if f.writing then f._write(arr.dsiAccess(key));
+      if f.writing then f.write(arr.dsiAccess(key));
       else arr.dsiAccess(key) = f.read(arr.eltType);
     }
 

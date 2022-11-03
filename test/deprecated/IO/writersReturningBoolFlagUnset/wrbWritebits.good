@@ -1,1 +1,0 @@
-wrbWritebits.chpl:4: error: illegal use of boolean return value from 'writebits'. Note: this functionality is deprecated; recompile with -sWritersReturnBool=true to continue using the deprecated behavior.

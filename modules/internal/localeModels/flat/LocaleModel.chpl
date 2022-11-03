@@ -183,7 +183,7 @@ module LocaleModel {
     proc local_name() return "rootLocale";
 
     override proc writeThis(f) throws {
-      f._write(name);
+      f.write(name);
     }
 
     override proc getChildCount() return this.myLocaleSpace.size;

@@ -1061,45 +1061,45 @@ module UnitTest {
         separator2 = "-"* 70;
 
     proc startTest(test) throws {
-      stdout._writeln(test: string);
+      stdout.writeln(test: string);
     }
 
     proc addError(test, errMsg) throws {
-      stdout._writeln("Flavour: ERROR");
+      stdout.writeln("Flavour: ERROR");
       PrintError(errMsg);
     }
 
     proc addFailure(test, errMsg) throws {
-      stdout._writeln("Flavour: FAIL");
+      stdout.writeln("Flavour: FAIL");
       PrintError(errMsg);
     }
 
     proc addSuccess(test) throws {
-      stdout._writeln("Flavour: OK");
-      stdout._writeln(this.separator1);
-      stdout._writeln(this.separator2);
+      stdout.writeln("Flavour: OK");
+      stdout.writeln(this.separator1);
+      stdout.writeln(this.separator2);
     }
 
     proc addSkip(test, reason) throws {
-      stdout._writeln("Flavour: SKIPPED");
+      stdout.writeln("Flavour: SKIPPED");
       PrintError(reason);
     }
 
     proc addIncorrectNumLocales(test, reason) throws {
-      stdout._writeln("Flavour: IncorrectNumLocales");
+      stdout.writeln("Flavour: IncorrectNumLocales");
       PrintError(reason);
     }
 
     proc dependencyNotMet(test) throws {
-      stdout._writeln("Flavour: Dependence");
-      stdout._writeln(this.separator1);
-      stdout._writeln(this.separator2);
+      stdout.writeln("Flavour: Dependence");
+      stdout.writeln(this.separator1);
+      stdout.writeln(this.separator2);
     }
 
     proc PrintError(err) throws {
-      stdout._writeln(this.separator1);
-      stdout._writeln(err);
-      stdout._writeln(this.separator2);
+      stdout.writeln(this.separator1);
+      stdout.writeln(err);
+      stdout.writeln(this.separator2);
     }
 
   }
