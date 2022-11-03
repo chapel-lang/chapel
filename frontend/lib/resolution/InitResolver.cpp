@@ -575,5 +575,11 @@ bool InitResolver::handleResolvingFieldAccess(const Dot* node) {
   return true;
 }
 
+void InitResolver::checkEarlyReturn(const Return* ret) {
+  if (phase_ != PHASE_COMPLETE) {
+    ctx_->error(ret, "cannot return from initializer before initialization is complete");
+  }
+}
+
 } // end namespace resolution
 } // end namespace chpl
