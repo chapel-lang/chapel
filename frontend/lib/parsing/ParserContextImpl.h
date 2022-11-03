@@ -22,6 +22,7 @@
 #include "chpl/uast/Pragma.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/framework/ErrorBase.h"
+#include "chpl/parsing/parser-error.h"
 
 #include <cerrno>
 #include <cfloat>
@@ -34,27 +35,6 @@
 
 using chpl::types::Param;
 using chpl::owned;
-
-/**
-  Helper macro to report errors from the parser, which takes care of saving the
-  error in the ParserContext, retrieving the global Context from the
-  ParserContext, and converting YYLTYPE locations.
-
-  Evaluates to an ErroneousExpression error sentinel at the location of the
-  error, which may be used or ignored.
- */
-#define CHPL_PARSER_REPORT(PARSER_CONTEXT__, NAME__, LOC__, EINFO__...) \
-  (({                                                                   \
-     const ErrorBase* ERR__ = Error##NAME__::get(                       \
-         PARSER_CONTEXT__->context(),                                   \
-         std::make_tuple(PARSER_CONTEXT__->convertLocation(LOC__),      \
-                         ##EINFO__));                                   \
-     PARSER_CONTEXT__->context()->report(ERR__);                        \
-     PARSER_CONTEXT__->saveError(ERR__);                                \
-   }),                                                                  \
-   ErroneousExpression::build(PARSER_CONTEXT__->builder,                \
-                              PARSER_CONTEXT__->convertLocation(LOC__)) \
-       .release())
 
 static bool locationLessEq(YYLTYPE lhs, YYLTYPE rhs) {
   return (lhs.first_line < rhs.first_line) ||
