@@ -2525,8 +2525,6 @@ void runClang(const char* just_parse_filename) {
   for_vector(const char, dirName, incDirs) {
     clangCCArgs.push_back(std::string("-I") + dirName);
   }
-  clangCCArgs.push_back(std::string("-I/usr/include/c++/12.1.0"));
-  clangCCArgs.push_back(std::string("-I/usr/include/c++/12.1.0/x86_64-pc-linux-gnu"));
 
   // Add C compilation flags from the command line (--ccflags arguments)
   splitStringWhitespace(ccflags, clangCCArgs);
@@ -2553,19 +2551,20 @@ void runClang(const char* just_parse_filename) {
   if (usingGpuLocaleModel()) {
     // Need to pass this flag so atomics header will compile
     clangOtherArgs.push_back("--std=c++11");
+ 
     // Need to select CUDA mode in embedded clang to
     // activate the GPU target
-//    clangOtherArgs.push_back("-x");
-//    clangOtherArgs.push_back("cuda");
+    clangOtherArgs.push_back("-x");
+    clangOtherArgs.push_back("hip");
 
-//    std::string cudaGPUArch = std::string("--cuda-gpu-arch=") + fCUDAArch;
-//    clangOtherArgs.push_back(cudaGPUArch);
+    std::string gpuArch = std::string("--offload-arch=") + fCUDAArch;
+    clangOtherArgs.push_back(gpuArch);
 
-     clangOtherArgs.push_back("-x");
-     clangOtherArgs.push_back("c++");
+    clangOtherArgs.push_back("-I");
+    clangOtherArgs.push_back("/opt/rocm-4.2.0/hip/include");
 
-    clangOtherArgs.push_back("-target");
-    clangOtherArgs.push_back("amdgcn-amd-amdhsa");
+    clangOtherArgs.push_back("-I");
+    clangOtherArgs.push_back("/opt/rocm-4.2.0/hsa/include");
   }
 
   // Always include sys_basic because it might change the
@@ -3860,7 +3859,6 @@ static void linkLibDevice() {
   iPass.internalizeModule(*info->module);
 }
 
-
 // If we're using the LLVM wide optimizations, we have to add
 // some functions to call put/get into the Chapel runtime layers
 // (the optimization is meant to be portable to other languages)
@@ -4042,6 +4040,8 @@ void makeBinaryLLVM(void) {
   std::string opt1Filename;
   std::string opt2Filename;
   std::string asmFilename;
+  std::string objFilename;
+  std::string outFilename;
   std::string ptxObjectFilename;
   std::string fatbinFilename;
 
@@ -4057,7 +4057,8 @@ void makeBinaryLLVM(void) {
     opt2Filename = genIntermediateFilename("chpl__gpu_module-opt2.bc");
     //asmFilename = genIntermediateFilename("chpl__gpu_ptx.s");
     asmFilename = genIntermediateFilename("chpl__gpu.s");
-    ptxObjectFilename = genIntermediateFilename("chpl__gpu_ptx.o");
+    objFilename = genIntermediateFilename("chpl__gpu.o");
+    outFilename = genIntermediateFilename("chpl__gpu.out");
     fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
   }
 
@@ -4307,12 +4308,11 @@ void makeBinaryLLVM(void) {
     } else {
 
       llvm::CodeGenFileType asmFileType =
-      //llvm::CodeGenFileType::CGFT_ObjectFile;
-      llvm::CodeGenFileType::CGFT_AssemblyFile;
+        llvm::CodeGenFileType::CGFT_ObjectFile;
 
       linkLibDevice();
 
-      llvm::raw_fd_ostream outputASMfile(asmFilename, error, flags);
+      llvm::raw_fd_ostream outputOBJfile(objFilename, error, flags);
 
       {
 
@@ -4321,7 +4321,7 @@ void makeBinaryLLVM(void) {
         emitPM.add(createTargetTransformInfoWrapperPass(
                    info->targetMachine->getTargetIRAnalysis()));
 
-        info->targetMachine->addPassesToEmitFile(emitPM, outputASMfile,
+        info->targetMachine->addPassesToEmitFile(emitPM, outputOBJfile,
                                                  nullptr,
                                                  asmFileType,
                                                  disableVerify);
@@ -4330,40 +4330,25 @@ void makeBinaryLLVM(void) {
 
       }
 
-      outputASMfile.close();
+      outputOBJfile.close();
+      printf("OBJ file: %s\n", objFilename.c_str());
 
-      if (myshell("which ptxas > /dev/null 2>&1", "Check to see if ptxas command can be found", true)) {
-        USR_FATAL("Command 'ptxas' not found\n");
-      }
+      std::string lldCmd = std::string("/opt/rocm-4.2.0/llvm/bin/lld -flavor gnu") +
+                           " --no-undefined -shared" +
+                           " -plugin-opt=-amdgpu-internalize-symbols" +
+                           " -plugin-opt=mcpu=gfx906 -plugin-opt=O3" +
+                           " -plugin-opt=-amdgpu-early-inline-all=true" +
+                           " -plugin-opt=-amdgpu-function-calls=false -o " +
+                           outFilename + " " + objFilename;
+      std::string bundlerCmd = std::string("/opt/rocm-4.2.0/llvm/bin/clang-offload-bundler")+
+                               " -type=o -bundle-align=4096" +
+                               " -targets=host-x86_64-unknown-linux," +
+                               "hipv4-amdgcn-amd-amdhsa--" + fCUDAArch +
+                               " -inputs=/dev/null," + outFilename +
+                               " -outputs=" + fatbinFilename;
 
-      if (myshell("which fatbinary > /dev/null 2>&1", "Check to see if fatbinary command can be found", true)) {
-        USR_FATAL("Command 'fatbinary' not found\n");
-      }
-
-
-      std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + fCUDAArch +
-                           std::string(" --output-file ") +
-                           ptxObjectFilename.c_str() +
-                           " " + asmFilename.c_str();
-
-      mysystem(ptxCmd.c_str(), "PTX to  object file");
-
-      if (strncmp(fCUDAArch, "sm_", 3) != 0 || strlen(fCUDAArch) != 5) {
-        USR_FATAL("Unrecognized CUDA arch");
-      }
-
-      std::string computeCap = std::string("compute_") + fCUDAArch[3] +
-                                                         fCUDAArch[4];
-      std::string fatbinaryCmd = std::string("fatbinary -64 ") +
-                                 std::string("--create ") +
-                                 fatbinFilename.c_str() +
-                                 std::string(" --image=profile=") + fCUDAArch +
-                                 ",file=" + ptxObjectFilename.c_str() +
-                                 std::string(" --image=profile=") + computeCap +
-                                 ",file=" + asmFilename.c_str();
-
-      mysystem(fatbinaryCmd.c_str(), "object file to fatbinary");
-
+      mysystem(lldCmd.c_str(), "Device .o file to .out file");
+      mysystem(bundlerCmd.c_str(), ".out file to fatbin file");
     }
   }
 

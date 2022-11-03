@@ -20,7 +20,7 @@ def get():
 
 @memoize
 def get_cuda_path():
-    if get() == 'cuda':
+    if get() == 'cuda' or get() == 'amd':
         chpl_cuda_path = os.environ.get("CHPL_CUDA_PATH")
         if chpl_cuda_path:
             return chpl_cuda_path
@@ -48,7 +48,7 @@ def get_gpu_mem_strategy():
 
 
 def get_cuda_libdevice_path():
-    if get() == 'cuda':
+    if get() == 'cuda' or get() == 'amd':
         # TODO this only makes sense when we are generating for nvidia
         chpl_cuda_path = get_cuda_path()
 
