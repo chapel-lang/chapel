@@ -210,8 +210,7 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
           const QualifiedType& formalQt = fn->formalType(i);
           auto kind = formalQt.kind();
           if (kind == QualifiedType::OUT ||
-              kind == QualifiedType::IN ||
-              kind == QualifiedType::CONST_IN ||
+              kind == QualifiedType::IN || kind == QualifiedType::CONST_IN ||
               kind == QualifiedType::INOUT) {
             anyInOutInout = true;
             break;
@@ -251,15 +250,16 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
           (void) actual; // avoid compilation error about unused variable
 
           const AstNode* actualAst = actualAsts[actualIdx];
+          IntentList kind = actualFormalIntents[actualIdx];
 
           // handle an actual that is passed to an 'out'/'in'/'inout' formal
-          if (actualFormalIntents[actualIdx] == IntentList::OUT) {
+          if (kind == IntentList::OUT) {
             handleOutFormal(callAst, actualAst,
                             actualFormalTypes[actualIdx], rv);
-          } else if (actualFormalIntents[actualIdx] == IntentList::IN) {
+          } else if (kind == IntentList::IN || kind == IntentList::CONST_IN) {
             handleInFormal(callAst, actualAst,
                            actualFormalTypes[actualIdx], rv);
-          } else if (actualFormalIntents[actualIdx] == IntentList::INOUT) {
+          } else if (kind == IntentList::INOUT) {
             handleInoutFormal(callAst, actualAst,
                               actualFormalTypes[actualIdx], rv);
           } else {
