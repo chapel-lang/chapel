@@ -24,29 +24,6 @@
 
 // Headers that this depends upon should be defined in ParserDependencies.h
 
-struct ParserError {
-  // Note that this does not include the filename;
-  // that should be known by whatever code is parsing something
-  // when it goes to report errors.
-  //
-  // When an error occurs during parsing, the parser should
-  // emit errors here and create a stand-in ErroneousExpression AST
-  // node.
-  ErrorMessage::Kind kind;
-  YYLTYPE location;
-  std::string message;
-  ParserError(YYLTYPE location, std::string message,
-              ErrorMessage::Kind kind)
-    : kind(kind), location(location), message(message) {
-    gdbShouldBreakHere();
-  }
-  ParserError(YYLTYPE location, const char* message,
-              ErrorMessage::Kind kind)
-    : kind(kind), location(location), message(message) {
-    gdbShouldBreakHere();
-  }
-};
-
 struct ParserComment {
   YYLTYPE location;
   Comment* comment;
@@ -68,7 +45,7 @@ struct ParserContext {
   parsing::ParserStats* parseStats;
 
   ParserExprList* topLevelStatements;
-  std::vector<ParserError> errors;
+  std::vector<const ErrorBase*> errors;
 
   // TODO: this should just hash on the pointer; the void* is a hack to do that
   std::unordered_map<void*, YYLTYPE> commentLocations;
@@ -191,6 +168,8 @@ struct ParserContext {
       .last_column    = endLoc.last_column
     };
   }
+
+  void saveError(const ErrorBase* error) { errors.push_back(error); }
 
   void noteComment(YYLTYPE loc, const char* data, long size);
   std::vector<ParserComment>* gatherComments(YYLTYPE location);

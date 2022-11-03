@@ -140,10 +140,6 @@ void BuilderResult::mark(Context* context) const {
     loc.mark(context);
   }
 
-  for (const auto& em : errors_) {
-    em->mark(context);
-  }
-
   // update the filePathForModuleName query
   BuilderResult::updateFilePaths(context, *this);
 }

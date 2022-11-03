@@ -74,12 +74,9 @@ static void updateParseResult(ParserContext* parserContext) {
     delete parserContext->comments;
   }
 
-  // Save the parse errors
-  for (ParserError & parserError : parserContext->errors) {
-    // Need to convert the error to a regular ErrorMessage
-    Location loc = parserContext->convertLocation(parserError.location);
-    auto errMsg = ErrorMessage(parserError.kind, loc, parserError.message);
-    builder->addError(std::move(errMsg));
+  // Save the parse errors to the builder
+  for (const auto* error : parserContext->errors) {
+    builder->addError(error);
   }
 }
 
