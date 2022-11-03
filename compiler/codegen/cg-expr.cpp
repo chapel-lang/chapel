@@ -3894,6 +3894,7 @@ static GenRet codegenCallIndirect(CallExpr* call) {
   // C
   if (gGenInfo->cfile) {
     INT_FATAL("The C backend is not supported yet!");
+    ret = codegenCallExprInner(base, args, chplFnType);
 
   // LLVM
   } else {

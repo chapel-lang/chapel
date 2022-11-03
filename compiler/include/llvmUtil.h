@@ -72,6 +72,14 @@ void print_llvm(llvm::Value* v);
 void print_llvm(llvm::Module* m);
 // print_clang is also available in another file
 
-#endif //HAVE_LLVM
+llvm::AttrBuilder llvmPrepareAttrBuilder(llvm::LLVMContext& ctx);
 
+void llvmAddAttr(llvm::LLVMContext& ctx, llvm::AttributeList& attrs,
+                 size_t idx,
+                 llvm::AttrBuilder& b);
+
+void llvmAttachStructRetAttr(llvm::AttrBuilder& b, llvm::Type* returnTy,
+                             unsigned int addrSpace);
+
+#endif //HAVE_LLVM
 #endif //LLVMUTIL_H

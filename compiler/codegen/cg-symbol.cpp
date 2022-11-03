@@ -1811,40 +1811,6 @@ static void pushAllFieldTypesRecursively(const char* name,
   }
 }
 
-static llvm::AttrBuilder
-llvmPrepareAttrBuilder(llvm::LLVMContext& ctx) {
-  #if HAVE_LLVM_VER >= 140
-  llvm::AttrBuilder ret(ctx);
-  #else
-  llvm::AttrBuilder ret;
-  std::ignore = ctx;
-  #endif
-  return ret;
-}
-
-static void
-llvmAddAttr(llvm::LLVMContext& ctx, llvm::AttributeList& attrs,
-            size_t idx,
-            llvm::AttrBuilder& b) {
-  #if HAVE_LLVM_VER >= 140
-  attrs = attrs.addAttributesAtIndex(ctx, idx, b);
-  #else
-  attrs = attrs.addAttributes(ctx, idx, b);
-  #endif
-}
-
-static void
-llvmAttachStructRet(llvm::AttrBuilder& b, llvm::Type* chapelReturnTy,
-                    unsigned int stackSpace) {
-  #if HAVE_LLVM_VER >= 130
-  b.addStructRetAttr(llvm::PointerType::get(chapelReturnTy, stackSpace));
-  #else
-  b.addAttribute(llvm::Attribute::StructRet);
-  std::ignore = chapelReturnTy;
-  std::ignore = stackSpace;
-  #endif
-}
-
 static void
 llvmAttachReturnInfo(llvm::LLVMContext& ctx,
                      llvm::AttributeList& attrs,
@@ -1919,7 +1885,7 @@ llvmAttachReturnInfo(llvm::LLVMContext& ctx,
 
     // Adjust attributes for sret argument
     auto b = llvmPrepareAttrBuilder(ctx);
-    llvmAttachStructRet(b, chapelReturnTy, stackSpace);
+    llvmAttachStructRetAttr(b, chapelReturnTy, stackSpace);
     b.addAttribute(llvm::Attribute::NoAlias);
     if (returnInfo.getInReg()) b.addAttribute(llvm::Attribute::InReg);
     b.addAlignmentAttr(returnInfo.getIndirectAlign().getQuantity());
