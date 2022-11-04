@@ -81,7 +81,7 @@ void check_checkParsed()
 {
   // checkIsIterator() will crash if there were certain USR_FATAL_CONT()
   // e.g. functions/vass/proc-iter/error-yield-in-proc-*
-  exitAndPrintIfFatalErrorsEncountered();
+  exitIfFatalErrorsEncountered();
   checkIsIterator();
 }
 

@@ -871,7 +871,7 @@ static void vhandleError(const BaseAST* ast,
     if (fPrintAdditionalErrors == false) {
       print_error("note: An additional error is hidden. "
                   "Use --print-additional-errors to see it.\n");
-      exitAndPrintIfFatalErrorsEncountered();
+      exitIfFatalErrorsEncountered();
       return;
     }
     print_error("note: Additional error follows\n");
@@ -910,12 +910,10 @@ static void vhandleError(const BaseAST* ast,
   }
 }
 
-void exitAndPrintIfFatalErrorsEncountered() {
-  printCallstackForLastError();
-  exitIfFatalErrorsEncountered();
-}
 
 void exitIfFatalErrorsEncountered() {
+  printCallstackForLastError();
+
   if (exit_eventually) {
     if (ignore_errors_for_pass) {
       exit_end_of_pass = true;

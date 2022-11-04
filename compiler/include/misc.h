@@ -69,7 +69,7 @@
 
 #define USR_PRINT      setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 5), handleError
 
-#define USR_STOP       exitAndPrintIfFatalErrorsEncountered
+#define USR_STOP       exitIfFatalErrorsEncountered
 
 // INT_ASSERT is intended to become no-op in production builds of compiler
 #define SELECT_ASSERT(_1, _2, NAME, ...) NAME
@@ -112,7 +112,6 @@ void        handleError(const BaseAST* ast, const char* fmt, ...)__attribute__ (
 void        handleError(astlocT astloc, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
 void        handleError(chpl::Location, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
 
-void        exitAndPrintIfFatalErrorsEncountered();
 void        exitIfFatalErrorsEncountered();
 
 void        considerExitingEndOfPass();

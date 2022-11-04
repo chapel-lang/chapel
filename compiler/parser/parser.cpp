@@ -891,7 +891,6 @@ static bool dynoRealizeErrors(void) {
       // Use production compiler's exit-on-error functionality for errors
       // reported via new Dyno mechanism
       setupDynoError(err->kind());
-      exitIfFatalErrorsEncountered();
     } else {
       // Try to maintain compatibility with the old reporting mechanism
       dynoDisplayError(gContext, err->toErrorMessage(gContext));
