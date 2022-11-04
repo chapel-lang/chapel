@@ -2891,6 +2891,7 @@ struct Converter {
 
     auto isym = InterfaceSymbol::buildDef(name, formals, body);
     auto ret = buildChapelStmt(isym);
+    noteConvertedSym(node, isym->sym);
 
     return ret;
   }
