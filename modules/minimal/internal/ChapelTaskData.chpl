@@ -18,14 +18,14 @@
  * limitations under the License.
  */
 
-// ChapelStandard.chpl
+// ChapelTaskData.chpl
 //
-pragma "export init"
-module ChapelStandard {
-  public use ChapelLocale;
-  public use ChapelTaskData;
-  public use ChapelTaskTable;
-  public use MemTracking;
-  public use ChapelUtil;
-  public use IO;
+module ChapelTaskData {
+  export proc chpl_task_setCommDiagsTemporarilyDisabled(disabled: bool) : bool {
+    return false;
+  }
+
+  export proc chpl_task_getCommDiagsTemporarilyDisabled() : bool {
+    return false;
+  }
 }
