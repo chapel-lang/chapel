@@ -572,13 +572,17 @@ zipper iteration.
 Zipper Iteration
 ~~~~~~~~~~~~~~~~
 
-When multiple iterators are iterated over in a zipper context, on each
-iteration, each expression is iterated over, the values are returned by
-the iterators in a tuple and assigned to the index, and then statement
-is executed.
-
-The shape of each iterator, the rank and the extents in each dimension,
-must be identical.
+When multiple iterand expressions are traversed in a loop using a
+`zip()` expression, the corresponding values yielded by each iterand
+are combined into a tuple, as represented by the loop's index
+variable(s).  The first iterand in the `zip()` expression is said to
+`lead` the loop's iterations, determining the size and shape of the
+iteration space.  Subsequent expressions `follow` the lead iterand.
+In most cases, these follower iterands are expected to conform to the
+number, and shape, of values yielded by the leader.  For example, if
+the first iterand is a 2D array with `m` rows and `n` columns,
+subsequent iterands will need to support iteration over a 2D `m` x `n`
+space as well.
 
    *Example (zipper.chpl)*.
 
