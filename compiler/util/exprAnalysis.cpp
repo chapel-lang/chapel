@@ -51,7 +51,7 @@ bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e, Expr* exprToMove) {
 
       // Call to some sort of function type that is not -> function symbol.
       // Since it's an indirect call, we have to assume it side effects.
-      } else if (auto fnType = toFunctionType(e->qualType().type())) {
+      } else if (isFunctionType(e->qualType().type())) {
         if (e != ce->baseExpr) {
           safeExprCache[e] = false;
           return false;
