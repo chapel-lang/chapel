@@ -30,6 +30,14 @@ jobs:
     - name: make check
       run: |
         ./util/buildRelease/smokeTest chpl
+         if [$? -ne 0]
+          then
+             echo "Encountered issue executing smokeTest"
+          exit 1
+          else
+             echo "smokeTest Succeeded"
+          fi
+
 
   make_doc:
     runs-on: ubuntu-latest
@@ -47,6 +55,14 @@ jobs:
       # Uses a quickstart config to keep it from running too long
       run: |
         ./util/buildRelease/smokeTest quickstart docs
+         if [$? -ne 0]
+          then
+             echo "Encountered issue executing smokeTest"
+          exit 1
+          else
+             echo "smoketest Succeeded"
+          fi
+
     - name: upload docs
       uses: actions/upload-artifact@v2
       with:
@@ -67,6 +83,13 @@ jobs:
       # While there, run a make check in that config for more coverage
       run: |
         ./util/buildRelease/smokeTest quickstart mason chpl
+         if [$? -ne 0]
+          then
+             echo "Encountered issue executing smokeTest"
+          exit 1
+          else
+             echo "smoketest Succeeded"
+          fi
 
   check_compiler_dyno_tests:
     runs-on: ubuntu-latest
@@ -113,5 +136,5 @@ jobs:
              echo "Encountered issue executing smokeTest"
           exit 1
           else
-             echo "smoketest Succeded"
+             echo "smoketest Succeeded"
           fi
