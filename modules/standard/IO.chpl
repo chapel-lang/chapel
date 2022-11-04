@@ -3611,6 +3611,22 @@ private proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param by
 pragma "no doc"
 config param chpl_testWriteBinaryInternalEIO = false;
 
+private proc _write_binary_string_or_bytes(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, x:?t, len: int): errorCode
+  where t == string || t == bytes
+{
+  if t == string {
+    var local_x = x.localize();
+    // check if the string has escapes
+    if local_x.hasEscapes {
+      return EILSEQ;
+    }
+    return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), len: c_ssize_t);
+  } else if t == bytes {
+    var local_x = x.localize();
+    return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), len: c_ssize_t);
+  }
+}
+
 private proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, x:?t):errorCode where _isIoPrimitiveType(t) {
   if chpl_testWriteBinaryInternalEIO {
     return EIO;
@@ -5225,6 +5241,143 @@ proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
     }
     when ioendian.little {
       this.writeBinary(arg, ioendian.little);
+    }
+  }
+}
+
+/*
+   Write a :type:`~String.string` to the channel in binary format
+
+   :arg s: the ``string`` to write
+   :arg size: the number of codepoints from the ``string`` to write
+
+   :throws SystemError: Thrown if the string could not be written to the channel.
+   :throws BadFormatError: Thrown if ``size`` is larger than ``s.size``
+*/
+proc _channel.writeBinary(s: string, size: int = data.size) throws {
+  var e:errorCode = ENOERR;
+
+  if size > s.size {
+    throw new owned BadFormatError("size argument cannot exceed length of provided string in 'writeBinary");
+  }
+
+  select (endian) {
+    when ioendian.native {
+      e = try _write_binary_string_or_bytes(_channel_internal, iokind.native, s, size);
+    }
+    when ioendian.big {
+      e = try _write_binary_string_or_bytes(_channel_internal, iokind.big, s, size);
+    }
+    when ioendian.little {
+      e = try _write_binary_string_or_bytes(_channel_internal, iokind.little, s, size);
+    }
+  }
+  if (e != ENOERR) {
+    throw createSystemError(e);
+  }
+}
+
+/*
+   Write a :type:`~Bytes.bytes` to the channel in binary format
+
+   :arg s: the ``bytes`` to write
+   :arg size: the number of bytes from the ``bytes`` to write
+
+   :throws SystemError: Thrown if the bytes could not be written to the channel.
+   :throws BadFormatError: Thrown if ``size`` is larger than ``b.size``
+*/
+proc _channel.writeBinary(b: bytes, size: int = data.size) throws {
+  var e:errorCode = ENOERR;
+
+  if size > b.size {
+    throw new owned BadFormatError("size argument cannot exceed length of provided bytes in 'writeBinary");
+  }
+
+  select (endian) {
+    when ioendian.native {
+      e = try _write_binary_string_or_bytes(_channel_internal, iokind.native, b, size);
+    }
+    when ioendian.big {
+      e = try _write_binary_string_or_bytes(_channel_internal, iokind.big, b, size);
+    }
+    when ioendian.little {
+      e = try _write_binary_string_or_bytes(_channel_internal, iokind.little, b, size);
+    }
+  }
+  if (e != ENOERR) {
+    throw createSystemError(e);
+  }
+}
+
+/*
+   Write an array of binary numbers to the channel
+
+   Note that this routine currently requires a 1D rectangular non-strided array.
+
+   :arg data: an array of numbers to write to the cannel
+   :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
+              to read the numbers. Defaults to ``ioendian.native``.
+
+   :throws SystemError: Thrown if the values could not be written to the channel.
+   :throws UnexpectedEofError: Thrown if EOF is reached before all the values could be written.
+*/
+proc _channel.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws
+  where (d.rank == 1 && d.stridable == false) && (
+          isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
+{
+  var e : errorCode = ENOERR,
+      readSomething = false;
+
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    for b in data {
+      select (endian) {
+        when ioendian.native {
+          e = try _write_binary_internal(this._channel_internal, iokind.native, b);
+        }
+        when ioendian.big {
+          e = try _write_binary_internal(this._channel_internal, iokind.big, b);
+        }
+        when ioendian.little {
+          e = try _write_binary_internal(this._channel_internal, iokind.little, b);
+        }
+      }
+
+      if e == EEOF {
+        throw new owned UnexpectedEofError("Unable to read entire array of values in 'readBinary'");
+      } else if e != ENOERR {
+        throw createSystemError(e);
+      }
+    }
+  }
+}
+
+/*
+   Write an array of binary numbers to the channel
+
+   Note that this routine currently requires a 1D rectangular non-strided array.
+
+   :arg data: an array of numbers to write to the cannel
+   :arg endian: :type:`ioendian` specifies the byte order in which
+              to write the number.
+
+   :throws SystemError: Thrown if the values could not be written to the channel.
+   :throws UnexpectedEofError: Thrown if EOF is reached before all the values could be written.
+*/
+proc _channel.writeBinary(const ref data: [?d] ?t, endian:ioendian) throws
+  where (d.rank == 1 && d.stridable == false) && (
+          isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
+{
+  select (endian) {
+    when ioendian.native {
+      rv = this.writeBinary(data, ioendian.native);
+    }
+    when ioendian.big {
+      rv = this.writeBinary(data, ioendian.big);
+    }
+    when ioendian.little {
+      rv = this.writeBinary(data, ioendian.little);
     }
   }
 }
