@@ -19,146 +19,24 @@
 
 #include "chpl/framework/ErrorMessage.h"
 
-#include "chpl/parsing/parsing-queries.h"
-#include "chpl/uast/AstNode.h"
-
 #include <cassert>
 #include <cstdarg>
 #include <cstdlib>
 
+#include "chpl/parsing/parsing-queries.h"
+#include "chpl/uast/AstNode.h"
+
 namespace chpl {
 
-ErrorMessage::ErrorMessage()
-  : isDefaultConstructed_(true), kind_(ERROR), id_(), location_(), message_() {
-}
-
 ErrorMessage::ErrorMessage(Kind kind, Location location, std::string message)
-  : isDefaultConstructed_(false), kind_(kind), id_(), location_(location),
-    message_(message) {
-  gdbShouldBreakHere();
-}
-
-ErrorMessage::ErrorMessage(Kind kind, Location location, const char* message)
-  : isDefaultConstructed_(false), kind_(kind), id_(), location_(location),
-    message_(message) {
+    : kind_(kind), id_(), location_(location), message_(message) {
   gdbShouldBreakHere();
 }
 
 ErrorMessage::ErrorMessage(Kind kind, ID id, std::string message)
-  : isDefaultConstructed_(false), kind_(kind), id_(id), location_(),
-    message_(message) {
+    : kind_(kind), id_(id), location_(), message_(message) {
   gdbShouldBreakHere();
 }
-
-ErrorMessage::ErrorMessage(Kind kind, ID id, const char* message)
-  : isDefaultConstructed_(false), kind_(kind), id_(id), location_(),
-    message_(message) {
-  gdbShouldBreakHere();
-}
-
-ErrorMessage ErrorMessage::vbuild(Kind kind, ID id,
-                                  const char* fmt,
-                                  va_list vl) {
-  std::string str;
-  str = vprintToString(fmt, vl);
-  return ErrorMessage(kind, id, str);
-}
-
-ErrorMessage ErrorMessage::vbuild(Kind kind, Location location,
-                                  const char* fmt,
-                                  va_list vl) {
-  std::string str;
-  str = vprintToString(fmt, vl);
-  return ErrorMessage(kind, location, str);
-}
-
-ErrorMessage ErrorMessage::note(ID id, const char* fmt, ...) {
-  ErrorMessage ret;
-  va_list vl;
-  va_start(vl, fmt);
-  ret = ErrorMessage::vbuild(NOTE, id, fmt, vl);
-  va_end(vl);
-  return ret;
-}
-
-ErrorMessage ErrorMessage::note(const uast::AstNode* ast,
-                                const char* fmt, ...) {
-  ErrorMessage ret;
-  va_list vl;
-  va_start(vl, fmt);
-  ret = ErrorMessage::vbuild(NOTE, ast->id(), fmt, vl);
-  va_end(vl);
-  return ret;
-}
-
-ErrorMessage ErrorMessage::note(Location loc,
-                                const char* fmt, ...) {
-  ErrorMessage ret;
-  va_list vl;
-  va_start(vl, fmt);
-  ret = ErrorMessage::vbuild(NOTE, loc, fmt, vl);
-  va_end(vl);
-  return ret;
-}
-
-ErrorMessage ErrorMessage::warning(ID id, const char* fmt, ...) {
-  ErrorMessage ret;
-  va_list vl;
-  va_start(vl, fmt);
-  ret = ErrorMessage::vbuild(WARNING, id, fmt, vl);
-  va_end(vl);
-  return ret;
-}
-
-ErrorMessage ErrorMessage::warning(const uast::AstNode* ast,
-                                   const char* fmt, ...) {
-  ErrorMessage ret;
-  va_list vl;
-  va_start(vl, fmt);
-  ret = ErrorMessage::vbuild(WARNING, ast->id(), fmt, vl);
-  va_end(vl);
-  return ret;
-}
-
-ErrorMessage ErrorMessage::warning(Location loc,
-                                 const char* fmt, ...) {
-  ErrorMessage ret;
-  va_list vl;
-  va_start(vl, fmt);
-  ret = ErrorMessage::vbuild(WARNING, loc, fmt, vl);
-  va_end(vl);
-  return ret;
-}
-
-ErrorMessage ErrorMessage::error(ID id, const char* fmt, ...) {
-  ErrorMessage ret;
-  va_list vl;
-  va_start(vl, fmt);
-  ret = ErrorMessage::vbuild(ERROR, id, fmt, vl);
-  va_end(vl);
-  return ret;
-}
-
-ErrorMessage ErrorMessage::error(const uast::AstNode* ast,
-                                 const char* fmt, ...) {
-  ErrorMessage ret;
-  va_list vl;
-  va_start(vl, fmt);
-  ret = ErrorMessage::vbuild(ERROR, ast->id(), fmt, vl);
-  va_end(vl);
-  return ret;
-}
-
-ErrorMessage ErrorMessage::error(Location loc,
-                                 const char* fmt, ...) {
-  ErrorMessage ret;
-  va_list vl;
-  va_start(vl, fmt);
-  ret = ErrorMessage::vbuild(ERROR, loc, fmt, vl);
-  va_end(vl);
-  return ret;
-}
-
 
 void ErrorMessage::addDetail(ErrorMessage err) {
   details_.push_back(std::move(err));
@@ -174,23 +52,5 @@ Location ErrorMessage::computeLocation(Context* context) const {
   // otherwise, use the location stored here
   return location_;
 }
-
-void ErrorMessage::swap(ErrorMessage& other) {
-  std::swap(isDefaultConstructed_, other.isDefaultConstructed_);
-  std::swap(id_, other.id_);
-  std::swap(kind_, other.kind_);
-  location_.swap(other.location_);
-  message_.swap(other.message_);
-  details_.swap(other.details_);
-}
-
-void ErrorMessage::mark(Context* context) const {
-  location_.mark(context);
-  for (auto& em : details_) {
-    em.mark(context);
-  }
-  id_.mark(context);
-}
-
 
 } // namespace chpl

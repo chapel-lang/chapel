@@ -20,9 +20,8 @@
 #ifndef CHPL_UTIL_FILESYSTEM_H
 #define CHPL_UTIL_FILESYSTEM_H
 
-#include "chpl/framework/ErrorMessage.h"
-
 #include <string>
+#include <system_error>
 
 namespace chpl {
 

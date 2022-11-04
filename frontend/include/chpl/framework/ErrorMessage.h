@@ -20,22 +20,16 @@
 #ifndef CHPL_QUERIES_ERRORMESSAGE_H
 #define CHPL_QUERIES_ERRORMESSAGE_H
 
-#include "chpl/framework/Location.h"
-#include "chpl/framework/ID.h"
-#include "chpl/util/printf.h"
-
 #include <cstdarg>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "chpl/framework/ID.h"
+#include "chpl/framework/Location.h"
+#include "chpl/util/printf.h"
+
 namespace chpl {
-
-// forward declare AstNode
-namespace uast {
-  class AstNode;
-}
-
 
 /**
   This class represents an error/warning message. The message
@@ -43,15 +37,9 @@ namespace uast {
  */
 class ErrorMessage final {
  public:
-  enum Kind {
-    NOTE,
-    WARNING,
-    SYNTAX,
-    ERROR
-  };
+  enum Kind { NOTE, WARNING, SYNTAX, ERROR };
 
  private:
-  bool isDefaultConstructed_;
   Kind kind_;
   // if id_ is set, it is used instead of location_
   ID id_;
@@ -68,64 +56,8 @@ class ErrorMessage final {
   // TODO: how to handle a callstack of sorts?
 
  public:
-  ErrorMessage();
   ErrorMessage(Kind kind, Location location, std::string message);
-  ErrorMessage(Kind kind, Location location, const char* message);
   ErrorMessage(Kind kind, ID id, std::string message);
-  ErrorMessage(Kind kind, ID id, const char* message);
-
-  /** Build an ErrorMessage within another varargs function */
-  static ErrorMessage vbuild(Kind kind, ID id, const char* fmt, va_list vl);
-
-  /** Build an ErrorMessage within another varargs function */
-  static ErrorMessage vbuild(Kind kind, Location location,
-                             const char* fmt, va_list vl);
-
-
-  /** Build a note ErrorMessage from an ID and a printf-style format */
-  static ErrorMessage note(ID id, const char* fmt, ...)
-    DYNO_ATTR_PRINTF_FORMAT(2,3)
-    ;
-
-  /** Build a note ErrorMessage from an AstNode* and a printf-style format */
-  static ErrorMessage note(const uast::AstNode* ast, const char* fmt, ...)
-    DYNO_ATTR_PRINTF_FORMAT(2,3)
-    ;
-
-  /** Build a note ErrorMessage from a Location and a printf-style format */
-  static ErrorMessage note(Location loc, const char* fmt, ...)
-    DYNO_ATTR_PRINTF_FORMAT(2,3)
-    ;
-
-  /** Build a warning ErrorMessage from an ID and a printf-style format */
-  static ErrorMessage warning(ID id, const char* fmt, ...)
-    DYNO_ATTR_PRINTF_FORMAT(2,3)
-    ;
-
-  /** Build a warning ErrorMessage from an AstNode* and a printf-style format*/
-  static ErrorMessage warning(const uast::AstNode*, const char* fmt, ...)
-    DYNO_ATTR_PRINTF_FORMAT(2,3)
-    ;
-
-  /** Build a warning ErrorMessage from a Location and a printf-style format */
-  static ErrorMessage warning(Location loc, const char* fmt, ...)
-    DYNO_ATTR_PRINTF_FORMAT(2,3)
-    ;
-
-  /** Build an error ErrorMessage from an ID and a printf-style format */
-  static ErrorMessage error(ID id, const char* fmt, ...)
-    DYNO_ATTR_PRINTF_FORMAT(2,3)
-    ;
-
-  /** Build an error ErrorMessage from an AstNode* and a printf-style format */
-  static ErrorMessage error(const uast::AstNode*, const char* fmt, ...)
-    DYNO_ATTR_PRINTF_FORMAT(2,3)
-    ;
-
-  /** Build an error ErrorMessage from a Location and a printf-style format */
-  static ErrorMessage error(Location loc, const char* fmt, ...)
-    DYNO_ATTR_PRINTF_FORMAT(2,3)
-    ;
 
   /** Add an ErrorMessage as detail information to this ErrorMessage. */
   void addDetail(ErrorMessage err);
@@ -136,12 +68,6 @@ class ErrorMessage final {
     a syntax error (where the location offers useful info).
   */
   bool isEmpty() const { return message_.empty() && details_.empty(); }
-
-  /**
-    Returns true if this error message was default constructed, in
-    which case its contents are not meaningful.
-  */
-  bool isDefaultConstructed() const { return isDefaultConstructed_; }
 
   /**
     Return the location in the source code where this error occurred.
@@ -159,22 +85,14 @@ class ErrorMessage final {
   inline Location location() const { return location_; }
 
   inline bool operator==(const ErrorMessage& other) const {
-    return isDefaultConstructed_ == other.isDefaultConstructed_ &&
-           kind_ == other.kind_ &&
-           id_ == other.id_ &&
-           location_ == other.location_ &&
-           message_ == other.message_ &&
+    return kind_ == other.kind_ && id_ == other.id_ &&
+           location_ == other.location_ && message_ == other.message_ &&
            details_ == other.details_;
   }
   inline bool operator!=(const ErrorMessage& other) const {
     return !(*this == other);
   }
-
-  void swap(ErrorMessage& other);
-
-  void mark(Context* context) const;
 };
-
 
 } // end namespace chpl
 

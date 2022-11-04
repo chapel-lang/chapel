@@ -24,6 +24,7 @@
 #include "chpl/framework/ID.h"
 #include "chpl/framework/CommentID.h"
 #include "chpl/framework/UniqueString.h"
+#include "chpl/framework/Location.h"
 #include "chpl/util/memory.h"
 #include "chpl/util/hash.h"
 #include "chpl/util/break.h"
