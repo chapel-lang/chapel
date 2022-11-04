@@ -1,5 +1,7 @@
+// Test that an UnexpectedEofError error is thrown if
+//   the channel contains fewer bytes than requested
+
 use IO;
-use CTypes;
 
 var r = openreader("./input/tu8.bin");
 

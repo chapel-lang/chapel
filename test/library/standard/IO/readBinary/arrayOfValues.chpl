@@ -1,3 +1,6 @@
+// Test that the array interface reads the correct bytes for all
+//  integer sizes, signs, and big&little endianness
+
 use IO;
 
 testBinaryRead("./input/tu8.bin", makeUnsignedArray(8));

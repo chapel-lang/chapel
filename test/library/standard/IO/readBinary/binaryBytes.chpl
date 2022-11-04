@@ -12,7 +12,7 @@ stdin.matchLiteral(" very interesting");
 
 try {
     var didRead = stdin.readBinary(b, 29);
-    write(b);
+    writeln(b);
 } catch e {
     writeln(e);
 }
@@ -20,7 +20,7 @@ try {
 // the channel is empty now
 try {
     var didNotRead = ! stdin.readBinary(b, 1);
-    writeln(didNotRead);
+    writeln(didNotRead, "\t", b.isEmpty());
 } catch e {
     writeln(e);
 }

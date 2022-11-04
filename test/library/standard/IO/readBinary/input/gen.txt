@@ -1,0 +1,117 @@
+// rust code used to generate binary files
+
+use std::fs::File;
+use std::io::prelude::*;
+use bytes::{BytesMut, BufMut}; // https://crates.io/crates/bytes
+
+fn main() {
+    // let nu8 = makeNumericArray(8);
+    // let mut f = File::create("./output/tu8.txt").unwrap();
+    // let mut b = BytesMut::with_capacity(8);
+
+    // for n in nu8 {
+    //     b.put_u8(n.try_into().unwrap());
+    // }
+
+    // f.write_all(&b);
+
+    make_binary_file("tu8", DataType::NU8, End::Big);
+    make_binary_file("ti8", DataType::NI8, End::Big);
+    make_binary_file("tu16", DataType::NU16, End::Big);
+    make_binary_file("ti16", DataType::NI16, End::Big);
+    make_binary_file("tu32", DataType::NU32, End::Big);
+    make_binary_file("ti32", DataType::NI32, End::Big);
+    make_binary_file("tu64", DataType::NU64, End::Big);
+    make_binary_file("ti64", DataType::NI64, End::Big);
+
+    make_binary_file("tu16le", DataType::NU16, End::Little);
+    make_binary_file("ti16le", DataType::NI16, End::Little);
+    make_binary_file("tu32le", DataType::NU32, End::Little);
+    make_binary_file("ti32le", DataType::NI32, End::Little);
+    make_binary_file("tu64le", DataType::NU64, End::Little);
+    make_binary_file("ti64le", DataType::NI64, End::Little);
+}
+
+fn make_binary_file(p: &'static str, flav: DataType, end: End) {
+    let mut f = File::create(format!("./{}.bin", p)).unwrap();
+    let mut b = BytesMut::with_capacity(flav.sz() * flav.sz());
+
+    let num = make_numeric_array(flav.sz(), flav.sgnd());
+    println!("{:?}", num);
+
+    for n in num {
+        match end {
+            End::Little => match flav {
+                DataType::NU8 | DataType::NI8 => (),
+                DataType::NU16 => b.put_u16_le(n.try_into().unwrap()),
+                DataType::NI16 => b.put_i16_le(n.try_into().unwrap()),
+                DataType::NU32 => b.put_u32_le(n.try_into().unwrap()),
+                DataType::NI32 => b.put_i32_le(n.try_into().unwrap()),
+                DataType::NU64 => b.put_u64_le(n.try_into().unwrap()),
+                DataType::NI64 => b.put_i64_le(n.try_into().unwrap()),
+            },
+            End::Big => match flav {
+                DataType::NU8 => b.put_u8(n.try_into().unwrap()),
+                DataType::NI8 => b.put_i8(n.try_into().unwrap()),
+                DataType::NU16 => b.put_u16(n.try_into().unwrap()),
+                DataType::NI16 => b.put_i16(n.try_into().unwrap()),
+                DataType::NU32 => b.put_u32(n.try_into().unwrap()),
+                DataType::NI32 => b.put_i32(n.try_into().unwrap()),
+                DataType::NU64 => b.put_u64(n.try_into().unwrap()),
+                DataType::NI64 => b.put_i64(n.try_into().unwrap()),
+            }
+        }
+    }
+
+    f.write_all(&b).unwrap();
+}
+
+fn make_numeric_array(s: usize, signed: bool) -> Vec<usize> {
+    let mut v : Vec<usize> = Vec::with_capacity(s);
+
+    let mut x = 1;
+    v.push(x);
+    for _ in match signed {
+        true => 0..(s-2),
+        false => 0..(s-1),
+    } {
+        x *= 2;
+        v.push(x);
+    }
+
+    v
+}
+
+enum DataType {
+    NU8,
+    NU16,
+    NU32,
+    NU64,
+    NI8,
+    NI16,
+    NI32,
+    NI64,
+}
+
+impl DataType {
+    fn sz(&self) -> usize {
+        match self {
+            Self::NU8 | Self::NI8 => 8,
+            Self::NU16 | Self::NI16 => 16,
+            Self::NU32 | Self::NI32 => 32,
+            Self::NU64 | Self::NI64 => 64
+        }
+    }
+
+    fn sgnd(&self) -> bool {
+        match self {
+            Self::NU8 | Self::NU16 | Self::NU32 | Self::NU64 => false,
+            Self::NI8 | Self::NI16 | Self::NI32 | Self::NI64 => true,
+        }
+    }
+}
+
+enum End {
+    Little,
+    Big,
+}

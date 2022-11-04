@@ -5430,10 +5430,7 @@ proc _channel.readBinary(ref b: bytes, maxSize: int): bool throws {
 */
 proc _channel.readBinary(ref data: [?d] ?t, param endian = ioendian.native): bool throws
   where (d.rank == 1 && d.stridable == false) && (
-          t ==  int(8)  || t ==  int(16) || t ==  int(32) || t ==  int(64) ||
-          t == uint(8)  || t == uint(16) || t == uint(32) || t == uint(64) ||
-          t == real(32) || t == real(64) || t == imag(32) || t == imag(64) ||
-          t == complex(32) || t == complex(64))
+          isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
   var e : errorCode = ENOERR,
       readSomething = false;
@@ -5441,7 +5438,7 @@ proc _channel.readBinary(ref data: [?d] ?t, param endian = ioendian.native): boo
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
-    for b in data {
+    for (i, b) in zip(data.domain, data) {
       select (endian) {
         when ioendian.native {
           e = try _read_binary_internal(this._channel_internal, iokind.native, b);
@@ -5455,7 +5452,11 @@ proc _channel.readBinary(ref data: [?d] ?t, param endian = ioendian.native): boo
       }
 
       if e == EEOF {
-        throw new owned UnexpectedEofError("Unable to read entire array of values in 'readBinary'");
+        if i == data.domain.first {
+          break;
+        } else {
+          throw new owned UnexpectedEofError("Unable to read entire array of values in 'readBinary'");
+        }
       } else if e != ENOERR {
         throw createSystemError(e);
       } else {
@@ -5487,10 +5488,7 @@ proc _channel.readBinary(ref data: [?d] ?t, param endian = ioendian.native): boo
 */
 proc _channel.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
   where (d.rank == 1 && d.stridable == false) && (
-          t ==  int(8)  || t ==  int(16) || t ==  int(32) || t ==  int(64) ||
-          t == uint(8)  || t == uint(16) || t == uint(32) || t == uint(64) ||
-          t == real(32) || t == real(64) || t == imag(32) || t == imag(64) ||
-          t == complex(32) || t == complex(64))
+          isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
   var rv: bool = false;
 
