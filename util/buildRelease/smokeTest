@@ -105,12 +105,13 @@ echo ""
 if [ $LINT -eq 1 ]; then
     # Check for tabs.
     echo "Checking for tabs"
-    num_tabs=$($CHPL_HOME/util/devel/lookForTabs | wc -l)
-    if (( $num_tabs > 0 )) ; then
+    output=$($CHPL_HOME/util/devel/lookForTabs)
+    if [ $? -ne 0 ] ; then
         echo "Found tabs :-("
-        echo $($CHPL_HOME/util/devel/lookForTabs)
+        echo $output
         exit 1
     fi
+
 
     # Need to clean up all of the trailing spaces before adding this
     # Check for trailing spaces

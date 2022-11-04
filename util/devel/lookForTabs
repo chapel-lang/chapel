@@ -7,6 +7,7 @@
 
 cd $CHPL_HOME >& /dev/null
 
+passed=true 
 git grep -n $'\t' -- ':!*bison-chapel.cpp' ':!*bison-chapel.h' \
                      ':!*flex-chapel.cpp'  ':!*flex-chapel.h'  \
                      ':!*bison-chpl-lib.cpp'  ':!*bison-chpl-lib.h'  \
@@ -14,11 +15,23 @@ git grep -n $'\t' -- ':!*bison-chapel.cpp' ':!*bison-chapel.h' \
                      'compiler/*.lex'      'compiler/*.y'      \
                      'compiler/*.ypp'      'compiler/*.h'      \
                      'compiler/*.c'        'compiler/*.cpp'
-
+if [ $? -ne 1 ]; then 
+  passed=false
+fi  
 git grep -n $'\t' -- 'runtime/*.h' 'runtime/*.c' 'runtime/*.cpp'
-
+if [ $? -ne 1 ]; then 
+  passed=false
+fi  
 git grep -n $'\t' -- 'modules/*.chpl'
-
+if [ $? -ne 1 ]; then 
+  passed=false
+fi  
 git grep -n $'\t' -- 'tools/*.c'   'tools/*.h'    'tools/*.H'   \
                      'tools/*.cxx' 'tools/*.chpl' 'tools/*.rst' \
                      'tools/*.sh'  'tools/*.py'
+if [ $? -ne 1 ]; then 
+  passed=false
+fi                      
+if [ $passed = false ]; then
+  exit 1
+fi  
