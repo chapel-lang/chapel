@@ -28,6 +28,7 @@
 
 #include "astlocs.h"
 #include "chpl/util/break.h"
+#include "chpl/framework/ErrorBase.h"
 
 #ifdef HAVE_LLVM
 #define exit(x) clean_exit(x)
@@ -68,7 +69,7 @@
 
 #define USR_PRINT      setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 5), handleError
 
-#define USR_STOP       exitIfFatalErrorsEncountered
+#define USR_STOP       exitAndPrintIfFatalErrorsEncountered
 
 // INT_ASSERT is intended to become no-op in production builds of compiler
 #define SELECT_ASSERT(_1, _2, NAME, ...) NAME
@@ -104,12 +105,14 @@ const char* cleanFilename(const char*    name);
 //  5 = USR_PRINT
 //
 void        setupError(const char* subdir, const char* filename, int lineno, int tag);
+void        setupDynoError(chpl::ErrorBase::Kind errKind);
 
 void        handleError(const char* fmt, ...) __attribute__ ((format (printf, 1, 2)));
 void        handleError(const BaseAST* ast, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
 void        handleError(astlocT astloc, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
 void        handleError(chpl::Location, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
 
+void        exitAndPrintIfFatalErrorsEncountered();
 void        exitIfFatalErrorsEncountered();
 
 void        considerExitingEndOfPass();

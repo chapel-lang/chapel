@@ -80,6 +80,24 @@ void setupError(const char* subdir, const char* filename, int lineno, int tag) {
   exit_eventually  |= tag == 3;
 }
 
+void setupDynoError(chpl::ErrorBase::Kind errKind) {
+  // This function mostly exists as a convenience to set exit_immediately and
+  // exit_eventually, so both production and dyno errors can share the same
+  // exit-on-error logic.
+
+  // No need to set path information because we are not handling internal errors
+  // with this.
+
+  err_fatal = errKind == chpl::ErrorBase::Kind::ERROR ||
+              errKind == chpl::ErrorBase::Kind::SYNTAX;
+  err_user = true;
+  err_print = false;
+  err_ignore = ignore_warnings && errKind == chpl::ErrorBase::Kind::WARNING;
+
+  exit_immediately = false;
+  exit_eventually |= err_fatal;
+}
+
 // Return true if the current locale model needs GPU code generation
 bool usingGpuLocaleModel() {
   return 0 == strcmp(CHPL_LOCALE_MODEL, "gpu");
@@ -853,7 +871,7 @@ static void vhandleError(const BaseAST* ast,
     if (fPrintAdditionalErrors == false) {
       print_error("note: An additional error is hidden. "
                   "Use --print-additional-errors to see it.\n");
-      exitIfFatalErrorsEncountered();
+      exitAndPrintIfFatalErrorsEncountered();
       return;
     }
     print_error("note: Additional error follows\n");
@@ -892,10 +910,12 @@ static void vhandleError(const BaseAST* ast,
   }
 }
 
+void exitAndPrintIfFatalErrorsEncountered() {
+  printCallstackForLastError();
+  exitIfFatalErrorsEncountered();
+}
 
 void exitIfFatalErrorsEncountered() {
-  printCallstackForLastError();
-
   if (exit_eventually) {
     if (ignore_errors_for_pass) {
       exit_end_of_pass = true;
