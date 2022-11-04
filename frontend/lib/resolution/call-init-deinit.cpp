@@ -19,8 +19,6 @@
 
 #include "call-init-deinit.h"
 
-#include "Resolver.h"
-
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/ResolvedVisitor.h"
@@ -29,6 +27,9 @@
 #include "chpl/resolution/copy-elision.h"
 #include "chpl/resolution/split-init.h"
 #include "chpl/uast/all-uast.h"
+
+#include "Resolver.h"
+#include "VarScopeVisitor.h"
 
 namespace chpl {
 namespace resolution {
@@ -47,6 +48,7 @@ using namespace types;
 //         a copy, but it's hard to associate that information
 //         with a call actual (because the actual doesn't exist).
 
+/*
 struct Action {
   enum ActionKind {
     COPY_INIT, // for 'in'
@@ -57,106 +59,47 @@ struct Action {
   ID id;             // which ID?
   Action(ActionKind action, ID id) : action(action), id(id) { }
 };
+*/
 
-// for blocks / things that behave like blocks
-struct ScopeFrame {
-  const Scope* scope = nullptr;
-
-  // localsAndDefers contains both VarSymbol and DeferStmt in
-  // order to create a single stack for cleanup operations to be executed.
-  // In particular, the ordering between defer blocks and locals matters,
-  // in addition to the ordering within each group.
-  std::vector<const AstNode*> localsAndDefers;
-
-  // Which variables are declared in this scope?
-  std::set<const VarLikeDecl*> declaredVars;
-
-  // Which variables are initialized in this scope
-  // (possibly including outer variables)?
-  std::set<const VarLikeDecl*> initedVars;
-
-  // Which outer variables have been initialized in this scope?
-  // This vector lists them in initialization order.
-  std::vector<const VarLikeDecl*> initedOuterVars;
-
-  // Which variables have been deinitialized early in this scope?
-  std::set<const VarLikeDecl*> deinitedVars;
-
-  // What actions should be taken at the end of the scope?
-  std::vector<Action> endOfScopeActions;
-
-  // Stores the state for variables that are currently
-  //std::map<ID, InitDeinitState> varState;
-
-  ScopeFrame(const Scope* scope) : scope(scope) { }
-};
-
-// Resolves init, deinit, and assign
+// Resolves default-init, copy-init, assign, and deinit
 // TODO: should it be renamed to include Assign?
-struct CallInitDeinit {
-  using RV = MutatingResolvedVisitor<CallInitDeinit>;
-
+struct CallInitDeinit : VarScopeVisitor {
   // inputs to the process
-  Context* context = nullptr;
   Resolver& resolver;
-  std::set<ID> splitInitedVars;
-  std::set<ID> elidedCopyFromIds;
+  const std::set<ID>& splitInitedVars;
+  const std::set<ID>& elidedCopyFromIds;
 
-  // internal variables
+  // methods
+  CallInitDeinit(Context* context,
+                 Resolver& resolver,
+                 const std::set<ID>& splitInitedVars,
+                 const std::set<ID>& elidedCopyFromIds)
+    : VarScopeVisitor(context),
+      resolver(resolver),
+      splitInitedVars(splitInitedVars),
+      elidedCopyFromIds(elidedCopyFromIds)
+  { }
 
-  // for handling calls, nested calls, end of statement actions
-  std::vector<const Call*> callStack;
-  std::vector<Action> endOfStatementActions;
-
-  // for handling end of block / end of scope actions
-  std::vector<ScopeFrame> scopeStack;
-
-  // main entry point to this code
-  // updates the ResolutionResultsByPostorderID
-  static void process(Resolver& resolver,
-                      std::set<ID> splitInitedVars,
-                      std::set<ID> elidedCopyFromIds);
-
-  void printActions(const std::vector<Action>& actions);
-
-  CallInitDeinit(Resolver& resolver,
-                 std::set<ID> splitInitedVars,
-                 std::set<ID> elidedCopyFromIds);
-
-  void checkValidAssignTypes(QualifiedType lhsType, QualifiedType rhsType);
-
-  void enterScope(const uast::AstNode* ast);
-  void exitScope(const uast::AstNode* ast);
-
-  bool enter(const VarLikeDecl* ast, RV& rv);
-  void exit(const VarLikeDecl* ast, RV& rv);
-
-  bool enter(const OpCall* ast, RV& rv);
-  void exit(const OpCall* ast, RV& rv);
-
-  bool enter(const Call* ast, RV& rv);
-  void exit(const Call* ast, RV& rv);
-
-  bool enter(const uast::AstNode* node, RV& rv);
-  void exit(const uast::AstNode* node, RV& rv);
+  // overrides
+  void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
+  void handleMention(const Identifier* ast, ID varId, RV& rv) override;
+  void handleAssign(const OpCall* ast, RV& rv) override;
+  void handleOutFormal(const FnCall* ast, const AstNode* actual,
+                       const QualifiedType& formalType,
+                       RV& rv) override;
+  void handleInFormal(const FnCall* ast, const AstNode* actual,
+                      const QualifiedType& formalType,
+                      RV& rv) override;
+  void handleInoutFormal(const FnCall* ast, const AstNode* actual,
+                         const QualifiedType& formalType,
+                         RV& rv) override;
+  void handleReturnOrThrow(const uast::AstNode* ast, RV& rv) override;
+  void handleConditional(const Conditional* cond) override;
+  void handleTry(const Try* t) override;
+  void handleScope(const AstNode* ast) override;
 };
 
-
-
-void CallInitDeinit::process(Resolver& resolver,
-                             std::set<ID> splitInitedVars,
-                             std::set<ID> elidedCopyFromIds) {
-  CallInitDeinit uv(resolver,
-                    std::move(splitInitedVars),
-                    std::move(elidedCopyFromIds));
-  MutatingResolvedVisitor<CallInitDeinit> rv(resolver.context,
-                                             resolver.symbol,
-                                             uv,
-                                             resolver.byPostorder);
-
-  resolver.symbol->traverse(rv);
-}
-
+/*
 void CallInitDeinit::printActions(const std::vector<Action>& actions) {
   for (auto act : actions) {
     switch (act.action) {
@@ -171,170 +114,130 @@ void CallInitDeinit::printActions(const std::vector<Action>& actions) {
         break;
     }
   }
+}*/
+
+void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
+  // TODO
 }
-
-CallInitDeinit::CallInitDeinit(Resolver& resolver,
-                               std::set<ID> splitInitedVars,
-                               std::set<ID> elidedCopyFromIds)
-  : context(resolver.context), resolver(resolver),
-    splitInitedVars(std::move(splitInitedVars)),
-    elidedCopyFromIds(std::move(elidedCopyFromIds))
-{
+void CallInitDeinit::handleMention(const Identifier* ast, ID varId, RV& rv) {
+  // TODO
 }
+void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
+  // What is the RHS and LHS of the '=' call?
+  auto lhsAst = ast->actual(0);
+  auto rhsAst = ast->actual(1);
 
-// if lhsType is not a record, check
-void CallInitDeinit::checkValidAssignTypes(QualifiedType lhsType, QualifiedType rhsType) {
-}
+  ResolvedExpression& lhsRe = rv.byAst(lhsAst);
+  QualifiedType lhsType = lhsRe.type();
 
-void CallInitDeinit::enterScope(const AstNode* ast) {
-  if (createsScope(ast->tag())) {
-    const Scope* scope = scopeForId(context, ast->id());
-    scopeStack.push_back(ScopeFrame(scope));
-  }
-}
-void CallInitDeinit::exitScope(const AstNode* ast) {
-  if (createsScope(ast->tag())) {
-    ScopeFrame& frame = scopeStack.back();
-    printActions(frame.endOfScopeActions);
+  ResolvedExpression& rhsRe = rv.byAst(rhsAst);
+  QualifiedType rhsType = rhsRe.type();
 
-    assert(!scopeStack.empty());
-    scopeStack.pop_back();
-  }
-}
+  bool resolveAssign = false;
+  bool resolveInitAssign = false;
 
-bool CallInitDeinit::enter(const VarLikeDecl* ast, RV& rv) {
-  enterScope(ast);
+  // update initedVars if it is initializing a variable
+  bool splitInited = handleSplitInitAssign(ast, splitInitedVars, rv);
 
-  return true;
-}
-void CallInitDeinit::exit(const VarLikeDecl* ast, RV& rv) {
-  assert(!scopeStack.empty());
-  if (!scopeStack.empty()) {
-    ScopeFrame& frame = scopeStack.back();
-    frame.declaredVars.insert(ast);
-  }
+  if (lhsType.isType() || lhsType.isParam()) {
+    // these are basically 'move' initialization
+  } else if (splitInited) {
+    if (elidedCopyFromIds.count(ast->id())) {
+      // it is move initialization
 
-  exitScope(ast);
-}
+      // Future TODO: might need to call something provided by the record
+      // author to be a hook for move initialization across locales
+      // (see issue #15676).
 
-// TODO: visit nested calls & record their IDs
-// in InitDeinitState to record required deinit actions
-
-bool CallInitDeinit::enter(const OpCall* ast, RV& rv) {
-  if (auto op = ast->toOpCall()) {
-    if (op->op() == USTR("=")) {
-      // What is the RHS and LHS of the '=' call?
-      auto lhsAst = ast->actual(0);
-      auto rhsAst = ast->actual(1);
-
-      // TODO: should it visit the RHS first?
-
-      ResolvedExpression& lhsRe = rv.byAst(lhsAst);
-      QualifiedType lhsType = lhsRe.type();
-      ID toId = lhsRe.toId();
-
-      ResolvedExpression& rhsRe = rv.byAst(rhsAst);
-      QualifiedType rhsType = rhsRe.type();
-
-      bool resolveAssign = false;
-      bool resolveInitAssign = false;
-
-      if (lhsType.isType() || lhsType.isParam()) {
-        // these are basically 'move' initialization
-      } else if (!toId.isEmpty() && splitInitedVars.count(toId) > 0) {
-        if (elidedCopyFromIds.count(rhsAst->id())) {
-          // it is move initialization
-
-          // Future TODO: might need to call something provided by the record
-          // author to be a hook for move initialization across locales
-          // (see issue #15676).
-
-          // Otherwise, no need to resolve anything else.
-        } else {
-          // it is copy initialization, so use init= for records
-          // TODO: and tuples?
-          if (lhsType.type() != nullptr && lhsType.type()->isRecordType()) {
-            resolveInitAssign = true;
-          } else {
-            resolveAssign = true;
-          }
-        }
+      // Otherwise, no need to resolve anything else.
+    } else {
+      // it is copy initialization, so use init= for records
+      // TODO: and tuples?
+      if (lhsType.type() != nullptr && lhsType.type()->isRecordType()) {
+        resolveInitAssign = true;
       } else {
-        // it is assignment, so resolve the '=' call
         resolveAssign = true;
       }
-
-      if (resolveAssign) {
-        std::vector<CallInfoActual> actuals;
-        actuals.push_back(CallInfoActual(lhsType, UniqueString()));
-        actuals.push_back(CallInfoActual(rhsType, UniqueString()));
-        auto ci = CallInfo (/* name */ USTR("="),
-                            /* calledType */ QualifiedType(),
-                            /* isMethodCall */ false,
-                            /* hasQuestionArg */ false,
-                            /* isParenless */ false,
-                            actuals);
-        const Scope* scope = scopeForId(context, op->id());
-        auto c = resolveGeneratedCall(context, op, ci, scope,
-                                      resolver.poiScope);
-        ResolvedExpression& opR = rv.byAst(op);
-        resolver.handleResolvedAssociatedCall(opR, op, ci, c);
-      } else if (resolveInitAssign) {
-        std::vector<CallInfoActual> actuals;
-        actuals.push_back(CallInfoActual(lhsType, USTR("this")));
-        actuals.push_back(CallInfoActual(rhsType, UniqueString()));
-        auto ci = CallInfo (/* name */ USTR("init="),
-                            /* calledType */ QualifiedType(),
-                            /* isMethodCall */ true,
-                            /* hasQuestionArg */ false,
-                            /* isParenless */ false,
-                            actuals);
-        const Scope* scope = scopeForId(context, op->id());
-        auto c = resolveGeneratedCall(context, op, ci, scope,
-                                      resolver.poiScope);
-        ResolvedExpression& opR = rv.byAst(op);
-        resolver.handleResolvedAssociatedCall(opR, op, ci, c);
-      } else {
-        // if it's move initialization, check that the types are compatable
-        if (!canPass(context, rhsType, lhsType).passes()) {
-          context->error(ast, "types not compatable for move-init");
-        }
-      }
     }
+  } else {
+    // it is assignment, so resolve the '=' call
+    resolveAssign = true;
   }
 
-  callStack.push_back(ast);
-
-  return true;
+  if (resolveAssign) {
+    std::vector<CallInfoActual> actuals;
+    actuals.push_back(CallInfoActual(lhsType, UniqueString()));
+    actuals.push_back(CallInfoActual(rhsType, UniqueString()));
+    auto ci = CallInfo (/* name */ USTR("="),
+                        /* calledType */ QualifiedType(),
+                        /* isMethodCall */ false,
+                        /* hasQuestionArg */ false,
+                        /* isParenless */ false,
+                        actuals);
+    const Scope* scope = scopeForId(context, ast->id());
+    auto c = resolveGeneratedCall(context, ast, ci, scope,
+                                  resolver.poiScope);
+    ResolvedExpression& opR = rv.byAst(ast);
+    resolver.handleResolvedAssociatedCall(opR, ast, ci, c);
+  } else if (resolveInitAssign) {
+    std::vector<CallInfoActual> actuals;
+    actuals.push_back(CallInfoActual(lhsType, USTR("this")));
+    actuals.push_back(CallInfoActual(rhsType, UniqueString()));
+    auto ci = CallInfo (/* name */ USTR("init="),
+                        /* calledType */ QualifiedType(),
+                        /* isMethodCall */ true,
+                        /* hasQuestionArg */ false,
+                        /* isParenless */ false,
+                        actuals);
+    const Scope* scope = scopeForId(context, ast->id());
+    auto c = resolveGeneratedCall(context, ast, ci, scope,
+                                  resolver.poiScope);
+    ResolvedExpression& opR = rv.byAst(ast);
+    resolver.handleResolvedAssociatedCall(opR, ast, ci, c);
+  } else {
+    // if it's move initialization, check that the types are compatable
+    if (!canPass(context, rhsType, lhsType).passes()) {
+      context->error(ast, "types not compatable for move-init");
+    }
+  }
 }
-void CallInitDeinit::exit(const OpCall* ast, RV& rv) {
-  // TODO: handle in/out/inout temporaries for nested calls by adding
-  // to the call's CallFrame (which is currently at callStack.back()).
-  callStack.pop_back();
+void CallInitDeinit::handleOutFormal(const FnCall* ast,
+                                     const AstNode* actual,
+                                     const QualifiedType& formalType,
+                                     RV& rv) {
+  // update initedVars if it is initializing a variable
+  handleSplitInitOut(ast, actual, splitInitedVars, rv);
 }
-
-
-bool CallInitDeinit::enter(const Call* ast, RV& rv) {
-  callStack.push_back(ast);
-
-  return true;
+void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
+                                      const QualifiedType& formalType,
+                                      RV& rv) {
+  // TODO
 }
-void CallInitDeinit::exit(const Call* ast, RV& rv) {
-  // TODO: handle in/out/inout temporaries for nested calls by adding
-  // to the call's CallFrame (which is currently at callStack.back()).
-  callStack.pop_back();
+void CallInitDeinit::handleInoutFormal(const FnCall* ast,
+                                         const AstNode* actual,
+                                         const QualifiedType& formalType,
+                                         RV& rv) {
+  // TODO
 }
-
-
-bool CallInitDeinit::enter(const AstNode* ast, RV& rv) {
-  enterScope(ast);
-
-  return true;
+void CallInitDeinit::handleReturnOrThrow(const uast::AstNode* ast, RV& rv) {
+  // TODO
 }
-void CallInitDeinit::exit(const AstNode* ast, RV& rv) {
-  exitScope(ast);
+void CallInitDeinit::handleConditional(const Conditional* cond) {
+  // TODO
 }
+void CallInitDeinit::handleTry(const Try* t) {
+  // TODO
+}
+void CallInitDeinit::handleScope(const AstNode* ast) {
+  VarFrame* frame = currentFrame();
+  VarFrame* parent = currentParentFrame();
 
+  // propagate inited vars
+  if (parent != nullptr) {
+    parent->initedVars.insert(frame->initedVars.begin(),
+                              frame->initedVars.end());
+  }
+}
 
 void callInitDeinit(Resolver& resolver) {
   std::set<ID> splitInitedVars = computeSplitInits(resolver.context,
@@ -342,9 +245,9 @@ void callInitDeinit(Resolver& resolver) {
                                                    resolver.byPostorder);
   std::set<ID> elidedCopyFromIds = computeElidedCopies(resolver.context,
                                                        resolver.symbol,
-                                                       resolver.byPostorder);
+                                                       resolver.byPostorder,
+                                                       splitInitedVars);
 
-  /*
   printf("\nSplit Init Report:\n");
   for (auto varId : splitInitedVars) {
     auto ast = parsing::idToAst(resolver.context, varId);
@@ -363,13 +266,13 @@ void callInitDeinit(Resolver& resolver) {
            id.str().c_str());
   }
   printf("\n");
-  */
 
 
-  CallInitDeinit::process(resolver,
-                          std::move(splitInitedVars),
-                          std::move(elidedCopyFromIds));
+  CallInitDeinit uv(resolver.context, resolver,
+                    splitInitedVars, elidedCopyFromIds);
+  uv.process(resolver.symbol, resolver.byPostorder);
 }
+
 
 } // end namespace resolution
 } // end namespace chpl
