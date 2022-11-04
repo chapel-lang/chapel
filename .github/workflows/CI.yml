@@ -122,8 +122,8 @@ jobs:
           ./util/buildRelease/smokeTest -ne 0
           if [$? -ne 0]
           then
-             echo "Encountered issue executing the script"
+             echo "Encountered issue executing smokeTest"
           exit 1
           else
-             echo "Succeded"
+             echo "smoketest Succeded"
           fi
