@@ -5413,18 +5413,22 @@ proc _channel.readBinary(ref b: bytes, maxSize: int): bool throws {
 /*
    Read an array of binary numbers from the channel
 
-   The binary values in ``data`` are read from the channel in order until all
-   of the values have been read. If any of the values cannot be read, or EOF is
-   reached before all of ``data`` has been read, an error will be thrown.
+   Binary values of the type ``data.eltType`` are consumed from the channel
+   until ``data`` is full or EOF is reached. An :class:`~OS.UnexpectedEofError`
+   is thrown if EOF is reached before the array is filled.
 
-   :arg data: an array of numbers to read from the channel
+   Note that this routine currently requires a 1D rectangular non-strided array.
+
+   :arg data: an array to read into – existing values are overwritten.
    :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
               to read the numbers. Defaults to ``ioendian.native``.
-   :returns: `false` if EOF is encountered before reading anything, `true` otherwise
+   :returns: `false` if EOF is encountered before reading anything,
+              `true` otherwise
 
    :throws SystemError: Thrown if an error occurred while reading the channel
+   :throws UnexpectedEofError: Thrown if EOF is encountered before ``data.size`` values are read
 */
-proc _channel.readBinary(ref data: [?d] ?t, param endian = ioendian.native):bool throws
+proc _channel.readBinary(ref data: [?d] ?t, param endian = ioendian.native): bool throws
   where (d.rank == 1 && d.stridable == false) && (
           t ==  int(8)  || t ==  int(16) || t ==  int(32) || t ==  int(64) ||
           t == uint(8)  || t == uint(16) || t == uint(32) || t == uint(64) ||
@@ -5450,9 +5454,9 @@ proc _channel.readBinary(ref data: [?d] ?t, param endian = ioendian.native):bool
         }
       }
 
-      if (e == EEOF) {
+      if e == EEOF {
         throw new owned UnexpectedEofError("Unable to read entire array of values in 'readBinary'");
-      } else if (e != ENOERR) {
+      } else if e != ENOERR {
         throw createSystemError(e);
       } else {
         readSomething = true;
@@ -5466,17 +5470,20 @@ proc _channel.readBinary(ref data: [?d] ?t, param endian = ioendian.native):bool
 /*
    Read an array of binary numbers from the channel
 
-   The binary values in ``data`` are read from the channel until either EOF is
-   reached or all of the values have been read. If any of the values cannot be
-   read, an error is thrown.
+   Binary values of the type ``data.eltType`` are consumed from the channel
+   until ``data`` is full or EOF is reached. An :class:`~OS.UnexpectedEofError`
+   is thrown if EOF is reached before the array is filled.
 
-   :arg data: an array of numbers to read from the channel
+   Note that this routine currently requires a 1D rectangular non-strided array.
+
+   :arg data: an array to read into – existing values are overwritten.
    :arg endian: :type:`ioendian` specifies the byte order in which
               to read the number.
-   :returns: `false` if EOF is encountered before reading anything, `true` otherwise
+   :returns: `false` if EOF is encountered before reading anything,
+              `true` otherwise
 
-   :throws SystemError: Thrown if an error occurred while reading the channel.
-   :throws BadArgumentError: Thrown if a value cannot be read from the channel.
+   :throws SystemError: Thrown if an error occurred while reading the channel
+   :throws UnexpectedEofError: Thrown if EOF is encountered before ``data.size`` values are read
 */
 proc _channel.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
   where (d.rank == 1 && d.stridable == false) && (
