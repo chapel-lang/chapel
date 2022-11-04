@@ -508,8 +508,10 @@ class Context {
     with the error handler set by setErrorHandler.
 
     If no query is currently running, it just reports the error.
+
+    Returns the passed-in error for convenience.
    */
-  void report(const ErrorBase* error);
+  const ErrorBase* report(const ErrorBase* error);
 
   /**
     Note an error for the currently running query.

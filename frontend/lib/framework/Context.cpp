@@ -557,7 +557,7 @@ void Context::collectGarbage() {
   }
 }
 
-void Context::report(const ErrorBase* error) {
+const ErrorBase* Context::report(const ErrorBase* error) {
   gdbShouldBreakHere();
   if (queryStack.size() > 0) {
     queryStack.back()->errors.push_back(std::move(error));
@@ -565,6 +565,8 @@ void Context::report(const ErrorBase* error) {
   } else {
     reportError(this, error);
   }
+
+  return error;
 }
 
 static void logErrorInContext(Context* context,
