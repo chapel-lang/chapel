@@ -465,14 +465,22 @@ undefined behavior.
    checked at runtime and the program will halt if the range iteration is
    invalid.
 
-.. _Iterating_over_Unbounded_Ranges_in_Zippered_Iterations:
+.. _Iterating_over_Unbounded_Ranges:
 
-Iterating over Unbounded Ranges in Zippered Iterations
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Iterating over Unbounded Ranges
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-When a range with the first index but without the last index is used in
-a zippered iteration ( :ref:`Zipper_Iteration`), it generates as
-many indices as needed to match the other iterator(s).
+When an unbounded range of integer values is used to drive a loop,
+either by being the only iterand, or by serving as the leader iterand
+of a zippered iteration, it will generate a conceptually infinite
+number of iterations (though practically, the behavior is undefined
+once it approaches the extreme values that its index type can store).
+For such loops to be useful in practice, they must typically contain a
+``break`` or ``return`` statement.
+
+When an unbounded range of integer values serves as a follower iterand
+in a zippered context ( :ref:`Zipper_Iteration`), it will generate as
+many indices as are needed to match its leader iterand.
 
    *Example (zipWithUnbounded.chpl)*.
 
@@ -495,6 +503,11 @@ many indices as needed to match the other iterator(s).
 
       (1, 3); (2, 4); (3, 5); (4, 6); (5, 7); 
 
+When an unbounded range of ``bool`` or ``enum`` values is used in a
+loop context, it is equivalent to a bounded range where the omitted
+low/high bound is taken to be the ``false``/``true`` for a ``bool``
+range or the type's initial/final value for an ``enum`` range.
+
 .. _Range_Promotion_of_Scalar_Functions:
 
 Range Promotion of Scalar Functions
@@ -506,19 +519,19 @@ scalar function as described in :ref:`Promotion`.
 
    *Example (rangePromotion.chpl)*.
 
-   Given a function ``addOne(x:int)`` that accepts ``int`` values and a
-   range ``1..10``, the function ``addOne()`` can be called with
-   ``1..10`` as its actual argument which will result in the function
-   being invoked for each value in the range.
+   Given a function ``addOne(x: int)`` that accepts ``int`` values,
+   the function ``addOne()`` can be called with the range ``1..10`` as
+   its actual argument, which will result in the function being
+   invoked for each value in the range in a data-parallel manner.
 
    
 
    .. code-block:: chapel
 
-      proc addOne(x:int) {
+      proc addOne(x: int) {
         return x + 1;
       }
-      var A:[1..10] int;
+      var A: [1..10] int;
       A = addOne(1..10);
 
    
@@ -537,7 +550,7 @@ The last statement is equivalent to:
 
 .. code-block:: chapel
 
-   forall (a,i) in zip(A,1..10) do
+   forall (a, i) in zip(A, 1..10) do
      a = addOne(i);
 
 .. _Range_Operators:
