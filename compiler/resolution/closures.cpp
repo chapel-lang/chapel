@@ -21,9 +21,9 @@
 #include "closures.h"
 
 #include "astutil.h"
+#include "AstVisitorTraverse.h"
 #include "buildDefaultFunctions.h"
 #include "DecoratedClassType.h"
-#include "driver.h"
 #include "passes.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -164,6 +164,8 @@ insertSharedParentFactory(const SharedFcfSuperInfo info,
 
 static bool checkAndResolveForClosure(FnSymbol* fn, Expr* use);
 
+static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use);
+
 /************************************* | *************************************
 *                                                                            *
 *                                                                            *
@@ -187,7 +189,7 @@ static Type* buildSharedWrapperType(AggregateType* super) {
   superShared->remove();
   ret = superShared->typeInfo();
   INT_ASSERT(ret);
-  ret->symbol->addFlag(FLAG_CLOSURE_CLASS);
+  ret->symbol->addFlag(FLAG_FUNCTION_CLASS);
   return ret;
 }
 
@@ -400,7 +402,7 @@ insertFcfWrapperSuperTypeAtProgram(const char* name,
   auto ret = new AggregateType(AGGREGATE_CLASS);
   auto tsym = new TypeSymbol(name, ret);
 
-  tsym->addFlag(FLAG_CLOSURE_CLASS);
+  tsym->addFlag(FLAG_FUNCTION_CLASS);
 
   // TODO: Should we be using the base module or "TheProgram" here?
   baseModule->block->insertAtHead(new DefExpr(tsym));
@@ -799,7 +801,58 @@ static bool checkAndResolveForClosure(FnSymbol* fn, Expr* use) {
   return ret;
 }
 
-} // end anonymous namespace
+static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use) {
+  INT_ASSERT(fn && fn->defPoint);
+
+  if (!checkAndResolveForClosure(fn, use)) {
+    auto dummy = closureErrorSink();
+    return new SymExpr(dummy);
+  }
+
+  // Reuse cached FCF wrapper if it already exists.
+  if (payloadToSharedParentFactory.find(fn) !=
+      payloadToSharedParentFactory.end()) {
+    auto ret = new CallExpr(payloadToSharedParentFactory[fn]);
+    return ret;
+  }
+
+  // TODO: Move me to dyno.
+  if (fWarnUnstable) {
+    USR_WARN(use, "first class functions are unstable");
+  }
+
+  auto& env = computeOuterVariables(fn);
+  if (!env.isEmpty()) {
+    INT_FATAL(use, "Not implemented yet!");
+  }
+
+  auto info = buildWrapperSuperTypeAtProgram(fn);
+
+  auto child = insertChildWrapperAtPayload(info, fn);
+  std::ignore = attachChildThis(info, child, fn);
+
+  std::ignore = attachChildWriteThis(info, child, fn, "writeThis");
+  if (fUseIOFormatters) {
+    std::ignore = attachChildWriteThis(info, child, fn, "encodeTo");
+  }
+
+  std::ignore = attachChildPayloadPtrGetter(info, child, fn);
+  auto wrapper = insertSharedParentFactory(info, child, fn);
+
+  payloadToSharedParentFactory[fn] = wrapper;
+
+  auto invoke = new CallExpr(wrapper);
+  auto tmp = newTemp();
+  auto move = new CallExpr(PRIM_MOVE, tmp, invoke);
+  use->getStmtExpr()->insertBefore(new DefExpr(tmp));
+  use->getStmtExpr()->insertBefore(move);
+  std::ignore = resolveExpr(invoke);
+  std::ignore = resolveExpr(move);
+
+  auto ret = new SymExpr(tmp);
+
+  return ret;
+}
 
 /************************************* | **************************************
 *                                                                             *
@@ -807,7 +860,136 @@ static bool checkAndResolveForClosure(FnSymbol* fn, Expr* use) {
 *                                                                             *
 ************************************** | *************************************/
 
+//
+// TODO: The modern implementation stuff will go here...
+//
+
+} // end anonymous namespace
+
 namespace closures {
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+// This visitor will collect all the uses of outer variables in a function.
+struct OuterVariableCollector : public AstVisitorTraverse {
+  using OuterVarToUseMap = std::map<Symbol*, std::vector<SymExpr*>>;
+
+  FnSymbol* owner_;
+  std::vector<Symbol*>& outerVariables_;
+  OuterVarToUseMap& outerVariableToUses_;
+  std::vector<FnSymbol*>& childFunctions_;
+
+  OuterVariableCollector(FnSymbol* owner,
+                         std::vector<Symbol*>& outerVariables,
+                         OuterVarToUseMap& outerVariableToUses,
+                         std::vector<FnSymbol*>& childFunctions)
+      : owner_(owner),
+        outerVariables_(outerVariables),
+        outerVariableToUses_(outerVariableToUses),
+        childFunctions_(childFunctions) {
+    return;
+  }
+
+ ~OuterVariableCollector() = default;
+
+  bool isOuterSymbol(Symbol* node) {
+    auto p = node->defPoint->parentSymbol;
+    auto ret = p != owner_;
+    return ret;
+  }
+
+  bool isSymbolOfInterest(Symbol* node) {
+    auto ret = isLcnSymbol(node) && !isGlobal(node);
+    return ret;
+  }
+
+  void visitSymExpr(SymExpr* node) override {
+    auto sym = node->symbol();
+
+    if (!isOuterSymbol(sym) || !isSymbolOfInterest(sym)) return;
+
+    auto it = outerVariableToUses_.find(sym);
+    if (it != outerVariableToUses_.end()) {
+      it->second.push_back(node);
+      return;
+    }
+
+    outerVariables_.push_back(sym);
+    auto& v = outerVariableToUses_[sym];
+    v.push_back(node);
+  }
+
+  bool enterFnSym(FnSymbol* node) override {
+    childFunctions_.push_back(node);
+    return false;
+  }
+};
+
+ClosureEnv::ClosureEnv(FnSymbol* owner) : owner_(owner) {
+  INT_ASSERT(owner);
+  auto p = owner->defPoint->parentSymbol;
+
+  INT_ASSERT(p->getModule() == owner->getModule());
+
+  if (isFnSymbol(p) && p != owner->getModule()->initFn) {
+    auto v = OuterVariableCollector(owner_, outerVariables_,
+                                    outerVariableToUses_,
+                                    childFunctions_);
+    owner->body->accept(&v);
+  }
+}
+
+FnSymbol* ClosureEnv::owner() const {
+  return owner_;
+}
+
+bool ClosureEnv::isEmpty() const {
+  auto ret = numOuterVariables() == 0;
+  return ret;
+}
+
+int ClosureEnv::numOuterVariables() const {
+  auto ret = ((int) outerVariables_.size());
+  return ret;
+}
+
+Symbol* ClosureEnv::outerVariable(int idx) const {
+  INT_ASSERT(0 <= idx && idx < numOuterVariables());
+  auto ret = outerVariables_[idx];
+  return ret;
+}
+
+int ClosureEnv::numUsesOf(Symbol* sym) const {
+  auto it = outerVariableToUses_.find(sym);
+  if (it == outerVariableToUses_.end()) return 0;
+  auto ret = ((int) it->second.size());
+  return ret;
+}
+
+SymExpr* ClosureEnv::firstUseOf(Symbol* sym) const {
+  INT_ASSERT(1 <= numUsesOf(sym));
+  auto ret = useOf(sym, 0);
+  return ret;
+}
+
+SymExpr* ClosureEnv::useOf(Symbol* sym, int idx) const {
+  auto it = outerVariableToUses_.find(sym);
+  if (it == outerVariableToUses_.end()) return nullptr;
+  int hi = ((int) it->second.size());
+  INT_ASSERT(0 <= idx && idx < hi);
+  auto ret = it->second[idx];
+  return ret;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
 
 bool legacyFirstClassFunctions(void) {
   static VarSymbol* valueOfConfigParam = nullptr;
@@ -847,59 +1029,16 @@ bool legacyFirstClassFunctions(void) {
   return ret;
 }
 
-Expr* instanceFromFnExpr(FnSymbol* fn, Expr* use) {
-  INT_ASSERT(fn && fn->defPoint);
-
-  if (!checkAndResolveForClosure(fn, use)) {
-    auto dummy = closureErrorSink();
-    return new SymExpr(dummy);
+Expr* createClassInstance(FnSymbol* fn, Expr* use) {
+  if (legacyFirstClassFunctions()) {
+    return createLegacyClassInstance(fn, use);
+  } else {
+    INT_FATAL(use, "Modern closures are not implemented yet!");
+    return nullptr;
   }
-
-  // Reuse cached FCF wrapper if it already exists.
-  if (payloadToSharedParentFactory.find(fn) !=
-      payloadToSharedParentFactory.end()) {
-    auto ret = new CallExpr(payloadToSharedParentFactory[fn]);
-    return ret;
-  }
-
-  // TODO: Move me to dyno.
-  if (fWarnUnstable) {
-    USR_WARN(use, "first class functions are unstable");
-  }
-
-  auto& env = computeOuterVariables(fn);
-  if (!env.empty()) {
-    INT_FATAL(use, "Not implemented yet!");
-  }
-
-  auto info = buildWrapperSuperTypeAtProgram(fn);
-
-  auto child = insertChildWrapperAtPayload(info, fn);
-  std::ignore = attachChildThis(info, child, fn);
-  std::ignore = attachChildWriteThis(info, child, fn, "writeThis");
-  if (fUseIOFormatters) {
-    std::ignore = attachChildWriteThis(info, child, fn, "encodeTo");
-  }
-
-  std::ignore = attachChildPayloadPtrGetter(info, child, fn);
-  auto wrapper = insertSharedParentFactory(info, child, fn);
-
-  payloadToSharedParentFactory[fn] = wrapper;
-
-  auto invoke = new CallExpr(wrapper);
-  auto tmp = newTemp();
-  auto move = new CallExpr(PRIM_MOVE, tmp, invoke);
-  use->getStmtExpr()->insertBefore(new DefExpr(tmp));
-  use->getStmtExpr()->insertBefore(move);
-  std::ignore = resolveExpr(invoke);
-  std::ignore = resolveExpr(move);
-
-  auto ret = new SymExpr(tmp);
-
-  return ret;
 }
 
-Type* superTypeFromLegacyFuncFnCall(CallExpr* call) {
+Type* legacySuperTypeForFuncConstructor(CallExpr* call) {
   INT_ASSERT(call && call->isPrimitive(PRIM_CREATE_FN_TYPE));
 
   AList& argList = call->argList;
@@ -941,7 +1080,7 @@ static bool isAnyErrorSinkType(Type* t) {
 }
 
 const char* closureTypeToString(Type* t) {
-  INT_ASSERT(t && t->symbol->hasFlag(FLAG_CLOSURE_CLASS));
+  INT_ASSERT(t && t->symbol->hasFlag(FLAG_FUNCTION_CLASS));
 
   auto at = toAggregateType(t);
 
@@ -959,21 +1098,6 @@ const char* closureTypeToString(Type* t) {
   auto ret = astr(info->userTypeString);
 
   return ret;
-}
-
-bool isClosureValidExternType(Type* t) {
-  if (!t || !t->symbol->hasFlag(FLAG_CLOSURE_CLASS)) return false;
-  auto info = typeToInfo[t];
-  INT_ASSERT(info.get() != nullptr);
-
-  // TODO: What do we do about intents here? E.g., out intent...
-  for (auto& formal : info->formals) {
-    if (!isExternType(formal.type)) return false;
-  }
-
-  if (!isExternType(info->retType)) return false;
-
-  return true;
 }
 
 bool checkAndResolveSignature(FnSymbol* fn, Expr* use) {
@@ -1040,11 +1164,12 @@ std::vector<FnSymbol*> lookupFunctions(const char* name, Expr* use) {
   return ret;
 }
 
-static std::map<FnSymbol*, std::vector<Symbol*>> fnToEnv;
+static std::map<FnSymbol*, ClosureEnv> fnToEnv;
 
-const std::vector<Symbol*>& computeOuterVariables(FnSymbol* fn) {
+const ClosureEnv& computeOuterVariables(FnSymbol* fn) {
   auto it = fnToEnv.find(fn);
   if (it != fnToEnv.end()) return it->second;
+  fnToEnv.insert(std::make_pair(fn, ClosureEnv(fn)));
   auto& ret = fnToEnv[fn];
   return ret;
 }
@@ -1063,6 +1188,7 @@ VarSymbol* errorSink(FunctionType::Kind kind) {
   }
 
   if (*create) return *create;
+
   auto name = astr("chpl_", FunctionType::kindToString(kind), "_error");
   auto super = insertFcfWrapperSuperTypeAtProgram(name);
   VarSymbol* ret = newTemp(super);
@@ -1076,10 +1202,12 @@ VarSymbol* closureErrorSink(void) {
   static VarSymbol* closureError = nullptr;
 
   if (closureError) return closureError;
+
   auto super = insertFcfWrapperSuperTypeAtProgram("chpl_closure_error");
   closureError = newTemp(super);
   theProgram->block->body.insertAtTail(new DefExpr(closureError));
   auto ret = closureError;
+
   return ret;
 }
 

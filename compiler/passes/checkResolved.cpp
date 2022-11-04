@@ -617,7 +617,7 @@ static bool isErroneousExternExportArgIntent(ArgSymbol* formal) {
   if (valType == dtExternalArray || valType == dtOpaqueArray)
     return false;
 
-  if (valType->symbol->hasFlag(FLAG_CLOSURE_CLASS)) return false;
+  if (valType->symbol->hasFlag(FLAG_FUNCTION_CLASS)) return false;
 
   return isRecord(valType) &&
          (formal->originalIntent == INTENT_BLANK ||

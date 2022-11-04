@@ -251,7 +251,7 @@ PRIMITIVE_G(PRIVATE_BROADCAST, "_private_broadcast")
 PRIMITIVE_G(INT_ERROR, "_internal_error")
 
 PRIMITIVE_R(CAPTURE_FN, "capture fn")
-PRIMITIVE_R(CAPTURE_FN_TO_CLOSURE, "capture fn to closure")
+PRIMITIVE_R(CAPTURE_FN_TO_CLASS, "capture fn to class")
 PRIMITIVE_R(CREATE_FN_TYPE, "create fn type")
 
 PRIMITIVE_G(STRING_COMPARE, "string_compare")

@@ -4635,7 +4635,7 @@ void printResolutionErrorUnresolved(CallInfo&       info,
         USR_FATAL_CONT(call,
                        "illegal access of iterator or promoted expression");
 
-      } else if (t->symbol->hasFlag(FLAG_CLOSURE_CLASS)) {
+      } else if (t->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
         const bool legacy = closures::legacyFirstClassFunctions();
         auto str = legacy ? "first class function" : "closure";
 
@@ -10079,7 +10079,7 @@ static Expr* convertFunctionToClosureIfNeeded(FnSymbol* fn, Expr* use) {
   auto& env = closures::computeOuterVariables(fn);
 
   // TODO: We want to support closures, obviously...
-  if (!env.empty()) {
+  if (!env.isEmpty()) {
     auto kindStr = FunctionType::kindToString(fnType->kind());
     if (fn->hasFlag(FLAG_LEGACY_LAMBDA)) kindStr = "lambda";
 
@@ -10095,10 +10095,15 @@ static Expr* convertFunctionToClosureIfNeeded(FnSymbol* fn, Expr* use) {
                           fn->name);
     }
 
-    Symbol* one = env[0];
-    USR_PRINT(one->defPoint, "such as '%s', here", one->name);
+    const int hi = 3;
+    const int num = env.numOuterVariables();
+    const int stop = num < hi ? num : hi;
 
-    return use;
+    for (int i = 0; i < stop; i++) {
+      auto sym = env.outerVariable(i);
+      auto use = env.firstUseOf(sym);
+      USR_PRINT(use, "such as '%s', here", sym->name);
+    }
   }
 
   return nullptr;
@@ -10184,7 +10189,7 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
 
   if (discardType) {
     auto& env = closures::computeOuterVariables(fn);
-    if (!env.empty()) {
+    if (!env.isEmpty()) {
       USR_FATAL_CONT(use, "cannot convert '%s' to type '%s' because it "
                           "refers to one or more outer variables",
                           fn->name,
@@ -10208,7 +10213,7 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
 
   // In legacy mode, every capture creates a closure.
   if (closures::legacyFirstClassFunctions() || promoteToClosure) {
-    auto ret = closures::instanceFromFnExpr(fn, use);
+    auto ret = closures::createClassInstance(fn, use);
     use->replace(ret);
     return ret;
   }
@@ -10229,7 +10234,7 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
 //
 static Expr* maybeResolveFunctionCapturePrimitive(CallExpr* call) {
   if (!call->isPrimitive(PRIM_CAPTURE_FN) &&
-      !call->isPrimitive(PRIM_CAPTURE_FN_TO_CLOSURE) &&
+      !call->isPrimitive(PRIM_CAPTURE_FN_TO_CLASS) &&
       !call->isPrimitive(PRIM_CREATE_FN_TYPE)) {
     return nullptr;
   }
@@ -10239,7 +10244,7 @@ static Expr* maybeResolveFunctionCapturePrimitive(CallExpr* call) {
   switch (call->primitive->tag) {
 
     // Create a closure, a function pointer, or a 'c_fn_ptr'.
-    case PRIM_CAPTURE_FN_TO_CLOSURE:
+    case PRIM_CAPTURE_FN_TO_CLASS:
     case PRIM_CAPTURE_FN: {
       INT_ASSERT(1 <= call->numActuals() && call->numActuals() <= 2);
 
@@ -10261,7 +10266,7 @@ static Expr* maybeResolveFunctionCapturePrimitive(CallExpr* call) {
       if (!fn) return nullptr;
 
       const bool discardType = (call->numActuals() > 1);
-      const bool promote = call->isPrimitive(PRIM_CAPTURE_FN_TO_CLOSURE);
+      const bool promote = call->isPrimitive(PRIM_CAPTURE_FN_TO_CLASS);
 
       // Expression return will already be in tree.
       auto ret = resolveFunctionCapture(fn, call, discardType, promote);
@@ -10271,7 +10276,7 @@ static Expr* maybeResolveFunctionCapturePrimitive(CallExpr* call) {
 
     // This legacy constructor always computes a closure type.
     case PRIM_CREATE_FN_TYPE: {
-      Type* t = closures::superTypeFromLegacyFuncFnCall(call);
+      Type* t = closures::legacySuperTypeForFuncConstructor(call);
       auto ret = new SymExpr(t->symbol);
       call->replace(ret);
 

@@ -843,14 +843,13 @@ bool isExternType(Type* t) {
          ts->hasFlag(FLAG_C_PTR_CLASS) ||
          ts->hasFlag(FLAG_C_ARRAY) ||
          ts->hasFlag(FLAG_EXTERN) ||
-         ts->hasFlag(FLAG_EXPORT) || // these don't exist yet
-         closures::isClosureValidExternType(t);
+         ts->hasFlag(FLAG_EXPORT); // these don't exist yet
 }
 
 bool isExportableType(Type* t) {
 
   // TODO: Exporting will need a different representation of FCF types.
-  if (t->symbol->hasFlag(FLAG_CLOSURE_CLASS)) return false;
+  if (t->symbol->hasFlag(FLAG_FUNCTION_CLASS)) return false;
   if (t == dtString || t == dtBytes) {
     // string/bytes are OK in export functions
     // because they are converted to wrapper

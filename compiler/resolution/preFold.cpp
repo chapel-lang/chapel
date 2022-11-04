@@ -792,7 +792,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
                                           testType,
                                           call)) {
                 // TODO: Replace me with a function pointer.
-                auto capture = new CallExpr(PRIM_CAPTURE_FN_TO_CLOSURE,
+                auto capture = new CallExpr(PRIM_CAPTURE_FN_TO_CLASS,
                                             new SymExpr(fn));
                 fn->defPoint->getStmtExpr()->insertAfter(capture);
                 Expr* val = resolveExpr(capture);

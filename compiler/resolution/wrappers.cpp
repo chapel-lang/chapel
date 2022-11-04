@@ -1425,7 +1425,7 @@ static void errorIfValueCoercionToRef(CallExpr* call, Symbol* actual,
   }
 
   // Ignore this class of error for first class functions.
-  if (formal->getValType()->symbol->hasFlag(FLAG_CLOSURE_CLASS)) {
+  if (formal->getValType()->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
     return;
   }
 

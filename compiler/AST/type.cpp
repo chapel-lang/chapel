@@ -215,7 +215,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
       } else if (strncmp(at->symbol->name, drDomName, drDomNameLen) == 0) {
         retval = astr("domain", at->symbol->name + drDomNameLen);
 
-      } else if (at->symbol->hasFlag(FLAG_CLOSURE_CLASS)) {
+      } else if (at->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
         retval = closures::closureTypeToString(at);
 
       } else if (isRecordWrappedType(at) == true) {

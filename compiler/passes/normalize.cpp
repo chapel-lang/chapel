@@ -770,7 +770,7 @@ void checkUseBeforeDefs(FnSymbol* fn) {
         if (call == NULL ||
             (call->baseExpr != use &&
              !call->isPrimitive(PRIM_CAPTURE_FN) &&
-             !call->isPrimitive(PRIM_CAPTURE_FN_TO_CLOSURE))) {
+             !call->isPrimitive(PRIM_CAPTURE_FN_TO_CLASS))) {
           if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
             const char* name = use->unresolved;
 

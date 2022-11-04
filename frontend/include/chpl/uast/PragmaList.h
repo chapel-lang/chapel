@@ -248,7 +248,7 @@ PRAGMA(FORMAL_TEMP, npr,
 PRAGMA(FORMAL_TEMP_OUT, npr, "formal temp out", "a formal temp to back an out argument")
 PRAGMA(FORMAL_TEMP_OUT_CALLSITE, npr, "formal temp out callsite", "a formal temp to handle out/inout writeback at the callsite")
 PRAGMA(FORWARDING_FN, npr, "forwarding function", ncm)
-PRAGMA(CLOSURE_CLASS, npr, "closure class", "closure class representation")
+PRAGMA(FUNCTION_CLASS, npr, "function class", "function class representation")
 PRAGMA(FUNCTION_TERMINATES_PROGRAM, ypr, "function terminates program", "function that causes the program to exit")
 PRAGMA(GENERATE_SIGNATURE, ypr, "generate signature", "compiler should codegen a function signature")
 // When applied to an argument, this flag means that the arg accepts a value

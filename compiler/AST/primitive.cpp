@@ -1073,7 +1073,7 @@ initPrimitive() {
   prim_def(PRIM_INT_ERROR, "_internal_error", returnInfoVoid, true);
 
   prim_def(PRIM_CAPTURE_FN, "capture fn", returnInfoVoid);
-  prim_def(PRIM_CAPTURE_FN_TO_CLOSURE, "capture fn to closure", returnInfoVoid);
+  prim_def(PRIM_CAPTURE_FN_TO_CLASS, "capture fn to class", returnInfoVoid);
   prim_def(PRIM_CREATE_FN_TYPE, "create fn type", returnInfoVoid);
 
   prim_def(PRIM_STRING_COMPARE, "string_compare", returnInfoDefaultInt, true);

@@ -973,7 +973,7 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
 
       // Avoid duplicate wrapping.
       if (call && (call->isPrimitive(PRIM_CAPTURE_FN) ||
-                   call->isPrimitive(PRIM_CAPTURE_FN_TO_CLOSURE))) {
+                   call->isPrimitive(PRIM_CAPTURE_FN_TO_CLASS))) {
         return;
       }
 

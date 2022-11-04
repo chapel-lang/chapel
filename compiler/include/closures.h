@@ -24,6 +24,7 @@
 #include "CallExpr.h"
 #include "symbol.h"
 
+#include <map>
 #include <vector>
 
 class CallExpr;
@@ -45,27 +46,52 @@ namespace closures {
 */
 bool legacyFirstClassFunctions(void);
 
-bool isFunctionCapturePrimitive(CallExpr* call);
+/***
+  Create an instance of a closure given a function and a point-of-use.
+  The expression will not be inserted into the tree and is resolved.
 
-Expr* instanceFromFnExpr(FnSymbol* fn, Expr* use);
+  This is currently only supported for legacy closures.
+*/
+Expr* createClassInstance(FnSymbol* fn, Expr* use);
 
-Type* superTypeFromLegacyFuncFnCall(CallExpr* call);
+/*** This always computes a legacy closure type. */
+Type* legacySuperTypeForFuncConstructor(CallExpr* call);
 
+/*** Currently only works for legacy closures. */
 const char* closureTypeToString(Type* t);
 
-bool isClosureValidExternType(Type* t);
-
-/*** May resolve the body if the return type is inferred. */
+/*** May resolve body if return type is inferred, but not if generic. */
 bool checkAndResolveSignature(FnSymbol* fn, Expr* use);
 
-/*** Will not resolve the body if the input is generic. */
+/*** Will not resolve body if the input is generic. */
 bool checkAndResolveSignatureAndBody(FnSymbol* fn, Expr* use);
 
 /*** Wrapper around the scope-resolve lookup function. */
 std::vector<FnSymbol*> lookupFunctions(const char* name, Expr* use);
 
-/*** Compute the outer variables used by a closure in lexical order. */
-const std::vector<Symbol*>& computeOuterVariables(FnSymbol* fn);
+class ClosureEnv {
+ private:
+  FnSymbol* owner_ = nullptr;
+  std::vector<Symbol*> outerVariables_;
+  std::map<Symbol*, std::vector<SymExpr*>> outerVariableToUses_;
+  std::vector<FnSymbol*> childFunctions_;
+
+ public:
+  ClosureEnv() = default;
+  ~ClosureEnv() = default;
+  ClosureEnv(FnSymbol* owner);
+
+  FnSymbol* owner() const;
+  bool isEmpty() const;
+  int numOuterVariables() const;
+  Symbol* outerVariable(int idx) const;
+  int numUsesOf(Symbol* sym) const;
+  SymExpr* firstUseOf(Symbol* sym) const;
+  SymExpr* useOf(Symbol* sym, int idx) const;
+};
+
+/*** Compute the outer variables used by a function in lexical order. */
+const ClosureEnv& computeOuterVariables(FnSymbol* fn);
 
 /*** Emitted whenever an error occurs when resolving function capture. */
 VarSymbol* errorSink(FunctionType::Kind);

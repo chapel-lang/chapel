@@ -295,7 +295,7 @@ void checkPrimitives()
      case PRIM_PRIVATE_BROADCAST:
      case PRIM_INT_ERROR:
      case PRIM_CAPTURE_FN:
-     case PRIM_CAPTURE_FN_TO_CLOSURE:
+     case PRIM_CAPTURE_FN_TO_CLASS:
      case PRIM_CREATE_FN_TYPE:
      case PRIM_STRING_COPY:
      case PRIM_CAST_TO_VOID_STAR:       // Cast the object argument to void*.
