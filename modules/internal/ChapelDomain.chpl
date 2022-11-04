@@ -2221,7 +2221,12 @@ module ChapelDomain {
     /* Return a new domain that is the current domain expanded by
        ``off(d)`` in dimension ``d`` if ``off(d)`` is positive or
        contracted by ``off(d)`` in dimension ``d`` if ``off(d)``
-       is negative. */
+       is negative.
+
+       See :proc:`ChapelRange.range.expand` for further information about what
+       it means to expand a range.
+
+     */
     proc expand(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do {
@@ -2236,7 +2241,11 @@ module ChapelDomain {
 
     /* Return a new domain that is the current domain expanded by
        ``off`` in all dimensions if ``off`` is positive or contracted
-       by ``off`` in all dimensions if ``off`` is negative. */
+       by ``off`` in all dimensions if ``off`` is negative.
+
+       See :proc:`ChapelRange.range.expand` for further information about what
+       it means to expand a range.
+     */
     proc expand(off: integral) where rank > 1 {
       var ranges = dims();
       for i in 0..rank-1 do
@@ -2261,7 +2270,12 @@ module ChapelDomain {
        current domain with ``off(d)`` indices for each dimension ``d``.
        If ``off(d)`` is negative, compute the exterior from the low
        bound of the dimension; if positive, compute the exterior
-       from the high bound. */
+       from the high bound.
+
+       See :proc:`ChapelRange.range.exterior` for further information about what
+       it means to compute the exterior of a range.
+
+     */
     proc exterior(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do
@@ -2273,7 +2287,12 @@ module ChapelDomain {
        current domain with ``off`` indices for each dimension.
        If ``off`` is negative, compute the exterior from the low
        bound of the dimension; if positive, compute the exterior
-       from the high bound. */
+       from the high bound.
+
+       See :proc:`ChapelRange.range.exterior` for further information about what
+       it means to compute the exterior of a range.
+
+     */
     proc exterior(off:integral) where rank != 1 {
       var offTup: rank*off.type;
       for i in 0..rank-1 do
@@ -2298,7 +2317,12 @@ module ChapelDomain {
        current domain with ``off(d)`` indices for each dimension
        ``d``. If ``off(d)`` is negative, compute the interior from
        the low bound of the dimension; if positive, compute the
-       interior from the high bound. */
+       interior from the high bound.
+
+       See :proc:`ChapelRange.range.interior` for further information about what
+       it means to compute the exterior of a range.
+
+     */
     proc interior(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do {
@@ -2315,7 +2339,12 @@ module ChapelDomain {
        current domain with ``off`` indices for each dimension.
        If ``off`` is negative, compute the interior from the low
        bound of the dimension; if positive, compute the interior
-       from the high bound. */
+       from the high bound.
+
+       See :proc:`ChapelRange.range.interior` for further information about what
+       it means to compute the exterior of a range.
+
+     */
     proc interior(off: integral) where rank != 1 {
       var offTup: rank*off.type;
       for i in 0..rank-1 do
