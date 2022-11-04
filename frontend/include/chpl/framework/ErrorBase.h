@@ -188,18 +188,19 @@ class BasicError : public ErrorBase {
 };
 
 /**
-  An error originating from the parser.
+   A parsing error which is simple enough that no error class is specialized for
+   it.
  */
 class ParseError : public BasicError {
  protected:
-  ParseError(Kind kind, ID id, Location loc, std::string message, std::vector<Note> notes)
-    : BasicError(kind, PARSE, std::move(id), std::move(loc), std::move(message),
-        std::move(notes)) {}
+  ParseError(const Location loc, const std::string message)
+      : BasicError(Kind::ERROR, PARSE, ID(), std::move(loc),
+                   std::move(message), {}) {}
 
-  static const owned<ParseError>&
-  getParseError(Context* context, Kind kind, ID id,
-                Location loc, std::string message,
-                std::vector<Note> notes);
+  static const owned<ParseError>& getParseError(Context* context,
+                                                const Location loc,
+                                                const std::string message);
+
  public:
   static const ParseError* get(Context* context, const ErrorMessage&);
 };

@@ -108,8 +108,7 @@ void Builder::addError(const ErrorBase* e) {
 }
 
 void Builder::addError(const ErrorMessage& e) {
-  if (!e.isDefaultConstructed())
-    this->errors_.push_back(ParseError::get(context_, e));
+  this->errors_.push_back(ParseError::get(context_, e));
 }
 
 void Builder::noteLocation(AstNode* ast, Location loc) {

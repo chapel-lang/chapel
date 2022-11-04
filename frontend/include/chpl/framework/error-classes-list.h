@@ -134,7 +134,7 @@ PARSER_ERROR_CLASS(BisonMemoryExhausted)
 PARSER_ERROR_CLASS(BisonUnknownError, std::string, std::string)
 PARSER_ERROR_CLASS(BisonSyntaxError, std::string)
 
-/* lexer errors */
+/* lexer-specific parser errors */
 PARSER_ERROR_CLASS(StringLiteralEOL)
 PARSER_ERROR_CLASS(NonHexChar)
 PARSER_ERROR_CLASS(HexOverflow, const bool)
