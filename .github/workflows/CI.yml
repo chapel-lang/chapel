@@ -108,3 +108,10 @@ jobs:
     - name: smokeTest lint
       run: |
         ./util/buildRelease/smokeTest lint
+          if [$? -ne 0]
+          then
+             echo "Encountered issue executing smokeTest"
+          exit 1
+          else
+             echo "smoketest Succeded"
+          fi
