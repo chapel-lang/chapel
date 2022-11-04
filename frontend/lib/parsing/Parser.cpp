@@ -89,11 +89,11 @@ BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
     builder = Builder::createForIncludedModule(this->context(), path,
                                                parentSymbolPath_);
   }
-  ErrorMessage fileError;
+  std::string fileError;
 
   FILE* fp = openfile(path, "r", fileError);
   if (fp == NULL) {
-    builder->addError(fileError);
+    builder->addError(ParseError::get(this->context(), Location(), fileError));
     return builder->result();
   }
 
@@ -164,7 +164,7 @@ BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
   yychpl_lex_destroy(parserContext.scanner);
 
   if (closefile(fp, path, fileError)) {
-    builder->addError(fileError);
+    builder->addError(ParseError::get(this->context(), Location(), fileError));
   }
 
   updateParseResult(&parserContext);

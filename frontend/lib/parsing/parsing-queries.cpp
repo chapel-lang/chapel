@@ -53,11 +53,11 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
   QUERY_BEGIN_INPUT(fileTextQuery, context, path);
 
   std::string text;
-  ErrorMessage error;
+  std::string error;
   const ParseError* parseError = nullptr;
-  bool ok = readfile(path.c_str(), text, error);
-  if (!ok) {
-    parseError = ParseError::get(context, error);
+  if (!readfile(path.c_str(), text, error)) {
+    error = "error reading file: " + error;
+    parseError = ParseError::get(context, Location(), error);
     context->report(parseError);
   }
   auto result = FileContents(std::move(text), parseError);

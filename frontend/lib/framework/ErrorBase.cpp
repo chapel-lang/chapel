@@ -187,16 +187,16 @@ void BasicError::mark(Context* context) const {
 }
 
 const owned<ParseError>& ParseError::getParseError(Context* context,
-                                                   Location loc,
-                                                   std::string message) {
+                                                   const Location loc,
+                                                   const std::string message) {
   QUERY_BEGIN(getParseError, context, loc, message);
   auto result = std::unique_ptr<ParseError>(new ParseError(loc, message));
   return QUERY_END(result);
 }
 
-const ParseError* ParseError::get(Context* context, const ErrorMessage& error) {
-  return ParseError::getParseError(context, error.location(), error.message())
-      .get();
+const ParseError* ParseError::get(Context* context, const Location loc,
+                                  const std::string message) {
+  return ParseError::getParseError(context, loc, message).get();
 }
 
 const owned<GeneralError>&

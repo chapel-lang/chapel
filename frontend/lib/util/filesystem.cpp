@@ -78,37 +78,28 @@ static std::string getTempDir() {
 #endif
 }
 
-FILE* openfile(const char* path, const char* mode, ErrorMessage& errorOut) {
+FILE* openfile(const char* path, const char* mode, std::string& errorOut) {
   FILE* fp = fopen(path, mode);
   if (fp == nullptr) {
-    std::string strerr = my_strerror(errno);
     // set errorOut. NULL will be returned.
-    errorOut = ErrorMessage::error(Location(),
-                                   "opening %s: %s",
-                                   path, strerr.c_str());
+    errorOut = my_strerror(errno);
   }
 
   return fp;
 }
 
-bool closefile(FILE* fp, const char* path, ErrorMessage& errorOut) {
+bool closefile(FILE* fp, const char* path, std::string& errorOut) {
   int rc = fclose(fp);
   if (rc != 0) {
-    std::string strerr = my_strerror(errno);
-    errorOut = ErrorMessage::error(Location(),
-                                   "closing %s: %s",
-                                   path, strerr.c_str());
+    errorOut = my_strerror(errno);
     return false;
   }
   return true;
 }
 
-bool readfile(const char* path,
-              std::string& strOut,
-              ErrorMessage& errorOut) {
-
+bool readfile(const char* path, std::string& strOut, std::string& errorOut) {
   FILE* fp = openfile(path, "r", errorOut);
-  if (fp == nullptr) {
+  if (!fp) {
     return false;
   }
 
@@ -126,21 +117,16 @@ bool readfile(const char* path,
       strOut.append(buf, got);
     } else {
       if (ferror(fp)) {
-        errorOut = ErrorMessage::error(Location(), "reading %s", path);
-        ErrorMessage ignored;
-        closefile(fp, path, ignored);
+        std::string ignoredErrorOut;
+        closefile(fp, path, ignoredErrorOut);
         return false;
       }
       // otherwise, end of file reached
       break;
     }
   }
-  bool ok = closefile(fp, path, errorOut);
-  if (!ok) {
-    return false;
-  }
 
-  return true;
+  return closefile(fp, path, errorOut);
 }
 
 bool fileExists(const char* path) {
