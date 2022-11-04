@@ -2373,29 +2373,37 @@ module ChapelDomain {
     proc translate(off...rank) return translate(off);
 
     /* Return a new domain that is the current domain translated by
-       ``off(d)`` in each dimension ``d``. */
-    proc translate(off) where isTuple(off) {
-      if off.size != rank then
-        compilerError("the domain and offset arguments of translate() must be of the same rank");
+       ``off(d)`` in each dimension ``d``.
+
+       See :proc:`ChapelRange.range.translate` for further information about
+       what it means to translate a range.
+
+     */
+    proc translate(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = _value.dsiDim(i).translate(off(i));
       return new _domain(dist, rank, _value.idxType, stridable, ranges);
-     }
+    }
 
     /* Return a new domain that is the current domain translated by
-       ``off`` in each dimension. */
-     proc translate(off) where rank != 1 && !isTuple(off) {
-       var offTup: rank*off.type;
-       for i in 0..rank-1 do
-         offTup(i) = off;
-       return translate(offTup);
-     }
+       ``off`` in each dimension.
 
-     /* Return true if the domain has no indices */
-     proc isEmpty(): bool {
-       return this.sizeAs(uint) == 0;
-     }
+       See :proc:`ChapelRange.range.translate()` for further information about
+       what it means to translate a range.
+
+     */
+    proc translate(off: integral) where rank != 1 {
+      var offTup: rank*off.type;
+      for i in 0..rank-1 do
+        offTup(i) = off;
+      return translate(offTup);
+    }
+
+    /* Return true if the domain has no indices */
+    proc isEmpty(): bool {
+      return this.sizeAs(uint) == 0;
+    }
 
     //
     // intended for internal use only:
