@@ -166,6 +166,9 @@ class VarScopeVisitor {
                           const std::set<ID>& allSplitInitedVars,
                           RV& rv);
 
+  /** Handle updating initedVars for a declaration with an initExpression. */
+  bool handleDeclarationInit(const VarLikeDecl* ast, RV& rv);
+
  public:
   // ----- visitor implementation
   void enterScope(const uast::AstNode* ast);

@@ -117,7 +117,7 @@ void CallInitDeinit::printActions(const std::vector<Action>& actions) {
 }*/
 
 void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
-  // TODO
+  handleDeclarationInit(ast, rv);
 }
 void CallInitDeinit::handleMention(const Identifier* ast, ID varId, RV& rv) {
   // TODO

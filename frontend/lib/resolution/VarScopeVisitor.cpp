@@ -162,6 +162,15 @@ bool VarScopeVisitor::handleSplitInitOut(const FnCall* ast,
   return inserted;
 }
 
+bool VarScopeVisitor::handleDeclarationInit(const VarLikeDecl* ast, RV& rv) {
+  VarFrame* frame = currentFrame();
+  bool inserted = false;
+  if (ast->initExpression() != nullptr) {
+    inserted = frame->addToInitedVars(ast->id());
+  }
+  return inserted;
+}
+
 void VarScopeVisitor::enterScope(const AstNode* ast) {
   if (createsScope(ast->tag())) {
     scopeStack.push_back(toOwned(new VarFrame(ast)));

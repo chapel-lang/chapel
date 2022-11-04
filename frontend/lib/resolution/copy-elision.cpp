@@ -181,6 +181,23 @@ bool FindElidedCopies::isEligibleVarInAnyFrame(ID varId) {
 
 void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   addDeclaration(currentFrame(), ast);
+  handleDeclarationInit(ast, rv);
+
+  if (auto initExpr = ast->initExpression()) {
+    VarFrame* frame = currentFrame();
+    ID lhsVarId = ast->id();
+    ID rhsVarId = refersToId(initExpr, rv);
+    if (!rhsVarId.isEmpty() && isEligibleVarInAnyFrame(rhsVarId)) {
+      // check that the types are the same
+      if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
+        QualifiedType lhsType = rv.byId(lhsVarId).type();
+        QualifiedType rhsType = rv.byId(rhsVarId).type();
+        if (copyElisionAllowedForTypes(lhsType, rhsType)) {
+          addCopyInit(frame, rhsVarId, ast->id());
+        }
+      }
+    }
+  }
 }
 void FindElidedCopies::handleMention(const Identifier* ast, ID varId, RV& rv) {
   VarFrame* frame = currentFrame();
@@ -228,14 +245,21 @@ void FindElidedCopies::handleInFormal(const FnCall* ast, const AstNode* actual,
   // copy might need to be elided
   VarFrame* frame = currentFrame();
   ID actualToId = refersToId(actual, rv);
+  bool elide = false;
   if (!actualToId.isEmpty() && isEligibleVarInAnyFrame(actualToId)) {
     // check that the types are the same
     if (rv.hasId(actualToId)) {
       QualifiedType actualType = rv.byId(actualToId).type();
       if (copyElisionAllowedForTypes(formalType, actualType)) {
-        addCopyInit(frame, actualToId, ast->id());
+        elide = true;
       }
     }
+  }
+
+  if (elide) {
+    addCopyInit(frame, actualToId, actual->id());
+  } else {
+    handleMentions(actual, rv);
   }
 }
 void FindElidedCopies::handleInoutFormal(const FnCall* ast,
@@ -440,6 +464,13 @@ computeElidedCopies(Context* context,
                     const ResolutionResultByPostorderID& byPostorder,
                     const std::set<ID>& allSplitInitedVars) {
   std::set<ID> elidedCopyFromIds;
+
+  if (!symbol->isFunction()) {
+    // module-scope variables can't be copy elided, so don't run
+    // the analysis on them.
+    return elidedCopyFromIds;
+  }
+
   FindElidedCopies uv(context, allSplitInitedVars);
 
   uv.process(symbol,

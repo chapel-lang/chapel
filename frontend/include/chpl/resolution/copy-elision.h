@@ -29,8 +29,21 @@ namespace chpl {
 namespace resolution {
 
 
-/* Computes the set of IDs of init-exprs that are 'move's rather
-   than '=' or 'copy-init' now. */
+/* Computes the set of IDs of initialization points
+   that can be 'move's rather than '=' or 'copy-init'.
+     * If the elided initialization point is a variable initialization expr,
+       the ID of the initialized variable is stored in the set.
+     * If the elided initialization point is an '=' call,
+       the ID of the OpCall is stored in the set.
+     * If the elided initialization point is an actual passed by 'in' intent,
+       the ID of the actual is stored in the set.
+   Does not consider copy elision that only work with temporary
+   variables (e.g. acceptsWithIn(returnsByValue())).
+
+   This is not a query. It may raise errors within the currently running query.
+
+   allSplitInitedVars can be computed by computeSplitInits.
+ */
 std::set<ID>
 computeElidedCopies(Context* context,
                     const uast::AstNode* symbol,

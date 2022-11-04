@@ -19,11 +19,10 @@
 
 #include "test-resolution.h"
 
-#include "chpl/resolution/split-init.h"
-
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/resolution/split-init.h"
 #include "chpl/uast/Call.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Identifier.h"
