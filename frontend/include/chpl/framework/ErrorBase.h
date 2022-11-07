@@ -51,10 +51,9 @@ using Note = std::tuple<ID, Location, std::string>;
 
 /** Enum representing the different types of errors in Dyno. */
 enum ErrorType {
-  // The ParseError and GeneralError are not defined via macros to
-  // make it easier to provide special behavior for them (e.g. vbuild
-  // for GeneralError). Their tags are thus also not provided via the macro.
-  PARSE,
+  // GeneralError is not defined via macro to make it easier to provide special
+  // behavior for it (e.g. vbuild). Its tags are thus also not provided via the
+  // macro.
   GENERAL,
 // Include each error specified in error-classes-list.h as an enum element here
 #define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) NAME,
@@ -185,24 +184,6 @@ class BasicError : public ErrorBase {
  public:
   void write(ErrorWriterBase& eq) const override;
   void mark(Context* context) const override;
-};
-
-/**
-   A parsing error simple enough that no error class is specialized for it.
- */
-class ParseError : public BasicError {
- protected:
-  ParseError(Location loc, std::string message)
-      : BasicError(Kind::ERROR, PARSE, ID(), std::move(loc), std::move(message),
-                   /* notes */ {}) {}
-
-  static const owned<ParseError>& getParseError(Context* context,
-                                                const Location loc,
-                                                const std::string message);
-
- public:
-  static const ParseError* get(Context* context, const Location loc,
-                               const std::string message);
 };
 
 /**

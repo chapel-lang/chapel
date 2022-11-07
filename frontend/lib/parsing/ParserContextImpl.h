@@ -159,9 +159,9 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
     ret = PODUniqueString::get(context(), strLit->str().c_str());
     auto tag = pragmaNameToTag(ret.c_str());
 
-    if (tag == PRAGMA_UNKNOWN) {
-      CHPL_PARSER_REPORT(this, UnknownPragma, loc, strLit->str().str());
-    }
+    if (tag == PRAGMA_UNKNOWN)
+      CHPL_PARSER_REPORT_SIMPLE(this, loc,
+                                "unknown pragma '" + strLit->str().str() + "'");
 
     // Initialize the pragma flags if needed.
     auto& pragmas = attributeParts.pragmas;

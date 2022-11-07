@@ -554,10 +554,10 @@ void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
 
 /* parser errors */
 
-void ErrorUnknownPragma::write(ErrorWriterBase& wr) const {
+void ErrorParsing::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
-  auto pragmaStr = std::get<std::string>(info);
-  wr.heading(kind_, type_, loc, "unknown pragma '", pragmaStr, "'.");
+  auto msg = std::get<std::string>(info);
+  wr.heading(kind_, type_, loc, msg);
 }
 
 void ErrorTypeCannotImplementInterface::write(ErrorWriterBase& wr) const {

@@ -36,6 +36,11 @@
                               P_CONTEXT__->convertLocation(LOC__))         \
        .release())
 
+// A simplified version of CHPL_PARSER_REPORT which reports an error message
+// without a specialized error class or attached info
+#define CHPL_PARSER_REPORT_SIMPLE(P_CONTEXT__, LOC__, MSG__) \
+  CHPL_PARSER_REPORT(P_CONTEXT__, Parsing, LOC__, MSG__)
+
 /**
   Helper macro(s) to report errors from the lexer, including retrieving the
   global Context and lexer-specific location adjustments.

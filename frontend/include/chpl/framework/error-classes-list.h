@@ -91,7 +91,9 @@ ERROR_CLASS(SuperFromTopLevelModule,
     resolution::VisibilityStmtKind)
 
 /* parser errors */
-PARSER_ERROR_CLASS(UnknownPragma, std::string)
+// catch-all for simple parsing errors that do not have a specialized error
+// class
+PARSER_ERROR_CLASS(Parsing, std::string)
 PARSER_ERROR_CLASS(TypeCannotImplementInterface, std::string)
 PARSER_ERROR_CLASS(PragmasBeforeDeprecation)
 PARSER_ERROR_CLASS(CannotAttachPragmas)
