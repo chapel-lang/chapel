@@ -1095,7 +1095,7 @@ module OS {
       return new owned BlockingIoError(details, err);
     } else if err == ECHILD {
       return new owned ChildProcessError(details, err);
-    } else if err == EPIPE || err == ESHUTDOWN {
+    } else if err == EPIPE {
       return new owned BrokenPipeError(details, err);
     } else if err == ECONNABORTED {
       return new owned ConnectionAbortedError(details, err);
