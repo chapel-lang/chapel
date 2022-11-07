@@ -151,23 +151,23 @@ class VarScopeVisitor {
 
   /** Call handleMention for any Identifiers contained in this ast node.
       Only appropriate for expressions (not for Loops) */
-  void handleMentions(const AstNode* ast, RV& rv);
+  void processMentions(const AstNode* ast, RV& rv);
 
-  /** Handle updating initedVars if an assignment represents a split-init.
+  /** Update initedVars if an assignment represents a split-init.
       Returns true if it was a split init. */
-  bool handleSplitInitAssign(const OpCall* ast,
-                             const std::set<ID>& allSplitInitedVars,
-                             RV& rv);
+  bool processSplitInitAssign(const OpCall* ast,
+                              const std::set<ID>& allSplitInitedVars,
+                              RV& rv);
 
-  /** Handle updating initedVars if a call with at 'out' formal
+  /** Update initedVars if a call with at 'out' formal
       represents a split-init. Returns true if it was a split init. */
-  bool handleSplitInitOut(const FnCall* ast,
-                          const AstNode* actual,
-                          const std::set<ID>& allSplitInitedVars,
-                          RV& rv);
+  bool processSplitInitOut(const FnCall* ast,
+                           const AstNode* actual,
+                           const std::set<ID>& allSplitInitedVars,
+                           RV& rv);
 
-  /** Handle updating initedVars for a declaration with an initExpression. */
-  bool handleDeclarationInit(const VarLikeDecl* ast, RV& rv);
+  /** Update initedVars for a declaration with an initExpression. */
+  bool processDeclarationInit(const VarLikeDecl* ast, RV& rv);
 
  public:
   // ----- visitor implementation

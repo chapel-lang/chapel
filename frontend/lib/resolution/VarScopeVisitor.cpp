@@ -119,7 +119,7 @@ ID VarScopeVisitor::refersToId(const AstNode* ast, RV& rv) {
   return toId;
 }
 
-void VarScopeVisitor::handleMentions(const AstNode* ast, RV& rv) {
+void VarScopeVisitor::processMentions(const AstNode* ast, RV& rv) {
   // This could be its own ResolvedVisitor if it needs to handle
   // more complex forms. For now, this simple implementation should suffice
   // for expressions used as actuals etc.
@@ -130,15 +130,15 @@ void VarScopeVisitor::handleMentions(const AstNode* ast, RV& rv) {
     }
   } else {
     for (auto child : ast->children()) {
-      handleMentions(child, rv);
+      processMentions(child, rv);
     }
   }
 }
 
 bool
-VarScopeVisitor::handleSplitInitAssign(const OpCall* ast,
-                                       const std::set<ID>& allSplitInitedVars,
-                                       RV& rv) {
+VarScopeVisitor::processSplitInitAssign(const OpCall* ast,
+                                        const std::set<ID>& allSplitInitedVars,
+                                        RV& rv) {
   bool inserted = false;
   VarFrame* frame = currentFrame();
   auto lhsAst = ast->actual(0);
@@ -149,10 +149,11 @@ VarScopeVisitor::handleSplitInitAssign(const OpCall* ast,
   return inserted;
 }
 
-bool VarScopeVisitor::handleSplitInitOut(const FnCall* ast,
-                                         const AstNode* actual,
-                                         const std::set<ID>& allSplitInitedVars,
-                                         RV& rv) {
+bool
+VarScopeVisitor::processSplitInitOut(const FnCall* ast,
+                                     const AstNode* actual,
+                                     const std::set<ID>& allSplitInitedVars,
+                                     RV& rv) {
   bool inserted = false;
   VarFrame* frame = currentFrame();
   ID actualVarId = refersToId(actual, rv);
@@ -162,7 +163,7 @@ bool VarScopeVisitor::handleSplitInitOut(const FnCall* ast,
   return inserted;
 }
 
-bool VarScopeVisitor::handleDeclarationInit(const VarLikeDecl* ast, RV& rv) {
+bool VarScopeVisitor::processDeclarationInit(const VarLikeDecl* ast, RV& rv) {
   VarFrame* frame = currentFrame();
   bool inserted = false;
   if (ast->initExpression() != nullptr) {

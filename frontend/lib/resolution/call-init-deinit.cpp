@@ -117,7 +117,7 @@ void CallInitDeinit::printActions(const std::vector<Action>& actions) {
 }*/
 
 void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
-  handleDeclarationInit(ast, rv);
+  processDeclarationInit(ast, rv);
 }
 void CallInitDeinit::handleMention(const Identifier* ast, ID varId, RV& rv) {
   // TODO
@@ -137,7 +137,7 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
   bool resolveInitAssign = false;
 
   // update initedVars if it is initializing a variable
-  bool splitInited = handleSplitInitAssign(ast, splitInitedVars, rv);
+  bool splitInited = processSplitInitAssign(ast, splitInitedVars, rv);
 
   if (lhsType.isType() || lhsType.isParam()) {
     // these are basically 'move' initialization
@@ -206,7 +206,7 @@ void CallInitDeinit::handleOutFormal(const FnCall* ast,
                                      const QualifiedType& formalType,
                                      RV& rv) {
   // update initedVars if it is initializing a variable
-  handleSplitInitOut(ast, actual, splitInitedVars, rv);
+  processSplitInitOut(ast, actual, splitInitedVars, rv);
 }
 void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
                                       const QualifiedType& formalType,

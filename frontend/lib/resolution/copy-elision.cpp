@@ -181,7 +181,7 @@ bool FindElidedCopies::isEligibleVarInAnyFrame(ID varId) {
 
 void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   addDeclaration(currentFrame(), ast);
-  handleDeclarationInit(ast, rv);
+  processDeclarationInit(ast, rv);
 
   if (auto initExpr = ast->initExpression()) {
     VarFrame* frame = currentFrame();
@@ -206,7 +206,7 @@ void FindElidedCopies::handleMention(const Identifier* ast, ID varId, RV& rv) {
 void FindElidedCopies::handleAssign(const OpCall* ast, RV& rv) {
   auto lhsAst = ast->actual(0);
   auto rhsAst = ast->actual(1);
-  bool splitInit = handleSplitInitAssign(ast, allSplitInitedVars, rv);
+  bool splitInit = processSplitInitAssign(ast, allSplitInitedVars, rv);
   if (splitInit) {
     VarFrame* frame = currentFrame();
 
@@ -225,7 +225,7 @@ void FindElidedCopies::handleAssign(const OpCall* ast, RV& rv) {
       }
     }
   } else {
-    handleMentions(lhsAst, rv);
+    processMentions(lhsAst, rv);
   }
 }
 void FindElidedCopies::handleOutFormal(const FnCall* ast,
@@ -233,10 +233,10 @@ void FindElidedCopies::handleOutFormal(const FnCall* ast,
                                        const QualifiedType& formalType,
                                        RV& rv) {
   // 'out' can't be the RHS for an elided copy
-  handleMentions(actual, rv);
+  processMentions(actual, rv);
 
   // updated initedVars for split init
-  handleSplitInitOut(ast, actual, allSplitInitedVars, rv);
+  processSplitInitOut(ast, actual, allSplitInitedVars, rv);
 }
 void FindElidedCopies::handleInFormal(const FnCall* ast, const AstNode* actual,
                                       const QualifiedType& formalType,
@@ -259,7 +259,7 @@ void FindElidedCopies::handleInFormal(const FnCall* ast, const AstNode* actual,
   if (elide) {
     addCopyInit(frame, actualToId, actual->id());
   } else {
-    handleMentions(actual, rv);
+    processMentions(actual, rv);
   }
 }
 void FindElidedCopies::handleInoutFormal(const FnCall* ast,
@@ -267,7 +267,7 @@ void FindElidedCopies::handleInoutFormal(const FnCall* ast,
                                          const QualifiedType& formalType,
                                          RV& rv) {
   // 'inout' can't be the RHS for an elided copy
-  handleMentions(actual, rv);
+  processMentions(actual, rv);
 }
 
 void FindElidedCopies::handleReturnOrThrow(const uast::AstNode* ast, RV& rv) {

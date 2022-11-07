@@ -187,20 +187,20 @@ void FindSplitInits::handleOutFormal(const FnCall* ast, const AstNode* actual,
     handleInitOrAssign(toId, formalType, rv);
   } else {
     // gather any mentions used in the actual
-    handleMentions(actual, rv);
+    processMentions(actual, rv);
   }
 }
 
 void FindSplitInits::handleInFormal(const FnCall* ast, const AstNode* actual,
                                     const QualifiedType& formalType,
                                     RV& rv) {
-  handleMentions(actual, rv);
+  processMentions(actual, rv);
 }
 
 void FindSplitInits::handleInoutFormal(const FnCall* ast, const AstNode* actual,
                                        const QualifiedType& formalType,
                                        RV& rv) {
-  handleMentions(actual, rv);
+  processMentions(actual, rv);
 }
 
 void FindSplitInits::handleReturnOrThrow(const uast::AstNode* ast, RV& rv) {
