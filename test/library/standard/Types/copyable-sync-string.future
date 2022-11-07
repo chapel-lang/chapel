@@ -1,0 +1,2 @@
+bug: sync type argument to isCopyableType triggers deprecation warning
+#20984
