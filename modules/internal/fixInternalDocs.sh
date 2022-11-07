@@ -245,3 +245,10 @@ replace "_shared" "shared" $file
 replace "chpl_t" "t" $file
 removeUsage $file
 ## End of SharedObject ##
+
+## SharedObject ##
+file=WeakPointer.rst
+removeTitle $file
+replace "_shared" "shared" $file
+removeUsage $file
+## End of SharedObject ##

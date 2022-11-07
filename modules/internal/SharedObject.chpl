@@ -25,6 +25,8 @@ module SharedObject {
   use Errors, Atomics, ChapelBase;
   use OwnedObject;
 
+  private use WeakPointer;
+
   // TODO unify with RefCountBase. Even though that one is for
   // intrusive ref-counting and this one isn't, there's no fundamental
   // reason it couldn't be one class.
@@ -428,7 +430,7 @@ module SharedObject {
     }
 
     /*
-      Return a :record:`~WeakPointer.weakPointer` from to this object.
+      Create a :record:`~WeakPointer.weakPointer` to this object
     */
     proc downgrade() {
       return new WeakPointer.weakPointer(this);
@@ -653,30 +655,21 @@ module SharedObject {
     }
     return _to_nonnil(x.chpl_p);
   }
+}
 
-  /*
+/*
+*/
+module WeakPointer {
 
-  */
-  module WeakPointer {
-    /*
-        The weak pointer type is used to provide a reference to a shared class
-        object without requiring it to stay allocated.
+    use Errors, Atomics, ChapelBase;
 
-        A "strong" shared reference to the class instance can be obtained via
-        the :proc:`weakPointer.upgrade` method, or by casting the weakPointer
-        to a ``shared t`` or a ``shared t?``. If the underlying class is not
-        valid (i.e., its shared reference count has dropped to zero and it has
-        been deinitialized) the upgrade attempt will fail.
-
-        Weak pointers are implemented using task-safe reference counting.
-    */
     record weakPointer {
         /* The shared class type referenced by this pointer */
-        type chpl_t;
+        type classType;
 
         pragma "no doc"
         pragma "owned"
-        var chpl_p: __primitive("to nilable class", _to_unmanaged(chpl_t)); // instance pointer
+        var chpl_p: __primitive("to nilable class", _to_unmanaged(classType)); // instance pointer
 
         pragma "no doc"
         pragma "owned"
@@ -686,7 +679,7 @@ module SharedObject {
 
         pragma "no doc"
         proc init(c : unmanaged) {
-        this.chpl_t = c.type;
+        this.classType = c.type;
         compilerError(
             "cannot initialize a weakPointer from an unmanaged class: '" + c.type:string + "'"
         );
@@ -694,7 +687,7 @@ module SharedObject {
 
         pragma "no doc"
         proc init(c : owned) {
-        this.chpl_t = c.type;
+        this.classType = c.type;
         compilerError(
             "cannot initialize a weakPointer from an owned class: '" + c.type:string + "'"
         );
@@ -702,7 +695,7 @@ module SharedObject {
 
         pragma "no doc"
         proc init(c : borrowed) {
-        this.chpl_t = c.type;
+        this.classType = c.type;
         compilerError(
             "cannot initialize a weakPointer from a borrowed class: '" + c.type:string + "'"
         );
@@ -711,7 +704,7 @@ module SharedObject {
         // disallow initialization from all other types
         pragma "no doc"
         proc init(c) {
-        this.chpl_t = c.type;
+        this.classType = c.type;
         compilerError("cannot initialize a weakPointer from: '" + c.type:string + "'");
         }
 
@@ -725,7 +718,7 @@ module SharedObject {
             // increment the weak reference count (or store nil if the class is nil)
             if ptr != nil then count!.incrementWeak(); else count = nil;
 
-            this.chpl_t = shared c.chpl_t;
+            this.classType = shared c.chpl_t;
             // this.complete();
 
             this.chpl_p = ptr;
@@ -738,7 +731,7 @@ module SharedObject {
             Increments the weak-reference count.
         */
         proc init=(pragma "nil from arg" const ref src: weakPointer) {
-          this.chpl_t = src.chpl_t;
+          this.classType = src.classType;
 
           if src.chpl_p!= nil {
             this.chpl_p = src.chpl_p;
@@ -752,10 +745,10 @@ module SharedObject {
 
         // type-only constructor for array initialization, etc.
         pragma "no doc"
-        proc init(type chpl_t: shared) {
-          if !isClass(chpl_t) then
+        proc init(type classType: shared) {
+          if !isClass(classType) then
             compilerError("'weakPointer' only works with shared classes");
-          this.chpl_t = chpl_t;
+          this.classType = classType;
           this.chpl_p = nil;
           this.chpl_pn = nil;
         }
@@ -771,7 +764,7 @@ module SharedObject {
           If the pointer is invalid (or the object itself is `nil`) then a
           `nil` value will be returned.
         */
-        proc upgrade(): this.chpl_t? {
+        proc upgrade(): this.classType? {
           if this.chpl_p != nil {
             var sc = this.chpl_pn!.strongCount.read();
             if sc == 0 {
@@ -782,7 +775,7 @@ module SharedObject {
                         return nil;
                     }
                 }
-                var result: chpl_t?;
+                var result: this.classType?;
                 result.chpl_p = this.chpl_p;
                 result.chpl_pn = this.chpl_pn;
                 return result;
@@ -796,7 +789,8 @@ module SharedObject {
           When a ``weakPointer`` is deinitialized, the weak reference count is
           decremented.
 
-          If there are no other weak references, the backing pointer is freed.
+          If there are no other references (weak or strong), the backing pointer
+          is freed.
         */
         proc deinit() {
           this.doClear();
@@ -855,7 +849,7 @@ module SharedObject {
         ``t``.
     */
     inline operator :(const ref x: weakPointer, type t: shared class?)
-      where isSubtype(_to_nonnil(x.chpl_t), _to_nonnil(t.chpl_t))
+      where isSubtype(_to_nonnil(x.classType), _to_nonnil(t.chpl_t))
     {
         if x.chpl_p != nil {
             var sc = x.chpl_pn!.strongCount.read();
@@ -888,10 +882,10 @@ module SharedObject {
         If the referenced class has already been deinitialized, or is
         itself ``nil``, this cast will throw a :class:`~Errors.NilClassError`.
 
-        Otherwise it will return a :record:`~SharedObject.shared` t.
+        Otherwise it will return a :record:`~SharedObject.shared` ``t``.
     */
     inline operator :(const ref x: weakPointer, type t: shared class) throws
-      where isSubtype(_to_nonnil(x.chpl_t), t.chpl_t)
+      where isSubtype(_to_nonnil(x.classType), t.chpl_t)
     {
         if x.chpl_p != nil {
             var sc = x.chpl_pn!.strongCount.read();
@@ -955,4 +949,3 @@ module SharedObject {
     }
 
   }
-}
