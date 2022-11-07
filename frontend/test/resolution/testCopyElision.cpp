@@ -32,8 +32,6 @@
 
 #include "./ErrorGuard.h"
 
-static const bool ERRORS_EXPECTED=true;
-
 // resolves the last function, or module if testModule=true
 // checks that the copy elision points match the string IDs provided
 static void testCopyElision(const char* test,
