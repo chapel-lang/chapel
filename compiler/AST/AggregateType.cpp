@@ -1603,6 +1603,9 @@ void AggregateType::renameInstantiation() {
   } else if (!developer && symbol->hasFlag(FLAG_SINGLE)) {
     name = "single ";
     buildFieldNames(this, name, false);
+  } else if (!developer && symbol->hasFlag(FLAG_ATOMIC_TYPE)) {
+    name = "atomic ";
+    buildFieldNames(this, name, false);
   } else {
     name += "(";
     buildFieldNames(this, name, false);

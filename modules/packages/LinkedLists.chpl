@@ -283,7 +283,7 @@ record LinkedList {
 
     if binary {
       // Write the number of elements.
-      f._write(size);
+      f.write(size);
     }
     if isjson || ischpl {
       f._writeLiteral("[");
@@ -297,7 +297,7 @@ record LinkedList {
         else if isjson || ischpl then f._writeLiteral(", ");
       }
 
-      f._write(e);
+      f.write(e);
     }
 
     if isjson || ischpl {

@@ -128,7 +128,7 @@ proc runProjectBinary(show: bool, release: bool, execopts: list(string)) throws 
     }
   }
   catch e: MasonError {
-    stderr._writeln(e.message());
+    stderr.writeln(e.message());
     exit(1);
   }
 }
@@ -200,6 +200,6 @@ private proc masonBuildRun(args: [?d] string, checkProj=true) {
     }
   }
   catch e: MasonError {
-    stderr._writeln(e.message());
+    stderr.writeln(e.message());
   }
 }

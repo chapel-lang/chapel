@@ -317,7 +317,7 @@ proc ReplicatedDom.dsiDims()        return whole.dims();
 //proc ReplicatedDom.dsiGetIndices()  return whole.getIndices();
 proc ReplicatedDom.dsiMember(i)     return whole.contains(i);
 proc ReplicatedDom.doiToString()    return whole:string;
-proc ReplicatedDom.dsiSerialWrite(x) { x._write(whole); }
+proc ReplicatedDom.dsiSerialWrite(x) { x.write(whole); }
 proc ReplicatedDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
 override proc ReplicatedDom.dsiIndexOrder(i)              return whole.indexOrder(i);
 override proc ReplicatedDom.dsiMyDist()                   return dist;

@@ -380,7 +380,7 @@ module Heap {
     */
     proc writeThis(ch: fileWriter) throws {
       _enter();
-      ch._write(this._data);
+      ch.write(this._data);
       _leave();
     }
   }

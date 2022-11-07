@@ -32,5 +32,6 @@ target_sources(libdyno-obj
                scope-queries.cpp
                scope-types.cpp
                split-init.cpp
+               VarScopeVisitor.cpp
 
               )

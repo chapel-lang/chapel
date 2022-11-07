@@ -64,7 +64,7 @@ proc getSpecFields(spec: string) {
                   specInfo[3]);
   }
   catch e: MasonError {
-    stderr._writeln(e.message());
+    stderr.writeln(e.message());
   }
   return specFields;
 }

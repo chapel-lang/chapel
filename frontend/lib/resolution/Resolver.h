@@ -53,6 +53,7 @@ struct Resolver {
   // internal variables
   std::vector<const uast::Decl*> declStack;
   std::vector<const Scope*> scopeStack;
+  std::vector<int> tagTracker;
   bool signatureOnly = false;
   bool fieldOrFormalsComputed = false;
   bool scopeResolveOnly = false;
@@ -92,6 +93,7 @@ struct Resolver {
       poiScope(poiScope),
       byPostorder(byPostorder), poiInfo(makePoiInfo(poiScope)) {
 
+    tagTracker.resize(uast::asttags::AstTag::NUM_AST_TAGS);
     enterScope(symbol);
   }
  public:
@@ -386,6 +388,10 @@ struct Resolver {
   void enterScope(const uast::AstNode* ast);
   void exitScope(const uast::AstNode* ast);
 
+  /* Returns 'true' if the Resolver has recursed inside of a node of the
+     given AstTag. */
+  bool isInsideTag(uast::asttags::AstTag tag) const;
+
   // the visitor methods
   bool enter(const uast::Conditional* cond);
   void exit(const uast::Conditional* cond);
@@ -429,6 +435,15 @@ struct Resolver {
 
   bool enter(const uast::TaskVar* taskVar);
   void exit(const uast::TaskVar* taskVar);
+
+  bool enter(const uast::Return* ret);
+  void exit(const uast::Return* ret);
+
+  bool enter(const uast::Throw* ret);
+  void exit(const uast::Throw* ret);
+
+  bool enter(const uast::Try* ret);
+  void exit(const uast::Try* ret);
 
   // if none of the above is called, fall back on this one
   bool enter(const uast::AstNode* ast);

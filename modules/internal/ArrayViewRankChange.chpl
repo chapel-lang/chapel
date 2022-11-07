@@ -322,13 +322,13 @@ module ArrayViewRankChange {
       for d in 0..downrank-1 do
         if !collapsedDim(d) {
           if first {
-            f._write("{");
+            f.write("{");
             first = false;
           } else
-            f._write(", ");
-          f._write(downDom.dsiDim(d));
+            f.write(", ");
+          f.write(downDom.dsiDim(d));
         }
-      f._write("}");
+      f.write("}");
     }
 
     override proc dsiMyDist() {
