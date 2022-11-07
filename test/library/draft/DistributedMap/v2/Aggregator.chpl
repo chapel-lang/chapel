@@ -60,6 +60,11 @@ module Aggregator {
       }
 
       if (idx == bufferSize) {
+        // TODO:
+        // Should we flush the individual locale buffer?  Maybe have flush call
+        // out to a flush that takes in the locale to update?  That'd avoid
+        // locking everything when one buffer gets full and be more optimal for
+        // remote work
         flush();
         buffers[loc][0].writeEF(key);
       }
