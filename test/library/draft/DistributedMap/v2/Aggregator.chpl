@@ -86,7 +86,8 @@ module Aggregator {
                 this.updater(curVal);
                 client.setUnlocked(arrCopy[i], curVal);
               } else {
-                var newVal = 1;
+                var newVal: client.valType; // use default value for val type
+                this.updater(newVal);
                 client.addUnlocked(arrCopy[i], newVal);
               }
             }
