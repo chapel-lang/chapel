@@ -753,7 +753,6 @@ module DistributedMap {
       compilerError("unimplemented");
     }
 
-    // TODO: impl
     // Return new aggregator for distributed map that stores an operation that
     // should be performed on the value stored by the key.  The aggregator
     // will handle putting its contents into the map using a lower-level
