@@ -1341,6 +1341,24 @@ module OS {
     }
   }
 
+  /*
+    :class:`InsufficientCapacityError` is a subclass of :class:`IoError`
+    indicating that an IO operation required more storage than was provided
+  */
+  class InsufficientCapacityError: IoError {
+    proc init(details: string = "") {
+      super.init(ERANGE: errorCode, details);
+    }
+
+    override proc message() {
+      return
+        if details.isEmpty() then
+          "Result too large"
+        else
+          details;
+    }
+  }
+
   // here's what we need from Sys
   private extern proc sys_strerror_syserr_str(error:errorCode, out err_in_strerror:c_int):c_string;
 

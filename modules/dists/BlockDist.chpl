@@ -642,14 +642,14 @@ override proc Block.dsiNewSparseDom(param rank: int, type idxType,
 // output distribution
 //
 proc Block.writeThis(x) throws {
-  x._writeln("Block");
-  x._writeln("-------");
-  x._writeln("distributes: ", boundingBox);
-  x._writeln("across locales: ", targetLocales);
-  x._writeln("indexed via: ", targetLocDom);
-  x._writeln("resulting in: ");
+  x.writeln("Block");
+  x.writeln("-------");
+  x.writeln("distributes: ", boundingBox);
+  x.writeln("across locales: ", targetLocales);
+  x.writeln("indexed via: ", targetLocDom);
+  x.writeln("resulting in: ");
   for locid in targetLocDom do
-    x._writeln("  [", locid, "] locale ", locDist(locid).locale.id,
+    x.writeln("  [", locid, "] locale ", locDist(locid).locale.id,
       " owns chunk: ", locDist(locid).myChunk);
 }
 
@@ -880,7 +880,7 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
     // not checking here whether the new low and high fit into idxType
     var low = (stride * followThis(i).lowBound:strType):idxType;
     var high = (stride * followThis(i).highBound:strType):idxType;
-    t(i) = ((low..high by stride:strType) + whole.dim(i).alignedLow by followThis(i).stride:strType).safeCast(t(i).type);
+    t(i) = ((low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType).safeCast(t(i).type);
   }
   for i in {(...t)} {
     yield i;
@@ -931,8 +931,8 @@ proc BlockDom.parSafe param {
 }
 override proc BlockDom.dsiLow           return whole.lowBound;
 override proc BlockDom.dsiHigh          return whole.highBound;
-override proc BlockDom.dsiAlignedLow    return whole.alignedLow;
-override proc BlockDom.dsiAlignedHigh   return whole.alignedHigh;
+override proc BlockDom.dsiAlignedLow    return whole.low;
+override proc BlockDom.dsiAlignedHigh   return whole.high;
 override proc BlockDom.dsiFirst         return whole.first;
 override proc BlockDom.dsiLast          return whole.last;
 override proc BlockDom.dsiStride        return whole.stride;
@@ -944,7 +944,7 @@ proc BlockDom.dsiDims()        return whole.dims();
 proc BlockDom.dsiGetIndices()  return whole.getIndices();
 proc BlockDom.dsiMember(i)     return whole.contains(i);
 proc BlockDom.doiToString()    return whole:string;
-proc BlockDom.dsiSerialWrite(x) { x._write(whole); }
+proc BlockDom.dsiSerialWrite(x) { x.write(whole); }
 proc BlockDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
 override proc BlockDom.dsiIndexOrder(i)              return whole.indexOrder(i);
 override proc BlockDom.dsiMyDist()                   return dist;
@@ -1205,7 +1205,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).lowBound * abs(stride):idxType;
     var high = followThis(i).highBound * abs(stride):idxType;
-    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).alignedLow by followThis(i).stride).safeCast(myFollowThis(i).type);
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride).safeCast(myFollowThis(i).type);
     lowIdx(i) = myFollowThis(i).lowBound;
   }
 
@@ -1257,7 +1257,7 @@ pragma "no copy return"
 proc BlockArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 0..rank-1 {
-    low(i) = ranges(i).alignedLow;
+    low(i) = ranges(i).low;
   }
 
   return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
@@ -1847,7 +1847,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
         }
 
         // Mark that scan values are ready
-        coforall (ready, elem) in zip(valIter(outputReady), valIter(elemPerLoc)) do on ready {
+        coforall (_, ready, elem) in zip(targetLocs.domain, valIter(outputReady), valIter(elemPerLoc)) do on ready {
           ready!.writeEF(elem);
         }
 

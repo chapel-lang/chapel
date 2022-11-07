@@ -56,6 +56,17 @@ int chpl_topo_getCPUs(chpl_bool physical, int *cpus, int count) {
   return 0;
 }
 
+
+int chpl_topo_reserveCPUPhysical(void) {
+  return -1;
+}
+
+
+int chpl_topo_bindCPU(int id) {
+  return 1;
+}
+
+
 int chpl_topo_getNumNumaDomains(void) {
   return 1;
 }

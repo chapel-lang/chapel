@@ -18,10 +18,10 @@ var SparseDom = if layoutType == layoutTypes.csr then
                   cooDom;
 var SparseMat: [SparseDom] int;
 
-writeln(ParentDom.alignedLow);
+writeln(ParentDom.low);
 
-const rowToAdd = ParentDom.dim(0).alignedLow + ParentDom.stride[0]*2;
-const colToAdd = ParentDom.dim(1).alignedLow + ParentDom.stride[1]*3;
+const rowToAdd = ParentDom.dim(0).low + ParentDom.stride[0]*2;
+const colToAdd = ParentDom.dim(1).low + ParentDom.stride[1]*3;
 var row = [i in ParentDom.dim(1)] (rowToAdd, i);
 var col = [i in ParentDom.dim(0)] (i, colToAdd);
 
@@ -58,5 +58,5 @@ else {
   writeln("last:\t\t", SparseDom.last == expectedLast);
 }
 
-writeln("alignedLow:\t",SparseDom.alignedLow);
-writeln("alignedHigh:\t",SparseDom.alignedHigh);
+writeln("low:\t",SparseDom.low);
+writeln("high:\t",SparseDom.high);

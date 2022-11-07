@@ -34,7 +34,7 @@ source $CWD/common-arkouda.bash
 
 # List of Arkouda server modules we exempt from testing (that goal is to
 # eventually have this be an empty list).
-export CHPL_TEST_ARKOUDA_DISABLE_MODULES=In1dMsg:HDF5Msg
+export CHPL_TEST_ARKOUDA_DISABLE_MODULES=In1dMsg:HDF5Msg:HDF5Msg_LEGACY:HDF5MultiDim
 export CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD="true"
 
 module list

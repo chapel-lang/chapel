@@ -1,0 +1,2 @@
+--detailed-errors # duplicateEnumElement-detailed.good
+--no-detailed-errors # duplicateEnumElement-brief.good

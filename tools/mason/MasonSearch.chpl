@@ -187,7 +187,7 @@ proc rankResults(results: list(string), query: string): [] string {
 /* Creates an empty cache file if its not found in registry */
 proc touch(pathToReg: string) {
   const fileWriter = open(pathToReg, iomode.cw).writer();
-  fileWriter._write("");
+  fileWriter.write("");
   fileWriter.close();
 }
 

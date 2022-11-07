@@ -395,10 +395,10 @@ proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
 }
 
 proc Cyclic.writeThis(x) throws {
-  x._writeln(this.type:string);
-  x._writeln("------");
+  x.writeln(this.type:string);
+  x.writeln("------");
   for locid in targetLocDom do
-    x._writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ",
+    x.writeln(" [", locid, "=", targetLocs(locid), "] owns chunk: ",
       locDist(locid).myChunk);
 }
 
@@ -557,8 +557,8 @@ proc CyclicDom.parSafe param {
 }
 override proc CyclicDom.dsiLow           return whole.lowBound;
 override proc CyclicDom.dsiHigh          return whole.highBound;
-override proc CyclicDom.dsiAlignedLow    return whole.alignedLow;
-override proc CyclicDom.dsiAlignedHigh   return whole.alignedHigh;
+override proc CyclicDom.dsiAlignedLow    return whole.low;
+override proc CyclicDom.dsiAlignedHigh   return whole.high;
 override proc CyclicDom.dsiFirst         return whole.first;
 override proc CyclicDom.dsiLast          return whole.last;
 override proc CyclicDom.dsiStride        return whole.stride;
@@ -593,14 +593,14 @@ proc CyclicDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
 
 proc CyclicDom.dsiSerialWrite(x) {
   if verboseCyclicDistWriters {
-    x._writeln(this.type:string);
-    x._writeln("------");
+    x.writeln(this.type:string);
+    x.writeln("------");
     for loc in dist.targetLocDom {
-      x._writeln("[", loc, "=", dist.targetLocs(loc), "] owns ",
+      x.writeln("[", loc, "=", dist.targetLocs(loc), "] owns ",
         locDoms(loc).myBlock);
     }
   } else {
-    x._write(whole);
+    x.write(whole);
   }
 }
 
@@ -669,7 +669,7 @@ private proc chpl__followThisToOrig(type idxType, followThis, whole) {
   for param i in 0..rank-1 {
     // NOTE: unsigned idxType with negative stride will not work
     const wholestride = whole.dim(i).stride:chpl__signedType(idxType);
-    t(i) = ((followThis(i).lowBound*wholestride:idxType)..(followThis(i).highBound*wholestride:idxType) by (followThis(i).stride*wholestride)) + whole.dim(i).alignedLow;
+    t(i) = ((followThis(i).lowBound*wholestride:idxType)..(followThis(i).highBound*wholestride:idxType) by (followThis(i).stride*wholestride)) + whole.dim(i).low;
   }
   return t;
 }
@@ -743,7 +743,7 @@ pragma "no copy return"
 proc CyclicArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 0..rank-1 {
-    low(i) = ranges(i).alignedLow;
+    low(i) = ranges(i).low;
   }
 
   return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
@@ -974,7 +974,7 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
     const      lo = (followThis(i).lowBound * iStride):idxType,
                hi = (followThis(i).highBound * iStride):idxType,
            stride = (followThis(i).stride*wholestride):strType;
-    t(i) = (lo..hi by stride) + dom.whole.dim(i).alignedLow;
+    t(i) = (lo..hi by stride) + dom.whole.dim(i).low;
   }
   const myFollowThisDom = {(...t)};
   if fast {

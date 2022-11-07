@@ -59,6 +59,6 @@ proc masonDoc(args: [] string) throws {
     }
   }
   catch e: MasonError {
-    stderr._writeln(e.message());
+    stderr.writeln(e.message());
   }
 }

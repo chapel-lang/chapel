@@ -69,7 +69,7 @@ void QualifiedType::mark(Context* context) const {
   context->markPointer(param_);
 }
 
-static const char* kindToString(QualifiedType::Kind kind) {
+const char* QualifiedType::kindToString(QualifiedType::Kind kind) {
   switch (kind) {
     case QualifiedType::UNKNOWN:            return "unknown";
     case QualifiedType::DEFAULT_INTENT:     return "default intent";

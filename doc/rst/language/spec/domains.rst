@@ -924,11 +924,10 @@ set manipulations.  The supported set operators are:
   =======  ====================
 
 
-Predefined Methods on Domains
------------------------------
+Predefined Routines on Domains
+------------------------------
 
 .. include:: ../../builtins/ChapelDomain.rst
 
 .. [3]
    This is also known as row-major ordering.
-

@@ -847,8 +847,8 @@ override proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
 // common redirects
 override proc DimensionalDom.dsiLow           return whole.lowBound;
 override proc DimensionalDom.dsiHigh          return whole.highBound;
-override proc DimensionalDom.dsiAlignedLow    return whole.alignedLow;
-override proc DimensionalDom.dsiAlignedHigh   return whole.alignedHigh;
+override proc DimensionalDom.dsiAlignedLow    return whole.low;
+override proc DimensionalDom.dsiAlignedHigh   return whole.high;
 override proc DimensionalDom.dsiFirst         return whole.first;
 override proc DimensionalDom.dsiLast          return whole.last;
 override proc DimensionalDom.dsiStride        return whole.stride;
@@ -860,7 +860,7 @@ proc DimensionalDom.dsiDims()        return whole.dims();
 //proc DimensionalDom.dsiGetIndices()  return whole.getIndices();
 proc DimensionalDom.dsiMember(i)     return whole.contains(i);
 proc DimensionalDom.doiToString()    return whole:string;
-proc DimensionalDom.dsiSerialWrite(x) { x._write(whole); }
+proc DimensionalDom.dsiSerialWrite(x) { x.write(whole); }
 proc DimensionalDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
 override proc DimensionalDom.dsiIndexOrder(i)              return whole.indexOrder(i);
 override proc DimensionalDom.dsiMyDist()                   return dist;
@@ -895,7 +895,7 @@ proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
   // domains is empty; could change it to halt("unimplemented")
   if dom1.dsiSetIndicesUnimplementedCase||dom2.dsiSetIndicesUnimplementedCase
     then if _arrs_containing_dom > 0 then
-      stderr._writeln("warning: array resizing will not preserve array contents upon change in dimension stride with 1-d BlockCyclic distribution");
+      stderr.writeln("warning: array resizing will not preserve array contents upon change in dimension stride with 1-d BlockCyclic distribution");
 
   coforall (locId, locDD) in zip(targetIds, localDdescs) do
     on locDD do
@@ -1080,15 +1080,15 @@ proc DimensionalArr.dsiSerialWrite(f): void {
 
   var nextD1 = false;
   for (l1,i1) in iHelp(0) {
-      if nextD1 then f._writeln();
+      if nextD1 then f.writeln();
       nextD1 = true;
 
       var nextD2 = false;
       for (l2,i2) in iHelp(1) {
           const locAdesc = this.localAdescs[l1,l2];
           const elem = locAdesc.myStorageArr(i1,i2);
-          if nextD2 then f._write(" ");
-          f._write(elem);
+          if nextD2 then f.write(" ");
+          f.write(elem);
           nextD2 = true;
         }
     }

@@ -1224,6 +1224,26 @@ module ChapelBase {
     return ChplConfig.CHPL_NETWORK_ATOMICS != "none";
   }
 
+  config param commDiagsTrackEndCounts = false;
+
+  pragma "no default functions"
+  record endCountDiagsManager {
+    var taskInfo: c_ptr(chpl_task_infoChapel_t);
+    var prevDiagsDisabledVal: bool;
+    inline proc enterThis() : void {
+      if !commDiagsTrackEndCounts {
+        taskInfo = chpl_task_getInfoChapel();
+        prevDiagsDisabledVal = chpl_task_data_setCommDiagsTemporarilyDisabled(taskInfo, true);
+      }
+    }
+
+    inline proc leaveThis(in unused: owned Error?) {
+      if !commDiagsTrackEndCounts {
+        chpl_task_data_setCommDiagsTemporarilyDisabled(taskInfo, prevDiagsDisabledVal);
+      }
+    }
+  }
+
   // Parent class for _EndCount instances so that it's easy
   // to add non-generic fields here.
   // And to get 'errors' field from any generic instantiation.
@@ -1242,6 +1262,21 @@ module ChapelBase {
     proc init(type iType, type taskType) {
       this.iType = iType;
       this.taskType = taskType;
+    }
+
+    inline proc add(value: int, param order: memoryOrder) {
+      manage new endCountDiagsManager() do
+        this.i.add(value, order);
+    }
+
+    inline proc sub(value: int, param order: memoryOrder) {
+      manage new endCountDiagsManager() do
+        this.i.sub(value, order);
+    }
+
+    inline proc waitFor(value: int, param order: memoryOrder) {
+      manage new endCountDiagsManager() do
+        this.i.waitFor(value, order);
     }
   }
 
@@ -1286,7 +1321,7 @@ module ChapelBase {
   pragma "task spawn impl fn"
   proc _upEndCount(e: _EndCount, param countRunningTasks=true) {
     if isAtomic(e.taskCnt) {
-      e.i.add(1, memoryOrder.release);
+      e.add(1, memoryOrder.release);
       e.taskCnt.add(1, memoryOrder.release);
     } else {
       // note that this on statement does not have the usual
@@ -1294,7 +1329,7 @@ module ChapelBase {
       // above. So we do an acquire fence before it.
       chpl_rmem_consist_fence(memoryOrder.release);
       on e {
-        e.i.add(1, memoryOrder.release);
+        e.add(1, memoryOrder.release);
         e.taskCnt += 1;
       }
     }
@@ -1310,7 +1345,7 @@ module ChapelBase {
   pragma "no remote memory fence"
   pragma "task spawn impl fn"
   proc _upEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
-    e.i.add(numTasks:int, memoryOrder.release);
+    e.add(numTasks:int, memoryOrder.release);
 
     if countRunningTasks {
       if numTasks > 1 {
@@ -1346,7 +1381,7 @@ module ChapelBase {
     chpl_save_task_error(e, err);
     chpl_comm_task_end();
     // inform anybody waiting that we're done
-    e.i.sub(1, memoryOrder.release);
+    e.sub(1, memoryOrder.release);
   }
 
   // This function is called once by the initiating task.  As above, no
@@ -1362,7 +1397,7 @@ module ChapelBase {
     here.runningTaskCntSub(1);
 
     // Wait for all tasks to finish
-    e.i.waitFor(0, memoryOrder.acquire);
+    e.waitFor(0, memoryOrder.acquire);
 
     if countRunningTasks {
       const taskDec = if isAtomic(e.taskCnt) then e.taskCnt.read() else e.taskCnt;
@@ -1384,7 +1419,7 @@ module ChapelBase {
   pragma "unchecked throws"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true, numTasks) throws {
     // Wait for all tasks to finish
-    e.i.waitFor(0, memoryOrder.acquire);
+    e.waitFor(0, memoryOrder.acquire);
 
     if countRunningTasks {
       if numTasks > 1 {

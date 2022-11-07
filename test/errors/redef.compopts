@@ -1,0 +1,2 @@
+--detailed-errors # redef-detailed.good
+--no-detailed-errors # redef-brief.good

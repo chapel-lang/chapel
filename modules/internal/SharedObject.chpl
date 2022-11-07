@@ -19,70 +19,6 @@
  */
 
 /*
-
-:record:`shared` (along with :record:`~OwnedObject.owned`) manage the
-deallocation of a class instance. :record:`shared` is meant to be used when many
-different references will exist to the object at the same time and these
-references need to keep the object alive.
-
-Please see also the language spec section :ref:`Class_Lifetime_and_Borrows`.
-
-Using `shared`
---------------
-
-To use :record:`shared`, allocate a class instance following this
-pattern:
-
-.. code-block:: chapel
-
- var mySharedObject = new shared MyClass(...));
-
-When ``mySharedObject`` and any copies of it go out of scope, the class
-instance it refers to will be deleted.
-
-Copy initializing or assigning from mySharedObject will make
-other variables refer to the same class instance. The class instance
-will be deleted after all of these references go out of scope.
-
-.. code-block:: chapel
-
- var globalSharedObject:shared MyClass;
-
- proc makeGlobalSharedObject() {
-   var mySharedObject = new shared MyClass(...);
-   globalSharedObject = mySharedObject;
-   // the reference count is decremented when mySharedObject
-   // goes out of scope. Since it's not zero after decrementing, the
-   // MyClass instance is not deleted until globalSharedObject
-   // goes out of scope.
- }
-
-Borrowing from `shared`
------------------------
-
-The :proc:`shared.borrow` method returns the pointer managed by the
-:record:`shared`. This pointer is only valid as long as the :record:`shared` is
-storing that pointer. The compiler includes some checking for errors in this
-case. In these ways, :record:`shared` is similar to
-:record:`~OwnedObject.owned`.
-
-See :ref:`about-owned-borrowing` for more details and examples.
-
-Coercions for `shared`
-----------------------
-
-As with :record:`~OwnedObject.owned`, :record:`shared` supports
-coercions to the class type as well as
-coercions from a ``shared(T)`` to ``shared(U)`` where ``T`` is a
-subclass of ``U``.
-
-See :ref:`about-owned-coercions` for more details and examples.
-
-`shared` Default Intent
------------------------
-
-The default intent for :record:`shared` types is ``const ref``.
-
  */
 module SharedObject {
 
@@ -573,12 +509,12 @@ module SharedObject {
   proc _shared._readWriteHelper(f) throws {
     if isNonNilableClass(this.chpl_t) {
       var tmp = this.chpl_p! : borrowed class;
-      if f.writing then f._write(tmp); else tmp = f.read(tmp.type);
+      if f.writing then f.write(tmp); else tmp = f.read(tmp.type);
       if tmp == nil then halt("internal error - read nil");
       if tmp != this.chpl_p then halt("internal error - read changed ptr");
     } else {
       var tmp = this.chpl_p : borrowed class?;
-      if f.writing then f._write(tmp); else tmp = f.read(tmp.type);
+      if f.writing then f.write(tmp); else tmp = f.read(tmp.type);
       if tmp != this.chpl_p then halt("internal error - read changed ptr");
       if tmp == nil then
         this.doClear();

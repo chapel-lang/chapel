@@ -1717,7 +1717,7 @@ module ChapelArray {
     // documentation. Don't document it for now.
     pragma "no doc"
     proc head(): this._value.eltType {
-      return this[this.domain.alignedLow];
+      return this[this.domain.low];
     }
 
     /* Return the last value in the array */
@@ -1725,7 +1725,7 @@ module ChapelArray {
     // documentation. Don't document it for now.
     pragma "no doc"
     proc tail(): this._value.eltType {
-      return this[this.domain.alignedHigh];
+      return this[this.domain.high];
     }
 
     /* Return the last element in the array. The array must be a
@@ -1759,9 +1759,9 @@ module ChapelArray {
     proc reverse() {
       if (!chpl__isDense1DArray()) then
         compilerError("reverse() is only supported on dense 1D arrays");
-      const lo = this.domain.alignedLow,
+      const lo = this.domain.low,
             mid = this.domain.sizeAs(this.idxType) / 2,
-            hi = this.domain.alignedHigh;
+            hi = this.domain.high;
       for i in 0..#mid {
         this[lo + i] <=> this[hi - i];
       }
@@ -2374,7 +2374,7 @@ module ChapelArray {
 
      // TODO can we omit the following check and bulk transfer narrow
      // pointers, too
-    if __primitive("is wide pointer", a[aDom.alignedLow]) {
+    if __primitive("is wide pointer", a[aDom.low]) {
       return chpl__bulkTransferArray(a, aDom, b, bDom);
     }
     return false;
@@ -3509,7 +3509,7 @@ module ChapelArray {
       halt("An array can only be passed to an external routine from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
 
     use CTypes;
-    const ptr = c_pointer_return(arr[arr.domain.alignedLow]);
+    const ptr = c_pointer_return(arr[arr.domain.low]);
     if castToVoidStar then
       return ptr: c_void_ptr;
     else

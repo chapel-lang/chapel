@@ -362,8 +362,8 @@ proc getChapelVersionInfo(): VersionInfo {
       const split = semver.split(".");
       chplVersionInfo = new VersionInfo(split[0]:int, split[1]:int, split[2]:int);
     } catch e : Error {
-      stderr._writeln("Error while getting Chapel version:");
-      stderr._writeln(e.message());
+      stderr.writeln("Error while getting Chapel version:");
+      stderr.writeln(e.message());
       exit(1);
     }
   }
@@ -587,7 +587,7 @@ proc findLatest(packageDir: string): VersionInfo {
     if !manifest.endsWith(suffix) {
       var warningStr = "File without '.toml' extension encountered - skipping ";
       warningStr += packageName + " " + manifest;
-      stderr._writeln(warningStr);
+      stderr.writeln(warningStr);
       continue;
     }
 
@@ -614,19 +614,19 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
   use Regex;
 
   if brick == nil {
-    stderr._writeln("Error: Unable to parse manifest file");
+    stderr.writeln("Error: Unable to parse manifest file");
     exit(1);
   }
 
   // Assert some expected fields are not nil
   if brick!['name'] == nil || brick!['version'] == nil{
-    stderr._writeln("Error: Unable to parse manifest file");
+    stderr.writeln("Error: Unable to parse manifest file");
     exit(1);
   }
 
   if brick!['chplVersion'] == nil {
     const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
-    stderr._writeln("Brick '", name, "' missing required 'chplVersion' field");
+    stderr.writeln("Brick '", name, "' missing required 'chplVersion' field");
     exit(1);
   }
 
@@ -639,8 +639,8 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
     high = res[1];
   } catch e : Error {
     const name = brick!["name"]!.s + "-" + brick!["version"]!.s;
-    stderr._writeln("Invalid chplVersion in package '", name, "': ", chplVersion);
-    stderr._writeln("Details: ", e.message());
+    stderr.writeln("Invalid chplVersion in package '", name, "': ", chplVersion);
+    stderr.writeln("Details: ", e.message());
     exit(1);
   }
 

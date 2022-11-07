@@ -19,16 +19,15 @@
 
 #include "test-resolution.h"
 
-#include "ResolvedVisitor.h"
-
 #include "chpl/framework/ErrorWriter.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/ResolvedVisitor.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
-#include "chpl/uast/IntentList.h"
-#include "chpl/uast/Identifier.h"
 #include "chpl/uast/For.h"
+#include "chpl/uast/Identifier.h"
+#include "chpl/uast/IntentList.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
@@ -86,8 +85,8 @@ struct Collector {
   }
 
   bool enter(const uast::VarLikeDecl* decl, RV& rv) {
-    if (rv.byPostorder.hasId(decl->id())) {
-      const ResolvedExpression& rr = rv.byPostorder.byAst(decl);
+    if (rv.hasAst(decl)) {
+      const ResolvedExpression& rr = rv.byAst(decl);
       declTypes.emplace(decl->name().str(), rr.type());
     }
 
@@ -95,8 +94,8 @@ struct Collector {
   }
 
   bool enter(const uast::Identifier* ident, RV& rv) {
-    if (rv.byPostorder.hasId(ident->id())) {
-      const ResolvedExpression& rr = rv.byPostorder.byAst(ident);
+    if (rv.hasAst(ident)) {
+      const ResolvedExpression& rr = rv.byAst(ident);
       identTypes.emplace(ident->name().str(), rr.type());
     }
 
@@ -104,8 +103,8 @@ struct Collector {
   }
 
   bool enter(const uast::TypeQuery* tq, RV& rv) {
-    if (rv.byPostorder.hasId(tq->id())) {
-      const ResolvedExpression& rr = rv.byPostorder.byAst(tq);
+    if (rv.hasAst(tq)) {
+      const ResolvedExpression& rr = rv.byAst(tq);
       declTypes.emplace(tq->name().str(), rr.type());
     }
 
@@ -119,14 +118,14 @@ struct Collector {
     // TODO: Eventually this logic should be moved into ResolvedVisitor as
     // a helper method.
     //
-    if (rv.byPostorder.hasId(call->id())) {
-      const ResolvedExpression& result = rv.byPostorder.byAst(call);
+    if (rv.hasAst(call)) {
+      const ResolvedExpression& result = rv.byAst(call);
       if (result.mostSpecific().isEmpty() == false) {
         const TypedFnSignature* sig = result.mostSpecific().only();
-        auto fn = resolveFunction(rv.context, sig, result.poiScope());
+        auto fn = resolveFunction(rv.context(), sig, result.poiScope());
 
-        ResolvedVisitor<Collector> newRV(rv.context, nullptr, *this, fn->resolutionById());
-        auto untyped = idToAst(rv.context, sig->id());
+        ResolvedVisitor<Collector> newRV(rv.context(), nullptr, *this, fn->resolutionById());
+        auto untyped = idToAst(rv.context(), sig->id());
         assert(untyped->id() == sig->id());
         untyped->traverse(newRV);
       }
@@ -677,7 +676,7 @@ proc fn(param n : int, args...n) {
 )""");
 
   std::vector<const ErrorBase*> errors;
-  auto errMsg = "Cannot resolve call: no matching candidates";
+  auto errMsg = "Cannot resolve call to 'fn': no matching candidates";
 
   auto good = std::string(R"""(var x = fn(3, 1, 2.0, "hello");)""");
   auto gc = customHelper(paramFn + good);
@@ -771,7 +770,7 @@ proc fn(param n : int, args...n, y : int, z : real) {
 }
 )""");
 
-  auto errMsg = "Cannot resolve call: no matching candidates";
+  auto errMsg = "Cannot resolve call to 'fn': no matching candidates";
   std::vector<const ErrorBase*> errors;
 
   auto good = std::string(R"""(var x = fn(3, 1, 2, 3, 4, 5.0);)""");

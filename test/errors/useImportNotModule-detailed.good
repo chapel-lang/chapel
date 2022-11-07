@@ -1,0 +1,9 @@
+─── error in useImportNotModule.chpl:8 [UseImportNotModule] ───
+  Cannot 'use' 'someProc', which is not a module.
+  In the following 'use' statement:
+      |
+    8 |   use M.someProc;
+      |       ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  Only modules and enums can be used with 'use' statements.
+

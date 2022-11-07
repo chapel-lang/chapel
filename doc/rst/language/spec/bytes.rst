@@ -7,9 +7,9 @@
 Bytes
 =====
 
-The ``bytes`` type is similar to a string but allows arbitrary
-data to be stored in it. Methods on ``bytes`` that interpret the data as
-characters assume that the bytes are ASCII characters.
+The ``bytes`` type is similar to the :type:`~String.string` type but allows
+arbitrary data to be stored in it. Methods on ``bytes`` that interpret the
+data as characters assume that the bytes are ASCII characters.
 
 .. _Bytes_Instantiation:
 
@@ -17,15 +17,15 @@ Bytes Instantiation and Casting
 -------------------------------
 
 A ``bytes`` instance can be created using the literals similar to strings,
-prepended by a `b` character:
+prepended by a ``b`` character:
 
 .. code-block:: chapel
 
    var b = b"my bytes";
 
-``bytes`` can also be crated using a specific buffer (i.e. data in another
-*bytes*, a `c_string` or a C pointer) you can use the factory functions shown
-below, such as :proc:`~Bytes.createBytesWithNewBuffer`.
+The factory functions shown below, such as :proc:`~Bytes.createBytesWithNewBuffer`,
+allow you to create a ``bytes`` using a specific buffer (i.e. data in another
+``bytes``, a ``c_string`` or a :class:`~CTypes.c_ptr`).
 
 .. _Bytes_and_String:
 
@@ -50,9 +50,9 @@ and needs to be decoded to be converted to a *string*.
 
   var s2 = b.decode(); // you need to decode a bytes to convert it to a string
 
-See the documentation for the :proc:`~Bytes.bytes.decode` method for details.
+See the :proc:`~Bytes.bytes.decode` method below for details.
 
-Similarly, a ``bytes`` can be initialized using a string:
+Similarly, a ``bytes`` can be initialized using a ``string``:
 
 .. code-block:: chapel
 
@@ -86,8 +86,8 @@ on :ref:`Error Handling <Chapter-Error_Handling>`.
 
 .. _Bytes_Methods:
 
-Bytes Methods
--------------
+Predefined Routines on Bytes
+----------------------------
 
 The *bytes* type:
 

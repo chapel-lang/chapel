@@ -77,7 +77,7 @@ proc fullIdxToReducedIdx(const resDims, const srcDims, const srcIdx)
 
   for param dim in 0..resDims.size-1 do
     if isReducedDim(resDims, srcDims, dim) then
-      resIdx(dim) = resDims(dim).alignedLow;
+      resIdx(dim) = resDims(dim).low;
     else
       resIdx(dim) = srcIdx(dim);
 

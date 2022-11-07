@@ -317,15 +317,15 @@ override proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
 // output distribution
 //
 proc BlockCyclic.writeThis(x) throws {
-  x._writeln("BlockCyclic");
-  x._writeln("-------");
-  x._writeln("distributes: ", lowIdx, "...");
-  x._writeln("in chunks of: ", blocksize);
-  x._writeln("across locales: ", targetLocales);
-  x._writeln("indexed via: ", targetLocDom);
-  x._writeln("resulting in: ");
+  x.writeln("BlockCyclic");
+  x.writeln("-------");
+  x.writeln("distributes: ", lowIdx, "...");
+  x.writeln("in chunks of: ", blocksize);
+  x.writeln("across locales: ", targetLocales);
+  x.writeln("indexed via: ", targetLocDom);
+  x.writeln("resulting in: ");
   for locid in targetLocDom do
-    x._writeln("  [", locid, "] ", locDist(locid));
+    x.writeln("  [", locid, "] ", locDist(locid));
 }
 
 //
@@ -488,7 +488,7 @@ proc LocBlockCyclic.writeThis(x) throws {
   on this {
     localeid = here.id;
   }
-  x._write("locale ", localeid, " owns blocks: ", myStarts);
+  x.write("locale ", localeid, " owns blocks: ", myStarts);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -623,8 +623,8 @@ proc BlockCyclicDom.parSafe param {
 }
 override proc BlockCyclicDom.dsiLow           return whole.lowBound;
 override proc BlockCyclicDom.dsiHigh          return whole.highBound;
-override proc BlockCyclicDom.dsiAlignedLow    return whole.alignedLow;
-override proc BlockCyclicDom.dsiAlignedHigh   return whole.alignedHigh;
+override proc BlockCyclicDom.dsiAlignedLow    return whole.low;
+override proc BlockCyclicDom.dsiAlignedHigh   return whole.high;
 override proc BlockCyclicDom.dsiFirst         return whole.first;
 override proc BlockCyclicDom.dsiLast          return whole.last;
 override proc BlockCyclicDom.dsiStride        return whole.stride;
@@ -636,7 +636,7 @@ proc BlockCyclicDom.dsiDims()        return whole.dims();
 proc BlockCyclicDom.dsiGetIndices()  return whole.getIndices();
 proc BlockCyclicDom.dsiMember(i)     return whole.contains(i);
 proc BlockCyclicDom.doiToString()    return whole:string;
-proc BlockCyclicDom.dsiSerialWrite(x) { x._write(whole); }
+proc BlockCyclicDom.dsiSerialWrite(x) { x.write(whole); }
 proc BlockCyclicDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
 override proc BlockCyclicDom.dsiIndexOrder(i)              return whole.indexOrder(i);
 override proc BlockCyclicDom.dsiMyDist()                   return dist;
@@ -775,7 +775,7 @@ proc LocBlockCyclicDom.computeFlatInds() {
 // output local domain piece
 //
 proc LocBlockCyclicDom.writeThis(x) throws {
-  x._write(myStarts);
+  x.write(myStarts);
 }
 
 proc LocBlockCyclicDom.enumerateBlocks() {
@@ -810,11 +810,11 @@ proc LocBlockCyclicDom.size {
 }
 
 proc LocBlockCyclicDom.low {
-  return myStarts.alignedLow;
+  return myStarts.low;
 }
 
 proc LocBlockCyclicDom.high {
-  return myStarts.alignedHigh;
+  return myStarts.high;
 }
 
 proc LocBlockCyclicDom._lens {
@@ -1279,7 +1279,7 @@ proc LocBlockCyclicArr.this(i) ref {
 //
 proc LocBlockCyclicArr.writeThis(x) throws {
   // note on this fails; see writeThisUsingOn.chpl
-  x._write(myElems);
+  x.write(myElems);
 }
 
 // sungeun: This doesn't appear to be used yet, so I left it, but it

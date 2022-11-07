@@ -1,4 +1,4 @@
-ambiguousConfigType.chpl:5: warning: This file-scope code is outside of any explicit module declarations (e.g., module M), so an implicit module named 'ambiguousConfigType' is being introduced to contain the file's contents.
+ambiguousConfigType.chpl:5: warning: an implicit module named 'ambiguousConfigType' is being introduced to contain file-scope code
 ambiguousConfigType.chpl:6: error: ambiguous config name (PV)
 ambiguousConfigType.chpl:3: note: also defined here
 ambiguousConfigType.chpl:3: note: (disambiguate using -s<modulename>.PV...)

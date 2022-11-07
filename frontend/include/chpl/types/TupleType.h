@@ -99,6 +99,9 @@ class TupleType final : public CompositeType {
 
   ~TupleType() = default;
 
+  virtual void stringify(std::ostream& ss,
+                         chpl::StringifyKind stringKind) const override;
+
   /** Returns the number of tuple elements.
       Returns '-1' if the size is not known. */
   int numElements() const {

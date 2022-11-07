@@ -317,19 +317,19 @@ module CommDiagnostics
       use Reflection;
 
       var first = true;
-      c._write("(");
+      c.write("(");
       for param i in 0..<numFields(chpl_commDiagnostics) {
         param name = getFieldName(chpl_commDiagnostics, i);
         const val = getField(this, i);
         if val != 0 {
           if commDiagsPrintUnstable || name != 'amo' {
-            if first then first = false; else c._write(", ");
-            c._write(name, " = ", val);
+            if first then first = false; else c.write(", ");
+            c.write(name, " = ", val);
           }
         }
       }
-      if first then c._write("<no communication>");
-      c._write(")");
+      if first then c.write("<no communication>");
+      c.write(")");
     }
   };
 

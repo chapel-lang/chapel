@@ -8651,10 +8651,38 @@ static Type* moveDetermineRhsTypeErrorIfInvalid(CallExpr* call) {
           if (rhsFn->hasFlag(FLAG_PROMOTION_WRAPPER))
             rhsName = unwrapFnName(rhsFn);
 
-          USR_FATAL(userCall(call),
+          // TODO <June 23 Release>: this deprecation-specific error message should be removed
+          //                         when the bool-returning-writers deprecation is finalized
+          if (
+            rhsFn->getModule()->modTag != MOD_USER && (
+              // writer methods on channels
+              (rhsFn->isMethod() == 1 &&
+                (
+                    std::strcmp("write", rhsName) == 0 ||
+                    std::strcmp("writeln", rhsName) == 0 ||
+                    std::strcmp("writebits", rhsName) == 0 ||
+                    std::strcmp("writeBytes", rhsName) == 0 ||
+                    std::strcmp("writef", rhsName) == 0
+                )
+              ) ||
+              // or, top-level writef
+              std::strcmp("writef", rhsName) == 0
+            )
+          ) {
+            // emit the write* specific error message:
+            // (https://github.com/chapel-lang/chapel/pull/20907#pullrequestreview-1155017128)
+            USR_FATAL(userCall(call),
+                    "illegal use of return value from '%s'. "
+                    "Note: if you wish to detect early EOF from a write call, "
+                    "check for an EofError using a try-catch block",
+                    rhsName);
+          } else {
+            // otherwise, emit the normal error message:
+            USR_FATAL(userCall(call),
                     "illegal use of function that does not "
                     "return a value: '%s'",
                     rhsName);
+          }
         }
       }
     }

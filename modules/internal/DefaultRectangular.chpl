@@ -611,22 +611,22 @@ module DefaultRectangular {
 
     override proc dsiAlignedLow {
       if rank == 1 {
-        return ranges(0).alignedLow;
+        return ranges(0).low;
       } else {
         var result: rank*idxType;
         for param i in 0..rank-1 do
-          result(i) = ranges(i).alignedLow;
+          result(i) = ranges(i).low;
         return result;
       }
     }
 
     override proc dsiAlignedHigh {
       if rank == 1 {
-        return ranges(0).alignedHigh;
+        return ranges(0).high;
       } else {
         var result: rank*idxType;
         for param i in 0..rank-1 do
-          result(i) = ranges(i).alignedHigh;
+          result(i) = ranges(i).high;
         return result;
       }
     }
@@ -1232,7 +1232,7 @@ module DefaultRectangular {
 
     proc setupFieldsAndAllocate(param initElts) {
       for param dim in 0..rank-1 {
-        off(dim) = dom.dsiDim(dim).alignedLow;
+        off(dim) = dom.dsiDim(dim).low;
         str(dim) = dom.dsiDim(dim).stride;
       }
       if storageOrder == ArrayStorageOrder.RMO {
@@ -1669,7 +1669,7 @@ module DefaultRectangular {
       if !first then rwLiteral(", ");
       else first = false;
 
-      if f.writing then f._write(ranges(i));
+      if f.writing then f.write(ranges(i));
       else ranges(i) = f.read(ranges(i).type);
     }
     rwLiteral("}");
@@ -1755,13 +1755,13 @@ module DefaultRectangular {
 
       if dim == rank-1 {
         var first = true;
-        if debugDefaultDist && f.writing then f._writeln(dom.dsiDim(dim));
+        if debugDefaultDist && f.writing then f.writeln(dom.dsiDim(dim));
         for j in dom.dsiDim(dim) by makeStridePositive {
           if first then first = false;
           else if isspace then rwLiteral(" ");
           else if isjson || ischpl then rwLiteral(", ");
           idx(dim) = j;
-          if f.writing then f._write(arr.dsiAccess(idx));
+          if f.writing then f.write(arr.dsiAccess(idx));
           else arr.dsiAccess(idx) = f.read(eltType);
         }
       } else {
@@ -1770,7 +1770,7 @@ module DefaultRectangular {
           idx(dim) = j;
 
           recursiveArrayReaderWriter(idx, dim=dim+1,
-                               last=(last || dim == 0) && (j == dom.dsiDim(dim).alignedHigh));
+                               last=(last || dim == 0) && (j == dom.dsiDim(dim).high));
 
           if isjson || ischpl {
             if j != lastIdx {
@@ -1816,7 +1816,7 @@ module DefaultRectangular {
       const size = len:c_ssize_t*elemSize:c_ssize_t;
       try {
         if f.writing {
-          f._writeBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
         } else {
           f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
         }

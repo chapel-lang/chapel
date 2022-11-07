@@ -150,34 +150,227 @@ const UntypedFnSignature* UntypedFnSignature::get(Context* context,
   return getUntypedFnSignatureForIdQuery(context, functionId);
 }
 
-CallInfo::CallInfo(const uast::FnCall* call) {
+CallInfo CallInfo::createSimple(const uast::FnCall* call) {
+  // Pieces of the CallInfo we need to prepare.
+  UniqueString name;
+  QualifiedType calledType;
+  bool isMethodCall = false;
+  bool hasQuestionArg = false;
+  std::vector<CallInfoActual> actuals;
+
   // set the name (simple cases only)
   if (auto called = call->calledExpression()) {
     if (auto id = called->toIdentifier()) {
-      name_ = id->name();
-      // should not be a valid operator name
-      assert(!uast::isOpName(name_));
+      name = id->name();
     }
   }
 
-  isOpCall_ = false;
+  assert(!name.isEmpty());
 
   int i = 0;
   for (auto actual : call->actuals()) {
     if (isQuestionMark(actual)) {
-      hasQuestionArg_ = true;
+      hasQuestionArg = true;
     } else {
       UniqueString byName;
       if (call->isNamedActual(i)) {
         byName = call->actualName(i);
-        if (i == 0 && byName == USTR("this"))
-          isMethodCall_ = true;
       }
-      actuals_.push_back(CallInfoActual(QualifiedType(), byName));
+      actuals.push_back(CallInfoActual(QualifiedType(), byName));
       i++;
     }
   }
+
+  auto ret = CallInfo(name, calledType, isMethodCall, hasQuestionArg,
+                      /* isParenless */ false, actuals);
+
+  return ret;
 }
+
+void CallInfo::prepareActuals(Context* context,
+                              const Call* call,
+                              const ResolutionResultByPostorderID& byPostorder,
+                              bool raiseErrors,
+                              std::vector<CallInfoActual>& actuals,
+                              const AstNode*& questionArg,
+                              std::vector<const uast::AstNode*>* actualAsts) {
+
+  const FnCall* fnCall = call->toFnCall();
+
+  // Prepare the actuals of the call.
+  for (int i = 0; i < call->numActuals(); i++) {
+    auto actual = call->actual(i);
+
+    if (isQuestionMark(actual)) {
+      if (questionArg == nullptr) {
+        questionArg = actual;
+      } else {
+        CHPL_REPORT(context, MultipleQuestionArgs, fnCall, questionArg, actual);
+        // Keep questionArg pointing at the first question argument we found
+      }
+    } else {
+      const ResolvedExpression& r = byPostorder.byAst(actual);
+      QualifiedType actualType = r.type();
+      UniqueString byName;
+      if (fnCall && fnCall->isNamedActual(i)) {
+        byName = fnCall->actualName(i);
+      }
+
+      bool handledTupleExpansion = false;
+      if (auto op = actual->toOpCall()) {
+        if (op->op() == USTR("...")) {
+          if (op->numActuals() != 1) {
+            if (raiseErrors) {
+              context->error(op, "tuple expansion can only accept one argument");
+            }
+            actualType = QualifiedType(QualifiedType::VAR,
+                                       ErroneousType::get(context));
+          } else {
+            const ResolvedExpression& rr = byPostorder.byAst(op->actual(0));
+            actualType = rr.type();
+          }
+
+          // handle tuple expansion
+          if (!actualType.hasTypePtr() ||
+              actualType.type()->isUnknownType()) {
+            // leave the result unknown
+            actualType = QualifiedType(QualifiedType::VAR,
+                                       UnknownType::get(context));
+          } else if (actualType.type()->isErroneousType()) {
+            // let it stay erroneous type
+          } else if (!actualType.type()->isTupleType()) {
+            if (raiseErrors) {
+              CHPL_REPORT(context, TupleExpansionNonTuple, fnCall, op, actualType);
+            }
+            actualType = QualifiedType(QualifiedType::VAR,
+                                       ErroneousType::get(context));
+          } else {
+            if (!byName.isEmpty()) {
+              CHPL_REPORT(context, TupleExpansionNamedArgs, op, fnCall);
+            }
+
+            auto tupleType = actualType.type()->toTupleType();
+            int n = tupleType->numElements();
+            for (int i = 0; i < n; i++) {
+              tupleType->elementType(i);
+              // intentionally use the empty name (to ignore it if it was
+              // set and we issued an error above)
+              actuals.push_back(CallInfoActual(tupleType->elementType(i),
+                                               UniqueString()));
+              if (actualAsts != nullptr) {
+                actualAsts->push_back(op);
+              }
+            }
+            handledTupleExpansion = true;
+          }
+        }
+      }
+
+      if (!handledTupleExpansion) {
+        actuals.push_back(CallInfoActual(actualType, byName));
+        if (actualAsts != nullptr) {
+          actualAsts->push_back(actual);
+        }
+      }
+    }
+  }
+}
+
+CallInfo CallInfo::create(Context* context,
+                          const Call* call,
+                          const ResolutionResultByPostorderID& byPostorder,
+                          bool raiseErrors,
+                          std::vector<const uast::AstNode*>* actualAsts) {
+
+  // Pieces of the CallInfo we need to prepare.
+  UniqueString name;
+  QualifiedType calledType;
+  bool isMethodCall = false;
+  const AstNode* questionArg = nullptr;
+  std::vector<CallInfoActual> actuals;
+
+  if (actualAsts != nullptr) {
+    actualAsts->clear();
+  }
+
+  // Get the name of the called expression.
+  if (auto op = call->toOpCall()) {
+    name = op->op();
+  } else if (auto called = call->calledExpression()) {
+    if (auto calledIdent = called->toIdentifier()) {
+      name = calledIdent->name();
+    } else if (auto calledDot = called->toDot()) {
+      name = calledDot->field();
+    } else {
+      assert(false && "Unexpected called expression");
+    }
+  }
+
+  // Check for method call, maybe construct a receiver.
+  if (!call->isOpCall()) {
+    if (auto called = call->calledExpression()) {
+      if (auto calledDot = called->toDot()) {
+
+        const AstNode* receiver = calledDot->receiver();
+        const ResolvedExpression& reReceiver = byPostorder.byAst(receiver);
+        const QualifiedType& qtReceiver = reReceiver.type();
+
+        // Check to make sure the receiver is a value or type.
+        if (qtReceiver.kind() != QualifiedType::UNKNOWN &&
+            qtReceiver.kind() != QualifiedType::FUNCTION &&
+            qtReceiver.kind() != QualifiedType::MODULE) {
+
+          actuals.push_back(CallInfoActual(qtReceiver, USTR("this")));
+          if (actualAsts != nullptr) {
+            actualAsts->push_back(receiver);
+          }
+          calledType = qtReceiver;
+          isMethodCall = true;
+        }
+      }
+    }
+  }
+
+  // Get the type of the called expression.
+  if (isMethodCall == false) {
+    if (auto calledExpr = call->calledExpression()) {
+      const ResolvedExpression& r = byPostorder.byAst(calledExpr);
+      calledType = r.type();
+
+      if (calledType.kind() != QualifiedType::UNKNOWN &&
+          calledType.kind() != QualifiedType::TYPE &&
+          calledType.kind() != QualifiedType::FUNCTION) {
+        // If e.g. x is a value (and not a function)
+        // then x(0) translates to x.this(0)
+        name = USTR("this");
+        // add the 'this' argument as well
+        isMethodCall = true;
+        actuals.push_back(CallInfoActual(calledType, USTR("this")));
+        if (actualAsts != nullptr) {
+          actualAsts->push_back(calledExpr);
+        }
+        // and reset calledType
+        calledType = QualifiedType(QualifiedType::FUNCTION, nullptr);
+      }
+    }
+  }
+
+  // Prepare the remaining actuals.
+  prepareActuals(context, call, byPostorder, raiseErrors,
+                 actuals, questionArg, actualAsts);
+
+  if (actualAsts != nullptr) {
+    assert(actualAsts->size() == actuals.size());
+  }
+
+  auto ret = CallInfo(name, calledType, isMethodCall,
+                      /* hasQuestionArg */ questionArg != nullptr,
+                      /* isParenless */ false, actuals);
+
+  return ret;
+}
+
+
 
 void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
   assert(Builder::astTagIndicatesNewIdScope(ast->tag()));
@@ -270,6 +463,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
 
       entryIdx++;
     } else {
+      // handle a varargs formal
       numVarArgFormals += 1;
 
       if (numVarArgFormals > 1) {
@@ -282,19 +476,34 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
       numEntries = numFormals + attemptedNumVarArgs - 1;
       byFormalIdx_.resize(numEntries);
 
+      QualifiedType starQT;
       if (formalQT.type() != nullptr) {
         const TupleType* tup = formalQT.type()->toTupleType();
-        formalQT = tup->starType();
+        assert(tup);
+        if (tup->isStarTuple()) {
+          starQT = tup->starType();
+        }
       }
 
       for (int j = 0; j < attemptedNumVarArgs; j++) {
         FormalActual& entry = byFormalIdx_[entryIdx];
 
+        QualifiedType qt;
+        if (starQT.type() != nullptr) {
+          qt = starQT;
+        } else if (formalQT.type() != nullptr) {
+          // try to pull the type out of the formalQT if it
+          // is after instantiation.
+          const TupleType* tup = formalQT.type()->toTupleType();
+          assert(tup);
+          qt = tup->elementType(j);
+        }
+
         entry.formal_ = decl;
         entry.hasActual_ = false;
         entry.formalIdx_ = i;
         entry.actualIdx_ = -1;
-        entry.formalType_ = formalQT;
+        entry.formalType_ = qt;
         entry.formalInstantiated_ = formalInstantiated;
         entry.hasDefault_ = untyped->formalHasDefault(i);
         entry.isVarArgEntry_ = true;

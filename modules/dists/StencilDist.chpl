@@ -579,14 +579,14 @@ override proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
 // output distribution
 //
 proc Stencil.writeThis(x) throws {
-  x._writeln("Stencil");
-  x._writeln("-------");
-  x._writeln("distributes: ", boundingBox);
-  x._writeln("across locales: ", targetLocales);
-  x._writeln("indexed via: ", targetLocDom);
-  x._writeln("resulting in: ");
+  x.writeln("Stencil");
+  x.writeln("-------");
+  x.writeln("distributes: ", boundingBox);
+  x.writeln("across locales: ", targetLocales);
+  x.writeln("indexed via: ", targetLocDom);
+  x.writeln("resulting in: ");
   for locid in targetLocDom do
-    x._writeln("  [", locid, "] locale ", locDist(locid).locale.id,
+    x.writeln("  [", locid, "] locale ", locDist(locid).locale.id,
       " owns chunk: ", locDist(locid).myChunk);
 }
 
@@ -806,7 +806,7 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
     // not checking here whether the new low and high fit into idxType
     var low = (stride * followThis(i).lowBound:strType):idxType;
     var high = (stride * followThis(i).highBound:strType):idxType;
-    t(i) = ((low..high by stride:strType) + whole.dim(i).alignedLow by followThis(i).stride:strType).safeCast(t(i).type);
+    t(i) = ((low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType).safeCast(t(i).type);
   }
   for i in {(...t)} {
     yield i;
@@ -852,8 +852,8 @@ proc StencilDom.dsiBuildArray(type eltType, param initElts:bool) {
 // common redirects
 override proc StencilDom.dsiLow           return whole.lowBound;
 override proc StencilDom.dsiHigh          return whole.highBound;
-override proc StencilDom.dsiAlignedLow    return whole.alignedLow;
-override proc StencilDom.dsiAlignedHigh   return whole.alignedHigh;
+override proc StencilDom.dsiAlignedLow    return whole.low;
+override proc StencilDom.dsiAlignedHigh   return whole.high;
 override proc StencilDom.dsiFirst         return whole.first;
 override proc StencilDom.dsiLast          return whole.last;
 override proc StencilDom.dsiStride        return whole.stride;
@@ -865,7 +865,7 @@ proc StencilDom.dsiDims()        return whole.dims();
 proc StencilDom.dsiGetIndices()  return whole.getIndices();
 //proc StencilDom.dsiMember(i)     return whole.contains(i);
 proc StencilDom.doiToString()    return whole:string;
-proc StencilDom.dsiSerialWrite(x) { x._write(whole); }
+proc StencilDom.dsiSerialWrite(x) { x.write(whole); }
 proc StencilDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
 override proc StencilDom.dsiIndexOrder(i)              return whole.indexOrder(i);
 override proc StencilDom.dsiMyDist()                   return dist;
@@ -1316,7 +1316,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).lowBound * abs(stride):idxType;
     var high = followThis(i).highBound * abs(stride):idxType;
-    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).alignedLow by followThis(i).stride).safeCast(myFollowThis(i).type);
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride).safeCast(myFollowThis(i).type);
     lowIdx(i) = myFollowThis(i).lowBound;
   }
 
@@ -1365,16 +1365,16 @@ proc StencilArr.dsiSerialWrite(f) {
   for dim in 0..rank-1 do
     i(dim) = dom.dsiDim(dim).lowBound;
   label next while true {
-    f._write(do_dsiAccess(true, i));
+    f.write(do_dsiAccess(true, i));
     if i(rank-1) <= (dom.dsiDim(rank-1).highBound - dom.dsiDim(rank-1).stride:strType) {
-      if ! binary then f._write(" ");
+      if ! binary then f.write(" ");
       i(rank-1) += dom.dsiDim(rank-1).stride:strType;
     } else {
       for dim in 0..rank-2 by -1 {
         if i(dim) <= (dom.dsiDim(dim).highBound - dom.dsiDim(dim).stride:strType) {
           i(dim) += dom.dsiDim(dim).stride:strType;
           for dim2 in dim+1..rank-1 {
-            f._writeln();
+            f.writeln();
             i(dim2) = dom.dsiDim(dim2).lowBound;
           }
           continue next;

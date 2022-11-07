@@ -31,6 +31,7 @@
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 
+#include "call-init-deinit.h"
 #include "Resolver.h"
 #include "default-functions.h"
 #include "prims.h"
@@ -1690,7 +1691,12 @@ resolveFunctionByInfoQuery(Context* context,
                                                   sig,
                                                   resolutionById);
     assert(visitor.initResolver.get());
-    if (fn) fn->body()->traverse(visitor);
+    if (fn) {
+      fn->body()->traverse(visitor);
+      // then, resolve '=' and add any copy init/deinit calls as needed
+      callInitDeinit(visitor);
+    }
+
     auto newTfsForInitializer = visitor.initResolver->finalize();
 
     // TODO: can this be encapsulated in a method?
@@ -1750,6 +1756,9 @@ resolveFunctionByInfoQuery(Context* context,
     auto visitor = Resolver::createForFunction(context, fn, poiScope, sig,
                                                resolutionById);
     fn->body()->traverse(visitor);
+
+    // then, resolve '=' and add any copy init/deinit calls as needed
+    callInitDeinit(visitor);
 
     // TODO: can this be encapsulated in a method?
     resolvedPoiInfo.swap(visitor.poiInfo);
@@ -2033,6 +2042,11 @@ struct ReturnTypeInferrer {
   bool enter(const Return* ret) {
     if (const AstNode* expr = ret->value()) {
       noteReturnType(expr, ret);
+      if (const Function* fn = astForErr->toFunction()) {
+        if (fn->name() == "init" && fn->isMethod()) {
+          context->error(ret, "initializers can only return 'void'");
+        }
+      }
     } else {
       noteVoidReturnType(ret);
     }
@@ -2488,7 +2502,7 @@ static std::vector<BorrowedIdsWithName>
 lookupCalledExpr(Context* context,
                  const Scope* scope,
                  const CallInfo& ci,
-                 ScopeSet& visited) {
+                 NamedScopeSet& visited) {
   const LookupConfig config = LOOKUP_DECLS |
                               LOOKUP_IMPORT_AND_USE |
                               LOOKUP_PARENTS;
@@ -2929,7 +2943,7 @@ static std::vector<BorrowedIdsWithName>
 lookupCalledExprConsideringReceiver(Context* context,
                                     const Scope* inScope,
                                     const CallInfo& ci,
-                                    ScopeSet& visited) {
+                                    NamedScopeSet& visited) {
   const Scope* receiverScope = nullptr;
 
   // For method and operator calls, also consider the receiver scope.
@@ -2969,7 +2983,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
   // search for candidates at each POI until we have found a candidate
   CandidatesVec candidates;
   size_t firstPoiCandidate = 0;
-  ScopeSet visited;
+  NamedScopeSet visited;
 
   // inject compiler-generated candidates in a manner similar to below
   // (note that any added candidates are already fully instantiated)

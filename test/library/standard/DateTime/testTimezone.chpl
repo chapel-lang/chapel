@@ -41,11 +41,11 @@ proc test_zones() {
   var est = new shared FixedOffset(-300, "EST", 1);
   var utc = new shared FixedOffset(0, "UTC", -2);
   var met = new shared FixedOffset(60, "MET", 3);
-  var t1 = new time( 7, 47, tzinfo=est);
-  var t2 = new time(12, 47, tzinfo=utc);
-  var t3 = new time(13, 47, tzinfo=met);
+  var t1 = new time( 7, 47, tz=est);
+  var t2 = new time(12, 47, tz=utc);
+  var t3 = new time(13, 47, tz=met);
   var t4 = new time(microsecond=40);
-  var t5 = new time(microsecond=40, tzinfo=utc);
+  var t5 = new time(microsecond=40, tz=utc);
 
   assert(t1.timezone == est);
   assert(t2.timezone == utc);
@@ -83,13 +83,13 @@ proc test_zones() {
   assert(t4.isoFormat() == "00:00:00.000040");
   assert(t5.isoFormat() == "00:00:00.000040+00:00");
 
-  // %z conversion uses local timezone instead of the one in the tzinfo
+  // %z conversion uses local timezone instead of the one in the tz
   //assert(t1.strftime("%H:%M:%S %%Z=%Z %%z=%z") ==
   //                             "07:47:00 %Z=EST %z=-0500");
   //assert(t2.strftime("%H:%M:%S %Z %z") == "12:47:00 UTC +0000");
   //assert(t3.strftime("%H:%M:%S %Z %z") == "13:47:00 MET +0100");
   //var yuck = new FixedOffset(-1439, "%z %Z %%z%%Z");
-  //t1 = new time(23, 59, tzinfo=yuck);
+  //t1 = new time(23, 59, tz=yuck);
   //assert(t1.strftime("%H:%M %%Z='%Z' %%z='%z'") ==
   //                   "23:59 %Z='%z %Z %%z%%Z' %z='-2359'");
 }
@@ -99,7 +99,7 @@ proc test_replace() {
   var zm200 = new shared FixedOffset(new timedelta(minutes=-200), "-200");
   var args = (1, 2, 3, 4);
   var base = new time((...args), z100);
-  assert(base == base.replace(tzinfo=base.timezone));
+  assert(base == base.replace(tz=base.timezone));
 
   var i = 0;
   for (name, newval) in (("hour", 5),
@@ -111,13 +111,13 @@ proc test_replace() {
     var expected = new time((...newargs), z100);
     var got: time;
     if name == "hour" then
-      got = base.replace(hour=newval, tzinfo=base.timezone);
+      got = base.replace(hour=newval, tz=base.timezone);
     else if name == "minute" then
-      got = base.replace(minute=newval, tzinfo=base.timezone);
+      got = base.replace(minute=newval, tz=base.timezone);
     else if name == "second" then
-      got = base.replace(second=newval, tzinfo=base.timezone);
+      got = base.replace(second=newval, tz=base.timezone);
     else if name == "microsecond" then
-      got = base.replace(microsecond=newval, tzinfo=base.timezone);
+      got = base.replace(microsecond=newval, tz=base.timezone);
 
     assert(expected == got);
     i += 1;
@@ -126,18 +126,18 @@ proc test_replace() {
   {
     var newargs = args;
     var expected = new time((...newargs), zm200);
-    var got = base.replace(tzinfo=zm200);
+    var got = base.replace(tz=zm200);
     assert(expected == got);
   }
 
-  // Ensure we can get rid of a tzinfo.
+  // Ensure we can get rid of a tz.
   assert(base.tzname() == "+100");
-  var base2 = base.replace(tzinfo=nil);
+  var base2 = base.replace(tz=nil);
   assert(base2.timezone.borrow() == nil);
   assert(base2.tzname() == "");
 
   // Ensure we can add one.
-  var base3 = base2.replace(tzinfo=z100);
+  var base3 = base2.replace(tz=z100);
   assert(base == base3);
   assert(base.timezone == base3.timezone);
 }
@@ -146,11 +146,11 @@ proc test_mixed_compare() {
   var t1 = new time(1, 2, 3);
   var t2 = new time(1, 2, 3);
   assert(t1 == t2);
-  t2 = t2.replace(tzinfo=nil);
+  t2 = t2.replace(tz=nil);
   assert(t1 == t2);
-  t2 = t2.replace(tzinfo=new shared FixedOffset(0, ""));
+  t2 = t2.replace(tz=new shared FixedOffset(0, ""));
 
-  // In time w/ identical tzinfo objects, utcoffset is ignored.
+  // In time w/ identical tz objects, utcoffset is ignored.
   class Varies: Timezone {
     var offset: timedelta;
     var name = "Var";
@@ -170,14 +170,14 @@ proc test_mixed_compare() {
   }
 
   var v = new shared Varies();
-  t1 = t2.replace(tzinfo=v);
-  t2 = t2.replace(tzinfo=v);
+  t1 = t2.replace(tz=v);
+  t2 = t2.replace(tz=v);
   assert(t1.utcOffset() == new timedelta(minutes=23));
   assert(t2.utcOffset() == new timedelta(minutes=24));
   assert(t1 == t2);
 
   // But if they're not identical, it isn't ignored.
-  t2 = t2.replace(tzinfo=new shared Varies());
+  t2 = t2.replace(tz=new shared Varies());
   assert(t1 < t2);  // t1's offset counter still going up
 }
 

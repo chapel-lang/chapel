@@ -18,8 +18,6 @@ proc testRange(r) {
   writeln("last = ", r.last);
   writeln("low = ", r.low);
   writeln("high = ", r.high);
-  writeln("alignedLow = ", r.alignedLow);
-  writeln("alignedHigh = ", r.alignedHigh);
   writeln("isEmpty = ", r.isEmpty());
   writeln("hasFirst = ", r.hasFirst());
   writeln("hasLast = ", r.hasLast());

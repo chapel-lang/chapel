@@ -67,6 +67,8 @@ class QualifiedType final {
   static const Kind PARENLESS_FUNCTION = uast::IntentList::PARENLESS_FUNCTION;
   static const Kind MODULE = uast::IntentList::MODULE;
 
+  static const char* kindToString(Kind k);
+
  private:
   Kind kind_ = UNKNOWN;
   const Type* type_ = nullptr;
@@ -231,8 +233,15 @@ class QualifiedType final {
   /// \endcond DO_NOT_DOCUMENT
 };
 
-
 } // end namespace types
+
+template <>
+struct stringify<types::QualifiedType::Kind> {
+  void operator()(std::ostream& os, StringifyKind stringKind,
+                  types::QualifiedType::Kind k) {
+    os << types::QualifiedType::kindToString(k);
+  }
+};
 
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT

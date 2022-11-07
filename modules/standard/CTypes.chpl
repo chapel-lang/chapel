@@ -233,7 +233,7 @@ module CTypes {
       var first = true;
       for i in 0..#size {
 
-        ch._write(this(i));
+        ch.write(this(i));
 
         if i != size-1 then
           ch.readWriteLiteral(", ");
@@ -275,7 +275,7 @@ module CTypes {
 
   pragma "no doc"
   inline proc c_void_ptr.writeThis(ch) throws {
-    ch._writef("0x%xu", this:c_uintptr);
+    ch.writef("0x%xu", this:c_uintptr);
   }
 
   pragma "no doc"
@@ -496,7 +496,7 @@ module CTypes {
     if (arr._value.locale != here) then
       halt("c_ptrTo() can only be applied to an array from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
 
-    return c_pointer_return(arr[arr.domain.alignedLow]);
+    return c_pointer_return(arr[arr.domain.low]);
   }
 
   /* Returns a :type:`c_ptr` to any Chapel object.

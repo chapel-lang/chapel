@@ -82,10 +82,10 @@ proc runSuite(/*param*/ len:int, /*param*/ sa:int, /*param*/ ssign:int, w: range
   // test with r.size == 3
   if len <= 3 then return;
 
-  verify(w.alignedLow .. w.alignedLow + 2 * sa by sa);
-  verify(w.alignedLow .. w.alignedLow + 2 * sa by -sa);
-  verify(w.alignedHigh - 2 * sa .. w.alignedHigh by sa);
-  verify(w.alignedHigh - 2 * sa .. w.alignedHigh by -sa);
+  verify(w.low .. w.low + 2 * sa by sa);
+  verify(w.low .. w.low + 2 * sa by -sa);
+  verify(w.high - 2 * sa .. w.high by sa);
+  verify(w.high - 2 * sa .. w.high by -sa);
 
 } // proc runSuite
 

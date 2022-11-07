@@ -124,6 +124,8 @@ public:
 
   // Called to produce the final function signature.
   const TypedFnSignature* finalize(void);
+
+  void checkEarlyReturn(const uast::Return* ret);
 };
 
 } // end namespace resolution
