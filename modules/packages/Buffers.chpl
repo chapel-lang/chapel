@@ -47,7 +47,6 @@
  */
 module Buffers {
   use OS.POSIX;
-  import SysBasic.{ENOERR};
   use OS;
   private use CTypes;
 
@@ -302,7 +301,7 @@ module Buffers {
   }
   pragma "no doc"
   proc buffer.init() /*throws*/ {
-    var error:errorCode = ENOERR;
+    var error:errorCode = 0;
     this.home = here;
     this.complete();
     error = qbuffer_create(this._buf_internal);
@@ -318,7 +317,7 @@ module Buffers {
       this._buf_internal = x._buf_internal;
       this.complete();
     } else {
-      var error: errorCode = ENOERR;
+      var error: errorCode = 0;
       this.init(error);
       if error then halt("Got an error when initializing a new buffer.");
       var start_offset:int(64);
@@ -329,7 +328,7 @@ module Buffers {
         end_offset = qbuffer_end_offset(x._buf_internal);
       }
 
-      var allocErr:errorCode = ENOERR;
+      var allocErr:errorCode = 0;
       var b = new byteBuffer(end_offset - start_offset, error=allocErr);
       if allocErr then
         try! ioerror(allocErr, "could not allocate bytes in buffer copy");
@@ -344,7 +343,7 @@ module Buffers {
       var there_uid = here.id;
 
       on x.home {
-        var err:errorCode = ENOERR;
+        var err:errorCode = 0;
         err = bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
                               qbuffer_begin(x._buf_internal),
                               qbuffer_end(x._buf_internal));
@@ -364,7 +363,7 @@ module Buffers {
    */
   proc buffer.flatten(range:buffer_range) throws {
     var ret: byteBuffer  = new byteBuffer();
-    var err: errorCode = ENOERR;
+    var err: errorCode = 0;
 
     if this.home == here {
       err = qbuffer_flatten(this._buf_internal, range.start._bufit_internal, range.end._bufit_internal, ret._bytes_internal);
@@ -426,7 +425,7 @@ module Buffers {
       var there_uid = here.id;
 
       on x.home {
-        var err:errorCode = ENOERR;
+        var err:errorCode = 0;
         err = bulk_put_buffer(there_uid, ptr, len, x._buf_internal,
                               qbuffer_begin(x._buf_internal),
                               qbuffer_end(x._buf_internal));
@@ -467,7 +466,7 @@ module Buffers {
      :arg len_bytes: how many bytes to append to the buffer
   */
   proc buffer.append(b:byteBuffer, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len) throws {
-    var err:errorCode = ENOERR;
+    var err:errorCode = 0;
     on this.home {
       err = qbuffer_append(this._buf_internal, b._bytes_internal, skip_bytes, len_bytes);
     }
@@ -485,7 +484,7 @@ module Buffers {
                 buffer to copy. Defaults to all of the buffer.
    */
   proc buffer.append(buf:buffer, part:buffer_range = buf.all()) throws {
-    var err:errorCode = ENOERR;
+    var err:errorCode = 0;
     on this.home {
       err = qbuffer_append_buffer(this._buf_internal, buf._buf_internal, part.start._bufit_internal, part.end._bufit_internal);
     }
@@ -504,7 +503,7 @@ module Buffers {
      :arg len_bytes: how many bytes to append to the buffer
   */
   proc buffer.prepend(b:byteBuffer, skip_bytes:int(64) = 0, len_bytes:int(64) = b.len) throws {
-    var err:errorCode = ENOERR;
+    var err:errorCode = 0;
     on this.home {
       err = qbuffer_prepend(this._buf_internal, b._bytes_internal, skip_bytes, len_bytes);
     }
@@ -598,7 +597,7 @@ module Buffers {
   */
   proc buffer.copyout(it:buffer_iterator, ref value: ?T):buffer_iterator throws where isNumericType(T) {
     var ret:buffer_iterator;
-    var err:errorCode = ENOERR;
+    var err:errorCode = 0;
     ret.home = this.home;
     on this.home {
       var end:buffer_iterator = it;
@@ -616,7 +615,7 @@ module Buffers {
   pragma "no doc"
   proc buffer.copyout(it:buffer_iterator, ref value: string):buffer_iterator throws {
     var ret:buffer_iterator;
-    var err:errorCode = ENOERR;
+    var err:errorCode = 0;
     ret.home = this.home;
     on this.home {
       var start = it;
@@ -658,7 +657,7 @@ module Buffers {
   proc buffer.copyin(it:buffer_iterator, value: ?T): buffer_iterator
                      throws where isNumericType(T) {
     var ret:buffer_iterator;
-    var err:errorCode = ENOERR;
+    var err:errorCode = 0;
     ret.home = this.home;
     on this.home {
       //writeln("iterator on way in");
@@ -682,7 +681,7 @@ module Buffers {
   pragma "no doc"
   proc buffer.copyin(it:buffer_iterator, value: string):buffer_iterator throws {
     var ret:buffer_iterator;
-    var err:errorCode = ENOERR;
+    var err:errorCode = 0;
     ret.home = this.home;
     on this.home {
       var start = it;

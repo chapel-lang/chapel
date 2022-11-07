@@ -44,7 +44,6 @@
  */
 deprecated "The 'Sys' module has been deprecated; please find replacement symbols in the 'OS' and  'Socket' modules"
 module Sys {
-  import SysBasic.{qio_err_t, fd_t};
   private use CTypes;
   private use OS;
 
@@ -564,43 +563,43 @@ module Sys {
 
   // not used outside of Sys
   // --- deprecated with no replacement ---
-  extern proc sys_open(pathname:c_string, flags:c_int, mode:mode_t, ref fd_out:fd_t):qio_err_t;
+  extern proc sys_open(pathname:c_string, flags:c_int, mode:mode_t, ref fd_out:c_int):qio_err_t;
 
   // --- deprecated and moved to Socket as private ---
-  extern proc sys_close(fd:fd_t):qio_err_t;
+  extern proc sys_close(fd:c_int):qio_err_t;
 
   /* The type corresponding to C's off_t */
   // --- has replacement in OS.POSIX ---
   extern type off_t = int(64);
 
   // --- deprecated with no replacement ---
-  extern proc sys_mmap(addr:c_void_ptr, length:c_size_t, prot:c_int, flags:c_int, fd:fd_t, offset:off_t, ref ret_out:c_void_ptr):qio_err_t;
+  extern proc sys_mmap(addr:c_void_ptr, length:c_size_t, prot:c_int, flags:c_int, fd:c_int, offset:off_t, ref ret_out:c_void_ptr):qio_err_t;
   extern proc sys_munmap(addr:c_void_ptr, length:c_size_t):qio_err_t;
-  extern proc sys_fcntl_ptr(fd:fd_t, cmd:c_int, arg:c_void_ptr, ref ret_out:c_int):qio_err_t;
-  extern proc sys_dup(oldfd:fd_t, ref fd_out:fd_t):qio_err_t;
-  extern proc sys_dup2(oldfd:fd_t, newfd:fd_t, ref fd_out:fd_t):qio_err_t;
-  extern proc sys_pipe(ref read_fd_out:fd_t, ref write_fd_out:fd_t):qio_err_t;
+  extern proc sys_fcntl_ptr(fd:c_int, cmd:c_int, arg:c_void_ptr, ref ret_out:c_int):qio_err_t;
+  extern proc sys_dup(oldfd:c_int, ref fd_out:c_int):qio_err_t;
+  extern proc sys_dup2(oldfd:c_int, newfd:c_int, ref fd_out:fd_t):qio_err_t;
+  extern proc sys_pipe(ref read_fd_out:c_int, ref write_fd_out:c_int):qio_err_t;
   extern proc sys_getaddrinfo_protocol(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getnameinfo(ref addr:sys_sockaddr_t, ref host_out:c_string, ref serv_outc_:c_string, flags:c_int):qio_err_t;
-  extern proc sys_socketpair(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out_a:fd_t, ref sockfd_out_b:fd_t):qio_err_t;
-  extern proc sys_shutdown(sockfd:fd_t, how:c_int):qio_err_t;
+  extern proc sys_socketpair(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out_a:c_int, ref sockfd_out_b:c_int):qio_err_t;
+  extern proc sys_shutdown(sockfd:c_int, how:c_int):qio_err_t;
 
   // --- deprecated and moved to Socket as private ---
-  extern proc sys_fcntl(fd:fd_t, cmd:c_int, ref ret_out:c_int):qio_err_t;
-  extern proc sys_fcntl_long(fd:fd_t, cmd:c_int, arg:c_long, ref ret_out:c_int):qio_err_t;
-  extern proc sys_accept(sockfd:fd_t, ref add_out:sys_sockaddr_t, ref fd_out:fd_t):qio_err_t;
-  extern proc sys_bind(sockfd:fd_t, const ref addr:sys_sockaddr_t):qio_err_t;
-  extern proc sys_connect(sockfd:fd_t, const ref addr:sys_sockaddr_t):qio_err_t;
+  extern proc sys_fcntl(fd:c_int, cmd:c_int, ref ret_out:c_int):qio_err_t;
+  extern proc sys_fcntl_long(fd:c_int, cmd:c_int, arg:c_long, ref ret_out:c_int):qio_err_t;
+  extern proc sys_accept(sockfd:c_int, ref add_out:sys_sockaddr_t, ref fd_out:c_int):qio_err_t;
+  extern proc sys_bind(sockfd:c_int, const ref addr:sys_sockaddr_t):qio_err_t;
+  extern proc sys_connect(sockfd:c_int, const ref addr:sys_sockaddr_t):qio_err_t;
   extern proc getaddrinfo(node:c_string, service:c_string, ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):qio_err_t;
   extern proc sys_freeaddrinfo(res:sys_addrinfo_ptr_t);
-  extern proc sys_getpeername(sockfd:fd_t, ref addr:sys_sockaddr_t):qio_err_t;
-  extern proc sys_getsockname(sockfd:fd_t, ref addr:sys_sockaddr_t):qio_err_t;
+  extern proc sys_getpeername(sockfd:c_int, ref addr:sys_sockaddr_t):qio_err_t;
+  extern proc sys_getsockname(sockfd:c_int, ref addr:sys_sockaddr_t):qio_err_t;
   // TODO -- these should be generic, assuming caller knows what they
   // are doing.
-  extern proc sys_getsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, ref optlen:socklen_t):qio_err_t;
-  extern proc sys_setsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, optlen:socklen_t):qio_err_t;
-  extern proc sys_listen(sockfd:fd_t, backlog:c_int):qio_err_t;
-  extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:fd_t):qio_err_t;
+  extern proc sys_getsockopt(sockfd:c_int, level:c_int, optname:c_int, optval:c_void_ptr, ref optlen:socklen_t):qio_err_t;
+  extern proc sys_setsockopt(sockfd:c_int, level:c_int, optname:c_int, optval:c_void_ptr, optlen:socklen_t):qio_err_t;
+  extern proc sys_listen(sockfd:c_int, backlog:c_int):qio_err_t;
+  extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:c_int):qio_err_t;
   extern proc sys_getaddrinfo_addr(res:sys_addrinfo_ptr_t):sys_sockaddr_t;
   extern proc sys_getaddrinfo_next(res:sys_addrinfo_ptr_t):sys_addrinfo_ptr_t;
   extern proc sys_getaddrinfo_flags(res:sys_addrinfo_ptr_t):c_int;

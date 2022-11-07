@@ -28,6 +28,7 @@
    authority on system error codes.
  */
 
+deprecated "The SysBasic module has been deprecated; most symbols have been moved to IO or OS as appropriate"
 module SysBasic {
 
 /* BASIC TYPES */
@@ -41,13 +42,13 @@ deprecated "'qio_err_t' has been deprecated; please use a 'CTypes.c_int' instead
 extern type qio_err_t = c_int;
 
 /* A system file descriptor. This is really just a `c_int`, but code is
-   clearer if you use fd_t to indicate arguments, variables, and return types
+   clearer if you use c_int to indicate arguments, variables, and return types
    that are system file descriptors.
  */
-extern type fd_t = c_int;
+extern type c_int = c_int;
 
 /* The error code indicating that no error occurred (Chapel specific) */
-inline proc ENOERR return 0:c_int;
+inline proc 0 return 0:c_int;
 
 // end of file
 private extern proc chpl_macro_int_EEOF():c_int;
