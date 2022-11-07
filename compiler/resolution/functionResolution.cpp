@@ -2253,6 +2253,12 @@ static bool fits_in_mantissa_exponent(int mantissa_width,
   } else
     INT_FATAL("unsupported number kind");
 
+  if (!std::isfinite(v)) {
+    // it must be infinity or nan
+    // assume these fit in any sized real
+    return true;
+  }
+
   double frac = 0.0;
   int exp = 0;
 
