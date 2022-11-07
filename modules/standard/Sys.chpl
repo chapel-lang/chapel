@@ -577,7 +577,7 @@ module Sys {
   extern proc sys_munmap(addr:c_void_ptr, length:c_size_t):qio_err_t;
   extern proc sys_fcntl_ptr(fd:c_int, cmd:c_int, arg:c_void_ptr, ref ret_out:c_int):qio_err_t;
   extern proc sys_dup(oldfd:c_int, ref fd_out:c_int):qio_err_t;
-  extern proc sys_dup2(oldfd:c_int, newfd:c_int, ref fd_out:fd_t):qio_err_t;
+  extern proc sys_dup2(oldfd:c_int, newfd:c_int, ref fd_out:c_int):qio_err_t;
   extern proc sys_pipe(ref read_fd_out:c_int, ref write_fd_out:c_int):qio_err_t;
   extern proc sys_getaddrinfo_protocol(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getnameinfo(ref addr:sys_sockaddr_t, ref host_out:c_string, ref serv_outc_:c_string, flags:c_int):qio_err_t;
