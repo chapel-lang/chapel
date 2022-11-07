@@ -305,7 +305,7 @@ template<> struct stringify<char> {
 void operator()(std::ostream& streamOut,
                 StringifyKind stringKind,
                 const char val) const {
-  streamOut << std::to_string(val);
+  streamOut << val;
 }
 };
 

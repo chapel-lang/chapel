@@ -192,7 +192,7 @@ class BasicError : public ErrorBase {
  */
 class ParseError : public BasicError {
  protected:
-  ParseError(const Location loc, const std::string message)
+  ParseError(Location loc, std::string message)
       : BasicError(Kind::ERROR, PARSE, ID(), std::move(loc), std::move(message),
                    /* notes */ {}) {}
 

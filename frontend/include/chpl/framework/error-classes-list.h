@@ -115,9 +115,9 @@ PARSER_ERROR_CLASS(NewWithoutArgs)
 PARSER_ERROR_CLASS(DotAfterNew)
 PARSER_ERROR_CLASS(InvalidNewForm)
 PARSER_ERROR_CLASS(InvalidIterandExpr)
-PARSER_ERROR_CLASS(UseImportNeedsModule, const bool)
+PARSER_ERROR_CLASS(UseImportNeedsModule, bool)
 PARSER_ERROR_CLASS(ExceptOnlyInvalidExpr,
-            const uast::VisibilityClause::LimitationKind)
+            uast::VisibilityClause::LimitationKind)
 // this error is very similar to InvalidAsIdent, but takes an explicit Location
 // because it is raised during parsing when AstNodes do not have attached
 // locations
@@ -137,13 +137,13 @@ PARSER_ERROR_CLASS(BisonSyntaxError, std::string)
 /* lexer-specific parser errors */
 PARSER_ERROR_CLASS(StringLiteralEOL)
 PARSER_ERROR_CLASS(NonHexChar)
-PARSER_ERROR_CLASS(HexOverflow, const bool)
+PARSER_ERROR_CLASS(HexOverflow, bool)
 PARSER_ERROR_CLASS(UnknownHexError)
 PARSER_ERROR_CLASS(UniversalCharUnsupported)
 PARSER_ERROR_CLASS(OctalEscapeUnsupported)
-PARSER_ERROR_CLASS(UnexpectedStrEscape, const char)
+PARSER_ERROR_CLASS(UnexpectedStrEscape, char)
 PARSER_ERROR_CLASS(StringLiteralEOF)
 PARSER_ERROR_CLASS(ExternUnclosedPair, std::string)
 PARSER_ERROR_CLASS(ExternCommentNoNewline)
-PARSER_ERROR_CLASS(CommentEOF, const Location, const Location)
+PARSER_ERROR_CLASS(CommentEOF, Location, Location)
 PARSER_ERROR_CLASS(InvalidToken, std::string)

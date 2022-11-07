@@ -85,8 +85,10 @@ class ErrorMessage final {
   inline Location location() const { return location_; }
 
   inline bool operator==(const ErrorMessage& other) const {
-    return kind_ == other.kind_ && id_ == other.id_ &&
-           location_ == other.location_ && message_ == other.message_ &&
+    return kind_ == other.kind_ &&
+           id_ == other.id_ &&
+           location_ == other.location_ &&
+           message_ == other.message_ &&
            details_ == other.details_;
   }
   inline bool operator!=(const ErrorMessage& other) const {

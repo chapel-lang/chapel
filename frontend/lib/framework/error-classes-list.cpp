@@ -697,7 +697,7 @@ void ErrorInvalidIterandExpr::write(ErrorWriterBase& wr) const {
 
 void ErrorUseImportNeedsModule::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
-  auto isImport = std::get<const bool>(info);
+  auto isImport = std::get<bool>(info);
   std::string useOrImport = isImport ? "import" : "use";
   wr.heading(kind_, type_, loc, "'", useOrImport,
              "' statements must refer to module", (isImport ? "" : " or enum"),
@@ -707,7 +707,7 @@ void ErrorUseImportNeedsModule::write(ErrorWriterBase& wr) const {
 
 void ErrorExceptOnlyInvalidExpr::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
-  auto limitationKind = std::get<const uast::VisibilityClause::LimitationKind>(info);
+  auto limitationKind = std::get<uast::VisibilityClause::LimitationKind>(info);
   wr.heading(kind_, type_, loc, "incorrect expression in '", limitationKind,
              "' list, identifier expected.");
 }
@@ -797,7 +797,7 @@ void ErrorNonHexChar::write(ErrorWriterBase& wr) const {
 
 void ErrorHexOverflow::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
-  auto isUnderflow = std::get<const bool>(info);
+  auto isUnderflow = std::get<bool>(info);
   std::string underflowOrOverflow = (isUnderflow ? "underflow" : "overflow");
   wr.heading(kind_, type_, loc, underflowOrOverflow, " when reading \\x escape.");
 }
@@ -820,7 +820,7 @@ void ErrorOctalEscapeUnsupported::write(ErrorWriterBase& wr) const {
 
 void ErrorUnexpectedStrEscape::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
-  auto escapedChar = std::get<const char>(info);
+  auto escapedChar = std::get<char>(info);
   wr.heading(kind_, type_, loc, "unexpected string escape: '\\", escapedChar,
              "'.");
 }
