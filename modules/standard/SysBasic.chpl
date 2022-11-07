@@ -45,10 +45,10 @@ extern type qio_err_t = c_int;
    clearer if you use c_int to indicate arguments, variables, and return types
    that are system file descriptors.
  */
-extern type c_int = c_int;
+extern type fd_t = c_int;
 
 /* The error code indicating that no error occurred (Chapel specific) */
-inline proc 0 return 0:c_int;
+inline proc ENOERR return 0:c_int;
 
 // end of file
 private extern proc chpl_macro_int_EEOF():c_int;
