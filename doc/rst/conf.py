@@ -122,6 +122,7 @@ exclude_patterns = ['Makefile',
                     'builtins/ChapelTuple.rst',
                     'builtins/OwnedObject.rst',
                     'builtins/SharedObject.rst',
+                    'builtins/WeakPointer.rst',
                     'builtins/String.rst'
                    ]
 

@@ -2218,3 +2218,34 @@ Methods on `shared` Classes
 ---------------------------
 
 .. include:: /builtins/SharedObject.rst
+
+
+WeakPointer
+~~~~~~~~~~~
+
+The ``weakPointer`` type is a special smart pointer type designed to be used in
+tandem with :record:`~SharedObject.shared` objects.
+
+A ``weakPointer`` provides a reference to a ``shared`` class object without
+requiring it to stay allocated. Such a pattern is useful for implementing graph
+or tree structures with bidirectional references, or for implementing a cash-
+like data structure that maintains a list of objects but doesn't require them
+to stay allocated.
+
+A "strong" shared reference to the relevant class object can be obtained via
+the :proc:`~WeakPointer.weakPointer.upgrade` method, or by casting the
+weakPointer to a ``shared t`` or a ``shared t?``. If the underlying class is
+not valid (i.e., its shared reference count has dropped to zero causing it to
+be deinitialized) the upgrade attempt will fail.
+
+Weak pointers are implemented using task-safe reference counting.
+
+This type is not included by default, add one of the following lines to use it:
+
+.. code-block:: chapel
+
+   use WeakPointer;
+
+   import WeakPointer.weakPointer;
+
+.. include:: /builtins/WeakPointer.rst
