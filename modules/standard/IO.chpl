@@ -5254,24 +5254,13 @@ proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
    :throws SystemError: Thrown if the string could not be written to the channel.
    :throws BadFormatError: Thrown if ``size`` is larger than ``s.size``
 */
-proc _channel.writeBinary(s: string, size: int = data.size) throws {
-  var e:errorCode = ENOERR;
-
+proc _channel.writeBinary(s: string, size: int = s.size) throws {
   if size > s.size {
     throw new owned BadFormatError("size argument cannot exceed length of provided string in 'writeBinary");
   }
 
-  select (endian) {
-    when ioendian.native {
-      e = try _write_binary_string_or_bytes(_channel_internal, iokind.native, s, size);
-    }
-    when ioendian.big {
-      e = try _write_binary_string_or_bytes(_channel_internal, iokind.big, s, size);
-    }
-    when ioendian.little {
-      e = try _write_binary_string_or_bytes(_channel_internal, iokind.little, s, size);
-    }
-  }
+  var e :errorCode = try _write_binary_string_or_bytes(_channel_internal, iokind.native, s, size);
+
   if (e != ENOERR) {
     throw createSystemError(e);
   }
@@ -5286,24 +5275,13 @@ proc _channel.writeBinary(s: string, size: int = data.size) throws {
    :throws SystemError: Thrown if the bytes could not be written to the channel.
    :throws BadFormatError: Thrown if ``size`` is larger than ``b.size``
 */
-proc _channel.writeBinary(b: bytes, size: int = data.size) throws {
-  var e:errorCode = ENOERR;
-
+proc _channel.writeBinary(b: bytes, size: int = b.size) throws {
   if size > b.size {
     throw new owned BadFormatError("size argument cannot exceed length of provided bytes in 'writeBinary");
   }
 
-  select (endian) {
-    when ioendian.native {
-      e = try _write_binary_string_or_bytes(_channel_internal, iokind.native, b, size);
-    }
-    when ioendian.big {
-      e = try _write_binary_string_or_bytes(_channel_internal, iokind.big, b, size);
-    }
-    when ioendian.little {
-      e = try _write_binary_string_or_bytes(_channel_internal, iokind.little, b, size);
-    }
-  }
+  var e:errorCode = try _write_binary_string_or_bytes(_channel_internal, iokind.native, b, size);
+
   if (e != ENOERR) {
     throw createSystemError(e);
   }
@@ -5325,8 +5303,7 @@ proc _channel.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioend
   where (d.rank == 1 && d.stridable == false) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
-  var e : errorCode = ENOERR,
-      readSomething = false;
+  var e : errorCode = ENOERR;
 
   on this._home {
     try this.lock(); defer { this.unlock(); }
@@ -5345,7 +5322,7 @@ proc _channel.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioend
       }
 
       if e == EEOF {
-        throw new owned UnexpectedEofError("Unable to read entire array of values in 'readBinary'");
+        throw new owned UnexpectedEofError("Unable to write entire array of values in 'writeBinary'");
       } else if e != ENOERR {
         throw createSystemError(e);
       }
@@ -5371,13 +5348,13 @@ proc _channel.writeBinary(const ref data: [?d] ?t, endian:ioendian) throws
 {
   select (endian) {
     when ioendian.native {
-      rv = this.writeBinary(data, ioendian.native);
+      this.writeBinary(data, ioendian.native);
     }
     when ioendian.big {
-      rv = this.writeBinary(data, ioendian.big);
+      this.writeBinary(data, ioendian.big);
     }
     when ioendian.little {
-      rv = this.writeBinary(data, ioendian.little);
+      this.writeBinary(data, ioendian.little);
     }
   }
 }
