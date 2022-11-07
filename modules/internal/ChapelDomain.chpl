@@ -2356,7 +2356,7 @@ module ChapelDomain {
     // NOTE: We eventually want to support translate on other domain types
     //
     pragma "no doc"
-    proc translate(off) where !this.isRectangular() {
+    proc translate(off: rank*integral) where !this.isRectangular() {
       if this.isAssociative() then
         compilerError("translate not supported on associative domains");
       else if this.isSparse() then
