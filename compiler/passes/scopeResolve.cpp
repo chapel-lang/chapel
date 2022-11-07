@@ -201,10 +201,19 @@ static void handleReceiverFormals() {
         }
 
       } else if (SymExpr* sym = toSymExpr(stmt)) {
-        fn->_this->type = sym->symbol()->type;
-        fn->_this->type->methods.add(fn);
+        if (InterfaceSymbol* isym = toInterfaceSymbol(sym->symbol())) {
+          // Convert fn(this: IFC, ...) to
+          //   fn(this: ?t_IFC, ...) where t_IFC implements IFC
+          TypeSymbol* ctSym = desugarInterfaceAsType(fn,
+                                toArgSymbol(fn->_this), sym, isym);
+          fn->_this->type = ctSym->type;
+          recordIfcThis(isym, fn, ctSym);
+        } else {
+          fn->_this->type = sym->symbol()->type;
+          fn->_this->type->methods.add(fn);
 
-        AggregateType::setCreationStyle(sym->symbol()->type->symbol, fn);
+          AggregateType::setCreationStyle(sym->symbol()->type->symbol, fn);
+        }
       }
 
     } else {
