@@ -71,7 +71,7 @@ proc main() {
         var task_ids : [0..<num_task_ids] uint;
         Random.fillRandom(task_ids);
         for tid in task_ids {
-            tid %= num_task_ids;
+            tid %= (num_task_ids: uint);
         }
 
         // concurrently construct or upgrade the 'basicClass' associated with each 'tid'

@@ -2246,6 +2246,8 @@ This type is not included by default, add one of the following lines to use it:
 
    use WeakPointer;
 
+   // or
+
    import WeakPointer.weakPointer;
 
 .. include:: /builtins/WeakPointer.rst

@@ -1,2 +1,5 @@
+concurrentUpgrades.chpl:11: In function 'concurrentlyUpgrade':
+concurrentUpgrades.chpl:12: warning: The 'weakPointer' type is still under development and may change in the future
+  concurrentUpgrades.chpl:39: called as concurrentlyUpgrade(s: shared basicClass)
 true
 true

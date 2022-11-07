@@ -432,6 +432,7 @@ module SharedObject {
     /*
       Create a :record:`~WeakPointer.weakPointer` to this object
     */
+    @unstable "The 'weakPointer' type is still under development and may change in the future"
     proc downgrade() {
       return new WeakPointer.weakPointer(this);
     }
@@ -711,6 +712,7 @@ module WeakPointer {
         /*
             Create a new weak pointer to a shared class instance 'c'
         */
+        @unstable "The 'weakPointer' type is still under development and may change in the future"
         proc init(c : shared) {
             var ptr = c.chpl_p: _to_nilable(_to_unmanaged(c.chpl_t));
             var count = c.chpl_pn;
