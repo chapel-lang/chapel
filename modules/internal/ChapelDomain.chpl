@@ -2370,7 +2370,7 @@ module ChapelDomain {
     // index type.  This is handled in the range.translate().
     //
     pragma "no doc"
-    proc translate(off...rank) return translate(off);
+    proc translate(off: integral ...rank) return translate(off);
 
     /* Return a new domain that is the current domain translated by
        ``off(d)`` in each dimension ``d``.
