@@ -92,8 +92,6 @@ public:
 
   bool  fn1ParamArgsPreferred;
   bool  fn2ParamArgsPreferred;
-
-  bool  useExperimentalNewWay;
 };
 
 // map: (block id) -> (map: sym -> sym)
@@ -5468,8 +5466,7 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
                               const DisambiguationContext& DC,
                               int                          i,
                               int                          j,
-                              bool                         forGenericInit,
-                              bool                         newWay);
+                              bool                         forGenericInit);
 
 static int testArgMapping(ResolutionCandidate*         candidate1,
                           ArgSymbol*                   formal1,
@@ -5794,7 +5791,6 @@ static void discardWorsePromoting(Vec<ResolutionCandidate*>&   candidates,
 // candidate.
 static void discardWorseArgs(Vec<ResolutionCandidate*>&   candidates,
                              const DisambiguationContext& DC,
-                             bool                         newWay,
                              std::vector<bool>&           discarded) {
 
   // If index i is set then we can skip testing function F_i because
@@ -5845,8 +5841,7 @@ static void discardWorseArgs(Vec<ResolutionCandidate*>&   candidates,
       int p = compareSpecificity(candidate1, candidate2,
                                  DC,
                                  i, j,
-                                 forGenericInit,
-                                 newWay);
+                                 forGenericInit);
 
       if (p == 1) {
         EXPLAIN("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
@@ -6151,8 +6146,7 @@ struct PartialOrderChecker {
                                  DC,
                                  i,
                                  j,
-                                 forGenericInit,
-                                 false);
+                                 forGenericInit);
 
     if (cmp == 1) {
       EXPLAIN("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
@@ -6226,7 +6220,6 @@ struct PartialOrderChecker {
 static void disambiguateDiscarding(Vec<ResolutionCandidate*>&   candidates,
                                    const DisambiguationContext& DC,
                                    bool                         ignoreWhere,
-                                   bool                         newWay,
                                    std::vector<bool>&           discarded) {
 
   if (!DC.useOldVisibility && !DC.isMethodCall) {
@@ -6243,10 +6236,10 @@ static void disambiguateDiscarding(Vec<ResolutionCandidate*>&   candidates,
   // Consider the relationship among the arguments
   // Note that this part is a partial order;
   // in other words, "incomparable" is an option when comparing
-  // two candidates. However, it should be transitive.
+  // two candidates. It should be transitive.
   // Discard any candidate that has a worse argument mapping than another
   // candidate.
-  discardWorseArgs(candidates, DC, newWay, discarded);
+  discardWorseArgs(candidates, DC, discarded);
 
   // Apply further filtering to the set of candidates
 
@@ -6283,8 +6276,7 @@ disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
     return candidates.v[0];
   }
 
-  // Disable implicit conversion to remove nilability
-  // for disambiguation
+  // Disable implicit conversion to remove nilability for disambiguation
   int saveGenerousResolutionForErrors = 0;
   if (generousResolutionForErrors > 0) {
     saveGenerousResolutionForErrors = generousResolutionForErrors;
@@ -6293,14 +6285,9 @@ disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
 
   // If index i is set we have ruled out that function
   std::vector<bool> discarded(candidates.n, false);
-  std::vector<bool> discardedNew(candidates.n, false);
 
   // use new rules
-  disambiguateDiscarding(candidates, DC, ignoreWhere, true, discarded);
-
-  // use old rules but fail compilation if there is a difference
-  //disambiguateDiscarding(candidates, DC, ignoreWhere, false, discarded);
-  //disambiguateDiscarding(candidates, DC, ignoreWhere, true, discardedNew);
+  disambiguateDiscarding(candidates, DC, ignoreWhere, discarded);
 
   // If there is just 1 candidate at this point, return it
   {
@@ -6320,10 +6307,6 @@ disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
       if (saveGenerousResolutionForErrors > 0)
         generousResolutionForErrors = saveGenerousResolutionForErrors;
 
-      if (discardedNew[only]) {
-        USR_FATAL("old and new resolution disagree for 1-match call %i", DC.id);
-      }
-
       return candidates.v[only];
     }
   }
@@ -6334,10 +6317,6 @@ disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
   for (int i = 0; i < candidates.n; i++) {
     if (discarded[i]) {
       continue;
-    }
-
-    if (discardedNew[i]) {
-      USR_FATAL("old and new resolution disagree for many-match call %i", DC.id);
     }
 
     EXPLAIN("Z: Fn %d is one of the best matches\n", i);
@@ -6373,8 +6352,7 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
                                      DC,
                                      i,
                                      j,
-                                     forGenericInit,
-                                     false);
+                                     forGenericInit);
 
         checker.addResult(i, j, cmp);
       }
@@ -6406,12 +6384,9 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
                               const DisambiguationContext& DC,
                               int                          i,
                               int                          j,
-                              bool                         forGenericInit,
-                              bool                         newWay) {
+                              bool                         forGenericInit) {
 
   DisambiguationState DS;
-
-  DS.useExperimentalNewWay = newWay;
 
   // Initializer work-around: Skip _mt/_this for generic initializers
   int                 start   = (forGenericInit == false) ? 0 : 2;
@@ -6668,9 +6643,7 @@ static int testArgMapping(ResolutionCandidate*         candidate1,
       reason = "concrete vs generic";
       return 2;
     }
-  }
 
-  if (DS.useExperimentalNewWay == false || f1Type == f2Type) {
     if (formal1->instantiatedFrom != dtAny &&
         formal2->instantiatedFrom == dtAny) {
       reason = "generic any vs partially generic/concrete";
@@ -13200,7 +13173,6 @@ void expandInitFieldPrims()
 
 DisambiguationContext::DisambiguationContext(CallInfo& info,
                                              BlockStmt* searchScope) {
-  id = info.call->id;
   actuals = &info.actuals;
   scope   = searchScope;
 
@@ -13251,6 +13223,4 @@ DisambiguationState::DisambiguationState() {
 
   fn1ParamArgsPreferred     = false;
   fn2ParamArgsPreferred     = false;
-
-  useExperimentalNewWay = false;
 }
