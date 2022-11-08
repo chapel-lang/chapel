@@ -7,7 +7,7 @@
 
 cd $CHPL_HOME >& /dev/null
 
-# If the git grep command succeeds and id there are no tabs the the exit code is 1. 
+# If the git grep command succeeds and if there are no tabs the the exit code is 1. 
 # If git grep fails or if there are tabs then the exit code is a number that is not 1.
 passed=true 
 
