@@ -64,8 +64,10 @@ jobs:
            html_body: |
               <!DOCTYPE html>
               <html>
+              <head>
+               <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+              </head>
               <body>
-              <meta http-equiv="content-type" content="text/html; charset=UTF-8">
               <p>
               
               Branch: ${{github.ref}} <br>
