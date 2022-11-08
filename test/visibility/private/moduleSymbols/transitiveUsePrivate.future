@@ -1,5 +1,4 @@
-Bug
-A transitive 'use' can incorrectly allow access to private symbols in its scope
+design: transitive 'use' can allow access to private symbols in its scope
 #20707
 
 If the first use in the transitive chain occurs in the same scope as the private
