@@ -10,10 +10,40 @@ cd $CHPL_HOME >& /dev/null
 # Look for trailing spaces in files in compiler/runtime/modules.
 # Exclude the generated files bison-chapel.cpp and flex-chapel.cpp and
 # their compiler/dyno counterparts.
+
+# If the git grep command succeeds and id there are no tabs the the exit code is 1. 
+#  If git grep fails or if there are trailing white spaces then the exit code is a number that is not 1.
+passed=true 
+
+
 git grep -n ' $' -- compiler ':!*bison-chapel.cpp'   ':!*bison-chapel.h' \
                              ':!*bison-chpl-lib.cpp' ':!*bison-chpl-lib.h' \
                              ':!*flex-chapel.cpp'    ':!*flex-chapel.h' \
                              ':!*flex-chpl-lib.cpp'  ':!*flex-chpl-lib.h'
+
+  
+if [ $? -ne 1 ]; then 
+  passed=false
+fi   
+
 git grep -n ' $' -- runtime
+
+if [ $? -ne 1 ]; then 
+  passed=false
+fi 
+
 git grep -n ' $' -- modules
+
+if [ $? -ne 1 ]; then 
+  passed=false
+fi 
+
 git grep -n ' $' -- tools
+
+if [ $? -ne 1 ]; then 
+  passed=false
+fi 
+
+if [ $passed = false ]; then
+  exit 1
+fi  

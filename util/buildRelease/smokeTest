@@ -116,10 +116,10 @@ if [ $LINT -eq 1 ]; then
     # Need to clean up all of the trailing spaces before adding this
     # Check for trailing spaces
     echo "Checking for trailing spaces"
-    num_trailing_space_lines=$($CHPL_HOME/util/devel/lookForTrailingSpaces | wc -l)
-    if (( $num_trailing_space_lines > 0 )) ; then
+    output=$($CHPL_HOME/util/devel/lookForTrailingSpaces)
+    if [ $? -ne 0 ] ; then
        echo "Found $num_trailing_space_lines lines with trailing spaces :-("
-       echo $($CHPL_HOME/util/devel/lookForTrailingSpaces)
+        echo $output
        exit 1
     fi
 
