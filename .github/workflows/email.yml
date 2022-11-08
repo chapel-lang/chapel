@@ -2,14 +2,15 @@ name: email
 on:
     # this workflow is intended to run on merges from a forked repo to main(base-repo). Use pull_request_target
     # this will provide read access to the secrets in main
-    pull_request_target:
-      types:
-        - closed
+    push:
+    #pull_request_target:
+      #types:
+       # - closed
       
 jobs: 
   send_email:
    # run this workflow step only when the PR is merged 
-    if:  github.event.pull_request.merged == true 
+    #if:  github.event.pull_request.merged == true 
     runs-on: ubuntu-latest 
     steps:
       - name: print git events
@@ -22,14 +23,14 @@ jobs:
         env:
           COMMIT_URL: ${{github.event.pull_request._links.commits.href}}
         run: |
-              curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
+              curl --location --request GET 'https://api.github.com/repos/chapel-lang/chapel/pulls/20904/commits' --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
               echo "AUTHOR=$(jq -r '.[0].commit.author.name' commits.json)" >> $GITHUB_ENV   
               echo "LINK=$(jq -r '.[0].html_url' commits.json)" >> $GITHUB_ENV
               echo "MESSAGE=$((jq  '.[0].commit.message' commits.json)| awk -F'\\\\n' '{print $1}' | sed 's/\"//g')" >> $GITHUB_ENV 
               echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
               echo "LOG=$(echo '[Merge pull request] # ${{github.event.number}} from ${{github.event.pull_request.head.label}}' )" >> $GITHUB_ENV
               echo "FILES_CHANGED=$(echo '${{github.event.pull_request._links.html.href}}/files' )" >> $GITHUB_ENV
-              echo "SUBJECT= $(echo '[Chapel Merge] ${{github.event.number}}  ${{github.event.pull_request.title}}' )" >> $GITHUB_ENV
+              echo "SUBJECT= $(echo '[Chapel Merge] ${{github.event.pull_request.title}} #${{github.event.number}}' )" >> $GITHUB_ENV
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
@@ -55,7 +56,8 @@ jobs:
            # Required mail subject:
            subject: ${{env.SUBJECT}} 
            # Required recipients' addresses:
-           to: chapel+commits@discoursemail.com
+           #to: chapel+commits@discoursemail.com
+           to: bhavani@hpe.com
            # Required sender full name (address can be skipped):
            from: chapel-lang 
            html_body: |
@@ -66,11 +68,11 @@ jobs:
               Branch: ${{github.ref}} <br>
               Revision: ${{ github.event.pull_request.merge_commit_sha }}  <br>
               Author: ${{ env.AUTHOR}} <br>
-              Link: ${{env.LOG}} &nbsp;&nbsp;${{github.event.pull_request._links.html.href}} <br>             
+              Link: ${{github.event.pull_request._links.html.href}} <br>             
               Log Message: <br><br>
-                           ${{env.LOG}} <br>
-                           ${{env.MESSAGE}} <br>  
-                           ${{github.event.pull_request.body}} <br><br>
+                           ${{env.MESSAGE}} <br> <br> 
+                           <a href="${{github.event.pull_request.body}}"></a>
+                           <br><br>
               Compare: ${{env.COMPARE_URL}} <br> 
               Diff: ${{github.event.pull_request.diff_url}} <br>
               FilesChanged: ${{env.FILES_CHANGED}} <br><br>
