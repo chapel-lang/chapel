@@ -1,6 +1,7 @@
 chapel_specific_errors.chpl:1: warning: 'SysBasic.EEOF' has been deprecated; please use 'IO.EEOF' instead.
 chapel_specific_errors.chpl:1: warning: 'SysBasic.ESHORT' has been deprecated; please use 'IO.ESHORT' instead.
 chapel_specific_errors.chpl:1: warning: 'SysBasic.EFORMAT' has been deprecated; please use 'IO.EFORMAT' instead.
+chapel_specific_errors.chpl:1: warning: The SysBasic module has been deprecated; most symbols have been moved to IO or OS as appropriate
 chapel_specific_errors.chpl:4: warning: 'SysBasic.EEOF' has been deprecated; please use 'IO.EEOF' instead.
 chapel_specific_errors.chpl:5: warning: 'SysBasic.ESHORT' has been deprecated; please use 'IO.ESHORT' instead.
 chapel_specific_errors.chpl:6: warning: 'SysBasic.EFORMAT' has been deprecated; please use 'IO.EFORMAT' instead.
