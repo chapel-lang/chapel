@@ -60,31 +60,29 @@ jobs:
            #to: chapel+commits@discoursemail.com
            to: bhavani@hpe.com
            # Required sender full name (address can be skipped):
-           from: chapel-lang 
-           html_body: |
-              <!DOCTYPE html>
-              <html>
-              <body>
-              <p>
-              Branch: ${{github.ref}} <br>
-              Revision: ${{ github.event.pull_request.merge_commit_sha }}  <br>
-              Author: ${{ env.AUTHOR}} <br>
-              Link: ${{github.event.pull_request._links.html.href}} <br>             
-              Log Message: <br><br>
-                           ${{env.MESSAGE}} <br> <br> 
-                           <a href="${{github.event.pull_request.body}}"></a>
-                           <br><br>
-              Compare: ${{env.COMPARE_URL}} <br> 
-              Diff: ${{github.event.pull_request.diff_url}} <br>
-              FilesChanged: ${{env.FILES_CHANGED}} <br><br>
-              Modified Files: <br>
-                   ${{steps.changed-files.outputs.all_changed_and_modified_files}} <br><br>
-              Removed Files: <br>     
-                   ${{steps.changed-files.outputs.deleted_files}} <br>
+           from:  ${{env.AUTHOR}}
+           body: |
              
-              </p>
-              </body>
-              </html>
+              Branch: ${{github.ref}} \n
+              Revision: ${{ github.event.pull_request.merge_commit_sha }} \n
+              Author: ${{ env.AUTHOR}} <br>
+              Link: ${{github.event.pull_request._links.html.href}} \n       
+              Log Message: \n \n
+                           ${{env.MESSAGE}} \n \n
+                           ${{github.event.pull_request.body}}
+                           this is a test message \n to test the line breakers.ß
+                           \n \n
+              Compare: ${{env.COMPARE_URL}} <br> 
+              Diff: ${{github.event.pull_request.diff_url}} \n
+              FilesChanged: ${{env.FILES_CHANGED}} \n \n
+              Added Files:
+                    ${{steps.changed-files.outputs.added_files}} \n
+              Modified Files: <br>
+                   ${{steps.changed-files.outputs.all_changed_and_modified_files}} \n\n
+              Removed Files: <br>     
+                   ${{steps.changed-files.outputs.deleted_files}} \n
+             
+              
            # Optional converting Markdown to HTML (set content_type to text/html too):
            convert_markdown: true
            # Optional priority: 'high', 'normal' (default) or 'low'
