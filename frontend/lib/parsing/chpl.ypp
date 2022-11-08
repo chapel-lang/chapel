@@ -1842,7 +1842,8 @@ implements_type_ident:
 | TVOID
 | implements_type_error_ident
   {
-    CHPL_PARSER_REPORT(context, TypeCannotImplementInterface, @$, $1.c_str());
+    CHPL_PARSER_REPORT_SIMPLE(
+        context, @$, "type '" + $1.str() + "' cannot implement an interface");
     $$ = $1;
   }
 ;
@@ -2603,7 +2604,8 @@ named_formal:
 | opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP
   opt_colon_formal_type formal_var_arg_expr
   {
-    $$ = CHPL_PARSER_REPORT(context, VarargNotGrouped, @$);
+    $$ = CHPL_PARSER_REPORT_SIMPLE(
+        context, @$, "variable-length argument may not be grouped in a tuple");
   }
 ;
 
@@ -2907,7 +2909,8 @@ ret_array_type:
   }
 | TLSBR error TRSBR
   {
-    $$ = CHPL_PARSER_REPORT(context, ArrayReturnInvalidDom, @$);
+    $$ = CHPL_PARSER_REPORT_SIMPLE(
+        context, @$, "invalid expression for domain of array return type");
   }
 ;
 
@@ -3436,7 +3439,8 @@ intent_expr:
                                  toOwned($4));
       $$ = node.release();
     } else {
-      $$ = CHPL_PARSER_REPORT(context, TaskVarNameNotIdent, @$);
+      $$ = CHPL_PARSER_REPORT_SIMPLE(
+          context, @$, "expected identifier for task variable name");
     }
   }
 | reduce_scan_op_expr TREDUCE ident_expr

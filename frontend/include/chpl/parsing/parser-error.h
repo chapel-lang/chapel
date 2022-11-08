@@ -51,6 +51,9 @@
   CHPL_LEXER_REPORT_ACTUAL(SCANNER__, NLINES__, NCOLS__,                    \
                            /* MOVE_TO_END__ */ false, NAME__, ##EINFO__)
 
+#define CHPL_LEXER_REPORT_SIMPLE(SCANNER__, NLINES__, NCOLS__, MSG__) \
+  CHPL_LEXER_REPORT(SCANNER__, NLINES__, NCOLS__, Parsing, MSG__)
+
 // this variant moves the beginning of the reported location to its current end
 #define CHPL_LEXER_REPORT_END(SCANNER__, NLINES__, NCOLS__, NAME__, \
                               EINFO__...)                           \

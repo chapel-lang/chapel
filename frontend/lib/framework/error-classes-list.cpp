@@ -556,21 +556,11 @@ void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
 
 void ErrorParsing::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
-  auto msg = std::get<std::string>(info);
-  wr.heading(kind_, type_, loc, msg);
-}
-
-void ErrorTypeCannotImplementInterface::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto typeName = std::get<std::string>(info);
-  wr.heading(kind_, type_, loc, "type '", typeName,
-             "' cannot implement an interface.");
-}
-
-void ErrorPragmasBeforeDeprecation::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc,
-             "pragma list must come before deprecation statement.");
+  auto errorMessage = std::get<std::string>(info);
+  assert(errorMessage.back() != '.' &&
+         "expected no period at end of ErrorParsing message");
+  errorMessage.push_back('.');
+  wr.heading(kind_, type_, loc, errorMessage);
 }
 
 void ErrorCannotAttachPragmas::write(ErrorWriterBase& wr) const {
@@ -578,46 +568,9 @@ void ErrorCannotAttachPragmas::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, loc, "cannot attach pragmas to this statement.");
 }
 
-void ErrorPrimCallNamedArgs::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc, "primitive calls cannot use named arguments.");
-}
-
-void ErrorPrimCallNoStrLiteral::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc, "primitive calls must start with string literal.");
-}
-
-void ErrorUnknownPrimitive::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc, "unknown primitive.");
-}
-
-void ErrorSecondaryTypeMethodNoType::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc, "missing type for secondary type method.");
-}
-
-void ErrorThisIntentNotMethod::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc,
-             "'this' intents can only be applied to methods.");
-}
-
 void ErrorInvalidIndexExpr::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   wr.heading(kind_, type_, loc, "invalid index expression.");
-}
-
-void ErrorClassExportExtern::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc,
-             "cannot declare class types as export or extern.");
-}
-
-void ErrorUnionExport::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc, "cannot export union types.");
 }
 
 void ErrorRecordInheritanceNotSupported::write(ErrorWriterBase& wr) const {
@@ -627,22 +580,6 @@ void ErrorRecordInheritanceNotSupported::write(ErrorWriterBase& wr) const {
   wr.message(
       "thoughts on what record inheritance should entail can be added to "
       "https://github.com/chapel-lang/chapel/issues/6851");
-}
-
-void ErrorUnionInheritanceNotAllowed::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc, "unions cannot inherit.");
-}
-
-void ErrorMultipleInheritance::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc, "only single inheritance is supported.");
-}
-
-void ErrorInheritInvalidExpr::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc,
-             "non-Identifier expression cannot be inherited.");
 }
 
 void ErrorInvalidNumericLiteral::write(ErrorWriterBase& wr) const {
@@ -660,11 +597,6 @@ void ErrorMultipleExternalRenaming::write(ErrorWriterBase& wr) const {
       "external symbol renaming can only be applied to one symbol at a time.");
 }
 
-void ErrorReduceIntentNoIdent::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc, "expected identifier for reduce intent name.");
-}
-
 void ErrorPreIncDecOp::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto opName = std::get<1>(info);
@@ -675,24 +607,7 @@ void ErrorPreIncDecOp::write(ErrorWriterBase& wr) const {
 void ErrorNewWithoutArgs::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   wr.heading(kind_, type_, loc,
-             "type in 'new' expression is missing its argument list.");
-}
-
-void ErrorDotAfterNew::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(
-      kind_, type_, loc,
-      "please use parentheses to disambiguate dot expression after 'new'.");
-}
-
-void ErrorInvalidNewForm::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc, "invalid form for 'new' expression.");
-}
-
-void ErrorInvalidIterandExpr::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc, "invalid iterand expression.");
+             "'new' expression is missing its argument list.");
 }
 
 void ErrorUseImportNeedsModule::write(ErrorWriterBase& wr) const {
@@ -712,51 +627,14 @@ void ErrorExceptOnlyInvalidExpr::write(ErrorWriterBase& wr) const {
              "' list, identifier expected.");
 }
 
-void ErrorImportInvalidAs::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(
-      kind_, type_, loc,
-      "incorrect expression in 'import' list rename, identifier expected.");
-}
-
-void ErrorImportInvalidExpr::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc,
-             "incorrect expression in 'import' for unqualified access, "
-             "identifier expected");
-}
-
-void ErrorDeprecateForwardingStmt::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc, "can't deprecate a forwarding statement.");
-}
-
-void ErrorSelectMultipleOtherwise::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc, "select has multiple otherwise clauses.");
-}
-
 void ErrorLabelIneligibleStmt::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc,
-             "can only label for-, while-do- and do-while-statements.");
-}
-
-void ErrorVarargNotGrouped::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc,
-             "variable-length argument may not be grouped in a tuple.");
-}
-
-void ErrorArrayReturnInvalidDom::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc,
-             "invalid expression for domain of array return type.");
-}
-
-void ErrorTaskVarNameNotIdent::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc, "expected identifier for task variable name.");
+  auto maybeStmt = std::get<const uast::AstNode*>(info);
+  std::string msg = "Cannot label";
+  if (maybeStmt) msg = msg + " '+" + tagToString(maybeStmt->tag()) + "'";
+  msg += " statement";
+  wr.heading(kind_, type_, loc, msg);
+  wr.message("Only for-, while-do- and do-while-statements can have labels.");
 }
 
 void ErrorBisonMemoryExhausted::write(ErrorWriterBase& wr) const {
@@ -784,45 +662,11 @@ void ErrorBisonSyntaxError::write(ErrorWriterBase& wr) const {
 
 /* lexer errors */
 
-void ErrorStringLiteralEOL::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc,
-             "end-of-line in a string literal without a preceding backslash.");
-}
-
-void ErrorNonHexChar::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc, "non-hexadecimal character follows \\x.");
-}
-
 void ErrorHexOverflow::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto isUnderflow = std::get<bool>(info);
   std::string underflowOrOverflow = (isUnderflow ? "underflow" : "overflow");
   wr.heading(kind_, type_, loc, underflowOrOverflow, " when reading \\x escape.");
-}
-
-void ErrorUnknownHexError::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc, "unknown problem when reading \\x escape.");
-}
-
-void ErrorUniversalCharUnsupported::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc,
-             "universal character name not yet supported in string literal.");
-}
-
-void ErrorOctalEscapeUnsupported::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc, "octal escape not supported in string literal.");
-}
-
-void ErrorUnexpectedStrEscape::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto escapedChar = std::get<char>(info);
-  wr.heading(kind_, type_, loc, "unexpected string escape: '\\", escapedChar,
-             "'.");
 }
 
 void ErrorStringLiteralEOF::write(ErrorWriterBase& wr) const {
@@ -837,12 +681,6 @@ void ErrorExternUnclosedPair::write(ErrorWriterBase& wr) const {
              " symbol in extern block.");
 }
 
-void ErrorExternCommentNoNewline::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc,
-             "missing newline after extern block // comment.");
-}
-
 void ErrorCommentEOF::write(ErrorWriterBase& wr) const {
   auto loc = std::get<0>(info);
   auto startLoc = std::get<1>(info);
@@ -852,12 +690,6 @@ void ErrorCommentEOF::write(ErrorWriterBase& wr) const {
   if (!nestedLoc.isEmpty()) {
     wr.note(nestedLoc, "Nested comment started here:");
   }
-}
-
-void ErrorInvalidToken::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto token = std::get<std::string>(info);
-  wr.heading(kind_, type_, loc, "invalid token: ", token);
 }
 
 } // end namespace 'chpl'
