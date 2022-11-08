@@ -1795,7 +1795,6 @@ module ChapelBase {
   }
 
   pragma "compiler generated"
-  //pragma "last resort" not last resort to avoid change in behavior
   pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: borrowed object) { }
 
