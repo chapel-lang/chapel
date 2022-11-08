@@ -1,2 +1,3 @@
 var x: sync string;
-writeln(isCopyableType(x.type));
+param p = isCopyableType(x.type);
+compilerError("isCopyableType(sync string) = " + p:string);
