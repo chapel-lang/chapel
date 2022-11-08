@@ -79,11 +79,11 @@ jobs:
               Compare: ${{env.COMPARE_URL}} <br> 
               Diff: ${{github.event.pull_request.diff_url}} <br>
               FilesChanged: ${{env.FILES_CHANGED}} <br><br>
+              Added 
               Modified Files: <br>
                    ${{steps.changed-files.outputs.all_changed_and_modified_files}} <br><br>
               Removed Files: <br>     
                    ${{steps.changed-files.outputs.deleted_files}} <br>
-            
               </p>
               </body>
               </html>
