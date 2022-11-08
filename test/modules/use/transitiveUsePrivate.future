@@ -1,7 +1,6 @@
 Bug
+A transitive 'use' can incorrectly allow access to private symbols in its scope
+#20707
 
-https://github.com/chapel-lang/chapel/issues/20707
-
-A transitive 'use' can incorrectly allow access to private symbols,
-if the first use in the transitive chain occurs in the same scope as of the
-private symbol.
+If the first use in the transitive chain occurs in the same scope as the private
+symbol, it will incorrectly provide visibility of the private symbol.
