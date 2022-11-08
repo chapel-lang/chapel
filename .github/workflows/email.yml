@@ -31,6 +31,7 @@ jobs:
               echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
               echo "LOG=$(echo '[Merge pull request] # ${{github.event.number}} from ${{github.event.pull_request.head.label}}' )" >> $GITHUB_ENV
               echo "FILES_CHANGED=$(echo '${{github.event.pull_request._links.html.href}}/files' )" >> $GITHUB_ENV
+              echo "LOG_FORMAT= $(echo'this is an example \n to test \n split \n and \t \n tab ' | sed  's!\n!<br \/>!' )" >> $GITHUB_ENV
               echo "SUBJECT= $(echo '[Chapel Merge] ${{github.event.pull_request.title}} #${{github.event.number}}' )" >> $GITHUB_ENV
       - name: checkout
         uses: actions/checkout@v3
@@ -71,23 +72,15 @@ jobs:
               <body>
                
               <p>
-                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="624px" style="margin: 0 auto;padding: 30px 0px; border-radius: 10px;background: #fff;">
-              <tr>
-              <td style="padding: 24px">
-              <!-- inner table with rows -->
-              <table align="center" border="0" cellpadding="0" cellspacing="0" width="600px">
-              <tr>
-              <td>
+               
                Branch: ${{github.ref}} <br>
                Revision: ${{ github.event.pull_request.merge_commit_sha }}  <br>
                Author: ${{ env.AUTHOR}} <br>
                Link: ${{github.event.pull_request._links.html.href}} <br>             
                Log Message: <br><br>
-                           ${{env.LOG}} <br>
-                           ${{env.MESSAGE}} <br>  
-                           test \n\t next line
-                           "Stop tying Clang flags for extern blocks to the --cc-warnings flag\r\n\r\nThere is a large list of `-W` warning flags we pass to our internal\r\nClang compiler when invoking it. These flags were not previously\r\nrequired and were tied to the `--cc-warnings` flag, which meant that\r\nit was possible for non-developer compiles to skip throwing the\r\nflags.\r\n\r\nThis PR adjusts the invocation to always add the flags. They protect\r\nagainst a large class of \"warnings\" (that really ought to be errors)\r\nin C code that the Chapel backend does not know how to handle.\r\n\r\nFor further justification: the `--cc-warnings` flag is intended to\r\nsuppress warnings for _generated_ C code, however C code in extern\r\nblocks is handwritten and is consumed only by the Chapel compiler.\r\nSince `chpl` is the only consumer, it seems fine to require that\r\nall code in extern blocks must compile using specific `-W` flags.\r\nThe documentation could be updated to list the flags if needed.\r\n\r\nReviewed by @vasslitvinov. Thanks!\r\n\r\nTESTING\r\n\r\n- [x] `linux64`, `standard`\r\n\r\nSigned-off-by: David Longnecker <dlongnecke-cray@users.noreply.github.com>"
-                           ${{github.event.pull_request.body}} <br><br>
+                           ${{env.LOG_FORMAT}} <br>
+                          
+                          
                Compare: ${{env.COMPARE_URL}} <br> 
                Diff: ${{github.event.pull_request.diff_url}} <br>
                FilesChanged: ${{env.FILES_CHANGED}} <br><br>
@@ -96,9 +89,7 @@ jobs:
                    ${{steps.changed-files.outputs.all_changed_and_modified_files}} <br><br>
                Removed Files: <br>     
                    ${{steps.changed-files.outputs.deleted_files}} <br>
-              </td>
-              </tr>
-              </table>
+           
               
               </p>
               </body>
