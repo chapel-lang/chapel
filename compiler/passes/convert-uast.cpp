@@ -2873,20 +2873,15 @@ struct Converter {
     auto style = uast::BlockStyle::EXPLICIT;
     BlockStmt* body = createBlockWithStmts(node->stmts(), style);
 
-    if (node->isFormalListPresent()) {
-      for (auto formal : node->formals()) {
-        if (auto ident = formal->toIdentifier()) {
-          const char* name = astr(ident->name());
-          auto formal = InterfaceSymbol::buildFormal(name, INTENT_TYPE);
-          formals->insertAtTail(formal);
-        } else {
-          INT_FATAL("Expected identifier for interface formal");
-        }
+    for (auto formal : node->formals()) {
+      if (auto ident = formal->toIdentifier()) {
+        const char* name = astr(ident->name());
+        auto formal = InterfaceSymbol::buildFormal(name, INTENT_TYPE);
+        formals->insertAtTail(formal);
+        noteConvertedSym(ident, formal->sym);
+      } else {
+        INT_FATAL("Expected identifier for interface formal");
       }
-    } else {
-      INT_ASSERT(node->numFormals() == 0);
-      DefExpr* formal = InterfaceSymbol::buildFormal("Self", INTENT_TYPE);
-      formals->insertAtTail(formal);
     }
 
     auto isym = InterfaceSymbol::buildDef(name, formals, body);
