@@ -1,5 +1,5 @@
-renameViaParamExpr.chpl:9: syntax error: near 'record'
-renameViaParamExpr.chpl:12: syntax error: near '}'
+renameViaParamExpr.chpl:9: error: syntax error near 'record'
+renameViaParamExpr.chpl:12: error: syntax error near '}'
 renameViaParamExpr.chpl:3: error: the linkage name for 'cVarType' must be a string literal
 renameViaParamExpr.chpl:11: error: the linkage name for 'cFieldType' must be a string literal
 renameViaParamExpr.chpl:16: error: the linkage name for 'myCInt' must be a string literal

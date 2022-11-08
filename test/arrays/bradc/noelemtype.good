@@ -1,1 +1,1 @@
-noelemtype.chpl:5: syntax error: near '='
+noelemtype.chpl:5: error: syntax error near '='

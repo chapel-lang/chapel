@@ -1,1 +1,1 @@
-forallArrayTypeVar.chpl:1: syntax error: near ';'
+forallArrayTypeVar.chpl:1: error: syntax error near ';'

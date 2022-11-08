@@ -1,1 +1,1 @@
-noUnscoreRename.chpl:5: syntax error: near '_'
+noUnscoreRename.chpl:5: error: syntax error near '_'

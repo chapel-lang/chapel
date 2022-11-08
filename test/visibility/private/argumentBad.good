@@ -1,1 +1,1 @@
-argumentBad.chpl:1: syntax error: near 'private'
+argumentBad.chpl:1: error: syntax error near 'private'

@@ -1,1 +1,1 @@
-useAtClassScope.chpl:17: syntax error: near 'use'
+useAtClassScope.chpl:17: error: syntax error near 'use'

@@ -1,1 +1,1 @@
-test_array_arg6_auto.chpl:11: syntax error: near '=>'
+test_array_arg6_auto.chpl:11: error: syntax error near '=>'

@@ -160,8 +160,8 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
     auto tag = pragmaNameToTag(ret.c_str());
 
     if (tag == PRAGMA_UNKNOWN)
-      CHPL_PARSER_REPORT_SIMPLE(this, loc,
-                                "unknown pragma '" + strLit->str().str() + "'");
+      CHPL_PARSER_REPORT_SIMPLE(
+          this, loc, "unknown pragma \"" + strLit->str().str() + "\"");
 
     // Initialize the pragma flags if needed.
     auto& pragmas = attributeParts.pragmas;
@@ -1301,7 +1301,7 @@ AstNode* ParserContext::buildNewExpr(YYLTYPE location,
           expr->toDot()->receiver()->isOpCall()) {
         CHPL_PARSER_REPORT_SIMPLE(
             this, location,
-            "must use parentheses to disambiguiate dot expression after 'new'");
+            "must use parentheses to disambiguate dot expression after 'new'");
       } else {
         // try to capture case of new M.Q;
         CHPL_PARSER_REPORT(this, NewWithoutArgs, location);

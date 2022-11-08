@@ -1,1 +1,1 @@
-badEscape.chpl:1: error: Unexpected string escape: '\ '
+badEscape.chpl:1: error: unexpected string escape: '\ '

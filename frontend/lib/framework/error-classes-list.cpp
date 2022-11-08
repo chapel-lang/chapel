@@ -586,8 +586,8 @@ void ErrorInvalidNumericLiteral::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto literalStr = std::get<1>(info);
   auto errMessage = std::get<2>(info);
-  wr.heading(kind_, type_, loc, "error building numeric literal '", literalStr,
-             "': ", errMessage, ".");
+  wr.heading(kind_, type_, loc, "error building numeric literal: ", errMessage,
+             ".");
 }
 
 void ErrorMultipleExternalRenaming::write(ErrorWriterBase& wr) const {
@@ -599,15 +599,15 @@ void ErrorMultipleExternalRenaming::write(ErrorWriterBase& wr) const {
 
 void ErrorPreIncDecOp::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
-  auto opName = std::get<1>(info);
-  auto opSymbol = std::get<2>(info);
+  auto opSymbol = std::get<1>(info);
+  auto opName = std::get<2>(info);
   wr.heading(kind_, type_, loc, "'", opSymbol, "' is not a pre-", opName, ".");
 }
 
 void ErrorNewWithoutArgs::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   wr.heading(kind_, type_, loc,
-             "'new' expression is missing its argument list.");
+             "type in 'new' expression is missing its argument list.");
 }
 
 void ErrorUseImportNeedsModule::write(ErrorWriterBase& wr) const {
@@ -630,9 +630,9 @@ void ErrorExceptOnlyInvalidExpr::write(ErrorWriterBase& wr) const {
 void ErrorLabelIneligibleStmt::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto maybeStmt = std::get<const uast::AstNode*>(info);
-  std::string msg = "Cannot label";
-  if (maybeStmt) msg = msg + " '+" + tagToString(maybeStmt->tag()) + "'";
-  msg += " statement";
+  std::string msg = "cannot label";
+  if (maybeStmt) msg = msg + " '" + tagToString(maybeStmt->tag()) + "'";
+  msg += " statement.";
   wr.heading(kind_, type_, loc, msg);
   wr.message("Only for-, while-do- and do-while-statements can have labels.");
 }

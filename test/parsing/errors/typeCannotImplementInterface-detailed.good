@@ -1,3 +1,0 @@
-─── error in typeCannotImplementInterface.chpl:4 [TypeCannotImplementInterface] ───
-  Type 'true' cannot implement an interface.
-
