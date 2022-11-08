@@ -63,24 +63,24 @@ jobs:
            from:  ${{env.AUTHOR}}
            body: |
              
-              Branch: ${{github.ref}} \n
-              Revision: ${{ github.event.pull_request.merge_commit_sha }} \n
+              Branch: ${{github.ref}} 
+              Revision: ${{ github.event.pull_request.merge_commit_sha }} 
               Author: ${{ env.AUTHOR}} <br>
-              Link: ${{github.event.pull_request._links.html.href}} \n       
-              Log Message: \n \n
-                           ${{env.MESSAGE}} \n \n
+              Link: ${{github.event.pull_request._links.html.href}}  
+              Log Message: 
+                           ${{env.MESSAGE}} 
                            ${{github.event.pull_request.body}}
-                           this is a test message \n to test the line breakers.ß
-                           \n \n
+                         "Stop tying Clang flags for extern blocks to the --cc-warnings flag\r\n\r\nThere is a large list of `-W` warning flags we pass to our internal\r\nClang compiler when invoking it. These flags were not previously\r\nrequired and were tied to the `--cc-warnings` flag, which meant that\r\nit was possible for non-developer compiles to skip throwing the\r\nflags.\r\n\r\nThis PR adjusts the invocation to always add the flags. They protect\r\nagainst a large class of \"warnings\" (that really ought to be errors)\r\nin C code that the Chapel backend does not know how to handle.\r\n\r\nFor further justification: the `--cc-warnings` flag is intended to\r\nsuppress warnings for _generated_ C code, however C code in extern\r\nblocks is handwritten and is consumed only by the Chapel compiler.\r\nSince `chpl` is the only consumer, it seems fine to require that\r\nall code in extern blocks must compile using specific `-W` flags.\r\nThe documentation could be updated to list the flags if needed.\r\n\r\nReviewed by @vasslitvinov. Thanks!\r\n\r\nTESTING\r\n\r\n- [x] `linux64`, `standard`\r\n\r\nSigned-off-by: David Longnecker <dlongnecke-cray@users.noreply.github.com>"
+                           
               Compare: ${{env.COMPARE_URL}} <br> 
-              Diff: ${{github.event.pull_request.diff_url}} \n
-              FilesChanged: ${{env.FILES_CHANGED}} \n \n
+              Diff: ${{github.event.pull_request.diff_url}} 
+              FilesChanged: ${{env.FILES_CHANGED}} 
               Added Files:
-                    ${{steps.changed-files.outputs.added_files}} \n
+                    ${{steps.changed-files.outputs.added_files}} 
               Modified Files: <br>
-                   ${{steps.changed-files.outputs.all_changed_and_modified_files}} \n\n
+                   ${{steps.changed-files.outputs.all_changed_and_modified_files}} 
               Removed Files: <br>     
-                   ${{steps.changed-files.outputs.deleted_files}} \n
+                   ${{steps.changed-files.outputs.deleted_files}} 
              
               
            # Optional converting Markdown to HTML (set content_type to text/html too):
