@@ -649,7 +649,8 @@ void ErrorBisonUnknownError::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, loc,
              "unknown error from Bison parser: ", errorMessage, ".");
   if (!nearestToken.empty()) {
-    wr.note(loc, "Nearest token when error was encountered: ", nearestToken);
+    wr.note(loc, "Nearest token when error was encountered: '", nearestToken,
+            "'");
   }
 }
 
@@ -657,7 +658,7 @@ void ErrorBisonSyntaxError::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto nearestToken = std::get<std::string>(info);
   wr.heading(kind_, type_, loc, "syntax error",
-             (nearestToken.empty() ? "" : " near " + nearestToken));
+             (nearestToken.empty() ? "" : " near '" + nearestToken + "'"));
 }
 
 /* lexer errors */
