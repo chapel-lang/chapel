@@ -31,7 +31,7 @@ jobs:
               echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
               echo "LOG=$(echo '[Merge pull request] # ${{github.event.number}} from ${{github.event.pull_request.head.label}}' )" >> $GITHUB_ENV
               echo "FILES_CHANGED=$(echo '${{github.event.pull_request._links.html.href}}/files' )" >> $GITHUB_ENV
-              echo "LOG_FORMAT= $((jq  '.[0].commit.message' commits.json) | sed  's/\\n/<br>/g' | sed  's/\\t/<&emsp>/g' )" >> $GITHUB_ENV
+              echo "LOG_FORMAT= $(echo ' So there is no loss of precision when converting to the smaller width.\r\n\r\nThis is arguably already implied by the spec language in https://chapel-lang.org/docs/language/spec/conversions.html#implicit-compile-time-constant-conversions :\r\n\r\n> `param` `real(s)` that is exactly representable in the target type can implicitly convert to `real(t)` or to `complex(t)` regardless of the values of `s` and `t`.\r\n\r\nReviewed by @vasslitvinov - thanks!\r\n\r\n ' | sed  's/\\n/<br>/g' | sed  's/\\t/<&emsp>/g' )" >> $GITHUB_ENV
               echo "SUBJECT= $(echo '[Chapel Merge] ${{github.event.pull_request.title}} #${{github.event.number}}' )" >> $GITHUB_ENV
       - name: checkout
         uses: actions/checkout@v3
