@@ -151,7 +151,6 @@ module BigInteger {
   use GMP;
   use HaltWrappers;
   use CTypes;
-  use SysBasic only ENOERR;
   use IO only EFORMAT;
   use OS;
 
@@ -262,7 +261,7 @@ module BigInteger {
 
         error = EFORMAT;
       } else {
-        error = ENOERR;
+        error = 0;
       }
 
       this.localeId = chpl_nodeID;

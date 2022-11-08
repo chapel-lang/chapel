@@ -2210,7 +2210,7 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
 BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block) {
   auto ret = new BlockStmt();
 
-  if (fWarnUnstable) {
+  if (fWarnUnstable && currentModuleType == MOD_USER) {
     USR_WARN(managers, "manage statements are not stable and may change");
   }
 

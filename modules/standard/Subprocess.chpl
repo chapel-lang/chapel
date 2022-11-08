@@ -133,7 +133,6 @@ module Subprocess {
   use OS;
   use CTypes;
   use OS.POSIX;
-  import SysBasic.{ENOERR};
 
   private extern proc qio_openproc(argv:c_ptr(c_string),
                                    env:c_ptr(c_string),
@@ -569,7 +568,7 @@ module Subprocess {
       ret.spawn_error = err;
       return ret;
     }
-    ret.spawn_error = ENOERR;
+    ret.spawn_error = 0;
 
     // open the QIO files if a pipe was used.
 
@@ -726,7 +725,7 @@ module Subprocess {
   proc subprocess.poll() throws {
     try _throw_on_launch_error();
 
-    var err:errorCode = ENOERR;
+    var err:errorCode = 0;
     on home {
       // check if child process has terminated.
       var done:c_int = 0;
@@ -794,10 +793,10 @@ module Subprocess {
       return;
     }
 
-    var stdin_err:errorCode  = ENOERR;
-    var wait_err:errorCode   = ENOERR;
-    var stdout_err:errorCode = ENOERR;
-    var stderr_err:errorCode = ENOERR;
+    var stdin_err:errorCode  = 0;
+    var wait_err:errorCode   = 0;
+    var stdout_err:errorCode = 0;
+    var stderr_err:errorCode = 0;
 
     on home {
       // Close stdin.
@@ -909,7 +908,7 @@ module Subprocess {
       return;
     }
 
-    var err:errorCode = ENOERR;
+    var err:errorCode = 0;
     on home {
       if this.stdin_pipe {
         // send data to stdin
@@ -943,7 +942,7 @@ module Subprocess {
    */
   proc subprocess.close() throws {
     // TODO: see subprocess.wait() for more on this error handling approach
-    var err: errorCode = ENOERR;
+    var err: errorCode = 0;
 
     // Close stdin.
     if this.stdin_pipe {
@@ -1120,7 +1119,7 @@ module Subprocess {
   proc subprocess.sendPosixSignal(signal:int) throws {
     try _throw_on_launch_error();
 
-    var err: errorCode = ENOERR;
+    var err: errorCode = 0;
     on home {
       err = qio_send_signal(pid, signal:c_int);
     }

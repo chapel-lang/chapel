@@ -159,7 +159,6 @@ Curl Support Types and Functions
 module Curl {
   public use IO, CTypes;
   use OS.POSIX;
-  import SysBasic.{ENOERR};
   import OS.{errorCode};
 
   require "curl/curl.h";
@@ -326,7 +325,7 @@ module Curl {
      :arg str: a string argument to append
     */
   proc slist.append(str:string) throws {
-    var err: errorCode = ENOERR;
+    var err: errorCode = 0;
     on this.home {
       this.list = curl_slist_append(this.list, str.localize().c_str());
       if this.list == nil then
@@ -512,7 +511,6 @@ module Curl {
     use Curl;
     use CTypes;
     use OS.POSIX;
-    import SysBasic.{ENOERR};
     import OS.{errorCode};
 
     pragma "no doc"
@@ -542,12 +540,12 @@ module Curl {
         }
 
         length = this.length;
-        return ENOERR;
+        return 0;
       }
       override proc getpath(out path:c_string, out len:int(64)):errorCode {
         path = qio_strdup(this.url_c);
         len = url_c.size;
-        return ENOERR;
+        return 0;
       }
 
       override proc fsync():errorCode {
@@ -564,7 +562,7 @@ module Curl {
       override proc close():errorCode {
         c_free(url_c:c_void_ptr);
         url_c = nil;
-        return ENOERR;
+        return 0;
       }
     }
 
@@ -575,7 +573,7 @@ module Curl {
       var curlm: c_ptr(CURLM);  // Curl multi handle
       var running_handles: c_int;
       var have_channel_lock:bool;
-      var saved_error:errorCode = ENOERR;
+      var saved_error:errorCode = 0;
 
       override proc readAtLeast(amt:int(64)):errorCode {
         return read_atleast(this, amt);
@@ -588,7 +586,7 @@ module Curl {
         curl_multi_remove_handle(curlm, curl);
         curl_easy_cleanup(curl);
         curl_multi_cleanup(curlm);
-        return ENOERR;
+        return 0;
       }
     }
 
@@ -855,13 +853,13 @@ module Curl {
 
       //writeln("finished start_channel");
 
-      return ENOERR;
+      return 0;
     }
 
     private proc curl_write_received(contents: c_void_ptr, size:c_size_t, nmemb:c_size_t, userp: c_void_ptr):c_size_t {
       var realsize:c_size_t = size * nmemb;
       var cc = userp:unmanaged CurlChannel?;
-      var err:errorCode = ENOERR;
+      var err:errorCode = 0;
 
       // lock the channel if it's not already locked
       assert(cc!.have_channel_lock);
@@ -876,7 +874,7 @@ module Curl {
 
       // unlock the channel if we locked it
 
-      if err != ENOERR {
+      if err != 0 {
         cc!.saved_error = err;
         return 0;
       }
@@ -897,7 +895,7 @@ module Curl {
       var curl = cc.curl;
       var curlm = cc.curlm;
       var mcode: CURLMcode;
-      var serr:errorCode = ENOERR;
+      var serr:errorCode = 0;
       var fdread: fd_set;
       var fdwrite: fd_set;
       var fdexcept: fd_set;
@@ -975,7 +973,7 @@ module Curl {
           break;
 
         // stop if there was an error saving the data to the buffer
-        if cc.saved_error != ENOERR then
+        if cc.saved_error != 0 then
           return cc.saved_error;
       }
 
@@ -984,7 +982,7 @@ module Curl {
       if cc.running_handles == 0 && space < amt then
         return EEOF;
 
-      return ENOERR;
+      return 0;
     }
 
     // Send some data somewhere with curl
@@ -993,7 +991,7 @@ module Curl {
     private proc curl_read_buffered(contents: c_void_ptr, size:c_size_t, nmemb:c_size_t, userp: c_void_ptr):c_size_t {
       var realsize:c_size_t = size * nmemb;
       var cc = userp:unmanaged CurlChannel?;
-      var err:errorCode = ENOERR;
+      var err:errorCode = 0;
 
       // lock the channel if it's not already locked
       assert(cc!.have_channel_lock);
@@ -1010,7 +1008,7 @@ module Curl {
       // unlock the channel if we locked it
 
       // If there was an error from the channel, abort the connection
-      if err != ENOERR {
+      if err != 0 {
         cc!.saved_error = err;
         return CURL_READFUNC_ABORT;
       }
@@ -1039,7 +1037,7 @@ module Curl {
       var curlm = cc.curlm;
       var ccode: CURLcode;
       var mcode: CURLMcode;
-      var serr:errorCode = ENOERR;
+      var serr:errorCode = 0;
       var fdread: fd_set;
       var fdwrite: fd_set;
       var fdexcept: fd_set;
@@ -1117,7 +1115,7 @@ module Curl {
           break;
 
         // stop if there was an error saving the data to the buffer
-        if cc.saved_error != ENOERR then
+        if cc.saved_error != 0 then
           return cc.saved_error;
       }
 
@@ -1128,14 +1126,14 @@ module Curl {
         return EEOF;
       }
 
-      return ENOERR;
+      return 0;
     }
 
     proc openCurlFile(url:string,
                      mode:iomode = iomode.r,
                      style:iostyleInternal = defaultIOStyleInternal()) throws {
 
-      var err_out: errorCode = ENOERR;
+      var err_out: errorCode = 0;
       var rc = 0;
       var filelength: int(64);
 

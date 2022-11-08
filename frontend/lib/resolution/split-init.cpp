@@ -24,7 +24,6 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/uast/all-uast.h"
 
-#include "Resolver.h"
 #include "VarScopeVisitor.h"
 
 namespace chpl {
@@ -52,7 +51,7 @@ struct FindSplitInits : VarScopeVisitor {
   // overrides
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
-  void handleVarAssign(const OpCall* ast, ID varId, RV& rv) override;
+  void handleAssign(const OpCall* ast, RV& rv) override;
   void handleOutFormal(const FnCall* ast, const AstNode* actual,
                        const QualifiedType& formalType,
                        RV& rv) override;
@@ -62,6 +61,8 @@ struct FindSplitInits : VarScopeVisitor {
   void handleInoutFormal(const FnCall* ast, const AstNode* actual,
                          const QualifiedType& formalType,
                          RV& rv) override;
+
+  void handleReturnOrThrow(const uast::AstNode* ast, RV& rv) override;
   void handleConditional(const Conditional* cond) override;
   void handleTry(const Try* t) override;
   void handleScope(const AstNode* ast) override;
@@ -81,7 +82,7 @@ SplitInitVarStatus FindSplitInits::findVarStatus(ID varId) {
 
   for (ssize_t i = scopeStack.size() - 1; i >= 0; i--) {
     VarFrame* frame = scopeStack[i].get();
-    if (frame->returns || frame->throws) {
+    if (frame->returnsOrThrows) {
       status.foundReturnsThrows = true;
     }
     if (frame->initedVars.count(varId) > 0) {
@@ -164,12 +165,19 @@ void FindSplitInits::handleMention(const Identifier* ast, ID varId, RV& rv) {
   }
 }
 
-void FindSplitInits::handleVarAssign(const OpCall* ast, ID varId, RV& rv) {
-  // get the type for the rhs
+void FindSplitInits::handleAssign(const OpCall* ast, RV& rv) {
+  auto lhsAst = ast->actual(0);
   auto rhsAst = ast->actual(1);
-  QualifiedType rhsType = rv.byAst(rhsAst).type();
 
-  handleInitOrAssign(varId, rhsType, rv);
+  ID lhsVarId = refersToId(lhsAst, rv);
+  if (!lhsVarId.isEmpty()) {
+    // get the type for the rhs
+    QualifiedType rhsType = rv.byAst(rhsAst).type();
+    handleInitOrAssign(lhsVarId, rhsType, rv);
+  } else {
+    // visit the LHS to check for mentions
+    lhsAst->traverse(rv);
+  }
 }
 
 void FindSplitInits::handleOutFormal(const FnCall* ast, const AstNode* actual,
@@ -179,20 +187,24 @@ void FindSplitInits::handleOutFormal(const FnCall* ast, const AstNode* actual,
     handleInitOrAssign(toId, formalType, rv);
   } else {
     // gather any mentions used in the actual
-    handleMentions(actual, rv);
+    processMentions(actual, rv);
   }
 }
 
 void FindSplitInits::handleInFormal(const FnCall* ast, const AstNode* actual,
                                     const QualifiedType& formalType,
                                     RV& rv) {
-  handleMentions(actual, rv);
+  processMentions(actual, rv);
 }
 
 void FindSplitInits::handleInoutFormal(const FnCall* ast, const AstNode* actual,
                                        const QualifiedType& formalType,
                                        RV& rv) {
-  handleMentions(actual, rv);
+  processMentions(actual, rv);
+}
+
+void FindSplitInits::handleReturnOrThrow(const uast::AstNode* ast, RV& rv) {
+  // no action needed
 }
 
 // updates the back frame with the combined result from
@@ -224,16 +236,10 @@ void FindSplitInits::handleConditional(const Conditional* cond) {
     }
   }
 
-  bool thenReturns = thenFrame->returns;
-  bool thenThrows = thenFrame->throws;
-  bool thenReturnsThrows = thenReturns || thenThrows;
-  bool elseReturns = false;
-  bool elseThrows = false;
+  bool thenReturnsThrows = thenFrame->returnsOrThrows;
   bool elseReturnsThrows = false;
   if (elseFrame != nullptr) {
-    elseReturns = elseFrame->returns;
-    elseThrows = elseFrame->throws;
-    elseReturnsThrows = elseReturns || elseThrows;
+    elseReturnsThrows = elseFrame->returnsOrThrows;
   }
 
   std::set<ID> locSplitInitedVars;
@@ -389,7 +395,7 @@ void FindSplitInits::handleTry(const Try* t) {
   bool allThrowOrReturn = true;
   for (int i = 0; i < nCatchFrames; i++) {
     VarFrame* catchFrame = currentCatchFrame(i);
-    if (!catchFrame->returns && !catchFrame->throws) {
+    if (!catchFrame->returnsOrThrows) {
       allThrowOrReturn = false;
     }
   }
@@ -467,12 +473,8 @@ static bool allowsSplitInit(const AstNode* ast) {
 }
 
 void FindSplitInits::handleScope(const AstNode* ast) {
-  size_t n = scopeStack.size();
   VarFrame* frame = currentFrame();
-  VarFrame* parent = nullptr;
-  if (n >= 2) {
-    parent = scopeStack[n-2].get();
-  }
+  VarFrame* parent = currentParentFrame();
 
   if (allowsSplitInit(ast)) {
     // a scope that allows split init (e.g. a regular { } block)
@@ -497,9 +499,6 @@ void FindSplitInits::handleScope(const AstNode* ast) {
           parent->mentionedVars.insert(id);
         }
       }
-      // propagate return/throw-ness
-      parent->returns |= frame->returns;
-      parent->throws |= frame->throws;
     }
   } else {
     // some kind of scope that does not allow split init
@@ -528,7 +527,10 @@ computeSplitInits(Context* context,
   std::set<ID> splitInitedVars;
   FindSplitInits uv(context);
 
-  uv.process(symbol, byPostorder);
+  uv.process(symbol,
+             // cast here allows VarScopeVisitor to be simple
+             // by always using the mutating visitor
+             const_cast<ResolutionResultByPostorderID&>(byPostorder));
 
   splitInitedVars.swap(uv.allSplitInitedVars);
   return splitInitedVars;

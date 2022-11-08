@@ -28,6 +28,7 @@
    authority on system error codes.
  */
 
+deprecated "The SysBasic module has been deprecated; most symbols have been moved to IO or OS as appropriate"
 module SysBasic {
 
 /* BASIC TYPES */
