@@ -2554,7 +2554,14 @@ CommentsAndStmt ParserContext::buildInterfaceStmt(YYLTYPE location,
                     locBody,
                     body);
 
-  AstList formalList = formals ? consumeList(formals) : AstList();
+  AstList formalList;
+  if (formals != nullptr) {
+    formalList = consumeList(formals);
+  } else {
+    auto selfStr = PODUniqueString::get(context(), "Self");
+    formalList.push_back(toOwned(buildInterfaceFormal(location, selfStr)));
+  }
+
   AstList bodyStmts = bodyExprLst
       ? consumeAndFlattenTopLevelBlocks(bodyExprLst)
       : AstList();
