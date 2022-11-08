@@ -1250,7 +1250,7 @@ operator :(r: range(?), type t: range(?)) {
   */
   proc range.expand(offset: integral)
   {
-    const i = offset.safeCast(intIdxType);
+    const i = offset.safeCast(chpl__signedType(intIdxType));
     return new range(idxType, boundedType, stridable,
                      _low-i,
                      _high+i,
@@ -1314,15 +1314,15 @@ operator :(r: range(?), type t: range(?)) {
   proc range.interior(offset: integral)
   {
     if boundsChecking then
-      if abs(offset) > this.sizeAs(uint) then
+      if abs(offset):uint > this.sizeAs(uint) then
         HaltWrappers.boundsCheckHalt("can't compute the interior " + offset:string + " elements of a range with size " + this.sizeAs(uint):string);
 
-    const i = offset.safeCast(intIdxType);
-    if i < 0 then
+    const i = (abs(offset)).safeCast(intIdxType);
+    if offset < 0 then
       return new range(idxType, boundedType, stridable,
-                       _low, _low - 1 - i, stride,
+                       _low, _low - 1 + i, stride,
                        _effAlmt(), aligned);
-    if i > 0 then
+    if offset > 0 then
       return new range(idxType, boundedType, stridable,
                        _high + 1 - i, _high, stride,
                        _effAlmt(), aligned);
@@ -1364,13 +1364,13 @@ operator :(r: range(?), type t: range(?)) {
    */
   proc range.exterior(offset: integral)
   {
-    const i = offset.safeCast(intIdxType);
-    if i < 0 then
+    const i = (abs(offset)).safeCast(intIdxType);
+    if offset < 0 then
       return new range(idxType, boundedType, stridable,
-                       _low + i,
+                       _low - i,
                        _low - 1,
                        stride, _effAlmt(), aligned);
-    if i > 0 then
+    if offset > 0 then
       return new range(idxType, boundedType, stridable,
                        _high + 1,
                        _high + i,

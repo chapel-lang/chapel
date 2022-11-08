@@ -1,26 +1,54 @@
+case 1 int(8):
 int(8):
 D: {-5..10}
-{-10..-6}
-{-9..-6}
-{-8..-6}
-{-7..-6}
-{-6..-6}
-{-5..10}
-{11..11}
-{11..12}
-{11..13}
-{11..14}
-{11..15}
-uint(8):
-D: {-5..10}
-{-10..-6}
-{-9..-6}
-{-8..-6}
-{-7..-6}
-{-6..-6}
-{-5..10}
-{11..11}
-{11..12}
-{11..13}
-{11..14}
-{11..15}
+D.exterior(-5) = {-10..-6}
+D.exterior(-4) = {-9..-6}
+D.exterior(-3) = {-8..-6}
+D.exterior(-2) = {-7..-6}
+D.exterior(-1) = {-6..-6}
+D.exterior(0) = {-5..10}
+D.exterior(1) = {11..11}
+D.exterior(2) = {11..12}
+D.exterior(3) = {11..13}
+D.exterior(4) = {11..14}
+D.exterior(5) = {11..15}
+case 2 int(8):
+int(8):
+D: {5..20}
+D.exterior(-5) = {0..4}
+D.exterior(-4) = {1..4}
+D.exterior(-3) = {2..4}
+D.exterior(-2) = {3..4}
+D.exterior(-1) = {4..4}
+D.exterior(0) = {5..20}
+D.exterior(1) = {21..21}
+D.exterior(2) = {21..22}
+D.exterior(3) = {21..23}
+D.exterior(4) = {21..24}
+D.exterior(5) = {21..25}
+case 3 uint(8):
+r: 5..20
+r.exterior(-5) = 0..4
+r.exterior(-4) = 1..4
+r.exterior(-3) = 2..4
+r.exterior(-2) = 3..4
+r.exterior(-1) = 4..4
+r.exterior(0) = 5..20
+r.exterior(1) = 21..21
+r.exterior(2) = 21..22
+r.exterior(3) = 21..23
+r.exterior(4) = 21..24
+r.exterior(5) = 21..25
+case 4 uint(8):
+D: {5..20}
+D.exterior(-5) = {0..4}
+D.exterior(-4) = {1..4}
+D.exterior(-3) = {2..4}
+D.exterior(-2) = {3..4}
+D.exterior(-1) = {4..4}
+D.exterior(0) = {5..20}
+D.exterior(1) = {21..21}
+D.exterior(2) = {21..22}
+D.exterior(3) = {21..23}
+D.exterior(4) = {21..24}
+D.exterior(5) = {21..25}

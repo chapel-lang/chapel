@@ -1,1 +1,8 @@
-translate_illegal.chpl:6: error: offsets must be of integral type
+translate_illegal.chpl:6: error: unresolved call 'domain(1,int(8),false).translate(real(64))'
+$CHPL_HOME/modules/internal/ChapelDomain.chpl:nnnn: note: this candidate did not match: _domain.translate(off: rank*integral)
+translate_illegal.chpl:6: note: because actual argument #1 with type 'real(64)'
+$CHPL_HOME/modules/internal/ChapelDomain.chpl:nnnn: note: is passed to formal 'off: _tuple'
+translate_illegal.chpl:6: note: other candidates are:
+$CHPL_HOME/modules/internal/ChapelDomain.chpl:nnnn: note:   _domain.translate(off: integral ...rank)
+$CHPL_HOME/modules/internal/ChapelDomain.chpl:nnnn: note:   _domain.translate(off: rank*integral)
+note: and 4 other candidates, use --print-all-candidates to see them

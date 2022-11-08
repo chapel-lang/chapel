@@ -239,7 +239,8 @@ module ChapelBase {
   inline operator +(a: complex(?w)) return a;
 
   inline operator -(a: int(?w)) return __primitive("u-", a);
-  inline operator -(a: uint(64)) { compilerError("illegal use of '-' on operand of type ", a.type:string); }
+  inline operator -(a: uint(?w)) { compilerError("illegal use of '-' on operand of type ", a.type:string); }
+
   inline operator -(a: real(?w)) return __primitive("u-", a);
   inline operator -(a: imag(?w)) return __primitive("u-", a);
   inline operator -(a: complex(?w)) return __primitive("u-", a);
@@ -252,10 +253,7 @@ module ChapelBase {
 
   inline operator -(param a: int(?w)) param return __primitive("u-", a);
   inline operator -(param a: uint(?w)) param {
-    if (a:int(w) < 0) then
-      compilerError("illegal use of '-' on operand of type ", a.type:string);
-    else
-      return -(a:int(w));
+    compilerError("illegal use of '-' on operand of type ", a.type:string);
   }
 
   inline operator -(param a: real(?w)) param return __primitive("u-", a);
