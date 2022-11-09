@@ -162,6 +162,7 @@ scopeResolveModule(Context* context, ID id) {
             child->isTypeDecl() ||
             child->isFunction() ||
             child->isModule() ||
+            child->isInterface() ||
             child->isUse() ||
             child->isImport()) {
           // ignore this statement since it is not relevant to
