@@ -15,10 +15,10 @@ else:
                          capture_output=True)
     if sub.returncode == 0:
         v = sub.stdout
-        v = v.rstrip()
+        v = v.strip()
         v = str(v, encoding='utf-8', errors='surrogateescape')
 
-        if parse_version(v) < parse_version('3.0'):
+        if v == "1.1.1k" or parse_version(v) < parse_version('3.0'):
             # blowfish was moved to legacy in OpenSSL 3 and doesn't work
             # in the crypto module
             Ok = True
