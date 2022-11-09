@@ -1,8 +1,4 @@
-arrayFuncs.chpl:7: warning: 'Array.count' is unstable
-arrayFuncs.chpl:8: warning: 'Array.sorted' is unstable
-arrayFuncs.chpl:9: warning: 'Array.find' is unstable
-arrayFuncs.chpl:10: warning: 'Array.reverse' is unstable
+arrayFuncs.chpl:6: warning: 'Array.count' is unstable
+arrayFuncs.chpl:7: warning: 'Array.find' is unstable
 Count of 1's in A = 4
-A sorted is = 1 1 1 1 2 3 4 5
 Finding 3 in A = (true, 3)
-Reversing A: 5 1 4 1 3 1 2 1

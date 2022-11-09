@@ -1623,7 +1623,7 @@ module ChapelArray {
     }
 
     /* Yield the array elements in sorted order. */
-    @unstable "'Array.sorted' is unstable"
+    deprecated "'Array.sorted' is deprecated - use Sort.sort instead"
     iter sorted(comparator:?t = chpl_defaultComparator()) {
       if Reflection.canResolveMethod(_value, "dsiSorted", comparator) {
         for i in _value.dsiSorted(comparator) {
@@ -1755,7 +1755,7 @@ module ChapelArray {
     }
 
     /* Reverse the order of the values in the array. */
-    @unstable "'Array.reverse' is unstable"
+    deprecated "'Array.reverse' is deprecated"
     proc reverse() {
       if (!chpl__isDense1DArray()) then
         compilerError("reverse() is only supported on dense 1D arrays");
