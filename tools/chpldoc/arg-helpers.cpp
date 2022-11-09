@@ -21,6 +21,7 @@
 #include "chpl/util/filesystem.h"
 
 #include <iostream>
+#include <cstring>
 
 bool developer = false;
 
