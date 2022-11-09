@@ -111,7 +111,6 @@ PARSER_ERROR_CLASS(BisonUnknownError, std::string, std::string)
 PARSER_ERROR_CLASS(BisonSyntaxError, std::string)
 
 /* lexer-specific parser errors */
-PARSER_ERROR_CLASS(HexOverflow, bool)
 PARSER_ERROR_CLASS(StringLiteralEOF)
 PARSER_ERROR_CLASS(ExternUnclosedPair, std::string)
 PARSER_ERROR_CLASS(CommentEOF, Location, Location)

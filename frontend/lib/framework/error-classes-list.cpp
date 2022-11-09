@@ -663,13 +663,6 @@ void ErrorBisonSyntaxError::write(ErrorWriterBase& wr) const {
 
 /* lexer errors */
 
-void ErrorHexOverflow::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto isUnderflow = std::get<bool>(info);
-  std::string underflowOrOverflow = (isUnderflow ? "underflow" : "overflow");
-  wr.heading(kind_, type_, loc, underflowOrOverflow, " when reading \\x escape.");
-}
-
 void ErrorStringLiteralEOF::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   wr.heading(kind_, type_, loc, "end-of-file in string literal.");

@@ -305,21 +305,14 @@ static std::string eatStringLiteral(yyscan_t scanner,
 
         long hexChar = strtol(buf, NULL, 16);
 
-        if (foundHex == false) {
-          CHPL_LEXER_REPORT_SIMPLE(scanner, nLines, nCols,
-                                   "non-hexadecimal character follows \\x");
+        if (!foundHex || hexChar == LONG_MIN || hexChar == LONG_MAX) {
+          assert(false &&
+                 "invalid hex literal should have been caught already");
           isErroneousOut = true;
-        } else if (hexChar == LONG_MIN) {
-          CHPL_LEXER_REPORT(scanner, nLines, nCols, HexOverflow,
-                          /* isUnderflow */ true);
-          isErroneousOut = true;
-        } else if (hexChar == LONG_MAX) {
-          CHPL_LEXER_REPORT(scanner, nLines, nCols, HexOverflow,
-                          /* isUnderflow */ false);
-          isErroneousOut = true;
-        } else if (0 <= hexChar && hexChar <= 255) {
+        }
+        if (0 <= hexChar && hexChar <= 255) {
           // append the character
-          char cc = (char) hexChar;
+          char cc = (char)hexChar;
           s += cc;
         } else {
           CHPL_LEXER_REPORT_SIMPLE(scanner, nLines, nCols,
