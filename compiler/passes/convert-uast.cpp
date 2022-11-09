@@ -390,6 +390,24 @@ struct Converter {
         if (rr != nullptr) {
           auto id = rr->toId();
           if (!id.isEmpty()) {
+
+            // If we're referring to an associated type in an interface,
+            // leave it unconverted for now because the compiler does some
+            // mangling of the AST and breaks the "points-to" ID.
+            auto toAst = parsing::idToAst(context, id);
+            if (auto varLikeDecl = toAst->toVarLikeDecl()) {
+              if (varLikeDecl->storageKind() == types::QualifiedType::TYPE) {
+                auto toParentId = parsing::idToParentId(context, id);
+                auto toParentAst = parsing::idToAst(context, toParentId);
+
+                if (toParentAst->isInterface()) {
+                  // We're looking at an associated type.
+                  Symbol* sym = new TemporaryConversionSymbol(id);
+                  return new SymExpr(sym);
+                }
+              }
+            }
+
             // figure out if it is field access
             bool isFieldAccess = false;
             const uast::Formal* parentMethodThis = nullptr;
@@ -2885,6 +2903,24 @@ struct Converter {
     }
 
     auto isym = InterfaceSymbol::buildDef(name, formals, body);
+
+    // associated types declarations in buildDef are transformed from
+    // variables to TypeSymbols. Iterate the type symbol definitions
+    // on the Dyno end and re-run noteConvertedSym to make sure they
+    // refer to the newly-inserted TypeSymbols and not the now-deleted
+    // variables.
+    const auto& isymAssociatedTypes =
+      toInterfaceSymbol(isym->sym)->associatedTypes;
+    for (auto stmt : node->stmts()) {
+      auto varLikeDecl = stmt->toVarLikeDecl();
+      if (varLikeDecl == nullptr) continue;
+      if (varLikeDecl->storageKind() != types::QualifiedType::TYPE) continue;
+
+      auto assocTypeName = varLikeDecl->name().c_str();
+      noteConvertedSym(varLikeDecl,
+                       isymAssociatedTypes.at(assocTypeName)->symbol);
+    }
+
     auto ret = buildChapelStmt(isym);
     noteConvertedSym(node, isym->sym);
 

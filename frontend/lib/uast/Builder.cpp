@@ -141,6 +141,7 @@ bool Builder::astTagIndicatesNewIdScope(asttags::AstTag tag) {
   return asttags::isNamedDecl(tag) &&
         (asttags::isFunction(tag) ||
          asttags::isModule(tag) ||
+         asttags::isInterface(tag) ||
          asttags::isTypeDecl(tag));
 }
 
