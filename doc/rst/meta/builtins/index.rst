@@ -13,6 +13,7 @@ amenable to being documented using **chpldoc**:
    :maxdepth: 1
 
    ChapelSyncvar
+   WeakPointer
 
 Index
 -----

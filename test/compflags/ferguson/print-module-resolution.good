@@ -50,6 +50,8 @@ ChapelLocks
   from print-module-resolution.ChapelStandard.SharedObject.Errors.ChapelLocks
 Errors
   from print-module-resolution.ChapelStandard.SharedObject.Errors
+WeakPointer
+  from print-module-resolution.ChapelStandard.SharedObject.WeakPointer
 SharedObject
   from print-module-resolution.ChapelStandard.SharedObject
 NetworkAtomics
