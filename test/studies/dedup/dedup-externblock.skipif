@@ -13,11 +13,15 @@ Ok = False
 if llvm == 'none' or platform != 'linux64':
     Ok = False  # not linux / no llvm
 else:
-    output = subprocess.check_output(['openssl', 'version']).rstrip()
-    output = str(output, encoding='utf-8', errors='surrogateescape')
-    output = output.replace("OpenSSL", "")
-    output = output.strip()
-    if parse_version(output) >= parse_version('1.1'):
-        Ok = True
+    sub = subprocess.run(['pkg-config', '--modversion', 'libcrypto'],
+                         capture_output=True)
+    if sub.returncode == 0:
+        v = sub.stdout
+        v = v.rstrip()
+        v = str(v, encoding='utf-8', errors='surrogateescape')
+
+        if parse_version(v) >= parse_version('1.1'):
+            # OK, version is compatible.
+            Ok = True
 
 print(not Ok)
