@@ -149,7 +149,7 @@ static void genNumLocalesOptions(FILE* slurmFile, sbatchVersion sbatch,
   }
 }
 
-static int propagate_environment(char* buf, int size)
+static int propagate_environment(char* buf, size_t size)
 {
   int len = 0;
 

@@ -173,7 +173,7 @@ void chpl_setMemFlags(void) {
     if (chpl_numNodes == 1) {
       memLogFile = fopen(memLog, "w");
     } else {
-      int size = (strlen(memLog)+10)*sizeof(char);
+      size_t size = (strlen(memLog)+10)*sizeof(char);
       char* filename = (char*)sys_malloc(size);
       snprintf(filename, size, "%s.%" PRI_c_nodeid_t, memLog, chpl_nodeID);
       memLogFile = fopen(filename, "w");
@@ -603,7 +603,7 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
   }
   qsort(table, n, sizeof(memTableEntry*), descCmp);
 
-  int locSize = (filenameWidth+numberWidth+1)*sizeof(char);
+  size_t locSize = (filenameWidth+numberWidth+1)*sizeof(char);
   loc = (char*)sys_malloc(locSize);
 
   for (i = 0; i < n; i++) {

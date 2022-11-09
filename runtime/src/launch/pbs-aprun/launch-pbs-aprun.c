@@ -103,7 +103,7 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
   int length = 0;
   FILE *qsubScript = NULL;
   char *qsubFilename = expectFilename;
-  int qsubFilenameSize = sizeof(expectFilename);
+  size_t qsubFilenameSize = sizeof(expectFilename);
   char jobName[128];
 
   if (!queue) {

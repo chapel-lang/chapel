@@ -306,9 +306,10 @@ void chpl_launcher_record_env_var(const char* evName, const char *evVal) {
   evList = chpl_mem_realloc(evList, evListSize,
                             CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   if (evListSizeWas == 0) {
-    snprintf(evList, evListSize, "%s=%s", evName, evVal);
+    snprintf(evList, (size_t) evListSize, "%s=%s", evName, evVal);
   } else {
-    snprintf(evList + evListSizeWas - 1, evListSize - (evListSizeWas - 1),
+    snprintf(evList + evListSizeWas - 1,
+             (size_t) (evListSize - (evListSizeWas - 1)),
              " %s=%s", evName, evVal);
   }
 }

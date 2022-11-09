@@ -465,7 +465,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   // copy baseCommand into command and return it
   size = strlen(baseCommand) + 1;
   command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-  snprintf(command, size, "%s", baseCommand);
+  snprintf(command, size * sizeof(char), "%s", baseCommand);
   if (strlen(command)+1 > size) {
     chpl_internal_error("buffer overflow");
   }

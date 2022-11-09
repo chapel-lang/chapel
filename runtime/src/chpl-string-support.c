@@ -178,7 +178,7 @@ string_index(c_string x, int i, int32_t lineno, int32_t filename) {
   }
   buffer = chpl_mem_allocMany(1, 2, CHPL_RT_MD_STR_COPY_DATA,
                               lineno, filename);
-  snprintf(buffer, 2, "%c", x[i-1]);
+  snprintf(buffer, (size_t) 2, "%c", x[i-1]);
   return buffer;
 }
 
