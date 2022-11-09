@@ -20,6 +20,8 @@
 #include "arg-helpers.h"
 #include "chpl/util/filesystem.h"
 
+#include <iostream>
+
 bool developer = false;
 
 
