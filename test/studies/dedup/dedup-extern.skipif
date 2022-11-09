@@ -11,15 +11,8 @@ Ok = False
 if platform != 'linux64':
     Ok = False  # not linux
 else:
-    sub = subprocess.run(['pkg-config', '--modversion', 'libcrypto'],
-                         capture_output=True)
+    sub = subprocess.run(['pkg-config', '--exists', 'libcrypto >= 1.1'])
     if sub.returncode == 0:
-        v = sub.stdout
-        v = v.strip()
-        v = str(v, encoding='utf-8', errors='surrogateescape')
-
-        if v == "1.1.1k" or parse_version(v) >= parse_version('1.1'):
-            # OK, version is compatible.
-            Ok = True
+        Ok = True
 
 print(not Ok)
