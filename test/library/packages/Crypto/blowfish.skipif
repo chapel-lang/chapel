@@ -4,7 +4,6 @@ import os
 import subprocess
 from pkg_resources import parse_version
 
-
 platform = os.getenv('CHPL_TARGET_PLATFORM')
 
 Ok = False
@@ -19,8 +18,9 @@ else:
         v = v.rstrip()
         v = str(v, encoding='utf-8', errors='surrogateescape')
 
-        if parse_version(v) >= parse_version('1.1'):
-            # OK, version is compatible.
+        if parse_version(v) < parse_version('3.0'):
+            # blowfish was moved to legacy in OpenSSL 3 and doesn't work
+            # in the crypto module
             Ok = True
 
 print(not Ok)
