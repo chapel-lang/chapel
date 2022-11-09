@@ -173,8 +173,8 @@ module ChapelSyncvar {
       this.isOwned = false;
     }
 
+    deprecated "Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side"
     proc init=(const ref other: _syncvar(?)) {
-      compilerWarning("Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side");
       // Allow initialization from compatible sync variables, e.g.:
       //   var x : sync int = 5;
       //   var y : sync real = x;
@@ -390,8 +390,8 @@ module ChapelSyncvar {
   }
 
   pragma "init copy fn"
+  deprecated "Initializing a type-inferred variable from a 'sync' is deprecated; apply a '.read??()' method to the right-hand side"
   proc chpl__initCopy(ref sv : _syncvar(?t), definedConst: bool) {
-    compilerWarning("Initializing a type-inferred variable from a 'sync' is deprecated; apply a '.read??()' method to the right-hand side");
     return sv.readFE();
   }
 

@@ -12,8 +12,6 @@ ByteBufferHelpers
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.ByteBufferHelpers
 NVStringFactory
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.NVStringFactory
-SysBasic
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.OS.POSIX.SysBasic
 POSIX
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChplConfig.String.BytesStringCommon.OS.POSIX
 OS
@@ -50,6 +48,8 @@ ChapelLocks
   from print-module-resolution.ChapelStandard.SharedObject.Errors.ChapelLocks
 Errors
   from print-module-resolution.ChapelStandard.SharedObject.Errors
+WeakPointer
+  from print-module-resolution.ChapelStandard.SharedObject.WeakPointer
 SharedObject
   from print-module-resolution.ChapelStandard.SharedObject
 NetworkAtomics

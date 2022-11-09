@@ -120,19 +120,26 @@ module String {
 
   // Helper routines in support of being able to use ranges of indices
   pragma "no doc"
-  proc chpl_build_bounded_range(low: ?t, high: t)
-    where t == byteIndex || t == codepointIndex
-    return new range(t, low=low, high=high);
+  proc chpl_build_bounded_range(low: byteIndex, high: byteIndex)
+    return new range(byteIndex, low=low, high=high);
+  pragma "no doc"
+  proc chpl_build_bounded_range(low: codepointIndex, high: codepointIndex)
+    return new range(codepointIndex, low=low, high=high);
 
   pragma "no doc"
-  proc chpl_build_low_bounded_range(low: ?t)
-    where t == byteIndex || t == codepointIndex
-  return new range(low=low);
+  proc chpl_build_low_bounded_range(low: byteIndex)
+    return new range(low=low);
+  pragma "no doc"
+  proc chpl_build_low_bounded_range(low: codepointIndex)
+    return new range(low=low);
 
   pragma "no doc"
-  proc chpl_build_high_bounded_range(high: ?t)
-    where t == byteIndex || t == codepointIndex
-  return new range(high=high);
+  proc chpl_build_high_bounded_range(high: byteIndex)
+    return new range(high=high);
+  pragma "no doc"
+  proc chpl_build_high_bounded_range(high: codepointIndex)
+    return new range(high=high);
+
 
   pragma "no doc"
   proc chpl__rangeStrideType(type idxType: byteIndex) type
@@ -151,8 +158,10 @@ module String {
     return uint;
 
   pragma "no doc"
-  inline proc chpl__idxToInt(i: ?t)
-    where t == byteIndex || t == codepointIndex
+  inline proc chpl__idxToInt(i: byteIndex)
+    return i:int;
+  pragma "no doc"
+  inline proc chpl__idxToInt(i: codepointIndex)
     return i:int;
 
   pragma "no doc"

@@ -101,13 +101,17 @@ proc runCommand(cmd, quiet=false) : string throws {
   try {
 
     var splitCmd = cmd.split();
-    var process = spawn(splitCmd, stdout=pipeStyle.pipe);
+    var process = spawn(splitCmd, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
 
-    for line in process.stdout.lines() {
+    var line:string;
+    while process.stdout.readLine(line) {
       ret += line;
       if !quiet {
         write(line);
       }
+    }
+    if !quiet {
+      while process.stderr.readLine(line) do write(line);
     }
     process.wait();
   }

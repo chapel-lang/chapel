@@ -54,7 +54,7 @@ struct ControlFlowSubBlock;
     the interface covers whatever these analyses need. */
 class VarScopeVisitor {
  protected:
-  using RV = ResolvedVisitor<VarScopeVisitor>;
+  using RV = MutatingResolvedVisitor<VarScopeVisitor>;
 
   // ----- inputs to the process
   Context* context = nullptr;
@@ -70,8 +70,8 @@ class VarScopeVisitor {
   virtual void handleDeclaration(const uast::VarLikeDecl* ast, RV& rv) = 0;
   /** Called for an Identifier not used in one of the below cases */
   virtual void handleMention(const uast::Identifier* ast, ID varId, RV& rv) = 0;
-  /** Called for Identifier = <expr> assignment pattern */
-  virtual void handleVarAssign(const uast::OpCall* ast, ID varId, RV& rv) = 0;
+  /** Called for <expr> = <expr> assignment pattern */
+  virtual void handleAssign(const uast::OpCall* ast, RV& rv) = 0;
   /** Called for an actual passed to an 'out' formal */
   virtual void handleOutFormal(const uast::FnCall* ast,
                                const uast::AstNode* actual,
@@ -86,7 +86,10 @@ class VarScopeVisitor {
                                  const uast::AstNode* actual,
                                  const types::QualifiedType& formalType,
                                  RV& rv) = 0;
- 
+
+  /** Called for an unconditional return or throw */
+  virtual void handleReturnOrThrow(const uast::AstNode* ast, RV& rv) = 0;
+
   /** Called to process a Conditional after handling its contents --
       should update currentFrame() which is the frame for the Conditional.
       The then/else frames are sitting in currentFrame().subBlocks. */
@@ -107,7 +110,7 @@ class VarScopeVisitor {
 
  public:
   void process(const uast::AstNode* symbol,
-               const ResolutionResultByPostorderID& byPostorder);
+               ResolutionResultByPostorderID& byPostorder);
 
  protected:
 
@@ -116,6 +119,16 @@ class VarScopeVisitor {
   VarFrame* currentFrame() {
     assert(!scopeStack.empty());
     return scopeStack.back().get();
+  }
+
+  /** Return the parent frame or nullptr if there is none. */
+  VarFrame* currentParentFrame() {
+    VarFrame* parent = nullptr;
+    size_t n = scopeStack.size();
+    if (n >= 2) {
+      parent = scopeStack[n-2].get();
+    }
+    return parent;
   }
 
   /** Assuming that the current frame refers to a Conditional,
@@ -138,7 +151,23 @@ class VarScopeVisitor {
 
   /** Call handleMention for any Identifiers contained in this ast node.
       Only appropriate for expressions (not for Loops) */
-  void handleMentions(const AstNode* ast, RV& rv);
+  void processMentions(const AstNode* ast, RV& rv);
+
+  /** Update initedVars if an assignment represents a split-init.
+      Returns true if it was a split init. */
+  bool processSplitInitAssign(const OpCall* ast,
+                              const std::set<ID>& allSplitInitedVars,
+                              RV& rv);
+
+  /** Update initedVars if a call with at 'out' formal
+      represents a split-init. Returns true if it was a split init. */
+  bool processSplitInitOut(const FnCall* ast,
+                           const AstNode* actual,
+                           const std::set<ID>& allSplitInitedVars,
+                           RV& rv);
+
+  /** Update initedVars for a declaration with an initExpression. */
+  bool processDeclarationInit(const VarLikeDecl* ast, RV& rv);
 
  public:
   // ----- visitor implementation
@@ -175,6 +204,12 @@ struct ControlFlowSubBlock {
   ControlFlowSubBlock(const AstNode* block) : block(block) { }
 };
 
+/** Per-variable state used by the copy elision implementation */
+struct CopyElisionState {
+  bool lastIsCopy = false; // is the last mention (so far) a copy?
+  std::set<ID> points; // uAST IDs of the potentially elided copies?
+};
+
 /** Collects information about a variable declaration frame / scope.
     Note that some of the fields here will only be used by a single subclass.
     Keeping them declared here keeps things simple. */
@@ -190,11 +225,8 @@ struct VarFrame {
   // This includes both locally declared and outer variables.
   std::set<ID> initedVars;
 
-  // has the block already encountered a return?
-  bool returns = false;
-
-  // has the block already encountered a throw?
-  bool throws = false;
+  // has the block already encountered a return or a throw?
+  bool returnsOrThrows = false;
 
   // When processing a conditional or catch blocks,
   // instead of popping the SplitInitFrame for the then/else/catch blocks,
@@ -204,15 +236,35 @@ struct VarFrame {
 
   // ----- variables declared here for use in particular subclasses
 
-  // for split init:
-
+  // for split init and copy elision:
   // which variables are declared here in a way that allows split init?
   std::set<ID> eligibleVars;
+
+  // for split init:
   // same as initedVars but preserves order & saves types
   std::vector<std::pair<ID, types::QualifiedType>> initedVarsVec;
   // Which variables are mentioned in this scope before
   // being initialized, throwing or returning?
   std::set<ID> mentionedVars;
+
+  // for copy elision:
+  // Is the last mention of the variable a copy?
+  // What are the copy points?
+  std::map<ID,CopyElisionState> copyElisionState;
+
+  // for call init deinit:
+  // localsAndDefers contains both VarSymbol and DeferStmt in
+  // order to create a single stack for cleanup operations to be executed.
+  // In particular, the ordering between defer blocks and locals matters,
+  // in addition to the ordering within each group.
+  std::vector<const AstNode*> localsAndDefers;
+
+  // Which outer variables have been initialized in this scope?
+  // This vector lists them in initialization order.
+  std::vector<ID> initedOuterVars;
+
+  // Which variables have been deinitialized early in this scope?
+  std::set<ID> deinitedVars;
 
   VarFrame(const AstNode* scopeAst) : scopeAst(scopeAst) { }
 

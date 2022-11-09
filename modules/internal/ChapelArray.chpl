@@ -1623,7 +1623,7 @@ module ChapelArray {
     }
 
     /* Yield the array elements in sorted order. */
-    @unstable "'Array.sorted' is unstable"
+    deprecated "'Array.sorted' is deprecated - use Sort.sort instead"
     iter sorted(comparator:?t = chpl_defaultComparator()) {
       if Reflection.canResolveMethod(_value, "dsiSorted", comparator) {
         for i in _value.dsiSorted(comparator) {
@@ -1755,7 +1755,7 @@ module ChapelArray {
     }
 
     /* Reverse the order of the values in the array. */
-    @unstable "'Array.reverse' is unstable"
+    deprecated "'Array.reverse' is deprecated"
     proc reverse() {
       if (!chpl__isDense1DArray()) then
         compilerError("reverse() is only supported on dense 1D arrays");
@@ -2033,6 +2033,7 @@ module ChapelArray {
   proc _validRankChangeArgs(args, type idxType) param {
     proc _validRankChangeArg(type idxType, r: range(?)) param return true;
     proc _validRankChangeArg(type idxType, i: idxType) param return true;
+    pragma "last resort"
     proc _validRankChangeArg(type idxType, x) param return false;
 
     /*
@@ -2578,7 +2579,16 @@ module ChapelArray {
   }
 
   pragma "no doc"
-  inline operator =(ref a: [], b) /* b is not an array nor a domain nor a tuple */ {
+  inline operator =(ref a: [], b: _iteratorRecord) {
+    // e.g. b might be a list
+    chpl__transferArray(a, b);
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  inline operator =(ref a: [], b: ?t)
+  where !(isTupleType(t) || isCoercible(t, _desync(a.eltType))) {
+    // e.g. b might be a list
     chpl__transferArray(a, b);
   }
 
@@ -3188,8 +3198,10 @@ module ChapelArray {
     return lhs;
   }
 
+  // TODO: can we remove this last resort?
   pragma "find user line"
   pragma "coerce fn"
+  pragma "last resort"
   proc chpl__coerceCopy(type dstType:_array, rhs, definedConst: bool) {
     // assumes rhs is iterable (e.g. list)
 

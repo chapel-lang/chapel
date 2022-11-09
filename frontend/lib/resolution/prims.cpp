@@ -82,6 +82,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_ATOMIC_TYPE:
     case PRIM_IS_REF_ITER_TYPE:
     case PRIM_IS_EXTERN_TYPE:
+    case PRIM_IS_BORROWED_CLASS_TYPE:
     case PRIM_IS_ABS_ENUM_TYPE:
     case PRIM_IS_POD:
     case PRIM_IS_COPYABLE:

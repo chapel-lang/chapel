@@ -1,0 +1,17 @@
+In file included from <built-in>:2:
+ExternBlockClangError.chpl:2:18: error: this function declaration is not a prototype [-Werror,-Wstrict-prototypes]
+  extern void foo();
+                 ^
+                  void
+ExternBlockClangError.chpl:3:8: error: no previous prototype for function 'bar' [-Werror,-Wmissing-prototypes]
+  void bar() {
+       ^
+ExternBlockClangError.chpl:3:3: note: declare 'static' if the function is not intended to be used outside of this translation unit
+  void bar() {
+  ^
+  static 
+ExternBlockClangError.chpl:3:11: error: this old-style function definition is not preceded by a prototype [-Werror,-Wstrict-prototypes]
+  void bar() {
+          ^
+3 errors generated.
+error: error running clang on extern block

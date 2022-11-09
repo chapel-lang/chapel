@@ -45,11 +45,11 @@ bool VarFrame::addToInitedVars(ID varId) {
 
 void
 VarScopeVisitor::process(const uast::AstNode* symbol,
-                         const ResolutionResultByPostorderID& byPostorder) {
-  ResolvedVisitor<VarScopeVisitor> rv(context,
-                                      symbol,
-                                      *this,
-                                      byPostorder);
+                         ResolutionResultByPostorderID& byPostorder) {
+  MutatingResolvedVisitor<VarScopeVisitor> rv(context,
+                                              symbol,
+                                              *this,
+                                              byPostorder);
 
   // Traverse formals and then the body. This is done here rather
   // than in enter(Function) because nested functions will have
@@ -119,7 +119,7 @@ ID VarScopeVisitor::refersToId(const AstNode* ast, RV& rv) {
   return toId;
 }
 
-void VarScopeVisitor::handleMentions(const AstNode* ast, RV& rv) {
+void VarScopeVisitor::processMentions(const AstNode* ast, RV& rv) {
   // This could be its own ResolvedVisitor if it needs to handle
   // more complex forms. For now, this simple implementation should suffice
   // for expressions used as actuals etc.
@@ -130,9 +130,46 @@ void VarScopeVisitor::handleMentions(const AstNode* ast, RV& rv) {
     }
   } else {
     for (auto child : ast->children()) {
-      handleMentions(child, rv);
+      processMentions(child, rv);
     }
   }
+}
+
+bool
+VarScopeVisitor::processSplitInitAssign(const OpCall* ast,
+                                        const std::set<ID>& allSplitInitedVars,
+                                        RV& rv) {
+  bool inserted = false;
+  VarFrame* frame = currentFrame();
+  auto lhsAst = ast->actual(0);
+  ID lhsVarId = refersToId(lhsAst, rv);
+  if (!lhsVarId.isEmpty() && allSplitInitedVars.count(lhsVarId) > 0) {
+    inserted = frame->addToInitedVars(lhsVarId);
+  }
+  return inserted;
+}
+
+bool
+VarScopeVisitor::processSplitInitOut(const FnCall* ast,
+                                     const AstNode* actual,
+                                     const std::set<ID>& allSplitInitedVars,
+                                     RV& rv) {
+  bool inserted = false;
+  VarFrame* frame = currentFrame();
+  ID actualVarId = refersToId(actual, rv);
+  if (!actualVarId.isEmpty() && allSplitInitedVars.count(actualVarId) > 0) {
+    inserted = frame->addToInitedVars(actualVarId);
+  }
+  return inserted;
+}
+
+bool VarScopeVisitor::processDeclarationInit(const VarLikeDecl* ast, RV& rv) {
+  VarFrame* frame = currentFrame();
+  bool inserted = false;
+  if (ast->initExpression() != nullptr) {
+    inserted = frame->addToInitedVars(ast->id());
+  }
+  return inserted;
 }
 
 void VarScopeVisitor::enterScope(const AstNode* ast) {
@@ -179,10 +216,49 @@ void VarScopeVisitor::exitScope(const AstNode* ast) {
              parentFrame->scopeAst->isTry());
     } else if (auto cond = ast->toConditional()) {
       handleConditional(cond);
+      if (parentFrame != nullptr) {
+        // if both branches return or throw, update the parent frame.
+        VarFrame* thenFrame = currentThenFrame();
+        VarFrame* elseFrame = currentElseFrame();
+        if (thenFrame && elseFrame &&
+            thenFrame->returnsOrThrows && elseFrame->returnsOrThrows) {
+          parentFrame->returnsOrThrows = true;
+        }
+      }
     } else if (auto t = ast->toTry()) {
       handleTry(t);
+      // if the try returns/throws
+      // and any catch clauses also return/throws, update the parent frame
+      if (parentFrame != nullptr) {
+        VarFrame* tryFrame = currentFrame();
+        if (tryFrame->returnsOrThrows) {
+          int nCatchFrames = currentNumCatchFrames();
+          bool allCatchReturnThrow = true;
+          for (int i = 0; i < nCatchFrames; i++) {
+            VarFrame* catchFrame = currentCatchFrame(i);
+            if (!catchFrame->returnsOrThrows) {
+              allCatchReturnThrow = false;
+              break;
+            }
+          }
+          if (allCatchReturnThrow) {
+            parentFrame->returnsOrThrows = true;
+          }
+        }
+      }
     } else {
       handleScope(ast);
+      // update the parent frame with the returns/throws status
+      if (parentFrame != nullptr) {
+        if (!ast->isLoop()) {
+          // don't propagate return/throw out of a loop,
+          // because it could be loop { break; return; } e.g.
+          VarFrame* frame = currentFrame();
+          if (frame->returnsOrThrows) {
+            parentFrame->returnsOrThrows = true;
+          }
+        }
+      }
     }
     scopeStack.pop_back();
   }
@@ -207,22 +283,13 @@ void VarScopeVisitor::exit(const VarLikeDecl* ast, RV& rv) {
 bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
 
   if (ast->op() == USTR("=")) {
-    // What is the RHS and LHS of the '=' call?
-    auto lhsAst = ast->actual(0);
+    // What is the RHS of the '=' call?
     auto rhsAst = ast->actual(1);
 
     // visit the RHS first
     rhsAst->traverse(rv);
 
-    // now consider the LHS
-    ID toId = rv.byAst(lhsAst).toId();
-
-    if (!toId.isEmpty()) {
-      handleVarAssign(ast, toId, rv);
-    } else {
-      // visit the LHS to check for mentions
-      lhsAst->traverse(rv);
-    }
+    handleAssign(ast, rv);
   }
 
   return false;
@@ -322,7 +389,8 @@ bool VarScopeVisitor::enter(const Return* ast, RV& rv) {
 void VarScopeVisitor::exit(const Return* ast, RV& rv) {
   if (!scopeStack.empty()) {
     VarFrame* frame = scopeStack.back().get();
-    frame->returns = true;
+    frame->returnsOrThrows = true;
+    handleReturnOrThrow(ast, rv);
   }
 }
 
@@ -333,7 +401,8 @@ bool VarScopeVisitor::enter(const Throw* ast, RV& rv) {
 void VarScopeVisitor::exit(const Throw* ast, RV& rv) {
   if (!scopeStack.empty()) {
     VarFrame* frame = scopeStack.back().get();
-    frame->throws = true;
+    frame->returnsOrThrows = true;
+    handleReturnOrThrow(ast, rv);
   }
 }
 

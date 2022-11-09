@@ -5,6 +5,7 @@ class D {
 class C : D {
   var x = 1;
   proc foo() {
+    pragma "last resort"
     proc bar(_x) {
       writeln("default bar");
     }

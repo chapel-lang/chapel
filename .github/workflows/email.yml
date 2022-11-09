@@ -27,9 +27,8 @@ jobs:
               echo "LINK=$(jq -r '.[0].html_url' commits.json)" >> $GITHUB_ENV
               echo "MESSAGE=$((jq  '.[0].commit.message' commits.json)| awk -F'\\\\n' '{print $1}' | sed 's/\"//g')" >> $GITHUB_ENV 
               echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
-              echo "LOG=$(echo '[Merge pull request] # ${{github.event.number}} from ${{github.event.pull_request.head.label}}' )" >> $GITHUB_ENV
               echo "FILES_CHANGED=$(echo '${{github.event.pull_request._links.html.href}}/files' )" >> $GITHUB_ENV
-              echo "SUBJECT= $(echo '[Chapel Merge] ${{github.event.number}}  ${{github.event.pull_request.title}}' )" >> $GITHUB_ENV
+  
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
@@ -53,11 +52,11 @@ jobs:
            # Optional (recommended) mail server password:
            password: ${{secrets.MAIL_PASSWORD}}
            # Required mail subject:
-           subject: ${{env.SUBJECT}} 
+           subject: "[Chapel Merge] ${{github.event.pull_request.title}}"
            # Required recipients' addresses:
            to: chapel+commits@discoursemail.com
            # Required sender full name (address can be skipped):
-           from: chapel-lang 
+           from:  ${{env.AUTHOR}}
            html_body: |
               <!DOCTYPE html>
               <html>
@@ -66,16 +65,16 @@ jobs:
               Branch: ${{github.ref}} <br>
               Revision: ${{ github.event.pull_request.merge_commit_sha }}  <br>
               Author: ${{ env.AUTHOR}} <br>
-              Link: ${{env.LOG}} &nbsp;&nbsp;${{github.event.pull_request._links.html.href}} <br>             
+              Link: ${{github.event.pull_request._links.html.href}} <br>             
               Log Message: <br><br>
-                           ${{env.LOG}} <br>
-                           ${{env.MESSAGE}} <br>  
-                           ${{github.event.pull_request.body}} <br><br>
+                           ${{env.MESSAGE}} <br> 
+                           ${{github.event.pull_request.body}} <br>
               Compare: ${{env.COMPARE_URL}} <br> 
               Diff: ${{github.event.pull_request.diff_url}} <br>
-              FilesChanged: ${{env.FILES_CHANGED}} <br><br>
               Modified Files: <br>
-                   ${{steps.changed-files.outputs.all_changed_and_modified_files}} <br><br>
+                   ${{steps.changed-files.outputs.modified_files}} <br><br>
+              Added Files: <br>
+                   ${{steps.changed-files.outputs.added_files}} <br><br>    
               Removed Files: <br>     
                    ${{steps.changed-files.outputs.deleted_files}} <br>
              

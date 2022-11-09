@@ -17,6 +17,7 @@
 
 comp_unit_test(testCanPass)
 comp_unit_test(testClasses)
+comp_unit_test(testCopyElision)
 comp_unit_test(testDisambiguation)
 comp_unit_test(testEnums)
 comp_unit_test(testErrorGuard)
