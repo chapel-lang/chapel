@@ -28,7 +28,7 @@ jobs:
               echo "MESSAGE=$((jq  '.[0].commit.message' commits.json)| awk -F'\\\\n' '{print $1}' | sed 's/\"//g')" >> $GITHUB_ENV 
               echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
               echo "FILES_CHANGED=$(echo '${{github.event.pull_request._links.html.href}}/files' )" >> $GITHUB_ENV
-              echo "SUBJECT= $(echo '[Chapel Merge] ${{github.event.pull_request.title}}' )" >> $GITHUB_ENV
+  
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
@@ -52,7 +52,7 @@ jobs:
            # Optional (recommended) mail server password:
            password: ${{secrets.MAIL_PASSWORD}}
            # Required mail subject:
-           subject: ${{env.SUBJECT}} 
+           subject: "[Chapel Merge] ${{github.event.pull_request.title}}"
            # Required recipients' addresses:
            to: chapel+commits@discoursemail.com
            # Required sender full name (address can be skipped):
