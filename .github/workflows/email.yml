@@ -61,37 +61,14 @@ jobs:
            to: bhavani@hpe.com
            # Required sender full name (address can be skipped):
            from:  ${{env.AUTHOR}}
-           html_body: |
-              <!DOCTYPE html>
-              <html>
-              <body>
-              <p>
-              Branch: ${{github.ref}} <br>
-              Revision: ${{ github.event.pull_request.merge_commit_sha }}  <br>
-              Author: ${{ env.AUTHOR}} <br>
-              Link: ${{github.event.pull_request._links.html.href}} <br>             
-              Log Message: <br><br>
-                           ${{env.MESSAGE}} <br>  
-                           ${{env.LOG}} <br>
-              Compare: ${{env.COMPARE_URL}} <br> 
-              Diff: ${{github.event.pull_request.diff_url}} <br>
-              Modified Files: <br>
-                   ${{steps.changed-files.outputs.modified_files}} <br><br>
-              Added Files: <br>
-                   ${{steps.changed-files.outputs.added_files}} <br><br>    
-              Removed Files: <br>     
-                   ${{steps.changed-files.outputs.deleted_files}} <br>
-             
-              </p>
-              </body>
-              </html>
-           body: | 
+        
+           body: |
 
-              Modified Files 
+              Modified Files:
                    ${{steps.changed-files.outputs.modified_files}}
-              Added Files  
+              Added Files:  
                    ${{steps.changed-files.outputs.added_files}}   
-              Removed Files     
+              Removed Files :    
                    ${{steps.changed-files.outputs.deleted_files}}  
               Test  "split \n line"
 
