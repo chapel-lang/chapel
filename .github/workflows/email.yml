@@ -63,14 +63,8 @@ jobs:
            from:  ${{env.AUTHOR}}
         
            body: |
-
-              Modified Files:
-                   ${{steps.changed-files.outputs.modified_files}}
-              Added Files:  
-                   ${{steps.changed-files.outputs.added_files}}   
-              Removed Files :    
-                   ${{steps.changed-files.outputs.deleted_files}}  
-              Test  split \n line 
+                  "body": "As described here: https://github.com/chapel-lang/chapel/issues/18089#issuecomment-1276500706\r\n\r\nWe've decided to deprecate array's `sorted` and `reverse` methods. These were previously marked unstable.", 
+             
 
            # Optional converting Markdown to HTML (set content_type to text/html too):
            convert_markdown: true
