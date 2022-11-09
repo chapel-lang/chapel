@@ -3,6 +3,12 @@ knucleotide3.chpl:25: warning: channel.readline is deprecated. Use channel.readL
 knucleotide3.chpl:25: warning: channel.readline is deprecated. Use channel.readLine instead
 knucleotide3.chpl:33: warning: channel.readline is deprecated. Use channel.readLine instead
 knucleotide3.chpl:33: warning: channel.readline is deprecated. Use channel.readLine instead
+knucleotide3.chpl:53: In function 'writeFreqs':
+knucleotide3.chpl:60: warning: 'Array.sorted' is deprecated - use Sort.sort instead
+  knucleotide3.chpl:43: called as writeFreqs(data: [domain(1,int(64),false)] uint(8), param nclSize = 1) from function 'main'
+knucleotide3.chpl:53: In function 'writeFreqs':
+knucleotide3.chpl:60: warning: 'Array.sorted' is deprecated - use Sort.sort instead
+  knucleotide3.chpl:44: called as writeFreqs(data: [domain(1,int(64),false)] uint(8), param nclSize = 2) from function 'main'
 A 30.279
 T 30.113
 G 19.835
