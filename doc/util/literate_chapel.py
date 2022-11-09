@@ -4,10 +4,15 @@
 from __future__ import print_function
 
 import sys
+import re
 
 def title_comment(line):
     """Condition for a line to be a title comment"""
     return line.startswith('//') and len(line.lstrip('//').strip()) > 0
+
+def metadata_comment(line):
+    """Condition for a line t be a front matter comment"""
+    return line.startswith('//') and re.match(r"^\/\/ [a-zA-Z]+:.*$", line)
 
 def to_pieces(handle, islearnChapelInYMinutes=False):
     output = []
@@ -38,6 +43,7 @@ def to_pieces(handle, islearnChapelInYMinutes=False):
     state = ''
     indentation = -1
     chunk_index = 0
+    inFrontMatter = True
     foundCommentExample = False
 
     # Each line is prose or code-block
@@ -48,6 +54,14 @@ def to_pieces(handle, islearnChapelInYMinutes=False):
             push_line(line.lstrip('//').strip())
             switch_type('prose')
             continue
+
+        # Collect metadata strings
+        if inFrontMatter and metadata_comment(line):
+            switch_type('frontmatter')
+            push_line(line.lstrip('//').strip())
+            continue
+
+        inFrontMatter = False
 
         # Skip empty lines
         if len(line.strip()) == 0:
@@ -132,7 +146,12 @@ def to_pieces(handle, islearnChapelInYMinutes=False):
     flush()
     if chunk_index != 0:
         # We found __BREAK__; print the last chunk.
-        output.append(('output', chunk_index))
+        # output.append(('output', chunk_index))
+
+        # Don't print the last chunk, it's usually empty anyway.
+        # If a user wants the "last output", they can just write another
+        # __BREAK__.
+        pass
 
     if islearnChapelInYMinutes and not foundCommentExample:
         print('Error: Failed to find special case of comment example in learnChapelInYMinutes.chpl')
