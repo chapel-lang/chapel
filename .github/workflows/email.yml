@@ -70,7 +70,7 @@ jobs:
                    ${{steps.changed-files.outputs.added_files}}   
               Removed Files :    
                    ${{steps.changed-files.outputs.deleted_files}}  
-              Test  "split \n line"
+              Test  split \n line 
 
            # Optional converting Markdown to HTML (set content_type to text/html too):
            convert_markdown: true
