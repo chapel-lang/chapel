@@ -2537,7 +2537,10 @@ ParserContext::buildSelectStmt(YYLTYPE location, owned<AstNode> expr,
 
 AstNode* ParserContext::buildInterfaceFormal(YYLTYPE location,
                                              PODUniqueString name) {
-  return buildIdent(location, name);
+  return buildFormal(location, Formal::Intent::TYPE, name,
+                    /* typeExpr */ nullptr,
+                    /* initExpr */ nullptr,
+                    /* consumeAttributes */ false);
 }
 
 CommentsAndStmt ParserContext::buildInterfaceStmt(YYLTYPE location,
