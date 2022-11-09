@@ -2,8 +2,6 @@
 
 import os
 import subprocess
-from pkg_resources import parse_version
-
 
 llvm = os.getenv('CHPL_LLVM')
 platform = os.getenv('CHPL_TARGET_PLATFORM')
