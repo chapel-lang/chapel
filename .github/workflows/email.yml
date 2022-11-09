@@ -87,14 +87,14 @@ jobs:
               </html>
            body: | 
 
-             Modified Files: 
+              Modified Files 
                    ${{steps.changed-files.outputs.modified_files}}
-              Added Files:  
+              Added Files  
                    ${{steps.changed-files.outputs.added_files}}   
-              Removed Files:     
+              Removed Files     
                    ${{steps.changed-files.outputs.deleted_files}}  
-              Test : "split \n line"
-              
+              Test  "split \n line"
+
            # Optional converting Markdown to HTML (set content_type to text/html too):
            convert_markdown: true
            # Optional priority: 'high', 'normal' (default) or 'low'
