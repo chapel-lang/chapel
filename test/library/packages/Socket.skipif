@@ -5,22 +5,18 @@ import subprocess
 from pkg_resources import parse_version
 
 platform = os.getenv('CHPL_TARGET_PLATFORM')
+tasks = os.getenv('CHPL_TASKS')
+comp = os.getenv('CHPL_TARGET_COMPILER')
 
-skip = False
+skip = True
 
 if platform != 'linux64':
-    skip = True
+    skip = True # only test on linux
+elif tasks == 'fifo' or comp == 'llvm':
+    skip = True # these configurations don't currently work
 else:
-    v = subprocess.check_output(['pkg-config', '--modversion', 'libevent'])
-    v = v.rstrip()
-    v = str(v, encoding='utf-8', errors='surrogateescape')
-
-    if parse_version(v.split('-')[0]) < parse_version('2.1'):
-        # skip, version not is compatible.
-        skip = True
-
-    if os.getenv('CHPL_TASKS') == 'fifo' or os.getenv('CHPL_TARGET_COMPILER') == 'llvm':
-        skip = True
-
+    sub = subprocess.run(['pkg-config', '--exists', 'libevent >= 2.1'])
+    if sub.returncode == 0:
+      skip = False # libevent exists and is new enough
 
 print(skip)
