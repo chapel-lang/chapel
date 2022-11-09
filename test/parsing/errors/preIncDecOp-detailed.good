@@ -1,0 +1,3 @@
+─── warning in preIncDecOp.chpl:2 [PreIncDecOp] ───
+  '--' is not a pre-decrement.
+

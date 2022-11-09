@@ -1,0 +1,2 @@
+--detailed-errors # cannotAttachPragmas-detailed.good
+--no-detailed-errors # cannotAttachPragmas-brief.good

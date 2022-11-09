@@ -1,0 +1,1 @@
+invalidNumericLiteral.chpl:1: error: error building numeric literal: Integer literal overflow: '100000000000000000000000000000' is too big for type 'uint64'

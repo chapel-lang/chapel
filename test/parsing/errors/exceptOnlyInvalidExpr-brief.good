@@ -1,0 +1,1 @@
+exceptOnlyInvalidExpr.chpl:1: error: incorrect expression in 'except' list, identifier expected

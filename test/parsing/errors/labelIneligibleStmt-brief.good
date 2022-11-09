@@ -1,0 +1,1 @@
+labelIneligibleStmt.chpl:1: error: cannot label 'FnCall' statement

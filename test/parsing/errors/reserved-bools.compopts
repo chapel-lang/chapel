@@ -1,0 +1,2 @@
+--detailed-errors # reserved-bools-detailed.good
+--no-detailed-errors # reserved-bools-brief.good

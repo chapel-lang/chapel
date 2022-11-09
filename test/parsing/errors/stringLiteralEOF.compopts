@@ -1,0 +1,2 @@
+--detailed-errors # stringLiteralEOF-detailed.good
+--no-detailed-errors # stringLiteralEOF-brief.good

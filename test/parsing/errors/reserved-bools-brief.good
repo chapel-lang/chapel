@@ -1,0 +1,18 @@
+reserved-bools.chpl:1: error: attempt to redefine reserved word 'true'
+reserved-bools.chpl:3: In function 'f':
+reserved-bools.chpl:3: error: attempt to redefine reserved word 'true'
+reserved-bools.chpl:6: error: attempt to redefine reserved word 'true'
+reserved-bools.chpl:7: error: attempt to redefine reserved word 'true'
+reserved-bools.chpl:10: error: attempt to redefine reserved word 'true'
+reserved-bools.chpl:12: error: attempt to redefine reserved word 'true'
+reserved-bools.chpl:15: In function 'test':
+reserved-bools.chpl:17: error: attempt to redefine reserved word 'true'
+reserved-bools.chpl:21: error: attempt to redefine reserved word 'false'
+reserved-bools.chpl:23: In function 'f2':
+reserved-bools.chpl:23: error: attempt to redefine reserved word 'false'
+reserved-bools.chpl:26: error: attempt to redefine reserved word 'false'
+reserved-bools.chpl:27: error: attempt to redefine reserved word 'false'
+reserved-bools.chpl:30: error: attempt to redefine reserved word 'false'
+reserved-bools.chpl:32: error: attempt to redefine reserved word 'false'
+reserved-bools.chpl:35: In function 'test2':
+reserved-bools.chpl:37: error: attempt to redefine reserved word 'false'

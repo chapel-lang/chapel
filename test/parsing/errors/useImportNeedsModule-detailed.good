@@ -1,0 +1,4 @@
+─── error in useImportNeedsModule.chpl:1 [UseImportNeedsModule] ───
+  'use' statements must refer to module or enum symbols.
+  (e.g., 'use <module>[.<submodule>]*;')
+

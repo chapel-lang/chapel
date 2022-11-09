@@ -1,0 +1,42 @@
+─── error in reserved-bools.chpl:1 ───
+  Attempt to redefine reserved word 'true'.
+
+─── error in reserved-bools.chpl:3 ───
+  Attempt to redefine reserved word 'true'.
+
+─── error in reserved-bools.chpl:6 ───
+  Attempt to redefine reserved word 'true'.
+
+─── error in reserved-bools.chpl:7 ───
+  Attempt to redefine reserved word 'true'.
+
+─── error in reserved-bools.chpl:10 ───
+  Attempt to redefine reserved word 'true'.
+
+─── error in reserved-bools.chpl:12 ───
+  Attempt to redefine reserved word 'true'.
+
+─── error in reserved-bools.chpl:17 ───
+  Attempt to redefine reserved word 'true'.
+
+─── error in reserved-bools.chpl:21 ───
+  Attempt to redefine reserved word 'false'.
+
+─── error in reserved-bools.chpl:23 ───
+  Attempt to redefine reserved word 'false'.
+
+─── error in reserved-bools.chpl:26 ───
+  Attempt to redefine reserved word 'false'.
+
+─── error in reserved-bools.chpl:27 ───
+  Attempt to redefine reserved word 'false'.
+
+─── error in reserved-bools.chpl:30 ───
+  Attempt to redefine reserved word 'false'.
+
+─── error in reserved-bools.chpl:32 ───
+  Attempt to redefine reserved word 'false'.
+
+─── error in reserved-bools.chpl:37 ───
+  Attempt to redefine reserved word 'false'.
+

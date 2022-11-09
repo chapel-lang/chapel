@@ -1,0 +1,5 @@
+─── error in commentEOF.chpl:3 [CommentEOF] ───
+  EOF in comment.
+  Unterminated comment started here:
+  Nested comment started here:
+
