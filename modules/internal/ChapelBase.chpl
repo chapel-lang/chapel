@@ -1919,7 +1919,7 @@ module ChapelBase {
   inline operator +=(ref lhs:imag(?w), rhs:imag(w)) {
     __primitive("+=", lhs, rhs);
   }
-  // this one is just here so we can use isNumericType below
+  // this one is just here so we can use !isNumericType(t) below
   inline operator +=(ref lhs:complex(?w), rhs:complex(w)) {
     lhs = lhs + rhs;
   }
@@ -1946,7 +1946,7 @@ module ChapelBase {
   inline operator -=(ref lhs:imag(?w), rhs:imag(w)) {
     __primitive("-=", lhs, rhs);
   }
-  // this one is just here so we can use isNumericType below
+  // this one is just here so we can use !isNumericType(t) below
   inline operator -=(ref lhs:complex(?w), rhs:complex(w)) {
     lhs = lhs - rhs;
   }
