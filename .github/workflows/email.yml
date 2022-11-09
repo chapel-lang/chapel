@@ -55,7 +55,7 @@ jobs:
            # Optional (recommended) mail server password:
            password: ${{secrets.MAIL_PASSWORD}}
            # Required mail subject:
-           subject: "[CHAPEL MERGE] ${{env.SUBJECT}} "
+           subject: "[CHAPEL MERGE] Hide stderr for Mason's `runCommand` "
            # Required recipients' addresses:
            # to: chapel+commits@discoursemail.com
            to: bhavani@hpe.com
