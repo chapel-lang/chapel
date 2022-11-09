@@ -2,14 +2,16 @@ name: email
 on:
     # this workflow is intended to run on merges from a forked repo to main(base-repo). Use pull_request_target
     # this will provide read access to the secrets in main
-    pull_request_target:
-      types:
-        - closed
+    push:
+    pull_request:
+    #pull_request_target:
+      #types:
+       # - closed
       
 jobs: 
   send_email:
    # run this workflow step only when the PR is merged 
-    if:  github.event.pull_request.merged == true 
+    # if:  github.event.pull_request.merged == true 
     runs-on: ubuntu-latest 
     steps:
       - name: print git events
@@ -55,7 +57,8 @@ jobs:
            # Required mail subject:
            subject: ${{env.SUBJECT}} 
            # Required recipients' addresses:
-           to: chapel+commits@discoursemail.com
+           # to: chapel+commits@discoursemail.com
+           to: bhavani@hpe.com
            # Required sender full name (address can be skipped):
            from:  ${{env.AUTHOR}}
            html_body: |
