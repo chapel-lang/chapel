@@ -49,52 +49,55 @@ proc f(x: complex(128), y: complex(128)) {
   writeln("  f(", x.type:string, ",", y.type:string, ")");
 }
 
-// next, call 'f' with all combinations of numeric types
-proc callF(param p1, param p2) {
-  writef(" Second actual %-12s -> ", p2.type:string);
-  f(p1, p2);
-
-  writef("      Reversed %-12s -> ", "");
-  f(p2, p1);
-
-  writef("               %-12s ->   ", "+");
-  writeln((p1+p2).type:string);
+proc f(x, y) {
+  writeln("  f(generic, generic)");
 }
 
-proc callFVaryP(param p1) {
-  writeln("First actual ", p1.type:string);
+// next, call 'f' with all combinations of numeric types
+proc callF(type t1, type t2) {
+  {
+    writef(" Second actual %-12s -> ", t2:string);
+  }
+
+  var x: t1;
+  var y: t2;
+
+  f(x, y);
+
+  writef("      Reversed %-12s -> ", "");
+  f(y, x);
+
+
+  writef("               %-12s ->   ", "+");
+  writeln((x+y).type:string);
+}
+
+proc callFVaryT2(type t1) {
+  writeln("First actual ", t1:string);
   writeln();
 
-  // default-sized params
-  callF(p1, 1);
-  callF(p1, 1.0);
-  callF(p1, 2.0i);
-  callF(p1, 1.0+2.0i);
+  callF(t1, int(8));
+  callF(t1, int(16));
+  callF(t1, int(32));
+  callF(t1, int(64));
   writeln();
 
-  // other-sized params
-  callF(p1, 1:int(8));
-  callF(p1, 1:int(16));
-  callF(p1, 1:int(32));
-  callF(p1, 1:int(64));
+  callF(t1, uint(8));
+  callF(t1, uint(16));
+  callF(t1, uint(32));
+  callF(t1, uint(64));
   writeln();
 
-  callF(p1, 1:uint(8));
-  callF(p1, 1:uint(16));
-  callF(p1, 1:uint(32));
-  callF(p1, 1:uint(64));
+  callF(t1, real(32));
+  callF(t1, real(64));
   writeln();
 
-  callF(p1, 1.0:real(32));
-  callF(p1, 1.0:real(64));
+  callF(t1, imag(32));
+  callF(t1, imag(64));
   writeln();
 
-  callF(p1, 2.0i:imag(32));
-  callF(p1, 2.0i:imag(64));
-  writeln();
-
-  callF(p1, (1.0+2.0i):complex(64));
-  callF(p1, (1.0+2.0i):complex(128));
+  callF(t1, complex(64));
+  callF(t1, complex(128));
   writeln();
 
   writeln();
@@ -102,30 +105,23 @@ proc callFVaryP(param p1) {
 }
 
 proc main() {
-  // default-sized params
-  callFVaryP(1);
-  callFVaryP(1.0);
-  callFVaryP(2.0i);
-  callFVaryP(1.0+2.0i);
+  callFVaryT2(int(8));
+  callFVaryT2(int(16));
+  callFVaryT2(int(32));
+  callFVaryT2(int(64));
 
-  // other-sized params
-  callFVaryP(1:int(8));
-  callFVaryP(1:int(16));
-  callFVaryP(1:int(32));
-  callFVaryP(1:int(64));
+  callFVaryT2(uint(8));
+  callFVaryT2(uint(16));
+  callFVaryT2(uint(32));
+  callFVaryT2(uint(64));
 
-  callFVaryP(1:uint(8));
-  callFVaryP(1:uint(16));
-  callFVaryP(1:uint(32));
-  callFVaryP(1:uint(64));
+  callFVaryT2(real(32));
+  callFVaryT2(real(64));
 
-  callFVaryP(1.0:real(32));
-  callFVaryP(1.0:real(64));
+  callFVaryT2(imag(32));
+  callFVaryT2(imag(64));
 
-  callFVaryP(2.0i:imag(32));
-  callFVaryP(2.0i:imag(64));
-
-  callFVaryP((1.0+2.0i):complex(64));
-  callFVaryP((1.0+2.0i):complex(128));
+  callFVaryT2(complex(64));
+  callFVaryT2(complex(128));
 }
 

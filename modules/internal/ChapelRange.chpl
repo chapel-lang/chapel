@@ -241,6 +241,9 @@ module ChapelRange {
       return (low+high).type;
     }
   }
+  private proc isValidRangeIdxType(type t) param {
+    return isIntegralType(t) || isEnumType(t) || isBoolType(t);
+  }
 
   // Range builders for fully bounded ranges
   proc chpl_build_bounded_range(param low: integral, param high: integral) {
@@ -258,7 +261,9 @@ module ChapelRange {
   }
   proc chpl_build_bounded_range(low: bool, high: bool)
     return new range(bool, low=low, high=high);
-  proc chpl_build_bounded_range(low, high) {
+
+  proc chpl_build_bounded_range(low, high)
+  where !(isValidRangeIdxType(low.type) && isValidRangeIdxType(high.type)) {
     if (low.type == high.type) then
       compilerError("Ranges defined using bounds of type '" + low.type:string + "' are not currently supported");
     else
@@ -285,7 +290,8 @@ module ChapelRange {
     return new range(low=low);
   proc chpl_build_low_bounded_range(low: bool)
     return new range(low=low);
-  proc chpl_build_low_bounded_range(low) {
+  proc chpl_build_low_bounded_range(low)
+  where !isValidRangeIdxType(low.type) {
     compilerError("Ranges defined using bounds of type '" + low.type:string + "' are not currently supported");
   }
 
@@ -296,7 +302,8 @@ module ChapelRange {
     return new range(high=high);
   proc chpl_build_high_bounded_range(high: bool)
     return new range(high=high);
-  proc chpl_build_high_bounded_range(high) {
+  proc chpl_build_high_bounded_range(high)
+  where !isValidRangeIdxType(high.type) {
     compilerError("Ranges defined using bounds of type '" + high.type:string + "' are not currently supported");
   }
 
@@ -342,15 +349,14 @@ module ChapelRange {
     return high;
   }
 
-  pragma "last resort"
-  proc chpl_compute_low_param_loop_bound(param low, param high) param {
+  proc chpl_compute_low_param_loop_bound(param low, param high) param
+  where !(isValidRangeIdxType(low.type) && isValidRangeIdxType(high.type)) {
     if (low.type == high.type) then
       compilerError("param for-loops defined using bounds of type '" + low.type:string + "' are not currently supported");
     else
       compilerError("param for-loops defined using bounds of type '" + low.type:string + ".." + high.type:string + "' are not currently supported");
   }
 
-  pragma "last resort"
   proc chpl_compute_low_param_loop_bound(low, high) {
     compilerError("param for-loops must be defined over a bounded param range");
   }
@@ -359,7 +365,6 @@ module ChapelRange {
     return count;
   }
 
-  pragma "last resort"
   proc chpl_compute_count_param_loop(count) {
     compilerError("in a param for-loop, the count operator requires a param integral value");
   }
@@ -1210,6 +1215,7 @@ operator :(r: range(?), type t: range(?)) {
     return this + offset;
 
   pragma "no doc"
+  pragma "last resort"
   inline proc range.translate(i)
   {
     compilerError("offsets must be of integral type");
@@ -1276,6 +1282,7 @@ operator :(r: range(?), type t: range(?)) {
 
   // Return an interior portion of this range.
   pragma "no doc"
+  pragma "last resort"
   proc range.interior(offset: integral)
     where boundedType != BoundedRangeType.bounded
   {
@@ -1332,6 +1339,7 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   pragma "no doc"
+  pragma "last resort"
   proc range.exterior(offset: integral)
     where boundedType != BoundedRangeType.bounded
   {
@@ -1435,6 +1443,13 @@ operator :(r: range(?), type t: range(?)) {
                      r.aligned);
   }
 
+  // TODO can this be removed?
+  pragma "no doc"
+  inline operator +=(ref r: range(?e, ?b, ?s), offset: integral)
+  {
+    r = r + offset;
+  }
+
   pragma "no doc"
   inline operator +(i:integral, r: range(?e,?b,?s))
     return r + i;
@@ -1450,6 +1465,13 @@ operator :(r: range(?), type t: range(?)) {
                      r.stride : strType,
                      chpl__idxToInt(r.alignment)-i,
                      r.aligned);
+  }
+
+  // TODO can this be removed?
+  pragma "no doc"
+  inline operator -=(ref r: range(?e, ?b, ?s), offset: integral)
+  {
+    r = r - offset;
   }
 
   inline proc chpl_check_step_integral(step) {
@@ -1795,6 +1817,7 @@ operator :(r: range(?), type t: range(?)) {
   // If the argument n is negative, the new range contains
   // the last abs(n) elements in the existing range.
 
+  pragma "last resort"
   proc chpl_count_help(r:range(?), i)
     where r.boundedType == BoundedRangeType.boundedNone
   {
@@ -2050,7 +2073,8 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // case for when low and high aren't compatible types and can't be coerced
-  iter chpl_direct_range_iter(low, high) {
+  iter chpl_direct_range_iter(low, high)
+  where !(isValidRangeIdxType(low.type) && isValidRangeIdxType(high.type)) {
     chpl_build_bounded_range(low, high);  // use general error if possible
     // otherwise, generate a more specific one (though I don't think it's
     // possible to get here)
@@ -2171,7 +2195,8 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // case for when low and high aren't compatible types and can't be coerced
-  iter chpl_direct_strided_range_iter(low, high, stride) {
+  iter chpl_direct_strided_range_iter(low, high, stride)
+  where !(isValidRangeIdxType(low.type) && isValidRangeIdxType(high.type)) {
     chpl_build_bounded_range(low, high, stride);  // use general error if possible
     // otherwise, generate a more specific one (though I don't think it's
     // possible to get here)
@@ -2216,7 +2241,8 @@ operator :(r: range(?), type t: range(?)) {
     for i in r#count do yield i;
   }
 
-  iter chpl_direct_counted_range_iter(low, count) {
+  iter chpl_direct_counted_range_iter(low, count)
+  where !(isValidRangeIdxType(low.type) && isValidRangeIdxType(count.type)) {
     chpl_build_low_bounded_range(low);  // generate normal error, if possible
     // otherwise, fall back to this one:
     compilerError("can't apply '#' to a range with idxType ",

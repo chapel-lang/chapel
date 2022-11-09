@@ -49,10 +49,6 @@ proc f(x: complex(128), y: complex(128)) {
   writeln("  f(", x.type:string, ",", y.type:string, ")");
 }
 
-proc f(x, y) {
-  writeln("  f(generic)");
-}
-
 // next, call 'f' with all combinations of numeric types
 proc callF(param p1, param p2) {
   var s2: string = p2:string + " : " + p2.type:string;

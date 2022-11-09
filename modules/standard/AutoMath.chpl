@@ -1003,17 +1003,21 @@ module AutoMath {
   pragma "no doc"
   inline proc max(x: uint(?w), y: int(w)) return if x > y then x else y:uint(w);
 
+  pragma "last resort"
+  pragma "no doc"
+  proc max(x, y) where isAtomicType(x.type) || isAtomicType(y.type) {
+    compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
+  }
+
   /* Returns the maximum value of two arguments using the ``>`` operator
      for comparison.
      If one of the arguments is :proc:`AutoMath.NAN`, the result is also NAN.
 
      :rtype: The type of `x`.
    */
-  inline proc max(x, y) where !isArray(x) && !isArray(y) {
-    if isAtomic(x) || isAtomic(y) {
-      compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
-    }
-
+  inline proc max(x, y)
+  where !isArray(x) && !isArray(y) &&
+        !(isNumeric(_desync(x.type)) && isNumeric(_desync(y.type))) {
     return if x > y then x else y;
   }
   /* Returns the maximum value of 3 or more arguments using the above call.
@@ -1037,6 +1041,14 @@ module AutoMath {
   inline proc min(x: int(?w), y: uint(w)) return if x < y then x else y:int(w);
   pragma "no doc"
   inline proc min(x: uint(?w), y: int(w)) return if x < y then x:int(w) else y;
+
+  pragma "last resort"
+  pragma "no doc"
+  proc min(x, y) where isAtomicType(x.type) || isAtomicType(y.type) {
+    compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
+  }
+
+
   /* Returns the minimum value of two arguments using the ``<`` operator
      for comparison.
 
@@ -1044,11 +1056,9 @@ module AutoMath {
 
      :rtype: The type of `x`.
    */
-  inline proc min(x, y) where !isArray(x) && !isArray(y) {
-    if isAtomic(x) || isAtomic(y) {
-      compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
-    }
-
+  inline proc min(x, y)
+  where !isArray(x) && !isArray(y) &&
+        !(isNumeric(_desync(x.type)) && isNumeric(_desync(y.type))) {
     return if x < y then x else y;
   }
   /* Returns the minimum value of 3 or more arguments using the above call.

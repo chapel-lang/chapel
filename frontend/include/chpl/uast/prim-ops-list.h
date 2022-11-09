@@ -311,6 +311,7 @@ PRIMITIVE_R(IS_EXTERN_UNION_TYPE, "is extern union type")
 PRIMITIVE_R(IS_ATOMIC_TYPE, "is atomic type")
 PRIMITIVE_R(IS_REF_ITER_TYPE, "is ref iter type")
 PRIMITIVE_R(IS_EXTERN_TYPE, "is extern type")
+PRIMITIVE_R(IS_BORROWED_CLASS_TYPE, "is borrowed class type")
 PRIMITIVE_R(IS_ABS_ENUM_TYPE, "is abstract enum type")
 
 PRIMITIVE_R(IS_POD, "is pod type")
