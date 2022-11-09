@@ -148,7 +148,9 @@ def to_pieces(handle, islearnChapelInYMinutes=False):
         # We found __BREAK__; print the last chunk.
         # output.append(('output', chunk_index))
 
-        # Don't print the last chunk, it's usually garbage anyway.
+        # Don't print the last chunk, it's usually empty anyway.
+        # If a user wants the "last output", they can just write another
+        # __BREAK__.
         pass
 
     if islearnChapelInYMinutes and not foundCommentExample:
