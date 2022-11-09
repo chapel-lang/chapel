@@ -10,7 +10,9 @@ Ok = False
 if platform != 'linux64':
     Ok = False  # not linux
 else:
-    sub = subprocess.run(['pkg-config', '--exists', 'libcrypto >= 1.1'])
+    # blowfish was moved to legacy in OpenSSL 3 and doesn't work
+    # in the crypto module
+    sub = subprocess.run(['pkg-config', '--exists', 'libcrypto < 3.0'])
     if sub.returncode == 0:
         Ok = True
 
