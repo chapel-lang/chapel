@@ -263,7 +263,7 @@ type tcpConn = file;
 proc tcpConn.socketFd throws {
   var tempfd:c_int;
   var err:errorCode = 0;
-  on this.home {
+  on this._home {
     var localtempfd = tempfd;
     err = qio_get_fd(this._file_internal, localtempfd);
     if err then try ioerror(err, "in tcpConn.socketFd");
@@ -279,7 +279,7 @@ proc tcpConn.socketFd throws {
 */
 proc tcpConn.addr throws {
   var address:ipAddr;
-  on this.home {
+  on this._home {
     address = getPeerName(this.socketFd);
   }
   return address;
