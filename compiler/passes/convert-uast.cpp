@@ -2873,14 +2873,14 @@ struct Converter {
     auto style = uast::BlockStyle::EXPLICIT;
     BlockStmt* body = createBlockWithStmts(node->stmts(), style);
 
-    for (auto formal : node->formals()) {
-      if (auto ident = formal->toIdentifier()) {
-        const char* name = astr(ident->name());
-        auto formal = InterfaceSymbol::buildFormal(name, INTENT_TYPE);
-        formals->insertAtTail(formal);
-        noteConvertedSym(ident, formal->sym);
+    for (auto ast : node->formals()) {
+      if (auto formal = ast->toFormal()) {
+        const char* name = astr(formal->name());
+        auto ifcFormal = InterfaceSymbol::buildFormal(name, INTENT_TYPE);
+        formals->insertAtTail(ifcFormal);
+        noteConvertedSym(formal, ifcFormal->sym);
       } else {
-        INT_FATAL("Expected identifier for interface formal");
+        INT_FATAL("Interface formal is not represented by a formal AST node!");
       }
     }
 
