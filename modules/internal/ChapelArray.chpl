@@ -3198,7 +3198,6 @@ module ChapelArray {
     return lhs;
   }
 
-  // TODO: can we remove this last resort?
   pragma "find user line"
   pragma "coerce fn"
   pragma "last resort"
@@ -3220,6 +3219,7 @@ module ChapelArray {
   }
   pragma "find user line"
   pragma "coerce fn"
+  pragma "last resort"
   proc chpl__coerceMove(type dstType:_array, in rhs, definedConst: bool) {
     // assumes rhs is iterable (e.g. list)
 
