@@ -267,7 +267,7 @@ proc create_tree(ref q: DeQueue(unmanaged TreeNode)) {
 
 
 proc main() {
-  var t_create: Timer;
+  var t_create: stopwatch;
   var queue: DeQueue(unmanaged TreeNode);
  
   // Create the root and push it into a queue

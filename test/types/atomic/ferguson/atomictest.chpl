@@ -35,7 +35,7 @@ proc test(type base_type, n_max:int) {
 
   var aint:atomic base_type;
 
-  var t: Timer;
+  var t: stopwatch;
   t.start();
   forall i in 1..n {
     aint.fetchAdd(one);

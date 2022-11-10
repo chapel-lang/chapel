@@ -133,7 +133,7 @@ proc Gen_RMAT_graph_1D_array ( a : real, b : real, c : real, d : real,
 
       var   Edges:[edgelist_domain] directed_vertex_pair;
 
-      var   graph_gen_time: Timer;
+      var   graph_gen_time: stopwatch;
 
       // Step 0: Construct permutation array
 

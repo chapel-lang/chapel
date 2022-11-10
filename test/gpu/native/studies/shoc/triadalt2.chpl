@@ -12,8 +12,8 @@ config const perftest = false;
 
 
 proc main(){
-    var timer: Timer;
-    var kernelTimer: Timer;
+    var timer: stopwatch;
+    var kernelTimer: stopwatch;
 
     // Numbers just copied from cuda version
     // 256K through 8M bytes. (scaled down by 1024)

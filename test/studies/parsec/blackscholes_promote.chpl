@@ -1,7 +1,7 @@
 use Time, IO, BlockDist;
 
 config const timer : bool = false;
-var t : Timer;
+var t : stopwatch;
 
 //Precision to use for calculations
 

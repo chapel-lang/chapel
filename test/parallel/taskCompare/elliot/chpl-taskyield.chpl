@@ -13,7 +13,7 @@ proc main() {
 }
 
 proc taskYield(oversub) {
-  var t: Timer;
+  var t: stopwatch;
 
   t.start();
   var total: atomic int;

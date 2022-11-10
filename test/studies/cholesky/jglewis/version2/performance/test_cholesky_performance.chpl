@@ -84,7 +84,7 @@ module performance_cholesky_test {
     writeln ("\n\n");
     writeln ("scalar column major outer product cholesky factorization ");
 
-    var clock : Timer;
+    var clock : stopwatch;
 
     clock.start ();
 

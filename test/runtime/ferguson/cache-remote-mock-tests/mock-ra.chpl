@@ -18,7 +18,7 @@ config const printStats = false;
 proc main() {
   var rng = new RandomStream(uint, seed, parSafe=false);
 
-  var t:Timer;
+  var t:stopwatch;
 
   if printStats {
     writeln("Number of Locales = ", nLocales);

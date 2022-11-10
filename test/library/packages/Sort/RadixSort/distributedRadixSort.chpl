@@ -79,7 +79,7 @@ proc randomtest(n:int) {
     //startVerboseComm();
   }
 
-  var timer:Timer;
+  var timer:stopwatch;
   timer.start();
   TwoArrayRadixSort.twoArrayRadixSort(A, defaultComparator);
   timer.stop();

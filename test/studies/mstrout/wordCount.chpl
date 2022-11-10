@@ -52,7 +52,7 @@ config const minCount = 2;      // minimum count for a word to show up in output
 //-----------------------------------------------------------------------
 // Read in the input csv files and at the same time do a wordcount per csv file.
 
-var t: Timer;
+var t: stopwatch;
 t.start();
 
 var filenamesList: list(string);

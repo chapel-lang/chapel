@@ -74,7 +74,7 @@ if !correctness {
   writeln("Indexes are ", if !scramble then "not " else "", "scrambled");
 }
 
-var t = new Timer();
+var t = new stopwatch();
 for niter in 0..iterations {
 
   if niter == 1 then t.start();

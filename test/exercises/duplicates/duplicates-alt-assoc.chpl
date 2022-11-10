@@ -8,7 +8,7 @@ use Time;
 config const timing = false;
 
 proc main(args: [] string) {
-  var clock:Timer;
+  var clock:stopwatch;
   var paths:domain(string);
 
   if timing {

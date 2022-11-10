@@ -43,7 +43,7 @@ if verify {
 //
 
 {
-  var timer: Timer;
+  var timer: stopwatch;
   timer.start();
   for aa in AA {
     var ai = aa;
@@ -72,13 +72,13 @@ if verify {
 //
 
 {
-  var paraTimer: Timer;
-  paraTimer.start();
+  var parastopwatch: stopwatch;
+  parastopwatch.start();
   forall aa in AA {
     var ai = aa;
     A((ai+offset)/2) = ai;
   }
-  paraTimer.stop();
+  parastopwatch.stop();
 
   var success = true;
 
@@ -92,5 +92,5 @@ if verify {
     }
   }
   writeln("Parallel array iteration: ", if success then "SUCCESS" else "FAILED");
-  if printTiming then writeln("Parallel: ", paraTimer.elapsed());
+  if printTiming then writeln("Parallel: ", parastopwatch.elapsed());
 }

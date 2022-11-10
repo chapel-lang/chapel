@@ -1065,8 +1065,8 @@ proc main() {
 
 // ``forall`` loops are particularly useful for parallel iteration over arrays.
 // Lets run an experiment to see how much faster a parallel loop is
-  use Time; // Import the Time module to use Timer objects
-  var timer: Timer;
+  use Time; // Import the Time module to use stopwatch objects
+  var timer: stopwatch;
   var myBigArray: [{1..4000,1..4000}] real; // Large array we will write into
 
 // Serial Experiment:

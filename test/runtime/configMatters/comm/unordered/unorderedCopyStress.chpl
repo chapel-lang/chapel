@@ -37,7 +37,7 @@ inline proc assign(ref dst, ref src) {
     unorderedCopyTaskFence();
 }
 
-var t: Timer;
+var t: stopwatch;
 
 proc start() {
   reversedA -= reversedA;
