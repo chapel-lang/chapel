@@ -93,6 +93,21 @@ __host__ static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameI
   chpl_error("assertOnGpu() failed", lineno, filenameIdx);
 }
 
+__device__ static inline unsigned int chpl_gpu_clock(void) {
+  return (unsigned int)clock();
+}
+__host__ static inline unsigned int chpl_gpu_clock(void) {
+  return 0;
+}
+
+__device__ __host__ static inline void chpl_gpu_printTimeDelta(
+  const char *msg, unsigned int start, unsigned int end)
+{
+  // For some reason the %Lf specifier doesn't work in CUDA
+  // so I downcast to double.
+  printf("%s%u\n", msg, end - start);
+}
+
 #endif // HAS_GPU_LOCALE
 
 #endif // _CHPL_GPU_GEN_INCLUDES_H
