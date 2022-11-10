@@ -28,6 +28,8 @@ jobs:
               echo "AUTHOR=$(jq -r '.[0].commit.author.name' commits.json)" >> $GITHUB_ENV   
               echo "LINK=$(jq -r '.[0].html_url' commits.json)" >> $GITHUB_ENV
               echo "MESSAGE=$((jq  '.[0].commit.message' commits.json)| awk -F'\\\\n' '{print $1}' | sed 's/\"//g')" >> $GITHUB_ENV 
+              echo ${{github.event.repository.html_url}} >> blah.txt
+              cat blah.txt
               echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
               echo "$(jq  '.[0].commit.message' commits.json)"  >> msg.txt 
               cat msg.txt
