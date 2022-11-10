@@ -131,7 +131,7 @@ static int aParsedString(FILE* argFile, char* setConfigBuffer,
           if (stringLength >= _default_string_length - 1) {
             char dsl[1024];
             char* message;
-            sprintf(dsl, "%d", _default_string_length);
+            snprintf(dsl, sizeof(dsl), "%d", _default_string_length);
             message = chpl_glom_strings(2, "String exceeds the maximum string length of ",
                                         dsl);
             chpl_error(message, lineno, filename);
