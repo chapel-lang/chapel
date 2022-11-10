@@ -79,7 +79,7 @@ have identical major, minor, update, and commit values.
 Ordered comparisons are based on the ordering of the semantic
 versions of the two values, as defined by their ``major``,
 ``minor``, and ``update`` components.
-Note that ff the two values have identical semantic versions,
+Note that if the two values have identical semantic versions,
 any cases that rely on an ordering of the commits will generate an error
 if the values have differing, non-empty ``commit`` values due to the
 challenge of ordering commits. An empty ``commit`` value is considered to
@@ -88,10 +88,14 @@ an official release and the latter a pre-release.
 
 For example::
 
-    var v1 = new version(1, 2, 3);        // any of these can be
-    var v2 = new version(1, 2, 4);        // can be replaced with
-    var v3 = new version(1, 2, 4, "abc"); // const vN = new versionValue(...)
-    var v4 = new version(1, 2, 4, "def"); // instead of using the version type
+    // any of the following variable declarations can be replaced with
+    // `const vN = new versionValue(...)` instead of using the version type
+    // and the comparison results would remain the same
+
+    var v1 = new version(1, 2, 3);
+    var v2 = new version(1, 2, 4);
+    var v3 = new version(1, 2, 4, "abc");
+    var v4 = new version(1, 2, 4, "def");
 
     writeln(v1 < v2); // prints "true"
     writeln(v2 < v3); // prints "false" as v3 and v4 are considered pre-releases of v2
@@ -124,13 +128,16 @@ module Version {
   chplVersion = new versionValue(chplMajor, chplMinor, chplUpdate, chplSHA);
 
   /*
-    This record represents a software version in a Git repository.  It
-    uses ``param`` values to represent its components in order to
-    support `compile-time` comparison of version numbers which in turn
-    permits code to specialize to specific versions of Chapel.  When
-    printed or converted to a string, it is represented as
-    ``major.minor.update (commit)``.
+    This record represents a software version that is mostly equivalent to
+    a semantic version, though not 100% true to the semver spec. The main
+    deviation from the spec is that ``versionValue`` doesn't support pre-release
+    identifiers and the version and optional build/commit value are separated
+    with a space rather than with ``+``. See semver.org for details on the spec.
 
+    The ``versionValue`` uses ``param`` values to represent its components in
+    order to support `compile-time` comparison of version numbers which in turn
+    permits code to specialize to specific versions of Chapel. When printed or
+    converted to a string, it is represented as ``major.minor.update (commit)``.
   */
 
   record versionValue {
@@ -284,10 +291,11 @@ module Version {
 
 
   /*
-    This record represents a software version. It uses ``var`` values to
-    represent its components in order to support `run-time` building and
-    comparison of version numbers. When printed or converted to a string,
-    it is represented as ``major.minor.update (commit)``.
+    This record represents a software version similar to the :type:`versionValue`.
+    It uses ``var`` values to represent its components in order to support
+    `run-time` building and comparison of version numbers. When printed or
+    converted to a string, it is represented as ``major.minor.update (commit)``.
+    Unlike :type:`versionValue`, a ``version`` can be created and modified at runtime.
   */
 
   record version {
