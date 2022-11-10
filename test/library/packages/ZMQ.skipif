@@ -1,26 +1,13 @@
 #!/usr/bin/env python3
 
-"""
- The ZMQ package requires the zmq library.
+import subprocess
+from contextlib import suppress
 
- Installation of the ZMQ library is detected with the find_library function,
- which looks for the appropriate dynamic library (e.g. libzmq.so).
- Note that if the dynamic library is found, this test assumes that the
- header and static library are available. Can be overridden with
- `CHPL_TEST_NO_ZMQ=True`
+Ok = False
 
- Skip CHPL_COMM != none until #9425 is resolved.
-"""
+with suppress(Exception):
+    sub = subprocess.run(['pkg-config', '--exists', 'libzmq'], stderr=subprocess.DEVNULL)
+    if sub.returncode == 0:
+        Ok = True
 
-from ctypes.util import find_library
-import os
-
-# Is ZMQ available?
-zmq_found = find_library('zmq') is not None
-user_no_zmq = os.getenv('CHPL_TEST_NO_ZMQ') is not None
-
-# OK contains the conditions that must be met to run the test
-OK = zmq_found and not user_no_zmq
-
-# Skip if not OK
-print(not OK)
+print(not Ok)
