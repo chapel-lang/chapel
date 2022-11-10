@@ -34,7 +34,7 @@ jobs:
               echo  -e "Email body was not honoring linefeeds. 
                      Parse the merge log replace line feeds with '<br>' .
                       - [x]  To address a comment in the issue https://github.com/Cray/chapel-private/issues/3995.
-                      In the merge message quoted in the mail, newlines/paragraphs seem to be lost. For example, compare the OP in this PR https://github.com/chapel-lang/chapel/pull/20891 with its merge mail message here: [https://chapel.discourse.group/t/chapel-merge-20891-make-zippered-for-loops-more-like-pa[…]-zippered-loops-by-having-the-first-expression-lead/17148](https://chapel.discourse.group/t/chapel-merge-20891-make-zippered-for-loops-more-like-parallel-zippered-loops-by-having-the-first-expression-lead/17148) I think it’s important to preserve these linefeeds in the mail for readability. ")"  >> msg.txt 
+                      In the merge message quoted in the mail, newlines/paragraphs seem to be lost. For example, compare the OP in this PR https://github.com/chapel-lang/chapel/pull/20891 with its merge mail message here: [https://chapel.discourse.group/t/chapel-merge-20891-make-zippered-for-loops-more-like-pa[…]-zippered-loops-by-having-the-first-expression-lead/17148](https://chapel.discourse.group/t/chapel-merge-20891-make-zippered-for-loops-more-like-parallel-zippered-loops-by-having-the-first-expression-lead/17148) I think it’s important to preserve these linefeeds in the mail for readability. "  >> msg.txt 
               cat msg.txt
               echo "LOG=$(cat msg.txt | sed  's/\\n/<br>/g') " >> $GITHUB_ENV
               echo "FILES_CHANGED=$(echo '${{github.event.pull_request._links.html.href}}/files' )" >> $GITHUB_ENV
