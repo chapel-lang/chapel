@@ -5252,11 +5252,11 @@ proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
    :arg size: the number of codepoints from the ``string`` to write
 
    :throws SystemError: Thrown if the string could not be written to the channel.
-   :throws BadFormatError: Thrown if ``size`` is larger than ``s.size``
+   :throws IllegalArgumentError: Thrown if ``size`` is larger than ``s.size``
 */
 proc _channel.writeBinary(s: string, size: int = s.size) throws {
   if size > s.size {
-    throw new owned BadFormatError("size argument cannot exceed length of provided string in 'writeBinary");
+    throw new owned IllegalArgumentError("size argument cannot exceed length of provided string in 'writeBinary'");
   }
 
   var e :errorCode = try _write_binary_string_or_bytes(_channel_internal, iokind.native, s, size);
@@ -5273,11 +5273,11 @@ proc _channel.writeBinary(s: string, size: int = s.size) throws {
    :arg size: the number of bytes from the ``bytes`` to write
 
    :throws SystemError: Thrown if the bytes could not be written to the channel.
-   :throws BadFormatError: Thrown if ``size`` is larger than ``b.size``
+   :throws IllegalArgumentError: Thrown if ``size`` is larger than ``b.size``
 */
 proc _channel.writeBinary(b: bytes, size: int = b.size) throws {
   if size > b.size {
-    throw new owned BadFormatError("size argument cannot exceed length of provided bytes in 'writeBinary");
+    throw new owned IllegalArgumentError("size argument cannot exceed length of provided bytes in 'writeBinary'");
   }
 
   var e:errorCode = try _write_binary_string_or_bytes(_channel_internal, iokind.native, b, size);
