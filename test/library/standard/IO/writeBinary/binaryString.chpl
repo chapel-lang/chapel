@@ -5,6 +5,8 @@ var d: string = "some very interesting output data 👍\n";
 
 // test normal behavior
 w.writeBinary(d);
+w.writeBinary(d, d.size - 2);
+w.writeBinary("🤌\n");
 
 // test error handling for bad arguments
 try {

@@ -5251,8 +5251,10 @@ proc _channel.writeBinary(s: string, size: int = s.size) throws {
   if size == sLocal.size {
     bytesLen = s.numBytes;
   } else {
-    for (cp_index, (_, cp_byte_len)) in zip(0..#size, sLocal._indexLen()) do
+    for ((_, cp_byte_len), i) in zip(sLocal._indexLen(), 0..) {
+      if i == size then break;
       bytesLen += cp_byte_len;
+    }
   }
 
   // write the first bytesLen bytes of the string to the channel
