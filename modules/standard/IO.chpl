@@ -3611,22 +3611,6 @@ private proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param by
 pragma "no doc"
 config param chpl_testWriteBinaryInternalEIO = false;
 
-private proc _write_binary_string_or_bytes(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, x:?t, len: int): errorCode
-  where t == string || t == bytes
-{
-  if t == string {
-    var local_x = x.localize();
-    // check if the string has escapes
-    if local_x.hasEscapes {
-      return EILSEQ;
-    }
-    return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), len: c_ssize_t);
-  } else if t == bytes {
-    var local_x = x.localize();
-    return qio_channel_write_string(false, byteorder:c_int, qio_channel_str_style(_channel_internal), _channel_internal, local_x.c_str(), len: c_ssize_t);
-  }
-}
-
 private proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, x:?t):errorCode where _isIoPrimitiveType(t) {
   if chpl_testWriteBinaryInternalEIO {
     return EIO;
@@ -5249,42 +5233,69 @@ proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
    Write a :type:`~String.string` to the channel in binary format
 
    :arg s: the ``string`` to write
-   :arg size: the number of codepoints from the ``string`` to write
+   :arg size: the number of codepoints to write from the ``string``
 
    :throws SystemError: Thrown if the string could not be written to the channel.
    :throws IllegalArgumentError: Thrown if ``size`` is larger than ``s.size``
 */
 proc _channel.writeBinary(s: string, size: int = s.size) throws {
-  if size > s.size {
+  // handle bad arguments
+  if size > s.size then
     throw new owned IllegalArgumentError("size argument cannot exceed length of provided string in 'writeBinary'");
+  if s.hasEscapes then
+    throw createSystemError(EILSEQ, "illegal use of escaped string characters in 'writeBinary'");
+
+  // count the number of bytes to write
+  var sLocal = s.localize();
+  var bytesLen = 0;
+  if size == sLocal.size {
+    bytesLen = s.numBytes;
+  } else {
+    for (cp_index, (_, cp_byte_len)) in zip(0..#size, sLocal._indexLen()) do
+      bytesLen += cp_byte_len;
   }
 
-  var e :errorCode = try _write_binary_string_or_bytes(_channel_internal, iokind.native, s, size);
+  // write the first bytesLen bytes of the string to the channel
+  var e: errorCode = qio_channel_write_string(
+    false,
+    iokind.native: c_int,
+    qio_channel_str_style(this._channel_internal),
+    this._channel_internal,
+    sLocal.c_str(),
+    bytesLen: c_ssize_t
+  );
 
-  if (e != ENOERR) {
+  if (e != ENOERR) then
     throw createSystemError(e);
-  }
 }
 
 /*
    Write a :type:`~Bytes.bytes` to the channel in binary format
 
    :arg s: the ``bytes`` to write
-   :arg size: the number of bytes from the ``bytes`` to write
+   :arg size: the number of bytes to write from the ``bytes``
 
    :throws SystemError: Thrown if the bytes could not be written to the channel.
    :throws IllegalArgumentError: Thrown if ``size`` is larger than ``b.size``
 */
 proc _channel.writeBinary(b: bytes, size: int = b.size) throws {
-  if size > b.size {
+  // handle bad arguments
+  if size > b.size then
     throw new owned IllegalArgumentError("size argument cannot exceed length of provided bytes in 'writeBinary'");
-  }
 
-  var e:errorCode = try _write_binary_string_or_bytes(_channel_internal, iokind.native, b, size);
+  // write the first size bytes to the channel
+  var bLocal = b.localize();
+  var e: errorCode = qio_channel_write_string(
+    false,
+    iokind.native: c_int,
+    qio_channel_str_style(this._channel_internal),
+    this._channel_internal,
+    bLocal.c_str(),
+    size: c_ssize_t
+  );
 
-  if (e != ENOERR) {
+  if (e != ENOERR) then
     throw createSystemError(e);
-  }
 }
 
 /*
