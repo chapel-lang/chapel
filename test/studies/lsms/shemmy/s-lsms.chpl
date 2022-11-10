@@ -34,7 +34,7 @@ type AtomMatrix = nExtent*real;
 const GridDom  = {0..#span_x, 0..#span_y, 0..#span_z};
 
 proc main() {
-	var t: Timer;
+	var t: stopwatch;
 
 	writeln("[[ LSMS ]]");
 	writeln("Problem size = [", span_x, ", ", span_y, ", ", span_z, "]");

@@ -11,7 +11,7 @@ proc main() {
 
   var m = new map(string, string, parSafe=false);
 
-  var t: Timer;
+  var t: stopwatch;
   t.start();
   for line in reader.lines() {
     for i in 1..repeat {

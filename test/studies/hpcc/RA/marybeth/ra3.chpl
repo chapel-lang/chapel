@@ -36,7 +36,7 @@ var GUPs:real;
 proc main() {
 
   use Time;
-  var t:Timer;
+  var t:stopwatch;
 
   if doIO then writeRAdata();
 

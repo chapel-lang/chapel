@@ -21,7 +21,7 @@ proc main() {
   const Space = {1..m, 1..m};
   var SparseDom: sparse subdomain(Space);
 
-  var t: Timer;
+  var t: stopwatch;
 
   if !correctness {
     writeln('=====================================');

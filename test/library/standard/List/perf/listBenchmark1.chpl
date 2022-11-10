@@ -39,7 +39,7 @@ class Test {
   proc test() { pureVirtualMethodHalt(); }
 
   proc run(): real {
-    var tmr = new Timer();
+    var tmr = new stopwatch();
 
     setup();
 

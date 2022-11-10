@@ -29,7 +29,7 @@ param stencilSize = 4*R + 1,
       weightSize = 2*R + 1,
       Wsize = 2*R + 1;
 
-var timer: Timer;
+var timer: stopwatch;
 
 //
 // Process and test input configs

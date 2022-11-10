@@ -114,7 +114,7 @@ if !correctness {
   writeln("Number of particles placed : ", particles.size);
 }
 
-var t = new Timer();
+var t = new stopwatch();
 
 for niter in 0..iterations {
 

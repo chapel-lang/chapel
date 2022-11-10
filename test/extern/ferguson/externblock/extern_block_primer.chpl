@@ -43,7 +43,7 @@ var A = [i in 1..n] i;
 
 var sum_chapel: int;
 var sum_c: int;
-var t: Timer;
+var t: stopwatch;
 
 // compare timings between serial C and Chapel array sums:
 t.start();

@@ -289,8 +289,8 @@ proc destroyTree(tn: unmanaged TreeNode) {
 
 
 proc main {
-  var t_create: Timer();
-  var t_dfs   : Timer();
+  var t_create: stopwatch();
+  var t_dfs   : stopwatch();
   var counted, created: int;
   var root = new unmanaged TreeNode(0);
   rng_init(root.hasharr[1], SEED:sha_int);

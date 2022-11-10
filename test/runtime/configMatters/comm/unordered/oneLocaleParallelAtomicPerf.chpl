@@ -16,7 +16,7 @@ proc test(param useUnordered, dynamicIters, iters, printStats) {
     const d = {1..iters};
     const chunk =  2**16;
 
-    var t: Timer; t.start();
+    var t: stopwatch; t.start();
     if dynamicIters {
       forall dynamic(d, chunkSize=chunk, numTasks=tasksPerLocale) do
         if useUnordered then a.unorderedAdd(1);

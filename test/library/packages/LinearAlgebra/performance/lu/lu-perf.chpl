@@ -16,7 +16,7 @@ proc main() {
 
   const Space = {0..<m, 0..<m};
 
-  var t: Timer;
+  var t: stopwatch;
 
   if !correctness {
     writeln('=========================================');

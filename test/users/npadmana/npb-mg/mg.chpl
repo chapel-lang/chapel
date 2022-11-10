@@ -45,7 +45,7 @@ class MGLevel {
   var Z, R : [dom] real;
 }
 
-var fluffTime : Timer;
+var fluffTime : stopwatch;
 
 proc main() {
   // Allocate the levels
@@ -59,7 +59,7 @@ proc main() {
 
   fillInit(U, V);
 
-  var timeit : Timer;
+  var timeit : stopwatch;
   timeit.clear();
   timeit.start();
   fluffTime.clear();
@@ -100,7 +100,7 @@ proc main() {
 /* Multigrid step
 */
 proc mgstep(U, V, Levels) {
-  var t1 : Timer;
+  var t1 : stopwatch;
   t1.clear();
 
   t1.start();

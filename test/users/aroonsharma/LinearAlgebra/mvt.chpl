@@ -66,7 +66,7 @@ proc print_matrix(A: [], dim: int) {
 /* The process which runs the benchmark */
 proc kernel_mvt(dist, dim: int) {
   var still_correct = true;
-  var t:Timer;
+  var t:stopwatch;
   
   if messages {
     resetCommDiagnostics();
@@ -75,7 +75,7 @@ proc kernel_mvt(dist, dim: int) {
   
     /******* Start the timer: this is where we do work *******/
   if timeit {
-    t = new Timer();
+    t = new stopwatch();
     t.start();
   }
   

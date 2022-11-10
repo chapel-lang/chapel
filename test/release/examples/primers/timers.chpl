@@ -1,7 +1,7 @@
-// Timers
+// stopwatches
 
 /*
-   This primer demonstrates the use of a Timer from the ``Time`` module.
+   This primer demonstrates the use of a stopwatch from the ``Time`` module.
 */
 
 //
@@ -16,9 +16,9 @@ use Time;
 config const quiet: bool = false;
 
 //
-// A ``Timer`` can be used like a stopwatch to time portions of code.
+// A ``stopwatch`` can be used like a stopwatch to time portions of code.
 //
-var t: Timer;
+var t: stopwatch;
 
 //
 // To time a procedure, start the timer before calling the
@@ -45,7 +45,7 @@ if !quiet then
   writeln("B. ", t.elapsed(TimeUnits.milliseconds), " milliseconds");
 
 //
-// The ``Timer`` can be started again to accumulate additional time.
+// The ``stopwatch`` can be started again to accumulate additional time.
 //
 t.start();
 sleep(1);
@@ -54,7 +54,7 @@ if !quiet then
   writeln("C. ", t.elapsed(TimeUnits.microseconds), " microseconds");
 
 //
-// To start the ``Timer`` over at zero, call the ``clear`` method.
+// To start the ``stopwatch`` over at zero, call the ``clear`` method.
 //
 t.clear();
 writeln("D. ", t.elapsed(), " seconds");

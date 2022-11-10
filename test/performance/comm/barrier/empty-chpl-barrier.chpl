@@ -18,7 +18,7 @@ use BarrierMode;
 config param barrierMode = LocalAtomic;
 
 proc main() {
-  var t: Timer;
+  var t: stopwatch;
 
   t.start();
   select barrierMode {

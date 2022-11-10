@@ -43,7 +43,7 @@ proc main {
   var numNodes: int(32);
   var f = open(infileName, iomode.r);
   var r = f.reader();
-  var inputTimer, outputTimer, computeTimer, totalTimer: Timer;
+  var inputTimer, outputTimer, computeTimer, totalTimer: stopwatch;
 
   totalTimer.start();
   inputTimer.start();

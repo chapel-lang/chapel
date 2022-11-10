@@ -53,7 +53,7 @@ module HPCC_PTRANS {
         C_save             : [transpose_domain] real,
         C_plus_A_transpose : [transpose_domain] real;
 
-    var PTRANS_time : Timer;
+    var PTRANS_time : stopwatch;
 
     var norm_A, norm_C : real;
 

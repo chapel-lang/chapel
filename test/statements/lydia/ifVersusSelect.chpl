@@ -19,7 +19,7 @@ enum filler {
   random
 }
 
-var t1, t2: Timer;
+var t1, t2: stopwatch;
 
 // Get a random number
 var arr: [1..#numElems] real;

@@ -184,8 +184,8 @@ proc main() {
 
 proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
   const subtime = time && useSubTimers;
-  var totalTimer: Timer;
-  var subTimer: Timer;
+  var totalTimer: stopwatch;
+  var subTimer: stopwatch;
 
   if time {
     totalTimer.start();

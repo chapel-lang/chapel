@@ -18,7 +18,7 @@ proc within_epsilon(a: real, b: real, eps=1e-6) {
 
 proc kernel_stencil9(dist_little, dist_big, dom_little, dom_big) {
   var still_correct = true;
-  var t: Timer;
+  var t: stopwatch;
   
     const northWest = {0..n-1, 0..n-1}, north = {0..n-1, 1..n}, northEast = {0..n-1, 2..n+1};
     const west = {1..n, 0..n-1}, center = {1..n, 1..n}, east = {1..n, 2..n+1};
@@ -46,7 +46,7 @@ proc kernel_stencil9(dist_little, dist_big, dom_little, dom_big) {
   }
 
   if timeit {
-    t = new Timer();
+    t = new stopwatch();
     t.start();
   }
   

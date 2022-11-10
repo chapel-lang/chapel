@@ -10,7 +10,7 @@ use Time;
 
 // To keep track of line numbers and speed parallel speedup
 var lineNum: int = 1;
-var clock: Timer;
+var clock: stopwatch;
 
 // Main
 proc main(args: [] string) {
