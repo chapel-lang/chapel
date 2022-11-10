@@ -263,7 +263,7 @@ private proc runTests(show: bool, run: bool, parallel: bool,
     if numTests > 0 {
 
       var result =  new TestResult();
-      var timeElapsed = new Timer();
+      var timeElapsed = new stopwatch();
       timeElapsed.start();
       for test in testNames {
         var testPath: string;
@@ -463,7 +463,7 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
       }
 
       var result =  new TestResult();
-      var timeElapsed = new Timer();
+      var timeElapsed = new stopwatch();
       timeElapsed.start();
       for tests in files {
         try {

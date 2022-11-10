@@ -57,7 +57,7 @@ proc accum(ref A : Box, B : Box) {
   A.count += bc;
 }
 
-stopwatchs["total"].start();
+Timers["total"].start();
 
 timestampMessage("Starting Initialization");
 
@@ -90,9 +90,9 @@ randomDisplacements();
 
 redistributeAtoms();
 
-stopwatchs["computeForce"].start();
+Timers["computeForce"].start();
   Pot.force();
-stopwatchs["computeForce"].stop();
+Timers["computeForce"].stop();
 
 kineticEnergy();
 
@@ -192,9 +192,9 @@ proc createFccLattice(lat : real) {
 }
 
 proc sumAtoms() {
-  stopwatchs["commReduce"].start();
+  Timers["commReduce"].start();
     numAtoms = + reduce Boxes.count;
-  stopwatchs["commReduce"].stop();
+  Timers["commReduce"].stop();
 }
 
 proc setTemperature(temperature) {
@@ -266,25 +266,25 @@ proc randomDisplacements() {
 }
 
 proc redistributeAtoms() {
-  stopwatchs["redistribute"].start();
+  Timers["redistribute"].start();
 
-  Rediststopwatchs["updateLinkCells"].start();
+  RedistTimers["updateLinkCells"].start();
     updateLinkCells();
-  Rediststopwatchs["updateLinkCells"].stop();
+  RedistTimers["updateLinkCells"].stop();
 
-  Rediststopwatchs["atomHalo"].start();
+  RedistTimers["atomHalo"].start();
     Boxes.updateFluff();
 
-    Rediststopwatchs["pbc"].start();
+    RedistTimers["pbc"].start();
       pbc();
-    Rediststopwatchs["pbc"].stop();
-  Rediststopwatchs["atomHalo"].stop();
+    RedistTimers["pbc"].stop();
+  RedistTimers["atomHalo"].stop();
 
-  Rediststopwatchs["sort"].start();
+  RedistTimers["sort"].start();
     sortAtomsInCell();
-  Rediststopwatchs["sort"].stop();
+  RedistTimers["sort"].stop();
 
-  stopwatchs["redistribute"].stop();
+  Timers["redistribute"].stop();
 }
 
 iter allAtoms() ref {
@@ -313,9 +313,9 @@ proc timestep(nSteps : int, dt : real) {
     advancePosition(dt);
     redistributeAtoms();
 
-    stopwatchs["computeForce"].start();
+    Timers["computeForce"].start();
       Pot.force();
-    stopwatchs["computeForce"].stop();
+    Timers["computeForce"].stop();
 
     advanceVelocity(0.5 * dt);
   }
@@ -324,20 +324,20 @@ proc timestep(nSteps : int, dt : real) {
 }
 
 proc advanceVelocity(dt : real) {
-  stopwatchs["velocity"].start();
+  Timers["velocity"].start();
   forall a in allAtoms() {
     a.p += dt * a.f;
   }
-  stopwatchs["velocity"].stop();
+  Timers["velocity"].stop();
 }
 
 proc advancePosition(dt : real) {
-  stopwatchs["position"].start();
+  Timers["position"].start();
   forall a in allAtoms() {
     const invMass = 1.0 / a.mass;
     a.r += dt * a.p * invMass;
   }
-  stopwatchs["position"].stop();
+  Timers["position"].stop();
 }
 
 proc updateLinkCells() {
