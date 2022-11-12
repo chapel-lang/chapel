@@ -1,3 +1,6 @@
 #!/bin/bash
 
-$3 `pkg-config --libs --cflags libzmq` getLastEndpointHelper.chpl
+ccflags=$(pkg-config --cflags libzmq)
+ldflags=$(pkg-config --libs libzmq)
+
+$3 ${ccflags:+--ccflags "$ccflags"} ${ldflags:+--ldflags "$ldflags"} getLastEndpointHelper.chpl
