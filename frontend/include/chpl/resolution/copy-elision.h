@@ -35,8 +35,8 @@ namespace resolution {
        the ID of the initialized variable is stored in the set.
      * If the elided initialization point is an '=' call,
        the ID of the OpCall is stored in the set.
-     * If the elided initialization point is an actual passed by 'in' intent,
-       the ID of the actual is stored in the set.
+     * If the elided initialization point is an actual passed by 'in'
+       intent, the ID of the actual is stored in the set.
    Does not consider copy elision that only work with temporary
    variables (e.g. acceptsWithIn(returnsByValue())).
 

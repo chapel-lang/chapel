@@ -167,6 +167,14 @@ computeAndPrintStuff(Context* context,
         }
       }
     }
+    for (const TypedFnSignature* sig : r->associatedFns()) {
+      if (sig != nullptr) {
+        if (sig->untyped()->idIsFunction()) {
+          auto fn = resolveFunction(context, sig, r->poiScope());
+          calledFns.insert(fn);
+        }
+      }
+    }
 
     printId(ast);
     std::ostringstream ss;

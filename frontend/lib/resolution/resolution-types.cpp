@@ -685,7 +685,14 @@ TypedFnSignature::get(Context* context,
 
 void TypedFnSignature::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
-  id().stringify(ss, stringKind);
+
+
+  if (!id().isEmpty()) {
+    ss << "id ";
+    id().stringify(ss, stringKind);
+    ss << " ";
+  }
+  untyped()->name().stringify(ss, stringKind);
   ss << "(";
   int nFormals = numFormals();
   for (int i = 0; i < nFormals; i++) {
@@ -754,6 +761,36 @@ bool PoiInfo::canReuse(const PoiInfo& check) const {
   return false; // TODO -- consider function names etc -- see PR #16261
 }
 
+void MostSpecificCandidates::stringify(std::ostream& ss,
+                                       chpl::StringifyKind stringKind) const {
+  auto onlyFn = only();
+  if (onlyFn) {
+    ss << " calls ";
+    onlyFn->stringify(ss, stringKind);
+  } else {
+    if (auto sig = bestRef()) {
+      ss << " calls ref ";
+      sig->stringify(ss, stringKind);
+    }
+    if (auto sig = bestConstRef()) {
+      ss << " calls const ref ";
+      sig->stringify(ss, stringKind);
+    }
+    if (auto sig = bestValue()) {
+      ss << " calls value ";
+      sig->stringify(ss, stringKind);
+    }
+  }
+}
+
+void CallResolutionResult::stringify(std::ostream& ss,
+                                     chpl::StringifyKind stringKind) const {
+  mostSpecific_.stringify(ss, stringKind);
+  ss << " : ";
+  exprType_.stringify(ss, stringKind);
+}
+
+
 void ResolvedExpression::stringify(std::ostream& ss,
                                    chpl::StringifyKind stringKind) const {
   ss << " : ";
@@ -763,23 +800,13 @@ void ResolvedExpression::stringify(std::ostream& ss,
     ss << " refers to ";
     toId_.stringify(ss, stringKind);
   } else {
-    auto onlyFn = mostSpecific_.only();
-    if (onlyFn) {
-      ss << " calls ";
-      onlyFn->stringify(ss, stringKind);
-    } else {
-      if (auto sig = mostSpecific_.bestRef()) {
-        ss << " calls ref ";
-        sig->stringify(ss, stringKind);
-      }
-      if (auto sig = mostSpecific_.bestConstRef()) {
-        ss << " calls const ref ";
-        sig->stringify(ss, stringKind);
-      }
-      if (auto sig = mostSpecific_.bestValue()) {
-        ss << " calls value ";
-        sig->stringify(ss, stringKind);
-      }
+    mostSpecific_.stringify(ss, stringKind);
+  }
+
+  for (auto sig : associatedFns_) {
+    if (sig != nullptr) {
+      ss << " assoc ";
+      sig->stringify(ss, stringKind);
     }
   }
 }
@@ -791,6 +818,8 @@ IMPLEMENT_DUMP(TypedFnSignature);
 IMPLEMENT_DUMP(ResolvedExpression);
 IMPLEMENT_DUMP(CallInfoActual);
 IMPLEMENT_DUMP(CallInfo);
+IMPLEMENT_DUMP(MostSpecificCandidates);
+IMPLEMENT_DUMP(CallResolutionResult);
 
 } // end namespace resolution
 } // end namespace chpl
