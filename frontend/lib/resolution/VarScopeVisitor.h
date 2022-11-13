@@ -257,7 +257,9 @@ struct VarFrame {
   // order to create a single stack for cleanup operations to be executed.
   // In particular, the ordering between defer blocks and locals matters,
   // in addition to the ordering within each group.
-  std::vector<const AstNode*> localsAndDefers;
+  // It stores variables in initialization order. It does not store
+  // declared but not-yet-initialized variables.
+  std::vector<ID> localsAndDefers;
 
   // Which outer variables have been initialized in this scope?
   // This vector lists them in initialization order.

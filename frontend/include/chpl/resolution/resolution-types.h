@@ -950,6 +950,12 @@ class MostSpecificCandidates {
       context->markPointer(sig);
     }
   }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /** CallResolutionResult */
@@ -999,6 +1005,12 @@ class CallResolutionResult {
     exprType_.swap(other.exprType_);
     poiInfo_.swap(other.poiInfo_);
   }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 class ResolvedParamLoop;
