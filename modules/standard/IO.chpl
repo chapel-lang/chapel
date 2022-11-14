@@ -5241,7 +5241,7 @@ proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
 proc _channel.writeBinary(s: string, size: int = s.size) throws {
   // handle bad arguments
   if size > s.size then
-    throw new owned IllegalArgumentError("size argument cannot exceed length of provided string in 'writeBinary'");
+    throw new owned IllegalArgumentError("size", "cannot exceed length of provided string");
   if s.hasEscapes then
     throw createSystemError(EILSEQ, "illegal use of escaped string characters in 'writeBinary'");
 
@@ -5285,7 +5285,7 @@ proc _channel.writeBinary(s: string, size: int = s.size) throws {
 proc _channel.writeBinary(b: bytes, size: int = b.size) throws {
   // handle bad arguments
   if size > b.size then
-    throw new owned IllegalArgumentError("size argument cannot exceed length of provided bytes in 'writeBinary'");
+    throw new owned IllegalArgumentError("size", "cannot exceed length of provided bytes");
 
   // write the first size bytes to the channel
   var bLocal = b.localize();

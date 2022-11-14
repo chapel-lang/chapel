@@ -1,4 +1,4 @@
-caught IllegalArgumentError: size argument cannot exceed length of provided string in 'writeBinary'
+caught IllegalArgumentError: illegal argument 'size': cannot exceed length of provided string
 SystemError: Illegal byte sequence (illegal use of escaped string characters in 'writeBinary')
 some very interesting output data 👍
 some very interesting output data 🤌
