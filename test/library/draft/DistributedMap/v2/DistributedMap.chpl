@@ -78,8 +78,8 @@ module DistributedMap {
     pragma "no doc"
     var tables: [locDom] chpl__hashtable(keyType, valType);
 
-    // TODO: I seem to recall someone not liking the idea of a lock per locale,
-    // remind myself of why and maybe do something different.
+    // TODO: eventually will want to do something like a lock per core on each
+    // locale, since nodes can be beefy and we don't want to limit parallelism
     pragma "no doc"
     var locks: [locDom] owned _LockWrapper =
       [i in locDom] new owned _LockWrapper();
@@ -286,9 +286,8 @@ module DistributedMap {
       }
     }
 
-    // TODO: proc this overloads?
-
-    // TODO: getBorrowed?
+    // TODO: getBorrowed, or maybe merge getBorrowed and getValue into single
+    // method called `get` if possible
 
     /* Get a copy of the element stored at position `k`.
 
@@ -752,6 +751,9 @@ module DistributedMap {
     proc valuesToArray(): [] valType {
       compilerError("unimplemented");
     }
+
+    // TODO: update method that doesn't deal with the aggregator, so it can be
+    // used independently
 
     // Return new aggregator for distributed map that stores an operation that
     // should be performed on the value stored by the key.  The aggregator
