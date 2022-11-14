@@ -78,9 +78,9 @@ proc MASON_REGISTRY {
     for str in env.split(',') {
       const regArr = str.split('|');
       if regArr.size > 2 || regArr.size < 1 {
-        stderr._writeln("expected MASON_REGISTRY to contain a comma " +
+        stderr.writeln("expected MASON_REGISTRY to contain a comma " +
                        "separated list of locations or 'name|location' pairs");
-        stderr._writeln(str);
+        stderr.writeln(str);
         exit(1);
       } else {
         var regTup: 2*string;
@@ -101,9 +101,9 @@ proc MASON_REGISTRY {
     for i in registries.indices {
       for j in i+1..<registries.size {
         if registries(i)(0) == registries(j)(0) {
-          stderr._writeln("registry names specified in MASON_REGISTRY must be unique:");
-          stderr._writeln(registries(i)(0), " - ", registries(i)(1));
-          stderr._writeln(registries(j)(0), " - ", registries(j)(1));
+          stderr.writeln("registry names specified in MASON_REGISTRY must be unique:");
+          stderr.writeln(registries(i)(0), " - ", registries(i)(1));
+          stderr.writeln(registries(j)(0), " - ", registries(j)(1));
           exit(1);
         }
       }
@@ -175,7 +175,7 @@ private proc getRegNameFromLoc(location: string): string {
   var strippedLoc  = location.strip("/", leading=false);
   var lastSlashPos = strippedLoc.rfind("/");
   if lastSlashPos == -1 {
-    stderr._writeln("location should be an absolute path or URL");
+    stderr.writeln("location should be an absolute path or URL");
     exit(1);
   }
   const gitExtension = ".git";

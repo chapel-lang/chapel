@@ -877,15 +877,15 @@ static void maybe_add_thread(void) {
       uint32_t num_threads = chpl_thread_getNumThreads();
       char msg[256];
       if (max_threads)
-        sprintf(msg,
-                "max threads per locale is %" PRId32
-                ", but unable to create more than %d threads",
-                max_threads, num_threads);
+        snprintf(msg, sizeof(msg),
+                 "max threads per locale is %" PRId32
+                 ", but unable to create more than %d threads",
+                 max_threads, num_threads);
       else
-        sprintf(msg,
-                "max threads per locale is unbounded"
-                ", but unable to create more than %d threads",
-                num_threads);
+        snprintf(msg, sizeof(msg),
+                 "max threads per locale is unbounded"
+                 ", but unable to create more than %d threads",
+                 num_threads);
       chpl_warning(msg, 0, 0);
       warning_issued = true;
     }

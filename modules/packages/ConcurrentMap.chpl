@@ -1057,17 +1057,17 @@ module ConcurrentMap {
       :arg ch: A channel to write to.
     */
     proc writeThis(f) throws {
-      ch._write("{");
+      ch.write("{");
       var first = true;
       for (key, val) in this {
         if first {
-          ch._write(key, ": ", val);
+          ch.write(key, ": ", val);
           first = false;
         } else {
-          ch._write(", ", key, ": ", val);
+          ch.write(", ", key, ": ", val);
         }
       }
-      ch._write("}");
+      ch.write("}");
     }
   }
 

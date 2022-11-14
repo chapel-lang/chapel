@@ -1669,7 +1669,7 @@ module DefaultRectangular {
       if !first then rwLiteral(", ");
       else first = false;
 
-      if f.writing then f._write(ranges(i));
+      if f.writing then f.write(ranges(i));
       else ranges(i) = f.read(ranges(i).type);
     }
     rwLiteral("}");
@@ -1755,13 +1755,13 @@ module DefaultRectangular {
 
       if dim == rank-1 {
         var first = true;
-        if debugDefaultDist && f.writing then f._writeln(dom.dsiDim(dim));
+        if debugDefaultDist && f.writing then f.writeln(dom.dsiDim(dim));
         for j in dom.dsiDim(dim) by makeStridePositive {
           if first then first = false;
           else if isspace then rwLiteral(" ");
           else if isjson || ischpl then rwLiteral(", ");
           idx(dim) = j;
-          if f.writing then f._write(arr.dsiAccess(idx));
+          if f.writing then f.write(arr.dsiAccess(idx));
           else arr.dsiAccess(idx) = f.read(eltType);
         }
       } else {
@@ -1816,7 +1816,7 @@ module DefaultRectangular {
       const size = len:c_ssize_t*elemSize:c_ssize_t;
       try {
         if f.writing {
-          f._writeBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
         } else {
           f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
         }
@@ -2292,6 +2292,7 @@ module DefaultRectangular {
   // due to a type, stridability, or rank mismatch in the other argument). When
   // debugOptimizedSwap is off, this overload will be ignored due to its where
   // clause.
+  pragma "last resort"
   proc DefaultRectangularArr.doiOptimizedSwap(other) where debugOptimizedSwap {
     writeln("DefaultRectangularArr doing unoptimized swap. Type mismatch");
     return false;

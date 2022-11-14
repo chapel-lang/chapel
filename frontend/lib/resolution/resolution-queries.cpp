@@ -2042,6 +2042,11 @@ struct ReturnTypeInferrer {
   bool enter(const Return* ret) {
     if (const AstNode* expr = ret->value()) {
       noteReturnType(expr, ret);
+      if (const Function* fn = astForErr->toFunction()) {
+        if (fn->name() == "init" && fn->isMethod()) {
+          context->error(ret, "initializers can only return 'void'");
+        }
+      }
     } else {
       noteVoidReturnType(ret);
     }

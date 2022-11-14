@@ -294,6 +294,7 @@ module ChapelDomain {
   proc isAssociativeDom(d: domain) param return d.isAssociative();
 
   proc chpl_isAssociativeDomClass(dc: BaseAssociativeDom) param return true;
+  pragma "last resort"
   proc chpl_isAssociativeDomClass(dc) param return false;
 
   deprecated "isSparseDom is deprecated - please use isSparse method on domain"
@@ -2206,7 +2207,7 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc expand(off: rank*intIdxType) where !this.isRectangular() {
+    proc expand(off: rank*integral) where !this.isRectangular() {
       if this.isAssociative() then
         compilerError("expand not supported on associative domains");
       else if this.isSparse() then
@@ -2216,13 +2217,18 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc expand(off: intIdxType ...rank) return expand(off);
+    proc expand(off: integral ...rank) return expand(off);
 
     /* Return a new domain that is the current domain expanded by
        ``off(d)`` in dimension ``d`` if ``off(d)`` is positive or
        contracted by ``off(d)`` in dimension ``d`` if ``off(d)``
-       is negative. */
-    proc expand(off: rank*intIdxType) {
+       is negative.
+
+       See :proc:`ChapelRange.range.expand` for further information about what
+       it means to expand a range.
+
+     */
+    proc expand(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do {
         ranges(i) = ranges(i).expand(off(i));
@@ -2236,8 +2242,12 @@ module ChapelDomain {
 
     /* Return a new domain that is the current domain expanded by
        ``off`` in all dimensions if ``off`` is positive or contracted
-       by ``off`` in all dimensions if ``off`` is negative. */
-    proc expand(off: intIdxType) where rank > 1 {
+       by ``off`` in all dimensions if ``off`` is negative.
+
+       See :proc:`ChapelRange.range.expand` for further information about what
+       it means to expand a range.
+     */
+    proc expand(off: integral) where rank > 1 {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = dim(i).expand(off);
@@ -2245,7 +2255,7 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc exterior(off: rank*intIdxType) where !this.isRectangular() {
+    proc exterior(off: rank*integral) where !this.isRectangular() {
       if this.isAssociative() then
         compilerError("exterior not supported on associative domains");
       else if this.isSparse() then
@@ -2255,14 +2265,19 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc exterior(off: intIdxType ...rank) return exterior(off);
+    proc exterior(off: integral ...rank) return exterior(off);
 
     /* Return a new domain that is the exterior portion of the
        current domain with ``off(d)`` indices for each dimension ``d``.
        If ``off(d)`` is negative, compute the exterior from the low
        bound of the dimension; if positive, compute the exterior
-       from the high bound. */
-    proc exterior(off: rank*intIdxType) {
+       from the high bound.
+
+       See :proc:`ChapelRange.range.exterior` for further information about what
+       it means to compute the exterior of a range.
+
+     */
+    proc exterior(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = dim(i).exterior(off(i));
@@ -2273,16 +2288,21 @@ module ChapelDomain {
        current domain with ``off`` indices for each dimension.
        If ``off`` is negative, compute the exterior from the low
        bound of the dimension; if positive, compute the exterior
-       from the high bound. */
-    proc exterior(off:intIdxType) where rank != 1 {
-      var offTup: rank*intIdxType;
+       from the high bound.
+
+       See :proc:`ChapelRange.range.exterior` for further information about what
+       it means to compute the exterior of a range.
+
+     */
+    proc exterior(off:integral) where rank != 1 {
+      var offTup: rank*off.type;
       for i in 0..rank-1 do
         offTup(i) = off;
       return exterior(offTup);
     }
 
     pragma "no doc"
-    proc interior(off: rank*intIdxType) where !this.isRectangular() {
+    proc interior(off: rank*integral) where !this.isRectangular() {
       if this.isAssociative() then
         compilerError("interior not supported on associative domains");
       else if this.isSparse() then
@@ -2292,14 +2312,19 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc interior(off: intIdxType ...rank) return interior(off);
+    proc interior(off: integral ...rank) return interior(off);
 
     /* Return a new domain that is the interior portion of the
        current domain with ``off(d)`` indices for each dimension
        ``d``. If ``off(d)`` is negative, compute the interior from
        the low bound of the dimension; if positive, compute the
-       interior from the high bound. */
-    proc interior(off: rank*intIdxType) {
+       interior from the high bound.
+
+       See :proc:`ChapelRange.range.interior` for further information about what
+       it means to compute the exterior of a range.
+
+     */
+    proc interior(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do {
         if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
@@ -2315,9 +2340,14 @@ module ChapelDomain {
        current domain with ``off`` indices for each dimension.
        If ``off`` is negative, compute the interior from the low
        bound of the dimension; if positive, compute the interior
-       from the high bound. */
-    proc interior(off: intIdxType) where rank != 1 {
-      var offTup: rank*intIdxType;
+       from the high bound.
+
+       See :proc:`ChapelRange.range.interior` for further information about what
+       it means to compute the exterior of a range.
+
+     */
+    proc interior(off: integral) where rank != 1 {
+      var offTup: rank*off.type;
       for i in 0..rank-1 do
         offTup(i) = off;
       return interior(offTup);
@@ -2327,7 +2357,7 @@ module ChapelDomain {
     // NOTE: We eventually want to support translate on other domain types
     //
     pragma "no doc"
-    proc translate(off) where !this.isRectangular() {
+    proc translate(off: rank*integral) where !this.isRectangular() {
       if this.isAssociative() then
         compilerError("translate not supported on associative domains");
       else if this.isSparse() then
@@ -2341,32 +2371,40 @@ module ChapelDomain {
     // index type.  This is handled in the range.translate().
     //
     pragma "no doc"
-    proc translate(off...rank) return translate(off);
+    proc translate(off: integral ...rank) return translate(off);
 
     /* Return a new domain that is the current domain translated by
-       ``off(d)`` in each dimension ``d``. */
-    proc translate(off) where isTuple(off) {
-      if off.size != rank then
-        compilerError("the domain and offset arguments of translate() must be of the same rank");
+       ``off(d)`` in each dimension ``d``.
+
+       See :proc:`ChapelRange.range.translate` for further information about
+       what it means to translate a range.
+
+     */
+    proc translate(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = _value.dsiDim(i).translate(off(i));
       return new _domain(dist, rank, _value.idxType, stridable, ranges);
-     }
+    }
 
     /* Return a new domain that is the current domain translated by
-       ``off`` in each dimension. */
-     proc translate(off) where rank != 1 && !isTuple(off) {
-       var offTup: rank*off.type;
-       for i in 0..rank-1 do
-         offTup(i) = off;
-       return translate(offTup);
-     }
+       ``off`` in each dimension.
 
-     /* Return true if the domain has no indices */
-     proc isEmpty(): bool {
-       return this.sizeAs(uint) == 0;
-     }
+       See :proc:`ChapelRange.range.translate()` for further information about
+       what it means to translate a range.
+
+     */
+    proc translate(off: integral) where rank != 1 {
+      var offTup: rank*off.type;
+      for i in 0..rank-1 do
+        offTup(i) = off;
+      return translate(offTup);
+    }
+
+    /* Return true if the domain has no indices */
+    proc isEmpty(): bool {
+      return this.sizeAs(uint) == 0;
+    }
 
     //
     // intended for internal use only:

@@ -137,7 +137,6 @@ pragma "module included by default"
 module ChapelIO {
   use ChapelBase; // for uint().
   use ChapelLocale;
-  import SysBasic.{ENOERR};
 
   // TODO -- this should probably be private
   pragma "no doc"
@@ -211,7 +210,7 @@ module ChapelIO {
               writer._writeLiteral(eq);
             }
 
-            writer._write(__primitive("field by num", x, i));
+            writer.write(__primitive("field by num", x, i));
 
             first = false;
           }
@@ -229,7 +228,7 @@ module ChapelIO {
               const eq = ioFieldNameEqLiteral(writer, t, i);
               writer._writeLiteral(eq);
             }
-            writer._write(__primitive("field by num", x, i));
+            writer.write(__primitive("field by num", x, i));
           }
         }
       }
@@ -546,18 +545,18 @@ module ChapelIO {
   pragma "no doc"
   proc locale.writeThis(f) throws {
     // FIXME this doesn't resolve without `this`
-    f._write(this._instance);
+    f.write(this._instance);
   }
 
   pragma "no doc"
   proc _ddata.writeThis(f) throws {
     compilerWarning("printing _ddata class");
-    f._write("<_ddata class cannot be printed>");
+    f.write("<_ddata class cannot be printed>");
   }
 
   pragma "no doc"
   proc chpl_taskID_t.writeThis(f) throws {
-    f._write(this : uint(64));
+    f.write(this : uint(64));
   }
 
   pragma "no doc"
@@ -601,7 +600,7 @@ module ChapelIO {
 
     const (start, comma, comma1tup, end) = getLiterals();
 
-    proc helper(const ref arg) throws where f.writing { f._write(arg); }
+    proc helper(const ref arg) throws where f.writing { f.write(arg); }
     proc helper(ref arg) throws where !f.writing { arg = f.read(arg.type); }
 
     proc rwLiteral(lit:string) throws {
@@ -644,26 +643,26 @@ module ChapelIO {
     }
 
     if hasLowBound() then
-      f._write(lowBound);
+      f.write(lowBound);
     f._writeLiteral("..");
     if hasHighBound() {
       if (chpl__singleValIdxType(this.idxType) && this._low != this._high) {
         f._writeLiteral("<");
-        f._write(lowBound);
+        f.write(lowBound);
       } else {
-        f._write(highBound);
+        f.write(highBound);
       }
     }
     if stride != 1 {
       f._writeLiteral(" by ");
-      f._write(stride);
+      f.write(stride);
     }
 
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
     if ! alignCheckRange.isNaturallyAligned() && aligned {
       f._writeLiteral(" align ");
-      f._write(chpl_intToIdx(chpl__mod(chpl__idxToInt(alignment), stride)));
+      f.write(chpl_intToIdx(chpl__mod(chpl__idxToInt(alignment), stride)));
     }
   }
 
@@ -697,7 +696,7 @@ module ChapelIO {
   pragma "no doc"
   override proc LocaleModel.writeThis(f) throws {
     f._writeLiteral("LOCALE");
-    f._write(chpl_id());
+    f.write(chpl_id());
   }
 
   /* Errors can be printed out. In that event, they will
@@ -706,58 +705,37 @@ module ChapelIO {
   */
   pragma "no doc"
   override proc Error.writeThis(f) throws {
-    f._write(chpl_describe_error(this));
+    f.write(chpl_describe_error(this));
   }
 
   /* Equivalent to ``try! stdout.write``. See :proc:`IO.channel.write` */
   proc write(const args ...?n) {
-    try! stdout._write((...args));
+    try! stdout.write((...args));
   }
   /* Equivalent to ``try! stdout.writeln``. See :proc:`IO.channel.writeln` */
   proc writeln(const args ...?n) {
-    try! stdout._writeln((...args));
+    try! stdout.writeln((...args));
   }
 
   // documented in the arguments version.
   pragma "no doc"
   proc writeln() {
-    try! stdout._writeln();
+    try! stdout.writeln();
   }
 
  /* Equivalent to ``try! stdout.writef``. See
      :proc:`FormattedIO.channel.writef`. */
   proc writef(fmt:?t, const args ...?k)
-      where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == false
+      where isStringType(t) || isBytesType(t)
   {
-    try! { stdout._writef(fmt, (...args)); }
+    try! { stdout.writef(fmt, (...args)); }
   }
   // documented in string version
   pragma "no doc"
   proc writef(fmt:?t)
-      where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == false
+      where isStringType(t) || isBytesType(t)
   {
-    try! { stdout._writef(fmt); }
-  }
-
-  deprecated "The returning variant of ``writef`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
-  proc writef(fmt:?t, const args ...?k):bool
-      where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == true
-  {
-    try! {
-      stdout._writef(fmt, (...args));
-      return true;
-    }
-  }
-  // documented in string version
-  pragma "no doc"
-  deprecated "The returning variant of ``writef`` is deprecated; use the new variant by compiling with `-sWritersReturnBool=false`"
-  proc writef(fmt:?t):bool
-      where (isStringType(t) || isBytesType(t)) && IO.WritersReturnBool == true
-  {
-    try! {
-      stdout._writef(fmt);
-      return true;
-    }
+    try! { stdout.writef(fmt); }
   }
 
   pragma "no doc"

@@ -1,4 +1,3 @@
-use SysBasic;
 use CTypes;
 import OS.{errorCode};
 
@@ -10,14 +9,14 @@ proc doDebugWrite(x, y):c_int {
 }
 
 proc test(arg:string, out error:c_int):bool {
-  error = ENOERR;
+  error = 0;
   on Locales[0] {
     if ! error {
       error = doDebugWrite("test ", arg);
     }
   }
-  return error==ENOERR;
+  return error==0;
 }
 
-var e:c_int = ENOERR;
+var e:c_int = 0;
 test("hello", e);

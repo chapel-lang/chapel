@@ -93,7 +93,6 @@
 module FileSystem {
 
   public use OS;
-  import SysBasic.{ENOERR};
   use Path;
   use HaltWrappers;
   use CTypes;
@@ -187,7 +186,7 @@ private inline proc unescape(str: string) {
 proc locale.chdir(name: string) throws {
   extern proc chpl_fs_chdir(name: c_string):errorCode;
 
-  var err: errorCode = ENOERR;
+  var err: errorCode = 0;
   on this {
     err = chpl_fs_chdir(unescape(name).c_str());
   }
@@ -383,7 +382,7 @@ proc copyFile(src: string, dest: string) throws {
   // If increasing the read size, make sure there's a test in
   // test/library/standard/FileSystem that copies a file larger than one buffer.
   while (try srcChnl.readbytes(buf, len=4096)) {
-    try destChnl._write(buf);
+    try destChnl.write(buf);
     // From mppf:
     // If you want it to be faster, we can make it only buffer once (sharing
     // the bytes read into memory between the two channels). To do that you'd
@@ -432,7 +431,7 @@ proc copyMode(src: string, dest: string) throws {
 
 pragma "no doc"
 proc copyMode(out error: errorCode, src: string, dest: string) {
-  var err: errorCode = ENOERR;
+  var err: errorCode = 0;
   try {
     copyMode(src, dest);
   } catch e: SystemError {
@@ -531,7 +530,7 @@ proc locale.cwd(): string throws {
   extern proc chpl_fs_cwd(ref working_dir:c_string):errorCode;
 
   var ret:string;
-  var err: errorCode = ENOERR;
+  var err: errorCode = 0;
   on this {
     var tmp:c_string;
     // c_strings can't cross on statements.
@@ -542,7 +541,7 @@ proc locale.cwd(): string throws {
     // tmp was qio_malloc'd by chpl_fs_cwd
     chpl_free_c_string(tmp);
   }
-  if err != ENOERR then try ioerror(err, "in cwd");
+  if err != 0 then try ioerror(err, "in cwd");
   return ret;
 }
 

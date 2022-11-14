@@ -1,1 +1,8 @@
-opequals2.chpl:6: error: Cannot assign to imag(64) from complex(128)
+opequals2.chpl:6: error: unresolved call '-=(imag(64), 1.0)'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: this candidate did not match: -=(lhs: imag(32), rhs: imag(32))
+opequals2.chpl:6: note: because actual argument #1 with type 'imag(64)'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: is passed to formal 'ref lhs: imag(32)'
+opequals2.chpl:6: note: other candidates are:
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   -=(lhs: int(8), rhs: int(8))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   -=(lhs: int(16), rhs: int(16))
+note: and 20 other candidates, use --print-all-candidates to see them

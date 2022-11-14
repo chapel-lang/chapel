@@ -27,11 +27,11 @@
 #include "chpl/resolution/intents.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
-#include "chpl/resolution/split-init.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 
 #include "InitResolver.h"
+#include "VarScopeVisitor.h"
 
 #include <cstdio>
 #include <set>
@@ -1125,9 +1125,9 @@ Resolver::adjustTypesForOutFormals(const CallInfo& ci,
                                    const MostSpecificCandidates& fns) {
 
   std::vector<QualifiedType> actualFormalTypes;
-  std::vector<int8_t> actualIdxToOut;
-  computeOutFormals(context, fns, ci, asts,
-                    actualIdxToOut, actualFormalTypes);
+  std::vector<IntentList> actualIntents;
+  computeActualFormalIntents(context, fns, ci, asts,
+                             actualIntents, actualFormalTypes);
 
   int actualIdx = 0;
   for (auto actual : ci.actuals()) {
@@ -1139,7 +1139,7 @@ Resolver::adjustTypesForOutFormals(const CallInfo& ci,
     if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
       id = byPostorder.byAst(actualAst).toId();
     }
-    if (actualIdxToOut[actualIdx] && !id.isEmpty()) {
+    if (actualIntents[actualIdx] == IntentList::OUT && !id.isEmpty()) {
       QualifiedType formalType = actualFormalTypes[actualIdx];
       adjustTypesForSplitInit(id, formalType, actualAst, actualAst);
     }
@@ -1564,6 +1564,10 @@ void Resolver::enterScope(const AstNode* ast) {
   if (auto d = ast->toDecl()) {
     declStack.push_back(d);
   }
+  tagTracker[ast->tag()] += 1;
+  if (ast->isLoop()) {
+    tagTracker[AstTag::START_Loop] += 1;
+  }
 }
 void Resolver::exitScope(const AstNode* ast) {
   if (createsScope(ast->tag())) {
@@ -1574,6 +1578,14 @@ void Resolver::exitScope(const AstNode* ast) {
     assert(!declStack.empty());
     declStack.pop_back();
   }
+  tagTracker[ast->tag()] -= 1;
+  if (ast->isLoop()) {
+    tagTracker[AstTag::START_Loop] -= 1;
+  }
+}
+
+bool Resolver::isInsideTag(uast::asttags::AstTag tag) const {
+  return tagTracker[tag] > 0;
 }
 
 bool Resolver::enter(const uast::Conditional* cond) {
@@ -2743,6 +2755,38 @@ void Resolver::exit(const TaskVar* taskVar) {
   if (isTaskIntent == false) {
     exitScope(taskVar);
   }
+}
+
+bool Resolver::enter(const Return* ret) {
+  return true;
+}
+
+void Resolver::exit(const Return* ret) {
+  if (initResolver) {
+    initResolver->checkEarlyReturn(ret);
+  }
+}
+
+bool Resolver::enter(const Throw* node) {
+  return true;
+}
+
+void Resolver::exit(const Throw* node) {
+  if (initResolver) {
+    context->error(node, "initializers are not yet allowed to throw errors");
+  }
+}
+
+bool Resolver::enter(const Try* node) {
+  enterScope(node);
+  return true;
+}
+
+void Resolver::exit(const Try* node) {
+  if (initResolver && node->isTryBang() && node->numHandlers() > 0) {
+    context->error(node, "Only catch-less try! statements are allowed in initializers for now");
+  }
+  exitScope(node);
 }
 
 bool Resolver::enter(const AstNode* ast) {

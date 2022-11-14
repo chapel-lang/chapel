@@ -55,7 +55,7 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 
   largv[0] = (char *) launch_cmd;
   largv[1] = (char *) "-np";
-  sprintf(_nlbuf, "%d", numranks);
+  snprintf(_nlbuf, sizeof(_nlbuf), "%d", numranks);
   largv[2] = _nlbuf;
 
   return chpl_bundle_exec_args(argc, argv, largc, largv);

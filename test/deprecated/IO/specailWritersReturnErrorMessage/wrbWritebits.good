@@ -1,0 +1,1 @@
+wrbWritebits.chpl:4: error: illegal use of return value from 'writebits'. Note: if you wish to detect early EOF from a write call, check for an EofError using a try-catch block

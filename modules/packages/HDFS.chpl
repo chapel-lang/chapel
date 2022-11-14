@@ -127,7 +127,6 @@ module HDFS {
 
   use IO, OS.POSIX, OS;
   public use CTypes;
-  import SysBasic.{ENOERR};
 
   require "hdfs.h";
 
@@ -385,7 +384,7 @@ module HDFS {
 
       var hdfsch = new unmanaged HDFSChannel(this:unmanaged, qioChannelPtr);
       pluginChannel = hdfsch;
-      return ENOERR;
+      return 0;
     }
 
     override proc filelength(out length:int(64)):errorCode {
@@ -399,7 +398,7 @@ module HDFS {
       hdfsFreeFileInfo(fInfoPtr, 1);
       if verbose then
         writeln("HDFSFile.filelength length=", length);
-      return ENOERR;
+      return 0;
     }
     override proc getpath(out path:c_string, out len:int(64)):errorCode {
       if verbose then
@@ -408,7 +407,7 @@ module HDFS {
       len = this.path.size;
       if verbose then
         writeln("HDFSFile.getpath returning ", (path:string, len));
-      return ENOERR;
+      return 0;
     }
 
     override proc fsync():errorCode {
@@ -417,7 +416,7 @@ module HDFS {
       var rc = hdfsFlush(fs.hfs, hfile);
       if rc < 0 then
         return qio_mkerror_errno();
-      return ENOERR;
+      return 0;
     }
     override proc getChunk(out length:int(64)):errorCode {
       if verbose then
@@ -427,7 +426,7 @@ module HDFS {
         return EINVAL;
       length = fInfoPtr.deref().mBlockSize;
       hdfsFreeFileInfo(fInfoPtr, 1);
-      return ENOERR;
+      return 0;
     }
     override proc getLocalesForRegion(start:int(64), end:int(64), out
         localeNames:c_ptr(c_string), ref nLocales:int(64)):errorCode {
@@ -440,7 +439,7 @@ module HDFS {
       if verbose then
         writeln("hdfsCloseFile");
 
-      var err:errorCode = ENOERR;
+      var err:errorCode = 0;
       var rc = hdfsCloseFile(fs.hfs, hfile);
       if rc != 0 then
         err = qio_mkerror_errno();
@@ -449,7 +448,7 @@ module HDFS {
       if count == 0 {
         delete fs;
       }
-      return ENOERR;
+      return 0;
     }
   }
 
@@ -471,9 +470,9 @@ module HDFS {
         writeln("HDFSChannel.readAtLeast");
 
       if amt == 0 then
-        return ENOERR;
+        return 0;
 
-      var err:errorCode = ENOERR;
+      var err:errorCode = 0;
 
       var remaining = amt;
       while remaining > 0 {
@@ -507,13 +506,13 @@ module HDFS {
         remaining -= rc:int(64);
       }
 
-      return ENOERR;
+      return 0;
     }
     override proc write(amt:int(64)):errorCode {
       if verbose then
         writeln("HDFSChannel.write");
 
-      var err:errorCode = ENOERR;
+      var err:errorCode = 0;
       var remaining = amt;
       while remaining > 0 {
         var ptr:c_void_ptr = c_nil;
@@ -539,10 +538,10 @@ module HDFS {
         qio_channel_advance_write_behind_unlocked(qio_ch, rc);
         remaining -= rc:int(64);
       }
-      return ENOERR;
+      return 0;
     }
     override proc close():errorCode {
-      return ENOERR;
+      return 0;
     }
   }
 

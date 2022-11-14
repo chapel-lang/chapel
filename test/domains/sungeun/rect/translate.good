@@ -1,26 +1,54 @@
+case 1 int(8):
 int(8):
 D: {-5..10}
-{-10..5}
-{-9..6}
-{-8..7}
-{-7..8}
-{-6..9}
-{-5..10}
-{-4..11}
-{-3..12}
-{-2..13}
-{-1..14}
-{0..15}
-uint(8):
-D: {-5..10}
-{-10..5}
-{-9..6}
-{-8..7}
-{-7..8}
-{-6..9}
-{-5..10}
-{-4..11}
-{-3..12}
-{-2..13}
-{-1..14}
-{0..15}
+D.translate(-5) = {-10..5}
+D.translate(-4) = {-9..6}
+D.translate(-3) = {-8..7}
+D.translate(-2) = {-7..8}
+D.translate(-1) = {-6..9}
+D.translate(0) = {-5..10}
+D.translate(1) = {-4..11}
+D.translate(2) = {-3..12}
+D.translate(3) = {-2..13}
+D.translate(4) = {-1..14}
+D.translate(5) = {0..15}
+case 2 int(8):
+int(8):
+D: {5..20}
+D.translate(-5) = {0..15}
+D.translate(-4) = {1..16}
+D.translate(-3) = {2..17}
+D.translate(-2) = {3..18}
+D.translate(-1) = {4..19}
+D.translate(0) = {5..20}
+D.translate(1) = {6..21}
+D.translate(2) = {7..22}
+D.translate(3) = {8..23}
+D.translate(4) = {9..24}
+D.translate(5) = {10..25}
+case 3 uint(8):
+r: 5..20
+r.translate(-5) = 0..15
+r.translate(-4) = 1..16
+r.translate(-3) = 2..17
+r.translate(-2) = 3..18
+r.translate(-1) = 4..19
+r.translate(0) = 5..20
+r.translate(1) = 6..21
+r.translate(2) = 7..22
+r.translate(3) = 8..23
+r.translate(4) = 9..24
+r.translate(5) = 10..25
+case 4 uint(8):
+D: {5..20}
+D.translate(-5) = {0..15}
+D.translate(-4) = {1..16}
+D.translate(-3) = {2..17}
+D.translate(-2) = {3..18}
+D.translate(-1) = {4..19}
+D.translate(0) = {5..20}
+D.translate(1) = {6..21}
+D.translate(2) = {7..22}
+D.translate(3) = {8..23}
+D.translate(4) = {9..24}
+D.translate(5) = {10..25}

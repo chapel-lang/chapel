@@ -888,6 +888,9 @@ static bool dynoRealizeErrors(void) {
     if (!issuedErrors.insert(err).second) continue;
     if (fDetailedErrors) {
       chpl::Context::defaultReportError(gContext, err);
+      // Use production compiler's exit-on-error functionality for errors
+      // reported via new Dyno mechanism
+      setupDynoError(err->kind());
     } else {
       // Try to maintain compatibility with the old reporting mechanism
       dynoDisplayError(gContext, err->toErrorMessage(gContext));

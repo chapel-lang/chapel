@@ -19,11 +19,10 @@
 
 #include "test-resolution.h"
 
-#include "chpl/resolution/split-init.h"
-
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/resolution/split-init.h"
 #include "chpl/uast/Call.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Identifier.h"
@@ -976,6 +975,208 @@ static void test37() {
     {});
 }
 
+static void test38() {
+  testSplitInit("test38",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x:int;
+          if x {
+            x = 11;
+          } else {
+            x = 11;
+          }
+        }
+      }
+    )"""",
+    {});
+}
+
+static void test39() {
+  testSplitInit("test39",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x:int;
+          var y = x;
+          x = 11;
+        }
+      }
+    )"""",
+    {});
+}
+
+static void test40() {
+  testSplitInit("test40",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test(cond: bool) {
+          var x:int;
+          if cond {
+            x;
+          }
+          x = 11;
+        }
+      }
+    )"""",
+    {});
+}
+
+static void test41() {
+  testSplitInit("test41",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x:int;
+          {
+            x;
+          }
+          x = 11;
+        }
+      }
+    )"""",
+    {});
+}
+
+static void test42() {
+  testSplitInit("test42",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x:int;
+          try {
+            x;
+          }
+          x = 11;
+        }
+      }
+    )"""",
+    {});
+}
+
+static void test43() {
+  testSplitInit("test43",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x:int;
+          try {
+          } catch {
+            x;
+          }
+          x = 11;
+        }
+      }
+    )"""",
+    {});
+}
+
+static void test44() {
+  testSplitInit("test44",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test(cond: bool) {
+          var x:int;
+          if cond {
+            x = 12;
+          } else {
+            if cond {
+              return;
+            } else {
+              return;
+            }
+          }
+        }
+      }
+    )"""",
+    {"x"});
+}
+
+static void test45() {
+  testSplitInit("test45",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test(cond: bool) {
+          var x:int;
+          if cond {
+            x = 12;
+          } else {
+            while true {
+              return;
+            }
+          }
+        }
+      }
+    )"""",
+    {});
+}
+
+static void test46() {
+  testSplitInit("test46",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test(cond: bool) {
+          var x:int;
+          if cond {
+            x = 12;
+          } else {
+            try {
+              return;
+            } catch e {
+              return;
+            }
+          }
+        }
+      }
+    )"""",
+    {"x"});
+}
+
 
 int main() {
   test1();
@@ -1017,6 +1218,15 @@ int main() {
   //test35(); TODO
   //test36(); TODO
   test37();
+  test38();
+  test39();
+  test40();
+  test41();
+  test42();
+  test43();
+  test44();
+  test45();
+  test46();
 
   return 0;
 }

@@ -28,6 +28,7 @@
 
 #include "astlocs.h"
 #include "chpl/util/break.h"
+#include "chpl/framework/ErrorBase.h"
 
 #ifdef HAVE_LLVM
 #define exit(x) clean_exit(x)
@@ -104,6 +105,7 @@ const char* cleanFilename(const char*    name);
 //  5 = USR_PRINT
 //
 void        setupError(const char* subdir, const char* filename, int lineno, int tag);
+void        setupDynoError(chpl::ErrorBase::Kind errKind);
 
 void        handleError(const char* fmt, ...) __attribute__ ((format (printf, 1, 2)));
 void        handleError(const BaseAST* ast, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
