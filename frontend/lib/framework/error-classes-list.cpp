@@ -566,6 +566,8 @@ void ErrorParsing::write(ErrorWriterBase& wr) const {
 void ErrorCannotAttachPragmas::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   wr.heading(kind_, type_, loc, "cannot attach pragmas to this statement.");
+  wr.code(loc);
+  wr.message("Only declarations, such as variable declarations, can have 'pragma's attached to them.");
 }
 
 void ErrorInvalidIndexExpr::write(ErrorWriterBase& wr) const {
@@ -606,8 +608,11 @@ void ErrorPreIncDecOp::write(ErrorWriterBase& wr) const {
 
 void ErrorNewWithoutArgs::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
+  auto expr = std::get<const AstNode*>(info);
   wr.heading(kind_, type_, loc,
              "type in 'new' expression is missing its argument list.");
+  wr.code(loc, { expr });
+  wr.message("Perhaps you intended to write 'new ", expr, "()' instead?");
 }
 
 void ErrorUseImportNeedsModule::write(ErrorWriterBase& wr) const {
@@ -630,10 +635,12 @@ void ErrorExceptOnlyInvalidExpr::write(ErrorWriterBase& wr) const {
 void ErrorLabelIneligibleStmt::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto maybeStmt = std::get<const uast::AstNode*>(info);
-  std::string msg = "cannot label";
-  if (maybeStmt) msg = msg + " '" + tagToString(maybeStmt->tag()) + "'";
-  msg += " statement.";
-  wr.heading(kind_, type_, loc, msg);
+  if (maybeStmt == nullptr) {
+    wr.heading(kind_, type_, loc, "cannot label statement.");
+  } else {
+    wr.heading(kind_, type_, loc, "cannot label '",
+                        tagToString(maybeStmt->tag()),"' statement.");
+  }
   wr.message("Only for-, while-do- and do-while-statements can have labels.");
 }
 
