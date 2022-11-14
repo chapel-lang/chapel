@@ -5245,6 +5245,8 @@ proc _channel.writeBinary(s: string, size: int = s.size) throws {
   if s.hasEscapes then
     throw createSystemError(EILSEQ, "illegal use of escaped string characters in 'writeBinary'");
 
+  var e:errorCode = ENOERR;
+
   // count the number of bytes to write
   var sLocal = s.localize();
   var bytesLen = 0;
@@ -5258,7 +5260,7 @@ proc _channel.writeBinary(s: string, size: int = s.size) throws {
   }
 
   // write the first bytesLen bytes of the string to the channel
-  var e: errorCode = qio_channel_write_string(
+  e = qio_channel_write_string(
     false,
     iokind.native: c_int,
     qio_channel_str_style(this._channel_internal),
@@ -5267,7 +5269,7 @@ proc _channel.writeBinary(s: string, size: int = s.size) throws {
     bytesLen: c_ssize_t
   );
 
-  if (e != ENOERR) then
+  if e != ENOERR then
     throw createSystemError(e);
 }
 
@@ -5296,7 +5298,7 @@ proc _channel.writeBinary(b: bytes, size: int = b.size) throws {
     size: c_ssize_t
   );
 
-  if (e != ENOERR) then
+  if e != ENOERR then
     throw createSystemError(e);
 }
 
