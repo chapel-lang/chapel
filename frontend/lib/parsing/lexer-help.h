@@ -262,7 +262,7 @@ static std::string eatStringLiteral(yyscan_t scanner,
       // are not documented in the spec
       CHPL_LEXER_REPORT_SIMPLE(
           scanner, nLines, nCols,
-          "end-of-line in a string literal without a preceding backslash");
+          "end-of-line in a string literal without a preceding backslash.");
       isErroneousOut = true;
       s += c;
       nLines++;
@@ -310,7 +310,7 @@ static std::string eatStringLiteral(yyscan_t scanner,
                "of digits");
         if (!foundHex) {
           CHPL_LEXER_REPORT_SIMPLE(scanner, nLines, nCols,
-                                   "non-hexadecimal character follows \\x");
+                                   "non-hexadecimal character follows \\x.");
           isErroneousOut = true;
         } else if (0 <= hexChar && hexChar <= 255) {
           // append the character
@@ -318,7 +318,7 @@ static std::string eatStringLiteral(yyscan_t scanner,
           s += cc;
         } else {
           CHPL_LEXER_REPORT_SIMPLE(scanner, nLines, nCols,
-                                   "unknown problem while reading \\x escape");
+                                   "unknown problem while reading \\x escape.");
           isErroneousOut = true;
         }
 
@@ -328,13 +328,13 @@ static std::string eatStringLiteral(yyscan_t scanner,
       } else if (c == 'u' || c == 'U') {
         CHPL_LEXER_REPORT_SIMPLE(
             scanner, nLines, nCols,
-            "universal character name not yet supported in string literal");
+            "universal character name not yet supported in string literal.");
         s += "\\u"; // this is a dummy value
         isErroneousOut = true;
       } else if ('0' <= c && c <= '7' ) {
         CHPL_LEXER_REPORT_SIMPLE(
             scanner, nLines, nCols,
-            "octal escape not supported in string literal");
+            "octal escape not supported in string literal.");
         s += "\\";
         s += c; // a dummy value
         isErroneousOut = true;
@@ -345,7 +345,7 @@ static std::string eatStringLiteral(yyscan_t scanner,
       } else {
         CHPL_LEXER_REPORT_SIMPLE(
             scanner, nLines, nCols,
-            std::string("unexpected string escape: '\\") + (char)c + "'");
+            std::string("unexpected string escape: '\\") + (char)c + "'.");
         isErroneousOut = true;
       }
     } else {
@@ -356,7 +356,8 @@ static std::string eatStringLiteral(yyscan_t scanner,
   } /* eat up string */
 
   if (c == 0) {
-    CHPL_LEXER_REPORT(scanner, nLines, nCols, StringLiteralEOF);
+    CHPL_LEXER_REPORT(scanner, nLines, nCols, StringLiteralEOF, startCh,
+                      /* startCharCount */ 1);
     isErroneousOut = true;
   }
 
@@ -405,7 +406,8 @@ static std::string eatTripleStringLiteral(yyscan_t scanner,
   } /* eat up string */
 
   if (c == 0) {
-    CHPL_LEXER_REPORT(scanner, nLines, nCols, StringLiteralEOF);
+    CHPL_LEXER_REPORT(scanner, nLines, nCols, StringLiteralEOF, startCh,
+                      startChCount);
     isErroneousOut = true;
   }
 
@@ -525,7 +527,7 @@ static SizedStr eatExternCode(yyscan_t scanner) {
 
         case in_single_line_comment:
           CHPL_LEXER_REPORT_SIMPLE(scanner, nLines, nCols,
-                            "missing newline after // comment in extern block");
+                            "missing newline after // comment in extern block.");
           break;
 
         case in_multi_line_comment:
@@ -784,7 +786,8 @@ static int processBlockComment(yyscan_t scanner) {
 
 static void processInvalidToken(yyscan_t scanner) {
   std::string pch = std::string(yyget_text(scanner));
-  CHPL_LEXER_REPORT_SIMPLE(scanner, 0, pch.length(), "invalid token: " + pch);
+  CHPL_LEXER_REPORT_SIMPLE(scanner, 0, pch.length(),
+                           "invalid token: " + pch + ".");
 }
 
 static int getNextYYChar(yyscan_t scanner) {

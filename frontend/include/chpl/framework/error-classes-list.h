@@ -96,10 +96,10 @@ ERROR_CLASS(SuperFromTopLevelModule,
 PARSER_ERROR_CLASS(Parsing, std::string)
 PARSER_ERROR_CLASS(CannotAttachPragmas, const uast::AstNode*)
 PARSER_ERROR_CLASS(InvalidIndexExpr)
-PARSER_ERROR_CLASS(RecordInheritanceNotSupported)
+PARSER_ERROR_CLASS(RecordInheritanceNotSupported, std::string)
 PARSER_ERROR_CLASS(InvalidNumericLiteral, std::string, std::string)
 PARSER_ERROR_CLASS(MultipleExternalRenaming)
-PARSER_WARNING_CLASS(PreIncDecOp, std::string, std::string)
+PARSER_WARNING_CLASS(PreIncDecOp, bool)
 PARSER_ERROR_CLASS(NewWithoutArgs, const uast::AstNode*)
 PARSER_ERROR_CLASS(UseImportNeedsModule, bool)
 PARSER_ERROR_CLASS(ExceptOnlyInvalidExpr,
@@ -111,6 +111,6 @@ PARSER_ERROR_CLASS(BisonUnknownError, std::string, std::string)
 PARSER_ERROR_CLASS(BisonSyntaxError, std::string)
 
 /* lexer-specific parser errors */
-PARSER_ERROR_CLASS(StringLiteralEOF)
+PARSER_ERROR_CLASS(StringLiteralEOF, char, int)
 PARSER_ERROR_CLASS(ExternUnclosedPair, std::string)
 PARSER_ERROR_CLASS(CommentEOF, Location, Location)
