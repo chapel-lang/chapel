@@ -265,7 +265,7 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
     if(cs.stmt) assert(hasAttributeParts);
 
     // TODO: The original builder also states the first pragma.
-    CHPL_PARSER_REPORT(this, CannotAttachPragmas, loc);
+    CHPL_PARSER_REPORT(this, CannotAttachPragmas, loc, cs.stmt);
 
     // Clean up the attribute parts.
     resetAttributePartsState();
@@ -1293,7 +1293,7 @@ AstNode* ParserContext::buildNewExpr(YYLTYPE location,
   } else {
     if (expr->isIdentifier() && expr->toIdentifier()->numChildren() == 0) {
       // try to capture case of new A; (new without parens)
-      CHPL_PARSER_REPORT(this, NewWithoutArgs, location);
+      CHPL_PARSER_REPORT(this, NewWithoutArgs, location, expr);
     } else if (expr->isDot() ) {
       // try to capture case of var z20a = new C().tmeth;
       // and var z20c = new C()?.tmeth;
@@ -1304,7 +1304,7 @@ AstNode* ParserContext::buildNewExpr(YYLTYPE location,
             "must use parentheses to disambiguate dot expression after 'new'");
       } else {
         // try to capture case of new M.Q;
-        CHPL_PARSER_REPORT(this, NewWithoutArgs, location);
+        CHPL_PARSER_REPORT(this, NewWithoutArgs, location, expr);
       }
     } else {
       // It's an error for one reason or another. TODO: Specialize these

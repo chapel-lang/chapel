@@ -565,9 +565,14 @@ void ErrorParsing::write(ErrorWriterBase& wr) const {
 
 void ErrorCannotAttachPragmas::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
+  auto stmt = std::get<const uast::AstNode*>(info);
   wr.heading(kind_, type_, loc, "cannot attach pragmas to this statement.");
-  wr.code(loc);
-  wr.message("Only declarations, such as variable declarations, can have 'pragma's attached to them.");
+  if (stmt) {
+    wr.code(stmt);
+  }
+  wr.message(
+      "Only declarations, such as variable declarations, can have 'pragma's "
+      "attached to them.");
 }
 
 void ErrorInvalidIndexExpr::write(ErrorWriterBase& wr) const {
@@ -608,10 +613,9 @@ void ErrorPreIncDecOp::write(ErrorWriterBase& wr) const {
 
 void ErrorNewWithoutArgs::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
-  auto expr = std::get<const AstNode*>(info);
+  auto expr = std::get<const uast::AstNode*>(info);
   wr.heading(kind_, type_, loc,
              "type in 'new' expression is missing its argument list.");
-  wr.code(loc, { expr });
   wr.message("Perhaps you intended to write 'new ", expr, "()' instead?");
 }
 

@@ -94,13 +94,13 @@ ERROR_CLASS(SuperFromTopLevelModule,
 // catch-all for simple parsing errors that do not have a specialized error
 // class
 PARSER_ERROR_CLASS(Parsing, std::string)
-PARSER_ERROR_CLASS(CannotAttachPragmas)
+PARSER_ERROR_CLASS(CannotAttachPragmas, const uast::AstNode*)
 PARSER_ERROR_CLASS(InvalidIndexExpr)
 PARSER_ERROR_CLASS(RecordInheritanceNotSupported)
 PARSER_ERROR_CLASS(InvalidNumericLiteral, std::string, std::string)
 PARSER_ERROR_CLASS(MultipleExternalRenaming)
 PARSER_WARNING_CLASS(PreIncDecOp, std::string, std::string)
-PARSER_ERROR_CLASS(NewWithoutArgs)
+PARSER_ERROR_CLASS(NewWithoutArgs, const uast::AstNode*)
 PARSER_ERROR_CLASS(UseImportNeedsModule, bool)
 PARSER_ERROR_CLASS(ExceptOnlyInvalidExpr,
                    uast::VisibilityClause::LimitationKind)
