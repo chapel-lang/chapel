@@ -111,7 +111,7 @@ int rng_nextrand(RNG_state *mystate){
 
 /* condense state into string to display during debugging */
 char * rng_showstate(RNG_state *state, char *s){
-  snprintf(s,"%.2X%.2X...", 8 * sizeof(char), state[0],state[1]);
+  snprintf(s, 8 * sizeof(char), "%.2X%.2X...", state[0],state[1]);
   return s;
 }
 
