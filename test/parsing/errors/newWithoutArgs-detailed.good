@@ -1,3 +1,4 @@
 ─── error in newWithoutArgs.chpl:5 [NewWithoutArgs] ───
   Type in 'new' expression is missing its argument list.
+  Perhaps you intended to write 'new Foo()' instead?
 
