@@ -351,6 +351,8 @@ class CallInfo {
   bool isOpCall_ = false;               // is an operator call
   bool hasQuestionArg_ = false;         // includes ? arg for type constructor
   bool isParenless_ = false;            // is a parenless call
+
+  // Performance TODO: use SmallVector here?
   std::vector<CallInfoActual> actuals_; // types/params/names of actuals
 
  public:
@@ -1037,6 +1039,10 @@ class ResolvedExpression {
   const PoiScope *poiScope_ = nullptr;
 
   // functions associated with or used to implement this expression
+  // TODO: change to associatedActions
+  //   * with action (an enum)
+  //   * with ID (for e.g. a var or tmp deinit)
+  //   * with TypedFnSignature
   std::vector<const TypedFnSignature*> associatedFns_;
 
   const ResolvedParamLoop* paramLoop_ = nullptr;
