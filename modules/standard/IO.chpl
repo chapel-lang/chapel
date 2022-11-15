@@ -5245,8 +5245,6 @@ proc _channel.writeBinary(s: string, size: int = s.size) throws {
   if s.hasEscapes then
     throw createSystemError(EILSEQ, "illegal use of escaped string characters in 'writeBinary'");
 
-  var e:errorCode = ENOERR;
-
   // count the number of bytes to write
   var sLocal = s.localize();
   var bytesLen = 0;
@@ -5260,7 +5258,7 @@ proc _channel.writeBinary(s: string, size: int = s.size) throws {
   }
 
   // write the first bytesLen bytes of the string to the channel
-  e = qio_channel_write_string(
+  var e: errorCode = qio_channel_write_string(
     false,
     iokind.native: c_int,
     qio_channel_str_style(this._channel_internal),
@@ -5269,7 +5267,7 @@ proc _channel.writeBinary(s: string, size: int = s.size) throws {
     bytesLen: c_ssize_t
   );
 
-  if e != ENOERR then
+  if e != 0 then
     throw createSystemError(e);
 }
 
@@ -5298,7 +5296,7 @@ proc _channel.writeBinary(b: bytes, size: int = b.size) throws {
     size: c_ssize_t
   );
 
-  if e != ENOERR then
+  if e != 0 then
     throw createSystemError(e);
 }
 
@@ -5318,7 +5316,7 @@ proc _channel.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioend
   where (d.rank == 1 && d.stridable == false) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
-  var e : errorCode = ENOERR;
+  var e : errorCode = 0;
 
   on this._home {
     try this.lock(); defer { this.unlock(); }
@@ -5338,7 +5336,7 @@ proc _channel.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioend
 
       if e == EEOF {
         throw new owned UnexpectedEofError("Unable to write entire array of values in 'writeBinary'");
-      } else if e != ENOERR {
+      } else if e != 0 {
         throw createSystemError(e);
       }
     }
