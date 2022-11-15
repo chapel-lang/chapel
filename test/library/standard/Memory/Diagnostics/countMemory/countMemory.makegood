@@ -46,11 +46,11 @@ printf "    in gb: %s\n", $realMemInGBytes;
 sub print_chapel_real{
 	$retVal = 0;
 	if( ($_[0] >= 100000.0) and ($_[0] < 1000000.0) ){
-		$retVal = sprintf("%.5e", $_[0]);
+		$retVal = snprintf("%.5e", 32 * sizeof(char), $_[0]);
 		$retVal =~ s/0+e/e/; #for removing the zeroes
 	}
 	else {
-		$retVal = sprintf("%g", $_[0]);
+		$retVal = snprintf("%g", 32 * sizeof(char), $_[0]);
 	}
 
 	#
