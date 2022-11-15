@@ -248,8 +248,9 @@ module ChapelRange {
 
     param isEnumBool = isEnumOrBool(idxType);
     type bt = other.intIdxType;
-    const low = if isEnumBool && !other.hasLowBound() then implicitLowBound(idxType):bt
-                                                      else other._low;
+    const low  = if isEnumBool && !other.hasLowBound()
+                 then implicitLowBound(idxType):bt
+                 else other._low;
     const high = if isEnumBool && !other.hasHighBound()
                  then implicitHighBound(idxType):bt
                  else other._high;
@@ -1640,7 +1641,7 @@ operator :(r: range(?), type t: range(?)) {
     }
 
     if boundsChecking && !hasFirst() then
-      HaltWrappers.boundsCheckHalt("invoking 'offset' on a range without the first index");
+      HaltWrappers.boundsCheckHalt("invoking 'offset' on a range without a first index");
 
     return new range(idxType, boundedType, stridable, _low, _high, stride,
                      // here's the new alignment
