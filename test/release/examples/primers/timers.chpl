@@ -16,7 +16,7 @@ use Time;
 config const quiet: bool = false;
 
 //
-// A ``stopwatch`` can be used like a stopwatch to time portions of code.
+// A ``stopwatch`` can be used to time portions of code.
 //
 var t: stopwatch;
 

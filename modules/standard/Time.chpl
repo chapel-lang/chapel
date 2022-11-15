@@ -24,9 +24,10 @@
 /* Support for routines related to measuring the passing of time.
 
    This module provides support for querying wall time in the local
-   timezone and implements a record :record:`~stopwatch` that provides basic
-   stopwatch behavior.  The stopwatch has the potential for microsecond
-   resolution and is intended to be useful for performance testing.
+   timezone and implements a record :record:`~stopwatch` that can measure
+   the execution time of sections of a program. The stopwatch has the
+   potential for microsecond resolution and is intended to be useful for
+   performance testing.
  */
 
 module Time {

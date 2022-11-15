@@ -838,7 +838,7 @@ tArray[timerEnum.TOTAL].stop();
       writef("%s : %12.4dr\n", t.name, t.duration);
   } else {
 
-    writeln("        stopwatch        # Calls    Avg/Call (s)   Total (s)    % Loop");
+    writeln("        Timer        # Calls    Avg/Call (s)   Total (s)    % Loop");
     writeln("_____________________________________________________________________");
 
     var loopTime : real = tArray(timerEnum.LOOP).duration;
