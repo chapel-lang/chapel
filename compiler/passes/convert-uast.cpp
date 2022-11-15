@@ -2408,8 +2408,8 @@ struct Converter {
 
     if ((nextId + 1) == 0) INT_FATAL("Overflow for lambda ID number");
 
-    // Use sprintf to prevent buffer overflow if there are too many lambdas.
-    int n = snprintf(buf, maxDigits, "chpl_lambda_%i", nextId++);
+    // Use snprintf to prevent buffer overflow if there are too many lambdas.
+    int n = snprintf(buf, (size_t)maxDigits, "chpl_lambda_%i", nextId++);
     if (n > (int) maxDigits) INT_FATAL("Too many lambdas.");
 
     auto ret = astr(buf);

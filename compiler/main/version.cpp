@@ -31,9 +31,9 @@
 
 void
 get_version(char *v) {
-  v += sprintf(v, "%d.%d.%d", MAJOR_VERSION, MINOR_VERSION, UPDATE_VERSION);
+  v += snprintf(v, 16 * sizeof(char), "%d.%d.%d", MAJOR_VERSION, MINOR_VERSION, UPDATE_VERSION);
   if (!officialRelease) {
-    sprintf(v, " pre-release (%s)", BUILD_VERSION);
+    snprintf(v, 32 * sizeof(char), " pre-release (%s)", BUILD_VERSION);
   } else {
     // It's is an official release.
     // Try to decide whether or not to include the BUILD_VERSION
@@ -44,14 +44,14 @@ get_version(char *v) {
       // no need to append a .0
     } else {
       // include the BUILD_VERSION contents to add e.g. a .1
-      sprintf(v, ".%s", BUILD_VERSION);
+      snprintf(v, 16 * sizeof(char), ".%s", BUILD_VERSION);
     }
   }
 }
 
 void
 get_major_minor_version(char *v) {
-  sprintf(v, "%d.%d", MAJOR_VERSION, MINOR_VERSION);
+  snprintf(v, 12 * sizeof(char), "%d.%d", MAJOR_VERSION, MINOR_VERSION);
 }
 
 const char*

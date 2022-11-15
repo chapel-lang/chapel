@@ -297,7 +297,8 @@ void AstDump::visitSymExpr(SymExpr* node) {
     char         buff[bufSize + 1];
 
     snprint_imm(imm, bufSize, *var->immediate);
-    sprintf(buff, "%s%s", imm, is_imag_type(var->type) ? "i" : "");
+    snprintf(buff, sizeof(buff), "%s%s", imm,
+            is_imag_type(var->type) ? "i" : "");
 
     write(buff);
 

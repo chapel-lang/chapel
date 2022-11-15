@@ -246,7 +246,7 @@ static void print_user_internal_error() {
 
   error[idx++] = '-';
   // next 4 characters are the line number
-  sprintf(&error[idx], "%04d", err_lineno);
+  snprintf(&error[idx], 4 * sizeof(char), "%04d", err_lineno);
 
   // now make the error string upper case
   for (int i = 0; i < (int)sizeof(error) && error[i]; i++) {
