@@ -588,8 +588,8 @@ void ErrorRecordInheritanceNotSupported::write(ErrorWriterBase& wr) const {
              "inheritance is not currently supported for records.");
   wr.note(loc, recordName, " declared as a record here");
   wr.message(
-      "thoughts on what record inheritance should entail can be added to "
-      "https://github.com/chapel-lang/chapel/issues/6851");
+      "Thoughts on what record inheritance should entail can be added to "
+      "https://github.com/chapel-lang/chapel/issues/6851.");
 }
 
 void ErrorInvalidNumericLiteral::write(ErrorWriterBase& wr) const {
@@ -623,7 +623,7 @@ void ErrorNewWithoutArgs::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto expr = std::get<const uast::AstNode*>(info);
   wr.heading(kind_, type_, loc,
-             "type in 'new' expression is missing its argument list.");
+             "'new' expression is missing its argument list.");
   wr.message("Perhaps you intended to write 'new ", expr, "()' instead?");
 }
 
@@ -656,7 +656,7 @@ void ErrorLabelIneligibleStmt::write(ErrorWriterBase& wr) const {
     wr.heading(kind_, type_, loc, "cannot label '",
                tagToString(maybeStmt->tag()), "' statement.");
   }
-  wr.message("Only for-, while-do- and do-while-statements can have labels.");
+  wr.message("Only 'for', 'while', and 'do-while' statements can have labels.");
 }
 
 void ErrorBisonMemoryExhausted::write(ErrorWriterBase& wr) const {
