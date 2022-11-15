@@ -7,8 +7,8 @@ proc main  {
   use Time;
   var AAA: [1..n] real;
   var TTT: n*real;
-  var Atimer: Timer();
-  var Ttimer: Timer();
+  var Atimer: stopwatch();
+  var Ttimer: stopwatch();
   Atimer.start(); 
   for i in 1..iters {
     for j in 1..n {

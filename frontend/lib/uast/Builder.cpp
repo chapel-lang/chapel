@@ -148,11 +148,11 @@ bool Builder::astTagIndicatesNewIdScope(asttags::AstTag tag) {
 void Builder::createImplicitModuleIfNeeded() {
   bool containsOnlyModules = true;
   bool containsAnyModules = false;
-  bool containsUseImportOrRequire = false;
   bool containsOther = false;
   int nModules = 0;
   const Module* lastModule = nullptr;
   const AstNode* firstNonModule = nullptr;
+  const AstNode* firstUseImportOrRequire = nullptr;
 
   for (auto const& ownedExpression: topLevelExpressions_) {
     const AstNode* ast = ownedExpression.get();
@@ -168,8 +168,8 @@ void Builder::createImplicitModuleIfNeeded() {
         firstNonModule = ast;
       }
 
-      if (ast->isUse() || ast->isImport() || ast->isRequire()) {
-        containsUseImportOrRequire = true;
+      if (!firstUseImportOrRequire && (ast->isUse() || ast->isImport() || ast->isRequire())) {
+        firstUseImportOrRequire = ast;
       } else {
         containsOther = true;
       }
@@ -196,9 +196,9 @@ void Builder::createImplicitModuleIfNeeded() {
     topLevelExpressions_.push_back(std::move(ownedModule));
 
     // emit warnings as needed
-    if (containsUseImportOrRequire && !containsOther && nModules == 1) {
-      addError(ErrorImplicitSubModule::get(context(),
-            std::make_tuple(lastModule, filepath_)));
+    if (firstUseImportOrRequire && !containsOther && nModules == 1) {
+      addError(ErrorImplicitFileModule::get(context(),
+            std::make_tuple(firstUseImportOrRequire, lastModule, implicitModule)));
     } else if (nModules >= 1 && !containsOnlyModules) {
       addError(ErrorImplicitFileModule::get(context(),
             std::make_tuple(firstNonModule, lastModule, implicitModule)));

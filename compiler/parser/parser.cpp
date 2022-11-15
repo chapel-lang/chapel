@@ -34,6 +34,7 @@
 #include "misc.h"
 
 #include "chpl/parsing/parsing-queries.h"
+#include "llvm/ADT/SmallPtrSet.h"
 
 // Turn this on to dump AST/uAST when using --dyno.
 #define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
@@ -120,7 +121,7 @@ class DynoErrorHandler : public chpl::Context::ErrorHandler {
 // Call to insert an instance of the error handler above into the context.
 static DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void);
 
-static int dynoRealizeErrors(void);
+static bool dynoRealizeErrors(void);
 
 static ModuleSymbol* dynoParseFile(const char* fileName,
                                    ModTag      modTag,
@@ -853,19 +854,50 @@ static DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void) {
   return ret;
 }
 
+//
+// TODO: The error handler would like to do something like fetch AST from
+// IDs, but it cannot due to the possibility of a query cycle:
+//
+// - The 'parseFileToBuilderResult' query is called
+// - Some errors are encountered
+// - Errors are reported to the context by the builder
+// - Which calls the custom error handler, which calls 'idToAst'...
+// - Which calls 'parseFileToBuilderResult' again!
+//
+// I'm sure there's a better way to avoid this cycle, but for right now
+// I am just going to store the errors and display them at a later point
+// after the parsing has completed.
+//
+// One option to fix this is to wield query powers and manually check
+// for and handle the recursion. Another option might be to make our
+// error handler more robust (e.g., make it a class, and separate out the
+// reporting and "realizing" of the errors, as we are doing here).
+//
+static std::vector<const chpl::ErrorBase*> dynoErrorMessages;
+
 // Only install one of these for the entire session.
 static DynoErrorHandler* gDynoErrorHandler = nullptr;
 
-int dynoRealizeErrors(void) {
+static bool dynoRealizeErrors(void) {
   INT_ASSERT(gDynoErrorHandler);
-  int ret = (int) gDynoErrorHandler->errors().size();
-  if (ret) {
-    for (auto err : gDynoErrorHandler->errors()) {
+  bool hadErrors;
+  llvm::SmallPtrSet<const chpl::ErrorBase*, 10> issuedErrors;
+  for (auto err : gDynoErrorHandler->errors()) {
+    hadErrors = true;
+    // skip issuing errors that have already been issued
+    if (!issuedErrors.insert(err).second) continue;
+    if (fDetailedErrors) {
+      chpl::Context::defaultReportError(gContext, err);
+      // Use production compiler's exit-on-error functionality for errors
+      // reported via new Dyno mechanism
+      setupDynoError(err->kind());
+    } else {
+      // Try to maintain compatibility with the old reporting mechanism
       dynoDisplayError(gContext, err->toErrorMessage(gContext));
     }
-    gDynoErrorHandler->clear();
   }
-  return ret;
+  gDynoErrorHandler->clear();
+  return hadErrors;
 }
 
 static ModuleSymbol* dynoParseFile(const char* fileName,

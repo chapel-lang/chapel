@@ -33,8 +33,8 @@ namespace resolution {
   the name of the error to report, and additional error information arguments,
   the exact types of which depend on the type of error (see error-classes-list.h)
  */
-#define TYPE_ERROR(CONTEXT, NAME, EINFO...)\
-  (REPORT(CONTEXT, NAME, EINFO),\
+#define CHPL_TYPE_ERROR(CONTEXT, NAME, EINFO...)\
+  (CHPL_REPORT(CONTEXT, NAME, EINFO),\
    QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(CONTEXT)))
 
 struct Resolver {
@@ -53,12 +53,14 @@ struct Resolver {
   // internal variables
   std::vector<const uast::Decl*> declStack;
   std::vector<const Scope*> scopeStack;
+  std::vector<int> tagTracker;
   bool signatureOnly = false;
   bool fieldOrFormalsComputed = false;
   bool scopeResolveOnly = false;
   const uast::Block* fnBody = nullptr;
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
+  std::set<ID> splitInitTypeInferredVariables;
   const uast::Call* inLeafCall = nullptr;
   bool receiverScopeComputed = false;
   const Scope* savedReceiverScope = nullptr;
@@ -91,6 +93,7 @@ struct Resolver {
       poiScope(poiScope),
       byPostorder(byPostorder), poiInfo(makePoiInfo(poiScope)) {
 
+    tagTracker.resize(uast::asttags::AstTag::NUM_AST_TAGS);
     enterScope(symbol);
   }
  public:
@@ -287,6 +290,23 @@ struct Resolver {
                                     const CallInfo& ci,
                                     const CallResolutionResult& c);
 
+  // If the variable with the passed ID has unknown or generic type,
+  // and it has not yet been initialized, set its type to rhsType.
+  // Also sets lhsExprAst to have this new type.
+  void adjustTypesForSplitInit(ID id,
+                               const types::QualifiedType& rhsType,
+                               const uast::AstNode* lhsExprAst,
+                               const uast::AstNode* astForErr);
+
+  // handles setting types of variables for split init with '='
+  void adjustTypesOnAssign(const uast::AstNode* lhsAst,
+                           const uast::AstNode* rhsAst);
+
+  // handles setting types of variables for split init with 'out' formals
+  void adjustTypesForOutFormals(const CallInfo& ci,
+                                const std::vector<const uast::AstNode*>& asts,
+                                const MostSpecificCandidates& fns);
+
   // e.g. (a, b) = mytuple
   // checks that tuple size matches and that the elements are assignable
   // saves any '=' called into r.associatedFns
@@ -343,7 +363,7 @@ struct Resolver {
   // includes special handling for operators and tuple literals
   void prepareCallInfoActuals(const uast::Call* call,
                               std::vector<CallInfoActual>& actuals,
-                              bool& hasQuestionArg);
+                              const uast::AstNode*& questionArg);
 
   // prepare a CallInfo by inspecting the called expression and actuals
   CallInfo prepareCallInfoNormalCall(const uast::Call* call);
@@ -367,6 +387,10 @@ struct Resolver {
      enterScope and exitScope update those stacks. */
   void enterScope(const uast::AstNode* ast);
   void exitScope(const uast::AstNode* ast);
+
+  /* Returns 'true' if the Resolver has recursed inside of a node of the
+     given AstTag. */
+  bool isInsideTag(uast::asttags::AstTag tag) const;
 
   // the visitor methods
   bool enter(const uast::Conditional* cond);
@@ -411,6 +435,15 @@ struct Resolver {
 
   bool enter(const uast::TaskVar* taskVar);
   void exit(const uast::TaskVar* taskVar);
+
+  bool enter(const uast::Return* ret);
+  void exit(const uast::Return* ret);
+
+  bool enter(const uast::Throw* ret);
+  void exit(const uast::Throw* ret);
+
+  bool enter(const uast::Try* ret);
+  void exit(const uast::Try* ret);
 
   // if none of the above is called, fall back on this one
   bool enter(const uast::AstNode* ast);

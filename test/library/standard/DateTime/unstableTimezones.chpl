@@ -1,6 +1,6 @@
 use Time;
 
-class zone: TZInfo {
+class zone: Timezone {
   /* The offset from UTC this class represents */
   proc utcoffset(dt: datetime): timedelta {
     return new timedelta();

@@ -143,7 +143,7 @@ proc main() {
   initRands();
 
   use Time;      // Bring in timers to measure the rendering time
-  var t: Timer;
+  var t: stopwatch;
   t.start();
 
   // render a frame of xsz x ysz pixels into the provided framebuffer

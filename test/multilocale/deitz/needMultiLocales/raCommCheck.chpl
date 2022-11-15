@@ -108,7 +108,7 @@ proc main() {
 
   var Diagnostics = getCommDiagnostics();
   writeln("Locale: (gets, puts, forks, fast forks, non-blocking forks)");
-  for (lid, diagnostics) in zip(1..,Diagnostics) do
+  for (diagnostics, lid) in zip(Diagnostics, 1..) do
     writeln(lid, ": ", diagnostics);
 
   const validAnswer = verifyResults();             // verify the updates

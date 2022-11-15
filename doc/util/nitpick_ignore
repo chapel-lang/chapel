@@ -35,6 +35,7 @@ cpp:identifier detail::PODUniqueString
 cpp:identifier AstList::const_iterator::difference_type
 cpp:identifier uint64_t
 cpp:identifier int64_t
+cpp:identifier int8_t
 cpp:identifier va_list
 # TODO: Expand macros before generating docs to remove these.
 cpp:identifier ParamTag

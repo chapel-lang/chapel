@@ -1641,7 +1641,7 @@ module ArgumentParser {
         try {
           _tryParseArgs(arguments);
         } catch ex: Error {
-          stderr._writeln(ex.message());
+          stderr.writeln(ex.message());
           if _addHelp {
             _help.printHelp();
             exit(1);
@@ -2046,6 +2046,6 @@ module ArgumentParser {
 
   pragma "no doc"
   proc debugTrace(msg:string) {
-    if DEBUG then try! {stderr._writeln(msg);}
+    if DEBUG then try! {stderr.writeln(msg);}
   }
 }

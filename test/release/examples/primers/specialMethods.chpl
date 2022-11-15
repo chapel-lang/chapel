@@ -67,7 +67,7 @@ record R {
 */
 
 // The ``this`` method gives the record the ability to be accessed like an
-// array.  Here we use the the argument as an index to choose a tuple element.
+// array.  Here we use the argument as an index to choose a tuple element.
 proc R.this(n: int) ref {
   if !vals.indices.contains(n) then
     halt("index out of bounds accessing R");

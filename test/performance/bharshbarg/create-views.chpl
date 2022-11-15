@@ -45,7 +45,7 @@ proc makeReindex(X: []) {
 }
 
 proc test(m : mode, X : []) {
-  var t : Timer;
+  var t : stopwatch;
   var c : int;
 
   t.start();

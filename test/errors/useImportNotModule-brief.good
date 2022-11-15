@@ -1,0 +1,1 @@
+error in useImportNotModule.chpl:8: cannot 'use' 'someProc', which is not a module

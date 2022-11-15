@@ -64,7 +64,7 @@ const epsilon = 1.0e-8,
 const WorkSpace = {0:int(64)..#nn},
       WorkDist  = WorkSpace dmapped Block(WorkSpace);
 
-var totalTime: Timer;
+var totalTime: stopwatch;
 
 writef(" NAS Parallel Benchmarks 2.4 -- EP Benchmark\n");
 writef(" Number of random numbers generated:  %15i\n", 2**(m+1));

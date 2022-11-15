@@ -266,7 +266,10 @@ const char* toString(Type* type, bool decorateAllClasses) {
           retval = astr(vt->symbol->name + 1);
         }
 
-      // TODO: add a case to handle sync, single, atomic
+      } else if (at->symbol->hasFlag(FLAG_ATOMIC_TYPE) &&
+                 (strcmp(at->symbol->name, "AtomicBool") == 0 ||
+                  strcmp(at->symbol->name, "RAtomicBool") == 0)) {
+        retval = astr("atomic bool");
       } else if (isManagedPtrType(vt)) {
         Type* borrowType = getManagedPtrBorrowType(vt);
         const char* borrowed = "borrowed ";

@@ -1,0 +1,2 @@
+--detailed-errors # invalidNew-detailed.good
+--no-detailed-errors # invalidNew-brief.good

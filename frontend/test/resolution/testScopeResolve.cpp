@@ -425,6 +425,106 @@ static void test10() {
   assert(reA.toId().isEmpty());
 }
 
+// Private modifiers are respected.
+static void test11() {
+  printf("test11\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module A {
+        private var x : int;
+      }
+      module B {
+        public use A;
+        private var y : int;
+      }
+      module C {
+        use B;
+        private var z : int;
+        var a = x;
+        var b = y;
+        var c = z;
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+  const Variable* y = findVariable(vec, "y");
+  assert(y);
+  const Variable* z = findVariable(vec, "z");
+  assert(z);
+  const Variable* a = findVariable(vec, "a");
+  assert(a);
+  const Variable* b = findVariable(vec, "b");
+  assert(b);
+  const Variable* c = findVariable(vec, "c");
+  assert(c);
+
+  const ResolvedExpression& reA = scopeResolveIt(context, a->initExpression());
+  assert(reA.toId().isEmpty());
+  const ResolvedExpression& reB = scopeResolveIt(context, b->initExpression());
+  assert(reB.toId().isEmpty());
+  const ResolvedExpression& reC = scopeResolveIt(context, c->initExpression());
+  assert(reC.toId() == z->id());
+}
+
+// multiple imports / uses of the same module don't block finding symbols
+// via the second visibility statment onwards.
+static void test12() {
+  printf("test12\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  // x is imported as usual.
+  // y is only ever imported renamed, so we can't find it.
+  // When we search for z, we first check 'B except y' and don't find it. We
+  // then check 'B only y as z'. The name we're looking for changed, so
+  // we have to perform the search again (and should not skip searching in
+  // B a second time).
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module A {
+        var x : int;
+        var y : int;
+      }
+      module B {
+        use A except y;
+        use A only y as z;
+
+        var a = x;
+        var b = y;
+        var c = z;
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+  const Variable* y = findVariable(vec, "y");
+  assert(y);
+  const Variable* a = findVariable(vec, "a");
+  assert(a);
+  const Variable* b = findVariable(vec, "b");
+  assert(b);
+  const Variable* c = findVariable(vec, "c");
+  assert(c);
+
+  const ResolvedExpression& reA = scopeResolveIt(context, a->initExpression());
+  assert(reA.toId() == x->id());
+  const ResolvedExpression& reB = scopeResolveIt(context, b->initExpression());
+  assert(reB.toId().isEmpty());
+  const ResolvedExpression& reC = scopeResolveIt(context, c->initExpression());
+  assert(reC.toId() == y->id());
+}
+
 int main() {
   test1();
   test2();
@@ -436,6 +536,8 @@ int main() {
   test8();
   test9();
   test10();
+  test11();
+  test12();
 
   return 0;
 }

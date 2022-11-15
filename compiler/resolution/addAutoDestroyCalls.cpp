@@ -928,7 +928,7 @@ static Expr* findLastExprInStatement(Expr* e, VarSymbol* v) {
     }
   }
 
-  // Check if the early deinit point is the same as the the
+  // Check if the early deinit point is the same as the
   // usual (end of block) deinit point. If it is, treat the variable
   // as end-of-block to simplify matters.
   GotoStmt* gotoStmt = toGotoStmt(stmt);

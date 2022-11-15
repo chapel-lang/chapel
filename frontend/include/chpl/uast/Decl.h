@@ -157,4 +157,15 @@ class Decl : public AstNode {
 } // end namespace uast
 } // end namespace chpl
 
+namespace std {
+
+template<> struct hash<chpl::uast::Decl::Visibility>
+{
+  size_t operator()(const chpl::uast::Decl::Visibility& key) const {
+    return (size_t) key;
+  }
+};
+
+} // end namespace std
+
 #endif

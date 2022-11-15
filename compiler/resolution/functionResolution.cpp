@@ -2253,6 +2253,12 @@ static bool fits_in_mantissa_exponent(int mantissa_width,
   } else
     INT_FATAL("unsupported number kind");
 
+  if (!std::isfinite(v)) {
+    // it must be infinity or nan
+    // assume these fit in any sized real
+    return true;
+  }
+
   double frac = 0.0;
   int exp = 0;
 
@@ -5781,58 +5787,6 @@ static void discardWorsePromoting(Vec<ResolutionCandidate*>&   candidates,
   }
 }
 
-// Discard any candidate that has more implicit conversions
-// to a type not used at the call site than another candidate.
-//
-// The type-not-used rule resolves a problem with
-//   proc f(real(32), real(32))
-//   proc f(real(64), real(64))
-//   proc f(uint(32), uint(32))
-//   proc f(int(64), int(64))
-//   f(myUint32, max(int));
-//  .... but it causes problems with preferring generic to non-generic.
-/*static void discardWorseConversionsToNotMentioned(
-    Vec<ResolutionCandidate*>&   candidates,
-    const DisambiguationContext& DC,
-    std::vector<bool>&           discarded) {
-
-  int minImpConvNotMentioned = INT_MAX;
-  int maxImpConvNotMentioned = INT_MIN;
-
-  for (int i = 0; i < candidates.n; i++) {
-    if (discarded[i]) {
-      continue;
-    }
-
-    ResolutionCandidate* candidate = candidates.v[i];
-    computeConversionInfo(candidate, DC);
-
-    int impConvNotMentioned = candidate->nImpConvToTypeNotMentioned;
-    if (impConvNotMentioned < minImpConvNotMentioned) {
-      minImpConvNotMentioned = impConvNotMentioned;
-    }
-    if (impConvNotMentioned > maxImpConvNotMentioned) {
-      maxImpConvNotMentioned = impConvNotMentioned;
-    }
-  }
-
-  if (minImpConvNotMentioned < maxImpConvNotMentioned) {
-    for (int i = 0; i < candidates.n; i++) {
-      if (discarded[i]) {
-        continue;
-      }
-
-      ResolutionCandidate* candidate = candidates.v[i];
-      int impConvNotMentioned = candidate->nImpConvToTypeNotMentioned;
-      if (impConvNotMentioned > minImpConvNotMentioned) {
-        EXPLAIN("X: Fn %d has more implicit conversions to type not used\n", i);
-        discarded[i] = true;
-      }
-    }
-  }
-}
-*/
-
 // Discard any candidate that has a worse argument mapping than another
 // candidate.
 static void discardWorseArgs(Vec<ResolutionCandidate*>&   candidates,
@@ -6263,30 +6217,10 @@ struct PartialOrderChecker {
   }
 };
 
-static ResolutionCandidate*
-disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
-                         const DisambiguationContext& DC,
-                         bool                         ignoreWhere,
-                         Vec<ResolutionCandidate*>&   ambiguous) {
-
-  // quick exit if there is nothing to do
-  if (candidates.n == 0) {
-    return nullptr;
-  }
-  if (candidates.n == 1) {
-    return candidates.v[0];
-  }
-
-  // Disable implicit conversion to remove nilability
-  // for disambiguation
-  int saveGenerousResolutionForErrors = 0;
-  if (generousResolutionForErrors > 0) {
-    saveGenerousResolutionForErrors = generousResolutionForErrors;
-    generousResolutionForErrors = 0;
-  }
-
-  // If index i is set we have ruled out that function
-  std::vector<bool> discarded(candidates.n, false);
+static void disambiguateDiscarding(Vec<ResolutionCandidate*>&   candidates,
+                                   const DisambiguationContext& DC,
+                                   bool                         ignoreWhere,
+                                   std::vector<bool>&           discarded) {
 
   if (!DC.useOldVisibility && !DC.isMethodCall) {
     // If some candidates are less visible than other candidates,
@@ -6302,7 +6236,7 @@ disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
   // Consider the relationship among the arguments
   // Note that this part is a partial order;
   // in other words, "incomparable" is an option when comparing
-  // two candidates. However, it should be transitive.
+  // two candidates. It should be transitive.
   // Discard any candidate that has a worse argument mapping than another
   // candidate.
   discardWorseArgs(candidates, DC, discarded);
@@ -6326,7 +6260,34 @@ disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
     // This filter should not be applied to method calls.
     discardWorseVisibility(candidates, DC, discarded);
   }
+}
 
+static ResolutionCandidate*
+disambiguateByMatchInner(Vec<ResolutionCandidate*>&   candidates,
+                         const DisambiguationContext& DC,
+                         bool                         ignoreWhere,
+                         Vec<ResolutionCandidate*>&   ambiguous) {
+
+  // quick exit if there is nothing to do
+  if (candidates.n == 0) {
+    return nullptr;
+  }
+  if (candidates.n == 1) {
+    return candidates.v[0];
+  }
+
+  // Disable implicit conversion to remove nilability for disambiguation
+  int saveGenerousResolutionForErrors = 0;
+  if (generousResolutionForErrors > 0) {
+    saveGenerousResolutionForErrors = generousResolutionForErrors;
+    generousResolutionForErrors = 0;
+  }
+
+  // If index i is set we have ruled out that function
+  std::vector<bool> discarded(candidates.n, false);
+
+  // use new rules
+  disambiguateDiscarding(candidates, DC, ignoreWhere, discarded);
 
   // If there is just 1 candidate at this point, return it
   {
@@ -6672,42 +6633,42 @@ static int testArgMapping(ResolutionCandidate*         candidate1,
   //   class Parent { }
   //   class GenericChild : Parent { type t; }
   // Here a GenericChild argument should be preferred to a Parent one
-  if (f1Type == f2Type           &&
-      !formal1->instantiatedFrom && formal2->instantiatedFrom) {
-    reason = "concrete vs generic";
-    return 1;
-  }
+  if (f1Type == f2Type) {
+    if (!formal1->instantiatedFrom && formal2->instantiatedFrom) {
+      reason = "concrete vs generic";
+      return 1;
+    }
 
-  if (f1Type == f2Type &&
-      formal1->instantiatedFrom && !formal2->instantiatedFrom) {
-    reason = "concrete vs generic";
-    return 2;
-  }
+    if (formal1->instantiatedFrom && !formal2->instantiatedFrom) {
+      reason = "concrete vs generic";
+      return 2;
+    }
 
-  if (formal1->instantiatedFrom != dtAny &&
-      formal2->instantiatedFrom == dtAny) {
-    reason = "generic any vs partially generic/concrete";
-    return 1;
-  }
+    if (formal1->instantiatedFrom != dtAny &&
+        formal2->instantiatedFrom == dtAny) {
+      reason = "generic any vs partially generic/concrete";
+      return 1;
+    }
 
-  if (formal1->instantiatedFrom == dtAny &&
-      formal2->instantiatedFrom != dtAny) {
-    reason = "generic any vs partially generic/concrete";
-    return 2;
-  }
+    if (formal1->instantiatedFrom == dtAny &&
+        formal2->instantiatedFrom != dtAny) {
+      reason = "generic any vs partially generic/concrete";
+      return 2;
+    }
 
-  if (formal1->instantiatedFrom && formal2->instantiatedFrom &&
-      formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
-      !formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
-    reason = "partially generic vs generic";
-    return 1;
-  }
+    if (formal1->instantiatedFrom && formal2->instantiatedFrom &&
+        formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
+        !formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
+      reason = "partially generic vs generic";
+      return 1;
+    }
 
-  if (formal1->instantiatedFrom && formal2->instantiatedFrom &&
-      !formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
-      formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
-    reason = "partially generic vs generic";
-    return 2;
+    if (formal1->instantiatedFrom && formal2->instantiatedFrom &&
+        !formal1->hasFlag(FLAG_NOT_FULLY_GENERIC) &&
+        formal2->hasFlag(FLAG_NOT_FULLY_GENERIC)) {
+      reason = "partially generic vs generic";
+      return 2;
+    }
   }
 
   if (f1Param && !f2Param) {
@@ -8651,10 +8612,38 @@ static Type* moveDetermineRhsTypeErrorIfInvalid(CallExpr* call) {
           if (rhsFn->hasFlag(FLAG_PROMOTION_WRAPPER))
             rhsName = unwrapFnName(rhsFn);
 
-          USR_FATAL(userCall(call),
+          // TODO <June 23 Release>: this deprecation-specific error message should be removed
+          //                         when the bool-returning-writers deprecation is finalized
+          if (
+            rhsFn->getModule()->modTag != MOD_USER && (
+              // writer methods on channels
+              (rhsFn->isMethod() == 1 &&
+                (
+                    std::strcmp("write", rhsName) == 0 ||
+                    std::strcmp("writeln", rhsName) == 0 ||
+                    std::strcmp("writebits", rhsName) == 0 ||
+                    std::strcmp("writeBytes", rhsName) == 0 ||
+                    std::strcmp("writef", rhsName) == 0
+                )
+              ) ||
+              // or, top-level writef
+              std::strcmp("writef", rhsName) == 0
+            )
+          ) {
+            // emit the write* specific error message:
+            // (https://github.com/chapel-lang/chapel/pull/20907#pullrequestreview-1155017128)
+            USR_FATAL(userCall(call),
+                    "illegal use of return value from '%s'. "
+                    "Note: if you wish to detect early EOF from a write call, "
+                    "check for an EofError using a try-catch block",
+                    rhsName);
+          } else {
+            // otherwise, emit the normal error message:
+            USR_FATAL(userCall(call),
                     "illegal use of function that does not "
                     "return a value: '%s'",
                     rhsName);
+          }
         }
       }
     }

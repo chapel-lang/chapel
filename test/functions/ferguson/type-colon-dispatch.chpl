@@ -28,6 +28,7 @@ proc foo(type t:int) {
 proc foo(type t:integral) {
   writeln("integral");
 }
+pragma "last resort"
 proc foo(type t) {
   writeln("any type");
 }

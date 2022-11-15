@@ -10,7 +10,7 @@ config const printDiags = false;
 
 enum OP {GET,PUT,FAMO,NFAMO,CASAMO,GETAMO,PUTAMO,FASTAM,AM};
 
-var t: Timer;
+var t: stopwatch;
 proc startDiags() {
   t.start();
   if printDiags { startCommDiagnostics(); }

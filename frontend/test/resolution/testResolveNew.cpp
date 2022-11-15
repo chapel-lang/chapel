@@ -415,6 +415,10 @@ static void testGenericRecordUserInitDependentField() {
 
   auto path = TEST_NAME(ctx);
   std::string contents = R""""(
+    operator =(ref lhs: int, rhs: int) {
+      __primitive("=", lhs, rhs);
+    }
+
     record r {
       type f1;
       param f2: int;
@@ -436,10 +440,10 @@ static void testGenericRecordUserInitDependentField() {
   assert(br.numTopLevelExpressions() == 1);
   auto mod = br.singleModule();
   assert(mod);
-  assert(mod->numStmts() == 2);
-  auto rec = mod->stmt(0)->toRecord();
+  assert(mod->numStmts() == 3);
+  auto rec = mod->stmt(1)->toRecord();
   assert(rec);
-  auto obj = mod->stmt(1)->toVariable();
+  auto obj = mod->stmt(2)->toVariable();
   assert(obj);
 
   // Resolve the module.
@@ -514,50 +518,6 @@ static void testGenericRecordUserInitDependentField() {
   assert(qtRecv.kind() == QualifiedType::REF);
 }
 
-static void testFieldUseBeforeInit1(void) {
-  Context context;
-  Context* ctx = &context;
-  ErrorGuard guard(ctx);
-
-  auto path = TEST_NAME(ctx);
-  std::string contents = R""""(
-    record r {
-      var x: int;
-    }
-    proc foo(x) return;
-    proc r.init() {
-      foo(x);
-      var doNotFold: bool;
-      if doNotFold then foo(x); else foo(x);
-      for i in 1..7 do foo(x);
-      forall i in 1..7 do foo(x);
-      foreach i in 1..7 do foo(x);
-      this.x = 16;
-      foo(x);
-    }
-    var obj = new r();
-    )"""";
-
-  setFileText(ctx, path, contents);
-
-  // Get the module.
-  auto& br = parseAndReportErrors(ctx, path);
-  assert(br.numTopLevelExpressions() == 1);
-  auto mod = br.topLevelExpression(0)->toModule();
-  assert(mod);
-
-  // Resolve the module.
-  std::ignore = resolveModule(ctx, mod->id());
-
-  assert(guard.errors().size() == 6);
-
-  // Check the first error to see if it lines up.
-  auto& msg = guard.errors()[0];
-  assert(msg->message() == "'x' is used before it is initialized");
-  assert(msg->location(ctx).firstLine() == 7);
-  assert(guard.realizeErrors());
-}
-
 static void testRecordNewSegfault(void) {
   Context context;
   Context* ctx = &context;
@@ -591,7 +551,6 @@ int main() {
   testTertMethodCallCrossModule();
   testClassManagementNilabilityInNewExpr();
   testGenericRecordUserInitDependentField();
-  testFieldUseBeforeInit1();
   testRecordNewSegfault();
 
   return 0;

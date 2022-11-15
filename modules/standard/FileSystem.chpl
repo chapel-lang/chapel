@@ -59,10 +59,10 @@
 
    File/Directory Properties
    -------------------------
-   :proc:`getGID`
+   :proc:`getGid`
    :proc:`getMode`
    :proc:`getFileSize`
-   :proc:`getUID`
+   :proc:`getUid`
    :proc:`exists`
    :proc:`isDir`
    :proc:`isFile`
@@ -83,9 +83,9 @@
    File System Traversal Iterators
    -------------------------------
    :iter:`glob`
-   :iter:`listdir`
-   :iter:`walkdirs`
-   :iter:`findfiles`
+   :iter:`listDir`
+   :iter:`walkDirs`
+   :iter:`findFiles`
 
    Constant and Function Definitions
    ---------------------------------
@@ -93,7 +93,6 @@
 module FileSystem {
 
   public use OS;
-  import SysBasic.{ENOERR};
   use Path;
   use HaltWrappers;
   use CTypes;
@@ -187,7 +186,7 @@ private inline proc unescape(str: string) {
 proc locale.chdir(name: string) throws {
   extern proc chpl_fs_chdir(name: c_string):errorCode;
 
-  var err: errorCode = ENOERR;
+  var err: errorCode = 0;
   on this {
     err = chpl_fs_chdir(unescape(name).c_str());
   }
@@ -297,8 +296,8 @@ proc copy(src: string, dest: string, metadata: bool = false) throws {
     if err then try ioerror(err, "in copy(" + src + ", " + dest + ")");
 
     // Get uid and gid from src
-    var uid = try getUID(src);
-    var gid = try getGID(src);
+    var uid = try getUid(src);
+    var gid = try getGid(src);
 
     // Change uid and gid to that of the src
     try chown(destFile, uid, gid);
@@ -383,7 +382,7 @@ proc copyFile(src: string, dest: string) throws {
   // If increasing the read size, make sure there's a test in
   // test/library/standard/FileSystem that copies a file larger than one buffer.
   while (try srcChnl.readbytes(buf, len=4096)) {
-    try destChnl._write(buf);
+    try destChnl.write(buf);
     // From mppf:
     // If you want it to be faster, we can make it only buffer once (sharing
     // the bytes read into memory between the two channels). To do that you'd
@@ -432,7 +431,7 @@ proc copyMode(src: string, dest: string) throws {
 
 pragma "no doc"
 proc copyMode(out error: errorCode, src: string, dest: string) {
-  var err: errorCode = ENOERR;
+  var err: errorCode = 0;
   try {
     copyMode(src, dest);
   } catch e: SystemError {
@@ -484,7 +483,7 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
   var oldMode = try getMode(src);
   try mkdir(dest, mode=oldMode, parents=true);
 
-  for filename in listdir(path=src, dirs=false, files=true, listlinks=true) {
+  for filename in listDir(path=src, dirs=false, files=true, listlinks=true) {
     // Take care of files in src
     var fileDestName = dest + "/" + filename;
     var fileSrcName = src + "/" + filename;
@@ -499,7 +498,7 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
     }
   }
 
-  for dirname in listdir(path=src, dirs=true, files=false, listlinks=true) {
+  for dirname in listDir(path=src, dirs=true, files=false, listlinks=true) {
     var dirDestName = dest+"/"+dirname;
     var dirSrcName = src+"/"+dirname;
     if (try isLink(dirSrcName) && copySymbolically) {
@@ -531,7 +530,7 @@ proc locale.cwd(): string throws {
   extern proc chpl_fs_cwd(ref working_dir:c_string):errorCode;
 
   var ret:string;
-  var err: errorCode = ENOERR;
+  var err: errorCode = 0;
   on this {
     var tmp:c_string;
     // c_strings can't cross on statements.
@@ -542,7 +541,7 @@ proc locale.cwd(): string throws {
     // tmp was qio_malloc'd by chpl_fs_cwd
     chpl_free_c_string(tmp);
   }
-  if err != ENOERR then try ioerror(err, "in cwd");
+  if err != 0 then try ioerror(err, "in cwd");
   return ret;
 }
 
@@ -592,32 +591,71 @@ proc exists(name: string): bool throws {
 
    :yield:  The paths to any files found, relative to `startdir`, as strings
 */
+iter findFiles(startdir: string = ".", recursive: bool = false,
+               hidden: bool = false): string {
+  if (recursive) then
+    foreach subdir in walkDirs(startdir, hidden=hidden) do
+      foreach file in listDir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+        yield subdir+"/"+file;
+  else
+    foreach file in listDir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+      yield startdir+"/"+file;
+}
 
+// When this deprecated iterator is removed remember to remove the standalone
+// parallel version below as well.
+deprecated "'findfiles' is deprecated, please use 'findFiles' instead"
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false): string {
   if (recursive) then
-    foreach subdir in walkdirs(startdir, hidden=hidden) do
-      foreach file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+    foreach subdir in walkDirs(startdir, hidden=hidden) do
+      foreach file in listDir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
         yield subdir+"/"+file;
   else
-    foreach file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+    foreach file in listDir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
       yield startdir+"/"+file;
 }
 
 pragma "no doc"
+iter findFiles(startdir: string = ".", recursive: bool = false,
+               hidden: bool = false, param tag: iterKind): string
+       where tag == iterKind.standalone {
+  if (recursive) then
+    // Why "with (ref hidden)"?  A: the compiler currently allows only
+    // [const] ref intents in forall loops over recursive parallel iterators
+    // such as walkDirs().
+    forall subdir in walkDirs(startdir, hidden=hidden) with (ref hidden) do
+      foreach file in listDir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+        yield subdir+"/"+file;
+  else
+    foreach file in listDir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+      yield startdir+"/"+file;
+}
+
+// Adding the deprecation warning here causes 3 deprecation warnings in
+// addition to the one that comes from the serial iterator for a forall loop
+// that calls this. (serial, leader, follower, standalone). Rely on just
+// the serial deprecation warning to reduce it to a single message.
+pragma "no doc"
+//deprecated "'findfiles' is deprecated, please use 'findFiles' instead"
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
   if (recursive) then
     // Why "with (ref hidden)"?  A: the compiler currently allows only
     // [const] ref intents in forall loops over recursive parallel iterators
-    // such as walkdirs().
-    forall subdir in walkdirs(startdir, hidden=hidden) with (ref hidden) do
-      foreach file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+    // such as walkDirs().
+    forall subdir in walkDirs(startdir, hidden=hidden) with (ref hidden) do
+      foreach file in listDir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
         yield subdir+"/"+file;
   else
-    foreach file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+    foreach file in listDir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
       yield startdir+"/"+file;
+}
+
+deprecated "getGID is deprecated, please use getGid instead"
+proc getGID(name: string): int throws {
+  return getGid(name);
 }
 
 /* Obtains and returns the group id associated with the file or directory
@@ -631,12 +669,12 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
 
    :throws SystemError: Thrown to describe an error if one occurs.
 */
-proc getGID(name: string): int throws {
+proc getGid(name: string): int throws {
   extern proc chpl_fs_get_gid(ref result: c_int, filename: c_string): errorCode;
 
   var result: c_int;
   var err = chpl_fs_get_gid(result, unescape(name).c_str());
-  if err then try ioerror(err, "in getGID");
+  if err then try ioerror(err, "in getGid");
   return result;
 }
 
@@ -681,6 +719,11 @@ proc getFileSize(name: string): int throws {
   return result;
 }
 
+deprecated "getUID is deprecated, please use getUid instead"
+proc getUID(name: string): int throws {
+  return getUid(name);
+}
+
 /* Obtains and returns the user id associated with the file or directory
    specified by `name`.
 
@@ -692,12 +735,12 @@ proc getFileSize(name: string): int throws {
 
    :throws SystemError: Thrown to describe an error if one occurs.
 */
-proc getUID(name: string): int throws {
+proc getUid(name: string): int throws {
   extern proc chpl_fs_get_uid(ref result: c_int, filename: c_string): errorCode;
 
   var result: c_int;
   var err = chpl_fs_get_uid(result, unescape(name).c_str());
-  if err then try ioerror(err, "in getUID");
+  if err then try ioerror(err, "in getUid");
   return result;
 }
 
@@ -949,6 +992,14 @@ proc isMount(name: string): bool throws {
   return ret != 0;
 }
 
+deprecated "listdir is deprecated, please use listDir instead"
+iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
+             files: bool = true, listlinks: bool = true): string {
+  for filename in listDir(path, hidden, dirs, files, listlinks) {
+    yield filename;
+  }
+}
+
 /* Lists the contents of a directory.  May be invoked in serial
    contexts only.
 
@@ -973,7 +1024,7 @@ proc isMount(name: string): bool throws {
 
    :yield: The names of the specified directory's contents, as strings
 */
-iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
+iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
               files: bool = true, listlinks: bool = true): string {
   extern type DIRptr;
   extern type direntptr;
@@ -1009,10 +1060,10 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
                 yield filename;
             }
           } catch e: SystemError {
-            writeln("error in listdir(): ", errorToString(e.err));
+            writeln("error in listDir(): ", errorToString(e.err));
             break;
           } catch {
-            writeln("unknown error in listdir()");
+            writeln("unknown error in listDir()");
             break;
           }
         }
@@ -1022,7 +1073,7 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
     closedir(dir);
   } else {
     extern proc perror(s: c_string);
-    perror(("error in listdir(): " + path).c_str());
+    perror(("error in listDir(): " + path).c_str());
   }
 }
 
@@ -1188,13 +1239,13 @@ proc rmTree(root: string) throws {
 
 private proc rmTreeHelper(root: string) throws {
   // Go through all the files in this current directory and remove them
-  for filename in listdir(path=root, dirs=false, files=true, listlinks=true, hidden=true) {
+  for filename in listDir(path=root, dirs=false, files=true, listlinks=true, hidden=true) {
     var name = root + "/" + filename;
     try remove(name);
   }
   // Then traverse all the directories within this current directory and have
   // them handle cleaning up their contents and themselves
-  for dirname in listdir(path=root, dirs=true, files=false, listlinks=true, hidden=true) {
+  for dirname in listDir(path=root, dirs=true, files=false, listlinks=true, hidden=true) {
     var fullpath = root + "/" + dirname;
     var dirIsLink = try isLink(fullpath);
     if (dirIsLink) {
@@ -1316,6 +1367,15 @@ proc locale.umask(mask: int): int {
 }
 
 
+deprecated "walkdirs is deprecated; please use walkDirs instead"
+iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
+              hidden: bool = false, followlinks: bool = false,
+              sort: bool = false): string {
+  for dir in walkDirs(path, topdown, depth, hidden, followlinks, sort) {
+    yield dir;
+  }
+}
+
 /* Recursively walk a directory structure, yielding directory names.
    May be invoked in serial or non-zippered parallel contexts.
 
@@ -1345,7 +1405,7 @@ proc locale.umask(mask: int): int {
 
    :yield: The directory names encountered, relative to `path`, as strings
 */
-iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
+iter walkDirs(path: string = ".", topdown: bool = true, depth: int = max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false): string {
 
@@ -1353,7 +1413,7 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
     yield path;
 
   if (depth) {
-    var subdirs = listdir(path, hidden=hidden, files=false, listlinks=followlinks);
+    var subdirs = listDir(path, hidden=hidden, files=false, listlinks=followlinks);
     if (sort) {
       use Sort /* only sort */;
       sort(subdirs);
@@ -1361,7 +1421,7 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
 
     for subdir in subdirs {
       const fullpath = path + "/" + subdir;
-      for subdir in walkdirs(fullpath, topdown, depth-1, hidden,
+      for subdir in walkDirs(fullpath, topdown, depth-1, hidden,
                              followlinks, sort) do
         yield subdir;
     }
@@ -1371,12 +1431,21 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
     yield path;
 }
 
+pragma "no doc"
+iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
+              hidden: bool = false, followlinks: bool = false,
+              sort: bool = false, param tag: iterKind): string
+       where tag == iterKind.standalone {
+  forall dir in walkDirs(path, topdown, depth, hidden, followlinks, sort) {
+    yield dir;
+  }
+}
 
 //
 // Here's a parallel version
 //
 pragma "no doc"
-iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
+iter walkDirs(path: string = ".", topdown: bool = true, depth: int =max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
@@ -1388,14 +1457,14 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
     yield path;
 
   if (depth) {
-    var subdirs = listdir(path, hidden=hidden, files=false, listlinks=followlinks);
+    var subdirs = listDir(path, hidden=hidden, files=false, listlinks=followlinks);
     forall subdir in subdirs {
       const fullpath = path + "/" + subdir;
       //
       // Call standalone walkdirs() iterator recursively; set sort=false since it is
       // not useful and we've already printed the warning
       //
-      for subdir in walkdirs(fullpath, topdown, depth-1, hidden, followlinks, sort=false, iterKind.standalone) do
+      for subdir in walkDirs(fullpath, topdown, depth-1, hidden, followlinks, sort=false, iterKind.standalone) do
         yield subdir;
     }
   }

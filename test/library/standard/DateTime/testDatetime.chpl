@@ -223,7 +223,7 @@ proc test_replace() {
   var base = new datetime((...args));
   var nilTZ:shared Timezone?;
 
-  assert(base == base.replace(tzinfo=nilTZ));
+  assert(base == base.replace(tz=nilTZ));
 
   var i = 0;
   for (name, newval) in (("year", 2),
@@ -239,19 +239,19 @@ proc test_replace() {
     var expected = new datetime((...newargs));
 
     if name == "year" then
-      got = base.replace(year = newval, tzinfo=nilTZ);
+      got = base.replace(year = newval, tz=nilTZ);
     else if name == "month" then
-      got = base.replace(month = newval, tzinfo=nilTZ);
+      got = base.replace(month = newval, tz=nilTZ);
     else if name == "day" then
-      got = base.replace(day = newval, tzinfo=nilTZ);
+      got = base.replace(day = newval, tz=nilTZ);
     else if name == "hour" then
-      got = base.replace(hour = newval, tzinfo=nilTZ);
+      got = base.replace(hour = newval, tz=nilTZ);
     else if name == "minute" then
-      got = base.replace(minute = newval, tzinfo=nilTZ);
+      got = base.replace(minute = newval, tz=nilTZ);
     else if name == "second" then
-      got = base.replace(second = newval, tzinfo=nilTZ);
+      got = base.replace(second = newval, tz=nilTZ);
     else if name == "microsecond" then
-      got = base.replace(microsecond = newval, tzinfo=nilTZ);
+      got = base.replace(microsecond = newval, tz=nilTZ);
 
     assert(expected == got);
     i += 1;

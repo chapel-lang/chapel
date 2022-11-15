@@ -1,4 +1,4 @@
 use FileSystem;
 
-writeln(getUID("getting.chpl"));
-writeln(getGID("getting.chpl"));
+writeln(getUid("getting.chpl"));
+writeln(getGid("getting.chpl"));

@@ -47,10 +47,10 @@ note: tuple element #0 of type shared C?
 tupleModifyConstArgElem.chpl:32: note: possibly set here
 tupleModifyConstArgElem.chpl:43: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:43: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
-note: tuple element #0 of type AtomicT(int(64))
+note: tuple element #0 of type atomic int(64)
 tupleModifyConstArgElem.chpl:44: note: possibly set here
-  tupleModifyConstArgElem.chpl:83: called as modifyConstArgElement(tup: 1*AtomicT(int(64))) from function 'run'
-  tupleModifyConstArgElem.chpl:129: called as run(elem: AtomicT(int(64)))
+  tupleModifyConstArgElem.chpl:83: called as modifyConstArgElement(tup: 1*atomic int(64)) from function 'run'
+  tupleModifyConstArgElem.chpl:129: called as run(elem: atomic int(64))
 tupleModifyConstArgElem.chpl:55: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:55: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
 note: tuple element #0 of type string

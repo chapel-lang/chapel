@@ -25,7 +25,7 @@ const nElems = if size == arraySize.tiny then nElemsTiny else
                if size == arraySize.large then nElemsLarge else -1;
 
 
-var t: Timer;
+var t: stopwatch;
 inline proc startDiag() {
   if !correctness {
     if commCount {

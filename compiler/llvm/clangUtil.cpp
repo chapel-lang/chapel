@@ -2385,14 +2385,23 @@ void runClang(const char* just_parse_filename) {
   bool parseOnly = (just_parse_filename != NULL);
   static bool is_installed_fatal_error_handler = false;
 
-  const char* clang_warn[] = {"-Wall", "-Werror", "-Wpointer-arith",
-                              "-Wwrite-strings", "-Wno-strict-aliasing",
-                              "-Wmissing-declarations", "-Wmissing-prototypes",
-                              "-Wstrict-prototypes",
-                              "-Wmissing-format-attribute",
-                              // clang can't tell which functions we use
-                              "-Wno-unused-function",
-                              NULL};
+  // These warnings are _required_ to make sure the code Clang generates
+  // when compiling the code in Chapel 'extern' blocks will play well
+  // with our backend.
+  const char* clangRequiredWarningFlags[] = {
+    "-Wall",
+    "-Werror",
+    "-Wpointer-arith",
+    "-Wwrite-strings",
+    "-Wno-strict-aliasing",
+    "-Wmissing-declarations",
+    "-Wmissing-prototypes",
+    "-Wstrict-prototypes",
+    "-Wmissing-format-attribute",
+    // clang can't tell which functions we use
+    "-Wno-unused-function",
+    NULL};
+
   const char* clang_debug = "-g";
   const char* clang_opt = "-O3";
   const char* clang_fast_float = "-ffast-math";
@@ -2458,11 +2467,9 @@ void runClang(const char* just_parse_filename) {
   // add a -I for the generated code directory
   clangCCArgs.push_back(std::string("-I") + getIntermediateDirName());
 
-  // Add warnings flags
-  if (ccwarnings) {
-    for (int i = 0; clang_warn[i]; i++) {
-      clangCCArgs.push_back(clang_warn[i]);
-    }
+  // Always add warnings flags
+  for (int i = 0; clangRequiredWarningFlags[i]; i++) {
+    clangCCArgs.push_back(clangRequiredWarningFlags[i]);
   }
 
   // Add debug flags
@@ -3506,7 +3513,7 @@ const clang::CodeGen::ABIArgInfo*
 getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg)
 {
 
-  // Don't try to use the the calling convention code for variadic args.
+  // Don't try to use the calling convention code for variadic args.
   if ((unsigned) curCArg >= CGI->arg_size() && CGI->isVariadic())
     return NULL;
 

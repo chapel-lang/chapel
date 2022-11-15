@@ -4,7 +4,7 @@ config const n = 10000;
 const numTasksPerLocale = if dataParTasksPerLocale > 0 then dataParTasksPerLocale
                              else here.maxTaskPar;
 config const performanceTest = false;
-var t : Timer;
+var t : stopwatch;
 t.start();
 var myc1 = new channel(int);
 var myc2 = new channel(int);

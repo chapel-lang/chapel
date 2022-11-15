@@ -2110,6 +2110,7 @@ int main(int argc, char** argv) {
 
   Context context(CHPL_HOME);
   Context *ctx = &context;
+  ctx->setDetailedErrorOutput(false);
   auto chplEnv = ctx->getChplEnv();
   assert(!chplEnv.getError() && "not handling chplenv errors yet");
 

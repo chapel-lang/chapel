@@ -41,7 +41,6 @@ Initializing Modules:
      LocaleModelHelpMem
     LocalesArray
     ChapelIO
-    LocaleTree
     ChapelTaskTable
      Errors
     MemTracking

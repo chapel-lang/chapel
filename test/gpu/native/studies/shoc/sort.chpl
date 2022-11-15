@@ -26,7 +26,7 @@ on here.gpus[0] {
 proc runSort(){
     // Number of key value pairs to sort scaled down by 2^20
     const problemSizes = [1, 8, 48, 96];
-    var timer: Timer;
+    var timer: stopwatch;
 
     var size = problemSizes[sz-1] : uint(32);
     // Scale back up by 2^20
@@ -64,7 +64,7 @@ proc runSort(){
         }
         numScanElts = numBlocks;
     } while (numScanElts > 1);
-    // Print the the above vars to see if they match the expected values
+    // Print the above vars to see if they match the expected values
 
     scanBlockSums[level] = new list(uint(32)); // Size of this last list is just 1
 

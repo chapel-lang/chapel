@@ -950,7 +950,7 @@ size_t globalCopyPropagation(FnSymbol* fn) {
         // Two available pairs at the start of a basic block should not have
         // the same LHS, because one should kill the other.
         // Also, this makes arbitrary the choice of which one survives.
-        INT_ASSERT(available.find(ap.first) == available.end());
+        INT_ASSERT(fn, available.find(ap.first) == available.end());
         available.insert(ap);
         ravailable[ap.second].push_back(ap.first);
       }

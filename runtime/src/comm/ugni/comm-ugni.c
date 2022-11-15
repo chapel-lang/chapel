@@ -2105,7 +2105,7 @@ void chpl_comm_post_task_init(void)
   //
   // Start the polling task.
   //
-  if (chpl_task_createCommTask(polling_task, NULL) != 0)
+  if (chpl_task_createCommTask(polling_task, NULL, -1) != 0)
     CHPL_INTERNAL_ERROR("unable to start comm task for uGNI comm layer");
 
   //

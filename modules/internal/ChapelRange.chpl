@@ -301,6 +301,9 @@ module ChapelRange {
       return (low+high).type;
     }
   }
+  private proc isValidRangeIdxType(type t) param {
+    return isIntegralType(t) || isEnumType(t) || isBoolType(t);
+  }
 
   // Range builders for fully bounded ranges
   proc chpl_build_bounded_range(param low: integral, param high: integral) {
@@ -318,7 +321,9 @@ module ChapelRange {
   }
   proc chpl_build_bounded_range(low: bool, high: bool)
     return new range(bool, low=low, high=high);
-  proc chpl_build_bounded_range(low, high) {
+
+  proc chpl_build_bounded_range(low, high)
+  where !(isValidRangeIdxType(low.type) && isValidRangeIdxType(high.type)) {
     if (low.type == high.type) then
       compilerError("Ranges defined using bounds of type '" + low.type:string + "' are not currently supported");
     else
@@ -345,7 +350,8 @@ module ChapelRange {
     return new range(low=low);
   proc chpl_build_low_bounded_range(low: bool)
     return new range(low=low);
-  proc chpl_build_low_bounded_range(low) {
+  proc chpl_build_low_bounded_range(low)
+  where !isValidRangeIdxType(low.type) {
     compilerError("Ranges defined using bounds of type '" + low.type:string + "' are not currently supported");
   }
 
@@ -356,7 +362,8 @@ module ChapelRange {
     return new range(high=high);
   proc chpl_build_high_bounded_range(high: bool)
     return new range(high=high);
-  proc chpl_build_high_bounded_range(high) {
+  proc chpl_build_high_bounded_range(high)
+  where !isValidRangeIdxType(high.type) {
     compilerError("Ranges defined using bounds of type '" + high.type:string + "' are not currently supported");
   }
 
@@ -402,15 +409,14 @@ module ChapelRange {
     return high;
   }
 
-  pragma "last resort"
-  proc chpl_compute_low_param_loop_bound(param low, param high) param {
+  proc chpl_compute_low_param_loop_bound(param low, param high) param
+  where !(isValidRangeIdxType(low.type) && isValidRangeIdxType(high.type)) {
     if (low.type == high.type) then
       compilerError("param for-loops defined using bounds of type '" + low.type:string + "' are not currently supported");
     else
       compilerError("param for-loops defined using bounds of type '" + low.type:string + ".." + high.type:string + "' are not currently supported");
   }
 
-  pragma "last resort"
   proc chpl_compute_low_param_loop_bound(low, high) {
     compilerError("param for-loops must be defined over a bounded param range");
   }
@@ -419,7 +425,6 @@ module ChapelRange {
     return count;
   }
 
-  pragma "last resort"
   proc chpl_compute_count_param_loop(count) {
     compilerError("in a param for-loop, the count operator requires a param integral value");
   }
@@ -583,7 +588,7 @@ module ChapelRange {
      .. code-block:: chapel
 
        var r = 1..10 by -2;
-       writeln(r.alignedLow);
+       writeln(r.low);
 
      produces the output
 
@@ -596,18 +601,19 @@ module ChapelRange {
     if !hasLowBound() {
       compilerError("can't query the low bound of a range without one");
     }
-    return this.alignedLow;
+    return chpl_intToIdx(this.alignedLowAsInt);
   }
 
 
   /* Return the range's aligned low bound.  Note that this is a
      synonym for :proc:`range.low`.
   */
+  deprecated "'.alignedLow' is deprecated; please use '.low' instead"
   inline proc range.alignedLow: idxType {
     if !hasLowBound() {
       compilerError("can't query the low bound of a range without one");
     }
-    return chpl_intToIdx(this.alignedLowAsInt);
+    return this.low;
   }
 
   pragma "no doc"
@@ -668,7 +674,7 @@ module ChapelRange {
      .. code-block:: chapel
 
        var r = 1..10 by 2;
-       writeln(r.alignedHigh);
+       writeln(r.high);
 
      produces the output
 
@@ -683,27 +689,28 @@ module ChapelRange {
     if chpl__singleValIdxType(idxType) {
       if _low > _high { // avoid circularity of calling .size which calls .high
         warning("This range is empty and has a single-value idxType, so its high bound isn't trustworthy");
-        return this.alignedLow;
+        return this.low;
       }
     }
-    return this.alignedHigh;
+    if chpl__singleValIdxType(idxType) {
+      if size == 0 {
+        warning("This range is empty and has a single-value idxType, so its high bound isn't trustworthy");
+        return chpl_intToIdx(_low);
+      }
+    }
+    return chpl_intToIdx(this.alignedHighAsInt);
   }
 
 
   /* Return the range's aligned high bound.  Note that this is a
      synonym for :proc:`range.high`.
   */
+  deprecated "'.alignedHigh' is deprecated; please use '.high' instead"
   inline proc range.alignedHigh: idxType {
     if !hasHighBound() {
       compilerError("can't query the high bound of a range without one");
     }
-    if chpl__singleValIdxType(idxType) {
-      if size == 0 {
-        warning("This range is empty and has a single-value idxType, so its high bound isn't trustworthy");
-        return lowBound;
-      }
-    }
-    return chpl_intToIdx(this.alignedHighAsInt);
+    return this.high;
   }
 
   pragma "no doc"
@@ -999,10 +1006,10 @@ module ChapelRange {
       if r1.stride != r2.stride then return false;
 
       if r1.hasLowBound() then
-        if r1.alignedLow != r2.alignedLow then return false;
+        if r1.low != r2.low then return false;
 
       if r1.hasHighBound() then
-        if r1.alignedHigh != r2.alignedHigh then return false;
+        if r1.high != r2.high then return false;
 
       return true;
     }
@@ -1015,6 +1022,34 @@ module ChapelRange {
 
   pragma "no doc"
   operator !=(r1: range(?), r2: range(?))  return !(r1 == r2);
+
+  pragma "no doc"
+  operator <(r1: range(?), r2: range(?))
+    where r1.boundedType != BoundedRangeType.bounded ||
+          r2.boundedType != BoundedRangeType.bounded {
+    compilerError("Unbounded ranges don't support comparisons other than '==' and '!='");
+  }
+
+  pragma "no doc"
+  operator >(r1: range(?), r2: range(?))
+    where r1.boundedType != BoundedRangeType.bounded ||
+          r2.boundedType != BoundedRangeType.bounded {
+    compilerError("Unbounded ranges don't support comparisons other than '==' and '!='");
+  }
+
+  pragma "no doc"
+  operator <=(r1: range(?), r2: range(?))
+    where r1.boundedType != BoundedRangeType.bounded ||
+          r2.boundedType != BoundedRangeType.bounded {
+    compilerError("Unbounded ranges don't support comparisons other than '==' and '!='");
+  }
+
+  pragma "no doc"
+  operator >=(r1: range(?), r2: range(?))
+    where r1.boundedType != BoundedRangeType.bounded ||
+          r2.boundedType != BoundedRangeType.bounded {
+    compilerError("Unbounded ranges don't support comparisons other than '==' and '!='");
+  }
 
   proc chpl_ident(r1: range(?), r2: range(?))
     where r1.idxType == r2.idxType &&
@@ -1269,6 +1304,7 @@ operator :(r: range(?), type t: range(?)) {
     return this + offset;
 
   pragma "no doc"
+  pragma "last resort"
   inline proc range.translate(i)
   {
     compilerError("offsets must be of integral type");
@@ -1309,7 +1345,7 @@ operator :(r: range(?), type t: range(?)) {
   */
   proc range.expand(offset: integral)
   {
-    const i = offset.safeCast(intIdxType);
+    const i = offset.safeCast(chpl__signedType(intIdxType));
     return new range(idxType, boundedType, stridable,
                      _low-i,
                      _high+i,
@@ -1335,6 +1371,7 @@ operator :(r: range(?), type t: range(?)) {
 
   // Return an interior portion of this range.
   pragma "no doc"
+  pragma "last resort"
   proc range.interior(offset: integral)
     where boundedType != BoundedRangeType.bounded
   {
@@ -1373,15 +1410,15 @@ operator :(r: range(?), type t: range(?)) {
   proc range.interior(offset: integral)
   {
     if boundsChecking then
-      if abs(offset) > this.sizeAs(uint) then
+      if abs(offset):uint > this.sizeAs(uint) then
         HaltWrappers.boundsCheckHalt("can't compute the interior " + offset:string + " elements of a range with size " + this.sizeAs(uint):string);
 
-    const i = offset.safeCast(intIdxType);
-    if i < 0 then
+    const i = (abs(offset)).safeCast(intIdxType);
+    if offset < 0 then
       return new range(idxType, boundedType, stridable,
-                       _low, _low - 1 - i, stride,
+                       _low, _low - 1 + i, stride,
                        _effAlmt(), aligned);
-    if i > 0 then
+    if offset > 0 then
       return new range(idxType, boundedType, stridable,
                        _high + 1 - i, _high, stride,
                        _effAlmt(), aligned);
@@ -1391,6 +1428,7 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   pragma "no doc"
+  pragma "last resort"
   proc range.exterior(offset: integral)
     where boundedType != BoundedRangeType.bounded
   {
@@ -1423,13 +1461,13 @@ operator :(r: range(?), type t: range(?)) {
    */
   proc range.exterior(offset: integral)
   {
-    const i = offset.safeCast(intIdxType);
-    if i < 0 then
+    const i = (abs(offset)).safeCast(intIdxType);
+    if offset < 0 then
       return new range(idxType, boundedType, stridable,
-                       _low + i,
+                       _low - i,
                        _low - 1,
                        stride, _effAlmt(), aligned);
-    if i > 0 then
+    if offset > 0 then
       return new range(idxType, boundedType, stridable,
                        _high + 1,
                        _high + i,
@@ -1494,6 +1532,13 @@ operator :(r: range(?), type t: range(?)) {
                      r.aligned);
   }
 
+  // TODO can this be removed?
+  pragma "no doc"
+  inline operator +=(ref r: range(?e, ?b, ?s), offset: integral)
+  {
+    r = r + offset;
+  }
+
   pragma "no doc"
   inline operator +(i:integral, r: range(?e,?b,?s))
     return r + i;
@@ -1509,6 +1554,13 @@ operator :(r: range(?), type t: range(?)) {
                      r.stride : strType,
                      chpl__idxToInt(r.alignment)-i,
                      r.aligned);
+  }
+
+  // TODO can this be removed?
+  pragma "no doc"
+  inline operator -=(ref r: range(?e, ?b, ?s), offset: integral)
+  {
+    r = r - offset;
   }
 
   inline proc chpl_check_step_integral(step) {
@@ -1856,6 +1908,7 @@ operator :(r: range(?), type t: range(?)) {
   // If the argument n is negative, the new range contains
   // the last abs(n) elements in the existing range.
 
+  pragma "last resort"
   proc chpl_count_help(r:range(?), i)
     where r.boundedType == BoundedRangeType.boundedNone
   {
@@ -2113,7 +2166,8 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // case for when low and high aren't compatible types and can't be coerced
-  iter chpl_direct_range_iter(low, high) {
+  iter chpl_direct_range_iter(low, high)
+  where !(isValidRangeIdxType(low.type) && isValidRangeIdxType(high.type)) {
     chpl_build_bounded_range(low, high);  // use general error if possible
     // otherwise, generate a more specific one (though I don't think it's
     // possible to get here)
@@ -2234,7 +2288,8 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   // case for when low and high aren't compatible types and can't be coerced
-  iter chpl_direct_strided_range_iter(low, high, stride) {
+  iter chpl_direct_strided_range_iter(low, high, stride)
+  where !(isValidRangeIdxType(low.type) && isValidRangeIdxType(high.type)) {
     chpl_build_bounded_range(low, high, stride);  // use general error if possible
     // otherwise, generate a more specific one (though I don't think it's
     // possible to get here)
@@ -2279,7 +2334,8 @@ operator :(r: range(?), type t: range(?)) {
     for i in r#count do yield i;
   }
 
-  iter chpl_direct_counted_range_iter(low, count) {
+  iter chpl_direct_counted_range_iter(low, count)
+  where !(isValidRangeIdxType(low.type) && isValidRangeIdxType(count.type)) {
     chpl_build_low_bounded_range(low);  // generate normal error, if possible
     // otherwise, fall back to this one:
     compilerError("can't apply '#' to a range with idxType ",
@@ -2390,7 +2446,7 @@ operator :(r: range(?), type t: range(?)) {
 
     // This iterator could be split into different cases depending on the
     // stride like the bounded iterators. However, all that gets you is the
-    // ability to use low/alignedLow over first. The additional code isn't
+    // ability to use .low over .first. The additional code isn't
     // worth it just for that.
     var i: intIdxType;
     const start = chpl__idxToInt(this.first);

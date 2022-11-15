@@ -215,6 +215,33 @@ static void test2(Parser* parser) {
   }
 }
 
+static void test3(Parser* parser) {
+  auto parseResult = parser->parseString("test3.chpl",
+      R""""(
+        module M {
+          try {
+            var x;
+            x;
+          } catch {
+            x;
+          }
+        }
+      )"""");
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isTry());
+  const Try* t = mod->stmt(0)->toTry();
+  assert(t->body() != nullptr);
+  assert(t->body() == t->child(0));
+  assert(t->body()->numStmts() == 2);
+  assert(t->numStmts() == 2);
+  assert(t->stmt(0)->isVariable());
+  assert(t->stmt(1)->isIdentifier());
+  assert(t->numHandlers() == 1);
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -225,6 +252,7 @@ int main() {
   test0(p);
   test1(p);
   test2(p);
+  test3(p);
 
   return 0;
 }

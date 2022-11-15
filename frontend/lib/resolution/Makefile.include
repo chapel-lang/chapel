@@ -22,7 +22,9 @@ ALL_SRCS += ../frontend/lib/resolution/*.h ../frontend/lib/resolution/*.cpp
 
 FRONTEND_RESOLUTION_SRCS =                          \
            Resolver.cpp                             \
+           call-init-deinit.cpp                     \
            can-pass.cpp                             \
+           copy-elision.cpp                         \
            default-functions.cpp                    \
            disambiguation.cpp                       \
            InitResolver.cpp                         \
@@ -32,6 +34,8 @@ FRONTEND_RESOLUTION_SRCS =                          \
            resolution-types.cpp                     \
            scope-queries.cpp                        \
            scope-types.cpp                          \
+           split-init.cpp                           \
+           VarScopeVisitor.cpp                      \
 
 
 SRCS = $(FRONTEND_RESOLUTION_SRCS)

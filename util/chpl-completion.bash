@@ -53,6 +53,7 @@ _chpl ()
 --debug-short-loc \
 --default-dist \
 --denormalize \
+--detailed-errors \
 --devel \
 --div-by-zero-checks \
 --dynamic \
@@ -168,6 +169,7 @@ _chpl ()
 --no-debug \
 --no-debug-short-loc \
 --no-denormalize \
+--no-detailed-errors \
 --no-devel \
 --no-div-by-zero-checks \
 --no-dynamic-auto-local-access \

@@ -136,7 +136,7 @@ proc masonTest(args: [] string, checkProj=true) throws {
         subTestPath = cwd;
       }
 
-      var tests = findfiles(startdir=subTestPath, recursive=true, hidden=false);
+      var tests = findFiles(startdir=subTestPath, recursive=true, hidden=false);
       for test in tests{
         if test.endsWith(".chpl"){
           if(inProjectDir){
@@ -186,7 +186,7 @@ proc masonTest(args: [] string, checkProj=true) throws {
         var testNames: list(string);
 
         if isDir('.'){
-          var tests = findfiles(startdir='.', recursive=subdir);
+          var tests = findFiles(startdir='.', recursive=subdir);
           for test in tests {
             if test.endsWith(".chpl") {
               testNames.append(test);
@@ -248,7 +248,7 @@ private proc runTests(show: bool, run: bool, parallel: bool,
     else {
       try! {
         for dir in dirs {
-          for file in findfiles(startdir = dir, recursive = subdir) {
+          for file in findFiles(startdir = dir, recursive = subdir) {
             if file.endsWith(".chpl") {
               files.append(file);
             }
@@ -263,7 +263,7 @@ private proc runTests(show: bool, run: bool, parallel: bool,
     if numTests > 0 {
 
       var result =  new TestResult();
-      var timeElapsed = new Timer();
+      var timeElapsed = new stopwatch();
       timeElapsed.start();
       for test in testNames {
         var testPath: string;
@@ -289,7 +289,7 @@ private proc runTests(show: bool, run: bool, parallel: bool,
         const compilation = runWithStatus(compCommand, !show);
 
         if compilation != 0 {
-          stderr._writeln("compilation failed for " + test);
+          stderr.writeln("compilation failed for " + test);
           var errMsg = test + " failed to compile";
           if !show then
             errMsg += "\nTry running 'mason test --show' for more details";
@@ -317,7 +317,7 @@ private proc runTests(show: bool, run: bool, parallel: bool,
     toParse.close();
   }
   catch e: MasonError {
-    stderr._writeln(e.message());
+    stderr.writeln(e.message());
     exit(1);
   }
 }
@@ -391,7 +391,7 @@ private proc getTests(lock: borrowed Toml, projectHome: string) {
     }
   }
   else if isDir(testPath) {
-    var tests = findfiles(startdir=testPath, recursive=true, hidden=false);
+    var tests = findFiles(startdir=testPath, recursive=true, hidden=false);
     for test in tests {
       if test.endsWith(".chpl") {
         testNames.append(getTestPath(test));
@@ -463,7 +463,7 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
       }
 
       var result =  new TestResult();
-      var timeElapsed = new Timer();
+      var timeElapsed = new stopwatch();
       timeElapsed.start();
       for tests in files {
         try {
@@ -517,7 +517,7 @@ proc testFile(file, ref result, show: bool) throws {
   const compilation = runWithStatus(compCommand, !show);
 
   if compilation != 0 {
-    stderr._writeln("compilation failed for " + fileName);
+    stderr.writeln("compilation failed for " + fileName);
     const errMsg = fileName +" failed to compile";
     result.addError(executable, fileName,  errMsg);
   }
@@ -554,7 +554,7 @@ proc testFile(file, ref result, show: bool) throws {
 pragma "no doc"
 /*Docs: Todo*/
 proc testDirectory(dir, ref result, show: bool) throws {
-  for file in findfiles(startdir = dir, recursive = subdir) {
+  for file in findFiles(startdir = dir, recursive = subdir) {
     if file.endsWith(".chpl") {
       testFile(file, result, show);
     }

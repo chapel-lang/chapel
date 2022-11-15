@@ -100,4 +100,15 @@ enum struct IntentList {
 } // end namespace uast
 } // end namespace chpl
 
+namespace std {
+
+template<> struct hash<chpl::uast::IntentList>
+{
+  size_t operator()(const chpl::uast::IntentList& key) const {
+    return (size_t) key;
+  }
+};
+
+} // end namespace std
+
 #endif

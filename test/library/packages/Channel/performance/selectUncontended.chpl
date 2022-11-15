@@ -5,7 +5,7 @@ const numTasksPerLocale = if dataParTasksPerLocale > 0 then dataParTasksPerLocal
                              else here.maxTaskPar;
 config const performanceTest = false;
 var cnt = n / numTasksPerLocale;
-var t : Timer;
+var t : stopwatch;
 t.start();
 coforall tid in 0..#numTasksPerLocale {
   test();

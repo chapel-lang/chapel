@@ -139,7 +139,7 @@ module Version {
 
     pragma "no doc"
     proc writeThis(s) throws {
-      s._write(this:string);
+      s.write(this:string);
     }
   }
 

@@ -703,8 +703,8 @@ module ChapelDistribution {
       const _tmp: rank*idxType;
       return _tmp;
     }
-    override proc dsiAlignedLow { return parentDom.alignedLow; }
-    override proc dsiAlignedHigh { return parentDom.alignedHigh; }
+    override proc dsiAlignedLow { return parentDom.low; }
+    override proc dsiAlignedHigh { return parentDom.high; }
 
     override proc dsiMakeIndexBuffer(size) {
       return new SparseIndexBuffer(rank=this.rank, obj=this, size=size);

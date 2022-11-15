@@ -35,7 +35,7 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
   writeln("X is:\n", X);
   writeln();
   // Test read access via tuples and varargs
-  writeln("low element is: ", X[X.domain.alignedLow]);
+  writeln("low element is: ", X[X.domain.low]);
   writeln();
   // Test local write accesses via tuples and varargs
   forall ind in X.domain do
@@ -44,7 +44,7 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
   writeln();
   const domForLowHigh = if X.hasSingleLocalSubdomain() then X.localSubdomain() else X.domain;
   // Test local read access via tuples and varargs
-  writeln("low element is: ", X.localAccess[domForLowHigh.alignedLow]);
+  writeln("low element is: ", X.localAccess[domForLowHigh.low]);
   writeln();
   // Test serial iteration
   for x in X do
@@ -133,9 +133,9 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
   writeln();
 
   // Test read access via tuples and varargs
-  writeln("low element is: ", X[X.domain.alignedLow]);
+  writeln("low element is: ", X[X.domain.low]);
   if (X.rank > 1) then
-    writeln("high element is: ", X[(...X.domain.alignedHigh)]);
+    writeln("high element is: ", X[(...X.domain.high)]);
   writeln();
 
   // Test local write accesses via tuples and varargs
@@ -151,9 +151,9 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
 
   const domForLowHigh = if X.hasSingleLocalSubdomain() then X.localSubdomain() else X.domain;
   // Test local read access via tuples and varargs
-  writeln("low element is: ", X.localAccess[domForLowHigh.alignedLow]);
+  writeln("low element is: ", X.localAccess[domForLowHigh.low]);
   if (X.rank > 1) then
-    writeln("high element is: ", X.localAccess[(...domForLowHigh.alignedHigh)]);
+    writeln("high element is: ", X.localAccess[(...domForLowHigh.high)]);
   writeln();
 
   // Test serial iteration
@@ -201,8 +201,8 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
 
   // Test views
   writeln("slice by ", sliceDom, ":\n", X[sliceDom]);
-  writeln("rank change 1: ", X[X.domain.alignedLow(0), ..]);
-  writeln("rank change 2: ", X[sliceDom.dim(0), X.domain.alignedHigh(1)]);
+  writeln("rank change 1: ", X[X.domain.low(0), ..]);
+  writeln("rank change 2: ", X[sliceDom.dim(0), X.domain.high(1)]);
   for (i,x) in zip(reindexDom, X.reindex(reindexDom)) do
     writeln("reindexed X[", i, "] = ", x);
   writeln();

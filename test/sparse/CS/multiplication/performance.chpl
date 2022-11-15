@@ -39,7 +39,7 @@ proc main() {
   populate(A, ADom, sparsity, seed);
   populate(B, BDom, sparsity, seed+1);
 
-  var t: Timer;
+  var t: stopwatch;
 
   // CSR . CSC - optimized
   t.start();

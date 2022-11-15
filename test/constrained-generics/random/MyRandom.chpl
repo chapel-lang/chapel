@@ -281,7 +281,7 @@ module MyRandom {
   proc _choiceUniform(stream, X: domain, size: ?sizeType, replace: bool) throws
   {
 
-    const low = X.alignedLow,
+    const low = X.low,
           stride = abs(X.stride);
 
     if isNothingType(sizeType) {
@@ -352,7 +352,7 @@ module MyRandom {
     if prob.size == 0 then
       throw new owned IllegalArgumentError('choice() prob array cannot be empty');
 
-    const low = X.alignedLow,
+    const low = X.low,
           stride = abs(X.stride);
     ref P = prob.reindex(0..<X.size);
 
@@ -1168,7 +1168,7 @@ module MyRandom {
         if D.rank != 1 then
           compilerError("Shuffle requires 1-D array");
 
-        const low = D.alignedLow,
+        const low = D.low,
               stride = abs(D.stride);
 
         _lock();

@@ -10,7 +10,7 @@ config const n = 10000000;
 config const timing = true;
 
 // concatenate
-var tConcat: Timer;
+var tConcat: stopwatch;
 var concat: dataType;
 if timing then tConcat.start();
 if testType == types.utf8String {
@@ -28,7 +28,7 @@ else {
 if timing then tConcat.stop();
 
 // append
-var tAppend: Timer;
+var tAppend: stopwatch;
 var append: dataType;
 if timing then tAppend.start();
 if testType == types.utf8String {
@@ -46,7 +46,7 @@ else {
 if timing then tAppend.stop();
 
 // copy
-var tCopy: Timer;
+var tCopy: stopwatch;
 var keepAlive: int;
 var copied = if testType == types.utf8String then "mañana"
              else if testType == types.byteString then b"copycat"
@@ -68,7 +68,7 @@ else {
 if timing then tCopy.stop();
 
 // iterate
-var tIterate: Timer;
+var tIterate: stopwatch;
 if timing then tIterate.start();
 var count = 0;
 for i in append do

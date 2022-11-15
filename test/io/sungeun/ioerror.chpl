@@ -1,5 +1,5 @@
 // Test IO error function interfaces
-use IO, OS.POSIX; import SysBasic.{ENOERR};
+use IO, OS.POSIX;
 
 config const testError = 0;
 
@@ -10,10 +10,10 @@ select testError {
   when 3 do ioerror(errorToString(EACCES:errorCode),
                     "EACCES", "this/is/my/path", -1);
   when 4 {
-    writeln(errorToString(ENOERR:errorCode));
-    ioerror(ENOERR:errorCode, "This is a test");
-    ioerror(ENOERR:errorCode, "This is a test", "this/is/my/path");
-    ioerror(ENOERR:errorCode, "This is a test", "this/is/my/path", -1);
+    writeln(errorToString(0:errorCode));
+    ioerror(0:errorCode, "This is a test");
+    ioerror(0:errorCode, "This is a test", "this/is/my/path");
+    ioerror(0:errorCode, "This is a test", "this/is/my/path", -1);
   }
 }
 

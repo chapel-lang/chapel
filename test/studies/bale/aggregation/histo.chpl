@@ -15,7 +15,7 @@ const tableSize = M * numTasks;
 
 config param useBlockArr = false;
 
-var t: Timer;
+var t: stopwatch;
 proc startTimer() {
   t.start();
 }

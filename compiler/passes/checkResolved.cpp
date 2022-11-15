@@ -95,6 +95,11 @@ checkResolved() {
         USR_FATAL_CONT(fn, "functions cannot return nested iterators or loop expressions");
       }
     }
+
+    // MPF note: the below error will be thrown if += is promoted
+    // (e.g. over an array). But, that is probably an error anyway,
+    // because currently there are array += scalar overloads and if
+    // one of these is promoted, we get too many additions.
     if (fn->hasFlag(FLAG_ASSIGNOP) && fn->retType != dtVoid)
       USR_FATAL(fn, "The return value of an assignment operator must be 'void'.");
   }

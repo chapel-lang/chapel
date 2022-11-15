@@ -13,19 +13,26 @@ jobs:
     runs-on: ubuntu-latest 
     steps:
       - name: print git events
-        run:  cat "$GITHUB_EVENT_PATH"          
-      - name: if_merged
-        if: github.event.pull_request.merged == true
-        run:  echo The PR was merged           
+        run:  cat "$GITHUB_EVENT_PATH"                     
       - name: print GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"  
+      - name: get commits payload
+        env:
+          COMMIT_URL: ${{github.event.pull_request._links.commits.href}}
+        run: |
+              curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
+              echo "AUTHOR=$(jq -r '.[0].commit.author.name' commits.json)" >> $GITHUB_ENV   
+              echo "LINK=$(jq -r '.[0].html_url' commits.json)" >> $GITHUB_ENV
+              echo "MESSAGE=$((jq  '.[0].commit.message' commits.json)| awk -F'\\\\n' '{print $1}' | sed 's/\"//g')" >> $GITHUB_ENV 
+              echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
+              echo "FILES_CHANGED=$(echo '${{github.event.pull_request._links.html.href}}/files' )" >> $GITHUB_ENV
       - name: checkout
         uses: actions/checkout@v3
-        # To get git diff on the files that were changed in the PR checkout with fetch-depth 0.
+        # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
         with:
-          fetch-depth: 0          
+          fetch-depth: 2          
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v32
@@ -44,28 +51,32 @@ jobs:
            # Optional (recommended) mail server password:
            password: ${{secrets.MAIL_PASSWORD}}
            # Required mail subject:
-           subject: Chapel Merge ${{ github.event.head_commit.message }}  
+           subject: "[Chapel Merge] ${{github.event.pull_request.title}}"
            # Required recipients' addresses:
-           to: bhavani@hpe.com
+           to: chapel+commits@discoursemail.com
            # Required sender full name (address can be skipped):
-           from: chapel-lang 
+           from:  ${{env.AUTHOR}}
            html_body: |
               <!DOCTYPE html>
               <html>
               <body>
-              <p>   
-              Branch ${{github.ref}} <br>
-              Author: ${{ github.event.head_commit.author.name}} <br>
-              Revision: ${{github.event.repository.id}}  <br>
-              Commit id : ${{ github.event.head_commit.id }} <br>
-              Commit message: ${{ github.event.head_commit.message }}  <br>
-              Sha: ${{ github.head_ref }}.${{ github.sha }}<br>
-              Link: ${{github.event.head_commit.url}} <br> 
-              Log Message: ${{github.event.commit.message}} <br>  
-              Compare: ${{github.event.compare}} <br>
-              Files changed: <br>
-              ${{steps.changed-files.outputs.all_changed_and_modified_files}} <br>
-              ${{steps.changed-files.outputs.deleted_files}} <br>
+              <p>
+              Branch: ${{github.ref}} <br>
+              Revision: ${{ github.event.pull_request.merge_commit_sha }}  <br>
+              Author: ${{ env.AUTHOR}} <br>
+              Link: ${{github.event.pull_request._links.html.href}} <br>             
+              Log Message: <br><br>
+                           ${{env.MESSAGE}} <br> 
+                           ${{github.event.pull_request.body}} <br>
+              Compare: ${{env.COMPARE_URL}} <br> 
+              Diff: ${{github.event.pull_request.diff_url}} <br>
+              Modified Files: <br>
+                   ${{steps.changed-files.outputs.modified_files}} <br><br>
+              Added Files: <br>
+                   ${{steps.changed-files.outputs.added_files}} <br><br>    
+              Removed Files: <br>     
+                   ${{steps.changed-files.outputs.deleted_files}} <br>
+             
               </p>
               </body>
               </html>

@@ -16,8 +16,8 @@ proc main(){
         var bdwthDB = new ResultDatabase("TriadBdwth", "GB/s");
         var triadDB = new ResultDatabase("Triad Time", "sec");
         var kernelDB = new ResultDatabase("Kernel Time", "sec");
-        var timer: Timer;
-        var kernelTimer: Timer;
+        var timer: stopwatch;
+        var kernelTimer: stopwatch;
         // Just do the whole computation once because overhead of GPU Launches is high
         param maxProblemSize = 16384;
         param numMaxFloats = (1024 * maxProblemSize / numBytes(real(32))) : int;
@@ -30,8 +30,18 @@ proc main(){
             // The reference (CUDA) implementation of SHOC fills hos
             // with random values, in our implementation we fill with
             // known sample values so we can later verify the result.
-            // This difference shouldn't impact performance.
-            forall i in 0..#halfNumFloats {
+            // This difference in values shouldn't impact performance.
+            //
+            // Note: we're very explicit about making this a 'for'
+            // rather than a 'forall' loop so that this initialization
+            // computation occurs on the CPU rather than GPU. Why?:
+            // We want A, B, and C to start off on the CPU so that
+            // we measure the transfer cost (as we do in the CUDA
+            // version) for a fair comparison. If we made this a forall
+            // loop it would turn into a GPU kernel and (assuming
+            // we're using the unified_memory memory strategy) A, B,
+            //  and C will be left on the GPU before we start the timers.
+            for i in 0..#halfNumFloats {
                 A[i] = i:int(32)%16:int(32) + 0.12:real(32);
                 A[halfNumFloats+i] = A[i] ;
                 B[i] = A[i];

@@ -31,13 +31,33 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
   if (auto ptr = moreIds_.get()) {
     for (const auto& elt : *ptr) {
-      elt.stringify(ss, stringKind);
+      elt.first.stringify(ss, stringKind);
     }
   } else {
-    if (!id_.isEmpty()) {
-      id_.stringify(ss, stringKind);
+    if (!id_.first.isEmpty()) {
+      id_.first.stringify(ss, stringKind);
     }
   }
+}
+
+llvm::Optional<BorrowedIdsWithName> OwnedIdsWithName::borrow(bool skipPrivateVisibilities) const {
+  if (BorrowedIdsWithName::isIdVisible(id_, skipPrivateVisibilities)) {
+    return BorrowedIdsWithName(id_, moreIds_.get(), skipPrivateVisibilities);
+  }
+  // The first ID isn't visible; are others?
+  if (moreIds_.get() == nullptr) {
+    return llvm::None;
+  }
+
+  for (auto& id : *moreIds_) {
+    if (!BorrowedIdsWithName::isIdVisible(id, skipPrivateVisibilities)) continue;
+
+    // Found a visible ID!
+    return BorrowedIdsWithName(id, moreIds_.get(), skipPrivateVisibilities);
+  }
+
+  // No ID was visible, so we can't borrow.
+  return llvm::None;
 }
 
 void BorrowedIdsWithName::stringify(std::ostream& ss,
@@ -63,7 +83,7 @@ void Scope::addBuiltin(UniqueString name) {
   // Just refer to empty ID since builtin type declarations don't
   // actually exist in the AST.
   // The resolver knows that the empty ID means a builtin thing.
-  declared_.emplace(name, ID());
+  declared_.emplace(name, OwnedIdsWithName(ID(), uast::Decl::PUBLIC));
 }
 
 const Scope* Scope::moduleScope() const {

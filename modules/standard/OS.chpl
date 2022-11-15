@@ -45,7 +45,6 @@ module OS {
   */
   module POSIX {
     public use CTypes;
-    import SysBasic.fd_t;
 
     //
     // sys/types.h
@@ -966,8 +965,8 @@ module OS {
    .. code-block:: chapel
 
      var err: errorCode;
-     if err then writeln("err contains an error, ie err != ENOERR");
-     else writeln("err does not contain an error; err == ENOERR");
+     if err then writeln("err contains an error, ie err != 0");
+     else writeln("err does not contain an error; err == 0");
 
    The default intent for a formal of type :type:`errorCode` is `const in`.
 
@@ -1035,7 +1034,6 @@ module OS {
 
   private use CTypes;
   private use POSIX;
-  import SysBasic.{ESHUTDOWN,ENOERR};
 
   /*
    Private local copies of IO.{EEOF,ESHORT,EFORMAT}, since if we import IO
@@ -1069,7 +1067,7 @@ module OS {
        from the internal ``err`` and the ``details`` string.
     */
     override proc message() {
-      var strerror_err: c_int = ENOERR;
+      var strerror_err: c_int = 0;
       var errstr              = sys_strerror_syserr_str(err, strerror_err);
       var err_msg: string;
       try! {
@@ -1097,7 +1095,7 @@ module OS {
       return new owned BlockingIoError(details, err);
     } else if err == ECHILD {
       return new owned ChildProcessError(details, err);
-    } else if err == EPIPE || err == ESHUTDOWN {
+    } else if err == EPIPE {
       return new owned BrokenPipeError(details, err);
     } else if err == ECONNABORTED {
       return new owned ConnectionAbortedError(details, err);
@@ -1181,7 +1179,7 @@ module OS {
 
   /*
      :class:`BrokenPipeError` is the subclass of :class:`ConnectionError`
-     corresponding to :const:`~POSIX.EPIPE` and :const:`SysBasic.ESHUTDOWN`.
+     corresponding to :const:`~POSIX.EPIPE`
   */
   class BrokenPipeError : ConnectionError {
     proc init(details: string = "", err: errorCode = EPIPE:errorCode) {
@@ -1341,6 +1339,24 @@ module OS {
     }
   }
 
+  /*
+    :class:`InsufficientCapacityError` is a subclass of :class:`IoError`
+    indicating that an IO operation required more storage than was provided
+  */
+  class InsufficientCapacityError: IoError {
+    proc init(details: string = "") {
+      super.init(ERANGE: errorCode, details);
+    }
+
+    override proc message() {
+      return
+        if details.isEmpty() then
+          "Result too large"
+        else
+          details;
+    }
+  }
+
   // here's what we need from Sys
   private extern proc sys_strerror_syserr_str(error:errorCode, out err_in_strerror:c_int):c_string;
 
@@ -1439,7 +1455,7 @@ module OS {
    */
   proc errorToString(error:errorCode):string
   {
-    var strerror_err:c_int = ENOERR;
+    var strerror_err:c_int = 0;
     const errstr = sys_strerror_syserr_str(error, strerror_err);
     try! {
       return createStringWithOwnedBuffer(errstr);

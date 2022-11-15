@@ -54,24 +54,30 @@ namespace uast {
  */
 class Try final : public AstNode {
  private:
-  Try(AstList children, int numBodyStmts, int numHandlers,
+  Try(AstList children,
+      int numHandlers,
+      bool containsBlock,
       bool isExpressionLevel,
       bool isTryBang)
         : AstNode(asttags::Try, std::move(children)),
-          numBodyStmts_(numBodyStmts),
           numHandlers_(numHandlers),
+          containsBlock_(containsBlock),
           isExpressionLevel_(isExpressionLevel),
           isTryBang_(isTryBang) {
     if (isExpressionLevel_) {
-      assert(numBodyStmts == 1);
+      assert(numHandlers == 0);
+    }
+    if (containsBlock) {
+      assert(child(bodyChildNum_)->isBlock());
+    } else {
       assert(numHandlers == 0);
     }
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Try* rhs = other->toTry();
-    return this->numBodyStmts_ == rhs->numBodyStmts_ &&
-      this->numHandlers_ == rhs->numHandlers_ &&
+    return this->numHandlers_ == rhs->numHandlers_ &&
+      this->containsBlock_ == rhs->containsBlock_ &&
       this->isExpressionLevel_ == rhs->isExpressionLevel_ &&
       this->isTryBang_ == rhs->isTryBang_;
   }
@@ -79,11 +85,14 @@ class Try final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
-  // If this exists, its position is always the same.
+  // body position is always the same
   static const int8_t bodyChildNum_ = 0;
+  // try expressions always contain a body expression
+  // try statements always contain a body block
+  static const int8_t numBodyStmts_ = 1;
 
-  int numBodyStmts_;
   int numHandlers_;
+  bool containsBlock_;
   bool isExpressionLevel_;
   bool isTryBang_;
 
@@ -93,12 +102,12 @@ class Try final : public AstNode {
   /**
     Create and return a try statement.
   */
-  static owned<Try> build(Builder* builder, Location loc, AstList stmts,
+  static owned<Try> build(Builder* builder, Location loc, owned<Block> body,
                           AstList catches,
                           bool isTryBang);
 
   /**
-    Create and return a try expression.
+    Create and return a try expression or decorated statement.
   */
   static owned<Try> build(Builder* builder, Location loc,
                           owned<AstNode> expr,
@@ -106,30 +115,55 @@ class Try final : public AstNode {
                           bool isExpressionLevel);
 
   /**
+    Return the contained block for a try statement.
+    For an expression-level try, returns nullptr.
+   */
+  const Block* body() const {
+    if (containsBlock_) {
+      assert(numBodyStmts_ == 1);
+      return (Block*) child(bodyChildNum_);
+    } else {
+      return nullptr;
+    }
+  }
+
+  /**
     Iterate over the statements contained in this try.
   */
   AstListIteratorPair<AstNode> stmts() const {
-    auto begin = numBodyStmts_ ? children_.begin() + bodyChildNum_
-                               : children_.end();
-    auto end = begin + numBodyStmts_;
-    return AstListIteratorPair<AstNode>(begin, end);
+    if (const Block* stmtBody = body()) {
+      return stmtBody->stmts();
+    } else {
+      auto begin = numBodyStmts_ ? children_.begin() + bodyChildNum_
+                                 : children_.end();
+      auto end = begin + numBodyStmts_;
+      return AstListIteratorPair<AstNode>(begin, end);
+    }
   }
 
   /**
     Return the number of statements contained in this try.
   */
   int numStmts() const {
-    return numBodyStmts_;
+    if (const Block* stmtBody = body()) {
+      return stmtBody->numStmts();
+    } else {
+      return numBodyStmts_;
+    }
   }
 
   /**
     Get the i'th statement in the body of this try.
   */
   const AstNode* stmt(int i) const {
-    assert(i >= bodyChildNum_ && i < numBodyStmts_);
-    auto ret = child(bodyChildNum_ + i);
-    assert(ret);
-    return ret;
+    if (const Block* stmtBody = body()) {
+      return stmtBody->stmt(i);
+    } else {
+      assert(i >= bodyChildNum_ && i < numBodyStmts_);
+      auto ret = child(bodyChildNum_ + i);
+      assert(ret);
+      return ret;
+    }
   }
 
   /**

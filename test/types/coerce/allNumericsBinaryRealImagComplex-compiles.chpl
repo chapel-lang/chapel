@@ -19,15 +19,9 @@ proc f(x: complex(128), y: complex(128)) {
   writeln("  f(", x.type:string, ",", y.type:string, ")");
 }
 
-proc f(x, y) {
-  writeln("  f(generic)");
-}
-
-
 proc skip(type t1, type t2) param {
   return isIntegralType(t1) && isIntegralType(t2) && numBits(t1) != numBits(t2);
 }
-
 
 // next, call 'f' with all combinations of numeric types
 proc callF(type t1, type t2) {

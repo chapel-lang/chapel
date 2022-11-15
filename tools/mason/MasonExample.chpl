@@ -61,7 +61,7 @@ proc masonExample(args: [] string, checkProj=true) throws {
     parser.parseArgs(args);
   }
   catch ex : ArgumentError {
-    stderr._writeln(ex.message());
+    stderr.writeln(ex.message());
     exit(1);
   }
   var show = showFlag.valueAsBool();
@@ -243,7 +243,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
             const compilation = runWithStatus(compCommand);
 
             if compilation != 0 {
-              stderr._writeln("compilation failed for " + example);
+              stderr.writeln("compilation failed for " + example);
             }
             else {
               if show || !run then writeln("compiled ", example, " successfully");
@@ -271,7 +271,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
     }
   }
   catch e: MasonError {
-    stderr._writeln(e.message());
+    stderr.writeln(e.message());
     exit(1);
   }
 }
@@ -308,7 +308,7 @@ private proc getExamples(toml: Toml, projectHome: string) {
     return exampleNames;
   }
   else if isDir(examplePath) {
-    var examples = findfiles(startdir=examplePath, recursive=true, hidden=false);
+    var examples = findFiles(startdir=examplePath, recursive=true, hidden=false);
     for example in examples {
       if example.endsWith(".chpl") {
         exampleNames.append(getExamplePath(example));
@@ -351,7 +351,7 @@ proc printAvailableExamples() {
     writeln("--------------------------");
   }
   catch e: MasonError {
-    stderr._writeln(e.message());
+    stderr.writeln(e.message());
     exit(1);
   }
 }

@@ -421,16 +421,16 @@ module SortedMap {
     proc writeThis(ch: fileWriter) throws {
       _enter(); defer _leave();
       var first = true;
-      ch._write("{");
+      ch.write("{");
       for kv in _set {
         if first {
           first = false;
         } else {
-          ch._write(", ");
+          ch.write(", ");
         }
-        ch._write(kv[0], ": ", kv[1]!.val);
+        ch.write(kv[0], ": ", kv[1]!.val);
       }
-      ch._write("}");
+      ch.write("}");
     }
 
     /*

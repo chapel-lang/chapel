@@ -17,7 +17,7 @@ config const showtime = false;
    goes out to lunch for 5 seconds.
  */
 
-var timer:Timer;
+var timer:stopwatch;
 
 var sub = spawn(["bash", "waiting.bash"], stdout=pipeStyle.pipe);
 

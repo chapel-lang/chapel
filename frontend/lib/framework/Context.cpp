@@ -75,6 +75,10 @@ const std::string& Context::chplHome() const {
   return chplHome_;
 }
 
+void Context::setDetailedErrorOutput(bool detailedErrors) {
+  this->detailedErrors = detailedErrors;
+}
+
 llvm::ErrorOr<const ChplEnvMap&> Context::getChplEnv() {
   if (chplHome_.empty() || computedChplEnv) return chplEnv;
   auto chplEnvResult = ::chpl::getChplEnv(chplEnvOverrides, chplHome_.c_str());
@@ -88,9 +92,16 @@ llvm::ErrorOr<const ChplEnvMap&> Context::getChplEnv() {
 }
 
 void Context::defaultReportError(Context* context, const ErrorBase* err) {
-  ErrorWriter ew(context, std::cerr, ErrorWriter::BRIEF,
+  ErrorWriter ew(context, std::cerr,
+                 context->detailedErrors ?
+                   ErrorWriter::DETAILED :
+                   ErrorWriter::BRIEF,
                  context->currentTerminalSupportsColor_);
   err->write(ew);
+  if (context->detailedErrors) {
+    // Print an extra error separator
+    std::cerr << std::endl;
+  }
 }
 
 // unique'd strings are preceded by 4 bytes of length, gcMark and doNotCollectMark
@@ -547,6 +558,7 @@ void Context::collectGarbage() {
 }
 
 void Context::report(const ErrorBase* error) {
+  gdbShouldBreakHere();
   if (queryStack.size() > 0) {
     queryStack.back()->errors.push_back(std::move(error));
     reportError(this, queryStack.back()->errors.back());

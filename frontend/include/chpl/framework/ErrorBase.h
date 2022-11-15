@@ -22,6 +22,7 @@
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/types/all-types.h"
+#include "chpl/resolution/scope-types.h"
 #include "llvm/ADT/Optional.h"
 
 namespace chpl {
@@ -52,8 +53,9 @@ enum ErrorType {
 /**
   Parent class for all errors in Dyno.
 
-  The most important part of defining a new error is implementing the ::write
-  method; see its documentation for the implementation strategy.
+  The most important part of defining a new error is implementing the
+  ErrorBase::write method; see its documentation for the implementation
+  strategy.
 
   Most sub-classes of ErrorBase should be defined by adding them to
   error-classes-list
@@ -83,6 +85,8 @@ class ErrorBase {
  public:
   virtual ~ErrorBase() = default;
 
+  static const char* getTypeName(ErrorType type);
+
   template <typename T>
   static bool update(owned<T>& old, owned<T>& addin) {
     return defaultUpdateOwned(old, addin);
@@ -101,7 +105,7 @@ class ErrorBase {
     Convert the error to an ErrorMessage. This is mostly needed
     for compatibility reasons, since the production compiler currently
     knows how to print ErrorMessage, and does it differently from
-    our ::write methods.
+    our ErrorBase::write methods.
    */
   ErrorMessage toErrorMessage(Context* context) const;
 
@@ -119,8 +123,8 @@ class ErrorBase {
 
     This method should call methods on the ErrorWriterBase class to
     provide information about the error.
-    * All ::write implemenations must call ErrorWriterBase::heading to provide
-      a concise description of the error message.
+    * All ErrorBase::write implemenations must call ErrorWriterBase::heading to
+      provide a concise description of the error message.
     * After this, ErrorWriterBase::note can be used to print notes, which are
       always shown to the user.
     * ErrorWriterBase::message along with ErrorWriterBase::code can be used to
@@ -139,11 +143,12 @@ class BasicError : public ErrorBase {
  private:
   /**
     The ID where the error occurred. Much like ErrorMessage, if the ID
-    is empty, then ::loc_ should be used instead.
+    is empty, then BasicError::loc_ should be used instead.
    */
   ID id_;
   /**
-    The location of the error message. Should be used only if ::id_ is empty.
+    The location of the error message. Should be used only if BasicError::id_
+    is empty.
    */
   Location loc_;
   /** The error's message. */
@@ -229,7 +234,7 @@ class GeneralError : public BasicError {
 // for each error message defined in the list. In this case, we use this
 // macro to generate class declarations for each error. This way, the only
 // steps needed to add a new error are to add a line to error-classes-list.h,
-// and to implement the new error classes' ::write method.
+// and to implement the new error classes' ErrorBase::write method.
 #define DIAGNOSTIC_CLASS(NAME__, KIND__, EINFO__...)\
   class Error##NAME__ : public ErrorBase {\
    private:\
@@ -267,7 +272,7 @@ class GeneralError : public BasicError {
   This macro takes care of packaging the error information into a tuple;
   it's sufficient to provide it via varargs.
  */
-#define REPORT(CONTEXT__, NAME__, EINFO__...)\
+#define CHPL_REPORT(CONTEXT__, NAME__, EINFO__...)\
   CONTEXT__->report(Error##NAME__::get(CONTEXT__, std::make_tuple(EINFO__)))
 
 template <>

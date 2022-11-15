@@ -191,7 +191,7 @@ module CString {
 
   inline proc c_string.substring(r: range(?)) {
     var r2 = r[1..this.size];  // This may warn about ambiguously aligned ranges.
-    var lo:int = r2.alignedLow, hi:int = r2.alignedHigh;
+    var lo:int = r2.low, hi:int = r2.high;
     return __primitive("string_select", this, lo, hi, r2.stride);
   }
 

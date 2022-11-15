@@ -1,4 +1,4 @@
-warning in surroundingModule.doc.chpl:2: This file-scope code is outside of any explicit module declarations (e.g., module Middle), so an implicit module named 'surroundingModule.doc' is being introduced to contain the file's contents.
+warning in surroundingModule.doc.chpl:2: an implicit module named 'surroundingModule.doc' is being introduced to contain file-scope code
 .. default-domain:: chpl
 
 .. module:: surroundingModule.doc

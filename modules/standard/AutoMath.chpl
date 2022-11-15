@@ -84,19 +84,26 @@ module AutoMath {
   // Helper constants and functions (not included in chpldocs).
   //
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   private extern proc chpl_macro_double_isinf(x: real(64)): c_int;
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   private extern proc chpl_macro_float_isinf(x: real(32)): c_int;
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   private extern proc chpl_macro_double_isfinite(x: real(64)): c_int;
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   private extern proc chpl_macro_float_isfinite(x: real(32)): c_int;
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   private extern proc chpl_macro_double_isnan(x: real(64)): c_int;
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   private extern proc chpl_macro_float_isnan(x: real(32)): c_int;
 
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   private extern proc fabs(x: real(64)): real(64);
 
 
@@ -134,6 +141,7 @@ module AutoMath {
   /* Returns the magnitude of the real argument `x`. */
   inline proc abs(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc fabsf(x: real(32)): real(32);
     return fabsf(x);
   }
@@ -144,6 +152,7 @@ module AutoMath {
   /* Returns the real magnitude of the imaginary argument `im`. */
   inline proc abs(im: imag(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc fabsf(x: real(32)): real(32);
     return fabsf(_i2r(im));
   }
@@ -154,8 +163,10 @@ module AutoMath {
   */
   inline proc abs(z : complex(?w)): real(w/2) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc cabsf(z: complex(64)): real(32);
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc cabs(z: complex(128)): real(64);
     if w == 64 then
       return cabsf(z);
@@ -167,8 +178,10 @@ module AutoMath {
   /* Returns the real phase angle of complex argument `z`. */
   inline proc carg(z: complex(?w)): real(w/2) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc cargf(z: complex(64)): real(32);
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc carg(z: complex(128)): real(64);
     if w == 64 then
       return cargf(z);
@@ -182,6 +195,7 @@ module AutoMath {
      It is an error if `x` is less than -1 or greater than 1.
   */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc acos(x: real(64)): real(64);
 
   /* Returns the arc cosine of the argument `x`.
@@ -190,6 +204,7 @@ module AutoMath {
   */
   inline proc acos(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc acosf(x: real(32)): real(32);
     return acosf(x);
   }
@@ -197,6 +212,7 @@ module AutoMath {
   /* Returns the arc cosine of the argument `z`. */
   inline proc acos(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc cacosf(z: complex(64)): complex(64);
     return cacosf(z);
   }
@@ -204,6 +220,7 @@ module AutoMath {
   /* Returns the arc cosine of the argument `z`. */
   inline proc acos(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc cacos(z: complex(128)): complex(128);
     return cacos(z);
   }
@@ -214,6 +231,7 @@ module AutoMath {
      It is an error if `x` is less than 1.
   */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc acosh(x: real(64)): real(64);
 
   /* Returns the inverse hyperbolic cosine of the argument `x`.
@@ -222,6 +240,7 @@ module AutoMath {
   */
   inline proc acosh(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc acoshf(x: real(32)): real(32);
     return acoshf(x);
   }
@@ -229,6 +248,7 @@ module AutoMath {
   /* Returns the inverse hyperbolic cosine of the argument `z`. */
   inline proc acosh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc cacoshf(z: complex(64)): complex(64);
     return cacoshf(z);
   }
@@ -236,6 +256,7 @@ module AutoMath {
   /* Returns the inverse hyperbolic cosine of the argument `z`. */
   inline proc acosh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc cacosh(z: complex(128)): complex(128);
     return cacosh(z);
   }
@@ -246,6 +267,7 @@ module AutoMath {
      It is an error if `x` is less than -1 or greater than 1.
   */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc asin(x: real(64)): real(64);
 
   /* Returns the arc sine of the argument `x`.
@@ -254,6 +276,7 @@ module AutoMath {
   */
   inline proc asin(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc asinf(x: real(32)): real(32);
     return asinf(x);
   }
@@ -261,6 +284,7 @@ module AutoMath {
   /* Returns the arc sine of the argument `z`. */
   inline proc asin(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc casinf(z: complex(64)): complex(64);
     return casinf(z);
   }
@@ -268,6 +292,7 @@ module AutoMath {
   /* Returns the arc sine of the argument `z`. */
   inline proc asin(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc casin(z: complex(128)): complex(128);
     return casin(z);
   }
@@ -275,11 +300,13 @@ module AutoMath {
 
   /* Returns the inverse hyperbolic sine of the argument `x`. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc asinh(x: real(64)): real(64);
 
   /* Returns the inverse hyperbolic sine of the argument `x`. */
   inline proc asinh(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc asinhf(x: real(32)): real(32);
     return asinhf(x);
   }
@@ -287,6 +314,7 @@ module AutoMath {
   /* Returns the inverse hyperbolic sine of the argument `z`. */
   inline proc asinh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc casinhf(z: complex(64)): complex(64);
     return casinhf(z);
   }
@@ -294,6 +322,7 @@ module AutoMath {
   /* Returns the inverse hyperbolic sine of the argument `z`. */
   inline proc asinh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc casinh(z: complex(128)): complex(128);
     return casinh(z);
   }
@@ -302,11 +331,13 @@ module AutoMath {
 
   /* Returns the arc tangent of the argument `x`. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc atan(x: real(64)): real(64);
 
   /* Returns the arc tangent of the argument `x`. */
   inline proc atan(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc atanf(x: real(32)): real(32);
     return atanf(x);
   }
@@ -314,6 +345,7 @@ module AutoMath {
   /* Returns the arc tangent of the argument `z`. */
   inline proc atan(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc catanf(z: complex(64)): complex(64);
     return catanf(z);
   }
@@ -321,6 +353,7 @@ module AutoMath {
   /* Returns the arc tangent of the argument `z`. */
   inline proc atan(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc catan(z: complex(128)): complex(128);
     return catan(z);
   }
@@ -332,6 +365,7 @@ module AutoMath {
      the arc tangent of `y` / `x` except that the signs of `y`
      and `x` are used to determine the quadrant of the result. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc atan2(y: real(64), x: real(64)): real(64);
 
   /* Returns the arc tangent of the two arguments.
@@ -341,6 +375,7 @@ module AutoMath {
      and `x` are used to determine the quadrant of the result. */
   inline proc atan2(y : real(32), x: real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc atan2f(y: real(32), x: real(32)): real(32);
     return atan2f(y, x);
   }
@@ -350,6 +385,7 @@ module AutoMath {
 
      It is an error if `x` is less than -1 or greater than 1. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc atanh(x: real(64)): real(64);
 
   /* Returns the inverse hyperbolic tangent of the argument `x`.
@@ -357,6 +393,7 @@ module AutoMath {
      It is an error if `x` is less than -1 or greater than 1. */
   inline proc atanh(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc atanhf(x: real(32)): real(32);
     return atanhf(x);
   }
@@ -364,6 +401,7 @@ module AutoMath {
   /* Returns the inverse hyperbolic tangent of the argument `z`. */
   inline proc atanh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc catanhf(z: complex(64)): complex(64);
     return catanhf(z);
   }
@@ -371,6 +409,7 @@ module AutoMath {
   /* Returns the inverse hyperbolic tangent of the argument `z`. */
   inline proc atanh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc catanh(z: complex(128)): complex(128);
     return catanh(z);
   }
@@ -378,11 +417,13 @@ module AutoMath {
 
   /* Returns the cube root of the argument `x`. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc cbrt(x: real(64)): real(64);
 
   /* Returns the cube root of the argument `x`. */
   inline proc cbrt(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc cbrtf(x: real(32)): real(32);
     return cbrtf(x);
   }
@@ -390,11 +431,13 @@ module AutoMath {
 
   /* Returns the value of the argument `x` rounded up to the nearest integer. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc ceil(x: real(64)): real(64);
 
   /* Returns the value of the argument `x` rounded up to the nearest integer. */
   inline proc ceil(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc ceilf(x: real(32)): real(32);
     return ceilf(x);
   }
@@ -406,8 +449,10 @@ module AutoMath {
   */
   inline proc conjg(z: complex(?w)) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc conjf(z: complex(64)): complex(64);
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc conj(z: complex(128)): complex(128);
     if w == 64 then
       return conjf(z);
@@ -442,8 +487,10 @@ module AutoMath {
   /* Returns the projection of `z` on a Riemann sphere. */
   inline proc cproj(z: complex(?w)): complex(w) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc cprojf(z: complex(64)): complex(64);
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc cproj(z: complex(128)): complex(128);
     if w == 64 then
       return cprojf(z);
@@ -454,11 +501,13 @@ module AutoMath {
 
   /* Returns the cosine of the argument `x`. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc cos(x: real(64)): real(64);
 
   /* Returns the cosine of the argument `x`. */
   inline proc cos(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc cosf(x: real(32)): real(32);
     return cosf(x);
   }
@@ -466,6 +515,7 @@ module AutoMath {
   /* Returns the cosine of the argument `z`. */
   inline proc cos(z : complex(64)): complex(64) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc ccosf(z: complex(64)): complex(64);
     return ccosf(z);
   }
@@ -473,6 +523,7 @@ module AutoMath {
   /* Returns the cosine of the argument `z`. */
   inline proc cos(z : complex(128)): complex(128) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc ccos(z: complex(128)): complex(128);
     return ccos(z);
   }
@@ -480,11 +531,13 @@ module AutoMath {
 
   /* Returns the hyperbolic cosine of the argument `x`. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc cosh(x: real(64)): real(64);
 
   /* Returns the hyperbolic cosine of the argument `x`. */
   inline proc cosh(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc coshf(x: real(32)): real(32);
     return coshf(x);
   }
@@ -492,6 +545,7 @@ module AutoMath {
   /* Returns the hyperbolic cosine of the argument `z`. */
   inline proc cosh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc ccoshf(z: complex(64)): complex(64);
     return ccoshf(z);
   }
@@ -499,6 +553,7 @@ module AutoMath {
   /* Returns the hyperbolic cosine of the argument `z`. */
   inline proc cosh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc ccosh(z: complex(128)): complex(128);
     return ccosh(z);
   }
@@ -586,11 +641,13 @@ module AutoMath {
 
   /* Returns the error function of the argument `x`. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc erf(x: real(64)): real(64);
 
   /* Returns the error function of the argument `x`. */
   inline proc erf(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc erff(x: real(32)): real(32);
     return erff(x);
   }
@@ -600,6 +657,7 @@ module AutoMath {
      This is equivalent to 1.0 - :proc:`erf`\(`x`).
   */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc erfc(x: real(64)): real(64);
 
   /* Returns the complementary error function of the argument.
@@ -607,6 +665,7 @@ module AutoMath {
   */
   inline proc erfc(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc erfcf(x: real(32)): real(32);
     return erfcf(x);
   }
@@ -614,11 +673,13 @@ module AutoMath {
 
   /* Returns the value of the Napierian `e` raised to the power of the argument `x`. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc exp(x: real(64)): real(64);
 
   /* Returns the value of the Napierian `e` raised to the power of the argument. */
   inline proc exp(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc expf(x: real(32)): real(32);
     return expf(x);
   }
@@ -626,6 +687,7 @@ module AutoMath {
   /* Returns the value of the Napierian `e` raised to the power of the argument. */
   inline proc exp(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc cexpf(z: complex(64)): complex(64);
     return cexpf(z);
   }
@@ -633,6 +695,7 @@ module AutoMath {
   /* Returns the value of the Napierian `e` raised to the power of the argument. */
   inline proc exp(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc cexp(z: complex(128)): complex(128);
     return cexp(z);
   }
@@ -640,11 +703,13 @@ module AutoMath {
 
   /* Returns the value of `2` raised to the power of the argument `x`. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc exp2(x: real(64)): real(64);
 
   /* Returns the value of `2` raised to the power of the argument `x`. */
   inline proc exp2(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc exp2f(x: real(32)): real(32);
     return exp2f(x);
   }
@@ -653,12 +718,14 @@ module AutoMath {
   /* Returns one less than the value of the Napierian `e` raised to the power
      of the argument `x`. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc expm1(x: real(64)): real(64);
 
   /* Returns one less than the value of the Napierian `e` raised to the power
      of the argument `x`. */
   inline proc expm1(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc expm1f(x: real(32)): real(32);
     return expm1f(x);
   }
@@ -666,11 +733,13 @@ module AutoMath {
 
   /* Returns the value of the argument `x` rounded down to the nearest integer. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc floor(x: real(64)): real(64);
 
   /* Returns the value of the argument `x` rounded down to the nearest integer. */
   inline proc floor(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc floorf(x: real(32)): real(32);
     return floorf(x);
   }
@@ -710,9 +779,11 @@ module AutoMath {
      Returns x * 2**n.
      */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc ldexp(x:real(64), n:int(32)):real(64);
   inline proc ldexp(x:real(32), n:int(32)):real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc ldexpf(x:real(32), n:int(32)):real(32);
     return ldexpf(x, n);
   }
@@ -721,6 +792,7 @@ module AutoMath {
      of the gamma function of the argument `x`.
   */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc lgamma(x: real(64)): real(64);
 
   /* Returns the natural logarithm of the absolute value
@@ -728,6 +800,7 @@ module AutoMath {
   */
   inline proc lgamma(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc lgammaf(x: real(32)): real(32);
     return lgammaf(x);
   }
@@ -738,6 +811,7 @@ module AutoMath {
      It is an error if `x` is less than or equal to zero.
   */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc log(x: real(64)): real(64);
 
   /* Returns the natural logarithm of the argument `x`.
@@ -746,6 +820,7 @@ module AutoMath {
   */
   inline proc log(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc logf(x: real(32)): real(32);
     return logf(x);
   }
@@ -753,6 +828,7 @@ module AutoMath {
   /* Returns the natural logarithm of the argument `z`. */
   inline proc log(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc clogf(z: complex(64)): complex(64);
     return clogf(z);
   }
@@ -760,6 +836,7 @@ module AutoMath {
   /* Returns the natural logarithm of the argument `z`. */
   inline proc log(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc clog(z: complex(128)): complex(128);
     return clog(z);
   }
@@ -770,6 +847,7 @@ module AutoMath {
      It is an error if `x` is less than or equal to zero.
   */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc log10(x: real(64)): real(64);
 
   /* Returns the base 10 logarithm of the argument `x`.
@@ -778,6 +856,7 @@ module AutoMath {
   */
   inline proc log10(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc log10f(x: real(32)): real(32);
     return log10f(x);
   }
@@ -787,6 +866,7 @@ module AutoMath {
   pragma "no doc"
   inline proc chpl_log1p(x: real(64)): real(64) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc log1p(x: real(64)): real(64);
     return log1p(x);
   }
@@ -796,6 +876,7 @@ module AutoMath {
   pragma "no doc"
   inline proc chpl_log1p(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc log1pf(x: real(32)): real(32);
     return log1pf(x);
   }
@@ -836,6 +917,7 @@ module AutoMath {
      It is an error if `x` is less than or equal to zero.
   */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc log2(x: real(64)): real(64);
 
   /* Returns the base 2 logarithm of the argument `x`.
@@ -844,13 +926,16 @@ module AutoMath {
   */
   inline proc log2(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc log2f(x: real(32)): real(32);
     return log2f(x);
   }
 
   private inline proc _logBasePow2Help(in val, baseLog2) {
     // These are used here to avoid including BitOps by default.
+    pragma "codegen for CPU and GPU"
     extern proc chpl_bitops_clz_32(x: c_uint) : uint(32);
+    pragma "codegen for CPU and GPU"
     extern proc chpl_bitops_clz_64(x: c_ulonglong) : uint(64);
 
     var lg2 = 0;
@@ -918,17 +1003,21 @@ module AutoMath {
   pragma "no doc"
   inline proc max(x: uint(?w), y: int(w)) return if x > y then x else y:uint(w);
 
+  pragma "last resort"
+  pragma "no doc"
+  proc max(x, y) where isAtomicType(x.type) || isAtomicType(y.type) {
+    compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
+  }
+
   /* Returns the maximum value of two arguments using the ``>`` operator
      for comparison.
      If one of the arguments is :proc:`AutoMath.NAN`, the result is also NAN.
 
      :rtype: The type of `x`.
    */
-  inline proc max(x, y) where !isArray(x) && !isArray(y) {
-    if isAtomic(x) || isAtomic(y) {
-      compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
-    }
-
+  inline proc max(x, y)
+  where !isArray(x) && !isArray(y) &&
+        !(isNumeric(_desync(x.type)) && isNumeric(_desync(y.type))) {
     return if x > y then x else y;
   }
   /* Returns the maximum value of 3 or more arguments using the above call.
@@ -952,6 +1041,14 @@ module AutoMath {
   inline proc min(x: int(?w), y: uint(w)) return if x < y then x else y:int(w);
   pragma "no doc"
   inline proc min(x: uint(?w), y: int(w)) return if x < y then x:int(w) else y;
+
+  pragma "last resort"
+  pragma "no doc"
+  proc min(x, y) where isAtomicType(x.type) || isAtomicType(y.type) {
+    compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
+  }
+
+
   /* Returns the minimum value of two arguments using the ``<`` operator
      for comparison.
 
@@ -959,11 +1056,9 @@ module AutoMath {
 
      :rtype: The type of `x`.
    */
-  inline proc min(x, y) where !isArray(x) && !isArray(y) {
-    if isAtomic(x) || isAtomic(y) {
-      compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
-    }
-
+  inline proc min(x, y)
+  where !isArray(x) && !isArray(y) &&
+        !(isNumeric(_desync(x.type)) && isNumeric(_desync(y.type))) {
     return if x < y then x else y;
   }
   /* Returns the minimum value of 3 or more arguments using the above call.
@@ -1041,6 +1136,7 @@ module AutoMath {
      floating-point exception.
   */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc nearbyint(x: real(64)): real(64);
 
   /* Returns the rounded integral value of the argument `x` determined by the
@@ -1049,6 +1145,7 @@ module AutoMath {
   */
   inline proc nearbyint(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc nearbyintf(x: real(32)): real(32);
     return nearbyintf(x);
   }
@@ -1059,6 +1156,7 @@ module AutoMath {
      exception.
   */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc rint(x: real(64)): real(64);
 
   /* Returns the rounded integral value of the argument `x` determined by the
@@ -1067,6 +1165,7 @@ module AutoMath {
   */
   inline proc rint(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc rintf(x: real(32)): real(32);
     return rintf(x);
   }
@@ -1075,12 +1174,14 @@ module AutoMath {
   /* Returns the nearest integral value of the argument `x`, returning that
      value which is larger than `x` in absolute value for the half-way case. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc round(x: real(64)): real(64);
 
   /* Returns the nearest integral value of the argument `x`, returning that
      value which is larger than `x` in absolute value for the half-way case. */
   inline proc round(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc roundf(x: real(32)): real(32);
     return roundf(x);
   }
@@ -1113,11 +1214,13 @@ module AutoMath {
 
   /* Returns the sine of the argument `x`. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc sin(x: real(64)): real(64);
 
   /* Returns the sine of the argument `x`. */
   inline proc sin(x: real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc sinf(x: real(32)): real(32);
     return sinf(x);
   }
@@ -1125,6 +1228,7 @@ module AutoMath {
   /* Returns the sine of the argument `z`. */
   inline proc sin(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc csinf(z: complex(64)): complex(64);
     return csinf(z);
   }
@@ -1132,6 +1236,7 @@ module AutoMath {
   /* Returns the sine of the argument `z`. */
   inline proc sin(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc csin(z: complex(128)): complex(128);
     return csin(z);
   }
@@ -1139,11 +1244,13 @@ module AutoMath {
 
   /* Returns the hyperbolic sine of the argument `x`. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc sinh(x: real(64)): real(64);
 
   /* Returns the hyperbolic sine of the argument `x`. */
   inline proc sinh(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc sinhf(x: real(32)): real(32);
     return sinhf(x);
   }
@@ -1151,6 +1258,7 @@ module AutoMath {
   /* Returns the hyperbolic sine of the argument `z`. */
   inline proc sinh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc csinhf(z: complex(64)): complex(64);
     return csinhf(z);
   }
@@ -1158,6 +1266,7 @@ module AutoMath {
   /* Returns the hyperbolic sine of the argument `z`. */
   inline proc sinh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc csinh(z: complex(128)): complex(128);
     return csinh(z);
   }
@@ -1168,6 +1277,7 @@ module AutoMath {
      It is an error if the `x` is less than zero.
   */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc sqrt(x: real(64)): real(64);
 
   /* Returns the square root of the argument `x`.
@@ -1176,6 +1286,7 @@ module AutoMath {
   */
   inline proc sqrt(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc sqrtf(x: real(32)): real(32);
     return sqrtf(x);
   }
@@ -1183,6 +1294,7 @@ module AutoMath {
   /* Returns the square root of the argument `z`. */
   inline proc sqrt(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc csqrtf(z: complex(64)): complex(64);
     return csqrtf(z);
   }
@@ -1190,6 +1302,7 @@ module AutoMath {
   /* Returns the square root of the argument `z`. */
   inline proc sqrt(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc csqrt(z: complex(128)): complex(128);
     return csqrt(z);
   }
@@ -1197,11 +1310,13 @@ module AutoMath {
 
   /* Returns the tangent of the argument `x`. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc tan(x: real(64)): real(64);
 
   /* Returns the tangent of the argument `x`. */
   inline proc tan(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc tanf(x: real(32)): real(32);
     return tanf(x);
   }
@@ -1209,6 +1324,7 @@ module AutoMath {
   /* Returns the tangent of the argument `z`. */
   inline proc tan(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc ctanf(z: complex(64)): complex(64);
     return ctanf(z);
   }
@@ -1216,6 +1332,7 @@ module AutoMath {
   /* Returns the tangent of the argument `z`. */
   inline proc tan(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc ctan(z: complex(128)): complex(128);
     return ctan(z);
   }
@@ -1223,11 +1340,13 @@ module AutoMath {
 
   /* Returns the hyperbolic tangent of the argument `x`. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc tanh(x: real(64)): real(64);
 
   /* Returns the hyperbolic tangent of the argument `x`. */
   inline proc tanh(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc tanhf(x: real(32)): real(32);
     return tanhf(x);
   }
@@ -1235,6 +1354,7 @@ module AutoMath {
   /* Returns the hyperbolic tangent of the argument `z`. */
   inline proc tanh(z: complex(64)): complex(64) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc ctanhf(z: complex(64)): complex(64);
     return ctanhf(z);
   }
@@ -1242,6 +1362,7 @@ module AutoMath {
   /* Returns the hyperbolic tangent of the argument `z`. */
   inline proc tanh(z: complex(128)): complex(128) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc ctanh(z: complex(128)): complex(128);
     return ctanh(z);
   }
@@ -1250,11 +1371,13 @@ module AutoMath {
 
   /* Returns the absolute value of the gamma function of the argument `x`. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc tgamma(x: real(64)): real(64);
 
   /* Returns the absolute value of the gamma function of the argument `x`. */
   inline proc tgamma(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc tgammaf(x: real(32)): real(32);
     return tgammaf(x);
   }
@@ -1263,12 +1386,14 @@ module AutoMath {
   /* Returns the nearest integral value to the argument `x` that is not larger
      than `x` in absolute value. */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc trunc(x: real(64)): real(64);
 
   /* Returns the nearest integral value to the argument `x` that is not larger
      than `x` in absolute value. */
   inline proc trunc(x : real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc truncf(x: real(32)): real(32);
     return truncf(x);
   }
@@ -1300,6 +1425,7 @@ module AutoMath {
   pragma "no doc"
   inline proc chpl_j0(x: real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc chpl_float_j0(x: real(32)): real(32);
     return chpl_float_j0(x);
   }
@@ -1307,6 +1433,7 @@ module AutoMath {
   pragma "no doc"
   inline proc chpl_j0(x: real(64)): real(64) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc j0(x: real(64)): real(64);
     return j0(x);
   }
@@ -1334,6 +1461,7 @@ module AutoMath {
   pragma "no doc"
   inline proc chpl_j1(x: real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc chpl_float_j1(x: real(32)): real(32);
     return chpl_float_j1(x);
   }
@@ -1341,6 +1469,7 @@ module AutoMath {
   pragma "no doc"
   inline proc chpl_j1(x: real(64)): real(64) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc j1(x: real(64)): real(64);
     return j1(x);
   }
@@ -1368,6 +1497,7 @@ module AutoMath {
   pragma "no doc"
   inline proc chpl_jn(n: int, x: real(32)): real(32) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc chpl_float_jn(n: c_int, x: real(32)): real(32);
     return chpl_float_jn(n.safeCast(c_int), x);
   }
@@ -1375,6 +1505,7 @@ module AutoMath {
   pragma "no doc"
   inline proc chpl_jn(n: int, x: real(64)): real(64) {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc jn(n: c_int, x: real(64)): real(64);
     return jn(n.safeCast(c_int), x);
   }
@@ -1405,6 +1536,7 @@ module AutoMath {
       HaltWrappers.boundsCheckHalt("Input value for y0() must be non-negative");
 
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc chpl_float_y0(x: real(32)): real(32);
     return chpl_float_y0(x);
   }
@@ -1415,6 +1547,7 @@ module AutoMath {
       HaltWrappers.boundsCheckHalt("Input value for y0() must be non-negative");
 
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc y0(x: real(64)): real(64);
     return y0(x);
   }
@@ -1445,6 +1578,7 @@ module AutoMath {
       HaltWrappers.boundsCheckHalt("Input value for y1() must be non-negative");
 
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc chpl_float_y1(x: real(32)): real(32);
     return chpl_float_y1(x);
   }
@@ -1455,6 +1589,7 @@ module AutoMath {
       HaltWrappers.boundsCheckHalt("Input value for y1() must be non-negative");
 
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc y1(x: real(64)): real(64);
     return y1(x);
   }
@@ -1485,6 +1620,7 @@ module AutoMath {
       HaltWrappers.boundsCheckHalt("Input value for yn() must be non-negative");
 
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc chpl_float_yn(n: c_int, x: real(32)): real(32);
     return chpl_float_yn(n.safeCast(c_int), x);
   }
@@ -1495,6 +1631,7 @@ module AutoMath {
       HaltWrappers.boundsCheckHalt("Input value for yn() must be non-negative");
 
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc yn(n: c_int, x: real(64)): real(64);
     return yn(n.safeCast(c_int), x);
   }
@@ -1523,6 +1660,7 @@ module AutoMath {
      the sign bit of zeroes, infinities, and NANs */
   inline proc signbit(x : real(32)): bool {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc chpl_macro_float_signbit(x: real(32)): c_int;
     return chpl_macro_float_signbit(x): bool;
   }
@@ -1531,6 +1669,7 @@ module AutoMath {
      the sign bit of zeroes, infinities, and NANs */
   inline proc signbit(x : real(64)): bool {
     pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
     extern proc chpl_macro_double_signbit(x: real(64)): c_int;
     return chpl_macro_double_signbit(x): bool;
   }

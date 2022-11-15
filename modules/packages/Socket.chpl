@@ -72,7 +72,6 @@ public use CTypes;
 use Time;
 use OS, OS.POSIX;
 use IO;
-import SysBasic.{ENOERR, fd_t};
 
 /*
   Available values for different Internet
@@ -236,7 +235,7 @@ inline operator ==(const ref lhs: ipAddr, const ref rhs: ipAddr) {
 
 pragma "no doc"
 proc ipAddr.writeThis(f) throws {
-  f._write("(","family:",this.family,",host:",this.host,",port:",this.port,")");
+  f.write("(","family:",this.family,",host:",this.host,",port:",this.port,")");
 }
 
 /*
@@ -263,8 +262,8 @@ type tcpConn = file;
 */
 proc tcpConn.socketFd throws {
   var tempfd:c_int;
-  var err:errorCode = ENOERR;
-  on this.home {
+  var err:errorCode = 0;
+  on this._home {
     var localtempfd = tempfd;
     err = qio_get_fd(this._file_internal, localtempfd);
     if err then try ioerror(err, "in tcpConn.socketFd");
@@ -280,7 +279,7 @@ proc tcpConn.socketFd throws {
 */
 proc tcpConn.addr throws {
   var address:ipAddr;
-  on this.home {
+  on this._home {
     address = getPeerName(this.socketFd);
   }
   return address;
@@ -324,7 +323,7 @@ inline operator ==(const ref lhs: tcpConn,const ref rhs: tcpConn) {
 
 pragma "no doc"
 proc tcpConn.writeThis(f) throws {
-  f._write("(","addr:",this.addr,",fd:",this.socketFd,")");
+  f.write("(","addr:",this.addr,",fd:",this.socketFd,")");
 }
 
 pragma "no doc"
@@ -580,20 +579,20 @@ pragma "no doc" proc sys_addrinfo_ptr_t.addr:sys_sockaddr_t { return sys_getaddr
 pragma "no doc" proc sys_addrinfo_ptr_t.next:sys_addrinfo_ptr_t { return sys_getaddrinfo_next(this); }
 
 
-private extern proc sys_fcntl(fd:fd_t, cmd:c_int, ref ret_out:c_int):c_int;
-private extern proc sys_fcntl_long(fd:fd_t, cmd:c_int, arg:c_long, ref ret_out:c_int):c_int;
-private extern proc sys_accept(sockfd:fd_t, ref add_out:sys_sockaddr_t, ref fd_out:fd_t):c_int;
-private extern proc sys_bind(sockfd:fd_t, const ref addr:sys_sockaddr_t):c_int;
-private extern proc sys_connect(sockfd:fd_t, const ref addr:sys_sockaddr_t):c_int;
+private extern proc sys_fcntl(fd:c_int, cmd:c_int, ref ret_out:c_int):c_int;
+private extern proc sys_fcntl_long(fd:c_int, cmd:c_int, arg:c_long, ref ret_out:c_int):c_int;
+private extern proc sys_accept(sockfd:c_int, ref add_out:sys_sockaddr_t, ref fd_out:c_int):c_int;
+private extern proc sys_bind(sockfd:c_int, const ref addr:sys_sockaddr_t):c_int;
+private extern proc sys_connect(sockfd:c_int, const ref addr:sys_sockaddr_t):c_int;
 private extern proc getaddrinfo(node:c_string, service:c_string, ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):c_int;
 private extern proc sys_freeaddrinfo(res:sys_addrinfo_ptr_t);
-private extern proc sys_getpeername(sockfd:fd_t, ref addr:sys_sockaddr_t):c_int;
-private extern proc sys_getsockname(sockfd:fd_t, ref addr:sys_sockaddr_t):c_int;
-private extern proc sys_getsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, ref optlen:socklen_t):c_int;
-private extern proc sys_setsockopt(sockfd:fd_t, level:c_int, optname:c_int, optval:c_void_ptr, optlen:socklen_t):c_int;
-private extern proc sys_listen(sockfd:fd_t, backlog:c_int):c_int;
-private extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:fd_t):c_int;
-private extern proc sys_close(fd:fd_t):c_int;
+private extern proc sys_getpeername(sockfd:c_int, ref addr:sys_sockaddr_t):c_int;
+private extern proc sys_getsockname(sockfd:c_int, ref addr:sys_sockaddr_t):c_int;
+private extern proc sys_getsockopt(sockfd:c_int, level:c_int, optname:c_int, optval:c_void_ptr, ref optlen:socklen_t):c_int;
+private extern proc sys_setsockopt(sockfd:c_int, level:c_int, optname:c_int, optval:c_void_ptr, optlen:socklen_t):c_int;
+private extern proc sys_listen(sockfd:c_int, backlog:c_int):c_int;
+private extern proc sys_socket(_domain:c_int, _type:c_int, protocol:c_int, ref sockfd_out:c_int):c_int;
+private extern proc sys_close(fd:c_int):c_int;
 private extern proc sys_getaddrinfo_addr(res:sys_addrinfo_ptr_t):sys_sockaddr_t;
 private extern proc sys_getaddrinfo_next(res:sys_addrinfo_ptr_t):sys_addrinfo_ptr_t;
 private extern proc sys_getaddrinfo_flags(res:sys_addrinfo_ptr_t):c_int;
@@ -651,7 +650,7 @@ record tcpListener {
 */
 proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn throws {
   var client_addr:sys_sockaddr_t = new sys_sockaddr_t();
-  var fdOut:fd_t;
+  var fdOut:c_int;
   var err_out:c_int = 0;
   // try accept
   err_out = sys_accept(socketFd, client_addr, fdOut);
@@ -672,7 +671,7 @@ proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn 
   }
 
   while err_out != 0 {
-    var t: Timer;
+    var t: stopwatch;
     t.start();
     // make event active
     err_out = event_add(internalEvent, if timeout.tv_sec:c_long == -1 then nil else c_ptrTo(timeout));
@@ -776,7 +775,7 @@ inline operator ==(const ref lhs: tcpListener,const ref rhs: tcpListener) {
 
 pragma "no doc"
 proc tcpListener.writeThis(f) throws {
-  f._write("(","addr:",this.addr,",fd:",this.socketFd);
+  f.write("(","addr:",this.addr,",fd:",this.socketFd);
 }
 
 pragma "no doc"
@@ -1019,7 +1018,7 @@ proc udpSocket.close throws {
 }
 
 pragma "no doc"
-private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:c_size_t, flags:c_int, ref src_addr_out:sys_sockaddr_t, ref num_recvd_out:c_ssize_t):c_int;
+private extern proc sys_recvfrom(sockfd:c_int, buff:c_void_ptr, len:c_size_t, flags:c_int, ref src_addr_out:sys_sockaddr_t, ref num_recvd_out:c_ssize_t):c_int;
 
 /*
   Reads upto `bufferLen` bytes from the socket, and
@@ -1064,7 +1063,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
   }
 
   while err_out != 0 {
-    var t: Timer;
+    var t: stopwatch;
     t.start();
     err_out = event_add(internalEvent, if timeout.tv_sec:c_long == -1 then nil else c_ptrTo(timeout));
     if err_out != 0 {
@@ -1136,7 +1135,7 @@ proc udpSocket.recv(bufferLen: int, timeout: real) throws {
 }
 
 pragma "no doc"
-private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c_int, const ref address:sys_sockaddr_t,  ref num_sent_out:c_ssize_t):c_int;
+private extern proc sys_sendto(sockfd:c_int, buff:c_void_ptr, len:c_long, flags:c_int, const ref address:sys_sockaddr_t,  ref num_sent_out:c_ssize_t):c_int;
 
 /*
   Send `data` over socket to the provided address and
@@ -1178,7 +1177,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
     event_free(internalEvent);
   }
   while err_out != 0 {
-    var t: Timer;
+    var t: stopwatch;
     t.start();
     err_out = event_add(internalEvent, if timeout.tv_sec:c_long == -1 then nil else c_ptrTo(timeout));
     if err_out != 0 {
@@ -1226,7 +1225,7 @@ inline operator ==(const ref lhs: udpSocket,const ref rhs: udpSocket) {
 
 pragma "no doc"
 proc udpSocket.writeThis(f) throws {
-  f._write("(","addr:",this.addr,",fd:",this.socketFd);
+  f.write("(","addr:",this.addr,",fd:",this.socketFd);
 }
 
 
@@ -1245,7 +1244,7 @@ extern const SO_SNDTIMEO:c_int;
 extern const SO_SECINFO:c_int;
 
 pragma "no doc"
-proc setSockOpt(socketFd: fd_t, level: c_int, optname: c_int, ref value: c_int) throws {
+proc setSockOpt(socketFd: c_int, level: c_int, optname: c_int, ref value: c_int) throws {
   var optlen = sizeof(value):socklen_t;
   var ptroptval = c_ptrTo(value);
   var err_out = sys_setsockopt(socketFd, level, optname, ptroptval:c_void_ptr, optlen);
@@ -1281,7 +1280,7 @@ proc setSockOpt(ref socket: ?t, level: c_int, optname: c_int, value: c_int)
 }
 
 pragma "no doc"
-proc setSockOpt(socketFd:fd_t, level: c_int, optname: c_int, ref value: bytes) throws {
+proc setSockOpt(socketFd:c_int, level: c_int, optname: c_int, ref value: bytes) throws {
   var optlen = value.size:socklen_t;
   var ptroptval = value.c_str();
   var err_out = sys_setsockopt(socketFd, level, optname, ptroptval, optlen);
@@ -1315,7 +1314,7 @@ proc setSockOpt(ref socket: ?t, level: c_int, optname: c_int, value: bytes)
 }
 
 pragma "no doc"
-proc setSockOpt(socketFd:fd_t, level: c_int, optname: c_int, value:nothing, optlen:socklen_t) throws {
+proc setSockOpt(socketFd:c_int, level: c_int, optname: c_int, value:nothing, optlen:socklen_t) throws {
   var err_out = sys_setsockopt(socketFd, level, optname, nil, optlen);
   if err_out != 0 {
     throw createSystemError(err_out, "Failed to set socket option");
@@ -1346,7 +1345,7 @@ proc setSockOpt(ref socket: ?t, level: c_int, optname: c_int, value: nothing, op
 }
 
 pragma "no doc"
-proc getSockOpt(socketFd:fd_t, level: c_int, optname: c_int) throws {
+proc getSockOpt(socketFd:c_int, level: c_int, optname: c_int) throws {
   var optval:c_int;
   var ptroptval = c_ptrTo(optval);
   var optlen = sizeof(optval):socklen_t;
@@ -1380,7 +1379,7 @@ proc getSockOpt(ref socket: ?t, level: c_int, optname: c_int): int(32)
 }
 
 pragma "no doc"
-proc getSockOpt(socketFd:fd_t, level: c_int, optname: c_int, buflen: uint(16)) throws {
+proc getSockOpt(socketFd:c_int, level: c_int, optname: c_int, buflen: uint(16)) throws {
   if buflen < 0 || buflen > 1024 {
     throw new Error("getSockOpt buflen out of range");
   }
@@ -1419,7 +1418,7 @@ proc getSockOpt(ref socket: ?t, level: c_int, optname: c_int, buflen: uint(16)):
 }
 
 pragma "no doc"
-proc getPeerName(socketFD: fd_t) throws {
+proc getPeerName(socketFD: c_int) throws {
   var addressStorage = new sys_sockaddr_t();
   var err = sys_getpeername(socketFD, addressStorage);
   if err != 0 {
@@ -1446,7 +1445,7 @@ proc getPeerName(ref socket: tcpConn): ipAddr throws {
 }
 
 pragma "no doc"
-proc getSockName(socketFD: fd_t) throws {
+proc getSockName(socketFD: c_int) throws {
   var addressStorage = new sys_sockaddr_t();
   var err = sys_getsockname(socketFD, addressStorage);
   if err != 0 {
@@ -1483,7 +1482,7 @@ proc socket(family:IPFamily = IPFamily.IPv4, sockType:c_int = SOCK_STREAM, proto
 }
 
 pragma "no doc"
-proc setBlocking(socketFd: fd_t, blocking: bool) throws {
+proc setBlocking(socketFd: c_int, blocking: bool) throws {
   var flags:c_int;
   var err = sys_fcntl(socketFd, F_GETFL, flags);
   if err != 0 {
@@ -1502,7 +1501,7 @@ proc setBlocking(socketFd: fd_t, blocking: bool) throws {
 }
 
 pragma "no doc"
-proc bind(socketFd:fd_t, ref address: ipAddr, reuseAddr = true) throws {
+proc bind(socketFd:c_int, ref address: ipAddr, reuseAddr = true) throws {
   var enable = (if reuseAddr then 1 else 0):c_int;
   setSockOpt(socketFd, SOL_SOCKET, SO_REUSEADDR, enable);
   var err = sys_bind(socketFd, address._addressStorage);
@@ -1538,24 +1537,24 @@ proc bind(ref socket: ?t, ref address: ipAddr, reuseAddr = true)
 }
 
 pragma "no doc"
-proc nagle(socketFd:fd_t, enable:bool) throws {
+proc nagle(socketFd:c_int, enable:bool) throws {
   var c_enable = (if enable then 0 else 1):c_int;
   setSockOpt(socketFd, IPPROTO_TCP, TCP_NODELAY, c_enable);
 }
 
 pragma "no doc"
-proc nagle(socketFd:fd_t):bool throws {
+proc nagle(socketFd:c_int):bool throws {
   return if getSockOpt(socketFd, IPPROTO_TCP, TCP_NODELAY) == 0 then true else false;
 }
 
 pragma "no doc"
-proc delayAck(socketFd:fd_t, enable:bool) throws {
+proc delayAck(socketFd:c_int, enable:bool) throws {
   var c_enable = (if enable then 0 else 1):c_int;
   setSockOpt(socketFd, IPPROTO_TCP, TCP_QUICKACK, c_enable);
 }
 
 pragma "no doc"
-proc delayAck(socketFd:fd_t):bool throws {
+proc delayAck(socketFd:c_int):bool throws {
   return if getSockOpt(socketFd, IPPROTO_TCP, TCP_QUICKACK) == 0 then true else false;
 }
 

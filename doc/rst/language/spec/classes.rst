@@ -31,7 +31,7 @@ discussed in :ref:`Generic_Types`.
 Class Declarations
 ------------------
 
-A class is defined with the following syntax: 
+A class is defined with the following syntax:
 
 .. code-block:: syntax
 
@@ -90,15 +90,16 @@ strategy*. Four memory management strategies are available: ``owned``,
 managed by the compiler. In other words, the compiler automatically calls
 ``delete`` on these instances to reclaim their memory. For these
 instances, ``=`` and copy initialization can result in the transfer or
-sharing of ownership. See the module documentation for :record:`~OwnedObject.owned` and :record:`~SharedObject.shared`.  When ``borrowed`` is
-used as a memory management strategy in a ``new-expression``, it also
-creates an instance that has its lifetime managed by the compiler
-(:ref:`Class_New`).
+sharing of ownership. See the :ref:`Owned_Objects` and :ref:`Shared_Objects`
+sections for more details.  When ``borrowed`` is used as a memory management
+strategy in a ``new-expression``, it also creates an instance that has its
+lifetime managed by the compiler (:ref:`Class_New`).
 
 Class instances that are ``unmanaged`` have their lifetime managed
-explicitly and ``delete`` must be used to reclaim their memory.
+explicitly by the programmer. The ``delete`` keyword must be used to
+reclaim their memory.
 
-No matter the memory management strategy used, class types support
+Regardless of the memory management strategy used, class types support
 *borrowing*. A ``borrowed`` class instance refers to the same class
 instance as another variable but has no impact on the lifetime of that
 instance. The process of getting such a reference to an instance is
@@ -163,8 +164,8 @@ Class Types
 ~~~~~~~~~~~
 
 A class type is formed by the combination of a basic class type and a
-memory management strategy.
-
+memory management strategy. Class types can be used in a variety of scenarios
+such as variable declarations or type specifiers on formal arguments.
 
 
 .. code-block:: syntax
@@ -176,11 +177,10 @@ memory management strategy.
      'borrowed' basic-class-type
      'unmanaged' basic-class-type
 
-A basic class type is given simply by the class name for non-generic
-classes. Generic classes must be instantiated to serve as a
-fully-specified type, for example to declare a variable. This is done
-with type constructors, which are defined in Section :ref:`Type_Constructors`.
-
+A `basic-class-type` can be specified using the name of any non-generic class.
+To use a generic class in a `class-type`, it must be fully-instantiated. More
+information on instantiating generic types can be found in the
+:ref:`Type Constructors <Type_Constructors>` Section.
 
 
 .. code-block:: syntax
@@ -193,8 +193,10 @@ A basic class type, including a generic class type that is not fully
 specified, may appear in the inheritance lists of other class
 declarations.
 
-If no memory management strategy is indicated, the class will be
-considered to have generic management.
+If a class type's memory management strategy is unspecified, it will be
+generic. (This is not the case for instances of classes. When a new class
+instance is created with an unspecified memory management strategy it
+will default to ``owned``.)
 
 Variables of class type cannot store ``nil`` unless the class type is
 nilable (:ref:`Nilable_Classes`).
@@ -203,12 +205,12 @@ The memory management strategies have the following meaning:
 
 -  ``owned`` the instance will be deleted automatically when the
    ``owned`` variable goes out of scope, but only one ``owned`` variable
-   can refer to the instance at a time. See the module documentation for
-   :record:`~OwnedObject.owned`.
+   can refer to the instance at a time. See the :ref:`Owned_Objects` section
+   for more details.
 
 -  ``shared`` will be deleted when all of the ``shared`` variables
-   referring to the instance go out of scope. See
-   the module documentation for :record:`~SharedObject.shared`.
+   referring to the instance go out of scope. See the :ref:`Shared_Objects`
+   section for more details.
 
 -  ``borrowed`` refers to a class instance that has a lifetime managed
    by another variable.
@@ -236,7 +238,7 @@ available for this purpose
 
    .. BLOCK-test-chapeloutput
 
-      duplicate-management.chpl:2: error: Type expression uses multiple class kinds: borrowed unmanaged
+      duplicate-management.chpl:2: error: type expression uses multiple class kinds: borrowed unmanaged
 
 ..
 
@@ -375,7 +377,7 @@ non-nilable classes are not currently supported.
    ``nil``. The next statement assigned to it an instance of the class
    ``C``. The declaration of variable ``c2`` shows that these steps can
    be combined. The type of ``c2`` is also ``borrowed C?``, determined
-   implicitly from the the initialization expression. Finally, an object
+   implicitly from the initialization expression. Finally, an object
    of type ``owned D`` is created and assigned to ``c``.
 
 .. _Class_nil_value:
@@ -2003,9 +2005,216 @@ the memory.
                                   // output and then the memory is reclaimed.
       }
 
-   
 
    .. BLOCK-test-chapeloutput
 
       Bye, bye 1
       Bye, bye 2
+
+
+
+.. _Owned_Objects:
+
+Owned Objects
+-------------
+
+Including ``owned`` (or :record:`~SharedObject.shared`) in a class type directs
+the compiler to manage the deallocation of a class instances of that type.
+:record:`~OwnedObject.owned` is meant to be used when only one reference to an
+object needs to manage that object's storage at a time.
+
+Also see the above section on :ref:`Class_Lifetime_and_Borrows`.
+
+Using `owned`
+~~~~~~~~~~~~~
+
+The ``new`` keyword allocates :record:`~OwnedObject.owned` classes by default.
+Additionally, it is possible to explicitly request an ``owned`` class instance
+
+.. code-block:: chapel
+
+ class MyClass { }
+
+ var myOwnedObject = new MyClass();
+ // or, equivalently
+ var myOwnedObject = new owned MyClass();
+
+When ``myOwnedObject`` goes out of scope, the class instance it refers to will
+be deleted. It is possible to transfer the ownership to another ``owned``
+variable before that happens.
+
+Copy initializing from ``myOwnedObject`` or assigning it to another
+:record:`~OwnedObject.owned` will leave ``myOwnedObject`` storing a nil value
+and transfer the owned class instance to the other value.
+
+.. code-block:: chapel
+
+ var otherOwnedObject = myOwnedObject;
+ // now myOwnedObject stores nil
+ // the value it stored earlier has moved to otherOwnedObject
+
+ myOwnedObject = otherOwnedObject;
+ // this assignment moves the value from the right-hand-side
+ // to the left-hand-side, leaving the right-hand-side empty.
+ // after the assignment, otherOwnedObject stores nil
+ // and myOwnedObject stores a value that will be deleted
+ // when myOwnedObject goes out of scope.
+
+
+``owned`` forms part of a type and can be used in type expressions:
+
+.. code-block:: chapel
+
+ var emptyOwnedObject: owned MyClass;
+
+
+.. _about-owned-borrowing:
+
+Borrowing from `owned`
+~~~~~~~~~~~~~~~~~~~~~~
+
+The :proc:`~OwnedObject.owned.borrow` method returns the pointer managed by the
+:record:`~OwnedObject.owned`. This pointer is only valid as long as the
+:record:`~OwnedObject.owned` is storing that pointer.
+
+The compiler includes a component called the lifetime checker that
+can, in many cases, check that a `borrow` does not refer to an object
+that could be deleted before the `borrow`. For example:
+
+.. code-block:: chapel
+
+ proc test() {
+   var a: owned MyClass = new owned MyClass();
+   // the instance referred to by a is deleted at end of scope
+   var c: borrowed MyClass = a.borrow();
+   // c "borrows" to the instance managed by a
+   return c; // lifetime checker error! returning borrow from local variable
+   // a is deleted here
+ }
+
+.. _about-owned-coercions:
+
+Coercions for `owned`
+~~~~~~~~~~~~~~~~~~~~~
+
+The compiler includes support for introducing automatic coercions
+from :record:`~OwnedObject.owned` to the borrow type. This is equivalent
+to calling the :proc:`~OwnedObject.owned.borrow` method. For example:
+
+.. code-block:: chapel
+
+ proc f(arg: borrowed MyClass) {
+   writeln(arg);
+ }
+
+ var myOwned = new owned MyClass();
+ f(myOwned); // compiler coerces to borrowed MyClass via borrow()
+
+
+Additionally, the compiler includes support for coercing a value
+of type ``owned T`` to ``owned U`` when ``T`` is a subclass of ``U``.
+For example:
+
+.. code-block:: chapel
+
+ class Person { }
+ class Student : Person { }
+
+ var myStudent = new owned Student();
+ var myPerson:owned Person = myStudent;
+ // relies on coercion from owned Student to owned Person
+ // moves the instance from myStudent to myPerson, leaving
+ // myStudent containing nil.
+
+
+`owned` Default Intent
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The default intent for :record:`~OwnedObject.owned` is ``const ref``.
+See more on argument intents in the :ref:`Procedures Primer <primers-procedures>`
+
+.. _Owned_Methods:
+
+Methods on `owned` Classes
+--------------------------
+
+.. include:: /builtins/OwnedObject.rst
+
+
+
+.. _Shared_Objects:
+
+Shared Objects
+--------------
+
+Including ``shared`` (or :record:`~OwnedObject.owned`) in a class type directs
+the compiler to manage the deallocation of a class instances of that type.
+:record:`~OwnedObject.owned` is meant to be used when many different references
+will exist to the object at the same time and these references need to keep
+the object alive.
+
+Also see the above section on :ref:`Class_Lifetime_and_Borrows`.
+
+Using `shared`
+~~~~~~~~~~~~~~
+
+To use :record:`~SharedObject.shared`, allocate a class instance following this
+pattern:
+
+.. code-block:: chapel
+
+ var mySharedObject = new shared MyClass(...));
+
+When ``mySharedObject`` and any copies of it go out of scope, the class
+instance it refers to will be deleted.
+
+Copy initializing or assigning from mySharedObject will make
+other variables refer to the same class instance. The class instance
+will be deleted after all of these references go out of scope.
+
+.. code-block:: chapel
+
+ var globalSharedObject:shared MyClass;
+
+ proc makeGlobalSharedObject() {
+   var mySharedObject = new shared MyClass(...);
+   globalSharedObject = mySharedObject;
+   // the reference count is decremented when mySharedObject
+   // goes out of scope. Since it's not zero after decrementing, the
+   // MyClass instance is not deleted until globalSharedObject
+   // goes out of scope.
+ }
+
+Borrowing from `shared`
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The :proc:`~SharedObject.shared.borrow` method returns the pointer managed by
+the :record:`~SharedObject.shared`. This pointer is only valid as long as the
+:record:`~SharedObject.shared` is storing that pointer. The compiler includes
+some checking for errors in this case. In these ways,
+:record:`~SharedObject.shared` is similar to :record:`~OwnedObject.owned`.
+
+See :ref:`about-owned-borrowing` for more details and examples.
+
+Coercions for `shared`
+~~~~~~~~~~~~~~~~~~~~~~
+
+As with :record:`~OwnedObject.owned`, :record:`~SharedObject.shared` supports
+coercions to the class type as well as
+coercions from a ``shared(T)`` to ``shared(U)`` where ``T`` is a
+subclass of ``U``.
+
+See :ref:`about-owned-coercions` for more details and examples.
+
+`shared` Default Intent
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The default intent for :record:`~SharedObject.shared` types is ``const ref``.
+See more on argument intents in the :ref:`Procedures Primer <primers-procedures>`
+
+.. _Shared_Methods:
+
+Methods on `shared` Classes
+---------------------------
+
+.. include:: /builtins/SharedObject.rst

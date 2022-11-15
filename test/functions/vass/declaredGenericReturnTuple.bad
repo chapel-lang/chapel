@@ -1,14 +1,14 @@
 declaredGenericReturnTuple.chpl:11: In function 'p2':
 declaredGenericReturnTuple.chpl:11: error: cannot initialize return value of type '1*VectorListElement' from a '1*VectorListElement(int(64))'
-$CHPL_HOME/modules/standard/ChapelIO.chpl:584: In method '_readWriteHelper':
-$CHPL_HOME/modules/standard/ChapelIO.chpl:624: error: cannot default-initialize a variable with generic type
-$CHPL_HOME/modules/standard/ChapelIO.chpl:624: note: '<temporary>' has generic type 'VectorListElement'
-$CHPL_HOME/modules/standard/ChapelIO.chpl:624: note: cannot find initialization point to split-init this variable
-$CHPL_HOME/modules/standard/ChapelIO.chpl:624: note: '<temporary>' is used here before it is initialized
-  $CHPL_HOME/modules/standard/ChapelIO.chpl:579: called as 1*VectorListElement._readWriteHelper(f: fileWriter(dynamic,false)) from method 'writeThis'
-  $CHPL_HOME/modules/standard/IO.chpl:3917: called as 1*VectorListElement.writeThis(f: fileWriter(dynamic,false)) from function '_write_one_internal'
-  $CHPL_HOME/modules/standard/IO.chpl:3727: called as _write_one_internal(_channel_internal: qio_channel_ptr_t, param kind = 0: iokind, x: 1*VectorListElement, loc: locale) from method '_writeOne'
-  $CHPL_HOME/modules/standard/IO.chpl:5320: called as (fileWriter(dynamic,true))._writeOne(param kind = 0: iokind, x: 1*VectorListElement, loc: locale) from method '_write'
-  $CHPL_HOME/modules/standard/IO.chpl:5407: called as (fileWriter(dynamic,true))._write(args(0): 1*VectorListElement, args(1): ioNewline) from method '_writeln'
-  $CHPL_HOME/modules/standard/ChapelIO.chpl:719: called as (fileWriter(dynamic,true))._writeln(args(0): 1*VectorListElement) from function 'writeln'
+$CHPL_HOME/modules/standard/ChapelIO.chpl:583: In method '_readWriteHelper':
+$CHPL_HOME/modules/standard/ChapelIO.chpl:623: error: cannot default-initialize a variable with generic type
+$CHPL_HOME/modules/standard/ChapelIO.chpl:623: note: '<temporary>' has generic type 'VectorListElement'
+$CHPL_HOME/modules/standard/ChapelIO.chpl:623: note: cannot find initialization point to split-init this variable
+$CHPL_HOME/modules/standard/ChapelIO.chpl:623: note: '<temporary>' is used here before it is initialized
+  $CHPL_HOME/modules/standard/ChapelIO.chpl:578: called as 1*VectorListElement._readWriteHelper(f: fileWriter(dynamic,false)) from method 'writeThis'
+  $CHPL_HOME/modules/standard/IO.chpl:3919: called as 1*VectorListElement.writeThis(f: fileWriter(dynamic,false)) from function '_write_one_internal'
+  $CHPL_HOME/modules/standard/IO.chpl:3729: called as _write_one_internal(_channel_internal: qio_channel_ptr_t, param kind = 0: iokind, x: 1*VectorListElement, loc: locale) from method '_writeOne'
+  $CHPL_HOME/modules/standard/IO.chpl:5420: called as (fileWriter(dynamic,true))._writeOne(param kind = 0: iokind, x: 1*VectorListElement, loc: locale) from method 'write'
+  $CHPL_HOME/modules/standard/IO.chpl:5471: called as (fileWriter(dynamic,true)).write(args(0): 1*VectorListElement, args(1): ioNewline) from method 'writeln'
+  $CHPL_HOME/modules/standard/ChapelIO.chpl:718: called as (fileWriter(dynamic,true)).writeln(args(0): 1*VectorListElement) from function 'writeln'
   declaredGenericReturnTuple.chpl:12: called as writeln(args(0): 1*VectorListElement)

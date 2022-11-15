@@ -34,7 +34,7 @@ use TaskingMode;
 config param taskingMode = ompParallelForT;
 
 proc main() {
-  var t: Timer;
+  var t: stopwatch;
 
   t.start();
   select taskingMode {

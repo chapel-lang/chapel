@@ -1,0 +1,1 @@
+copyable-sync-string.chpl:3: error: isCopyableType(sync string) = true

@@ -1,0 +1,24 @@
+./Aggregator.chpl:36: In initializer:
+$CHPL_HOME/modules/standard/Types.chpl:250: warning: Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side
+  ./DistributedMap.chpl:763: called as (aggregator(distributedMapImpl(string,int(64),nothing),proc(ref element: int))).init(clientInst: borrowed distributedMapImpl(string,int(64),nothing), updaterFcf: proc(ref element: int)) from method 'updateAggregator'
+  use-distributed-map.chpl:12: called as (distributedMapImpl(string,int(64),nothing)).updateAggregator(updater: proc(ref element: int))
+Jacob=2
+Jingleheimer=2
+John=2
+Schmidt=2
+always=1
+go=1
+goes=1
+his=1
+is=1
+la=7
+my=1
+name=2
+out=1
+people=1
+shout=1
+the=1
+there=1
+too=1
+we=1
+whenever=1

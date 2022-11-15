@@ -16,8 +16,8 @@ var acc = 0;
 test();
 
 // passing
-proc testPassing():Timer {
-  var tPassing: Timer;
+proc testPassing():stopwatch {
+  var tPassing: stopwatch;
   tPassing.start();
   for i in 1..n {
     acc += receive(pass);
@@ -27,8 +27,8 @@ proc testPassing():Timer {
 }
 
 // returning
-proc testReturning():Timer {
-  var tReturning: Timer;
+proc testReturning():stopwatch {
+  var tReturning: stopwatch;
   tReturning.start();
   var keepAlive: int;
   for i in 1..n {
@@ -38,8 +38,8 @@ proc testReturning():Timer {
   tReturning.stop();
   return tReturning;
 }
-proc testReturningItoa():Timer {
-  var tReturning: Timer;
+proc testReturningItoa():stopwatch {
+  var tReturning: stopwatch;
   tReturning.start();
   var keepAlive: int;
   for i in 1..(n/10) {

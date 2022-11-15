@@ -12,7 +12,7 @@ use TaskingMode;
 config param taskingMode = forallT;
 
 proc main() {
-  var t: Timer;
+  var t: stopwatch;
 
   t.start();
   select taskingMode {

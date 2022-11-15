@@ -766,6 +766,7 @@ module ChapelLocale {
 
   pragma "fn synchronization free"
   pragma "no doc"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_task_getRequestedSubloc(): chpl_sublocID_t;
 
   pragma "no doc"

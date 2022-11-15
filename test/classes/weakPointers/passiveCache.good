@@ -1,0 +1,5 @@
+passiveCache.chpl:46: In method 'buildAndSave':
+passiveCache.chpl:48: warning: The 'weakPointer' type is still under development and may change in the future
+  passiveCache.chpl:38: called as (PassiveCache(basicClass)).buildAndSave(key: int(64)) from method 'getOrBuild'
+  passiveCache.chpl:66: called as (PassiveCache(basicClass)).getOrBuild(key: int(64))
+true

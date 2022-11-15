@@ -346,12 +346,9 @@ ID InitResolver::fieldIdFromPossibleMentionOfField(const AstNode* node) {
 
   if (fieldId.isEmpty()) return ret;
 
-  if (phase_ < PHASE_COMPLETE) {
-    auto id = re.toId();
-    if (!id.isEmpty() && parsing::idIsField(ctx_, id)) return id;
-  } else {
-    assert(false && "Not handled yet!");
-  }
+  // TODO: Handle case where "this.foo" resolve to a paren-less method
+  auto id = re.toId();
+  if (!id.isEmpty() && parsing::idIsField(ctx_, id)) return id;
 
   return ret;
 }
@@ -401,6 +398,19 @@ void InitResolver::doDetectPossibleAssignmentToField(const OpCall* node) {
   if (node->op() == USTR("=")) isDescendingIntoAssignment_ = true;
 }
 
+static void checkInsideBadTag(Context* context,
+                              Resolver& resolver, const AstNode* node) {
+  if (resolver.isInsideTag(AstTag::START_Loop)) {
+    context->error(node, "cannot initialize fields inside of loops");
+  }
+  if (resolver.isInsideTag(AstTag::Begin)) {
+    context->error(node, "cannot initialize fields inside begin statements");
+  }
+  if (resolver.isInsideTag(AstTag::Cobegin)) {
+    context->error(node, "cannot initialize fields inside cobegin statements");
+  }
+}
+
 bool InitResolver::handleAssignmentToField(const OpCall* node) {
   if (node->op() != USTR("=")) return false;
   assert(node->numActuals() == 2);
@@ -416,6 +426,8 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
 
   bool isAlreadyInitialized = !state->initPointId.isEmpty();
   bool isOutOfOrder = state->ordinalPos < currentFieldIndex_;
+
+  checkInsideBadTag(ctx_, initResolver_, node);
 
   // Implicitly initialize any fields between the current index and this.
   int old = currentFieldIndex_;
@@ -437,6 +449,10 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
     // How often do we need to recompute this? More often?
     if (state->qt.isType() || state->qt.isParam()) {
       updateResolverVisibleReceiverType();
+    }
+
+    if ((size_t)currentFieldIndex_ == fieldIdsByOrdinal_.size()) {
+      phase_ = PHASE_COMPLETE;
     }
 
   } else {
@@ -495,8 +511,8 @@ bool InitResolver::handleUseOfField(const AstNode* node) {
 ID InitResolver::solveNameConflictByIgnoringField(const NameVec& vec) {
   if (vec.size() != 2) return ID();
   if (vec[0].numIds() > 1 || vec[1].numIds() > 1) return ID();
-  auto one = vec[0].id(0);
-  auto two = vec[1].id(0);
+  auto one = vec[0].firstId();
+  auto two = vec[1].firstId();
   assert(one != two);
   if (!parsing::idIsField(ctx_, one) &&
       !parsing::idIsField(ctx_, two)) return ID();
@@ -511,7 +527,7 @@ bool InitResolver::handleResolvingFieldAccess(const Identifier* node) {
 
   // Handle and exit early if there were no ambiguities.
   if (vec.size() == 1 && vec[0].numIds() == 1) {
-    auto& id = vec[0].id(0);
+    auto& id = vec[0].firstId();
     if (parsing::idIsField(ctx_, id)) {
       auto state = fieldStateFromId(id);
       auto qt = state->qt;
@@ -557,6 +573,12 @@ bool InitResolver::handleResolvingFieldAccess(const Dot* node) {
   }
 
   return true;
+}
+
+void InitResolver::checkEarlyReturn(const Return* ret) {
+  if (phase_ != PHASE_COMPLETE) {
+    ctx_->error(ret, "cannot return from initializer before initialization is complete");
+  }
 }
 
 } // end namespace resolution
