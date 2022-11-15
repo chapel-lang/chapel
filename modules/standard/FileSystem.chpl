@@ -85,7 +85,7 @@
    :iter:`glob`
    :iter:`listDir`
    :iter:`walkDirs`
-   :iter:`findfiles`
+   :iter:`findFiles`
 
    Constant and Function Definitions
    ---------------------------------
@@ -591,7 +591,20 @@ proc exists(name: string): bool throws {
 
    :yield:  The paths to any files found, relative to `startdir`, as strings
 */
+iter findFiles(startdir: string = ".", recursive: bool = false,
+               hidden: bool = false): string {
+  if (recursive) then
+    foreach subdir in walkDirs(startdir, hidden=hidden) do
+      foreach file in listDir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+        yield subdir+"/"+file;
+  else
+    foreach file in listDir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+      yield startdir+"/"+file;
+}
 
+// When this deprecated iterator is removed remember to remove the standalone
+// parallel version below as well.
+deprecated "'findfiles' is deprecated, please use 'findFiles' instead"
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false): string {
   if (recursive) then
@@ -604,6 +617,27 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
 }
 
 pragma "no doc"
+iter findFiles(startdir: string = ".", recursive: bool = false,
+               hidden: bool = false, param tag: iterKind): string
+       where tag == iterKind.standalone {
+  if (recursive) then
+    // Why "with (ref hidden)"?  A: the compiler currently allows only
+    // [const] ref intents in forall loops over recursive parallel iterators
+    // such as walkDirs().
+    forall subdir in walkDirs(startdir, hidden=hidden) with (ref hidden) do
+      foreach file in listDir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+        yield subdir+"/"+file;
+  else
+    foreach file in listDir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+      yield startdir+"/"+file;
+}
+
+// Adding the deprecation warning here causes 3 deprecation warnings in
+// addition to the one that comes from the serial iterator for a forall loop
+// that calls this. (serial, leader, follower, standalone). Rely on just
+// the serial deprecation warning to reduce it to a single message.
+pragma "no doc"
+//deprecated "'findfiles' is deprecated, please use 'findFiles' instead"
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {

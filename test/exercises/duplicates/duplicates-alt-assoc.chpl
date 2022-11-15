@@ -19,7 +19,7 @@ proc main(args: [] string) {
     if isFile(arg) {
       paths += relativeRealPath(arg);
     } else if isDir(arg) {
-      for path in findfiles(arg, recursive=true) {
+      for path in findFiles(arg, recursive=true) {
         paths += relativeRealPath(path);
       }
     } else {
