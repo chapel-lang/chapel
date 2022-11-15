@@ -1,1 +1,1 @@
-onlyExceptSameUse.chpl:13: error: syntax error near 'except'
+onlyExceptSameUse.chpl:13: syntax error: syntax error near 'except'

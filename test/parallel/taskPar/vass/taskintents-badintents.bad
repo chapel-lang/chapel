@@ -1,1 +1,1 @@
-taskintents-badintents.chpl:4: error: syntax error near 'inout'
+taskintents-badintents.chpl:4: syntax error: syntax error near 'inout'

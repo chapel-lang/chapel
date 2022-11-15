@@ -1,5 +1,5 @@
-─── error in recordInheritanceNotSupported.chpl:5 [RecordInheritanceNotSupported] ───
+─── syntax in recordInheritanceNotSupported.chpl:5 [RecordInheritanceNotSupported] ───
   Inheritance is not currently supported for records.
   Bar declared as a record here
-  thoughts on what record inheritance should entail can be added to https://github.com/chapel-lang/chapel/issues/6851
+  Thoughts on what record inheritance should entail can be added to https://github.com/chapel-lang/chapel/issues/6851.
 

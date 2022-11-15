@@ -1,2 +1,2 @@
-test_slice_stride4_auto.chpl:3: error: syntax error near '=>'
-test_slice_stride4_auto.chpl:7: error: syntax error near '=>'
+test_slice_stride4_auto.chpl:3: syntax error: syntax error near '=>'
+test_slice_stride4_auto.chpl:7: syntax error: syntax error near '=>'

@@ -1,4 +1,4 @@
-genericReturnMemKind.chpl:11: error: syntax error near 'return'
-genericReturnMemKind.chpl:11: error: syntax error near '}'
-genericReturnMemKind.chpl:30: error: syntax error near 'yield'
-genericReturnMemKind.chpl:30: error: no-op procedures are only legal for extern functions
+genericReturnMemKind.chpl:11: syntax error: syntax error near 'return'
+genericReturnMemKind.chpl:11: syntax error: syntax error near '}'
+genericReturnMemKind.chpl:30: syntax error: syntax error near 'yield'
+genericReturnMemKind.chpl:30: syntax error: no-op procedures are only legal for extern functions

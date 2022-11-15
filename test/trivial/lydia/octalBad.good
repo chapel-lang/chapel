@@ -1,1 +1,1 @@
-octalBad.chpl:2: error: syntax error near 'o87'
+octalBad.chpl:2: syntax error: syntax error near 'o87'

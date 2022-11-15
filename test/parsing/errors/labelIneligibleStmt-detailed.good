@@ -1,4 +1,4 @@
-─── error in labelIneligibleStmt.chpl:1 [LabelIneligibleStmt] ───
+─── syntax in labelIneligibleStmt.chpl:1 [LabelIneligibleStmt] ───
   Cannot label 'FnCall' statement.
-  Only for-, while-do- and do-while-statements can have labels.
+  Only 'for', 'while', and 'do-while' statements can have labels.
 

@@ -1,1 +1,1 @@
-invalidToken.chpl:3: error: syntax error near 'one'
+invalidToken.chpl:3: syntax error: syntax error near 'one'

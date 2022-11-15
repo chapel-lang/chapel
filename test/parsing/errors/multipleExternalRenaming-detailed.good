@@ -1,3 +1,3 @@
-─── error in multipleExternalRenaming.chpl:1 [MultipleExternalRenaming] ───
+─── syntax in multipleExternalRenaming.chpl:1 [MultipleExternalRenaming] ───
   External symbol renaming can only be applied to one symbol at a time.
 

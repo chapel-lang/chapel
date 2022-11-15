@@ -1,1 +1,1 @@
-bisonSyntaxError.chpl:1: error: syntax error near '"'
+bisonSyntaxError.chpl:1: syntax error: syntax error near '"'

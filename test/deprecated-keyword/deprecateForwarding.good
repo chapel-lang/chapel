@@ -1,1 +1,1 @@
-deprecateForwarding.chpl:5: error: can't deprecate a forwarding statement
+deprecateForwarding.chpl:5: syntax error: can't deprecate a forwarding statement

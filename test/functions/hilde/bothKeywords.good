@@ -1,1 +1,1 @@
-bothKeywords.chpl:2: error: syntax error near 'export'
+bothKeywords.chpl:2: syntax error: syntax error near 'export'

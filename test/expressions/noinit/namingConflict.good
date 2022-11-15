@@ -1,2 +1,2 @@
-namingConflict.chpl:1: error: syntax error near 'noinit'
-namingConflict.chpl:2: error: syntax error near 'noinit'
+namingConflict.chpl:1: syntax error: syntax error near 'noinit'
+namingConflict.chpl:2: syntax error: syntax error near 'noinit'

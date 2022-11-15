@@ -1,3 +1,3 @@
-bad_label.chpl:7: error: labels should not be terminated with semicolons
-bad_label.chpl:13: error: labels should not be terminated with semicolons
-bad_label.chpl:20: error: labels should not be terminated with semicolons
+bad_label.chpl:7: syntax error: labels should not be terminated with semicolons
+bad_label.chpl:13: syntax error: labels should not be terminated with semicolons
+bad_label.chpl:20: syntax error: labels should not be terminated with semicolons

@@ -1,1 +1,1 @@
-wrong-escapes-3.chpl:2: error: end-of-file in string literal
+wrong-escapes-3.chpl:2: syntax error: end-of-file in string literal

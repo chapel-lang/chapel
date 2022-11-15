@@ -1,4 +1,4 @@
-test_array_arg8_auto.chpl:9: error: syntax error near '=>'
-test_array_arg8_auto.chpl:10: error: syntax error near '=>'
-test_array_arg8_auto.chpl:11: error: syntax error near '=>'
-test_array_arg8_auto.chpl:12: error: syntax error near '=>'
+test_array_arg8_auto.chpl:9: syntax error: syntax error near '=>'
+test_array_arg8_auto.chpl:10: syntax error: syntax error near '=>'
+test_array_arg8_auto.chpl:11: syntax error: syntax error near '=>'
+test_array_arg8_auto.chpl:12: syntax error: syntax error near '=>'

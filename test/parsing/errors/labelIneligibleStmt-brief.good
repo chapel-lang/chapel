@@ -1,1 +1,1 @@
-labelIneligibleStmt.chpl:1: error: cannot label 'FnCall' statement
+labelIneligibleStmt.chpl:1: syntax error: cannot label 'FnCall' statement

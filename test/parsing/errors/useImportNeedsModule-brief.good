@@ -1,1 +1,1 @@
-useImportNeedsModule.chpl:1: error: 'use' statements must refer to module or enum symbols
+useImportNeedsModule.chpl:1: syntax error: 'use' statements must refer to module or enum symbols

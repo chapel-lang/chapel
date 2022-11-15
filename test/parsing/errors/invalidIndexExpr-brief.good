@@ -1,1 +1,1 @@
-invalidIndexExpr.chpl:1: error: only identifiers or tuples are allowed as index expressions
+invalidIndexExpr.chpl:1: syntax error: only identifiers or tuples are allowed as index expressions

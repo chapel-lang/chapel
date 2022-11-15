@@ -1,1 +1,1 @@
-noUnderscoreOnlyList.chpl:5: error: syntax error near '_'
+noUnderscoreOnlyList.chpl:5: syntax error: syntax error near '_'

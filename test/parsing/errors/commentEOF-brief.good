@@ -1,3 +1,3 @@
-commentEOF.chpl:3: error: end-of-file in comment
+commentEOF.chpl:3: syntax error: end-of-file in comment
 commentEOF.chpl:1: note: Unterminated comment started here
 commentEOF.chpl:2: note: Nested comment started here

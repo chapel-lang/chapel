@@ -1,1 +1,1 @@
-cobeginSyntaxError.chpl:4: error: syntax error near 'count$'
+cobeginSyntaxError.chpl:4: syntax error: syntax error near 'count$'

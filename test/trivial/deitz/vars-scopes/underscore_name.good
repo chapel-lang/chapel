@@ -1,2 +1,2 @@
-underscore_name.chpl:1: error: syntax error near '_'
-underscore_name.chpl:3: error: syntax error near '_'
+underscore_name.chpl:1: syntax error: syntax error near '_'
+underscore_name.chpl:3: syntax error: syntax error near '_'

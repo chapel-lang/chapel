@@ -1,1 +1,1 @@
-pragma-error-unrecognized-1.chpl:1: error: unknown pragma "this is a non-existing pragma"
+pragma-error-unrecognized-1.chpl:1: syntax error: unknown pragma "this is a non-existing pragma"

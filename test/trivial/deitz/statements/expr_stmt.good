@@ -1,1 +1,1 @@
-expr_stmt.chpl:1: error: syntax error near ';'
+expr_stmt.chpl:1: syntax error: syntax error near ';'

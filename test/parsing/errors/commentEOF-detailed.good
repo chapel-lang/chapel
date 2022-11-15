@@ -1,5 +1,5 @@
-─── error in commentEOF.chpl:3 [CommentEOF] ───
+─── syntax in commentEOF.chpl:3 [CommentEOF] ───
   End-of-file in comment.
-  Unterminated comment started here:
-  Nested comment started here:
+  Unterminated comment started here
+  Nested comment started here
 

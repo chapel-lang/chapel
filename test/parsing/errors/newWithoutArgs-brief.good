@@ -1,1 +1,1 @@
-newWithoutArgs.chpl:5: error: type in 'new' expression is missing its argument list
+newWithoutArgs.chpl:5: syntax error: 'new' expression is missing its argument list
