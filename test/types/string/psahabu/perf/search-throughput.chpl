@@ -65,7 +65,7 @@ if timing {
 }
 
 // startsWith
-var tStartsWith: Timer;
+var tStartsWith: stopwatch;
 if timing then tStartsWith.start();
 for i in 1..n {
   var s = Passage[i];
@@ -74,7 +74,7 @@ for i in 1..n {
 if timing then tStartsWith.stop();
 
 // endsWith
-var tEndsWith: Timer;
+var tEndsWith: stopwatch;
 if timing then tEndsWith.start();
 for i in 1..n {
   var s = Passage[i];
@@ -83,7 +83,7 @@ for i in 1..n {
 if timing then tEndsWith.stop();
 
 // find
-var tFind: Timer;
+var tFind: stopwatch;
 if timing then tFind.start();
 for i in 1..n {
   var s = Passage[i];
@@ -92,7 +92,7 @@ for i in 1..n {
 if timing then tFind.stop();
 
 // rfind
-var tRFind: Timer;
+var tRFind: stopwatch;
 if timing then tRFind.start();
 for i in 1..n {
   var s = Passage[i];

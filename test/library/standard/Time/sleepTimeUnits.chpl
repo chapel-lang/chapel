@@ -10,7 +10,7 @@ proc lt(a : real, b : real) {
   return a < (b-tolerance);
 }
 
-var timer: Timer;
+var timer: stopwatch;
 
 timer.start();
 sleep(-5);

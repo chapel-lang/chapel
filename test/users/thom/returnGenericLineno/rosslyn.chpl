@@ -38,7 +38,7 @@ module Rosslyn
                                "create new class instance");
             hasBeenRun = true;
 
-            var timer : Timer;
+            var timer : stopwatch;
 
             timer.start();
             runKernel(); //assume there is minimal overhead here

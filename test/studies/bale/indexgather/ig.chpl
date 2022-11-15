@@ -39,7 +39,7 @@ proc main() {
 
   var tmp: [D2] int = -1;
 
-  var t: Timer;
+  var t: stopwatch;
   t.start();
 
   select mode {

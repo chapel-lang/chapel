@@ -49,7 +49,7 @@ record HashedPathComparator {
  */
 proc computeHashes(hashAndPath:[] HashedPath) {
 
-  var clock: Timer;
+  var clock: stopwatch;
   clock.start();
 
   forall rec in hashAndPath {

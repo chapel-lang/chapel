@@ -32,7 +32,7 @@ proc computeHashes(hashAndPath:[] (SHA256Hash, string)) {
   // STEP 1: Call computeFileHash to compute the hashes for each
   // path, and store the resulting hash in the hashAndPath array.
 
-  var clock: Timer;
+  var clock: stopwatch;
   clock.start();
 
   forall (hash, path) in hashAndPath {

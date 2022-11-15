@@ -2,7 +2,7 @@ use Time;
 
 use LayoutCS;
 
-var t = new Timer();
+var t = new stopwatch();
 
 config const correctness = true;
 

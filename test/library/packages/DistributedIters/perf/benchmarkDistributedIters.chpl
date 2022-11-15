@@ -141,7 +141,7 @@ else
 pragma "no doc"
 private proc testDynamicWorkload()
 {
-  var timer:Timer;
+  var timer:stopwatch;
 
   const replicatedDomain:domain(1) dmapped Replicated() = controlDomain;
   var array:[controlDomain]real;
@@ -176,7 +176,7 @@ private proc testDynamicWorkload()
 pragma "no doc"
 private proc testGuidedWorkload()
 {
-  var timer:Timer;
+  var timer:stopwatch;
 
   const replicatedDomain:domain(1) dmapped Replicated() = controlDomain;
   var array:[controlDomain]real;
@@ -210,7 +210,7 @@ private proc testGuidedWorkload()
 pragma "no doc"
 private proc testControlWorkload():real
 {
-  var timer:Timer;
+  var timer:stopwatch;
 
   const D:domain(1) dmapped Block(boundingBox=controlDomain) = controlDomain;
   var array:[D]real;

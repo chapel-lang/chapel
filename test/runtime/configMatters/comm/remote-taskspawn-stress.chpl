@@ -13,7 +13,7 @@ config const printArgBundle = false;
   - parallel all-to-all (all tasks on all nodes spawn to all nodes)
   */
 proc main() {
-  var t: Timer;
+  var t: stopwatch;
 
   t.start();
   runTaskSpawn(argBundleSize=0);

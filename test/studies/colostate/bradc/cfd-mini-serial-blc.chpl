@@ -30,7 +30,7 @@ module CFD_mini {
  var yFluxDomain: domain(3) = {0..nCell-1,0..nCell,0..nCell-1};
  var zFluxDomain: domain(3) = {0..nCell,0..nCell-1,0..nCell-1};
  var FluxDomain: domain(3) = {0..nCell,0..nCell,0..nCell};
- var loopTime: Timer;
+ var loopTime: stopwatch;
 
 
  proc main() { 

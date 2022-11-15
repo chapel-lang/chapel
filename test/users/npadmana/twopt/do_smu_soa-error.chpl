@@ -35,7 +35,7 @@ config const nmubins=5;
 config const nsbins=5;
 
 // Global variables
-var gtime1 : Timer;
+var gtime1 : stopwatch;
 
 proc main() {
   doPairs();
@@ -292,7 +292,7 @@ proc smuAccumulate(hh : UniformBins, p1,p2 : Particle3D, d1,d2 : domain(1), scal
 }
 
 proc doPairs() {
-  var tt : Timer;
+  var tt : stopwatch;
 
   // Read in the file
   tt.clear(); tt.start();

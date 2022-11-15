@@ -82,7 +82,7 @@ class CombiningReduceOp: ReduceScanOp {
 }
 
 proc main(args: [] string) {
-  var clock:Timer;
+  var clock:stopwatch;
   var paths:Set(string);
 
   if timing {

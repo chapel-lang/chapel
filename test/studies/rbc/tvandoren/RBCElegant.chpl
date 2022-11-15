@@ -13,7 +13,7 @@ config const printElapsed = true,
 
 proc main() {
   // 0. Housekeeping
-  var timer: Timer;
+  var timer: stopwatch;
   timer.start();
 
   // 1. Calibration

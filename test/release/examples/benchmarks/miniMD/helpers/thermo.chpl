@@ -42,7 +42,7 @@ proc initThermo() {
   } 
 }
 
-proc computeThermo(step : int, total : Timer) {
+proc computeThermo(step : int, total : stopwatch) {
 
   // if not the 0th step and we shouldn't compute, leave
   if step > 0 && (step % thermoEvery >= 1) then return;

@@ -28,7 +28,7 @@ proc refAccess(A: [] real, B: [] real, param nAdds) {
 
 proc main {
   use Time;
-  var t1, t2: Timer;
+  var t1, t2: stopwatch;
   var Dom = {0..#size, 0..#size};
   var A: [Dom] real;
   var B: [Dom] real;

@@ -57,7 +57,7 @@ proc main() {
     writeln('Multiplying A*A');
   }
 
-  var t: Timer;
+  var t: stopwatch;
 
   t.start();
   var AA = SPAdot(A, A);

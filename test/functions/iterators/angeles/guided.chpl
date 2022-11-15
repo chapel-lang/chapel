@@ -14,7 +14,7 @@ use Time;
 config const quiet: bool = true;
 config const nIterTimesF, nIterTimesC, nIterTimesT, nIterTimesR:int=1;
 config const chunkTimesF, chunkTimesC, chunkTimesT, chunkTimesR:int=1;
-var t: Timer;
+var t: stopwatch;
 
 var grainsize:string; // "fine", "coarse", "tri", "rand"
 use Random; 
@@ -46,7 +46,7 @@ proc CheckCorrectness(grainsize:string)
 {
  
   use Time;
-  var t: Timer;
+  var t: stopwatch;
   var delay:uint;
   var n,m, chunk:int;
   var r:range;

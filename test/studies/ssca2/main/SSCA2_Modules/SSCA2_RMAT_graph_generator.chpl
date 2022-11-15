@@ -40,7 +40,7 @@ config const parGC = true;      // do Graph Generation in parallel?
 // Set to false for parallel computation (=> faster but not reproducible).
 config param SERIAL_GRAPH_GEN = REPRODUCIBLE_PROBLEMS;
 
-var stopwatch : Timer;
+var sw : stopwatch;
 
 record directed_vertex_pair {
   var start = 1: int;
@@ -115,7 +115,7 @@ proc Gen_RMAT_graph ( a : real,
 { use Random, IO;
     use analyze_RMAT_graph_associative_array;
 
-    if PRINT_TIMING_STATISTICS then stopwatch.start ();
+    if PRINT_TIMING_STATISTICS then sw.start ();
 
     const vertex_range = 1..N_VERTICES,
           edge_range   = 1..n_raw_edges;
@@ -344,10 +344,10 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
     }
 
     if PRINT_TIMING_STATISTICS then {
-      stopwatch.stop ();
-      writeln ( "Elapsed time for Edge Generation: ", stopwatch.elapsed (),
+      sw.stop ();
+      writeln ( "Elapsed time for Edge Generation: ", sw.elapsed (),
                 " seconds");
-      stopwatch.clear ();
+      sw.clear ();
     }
 
     if DEBUG_WEIGHT_GENERATOR then {
@@ -418,7 +418,7 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
 
     writeln("Starting Graph Generation ",
             if parGC then "in parallel" else "serially");
-    if PRINT_TIMING_STATISTICS then stopwatch.start ();
+    if PRINT_TIMING_STATISTICS then sw.start ();
 
     var collisions = 0, self_edges = 0;
 
@@ -468,10 +468,10 @@ NPBRandomPrivate_iterate(real, edge_domain, seed, start=rndPos+4*delta)) {
       vx.tidyNeighbors(firstAvail$);
 
     if PRINT_TIMING_STATISTICS then {
-      stopwatch.stop ();
-      writeln ( "Elapsed time for Kernel 1: ", stopwatch.elapsed (),
+      sw.stop ();
+      writeln ( "Elapsed time for Kernel 1: ", sw.elapsed (),
                 " seconds");
-      stopwatch.clear ();
+      sw.clear ();
     }
 
     G.num_edges = + reduce [v in G.vertices] G.n_Neighbors (v);

@@ -40,7 +40,7 @@ var digits: [digitDom] int(8);
 
 proc main
 {
-  var t: Timer;
+  var t: stopwatch;
   if perfTest then t.start();
 
   for n in digitDom.dim(0) by blkSz align 0 do
