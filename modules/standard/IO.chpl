@@ -5344,23 +5344,23 @@ proc _channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
 /*
    Read a specified number of codepoints into a :type:`~String.string`
 
-   ``s.size`` may be smaller than ``maxSize`` if EOF is reached before
+   The string ``s`` may be smaller than ``maxSize`` if EOF is reached before
    reading the specified number of codepoints. Additionally, if nothing
-   is read from the channel, ``s`` will be set to ``""`` and the method will
-   return ``false``.
+   is read from the fileReader, ``s`` will be set to ``""`` and the method
+   will return ``false``.
 
    .. note::
 
-      This method always uses UTF-8 encoding regaurdless of the channel's
+      This method always uses UTF-8 encoding regaurdless of the fileReader's
       configuration
 
    :arg s: the string to read into — this value is overwritten
-   :arg maxSize: the number of codepoints to read from the channel
+   :arg maxSize: the number of codepoints to read from the fileReader
    :returns: `false` if EOF is reached before reading anything, `true` otherwise
 
-   :throws SystemError: Thrown if an error occurred while reading the channel.
+   :throws SystemError: Thrown if an error occurred while reading from the fileReader.
 */
-proc _channel.readBinary(ref s: string, maxSize: int): bool throws {
+proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
   var e:errorCode = ENOERR;
 
   var len: int(64);
@@ -5381,18 +5381,18 @@ proc _channel.readBinary(ref s: string, maxSize: int): bool throws {
 /*
    Read a specified number of bytes into a :type:`~Bytes.bytes`
 
-   ``b.size`` may be smaller than ``maxSize`` if EOF is reached before
+   The bytes ``b`` may be smaller than ``maxSize`` if EOF is reached before
    reading the specified number of bytes. Additionally, if nothing is read
-   from the channel, ``b`` will be set to ``b""`` and the method will
+   from the fileReader, ``b`` will be set to ``b""`` and the method will
    return ``false``.
 
-   :arg s: the bytes to read into — this value is overwritten
-   :arg maxSize: the number of bytes to read from the channel
+   :arg b: the bytes to read into — this value is overwritten
+   :arg maxSize: the number of bytes to read from the fileReader
    :returns: `false` if EOF is reached before reading anything, `true` otherwise
 
-   :throws SystemError: Thrown if an error occurred while reading the channel.
+   :throws SystemError: Thrown if an error occurred while reading from the fileReader.
 */
-proc _channel.readBinary(ref b: bytes, maxSize: int): bool throws {
+proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
   var e:errorCode = ENOERR;
 
   var len: int(64);
@@ -5411,9 +5411,9 @@ proc _channel.readBinary(ref b: bytes, maxSize: int): bool throws {
 }
 
 /*
-   Read an array of binary numbers from the channel
+   Read an array of binary numbers from a fileReader
 
-   Binary values of the type ``data.eltType`` are consumed from the channel
+   Binary values of the type ``data.eltType`` are consumed from the fileReader
    until ``data`` is full or EOF is reached. An :class:`~OS.UnexpectedEofError`
    is thrown if EOF is reached before the array is filled.
 
@@ -5425,10 +5425,10 @@ proc _channel.readBinary(ref b: bytes, maxSize: int): bool throws {
    :returns: `false` if EOF is encountered before reading anything,
               `true` otherwise
 
-   :throws SystemError: Thrown if an error occurred while reading the channel
+   :throws SystemError: Thrown if an error occurred while reading from the fileReader
    :throws UnexpectedEofError: Thrown if EOF is encountered before ``data.size`` values are read
 */
-proc _channel.readBinary(ref data: [?d] ?t, param endian = ioendian.native): bool throws
+proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): bool throws
   where (d.rank == 1 && d.stridable == false) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
@@ -5469,9 +5469,9 @@ proc _channel.readBinary(ref data: [?d] ?t, param endian = ioendian.native): boo
 }
 
 /*
-   Read an array of binary numbers from the channel
+   Read an array of binary numbers from a fileReader
 
-   Binary values of the type ``data.eltType`` are consumed from the channel
+   Binary values of the type ``data.eltType`` are consumed from the fileReader
    until ``data`` is full or EOF is reached. An :class:`~OS.UnexpectedEofError`
    is thrown if EOF is reached before the array is filled.
 
@@ -5483,10 +5483,10 @@ proc _channel.readBinary(ref data: [?d] ?t, param endian = ioendian.native): boo
    :returns: `false` if EOF is encountered before reading anything,
               `true` otherwise
 
-   :throws SystemError: Thrown if an error occurred while reading the channel
+   :throws SystemError: Thrown if an error occurred while reading the from fileReader
    :throws UnexpectedEofError: Thrown if EOF is encountered before ``data.size`` values are read
 */
-proc _channel.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
+proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
   where (d.rank == 1 && d.stridable == false) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
