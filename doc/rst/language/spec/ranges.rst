@@ -473,10 +473,17 @@ Iterating over Unbounded Ranges
 When an unbounded range of integer values is used to drive a loop,
 either by being the only iterand, or by serving as the leader iterand
 of a zippered iteration, it will generate a conceptually infinite
-number of iterations (though practically, the behavior is undefined
-once it approaches the extreme values that its index type can store).
-For such loops to be useful in practice, they must typically contain a
-``break`` or ``return`` statement.
+number of iterations.  In order for such loops to be useful in
+practice, they must typically contain a ``break`` or ``return``
+statement.  Of course, in practice, the values representable by
+``idxType`` are finite; as a result, when the loop reaches its extreme
+values, the behavior of the loop is undefined.
+
+   *Implementation Notes*.
+
+   In the current implementation of Chapel, the loop will halt with an
+   error once it yields a value within ``stride`` of the maximal
+   ``idxType`` value.
 
 When an unbounded range of integer values serves as a follower iterand
 in a zippered context ( :ref:`Zipper_Iteration`), it will generate as
@@ -546,12 +553,12 @@ scalar function as described in :ref:`Promotion`.
 
       2 3 4 5 6 7 8 9 10 11
 
-The last statement is equivalent to: 
+   The last statement is equivalent to: 
 
-.. code-block:: chapel
+   .. code-block:: chapel
 
-   forall (a, i) in zip(A, 1..10) do
-     a = addOne(i);
+      forall (a, i) in zip(A, 1..10) do
+        a = addOne(i);
 
 .. _Range_Operators:
 
