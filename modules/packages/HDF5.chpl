@@ -3533,7 +3533,7 @@ module HDF5 {
     use FileSystem, List;
 
     var filenames: list(string);
-    for f in findfiles(dirName) {
+    for f in findFiles(dirName) {
       if f.startsWith(dirName + '/' + filenameStart:string) &&
          f.endsWith(".h5") {
         filenames.append(f);

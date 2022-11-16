@@ -19,7 +19,7 @@ proc runtest() {
 
   writeln("uploading some files to FTP");
 
-  for f in findfiles() {
+  for f in findFiles() {
     if f.endsWith(".txt") || f.endsWith(".htm") || f.endsWith(".html") {
 
       if verbose then
