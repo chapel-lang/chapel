@@ -1,4 +1,5 @@
 use IO;
+import OS.POSIX.EILSEQ;
 
 var w = open("./bs.bin", iomode.cw).writer();
 var d: string = "some very interesting output data 👍\n";
@@ -21,6 +22,8 @@ var myBytes = b"Illegal \xff sequence";  // \xff is non UTF-8
 var myEscapedString = myBytes.decode(policy=decodePolicy.escape);
 try {
     w.writeBinary(myEscapedString);
+} catch e : SystemError {
+    writeln(e.err == EILSEQ);
 } catch e {
-    writeln(e);
+    writeln("threw wrong error: ", e);
 }
