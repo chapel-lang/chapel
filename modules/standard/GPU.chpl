@@ -114,7 +114,7 @@ module GPU
   }
 
   /*
-    Prints 'msg' followed by the difference between 'stop' and 'stop'. Meant to
+    Prints 'msg' followed by the difference between 'stop' and 'start'. Meant to
     print the time ellapsed between subsequent calls to 'gpuClock()'.
     To convert to seconds divide by 'gpuClocksPerSec()'
   */

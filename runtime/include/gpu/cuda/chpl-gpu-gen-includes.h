@@ -103,8 +103,6 @@ __host__ static inline unsigned int chpl_gpu_clock(void) {
 __device__ __host__ static inline void chpl_gpu_printTimeDelta(
   const char *msg, unsigned int start, unsigned int end)
 {
-  // For some reason the %Lf specifier doesn't work in CUDA
-  // so I downcast to double.
   printf("%s%u\n", msg, end - start);
 }
 
