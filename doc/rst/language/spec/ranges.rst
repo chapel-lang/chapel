@@ -486,7 +486,7 @@ values, the behavior of the loop is undefined.
    ``idxType`` value.
 
 When an unbounded range of integer values serves as a follower iterand
-in a zippered context ( :ref:`Zipper_Iteration`), it will generate as
+in a zippered context ( :ref:`Zippered_Iteration`), it will generate as
 many indices as are needed to match its leader iterand.
 
    *Example (zipWithUnbounded.chpl)*.

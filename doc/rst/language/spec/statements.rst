@@ -566,12 +566,12 @@ indices do not need to be referenced in the loop (in which case the
 
 If the iteratable-expression begins with the keyword ``zip`` followed by
 a parenthesized expression-list, the listed expressions must support
-zipper iteration.
+zippered iteration.
 
-.. _Zipper_Iteration:
+.. _Zippered_Iteration:
 
-Zipper Iteration
-~~~~~~~~~~~~~~~~
+Zippered Iteration
+~~~~~~~~~~~~~~~~~~
 
 When multiple iterand expressions are traversed in a loop using the
 ``zip`` keyword, the corresponding expressions yielded by each iterand

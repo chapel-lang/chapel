@@ -570,7 +570,7 @@ compatible in terms of number of dimensions and shape.
       2 2 2
       2 2 2
 
-   If the zipper iteration is illegal, then the assignment is illegal.
+   If the zippered iteration is illegal, then the assignment is illegal.
    This means, for example, that a range cannot be assigned to a
    multidimensional rectangular array because the two expressions don’t
    match in shape and can’t be zipped together. Notice that the
