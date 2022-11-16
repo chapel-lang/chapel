@@ -37,6 +37,19 @@ module GPU
   pragma "codegen for CPU and GPU"
   extern proc chpl_gpu_write(const str : c_string) : void;
 
+  pragma "no doc"
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_clock() : uint;
+
+  pragma "no doc"
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printTimeDelta(
+    msg : c_string, start : uint, stop : uint) : void;
+
+  pragma "no doc"
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_device_clock_rate(devNum : int(32)) : uint;
+
   /*
      This function is intended to be called from within a GPU kernel and is
      useful for debugging purposes.
@@ -90,5 +103,32 @@ module GPU
   pragma "always propagate line file info"
   inline proc assertOnGpu() {
     __primitive("chpl_assert_on_gpu");
+  }
+
+  /*
+    Returns value of a per-multiprocessor counter that increments every clock cycle
+  */
+  pragma "no doc"
+  proc gpuClock() : uint {
+    return chpl_gpu_clock();
+  }
+
+  /*
+    Prints 'msg' followed by the difference between 'stop' and 'start'. Meant to
+    print the time ellapsed between subsequent calls to 'gpuClock()'.
+    To convert to seconds divide by 'gpuClocksPerSec()'
+  */
+  pragma "no doc"
+  proc gpuPrintTimeDelta(msg : c_string, start : uint, stop : uint) : void {
+    chpl_gpu_printTimeDelta(msg, start, stop);
+  }
+
+  /*
+    Returns the number of clock cycles per second of a GPU multiprocessor.
+    Currently we don't support calling this function from within a kernel.
+   */
+  pragma "no doc"
+  proc gpuClocksPerSec(devNum : int) {
+    return chpl_gpu_device_clock_rate(devNum : int(32));
   }
 }
