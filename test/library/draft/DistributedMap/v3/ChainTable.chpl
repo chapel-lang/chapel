@@ -150,9 +150,10 @@ module ChainTable {
         // how many no-rehash context managers have access to this
         var numStaticManagers: atomic uint;
 
-        // var buckets: _ddata(unmanaged Bucket(keyType, valType));
-        var d : domain(rank=1, idxType=uint, stridable=false);
-        var buckets : [d] unmanaged Bucket(keyType, valType)?;
+        var buckets: _ddata(unmanaged Bucket(keyType, valType));
+
+        // var d : domain(rank=1, idxType=uint, stridable=false);
+        // var buckets : [d] unmanaged Bucket(keyType, valType)?;
 
         proc init(type keyType, type valType, initialCapacity = defaultInitialCapacity) {
             if isDomainType(keyType) then
@@ -164,11 +165,20 @@ module ChainTable {
             this.numEntries = 0;
 
             // this.complete();
-            // this.buckets = (if this.numBuckets == 0
-            //     then nil
-            //     else _allocateData(this.numBuckets, unmanaged Bucket(this.keyType, this.valType))
-            // );
-            this.d = {0..<this.numBuckets};
+            this.buckets = (if this.numBuckets == 0
+                then nil
+                else _allocateData(this.numBuckets, unmanaged Bucket(this.keyType, this.valType))
+            );
+            // this.d = {0..<this.numBuckets};
+        }
+
+        proc deinit() {
+            if this.buckets != nil {
+                for i in 0..this.numBuckets {
+                    delete this.buckets[i];
+                }
+                _ddata_free(this.buckets, this.numBuckets);
+            }
         }
 
         // determine if the map has an entry for the given key
@@ -176,7 +186,7 @@ module ChainTable {
         //  otherwise, return (false, bucket index, 0)
         proc getFullSlotFor(key: keyType) : (bool, uint, uint) {
             var bucket_idx = this._bucketIdx(key);
-            var (has_key, chain_idx) = this.buckets[bucket_idx]!.findIndexOf(key);
+            var (has_key, chain_idx) = this.buckets[bucket_idx].findIndexOf(key);
             return (has_key, bucket_idx, chain_idx);
         }
 
@@ -185,17 +195,17 @@ module ChainTable {
         //  otherwise, return (bucket index, next open index in the bucket)
         proc getSlotFor(key: keyType) : (uint, uint) {
             var bucket_idx = this._bucketIdx(key);
-            var (has_key, chain_idx) = this.buckets[bucket_idx]!.findIndexOf(key);
+            var (has_key, chain_idx) = this.buckets[bucket_idx].findIndexOf(key);
             return if has_key
                 then (bucket_idx, chain_idx)
-                else (bucket_idx, this.buckets[bucket_idx]!.firstAvailableIndex());
+                else (bucket_idx, this.buckets[bucket_idx].firstAvailableIndex());
         }
 
         // copy a key-value pair into a slot with the given indices
         proc fillSlot((bucket_idx, chain_idx): (uint, uint), in key: keyType, in val: valType) {
             use Memory.Initialization;
 
-            ref entry = this.buckets[bucket_idx]![chain_idx];
+            ref entry = this.buckets[bucket_idx][chain_idx];
 
             select entry.status {
                 when entryStatus.full do _deinitSlot(entry);
@@ -212,7 +222,7 @@ module ChainTable {
         proc clearSlot((bucket_idx, chain_idx): (uint, uint), out key: keyType, out val: valType) {
             use Memory.Initialization;
 
-            ref entry = this.buckets[bucket_idx]![chain_idx];
+            ref entry = this.buckets[bucket_idx][chain_idx];
 
             key = moveToValue(entry.key);
             val = moveToValue(entry.val);
@@ -221,22 +231,26 @@ module ChainTable {
             this.numEntries -= 1;
         }
 
+        // replace the current array of buckets with a new array of different size
         proc _rehash(newNumBuckets: uint) {
-            if newNumBuckets == 0 then halt("cannot rehash with zero buckets!");
+            if newNumBuckets == 0 then halt("cannot rehash into zero buckets");
             this.rehashing.write(true);
 
             const oldBuckets = this.buckets;
             const oldNumBuckets = this.numBuckets;
 
             this.numBuckets = newNumBuckets;
-            this.d = {0..<this.numBuckets};
-            this.buckets : [this.d] unmanaged Bucket(this.keyType, this.valType)?;
+            this.buckets = _allocateData(this.numBuckets, unmanaged Bucket(this.keyType, this.valType));
 
-            for b in oldBuckets {
+            for i in 0..oldNumBuckets {
+                ref b = this.buckets[i];
                 for e in b._allEntries() {
                     this.fillSlot(this.getSlotFor(e.key), e.key, e.val);
                 }
+                delete b;
             }
+
+            if oldBuckets != nil then _ddata_free(oldBuckets, oldNumBuckets);
         }
 
         proc _bucketIdx(key: keyType) : uint {
