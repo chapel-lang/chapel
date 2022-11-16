@@ -36,6 +36,15 @@ module ChainTable {
         type valType;
         var entry : rawTableEntry(keyType, valType);
         var next : owned ChainedTableEntry(keyType, valType)?;
+
+        proc appendToTail(idx: uint) : uint {
+            if this.next != nil {
+                return this.next!.appendToTail(idx + 1);
+            } else {
+                this.next = new owned ChainedTableEntry(keyType, valType);
+                return idx;
+            }
+        }
     }
 
     // a bucket for holding hashtable entries that all correspond the the same hash
@@ -52,21 +61,20 @@ module ChainTable {
         var localEntries: [0..<numLocalBucketSlots] rawTableEntry(keyType, valType);
 
         // store the remainder of the entries in a linked list on the heap
-        var heapEntriesHead: owned ChainedTableEntry(keyType, valType)?;
+        var chainHead: owned ChainedTableEntry(keyType, valType)?;
 
         proc init(type keyType, type valType) {
             this.keyType = keyType;
             this.valType = valType;
             this.complete();
-            this.heapEntriesHead = nil;
-            this.numEntries = 0;
+            this.chainHead = nil;
         }
 
         // determine if this bucket has a 'full' entry with the given key.
         //  if so, return (true, idx of the slot)
         //  otherwise, return (false, 0)
         proc findIndexOf(key: keyType) : (bool, uint) {
-            for (e, idx) in this._allEntries() {
+            for (e, idx) in zip(this._allEntries(), 0..) {
                 if e.isFull() && keysMatch(e.key, key) then return (true, idx);
             }
             return (false, 0);
@@ -74,19 +82,17 @@ module ChainTable {
 
         // return the index of the next open slot
         proc firstAvailableIndex() : uint {
-            for (e, idx) in this._allEntries() {
+            for (e, idx) in zip(this._allEntries(), 0..) {
                 if !e.isFull() then return idx;
             }
             // none of the existing slots are empty or deleted,
-            //  so add one to the linked list and return its index
-            var slot_idx = numLocalBucketSlots;
-            var h = this.heapEntriesHead.borrow();
-            while h != nil {
-                h = h!.next.borrow();
-                slot_idx += 1;
+            //  so add one to the end of the linked list and return its index
+            if this.chainHead == nil {
+                this.chainHead = new owned ChainedTableEntry(this.keyType, this.valType);
+                return numLocalBucketSlots;
+            } else {
+                return this.chainHead!.appendToTail(numLocalBucketSlots + 1);
             }
-            h = new ChainedTableEntry(this.keyType, this.valType);
-            return slot_idx;
         }
 
         // return a reference to the entry at the given index
@@ -96,7 +102,7 @@ module ChainTable {
                 return entry;
             } else {
                 var cnt = numLocalBucketSlots;
-                var h = this.heapEntriesHead.borrow();
+                var h = this.chainHead.borrow();
                 while h != nil {
                     if cnt == idx {
                         ref entry = h!.entry;
@@ -110,22 +116,18 @@ module ChainTable {
         }
 
         // Iterate over of all of the Bucket's entries
-        //  yield the local entries first, then those linked on the heap
-        iter _allEntries() ref : (rawTableEntry, uint) {
-            var entry_idx: uint = 0;
-
+        //  yield the local entries first, then those in the linked list
+        iter _allEntries() ref : rawTableEntry(this.keyType, this.valType) {
             for e in this.localEntries {
                 ref entry = e;
-                yield (entry, entry_idx);
-                entry_idx += 1;
+                yield entry;
             }
 
-            var h = this.heapEntriesHead.borrow();
+            var h = this.chainHead.borrow();
             while h != nil {
                 ref entry = h!.entry;
-                yield (entry, entry_idx);
+                yield entry;
                 h = h!.next.borrow(); // could be nil
-                entry_idx += 1;
             }
         }
     }
@@ -141,7 +143,9 @@ module ChainTable {
         var numBuckets : uint;
         var numEntries : uint;
 
-        var buckets: _ddata(unmanaged Bucket(keyType, valType));
+        // var buckets: _ddata(unmanaged Bucket(keyType, valType));
+        var d : domain(rank=1, idxType=uint, stridable=false);
+        var buckets : [d] unmanaged Bucket(keyType, valType)?;
 
         proc init(type keyType, type valType, initialCapacity = defaultInitialCapacity) {
             if isDomainType(keyType) then
@@ -153,10 +157,11 @@ module ChainTable {
             this.numEntries = 0;
 
             // this.complete();
-            this.buckets = (if this.numBuckets == 0
-                then nil
-                else _allocateData(this.numBuckets, unmanaged Bucket(this.keyType, this.valType))
-            );
+            // this.buckets = (if this.numBuckets == 0
+            //     then nil
+            //     else _allocateData(this.numBuckets, unmanaged Bucket(this.keyType, this.valType))
+            // );
+            this.d = {0..<this.numBuckets};
         }
 
         // determine if the map has an entry for the given key
@@ -164,26 +169,26 @@ module ChainTable {
         //  otherwise, return (false, bucket index, 0)
         proc getFullSlotFor(key: keyType) : (bool, uint, uint) {
             var bucket_idx = this._bucketIdx(key);
-            var (has_key, chain_idx) = this.buckets[bucket_idx].findIndexOf(key);
+            var (has_key, chain_idx) = this.buckets[bucket_idx]!.findIndexOf(key);
             return (has_key, bucket_idx, chain_idx);
         }
 
         // return the indices for a given key
-        //  if an entry is already present for the key, return its (bucket index, its index within the bucket)
+        //  if an entry is already present for the key, return (bucket index, its index within the bucket)
         //  otherwise, return (bucket index, next open index in the bucket)
         proc getSlotFor(key: keyType) : (uint, uint) {
             var bucket_idx = this._bucketIdx(key);
-            var (has_key, chain_idx) = this.buckets[bucket_idx].findIndexOf(key);
+            var (has_key, chain_idx) = this.buckets[bucket_idx]!.findIndexOf(key);
             return if has_key
                 then (bucket_idx, chain_idx)
-                else (bucket_idx, this.buckets[bucket_idx].firstAvailableIndex());
+                else (bucket_idx, this.buckets[bucket_idx]!.firstAvailableIndex());
         }
 
         // copy a key-value pair into a slot with the given indices
         proc fillSlot((bucket_idx, chain_idx): (uint, uint), in key: keyType, in val: valType) {
             use Memory.Initialization;
 
-            ref entry = this.buckets[bucket_idx][chain_idx];
+            ref entry = this.buckets[bucket_idx]![chain_idx];
 
             select entry.status {
                 when entryStatus.full do _deinitSlot(entry);
@@ -200,7 +205,7 @@ module ChainTable {
         proc clearSlot((bucket_idx, chain_idx): (uint, uint), out key: keyType, out val: valType) {
             use Memory.Initialization;
 
-            ref entry = this.buckets[bucket_idx][chain_idx];
+            ref entry = this.buckets[bucket_idx]![chain_idx];
 
             key = moveToValue(entry.key);
             val = moveToValue(entry.val);
@@ -209,8 +214,14 @@ module ChainTable {
             this.numEntries -= 1;
         }
 
-        inline proc _bucketIdx(key: keyType) : uint {
-            return chpl__defaultHashWrapper(key):uint & (this.numBuckets - 1);
+        proc rehash() {
+            // unimplemented!
+        }
+
+        proc _bucketIdx(key: keyType) : uint {
+            const idx = chpl__defaultHashWrapper(key):uint & (this.numBuckets - 1);
+            if this.buckets[idx] == nil then this.buckets[idx] = new unmanaged Bucket(this.keyType, this.valType);
+            return idx;
         }
 
         inline proc _loadFactor() : real {
@@ -259,13 +270,13 @@ module ChainTable {
             }
             when ArrayInit.serialInit {
                 for slot in 0..#size {
-                c_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+                    c_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
                 }
             }
             when ArrayInit.parallelInit {
                 // This should match the 'these' iterator in terms of idx->task
                 forall slot in 0..#size {
-                c_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+                    c_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
                 }
             }
             otherwise {
