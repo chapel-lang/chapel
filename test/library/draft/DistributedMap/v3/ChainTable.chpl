@@ -48,7 +48,8 @@ module ChainTable {
     }
 
     // a bucket for holding hashtable entries that all correspond the the same hash
-    //  some small number of entries are stored in an array, and the remainder
+    //
+    // some small number of entries are stored in an array, and the remainder
     //  are stored in a linked list
     //
     // this type provides an interface for finding and modifying entries in the
@@ -143,6 +144,12 @@ module ChainTable {
         var numBuckets : uint;
         var numEntries : uint;
 
+        // is someone rehashing right now?
+        var rehashing : atomic bool;
+
+        // how many no-rehash context managers have access to this
+        var numStaticManagers: atomic uint;
+
         // var buckets: _ddata(unmanaged Bucket(keyType, valType));
         var d : domain(rank=1, idxType=uint, stridable=false);
         var buckets : [d] unmanaged Bucket(keyType, valType)?;
@@ -214,8 +221,22 @@ module ChainTable {
             this.numEntries -= 1;
         }
 
-        proc rehash() {
-            // unimplemented!
+        proc _rehash(newNumBuckets: uint) {
+            if newNumBuckets == 0 then halt("cannot rehash with zero buckets!");
+            this.rehashing.write(true);
+
+            const oldBuckets = this.buckets;
+            const oldNumBuckets = this.numBuckets;
+
+            this.numBuckets = newNumBuckets;
+            this.d = {0..<this.numBuckets};
+            this.buckets : [this.d] unmanaged Bucket(this.keyType, this.valType)?;
+
+            for b in oldBuckets {
+                for e in b._allEntries() {
+                    this.fillSlot(this.getSlotFor(e.key), e.key, e.val);
+                }
+            }
         }
 
         proc _bucketIdx(key: keyType) : uint {
