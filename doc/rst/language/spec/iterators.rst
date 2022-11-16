@@ -144,7 +144,7 @@ with matching shape and element type (see also :ref:`Implicit_Conversions`).
 
 When an iterator is assigned to an existing array, the array and the
 iterator will be iterated over with zippered iteration
-(:ref:`Zipper_Iteration`) and the array elements assigned to the yielded
+(:ref:`Zippered_Iteration`) and the array elements assigned to the yielded
 value.
 
    *Example (as-arrays.chpl)*.

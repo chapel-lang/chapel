@@ -1586,7 +1586,7 @@ When a for expression is used to initialize a variable, such as
 the variable will be inferred to have an array type. The array’s domain
 is defined by the ``iterable-expression`` following the same rules as
 for promotion, both in the regular case :ref:`Promotion` and in
-the zipper case :ref:`Zipper_Promotion`.
+the zippered case :ref:`Zippered_Promotion`.
 
 .. _Filtering_Predicates_For:
 

@@ -1,0 +1,3 @@
+bug: serial zippered iteration does not complain about shape mismatches
+
+#21042
