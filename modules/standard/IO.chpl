@@ -5230,15 +5230,15 @@ proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
 }
 
 /*
-   Write a :type:`~String.string` to the channel in binary format
+   Write a :type:`~String.string` to a fileWriter in binary format
 
    :arg s: the ``string`` to write
    :arg size: the number of codepoints to write from the ``string``
 
-   :throws SystemError: Thrown if the string could not be written to the channel.
+   :throws SystemError: Thrown if the string could not be written to the fileWriter.
    :throws IllegalArgumentError: Thrown if ``size`` is larger than ``s.size``
 */
-proc _channel.writeBinary(s: string, size: int = s.size) throws {
+proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
   // handle bad arguments
   if size > s.size then
     throw new owned IllegalArgumentError("size", "cannot exceed length of provided string");
@@ -5257,7 +5257,7 @@ proc _channel.writeBinary(s: string, size: int = s.size) throws {
     }
   }
 
-  // write the first bytesLen bytes of the string to the channel
+  // write the first bytesLen bytes of the string to the fileWriter
   var e: errorCode = qio_channel_write_string(
     false,
     iokind.native: c_int,
@@ -5272,20 +5272,20 @@ proc _channel.writeBinary(s: string, size: int = s.size) throws {
 }
 
 /*
-   Write a :type:`~Bytes.bytes` to the channel in binary format
+   Write a :type:`~Bytes.bytes` to a fileWriter in binary format
 
-   :arg s: the ``bytes`` to write
+   :arg b: the ``bytes`` to write
    :arg size: the number of bytes to write from the ``bytes``
 
-   :throws SystemError: Thrown if the bytes could not be written to the channel.
+   :throws SystemError: Thrown if the bytes could not be written to the fileWriter.
    :throws IllegalArgumentError: Thrown if ``size`` is larger than ``b.size``
 */
-proc _channel.writeBinary(b: bytes, size: int = b.size) throws {
+proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
   // handle bad arguments
   if size > b.size then
     throw new owned IllegalArgumentError("size", "cannot exceed length of provided bytes");
 
-  // write the first size bytes to the channel
+  // write the first size bytes to the fileWriter
   var bLocal = b.localize();
   var e: errorCode = qio_channel_write_string(
     false,
@@ -5301,18 +5301,18 @@ proc _channel.writeBinary(b: bytes, size: int = b.size) throws {
 }
 
 /*
-   Write an array of binary numbers to the channel
+   Write an array of binary numbers to a fileWriter
 
    Note that this routine currently requires a 1D rectangular non-strided array.
 
-   :arg data: an array of numbers to write to the cannel
+   :arg data: an array of numbers to write to the fileWriter
    :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
               to read the numbers. Defaults to ``ioendian.native``.
 
-   :throws SystemError: Thrown if the values could not be written to the channel.
+   :throws SystemError: Thrown if the values could not be written to the fileWriter.
    :throws UnexpectedEofError: Thrown if EOF is reached before all the values could be written.
 */
-proc _channel.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws
+proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws
   where (d.rank == 1 && d.stridable == false) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
@@ -5344,18 +5344,18 @@ proc _channel.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioend
 }
 
 /*
-   Write an array of binary numbers to the channel
+   Write an array of binary numbers to a fileWriter
 
    Note that this routine currently requires a 1D rectangular non-strided array.
 
-   :arg data: an array of numbers to write to the cannel
+   :arg data: an array of numbers to write to the fileWriter
    :arg endian: :type:`ioendian` specifies the byte order in which
               to write the number.
 
-   :throws SystemError: Thrown if the values could not be written to the channel.
+   :throws SystemError: Thrown if the values could not be written to the fileWriter.
    :throws UnexpectedEofError: Thrown if EOF is reached before all the values could be written.
 */
-proc _channel.writeBinary(const ref data: [?d] ?t, endian:ioendian) throws
+proc fileWriter.writeBinary(const ref data: [?d] ?t, endian:ioendian) throws
   where (d.rank == 1 && d.stridable == false) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
