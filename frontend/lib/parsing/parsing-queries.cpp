@@ -666,6 +666,13 @@ const ID& idToParentId(Context* context, ID id) {
   return QUERY_END(result);
 }
 
+const uast::AstNode*
+astToParentAst(Context* context, const uast::AstNode* node) {
+  auto parentId = idToParentId(context, node->id());
+  if (parentId.isEmpty()) return nullptr;
+  return idToAst(context, parentId);
+}
+
 // Given an ID:
 //  if it is a module, return that ID
 //  if it is not a module, return the ID of the module containing it

@@ -96,6 +96,13 @@ const Scope* Scope::moduleScope() const {
   return cur;
 }
 
+const Scope* Scope::parentModuleScope() const {
+  auto modScope = this->moduleScope();
+  if (this != modScope) return modScope;
+  if (this->parentScope()) return this->parentScope()->moduleScope();
+  return nullptr;
+}
+
 IMPLEMENT_DUMP(OwnedIdsWithName);
 IMPLEMENT_DUMP(BorrowedIdsWithName);
 IMPLEMENT_DUMP(Scope);

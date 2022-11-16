@@ -537,4 +537,11 @@ void ErrorProcDefExplicitAnonFormal::write(ErrorWriterBase& wr) const {
   wr.code(fn, {formal});
 }
 
+void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
+  auto use = std::get<const uast::AstNode*>(info);
+  wr.heading(kind_, type_, use, "cannot use/import super from a toplevel "
+                                "module");
+  wr.code(use, {use});
+}
+
 } // end namespace 'chpl'

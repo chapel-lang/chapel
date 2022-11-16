@@ -556,29 +556,26 @@ static bool lookupInScopeViz(Context* context,
 
   LookupConfig config = LOOKUP_INNERMOST;
 
-  if (isFirstPart == true) {
-    // e.g. A in use A.B.C or import A.B.C
+  // e.g. A in use A.B.C or import A.B.C
+  if (isFirstPart) {
+
+    // a top-level module name
+    config |= LOOKUP_TOPLEVEL;
+
+    // a module name in scope due to another use/import
+    config |= LOOKUP_IMPORT_AND_USE;
+
+    // a sibling module or parent module
+    config |= LOOKUP_PARENTS;
+
     if (useOrImport == VIS_USE) {
-      // a top-level module name
-      config |= LOOKUP_TOPLEVEL;
 
       // a submodule of the current module
       config |= LOOKUP_DECLS;
-
-      // a module name in scope due to another use/import
-      config |= LOOKUP_IMPORT_AND_USE;
-
-      // a sibling module or parent module
-      config |= LOOKUP_PARENTS;
     }
-    if (useOrImport == VIS_IMPORT) {
-      // a top-level module name
-      config |= LOOKUP_TOPLEVEL;
 
-      // a module name in scope due to another use/import
-      config |= LOOKUP_IMPORT_AND_USE;
-    }
   } else {
+
     // if it's not the first part, look in the scope for
     // declarations and use/import statements.
     config |= LOOKUP_IMPORT_AND_USE;
@@ -845,8 +842,22 @@ findUseImportTarget(Context* context,
                     UniqueString& foundName) {
   if (auto ident = expr->toIdentifier()) {
     foundName = ident->name();
+
     if (ident->name() == USTR("super")) {
-      return scope->parentScope()->moduleScope();
+
+      // Get the scope of the closest module, or ourself if we are one.
+      auto modScope = scope->moduleScope();
+
+      // Get the next closest module.
+      auto ret = modScope->parentModuleScope();
+
+      // This error works because 'dot' expressions recurse to the left.
+      // If we've hit this case then we're at the leftmost component
+      // in 'super.foo' and failed to find a parent module.
+      // TODO: How difficult would it be to move this to post-parse?
+      if (!ret) CHPL_REPORT(context, SuperFromTopLevelModule, expr);
+
+      return ret;
     } else if (ident->name() == USTR("this")) {
       return scope->moduleScope();
     } else {
@@ -854,10 +865,30 @@ findUseImportTarget(Context* context,
                           expr->id(), useOrImport, /* isFirstPart */ true);
     }
   } else if (auto dot = expr->toDot()) {
-    UniqueString ignoredFoundName;
+    UniqueString ignoreFoundName;
     const Scope* innerScope = findUseImportTarget(context, scope, resolving,
                                                   dot->receiver(), useOrImport,
-                                                  ignoredFoundName);
+                                                  ignoreFoundName);
+    // TODO: 'this.this'?
+    if (dot->field() == USTR("super")) {
+      auto ast = parsing::astToParentAst(context, dot);
+      assert(ast);
+
+      // Ok, descending...
+      if (ast->isDot()) {
+        auto ret = innerScope->parentModuleScope();
+
+        // TODO: In production this case is the same as the above, but maybe
+        // they ought to be different. Technically, this isn't trying to
+        // use 'super' from a top-level module - it's actually just adding
+        // one too many 'super' to the chain.
+        if (!ret) CHPL_REPORT(context, SuperFromTopLevelModule, expr);
+
+        // Exit without searching the scope.
+        return ret;
+      }
+    }
+
     if (innerScope != nullptr) {
       UniqueString nameInScope = dot->field();
       // find nameInScope in innerScope
