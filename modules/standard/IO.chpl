@@ -5361,7 +5361,7 @@ proc _channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
    :throws SystemError: Thrown if an error occurred while reading from the fileReader.
 */
 proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
-  var e:errorCode = ENOERR;
+  var e:errorCode = 0;
 
   var len: int(64);
   var tx: c_string;
@@ -5372,7 +5372,7 @@ proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
 
   if (e == EEOF) {
     return if len > 0 then true else false;
-  } else if (e != ENOERR) {
+  } else if (e != 0) {
     throw createSystemError(e);
   }
   return true;
@@ -5393,7 +5393,7 @@ proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
    :throws SystemError: Thrown if an error occurred while reading from the fileReader.
 */
 proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
-  var e:errorCode = ENOERR;
+  var e:errorCode = 0;
 
   var len: int(64);
   var tx: c_string;
@@ -5404,7 +5404,7 @@ proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
 
   if (e == EEOF) {
     return if len > 0 then true else false;
-  } else if (e != ENOERR) {
+  } else if (e != 0) {
     throw createSystemError(e);
   }
   return true;
@@ -5432,7 +5432,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): b
   where (d.rank == 1 && d.stridable == false) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
-  var e : errorCode = ENOERR,
+  var e : errorCode = 0,
       readSomething = false;
 
   on this._home {
@@ -5457,7 +5457,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): b
         } else {
           throw new owned UnexpectedEofError("Unable to read entire array of values in 'readBinary'");
         }
-      } else if e != ENOERR {
+      } else if e != 0 {
         throw createSystemError(e);
       } else {
         readSomething = true;
