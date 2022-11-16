@@ -47,6 +47,8 @@ module ChainTable {
         }
     }
 
+    enum bucketInitState { uninit=0, initialized };
+
     // a bucket for holding hashtable entries that all correspond the the same hash
     //
     // some small number of entries are stored in an array, and the remainder
@@ -54,21 +56,26 @@ module ChainTable {
     //
     // this type provides an interface for finding and modifying entries in the
     //  bucket. Modifications are done by reference using the 'this()' accessor
-    class Bucket {
+    record Bucket {
         type keyType;
         type valType;
 
         // store some number of local entries to reduce # of cache misses when load factor is low
-        var localEntries: [0..<numLocalBucketSlots] rawTableEntry(keyType, valType);
+        var localEntries: numLocalBucketSlots*rawTableEntry(keyType, valType);
 
         // store the remainder of the entries in a linked list on the heap
         var chainHead: owned ChainedTableEntry(keyType, valType)?;
 
+        var initState : bucketInitState = bucketInitState.uninit;
+        inline proc isInit() {
+            return this.initState == bucketInitState.initialized;
+        }
+
         proc init(type keyType, type valType) {
             this.keyType = keyType;
             this.valType = valType;
-            this.complete();
             this.chainHead = nil;
+            this.initState = bucketInitState.initialized;
         }
 
         // determine if this bucket has a 'full' entry with the given key.
@@ -119,8 +126,8 @@ module ChainTable {
         // Iterate over of all of the Bucket's entries
         //  yield the local entries first, then those in the linked list
         iter _allEntries() ref : rawTableEntry(this.keyType, this.valType) {
-            for e in this.localEntries {
-                ref entry = e;
+            for i in 0..<numLocalBucketSlots {
+                ref entry = this.localEntries[i];
                 yield entry;
             }
 
@@ -150,7 +157,7 @@ module ChainTable {
         // how many no-rehash context managers have access to this
         var numStaticManagers: atomic uint;
 
-        var buckets: _ddata(unmanaged Bucket(keyType, valType));
+        var buckets: _ddata(Bucket(keyType, valType));
 
         // var d : domain(rank=1, idxType=uint, stridable=false);
         // var buckets : [d] unmanaged Bucket(keyType, valType)?;
@@ -167,16 +174,13 @@ module ChainTable {
             // this.complete();
             this.buckets = (if this.numBuckets == 0
                 then nil
-                else _allocateData(this.numBuckets, unmanaged Bucket(this.keyType, this.valType))
+                else _allocateData(this.numBuckets, Bucket(this.keyType, this.valType))
             );
             // this.d = {0..<this.numBuckets};
         }
 
         proc deinit() {
             if this.buckets != nil {
-                for i in 0..this.numBuckets {
-                    delete this.buckets[i];
-                }
                 _ddata_free(this.buckets, this.numBuckets);
             }
         }
@@ -234,20 +238,19 @@ module ChainTable {
         // replace the current array of buckets with a new array of different size
         proc _rehash(newNumBuckets: uint) {
             if newNumBuckets == 0 then halt("cannot rehash into zero buckets");
-            this.rehashing.write(true);
+            this.rehashing.write(true); defer this.rehashing.write(false);
 
             const oldBuckets = this.buckets;
             const oldNumBuckets = this.numBuckets;
 
+            this.buckets = _allocateData(this.numBuckets, Bucket(this.keyType, this.valType));
             this.numBuckets = newNumBuckets;
-            this.buckets = _allocateData(this.numBuckets, unmanaged Bucket(this.keyType, this.valType));
 
             for i in 0..oldNumBuckets {
-                ref b = this.buckets[i];
+                ref b = oldBuckets[i];
                 for e in b._allEntries() {
                     this.fillSlot(this.getSlotFor(e.key), e.key, e.val);
                 }
-                delete b;
             }
 
             if oldBuckets != nil then _ddata_free(oldBuckets, oldNumBuckets);
@@ -255,7 +258,7 @@ module ChainTable {
 
         proc _bucketIdx(key: keyType) : uint {
             const idx = chpl__defaultHashWrapper(key):uint & (this.numBuckets - 1);
-            if this.buckets[idx] == nil then this.buckets[idx] = new unmanaged Bucket(this.keyType, this.valType);
+            if !this.buckets[idx].isInit() then this.buckets[idx] = new Bucket(this.keyType, this.valType);
             return idx;
         }
 
