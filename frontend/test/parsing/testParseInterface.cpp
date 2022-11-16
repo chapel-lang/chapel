@@ -43,7 +43,7 @@ static void test0(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   auto intf = mod->stmt(1)->toInterface();
   assert(intf);
-  assert(intf->isFormalListPresent());
+  assert(intf->isFormalListExplicit());
   assert(intf->numFormals() == 3);
   assert(intf->numStmts() == 1);
   assert(intf->stmt(0)->isFunction());
