@@ -1,4 +1,5 @@
-// rust code used to generate binary files
+// this script was used to generate all the binary files in this directory
+// it does not run as part of the readBinary tests, but is only here for reference
 
 use std::fs::File;
 use std::io::prelude::*;

@@ -5346,12 +5346,12 @@ proc _channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
 
    The string ``s`` may be smaller than ``maxSize`` if EOF is reached before
    reading the specified number of codepoints. Additionally, if nothing
-   is read from the fileReader, ``s`` will be set to ``""`` and the method
-   will return ``false``.
+   is read from the fileReader, ``s`` will be set to ``""`` (the empty string)
+   and the method will return ``false``.
 
    .. note::
 
-      This method always uses UTF-8 encoding regaurdless of the fileReader's
+      This method always uses UTF-8 encoding regardless of the fileReader's
       configuration
 
    :arg s: the string to read into — this value is overwritten
@@ -5383,8 +5383,8 @@ proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
 
    The bytes ``b`` may be smaller than ``maxSize`` if EOF is reached before
    reading the specified number of bytes. Additionally, if nothing is read
-   from the fileReader, ``b`` will be set to ``b""`` and the method will
-   return ``false``.
+   from the fileReader, ``b`` will be set to ``b""`` (the empty bytes) and
+   the method will return ``false``.
 
    :arg b: the bytes to read into — this value is overwritten
    :arg maxSize: the number of bytes to read from the fileReader
