@@ -5197,8 +5197,8 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
   var e:errorCode = 0;
   const numToWrite = numBytes / c_sizeof(t);
 
-  for i in 0..numToWrite {
-    e = try _write_binary_internal(this._channel_internal, iokind.native, ptr[i]:t);
+  for i in 0..<numToWrite {
+    e = try _write_binary_internal(this._channel_internal, iokind.native, ptr[i]);
   }
 
   if (e != 0) {
@@ -5224,7 +5224,7 @@ proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
   var e:errorCode = 0;
 
   var byte_ptr = ptr : c_ptr(uint(8));
-  for i in 0..numBytes {
+  for i in 0..<numBytes {
     e = try _write_binary_internal(this._channel_internal, iokind.native, byte_ptr[i]:uint(8));
   }
 

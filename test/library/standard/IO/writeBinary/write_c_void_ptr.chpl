@@ -1,14 +1,14 @@
 use IO;
 use CTypes;
 
-require "c_utils.h", "c_utils.c";
-extern proc point_to_void_char_array() : c_void_ptr;
-extern proc point_to_void_short_array() : c_void_ptr;
+testCptrToArray(openwriter("./c_ptr_out/cvoidptr8.bin"), 8);
+testCptrToArray(openwriter("./c_ptr_out/cvoidptr16.bin"), 16);
+testCptrToArray(openwriter("./c_ptr_out/cvoidptr32.bin"), 32);
+testCptrToArray(openwriter("./c_ptr_out/cvoidptr64.bin"), 64);
 
-var w = open("./cptrdata.bin", iomode.cw).writer();
-
-var pv8 = point_to_void_char_array();
-w.writeBinary(pv8, 10);
-
-var pv16 = point_to_void_short_array();
-w.writeBinary(pv16, 20);
+proc testCptrToArray(writer, param isize: int) {
+    var a = [0,1,2,3,4,5,6,7,8,9] : uint(isize);
+    var p : c_ptr(uint(isize)) = c_ptrTo(a);
+    var pv = p : c_void_ptr;
+    writer.writeBinary(pv, 10 * (isize / 8));
+}
