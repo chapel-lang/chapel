@@ -2916,9 +2916,9 @@ struct Converter {
       if (varLikeDecl == nullptr) continue;
       if (varLikeDecl->storageKind() != types::QualifiedType::TYPE) continue;
 
-      auto assocTypeName = varLikeDecl->name().c_str();
+      auto assocTypeName = varLikeDecl->name();
       noteConvertedSym(varLikeDecl,
-                       isymAssociatedTypes.at(assocTypeName)->symbol);
+                       isymAssociatedTypes.at(assocTypeName.c_str())->symbol);
     }
 
     auto ret = buildChapelStmt(isym);
