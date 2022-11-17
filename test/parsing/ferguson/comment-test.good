@@ -1,2 +1,2 @@
 comment-test.chpl:10: syntax error: end-of-file in comment
-comment-test.chpl:6: note: unterminated comment started here
+comment-test.chpl:6: note: unterminated comment here
