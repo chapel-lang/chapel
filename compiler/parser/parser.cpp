@@ -830,24 +830,23 @@ static void dynoDisplayError(chpl::Context* context,
     } else {
       fprintf(stderr, "\n");
     }
-    return;
-  }
+  } else {
+    maybePrintErrorHeader(id);
 
-  maybePrintErrorHeader(id);
-
-  switch (err.kind()) {
-    case chpl::ErrorMessage::NOTE:
-      USR_PRINT(loc, "%s", msg);
-      break;
-    case chpl::ErrorMessage::WARNING:
-      USR_WARN(loc, "%s", msg);
-      break;
-    case chpl::ErrorMessage::ERROR:
-      USR_FATAL_CONT(loc,"%s", msg);
-      break;
-    default:
-      INT_FATAL("Should not reach here!");
-      break;
+    switch (err.kind()) {
+      case chpl::ErrorMessage::NOTE:
+        USR_PRINT(loc, "%s", msg);
+        break;
+      case chpl::ErrorMessage::WARNING:
+        USR_WARN(loc, "%s", msg);
+        break;
+      case chpl::ErrorMessage::ERROR:
+        USR_FATAL_CONT(loc, "%s", msg);
+        break;
+      default:
+        INT_FATAL("Should not reach here!");
+        break;
+    }
   }
 
   // Also show the details if there is additional information.
