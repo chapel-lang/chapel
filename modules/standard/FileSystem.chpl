@@ -66,7 +66,7 @@
    :proc:`exists`
    :proc:`isDir`
    :proc:`isFile`
-   :proc:`isLink`
+   :proc:`isSymlink`
    :proc:`isMount`
    :proc:`sameFile`
 
@@ -487,7 +487,7 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
     // Take care of files in src
     var fileDestName = dest + "/" + filename;
     var fileSrcName = src + "/" + filename;
-    if (try isLink(fileSrcName) && copySymbolically) {
+    if (try isSymlink(fileSrcName) && copySymbolically) {
       // Copy symbolically means symlinks should be copied as symlinks
       var realp = try realPath(fileSrcName);
       try symlink(realp, fileDestName);
@@ -501,7 +501,7 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
   for dirname in listDir(path=src, dirs=true, files=false, listlinks=true) {
     var dirDestName = dest+"/"+dirname;
     var dirSrcName = src+"/"+dirname;
-    if (try isLink(dirSrcName) && copySymbolically) {
+    if (try isSymlink(dirSrcName) && copySymbolically) {
       // Copy symbolically means symlinks should be copied as symlinks
       var realp = try realPath(dirSrcName);
       try symlink(realp, dirDestName);
@@ -946,7 +946,7 @@ proc isFile(name:string):bool throws {
                         including the case where the path does not refer
                         to a valid file or directory.
 */
-proc isLink(name: string): bool throws {
+proc isSymlink(name: string): bool throws {
   extern proc chpl_fs_is_link(ref result:c_int, name: c_string): errorCode;
 
   if (name.isEmpty()) {
@@ -958,8 +958,13 @@ proc isLink(name: string): bool throws {
 
   var ret:c_int;
   var err = chpl_fs_is_link(ret, unescape(name).c_str());
-  if err then try ioerror(err, "in isLink", name);
+  if err then try ioerror(err, "in isSymlink", name);
   return ret != 0;
+}
+
+deprecated "'isLink' is deprecated. Please use 'isSymlink' instead"
+proc isLink(name: string): bool throws {
+  return isSymlink(name);
 }
 
 /* Determine if the provided path `name` corresponds to a mount point and
@@ -1053,7 +1058,7 @@ iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
 
           // TODO: revisit error handling for this method
           try {
-            if (listlinks || !isLink(fullpath)) {
+            if (listlinks || !isSymlink(fullpath)) {
               if (dirs && isDir(fullpath)) then
                 yield filename;
               else if (files && isFile(fullpath)) then
@@ -1247,7 +1252,7 @@ private proc rmTreeHelper(root: string) throws {
   // them handle cleaning up their contents and themselves
   for dirname in listDir(path=root, dirs=true, files=false, listlinks=true, hidden=true) {
     var fullpath = root + "/" + dirname;
-    var dirIsLink = try isLink(fullpath);
+    var dirIsLink = try isSymlink(fullpath);
     if (dirIsLink) {
       try remove(fullpath);
     } else {
