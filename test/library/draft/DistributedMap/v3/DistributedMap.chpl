@@ -35,8 +35,8 @@ module DistributedMap {
 
         proc init(type keyType, type valType) {
             this.keyType = keyType;
-            this.valType = valType;cd
-            this.localeHasher = new defaultLocaleHasher(keyType);
+            this.valType = valType;
+            this.localeHasher = new defaultLocaleHasher(keyType, Locales.size);
         }
 
         proc init(type keyType, type valType, hasher)
@@ -100,11 +100,11 @@ module DistributedMap {
             const loc = this._localeFor(k);
             var ret;
             on loc {
-                this.locks[loc].lock();
-                const (found, (bucket_idx, chain_idx)) = this.tables[loc].getFullSlotFor(k);
+                this.locks[loc.id].lock();
+                const (found, (bucket_idx, chain_idx)) = this.tables[loc.id].getFullSlotFor(k);
                 if !found then boundsCheckHalt("map index " + k:string + " out of bounds");
-                ret = this.tables[loc][bucket_idx][chain_idx].val;
-                this.locks[loc].unlock();
+                ret = this.tables[loc.id].buckets[bucket_idx][chain_idx].val;
+                this.locks[loc.id].unlock();
             }
             return ret;
         }
@@ -113,19 +113,19 @@ module DistributedMap {
             where isDefaultInitializable(valType)
         {
             const loc = this._localeFor(k);
-            var ret;
+            var ret: valType;
             on loc {
-                this.locks[loc].lock();
-                const (found, (bucket_idx, chain_idx)) = this.tables[loc].getFullSlotFor(k);
+                this.locks[loc.id].lock();
+                const (found, (bucket_idx, chain_idx)) = this.tables[loc.id].getFullSlotFor(k);
                 if !found {
                     var v : this.keyType;
-                    const openSlot = this.tables[loc].getSlotFor(k);
-                    this.tables[loc].fillSlot(openSlot, k, v);
-                    ret = this.tables[loc][openSlot[0]][openSlot[1]].val;
+                    const openSlot = this.tables[loc.id].getSlotFor(k);
+                    this.tables[loc.id].fillSlot(openSlot, k, v);
+                    ret = this.tables[loc.id].buckets[openSlot[0]][openSlot[1]].val;
                 } else {
-                    ret = this.tables[loc][bucket_idx][chain_idx].val;
+                    ret = this.tables[loc.id].buckets[bucket_idx][chain_idx].val;
                 }
-                this.locks[loc].unlock();
+                this.locks[loc.id].unlock();
             }
             return ret;
         }
@@ -135,13 +135,13 @@ module DistributedMap {
             where shouldReturnRvalueByValue(valType) && !isNonNilableClass(valType)
         {
             const loc = this._localeFor(k);
-            const ret;
+            var ret : valType;
             on loc {
-                this.locks[loc].lock();
-                const (found, (bucket_idx, chain_idx)) = this.tables[loc].getFullSlotFor(k);
+                this.locks[loc.id].lock();
+                const (found, (bucket_idx, chain_idx)) = this.tables[loc.id].getFullSlotFor(k);
                 if !found then boundsCheckHalt("map index " + k:string + " out of bounds");
-                ret = this.tables[loc][bucket_idx][chain_idx].val;
-                this.locks[loc].unlock();
+                ret = this.tables[loc.id].buckets[bucket_idx][chain_idx].val;
+                this.locks[loc.id].unlock();
             }
             return ret;
         }
@@ -151,13 +151,13 @@ module DistributedMap {
             where !isNonNilableClass(valType)
         {
             const loc = this._localeFor(k);
-            var ret;
+            var ret: valType;
             on loc {
-                this.locks[loc].lock();
-                const (found, (bucket_idx, chain_idx)) = this.tables[loc].getFullSlotFor(k);
+                this.locks[loc.id].lock();
+                const (found, (bucket_idx, chain_idx)) = this.tables[loc.id].getFullSlotFor(k);
                 if !found then boundsCheckHalt("map index " + k:string + " out of bounds");
-                ret = this.tables[loc][bucket_idx][chain_idx].val;
-                this.locks[loc].unlock();
+                ret = this.tables[loc.id].buckets[bucket_idx][chain_idx].val;
+                this.locks[loc.id].unlock();
             }
             return ret;
         }
@@ -178,12 +178,12 @@ module DistributedMap {
             const loc = this._localeFor(k);
             var ret : valType;
             on loc {
-                this.locks[loc].lock();
-                const (found, (bucket_idx, chain_idx)) = this.tables[loc].getFullSlotFor(k);
+                this.locks[loc.id].lock();
+                const (found, (bucket_idx, chain_idx)) = this.tables[loc.id].getFullSlotFor(k);
                 if !found
-                    then ret = this.tables[loc][bucket_idx][chain_idx].val : this.valType;
+                    then ret = this.tables[loc.id].buckets[bucket_idx][chain_idx].val : this.valType;
                     else throw new KeyNotFoundError(k: string);
-                this.locks[loc].unlock();
+                this.locks[loc.id].unlock();
             }
             return ret;
         }
@@ -192,12 +192,12 @@ module DistributedMap {
             const loc = this._localeFor(k);
             var ret : valType;
             on loc {
-                this.locks[loc].lock();
-                const (found, (bucket_idx, chain_idx)) = this.tables[loc].getFullSlotFor(k);
+                this.locks[loc.id].lock();
+                const (found, (bucket_idx, chain_idx)) = this.tables[loc.id].getFullSlotFor(k);
                 if !found
-                    then ret = this.tables[loc][bucket_idx][chain_idx].val : this.valType;
+                    then ret = this.tables[loc.id].buckets[bucket_idx][chain_idx].val : this.valType;
                     else ret = sentinel;
-                this.locks[loc].unlock();
+                this.locks[loc.id].unlock();
             }
             return ret;
         }
@@ -206,12 +206,12 @@ module DistributedMap {
             const loc = this._localeFor(k);
             var ret : valType;
             on loc {
-                this.locks[loc].lock();
-                const (found, slot) = this.tables[loc].getFullSlotFor(k);
+                this.locks[loc.id].lock();
+                const (found, slot) = this.tables[loc.id].getFullSlotFor(k);
                 if !found
-                    then ret = this.tables[loc].remove(slot, k, ret);
+                    then ret = this.tables[loc.id].remove(slot, k, ret);
                     else throw new KeyNotFoundError(k: string);
-                this.locks[loc].unlock();
+                this.locks[loc.id].unlock();
             }
             return ret;
         }
@@ -220,10 +220,10 @@ module DistributedMap {
             const loc = this._localeFor(k);
             var ret = false;
             on loc {
-                this.locks[loc].lock();
-                const (found, _) = this.tables[loc].getFullSlotFor(k);
+                this.locks[loc.id].lock();
+                const (found, _) = this.tables[loc.id].getFullSlotFor(k);
                 ret = found;
-                this.locks[loc].unlock();
+                this.locks[loc.id].unlock();
             }
             return ret;
         }
@@ -236,15 +236,15 @@ module DistributedMap {
             const loc = this._localeFor(k);
             var ret = true;
             on loc {
-                this.locks[loc].lock();
-                const (found, _) = this.tables[loc].getFullSlotFor(k);
+                this.locks[loc.id].lock();
+                const (found, _) = this.tables[loc.id].getFullSlotFor(k);
                 if !found {
-                    const openSlot = this.tables[loc].getSlotFor(k);
-                    this.tables[loc].fillSlot(openSlot, k, v);
+                    const openSlot = this.tables[loc.id].getSlotFor(k);
+                    this.tables[loc.id].fillSlot(openSlot, k, v);
                 } else {
                     ret = false;
                 }
-                this.locks[loc].unlock();
+                this.locks[loc.id].unlock();
             }
             return ret;
         }
@@ -253,12 +253,12 @@ module DistributedMap {
             const loc = this._localeFor(k);
             var ret = true;
             on loc {
-                this.locks[loc].lock();
-                const (found, slot) = this.tables[loc].getFullSlotFor(k);
+                this.locks[loc.id].lock();
+                const (found, slot) = this.tables[loc.id].getFullSlotFor(k);
                 if found
-                    then this.tables[loc].fillSlot(slot, k, v);
+                    then this.tables[loc.id].fillSlot(slot, k, v);
                     else ret = false;
-                this.locks[loc].unlock();
+                this.locks[loc.id].unlock();
             }
             return ret;
         }
@@ -266,10 +266,10 @@ module DistributedMap {
         proc addOrSet(in k: keyType, in v: valType) {
             const loc = this._localeFor(k);
             on loc {
-                this.locks[loc].lock();
-                const slot = this.tables[loc].getSlotFor(k);
-                this.tables[loc].fillSlot(slot, k, v);
-                this.locks[loc].unlock();
+                this.locks[loc.id].lock();
+                const slot = this.tables[loc.id].getSlotFor(k);
+                this.tables[loc.id].fillSlot(slot, k, v);
+                this.locks[loc.id].unlock();
             }
         }
 
@@ -277,13 +277,13 @@ module DistributedMap {
             const loc = this._localeFor(k);
             var ret = true;
             on loc {
-                this.locks[loc].lock();
-                const (found, slot) = this.tables[loc].getFullSlotFor(k);
+                this.locks[loc.id].lock();
+                const (found, slot) = this.tables[loc.id].getFullSlotFor(k);
                 var kout, vout;
                 if found
-                    then this.tables[loc].remove(slot, kout, vout);
+                    then this.tables[loc.id].remove(slot, kout, vout);
                     else ret = false;
-                this.locks[loc].unlock();
+                this.locks[loc.id].unlock();
             }
             return ret;
         }
@@ -292,7 +292,7 @@ module DistributedMap {
         //  Utilities
         // -------------------------------------------
 
-        proc _localeFor(key: keyType): int {
+        proc _localeFor(key: keyType): locale {
             const lidx = this.localeHasher(key);
             if !this.locDom.contains(lidx) then halt("Invalid locale hash!");
             return this.targetLocales[lidx];
@@ -301,12 +301,37 @@ module DistributedMap {
 
     record defaultLocaleHasher {
         type keyType;
-        proc init(type kt) {
+        var numLocs: int;
+        proc init(type kt, nl) {
             this.keyType = kt;
+            this.numLocs = nl;
         }
-        proc this(key: keyType, numLocales: int): int {
+        proc this(key: keyType): int {
             const hash = chpl__defaultHashWrapper(key);
-            return hash % numLocales;
+            return hash % this.numLocs;
+        }
+    }
+
+    record staticRefsManager {
+        type dmType;
+        var dm: dmType;
+
+        proc init(dm) {
+            this.dmType = dm.type;
+            this.dm = dm;
+        }
+
+        proc ref enterThis() ref: dmType {
+            for t in this.dm.tables do t.__incrementStaticCount();
+            return this.dm;
+        }
+
+        proc ref leaveThis(in err: owned Error?) {
+            for t in this.dm.tables {
+                t.__decrementStaticCount();
+                t.__maybeResize();
+            }
+            if err then try! { throw err; }
         }
     }
 }

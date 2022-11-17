@@ -9,7 +9,7 @@ for (letter, number) in zip(["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "
 writeln(table.buckets[0]);
 writeln(table.buckets[1]);
 
-table._rehash(4);
+table.__rehash(4);
 writeln(table.buckets[0]);
 writeln(table.buckets[1]);
 writeln(table.buckets[2]);
