@@ -82,7 +82,7 @@ FILE* openfile(const char* path, const char* mode, std::string& errorOut) {
   FILE* fp = fopen(path, mode);
   if (fp == nullptr) {
     // set errorOut. NULL will be returned.
-    errorOut = my_strerror(errno);
+    errorOut = my_strerror(errno) + ".";
   }
 
   return fp;
@@ -91,7 +91,7 @@ FILE* openfile(const char* path, const char* mode, std::string& errorOut) {
 bool closefile(FILE* fp, const char* path, std::string& errorOut) {
   int rc = fclose(fp);
   if (rc != 0) {
-    errorOut = my_strerror(errno);
+    errorOut = my_strerror(errno) + ".";
     return false;
   }
   return true;
