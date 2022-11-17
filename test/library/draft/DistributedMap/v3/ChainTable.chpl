@@ -78,6 +78,11 @@ module ChainTable {
             this.initState = bucketInitState.initialized;
         }
 
+        proc clear() {
+            for i in 0..numLocalBucketSlots do this.localEntries[i].status = entryStatus.deleted;
+            delete this.chainHead;
+        }
+
         // determine if this bucket has a 'full' entry with the given key.
         //  if so, return (true, idx of the slot)
         //  otherwise, return (false, 0)
@@ -180,10 +185,10 @@ module ChainTable {
         // determine if the map has an entry for the given key
         //  if so, return (true, bucket index, index within the bucket)
         //  otherwise, return (false, bucket index, 0)
-        proc getFullSlotFor(key: keyType) : (bool, uint, uint) {
+        proc getFullSlotFor(key: keyType) : (bool, (uint, uint)) {
             var bucket_idx = this._bucketIdx(key);
             var (has_key, chain_idx) = this.buckets[bucket_idx].findIndexOf(key);
-            return (has_key, bucket_idx, chain_idx);
+            return (has_key, (bucket_idx, chain_idx));
         }
 
         // return the indices for a given key
@@ -215,7 +220,7 @@ module ChainTable {
         }
 
         // copy a key-value pair out of a slot with the given indices
-        proc clearSlot((bucket_idx, chain_idx): (uint, uint), out key: keyType, out val: valType) {
+        proc remove((bucket_idx, chain_idx): (uint, uint), out key: keyType, out val: valType) {
             use Memory.Initialization;
 
             ref entry = this.buckets[bucket_idx][chain_idx];
@@ -225,6 +230,12 @@ module ChainTable {
             entry.status = entryStatus.deleted;
 
             this.numEntries -= 1;
+        }
+
+        proc clear() {
+            for i in 0..this.numBuckets {
+                this.buckets[i].clear();
+            }
         }
 
         // replace the current array of buckets with a new array of different size

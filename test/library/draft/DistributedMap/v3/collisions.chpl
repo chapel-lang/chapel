@@ -18,11 +18,11 @@ writeln("size: ", table.numEntries, "\n");
 // remove 5 and 13
 var k;
 var v;
-table.clearSlot((0, 1), k, v);
+table.remove((0, 1), k, v);
 writeln(k, ", ", v);
 writeln(table.buckets[0]);
 
-table.clearSlot((0, 3), k, v);
+table.remove((0, 3), k, v);
 writeln(k, ", ", v);
 writeln(table.buckets[0]);
 writeln("size: ", table.numEntries, "\n");
