@@ -9,6 +9,9 @@ module ChainTable {
     const defaultInitialCapacity : uint = 32;
     param numLocalBucketSlots : uint = 2;
 
+    const loadFactorGrowThreshold : real = 1.5,
+          loadFactorShrinkThreshold: real = 0.125;
+
     // ----------------------------------------------------
     // Component data structures for Bucket implementation
     // ----------------------------------------------------
@@ -232,14 +235,36 @@ module ChainTable {
             this.numEntries -= 1;
         }
 
+        // for each bucket, mark the local entries as deleted, and free the linked list
         proc clear() {
             for i in 0..this.numBuckets {
                 this.buckets[i].clear();
             }
         }
 
+        proc __incrementStaticCount() {
+            // TODO: probably should be a compareExchange loop
+            this.numStaticManagers.write(this.numStaticManagers.read() + 1);
+        }
+
+        proc __decrementStaticCount() {
+            // TODO: probably should be a compareExchange loop
+            this.numStaticManagers.write(this.numStaticManagers.read() - 1);
+        }
+
+        // TODO: the context manager should wrap the distributed map's lock around this
+        proc __maybeResize() {
+            if this.numStaticManagers.read() == 0 {
+                if this._loadFactor() > loadFactorGrowThreshold {
+                    this.__rehash(this.numBuckets * 2);
+                } else if this._loadFactor() < loadFactorShrinkThreshold {
+                    this.__rehash(this.numBuckets / 2);
+                }
+            }
+        }
+
         // replace the current array of buckets with a new array of different size
-        proc _rehash(newNumBuckets: uint) {
+        proc __rehash(newNumBuckets: uint) {
             if newNumBuckets == 0 then halt("cannot rehash into zero buckets");
             this.rehashing.write(true); defer this.rehashing.write(false);
 
