@@ -1843,7 +1843,7 @@ implements_type_ident:
 | implements_type_error_ident
   {
     CHPL_PARSER_REPORT_SIMPLE(
-        context, @$, "type '" + $1.str() + "' cannot implement an interface");
+        context, @$, "type '" + $1.str() + "' cannot implement an interface.");
     $$ = $1;
   }
 ;
@@ -2605,7 +2605,7 @@ named_formal:
   opt_colon_formal_type formal_var_arg_expr
   {
     $$ = CHPL_PARSER_REPORT_SIMPLE(
-        context, @$, "variable-length argument may not be grouped in a tuple");
+        context, @$, "variable-length argument may not be grouped in a tuple.");
   }
 ;
 
@@ -2910,7 +2910,7 @@ ret_array_type:
 | TLSBR error TRSBR
   {
     $$ = CHPL_PARSER_REPORT_SIMPLE(
-        context, @$, "invalid expression for domain of array return type");
+        context, @$, "invalid expression for domain of array return type.");
   }
 ;
 
@@ -3440,7 +3440,7 @@ intent_expr:
       $$ = node.release();
     } else {
       $$ = CHPL_PARSER_REPORT_SIMPLE(
-          context, @$, "expected identifier for task variable name");
+          context, @$, "expected identifier for task variable name.");
     }
   }
 | reduce_scan_op_expr TREDUCE ident_expr

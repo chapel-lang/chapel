@@ -1,5 +1,5 @@
 Skipping registry update since no dependency found in manifest file.
-test/compilererror.chpl:1: syntax error: syntax error near 'test'
+test/compilererror.chpl:1: syntax error: near 'test'
 
 ======================================================================
 ERROR compilererror.chpl: compilererror

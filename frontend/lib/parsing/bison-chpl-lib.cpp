@@ -8376,7 +8376,7 @@ yyreduce:
 #line 1844 "chpl.ypp"
   {
     CHPL_PARSER_REPORT_SIMPLE(
-        context, (yyloc), "type '" + (yyvsp[0].uniqueStr).str() + "' cannot implement an interface");
+        context, (yyloc), "type '" + (yyvsp[0].uniqueStr).str() + "' cannot implement an interface.");
     (yyval.uniqueStr) = (yyvsp[0].uniqueStr);
   }
 #line 8383 "bison-chpl-lib.cpp"
@@ -9375,7 +9375,7 @@ yyreduce:
 #line 2606 "chpl.ypp"
   {
     (yyval.expr) = CHPL_PARSER_REPORT_SIMPLE(
-        context, (yyloc), "variable-length argument may not be grouped in a tuple");
+        context, (yyloc), "variable-length argument may not be grouped in a tuple.");
   }
 #line 9381 "bison-chpl-lib.cpp"
     break;
@@ -9988,7 +9988,7 @@ yyreduce:
 #line 2911 "chpl.ypp"
   {
     (yyval.expr) = CHPL_PARSER_REPORT_SIMPLE(
-        context, (yyloc), "invalid expression for domain of array return type");
+        context, (yyloc), "invalid expression for domain of array return type.");
   }
 #line 9994 "bison-chpl-lib.cpp"
     break;
@@ -10806,7 +10806,7 @@ yyreduce:
       (yyval.expr) = node.release();
     } else {
       (yyval.expr) = CHPL_PARSER_REPORT_SIMPLE(
-          context, (yyloc), "expected identifier for task variable name");
+          context, (yyloc), "expected identifier for task variable name.");
     }
   }
 #line 10813 "bison-chpl-lib.cpp"

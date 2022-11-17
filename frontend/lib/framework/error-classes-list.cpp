@@ -587,6 +587,7 @@ void ErrorRecordInheritanceNotSupported::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, loc,
              "inheritance is not currently supported for records.");
   wr.note(loc, recordName, " declared as a record here");
+  wr.code(loc);
   wr.message(
       "Thoughts on what record inheritance should entail can be added to "
       "https://github.com/chapel-lang/chapel/issues/6851.");
@@ -624,6 +625,7 @@ void ErrorNewWithoutArgs::write(ErrorWriterBase& wr) const {
   auto expr = std::get<const uast::AstNode*>(info);
   wr.heading(kind_, type_, loc,
              "'new' expression is missing its argument list.");
+  wr.code(loc, { expr });
   wr.message("Perhaps you intended to write 'new ", expr, "()' instead?");
 }
 
@@ -679,8 +681,10 @@ void ErrorBisonUnknownError::write(ErrorWriterBase& wr) const {
 void ErrorBisonSyntaxError::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto nearestToken = std::get<std::string>(info);
-  wr.heading(kind_, type_, loc, "syntax error",
-             (nearestToken.empty() ? "" : " near '" + nearestToken + "'"), ".");
+  wr.heading(kind_, type_, loc,
+             (nearestToken.empty() ? "(no location given)"
+                                   : "near '" + nearestToken + "'"),
+             ".");
 }
 
 /* lexer errors */
@@ -707,9 +711,11 @@ void ErrorCommentEOF::write(ErrorWriterBase& wr) const {
   auto startLoc = std::get<1>(info);
   auto nestedLoc = std::get<2>(info);
   wr.heading(kind_, type_, loc, "end-of-file in comment.");
-  wr.note(startLoc, "unterminated comment started here");
+  wr.note(startLoc, "unterminated comment started here:");
+  wr.code(startLoc);
   if (!nestedLoc.isEmpty()) {
-    wr.note(nestedLoc, "nested comment started here");
+    wr.note(nestedLoc, "nested comment started here:");
+    wr.code(nestedLoc);
   }
 }
 
