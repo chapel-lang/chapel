@@ -25,14 +25,17 @@ def get_cuda_path():
         if chpl_cuda_path:
             return chpl_cuda_path
 
+        to_find = 'nvcc' if get() == 'cuda' else 'hipcc'
+        executable_depth = 2 if get() == 'cuda' else 3
         exists, returncode, my_stdout, my_stderr = utils.try_run_command(["which",
-                                                                          "nvcc"])
+                                                                          to_find])
 
         if exists and returncode == 0:
-            chpl_cuda_path = "/".join(os.path.realpath(my_stdout).strip().split("/")[:-2])
+            real_path = os.path.realpath(my_stdout.strip()).strip()
+            chpl_cuda_path = "/".join(real_path.split("/")[:-executable_depth])
             return chpl_cuda_path
         else:
-            error("Can't find cuda")
+            error("Can't find {}".format(get()))
 
     return ""
 
@@ -48,7 +51,7 @@ def get_gpu_mem_strategy():
 
 
 def get_cuda_libdevice_path():
-    if get() == 'cuda' or get() == 'amd':
+    if get() == 'cuda':
         # TODO this only makes sense when we are generating for nvidia
         chpl_cuda_path = get_cuda_path()
 

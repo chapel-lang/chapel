@@ -2559,12 +2559,6 @@ void runClang(const char* just_parse_filename) {
 
     std::string gpuArch = std::string("--offload-arch=") + fCUDAArch;
     clangOtherArgs.push_back(gpuArch);
-
-    clangOtherArgs.push_back("-I");
-    clangOtherArgs.push_back("/opt/rocm-4.2.0/hip/include");
-
-    clangOtherArgs.push_back("-I");
-    clangOtherArgs.push_back("/opt/rocm-4.2.0/hsa/include");
   }
 
   // Always include sys_basic because it might change the
@@ -3830,16 +3824,6 @@ static void linkLibDevice() {
 
   GenInfo* info = gGenInfo;
 
-  // load libdevice as a new module
-  llvm::SMDiagnostic err;
-  auto libdevice = llvm::parseIRFile(CHPL_CUDA_LIBDEVICE_PATH, err,
-                                     info->llvmContext);
-  //
-  // adjust it
-  const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
-  libdevice->setTargetTriple(Triple.getTriple());
-  libdevice->setDataLayout(info->clangInfo->asmTargetLayoutStr);
-
   // save external functions
   std::set<std::string> externals;
   for (auto it = info->module->begin() ; it!= info->module->end() ; ++it) {
@@ -3847,10 +3831,6 @@ static void linkLibDevice() {
       externals.insert(it->getGlobalIdentifier());
     }
   }
-
-  // link
-  llvm::Linker::linkModules(*info->module, std::move(libdevice),
-                            llvm::Linker::Flags::LinkOnlyNeeded);
 
   // internalize all functions that are not in `externals`
   llvm::InternalizePass iPass([&externals](const llvm::GlobalValue& gv) {
@@ -4333,14 +4313,17 @@ void makeBinaryLLVM(void) {
       outputOBJfile.close();
       printf("OBJ file: %s\n", objFilename.c_str());
 
-      std::string lldCmd = std::string("/opt/rocm-4.2.0/llvm/bin/lld -flavor gnu") +
+      printf("Cuda path: %s\n", CHPL_CUDA_PATH);
+      std::string lldCmd = std::string(CHPL_CUDA_PATH) +
+                          "/llvm/bin/lld -flavor gnu" +
                            " --no-undefined -shared" +
                            " -plugin-opt=-amdgpu-internalize-symbols" +
                            " -plugin-opt=mcpu=gfx906 -plugin-opt=O3" +
                            " -plugin-opt=-amdgpu-early-inline-all=true" +
                            " -plugin-opt=-amdgpu-function-calls=false -o " +
                            outFilename + " " + objFilename;
-      std::string bundlerCmd = std::string("/opt/rocm-4.2.0/llvm/bin/clang-offload-bundler")+
+      std::string bundlerCmd = std::string(CHPL_CUDA_PATH) +
+                              "/llvm/bin/clang-offload-bundler" +
                                " -type=o -bundle-align=4096" +
                                " -targets=host-x86_64-unknown-linux," +
                                "hipv4-amdgcn-amd-amdhsa--" + fCUDAArch +
