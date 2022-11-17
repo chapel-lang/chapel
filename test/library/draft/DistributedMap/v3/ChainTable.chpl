@@ -51,8 +51,8 @@ module ChainTable {
 
     // a bucket for holding hashtable entries that all correspond the the same hash
     //
-    // some small number of entries are stored in an array, and the remainder
-    //  are stored in a linked list
+    // some small number of entries are stored in a local tuple, and the remainder
+    //  are stored on the heap in a linked list
     //
     // this type provides an interface for finding and modifying entries in the
     //  bucket. Modifications are done by reference using the 'this()' accessor
@@ -151,16 +151,10 @@ module ChainTable {
         var numBuckets : uint;
         var numEntries : uint;
 
-        // is someone rehashing right now?
         var rehashing : atomic bool;
-
-        // how many no-rehash context managers have access to this
         var numStaticManagers: atomic uint;
 
         var buckets: _ddata(Bucket(keyType, valType));
-
-        // var d : domain(rank=1, idxType=uint, stridable=false);
-        // var buckets : [d] unmanaged Bucket(keyType, valType)?;
 
         proc init(type keyType, type valType, initialCapacity = defaultInitialCapacity) {
             if isDomainType(keyType) then
@@ -171,12 +165,10 @@ module ChainTable {
             this.numBuckets = initialCapacity / numLocalBucketSlots;
             this.numEntries = 0;
 
-            // this.complete();
             this.buckets = (if this.numBuckets == 0
                 then nil
                 else _allocateData(this.numBuckets, Bucket(this.keyType, this.valType))
             );
-            // this.d = {0..<this.numBuckets};
         }
 
         proc deinit() {
