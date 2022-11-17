@@ -1,3 +1,9 @@
 ─── syntax in externUnclosedPair.chpl:1 [ExternUnclosedPair] ───
   Missing closing " symbol in extern block.
+  In this extern block:
+      |
+    1 | extern {
+    2 | const char* unterminatedStr = "unterminated
+    3 | }
+      |
 

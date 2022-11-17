@@ -1,3 +1,7 @@
 ─── syntax in invalidIndexExpr.chpl:1 [InvalidIndexExpr] ───
   Only identifiers or tuples are allowed as index expressions.
+  Invalid index expression used here:
+      |
+    1 | for i.x in [1..5] do {
+      |
 

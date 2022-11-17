@@ -3,5 +3,9 @@
 
 ─── syntax in stringLiteralEOF.chpl:1 [StringLiteralEOF] ───
   End-of-file in string literal.
+  Unterminated string literal here:
+      |
+    1 | var x : string = "unterminated
+      |
   This string literal began with " and must end with the same un-escaped delimiter.
 

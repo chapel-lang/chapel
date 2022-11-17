@@ -579,6 +579,8 @@ void ErrorInvalidIndexExpr::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   wr.heading(kind_, type_, loc,
              "only identifiers or tuples are allowed as index expressions.");
+  wr.message("Invalid index expression used here:");
+  wr.code(loc);
 }
 
 void ErrorRecordInheritanceNotSupported::write(ErrorWriterBase& wr) const {
@@ -601,6 +603,8 @@ void ErrorInvalidNumericLiteral::write(ErrorWriterBase& wr) const {
   errMessage[0] = std::tolower(errMessage[0]);
   wr.heading(kind_, type_, loc, "error building numeric literal: ", errMessage,
              ".");
+  wr.message("Numeric literal encountered here:");
+  wr.code(loc);
 }
 
 void ErrorMultipleExternalRenaming::write(ErrorWriterBase& wr) const {
@@ -608,6 +612,8 @@ void ErrorMultipleExternalRenaming::write(ErrorWriterBase& wr) const {
   wr.heading(
       kind_, type_, loc,
       "external symbol renaming can only be applied to one symbol at a time.");
+  wr.message("Multiple renaming used here:");
+  wr.code(loc);
 }
 
 void ErrorPreIncDecOp::write(ErrorWriterBase& wr) const {
@@ -618,6 +624,8 @@ void ErrorPreIncDecOp::write(ErrorWriterBase& wr) const {
   } else {
     wr.heading(kind_, type_, loc, "'--' is not a pre-decrement.");
   }
+  wr.message("Used here:");
+  wr.code(loc);
 }
 
 void ErrorNewWithoutArgs::write(ErrorWriterBase& wr) const {
@@ -625,6 +633,7 @@ void ErrorNewWithoutArgs::write(ErrorWriterBase& wr) const {
   auto expr = std::get<const uast::AstNode*>(info);
   wr.heading(kind_, type_, loc,
              "'new' expression is missing its argument list.");
+  wr.message("New expression used here:");
   wr.code(loc, { expr });
   wr.message("Perhaps you intended to write 'new ", expr, "()' instead?");
 }
@@ -636,6 +645,8 @@ void ErrorUseImportNeedsModule::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, loc, "'", useOrImport,
              "' statements must refer to module", (isImport ? "" : " or enum"),
              " symbols.");
+  wr.message("In the following ", useOrImport, " statement:");
+  wr.code(loc);
 }
 
 void ErrorExceptOnlyInvalidExpr::write(ErrorWriterBase& wr) const {
@@ -643,6 +654,8 @@ void ErrorExceptOnlyInvalidExpr::write(ErrorWriterBase& wr) const {
   auto limitationKind = std::get<uast::VisibilityClause::LimitationKind>(info);
   wr.heading(kind_, type_, loc, "incorrect expression in '", limitationKind,
              "' list, identifier expected.");
+  wr.message("In the ", limitationKind, " list here:");
+  wr.code(loc);
 }
 
 void ErrorLabelIneligibleStmt::write(ErrorWriterBase& wr) const {
@@ -658,6 +671,8 @@ void ErrorLabelIneligibleStmt::write(ErrorWriterBase& wr) const {
     wr.heading(kind_, type_, loc, "cannot label '",
                tagToString(maybeStmt->tag()), "' statement.");
   }
+  wr.message("Label on ineligible statement here:");
+  wr.code(loc);
   wr.message("Only 'for', 'while', and 'do-while' statements can have labels.");
 }
 
@@ -695,6 +710,8 @@ void ErrorStringLiteralEOF::write(ErrorWriterBase& wr) const {
   auto startCharCount = std::get<int>(info);
   auto startDelimiter = std::string((size_t)startCharCount, startChar);
   wr.heading(kind_, type_, loc, "end-of-file in string literal.");
+  wr.message("Unterminated string literal here:");
+  wr.code(loc);
   wr.message("This string literal began with ", startDelimiter,
              " and must end with the same un-escaped delimiter.");
 }
@@ -704,6 +721,8 @@ void ErrorExternUnclosedPair::write(ErrorWriterBase& wr) const {
   auto pairSymbol = std::get<std::string>(info);
   wr.heading(kind_, type_, loc, "missing closing ", pairSymbol,
              " symbol in extern block.");
+  wr.message("In this extern block:");
+  wr.code(loc);
 }
 
 void ErrorCommentEOF::write(ErrorWriterBase& wr) const {
@@ -711,10 +730,10 @@ void ErrorCommentEOF::write(ErrorWriterBase& wr) const {
   auto startLoc = std::get<1>(info);
   auto nestedLoc = std::get<2>(info);
   wr.heading(kind_, type_, loc, "end-of-file in comment.");
-  wr.note(startLoc, "unterminated comment started here:");
+  wr.note(startLoc, "unterminated comment here");
   wr.code(startLoc);
   if (!nestedLoc.isEmpty()) {
-    wr.note(nestedLoc, "nested comment started here:");
+    wr.note(nestedLoc, "nested comment here");
     wr.code(nestedLoc);
   }
 }
