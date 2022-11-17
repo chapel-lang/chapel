@@ -35,7 +35,7 @@ module DistributedMap {
 
         proc init(type keyType, type valType) {
             this.keyType = keyType;
-            this.valType = valType;
+            this.valType = valType;cd
             this.localeHasher = new defaultLocaleHasher(keyType);
         }
 
@@ -72,12 +72,12 @@ module DistributedMap {
             return this.size == 0;
         }
 
-        proc extend(m: Map) {
-
+        proc extend(m: map) {
+            compilerError("unimplemented");
         }
 
         proc extend(other: distributedMap) {
-
+            compilerError("unimplemented");
         }
 
         proc toArray(): [] (keyType, valType) {
@@ -202,6 +202,20 @@ module DistributedMap {
             return ret;
         }
 
+        proc getAndRemove(k: keyType) : valType {
+            const loc = this._localeFor(k);
+            var ret : valType;
+            on loc {
+                this.locks[loc].lock();
+                const (found, slot) = this.tables[loc].getFullSlotFor(k);
+                if !found
+                    then ret = this.tables[loc].remove(slot, k, ret);
+                    else throw new KeyNotFoundError(k: string);
+                this.locks[loc].unlock();
+            }
+            return ret;
+        }
+
         proc contains(k: keyType): bool {
             const loc = this._localeFor(k);
             var ret = false;
@@ -223,10 +237,13 @@ module DistributedMap {
             var ret = true;
             on loc {
                 this.locks[loc].lock();
-                const (found, slot) = this.tables[loc].getFullSlotFor(k);
-                if !found
-                    then this.tables[loc].fillSlot(slot, k, v);
-                    else ret = false;
+                const (found, _) = this.tables[loc].getFullSlotFor(k);
+                if !found {
+                    const openSlot = this.tables[loc].getSlotFor(k);
+                    this.tables[loc].fillSlot(openSlot, k, v);
+                } else {
+                    ret = false;
+                }
                 this.locks[loc].unlock();
             }
             return ret;
