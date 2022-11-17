@@ -5178,6 +5178,62 @@ proc _channel.writebits(v:integral, nbits:integral) throws {
 }
 
 /*
+   Write the values referenced by a :class:`~CTypes.c_ptr` to the fileWriter
+
+   Note, this method assumes that the `ptr` points to at least ``numBytes`` bytes of
+   valid allocated memory. It provides no protection agianst halting on an illegal
+   access.
+
+   Native endianess is always used.
+
+   :arg ptr: a C pointer to some memory. Only numerical types are supported.
+   :arg numBytes: the number of bytes to write to the fileWriter.
+
+   :throws SystemError: Thrown if the bytes could not be written to the fileWriter
+*/
+proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
+  where isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t)
+{
+  var e:errorCode = 0;
+  const numToWrite = numBytes / c_sizeof(t);
+
+  for i in 0..numToWrite {
+    e = try _write_binary_internal(this._channel_internal, iokind.native, ptr[i]:t);
+  }
+
+  if (e != 0) {
+    throw createSystemError(e);
+  }
+}
+
+/*
+   Write the bytes referenced by a :type:`~CTypes.c_void_ptr` to the fileWriter
+
+   Note, this method assumes that the `ptr` points to at least numBytes bytes of
+   valid allocated memory. It provides no protection agianst halting on an illegal
+   access.
+
+   The referenced memory is written one byte at a time.
+
+   :arg ptr: a C pointer to some memory without a specified type.
+   :arg numBytes: the number of bytes to write to the fileWriter.
+
+   :throws SystemError: Thrown if the bytes could not be written to the fileWriter
+*/
+proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
+  var e:errorCode = 0;
+
+  var byte_ptr = ptr : c_ptr(uint(8));
+  for i in 0..numBytes {
+    e = try _write_binary_internal(this._channel_internal, iokind.native, byte_ptr[i]:uint(8));
+  }
+
+  if (e != 0) {
+    throw createSystemError(e);
+  }
+}
+
+/*
    Write a binary number to the channel
 
    :arg arg: number to be written
