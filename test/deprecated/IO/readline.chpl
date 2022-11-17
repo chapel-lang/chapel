@@ -4,7 +4,7 @@ config type dataType = string;
 proc test_readlines()
 {
 
-  var f = opentmp();
+  var f = openTempFile();
   {
     var ch = f.writer();
     ch.writeln("a b");

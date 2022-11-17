@@ -18,8 +18,8 @@ module HDF5Preprocessors {
       use FileSystem, Path, Subprocess;
 
       try! {
-        // opentmp() doesn't seem to give me a file I can get the name of :(
-        //var f = opentmp();
+        // openTempFile() doesn't seem to give me a file I can get the name of :(
+        //var f = openTempFile();
         //const scriptName = f.realPath();
 
         const scriptName = "./hdf5TempScript.bash";

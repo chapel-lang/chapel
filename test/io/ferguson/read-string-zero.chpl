@@ -3,7 +3,7 @@ use IO;
 
 var str = "hello\x00goodbye\n";
 
-var f = opentmp();
+var f = openTempFile();
 
 {
   var w = f.writer(kind=iokind.native);
