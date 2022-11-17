@@ -5229,6 +5229,65 @@ proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
 }
 
 /*
+   Read up to ``maxBytes`` bytes from a fileReader into a :class:`~CTypes.c_ptr`
+
+   Note that native endianess is always used.
+
+   :arg ptr: a :class:`~CTypes.c_ptr` to some memory. existing values will be
+              overwritten
+   :arg maxBytes: the maximum number of bytes to read from the fileReader
+   :returns: the number of bytes that were read. can be less than ``maxBytes``
+              if EOF is reached before reading the specified number of bytes
+
+   :throws SystemError: Thrown if an error occurred reading from the fileReader
+*/
+proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
+  var e: errorCode = 0;
+  const tSize = c_sizeof(t),
+        numToRead = maxBytes / tSize;
+
+  for n in 0..<numToRead {
+    e = try _read_binary_internal(this._channel_internal, iokind.native, ptr[n]);
+    if e == EEOF {
+      return (n * tSize):int;
+    } else if e != 0 {
+      throw createSystemError(e);
+    }
+  }
+
+  return maxBytes;
+}
+
+/*
+   Read up to ``maxBytes`` bytes from a fileReader into a :type:`~CTypes.c_void_ptr`
+
+   Data is read one byte at a time, so endianness is not relevant.
+
+   :arg ptr: a typless :type:`~CTypes.c_void_ptr` to some memory — existing values
+              will be overwritten
+   :arg maxBytes: the maximum number of bytes to read from the fileReader
+   :returns: the number of bytes that were read. can be less than ``maxBytes``
+              if EOF is reached before reading the specified number of bytes
+
+   :throws SystemError: Thrown if an error occurred reading from the fileReader
+*/
+proc fileReader.readBinary(ptr: c_void_ptr, maxBytes: int): int throws {
+  var e: errorCode = 0;
+  var bytes_ptr = ptr: c_ptr(uint(8));
+
+  for n in 0..<maxBytes {
+    e = try _read_binary_internal(this._channel_internal, iokind.native, bytes_ptr[n]);
+    if e == EEOF {
+      return n;
+    } else if e != 0 {
+      throw createSystemError(e);
+    }
+  }
+
+  return maxBytes;
+}
+
+/*
    Read a binary number from the channel
 
    :arg arg: number to be read
