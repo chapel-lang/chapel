@@ -1,2 +1,0 @@
-# AM handler has a dedicated core
-CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES=true

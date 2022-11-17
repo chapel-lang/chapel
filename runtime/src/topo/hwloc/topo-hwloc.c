@@ -98,15 +98,6 @@ static void chpl_topo_setMemLocalityByPages(unsigned char*, size_t,
 static chpl_bool okToReserveCPU = true;
 
 //
-// Testing definitions.
-
-// Use this bitmap instead of hwloc_get_proc_cpubind. In list format.
-static const char *testProcCPUBind = NULL;
-
-// Fake support for hwloc_set_cpubind.
-static chpl_bool testCPUBind = false;
-
-//
 // Error reporting.
 //
 // CHK_ERR*() must evaluate 'expr' precisely once!
@@ -212,9 +203,6 @@ void chpl_topo_init(void) {
       }
     }
   }
-
-  testProcCPUBind = chpl_env_rt_get("TEST_TOPO_PROC_CPUBIND", NULL);
-  testCPUBind = chpl_env_rt_get_bool("TEST_TOPO_CPUBIND", false);
 }
 
 
@@ -289,17 +277,12 @@ void chpl_topo_post_comm_init(void) {
   // the set of accessible PUs here.  But that seems not to reflect the
   // schedaffinity settings, so use hwloc_get_proc_cpubind() instead.
   //
-  if (testProcCPUBind == NULL) {
-    if (topoSupport->cpubind->get_proc_cpubind) {
-      int rc = hwloc_get_proc_cpubind(topology, getpid(), logAccSet, 0);
-      CHK_ERR_ERRNO(rc == 0);
-    } else {
-      // assume all PUs are accessible
-      hwloc_bitmap_fill(logAccSet);
-    }
+  if (topoSupport->cpubind->get_proc_cpubind) {
+    int rc = hwloc_get_proc_cpubind(topology, getpid(), logAccSet, 0);
+    CHK_ERR_ERRNO(rc == 0);
   } else {
-    // for testing read the binding from the environment variable
-    hwloc_bitmap_list_sscanf(logAccSet, testProcCPUBind);
+    // assume all PUs are accessible
+    hwloc_bitmap_fill(logAccSet);
   }
 
   hwloc_bitmap_and(logAccSet, logAccSet,
@@ -781,11 +764,10 @@ chpl_topo_reserveCPUPhysical(void) {
   int id = -1;
   _DBG_P("topoSupport->cpubind->set_thisthread_cpubind: %d",
          topoSupport->cpubind->set_thisthread_cpubind);
-  _DBG_P("testCPUBind: %d", testCPUBind);
   _DBG_P("numCPUsPhysAcc: %d", numCPUsPhysAcc);
   if (okToReserveCPU) {
-    if (((topoSupport->cpubind->set_thisthread_cpubind || testCPUBind)) &&
-       (numCPUsPhysAcc > 1)) {
+    if ((topoSupport->cpubind->set_thisthread_cpubind) &&
+        (numCPUsPhysAcc > 1)) {
 
 #ifdef DEBUG
       char buf[1024];
@@ -847,19 +829,15 @@ chpl_topo_reserveCPUPhysical(void) {
 //
 int chpl_topo_bindCPU(int id) {
   int status = 1;
-  if (hwloc_bitmap_isset(physReservedSet, id)) {
-    if (topoSupport->cpubind->set_thisthread_cpubind) {
-      int flags = HWLOC_CPUBIND_THREAD | HWLOC_CPUBIND_STRICT;
-      hwloc_cpuset_t cpuset;
-      CHK_ERR_ERRNO((cpuset = hwloc_bitmap_alloc()) != NULL);
-      hwloc_bitmap_set(cpuset, id);
-      CHK_ERR_ERRNO(hwloc_set_cpubind(topology, cpuset, flags) == 0);
-      hwloc_bitmap_free(cpuset);
-      status = 0;
-    } else if (testCPUBind) {
-      // fake it for testing on platforms that don't support cpubind
-      status = 0;
-    }
+  if (hwloc_bitmap_isset(physReservedSet, id) &&
+      (topoSupport->cpubind->set_thisthread_cpubind)) {
+    int flags = HWLOC_CPUBIND_THREAD | HWLOC_CPUBIND_STRICT;
+    hwloc_cpuset_t cpuset;
+    CHK_ERR_ERRNO((cpuset = hwloc_bitmap_alloc()) != NULL);
+    hwloc_bitmap_set(cpuset, id);
+    CHK_ERR_ERRNO(hwloc_set_cpubind(topology, cpuset, flags) == 0);
+    hwloc_bitmap_free(cpuset);
+    status = 0;
   }
   _DBG_P("chpl_topo_bindCPUPhysical id: %d status: %d", id, status);
   return status;

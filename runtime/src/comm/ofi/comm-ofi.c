@@ -4655,7 +4655,7 @@ void init_amHandling(void) {
   // least one is running.
   //
   atomic_init_bool(&amHandlersExit, false);
-  
+
   PTHREAD_CHK(pthread_mutex_lock(&amStartStopMutex));
   for (int i = 0; i < numAmHandlers; i++) {
     CHK_TRUE(chpl_task_createCommTask(amHandler, NULL, reservedCPUs[i]) == 0);
