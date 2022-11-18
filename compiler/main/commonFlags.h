@@ -51,6 +51,7 @@ void setHome(const ArgumentDescription* desc, const char* arg);
   {"break-on-remove-id", ' ', NULL, "Break when AST id is removed from the tree", "I", &breakOnRemoveID, "CHPL_BREAK_ON_REMOVE_ID", NULL}
 
 #define DRIVER_ARG_CHPLDRIVER \
+  {"driver-tmp-dir", ' ', "<tmpDir>", "Run compiler as monolithic without driver", "P", NULL, NULL, setTmpDir}, \
   {"do-monolithic", ' ', NULL, "Run compiler as monolithic without driver", "F", &fDoMonolithic, NULL, NULL}, \
   {"do-compilation", ' ', NULL, "Run compiler front and mid-end in driver", "F", &fDoCompilation, NULL, NULL}, \
   {"do-backend", ' ', NULL, "Run compiler backend", "F", &fDoBackend, NULL, NULL} \

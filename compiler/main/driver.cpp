@@ -43,6 +43,7 @@
 #include "symbol.h"
 #include "version.h"
 #include "visibleFunctions.h"
+#include "tmpdirname.h"
 
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/Context.h"
@@ -691,28 +692,31 @@ static void handleIncDir(const ArgumentDescription* desc, const char* arg_unused
   addIncInfo(incFilename);
 }
 
-static int invokeChplWithFlag(int argc, char* argv[],
-                              const std::string additionalFlag,
+static int invokeChplWithFlags(int argc, char* argv[],
+                              const std::string additionalFlags,
                               const char* description) {
   // invoke the compiler again with arguments forwarded
-  std::string command;
+  assert(!additionalFlags.empty());
+  std::ostringstream command;
   for (int i = 0; i < argc; i++) {
-    if (i > 0) command += " ";
-    command += argv[i];
-    if (i == 0 && !additionalFlag.empty()) command += " " + additionalFlag;
+    if (i > 0) command << " ";
+    command << argv[i];
+    if (i == 0)
+      command << " " << additionalFlags << " --driver-tmp-dir " << tmpdirname;
   }
-  std::cout << "invoking chpl: " << command << "\n";
+  std::string commandStr = command.str();
 
-  return mysystem(astr(command.c_str()), description, false);
+  std::cout << "invoking chpl: " << commandStr << "\n";
+  return mysystem(astr(commandStr.c_str()), description, false);
 }
 
 static int runCompilation(int argc, char* argv[]) {
-  return invokeChplWithFlag(argc, argv, "--do-compilation",
+  return invokeChplWithFlags(argc, argv, "--do-compilation",
                             "invoking compiler front- and mid-end");
 }
 
 static int runBackend(int argc, char* argv[]) {
-  return invokeChplWithFlag(argc, argv, "--do-backend",
+  return invokeChplWithFlags(argc, argv, "--do-backend",
                             "invoking compiler back-end");
 }
 
@@ -756,6 +760,11 @@ static void readConfig(const ArgumentDescription* desc, const char* arg_unused) 
     // arg_unused was just name
     parseCmdLineConfig(name, "");
   }
+}
+
+static void setTmpDir(const ArgumentDescription* desc, const char* arg) {
+  // TODO I'm pretty sure there's a memory leak here
+  tmpdirname = astr(arg);
 }
 
 static void addModulePath(const ArgumentDescription* desc, const char* newpath) {
@@ -1638,6 +1647,11 @@ static void checkCompilerDriverFlags() {
           "compiler-driver flags were set; they will be ignored and monolithic "
           "compilation will be performed.");
     }
+    if (tmpdirname != NULL) {
+      // user has specified a tmp dir
+      USR_WARN(
+          "Driver temp dir set for monolithic compilation will be ignored");
+    }
   }
 }
 
@@ -1963,8 +1977,16 @@ int main(int argc, char* argv[]) {
     // components of the actual compilation work to be performed
     if (!(fDoCompilation || fDoBackend)) {
       int status = 0;
-      if ((status = runCompilation(argc, argv)) != 0) clean_exit(status);
-      if ((status = runBackend(argc, argv)) != 0) clean_exit(status);
+      // initialize resources that need to be carried over between invocations
+      ensureTmpDirExists();
+      // invoke front- and mid-end
+      if ((status = runCompilation(argc, argv)) != 0)
+        clean_exit(status);
+      // invoke back-end
+      if ((status = runBackend(argc, argv)) != 0)
+        clean_exit(status);
+      // clean up shared resources
+      deleteTmpDir();
       clean_exit(status);
     }
   }
