@@ -309,6 +309,7 @@ static const char* mcmModeNames[] = { "undefined",
 
 static bool cxiHybridMRMode = false;
 
+
 ////////////////////////////////////////
 //
 // Forward decls
@@ -1049,6 +1050,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   pthread_that_inited = pthread_self();
 }
 
+
 void chpl_comm_pre_mem_init(void) {
   //
   // Reserve cores for the AM handlers. This is done here because it has to
@@ -1061,6 +1063,8 @@ void chpl_comm_pre_mem_init(void) {
 
 void chpl_comm_post_mem_init(void) {
   DBG_PRINTF(DBG_IFACE_SETUP, "%s()", __func__);
+
+
 
   chpl_comm_init_prv_bcast_tab();
   init_broadcast_private();
@@ -1076,6 +1080,7 @@ void chpl_comm_post_mem_init(void) {
   if (chpl_numNodes > 1) {
     init_ofiFabricDomain();
   }
+  init_ofiReserveCores();
 }
 
 
@@ -1106,8 +1111,8 @@ void chpl_comm_post_task_init(void) {
 
 static
 void init_ofi(void) {
-  if (verbosity >= 2) {
-    if (chpl_nodeID == 0) {
+  if (verbosity >= 2 || DBG_TEST_MASK(DBG_PROV)) {
+    if ((chpl_nodeID == 0) || DBG_TEST_MASK(DBG_PROV)) {
       void* start;
       size_t size;
       chpl_comm_regMemHeapInfo(&start, &size);
@@ -1420,6 +1425,9 @@ struct fi_info* findProvInList(struct fi_info* info,
                                chpl_bool accept_RxM_provs,
                                chpl_bool accept_sockets_provs) {
 
+  chpl_topo_pci_addr_t pciAddr;
+  chpl_topo_pci_addr_t *addr = NULL;
+
   for (; info != NULL; info = info->next) {
     // break out of the loop when we find one that meets all of our criteria
     if (!accept_ungood_provs && !isGoodCoreProvider(info)) {
@@ -1436,6 +1444,40 @@ struct fi_info* findProvInList(struct fi_info* info,
     }
     if (!isUseableProvider(info)) {
       continue;
+    }
+    // If we get here the provider is usable, but if the machine has multiple
+    // NICs there will be multiple instances of this type of provider. Ask
+    // the topology layer which NIC we should use, e.g., if we are running in
+    // a socket then we should use a NIC associated with that socket.
+    // If it returns NULL then the topology layer doesn't care and we
+    // can just use this provider, otherwise we have to look for the same type
+    // of provider for the specified NIC.
+
+    if (addr == NULL) {
+      if ((info->nic != NULL) && (info->nic->bus_attr != NULL)) {
+        chpl_topo_pci_addr_t inAddr;
+        struct fi_pci_attr *pci = &info->nic->bus_attr->attr.pci;
+        inAddr.domain = pci->domain_id;
+        inAddr.bus = pci->bus_id;
+        inAddr.device = pci->device_id;
+        inAddr.function = pci->function_id;
+        addr = chpl_topo_selectNicByType(&inAddr, &pciAddr);
+      }
+    }
+    if (addr != NULL) {
+      // Only use this provider if the PCI address of its NIC matches that
+      // returned by the topology layer.
+      if ((info->nic != NULL) && (info->nic->bus_attr != NULL) &&
+          (info->nic->bus_attr->bus_type == FI_BUS_PCI)) {
+        struct fi_pci_attr *pci = &info->nic->bus_attr->attr.pci;
+        if ((pci->domain_id != addr->domain) ||
+            (pci->bus_id != addr->bus) ||
+            (pci->device_id != addr->device) ||
+            (pci->function_id != addr->function)) {
+          // don't use this one
+          continue;
+        }
+      }
     }
     // got one
     break;
@@ -2756,12 +2798,14 @@ void init_ofiForMem(void) {
     bufAcc |= FI_SEND | FI_READ | FI_WRITE;
   }
 
+  DBG_PRINTF(DBG_MR, "memTabCount %d", memTabCount);
   for (int i = 0; i < memTabCount; i++) {
     DBG_PRINTF(DBG_MR, "[%d] fi_mr_reg(%p, %#zx, %#" PRIx64 ")",
                i, memTab[i].addr, memTab[i].size, bufAcc);
     OFI_CHK(fi_mr_reg(ofi_domain,
                       memTab[i].addr, memTab[i].size,
                       bufAcc, 0, (prov_key ? 0 : i), 0, &ofiMrTab[i], NULL));
+    DBG_PRINTF(DBG_MR, "[%d] fi_mr_reg complete", i);
     if ((ofi_info->domain_attr->mr_mode & FI_MR_ENDPOINT) != 0) {
       OFI_CHK(fi_mr_bind(ofiMrTab[i], &ofi_rxEp->fid, 0));
       OFI_CHK(fi_mr_enable(ofiMrTab[i]));
@@ -2772,6 +2816,7 @@ void init_ofiForMem(void) {
                prov_key ? "(prov)" : "");
     CHK_TRUE(prov_key || memTab[i].key == i);
   }
+  DBG_PRINTF(DBG_MR, "memory registration complete");
 
   //
   // Unless we're doing scalable registration of the entire address
@@ -4673,6 +4718,7 @@ void init_amHandling(void) {
   // least one is running.
   //
   atomic_init_bool(&amHandlersExit, false);
+  
   PTHREAD_CHK(pthread_mutex_lock(&amStartStopMutex));
   for (int i = 0; i < numAmHandlers; i++) {
     CHK_TRUE(chpl_task_createCommTask(amHandler, NULL, reservedCPUs[i]) == 0);

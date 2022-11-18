@@ -22,8 +22,7 @@ CHPL_HWLOC_CFG_OPTIONS += --enable-static \
                           --disable-cuda \
                           --disable-nvml \
                           --disable-opencl \
-                          --disable-gl \
-                          --disable-pci
+                          --disable-gl
 
 ifdef CHPL_HWLOC_PREFIX
    CHPL_HWLOC_CFG_OPTIONS += --with-hwloc-symbol-prefix=$(CHPL_HWLOC_PREFIX)

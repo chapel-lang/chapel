@@ -59,6 +59,16 @@ int chpl_topo_getNumCPUsLogical(chpl_bool /*accessible_only*/);
 //
 int chpl_topo_getCPUs(chpl_bool physical, int *cpus, int count);
 
+// Reserves a physical CPU and returns its physical OS index.
+// Returns -1 if the reservation failed.
+//
+int chpl_topo_reserveCPUPhysical(void);
+
+// Binds the current thread to the specified physical CPU (core)
+// Returns 0 on success, 1 otherwise
+//
+int chpl_topo_bindCPUPhysical(int id);
+
 //
 // Reserves a physical CPU (core) and returns its hwloc OS index. The
 // core and its PUs will not be returned by chpl_topo_getCPUs,
@@ -146,6 +156,15 @@ void chpl_topo_touchMemFromSubloc(void*, size_t, chpl_bool, c_sublocid_t);
 //
 c_sublocid_t chpl_topo_getMemLocality(void*);
 
+typedef struct chpl_topo_pci_addr {
+    uint16_t domain;
+    uint8_t bus;
+    uint8_t device;
+    uint8_t function;
+} chpl_topo_pci_addr_t;
+
+chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
+                                                chpl_topo_pci_addr_t *outAddr);
 //
 // Returns True if the node is oversubscribed (locales are sharing
 // cores).
