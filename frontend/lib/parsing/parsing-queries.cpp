@@ -682,8 +682,7 @@ const ID& idToParentId(Context* context, ID id) {
   return QUERY_END(result);
 }
 
-const uast::AstNode*
-astToParentAst(Context* context, const uast::AstNode* node) {
+const uast::AstNode* parentAst(Context* context, const uast::AstNode* node) {
   auto parentId = idToParentId(context, node->id());
   if (parentId.isEmpty()) return nullptr;
   return idToAst(context, parentId);

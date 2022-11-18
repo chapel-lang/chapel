@@ -539,9 +539,17 @@ void ErrorProcDefExplicitAnonFormal::write(ErrorWriterBase& wr) const {
 
 void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
   auto use = std::get<const uast::AstNode*>(info);
-  wr.heading(kind_, type_, use, "cannot use/import super from a toplevel "
-                                "module");
+  auto mod = std::get<const uast::Module*>(info);
+  auto useOrImport = std::get<resolution::VisibilityStmtKind>(info);
+  auto useOrImportStr = (useOrImport == resolution::VIS_USE) ? "use"
+                                                             : "import";
+  wr.heading(kind_, type_, use, "invalid use of 'super' in '",
+                                useOrImportStr, "'; '", mod->name().c_str(),
+                                "' is a top-level module.");
   wr.code(use, {use});
+  wr.note(mod->id(), "module '", mod->name(), "' was declared at the ",
+                     "top level here:");
+  wr.code(mod);
 }
 
 } // end namespace 'chpl'

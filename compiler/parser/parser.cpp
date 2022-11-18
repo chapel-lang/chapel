@@ -753,6 +753,8 @@ static chpl::ID findIdForContainingDecl(chpl::ID id) {
 }
 
 static const char* labelForContainingDeclFromId(chpl::ID id) {
+  if (id.isEmpty()) return nullptr;
+
   auto ast = chpl::parsing::idToAst(gContext, id);
   const char* preface = "function";
   const char* name = nullptr;
@@ -793,7 +795,7 @@ static void maybePrintErrorHeader(chpl::ID id) {
 
   auto declId = findIdForContainingDecl(id);
 
-  if (declId != idForLastContainingDecl) {
+  if (!declId.isEmpty() && declId != idForLastContainingDecl) {
     auto declLabelStr = labelForContainingDeclFromId(declId);
 
     // No label was created, so we have nothing to print.

@@ -315,9 +315,11 @@ class Scope {
       or if it is a module scope, this scope. */
   const Scope* moduleScope() const;
 
-  /** Return the module scope containing this scope.
-      If this scope is a module scope, returns the scope
-      of the parent module, or nullptr if none exists. */
+  /** Return the parent module of the module containing
+      this scope. This is equivalent to:
+
+      'scope->moduleScope()->parentScope()->moduleScope()'
+   */
   const Scope* parentModuleScope() const;
 
   /** Returns the AST tag of the construct that this Scope represents. */

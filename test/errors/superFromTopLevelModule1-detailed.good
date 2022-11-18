@@ -1,0 +1,11 @@
+─── error in superFromTopLevelModule1.chpl:2 [SuperFromTopLevelModule] ───
+  Invalid use of 'super' in 'import'; 'superFromTopLevelModule1' is a top-level module.
+      |
+    2 |   import super.foo;
+      |          ⎺⎺⎺⎺⎺
+      |
+  Module 'superFromTopLevelModule1' was declared at the top level here:
+      |
+    1 | module superFromTopLevelModule1 {
+      |
+

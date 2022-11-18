@@ -98,8 +98,7 @@ const Scope* Scope::moduleScope() const {
 
 const Scope* Scope::parentModuleScope() const {
   auto modScope = this->moduleScope();
-  if (this != modScope) return modScope;
-  if (this->parentScope()) return this->parentScope()->moduleScope();
+  if (auto ps = modScope->parentScope()) return ps->moduleScope();
   return nullptr;
 }
 

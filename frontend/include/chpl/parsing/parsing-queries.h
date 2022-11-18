@@ -282,8 +282,7 @@ const ID& idToParentId(Context* context, ID id);
 /**
  Returns the parent AST node given an AST node
  */
-const uast::AstNode*
-astToParentAst(Context* context, const uast::AstNode* node);
+const uast::AstNode* parentAst(Context* context, const uast::AstNode* node);
 
 /**
   Returns the ID for the module containing the given ID,

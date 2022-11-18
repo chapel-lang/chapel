@@ -829,6 +829,25 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
   return nullptr;
 }
 
+static const Scope* handleSuperMaybeError(Context* context,
+                                          const Scope* scopeToAdvanceFrom,
+                                          const Scope* scopeForOrigin,
+                                          const AstNode* expr,
+                                          VisibilityStmtKind kind) {
+  auto ret = scopeToAdvanceFrom->parentModuleScope();
+
+  if (!ret) {
+    auto currentModScope = scopeForOrigin->moduleScope();
+    assert(currentModScope);
+    auto ast = parsing::idToAst(context, currentModScope->id());
+    assert(ast && ast->isModule());
+    auto mod = ast->toModule();
+    CHPL_REPORT(context, SuperFromTopLevelModule, expr, mod, kind);
+  }
+
+  return ret;
+}
+
 // Handle this/super and submodules
 // e.g. M.N.S is represented as
 //   Dot( Dot(M, N), S)
@@ -844,19 +863,11 @@ findUseImportTarget(Context* context,
     foundName = ident->name();
 
     if (ident->name() == USTR("super")) {
-
-      // Get the scope of the closest module, or ourself if we are one.
-      auto modScope = scope->moduleScope();
-
-      // Get the next closest module.
-      auto ret = modScope->parentModuleScope();
-
-      // This error works because 'dot' expressions recurse to the left.
-      // If we've hit this case then we're at the leftmost component
-      // in 'super.foo' and failed to find a parent module.
-      // TODO: How difficult would it be to move this to post-parse?
-      if (!ret) CHPL_REPORT(context, SuperFromTopLevelModule, expr);
-
+      auto ret = handleSuperMaybeError(context,
+                                       scope, // scopeToAdvanceFrom
+                                       scope, // scopeForOrigin
+                                       expr,
+                                       useOrImport);
       return ret;
     } else if (ident->name() == USTR("this")) {
       return scope->moduleScope();
@@ -871,22 +882,17 @@ findUseImportTarget(Context* context,
                                                   ignoreFoundName);
     // TODO: 'this.this'?
     if (dot->field() == USTR("super")) {
-      auto ast = parsing::astToParentAst(context, dot);
-      assert(ast);
 
-      // Ok, descending...
-      if (ast->isDot()) {
-        auto ret = innerScope->parentModuleScope();
-
-        // TODO: In production this case is the same as the above, but maybe
-        // they ought to be different. Technically, this isn't trying to
-        // use 'super' from a top-level module - it's actually just adding
-        // one too many 'super' to the chain.
-        if (!ret) CHPL_REPORT(context, SuperFromTopLevelModule, expr);
-
-        // Exit without searching the scope.
-        return ret;
-      }
+      // TODO: In production this case is the same as the above, but maybe
+      // they ought to be different. Technically, this isn't trying to
+      // use 'super' from a top-level module - it's actually just adding
+      // one too many 'super' to the chain.
+      auto ret = handleSuperMaybeError(context,
+                                       innerScope, // scopeToAdvanceFrom
+                                       scope,      // scopeForOrigin
+                                       expr,
+                                       useOrImport);
+      return ret;
     }
 
     if (innerScope != nullptr) {
