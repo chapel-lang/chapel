@@ -32,6 +32,7 @@ extern bool fPrintHelp;
 extern bool fPrintLicense;
 extern bool fPrintSettingsHelp;
 extern bool fPrintVersion;
+extern bool fDoMonolithic;
 extern bool fDoCompilation;
 extern bool fRungdb;
 extern bool fRunlldb;
@@ -49,6 +50,7 @@ void setHome(const ArgumentDescription* desc, const char* arg);
   {"break-on-remove-id", ' ', NULL, "Break when AST id is removed from the tree", "I", &breakOnRemoveID, "CHPL_BREAK_ON_REMOVE_ID", NULL}
 
 #define DRIVER_ARG_CHPLDRIVER \
+  {"do-monolithic", ' ', NULL, "Run compiler as monolithic without driver", "F", &fDoMonolithic, NULL, NULL}, \
   {"do-compilation", ' ', NULL, "Run actual compiler in driver", "F", &fDoCompilation, NULL, NULL} \
 
 #define DRIVER_ARG_DEBUGGERS                                            \

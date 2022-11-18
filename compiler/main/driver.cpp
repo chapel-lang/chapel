@@ -1619,6 +1619,17 @@ static void setGPUFlags() {
   }
 }
 
+static void checkCompilerDriverFlags() {
+  if (fDoMonolithic) {
+    if (fDoCompilation /* || fDoBackend || ... */) {
+      USR_WARN(
+          "You have requested monolithic compilation, but one or more internal "
+          "compiler-driver flags were set; they will be ignored and monolithic "
+          "compilation will be performed.");
+    }
+  }
+}
+
 static void checkLLVMCodeGen() {
 #ifdef HAVE_LLVM
   if (fLlvmCodegen) {
@@ -1811,6 +1822,8 @@ static void postprocess_args() {
 // chplconfig-style environment variables checks could/should be done in the
 // chplenv scripts; otherwise put the checks here.
 static void validateSettings() {
+  checkCompilerDriverFlags();
+
   checkNotLibraryAndMinimalModules();
 
   checkLLVMCodeGen();
@@ -1928,14 +1941,17 @@ int main(int argc, char* argv[]) {
   printStuff(argv[0]);
   validateSettings();
 
-  if (!fDoCompilation)
-    runCompilerActual(argc, argv);
-
   if (fRungdb)
     runCompilerInGDB(argc, argv);
 
   if (fRunlldb)
     runCompilerInLLDB(argc, argv);
+
+  if (!fDoMonolithic) {
+    // use chpl as a driver, re-invoking itself with flags that cause actual
+    // compilation work to be performed
+    if (!fDoCompilation) runCompilerActual(argc, argv);
+  }
 
   assertSourceFilesFound();
 
