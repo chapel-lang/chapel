@@ -27,6 +27,7 @@ jobs:
               echo "LINK=$(jq -r '.[0].html_url' commits.json)" >> $GITHUB_ENV
               echo "MESSAGE=$((jq  '.[0].commit.message' commits.json)| awk -F'\\\\n' '{print $1}' | sed 's/\"//g')" >> $GITHUB_ENV 
               echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
+              echo "LOG= $(echo "${{github.event.pull_request.body}}" | sed 's/\\n/<br>/g' | sed 's/\\r/ /g' ) " >> $GITHUB_ENV
               echo "FILES_CHANGED=$(echo '${{github.event.pull_request._links.html.href}}/files' )" >> $GITHUB_ENV
       - name: checkout
         uses: actions/checkout@v3
@@ -67,7 +68,7 @@ jobs:
               Link: ${{github.event.pull_request._links.html.href}} <br>             
               Log Message: <br><br>
                            ${{env.MESSAGE}} <br> 
-                           ${{github.event.pull_request.body}} <br>
+                           ${{env.LOG}} <br>
               Compare: ${{env.COMPARE_URL}} <br> 
               Diff: ${{github.event.pull_request.diff_url}} <br>
               Modified Files: <br>
