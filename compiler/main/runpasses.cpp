@@ -242,9 +242,13 @@ static void runPass(PhaseTracker& tracker, size_t passIndex) {
 
   //
   // Clean up the global pointers to AST.
+  // Skip if we're on the backend invocation of the compiler, in which case
+  // there is no AST.
   //
-  tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
-  cleanAst();
+  if (!fDoBackend) {
+    tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
+    cleanAst();
+  }
 
   if (printPasses == true || printPassesFile != 0) {
     tracker.ReportPass();
