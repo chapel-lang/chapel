@@ -32,6 +32,7 @@ extern bool fPrintHelp;
 extern bool fPrintLicense;
 extern bool fPrintSettingsHelp;
 extern bool fPrintVersion;
+extern bool fDoCompilation;
 extern bool fRungdb;
 extern bool fRunlldb;
 
@@ -46,6 +47,9 @@ void setHome(const ArgumentDescription* desc, const char* arg);
 #define DRIVER_ARG_BREAKFLAGS_COMMON \
   {"break-on-id", ' ', NULL, "Break when AST id is created", "I", &breakOnID, "CHPL_BREAK_ON_ID", NULL}, \
   {"break-on-remove-id", ' ', NULL, "Break when AST id is removed from the tree", "I", &breakOnRemoveID, "CHPL_BREAK_ON_REMOVE_ID", NULL}
+
+#define DRIVER_ARG_CHPLDRIVER \
+  {"do-compilation", ' ', NULL, "Run actual compiler in driver", "F", &fDoCompilation, NULL, NULL} \
 
 #define DRIVER_ARG_DEBUGGERS                                            \
   {"gdb", ' ', NULL, "Run compiler in gdb", "F", &fRungdb, NULL, NULL}, \

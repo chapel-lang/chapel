@@ -29,6 +29,7 @@ bool fPrintHelp = false;
 bool fPrintLicense = false;
 bool fPrintSettingsHelp = false;
 bool fPrintVersion = false;
+bool fDoCompilation = false;
 bool fRungdb = false;
 bool fRunlldb = false;
 

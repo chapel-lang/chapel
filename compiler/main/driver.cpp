@@ -691,6 +691,20 @@ static void handleIncDir(const ArgumentDescription* desc, const char* arg_unused
   addIncInfo(incFilename);
 }
 
+static void runCompilerActual(int argc, char* argv[]) {
+  // invoke the compiler again with proper arguments forwarded
+  std::string command;
+  for (int i = 0; i < argc; i++) {
+    if (i > 0) command += " ";
+    command += argv[i];
+    if (i == 0) command += " --do-compilation";
+  }
+  std::cout << "invoking chpl: " << command << "\n";
+
+  int status = mysystem(astr(command.c_str()), "invoking actual compiler", false);
+  clean_exit(status);
+}
+
 static void runCompilerInGDB(int argc, char* argv[]) {
   const char* gdbCommandFilename = createDebuggerFile("gdb", argc, argv);
   const char* command = astr("gdb -q ", argv[0]," -x ", gdbCommandFilename);
@@ -1182,6 +1196,7 @@ static ArgumentDescription arg_desc[] = {
  {"explain-call-id", ' ', "<call-id>", "Explain resolution of call by ID", "I", &explainCallID, NULL, NULL},
  {"break-on-resolve-id", ' ', NULL, "Break when function call with AST id is resolved", "I", &breakOnResolveID, "CHPL_BREAK_ON_RESOLVE_ID", NULL},
  {"denormalize", ' ', NULL, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", NULL},
+ DRIVER_ARG_CHPLDRIVER,
  DRIVER_ARG_DEBUGGERS,
  {"interprocedural-alias-analysis", ' ', NULL, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, NULL, NULL},
  {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "n", &fNoLifetimeChecking, NULL, NULL},
@@ -1912,6 +1927,9 @@ int main(int argc, char* argv[]) {
   //
   printStuff(argv[0]);
   validateSettings();
+
+  if (!fDoCompilation)
+    runCompilerActual(argc, argv);
 
   if (fRungdb)
     runCompilerInGDB(argc, argv);
