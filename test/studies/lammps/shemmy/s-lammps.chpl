@@ -29,13 +29,13 @@ var   membcounts:[atomsExt] int;
 const infile:string = 'ljcut.in';
 
 loadParticles(infile, positions, velocities);
-var timer:Timer;
+var timer:stopwatch;
 writeln("-- LAMMPS - (Serial,Chapel) --");
 timer.start();
 
 for i in 1..numSteps
 {
-//    var it:Timer;
+//    var it:stopwatch;
 //    it.start();
 //    writeln("--------------------------");
 //    writeln("iteration=",i);

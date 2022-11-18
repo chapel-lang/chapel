@@ -26,7 +26,7 @@ on here.gpus[0] {
 proc runSort(){
     // Number of key value pairs to sort scaled down by 2^20
     const problemSizes = [1, 8, 48, 96];
-    var timer: Timer;
+    var timer: stopwatch;
 
     var size = problemSizes[sz-1] : uint(32);
     // Scale back up by 2^20

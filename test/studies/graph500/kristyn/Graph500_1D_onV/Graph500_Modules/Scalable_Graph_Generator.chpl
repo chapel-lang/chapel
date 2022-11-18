@@ -102,7 +102,7 @@ module Scalable_Graph_Generator
 
       var   Edge_lock$   : [ArrD] sync bool = true;
 
-      var   graph_gen_time: Timer;
+      var   graph_gen_time: stopwatch;
 
 
 // Initialize records in Edges

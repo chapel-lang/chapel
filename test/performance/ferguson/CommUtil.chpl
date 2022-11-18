@@ -7,7 +7,7 @@ config var printAllCounts = false;
 // this is a config param just so it can be in COMPOPTS
 config param checkMaxAttained = false;
 
-var timer:Timer;
+var timer:stopwatch;
 
 proc start() {
   resetCommDiagnostics();

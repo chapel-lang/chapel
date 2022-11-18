@@ -50,7 +50,7 @@ A = 0.0;
 B = 2.0;
 C = 2.0;
 
-var timer = new Timer();
+var timer = new stopwatch();
 
 //
 // Main loop

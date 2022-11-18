@@ -15,7 +15,7 @@ config const seed = 31415;
 config const blksHoriz : int = ceil((n+1.0)/blkSize:real):int;
 config const blksVert  : int = ceil(n:real/blkSize:real):int;
 config const verbose: bool = true;
-var timer = new Timer();
+var timer = new stopwatch();
 
 // calculate C = C - A * B.
 proc dgemm(

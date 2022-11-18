@@ -18,7 +18,7 @@ module Timer {
   }
 
   class ChapelTimer: TimerImpl {
-    var t: Timer;
+    var t: stopwatch;
     override proc start() {
       t.start();
     }

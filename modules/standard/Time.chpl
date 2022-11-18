@@ -24,9 +24,10 @@
 /* Support for routines related to measuring the passing of time.
 
    This module provides support for querying wall time in the local
-   timezone and implements a record :record:`~Timer` that provides basic
-   stopwatch behavior.  The stopwatch has the potential for microsecond
-   resolution and is intended to be useful for performance testing.
+   timezone and implements a record :record:`~stopwatch` that can measure
+   the execution time of sections of a program. The stopwatch has the
+   potential for microsecond resolution and is intended to be useful for
+   performance testing.
  */
 
 module Time {
@@ -1965,10 +1966,78 @@ inline proc sleep(t: real, unit: TimeUnits = TimeUnits.seconds) : void {
    Implements basic stopwatch behavior with a potential resolution of
    microseconds if supported by the runtime platform.
 
-   The :record:`!Timer` can be started, stopped, and cleared.
-   A :record:`!Timer` is either running or stopped.
+   The :record:`!stopwatch` can be started, stopped, and cleared.
+   A :record:`!stopwatch` is either running or stopped.
 */
+record stopwatch {
+  pragma "no doc"
+  var time:        _timevalue = chpl_null_timevalue();
 
+  pragma "no doc"
+  var accumulated: real       = 0.0;
+
+  pragma "no doc"
+  var running:     bool       = false;
+
+  /*
+     Clears the elapsed time. If the timer is running then it is restarted
+     otherwise it remains in the stopped state.
+  */
+  proc clear() : void {
+    accumulated = 0.0;
+
+    if running {
+      time = chpl_now_timevalue();
+    }
+  }
+
+  /* Starts the timer. A warning is emitted if the timer is already running. */
+  proc start() : void {
+    if !running {
+      running = true;
+      time    = chpl_now_timevalue();
+    } else {
+      warning("start called on a timer that has not been stopped");
+    }
+  }
+
+  /* Stops the timer. A warning is emitted if the timer is not running. */
+  proc stop() : void {
+    if running {
+      var time2: _timevalue = chpl_now_timevalue();
+
+      accumulated += _diff_time(time2, time);
+      running      = false;
+    } else {
+      warning("stop called on a timer that has not been started");
+    }
+  }
+
+  /*
+     Returns the cumulative elapsed time, in the units specified, between
+     all pairs of calls to :proc:`start` and :proc:`stop`
+     since the timer was created or the last call to :proc:`clear`.
+     If the timer is running, the elapsed time since the last call to
+     :proc:`start` is added to the return value.
+
+     :arg  unit: The units for the returned value
+     :type unit: :type:`TimeUnits`
+
+     :returns: The elapsed time in the units specified
+     :rtype:   `real(64)`
+  */
+  proc elapsed(unit: TimeUnits = TimeUnits.seconds) : real {
+    if running {
+      var time2: _timevalue = chpl_now_timevalue();
+
+      return _convert_microseconds(unit, accumulated + _diff_time(time2, time));
+    } else {
+      return _convert_microseconds(unit, accumulated);
+    }
+  }
+}
+
+deprecated "'Timer' is deprecated, please use 'stopwatch' instead"
 record Timer {
   pragma "no doc"
   var time:        _timevalue = chpl_null_timevalue();

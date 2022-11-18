@@ -511,7 +511,7 @@ prototype module DistributedFFT {
 
 
     record TimeTracker {
-      var tt : Timer();
+      var tt : stopwatch();
       var arr : [stageDomain] real;
 
       proc deinit() {

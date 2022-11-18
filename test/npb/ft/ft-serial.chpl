@@ -370,7 +370,7 @@ fft(1, U1, U0);
 //
 // Restart benchmark
 //
-var totalTime: Timer;
+var totalTime: stopwatch;
 totalTime.start();
 
 compute_index_map(Twiddle);

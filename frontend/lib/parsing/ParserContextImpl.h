@@ -2537,7 +2537,10 @@ ParserContext::buildSelectStmt(YYLTYPE location, owned<AstNode> expr,
 
 AstNode* ParserContext::buildInterfaceFormal(YYLTYPE location,
                                              PODUniqueString name) {
-  return buildIdent(location, name);
+  return buildFormal(location, Formal::Intent::TYPE, name,
+                    /* typeExpr */ nullptr,
+                    /* initExpr */ nullptr,
+                    /* consumeAttributes */ false);
 }
 
 CommentsAndStmt ParserContext::buildInterfaceStmt(YYLTYPE location,
@@ -2554,7 +2557,14 @@ CommentsAndStmt ParserContext::buildInterfaceStmt(YYLTYPE location,
                     locBody,
                     body);
 
-  AstList formalList = formals ? consumeList(formals) : AstList();
+  AstList formalList;
+  if (formals != nullptr) {
+    formalList = consumeList(formals);
+  } else {
+    auto selfStr = PODUniqueString::get(context(), "Self");
+    formalList.push_back(toOwned(buildInterfaceFormal(location, selfStr)));
+  }
+
   AstList bodyStmts = bodyExprLst
       ? consumeAndFlattenTopLevelBlocks(bodyExprLst)
       : AstList();

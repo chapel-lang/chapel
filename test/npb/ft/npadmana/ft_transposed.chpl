@@ -39,7 +39,7 @@ var W : [Dom] complex;
 var V, Wt: [DomT] complex;
 var Twiddle : [DomT] real;
 
-var timeit : Timer;
+var timeit : stopwatch;
 
 // Touch the arrays once
 timeit.clear(); timeit.start();

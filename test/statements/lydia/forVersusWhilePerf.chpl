@@ -39,7 +39,7 @@ proc while_loop()
 }
 
 proc main() {
-  var t1, t2: Timer;
+  var t1, t2: stopwatch;
   t1.start();
   var res1 = for_loop();
   t1.stop();

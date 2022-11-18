@@ -23,7 +23,7 @@ const n = arrSize / numBytes(elemType);
 
 
 config const showPerf = false;
-var timer: Timer;
+var timer: stopwatch;
 
 timer.start();
 coforall loc in Locales do on loc {

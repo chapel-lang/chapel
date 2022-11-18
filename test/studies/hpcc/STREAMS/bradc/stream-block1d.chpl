@@ -23,7 +23,7 @@ config const printParams = true,
 
 proc main() {
   printConfiguration();
-  var t1, t2, t3: Timer;
+  var t1, t2, t3: stopwatch;
 
   t1.start();
   const BlockDist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={1..m}, targetLocales=Locales));

@@ -15,7 +15,7 @@ config const printC = true,
 config const scalingFactor = 1;
 
 var randStream = createRandomStream(eltType=real, seed=randSeed, algorithm=RNG.NPB),
-  timer: Timer;
+  timer: stopwatch;
 
 const inner = 1..5 * scalingFactor,
   outerRows = 1..10 * scalingFactor,

@@ -5,7 +5,7 @@ public use Potential;
 
 record SubTimer {
   var D : domain(string);
-  var A : [D] Timer;
+  var A : [D] stopwatch;
 
   proc init(names : string...) {
     this.complete();

@@ -21,7 +21,7 @@ proc main() {
   if printOriginal then writeln("# Starting dynamics ...\n# Timestep T U P Time");
 
   // master timer
-  var master : Timer;
+  var master : stopwatch;
 
   // compute initial temp, energy, pressure values
   computeThermo(0, master);
@@ -73,9 +73,9 @@ proc finalIntegrate() {
   }
 }
 
-proc run(master : Timer) {
+proc run(master : stopwatch) {
   dtforce = dtforce / mass;
-  var iterTimer : Timer;
+  var iterTimer : stopwatch;
   for step in 1..numSteps {
     // update atoms' physical properties
     initialIntegrate();
