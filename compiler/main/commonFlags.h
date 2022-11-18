@@ -34,6 +34,7 @@ extern bool fPrintSettingsHelp;
 extern bool fPrintVersion;
 extern bool fDoMonolithic;
 extern bool fDoCompilation;
+extern bool fDoBackend;
 extern bool fRungdb;
 extern bool fRunlldb;
 
@@ -51,7 +52,8 @@ void setHome(const ArgumentDescription* desc, const char* arg);
 
 #define DRIVER_ARG_CHPLDRIVER \
   {"do-monolithic", ' ', NULL, "Run compiler as monolithic without driver", "F", &fDoMonolithic, NULL, NULL}, \
-  {"do-compilation", ' ', NULL, "Run actual compiler in driver", "F", &fDoCompilation, NULL, NULL} \
+  {"do-compilation", ' ', NULL, "Run compiler front and mid-end in driver", "F", &fDoCompilation, NULL, NULL}, \
+  {"do-backend", ' ', NULL, "Run compiler backend", "F", &fDoBackend, NULL, NULL} \
 
 #define DRIVER_ARG_DEBUGGERS                                            \
   {"gdb", ' ', NULL, "Run compiler in gdb", "F", &fRungdb, NULL, NULL}, \

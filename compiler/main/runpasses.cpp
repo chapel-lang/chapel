@@ -147,8 +147,8 @@ static PassInfo sPassList[] = {
   // AST to C or LLVM
   RUN(insertLineNumbers),       // insert line numbers for error messages
   RUN(denormalize),             // denormalize -- remove local temps
-  RUN(codegen),                 // generate C code
-  RUN(makeBinary)               // invoke underlying C compiler
+  RUN(codegen),                 // generate C or LLVM code
+  RUN(makeBinary)               // invoke underlying C or LLVM compiler
 };
 
 static void runPass(PhaseTracker& tracker, size_t passIndex);
@@ -178,11 +178,21 @@ void runPasses(PhaseTracker& tracker) {
   }
 
   for (size_t i = 0; i < passListSize; i++) {
+    // skip until makeBinary if in backend invocation
+    if (fDoBackend && strcmp(sPassList[i].name, "makeBinary") != 0) {
+      continue;
+    }
+
     runPass(tracker, i);
 
     USR_STOP(); // quit if fatal errors were encountered in pass
 
     currentPassNo++;
+
+    // quit before backend in compilation-only invocation
+    if (fDoCompilation && strcmp(sPassList[i].name, "codegen") == 0) {
+      break;
+    }
 
     // Break early if this is a parse-only run
     if (fParseOnly ==  true && strcmp(sPassList[i].name, "checkParsed") == 0) {

@@ -691,18 +691,29 @@ static void handleIncDir(const ArgumentDescription* desc, const char* arg_unused
   addIncInfo(incFilename);
 }
 
-static void runCompilerActual(int argc, char* argv[]) {
-  // invoke the compiler again with proper arguments forwarded
+static int invokeChplWithFlag(int argc, char* argv[],
+                              const std::string additionalFlag,
+                              const char* description) {
+  // invoke the compiler again with arguments forwarded
   std::string command;
   for (int i = 0; i < argc; i++) {
     if (i > 0) command += " ";
     command += argv[i];
-    if (i == 0) command += " --do-compilation";
+    if (i == 0 && !additionalFlag.empty()) command += " " + additionalFlag;
   }
   std::cout << "invoking chpl: " << command << "\n";
 
-  int status = mysystem(astr(command.c_str()), "invoking actual compiler", false);
-  clean_exit(status);
+  return mysystem(astr(command.c_str()), description, false);
+}
+
+static int runCompilation(int argc, char* argv[]) {
+  return invokeChplWithFlag(argc, argv, "--do-compilation",
+                            "invoking compiler front- and mid-end");
+}
+
+static int runBackend(int argc, char* argv[]) {
+  return invokeChplWithFlag(argc, argv, "--do-backend",
+                            "invoking compiler back-end");
 }
 
 static void runCompilerInGDB(int argc, char* argv[]) {
@@ -1621,7 +1632,7 @@ static void setGPUFlags() {
 
 static void checkCompilerDriverFlags() {
   if (fDoMonolithic) {
-    if (fDoCompilation /* || fDoBackend || ... */) {
+    if (fDoCompilation || fDoBackend) {
       USR_WARN(
           "You have requested monolithic compilation, but one or more internal "
           "compiler-driver flags were set; they will be ignored and monolithic "
@@ -1948,9 +1959,14 @@ int main(int argc, char* argv[]) {
     runCompilerInLLDB(argc, argv);
 
   if (!fDoMonolithic) {
-    // use chpl as a driver, re-invoking itself with flags that cause actual
-    // compilation work to be performed
-    if (!fDoCompilation) runCompilerActual(argc, argv);
+    // treat 'chpl' as a driver, re-invoking itself with flags that trigger
+    // components of the actual compilation work to be performed
+    if (!(fDoCompilation || fDoBackend)) {
+      int status = 0;
+      if ((status = runCompilation(argc, argv)) != 0) clean_exit(status);
+      if ((status = runBackend(argc, argv)) != 0) clean_exit(status);
+      clean_exit(status);
+    }
   }
 
   assertSourceFilesFound();

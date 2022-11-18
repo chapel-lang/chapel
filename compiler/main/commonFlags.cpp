@@ -31,6 +31,7 @@ bool fPrintSettingsHelp = false;
 bool fPrintVersion = false;
 bool fDoMonolithic = false;
 bool fDoCompilation = false;
+bool fDoBackend = false;
 bool fRungdb = false;
 bool fRunlldb = false;
 
