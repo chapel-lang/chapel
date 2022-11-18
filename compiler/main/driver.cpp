@@ -696,18 +696,20 @@ static int invokeChplWithFlags(int argc, char* argv[],
                               const std::string additionalFlags,
                               const char* description) {
   // invoke the compiler again with arguments forwarded
-  assert(!additionalFlags.empty());
+  assert(!additionalFlags.empty() &&
+         "expected additional flags to be specified for chpl invocation");
   std::ostringstream command;
   for (int i = 0; i < argc; i++) {
-    if (i > 0) command << " ";
+    if (i > 0) {
+      command << " ";
+    }
     command << argv[i];
-    if (i == 0)
+    if (i == 0) {
       command << " " << additionalFlags << " --driver-tmp-dir " << tmpdirname;
+    }
   }
-  std::string commandStr = command.str();
 
-  std::cout << "invoking chpl: " << commandStr << "\n";
-  return mysystem(astr(commandStr.c_str()), description, false);
+  return mysystem(astr(command.str().c_str()), description, false);
 }
 
 static int runCompilation(int argc, char* argv[]) {
@@ -763,10 +765,8 @@ static void readConfig(const ArgumentDescription* desc, const char* arg_unused) 
 }
 
 static void setTmpDir(const ArgumentDescription* desc, const char* arg) {
-  // TODO I'm pretty sure there's a memory leak here
   tmpdirname = astr(arg);
-  intDirName = astr(arg);
-  std::cout << "tmp dir: " << tmpdirname << "\n";
+  intDirName = tmpdirname;
 }
 
 static void addModulePath(const ArgumentDescription* desc, const char* newpath) {

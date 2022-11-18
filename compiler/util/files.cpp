@@ -127,7 +127,6 @@ void ensureTmpDirExists() {
   if (saveCDir[0] == '\0') {
     if (tmpdirname == NULL) {
       tmpdirname = makeTempDir("chpl-");
-      std::cout << "set tmp dir name to " << tmpdirname << "\n";
       intDirName = tmpdirname;
     }
   } else {
@@ -186,9 +185,6 @@ const char* genIntermediateFilename(const char* filename) {
 
   ensureTmpDirExists();
 
-  if (intDirName == NULL) {
-    std::cout << "intdirname is null somehow oh no\n";
-  }
   return astr(intDirName, slash, filename);
 }
 
