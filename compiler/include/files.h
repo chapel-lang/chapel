@@ -39,6 +39,9 @@ extern std::vector<const char*> incDirs;
 extern std::vector<const char*> libDirs;
 extern std::vector<const char*> libFiles;
 
+// directory for intermediates; tmpdir or saveCDir
+extern const char* intDirName;
+
 struct fileinfo {
   FILE* fptr;
   const char* filename;

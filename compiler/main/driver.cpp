@@ -765,6 +765,8 @@ static void readConfig(const ArgumentDescription* desc, const char* arg_unused) 
 static void setTmpDir(const ArgumentDescription* desc, const char* arg) {
   // TODO I'm pretty sure there's a memory leak here
   tmpdirname = astr(arg);
+  intDirName = astr(arg);
+  std::cout << "tmp dir: " << tmpdirname << "\n";
 }
 
 static void addModulePath(const ArgumentDescription* desc, const char* newpath) {

@@ -2579,6 +2579,7 @@ void runClang(const char* just_parse_filename) {
       //create a header file to include header files from the command line
       std::string genHeaderFilename;
       genHeaderFilename = genIntermediateFilename("command-line-includes.h");
+      std::cout << genHeaderFilename.c_str() << "\n";
       FILE* fp =  openfile(genHeaderFilename.c_str(), "w");
       if(usingGpuLocaleModel()) {
         // In some version of the CUDA headers they end up redefining

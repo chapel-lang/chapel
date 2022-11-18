@@ -70,8 +70,7 @@ std::vector<const char*>   incDirs;
 std::vector<const char*>   libDirs;
 std::vector<const char*>   libFiles;
 
-// directory for intermediates; tmpdir or saveCDir
-static const char* intDirName        = NULL;
+const char* intDirName = NULL;
 
 static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
   char* dirString = strdup(pathVar);
@@ -128,6 +127,7 @@ void ensureTmpDirExists() {
   if (saveCDir[0] == '\0') {
     if (tmpdirname == NULL) {
       tmpdirname = makeTempDir("chpl-");
+      std::cout << "set tmp dir name to " << tmpdirname << "\n";
       intDirName = tmpdirname;
     }
   } else {
@@ -186,6 +186,9 @@ const char* genIntermediateFilename(const char* filename) {
 
   ensureTmpDirExists();
 
+  if (intDirName == NULL) {
+    std::cout << "intdirname is null somehow oh no\n";
+  }
   return astr(intDirName, slash, filename);
 }
 
