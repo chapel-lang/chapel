@@ -77,16 +77,9 @@ jobs:
               Author: ${{ env.AUTHOR}} <br>
               Link: ${{github.event.pull_request._links.html.href}} <br>             
               Log Message: <br><br>
-                           ${{env.LOG}} <br>
+                           
                            ${{env.LOG1}} <br>
-              Compare: ${{env.COMPARE_URL}} <br> 
-              Diff: ${{github.event.pull_request.diff_url}} <br>
-              Modified Files: <br>
-                   ${{steps.changed-files.outputs.modified_files}} <br><br>
-              Added Files: <br>
-                   ${{steps.changed-files.outputs.added_files}} <br><br>    
-              Removed Files: <br>     
-                   ${{steps.changed-files.outputs.deleted_files}} <br>
+              
              
               </p>
               </body>
