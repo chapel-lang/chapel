@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include "chpllaunch.h"
+#include "chpl-env.h"
 #include "chpl-mem.h"
 #include "chpltypes.h"
 #include "error.h"
@@ -38,7 +39,7 @@
 #define CHPL_PARTITION_FLAG "--partition"
 #define CHPL_EXCLUDE_FLAG "--exclude"
 
-#define CHPL_LPN_VAR "CHPL_RT_LOCALES_PER_NODE"
+#define CHPL_LPN_VAR "LOCALES_PER_NODE"
 
 static char* debug = NULL;
 static char* walltime = NULL;
@@ -166,7 +167,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* errorfn = getenv("CHPL_LAUNCHER_SLURM_ERROR_FILENAME");
   char* nodeAccessEnv = getenv("CHPL_LAUNCHER_NODE_ACCESS");
   char* memEnv = getenv("CHPL_LAUNCHER_MEM");
-  char* lpnEnv = getenv(CHPL_LPN_VAR);
   const char* nodeAccessStr = NULL;
   const char* memStr = NULL;
   char* basenamePtr = strrchr(argv[0], '/');
@@ -243,20 +243,19 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     memStr = memEnv;
   }
 
-  localesPerNode = 1;
-  if (lpnEnv != NULL) {
-    localesPerNode = atoi(lpnEnv);
-    if (localesPerNode <= 0) {
-      char msg[100];
-      snprintf(msg, sizeof(msg), "%s must be > 0.", CHPL_LPN_VAR);
-      chpl_warning(msg, 0, 0);
-      localesPerNode = 1;
-    }
+  localesPerNode = chpl_env_rt_get_int(CHPL_LPN_VAR, 1);
+  if (localesPerNode <= 0) {
+    char msg[100];
+    snprintf(msg, sizeof(msg), "%s must be > 0.", "CHPL_RT_" CHPL_LPN_VAR);
+    chpl_warning(msg, 0, 0);
+    localesPerNode = 1;
   }
 
-  if (localesPerNode > numLocales) {
-    localesPerNode = numLocales;
-  }
+  // Note: if localesPerNode > numLocales then some cores will go unused. This
+  // is by design, as it allows for scalability testing by increasing the
+  // number of locales per node. If the user wants a single locale to use all
+  // of the cores they should set CHPL_RT_LOCALES_PER_NODE to 1 or not set it
+  // at all.
 
   if (basenamePtr == NULL) {
     basenamePtr = argv[0];

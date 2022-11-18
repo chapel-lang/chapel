@@ -58,7 +58,8 @@ extern int PMI2_KVS_Get(const char* jobid, int src_pmi_id,
                         const char key[], char value[],
                         int maxvalue, int* vallen)
            __attribute__((weak));
-extern int PMI_Get_clique_size(int* size)
+extern int PMI_Get_numpes_on_smp(int* size) __attribute__((weak));
+extern int PMI_Get_pes_on_smp(int *ranks, int length)
     __attribute__((weak));
 
 #define PMI2_CHK(expr) CHK_EQ_TYPED(expr, PMI2_SUCCESS, int, "d")
@@ -296,56 +297,83 @@ typedef struct locale_info_t {
   int       nodeID;   // locale's ID
 } locale_info_t;
 
+static int compareRanks(const void *a, const void *b) {
+  return *((int *) a) - *((int *) b);
+}
+
 int chpl_comm_ofi_oob_locales_on_node(int *rank) {
   int count = 0;
-  // do an allgather of hostname hashes to determine the locales on the same node as us
-  // assumes each hostname has a unique hash
-
-  char hostname[HOST_NAME_MAX+1];
-  int rc = gethostname(hostname, sizeof(hostname));
-  CHK_TRUE(rc == 0);
-
-  uint64_t hash = 0;
-  for (int i = 0; i < sizeof(hostname); i++) {
-    char c = hostname[i];
-    if (c == '\0') {
-      break;
-    }
-    // The hash code is borrowed from gasnet including the comment.
-    // See third-party/gasnet/gasnet-src/license.txt.
-
-    /* The "c = ..." squeezes ASCII down to 6 bits, while encoding
-     * all chars valid in hostnames and IP addresses (IPV4 and IPV6).
-     * A unique value is assigned to each of the digits, the lower
-     * case letters, '-', '.' and ':'.  The upper case letters map
-     * to the same values as the corresponding lower-case.
-     */
-    c = ((c & 0x40) >> 1) | (c & 0x1f);
-    hash = ((hash << 6) | ((hash >> 58) & 0x3F)) ^ c;
-  }
-
-  // get the hashes for all locales
-
-  locale_info_t info;
-  info.hash = hash;
-  DBG_PRINTF(DBG_OOB, "PMI2 OOB chpl_nodeID %d", chpl_nodeID);
-  info.nodeID = chpl_nodeID;
-  locale_info_t *infos = NULL;
-  CHK_SYS_CALLOC(infos, chpl_numNodes);
-  chpl_comm_ofi_oob_allgather(&info, infos, sizeof(*infos));
-
-  // count the number of hashes that match ours
-
-  for (int i = 0; i < chpl_numNodes; i++) {
-    if (infos[i].hash == hash) {
-      if ((rank != NULL) && (infos[i].nodeID == chpl_nodeID)) {
-        // record our rank among the locales on the same node
-        *rank = count;
+  if (PMI_Get_numpes_on_smp && PMI_Get_pes_on_smp) {
+    // Use PMI.
+    PMI_CHK(PMI_Get_numpes_on_smp(&count));
+    if (rank) {
+      int *ranks;
+      CHK_SYS_CALLOC(ranks, count);
+      PMI_CHK(PMI_Get_pes_on_smp(ranks, count));
+      // Ranks aren't guaranteed to be returned in order, so sort them
+      // so all locales see them in the same order.
+      qsort(ranks, count, sizeof(int), compareRanks);
+      *rank = -1;
+      for (int i = 0; i < count; i++) {
+        if (ranks[i] == chpl_nodeID) {
+          *rank = i;
+          break;
+        }
       }
-      count++;
+      sys_free(ranks);
     }
+    DBG_PRINTF(DBG_OOB, "got rank info from PMI");
+  } else {
+
+    // Do an allgather of hostname hashes to determine the locales on the same
+    // node as us assumes each hostname has a unique hash
+
+    char hostname[HOST_NAME_MAX+1];
+    int rc = gethostname(hostname, sizeof(hostname));
+    CHK_TRUE(rc == 0);
+
+    uint64_t hash = 0;
+    for (int i = 0; i < sizeof(hostname); i++) {
+      char c = hostname[i];
+      if (c == '\0') {
+        break;
+      }
+      // The hash code is borrowed from gasnet including the comment.
+      // See third-party/gasnet/gasnet-src/license.txt.
+
+      /* The "c = ..." squeezes ASCII down to 6 bits, while encoding
+       * all chars valid in hostnames and IP addresses (IPV4 and IPV6).
+       * A unique value is assigned to each of the digits, the lower
+       * case letters, '-', '.' and ':'.  The upper case letters map
+       * to the same values as the corresponding lower-case.
+       */
+      c = ((c & 0x40) >> 1) | (c & 0x1f);
+      hash = ((hash << 6) | ((hash >> 58) & 0x3F)) ^ c;
+    }
+
+    // get the hashes for all locales
+
+    locale_info_t info;
+    info.hash = hash;
+    DBG_PRINTF(DBG_OOB, "PMI2 OOB chpl_nodeID %d", chpl_nodeID);
+    info.nodeID = chpl_nodeID;
+    locale_info_t *infos = NULL;
+    CHK_SYS_CALLOC(infos, chpl_numNodes);
+    chpl_comm_ofi_oob_allgather(&info, infos, sizeof(*infos));
+
+    // count the number of hashes that match ours
+
+    for (int i = 0; i < chpl_numNodes; i++) {
+      if (infos[i].hash == hash) {
+        if ((rank != NULL) && (infos[i].nodeID == chpl_nodeID)) {
+          // record our rank among the locales on the same node
+          *rank = count;
+        }
+        count++;
+      }
+    }
+    CHK_SYS_FREE(infos);
   }
-  CHK_SYS_FREE(infos);
   DBG_PRINTF(DBG_OOB, "PMI2 OOB locales on node: %d", count);
   if (rank != NULL) {
     DBG_PRINTF(DBG_OOB, "PMI2 OOB local rank: %d", *rank);

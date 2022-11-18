@@ -61,6 +61,7 @@
 #define _DBG_P(f, ...)
 #endif
 
+static chpl_bool initialized = false;
 static chpl_bool haveTopology = false;
 
 static hwloc_topology_t topology;
@@ -96,6 +97,8 @@ static void chpl_topo_setMemLocalityByPages(unsigned char*, size_t,
 // CPU reservation must happen before CPU information is returned to other
 // layers.
 static chpl_bool okToReserveCPU = true;
+
+static chpl_bool oversubscribed = false;
 
 //
 // Error reporting.
@@ -309,32 +312,41 @@ void chpl_topo_post_comm_init(void) {
     int numSockets = hwloc_get_nbobjs_inside_cpuset_by_type(topology,
                           root->cpuset, HWLOC_OBJ_PACKAGE);
     if (numSockets != numLocalesOnNode) {
-      char msg[100];
-      snprintf(msg, sizeof(msg), "The number of locales on the node does not "
-               "equal the number of sockets (%d != %d).", numLocalesOnNode,
-               numSockets);
-      chpl_error(msg, 0, 0);
-    }
 
-    // Each locale gets its own socket.
+      // If CHPL_RT_LOCALES_PER_NODE is set then the number of locales
+      // must equal the number of sockets.
+      if (chpl_env_rt_get("LOCALES_PER_NODE", NULL) != NULL) {
+        char msg[100];
+        snprintf(msg, sizeof(msg), "The number of locales on the node does "
+                 "not equal the number of sockets (%d != %d).",
+                 numLocalesOnNode, numSockets);
+        chpl_error(msg, 0, 0);
+      } else {
+        // We are oversubscribed.
+        oversubscribed = true;
+      }
+    } else {
 
-    hwloc_obj_t socket = hwloc_get_obj_inside_cpuset_by_type(topology,
-                              root->cpuset, HWLOC_OBJ_PACKAGE, rank);
-    CHK_ERR(socket != NULL);
+      // Each locale gets its own socket.
 
-    _DBG_P("using socket %d", socket->logical_index);
+      hwloc_obj_t socket = hwloc_get_obj_inside_cpuset_by_type(topology,
+                                root->cpuset, HWLOC_OBJ_PACKAGE, rank);
+      CHK_ERR(socket != NULL);
 
-    // Limit the accessible PUs to those in our socket.
+      _DBG_P("using socket %d", socket->logical_index);
 
-    hwloc_bitmap_and(logAccSet, logAccSet, socket->cpuset);
-    numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
-    CHK_ERR(numCPUsLogAcc > 0);
+      // Limit the accessible PUs to those in our socket.
+
+      hwloc_bitmap_and(logAccSet, logAccSet, socket->cpuset);
+      numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
+      CHK_ERR(numCPUsLogAcc > 0);
 #ifdef DEBUG
-    char buf[1024];
-    hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
-    _DBG_P("numCPUsLogAcc: %d logAccSet: %s", numCPUsLogAcc, buf);
+      char buf[1024];
+      hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
+      _DBG_P("numCPUsLogAcc: %d logAccSet: %s", numCPUsLogAcc, buf);
 #endif
-    root = socket;
+      root = socket;
+    }
   }
 
 // accessible cores
@@ -396,6 +408,7 @@ void chpl_topo_post_comm_init(void) {
   hwloc_bitmap_list_snprintf(buf, sizeof(buf), physAccSet);
   _DBG_P("%d numCPUsPhysAcc: %d physAccSet: %s", getpid(), numCPUsPhysAcc, buf);
 #endif
+    initialized = true;
 }
 
 
@@ -819,6 +832,11 @@ int chpl_topo_bindCPU(int id) {
   return status;
 }
 
+chpl_bool chpl_topo_isOversubscribed(void) {
+  CHK_ERR(initialized);
+  _DBG_P("oversubscribed = %s\n", oversubscribed ? "True" : "False");
+  return oversubscribed;
+}
 
 static
 void chk_err_fn(const char* file, int lineno, const char* what) {

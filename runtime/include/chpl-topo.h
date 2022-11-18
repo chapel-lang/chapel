@@ -146,6 +146,11 @@ void chpl_topo_touchMemFromSubloc(void*, size_t, chpl_bool, c_sublocid_t);
 //
 c_sublocid_t chpl_topo_getMemLocality(void*);
 
+//
+// Returns True if the node is oversubscribed (locales are sharing
+// cores).
+chpl_bool chpl_topo_isOversubscribed(void);
+
 
 #ifdef __cplusplus
 } // end extern "C"
