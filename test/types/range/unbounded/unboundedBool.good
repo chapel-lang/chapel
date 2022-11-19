@@ -1,8 +1,1 @@
-false
-true
-0
-1
-false
-true
-0
-1
+unboundedBool.chpl:3: error: can't query the low bound of a range without one
