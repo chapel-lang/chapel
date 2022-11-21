@@ -1,5 +1,8 @@
 ─── syntax in stringLiteralEOF.chpl:1 [Parsing] ───
   End-of-line in a string literal without a preceding backslash.
+      |
+    1 | var x : string = "unterminated
+      |
 
 ─── syntax in stringLiteralEOF.chpl:1 [StringLiteralEOF] ───
   End-of-file in string literal.

@@ -37,7 +37,12 @@ namespace chpl {
  */
 class ErrorMessage final {
  public:
-  enum Kind { NOTE, WARNING, SYNTAX, ERROR };
+  enum Kind {
+    NOTE,
+    WARNING,
+    SYNTAX,
+    ERROR
+  };
 
  private:
   Kind kind_;

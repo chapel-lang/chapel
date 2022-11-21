@@ -578,7 +578,8 @@ void ErrorCannotAttachPragmas::write(ErrorWriterBase& wr) const {
 void ErrorInvalidIndexExpr::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   wr.heading(kind_, type_, loc,
-             "only identifiers or tuples are allowed as index expressions.");
+             "only identifiers or tuples of identifiers are allowed as index "
+             "expressions.");
   wr.message("Invalid index expression used here:");
   wr.code(loc);
 }
@@ -588,7 +589,7 @@ void ErrorRecordInheritanceNotSupported::write(ErrorWriterBase& wr) const {
   auto recordName = std::get<std::string>(info);
   wr.heading(kind_, type_, loc,
              "inheritance is not currently supported for records.");
-  wr.note(loc, recordName, " declared as a record here");
+  wr.note(loc, recordName, " declared as a record here:");
   wr.code(loc);
   wr.message(
       "Thoughts on what record inheritance should entail can be added to "
@@ -643,9 +644,9 @@ void ErrorUseImportNeedsModule::write(ErrorWriterBase& wr) const {
   auto isImport = std::get<bool>(info);
   std::string useOrImport = isImport ? "import" : "use";
   wr.heading(kind_, type_, loc, "'", useOrImport,
-             "' statements must refer to module", (isImport ? "" : " or enum"),
-             " symbols.");
-  wr.message("In the following ", useOrImport, " statement:");
+             "' statements must refer to module",
+             (isImport ? "" : " or 'enum'"), " symbols.");
+  wr.message("In the following '", useOrImport, "' statement:");
   wr.code(loc);
 }
 
@@ -730,10 +731,10 @@ void ErrorCommentEOF::write(ErrorWriterBase& wr) const {
   auto startLoc = std::get<1>(info);
   auto nestedLoc = std::get<2>(info);
   wr.heading(kind_, type_, loc, "end-of-file in comment.");
-  wr.note(startLoc, "unterminated comment here");
+  wr.note(startLoc, "unterminated comment here:");
   wr.code(startLoc);
   if (!nestedLoc.isEmpty()) {
-    wr.note(nestedLoc, "nested comment here");
+    wr.note(nestedLoc, "nested comment here:");
     wr.code(nestedLoc);
   }
 }

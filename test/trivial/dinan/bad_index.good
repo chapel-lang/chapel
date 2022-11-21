@@ -1,1 +1,1 @@
-bad_index.chpl:1: syntax error: only identifiers or tuples are allowed as index expressions
+bad_index.chpl:1: syntax error: only identifiers or tuples of identifiers are allowed as index expressions

@@ -1,6 +1,6 @@
 ─── syntax in useImportNeedsModule.chpl:1 [UseImportNeedsModule] ───
-  'use' statements must refer to module or enum symbols.
-  In the following use statement:
+  'use' statements must refer to module or 'enum' symbols.
+  In the following 'use' statement:
       |
     1 | use "not a module";
       |

@@ -1,6 +1,6 @@
 ─── syntax in recordInheritanceNotSupported.chpl:5 [RecordInheritanceNotSupported] ───
   Inheritance is not currently supported for records.
-  Bar declared as a record here
+  Bar declared as a record here:
       |
     5 | record Bar : Foo {
       |
