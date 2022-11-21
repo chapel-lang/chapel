@@ -20,7 +20,8 @@
 
 # Warnings squashed for generated code
 # 592 : squelch use-before-def problems -- we'll rely on valgrind to catch them
-CRAYPE_GEN_CFLAGS = -wr592
+# commenting out as part of a fix to ignore icc warning "icc: remark #10441". 
+# CRAYPE_GEN_CFLAGS = -wr592
 CRAYPE_COMP_CXXFLAGS =
 
 

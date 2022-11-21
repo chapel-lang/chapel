@@ -74,7 +74,7 @@ COMP_CXXFLAGS_NONCHPL = -wr111,193,1418,1419,2215,2259,170 -Wno-error
 COMP_CXXFLAGS_NONCHPL+= -diag-disable 10441 
 RUNTIME_CFLAGS = $(C_STD) $(CPPFLAGS) $(CFLAGS) -wr181,188
 RUNTIME_CXXFLAGS = $(CXX_STD) $(CPPFLAGS) $(CXXFLAGS)
-GEN_CFLAGS = $(C_STD) -wr592
+GEN_CFLAGS = $(C_STD) 
 # NOTE: These are only supported for Linux
 GEN_STATIC_FLAG = -static-intel -static-libgcc -static
 GEN_DYNAMIC_FLAG = -Bdynamic
