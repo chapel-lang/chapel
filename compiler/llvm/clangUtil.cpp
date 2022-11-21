@@ -2132,7 +2132,7 @@ void finishCodegenLLVM() {
   // Now overwrite the value of llvm.ident to show Chapel
   char version[128];
   char chapel_string[256];
-  get_version(version);
+  get_version(version, sizeof(version));
   snprintf(chapel_string, 256, "Chapel version %s", version);
   info->module->getNamedMetadata("llvm.ident")->setOperand(0,
     llvm::MDNode::get(info->module->getContext(),

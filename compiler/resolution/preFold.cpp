@@ -2374,7 +2374,7 @@ static Expr* preFoldNamed(CallExpr* call) {
         USR_FATAL(call, "type index expression '%" PRId64 "' out of bounds (0..%d)", index, at->fields.length-2);
       }
 
-      sprintf(field, "x%" PRId64, index);
+      snprintf(field, sizeof(field), "x%" PRId64, index);
 
       retval = new SymExpr(sym->type->getField(field)->type->symbol);
       call->replace(retval);
@@ -2712,20 +2712,20 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
   bool error = false;
 
   if (get_int(call->get(3), &index)) {
-    sprintf(field, "x%" PRId64, index);
+    snprintf(field, sizeof(field), "x%" PRId64, index);
     if (index < 0 || index >= baseType->fields.length-1) {
       USR_FATAL_CONT(call, "tuple index %" PRId64 " is out of bounds", index);
       if (index < 0) zero_error = true;
       error = true;
     }
   } else if (get_uint(call->get(3), &uindex)) {
-    sprintf(field, "x%" PRIu64, uindex);
+    snprintf(field, sizeof(field), "x%" PRIu64, uindex);
     if (uindex >= (unsigned long)baseType->fields.length-1) {
       USR_FATAL_CONT(call, "tuple index %" PRIu64 " is out of bounds", uindex);
       error = true;
     }
   } else if (get_bool(call->get(3), &uindex)) {
-    sprintf(field, "x%" PRIu64, uindex);
+    snprintf(field, sizeof(field), "x%" PRIu64, uindex);
     if (uindex >= (unsigned long)baseType->fields.length-1) {
       USR_FATAL_CONT(call, "tuple index %" PRIu64 " is out of bounds", uindex);
       error = true;

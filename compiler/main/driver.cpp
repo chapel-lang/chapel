@@ -383,7 +383,7 @@ static void setupChplHome(const char* argv0) {
   char        majMinorVers[64];
 
   // Get major.minor version string (used below)
-  get_major_minor_version(majMinorVers);
+  get_major_minor_version(majMinorVers, sizeof(majMinorVers));
 
   // Get the executable path.
   guess = findProgramPath(argv0);
@@ -577,7 +577,7 @@ static void recordCodeGenStrings(int argc, char* argv[]) {
     if (arg)
       compileCommand = astr(compileCommand, arg, " ");
   }
-  get_version(compileVersion);
+  get_version(compileVersion, sizeof(compileVersion));
 }
 
 void setHome(const ArgumentDescription* desc, const char* arg) {

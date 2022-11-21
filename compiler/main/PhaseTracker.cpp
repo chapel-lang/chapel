@@ -313,7 +313,7 @@ void Phase::ReportPass(unsigned long now) const
   {
     char text[32];
 
-    sprintf(text, "  [%9d]", lastNodeIDUsed());
+    snprintf(text, sizeof(text), "  [%9d]", lastNodeIDUsed());
 
     ReportText(text);
   }

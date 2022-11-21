@@ -63,7 +63,7 @@ const char* astr(UniqueString s)
 const char*
 istr(int i) {
   char s[64];
-  if (sprintf(s, "%d", i) > 63)
+  if (snprintf(s, sizeof(s), "%d", i) > 63)
     INT_FATAL("istr buffer overflow");
   return astr(s);
 }

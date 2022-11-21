@@ -15,11 +15,12 @@ static int nc_inq_dimlen_WAR(int ncid, int dimid, void* dimlens) {
 char hexstr[19];
 
 static const char* float_to_hex(float x) {
-  sprintf(hexstr, "0x%8x", *(unsigned int*)&x);
+  snprintf(hexstr, sizeof(hexstr), "0x%8x", *(unsigned int*)&x);
   return hexstr;
 }
 
 static const char* double_to_hex(double x) {
-  sprintf(hexstr, "0x%.8x%.8x", ((unsigned int*)&x)[1], ((unsigned int*)&x)[0]);
+  snprintf(hexstr, sizeof(hexstr), "0x%.8x%.8x", ((unsigned int*)&x)[1],
+           ((unsigned int*)&x)[0]);
   return hexstr;
 }
