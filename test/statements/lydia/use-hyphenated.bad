@@ -1,1 +1,1 @@
-use-hyphenated.chpl:1: syntax error: syntax error near 'module'
+use-hyphenated.chpl:1: syntax error: near 'module'
