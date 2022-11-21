@@ -830,16 +830,18 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
 }
 
 static const Scope* handleSuperMaybeError(Context* context,
-                                          const Scope* scopeToAdvanceFrom,
-                                          const Scope* scopeForOrigin,
+                                          const Scope* scope,
                                           const AstNode* expr,
                                           VisibilityStmtKind kind) {
-  auto ret = scopeToAdvanceFrom->parentModuleScope();
+  // There was a problem - we already walked off the top of the scope stack.
+  if (!scope) return nullptr;
+
+  auto ret = scope->parentModuleScope();
 
   if (!ret) {
-    auto currentModScope = scopeForOrigin->moduleScope();
-    assert(currentModScope);
-    auto ast = parsing::idToAst(context, currentModScope->id());
+    auto modScope = scope->moduleScope();
+    assert(modScope);
+    auto ast = parsing::idToAst(context, modScope->id());
     assert(ast && ast->isModule());
     auto mod = ast->toModule();
     CHPL_REPORT(context, SuperFromTopLevelModule, expr, mod, kind);
@@ -864,8 +866,7 @@ findUseImportTarget(Context* context,
 
     if (ident->name() == USTR("super")) {
       auto ret = handleSuperMaybeError(context,
-                                       scope, // scopeToAdvanceFrom
-                                       scope, // scopeForOrigin
+                                       scope,
                                        expr,
                                        useOrImport);
       return ret;
@@ -883,13 +884,10 @@ findUseImportTarget(Context* context,
     // TODO: 'this.this'?
     if (dot->field() == USTR("super")) {
 
-      // TODO: In production this case is the same as the above, but maybe
-      // they ought to be different. Technically, this isn't trying to
-      // use 'super' from a top-level module - it's actually just adding
-      // one too many 'super' to the chain.
+      // Note that it is possible for 'innerScope' to be 'nullptr' already,
+      //  in which case we will not emit an error for this component.
       auto ret = handleSuperMaybeError(context,
-                                       innerScope, // scopeToAdvanceFrom
-                                       scope,      // scopeForOrigin
+                                       innerScope,
                                        expr,
                                        useOrImport);
       return ret;
