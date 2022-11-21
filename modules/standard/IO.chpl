@@ -5362,10 +5362,10 @@ proc _channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
 */
 proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
   var e:errorCode = 0,
-      s_:string;
+      s_:string,
+      len:int(64);
 
   on this._home {
-    var len: int(64);
     var tx: c_string;
     e = qio_channel_read_string(false, ioendian.native: c_int,
                                     qio_channel_str_style(this._channel_internal),
@@ -5398,10 +5398,10 @@ proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
 */
 proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
   var e:errorCode = 0,
-      b_:bytes;
+      b_:bytes,
+      len:int(64);
 
   on this._home {
-    var len: int(64);
     var tx: c_string;
     e = qio_channel_read_string(false, ioendian.native: c_int,
                                     qio_channel_str_style(this._channel_internal),
