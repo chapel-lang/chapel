@@ -83,7 +83,7 @@ module ChainTable {
 
         proc clear() {
             for i in 0..numLocalBucketSlots do this.localEntries[i].status = entryStatus.deleted;
-            delete this.chainHead;
+            this.chainHead = nil;
         }
 
         // determine if this bucket has a 'full' entry with the given key.
