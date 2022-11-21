@@ -313,6 +313,9 @@ bool fDynoScopeBundled = false;
 bool fDynoDebugTrace = false;
 size_t fDynoBreakOnHash = 0;
 
+std::vector<std::string> gDynoPrependInternalModulePaths;
+std::vector<std::string> gDynoPrependStandardModulePaths;
+
 int fGPUBlockSize = 0;
 char fCUDAArch[16] = "sm_60";
 
@@ -1204,6 +1207,9 @@ static ArgumentDescription arg_desc[] = {
  {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
  {"memory-frees", ' ', NULL, "Enable [disable] memory frees in the generated code", "n", &fNoMemoryFrees, "CHPL_DISABLE_MEMORY_FREES", NULL},
  {"override-checking", ' ', NULL, "[Don't] check use of override keyword", "N", &fOverrideChecking, NULL, NULL},
+ // These flags enable us to diagnose problems with our internal modules in
+ // the field by swapping in updated variants. This is useful in situations
+ // where the end user is unable to upgrade their Chapel installation.
  {"prepend-internal-module-dir", ' ', "<directory>", "Prepend directory to internal module search path", "P", NULL, NULL, addInternalModulePath},
  {"prepend-standard-module-dir", ' ', "<directory>", "Prepend directory to standard module search path", "P", NULL, NULL, addStandardModulePath},
  {"preserve-inlined-line-numbers", ' ', NULL, "[Don't] Preserve file names/line numbers in inlined code", "N", &preserveInlinedLineNumbers, "CHPL_PRESERVE_INLINED_LINE_NUMBERS", NULL},
@@ -1829,6 +1835,8 @@ int main(int argc, char* argv[]) {
                                           CHPL_COMM,
                                           CHPL_SYS_MODULES_SUBDIR,
                                           chpl_module_path,
+                                          gDynoPrependInternalModulePaths,
+                                          gDynoPrependStandardModulePaths,
                                           cmdLineModPaths,
                                           getChplFilenames());
 

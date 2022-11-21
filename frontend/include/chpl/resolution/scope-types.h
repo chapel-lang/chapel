@@ -315,6 +315,13 @@ class Scope {
       or if it is a module scope, this scope. */
   const Scope* moduleScope() const;
 
+  /** Return the parent module of the module containing
+      this scope. This is equivalent to:
+
+      'scope->moduleScope()->parentScope()->moduleScope()'
+   */
+  const Scope* parentModuleScope() const;
+
   /** Returns the AST tag of the construct that this Scope represents. */
   uast::asttags::AstTag tag() const { return tag_; }
 

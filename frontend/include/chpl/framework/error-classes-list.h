@@ -85,3 +85,7 @@ ERROR_CLASS(ProcTypeUnannotatedFormal,
 ERROR_CLASS(ProcDefExplicitAnonFormal,
     const uast::Function*,
     const uast::Formal*)
+ERROR_CLASS(SuperFromTopLevelModule,
+    const uast::AstNode*,
+    const uast::Module*,
+    resolution::VisibilityStmtKind)
