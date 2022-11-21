@@ -1,3 +1,6 @@
 ─── syntax in bisonSyntaxErrorNoToken.chpl:1 [BisonSyntaxError] ───
-  (no location given).
+  (no token given):
+      |
+    1 | {;
+      |
 

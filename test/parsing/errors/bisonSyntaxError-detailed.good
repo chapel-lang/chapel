@@ -1,3 +1,6 @@
 ─── syntax in bisonSyntaxError.chpl:1 [BisonSyntaxError] ───
-  Near '"'.
+  Near '"':
+      |
+    1 | writeln"asdf");
+      |
 

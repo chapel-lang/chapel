@@ -561,6 +561,7 @@ void ErrorParsing::write(ErrorWriterBase& wr) const {
   assert(errorMessage.back() == '.' &&
          "expected a period at the end of ErrorParsing message");
   wr.heading(kind_, type_, loc, errorMessage);
+  wr.code(loc);
 }
 
 void ErrorCannotAttachPragmas::write(ErrorWriterBase& wr) const {
@@ -698,9 +699,10 @@ void ErrorBisonSyntaxError::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto nearestToken = std::get<std::string>(info);
   wr.heading(kind_, type_, loc,
-             (nearestToken.empty() ? "(no location given)"
+             (nearestToken.empty() ? "(no token given)"
                                    : "near '" + nearestToken + "'"),
-             ".");
+             ":");
+  wr.code(loc);
 }
 
 /* lexer errors */
