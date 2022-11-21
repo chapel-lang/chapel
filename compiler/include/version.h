@@ -23,8 +23,8 @@
 
 #include <string>
 
-void get_version(char * buf);
-void get_major_minor_version(char * buf);
+void get_version(char * buf, size_t bufsize);
+void get_major_minor_version(char * buf, size_t bufsize);
 const char* get_configured_prefix();
 
 int get_major_version();
