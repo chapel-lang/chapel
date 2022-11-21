@@ -131,7 +131,8 @@ IEEE_FLOAT_GEN_CFLAGS = -fp-model precise -fp-model source
 WARN_CXXFLAGS = -Wall -Werror -diag-disable remark -wr279,304,593,810,869,981,1572,1599 -diag-warning 3924
 WARN_CFLAGS = $(WARN_CXXFLAGS)
 WARN_GEN_CFLAGS = $(WARN_CFLAGS)
-SQUASH_WARN_GEN_CFLAGS = -wr111,167,174,177
+# As part of the fix to ignore icc icc: remark #10441: Commenting out to ignore the below flags 
+# SQUASH_WARN_GEN_CFLAGS = -wr111,167,174,177
 
 #
 # Don't warn for signed pointer issues (ex. c_ptr(c_char) )
