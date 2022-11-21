@@ -21,7 +21,7 @@ var numer, accum, denom, tmp1, tmp2: mpz_t;
 
 proc main
 {
-  var t: Timer;
+  var t: stopwatch;
 
   if perfTest then t.start();
   // Produce the number of digits of Pi specified in n.

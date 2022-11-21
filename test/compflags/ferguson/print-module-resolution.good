@@ -160,8 +160,6 @@ ChapelAutoLocalAccess
   from print-module-resolution.ChapelStandard.ChapelAutoLocalAccess
 ChapelIO
   from print-module-resolution.ChapelStandard.ChapelIO
-LocaleTree
-  from print-module-resolution.ChapelStandard.LocaleTree
 ChapelTaskID
   from print-module-resolution.ChapelStandard.ChapelTaskID
 ChapelTaskTable

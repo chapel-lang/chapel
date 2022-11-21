@@ -26,7 +26,7 @@ proc main() {
   writeln("Main table size = 2**", logTableSize, " = ", tableSize, " words");
   writeln("Number of updates = ", numUpdates);
 
-  var timer: Timer;
+  var timer: stopwatch;
   timer.start();
   randomAccessUpdate();
   timer.stop();

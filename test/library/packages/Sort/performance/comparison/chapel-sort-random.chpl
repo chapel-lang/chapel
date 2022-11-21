@@ -11,7 +11,7 @@ proc main() {
 
   fillRandom(A);
 
-  var timer:Timer;
+  var timer:stopwatch;
   timer.start();
   sort(A);
   timer.stop();

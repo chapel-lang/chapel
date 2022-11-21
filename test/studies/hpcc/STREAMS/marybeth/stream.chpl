@@ -49,7 +49,7 @@ var curGBs: real;
 param seed = 314159265;
 
 proc main() {
-  var clock: Timer;
+  var clock: stopwatch;
 
   initStreamVectors();
 

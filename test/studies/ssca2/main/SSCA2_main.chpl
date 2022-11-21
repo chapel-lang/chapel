@@ -91,8 +91,8 @@ module SSCA2_main
     
   proc main () {
 
-    var stopwatch : Timer;
-    if PRINT_TIMING_STATISTICS then stopwatch.start ();
+    var sw : stopwatch;
+    if PRINT_TIMING_STATISTICS then sw.start ();
 
     var graph_types = {graph_type.RMAT_associative..graph_type.Torus_4D};
 
@@ -188,8 +188,8 @@ module SSCA2_main
 
 
     if PRINT_TIMING_STATISTICS then {
-      stopwatch.stop ();
-      writeln ( "Elapsed time for SSCA#2: ", stopwatch.elapsed (), " seconds");
+      sw.stop ();
+      writeln ( "Elapsed time for SSCA#2: ", sw.elapsed (), " seconds");
     }
 
   } // end of main

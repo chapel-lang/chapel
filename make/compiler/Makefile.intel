@@ -71,7 +71,6 @@ CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
 
 COMP_CXXFLAGS = $(CXX_STD) $(CPPFLAGS) $(CXXFLAGS)
 COMP_CXXFLAGS_NONCHPL = -wr111,193,1418,1419,2215,2259,170 -Wno-error
-COMP_CXXFLAGS_NONCHPL+= -diag-disable 10441 
 RUNTIME_CFLAGS = $(C_STD) $(CPPFLAGS) $(CFLAGS) -wr181,188
 RUNTIME_CXXFLAGS = $(CXX_STD) $(CPPFLAGS) $(CXXFLAGS)
 GEN_CFLAGS = $(C_STD) 
@@ -130,7 +129,6 @@ IEEE_FLOAT_GEN_CFLAGS = -fp-model precise -fp-model source
 #  177 : warns about unused variable declarations
 
 WARN_CXXFLAGS = -Wall -Werror -diag-disable remark -wr279,304,593,810,869,981,1572,1599 -diag-warning 3924
-WARN_CXXFLAGS+= -diag-disable 10441
 WARN_CFLAGS = $(WARN_CXXFLAGS)
 WARN_GEN_CFLAGS = $(WARN_CFLAGS)
 SQUASH_WARN_GEN_CFLAGS = -wr111,167,174,177

@@ -19,7 +19,7 @@ const space = 1..n;
 var data : [space] elemType;
 var x : elemType = 2;
 
-var time : Timer;
+var time : stopwatch;
 time.start();
 if zipIter {
   forall (i, j) in zip(data, data) with (ref x) do

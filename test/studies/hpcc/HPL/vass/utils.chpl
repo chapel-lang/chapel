@@ -174,7 +174,7 @@ record VTimerG {
   }
 
   // implementation
-  var timer: Timer;
+  var timer: stopwatch;
   var hasBeenStarted: bool = false;
   var invCount = 0;
   var totElapsed = 0:real;

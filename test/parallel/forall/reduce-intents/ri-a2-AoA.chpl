@@ -7,7 +7,7 @@ const pDomain = {0..#n_bodies};
 
 config const printTimings = false;
 use Time;
-var timer: Timer;
+var timer: stopwatch;
 var snapshot, completion: real;
 proc snapTime() { snapshot = timer.elapsed(); }
 timer.start();

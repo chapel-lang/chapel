@@ -18,8 +18,8 @@ module CheckHttp {
 
     writeln("checking served files match");
 
-    /* for f in findfiles() but for #18218 */
-    var files = findfiles();
+    /* for f in findFiles() but for #18218 */
+    var files = findFiles();
     for f in files {
       if f.endsWith(".txt") ||
         f.endsWith(".htm") || f.endsWith(".html") ||

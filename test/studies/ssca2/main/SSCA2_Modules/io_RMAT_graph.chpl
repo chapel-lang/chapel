@@ -38,8 +38,8 @@ proc Writeout_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
   writeln("writing RMAT graph with ", graphNumVertices(G), " vertices, ",
         graphTotalEdges(G), " edges to '", snapshot_prefix, "'*");
 
-  var stopwatch : Timer;
-  if PRINT_TIMING_STATISTICS then stopwatch.start ();
+  var sw : stopwatch;
+  if PRINT_TIMING_STATISTICS then sw.start ();
 
   param wri = true;
 
@@ -97,10 +97,10 @@ proc Writeout_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
   sta.close();
 
   if PRINT_TIMING_STATISTICS then {
-    stopwatch.stop ();
-    writeln ( "Elapsed time for writing RMAT graph: ", stopwatch.elapsed (),
+    sw.stop ();
+    writeln ( "Elapsed time for writing RMAT graph: ", sw.elapsed (),
               " seconds");
-    stopwatch.clear ();
+    sw.clear ();
   }
 
   write("DONE writing RMAT graph");
@@ -132,8 +132,8 @@ proc Readin_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
               then " in parallel, 1 task per locale" else " in parallel",
           " from '", snapshot_prefix, "'*");
 
-  var stopwatch : Timer;
-  if PRINT_TIMING_STATISTICS then stopwatch.start ();
+  var sw : stopwatch;
+  if PRINT_TIMING_STATISTICS then sw.start ();
 
   param rea = false;
 
@@ -243,10 +243,10 @@ repfiles[repfileST2] = createGraphFile(snapshot_prefix, START_FILENAME, rea);
   } // if IOserial
 
   if PRINT_TIMING_STATISTICS then {
-    stopwatch.stop ();
-    writeln ( "Elapsed time for reading RMAT graph: ", stopwatch.elapsed (),
+    sw.stop ();
+    writeln ( "Elapsed time for reading RMAT graph: ", sw.elapsed (),
               " seconds");
-    stopwatch.clear ();
+    sw.clear ();
   }
 
   write("DONE reading RMAT graph");

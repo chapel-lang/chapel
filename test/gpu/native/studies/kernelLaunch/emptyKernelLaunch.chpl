@@ -8,7 +8,7 @@ config const report = false;
 config const granularity = 1000;
 config const n = 1;
 
-var t = new Timer();
+var t = new stopwatch();
 
 if validate then startGPUDiagnostics();
 var numLaunches = 0;
