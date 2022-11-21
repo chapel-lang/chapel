@@ -177,7 +177,7 @@ void PhaseTracker::ReportTotal() const
   unsigned long lastStart = 0;
   unsigned long passTime;
   size_t numMetapasses = sizeof(passGroups) / sizeof(passGroups[0]);
-  for (int i = 0; i < numMetapasses; i++) {
+  for (size_t i = 0; i < numMetapasses; i++) {
     const char* groupName = passGroups[i][0];
     const char* groupLastPhase = passGroups[i][1];
 
