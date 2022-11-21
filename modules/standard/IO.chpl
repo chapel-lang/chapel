@@ -5238,7 +5238,6 @@ proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
 
    :throws SystemError: Thrown if an error occurred reading the number.
  */
-
 proc _channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native):bool throws {
   var e:errorCode = 0;
 
@@ -5288,6 +5287,179 @@ proc _channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
   return rv;
 }
 
+/*
+   Read a specified number of codepoints into a :type:`~String.string`
+
+   The string ``s`` may be smaller than ``maxSize`` if EOF is reached before
+   reading the specified number of codepoints. Additionally, if nothing
+   is read from the fileReader, ``s`` will be set to ``""`` (the empty string)
+   and the method will return ``false``.
+
+   .. note::
+
+      This method always uses UTF-8 encoding regardless of the fileReader's
+      configuration
+
+   :arg s: the string to read into — this value is overwritten
+   :arg maxSize: the number of codepoints to read from the fileReader
+   :returns: `false` if EOF is reached before reading anything, `true` otherwise
+
+   :throws SystemError: Thrown if an error occurred while reading from the fileReader.
+*/
+proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
+  var e:errorCode = 0,
+      s_:string,
+      len:int(64);
+
+  on this._home {
+    var tx: c_string;
+    e = qio_channel_read_string(false, ioendian.native: c_int,
+                                    qio_channel_str_style(this._channel_internal),
+                                    this._channel_internal, tx, len, maxSize);
+    s_ = try! createStringWithOwnedBuffer(tx, length=len);
+  }
+  s = s_.localize();
+
+  if e == EEOF {
+    return if len > 0 then true else false;
+  } else if e != 0 {
+    throw createSystemError(e);
+  }
+  return true;
+}
+
+/*
+   Read a specified number of bytes into a :type:`~Bytes.bytes`
+
+   The bytes ``b`` may be smaller than ``maxSize`` if EOF is reached before
+   reading the specified number of bytes. Additionally, if nothing is read
+   from the fileReader, ``b`` will be set to ``b""`` (the empty bytes) and
+   the method will return ``false``.
+
+   :arg b: the bytes to read into — this value is overwritten
+   :arg maxSize: the number of bytes to read from the fileReader
+   :returns: `false` if EOF is reached before reading anything, `true` otherwise
+
+   :throws SystemError: Thrown if an error occurred while reading from the fileReader.
+*/
+proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
+  var e:errorCode = 0,
+      b_:bytes,
+      len:int(64);
+
+  on this._home {
+    var tx: c_string;
+    e = qio_channel_read_string(false, ioendian.native: c_int,
+                                    qio_channel_str_style(this._channel_internal),
+                                    this._channel_internal, tx, len, maxSize);
+    b_ = try! createBytesWithOwnedBuffer(tx, length=len);
+  }
+  b = b_.localize();
+
+  if e == EEOF {
+    return if len > 0 then true else false;
+  } else if e != 0 {
+    throw createSystemError(e);
+  }
+  return true;
+}
+
+/*
+   Read an array of binary numbers from a fileReader
+
+   Binary values of the type ``data.eltType`` are consumed from the fileReader
+   until ``data`` is full or EOF is reached. An :class:`~OS.UnexpectedEofError`
+   is thrown if EOF is reached before the array is filled.
+
+   Note that this routine currently requires a 1D rectangular non-strided array.
+
+   :arg data: an array to read into – existing values are overwritten.
+   :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
+              to read the numbers. Defaults to ``ioendian.native``.
+   :returns: `false` if EOF is encountered before reading anything,
+              `true` otherwise
+
+   :throws SystemError: Thrown if an error occurred while reading from the fileReader
+   :throws UnexpectedEofError: Thrown if EOF is encountered before ``data.size`` values are read
+*/
+proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): bool throws
+  where (d.rank == 1 && d.stridable == false) && (
+          isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
+{
+  var e : errorCode = 0,
+      readSomething = false;
+
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    for (i, b) in zip(data.domain, data) {
+      select (endian) {
+        when ioendian.native {
+          e = try _read_binary_internal(this._channel_internal, iokind.native, b);
+        }
+        when ioendian.big {
+          e = try _read_binary_internal(this._channel_internal, iokind.big,    b);
+        }
+        when ioendian.little {
+          e = try _read_binary_internal(this._channel_internal, iokind.little, b);
+        }
+      }
+
+      if e == EEOF {
+        if i == data.domain.first {
+          break;
+        } else {
+          throw new owned UnexpectedEofError("Unable to read entire array of values in 'readBinary'");
+        }
+      } else if e != 0 {
+        throw createSystemError(e);
+      } else {
+        readSomething = true;
+      }
+    }
+  }
+
+  return readSomething;
+}
+
+/*
+   Read an array of binary numbers from a fileReader
+
+   Binary values of the type ``data.eltType`` are consumed from the fileReader
+   until ``data`` is full or EOF is reached. An :class:`~OS.UnexpectedEofError`
+   is thrown if EOF is reached before the array is filled.
+
+   Note that this routine currently requires a 1D rectangular non-strided array.
+
+   :arg data: an array to read into – existing values are overwritten.
+   :arg endian: :type:`ioendian` specifies the byte order in which
+              to read the number.
+   :returns: `false` if EOF is encountered before reading anything,
+              `true` otherwise
+
+   :throws SystemError: Thrown if an error occurred while reading the from fileReader
+   :throws UnexpectedEofError: Thrown if EOF is encountered before ``data.size`` values are read
+*/
+proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
+  where (d.rank == 1 && d.stridable == false) && (
+          isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
+{
+  var rv: bool = false;
+
+  select (endian) {
+    when ioendian.native {
+      rv = this.readBinary(data, ioendian.native);
+    }
+    when ioendian.big {
+      rv = this.readBinary(data, ioendian.big);
+    }
+    when ioendian.little {
+      rv = this.readBinary(data, ioendian.little);
+    }
+  }
+
+  return rv;
+}
 
 // Documented in the varargs version
 pragma "no doc"
@@ -5295,7 +5467,6 @@ proc _channel.readln():bool throws {
   var nl = new ioNewline();
   return try this.read(nl);
 }
-
 
 /*
 
