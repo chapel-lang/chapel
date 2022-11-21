@@ -526,7 +526,7 @@ static void test12() {
   assert(reC.toId() == y->id());
 }
 
-void test13() {
+static void test13() {
   printf("test13\n");
   Context context;
   Context* ctx = &context;
