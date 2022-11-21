@@ -103,7 +103,8 @@ module DistributedMap {
                 this.locks[loc.id].lock();
                 const (found, (bucket_idx, chain_idx)) = this.tables[loc.id].getFullSlotFor(k);
                 if !found then boundsCheckHalt("map index " + k:string + " out of bounds");
-                ret = this.tables[loc.id].buckets[bucket_idx][chain_idx].val;
+                ref valref = this.tables[loc.id].buckets[bucket_idx][chain_idx].val;
+                ret = valref;
                 this.locks[loc.id].unlock();
             }
             return ret;
