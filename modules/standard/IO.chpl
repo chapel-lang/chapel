@@ -5361,18 +5361,22 @@ proc _channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
    :throws SystemError: Thrown if an error occurred while reading from the fileReader.
 */
 proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
-  var e:errorCode = 0;
+  var e:errorCode = 0,
+      s_:string;
 
-  var len: int(64);
-  var tx: c_string;
-  e = qio_channel_read_string(false, ioendian.native: c_int,
-                                  qio_channel_str_style(this._channel_internal),
-                                  this._channel_internal, tx, len, maxSize);
-  s = try! createStringWithOwnedBuffer(tx, length=len);
+  on this._home {
+    var len: int(64);
+    var tx: c_string;
+    e = qio_channel_read_string(false, ioendian.native: c_int,
+                                    qio_channel_str_style(this._channel_internal),
+                                    this._channel_internal, tx, len, maxSize);
+    s_ = try! createStringWithOwnedBuffer(tx, length=len);
+  }
+  s = s_.localize();
 
-  if (e == EEOF) {
+  if e == EEOF {
     return if len > 0 then true else false;
-  } else if (e != 0) {
+  } else if e != 0 {
     throw createSystemError(e);
   }
   return true;
@@ -5393,18 +5397,22 @@ proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
    :throws SystemError: Thrown if an error occurred while reading from the fileReader.
 */
 proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
-  var e:errorCode = 0;
+  var e:errorCode = 0,
+      b_:bytes;
 
-  var len: int(64);
-  var tx: c_string;
-  e = qio_channel_read_string(false, ioendian.native: c_int,
-                                  qio_channel_str_style(this._channel_internal),
-                                  this._channel_internal, tx, len, maxSize);
-  b = try! createBytesWithOwnedBuffer(tx, length=len);
+  on this._home {
+    var len: int(64);
+    var tx: c_string;
+    e = qio_channel_read_string(false, ioendian.native: c_int,
+                                    qio_channel_str_style(this._channel_internal),
+                                    this._channel_internal, tx, len, maxSize);
+    b_ = try! createBytesWithOwnedBuffer(tx, length=len);
+  }
+  b = b_.localize();
 
-  if (e == EEOF) {
+  if e == EEOF {
     return if len > 0 then true else false;
-  } else if (e != 0) {
+  } else if e != 0 {
     throw createSystemError(e);
   }
   return true;
