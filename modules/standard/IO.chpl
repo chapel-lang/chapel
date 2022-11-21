@@ -5245,30 +5245,32 @@ proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
   if s.hasEscapes then
     throw createSystemError(EILSEQ, "illegal use of escaped string characters in 'writeBinary'");
 
-  // count the number of bytes to write
-  var sLocal = s.localize();
-  var bytesLen = 0;
-  if size == sLocal.size {
-    bytesLen = s.numBytes;
-  } else {
-    for ((_, cp_byte_len), i) in zip(sLocal._indexLen(), 0..) {
-      if i == size then break;
-      bytesLen += cp_byte_len;
+  on this._home {
+    // count the number of bytes to write
+    var sLocal = s.localize();
+    var bytesLen = 0;
+    if size == sLocal.size {
+      bytesLen = s.numBytes;
+    } else {
+      for ((_, cp_byte_len), i) in zip(sLocal._indexLen(), 0..) {
+        if i == size then break;
+        bytesLen += cp_byte_len;
+      }
     }
+
+    // write the first bytesLen bytes of the string to the fileWriter
+    var e: errorCode = qio_channel_write_string(
+      false,
+      iokind.native: c_int,
+      qio_channel_str_style(this._channel_internal),
+      this._channel_internal,
+      sLocal.c_str(),
+      bytesLen: c_ssize_t
+    );
+
+    if e != 0 then
+      throw createSystemError(e);
   }
-
-  // write the first bytesLen bytes of the string to the fileWriter
-  var e: errorCode = qio_channel_write_string(
-    false,
-    iokind.native: c_int,
-    qio_channel_str_style(this._channel_internal),
-    this._channel_internal,
-    sLocal.c_str(),
-    bytesLen: c_ssize_t
-  );
-
-  if e != 0 then
-    throw createSystemError(e);
 }
 
 /*
@@ -5285,19 +5287,21 @@ proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
   if size > b.size then
     throw new owned IllegalArgumentError("size", "cannot exceed length of provided bytes");
 
-  // write the first size bytes to the fileWriter
-  var bLocal = b.localize();
-  var e: errorCode = qio_channel_write_string(
-    false,
-    iokind.native: c_int,
-    qio_channel_str_style(this._channel_internal),
-    this._channel_internal,
-    bLocal.c_str(),
-    size: c_ssize_t
-  );
+  on this._home {
+    // write the first size bytes to the fileWriter
+    var bLocal = b.localize();
+    var e: errorCode = qio_channel_write_string(
+      false,
+      iokind.native: c_int,
+      qio_channel_str_style(this._channel_internal),
+      this._channel_internal,
+      bLocal.c_str(),
+      size: c_ssize_t
+    );
 
-  if e != 0 then
-    throw createSystemError(e);
+    if e != 0 then
+      throw createSystemError(e);
+  }
 }
 
 /*
