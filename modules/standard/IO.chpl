@@ -5308,20 +5308,22 @@ proc _channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
 */
 proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
   var e:errorCode = 0,
-      s_:string,
-      len:int(64);
+      didRead = false;
 
   on this._home {
-    var tx: c_string;
+    var len: int(64),
+        tx: c_string;
+
     e = qio_channel_read_string(false, ioendian.native: c_int,
                                     qio_channel_str_style(this._channel_internal),
                                     this._channel_internal, tx, len, maxSize);
-    s_ = try! createStringWithOwnedBuffer(tx, length=len);
+
+    if len > 0 then didRead = true;
+    s = try! createStringWithOwnedBuffer(tx, length=len);
   }
-  s = s_.localize();
 
   if e == EEOF {
-    return if len > 0 then true else false;
+    return didRead;
   } else if e != 0 {
     throw createSystemError(e);
   }
@@ -5344,20 +5346,21 @@ proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
 */
 proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
   var e:errorCode = 0,
-      b_:bytes,
-      len:int(64);
+      didRead = false;
 
   on this._home {
-    var tx: c_string;
+    var len: int(64),
+        tx: c_string;
+
     e = qio_channel_read_string(false, ioendian.native: c_int,
                                     qio_channel_str_style(this._channel_internal),
                                     this._channel_internal, tx, len, maxSize);
-    b_ = try! createBytesWithOwnedBuffer(tx, length=len);
+    if len > 0 then didRead = true;
+    b = try! createBytesWithOwnedBuffer(tx, length=len);
   }
-  b = b_.localize();
 
   if e == EEOF {
-    return if len > 0 then true else false;
+    return didRead;
   } else if e != 0 {
     throw createSystemError(e);
   }
