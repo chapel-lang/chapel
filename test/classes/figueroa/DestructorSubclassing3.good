@@ -1,2 +1,2 @@
-DestructorSubclassing3.chpl:10: syntax error: only single inheritance is supported
-DestructorSubclassing3.chpl:19: syntax error: only single inheritance is supported
+DestructorSubclassing3.chpl:10: error: only single inheritance is supported
+DestructorSubclassing3.chpl:19: error: only single inheritance is supported

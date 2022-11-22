@@ -1,1 +1,1 @@
-DestructorSubclassing2.chpl:11: syntax error: only single inheritance is supported
+DestructorSubclassing2.chpl:11: error: only single inheritance is supported

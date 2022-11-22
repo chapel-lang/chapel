@@ -1,4 +1,4 @@
-─── syntax in stringLiteralEOF.chpl:1 [Parsing] ───
+─── syntax in stringLiteralEOF.chpl:1 [ParseSyntax] ───
   End-of-line in a string literal without a preceding backslash.
       |
     1 | var x : string = "unterminated

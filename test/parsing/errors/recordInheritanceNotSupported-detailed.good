@@ -1,4 +1,4 @@
-─── syntax in recordInheritanceNotSupported.chpl:5 [RecordInheritanceNotSupported] ───
+─── error in recordInheritanceNotSupported.chpl:5 [RecordInheritanceNotSupported] ───
   Inheritance is not currently supported for records.
   Bar declared as a record here:
       |

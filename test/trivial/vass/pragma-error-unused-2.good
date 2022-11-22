@@ -1,2 +1,2 @@
-pragma-error-unused-2.chpl:1: syntax error: unknown pragma "this pragma does not apply to any symbols"
+pragma-error-unused-2.chpl:1: error: unknown pragma "this pragma does not apply to any symbols"
 pragma-error-unused-2.chpl:2: syntax error: cannot attach 'pragma's to this statement

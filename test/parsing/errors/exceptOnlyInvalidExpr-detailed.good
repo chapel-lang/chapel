@@ -1,6 +1,6 @@
 ─── syntax in exceptOnlyInvalidExpr.chpl:1 [ExceptOnlyInvalidExpr] ───
   Incorrect expression in 'except' list, identifier expected.
-  In the except list here:
+  In the 'except' list here:
       |
     1 | use OS except "not a symbol";
       |

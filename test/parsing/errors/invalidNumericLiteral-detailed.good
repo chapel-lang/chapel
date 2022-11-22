@@ -1,5 +1,5 @@
 ─── syntax in invalidNumericLiteral.chpl:1 [InvalidNumericLiteral] ───
-  Error building numeric literal: integer literal overflow: '100000000000000000000000000000' is too big for a 64-bit unsigned integer.
+  Integer literal overflow: '100000000000000000000000000000' is too big for a 64-bit unsigned integer.
   Numeric literal encountered here:
       |
     1 | var x : int = 100000000000000000000000000000;

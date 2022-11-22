@@ -1,2 +1,2 @@
-inheritanceError.chpl:5: syntax error: inheritance is not currently supported for records
+inheritanceError.chpl:5: error: inheritance is not currently supported for records
 inheritanceError.chpl:5: note: Bar declared as a record here
