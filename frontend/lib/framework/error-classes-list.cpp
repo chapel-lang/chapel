@@ -463,7 +463,7 @@ void ErrorMultipleEnumElems::write(ErrorWriterBase& wr) const {
   wr.message("An enum cannot have repeated elements of the same name.");
 }
 
-void ErrorInvalidNew::write(ErrorWriterBase& wr) const {
+void ErrorInvalidNewTarget::write(ErrorWriterBase& wr) const {
   auto newExpr = std::get<const uast::New*>(info);
   auto type = std::get<types::QualifiedType>(info);
 
@@ -599,12 +599,12 @@ void ErrorRecordInheritanceNotSupported::write(ErrorWriterBase& wr) const {
 
 void ErrorInvalidNumericLiteral::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
-  auto literalStr = std::get<1>(info);
-  auto errMessage = std::get<2>(info);
+  auto errMessage = std::get<std::string>(info);
   assert(!errMessage.empty());
+  assert(errMessage.back() == '.' &&
+         "expected a period at the end of InvalidNumericLiteral message");
   errMessage[0] = std::tolower(errMessage[0]);
-  wr.heading(kind_, type_, loc, "error building numeric literal: ", errMessage,
-             ".");
+  wr.heading(kind_, type_, loc, errMessage);
   wr.message("Numeric literal encountered here:");
   wr.code(loc);
 }
@@ -630,12 +630,20 @@ void ErrorPreIncDecOp::write(ErrorWriterBase& wr) const {
   wr.code(loc);
 }
 
+void ErrorInvalidNewForm::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto newExpr = std::get<const uast::AstNode*>(info);
+  wr.heading(kind_, type_, loc, "Invalid form for 'new' expression.");
+  wr.message("'new' expression used here:");
+  wr.code(loc, {newExpr});
+}
+
 void ErrorNewWithoutArgs::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto expr = std::get<const uast::AstNode*>(info);
   wr.heading(kind_, type_, loc,
              "'new' expression is missing its argument list.");
-  wr.message("New expression used here:");
+  wr.message("'new' expression used here:");
   wr.code(loc, { expr });
   wr.message("Perhaps you intended to write 'new ", expr, "()' instead?");
 }
@@ -656,7 +664,7 @@ void ErrorExceptOnlyInvalidExpr::write(ErrorWriterBase& wr) const {
   auto limitationKind = std::get<uast::VisibilityClause::LimitationKind>(info);
   wr.heading(kind_, type_, loc, "incorrect expression in '", limitationKind,
              "' list, identifier expected.");
-  wr.message("In the ", limitationKind, " list here:");
+  wr.message("In the '", limitationKind, "' list here:");
   wr.code(loc);
 }
 
@@ -664,14 +672,11 @@ void ErrorLabelIneligibleStmt::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto maybeStmt = std::get<const uast::AstNode*>(info);
   if (!maybeStmt) {
-    wr.heading(kind_, type_, loc, "cannot label statement.");
+    wr.heading(kind_, type_, loc, "cannot label this kind of statement.");
   } else if (maybeStmt->tag() == uast::AstTag::EmptyStmt) {
     // this is the case where there is a semicolon following the label name
     wr.heading(kind_, type_, loc,
                "labels should not be terminated with semicolons.");
-  } else {
-    wr.heading(kind_, type_, loc, "cannot label '",
-               tagToString(maybeStmt->tag()), "' statement.");
   }
   wr.message("Label on ineligible statement here:");
   wr.code(loc);

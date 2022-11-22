@@ -1,1 +1,1 @@
-invalidNumericLiteral.chpl:1: syntax error: error building numeric literal: integer literal overflow: '100000000000000000000000000000' is too big for a 64-bit unsigned integer
+invalidNumericLiteral.chpl:1: syntax error: integer literal overflow: '100000000000000000000000000000' is too big for a 64-bit unsigned integer

@@ -1,0 +1,14 @@
+─── warning in invalidNewForm.chpl:3 [PreIncDecOp] ───
+  '++' is not a pre-increment.
+  Used here:
+      |
+    3 | var a : Foo = new ++Foo();
+      |
+
+─── syntax in invalidNewForm.chpl:3 [InvalidNewForm] ───
+  Invalid form for 'new' expression.
+  'new' expression used here:
+      |
+    3 | var a : Foo = new ++Foo();
+      |
+

@@ -1025,15 +1025,16 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   // TODO: I think we should redundantly store the receiver intent
   // in the function as well as the receiver formal.
   if (!f->isMethod() && fp.thisIntent != Formal::DEFAULT_INTENT) {
-    if (fp.thisIntent == Formal::TYPE)
+    if (fp.thisIntent == Formal::TYPE) {
       CHPL_PARSER_REPORT_SIMPLE(this, location,
                                 "missing type for secondary type method '" +
                                     identName->name().str() + "'.");
-    else
+    } else {
       CHPL_PARSER_REPORT_SIMPLE(
           this, location,
           "'this' intents can only be applied to methods, but '" +
               identName->name().str() + "' is not a method.");
+    }
   }
 
   this->clearComments();
@@ -1289,6 +1290,8 @@ AstNode* ParserContext::buildNewExpr(YYLTYPE location,
                                                  fnCall);
       child.reset(wrappedFn);
       return expr;
+    } else {
+      CHPL_PARSER_REPORT(this, InvalidNewForm, location, expr);
     }
   } else {
     if (expr->isIdentifier() && expr->toIdentifier()->numChildren() == 0) {
@@ -1312,8 +1315,7 @@ AstNode* ParserContext::buildNewExpr(YYLTYPE location,
       // the expression 'a.field'; 'new foo' would require an argument
       // list for 'foo'; and something like 'new __primitive()' just
       // doesn't make any sense...
-      CHPL_PARSER_REPORT_SIMPLE(this, location,
-                                "invalid form for 'new' expression.");
+      CHPL_PARSER_REPORT(this, InvalidNewForm, location, expr);
     }
   }
   auto loc = convertLocation(location);
@@ -1786,8 +1788,8 @@ AstNode* ParserContext::buildNumericLiteral(YYLTYPE location,
     }
 
     if (!err.empty()) {
-      CHPL_PARSER_REPORT(this, InvalidNumericLiteral, location, str.str(), err);
-      ret = ErroneousExpression::build(builder, loc).release();
+      ret =
+          CHPL_PARSER_REPORT(this, InvalidNumericLiteral, location, err + ".");
     } else if (ull <= 9223372036854775807ull) {
       ret = IntLiteral::build(builder, loc, ull, text).release();
     } else {
@@ -1807,8 +1809,8 @@ AstNode* ParserContext::buildNumericLiteral(YYLTYPE location,
     double num = Param::str2double(noUnderscores, noUnderscoresLen, err);
 
     if (!err.empty()) {
-      CHPL_PARSER_REPORT(this, InvalidNumericLiteral, location, str.str(), err);
-      ret = ErroneousExpression::build(builder, loc).release();
+      ret =
+          CHPL_PARSER_REPORT(this, InvalidNumericLiteral, location, err + ".");
     } else if (type == IMAGLITERAL) {
       ret = ImagLiteral::build(builder, loc, num, text).release();
     } else {

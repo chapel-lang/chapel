@@ -1,0 +1,2 @@
+--detailed-errors # invalidNewForm-detailed.good
+--no-detailed-errors # invalidNewForm-brief.good

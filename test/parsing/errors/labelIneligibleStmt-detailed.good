@@ -1,5 +1,5 @@
 ─── syntax in labelIneligibleStmt.chpl:1 [LabelIneligibleStmt] ───
-  Cannot label 'FnCall' statement.
+  Cannot label this kind of statement.
   Label on ineligible statement here:
       |
     1 | label asdf writeln("not a loop");

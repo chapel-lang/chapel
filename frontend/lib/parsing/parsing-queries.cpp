@@ -57,8 +57,7 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
   const ErrorParsing* parseError = nullptr;
   if (!readfile(path.c_str(), text, error)) {
     error = "error reading file: " + error;
-    parseError = ErrorParsing::get(context, {Location(), error});
-    context->report(parseError);
+    context->report(ErrorParsing::get(context, {Location(), error}));
   }
   auto result = FileContents(std::move(text), parseError);
   return QUERY_END(result);
