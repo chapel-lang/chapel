@@ -579,6 +579,8 @@ via the ``str_style`` field in :record:`iostyle`.
   bytes should be read or written.
 
 */
+@unstable
+"iostringstyle is unstable because it supports the unstable type 'iostyle'"
 enum iostringstyle {
   len1b_data = -1,
   len2b_data = -2,
@@ -608,6 +610,8 @@ via the ``string_format`` field in :record:`iostyle`.
   * ``iostringformat.toeof`` means string is as-is; reading reads until
     end of file
 */
+@unstable
+"iostringformat is unstable because it supports the unstable type 'iostyle'"
 enum iostringformat {
   word = 0,
   basic = 1,
