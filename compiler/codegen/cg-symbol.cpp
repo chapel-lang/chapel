@@ -94,6 +94,7 @@ const char* llvmStageName[llvmStageNum::LAST] = {
   "none", //llvmStageNum::NONE
   "basic", //llvmStageNum::BASIC
   "full", //llvmStageNum::FULL
+  "asm", //llvmStageNum::ASM
   "every", //llvmStageNum::EVERY
   "early-as-possible",
   "module-optimizer-early",
@@ -142,6 +143,15 @@ bool shouldLlvmPrintIrCName(const char* name) {
 
 bool shouldLlvmPrintIrFn(FnSymbol* fn) {
   return shouldLlvmPrintIrName(fn->name) || shouldLlvmPrintIrCName(fn->cname);
+}
+
+std::vector<const char*> gatherPrintLlvmIrCNames() {
+  std::vector<const char*> ret;
+  for (auto elt : llvmPrintIrCNames) {
+    ret.push_back(elt);
+  }
+
+  return ret;
 }
 
 #ifdef HAVE_LLVM

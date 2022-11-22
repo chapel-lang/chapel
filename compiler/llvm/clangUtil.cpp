@@ -3805,6 +3805,7 @@ bool getIrDumpExtensionPoint(llvmStageNum_t s,
     case llvmStageNum::BASIC:
     case llvmStageNum::FULL:
     case llvmStageNum::EVERY:
+    case llvmStageNum::ASM:
     case llvmStageNum::LAST:
       return false;
   }
@@ -4294,6 +4295,29 @@ void makeBinaryLLVM(void) {
 
       }
       outputOfile.close();
+
+      if (llvmPrintIrStageNum == llvmStageNum::ASM ||
+          llvmPrintIrStageNum == llvmStageNum::EVERY) {
+        if (myshell("which objdump > /dev/null 2>&1", "Check to see if fatbinary command can be found", true)) {
+          USR_FATAL("Command 'objdump' not found");
+        }
+
+        std::vector<const char*> names = gatherPrintLlvmIrCNames();
+        for (auto name : names) {
+          printf("\n\n# Dissasembling symbol %s\n\n", name);
+          std::vector<std::string> cmd;
+          cmd.push_back("objdump");
+          std::string arg = "--disassemble=";
+          arg += name;
+          cmd.push_back(arg);
+          cmd.push_back(moduleFilename);
+
+          mysystem(cmd, "dissassemble a symbol",
+                   /* ignoreStatus */ true,
+                   /* quiet */ false);
+        }
+      }
+
 
     } else {
 
