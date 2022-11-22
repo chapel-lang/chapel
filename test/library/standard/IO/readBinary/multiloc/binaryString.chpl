@@ -7,7 +7,7 @@ on Locales[0] {
         var s: string = "";
 
         on Locales[2] {
-            reader.readBinary(s, 32);
+            reader.readBinary(s, 40);
             writeln(s);
         }
     }

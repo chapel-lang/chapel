@@ -7,7 +7,7 @@ on Locales[0] {
         var b: bytes = b"";
 
         on Locales[2] {
-            reader.readBinary(b, 32);
+            reader.readBinary(b, 40);
             writeln(b);
         }
     }
