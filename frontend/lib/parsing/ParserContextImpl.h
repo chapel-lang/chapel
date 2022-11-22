@@ -160,7 +160,7 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
     auto tag = pragmaNameToTag(ret.c_str());
 
     if (tag == PRAGMA_UNKNOWN)
-      CHPL_PARSER_REPORT_SIMPLE(
+      CHPL_PARSER_REPORT_ERR(
           this, loc, "unknown pragma \"" + strLit->str().str() + "\".");
 
     // Initialize the pragma flags if needed.
@@ -256,7 +256,7 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
       assert(attributeParts.pragmas == nullptr);
       assert(attributeParts.isDeprecated);
       assert(attributeParts.isUnstable);
-      CHPL_PARSER_REPORT_SIMPLE(
+      CHPL_PARSER_REPORT_SYNTAX(
           this, loc, "pragma list must come before deprecation statement.");
     }
 
@@ -643,10 +643,10 @@ AstNode* ParserContext::buildPrimCall(YYLTYPE location,
 
   if (anyNames || primName.isEmpty()) {
     if (anyNames)
-      CHPL_PARSER_REPORT_SIMPLE(this, location,
+      CHPL_PARSER_REPORT_SYNTAX(this, location,
                                 "primitive calls cannot use named arguments.");
     else
-      CHPL_PARSER_REPORT_SIMPLE(
+      CHPL_PARSER_REPORT_SYNTAX(
           this, location, "primitive calls must start with string literal.");
 
     return ErroneousExpression::build(builder, loc).release();
@@ -654,7 +654,7 @@ AstNode* ParserContext::buildPrimCall(YYLTYPE location,
 
   PrimitiveTag tag = primNameToTag(primName.c_str());
   if (tag == PRIM_UNKNOWN) {
-    CHPL_PARSER_REPORT_SIMPLE(this, location,
+    CHPL_PARSER_REPORT_ERR(this, location,
                               "unknown primitive '" + primName.str() + "'.");
     return ErroneousExpression::build(builder, loc).release();
   }
@@ -1026,11 +1026,11 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   // in the function as well as the receiver formal.
   if (!f->isMethod() && fp.thisIntent != Formal::DEFAULT_INTENT) {
     if (fp.thisIntent == Formal::TYPE) {
-      CHPL_PARSER_REPORT_SIMPLE(this, location,
+      CHPL_PARSER_REPORT_ERR(this, location,
                                 "missing type for secondary type method '" +
                                     identName->name().str() + "'.");
     } else {
-      CHPL_PARSER_REPORT_SIMPLE(
+      CHPL_PARSER_REPORT_ERR(
           this, location,
           "'this' intents can only be applied to methods, but '" +
               identName->name().str() + "' is not a method.");
@@ -1302,7 +1302,7 @@ AstNode* ParserContext::buildNewExpr(YYLTYPE location,
       // and var z20c = new C()?.tmeth;
       if (expr->toDot()->receiver()->isFnCall() ||
           expr->toDot()->receiver()->isOpCall()) {
-        CHPL_PARSER_REPORT_SIMPLE(
+        CHPL_PARSER_REPORT_SYNTAX(
             this, location,
             "must use parentheses to disambiguate dot expression after 'new'.");
       } else {
@@ -1519,7 +1519,7 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
 
   if (iterExprs->size() > 1) {
     return {.comments = comments,
-            .stmt = CHPL_PARSER_REPORT_SIMPLE(this, locIterExprs,
+            .stmt = CHPL_PARSER_REPORT_ERR(this, locIterExprs,
                                               "invalid iterand expression.")};
   } else {
     auto uncastedIterandExpr = consumeList(iterExprs)[0].release();
@@ -1852,12 +1852,12 @@ buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol,
       if (asExpr) {
         if (!asExpr->symbol()->isIdentifier() ||
             !asExpr->rename()->isIdentifier()) {
-          error = CHPL_PARSER_REPORT_SIMPLE(this, location,
+          error = CHPL_PARSER_REPORT_SYNTAX(this, location,
                                             "incorrect expression in 'import' "
                                             "list rename, identifier expected.");
         }
       } else {
-        error = CHPL_PARSER_REPORT_SIMPLE(
+        error = CHPL_PARSER_REPORT_SYNTAX(
             this, location,
             "incorrect expression in 'import' for unqualified access, "
             "identifier expected.");
@@ -1893,7 +1893,7 @@ buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
 
   auto comments = gatherComments(location);
   if (attributes && attributes->isDeprecated()) {
-    CHPL_PARSER_REPORT_SIMPLE(this, location,
+    CHPL_PARSER_REPORT_ERR(this, location,
                               "can't deprecate a forwarding statement.");
   }
   if (limitationKind == VisibilityClause::NONE) {
@@ -2138,7 +2138,7 @@ void ParserContext::validateExternTypeDeclParts(YYLTYPE location,
                                                 TypeDeclParts& parts) {
   if (parts.tag == asttags::Class) {
     assert(parts.linkage != Decl::DEFAULT_LINKAGE);
-    CHPL_PARSER_REPORT_SIMPLE(this, location,
+    CHPL_PARSER_REPORT_ERR(this, location,
                        "cannot declare class types as export or extern.");
 
     // Clear the linkage state for this so that parsing can continue.
@@ -2146,7 +2146,7 @@ void ParserContext::validateExternTypeDeclParts(YYLTYPE location,
   }
 
   if (parts.tag == asttags::Union && parts.linkage == Decl::EXPORT) {
-    CHPL_PARSER_REPORT_SIMPLE(this, location, "cannot export union types.");
+    CHPL_PARSER_REPORT_ERR(this, location, "cannot export union types.");
 
     // Clear the linkage state for this so that parsing can continue.
     clearTypeDeclPartsLinkage(parts);
@@ -2182,17 +2182,17 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
         CHPL_PARSER_REPORT(this, RecordInheritanceNotSupported, inheritLoc,
                            parts.name.str());
       } else if (parts.tag == asttags::Union) {
-        CHPL_PARSER_REPORT_SIMPLE(this, inheritLoc, "unions cannot inherit.");
+        CHPL_PARSER_REPORT_ERR(this, inheritLoc, "unions cannot inherit.");
       } else {
         if (optInherit->size() > 1)
-          CHPL_PARSER_REPORT_SIMPLE(this, inheritLoc,
+          CHPL_PARSER_REPORT_ERR(this, inheritLoc,
                                     "only single inheritance is supported.");
         AstNode* ast = (*optInherit)[0];
         if (ast->isIdentifier()) {
           inheritIdentifier = toOwned(ast->toIdentifier());
           (*optInherit)[0] = nullptr;
         } else {
-          CHPL_PARSER_REPORT_SIMPLE(
+          CHPL_PARSER_REPORT_SYNTAX(
               this, inheritLoc,
               "non-Identifier expression cannot be inherited.");
         }
@@ -2278,7 +2278,7 @@ AstNode* ParserContext::buildReduceIntent(YYLTYPE location,
   (void) locOp;
   const Identifier* ident = iterand->toIdentifier();
   if (ident == nullptr) {
-    return CHPL_PARSER_REPORT_SIMPLE(
+    return CHPL_PARSER_REPORT_SYNTAX(
         this, location, "expected identifier for reduce intent name.");
   }
   auto node = ReduceIntent::build(builder, convertLocation(location),
@@ -2505,7 +2505,7 @@ ParserContext::buildSelectStmt(YYLTYPE location, owned<AstNode> expr,
     if (when->isOtherwise() && numOtherwise++) {
       CommentsAndStmt cs = {
           .comments = comments,
-          .stmt = CHPL_PARSER_REPORT_SIMPLE(
+          .stmt = CHPL_PARSER_REPORT_SYNTAX(
               this, location, "select has multiple otherwise clauses.")};
       return cs;
     }

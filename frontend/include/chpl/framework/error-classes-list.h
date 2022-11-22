@@ -93,18 +93,19 @@ ERROR_CLASS(SuperFromTopLevelModule,
 /* parser errors */
 // catch-all for simple parsing errors that do not have a specialized error
 // class
-PARSER_SYNTAX_CLASS(Parsing, std::string)
+PARSER_ERROR_CLASS(ParseErr, std::string)
+PARSER_SYNTAX_CLASS(ParseSyntax, std::string)
 PARSER_SYNTAX_CLASS(CannotAttachPragmas, const uast::AstNode*)
 PARSER_SYNTAX_CLASS(InvalidIndexExpr)
-PARSER_SYNTAX_CLASS(RecordInheritanceNotSupported, std::string)
+PARSER_ERROR_CLASS(RecordInheritanceNotSupported, std::string)
 PARSER_SYNTAX_CLASS(InvalidNumericLiteral, std::string)
-PARSER_SYNTAX_CLASS(MultipleExternalRenaming)
+PARSER_ERROR_CLASS(MultipleExternalRenaming)
 PARSER_WARNING_CLASS(PreIncDecOp, bool)
 PARSER_SYNTAX_CLASS(InvalidNewForm, const uast::AstNode*)
 PARSER_SYNTAX_CLASS(NewWithoutArgs, const uast::AstNode*)
 PARSER_SYNTAX_CLASS(UseImportNeedsModule, bool)
 PARSER_SYNTAX_CLASS(ExceptOnlyInvalidExpr,
-                   uast::VisibilityClause::LimitationKind)
+                    uast::VisibilityClause::LimitationKind)
 PARSER_SYNTAX_CLASS(LabelIneligibleStmt, const uast::AstNode*)
 // Bison* errors are reported by the Bison parser to yyerror
 PARSER_ERROR_CLASS(BisonMemoryExhausted)

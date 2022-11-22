@@ -94,7 +94,7 @@ BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
   FILE* fp = openfile(path, "r", fileError);
   if (fp == NULL) {
     builder->addError(
-        ErrorParsing::get(this->context(), {Location(), fileError}));
+        ErrorParseErr::get(this->context(), {Location(), fileError}));
     return builder->result();
   }
 
@@ -166,7 +166,7 @@ BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
 
   if (closefile(fp, path, fileError)) {
     builder->addError(
-        ErrorParsing::get(this->context(), {Location(), fileError}));
+        ErrorParseErr::get(this->context(), {Location(), fileError}));
   }
 
   updateParseResult(&parserContext);

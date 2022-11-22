@@ -8375,7 +8375,7 @@ yyreduce:
   case 261: /* implements_type_ident: implements_type_error_ident  */
 #line 1844 "chpl.ypp"
   {
-    CHPL_PARSER_REPORT_SIMPLE(
+    CHPL_PARSER_REPORT_SYNTAX(
         context, (yyloc), "type '" + (yyvsp[0].uniqueStr).str() + "' cannot implement an interface.");
     (yyval.uniqueStr) = (yyvsp[0].uniqueStr);
   }
@@ -9374,7 +9374,7 @@ yyreduce:
   case 426: /* named_formal: opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_colon_formal_type formal_var_arg_expr  */
 #line 2606 "chpl.ypp"
   {
-    (yyval.expr) = CHPL_PARSER_REPORT_SIMPLE(
+    (yyval.expr) = CHPL_PARSER_REPORT_SYNTAX(
         context, (yyloc), "variable-length argument may not be grouped in a tuple.");
   }
 #line 9381 "bison-chpl-lib.cpp"
@@ -9987,7 +9987,7 @@ yyreduce:
   case 512: /* ret_array_type: TLSBR error TRSBR  */
 #line 2911 "chpl.ypp"
   {
-    (yyval.expr) = CHPL_PARSER_REPORT_SIMPLE(
+    (yyval.expr) = CHPL_PARSER_REPORT_SYNTAX(
         context, (yyloc), "invalid expression for domain of array return type.");
   }
 #line 9994 "bison-chpl-lib.cpp"
@@ -10805,7 +10805,7 @@ yyreduce:
                                  toOwned((yyvsp[0].expr)));
       (yyval.expr) = node.release();
     } else {
-      (yyval.expr) = CHPL_PARSER_REPORT_SIMPLE(
+      (yyval.expr) = CHPL_PARSER_REPORT_SYNTAX(
           context, (yyloc), "expected identifier for task variable name.");
     }
   }

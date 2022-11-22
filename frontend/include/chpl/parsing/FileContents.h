@@ -42,7 +42,7 @@ class FileContents {
   std::string text_;
   // TODO: it would be better to use the LLVM error handling strategy here,
   //       instead of storing errors created via Context.
-  const ErrorParsing* error_;
+  const ErrorParseErr* error_;
 
  public:
   /** Construct a FileContents containing empty text and no error */
@@ -52,14 +52,14 @@ class FileContents {
   FileContents(std::string text)
     : text_(std::move(text)), error_() { }
   /** Construct a FileContents containing the passed text and error */
-  FileContents(std::string text, const ErrorParsing* error)
+  FileContents(std::string text, const ErrorParseErr* error)
     : text_(std::move(text)), error_(error) { }
 
   /** Return a reference to the contents of this file */
   const std::string& text() const { return text_; }
 
   /** Return a reference to an error encountered when reading this file */
-  const ErrorParsing* error() const { return error_; }
+  const ErrorParseErr* error() const { return error_; }
 
   bool operator==(const FileContents& other) const {
     return text_ == other.text_ &&

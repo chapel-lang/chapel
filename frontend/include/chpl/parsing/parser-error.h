@@ -36,10 +36,12 @@
                               P_CONTEXT__->convertLocation(LOC__))         \
        .release())
 
-// A simplified version of CHPL_PARSER_REPORT which reports an error message
-// without a specialized error class or attached info
-#define CHPL_PARSER_REPORT_SIMPLE(P_CONTEXT__, LOC__, MSG__) \
-  CHPL_PARSER_REPORT(P_CONTEXT__, Parsing, LOC__, MSG__)
+// Simplified versions of CHPL_PARSER_REPORT which report an error/syntax error
+// message without a specialized error class or additional info
+#define CHPL_PARSER_REPORT_ERR(P_CONTEXT__, LOC__, MSG__) \
+  CHPL_PARSER_REPORT(P_CONTEXT__, ParseErr, LOC__, MSG__)
+#define CHPL_PARSER_REPORT_SYNTAX(P_CONTEXT__, LOC__, MSG__) \
+  CHPL_PARSER_REPORT(P_CONTEXT__, ParseSyntax, LOC__, MSG__)
 
 /**
   Helper macro(s) to report errors from the lexer, including retrieving the
@@ -51,8 +53,8 @@
   CHPL_LEXER_REPORT_ACTUAL(SCANNER__, NLINES__, NCOLS__,                    \
                            /* MOVE_TO_END__ */ false, NAME__, ##EINFO__)
 
-#define CHPL_LEXER_REPORT_SIMPLE(SCANNER__, NLINES__, NCOLS__, MSG__) \
-  CHPL_LEXER_REPORT(SCANNER__, NLINES__, NCOLS__, Parsing, MSG__)
+#define CHPL_LEXER_REPORT_SYNTAX(SCANNER__, NLINES__, NCOLS__, MSG__) \
+  CHPL_LEXER_REPORT(SCANNER__, NLINES__, NCOLS__, ParseSyntax, MSG__)
 
 // this variant moves the beginning of the reported location to its current end
 #define CHPL_LEXER_REPORT_END(SCANNER__, NLINES__, NCOLS__, NAME__, \

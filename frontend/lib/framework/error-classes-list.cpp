@@ -555,11 +555,21 @@ void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
 
 /* parser errors */
 
-void ErrorParsing::write(ErrorWriterBase& wr) const {
+void ErrorParseErr::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto errorMessage = std::get<std::string>(info);
   assert(errorMessage.back() == '.' &&
-         "expected a period at the end of ErrorParsing message");
+         "expected a period at the end of ErrorParseErr message");
+  wr.heading(kind_, type_, loc, errorMessage);
+  wr.code(loc);
+}
+
+// same as ErrorParseErr, but for syntax errors
+void ErrorParseSyntax::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto errorMessage = std::get<std::string>(info);
+  assert(errorMessage.back() == '.' &&
+         "expected a period at the end of ErrorParseSyntax message");
   wr.heading(kind_, type_, loc, errorMessage);
   wr.code(loc);
 }
