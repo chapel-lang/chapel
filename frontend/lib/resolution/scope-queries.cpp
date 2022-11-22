@@ -1010,9 +1010,13 @@ doResolveImportStmt(Context* context, const Import* imp,
     // on it matching just one thing).
     // But, we don't do that for 'import M.f.{a,b,c}'
     if (auto dot = expr->toDot()) {
-      if (clause->limitationKind() != VisibilityClause::BRACES) {
-        expr = dot->receiver();
-        dotName = dot->field();
+      // super and this are special keywords, they should not be resolved
+      // via the dot-name mechanism here.
+      if (dot->field() != USTR("super") && dot->field() != USTR("this")) {
+        if (clause->limitationKind() != VisibilityClause::BRACES) {
+          expr = dot->receiver();
+          dotName = dot->field();
+        }
       }
     }
 
