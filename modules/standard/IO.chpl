@@ -127,7 +127,7 @@ I/O Styles
 
 .. warning::
 
-   :record:`iostyle` is now deprecated.
+   :record:`iostyle` is now unstable.
    We are working on creating a full-featured replacement for it
    but in the meantime the :ref:`about-io-formatted-io` facilities are still
    available to control formatting.
@@ -796,7 +796,7 @@ extern const QIO_STRING_FORMAT_TOEOF:uint(8);
 The :record:`iostyleInternal` type represents I/O styles
 defining how Chapel's basic types should be read or written.
 
-It replaces the now deprecated `iostyle` type, and will eventually
+It replaces the now unstable `iostyle` type, and will eventually
 be migrated into a new strategy, likely involving encoders/decoders
 */
 pragma "no doc"
