@@ -178,6 +178,11 @@ void gatherDeclsWithin(const uast::AstNode* ast,
     child->traverse(visitor);
   }
 
+  // For modules, also include the module's name itself.
+  if (auto mod = ast->toModule()) {
+    gather(visitor.declared, mod->name(), mod, uast::Decl::PUBLIC);
+  }
+
   declared.swap(visitor.declared);
   containsUseImport = visitor.containsUseImport;
   containsFunctionDecls = visitor.containsFunctionDecls;
