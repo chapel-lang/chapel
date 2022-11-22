@@ -8,7 +8,7 @@ on Locales[0] {
 
         on Locales[2] {
             reader.readBinary(s, 40);
-            writeln(s);
+            write(s);
         }
     }
 }
