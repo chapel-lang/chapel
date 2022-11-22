@@ -681,12 +681,12 @@ void ErrorExceptOnlyInvalidExpr::write(ErrorWriterBase& wr) const {
 void ErrorLabelIneligibleStmt::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto maybeStmt = std::get<const uast::AstNode*>(info);
-  if (!maybeStmt) {
-    wr.heading(kind_, type_, loc, "cannot label this kind of statement.");
-  } else if (maybeStmt->tag() == uast::AstTag::EmptyStmt) {
+  if (maybeStmt && maybeStmt->tag() == uast::AstTag::EmptyStmt) {
     // this is the case where there is a semicolon following the label name
     wr.heading(kind_, type_, loc,
                "labels should not be terminated with semicolons.");
+  } else {
+    wr.heading(kind_, type_, loc, "cannot label this kind of statement.");
   }
   wr.message("Label on ineligible statement here:");
   wr.code(loc);
