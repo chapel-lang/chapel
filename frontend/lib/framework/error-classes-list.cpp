@@ -772,16 +772,16 @@ void ErrorUseImportUnknownSym::write(ErrorWriterBase& wr) const {
 
   auto limitationKind = visibilityClause->limitationKind();
   if (isRename) {
-    wr.heading(kind_, type_, locationOnly(visibilityClause),
-               "Bad identifier in rename, no known '",
-               symbolName, "' in '", searchedScope->name(),"'");
+    wr.heading(kind_, type_, visibilityClause,
+               "bad identifier in rename, no known '",
+               symbolName, "' in '", searchedScope->name(),"'.");
   } else if (limitationKind == uast::VisibilityClause::ONLY ||
       limitationKind == uast::VisibilityClause::EXCEPT) {
     wr.heading(kind_, type_, visibilityClause,
-               "Bad identifier in '", limitationKind, "' clause, no known '",
-               symbolName, "' defined in '", searchedScope->name(),"'");
+               "bad identifier in '", limitationKind, "' clause, no known '",
+               symbolName, "' defined in '", searchedScope->name(),"'.");
   } else {
-    wr.heading(kind_, type_, locationOnly(visibilityClause),
+    wr.heading(kind_, type_, visibilityClause,
                "cannot find symbol '", symbolName, "' for ", useOrImport, ".");
   }
   wr.message("In the following '", useOrImport, "' statement:");
