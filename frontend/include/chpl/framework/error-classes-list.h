@@ -123,8 +123,11 @@ ERROR_CLASS(UseImportNotModule, const ID, const resolution::VisibilityStmtKind,
             std::string)
 ERROR_CLASS(UseImportUnknownMod, const ID, const resolution::VisibilityStmtKind,
             std::string)
-ERROR_CLASS(UseImportUnknownSym, const uast::VisibilityClause*,
-            const resolution::Scope*, const resolution::VisibilityStmtKind,
+ERROR_CLASS(UseImportUnknownSym,
+            const uast::VisibilityClause*,
+            const resolution::Scope*,
+            const resolution::VisibilityStmtKind,
+            bool,
             std::string)
 ERROR_CLASS(UseOfLaterVariable, const uast::AstNode*, ID)
 ERROR_CLASS(ValueUsedAsType, const uast::AstNode*, types::QualifiedType)

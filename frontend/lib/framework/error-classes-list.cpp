@@ -768,8 +768,22 @@ void ErrorUseImportUnknownSym::write(ErrorWriterBase& wr) const {
   auto symbolName = std::get<std::string>(info);
   auto searchedScope = std::get<const resolution::Scope*>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
-  wr.heading(kind_, type_, locationOnly(visibilityClause),
-             "cannot find symbol '", symbolName, "' for ", useOrImport, ".");
+  auto isRename = std::get<bool>(info);
+
+  auto limitationKind = visibilityClause->limitationKind();
+  if (isRename) {
+    wr.heading(kind_, type_, locationOnly(visibilityClause),
+               "Bad identifier in rename, no known '",
+               symbolName, "' in '", searchedScope->name(),"'");
+  } else if (limitationKind == uast::VisibilityClause::ONLY ||
+      limitationKind == uast::VisibilityClause::EXCEPT) {
+    wr.heading(kind_, type_, visibilityClause,
+               "Bad identifier in '", limitationKind, "' clause, no known '",
+               symbolName, "' defined in '", searchedScope->name(),"'");
+  } else {
+    wr.heading(kind_, type_, locationOnly(visibilityClause),
+               "cannot find symbol '", symbolName, "' for ", useOrImport, ".");
+  }
   wr.message("In the following '", useOrImport, "' statement:");
   wr.code(visibilityClause, { visibilityClause });
   // get class name of AstNode that generated scope (probably Module or Enum)

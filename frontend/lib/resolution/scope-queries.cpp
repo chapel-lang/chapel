@@ -680,7 +680,8 @@ static void errorIfNameNotInScope(Context* context,
                                   const ResolvedVisibilityScope* resolving,
                                   UniqueString name,
                                   const VisibilityClause* clauseForError,
-                                  VisibilityStmtKind useOrImport) {
+                                  VisibilityStmtKind useOrImport,
+                                  bool isRename) {
   NamedScopeSet checkedScopes;
   std::vector<BorrowedIdsWithName> result;
   LookupConfig config = LOOKUP_INNERMOST |
@@ -692,7 +693,7 @@ static void errorIfNameNotInScope(Context* context,
 
   if (got == false || result.size() == 0) {
     CHPL_REPORT(context, UseImportUnknownSym, clauseForError, scope, useOrImport,
-                name.c_str());
+                isRename, name.c_str());
   }
 }
 
@@ -705,11 +706,11 @@ errorIfAnyLimitationNotInScope(Context* context,
   for (const AstNode* e : clause->limitations()) {
     if (auto ident = e->toIdentifier()) {
       errorIfNameNotInScope(context, scope, resolving, ident->name(),
-                            clause, useOrImport);
+                            clause, useOrImport, /* isRename */ false);
     } else if (auto as = e->toAs()) {
       if (auto ident = as->symbol()->toIdentifier()) {
         errorIfNameNotInScope(context, scope, resolving, ident->name(),
-                              clause, useOrImport);
+                              clause, useOrImport, /* isRename */ true);
       }
     }
   }
@@ -1037,7 +1038,8 @@ doResolveImportStmt(Context* context, const Import* imp,
           case VisibilityClause::NONE:
             kind = VisibilitySymbols::ONLY_CONTENTS;
             errorIfNameNotInScope(context, foundScope, r,
-                                  dotName, clause, VIS_IMPORT);
+                                  dotName, clause, VIS_IMPORT,
+                                  /* isRename */ !newName.isEmpty());
             if (newName.isEmpty()) {
               // e.g. 'import M.f'
               r->addVisibilityClause(foundScope, kind, isPrivate,
