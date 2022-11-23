@@ -892,6 +892,8 @@ findUseImportTarget(Context* context,
                                        expr,
                                        useOrImport);
       return ret;
+    } else if (dot->field() == USTR("this")) {
+      return innerScope->moduleScope();
     }
 
     if (innerScope != nullptr) {
