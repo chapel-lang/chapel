@@ -516,12 +516,12 @@ bool isRelationalOperator(CallExpr* call) {
 // TODO this should be fixed to include PRIM_SET_MEMBER
 // See notes in iterator.cpp and/or loopInvariantCodeMotion.cpp
 // TODO this should also be fixed to include the PRIM_SET_SVEC_MEMBER
+// which gets inserted from the returnStartTuplesByRefArgs pass
 //  an attempt to do so is in the commented-out sections below
 //  but would require also fixing a bug in copy-propagation
 //  with e.g. functions/deitz/nested/test_nested_var_iterator2.chpl
-// TODO this should handle PRIM_VIRTUAL_METHOD_CALL and PRIM_FTABLE_CALL
+// TODO handle PRIM_FTABLE_CALL
 //
-// which gets inserted from the returnStartTuplesByRefArgs pass
 // return & 1 is true if se is a def
 // return & 2 is true if se is a use
 //
@@ -568,6 +568,17 @@ int isDefAndOrUse(SymExpr* se) {
       // se   =   se <op> ?
       // ^-def    ^-use
       return DEF_USE;
+    } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+      // actual_to_formal() breaks if passed the cid argument
+      if (se == call->get(2))
+        return USE;
+      // same as for resolvedFunction()
+      ArgSymbol* arg = actual_to_formal(se);
+      if (arg->intent == INTENT_REF ||
+          arg->intent == INTENT_INOUT)
+        return DEF_USE;
+      else if (arg->intent == INTENT_OUT)
+        return DEF;
     } else if (FnSymbol* fn = call->resolvedFunction()) {
       ArgSymbol* arg = actual_to_formal(se);
 
