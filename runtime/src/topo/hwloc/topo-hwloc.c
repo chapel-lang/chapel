@@ -206,6 +206,7 @@ void chpl_topo_init(void) {
       }
     }
   }
+  oversubscribed = chpl_env_rt_get_bool("OVERSUBSCRIBED", false);
 }
 
 
@@ -297,55 +298,52 @@ void chpl_topo_post_comm_init(void) {
   //
   numCPUsLogAll = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PU);
   CHK_ERR(numCPUsLogAll > 0);
-  //
-  // If some PUs are inaccesssible to us then assume we've been restricted to
-  // certain PUs at a higher level such as by the launcher. If so, use all
-  // accessible PUs. Otherwise, if we can access all PUs but we are sharing
-  // the machine with other locales then the number of locales must equal the
-  // number of sockets and we get our own socket.
-  //
+
+  // If there is more than one locale on the node then we are oversubscribed
+  // if there isn't one locale per socket. If CHPL_RT_LOCALES_PER_NODE is
+  // set then it's an error if there isn't one locale per socket.
 
   int numLocalesOnNode = chpl_get_num_locales_on_node();
   int rank = chpl_get_local_rank();
-  if ((numCPUsLogAcc == numCPUsLogAll) && (numLocalesOnNode > 1) &&
-      (rank != -1)) {
+  if (numLocalesOnNode > 1) {
     int numSockets = hwloc_get_nbobjs_inside_cpuset_by_type(topology,
-                          root->cpuset, HWLOC_OBJ_PACKAGE);
-    if (numSockets != numLocalesOnNode) {
-
-      // If CHPL_RT_LOCALES_PER_NODE is set then the number of locales
-      // must equal the number of sockets.
+                        root->cpuset, HWLOC_OBJ_PACKAGE);
+    if (numLocalesOnNode != numSockets) {
+      oversubscribed = true;
       if (chpl_env_rt_get("LOCALES_PER_NODE", NULL) != NULL) {
         char msg[100];
         snprintf(msg, sizeof(msg), "The number of locales on the node does "
                  "not equal the number of sockets (%d != %d).",
                  numLocalesOnNode, numSockets);
         chpl_error(msg, 0, 0);
-      } else {
-        // We are oversubscribed.
-        oversubscribed = true;
+      }
+
+    // If we have access to all PUs and we know our rank, then only use the
+    // PUs in our socket. Otherwise, we'll use all of the PUs accessible
+    // to us.
+
+    } else if (numCPUsLogAcc == numCPUsLogAll) {
+      if (rank != -1) {
+        hwloc_obj_t socket = hwloc_get_obj_inside_cpuset_by_type(topology,
+                                  root->cpuset, HWLOC_OBJ_PACKAGE, rank);
+        CHK_ERR(socket != NULL);
+
+        _DBG_P("using socket %d", socket->logical_index);
+
+        // Limit the accessible PUs to those in our socket.
+
+        hwloc_bitmap_and(logAccSet, logAccSet, socket->cpuset);
+        numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
+        CHK_ERR(numCPUsLogAcc > 0);
+#ifdef DEBUG
+        char buf[1024];
+        hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
+        _DBG_P("numCPUsLogAcc: %d logAccSet: %s", numCPUsLogAcc, buf);
+#endif
+        root = socket;
       }
     } else {
-
-      // Each locale gets its own socket.
-
-      hwloc_obj_t socket = hwloc_get_obj_inside_cpuset_by_type(topology,
-                                root->cpuset, HWLOC_OBJ_PACKAGE, rank);
-      CHK_ERR(socket != NULL);
-
-      _DBG_P("using socket %d", socket->logical_index);
-
-      // Limit the accessible PUs to those in our socket.
-
-      hwloc_bitmap_and(logAccSet, logAccSet, socket->cpuset);
-      numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
-      CHK_ERR(numCPUsLogAcc > 0);
-#ifdef DEBUG
-      char buf[1024];
-      hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
-      _DBG_P("numCPUsLogAcc: %d logAccSet: %s", numCPUsLogAcc, buf);
-#endif
-      root = socket;
+      oversubscribed = true;
     }
   }
 

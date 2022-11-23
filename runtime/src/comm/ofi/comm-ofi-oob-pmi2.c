@@ -297,10 +297,6 @@ typedef struct locale_info_t {
   int       nodeID;   // locale's ID
 } locale_info_t;
 
-static int compareRanks(const void *a, const void *b) {
-  return *((int *) a) - *((int *) b);
-}
-
 int chpl_comm_ofi_oob_locales_on_node(int *rank) {
   int count = 0;
   if (PMI_Get_numpes_on_smp && PMI_Get_pes_on_smp) {
@@ -310,14 +306,10 @@ int chpl_comm_ofi_oob_locales_on_node(int *rank) {
       int *ranks;
       CHK_SYS_CALLOC(ranks, count);
       PMI_CHK(PMI_Get_pes_on_smp(ranks, count));
-      // Ranks aren't guaranteed to be returned in order, so sort them
-      // so all locales see them in the same order.
-      qsort(ranks, count, sizeof(int), compareRanks);
-      *rank = -1;
+      *rank = 0;
       for (int i = 0; i < count; i++) {
-        if (ranks[i] == chpl_nodeID) {
-          *rank = i;
-          break;
+        if (ranks[i] < chpl_nodeID) {
+          *rank++;
         }
       }
       sys_free(ranks);
