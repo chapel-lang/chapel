@@ -379,8 +379,17 @@ static bool doLookupInImports(Context* context,
       }
 
       if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
-        result.push_back(BorrowedIdsWithName(is.scope()->id(), uast::Decl::PUBLIC));
-        found = true;
+        // Make sure the module / enum being renamed isn't private.
+        auto scopeAst = parsing::idToAst(context, is.scope()->id());
+        auto visibility = scopeAst->toDecl()->visibility();
+        auto foundIds =
+          BorrowedIdsWithName::createWithSingleId(is.scope()->id(),
+                                                  visibility,
+                                                  skipPrivateVisibilities);
+        if (foundIds) {
+          result.push_back(std::move(foundIds.getValue()));
+          found = true;
+        }
       }
     }
 
@@ -419,7 +428,7 @@ static bool doLookupInToplevelModules(Context* context,
   if (mod == nullptr)
     return false;
 
-  result.push_back(BorrowedIdsWithName(mod->id(), uast::Decl::PUBLIC));
+  result.push_back(BorrowedIdsWithName::createWithSinglePublicId(mod->id()));
   return true;
 }
 
