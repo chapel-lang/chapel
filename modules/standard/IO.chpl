@@ -5311,7 +5311,7 @@ proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
       didRead = false;
 
   on this._home {
-    var len: int(64),
+    var len: int,
         tx: c_string;
 
     e = qio_channel_read_string(false, ioendian.native: c_int,
@@ -5349,7 +5349,7 @@ proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
       didRead = false;
 
   on this._home {
-    var len: int(64),
+    var len: int,
         tx: c_string;
 
     e = qio_channel_read_string(false, ioendian.native: c_int,
