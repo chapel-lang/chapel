@@ -5315,7 +5315,7 @@ proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
     var tx: c_string;
     e = qio_channel_read_string(false, ioendian.native: c_int,
                                     qio_channel_str_style(this._channel_internal),
-                                    this._channel_internal, tx, len, maxSize);
+                                    this._channel_internal, tx, len, maxSize:c_ssize_t);
     s_ = try! createStringWithOwnedBuffer(tx, length=len);
   }
   s = s_.localize();
@@ -5351,7 +5351,7 @@ proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
     var tx: c_string;
     e = qio_channel_read_string(false, ioendian.native: c_int,
                                     qio_channel_str_style(this._channel_internal),
-                                    this._channel_internal, tx, len, maxSize);
+                                    this._channel_internal, tx, len, maxSize:c_ssize_t);
     b_ = try! createBytesWithOwnedBuffer(tx, length=len);
   }
   b = b_.localize();
