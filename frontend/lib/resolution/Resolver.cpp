@@ -1682,6 +1682,28 @@ Resolver::lookupIdentifier(const Identifier* ident,
   return vec;
 }
 
+void Resolver::validateAndSetToId(ResolvedExpression& r,
+                                  const AstNode* node,
+                                  const ID& id) {
+  if (!id.isEmpty()) {
+    auto toAst = parsing::idToAst(context, id);
+    if (toAst != nullptr) {
+      if (auto mod = toAst->toModule()) {
+        auto parentId = parsing::idToParentId(context, node->id());
+        if (!parentId.isEmpty()) {
+          auto parentAst = parsing::idToAst(context, parentId);
+          if (!parentAst->isUse() && !parentAst->isImport() &&
+              !parentAst->isAs() && !parentAst->isVisibilityClause() &&
+              !parentAst->isDot()) {
+            CHPL_REPORT(context, ModuleAsVariable, node, parentAst, mod);
+          }
+        }
+      }
+    }
+  }
+  r.setToId(id);
+}
+
 bool Resolver::resolveIdentifier(const Identifier* ident,
                                  const Scope* receiverScope) {
   ResolvedExpression& result = byPostorder.byAst(ident);
@@ -1759,7 +1781,7 @@ bool Resolver::resolveIdentifier(const Identifier* ident,
       }
     }
 
-    result.setToId(id);
+    validateAndSetToId(result, ident, id);
     result.setType(type);
     // if there are multiple ids we should have gotten
     // a multiple definition error at the declarations.
@@ -2382,7 +2404,7 @@ void Resolver::exit(const Dot* dot) {
         // but for things with generic type, use unknown.
         type = typeForId(id, /*localGenericToUnknown*/ true);
       }
-      r.setToId(id);
+      validateAndSetToId(r, dot, id);
       r.setType(type);
     }
     return;
@@ -2400,7 +2422,7 @@ void Resolver::exit(const Dot* dot) {
     ID elemId = r.toId(); // store the original in case we don't get a new one
     auto qt = typeForEnumElement(enumType, dot->field(), dot, elemId);
     r.setType(std::move(qt));
-    r.setToId(std::move(elemId));
+    validateAndSetToId(r, dot, std::move(elemId));
 
     return;
   }
@@ -2719,7 +2741,7 @@ bool Resolver::enter(const ReduceIntent* reduce) {
   ResolvedExpression& result = byPostorder.byAst(reduce);
 
   if (computeTaskIntentInfo(*this, reduce, id, type)) {
-    result.setToId(id);
+    validateAndSetToId(result, reduce, id);
   } else if (!scopeResolveOnly) {
     context->error(reduce, "Unable to find declaration of \"%s\" for reduction", reduce->name().c_str());
   }
@@ -2744,7 +2766,7 @@ bool Resolver::enter(const TaskVar* taskVar) {
     if (computeTaskIntentInfo(*this, taskVar, id, type)) {
       QualifiedType taskVarType = QualifiedType(taskVar->storageKind(),
                                                 type.type());
-      result.setToId(id);
+      validateAndSetToId(result, taskVar, id);
 
       // TODO: Handle in-intents where type can change (e.g. array slices)
       result.setType(taskVarType);

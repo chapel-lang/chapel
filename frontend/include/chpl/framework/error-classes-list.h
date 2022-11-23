@@ -96,6 +96,10 @@ ERROR_CLASS(IncompatibleTypeAndInit,
 ERROR_CLASS(InvalidNewTarget, const uast::New*, types::QualifiedType)
 ERROR_CLASS(MemManagementNonClass, const uast::New*, const types::Type*)
 ERROR_CLASS(MissingInclude, const uast::Include*, std::string)
+ERROR_CLASS(ModuleAsVariable,
+            const uast::AstNode*,
+            const uast::AstNode*,
+            const uast::Module*)
 ERROR_CLASS(MultipleEnumElems, const uast::AstNode*, chpl::UniqueString, const types::EnumType*, std::vector<ID>)
 ERROR_CLASS(MultipleQuestionArgs, const uast::FnCall*, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(NonIterable, const uast::IndexableLoop*, const uast::AstNode*, types::QualifiedType)

@@ -541,12 +541,31 @@ void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
   }
 }
 
+
 void ErrorMissingInclude::write(ErrorWriterBase& wr) const {
   auto moduleInclude = std::get<const uast::Include*>(info);
   auto& filePath = std::get<std::string>(info);
   wr.heading(kind_, type_, moduleInclude, "cannot find included submodule");
   wr.code(moduleInclude);
   wr.note(moduleInclude, "expected file at path '", filePath, "'");
+}
+
+void ErrorModuleAsVariable::write(ErrorWriterBase& wr) const {
+  auto node = std::get<0>(info);
+  auto parent = std::get<1>(info);
+  auto mod = std::get<const uast::Module*>(info);
+  const char* reason = "cannot be mentioned like variables";
+
+  if (parent) {
+    if (auto call = parent->toCall()) {
+      if (call->calledExpression() == node) {
+        reason = "cannot be called like procedures";
+      }
+    }
+  }
+  wr.heading(kind_, type_, node, "modules (like '", mod->name(), "' here) ",
+             reason, ".");
+  wr.code(parent, { node });
 }
 
 void ErrorMultipleEnumElems::write(ErrorWriterBase& wr) const {
