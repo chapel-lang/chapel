@@ -103,7 +103,7 @@ module ChapelSyncvar {
     }
   }
 
-  // This could be replaced with Memory.Initialization but I didn't
+  // This could be replaced with MemMove but I didn't
   // want to compile it by default at this time.
   pragma "no doc"
   pragma "unsafe"

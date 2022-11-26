@@ -20,7 +20,7 @@
 
 /* Support for move-initializing and deinitializing values.
 
-  The :mod:`Initialization` module provides functions which enable users to
+  The :mod:`MemMove` module provides functions which enable users to
   move-initialize and deinitialize values.
 
   The functionality provided by this module can be used to implement
@@ -34,8 +34,7 @@
 
 
 */
-deprecated "The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead"
-module Initialization {
+module MemMove {
 
   // Mark as "unsafe" to silence lifetime errors.
   pragma "unsafe"
@@ -320,6 +319,6 @@ module Initialization {
     }
   }
 
-// Memory.Initialization;
+// MemMove;
 }
 

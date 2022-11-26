@@ -424,7 +424,7 @@ module ChapelHashtable {
     proc fillSlot(ref tableEntry: chpl_TableEntry(keyType, valType),
                   in key: keyType,
                   in val: valType) {
-      use Memory.Initialization;
+      use MemMove;
 
       if tableEntry.status == chpl__hash_status.full {
         _deinitSlot(tableEntry);
@@ -469,7 +469,7 @@ module ChapelHashtable {
     // Returns the key and value that were removed in the out arguments
     proc clearSlot(ref tableEntry: chpl_TableEntry(keyType, valType),
                    out key: keyType, out val: valType) {
-      use Memory.Initialization;
+      use MemMove;
 
       // move the table entry into the key/val variables to be returned
       key = moveToValue(tableEntry.key);
@@ -534,7 +534,7 @@ module ChapelHashtable {
     // newSizeNum is an index into chpl__primes == newSize
     // assumes the array is already locked
     proc rehash(newSize:int) {
-      use Memory.Initialization;
+      use MemMove;
 
       // save the old table
       var oldSize = tableSize;

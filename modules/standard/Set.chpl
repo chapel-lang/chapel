@@ -281,7 +281,7 @@ module Set {
     // the value across locales.
     pragma "no doc"
     proc _addElem(pragma "no auto destroy" in elem: eltType): bool {
-      use Memory.Initialization;
+      use MemMove;
 
       var result = false;
 
