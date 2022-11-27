@@ -1,0 +1,1 @@
+memMoveModule.chpl:1: warning: The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead
