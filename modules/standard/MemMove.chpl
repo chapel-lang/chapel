@@ -111,6 +111,7 @@ module MemMove {
 
     :return: The contents of ``arg`` moved into a new value
   */
+  deprecated "'moveToValue' is deprecated; please use 'moveFrom' instead"
   proc moveToValue(const ref arg: ?t) {
     if t == nothing {
       return none;
@@ -120,6 +121,34 @@ module MemMove {
       pragma "no auto destroy"
       var result: t;
       _move(result, arg);
+      return result;
+    }
+  }
+
+  /*
+    Move the contents of the variable or constant referred to by ``src`` into
+    a new returned value.
+
+    .. warning::
+
+      The variable or constant referred to by ``src`` should be considered
+      uninitialized after a call to this function.
+
+    :arg src: A variable or constant to move
+
+    :return: The contents of ``src`` moved into a new value
+  */
+  proc moveFrom(const ref src: ?t) {
+    // Note: using 't' as an explicit return type can result in incorrect
+    // behavior for arrays
+    if t == nothing {
+      return none;
+    } else {
+      pragma "no init"
+      pragma "no copy"
+      pragma "no auto destroy"
+      var result: t;
+      _move(result, src);
       return result;
     }
   }

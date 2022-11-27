@@ -42,7 +42,7 @@ proc test3() {
   on Locales[0] {
     var doBlock = true;
     if doBlock {
-      var moved = moveToValue(x);
+      var moved = moveFrom(x);
       consumeElement(moved);
     }
   }
@@ -109,7 +109,7 @@ proc test7() {
   var x = new r();
 
   on Locales[0] {
-    var moved = moveToValue(x);
+    var moved = moveFrom(x);
     var doBlock = true;
     if doBlock {
       consumeElement(moved);

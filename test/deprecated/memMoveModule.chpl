@@ -10,4 +10,10 @@ proc main() {
     MemMove.moveSwap(x=a, b);
     writeln(a, " :: ", b);
   }
+  {
+    var a = 1;
+    var b = Old.moveToValue(a);
+    var c = MemMove.moveToValue(b);
+    writeln(c);
+  }
 }
