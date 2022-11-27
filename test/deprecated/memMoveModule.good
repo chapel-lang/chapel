@@ -1,1 +1,7 @@
 memMoveModule.chpl:1: warning: The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead
+memMoveModule.chpl:4: In function 'main':
+memMoveModule.chpl:7: warning: The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead
+memMoveModule.chpl:9: warning: The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead
+memMoveModule.chpl:7: warning: the formals 'lhs' and 'rhs' are deprecated, please use 'x' and 'y' instead
+memMoveModule.chpl:8: warning: the formals 'lhs' and 'rhs' are deprecated, please use 'x' and 'y' instead
+1 :: 9

@@ -134,15 +134,31 @@ module MemMove {
 
     :arg rhs: A variable to swap
   */
+  pragma "last resort"
+  deprecated "the formals 'lhs' and 'rhs' are deprecated, please use 'x' and 'y' instead"
   proc moveSwap(ref lhs: ?t, ref rhs: t) {
+    moveSwap(x=lhs, y=rhs);
+  }
+
+  /*
+    Swap the contents of the variables referred to by ``x`` and ``y``.
+    This function does not call the ``<=>`` operator. Unlike the ``<=>``
+    operator, :proc:`moveSwap()` does not perform assignment or
+    initialization.
+
+    :arg x: A variable to swap
+
+    :arg y: A variable to swap
+  */
+  proc moveSwap(ref x: ?t, ref y: t) {
     if t != nothing {
       pragma "no init"
       pragma "no copy"
       pragma "no auto destroy"
       var temp: t;
-      _move(temp, lhs);
-      _move(lhs, rhs);
-      _move(rhs, temp);
+      _move(temp, x);
+      _move(x, y);
+      _move(y, temp);
     }
   }
 
