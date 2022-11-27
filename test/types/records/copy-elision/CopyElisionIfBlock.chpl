@@ -34,7 +34,7 @@ test2();
 
 // This test mimics what I am trying to do in 'set._addElem()'.
 proc test3() {
-  use Memory.Initialization;
+  use MemMove;
 
   writeln('T3');
   pragma "no auto destroy"
@@ -101,7 +101,7 @@ proc test6() {
 test6();
 
 proc test7() {
-  use Memory.Initialization;
+  use MemMove;
 
   writeln('T7');
 

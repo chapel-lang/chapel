@@ -1,4 +1,4 @@
-use Memory.Initialization;
+use MemMove;
 
 var n1, n2: nothing;
 var i: int;
