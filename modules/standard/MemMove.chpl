@@ -88,6 +88,8 @@ module MemMove {
 
     :arg rhs: A value to move-initialize from
   */
+  pragma "last resort"
+  deprecated "The formals 'lhs' and 'rhs' are deprecated, please use 'dst' and 'src' instead"
   proc moveInitialize(ref lhs,
                       pragma "no auto destroy"
                       pragma "error on copy" in rhs) {
@@ -95,6 +97,47 @@ module MemMove {
       compilerError("type mismatch move-initializing an expression of type '"+lhs.type:string+"' from one of type '"+rhs.type:string+"'");
     } else if __primitive("static typeof", lhs) != nothing {
       _move(lhs, rhs);
+    }
+  }
+
+  /*
+    Move-initialize ``dst`` with the value in ``src``. The contents of ``dst``
+    are not deinitialized before the move, and ``src`` is not deinitialized
+    after the move.
+
+    .. warning::
+
+      If ``dst`` references an already initialized variable, it will be
+      overwritten by the contents of ``src`` without being deinitialized
+      first. Call :proc:`explicitDeinit()` to deinitialize ``dst`` if
+      necessary.
+
+    .. warning::
+
+      The static types of ``dst`` and ``src`` must match, or else a
+      compile-time error will be issued.
+
+    .. note::
+
+      If the compiler inserts a copy for the argument to ``src``, then a
+      compile-time error will be issued. The most likely cause is that the
+      argument is used elsewhere following the call to ``moveInitialize``.
+      The ``moveFrom`` function can be used with the ``src`` argument to avoid
+      the copy when certain of the variable's usage:
+
+      moveInitialize(myDst, moveFrom(mySrc));
+
+    :arg dst: A variable to move-initialize, whose type matches ``src``
+
+    :arg src: A value to move-initialize from
+  */
+  proc moveInitialize(ref dst,
+                      pragma "no auto destroy"
+                      pragma "error on copy" in src) {
+    if __primitive("static typeof", dst) != __primitive("static typeof", src) {
+      compilerError("type mismatch move-initializing an expression of type '"+dst.type:string+"' from one of type '"+src.type:string+"'");
+    } else if __primitive("static typeof", dst) != nothing {
+      _move(dst, src);
     }
   }
 

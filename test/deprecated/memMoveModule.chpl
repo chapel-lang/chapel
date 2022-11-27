@@ -16,4 +16,12 @@ proc main() {
     var c = MemMove.moveToValue(b);
     writeln(c);
   }
+  {
+    var a = 1;
+    var b : int;
+    Old.moveInitialize(lhs=b, a);
+    var c : int;
+    MemMove.moveInitialize(lhs=c, b);
+    writeln(c);
+  }
 }

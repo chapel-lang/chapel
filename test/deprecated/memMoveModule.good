@@ -3,9 +3,13 @@ memMoveModule.chpl:4: In function 'main':
 memMoveModule.chpl:7: warning: The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead
 memMoveModule.chpl:9: warning: The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead
 memMoveModule.chpl:15: warning: The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead
+memMoveModule.chpl:22: warning: The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead
 memMoveModule.chpl:7: warning: the formals 'lhs' and 'rhs' are deprecated, please use 'x' and 'y' instead
 memMoveModule.chpl:8: warning: the formals 'lhs' and 'rhs' are deprecated, please use 'x' and 'y' instead
 memMoveModule.chpl:15: warning: 'moveToValue' is deprecated; please use 'moveFrom' instead
 memMoveModule.chpl:16: warning: 'moveToValue' is deprecated; please use 'moveFrom' instead
+memMoveModule.chpl:22: warning: The formals 'lhs' and 'rhs' are deprecated, please use 'dst' and 'src' instead
+memMoveModule.chpl:24: warning: The formals 'lhs' and 'rhs' are deprecated, please use 'dst' and 'src' instead
 1 :: 9
+1
 1
