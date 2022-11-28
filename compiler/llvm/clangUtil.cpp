@@ -1702,7 +1702,7 @@ void setupClang(GenInfo* info, std::string mainFile)
   if (job == NULL)
     USR_FATAL("Could not find cc1 command from clang driver");
 
-    if( printSystemCommands && developer ) {
+  if( printSystemCommands && developer ) {
     printf("<internal clang cc> ");
     for ( auto a : job->getArguments() ) {
       printf("%s ", a);
