@@ -101,52 +101,35 @@ module ChapelArray {
   // with a privatized value that can be retrieved by the pid
   // without communication.
   proc _newPrivatizedClass(value) : int {
-
-    const n = numPrivateObjects.fetchAdd(1);
-
+    const pid = numPrivateObjects.fetchAdd(1);
     const hereID = here.id;
     const privatizeData = value.dsiGetPrivatizeData();
-    on Locales[0] do
-      _newPrivatizedClassHelp(value, value, n, hereID);
+    const definedConst = if isSubtype(value.type, BaseDom) then value.definedConst
+                                                           else none;
 
-    proc _newPrivatizedClassHelp(parentValue, originalValue, n, hereID) {
-      var newValue = originalValue;
+    coforall loc in Locales do on loc {
       if hereID != here.id {
-        newValue = parentValue.dsiPrivatize(privatizeData);
-        if isSubtype(parentValue.type, BaseDom) {
-          newValue.definedConst = parentValue.definedConst;
+        var newValue = value.dsiPrivatize(privatizeData);
+        if isSubtype(value.type, BaseDom) {
+          newValue.definedConst = definedConst;
         }
-        __primitive("chpl_newPrivatizedClass", newValue, n);
-        newValue.pid = n;
+        __primitive("chpl_newPrivatizedClass", newValue, pid);
+        newValue.pid = pid;
       } else {
-        __primitive("chpl_newPrivatizedClass", newValue, n);
-        newValue.pid = n;
-      }
-      cobegin {
-        if chpl_localeTree.left._instance != nil then
-          on chpl_localeTree.left do
-            _newPrivatizedClassHelp(newValue, originalValue, n, hereID);
-        if chpl_localeTree.right._instance != nil then
-          on chpl_localeTree.right do
-            _newPrivatizedClassHelp(newValue, originalValue, n, hereID);
+        __primitive("chpl_newPrivatizedClass", value, pid);
+        value.pid = pid;
       }
     }
-
-    return n;
+    return pid;
   }
 
   // original is the value this method shouldn't free, because it's the
   // canonical version. The rest are copies on other locales.
-  proc _freePrivatizedClass(pid:int, original:object):void
-  {
+  proc _freePrivatizedClass(pid:int, original:object) : void  {
     // Do nothing for null pids.
     if pid == nullPid then return;
 
-    on Locales[0] {
-      _freePrivatizedClassHelp(pid, original);
-    }
-
-    proc _freePrivatizedClassHelp(pid, original) {
+    coforall loc in Locales do on loc {
       var prv = chpl_getPrivatizedCopy(unmanaged object, pid);
       if prv != original then
         delete prv;
@@ -154,37 +137,19 @@ module ChapelArray {
       extern proc chpl_clearPrivatizedClass(pid:int);
       chpl_clearPrivatizedClass(pid);
 
-      cobegin {
-        if chpl_localeTree.left._instance != nil then
-          on chpl_localeTree.left do
-            _freePrivatizedClassHelp(pid, original);
-        if chpl_localeTree.right._instance != nil then
-          on chpl_localeTree.right do
-            _freePrivatizedClassHelp(pid, original);
-      }
     }
   }
 
-  proc _reprivatize(value) {
+  proc _reprivatize(value) : void {
     const pid = value.pid;
     const hereID = here.id;
     const reprivatizeData = value.dsiGetReprivatizeData();
-    on Locales[0] do
-      _reprivatizeHelp(value, value, pid, hereID);
 
-    proc _reprivatizeHelp(parentValue, originalValue, pid, hereID) {
-      var newValue = originalValue;
+    coforall loc in Locales do on loc {
+      var newValue = value;
       if hereID != here.id {
         newValue = chpl_getPrivatizedCopy(newValue.type, pid);
-        newValue.dsiReprivatize(parentValue, reprivatizeData);
-      }
-      cobegin {
-        if chpl_localeTree.left._instance != nil then
-          on chpl_localeTree.left do
-            _reprivatizeHelp(newValue, originalValue, pid, hereID);
-        if chpl_localeTree.right._instance != nil then
-          on chpl_localeTree.right do
-            _reprivatizeHelp(newValue, originalValue, pid, hereID);
+        newValue.dsiReprivatize(value, reprivatizeData);
       }
     }
   }
@@ -468,9 +433,12 @@ module ChapelArray {
                          definedConst: bool) {
     if definedConst {
       if dom.isRectangular() {
-        const distDom: domain(dom.rank,
+        const distDom = new _domain(d.newRectangularDom(
+                              dom.rank,
                               dom._value.idxType,
-                              dom._value.stridable) dmapped d = dom;
+                              dom._value.stridable,
+                              dom.dims(),
+                              definedConst));
         return distDom;
       } else {
         const distDom: domain(dom._value.idxType) dmapped d = dom;
@@ -479,7 +447,13 @@ module ChapelArray {
     }
     else {
       if dom.isRectangular() {
-        var distDom: domain(dom.rank, dom._value.idxType, dom._value.stridable) dmapped d = dom;
+        var distDom = new _domain(d.newRectangularDom(
+                              dom.rank,
+                              dom._value.idxType,
+                              dom._value.stridable,
+                              dom.dims(),
+                              definedConst));
+
         return distDom;
       } else {
         var distDom: domain(dom._value.idxType) dmapped d = dom;
@@ -3198,7 +3172,6 @@ module ChapelArray {
     return lhs;
   }
 
-  // TODO: can we remove this last resort?
   pragma "find user line"
   pragma "coerce fn"
   pragma "last resort"
@@ -3220,6 +3193,7 @@ module ChapelArray {
   }
   pragma "find user line"
   pragma "coerce fn"
+  pragma "last resort"
   proc chpl__coerceMove(type dstType:_array, in rhs, definedConst: bool) {
     // assumes rhs is iterable (e.g. list)
 

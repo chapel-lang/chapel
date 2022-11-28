@@ -29,7 +29,7 @@ config const nmubins=5;
 config const nsbins=5;
 
 // Global variables
-var gtime1 : Timer;
+var gtime1 : stopwatch;
 
 proc main() {
   doPairs();
@@ -242,7 +242,7 @@ proc TreeAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, node1, node
 
 // The main code 
 proc doPairs() {
-  var tt : Timer;
+  var tt : stopwatch;
 
   // Read in the file
   var nlines1, nlines2 : int;

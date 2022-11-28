@@ -29,6 +29,7 @@
 #include "chplcgfns.h"
 #include "chplsys.h"
 #include "chpl-topo.h"
+#include "chpl-comm.h"
 #include "chpltypes.h"
 #include "error.h"
 
@@ -44,10 +45,18 @@
 
 #ifdef DEBUG
 // note: format arg 'f' must be a string constant
+#ifdef DEBUG_NODEID
+#define _DBG_P(f, ...)                                                  \
+        do {                                                            \
+          printf("%d:%s:%d: " f "\n", chpl_nodeID, __FILE__, __LINE__,  \
+                                      ## __VA_ARGS__);                  \
+        } while (0)
+#else
 #define _DBG_P(f, ...)                                                  \
         do {                                                            \
           printf("%s:%d: " f "\n", __FILE__, __LINE__, ## __VA_ARGS__); \
         } while (0)
+#endif
 #else
 #define _DBG_P(f, ...)
 #endif

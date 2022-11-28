@@ -39,9 +39,9 @@ module Graph500_main
 
   var Edges:[edgelist_domain] directed_vertex_pair;
 
-  var generation_time: Timer;
-  var construction_time: Timer;
-  var BFS_time: [1..NUMROOTS] Timer;
+  var generation_time: stopwatch;
+  var construction_time: stopwatch;
+  var BFS_time: [1..NUMROOTS] stopwatch;
   var BFS_time_array: [1..NUMROOTS] real;
   var BFS_nedges_traversed: [1..NUMROOTS] int;
 

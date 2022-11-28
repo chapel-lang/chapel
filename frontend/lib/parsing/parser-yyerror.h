@@ -38,39 +38,24 @@ static enum ErrorKind determineErrorKind(const char* msg) {
   return UNKNOWN;
 }
 
-// TODO: Could break out separate function 'yyreport_syntax_error'.
 void yychpl_error(YYLTYPE*       loc,
                   ParserContext* context,
                   const char*    errorMessage) {
   auto errorKind = determineErrorKind(errorMessage);
-  auto tokenText = yychpl_get_text(context->scanner);
-  bool hasNearestTokenText = (strlen(tokenText) > 0);
-  bool printNearestToken = true;
-  const char* baseMsg = nullptr;
-  std::string msg;
+  auto nearestToken = std::string(yychpl_get_text(context->scanner));
 
   switch (errorKind) {
     case EMPTY_ERROR_MESSAGE:
     case SYNTAX_ERROR:
-      // Do not print "syntax error" - the error message kind implies that.
+      CHPL_PARSER_REPORT(context, BisonSyntaxError, *loc, nearestToken);
       break;
     case UNKNOWN:
-      // There is still a message of some sort to print.
-      baseMsg = errorMessage;
+      CHPL_PARSER_REPORT(context, BisonUnknownError, *loc,
+                         std::string(errorMessage), nearestToken);
       break;
     case MEMORY_EXHAUSTED:
-      baseMsg = "memory exhausted while parsing";
+      CHPL_PARSER_REPORT(context, BisonMemoryExhausted, *loc);
       break;
   }
-
-  if (baseMsg) msg = baseMsg;
-  if (hasNearestTokenText && printNearestToken) {
-    msg += msg.size() ? ": near '" : "near '";
-    msg += tokenText;
-    msg += "'";
-  }
-
-  auto err = ParserError(*loc, msg, ErrorMessage::SYNTAX);
-  context->noteSyntaxError(std::move(err));
 }
 

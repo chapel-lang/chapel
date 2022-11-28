@@ -29,7 +29,7 @@ proc doSort(param st: SortType, trials: int) {
   var I: [D] real;
   var RefI: domain(I.eltType);
   var HistI: [RefI] int;
-  var t: Timer;
+  var t: stopwatch;
   for i in iters {
     resetArr(I);
     for i in D do RefI += I[i];

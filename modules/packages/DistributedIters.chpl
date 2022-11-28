@@ -224,7 +224,7 @@ where tag == iterKind.leader
       }
 
       var localeTimes:[0..#numLocales]real;
-      var totalTime:Timer;
+      var totalTime:stopwatch;
       if timeDistributedIters then totalTime.start();
 
       // The dynamic iterator stage (determines next subrange index and size).
@@ -241,7 +241,7 @@ where tag == iterKind.leader
         // localeChunkSize should not be less than chunkSize
         const maxSize = max(computedSize, chunkSize);
         const actualLocaleChunkSize = min(maxSize, denseRange.size);
-        var localeTime:Timer;
+        var localeTime:stopwatch;
         if timeDistributedIters then localeTime.start();
 
         var localeStage:int = dynamicStageCount.fetchAdd(1);
@@ -488,14 +488,14 @@ where tag == iterKind.leader
       }
 
       var localeTimes:[0..#numLocales]real;
-      var totalTime:Timer;
+      var totalTime:stopwatch;
       if timeDistributedIters then totalTime.start();
 
       coforall L in actualWorkerLocales
       with (ref guidedStageCount, ref localeTimes)
       do on L
       {
-        var localeTime:Timer;
+        var localeTime:stopwatch;
         if timeDistributedIters then localeTime.start();
 
         var localeStage:int = guidedStageCount.fetchAdd(1);

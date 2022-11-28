@@ -66,6 +66,24 @@
 #include <unistd.h>
 #include <math.h>
 
+#ifdef DEBUG
+// note: format arg 'f' must be a string constant
+#ifdef DEBUG_NODEID
+#define _DBG_P(f, ...)                                                  \
+        do {                                                            \
+          printf("%d:%s:%d: " f "\n", chpl_nodeID, __FILE__, __LINE__,  \
+                                      ## __VA_ARGS__);                  \
+        } while (0)
+#else
+#define _DBG_P(f, ...)                                                  \
+        do {                                                            \
+          printf("%s:%d: " f "\n", __FILE__, __LINE__, ## __VA_ARGS__); \
+        } while (0)
+#endif
+#else
+#define _DBG_P(f, ...)
+#endif
+
 #define ALIGN_DN(i, size)  ((i) & ~((size) - 1))
 #define ALIGN_UP(i, size)  ALIGN_DN((i) + (size) - 1, size)
 
@@ -448,7 +466,7 @@ static void setupAvailableParallelism(int32_t maxThreads) {
         numPUsPerLocale = chpl_topo_getNumCPUsLogical(true);
         if (0 < numPUsPerLocale && numPUsPerLocale < hwpar) {
             char msg[256];
-            sprintf(msg,
+            snprintf(msg, sizeof(msg),
                     "QTHREADS: Reduced numThreadsPerLocale=%d to %d "
                     "to prevent oversubscription of the system.",
                     hwpar, numPUsPerLocale);
@@ -593,7 +611,8 @@ static void setupCallStacks(void) {
 
         stackSize = (reservedPages + 1) * pagesize;
 
-        sprintf(msg, "Stack size was too small, increasing to %zu bytes (which"
+        snprintf(msg, sizeof(msg),
+                     "Stack size was too small, increasing to %zu bytes (which"
                      " may still not be enough).\n  Note: guard pages use %zu"
                      " bytes and qthread task data structures use %zu bytes.",
                      stackSize, guardSize, rtdsSize);

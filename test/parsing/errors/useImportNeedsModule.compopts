@@ -1,0 +1,2 @@
+--detailed-errors # useImportNeedsModule-detailed.good
+--no-detailed-errors # useImportNeedsModule-brief.good

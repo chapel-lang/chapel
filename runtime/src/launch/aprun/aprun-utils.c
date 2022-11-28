@@ -242,16 +242,18 @@ char** chpl_create_aprun_cmd(int argc, char* argv[],
   if (verbosity < 2) {
     largv[largc++] = (char *) "-q";
   }
-  sprintf(_nbuf, "%s%d", getNumLocalesStr(), numLocales);
+  snprintf(_nbuf, sizeof(_nbuf), "%s%d", getNumLocalesStr(), numLocales);
   largv[largc++] = (char *) getAprunArgStr(aprun_cc);
   largv[largc++] = (char *) ccArg;
-  sprintf(_dbuf, "%s%d", getCoresPerLocaleStr(), getCoresPerLocale());
+  snprintf(_dbuf, sizeof(_dbuf), "%s%d", getCoresPerLocaleStr(),
+           getCoresPerLocale());
   largv[largc++] = _dbuf;
   largv[largc++] = _nbuf;
-  sprintf(_Nbuf, "%s%d", getLocalesPerNodeStr(), getLocalesPerNode());
+  snprintf(_Nbuf, sizeof(_Nbuf), "%s%d", getLocalesPerNodeStr(),
+           getLocalesPerNode());
   largv[largc++] = _Nbuf;
   if ((CPUsPerCU = getCPUsPerCU()) >= 0) {
-    sprintf(_jbuf, "%s%d", getCPUsPerCUStr(), getCPUsPerCU());
+    snprintf(_jbuf, sizeof(_jbuf), "%s%d", getCPUsPerCUStr(), getCPUsPerCU());
     largv[largc++] = _jbuf;
   }
   if ((nodeListOpt = getNodeListOpt()) != NULL) {

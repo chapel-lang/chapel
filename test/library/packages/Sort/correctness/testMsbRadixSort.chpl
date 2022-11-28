@@ -201,7 +201,7 @@ proc testSortsUnsigned(input) {
      array[i] = abs(array[i]);
    }
 
-   var t: Timer;
+   var t: stopwatch;
    t.start();
 
    MSBRadixSort.msbRadixSort(array, 1, size, new intCriterion(),

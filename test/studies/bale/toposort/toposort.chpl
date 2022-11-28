@@ -482,8 +482,8 @@ class PermutationMap {
   proc permuteDomain( D : domain )
   where D.rank == 2 && D.isSparse()
   {
-    // Timer for debugging purposes
-    var timer : Timer;
+    // stopwatch for debugging purposes
+    var timer : stopwatch;
 
     // resulting domain after permutation
     var sD : D.type;
@@ -515,7 +515,7 @@ class TopoSortResult {
   type idxType;
   var permutationMap : shared PermutationMap(idxType)?;
   var timerDom : domain(string);
-  var timers : [timerDom] Timer;
+  var timers : [timerDom] stopwatch;
 
   proc init(type idxType){
     this.idxType = idxType;

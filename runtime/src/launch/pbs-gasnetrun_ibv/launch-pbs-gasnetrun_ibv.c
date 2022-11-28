@@ -141,9 +141,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 #else
   mypid = 0;
 #endif
-  sprintf(sysFilename, "%s%d", baseSysFilename, (int)mypid);
-  sprintf(expectFilename, "%s%d", baseExpectFilename, (int)mypid);
-  sprintf(pbsFilename, "%s%d", basePBSFilename, (int)mypid);
+  snprintf(sysFilename, sizeof(sysFilename), "%s%d", baseSysFilename,
+           (int)mypid);
+  snprintf(expectFilename, sizeof(expectFilename), "%s%d", baseExpectFilename,
+           (int)mypid);
+  snprintf(pbsFilename, sizeof(pbsFilename), "%s%d", basePBSFilename,
+           (int)mypid);
 
   pbsFile = fopen(pbsFilename, "w");
   fprintf(pbsFile, "#!/bin/sh\n\n");

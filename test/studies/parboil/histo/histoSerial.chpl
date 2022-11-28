@@ -7,7 +7,7 @@ proc main(args: [] string) {
   use Time;
   var inputFilename: string;
   var outputFilename: string;
-  var inputTime, outputTime, computeTime, totalTime: Timer;
+  var inputTime, outputTime, computeTime, totalTime: stopwatch;
   if args.size == 4 {
     inputFilename = args[1];
     outputFilename = args[2];

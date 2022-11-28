@@ -52,14 +52,14 @@ config const minCount = 2;      // minimum count for a word to show up in output
 //-----------------------------------------------------------------------
 // Read in the input csv files and at the same time do a wordcount per csv file.
 
-var t: Timer;
+var t: stopwatch;
 t.start();
 
 var filenamesList: list(string);
 
-// findfiles() returns an iterator so putting all file names in a list
+// findFiles() returns an iterator so putting all file names in a list
 // to enable creating an array of file names.
-for f in findfiles(inputDir) {
+for f in findFiles(inputDir) {
     filenamesList.append(f);
 }
 // Create an array blocked into pieces per locale.

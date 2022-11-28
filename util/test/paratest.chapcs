@@ -39,6 +39,11 @@ def run_command_wrapper(command):
     output_lines = [line.strip().strip('"') for line in output.splitlines()]
     return output_lines
 
+def get_partition():
+    """
+    Get the slurm parition to test on.
+    """
+    return os.getenv('CHPL_TEST_PARTITION', 'chapel')
 
 def expand_hostnames(hostname):
     """
@@ -52,7 +57,7 @@ def expand_hostnames(hostname):
 
 def get_exclusive_nodes():
     """
-    Get nodes requested for immediate exclusive access on the chapel partition.
+    Get nodes requested for immediate exclusive access.
     Returns tuple of (num_exclusive_nodes, exclusive_hostnames)
     """
     # Grab "OVER_SUBSCRIBE;NODES;NODELIST;REQ_NODES;REASON" info for all jobs.
@@ -61,13 +66,13 @@ def get_exclusive_nodes():
     # nodes requested if no specific nodes were requested. Consider "draining"
     # nodes as exclusive since no other jobs will be able to run on them.
     squeue_cmd = ['squeue',
-                  '--partition=chapel',
+                  '--partition={0}'.format(get_partition()),
                   '--noheader',
                   '--format="%h;%D;%N;%n;%r"']
     squeue_out = run_command_wrapper(squeue_cmd)
 
     sinfo_cmd = ['sinfo',
-                 '--partition=chapel',
+                 '--partition={0}'.format(get_partition()),
                  '--noheader',
                  '--responding',
                  '--format="NO;%D;%N;%N;None"',
@@ -90,12 +95,11 @@ def get_exclusive_nodes():
 
 def get_num_non_exclusive_nodes():
     """
-    Get the number of nodes available for testing on the chapel partition
-    (online - exclusive)
+    Get the number of nodes available for testing (online - exclusive)
     """
     online_states = 'ALLOC,ALLOCATED,COMP,COMPLETING,IDLE,MIX,MIXED'
     sinfo_cmd = ['sinfo',
-                 '--partition=chapel',
+                 '--partition={0}'.format(get_partition()),
                  '--noheader',
                  '--responding',
                  '--format="%D"',
@@ -111,7 +115,7 @@ def get_num_oversub_jobs():
     Get the number of jobs that allow oversubscription (permit node sharing)
     """
     squeue_cmd = ['squeue',
-                  '--partition=chapel',
+                  '--partition={0}'.format(get_partition()),
                   '--noheader',
                   '--format="%h"']
     squeue_out = [s.upper() for s in run_command_wrapper(squeue_cmd)]
@@ -148,7 +152,7 @@ def run_paratest(args):
     salloc_cmd = ['salloc',
                   '--nodes={0}'.format(num_free_nodes),
                   '--immediate=60',
-                  '--partition=chapel',
+                  '--partition={0}'.format(get_partition()),
                   '--oversubscribe',
                   '--nice']
 

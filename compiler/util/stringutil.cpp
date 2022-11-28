@@ -63,7 +63,7 @@ const char* astr(UniqueString s)
 const char*
 istr(int i) {
   char s[64];
-  if (sprintf(s, "%d", i) > 63)
+  if (snprintf(s, sizeof(s), "%d", i) > 63)
     INT_FATAL("istr buffer overflow");
   return astr(s);
 }
@@ -148,10 +148,10 @@ uint64_t binStr2uint64(const char* str, bool userSupplied,
     if (userSupplied) {
       astlocT astloc(line, filename);
       USR_FATAL(astloc, "Integer literal overflow: '%s' is too big "
-                "for type 'uint64'", str);
+                "for a 64-bit unsigned integer", str);
     } else {
       INT_FATAL("Integer literal overflow: '%s' is too big "
-                "for type 'uint64'", str);
+                "for a 64-bit unsigned integer", str);
     }
   }
   uint64_t val = 0;
@@ -190,10 +190,10 @@ uint64_t octStr2uint64(const char* str, bool userSupplied,
     if (userSupplied) {
       astlocT astloc(line, filename);
       USR_FATAL(astloc, "Integer literal overflow: '%s' is too big "
-                "for type 'uint64'", str);
+                "for a 64-bit unsigned integer", str);
     } else {
       INT_FATAL("Integer literal overflow: '%s' is too big "
-                "for type 'uint64'", str);
+                "for a 64-bit unsigned integer", str);
     }
   }
 
@@ -225,10 +225,10 @@ uint64_t hexStr2uint64(const char* str, bool userSupplied,
     if (userSupplied) {
       astlocT astloc(line, filename);
       USR_FATAL(astloc, "Integer literal overflow: '%s' is too big "
-                "for type 'uint64'", str);
+                "for a 64-bit unsigned integer", str);
     } else {
       INT_FATAL("Integer literal overflow: '%s' is too big "
-                "for type 'uint64'", str);
+                "for a 64-bit unsigned integer", str);
     }
   }
 

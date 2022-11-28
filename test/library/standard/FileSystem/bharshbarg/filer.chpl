@@ -73,7 +73,7 @@ iter listdir(path: string, hidden=false, dirs=true, files=true,
             //
             use FileSystem;
 
-            if (listlinks || !isLink(fullpath)) {
+            if (listlinks || !isSymlink(fullpath)) {
               if (dirs && isDir(fullpath)) then
                 yield filename;
               else if (files && isFile(fullpath)) then

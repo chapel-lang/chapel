@@ -103,6 +103,7 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
   int length = 0;
   FILE *qsubScript = NULL;
   char *qsubFilename = expectFilename;
+  size_t qsubFilenameSize = sizeof(expectFilename);
   char jobName[128];
 
   if (!queue) {
@@ -116,7 +117,8 @@ static char* genQsubOptions(char* genFilename, char* projectString, qsubVersion 
 
   if (generate_qsub_script) {
     pid_t mypid = debug ? 0 : getpid();
-    sprintf(qsubFilename, "qsub.%s-%d", genFilename, (int) mypid);
+    snprintf(qsubFilename, qsubFilenameSize, "qsub.%s-%d", genFilename,
+             (int) mypid);
     qsubScript = fopen(qsubFilename, "w");
     fprintf(qsubScript, "#PBS -j oe\n");
     fprintf(qsubScript, "#PBS -zV\n");

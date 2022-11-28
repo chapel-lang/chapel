@@ -45,7 +45,7 @@ proc primePerf(type tableType) {
     for p in new Primes(tableType) { if count >= 25 then break; write(p, " "); count += 1; }
     writeln();
   } else {
-    var timer: Timer;
+    var timer: stopwatch;
     timer.start();
     for p in new Primes(tableType) { if p > LIMIT then break; count += 1; }
     timer.stop();

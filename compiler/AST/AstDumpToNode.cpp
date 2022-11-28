@@ -1665,10 +1665,10 @@ static const char* symPrefixString(Symbol* sym) {
     Symbol* parent = sym->defPoint ? sym->defPoint->parentSymbol : NULL;
 
     if (isModuleSymbol(parent))
-      sprintf(symPrefixBuffer, "%s.",  parent->name);
+      snprintf(symPrefixBuffer, sizeof(symPrefixBuffer), "%s.", parent->name);
 
     else if (isTypeSymbol(parent))
-      sprintf(symPrefixBuffer, "%s::", parent->name);
+      snprintf(symPrefixBuffer, sizeof(symPrefixBuffer), "%s::", parent->name);
 
     else
       symPrefixBuffer[0] = '\0';
@@ -1687,7 +1687,7 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
 
   if (compact)
   {
-    sprintf(name, "%s%s", symPrefixString(sym), sym->name);
+    snprintf(name, sizeof(name), "%s%s", symPrefixString(sym), sym->name);
   }
   else if (mod != 0)
   {
@@ -1696,32 +1696,32 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
       ;
 
     else if (sym == 0)
-      sprintf(name, "??.NULL");
+      snprintf(name, sizeof(name), "??.NULL");
 
     else if (mod->name == 0 && sym->name == 0)
-      sprintf(name, "??.??");
+      snprintf(name, sizeof(name), "??.??");
 
     else if (mod->name != 0 && sym->name == 0)
-      sprintf(name, "%s.??", mod->name);
+      snprintf(name, sizeof(name), "%s.??", mod->name);
 
     else if (mod->name == 0 && sym->name != 0)
-      sprintf(name, "??.%s", sym->name);
+      snprintf(name, sizeof(name), "??.%s", sym->name);
 
     else
-      sprintf(name, "%s.%s", mod->name, sym->name);
+      snprintf(name, sizeof(name), "%s.%s", mod->name, sym->name);
 #else
 
-      sprintf(name, "%s", sym->name);
+      snprintf(name, sizeof(name), "%s", sym->name);
 
 #endif
   }
   else
   {
     if (sym->name == 0)
-      sprintf(name, "NULL.??");
+      snprintf(name, sizeof(name), "NULL.??");
 
     else
-      sprintf(name, "NULL.%s", sym->name);
+      snprintf(name, sizeof(name), "NULL.%s", sym->name);
   }
 
 
@@ -1875,9 +1875,9 @@ void AstDumpToNode::writeSymbol(Symbol* sym) const
       if (var->type == dtBool)
       {
         if (var->immediate->v_bool == 0)
-          sprintf(imm, "false");
+          snprintf(imm, bufSize, "false");
         else
-          sprintf(imm, "true");
+          snprintf(imm, bufSize, "true");
       }
       else
       {

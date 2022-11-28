@@ -319,7 +319,7 @@ class ForceLJ : Force {
   override proc compute(store : bool) : void {
     eng_vdwl = 0;
     virial = 0;
-    var fTimer : Timer;
+    var fTimer : stopwatch;
 
     // wipe old forces of real AND ghost atoms
     fTimer.start();

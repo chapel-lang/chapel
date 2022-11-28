@@ -21,7 +21,7 @@ proc main(args: [] string) {
   const c0 = 1.0:real(32) / 6.0:real(32);
   const c1 = 1.0:real(32) / 6.0:real(32) / 6.0:real(32);
 
-  var IOTimer, computeTimer, totalTimer: Timer;
+  var IOTimer, computeTimer, totalTimer: stopwatch;
 
   if nx < 1 || ny < 1 || nz < 1 then
     halt("bad problem size");

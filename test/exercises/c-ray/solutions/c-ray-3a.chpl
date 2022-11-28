@@ -145,10 +145,10 @@ proc main() {
   var scene = loadScene();
 
   //
-  // Timers to measure the rendering time
+  // stopwatches to measure the rendering time
   //
   use Time;
-  var t: Timer;
+  var t: stopwatch;
   t.start();
 
   //

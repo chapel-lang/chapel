@@ -7,12 +7,12 @@ config const m = 100;
 
 var globalString = "";
 
-var tg:Timer;
-var t0:Timer;
-var t1:Timer;
-var t2:Timer;
-var t3:Timer;
-var t4:Timer;
+var tg:stopwatch;
+var t0:stopwatch;
+var t1:stopwatch;
+var t2:stopwatch;
+var t3:stopwatch;
+var t4:stopwatch;
 
 tg.start();
 

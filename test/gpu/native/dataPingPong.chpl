@@ -7,8 +7,8 @@ config const printResult = true;
 config const printTimes = false;
 config const useGPU = true;
 
-var detailTimer = new Timer();
-var totalTimer = new Timer();
+var detailTimer = new stopwatch();
+var totalTimer = new stopwatch();
 
 var A: [1..n] int;
 

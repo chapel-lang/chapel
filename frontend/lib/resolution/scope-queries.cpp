@@ -556,29 +556,26 @@ static bool lookupInScopeViz(Context* context,
 
   LookupConfig config = LOOKUP_INNERMOST;
 
-  if (isFirstPart == true) {
-    // e.g. A in use A.B.C or import A.B.C
+  // e.g. A in use A.B.C or import A.B.C
+  if (isFirstPart) {
+
+    // a top-level module name
+    config |= LOOKUP_TOPLEVEL;
+
+    // a module name in scope due to another use/import
+    config |= LOOKUP_IMPORT_AND_USE;
+
+    // a sibling module or parent module
+    config |= LOOKUP_PARENTS;
+
     if (useOrImport == VIS_USE) {
-      // a top-level module name
-      config |= LOOKUP_TOPLEVEL;
 
       // a submodule of the current module
       config |= LOOKUP_DECLS;
-
-      // a module name in scope due to another use/import
-      config |= LOOKUP_IMPORT_AND_USE;
-
-      // a sibling module or parent module
-      config |= LOOKUP_PARENTS;
     }
-    if (useOrImport == VIS_IMPORT) {
-      // a top-level module name
-      config |= LOOKUP_TOPLEVEL;
 
-      // a module name in scope due to another use/import
-      config |= LOOKUP_IMPORT_AND_USE;
-    }
   } else {
+
     // if it's not the first part, look in the scope for
     // declarations and use/import statements.
     config |= LOOKUP_IMPORT_AND_USE;
@@ -832,6 +829,27 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
   return nullptr;
 }
 
+static const Scope* handleSuperMaybeError(Context* context,
+                                          const Scope* scope,
+                                          const AstNode* expr,
+                                          VisibilityStmtKind kind) {
+  // There was a problem - we already walked off the top of the scope stack.
+  if (!scope) return nullptr;
+
+  auto ret = scope->parentModuleScope();
+
+  if (!ret) {
+    auto modScope = scope->moduleScope();
+    assert(modScope);
+    auto ast = parsing::idToAst(context, modScope->id());
+    assert(ast && ast->isModule());
+    auto mod = ast->toModule();
+    CHPL_REPORT(context, SuperFromTopLevelModule, expr, mod, kind);
+  }
+
+  return ret;
+}
+
 // Handle this/super and submodules
 // e.g. M.N.S is represented as
 //   Dot( Dot(M, N), S)
@@ -845,8 +863,13 @@ findUseImportTarget(Context* context,
                     UniqueString& foundName) {
   if (auto ident = expr->toIdentifier()) {
     foundName = ident->name();
+
     if (ident->name() == USTR("super")) {
-      return scope->parentScope()->moduleScope();
+      auto ret = handleSuperMaybeError(context,
+                                       scope,
+                                       expr,
+                                       useOrImport);
+      return ret;
     } else if (ident->name() == USTR("this")) {
       return scope->moduleScope();
     } else {
@@ -854,10 +877,22 @@ findUseImportTarget(Context* context,
                           expr->id(), useOrImport, /* isFirstPart */ true);
     }
   } else if (auto dot = expr->toDot()) {
-    UniqueString ignoredFoundName;
+    UniqueString ignoreFoundName;
     const Scope* innerScope = findUseImportTarget(context, scope, resolving,
                                                   dot->receiver(), useOrImport,
-                                                  ignoredFoundName);
+                                                  ignoreFoundName);
+    // TODO: 'this.this'?
+    if (dot->field() == USTR("super")) {
+
+      // Note that it is possible for 'innerScope' to be 'nullptr' already,
+      //  in which case we will not emit an error for this component.
+      auto ret = handleSuperMaybeError(context,
+                                       innerScope,
+                                       expr,
+                                       useOrImport);
+      return ret;
+    }
+
     if (innerScope != nullptr) {
       UniqueString nameInScope = dot->field();
       // find nameInScope in innerScope

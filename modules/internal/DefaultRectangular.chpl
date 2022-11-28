@@ -2292,6 +2292,7 @@ module DefaultRectangular {
   // due to a type, stridability, or rank mismatch in the other argument). When
   // debugOptimizedSwap is off, this overload will be ignored due to its where
   // clause.
+  pragma "last resort"
   proc DefaultRectangularArr.doiOptimizedSwap(other) where debugOptimizedSwap {
     writeln("DefaultRectangularArr doing unoptimized swap. Type mismatch");
     return false;

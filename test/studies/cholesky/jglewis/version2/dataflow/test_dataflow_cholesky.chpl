@@ -128,7 +128,7 @@ module test_dataflow_cholesky {
       print_lower_triangle ( L );
     }
 
-    var clock : Timer;
+    var clock : stopwatch;
           
     writeln ("\n\n");
     writeln ("scalar inner product cholesky factorization ");

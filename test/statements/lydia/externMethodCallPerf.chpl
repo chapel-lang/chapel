@@ -14,7 +14,7 @@ proc blah1(num) {
 }
 
 proc main() {
-  var t1, t2, t3: Timer;
+  var t1, t2, t3: stopwatch;
   var res1, res2, res3: int;
   
   t1.start();

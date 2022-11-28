@@ -66,7 +66,7 @@
    :proc:`exists`
    :proc:`isDir`
    :proc:`isFile`
-   :proc:`isLink`
+   :proc:`isSymlink`
    :proc:`isMount`
    :proc:`sameFile`
 
@@ -85,7 +85,7 @@
    :iter:`glob`
    :iter:`listDir`
    :iter:`walkDirs`
-   :iter:`findfiles`
+   :iter:`findFiles`
 
    Constant and Function Definitions
    ---------------------------------
@@ -487,7 +487,7 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
     // Take care of files in src
     var fileDestName = dest + "/" + filename;
     var fileSrcName = src + "/" + filename;
-    if (try isLink(fileSrcName) && copySymbolically) {
+    if (try isSymlink(fileSrcName) && copySymbolically) {
       // Copy symbolically means symlinks should be copied as symlinks
       var realp = try realPath(fileSrcName);
       try symlink(realp, fileDestName);
@@ -501,7 +501,7 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
   for dirname in listDir(path=src, dirs=true, files=false, listlinks=true) {
     var dirDestName = dest+"/"+dirname;
     var dirSrcName = src+"/"+dirname;
-    if (try isLink(dirSrcName) && copySymbolically) {
+    if (try isSymlink(dirSrcName) && copySymbolically) {
       // Copy symbolically means symlinks should be copied as symlinks
       var realp = try realPath(dirSrcName);
       try symlink(realp, dirDestName);
@@ -591,7 +591,20 @@ proc exists(name: string): bool throws {
 
    :yield:  The paths to any files found, relative to `startdir`, as strings
 */
+iter findFiles(startdir: string = ".", recursive: bool = false,
+               hidden: bool = false): string {
+  if (recursive) then
+    foreach subdir in walkDirs(startdir, hidden=hidden) do
+      foreach file in listDir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+        yield subdir+"/"+file;
+  else
+    foreach file in listDir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+      yield startdir+"/"+file;
+}
 
+// When this deprecated iterator is removed remember to remove the standalone
+// parallel version below as well.
+deprecated "'findfiles' is deprecated, please use 'findFiles' instead"
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false): string {
   if (recursive) then
@@ -604,6 +617,27 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
 }
 
 pragma "no doc"
+iter findFiles(startdir: string = ".", recursive: bool = false,
+               hidden: bool = false, param tag: iterKind): string
+       where tag == iterKind.standalone {
+  if (recursive) then
+    // Why "with (ref hidden)"?  A: the compiler currently allows only
+    // [const] ref intents in forall loops over recursive parallel iterators
+    // such as walkDirs().
+    forall subdir in walkDirs(startdir, hidden=hidden) with (ref hidden) do
+      foreach file in listDir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+        yield subdir+"/"+file;
+  else
+    foreach file in listDir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+      yield startdir+"/"+file;
+}
+
+// Adding the deprecation warning here causes 3 deprecation warnings in
+// addition to the one that comes from the serial iterator for a forall loop
+// that calls this. (serial, leader, follower, standalone). Rely on just
+// the serial deprecation warning to reduce it to a single message.
+pragma "no doc"
+//deprecated "'findfiles' is deprecated, please use 'findFiles' instead"
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
@@ -912,7 +946,7 @@ proc isFile(name:string):bool throws {
                         including the case where the path does not refer
                         to a valid file or directory.
 */
-proc isLink(name: string): bool throws {
+proc isSymlink(name: string): bool throws {
   extern proc chpl_fs_is_link(ref result:c_int, name: c_string): errorCode;
 
   if (name.isEmpty()) {
@@ -924,8 +958,13 @@ proc isLink(name: string): bool throws {
 
   var ret:c_int;
   var err = chpl_fs_is_link(ret, unescape(name).c_str());
-  if err then try ioerror(err, "in isLink", name);
+  if err then try ioerror(err, "in isSymlink", name);
   return ret != 0;
+}
+
+deprecated "'isLink' is deprecated. Please use 'isSymlink' instead"
+proc isLink(name: string): bool throws {
+  return isSymlink(name);
 }
 
 /* Determine if the provided path `name` corresponds to a mount point and
@@ -1019,7 +1058,7 @@ iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
 
           // TODO: revisit error handling for this method
           try {
-            if (listlinks || !isLink(fullpath)) {
+            if (listlinks || !isSymlink(fullpath)) {
               if (dirs && isDir(fullpath)) then
                 yield filename;
               else if (files && isFile(fullpath)) then
@@ -1213,7 +1252,7 @@ private proc rmTreeHelper(root: string) throws {
   // them handle cleaning up their contents and themselves
   for dirname in listDir(path=root, dirs=true, files=false, listlinks=true, hidden=true) {
     var fullpath = root + "/" + dirname;
-    var dirIsLink = try isLink(fullpath);
+    var dirIsLink = try isSymlink(fullpath);
     if (dirIsLink) {
       try remove(fullpath);
     } else {

@@ -49,13 +49,13 @@ var   membcounts:[atomsDist] int;
 config const infile:string = 'ljcut.in';
 
 loadParticles(infile, positions, velocities);
-var timer:Timer;
+var timer:stopwatch;
 writeln("-- LAMMPS - (Parallel,Chapel) -- ");
 timer.start();
 
 for i in 1..numSteps
 {
-//    var it:Timer;
+//    var it:stopwatch;
 //    it.start();
 
     for j in atomsDist

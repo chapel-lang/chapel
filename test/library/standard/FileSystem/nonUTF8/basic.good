@@ -1,7 +1,7 @@
 Creating a directory
 isFile works: true
 isDir works: true
-isLink works: true
+isSymlink works: true
 isMount works: true
 exists works: true
 
@@ -9,7 +9,7 @@ Changing directory
 Creating file
 isFile works: true
 isDir works: true
-isLink works: true
+isSymlink works: true
 isMount works: true
 exists works: true
 
@@ -28,7 +28,7 @@ chmod works: true
 Creating a symlink
 isFile works: true
 isDir works: true
-isLink works: true
+isSymlink works: true
 isMount works: true
 exists works: true
 

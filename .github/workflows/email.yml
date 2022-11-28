@@ -21,6 +21,7 @@ jobs:
       - name: get commits payload
         env:
           COMMIT_URL: ${{github.event.pull_request._links.commits.href}}
+          LOG: ${{github.event.pull_request.body}}
         run: |
               curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
               echo "AUTHOR=$(jq -r '.[0].commit.author.name' commits.json)" >> $GITHUB_ENV   
@@ -28,15 +29,16 @@ jobs:
               echo "MESSAGE=$((jq  '.[0].commit.message' commits.json)| awk -F'\\\\n' '{print $1}' | sed 's/\"//g')" >> $GITHUB_ENV 
               echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
               echo "FILES_CHANGED=$(echo '${{github.event.pull_request._links.html.href}}/files' )" >> $GITHUB_ENV
-  
+              echo $LOG
+              echo "MERGE_LOG= $(echo $LOG | sed 's/\\n/<br>/g' | sed 's/\\r/ /g' ) " >> $GITHUB_ENV
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
         with:
-          fetch-depth: 2          
+          fetch-depth: 0          
       - name: Get changed files
         id: changed-files
-        uses: tj-actions/changed-files@v32
+        uses: tj-actions/changed-files@v34
         with:
           separator: ","                 
       - name: Send mail  
@@ -68,7 +70,7 @@ jobs:
               Link: ${{github.event.pull_request._links.html.href}} <br>             
               Log Message: <br><br>
                            ${{env.MESSAGE}} <br> 
-                           ${{github.event.pull_request.body}} <br>
+                          ${{env.MERGE_LOG}} <br>
               Compare: ${{env.COMPARE_URL}} <br> 
               Diff: ${{github.event.pull_request.diff_url}} <br>
               Modified Files: <br>
