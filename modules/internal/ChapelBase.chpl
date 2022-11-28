@@ -1444,6 +1444,11 @@ module ChapelBase {
       // string to a type. Otherwise, we can't resolve chpl_debug_writeln in
       // `range.these`
       { var dummyRange = 1..0; for i in dummyRange {} }
+      // TODO: String comparison here is a workaround and would be better if
+      // we could use t == regex(string) - but this fails with an error that
+      // regex(type string) is not defined in this scope - adding use Regex;
+      // leads to a different error:
+      // "use of 'rootLocale' before encountering its definition, type unknown"
       if t:string == "regex(string)" || t:string == "regex(bytes)" then
         return compile(str);
       else
