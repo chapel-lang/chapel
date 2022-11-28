@@ -128,6 +128,26 @@ module Version {
   chplVersion = new versionValue(chplMajor, chplMinor, chplUpdate, chplSHA);
 
   /*
+    A helper function that creates a new versionValue from its arguments.
+    :arg major: The major version number
+    :type major: `int`
+    :arg minor: The minor version number
+    :type minor: `int`
+    :arg update: The optional update version number (defaults to 0)
+    :type update: `int`
+    :arg commit: The optional commit ID (defaults to "")
+    :type commit: `string`
+    :returns: A new version value of type :type:`versionValue`.
+  */
+  deprecated "createVersion is deprecated, please use 'new versionValue()' instead."
+  proc createVersion(param major: int,
+                     param minor: int,
+                     param update: int = 0,
+                     param commit: string = ""): versionValue(?) {
+    return new versionValue(major, minor, update, commit);
+  }
+
+  /*
     This record represents a software version that is mostly equivalent to
     a semantic version, though not 100% true to the semver spec. The main
     deviation from the spec is that ``versionValue`` doesn't support pre-release
