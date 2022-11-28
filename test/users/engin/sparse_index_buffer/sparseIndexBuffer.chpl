@@ -26,7 +26,7 @@ iter indexGen(d) {
 }
 
 proc test(d) {
-  var spsIndexBuffer = d.makeIndexBuffer(size=4);
+  var spsIndexBuffer = d.createIndexBuffer(size=4);
   for i in indexGen(d) do
     spsIndexBuffer.add(i);
   spsIndexBuffer.commit();
