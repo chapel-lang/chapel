@@ -120,7 +120,7 @@ static void test1(Parser* parser) {
   assert(mod->stmt(1)->isErroneousExpression());
   assert(mod->stmt(2)->isComment());
   auto error = parseResult.error(0);
-  const char* expected = "Select has multiple otherwise clauses";
+  const char* expected = "select has multiple otherwise clauses";
   auto actual = error->message();
   assert(actual == expected);
 }

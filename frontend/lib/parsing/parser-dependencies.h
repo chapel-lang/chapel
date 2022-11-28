@@ -42,5 +42,4 @@ using namespace chpl;
 using namespace uast;
 using chpl::detail::PODUniqueString;
 
-struct ParserError;
 struct ParserComment;

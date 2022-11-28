@@ -1,1 +1,1 @@
-literal-unicode.chpl:1: error: universal character name not yet supported in string literal
+literal-unicode.chpl:1: syntax error: universal character name not yet supported in string literal

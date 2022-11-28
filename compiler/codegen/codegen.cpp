@@ -2504,10 +2504,10 @@ static void embedGpuCode() {
   SET_LINENO(rootModule);
   std::string fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
   std::string buffer;
-  chpl::ErrorMessage err;
+  std::string err;
   chpl::readfile(fatbinFilename.c_str(), buffer, err);
-  if(!err.isEmpty()) {
-    USR_FATAL("%s", err.message().c_str());
+  if (!err.empty()) {
+    USR_FATAL("%s", err.c_str());
   }
 
   genGlobalRawString("chpl_gpuBinary", buffer, buffer.length());

@@ -20,7 +20,6 @@
 #ifndef CHPL_UAST_BUILDERRESULT_H
 #define CHPL_UAST_BUILDERRESULT_H
 
-#include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/framework/mark-functions.h"
 #include "chpl/framework/update-functions.h"

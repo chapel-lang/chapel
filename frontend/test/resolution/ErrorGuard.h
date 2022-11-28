@@ -21,7 +21,6 @@
 #define FRONTEND_TEST_RESOLUTION_ERROR_GUARD_H
 
 #include "chpl/framework/Context.h"
-#include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/ErrorWriter.h"
 #include <vector>
 

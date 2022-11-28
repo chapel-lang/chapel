@@ -20,7 +20,6 @@
 #ifndef CHPL_UAST_BUILDER_H
 #define CHPL_UAST_BUILDER_H
 
-#include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/framework/mark-functions.h"
 #include "chpl/framework/update-functions.h"
@@ -108,10 +107,6 @@ class Builder final {
     Save an error.
    */
   void addError(const ErrorBase*);
-  /**
-    Convert an error message into a Dyno error and save it.
-   */
-  void addError(const ErrorMessage&);
 
   /**
     Record the location of an AST element.

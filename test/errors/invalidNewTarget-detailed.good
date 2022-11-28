@@ -1,4 +1,4 @@
-─── error in invalidNew.chpl:3 [MemManagementNonClass] ───
+─── error in invalidNewTarget.chpl:3 [MemManagementNonClass] ───
   Cannot use memory management strategy 'owned' with non-class type 'E'.
       |
     3 | var y = new owned E();
@@ -6,7 +6,7 @@
       |
   Memory management strategies can only be used with classes.
 
-─── error in invalidNew.chpl:3 [InvalidNew] ───
+─── error in invalidNewTarget.chpl:3 [InvalidNewTarget] ───
   Invalid use of 'new' on enum type 'E'
       |
     3 | var y = new owned E();

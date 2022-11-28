@@ -301,6 +301,14 @@ void operator()(std::ostream& streamOut,
 }
 };
 
+template<> struct stringify<char> {
+void operator()(std::ostream& streamOut,
+                StringifyKind stringKind,
+                const char val) const {
+  streamOut << val;
+}
+};
+
 // end integral types
 
 /*

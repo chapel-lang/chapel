@@ -20,9 +20,8 @@
 #ifndef CHPL_UTIL_FILESYSTEM_H
 #define CHPL_UTIL_FILESYSTEM_H
 
-#include "chpl/framework/ErrorMessage.h"
-
 #include <string>
+#include <system_error>
 
 namespace chpl {
 
@@ -31,7 +30,7 @@ namespace chpl {
   Reads the contents of a file into a string.
   If something failed, returns false and sets errorOut.
  */
-bool readfile(const char* path, std::string& strOut, ErrorMessage& errorOut);
+bool readfile(const char* path, std::string& strOut, std::string& errorOut);
 
 /**
   Checks to see if a file exists at path. Returns 'true' if it does.
