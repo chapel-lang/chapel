@@ -65,6 +65,10 @@ class Use final : public AstNode {
     #endif
   }
 
+  Use(Deserializer& des) : AstNode(asttags::Use, des) {
+    visibility_ = des.read<Decl::Visibility>();
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Use* rhs = other->toUse();
     return this->visibility_ == rhs->visibility_;
@@ -116,6 +120,13 @@ class Use final : public AstNode {
     CHPL_ASSERT(ret->isVisibilityClause());
     return (const VisibilityClause*)ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serializePart(ser);
+    ser(visibility_);
+  }
+
+  DECLARE_STATIC_DES(Use);
 
 };
 
