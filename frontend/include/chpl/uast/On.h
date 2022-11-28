@@ -51,6 +51,9 @@ class On final : public SimpleBlockLike {
                       numBodyStmts) {
   }
 
+  On(Deserializer& des)
+    : SimpleBlockLike(asttags::On, des) { }
+
   bool contentsMatchInner(const AstNode* other) const override {
     return simpleBlockLikeContentsMatchInner(other);
   }
@@ -78,6 +81,12 @@ class On final : public SimpleBlockLike {
     auto ret = child(destChildNum_);
     return ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    SimpleBlockLike::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(On);
 
 };
 

@@ -20,6 +20,8 @@
 #ifndef CHPL_UAST_BLOCKSTYLE_H
 #define CHPL_UAST_BLOCKSTYLE_H
 
+#include "chpl/framework/serialize-functions.h"
+
 namespace chpl {
 namespace uast {
 
@@ -53,6 +55,9 @@ enum struct BlockStyle {
 };
 
 } // end namespace uast
+
+DECLARE_SERDE_ENUM(uast::BlockStyle, uint8_t);
+
 } // end namespace chpl
 
 #endif

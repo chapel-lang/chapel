@@ -42,6 +42,9 @@ class Block final : public SimpleBlockLike {
     assert(bodyChildNum_ >= 0);
   }
 
+  Block(Deserializer& des)
+    : SimpleBlockLike(asttags::Block, des) { }
+
   bool contentsMatchInner(const AstNode* other) const override {
     return simpleBlockLikeContentsMatchInner(other);
   }
@@ -57,6 +60,12 @@ class Block final : public SimpleBlockLike {
    Create and return a Block containing the passed stmts.
    */
   static owned<Block> build(Builder* builder, Location loc, AstList stmts);
+
+  void serialize(Serializer& ser) const override {
+    SimpleBlockLike::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(Block);
 
 };
 
