@@ -934,6 +934,25 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
 
   if (dynoRealizeErrors()) USR_STOP();
 
+
+  if (fDynoSerialize) {
+    //auto sfname = builderResult.serializeToDir(dynoBinAstDir);
+    //// 'res' = AstList for now - eventually will be a BuilderResult
+    //auto res = chpl::uast::BuilderResult::deserializeFromFile(gContext, sfname);
+
+    std::stringstream ss;
+    builderResult.serializeToDir(ss);
+    // 'res' = AstList for now - eventually will be a BuilderResult
+    auto res = chpl::uast::BuilderResult::deserializeFromFile(gContext, ss);
+
+    if (builderResult.compare(res) == false) {
+      printf("FAIL: %s\n", builderResult.filePath().c_str());
+    } else {
+      printf("SUCCESS: %s\n", builderResult.filePath().c_str());
+    }
+    builderResult.printNumNodes();
+  }
+
   ModuleSymbol* lastModSym = nullptr;
   int numModSyms = 0;
 

@@ -26,8 +26,11 @@
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Comment.h"
+#include "chpl/util/filesystem.h"
 
 #include <cstring>
+#include <iostream>
+#include <fstream>
 #include <string>
 
 namespace chpl {
@@ -196,6 +199,104 @@ ID BuilderResult::idToParentId(ID id) const {
     return search->second;
   }
   return ID();
+}
+
+
+// <7F>HPECHPL
+const uint64_t magic = 0x4C5048434550487F;
+const uint32_t version = 0x00000001;
+
+std::string BuilderResult::serializeToDir(const char* dn) const {
+  std::string dirName = dn;
+  chpl::makeDir(dirName, true);
+  std::string baseName;
+  {
+    auto copy = this->filePath().str();
+    const char* fname = copy.c_str();
+    const char* right = strrchr(fname, '/');
+    if (right == NULL) {
+      baseName = fname;
+    } else {
+      baseName = right + 1;
+    }
+  }
+  auto fileName = dirName + "/" + baseName + ".ast.bin";
+  std::ofstream myFile;
+  myFile.open(fileName, std::ios::out | std::ios::trunc | std::ios::binary);
+
+  serializeToDir(myFile);
+
+  return fileName;
+}
+
+void BuilderResult::serializeToDir(std::ostream& os) const {
+  Serializer ser(os);
+  ser(magic);
+  ser(version);
+  const uint32_t numEntries = numTopLevelExpressions();
+  ser(numEntries);
+
+  for (auto ast : topLevelExpressions()) {
+    ast->serialize(ser);
+  }
+}
+
+// TODO: handle Locations
+AstList BuilderResult::deserializeFromFile(Context* context, std::string& sfname) {
+  std::ifstream myFile;
+  myFile.open(sfname, std::ios::in | std::ios::binary);
+
+  return deserializeFromFile(context, myFile);
+}
+
+AstList BuilderResult::deserializeFromFile(Context* context, std::istream& is) {
+  AstList ret;
+  Deserializer des(context, is);
+
+  auto m = des.read<uint64_t>();
+  auto v = des.read<uint32_t>();
+  assert(m == magic);
+  assert(v == version);
+
+  const auto numEntries = des.read<uint32_t>();
+
+  for (uint32_t i = 0; i < numEntries; i++) {
+    ret.push_back(AstNode::deserializeFromFile(des));
+  }
+
+  is.peek();
+  assert(is.eof());
+
+  return ret;
+}
+
+bool BuilderResult::compare(const AstList& other) const {
+  const int n = numTopLevelExpressions();
+  if (other.size() != n) {
+    return false;
+  }
+  for (int i = 0; i < n; i++) {
+    if (other[i] == nullptr) {
+      return false;
+    }
+    if (other[i]->completeMatch(topLevelExpression(i)) == false) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void BuilderResult::printNumNodes() const {
+  std::map<uast::AstTag, int> counter;
+  for (const auto& pair : idToAst_) {
+    counter[pair.second->tag()] += 1;
+    // pair.first.mark(context); // redundant
+    //context->markPointer(pair.second);
+  }
+
+  for (const auto& pair : counter) {
+    printf("%s :: %d\n", tagToString(pair.first), pair.second);
+  }
 }
 
 
