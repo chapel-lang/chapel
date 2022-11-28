@@ -48,6 +48,9 @@ class Tuple final : public Call {
     CHPL_ASSERT(numChildren() >= 1);
   }
 
+  Tuple(Deserializer& des)
+    : Call(asttags::Tuple, des) { }
+
   bool contentsMatchInner(const AstNode* other) const override {
     return this->callContentsMatchInner(other->toCall());
   }
@@ -65,6 +68,12 @@ class Tuple final : public Call {
   static owned<Tuple> build(Builder* builder,
                             Location loc,
                             AstList exprs);
+
+  void serialize(Serializer& ser) const override {
+    Call::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(Tuple);
 
 };
 
