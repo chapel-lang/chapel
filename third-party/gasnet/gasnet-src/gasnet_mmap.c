@@ -2156,6 +2156,13 @@ int gasneti_segmentAttach(
   // EP_BindSegment:
   i_ep->_segment = i_segment;
   gasneti_legacy_segment_attach_hook(i_ep);
+
+  // After local segment is attached, call optional client-provided hook
+  // Should call BEFORE any conduit-specific pinning/registration of the segment
+  if (gasnet_client_attach_hook) {
+    gasnet_client_attach_hook(segbase, segsize);
+  }
+
 #if GASNETC_EP_BINDSEGMENT_HOOK
   if (gasnetc_ep_bindsegment_hook(i_ep, i_segment, flags)) {
     gasneti_fatalerror("Failed to bind segment to endpoint in %s",
@@ -2163,11 +2170,6 @@ int gasneti_segmentAttach(
                                                           : "gex_Segment_Attach");
   }
 #endif
-  
-  // After local segment is attached, call optional client-provided hook
-  if (gasnet_client_attach_hook) {
-    gasnet_client_attach_hook(segbase, segsize);
-  }
 
   // sanity check (but should be true "by construction")
   gasneti_assert_ptr(gasneti_seginfo[gasneti_mynode].addr ,==, segbase);
