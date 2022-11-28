@@ -31,10 +31,7 @@
 #include <assert.h>
 
 void chpl_gpu_impl_init() {}
-
-bool chpl_gpu_impl_is_device_ptr(void* ptr) {
-  return false;
-}
+void chpl_gpu_impl_on_std_modules_finished_initializing() {}
 
 void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
                                  const char* fatbinData, const char* name,
@@ -47,22 +44,37 @@ void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
                                       int num_threads, int blk_dim, int nargs,
                                       va_list args) {}
 
-void chpl_gpu_impl_copy_device_to_host(void* dst, void* src, size_t n) {}
-
-void chpl_gpu_impl_copy_host_to_device(void* dst, void* src, size_t n) {}
-
-void chpl_gpu_impl_copy_device_to_device(void* dst, void* src, size_t n) {}
+void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
+                               int32_t lineno, int32_t filename) {
+  return chpl_malloc(size);
+}
 
 void* chpl_gpu_impl_mem_alloc(size_t size) {
   return chpl_malloc(size);
 }
-
 void chpl_gpu_impl_mem_free(void* memAlloc) {}
+void* chpl_gpu_impl_memmove(void* dst, const void* src, size_t n) {
+  return memmove(dst, src, n);
+}
+
+void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n) {}
+void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n) {}
+
+void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n) {}
+
+bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
+  return false;
+}
+
+bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
+  return false;
+}
 
 // This can be used for proper reallocation
 size_t chpl_gpu_impl_get_alloc_size(void* ptr) {
   return 0;
 }
+
 
 #endif // HAS_GPU_LOCALE
 
