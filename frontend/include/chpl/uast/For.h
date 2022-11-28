@@ -62,6 +62,11 @@ class For final : public IndexableLoop {
     assert(withClause() == nullptr);
   }
 
+  For(Deserializer& des)
+    : IndexableLoop(asttags::For, des) {
+    isParam_ = des.read<bool>();
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const For* lhs = this;
     const For* rhs = (const For*) other;
@@ -101,6 +106,13 @@ class For final : public IndexableLoop {
   bool isParam() const {
     return isParam_;
   }
+
+  void serialize(Serializer& ser) const override {
+    IndexableLoop::serializePart(ser);
+    ser(isParam_);
+  }
+
+  DECLARE_STATIC_DES(For);
 
 };
 

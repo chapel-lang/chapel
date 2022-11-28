@@ -45,6 +45,12 @@ class Loop: public AstNode {
     assert(children_[loopBodyChildNum_]->isBlock());
   }
 
+  Loop(AstTag tag, Deserializer& des)
+    : AstNode(tag, des) {
+    blockStyle_ = des.read<BlockStyle>();
+    loopBodyChildNum_ = des.read<int>();
+  }
+
   bool loopContentsMatchInner(const Loop* other) const {
     const Loop* lhs = this;
     const Loop* rhs = other;
@@ -101,6 +107,12 @@ class Loop: public AstNode {
   */
   BlockStyle blockStyle() const {
     return blockStyle_;
+  }
+
+  void serializePart(Serializer& ser) const {
+    AstNode::serializePart(ser);
+    ser(blockStyle_);
+    ser(loopBodyChildNum_);
   }
 };
 
