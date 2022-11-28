@@ -1,3 +1,4 @@
+compareVersionTypes.chpl:21: warning: sourceVersion is deprecated, please use versionValue instead.
 Comparing versions:
 3.1.1
 3.1.1
@@ -1440,5 +1441,71 @@ Comparing versions:
 <  : false
 <= : false
 >  : true
+>= : true
+
+Comparing versions:
+3.1.0
+3.1.1 (fff)
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+3.1.1 (fff)
+3.1.0
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+3.1.1
+3.1.1 (fff)
+------------------
+== : false
+!= : true
+<  : false
+<= : false
+>  : true
+>= : true
+
+Comparing versions:
+3.1.1 (fff)
+3.1.1
+------------------
+== : false
+!= : true
+<  : true
+<= : true
+>  : false
+>= : false
+
+Comparing versions:
+3.1.1 (fff)
+3.1.1 (fff)
+------------------
+== : true
+!= : false
+<  : false
+<= : true
+>  : false
+>= : true
+
+Comparing versions:
+3.1.1 (fff)
+3.1.1 (fff)
+------------------
+== : true
+!= : false
+<  : false
+<= : true
+>  : false
 >= : true
 

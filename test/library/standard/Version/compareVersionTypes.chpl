@@ -17,15 +17,17 @@ const v2_2_1_p = new versionValue(2,2,1,"ddd");
 const v3_1_0_p = new versionValue(3,1,0,"eee");
 const v3_1_1_p = new versionValue(3,1,1,"fff");
 
+// test for deprecated sourceVersion
+const v3_1_1_psv = new sourceVersion(3,1,1,"fff");
 
 var x = 2, y = 1, z = 3, q = 0;
 
 const v2_1_0_c = new version(x,y);
-const v2_1_1_c = new version(x,y,y);
+const v2_1_1_c = new version(2,1,1);
 const v2_2_0_c = new version(x,x,q);
 const v2_2_1_c = new version(x,x,y);
 const v3_1_0_c = new version(z,y);
-const v3_1_1_c = new version(z,y,y);
+const v3_1_1_c = new version(3,1,1);
 
 const v2_1_0_p_c = new version(x,y,q,"aaa");
 const v2_1_1_p_c = new version(x,y,y,"bbb");
@@ -119,6 +121,9 @@ compareBothVersions(v3_1_0, v3_1_1_c);
 compareBothVersions(v3_1_0_c, v3_1_1_p);
 compareBothVersions(v3_1_0, v3_1_1_p_c);
 
+compareBothVersions(v3_1_0, v3_1_1_psv);
+compareBothVersions(v3_1_1, v3_1_1_psv);
+compareBothVersions(v3_1_1_p, v3_1_1_psv);
 
 proc compareBothVersions(v1, v2) {
   compareVersions(v1,v2);
