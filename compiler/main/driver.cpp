@@ -312,6 +312,8 @@ bool fDynoScopeProduction = true;
 bool fDynoScopeBundled = false;
 bool fDynoDebugTrace = false;
 size_t fDynoBreakOnHash = 0;
+bool fDynoSerialize = false;
+char dynoBinAstDir[FILENAME_MAX + 1] = "dyno.ast/";
 
 std::vector<std::string> gDynoPrependInternalModulePaths;
 std::vector<std::string> gDynoPrependStandardModulePaths;
@@ -919,6 +921,10 @@ static void setLogDir(const ArgumentDescription* desc, const char* arg) {
   fLogDir = true;
 }
 
+static void setDynoSerialize(const ArgumentDescription* desc, const char* arg) {
+  fDynoSerialize = true;
+}
+
 static void setLogPass(const ArgumentDescription* desc, const char* arg) {
   logSelectPass(arg);
 }
@@ -1239,6 +1245,8 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-scope-bundled", ' ', NULL, "Enable [disable] using dyno to scope resolve bundled modules", "N", &fDynoScopeBundled, "CHPL_DYNO_SCOPE_BUNDLED", NULL},
  {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
  {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "X", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
+ {"dyno-serialize", ' ', NULL, "Serialize AST to binary files in a directory", "N", &fDynoSerialize, "CHPL_DYNO_COMPILER_LIBRARY", NULL},
+ {"dyno-serialize-dir", ' ', "<path>", "Specify directory for binary .dyno.ast files", "P", dynoBinAstDir, "CHPL_DYNO_SERIALIZE_DIR", setDynoSerialize},
 
 
  DRIVER_ARG_PRINT_CHPL_HOME,
