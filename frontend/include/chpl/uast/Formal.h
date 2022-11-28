@@ -72,6 +72,9 @@ class Formal final : public VarLikeDecl {
                   typeExpressionChildNum,
                   initExpressionChildNum) {
   }
+  Formal(Deserializer& des)
+    : VarLikeDecl(asttags::Formal, des) {
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Formal* lhs = this;
@@ -110,6 +113,12 @@ class Formal final : public VarLikeDecl {
   inline bool isExplicitlyAnonymous() const {
     return name() == USTR("_");
   }
+
+  void serialize(Serializer& ser) const override {
+    VarLikeDecl::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(Formal);
 
 };
 

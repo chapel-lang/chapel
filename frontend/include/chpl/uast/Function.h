@@ -165,6 +165,27 @@ class Function final : public NamedDecl {
     #endif
   }
 
+  Function(Deserializer& des)
+    : NamedDecl(asttags::Function, des) {
+    inline_        = des.read<bool>();
+    override_      = des.read<bool>();
+    kind_          = des.read<Kind>();
+    returnIntent_  = des.read<ReturnIntent>();
+    throws_        = des.read<bool>();
+    primaryMethod_ = des.read<bool>();
+    parenless_     = des.read<bool>();
+
+    formalsChildNum_    = (int)des.read<int32_t>();
+    thisFormalChildNum_ = (int)des.read<int32_t>();
+    numFormals_         = (int)des.read<int32_t>();
+    returnTypeChildNum_ = (int)des.read<int32_t>();
+    whereChildNum_      = (int)des.read<int32_t>();
+    lifetimeChildNum_   = (int)des.read<int32_t>();
+    numLifetimeParts_   = (int)des.read<int32_t>();
+    bodyChildNum_       = (int)des.read<int32_t>();
+  }
+
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Function* lhs = this;
     const Function* rhs = (const Function*) other;
@@ -385,9 +406,34 @@ class Function final : public NamedDecl {
   static const char* returnIntentToString(ReturnIntent intent);
 
   static const char* kindToString(Kind kind);
+
+  void serialize(Serializer& ser) const override {
+    NamedDecl::serializePart(ser);
+    ser(inline_);
+    ser(override_);
+    ser(kind_);
+    ser(returnIntent_);
+    ser(throws_);
+    ser(primaryMethod_);
+    ser(parenless_);
+
+    ser.write<int32_t>(formalsChildNum_);
+    ser.write<int32_t>(thisFormalChildNum_);
+    ser.write<int32_t>(numFormals_);
+    ser.write<int32_t>(returnTypeChildNum_);
+    ser.write<int32_t>(whereChildNum_);
+    ser.write<int32_t>(lifetimeChildNum_);
+    ser.write<int32_t>(numLifetimeParts_);
+    ser.write<int32_t>(bodyChildNum_);
+  }
+
+  DECLARE_STATIC_DES(Function);
 };
 
 } // end namespace uast
+
+DECLARE_SERDE_ENUM(uast::Function::Kind, uint8_t);
+DECLARE_SERDE_ENUM(uast::Function::ReturnIntent, uint8_t);
 
 
 /// \cond DO_NOT_DOCUMENT
