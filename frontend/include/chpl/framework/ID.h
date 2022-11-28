@@ -205,6 +205,18 @@ class ID final {
   /// \endcond
 
   std::string str() const;
+
+  void serialize(Serializer& ser) const {
+    ser(symbolPath_);
+    ser((int64_t)postOrderId_);
+    ser((int64_t)numChildIds_);
+  }
+  static ID deserialize(Deserializer& des) {
+    auto path = des.read<UniqueString>();
+    auto poi = des.read<int64_t>();
+    auto nci = des.read<int64_t>();
+    return ID(path, (int)poi, (int)nci);
+  }
 };
 
 // docs are turned off for this as a workaround for breathe errors
