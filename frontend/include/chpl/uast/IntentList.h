@@ -20,6 +20,8 @@
 #ifndef CHPL_UAST_INTENTLIST_H
 #define CHPL_UAST_INTENTLIST_H
 
+#include "chpl/framework/serialize-functions.h"
+
 namespace chpl {
 namespace uast {
 
@@ -98,6 +100,9 @@ enum struct IntentList {
 
 
 } // end namespace uast
+
+DECLARE_SERDE_ENUM(uast::IntentList, uint8_t);
+
 } // end namespace chpl
 
 namespace std {
