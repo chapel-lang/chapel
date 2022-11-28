@@ -30,11 +30,10 @@
 
 #include <assert.h>
 
-#include <hip/hip_runtime.h>
-#include <hip/hip_runtime_api.h>
-
 void chpl_gpu_impl_init() {}
 void chpl_gpu_impl_on_std_modules_finished_initializing() {}
+
+extern void hipGetDeviceCount(int* into);
 
 void chpl_gpu_get_device_count(int* into) {
   hipGetDeviceCount(into);
