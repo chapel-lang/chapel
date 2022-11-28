@@ -59,6 +59,13 @@ class Range final : public AstNode {
     }
   }
 
+  Range(Deserializer& des)
+    : AstNode(asttags::Range, des) {
+    opKind_ = des.read<OpKind>();
+    lowerBoundChildNum_ = des.read<int8_t>();
+    upperBoundChildNum_ = des.read<int8_t>();
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Range* rhs = other->toRange();
     return this->opKind_ == rhs->opKind_ &&
@@ -116,10 +123,23 @@ class Range final : public AstNode {
     Returns a string describing the passed OpKind
     */
   static const char* opKindToString(OpKind kind);
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serializePart(ser);
+    ser(opKind_);
+    ser(lowerBoundChildNum_);
+    ser(upperBoundChildNum_);
+  }
+
+  DECLARE_STATIC_DES(Range);
+
 };
 
 
 } // end namespace uast
+
+DECLARE_SERDE_ENUM(uast::Range::OpKind, uint8_t);
+
 } // end namespace chpl
 
 #endif

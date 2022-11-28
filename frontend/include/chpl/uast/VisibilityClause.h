@@ -79,6 +79,12 @@ class VisibilityClause final : public AstNode {
     }
   }
 
+  VisibilityClause(Deserializer& des)
+    : AstNode(asttags::VisibilityClause, des) {
+    limitationKind_ = des.read<LimitationKind>();
+    numLimitations_ = (int)des.read<int32_t>();
+  }
+
   // No need to check 'symbolChildNum_' or 'limitationChildNum_'.
   bool contentsMatchInner(const AstNode* other) const override {
     const VisibilityClause* rhs = other->toVisibilityClause();
@@ -167,6 +173,15 @@ class VisibilityClause final : public AstNode {
     Return a string describing the passed LimitationKind.
    */
   static const char* limitationKindToString(LimitationKind kind);
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serializePart(ser);
+    ser(limitationKind_);
+    ser.write<int32_t>(numLimitations_);
+  }
+
+  DECLARE_STATIC_DES(VisibilityClause);
+
 };
 
 
@@ -203,6 +218,8 @@ struct mark<uast::VisibilityClause::LimitationKind> {
     // No need to mark enums
   }
 };
+
+DECLARE_SERDE_ENUM(uast::VisibilityClause::LimitationKind, uint8_t);
 
 /// \endcond
 
