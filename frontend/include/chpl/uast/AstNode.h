@@ -85,6 +85,7 @@ class AstNode {
   AstNode(AstTag tag, AstList children)
     : tag_(tag), id_(), children_(std::move(children)) {
   }
+  AstNode(AstTag tag, Deserializer& des);
 
   // Magic constant to indicate no such child exists.
   static const int NO_CHILD = -1;
@@ -189,6 +190,14 @@ class AstNode {
   void mark(Context* context) const;
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  // TODO: verification that all fields are mentioned in these methods
+  void serializePart(Serializer& os) const;
+  //static void deserializeRoot(Context* context, std::istream& is);
+  virtual void serialize(Serializer& os) const;
+
+  static owned<AstNode> deserializeFromFile(Deserializer& des);
+  static owned<AstNode> deserialize(Deserializer& des);
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
@@ -439,6 +448,26 @@ class AstNode {
   }
 };
 } // end namespace uast
+
+template<> struct serialize<uast::AstList> {
+  void operator()(Serializer& ser, const uast::AstList& list) {
+    ser((uint64_t)list.size());
+    for (const auto& node : list) {
+      node->serialize(ser);
+    }
+  }
+};
+
+template<> struct deserialize<uast::AstList> {
+  uast::AstList operator()(Deserializer& des) {
+    uast::AstList ret;
+    auto len = des.read<uint64_t>();
+    for (uint64_t i = 0; i < len; i++) {
+      ret.push_back(uast::AstNode::deserializeFromFile(des));
+    }
+    return ret;
+  }
+};
 } // end namespace chpl
 
 /// \cond DO_NOT_DOCUMENT
@@ -476,6 +505,10 @@ AST_LESS(AstNode)
 #undef AST_LESS
 /// \endcond
 
+#define DECLARE_STATIC_DES(NAME) \
+static owned<NAME> deserialize(Deserializer& des) { \
+  return owned<NAME>(new NAME(des)); \
+}
 
 } // end namespace std
 
