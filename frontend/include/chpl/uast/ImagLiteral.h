@@ -36,6 +36,10 @@ class ImagLiteral final : public NumericLiteral<double, types::RealParam> {
     : NumericLiteral(asttags::ImagLiteral, value, text)
   { }
 
+  ImagLiteral(Deserializer& des)
+    : NumericLiteral(asttags::ImagLiteral, des)
+  { }
+
   // contentsMatchInner / markUniqueStringsInner are in NumericLiteral
   // and would need to be defined here if any fields are added.
 
@@ -44,6 +48,12 @@ class ImagLiteral final : public NumericLiteral<double, types::RealParam> {
 
   static owned<ImagLiteral> build(Builder* builder, Location loc,
                                   double value, UniqueString text);
+
+  void serialize(Serializer& ser) const override {
+    NumericLiteral::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(ImagLiteral);
 };
 
 

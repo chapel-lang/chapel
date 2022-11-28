@@ -38,6 +38,10 @@ class StringLiteral final : public StringLikeLiteral {
     : StringLikeLiteral(asttags::StringLiteral, value, quotes)
   { }
 
+  StringLiteral(Deserializer& des)
+    : StringLikeLiteral(asttags::StringLiteral, des)
+  { }
+
   // contentsMatchInner / markUniqueStringsInner are in StringLikeLiteral
   // and would need to be defined here if any fields are added.
 
@@ -47,6 +51,12 @@ class StringLiteral final : public StringLikeLiteral {
   static owned<StringLiteral> build(Builder* builder, Location loc,
                                     const std::string& value,
                                     StringLikeLiteral::QuoteStyle quotes);
+
+  void serialize(Serializer& ser) const override {
+    StringLikeLiteral::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(StringLiteral);
 };
 
 
