@@ -39,6 +39,10 @@ class BytesLiteral final : public StringLikeLiteral {
     : StringLikeLiteral(asttags::BytesLiteral, value, quotes)
   { }
 
+  BytesLiteral(Deserializer& des)
+    : StringLikeLiteral(asttags::BytesLiteral, des)
+  { }
+
   // contentsMatchInner / markUniqueStringsInner are in StringLikeLiteral
   // and would need to be defined here if any fields are added.
 
@@ -48,6 +52,13 @@ class BytesLiteral final : public StringLikeLiteral {
   static owned<BytesLiteral> build(Builder* builder, Location loc,
                                    const std::string& value,
                                    StringLikeLiteral::QuoteStyle quotes);
+
+  void serialize(Serializer& ser) const override {
+    StringLikeLiteral::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(BytesLiteral);
+
 };
 
 
