@@ -1852,7 +1852,7 @@ module ChapelDomain {
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
     }
 
-    @deprecated "makeIndexBuffer has been renamed to createIndexBuffer"
+    deprecated "makeIndexBuffer has been renamed to createIndexBuffer"
     inline proc makeIndexBuffer(size: int) { return createIndexBuffer(size); }
 
     /*

@@ -314,7 +314,7 @@ module ArrayViewReindex {
     override proc dsiAlignedLow return updom.dsiAlignedLow;
     override proc dsiAlignedHigh return updom.dsiAlignedHigh;
     override proc dsiIndexOrder(i) return updom.dsiIndexOrder(i);
-    @deprecated "dsiMakeIndexBuffer has been renamed to dsiCreateIndexBuffer"
+    deprecated "dsiMakeIndexBuffer has been renamed to dsiCreateIndexBuffer"
     override proc dsiMakeIndexBuffer(size) return dsiCreateIndexBuffer(size);
     override proc dsiCreateIndexBuffer(size) return updom.dsiCreateIndexBuffer(size);
 
