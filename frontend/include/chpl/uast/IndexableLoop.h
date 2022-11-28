@@ -51,6 +51,14 @@ class IndexableLoop : public Loop {
     CHPL_ASSERT(iterandChildNum >= 0);
   }
 
+  IndexableLoop(AstTag tag, Deserializer& des)
+    : Loop(tag, des) {
+    indexChildNum_ = des.read<int8_t>();
+    iterandChildNum_ = des.read<int8_t>();
+    withClauseChildNum_ = des.read<int8_t>();
+    isExpressionLevel_ = des.read<bool>();
+  }
+
   bool indexableLoopContentsMatchInner(const IndexableLoop* other) const {
     const IndexableLoop* lhs = this;
     const IndexableLoop* rhs = other;
@@ -124,6 +132,14 @@ class IndexableLoop : public Loop {
   */
   bool isExpressionLevel() const {
     return isExpressionLevel_;
+  }
+
+  void serializePart(Serializer& ser) const {
+    Loop::serializePart(ser);
+    ser(indexChildNum_);
+    ser(iterandChildNum_);
+    ser(withClauseChildNum_);
+    ser(isExpressionLevel_);
   }
 
 };
