@@ -60,6 +60,9 @@ enum ParamTag {
 using chpl::types::paramtags::ParamTag;
 
 } // end namespace types
+
+DECLARE_SERDE_ENUM(types::ParamTag, uint8_t);
+
 } // end namespace chpl
 
 #endif
