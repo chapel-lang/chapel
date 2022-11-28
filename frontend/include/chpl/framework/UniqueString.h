@@ -27,6 +27,7 @@
 
 #include "chpl/framework/UniqueString-detail.h"
 #include "chpl/framework/stringify-functions.h"
+#include "chpl/framework/serialize-functions.h"
 #include "chpl/util/hash.h"
 
 #include <cstring>
@@ -145,6 +146,24 @@ class UniqueString final {
 
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  void serialize(Serializer& ser) const {
+    ser((uint64_t)length());
+    if (length() > 0) {
+      ser.os().write(c_str(), length());
+    }
+  }
+
+  static UniqueString deserialize(Deserializer& des) {
+    auto len = des.read<uint64_t>();
+    char* buf = nullptr;
+    if (len > 0) {
+      buf = (char*)malloc(len+1);
+      des.is().read(buf, len);
+      buf[len] = '\0';
+    }
+    return UniqueString::get(des.context(), buf, len);
+  }
 
   bool isEmpty() const {
     return s.isEmpty();
