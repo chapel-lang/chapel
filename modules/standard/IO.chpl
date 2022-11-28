@@ -186,7 +186,9 @@ implementing read or write operations for that type (see
 Files
 -----
 
-There are several functions that open a file and return a :record:`file` including :proc:`open`, :proc:`opentmp`, :proc:`openmem`, :proc:`openfd`, and :proc:`openfp`.
+There are several functions that open a file and return a :record:`file`
+including :proc:`open`, :proc:`openTempFile`, :proc:`openmem`, :proc:`openfd`,
+and :proc:`openfp`.
 
 Once a file is open, it is necessary to create associated channel(s) - see
 :proc:`file.reader` and :proc:`file.writer` - to write to and/or read from the
@@ -1976,7 +1978,12 @@ private proc openfpHelper(fp: c_FILE, hints=ioHintSet.empty,
   return ret;
 }
 
-@unstable "opentmp with a style argument is unstable"
+@unstable "openTempFile with a style argument is unstable"
+proc openTempFile(hints=ioHintSet.empty, style:iostyle):file throws {
+  return openTempFileHelper(hints, style: iostyleInternal);
+}
+
+deprecated "opentmp is deprecated, please use :proc:`openTempFile` instead"
 proc opentmp(hints=ioHintSet.empty, style:iostyle):file throws {
   return opentmpHelper(hints, style: iostyleInternal);
 }
@@ -1991,12 +1998,10 @@ The temporary file will be created in an OS-dependent temporary directory,
 for example "/tmp" is the typical location. The temporary file will be
 deleted upon closing.
 
-Temporary files are always opened with :type:`iomode` ``iomode.cwr``;
-that is, a new file is created that supports both writing and reading.
-
-.. TODO:
-  Temporary files are always opened with :type:`iomode` ``iomode.cwrx``;
-  that is, a new file is created that supports both writing and reading.
+Temporary files are opened with :type:`iomode` ``iomode.cwr``; that is, a new
+file is created that supports both writing and reading.  When possible, it may
+be opened such that it can never be reached via any pathname and in such a way
+that it will avoid symlink attacks, but this is system dependent.
 
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
@@ -2004,6 +2009,11 @@ that is, a new file is created that supports both writing and reading.
 
 :throws SystemError: Thrown if the temporary file could not be opened.
 */
+proc openTempFile(hints=ioHintSet.empty):file throws {
+  return opentmpHelper(hints);
+}
+
+deprecated "opentmp is deprecated, please use :proc:`openTempFile` instead"
 proc opentmp(hints=ioHintSet.empty):file throws {
   return opentmpHelper(hints);
 }
