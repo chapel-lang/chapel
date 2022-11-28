@@ -43,6 +43,10 @@ class Call : public AstNode {
     : AstNode(tag, std::move(children)),
       hasCalledExpression_(hasCalledExpression) {
   }
+  Call(AstTag tag, Deserializer& des)
+    : AstNode(tag, des) {
+    hasCalledExpression_ = des.read<bool>();
+  }
 
   bool callContentsMatchInner(const Call* other) const {
     return true;
@@ -87,6 +91,11 @@ class Call : public AstNode {
       const AstNode* ast = this->child(0);
       return ast;
     }
+  }
+
+  void serializePart(Serializer& ser) const {
+    AstNode::serializePart(ser);
+    ser(hasCalledExpression_);
   }
 };
 

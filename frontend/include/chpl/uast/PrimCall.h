@@ -52,6 +52,10 @@ class PrimCall final : public Call {
            /* hasCalledExpression */ false),
       prim_(prim) {
   }
+  PrimCall(Deserializer& des)
+    : Call(asttags::PrimCall, des) {
+    prim_ = des.read<PrimitiveTag>();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const PrimCall* lhs = this;
@@ -78,6 +82,13 @@ class PrimCall final : public Call {
 
   /** Returns the enum value of the primitive called */
   PrimitiveTag prim() const { return prim_; }
+
+  void serialize(Serializer& ser) const override {
+    Call::serializePart(ser);
+    ser(prim_);
+  }
+
+  DECLARE_STATIC_DES(PrimCall);
 };
 
 
