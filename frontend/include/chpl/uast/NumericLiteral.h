@@ -41,6 +41,11 @@ class NumericLiteral : public Literal {
       text_(text)
   { }
 
+  NumericLiteral(AstTag tag, Deserializer& des)
+    : Literal(tag, des) {
+    text_ = des.read<UniqueString>();
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     auto lhs = this;
     auto* rhs = (const NumericLiteral<ValueT, ParamT>*) other;
@@ -61,6 +66,11 @@ class NumericLiteral : public Literal {
   ValueT value() const {
     const ParamT* p = (const ParamT*) value_;
     return p->value();
+  }
+
+  void serializePart(Serializer& ser) const {
+    Literal::serializePart(ser);
+    ser(text_);
   }
 
   /**

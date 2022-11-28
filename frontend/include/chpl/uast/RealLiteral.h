@@ -37,6 +37,10 @@ class RealLiteral final : public NumericLiteral<double, types::RealParam> {
     : NumericLiteral(asttags::RealLiteral, value, text)
   { }
 
+  RealLiteral(Deserializer& des)
+    : NumericLiteral(asttags::RealLiteral, des)
+  { }
+
   // contentsMatchInner / markUniqueStringsInner are in NumericLiteral
   // and would need to be defined here if any fields are added.
 
@@ -45,6 +49,12 @@ class RealLiteral final : public NumericLiteral<double, types::RealParam> {
 
   static owned<RealLiteral> build(Builder* builder, Location loc,
                                   double value, UniqueString text);
+
+  void serialize(Serializer& ser) const override {
+    NumericLiteral::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(RealLiteral);
 };
 
 

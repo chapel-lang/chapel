@@ -37,6 +37,11 @@ class BoolLiteral final : public Literal {
     : Literal(asttags::BoolLiteral, value) {
   }
 
+  BoolLiteral(Deserializer& des)
+    : Literal(asttags::BoolLiteral, des) {
+    assert(value_->isBoolParam());
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const BoolLiteral* rhs = (const BoolLiteral*) other;
     return literalContentsMatchInner(rhs);
@@ -62,6 +67,13 @@ class BoolLiteral final : public Literal {
     auto p = (const types::BoolParam*) value_;
     return p->value() != 0;
   }
+
+  void serialize(Serializer& ser) const override {
+    Literal::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(BoolLiteral);
+
 };
 
 

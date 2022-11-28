@@ -38,6 +38,10 @@ class StringLiteral final : public StringLikeLiteral {
     : StringLikeLiteral(asttags::StringLiteral, value, quotes)
   { }
 
+  StringLiteral(Deserializer& des)
+    : StringLikeLiteral(asttags::StringLiteral, des)
+  { }
+
   // contentsMatchInner / markUniqueStringsInner are in StringLikeLiteral
   // and would need to be defined here if any fields are added.
 
@@ -57,6 +61,12 @@ class StringLiteral final : public StringLikeLiteral {
     const types::StringParam* p = (const types::StringParam*) value_;
     return p->value();
   }
+
+  void serialize(Serializer& ser) const override {
+    StringLikeLiteral::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(StringLiteral);
 };
 
 

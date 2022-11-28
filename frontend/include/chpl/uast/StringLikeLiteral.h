@@ -47,6 +47,11 @@ class StringLikeLiteral : public Literal {
       quotes_(quotes)
   { }
 
+  StringLikeLiteral(AstTag tag, Deserializer& des)
+    : Literal(tag, des) {
+    quotes_ = des.read<QuoteStyle>();
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const StringLikeLiteral* lhs = this;
     const StringLikeLiteral* rhs = (const StringLikeLiteral*) other;
@@ -64,10 +69,18 @@ class StringLikeLiteral : public Literal {
    Returns the type of quotes used for this string literal.
    */
   QuoteStyle quoteStyle() const { return this->quotes_; }
+
+  void serializePart(Serializer& ser) const {
+    Literal::serializePart(ser);
+    ser(quotes_);
+  }
 };
 
 
 } // end namespace uast
+
+DECLARE_SERDE_ENUM(uast::StringLikeLiteral::QuoteStyle, uint8_t);
+
 } // end namespace chpl
 
 #endif

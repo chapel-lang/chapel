@@ -40,6 +40,10 @@ class IntLiteral final : public NumericLiteral<int64_t, types::IntParam> {
     : NumericLiteral(asttags::IntLiteral, value, text)
   { }
 
+  IntLiteral(Deserializer& des)
+    : NumericLiteral(asttags::IntLiteral, des)
+  { }
+
   // contentsMatchInner / markUniqueStringsInner are in NumericLiteral
   // and would need to be defined here if any fields are added.
 
@@ -48,6 +52,12 @@ class IntLiteral final : public NumericLiteral<int64_t, types::IntParam> {
 
   static owned<IntLiteral> build(Builder* builder, Location loc,
                                  int64_t value, UniqueString text);
+
+  void serialize(Serializer& ser) const override {
+    NumericLiteral::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(IntLiteral);
 };
 
 
