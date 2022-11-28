@@ -220,8 +220,8 @@ module ChapelDistribution {
     pragma "no doc" pragma "last resort"
     proc dsiIndexOrder(i)         { dnsError("indexOrder"); }
 
-    @deprecated "dsiMakeIndexBuffer has been renamed to dsiCreateIndexBuffer"
     pragma "no doc" pragma "last resort"
+    @deprecated "dsiMakeIndexBuffer has been renamed to dsiCreateIndexBuffer"
     proc dsiMakeIndexBuffer(size) { dnsError("makeIndexBuffer"); }
 
     pragma "no doc" pragma "last resort"
