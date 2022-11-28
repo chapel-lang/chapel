@@ -68,6 +68,16 @@ class Attributes final : public AstNode {
     assert(pragmas_.size() <= NUM_KNOWN_PRAGMAS);
   }
 
+  Attributes(Deserializer& des)
+    : AstNode(asttags::Attributes, des) {
+      pragmas_ = des.read<std::set<PragmaTag>>();
+      isDeprecated_ = des.read<bool>();
+      isUnstable_ = des.read<bool>();
+      deprecationMessage_ = des.read<UniqueString>();
+      unstableMessage_ = des.read<UniqueString>();
+    }
+
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Attributes* rhs = (const Attributes*)other;
     return this->pragmas_ == rhs->pragmas_ &&
@@ -139,6 +149,18 @@ class Attributes final : public AstNode {
   UniqueString unstableMessage() const {
     return unstableMessage_;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serializePart(ser);
+
+    ser(pragmas_);
+    ser(isDeprecated_);
+    ser(isUnstable_);
+    ser(deprecationMessage_);
+    ser(unstableMessage_);
+  }
+
+  DECLARE_STATIC_DES(Attributes);
 
 };
 

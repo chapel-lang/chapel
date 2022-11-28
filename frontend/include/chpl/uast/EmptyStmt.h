@@ -47,6 +47,8 @@ private:
     : AstNode(asttags::EmptyStmt) {
     assert(numChildren() == 0);
   }
+  EmptyStmt(Deserializer& des)
+    : AstNode(asttags::EmptyStmt, des) { }
 
     bool contentsMatchInner(const AstNode* other) const override {
     const EmptyStmt* rhs = other->toEmptyStmt();
@@ -64,6 +66,11 @@ public:
   */
   static owned<EmptyStmt> build(Builder* builder, Location loc);
 
+  void serialize(Serializer& ser) const override {
+    AstNode::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(EmptyStmt);
 
 }; // end EmptyStmt
 
