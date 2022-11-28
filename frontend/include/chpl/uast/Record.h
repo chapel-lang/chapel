@@ -60,6 +60,9 @@ class Record final : public AggregateDecl {
                     numElements) {
   }
 
+  Record(Deserializer& des)
+    : AggregateDecl(asttags::Record, des) { }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Record* lhs = this;
     const Record* rhs = (const Record*) other;
@@ -80,6 +83,12 @@ class Record final : public AggregateDecl {
                              owned<AstNode> linkageName,
                              UniqueString name,
                              AstList contents);
+
+  void serialize(Serializer& ser) const override {
+    AggregateDecl::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(Record);
 };
 
 
