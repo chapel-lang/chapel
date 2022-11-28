@@ -4311,10 +4311,7 @@ void makeBinaryLLVM(void) {
       }
 
       outputOBJfile.close();
-      printf("OBJ file: %s\n", objFilename.c_str());
-
-      printf("Cuda path: %s\n", CHPL_CUDA_PATH);
-      std::string lldCmd = std::string(CHPL_CUDA_PATH) +
+      std::string lldCmd = std::string(CHPL_GPU_SDK_PATH) +
                           "/llvm/bin/lld -flavor gnu" +
                            " --no-undefined -shared" +
                            " -plugin-opt=-amdgpu-internalize-symbols" +
@@ -4322,7 +4319,7 @@ void makeBinaryLLVM(void) {
                            " -plugin-opt=-amdgpu-early-inline-all=true" +
                            " -plugin-opt=-amdgpu-function-calls=false -o " +
                            outFilename + " " + objFilename;
-      std::string bundlerCmd = std::string(CHPL_CUDA_PATH) +
+      std::string bundlerCmd = std::string(CHPL_GPU_SDK_PATH) +
                               "/llvm/bin/clang-offload-bundler" +
                                " -type=o -bundle-align=4096" +
                                " -targets=host-x86_64-unknown-linux," +
