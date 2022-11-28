@@ -1,18 +1,21 @@
 use Version;
 
-const v2_1_0 = createVersion(2,1);
-const v2_1_1 = createVersion(2,1,1);
-const v2_2_0 = createVersion(2,2,0);
-const v2_2_1 = createVersion(2,2,1);
-const v3_1_0 = createVersion(3,1);
-const v3_1_1 = createVersion(3,1,1);
+const v2_1_0 = new versionValue(2,1);
+const v2_1_1 = new versionValue(2,1,1);
+const v2_2_0 = new versionValue(2,2,0);
+const v2_2_1 = new versionValue(2,2,1);
+const v3_1_0 = new versionValue(3,1);
+const v3_1_1 = new versionValue(3,1,1);
 
-const v2_1_0_p = createVersion(2,1,0,"aaa");
-const v2_1_1_p = createVersion(2,1,1,"bbb");
-const v2_2_0_p = createVersion(2,2,commit="ccc");
-const v2_2_1_p = createVersion(2,2,1,"ddd");
-const v3_1_0_p = createVersion(3,1,0,"eee");
-const v3_1_1_p = createVersion(3,1,1,"fff");
+const v2_1_0_p = new versionValue(2,1,0,"aaa");
+const v2_1_1_p = new versionValue(2,1,1,"bbb");
+const v2_2_0_p = new versionValue(2,2,commit="ccc");
+const v2_2_1_p = new versionValue(2,2,1,"ddd");
+const v3_1_0_p = new versionValue(3,1,0,"eee");
+const v3_1_1_p = new versionValue(3,1,1,"fff");
+
+compareVersions(v3_1_1, v3_1_1);
+compareVersions(v3_1_1_p, v3_1_1_p);
 
 compareVersions(v2_1_0, v2_1_0);
 compareVersions(v2_1_0_p, v2_1_0_p);
