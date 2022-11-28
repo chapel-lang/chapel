@@ -43,6 +43,8 @@ class TypeDecl : public NamedDecl {
                 name) {
 
   }
+  TypeDecl(AstTag tag, Deserializer& des)
+    : NamedDecl(tag, des) { }
 
   bool typeDeclContentsMatchInner(const TypeDecl* other) const {
     return namedDeclContentsMatchInner(other);
@@ -54,6 +56,10 @@ class TypeDecl : public NamedDecl {
 
  public:
   virtual ~TypeDecl() = 0; // this is an abstract base class
+
+  void serializePart(Serializer& ser) const {
+    NamedDecl::serializePart(ser);
+  }
 };
 
 

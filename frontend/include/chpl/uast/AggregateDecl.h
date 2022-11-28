@@ -78,6 +78,12 @@ class AggregateDecl : public TypeDecl {
     assert(validAggregateChildren(declOrComments()));
   }
 
+  AggregateDecl(AstTag tag, Deserializer& des)
+    : TypeDecl(tag, des) {
+    elementsChildNum_ = des.read<int>();
+    numElements_ = des.read<int>();
+  }
+
   ~AggregateDecl() = 0; // this is an abstract base class
 
   /**
@@ -119,6 +125,12 @@ class AggregateDecl : public TypeDecl {
     return AstListNoCommentsIteratorPair<Decl>(
               children_.begin() + elementsChildNum_,
               children_.begin() + elementsChildNum_ + numElements_);
+  }
+
+  void serializePart(Serializer& ser) const {
+    TypeDecl::serializePart(ser);
+    ser(elementsChildNum_);
+    ser(numElements_);
   }
 };
 

@@ -61,6 +61,12 @@ class Module final : public NamedDecl {
 
   }
 
+  Module(Deserializer& des)
+    : NamedDecl(asttags::Module, des) {
+    kind_ = des.read<Kind>();
+  }
+
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Module* lhs = this;
     const Module* rhs = (const Module*) other;
@@ -117,10 +123,20 @@ class Module final : public NamedDecl {
     const AstNode* ast = this->child(i + stmtChildNum());
     return ast;
   }
+
+  void serialize(Serializer& ser) const override {
+    NamedDecl::serializePart(ser);
+    ser(kind_);
+  }
+
+  DECLARE_STATIC_DES(Module);
 };
 
 
 } // end namespace uast
+
+DECLARE_SERDE_ENUM(uast::Module::Kind, uint8_t);
+
 } // end namespace chpl
 
 #endif

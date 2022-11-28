@@ -64,6 +64,14 @@ class VarLikeDecl : public NamedDecl {
     }
   }
 
+  VarLikeDecl(AstTag tag, Deserializer& des)
+    : NamedDecl(tag, des) {
+    storageKind_ = des.read<IntentList>();
+    typeExpressionChildNum_ = des.read<int8_t>();
+    initExpressionChildNum_ = des.read<int8_t>();
+  }
+
+
   bool varLikeDeclContentsMatchInner(const AstNode* other) const {
     const VarLikeDecl* lhs = this;
     const VarLikeDecl* rhs = (const VarLikeDecl*) other;
@@ -114,10 +122,18 @@ class VarLikeDecl : public NamedDecl {
       return nullptr;
     }
   }
+
+  void serializePart(Serializer& ser) const {
+    NamedDecl::serializePart(ser);
+    ser(storageKind_);
+    ser(typeExpressionChildNum_);
+    ser(initExpressionChildNum_);
+  }
 };
 
 
 } // end namespace uast
+
 } // end namespace chpl
 
 #endif

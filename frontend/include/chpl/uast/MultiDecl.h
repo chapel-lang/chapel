@@ -63,6 +63,9 @@ class MultiDecl final : public Decl {
     assert(isAcceptableMultiDecl());
   }
 
+  MultiDecl(Deserializer& des)
+    : Decl(asttags::MultiDecl, des) { }
+
   bool isAcceptableMultiDecl();
 
   int declOrCommentChildNum() const {
@@ -126,6 +129,12 @@ class MultiDecl final : public Decl {
     auto end = begin + numDeclOrComments();
     return AstListNoCommentsIteratorPair<Decl>(begin, end);
   }
+
+  void serialize(Serializer& ser) const override {
+    Decl::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(MultiDecl);
 
 };
 
