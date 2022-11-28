@@ -125,6 +125,8 @@ template<> struct stringify<uast::AstTag> {
   }
 };
 
+DECLARE_SERDE_ENUM(uast::AstTag, uint8_t);
+
 /// \endcond
 
 
