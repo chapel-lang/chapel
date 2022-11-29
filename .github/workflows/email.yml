@@ -58,7 +58,7 @@ jobs:
            # Required mail subject:
            subject: "[Chapel Merge] ${{github.event.pull_request.title}}"
            # Required recipients' addresses:
-           to: chapel+commits@discoursemail.com
+           to: chapel+commits@discoursemail.com, bradford.chamberlain@hpe.com , bhavani@hpe.com
            # Required sender full name (address can be skipped):
            from:  ${{env.AUTHOR}}
            html_body: |
