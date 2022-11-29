@@ -1,4 +1,4 @@
-use Memory.Initialization;
+use MemMove;
 use TrackingRecord;
 
 proc test1() {

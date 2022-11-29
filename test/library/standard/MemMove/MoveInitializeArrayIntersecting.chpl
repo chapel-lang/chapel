@@ -1,4 +1,4 @@
-use Memory.Initialization;
+use MemMove;
 
 config param isSingleArray = false;
 

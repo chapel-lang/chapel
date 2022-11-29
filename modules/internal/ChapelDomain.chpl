@@ -1614,7 +1614,7 @@ module ChapelDomain {
 
       pragma "no doc"
       proc _moveInitializeElement(arr, idx, in value) {
-        import Memory.Initialization.moveInitialize;
+        import MemMove.moveInitialize;
         ref elem = arr[idx];
         moveInitialize(elem, value);
       }

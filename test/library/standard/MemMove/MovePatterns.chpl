@@ -1,4 +1,4 @@
-use Memory.Initialization;
+use MemMove;
 use LowLevelBuffer;
 use TrackingRecord;
 
@@ -46,7 +46,7 @@ proc test4() {
   for i in 0..<size do moveInitialize(buf[i], new r(i));
   writeln(buf);
   for i in 0..<size {
-    var x = moveToValue(buf[i]);
+    var x = moveFrom(buf[i]);
     writeln(x);
   }
 }

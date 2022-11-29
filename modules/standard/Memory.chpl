@@ -19,6 +19,8 @@
  */
 
 /* Support for operations related to memory usage and initialization.
+
+.. warning:: The "Memory.Initialization" module is deprecated.
 */
 module Memory {
 

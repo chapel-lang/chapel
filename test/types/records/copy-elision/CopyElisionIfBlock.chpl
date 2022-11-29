@@ -34,7 +34,7 @@ test2();
 
 // This test mimics what I am trying to do in 'set._addElem()'.
 proc test3() {
-  use Memory.Initialization;
+  use MemMove;
 
   writeln('T3');
   pragma "no auto destroy"
@@ -42,7 +42,7 @@ proc test3() {
   on Locales[0] {
     var doBlock = true;
     if doBlock {
-      var moved = moveToValue(x);
+      var moved = moveFrom(x);
       consumeElement(moved);
     }
   }
@@ -101,7 +101,7 @@ proc test6() {
 test6();
 
 proc test7() {
-  use Memory.Initialization;
+  use MemMove;
 
   writeln('T7');
 
@@ -109,7 +109,7 @@ proc test7() {
   var x = new r();
 
   on Locales[0] {
-    var moved = moveToValue(x);
+    var moved = moveFrom(x);
     var doBlock = true;
     if doBlock {
       consumeElement(moved);

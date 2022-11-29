@@ -20,7 +20,7 @@
 
 /* Support for move-initializing and deinitializing values.
 
-  The :mod:`Initialization` module provides functions which enable users to
+  The :mod:`MemMove` module provides functions which enable users to
   move-initialize and deinitialize values.
 
   The functionality provided by this module can be used to implement
@@ -34,8 +34,7 @@
 
 
 */
-deprecated "The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead"
-module Initialization {
+module MemMove {
 
   // Mark as "unsafe" to silence lifetime errors.
   pragma "unsafe"
@@ -90,6 +89,7 @@ module Initialization {
     :arg rhs: A value to move-initialize from
   */
   pragma "last resort"
+  pragma "no doc"
   deprecated "The formals 'lhs' and 'rhs' are deprecated, please use 'dst' and 'src' instead"
   proc moveInitialize(ref lhs,
                       pragma "no auto destroy"
@@ -155,6 +155,7 @@ module Initialization {
 
     :return: The contents of ``arg`` moved into a new value
   */
+  pragma "no doc"
   deprecated "'moveToValue' is deprecated; please use 'moveFrom' instead"
   proc moveToValue(const ref arg: ?t) {
     if t == nothing {
@@ -183,6 +184,8 @@ module Initialization {
     :return: The contents of ``src`` moved into a new value
   */
   proc moveFrom(const ref src: ?t) {
+    // Note: using 't' as an explicit return type can result in incorrect
+    // behavior for arrays
     if t == nothing {
       return none;
     } else {
@@ -206,6 +209,7 @@ module Initialization {
     :arg rhs: A variable to swap
   */
   pragma "last resort"
+  pragma "no doc"
   deprecated "the formals 'lhs' and 'rhs' are deprecated, please use 'x' and 'y' instead"
   proc moveSwap(ref lhs: ?t, ref rhs: t) {
     moveSwap(x=lhs, y=rhs);
@@ -406,6 +410,6 @@ module Initialization {
     }
   }
 
-// Memory.Initialization;
+// MemMove;
 }
 
