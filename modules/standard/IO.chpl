@@ -1980,7 +1980,7 @@ private proc openfpHelper(fp: c_FILE, hints=ioHintSet.empty,
 
 @unstable "openTempFile with a style argument is unstable"
 proc openTempFile(hints=ioHintSet.empty, style:iostyle):file throws {
-  return openTempFileHelper(hints, style: iostyleInternal);
+  return opentmpHelper(hints, style: iostyleInternal);
 }
 
 deprecated "opentmp is deprecated, please use :proc:`openTempFile` instead"
