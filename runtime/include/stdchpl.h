@@ -75,7 +75,7 @@
 #include "chpl-mem-consistency.h"
 
 #ifdef HAS_GPU_LOCALE
-//#include "chpl-gpu-gen-includes.h"
+#include "chpl-gpu-gen-includes.h"
 #endif
 
 #if defined(__linux__) || defined(__APPLE__)

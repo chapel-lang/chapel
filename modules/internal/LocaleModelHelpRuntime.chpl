@@ -62,9 +62,9 @@ module LocaleModelHelpRuntime {
     proc chpl_rt_buildLocaleID(node: chpl_nodeID_t,
                                subloc: chpl_sublocID_t): chpl_localeID_t;
 
-  //pragma "fn synchronization free"
-  //extern
-  //  proc chpl_rt_nodeFromLocaleID(in loc: chpl_localeID_t): chpl_nodeID_t;
+  pragma "fn synchronization free"
+  extern
+    proc chpl_rt_nodeFromLocaleID(in loc: chpl_localeID_t): chpl_nodeID_t;
 
   pragma "fn synchronization free"
   extern
@@ -80,8 +80,7 @@ module LocaleModelHelpRuntime {
   pragma "always resolve function"
   pragma "codegen for CPU and GPU"
   proc chpl_nodeFromLocaleID(in loc: chpl_localeID_t)
-    return 0;
-    //return chpl_rt_nodeFromLocaleID(loc);
+    return chpl_rt_nodeFromLocaleID(loc);
 
   pragma "insert line file info"
   pragma "always resolve function"

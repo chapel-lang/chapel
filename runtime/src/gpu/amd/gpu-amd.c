@@ -33,6 +33,11 @@
 void chpl_gpu_impl_init() {}
 void chpl_gpu_impl_on_std_modules_finished_initializing() {}
 
+// TODO:
+// HIP include files throw warnings when compiled under our set of
+// settings. We compile with -Werror. For the time being, do not
+// include HIP directly, and just forward declare the functions
+// ourselves.
 extern void hipGetDeviceCount(int* into);
 
 void chpl_gpu_get_device_count(int* into) {

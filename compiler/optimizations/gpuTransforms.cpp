@@ -35,6 +35,7 @@
 #include "astutil.h"
 #include "optimizations.h"
 #include "timer.h"
+#include "misc.h"
 
 #include "global-ast-vecs.h"
 
@@ -910,7 +911,12 @@ static void logGpuizableLoops() {
 }
 
 void gpuTransforms() {
-  return;
+  if (getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD) {
+    // TODO: the AMD GPU prototype is not currently in a state
+    // where gpuTransforms can be applied. Do not apply them
+    // for the time being.
+    return;
+  }
 
   if (debugPrintGPUChecks) {
     logGpuizableLoops();
