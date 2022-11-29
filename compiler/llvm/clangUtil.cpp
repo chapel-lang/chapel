@@ -4106,8 +4106,6 @@ void makeBinaryLLVM(void) {
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
 
-  auto codegenType = getGpuCodegenType();
-
   std::string moduleFilename;
   std::string preOptFilename;
   std::string opt1Filename;
@@ -4134,7 +4132,7 @@ void makeBinaryLLVM(void) {
     // In CUDA, we generate assembly and then assemble it. For
     // AMD, we generate an object file. Thus, we need to use
     // different file names.
-    switch (codegenType) {
+    switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_CUDA:
         artifactFilename = genIntermediateFilename("chpl__gpu_ptx.s");
         break;
@@ -4412,7 +4410,7 @@ void makeBinaryLLVM(void) {
       }
 
       outputArtifactFile.close();
-      switch (codegenType) {
+      switch (getGpuCodegenType()) {
         case GpuCodegenType::GPU_CG_CUDA:
           makeBinaryLLVMForCUDA(artifactFilename, ptxObjectFilename, fatbinFilename);
           break;
