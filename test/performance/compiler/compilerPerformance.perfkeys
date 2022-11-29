@@ -7,47 +7,7 @@
 # compiler performance testing. Passes don't change often so this shouldn't be
 # a big deal, but if it becomes an issue we can try to come up with a better
 # solution. See passCheck.prediff for more details.
-init :
-parse :
-checkParsed :
-readExternC :
-expandExternArrayCalls :
-cleanup :
-scopeResolve :
-flattenClasses :
-normalize :
-checkNormalized :
-buildDefaultFunctions :
-createTaskFunctions :
-resolve :
-resolveIntents :
-checkResolved :
-replaceArrayAccessesWithRefTemps :
-flattenFunctions :
-cullOverReferences :
-lowerErrorHandling :
-callDestructors :
-lowerIterators :
-parallel :
-prune :
-bulkCopyRecords :
-removeUnnecessaryAutoCopyCalls :
-inlineFunctions :
-scalarReplace :
-refPropagation :
-copyPropagation :
-deadCodeElimination :
-removeEmptyRecords :
-localizeGlobals :
-loopInvariantCodeMotion :
-prune2 :
-returnStarTuplesByRefArgs :
-insertWideReferences :
-optimizeOnClauses :
-addInitCalls :
-insertLineNumbers :
-denormalize :
-codegen :
-makeBinary :
-driverCleanup :
 total time :
+total time (front end) :
+total time (middle end) :
+total time (back end) :
