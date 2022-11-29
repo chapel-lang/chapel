@@ -127,7 +127,7 @@ I/O Styles
 
 .. warning::
 
-   :record:`iostyle` is now deprecated.
+   :record:`iostyle` is now unstable.
    We are working on creating a full-featured replacement for it
    but in the meantime the :ref:`about-io-formatted-io` facilities are still
    available to control formatting.
@@ -581,7 +581,21 @@ via the ``str_style`` field in :record:`iostyle`.
   bytes should be read or written.
 
 */
+@unstable
+"iostringstyle is unstable and will eventually be replaced"
 enum iostringstyle {
+  len1b_data = -1,
+  len2b_data = -2,
+  len4b_data = -4,
+  len8b_data = -8,
+  lenVb_data = -10,
+  data_toeof = -0xff00,
+  data_null = -0x0100,
+}
+
+/* Internal version of iostringstyle for interim use */
+pragma "no doc"
+enum iostringstyleInternal {
   len1b_data = -1,
   len2b_data = -2,
   len4b_data = -4,
@@ -610,7 +624,20 @@ via the ``string_format`` field in :record:`iostyle`.
   * ``iostringformat.toeof`` means string is as-is; reading reads until
     end of file
 */
+@unstable
+"iostringformat is unstable and will eventually be replaced"
 enum iostringformat {
+  word = 0,
+  basic = 1,
+  chpl = 2,
+  json = 3,
+  toend = 4,
+  toeof = 5,
+}
+
+/* Internal version of iostringformat for interim use */
+pragma "no doc"
+enum iostringformatInternal {
   word = 0,
   basic = 1,
   chpl = 2,
@@ -634,7 +661,7 @@ enum iostringformat {
 @unstable
 "stringStyleTerminated is unstable because it supports the unstable type 'iostyle'"
 proc stringStyleTerminated(terminator:uint(8)) {
-  return -(terminator - iostringstyle.data_null:int(64));
+  return -(terminator - iostringstyleInternal.data_null:int(64));
 }
 
 /*
@@ -646,7 +673,7 @@ proc stringStyleTerminated(terminator:uint(8)) {
 @unstable
 "stringStyleNullTerminated is unstable because it supports the unstable type 'iostyle'"
 proc stringStyleNullTerminated() {
-  return iostringstyle.data_null;
+  return iostringstyleInternal.data_null;
 }
 
 /*
@@ -669,7 +696,7 @@ pragma "no doc"
 @unstable
 "stringStyleWithVariableLength is unstable because it supports the unstable type 'iostyle'"
 proc stringStyleWithVariableLength() {
-  return iostringstyle.lenVb_data: int(64);
+  return iostringstyleInternal.lenVb_data: int(64);
 }
 
 /*
@@ -690,13 +717,13 @@ proc stringStyleWithLength(lengthBytes:int) throws {
 // users as it will likely be replaced in the future
 pragma "no doc"
 proc stringStyleWithLengthInternal(lengthBytes:int) throws {
-  var x = iostringstyle.lenVb_data;
+  var x = iostringstyleInternal.lenVb_data;
   select lengthBytes {
-    when 0 do x = iostringstyle.lenVb_data;
-    when 1 do x = iostringstyle.len1b_data;
-    when 2 do x = iostringstyle.len2b_data;
-    when 4 do x = iostringstyle.len4b_data;
-    when 8 do x = iostringstyle.len8b_data;
+    when 0 do x = iostringstyleInternal.lenVb_data;
+    when 1 do x = iostringstyleInternal.len1b_data;
+    when 2 do x = iostringstyleInternal.len2b_data;
+    when 4 do x = iostringstyleInternal.len4b_data;
+    when 8 do x = iostringstyleInternal.len8b_data;
     otherwise
       throw createSystemError(EINVAL,
                               "Invalid string length prefix " +
@@ -794,7 +821,7 @@ extern const QIO_STRING_FORMAT_TOEOF:uint(8);
 The :record:`iostyleInternal` type represents I/O styles
 defining how Chapel's basic types should be read or written.
 
-It replaces the now deprecated `iostyle` type, and will eventually
+It replaces the now unstable `iostyle` type, and will eventually
 be migrated into a new strategy, likely involving encoders/decoders
 */
 pragma "no doc"
@@ -815,7 +842,7 @@ extern record iostyleInternal { // aka qio_style_t
      in binary mode? See :type:`iostringstyle` for more information
      on what the values of ``str_style`` mean.
    */
-  var str_style:int(64) = iostringstyle.data_toeof: int(64);
+  var str_style:int(64) = iostringstyleInternal.data_toeof: int(64);
 
   // text style choices
   /* When performing text I/O, pad out to this many columns. */
@@ -833,10 +860,10 @@ extern record iostyleInternal { // aka qio_style_t
   var string_end:style_char_t = 0x22; // "
 
   /* How should we format strings when performing text I/O?
-     See :type:`iostringstyle` for more information
+     See :type:`iostringstyleInternal` for more information
      on what the values of ``str_style`` mean.
    */
-  var string_format:uint(8) = iostringformat.word:uint(8);
+  var string_format:uint(8) = iostringformatInternal.word:uint(8);
 
   /* What character do we start bytes with, when appropriate? Default is ``"``. */
   var bytes_prefix:style_char_t = 0x62; // b
@@ -5100,7 +5127,7 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
 
     if binary {
       err = qio_channel_read_string(false, byteorder,
-                                    iostringstyle.data_toeof:int(64),
+                                    iostringstyleInternal.data_toeof:int(64),
                                     ch._channel_internal, tx,
                                     lenread, uselen);
     } else {
@@ -7541,7 +7568,7 @@ proc _channel._conv_sethandler(
       if ! ok {
         error = qio_format_error_arg_mismatch(i);
       } else {
-        style.str_style = -(t:uint(8) - iostringstyle.data_null:int(64));
+        style.str_style = -(t:uint(8) - iostringstyleInternal.data_null:int(64));
       }
     }
     when QIO_CONV_SET_DONE {
