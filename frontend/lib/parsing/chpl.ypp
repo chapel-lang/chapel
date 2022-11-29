@@ -3772,6 +3772,7 @@ literal_expr:
   }
 | TLSBR expr_ls TRSBR
   {
+    printf("Error, one-element arrays must now use a trailing comma\n");
     $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
   }
 | TLSBR expr_ls TCOMMA TRSBR
