@@ -17,7 +17,9 @@ jobs:
       - name: print GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"  
+        run: echo "$GITHUB_CONTEXT" 
+     # This workflow step will parse github env. The parsed env will be used in the email body.
+     #  MERGE_LOG env holds the request body(PR description) that is parsed to replace \n\r with <br> for html formatting    
       - name: get commits payload
         env:
           COMMIT_URL: ${{github.event.pull_request._links.commits.href}}
