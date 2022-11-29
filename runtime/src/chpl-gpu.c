@@ -28,6 +28,8 @@
 #include "chplcgfns.h"
 #include "chpl-linefile-support.h"
 
+bool chpl_gpu_debug = false;
+
 void chpl_gpu_init(void) {
   chpl_gpu_impl_init();
 }

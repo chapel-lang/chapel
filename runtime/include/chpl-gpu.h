@@ -31,8 +31,10 @@ extern "C" {
 
 #ifdef HAS_GPU_LOCALE
 
+extern bool chpl_gpu_debug;
+
 static inline void CHPL_GPU_DEBUG(const char *str, ...) {
-  if (verbosity >= 2) {
+  if (chpl_gpu_debug) {
     va_list args;
     va_start(args, str);
     vfprintf(stdout, str, args);
