@@ -3002,6 +3002,11 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
             this file. See :record:`ioHintSet`.
 :returns: an open writing channel to the requested resource.
 
+:throws FileNotFoundError: Thrown if part of the provided path did not exist
+:throws PermissionError: Thrown if part of the provided path had inappropriate
+                         permissions
+:throws NotADirectoryError: Thrown if part of the provided path was expected to
+                            be a directory but was not
 :throws SystemError: Thrown if a writing channel could not be returned.
 */
 proc openwriter(path:string,
