@@ -741,7 +741,12 @@ void chpl_task_init(void)
     setupSpinWaiting();
     setupAffinity();
 
-    if (verbosity >= 2) { chpl_qt_setenv("INFO", "1", 0); }
+    if (verbosity >= 2) { 
+        chpl_qt_setenv("INFO", "1", 0);
+        if (chpl_nodeID == 0) {
+            printf("oversubscribed = %s\n", chpl_topo_isOversubscribed() ? "True" : "False");
+        }
+    }
 
     // Initialize qthreads
     pthread_create(&initer, NULL, initializer, NULL);

@@ -90,19 +90,11 @@ static sbatchVersion determineSlurmVersion(void) {
   }
 }
 
-static int nomultithread(int batch) {
-  char* hint;
-  if ((hint = getenv("SLURM_HINT")) && strcmp(hint, "nomultithread") == 0)
-    return 1;
-  if (batch && (hint = getenv("SBATCH_HINT")) && strcmp(hint, "nomultithread") == 0)
-    return 1;
-  return 0;
-}
 
 // Get the number of locales from the environment variable or if that is not
 // set just use sinfo to get the number of cpus and divide by the number
 // of locales per node.
-static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
+static int getCoresPerLocale(int32_t localesPerNode) {
   int numCores = -1;
   int threadsPerCore = -1;
   const int buflen = 1024;
@@ -145,9 +137,6 @@ static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
   if (sscanf(buf, "%d %d", &numCores, &threadsPerCore) != 2)
     chpl_error("unable to determine number of cores per locale; "
                "please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
-
-  if (nomultithread)
-    numCores /= threadsPerCore;
 
   return numCores / localesPerNode;
 }
@@ -300,13 +289,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(slurmFile, "#SBATCH --nodes=%d\n", numNodes);
     fprintf(slurmFile, "#SBATCH --ntasks=%d\n", numLocales);
     fprintf(slurmFile, "#SBATCH --ntasks-per-node=%d\n", localesPerNode);
-    if (localesPerNode == 1) {
-
-      // Don't specify cpus-per-task if oversubscribed otherwise cores
-      // won't be used due to rounding.
-      fprintf(slurmFile, "#SBATCH --cpus-per-task=%d\n",
-              getCoresPerLocale(nomultithread(true), localesPerNode));
-    }
+    int localesOnNode = (numLocales < localesPerNode) ?
+                        numLocales : localesPerNode;
+    int cpusPerTask = getCoresPerLocale(localesOnNode);
+    fprintf(slurmFile, "#SBATCH --cpus-per-task=%d\n", cpusPerTask);
     if (localesPerNode > 1) {
       fprintf(slurmFile, "#SBATCH --cpu-bind=none\n");
     }
@@ -432,8 +418,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     len += snprintf(iCom+len, sizeof(iCom)-len, "--ntasks=%d ", numLocales);
     len += snprintf(iCom+len, sizeof(iCom)-len, "--ntasks-per-node=%d ",
                     localesPerNode);
+    int localesOnNode = (numLocales < localesPerNode) ?
+                        numLocales : localesPerNode;
+    int cpusPerTask = getCoresPerLocale(localesOnNode);
     len += snprintf(iCom+len, sizeof(iCom)-len, "--cpus-per-task=%d ",
-                    getCoresPerLocale(nomultithread(false), localesPerNode));
+                    cpusPerTask);
 
     if (localesPerNode > 1) {
       len += sprintf(iCom+len, "--cpu-bind=none ");

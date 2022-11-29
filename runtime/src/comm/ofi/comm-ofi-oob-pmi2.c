@@ -304,14 +304,15 @@ int chpl_comm_ofi_oob_locales_on_node(int *rank) {
     PMI_CHK(PMI_Get_numpes_on_smp(&count));
     if (rank) {
       int *ranks;
+      int myrank = 0;
       CHK_SYS_CALLOC(ranks, count);
       PMI_CHK(PMI_Get_pes_on_smp(ranks, count));
-      *rank = 0;
       for (int i = 0; i < count; i++) {
         if (ranks[i] < chpl_nodeID) {
-          *rank++;
+          myrank++;
         }
       }
+      *rank = myrank;
       sys_free(ranks);
     }
     DBG_PRINTF(DBG_OOB, "got rank info from PMI");
