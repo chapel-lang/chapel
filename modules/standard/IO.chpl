@@ -5178,21 +5178,22 @@ proc _channel.writebits(v:integral, nbits:integral) throws {
 }
 
 /*
-   Write the values referenced by a :class:`~CTypes.c_ptr` to the fileWriter
+   Write ``numBytes`` of data from a :class:`~CTypes.c_ptr` to a fileWriter
 
-   Note, this method assumes that the `ptr` points to at least ``numBytes`` bytes of
-   valid allocated memory. It provides no protection agianst halting on an illegal
-   access.
+   Note that native endianess is always used.
 
-   Native endianess is always used.
+   If ``numBytes`` is not evenly divisible by the size of ``t``, then the
+   remaining bytes are ignored.
 
-   :arg ptr: a C pointer to some memory. Only numerical types are supported.
-   :arg numBytes: the number of bytes to write to the fileWriter.
+   .. warning::
+      This method provides no protection agianst attempting to access invalid memory
 
-   :throws SystemError: Thrown if the bytes could not be written to the fileWriter
+   :arg ptr: a :class:`~CTypes.c_ptr` to some valid memory
+   :arg numBytes: the number of bytes to write
+
+   :throws SystemError: Thrown if an error occured while writing to the fileWriter
 */
 proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
-  where isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t)
 {
   var e:errorCode = 0;
   const numToWrite = numBytes / c_sizeof(t);
@@ -5207,18 +5208,17 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
 }
 
 /*
-   Write the bytes referenced by a :type:`~CTypes.c_void_ptr` to the fileWriter
+   Write ``numBytes`` of data from a :type:`~CTypes.c_void_ptr` to a fileWriter
 
-   Note, this method assumes that the `ptr` points to at least numBytes bytes of
-   valid allocated memory. It provides no protection agianst halting on an illegal
-   access.
+   The data are written to the file one byte at a time.
 
-   The referenced memory is written one byte at a time.
+   .. warning::
+      This method provides no protection agianst attempting to access invalid memory
 
-   :arg ptr: a C pointer to some memory without a specified type.
-   :arg numBytes: the number of bytes to write to the fileWriter.
+   :arg ptr: a typless :type:`~CTypes.c_void_ptr` to some valid memory
+   :arg numBytes: the number of bytes to write
 
-   :throws SystemError: Thrown if the bytes could not be written to the fileWriter
+   :throws SystemError: Thrown if an error occured while writing to the fileWriter
 */
 proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
   var e:errorCode = 0;
