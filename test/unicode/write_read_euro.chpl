@@ -1,7 +1,7 @@
 use IO;
 
 if unicodeSupported() {
-  var f = opentmp();
+  var f = openTempFile();
 
   var euro = new ioChar(0x20ac); // euro sign "?";
   var got = new ioChar(0);

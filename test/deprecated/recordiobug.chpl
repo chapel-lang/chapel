@@ -5,7 +5,7 @@ record Point {
   var y: int;
 }
 
-var f = opentmp();
+var f = openTempFile();
 var w = f.writer();
 
 var p = new Point(1,3);
