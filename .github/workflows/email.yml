@@ -48,7 +48,7 @@ jobs:
       - name: Parse changed files
         id: parsed-output
         run: |
-                ${{steps.changed-files.outputs.modified_files}} > changed-output.out
+                
                 echo "OUTPUT= $(echo ${{steps.changed-files.outputs.modified_files}}  )" >> $GITHUB_ENV    
                 
       - name: Send mail  
