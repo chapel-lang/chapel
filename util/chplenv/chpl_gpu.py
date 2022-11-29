@@ -30,8 +30,14 @@ def get():
 @memoize
 def get_sdk_path():
     gpu_type = get()
-    gpu_variable, gpu_program, gpu_bin_depth = GPU_TYPES[gpu_type]
 
+    # No SDK path if GPU is not being used.
+    if gpu_type == 'none':
+        return ''
+
+    # Check vendor-specific environment variable for SDK path, or
+    # try to find the SDK by running `which` on a vendor-specific program.
+    gpu_variable, gpu_program, gpu_bin_depth = GPU_TYPES[gpu_type]
     chpl_sdk_path = os.environ.get(gpu_variable)
     if chpl_sdk_path:
         return chpl_sdk_path
