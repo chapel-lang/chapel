@@ -49,7 +49,7 @@ jobs:
         id: parsed-output
         run: |
                 
-                echo "OUTPUT= $(echo ${{steps.changed-files.outputs.modified_files}}  )" >> $GITHUB_ENV    
+                echo "OUTPUT= $(echo ${{steps.changed-files.outputs.modified_files}} |  sed 's/\,/<br>/g' )" >> $GITHUB_ENV    
                 
       - name: Send mail  
         uses: dawidd6/action-send-mail@v3
