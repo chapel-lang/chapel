@@ -48,7 +48,7 @@ jobs:
       - name: Parse changed files
         id: parsed-output
         run: |
-                {{steps.changed-files.outputs.modified_files}} > changed-output.out
+                ${{steps.changed-files.outputs.modified_files}} > changed-output.out
                 output="$(echo changed-output.out | sed 's/\''/<br>/g')"   
                 echo "::set-output name=changed-fields-output::$output"
       - name: Send mail  
