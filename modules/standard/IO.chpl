@@ -2000,8 +2000,8 @@ deleted upon closing.
 
 Temporary files are opened with :type:`iomode` ``iomode.cwr``; that is, a new
 file is created that supports both writing and reading.  When possible, it may
-be opened such that it can never be reached via any pathname and in such a way
-that it will avoid symlink attacks, but this is system dependent.
+be opened using OS support for temporary files in order to make sure that a new
+file is created only for use by the current application.
 
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
