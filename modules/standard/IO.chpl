@@ -5229,6 +5229,153 @@ proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
 }
 
 /*
+   Write a :type:`~String.string` to a fileWriter in binary format
+
+   :arg s: the ``string`` to write
+   :arg size: the number of codepoints to write from the ``string``
+
+   :throws SystemError: Thrown if the string could not be written to the fileWriter.
+   :throws IllegalArgumentError: Thrown if ``size`` is larger than ``s.size``
+*/
+proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
+  // handle bad arguments
+  if size > s.size then
+    throw new owned IllegalArgumentError("size", "cannot exceed length of provided string");
+  if s.hasEscapes then
+    throw createSystemError(EILSEQ, "illegal use of escaped string characters in 'writeBinary'");
+
+  on this._home {
+    // count the number of bytes to write
+    var sLocal = s.localize();
+    var bytesLen = 0;
+    if size == sLocal.size {
+      bytesLen = s.numBytes;
+    } else {
+      for ((_, cp_byte_len), i) in zip(sLocal._indexLen(), 0..) {
+        if i == size then break;
+        bytesLen += cp_byte_len;
+      }
+    }
+
+    // write the first bytesLen bytes of the string to the fileWriter
+    var e: errorCode = qio_channel_write_string(
+      false,
+      iokind.native: c_int,
+      qio_channel_str_style(this._channel_internal),
+      this._channel_internal,
+      sLocal.c_str(),
+      bytesLen: c_ssize_t
+    );
+
+    if e != 0 then
+      throw createSystemError(e);
+  }
+}
+
+/*
+   Write a :type:`~Bytes.bytes` to a fileWriter in binary format
+
+   :arg b: the ``bytes`` to write
+   :arg size: the number of bytes to write from the ``bytes``
+
+   :throws SystemError: Thrown if the bytes could not be written to the fileWriter.
+   :throws IllegalArgumentError: Thrown if ``size`` is larger than ``b.size``
+*/
+proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
+  // handle bad arguments
+  if size > b.size then
+    throw new owned IllegalArgumentError("size", "cannot exceed length of provided bytes");
+
+  on this._home {
+    // write the first size bytes to the fileWriter
+    var bLocal = b.localize();
+    var e: errorCode = qio_channel_write_string(
+      false,
+      iokind.native: c_int,
+      qio_channel_str_style(this._channel_internal),
+      this._channel_internal,
+      bLocal.c_str(),
+      size: c_ssize_t
+    );
+
+    if e != 0 then
+      throw createSystemError(e);
+  }
+}
+
+/*
+   Write an array of binary numbers to a fileWriter
+
+   Note that this routine currently requires a 1D rectangular non-strided array.
+
+   :arg data: an array of numbers to write to the fileWriter
+   :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
+              to read the numbers. Defaults to ``ioendian.native``.
+
+   :throws SystemError: Thrown if the values could not be written to the fileWriter.
+   :throws UnexpectedEofError: Thrown if EOF is reached before all the values could be written.
+*/
+proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws
+  where (d.rank == 1 && d.stridable == false) && (
+          isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
+{
+  var e : errorCode = 0;
+
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    for b in data {
+      select (endian) {
+        when ioendian.native {
+          e = try _write_binary_internal(this._channel_internal, iokind.native, b);
+        }
+        when ioendian.big {
+          e = try _write_binary_internal(this._channel_internal, iokind.big, b);
+        }
+        when ioendian.little {
+          e = try _write_binary_internal(this._channel_internal, iokind.little, b);
+        }
+      }
+
+      if e == EEOF {
+        throw new owned UnexpectedEofError("Unable to write entire array of values in 'writeBinary'");
+      } else if e != 0 {
+        throw createSystemError(e);
+      }
+    }
+  }
+}
+
+/*
+   Write an array of binary numbers to a fileWriter
+
+   Note that this routine currently requires a 1D rectangular non-strided array.
+
+   :arg data: an array of numbers to write to the fileWriter
+   :arg endian: :type:`ioendian` specifies the byte order in which
+              to write the number.
+
+   :throws SystemError: Thrown if the values could not be written to the fileWriter.
+   :throws UnexpectedEofError: Thrown if EOF is reached before all the values could be written.
+*/
+proc fileWriter.writeBinary(const ref data: [?d] ?t, endian:ioendian) throws
+  where (d.rank == 1 && d.stridable == false) && (
+          isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
+{
+  select (endian) {
+    when ioendian.native {
+      this.writeBinary(data, ioendian.native);
+    }
+    when ioendian.big {
+      this.writeBinary(data, ioendian.big);
+    }
+    when ioendian.little {
+      this.writeBinary(data, ioendian.little);
+    }
+  }
+}
+
+/*
    Read a binary number from the channel
 
    :arg arg: number to be read
