@@ -221,10 +221,6 @@ module ChapelDistribution {
     proc dsiIndexOrder(i)         { dnsError("indexOrder"); }
 
     pragma "no doc" pragma "last resort"
-    deprecated "dsiMakeIndexBuffer has been renamed to dsiCreateIndexBuffer"
-    proc dsiMakeIndexBuffer(size) { dnsError("makeIndexBuffer"); }
-
-    pragma "no doc" pragma "last resort"
     proc dsiCreateIndexBuffer(size) { dnsError("createIndexBuffer"); }
 
     // end of default overloads to provide clear compile-time error messages
@@ -709,11 +705,6 @@ module ChapelDistribution {
     }
     override proc dsiAlignedLow { return parentDom.low; }
     override proc dsiAlignedHigh { return parentDom.high; }
-
-    deprecated "dsiMakeIndexBuffer has been renamed to dsiCreateIndexBuffer"
-    override proc dsiMakeIndexBuffer(size) {
-      return dsiCreateIndexBuffer(size);
-    }
 
     override proc dsiCreateIndexBuffer(size) {
       return new SparseIndexBuffer(rank=this.rank, obj=this, size=size);
