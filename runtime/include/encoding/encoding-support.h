@@ -41,7 +41,7 @@ extern "C" {
 static inline intptr_t chpl_enc_ptr_diff(void* a, void* b)
 {
   if( a == NULL || b == NULL ) return 0;
-  return ((intptr_t)(size_t)a) - ((intptr_t)(size_t)b);
+  return ((intptr_t)a) - ((intptr_t)b);
 }
 
 static inline

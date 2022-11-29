@@ -231,7 +231,7 @@ static inline int64_t real2int(_real64 f) {
 
 // return the raw bytes of the pointer
 static inline int64_t object2int(_chpl_object o) {
-  return (intptr_t) (size_t)o;
+  return (intptr_t) o;
 }
 
 typedef int32_t chpl__class_id;
