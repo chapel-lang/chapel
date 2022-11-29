@@ -218,8 +218,10 @@ void VarScopeVisitor::exitFrame(const AstNode* ast) {
     }
     if (savedSubBlock) {
       // frame will be processed with parent block
-      bool isParentAstConditional = parsing::parentAst(context, ast);
+      auto parentAst = parsing::parentAst(context, ast);
+      bool isParentAstConditional = parentAst && parentAst->isConditional();
       assert(isParentAstConditional || parentFrame->scopeAst->isTry());
+      std::ignore = isParentAstConditional; // For CI checks.
     } else if (auto cond = ast->toConditional()) {
       handleConditional(cond);
       if (parentFrame != nullptr) {
