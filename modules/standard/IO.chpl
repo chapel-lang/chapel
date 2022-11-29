@@ -1778,6 +1778,11 @@ to create a channel to actually perform I/O operations
             this file. See :record:`ioHintSet`.
 :returns: an open file to the requested resource.
 
+:throws FileNotFoundError: Thrown if part of the provided path did not exist
+:throws PermissionError: Thrown if part of the provided path had inappropriate
+                         permissions
+:throws NotADirectoryError: Thrown if part of the provided path was expected to
+                            be a directory but was not
 :throws SystemError: Thrown if the file could not be opened.
 */
 proc open(path:string, mode:iomode, hints=ioHintSet.empty): file throws {
