@@ -57,8 +57,8 @@ VarScopeVisitor::process(const uast::AstNode* symbol,
   if (auto fn = symbol->toFunction()) {
     // traverse formals and then traverse the body
     if (auto body = fn->body()) {
-      // make a pretend scope for the formals
-      enterScope(body);
+      // make a pretend frame for the formals
+      enterFrame(body);
 
       // traverse the formals
       for (auto formal : fn->formals()) {
@@ -68,7 +68,7 @@ VarScopeVisitor::process(const uast::AstNode* symbol,
       // traverse the real body
       body->traverse(rv);
 
-      exitScope(body);
+      exitFrame(body);
     }
   } else {
     symbol->traverse(rv);
@@ -172,8 +172,14 @@ bool VarScopeVisitor::processDeclarationInit(const VarLikeDecl* ast, RV& rv) {
   return inserted;
 }
 
-void VarScopeVisitor::enterScope(const AstNode* ast) {
-  if (createsScope(ast->tag())) {
+bool VarScopeVisitor::createsFrame(const AstNode* ast) {
+  if (createsScope(ast->tag())) return true;
+  if (ast->isConditional()) return true;
+  return false;
+}
+
+void VarScopeVisitor::enterFrame(const AstNode* ast) {
+  if (createsFrame(ast)) {
     scopeStack.push_back(toOwned(new VarFrame(ast)));
   }
   if (auto c = ast->toConditional()) {
@@ -189,8 +195,8 @@ void VarScopeVisitor::enterScope(const AstNode* ast) {
     }
   }
 }
-void VarScopeVisitor::exitScope(const AstNode* ast) {
-  if (createsScope(ast->tag())) {
+void VarScopeVisitor::exitFrame(const AstNode* ast) {
+  if (createsFrame(ast)) {
     assert(!scopeStack.empty());
     size_t n = scopeStack.size();
     owned<VarFrame>& curFrame = scopeStack[n-1];
@@ -212,8 +218,8 @@ void VarScopeVisitor::exitScope(const AstNode* ast) {
     }
     if (savedSubBlock) {
       // frame will be processed with parent block
-      assert(parentFrame->scopeAst->isConditional() ||
-             parentFrame->scopeAst->isTry());
+      bool isParentAstConditional = parsing::parentAst(context, ast);
+      assert(isParentAstConditional || parentFrame->scopeAst->isTry());
     } else if (auto cond = ast->toConditional()) {
       handleConditional(cond);
       if (parentFrame != nullptr) {
@@ -266,7 +272,7 @@ void VarScopeVisitor::exitScope(const AstNode* ast) {
 
 
 bool VarScopeVisitor::enter(const VarLikeDecl* ast, RV& rv) {
-  enterScope(ast);
+  enterFrame(ast);
 
   return true;
 }
@@ -276,7 +282,7 @@ void VarScopeVisitor::exit(const VarLikeDecl* ast, RV& rv) {
     handleDeclaration(ast, rv);
   }
 
-  exitScope(ast);
+  exitFrame(ast);
 }
 
 
@@ -423,12 +429,12 @@ void VarScopeVisitor::exit(const Identifier* ast, RV& rv) {
 }
 
 bool VarScopeVisitor::enter(const AstNode* ast, RV& rv) {
-  enterScope(ast);
+  enterFrame(ast);
 
   return true;
 }
 void VarScopeVisitor::exit(const AstNode* ast, RV& rv) {
-  exitScope(ast);
+  exitFrame(ast);
 }
 
 

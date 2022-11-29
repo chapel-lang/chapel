@@ -44,7 +44,7 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
-static void gather(DeclMap& declared, UniqueString name, const AstNode* d,
+void gather(DeclMap& declared, UniqueString name, const AstNode* d,
                    Decl::Visibility visibility) {
   auto search = declared.find(name);
   if (search == declared.end()) {
@@ -188,7 +188,8 @@ bool createsScope(asttags::AstTag tag) {
          || asttags::isSimpleBlockLike(tag)
          || asttags::isLoop(tag)
          || asttags::isCobegin(tag)
-         || asttags::isConditional(tag)
+         // TODO: Do we have to open a scope if nothing is in it?
+         // || asttags::isConditional(tag) -> No, only branches.
          || asttags::isSelect(tag)
          || asttags::isTry(tag)
          || asttags::isCatch(tag)
@@ -204,6 +205,17 @@ static void populateScopeWithBuiltins(Context* context, Scope* scope) {
   for (const auto& pair : map) {
     scope->addBuiltin(pair.first);
   }
+}
+
+static bool
+isThenBlockOfConditionalWithIfVar(Context* context,
+                                  const uast::AstNode* ast) {
+  auto parent = parsing::parentAst(context, ast);
+  if (parent && parent->isConditional()) {
+    auto cond = parent->toConditional();
+    return cond->condition()->isVariable() && ast == cond->thenBlock();
+  }
+  return false;
 }
 
 // This query always constructs a scope
@@ -235,6 +247,13 @@ static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
       }
 
       result = new Scope(ast, parentScope, autoUsesModules);
+
+      if (isThenBlockOfConditionalWithIfVar(context, ast)) {
+        auto parent = parsing::parentAst(context, ast);
+        auto cond = parent->toConditional();
+        auto var = cond->condition()->toVariable();
+        result->addOutOfScopeEntry(var);
+      }
     }
   }
 
@@ -279,6 +298,13 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
         // create a new scope if we found any decls/uses immediately in it
         newScope = !(declared.empty() && containsUseImport == false);
       }
+    }
+
+    // Check to see if we can make a last minute exception for "if-vars",
+    // which are weird in that they exist at the level of the conditional
+    // itself, but belong in the scope of the then block.
+    if (!newScope && isThenBlockOfConditionalWithIfVar(context, ast)) {
+      newScope = true;
     }
 
     if (newScope) {

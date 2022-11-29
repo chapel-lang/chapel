@@ -308,6 +308,11 @@ class Scope {
       be called to populate the root scope with builtins. */
   void addBuiltin(UniqueString name);
 
+  /** Add an out-of-scope entry to this scope. Right now, this exists
+      to populate the scope for the 'then branch' of a conditional
+      with the declaration of an 'if-var'. */
+  void addOutOfScopeEntry(const uast::NamedDecl* ast);
+
   /** Return the parent scope for this scope. */
   const Scope* parentScope() const { return parentScope_; }
 

@@ -171,8 +171,9 @@ class VarScopeVisitor {
 
  public:
   // ----- visitor implementation
-  void enterScope(const uast::AstNode* ast);
-  void exitScope(const uast::AstNode* ast);
+  bool createsFrame(const uast::AstNode* ast);
+  void enterFrame(const uast::AstNode* ast);
+  void exitFrame(const uast::AstNode* ast);
 
   bool enter(const VarLikeDecl* ast, RV& rv);
   void exit(const VarLikeDecl* ast, RV& rv);

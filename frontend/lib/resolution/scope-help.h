@@ -28,6 +28,8 @@ namespace uast {
 }
 namespace resolution {
 
+void gather(DeclMap& declared, UniqueString name, const uast::AstNode* d,
+            uast::Decl::Visibility visibility);
 
 void gatherDeclsWithin(const uast::AstNode* ast,
                        DeclMap& declared,

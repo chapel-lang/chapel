@@ -86,6 +86,10 @@ void Scope::addBuiltin(UniqueString name) {
   declared_.emplace(name, OwnedIdsWithName(ID(), uast::Decl::PUBLIC));
 }
 
+void Scope::addOutOfScopeEntry(const uast::NamedDecl* ast) {
+  gather(declared_, ast->name(), ast, ast->visibility());
+}
+
 const Scope* Scope::moduleScope() const {
   const Scope* cur;
   for (cur = this;

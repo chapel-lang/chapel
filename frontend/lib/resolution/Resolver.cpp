@@ -1591,17 +1591,26 @@ bool Resolver::isInsideTag(uast::asttags::AstTag tag) const {
 bool Resolver::enter(const uast::Conditional* cond) {
   auto& r = byPostorder.byAst(cond);
 
+  // If there is a variable, prepare to add it to the 'then' scope.
+  if (cond->condition()->isVariable()) enterScope(cond->thenBlock());
+
   // Try short-circuiting. Visit the condition to see if it is a param
   cond->condition()->traverse(*this);
+
+  // Exit the 'then' scope.
+  if (cond->condition()->isVariable()) exitScope(cond->thenBlock());
+
   auto& condType = byPostorder.byAst(cond->condition()).type();
+
+  // Do param short-circuiting.
+  // If 'param true' -> only resolve 'then' block.
+  // If 'param false' -> only resolve 'else' block.
   if (condType.isParamTrue()) {
-    // condition is param true, might as well only resolve `then` branch
     cond->thenBlock()->traverse(*this);
     if (cond->isExpressionLevel()) {
       auto& thenType = byPostorder.byAst(cond->thenStmt(0)).type();
       r.setType(thenType);
     }
-    // No need to visit children again, or visit `else` branch.
     return false;
   } else if (condType.isParamFalse()) {
     auto elseBlock = cond->elseBlock();
@@ -1614,7 +1623,6 @@ bool Resolver::enter(const uast::Conditional* cond) {
       auto& elseType = byPostorder.byAst(elseBlock->stmt(0)).type();
       r.setType(elseType);
     }
-    // No need to visit children again, especially `then` branch.
     return false;
   }
 
