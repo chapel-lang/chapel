@@ -39,3 +39,27 @@ writeln("isFloat(1.2) returns ", isFloat(1.2));
 writeln("isFloat(real) returns ", isFloat(real));
 writeln("isFloatType(real) returns ", isFloatType(real));
 writeln("isFloatValue(1.2) returns ", isFloatValue(1.2));
+
+// Type subtype relations (operators now marked unstable, will likely be
+// deprecated in favor of named functions)
+
+writeln("Compare 1.type op int");
+writeln("op <= returns ", 1.type <= int);
+writeln("op <  returns ", 1.type <  int);
+writeln("op >= returns ", 1.type >= int);
+writeln("op >  returns ", 1.type >  int);
+
+class BaseClass {}
+class DerivedClass : BaseClass {}
+
+writeln("Compare BaseClass op DerivedClass");
+writeln("op <= returns ", BaseClass <= DerivedClass);
+writeln("op <  returns ", BaseClass <  DerivedClass);
+writeln("op >= returns ", BaseClass >= DerivedClass);
+writeln("op >  returns ", BaseClass >  DerivedClass);
+
+writeln("Compare DerivedClass.type op BaseClass.type");
+writeln("op <= returns ", BaseClass <= DerivedClass);
+writeln("op <  returns ", BaseClass <  DerivedClass);
+writeln("op >= returns ", BaseClass >= DerivedClass);
+writeln("op >  returns ", BaseClass >  DerivedClass);

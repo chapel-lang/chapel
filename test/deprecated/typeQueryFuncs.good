@@ -38,6 +38,18 @@ typeQueryFuncs.chpl:38: warning: isFloat is deprecated use `isReal(e) || isImag(
 typeQueryFuncs.chpl:39: warning: isFloat is deprecated use `isReal(t) || isImag(t)` instead
 typeQueryFuncs.chpl:40: warning: isFloatType is deprecated use `isRealType(t) || isImagType(t)` instead
 typeQueryFuncs.chpl:41: warning: isFloatValue is deprecated use `isRealValue(e) || isImagValue(e)` instead
+typeQueryFuncs.chpl:47: warning: type comparison operators are deprecated; use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:48: warning: type comparison operators are deprecated; use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:49: warning: type comparison operators are deprecated; use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:50: warning: type comparison operators are deprecated; use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:56: warning: type comparison operators are deprecated; use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:57: warning: type comparison operators are deprecated; use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:58: warning: type comparison operators are deprecated; use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:59: warning: type comparison operators are deprecated; use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:62: warning: type comparison operators are deprecated; use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:63: warning: type comparison operators are deprecated; use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:64: warning: type comparison operators are deprecated; use isSubtype/isProperSubtype instead
+typeQueryFuncs.chpl:65: warning: type comparison operators are deprecated; use isSubtype/isProperSubtype instead
 Given a rectangular domain: 
   isRectangularDom() = true
   isIrregularDom()   = false
@@ -72,3 +84,18 @@ isFloat(1.2) returns true
 isFloat(real) returns true
 isFloatType(real) returns true
 isFloatValue(1.2) returns true
+Compare 1.type op int
+op <= returns true
+op <  returns false
+op >= returns true
+op >  returns false
+Compare BaseClass op DerivedClass
+op <= returns false
+op <  returns false
+op >= returns true
+op >  returns true
+Compare DerivedClass.type op BaseClass.type
+op <= returns false
+op <  returns false
+op >= returns true
+op >  returns true
