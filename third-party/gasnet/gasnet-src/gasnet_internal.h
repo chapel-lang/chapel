@@ -276,7 +276,7 @@ GASNETI_MALLOCP(_gasneti_strndup)
 
 extern void gasneti_freezeForDebugger(void);
 
-#if PLATFORM_OS_LINUX || PLATFORM_OS_WSL
+#if PLATFORM_OS_LINUX
   // dynamic check for Linux flavor, to detect binary porting
   // return non-zero iff this Linux system is actually Microsoft Windows Subsystem for Linux
   extern int gasneti_platform_isWSL(void);
@@ -432,6 +432,8 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
                                   const char *force_spawner,
                                   gex_Rank_t *nodes_p, gex_Rank_t *mynode_p);
 
+extern int gasneti_spawn_verbose;
+
 /* ------------------------------------------------------------------------------------ */
 /* memory segment registration and management */
 
@@ -586,6 +588,19 @@ extern int gasnetc_segment_create_hook(gex_Segment_t e_segment);
 // The hook may assume that a prior gasnetc_segment_create_hook() (if any)
 // has returned GASNET_OK.
 extern void gasnetc_segment_destroy_hook(gasneti_Segment_t i_segment);
+#endif
+
+#if GASNETC_EP_BINDSEGMENT_HOOK
+// Called by gex_EP_BindSegment() after argument checking, but before any
+// conduit-independent segment binding steps.
+// Use of this hook may include per-EP memory registration.
+//
+// Arguments provided to gex_EP_BindSegment() are also provided to this
+// hook, but with their internal types.
+extern int gasnetc_ep_bindsegment_hook(
+                gasneti_EP_t        i_ep,
+                gasneti_Segment_t   i_segment,
+                gex_Flags_t         flags);
 #endif
 
 #if GASNETC_EP_PUBLISHBOUNDSEGMENT_HOOK
@@ -869,6 +884,8 @@ extern int gasneti_VerboseErrors;
 /* ------------------------------------------------------------------------------------ */
 /* nodemap data and functions */
 
+extern const char *gasneti_format_host_detect(void);
+
 extern uint64_t gasneti_hosthash(void);
 extern uint32_t gasneti_gethostid(void);
 
@@ -931,8 +948,32 @@ size_t gasneti_blockingRotatedExchangeV(gex_TM_t tm, GASNETI_BUG4227_CONST void 
 // An AM-based host-scoped barrier
 extern void gasneti_host_barrier(void);
 extern void gasnetc_hbarr_reqh(gex_Token_t token, gex_AM_Arg_t arg0);
+
+// An AM-based host-scoped sum of uint64_t
+extern uint64_t gasneti_host_sumu64(uint64_t);
+extern void gasnetc_hsumu64_reqh(gex_Token_t token, gex_AM_Arg_t arg0, gex_AM_Arg_t arg1);
+
+// AM-based bootstrap (job-scoped) collectives
+extern void gasneti_bootstrapBarrier_am(void);
+extern void gasnetc_am_barrier_reqh(gex_Token_t token, gex_AM_Arg_t arg0);
+extern void gasneti_bootstrapExchange_am(void *src, size_t len, void *dest);
+extern void gasnetc_am_exchange_reqh(gex_Token_t token, void *buf, size_t nbytes,
+                                     uint32_t arg0, uint32_t arg1);
+
 #define GASNETC_COMMON_HANDLERS() \
-    gasneti_handler_tableentry_no_bits(gasnetc_hbarr_reqh,1,REQUEST,SHORT,0)
+    gasneti_handler_tableentry_no_bits(gasnetc_am_exchange_reqh,2,REQUEST,MEDIUM,0), \
+    gasneti_handler_tableentry_no_bits(gasnetc_am_barrier_reqh,1,REQUEST,SHORT,0), \
+    gasneti_handler_tableentry_no_bits(gasnetc_hbarr_reqh,1,REQUEST,SHORT,0), \
+    gasneti_handler_tableentry_no_bits(gasnetc_hsumu64_reqh,2,REQUEST,SHORT,0)
+#define _hidx_gasnetc_hbarr_reqh              (GASNETE_HANDLER_BASE-1)
+#define _hidx_gasnetc_hsumu64_reqh            (GASNETE_HANDLER_BASE-2)
+#define _hidx_gasnetc_am_barrier_reqh         (GASNETE_HANDLER_BASE-3)
+#define _hidx_gasnetc_am_exchange_reqh        (GASNETE_HANDLER_BASE-4)
+
+extern gex_Rank_t gasneti_get_dissem_peers(const gex_Rank_t **out_p);
+#if GASNET_PSHM
+extern gex_Rank_t gasneti_get_dissem_peers_pshm(const gex_Rank_t **out_p);
+#endif
 
 /* ------------------------------------------------------------------------------------ */
 // Helpers for debug checks

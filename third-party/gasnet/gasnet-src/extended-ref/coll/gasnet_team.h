@@ -81,7 +81,7 @@ void gasnete_subteam_ID(
 
 gasnet_team_handle_t gasnete_coll_team_lookup(uint32_t team_id);
 
-#define PRINT_ARRAY(fp, A, size, format)        \
+#define GASNETE_PRINT_ARRAY(fp, A, size, format)\
   do {                                          \
     int i;                                      \
     for(i=0; i<(size); i++)                     \

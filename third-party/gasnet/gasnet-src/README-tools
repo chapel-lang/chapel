@@ -166,6 +166,9 @@ system-specific support, where available.
       This environment variable functions like GASNET_TSC_RATE_TOLERANCE, except
       that exceeeding this value results in a fatal error.
 
+    * GASNET_TSC_VERBOSE
+      This boolean setting requests console output regarding calibration activity
+
 -----
 Sleep
 -----

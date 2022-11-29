@@ -29,7 +29,6 @@ GASNETI_IDENT(gasneti_IdentString_MKClassHIP, "$GASNetMKClassHIP: 1 $");
 typedef struct my_MK_s {
   GASNETI_MK_COMMON // Class-indep prefix
 
-  hipCtx_t           ctx;
   hipDevice_t        dev;
 } *my_MK_t;
 
@@ -100,22 +99,24 @@ int gasneti_MK_Create_hip(
   }
 #endif
 
-  // Obtain the primary context for the given device, initializing if needed
-  hipCtx_t ctx;
-  hipError_t res = hipDevicePrimaryCtxRetain(&ctx, dev);
-  if (res == hipErrorNotInitialized) {
+  // Get handle for the user-specified device to validate
+  hipDevice_t devHandle;
+  hipError_t res = hipDeviceGet(&devHandle, dev);
+  if (res != hipSuccess) {
+    // try to Init (should not be necessary, but might as well try)
     int initRes = hipInit(0);
     if (initRes == hipSuccess) {
-      res = hipDevicePrimaryCtxRetain(&ctx, dev);
+      res = hipDeviceGet(&devHandle, dev);
     } else if (initRes == hipErrorNoDevice) {
       GASNETI_RETURN_ERRR(BAD_ARG,"GEX_MK_CLASS_HIP: no HIP devices found");
     } else {
-      const char *msg = gasneti_dynsprintf("GEX_MK_CLASS_HIP: hipInit() returned %i", initRes);
+      const char *msg = gasneti_dynsprintf("GEX_MK_CLASS_HIP: hipInit() returned "GASNETI_HIPRESULT_FMT,
+                                           GASNETI_HIPRESULT_ARG(initRes));
       GASNETI_RETURN_ERRR(BAD_ARG,msg);
     }
   }
 
-  // Failed to obtain the primary context, try to reason out why
+  // Failed to get the device handle for the user-provided device, try to reason out why
   // TODO: explicit diagnosis of more failure cases
   if_pf (res != hipSuccess) {
     const char *why = "unknown failure";
@@ -126,10 +127,11 @@ int gasneti_MK_Create_hip(
       } else if (! dev_count) {
         why = "no HIP devices found";
       } else {
-        why = gasneti_dynsprintf("invalid hipDevice_t=%i (%d devices found)", dev, dev_count);
+        why = gasneti_dynsprintf("invalid gex_hipDevice=%i (%d devices found)", dev, dev_count);
       }
     } else {
-      why = gasneti_dynsprintf("hipDevicePrimaryCtxRetain() returned %i", res);
+      why = gasneti_dynsprintf("hipDeviceGet(%i,...) returned "GASNETI_HIPRESULT_FMT,
+                               dev, GASNETI_HIPRESULT_ARG(res));
     }
     const char *msg = gasneti_dynsprintf("GEX_MK_CLASS_HIP: %s", why);
     GASNETI_RETURN_ERRR(BAD_ARG,msg);
@@ -137,7 +139,6 @@ int gasneti_MK_Create_hip(
 
   my_MK_t result = (my_MK_t) gasneti_alloc_mk(client, get_impl(), flags);
   result->dev = dev;
-  result->ctx = ctx;
 
 #if 0 // TODO: enable if HIP has equivalent of CU_POINTER_ATTRIBUTE_SYNC_MEMOPS
   result->use_sync_memops = gasneti_getenv_yesno_withdefault("GASNET_USE_HIP_SYNC_MEMOPS", 1);
@@ -145,18 +146,6 @@ int gasneti_MK_Create_hip(
 
   *i_memkind_p = (gasneti_MK_t) result;
   return GASNET_OK;
-}
-
-//
-// Class-specific MK_Destroy
-//
-static void gasneti_MK_Destroy_hip(
-            gasneti_MK_t                     i_mk,
-            gex_Flags_t                      flags)
-{
-  my_MK_t mk = (my_MK_t) i_mk;
-  gasneti_check_hipcall(hipDevicePrimaryCtxRelease(mk->dev));
-  gasneti_free_mk(i_mk);
 }
 
 //
@@ -254,7 +243,7 @@ static gasneti_mk_impl_t *get_impl(void) {
       the_impl.mk_sizeof    = sizeof(struct my_MK_s);
 
       the_impl.mk_format    = &gasneti_formatmk_hip;
-      the_impl.mk_destroy   = &gasneti_MK_Destroy_hip;
+      the_impl.mk_destroy   = NULL; // No class-specific MK_Destroy needed
       the_impl.mk_segment_create
                             = &gasneti_MK_Segment_Create_hip;
       the_impl.mk_segment_destroy

@@ -2,7 +2,7 @@
 GASNet for Chapel release
 =========================
 
-This copy of GASNet-EX 2022.3.0 is being released with Chapel for
+This copy of GASNet-EX 2022.9.0 is being released with Chapel for
 convenience and was obtained from
 
   https://gasnet.lbl.gov/
@@ -15,14 +15,10 @@ Chapel modifications to GASNet
 The modifications that we have made to the official GASNet release are
 as follows:
 
-* Pulled in an upstream patch for getting gasnet prefix out of .pc file
-   - https://bitbucket.org/berkeleylab/gasnet/commits/8f5f8a1ab
-* Pulled in an upstream patch to check if LD requires MPI using .pc file
-   - https://bitbucket.org/berkeleylab/gasnet/commits/a657aa1ef
-   - https://bitbucket.org/berkeleylab/gasnet/commits/12335d0fe
-   - https://bitbucket.org/berkeleylab/gasnet/commits/a57d84def
-* Pulled in an upstream fix for `--disable-full-path-expansion`
-   - https://bitbucket.org/berkeleylab/gasnet/commits/8f3eb926b
+* Pulled in an upstream fix to quiet psm2 warning
+   - https://bitbucket.org/berkeleylab/gasnet/commits/843f1d8
+* Pulled in an upstream fix for calling a client attach hook
+   - https://bitbucket.org/berkeleylab/gasnet/commits/ca69673
 
 Upgrading GASNet versions
 =========================
@@ -32,9 +28,9 @@ un-tarballed GASNet package contents.  Version updates should be done as
 follows, assuming the CWD is $CHPL_HOME/third-party/gasnet/:
 
 1. un-tarball the new package version into the directory it specifies,
-   for example GASNet-2022.3.0
+   for example GASNet-2022.9.0
 2. git rm -r gasnet-src
-3. mv GASNet-2022.3.0 gasnet-src
+3. mv GASNet-2022.9.0 gasnet-src
 4. git add --force gasnet-src
    ('--force' is needed so that the 'git add' ignores our .gitignore)
 5. commit

@@ -13,10 +13,7 @@
 #define GASNETC_HSL_SPINLOCK 1
 
 /* ------------------------------------------------------------------------------------ */
-#define _hidx_gasnetc_hbarr_reqh              (GASNETC_HANDLER_BASE+0)
-#define _hidx_gasnetc_exit_reqh               (GASNETC_HANDLER_BASE+1)
-#define _hidx_gasnetc_sys_barrier_reqh        (GASNETC_HANDLER_BASE+2)
-#define _hidx_gasnetc_sys_exchange_reqh       (GASNETC_HANDLER_BASE+3)
+#define _hidx_gasnetc_exit_reqh               (GASNETC_HANDLER_BASE+0)
 /* add new core API handlers here and to the bottom of gasnet_core.c */
 
 /* ------------------------------------------------------------------------------------ */
@@ -104,9 +101,6 @@ extern gasnetc_exitcode_t *gasnetc_exitcodes;
 /* Bootstrap collective operations */
 
 extern gasneti_spawnerfn_t const *gasneti_spawner;
-
-void gasnetc_bootstrapBarrier_gni(void);
-void gasnetc_bootstrapExchange_gni(void *src, size_t len, void *dest);
 
 /* ------------------------------------------------------------------------------------ */
 // Aries CE support

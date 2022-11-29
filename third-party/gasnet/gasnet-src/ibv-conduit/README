@@ -16,6 +16,7 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
 @ Section: Known Problems @
 @ Section: Core API @
 @ Section: Extended API @
+@ Section: GEX_FLAG_IMMEDIATE Support @
 @ Section: Graceful exits @
 @ Section: References @
 
@@ -1590,6 +1591,47 @@ Notes for myself for extended API:
   followed by a PUT, for small enough sizes.  This is not currently
   implemented.
   
+@ Section: GEX_FLAG_IMMEDIATE Support
+
+The following summarizes the current state of support for GEX_FLAG_IMMEDIATE.
+Last reviewed against 2022.3.0
+
+                    |   SEGMENT   |  SEGMENT   |  SEGMENT   |
+         OPERATION  |    FAST     |   LARGE    | EVERYTHING |
+        ------------+-------------+------------+------------+
+        FPAM Short  |      Y      |     Y      |     Y      |
+        FPAM Medium |      Y      |     Y      |     Y      |
+        FPAM Long   |   Note 1    |   Note 1   |   Note 1   |
+                    |             |            |            |
+        NPAM Medium |      Y      |     Y      |     Y      |
+        NPAM Long   |   Note 2    |     N      |     N      |
+                    |             |            |            |
+        RMA Put     |      N      |     N      |     N      |
+        RMA Get     |      N      |     N      |     N      |
+        ------------+-------------+------------+------------+
+
+        Y = GEX_FLAG_IMMEDIATE is fully implemented
+        N = GEX_FLAG_IMMEDIATE is ignored
+        FPAM = Fixed-payload AM
+        NPAM = Negotiated-payload AM
+
+For the notes which follow, define a "packed Long" as an AM Long having a
+payload size of GASNET_PACKEDLONG_LIMIT or less.
+
+Note 1: FPAM Long
+  + For a packed Long the IMMEDIATE flag is fully implemented.
+    For the LARGE and EVERYTHING segment modes, this notably includes all Reply
+    calls because in those cases the payload is always packed.
+  + Otherwise, the IMMEDIATE flag is ignored.
+
+Note 2: NPAM Long / FAST
+  + For a packed Long the IMMEDIATE flag is fully implemented.
+    This notably includes all calls with a GASNet-allocated buffer because in
+    this case the payload is always packed.
+  + Otherwise, the IMMEDIATE flag is *partially* implemented.  The logic in
+    Prepare is sensitive to AM flow-control credits and buffer allocation for
+    the AM header, but ignores the possibility of a stall in injection of the
+    payload transfer at Commit time.
 
 @ Section: Graceful exits @
 
