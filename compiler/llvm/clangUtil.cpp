@@ -2551,17 +2551,17 @@ void runClang(const char* just_parse_filename) {
   if (usingGpuLocaleModel()) {
     // Need to pass this flag so atomics header will compile
     clangOtherArgs.push_back("--std=c++11");
- 
+
     // Need to select CUDA/AMD mode in embedded clang to
     // activate the GPU target
     clangOtherArgs.push_back("-x");
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_CUDA:
         clangOtherArgs.push_back("cuda");
-	break;
+        break;
       case GpuCodegenType::GPU_CG_AMD:
         clangOtherArgs.push_back("hip");
-	break;
+        break;
     }
 
     std::string gpuArch = std::string("--offload-arch=") + fCUDAArch;
@@ -4137,10 +4137,10 @@ void makeBinaryLLVM(void) {
     switch (codegenType) {
       case GpuCodegenType::GPU_CG_CUDA:
         artifactFilename = genIntermediateFilename("chpl__gpu_ptx.s");
-	break;
+        break;
       case GpuCodegenType::GPU_CG_AMD:
         artifactFilename = genIntermediateFilename("chpl__gpu.o");
-	break;
+        break;
     }
   }
 
@@ -4418,7 +4418,7 @@ void makeBinaryLLVM(void) {
           break;
         case GpuCodegenType::GPU_CG_AMD:
           makeBinaryLLVMForHIP(artifactFilename, outFilename, fatbinFilename);
-	  break;
+          break;
       }
     }
   }
