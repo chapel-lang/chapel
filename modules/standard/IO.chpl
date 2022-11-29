@@ -5233,13 +5233,17 @@ proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
 
    Note that native endianess is always used.
 
-   :arg ptr: a :class:`~CTypes.c_ptr` to some memory. existing values will be
+   If ``maxBytes`` is not evenly divisible by the size of ``t``, then the
+   remaining bytes are ignored.
+
+   :arg ptr: a :class:`~CTypes.c_ptr` to some memory — existing values will be
               overwritten
    :arg maxBytes: the maximum number of bytes to read from the fileReader
    :returns: the number of bytes that were read. can be less than ``maxBytes``
-              if EOF is reached before reading the specified number of bytes
+              if EOF was reached before reading the specified number of bytes,
+              or if ``maxBytes`` is not evenly divisible by the size of ``t``
 
-   :throws SystemError: Thrown if an error occurred reading from the fileReader
+   :throws SystemError: Thrown if an error occurred while reading from the fileReader
 */
 proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
   var e: errorCode = 0;
@@ -5261,15 +5265,15 @@ proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
 /*
    Read up to ``maxBytes`` bytes from a fileReader into a :type:`~CTypes.c_void_ptr`
 
-   Data is read one byte at a time, so endianness is not relevant.
+   Note that bytes are read from the file one at a time.
 
    :arg ptr: a typless :type:`~CTypes.c_void_ptr` to some memory — existing values
               will be overwritten
    :arg maxBytes: the maximum number of bytes to read from the fileReader
    :returns: the number of bytes that were read. can be less than ``maxBytes``
-              if EOF is reached before reading the specified number of bytes
+              if EOF was reached before reading the specified number of bytes
 
-   :throws SystemError: Thrown if an error occurred reading from the fileReader
+   :throws SystemError: Thrown if an error occurred while reading from the fileReader
 */
 proc fileReader.readBinary(ptr: c_void_ptr, maxBytes: int): int throws {
   var e: errorCode = 0;

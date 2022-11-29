@@ -27,7 +27,7 @@ readCptrTestTooMany(openreader("./c_ptr_input/cptr64.bin"), 64);
 //  ensure that the first 10 values were read correctly, and that 'num_read' is correct
 proc readCptrTestTooMany(reader, param isize: int) {
     var cm = c_malloc(uint(isize), 12);
-    var num_read = reader.readBinary(cm, 12 * (isize / 8));
+    var num_read = reader.readBinary(cm, 12 * (isize / 8) + 1);
     var correct = true;
     for i in (0:uint(8))..<10 do correct &= cm[i] == i;
     writeln(num_read, "\t", correct);
