@@ -5178,20 +5178,21 @@ proc _channel.writebits(v:integral, nbits:integral) throws {
 }
 
 /*
-   Write ``numBytes`` of data from a :class:`~CTypes.c_ptr` to a fileWriter
+   Write ``numBytes`` of data from a :class:`~CTypes.c_ptr` to a ``fileWriter``
 
-   Note that native endianess is always used.
+   Note that native endianness is always used.
 
-   If ``numBytes`` is not evenly divisible by the size of ``t``, then the
-   remaining bytes are ignored.
+   If ``numBytes`` is not evenly divisible by the size of ``t``, the remaining
+   bytes will be ignored. For example, if the ``c_ptr``'s internal type is 4
+   bytes in length, and ``numBytes=17``, only 16 bytes will be written.
 
    .. warning::
-      This method provides no protection agianst attempting to access invalid memory
+      This method provides no protection against attempting to access invalid memory
 
    :arg ptr: a :class:`~CTypes.c_ptr` to some valid memory
    :arg numBytes: the number of bytes to write
 
-   :throws SystemError: Thrown if an error occured while writing to the fileWriter
+   :throws SystemError: Thrown if an error occured while writing to the ``fileWriter``
 */
 proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
 {
@@ -5208,17 +5209,17 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
 }
 
 /*
-   Write ``numBytes`` of data from a :type:`~CTypes.c_void_ptr` to a fileWriter
+   Write ``numBytes`` of data from a :type:`~CTypes.c_void_ptr` to a ``fileWriter``
 
    The data are written to the file one byte at a time.
 
    .. warning::
-      This method provides no protection agianst attempting to access invalid memory
+      This method provides no protection against attempting to access invalid memory
 
-   :arg ptr: a typless :type:`~CTypes.c_void_ptr` to some valid memory
+   :arg ptr: a typeless :type:`~CTypes.c_void_ptr` to some valid memory
    :arg numBytes: the number of bytes to write
 
-   :throws SystemError: Thrown if an error occured while writing to the fileWriter
+   :throws SystemError: Thrown if an error occured while writing to the ``fileWriter``
 */
 proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
   var e:errorCode = 0;
