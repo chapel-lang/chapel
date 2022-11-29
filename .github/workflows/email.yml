@@ -17,7 +17,9 @@ jobs:
       - name: print GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"  
+        run: echo "$GITHUB_CONTEXT" 
+     # This workflow step will parse github env. The parsed env will be used in the email body.
+     #  MERGE_LOG env holds the request body(PR description) that is parsed to replace \n\r with <br> for html formatting    
       - name: get commits payload
         env:
           COMMIT_URL: ${{github.event.pull_request._links.commits.href}}
@@ -30,7 +32,7 @@ jobs:
               echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
               echo "FILES_CHANGED=$(echo '${{github.event.pull_request._links.html.href}}/files' )" >> $GITHUB_ENV
               echo $LOG
-              echo "MERGE_LOG= $(echo $LOG | sed 's/\\n/<br>/g' | sed 's/\\r/ /g' ) " >> $GITHUB_ENV
+              echo "MERGE_LOG= $(echo $LOG | sed 's/\\r\\n/<br>/g' ) " >> $GITHUB_ENV
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
