@@ -65,8 +65,9 @@ def get_runtime_includes_and_defines():
         if gpu_type == "cuda":
             system.append("-I" + os.path.join(sdk_path, "include"))
         elif gpu_type == "amd":
-            system.append("-I" + os.path.join(sdk_path, "hip", "include"))
-            system.append("-I" + os.path.join(sdk_path, "hsa", "include"))
+            # -isystem instead of -I silences warnings from inside these includes.
+            system.append("-isystem" + os.path.join(sdk_path, "hip", "include"))
+            system.append("-isystem" + os.path.join(sdk_path, "hsa", "include"))
 
     if mem == "jemalloc":
         # set -DCHPL_JEMALLOC_PREFIX=chpl_je_

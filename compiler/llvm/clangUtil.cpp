@@ -2390,7 +2390,7 @@ void runClang(const char* just_parse_filename) {
   // with our backend.
   const char* clangRequiredWarningFlags[] = {
     "-Wall",
-    /* "-Werror", */
+    "-Werror",
     "-Wpointer-arith",
     "-Wwrite-strings",
     "-Wno-strict-aliasing",
