@@ -25,7 +25,13 @@
     This module is unstable and its interface is subject to change in the
     future.
 
+    GPU support is a relatively new feature to Chapel and is under active
+    development.
+
+    For the most up-to-date information about GPU support see the
+    :ref:`technical note <readme-gpu>` about it.
 */
+@unstable "The GPUDiagnostics module is unstable and its interface is subject to change in the future."
 module GPUDiagnostics
 {
 
