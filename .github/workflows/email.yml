@@ -49,8 +49,8 @@ jobs:
         id: parsed-output
         run: |
                 ${{steps.changed-files.outputs.modified_files}} > changed-output.out
-                output="$(echo changed-output.out | sed 's/\''/<br>/g')"   
-                echo "::set-output name=changed-fields-output::$output"
+                echo "OUTPUT= $(echo ${{steps.changed-files.outputs.modified_files}} | sed 's/\''/<br>/g' )" >> $GITHUB_ENV    
+                
       - name: Send mail  
         uses: dawidd6/action-send-mail@v3
         with:
@@ -83,7 +83,7 @@ jobs:
               Log Message: <br><br>
                            ${{env.LOG}} <br>
                           
-              ${{steps.parsed-outputs.outputs.changed-fields-output}} <br>
+              ${{env.OUTPUT}} <br>
              
               </p>
               </body>
