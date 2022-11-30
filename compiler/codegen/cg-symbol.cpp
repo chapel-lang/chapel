@@ -145,12 +145,14 @@ bool shouldLlvmPrintIrFn(FnSymbol* fn) {
   return shouldLlvmPrintIrName(fn->name) || shouldLlvmPrintIrCName(fn->cname);
 }
 
-std::vector<const char*> gatherPrintLlvmIrCNames() {
-  std::vector<const char*> ret;
+std::vector<std::string> gatherPrintLlvmIrCNames() {
+  std::vector<std::string> ret;
   for (auto elt : llvmPrintIrCNames) {
-    ret.push_back(elt);
+    ret.push_back(std::string(elt));
   }
 
+  // sort the symbols by value to have deterministic ordering
+  std::sort(ret.begin(), ret.end());
   return ret;
 }
 

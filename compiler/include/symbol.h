@@ -983,7 +983,7 @@ void addCNameToPrintLlvmIr(const char* name);
 bool shouldLlvmPrintIrName(const char* name);
 bool shouldLlvmPrintIrCName(const char* name);
 bool shouldLlvmPrintIrFn(FnSymbol* fn);
-std::vector<const char*> gatherPrintLlvmIrCNames();
+std::vector<std::string> gatherPrintLlvmIrCNames();
 
 #ifdef HAVE_LLVM
 void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage);
