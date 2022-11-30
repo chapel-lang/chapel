@@ -21,6 +21,7 @@
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/parsing/parser-error.h"
 #include "chpl/uast/all-uast.h"
 #include <vector>
 
@@ -161,7 +162,7 @@ void Visitor::report(const AstNode* node, ErrorBase::Kind kind,
                      const char* fmt,
                      va_list vl) {
   auto err = GeneralError::vbuild(context_, kind, node->id(), fmt, vl);
-  builder_.addError(std::move(err));
+  CHPL_POSTPARSE_REPORT_SIMPLE(builder_, err->message());
 }
 
 void Visitor::error(const AstNode* node, const char* fmt, ...) {
