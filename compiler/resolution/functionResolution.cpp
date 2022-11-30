@@ -2932,10 +2932,8 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
             // Put the call back in to aid traversal
             se->getStmtExpr()->insertBefore(call);
           } else {
-            if (fWarnUnstable) {
-              USR_WARN(call, "type comparison operators are unstable; "
-                "consider using isSubtype/isProperSubtype as a stable alternative");
-            }
+            USR_WARN(call, "type comparison operators are deprecated; "
+              "use isSubtype/isProperSubtype instead");
 
             rhs->remove();
             lhs->remove();
