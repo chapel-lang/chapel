@@ -50,9 +50,7 @@
    :proc:`remove`
    :proc:`rmTree`
    :proc:`symlink`
-   :proc:`chmod`
    :proc:`chown`
-   :proc:`copyMode`
    :proc:`rename`
 
    .. _file-status:
@@ -60,7 +58,6 @@
    File/Directory Properties
    -------------------------
    :proc:`getGid`
-   :proc:`getMode`
    :proc:`getFileSize`
    :proc:`getUid`
    :proc:`exists`
@@ -107,8 +104,7 @@ module FileSystem {
    idea of these constants as visible at `GNU Permissions
    <http://www.gnu.org/software/libc/manual/html_node/Permission-Bits.html>`_.
    They are intended for use when dealing with the permissions of files or
-   directories, such as with :proc:`chmod`, :proc:`getMode`, :proc:`mkdir`,
-   or :proc:`~locale.umask`
+   directories, such as with :proc:`mkdir`, or :proc:`~locale.umask`
 
    S_IRUSR refers to the user's read permission
 */
@@ -211,6 +207,7 @@ proc locale.chdir(name: string) throws {
    :throws PermissionError: Thrown when the current user does not have
                             permission to change the permissions
 */
+deprecated "'FileSystem.chmod()' is deprecated. Please use 'OS.POSIX.chmod()' instead"
 proc chmod(name: string, mode: int) throws {
   extern proc chpl_fs_chmod(name: c_string, mode: int): errorCode;
 
@@ -269,6 +266,17 @@ proc chown(name: string, uid: int, gid: int) throws {
 */
 proc copy(src: string, dest: string, metadata: bool = false) throws {
   var destFile = dest;
+
+  proc copyMode(src: string, dest: string) throws {
+    use OS.POSIX;
+    var statStruct: struct_stat;
+    const statRet = stat(src.c_str(), c_ptrTo(statStruct));
+
+    if statRet != 0 then try ioerror(statRet, "in copy's stat");;
+    const chmodRet = chmod(dest.c_str(), statStruct.st_mode);
+    if chmodRet != 0 then throw ioerror(chmodRet, "in copy's chmod");;
+  }
+
   try {
     if (isDir(destFile)) {
       // destFile = joinPath(destFile, basename(src));
@@ -417,6 +425,7 @@ proc copyFile(src: string, dest: string) throws {
    :throws PermissionError: Thrown when the current user does not have
                             permission to change the permissions
 */
+deprecated "'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead."
 proc copyMode(src: string, dest: string) throws {
   try {
     // Gets the mode from the source file.
@@ -430,6 +439,7 @@ proc copyMode(src: string, dest: string) throws {
 }
 
 pragma "no doc"
+deprecated "'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead."
 proc copyMode(out error: errorCode, src: string, dest: string) {
   var err: errorCode = 0;
   try {
@@ -479,8 +489,13 @@ proc copyTree(src: string, dest: string, copySymbolically: bool=false) throws {
 }
 
 private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=false) throws {
+  extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): errorCode;
+
   // Create dest
-  var oldMode = try getMode(src);
+  var oldMode:c_int;
+  var err = chpl_fs_viewmode(oldMode, unescape(src).c_str());
+  if err then try ioerror(err, "in copyTreeHelper", src);
+
   try mkdir(dest, mode=oldMode, parents=true);
 
   for filename in listDir(path=src, dirs=false, files=true, listlinks=true) {
@@ -691,6 +706,7 @@ proc getGid(name: string): int throws {
 
    :throws SystemError: Thrown to describe an error if one occurs.
 */
+deprecated "'FileSystem.getMode()' is deprecated, please use 'OS.POSIX.stat()' instead"
 proc getMode(name: string): int throws {
   extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): errorCode;
 
