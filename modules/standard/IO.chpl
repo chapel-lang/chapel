@@ -1807,6 +1807,11 @@ to create a channel to actually perform I/O operations
             this file. See :record:`ioHintSet`.
 :returns: an open file to the requested resource.
 
+:throws FileNotFoundError: Thrown if part of the provided path did not exist
+:throws PermissionError: Thrown if part of the provided path had inappropriate
+                         permissions
+:throws NotADirectoryError: Thrown if part of the provided path was expected to
+                            be a directory but was not
 :throws SystemError: Thrown if the file could not be opened.
 */
 proc open(path:string, mode:iomode, hints=ioHintSet.empty): file throws {
@@ -2965,6 +2970,11 @@ This function is equivalent to calling :proc:`open` and then
 
    The region argument will ignore any specified stride other than 1.
 
+:throws FileNotFoundError: Thrown if part of the provided path did not exist
+:throws PermissionError: Thrown if part of the provided path had inappropriate
+                         permissions
+:throws NotADirectoryError: Thrown if part of the provided path was expected to
+                            be a directory but was not
 :throws SystemError: Thrown if a reading channel could not be returned.
 :throws IllegalArgumentError: Thrown if trying to read explicitly prior to byte
                               0.
@@ -3029,6 +3039,11 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
             this file. See :record:`ioHintSet`.
 :returns: an open writing channel to the requested resource.
 
+:throws FileNotFoundError: Thrown if part of the provided path did not exist
+:throws PermissionError: Thrown if part of the provided path had inappropriate
+                         permissions
+:throws NotADirectoryError: Thrown if part of the provided path was expected to
+                            be a directory but was not
 :throws SystemError: Thrown if a writing channel could not be returned.
 */
 proc openwriter(path:string,
