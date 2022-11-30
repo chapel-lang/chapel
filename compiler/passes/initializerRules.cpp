@@ -282,10 +282,7 @@ static InitNormalize preNormalize(AggregateType* at,
 static void preNormalizeInit(FnSymbol* fn) {
   AggregateType* at = toAggregateType(fn->_this->type);
 
-  if (fn->throwsError() == true) {
-    USR_FATAL(fn, "initializers are not yet allowed to throw errors");
-
-  } else if (at->isRecord() == true || at->isUnion()) {
+  if (at->isRecord() == true || at->isUnion()) {
     preNormalizeInitRecordUnion(fn);
 
   } else if (at->isClass()  == true) {
