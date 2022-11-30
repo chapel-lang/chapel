@@ -4305,6 +4305,7 @@ void makeBinaryLLVM(void) {
         std::vector<const char*> names = gatherPrintLlvmIrCNames();
         for (auto name : names) {
           printf("\n\n# Dissasembling symbol %s\n\n", name);
+          fflush(stdout);
           std::vector<std::string> cmd;
           cmd.push_back("objdump");
           std::string arg = "--disassemble=";
