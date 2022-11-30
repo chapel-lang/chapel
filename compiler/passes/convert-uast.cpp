@@ -54,6 +54,8 @@
 #include "chpl/uast/all-uast.h"
 #include "chpl/uast/chpl-syntax-printer.h"
 #include "chpl/util/string-escapes.h"
+#include "chpl/framework/compiler-configuration.h"
+#include "chpl/util/assertions.h"
 
 // If this is set then variables/formals will have their "qual" field set
 // now instead of later during resolution.
@@ -936,7 +938,7 @@ struct Converter {
 
     Expr* one = toExpr(convertAST(node->symbol()));
     auto renameIdent = node->rename()->toIdentifier();
-    assert(renameIdent);
+    CHPL_ASSERT(renameIdent);
     Expr* two = new UnresolvedSymExpr(renameIdent->name().c_str());
     return std::pair<Expr*, Expr*>(one, two);
   }
@@ -2959,7 +2961,7 @@ struct Converter {
     bool foundPath =
       context->filePathForId(node->id(), pathUstr, ignoredParentSymPath);
     (void)foundPath; // avoid unused variable warning
-    assert(foundPath);
+    CHPL_ASSERT(foundPath);
     const char* path = astr(pathUstr);
 
     // TODO (dlongnecke): For now, the tag is overridden by the caller.
@@ -4067,10 +4069,10 @@ void Converter::popFromSymStack(const uast::AstNode* ast, BaseAST* ret) {
   }
 
   if (symStack.size() > 0) {
-    assert(symStack.back().ast == ast);
+    CHPL_ASSERT(symStack.back().ast == ast);
     symStack.back().convertedSyms->applyFixups(context, ast, trace);
   } else {
-    assert(false && "stack error");
+    CHPL_ASSERT(false && "stack error");
   }
   if (trace) {
     printf("Exiting %s %s\n",

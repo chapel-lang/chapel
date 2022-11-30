@@ -38,6 +38,7 @@ public:
   enum Name {
     UNKNOWN,
     WARN_UNSTABLE,
+    DEVELOPER,
     NUM_FLAGS
   };
 

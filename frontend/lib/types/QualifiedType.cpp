@@ -91,7 +91,7 @@ const char* QualifiedType::kindToString(QualifiedType::Kind kind) {
     case QualifiedType::MODULE:             return "module";
   }
 
-  assert(false && "should not be reachable");
+  CHPL_ASSERT(false && "should not be reachable");
   return "unknown";
 }
 

@@ -153,7 +153,7 @@ class Builder final {
   // as owned because it is consumed.
   AstList takeChildren(owned<AstNode> ast) {
     auto ret = std::move(ast->children_);
-    assert(ast->children_.size() == 0);
+    CHPL_ASSERT(ast->children_.size() == 0);
     return ret;
   }
 

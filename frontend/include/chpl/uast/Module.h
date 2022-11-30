@@ -113,7 +113,7 @@ class Module final : public NamedDecl {
     Get the i'th statement in this module.
   */
   const AstNode* stmt(int i) const {
-    assert(0 <= i && i < numStmts());
+    CHPL_ASSERT(0 <= i && i < numStmts());
     const AstNode* ast = this->child(i + stmtChildNum());
     return ast;
   }

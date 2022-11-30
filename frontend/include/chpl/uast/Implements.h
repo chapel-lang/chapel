@@ -67,14 +67,14 @@ class Implements final : public AstNode {
         typeIdentChildNum_(typeIdentChildNum),
         isExpressionLevel_(isExpressionLevel) {
     if (typeIdentChildNum_ != AstNode::NO_CHILD) {
-      assert(children_.size() == 2);
-      assert(child(typeIdentChildNum_)->isIdentifier());
+      CHPL_ASSERT(children_.size() == 2);
+      CHPL_ASSERT(child(typeIdentChildNum_)->isIdentifier());
     } else {
-      assert(children_.size() == 1);
+      CHPL_ASSERT(children_.size() == 1);
     }
 
-    assert(interfaceExpr());
-    assert(interfaceExpr()->isIdentifier() ||
+    CHPL_ASSERT(interfaceExpr());
+    CHPL_ASSERT(interfaceExpr()->isIdentifier() ||
            interfaceExpr()->isFnCall());
   }
 
@@ -108,7 +108,7 @@ class Implements final : public AstNode {
   const Identifier* typeIdent() const {
     if (typeIdentChildNum_ == AstNode::NO_CHILD) return nullptr;
     auto ret = child(typeIdentChildNum_)->toIdentifier();
-    assert(ret);
+    CHPL_ASSERT(ret);
     return ret;
   }
 
@@ -154,9 +154,9 @@ class Implements final : public AstNode {
     respectively.
   */
   const AstNode* interfaceExpr() const {
-    assert(interfaceExprChildNum() != AstNode::NO_CHILD);
+    CHPL_ASSERT(interfaceExprChildNum() != AstNode::NO_CHILD);
     const AstNode* ret = child(interfaceExprChildNum());
-    assert(ret);
+    CHPL_ASSERT(ret);
     return ret;
   }
 

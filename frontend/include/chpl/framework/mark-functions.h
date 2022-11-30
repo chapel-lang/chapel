@@ -24,7 +24,6 @@
 #ifndef CHPL_QUERIES_MARK_FUNCTIONS_H
 #define CHPL_QUERIES_MARK_FUNCTIONS_H
 
-#include <cassert>
 #include <cstring>
 #include <functional>
 #include <string>

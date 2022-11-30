@@ -85,7 +85,7 @@ class QualifiedType final {
     : kind_(kind), type_(type), param_(param)
   {
     // should only set param_ for kind_ == PARAM
-    assert(param_ == nullptr || kind_ == Kind::PARAM);
+    CHPL_ASSERT(param_ == nullptr || kind_ == Kind::PARAM);
   }
 
   /** Returns the kind of the expression this QualifiedType represents */

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 #include "chpl/util/printf.h"
-#include <cassert>
+#include "chpl/util/assertions.h"
 
 namespace chpl {
 
@@ -40,7 +40,7 @@ std::string vprintToString(const char* format, va_list vl) {
     // output was truncated, so try again
     size = got+1; // include '\0' terminator
     char* newbuf = (char*) realloc(buf, size);
-    assert(newbuf != nullptr);
+    CHPL_ASSERT(newbuf != nullptr);
     if (newbuf == nullptr) {
       free(buf);
       return "<internal error in saving error>";
@@ -48,7 +48,7 @@ std::string vprintToString(const char* format, va_list vl) {
     buf = newbuf;
     // this call destructively consumes 'vl'
     got = vsnprintf(buf, size, format, vl);
-    assert(got < size);
+    CHPL_ASSERT(got < size);
     if (got >= size) {
       free(buf);
       return "<internal error in saving error>";

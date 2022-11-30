@@ -53,7 +53,7 @@ class Dot final : public AstNode {
   Dot(AstList children, UniqueString fieldName)
     : AstNode(asttags::Dot, std::move(children)),
       fieldName_(fieldName) {
-    assert(children_.size() == 1);
+    CHPL_ASSERT(children_.size() == 1);
   }
   bool contentsMatchInner(const AstNode* other) const override {
     const Dot* lhs = this;

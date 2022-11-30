@@ -77,16 +77,16 @@ VarScopeVisitor::process(const uast::AstNode* symbol,
 
 VarFrame* VarScopeVisitor::currentThenFrame() {
   VarFrame* frame = currentFrame();
-  assert(frame->scopeAst->isConditional());
-  assert(frame->subBlocks.size() == 1 || frame->subBlocks.size() == 2);
+  CHPL_ASSERT(frame->scopeAst->isConditional());
+  CHPL_ASSERT(frame->subBlocks.size() == 1 || frame->subBlocks.size() == 2);
   VarFrame* ret = frame->subBlocks[0].frame.get();
-  assert(ret);
+  CHPL_ASSERT(ret);
   return ret;
 }
 VarFrame* VarScopeVisitor::currentElseFrame() {
   VarFrame* frame = currentFrame();
-  assert(frame->scopeAst->isConditional());
-  assert(frame->subBlocks.size() == 1 || frame->subBlocks.size() == 2);
+  CHPL_ASSERT(frame->scopeAst->isConditional());
+  CHPL_ASSERT(frame->subBlocks.size() == 1 || frame->subBlocks.size() == 2);
   if (frame->subBlocks.size() == 1) {
     // there was no 'else' clause
     return nullptr;
@@ -97,17 +97,17 @@ VarFrame* VarScopeVisitor::currentElseFrame() {
 
 int VarScopeVisitor::currentNumCatchFrames() {
   VarFrame* frame = currentFrame();
-  assert(frame->scopeAst->isTry());
+  CHPL_ASSERT(frame->scopeAst->isTry());
   int ret = frame->subBlocks.size();
-  assert(frame->scopeAst->toTry()->numHandlers() == ret);
+  CHPL_ASSERT(frame->scopeAst->toTry()->numHandlers() == ret);
   return ret;
 }
 VarFrame* VarScopeVisitor::currentCatchFrame(int i) {
   VarFrame* frame = currentFrame();
-  assert(frame->scopeAst->isTry());
-  assert(0 <= i && (size_t) i < frame->subBlocks.size());
+  CHPL_ASSERT(frame->scopeAst->isTry());
+  CHPL_ASSERT(0 <= i && (size_t) i < frame->subBlocks.size());
   VarFrame* ret = frame->subBlocks[i].frame.get();
-  assert(ret);
+  CHPL_ASSERT(ret);
   return ret;
 }
 
@@ -191,10 +191,10 @@ void VarScopeVisitor::enterScope(const AstNode* ast) {
 }
 void VarScopeVisitor::exitScope(const AstNode* ast) {
   if (createsScope(ast->tag())) {
-    assert(!scopeStack.empty());
+    CHPL_ASSERT(!scopeStack.empty());
     size_t n = scopeStack.size();
     owned<VarFrame>& curFrame = scopeStack[n-1];
-    assert(curFrame->scopeAst == ast);
+    CHPL_ASSERT(curFrame->scopeAst == ast);
     VarFrame* parentFrame = nullptr; // Conditional or Try
     bool savedSubBlock = false;
     if (n >= 2) {
@@ -212,7 +212,7 @@ void VarScopeVisitor::exitScope(const AstNode* ast) {
     }
     if (savedSubBlock) {
       // frame will be processed with parent block
-      assert(parentFrame->scopeAst->isConditional() ||
+      CHPL_ASSERT(parentFrame->scopeAst->isConditional() ||
              parentFrame->scopeAst->isTry());
     } else if (auto cond = ast->toConditional()) {
       handleConditional(cond);
@@ -271,7 +271,7 @@ bool VarScopeVisitor::enter(const VarLikeDecl* ast, RV& rv) {
   return true;
 }
 void VarScopeVisitor::exit(const VarLikeDecl* ast, RV& rv) {
-  assert(!scopeStack.empty());
+  CHPL_ASSERT(!scopeStack.empty());
   if (!scopeStack.empty()) {
     handleDeclaration(ast, rv);
   }

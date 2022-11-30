@@ -60,7 +60,7 @@ class Union final : public AggregateDecl {
                     numElements) {
 
     // Cannot export unions right now, this should be a parse error.
-    assert(linkage != Decl::EXPORT);
+    CHPL_ASSERT(linkage != Decl::EXPORT);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

@@ -43,7 +43,12 @@
 namespace chpl {
   class Context;
 
-class ErrorBase;
+  // Whether or not to exit on assertion failure
+  extern bool assertionsAreFatal;
+  // Whether or not to enable assertions
+  extern bool assertionsAreOn;
+
+  class ErrorBase;
 
 namespace uast {
   class AstNode;
@@ -114,7 +119,7 @@ class Context {
   bool computedChplEnv = false;
   ChplEnvMap chplEnv;
 
-  // Whether or no to use detailed error output
+  // Whether or not to use detailed error output
   bool detailedErrors = true;
 
   // map that supports uniqueCString / UniqueString
@@ -323,6 +328,14 @@ class Context {
         : toOwned<ErrorHandler>(new DefaultErrorHandler());
     std::swap(this->handler_, ret);
     return ret;
+  }
+
+  void setAssertions(bool enable) {
+    assertionsAreOn=enable;
+  }
+
+  void setAssertionsFatal(bool enable) {
+    assertionsAreFatal=enable;
   }
 
   /**
@@ -724,7 +737,7 @@ class Context {
           if (enableQueryTimingTrace) {
             auto ticks = elapsed.count();
             auto os = queryTimingTraceOutput.get();
-            assert(os != nullptr);
+            CHPL_ASSERT(os != nullptr);
             *os << depth << ' ' << base->queryName << ' ' << ticks << '\n';
           }
         });

@@ -32,7 +32,6 @@
 #include "chpl/util/memory.h"
 
 #include <algorithm>
-#include <cassert>
 #include <cstring>
 #include <functional>
 #include <iostream>

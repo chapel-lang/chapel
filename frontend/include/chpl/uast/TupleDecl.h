@@ -25,8 +25,6 @@
 #include "chpl/uast/Variable.h"
 #include "chpl/framework/Location.h"
 
-#include <cassert>
-
 namespace chpl {
 namespace uast {
 
@@ -92,7 +90,7 @@ class TupleDecl final : public Decl {
       typeExpressionChildNum_(typeExpressionChildNum),
       initExpressionChildNum_(initExpressionChildNum) {
 
-    assert(assertAcceptableTupleDecl());
+    CHPL_ASSERT(assertAcceptableTupleDecl());
   }
 
   bool assertAcceptableTupleDecl();
@@ -154,10 +152,10 @@ class TupleDecl final : public Decl {
    Return the i'th contained Decl.
    */
   const Decl* decl(int i) const {
-    assert(i >= 0 && i < numDecls());
+    CHPL_ASSERT(i >= 0 && i < numDecls());
     const AstNode* ast = this->child(i + declChildNum());
-    assert(ast->isVariable() || ast->isTupleDecl());
-    assert(ast->isDecl());
+    CHPL_ASSERT(ast->isVariable() || ast->isTupleDecl());
+    CHPL_ASSERT(ast->isDecl());
     return (const Decl*)ast;
   }
 

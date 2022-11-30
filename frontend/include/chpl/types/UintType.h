@@ -74,7 +74,7 @@ class UintType final : public PrimitiveType {
       case 64:
         return "uint(64)";
       default:
-        assert(false && "uint bit width case not handled");
+        CHPL_ASSERT(false && "uint bit width case not handled");
         return "uint(<unknown>)";
     }
   }

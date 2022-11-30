@@ -170,7 +170,7 @@ bool updateAstList(AstList& keep, AstList& addin) {
     anyChanged = true;
   }
 
-  assert(newList.size() == addin.size());
+  CHPL_ASSERT(newList.size() == addin.size());
   // Swap the lists into place.
   keep.swap(newList);
   addin.swap(junkList);

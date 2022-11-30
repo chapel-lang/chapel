@@ -82,7 +82,7 @@ class When final : public SimpleBlockLike {
   */
   const AstNode* caseExpr(int i) const {
     if (numCaseExprs_ <= 0) return nullptr;
-    assert(i >= 0 && i < numCaseExprs_);
+    CHPL_ASSERT(i >= 0 && i < numCaseExprs_);
     auto ret = child(i);
     return ret;
   }

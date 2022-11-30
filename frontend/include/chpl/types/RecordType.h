@@ -77,7 +77,7 @@ class RecordType final : public CompositeType {
    */
   const RecordType* instantiatedFrom() const {
     const CompositeType* ret = instantiatedFromCompositeType();
-    assert(ret == nullptr || ret->tag() == typetags::RecordType);
+    CHPL_ASSERT(ret == nullptr || ret->tag() == typetags::RecordType);
     return (const RecordType*) ret;
   }
 

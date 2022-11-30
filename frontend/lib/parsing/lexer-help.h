@@ -148,7 +148,7 @@ static int processStringLiteral(yyscan_t scanner,
                                 std::move(value),
                                 quotes).release();
   } else {
-    assert(false && "unknown type in processStringLiteral");
+    CHPL_ASSERT(false && "unknown type in processStringLiteral");
   }
 
   YYSTYPE* val = yyget_lval(scanner);
@@ -197,7 +197,7 @@ static int processTripleStringLiteral(yyscan_t scanner,
                                 std::move(value),
                                 quotes).release();
   } else {
-    assert(false && "unknown type in processStringLiteral");
+    CHPL_ASSERT(false && "unknown type in processStringLiteral");
   }
 
   YYSTYPE* val = yyget_lval(scanner);
@@ -305,7 +305,7 @@ static std::string eatStringLiteral(yyscan_t scanner,
 
         long hexChar = strtol(buf, NULL, 16);
 
-        assert((hexChar != LONG_MIN && hexChar != LONG_MAX) &&
+        CHPL_ASSERT((hexChar != LONG_MIN && hexChar != LONG_MAX) &&
                "overflow/underflow shouldn't be possible in the allowed number "
                "of digits");
         if (!foundHex) {

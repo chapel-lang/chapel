@@ -17,28 +17,28 @@
  * limitations under the License.
  */
 
-#include "chpl/types/UintType.h"
-#include "chpl/framework/query-impl.h"
+
+#include "chpl/util/assertions.h"
+#include "chpl/framework/Context.h"
 
 namespace chpl {
-namespace types {
 
+void assertion(bool expr, const char* filename, const char* func, int lineno, const char* exprText) {
+  // assertions OFF: skip all checks
+  if (!assertionsAreOn) {
+    return;
+  }
 
-const owned<UintType>& UintType::getUintType(Context* context, int bitwidth) {
-  QUERY_BEGIN(getUintType, context, bitwidth);
-
-  auto result = toOwned(new UintType(bitwidth));
-
-  return QUERY_END(result);
+  // assertions ON: perform check, conditionally exit if assertionsAreFatal
+  if (!expr) {
+    // assertion failed: write out error
+    fprintf(stderr, "Assertion failed in [%s:%d] in %s: %s\n", filename, lineno, func, exprText);
+    if (assertionsAreFatal) {
+      exit(1);
+    }
+  }
+  // assertions active and passed
 }
 
-const UintType* UintType::get(Context* context, int bitwidth) {
-  CHPL_ASSERT(bitwidth == 0 || bitwidth == 8 || bitwidth == 16 ||
-         bitwidth == 32 || bitwidth == 64);
-  if (bitwidth == 0) bitwidth = defaultBitwidth(); // canonicalize default width
-  return getUintType(context, bitwidth).get();
-}
 
-
-} // end namespace types
 } // end namespace chpl

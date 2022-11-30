@@ -52,7 +52,7 @@ class ExternBlock final : public AstNode {
   ExternBlock(std::string code)
     : AstNode(asttags::ExternBlock),
       code_(std::move(code)) {
-    assert(numChildren() == 0);
+    CHPL_ASSERT(numChildren() == 0);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

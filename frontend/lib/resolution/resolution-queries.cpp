@@ -56,7 +56,7 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
                                                        ID id) {
   QUERY_BEGIN(resolveModuleStmt, context, id);
 
-  assert(id.postOrderId() >= 0);
+  CHPL_ASSERT(id.postOrderId() >= 0);
 
   // TODO: can we save space better here by having
   // the ResolutionResultByPostorderID have a different offset
@@ -80,7 +80,7 @@ static const ResolutionResultByPostorderID&
 scopeResolveModuleStmt(Context* context, ID id) {
   QUERY_BEGIN(scopeResolveModuleStmt, context, id);
 
-  assert(id.postOrderId() >= 0);
+  CHPL_ASSERT(id.postOrderId() >= 0);
 
   // TODO: can we save space better here by having
   // the ResolutionResultByPostorderID have a different offset
@@ -108,7 +108,7 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
   QUERY_BEGIN(resolveModule, context, id);
 
   const AstNode* ast = parsing::idToAst(context, id);
-  assert(ast != nullptr);
+  CHPL_ASSERT(ast != nullptr);
 
   ResolutionResultByPostorderID result;
 
@@ -151,7 +151,7 @@ scopeResolveModule(Context* context, ID id) {
   QUERY_BEGIN(scopeResolveModule, context, id);
 
   const AstNode* ast = parsing::idToAst(context, id);
-  assert(ast != nullptr);
+  CHPL_ASSERT(ast != nullptr);
 
   ResolutionResultByPostorderID result;
 
@@ -219,10 +219,10 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
           kind = QualifiedType::FUNCTION;
         }
       } else {
-        assert(false && "case not handled");
+        CHPL_ASSERT(false && "case not handled");
       }
     } else {
-      assert(false && "case not handled");
+      CHPL_ASSERT(false && "case not handled");
     }
 
     result = QualifiedType(kind, t);
@@ -243,7 +243,7 @@ const QualifiedType& typeForBuiltin(Context* context,
   auto search = map.find(name);
   if (search != map.end()) {
     const Type* t = search->second;
-    assert(t);
+    CHPL_ASSERT(t);
 
     if (auto bct = t->toBasicClassType()) {
       auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
@@ -252,7 +252,7 @@ const QualifiedType& typeForBuiltin(Context* context,
 
     result = QualifiedType(QualifiedType::TYPE, t);
   } else {
-    assert(false && "Should not be reachable");
+    CHPL_ASSERT(false && "Should not be reachable");
   }
 
   return QUERY_END(result);
@@ -288,7 +288,7 @@ QualifiedType typeForLiteral(Context* context, const Literal* literal) {
       typePtr = RecordType::getStringType(context);
       break;
     default:
-      assert(false && "case not handled");
+      CHPL_ASSERT(false && "case not handled");
   }
   paramPtr = literal->param();
 
@@ -454,7 +454,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
                                         const PoiScope* poiScope,
                                         const Type* instantiatedFrom) {
 
-  assert(ad);
+  CHPL_ASSERT(ad);
 
   // Filter out substitutions that aren't fields within 'ad'.
   // In particular, there might be substitutions to do with a parent class.
@@ -506,23 +506,23 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       else if (auto ct = instantiatedFrom->toClassType())
         insnFromBct = ct->basicClassType();
       else
-        assert(false && "unexpected instantiatedFrom type");
+        CHPL_ASSERT(false && "unexpected instantiatedFrom type");
     }
 
 
     if (!parentClassType->isObjectType() && !substitutions.empty()) {
       // recompute the parent class type with substitutions
       auto parentAst = parsing::idToAst(context, parentClassType->id());
-      assert(parentAst);
+      CHPL_ASSERT(parentAst);
       auto parentAd = parentAst->toAggregateDecl();
-      assert(parentAd);
+      CHPL_ASSERT(parentAd);
       auto got = helpGetTypeForDecl(context,
                                     parentAd,
                                     substitutions,
                                     poiScope,
                                     parentClassType);
       auto gotBct = got->toBasicClassType();
-      assert(gotBct);
+      CHPL_ASSERT(gotBct);
       parentClassType = gotBct;
     }
 
@@ -536,7 +536,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       if (auto rec = instantiatedFrom->toRecordType())
         insnFromRec = rec;
       else
-        assert(false && "unexpected instantiatedFrom type");
+        CHPL_ASSERT(false && "unexpected instantiatedFrom type");
     }
 
     ret = RecordType::get(context, r->id(), r->name(),
@@ -548,14 +548,14 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       if (auto uni = instantiatedFrom->toUnionType())
         insnFromUni = uni;
       else
-        assert(false && "unexpected instantiatedFrom type");
+        CHPL_ASSERT(false && "unexpected instantiatedFrom type");
     }
 
     ret = UnionType::get(context, u->id(), u->name(),
                          insnFromUni, std::move(filteredSubs));
 
   } else {
-    assert(false && "case not handled");
+    CHPL_ASSERT(false && "case not handled");
   }
 
   return ret;
@@ -636,11 +636,11 @@ const ResolvedFields& resolveFieldDecl(Context* context,
 
   } else {
     auto typeAst = parsing::idToAst(context, ct->id());
-    assert(typeAst && typeAst->isAggregateDecl());
+    CHPL_ASSERT(typeAst && typeAst->isAggregateDecl());
     auto ad = typeAst->toAggregateDecl();
 
     auto fieldAst = parsing::idToAst(context, fieldId);
-    assert(fieldAst);
+    CHPL_ASSERT(fieldAst);
 
     if (ct->instantiatedFromCompositeType() == nullptr) {
       // handle resolving a not-yet-instantiated type
@@ -682,7 +682,7 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
 
   ResolvedFields result;
 
-  assert(ct);
+  CHPL_ASSERT(ct);
   result.setType(ct);
 
   bool isObjectType = false;
@@ -696,7 +696,7 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
 
   } else {
     auto ast = parsing::idToAst(context, ct->id());
-    assert(ast && ast->isAggregateDecl());
+    CHPL_ASSERT(ast && ast->isAggregateDecl());
     auto ad = ast->toAggregateDecl();
 
     for (auto child: ad->children()) {
@@ -771,10 +771,10 @@ static const CompositeType* getTypeWithDefaults(Context* context,
   // a substitution, and get the type with those substitutions.
   SubstitutionsMap substitutions;
   int nFields = g.numFields();
-  assert(r.numFields() == nFields);
+  CHPL_ASSERT(r.numFields() == nFields);
   for (int i = 0; i < nFields; i++) {
-    assert(g.fieldName(i) == r.fieldName(i));
-    assert(g.fieldDeclId(i) == r.fieldDeclId(i));
+    CHPL_ASSERT(g.fieldName(i) == r.fieldName(i));
+    CHPL_ASSERT(g.fieldDeclId(i) == r.fieldDeclId(i));
     QualifiedType gType = g.fieldType(i);
     QualifiedType rType = r.fieldType(i);
     if (gType != rType) {
@@ -788,7 +788,7 @@ static const CompositeType* getTypeWithDefaults(Context* context,
   }
 
   auto ast = parsing::idToAst(context, ct->id());
-  assert(ast && ast->isAggregateDecl());
+  CHPL_ASSERT(ast && ast->isAggregateDecl());
   auto ad = ast->toAggregateDecl();
 
   // POI is not relevant here
@@ -816,7 +816,7 @@ const types::QualifiedType typeWithDefaults(Context* context,
     if (auto clst = t.type()->toClassType()) {
       auto bct = clst->basicClassType();
       auto got = getTypeWithDefaultsQuery(context, bct);
-      assert(got->isBasicClassType());
+      CHPL_ASSERT(got->isBasicClassType());
       bct = got->toBasicClassType();
 
       auto r = ClassType::get(context, bct, clst->manager(), clst->decorator());
@@ -854,7 +854,7 @@ static Type::Genericity getFieldsGenericity(Context* context,
     int n = tt->numElements();
     for (int i = 0; i < n; i++) {
       auto g = getTypeGenericityIgnoring(context, tt->elementType(i), ignore);
-      assert(g != Type::MAYBE_GENERIC);
+      CHPL_ASSERT(g != Type::MAYBE_GENERIC);
       if (g == Type::GENERIC) {
         combined = g;
       } else if (g == Type::GENERIC_WITH_DEFAULTS &&
@@ -875,7 +875,7 @@ static Type::Genericity getFieldsGenericity(Context* context,
 
   if (auto bct = ct->toBasicClassType()) {
     g = getFieldsGenericity(context, bct->parentClassType(), ignore);
-    assert(g != Type::MAYBE_GENERIC);
+    CHPL_ASSERT(g != Type::MAYBE_GENERIC);
     if (g == Type::GENERIC)
       return Type::GENERIC;
   }
@@ -925,7 +925,7 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
 
   // MAYBE_GENERIC should only be returned for CompositeType /
   // ClassType right now.
-  assert(t->isCompositeType() || t->isClassType());
+  CHPL_ASSERT(t->isCompositeType() || t->isClassType());
 
   // the tuple type that isn't an instantiation is a generic type
   if (auto tt = t->toTupleType()) {
@@ -944,8 +944,8 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
   if (auto classType = t->toClassType()) {
     // should be handled in BasicClassType::isGeneric
     // so this code should only be called if the management is concrete
-    assert(!classType->decorator().isUnknownManagement());
-    assert(!classType->decorator().isUnknownNilability());
+    CHPL_ASSERT(!classType->decorator().isUnknownManagement());
+    CHPL_ASSERT(!classType->decorator().isUnknownNilability());
 
     auto bct = classType->basicClassType();
     return getFieldsGenericity(context, bct, ignore);
@@ -1058,9 +1058,9 @@ typeConstructorInitialQuery(Context* context, const Type* t)
     for (int i = 0; i < nFields; i++) {
       auto declId = f.fieldDeclId(i);
       auto declAst = parsing::idToAst(context, declId);
-      assert(declAst);
+      CHPL_ASSERT(declAst);
       const Decl* fieldDecl = declAst->toDecl();
-      assert(fieldDecl);
+      CHPL_ASSERT(fieldDecl);
       QualifiedType fieldType = f.fieldType(i);
       QualifiedType formalType;
       if (shouldIncludeFieldInTypeConstructor(context, fieldDecl, fieldType,
@@ -1072,7 +1072,7 @@ typeConstructorInitialQuery(Context* context, const Type* t)
                                                   fieldDecl->isVarArgFormal());
         formals.push_back(d);
         // formalType should have been set above
-        assert(formalType.kind() != QualifiedType::UNKNOWN);
+        CHPL_ASSERT(formalType.kind() != QualifiedType::UNKNOWN);
         formalTypes.push_back(formalType);
       }
     }
@@ -1083,7 +1083,7 @@ typeConstructorInitialQuery(Context* context, const Type* t)
       idTag = uast::asttags::Record;
     }
   } else {
-    assert(false && "case not handled");
+    CHPL_ASSERT(false && "case not handled");
   }
 
   auto untyped = UntypedFnSignature::get(context,
@@ -1127,12 +1127,12 @@ QualifiedType getInstantiationType(Context* context,
   const Type* actualT = actualType.type();
   const Type* formalT = formalType.type();
 
-  assert(actualT != nullptr);
-  assert(formalT != nullptr);
+  CHPL_ASSERT(actualT != nullptr);
+  CHPL_ASSERT(formalT != nullptr);
 
   // this function should only be called when instantiation is required
-  assert(canPass(context, actualType, formalType).passes());
-  assert(canPass(context, actualType, formalType).instantiates());
+  CHPL_ASSERT(canPass(context, actualType, formalType).passes());
+  CHPL_ASSERT(canPass(context, actualType, formalType).instantiates());
 
   if (auto actualCt = actualT->toClassType()) {
     // handle decorated class passed to decorated class
@@ -1146,7 +1146,7 @@ QualifiedType getInstantiationType(Context* context,
         // there aren't implicit conversions from managed -> managed,
         // so we can always use the actual's manager if the combined
         // decorator indicates management.
-        assert(actualCt->decorator().isManaged() && actualCt->manager());
+        CHPL_ASSERT(actualCt->decorator().isManaged() && actualCt->manager());
         manager = actualCt->manager();
       }
 
@@ -1154,7 +1154,7 @@ QualifiedType getInstantiationType(Context* context,
       const BasicClassType* bct = formalCt->basicClassType();
       auto g = getTypeGenericity(context, bct);
       if (g != Type::CONCRETE) {
-        assert(false && "not implemented yet");
+        CHPL_ASSERT(false && "not implemented yet");
       }
 
       // now construct the ClassType
@@ -1225,7 +1225,7 @@ QualifiedType getInstantiationType(Context* context,
   }
 
   // TODO: sync type -> value type?
-  assert(false && "case not handled");
+  CHPL_ASSERT(false && "case not handled");
   return QualifiedType();
 }
 
@@ -1280,7 +1280,7 @@ static Resolver createResolverForFnOrAd(Context* context,
     return Resolver::createForInstantiatedSignature(context, fn, substitutions,
                                                     poiScope, r);
   } else {
-    assert(ad != nullptr);
+    CHPL_ASSERT(ad != nullptr);
     return Resolver::createForInstantiatedSignatureFields(context, ad,
                                                           substitutions,
                                                           poiScope, r);
@@ -1336,7 +1336,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
   // will arrange to construct a unique TypedFnSignature by
   // its contents.
 
-  assert(sig->needsInstantiation());
+  CHPL_ASSERT(sig->needsInstantiation());
 
   const UntypedFnSignature* untypedSignature = sig->untyped();
   const AstNode* ast = nullptr;
@@ -1351,7 +1351,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
   const TypedFnSignature* parentFnTyped = nullptr;
   if (sig->parentFn()) {
-    assert(false && "generic child functions not yet supported");
+    CHPL_ASSERT(false && "generic child functions not yet supported");
     // TODO: how to compute parentFn for the instantiation?
     // Does the parent function need to be instantiated in some case?
     // Set parentFnTyped somehow.
@@ -1625,7 +1625,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
                                                      untypedSignature,
                                                      &substitutions);
   } else {
-    assert(false && "case not handled");
+    CHPL_ASSERT(false && "case not handled");
   }
 
   // now, construct a TypedFnSignature from the result
@@ -1644,10 +1644,10 @@ const TypedFnSignature* instantiateSignature(Context* context,
       if (isTfsForInitializer(result)) {
         auto resolvedFn = resolveInitializer(context, result, poiScope);
         auto newTfs = resolvedFn->signature();
-        assert(!newTfs->needsInstantiation());
+        CHPL_ASSERT(!newTfs->needsInstantiation());
         result = newTfs;
       } else {
-        assert(false && "Not handled yet!");
+        CHPL_ASSERT(false && "Not handled yet!");
         std::ignore = resolveFunction(context, result, poiScope);
       }
     }
@@ -1666,7 +1666,7 @@ resolveFunctionByPoisQuery(Context* context,
   // the actual value is set in resolveFunctionByInfoQuery after it is
   // computed because computing it generates the poiFnIdsUsed which is
   // part of the key for this query.
-  assert(false && "should not be reached");
+  CHPL_ASSERT(false && "should not be reached");
 
   return QUERY_END(result);
 }
@@ -1691,7 +1691,7 @@ resolveFunctionByInfoQuery(Context* context,
     auto visitor = Resolver::createForInitializer(context, fn, poiScope,
                                                   sig,
                                                   resolutionById);
-    assert(visitor.initResolver.get());
+    CHPL_ASSERT(visitor.initResolver.get());
     if (fn) {
       fn->body()->traverse(visitor);
       // then, resolve '=' and add any copy init/deinit calls as needed
@@ -1782,7 +1782,7 @@ resolveFunctionByInfoQuery(Context* context,
                        resolvedPoiInfo.poiFnIdsUsed());
 
   } else {
-    assert(false && "this query should be called on Functions");
+    CHPL_ASSERT(false && "this query should be called on Functions");
   }
 
   // Return the unique result from the query (that might have been saved above)
@@ -1799,7 +1799,7 @@ const ResolvedFunction* resolveInitializer(Context* context,
                                            const PoiScope* poiScope) {
   bool isAcceptable = isTfsForInitializer(sig);
   if (!isAcceptable) {
-    assert(false && "Should only be called for initializers");
+    CHPL_ASSERT(false && "Should only be called for initializers");
   }
 
   // construct the PoiInfo for this case
@@ -1814,7 +1814,7 @@ const ResolvedFunction* resolveFunction(Context* context,
                                         const PoiScope* poiScope) {
 
   // this should only be applied to concrete fns or instantiations
-  assert(!sig->needsInstantiation());
+  CHPL_ASSERT(!sig->needsInstantiation());
 
   // construct the PoiInfo for this case
   auto poiInfo = PoiInfo(poiScope);
@@ -2021,11 +2021,11 @@ struct ReturnTypeInferrer {
 
   bool enter(const Conditional* cond) {
     auto condition = cond->condition();
-    assert(condition != nullptr);
+    CHPL_ASSERT(condition != nullptr);
     const ResolvedExpression& r = resolutionById.byAst(condition);
     if (r.type().isParamTrue()) {
       auto then = cond->thenBlock();
-      assert(then != nullptr);
+      CHPL_ASSERT(then != nullptr);
       then->traverse(*this);
       return false;
     } else if (r.type().isParamFalse()) {
@@ -2092,14 +2092,14 @@ returnTypeForTypeCtorQuery(Context* context,
     const CompositeType* instantiatedFrom = nullptr;
     if (sig->instantiatedFrom()) {
       const Type* t = initialTypeForTypeDecl(context, ad->id());
-      assert(t);
+      CHPL_ASSERT(t);
 
       // ignore decorators etc for finding instantiatedFrom
       if (auto ct = t->toClassType())
         t = ct->basicClassType();
 
       instantiatedFrom = t->toCompositeType();
-      assert(instantiatedFrom);
+      CHPL_ASSERT(instantiatedFrom);
     }
 
     // compute the substitutions
@@ -2146,7 +2146,7 @@ returnTypeForTypeCtorQuery(Context* context,
   } else {
     // built-in type construction should be handled
     // by resolveFnCallSpecialType and not reach this point.
-    assert(false && "case not handled");
+    CHPL_ASSERT(false && "case not handled");
   }
 
   return QUERY_END(result);
@@ -2170,7 +2170,7 @@ static QualifiedType computeTypeOfField(Context* context,
     }
   }
 
-  assert(false && "should not be reachable");
+  CHPL_ASSERT(false && "should not be reachable");
   return QualifiedType(QualifiedType::VAR, ErroneousType::get(context));
 }
 
@@ -2189,7 +2189,7 @@ const QualifiedType& returnType(Context* context,
   } else if (untyped->idIsFunction()) {
     const AstNode* ast = parsing::idToAst(context, untyped->id());
     const Function* fn = ast->toFunction();
-    assert(fn);
+    CHPL_ASSERT(fn);
     if (const AstNode* retType = fn->returnType()) {
       // resolve the return type
       ResolutionResultByPostorderID resolutionById;
@@ -2222,7 +2222,7 @@ const QualifiedType& returnType(Context* context,
     if (result.type() && result.type()->isTupleType()) {
       auto tt = result.type()->toTupleType();
       auto vt = tt->toValueTuple(context);
-      assert(tt == vt); // this should already be done in return type inference
+      CHPL_ASSERT(tt == vt); // this should already be done in return type inference
       result = QualifiedType(kind, vt);
     }
 
@@ -2234,7 +2234,7 @@ const QualifiedType& returnType(Context* context,
     // so adjust the result.
     if (untyped->idIsClass()) {
       auto bct = t->toBasicClassType();
-      assert(bct);
+      CHPL_ASSERT(bct);
       auto dec = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
       t = ClassType::get(context, bct, /*manager*/ nullptr, dec);
     }
@@ -2263,10 +2263,10 @@ const QualifiedType& returnType(Context* context,
         result = QualifiedType(QualifiedType::REF, ft.type());
       }
     } else {
-      assert(false && "unhandled compiler-generated method");
+      CHPL_ASSERT(false && "unhandled compiler-generated method");
     }
   } else {
-    assert(false && "case not handled");
+    CHPL_ASSERT(false && "case not handled");
   }
 
   return QUERY_END(result);
@@ -2387,8 +2387,8 @@ doIsCandidateApplicableInitial(Context* context,
     if (ci.isParenless() && ci.isMethodCall() && ci.numActuals() == 1) {
       // calling a field accessor
       auto ct = ci.actual(0).type().type()->getCompositeType();
-      assert(ct);
-      assert(isNameOfField(context, ci.name(), ct));
+      CHPL_ASSERT(ct);
+      CHPL_ASSERT(isNameOfField(context, ci.name(), ct));
       return fieldAccessor(context, ct, ci.name());
     } else {
       // not a candidate
@@ -2396,7 +2396,7 @@ doIsCandidateApplicableInitial(Context* context,
     }
   }
 
-  assert(isFunction(tag) && "expected fn case only by this point");
+  CHPL_ASSERT(isFunction(tag) && "expected fn case only by this point");
   auto ufs = UntypedFnSignature::get(context, candidateId);
   auto faMap = FormalActualMap(ufs, ci);
   auto ret = typedSignatureInitial(context, ufs);
@@ -2511,7 +2511,7 @@ lookupCalledExpr(Context* context,
 
   // For method calls, also consider the receiver scope.
   if (ci.isMethodCall() || ci.isOpCall()) {
-    assert(ci.numActuals() >= 1);
+    CHPL_ASSERT(ci.numActuals() >= 1);
     auto& qtReceiver = ci.actual(0).type();
     if (auto t = qtReceiver.type()) {
       if (auto compType = t->getCompositeType()) {
@@ -2626,7 +2626,7 @@ static const Type* getManagedClassType(Context* context,
     bct = t->toBasicClassType();
   }
 
-  assert(bct);
+  CHPL_ASSERT(bct);
   return ClassType::get(context, bct, manager, d);
 }
 
@@ -2678,7 +2678,7 @@ static const Type* getNumericType(Context* context,
       } else if (name == USTR("complex")) {
         return AnyComplexType::get(context);
       } else {
-        assert(false && "should not be reachable");
+        CHPL_ASSERT(false && "should not be reachable");
         return nullptr;
       }
     }
@@ -2849,8 +2849,8 @@ resolveFnCallForTypeCtor(Context* context,
   std::vector<const TypedFnSignature*> initialCandidates;
   std::vector<const TypedFnSignature*> candidates;
 
-  assert(ci.calledType().type() != nullptr);
-  assert(!ci.calledType().type()->isUnknownType());
+  CHPL_ASSERT(ci.calledType().type() != nullptr);
+  CHPL_ASSERT(!ci.calledType().type()->isUnknownType());
 
   auto initial = typeConstructorInitial(context, ci.calledType().type());
   initialCandidates.push_back(initial);
@@ -2891,7 +2891,7 @@ considerCompilerGeneratedCandidates(Context* context,
   if (!ci.isMethodCall()) return false;
 
   // fetch the receiver type info
-  assert(ci.numActuals() >= 1);
+  CHPL_ASSERT(ci.numActuals() >= 1);
   auto& receiver = ci.actual(0);
   auto receiverType = receiver.type().type();
 
@@ -2904,7 +2904,7 @@ considerCompilerGeneratedCandidates(Context* context,
   // get the compiler-generated function, may be generic
   auto tfs = getCompilerGeneratedMethod(context, receiverType, ci.name(),
                                         ci.isParenless());
-  assert(tfs);
+  CHPL_ASSERT(tfs);
 
   // check if the initial signature matches
   auto faMap = FormalActualMap(tfs->untyped(), ci);
@@ -2924,8 +2924,8 @@ considerCompilerGeneratedCandidates(Context* context,
                                                            tfs,
                                                            ci,
                                                            poi);
-  assert(instantiated->untyped()->idIsFunction());
-  assert(instantiated->instantiatedFrom());
+  CHPL_ASSERT(instantiated->untyped()->idIsFunction());
+  CHPL_ASSERT(instantiated->instantiatedFrom());
 
   auto instantiationScope = pointOfInstantiationScope(context, inScope,
                                                       inPoiScope);
@@ -2949,7 +2949,7 @@ lookupCalledExprConsideringReceiver(Context* context,
 
   // For method and operator calls, also consider the receiver scope.
   if (ci.isMethodCall() || ci.isOpCall()) {
-    assert(ci.numActuals() >= 1);
+    CHPL_ASSERT(ci.numActuals() >= 1);
     auto& qtReceiver = ci.actual(0).type();
     if (auto t = qtReceiver.type()) {
       if (auto compType = t->getCompositeType()) {
@@ -3120,7 +3120,7 @@ CallResolutionResult resolveFnCall(Context* context,
   // signature is concrete, because there are semantic checks.
   if (isCallInfoForInitializer(ci) && mostSpecific.numBest() == 1) {
     auto candidate = mostSpecific.only();
-    assert(isTfsForInitializer(candidate));
+    CHPL_ASSERT(isTfsForInitializer(candidate));
 
     // TODO: Can we move this into the 'InitVisitor'?
     if (!candidate->untyped()->isCompilerGenerated()) {
@@ -3235,7 +3235,7 @@ CallResolutionResult resolveCall(Context* context,
     return resolveTupleExpr(context, tuple, ci, inScope, inPoiScope);
   }
 
-  assert(false && "should not be reached");
+  CHPL_ASSERT(false && "should not be reached");
   MostSpecificCandidates emptyCandidates;
   QualifiedType emptyType;
   PoiInfo emptyPoi;
@@ -3285,7 +3285,7 @@ isNameOfFieldQuery(Context* context,
 
   bool result = false;
   auto ast = parsing::idToAst(context, ct->id());
-  assert(ast && ast->isAggregateDecl());
+  CHPL_ASSERT(ast && ast->isAggregateDecl());
   auto ad = ast->toAggregateDecl();
 
   for (auto child: ad->children()) {

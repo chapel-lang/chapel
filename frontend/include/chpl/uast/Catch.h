@@ -85,7 +85,7 @@ class Catch final : public AstNode {
   const Variable* error() const {
     if (errorChildNum_ < 0) return nullptr;
     auto ret = child(errorChildNum_);
-    assert(ret && ret->isVariable());
+    CHPL_ASSERT(ret && ret->isVariable());
     return (const Variable*)ret;
   }
 
@@ -94,7 +94,7 @@ class Catch final : public AstNode {
   */
   const Block* body() const {
     auto ret = child(bodyChildNum_);
-    assert(ret && ret->isBlock());
+    CHPL_ASSERT(ret && ret->isBlock());
     return (const Block*)ret;
   }
 

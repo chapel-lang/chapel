@@ -19,7 +19,10 @@
 
 #include "chpl/framework/ErrorMessage.h"
 
-#include <cassert>
+#include "chpl/parsing/parsing-queries.h"
+#include "chpl/uast/AstNode.h"
+
+
 #include <cstdarg>
 #include <cstdlib>
 

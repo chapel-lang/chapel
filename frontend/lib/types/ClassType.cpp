@@ -55,7 +55,7 @@ void ClassType::stringify(std::ostream& ss,
   // compute the manager, if any
   std::string manager;
   if (decorator_.isManaged()) {
-    assert(manager_);
+    CHPL_ASSERT(manager_);
     if (manager_->isAnyOwnedType()) {
       manager = "owned";
     } else if (manager_->isAnySharedType()) {
@@ -76,7 +76,7 @@ void ClassType::stringify(std::ostream& ss,
   ss << " ";
 
   // emit basic class name
-  assert(basicType_);
+  CHPL_ASSERT(basicType_);
   basicType_->stringify(ss, stringKind);
 
   // emit ? if nilable

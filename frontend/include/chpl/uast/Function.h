@@ -133,26 +133,26 @@ class Function final : public NamedDecl {
       numLifetimeParts_(numLifetimeParts),
       bodyChildNum_(bodyChildNum) {
 
-    assert(-1 <= formalsChildNum_ &&
+    CHPL_ASSERT(-1 <= formalsChildNum_ &&
                  formalsChildNum_ < (ssize_t)children_.size());
-    assert(-1 <= thisFormalChildNum_ &&
+    CHPL_ASSERT(-1 <= thisFormalChildNum_ &&
                  thisFormalChildNum_ < (ssize_t)children_.size());
-    assert(0 <= numFormals_ &&
+    CHPL_ASSERT(0 <= numFormals_ &&
                 numFormals_ <= (ssize_t)children_.size());
-    assert(-1 <= returnTypeChildNum_ &&
+    CHPL_ASSERT(-1 <= returnTypeChildNum_ &&
                  returnTypeChildNum_ < (ssize_t)children_.size());
-    assert(-1 <= whereChildNum_ &&
+    CHPL_ASSERT(-1 <= whereChildNum_ &&
                  whereChildNum_ < (ssize_t)children_.size());
-    assert(-1 <= lifetimeChildNum_ &&
+    CHPL_ASSERT(-1 <= lifetimeChildNum_ &&
                  lifetimeChildNum_ < (ssize_t)children_.size());
-    assert(0 <= numLifetimeParts_ &&
+    CHPL_ASSERT(0 <= numLifetimeParts_ &&
                 numLifetimeParts_ <= (ssize_t)children_.size());
 
     if (bodyChildNum_ >= 0) {
-      assert(bodyChildNum_ < (ssize_t)children_.size());
-      assert(children_[bodyChildNum_]->isBlock());
+      CHPL_ASSERT(bodyChildNum_ < (ssize_t)children_.size());
+      CHPL_ASSERT(children_[bodyChildNum_]->isBlock());
     } else {
-      assert(bodyChildNum_ == -1);
+      CHPL_ASSERT(bodyChildNum_ == -1);
     }
 
     #ifndef NDEBUG
@@ -160,7 +160,7 @@ class Function final : public NamedDecl {
         bool isAcceptableDecl = decl->isFormal() || decl->isVarArgFormal() ||
                                 decl->isTupleDecl();
         std::ignore = isAcceptableDecl;
-        assert(isAcceptableDecl);
+        CHPL_ASSERT(isAcceptableDecl);
       }
     #endif
   }
@@ -251,10 +251,10 @@ class Function final : public NamedDecl {
    Return the i'th formal
    */
   const Decl* formal(int i) const {
-    assert(numFormals_ > 0 && formalsChildNum_ >= 0);
-    assert(0 <= i && i < numFormals_);
+    CHPL_ASSERT(numFormals_ > 0 && formalsChildNum_ >= 0);
+    CHPL_ASSERT(0 <= i && i < numFormals_);
     auto ret = this->child(formalsChildNum_ + i);
-    assert(ret->isFormal() || ret->isVarArgFormal() || ret->isTupleDecl());
+    CHPL_ASSERT(ret->isFormal() || ret->isVarArgFormal() || ret->isTupleDecl());
     return (const Decl*)ret;
   }
 
@@ -265,7 +265,7 @@ class Function final : public NamedDecl {
   const Formal* thisFormal() const {
     if (thisFormalChildNum_ >= 0) {
       const AstNode* ast = this->child(thisFormalChildNum_);
-      assert(ast->isFormal());
+      CHPL_ASSERT(ast->isFormal());
       const Formal* f = (const Formal*) ast;
       return f;
     } else {
@@ -327,8 +327,8 @@ class Function final : public NamedDecl {
    Return the i'th lifetime clause
    */
   const AstNode* lifetimeClause(int i) const {
-    assert(numLifetimeClauses() > 0 && lifetimeChildNum_ >= 0);
-    assert(0 <= i && i < numLifetimeClauses());
+    CHPL_ASSERT(numLifetimeClauses() > 0 && lifetimeChildNum_ >= 0);
+    CHPL_ASSERT(0 <= i && i < numLifetimeClauses());
     const AstNode* ast = this->child(lifetimeChildNum_ + i);
     return ast;
   }
@@ -375,7 +375,7 @@ class Function final : public NamedDecl {
    */
   const AstNode* stmt(int i) const {
     const Block* b = body();
-    assert(b != nullptr);
+    CHPL_ASSERT(b != nullptr);
     return b->stmt(i);
   }
 

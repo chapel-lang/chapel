@@ -54,7 +54,7 @@ class Defer final : public SimpleBlockLike {
     : SimpleBlockLike(asttags::Defer, std::move(stmts), blockStyle,
                       bodyChildNum,
                       numBodyStmts) {
-    assert(bodyChildNum_ >= 0);
+    CHPL_ASSERT(bodyChildNum_ >= 0);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
