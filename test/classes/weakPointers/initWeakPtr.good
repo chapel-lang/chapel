@@ -1,6 +1,6 @@
-initWeakPtr.chpl:17: warning: The 'weakPointer' type is still under development and may change in the future
-initWeakPtr.chpl:27: warning: The 'weakPointer' type is still under development and may change in the future
-initWeakPtr.chpl:43: warning: The 'weakPointer' type is still under development and may change in the future
+initWeakPtr.chpl:17: warning: The 'weakPointer' type is experimental and is likely to change in the future
+initWeakPtr.chpl:27: warning: The 'weakPointer' type is experimental and is likely to change in the future
+initWeakPtr.chpl:43: warning: the 'weakPointer' interface is experimental - this method is likely to change in the future
 1
 	shared: '{x = 1}' 	type: 'shared basicClass' 		sc: 1
 	weak: '{x = 1}' 	type: 'weakPointer(shared basicClass)' 	sc: 1	 wc: 1
