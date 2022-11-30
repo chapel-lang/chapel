@@ -43,7 +43,7 @@ jobs:
         uses: tj-actions/changed-files@v34
         with:
           separator: "," 
-      # tj-actions' limitaion prevents the user from using "\n" as output seperator.
+      # tj-actions' limitation prevents the user from using "\n" as output seperator.
       # Solution: parse the list of changed files and replace each comma delimiter with a <br>.   
       - name: Parse changed files
         id: parsed-output
