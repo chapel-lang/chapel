@@ -411,19 +411,6 @@ class BadRegexError : Error {
   }
 }
 
-// Until Issue 17275 is fixed:
-deprecated "Regex: 'BadRegexpError' is deprecated; please use 'BadRegexError' instead"
-type BadRegexpError = owned BadRegexError;
-
-// When Issue 17275 is fixed:
-
-// pragma "no doc"
-// proc BadRegexpError type
-// {
-//   compilerWarning("Regex: 'BadRegexpError' is deprecated; please use 'BadRegexError' instead");
-//   return BadRegexError;
-// }
-
 /*
    Compile a regular expression. This routine will throw a
    class:`BadRegexError` if compilation failed.
