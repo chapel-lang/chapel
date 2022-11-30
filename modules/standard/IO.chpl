@@ -5215,6 +5215,62 @@ proc _channel.writebits(v:integral, nbits:integral) throws {
 }
 
 /*
+   Write ``numBytes`` of data from a :class:`~CTypes.c_ptr` to a ``fileWriter``
+
+   Note that native endianness is always used.
+
+   If ``numBytes`` is not evenly divisible by the size of ``t``, the remaining
+   bytes will be ignored. For example, if the ``c_ptr``'s internal type is 4
+   bytes in length, and ``numBytes=17``, only 16 bytes will be written.
+
+   .. warning::
+      This method provides no protection against attempting to access invalid memory
+
+   :arg ptr: a :class:`~CTypes.c_ptr` to some valid memory
+   :arg numBytes: the number of bytes to write
+
+   :throws SystemError: Thrown if an error occured while writing to the ``fileWriter``
+*/
+proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
+{
+  var e:errorCode = 0,
+      numWritten:c_ssize_t;
+  const t_size = c_sizeof(t),
+        numBytesToWrite = (numBytes / t_size) * t_size;
+
+  e = try qio_channel_write(false, this._channel_internal, ptr[0], numBytesToWrite:c_ssize_t, numWritten);
+
+  if (e != 0) {
+    throw createSystemError(e);
+  }
+}
+
+/*
+   Write ``numBytes`` of data from a :type:`~CTypes.c_void_ptr` to a ``fileWriter``
+
+   The data are written to the file one byte at a time.
+
+   .. warning::
+      This method provides no protection against attempting to access invalid memory
+
+   :arg ptr: a typeless :type:`~CTypes.c_void_ptr` to some valid memory
+   :arg numBytes: the number of bytes to write
+
+   :throws SystemError: Thrown if an error occured while writing to the ``fileWriter``
+*/
+proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
+  var e:errorCode = 0,
+      numWritten:c_ssize_t;
+
+  var byte_ptr = ptr : c_ptr(uint(8));
+  e = try qio_channel_write(false, this._channel_internal, byte_ptr[0], numBytes, numWritten);
+
+  if (e != 0) {
+    throw createSystemError(e);
+  }
+}
+
+/*
    Write a binary number to the channel
 
    :arg arg: number to be written
