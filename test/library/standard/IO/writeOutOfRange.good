@@ -1,0 +1,2 @@
+caught correct error [ EofError: end of file (while writing string with path "outOfRange.txt" offset 0) ]
+caught correct error [ EofError: end of file (while writing string with path "outOfRange.txt" offset 0) ]
