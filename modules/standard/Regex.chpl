@@ -506,15 +506,6 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
   return ret;
 }
 
-pragma "no doc"
-pragma "last resort"
-proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
-             /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotnl=false,
-             /*U*/ nonGreedy=false): regex(t) throws where t==string || t==bytes {
-  compilerWarning("Regex.compile(): 'dotnl' is deprecated. Please use 'dotAll' instead.");
-  return compile(pattern, posix, literal, noCapture, ignoreCase, multiLine, dotnl, nonGreedy);
-}
-
 /*  The regexMatch record records a regular expression search match
     or a capture group.
 
