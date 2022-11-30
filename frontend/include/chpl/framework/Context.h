@@ -43,11 +43,6 @@
 namespace chpl {
   class Context;
 
-  // Whether or not to exit on assertion failure
-  extern bool assertionsAreFatal;
-  // Whether or not to enable assertions
-  extern bool assertionsAreOn;
-
   class ErrorBase;
 
 namespace uast {
@@ -328,14 +323,6 @@ class Context {
         : toOwned<ErrorHandler>(new DefaultErrorHandler());
     std::swap(this->handler_, ret);
     return ret;
-  }
-
-  void setAssertions(bool enable) {
-    assertionsAreOn=enable;
-  }
-
-  void setAssertionsFatal(bool enable) {
-    assertionsAreFatal=enable;
   }
 
   /**

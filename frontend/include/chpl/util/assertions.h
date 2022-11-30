@@ -49,6 +49,27 @@ void assertion(bool expr, const char* filename, const char* func, int lineno,
   } while (0)
 #endif
 
+/*
+  Set whether or not assertions in dyno are enabled
+*/
+void setAssertions(bool enable);
+
+/*
+  Set whether or not failed assertions in dyno are fatal
+*/
+void setAssertionsFatal(bool enable);
+
+/*
+  Get whether or not assertions are enabled in dyno
+*/
+bool assertionsAreOn();
+
+/*
+  Get whether or not failed assertions are fatal in dyno
+*/
+bool assertionsAreFatal();
+
+
 } // namespace chpl
 
 

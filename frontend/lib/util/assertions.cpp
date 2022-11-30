@@ -23,10 +23,31 @@
 
 namespace chpl {
 
+// Whether or not to exit on assertion failure
+bool assertionsAreFatal_ = true;
+// Whether or not to enable assertions
+bool assertionsAreOn_ = true;
+
+void setAssertions(bool enable) {
+  assertionsAreOn_ = enable;
+}
+
+void setAssertionsFatal(bool enable) {
+  assertionsAreFatal_ = enable;
+}
+
+bool assertionsAreOn() {
+  return assertionsAreOn_;
+}
+
+bool assertionsAreFatal() {
+  return assertionsAreFatal_;
+}
+
 void assertion(bool expr, const char* filename, const char* func,
                int lineno, const char* exprText) {
   // assertions OFF: skip all checks
-  if (!assertionsAreOn) {
+  if (!assertionsAreOn()) {
     return;
   }
 
@@ -35,7 +56,7 @@ void assertion(bool expr, const char* filename, const char* func,
     // assertion failed: write out error
     fprintf(stderr, "Assertion failed in [%s:%d] in %s: %s\n",
             filename, lineno, func, exprText);
-    if (assertionsAreFatal) {
+    if (assertionsAreFatal()) {
       exit(1);
     }
   }

@@ -41,8 +41,6 @@
 #include "../util/my_aligned_alloc.h" // assumes size_t defined
 
 namespace chpl {
-  bool assertionsAreFatal = true;
-  bool assertionsAreOn = true;
   namespace detail {
     GlobalStrings globalStrings;
     Context rootContext;

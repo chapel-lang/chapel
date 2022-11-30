@@ -49,6 +49,7 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/util/chplenv.h"
 #include "chpl/framework/compiler-configuration.h"
+#include "chpl/util/assertions.h"
 
 #include <inttypes.h>
 #include <string>
@@ -1864,9 +1865,9 @@ int main(int argc, char* argv[]) {
     setupDynoCompilerFlags(); // setup the compiler flags in the context
 
     // set whether dyno assertions should fire based on developer flag
-    gContext->setAssertions(developer);
+    chpl::setAssertions(developer);
     // set whether dyno assertions are fatal based on ignore_errors flag
-    gContext->setAssertionsFatal(!ignore_errors);
+    chpl::setAssertionsFatal(!ignore_errors);
 
     setupModulePaths();
 
