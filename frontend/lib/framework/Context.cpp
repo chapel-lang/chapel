@@ -26,6 +26,8 @@
 #include "chpl/framework/ErrorWriter.h"
 #include "chpl/framework/ErrorBase.h"
 
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/Config/llvm-config.h"
 #include "llvm/Support/FileSystem.h"
 
 #include <chrono>
@@ -459,8 +461,11 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
     // Note: if this check causes problems in the future, it could
     // be removed, or we could wire up setFileText used in tests
     // to work with the LLVM VirtualFilesystem
-    llvm::SmallVector<char> realPath;
-    llvm::SmallVector<char> realGotPath;
+#if LLVM_VERSION_MAJOR <= 11
+    llvm::SmallVector<char, 64> realPath, realGotPath;
+#else
+    llvm::SmallVector<char> realPath, realGotPath;
+#endif
     std::error_code errPath;
     std::error_code errGotPath;
     errPath = llvm::sys::fs::real_path(path.str(), realPath);
