@@ -1685,23 +1685,26 @@ Resolver::lookupIdentifier(const Identifier* ident,
 void Resolver::validateAndSetToId(ResolvedExpression& r,
                                   const AstNode* node,
                                   const ID& id) {
-  if (!id.isEmpty()) {
-    auto toAst = parsing::idToAst(context, id);
-    if (toAst != nullptr) {
-      if (auto mod = toAst->toModule()) {
-        auto parentId = parsing::idToParentId(context, node->id());
-        if (!parentId.isEmpty()) {
-          auto parentAst = parsing::idToAst(context, parentId);
-          if (!parentAst->isUse() && !parentAst->isImport() &&
-              !parentAst->isAs() && !parentAst->isVisibilityClause() &&
-              !parentAst->isDot()) {
-            CHPL_REPORT(context, ModuleAsVariable, node, parentAst, mod);
-          }
+  r.setToId(id);
+  if (id.isEmpty()) return;
+
+  // Validate the newly set to ID. It shouldn't refer to a module unless
+  // the node is an identifier in one of the places where module references
+  // are allowed (e.g. imports).
+  auto toAst = parsing::idToAst(context, id);
+  if (toAst != nullptr) {
+    if (auto mod = toAst->toModule()) {
+      auto parentId = parsing::idToParentId(context, node->id());
+      if (!parentId.isEmpty()) {
+        auto parentAst = parsing::idToAst(context, parentId);
+        if (!parentAst->isUse() && !parentAst->isImport() &&
+            !parentAst->isAs() && !parentAst->isVisibilityClause() &&
+            !parentAst->isDot()) {
+          CHPL_REPORT(context, ModuleAsVariable, node, parentAst, mod);
         }
       }
     }
   }
-  r.setToId(id);
 }
 
 bool Resolver::resolveIdentifier(const Identifier* ident,

@@ -640,6 +640,7 @@ static void test16() {
   printf("test16\n");
   Context ctx;
   Context* context = &ctx;
+  ErrorGuard guard(context);
 
   auto path = UniqueString::get(context, "input.chpl");
   std::string contents = R""""(
@@ -651,6 +652,7 @@ static void test16() {
       }
       module D {
         use A;
+        import C;
         var y = C.x;
       }
    )"""";
@@ -665,6 +667,7 @@ static void test16() {
 
   const ResolvedExpression& reY = scopeResolveIt(context, y->initExpression());
   assert(reY.toId().isEmpty());
+  assert(guard.realizeErrors() == 1);
 }
 
 // Makes sure a user can't use a module as a variable (like var x = M).
