@@ -4527,7 +4527,12 @@ static void handlePrintAsm(std::string dotOFile) {
   if (llvmPrintIrStageNum == llvmStageNum::ASM ||
       llvmPrintIrStageNum == llvmStageNum::EVERY) {
 
-    // find the directory containing clang
+    // Find llvm-objdump as a sibling to clang
+    // note that if we have /path/to/clang-14, this logic
+    // will loop for /path/to/llvm-objdump-14.
+    //
+    // If such suffixes do not turn out to matter in practice, it would
+    // be nice to update this code to use sys::path::parent_path().
     std::vector<std::string> split;
     std::string llvmObjDump = "llvm-objdump";
 
