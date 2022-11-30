@@ -17,15 +17,10 @@
  * limitations under the License.
  */
 
-#include "chpl/framework/ErrorMessage.h"
-
-#include "chpl/parsing/parsing-queries.h"
-#include "chpl/uast/AstNode.h"
-
-
 #include <cstdarg>
 #include <cstdlib>
 
+#include "chpl/framework/ErrorMessage.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/uast/AstNode.h"
 

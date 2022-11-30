@@ -1784,7 +1784,10 @@ static void validateSettings() {
 static void setupDynoCompilerFlags() {
   chpl::CompilerFlags compFlags = chpl::CompilerFlags();
   compFlags.set(chpl::CompilerFlags::DEVELOPER, developer);
-  compFlags.set(chpl::CompilerFlags::WARN_UNSTABLE, fWarnUnstable);
+  // TODO: Setting this flag causes a bunch of warnings to be printed
+  // but they are coming from our internal modules, so we should squelch them
+  // Seems to be coming from frontend/lib/uast/post-parse-checks.cpp:818
+  // compFlags.set(chpl::CompilerFlags::WARN_UNSTABLE, fWarnUnstable);
   chpl::setCompilerFlags(gContext, compFlags);
 }
 
