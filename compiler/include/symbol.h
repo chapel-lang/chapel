@@ -953,6 +953,7 @@ typedef enum {
        NONE,
        BASIC,
        FULL,
+       ASM,
        EVERY, // after every optimization if possible
        // These options allow instrumenting the pass pipeline
        // and match ExtensionPointTy in PassManagerBuilder
@@ -982,6 +983,7 @@ void addCNameToPrintLlvmIr(const char* name);
 bool shouldLlvmPrintIrName(const char* name);
 bool shouldLlvmPrintIrCName(const char* name);
 bool shouldLlvmPrintIrFn(FnSymbol* fn);
+std::vector<std::string> gatherPrintLlvmIrCNames();
 
 #ifdef HAVE_LLVM
 void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage);

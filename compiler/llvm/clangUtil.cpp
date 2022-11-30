@@ -3805,6 +3805,7 @@ bool getIrDumpExtensionPoint(llvmStageNum_t s,
     case llvmStageNum::BASIC:
     case llvmStageNum::FULL:
     case llvmStageNum::EVERY:
+    case llvmStageNum::ASM:
     case llvmStageNum::LAST:
       return false;
   }
@@ -3999,6 +4000,7 @@ void checkAdjustedDataLayout() {
   INT_ASSERT(dl.getTypeSizeInBits(testTy) == GLOBAL_PTR_SIZE);
 }
 
+static void handlePrintAsm(std::string dotOFile);
 static void makeLLVMStaticLibrary(std::string moduleFilename,
                                   const char* tmpbinname,
                                   std::vector<std::string> dotOFiles);
@@ -4295,6 +4297,8 @@ void makeBinaryLLVM(void) {
       }
       outputOfile.close();
 
+      handlePrintAsm(moduleFilename);
+
     } else {
 
       llvm::CodeGenFileType asmFileType =
@@ -4516,6 +4520,61 @@ void makeBinaryLLVM(void) {
                                getIntermediateDirName(), "/Makefile");
 
     mysystem(makecmd, "Make Binary - Building Launcher and Copying");
+  }
+}
+
+static void handlePrintAsm(std::string dotOFile) {
+  if (llvmPrintIrStageNum == llvmStageNum::ASM ||
+      llvmPrintIrStageNum == llvmStageNum::EVERY) {
+
+    // Find llvm-objdump as a sibling to clang
+    // note that if we have /path/to/clang-14, this logic
+    // will loop for /path/to/llvm-objdump-14.
+    //
+    // If such suffixes do not turn out to matter in practice, it would
+    // be nice to update this code to use sys::path::parent_path().
+    std::vector<std::string> split;
+    std::string llvmObjDump = "llvm-objdump";
+
+    splitStringWhitespace(CHPL_LLVM_CLANG_C, split);
+    if (split.size() > 0) {
+      std::string tmp = split[0];
+      const char* clang = "clang";
+      auto pos = tmp.find(clang);
+      if (pos != std::string::npos) {
+        tmp.replace(pos, strlen(clang), "llvm-objdump");
+        if (pathExists(tmp.c_str())) {
+          llvmObjDump = tmp;
+        }
+      }
+    }
+
+    // Note: if we want to support GNU objdump, just need to use
+    // --dissasemble= instead of the LLVM flag --disassemble-symbols=
+    // but this does not work with older GNU objdump versions.
+    std::string disSymArg = "--disassemble-symbols=";
+
+    static bool isDarwin = strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0;
+    if (isDarwin) {
+      // The symbols in a Mach-O file has a leading _
+      disSymArg += "_";
+    }
+
+    std::vector<std::string> names = gatherPrintLlvmIrCNames();
+    for (auto name : names) {
+      printf("\n\n# Dissasembling symbol %s\n\n", name.c_str());
+      fflush(stdout);
+      std::vector<std::string> cmd;
+      cmd.push_back(llvmObjDump);
+      std::string arg = disSymArg; // e.g. --dissasemble=
+      arg += name;
+      cmd.push_back(arg);
+      cmd.push_back(dotOFile);
+
+      mysystem(cmd, "dissassemble a symbol",
+               /* ignoreStatus */ true,
+               /* quiet */ false);
+    }
   }
 }
 
