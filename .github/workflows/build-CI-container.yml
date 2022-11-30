@@ -24,8 +24,6 @@ on:
       - .github/workflows/build-CI-container.yml
   # Adds a "manual run" option in the GH UI
   workflow_dispatch:
-
-
 jobs:
   build:
     runs-on: ubuntu-latest
