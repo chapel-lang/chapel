@@ -4298,7 +4298,7 @@ void makeBinaryLLVM(void) {
 
       if (llvmPrintIrStageNum == llvmStageNum::ASM ||
           llvmPrintIrStageNum == llvmStageNum::EVERY) {
-        if (myshell("which objdump > /dev/null 2>&1", "Check to see if fatbinary command can be found", true)) {
+        if (myshell("which objdump > /dev/null 2>&1", "Check to see if objdump command can be found", true)) {
           USR_FATAL("Command 'objdump' not found");
         }
 
