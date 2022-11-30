@@ -23,7 +23,8 @@
 
 namespace chpl {
 
-void assertion(bool expr, const char* filename, const char* func, int lineno, const char* exprText) {
+void assertion(bool expr, const char* filename, const char* func,
+               int lineno, const char* exprText) {
   // assertions OFF: skip all checks
   if (!assertionsAreOn) {
     return;
@@ -32,7 +33,8 @@ void assertion(bool expr, const char* filename, const char* func, int lineno, co
   // assertions ON: perform check, conditionally exit if assertionsAreFatal
   if (!expr) {
     // assertion failed: write out error
-    fprintf(stderr, "Assertion failed in [%s:%d] in %s: %s\n", filename, lineno, func, exprText);
+    fprintf(stderr, "Assertion failed in [%s:%d] in %s: %s\n",
+            filename, lineno, func, exprText);
     if (assertionsAreFatal) {
       exit(1);
     }

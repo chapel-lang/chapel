@@ -28,7 +28,8 @@ namespace chpl {
   --no-devel is passed, and also to not halt when an assertion fails if
   --ignore-errors was passed at runtime (of chpl, not the chapel runtime)
 */
-void assertion(bool expr, const char* filename, const char* func, int lineno, const char* exprText);
+void assertion(bool expr, const char* filename, const char* func, int lineno,
+               const char* exprText);
 
 /*
   Macro for our custom assertion mechanism - folded out if NDEBUG is defined
