@@ -1,0 +1,1 @@
+throwsBecauseFieldValueThrows.chpl:5: error: cannot call a throwing function before phase 2
