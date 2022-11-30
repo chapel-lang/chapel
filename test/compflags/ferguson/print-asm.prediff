@@ -1,0 +1,9 @@
+#!/bin/bash
+
+TEST=$1
+LOG=$2
+# PREDIFF: Script to execute before diff'ing output (arguments: <test
+#    executable>, <log>, <compiler executable>)
+
+cat $LOG | grep -e 'Dissasembling\|<foo_chpl>:\|<bar_chpl>:' | sed 's/^[0-9a-fA-F][0-9a-fA-F]*/ADDR/' > $LOG.tmp
+mv $LOG.tmp $LOG
