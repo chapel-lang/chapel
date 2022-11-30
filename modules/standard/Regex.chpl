@@ -1167,13 +1167,6 @@ proc string.find(pattern: regex(string)):byteIndex
 }
 
 pragma "no doc"
-pragma "last resort"
-proc string.search(needle: regex(string)):regexMatch
-{
-  return needle.search(this);
-}
-
-pragma "no doc"
 deprecated "string.search is deprecated, use regex search instead"
 proc string.search(pattern: regex(string)):regexMatch
 {
@@ -1193,25 +1186,10 @@ proc bytes.find(pattern: regex(bytes)):byteIndex
 }
 
 pragma "no doc"
-pragma "last resort"
-proc bytes.search(needle: regex(bytes)):regexMatch
-{
-  return needle.search(this);
-}
-
-pragma "no doc"
 deprecated "bytes.search is deprecated, use regex search instead"
 proc bytes.search(pattern: regex(bytes)):regexMatch
 {
   return pattern.search(this);
-}
-
-
-pragma "last resort"
-deprecated "string.search with needle argument is deprecated, use regex search instead"
-proc string.search(needle: regex(string), ref captures ...?k):regexMatch
-{
-  return needle.search(this, (...captures));
 }
 
 /* Search the receiving string for a regular expression already compiled
@@ -1231,14 +1209,6 @@ deprecated "string.search is deprecated, use regex search instead"
 proc string.search(pattern: regex(string), ref captures ...?k):regexMatch
 {
   return pattern.search(this, (...captures));
-}
-
-
-pragma "last resort"
-deprecated "bytes.search with needle argument is deprecated, use regex search instead"
-proc bytes.search(needle: regex(bytes), ref captures ...?k):regexMatch
-{
-  return needle.search(this, (...captures));
 }
 
 /* Search the receiving bytes for a regular expression already compiled

@@ -546,13 +546,6 @@ module Bytes {
     return startsEndsWith(this, patterns, fromLeft=false);
   }
 
-  pragma "last resort"
-  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
-  inline proc bytes.find(needle: bytes,
-                         region: range(?) = this.indices) : idxType {
-    return this.find(needle, region);
-  }
-
   /*
     Finds the argument in the :type:`bytes`
 
@@ -569,13 +562,6 @@ module Bytes {
   inline proc bytes.find(pattern: bytes,
                          indices: range(?) = this.indices) : idxType {
     return doSearchNoEnc(this, pattern, indices, count=false): idxType;
-  }
-
-  pragma "last resort"
-  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
-  inline proc bytes.rfind(needle: bytes,
-                          region: range(?) = this.indices) : idxType {
-    return this.rfind(needle, region);
   }
 
   /*
@@ -597,13 +583,6 @@ module Bytes {
                          fromLeft=false): idxType;
   }
 
-  pragma "last resort"
-  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
-  inline proc bytes.count(needle: bytes,
-                          region: range(?) = this.indices) : int {
-    return this.count(needle, region);
-  }
-
   /*
     Counts the number of occurrences of the argument in the :type:`bytes`
 
@@ -618,14 +597,6 @@ module Bytes {
   inline proc bytes.count(pattern: bytes,
                           indices: range(?) = this.indices) : int {
     return doSearchNoEnc(this, pattern, indices, count=true);
-  }
-
-  pragma "last resort"
-  deprecated "the 'needle' argument is deprecated, use 'pattern' instead"
-  inline proc bytes.replace(needle: bytes,
-                            replacement: bytes,
-                            count: int = -1) : bytes {
-    return this.replace(needle, replacement, count);
   }
 
 
