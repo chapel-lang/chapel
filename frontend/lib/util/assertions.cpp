@@ -54,7 +54,7 @@ void assertion(bool expr, const char* filename, const char* func,
   // assertions ON: perform check, conditionally exit if assertionsAreFatal
   if (!expr) {
     // assertion failed: write out error
-    fprintf(stderr, "Assertion failed in [%s:%d] in %s: %s\n",
+    fprintf(stderr, "[%s:%d in %s] Assertion failed: %s\n",
             filename, lineno, func, exprText);
     if (assertionsAreFatal()) {
       exit(1);
