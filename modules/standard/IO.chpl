@@ -5822,6 +5822,8 @@ proc _channel.read(type t ...?numTypes) throws where numTypes > 1 {
               value.writeThis() with the channel as an argument.
 
    :throws SystemError: Thrown if the values could not be written to the channel.
+   :throws EofError: Thrown if EOF is reached before all the arguments
+                      could be written.
  */
 pragma "fn exempt instantiation limit"
 inline proc _channel.write(const args ...?k) throws {
@@ -5880,6 +5882,8 @@ proc _channel.writeln() throws {
               value.writeThis() with the channel as an argument.
 
    :throws SystemError: Thrown if the values could not be written to the channel.
+   :throws EofError: Thrown if EOF is reached before all the arguments
+                      could be written.
  */
 proc _channel.writeln(const args ...?k) throws {
   try this.write((...args), new ioNewline());
