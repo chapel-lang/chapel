@@ -5196,12 +5196,12 @@ proc _channel.writebits(v:integral, nbits:integral) throws {
 */
 proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
 {
-  var e:errorCode = 0;
-  const numToWrite = numBytes / c_sizeof(t);
+  var e:errorCode = 0,
+      numWritten:c_ssize_t;
+  const t_size = c_sizeof(t),
+        numBytesToWrite = (numBytes / t_size) * t_size;
 
-  for i in 0..<numToWrite {
-    e = try _write_binary_internal(this._channel_internal, iokind.native, ptr[i]);
-  }
+  e = try qio_channel_write(false, this._channel_internal, ptr[0], numBytesToWrite:c_ssize_t, numWritten);
 
   if (e != 0) {
     throw createSystemError(e);
@@ -5222,12 +5222,11 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
    :throws SystemError: Thrown if an error occured while writing to the ``fileWriter``
 */
 proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
-  var e:errorCode = 0;
+  var e:errorCode = 0,
+      numWritten:c_ssize_t;
 
   var byte_ptr = ptr : c_ptr(uint(8));
-  for i in 0..<numBytes {
-    e = try _write_binary_internal(this._channel_internal, iokind.native, byte_ptr[i]:uint(8));
-  }
+  e = try qio_channel_write(false, this._channel_internal, byte_ptr[0], numBytes, numWritten);
 
   if (e != 0) {
     throw createSystemError(e);
