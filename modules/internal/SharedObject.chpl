@@ -664,13 +664,13 @@ tandem with :record:`~SharedObject.shared` objects.
 
 A ``weakPointer`` provides a reference to a ``shared`` class object without
 requiring it to stay allocated. Such a pattern is useful for implementing graph
-or tree structures with bidirectional references, or for implementing a cash-like
+or tree structures with bidirectional references, or for implementing cache-like
 data structures that maintain a list of objects but don't require them to stay
 allocated.
 
 A "strong" shared reference to the relevant class object can be obtained via
 the :proc:`~WeakPointer.weakPointer.upgrade` method, or by casting the
-weakPointer to a ``shared t`` or a ``shared t?``. If the underlying class is
+weakPointer to a ``shared t`` or a ``shared t?``. If the underlying object is
 not valid (i.e., its shared reference count has already dropped to zero
 causing it to be de-initialized) the upgrade attempt will fail.
 
