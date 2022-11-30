@@ -5705,6 +5705,61 @@ proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
   return rv;
 }
 
+/*
+   Read up to ``maxBytes`` bytes from a ``fileReader`` into a :class:`~CTypes.c_ptr`
+
+   Note that native endianness is always used.
+
+   If ``maxBytes`` is not evenly divisible by the size of ``t``, then the
+   remaining bytes are ignored.
+
+   :arg ptr: a :class:`~CTypes.c_ptr` to some memory — existing values will be
+              overwritten
+   :arg maxBytes: the maximum number of bytes to read from the ``fileReader``
+   :returns: the number of bytes that were read. this can be less than
+              ``maxBytes`` if EOF was reached before reading the specified
+              number of bytes, or if ``maxBytes`` is not evenly divisible by
+              the size of ``t``
+
+   :throws SystemError: Thrown if an error occurred while reading from the ``fileReader``
+*/
+proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
+  var e: errorCode = 0,
+      numRead: c_ssize_t = 0;
+  const t_size = c_sizeof(t),
+        numBytesToRead = (maxBytes / t_size) * t_size;
+
+  e = qio_channel_read(false, this._channel_internal, ptr[0], numBytesToRead: c_ssize_t, numRead);
+
+  if e != 0 && e != EEOF then throw createSystemError(e);
+  return numRead;
+}
+
+/*
+   Read up to ``maxBytes`` bytes from a ``fileReader`` into a :type:`~CTypes.c_void_ptr`
+
+   Note that data are read from the file one byte at a time.
+
+   :arg ptr: a typeless :type:`~CTypes.c_void_ptr` to some memory — existing values
+              will be overwritten
+   :arg maxBytes: the maximum number of bytes to read from the ``fileReader``
+   :returns: the number of bytes that were read. this can be less than ``maxBytes``
+              if EOF was reached before reading the specified number of bytes
+
+   :throws SystemError: Thrown if an error occurred while reading from the ``fileReader``
+*/
+proc fileReader.readBinary(ptr: c_void_ptr, maxBytes: int): int throws {
+  var e: errorCode = 0,
+      numRead: c_ssize_t = 0;
+  var bytes_ptr = ptr: c_ptr(uint(8));
+
+  e = qio_channel_read(false, this._channel_internal, bytes_ptr[0], maxBytes: c_ssize_t, numRead);
+
+  if e != 0 && e != EEOF then throw createSystemError(e);
+  return numRead;
+}
+
+
 // Documented in the varargs version
 pragma "no doc"
 proc _channel.readln():bool throws {
