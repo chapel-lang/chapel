@@ -112,6 +112,7 @@ void expandInstallationPaths(std::string& arg);
 void expandInstallationPaths(std::vector<std::string>& args);
 
 bool isDirectory(const char* path);
+bool pathExists(const char* path);
 
 char*       chplRealPath(const char* path);
 char*       dirHasFile(const char* dir, const char* file);

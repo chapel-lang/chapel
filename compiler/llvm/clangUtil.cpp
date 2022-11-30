@@ -4000,6 +4000,7 @@ void checkAdjustedDataLayout() {
   INT_ASSERT(dl.getTypeSizeInBits(testTy) == GLOBAL_PTR_SIZE);
 }
 
+static void handlePrintAsm(std::string dotOFile);
 static void makeLLVMStaticLibrary(std::string moduleFilename,
                                   const char* tmpbinname,
                                   std::vector<std::string> dotOFiles);
@@ -4296,49 +4297,7 @@ void makeBinaryLLVM(void) {
       }
       outputOfile.close();
 
-      if (llvmPrintIrStageNum == llvmStageNum::ASM ||
-          llvmPrintIrStageNum == llvmStageNum::EVERY) {
-        if (myshell("which objdump > /dev/null 2>&1", "Check to see if objdump command can be found", true)) {
-          USR_FATAL("Command 'objdump' not found");
-        }
-
-        // Figure out if we have the LLVM objdump or the GNU one
-        // because they have slightly different arguments.
-        // Note, LLVM objdump might be available as llvm-objdump,
-        // and we could look for that in the future.
-        std::string vers = runCommand("objdump --version");
-        std::string disSymArg;
-        if (vers.find("GNU") != std::string::npos) {
-          disSymArg = "--disassemble=";
-        } else if (vers.find("LLVM") != std::string::npos) {
-          disSymArg = "--disassemble-symbols=";
-        } else {
-          USR_FATAL("Unknown version of 'objdump'");
-        }
-
-        static bool isDarwin = strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0;
-        if (isDarwin) {
-          // The symbols in a Mach-O file has a leading _
-          disSymArg += "_";
-        }
-
-        std::vector<std::string> names = gatherPrintLlvmIrCNames();
-        for (auto name : names) {
-          printf("\n\n# Dissasembling symbol %s\n\n", name.c_str());
-          fflush(stdout);
-          std::vector<std::string> cmd;
-          cmd.push_back("objdump");
-          std::string arg = disSymArg; // e.g. --dissasemble=
-          arg += name;
-          cmd.push_back(arg);
-          cmd.push_back(moduleFilename);
-
-          mysystem(cmd, "dissassemble a symbol",
-                   /* ignoreStatus */ true,
-                   /* quiet */ false);
-        }
-      }
-
+      handlePrintAsm(moduleFilename);
 
     } else {
 
@@ -4561,6 +4520,56 @@ void makeBinaryLLVM(void) {
                                getIntermediateDirName(), "/Makefile");
 
     mysystem(makecmd, "Make Binary - Building Launcher and Copying");
+  }
+}
+
+static void handlePrintAsm(std::string dotOFile) {
+  if (llvmPrintIrStageNum == llvmStageNum::ASM ||
+      llvmPrintIrStageNum == llvmStageNum::EVERY) {
+
+    // find the directory containing clang
+    std::vector<std::string> split;
+    std::string llvmObjDump = "llvm-objdump";
+
+    splitStringWhitespace(CHPL_LLVM_CLANG_C, split);
+    if (split.size() > 0) {
+      std::string tmp = split[0];
+      const char* clang = "clang";
+      auto pos = tmp.find(clang);
+      if (pos != std::string::npos) {
+        tmp.replace(pos, strlen(clang), "llvm-objdump");
+        if (pathExists(tmp.c_str())) {
+          llvmObjDump = tmp;
+        }
+      }
+    }
+
+    // Note: if we want to support GNU objdump, just need to use
+    // --dissasemble= instead of the LLVM flag --disassemble-symbols=
+    // but this does not work with older GNU objdump versions.
+    std::string disSymArg = "--disassemble-symbols=";
+
+    static bool isDarwin = strcmp(CHPL_TARGET_PLATFORM, "darwin") == 0;
+    if (isDarwin) {
+      // The symbols in a Mach-O file has a leading _
+      disSymArg += "_";
+    }
+
+    std::vector<std::string> names = gatherPrintLlvmIrCNames();
+    for (auto name : names) {
+      printf("\n\n# Dissasembling symbol %s\n\n", name.c_str());
+      fflush(stdout);
+      std::vector<std::string> cmd;
+      cmd.push_back(llvmObjDump);
+      std::string arg = disSymArg; // e.g. --dissasemble=
+      arg += name;
+      cmd.push_back(arg);
+      cmd.push_back(dotOFile);
+
+      mysystem(cmd, "dissassemble a symbol",
+               /* ignoreStatus */ true,
+               /* quiet */ false);
+    }
   }
 }
 

@@ -958,6 +958,15 @@ bool isDirectory(const char* path)
   return false;
 }
 
+bool pathExists(const char* path)
+{
+  struct stat stats;
+  if (stat(path, &stats) == 0)
+    return true;
+
+  return false;
+}
+
 // would just use realpath, but it is not supported on all platforms.
 char* chplRealPath(const char* path)
 {
