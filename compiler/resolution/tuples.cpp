@@ -104,7 +104,7 @@ static FnSymbol* helpBuildTupleType(std::vector<ArgSymbol*>& typeCtorArgs,
                                     FnSymbol*      instantiatedFrom)
 {
   FnSymbol *buildTupleType = new FnSymbol(fnName);
-  for(size_t i = startArgs; i < endArgs; i++)
+  for(int i = startArgs; i < endArgs; i++)
     buildTupleType->insertFormalAtTail(typeCtorArgs[i]->copy());
 
   buildTupleType->addFlag(FLAG_ALLOW_REF);
