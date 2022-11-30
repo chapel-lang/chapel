@@ -32,20 +32,11 @@ static const char * volatile gasnetc_exit_state = "UNKNOWN STATE";
 // volume of garbage that might get printed in the event of memory corruption.
 #define GASNETC_EXIT_STATE_MAXLEN 60
 
-#if GASNET_DEBUG_VERBOSE
-  #define GASNETC_TRACE_EXIT_STATE() do {                 \
-        fprintf(stderr, "%d> EXIT STATE %s\n",            \
-                (int)gasneti_mynode, gasnetc_exit_state); \
-        fflush(NULL);                                     \
-  } while (0)
-#else
-  #define GASNETC_TRACE_EXIT_STATE() ((void)0)
-#endif
-
 #define GASNETC_EXIT_STATE(st) do {                                      \
         gasneti_static_assert(sizeof(st) <= GASNETC_EXIT_STATE_MAXLEN+1);\
         gasnetc_exit_state = st;                                         \
-        GASNETC_TRACE_EXIT_STATE();                                      \
+        if (gasneti_spawn_verbose) /* %s to silence -Wformat-security */ \
+          gasneti_console_message("EXIT STATE", "%s", gasnetc_exit_state); \
   } while (0)
 
 #define GASNETC_ROOT_NODE 0
@@ -75,6 +66,7 @@ static gasnetc_counter_t gasnetc_exit_repl_oust = GASNETC_COUNTER_INITIALIZER; /
 static gasneti_atomic_t gasnetc_exit_atsighandler = gasneti_atomic_init(0);
 
 static void gasnetc_atexit(int exitcode);
+static void gasnetc_exit_init(void);
 
 // gex_TM_t used for AM-based bootstrap collectives and exit handling
 static gex_TM_t gasnetc_bootstrap_tm = NULL;
@@ -100,70 +92,25 @@ size_t gasnetc_sizeof_segment_t(void) {
 
 /* ------------------------------------------------------------------------------------ */
 /*
-  Bootstrap collectives
+  Bootstrap collective wrappers
 */
 
-static gex_Rank_t gasnetc_dissem_peers = 0;
-static gex_Rank_t *gasnetc_dissem_peer = NULL;
-static gex_Rank_t *gasnetc_exchange_rcvd = NULL;
-static gex_Rank_t *gasnetc_exchange_send = NULL;
-
-static void gasnetc_sys_coll_init(void)
+extern void gasneti_bootstrapBarrier(void)
 {
-  int i;
-  const gex_Rank_t size = gasneti_nodes;
-  const gex_Rank_t rank = gasneti_mynode;
-
-  if (size == 1) {
-    /* No network comms */
-    goto done;
+  if (gasneti_attach_done) {
+    gasneti_bootstrapBarrier_am();
+  } else {
+    gasneti_spawner->Barrier();
   }
-
-  /* Construct vector of the dissemination peers */
-  gasnetc_dissem_peers = 0;
-  for (i = 1; i < size; i *= 2) {
-    ++gasnetc_dissem_peers;
-  }
-  if (NULL == gasnetc_dissem_peer) {
-    gasnetc_dissem_peer = gasneti_malloc(gasnetc_dissem_peers * sizeof(gex_Rank_t));
-    gasneti_leak(gasnetc_dissem_peer);
-  }
-  for (i = 0; i < gasnetc_dissem_peers; ++i) {
-    const gex_Rank_t distance = 1 << i;
-    const gex_Rank_t peer = (distance <= rank) ? (rank - distance) : (rank + (size - distance));
-    gasnetc_dissem_peer[i] = peer;
-  }
-  /* Compute the recv offset and send count for each step of exchange */
-  gasnetc_exchange_rcvd = gasneti_malloc((gasnetc_dissem_peers+1) * sizeof(gex_Rank_t));
-  gasnetc_exchange_send = gasneti_malloc(gasnetc_dissem_peers * sizeof(gex_Rank_t));
-  {
-    int step;
-    for (step = 0; step < gasnetc_dissem_peers; ++step) {
-      gasnetc_exchange_rcvd[step] = gasnetc_exchange_send[step] = 1 << step;
-    }
-    gasnetc_exchange_send[step-1] = gasneti_nodes - gasnetc_exchange_send[step-1];
-    gasnetc_exchange_rcvd[step] = gasneti_nodes;
-  }
-done:
-  // TODO: collectives
-  //gasneti_assert(! gasneti_bootstrap_native_coll);
-  //gasneti_bootstrap_native_coll = 1;
-  //gasneti_spawner->Cleanup(); /* No futher use of ssh/mpi/pmi collectives */
-  return;
 }
 
-static void gasnetc_sys_coll_fini(void)
+extern void gasneti_bootstrapExchange(void *src, size_t len, void *dest)
 {
-  gasnetc_dissem_peers = 0;
-  gasneti_free(gasnetc_dissem_peer);
-  gasneti_free(gasnetc_exchange_rcvd);
-  gasneti_free(gasnetc_exchange_send);
-
-#if GASNET_DEBUG
-  gasnetc_exchange_rcvd = NULL;
-  gasnetc_exchange_send = NULL;
-#endif
-  //gasneti_bootstrap_native_coll = 0;
+  if (gasneti_attach_done) {
+    gasneti_bootstrapExchange_am(src, len, dest);
+  } else {
+    gasneti_spawner->Exchange(src, len, dest);
+  }
 }
 
 /* ------------------------------------------------------------------------------------ */
@@ -567,9 +514,15 @@ static void gasnetc_ucx_fini(void)
   // gasneti_mutex_destroy(&gasneti_ucx_module.ucp_worker_lock);
 }
 
-static int gasnetc_init(gex_Client_t *client_p, gex_EP_t *ep_p,
-                        const char *clientName,
-                        int *argc, char ***argv, gex_Flags_t flags) {
+static int gasnetc_init(
+                               gex_Client_t            *client_p,
+                               gex_EP_t                *ep_p,
+                               gex_TM_t                *tm_p,
+                               const char              *clientName,
+                               int                     *argc,
+                               char                    ***argv,
+                               gex_Flags_t             flags)
+{
   ucp_config_t *config;
   ucs_status_t status;
   ucp_params_t ucp_params;
@@ -588,8 +541,7 @@ static int gasnetc_init(gex_Client_t *client_p, gex_EP_t *ep_p,
   gasneti_freezeForDebugger();
 
   #if GASNET_DEBUG_VERBOSE
-    /* note - can't call trace macros during gasnet_init because trace system not yet initialized */
-    fprintf(stderr,"gasnetc_init(): about to spawn...\n"); fflush(stderr);
+    gasneti_console_message("gasnetc_init","about to spawn...");
   #endif
 
   /* (###) bootstrap the nodes for your conduit - may need to modify if not using 
@@ -603,10 +555,10 @@ static int gasnetc_init(gex_Client_t *client_p, gex_EP_t *ep_p,
   /* Must init timers after global env, and preferably before tracing */
   GASNETI_TICKS_INIT();
 
-  #if GASNET_DEBUG_VERBOSE
-    fprintf(stderr,"gasnetc_init(): spawn successful - node %i/%i starting...\n", 
-      gasneti_mynode, gasneti_nodes); fflush(stderr);
-  #endif
+  if (gasneti_spawn_verbose) {
+    gasneti_console_message("gasnetc_init","spawn successful - proc %i/%i starting...",
+      gasneti_mynode, gasneti_nodes);
+  }
 
   gasnetc_exittimeout = gasneti_get_exittimeout(GASNETC_DEFAULT_EXITTIMEOUT_MAX,
           GASNETC_DEFAULT_EXITTIMEOUT_MIN,
@@ -730,7 +682,7 @@ static int gasnetc_init(gex_Client_t *client_p, gex_EP_t *ep_p,
      If the conduit can build gasneti_nodemap[] w/o assistance, it should
      call gasneti_nodemapParse() after constructing it (instead of nodemapInit()).
   */
-  gasneti_nodemapInit(gasneti_spawner->Exchange, NULL, 0, 0);
+  gasneti_nodemapInit(&gasneti_bootstrapExchange, NULL, 0, 0);
 
 #if GASNET_PSHM
   /* (###) If your conduit will support PSHM, you should initialize it here.
@@ -742,10 +694,10 @@ static int gasnetc_init(gex_Client_t *client_p, gex_EP_t *ep_p,
    * possibly using gasneti_pshm_prefault(), prior to use of gasneti_segmentLimit()
    * or similar memory probes.
    */
-  (void) gasneti_pshm_init(gasneti_spawner->SNodeBroadcast, 0);
+  (void) gasneti_pshm_init(&gasneti_bootstrapSNodeBroadcast, 0);
 #endif
 
-  //  Create first Client, EP and TM *here*, for use in subsequent bootstrap collectives
+  //  Create first Client, EP and TM *here*, for use in subsequent bootstrap communication
   {
     //  allocate the client object
     gasneti_Client_t client = gasneti_alloc_client(clientName, flags);
@@ -757,9 +709,21 @@ static int gasnetc_init(gex_Client_t *client_p, gex_EP_t *ep_p,
     gasneti_EP_t ep = gasneti_import_ep(*ep_p);
     gasnetc_handler = ep->_amtbl; // TODO-EX: this global variable to be removed
 
+    //  create the tm
     gasneti_TM_t tm = gasneti_alloc_tm(ep, gasneti_mynode, gasneti_nodes, flags);
-    gasnetc_bootstrap_tm = gasneti_export_tm(tm);
+    *tm_p = gasnetc_bootstrap_tm = gasneti_export_tm(tm);
   }
+
+  // Establish connections with all nodes
+  if (GASNET_OK != (status = gasnetc_connect_static())) {
+      return status;
+  }
+  // Initialize send and recv resources
+  if (GASNET_OK != (rc = gasnetc_recv_init())) {
+    return rc;
+  }
+  gasnetc_send_init();
+  gasneti_attach_done = 1; // Ready to use AM Short and Medium for bootstrap comms
 
   /* allocate and attach an aux segment */
   gasnet_seginfo_t auxseg = gasneti_auxsegAttach((uintptr_t)-1, gasneti_bootstrapExchange);
@@ -767,21 +731,10 @@ static int gasnetc_init(gex_Client_t *client_p, gex_EP_t *ep_p,
   void *auxbase = auxseg.addr;
   uintptr_t auxsize = auxseg.size;
 
-  uintptr_t limit = gasneti_segmentLimit((uintptr_t)-1, (uint64_t)-1,
-                                         &gasneti_bootstrapExchange,
-                                         &gasneti_bootstrapBarrier);
+  uintptr_t limit = gasneti_segmentLimit((uintptr_t)-1, (uint64_t)-1, NULL, NULL);
 
   /* determine Max{Local,GLobal}SegmentSize */
   gasneti_segmentInit(limit, &gasneti_bootstrapExchange, flags);
-
-  /*
-   * Establish connections with all nodes
-   */
-  if (GASNET_OK != (status = gasnetc_connect_static())) {
-      return status;
-  }
-
-  gasnetc_sys_coll_init();
 
 #if GASNETC_PIN_SEGMENT
   /* pin the aux segment and exchange the RKeys */
@@ -789,20 +742,12 @@ static int gasnetc_init(gex_Client_t *client_p, gex_EP_t *ep_p,
   gasnetc_segment_exchange_aux(mem_info);
 #endif
 
-  if (0 == gasneti_mynode) {
-    fflush(NULL);
-    fprintf(stderr,
-      " WARNING: ucx-conduit is experimental and should not be used for\n"
-      "          performance measurements.\n"
-      "          Please see `ucx-conduit/README` for more details.\n");
-    fflush(NULL);
-  }
-  gasneti_registerExitHandler(gasnetc_atexit);
+  gasneti_console0_message("WARNING",
+      "ucx-conduit is experimental and should not be used for performance measurements.\n"
+      "    WARNING: Please see `ucx-conduit/README` for more details.");
 
-  if (GASNET_OK != (rc = gasnetc_recv_init())) {
-    return rc;
-  }
-  gasnetc_send_init();
+  gasneti_registerExitHandler(gasnetc_atexit);
+  gasnetc_exit_init();
 
   return GASNET_OK;
 }
@@ -826,8 +771,9 @@ extern int gasnetc_attach_primary(void) {
 
   /* ------------------------------------------------------------------------------------ */
   /*  primary attach complete */
+  // TODO: can we safely invert the next two lines to use an AM-based barrier here instead?
+  gasneti_bootstrapBarrier();
   gasneti_attach_done = 1;
-  gasneti_spawner->Barrier();
 
   GASNETI_TRACE_PRINTF(C,("gasnetc_attach_primary(): primary attach complete"));
 
@@ -836,12 +782,12 @@ extern int gasnetc_attach_primary(void) {
   gasneti_nodemapFini();
 
   /* ensure extended API is initialized across nodes */
-  gasneti_spawner->Barrier();
+  gasneti_bootstrapBarrier();
 
   /* (###) Optionally (but recommended) free spawner's idle resources.
    * Safe even if spawner collectives are used after attach
    */
-  gasneti_spawner->Cleanup();
+  gasneti_bootstrapCleanup();
 
   return GASNET_OK;
 }
@@ -906,29 +852,18 @@ extern int gasnetc_Client_Init(
 
   //  main init
   // TODO-EX: must split off per-client and per-endpoint portions
-  if (!gasneti_init_done) {
-    int retval = gasnetc_init(client_p, ep_p, clientName, argc, argv, flags);
+  if (!gasneti_init_done) { // First client
+    // NOTE: gasnetc_init() creates the first Client, EP and TM for use in bootstrap comms
+    int retval = gasnetc_init(client_p, ep_p, tm_p, clientName, argc, argv, flags);
     if (retval != GASNET_OK) GASNETI_RETURN(retval);
     gasneti_trace_init(argc, argv);
   } else {
-    //  allocate the client object
-    gasneti_Client_t client = gasneti_alloc_client(clientName, flags);
-    *client_p = gasneti_export_client(client);
-    //  create the initial endpoint with internal handlers
-    if (gex_EP_Create(ep_p, *client_p, GEX_EP_CAPABILITY_ALL, flags))
-      GASNETI_RETURN_ERRR(RESOURCE,"Error creating initial endpoint");
+    gasneti_fatalerror("No multi-client support");
   }
-  gasneti_EP_t ep = gasneti_import_ep(*ep_p);
 
   // Do NOT move this prior to the gasneti_trace_init() call
   GASNETI_TRACE_PRINTF(O,("gex_Client_Init: name='%s' argc_p=%p argv_p=%p flags=%d",
                           clientName, (void *)argc, (void *)argv, flags));
-
-  // TODO-EX: create team
-  gasneti_TM_t tm = gasneti_init_done
-                    ? gasneti_import_tm(gasnetc_bootstrap_tm) // gasnetc_init() creates very first TM
-                    : gasneti_alloc_tm(ep, gasneti_mynode, gasneti_nodes, flags);
-  *tm_p = gasneti_export_tm(tm);
 
   if (0 == (flags & GASNETI_FLAG_INIT_LEGACY)) {
     /*  primary attach  */
@@ -937,6 +872,8 @@ extern int gasnetc_Client_Init(
 
     /* ensure everything is initialized across all nodes */
     gasnet_barrier(0, GASNET_BARRIERFLAG_UNNAMED);
+  } else {
+    gasneti_attach_done = 0; // Pending client call to gasnet_attach()
   }
 
   return GASNET_OK;
@@ -978,6 +915,14 @@ int gasnetc_ep_init_hook(gasneti_EP_t i_ep)
 }
 
 /* ------------------------------------------------------------------------------------ */
+// Exit handling logic
+
+static gex_Rank_t gasnetc_dissem_peers = 0;
+static const gex_Rank_t *gasnetc_dissem_peer = NULL;
+
+static void gasnetc_exit_init(void) {
+  gasnetc_dissem_peers = gasneti_get_dissem_peers(&gasnetc_dissem_peer);
+}
 
 /* gasnetc_exit_now
  *
@@ -993,10 +938,7 @@ static void gasnetc_exit_now(int exitcode) {
   /* If anybody is still waiting, let them go */
   gasneti_atomic_set(&gasnetc_exit_done, 1, GASNETI_ATOMIC_WMB_POST);
 
-  #if GASNET_DEBUG_VERBOSE
-    fprintf(stderr,"gasnetc_exit(): node %i/%i calling killmyprocess...\n",
-      gasneti_mynode, gasneti_nodes); fflush(stderr);
-  #endif
+  GASNETC_EXIT_STATE("calling gasneti_killmyprocess()");
   gasneti_killmyprocess(exitcode);
   /* NOT REACHED */
 
@@ -1049,13 +991,9 @@ static void gasnetc_exit_sighandler(int sig) {
 
     (void) write(STDERR_FILENO, msg1, sizeof(msg1) - 1);
 
-    /* assume sig < 100 */
-    if (sig > 9) {
-      digit = '0' + ((sig / 10) % 10);
-      (void) write(STDERR_FILENO, &digit, 1);
-    }
-    digit = '0' + (sig % 10);
-    (void) write(STDERR_FILENO, &digit, 1);
+    char sigstr[4];
+    size_t n = gasneti_utoa(sig, sigstr, sizeof(sigstr), 10);
+    (void) write(STDERR_FILENO, sigstr, n);
 
     (void) write(STDERR_FILENO, msg2, sizeof(msg2) - 1);
     (void) write(STDERR_FILENO, state, state_len);
@@ -1327,7 +1265,8 @@ static void gasnetc_exit_body(void) {
   // prevent possible GASNETI_CHECK_INJECT() failures when we communicate
   GASNETI_CHECK_INJECT_RESET();
 
-  GASNETI_TRACE_PRINTF(C,("gasnet_exit(%i)\n", exitcode));
+  if (gasneti_spawn_verbose) gasneti_console_message("EXIT STATE","gasnet_exit(%i)",exitcode);
+  else GASNETI_TRACE_PRINTF(C,("gasnet_exit(%i)\n", exitcode));
 
   /* Timed MAX(exitcode) reduction to clearly distinguish collective exit */
   alarm(2 + timeout); // +2 is margin of safety around the timed reduction
@@ -1336,8 +1275,6 @@ static void gasnetc_exit_body(void) {
   // A second alarm timer for most of the remaining exit steps
   // TODO: 120 is arbitrary and hard-coded
   alarm(MAX(120, timeout));
-
-  gasnetc_sys_coll_fini();
 
   // Try to flush out all the output
   GASNETC_EXIT_STATE("flushing output");
@@ -1376,7 +1313,7 @@ static void gasnetc_exit_body(void) {
   if (graceful && !gasnetc_exit_in_signal) {
     GASNETC_EXIT_STATE("flushing ucx requests: waiting for sends completions");
     gasnetc_send_list_wait(GASNETC_LOCK_REGULAR GASNETI_THREAD_PASS);
-    gasneti_bootstrapBarrier();
+    gasneti_spawner->Barrier(); // Always spawner
     GASNETC_EXIT_STATE("flushing ucx requests: waiting for recvs completions");
     while(gasnetc_poll_sndrcv(GASNETC_LOCK_REGULAR GASNETI_THREAD_PASS));
   }
@@ -1386,13 +1323,13 @@ static void gasnetc_exit_body(void) {
   // TODO: 30 is arbitrary and hard-coded
   alarm(MAX(30, timeout));
   if (graceful) {
-    GASNETC_EXIT_STATE("in gasneti_bootstrapFini()");
+    GASNETC_EXIT_STATE("in gasneti_bootstrapFini() during graceful exit");
     gasneti_bootstrapFini();
     // TODO: this may belong earlier, but placement earlier leads to errors
     GASNETC_EXIT_STATE("ucx finalization");
     gasnetc_ucx_fini();
   } else {
-    GASNETC_EXIT_STATE("in gasneti_bootstrapAbort()");
+    GASNETC_EXIT_STATE("in gasneti_bootstrapAbort() during forceful exit");
     gasneti_bootstrapAbort(exitcode);
   }
   alarm(0);

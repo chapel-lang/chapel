@@ -88,13 +88,13 @@ recordExample3LM();
 
 
 proc ioExample0LM() {
-  var tmp = opentmp();
+  var tmp = openTempFile();
 }
 ioExample0LM();
 
 proc ioExample1LM() {
   writeln("ioExample1LM");
-  var tmp = opentmp();
+  var tmp = openTempFile();
 
   var A = [1,2,3,4];
   var B:[A.domain] int;

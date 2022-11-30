@@ -34,7 +34,7 @@ proc main() {
   var streamTwoUpdates = 0;
   var streamTwoMisses = 0;
 
-  var t:Timer;
+  var t:stopwatch;
 
   if printStats || printMissRate {
     writeln("streamOneLocales = ", streamOneLocales);

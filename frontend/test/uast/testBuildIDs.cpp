@@ -20,7 +20,6 @@
 #include "test-common.h"
 
 #include "chpl/framework/Context.h"
-#include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/Location.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/uast/AstNode.h"

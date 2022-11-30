@@ -3,7 +3,7 @@ use FileSystem;
 iter myIter(param tag: iterKind)
   where tag == iterKind.standalone
 {
-  forall f in findfiles() {
+  forall f in findFiles() {
     if f == "./ParallelOnly.chpl" {
       yield f;
     }

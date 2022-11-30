@@ -29,11 +29,12 @@
 // this include sets CONFIGURED_PREFIX
 #include "configured_prefix.h"
 
-void
-get_version(char *v) {
-  v += sprintf(v, "%d.%d.%d", MAJOR_VERSION, MINOR_VERSION, UPDATE_VERSION);
+void get_version(char* v, size_t bufsize) {
+  size_t len = 0;
+  len += snprintf(v + len, bufsize - len, "%d.%d.%d", MAJOR_VERSION,
+                  MINOR_VERSION, UPDATE_VERSION);
   if (!officialRelease) {
-    sprintf(v, " pre-release (%s)", BUILD_VERSION);
+    len += snprintf(v + len, bufsize - len, " pre-release (%s)", BUILD_VERSION);
   } else {
     // It's is an official release.
     // Try to decide whether or not to include the BUILD_VERSION
@@ -44,14 +45,14 @@ get_version(char *v) {
       // no need to append a .0
     } else {
       // include the BUILD_VERSION contents to add e.g. a .1
-      sprintf(v, ".%s", BUILD_VERSION);
+      len += snprintf(v + len, bufsize - len, ".%s", BUILD_VERSION);
     }
   }
 }
 
 void
-get_major_minor_version(char *v) {
-  sprintf(v, "%d.%d", MAJOR_VERSION, MINOR_VERSION);
+get_major_minor_version(char *v, size_t bufsize) {
+  snprintf(v, bufsize, "%d.%d", MAJOR_VERSION, MINOR_VERSION);
 }
 
 const char*

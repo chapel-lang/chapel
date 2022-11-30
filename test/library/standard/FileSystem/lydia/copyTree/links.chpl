@@ -18,7 +18,7 @@ if (!exists(dirWithLinks)) {
 if (!exists(fileLink)) {
   symlink(realPath(linkSrc), fileLink);
 }
-if (!isLink(fileLink)) {
+if (!isSymlink(fileLink)) {
   writeln(fileLink + " was not a symlink, removing and replacing");
   remove(fileLink);
   symlink(realPath(linkSrc), fileLink);
@@ -28,7 +28,7 @@ if (!isLink(fileLink)) {
 if (!exists(dirLink)) {
   symlink(realPath(linkSrcDir), dirLink);
 }
-if (!isLink(dirLink)) {
+if (!isSymlink(dirLink)) {
   writeln(dirLink + " was not a symlink, removing and replacing");
   rmTree(dirLink);
   symlink(realPath(linkSrcDir), dirLink);
@@ -43,9 +43,9 @@ var fileLinkInDest = "willLink/amALink";
 var dirLinkInDest = "willLink/dirLink";
 writeln("Copying symbolically");
 writeln("file copy exists: ", exists(fileLinkInDest));
-writeln("and is a link: ", isLink(fileLinkInDest));
+writeln("and is a link: ", isSymlink(fileLinkInDest));
 writeln("dir copy exists: ", exists(dirLinkInDest));
-writeln("and is a link: ", isLink(dirLinkInDest));
+writeln("and is a link: ", isSymlink(dirLinkInDest));
 
 copyTree(dirWithLinks, destCopied, false);
 // destCopied is expected to contain a file with the exact contents of linkSrc
@@ -53,6 +53,6 @@ var fileCopyInDest = "willCopy/amALink";
 var dirCopyInDest = "willCopy/dirLink";
 writeln("Copying un-symbolically");
 writeln("file copy exists: ", exists(fileCopyInDest));
-writeln("and is a link: ", isLink(fileCopyInDest));
+writeln("and is a link: ", isSymlink(fileCopyInDest));
 writeln("dir copy exists: ", exists(dirCopyInDest));
-writeln("and is a link: ", isLink(dirCopyInDest));
+writeln("and is a link: ", isSymlink(dirCopyInDest));

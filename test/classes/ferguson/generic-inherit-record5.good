@@ -1,7 +1,2 @@
-Parent(int)
-1
-1
-Child(int,real)
-1
-12.0
-2.0
+generic-inherit-record5.chpl:13: error: inheritance is not currently supported for records
+generic-inherit-record5.chpl:13: note: Child declared as a record here

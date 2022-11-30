@@ -14,7 +14,7 @@ const nbytes = numBytes(eltType);
 
 proc test_expm() {
   const Space = {0..<m, 0..<m};
-  var t: Timer;
+  var t: stopwatch;
 
   if !correctness {
     writeln('=========================================');
@@ -272,7 +272,7 @@ proc test_sinm() {
     // [ 0.0     -1.0       1.0 + 1i]
 
     const Space = {0..<m, 0..<m};
-    var t: Timer;
+    var t: stopwatch;
 
     var X: [Space] complex;
     setDiag(X, 0, 1.0 + 1i);
@@ -307,7 +307,7 @@ proc test_cosm() {
     // [ 0.0     -1.0       1.0 + 1i]
 
     const Space = {0..<m, 0..<m};
-    var t: Timer;
+    var t: stopwatch;
 
     var X: [Space] complex;
     setDiag(X, 0, 1.0 + 1i);
@@ -342,7 +342,7 @@ proc test_sincos() {
     // [ 0.0     -1.0       1.0 + 1i]
 
     const Space = {0..<m, 0..<m};
-    var t: Timer;
+    var t: stopwatch;
 
     var X: [Space] complex;
     setDiag(X, 0, 1.0 + 1i);

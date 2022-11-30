@@ -1,3 +1,5 @@
+regexTertiary.chpl:8: warning: Casting strings to regex is deprecated. Use compile(string) from the Regex module instead.
+regexTertiary.chpl:9: warning: Casting bytes to regex is deprecated. Use compile(bytes) from the Regex module instead.
 regexTertiary.chpl:11: warning: string.search is deprecated, use regex search instead
 regexTertiary.chpl:12: warning: bytes.search is deprecated, use regex search instead
 regexTertiary.chpl:14: warning: string.search is deprecated, use regex search instead

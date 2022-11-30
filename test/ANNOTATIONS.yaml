@@ -507,6 +507,17 @@ all:
   07/09/22:
     - text: Bring block dist scan performance on par with local DR arrays (#19999)
       config: 16-node-xc, 16-node-cs-hdr
+  10/25/22:
+    - text: Hardware changes
+      config: 16-node-xc
+  11/05/22:
+    - Don't count the comms from end counts (#20985)
+  11/11/22:
+    - text: Switch away from tree-based privatization (#20241)
+      config: 16-node-xc, 16-node-cs-hdr, chapcs.comm-counts
+  11/15/22:
+    - text: Optimize distributed rectangular domain creation (#21038)
+      config: 16-node-xc, 16-node-cs-hdr, chapcs.comm-counts
 
 
 # End all
@@ -2184,6 +2195,8 @@ compilerAndTestingStats: &compiler-perf-base
     - Cache module-level scope resolution (#19900)
   07/17/22:
     - Use LLVM ADTs to improve compile times (#19561)
+  10/12/22:
+    - Default to jemalloc for host allocator on most platforms (#20774)
 
 allTotalTime:
   <<: *compiler-perf-base

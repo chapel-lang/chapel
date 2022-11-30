@@ -703,9 +703,9 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
       if (var->type == dtBool)
       {
         if (var->immediate->v_bool == 0)
-          sprintf(imm, "false");
+          snprintf(imm, bufSize, "false");
         else
-          sprintf(imm, "true");
+          snprintf(imm, bufSize, "true");
       }
 
       else if (var->immediate->const_kind == CONST_KIND_STRING)

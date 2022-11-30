@@ -1614,7 +1614,7 @@ module ChapelDomain {
 
       pragma "no doc"
       proc _moveInitializeElement(arr, idx, in value) {
-        import Memory.Initialization.moveInitialize;
+        import MemMove.moveInitialize;
         ref elem = arr[idx];
         moveInitialize(elem, value);
       }
@@ -1852,6 +1852,9 @@ module ChapelDomain {
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
     }
 
+    deprecated "makeIndexBuffer has been renamed to createIndexBuffer"
+    inline proc makeIndexBuffer(size: int) { return createIndexBuffer(size); }
+
     /*
      Creates an index buffer which can be used for faster index addition.
 
@@ -1868,7 +1871,7 @@ module ChapelDomain {
        .. code-block:: chapel
 
           var spsDom: sparse subdomain(parentDom);
-          var idxBuf = spsDom.makeIndexBuffer(size=N);
+          var idxBuf = spsDom.createIndexBuffer(size=N);
           for i in someIndexIterator() do
             idxBuf.add(i);
           idxBuf.commit();
@@ -1880,9 +1883,9 @@ module ChapelDomain {
      :arg size: Size of the buffer in number of indices.
      :type size: int
     */
-    @unstable "makeIndexBuffer() is subject to change in the future."
-    inline proc makeIndexBuffer(size: int) {
-      return _value.dsiMakeIndexBuffer(size);
+    @unstable "createIndexBuffer() is subject to change in the future."
+    inline proc createIndexBuffer(size: int) {
+      return _value.dsiCreateIndexBuffer(size);
     }
 
     /*

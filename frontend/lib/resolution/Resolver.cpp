@@ -2534,7 +2534,7 @@ void Resolver::exit(const New* node) {
       CHPL_REPORT(context, MemManagementNonClass, node, qtTypeExpr.type());
     }
 
-    CHPL_REPORT(context, InvalidNew, node, qtTypeExpr);
+    CHPL_REPORT(context, InvalidNewTarget, node, qtTypeExpr);
   }
 }
 

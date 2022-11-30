@@ -6,7 +6,7 @@ config const numTrials = 100;
 config const verbose = false;
 
 var res1 = 0;
-var t1: Timer;
+var t1: stopwatch;
 
 t1.start();
 for i in 1..#numTrials {
@@ -23,7 +23,7 @@ method();
 
 proc method() {
   var res2 = 0;
-  var t2: Timer;
+  var t2: stopwatch;
   t2.start();
   for i in 1..#numTrials {
     for j in 1..#numIters {

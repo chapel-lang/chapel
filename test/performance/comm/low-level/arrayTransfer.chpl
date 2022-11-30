@@ -58,7 +58,7 @@ proc main() {
   on Locales[numLocales - 1] {
     var nopsAtCheck = minOpsPerTimerCheck;
     var nops: int;
-    var t: Timer;
+    var t: stopwatch;
 
     var B: [1..n] elemType;
     [i in B.domain] B(i) = (n + 1 - i):B.eltType;

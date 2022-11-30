@@ -308,7 +308,7 @@ std::string ResolveScope::name() const {
   } else if (BlockStmt*    block   = toBlockStmt(mAstRef))    {
     char buff[1024];
 
-    sprintf(buff, "BlockStmt %9d", block->id);
+    snprintf(buff, sizeof(buff), "BlockStmt %9d", block->id);
 
     retval = buff;
 

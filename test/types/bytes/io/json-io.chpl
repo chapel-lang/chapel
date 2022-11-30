@@ -10,7 +10,7 @@ var r = new Rec(10, "some bytes":bytes);
 writef("testing default stdout: %t\n", r);
 writef("testing json stdout: %jt\n", r);
 
-var f = opentmp();
+var f = openTempFile();
 {
   var writer = f.writer();
   var str = '{"foo": 4, "bar":b"some written bytes"}';

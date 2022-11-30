@@ -22,7 +22,7 @@ config const useRandomSeed = true,
 // global variables
 var X, X2: [1..numNumbers] real, // arrays of random numbers
     Y: [1..numBuckets] int,      // histogram
-    timer: Timer;                // computation timer
+    timer: stopwatch;                // computation timer
 
 // output startup message
 writeln("Running Histogram Example");

@@ -1,7 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env python3
 
-if which lldb >/dev/null 2>/dev/null; then
-  echo False
-else
-  echo True
-fi
+import shutil
+
+missing_lldb = shutil.which("lldb") is None
+print(missing_lldb)

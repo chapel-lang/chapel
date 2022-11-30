@@ -33,16 +33,27 @@ namespace chpl {
 #define SYNTAX_CLASS(NAME, EINFO...) DIAGNOSTIC_CLASS(NAME, SYNTAX, EINFO)
 #define NOTE_CLASS(NAME, EINFO...) DIAGNOSTIC_CLASS(NAME, NOTE, EINFO)
 
+// Shorthands specific to parser errors, which provide explicit Locations
+#define PARSER_DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) \
+  DIAGNOSTIC_CLASS(NAME, KIND, const Location, ##EINFO)
+#define PARSER_ERROR_CLASS(NAME, EINFO...) \
+  PARSER_DIAGNOSTIC_CLASS(NAME, ERROR, ##EINFO)
+#define PARSER_WARNING_CLASS(NAME, EINFO...) \
+  PARSER_DIAGNOSTIC_CLASS(NAME, WARNING, ##EINFO)
+#define PARSER_SYNTAX_CLASS(NAME, EINFO...) \
+  PARSER_DIAGNOSTIC_CLASS(NAME, SYNTAX, ##EINFO)
+#define PARSER_NOTE_CLASS(NAME, EINFO...) \
+  PARSER_DIAGNOSTIC_CLASS(NAME, NOTE, ##EINFO)
+
 class ErrorWriterBase;
 
 using Note = std::tuple<ID, Location, std::string>;
 
 /** Enum representing the different types of errors in Dyno. */
 enum ErrorType {
-  // The ParseError and GeneralError are not defined via macros to
-  // make it easier to provide special behavior for them (e.g. vbuild
-  // for GeneralError). Their tags are thus also not provided via the macro.
-  PARSE,
+  // GeneralError is not defined via macro to make it easier to provide special
+  // behavior for it (e.g. vbuild). Its tags are thus also not provided via the
+  // macro.
   GENERAL,
 // Include each error specified in error-classes-list.h as an enum element here
 #define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) NAME,
@@ -173,23 +184,6 @@ class BasicError : public ErrorBase {
  public:
   void write(ErrorWriterBase& eq) const override;
   void mark(Context* context) const override;
-};
-
-/**
-  An error originating from the parser.
- */
-class ParseError : public BasicError {
- protected:
-  ParseError(Kind kind, ID id, Location loc, std::string message, std::vector<Note> notes)
-    : BasicError(kind, PARSE, std::move(id), std::move(loc), std::move(message),
-        std::move(notes)) {}
-
-  static const owned<ParseError>&
-  getParseError(Context* context, Kind kind, ID id,
-                Location loc, std::string message,
-                std::vector<Note> notes);
- public:
-  static const ParseError* get(Context* context, const ErrorMessage&);
 };
 
 /**

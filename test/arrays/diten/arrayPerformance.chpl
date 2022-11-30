@@ -38,7 +38,7 @@ proc initialize(B) {
 
 proc runTest(D, alpha: real) {
   use Time;
-  var timer: Timer;
+  var timer: stopwatch;
   var A, B: [D] real;
 
   initialize(B);

@@ -671,7 +671,7 @@ proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn 
   }
 
   while err_out != 0 {
-    var t: Timer;
+    var t: stopwatch;
     t.start();
     // make event active
     err_out = event_add(internalEvent, if timeout.tv_sec:c_long == -1 then nil else c_ptrTo(timeout));
@@ -1063,7 +1063,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = indefiniteTimeout,
   }
 
   while err_out != 0 {
-    var t: Timer;
+    var t: stopwatch;
     t.start();
     err_out = event_add(internalEvent, if timeout.tv_sec:c_long == -1 then nil else c_ptrTo(timeout));
     if err_out != 0 {
@@ -1177,7 +1177,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
     event_free(internalEvent);
   }
   while err_out != 0 {
-    var t: Timer;
+    var t: stopwatch;
     t.start();
     err_out = event_add(internalEvent, if timeout.tv_sec:c_long == -1 then nil else c_ptrTo(timeout));
     if err_out != 0 {

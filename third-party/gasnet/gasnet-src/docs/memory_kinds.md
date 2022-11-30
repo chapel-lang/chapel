@@ -94,9 +94,19 @@ All current memory kinds implementation work is limited to two types of devices:
 2. Devices with the HIP API, which should include all AMD GPUs supported by AMD ROCm.
    Please consult the ROCm documentation for information on supported devices.
 
-Support is further limited to ibv and ucx conduits on Linux and only when using
-Mellanox InfiniBand hardware and drivers with support for PCIe peer-to-peer
-communication.  In this document we will use "communication offload" in place
+Support is further limited to the following, and only when running drivers with
+support for PCIe peer-to-peer communication:  
+
+  + ibv-conduit on Linux over Mellanox InfiniBand hardware  
+  + ucx-conduit on Linux over Mellanox InfiniBand hardware  
+  + ofi-conduit (`verbs` provider) on Linux over Mellanox InfiniBand hardware  
+  + ofi-conduit (`verbs` provider) on HPE Cray EX systems using Slingshot-10 NICs  
+  + ofi-conduit (`cxi` provider) on HPE Cray EX systems using Slingshot-11 NICs  
+  + ofi-conduit *may* work with other providers and/or networks, but the
+    GASNet-EX maintainers lack access to test such configurations.  Reports of
+    success or failure are encouraged!
+
+In this document we will use "communication offload" in place
 of vendor-specific terms for the relevant technology ("GPUDirect RDMA" for
 NVIDIA or "ROCmRDMA" for AMD), except when a specific vendor's technology is
 intended.  In some cases, additional optional software (such as GPU-specific
@@ -116,6 +126,12 @@ With ucx-conduit, `GASNET_SEGMENT_FAST` and `GASNET_SEGMENT_LARGE` segment
 modes are supported.  Fast is the default segment mode, but can be specified
 explicitly at configure time using the `--enable-segment-fast` option.  To be
 clear: `--enable-segment-everything` configurations of ucx-conduit do not
+support the memory kinds work in the current implementation.
+
+With ofi-conduit, `GASNET_SEGMENT_FAST` and `GASNET_SEGMENT_LARGE` segment
+modes are supported.  Fast is the default segment mode, but can be specified
+explicitly at configure time using the `--enable-segment-fast` option.  To be
+clear: `--enable-segment-everything` configurations of ofi-conduit do not
 support the memory kinds work in the current implementation.
 
 To the best of our knowledge communications offload support is not available on
@@ -183,12 +199,50 @@ ucx-conduit).
 The ucx-conduit has support for `GEX_MK_CLASS_CUDA_UVA` and `GEX_MK_CLASS_HIP`.
 However, see "UCX and CUDA memory" under "Known Issues", below.
 
+## OFI (aka libfabric) Support for Memory Kinds
+
+Our testing has found version 1.12.0 of libfabric to be the oldest which
+correctly supports CUDA device memory (modulo the known issues listed later).
+For HIP/ROCm device memory the minimum is 1.12.1.  In both cases the support in
+libfabric is optional and must be explicitly enabled when the library is built.
+
+In general, absence of the appropriate device support in a build of libfabric
+will go undetected at run time and device memory will be treated as host memory.
+This can lead to random data corruption, SIGBUS or SIGSEGV errors, which might
+be indistinguishable from some of the known issues described later.
+
+To enable device memory support in a build of libfabric from sources, pass its
+`configure` script one or both of `--with-cuda` or `--with-rocr` (yes "rocr"
+not "rocm").  If the necessary CUDA or ROCm runtime libraries are not in the
+default locations, then one may pass an optional argument such as
+`--with-cuda=/opt/nvidia/cuda-11.2`.
+
+To query an install of libfabric for CUDA support, the most reliable means
+known to us is to run `fi_pingpong` on a compute node with debug tracing
+enabled using the two commands which follow:
+```sh
+$ fi_pingpong &
+$ env FI_LOG_LEVEL=debug fi_pingpong localhost |& grep ofi_hmem_init
+```
+This will yield one or more lines of the form
+```
+libfabric:[PID]:[TIMESTAMP]:core:core:ofi_hmem_init():222<info> Hmem iface FI_HMEM_[API] not supported
+```
+Where `[API]` may be `CUDA` or `ROCR`, among others.  These lines enumerate the
+device APIs which are *not* supported in the libfabric build.  It is generally
+safe to assume that absence of your target API from this output means support is
+present in your build of libfabric (assuming it meets the minimum version
+requirements, above).
+
+The ofi-conduit has support for `GEX_MK_CLASS_CUDA_UVA` and `GEX_MK_CLASS_HIP`.
+However, see multiple "OFI *" entries under "Known Issues", below.
+
 # Known Issues
 
 ## Loopback
 
 The current implementation does not handle RMA operations between combinations
-of host and GPU memory in the same processes (loopback), though this will be
+of host and GPU memory in the same process (loopback), though this will be
 supported in the future.
 
 It should be noted that this temporary limitation precludes use of GASNet for
@@ -202,12 +256,12 @@ GASNet-EX to perform such transfers.
 For the most up-to-date information on this issue see
 [bug 4149](https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4149)
 
-## Small Gets into device memory
+## Small Gets into CUDA memory on Mellanox InfiniBand hardware
 
 As documented
 [here](https://github.com/linux-rdma/rdma-core/blob/master/providers/mlx5/man/mlx5dv_create_qp.3.md)
 current versions of libibverbs for "mlx5" generation HCAs may default to
-performing small RDMA Gets into an unused space in the work request structure
+performing small RMA Gets into an unused space in the work request structure
 to minimize the number of PCI bus crossings required.  Such Get operations are
 eventually completed by a `memcpy()` to the original destination when the
 completion queue entry is reaped.  This `memcpy()` fails (with a `SIGSEGV`)
@@ -217,6 +271,12 @@ As noted in Mellanox's documentation, setting `MLX5_SCATTER_TO_CQE=0` in the
 environment disables this undesired behavior.  We hope to be able to provide a
 better solution (automatic and specific to device memory Gets) in a future
 release.
+
+This issue has been seen to impact ibv-, ucx- and ofi-conduits running over
+Mellanox InfiniBand hardware, but not on *every* system.  Because this
+work-around may increase the latency of all small RMA Gets, including those
+into host memory, it is recommended that you set `MLX5_SCATTER_TO_CQE=0` only
+if your system exhibits this issue.
 
 For the most up-to-date information on this issue see
 [bug 4151](https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4151)
@@ -231,6 +291,53 @@ correct for device memory at the expense of slowing of host memory RMA.
 
 For the most up-to-date information on this issue see
 [bug 4384](https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4384)
+
+## OFI and Unsupported Providers
+
+Currently, ofi-conduit support for memory kinds is limited to the `verbs` and
+`cxi` libfabric providers (when they are built with appropriate `FI_HMEM`
+capability support).  If ofi-conduit is compiled with memory kinds enabled and
+used with any other provider, the `GEX_MK_CLASS_*` defines will indicate support
+for the relevant kinds but calls to `gex_MK_Create()` will return
+`GASNET_ERR_RESOURCE`.
+
+It is hoped that in the future builds of ofi-conduit for an unsupported provider
+will not define `GEX_MK_CLASS_*`.
+
+## OFI/InfiniBand and CUDA memory
+
+When using ofi-conduit and the `verbs` provider over Mellanox InfiniBand
+hardware, RMA Puts with their source in CUDA device memory may crash with a
+`SIGSEGV` due to incorrect algorithm selection inside libfabric.
+
+This issue has been seen with a subset of applicable systems, with the majority
+of those tested *not* reproducing the problem.  We have been unable to correlate
+the problem with the versions of the HCA, firmware, driver or libibverbs.
+
+If you are using an impacted system, this issue can be worked-around
+by setting `FI_VERBS_INLINE_SIZE=0` in the environment.  Because this
+setting disables a valuable performance optimization, it may increase
+the latency of all small RMA Puts, including those from host memory,
+and small Active Message.  Therefore, it is strongly recommended that
+you set this variable *only* if your system exhibits this issue.
+
+For the most up-to-date information on this second issue see
+[bug 4494](https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4494)
+
+## OFI/Slingshot-10 and CUDA memory
+
+Because the Slingshot-10 network uses a Mellanox InfiniBand HCA and libfabric's
+`verbs` provider, such systems are impacted by two of the known issues described
+above.
+
+1.  Small Gets into CUDA memory on Mellanox InfiniBand hardware  
+    The work around of setting `MLX5_SCATTER_TO_CQE=0` is effective.
+
+2.  OFI/InfiniBand and CUDA memory  
+    The work around of setting `FI_VERBS_INLINE_SIZE=0` is effective.
+
+This is based on testing with HPE's `libfabric/1.11.0.x.y` environment module
+(for multiple values of `x` and `y`).
 
 # Tested Configurations
 
@@ -259,6 +366,34 @@ AMD GPU systems:
   + ROCm 4.5
   + Mellanox ConnectX-5 and ConnectX-6 HCAs
   + AMD Instinct-class (MI50, MI100, MI250X) GPUs
+
+HPE Cray EX systems with Slingshot-10:
+
+  + SS10+Nvidia:
+    - AMD Milan CPUs
+    - Mellanox ConnectX-5 HCAs
+    - Nvidia A100 GPUs
+    - CUDA 11.6 and 11.7
+
+  + SS10+AMD:
+    - AMD Rome CPUs
+    - Mellanox ConnectX-5 HCAs
+    - AMD MI100 GPUs
+    - ROCm 4.5
+
+HPE Cray EX systems with Slingshot-11:
+
+  + SS11+Nvidia:
+    - AMD Milan CPUs
+    - HPE Cassini NICs
+    - Nvidia A100 GPUs
+    - CUDA 11.7
+
+  + SS11+AMD:
+    - AMD Milan CPUs
+    - HPE Cassini NICs
+    - AMD MI250X GPUs
+    - ROCm 5.1.0
 
 Eventual minimum requirements may be lower than on the platforms listed above, or
 possibly higher.
@@ -357,7 +492,8 @@ are defined and will link in any conduit.  However, it is useful only when
 multi-EP support exists (see `gex_EP_Create()` for the current scope of
 multi-EP support).
 
-On ibv and ucx conduits, the implementation of this API is believed to be
+On those conduits and segment modes listed under "Supported Configurations",
+the implementation of this API is believed to be
 complete with respect to the API Proposal.  In particular, it is capable of
 creating segments of both client-allocated and GASNet-allocated memory, using
 either the defined `kind` value `GEX_MK_HOST` or a kind created using
@@ -382,9 +518,9 @@ process, inclusive of the primordial endpoint created by `gex_Client_Init()`.
 Any call to `gex_EP_Create()` which would exceed this limit will fail with
 a return of GASNET_ERR_RESOURCE.
 
-Currently, only ibv-conduit (in FAST segment mode) and ucx-conduit (in any
-segment mode) have values of `GASNET_MAXEPS` larger than 1 (each currently 33).
-Additionally, these conduits support only the `GEX_EP_CAPABILITY_RMA`
+Currently, only those conduits and segment modes listed under "Supported
+Configurations" have values of `GASNET_MAXEPS` larger than 1 (each currently
+33).  Additionally, these conduits support only the `GEX_EP_CAPABILITY_RMA`
 capability for non-primordial endpoints.
 
 The `GEX_FLAG_HINT_ACCEL_*` values are currently defined, but ignored.
@@ -402,7 +538,7 @@ This API does not appear in the API Proposal, nor in related documents which
 preceded it.  Complete semantics are documented in `docs/GASNet-EX.txt`.
 
 This call is currently necessary as the only means to actively distribute the
-RMA credentials required by some conduits (ibv and ucx among them).  While this task is
+RMA credentials required by some conduits (ibv, ucx and ofi among them).  While this task is
 performed in `gex_Segment_Attach()` for primordial endpoints, use of this API is
 required prior to use of `gex_RMA_*()` APIs using non-primordial endpoints.  It
 is hoped that this call can become optional in the future.
@@ -418,7 +554,7 @@ This API is believed to be fully implemented in all conduits and accepted by
 all APIs required to do so by the API Proposal (notably the `gex_RMA_*()`,
 `gex_AM_*()` and `gex_VIS_*()` API families).
 
-Since multi-EP support is currently exclusive to ibv and ucx conduits (and only in
+Since multi-EP support is currently exclusive to ibv, ucx and ofi conduits (and only in
 some segment modes), the use in other conduits is effectively limited to aliasing of the
 primordial team.
 
@@ -441,7 +577,8 @@ relative to their first appearance, as detailed earlier in this document), This
 includes the conditional definition (defined to `1` or undefined) of
 `GASNET_HAVE_MK_CLASS_CUDA_UVA` and/or `GASNET_HAVE_MK_CLASS_HIP`, each of which
 is defined only when the respective headers and libs were located at configure
-time *and* one is using ibv or ucx conduit in a supported segment mode.
+time *and* one is using a conduit and segment mode listed under "Supported
+Configurations".
 Otherwise these feature macros will be undefined.
 
 While these feature macros have only a conditional definition, the

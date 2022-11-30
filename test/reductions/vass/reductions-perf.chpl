@@ -45,7 +45,7 @@ config const M = if perf then 10000 else 10;
 ////// time and error reporting //////
 
 var testName: string;
-var timer: Timer;
+var timer: stopwatch;
 timer.start();
 var numFailures = 0;
 

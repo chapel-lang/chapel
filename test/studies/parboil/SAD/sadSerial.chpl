@@ -19,7 +19,7 @@ record image {
 
 proc main(args:[] string) {
   use Time;
-  var IOTimer, ComputeTimer, WallTimer: Timer;
+  var IOTimer, ComputeTimer, WallTimer: stopwatch;
   WallTimer.start();
   if args.size == 3 {
     filename1 = args[1];

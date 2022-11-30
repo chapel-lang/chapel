@@ -107,11 +107,6 @@ void Builder::addError(const ErrorBase* e) {
   this->errors_.push_back(e);
 }
 
-void Builder::addError(const ErrorMessage& e) {
-  if (!e.isDefaultConstructed())
-    this->errors_.push_back(ParseError::get(context_, e));
-}
-
 void Builder::noteLocation(AstNode* ast, Location loc) {
   notedLocations_[ast] = loc;
 }
@@ -141,6 +136,7 @@ bool Builder::astTagIndicatesNewIdScope(asttags::AstTag tag) {
   return asttags::isNamedDecl(tag) &&
         (asttags::isFunction(tag) ||
          asttags::isModule(tag) ||
+         asttags::isInterface(tag) ||
          asttags::isTypeDecl(tag));
 }
 

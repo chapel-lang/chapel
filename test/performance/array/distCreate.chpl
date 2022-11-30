@@ -37,7 +37,7 @@ const nElems = if size == arraySize.tiny then nElemsTiny else
                if size == arraySize.large then nElemsLarge else -1;
 
 
-var t = new Timer();
+var t = new stopwatch();
 
 inline proc shouldRunDiag(name) {
   if !reportInit && name.endsWith("Init") then

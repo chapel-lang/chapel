@@ -56,6 +56,7 @@ static struct gasneti_pshm_info {
 #define pshmnet_get_struct_addr_from_field_addr(structname, fieldname, fieldaddr) \
         ((structname*)(((uintptr_t)fieldaddr) - offsetof(structname,fieldname)))
 
+static const char *gasnetc_pshm_abort_context = "";
 static void (*gasnetc_pshm_abort_callback)(void);
 
 void gasneti_pshm_prefault(void *addr, size_t len) {
@@ -146,7 +147,20 @@ void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_
     // total to request:
     mmapsz += round_up_to_pshmpage(info_sz);
   }
-  mmapsz += round_up_to_pshmpage(aux_sz);
+  size_t padded_aux_sz = round_up_to_pshmpage(aux_sz);
+  mmapsz += padded_aux_sz;
+
+  // Report size before allocation to help identify out-of-memory crashes
+  { const char *msg = "Allocating shared memory in nbrhd %d (containing %d procs): %s for intra-nbrhd AMs and %s for conduit use";
+    char valstr1[32], valstr2[32];
+    gasnett_format_number(mmapsz - padded_aux_sz, valstr1, sizeof(valstr1), 1);
+    gasnett_format_number(padded_aux_sz, valstr2, sizeof(valstr2), 1);
+    GASNETI_TRACE_PRINTF(I,(msg, gasneti_nodemap_global_rank, gasneti_nodemap_local_count, valstr1, valstr2));
+    if (!gasneti_mynode &&
+        gasneti_getenv_yesno_withdefault("GASNET_AMPSHM_MEMORY_REPORT", 0)) {
+      gasneti_console_message("INFO", msg, gasneti_nodemap_global_rank, gasneti_nodemap_local_count, valstr1, valstr2);
+    }
+  }
 
   /* setup vnet shared memory region for AM infrastructure and supernode barrier.
    */
@@ -156,7 +170,7 @@ void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_
     const int save_errno = errno;
     char buf[16];
     gasneti_unlink_vnet();
-    gasneti_fatalerror("Failed to mmap %s for intra-node shared memory communication, errno=%s(%i)",
+    gasneti_fatalerror("Failed to mmap %s for intra-nbrhd shared memory communication, errno=%s(%i)",
                        gasneti_format_number(mmapsz, buf, sizeof(buf), 1),
                        strerror(save_errno), save_errno);
   }
@@ -518,11 +532,11 @@ static uintptr_t get_queue_mem(int nodes)
                                          GASNETI_PSHM_NETWORK_DEPTH_DEFAULT, 0);
   
   if (gasneti_pshmnet_network_depth < GASNETI_PSHM_NETWORK_DEPTH_MIN) {
-    fprintf(stderr, "WARNING: GASNET_PSHM_NETWORK_DEPTH (%lu) less than min: using %lu\n",
+    gasneti_console_message("WARNING","GASNET_PSHM_NETWORK_DEPTH (%lu) less than min: using %lu",
             gasneti_pshmnet_network_depth, GASNETI_PSHM_NETWORK_DEPTH_MIN);
     gasneti_pshmnet_network_depth = GASNETI_PSHM_NETWORK_DEPTH_MIN;
   } else if (gasneti_pshmnet_network_depth > GASNETI_PSHM_NETWORK_DEPTH_MAX) {
-    fprintf(stderr, "WARNING: GASNET_PSHM_NETWORK_DEPTH (%lu) greater than max: using %lu\n",
+    gasneti_console_message("WARNING","GASNET_PSHM_NETWORK_DEPTH (%lu) greater than max: using %lu",
             gasneti_pshmnet_network_depth, GASNETI_PSHM_NETWORK_DEPTH_MAX);
     gasneti_pshmnet_network_depth = GASNETI_PSHM_NETWORK_DEPTH_MAX;
   }
@@ -830,13 +844,19 @@ static void gasneti_pshm_abort_handler(int sig) {
 
   // Best-effort message if this is not due to gasneti_fatalerror()
   if (sig != SIGABRT) {
-    const char msg1[] = "*** FATAL ERROR: fatal ";
-    const char msg2[] = " while mapping shared memory\n";
+    // convert signal number to string
     const char *signame = gasnett_signame_fromval(sig);
     if (!signame) signame = "signal";
+    // convert rank to string
+    char procstr[10]; // room for 9 digits
+    gasneti_utoa(gasneti_mynode, procstr, sizeof(procstr), 10);
+    // generate full message
+    const char msg1[] = "*** FATAL ERROR (proc ";
+    const char msg2[] = "): fatal ";
+    const char *context = gasnetc_pshm_abort_context;
     char msg[128] = { '\0', };
-    gasneti_assert(strlen(msg1) + strlen(signame) + strlen(msg2) + 1 <= sizeof(msg));
-    strcat(strcat(strcat(msg, msg1), signame), msg2);
+    gasneti_assert(strlen(msg1) + strlen(procstr) + strlen(msg2) + strlen(signame) + strlen(context) + 2 <= sizeof(msg));
+    strcat(strcat(strcat(strcat(strcat(strcat(msg, msg1), procstr), msg2), signame), context), "\n");
     int ignore = write(STDERR_FILENO, msg, strlen(msg));
   }
 
@@ -856,8 +876,9 @@ static void gasneti_pshm_abort_handler(int sig) {
   gasneti_raise(sig);
 }
 
-void gasneti_pshm_cs_enter(void (*callback)(void))
+void gasneti_pshm_cs_enter(const char *context, void (*callback)(void))
 {
+  gasnetc_pshm_abort_context = context;
   gasnetc_pshm_abort_callback = callback;
   for (int i = 0; gasneti_pshm_catch_signals[i].sig; ++i) {
     gasneti_pshm_catch_signals[i].old_hand =
@@ -868,6 +889,7 @@ void gasneti_pshm_cs_enter(void (*callback)(void))
 
 void gasneti_pshm_cs_leave(void)
 {
+  gasnetc_pshm_abort_context = "";
   gasnetc_pshm_abort_callback = NULL;
   for (int i = 0; gasneti_pshm_catch_signals[i].sig; ++i) {
     gasneti_reghandler(gasneti_pshm_catch_signals[i].sig,

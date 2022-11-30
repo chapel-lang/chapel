@@ -127,7 +127,7 @@ I/O Styles
 
 .. warning::
 
-   :record:`iostyle` is now deprecated.
+   :record:`iostyle` is now unstable.
    We are working on creating a full-featured replacement for it
    but in the meantime the :ref:`about-io-formatted-io` facilities are still
    available to control formatting.
@@ -186,7 +186,9 @@ implementing read or write operations for that type (see
 Files
 -----
 
-There are several functions that open a file and return a :record:`file` including :proc:`open`, :proc:`opentmp`, :proc:`openmem`, :proc:`openfd`, and :proc:`openfp`.
+There are several functions that open a file and return a :record:`file`
+including :proc:`open`, :proc:`openTempFile`, :proc:`openmem`, :proc:`openfd`,
+and :proc:`openfp`.
 
 Once a file is open, it is necessary to create associated channel(s) - see
 :proc:`file.reader` and :proc:`file.writer` - to write to and/or read from the
@@ -579,7 +581,21 @@ via the ``str_style`` field in :record:`iostyle`.
   bytes should be read or written.
 
 */
+@unstable
+"iostringstyle is unstable and will eventually be replaced"
 enum iostringstyle {
+  len1b_data = -1,
+  len2b_data = -2,
+  len4b_data = -4,
+  len8b_data = -8,
+  lenVb_data = -10,
+  data_toeof = -0xff00,
+  data_null = -0x0100,
+}
+
+/* Internal version of iostringstyle for interim use */
+pragma "no doc"
+enum iostringstyleInternal {
   len1b_data = -1,
   len2b_data = -2,
   len4b_data = -4,
@@ -608,7 +624,20 @@ via the ``string_format`` field in :record:`iostyle`.
   * ``iostringformat.toeof`` means string is as-is; reading reads until
     end of file
 */
+@unstable
+"iostringformat is unstable and will eventually be replaced"
 enum iostringformat {
+  word = 0,
+  basic = 1,
+  chpl = 2,
+  json = 3,
+  toend = 4,
+  toeof = 5,
+}
+
+/* Internal version of iostringformat for interim use */
+pragma "no doc"
+enum iostringformatInternal {
   word = 0,
   basic = 1,
   chpl = 2,
@@ -632,7 +661,7 @@ enum iostringformat {
 @unstable
 "stringStyleTerminated is unstable because it supports the unstable type 'iostyle'"
 proc stringStyleTerminated(terminator:uint(8)) {
-  return -(terminator - iostringstyle.data_null:int(64));
+  return -(terminator - iostringstyleInternal.data_null:int(64));
 }
 
 /*
@@ -644,7 +673,7 @@ proc stringStyleTerminated(terminator:uint(8)) {
 @unstable
 "stringStyleNullTerminated is unstable because it supports the unstable type 'iostyle'"
 proc stringStyleNullTerminated() {
-  return iostringstyle.data_null;
+  return iostringstyleInternal.data_null;
 }
 
 /*
@@ -667,7 +696,7 @@ pragma "no doc"
 @unstable
 "stringStyleWithVariableLength is unstable because it supports the unstable type 'iostyle'"
 proc stringStyleWithVariableLength() {
-  return iostringstyle.lenVb_data: int(64);
+  return iostringstyleInternal.lenVb_data: int(64);
 }
 
 /*
@@ -688,13 +717,13 @@ proc stringStyleWithLength(lengthBytes:int) throws {
 // users as it will likely be replaced in the future
 pragma "no doc"
 proc stringStyleWithLengthInternal(lengthBytes:int) throws {
-  var x = iostringstyle.lenVb_data;
+  var x = iostringstyleInternal.lenVb_data;
   select lengthBytes {
-    when 0 do x = iostringstyle.lenVb_data;
-    when 1 do x = iostringstyle.len1b_data;
-    when 2 do x = iostringstyle.len2b_data;
-    when 4 do x = iostringstyle.len4b_data;
-    when 8 do x = iostringstyle.len8b_data;
+    when 0 do x = iostringstyleInternal.lenVb_data;
+    when 1 do x = iostringstyleInternal.len1b_data;
+    when 2 do x = iostringstyleInternal.len2b_data;
+    when 4 do x = iostringstyleInternal.len4b_data;
+    when 8 do x = iostringstyleInternal.len8b_data;
     otherwise
       throw createSystemError(EINVAL,
                               "Invalid string length prefix " +
@@ -792,7 +821,7 @@ extern const QIO_STRING_FORMAT_TOEOF:uint(8);
 The :record:`iostyleInternal` type represents I/O styles
 defining how Chapel's basic types should be read or written.
 
-It replaces the now deprecated `iostyle` type, and will eventually
+It replaces the now unstable `iostyle` type, and will eventually
 be migrated into a new strategy, likely involving encoders/decoders
 */
 pragma "no doc"
@@ -813,7 +842,7 @@ extern record iostyleInternal { // aka qio_style_t
      in binary mode? See :type:`iostringstyle` for more information
      on what the values of ``str_style`` mean.
    */
-  var str_style:int(64) = iostringstyle.data_toeof: int(64);
+  var str_style:int(64) = iostringstyleInternal.data_toeof: int(64);
 
   // text style choices
   /* When performing text I/O, pad out to this many columns. */
@@ -831,10 +860,10 @@ extern record iostyleInternal { // aka qio_style_t
   var string_end:style_char_t = 0x22; // "
 
   /* How should we format strings when performing text I/O?
-     See :type:`iostringstyle` for more information
+     See :type:`iostringstyleInternal` for more information
      on what the values of ``str_style`` mean.
    */
-  var string_format:uint(8) = iostringformat.word:uint(8);
+  var string_format:uint(8) = iostringformatInternal.word:uint(8);
 
   /* What character do we start bytes with, when appropriate? Default is ``"``. */
   var bytes_prefix:style_char_t = 0x62; // b
@@ -1976,7 +2005,12 @@ private proc openfpHelper(fp: c_FILE, hints=ioHintSet.empty,
   return ret;
 }
 
-@unstable "opentmp with a style argument is unstable"
+@unstable "openTempFile with a style argument is unstable"
+proc openTempFile(hints=ioHintSet.empty, style:iostyle):file throws {
+  return opentmpHelper(hints, style: iostyleInternal);
+}
+
+deprecated "opentmp is deprecated, please use :proc:`openTempFile` instead"
 proc opentmp(hints=ioHintSet.empty, style:iostyle):file throws {
   return opentmpHelper(hints, style: iostyleInternal);
 }
@@ -1991,12 +2025,10 @@ The temporary file will be created in an OS-dependent temporary directory,
 for example "/tmp" is the typical location. The temporary file will be
 deleted upon closing.
 
-Temporary files are always opened with :type:`iomode` ``iomode.cwr``;
-that is, a new file is created that supports both writing and reading.
-
-.. TODO:
-  Temporary files are always opened with :type:`iomode` ``iomode.cwrx``;
-  that is, a new file is created that supports both writing and reading.
+Temporary files are opened with :type:`iomode` ``iomode.cwr``; that is, a new
+file is created that supports both writing and reading.  When possible, it may
+be opened using OS support for temporary files in order to make sure that a new
+file is created only for use by the current application.
 
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
@@ -2004,6 +2036,11 @@ that is, a new file is created that supports both writing and reading.
 
 :throws SystemError: Thrown if the temporary file could not be opened.
 */
+proc openTempFile(hints=ioHintSet.empty):file throws {
+  return opentmpHelper(hints);
+}
+
+deprecated "opentmp is deprecated, please use :proc:`openTempFile` instead"
 proc opentmp(hints=ioHintSet.empty):file throws {
   return opentmpHelper(hints);
 }
@@ -5090,7 +5127,7 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
 
     if binary {
       err = qio_channel_read_string(false, byteorder,
-                                    iostringstyle.data_toeof:int(64),
+                                    iostringstyleInternal.data_toeof:int(64),
                                     ch._channel_internal, tx,
                                     lenread, uselen);
     } else {
@@ -5178,6 +5215,62 @@ proc _channel.writebits(v:integral, nbits:integral) throws {
 }
 
 /*
+   Write ``numBytes`` of data from a :class:`~CTypes.c_ptr` to a ``fileWriter``
+
+   Note that native endianness is always used.
+
+   If ``numBytes`` is not evenly divisible by the size of ``t``, the remaining
+   bytes will be ignored. For example, if the ``c_ptr``'s internal type is 4
+   bytes in length, and ``numBytes=17``, only 16 bytes will be written.
+
+   .. warning::
+      This method provides no protection against attempting to access invalid memory
+
+   :arg ptr: a :class:`~CTypes.c_ptr` to some valid memory
+   :arg numBytes: the number of bytes to write
+
+   :throws SystemError: Thrown if an error occured while writing to the ``fileWriter``
+*/
+proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
+{
+  var e:errorCode = 0,
+      numWritten:c_ssize_t;
+  const t_size = c_sizeof(t),
+        numBytesToWrite = (numBytes / t_size) * t_size;
+
+  e = try qio_channel_write(false, this._channel_internal, ptr[0], numBytesToWrite:c_ssize_t, numWritten);
+
+  if (e != 0) {
+    throw createSystemError(e);
+  }
+}
+
+/*
+   Write ``numBytes`` of data from a :type:`~CTypes.c_void_ptr` to a ``fileWriter``
+
+   The data are written to the file one byte at a time.
+
+   .. warning::
+      This method provides no protection against attempting to access invalid memory
+
+   :arg ptr: a typeless :type:`~CTypes.c_void_ptr` to some valid memory
+   :arg numBytes: the number of bytes to write
+
+   :throws SystemError: Thrown if an error occured while writing to the ``fileWriter``
+*/
+proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
+  var e:errorCode = 0,
+      numWritten:c_ssize_t;
+
+  var byte_ptr = ptr : c_ptr(uint(8));
+  e = try qio_channel_write(false, this._channel_internal, byte_ptr[0], numBytes, numWritten);
+
+  if (e != 0) {
+    throw createSystemError(e);
+  }
+}
+
+/*
    Write a binary number to the channel
 
    :arg arg: number to be written
@@ -5226,6 +5319,390 @@ proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
       this.writeBinary(arg, ioendian.little);
     }
   }
+}
+
+/*
+   Write a :type:`~String.string` to a fileWriter in binary format
+
+   :arg s: the ``string`` to write
+   :arg size: the number of codepoints to write from the ``string``
+
+   :throws SystemError: Thrown if the string could not be written to the fileWriter.
+   :throws IllegalArgumentError: Thrown if ``size`` is larger than ``s.size``
+*/
+proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
+  // handle bad arguments
+  if size > s.size then
+    throw new owned IllegalArgumentError("size", "cannot exceed length of provided string");
+  if s.hasEscapes then
+    throw createSystemError(EILSEQ, "illegal use of escaped string characters in 'writeBinary'");
+
+  on this._home {
+    // count the number of bytes to write
+    var sLocal = s.localize();
+    var bytesLen = 0;
+    if size == sLocal.size {
+      bytesLen = s.numBytes;
+    } else {
+      for ((_, cp_byte_len), i) in zip(sLocal._indexLen(), 0..) {
+        if i == size then break;
+        bytesLen += cp_byte_len;
+      }
+    }
+
+    // write the first bytesLen bytes of the string to the fileWriter
+    var e: errorCode = qio_channel_write_string(
+      false,
+      iokind.native: c_int,
+      qio_channel_str_style(this._channel_internal),
+      this._channel_internal,
+      sLocal.c_str(),
+      bytesLen: c_ssize_t
+    );
+
+    if e != 0 then
+      throw createSystemError(e);
+  }
+}
+
+/*
+   Write a :type:`~Bytes.bytes` to a fileWriter in binary format
+
+   :arg b: the ``bytes`` to write
+   :arg size: the number of bytes to write from the ``bytes``
+
+   :throws SystemError: Thrown if the bytes could not be written to the fileWriter.
+   :throws IllegalArgumentError: Thrown if ``size`` is larger than ``b.size``
+*/
+proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
+  // handle bad arguments
+  if size > b.size then
+    throw new owned IllegalArgumentError("size", "cannot exceed length of provided bytes");
+
+  on this._home {
+    // write the first size bytes to the fileWriter
+    var bLocal = b.localize();
+    var e: errorCode = qio_channel_write_string(
+      false,
+      iokind.native: c_int,
+      qio_channel_str_style(this._channel_internal),
+      this._channel_internal,
+      bLocal.c_str(),
+      size: c_ssize_t
+    );
+
+    if e != 0 then
+      throw createSystemError(e);
+  }
+}
+
+/*
+   Write an array of binary numbers to a fileWriter
+
+   Note that this routine currently requires a 1D rectangular non-strided array.
+
+   :arg data: an array of numbers to write to the fileWriter
+   :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
+              to read the numbers. Defaults to ``ioendian.native``.
+
+   :throws SystemError: Thrown if the values could not be written to the fileWriter.
+   :throws UnexpectedEofError: Thrown if EOF is reached before all the values could be written.
+*/
+proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws
+  where (d.rank == 1 && d.stridable == false) && (
+          isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
+{
+  var e : errorCode = 0;
+
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    for b in data {
+      select (endian) {
+        when ioendian.native {
+          e = try _write_binary_internal(this._channel_internal, iokind.native, b);
+        }
+        when ioendian.big {
+          e = try _write_binary_internal(this._channel_internal, iokind.big, b);
+        }
+        when ioendian.little {
+          e = try _write_binary_internal(this._channel_internal, iokind.little, b);
+        }
+      }
+
+      if e == EEOF {
+        throw new owned UnexpectedEofError("Unable to write entire array of values in 'writeBinary'");
+      } else if e != 0 {
+        throw createSystemError(e);
+      }
+    }
+  }
+}
+
+/*
+   Write an array of binary numbers to a fileWriter
+
+   Note that this routine currently requires a 1D rectangular non-strided array.
+
+   :arg data: an array of numbers to write to the fileWriter
+   :arg endian: :type:`ioendian` specifies the byte order in which
+              to write the number.
+
+   :throws SystemError: Thrown if the values could not be written to the fileWriter.
+   :throws UnexpectedEofError: Thrown if EOF is reached before all the values could be written.
+*/
+proc fileWriter.writeBinary(const ref data: [?d] ?t, endian:ioendian) throws
+  where (d.rank == 1 && d.stridable == false) && (
+          isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
+{
+  select (endian) {
+    when ioendian.native {
+      this.writeBinary(data, ioendian.native);
+    }
+    when ioendian.big {
+      this.writeBinary(data, ioendian.big);
+    }
+    when ioendian.little {
+      this.writeBinary(data, ioendian.little);
+    }
+  }
+}
+
+/*
+   Read a binary number from the channel
+
+   :arg arg: number to be read
+   :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
+              to read the number. Defaults to ``ioendian.native``.
+   :returns: `true` if the number was read, `false` otherwise
+
+   :throws SystemError: Thrown if an error occurred reading the number.
+ */
+proc _channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native):bool throws {
+  var e:errorCode = 0;
+
+  select (endian) {
+    when ioendian.native {
+      e = try _read_binary_internal(_channel_internal, iokind.native, arg);
+    }
+    when ioendian.big {
+      e = try _read_binary_internal(_channel_internal, iokind.big, arg);
+    }
+    when ioendian.little {
+      e = try _read_binary_internal(_channel_internal, iokind.little, arg);
+    }
+  }
+  if (e == EEOF) {
+    return false;
+  } else if (e != 0) {
+    throw createSystemError(e);
+  }
+  return true;
+}
+
+/*
+   Read a binary number from the channel
+
+   :arg arg: number to be read
+   :arg endian: :type:`ioendian` specifies the byte order in which
+              to read the number.
+   :returns: `true` if the number was read, `false` otherwise
+
+   :throws SystemError: Thrown if an error occurred reading the number.
+ */
+proc _channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
+  var rv: bool = false;
+
+  select (endian) {
+    when ioendian.native {
+      rv = this.readBinary(arg, ioendian.native);
+    }
+    when ioendian.big {
+      rv = this.readBinary(arg, ioendian.big);
+    }
+    when ioendian.little {
+      rv = this.readBinary(arg, ioendian.little);
+    }
+  }
+  return rv;
+}
+
+/*
+   Read a specified number of codepoints into a :type:`~String.string`
+
+   The string ``s`` may be smaller than ``maxSize`` if EOF is reached before
+   reading the specified number of codepoints. Additionally, if nothing
+   is read from the fileReader, ``s`` will be set to ``""`` (the empty string)
+   and the method will return ``false``.
+
+   .. note::
+
+      This method always uses UTF-8 encoding regardless of the fileReader's
+      configuration
+
+   :arg s: the string to read into — this value is overwritten
+   :arg maxSize: the number of codepoints to read from the fileReader
+   :returns: `false` if EOF is reached before reading anything, `true` otherwise
+
+   :throws SystemError: Thrown if an error occurred while reading from the fileReader.
+*/
+proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
+  var e:errorCode = 0,
+      didRead = false;
+
+  on this._home {
+    var len: int(64),
+        tx: c_string;
+
+    e = qio_channel_read_string(false, ioendian.native: c_int,
+                                qio_channel_str_style(this._channel_internal),
+                                this._channel_internal, tx, len, maxSize:c_ssize_t);
+
+    if len > 0 then didRead = true;
+    s = try! createStringWithOwnedBuffer(tx, length=len);
+  }
+
+  if e == EEOF {
+    return didRead;
+  } else if e != 0 {
+    throw createSystemError(e);
+  }
+  return true;
+}
+
+/*
+   Read a specified number of bytes into a :type:`~Bytes.bytes`
+
+   The bytes ``b`` may be smaller than ``maxSize`` if EOF is reached before
+   reading the specified number of bytes. Additionally, if nothing is read
+   from the fileReader, ``b`` will be set to ``b""`` (the empty bytes) and
+   the method will return ``false``.
+
+   :arg b: the bytes to read into — this value is overwritten
+   :arg maxSize: the number of bytes to read from the fileReader
+   :returns: `false` if EOF is reached before reading anything, `true` otherwise
+
+   :throws SystemError: Thrown if an error occurred while reading from the fileReader.
+*/
+proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
+  var e:errorCode = 0,
+      didRead = false;
+
+  on this._home {
+    var len: int(64),
+        tx: c_string;
+
+    e = qio_channel_read_string(false, ioendian.native: c_int,
+                                qio_channel_str_style(this._channel_internal),
+                                this._channel_internal, tx, len, maxSize:c_ssize_t);
+
+    if len > 0 then didRead = true;
+    b = try! createBytesWithOwnedBuffer(tx, length=len);
+  }
+
+  if e == EEOF {
+    return didRead;
+  } else if e != 0 {
+    throw createSystemError(e);
+  }
+  return true;
+}
+
+/*
+   Read an array of binary numbers from a fileReader
+
+   Binary values of the type ``data.eltType`` are consumed from the fileReader
+   until ``data`` is full or EOF is reached. An :class:`~OS.UnexpectedEofError`
+   is thrown if EOF is reached before the array is filled.
+
+   Note that this routine currently requires a 1D rectangular non-strided array.
+
+   :arg data: an array to read into – existing values are overwritten.
+   :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
+              to read the numbers. Defaults to ``ioendian.native``.
+   :returns: `false` if EOF is encountered before reading anything,
+              `true` otherwise
+
+   :throws SystemError: Thrown if an error occurred while reading from the fileReader
+   :throws UnexpectedEofError: Thrown if EOF is encountered before ``data.size`` values are read
+*/
+proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): bool throws
+  where (d.rank == 1 && d.stridable == false) && (
+          isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
+{
+  var e : errorCode = 0,
+      readSomething = false;
+
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    for (i, b) in zip(data.domain, data) {
+      select (endian) {
+        when ioendian.native {
+          e = try _read_binary_internal(this._channel_internal, iokind.native, b);
+        }
+        when ioendian.big {
+          e = try _read_binary_internal(this._channel_internal, iokind.big,    b);
+        }
+        when ioendian.little {
+          e = try _read_binary_internal(this._channel_internal, iokind.little, b);
+        }
+      }
+
+      if e == EEOF {
+        if i == data.domain.first {
+          break;
+        } else {
+          throw new owned UnexpectedEofError("Unable to read entire array of values in 'readBinary'");
+        }
+      } else if e != 0 {
+        throw createSystemError(e);
+      } else {
+        readSomething = true;
+      }
+    }
+  }
+
+  return readSomething;
+}
+
+/*
+   Read an array of binary numbers from a fileReader
+
+   Binary values of the type ``data.eltType`` are consumed from the fileReader
+   until ``data`` is full or EOF is reached. An :class:`~OS.UnexpectedEofError`
+   is thrown if EOF is reached before the array is filled.
+
+   Note that this routine currently requires a 1D rectangular non-strided array.
+
+   :arg data: an array to read into – existing values are overwritten.
+   :arg endian: :type:`ioendian` specifies the byte order in which
+              to read the number.
+   :returns: `false` if EOF is encountered before reading anything,
+              `true` otherwise
+
+   :throws SystemError: Thrown if an error occurred while reading the from fileReader
+   :throws UnexpectedEofError: Thrown if EOF is encountered before ``data.size`` values are read
+*/
+proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
+  where (d.rank == 1 && d.stridable == false) && (
+          isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
+{
+  var rv: bool = false;
+
+  select (endian) {
+    when ioendian.native {
+      rv = this.readBinary(data, ioendian.native);
+    }
+    when ioendian.big {
+      rv = this.readBinary(data, ioendian.big);
+    }
+    when ioendian.little {
+      rv = this.readBinary(data, ioendian.little);
+    }
+  }
+
+  return rv;
 }
 
 /*
@@ -5282,66 +5759,6 @@ proc fileReader.readBinary(ptr: c_void_ptr, maxBytes: int): int throws {
   return numRead;
 }
 
-/*
-   Read a binary number from the channel
-
-   :arg arg: number to be read
-   :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
-              to read the number. Defaults to ``ioendian.native``.
-   :returns: `true` if the number was read, `false` otherwise
-
-   :throws SystemError: Thrown if an error occurred reading the number.
- */
-
-proc _channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native):bool throws {
-  var e:errorCode = 0;
-
-  select (endian) {
-    when ioendian.native {
-      e = try _read_binary_internal(_channel_internal, iokind.native, arg);
-    }
-    when ioendian.big {
-      e = try _read_binary_internal(_channel_internal, iokind.big, arg);
-    }
-    when ioendian.little {
-      e = try _read_binary_internal(_channel_internal, iokind.little, arg);
-    }
-  }
-  if (e == EEOF) {
-    return false;
-  } else if (e != 0) {
-    throw createSystemError(e);
-  }
-  return true;
-}
-
-/*
-   Read a binary number from the channel
-
-   :arg arg: number to be read
-   :arg endian: :type:`ioendian` specifies the byte order in which
-              to read the number.
-   :returns: `true` if the number was read, `false` otherwise
-
-   :throws SystemError: Thrown if an error occurred reading the number.
- */
-proc _channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
-  var rv: bool = false;
-
-  select (endian) {
-    when ioendian.native {
-      rv = this.readBinary(arg, ioendian.native);
-    }
-    when ioendian.big {
-      rv = this.readBinary(arg, ioendian.big);
-    }
-    when ioendian.little {
-      rv = this.readBinary(arg, ioendian.little);
-    }
-  }
-  return rv;
-}
-
 
 // Documented in the varargs version
 pragma "no doc"
@@ -5349,7 +5766,6 @@ proc _channel.readln():bool throws {
   var nl = new ioNewline();
   return try this.read(nl);
 }
-
 
 /*
 
@@ -5748,6 +6164,7 @@ proc readln(type t ...?numTypes) throws {
 /*
    :returns: `true` if this version of the Chapel runtime supports UTF-8 output.
  */
+deprecated "unicodeSupported is deprecated"
 proc unicodeSupported():bool {
   return true;
 }
@@ -7263,7 +7680,7 @@ proc _channel._conv_sethandler(
       if ! ok {
         error = qio_format_error_arg_mismatch(i);
       } else {
-        style.str_style = -(t:uint(8) - iostringstyle.data_null:int(64));
+        style.str_style = -(t:uint(8) - iostringstyleInternal.data_null:int(64));
       }
     }
     when QIO_CONV_SET_DONE {

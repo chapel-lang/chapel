@@ -53,12 +53,12 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
   QUERY_BEGIN_INPUT(fileTextQuery, context, path);
 
   std::string text;
-  ErrorMessage error;
-  const ParseError* parseError = nullptr;
-  bool ok = readfile(path.c_str(), text, error);
-  if (!ok) {
-    parseError = ParseError::get(context, error);
-    context->report(parseError);
+  std::string error;
+  const ErrorParseErr* parseError = nullptr;
+  if (!readfile(path.c_str(), text, error)) {
+    error = "error reading file: " + error;
+    context->report(
+        ErrorParseErr::get(context, std::make_tuple(Location(), error)));
   }
   auto result = FileContents(std::move(text), parseError);
   return QUERY_END(result);
@@ -105,7 +105,7 @@ parseFileToBuilderResult(Context* context, UniqueString path,
   // Run the fileText query to get the file contents
   const FileContents& contents = fileText(context, path);
   const std::string& text = contents.text();
-  const ParseError* error = contents.error();
+  const ErrorParseErr* error = contents.error();
   BuilderResult result(path);
 
   if (error == nullptr) {
@@ -282,17 +282,20 @@ static void addFilePathModules(std::vector<std::string>& searchPath,
   }
 }
 
-void setupModuleSearchPaths(Context* context,
-                            const std::string& chplHome,
-                            bool minimalModules,
-                            const std::string& chplLocaleModel,
-                            bool enableTaskTracking,
-                            const std::string& chplTasks,
-                            const std::string& chplComm,
-                            const std::string& chplSysModulesSubdir,
-                            const std::string& chplModulePath,
-                            const std::vector<std::string>& cmdLinePaths,
-                            const std::vector<std::string>& inputFilenames) {
+void setupModuleSearchPaths(
+                  Context* context,
+                  const std::string& chplHome,
+                  bool minimalModules,
+                  const std::string& chplLocaleModel,
+                  bool enableTaskTracking,
+                  const std::string& chplTasks,
+                  const std::string& chplComm,
+                  const std::string& chplSysModulesSubdir,
+                  const std::string& chplModulePath,
+                  const std::vector<std::string>& prependInternalModulePaths,
+                  const std::vector<std::string>& prependStandardModulePaths,
+                  const std::vector<std::string>& cmdLinePaths,
+                  const std::vector<std::string>& inputFilenames) {
 
   std::string modRoot;
   if (!minimalModules) {
@@ -303,11 +306,17 @@ void setupModuleSearchPaths(Context* context,
 
   std::string internal = modRoot + "/internal";
   setInternalModulePath(context, UniqueString::get(context, internal));
+
   std::string bundled = modRoot + "/";
   setBundledModulePath(context, UniqueString::get(context, bundled));
 
   std::vector<std::string> searchPath;
 
+  for (auto& path : prependInternalModulePaths) {
+    searchPath.push_back(path);
+  }
+
+  // TODO: Shouldn't these use the internal path we just set?
   searchPath.push_back(modRoot + "/internal/localeModels/" + chplLocaleModel);
 
   const char* tt = enableTaskTracking ? "on" : "off";
@@ -319,6 +328,11 @@ void setupModuleSearchPaths(Context* context,
 
   searchPath.push_back(modRoot + "/internal");
 
+  for (auto& path : prependInternalModulePaths) {
+    searchPath.push_back(path);
+  }
+
+  // TODO: Shouldn't these use the standard path we just set?
   searchPath.push_back(modRoot + "/standard/gen/" + chplSysModulesSubdir);
 
   searchPath.push_back(modRoot + "/standard");
@@ -378,6 +392,8 @@ void setupModuleSearchPaths(Context* context,
                          chplEnv->at("CHPL_COMM"),
                          chplEnv->at("CHPL_SYS_MODULES_SUBDIR"),
                          chplModulePath,
+                         {},  // prependInternalModulePaths
+                         {},  // prependStandardModulePaths
                          cmdLinePaths,
                          inputFilenames);
 }
@@ -664,6 +680,12 @@ const ID& idToParentId(Context* context, ID id) {
   }
 
   return QUERY_END(result);
+}
+
+const uast::AstNode* parentAst(Context* context, const uast::AstNode* node) {
+  auto parentId = idToParentId(context, node->id());
+  if (parentId.isEmpty()) return nullptr;
+  return idToAst(context, parentId);
 }
 
 // Given an ID:

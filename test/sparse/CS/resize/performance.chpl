@@ -12,7 +12,7 @@ config const n = 1000,
              test = grow,
              correctness=false;
 
-var t: Timer;
+var t: stopwatch;
 
 proc main() {
   if test == grow then

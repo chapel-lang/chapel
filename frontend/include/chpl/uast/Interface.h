@@ -51,7 +51,7 @@ class Interface final : public NamedDecl {
   int numInterfaceFormals_;
   int bodyChildNum_;
   int numBodyStmts_;
-  bool isFormalListPresent_;
+  bool isFormalListExplicit_;
 
   Interface(AstList children, int attributesChildNum,
             Visibility visibility,
@@ -60,7 +60,7 @@ class Interface final : public NamedDecl {
             int numInterfaceFormals,
             int bodyChildNum,
             int numBodyStmts,
-            bool isFormalListPresent)
+            bool isFormalListExplicit)
       : NamedDecl(asttags::Interface, std::move(children),
                   attributesChildNum,
                   visibility,
@@ -71,7 +71,7 @@ class Interface final : public NamedDecl {
         numInterfaceFormals_(numInterfaceFormals),
         bodyChildNum_(bodyChildNum),
         numBodyStmts_(numBodyStmts),
-        isFormalListPresent_(isFormalListPresent) {
+        isFormalListExplicit_(isFormalListExplicit) {
     // TODO: Some assertions here...
   }
 
@@ -83,7 +83,7 @@ class Interface final : public NamedDecl {
       lhs->numInterfaceFormals_ == rhs->numInterfaceFormals_ &&
       lhs->bodyChildNum_ == rhs->bodyChildNum_ &&
       lhs->numBodyStmts_ == rhs->numBodyStmts_ &&
-      lhs->isFormalListPresent_ == rhs->isFormalListPresent_;
+      lhs->isFormalListExplicit_ == rhs->isFormalListExplicit_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -109,8 +109,8 @@ class Interface final : public NamedDecl {
 
     The formal list '(T)' is present, so this method returns 'true'.
   */
-  bool isFormalListPresent() const {
-    return isFormalListPresent_;
+  bool isFormalListExplicit() const {
+    return isFormalListExplicit_;
   }
 
   /**
@@ -180,7 +180,7 @@ class Interface final : public NamedDecl {
                                 owned<Attributes> attributes,
                                 Decl::Visibility visibility,
                                 UniqueString name,
-                                bool isFormalListPresent,
+                                bool isFormalListExplicit,
                                 AstList formals,
                                 AstList body);
 };

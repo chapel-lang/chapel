@@ -33,7 +33,7 @@ int myproc;
 int numprocs;
 int peerproc;
 unsigned int seed = 0;
-int nbytes = 8;
+size_t nbytes = 8;
 
 void *remmem;
 void *locmem;
@@ -41,11 +41,11 @@ void *locmem;
 #undef rem_addr /* AIX 5.3 header bug */
 
 void do_test(void) {GASNET_BEGIN_FUNCTION();
-    int i;
+    size_t i;
     int64_t begin, end;
     int iamsender = (myproc % 2 == 0);
-    int pagesz = MAX(PAGESZ, nbytes);
-    int pages = maxsz / pagesz;
+    size_t pagesz = MAX(PAGESZ, nbytes);
+    size_t pages = maxsz / pagesz;
     void **loc_addr = test_malloc(pages * sizeof(void *));
     void **rem_addr = test_malloc(pages * sizeof(void *));
     
@@ -57,7 +57,7 @@ void do_test(void) {GASNET_BEGIN_FUNCTION();
 		}
 		/* permute the arrays separately */
 		for (i = 0; i < pages - 1; ++i) {
-		    int j;
+		    size_t j;
 		    void *tmp;
 		   
 		    j = TEST_RAND(0,pages - 1 - i);
@@ -81,8 +81,8 @@ void do_test(void) {GASNET_BEGIN_FUNCTION();
 		    gex_RMA_PutBlocking(myteam, peerproc, rem_addr[i], loc_addr[i], nbytes, 0);
 		}
 		end = TIME();
-		printf("Proc %3i - %5i bytes, seed %10u, %7i pages: %12i us total, %9.3f us ave. per page\n",
-			myproc, nbytes, seed, pages, (int)(end-begin), ((double)(end-begin))/pages);
+		printf("Proc %3i - %5"PRIuSZ" bytes, seed %10u, %7"PRIuSZ" pages: %12"PRIi64" us total, %9.3f us ave. per page\n",
+			myproc, nbytes, seed, pages, (end-begin), ((double)(end-begin))/pages);
                 fflush(stdout);
                 sleep(1);
 	}
@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
     GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testrand", &argc, &argv, 0));
 
     /* parse arguments */
-    if (argc > 1) nbytes = atoi(argv[1]);
+    if (argc > 1) nbytes = atol(argv[1]);
     if (argc > 2) {
       maxsz = atol(argv[2]);
       maxsz = MAX(maxsz, nbytes);

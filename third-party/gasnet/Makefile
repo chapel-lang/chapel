@@ -54,6 +54,11 @@ CHPL_GASNET_CFG_OPTIONS += --disable-aries --disable-smp --disable-ofi
 endif
 endif
 
+# Disable hugepages on EX systems, initial results showed worse NUMA affinity
+ifeq ($(CHPL_MAKE_TARGET_PLATFORM),hpe-cray-ex)
+CHPL_GASNET_CFG_OPTIONS += --disable-hugetlbfs
+endif
+
 # The cross-configure scripts used on Crays ignore our CC and always use CC=cc
 # (the PrgEnv wrappers.) Use PrgEnv-gnu to produce something that is ABI and
 # compiler option compatible with llvm-clang.

@@ -18,7 +18,7 @@ proc main {
   }
 
 
-  var t = new Timer();
+  var t = new stopwatch();
   var preprocess = new owned AddNPreprocessor(1);
 
   for param i in 0..<inputTypes.size {

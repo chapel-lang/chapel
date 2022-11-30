@@ -17,7 +17,7 @@ config const report = false;
 config const time = false;
 
 proc main() {
-  var tmr : Timer;
+  var tmr : stopwatch;
 
   const Space = {0..#(numLocales*numLocales*n)};
   const D     = Space dmapped Block(Space);

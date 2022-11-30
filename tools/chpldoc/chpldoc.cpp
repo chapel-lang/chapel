@@ -2175,6 +2175,8 @@ int main(int argc, char** argv) {
                          chplEnv->at("CHPL_COMM"),
                          chplEnv->at("CHPL_SYS_MODULES_SUBDIR"),
                          chplModulePath,
+                         {}, //prependInternalModulePaths,
+                         {}, //prependStandardModulePaths,
                          {}, //cmdLinePaths
                          args.files);
   GatherModulesVisitor gather(ctx);

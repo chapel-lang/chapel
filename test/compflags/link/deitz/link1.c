@@ -8,7 +8,8 @@ void foo(const char* s) {
 
 char* bar(int i) {
   char* s;
-  s = (char*)malloc(50*sizeof(char));
-  sprintf(s, "sprintf %d", i);
+  size_t slen = 50;
+  s = (char*)malloc(slen);
+  snprintf(s, slen, "sprintf %d", i);
   return s;
 }

@@ -16,8 +16,8 @@ proc main(){
         var bdwthDB = new ResultDatabase("TriadBdwth", "GB/s");
         var triadDB = new ResultDatabase("Triad Time", "sec");
         var kernelDB = new ResultDatabase("Kernel Time", "sec");
-        var timer: Timer;
-        var kernelTimer: Timer;
+        var timer: stopwatch;
+        var kernelTimer: stopwatch;
         // Just do the whole computation once because overhead of GPU Launches is high
         param maxProblemSize = 16384;
         param numMaxFloats = (1024 * maxProblemSize / numBytes(real(32))) : int;

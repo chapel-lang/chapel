@@ -1,6 +1,6 @@
 use IO;
 
-var f = opentmp();
+var f = openTempFile();
 var style = defaultIOStyleInternal();
 param typ:iokind = iokind.native;
 var ch = f.writer(typ, style=style);

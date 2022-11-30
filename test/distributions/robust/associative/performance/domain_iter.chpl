@@ -33,7 +33,7 @@ if verify then sort(Aref);
 //
 
 {
-  var timer: Timer;
+  var timer: stopwatch;
   timer.start();
   for ai in AD {
     A((ai+offset)/2) = ai;
@@ -61,7 +61,7 @@ if verify then sort(Aref);
 //
 
 {
-  var timer: Timer;
+  var timer: stopwatch;
   timer.start();
   forall ai in AD {
     A((ai+offset)/2) = ai;

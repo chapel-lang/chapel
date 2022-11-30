@@ -2124,8 +2124,7 @@ extern void gasnete_coll_barrier_init(gasnete_coll_team_t team, int barrier_type
     gasnete_amdbarrier_init(team);
   } else if ((barrier_type == GASNETE_COLL_BARRIER_RDMADISSEM) && (team == GASNET_TEAM_ALL)) {
     /* TODO: Currently only support TEAM_ALL due to static allocation of in-segment space.
-             However SEGMENT_EVERYTHING and GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET both
-             offer the option to use regular heap memory.
+             However SEGMENT_EVERYTHING offers the option to use regular heap memory.
              Additionally, if TEAM_ALL doesn't require the entire block of space then
              one could imaging allocating space from it for some number of teams.
      */

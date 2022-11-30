@@ -89,6 +89,7 @@ MODULES_TO_DOCUMENT = \
 	standard/List.chpl \
 	standard/Map.chpl \
 	standard/Math.chpl \
+	standard/MemMove.chpl \
 	standard/Memory.chpl \
 	standard/Memory/Diagnostics.chpl \
 	standard/Memory/Initialization.chpl \

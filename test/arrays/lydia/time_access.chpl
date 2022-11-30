@@ -45,7 +45,7 @@ proc main {
   use Time;
   var A: [0..#arrsize, 0..#arrsize] int(32);
   var B: [0..#arrsize][0..#arrsize] int(32);
-  var t, t2: Timer;
+  var t, t2: stopwatch;
   var worked1, worked2 = true;
   assign(A, arrsize);
   assign2(B, arrsize);

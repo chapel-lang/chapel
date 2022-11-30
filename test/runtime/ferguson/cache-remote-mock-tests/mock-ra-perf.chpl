@@ -31,7 +31,7 @@ proc run(name:string,
 
   coforall task in 0..#threads {
     var rng = new RandomStream(uint, seed, parSafe=false);
-    var t:Timer;
+    var t:stopwatch;
     t.start();
     for update in 0..<numUpdates {
       const node = rng.getNext(min=0, max=nLocales-1);

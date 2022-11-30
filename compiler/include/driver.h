@@ -297,4 +297,7 @@ extern chpl::Context* gContext;
 
 extern std::vector<std::pair<std::string, std::string>> gDynoParams;
 
+extern std::vector<std::string> gDynoPrependInternalModulePaths;
+extern std::vector<std::string> gDynoPrependStandardModulePaths;
+
 #endif

@@ -57,6 +57,9 @@ inline Location locate(Context* context, const ID& id) {
 inline Location locate(Context* context, const uast::AstNode* node) {
   return locate(context, node->id());
 }
+inline Location locate(Context* context, const Location& loc) {
+  return loc;
+}
 
 /// \cond DO_NOT_DOCUMENT
 /**

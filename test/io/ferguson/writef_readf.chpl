@@ -23,7 +23,7 @@ proc testio(fmts: [] string, values: [])
         if noisy then writeln("Testing try ", tryN, " with fmt '", usefmt, "'");
 
         var x = v;
-        var f = opentmp();
+        var f = openTempFile();
         {
           var ch = f.writer();
           if noisy then writeln("Writing ", x:string);

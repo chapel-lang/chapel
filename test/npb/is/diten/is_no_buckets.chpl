@@ -42,7 +42,7 @@ var buffer:  [D] int;
 var passedVerifications = 0;
 
 proc main() {
-  var time = new Timer();
+  var time = new stopwatch();
   var randomStream = new owned NPBRandomStream(real, seed);
   var tempreals: [1..4] real;
   var max = Bmax / 4;

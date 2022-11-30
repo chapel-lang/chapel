@@ -388,7 +388,7 @@ static int AMMPI_SPMDShutdown(int exitcode) {
 
   flushStreams("AMMPI_SPMDExit");
 
- #if !PLATFORM_OS_CNL /* multi-node CNL hangs on exit if you close the streams */
+ #if !PLATFORM_OS_SUBFAMILY_CNL /* multi-node CNL hangs on exit if you close the streams */
   if (fclose(stdin)) {
   #if AMX_DEBUG_VERBOSE
     AMX_Err("failed to fclose stdin in AMMPI_SPMDExit()"); 

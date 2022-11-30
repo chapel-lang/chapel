@@ -1,0 +1,7 @@
+─── error in multipleExternalRenaming.chpl:1 [MultipleExternalRenaming] ───
+  External symbol renaming can only be applied to one symbol at a time.
+  Multiple renaming used here:
+      |
+    1 | extern "type" var ctype: int, dtype: int;
+      |
+

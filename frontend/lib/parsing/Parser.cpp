@@ -32,6 +32,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <tuple>
 
 #define DEBUG_PARSER 0
 
@@ -74,12 +75,9 @@ static void updateParseResult(ParserContext* parserContext) {
     delete parserContext->comments;
   }
 
-  // Save the parse errors
-  for (ParserError & parserError : parserContext->errors) {
-    // Need to convert the error to a regular ErrorMessage
-    Location loc = parserContext->convertLocation(parserError.location);
-    auto errMsg = ErrorMessage(parserError.kind, loc, parserError.message);
-    builder->addError(std::move(errMsg));
+  // Save the parse errors to the builder
+  for (const auto* error : parserContext->errors) {
+    builder->addError(error);
   }
 }
 
@@ -92,11 +90,12 @@ BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
     builder = Builder::createForIncludedModule(this->context(), path,
                                                parentSymbolPath_);
   }
-  ErrorMessage fileError;
+  std::string fileError;
 
   FILE* fp = openfile(path, "r", fileError);
   if (fp == NULL) {
-    builder->addError(fileError);
+    builder->addError(ErrorParseErr::get(
+        this->context(), std::make_tuple(Location(), fileError)));
     return builder->result();
   }
 
@@ -167,7 +166,8 @@ BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
   yychpl_lex_destroy(parserContext.scanner);
 
   if (closefile(fp, path, fileError)) {
-    builder->addError(fileError);
+    builder->addError(ErrorParseErr::get(
+        this->context(), std::make_tuple(Location(), fileError)));
   }
 
   updateParseResult(&parserContext);

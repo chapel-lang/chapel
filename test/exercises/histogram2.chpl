@@ -21,7 +21,7 @@ config const useRandomSeed = true,
 // global variables
 var X: [1..numNumbers] real, // array of random numbers
     Y: [1..numBuckets] int,  // histogram
-    timer: Timer;            // computation timer
+    timer: stopwatch;            // computation timer
 
 // output startup message
 writeln("Running Histogram Example");

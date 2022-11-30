@@ -50,9 +50,9 @@ static const char* symstring(Symbol* sym) {
   if (!sym)
     return "<no symbol provided>";
   if (developer)
-    snprintf(nameBuff, nameBuffSize, "%s[%d]", sym->name, sym->id);
+    snprintf(nameBuff, (size_t)nameBuffSize, "%s[%d]", sym->name, sym->id);
   else
-    snprintf(nameBuff, nameBuffSize, "'%s'", sym->name);
+    snprintf(nameBuff, (size_t)nameBuffSize, "'%s'", sym->name);
   return nameBuff;
 }
 
@@ -61,9 +61,9 @@ static const char* idstring(const char* prefix, BaseAST* ast) {
   if (!ast)
     return "<no node provided>";
   if (developer)
-    snprintf(idBuff, idBuffSize, "%s [%d]", prefix, ast->id);
+    snprintf(idBuff, (size_t)idBuffSize, "%s [%d]", prefix, ast->id);
   else
-    sprintf(idBuff, "");
+    snprintf(idBuff, 1 * sizeof(char), "");
   return idBuff;
 }
 

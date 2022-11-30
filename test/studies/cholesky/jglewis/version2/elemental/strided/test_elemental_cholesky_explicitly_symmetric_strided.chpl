@@ -90,7 +90,7 @@ module test_elemental_explicitly_strided_cholesky {
       print_lower_triangle ( L_unstrided );
     }
 
-    var clock : Timer;
+    var clock : stopwatch;
           
     writeln ("\n\n");
     writeln ("elemental cholesky factorization symmetric index range code\n " + 

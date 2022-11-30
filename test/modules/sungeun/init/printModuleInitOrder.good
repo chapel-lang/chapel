@@ -18,8 +18,6 @@ Initializing Modules:
         ChapelArray
          ChapelPrivatization
          ChapelDomain
-          Initialization
-           Memory
           IO
            FormattedIO
             Regex

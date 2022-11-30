@@ -43,10 +43,6 @@ namespace. The entries may not be exhaustive.
    :members:
    :undoc-members:
 
-.. doxygenclass:: chpl::ParseError
-   :members:
-   :undoc-members:
-
 .. doxygenclass:: chpl::GeneralError
    :members:
    :undoc-members:
