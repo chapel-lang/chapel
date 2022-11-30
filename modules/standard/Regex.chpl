@@ -506,11 +506,6 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
       var m:regexMatch = ...;
       if m then do_something_if_matched();
       if !m then do_something_if_not_matched();
-
-    .. warning::
-      offset field is deprecated, use byteOffset instead
-    .. warning::
-      size field is deprecated, use numBytes instead
  */
 record regexMatch {
   /* true if the regular expression search matched successfully */
@@ -519,18 +514,6 @@ record regexMatch {
   var byteOffset:byteIndex;
   /* the length of the match. 0 if matched==false */
   var numBytes:int;
-
-  pragma "no doc"
-  deprecated "field offset is deprecated, use byteOffset instead"
-  proc offset:byteIndex {
-    return this.byteOffset;
-  }
-
-  pragma "no doc"
-  deprecated "field size is deprecated, use numBytes instead"
-  proc size:int {
-    return this.numBytes;
-  }
 }
 
 pragma "no doc"
