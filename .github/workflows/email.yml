@@ -73,8 +73,9 @@ jobs:
            html_body: |
               <!DOCTYPE html>
               <html>
+              <p>
               <body>
-          
+                      
               Branch: ${{github.ref}} <br>
               Revision: ${{ github.event.pull_request.merge_commit_sha }}  <br>
               Author: ${{ env.AUTHOR}} <br>
@@ -86,7 +87,7 @@ jobs:
 
               With the recent changes to how unbounded ranges behave<br>when in the leader position of a zippered iteration and how<br>unbounded ranges of ints/bools/enums have changed in loop<br>contexts, the zippering sections of the spec needed some<br>refreshing.  Here, I've attempted to improve them with respect<br>to these changes.<p>While taking this pass, I noticed that we refer to cases like<br> for i in zip as zipper iteration rather than zippered<br>iteration in the spec, which is how I've said it out loud as<br>far as I can recall in recent memory.  A quick survey of the<br>team suggested the same, so I've updated that terminology<br>here.<p>I also added a future demonstrating that we support serial<br>zippering of arrays/domains/ranges with different size/shape/rank<br>today in support of #21042 based on reviewer feedback from<br>Vass.
 
-           
+              </p>
               </body>
               </html>
            # Optional converting Markdown to HTML (set content_type to text/html too):
