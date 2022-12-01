@@ -61,10 +61,6 @@ Chapel supports both string and bytes regular expressions.
 Now you can use these methods on regular expressions: :proc:`regex.search`,
 :proc:`regex.match`, :proc:`regex.split`, :proc:`regex.matches`.
 
-You can also use the string versions of these methods: :proc:`string.search`,
-:proc:`string.match`, :proc:`string.split`, or :proc:`string.matches`. Methods
-with same prototypes exist for :type:`~Bytes.bytes` type, as well.
-
 Lastly, you can include regular expressions in the format string for
 :proc:`~FormattedIO.readf` for searching on QIO channels using the ``%/<regex>/``
 syntax.
