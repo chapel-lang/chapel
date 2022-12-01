@@ -22,6 +22,8 @@
 #include "arg.h"
 #include "chpl-comm-locales.h"
 #include "error.h"
+#include "chpl-comm.h"
+#include "comm-ofi-internal.h"
 
 int64_t chpl_comm_default_num_locales(void) {
   return chpl_specify_locales_error();
@@ -29,4 +31,14 @@ int64_t chpl_comm_default_num_locales(void) {
 
 
 void chpl_comm_verify_num_locales(int64_t proposedNumLocales) {
+#ifndef LAUNCHER
+  if (proposedNumLocales != chpl_numNodes) {
+    char msg[100];
+    snprintf(msg, sizeof(msg),
+             "Number of locales from command-line doesn't match "
+             "number from OOB %s (%lld != %d)",
+             chpl_comm_oob, proposedNumLocales, chpl_numNodes);
+    chpl_error(msg,0,0);
+  }
+#endif
 }

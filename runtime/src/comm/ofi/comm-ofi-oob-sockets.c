@@ -69,6 +69,7 @@ void chpl_comm_ofi_oob_init(void) {
   } else {
     INTERNAL_ERROR_V("need slurm system launcher");
   }
+  chpl_comm_oob = "sockets";
 }
 
 
