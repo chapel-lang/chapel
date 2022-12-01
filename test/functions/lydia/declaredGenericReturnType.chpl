@@ -21,9 +21,6 @@ class Gen {
 
 var GlobClass = new owned Gen(real);
 
-
-/* pending #10172
-
 /// owned, explicit ///
 
 proc retsGenOE(type t): owned Gen {
@@ -45,8 +42,6 @@ var xSE = retsGenSE(int);
 var ySE = retsGenSE(real);
 compilerWarning(xSE.type: string);
 compilerWarning(ySE.type: string);
-*/
-
 
 /// borrowed, explicit ///
 
@@ -56,7 +51,6 @@ proc retsGenBE(type t): borrowed Gen {
 
 var xBE = retsGenBE(int);
 compilerWarning(xBE.type: string);
-
 
 /// unmanaged, explicit ///
 

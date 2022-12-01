@@ -1,4 +1,5 @@
 error message: confusing error message about default initializing
+#19113
 
 This error message _may_ be correct, but seemed confusing to me
 because it looked to me like the variable in question ('left')
@@ -9,3 +10,5 @@ For the .good file here, I'm putting in the output I was hoping for,
 though perhaps simply a better error message would be better if I'm
 wrong and this should be default initialized.
 
+See also:
+  test/functions/iterators/recursive/recursive-generic-declared-type.future
