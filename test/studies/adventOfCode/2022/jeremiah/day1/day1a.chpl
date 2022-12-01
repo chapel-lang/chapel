@@ -4,8 +4,7 @@ var maxCalories = 0,
     currentCalories = 0,
     nextCalories = 0;
 
-while true {
-    if !readln(nextCalories) then break;
+while readln(nextCalories) {
     currentCalories += nextCalories;
 
     if stdin.matchNewline() {
