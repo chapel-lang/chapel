@@ -1,0 +1,2 @@
+bug: Conversions to 'int' seem to retain extra characters?
+
