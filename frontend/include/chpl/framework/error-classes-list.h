@@ -115,6 +115,9 @@ PARSER_SYNTAX_CLASS(BisonSyntaxError, std::string)
 /* post-parse-checks errors */
 POSTPARSE_ERROR_CLASS(PostParseErr, std::string)
 POSTPARSE_WARNING_CLASS(PostParseWarn, std::string)
+POSTPARSE_ERROR_CLASS(MultipleClassKinds, const uast::New::Management,
+                      const uast::New::Management)
+POSTPARSE_ERROR_CLASS(CantApplyPrivate, std::string)
 
 /* lexer-specific parser errors */
 PARSER_SYNTAX_CLASS(StringLiteralEOF, char, int)
