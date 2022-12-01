@@ -35,6 +35,7 @@ PASSES_SRCS =                                              \
         flattenClasses.cpp                                 \
         flattenFunctions.cpp                               \
         initializerRules.cpp                               \
+        InitErrorHandling.cpp                              \
         InitNormalize.cpp                                  \
         insertLineNumbers.cpp                              \
         insertWideReferences.cpp                           \
