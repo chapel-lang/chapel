@@ -2012,7 +2012,7 @@ module ChapelBase {
         halt("Attempt to compute a modulus by zero");
     __primitive("%=", lhs, rhs);
   }
-  deprecated "'%=' is deprecated for 'real' values with no expectation to replace it"
+  deprecated "'%=' is deprecated for 'real' values for the time being because it does not work"
   inline operator %=(ref lhs:real(?w), rhs:real(w)) {
     __primitive("%=", lhs, rhs);
   }
