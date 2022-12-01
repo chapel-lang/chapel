@@ -27,8 +27,8 @@ namespace uast {
 
 owned<Let> Let::build(Builder* builder, Location loc, AstList decls,
                       owned<AstNode> expression) {
-  assert(decls.size() >= 1);
-  assert(expression.get() != nullptr);
+  CHPL_ASSERT(decls.size() >= 1);
+  CHPL_ASSERT(expression.get() != nullptr);
 
   const int numDecls = decls.size();
   AstList children = std::move(decls);

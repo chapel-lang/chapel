@@ -221,7 +221,7 @@ static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
   } else {
     const uast::AstNode* ast = parsing::idToAst(context, id);
     if (ast == nullptr) {
-      assert(false && "could not find ast for id");
+      CHPL_ASSERT(false && "could not find ast for id");
       result = new Scope();
     } else {
       ID parentId = parsing::idToParentId(context, id);
@@ -258,7 +258,7 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
     ID id = idIn;
     const uast::AstNode* ast = parsing::idToAst(context, id);
     if (ast == nullptr) {
-      assert(false && "could not find ast for id");
+      CHPL_ASSERT(false && "could not find ast for id");
     } else if (ast->isInclude()) {
       // parse 'module include' and use the result of parsing instead
       // of the 'module include' itself.
@@ -758,7 +758,7 @@ convertLimitations(Context* context, const VisibilityClause* clause) {
 
       // Expect an identifier by construction.
       auto ident = as->rename()->toIdentifier();
-      assert(ident);
+      CHPL_ASSERT(ident);
 
       rename = ident->name();
 
@@ -815,7 +815,7 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
   }
 
   // should not encounter ambiguous matches
-  assert(allIds.size() <= 1);
+  CHPL_ASSERT(allIds.size() <= 1);
 
   ID foundId = vec[0].firstId();
   AstTag tag = parsing::idToTag(context, foundId);
@@ -840,9 +840,9 @@ static const Scope* handleSuperMaybeError(Context* context,
 
   if (!ret) {
     auto modScope = scope->moduleScope();
-    assert(modScope);
+    CHPL_ASSERT(modScope);
     auto ast = parsing::idToAst(context, modScope->id());
-    assert(ast && ast->isModule());
+    CHPL_ASSERT(ast && ast->isModule());
     auto mod = ast->toModule();
     CHPL_REPORT(context, SuperFromTopLevelModule, expr, mod, kind);
   }
@@ -901,7 +901,7 @@ findUseImportTarget(Context* context,
                           expr->id(), useOrImport, /* isFirstPart */ false);
     }
   } else {
-    assert(false && "case not handled");
+    CHPL_ASSERT(false && "case not handled");
   }
 
   return nullptr;
@@ -973,7 +973,7 @@ doResolveUseStmt(Context* context, const Use* use,
           r->addVisibilityClause(foundScope, kind, isPrivate, emptyNames());
           break;
         case VisibilityClause::BRACES:
-          assert(false && "Should not be possible");
+          CHPL_ASSERT(false && "Should not be possible");
           break;
       }
     }
@@ -1028,7 +1028,7 @@ doResolveImportStmt(Context* context, const Import* imp,
         switch (clause->limitationKind()) {
           case VisibilityClause::EXCEPT:
           case VisibilityClause::ONLY:
-            assert(false && "Should not be possible");
+            CHPL_ASSERT(false && "Should not be possible");
             break;
           case VisibilityClause::NONE:
             kind = VisibilitySymbols::ONLY_CONTENTS;
@@ -1047,7 +1047,7 @@ doResolveImportStmt(Context* context, const Import* imp,
           case VisibilityClause::BRACES:
             // this case should be ruled out above
             // (dotName should not be set)
-            assert(false && "should not be reachable");
+            CHPL_ASSERT(false && "should not be reachable");
             break;
         }
       } else {
@@ -1055,7 +1055,7 @@ doResolveImportStmt(Context* context, const Import* imp,
         switch (clause->limitationKind()) {
           case VisibilityClause::EXCEPT:
           case VisibilityClause::ONLY:
-            assert(false && "Should not be possible");
+            CHPL_ASSERT(false && "Should not be possible");
             break;
           case VisibilityClause::NONE:
             kind = VisibilitySymbols::SYMBOL_ONLY;
@@ -1106,7 +1106,7 @@ doResolveVisibilityStmt(Context* context,
   }
 
   // this code should never run
-  assert(false && "should not be reached");
+  CHPL_ASSERT(false && "should not be reached");
 }
 
 static
@@ -1118,7 +1118,7 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
 
   owned<ResolvedVisibilityScope> result;
   const AstNode* ast = parsing::idToAst(context, scope->id());
-  assert(ast != nullptr);
+  CHPL_ASSERT(ast != nullptr);
   if (ast != nullptr) {
     result = toOwned(new ResolvedVisibilityScope(scope));
     auto r = result.get();

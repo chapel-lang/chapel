@@ -65,12 +65,12 @@ class Try final : public AstNode {
           isExpressionLevel_(isExpressionLevel),
           isTryBang_(isTryBang) {
     if (isExpressionLevel_) {
-      assert(numHandlers == 0);
+      CHPL_ASSERT(numHandlers == 0);
     }
     if (containsBlock) {
-      assert(child(bodyChildNum_)->isBlock());
+      CHPL_ASSERT(child(bodyChildNum_)->isBlock());
     } else {
-      assert(numHandlers == 0);
+      CHPL_ASSERT(numHandlers == 0);
     }
   }
 
@@ -120,7 +120,7 @@ class Try final : public AstNode {
    */
   const Block* body() const {
     if (containsBlock_) {
-      assert(numBodyStmts_ == 1);
+      CHPL_ASSERT(numBodyStmts_ == 1);
       return (Block*) child(bodyChildNum_);
     } else {
       return nullptr;
@@ -159,9 +159,9 @@ class Try final : public AstNode {
     if (const Block* stmtBody = body()) {
       return stmtBody->stmt(i);
     } else {
-      assert(i >= bodyChildNum_ && i < numBodyStmts_);
+      CHPL_ASSERT(i >= bodyChildNum_ && i < numBodyStmts_);
       auto ret = child(bodyChildNum_ + i);
-      assert(ret);
+      CHPL_ASSERT(ret);
       return ret;
     }
   }
@@ -187,9 +187,9 @@ class Try final : public AstNode {
     Return the i'th catch block contained in this try.
   */
   const Catch* handler(int i) const {
-    assert(i >= 0 && i < numHandlers_);
+    CHPL_ASSERT(i >= 0 && i < numHandlers_);
     auto ret = child(numBodyStmts_ + i);
-    assert(ret && ret->isCatch());
+    CHPL_ASSERT(ret && ret->isCatch());
     return (const Catch*)ret;
   }
 

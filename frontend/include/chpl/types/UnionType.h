@@ -66,7 +66,7 @@ class UnionType final : public CompositeType {
    */
   const UnionType* instantiatedFrom() const {
     const CompositeType* ret = instantiatedFromCompositeType();
-    assert(ret == nullptr || ret->tag() == typetags::UnionType);
+    CHPL_ASSERT(ret == nullptr || ret->tag() == typetags::UnionType);
     return (const UnionType*) ret;
   }
 };

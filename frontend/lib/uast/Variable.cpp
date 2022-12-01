@@ -86,9 +86,9 @@ void Variable::setInitExprForConfig(owned<AstNode> ie) {
     initExpressionChildNum_ = children_.size();
     children_.push_back(std::move(ie));
     if (this->typeExpressionChildNum_ > -1 || this->attributesChildNum() > -1) {
-      assert(numChildren() > 1);
+      CHPL_ASSERT(numChildren() > 1);
     } else {
-      assert(numChildren() == 1);
+      CHPL_ASSERT(numChildren() == 1);
     }
   }
 }

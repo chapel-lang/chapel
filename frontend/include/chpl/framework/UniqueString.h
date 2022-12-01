@@ -29,7 +29,6 @@
 #include "chpl/framework/stringify-functions.h"
 #include "chpl/util/hash.h"
 
-#include <cassert>
 #include <cstring>
 #include <string>
 

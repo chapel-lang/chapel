@@ -33,7 +33,7 @@ const owned<RealType>& RealType::getRealType(Context* context, int bitwidth) {
 }
 
 const RealType* RealType::get(Context* context, int bitwidth) {
-  assert(bitwidth == 0 || bitwidth == 32 || bitwidth == 64);
+  CHPL_ASSERT(bitwidth == 0 || bitwidth == 32 || bitwidth == 64);
   if (bitwidth == 0) bitwidth = defaultBitwidth(); // canonicalize default width
   return getRealType(context, bitwidth).get();
 }

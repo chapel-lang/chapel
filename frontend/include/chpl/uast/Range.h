@@ -55,7 +55,7 @@ class Range final : public AstNode {
       lowerBoundChildNum_(lowerBoundChildNum),
       upperBoundChildNum_(upperBoundChildNum) {
     if (opKind_ == OPEN_HIGH) {
-      assert(upperBoundChildNum_ >= 0);
+      CHPL_ASSERT(upperBoundChildNum_ >= 0);
     }
   }
 

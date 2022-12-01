@@ -70,7 +70,7 @@ class ImagType final : public PrimitiveType {
       case 64:
           return "imag(64)";
       default:
-        assert(false && "imag bit width case not handled");
+        CHPL_ASSERT(false && "imag bit width case not handled");
         return "real(<unknown>)";
     }
   }

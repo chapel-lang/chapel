@@ -25,6 +25,7 @@
 #include "chpl/framework/stringify-functions.h"
 #include "chpl/framework/ErrorWriter.h"
 #include "chpl/framework/ErrorBase.h"
+#include "chpl/framework/compiler-configuration.h"
 
 #include "llvm/Support/FileSystem.h"
 
@@ -32,7 +33,6 @@
 #include <fstream>
 #include <iomanip>
 
-#include <cassert>
 #include <cstdarg>
 #include <cstddef>
 #include <cstdint>
@@ -41,7 +41,6 @@
 #include "../util/my_aligned_alloc.h" // assumes size_t defined
 
 namespace chpl {
-
   namespace detail {
     GlobalStrings globalStrings;
     Context rootContext;
@@ -141,8 +140,8 @@ static char* allocateEvenAligned(size_t amt) {
     size_t align_up_len = ALIGN_UP(amt, sizeof(void*));
     buf = (char*) my_aligned_alloc(alignment, align_up_len);
   }
-  assert(buf);
-  assert((((uintptr_t)buf) & 1) == 0);
+  CHPL_ASSERT(buf);
+  CHPL_ASSERT((((uintptr_t)buf) & 1) == 0);
   return buf;
 }
 
@@ -153,7 +152,7 @@ static char* allocateEvenAligned(size_t amt) {
 char* Context::setupStringMetadata(char* buf, size_t len) {
   char gcMark = this->gcCounter & 0xff;
 
-  assert(len <= INT32_MAX);
+  CHPL_ASSERT(len <= INT32_MAX);
 
   int32_t len32 = len;
   // these assert should fail if the below code needs to change
@@ -336,7 +335,7 @@ void Context::markUniqueCString(const char* s) {
   #endif
 
   if (checkMarked) {
-    assert(buf[0] == gcMark && "string should already be marked");
+    CHPL_ASSERT(buf[0] == gcMark && "string should already be marked");
   }
 
   // write the mark if needed
@@ -344,7 +343,7 @@ void Context::markUniqueCString(const char* s) {
     buf[0] = gcMark;
   }
 
-  assert(0 <= buf[1] && buf[1] <= 1);   // doNotCollectMark bit is 0 or 1
+  CHPL_ASSERT(0 <= buf[1] && buf[1] <= 1);   // doNotCollectMark bit is 0 or 1
 }
 
 void Context::doNotCollectUniqueCString(const char* s) {
@@ -360,7 +359,7 @@ size_t Context::lengthForUniqueString(const char* s) {
   buf -= UNIQUED_STRING_METADATA_BYTES; // find start of metadata
   int32_t len32 = 0;
   memcpy(&len32, buf, sizeof(len32));
-  assert(len32 >= 0);
+  CHPL_ASSERT(len32 >= 0);
   return len32;
 }
 
@@ -370,11 +369,11 @@ bool Context::shouldMarkUnownedPointer(const void* ptr) {
     return false;
 
   // shouldn't run any mark code if the revision is not doing GC
-  assert(this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber);
+  CHPL_ASSERT(this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber);
 
   // check that the unowned pointer refers to an owned
   // pointer that we have already marked
-  assert(ownedPtrsForThisRevision.count(ptr) != 0);
+  CHPL_ASSERT(ownedPtrsForThisRevision.count(ptr) != 0);
 
   // add the pointer to the map
   auto pair = ptrsMarkedThisRevision.insert(ptr);
@@ -452,7 +451,7 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
     UniqueString gotPath;
     UniqueString gotParentSymbolPath;
     bool ok = filePathForId(moduleID, gotPath, gotParentSymbolPath);
-    assert(ok);
+    CHPL_ASSERT(ok);
 
     // ... and gives the same path
 
@@ -468,7 +467,7 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
     if (errPath || errGotPath) {
       // ignore the check if there were errors
     } else {
-      assert(realPath == realGotPath);
+      CHPL_ASSERT(realPath == realGotPath);
     }
   #endif
 }
@@ -501,7 +500,7 @@ void Context::setBreakOnHash(size_t hashVal) {
 
 void Context::collectGarbage() {
   // if there are no parent queries, collect some garbage
-  assert(queryStack.size() == 0);
+  CHPL_ASSERT(queryStack.size() == 0);
 
   if (enableDebugTrace) {
     printf("%i COLLECTING GARBAGE\n", queryTraceDepth);
@@ -644,7 +643,7 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
     // dependencies (e.g. if it is reading a file, we need to check that the
     // file has not changed.)
     resultEntry->recompute(this);
-    assert(resultEntry->lastChecked == this->currentRevisionNumber);
+    CHPL_ASSERT(resultEntry->lastChecked == this->currentRevisionNumber);
     return;
   }
 
@@ -670,7 +669,7 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
 
   if (useSaved == false) {
     resultEntry->recompute(this);
-    assert(resultEntry->lastChecked == this->currentRevisionNumber);
+    CHPL_ASSERT(resultEntry->lastChecked == this->currentRevisionNumber);
     if (enableDebugTrace) {
       printf("%i DONE RECOMPUTING IF NEEDED -- RECOMPUTED FOR %s\n",
              queryTraceDepth,
@@ -711,7 +710,7 @@ bool Context::queryCanUseSavedResult(
 
   bool useSaved = false;
 
-  assert(resultEntry != nullptr);
+  CHPL_ASSERT(resultEntry != nullptr);
 
   if (resultEntry->lastChanged == -1) {
     // If it is a new entry, we can't reuse it
@@ -726,7 +725,7 @@ bool Context::queryCanUseSavedResult(
     useSaved = true;
     for (const QueryMapResultBase* dependency : resultEntry->dependencies) {
       recomputeIfNeeded(dependency);
-      assert(dependency->lastChecked == this->currentRevisionNumber);
+      CHPL_ASSERT(dependency->lastChecked == this->currentRevisionNumber);
       if (dependency->lastChanged > resultEntry->lastChanged) {
         useSaved = false;
         break;
@@ -770,13 +769,13 @@ void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
   // We haven't pushed the query beginning yet; on already popped it.
   // So, the parent query is at queryDeps.back().
   if (queryStack.size() > 0) {
-    assert(queryStack.back() != resultEntry); // should be parent query
+    CHPL_ASSERT(queryStack.back() != resultEntry); // should be parent query
     queryStack.back()->dependencies.push_back(resultEntry);
   }
 }
 void Context::endQueryHandleDependency(const QueryMapResultBase* resultEntry) {
   // Remove the current query from the stack
-  assert(queryStack.back() == resultEntry);
+  CHPL_ASSERT(queryStack.back() == resultEntry);
   queryStack.pop_back();
 
   // We've just the query represented by 'resultEntry'. If that query

@@ -70,7 +70,7 @@ class ComplexType final : public PrimitiveType {
       case 128:
         return "complex(128)";
       default:
-        assert(false && "complex bit width case not handled");
+        CHPL_ASSERT(false && "complex bit width case not handled");
         return "complex(<unknown>)";
     }
   }

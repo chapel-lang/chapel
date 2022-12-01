@@ -52,7 +52,7 @@ class While final : public Loop {
     : Loop(asttags::While, std::move(children), blockStyle,
            loopBodyChildNum),
       conditionChildNum_(conditionChildNum) {
-    assert(condition());
+    CHPL_ASSERT(condition());
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

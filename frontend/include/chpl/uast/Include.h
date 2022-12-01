@@ -55,7 +55,7 @@ class Include final : public AstNode {
       visibility_(visibility),
       isPrototype_(isPrototype),
       name_(name) {
-    assert(!name_.isEmpty());
+    CHPL_ASSERT(!name_.isEmpty());
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

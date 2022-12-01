@@ -47,7 +47,7 @@ class Identifier final : public AstNode {
   Identifier(UniqueString name)
     : AstNode(asttags::Identifier), name_(name) {
 
-    assert(!name.isEmpty());
+    CHPL_ASSERT(!name.isEmpty());
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

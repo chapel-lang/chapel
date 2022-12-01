@@ -48,6 +48,8 @@
 #include "chpl/framework/Context.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/util/chplenv.h"
+#include "chpl/framework/compiler-configuration.h"
+#include "chpl/util/assertions.h"
 
 #include <inttypes.h>
 #include <string>
@@ -1780,6 +1782,7 @@ static void validateSettings() {
   checkRuntimeBuilt();
 }
 
+
 int main(int argc, char* argv[]) {
   PhaseTracker tracker;
 
@@ -1849,6 +1852,11 @@ int main(int argc, char* argv[]) {
     }
 
     initCompilerGlobals(); // must follow argument parsing
+
+    // set whether dyno assertions should fire based on developer flag
+    chpl::setAssertions(developer);
+    // set whether dyno assertions are fatal based on ignore_errors flag
+    chpl::setAssertionsFatal(!ignore_errors);
 
     setupModulePaths();
 

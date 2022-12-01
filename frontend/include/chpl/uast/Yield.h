@@ -45,7 +45,7 @@ class Yield final : public AstNode {
  private:
   Yield(AstList children)
     : AstNode(asttags::Yield, std::move(children)) {
-    assert(children_.size() == 1);
+    CHPL_ASSERT(children_.size() == 1);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -73,7 +73,7 @@ class Yield final : public AstNode {
   */
   const AstNode* value() const {
     auto ret = child(valueChildNum_);
-    assert(ret);
+    CHPL_ASSERT(ret);
     return ret;
   }
 

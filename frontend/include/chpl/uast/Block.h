@@ -38,8 +38,8 @@ class Block final : public SimpleBlockLike {
                       BlockStyle::EXPLICIT,
                       bodyChildNum,
                       numBodyStmts) {
-    assert(blockStyle_ == BlockStyle::EXPLICIT);
-    assert(bodyChildNum_ >= 0);
+    CHPL_ASSERT(blockStyle_ == BlockStyle::EXPLICIT);
+    CHPL_ASSERT(bodyChildNum_ >= 0);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

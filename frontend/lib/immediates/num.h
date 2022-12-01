@@ -24,7 +24,6 @@
 #include "chpl/framework/Context.h"
 #include "chpl/framework/UniqueString.h"
 
-#include <cassert>
 #include <cstdlib>
 #include <cstring>
 #include <sstream>
@@ -206,29 +205,29 @@ using Immediate = chpl::types::Immediate;
 
 inline uint64_t
 Immediate::bool_value( void) const {
-  assert(const_kind == NUM_KIND_BOOL);
+  CHPL_ASSERT(const_kind == NUM_KIND_BOOL);
   return v_bool;
 }
 
 inline int64_t
 Immediate::int_value( void) const {
   int64_t val = 0;
-  assert(const_kind == NUM_KIND_INT);
+  CHPL_ASSERT(const_kind == NUM_KIND_INT);
   switch (num_index) {
   case INT_SIZE_8 : val = v_int8;  break;
   case INT_SIZE_16: val = v_int16; break;
   case INT_SIZE_32: val = v_int32; break;
   case INT_SIZE_64: val = v_int64; break;
   default:
-    assert(false && "unknown int size");
+    CHPL_ASSERT(false && "unknown int size");
   }
   return val;
 }
 
 inline const char*
 Immediate::string_value( void) const {
-  assert(const_kind == CONST_KIND_STRING);
-  assert(string_kind == STRING_KIND_STRING ||
+  CHPL_ASSERT(const_kind == CONST_KIND_STRING);
+  CHPL_ASSERT(string_kind == STRING_KIND_STRING ||
          string_kind == STRING_KIND_BYTES ||
          string_kind == STRING_KIND_C_STRING);
 
@@ -238,12 +237,12 @@ Immediate::string_value( void) const {
 inline double
 Immediate::real_value( void) const {
   double val = 0.0;
-  assert(const_kind == NUM_KIND_REAL || const_kind == NUM_KIND_IMAG);
+  CHPL_ASSERT(const_kind == NUM_KIND_REAL || const_kind == NUM_KIND_IMAG);
   switch (num_index) {
   case FLOAT_SIZE_32: val = v_float32; break;
   case FLOAT_SIZE_64: val = v_float64; break;
   default:
-    assert(false && "unknown real size");
+    CHPL_ASSERT(false && "unknown real size");
   }
   return val;
 }
@@ -251,7 +250,7 @@ Immediate::real_value( void) const {
 
 inline int64_t
 Immediate::commid_value( void) const {
-  assert(const_kind == NUM_KIND_COMMID && num_index == INT_SIZE_64);
+  CHPL_ASSERT(const_kind == NUM_KIND_COMMID && num_index == INT_SIZE_64);
   return v_int64;
 }
 
@@ -259,14 +258,14 @@ Immediate::commid_value( void) const {
 inline uint64_t
 Immediate::uint_value( void) const {
   uint64_t val = 0;
-  assert(const_kind == NUM_KIND_UINT);
+  CHPL_ASSERT(const_kind == NUM_KIND_UINT);
   switch (num_index) {
   case INT_SIZE_8 : val = v_uint8;  break;
   case INT_SIZE_16: val = v_uint16; break;
   case INT_SIZE_32: val = v_uint32; break;
   case INT_SIZE_64: val = v_uint64; break;
   default:
-    assert(false && "unknown uint size");
+    CHPL_ASSERT(false && "unknown uint size");
   }
   return val;
 }
@@ -279,7 +278,7 @@ Immediate::to_int( void) const {
     case NUM_KIND_UINT: val = uint_value(); break;
     case NUM_KIND_BOOL: val = bool_value(); break;
   default:
-    assert(false && "kind not handled in to_int");
+    CHPL_ASSERT(false && "kind not handled in to_int");
   }
   return val;
 }
@@ -293,7 +292,7 @@ Immediate::to_uint( void) const {
     case NUM_KIND_UINT: val = uint_value(); break;
     case NUM_KIND_BOOL: val = bool_value(); break;
   default:
-    assert(false && "kind not handled in to_uint");
+    CHPL_ASSERT(false && "kind not handled in to_uint");
   }
   return val;
 }
@@ -311,7 +310,7 @@ inline std::string Immediate::to_string(void) const {
     } else if (num_index == FLOAT_SIZE_64) {
       ss << v_float64;
     } else {
-      assert(false && "Unexpected real size");
+      CHPL_ASSERT(false && "Unexpected real size");
     }
     break;
   }
@@ -323,12 +322,12 @@ inline std::string Immediate::to_string(void) const {
     } else if (num_index == COMPLEX_SIZE_128) {
       ss << v_complex128.r << "+ " << v_complex128.i;
     } else {
-      assert(false && "Unexpected complex size");
+      CHPL_ASSERT(false && "Unexpected complex size");
     }
     ss << "i";
     break;
   }
-  default: assert(false && "Unexpected type to convert to string"); break;
+  default: CHPL_ASSERT(false && "Unexpected type to convert to string"); break;
   } // Closes switch statement
   return ss.str();
 }

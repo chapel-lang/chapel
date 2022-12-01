@@ -94,7 +94,7 @@ class Cobegin final : public AstNode {
   const WithClause* withClause() const {
     if (withClauseChildNum_ < 0) return nullptr;
     auto ret = child(withClauseChildNum_);
-    assert(ret->isWithClause());
+    CHPL_ASSERT(ret->isWithClause());
     return (const WithClause*)ret;
   }
 
@@ -118,7 +118,7 @@ class Cobegin final : public AstNode {
     Return the i'th task body in this.
   */
   const AstNode* taskBody(int i) const {
-    assert(i >= 0 && i < numTaskBodies_);
+    CHPL_ASSERT(i >= 0 && i < numTaskBodies_);
     const AstNode* ast = this->child(i + bodyChildNum_);
     return ast;
   }

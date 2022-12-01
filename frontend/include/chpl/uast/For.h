@@ -59,7 +59,7 @@ class For final : public IndexableLoop {
                     isExpressionLevel),
       isParam_(isParam) {
 
-    assert(withClause() == nullptr);
+    CHPL_ASSERT(withClause() == nullptr);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

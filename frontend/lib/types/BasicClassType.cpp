@@ -45,7 +45,7 @@ BasicClassType::get(Context* context, ID id, UniqueString name,
                     SubstitutionsMap subs) {
   // getObjectType should be used to construct object
   // everything else should have a parent type.
-  assert(parentType != nullptr);
+  CHPL_ASSERT(parentType != nullptr);
   return getBasicClassType(context, id, name,
                            parentType, instantiatedFrom,
                            std::move(subs)).get();
@@ -66,7 +66,7 @@ bool BasicClassType::isSubtypeOf(const BasicClassType* parentType,
                                  bool& converts,
                                  bool& instantiates) const {
 
-  assert(parentType != nullptr); // code below assumes this
+  CHPL_ASSERT(parentType != nullptr); // code below assumes this
 
   for (const BasicClassType* t = this;
        t != nullptr; // note: ObjectType has no parent

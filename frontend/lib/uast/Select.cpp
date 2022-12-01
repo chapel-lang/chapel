@@ -28,7 +28,7 @@ namespace uast {
 owned<Select> Select::build(Builder* builder, Location loc,
                             owned<AstNode> expr,
                             AstList whenStmts) {
-  assert(expr.get() != nullptr);
+  CHPL_ASSERT(expr.get() != nullptr);
 
   AstList lst;
   const int numWhenStmts = whenStmts.size();
@@ -36,7 +36,7 @@ owned<Select> Select::build(Builder* builder, Location loc,
   lst.push_back(std::move(expr));
 
   for (auto& ast : whenStmts) {
-    assert(ast->isWhen());
+    CHPL_ASSERT(ast->isWhen());
     lst.push_back(std::move(ast));
   }
 

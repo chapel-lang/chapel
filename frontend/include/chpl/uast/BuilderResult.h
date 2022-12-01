@@ -113,7 +113,7 @@ class BuilderResult final {
 
   /** return the i'th top-level expression */
   const AstNode* topLevelExpression(int i) const {
-    assert(0 <= i && (size_t) i < topLevelExpressions_.size());
+    CHPL_ASSERT(0 <= i && (size_t) i < topLevelExpressions_.size());
     return topLevelExpressions_[i].get();
   }
 

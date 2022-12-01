@@ -22,7 +22,7 @@
 
 #include "chpl/framework/UniqueString.h"
 #include "chpl/util/hash.h"
-
+#include "chpl/util/assertions.h"
 
 namespace chpl {
 /**
@@ -37,7 +37,7 @@ class CommentID {
  public:
   CommentID() = default;
   CommentID(int index) : index_(index) {
-    assert(index >= 0);
+    CHPL_ASSERT(index >= 0);
   }
 
   /** Return the index of the comment id */

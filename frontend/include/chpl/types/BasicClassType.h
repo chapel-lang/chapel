@@ -45,7 +45,7 @@ class BasicClassType final : public CompositeType {
   {
     // all classes should have a parent type, except for object
     // which doesn't.
-    assert(parentType_ || name == USTR("object"));
+    CHPL_ASSERT(parentType_ || name == USTR("object"));
   }
 
   bool contentsMatchInner(const Type* other) const override {
@@ -106,7 +106,7 @@ class BasicClassType final : public CompositeType {
    */
   const BasicClassType* instantiatedFrom() const {
     const CompositeType* ret = instantiatedFromCompositeType();
-    assert(ret == nullptr || ret->tag() == typetags::BasicClassType);
+    CHPL_ASSERT(ret == nullptr || ret->tag() == typetags::BasicClassType);
     return (const BasicClassType*) ret;
   }
 

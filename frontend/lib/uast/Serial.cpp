@@ -52,7 +52,7 @@ owned<Serial> Serial::build(Builder* builder,
                           owned<AstNode> condition,
                           BlockStyle blockStyle,
                           AstList stmts) {
-  assert(condition.get() != nullptr);
+  CHPL_ASSERT(condition.get() != nullptr);
 
   AstList lst;
   int8_t condChildNum = -1;

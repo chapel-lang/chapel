@@ -50,7 +50,7 @@ class EnumElement final : public NamedDecl {
                 /*linkageNameChildNum*/ -1,
                 name) {
 
-    assert(children_.size() <= 2);
+    CHPL_ASSERT(children_.size() <= 2);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -91,7 +91,7 @@ class EnumElement final : public NamedDecl {
     // in this case children_.size() is > 0, but initExpression should still be nullptr
     if (initExpressionChildNum() >= (int) children_.size()) {
       // either there are no children, or there's only an attribute
-      assert(children_.size() == 0 || this->child(0)->isAttributes());
+      CHPL_ASSERT(children_.size() == 0 || this->child(0)->isAttributes());
       return nullptr;
     }
 
