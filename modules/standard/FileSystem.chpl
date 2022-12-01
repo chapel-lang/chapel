@@ -272,9 +272,9 @@ proc copy(src: string, dest: string, metadata: bool = false) throws {
     var statStruct: struct_stat;
     const statRet = stat(src.c_str(), c_ptrTo(statStruct));
 
-    if statRet != 0 then try ioerror(statRet, "in copy's stat");;
+    if statRet != 0 then try ioerror(statRet:errorCode, "in copy's stat");;
     const chmodRet = chmod(dest.c_str(), statStruct.st_mode);
-    if chmodRet != 0 then throw ioerror(chmodRet, "in copy's chmod");;
+    if chmodRet != 0 then try ioerror(chmodRet:errorCode, "in copy's chmod");;
   }
 
   try {
