@@ -1111,11 +1111,12 @@ create a general generic implementation and also a special
 implementation for specific concrete types.
 
 The first mechanism applies to functions. According to the function
-resolution rules described in :ref:`Function_Resolution`,
-functions accepting concrete arguments are selected in preference to
-those with a totally generic argument. So, creating a second version of
-a generic function that declares a concrete type will cause the concrete
-function to be used where possible:
+resolution rules described in :ref:`Function_Resolution`, if there is no
+implicit conversion involved, functions accepting concrete arguments are
+selected in preference to those with a totally generic argument. So,
+creating a second version of a generic function that declares a concrete
+type will cause the concrete function to be used when the call site
+matches its type:
 
    *Example (specializeGenericFunction.chpl)*.
 
@@ -1133,7 +1134,9 @@ function to be used where possible:
       var myReal:real;
       foo(myReal); // outputs "in generic foo(x)"
       var myInt:int;
-      foo(myInt); // outputs "in specific foo(x:int)"
+      foo(myInt);  // outputs "in specific foo(x:int)"
+      var myInt8: int(8);
+      foo(myInt8); // outputs "in generic foo(x)"
 
    
 
@@ -1141,6 +1144,7 @@ function to be used where possible:
 
       in generic foo(x)
       in specific foo(x:int)
+      in generic foo(x)
 
 This program will run the generic foo function if the argument is a
 real, but it runs the specific version for int if the argument is an
