@@ -24,6 +24,7 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/uast/VisibilityClause.h"
 #include "chpl/uast/AstTag.h"
+/* #include "chpl/uast/New.h" */
 #include "chpl/types/all-types.h"
 #include <sstream>
 #include <cstring>
@@ -736,6 +737,27 @@ void ErrorPostParseWarn::write(ErrorWriterBase& wr) const {
   CHPL_ASSERT(errorMessage.back() == '.' &&
          "expected a period at the end of ErrorPostParseWarn message");
   wr.heading(kind_, type_, id, errorMessage);
+  wr.code(id);
+}
+
+void ErrorMultipleClassKinds::write(ErrorWriterBase& wr) const {
+  auto id = std::get<const ID>(info);
+  auto outerMgt = std::get<1>(info);
+  auto innerMgt = std::get<2>(info);
+  wr.heading(kind_, type_, id,
+             "type expression uses multiple class kinds: ", outerMgt, " ",
+             innerMgt, ".");
+  wr.message("Multiple class kinds used in type expression here:");
+  wr.code(id);
+  wr.message("Only a single management kind can be used in a type expression.");
+}
+
+void ErrorCantApplyPrivate::write(ErrorWriterBase& wr) const {
+  auto id = std::get<const ID>(info);
+  auto appliedToWhat = std::get<std::string>(info);
+  wr.heading(kind_, type_, id, "can't apply private to ", appliedToWhat,
+             " yet.");
+  wr.message("Disallowed private applied here:");
   wr.code(id);
 }
 
