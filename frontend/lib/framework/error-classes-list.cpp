@@ -720,6 +720,25 @@ void ErrorBisonSyntaxError::write(ErrorWriterBase& wr) const {
   wr.code(loc);
 }
 
+/* post-parse-checks errors */
+void ErrorPostParseErr::write(ErrorWriterBase& wr) const {
+  auto id = std::get<const ID>(info);
+  auto errorMessage = std::get<std::string>(info);
+  CHPL_ASSERT(errorMessage.back() == '.' &&
+         "expected a period at the end of ErrorPostParseErr message");
+  wr.heading(kind_, type_, id, errorMessage);
+  wr.code(id);
+}
+
+void ErrorPostParseWarn::write(ErrorWriterBase& wr) const {
+  auto id = std::get<const ID>(info);
+  auto errorMessage = std::get<std::string>(info);
+  CHPL_ASSERT(errorMessage.back() == '.' &&
+         "expected a period at the end of ErrorPostParseWarn message");
+  wr.heading(kind_, type_, id, errorMessage);
+  wr.code(id);
+}
+
 /* lexer errors */
 
 void ErrorStringLiteralEOF::write(ErrorWriterBase& wr) const {

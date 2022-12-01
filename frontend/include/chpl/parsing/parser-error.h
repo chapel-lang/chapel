@@ -77,11 +77,14 @@
  * Helper macros to report errors in post-parse-checks to the Builder
  */
 
-#define CHPL_POSTPARSE_REPORT(BUILDER__, NAME__, EINFO__...) \
+#define CHPL_POSTPARSE_REPORT(BUILDER__, NAME__, NODE__, EINFO__...) \
   BUILDER__.addError(                                        \
-      CHPL_GET_ERROR(BUILDER__.context(), NAME__, Location(), EINFO__))
+      CHPL_GET_ERROR(BUILDER__.context(), NAME__, NODE__->id(), EINFO__))
 
-#define CHPL_POSTPARSE_REPORT_SIMPLE(BUILDER__, MSG__) \
-  CHPL_POSTPARSE_REPORT(BUILDER__, ParseErr, MSG__)
+#define CHPL_POSTPARSE_ERR_SIMPLE(BUILDER__, NODE__, MSG__) \
+  CHPL_POSTPARSE_REPORT(BUILDER__, PostParseErr, NODE__, MSG__)
+
+#define CHPL_POSTPARSE_WARN_SIMPLE(BUILDER__, NODE__, MSG__) \
+  CHPL_POSTPARSE_REPORT(BUILDER__, PostParseWarn, NODE__, MSG__)
 
 #endif
