@@ -1,0 +1,2 @@
+We don't currently do full codegen (or GPU transformations) when using
+AMD GPUs, so for the time being, this test should not be run.
