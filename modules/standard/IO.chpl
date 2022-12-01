@@ -8768,17 +8768,6 @@ proc _channel.extractMatch(m:regexMatch, ref arg) throws {
   }
 }
 
-// documented in throws version
-pragma "no doc"
-proc _channel.extractMatch(m:regexMatch, ref arg, ref error:errorCode) {
-  compilerWarning("`channel.extractMatch(m:regexMatch, ref arg, ref error:errorCode)` is deprecated");
-  on this._home {
-    try! this.lock();
-    _extractMatch(m, arg, error);
-    this.unlock();
-  }
-}
-
 // Assumes that the channel has been marked where the search began
 // (or at least before the capture groups if discarding)
 pragma "no doc"
@@ -8792,11 +8781,11 @@ proc _channel._ch_handle_captures(matches:_ddata(qio_regex_string_piece_t),
   }
 }
 
-// documented in the error= captures version
+// Private implementation helper for _channel.search(re:regex(?))
+// Todo: inline it into its single callsite.
 pragma "no doc"
-proc _channel.search(re:regex(?), ref error:errorCode):regexMatch
+proc _channel._searchHelp(re:regex(?), ref error:errorCode):regexMatch
 {
-  compilerWarning("`channel.search(re:regex(?), ref error:errorCode)` is deprecated");
   var m:regexMatch;
   on this._home {
     try! this.lock();
@@ -8838,7 +8827,7 @@ pragma "no doc"
 proc _channel.search(re:regex(?)):regexMatch throws
 {
   var e:errorCode = 0;
-  var ret = this.search(re, error=e);
+  var ret = this._searchHelp(re, error=e);
   if e then try this._ch_ioerror(e, "in channel.search");
   return ret;
 }
@@ -8898,123 +8887,6 @@ proc _channel.search(re:regex(?), ref captures ...?k): regexMatch throws
 
   if err then try this._ch_ioerror(err, "in channel.search");
   return m;
-}
-
-// documented in the capture group version
-pragma "no doc"
-proc _channel.match(re:regex(?), ref error:errorCode):regexMatch
-{
-  compilerWarning("`channel.match(re:regex(?), ref error:errorCode)` is deprecated");
-  var m:regexMatch;
-  on this._home {
-    try! this.lock();
-    var nm = 1;
-    var matches = _ddata_allocate(qio_regex_string_piece_t, nm);
-    error = qio_channel_mark(false, _channel_internal);
-    if ! error {
-      error = qio_regex_channel_match(re._regex,
-                                       false, _channel_internal, max(int(64)),
-                                       QIO_REGEX_ANCHOR_START,
-                                       /* can_discard */ true,
-                                       /* keep_unmatched */ true,
-                                       /* keep_whole_pattern */ true,
-                                       matches, nm);
-    }
-    // Don't report "didn't match" errors
-    if error == EFORMAT || error == EEOF then error = 0;
-    if !error {
-      m = _to_regexMatch(matches[0]);
-      if m.matched {
-        // Advance to the match.
-        qio_channel_revert_unlocked(_channel_internal);
-        var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.byteOffset:int;
-        error = qio_channel_advance(false, _channel_internal, target - cur);
-      } else {
-        // If we didn't match... leave the channel position at start
-        qio_channel_revert_unlocked(_channel_internal);
-      }
-    }
-    _ddata_free(matches, nm);
-    this.unlock();
-  }
-  return m;
-}
-
-pragma "no doc"
-proc _channel.match(re:regex(?)):regexMatch throws
-{
-  compilerWarning("`channel.match(re:regex(?))` is deprecated");
-  var e:errorCode = 0;
-  var ret = this.match(re, error=e);
-  if e then try this._ch_ioerror(e, "in channel.match");
-  return ret;
-}
-
-// documented in the throws version
-pragma "no doc"
-proc _channel.match(re:regex(?), ref captures ...?k, ref error:errorCode):regexMatch
-{
-  compilerWarning("`channel.match(re:regex(?), ref captures ...?k, ref error:errorCode)` is deprecated");
-  var m:regexMatch;
-  on this._home {
-    try! this.lock();
-    var nm = 1 + captures.size;
-    var matches = _ddata_allocate(qio_regex_string_piece_t, nm);
-    error = qio_channel_mark(false, _channel_internal);
-    if !error {
-      error = qio_regex_channel_match(re._regex,
-                               false, _channel_internal, max(int(64)),
-                               QIO_REGEX_ANCHOR_START,
-                               /* can_discard */ true,
-                               /* keep_unmatched */ true,
-                               /* keep_whole_pattern */ true,
-                               matches, nm);
-    }
-    // Don't report "didn't match" errors
-    if error == EFORMAT || error == EEOF then error = 0;
-    if !error {
-      m = _to_regexMatch(matches[0]);
-      if m.matched {
-        // Extract the capture groups.
-        _ch_handle_captures(matches, nm, captures, error);
-
-        // Advance to the match.
-        qio_channel_revert_unlocked(_channel_internal);
-        var cur = qio_channel_offset_unlocked(_channel_internal);
-        var target = m.byteOffset:int;
-        error = qio_channel_advance(false, _channel_internal, target - cur);
-      } else {
-        // If we didn't match... leave the channel position at start
-        qio_channel_revert_unlocked(_channel_internal);
-      }
-    }
-    _ddata_free(matches, nm);
-    this.unlock();
-  }
-  return m;
-}
-
-/* Match, starting at the current position in the channel,
-   against a regex, possibly pulling out capture groups.
-   If there was a match, leaves the channel position at
-   the match. If there was no match, leaves the channel
-   position where it was at the start of this call.
-
-   :arg re: a :record:`Regex.regex` record representing a compiled
-             regular expression.
-   :arg captures: an optional variable number of arguments in which to
-                  store the regions of the file matching the capture groups
-                  in the regular expression.
-   :returns: the region of the channel that matched
- */
-proc _channel.match(re:regex(?), ref captures ...?k):regexMatch throws
-{
-  compilerWarning("`channel.match(re:regex(?), ref captures ...?k)` is deprecated");
-  var e:errorCode = 0;
-  var ret = this.match(re, (...captures), error=e);
-  if e then try this._ch_ioerror(e, "in channel.match");
-  return ret;
 }
 
 /* Enumerates matches in the string as well as capture groups.

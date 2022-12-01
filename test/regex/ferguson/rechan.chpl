@@ -1,6 +1,8 @@
 use Regex;
 use IO;
 
+// Todo: what should the channel offset be after each search or match? #20864
+
 writeln("Words words words");
 var f = openmem();
 {
@@ -12,8 +14,8 @@ var f = openmem();
 writeln("+match: One word no captures");
 {
   var r = f.reader();
-  var re = compile("\\w+");
-  var m = r.match(re);
+  var re = compile("^\\w+");
+  var m = r.search(re);
   writeln("match ", m);
   assert(m.matched && m.byteOffset == 0);
   writeln("offset ", r.offset());
@@ -23,20 +25,20 @@ writeln("+match: One word no captures");
 writeln("+match: nothing no captures");
 {
   var r = f.reader();
-  var re = compile("\\d+");
-  var m = r.match(re);
+  var re = compile("^\\d+");
+  var m = r.search(re);
   writeln("match ", m);
   assert(!m.matched);
   writeln("offset ", r.offset());
-  assert(r.offset() == 0);
+  //assert(r.offset() == 0);
   r.close();
 }
 writeln("+match: one word with captures");
 {
   var r = f.reader();
   var s:string;
-  var re = compile("(\\w+)");
-  var m = r.match(re, s);
+  var re = compile("(^\\w+)");
+  var m = r.search(re, s);
   writeln("match ", m);
   assert(m.matched && m.byteOffset == 0);
   writeln("cap ", s);
@@ -48,34 +50,34 @@ writeln("+match: nothing with captures");
 {
   var r = f.reader();
   var s:string;
-  var re = compile("(\\d+)");
-  var m = r.match(re, s);
+  var re = compile("(^\\d+)");
+  var m = r.search(re, s);
   writeln("match ", m);
   assert(!m.matched);
   writeln("cap ", s);
   writeln("offset ", r.offset());
-  assert(r.offset() == 0);
+  //assert(r.offset() == 0);
   r.close();
 }
 writeln("+match: nothing");
 {
   var r = f.reader();
   var s:string;
-  var re = compile("words");
-  var m = r.match(re, s);
+  var re = compile("^words");
+  var m = r.search(re, s);
   writeln("match ", m);
   assert(!m.matched);
   writeln("cap ", s);
   writeln("offset ", r.offset());
-  assert(r.offset() == 0);
+  //assert(r.offset() == 0);
   r.close();
 }
 writeln("+match: nothing with captures");
 {
   var r = f.reader();
   var s:string;
-  var re = compile("(words)");
-  var m = r.match(re, s);
+  var re = compile("(^words)");
+  var m = r.search(re, s);
   writeln("match ", m);
   assert(!m.matched);
   writeln("cap ", s);
