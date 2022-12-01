@@ -4717,7 +4717,6 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
                                  nBytes: int,
                                  nCodepoints: int): errorCode {
   import BytesStringCommon;
-  import ByteBufferHelpers;
 
   BytesStringCommon.resizeBuffer(s, nBytes);
 
@@ -4730,7 +4729,6 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
   var err = qio_channel_read_amt(false, _channel_internal, s.buff, len);
   if !err {
     s.buffLen = nBytes;
-    s.buff[len] = 0:uint(8);
     if s.type == string {
       s.cachedNumCodepoints = nCodepoints;
       s.hasEscapes = false;
