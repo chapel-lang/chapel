@@ -2308,7 +2308,6 @@ isInitialTypedSignatureApplicable(Context* context,
   }
 
   // Next, check that the types are compatible
-  int formalIdx = 0;
   int numVarArgActuals = 0;
   QualifiedType varArgType;
   for (const FormalActual& entry : faMap.byFormals()) {
@@ -2341,8 +2340,6 @@ isInitialTypedSignatureApplicable(Context* context,
         return false;
       }
     }
-
-    formalIdx++;
   }
 
   if (!varArgType.isUnknown()) {
