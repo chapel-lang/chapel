@@ -1782,15 +1782,6 @@ static void validateSettings() {
   checkRuntimeBuilt();
 }
 
-static void setupDynoCompilerFlags() {
-  chpl::CompilerFlags compFlags = chpl::CompilerFlags();
-  compFlags.set(chpl::CompilerFlags::DEVELOPER, developer);
-  // TODO: Setting this flag causes a bunch of warnings to be printed
-  // but they are coming from our internal modules, so we should squelch them
-  // Seems to be coming from frontend/lib/uast/post-parse-checks.cpp:818
-  // compFlags.set(chpl::CompilerFlags::WARN_UNSTABLE, fWarnUnstable);
-  chpl::setCompilerFlags(gContext, compFlags);
-}
 
 int main(int argc, char* argv[]) {
   PhaseTracker tracker;
@@ -1861,8 +1852,6 @@ int main(int argc, char* argv[]) {
     }
 
     initCompilerGlobals(); // must follow argument parsing
-
-    setupDynoCompilerFlags(); // setup the compiler flags in the context
 
     // set whether dyno assertions should fire based on developer flag
     chpl::setAssertions(developer);
