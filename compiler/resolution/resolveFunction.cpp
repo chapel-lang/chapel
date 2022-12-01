@@ -487,7 +487,7 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
       fn->retType = retType;
     }
 
-    if (fn->isIterator() == true && fn->iteratorInfo == NULL &&
+    if (fn->isIterator() && fn->iteratorInfo == NULL &&
         ! retType->symbol->hasFlag(FLAG_GENERIC)) {
       // Note: protoIteratorClass changes fn->retType to the iterator record.
       // The original return type is stored here in retType.
@@ -2001,7 +2001,8 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
   if (fn->retTag != RET_TYPE && retType->symbol->hasFlag(FLAG_GENERIC))
     // The compiler should have reported an error earlier. If it has not,
     // give user-friendly error here - avoid potential confusion at callsite.
-    USR_FATAL(fn, "generic %s type '%s'",
+    USR_FATAL(fn, "could not determine the concrete type"
+              " for the generic %s type '%s'",
               isIterator ? "yielded" : "return", toString(retType));
 
   if (isIterator == false) {

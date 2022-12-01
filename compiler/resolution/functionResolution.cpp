@@ -9593,17 +9593,7 @@ void ensureEnumTypeResolved(EnumType* etype) {
   INT_ASSERT(etype->integerType != NULL);
 }
 
-static Type* resolveTypeAlias(SymExpr* se, SymExpr* userSE);
-static SymExpr* getUserSym(SymExpr* se, SymExpr* userSE) {
-  return se->symbol()->hasFlag(FLAG_TEMP) ? userSE : se;
-}
-
-// Recursively resolve typedefs
 Type* resolveTypeAlias(SymExpr* se) {
-  return resolveTypeAlias(se, getUserSym(se, nullptr));
-}
-
-Type* resolveTypeAlias(SymExpr* se, SymExpr* userSE) {
   Type* retval = NULL;
 
   if (se != NULL) {
