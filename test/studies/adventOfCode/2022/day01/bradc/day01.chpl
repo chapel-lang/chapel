@@ -1,22 +1,22 @@
 use IO;
 
 var line: string;
-var totCalories, maxCalories = 0;
+var currentCalories, maxCalories = 0;
 
 do {
   const more = readLine(line),
         foundItem = (line.size > 1);
 
   if foundItem then
-    totCalories += line: int;
+    currentCalories += (line: int);
     
-  // Are we at the end of an elf's item list?  If so, tabulate and set
-  // up for the next elf.
+  // If we are at the end of an elf's item list, update our maximum
+  // value if appropriate and reset our tally for the next elf.
   if !more || !foundItem {
-    if totCalories > maxCalories {
-      maxCalories = totCalories;
+    if currentCalories > maxCalories {
+      maxCalories = currentCalories;
     }
-    totCalories = 0;
+    currentCalories = 0;
   }
 } while more;
 

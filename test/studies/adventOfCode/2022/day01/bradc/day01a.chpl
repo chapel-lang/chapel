@@ -1,7 +1,7 @@
 use IO;
 
 var line: string;
-var totCalories = 0;
+var currentCalorites = 0;
 var maxCalories: [1..3] int = 0;
 
 do {
@@ -9,17 +9,20 @@ do {
         foundItem = (line.size > 1);
 
   if foundItem then
-    totCalories += line: int;
+    currentCalorites += line: int;
     
   // Are we at the end of an elf's item list?  If so, tabulate and set
   // up for the next elf.
   if !more || !foundItem {
 
+    // The following is a somewhat sloppy / quickly written way to
+    // maintain a sorted list of three elements:
+    
     // Check whether the current total is greater than any/all of our
     // previous three maxes
     var insertIdx = 0;
     for i in 1..3 {
-      if totCalories > maxCalories[i] {
+      if currentCalorites > maxCalories[i] {
         insertIdx = i;
       }
     }
@@ -29,10 +32,10 @@ do {
       for i in 1..<insertIdx {
         maxCalories[i] = maxCalories[i+1];
       }
-      maxCalories[insertIdx] = totCalories;
+      maxCalories[insertIdx] = currentCalorites;
     }
 
-    totCalories = 0;
+    currentCalorites = 0;
   }
 } while more;
 
