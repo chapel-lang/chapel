@@ -1456,12 +1456,12 @@ static void setChapelEnvs() {
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
         gGpuSdkPath = envMap["CHPL_CUDA_PATH"];
-	break;
+        break;
       case GpuCodegenType::GPU_CG_AMD_HIP:
         gGpuSdkPath = envMap["CHPL_ROCM_PATH"];
-	break;
+        break;
       default:
-	INT_ASSERT(0 && "Should be unreachable");
+        INT_ASSERT(0 && "Should be unreachable");
     }
   }
 
