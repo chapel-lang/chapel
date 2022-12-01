@@ -16,7 +16,7 @@
 # limitations under the License.
 add_executable(chpldoc "chpldoc.cpp")
 set_property(TARGET chpldoc PROPERTY CXX_STANDARD 14)
-target_sources(chpldoc PRIVATE arg.h arg.cpp arg-helpers.h arg-helpers.cpp version_num.h)
+target_sources(chpldoc PRIVATE arg.h arg.cpp arg-helpers.h arg-helpers.cpp version_num.h configured_prefix.h)
 target_link_libraries(chpldoc libdyno)
 target_include_directories(chpldoc PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
