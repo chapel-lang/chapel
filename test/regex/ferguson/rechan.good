@@ -1,25 +1,10 @@
-regexp-rechan.chpl:16: warning: `channel.match(re:regex(?))` is deprecated
-$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method 'match':
-$CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: `channel.match(re:regex(?), ref error:errorCode)` is deprecated
-  regexp-rechan.chpl:16: called as (fileReader(dynamic,true)).match(re: regex(string))
-regexp-rechan.chpl:27: warning: `channel.match(re:regex(?))` is deprecated
-regexp-rechan.chpl:39: warning: `channel.match(re:regex(?), ref captures ...?k)` is deprecated
-$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method 'match':
-$CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: `channel.match(re:regex(?), ref captures ...?k, ref error:errorCode)` is deprecated
-  regexp-rechan.chpl:39: called as (fileReader(dynamic,true)).match(re: regex(string), captures(0): string)
-regexp-rechan.chpl:52: warning: `channel.match(re:regex(?), ref captures ...?k)` is deprecated
-regexp-rechan.chpl:65: warning: `channel.match(re:regex(?), ref captures ...?k)` is deprecated
-regexp-rechan.chpl:78: warning: `channel.match(re:regex(?), ref captures ...?k)` is deprecated
-$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method 'search':
-$CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: `channel.search(re:regex(?), ref error:errorCode)` is deprecated
-  regexp-rechan.chpl:93: called as (fileReader(dynamic,true)).search(re: regex(string))
 Words words words
 +match: One word no captures
 match (matched = true, byteOffset = 0, numBytes = 5)
 offset 0
 +match: nothing no captures
 match (matched = false, byteOffset = -1, numBytes = 0)
-offset 0
+offset 1
 +match: one word with captures
 match (matched = true, byteOffset = 0, numBytes = 5)
 cap Words
@@ -27,11 +12,11 @@ offset 0
 +match: nothing with captures
 match (matched = false, byteOffset = -1, numBytes = 0)
 cap 
-offset 0
+offset 1
 +match: nothing
 match (matched = false, byteOffset = -1, numBytes = 0)
 cap 
-offset 0
+offset 11
 +match: nothing with captures
 match (matched = false, byteOffset = -1, numBytes = 0)
 cap 
