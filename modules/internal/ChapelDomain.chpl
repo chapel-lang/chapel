@@ -567,11 +567,6 @@ module ChapelDomain {
   }
 
   pragma "no doc"
-  deprecated "'|' on rectangular domains is deprecated"
-  operator |(a :domain, b: domain) where a.isRectangular() && b.isRectangular()
-    return forall (aa, bb) in zip(a, b) do aa|bb;
-
-  pragma "no doc"
   operator |=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     for e in b do
@@ -606,11 +601,6 @@ module ChapelDomain {
   }
 
   pragma "no doc"
-  deprecated "'&' on rectangular domains is deprecated"
-  operator &(a :domain, b: domain) where a.isRectangular() && b.isRectangular()
-    return forall (aa, bb) in zip(a, b) do aa&bb;
-
-  pragma "no doc"
   operator &=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     var removeSet: domain(a.idxType);
@@ -640,11 +630,6 @@ module ChapelDomain {
 
     return newDom;
   }
-
-  pragma "no doc"
-  deprecated "'^' on rectangular domains is deprecated"
-  operator ^(a :domain, b: domain) where a.isRectangular() && b.isRectangular()
-    return forall (aa, bb) in zip(a, b) do aa^bb;
 
   /*
      We remove elements in the RHS domain from those in the LHS domain only if
