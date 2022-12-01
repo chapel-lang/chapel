@@ -14,23 +14,23 @@ proc runQueries(description, A) {
   }
 }
 
-var rectangularDom = {1..2, 1..2};
-var rectangularArr : [rectangularDom] int;
+// empty space needed to match line numbers in .good
 
-var assocDom : domain(string);
-assocDom += "Hello";
-assocDom += "World";
-var assocArr : [assocDom] int;
 
-var sparseDom : sparse subdomain(rectangularDom);
-var sparseArr : [sparseDom] int;
 
-runQueries("rectangular domain", rectangularDom);
-runQueries("rectangular array", rectangularArr);
-runQueries("associative domain", assocDom);
-runQueries("associative array", assocArr);
-runQueries("sparse domain", sparseDom);
-runQueries("sparse array", sparseArr);
+
+
+
+
+
+
+
+
+
+
+
+
+// end empty space
 
 // isFloat* functions are being deprecatd
 // (in favor of doing isReal(x) || isImag(x) instead)

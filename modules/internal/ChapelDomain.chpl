@@ -284,21 +284,9 @@ module ChapelDomain {
     return _getDomain(dom._value);
   }
 
-  deprecated "isRectangularDom is deprecated - please use isRectangular method on domain"
-  proc isRectangularDom(d: domain) param return d.isRectangular();
-
-  deprecated "isIrregularDom is deprecated - please use isIrregular method on domain"
-  proc isIrregularDom(d: domain) param return d.isIrregular();
-
-  deprecated "isAssociativeDom is deprecated - please use isAssociative method on domain"
-  proc isAssociativeDom(d: domain) param return d.isAssociative();
-
   proc chpl_isAssociativeDomClass(dc: BaseAssociativeDom) param return true;
   pragma "last resort"
   proc chpl_isAssociativeDomClass(dc) param return false;
-
-  deprecated "isSparseDom is deprecated - please use isSparse method on domain"
-  proc isSparseDom(d: domain) param return d.isSparse();
 
   private proc errorIfNotRectangular(dom: domain, param op, param arrays="") {
     if dom.isAssociative() || dom.isSparse() then
