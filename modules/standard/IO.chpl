@@ -5278,7 +5278,7 @@ proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
       numWritten:c_ssize_t;
 
   var byte_ptr = ptr : c_ptr(uint(8));
-  e = try qio_channel_write(false, this._channel_internal, byte_ptr[0], numBytes, numWritten);
+  e = try qio_channel_write(false, this._channel_internal, byte_ptr[0], numBytes:c_ssize_t, numWritten);
 
   if (e != 0) {
     throw createSystemError(e);
