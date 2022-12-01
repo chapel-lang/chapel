@@ -17,6 +17,12 @@
  * limitations under the License.
  */
 
+// We need to define this variable outside of the commented out HAS_GPU_LOCALE
+// section due to the fact that GPUDiagnostics module accesses it (and this
+// module can be used despite what locale model you're using).
+#include <stdbool.h>
+bool chpl_gpu_debug = false;
+
 #ifdef HAS_GPU_LOCALE
 
 #include "chplrt.h"
@@ -27,8 +33,6 @@
 #include "error.h"
 #include "chplcgfns.h"
 #include "chpl-linefile-support.h"
-
-bool chpl_gpu_debug = false;
 
 void chpl_gpu_init(void) {
   chpl_gpu_impl_init();
