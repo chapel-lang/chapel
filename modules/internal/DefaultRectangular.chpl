@@ -1818,7 +1818,7 @@ module DefaultRectangular {
         if f.writing {
           f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
         } else {
-          f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f._readBytes(_ddata_shift(arr.eltType, src, idx), size);
         }
       } catch err {
         // Setting errors in channels has no effect, so just rethrow.
