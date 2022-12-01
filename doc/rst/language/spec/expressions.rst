@@ -617,9 +617,8 @@ corresponds to subtracting the value from zero. For real and imaginary
 types, this corresponds to inverting the sign. For complex types, this
 corresponds to inverting the signs of both the real and imaginary parts.
 
-It is an error to try to negate a value of type ``uint(64)``. Note that
-negating a value of type ``uint(32)`` first converts the type to
-``int(64)`` using an implicit conversion.
+Negating a value of type ``uint`` or ``uint(w)`` for any width will
+result in a compilation error.
 
 .. _Addition_Operators:
 
