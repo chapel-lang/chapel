@@ -1836,12 +1836,6 @@ module ChapelDomain {
       return _value.dsiAdd(idx);
     }
 
-    pragma "last resort" pragma "no doc"
-    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
-    proc ref add(in i) {
-      return add(i);
-    }
-
     pragma "no doc"
     @unstable "bulkAdd() is subject to change in the future."
     proc ref bulkAdd(inds: [] _value.idxType, dataSorted=false,
@@ -1950,12 +1944,6 @@ module ChapelDomain {
       return _value.dsiRemove(idx);
     }
 
-    pragma "last resort" pragma "no doc"
-    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
-    proc ref remove(i) {
-      return remove(i);
-    }
-
     /* Request space for a particular number of values in an
        domain.
 
@@ -1970,12 +1958,6 @@ module ChapelDomain {
         compilerError("domain.requestCapacity only applies to associative domains");
 
       _value.dsiRequestCapacity(capacity);
-    }
-
-    pragma "last resort" pragma "no doc"
-    deprecated "the formal 'i' is deprecated, please use 'capacity' instead"
-    proc ref requestCapacity(i) {
-      requestCapacity(i);
     }
 
     /*
@@ -2071,18 +2053,6 @@ module ChapelDomain {
      */
     inline proc contains(idx: _value.idxType ...rank) {
       return contains(idx);
-    }
-
-    pragma "last resort" pragma "no doc"
-    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
-    inline proc contains(i: _value.idxType) {
-      return contains(idx=i);
-    }
-
-    pragma "last resort" pragma "no doc"
-    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
-    inline proc contains(i: rank*_value.idxType) {
-      return contains(idx=i);
     }
 
     /* Return true if this domain is a subset of ``super``. Otherwise
