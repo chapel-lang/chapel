@@ -1,4 +1,7 @@
-use FileSystem;
+use OS.POSIX;
+
+var structStat: struct_stat;
+var err: int;
 
 // This test is going to be robust, gorramn it!
 var permission: int;
@@ -20,9 +23,13 @@ for ur in [true, false] {
                 permission += if ow then 2 else 0;
                 for ox in [true, false] {
                   permission += if ox then 1 else 0;
-                  chmod("blah", permission);
-                  var result = getMode("blah");
-                  if (result != permission) {
+                  var perm = permission:c_int;
+                  err = chmod(c"blah", perm: mode_t);
+                  if err != 0 then halt("error in chmod");
+                  err = stat(c"blah", c_ptrTo(structStat));
+                  if err != 0 then halt("error in stat");
+                  var result = structStat.st_mode: c_int & 0x1ff;//bottom 9 bits
+                  if (result != perm) {
                     writeln("Expected ", permission, " on file blah, got ", result);
                   }
                   permission -= if ox then 1 else 0;
@@ -43,4 +50,8 @@ for ur in [true, false] {
   }
   permission = 0;
 }
-chmod("blah", 448); // reset blah's permissions to only include user permissions
+
+permission = 448;
+var perm = permission:c_int;
+err = chmod(c"blah", perm: mode_t); // reset blah's permissions to only include user permissions
+if err != 0 then halt("error in chmod");
