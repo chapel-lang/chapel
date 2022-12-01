@@ -2040,20 +2040,6 @@ module ChapelDomain {
       return contains(idx);
     }
 
-    /* Return true if this domain is a subset of ``super``. Otherwise
-       returns false. */
-    deprecated "'domain1.isSubset(domain2)' is deprecated, instead please use 'domain2.contains(domain1)'"
-    proc isSubset(super : domain) {
-      return super.contains(this);
-    }
-
-    /* Return true if this domain is a superset of ``sub``. Otherwise
-       returns false. */
-    deprecated "'domain1.isSuper(domain2)' is deprecated, instead please use 'domain1.contains(domain2)'"
-    proc isSuper(sub : domain) {
-      return this.contains(sub);
-    }
-
     /* Returns true if this domain contains all the indices in the domain
        ``other``. */
     proc contains(other: domain) {
