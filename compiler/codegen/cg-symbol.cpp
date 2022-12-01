@@ -2322,10 +2322,10 @@ void FnSymbol::codegenPrototype() {
       func->setConvergent();
       if (!hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
         switch (getGpuCodegenType()) {
-          case GpuCodegenType::GPU_CG_CUDA:
+          case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
             func->setCallingConv(llvm::CallingConv::PTX_Kernel);
             break;
-          case GpuCodegenType::GPU_CG_AMD:
+          case GpuCodegenType::GPU_CG_AMD_HIP:
             func->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
             break;
         }

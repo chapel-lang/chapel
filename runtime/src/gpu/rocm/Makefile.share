@@ -15,11 +15,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+SRCS = gpu-rocm.c
 
-GPU_SUBDIR = src/gpu/amd
+GPU_SRCS = gpu-rocm.c
 
-GPU_OBJDIR = $(RUNTIME_BUILD)/$(GPU_SUBDIR)
-
-ALL_SRCS += $(CURDIR)/$(GPU_SUBDIR)/*.c
-
-include $(RUNTIME_ROOT)/$(GPU_SUBDIR)/Makefile.share
+GPU_OBJS = $(GPU_SRCS:%.c=$(GPU_OBJDIR)/%.o)

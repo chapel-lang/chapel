@@ -35,7 +35,9 @@ chplvars = [
              'CHPL_LOCALE_MODEL',
              'CHPL_GPU_CODEGEN',
              'CHPL_GPU_RUNTIME',
-             'CHPL_GPU_SDK_PATH',
+             'CHPL_CUDA_PATH',
+             'CHPL_ROCM_PATH',
+             'CHPL_GPU_ARCH',
 
              'CHPL_COMM',
              'CHPL_COMM_SUBSTRATE',

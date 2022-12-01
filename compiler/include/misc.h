@@ -87,9 +87,9 @@
 
 class BaseAST;
 
-enum GpuCodegenType {
-  GPU_CG_CUDA,
-  GPU_CG_AMD,
+enum class GpuCodegenType {
+  GPU_CG_NVIDIA_CUDA,
+  GPU_CG_AMD_HIP,
 };
 
 bool        forceWidePtrsForLocal();

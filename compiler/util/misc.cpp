@@ -99,12 +99,16 @@ void setupDynoError(chpl::ErrorBase::Kind errKind) {
 }
 
 GpuCodegenType getGpuCodegenType() {
-  INT_ASSERT(usingGpuLocaleModel());
-  if (0 == strcmp(CHPL_GPU_CODEGEN, "cuda")) {
-    return GPU_CG_CUDA;
-  } else {
-    return GPU_CG_AMD;
-  }
+  static const GpuCodegenType cached = []() {
+    INT_ASSERT(usingGpuLocaleModel());
+    if (0 == strcmp(CHPL_GPU_CODEGEN, "cuda")) {
+      return GpuCodegenType::GPU_CG_NVIDIA_CUDA;
+    } else {
+      INT_ASSERT(!strcmp(CHPL_GPU_CODEGEN, "rocm"));
+      return GpuCodegenType::GPU_CG_AMD_HIP;
+    }
+  }();
+  return cached;
 }
 
 // Return true if the current locale model needs GPU code generation
