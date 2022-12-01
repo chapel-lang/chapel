@@ -29,6 +29,15 @@
 
 using namespace chpl;
 
+/*
+  Signal handler for when the child process aborts
+  Helps ensure that we detect an appropriate signal in test4
+*/
+static void handler(int sig)
+{
+  assert(sig == SIGCHLD);
+}
+
 // test that we can see initial values for globals and edit them
 static void test1() {
   // verify the default status
@@ -71,7 +80,7 @@ static void test4() {
   // verify the state from test3
   assert(assertionsAreOn());
   assert(assertionsAreFatal());
-
+  signal(SIGCHLD, handler);
   pid_t childPid = fork();
   int status = -1;
   if (childPid == 0) {
@@ -83,10 +92,9 @@ static void test4() {
     waitpid(childPid, &status, 0);
     // filter status down to key bits
     int code = WEXITSTATUS(status);
-    // expect return code 1 from assertion failure
-    assert(code == 1);
+    // expect return code 0 since child process aborted, fork returns 0 immediately
+    assert(code == 0);
   }
-
 }
 
 int main(int argc, char** argv) {
