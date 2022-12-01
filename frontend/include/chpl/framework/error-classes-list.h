@@ -112,6 +112,10 @@ PARSER_ERROR_CLASS(BisonMemoryExhausted)
 PARSER_ERROR_CLASS(BisonUnknownError, std::string, std::string)
 PARSER_SYNTAX_CLASS(BisonSyntaxError, std::string)
 
+/* post-parse-checks errors */
+POSTPARSE_ERROR_CLASS(PostParseErr, std::string)
+POSTPARSE_WARNING_CLASS(PostParseWarn, std::string)
+
 /* lexer-specific parser errors */
 PARSER_SYNTAX_CLASS(StringLiteralEOF, char, int)
 PARSER_SYNTAX_CLASS(ExternUnclosedPair, std::string)

@@ -162,7 +162,7 @@ void Visitor::report(const AstNode* node, ErrorBase::Kind kind,
                      const char* fmt,
                      va_list vl) {
   auto err = GeneralError::vbuild(context_, kind, node->id(), fmt, vl);
-  CHPL_POSTPARSE_REPORT_SIMPLE(builder_, err->message());
+  CHPL_POSTPARSE_ERR_SIMPLE(builder_, node, err->message());
 }
 
 void Visitor::error(const AstNode* node, const char* fmt, ...) {

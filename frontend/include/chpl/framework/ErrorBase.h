@@ -45,6 +45,19 @@ namespace chpl {
 #define PARSER_NOTE_CLASS(NAME, EINFO...) \
   PARSER_DIAGNOSTIC_CLASS(NAME, NOTE, ##EINFO)
 
+// Shorthands specific to post-parse-checks errors, which provide node IDs
+// that should connect to locations by the time we report out errors
+#define POSTPARSE_DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) \
+  DIAGNOSTIC_CLASS(NAME, KIND, const ID, ##EINFO)
+#define POSTPARSE_ERROR_CLASS(NAME, EINFO...) \
+  POSTPARSE_DIAGNOSTIC_CLASS(NAME, ERROR, ##EINFO)
+#define POSTPARSE_WARNING_CLASS(NAME, EINFO...) \
+  POSTPARSE_DIAGNOSTIC_CLASS(NAME, WARNING, ##EINFO)
+#define POSTPARSE_SYNTAX_CLASS(NAME, EINFO...) \
+  POSTPARSE_DIAGNOSTIC_CLASS(NAME, SYNTAX, ##EINFO)
+#define POSTPARSE_NOTE_CLASS(NAME, EINFO...) \
+  POSTPARSE_DIAGNOSTIC_CLASS(NAME, NOTE, ##EINFO)
+
 class ErrorWriterBase;
 
 using Note = std::tuple<ID, Location, std::string>;
