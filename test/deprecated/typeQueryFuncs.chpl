@@ -1,20 +1,20 @@
-proc runQueries(description, A) {
-  writeln("Given a ", description, ": ");
-  if isDomain(A) {
-    writeln("  isRectangularDom() = ", isRectangularDom(A));
-    writeln("  isIrregularDom()   = ", isIrregularDom(A));
-    writeln("  isAssociativeDom() = ", isAssociativeDom(A));
-    writeln("  isSparseDom()      = ", isSparseDom(A));
-  }
-  if isArray(A) {
-    writeln("  isRectangularArr() = ", isRectangularArr(A));
-    writeln("  isIrregularArr()   = ", isIrregularArr(A));
-    writeln("  isAssociativeArr() = ", isAssociativeArr(A));
-    writeln("  isSparseArr()      = ", isSparseArr(A));
-  }
-}
-
 // empty space needed to match line numbers in .good
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
