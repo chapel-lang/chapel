@@ -101,6 +101,72 @@ static void test6() {
   assert(qt.kind() == QualifiedType::UNKNOWN);
 }
 
+static void testIfVarErrorUseInElseBranch() {
+  Context context;
+  auto ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME_FROM_FN_NAME(ctx);
+  std::string contents =
+    R""""(
+      class C {}
+      proc foo(x) {}
+      if var x = new C() then foo(x); else foo(x);
+    )"""";
+  setFileText(ctx, path, contents);
+
+  auto& br = parseAndReportErrors(ctx, path);
+  auto mod = br.singleModule();
+  assert(mod);
+
+  assert(mod->numStmts() == 3 && mod->stmt(2)->isConditional());
+  auto cond = mod->stmt(2)->toConditional();
+  auto var = cond->condition()->toVariable();
+  assert(var);
+  auto elseCall = cond->elseStmt(0)->toFnCall();
+  assert(elseCall && elseCall->numActuals() == 1);
+  auto elseUse = elseCall->actual(0)->toIdentifier();
+  assert(elseUse);
+
+  auto& rr = resolveModule(ctx, mod->id());
+  auto& reElseUse = rr.byAst(elseUse);
+  assert(reElseUse.toId().isEmpty());
+  assert(reElseUse.type().isUnknown());
+}
+
+static void testIfVarErrorNonClassType() {
+  Context context;
+  auto ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME_FROM_FN_NAME(ctx);
+  std::string contents =
+    R""""(
+      proc foo(x) {}
+      if var x = 1 then foo(x); else;
+    )"""";
+  setFileText(ctx, path, contents);
+
+  auto& br = parseAndReportErrors(ctx, path);
+  auto mod = br.singleModule();
+  assert(mod);
+
+  assert(mod->numStmts() == 2 && mod->stmt(1)->isConditional());
+  auto cond = mod->stmt(1)->toConditional();
+  auto var = cond->condition()->toVariable();
+  assert(var);
+
+  auto& rr = resolveModule(ctx, mod->id());
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->message() ==
+         "a variable declared in the condition of an if statement must "
+         "be a class, not a value of type 'int(64)'");
+  auto& reVar = rr.byAst(var);
+  assert(reVar.type().kind() == QualifiedType::VAR);
+  assert(reVar.type().type() == IntType::get(ctx, 64));
+  guard.realizeErrors();
+}
+
 int main() {
   test1();
   test2();
@@ -108,5 +174,7 @@ int main() {
   test4();
   test5();
   test6();
+  testIfVarErrorUseInElseBranch();
+  testIfVarErrorNonClassType();
   return 0;
 }

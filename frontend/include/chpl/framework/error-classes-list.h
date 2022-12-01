@@ -135,4 +135,7 @@ ERROR_CLASS(UseImportUnknownSym,
             std::string)
 ERROR_CLASS(UseOfLaterVariable, const uast::AstNode*, ID)
 ERROR_CLASS(ValueUsedAsType, const uast::AstNode*, types::QualifiedType)
+ERROR_CLASS(IfVarNonClassType,
+    const uast::Conditional*,
+    types::QualifiedType)
 /* end resolution errors */

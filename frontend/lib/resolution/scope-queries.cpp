@@ -195,6 +195,15 @@ bool createsScope(asttags::AstTag tag) {
          || asttags::isSync(tag);
 }
 
+static bool
+isElseBlockOfConditionalWithIfVar(Context* context,
+                                  const uast::AstNode* ast) {
+  if (!ast) return false;
+  if (auto parent = parsing::parentAst(context, ast))
+    if (auto cond = parent->toConditional()) return ast == cond->elseBlock();
+  return false;
+}
+
 static const Scope* const& scopeForIdQuery(Context* context, ID id);
 
 static void populateScopeWithBuiltins(Context* context, Scope* scope) {
@@ -279,6 +288,12 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
         // create a new scope if we found any decls/uses immediately in it
         newScope = !(declared.empty() && containsUseImport == false);
       }
+    }
+
+    // We need the scope in this case so that we can know we're coming
+    // from the else branch of such a conditional when scope-resolving.
+    if (!newScope && isElseBlockOfConditionalWithIfVar(context, ast)) {
+      newScope = true;
     }
 
     if (newScope) {
@@ -432,6 +447,8 @@ static bool doLookupInToplevelModules(Context* context,
   return true;
 }
 
+
+
 // appends to result
 static bool doLookupInScope(Context* context,
                             const Scope* scope,
@@ -466,6 +483,26 @@ static bool doLookupInScope(Context* context,
     return false;
   }
 
+  bool skipClosestConditional = false;
+  auto ast = !scope->id().isEmpty() ? parsing::idToAst(context, scope->id())
+                                    : nullptr;
+
+  if (isElseBlockOfConditionalWithIfVar(context, ast)) {
+
+    // If an if-var is declared and the else branch of a conditional
+    // has no declarations in it, then the else block will not have a
+    // scope and we will be looking at the scope for the conditional
+    // itself. We need to skip it.
+    if (ast->isConditional()) {
+      checkDecls = false;
+
+    // Otherwise, skip the first conditional encountered when we walk up
+    // through parent scopes.
+    } else {
+      skipClosestConditional = true;
+    }
+  }
+
   if (checkDecls) {
     bool got = scope->lookupInScope(name, result, skipPrivateVisibilities);
     if (onlyInnermost && got) return true;
@@ -495,10 +532,26 @@ static bool doLookupInScope(Context* context,
     // Search parent scopes, if any, until a module is encountered
     const Scope* cur = nullptr;
     bool reachedModule = false;
+    bool didSkipConditional = false;
+
     for (cur = scope->parentScope(); cur != nullptr; cur = cur->parentScope()) {
       if (asttags::isModule(cur->tag())) {
         reachedModule = true;
         break;
+      }
+
+      // This trickiness is required to implement correct scoping behavior
+      // for 'if-vars' in conditionals. The 'if-var' lives in the scope
+      // for the conditional, but it is not visible within the 'else'
+      // branch. Without this hack, we'd be able to see the 'if-var' in
+      // both branches.
+      if (skipClosestConditional && !didSkipConditional) {
+        if (auto ast = parsing::idToAst(context, cur->id())) {
+          if (ast->isConditional()) {
+            didSkipConditional = true;
+            continue;
+          }
+        }
       }
 
       bool got = doLookupInScope(context, cur, receiverScope, resolving, name,

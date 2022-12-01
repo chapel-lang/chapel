@@ -32,7 +32,6 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/While.h"
-#include "./ErrorGuard.h"
 
 #include <algorithm>
 #include <sstream>
@@ -385,10 +384,7 @@ static void printErrors(const ErrorGuard& guard) {
     printf("Found %lu errors.\n\n", guard.errors().size());
   } else {
     printf("======== Errors ========\n");
-    ErrorWriter ew(guard.context(), std::cout, ErrorWriter::DETAILED, false);
-    for (auto err : guard.errors()) {
-      err->write(ew);
-    }
+    guard.printErrors();
     printf("========================\n\n");
   }
 }
