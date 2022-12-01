@@ -7,7 +7,7 @@ var f = open("test.txt", iomode.r);
 {
   var r = f.reader(kind=ionative);
   var str:string;
-  r.readstring(str);
+  r.readString(str);
   writeln("Read (binary all)\n", str);
   r.close();
 }
@@ -15,7 +15,7 @@ var f = open("test.txt", iomode.r);
 {
   var r = f.reader(kind=ionative);
   var str:string;
-  r.readstring(str, 10);
+  r.readString(str, 10);
   writeln("Read (binary 10)\n", str);
   r.close();
 }
@@ -23,7 +23,7 @@ var f = open("test.txt", iomode.r);
 {
   var r = f.reader();
   var str:string;
-  r.readstring(str);
+  r.readString(str);
   writeln("Read (text all)\n", str);
   r.close();
 }
@@ -31,7 +31,7 @@ var f = open("test.txt", iomode.r);
 {
   var r = f.reader();
   var str:string;
-  r.readstring(str, 10);
+  r.readString(str, 10);
   writeln("Read (text 10)\n", str);
   r.close();
 }
