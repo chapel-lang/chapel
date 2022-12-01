@@ -4717,6 +4717,7 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
                                  nBytes: int,
                                  nCodepoints: int): errorCode {
   import BytesStringCommon;
+  import ByteBufferHelpers;
 
   BytesStringCommon.resizeBuffer(s, nBytes);
 
@@ -4729,6 +4730,7 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
   var err = qio_channel_read_amt(false, _channel_internal, s.buff, len);
   if !err {
     s.buffLen = nBytes;
+    s.buff[len] = 0:uint(8);
     if s.type == string {
       s.cachedNumCodepoints = nCodepoints;
       s.hasEscapes = false;
@@ -5278,7 +5280,7 @@ proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
       numWritten:c_ssize_t;
 
   var byte_ptr = ptr : c_ptr(uint(8));
-  e = try qio_channel_write(false, this._channel_internal, byte_ptr[0], numBytes, numWritten);
+  e = try qio_channel_write(false, this._channel_internal, byte_ptr[0], numBytes:c_ssize_t, numWritten);
 
   if (e != 0) {
     throw createSystemError(e);
