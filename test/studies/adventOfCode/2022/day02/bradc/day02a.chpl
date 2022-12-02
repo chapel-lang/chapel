@@ -1,8 +1,8 @@
 use IO;
-use shape, outcome;
+use outcome, shape;
 
-enum shape {rock=1, paper, scissors};
 enum outcome {lose=0, draw=3, win=6};
+enum shape {rock=1, paper, scissors};
 enum entry {A=rock:int, B, C,
             X=lose:int, Y=draw:int, Z=win:int};
 
