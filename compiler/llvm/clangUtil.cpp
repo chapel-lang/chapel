@@ -2547,17 +2547,25 @@ void runClang(const char* just_parse_filename) {
     addFilteredArgs(clangCCArgs, args, parseOnly);
   }
 
-  // tell clang to use CUDA support
+  // tell clang to use CUDA/AMD support
   if (usingGpuLocaleModel()) {
     // Need to pass this flag so atomics header will compile
     clangOtherArgs.push_back("--std=c++11");
-    // Need to select CUDA mode in embedded clang to
+
+    // Need to select CUDA/AMD mode in embedded clang to
     // activate the GPU target
     clangOtherArgs.push_back("-x");
-    clangOtherArgs.push_back("cuda");
+    switch (getGpuCodegenType()) {
+      case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
+        clangOtherArgs.push_back("cuda");
+        break;
+      case GpuCodegenType::GPU_CG_AMD_HIP:
+        clangOtherArgs.push_back("hip");
+        break;
+    }
 
-    std::string cudaGPUArch = std::string("--cuda-gpu-arch=") + fCUDAArch;
-    clangOtherArgs.push_back(cudaGPUArch);
+    std::string gpuArch = std::string("--offload-arch=") + CHPL_GPU_ARCH;
+    clangOtherArgs.push_back(gpuArch);
   }
 
   // Always include sys_basic because it might change the
@@ -3824,16 +3832,6 @@ static void linkLibDevice() {
 
   GenInfo* info = gGenInfo;
 
-  // load libdevice as a new module
-  llvm::SMDiagnostic err;
-  auto libdevice = llvm::parseIRFile(CHPL_CUDA_LIBDEVICE_PATH, err,
-                                     info->llvmContext);
-  //
-  // adjust it
-  const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
-  libdevice->setTargetTriple(Triple.getTriple());
-  libdevice->setDataLayout(info->clangInfo->asmTargetLayoutStr);
-
   // save external functions
   std::set<std::string> externals;
   for (auto it = info->module->begin() ; it!= info->module->end() ; ++it) {
@@ -3842,9 +3840,22 @@ static void linkLibDevice() {
     }
   }
 
-  // link
-  llvm::Linker::linkModules(*info->module, std::move(libdevice),
-                            llvm::Linker::Flags::LinkOnlyNeeded);
+  // libdevice is a CUDA-specific thing
+  if (getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA) {
+    // load libdevice as a new module
+    llvm::SMDiagnostic err;
+    auto libdevice = llvm::parseIRFile(CHPL_CUDA_LIBDEVICE_PATH, err,
+                                       info->llvmContext);
+    //
+    // adjust it
+    const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
+    libdevice->setTargetTriple(Triple.getTriple());
+    libdevice->setDataLayout(info->clangInfo->asmTargetLayoutStr);
+
+    // link
+    llvm::Linker::linkModules(*info->module, std::move(libdevice),
+                              llvm::Linker::Flags::LinkOnlyNeeded);
+  }
 
   // internalize all functions that are not in `externals`
   llvm::InternalizePass iPass([&externals](const llvm::GlobalValue& gv) {
@@ -3852,7 +3863,6 @@ static void linkLibDevice() {
   });
   iPass.internalizeModule(*info->module);
 }
-
 
 // If we're using the LLVM wide optimizations, we have to add
 // some functions to call put/get into the Chapel runtime layers
@@ -4024,6 +4034,73 @@ static std::string getLibraryOutputPath();
 static void moveGeneratedLibraryFile(const char* tmpbinname);
 static void moveResultFromTmp(const char* resultName, const char* tmpbinname);
 
+static llvm::CodeGenFileType getCodeGenFileType() {
+  switch (getGpuCodegenType()) {
+    case GpuCodegenType::GPU_CG_AMD_HIP:
+      return llvm::CodeGenFileType::CGFT_ObjectFile;
+    case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
+    default:
+      return llvm::CodeGenFileType::CGFT_AssemblyFile;
+  }
+}
+
+static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
+                                  const std::string& ptxObjectFilename,
+                                  const std::string& fatbinFilename) {
+  if (myshell("which ptxas > /dev/null 2>&1", "Check to see if ptxas command can be found", true)) {
+    USR_FATAL("Command 'ptxas' not found\n");
+  }
+
+  if (myshell("which fatbinary > /dev/null 2>&1", "Check to see if fatbinary command can be found", true)) {
+    USR_FATAL("Command 'fatbinary' not found\n");
+  }
+
+  std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + CHPL_GPU_ARCH +
+                       std::string(" --output-file ") +
+                       ptxObjectFilename.c_str() +
+                       " " + artifactFilename.c_str();
+
+  mysystem(ptxCmd.c_str(), "PTX to  object file");
+
+  if (strncmp(CHPL_GPU_ARCH, "sm_", 3) != 0 || strlen(CHPL_GPU_ARCH) != 5) {
+    USR_FATAL("Unrecognized CUDA arch");
+  }
+
+  std::string computeCap = std::string("compute_") + CHPL_GPU_ARCH[3] +
+                                                     CHPL_GPU_ARCH[4];
+  std::string fatbinaryCmd = std::string("fatbinary -64 ") +
+                             std::string("--create ") +
+                             fatbinFilename.c_str() +
+                             std::string(" --image=profile=") + CHPL_GPU_ARCH +
+                             ",file=" + ptxObjectFilename.c_str() +
+                             std::string(" --image=profile=") + computeCap +
+                             ",file=" + artifactFilename.c_str();
+  mysystem(fatbinaryCmd.c_str(), "object file to fatbinary");
+}
+
+static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
+                                 const std::string& outFilename,
+                                 const std::string& fatbinFilename) {
+  std::string lldCmd = std::string(gGpuSdkPath) +
+                      "/llvm/bin/lld -flavor gnu" +
+                       " --no-undefined -shared" +
+                       " -plugin-opt=-amdgpu-internalize-symbols" +
+                       " -plugin-opt=mcpu=gfx906 -plugin-opt=O3" +
+                       " -plugin-opt=-amdgpu-early-inline-all=true" +
+                       " -plugin-opt=-amdgpu-function-calls=false -o " +
+                       outFilename + " " + artifactFilename;
+  std::string bundlerCmd = std::string(gGpuSdkPath) +
+                          "/llvm/bin/clang-offload-bundler" +
+                           " -type=o -bundle-align=4096" +
+                           " -targets=host-x86_64-unknown-linux," +
+                           "hipv4-amdgcn-amd-amdhsa--" + CHPL_GPU_ARCH +
+                           " -inputs=/dev/null," + outFilename +
+                           " -outputs=" + fatbinFilename;
+
+  mysystem(lldCmd.c_str(), "Device .o file to .out file");
+  mysystem(bundlerCmd.c_str(), ".out file to fatbin file");
+}
+
 void makeBinaryLLVM(void) {
 
   GenInfo* info = gGenInfo;
@@ -4035,8 +4112,9 @@ void makeBinaryLLVM(void) {
   std::string preOptFilename;
   std::string opt1Filename;
   std::string opt2Filename;
-  std::string asmFilename;
+  std::string artifactFilename;
   std::string ptxObjectFilename;
+  std::string outFilename;
   std::string fatbinFilename;
 
   if (gCodegenGPU == false) {
@@ -4049,9 +4127,21 @@ void makeBinaryLLVM(void) {
     preOptFilename = genIntermediateFilename("chpl__gpu_module-nopt.bc");
     opt1Filename = genIntermediateFilename("chpl__gpu_module-opt1.bc");
     opt2Filename = genIntermediateFilename("chpl__gpu_module-opt2.bc");
-    asmFilename = genIntermediateFilename("chpl__gpu_ptx.s");
     ptxObjectFilename = genIntermediateFilename("chpl__gpu_ptx.o");
     fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
+    outFilename = genIntermediateFilename("chpl__gpu.out");
+
+    // In CUDA, we generate assembly and then assemble it. For
+    // AMD, we generate an object file. Thus, we need to use
+    // different file names.
+    switch (getGpuCodegenType()) {
+      case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
+        artifactFilename = genIntermediateFilename("chpl__gpu_ptx.s");
+        break;
+      case GpuCodegenType::GPU_CG_AMD_HIP:
+        artifactFilename = genIntermediateFilename("chpl__gpu.o");
+        break;
+    }
   }
 
   if( saveCDir[0] != '\0' ) {
@@ -4301,12 +4391,11 @@ void makeBinaryLLVM(void) {
 
     } else {
 
-      llvm::CodeGenFileType asmFileType =
-        llvm::CodeGenFileType::CGFT_AssemblyFile;
+      auto artifactFileType = getCodeGenFileType();
 
       linkLibDevice();
 
-      llvm::raw_fd_ostream outputASMfile(asmFilename, error, flags);
+      llvm::raw_fd_ostream outputArtifactFile(artifactFilename, error, flags);
 
       {
 
@@ -4315,49 +4404,24 @@ void makeBinaryLLVM(void) {
         emitPM.add(createTargetTransformInfoWrapperPass(
                    info->targetMachine->getTargetIRAnalysis()));
 
-        info->targetMachine->addPassesToEmitFile(emitPM, outputASMfile,
+        info->targetMachine->addPassesToEmitFile(emitPM, outputArtifactFile,
                                                  nullptr,
-                                                 asmFileType,
+                                                 artifactFileType,
                                                  disableVerify);
 
         emitPM.run(*info->module);
 
       }
 
-      outputASMfile.close();
-
-      if (myshell("which ptxas > /dev/null 2>&1", "Check to see if ptxas command can be found", true)) {
-        USR_FATAL("Command 'ptxas' not found\n");
+      outputArtifactFile.close();
+      switch (getGpuCodegenType()) {
+        case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
+          makeBinaryLLVMForCUDA(artifactFilename, ptxObjectFilename, fatbinFilename);
+          break;
+        case GpuCodegenType::GPU_CG_AMD_HIP:
+          makeBinaryLLVMForHIP(artifactFilename, outFilename, fatbinFilename);
+          break;
       }
-
-      if (myshell("which fatbinary > /dev/null 2>&1", "Check to see if fatbinary command can be found", true)) {
-        USR_FATAL("Command 'fatbinary' not found\n");
-      }
-
-
-      std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + fCUDAArch +
-                           std::string(" --output-file ") +
-                           ptxObjectFilename.c_str() +
-                           " " + asmFilename.c_str();
-
-      mysystem(ptxCmd.c_str(), "PTX to  object file");
-
-      if (strncmp(fCUDAArch, "sm_", 3) != 0 || strlen(fCUDAArch) != 5) {
-        USR_FATAL("Unrecognized CUDA arch");
-      }
-
-      std::string computeCap = std::string("compute_") + fCUDAArch[3] +
-                                                         fCUDAArch[4];
-      std::string fatbinaryCmd = std::string("fatbinary -64 ") +
-                                 std::string("--create ") +
-                                 fatbinFilename.c_str() +
-                                 std::string(" --image=profile=") + fCUDAArch +
-                                 ",file=" + ptxObjectFilename.c_str() +
-                                 std::string(" --image=profile=") + computeCap +
-                                 ",file=" + asmFilename.c_str();
-
-      mysystem(fatbinaryCmd.c_str(), "object file to fatbinary");
-
     }
   }
 
