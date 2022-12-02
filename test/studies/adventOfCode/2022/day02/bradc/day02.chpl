@@ -24,7 +24,7 @@ proc verdict(theirVal, ourVal) {
 // given an entry from the 'them' column (A, B, C) and one from the
 // 'us' column (X, Y, Z), see who won, and compute the score we
 // earned.
-proc score(them, us) {
+proc score((them, us)) {
   const theirVal = them:int,
         ourVal = us:int;
 
@@ -41,5 +41,5 @@ iter readGuide() {
 const Guide = readGuide();
 //writeln(Guide);
 
-writeln(+ reduce [(them, us) in Guide] score(them, us));
+writeln(+ reduce score(Guide));
 

@@ -34,6 +34,13 @@ proc strategize(them, result) {
   }
 }
 
+// given an entry from the 'them' column (A, B, C) and one from the
+// 'us' column (X, Y, Z), see who ought to win, what we should throw,
+// and the score we earned.
+proc score((them, outcome)) {
+  return outcome:int + strategize(them, outcome);
+}
+
 iter readGuide() {
   var abc, xyz: string;
 
@@ -51,6 +58,6 @@ for them in A..C do
 }
 */
 
-writeln(+ reduce [(them, outcome) in Guide] outcome:int + strategize(them, outcome));
+writeln(+ reduce score(Guide));
 
   
