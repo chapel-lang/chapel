@@ -949,8 +949,14 @@ doResolveUseStmt(Context* context, const Use* use,
       // Per the spec, we only have visibility of the symbol itself if the
       // use is renamed (with 'as') or non-public.
       if (!newName.isEmpty()) {
-        r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
-                               isPrivate, convertOneRename(oldName, newName));
+        if (newName == USTR("_")) {
+          // Do not introduce the name at all.
+          r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
+                                 isPrivate, emptyNames());
+        } else {
+          r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
+                                 isPrivate, convertOneRename(oldName, newName));
+        }
       } else if (isPrivate) {
         r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
                                isPrivate, convertOneName(oldName));
@@ -1080,6 +1086,9 @@ doResolveImportStmt(Context* context, const Import* imp,
               // e.g. 'import OtherModule'
               r->addVisibilityClause(foundScope, kind, isPrivate,
                                      convertOneName(oldName));
+            } if (newName == USTR("_")) {
+              // e.g. 'import OtherModule as _'
+              r->addVisibilityClause(foundScope, kind, isPrivate, emptyNames());
             } else {
               // e.g. 'import OtherModule as Foo'
               r->addVisibilityClause(foundScope, kind, isPrivate,
