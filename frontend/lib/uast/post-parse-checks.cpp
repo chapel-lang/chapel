@@ -486,7 +486,7 @@ void Visitor::checkOperatorNameValidity(const Function* node) {
     if (!isOpName(node->name())) {
       CHPL_POSTPARSE_ERR_SIMPLE(
           builder_, node,
-          node->name().str() + " is not a legal operator name.");
+          "'" + node->name().str() + "' is not a legal operator name.");
     }
   } else {
     // functions with operator names must be declared as operators
@@ -551,7 +551,7 @@ void Visitor::checkProcedureRequiresParens(const Function* node) {
 void Visitor::checkOverrideNonMethod(const Function* node) {
   if (!node->isMethod() && node->isOverride()) {
     CHPL_POSTPARSE_ERR_SIMPLE(builder_, node,
-                              "'override' cannot be applied to non-method " +
+                              "'override' cannot be applied to non-method '" +
                                   node->name().str() + "'.");
   }
 }
@@ -774,10 +774,14 @@ void Visitor::checkReservedSymbolName(const NamedDecl* node) {
   // test/parallel/forall/checks/with-this.chpl
   if (node->isTaskVar()) return;
 
-  if (isNameReservedWord(node) || isNameReservedType(name)) {
+  if (isNameReservedWord(node)) {
     CHPL_POSTPARSE_ERR_SIMPLE(
         builder_, node,
         "attempt to redefine reserved word '" + name.str() + "'.");
+  } else if (isNameReservedType(name)) {
+    CHPL_POSTPARSE_ERR_SIMPLE(
+        builder_, node,
+        "attempt to redefine reserved type '" + name.str() + "'.");
   }
 }
 
