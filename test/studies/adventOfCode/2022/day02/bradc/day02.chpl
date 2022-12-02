@@ -1,11 +1,10 @@
 use IO;
+use shape, outcome;
 
 enum shape {rock=1, paper, scissors};
 enum outcome {lose=0, draw=3, win=6};
 enum entry {A=rock:int, B, C,
             X=rock:int, Y, Z};
-
-use shape, outcome, entry;
 
 // based on integer shape values, determine whether our shape won or
 // not, returning the corresponding outcome
