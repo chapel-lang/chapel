@@ -6,8 +6,8 @@ enum shape {rock=1, paper, scissors};
 enum entry {A=rock:int, B, C,
             X=rock:int, Y, Z};
 
-
-writeln(+ reduce score(readGuide()));
+const Guide = readGuide();
+writeln(+ reduce score(Guide));
 
 iter readGuide() {
   var abc, xyz: string;
@@ -16,26 +16,33 @@ iter readGuide() {
     yield (abc:entry, xyz:entry);
 }
 
-// given an entry from the 'them' column (A, B, C) and one from the
-// 'us' column (X, Y, Z), see who won, and compute the score we
-// earned
-proc score((them, us)) {
-  return us:int + verdict(them, us):int;
+// Given an entry from the 'abc' column (A, B, C) and one from the
+// 'xyz' column (X, Y, Z), see who won, and compute the score we
+// earned.
+proc score((abc, xyz)) {
+  return xyz:int + verdict(abc, xyz):int;
 }
 
-// given two shapes, determine whether ours won or not,
-// returning the corresponding outcome
-proc verdict(them, us) {
-  const theirVal = them:int,
-        ourVal = us:int;
-
-  if theirVal == ourVal {
+// Given two guide entries, determine whether we won or not,
+// returning the corresponding outcome.
+proc verdict(abc, xyz) {
+  const them = abc: int: shape,
+        us   = xyz: int: shape;
+  
+  if them == us {
     return draw;
-  } else if theirVal == (ourVal%3)+1 {
+  } else if shapeBeatsShape(them, us) {
     return lose;
-  } else if (theirVal%3)+1 == ourVal {
+  } else if shapeBeatsShape(us, them) {
     return win;
   } else {
-    halt("Should never get here: ", (theirVal, ourVal));
+    halt("Should never get here: ", (them, us));
   }
+}
+
+// return whether shape 's1' beats shape 's2'
+proc shapeBeatsShape(s1, s2) {
+  return (s1 == rock && s2 == scissors ||
+          s1 == paper && s2 == rock ||
+          s1 == scissors && s2 == paper);
 }
