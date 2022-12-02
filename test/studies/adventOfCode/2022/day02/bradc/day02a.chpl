@@ -12,7 +12,7 @@ writeln(+ reduce score(Guide));
 iter readGuide() {
   var abc, xyz: string;
 
-  while (readf("%s %s", abc, xyz)) do
+  while readf("%s %s", abc, xyz) do
     yield (abc:entry, xyz:entry);
 }
 
@@ -33,19 +33,5 @@ proc strategize(them, result) {
     return if val == 1 then 3 else val-1;  // surely this has a closed form?
   } else { // draw
     return val;
-  }
-}
-
-// based on integer shape values, determine whether our shape won or
-// not, returning the corresponding outcome
-proc verdict(theirVal, ourVal) {
-  if theirVal == ourVal {
-    return draw;
-  } else if theirVal == (ourVal%3)+1 {
-    return lose;
-  } else if (theirVal%3)+1 == ourVal {
-    return win;
-  } else {
-    halt("Should never get here: ", (theirVal, ourVal));
   }
 }
