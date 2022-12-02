@@ -133,4 +133,15 @@ struct stringify<uast::New::Management> {
 
 } // end namespace chpl
 
+namespace std {
+
+template <>
+struct hash<chpl::uast::New::Management> {
+  size_t operator()(const chpl::uast::New::Management& key) const {
+    return (size_t)key;
+  }
+};
+
+}  // end namespace std
+
 #endif
