@@ -1428,7 +1428,7 @@ module BytesStringCommon {
     }
 
     // ensure that there is a null byte at the end of the buffer
-    x.buff[x.buffLen] = 0;
+    if x.buffLen > 0 then x.buff[x.buffLen] = 0;
   }
 
   private proc _isSingleWord(const ref x: ?t) {
