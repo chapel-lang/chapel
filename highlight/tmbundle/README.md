@@ -16,7 +16,7 @@ Updating Chapel bundle
 0. Fork and clone the [chapel-lang/chapel-tmbundle][1] repo.
 0. Manually update the PList/XML in `Syntaxes/Chapel.tmLanguage` with whatever
    changes you need.
-0. Test the changes, e.g. using Jetbrains' [CLion][4] or another IDE that
+0. Test the changes, e.g. using JetBrains' [CLion][4] or another IDE that
    supports TextMate bundles.  Opening a copy of [lulesh][5] may be useful.
 0. Open a PR for the chapel-tmbundle repo and follow the normal merge process.
 0. That's it! The next time [github/linguist][2] is released, the changes will
