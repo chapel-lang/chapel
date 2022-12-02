@@ -253,6 +253,17 @@ const types::QualifiedType& returnType(Context* context,
                                        const TypedFnSignature* sig,
                                        const PoiScope* poiScope);
 
+/**
+  Compute the types for any generic 'out' formal types after instantiation
+  of any other generic arguments.
+
+  The 'out' formal types are inferred from the body of the function.
+  The returned TypedFnSignature* will have the inferred out formal types.
+ */
+const TypedFnSignature* inferOutFormals(Context* context,
+                                        const TypedFnSignature* sig,
+                                        const PoiScope* poiScope);
+
 /////// call resolution
 
 /**

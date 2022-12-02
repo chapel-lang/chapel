@@ -465,7 +465,7 @@ computeActualFormalIntents(Context* context,
 
   int nFns = candidates.numBest();
   if (nFns == 0) {
-    // return early if there are no actual candidates
+    // return early if there are no candidates
     return;
   }
 

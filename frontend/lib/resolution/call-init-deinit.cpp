@@ -176,19 +176,28 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
     printf("DEINIT %s\n", varOrDeferId.str().c_str());
     // TODO: actually call it here
   }
-  for (auto id : frame->initedOuterVars) {
-    if (parent->addToInitedVars(id)) {
-      recordInitializationOrder(parent, id);
+
+  if (parent != nullptr) {
+    for (auto id : frame->initedOuterVars) {
+      if (parent->addToInitedVars(id)) {
+        recordInitializationOrder(parent, id);
+      }
     }
-  }
-  for (auto id : frame->deinitedVars) {
-    if (parent->declaredVars.count(id) == 0) {
-      parent->deinitedVars.insert(id);
+    for (auto id : frame->deinitedVars) {
+      if (parent->declaredVars.count(id) == 0) {
+        parent->deinitedVars.insert(id);
+      }
     }
   }
 }
 
 void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
+
+  if (ast->isFormal()) {
+    // don't try to default init formal values
+    return;
+  }
+
   ResolvedExpression& varRes = rv.byAst(ast);
   QualifiedType varType = varRes.type();
 
@@ -318,8 +327,13 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
       // Otherwise, no need to resolve anything else.
     } else {
       // resolve a copy init and a deinit to deinit the temporary
-      resolveCopyInit(ast, lhsType, rhsType, rv);
-      resolveDeinit(ast, rhsType, rv);
+      if (lhsType.isGenericOrUnknown() || rhsType.isGenericOrUnknown()) {
+        // TODO: this should not happen
+        printf("Warning: should not be reached\n");
+      } else {
+        resolveCopyInit(ast, lhsType, rhsType, rv);
+        resolveDeinit(ast, rhsType, rv);
+      }
     }
   } else {
     assert(false && "TODO"); // e.g. value = copy init from ref
@@ -501,7 +515,9 @@ void CallInitDeinit::handleConditional(const Conditional* cond) {
 
   // process end-of-block deinits in then/else blocks and then propagate
   processDeinitsAndPropagate(thenFrame, frame);
-  processDeinitsAndPropagate(elseFrame, frame);
+  if (elseFrame) {
+    processDeinitsAndPropagate(elseFrame, frame);
+  }
 
   // propagate information out of Conditional itself
   processDeinitsAndPropagate(frame, parent);
