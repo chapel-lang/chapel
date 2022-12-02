@@ -26,13 +26,8 @@
 #include <fstream>
 #include <limits>
 #include <regex>
-#include <sstream>
 #include <unordered_map>
-#include <unordered_set>
 #include <queue>
-
-#include <sys/stat.h>
-#include <unistd.h>
 
 #include "arg.h"
 #include "arg-helpers.h"
@@ -46,8 +41,6 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/framework/stringify-functions.h"
 #include "chpl/framework/update-functions.h"
-#include "chpl/uast/AstTag.h"
-#include "chpl/uast/ASTTypes.h"
 #include "chpl/uast/TypeDecl.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/util/string-escapes.h"
@@ -56,9 +49,7 @@
 #include "chpl/framework/global-strings.h"
 #include "chpl/resolution/scope-queries.h"
 
-#include "chpl/util/filesystem.h"
 #include "llvm/Support/FileSystem.h"
-
 
 
 using namespace chpl;
