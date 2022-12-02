@@ -2,6 +2,15 @@ use FileSystem;
 use IO;
 use Sort;
 use List;
+use OS.POSIX;
+
+proc getMode(filename: string) throws {
+
+  var structStat: struct_stat;
+  var err = stat(filename.encode(policy=encodePolicy.unescape).c_str(), c_ptrTo(structStat));
+  if err != 0 then halt("Error in stat call");
+  return structStat.st_mode:c_int & 0x1ff;
+}
 
 config param useNonUTF8 = true;
 
@@ -52,7 +61,7 @@ writeln("exists works: ", exists(filename1) == true);
 
 const gid = getGid(filename1);
 const uid = getUid(filename1);
-const mode = getMode(filename1);
+const mode = getMode(filename1); 
 const size = getFileSize(filename1);
 writeln();
 
@@ -77,9 +86,9 @@ catch e: PermissionError {
 writeln();
 
 writeln("chmod'ing the file");
-chmod(filename2, 644);
-writeln("chmod works: ", getMode(filename2) == 644);
-chmod(filename2, mode); // change it back
+chmod(filename2.c_str(), 0o644:mode_t);
+writeln("chmod works: ", getMode(filename2) == 0o644);
+chmod(filename2.c_str(), mode:mode_t); // change it back
 writeln();
 
 
