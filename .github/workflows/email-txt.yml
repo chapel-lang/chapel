@@ -47,8 +47,7 @@ jobs:
       - name: Parse changed files
         id: parsed-output
         run: |
-                
-             echo "OUTPUT= $(echo ${{steps.changed-files.outputs.modified_files}} |  sed 's/\,/\\n/g' )" >> $GITHUB_ENV    
+              echo "OUTPUT= $(echo ${{steps.changed-files.outputs.modified_files}} |  sed 's/\,/\\n/g' )" >> $GITHUB_ENV    
                 
       - name: Send mail  
         uses: dawidd6/action-send-mail@v3
@@ -71,7 +70,6 @@ jobs:
            from:  ${{env.AUTHOR}}
         
            body: |
-                      
                     " Branch :"  ${{github.ref}} 
                      Revision ${{ github.event.pull_request.merge_commit_sha }}  
                      Author  ${{ env.AUTHOR}} 
