@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -x
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+
+# Should be set by cron script:
+#export CHPL_TEST_PERF_DIR=$CWD/PerfDir
+#export CHPL_TEST_PERF_DESCRIPTION=main
+
+CHOP_URL=git@github.com:tcarneirop/ChOp.git
+CHOP_BRANCH=main
+CHOP_GRAPH_PATH=$CWD/graph-infra
+
+source $CWD/functions.bash
+
+export CHOP_HOME=$CWD/ChOp
+rm -rf ${CHOP_HOME}
+
+# Clone ChOp
+if ! git clone ${CHOP_URL} --branch=${CHOP_BRANCH} ; then
+  log_fatal_error "cloning ChOp"
+else
+  echo "Cloned ChOp successfully"
+fi
+
+# Build ChOp
+echo cd ${CHOP_HOME}/other_codes/chplGPU
+cd ${CHOP_HOME}/other_codes/chplGPU
+test_compile
+
+test_run 15
+test_run 16
+test_run 17
