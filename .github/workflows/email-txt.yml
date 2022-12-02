@@ -78,11 +78,11 @@ jobs:
                            ${{env.LOG}} 
                           
                      ${{env.OUTPUT}} 
-              
-                     "Resolves #21073\r\n\r\nThis fixes a bug where an actual argument was always considered a \"use\" upon a call to a virtually-dispatched method even when the corresponding formal had a ref or [in]out intent.\r\n\r\nThe bug was observed when such an actual argument was an array indexing expression, which involved return intent overloading. Because of the bug, the return-value overload was chosen instead of the return-ref one.\r\n\r\nNext steps: check if this bug can occur upon calls to ftable-ed functions.\n\nTesting: standard paratest; gasnet paratest over multilocale tests.""
+                     ${{ github.event.push.head_commit.message }}
+                     "Resolves #21073\r\n\r\nThis fixes a bug where an actual argument was always considered a \"use\" upon a call to a virtually-dispatched method even when the corresponding formal had a ref or [in]out intent.\r\n\r\nThe bug was observed when such an actual argument was an array indexing expression, which involved return intent overloading. Because of the bug, the return-value overload was chosen instead of the return-ref one.\r\n\r\nNext steps: check if this bug can occur upon calls to ftable-ed functions.\n\nTesting: standard paratest; gasnet paratest over multilocale tests."
 
               
            # Optional converting Markdown to HTML (set content_type to text/html too):
-          # convert_markdown: true
+           #convert_markdown: true
            # Optional priority: 'high', 'normal' (default) or 'low'
            priority: low
