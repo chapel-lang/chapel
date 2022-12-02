@@ -754,6 +754,10 @@ class TypedFnSignature {
     return formalsInstantiated_[i];
   }
 
+  const Bitmap& formalsInstantiatedBitmap() const {
+    return formalsInstantiated_;
+  }
+
   /**
      Is this for an inner Function? If so, what is the parent
      function signature?
@@ -839,6 +843,12 @@ class MostSpecificCandidates {
     ret.emptyDueToAmbiguity = true;
     return ret;
   }
+
+  /**
+    Adjust each candidate signature by inferring generic 'out' intent formals
+    if there are any.
+   */
+  void inferOutFormals(Context* context, const PoiScope* poiScope);
 
   const TypedFnSignature* const* begin() const {
     return &candidates[0];

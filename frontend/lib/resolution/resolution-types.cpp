@@ -761,6 +761,16 @@ bool PoiInfo::canReuse(const PoiInfo& check) const {
   return false; // TODO -- consider function names etc -- see PR #16261
 }
 
+void MostSpecificCandidates::inferOutFormals(Context* context,
+                                             const PoiScope* poiScope) {
+  for (int i = 0; i < NUM_INTENTS; i++) {
+    const TypedFnSignature*& c = candidates[i];
+    if (c != nullptr) {
+      c = chpl::resolution::inferOutFormals(context, c, poiScope);
+    }
+  }
+}
+
 void MostSpecificCandidates::stringify(std::ostream& ss,
                                        chpl::StringifyKind stringKind) const {
   auto onlyFn = only();
