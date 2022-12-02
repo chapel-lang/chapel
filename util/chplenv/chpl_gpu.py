@@ -107,8 +107,9 @@ def get_runtime():
     # For now, the runtime and codegen targets match one-for-one.
     chpl_gpu_runtime = os.environ.get("CHPL_GPU_RUNTIME")
     if chpl_gpu_runtime:
-        if chpl_gpu_runtime not in GPU_TYPES:
-            error("Only {} supported for 'CHPL_GPU_RUNTIME'".format(GPU_TYPES.keys()))
+        valid_runtimes = list(GPU_TYPES.keys()) + ['none']
+        if chpl_gpu_runtime not in valid_runtimes:
+            error("Only {} supported for 'CHPL_GPU_RUNTIME'".format(valid_runtimes))
         else:
             return chpl_gpu_runtime
     return get()
