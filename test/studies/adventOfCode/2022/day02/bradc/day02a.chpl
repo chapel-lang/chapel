@@ -49,14 +49,6 @@ iter readGuide() {
 
 const Guide = readGuide();
 
-/*
-{
-for them in A..C do
-  for outcome in X..Z do
-    writeln((them, outcome, strategize(them, outcome)));
-}
-*/
-
 writeln(+ reduce score(Guide));
 
   

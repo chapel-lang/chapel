@@ -38,7 +38,6 @@ iter readGuide() {
 }
 
 const Guide = readGuide();
-//writeln(Guide);
 
 writeln(+ reduce score(Guide));
 
