@@ -1,34 +1,28 @@
 use IO, Set;
 
 var Rucksacks = readItems();
-//writeln(Rucksacks);
 
 var sum = 0;
-
-var allchars = " abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 /*
 forall (s1, s2) in Rucksacks with (+ reduce sum) {
 */
-for (s1, s2) in Rucksacks {
-//  writeln((s1, s2));
-  var chars: set(uint(8));
-  for b in s1 {
-    chars.add(charToInt(b));
+for (compartment1, compartment2) in Rucksacks {
+  var items: set(uint(8));
+  for item in compartment1 {
+    items.add(itemToPriority(item));
   }
-  for (b,i) in zip(s2,0..) {
-    const b2 = charToInt(b);
-    if chars.contains(b2) {
-//      writeln("Found duplicate: ", b2);
-//      writeln("(", allchars[b2], ")");
-      sum += b2;
+  for item in compartment2 {
+    const priority = itemToPriority(item);
+    if items.contains(priority) {
+      sum += priority;
       break;
     }
   }
 }
 writeln(sum);
 
-proc charToInt(char) {
+proc itemToPriority(char) {
   param a = b"a".toByte(),
         z = b"z".toByte(),
         A = b"A".toByte(),
@@ -41,10 +35,10 @@ proc charToInt(char) {
 }
 
 iter readItems() {
-  var line: bytes;
-  while readLine(line) {
-    const len = line.size-1,
+  var rucksack: bytes;
+  while readLine(rucksack) {
+    const len = rucksack.size-1,
           mid = len / 2;
-    yield (line[0..<mid], line[mid..<len]);
+    yield (rucksack[0..<mid], rucksack[mid..<len]);
   }
 }
