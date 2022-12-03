@@ -1,3 +1,6 @@
+// WARNING:  This is a hot mess because I've been spending all my
+// time writing blogs rather than cleaning up my solutions
+
 use IO, Set;
 
 var Rucksacks = readItems();
