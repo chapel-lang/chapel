@@ -31,18 +31,18 @@ proc verdict(abc, xyz) {
   
   if them == us {
     return draw;
-  } else if shapeBeatsShape(them, us) {
+  } else if beats(them, us) {
     return lose;
-  } else if shapeBeatsShape(us, them) {
+  } else if beats(us, them) {
     return win;
   } else {
-    halt("Should never get here: ", (them, us));
+    halt("We should never get here: ", (them, us));
   }
 }
 
-// return whether shape 's1' beats shape 's2'
-proc shapeBeatsShape(s1, s2) {
-  return (s1 == rock && s2 == scissors ||
-          s1 == paper && s2 == rock ||
-          s1 == scissors && s2 == paper);
+// Return whether shape 's1' beats shape 's2'.
+proc beats(s1, s2) {
+  return s1 == rock && s2 == scissors ||
+         s1 == paper && s2 == rock ||
+         s1 == scissors && s2 == paper;
 }
