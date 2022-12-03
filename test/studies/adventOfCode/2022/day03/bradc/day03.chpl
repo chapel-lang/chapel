@@ -4,33 +4,29 @@ var Rucksacks = readItems();
 
 var sum = 0;
 
-/*
-forall (s1, s2) in Rucksacks with (+ reduce sum) {
-*/
-for (compartment1, compartment2) in Rucksacks {
+forall (compartment1, compartment2) in Rucksacks with (+ reduce sum) {
   var items: set(uint(8));
   for item in compartment1 {
-    items.add(itemToPriority(item));
+    items.add(item);
   }
   for item in compartment2 {
-    const priority = itemToPriority(item);
-    if items.contains(priority) {
-      sum += priority;
+    if items.contains(item) {
+      sum += itemToPriority(item);
       break;
     }
   }
 }
 writeln(sum);
 
-proc itemToPriority(char) {
-  param a = b"a".toByte(),
-        z = b"z".toByte(),
-        A = b"A".toByte(),
-	Z = b"Z".toByte();
-  if char <= Z {
-    return char-A + 27;
+proc itemToPriority(item) {
+  param A = b"A".toByte(),
+	Z = b"Z".toByte(),
+        a = b"a".toByte();
+
+  if item <= Z {
+    return item-A + 27;
   } else {
-    return char-a + 1;
+    return item-a + 1;
   }
 }
 
