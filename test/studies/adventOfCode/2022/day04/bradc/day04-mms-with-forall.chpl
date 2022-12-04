@@ -1,6 +1,8 @@
 // topics:
 // * IO: more readf()
-// * ranges: contains() and intersection via slicing
+// * ranges: contains() and range index selection via slicing
+// * forall vs. promotion: forall permits us to fire up tasks and traverse
+//   array once rather than twice for better performance
 
 use IO;
 
