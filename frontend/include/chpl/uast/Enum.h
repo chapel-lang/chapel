@@ -63,6 +63,9 @@ class Enum final : public TypeDecl {
     #endif
   }
 
+  Enum(Deserializer& des)
+    : TypeDecl(asttags::Enum, des) {}
+
   int declOrCommentChildNum() const {
     return attributes() ? 1 : 0;
   }
@@ -123,6 +126,13 @@ class Enum final : public TypeDecl {
     auto end = begin + numDeclOrComments();
     return AstListNoCommentsIteratorPair<EnumElement>(begin, end);
   }
+
+  void serialize(Serializer& ser) const override {
+    TypeDecl::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(Enum);
+
 };
 
 
