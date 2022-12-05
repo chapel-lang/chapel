@@ -261,7 +261,7 @@ AstList BuilderResult::deserializeFromFile(Context* context, std::istream& is) {
 
 bool BuilderResult::compare(const AstList& other) const {
   const int n = numTopLevelExpressions();
-  if (other.size() != n) {
+  if (other.size() != (size_t)n) {
     return false;
   }
   for (int i = 0; i < n; i++) {
