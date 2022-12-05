@@ -193,10 +193,11 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
 
 void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
 
-  if (ast->isFormal()) {
-    // don't try to default init formal values
+  /*auto formal = ast->toFormal();
+  if (formal != nullptr && formal->intent() != Formal::OUT) {
+    // don't try to default init formal values unless they are 'out'.
     return;
-  }
+  }*/
 
   ResolvedExpression& varRes = rv.byAst(ast);
   QualifiedType varType = varRes.type();
@@ -216,37 +217,81 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
     return;
   }
 
+  // these will be set below
+  const ClassType* classType = nullptr;
+  const CompositeType* compositeType = nullptr;
+
   const Type* vt = varType.type();
+
   if (vt->isPrimitiveType() || vt->isBuiltinType() || vt->isCStringType() ||
       vt->isNilType() || vt->isNothingType() || vt->isVoidType()) {
     // OK, we can always default initialize primitive numeric types,
     // and as well we assume that for the non-generic builtin types
     // e.g. TaskIdType.
     // No need to resolve anything additional now.
+    return;
   } else if (vt->isEnumType()) {
     // OK, can default-initialize enums to first element
+    return;
   } else if (vt->isFunctionType()) {
     // TODO: any action needed here?
-  } else if (vt->isDeclaredType()) {
-    if (auto ct = vt->toClassType()) {
-      // check that the class is a nilable class type
-      if (!ct->decorator().isNilable()) {
-        // TODO: improve this error
-        context->error(ast, "cannot default initialize variable using non-nilable class type");
-        return;
-      }
+    return;
+  } else if (vt->isTupleType()) {
+    // TODO: probably need to do something here, at least in some cases
+  } else if (auto ct = vt->toClassType()) {
+    auto decorator = ct->decorator();
+    // check that the class is a nilable class type
+    if (!decorator.isNilable()) {
+      // TODO: improve this error
+      context->error(ast, "cannot default initialize variable using non-nilable class type");
+      return;
+    }
+    // no action needed for 'borrowed' or 'unmanaged'
+    // (these should just default initialized to 'nil',
+    //  so nothing else needs to be resolved)
+    if (decorator.isBorrowed() || decorator.isUnmanaged()) {
+      return;
     }
 
+    // otherwise, need to resolve an 'init' e.g. shared.init
+    classType = ct;
+    compositeType = ct->manager()->toCompositeType();
+  } else if (auto ct = vt->toCompositeType()) {
+    compositeType = ct;
+  }
+
+  if (compositeType != nullptr) {
     // try to resolve 'init'
     // TODO: handle instantiations passing field types
     std::vector<CallInfoActual> actuals;
     actuals.push_back(CallInfoActual(varType, USTR("this")));
+    if (classType != nullptr && classType->manager() != nullptr) {
+      // always pass chpl_t=borrowed class type
+      auto dec = classType->decorator().toBorrowed();
+      auto t = ClassType::get(context,
+                              classType->basicClassType(),
+                              /* manager */ nullptr,
+                              dec);
+      auto chpl_t = UniqueString::get(context, "chpl_t");
+      actuals.push_back(
+          CallInfoActual(QualifiedType(QualifiedType::TYPE, t), chpl_t));
+    } else if (compositeType != nullptr &&
+               compositeType->instantiatedFromCompositeType() != nullptr) {
+      // pass generic type and param fields by the name
+      auto subs = compositeType->sortedSubstitutions();
+      for (auto pair : subs) {
+        const ID& id = pair.first;
+        const QualifiedType& qt = pair.second;
+        UniqueString fname = parsing::fieldIdToName(context, id);
+        actuals.push_back(CallInfoActual(qt, fname));
+      }
+    }
     auto ci = CallInfo (/* name */ USTR("init"),
                         /* calledType */ QualifiedType(),
                         /* isMethodCall */ true,
                         /* hasQuestionArg */ false,
                         /* isParenless */ false,
-                        actuals);
+                        std::move(actuals));
     const Scope* scope = scopeForId(context, ast->id());
     auto c = resolveGeneratedCall(context, ast, ci, scope,
                                   resolver.poiScope);
@@ -361,15 +406,27 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
 
 void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   VarFrame* frame = currentFrame();
-  bool inited = processDeclarationInit(ast, rv);
-  bool splitInited = (splitInitedVars.count(ast->id()) > 0);
 
-  if (!inited && !splitInited) {
-    // not inited here and not split-inited, so default-initialize it
-    resolveDefaultInit(ast, rv);
-    ID id = ast->id();
-    frame->initedVars.insert(id);
-    frame->localsAndDefers.push_back(id);
+  auto formal = ast->toFormal();
+  if (formal != nullptr && formal->intent() != Formal::OUT) {
+    // don't try to default init formal values unless they are 'out'.
+  } else if (auto vaf = ast->toVarArgFormal()) {
+    // don't try to default init var-arg formals
+    if (vaf->intent() == Formal::OUT) {
+      // at least it's not supported right now...
+      context->error(vaf, "cannot have out intent varargs");
+    }
+  } else {
+    bool inited = processDeclarationInit(ast, rv);
+    bool splitInited = (splitInitedVars.count(ast->id()) > 0);
+
+    if (!inited && !splitInited) {
+      // not inited here and not split-inited, so default-initialize it
+      resolveDefaultInit(ast, rv);
+      ID id = ast->id();
+      frame->initedVars.insert(id);
+      frame->localsAndDefers.push_back(id);
+    }
   }
 
   // record it in declaredVars

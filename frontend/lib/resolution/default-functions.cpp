@@ -19,9 +19,10 @@
 
 #include "default-functions.h"
 
-#include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
@@ -71,6 +72,8 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
   // nothing found
   if (vec.size() == 0) return false;
 
+  auto haveQt = QualifiedType(QualifiedType::VAR, type);
+
   // loop through IDs and see if any are methods on the same type
   for (auto& ids : vec) {
     for (auto id : ids) {
@@ -86,8 +89,11 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
         auto tfs = typedSignatureInitial(context, ufs);
         auto receiverQualType = tfs->formalType(0);
 
-        // receiver type matches, return true
-        if (receiverQualType.type() == type) {
+        // return true if the receiver type matches or
+        // if the receiver type is a generic type and we have
+        // an instantiation.
+        auto result = canPass(context, haveQt, receiverQualType);
+        if (result.passes() && !result.converts() && !result.promotes()) {
           return true;
         }
       }

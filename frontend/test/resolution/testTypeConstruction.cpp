@@ -1246,6 +1246,7 @@ static void test41() {
                           }
                           record R {
                             param p;
+                            proc init(param p) { this.p = p; }
                           }
                           var x = useType(R(1));
                         )"""");
@@ -1278,6 +1279,7 @@ static void test42() {
                           }
                           record R {
                             param p;
+                            proc init(param p) { this.p = p; }
                           }
                           var x = useType(R);
                         )"""");
