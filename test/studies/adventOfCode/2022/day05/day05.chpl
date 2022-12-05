@@ -13,16 +13,25 @@ param charsPerStack = 4;
 enum alphabet {A, B, C, D, E, F, G, H, I, J, K, L, M,
                N, O, P, Q, R, S, T, U, V, W, X, Y, Z};
 
-const InitState = readInitState();
-var Stacks = initStateToStacks(InitState[..<InitState.size-1]);
-runCommands();
+var Stacks = initStacks();
+
+// read the commands from the file and run them
+var num, src, dst: int;
+
+// Process the commands
+while readf("move %i from %i to %i\n", num, src, dst) do
+  for i in 1..num do
+    Stacks[dst].append(Stacks[src].pop());
 
 // Print the top of each stack
 for s in Stacks do
   write(s.pop());
 writeln();
 
-proc initStateToStacks(InitState) {
+
+proc initStacks() {
+  const InitState = readInitState();
+
   // use the last line (with all the stack numbers) to compute the # of stacks
   var numStacks = InitState.last.size / charsPerStack;
 
@@ -30,8 +39,10 @@ proc initStateToStacks(InitState) {
   // (wishing it was an array of stacks of the enum)
   var Stacks: [1..numStacks] list(alphabet);
 
-  // iterate over the lines representing crates backwards (bottom up)
+  // iterate over the lines representing crates backwards (bottom up),
+  // skipping over the line with the stack numbers
   for i in 0..<InitState.size-1 by -1 {
+
     // do a zippered iteration over the stack IDs and
     // offsets where crate names will be
     for (s,off) in zip(1..numStacks, 1.. by charsPerStack) {
@@ -44,22 +55,10 @@ proc initStateToStacks(InitState) {
   return Stacks;
 }
 
-// Read in, and execute, the moves
-proc runCommands() {
-  var num, src, dst: int;
-
-  // Process the commands
-  while readf("move %i from %i to %i\n", num, src, dst) do
-    for i in 1..num do
-      Stacks[dst].append(Stacks[src].pop());
-}
-
 // read and yield lines until we get to the blank one
 iter readInitState() {
-  do {
-    var line: string;
-    readLine(line);
+  var line: string;
+  while (readLine(line) && line.size > 1) do
     yield line;
-  } while (line.size > 1);
 }
 
