@@ -1,53 +1,58 @@
 // max reduce
-// list
-// unbounded range slice
+// lists (oh how I wish they were stacks!)
 // strided ranges
 
 use IO, List;
 
+// Each stack uses 4 ascii characters in the input: [, A-Z, ], and ' ' or '\n'
+param charsPerStack = 4;
+
+// After processing the input, let's convert with enums rather than
+// strings, for speed!
 enum alphabet {A, B, C, D, E, F, G, H, I, J, K, L, M,
                N, O, P, Q, R, S, T, U, V, W, X, Y, Z};
 
-const State = readInitState();
-//writeln(State);
+// Read in the part of the input describing the initial state
+const InitState = readInitState();
 
-var numStacks = max reduce ([s in State] s.size/4);
-//writeln("numStacks = ", numStacks);
+// Determine the largest number of stacks, which we can find using a
+// max reduction (or... duh... we could just take the length of the
+// final line, couldn't we?  TODO
+var numStacks = max reduce ([s in InitState] s.size/charsPerStack);
 
+// Represent our stacks with an array of lists of the enum
+// (wishing it were an array of stacks of the enum
 var Stacks: [1..numStacks] list(alphabet);
 
-for i in 0..<State.size-2 by -1 {
-//  write(State[i]);
+// Convert the InitState into the stacks
+
+const linesToProcess = InitState.size - 2;
+for i in 0..<linesToProcess by -1 {
   for s in 1..numStacks do {
-    const char = State[i][(s-1)*4 + 1];
+    const char = InitState[i][(s-1)*charsPerStack + 1];
     if (char != " ") {
-//      writeln(char);
-//      writeln(char:alphabet);
       Stacks[s].append(char:alphabet);
     }
   }
 }
 
-//writeln(Stacks);
-
+// Read in, and execute, the moves
 var num, src, dst: int;
-while readf("move %i from %i to %i\n", num, src, dst) {
-//  writeln((num, src, dst));
-  for i in 1..num {
-    Stacks[dst].append(Stacks[src].pop());
-  }
-}
 
+// Process the commands
+while readf("move %i from %i to %i\n", num, src, dst) do
+  for i in 1..num do
+    Stacks[dst].append(Stacks[src].pop());
+
+// Print the top of each stack
 for s in Stacks do
   write(s.pop());
 writeln();
 
-//writeln(Stacks);
-
 
 iter readInitState() {
   do {
-// BUG:
+// BUG:  var line = readLine();
     var line: string;
     readLine(line);
     yield line;
