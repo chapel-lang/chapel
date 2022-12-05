@@ -193,12 +193,6 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
 
 void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
 
-  /*auto formal = ast->toFormal();
-  if (formal != nullptr && formal->intent() != Formal::OUT) {
-    // don't try to default init formal values unless they are 'out'.
-    return;
-  }*/
-
   ResolvedExpression& varRes = rv.byAst(ast);
   QualifiedType varType = varRes.type();
 
@@ -296,7 +290,9 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
     auto c = resolveGeneratedCall(context, ast, ci, scope,
                                   resolver.poiScope);
     ResolvedExpression& opR = rv.byAst(ast);
-    resolver.handleResolvedAssociatedCall(opR, ast, ci, c);
+    resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
+                                          AssociatedAction::DEFAULT_INIT,
+                                          ast->id());
   }
 }
 
@@ -317,7 +313,9 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
   auto c = resolveGeneratedCall(context, ast, ci, scope,
                                 resolver.poiScope);
   ResolvedExpression& opR = rv.byAst(ast);
-  resolver.handleResolvedAssociatedCall(opR, ast, ci, c);
+  resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
+                                        AssociatedAction::ASSIGN,
+                                        ast->id());
 }
 
 void CallInitDeinit::resolveCopyInit(const AstNode* ast,
@@ -337,7 +335,8 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
   auto c = resolveGeneratedCall(context, ast, ci, scope,
                                 resolver.poiScope);
   ResolvedExpression& opR = rv.byAst(ast);
-  resolver.handleResolvedAssociatedCall(opR, ast, ci, c);
+  resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
+                                        AssociatedAction::COPY_INIT, ast->id());
 }
 
 static bool isValue(QualifiedType::Kind kind) {
@@ -401,7 +400,8 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
   auto c = resolveGeneratedCall(context, ast, ci, scope,
                                 resolver.poiScope);
   ResolvedExpression& opR = rv.byAst(ast);
-  resolver.handleResolvedAssociatedCall(opR, ast, ci, c);
+  resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
+                                        AssociatedAction::DEINIT, ast->id());
 }
 
 void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {

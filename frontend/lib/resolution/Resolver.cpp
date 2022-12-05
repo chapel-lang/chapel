@@ -1016,14 +1016,16 @@ void Resolver::handleResolvedCall(ResolvedExpression& r,
 void Resolver::handleResolvedAssociatedCall(ResolvedExpression& r,
                                             const uast::AstNode* astForErr,
                                             const CallInfo& ci,
-                                            const CallResolutionResult& c) {
+                                            const CallResolutionResult& c,
+                                            AssociatedAction::Action action,
+                                            ID id) {
   if (!c.exprType().hasTypePtr()) {
     issueErrorForFailedCallResolution(astForErr, ci, c);
   } else {
     // save candidates as associated functions
     for (auto sig : c.mostSpecific()) {
       if (sig != nullptr) {
-        r.addAssociatedFn(sig);
+        r.addAssociatedAction(action, sig, id);
       }
     }
     // gather the poi scopes used when resolving the call
@@ -1208,7 +1210,9 @@ void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
                           actuals);
 
       auto c = resolveGeneratedCall(context, actual, ci, scope, poiScope);
-      handleResolvedAssociatedCall(r, astForErr, ci, c);
+      handleResolvedAssociatedCall(r, astForErr, ci, c,
+                                   AssociatedAction::ASSIGN,
+                                   lhsTuple->id());
     }
     i++;
   }
@@ -1359,7 +1363,9 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
 
   // there should be one or zero applicable candidates
   if (auto initTfs = crr.mostSpecific().only()) {
-    handleResolvedAssociatedCall(re, call, ci, crr);
+    handleResolvedAssociatedCall(re, call, ci, crr,
+                                 AssociatedAction::NEW_INIT,
+                                 call->id());
 
     // Set the final output type based on the result of the 'new' call.
     auto qtInitReceiver = initTfs->formalType(0);
@@ -2579,7 +2585,9 @@ static QualifiedType resolveSerialIterType(Resolver& resolver,
 
     if (c.mostSpecific().only() != nullptr) {
       idxType = c.exprType();
-      resolver.handleResolvedAssociatedCall(iterandRE, loop, ci, c);
+      resolver.handleResolvedAssociatedCall(iterandRE, loop, ci, c,
+                                            AssociatedAction::ITERATE,
+                                            iterand->id());
     } else {
       idxType = CHPL_TYPE_ERROR(context, NonIterable, loop, iterand, iterandRE.type());
     }

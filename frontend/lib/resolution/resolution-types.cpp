@@ -829,6 +829,42 @@ void CallResolutionResult::stringify(std::ostream& ss,
 }
 
 
+void AssociatedAction::stringify(std::ostream& ss,
+                                 chpl::StringifyKind stringKind) const {
+  const char* kind = "<unknown>";
+  switch (action_) {
+    case ASSIGN:
+      kind = "assign";
+      break;
+    case COPY_INIT:
+      kind = "copy-init";
+      break;
+    case DEFAULT_INIT:
+      kind = "default-init";
+      break;
+    case DEINIT:
+      kind = "deinit";
+      break;
+    case ITERATE:
+      kind = "these";
+      break;
+    case NEW_INIT:
+      kind = "new-init";
+      break;
+  }
+
+
+  ss << "assoc " << kind;
+  if (fn_ != nullptr) {
+    ss << " fn=";
+    fn_->stringify(ss, stringKind);
+  }
+  if (!id_.isEmpty()) {
+    ss << " id=";
+    id_.stringify(ss, stringKind);
+  }
+}
+
 void ResolvedExpression::stringify(std::ostream& ss,
                                    chpl::StringifyKind stringKind) const {
   ss << " : ";
@@ -841,11 +877,8 @@ void ResolvedExpression::stringify(std::ostream& ss,
     mostSpecific_.stringify(ss, stringKind);
   }
 
-  for (auto sig : associatedFns_) {
-    if (sig != nullptr) {
-      ss << " assoc ";
-      sig->stringify(ss, stringKind);
-    }
+  for (auto a : associatedActions_) {
+    a.stringify(ss, stringKind);
   }
 }
 

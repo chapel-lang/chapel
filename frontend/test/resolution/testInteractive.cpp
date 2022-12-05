@@ -167,7 +167,8 @@ computeAndPrintStuff(Context* context,
         }
       }
     }
-    for (const TypedFnSignature* sig : r->associatedFns()) {
+    for (auto a : r->associatedActions()) {
+      auto sig = a.fn();
       if (sig != nullptr) {
         if (sig->untyped()->idIsFunction()) {
           auto fn = resolveFunction(context, sig, r->poiScope());

@@ -1066,6 +1066,55 @@ class CallResolutionResult {
 class ResolvedParamLoop;
 
 /**
+
+  This type represents an associated action (for use within a
+  ResolvedExpression)
+
+ */
+class AssociatedAction {
+ public:
+  enum Action {
+    ASSIGN,
+    COPY_INIT,
+    DEFAULT_INIT,
+    DEINIT,
+    ITERATE, // aka "these"
+    NEW_INIT,
+  };
+
+ private:
+  Action action_;
+  const TypedFnSignature* fn_;
+  ID id_;
+
+ public:
+  AssociatedAction(Action action, const TypedFnSignature* fn, ID id)
+    : action_(action), fn_(fn), id_(id) {
+  }
+  bool operator==(const AssociatedAction& other) const {
+    return action_ == other.action_ &&
+           fn_ == other.fn_ &&
+           id_ == other.id_;
+  }
+  bool operator!=(const AssociatedAction& other) const {
+    return !(*this == other);
+  }
+  /** Returns which action this represents */
+  Action action() const { return action_; }
+  /** Return which function is called to help with the action */
+  const TypedFnSignature* fn() const { return fn_; }
+  /** Return the ID is associated with the action */
+  const ID& id() const { return id_; }
+
+  void mark(Context* context) const {
+    if (fn_ != nullptr) fn_->mark(context);
+    id_.mark(context);
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+};
+
+/**
   This type represents a resolved expression.
 */
 class ResolvedExpression {
@@ -1091,12 +1140,12 @@ class ResolvedExpression {
   //   * with action (an enum)
   //   * with ID (for e.g. a var or tmp deinit)
   //   * with TypedFnSignature
-  std::vector<const TypedFnSignature*> associatedFns_;
+  std::vector<AssociatedAction> associatedActions_;
 
   const ResolvedParamLoop* paramLoop_ = nullptr;
 
  public:
-  using AssociatedFns = std::vector<const TypedFnSignature*>;
+  using AssociatedActions = std::vector<AssociatedAction>;
 
   ResolvedExpression() { }
 
@@ -1116,8 +1165,8 @@ class ResolvedExpression {
 
   const PoiScope* poiScope() const { return poiScope_; }
 
-  const AssociatedFns& associatedFns() const {
-    return associatedFns_;
+  const AssociatedActions& associatedActions() const {
+    return associatedActions_;
   }
 
   const ResolvedParamLoop* paramLoop() const {
@@ -1139,8 +1188,10 @@ class ResolvedExpression {
   void setPoiScope(const PoiScope* poiScope) { poiScope_ = poiScope; }
 
   /** add an associated function */
-  void addAssociatedFn(const TypedFnSignature* fn) {
-    associatedFns_.push_back(fn);
+  void addAssociatedAction(AssociatedAction::Action action,
+                           const TypedFnSignature* fn,
+                           ID id) {
+    associatedActions_.push_back(AssociatedAction(action, fn, id));
   }
 
   void setParamLoop(const ResolvedParamLoop* paramLoop) { paramLoop_ = paramLoop; }
@@ -1150,7 +1201,7 @@ class ResolvedExpression {
            toId_ == other.toId_ &&
            mostSpecific_ == other.mostSpecific_ &&
            poiScope_ == other.poiScope_ &&
-           associatedFns_ == other.associatedFns_ &&
+           associatedActions_ == other.associatedActions_ &&
            paramLoop_ == other.paramLoop_;
   }
   bool operator!=(const ResolvedExpression& other) const {
@@ -1161,7 +1212,7 @@ class ResolvedExpression {
     toId_.swap(other.toId_);
     mostSpecific_.swap(other.mostSpecific_);
     std::swap(poiScope_, other.poiScope_);
-    std::swap(associatedFns_, other.associatedFns_);
+    std::swap(associatedActions_, other.associatedActions_);
     std::swap(paramLoop_, other.paramLoop_);
   }
   static bool update(ResolvedExpression& keep, ResolvedExpression& addin) {
@@ -1172,7 +1223,9 @@ class ResolvedExpression {
     toId_.mark(context);
     mostSpecific_.mark(context);
     context->markPointer(poiScope_);
-    for (auto tfs : associatedFns_) tfs->mark(context);
+    for (auto a : associatedActions_) {
+      a.mark(context);
+    }
     context->markPointer(paramLoop_);
   }
 
