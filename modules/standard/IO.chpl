@@ -6163,7 +6163,7 @@ proc readLine(ref b: bytes, maxSize=-1, stripNewline=false): bool throws{
 
 /* Equivalent to ``stdin.readLine``.  See :proc:`channel.readLine` */
 proc readLine(type t=string, maxSize=-1, stripNewline=false): t throws where t==string || t==bytes {
-  return stdin.readline(t, maxSize, stripNewline);
+  return stdin.readLine(t, maxSize, stripNewline);
 }
 
 /* Equivalent to ``stdin.readln``. See :proc:`channel.readln` */
