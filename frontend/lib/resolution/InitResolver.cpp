@@ -217,7 +217,7 @@ InitResolver::computeTypedSignature(const Type* newRecvType) {
 
   ret = TypedFnSignature::get(ctx_, ufs, formalTypes,
                               tfs->whereClauseResult(),
-                              false,
+                              /* needsInstantiation */ false,
                               tfs->instantiatedFrom(),
                               tfs->parentFn(),
                               formalsInstantiated);

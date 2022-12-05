@@ -646,18 +646,20 @@ TypedFnSignature::getTypedFnSignature(Context* context,
                     std::vector<types::QualifiedType> formalTypes,
                     TypedFnSignature::WhereClauseResult whereClauseResult,
                     bool needsInstantiation,
+                    bool isRefinementOnly,
                     const TypedFnSignature* instantiatedFrom,
                     const TypedFnSignature* parentFn,
                     Bitmap formalsInstantiated) {
   QUERY_BEGIN(getTypedFnSignature, context,
               untypedSignature, formalTypes, whereClauseResult,
-              needsInstantiation, instantiatedFrom, parentFn,
+              needsInstantiation, isRefinementOnly, instantiatedFrom, parentFn,
               formalsInstantiated);
 
   auto result = toOwned(new TypedFnSignature(untypedSignature,
                                              std::move(formalTypes),
                                              whereClauseResult,
                                              needsInstantiation,
+                                             isRefinementOnly,
                                              instantiatedFrom,
                                              parentFn,
                                              std::move(formalsInstantiated)));
@@ -678,10 +680,28 @@ TypedFnSignature::get(Context* context,
                              std::move(formalTypes),
                              whereClauseResult,
                              needsInstantiation,
+                             /* isRefinementOnly */ false,
                              instantiatedFrom,
                              parentFn,
                              std::move(formalsInstantiated)).get();
 }
+
+const TypedFnSignature*
+TypedFnSignature::getInferred(
+                      Context* context,
+                      std::vector<types::QualifiedType> formalTypes,
+                      const TypedFnSignature* inferredFrom) {
+  return getTypedFnSignature(context,
+                             inferredFrom->untyped(),
+                             formalTypes,
+                             inferredFrom->whereClauseResult(),
+                             inferredFrom->needsInstantiation(),
+                             /* isRefinementOnly */ true,
+                             inferredFrom->inferredFrom(),
+                             inferredFrom->parentFn(),
+                             inferredFrom->formalsInstantiatedBitmap()).get();
+}
+
 
 void TypedFnSignature::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
@@ -761,12 +781,13 @@ bool PoiInfo::canReuse(const PoiInfo& check) const {
   return false; // TODO -- consider function names etc -- see PR #16261
 }
 
-void MostSpecificCandidates::inferOutFormals(Context* context,
-                                             const PoiScope* poiScope) {
+void
+MostSpecificCandidates::inferOutFormals(Context* context,
+                                        const PoiScope* instantiationPoiScope) {
   for (int i = 0; i < NUM_INTENTS; i++) {
     const TypedFnSignature*& c = candidates[i];
     if (c != nullptr) {
-      c = chpl::resolution::inferOutFormals(context, c, poiScope);
+      c = chpl::resolution::inferOutFormals(context, c, instantiationPoiScope);
     }
   }
 }

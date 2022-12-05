@@ -550,7 +550,12 @@ void callInitDeinit(Resolver& resolver) {
                                                        resolver.byPostorder,
                                                        splitInitedVars);
 
-  printf("\nSplit Init Report:\n");
+  auto symName = UniqueString::get(resolver.context, "unknown");
+  if (auto nd = resolver.symbol->toNamedDecl()) {
+    symName = nd->name();
+  }
+
+  printf("\nSplit Init Report for '%s':\n", symName.c_str());
   for (auto varId : splitInitedVars) {
     auto ast = parsing::idToAst(resolver.context, varId);
     if (ast) {
@@ -562,7 +567,7 @@ void callInitDeinit(Resolver& resolver) {
   }
   printf("\n");
 
-  printf("\nCopy Elision Report:\n");
+  printf("\nCopy Elision Report for '%s':\n", symName.c_str());
   for (auto id : elidedCopyFromIds) {
     printf("  Copy eliding ID %s\n",
            id.str().c_str());
