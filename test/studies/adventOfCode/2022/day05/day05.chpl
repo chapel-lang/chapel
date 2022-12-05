@@ -1,7 +1,9 @@
-// array slice
-// lists (oh how I wish they were stacks!)
-// strided ranges
-// zippered iteration
+// Highlights:
+// * strided ranges
+//   - 'by -1' and 'by charsPerStack'
+// * zippered iteration
+//   - to iterate over stack numbers and column offsets simultaneously
+// * lists (oh how I wish they were stacks!)
 
 use IO, List;
 
