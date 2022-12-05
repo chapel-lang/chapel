@@ -650,19 +650,28 @@ bool idIsParenlessFunction(Context* context, ID id) {
   return idIsParenlessFunctionQuery(context, id);
 }
 
-static const bool& idIsFieldQuery(Context* context, ID id) {
-  QUERY_BEGIN(idIsFieldQuery, context, id);
+static const UniqueString& fieldIdToNameQuery(Context* context, ID id) {
+  QUERY_BEGIN(fieldIdToNameQuery, context, id);
 
-  bool result = false;
-  if (auto ast = astForIDQuery(context, id))
-    if (auto var = ast->toVariable())
-      result = var->isField();
+  UniqueString result;
+  if (auto ast = astForIDQuery(context, id)) {
+    if (auto var = ast->toVariable()) {
+      if (var->isField()) {
+        result = var->name();
+      }
+    }
+  }
 
   return QUERY_END(result);
 }
 
+UniqueString fieldIdToName(Context* context, ID id) {
+  return fieldIdToNameQuery(context, id);
+}
+
 bool idIsField(Context* context, ID id) {
-  return idIsFieldQuery(context, id);
+  UniqueString name = fieldIdToName(context, id);
+  return !name.isEmpty();
 }
 
 const ID& idToParentId(Context* context, ID id) {
