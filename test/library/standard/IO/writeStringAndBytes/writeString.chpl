@@ -1,14 +1,14 @@
 use IO;
 
 var w = openwriter("sfile.txt");
-var s = "'negates itself when prepended to itself' ⬅️ negates itself when prepended to itself";
+var s = "negates itself when prepended to itself ⬅️ negates itself when prepended to itself";
 
 // default size:
 w.writeString(s);
 w.writeln();
 
 // valid size argument:
-w.writeString(s, 44);
+w.writeString(s, 14);
 w.writeln();
 
 // invalid size argument:

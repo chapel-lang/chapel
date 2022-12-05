@@ -1,14 +1,14 @@
 use IO;
 
 var w = openwriter("bfile.txt");
-var b = b"'negates itself when prepended to itself' \xE2\xAC\x85\xEf\xB8\x8F negates itself when prepended to itself";
+var b = b"negates itself when prepended to itself \xE2\xAC\x85\xEf\xB8\x8F negates itself when prepended to itself";
 
 // default size:
 w.writeBytes(b);
 w.writeln();
 
 // valid size argument:
-w.writeBytes(b, 48);
+w.writeBytes(b, 14);
 w.writeln();
 
 // invalid size argument:
