@@ -32,6 +32,17 @@ Input/output (I/O) facilities in Chapel include the types :record:`file` and
 :proc:`file.reader`, :proc:`file.writer`, :proc:`channel.read`,
 :proc:`channel.write`, and many others.
 
+.. warning::
+  Please be aware, the IO Module documentation is under development and
+  currently contains some minor inconsistencies.
+
+  For example, the :record:`channel` type has been replaced with the
+  :record:`fileWriter` and :record:`fileReader` types; however, not all
+  references to ``channel`` have been removed from the docs. As such, note that
+  writing methods on the ``channel`` type (such as :proc:`channel.writeln`) are
+  intended to be called on a ``fileWriter`` and reading methods are intended to
+  be called on a ``fileReader``.
+
 .. _about-io-overview:
 
 I/O Overview
