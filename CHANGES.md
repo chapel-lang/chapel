@@ -18,15 +18,21 @@ Syntactic / Naming Changes
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
+* zippered for-loops led by unbounded ranges are now considered infinite  
+  (see https://chapel-lang.org/docs/1.29/language/spec/ranges.html#iterating-over-unbounded-ranges)
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* deprecated `.alignedLow`/`...High` on ranges and domains (use `.low`/`.high`)
+* deprecated non-functional support for the `%=` operator on `real` values
 
 New Features
 ------------
 
 Feature Improvements
 --------------------
+* improved type inference for array literals to consider all elements' types  
+  (see https://chapel-lang.org/docs/1.29/language/spec/arrays.html#rectangular-array-literals)
 
 Namespace Changes
 -----------------
@@ -45,6 +51,7 @@ Standard Library Modules
 
 Package Modules
 ---------------
+* improved support for matrices made of het. array literals in 'LinearAlgebra'
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -60,12 +67,18 @@ Platform-specific Performance Optimizations / Improvements
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
+* reduced compile time and code generated for homogeneous array literals
 
 Memory Improvements
 -------------------
 
 Documentation
 -------------
+* improved the spec's rationale for, and presentation of, abstract intents  
+  (see https://chapel-lang.org/docs/1.29/language/spec/procedures.html#abstract-intents)
+* unified spec to use 'zippered iteration' rather than 'zipper iteration'
+* updated broken external hyperlinks in BLAS documentation  
+  (see https://chapel-lang.org/docs/1.29/modules/packages/BLAS.html#BLAS.gemm, e.g.)
 
 Syntax Highlighting
 -------------------
@@ -84,6 +97,7 @@ GPU Computing
 
 Compiler Improvements
 ---------------------
+* improved internal error messages to avoid referring to nonexistent line #s
 
 Compiler Flags
 --------------
@@ -138,6 +152,7 @@ Developer-oriented changes: Performance improvements
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* stopped 'chpldoc' sources from contributing to 'chpl's tags/ebrowse data
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
