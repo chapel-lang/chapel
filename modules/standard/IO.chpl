@@ -5079,14 +5079,15 @@ proc _channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
 }
 
 /*
-  Read ``maxSize`` codepoints from a ``fileReader``, returning a new
+  Read a given number of codepoints from a ``fileReader``, returning a new
   :type:`~String.string`.
 
   The ``string``'s length may be less than ``maxSize`` if EOF is reached while
-  reading. If nothing can be read, the empty string will be returned.
+  reading. If nothing is read, the empty string (``""``) will be returned.
 
   :arg maxSize: the maximum number of codepoints to read from the ``fileReader``
-  :returns: a new string conatining the contents of the ``fileReader``
+  :returns: a new ``string`` containing up to the next ``maxSize`` codepoints
+              from the ``fileReader``
 
   :throws SystemError: Thrown if a ``string`` could not be read from the ``fileReader``.
 */
@@ -5100,19 +5101,18 @@ proc fileReader.readString(maxSize: int): string throws {
 }
 
 /*
-  Read ``maxSize`` codepoints from a ``fileReader`` into a
+  Read a given number of codepoints from a ``fileReader`` into a
   :type:`~String.string`.
 
-  The ``string``'s length may be less than ``maxSize`` if EOF is reached while
-  reading. If nothing can be read, the string argument will be set to the empty
-  string.
+  The updated ``string``'s length may be less than ``maxSize`` if EOF is
+  reached while reading. If nothing is read, it will be set to the empty
+  string (``""``).
 
   :arg s: the ``string`` to read into — contents will be overwritten
   :arg maxSize: the maximum number of codepoints to read from the ``fileReader``
   :returns: ``false`` if nothing could be read, or ``true`` if something was read.
 
   :throws SystemError: Thrown if a ``string`` could not be read from the ``fileReader``.
-
 */
 proc fileReader.readString(ref s: string, maxSize: int): bool throws {
   var (e, lenRead) = readBytesOrString(this, s, maxSize);
@@ -5148,14 +5148,15 @@ proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
 }
 
 /*
-  Read ``maxSize`` bytes from a ``fileReader``, returning a new
+  Read a given number of bytes from a ``fileReader``, returning a new
   :type:`~Bytes.bytes`.
 
   The ``bytes``'s length may be less than ``maxSize`` if EOF is reached while
-  reading. If nothing can be read, the empty bytes will be returned.
+  reading. If nothing is read, the empty bytes (``b""``) will be returned.
 
   :arg maxSize: the maximum number of bytes to read from the ``fileReader``
-  :returns: a new bytes conatining the contents of the ``fileReader``
+  :returns: a new ``bytes`` containing up to the next ``maxSize`` bytes
+              from the ``fileReader``
 
   :throws SystemError: Thrown if a ``bytes`` could not be read from the ``fileReader``.
 */
@@ -5169,19 +5170,18 @@ proc fileReader.readBytes(maxSize: int): bytes throws {
 }
 
 /*
-  Read ``maxSize`` bytes from a ``fileReader`` into a
+  Read a given number of bytes from a ``fileReader`` into a
   :type:`~Bytes.bytes`.
 
-  The ``bytes``'s length may be less than ``maxSize`` if EOF is reached while
-  reading. If nothing can be read, the bytes argument will be set to the empty
-  bytes.
+  The updated ``bytes``'s length may be less than ``maxSize`` if EOF is
+  reached while reading. If nothing is read, it will be set to the empty
+  bytes (``b""``).
 
-  :arg s: the ``bytes`` to read into — contents will be overwritten
+  :arg b: the ``bytes`` to read into — contents will be overwritten
   :arg maxSize: the maximum number of bytes to read from the ``fileReader``
   :returns: ``false`` if nothing could be read, or ``true`` if something was read.
 
   :throws SystemError: Thrown if a ``bytes`` could not be read from the ``fileReader``.
-
 */
 proc fileReader.readBytes(ref b: bytes, maxSize: int): bool throws {
   var (e, lenRead) = readBytesOrString(this, b, maxSize);
