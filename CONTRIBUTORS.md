@@ -10,7 +10,6 @@ Contributors to the Chapel 1.28.0 release
 * Paul Cassella, [HPE]
 * [Brad Chamberlain], [HPE]
 * Soohoon Choi, [HPE]
-* Andrew Consroe, [HPE]
 * Jeremiah Corrado, [HPE]
 * Lydia Duncan, [HPE]
 * Daniel Fedorin, [HPE]
@@ -20,18 +19,15 @@ Contributors to the Chapel 1.28.0 release
 * David Iten, [HPE]
 * Bhavani Jayakumaran, [HPE]
 * Engin Kayraklioglu, [HPE]
-* Shreyas Khandekar, [HPE] intern from [University of Arizona]
 * Vassily Litvinov, [HPE]
 * David Longnecker, [HPE]
 * Ben McDonald, [HPE] (former intern from [Gonzaga University])
-* Brandon Neth, [HPE] intern from [University of Arizona]
-* Nikki Rad, [HPE] intern from [Texas A&M University]
 * Ahmad Rezaii, [HPE]
 * Anna Rift, [HPE]
-* Thomas Rolinger, individual contributor
 * Elliot Ronaghan, [HPE]
 * Andy Stone, [HPE] (former [Cray Inc.] intern from [Colorado State University])
 * Michelle Mills Strout, [HPE]
+* Vivian Wang, individual contributor, [GHC] 2022 Open Source Day
 * Karlon West, [HPE]
 * Tim Zinsky, [HPE]
 
@@ -64,6 +60,7 @@ Contributors to previous releases
 * Sung-Eun Choi, [Cray Inc.]
 * Mike Chu, [Advanced Micro Devices, Inc.]
 * Cristian-loan Condruz, individual contributor
+* Andrew Consroe, [HPE]
 * Anway De, individual contributor
 * Steve Deitz, [Cray Inc.]
 * Laura Delaney, [Cray Inc.] intern from [Whitworth University]
@@ -102,6 +99,7 @@ Contributors to previous releases
 * Avneet Kaur, [RGSoC 2018] student from [Indraprastha Institute of Information Technology, Delhi]
 * David Keaton, [Cray Inc.]
 * Krishna Keshav, individual contributor
+* Shreyas Khandekar, [HPE] intern from [University of Arizona]
 * Sagar Khatri, individual contributor
 * Lee Killough, [HPE]
 * John Koenig, [Cray Inc.]
@@ -134,6 +132,7 @@ Contributors to previous releases
 * Divye Nayyar, individual contributor and [GSoC 2021] student from [Indian Institute of Technology Roorkee]
 * Jacob Nelson, [Cray Inc.] intern from [University of Washington]
 * [Phil Nelson], [Western Washington University] / [Cray Inc.] contractor
+* Brandon Neth, [HPE] intern from [University of Arizona]
 * Sarah Nguyen, [HPE]
 * Michael Noakes, [Cray Inc.]
 * Joshua Olson, individual contributor
@@ -155,8 +154,10 @@ Contributors to previous releases
 * Lee Prokowich, [Cray Inc.]
 * David Qian, individual contributor
 * Yujia Qiao, individual contributor and [GSoC 2020] student from [Huazhong University of Science and Technology]
+* Nikki Rad, [HPE] intern from [Texas A&M University]
 * Venkatavaradan Raghuraman, individual contributor
 * Yash Raj, individual contributor
+* Thomas Rolinger, individual contributor
 * Brandon Ross, [University at Buffalo]
 * Preston Sahabu, [Cray Inc.]
 * Sara Salem, [Cairo University]
@@ -248,6 +249,7 @@ implementation.
 [ETI]: http://www.etinternational.com/
 [George Washington University]: https://www.gwu.edu/
 [Georgia Tech]: http://www.cc.gatech.edu/
+[GHC]: https://ghc.anitab.org/
 [Gonzaga University]: https://www.gonzaga.edu/
 [GSoC 2016]: https://summerofcode.withgoogle.com/archive/2016/organizations/4704629866627072/
 [GSoC 2017]: https://summerofcode.withgoogle.com/archive/2017/organizations/4757669491507200/
