@@ -78,7 +78,7 @@
 #include "chpl-gpu-gen-includes.h"
 #endif
 
-#if defined(__linux__) || defined(__APPLE__)
+#if defined(__linux__) || defined(__APPLE__) || defined(__CYGWIN__)
 #include "os-module-support/posix.h"
 #endif
 
