@@ -71,6 +71,18 @@ struct LoopData
 #endif
 };
 
+/* Holds names of files used by LLVM codegen. */
+struct LLVMGenFilenames {
+  std::string moduleFilename;
+  std::string preOptFilename;
+  std::string opt1Filename;
+  std::string opt2Filename;
+  std::string artifactFilename;
+  std::string ptxObjectFilename;
+  std::string outFilename;
+  std::string fatbinFilename;
+};
+
 /* GenInfo is meant to be a global variable which stores
  * the code generator state - e.g. FILE* to print C to
  * or LLVM module in which to generate.
@@ -110,6 +122,8 @@ struct GenInfo {
   llvm::IRBuilder<> *irBuilder;
   llvm::MDBuilder *mdBuilder;
   llvm::TargetMachine* targetMachine;
+
+  LLVMGenFilenames llvmGenFilenames;
 
   std::vector<LoopData> loopStack;
   std::vector<std::pair<llvm::AllocaInst*, llvm::Type*> > currentStackVariables;
@@ -157,6 +171,8 @@ extern std::map<std::string, int> commIDMap;
 #ifdef HAVE_LLVM
 void setupClang(GenInfo* info, std::string rtmain);
 #endif
+
+void setupLLVMCodegenFilenames(void);
 
 bool isBuiltinExternCFunction(const char* cname);
 

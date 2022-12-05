@@ -2151,6 +2151,8 @@ void finishCodegenLLVM() {
       INT_FATAL("LLVM module verification failed");
     }
   }
+
+  llvmOptimizeAndCodegen();
 }
 
 #ifdef HAVE_LLVM_RV
@@ -2270,6 +2272,8 @@ void prepareCodegenLLVM()
     info->irBuilder->setFastMathFlags(FM);
   }
 
+  setupLLVMCodegenFilenames();
+
   checkAdjustedDataLayout();
 }
 
@@ -2376,6 +2380,12 @@ static void addFilteredArgs(std::vector<std::string>& dst,
     for (size_t i = 0; i < src.size(); i++) {
       dst.push_back(src[i]);
     }
+  }
+}
+
+void initializeGenInfo(void) {
+  if (!gGenInfo) {
+    gGenInfo = new GenInfo();
   }
 }
 
@@ -2664,7 +2674,7 @@ void runClang(const char* just_parse_filename) {
   // turn it off if we just wanted to parse some C.
   if (parseOnly) {
     // TODO (dlongnecke): Always initialize outside of this function?
-    gGenInfo = new GenInfo();
+    initializeGenInfo();
   } else {
     // Note that if we are calling 'runClang(NULL)' then the final gGenInfo
     // Should have already been initialized for us.
@@ -4153,243 +4163,20 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
 }
 
 void makeBinaryLLVM(void) {
-
+  initializeGenInfo();
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
 
-  std::string moduleFilename;
-  std::string preOptFilename;
-  std::string opt1Filename;
-  std::string opt2Filename;
-  std::string artifactFilename;
-  std::string ptxObjectFilename;
-  std::string outFilename;
-  std::string fatbinFilename;
-
-  if (gCodegenGPU == false) {
-    moduleFilename = genIntermediateFilename("chpl__module.o");
-    preOptFilename = genIntermediateFilename("chpl__module-nopt.bc");
-    opt1Filename = genIntermediateFilename("chpl__module-opt1.bc");
-    opt2Filename = genIntermediateFilename("chpl__module-opt2.bc");
-  } else {
-    moduleFilename = genIntermediateFilename("chpl__gpu_module.o");
-    preOptFilename = genIntermediateFilename("chpl__gpu_module-nopt.bc");
-    opt1Filename = genIntermediateFilename("chpl__gpu_module-opt1.bc");
-    opt2Filename = genIntermediateFilename("chpl__gpu_module-opt2.bc");
-    ptxObjectFilename = genIntermediateFilename("chpl__gpu_ptx.o");
-    fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
-    outFilename = genIntermediateFilename("chpl__gpu.out");
-
-    // In CUDA, we generate assembly and then assemble it. For
-    // AMD, we generate an object file. Thus, we need to use
-    // different file names.
-    switch (getGpuCodegenType()) {
-      case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
-        artifactFilename = genIntermediateFilename("chpl__gpu_ptx.s");
-        break;
-      case GpuCodegenType::GPU_CG_AMD_HIP:
-        artifactFilename = genIntermediateFilename("chpl__gpu.o");
-        break;
-    }
-  }
-
-  if( saveCDir[0] != '\0' ) {
-    std::error_code tmpErr;
-    // Save the generated LLVM before optimization.
-#if HAVE_LLVM_VER >= 120
-    ToolOutputFile output (preOptFilename.c_str(), tmpErr, sys::fs::OF_None);
-#else
-    ToolOutputFile output (preOptFilename.c_str(), tmpErr, sys::fs::F_None);
-#endif
-    if (tmpErr)
-      USR_FATAL("Could not open output file %s", preOptFilename.c_str());
-#if HAVE_LLVM_VER < 70
-    WriteBitcodeToFile(info->module, output.os());
-#else
-    WriteBitcodeToFile(*info->module, output.os());
-#endif
-    output.keep();
-    output.os().flush();
-  }
-
-  // Handle --llvm-print-ir-stage=basic
-#ifdef HAVE_LLVM
-  if((llvmStageNum::BASIC == llvmPrintIrStageNum ||
-      llvmStageNum::EVERY == llvmPrintIrStageNum)) {
-
-    for (auto &F : info->module->functions()) {
-      std::string str = F.getName().str();
-      if (shouldLlvmPrintIrCName(str.c_str()))
-        printLlvmIr(str.c_str(), &F, llvmStageNum::BASIC);
-    }
-
-    completePrintLlvmIrStage(llvmStageNum::BASIC);
-  }
-#endif
-
-
-  // Open the output file
+  // setup output file info
+  LLVMGenFilenames* filenames = &info->llvmGenFilenames;
+  setupLLVMCodegenFilenames();
   std::error_code error;
 #if HAVE_LLVM_VER >= 120
   llvm::sys::fs::OpenFlags flags = llvm::sys::fs::OF_None;
 #else
   llvm::sys::fs::OpenFlags flags = llvm::sys::fs::F_None;
-#endif
-
-  static bool addedGlobalExts = false;
-  if( ! addedGlobalExts ) {
-    // Add IR dumping pass if necessary
-    // point is initialized to a dummy value; it is set
-    // in getIrDumpExtensionPoint.
-    PassManagerBuilder::ExtensionPointTy point =
-                  PassManagerBuilder::EP_EarlyAsPossible;
-
-    if (getIrDumpExtensionPoint(llvmPrintIrStageNum, point)) {
-      printf("Adding IR dump extension at %i\n", point);
-      PassManagerBuilder::addGlobalExtension(point, addDumpIrPass);
-    }
-
-    if (llvmPrintIrStageNum == llvmStageNum::EVERY) {
-      printf("; Adding IR dump extensions for all phases\n");
-      for (int i = 0; i < llvmStageNum::LAST; i++) {
-        llvmStageNum::llvmStageNum_t stage = (llvmStageNum::llvmStageNum_t) i;
-        if (getIrDumpExtensionPoint(stage, point))
-          PassManagerBuilder::addGlobalExtension(
-              point,
-              [stage] (const PassManagerBuilder &Builder,
-                       llvm::legacy::PassManagerBase &PM) -> void {
-                PM.add(createDumpIrPass(stage));
-              });
-      }
-
-      // Put the print-stage-num back
-      llvmPrintIrStageNum = llvmStageNum::EVERY;
-    }
-
-    addedGlobalExts = true;
-  }
-
-  // Create PassManager and run optimizations
-  PassManagerBuilder PMBuilder;
-
-  configurePMBuilder(PMBuilder, /* for function passes */ false);
-
-  // Note, these global extensions currently only apply
-  // to the module-level optimization (not the "basic" function
-  // optimization we do immediately after generating LLVM IR).
-
-  // Add the Global to Wide optimization if necessary.
-  if (fLLVMWideOpt) {
-    PMBuilder.addExtension(PassManagerBuilder::EP_OptimizerLast, addAggregateGlobalOps);
-    PMBuilder.addExtension(PassManagerBuilder::EP_OptimizerLast, addGlobalToWide);
-    PMBuilder.addExtension(PassManagerBuilder::EP_EnabledOnOptLevel0, addGlobalToWide);
-  }
-
-  // Setup for and run LLVM optimization passes
-  {
-    adjustLayoutForGlobalToWide();
-
-    llvm::legacy::PassManager mpm;
-    llvm::legacy::PassManager mpm2;
-
-    // Add the TransformInfo pass
-    mpm.add(createTargetTransformInfoWrapperPass(
-            info->targetMachine->getTargetIRAnalysis()));
-    mpm2.add(createTargetTransformInfoWrapperPass(
-             info->targetMachine->getTargetIRAnalysis()));
-
-    // Add the TargetLibraryInfo pass
-    Triple TargetTriple(info->module->getTargetTriple());
-    llvm::TargetLibraryInfoImpl TLII(TargetTriple);
-    mpm.add(new TargetLibraryInfoWrapperPass(TLII));
-    mpm2.add(new TargetLibraryInfoWrapperPass(TLII));
-
-    PMBuilder.populateModulePassManager(mpm);
-
-    // Run the optimizations now!
-    mpm.run(*info->module);
-
-    if( saveCDir[0] != '\0' ) {
-      // Save the generated LLVM after first chunk of optimization
-      std::error_code tmpErr;
-#if HAVE_LLVM_VER >= 120
-      ToolOutputFile output1 (opt1Filename.c_str(),
-                               tmpErr, sys::fs::OF_None);
-#else
-      ToolOutputFile output1 (opt1Filename.c_str(),
-                               tmpErr, sys::fs::F_None);
-#endif
-
-      if (tmpErr)
-        USR_FATAL("Could not open output file %s", opt1Filename.c_str());
-#if HAVE_LLVM_VER < 70
-      WriteBitcodeToFile(info->module, output1.os());
-#else
-      WriteBitcodeToFile(*info->module, output1.os());
-#endif
-      output1.keep();
-      output1.os().flush();
-    }
-
-
-    if (fLLVMWideOpt) {
-      // the GlobalToWide pass creates calls to inline functions, among
-      // other things, that will need to be optimized. So run an additional
-      // battery of optimizations now.
-
-      PassManagerBuilder PMBuilder2;
-
-      configurePMBuilder(PMBuilder2, false, /* opt level */ 1);
-      // Should we disable vectorization since we did that?
-      // Or run select few cleanup passes?
-      // Inlining is definitely important here..
-
-      PMBuilder2.populateModulePassManager(mpm2);
-
-      // Reset the data layout.
-      info->module->setDataLayout(clangInfo->asmTargetLayoutStr);
-
-      // Run the optimizations now!
-      mpm2.run(*info->module);
-
-      if( saveCDir[0] != '\0' ) {
-        // Save the generated LLVM after second chunk of optimization
-        std::error_code tmpErr;
-#if HAVE_LLVM_VER >= 120
-        ToolOutputFile output2 (opt2Filename.c_str(),
-                                 tmpErr, sys::fs::OF_None);
-#else
-        ToolOutputFile output2 (opt2Filename.c_str(),
-                                 tmpErr, sys::fs::F_None);
-#endif
-        if (tmpErr)
-          USR_FATAL("Could not open output file %s", opt2Filename.c_str());
-#if HAVE_LLVM_VER < 70
-        WriteBitcodeToFile(info->module, output2.os());
-#else
-        WriteBitcodeToFile(*info->module, output2.os());
-#endif
-        output2.keep();
-        output2.os().flush();
-      }
-    }
-  }
-
-  // Handle --llvm-print-ir-stage=full
-#ifdef HAVE_LLVM
-  if((llvmStageNum::FULL == llvmPrintIrStageNum ||
-      llvmStageNum::EVERY == llvmPrintIrStageNum)) {
-
-    for (auto &F : info->module->functions()) {
-      std::string str = F.getName().str();
-      if (shouldLlvmPrintIrCName(str.c_str()))
-        printLlvmIr(str.c_str(), &F, llvmStageNum::FULL);
-    }
-
-    completePrintLlvmIrStage(llvmStageNum::FULL);
-  }
 #endif
 
   // Make sure that we are generating PIC when we need to be.
@@ -4405,9 +4192,9 @@ void makeBinaryLLVM(void) {
     bool disableVerify = !developer;
 
     if (gCodegenGPU == false) {
-      llvm::raw_fd_ostream outputOfile(moduleFilename, error, flags);
+      llvm::raw_fd_ostream outputOfile(filenames->moduleFilename, error, flags);
       if (error || outputOfile.has_error())
-        USR_FATAL("Could not open output file %s", moduleFilename.c_str());
+        USR_FATAL("Could not open output file %s", filenames->moduleFilename.c_str());
 
 #if HAVE_LLVM_VER >= 100
       llvm::CodeGenFileType FileType = llvm::CGFT_ObjectFile;
@@ -4438,7 +4225,7 @@ void makeBinaryLLVM(void) {
       }
       outputOfile.close();
 
-      handlePrintAsm(moduleFilename);
+      handlePrintAsm(filenames->moduleFilename);
 
     } else {
 
@@ -4446,7 +4233,7 @@ void makeBinaryLLVM(void) {
 
       linkLibDevice();
 
-      llvm::raw_fd_ostream outputArtifactFile(artifactFilename, error, flags);
+      llvm::raw_fd_ostream outputArtifactFile(filenames->artifactFilename, error, flags);
 
       {
 
@@ -4467,10 +4254,13 @@ void makeBinaryLLVM(void) {
       outputArtifactFile.close();
       switch (getGpuCodegenType()) {
         case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
-          makeBinaryLLVMForCUDA(artifactFilename, ptxObjectFilename, fatbinFilename);
+          makeBinaryLLVMForCUDA(filenames->artifactFilename,
+                                filenames->ptxObjectFilename,
+                                filenames->fatbinFilename);
           break;
         case GpuCodegenType::GPU_CG_AMD_HIP:
-          makeBinaryLLVMForHIP(artifactFilename, outFilename, fatbinFilename);
+          makeBinaryLLVMForHIP(filenames->artifactFilename,
+                               filenames->outFilename, filenames->fatbinFilename);
           break;
       }
     }
@@ -4581,7 +4371,7 @@ void makeBinaryLLVM(void) {
   // the generated program.
   fileinfo mainfile;
   mainfile.filename = "chpl__module.o";
-  mainfile.pathname = moduleFilename.c_str();
+  mainfile.pathname = filenames->moduleFilename.c_str();
   const char* tmpbinname = NULL;
   const char* tmpservername = NULL;
 
@@ -4599,10 +4389,10 @@ void makeBinaryLLVM(void) {
     // The default library link style for Chapel is _static_.
     case LS_DEFAULT:
     case LS_STATIC:
-      makeLLVMStaticLibrary(moduleFilename, tmpbinname, dotOFiles);
+      makeLLVMStaticLibrary(filenames->moduleFilename, tmpbinname, dotOFiles);
       break;
     case LS_DYNAMIC:
-      makeLLVMDynamicLibrary(useLinkCXX, options, moduleFilename, tmpbinname,
+      makeLLVMDynamicLibrary(useLinkCXX, options, filenames->moduleFilename, tmpbinname,
                              dotOFiles, clangLDArgs);
       break;
     default:
@@ -4613,7 +4403,7 @@ void makeBinaryLLVM(void) {
     const char* outbin = fMultiLocaleInterop ? tmpservername : tmpbinname;
 
     // Runs the LLVM link command for executables.
-    runLLVMLinking(useLinkCXX, options, moduleFilename, maino, outbin,
+    runLLVMLinking(useLinkCXX, options, filenames->moduleFilename, maino, outbin,
                    dotOFiles, clangLDArgs);
   }
 
@@ -4636,6 +4426,202 @@ void makeBinaryLLVM(void) {
 
     mysystem(makecmd, "Make Binary - Building Launcher and Copying");
   }
+}
+
+void llvmOptimizeAndCodegen(void) {
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  ClangInfo* clangInfo = info->clangInfo;
+  INT_ASSERT(clangInfo);
+  LLVMGenFilenames* filenames = &info->llvmGenFilenames;
+
+  {
+    std::error_code tmpErr;
+    // Save the generated LLVM before optimization.
+#if HAVE_LLVM_VER >= 120
+    ToolOutputFile output (filenames->preOptFilename.c_str(), tmpErr, sys::fs::OF_None);
+#else
+    ToolOutputFile output (filenames->preOptFilename.c_str(), tmpErr, sys::fs::F_None);
+#endif
+    if (tmpErr)
+      USR_FATAL("Could not open output file %s", filenames->preOptFilename.c_str());
+#if HAVE_LLVM_VER < 70
+    WriteBitcodeToFile(info->module, output.os());
+#else
+    WriteBitcodeToFile(*info->module, output.os());
+#endif
+    output.keep();
+    output.os().flush();
+  }
+
+  // Handle --llvm-print-ir-stage=basic
+#ifdef HAVE_LLVM
+  if((llvmStageNum::BASIC == llvmPrintIrStageNum ||
+      llvmStageNum::EVERY == llvmPrintIrStageNum)) {
+
+    for (auto &F : info->module->functions()) {
+      std::string str = F.getName().str();
+      if (shouldLlvmPrintIrCName(str.c_str()))
+        printLlvmIr(str.c_str(), &F, llvmStageNum::BASIC);
+    }
+
+    completePrintLlvmIrStage(llvmStageNum::BASIC);
+  }
+#endif
+
+  static bool addedGlobalExts = false;
+  if( ! addedGlobalExts ) {
+    // Add IR dumping pass if necessary
+    // point is initialized to a dummy value; it is set
+    // in getIrDumpExtensionPoint.
+    PassManagerBuilder::ExtensionPointTy point =
+                  PassManagerBuilder::EP_EarlyAsPossible;
+
+    if (getIrDumpExtensionPoint(llvmPrintIrStageNum, point)) {
+      printf("Adding IR dump extension at %i\n", point);
+      PassManagerBuilder::addGlobalExtension(point, addDumpIrPass);
+    }
+
+    if (llvmPrintIrStageNum == llvmStageNum::EVERY) {
+      printf("; Adding IR dump extensions for all phases\n");
+      for (int i = 0; i < llvmStageNum::LAST; i++) {
+        llvmStageNum::llvmStageNum_t stage = (llvmStageNum::llvmStageNum_t) i;
+        if (getIrDumpExtensionPoint(stage, point))
+          PassManagerBuilder::addGlobalExtension(
+              point,
+              [stage] (const PassManagerBuilder &Builder,
+                       llvm::legacy::PassManagerBase &PM) -> void {
+                PM.add(createDumpIrPass(stage));
+              });
+      }
+
+      // Put the print-stage-num back
+      llvmPrintIrStageNum = llvmStageNum::EVERY;
+    }
+
+    addedGlobalExts = true;
+  }
+
+  // Create PassManager and run optimizations
+  PassManagerBuilder PMBuilder;
+
+  configurePMBuilder(PMBuilder, /* for function passes */ false);
+
+  // Note, these global extensions currently only apply
+  // to the module-level optimization (not the "basic" function
+  // optimization we do immediately after generating LLVM IR).
+
+  // Add the Global to Wide optimization if necessary.
+  if (fLLVMWideOpt) {
+    PMBuilder.addExtension(PassManagerBuilder::EP_OptimizerLast, addAggregateGlobalOps);
+    PMBuilder.addExtension(PassManagerBuilder::EP_OptimizerLast, addGlobalToWide);
+    PMBuilder.addExtension(PassManagerBuilder::EP_EnabledOnOptLevel0, addGlobalToWide);
+  }
+
+  // Setup for and run LLVM optimization passes
+  {
+    adjustLayoutForGlobalToWide();
+
+    llvm::legacy::PassManager mpm;
+    llvm::legacy::PassManager mpm2;
+
+    // Add the TransformInfo pass
+    mpm.add(createTargetTransformInfoWrapperPass(
+            info->targetMachine->getTargetIRAnalysis()));
+    mpm2.add(createTargetTransformInfoWrapperPass(
+             info->targetMachine->getTargetIRAnalysis()));
+
+    // Add the TargetLibraryInfo pass
+    Triple TargetTriple(info->module->getTargetTriple());
+    llvm::TargetLibraryInfoImpl TLII(TargetTriple);
+    mpm.add(new TargetLibraryInfoWrapperPass(TLII));
+    mpm2.add(new TargetLibraryInfoWrapperPass(TLII));
+
+    PMBuilder.populateModulePassManager(mpm);
+
+    // Run the optimizations now!
+    mpm.run(*info->module);
+
+    if( saveCDir[0] != '\0' ) {
+      // Save the generated LLVM after first chunk of optimization
+      std::error_code tmpErr;
+#if HAVE_LLVM_VER >= 120
+      ToolOutputFile output1 (filenames->opt1Filename.c_str(),
+                               tmpErr, sys::fs::OF_None);
+#else
+      ToolOutputFile output1 (filenames->opt1Filename.c_str(),
+                               tmpErr, sys::fs::F_None);
+#endif
+
+      if (tmpErr)
+        USR_FATAL("Could not open output file %s", filenames->opt1Filename.c_str());
+#if HAVE_LLVM_VER < 70
+      WriteBitcodeToFile(info->module, output1.os());
+#else
+      WriteBitcodeToFile(*info->module, output1.os());
+#endif
+      output1.keep();
+      output1.os().flush();
+    }
+
+
+    if (fLLVMWideOpt) {
+      // the GlobalToWide pass creates calls to inline functions, among
+      // other things, that will need to be optimized. So run an additional
+      // battery of optimizations now.
+
+      PassManagerBuilder PMBuilder2;
+
+      configurePMBuilder(PMBuilder2, false, /* opt level */ 1);
+      // Should we disable vectorization since we did that?
+      // Or run select few cleanup passes?
+      // Inlining is definitely important here..
+
+      PMBuilder2.populateModulePassManager(mpm2);
+
+      // Reset the data layout.
+      info->module->setDataLayout(clangInfo->asmTargetLayoutStr);
+
+      // Run the optimizations now!
+      mpm2.run(*info->module);
+
+      if( saveCDir[0] != '\0' ) {
+        // Save the generated LLVM after second chunk of optimization
+        std::error_code tmpErr;
+#if HAVE_LLVM_VER >= 120
+        ToolOutputFile output2 (filenames->opt2Filename.c_str(),
+                                 tmpErr, sys::fs::OF_None);
+#else
+        ToolOutputFile output2 (filenames->opt2Filename.c_str(),
+                                 tmpErr, sys::fs::F_None);
+#endif
+        if (tmpErr)
+          USR_FATAL("Could not open output file %s", filenames->opt2Filename.c_str());
+#if HAVE_LLVM_VER < 70
+        WriteBitcodeToFile(info->module, output2.os());
+#else
+        WriteBitcodeToFile(*info->module, output2.os());
+#endif
+        output2.keep();
+        output2.os().flush();
+      }
+    }
+  }
+
+  // Handle --llvm-print-ir-stage=full
+#ifdef HAVE_LLVM
+  if((llvmStageNum::FULL == llvmPrintIrStageNum ||
+      llvmStageNum::EVERY == llvmPrintIrStageNum)) {
+
+    for (auto &F : info->module->functions()) {
+      std::string str = F.getName().str();
+      if (shouldLlvmPrintIrCName(str.c_str()))
+        printLlvmIr(str.c_str(), &F, llvmStageNum::FULL);
+    }
+
+    completePrintLlvmIrStage(llvmStageNum::FULL);
+  }
+#endif
 }
 
 static void handlePrintAsm(std::string dotOFile) {

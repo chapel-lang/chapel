@@ -106,7 +106,9 @@ bool useDarwinArmFix(Type* type);
 
 void makeBinaryLLVM();
 void prepareCodegenLLVM();
+void llvmOptimizeAndCodegen();
 void finishCodegenLLVM();
+void initializeGenInfo(void);
 void runClang(const char* just_parse_filename);
 
 bool lookupInExternBlock(ModuleSymbol* module, const char* name,

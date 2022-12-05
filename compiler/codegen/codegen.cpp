@@ -2757,6 +2757,9 @@ void makeBinary(void) {
   if (no_codegen)
     return;
 
+  // makeBinary shouldn't trigger in a compilation-only invocation
+  INT_ASSERT(!fDoCompilation);
+
   if(fLlvmCodegen) {
 #ifdef HAVE_LLVM
    makeBinaryLLVM();
@@ -2802,6 +2805,42 @@ GenInfo::GenInfo()
 #endif
 {
 }
+
+void setupLLVMCodegenFilenames(void) {
+  GenInfo* info = gGenInfo;
+  LLVMGenFilenames* filenames = &info->llvmGenFilenames;
+  if (gCodegenGPU == false) {
+    filenames->moduleFilename = genIntermediateFilename("chpl__module.o");
+    filenames->preOptFilename = genIntermediateFilename("chpl__module-nopt.bc");
+    filenames->opt1Filename = genIntermediateFilename("chpl__module-opt1.bc");
+    filenames->opt2Filename = genIntermediateFilename("chpl__module-opt2.bc");
+  } else {
+    filenames->moduleFilename = genIntermediateFilename("chpl__gpu_module.o");
+    filenames->preOptFilename =
+        genIntermediateFilename("chpl__gpu_module-nopt.bc");
+    filenames->opt1Filename =
+        genIntermediateFilename("chpl__gpu_module-opt1.bc");
+    filenames->opt2Filename =
+        genIntermediateFilename("chpl__gpu_module-opt2.bc");
+    filenames->ptxObjectFilename = genIntermediateFilename("chpl__gpu_ptx.o");
+    filenames->fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
+    filenames->outFilename = genIntermediateFilename("chpl__gpu.out");
+
+    // In CUDA, we generate assembly and then assemble it. For
+    // AMD, we generate an object file. Thus, we need to use
+    // different file names.
+    switch (getGpuCodegenType()) {
+      case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
+        filenames->artifactFilename =
+            genIntermediateFilename("chpl__gpu_ptx.s");
+        break;
+      case GpuCodegenType::GPU_CG_AMD_HIP:
+        filenames->artifactFilename = genIntermediateFilename("chpl__gpu.o");
+        break;
+    }
+  }
+}
+
 
 std::string numToString(int64_t num)
 {
