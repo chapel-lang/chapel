@@ -48,6 +48,11 @@ class Break : public AstNode {
     CHPL_ASSERT(numChildren() <= 1);
   }
 
+  Break(Deserializer& des)
+   : AstNode(asttags::Break, des) {
+    targetChildNum_ = des.read<int8_t>();
+    }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Break* lhs = this;
     const Break* rhs = other->toBreak();
@@ -83,6 +88,13 @@ class Break : public AstNode {
     CHPL_ASSERT(ret->isIdentifier());
     return (const Identifier*)ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serializePart(ser);
+    ser(targetChildNum_);
+  }
+
+  DECLARE_STATIC_DES(Break);
 
 };
 
