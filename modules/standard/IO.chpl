@@ -5231,7 +5231,8 @@ proc _channel.writebits(v:integral, nbits:integral) throws {
   :throws IllegalArgumentError: Thrown if ``size`` is larger than ``s.size``
 */
 proc fileWriter.writeString(s: string, size = s.size) throws {
-  // TODO: use a separate implementation once channels support non-uf8 encodings
+  // TODO: use a separate implementation when `fileWriter`s start supporting
+  //        non UTF-8 charachter encodings
   try this.writeBinary(s, size);
 }
 
@@ -5245,7 +5246,6 @@ proc fileWriter.writeString(s: string, size = s.size) throws {
   :throws IllegalArgumentError: Thrown if ``size`` is larger than ``b.size``
 */
 proc fileWriter.writeBytes(b: bytes, size = b.size) throws {
-  // TODO: use a separate implementation once channels support non-uf8 encodings
   try this.writeBinary(b, size);
 }
 
