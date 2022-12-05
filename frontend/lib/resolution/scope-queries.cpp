@@ -555,7 +555,7 @@ static bool doLookupInScope(Context* context,
       if (onlyInnermost && got) return true;
     }
 
-    assert(!skipClosestConditional || didSkipConditional);
+    CHPL_ASSERT(!skipClosestConditional || didSkipConditional);
 
     if (reachedModule) {
       // Assumption: If a module is encountered, and if there is a receiver
