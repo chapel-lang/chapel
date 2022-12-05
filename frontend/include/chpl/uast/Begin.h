@@ -56,6 +56,11 @@ class Begin final : public SimpleBlockLike {
       withClauseChildNum_(withClauseChildNum) {
   }
 
+    Begin(Deserializer& des)
+    : SimpleBlockLike(asttags::Begin, des) {
+      withClauseChildNum_ = des.read<int8_t>();
+    }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Begin* lhs = this;
     const Begin* rhs = (const Begin*) other;
@@ -95,6 +100,13 @@ class Begin final : public SimpleBlockLike {
     assert(ret->isWithClause());
     return (const WithClause*)ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    SimpleBlockLike::serializePart(ser);
+    ser(withClauseChildNum_);
+  }
+
+  DECLARE_STATIC_DES(Begin);
 
 };
 
