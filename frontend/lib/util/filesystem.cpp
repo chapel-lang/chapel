@@ -209,8 +209,7 @@ std::string getExecutablePath(const char* argv0, void* MainExecAddr) {
 }
 
 bool isSameFile(const char* path1, const char* path2) {
-  using namespace llvm::sys::fs;
-  return equivalent(path1, path2);
+  return llvm::sys::fs::equivalent(path1, path2);
 }
 
 
