@@ -294,10 +294,10 @@ static void testTheseNoIndex() {
   //
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   auto& iterandRE = rr.byAst(loop->iterand());
-  auto& associatedFns = iterandRE.associatedFns();
-  assert(associatedFns.size() == 1);
+  auto& associatedActions = iterandRE.associatedActions();
+  assert(associatedActions.size() == 1);
 
-  auto theseFn = associatedFns[0];
+  auto theseFn = associatedActions[0].fn();
   auto recR = m->stmt(0)->toRecord();
   auto recThese = recR->declOrComment(0)->toFunction();
   assert(theseFn->id() == recThese->id());

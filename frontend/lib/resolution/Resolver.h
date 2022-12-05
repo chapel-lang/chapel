@@ -288,7 +288,9 @@ struct Resolver {
   void handleResolvedAssociatedCall(ResolvedExpression& r,
                                     const uast::AstNode* astForErr,
                                     const CallInfo& ci,
-                                    const CallResolutionResult& c);
+                                    const CallResolutionResult& c,
+                                    AssociatedAction::Action action,
+                                    ID id);
 
   // If the variable with the passed ID has unknown or generic type,
   // and it has not yet been initialized, set its type to rhsType.
