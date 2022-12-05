@@ -56,6 +56,11 @@ class DoWhile final : public Loop {
     assert(condition());
   }
 
+  DoWhile(Deserializer& des)
+    : Loop(asttags::DoWhile, des) {
+      conditionChildNum_ = des.read<int>();
+    }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const DoWhile* lhs = this;
     const DoWhile* rhs = (const DoWhile*) other;
@@ -94,6 +99,13 @@ class DoWhile final : public Loop {
     auto ret = child(conditionChildNum_);
     return ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    Loop::serializePart(ser);
+    ser(conditionChildNum_);
+  }
+
+  DECLARE_STATIC_DES(DoWhile);
 
 };
 
