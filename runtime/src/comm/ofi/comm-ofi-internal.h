@@ -289,6 +289,8 @@ size_t chpl_comm_ofi_hp_gethugepagesize(void);
 //
 double chpl_comm_ofi_time_get(void);
 
+extern const char *chpl_comm_oob;
+
 #ifdef __cplusplus
 }
 #endif
