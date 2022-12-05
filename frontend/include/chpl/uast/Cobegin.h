@@ -55,6 +55,12 @@ class Cobegin final : public AstNode {
       numTaskBodies_(numTaskBodies) {
   }
 
+  Cobegin(Deserializer& des) : AstNode(asttags::Cobegin, des) {
+    withClauseChildNum_ = des.read<int8_t>();
+    bodyChildNum_ = des.read<int>();
+    numTaskBodies_ = des.read<int>();
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Cobegin* lhs = this;
     const Cobegin* rhs = (const Cobegin*) other;
@@ -122,6 +128,12 @@ class Cobegin final : public AstNode {
     const AstNode* ast = this->child(i + bodyChildNum_);
     return ast;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(Cobegin);
 
 };
 
