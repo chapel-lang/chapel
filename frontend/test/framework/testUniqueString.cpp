@@ -226,6 +226,20 @@ static void test1() {
   UniqueString empty;
   assert(empty == UniqueString::get(ctx, ""));
 
+  // check that strings with null bytes are uniqued differently
+  UniqueString h_plus = UniqueString::get(ctx, "hello\0plus", 10);
+  assert(h_plus != h1);
+  assert(h_plus.length() == 10);
+  assert(!h_plus.isEmpty());
+  UniqueString h_p = UniqueString::get(ctx, "hello\0p", 7);
+  assert(h_p != h_plus && h_p != h1);
+  assert(h_p.length() == 7);
+  assert(!h_p.isEmpty());
+  UniqueString z_boo = UniqueString::get(ctx, "\0boo", 4);
+  assert(z_boo.length() == 4);
+  assert(z_boo != empty);
+  assert(!z_boo.isEmpty());
+
   // check that truncation works for short strings and long ones
   assert(h1 == UniqueString::get(ctx, "hello____", strlen("hello")));
   assert(t1 == UniqueString::get(ctx, TEST1STRING "_____",
