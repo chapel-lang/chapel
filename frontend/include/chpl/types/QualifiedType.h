@@ -199,6 +199,16 @@ class QualifiedType final {
            kind_ == Kind::MODULE;
   }
 
+  /**
+    Returns true if the kind is one of the non-concrete intents
+    (unknown, default intent, or const intent) and false otherwise.
+   */
+  bool isNonConcreteIntent() const {
+    return (kind_ == Kind::UNKNOWN ||
+            kind_ == Kind::DEFAULT_INTENT ||
+            kind_ == Kind::CONST_INTENT);
+  }
+
   bool operator==(const QualifiedType& other) const {
     return kind_ == other.kind_ &&
            type_ == other.type_ &&

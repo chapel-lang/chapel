@@ -183,10 +183,10 @@ CanPassResult canPass(Context* context,
 using KindRequirement = llvm::Optional<chpl::types::QualifiedType::Kind>;
 
 /**
-  Given a (non-empty) list of types (e.g., the types of various return statements
-  in a function), determine the type, if any, that can be used to represent
-  all of them. Returns an llvm::Optional that contains the qualified type
-  if one is found, or is empty otherwise.
+  Given a (non-empty) list of types (e.g., the types of various return
+  statements in a function), determine the type, if any, that can be used to
+  represent all of them. Returns an llvm::Optional that contains the qualified
+  type if one is found, or is empty otherwise.
 
   If useRequiredKind=true is specified, the requiredKind argument is treated
   as a strict constraint on the kinds of the given types. For instance,

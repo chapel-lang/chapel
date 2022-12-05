@@ -313,7 +313,7 @@ class CallInfoActual {
 
  public:
   CallInfoActual(types::QualifiedType type, UniqueString byName)
-      : type_(type), byName_(byName) {}
+      : type_(std::move(type)), byName_(byName) {}
 
   /** return the qualified type */
   const types::QualifiedType& type() const { return type_; }

@@ -499,6 +499,13 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
           qt = tup->elementType(j);
         }
 
+        // if the formal has concrete intent (e.g. 'out' or 'in' or 'ref'),
+        // use the intent of the formal for the intent of the actual->formal
+        // mapping entry.
+        if (!formalQT.isNonConcreteIntent()) {
+          qt = QualifiedType(formalQT.kind(), qt.type(), qt.param());
+        }
+
         entry.formal_ = decl;
         entry.hasActual_ = false;
         entry.formalIdx_ = i;
