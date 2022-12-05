@@ -1626,18 +1626,19 @@ struct Converter {
     bool maybeArrayType = false;
     bool zippered = node->iterand()->isZip();
 
-    // Unpack things differently if body is a conditional.
-    if (auto origCond = node->stmt(0)->toConditional()) {
-      INT_ASSERT(origCond->numThenStmts() == 1);
-      INT_ASSERT(!origCond->hasElseBlock());
-      expr = singleExprFromStmts(origCond->thenStmts());
-      cond = toExpr(convertAST(origCond->condition()));
-      INT_ASSERT(cond);
-    } else {
-      expr = singleExprFromStmts(node->stmts());
+    // An 'if-expr' without an else is special pattern for the builder.
+    if (auto noElseCond = node->stmt(0)->toConditional()) {
+      if (!noElseCond->hasElseBlock()) {
+        expr = singleExprFromStmts(noElseCond->thenStmts());
+        cond = toExpr(convertAST(noElseCond->condition()));
+        INT_ASSERT(cond);
+      }
     }
 
-    INT_ASSERT(expr != nullptr);
+    if (!expr) {
+      INT_ASSERT(!cond);
+      expr = singleExprFromStmts(node->stmts());
+    }
 
     return buildForallLoopExpr(indices, iteratorExpr, expr, cond,
                                maybeArrayType,
