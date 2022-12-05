@@ -632,6 +632,14 @@ class TypedFnSignature {
   // Are any of the formals generic or unknown at this point?
   bool needsInstantiation_ = true;
 
+  // Does this TypedFnSignature represent a refinement of another
+  // TypedFnSignature with no new instantiation information?
+  // This is used for TypedFnSignatures that represent the inferred type
+  // of an 'out' formal.
+  // In that case, instantiatedFrom_ stores the TypedFnSignature
+  // that was refined.
+  bool isRefinementOnly_ = false;
+
   // Is this TypedFnSignature representing an instantiation?
   // If so, what is the generic TypedFnSignature that was instantiated?
   const TypedFnSignature* instantiatedFrom_ = nullptr;
@@ -647,6 +655,7 @@ class TypedFnSignature {
                    std::vector<types::QualifiedType> formalTypes,
                    WhereClauseResult whereClauseResult,
                    bool needsInstantiation,
+                   bool isRefinementOnly,
                    const TypedFnSignature* instantiatedFrom,
                    const TypedFnSignature* parentFn,
                    Bitmap formalsInstantiated)
@@ -654,6 +663,7 @@ class TypedFnSignature {
       formalTypes_(std::move(formalTypes)),
       whereClauseResult_(whereClauseResult),
       needsInstantiation_(needsInstantiation),
+      isRefinementOnly_(isRefinementOnly),
       instantiatedFrom_(instantiatedFrom),
       parentFn_(parentFn),
       formalsInstantiated_(std::move(formalsInstantiated)) { }
@@ -664,6 +674,7 @@ class TypedFnSignature {
                       std::vector<types::QualifiedType> formalTypes,
                       TypedFnSignature::WhereClauseResult whereClauseResult,
                       bool needsInstantiation,
+                      bool isRefinementOnly,
                       const TypedFnSignature* instantiatedFrom,
                       const TypedFnSignature* parentFn,
                       Bitmap formalsInstantiated);
@@ -680,11 +691,22 @@ class TypedFnSignature {
                               const TypedFnSignature* parentFn,
                               Bitmap formalsInstantiated);
 
+  /** Get the unique TypedFnSignature containing these components
+      for a refinement where some types are inferred (e.g. generic 'out'
+      formals have their type inferred from the body). */
+  static
+  const TypedFnSignature* getInferred(
+                              Context* context,
+                              std::vector<types::QualifiedType> formalTypes,
+                              const TypedFnSignature* inferredFrom);
+
+
   bool operator==(const TypedFnSignature& other) const {
     return untypedSignature_ == other.untypedSignature_ &&
            formalTypes_ == other.formalTypes_ &&
            whereClauseResult_ == other.whereClauseResult_ &&
            needsInstantiation_ == other.needsInstantiation_ &&
+           isRefinementOnly_ == other.isRefinementOnly_ &&
            instantiatedFrom_ == other.instantiatedFrom_ &&
            parentFn_ == other.parentFn_ &&
            formalsInstantiated_ == other.formalsInstantiated_;
@@ -729,6 +751,18 @@ class TypedFnSignature {
     return needsInstantiation_;
   }
 
+  /** If this TypedFnSignature represents the result of additional
+      inference, return the most basic TypedFnSignature that was
+      inferred from. */
+  const TypedFnSignature* inferredFrom() const {
+    const TypedFnSignature* ret = this;
+    if (ret->isRefinementOnly_) {
+      ret = ret->instantiatedFrom_;
+      assert(!ret->isRefinementOnly_);
+    }
+    return ret;
+  }
+
   /**
     Is this TypedFnSignature representing an instantiation?  If so, returns the
     generic TypedFnSignature that was instantiated.  Otherwise, returns nullptr.
@@ -738,9 +772,10 @@ class TypedFnSignature {
     will either be nullptr or result->instantiatedFrom() will be nullptr.
    */
   const TypedFnSignature* instantiatedFrom() const {
-    CHPL_ASSERT(instantiatedFrom_ == nullptr ||
-           instantiatedFrom_->instantiatedFrom_ == nullptr);
-    return instantiatedFrom_;
+    const TypedFnSignature* sig = inferredFrom();
+    CHPL_ASSERT(sig->instantiatedFrom_ == nullptr ||
+                sig->instantiatedFrom_->instantiatedFrom_ == nullptr);
+    return sig->instantiatedFrom_;
   }
 
   /**
@@ -748,14 +783,16 @@ class TypedFnSignature {
     it was present in the SubstitutionsMap when instantiating.
    */
   bool formalIsInstantiated(int i) const {
-    if (instantiatedFrom_ == nullptr)
+    const TypedFnSignature* sig = inferredFrom();
+    if (sig->instantiatedFrom_ == nullptr)
       return false;
 
-    return formalsInstantiated_[i];
+    return sig->formalsInstantiated_[i];
   }
 
   const Bitmap& formalsInstantiatedBitmap() const {
-    return formalsInstantiated_;
+    const TypedFnSignature* sig = inferredFrom();
+    return sig->formalsInstantiated_;
   }
 
   /**
@@ -763,7 +800,8 @@ class TypedFnSignature {
      function signature?
    */
   const TypedFnSignature* parentFn() const {
-    return parentFn_;
+    const TypedFnSignature* sig = inferredFrom();
+    return sig->parentFn_;
   }
 
   /** Returns the number of formals */
@@ -848,7 +886,7 @@ class MostSpecificCandidates {
     Adjust each candidate signature by inferring generic 'out' intent formals
     if there are any.
    */
-  void inferOutFormals(Context* context, const PoiScope* poiScope);
+  void inferOutFormals(Context* context, const PoiScope* instantiationPoiScope);
 
   const TypedFnSignature* const* begin() const {
     return &candidates[0];
