@@ -134,6 +134,47 @@ static void testIfVarErrorUseInElseBranch() {
   assert(reElseUse.type().isUnknown());
 }
 
+static void testIfVarErrorUseInElseBranchNested() {
+  Context context;
+  auto ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME_FROM_FN_NAME(ctx);
+  std::string contents =
+    R""""(
+      class C {}
+      proc foo(x) {}
+      if var x = new C() then foo(x); else { { { foo(x); } } }
+    )"""";
+  setFileText(ctx, path, contents);
+
+  auto& br = parseAndReportErrors(ctx, path);
+  auto mod = br.singleModule();
+  assert(mod);
+
+  assert(mod->numStmts() == 3 && mod->stmt(2)->isConditional());
+  auto cond = mod->stmt(2)->toConditional();
+  auto var = cond->condition()->toVariable();
+  assert(var);
+
+  auto elseBlock2 = cond->elseStmt(0)->toBlock();
+  assert(elseBlock2 && elseBlock2->numStmts());
+  auto elseBlock3 = elseBlock2->stmt(0)->toBlock();
+  assert(elseBlock3 && elseBlock3->numStmts());
+
+  auto elseCall = elseBlock3->stmt(0)->toFnCall();
+  assert(elseCall);
+
+  assert(elseCall && elseCall->numActuals() == 1);
+  auto elseUse = elseCall->actual(0)->toIdentifier();
+  assert(elseUse);
+
+  auto& rr = resolveModule(ctx, mod->id());
+  auto& reElseUse = rr.byAst(elseUse);
+  assert(reElseUse.toId().isEmpty());
+  assert(reElseUse.type().isUnknown());
+}
+
 static void testIfVarErrorNonClassType() {
   Context context;
   auto ctx = &context;
@@ -175,6 +216,7 @@ int main() {
   test5();
   test6();
   testIfVarErrorUseInElseBranch();
+  testIfVarErrorUseInElseBranchNested();
   testIfVarErrorNonClassType();
   return 0;
 }
