@@ -1,7 +1,6 @@
-// max reduce
-// list
-// unbounded range slice
-// strided ranges
+// NOTE: Not cleaned up at all since earning my star; turned
+// attention to the blog instead.  Could bring nice qualities
+// from day05.chpl over here now that it's been cleaned up.
 
 use IO, List;
 
