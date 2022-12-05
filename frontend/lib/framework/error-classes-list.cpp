@@ -792,7 +792,7 @@ void ErrorUseImportUnknownSym::write(ErrorWriterBase& wr) const {
   auto limitationKind = visibilityClause->limitationKind();
   if (isRename) {
     wr.heading(kind_, type_, visibilityClause,
-               "cannot rename symbol '", symbolName, "' as it is not found in '",
+               "cannot rename symbol '", symbolName, "' as it is not defined in '",
                searchedScope->name(),"'.");
   } else if (limitationKind == uast::VisibilityClause::ONLY ||
       limitationKind == uast::VisibilityClause::EXCEPT) {
