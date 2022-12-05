@@ -47,6 +47,11 @@ class Continue : public AstNode {
     CHPL_ASSERT(numChildren() <= 1);
   }
 
+  Continue(Deserializer& des)
+    : AstNode(asttags::Continue, des) {
+    targetChildNum_ = des.read<int8_t>();
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Continue* lhs = this;
     const Continue* rhs = other->toContinue();
@@ -82,6 +87,13 @@ class Continue : public AstNode {
     CHPL_ASSERT(ret->isIdentifier());
     return (const Identifier*)ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser(targetChildNum_);
+  }
+
+  DECLARE_STATIC_DES(Continue);
 
 };
 
