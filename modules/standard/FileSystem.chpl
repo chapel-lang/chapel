@@ -268,6 +268,33 @@ proc copy(src: string, dest: string, metadata: bool = false) throws {
   var destFile = dest;
 
   proc copyMode(src: string, dest: string) throws {
+    proc getMode(name: string): int throws {
+      extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): errorCode;
+
+      var ret:c_int;
+      var err = chpl_fs_viewmode(ret, unescape(name).c_str());
+      if err then try ioerror(err, "in getMode", name);
+      return ret;
+    }
+
+    proc chmod(name: string, mode: int) throws {
+      extern proc chpl_fs_chmod(name: c_string, mode: int): errorCode;
+
+      var err = chpl_fs_chmod(unescape(name).c_str(), mode);
+      if err then try ioerror(err, "in chmod", name);
+    }
+
+    try {
+      // Gets the mode from the source file.
+      var srcMode = getMode(src);
+      // Sets the mode of the destination to the source's mode.
+      chmod(dest, srcMode);
+    } catch e: SystemError {
+      // Hide implementation details.
+      try ioerror(e.err, "in copyMode " + src, dest);
+    }
+
+/*
     use OS.POSIX;
     var statStruct: struct_stat;
     const statRet = stat(src.c_str(), c_ptrTo(statStruct));
@@ -275,6 +302,7 @@ proc copy(src: string, dest: string, metadata: bool = false) throws {
     if statRet != 0 then try ioerror(statRet:errorCode, "in copy's stat");;
     const chmodRet = chmod(dest.c_str(), statStruct.st_mode);
     if chmodRet != 0 then try ioerror(chmodRet:errorCode, "in copy's chmod");;
+*/
   }
 
   try {
