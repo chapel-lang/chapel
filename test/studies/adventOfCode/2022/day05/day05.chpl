@@ -1,6 +1,7 @@
-// max reduce
+// array slice
 // lists (oh how I wish they were stacks!)
 // strided ranges
+// zippered iteration
 
 use IO, List;
 
@@ -12,47 +13,50 @@ param charsPerStack = 4;
 enum alphabet {A, B, C, D, E, F, G, H, I, J, K, L, M,
                N, O, P, Q, R, S, T, U, V, W, X, Y, Z};
 
-// Read in the part of the input describing the initial state
 const InitState = readInitState();
-
-// Determine the largest number of stacks, which we can find using a
-// max reduction (or... duh... we could just take the length of the
-// final line, couldn't we?  TODO
-var numStacks = max reduce ([s in InitState] s.size/charsPerStack);
-
-// Represent our stacks with an array of lists of the enum
-// (wishing it were an array of stacks of the enum
-var Stacks: [1..numStacks] list(alphabet);
-
-// Convert the InitState into the stacks
-
-const linesToProcess = InitState.size - 2;
-for i in 0..<linesToProcess by -1 {
-  for s in 1..numStacks do {
-    const char = InitState[i][(s-1)*charsPerStack + 1];
-    if (char != " ") {
-      Stacks[s].append(char:alphabet);
-    }
-  }
-}
-
-// Read in, and execute, the moves
-var num, src, dst: int;
-
-// Process the commands
-while readf("move %i from %i to %i\n", num, src, dst) do
-  for i in 1..num do
-    Stacks[dst].append(Stacks[src].pop());
+var Stacks = initStateToStacks(InitState[..<InitState.size-1]);
+runCommands();
 
 // Print the top of each stack
 for s in Stacks do
   write(s.pop());
 writeln();
 
+proc initStateToStacks(InitState) {
+  // use the last line (with all the stack numbers) to compute the # of stacks
+  var numStacks = InitState.last.size / charsPerStack;
 
+  // Represent our stacks with an array of lists of the enum
+  // (wishing it was an array of stacks of the enum)
+  var Stacks: [1..numStacks] list(alphabet);
+
+  // iterate over the lines representing crates backwards (bottom up)
+  for i in 0..<InitState.size-1 by -1 {
+    // do a zippered iteration over the stack IDs and
+    // offsets where crate names will be
+    for (s,off) in zip(1..numStacks, 1.. by charsPerStack) {
+      const char = InitState[i][off];
+      if (char != " ") then  // blank means no crate here
+        Stacks[s].append(char:alphabet);
+    }
+  }
+
+  return Stacks;
+}
+
+// Read in, and execute, the moves
+proc runCommands() {
+  var num, src, dst: int;
+
+  // Process the commands
+  while readf("move %i from %i to %i\n", num, src, dst) do
+    for i in 1..num do
+      Stacks[dst].append(Stacks[src].pop());
+}
+
+// read and yield lines until we get to the blank one
 iter readInitState() {
   do {
-// BUG:  var line = readLine();
     var line: string;
     readLine(line);
     yield line;
