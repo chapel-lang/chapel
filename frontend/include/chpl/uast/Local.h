@@ -59,6 +59,11 @@ class Local final : public SimpleBlockLike {
       condChildNum_(condChildNum) {
   }
 
+  Local(Deserializer& des)
+    : SimpleBlockLike(asttags::Local, des) {
+    condChildNum_ = des.read<int8_t>();
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Local* lhs = this;
     const Local* rhs = (const Local*) other;
@@ -106,6 +111,13 @@ class Local final : public SimpleBlockLike {
   const AstNode* condition() const {
     return condChildNum_ < 0 ? nullptr : child(condChildNum_);
   }
+
+  void serialize(Serializer& ser) const override {
+    SimpleBlockLike::serializePart(ser);
+    ser(condChildNum_);
+  }
+
+  DECLARE_STATIC_DES(Local);
 
 };
 
