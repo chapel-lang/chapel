@@ -76,7 +76,7 @@ class Throw final : public AstNode {
     return ast;
   }
 
-  void serialize(Serializer& ser) {
+  void serialize(Serializer& ser) const override {
     AstNode::serializePart(ser);
   }
 
