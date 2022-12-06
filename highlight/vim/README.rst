@@ -77,6 +77,13 @@ Manual Installation:
 
   ``$ cp -i sample-vimrc .vimrc``
 
+- To adjust tabs settings for Chapel files, choose one of the following:
+
+  * To set tab settings only for Chapel files, modify this file:
+    $HOME/.vim/ftplugin/chpl.vim
+
+  * Or, to use tab settings for all file types, leave the tab settings
+    in chpl.vim commented out and adjust tab settings in your .vimrc.
 
 Enabling Chapel Support in Vim:
 ===============================
@@ -90,9 +97,7 @@ file (without the ":").
 
 .. code-block:: vim
 
-   " Enable automatic filetype detection
-   :filetype on
-   " Enable syntax highlighting scheme:
+   " Enable syntax highlighting:
    :syntax on
-   " Enable indenting scheme:
-   :filetype indent on
+   " Enable automatic filetype detection, plugins, and indent support
+   :filetype plugin indent on
