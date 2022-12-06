@@ -2408,23 +2408,30 @@ void initializeGenInfo(void) {
   }
 }
 
-ClangInfo* gatherClangInfo(const char* just_parse_filename) {
+// if just_parse_filename != NULL, it is a file
+// containing an extern block to parse only
+// (and in that setting there is no need to work with the runtime).
+void runClang(const char* just_parse_filename) {
   bool parseOnly = (just_parse_filename != NULL);
+  static bool is_installed_fatal_error_handler = false;
+
   // These warnings are _required_ to make sure the code Clang generates
   // when compiling the code in Chapel 'extern' blocks will play well
   // with our backend.
   const char* clangRequiredWarningFlags[] = {
-      "-Wall",
-      "-Werror",
-      "-Wpointer-arith",
-      "-Wwrite-strings",
-      "-Wno-strict-aliasing",
-      "-Wmissing-declarations",
-      "-Wmissing-prototypes",
-      "-Wstrict-prototypes",
-      "-Wmissing-format-attribute",
-      // clang can't tell which functions we use
-      "-Wno-unused-function", NULL};
+    "-Wall",
+    "-Werror",
+    "-Wpointer-arith",
+    "-Wwrite-strings",
+    "-Wno-strict-aliasing",
+    "-Wmissing-declarations",
+    "-Wmissing-prototypes",
+    "-Wstrict-prototypes",
+    "-Wmissing-format-attribute",
+    // clang can't tell which functions we use
+    "-Wno-unused-function",
+    NULL
+  };
 
   const char* clang_debug = "-g";
   const char* clang_opt = "-O3";
@@ -2456,6 +2463,7 @@ ClangInfo* gatherClangInfo(const char* just_parse_filename) {
   if (split.size() > 0) {
     clangCXX = split[0];
   }
+
 
   // add -fPIC if CHPL_LIB_PIC indicates we should.
   // otherwise, pic-or-not will be up to clang's default, which,
@@ -2516,16 +2524,16 @@ ClangInfo* gatherClangInfo(const char* just_parse_filename) {
       0 != strcmp(CHPL_TARGET_CPU_FLAG, "none") &&
       0 != strcmp(CHPL_TARGET_BACKEND_CPU, "none") &&
       0 != strcmp(CHPL_TARGET_BACKEND_CPU, "unknown")) {
+
     // Check that the requested CPU is valid
     bool targetCpuValid = isTargetCpuValid(CHPL_TARGET_BACKEND_CPU);
     if (!targetCpuValid) {
       USR_WARN("Unknown target CPU %s -- not specializing",
                CHPL_TARGET_BACKEND_CPU);
       std::string triple = getConfiguredTargetTriple();
-      USR_PRINT(
-          "To see available CPU types, run "
-          "%s --target=%s --print-supported-cpus",
-          clangCC.c_str(), triple.c_str());
+      USR_PRINT("To see available CPU types, run "
+                "%s --target=%s --print-supported-cpus",
+                clangCC.c_str(), triple.c_str());
 
     } else {
       std::string march = "-m";
@@ -2538,11 +2546,11 @@ ClangInfo* gatherClangInfo(const char* just_parse_filename) {
 
   // Passing -ffast-math is important to get approximate versions
   // of cabs but it appears to slow down simple complex multiplication.
-  if (ffloatOpt > 0)                          // --no-ieee-float
-    clangCCArgs.push_back(clang_fast_float);  // --ffast-math
+  if (ffloatOpt > 0) // --no-ieee-float
+    clangCCArgs.push_back(clang_fast_float); // --ffast-math
 
-  if (ffloatOpt < 0)                          // --ieee-float
-    clangCCArgs.push_back(clang_ieee_float);  // -fno-fast-math
+  if (ffloatOpt < 0) // --ieee-float
+    clangCCArgs.push_back(clang_ieee_float); // -fno-fast-math
 
   // Add include directories specified on the command line
   for_vector(const char, dirName, incDirs) {
@@ -2598,13 +2606,32 @@ ClangInfo* gatherClangInfo(const char* just_parse_filename) {
 
   if (!parseOnly) {
     if (usingGpuLocaleModel()) {
-      // Include a conglomerate header file to include header files from the
-      // command line
-      std::string genHeaderFilename =
-          genIntermediateFilename("command-line-includes.h");
+      //create a header file to include header files from the command line
+      std::string genHeaderFilename;
+      genHeaderFilename = genIntermediateFilename("command-line-includes.h");
+      std::cout << genHeaderFilename.c_str() << "\n";
+      FILE* fp =  openfile(genHeaderFilename.c_str(), "w");
+      if(usingGpuLocaleModel()) {
+        // In some version of the CUDA headers they end up redefining
+        // __noinline__, which is used as an attribute in gcc. This was
+        // causing us to fail to compile Arkouda and so we undef it
+        // here as a workaround
+        fprintf(fp, "#undef __noinline__\n");
+      }
+
+      int filenum = 0;
+      while (const char* inputFilename = nthFilename(filenum++)) {
+        if (isCHeader(inputFilename)) {
+          fprintf(fp, "%s%s%s\n", "#include \"", inputFilename,"\"");
+        }
+      }
+
+      closefile(fp);
       clangOtherArgs.push_back("-include");
       clangOtherArgs.push_back(genHeaderFilename);
     }
+
+    // Running clang to compile all runtime and extern blocks
 
     // Include header files from the command line.
     else {
@@ -2622,13 +2649,14 @@ ClangInfo* gatherClangInfo(const char* just_parse_filename) {
     clangOtherArgs.push_back("llvm/chapel_libc_wrapper.h");
 
     // Include extern C blocks
-    if (fAllowExternC && gAllExternCode.filename) {
+    if( fAllowExternC && gAllExternCode.filename ) {
       clangOtherArgs.push_back("-include");
       clangOtherArgs.push_back(gAllExternCode.filename);
     }
 
     // Include a few extra things if generating a multi-locale library.
     if (fMultiLocaleInterop) {
+
       // Include the contents of the server bundle...
       clangOtherArgs.push_back("-include");
       INT_ASSERT(gMultiLocaleLibServerFile != NULL);
@@ -2645,42 +2673,21 @@ ClangInfo* gatherClangInfo(const char* just_parse_filename) {
     clangOtherArgs.push_back(just_parse_filename);
   }
 
-  return new ClangInfo(clangCC, clangCXX, clangCCArgs, clangOtherArgs,
-                       clangLDArgs, parseOnly);
-}
+  if( printSystemCommands ) {
+    if (parseOnly)
+      printf("<internal clang parsing %s> ", just_parse_filename);
+    else
+      printf("<internal clang code generation> ");
 
-// if just_parse_filename != NULL, it is a file
-// containing an extern block to parse only
-// (and in that setting there is no need to work with the runtime).
-void runClang(const char* just_parse_filename) {
-  bool parseOnly = (just_parse_filename != NULL);
-  static bool is_installed_fatal_error_handler = false;
-
-  if (!parseOnly) {
-    if (usingGpuLocaleModel()) {
-      // create a header file to include header files from the command line
-      std::string genHeaderFilename;
-      genHeaderFilename = genIntermediateFilename("command-line-includes.h");
-      std::cout << genHeaderFilename.c_str() << "\n";
-      FILE* fp = openfile(genHeaderFilename.c_str(), "w");
-      if (usingGpuLocaleModel()) {
-        // In some version of the CUDA headers they end up redefining
-        // __noinline__, which is used as an attribute in gcc. This was
-        // causing us to fail to compile Arkouda and so we undef it
-        // here as a workaround
-        fprintf(fp, "#undef __noinline__\n");
-      }
-
-      int filenum = 0;
-      while (const char* inputFilename = nthFilename(filenum++)) {
-        if (isCHeader(inputFilename)) {
-          fprintf(fp, "%s%s%s\n", "#include \"", inputFilename, "\"");
-        }
-      }
-
-      closefile(fp);
+    for( size_t i = 0; i < clangCCArgs.size(); i++ ) {
+      printf("%s ", clangCCArgs[i].c_str());
     }
+    for( size_t i = 0; i < clangOtherArgs.size(); i++ ) {
+      printf("%s ", clangOtherArgs[i].c_str());
+    }
+    printf("\n");
   }
+
 
   // Initialize gGenInfo
   // Toggle LLVM code generation in our clang run;
@@ -2696,32 +2703,22 @@ void runClang(const char* just_parse_filename) {
 
   gGenInfo->lvt = std::make_unique<LayeredValueTable>();
 
-  // TODO: is this a memory leak when replacing a previous ClangInfo?
-  gGenInfo->clangInfo = gatherClangInfo(just_parse_filename);
-  ClangInfo* clangInfo = gGenInfo->clangInfo;
 
-  if (printSystemCommands) {
-    if (parseOnly)
-      printf("<internal clang parsing %s> ", just_parse_filename);
-    else
-      printf("<internal clang code generation> ");
+  ClangInfo* clangInfo = NULL;
+  clangInfo = new ClangInfo(clangCC, clangCXX,
+                            clangCCArgs, clangOtherArgs, clangLDArgs,
+                            parseOnly);
 
-    for (size_t i = 0; i < clangInfo->clangCCArgs.size(); i++) {
-      printf("%s ", clangInfo->clangCCArgs[i].c_str());
-    }
-    for (size_t i = 0; i < clangInfo->clangOtherArgs.size(); i++) {
-      printf("%s ", clangInfo->clangOtherArgs[i].c_str());
-    }
-    printf("\n");
-  }
+  gGenInfo->clangInfo = clangInfo;
 
   std::string home(CHPL_HOME);
   std::string rtmain = home + "/runtime/etc/rtmain.c";
 
   setupClang(gGenInfo, rtmain);
 
-  if (fLlvmCodegen || fAllowExternC) {
-    GenInfo* info = gGenInfo;
+  if( fLlvmCodegen || fAllowExternC )
+  {
+    GenInfo *info = gGenInfo;
 
     // Install an LLVM Fatal Error Handler.
     if (!is_installed_fatal_error_handler) {
@@ -2736,21 +2733,19 @@ void runClang(const char* just_parse_filename) {
     // CCodeGenAction is defined above. It traverses the C AST
     // and does the code generation.
     clangInfo->cCodeGenAction = new CCodeGenAction();
-    if (!clangInfo->Clang->ExecuteAction(
-            *clangInfo->cCodeGenAction)) {
+    if (!clangInfo->Clang->ExecuteAction(*clangInfo->cCodeGenAction)) {
       if (parseOnly) {
         USR_FATAL("error running clang on extern block");
       } else {
         USR_FATAL("error running clang during code generation");
       }
     }
-    if (!parseOnly) {
+    if( ! parseOnly ) {
       // LLVM module should have been created by CCodeGenConsumer
       INT_ASSERT(gGenInfo->module);
 
       // Create a new IRBuilder
-      gGenInfo->irBuilder =
-          new llvm::IRBuilder<>(gGenInfo->module->getContext());
+      gGenInfo->irBuilder = new llvm::IRBuilder<>(gGenInfo->module->getContext());
 
       // This seems to be needed, even though it is strange.
       // (otherwise we segfault in info->irBuilder->CreateGlobalString)
@@ -2758,20 +2753,21 @@ void runClang(const char* just_parse_filename) {
       // Some IRBuilder methods, codegenning a string,
       // need a basic block in order to get to the module
       // so we create a dummy function to code generate into
-      llvm::Type* voidTy = llvm::Type::getVoidTy(info->module->getContext());
+      llvm::Type * voidTy =  llvm::Type::getVoidTy(info->module->getContext());
       std::vector<llvm::Type*> args;
-      llvm::FunctionType* FT = llvm::FunctionType::get(voidTy, args, false);
-      Function* F = Function::Create(FT, Function::InternalLinkage,
-                                     "chplDummyFunction", info->module);
-      llvm::BasicBlock* block =
-          llvm::BasicBlock::Create(info->module->getContext(), "entry", F);
+      llvm::FunctionType * FT = llvm::FunctionType::get(voidTy, args, false);
+      Function * F =
+        Function::Create(FT, Function::InternalLinkage,
+                         "chplDummyFunction", info->module);
+      llvm::BasicBlock *block =
+        llvm::BasicBlock::Create(info->module->getContext(), "entry", F);
       info->irBuilder->SetInsertPoint(block);
     }
     // read macros. May call IRBuilder methods to codegen a string,
     // so needs to happen after we set the insert point.
     readMacrosClang();
 
-    if (!parseOnly) {
+    if( ! parseOnly ) {
       info->irBuilder->CreateRetVoid();
     }
   }
