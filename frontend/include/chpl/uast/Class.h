@@ -65,7 +65,9 @@ class Class final : public AggregateDecl {
   }
 
   Class(Deserializer& des)
-    : AggregateDecl(asttags::Class, des) { }
+    : AggregateDecl(asttags::Class, des) {
+      parentClassChildNum_ = des.read<int>();
+     }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Class* lhs = this;
@@ -102,6 +104,7 @@ class Class final : public AggregateDecl {
 
   void serialize(Serializer& ser) const override {
     AggregateDecl::serializePart(ser);
+    ser(parentClassChildNum_);
   }
 
   DECLARE_STATIC_DES(Class);
