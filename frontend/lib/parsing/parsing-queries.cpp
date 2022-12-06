@@ -352,12 +352,12 @@ void setupModuleSearchPaths(
     }
   }
 
+  addFilePathModules(searchPath, inputFilenames);
+
   // Add paths from the command line
   for (const auto& p : cmdLinePaths) {
     searchPath.push_back(p);
   }
-
-  addFilePathModules(searchPath, inputFilenames);
 
   // Convert them all to UniqueStrings.
   std::vector<UniqueString> uSearchPath;
