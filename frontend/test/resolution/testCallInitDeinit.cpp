@@ -38,25 +38,40 @@ using ActionElt = std::tuple<AssociatedAction::Action,
                              std::string /* ID acted upon or "" */ >;
 using Actions = std::vector<ActionElt>;
 
-static void gatherActions(const AstNode* ast,
+static std::string idToStr(Context* context, ID id) {
+  std::string name = id.str();
+  if (const AstNode* ast = idToAst(context, id)) {
+    if (auto nd = ast->toNamedDecl()) {
+      name = nd->name().str();
+    }
+  }
+
+  return name;
+}
+
+static void gatherActions(Context* context,
+                          const AstNode* ast,
                           const ResolvedFunction* r,
                           Actions& actions) {
 
   // gather actions for child nodes
   for (auto child : ast->children()) {
-    gatherActions(child, r, actions);
+    gatherActions(context, child, r, actions);
   }
 
   // gather actions for this node
   const ResolvedExpression* re = r->resolutionById().byAstOrNull(ast);
   if (re != nullptr) {
     for (auto act: re->associatedActions()) {
-      // ignore acted-upon ID expect for DEINIT
-      if (act.action() != AssociatedAction::DEINIT) {
-        actions.push_back(std::make_tuple(act.action(), ast->id().str(), ""));
+      if (act.action() == AssociatedAction::DEINIT) {
+        actions.push_back(std::make_tuple(act.action(),
+                                          idToStr(context, ast->id()),
+                                          idToStr(context, act.id())));
       } else {
-        actions.push_back(
-            std::make_tuple(act.action(), ast->id().str(), act.id().str()));
+        // ignore acted-upon ID expect for DEINIT
+        actions.push_back(std::make_tuple(act.action(),
+                                          idToStr(context, ast->id()),
+                                          ""));
       }
     }
   }
@@ -119,7 +134,7 @@ static void testActions(const char* test,
   assert(r);
 
   Actions actions;
-  gatherActions(func, r, actions);
+  gatherActions(context, func, r, actions);
 
   printf("Expecting:\n");
   printActions(expected);
@@ -173,6 +188,7 @@ static void testActions(const char* test,
   }
 }
 
+// test very basic default init & deinit
 static void test1() {
   testActions("test1",
     R""""(
@@ -186,13 +202,14 @@ static void test1() {
       }
     )"""",
     {
-      {AssociatedAction::DEFAULT_INIT, "M.test@1", ""},
-      {AssociatedAction::DEINIT, "M.test@2", "M.test@1"}
+      {AssociatedAction::DEFAULT_INIT, "x",        ""},
+      {AssociatedAction::DEINIT,       "M.test@2", "x"}
     });
 }
 
-static void test2() {
-  testActions("test2",
+// test deinit order when split initing & move from value call
+static void test2a() {
+  testActions("test2a",
     R""""(
       module M {
         record R { }
@@ -211,13 +228,14 @@ static void test2() {
       }
     )"""",
     {
-      {AssociatedAction::DEINIT, "M.test@12", "M.test@1"},
-      {AssociatedAction::DEINIT, "M.test@12", "M.test@3"}
+      {AssociatedAction::DEINIT, "M.test@12", "x"},
+      {AssociatedAction::DEINIT, "M.test@12", "y"}
     });
 }
 
-static void test3() {
-  testActions("test3",
+// test deinit order when split initing
+static void test2b() {
+  testActions("test2b",
     R""""(
       module M {
         record R { }
@@ -236,13 +254,14 @@ static void test3() {
       }
     )"""",
     {
-      {AssociatedAction::DEINIT, "M.test@12", "M.test@3"},
-      {AssociatedAction::DEINIT, "M.test@12", "M.test@1"}
+      {AssociatedAction::DEINIT, "M.test@12", "y"},
+      {AssociatedAction::DEINIT, "M.test@12", "x"}
     });
 }
 
-static void test4() {
-  testActions("test4",
+// test deinit order when split initing
+static void test2c() {
+  testActions("test2c",
     R""""(
       module M {
         record R { }
@@ -263,20 +282,132 @@ static void test4() {
       }
     )"""",
     {
-      {AssociatedAction::DEINIT, "M.test@13", "M.test@3"},
-      {AssociatedAction::DEINIT, "M.test@13", "M.test@1"}
+      {AssociatedAction::DEINIT, "M.test@13", "y"},
+      {AssociatedAction::DEINIT, "M.test@13", "x"}
+    });
+}
+
+// test assignment between values
+// this one has no split init and no copy elision
+static void test3a() {
+  testActions("test3a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+        proc makeR() {
+          return new R();
+        }
+        proc test() {
+          var x:R;
+          var y:R;
+          x; // no split init
+          x = y; // assignment -- not a copy so no elision
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",        ""},
+      {AssociatedAction::DEFAULT_INIT, "y",        ""},
+      {AssociatedAction::ASSIGN,       "M.test@7", ""},
+      {AssociatedAction::DEINIT,       "M.test@8", "y"},
+      {AssociatedAction::DEINIT,       "M.test@8", "x"}
+    });
+}
+
+static void test3b() {
+  testActions("test3b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+        proc makeR() {
+          return new R();
+        }
+        proc test() {
+          var x:R;
+          var y:R;
+          x = y; // split init
+          y; // no copy elision
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "y",        ""},
+      {AssociatedAction::COPY_INIT,    "M.test@6", ""},
+      {AssociatedAction::DEINIT,       "M.test@8", "x"},
+      {AssociatedAction::DEINIT,       "M.test@8", "y"}
+    });
+}
+
+static void test3c() {
+  testActions("test3c",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+        proc makeR() {
+          return new R();
+        }
+        proc test() {
+          var x:R;
+          var y:R;
+          x = y; // split init + copy elision
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "y",        ""},
+      {AssociatedAction::DEINIT,       "M.test@7", "x"}
+    });
+}
+
+static void test3d() {
+  testActions("test3d",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+        proc makeR() {
+          return new R();
+        }
+        proc test() {
+          var x:R;
+          var y:R;
+          {
+            x = y; // split init + copy elision
+          }
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "y",        ""},
+      {AssociatedAction::DEINIT,       "M.test@8", "x"}
     });
 }
 
 
-
-
-
 int main() {
   test1();
-  test2();
-  test3();
-  test4();
+  test2a();
+  test2b();
+  test2c();
+  test3a();
+  test3b();
+  test3c();
+  test3d();
 
   return 0;
 }
