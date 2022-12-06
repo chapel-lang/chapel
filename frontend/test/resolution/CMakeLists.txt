@@ -15,6 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+comp_unit_test(testCallInitDeinit)
 comp_unit_test(testCanPass)
 comp_unit_test(testClasses)
 comp_unit_test(testCopyElision)
@@ -27,8 +28,8 @@ comp_unit_test(testFieldAccess)
 comp_unit_test(testFindDecl)
 comp_unit_test(testFunctionCalls)
 comp_unit_test(testGenericDefaults)
-comp_unit_test(testInteractive)
 comp_unit_test(testInitSemantics)
+comp_unit_test(testInteractive)
 comp_unit_test(testLocation)
 comp_unit_test(testLoopIndexVars)
 comp_unit_test(testMultiDecl)

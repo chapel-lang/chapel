@@ -58,7 +58,7 @@ VarScopeVisitor::process(const uast::AstNode* symbol,
     // traverse formals and then traverse the body
     if (auto body = fn->body()) {
       // make a pretend scope for the formals
-      enterScope(body);
+      enterScope(body, rv);
 
       // traverse the formals
       for (auto formal : fn->formals()) {
@@ -68,7 +68,7 @@ VarScopeVisitor::process(const uast::AstNode* symbol,
       // traverse the real body
       body->traverse(rv);
 
-      exitScope(body);
+      exitScope(body, rv);
     }
   } else {
     symbol->traverse(rv);
@@ -172,7 +172,7 @@ bool VarScopeVisitor::processDeclarationInit(const VarLikeDecl* ast, RV& rv) {
   return inserted;
 }
 
-void VarScopeVisitor::enterScope(const AstNode* ast) {
+void VarScopeVisitor::enterScope(const AstNode* ast, RV& rv) {
   if (createsScope(ast->tag())) {
     scopeStack.push_back(toOwned(new VarFrame(ast)));
   }
@@ -189,7 +189,7 @@ void VarScopeVisitor::enterScope(const AstNode* ast) {
     }
   }
 }
-void VarScopeVisitor::exitScope(const AstNode* ast) {
+void VarScopeVisitor::exitScope(const AstNode* ast, RV& rv) {
   if (createsScope(ast->tag())) {
     CHPL_ASSERT(!scopeStack.empty());
     size_t n = scopeStack.size();
@@ -215,7 +215,7 @@ void VarScopeVisitor::exitScope(const AstNode* ast) {
       CHPL_ASSERT(parentFrame->scopeAst->isConditional() ||
              parentFrame->scopeAst->isTry());
     } else if (auto cond = ast->toConditional()) {
-      handleConditional(cond);
+      handleConditional(cond, rv);
       if (parentFrame != nullptr) {
         // if both branches return or throw, update the parent frame.
         VarFrame* thenFrame = currentThenFrame();
@@ -226,7 +226,7 @@ void VarScopeVisitor::exitScope(const AstNode* ast) {
         }
       }
     } else if (auto t = ast->toTry()) {
-      handleTry(t);
+      handleTry(t, rv);
       // if the try returns/throws
       // and any catch clauses also return/throws, update the parent frame
       if (parentFrame != nullptr) {
@@ -247,7 +247,7 @@ void VarScopeVisitor::exitScope(const AstNode* ast) {
         }
       }
     } else {
-      handleScope(ast);
+      handleScope(ast, rv);
       // update the parent frame with the returns/throws status
       if (parentFrame != nullptr) {
         if (!ast->isLoop()) {
@@ -266,7 +266,7 @@ void VarScopeVisitor::exitScope(const AstNode* ast) {
 
 
 bool VarScopeVisitor::enter(const VarLikeDecl* ast, RV& rv) {
-  enterScope(ast);
+  enterScope(ast, rv);
 
   return true;
 }
@@ -276,7 +276,7 @@ void VarScopeVisitor::exit(const VarLikeDecl* ast, RV& rv) {
     handleDeclaration(ast, rv);
   }
 
-  exitScope(ast);
+  exitScope(ast, rv);
 }
 
 
@@ -423,12 +423,12 @@ void VarScopeVisitor::exit(const Identifier* ast, RV& rv) {
 }
 
 bool VarScopeVisitor::enter(const AstNode* ast, RV& rv) {
-  enterScope(ast);
+  enterScope(ast, rv);
 
   return true;
 }
 void VarScopeVisitor::exit(const AstNode* ast, RV& rv) {
-  exitScope(ast);
+  exitScope(ast, rv);
 }
 
 
