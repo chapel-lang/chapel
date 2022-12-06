@@ -131,6 +131,9 @@ class Cobegin final : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serializePart(ser);
+    ser(withClauseChildNum_ );
+    ser(bodyChildNum_);
+    ser(numTaskBodies_);
   }
 
   DECLARE_STATIC_DES(Cobegin);
