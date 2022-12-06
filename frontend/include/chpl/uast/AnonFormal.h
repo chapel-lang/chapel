@@ -77,6 +77,11 @@ class AnonFormal final : public AstNode {
       typeExpressionChildNum_(typeExpressionChildNum) {
   }
 
+  AnonFormal(Deserializer& des)
+    : AstNode(asttags::AnonFormal, des) {
+      intent_ = des.read<Formal::Intent>();
+    }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const AnonFormal* lhs = this;
     const AnonFormal* rhs = (const AnonFormal*) other;
@@ -115,10 +120,23 @@ class AnonFormal final : public AstNode {
   static std::string intentToString(Intent intent) {
     return Formal::intentToString(intent);
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serializePart(ser);
+    ser(intent_);
+  }
+
+  DECLARE_STATIC_DES(AnonFormal);
+
 };
 
 
 } // end namespace uast
+
+
+DECLARE_SERDE_ENUM(uast::Formal::Intent, uint8_t);
+
+
 } // end namespace chpl
 
 #endif
