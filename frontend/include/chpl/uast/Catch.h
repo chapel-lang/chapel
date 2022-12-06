@@ -54,6 +54,13 @@ class Catch final : public AstNode {
       hasParensAroundError_(hasParensAroundError) {
   }
 
+  Catch(Deserializer& des)
+    : AstNode(asttags::Catch, des) {
+        errorChildNum_ = des.read<int8_t>();
+        bodyChildNum_ = des.read<int8_t>();
+        hasParensAroundError_ = des.read<bool>();
+      }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Catch* rhs = other->toCatch();
     return this->errorChildNum_ == rhs->errorChildNum_ &&
@@ -128,6 +135,15 @@ class Catch final : public AstNode {
   bool hasParensAroundError() const {
     return hasParensAroundError_;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serializePart(ser);
+    ser(errorChildNum_);
+    ser(bodyChildNum_);
+    ser(hasParensAroundError_);
+  }
+
+  DECLARE_STATIC_DES(Catch);
 
 };
 

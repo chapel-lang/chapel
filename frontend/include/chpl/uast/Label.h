@@ -50,6 +50,11 @@ class Label final : public AstNode {
     CHPL_ASSERT(numChildren() == 1);
   }
 
+  Label(Deserializer& des)
+    : AstNode(asttags::Label, des) {
+      name_ = des.read<UniqueString>();
+    }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Label* lhs = this;
     const Label* rhs = other->toLabel();
@@ -96,6 +101,14 @@ class Label final : public AstNode {
   UniqueString name() const {
     return name_;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serializePart(ser);
+    ser(name_);
+  }
+
+  DECLARE_STATIC_DES(Label);
+
 
 };
 

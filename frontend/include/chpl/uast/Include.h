@@ -58,6 +58,14 @@ class Include final : public AstNode {
     CHPL_ASSERT(!name_.isEmpty());
   }
 
+  Include(Deserializer& des)
+    : AstNode(asttags::Include, des) {
+      visibility_ = des.read<Decl::Visibility>();
+      isPrototype_ = des.read<bool>();
+      name_ = des.read<UniqueString>();
+    }
+
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Include* lhs = this;
     const Include* rhs = other->toInclude();
@@ -102,6 +110,16 @@ class Include final : public AstNode {
   UniqueString name() const {
     return name_;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serializePart(ser);
+    ser(visibility_);
+    ser(isPrototype_);
+    ser(name_);
+  }
+
+  DECLARE_STATIC_DES(Include);
+
 };
 
 

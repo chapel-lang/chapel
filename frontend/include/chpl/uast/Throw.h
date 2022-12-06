@@ -47,6 +47,9 @@ class Throw final : public AstNode {
     CHPL_ASSERT(numChildren() == 1);
   }
 
+  Throw(Deserializer& des)
+    : AstNode(asttags::Throw, des) { }
+
   bool contentsMatchInner(const AstNode* other) const override {
     return true;
   }
@@ -72,6 +75,12 @@ class Throw final : public AstNode {
     const AstNode* ast = this->child(errorExprChildNum_);
     return ast;
   }
+
+  void serialize(Serializer& ser) {
+    AstNode::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(Throw);
 
 };
 
