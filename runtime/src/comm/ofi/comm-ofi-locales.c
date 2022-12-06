@@ -36,7 +36,7 @@ void chpl_comm_verify_num_locales(int64_t proposedNumLocales) {
     char msg[100];
     snprintf(msg, sizeof(msg),
              "Number of locales from command-line doesn't match "
-             "number from OOB %s (%lld != %d)",
+             "number from OOB %s (%" PRId64 " != %d)",
              chpl_comm_oob, proposedNumLocales, chpl_numNodes);
     chpl_error(msg,0,0);
   }
