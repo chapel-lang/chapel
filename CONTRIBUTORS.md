@@ -4,7 +4,7 @@ Chapel Contributors
 The following people have contributed to the implementation of the
 most recent Chapel release:
 
-Contributors to the Chapel 1.28.0 release
+Contributors to the Chapel 1.29.0 release
 -----------------------------------------
 * Gabriel Brown, individual contributor
 * Paul Cassella, [HPE]
