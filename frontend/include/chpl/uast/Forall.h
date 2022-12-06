@@ -61,6 +61,10 @@ class Forall final : public IndexableLoop {
                     isExpressionLevel) {
   }
 
+  Forall(Deserializer& des)
+    : IndexableLoop(asttags::Forall, des) {
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     return indexableLoopContentsMatchInner(other->toIndexableLoop());
   }
@@ -82,6 +86,12 @@ class Forall final : public IndexableLoop {
                              BlockStyle blockStyle,
                              owned<Block> body,
                              bool isExpressionLevel);
+
+  void serialize(Serializer& ser) const override {
+    IndexableLoop::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(Forall);
 
 };
 

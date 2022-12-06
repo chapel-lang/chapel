@@ -61,6 +61,9 @@ class Foreach final : public IndexableLoop {
 
   }
 
+  Foreach(Deserializer& des)
+    : IndexableLoop(asttags::Foreach, des) {}
+
   bool contentsMatchInner(const AstNode* other) const override {
     return indexableLoopContentsMatchInner(other->toIndexableLoop());
   }
@@ -82,6 +85,12 @@ class Foreach final : public IndexableLoop {
                               BlockStyle blockStyle,
                               owned<Block> body);
 
+
+  void serialize(Serializer& ser) const override {
+    IndexableLoop::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(Foreach);
 
 };
 
