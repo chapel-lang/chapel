@@ -4203,6 +4203,7 @@ void makeBinaryLLVM(void) {
   // setup filenames list
   LLVMGenFilenames* filenames = &info->llvmGenFilenames;
   setupLLVMCodegenFilenames();
+  setupDefaultFilenames();
 
   // load in module from codegen'd bitcode
   loadModuleFromBitcode();

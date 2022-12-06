@@ -192,6 +192,7 @@ GenRet codegenCallExpr(const char* fnName);
 GenRet codegenCallExpr(const char* fnName, GenRet a1);
 GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
 Type* getNamedTypeDuringCodegen(const char* name);
+void setupDefaultFilenames(void);
 void gatherTypesForCodegen(void);
 
 void registerPrimitiveCodegens();
