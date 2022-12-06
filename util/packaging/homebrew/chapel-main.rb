@@ -1,26 +1,27 @@
 class Chapel < Formula
   desc "Programming language for productive parallel computing at scale"
   homepage "https://chapel-lang.org/"
-  url "https://github.com/chapel-lang/chapel/releases/download/1.27.0/chapel-1.27.0.tar.gz"
-  sha256 "558b1376fb7757a5e1f254c717953f598a3e89850c8edd1936b8d09c464f3e8b"
+  url "https://github.com/chapel-lang/chapel/releases/download/1.28.0/chapel-1.28.0.tar.gz"
+  sha256 "64eacfb5915e1b3c487e865f819faf9bb8771c9f83aac6512698ded1baab250e"
   license "Apache-2.0"
-  revision 2
+  revision 1
   head "https://github.com/chapel-lang/chapel.git", branch: "main"
 
   bottle do
-    sha256 arm64_monterey: "8bbe059caaf4f0ecf94d21e474027d5c12cdd66eeca0e733ff3227e3817cd63e"
-    sha256 arm64_big_sur:  "0891b258dbb9eb380278dffcf5bb635c23b70a0860bf2a6e7ddfeca11da77f4f"
-    sha256 monterey:       "070d13b86167a2a6a0e919a87771825280a4ccd50c38a4ebebaef40d88966911"
-    sha256 big_sur:        "6af85521fa09d3b0b0617be98fb94634f053f03f4cea4538b610df8b0d3c5377"
-    sha256 catalina:       "68dbcbb43aea0214677cb895bd15b683ad5ad4b8f28cb0ded08aee88c3e1d94e"
-    sha256 x86_64_linux:   "e6119c8d727fa60b20c7cd7c1dc3502aa4a440a4db074026906850a1e5ae80fd"
+    sha256 arm64_ventura:  "02f2f907d5564b80034d763144584b56c551d3ee6024dba84f77a18e3581dddf"
+    sha256 arm64_monterey: "16e3fd0177ab450a788271b0e38e417ec459fc91d70b8d388a9fe85e78d0291b"
+    sha256 arm64_big_sur:  "c36c6e7cf4b30fefb9fe65aec07a04afdb168765c1a417318f75f65df0b4bd94"
+    sha256 ventura:        "bc45e9b7ea5aa0cc14b1158c4b62f88498f570a682b4128c2c5feee7ef41e9c8"
+    sha256 monterey:       "e2d386f7f931f4c684f5aa325b56c678fc1613935404d40de5d9e09933a3e41b"
+    sha256 big_sur:        "97697fee3e47ad73ad0e2cb80078ea2a7dd1110fa06e297e8b076fff4ec3bc84"
+    sha256 catalina:       "4a588c9b8fdb17f01109be986a3d8df929eb666ddc403499ffdaabd2d174e8e1"
+    sha256 x86_64_linux:   "44e78c563407371437e9cb150ffd1b1f02dfd6f2643ec82d88322ad5665346a1"
   end
 
   depends_on "gmp"
+  depends_on "llvm@14"
   depends_on "python@3.10"
-  # Chapel only supports  LLVM 14 and older. When LLVM15 releases,  our formula would need to change
-  # this line to llvm@14. 
-  depends_on "llvm"
+  depends_on "cmake"
 
   # LLVM is built with gcc11 and we will fail on linux with gcc version 5.xx
   fails_with gcc: "5"
@@ -38,8 +39,8 @@ class Chapel < Formula
   def install
     # Always detect Python used as dependency rather than needing aliased Python formula
     python = "python3.10"
-    # It should be noted that this will expand to: 'for cmd in python3.10 python3 python python2; do' 
-    # in our find-python.sh script.  
+    # It should be noted that this will expand to: 'for cmd in python3.10 python3 python python2; do'
+    # in our find-python.sh script.
     inreplace "util/config/find-python.sh", /^(for cmd in )(python3 )/, "\\1#{python} \\2"
 
     libexec.install Dir["*"]
