@@ -6,19 +6,17 @@ syntax on                  " enable syntax highlighting
 filetype plugin indent on  " enable filetype detection, plugins, indent
 set autoindent             " turn on auto indenting
 
-" To adjust tabs settings for Chapel files, choose one of the following ways:
+" If you prefer spaces to tabs, uncomment the following:
+"  (To get a real tab with these settings, do CTRL-V TAB)
+" These settings will affect file types that don't do adjust settings
+" in their ftplugin file (C, C++, Chapel) but not those that do (Python)
 "
-"  1. To configure tab settings only for Chapel files, adjust
-"     $HOME/.vim/ftplugin/chpl.vim
-"
-"  2. Or, to use tab settings for all file types, leave the tab settings
-"     in chpl.vim commented out and adjust tab settings here in your .vimrc.
-"     Below are some example settings, but adjust to your preference.
-"       set expandtab     " replace indents with spaces
-"       set shiftwidth=2  " set how many spaces per indent
-"       set smarttab      " use spaces as indents at the beginning of lines
+" set expandtab       " replace indents with spaces
+" set shiftwidth=2    " set how many spaces per indent
+" set smarttab        " use spaces as indents at the beginning of lines
 
 " Other useful commands, uncomment as desired:
+"
 " set background=dark " switch to color scheme for terminals with a dark background
 " set ignorecase      " ignore case when searching (turn off by ": set noignorecase")
 " set incsearch       " enable incremental search
