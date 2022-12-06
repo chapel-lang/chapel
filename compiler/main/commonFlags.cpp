@@ -32,6 +32,7 @@ bool fPrintVersion = false;
 bool fDoMonolithic = false;
 bool fDoCompilation = false;
 bool fDoBackend = false;
+const char* fBackendMainMod = "";
 bool fRungdb = false;
 bool fRunlldb = false;
 

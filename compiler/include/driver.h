@@ -162,6 +162,7 @@ extern bool fExplainVerbose;
 extern bool fParseOnly;
 extern bool fDoCompilation;
 extern bool fDoBackend;
+extern const char* fBackendMainMod;
 extern bool fPrintAllCandidates;
 extern bool fPrintCallGraph;
 extern bool fPrintCallStackOnError;

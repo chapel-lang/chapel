@@ -4200,13 +4200,16 @@ void makeBinaryLLVM(void) {
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
 
-  // setup filenames list
+  // setup LLVM codegen filenames list
   LLVMGenFilenames* filenames = &info->llvmGenFilenames;
   setupLLVMCodegenFilenames();
 
   // load in module from codegen'd bitcode
   loadModuleFromBitcode();
   setupModule();
+
+  // generate filenames such as executable
+  setupDefaultFilenames();
 
   // setup output file info
   std::error_code error;
