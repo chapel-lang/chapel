@@ -86,6 +86,18 @@ class FunctionSignature final : public AstNode {
                  returnTypeChildNum_ < (ssize_t)children_.size());
   }
 
+  FunctionSignature(Deserializer& des)
+    : AstNode(asttags::FunctionSignature, des) {
+      kind_ = des.read<Kind>();
+      returnIntent_ = des.read<ReturnIntent>();
+      formalsChildNum_ = des.read<int>();
+      thisFormalChildNum_ = des.read<int>();
+      numFormals_= des.read<int>();
+      returnTypeChildNum_ = des.read<int>();
+      throws_ = des.read<bool>();
+      isParenless_ = des.read<bool>();
+    }
+
   bool contentsMatchInner(const AstNode* other) const override {
     auto lhs = this;
     auto rhs = (const FunctionSignature*) other;
@@ -159,6 +171,20 @@ class FunctionSignature final : public AstNode {
     const AstNode* ret = this->child(returnTypeChildNum_);
     return ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serializePart(ser);
+    ser(kind_);
+    ser(returnIntent_);
+    ser(formalsChildNum_);
+    ser(thisFormalChildNum_);
+    ser(numFormals_);
+    ser(returnTypeChildNum_);
+    ser(throws_);
+    ser(isParenless_);
+  }
+
+  DECLARE_STATIC_DES(FunctionSignature);
 
 };
 
