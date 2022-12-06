@@ -89,7 +89,7 @@ class Continue : public AstNode {
   }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+    AstNode::serializePart(ser);
     ser(targetChildNum_);
   }
 
