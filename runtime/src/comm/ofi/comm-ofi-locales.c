@@ -22,8 +22,11 @@
 #include "arg.h"
 #include "chpl-comm-locales.h"
 #include "error.h"
+
+#ifndef LAUNCHER
 #include "chpl-comm.h"
 #include "comm-ofi-internal.h"
+#endif
 
 int64_t chpl_comm_default_num_locales(void) {
   return chpl_specify_locales_error();
