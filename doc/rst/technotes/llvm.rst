@@ -84,7 +84,7 @@ benchmarks.
 
 Please see `LLVM-based Communication Optimizations for PGAS Programs`_ by
 Hayashi et al. for more information about this flag and its
-implementation. Note that locality optimizationd and transfer coalescing
+implementation. Note that locality optimizations and transfer coalescing
 are not yet available in Chapel releases.
 
 Caveats:
