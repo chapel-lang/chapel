@@ -1106,9 +1106,10 @@ struct Converter {
         svs = convertTaskVar(tv);
         INT_ASSERT(svs);
 
-        isTaskVarDecl = tv->intent() == uast::TaskVar::Intent::VAR ||
-                        tv->intent() == uast::TaskVar::Intent::CONST;
-
+        // (const x) is a task intent, but (const x: int) and (const x = 1)
+        // are task-private variable declarations.
+        isTaskVarDecl = tv->initExpression() != nullptr ||
+                        tv->typeExpression() != nullptr;
       // Handle reductions in with clauses explicitly here.
       } else if (const uast::ReduceIntent* rd = expr->toReduceIntent()) {
         astlocMarker markAstLoc(rd->id());
