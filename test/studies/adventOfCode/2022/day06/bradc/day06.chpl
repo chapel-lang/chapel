@@ -1,27 +1,24 @@
-// Concepts:
-// configs (!!!)
-// named ranges
-// # on ranges
-// string slicing (take two?)
-
-// TODO: maybe remove while loop for blog
-
 use IO, Set;
 
-config const matchSize = 4;
+config const markerLen = 4;
 
-var line: bytes;
-while readLine(line) {
-  const inds = 0..<(line.size-matchSize);
-  for i in inds {
-    var s: set(uint(8));
+var buffer: bytes;
+while readLine(buffer) {  // use a while loop to try multiple tests in one run
+  const inds = 0..<buffer.size-markerLen;
+  var (_, loc) = maxloc reduce zip([i in inds] isMarker(buffer[i..#markerLen]),
+                                   inds+markerLen);
+  writeln(loc);
+}
 
-    for ch in line[i..#matchSize] do
-      s.add(ch);
+proc isMarker(window) {
+  return uniqueChars(window) == markerLen;
+}
 
-    if s.size == matchSize {
-      writeln(i+matchSize);
-      break;
-    }
-  }
+proc uniqueChars(window) {
+  var s: set(uint(8));
+
+  for ch in window do
+    s.add(ch);
+
+  return s.size;
 }
