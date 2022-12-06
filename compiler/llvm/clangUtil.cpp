@@ -4186,15 +4186,18 @@ void makeBinaryLLVM(void) {
   initializeGenInfo();
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
-  ClangInfo* clangInfo = info->clangInfo;
-  if (!clangInfo) {
+  if (fDoBackend) {
     // we are in backend-only compilation and need to regenerate clang
     // command-line info
     // TODO: do this in a better way
+    assert(!info->clangInfo);
     runClang(NULL);
+    // delete the new Builder module
+    info->clangInfo->cCodeGen->ReleaseModule();
     delete info->module;
     info->module = nullptr;
   }
+  ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
 
   // setup filenames list
