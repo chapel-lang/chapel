@@ -109,7 +109,7 @@ struct CallInitDeinit : VarScopeVisitor {
 // localsAndDefers/initedOuterVars vectors.
 // Does not update any sets
 void CallInitDeinit::recordInitializationOrder(VarFrame* frame, ID varId) {
-  assert(!varId.isEmpty()); // caller error
+  CHPL_ASSERT(!varId.isEmpty()); // caller error
   if (frame->declaredVars.count(varId) > 0) {
     // it is declared in the local scope
     frame->localsAndDefers.push_back(varId);
@@ -496,7 +496,7 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
   } else if (splitInited) {
     if (isRef(lhsType.kind())) {
       // e.g. ref x = returnAValue();
-      assert(false && "TODO");
+      CHPL_ASSERT(false && "TODO");
     } else if (elidedCopyFromIds.count(ast->id()) > 0) {
       // it is move initialization
       resolveMoveInit(ast, lhsType, rhsType, rv);
@@ -505,7 +505,7 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
       // so note that in deinitedVars.
       ID rhsId = refersToId(rhsAst, rv);
       // copy elision with '=' should only apply to myVar = myOtherVar
-      assert(!rhsId.isEmpty());
+      CHPL_ASSERT(!rhsId.isEmpty());
       frame->deinitedVars.insert(rhsId);
     } else if (rhsRe.toId().isEmpty() && !isRef(rhsType.kind())) {
       // e.g. var x; x = callReturningValue();
@@ -570,7 +570,7 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
     // so note that in deinitedVars.
     ID actualId = refersToId(actual, rv);
     // copy elision should only apply to copies from variables
-    assert(!actualId.isEmpty());
+    CHPL_ASSERT(!actualId.isEmpty());
     frame->deinitedVars.insert(actualId);
   }
 }
