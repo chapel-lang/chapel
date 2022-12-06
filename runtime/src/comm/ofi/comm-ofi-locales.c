@@ -22,9 +22,9 @@
 #include "arg.h"
 #include "chpl-comm-locales.h"
 #include "error.h"
-#include "chpl-comm.h"
 
 #ifndef LAUNCHER
+#include "chpl-comm.h"
 #include "comm-ofi-internal.h"
 #endif
 
