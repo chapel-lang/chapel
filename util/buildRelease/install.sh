@@ -346,25 +346,21 @@ then
   fi
 fi
 
-# create symlink for chpldoc-legacy
+# copy chpldoc
+# and create symlink for chpldoc-legacy
 if [ -f "bin/$CHPL_BIN_SUBDIR/chpldoc" ]
 then
   # Choose destination depending on installation mode {prefix, home}
   if [ ! -z "$PREFIX" ]
   then
+    myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpldoc "$PREFIX/bin"
     (cd "$PREFIX/bin" && rm -f chpldoc-legacy && ln -s chpl chpldoc-legacy)
   else
+    myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpldoc "$DEST_DIR/bin/$CHPL_BIN_SUBDIR"
     (cd "$DEST_DIR/bin/$CHPL_BIN_SUBDIR" && rm -f chpldoc-legacy && ln -s chpl chpldoc-legacy)
   fi
 fi
 
-# copy chpldoc
-if [ ! -z "$PREFIX" ]
-then
-  myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpldoc "$PREFIX/bin"
-else
-  myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpldoc "$DEST_DIR/bin/$CHPL_BIN_SUBDIR"
-fi
 
 # copy chplconfig
 if [ -f chplconfig ]
