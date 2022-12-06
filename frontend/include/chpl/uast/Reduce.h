@@ -73,6 +73,9 @@ class Reduce final : public Call {
     assert(numChildren() == 2);
   }
 
+  Reduce(Deserializer& des)
+      : Call(asttags::Reduce, des) { }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Reduce* rhs = other->toReduce();
     return this->callContentsMatchInner(rhs);
@@ -109,6 +112,12 @@ class Reduce final : public Call {
   const AstNode* iterand() const {
     return this->child(iterandExprChildNum_);
   }
+
+  void serialize(Serializer& ser) const override {
+    Call::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(Reduce);
 
 };
 
