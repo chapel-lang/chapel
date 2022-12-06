@@ -1,6 +1,0 @@
-bug / error message: This should work, whouldn't it?
-
-Using readLine() in this way gives an error in an internal module.
-Using it like `stdin.readLine()` seems to work fine.  This makes
-me think that some wiring got broken somewhere.  Otherwise, we
-should make it into a nicer user-facing error message
