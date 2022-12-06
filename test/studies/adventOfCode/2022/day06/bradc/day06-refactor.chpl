@@ -13,15 +13,20 @@ config const matchSize = 4;
 var line: bytes;
 while readLine(line) {
   const inds = 0..<(line.size-matchSize);
+
   for i in inds {
-    var s: set(uint(8));
-
-    for ch in line[i..#matchSize] do
-      s.add(ch);
-
-    if s.size == matchSize {
+    if numUnique(line[i..#matchSize]) == matchSize {
       writeln(i+matchSize);
       break;
     }
   }
+}
+
+proc numUnique(subline) {
+  var s: set(uint(8));
+
+  for ch in subline do
+    s.add(ch);
+
+  return s.size;
 }
