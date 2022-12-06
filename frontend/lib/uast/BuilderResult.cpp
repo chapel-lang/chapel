@@ -244,6 +244,8 @@ AstList BuilderResult::deserializeFromFile(Context* context, std::istream& is) {
 
   auto m = des.read<uint64_t>();
   auto v = des.read<uint32_t>();
+  (void)m; // silence unused variable warnings
+  (void)v; // silence unused variable warnings
   assert(m == magic);
   assert(v == version);
 
