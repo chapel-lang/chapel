@@ -39,27 +39,10 @@ using namespace uast;
 using namespace types;
 
 
-// TODO -- figure out where to store copy (associatedFns?)
-//         and where to store deinit (associatedFns not so good).
-//         For now it just prints these.
-//
 // TODO -- a default argument can have a RHS that is a reference
 //         even though it is 'in' intent. As such, it would require
 //         a copy, but it's hard to associate that information
 //         with a call actual (because the actual doesn't exist).
-
-/*
-struct Action {
-  enum ActionKind {
-    COPY_INIT, // for 'in'
-    WRITE_BACK, // for 'out' and 'inout'
-    DEINIT,
-  };
-  ActionKind action; // which action?
-  ID id;             // which ID?
-  Action(ActionKind action, ID id) : action(action), id(id) { }
-};
-*/
 
 // Resolves default-init, copy-init, assign, and deinit
 // TODO: should it be renamed to include Assign?
@@ -82,7 +65,7 @@ struct CallInitDeinit : VarScopeVisitor {
 
   void recordInitializationOrder(VarFrame* frame, ID varId);
   void checkUseOfDeinited(const AstNode* useAst, ID varId);
-  void processDeinitsAndPropagate(VarFrame* frame, VarFrame* parent);
+  void processDeinitsAndPropagate(VarFrame* frame, VarFrame* parent, RV& rv);
 
   void resolveDefaultInit(const VarLikeDecl* ast, RV& rv);
   void resolveAssign(const AstNode* ast,
@@ -98,6 +81,7 @@ struct CallInitDeinit : VarScopeVisitor {
                        const QualifiedType& rhsType,
                        RV& rv);
   void resolveDeinit(const AstNode* ast,
+                     ID deinitedId,
                      const QualifiedType& type,
                      RV& rv);
 
@@ -116,27 +100,10 @@ struct CallInitDeinit : VarScopeVisitor {
                          const QualifiedType& formalType,
                          RV& rv) override;
   void handleReturnOrThrow(const uast::AstNode* ast, RV& rv) override;
-  void handleConditional(const Conditional* cond) override;
-  void handleTry(const Try* t) override;
-  void handleScope(const AstNode* ast) override;
+  void handleConditional(const Conditional* cond, RV& rv) override;
+  void handleTry(const Try* t, RV& rv) override;
+  void handleScope(const AstNode* ast, RV& rv) override;
 };
-
-/*
-void CallInitDeinit::printActions(const std::vector<Action>& actions) {
-  for (auto act : actions) {
-    switch (act.action) {
-      case Action::COPY_INIT:
-        printf("copy-init %s\n", act.id.str().c_str());
-        break;
-      case Action::WRITE_BACK:
-        printf("writeback %s\n", act.id.str().c_str());
-        break;
-      case Action::DEINIT:
-        printf("deinit %s\n", act.id.str().c_str());
-        break;
-    }
-  }
-}*/
 
 // When varId is initialized, record that fact in the
 // localsAndDefers/initedOuterVars vectors.
@@ -166,15 +133,16 @@ void CallInitDeinit::checkUseOfDeinited(const AstNode* useAst, ID varId) {
 }
 
 void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
-                                                VarFrame* parent) {
+                                                VarFrame* parent,
+                                                RV& rv) {
   ssize_t n = frame->localsAndDefers.size();
   for (ssize_t i = n - 1; i >= 0; i--) {
     ID varOrDeferId = frame->localsAndDefers[i]; 
-    // TODO find the uAST node to associate the deinits & call it here
-    // It could just be the last child node, since there must
-    // be more than one if we are deiniting something, right?
-    printf("DEINIT %s\n", varOrDeferId.str().c_str());
-    // TODO: actually call it here
+
+    ResolvedExpression& re = rv.byId(varOrDeferId);
+    QualifiedType type = re.type();
+
+    resolveDeinit(frame->scopeAst, varOrDeferId, type, rv);
   }
 
   if (parent != nullptr) {
@@ -376,7 +344,7 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
         printf("Warning: should not be reached\n");
       } else {
         resolveCopyInit(ast, lhsType, rhsType, rv);
-        resolveDeinit(ast, rhsType, rv);
+        resolveDeinit(ast, ast->id(), rhsType, rv);
       }
     }
   } else {
@@ -386,6 +354,7 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
 
 
 void CallInitDeinit::resolveDeinit(const AstNode* ast,
+                                   ID deinitedId,
                                    const QualifiedType& type,
                                    RV& rv) {
   std::vector<CallInfoActual> actuals;
@@ -401,7 +370,8 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
                                 resolver.poiScope);
   ResolvedExpression& opR = rv.byAst(ast);
   resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
-                                        AssociatedAction::DEINIT, ast->id());
+                                        AssociatedAction::DEINIT,
+                                        deinitedId);
 }
 
 void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
@@ -480,6 +450,9 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
       // copy elision with '=' should only apply to myVar = myOtherVar
       assert(!rhsId.isEmpty());
       frame->deinitedVars.insert(rhsId);
+    } else if (rhsRe.toId().isEmpty() && !isRef(rhsType.kind())) {
+      // e.g. var x; x = callReturningValue();
+      resolveMoveInit(ast, lhsType, rhsType, rv);
     } else {
       // it is copy initialization, so use init= for records
       // TODO: and tuples?
@@ -563,7 +536,7 @@ void CallInitDeinit::handleReturnOrThrow(const uast::AstNode* ast, RV& rv) {
   // check for use of deinited variables
   processMentions(ast, rv);
 }
-void CallInitDeinit::handleConditional(const Conditional* cond) {
+void CallInitDeinit::handleConditional(const Conditional* cond, RV& rv) {
   // Any outer variables inited in the 'then' frame can be propagated up
   VarFrame* frame = currentFrame();
   VarFrame* parent = currentParentFrame();
@@ -571,31 +544,31 @@ void CallInitDeinit::handleConditional(const Conditional* cond) {
   VarFrame* elseFrame = currentElseFrame();
 
   // process end-of-block deinits in then/else blocks and then propagate
-  processDeinitsAndPropagate(thenFrame, frame);
+  processDeinitsAndPropagate(thenFrame, frame, rv);
   if (elseFrame) {
-    processDeinitsAndPropagate(elseFrame, frame);
+    processDeinitsAndPropagate(elseFrame, frame, rv);
   }
 
   // propagate information out of Conditional itself
-  processDeinitsAndPropagate(frame, parent);
+  processDeinitsAndPropagate(frame, parent, rv);
 }
-void CallInitDeinit::handleTry(const Try* t) {
+void CallInitDeinit::handleTry(const Try* t, RV& rv) {
   VarFrame* frame = currentFrame();
   VarFrame* parent = currentParentFrame();
 
   int nCatch = currentNumCatchFrames();
   for (int i = 0; i < nCatch; i++) {
     VarFrame* catchFrame = currentCatchFrame(i);
-    processDeinitsAndPropagate(catchFrame, frame);
+    processDeinitsAndPropagate(catchFrame, frame, rv);
   }
 
   // propagate information out of the Try itself
-  processDeinitsAndPropagate(frame, parent);
+  processDeinitsAndPropagate(frame, parent, rv);
 }
-void CallInitDeinit::handleScope(const AstNode* ast) {
+void CallInitDeinit::handleScope(const AstNode* ast, RV& rv) {
   VarFrame* frame = currentFrame();
   VarFrame* parent = currentParentFrame();
-  processDeinitsAndPropagate(frame, parent);
+  processDeinitsAndPropagate(frame, parent, rv);
 }
 
 void callInitDeinit(Resolver& resolver) {

@@ -829,30 +829,35 @@ void CallResolutionResult::stringify(std::ostream& ss,
 }
 
 
-void AssociatedAction::stringify(std::ostream& ss,
-                                 chpl::StringifyKind stringKind) const {
-  const char* kind = "<unknown>";
-  switch (action_) {
+const char* AssociatedAction::kindToString(Action a) {
+  const char* s = "<unknown>";
+  switch (a) {
     case ASSIGN:
-      kind = "assign";
+      s = "assign";
       break;
     case COPY_INIT:
-      kind = "copy-init";
+      s = "copy-init";
       break;
     case DEFAULT_INIT:
-      kind = "default-init";
+      s = "default-init";
       break;
     case DEINIT:
-      kind = "deinit";
+      s = "deinit";
       break;
     case ITERATE:
-      kind = "these";
+      s = "these";
       break;
     case NEW_INIT:
-      kind = "new-init";
+      s = "new-init";
       break;
   }
 
+  return s;
+}
+
+void AssociatedAction::stringify(std::ostream& ss,
+                                 chpl::StringifyKind stringKind) const {
+  const char* kind = AssociatedAction::kindToString(action_);
 
   ss << "assoc " << kind;
   if (fn_ != nullptr) {
