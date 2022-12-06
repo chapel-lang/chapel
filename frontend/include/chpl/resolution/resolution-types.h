@@ -758,7 +758,7 @@ class TypedFnSignature {
     const TypedFnSignature* ret = this;
     if (ret->isRefinementOnly_) {
       ret = ret->instantiatedFrom_;
-      assert(!ret->isRefinementOnly_);
+      CHPL_ASSERT(!ret->isRefinementOnly_);
     }
     return ret;
   }
