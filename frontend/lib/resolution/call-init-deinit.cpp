@@ -137,7 +137,7 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
                                                 RV& rv) {
   ssize_t n = frame->localsAndDefers.size();
   for (ssize_t i = n - 1; i >= 0; i--) {
-    ID varOrDeferId = frame->localsAndDefers[i]; 
+    ID varOrDeferId = frame->localsAndDefers[i];
 
     // don't deinit it if it was already destroyed by moving from it
     if (frame->deinitedVars.count(varOrDeferId) == 0) {
@@ -161,6 +161,36 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
     }
   }
 }
+
+static bool typeNeedsInitDeinitCall(const Type* t) {
+  if (t->isUnknownType() || t->isErroneousType()) {
+    // can't do anything with these
+    return false;
+  } else if (t->isPrimitiveType() || t->isBuiltinType() || t->isCStringType() ||
+             t->isNilType() || t->isNothingType() || t->isVoidType()) {
+    // OK, we can always default initialize primitive numeric types,
+    // and as well we assume that for the non-generic builtin types
+    // e.g. TaskIdType.
+    // No need to resolve anything additional now.
+    return false;
+  } else if (t->isEnumType()) {
+    // OK, can default-initialize enums to first element
+    return false;
+  } else if (t->isFunctionType()) {
+    return false;
+  } else if (auto ct = t->toClassType()) {
+    auto decorator = ct->decorator();
+    // no action needed for 'borrowed' or 'unmanaged'
+    // (these should just default initialized to 'nil',
+    //  so nothing else needs to be resolved)
+    if (decorator.isBorrowed() || decorator.isUnmanaged()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 
 void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
 
@@ -188,19 +218,18 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
 
   const Type* vt = varType.type();
 
-  if (vt->isPrimitiveType() || vt->isBuiltinType() || vt->isCStringType() ||
-      vt->isNilType() || vt->isNothingType() || vt->isVoidType()) {
-    // OK, we can always default initialize primitive numeric types,
-    // and as well we assume that for the non-generic builtin types
-    // e.g. TaskIdType.
-    // No need to resolve anything additional now.
-    return;
-  } else if (vt->isEnumType()) {
-    // OK, can default-initialize enums to first element
-    return;
-  } else if (vt->isFunctionType()) {
-    // TODO: any action needed here?
-    return;
+  if (auto ct = vt->toClassType()) {
+    auto decorator = ct->decorator();
+    // check that the class is a nilable class type
+    if (!decorator.isNilable()) {
+      // TODO: improve this error
+      context->error(ast, "cannot default initialize variable using non-nilable class type");
+      return;
+    }
+  }
+
+  if (!typeNeedsInitDeinitCall(vt)) {
+    // nothing to do here
   } else if (vt->isTupleType()) {
     // TODO: probably need to do something here, at least in some cases
   } else if (auto ct = vt->toClassType()) {
@@ -271,6 +300,13 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
                                    const QualifiedType& lhsType,
                                    const QualifiedType& rhsType,
                                    RV& rv) {
+
+  if (lhsType.type() == rhsType.type() &&
+      !typeNeedsInitDeinitCall(lhsType.type())) {
+    // TODO: we should resolve it anyway
+    return;
+  }
+
   std::vector<CallInfoActual> actuals;
   actuals.push_back(CallInfoActual(lhsType, UniqueString()));
   actuals.push_back(CallInfoActual(rhsType, UniqueString()));
@@ -293,6 +329,11 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
                                      const QualifiedType& lhsType,
                                      const QualifiedType& rhsType,
                                      RV& rv) {
+  if (!typeNeedsInitDeinitCall(lhsType.type())) {
+    // TODO: we could resolve it anyway
+    return;
+  }
+
   std::vector<CallInfoActual> actuals;
   actuals.push_back(CallInfoActual(lhsType, USTR("this")));
   actuals.push_back(CallInfoActual(rhsType, UniqueString()));
@@ -318,6 +359,9 @@ static bool isValue(QualifiedType::Kind kind) {
           kind == QualifiedType::OUT ||
           kind == QualifiedType::INOUT);
 }
+static bool isValueOrParam(QualifiedType::Kind kind) {
+  return isValue(kind) || kind == QualifiedType::PARAM;
+}
 static bool isRef(QualifiedType::Kind kind) {
   return (kind == QualifiedType::CONST_REF ||
           kind == QualifiedType::REF);
@@ -333,7 +377,7 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
                                      RV& rv) {
   if (isTypeParam(lhsType.kind())) {
     // OK, nothing else to do
-  } else if (isValue(lhsType.kind()) && isValue(rhsType.kind())) {
+  } else if (isValue(lhsType.kind()) && isValueOrParam(rhsType.kind())) {
     if (lhsType.type() == rhsType.type()) {
       // Future TODO: might need to call something provided by the record
       // author to be a hook for move initialization across locales
@@ -351,7 +395,7 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
       }
     }
   } else {
-    assert(false && "TODO"); // e.g. value = copy init from ref
+    CHPL_ASSERT(false && "TODO"); // e.g. value = copy init from ref
   }
 }
 
@@ -360,6 +404,16 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
                                    ID deinitedId,
                                    const QualifiedType& type,
                                    RV& rv) {
+
+  // nothing to do for 'int' etc
+  if (!typeNeedsInitDeinitCall(type.type())) {
+    return;
+  } else if (type.type()->isTupleType()) {
+    // TODO: probably need to do something here, at least in some cases
+    printf("Warning: omitting tuple deinit");
+    return;
+  }
+
   std::vector<CallInfoActual> actuals;
   actuals.push_back(CallInfoActual(type, USTR("this")));
   auto ci = CallInfo (/* name */ USTR("deinit"),
