@@ -74,6 +74,14 @@ class Try final : public AstNode {
     }
   }
 
+  Try(Deserializer& des)
+    : AstNode(asttags::Try, des) {
+      numHandlers_ = des.read<int>();
+      containsBlock_ = des.read<bool>();
+      isExpressionLevel_ = des.read<bool>();
+      isTryBang_ = des.read<bool>();
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Try* rhs = other->toTry();
     return this->numHandlers_ == rhs->numHandlers_ &&
@@ -209,6 +217,16 @@ class Try final : public AstNode {
   bool isTryBang() const {
     return isTryBang_;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serializePart(ser);
+    ser(numHandlers_);
+    ser(containsBlock_);
+    ser(isExpressionLevel_);
+    ser(isTryBang_);
+  }
+
+  DECLARE_STATIC_DES(Try);
 
 };
 

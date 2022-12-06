@@ -78,6 +78,11 @@ class Implements final : public AstNode {
            interfaceExpr()->isFnCall());
   }
 
+  Implements(Deserializer& des)
+    : AstNode(asttags::Implements, des) {
+      typeIdentChildNum_ = des.read<int8_t>();
+      isExpressionLevel_ = des.read<bool>();
+    }
   bool contentsMatchInner(const AstNode* other) const override {
     const Implements* lhs = this;
     const Implements* rhs = (const Implements*) other;
@@ -167,6 +172,15 @@ class Implements final : public AstNode {
                                  owned<Identifier> typeIdent,
                                  owned<AstNode> interfaceExpr,
                                  bool isExpressionLevel);
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serializePart(ser);
+    ser(typeIdentChildNum_);
+    ser(isExpressionLevel_);
+  }
+
+  DECLARE_STATIC_DES(Implements);
+
 };
 
 
