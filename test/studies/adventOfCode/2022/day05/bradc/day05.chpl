@@ -30,24 +30,27 @@ writeln();
 
 
 proc initStacks() {
-  // After processing the input, let's convert with enums rather than
-  // strings, for speed!
-  enum alphabet {A, B, C, D, E, F, G, H, I, J, K, L, M,
-                 N, O, P, Q, R, S, T, U, V, W, X, Y, Z};
+  // Read the lines representing the crate stacks into an array
+  const InitState = readInitState();
 
   // Each stack uses 4 ascii characters in the input to represent
   // itself: `[`, `A`-`Z`, `]`, and ' ' or '\n' (or 4 spaces if the
   // crate is missing).
   param charsPerStack = 4;
 
-  const InitState = readInitState();
-
-  // use the last line (with all the stack numbers) to compute the # of stacks
+  // Compute the number of stacks by taking the size of the last line
+  // (which lists of the stack numbers) and dividing by the number of
+  // characters per stack.
   var numStacks = InitState.last.size / charsPerStack;
 
+  // Computing with enums is faster than with strings, so we'll
+  // convert our crate names from strings to values as we go:
+  enum crateID {A, B, C, D, E, F, G, H, I, J, K, L, M,
+                N, O, P, Q, R, S, T, U, V, W, X, Y, Z};
+
   // Represent our stacks with an array of lists of the enum
-  // (wishing it was an array of stacks of the enum)
-  var Stacks: [1..numStacks] list(alphabet);
+  // (wishing it was an array of stacks instead)
+  var Stacks: [1..numStacks] list(crateID);
 
   // iterate over the lines representing crates backwards (bottom up),
   // skipping over the line with the stack numbers
@@ -56,10 +59,10 @@ proc initStacks() {
 
     // do a zippered iteration over the stack IDs and
     // offsets where crate names will be
-    for (off, stackID) in zip(1..<line.size by charsPerStack, 1.. ) {
-      const char = line[off];
+    for (offset, stackID) in zip(1..<line.size by charsPerStack, 1.. ) {
+      const char = line[offset];
       if (char != " ") then  // blank means no crate here
-        Stacks[stackID].append(char:alphabet);
+        Stacks[stackID].append(char: crateID);
     }
   }
 
