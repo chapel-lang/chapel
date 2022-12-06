@@ -59,10 +59,10 @@ proc initStacks() {
 
     // do a zippered iteration over the stack IDs and
     // offsets where crate names will be
-    for (offset, stackID) in zip(1..<line.size by charsPerStack, 1.. ) {
+    for (offset, stackIdx) in zip(1..<line.size by charsPerStack, 1.. ) {
       const char = line[offset];
       if (char != " ") then  // blank means no crate here
-        Stacks[stackID].append(char: crateID);
+        Stacks[stackIdx].append(char: crateID);
     }
   }
 
