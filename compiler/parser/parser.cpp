@@ -946,11 +946,12 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
     auto res = chpl::uast::BuilderResult::deserializeFromFile(gContext, ss);
 
     if (builderResult.compare(res) == false) {
-      printf("FAIL: %s\n", builderResult.filePath().c_str());
-    } else {
-      printf("SUCCESS: %s\n", builderResult.filePath().c_str());
+      //printf("FAIL: %s\n", builderResult.filePath().c_str());
+      USR_FATAL("FAILED TO (DE)SERIALIZE %s\n", builderResult.filePath().c_str());
+//    } else {
+      //printf("SUCCESS: %s\n", builderResult.filePath().c_str());
     }
-    builderResult.printNumNodes();
+//    builderResult.printNumNodes();
   }
 
   ModuleSymbol* lastModSym = nullptr;
