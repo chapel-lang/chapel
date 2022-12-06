@@ -69,6 +69,9 @@ private:
     CHPL_ASSERT(children_.size() >= 0 && children_.size() <= 2);
   }
 
+  ForwardingDecl(Deserializer& des)
+    : Decl(asttags::ForwardingDecl, des) { }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const ForwardingDecl* lhs = (const ForwardingDecl*) this;
     const ForwardingDecl* rhs = (const ForwardingDecl*) other;
@@ -107,6 +110,13 @@ private:
       return nullptr;
     }
   }
+
+  void serialize(Serializer& ser) const override {
+    Decl::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(ForwardingDecl);
+
 };
 
 

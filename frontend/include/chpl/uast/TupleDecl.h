@@ -93,6 +93,14 @@ class TupleDecl final : public Decl {
     CHPL_ASSERT(assertAcceptableTupleDecl());
   }
 
+  TupleDecl(Deserializer& des)
+    : Decl(asttags::TupleDecl, des) {
+      intentOrKind_ = des.read<IntentOrKind>();
+      numElements_ = des.read<int>();
+      typeExpressionChildNum_ = des.read<int>();
+      initExpressionChildNum_ = des.read<int>();
+    }
+
   bool assertAcceptableTupleDecl();
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -192,10 +200,26 @@ class TupleDecl final : public Decl {
     Returns a string describing the passed intentOrKind.
    */
   static const char* intentOrKindToString(IntentOrKind kind);
+
+  void serialize(Serializer& ser) const override {
+    Decl::serializePart(ser);
+    ser(intentOrKind_);
+    ser(numElements_);
+    ser(typeExpressionChildNum_);
+    ser(initExpressionChildNum_);
+  }
+
+  DECLARE_STATIC_DES(TupleDecl);
+
 };
 
 
 } // end namespace uast
+
+
+DECLARE_SERDE_ENUM(uast::TupleDecl::IntentOrKind, uint8_t);
+
+
 } // end namespace chpl
 
 #endif
