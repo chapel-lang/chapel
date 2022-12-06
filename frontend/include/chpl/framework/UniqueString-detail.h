@@ -205,7 +205,7 @@ struct InlinedString {
     }
 
     // otherwise, the pointed-to string should not be empty
-    assert(length() > 0);
+    CHPL_ASSERT(length() > 0);
     return false;
   }
 

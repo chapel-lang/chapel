@@ -171,6 +171,8 @@ static void test6() {
   auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { }
+                  proc R.init() { }
+                  proc R.deinit() { }
                   proc f() {
                     var r: R;
                     return (r, r);

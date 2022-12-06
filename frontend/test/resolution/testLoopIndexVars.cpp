@@ -47,6 +47,8 @@ static auto recIter = std::string(R""""(
                         iter these() {
                           yield 1;
                         }
+                        proc init() { }
+                        proc deinit() { }
                       }
 
                       )"""");
