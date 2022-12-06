@@ -64,6 +64,11 @@ class VarArgFormal final : public VarLikeDecl {
       countChildNum_(countChildNum) {
   }
 
+  VarArgFormal(Deserializer& des)
+    : VarLikeDecl(asttags::VarArgFormal, des) {
+      countChildNum_ = des.read<int>();
+    }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const VarArgFormal* lhs = this;
     const VarArgFormal* rhs = (const VarArgFormal*) other;
@@ -105,6 +110,13 @@ class VarArgFormal final : public VarLikeDecl {
     auto ret = child(countChildNum_);
     return ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    VarLikeDecl::serializePart(ser);
+    ser(countChildNum_);
+  }
+
+  DECLARE_STATIC_DES(VarArgFormal);
 
 };
 

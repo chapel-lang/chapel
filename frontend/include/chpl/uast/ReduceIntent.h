@@ -63,6 +63,9 @@ class ReduceIntent final : public NamedDecl {
     assert(numChildren() == 1);
   }
 
+  ReduceIntent(Deserializer& des)
+    : NamedDecl(asttags::ReduceIntent, des) { }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const ReduceIntent* rhs = other->toReduceIntent();
     return this->namedDeclContentsMatchInner(rhs);
@@ -91,6 +94,12 @@ class ReduceIntent final : public NamedDecl {
   const AstNode* op() const {
     return this->child(opChildNum_);
   }
+
+  void serialize(Serializer& ser) const override {
+    NamedDecl::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(ReduceIntent);
 
 };
 
