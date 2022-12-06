@@ -139,10 +139,13 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
   for (ssize_t i = n - 1; i >= 0; i--) {
     ID varOrDeferId = frame->localsAndDefers[i]; 
 
-    ResolvedExpression& re = rv.byId(varOrDeferId);
-    QualifiedType type = re.type();
+    // don't deinit it if it was already destroyed by moving from it
+    if (frame->deinitedVars.count(varOrDeferId) == 0) {
+      ResolvedExpression& re = rv.byId(varOrDeferId);
+      QualifiedType type = re.type();
 
-    resolveDeinit(frame->scopeAst, varOrDeferId, type, rv);
+      resolveDeinit(frame->scopeAst, varOrDeferId, type, rv);
+    }
   }
 
   if (parent != nullptr) {
@@ -152,7 +155,7 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
       }
     }
     for (auto id : frame->deinitedVars) {
-      if (parent->declaredVars.count(id) == 0) {
+      if (frame->declaredVars.count(id) == 0) {
         parent->deinitedVars.insert(id);
       }
     }
