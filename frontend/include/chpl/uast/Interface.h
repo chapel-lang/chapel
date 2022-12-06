@@ -76,6 +76,15 @@ class Interface final : public NamedDecl {
     // TODO: Some assertions here...
   }
 
+  Interface(Deserializer& des)
+    : NamedDecl(asttags::Interface, des) {
+      interfaceFormalsChildNum_ = des.read<int>();
+      numInterfaceFormals_ = des.read<int>();
+      bodyChildNum_ = des.read<int>();
+      numBodyStmts_ = des.read<int>();
+      isFormalListExplicit_ = des.read<bool>();
+    }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Interface* lhs = this;
     const Interface* rhs = (const Interface*) other;
@@ -187,6 +196,18 @@ class Interface final : public NamedDecl {
                                 bool isFormalListExplicit,
                                 AstList formals,
                                 AstList body);
+
+  void serialize(Serializer& ser) const override {
+    NamedDecl::serializePart(ser);
+    ser(interfaceFormalsChildNum_);
+    ser(numInterfaceFormals_);
+    ser(bodyChildNum_);
+    ser(numBodyStmts_);
+    ser(isFormalListExplicit_);
+  }
+
+  DECLARE_STATIC_DES(Interface);
+
 };
 
 

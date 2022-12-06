@@ -73,6 +73,11 @@ class TaskVar final : public VarLikeDecl {
                     initExpressionChildNum) {
   }
 
+  TaskVar(Deserializer& des)
+      : VarLikeDecl(asttags::TaskVar, des) {
+
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const TaskVar* lhs = this;
     const TaskVar* rhs = (const TaskVar*) other;
@@ -99,10 +104,21 @@ class TaskVar final : public VarLikeDecl {
   */
   Intent intent() const { return (Intent)((int)storageKind()); }
 
+  void serialize(Serializer& ser) const override {
+    VarLikeDecl::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(TaskVar);
+
 };
+
+// DECLARE_SERDE_ENUM(uast::TaskVar::Intent, uint8_t);
 
 
 } // end namespace uast
+
+
+
 } // end namespace chpl
 
 #endif
