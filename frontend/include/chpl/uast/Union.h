@@ -63,6 +63,10 @@ class Union final : public AggregateDecl {
     CHPL_ASSERT(linkage != Decl::EXPORT);
   }
 
+  Union(Deserializer& des)
+    : AggregateDecl(asttags::Union, des) { }
+
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Union* lhs = this;
     const Union* rhs = (const Union*) other;
@@ -83,6 +87,13 @@ class Union final : public AggregateDecl {
                             owned<AstNode> linkageName,
                             UniqueString name,
                             AstList contents);
+
+  void serialize(Serializer& ser) const override {
+    AggregateDecl::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(Union);
+
 };
 
 
