@@ -2807,6 +2807,7 @@ GenInfo::GenInfo()
 }
 
 void setupLLVMCodegenFilenames(void) {
+#ifdef HAVE_LLVM
   GenInfo* info = gGenInfo;
   LLVMGenFilenames* filenames = &info->llvmGenFilenames;
   if (gCodegenGPU == false) {
@@ -2839,6 +2840,7 @@ void setupLLVMCodegenFilenames(void) {
         break;
     }
   }
+#endif
 }
 
 
