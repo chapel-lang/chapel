@@ -1833,8 +1833,8 @@ bool Resolver::resolveIdentifier(const Identifier* ident,
   if (vec.size() == 0) {
     result.setType(QualifiedType());
   } else if (vec.size() > 1 || vec[0].numIds() > 1) {
-    // can't establish the type. If this is in a function
-    // call, we'll establish it later anyway.
+    // Use is ambiguous or a call to an overloaded function.
+    // It will be handled elsewhere.
   } else {
     // vec.size() == 1 and vec[0].numIds() <= 1
     const ID& id = vec[0].firstId();
@@ -1982,35 +1982,36 @@ bool Resolver::enter(const NamedDecl* decl) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
-  // All functions can be overloaded, even parenless ones (via return
-  // intent overloading).
-  bool canOverload = decl->isFunction();
+  LookupConfig config = LOOKUP_DECLS          |
+                        LOOKUP_IMPORT_AND_USE |
+                        LOOKUP_SKIP_PRIVATE_VIS;
 
-  if (canOverload == false) {
-    // check for multiple definitions
-    LookupConfig config = LOOKUP_DECLS;
-    auto vec = lookupNameInScope(context, scope,
-                                 /* receiverScope */ nullptr,
-                                 decl->name(), config);
+  const Scope* receiverScope = nullptr;
+  auto vec = lookupNameInScope(context, scope, receiverScope,
+                               decl->name(),
+                               config);
 
-    if (vec.size() > 0) {
-      const BorrowedIdsWithName& m = vec[0];
-      if (m.firstId() == decl->id()) {
-        // Checks if the given ID refers to a declaration conflicting
-        // with this one. Functions don't conflict.
-        auto isConflictingId = [&](auto decl) {
-          auto ast = parsing::idToAst(context, decl);
-          return !ast->isFunction();
-        };
+  if (vec.size() > 0) {
 
-        std::vector<ID> redefinedIds;
-        std::copy_if(m.begin(), m.end(),
-                     std::back_inserter(redefinedIds), isConflictingId);
-        if (redefinedIds.size() > 1) {
-          // The first one is the ID we're looking at itself.
-          CHPL_REPORT(context, Redefinition, decl, redefinedIds);
-        }
+    // The first one is always the ID we're looking at itself.
+    std::vector<ID> conflictingIds = { decl->id() };
+    bool areIdsAllFunctions = decl->isFunction();
+
+    for (auto& borrowedIds : vec) {
+      for (auto id : borrowedIds) {
+        if (id != decl->id()) conflictingIds.push_back(id);
+        auto ast = parsing::idToAst(context, id);
+        areIdsAllFunctions &= ast->isFunction();
       }
+    }
+
+    // TODO: We will need to extend the scope-resolver to optionally
+    // record where a "trace" of how each conflict became visible in
+    // the current scope.
+    // TODO: We may want to also do this at the point where a use or
+    // import statement is resolved.
+    if (conflictingIds.size() > 1 && !areIdsAllFunctions) {
+      CHPL_REPORT(context, Redefinition, decl, conflictingIds);
     }
   }
 
