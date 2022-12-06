@@ -44,7 +44,6 @@ public:
 
   static void             mainModuleNameSet(const ArgumentDescription* desc,
                                             const char*                arg);
-
 private:
   static ModuleSymbol*    findMainModuleByName();
   static ModuleSymbol*    findMainModuleFromMainFunction();

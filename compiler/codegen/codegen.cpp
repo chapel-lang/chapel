@@ -2320,16 +2320,10 @@ static const char* getClangBuiltinWrappedName(const char* name)
 // Set the executable name to the name of the file containing the
 // main module (minus its path and extension) if it isn't set
 // already.  If in library mode, set the name of the header file as well.
-void setupDefaultFilenames() {
+static void setupDefaultFilenames() {
   if (executableFilename[0] == '\0') {
-    const char* mainModFilename;
-    if (fDoBackend) {
-      INT_ASSERT(fBackendMainMod[0] != '\0');
-      mainModFilename = fBackendMainMod;
-    } else {
-      ModuleSymbol* mainMod = ModuleSymbol::mainModule();
-      mainModFilename = mainMod->astloc.filename();
-    }
+    ModuleSymbol* mainMod = ModuleSymbol::mainModule();
+    const char* mainModFilename = mainMod->astloc.filename();
     const char* filename = stripdirectories(mainModFilename);
 
     // "Executable" name should be given a "lib" prefix in library compilation,
@@ -2347,7 +2341,8 @@ void setupDefaultFilenames() {
         // remove the filename extension from the library header name.
         char* lastDot = strrchr(libmodeHeadername, '.');
         if (lastDot == NULL) {
-          INT_FATAL("main module filename is missing its extension: %s\n",
+          INT_FATAL(mainMod,
+                    "main module filename is missing its extension: %s\n",
                     libmodeHeadername);
         }
         *lastDot = '\0';
@@ -2363,7 +2358,8 @@ void setupDefaultFilenames() {
         pythonModulename[sizeof(pythonModulename)-1] = '\0';
         char* lastDot = strrchr(pythonModulename, '.');
         if (lastDot == NULL) {
-          INT_FATAL("main module filename is missing its extension: %s\n",
+          INT_FATAL(mainMod,
+                    "main module filename is missing its extension: %s\n",
                     pythonModulename);
         }
         *lastDot = '\0';
@@ -2382,7 +2378,7 @@ void setupDefaultFilenames() {
     // remove the filename extension from the executable filename
     char* lastDot = strrchr(executableFilename, '.');
     if (lastDot == NULL) {
-      INT_FATAL("main module filename is missing its extension: %s\n",
+      INT_FATAL(mainMod, "main module filename is missing its extension: %s\n",
                 executableFilename);
     }
     *lastDot = '\0';
