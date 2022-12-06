@@ -50,6 +50,9 @@ class Scan final : public Call {
     CHPL_ASSERT(numChildren() == 2);
   }
 
+  Scan(Deserializer& des)
+    : Call(asttags::Scan, des) { }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Scan* rhs = other->toScan();
     return this->callContentsMatchInner(rhs);
@@ -84,6 +87,12 @@ class Scan final : public Call {
   const AstNode* iterand() const {
     return this->child(iterandChildNum_);
   }
+
+  void serialize(Serializer& ser) const override {
+    Call::serializePart(ser);
+  }
+
+  DECLARE_STATIC_DES(Scan);
 
 };
 
