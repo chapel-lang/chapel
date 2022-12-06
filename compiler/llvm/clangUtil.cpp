@@ -50,17 +50,21 @@
 #include "clang/Lex/MacroInfo.h"
 #include "clang/Lex/Preprocessor.h"
 
+#include "llvm/ADT/APFloat.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/Bitcode/BitcodeWriter.h"
+#include "llvm/Bitcode/BitcodeReader.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Verifier.h"
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Linker/Linker.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/SubtargetFeature.h"
+#include "llvm/Support/ErrorOr.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Host.h"
+#include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/ToolOutputFile.h"
@@ -1973,6 +1977,21 @@ static llvm::TargetOptions getTargetOptions(
   return Options;
 }
 
+// deserialize the module from previously-outputted LLVM bitcode file
+static void loadModuleFromBitcode() {
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  INT_ASSERT(!info->module);
+
+  std::string bitcodeFilename = info->llvmGenFilenames.preOptFilename;
+  std::unique_ptr<llvm::MemoryBuffer> bitcodeFile =
+      std::move(MemoryBuffer::getFile(bitcodeFilename).get());
+  info->module =
+      llvm::parseBitcodeFile(bitcodeFile->getMemBufferRef(), info->llvmContext)
+          .get()
+          .release();
+}
+
 static void setupModule()
 {
   GenInfo* info = gGenInfo;
@@ -2395,9 +2414,15 @@ ClangInfo* gatherClangInfo(const char* just_parse_filename) {
   // when compiling the code in Chapel 'extern' blocks will play well
   // with our backend.
   const char* clangRequiredWarningFlags[] = {
-      "-Wall", "-Werror", "-Wpointer-arith", "-Wwrite-strings",
-      "-Wno-strict-aliasing", "-Wmissing-declarations", "-Wmissing-prototypes",
-      "-Wstrict-prototypes", "-Wmissing-format-attribute",
+      "-Wall",
+      "-Werror",
+      "-Wpointer-arith",
+      "-Wwrite-strings",
+      "-Wno-strict-aliasing",
+      "-Wmissing-declarations",
+      "-Wmissing-prototypes",
+      "-Wstrict-prototypes",
+      "-Wmissing-format-attribute",
       // clang can't tell which functions we use
       "-Wno-unused-function", NULL};
 
@@ -2483,8 +2508,10 @@ ClangInfo* gatherClangInfo(const char* just_parse_filename) {
   }
 
   // Add specialization flags
-  if (specializeCCode && CHPL_TARGET_CPU_FLAG != NULL &&
-      CHPL_TARGET_BACKEND_CPU != NULL && CHPL_TARGET_CPU_FLAG[0] != '\0' &&
+  if (specializeCCode &&
+      CHPL_TARGET_CPU_FLAG != NULL &&
+      CHPL_TARGET_BACKEND_CPU != NULL &&
+      CHPL_TARGET_CPU_FLAG[0] != '\0' &&
       CHPL_TARGET_BACKEND_CPU[0] != '\0' &&
       0 != strcmp(CHPL_TARGET_CPU_FLAG, "none") &&
       0 != strcmp(CHPL_TARGET_BACKEND_CPU, "none") &&
@@ -4163,17 +4190,26 @@ void makeBinaryLLVM(void) {
   initializeGenInfo();
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
-  if (!info->clangInfo) {
+  ClangInfo* clangInfo = info->clangInfo;
+  if (!clangInfo) {
     // we are in backend-only compilation and need to regenerate clang
     // command-line info
-    info->clangInfo = gatherClangInfo(NULL);
+    // TODO: do this in a better way
+    runClang(NULL);
+    delete info->module;
+    info->module = nullptr;
   }
-  ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
 
-  // setup output file info
+  // setup filenames list
   LLVMGenFilenames* filenames = &info->llvmGenFilenames;
   setupLLVMCodegenFilenames();
+
+  // load in module from codegen'd bitcode
+  loadModuleFromBitcode();
+  setupModule();
+
+  // setup output file info
   std::error_code error;
 #if HAVE_LLVM_VER >= 120
   llvm::sys::fs::OpenFlags flags = llvm::sys::fs::OF_None;
@@ -4268,7 +4304,7 @@ void makeBinaryLLVM(void) {
     }
   }
 
-  //finishClang is before the call to the debug finalize
+  // finishClang is before the call to the debug finalize
   deleteClang(clangInfo);
 
   // Just make the .o file for GPU code
