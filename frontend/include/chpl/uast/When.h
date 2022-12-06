@@ -44,6 +44,11 @@ class When final : public SimpleBlockLike {
       numCaseExprs_(numCaseExprs) {
   }
 
+  When(Deserializer& des)
+    : SimpleBlockLike(asttags::When, des) {
+      numCaseExprs_ = des.read<int>();
+    }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const When* rhs = other->toWhen();
     return this->numCaseExprs_ == rhs->numCaseExprs_ &&
@@ -104,6 +109,13 @@ class When final : public SimpleBlockLike {
   bool isOtherwise() const {
     return numCaseExprs_ == 0;
   }
+
+  void serialize(Serializer& ser) const override {
+    SimpleBlockLike::serializePart(ser);
+    ser(numCaseExprs_);
+  }
+
+  DECLARE_STATIC_DES(When);
 
 };
 
