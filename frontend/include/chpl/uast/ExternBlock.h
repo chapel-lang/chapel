@@ -86,6 +86,8 @@ class ExternBlock final : public AstNode {
     ser(code_);
   }
 
+  DECLARE_STATIC_DES(ExternBlock);
+
 };
 
 
