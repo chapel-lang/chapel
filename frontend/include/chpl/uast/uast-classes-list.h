@@ -72,7 +72,6 @@
   AST_NODE(Require)                    //
   AST_NODE(Return)                     //
   AST_NODE(Select)                     //
-  AST_NODE(Sync)                       //
   AST_NODE(Throw)                      //
   AST_NODE(Try)                        // old AST: TryStmt
   AST_NODE(TypeQuery)                  //
@@ -89,6 +88,7 @@
     AST_NODE(Manage)                   //
     AST_NODE(On)                       //
     AST_NODE(Serial)                   //
+    AST_NODE(Sync)                     //
     AST_NODE(When)                     //
   AST_END_SUBCLASSES(SimpleBlockLike)
 
