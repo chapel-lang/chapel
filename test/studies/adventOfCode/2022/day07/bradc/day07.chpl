@@ -1,45 +1,44 @@
-use IO, List, Map;
+// classes
+// - default initializers
+// - secondary methods
+// Maps
+// - and map-of-owned specifically
+// ref intents
+// atomic vars
+// Recursion (not particularly Chapel-specific
+
+use IO, Map;
 
 // A potentially overwrought solution that stored the entire state of
 // the file system in hopes of using it for part 2.  No such luck...
 
-config param largeFile = 100_000;
-
-var grandtotal = 0;  // lame, serial
+config param dirThreshold = 100_000;
 
 class Dir {
   var name: string;                     // name of this directory, for sanity
   var files: map(string, int);          // filename -> size map
   var subdirs: map(string, owned Dir);  // dir name -> contents map
-
-  proc findSize(threshold): int {
-    var total = 0;
-
-    for filesize in files.values() do
-      total += filesize;
-
-    for name in subdirs do   // BUG: Can't use items() with owned values?!?
-      total += subdirs.getBorrowed(name).findSize(threshold);
-
-    if total < threshold then
-      grandtotal += total;
-
-    return total;
-  }
 }
 
+// Get the stte of the world by creating our root directory...
 var RootDir = new Dir("/");
 
+// ...reading the first line and making sure it's correct...
 var line: string;
 readLine(line);
 assert(line == "$ cd /\n");
-readTerminal(RootDir.borrow());
 
-RootDir.findSize(largeFile);
-writeln(grandtotal);
+// ...then reading in the rest of the world's state.
+RootDir.readContents();
 
-// TODO: Make a method?  Or even an initializer?
-proc readTerminal(cwd) {
+
+// Now compute the sum of all directory sizes less than 
+var sumOfSmall = 0;  // lame, serial
+RootDir.findSize(dirThreshold, sumOfSmall);
+writeln(sumOfSmall);
+
+proc Dir.readContents() {
+  var line: string;
   while readLine(line) {
     line = line.strip();  // remove the newline
 
@@ -58,8 +57,8 @@ proc readTerminal(cwd) {
 	ref dirname = token[1];
 
         // if we have not seen this directory before, add a new Dir entry
-	if !cwd.subdirs.contains(dirname) {
-	  cwd.subdirs.add(dirname, new Dir(dirname));
+	if !subdirs.contains(dirname) {
+	  subdirs.add(dirname, new Dir(dirname));
         }
 	// otherwise, do nothing
       }
@@ -74,7 +73,7 @@ proc readTerminal(cwd) {
         if dirname == ".." {
 	  return;  // pops us back up a level
 	} else {
-  	  readTerminal(cwd.subdirs.getBorrowed(dirname));  // recurse
+  	  subdirs.getBorrowed(dirname).readContents();  // recurse
 	}
       }
 
@@ -85,8 +84,24 @@ proc readTerminal(cwd) {
 	      size = token[0]:int;
 	ref filename = token[1];
 	    
-	cwd.files.add(filename, size);
+	files.add(filename, size);
       }
     }
   }
+}
+
+
+proc Dir.findSize(threshold, ref sum): int {
+  var total = 0;
+
+  for filesize in files.values() do
+    total += filesize;
+
+  for name in subdirs do   // BUG: Can't use items() with owned values?!?
+    total += subdirs.getBorrowed(name).findSize(threshold, sum);
+
+  if total < threshold then
+    sum += total;
+
+  return total;
 }
