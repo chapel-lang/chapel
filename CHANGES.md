@@ -60,6 +60,7 @@ Standard Library Modules
    and https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.fileWriter.writeBinary)
 * modified `file.path` to exclusively return absolute, not relative, paths  
   (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.file.path)
+* removed unused `bool` return values from various `write*()` routines
 
 Package Modules
 ---------------
@@ -151,7 +152,6 @@ Bug Fixes for GPU Computing
 
 Bug Fixes for Libraries
 -----------------------
-* removed unused `bool` return values from `write()`, `writef()`, `writeln()`
 * fixed a bug that could cause `readLine()` to terminate strings incorrectly
 * fixed a bug in which argument-less `readLine()` calls would not compile
 * fixed a bug in 'UnitTest' regarding string comparisons
