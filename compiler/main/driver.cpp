@@ -134,6 +134,7 @@ bool fLibraryPython = false;
 bool fMultiLocaleInterop = false;
 bool fMultiLocaleLibraryDebug = false;
 
+bool driverInSubInvocation = false;
 bool no_codegen = false;
 int  debugParserLevel = 0;
 bool fVerify = false;
@@ -774,6 +775,10 @@ static void readConfig(const ArgumentDescription* desc, const char* arg_unused) 
 static void setTmpDir(const ArgumentDescription* desc, const char* arg) {
   tmpdirname = astr(arg);
   intDirName = tmpdirname;
+}
+
+static void setSubInvocation(const ArgumentDescription* desc, const char* arg) {
+  driverInSubInvocation = true;
 }
 
 static void addModulePath(const ArgumentDescription* desc, const char* newpath) {
@@ -1650,7 +1655,7 @@ static void setGPUFlags() {
 
 static void checkCompilerDriverFlags() {
   if (fDoMonolithic) {
-    if (fDoCompilation || fDoBackend) {
+    if (driverInSubInvocation) {
       USR_WARN(
           "You have requested monolithic compilation, but one or more internal "
           "compiler-driver flags were set; they will be ignored and monolithic "
@@ -1963,7 +1968,7 @@ int main(int argc, char* argv[]) {
     recordCodeGenStrings(argc, argv);
   } // astlocMarker scope
 
-  // we print things (--help*, --copyright, etc.) before validating
+  // We print things (--help*, --copyright, etc.) before validating
   // settings so that someone's attempt to run 'chpl --help' won't
   // result in a "you can't compile with those settings!!!" type of
   // error when all they were trying to do was get some help.
@@ -1972,8 +1977,13 @@ int main(int argc, char* argv[]) {
   // other steps above so that if they run '--help-settings' or the
   // like, they'll get the full set of set and inferred settings.
   //
-  printStuff(argv[0]);
-  validateSettings();
+  // Printing and validation is skipped if we are in a sub-invocation to avoid
+  // giving the user the same information on each invocation.
+  //
+  if (!driverInSubInvocation) {
+    printStuff(argv[0]);
+    validateSettings();
+  }
 
   if (fRungdb)
     runCompilerInGDB(argc, argv);
@@ -1981,25 +1991,24 @@ int main(int argc, char* argv[]) {
   if (fRunlldb)
     runCompilerInLLDB(argc, argv);
 
-  if (!fDoMonolithic) {
+  if (!fDoMonolithic && !driverInSubInvocation) {
     // treat 'chpl' as a driver, re-invoking itself with flags that trigger
     // components of the actual compilation work to be performed
-    if (!(fDoCompilation || fDoBackend)) {
-      int status = 0;
-      // initialize resources that need to be carried over between invocations
-      ensureTmpDirExists();
-      // invoke front- and mid-end
-      if ((status = runCompilation(argc, argv)) != 0) {
-        clean_exit(status);
-      }
-      // invoke back-end
-      if ((status = runBackend(argc, argv)) != 0) {
-        clean_exit(status);
-      }
-      // clean up shared resources
-      deleteTmpDir();
+
+    int status = 0;
+    // initialize resources that need to be carried over between invocations
+    ensureTmpDirExists();
+    // invoke front- and mid-end
+    if ((status = runCompilation(argc, argv)) != 0) {
       clean_exit(status);
     }
+    // invoke back-end
+    if ((status = runBackend(argc, argv)) != 0) {
+      clean_exit(status);
+    }
+    // clean up shared resources
+    deleteTmpDir();
+    clean_exit(status);
   }
 
   assertSourceFilesFound();
