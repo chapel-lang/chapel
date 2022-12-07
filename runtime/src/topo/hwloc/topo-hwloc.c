@@ -265,7 +265,7 @@ int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
 }
 
 //
-// Gets information about CPUs (cores and PUs) from the toplogy.
+// Gets information about CPUs (cores and PUs) from the topology.
 //
 static
 void getCPUInfo(void) {
