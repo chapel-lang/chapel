@@ -693,8 +693,8 @@ static void handleIncDir(const ArgumentDescription* desc, const char* arg_unused
 }
 
 static int invokeChplWithFlags(int argc, char* argv[],
-                              const std::string additionalFlags,
-                              const char* description) {
+                               const std::vector<std::string>& additionalFlags,
+                               const char* description) {
   // invoke the compiler again with arguments forwarded
   assert(!additionalFlags.empty() &&
          "expected additional flags to be specified for chpl invocation");
@@ -705,21 +705,28 @@ static int invokeChplWithFlags(int argc, char* argv[],
     }
     command << argv[i];
     if (i == 0) {
-      command << " " << additionalFlags << " --driver-tmp-dir " << tmpdirname;
+      for (const auto& flag : additionalFlags) {
+        command << " " << flag;
+      }
     }
   }
 
-  return mysystem(astr(command.str().c_str()), description, false);
+  return mysystem(astr(command.str().c_str()), description,
+                  /* ignoreStatus */ true, /* quiet */ true);
 }
 
 static int runCompilation(int argc, char* argv[]) {
-  return invokeChplWithFlags(argc, argv, "--do-compilation",
-                            "invoking compiler front- and mid-end");
+  std::vector<std::string> additionalFlags = {
+      "--do-compilation", std::string("--driver-tmp-dir ") + tmpdirname};
+  return invokeChplWithFlags(argc, argv, additionalFlags,
+                             "invoking compiler front- and mid-end");
 }
 
 static int runBackend(int argc, char* argv[]) {
-  return invokeChplWithFlags(argc, argv, "--do-backend",
-                            "invoking compiler back-end");
+  std::vector<std::string> additionalFlags = {
+      "--do-backend", std::string("--driver-tmp-dir ") + tmpdirname};
+  return invokeChplWithFlags(argc, argv, additionalFlags,
+                             "invoking compiler back-end");
 }
 
 static void runCompilerInGDB(int argc, char* argv[]) {
@@ -1982,11 +1989,13 @@ int main(int argc, char* argv[]) {
       // initialize resources that need to be carried over between invocations
       ensureTmpDirExists();
       // invoke front- and mid-end
-      if ((status = runCompilation(argc, argv)) != 0)
+      if ((status = runCompilation(argc, argv)) != 0) {
         clean_exit(status);
+      }
       // invoke back-end
-      if ((status = runBackend(argc, argv)) != 0)
+      if ((status = runBackend(argc, argv)) != 0) {
         clean_exit(status);
+      }
       // clean up shared resources
       deleteTmpDir();
       clean_exit(status);
