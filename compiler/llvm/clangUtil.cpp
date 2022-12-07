@@ -1979,6 +1979,9 @@ static llvm::TargetOptions getTargetOptions(
 
 // deserialize the module from previously-outputted LLVM bitcode file
 static void loadModuleFromBitcode() {
+  // should only be used for the backend to retrieve codegen results
+  INT_ASSERT(fDoBackend);
+
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
   INT_ASSERT(!info->module);
@@ -4183,31 +4186,32 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
 }
 
 void makeBinaryLLVM(void) {
-  initializeGenInfo();
+  if (fDoBackend) {
+    // generate necessary info for a backend-only invocation
+    initializeGenInfo();
+
+    // regenerate ClangInfo
+    assert(!gGenInfo->clangInfo);
+    runClang(NULL);
+    // delete the new Builder module since we will be loading from bitcode
+    gGenInfo->clangInfo->cCodeGen->ReleaseModule();
+    delete gGenInfo->module;
+    gGenInfo->module = nullptr;
+
+    // setup filenames to be referenced
+    setupLLVMCodegenFilenames();
+    setupDefaultFilenames();
+
+    // load in module from codegen'd bitcode
+    loadModuleFromBitcode();
+    setupModule();
+  }
+
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
-  if (fDoBackend) {
-    // we are in backend-only compilation and need to regenerate clang
-    // command-line info
-    // TODO: do this in a better way
-    assert(!info->clangInfo);
-    runClang(NULL);
-    // delete the new Builder module
-    info->clangInfo->cCodeGen->ReleaseModule();
-    delete info->module;
-    info->module = nullptr;
-  }
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
-
-  // setup filenames list
   LLVMGenFilenames* filenames = &info->llvmGenFilenames;
-  setupLLVMCodegenFilenames();
-  setupDefaultFilenames();
-
-  // load in module from codegen'd bitcode
-  loadModuleFromBitcode();
-  setupModule();
 
   // setup output file info
   std::error_code error;
