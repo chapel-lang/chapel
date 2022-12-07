@@ -1,0 +1,3 @@
+day07-par.chpl:118: In method 'findSize':
+day07-par.chpl:124: error: A standalone or leader iterator is not found for the iterable expression in this forall loop
+  day07-par.chpl:51: called as Dir.findSize(threshold: int(64), sum: atomic int(64))
