@@ -2,13 +2,14 @@
 // the file system in hopes of using it for part 2.  No such luck...
 
 
-// New features for the blog:
+// New features used here, not seen on the blog yet:
 
 // classes
 // - default initializers
 // - secondary methods
 // Maps
 // - and map-of-owned specifically
+// select statements
 // ref intents
 // atomic vars
 // Recursion (not particularly Chapel-specific
@@ -29,11 +30,14 @@ class Dir {
 //
 var RootDir = new Dir("/");
 
+
 // Then read in the first line, making sure it's as expected.
 //
 var line: string;
+
 readLine(line);
 assert(line == "$ cd /\n");
+
 
 // Then read in the rest of the disk's state.
 //
@@ -42,10 +46,14 @@ RootDir.readContents();
 
 // Now, compute the sum of all directory sizes less than 'dirThreshold'
 config param dirThreshold = 100_000;
-var sumOfSmall = 0;  // lame, serial
+var sumOfSmall = 0;
+
 RootDir.findSize(dirThreshold, sumOfSmall);
 writeln(sumOfSmall);
 
+//
+// Routine for reading in a directory's contents via terminal session commands
+//
 proc Dir.readContents() {
   var line: string;
 
@@ -104,13 +112,19 @@ proc Dir.readContents() {
 }
 
 
+//
+// Routine for adding up directory sizes less than threshold
+//
 proc Dir.findSize(threshold, ref sum): int {
   var total = 0;
 
   for filesize in files.values() do
     total += filesize;
 
-  for name in subdirs do   // BUG: Can't use items() with owned values?!?
+  // BUG: Can't use items() with 'owned' values?!?
+  // Workaround: iterate over keys and index... :'(
+  // 
+  for name in subdirs do  // loops over values
     total += subdirs.getBorrowed(name).findSize(threshold, sum);
 
   if total < threshold then

@@ -1,3 +1,5 @@
+// WARNING: Not really cleaned up at all like part 1 was
+
 use IO, List, Map;
 
 var grandtotal = 0;  // lame, serial
