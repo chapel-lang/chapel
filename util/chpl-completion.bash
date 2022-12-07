@@ -56,6 +56,10 @@ _chpl ()
 --detailed-errors \
 --devel \
 --div-by-zero-checks \
+--do-backend \
+--do-compilation \
+--do-monolithic \
+--driver-tmp-dir \
 --dynamic \
 --dynamic-auto-local-access \
 --dyno \
