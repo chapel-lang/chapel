@@ -2,10 +2,10 @@ Release Changes List
 ====================
 
 
-version 1.28.0
+version 1.29.0
 ==============
 
-Thirty-first public release of Chapel, September 15, 2022
+released December 15, 2022
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
