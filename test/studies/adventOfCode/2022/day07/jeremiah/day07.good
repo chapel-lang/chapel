@@ -1,0 +1,20 @@
+Parsing Dirs...
+	parsing: root
+	(dir) a
+	(file) b.txt : 14848514
+	(file) c.dat : 8504156
+	(dir) d
+		parsing: a
+		(dir) e
+		(file) f : 29116
+		(file) g : 2557
+		(file) h.lst : 62596
+			parsing: e
+			(file) i : 584
+		parsing: d
+		(file) j : 4060174
+		(file) d.log : 8033020
+		(file) d.ext : 5626152
+		(file) k : 7214296
+total target sizes: 95437
+smallest sufficient dir size: 24933642
