@@ -815,7 +815,6 @@ static void setLlvmCodegen(const ArgumentDescription* desc, const char* unused)
 {
   if (fYesLlvmCodegen) {
     fNoLlvmCodegen = false;
-    USR_WARN("--llvm is deprecated -- please use --target-compiler=llvm");
     envMap["CHPL_TARGET_COMPILER"] = "llvm";
     // set the environment variable for follow-on processes including
     // any printchplenv invocation
@@ -823,7 +822,6 @@ static void setLlvmCodegen(const ArgumentDescription* desc, const char* unused)
     if( rc ) USR_FATAL("Could not setenv CHPL_TARGET_COMPILER");
   } else {
     fNoLlvmCodegen = true;
-    USR_WARN("--no-llvm is deprecated -- please use e.g. --target-compiler=gnu");
   }
 }
 
@@ -1653,6 +1651,16 @@ static void setGPUFlags() {
   }
 }
 
+static void warnDeprecatedFlags() {
+  if (fYesLlvmCodegen) {
+    USR_WARN("--llvm is deprecated -- please use --target-compiler=llvm");
+  }
+  if (fNoLlvmCodegen) {
+    USR_WARN(
+        "--no-llvm is deprecated -- please use e.g. --target-compiler=gnu");
+  }
+}
+
 static void checkCompilerDriverFlags() {
   if (fDoMonolithic) {
     if (driverInSubInvocation) {
@@ -1861,6 +1869,8 @@ static void postprocess_args() {
 // chplconfig-style environment variables checks could/should be done in the
 // chplenv scripts; otherwise put the checks here.
 static void validateSettings() {
+  warnDeprecatedFlags();
+
   checkCompilerDriverFlags();
 
   checkNotLibraryAndMinimalModules();
