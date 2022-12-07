@@ -45,6 +45,7 @@ Name Changes in Libraries
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* removed deprecated `map` operators
 
 Standard Library Modules
 ------------------------
@@ -58,6 +59,8 @@ Standard Domain Maps (Layouts and Distributions)
 
 Tool Improvements
 -----------------
+* updated `--quiet` flag for `mason run` to hide `stderr` output
+* updated `c2chapel` to reflect `c_`-prefixed renamings of `ssize_t`/`size_t`
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -77,8 +80,12 @@ Documentation
 * improved the spec's rationale for, and presentation of, abstract intents  
   (see https://chapel-lang.org/docs/1.29/language/spec/procedures.html#abstract-intents)
 * unified spec to use 'zippered iteration' rather than 'zipper iteration'
-* updated broken external hyperlinks in BLAS documentation  
+* fixed broken external hyperlinks in 'BLAS' documentation  
   (see https://chapel-lang.org/docs/1.29/modules/packages/BLAS.html#BLAS.gemm, e.g.)
+* fixed outdated link in the 'NetCDF' module documentation  
+  (see https://chapel-lang.org/docs/1.29/tools/mason/mason.html)
+* moved Mason documentation to 'Tools' section  
+  (see https://chapel-lang.org/docs/1.29/tools/mason/mason.html)
 
 Syntax Highlighting
 -------------------
@@ -125,9 +132,11 @@ Bug Fixes for GPU Computing
 
 Bug Fixes for Libraries
 -----------------------
+* fixed a bug in 'UnitTest' regarding string comparisons
 
 Bug Fixes for Tools
 -------------------
+* fixed checking of `MASON_OFFLINE` for `mason install`
 
 Platform-specific Bug Fixes
 ---------------------------
