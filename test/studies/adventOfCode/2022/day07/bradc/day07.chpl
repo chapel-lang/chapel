@@ -1,3 +1,9 @@
+// A potentially overwrought solution that stored the entire state of
+// the file system in hopes of using it for part 2.  No such luck...
+
+
+// New features for the blog:
+
 // classes
 // - default initializers
 // - secondary methods
@@ -6,39 +12,43 @@
 // ref intents
 // atomic vars
 // Recursion (not particularly Chapel-specific
+// assert()
 
 use IO, Map;
 
-// A potentially overwrought solution that stored the entire state of
-// the file system in hopes of using it for part 2.  No such luck...
-
-config param dirThreshold = 100_000;
-
+// A class representing a directory and its contents
+//
 class Dir {
   var name: string;                     // name of this directory, for sanity
   var files: map(string, int);          // filename -> size map
   var subdirs: map(string, owned Dir);  // dir name -> contents map
 }
 
-// Get the stte of the world by creating our root directory...
+
+// Kick things off by creating a root directory.
+//
 var RootDir = new Dir("/");
 
-// ...reading the first line and making sure it's correct...
+// Then read in the first line, making sure it's as expected.
+//
 var line: string;
 readLine(line);
 assert(line == "$ cd /\n");
 
-// ...then reading in the rest of the world's state.
+// Then read in the rest of the disk's state.
+//
 RootDir.readContents();
 
 
-// Now compute the sum of all directory sizes less than 
+// Now, compute the sum of all directory sizes less than 'dirThreshold'
+config param dirThreshold = 100_000;
 var sumOfSmall = 0;  // lame, serial
 RootDir.findSize(dirThreshold, sumOfSmall);
 writeln(sumOfSmall);
 
 proc Dir.readContents() {
   var line: string;
+
   while readLine(line) {
     line = line.strip();  // remove the newline
 
@@ -48,11 +58,11 @@ proc Dir.readContents() {
         // no need to do anything, we'll just take care of the next lines
       }
 
-
-      // line:  dir <dirname>
-      // token: 0   1
-      // 
-      when "dir " {  // if this is a directory
+      when "dir " {
+        //
+        // line:  dir <dirname>
+        // token: 0   1
+        // 
 	const token = line.split(" ");
 	ref dirname = token[1];
 
@@ -63,23 +73,26 @@ proc Dir.readContents() {
 	// otherwise, do nothing
       }
 
-      // line:  $ cd <dirname>
-      // token: 0 1  2
-      //
       when "$ cd" {
+        //
+        // line:  $ cd <dirname>
+        // token: 0 1  2
+        //
 	const token = line.split(" ");
 	ref dirname = token[2];
 
         if dirname == ".." {
-	  return;  // pops us back up a level
+	  return;  // pop us back up a level
 	} else {
   	  subdirs.getBorrowed(dirname).readContents();  // recurse
 	}
       }
 
-      // line:   12345 <filename>
-      // token:  0     1
-      otherwise {
+      otherwise {  // This is a file
+        //
+        // line:   12345 <filename>
+        // token:  0     1
+	//
         const token = line.split(" "),
 	      size = token[0]:int;
 	ref filename = token[1];
