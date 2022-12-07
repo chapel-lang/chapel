@@ -44,6 +44,9 @@ static void test0(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const Sync* sync = mod->stmt(1)->toSync();
   assert(sync);
+  assert(sync->isSimpleBlockLike());
+  auto block = sync->toSimpleBlockLike();
+  assert(block);
   assert(sync->blockStyle() == BlockStyle::IMPLICIT);
   assert(sync->numStmts() == 2);
   assert(sync->stmt(0)->isComment());
