@@ -13,7 +13,7 @@ class Dir {
       total += sz;
     for name in subdirs do   // BUG: Can't use items() with owned values?!?
       total += subdirs.getBorrowed(name).findSize();
-    writeln("*>*>*>: ", name, " = ", total);
+//    writeln("*>*>*>: ", name, " = ", total);
     if total < 100_000 {
       grandtotal += total;
     }
@@ -33,7 +33,7 @@ writeln(grandtotal);
 
 // TODO: Make a method?  Or even an initializer?
 proc readTerminal(cwd) {
-  writeln("*** current directory is: ", cwd.name);
+//  writeln("*** current directory is: ", cwd.name);
   while readLine(line) {
     line = line.strip();
     select line[..3] {
@@ -42,32 +42,32 @@ proc readTerminal(cwd) {
         while (line[0] != "$") {
 	  readLine(line);
 	  */
-        writeln("ls'd: ", line);
+//        writeln("ls'd: ", line);
       }
       when "$ cd" {
-        writeln("cd'd: ", line);
+//        writeln("cd'd: ", line);
 	var token = line.split(" ");
 	ref dirname = token[2];
 	if dirname == ".." {
 	  return;
 	} else {
-          writeln("> Looking up ", token[2]);
+//          writeln("> Looking up ", token[2]);
   	  readTerminal(cwd.subdirs.getBorrowed(token[2]));
 	}
       }
       when "dir " {
-        writeln("dir'd: ", line);
+//        writeln("dir'd: ", line);
 	var token = line.split(" ");
 	if !cwd.subdirs.contains(token[1]) {
-	  writeln("> Inserting ", token[1]);
+//	  writeln("> Inserting ", token[1]);
 	  cwd.subdirs.add(token[1], new Dir(token[1]));
         } else {
-	  writeln("> Already knew about ", token[1]);
+//	  writeln("> Already knew about ", token[1]);
 	}
       }
       otherwise {
         const words = line.split(" ");
-	writeln((words[0], words[1]));
+//	writeln((words[0], words[1]));
 	cwd.files.add(words[1], words[0]:int);
       }
     }
