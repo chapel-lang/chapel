@@ -28,6 +28,8 @@ Deprecated / Unstable / Removed Language Features
 
 New Features
 ------------
+* added an experimental `weakPointer` type and module for use with `shared`  
+  (see https://chapel-lang.org/docs/1.29/builtins/WeakPointer.html)
 
 Feature Improvements
 --------------------
@@ -45,10 +47,19 @@ Name Changes in Libraries
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* deprecated the `_file` type, replacing it with `CTypes.c_FILE`  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/CTypes.html#CTypes.c_FILE)
 * removed deprecated `map` operators
 
 Standard Library Modules
 ------------------------
+* added `readAll()` methods to read the entire contents of a `fileReader`  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.channel.readAll)
+* added six new overloads of `read`|`writeBinary()` for a variety of types  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.channel.readBinary  
+   and https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.fileWriter.writeBinary)
+* modified `file.path` to exclusively return absolute, not relative, paths  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.file.path)
 
 Package Modules
 ---------------
@@ -80,12 +91,20 @@ Documentation
 * improved the spec's rationale for, and presentation of, abstract intents  
   (see https://chapel-lang.org/docs/1.29/language/spec/procedures.html#abstract-intents)
 * unified spec to use 'zippered iteration' rather than 'zipper iteration'
+* merged the `owned` and `shared` API docs into the language specification  
+  (see https://chapel-lang.org/docs/1.29/language/spec/classes.html#owned-objects  
+   and https://chapel-lang.org/docs/1.29/language/spec/classes.html#shared-objects)
+* added description of `EofError` cases to `fileWriter.write/ln` docs  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.channel.write)
+* moved Mason documentation to 'Tools' section  
+  (see https://chapel-lang.org/docs/1.29/tools/mason/mason.html)
 * fixed broken external hyperlinks in 'BLAS' documentation  
   (see https://chapel-lang.org/docs/1.29/modules/packages/BLAS.html#BLAS.gemm, e.g.)
 * fixed outdated link in the 'NetCDF' module documentation  
   (see https://chapel-lang.org/docs/1.29/tools/mason/mason.html)
-* moved Mason documentation to 'Tools' section  
-  (see https://chapel-lang.org/docs/1.29/tools/mason/mason.html)
+
+
+
 
 Syntax Highlighting
 -------------------
@@ -132,6 +151,9 @@ Bug Fixes for GPU Computing
 
 Bug Fixes for Libraries
 -----------------------
+* removed unused `bool` return values from `write()`, `writef()`, `writeln()`
+* fixed a bug that could cause `readLine()` to terminate strings incorrectly
+* fixed a bug in which argument-less `readLine()` calls would not compile
 * fixed a bug in 'UnitTest' regarding string comparisons
 
 Bug Fixes for Tools
@@ -149,6 +171,8 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* created a list of exceptions to the style guide's capitalization rules
+  (see https://chapel-lang.org/docs/1.29/developer/bestPractices/StandardModuleStyle.html#pascalcase-and-camelcase)
 
 Developer-oriented changes: Naming Changes
 ------------------------------------------
