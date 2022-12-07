@@ -1,22 +1,29 @@
 use IO, List, Map;
 
+// A potentially overwrought solution that stored the entire state of
+// the file system in hopes of using it for part 2.  No such luck...
+
+config param largeFile = 100_000;
+
 var grandtotal = 0;  // lame, serial
 
 class Dir {
-  var name: string;
-  var subdirs: map(string, owned Dir);
-  var files: map(string, int);
+  var name: string;                     // name of this directory, for sanity
+  var files: map(string, int);          // filename -> size map
+  var subdirs: map(string, owned Dir);  // dir name -> contents map
 
-  proc findSize(): int {
+  proc findSize(threshold): int {
     var total = 0;
-    for (f,sz) in files.items() do  // could be items?
-      total += sz;
+
+    for filesize in files.values() do
+      total += filesize;
+
     for name in subdirs do   // BUG: Can't use items() with owned values?!?
-      total += subdirs.getBorrowed(name).findSize();
-//    writeln("*>*>*>: ", name, " = ", total);
-    if total < 100_000 {
+      total += subdirs.getBorrowed(name).findSize(threshold);
+
+    if total < threshold then
       grandtotal += total;
-    }
+
     return total;
   }
 }
@@ -28,47 +35,57 @@ readLine(line);
 assert(line == "$ cd /\n");
 readTerminal(RootDir.borrow());
 
-RootDir.findSize();
+RootDir.findSize(largeFile);
 writeln(grandtotal);
 
 // TODO: Make a method?  Or even an initializer?
 proc readTerminal(cwd) {
-//  writeln("*** current directory is: ", cwd.name);
   while readLine(line) {
-    line = line.strip();
-    select line[..3] {
+    line = line.strip();  // remove the newline
+
+    select line[..3] {  // categorize the command by the first 4 characters
+
       when "$ ls" {
-      /*
-        while (line[0] != "$") {
-	  readLine(line);
-	  */
-//        writeln("ls'd: ", line);
+        // no need to do anything, we'll just take care of the next lines
       }
+
+
+      // line:  dir <dirname>
+      // token: 0   1
+      // 
+      when "dir " {  // if this is a directory
+	const token = line.split(" ");
+	ref dirname = token[1];
+
+        // if we have not seen this directory before, add a new Dir entry
+	if !cwd.subdirs.contains(dirname) {
+	  cwd.subdirs.add(dirname, new Dir(dirname));
+        }
+	// otherwise, do nothing
+      }
+
+      // line:  $ cd <dirname>
+      // token: 0 1  2
+      //
       when "$ cd" {
-//        writeln("cd'd: ", line);
-	var token = line.split(" ");
+	const token = line.split(" ");
 	ref dirname = token[2];
-	if dirname == ".." {
-	  return;
+
+        if dirname == ".." {
+	  return;  // pops us back up a level
 	} else {
-//          writeln("> Looking up ", token[2]);
-  	  readTerminal(cwd.subdirs.getBorrowed(token[2]));
+  	  readTerminal(cwd.subdirs.getBorrowed(dirname));  // recurse
 	}
       }
-      when "dir " {
-//        writeln("dir'd: ", line);
-	var token = line.split(" ");
-	if !cwd.subdirs.contains(token[1]) {
-//	  writeln("> Inserting ", token[1]);
-	  cwd.subdirs.add(token[1], new Dir(token[1]));
-        } else {
-//	  writeln("> Already knew about ", token[1]);
-	}
-      }
+
+      // line:   12345 <filename>
+      // token:  0     1
       otherwise {
-        const words = line.split(" ");
-//	writeln((words[0], words[1]));
-	cwd.files.add(words[1], words[0]:int);
+        const token = line.split(" "),
+	      size = token[0]:int;
+	ref filename = token[1];
+	    
+	cwd.files.add(filename, size);
       }
     }
   }
