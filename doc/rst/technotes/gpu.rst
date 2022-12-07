@@ -86,10 +86,10 @@ kernels for the ``forall`` loops in the function.
   }
 
 For additional examples we suggest looking at some of our internal tests. Note
-that these are not packaged in Chapel release but are accessible from our
-public GitHub repository.
+that these are not packaged in the Chapel release but are accessible from our
+`public Github repository <https://github.com/chapel-lang/chapel>`_.
 
-Tests of particular interest may include:
+Tests of particular interest include:
 
 Benchmark examples:
 ~~~~~~~~~~~~~~~~~~~
