@@ -57,6 +57,8 @@
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/util/assertions.h"
 
+#include "llvm/ADT/SmallPtrSet.h"
+
 // If this is set then variables/formals will have their "qual" field set
 // now instead of later during resolution.
 #define ATTACH_QUALIFIED_TYPES_EARLY 0
@@ -4231,20 +4233,34 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
 
   // Note: we should be able to minimize the fixups needed
   // by converting the modules in the initialization order
+  llvm::SmallPtrSet<SymExpr*, 4> fixedUp;
 
   // Fix up any SymExprs needing to be re-targeted
   for (const auto& p : identFixups) {
     SymExpr* se = p.first;
     ID target = p.second;
 
-    INT_ASSERT(isTemporaryConversionSymbol(se->symbol()));
+    // Already fixed up by following the symExprs linked list on a
+    // TemporaryConversionSymbol (see below). Skip here.
+    if (fixedUp.count(se) > 0) continue;
+
+    auto tcsymbol = se->symbol();
+    INT_ASSERT(isTemporaryConversionSymbol(tcsymbol));
 
     Symbol* sym = findConvertedSym(target, /* trace */ false);
     if (sym == nullptr) {
       INT_FATAL("could not find target symbol for sym fixup for %s within %s",
                 target.str().c_str(), inSymbolId.str().c_str());
     }
+
     se->setSymbol(sym);
+    // Not all symExprs are noted as fixups (due to lowering and AST
+    // transformations), so visit the temporary converion symbol's recorded
+    // symExprs to try handle these stragglers.
+    for_SymbolSymExprs(se, tcsymbol) {
+      se->setSymbol(sym);
+      fixedUp.insert(se);
+    }
   }
   // clear gIdentFixups since these have now been processed
   identFixups.clear();
