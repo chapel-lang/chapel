@@ -4614,7 +4614,7 @@ static void handlePrintAsm(std::string dotOFile) {
     }
 
     // Note: if we want to support GNU objdump, just need to use
-    // --dissasemble= instead of the LLVM flag --disassemble-symbols=
+    // --disassemble= instead of the LLVM flag --disassemble-symbols=
     // but this does not work with older GNU objdump versions.
     std::string disSymArg = "--disassemble-symbols=";
 
@@ -4626,16 +4626,16 @@ static void handlePrintAsm(std::string dotOFile) {
 
     std::vector<std::string> names = gatherPrintLlvmIrCNames();
     for (auto name : names) {
-      printf("\n\n# Dissasembling symbol %s\n\n", name.c_str());
+      printf("\n\n# Disassembling symbol %s\n\n", name.c_str());
       fflush(stdout);
       std::vector<std::string> cmd;
       cmd.push_back(llvmObjDump);
-      std::string arg = disSymArg; // e.g. --dissasemble=
+      std::string arg = disSymArg; // e.g. --disassemble=
       arg += name;
       cmd.push_back(arg);
       cmd.push_back(dotOFile);
 
-      mysystem(cmd, "dissassemble a symbol",
+      mysystem(cmd, "disassemble a symbol",
                /* ignoreStatus */ true,
                /* quiet */ false);
     }
