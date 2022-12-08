@@ -46,6 +46,7 @@ Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * deprecated `.alignedLow`/`High` on ranges and domains (use `.low`/`.high`)
 * deprecated non-functional support for the `%=` operator on `real` values
+* removed support for the deprecated `<~>` operator
 
 New Features
 ------------
@@ -78,6 +79,8 @@ Changes / Feature Improvements in Libraries
 
 Name Changes in Libraries
 -------------------------
+* renamed the module 'Memory.Initialization' to 'MemMove'  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/MemMove.html)
 * split the `channel` type into separate `fileReader` and `fileWriter` types  
   (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.fileReader)
 * renamed `opentmp()` to `openTempFile()` in the 'IO' module  
@@ -111,6 +114,7 @@ Deprecated / Unstable / Removed Library Features
 * removed the deprecated 'SysError' module and some related deprecated symbols
 * removed the deprecated 'DateTime' module
 * removed deprecated support for `start`/`end` arguments from 'IO' routines
+* removed `tryGetPath()`, `unlink()`, and `getchunk()` from 'IO'
 * removed deprecated `iohint` type from the 'IO' module
 * removed deprecated `map` operators
 
@@ -299,6 +303,12 @@ Developer-oriented changes: 'dyno' Compiler improvements/changes
 * improved the directory structure of the 'dyno' source code
 * adjusted the uAST representation for `try` to always include a body `Block`
 * addressed an issue in which parser errors could be issued twice
+* made numerous improvements to 'dyno's scope resolution capabilities:
+  - added support for record and class fields
+  - added support for secondary methods
+  - added support for nested classes and nested procedures
+  - added support for `synb` statements
+  - fixed problems with `require` statements
 * updated 'dyno' errors in scope-resolver to use the new reporting framework
 * made `use` statements transitively private by default, as expected
 * fixed `public use` to not bring in the module's name itself
