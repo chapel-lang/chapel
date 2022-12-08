@@ -25,7 +25,7 @@ Packaging / Configuration Changes
   (see https://hub.docker.com/r/chapel/chapel)
 * LLVM 14 is now required when using the LLVM back-end on a Mac OS X  
   (see https://chapel-lang.org/docs/1.29/usingchapel/prereqs.html)
-* doxygen 1.8.17 is now required to make the complete docs from source  
+* doxygen 1.8.17 is now required to make the compiler developer documentation  
   (see https://chapel-lang.org/docs/1.29/usingchapel/prereqs.html)
 
 Syntactic / Naming Changes
