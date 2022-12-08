@@ -1312,7 +1312,6 @@ module BigInteger {
 
     if b >= 0 {
       const b_ = b.safeCast(mp_bitcnt_t);
-      var   c  = new bigint();
 
       if _local {
         mpz_tdiv_q_2exp(c.mpz, a.mpz,  b_);
