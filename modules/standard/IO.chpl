@@ -2487,6 +2487,7 @@ inline operator :(x: ioBits, type t:string) {
 private extern proc chpl_macro_int_EEOF():c_int;
 /* An error code indicating the end of file has been reached (Chapel specific)
  */
+pragma "no doc"
 inline proc EEOF return chpl_macro_int_EEOF():c_int;
 
 private extern proc chpl_macro_int_ESHORT():c_int;
@@ -2494,6 +2495,7 @@ private extern proc chpl_macro_int_ESHORT():c_int;
    input was reached before the requested amount of data could be read.
    (Chapel specific)
   */
+pragma "no doc"
 inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
 
 private extern proc chpl_macro_int_EFORMAT():c_int;
@@ -2501,6 +2503,7 @@ private extern proc chpl_macro_int_EFORMAT():c_int;
    string literal, this would be returned if we never encountered the
    opening quote. (Chapel specific)
   */
+pragma "no doc"
 inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
 
 
