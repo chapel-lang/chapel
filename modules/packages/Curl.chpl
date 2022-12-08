@@ -105,7 +105,7 @@ Here is a full program enabling verbose output from Curl while downloading:
   Curl.setopt(reader, CURLOPT_VERBOSE, true);
 
   // now read into the bytes
-  reader.readBytes(str, maxSize=1024);
+  reader.readAll(str);
   writeln(str);
   reader.close();
 
