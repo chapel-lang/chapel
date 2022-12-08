@@ -2435,7 +2435,7 @@ Used to represent a constant string we want to read or write.
 When writing, the ``ioLiteral`` is output without any quoting or escaping.
 
 When reading, the ``ioLiteral`` must be matched exactly - or else the read call
-will return an error with code :data:`EFORMAT`.
+will return an error for incorrectly formatted input
 
 */
 record ioLiteral {
@@ -2487,6 +2487,7 @@ inline operator :(x: ioBits, type t:string) {
 private extern proc chpl_macro_int_EEOF():c_int;
 /* An error code indicating the end of file has been reached (Chapel specific)
  */
+pragma "no doc"
 inline proc EEOF return chpl_macro_int_EEOF():c_int;
 
 private extern proc chpl_macro_int_ESHORT():c_int;
@@ -2494,6 +2495,7 @@ private extern proc chpl_macro_int_ESHORT():c_int;
    input was reached before the requested amount of data could be read.
    (Chapel specific)
   */
+pragma "no doc"
 inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
 
 private extern proc chpl_macro_int_EFORMAT():c_int;
@@ -2501,6 +2503,7 @@ private extern proc chpl_macro_int_EFORMAT():c_int;
    string literal, this would be returned if we never encountered the
    opening quote. (Chapel specific)
   */
+pragma "no doc"
 inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
 
 
