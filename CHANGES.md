@@ -121,9 +121,6 @@ Documentation
 * fixed outdated link in the 'NetCDF' module documentation  
   (see https://chapel-lang.org/docs/1.29/tools/mason/mason.html)
 
-
-
-
 Syntax Highlighting
 -------------------
 
@@ -193,6 +190,8 @@ Developer-oriented changes: Documentation
 -----------------------------------------
 * created a list of exceptions to the style guide's capitalization rules
   (see https://chapel-lang.org/docs/1.29/developer/bestPractices/StandardModuleStyle.html#pascalcase-and-camelcase)
+* removed repeated `https://chapel-lang.org/docs/` refs in docs-building tips
+  (see https://chapel-lang.org/docs/1.29/developer/bestPractices/buildingdocs.html)
 
 Developer-oriented changes: Naming Changes
 ------------------------------------------
