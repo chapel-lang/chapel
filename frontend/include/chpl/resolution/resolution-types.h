@@ -139,7 +139,7 @@ class UntypedFnSignature {
       kind_(kind),
       formals_(std::move(formals)),
       whereClause_(whereClause) {
-    assert(idTag == uast::asttags::Function ||
+    CHPL_ASSERT(idTag == uast::asttags::Function ||
            idTag == uast::asttags::Class    ||
            idTag == uast::asttags::Record   ||
            idTag == uast::asttags::Union    ||
@@ -269,25 +269,25 @@ class UntypedFnSignature {
   }
   /** Returns the name of the i'th formal. */
   UniqueString formalName(int i) const {
-    assert(0 <= i && (size_t) i < formals_.size());
+    CHPL_ASSERT(0 <= i && (size_t) i < formals_.size());
     return formals_[i].name;
   }
 
   /** Return whether the i'th formal has a default value. */
   bool formalHasDefault(int i) const {
-    assert(0 <= i && (size_t) i < formals_.size());
+    CHPL_ASSERT(0 <= i && (size_t) i < formals_.size());
     return formals_[i].hasDefaultValue;
   }
 
   /** Returns the Decl for the i'th formal / field.
       This will return nullptr for compiler-generated functions. */
   const uast::Decl* formalDecl(int i) const {
-    assert(0 <= i && (size_t) i < formals_.size());
+    CHPL_ASSERT(0 <= i && (size_t) i < formals_.size());
     return formals_[i].decl;
   }
 
   bool formalIsVarArgs(int i) const {
-    assert(0 <= i && (size_t) i < formals_.size());
+    CHPL_ASSERT(0 <= i && (size_t) i < formals_.size());
     return formals_[i].isVarArgs;
   }
 
@@ -369,14 +369,14 @@ class CallInfo {
         actuals_(std::move(actuals)) {
     #ifndef NDEBUG
     if (isMethodCall) {
-      assert(numActuals() >= 1);
-      assert(this->actual(0).byName() == "this");
+      CHPL_ASSERT(numActuals() >= 1);
+      CHPL_ASSERT(this->actual(0).byName() == "this");
     }
     if (isParenless) {
       if (isMethodCall) {
-        assert(numActuals() == 1);
+        CHPL_ASSERT(numActuals() == 1);
       } else {
-        assert(numActuals() == 0);
+        CHPL_ASSERT(numActuals() == 0);
       }
     }
     #endif
@@ -450,7 +450,7 @@ class CallInfo {
 
   /** return the i'th actual */
   const CallInfoActual& actual(size_t i) const {
-    assert(i < actuals_.size());
+    CHPL_ASSERT(i < actuals_.size());
     return actuals_[i];
   }
 
@@ -736,7 +736,7 @@ class TypedFnSignature {
     will either be nullptr or result->instantiatedFrom() will be nullptr.
    */
   const TypedFnSignature* instantiatedFrom() const {
-    assert(instantiatedFrom_ == nullptr ||
+    CHPL_ASSERT(instantiatedFrom_ == nullptr ||
            instantiatedFrom_->instantiatedFrom_ == nullptr);
     return instantiatedFrom_;
   }
@@ -763,7 +763,7 @@ class TypedFnSignature {
   /** Returns the number of formals */
   int numFormals() const {
     int ret = formalTypes_.size();
-    assert(untypedSignature_ && ret == untypedSignature_->numFormals());
+    CHPL_ASSERT(untypedSignature_ && ret == untypedSignature_->numFormals());
     return ret;
   }
   /** Returns the name of the i'th formal */
@@ -772,7 +772,7 @@ class TypedFnSignature {
   }
   /** Returns the type of the i'th formal */
   const types::QualifiedType& formalType(int i) const {
-    assert(0 <= i && (size_t) i < formalTypes_.size());
+    CHPL_ASSERT(0 <= i && (size_t) i < formalTypes_.size());
     return formalTypes_[i];
   }
 
@@ -887,7 +887,7 @@ class MostSpecificCandidates {
     }
 
     // if there is only one candidate, it should be in slot ONLY
-    assert(candidates[ONLY] == ret);
+    CHPL_ASSERT(candidates[ONLY] == ret);
     return ret;
   }
 
@@ -916,7 +916,7 @@ class MostSpecificCandidates {
    */
   bool isAmbiguous() const {
     // if emptyDueToAmbiguity is set, isEmpty should return true
-    assert(!emptyDueToAmbiguity || isEmpty());
+    CHPL_ASSERT(!emptyDueToAmbiguity || isEmpty());
 
     return emptyDueToAmbiguity;
   }
@@ -1142,8 +1142,8 @@ class ResolutionResultByPostorderID {
 
   ResolvedExpression& byIdExpanding(const ID& id) {
     auto postorder = id.postOrderId();
-    assert(id.symbolPath() == symbolId.symbolPath());
-    assert(0 <= postorder);
+    CHPL_ASSERT(id.symbolPath() == symbolId.symbolPath());
+    CHPL_ASSERT(0 <= postorder);
     if ((size_t) postorder < vec.size()) {
       // OK
     } else {
@@ -1168,12 +1168,12 @@ class ResolutionResultByPostorderID {
   }
 
   ResolvedExpression& byId(const ID& id) {
-    assert(hasId(id));
+    CHPL_ASSERT(hasId(id));
     auto postorder = id.postOrderId();
     return vec[postorder];
   }
   const ResolvedExpression& byId(const ID& id) const {
-    assert(hasId(id));
+    CHPL_ASSERT(hasId(id));
     auto postorder = id.postOrderId();
     return vec[postorder];
   }
@@ -1359,7 +1359,7 @@ class FormalActualMap {
 
   /** get the FormalActual for a particular formal index */
   const FormalActual& byFormalIdx(int formalIdx) const {
-    assert(0 <= formalIdx && (size_t) formalIdx < byFormalIdx_.size());
+    CHPL_ASSERT(0 <= formalIdx && (size_t) formalIdx < byFormalIdx_.size());
     return byFormalIdx_[formalIdx];
   }
 
@@ -1460,19 +1460,19 @@ class ResolvedFields {
   }
 
   UniqueString fieldName(int i) const {
-    assert(0 <= i && (size_t) i < fields_.size());
+    CHPL_ASSERT(0 <= i && (size_t) i < fields_.size());
     return fields_[i].name;
   }
   bool fieldHasDefaultValue(int i) const {
-    assert(0 <= i && (size_t) i < fields_.size());
+    CHPL_ASSERT(0 <= i && (size_t) i < fields_.size());
     return fields_[i].hasDefaultValue;
   }
   ID fieldDeclId(int i) const {
-    assert(0 <= i && (size_t) i < fields_.size());
+    CHPL_ASSERT(0 <= i && (size_t) i < fields_.size());
     return fields_[i].declId;
   }
   types::QualifiedType fieldType(int i) const {
-    assert(0 <= i && (size_t) i < fields_.size());
+    CHPL_ASSERT(0 <= i && (size_t) i < fields_.size());
     return fields_[i].type;
   }
 

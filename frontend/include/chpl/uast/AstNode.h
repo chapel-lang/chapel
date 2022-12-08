@@ -27,7 +27,6 @@
 #include "chpl/util/memory.h"
 #include "chpl/framework/stringify-functions.h"
 
-#include <cassert>
 #include <functional>
 
 namespace chpl {
@@ -157,7 +156,7 @@ class AstNode {
     by this object.
    */
   const AstNode* child(int i) const {
-    assert(0 <= i && i < (int) children_.size());
+    CHPL_ASSERT(0 <= i && i < (int) children_.size());
     return children_[i].get();
   }
 
@@ -256,7 +255,7 @@ class AstNode {
         #define IGNORE(NAME) \
           case chpl::uast::asttags::NAME: \
           { \
-            assert(false && "this code should never be run"); \
+            CHPL_ASSERT(false && "this code should never be run"); \
           }
 
         #define AST_NODE(NAME) CONVERT(NAME)
@@ -277,7 +276,7 @@ class AstNode {
         #undef IGNORE
       }
 
-      assert(false && "this code should never be run");
+      CHPL_ASSERT(false && "this code should never be run");
       return ReturnType();
     }
   };
@@ -296,7 +295,7 @@ class AstNode {
         #define IGNORE(NAME) \
           case chpl::uast::asttags::NAME: \
           { \
-            assert(false && "this code should never be run"); \
+            CHPL_ASSERT(false && "this code should never be run"); \
           }
 
         #define AST_NODE(NAME) CONVERT(NAME)
@@ -317,7 +316,7 @@ class AstNode {
         #undef IGNORE
       }
 
-      assert(false && "this code should never be run");
+      CHPL_ASSERT(false && "this code should never be run");
     }
   };
 
@@ -389,7 +388,7 @@ class AstNode {
         { \
           const NAME* casted = (const NAME*) this; \
           v.enter(casted); \
-          assert(this->numChildren() == 0); \
+          CHPL_ASSERT(this->numChildren() == 0); \
           v.exit(casted); \
           break; \
         }
@@ -411,7 +410,7 @@ class AstNode {
       #define CASE_OTHER(NAME) \
         case asttags::NAME: \
         { \
-          assert(false && "this code should never be run"); \
+          CHPL_ASSERT(false && "this code should never be run"); \
           break; \
         }
 

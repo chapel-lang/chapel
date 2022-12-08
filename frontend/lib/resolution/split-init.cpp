@@ -316,9 +316,9 @@ void FindSplitInits::handleConditional(const Conditional* cond) {
   // these asserts should always be true because the 'both'
   // set was computed first; and because the vectors are
   // just the ordering for things in the set.
-  assert(splitInitedBothElseIds.size() == size);
-  assert(splitInitedBothThenTypes.size() == size);
-  assert(splitInitedBothElseTypes.size() == size);
+  CHPL_ASSERT(splitInitedBothElseIds.size() == size);
+  CHPL_ASSERT(splitInitedBothThenTypes.size() == size);
+  CHPL_ASSERT(splitInitedBothElseTypes.size() == size);
   bool orderOk = true;
   // first, check the order
   for (size_t i = 0; i < size; i++) {

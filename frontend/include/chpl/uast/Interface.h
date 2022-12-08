@@ -144,9 +144,9 @@ class Interface final : public NamedDecl {
     Return the i'th interface formal.
   */
   const AstNode* formal(int i) const {
-    assert(i >= 0 && i < numBodyStmts_);
+    CHPL_ASSERT(i >= 0 && i < numBodyStmts_);
     auto ret = child(i + interfaceFormalsChildNum_);
-    assert(ret);
+    CHPL_ASSERT(ret);
     return ret;
   }
 
@@ -170,9 +170,9 @@ class Interface final : public NamedDecl {
     Get the i'th statement in the body of this interface.
   */
   const AstNode* stmt(int i) const {
-    assert(i >= 0 && i < numBodyStmts_);
+    CHPL_ASSERT(i >= 0 && i < numBodyStmts_);
     auto ret = child(i + bodyChildNum_);
-    assert(ret);
+    CHPL_ASSERT(ret);
     return ret;
   }
 

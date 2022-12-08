@@ -1043,25 +1043,25 @@ proc isProperSubtype(type sub, type super) param {
 
 /* :returns: isProperSubtype(a,b) */
 pragma "docs only"
-@unstable "< operator is unstable when comparing types; consider using isProperSubtype() as a stable alternative"
+deprecated "< operator is deprecated when comparing types; use isProperSubtype() instead"
 operator <(type a, type b) param {
   return isProperSubtype(a,b);
 }
 /* :returns: isSubtype(a,b) */
 pragma "docs only"
-@unstable "<= operator is unstable when comparing types; consider using isSubtype() as a stable alternative"
+deprecated "<= operator is deprecated when comparing types; use isSubtype() instead"
 operator <=(type a, type b) param {
   return isSubtype(a,b);
 }
 /* :returns: isProperSubtype(b,a) */
 pragma "docs only"
-@unstable "> operator is unstable when comparing types; consider using isProperSubtype() as a stable alternative"
+deprecated "> operator is deprecated when comparing types; use isProperSubtype() instead"
 operator >(type a, type b) param {
   return isProperSubtype(b,a);
 }
 /* :returns: isSubtype(b,a) */
 pragma "docs only"
-@unstable ">= operator is unstable when comparing types; consider using isSubtype() as a stable alternative"
+deprecated ">= operator is deprecated when comparing types; use isSubtype() instead"
 operator >=(type a, type b) param {
   return isSubtype(b,a);
 }

@@ -30,8 +30,8 @@ owned<DoWhile> DoWhile::build(Builder* builder, Location loc,
                               owned<Block> body,
                               owned<AstNode> condition) {
 
-  assert(condition.get() != nullptr);
-  assert(body.get() != nullptr);
+  CHPL_ASSERT(condition.get() != nullptr);
+  CHPL_ASSERT(body.get() != nullptr);
 
   AstList lst;
   const int loopBodyChildNum = lst.size();

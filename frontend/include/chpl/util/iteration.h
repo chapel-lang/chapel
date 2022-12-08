@@ -20,8 +20,8 @@
 #ifndef CHPL_UTIL_ITERATION_H
 #define CHPL_UTIL_ITERATION_H
 
+#include "chpl/util/assertions.h"
 #include <iterator>
-#include <cassert>
 #include <vector>
 #include <type_traits>
 
@@ -71,7 +71,7 @@ struct ExpandingIteratorWrapper {
 
     // Prefix increment
     ExpandingIterator& operator++() {
-      assert(i_ >= 0); // UB anyways to increment the end()
+      CHPL_ASSERT(i_ >= 0); // UB anyways to increment the end()
       i_ += 1;
       if ((size_t)i_ == container_.size()) {
         i_ = -1;

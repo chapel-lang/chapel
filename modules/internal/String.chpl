@@ -1491,13 +1491,6 @@ module String {
     return startsEndsWith(this, patterns, fromLeft=false);
   }
 
-  pragma "last resort"
-  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
-  inline proc string.find(needle: string,
-                          region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
-    return this.find(needle, region);
-  }
-
   /*
     :arg pattern: the string to search for
     :arg indices: an optional range defining the substring to search within,
@@ -1514,13 +1507,6 @@ module String {
       return doSearchNoEnc(this, pattern, indices, count=false): byteIndex;
     else
       return doSearchUTF8(pattern, indices, count=false): byteIndex;
-  }
-
-  pragma "last resort"
-  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
-  inline proc string.rfind(needle: string,
-                           region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
-    return this.rfind(needle, region);
   }
 
   /*
@@ -1542,13 +1528,6 @@ module String {
                           count=false, fromLeft=false): byteIndex;
   }
 
-  pragma "last resort"
-  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
-  inline proc string.count(needle: string,
-                           region: range(?) = this.indices) : int {
-    return this.count(needle, region);
-  }
-
   /*
     :arg pattern: the string to search for
     :arg indices: an optional range defining the substring to search within,
@@ -1565,12 +1544,6 @@ module String {
       return doSearchUTF8(pattern, indices, count=true);
   }
 
-  pragma "last resort"
-  deprecated "the 'needle' argument is deprecated, use 'pattern' instead"
-  inline proc string.replace(needle: string, replacement: string,
-                             count: int = -1) : string {
-    return this.replace(needle, replacement, count);
-  }
   /*
     :arg pattern: the string to search for
     :arg replacement: the string to replace `pattern` with

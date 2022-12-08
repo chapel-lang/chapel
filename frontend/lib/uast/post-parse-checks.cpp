@@ -181,10 +181,10 @@ bool Visitor::isFlagSet(CompilerFlags::Name flag) const {
 }
 
 const AstNode* Visitor::parent(int depth) const {
-  assert(depth >= 0);
+  CHPL_ASSERT(depth >= 0);
   if (((size_t) depth) >= parents_.size()) return nullptr;
   int idx = parents_.size() - depth - 1;
-  assert(idx >= 0);
+  CHPL_ASSERT(idx >= 0);
   auto ret = parents_[idx];
   return ret;
 }
@@ -289,11 +289,11 @@ void Visitor::checkNoDuplicateNamedArguments(const FnCall* node) {
   for (int i = 0; i < node->numActuals(); i++) {
     if (node->isNamedActual(i)) {
       auto name = node->actualName(i);
-      assert(!name.isEmpty());
+      CHPL_ASSERT(!name.isEmpty());
 
       if (!actualNames.insert(name).second) {
         auto actual = node->actual(i);
-        assert(actual);
+        CHPL_ASSERT(actual);
         error(actual, "the named argument '%s' is used more "
                       "than once in the same function call.",
                       name.c_str());
@@ -367,7 +367,7 @@ bool Visitor::handleNestedDecoratorsInNew(const FnCall* node) {
       : nullptr;
 
   while (innerMgt != defMgt) {
-    assert(outerMgt != defMgt);
+    CHPL_ASSERT(outerMgt != defMgt);
 
     // TODO: Also error about 'please use class? instead of %s?'...
     error(outerPin, "type expression uses multiple class kinds: %s %s.",
@@ -401,7 +401,7 @@ Visitor::handleNestedDecoratorsInTypeConstructors(const FnCall* node) {
 
   // Do not loop, as recursion will handle other decorator pairs.
   if (innerMgt != defMgt) {
-    assert(outerMgt != defMgt);
+    CHPL_ASSERT(outerMgt != defMgt);
 
     // TODO: Also error about 'please use class? instead of %s?'...
     error(node, "type expression uses multiple class kinds: %s %s.",
@@ -476,7 +476,7 @@ static const char* configVarStr(Variable::Kind kind) {
       break;
   }
 
-  assert(ret);
+  CHPL_ASSERT(ret);
   return ret;
 }
 
@@ -499,7 +499,7 @@ void Visitor::checkConfigVar(const Variable* node) {
 
   if (doEmitError) {
     const char* varTypeStr = configVarStr(node->kind());
-    assert(varTypeStr);
+    CHPL_ASSERT(varTypeStr);
 
     error(node, "configuration %s are allowed only at module scope.",
                 varTypeStr);
@@ -600,7 +600,7 @@ void Visitor::checkFormalsForTypeOrParamProcs(const Function* node) {
     }
 
     if (doEmitError) {
-      assert(formalIntentStr);
+      CHPL_ASSERT(formalIntentStr);
       error(decl, "cannot use '%s' intent in a function returning "
                   "with '%s' intent.",
                   formalIntentStr,
@@ -668,7 +668,7 @@ Visitor::checkProcTypeFormalsAreAnnotated(const FunctionSignature* node) {
 
 void Visitor::checkProcDefFormalsAreNamed(const Function* node) {
   for (auto ast : node->formals()) {
-    assert(!ast->isAnonFormal());
+    CHPL_ASSERT(!ast->isAnonFormal());
 
     // All procedure formals must have names.
     if (auto formal = ast->toFormal())
@@ -797,7 +797,7 @@ void Visitor::checkLinkageName(const NamedDecl* node) {
   auto linkageName = node->linkageName();
   if (!linkageName) return;
 
-  assert(node->linkage() != Decl::DEFAULT_LINKAGE);
+  CHPL_ASSERT(node->linkage() != Decl::DEFAULT_LINKAGE);
 
   // Functions accept complex expressions for their linkage name.
   if (node->isFunction()) return;

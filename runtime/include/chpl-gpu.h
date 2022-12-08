@@ -29,10 +29,15 @@
 extern "C" {
 #endif
 
+// We need to declare this variable outside of the commented out HAS_GPU_LOCALE
+// section due to the fact that GPUDiagnostics module accesses it (and this
+// module can be used despite what locale model you're using).
+extern bool chpl_gpu_debug;
+
 #ifdef HAS_GPU_LOCALE
 
 static inline void CHPL_GPU_DEBUG(const char *str, ...) {
-  if (verbosity >= 2) {
+  if (chpl_gpu_debug) {
     va_list args;
     va_start(args, str);
     vfprintf(stdout, str, args);
@@ -47,6 +52,8 @@ static inline bool chpl_gpu_running_on_gpu_locale(void) {
 
 void chpl_gpu_init(void);
 void chpl_gpu_on_std_modules_finished_initializing(void);
+
+void chpl_gpu_get_device_count(int* into);
 
 void chpl_gpu_launch_kernel(int ln, int32_t fn,
                             const char* fatbinData, const char* name,

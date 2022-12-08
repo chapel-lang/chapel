@@ -60,7 +60,7 @@ class Class final : public AggregateDecl {
                     elementsChildNum,
                     numElements),
       parentClassChildNum_(parentClassChildNum) {
-    assert(parentClassChildNum_ == -1 ||
+    CHPL_ASSERT(parentClassChildNum_ == -1 ||
            child(parentClassChildNum_)->isIdentifier());
   }
 

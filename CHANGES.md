@@ -95,7 +95,7 @@ Changes / Feature Improvements in Libraries
 
 Name Changes in Libraries
 -------------------------
-* renamed `SysError.SystemError.fromSyserr()` to `OS.createSystmError()`  
+* renamed `SysError.SystemError.fromSyserr()` to `OS.createSystemError()`  
   (see https://chapel-lang.org/docs/1.28/modules/standard/OS.html#OS.createSystemError)
 * renamed `SystemError` class names to use CamelCase for acronyms  
   (e.g., see https://chapel-lang.org/docs/1.28/modules/standard/OS.html#OS.IoError)

@@ -27,17 +27,17 @@ namespace uast {
 
 UniqueString Implements::interfaceName() const {
   auto expr = interfaceExpr();
-  assert(expr);
+  CHPL_ASSERT(expr);
 
   if (auto ident = expr->toIdentifier()) {
     return ident->name();
   } else if (auto call = expr->toFnCall()) {
     auto called = call->calledExpression();
-    assert(called && called->isIdentifier());
+    CHPL_ASSERT(called && called->isIdentifier());
     auto ret = called->toIdentifier()->name();
     return ret;
   } else {
-    assert(false && "Not possible!");
+    CHPL_ASSERT(false && "Not possible!");
     UniqueString empty;
     return empty;
   }
@@ -56,8 +56,8 @@ Implements::build(Builder* builder, Location loc,
     children.push_back(std::move(typeExpr));
   }
 
-  assert(interfaceExpr.get() != nullptr);
-  assert(interfaceExpr->isIdentifier() || interfaceExpr->isFnCall());
+  CHPL_ASSERT(interfaceExpr.get() != nullptr);
+  CHPL_ASSERT(interfaceExpr->isIdentifier() || interfaceExpr->isFnCall());
   children.push_back(std::move(interfaceExpr));
 
   Implements* ret = new Implements(std::move(children), typeExprChildNum,

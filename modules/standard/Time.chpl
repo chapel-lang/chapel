@@ -2013,6 +2013,22 @@ record stopwatch {
     }
   }
 
+  /* Clear the elapsed time and ensure the stopwatch is stopped */
+  proc reset() {
+    if running {
+      stop();
+    }
+    clear();
+  }
+
+  /* Clear the elapsed time and ensure the stopwatch is running */
+  proc restart() {
+    clear();
+    if !running {
+      start();
+    }
+  }
+
   /*
      Returns the cumulative elapsed time, in the units specified, between
      all pairs of calls to :proc:`start` and :proc:`stop`

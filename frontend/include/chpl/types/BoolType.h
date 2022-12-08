@@ -79,7 +79,7 @@ class BoolType final : public PrimitiveType {
       case 64:
         return "bool(64)";
       default:
-        assert(false && "bool bit width case not handled");
+        CHPL_ASSERT(false && "bool bit width case not handled");
         return "bool(<unknown>)";
     }
   }

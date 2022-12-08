@@ -2932,10 +2932,8 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
             // Put the call back in to aid traversal
             se->getStmtExpr()->insertBefore(call);
           } else {
-            if (fWarnUnstable) {
-              USR_WARN(call, "type comparison operators are unstable; "
-                "consider using isSubtype/isProperSubtype as a stable alternative");
-            }
+            USR_WARN(call, "type comparison operators are deprecated; "
+              "use isSubtype/isProperSubtype instead");
 
             rhs->remove();
             lhs->remove();
@@ -4374,6 +4372,8 @@ void resolveNormalCallCompilerWarningStuff(CallExpr* call,
 ************************************** | *************************************/
 
 static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns);
+static bool maybeIssueSplitInitMissingTypeError(CallInfo& info,
+                                                Vec<FnSymbol*>& visibleFns);
 static void sortExampleCandidates(CallInfo& info,
                                   Vec<FnSymbol*>& visibleFns);
 static bool defaultValueMismatch(CallInfo& info);
@@ -4386,6 +4386,9 @@ void printResolutionErrorUnresolved(CallInfo&       info,
   } else {
     CallExpr* call = userCall(info.call);
 
+    if (maybeIssueSplitInitMissingTypeError(info, visibleFns)) {
+      // don't show additional unresolved error in addition to missing init
+    } else
     if (call->isCast() == true) {
       if (info.actuals.tail()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
         USR_FATAL_CONT(call, "illegal cast to non-type");
@@ -4725,16 +4728,19 @@ static bool maybeIssueSplitInitMissingTypeError(CallInfo& info,
     }
 
     if (anyTypeNotEstablished) {
+      bool printedError = false;
       for_actuals(actual, info.call) {
         Type* t = actual->getValType();
         if (t == dtSplitInitType || t->symbol->hasFlag(FLAG_GENERIC)) {
           if (SymExpr* se = toSymExpr(actual)) {
             CallExpr* call = userCall(info.call);
             splitInitMissingTypeError(se->symbol(), call, false);
-            return true; // don't print out candidates - probably irrelevant
+            printedError = true;
           }
         }
       }
+      if (printedError)
+        return true; // don't print out candidates - probably irrelevant
     }
   }
   return false;
@@ -4743,11 +4749,6 @@ static bool maybeIssueSplitInitMissingTypeError(CallInfo& info,
 static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
   CallExpr*   call = userCall(info.call);
   const char* str  = NULL;
-
-  if (maybeIssueSplitInitMissingTypeError(info, visibleFns)) {
-    // don't show additional unresolved error in addition to missing init
-    return;
-  }
 
   if (info.scope != NULL) {
     ModuleSymbol* mod = toModuleSymbol(info.scope->parentSymbol);
@@ -9532,11 +9533,14 @@ void ensureEnumTypeResolved(EnumType* etype) {
         Type* t = enumTypeExpr->typeInfo();
 
         if (t == dtUnknown) {
-          INT_FATAL(def->init, "Unable to resolve enumerator type expression");
+          USR_FATAL(def->init, "unable to resolve the initializer"
+                    " for the enumerator constant '%s'"
+                    " possibly because of a use before definition",
+                    def->sym->name);
         }
         if (!is_int_type(t) && !is_uint_type(t)) {
           USR_FATAL(def,
-                    "enumerator '%s' is not an integer param value",
+                    "enumerator constant '%s' has a non-integer initializer",
                     def->sym->name);
         }
 
@@ -9587,7 +9591,6 @@ void ensureEnumTypeResolved(EnumType* etype) {
   INT_ASSERT(etype->integerType != NULL);
 }
 
-// Recursively resolve typedefs
 Type* resolveTypeAlias(SymExpr* se) {
   Type* retval = NULL;
 
@@ -10792,8 +10795,12 @@ static void resolveEnumTypes() {
   // need to handle enumerated types better
   for_alive_in_Vec(TypeSymbol, type, gTypeSymbols) {
     if (EnumType* et = toEnumType(type->type)) {
-      SET_LINENO(et);
+      // skip irrelevant code
+      if (FnSymbol* parentFn = et->symbol->defPoint->getFunction())
+        if (! parentFn->isResolved())
+          continue;
 
+      SET_LINENO(et);
       ensureEnumTypeResolved(et);
     }
   }

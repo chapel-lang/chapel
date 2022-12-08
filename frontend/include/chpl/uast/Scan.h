@@ -47,7 +47,7 @@ class Scan final : public Call {
 
   Scan(AstList children)
     : Call(asttags::Scan, std::move(children), false) {
-    assert(numChildren() == 2);
+    CHPL_ASSERT(numChildren() == 2);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

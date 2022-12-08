@@ -70,7 +70,7 @@ class Reduce final : public Call {
   Reduce(AstList children)
       : Call(asttags::Reduce, std::move(children),
              /*hasCalledExpression*/ false) {
-    assert(numChildren() == 2);
+    CHPL_ASSERT(numChildren() == 2);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

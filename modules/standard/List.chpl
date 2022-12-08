@@ -1322,33 +1322,6 @@ module List {
 
       .. warning::
 
-        indexOf on lists is deprecated, use :proc:`find` instead.
-
-      :arg x: An element to search for.
-      :type x: `eltType`
-
-      :arg start: The start index to start searching from.
-      :type start: `int`
-
-      :arg end: The end index to stop searching at. A value less than
-                `0` will search the entire list.
-      :type end: `int`
-
-      :return: The index of the element to search for, or `-1` on error.
-      :rtype: `int`
-    */
-    deprecated "indexOf on lists is deprecated, use :proc:`find` instead; please let us know if this is problematic for you."
-    proc const indexOf(x: eltType, start: int=0, end: int=-1): int {
-      return find(x, start, end);
-    }
-
-    /*
-      Return a zero-based index into this list of the first item whose value
-      is equal to `x`. If no such element can be found or if the list is empty,
-      this method returns the value `-1`.
-
-      .. warning::
-
         Calling this method with values of `start` or `end` that are out of bounds
         will cause the currently running program to halt. If the `--fast` flag is
         used, no safety checks will be performed.

@@ -40,9 +40,9 @@ class Loop: public AstNode {
       blockStyle_(blockStyle),
       loopBodyChildNum_(loopBodyChildNum) {
 
-    assert(0 <= loopBodyChildNum_ &&
+    CHPL_ASSERT(0 <= loopBodyChildNum_ &&
            loopBodyChildNum_ < (int) children_.size());
-    assert(children_[loopBodyChildNum_]->isBlock());
+    CHPL_ASSERT(children_[loopBodyChildNum_]->isBlock());
   }
 
   bool loopContentsMatchInner(const Loop* other) const {

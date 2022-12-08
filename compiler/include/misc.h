@@ -87,10 +87,16 @@
 
 class BaseAST;
 
+enum class GpuCodegenType {
+  GPU_CG_NVIDIA_CUDA,
+  GPU_CG_AMD_HIP,
+};
+
 bool        forceWidePtrsForLocal();
 bool        requireWideReferences();
 bool        requireOutlinedOn();
 bool        usingGpuLocaleModel();
+GpuCodegenType getGpuCodegenType();
 
 const char* cleanFilename(const BaseAST* ast);
 const char* cleanFilename(const char*    name);

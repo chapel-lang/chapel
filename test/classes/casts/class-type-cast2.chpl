@@ -39,9 +39,9 @@ proc borrowedToOwned(type t) type {
       type tt = (t:owned class);
       return tt;
     }
+  } else {
+    return t;
   }
-
-  return t;
 }
 
 proc testToCq(type t) {

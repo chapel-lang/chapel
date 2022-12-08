@@ -95,20 +95,18 @@ void makeTupleName(std::vector<TypeSymbol*>& args,
   }
 }
 
-static
-FnSymbol* makeBuildTupleType(std::vector<ArgSymbol*> typeCtorArgs,
-                             TypeSymbol* newTypeSymbol,
-                             ModuleSymbol* tupleModule,
-                             BlockStmt* instantiationPoint,
-                             bool noref)
+static FnSymbol* helpBuildTupleType(std::vector<ArgSymbol*>& typeCtorArgs,
+                                    const char*    fnName,
+                                    int startArgs, int endArgs,
+                                    TypeSymbol*    newTypeSymbol,
+                                    ModuleSymbol*  tupleModule,
+                                    BlockStmt*     instantiationPoint,
+                                    FnSymbol*      instantiatedFrom)
 {
-  Type *newType = newTypeSymbol->type;
-  const char* fnName = noref?"_build_tuple_noref":"_build_tuple";
   FnSymbol *buildTupleType = new FnSymbol(fnName);
-  // starts at 1 to skip the size argument
-  for(size_t i = 1; i < typeCtorArgs.size(); i++ ) {
+  for(int i = startArgs; i < endArgs; i++)
     buildTupleType->insertFormalAtTail(typeCtorArgs[i]->copy());
-  }
+
   buildTupleType->addFlag(FLAG_ALLOW_REF);
   buildTupleType->addFlag(FLAG_COMPILER_GENERATED);
   buildTupleType->addFlag(FLAG_LAST_RESORT);
@@ -117,53 +115,54 @@ FnSymbol* makeBuildTupleType(std::vector<ArgSymbol*> typeCtorArgs,
   buildTupleType->addFlag(FLAG_BUILD_TUPLE);
   buildTupleType->addFlag(FLAG_BUILD_TUPLE_TYPE);
 
+  Type *newType = newTypeSymbol->type;
   buildTupleType->retTag = RET_TYPE;
   buildTupleType->retType = newType;
-  CallExpr* ret = new CallExpr(PRIM_RETURN, new SymExpr(newTypeSymbol));
-  buildTupleType->insertAtTail(ret);
-  buildTupleType->substitutions.copy(newType->substitutions);
 
-  buildTupleType->instantiatedFrom = gBuildTupleType;
+  buildTupleType->substitutions.copy(newType->substitutions);
+  buildTupleType->instantiatedFrom = instantiatedFrom;
   buildTupleType->setInstantiationPoint(instantiationPoint);
 
+  VarSymbol* rvv = newTemp("ret", newType);
+  rvv->addFlag(FLAG_TYPE_VARIABLE);
+  rvv->addFlag(FLAG_RVV);
+  rvv->qual = QUAL_UNKNOWN; // newTemp gave us a mis-fitting QUAL_VAL
+  buildTupleType->insertAtTail(new DefExpr(rvv));
+  buildTupleType->insertAtTail("'move'(%S,%S)", rvv, newTypeSymbol);
+  buildTupleType->insertAtTail("'return'(%S)", rvv);
+
   tupleModule->block->insertAtTail(new DefExpr(buildTupleType));
+  return buildTupleType;
+}
+
+static
+FnSymbol* makeBuildTupleType(std::vector<ArgSymbol*>& typeCtorArgs,
+                             TypeSymbol* newTypeSymbol,
+                             ModuleSymbol* tupleModule,
+                             BlockStmt* instantiationPoint,
+                             bool noref)
+{
+  FnSymbol *buildTupleType = helpBuildTupleType(typeCtorArgs,
+   noref ? "_build_tuple_noref" : "_build_tuple",
+   1, typeCtorArgs.size(), // starts at 1 to skip the size argument
+   newTypeSymbol, tupleModule, instantiationPoint, gBuildTupleType);
 
   return buildTupleType;
 }
 
 static
-FnSymbol* makeBuildStarTupleType(std::vector<ArgSymbol*> typeCtorArgs,
+FnSymbol* makeBuildStarTupleType(std::vector<ArgSymbol*>& typeCtorArgs,
                                  TypeSymbol* newTypeSymbol,
                                  ModuleSymbol* tupleModule,
                                  BlockStmt* instantiationPoint,
                                  bool noref)
 {
-  Type *newType = newTypeSymbol->type;
-  const char* fnName = noref?"_build_star_tuple_noref":"*";
-  FnSymbol *buildStarTupleType = new FnSymbol(fnName);
-  // just to arguments 0 and 1 to get size and element type
-  for(int i = 0; i < 2; i++ ) {
-    buildStarTupleType->insertFormalAtTail(typeCtorArgs[i]->copy());
-  }
-  buildStarTupleType->addFlag(FLAG_ALLOW_REF);
-  buildStarTupleType->addFlag(FLAG_COMPILER_GENERATED);
-  buildStarTupleType->addFlag(FLAG_LAST_RESORT);
-  buildStarTupleType->addFlag(FLAG_INLINE);
-  buildStarTupleType->addFlag(FLAG_INVISIBLE_FN);
-  buildStarTupleType->addFlag(FLAG_BUILD_TUPLE);
-  buildStarTupleType->addFlag(FLAG_BUILD_TUPLE_TYPE);
+  FnSymbol *buildStarTupleType = helpBuildTupleType(typeCtorArgs,
+   noref ? "_build_star_tuple_noref" : "*",
+   0, 2, // just to arguments 0 and 1 to get size and element type
+   newTypeSymbol, tupleModule, instantiationPoint, gBuildStarTupleType);
+
   buildStarTupleType->addFlag(FLAG_STAR_TUPLE);
-
-  buildStarTupleType->retTag = RET_TYPE;
-  buildStarTupleType->retType = newType;
-  CallExpr* ret = new CallExpr(PRIM_RETURN, new SymExpr(newTypeSymbol));
-  buildStarTupleType->insertAtTail(ret);
-  buildStarTupleType->substitutions.copy(newType->substitutions);
-
-  buildStarTupleType->instantiatedFrom = gBuildStarTupleType;
-  buildStarTupleType->setInstantiationPoint(instantiationPoint);
-
-  tupleModule->block->insertAtTail(new DefExpr(buildStarTupleType));
   return buildStarTupleType;
 }
 
@@ -355,7 +354,9 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     }
 
     // Decide whether or not we have a homogeneous/star tuple
+    // and whether it is generic.
     bool  markStar = true;
+    bool  markGeneric = false;
     {
       Type* starType = NULL;
 
@@ -364,7 +365,11 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
           starType = args[i]->type;
         } else if (starType != args[i]->type) {
           markStar = false;
-          break;
+          if (markGeneric) break;
+        }
+        if (args[i]->getValType()->symbol->hasFlag(FLAG_GENERIC)) {
+          markGeneric = true;
+          if (!markStar) break;
         }
       }
     }
@@ -386,6 +391,8 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
     newTypeSymbol->addFlag(FLAG_TYPE_VARIABLE);
     if (markStar)
       newTypeSymbol->addFlag(FLAG_STAR_TUPLE);
+    if (markGeneric)
+      newTypeSymbol->addFlag(FLAG_GENERIC);
 
     tupleModule->block->insertAtTail(new DefExpr(newTypeSymbol));
 

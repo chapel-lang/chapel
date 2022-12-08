@@ -73,9 +73,9 @@ class VisibilityClause final : public AstNode {
 
     switch (limitationKind_) {
       case BRACES:
-      case EXCEPT: assert(numLimitations >= 1); break;
-      case ONLY: assert(numLimitations_ >= 0); break;
-      case NONE: assert(numLimitations_ == 0); break;
+      case EXCEPT: CHPL_ASSERT(numLimitations >= 1); break;
+      case ONLY: CHPL_ASSERT(numLimitations_ >= 0); break;
+      case NONE: CHPL_ASSERT(numLimitations_ == 0); break;
     }
   }
 
@@ -119,7 +119,7 @@ class VisibilityClause final : public AstNode {
   */
   const AstNode* symbol() const {
     auto ret = child(symbolChildNum_);
-    assert(ret->isDot() || ret->isAs() || ret->isIdentifier());
+    CHPL_ASSERT(ret->isDot() || ret->isAs() || ret->isIdentifier());
     return ret;
   }
 
@@ -155,7 +155,7 @@ class VisibilityClause final : public AstNode {
     Identifier or As expressions.
   */
   const AstNode* limitation(int i) const {
-    assert(i >= 0 && i < numLimitations_);
+    CHPL_ASSERT(i >= 0 && i < numLimitations_);
     const AstNode* ast = this->child(limitationChildNum_+i);
     return ast;
   }
@@ -185,7 +185,7 @@ struct stringify<uast::VisibilityClause::LimitationKind> {
         streamOut << "none";
         break;
       default:
-        assert(false && "should not reach this point");
+        CHPL_ASSERT(false && "should not reach this point");
     }
   }
 };

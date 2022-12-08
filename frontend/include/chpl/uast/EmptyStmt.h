@@ -45,7 +45,7 @@ class EmptyStmt final : public AstNode {
 private:
   EmptyStmt()
     : AstNode(asttags::EmptyStmt) {
-    assert(numChildren() == 0);
+    CHPL_ASSERT(numChildren() == 0);
   }
 
     bool contentsMatchInner(const AstNode* other) const override {

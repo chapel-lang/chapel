@@ -735,7 +735,7 @@ struct stringify<resolution::VisibilityStmtKind> {
         streamOut << "import";
         break;
       default:
-        assert(false && "should not reach this point");
+        CHPL_ASSERT(false && "should not reach this point");
     }
   }
 };

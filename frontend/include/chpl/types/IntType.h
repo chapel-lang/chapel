@@ -75,7 +75,7 @@ class IntType final : public PrimitiveType {
       case 64:
         return "int(64)";
       default:
-        assert(false && "int bit width case not handled");
+        CHPL_ASSERT(false && "int bit width case not handled");
         return "int(<unknown>)";
     }
   }

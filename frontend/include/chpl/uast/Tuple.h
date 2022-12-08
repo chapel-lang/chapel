@@ -45,7 +45,7 @@ class Tuple final : public Call {
   Tuple(AstList children)
     : Call(asttags::Tuple, std::move(children),
            /*hasCalledExpression*/ false) {
-    assert(numChildren() >= 1);
+    CHPL_ASSERT(numChildren() >= 1);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

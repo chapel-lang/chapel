@@ -501,7 +501,7 @@ bool compilingWithPrgEnv() {
   return 0 != strcmp(CHPL_TARGET_COMPILER_PRGENV, "none");
 }
 
-std::string runCommand(std::string& command) {
+std::string runCommand(const std::string& command) {
   auto commandOutput = chpl::getCommandOutput(command);
   if (auto err = commandOutput.getError()) {
     USR_FATAL("failed to run '%s', error: %s",
@@ -953,6 +953,15 @@ bool isDirectory(const char* path)
 {
   struct stat stats;
   if (stat(path, &stats) == 0 && (stats.st_mode & S_IFMT) == S_IFDIR)
+    return true;
+
+  return false;
+}
+
+bool pathExists(const char* path)
+{
+  struct stat stats;
+  if (stat(path, &stats) == 0)
     return true;
 
   return false;

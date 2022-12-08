@@ -29,7 +29,7 @@ owned<Catch> Catch::build(Builder* builder, Location loc,
                           owned<Variable> error,
                           owned<Block> body,
                           bool hasParensAroundError) {
-  assert(body.get() != nullptr);
+  CHPL_ASSERT(body.get() != nullptr);
 
   AstList lst;
   int8_t errorChildNum = -1;
@@ -40,7 +40,7 @@ owned<Catch> Catch::build(Builder* builder, Location loc,
     lst.push_back(std::move(error));
   }
 
-  assert(body.get() != nullptr);
+  CHPL_ASSERT(body.get() != nullptr);
   bodyChildNum = lst.size();
   lst.push_back(std::move(body));
 

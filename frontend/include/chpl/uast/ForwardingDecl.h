@@ -66,7 +66,7 @@ private:
                 /*linkageNameChildNum*/ -1
                 ) {
 
-    assert(children_.size() >= 0 && children_.size() <= 2);
+    CHPL_ASSERT(children_.size() >= 0 && children_.size() <= 2);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

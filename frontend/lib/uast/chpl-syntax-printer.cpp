@@ -29,9 +29,9 @@ static const char* kindToString(Decl::Linkage kind) {
   switch (kind) {
     case Decl::Linkage::EXTERN: return "extern";
     case Decl::Linkage::EXPORT: return "export";
-    case Decl::Linkage::DEFAULT_LINKAGE: assert(false);
+    case Decl::Linkage::DEFAULT_LINKAGE: CHPL_ASSERT(false);
   }
-  assert(false);
+  CHPL_ASSERT(false);
   return "";
 }
 
@@ -42,7 +42,7 @@ static const char* kindToString(Function::Kind kind) {
     case Function::Kind::OPERATOR: return "operator";
     case Function::Kind::LAMBDA: return "lambda";
   }
-  assert(false);
+  CHPL_ASSERT(false);
   return "";
 }
 
@@ -50,9 +50,9 @@ static const char* kindToString(Function::Visibility kind) {
   switch (kind) {
     case Function::Visibility::PRIVATE: return "private";
     case Function::Visibility::PUBLIC: return "public";
-    case Function::Visibility::DEFAULT_VISIBILITY: assert(false);
+    case Function::Visibility::DEFAULT_VISIBILITY: CHPL_ASSERT(false);
   }
-  assert(false);
+  CHPL_ASSERT(false);
   return "";
 }
 
@@ -69,7 +69,7 @@ static const char* kindToString(IntentList kind) {
     case IntentList::INOUT: return "inout";
     case IntentList::PARAM: return "param";
     case IntentList::TYPE: return "type";
-    case IntentList::DEFAULT_INTENT: assert(false);
+    case IntentList::DEFAULT_INTENT: CHPL_ASSERT(false);
     default: return "";
   }
   return "";
@@ -79,9 +79,9 @@ static const char* kindToString(Module::Kind kind) {
   switch (kind) {
     case Module::Kind::IMPLICIT: return "";
     case Module::Kind::PROTOTYPE: return "prototype";
-    case Module::Kind::DEFAULT_MODULE_KIND: assert(false);
+    case Module::Kind::DEFAULT_MODULE_KIND: CHPL_ASSERT(false);
   }
-  assert(false);
+  CHPL_ASSERT(false);
   return "";
 }
 
@@ -91,11 +91,11 @@ static const char* kindToString(New::Management kind) {
     case New::Management::OWNED: return "owned";
     case New::Management::SHARED: return "shared";
     case New::Management::UNMANAGED: return "unmanaged";
-    case New::Management::DEFAULT_MANAGEMENT: assert(false);
+    case New::Management::DEFAULT_MANAGEMENT: CHPL_ASSERT(false);
     default:
-      assert(false);
+      CHPL_ASSERT(false);
   }
-  assert(false);
+  CHPL_ASSERT(false);
   return "";
 }
 
@@ -103,8 +103,8 @@ static const char* kindToString(VisibilityClause::LimitationKind kind) {
   switch (kind) {
     case VisibilityClause::LimitationKind::ONLY: return "only";
     case VisibilityClause::LimitationKind::EXCEPT: return "except";
-    case VisibilityClause::LimitationKind::BRACES: assert(false);
-    case VisibilityClause::LimitationKind::NONE: assert(false);
+    case VisibilityClause::LimitationKind::BRACES: CHPL_ASSERT(false);
+    case VisibilityClause::LimitationKind::NONE: CHPL_ASSERT(false);
     default: return "";
   }
 }
@@ -346,7 +346,7 @@ struct ChplSyntaxVisitor {
     // print out the receiver type for secondary methods
     if (node->isMethod() && !node->isPrimaryMethod()) {
       auto typeExpr = node->thisFormal()->typeExpression();
-      assert(typeExpr);
+      CHPL_ASSERT(typeExpr);
 
       if (auto ident = typeExpr->toIdentifier()) {
         ss_ << ident->name().str();
@@ -457,7 +457,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const uast::AstNode* node) {
-    assert(false && "Unhandled uAST node");
+    CHPL_ASSERT(false && "Unhandled uAST node");
   }
 
   void visit(const Array* node) {
@@ -711,7 +711,7 @@ struct ChplSyntaxVisitor {
 
   void visit(const FnCall* node) {
     const AstNode* callee = node->calledExpression();
-    assert(callee);
+    CHPL_ASSERT(callee);
     printAst(callee);
     if (isCalleeReservedWord(callee)) {
       ss_ << " ";
@@ -837,10 +837,10 @@ struct ChplSyntaxVisitor {
     }
 
     if (node->isOverride()) {
-      assert(node->linkage() == Decl::Linkage::DEFAULT_LINKAGE);
+      CHPL_ASSERT(node->linkage() == Decl::Linkage::DEFAULT_LINKAGE);
       ss_ << "override ";
     } else if (node->isInline()) {
-      assert(node->linkage() == Decl::Linkage::DEFAULT_LINKAGE);
+      CHPL_ASSERT(node->linkage() == Decl::Linkage::DEFAULT_LINKAGE);
       ss_ << "inline ";
     }
 
@@ -1027,7 +1027,7 @@ struct ChplSyntaxVisitor {
   }
 
   void printUnaryOp(const OpCall* node) {
-    assert(node->numActuals() == 1);
+    CHPL_ASSERT(node->numActuals() == 1);
     UniqueString unaryOp;
     bool isPostFixBang = false;
     bool isNilable = false;
@@ -1070,7 +1070,7 @@ struct ChplSyntaxVisitor {
   }
 
   void printBinaryOp(const OpCall* node) {
-    assert(node->numActuals() == 2);
+    CHPL_ASSERT(node->numActuals() == 2);
     bool addSpace = wantSpaces(node->op(), printingType_) ||
                     node->op() == USTR("by") ||
                     node->op() == USTR("align") ||
@@ -1291,7 +1291,7 @@ struct ChplSyntaxVisitor {
       interpose(node->limitations(), ", ", "{","}");
     } else if (limit == VisibilityClause::LimitationKind::NONE &&
                node->numLimitations() == 1) {
-      assert(node->limitation(0)->isIdentifier());
+      CHPL_ASSERT(node->limitation(0)->isIdentifier());
       ss_ << ".";
       printAst(node->limitation(0));
     } else {

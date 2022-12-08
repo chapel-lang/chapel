@@ -30,7 +30,7 @@ VisibilityClause::build(Builder* builder, Location loc,
                         owned<AstNode> symbol,
                         LimitationKind limitationKind,
                         AstList limitations) {
-  assert(symbol.get() != nullptr);
+  CHPL_ASSERT(symbol.get() != nullptr);
 
   AstList lst;
   int numLimitations = 0;

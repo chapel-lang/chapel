@@ -92,7 +92,7 @@ class Begin final : public SimpleBlockLike {
   const WithClause* withClause() const {
     if (withClauseChildNum_ < 0) return nullptr;
     auto ret = child(withClauseChildNum_);
-    assert(ret->isWithClause());
+    CHPL_ASSERT(ret->isWithClause());
     return (const WithClause*)ret;
   }
 

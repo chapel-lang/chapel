@@ -96,7 +96,7 @@ class New : public AstNode {
     Returns the type expression of this new expression.
   */
   const AstNode* typeExpression() const {
-    assert(children_.size() > 0);
+    CHPL_ASSERT(children_.size() > 0);
     return children_[0].get();
   }
 

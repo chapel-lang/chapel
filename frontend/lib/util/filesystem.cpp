@@ -208,5 +208,9 @@ std::string getExecutablePath(const char* argv0, void* MainExecAddr) {
   return getMainExecutable(argv0, MainExecAddr);
 }
 
+bool isSameFile(const char* path1, const char* path2) {
+  return llvm::sys::fs::equivalent(path1, path2);
+}
+
 
 } // namespace chpl

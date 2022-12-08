@@ -46,7 +46,7 @@ class Return final : public AstNode {
   Return(AstList children,  int8_t valueChildNum)
     : AstNode(asttags::Return, std::move(children)),
       valueChildNum_(valueChildNum) {
-    assert(valueChildNum_ <= 0);
+    CHPL_ASSERT(valueChildNum_ <= 0);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

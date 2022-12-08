@@ -42,15 +42,15 @@ bool TupleDecl::assertAcceptableTupleDecl() {
         }
 
         if (elt->tag() != firstNonTupleTag) {
-          assert(0 == "cannot mix formal and variable components");
+          CHPL_ASSERT(0 == "cannot mix formal and variable components");
           return false;
         }
       } else {
-        assert(0 == "variable, formal, or tuple decl components only");
+        CHPL_ASSERT(0 == "variable, formal, or tuple decl components only");
         return false;
       }
     } else {
-      assert(elt->isTupleDecl());
+      CHPL_ASSERT(elt->isTupleDecl());
     }
     i++;
   }

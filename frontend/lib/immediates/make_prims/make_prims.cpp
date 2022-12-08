@@ -18,7 +18,6 @@
  * limitations under the License.
  */
 
-#include <cassert>
 #include <cstdarg>
 #include <cstdlib>
 #include <cstdio>

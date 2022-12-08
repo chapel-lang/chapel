@@ -33,7 +33,7 @@ owned<Attributes> Attributes::build(Builder* builder, Location loc,
                                     UniqueString unstableMessage) {
   #ifndef NDEBUG
     for (auto tag : pragmas) {
-      assert(tag >= 0 && tag < NUM_KNOWN_PRAGMAS);
+      CHPL_ASSERT(tag >= 0 && tag < NUM_KNOWN_PRAGMAS);
     }
   #endif
 

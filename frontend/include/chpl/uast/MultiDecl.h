@@ -24,7 +24,6 @@
 #include "chpl/uast/Comment.h"
 #include "chpl/framework/Location.h"
 
-#include <cassert>
 
 namespace chpl {
 namespace uast {
@@ -60,7 +59,7 @@ class MultiDecl final : public Decl {
            linkage,
            /*linkageNameChildNum*/ -1) {
 
-    assert(isAcceptableMultiDecl());
+    CHPL_ASSERT(isAcceptableMultiDecl());
   }
 
   bool isAcceptableMultiDecl();
@@ -110,9 +109,9 @@ class MultiDecl final : public Decl {
    Return the i'th contained VariableDecl or Comment.
    */
   const AstNode* declOrComment(int i) const {
-    assert(i >= 0 && i < numDeclOrComments());
+    CHPL_ASSERT(i >= 0 && i < numDeclOrComments());
     const AstNode* ast = this->child(i + declOrCommentChildNum());
-    assert(ast->isVariable() || ast->isTupleDecl() || ast->isComment());
+    CHPL_ASSERT(ast->isVariable() || ast->isTupleDecl() || ast->isComment());
     return ast;
   }
 

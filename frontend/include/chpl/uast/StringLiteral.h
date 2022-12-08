@@ -53,7 +53,7 @@ class StringLiteral final : public StringLikeLiteral {
     which does not include the quotes.
    */
   UniqueString str() const {
-    assert(value_->isStringParam());
+    CHPL_ASSERT(value_->isStringParam());
     const types::StringParam* p = (const types::StringParam*) value_;
     return p->value();
   }

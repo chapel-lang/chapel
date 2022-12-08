@@ -28,8 +28,8 @@ namespace uast {
 owned<As> As::build(Builder* builder, Location loc,
                     owned<AstNode> symbol,
                     owned<AstNode> rename) {
-  assert(symbol.get() != nullptr);
-  assert(rename.get() != nullptr);
+  CHPL_ASSERT(symbol.get() != nullptr);
+  CHPL_ASSERT(rename.get() != nullptr);
 
   AstList lst;
 

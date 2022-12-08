@@ -38,7 +38,7 @@ class Literal : public AstNode {
   Literal(AstTag tag, const types::Param* value)
     : AstNode(tag), value_(value) {
 
-    assert(value_ != nullptr);
+    CHPL_ASSERT(value_ != nullptr);
   }
 
   bool literalContentsMatchInner(const Literal* other) const {

@@ -131,6 +131,9 @@ void chpl_gpu_impl_on_std_modules_finished_initializing(void) {
   chpl_gpu_device_alloc = true;
 }
 
+void chpl_gpu_get_device_count(int* into) {
+  cudaGetDeviceCount(into);
+}
 
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
   return chpl_gpu_common_is_device_ptr(ptr);

@@ -91,9 +91,11 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_TARGET_CPU_FLAG', INTERNAL),
     ChapelEnv('CHPL_TARGET_BACKEND_CPU', INTERNAL),
     ChapelEnv('CHPL_LOCALE_MODEL', RUNTIME | LAUNCHER | DEFAULT, 'loc'),
-    ChapelEnv('  CHPL_GPU_CODEGEN', RUNTIME | NOPATH),
+    ChapelEnv('  CHPL_GPU_CODEGEN', COMPILER | NOPATH),
     ChapelEnv('  CHPL_GPU_RUNTIME', RUNTIME | NOPATH, 'gpu'),
     ChapelEnv('  CHPL_CUDA_PATH', RUNTIME | NOPATH),
+    ChapelEnv('  CHPL_ROCM_PATH', RUNTIME | NOPATH),
+    ChapelEnv('  CHPL_GPU_ARCH', RUNTIME | NOPATH),
     ChapelEnv('  CHPL_CUDA_LIBDEVICE_PATH', RUNTIME | NOPATH),
     ChapelEnv('  CHPL_GPU_MEM_STRATEGY', RUNTIME | INTERNAL | NOPATH),
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
@@ -188,7 +190,9 @@ def compute_all_values():
     ENV_VALS['CHPL_LOCALE_MODEL'] = chpl_locale_model.get()
     ENV_VALS['  CHPL_GPU_CODEGEN'] = chpl_gpu.get()
     ENV_VALS['  CHPL_GPU_RUNTIME'] = chpl_gpu.get_runtime()
-    ENV_VALS['  CHPL_CUDA_PATH'] = chpl_gpu.get_cuda_path()
+    ENV_VALS['  CHPL_CUDA_PATH'] = chpl_gpu.get_sdk_path("cuda")
+    ENV_VALS['  CHPL_ROCM_PATH'] = chpl_gpu.get_sdk_path("rocm")
+    ENV_VALS['  CHPL_GPU_ARCH'] = chpl_gpu.get_arch()
     ENV_VALS['  CHPL_CUDA_LIBDEVICE_PATH'] = chpl_gpu.get_cuda_libdevice_path()
     ENV_VALS['  CHPL_GPU_MEM_STRATEGY'] = chpl_gpu.get_gpu_mem_strategy()
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
@@ -320,7 +324,7 @@ def filter_tidy(chpl_env):
     llvm = ENV_VALS['CHPL_LLVM']
     locale_model = ENV_VALS['CHPL_LOCALE_MODEL']
 
-    gpu_vars = ('  CHPL_CUDA_PATH',
+    gpu_vars = ('  CHPL_GPU_SDK_PATH',
                 '  CHPL_CUDA_LIBDEVICE_PATH',
                 '  CHPL_GPU_MEM_STRATEGY')
 

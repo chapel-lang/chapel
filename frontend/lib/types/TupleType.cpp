@@ -181,7 +181,7 @@ const TupleType*
 TupleType::getVarArgTuple(Context* context,
                           QualifiedType paramSize,
                           QualifiedType varArgEltType) {
-  assert(!varArgEltType.isUnknownKindOrType());
+  CHPL_ASSERT(!varArgEltType.isUnknownKindOrType());
 
   if (!paramSize.isUnknown()) {
     // Fixed size, we can at least create a star tuple of AnyType
@@ -201,20 +201,20 @@ TupleType::getVarArgTuple(Context* context,
 }
 
 QualifiedType TupleType::elementType(int i) const {
-  assert(isKnownSize_);
-  assert(0 <= i && (size_t) i < subs_.size());
+  CHPL_ASSERT(isKnownSize_);
+  CHPL_ASSERT(0 <= i && (size_t) i < subs_.size());
   // find subs[id]
   auto search = subs_.find(idForTupElt(i));
   if (search != subs_.end()) {
     return search->second;
   } else {
-    assert(false && "ID mismatch in tuple elements");
+    CHPL_ASSERT(false && "ID mismatch in tuple elements");
     return QualifiedType();
   }
 }
 
 QualifiedType TupleType::starType() const {
-  assert(isKnownSize_ == false || isStarTuple_);
+  CHPL_ASSERT(isKnownSize_ == false || isStarTuple_);
   return subs_.begin()->second;
 }
 
