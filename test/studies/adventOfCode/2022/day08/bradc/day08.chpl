@@ -9,7 +9,7 @@ iter readLines() {
 }
 
 const numRows = Lines.size,
-      numCols = Lines[0].size,
+      numCols = Lines.first.size,
       ForestSpace = {0..<numRows, 0..<numCols};
 
 var Forest = [(r,c) in ForestSpace] Lines[r][c]:int;
