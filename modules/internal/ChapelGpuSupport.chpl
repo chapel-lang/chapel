@@ -23,7 +23,7 @@ module ChapelGpuSupport {
 
   extern var chpl_gpu_debug : bool;
 
-  private config const debugGpu = false;
+  config const debugGpu = false;
 
   // by virtue of module initialization:
   chpl_gpu_debug = debugGpu;
