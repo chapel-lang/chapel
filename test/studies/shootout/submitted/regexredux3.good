@@ -1,3 +1,5 @@
+regexredux3.chpl:11: In function 'main':
+regexredux3.chpl:30: warning: 'readbytes' is deprecated; please use 'readBytes' instead
 agggtaaa|tttaccct 1
 [cgt]gggtaaa|tttaccc[acg] 0
 a[act]ggtaaa|tttacc[agt]t 0
