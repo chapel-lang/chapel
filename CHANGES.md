@@ -10,6 +10,7 @@ TODO:
 * move renamings in deprecation section to name changes section
 * TODOs
 * docs/1.29
+* man page
 
 version 1.29.0
 ==============
@@ -159,6 +160,8 @@ Platform-specific Performance Optimizations / Improvements
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
+* made the compiler default to 'jemalloc' on most platforms, improving perf.  
+  (see https://chapel-lang.org/docs/1.29/usingchapel/chplenv.html#chpl-host-mem)
 * reduced compile time and code generated for homogeneous array literals
 
 Memory Improvements
@@ -210,9 +213,11 @@ Portability / Platform-specific Improvements
 
 GPU Computing
 -------------
+* added prototype support for generating and building AMD GPU binary files
 
 Compiler Improvements
 ---------------------
+* introduced a new error-reporting framework supporting improved user messages
 * improved internal error messages to avoid referring to nonexistent line #s
 * improved error-checking for C code within `extern` blocks
 
@@ -297,14 +302,18 @@ Developer-oriented changes: Makefile / Build-time changes
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* added `--detailed-errors` to enable new verbose/helpful error message output
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
 * updated parser errors to use the new 'dyno' error-reporting framework
+* made `--print-passes` group compilation timings into coarser pass groups  
+  (e.g., 'front-end passes')
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
 * improved the directory structure of the 'dyno' source code
+* generally improved integration with the production compiler
 * adjusted the uAST representation for `try` to always include a body `Block`
 * addressed an issue in which parser errors could be issued twice
 * made numerous improvements to 'dyno's scope resolution capabilities:
@@ -313,12 +322,20 @@ Developer-oriented changes: 'dyno' Compiler improvements/changes
   - added support for nested classes and nested procedures
   - added support for `synb` statements
   - fixed problems with `require` statements
+  - added proper support for the `private` keyword
+  - added support for modules being discovered twice through distinct `import`s
+  - fixed "undefined variable" errors when a module is imported multiple times
+  - fixed failures when looking up variables inside renamed modules
+  - added support for scope-resolving interfaces
+  - added support for errors indicating when a module is used as a variable
 * updated 'dyno' errors in scope-resolver to use the new reporting framework
 * made `use` statements transitively private by default, as expected
 * fixed `public use` to not bring in the module's name itself
 * added support for detecting conflicting imported symbol names properly
 * improved scope resolution of `except` lists in 'dyno'
 * added initial support for resolving initializers
+* converted several resolution/type errors to use the new error framework
+* added support for enforcing type query constraints in formal arguments
 * added ability to resolve operator overloads
 * added ability to toggle dyno asserts with `CHPL_DEVELOPER` or `--[no-]devel`
 * made `--ignore-errors` continue compilation after a dyno assertion failure
@@ -336,6 +353,7 @@ Developer-oriented changes: Testing System
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
+* factored code from `chpl2rst.py` into `literate_chapel.py`
 
 Developer-oriented changes: Utilities
 -------------------------------------
