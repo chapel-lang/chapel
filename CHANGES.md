@@ -1,6 +1,9 @@
 Release Changes List
 ====================
 
+TODO:
+* quote 'dyno' or not?
+* check for init capital bullets
 
 version 1.29.0
 ==============
@@ -50,6 +53,14 @@ Name Changes in Libraries
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* deprecated `string`/`bytes` casts to `regex` in favor of `Regex.compile()`  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/Regex.html#Regex.compile)
+* deprecated `sourceVersion` in favor of a new `versionValue` type  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.versionValue)
+* deprecated `createVersion()` in favor of `new versionValue()`  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.createVersion)
+* removed `"version "` prefix when casting a `sourceVersion` to string  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.sourceVersion)
 * deprecated the `_file` type, replacing it with `CTypes.c_FILE`  
   (see https://chapel-lang.org/docs/1.29/modules/standard/CTypes.html#CTypes.c_FILE)
 * removed deprecated `map` operators
@@ -64,6 +75,9 @@ Standard Library Modules
 * modified `file.path` to exclusively return absolute, not relative, paths  
   (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.file.path)
 * removed unused `bool` return values from various `write*()` routines
+* added a new `version` type that can be constructed/modified at run-time  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.version)
+
 
 Package Modules
 ---------------
@@ -151,6 +165,7 @@ Bug Fixes
 
 Bug Fixes for Build Issues
 --------------------------
+* fixed `make install` bug that installed the legacy version of `chpldoc`
 
 Bug Fixes for GPU Computing
 ---------------------------
@@ -201,6 +216,8 @@ Developer-oriented changes: Compiler improvements/changes
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
 * added initial support for resolving initializers
+* added ability to toggle dyno asserts with `CHPL_DEVELOPER` or `--[no-]devel`
+* made `--ignore-errors` continue compilation after a dyno assertion failure
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
