@@ -7,4 +7,4 @@ record myHasher {
 }
 
 var dm = new distributedMap(string, int);
-var dm_me = new distributedMap(int, string, new myHasher());
+var dm_withhasher = new distributedMap(int, string, new myHasher());

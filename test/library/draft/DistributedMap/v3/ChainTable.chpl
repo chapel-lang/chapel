@@ -237,9 +237,16 @@ module ChainTable {
 
         // for each bucket, mark the local entries as deleted, and free the linked list
         proc clear() {
-            for i in 0..this.numBuckets {
+            for i in 0..<this.numBuckets {
                 this.buckets[i].clear();
             }
+        }
+
+        iter items() ref : rawTableEntry(this.keyType, this.valType) {
+            for bIdx in 0..<this.numBuckets do
+                for entry in this.buckets[bIdx]._allEntries() do
+                    if entry.isFull() then
+                        yield entry;
         }
 
         proc __incrementStaticCount() {

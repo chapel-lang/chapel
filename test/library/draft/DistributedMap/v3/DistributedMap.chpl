@@ -29,6 +29,7 @@ module DistributedMap {
         pragma "no doc"
         var localeHasher;
 
+
         // -------------------------------------------
         //  Initializers
         // -------------------------------------------
@@ -92,6 +93,19 @@ module DistributedMap {
             compilerError("unimplemented");
         }
 
+        proc writeThis(fr) throws {
+            for locIdx in this.locDom {
+                on this.targetLocales[locIdx] {
+                    fr.write("[", this.targetLocales[locIdx], ": ");
+                    this.locks[locIdx].lock();
+                    for entry in this.tables[locIdx].items() do
+                        fr.write("{", entry.key, " : ", entry.val, "}, ");
+                    this.locks[locIdx].unlock();
+                    fr.write("], ");
+                }
+            }
+        }
+
         // -------------------------------------------
         //  Reference Accessors
         // -------------------------------------------
@@ -114,20 +128,24 @@ module DistributedMap {
             where isDefaultInitializable(valType)
         {
             const loc = this._localeFor(k);
-            var ret: valType;
+            var bucket_idx, chain_idx: uint(64);
+
             on loc {
                 this.locks[loc.id].lock();
-                const (found, (bucket_idx, chain_idx)) = this.tables[loc.id].getFullSlotFor(k);
+                const (found, foundSlot) = this.tables[loc.id].getFullSlotFor(k);
                 if !found {
-                    var v : this.keyType;
+                    var v : this.valType;
                     const openSlot = this.tables[loc.id].getSlotFor(k);
                     this.tables[loc.id].fillSlot(openSlot, k, v);
-                    ret = this.tables[loc.id].buckets[openSlot[0]][openSlot[1]].val;
+                    bucket_idx = openSlot[0];
+                    chain_idx = openSlot[1];
                 } else {
-                    ret = this.tables[loc.id].buckets[bucket_idx][chain_idx].val;
+                    bucket_idx = foundSlot[0];
+                    chain_idx = foundSlot[1];
                 }
                 this.locks[loc.id].unlock();
             }
+            ref ret = this.tables[loc.id].buckets[bucket_idx][chain_idx].val;
             return ret;
         }
 
@@ -136,7 +154,7 @@ module DistributedMap {
             where shouldReturnRvalueByValue(valType) && !isNonNilableClass(valType)
         {
             const loc = this._localeFor(k);
-            var ret : valType;
+            var ret : this.valType;
             on loc {
                 this.locks[loc.id].lock();
                 const (found, (bucket_idx, chain_idx)) = this.tables[loc.id].getFullSlotFor(k);
@@ -152,14 +170,16 @@ module DistributedMap {
             where !isNonNilableClass(valType)
         {
             const loc = this._localeFor(k);
-            var ret: valType;
+            var bucket_idx, chain_idx: uint(64);
             on loc {
                 this.locks[loc.id].lock();
-                const (found, (bucket_idx, chain_idx)) = this.tables[loc.id].getFullSlotFor(k);
+                const (found, foundSlot) = this.tables[loc.id].getFullSlotFor(k);
                 if !found then boundsCheckHalt("map index " + k:string + " out of bounds");
-                ret = this.tables[loc.id].buckets[bucket_idx][chain_idx].val;
+                bucket_idx = foundSlot[0];
+                chain_idx = foundSlot[1];
                 this.locks[loc.id].unlock();
             }
+            ref ret = this.tables[loc.id].buckets[bucket_idx][chain_idx].val;
             return ret;
         }
 
@@ -309,7 +329,9 @@ module DistributedMap {
         }
         proc this(key: keyType): int {
             const hash = chpl__defaultHashWrapper(key);
-            return hash % this.numLocs;
+            const h = (hash & (log2(this.numLocs) + 1)) % this.numLocs;
+            // writeln("key: ", key, " -> ", hash, " : ", h);
+            return h;
         }
     }
 
