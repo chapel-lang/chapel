@@ -272,6 +272,7 @@ Platform-specific Bug Fixes
 Third-Party Software Changes
 ----------------------------
 * updated GASNet-EX to version 2022.9.0
+* added a configuration option specifying how 'qthreads' gets 'hwloc' toplogy
 
 Developer-oriented changes: Process
 -----------------------------------
@@ -294,10 +295,12 @@ Developer-oriented changes: Module changes
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
+* enabled support for a dedicated core for `comm=ofi` active message handler
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
 * stopped 'chpldoc' sources from contributing to 'chpl's tags/ebrowse data
+* added debugging flags for 'topo' and tasking runtime layers
 * quieted `doxygen` output during docs builds
 
 Developer-oriented changes: Compiler Flags
@@ -343,13 +346,18 @@ Developer-oriented changes: 'dyno' Compiler improvements/changes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* made 'binders' the default 'qthreads' topolgy module
+* started binding 'qthreads' shepherds to specific cores
+* replaced 'sprintf()' uses with 'snprintf()' in sources
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
 * removed a workaround for a problem with Homebrew libc++ based on upstream fix
+* added a check for erroneous OOB information for `CHPL_COMM=ofi`
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* enabled the ability to have a custom environment per test run
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
