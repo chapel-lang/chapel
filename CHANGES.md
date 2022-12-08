@@ -6,6 +6,8 @@ TODO:
 * check for init capital bullets
 * check for 'functions' (-> procedures, routines, methods?)
 * example codes
+* spellcheck
+* move renamings in deprecation section to name changes section
 
 version 1.29.0
 ==============
@@ -60,6 +62,10 @@ Name Changes in Libraries
 -------------------------
 * renamed `opentmp()` to `openTempFile()` in the 'IO' module  
   (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.openTempFile)
+* renamed the `_file` type to `c_FILE` in the 'CTypes' module  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/CTypes.html#CTypes.c_FILE)
+* renamed `sourceVersion` type to `versionValue` in the 'Version' module
+  (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.versionValue)
 
 
 Deprecated / Unstable / Removed Library Features
@@ -68,14 +74,10 @@ Deprecated / Unstable / Removed Library Features
   (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.file.localesForRegion)
 * deprecated `string`/`bytes` casts to `regex` in favor of `Regex.compile()`  
   (see https://chapel-lang.org/docs/1.29/modules/standard/Regex.html#Regex.compile)
-* deprecated `sourceVersion` in favor of a new `versionValue` type  
-  (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.versionValue)
 * deprecated `createVersion()` in favor of `new versionValue()`  
   (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.createVersion)
 * removed `"version "` prefix when casting a `sourceVersion` to string  
   (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.sourceVersion)
-* deprecated the `_file` type, replacing it with `CTypes.c_FILE`  
-  (see https://chapel-lang.org/docs/1.29/modules/standard/CTypes.html#CTypes.c_FILE)
 * removed deprecated support for `start`/`end` arguments from 'IO' routines
 * removed deprecated `iohint` type from the 'IO' module
 * removed deprecated `map` operators
