@@ -233,9 +233,11 @@ Portability / Platform-specific Improvements
 
 GPU Computing
 -------------
-* added prototype support for generating and building AMD GPU binary files
+* added prototype support for generating and building AMD GPU binary files  
+  (see https://chapel-lang.org/docs/1.29/technotes/gpu.html#prototypical-amd-gpu-support) TODO: Is this working?
 * added a `gpuClock()` procedure to time kernel codes
 * added a `debugGPU` config constant rather than tying behavior to `--verbose`
+* made calls to `extern` routines ineligible for GPU execution
 * marked 'GPU'/'GPUDiagnostics' modules as unstable (due to still being new))
 
 Compiler Improvements
@@ -282,6 +284,7 @@ Bug Fixes for Build Issues
 
 Bug Fixes for GPU Computing
 ---------------------------
+* fixed some compiler bugs when compiling non-GPU code w/ the GPU locale model
 
 Bug Fixes for Libraries
 -----------------------
