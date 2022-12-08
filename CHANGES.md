@@ -44,7 +44,7 @@ Semantic Changes / Changes to the Chapel Language
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
-* deprecated `.alignedLow`/`...High` on ranges and domains (use `.low`/`.high`)
+* deprecated `.alignedLow`/`High` on ranges and domains (use `.low`/`.high`)
 * deprecated non-functional support for the `%=` operator on `real` values
 
 New Features
@@ -82,6 +82,12 @@ Name Changes in Libraries
   (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.fileReader)
 * renamed `opentmp()` to `openTempFile()` in the 'IO' module  
   (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.openTempFile)
+* renamed `FileSystem.isLink()` to `FileSystem.isSymLink()`  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/FileSystem.html#FileSystem.isSymlink)
+* renamed several 'FileSystem' module symbols to follow naming conventions
+* renamed the `Timer` type to `stopwatch` in the 'Time' module  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/Time.html#Time.stopwatch)
+* renamed several 'Time' module symbols to follow naming conventions
 * renamed the `_file` type to `c_FILE` in the 'CTypes' module  
   (see https://chapel-lang.org/docs/1.29/modules/standard/CTypes.html#CTypes.c_FILE)
 * renamed `sourceVersion` type to `versionValue` in the 'Version' module
@@ -95,12 +101,15 @@ Deprecated / Unstable / Removed Library Features
 * deprecated `unicodeSupported` from the 'IO' module (always returned `true`)
 * deprecated `string`/`bytes` casts to `regex` in favor of `Regex.compile()`  
   (see https://chapel-lang.org/docs/1.29/modules/standard/Regex.html#Regex.compile)
+* deprecated `copyMode()`, `getMode()`, and `chmod()` from 'FileSystem'
 * deprecated `createVersion()` in favor of `new versionValue()`  
   (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.createVersion)
 * removed `"version "` prefix when casting a `sourceVersion` to string  
   (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.sourceVersion)
 * deprecated the 'SysBasic' module
 * marked `iostringstyle`, `iostringformat` as unstable in the 'IO' module
+* removed the deprecated 'SysError' module and some related deprecated symbols
+* removed the deprecated 'DateTime' module
 * removed deprecated support for `start`/`end` arguments from 'IO' routines
 * removed deprecated `iohint` type from the 'IO' module
 * removed deprecated `map` operators
@@ -115,6 +124,9 @@ Standard Library Modules
 * modified `file.path` to exclusively return absolute, not relative, paths  
   (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.file.path)
 * removed unused `bool` return values from various `write*()` routines
+* added new `.reset()` and `.restart()` methods to the `stopwatch` type  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/Time.html#Time.stopwatch.reset  
+   and https://chapel-lang.org/docs/1.29/modules/standard/Time.html#Time.stopwatch.restart)
 * added a new `version` type that can be constructed/modified at run-time  
   (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.version)
 
@@ -214,11 +226,13 @@ Launchers
 Error Messages / Semantic Checks
 --------------------------------
 * made several minor improvements to parser error messages
+* added a warning when inheriting from a deprecated class
 
 Bug Fixes
 ---------
-* fixed an internal error for `forall` statements containing conditionals
 * params storing infinity or NaN will now convert to a `real` of any width  
+* fixed an internal error for `forall` statements containing conditionals
+* fixed a bug involving virtual method calls with `ref` arguments
 * improved the deprecation message for `init=` on `sync` variables
 * fixed a bug when gathering types with method calls in a searched scope TODO
 
