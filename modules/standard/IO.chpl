@@ -2435,7 +2435,7 @@ Used to represent a constant string we want to read or write.
 When writing, the ``ioLiteral`` is output without any quoting or escaping.
 
 When reading, the ``ioLiteral`` must be matched exactly - or else the read call
-will return an error with code :data:`EFORMAT`.
+will return an error for incorrectly formatted input
 
 */
 record ioLiteral {
