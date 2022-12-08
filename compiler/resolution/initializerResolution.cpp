@@ -170,7 +170,18 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
     body->insertAtTail(new CallExpr(PRIM_MOVE, initTemp, callChplHereAlloc(type)));
     body->insertAtTail(new CallExpr(PRIM_SETCID, initTemp));
   }
-  body->insertAtTail(innerInit);
+
+  if (initFn->throwsError()) {
+    fn->throwsErrorInit();
+    // TODO: insert try/catch around the init call
+    body->insertAtTail(innerInit);
+    // TODO: clean up allocated memory?
+    //body->insertAtTail(callChplHereFree(initTemp));
+    // TODO: rethrow error
+
+  } else {
+    body->insertAtTail(innerInit);
+  }
 
   if (type->hasPostInitializer() == true) {
     body->insertAtTail(new CallExpr("postinit", gMethodToken, initTemp));
