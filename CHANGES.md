@@ -4,6 +4,8 @@ Release Changes List
 TODO:
 * quote 'dyno' or not?
 * check for init capital bullets
+* check for 'functions' (-> procedures, routines, methods?)
+* example codes
 
 version 1.29.0
 ==============
@@ -47,12 +49,23 @@ Namespace Changes
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
+* added flags to make 'IO' region arguments inclusive of their bounds  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.useNewSeekRegionBounds,  
+   https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.useNewOpenReaderRegionBounds,  
+   https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.useNewFileReaderRegionBounds,  
+  https://chapel-lang.org/docs/main/modules/standard/IO.html#IO.useNewLinesRegionBounds,  
+  and https://chapel-lang.org/docs/main/modules/standard/IO.html#IO.useNewFileWriterRegionBounds)
 
 Name Changes in Libraries
 -------------------------
+* renamed `opentmp()` to `openTempFile()` in the 'IO' module  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.openTempFile)
+
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* deprecated 'file.localesForRegion()' in the 'IO' module
+  (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.file.localesForRegion)
 * deprecated `string`/`bytes` casts to `regex` in favor of `Regex.compile()`  
   (see https://chapel-lang.org/docs/1.29/modules/standard/Regex.html#Regex.compile)
 * deprecated `sourceVersion` in favor of a new `versionValue` type  
@@ -63,6 +76,8 @@ Deprecated / Unstable / Removed Library Features
   (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.sourceVersion)
 * deprecated the `_file` type, replacing it with `CTypes.c_FILE`  
   (see https://chapel-lang.org/docs/1.29/modules/standard/CTypes.html#CTypes.c_FILE)
+* removed deprecated support for `start`/`end` arguments from 'IO' routines
+* removed deprecated `iohint` type from the 'IO' module
 * removed deprecated `map` operators
 
 Standard Library Modules
@@ -112,8 +127,16 @@ Documentation
 * merged the `owned` and `shared` API docs into the language specification  
   (see https://chapel-lang.org/docs/1.29/language/spec/classes.html#owned-objects  
    and https://chapel-lang.org/docs/1.29/language/spec/classes.html#shared-objects)
+* clarified the documentation of 'AutoMath.round()'
+  (see https://chapel-lang.org/docs/1.29/modules/standard/AutoMath.html#AutoMath.round)
+* added more thrown `SystemError` subclasses to 'IO' function documentation  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.open,  
+   https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.openreader,  
+   and https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.openwriter)
 * added description of `EofError` cases to `fileWriter.write/ln` docs  
   (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.channel.write)
+* added explicit return types to some 'BigInteger' operators
+  (https://chapel-lang.org/docs/1.29/modules/standard/BigInteger.html)
 * moved Mason documentation to 'Tools' section  
   (see https://chapel-lang.org/docs/1.29/tools/mason/mason.html)
 * fixed broken external hyperlinks in 'BLAS' documentation  
@@ -126,6 +149,8 @@ Syntax Highlighting
 
 Example Codes
 -------------
+* improved uses of 'IO' functions in the 'fileIO' primer
+  (see https://chapel-lang.org/docs/1.29/primers/fileIO.html)
 
 Build System Improvements
 -------------------------
@@ -159,6 +184,7 @@ Error Messages / Semantic Checks
 Bug Fixes
 ---------
 * fixed an internal error for `forall` statements containing conditionals
+* improved the deprecation message for `init=` on `sync` variables
 
 Bug Fixes for Build Issues
 --------------------------
@@ -192,6 +218,7 @@ Developer-oriented changes: Documentation
   (see https://chapel-lang.org/docs/1.29/developer/bestPractices/StandardModuleStyle.html#pascalcase-and-camelcase)
 * removed repeated `https://chapel-lang.org/docs/` refs in docs-building tips
   (see https://chapel-lang.org/docs/1.29/developer/bestPractices/buildingdocs.html)
+* updated documentation for `tmbundle` updates to use supported tools
 
 Developer-oriented changes: Naming Changes
 ------------------------------------------
