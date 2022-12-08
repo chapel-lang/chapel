@@ -5256,7 +5256,7 @@ proc _channel.writebits(v:integral, nbits:integral) throws {
    :arg ptr: a :class:`~CTypes.c_ptr` to some valid memory
    :arg numBytes: the number of bytes to write
 
-   :throws SystemError: Thrown if an error occured while writing to the ``fileWriter``
+   :throws SystemError: Thrown if an error occurred while writing to the ``fileWriter``
 */
 proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
 {
@@ -5283,7 +5283,7 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
    :arg ptr: a typeless :type:`~CTypes.c_void_ptr` to some valid memory
    :arg numBytes: the number of bytes to write
 
-   :throws SystemError: Thrown if an error occured while writing to the ``fileWriter``
+   :throws SystemError: Thrown if an error occurred while writing to the ``fileWriter``
 */
 proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
   var e:errorCode = 0,
