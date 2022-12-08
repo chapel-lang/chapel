@@ -130,7 +130,7 @@ code will target compute capability 6.0 (specifically by passing
 ``--cuda-gpu-arch=sm_60`` when invoking clang). If you would like to target a
 different compute capability (necessary for example, when targeting Tesla K20
 GPUs) you can pass ``--gpu-arch`` to ``chpl`` and specify a different value
-there.  This may also be set using the ``CHPL_CUDA_ARCH`` environment variable.
+there.  This may also be set using the ``CHPL_GPU_ARCH`` environment variable.
 
 If you would like to view debugging information you can pass ``--verbose`` to
 your generated executable. This output will show the invocation of CUDA kernel
@@ -145,8 +145,8 @@ Because of the early nature of the GPU support project there are a number of
 limitations. We provide a (non exhaustive) list of these limitations in this
 section; many of them will be addressed in upcoming editions.
 
-* We currently only target NVIDIA GPUs (although we intend to support AMD
-  GPUs in a future release).
+* We currently only target NVIDIA GPUs (although we are working on adding
+  support for AMD GPUs; see the section under `Prototypical AMD GPU Support`_).
 
 * ``LLVM`` must be used as Chapel's backend compiler (i.e.
   ``CHPL_LLVM`` must be set to ``system`` or ``bundled``). For more information
@@ -275,3 +275,27 @@ One limitation with memory access in this mode is that we do not support direct
 reads or writes from the host into individual elements of array data allocated
 on the GPU (e.g.  ``use(A[i])`` or ``A[i] = ...``). Array data accessed "as a
 whole" (e.g. ``writeln(A)``) will work, however.
+
+Prototypical AMD GPU Support
+----------------------------
+
+We are working on adding AMD GPU support. A very early stage prototype
+is currently available in the compiler. It works in a similar manner to
+the NVidia GPU implementation: the Chapel compiler generates AMD HSA binary files and bundles
+them into the resulting executable. Currently, there is no runtime implementation
+that executes the generated kernels; however, ``extern C``
+code can be used to invoke the HIP API and manually launch a kernel. Furthermore,
+only procedures marked with ``pragma "codegen for GPU"`` are converted into
+kernels. See |extern_kernel_launch|_ for an example this in action.
+
+.. |extern_kernel_launch| replace:: ``test/gpu/native/amd/extern_kernel_launch.chpl``
+.. _extern_kernel_launch: https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/amd/extern_kernel_launch.chpl
+
+To try the AMD GPU support prototype, the process is generally the same as that
+found in `Setup and Compilation`_. Instead of configuring the path to the CUDA
+SDK, you will need to set the ``CHPL_ROCM_PATH`` to the location of the ROCm SDK
+on your system. Furthermore, you will need to adjust the ``CHPL_GPU_CODEGEN``
+environment variable to ``rocm``. The ``CHPL_GPU_ARCH`` environment variable
+(or the ``--gpu-arch`` compiler flag) can be used to select the GPU architecture;
+the table in `LLVM's AMD documentation <https://llvm.org/docs/AMDGPUUsage.html#processors>`_
+is useful to map GPUs to their architecture.
