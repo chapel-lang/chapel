@@ -30,11 +30,14 @@ New Features
 ------------
 * added an experimental `weakPointer` type and module for use with `shared`  
   (see https://chapel-lang.org/docs/1.29/builtins/WeakPointer.html)
+* added new prototype support for first-class procedure types/values
+  (see TODO)
 
 Feature Improvements
 --------------------
 * improved type inference for array literals to consider all elements' types  
   (see https://chapel-lang.org/docs/1.29/language/spec/arrays.html#rectangular-array-literals)
+* added support for `throw`ing errors from legacy first-class functions
 
 Namespace Changes
 -----------------
@@ -125,6 +128,7 @@ GPU Computing
 Compiler Improvements
 ---------------------
 * improved internal error messages to avoid referring to nonexistent line #s
+* improved error-checking for C code within `extern` blocks
 
 Compiler Flags
 --------------
@@ -143,6 +147,7 @@ Error Messages / Semantic Checks
 
 Bug Fixes
 ---------
+* fixed an internal error for `forall` statements containing conditionals
 
 Bug Fixes for Build Issues
 --------------------------
@@ -195,6 +200,7 @@ Developer-oriented changes: Compiler improvements/changes
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
+* added initial support for resolving initializers
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
