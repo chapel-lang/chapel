@@ -11,6 +11,7 @@ TODO:
 * TODOs
 * docs/1.29
 * man page
+* no accidental changes prior to 1.29.0
 
 version 1.29.0
 ==============
@@ -49,6 +50,12 @@ Deprecated / Unstable / Removed Language Features
 * deprecated `.alignedLow`/`High` on ranges and domains (use `.low`/`.high`)
 * deprecated support for `.sorted()` and `.reverse()` on arrays
 * deprecated non-functional support for the `%=` operator on `real` values
+* removed deprecated operators on rectangular domains: `|`, `&`, `^`
+* removed deprecated queries `isRectangularDom()`, `isAssociativeDom()`, etc.
+* removed deprecated formals in domain methods, `.contains()`, `.add()`, etc.
+* removed deprecated domain methods `.isSuper()`, `.isSubset()`
+* removed deprecated formals in `.find()`, `.split()` on `bytes`, strings, etc.
+* removed deprecated methods `.search()`/`.match[es]()` on `string`/`bytes`
 * removed support for the deprecated `<~>` operator
 
 New Features
@@ -64,6 +71,8 @@ Feature Improvements
   (see https://chapel-lang.org/docs/1.29/language/spec/arrays.html#rectangular-array-literals)
 * improved domain methods like `expand()` to accept any integer width  
   (see https://chapel-lang.org/docs/1.29/language/spec/domains.html#ChapelDomain.expand)
+* improved support for routines with generic declared return types
+* improved support for concrete procedure-scoped enums
 * improved how atomic types are printed  
   (e.g., `atomic bool` rather than `AtomicT(bool)`)
 * added support for `throw`ing errors from legacy first-class functions
@@ -120,6 +129,11 @@ Deprecated / Unstable / Removed Library Features
 * removed deprecated support for `start`/`end` arguments from 'IO' routines
 * removed `tryGetPath()`, `unlink()`, and `getchunk()` from 'IO'
 * removed deprecated `iohint` type from the 'IO' module
+* removed deprecated formals in channel methods `.search()`, `.match()`, etc.
+* removed support for deprecated formals in `regex.compile()`
+* removed deprecated class `BadRegexpError`
+* removed deprecated fields `.offset`, `.size` in `regexMatch`
+* removed deprecated `.indexOf()`, `match()` methods on `list`
 * removed deprecated `map` operators
 
 Standard Library Modules
@@ -252,9 +266,12 @@ Error Messages / Semantic Checks
 
 Bug Fixes
 ---------
+* fixed a bug regarding to remote accesses within `export` procedures
 * params storing infinity or NaN will now convert to a `real` of any width  
 * fixed an internal error for `forall` statements containing conditionals
+* tuples containing generic types now properly have a generic type
 * fixed a bug involving virtual method calls with `ref` arguments
+* fixed a bug involving virtual method calls with `ref` return intents
 * improved the deprecation message for `init=` on `sync` variables
 
 Bug Fixes for Build Issues
@@ -269,6 +286,8 @@ Bug Fixes for Libraries
 -----------------------
 * fixed a bug that could cause `readLine()` to terminate strings incorrectly
 * fixed a bug in which argument-less `readLine()` calls would not compile
+* fixed a bug with respect to `.matches()` for `regex`/`channel` on empty input
+* unified behavior of `.matches()` on `channel`/`regex` for empty string regex
 * fixed a bug in 'UnitTest' regarding string comparisons
 
 Bug Fixes for Tools
