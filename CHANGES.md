@@ -9,6 +9,7 @@ TODO:
 * spellcheck
 * move renamings in deprecation section to name changes section
 * TODOs
+* docs/1.29
 
 version 1.29.0
 ==============
@@ -22,6 +23,10 @@ Packaging / Configuration Changes
 ---------------------------------
 * made our 'Dockerfile' use the current source rather than a specific release  
   (see https://hub.docker.com/r/chapel/chapel)
+* LLVM 14 is now required when using the LLVM back-end on a Mac OS X  
+  (see https://chapel-lang.org/docs/1.29/usingchapel/prereqs.html)
+* doxygen 1.8.17 is now required to make the complete docs from source  
+  (see https://chapel-lang.org/docs/1.29/usingchapel/prereqs.html)
 
 Syntactic / Naming Changes
 --------------------------
@@ -32,6 +37,10 @@ Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
 * zippered for-loops led by unbounded ranges are now considered infinite  
   (see https://chapel-lang.org/docs/1.29/language/spec/ranges.html#iterating-over-unbounded-ranges)
+* untyped formals are now preferred to those requiring implicit conversions  
+  (see https://chapel-lang.org/docs/1.29/language/spec/procedures.html#better-argument-mapping)
+* unary negation of `uint` now results in a compilation error for all widths  
+  (see https://chapel-lang.org/docs/1.29/language/spec/expressions.html#unary-minus-operators)
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
@@ -49,6 +58,8 @@ Feature Improvements
 --------------------
 * improved type inference for array literals to consider all elements' types  
   (see https://chapel-lang.org/docs/1.29/language/spec/arrays.html#rectangular-array-literals)
+* improved domain methods like `expand()` to accept any integer width  
+  (see https://chapel-lang.org/docs/1.29/language/spec/domains.html#ChapelDomain.expand)
 * added support for `throw`ing errors from legacy first-class functions
 
 Namespace Changes
@@ -67,6 +78,8 @@ Changes / Feature Improvements in Libraries
 
 Name Changes in Libraries
 -------------------------
+* split the `channel` type into separate `fileReader` and `fileWriter` types  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.fileReader)
 * renamed `opentmp()` to `openTempFile()` in the 'IO' module  
   (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.openTempFile)
 * renamed the `_file` type to `c_FILE` in the 'CTypes' module  
@@ -117,6 +130,7 @@ Tool Improvements
 -----------------
 * updated `--quiet` flag for `mason run` to hide `stderr` output
 * updated `c2chapel` to reflect `c_`-prefixed renamings of `ssize_t`/`size_t`
+* removed the legacy version of 'chpldoc' and the `--legacy` flag
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -133,6 +147,8 @@ Memory Improvements
 
 Documentation
 -------------
+* updated the sample installation commands in `prereqs.rst`  
+  (see https://chapel-lang.org/docs/1.29/usingchapel/prereqs.html)
 * improved the spec's rationale for, and presentation of, abstract intents  
   (see https://chapel-lang.org/docs/1.29/language/spec/procedures.html#abstract-intents)
 * unified spec to use 'zippered iteration' rather than 'zipper iteration'
@@ -171,6 +187,7 @@ Build System Improvements
 
 Portability / Platform-specific Improvements
 --------------------------------------------
+* expanded the set of target archicture modules recognized on HPE Cray systems
 
 GPU Computing
 -------------
@@ -182,6 +199,8 @@ Compiler Improvements
 
 Compiler Flags
 --------------
+* added a flag to show the generated assembly for a given Chapel routine
+  (see https://chapel-lang.org/docs/1.29/technotes/llvm.html#inspecting-the-generated-code)
 
 Generated Executable Flags
 --------------------------
@@ -199,6 +218,7 @@ Error Messages / Semantic Checks
 Bug Fixes
 ---------
 * fixed an internal error for `forall` statements containing conditionals
+* params storing infinity or NaN will now convert to a `real` of any width  
 * improved the deprecation message for `init=` on `sync` variables
 * fixed a bug when gathering types with method calls in a searched scope TODO
 
@@ -221,6 +241,7 @@ Bug Fixes for Tools
 
 Platform-specific Bug Fixes
 ---------------------------
+* added a `void` argument to some C routines to fix compilation warnings
 
 Third-Party Software Changes
 ----------------------------
@@ -230,6 +251,8 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* added more details to the style guide for standard library modules  
+  (see https://chapel-lang.org/docs/developer/bestPractices/StandardModuleStyle.html)
 * created a list of exceptions to the style guide's capitalization rules
   (see https://chapel-lang.org/docs/1.29/developer/bestPractices/StandardModuleStyle.html#pascalcase-and-camelcase)
 * removed repeated `https://chapel-lang.org/docs/` refs in docs-building tips
@@ -248,6 +271,7 @@ Developer-oriented changes: Performance improvements
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
 * stopped 'chpldoc' sources from contributing to 'chpl's tags/ebrowse data
+* quieted `doxygen` output during docs builds
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -258,6 +282,8 @@ Developer-oriented changes: Compiler improvements/changes
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
+* improved the directory structure of the 'dyno' source code
+* adjusted the uAST representation for `try` to always include a body `Block`
 * addressed an issue in which parser errors could be issued twice
 * updated 'dyno' errors in scope-resolver to use the new reporting framework
 * made `use` statements transitively private by default, as expected
@@ -268,12 +294,14 @@ Developer-oriented changes: 'dyno' Compiler improvements/changes
 * added ability to resolve operator overloads
 * added ability to toggle dyno asserts with `CHPL_DEVELOPER` or `--[no-]devel`
 * made `--ignore-errors` continue compilation after a dyno assertion failure
+* implemented draft versions of split initialization and copy elision analysis
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
+* removed a workaround for a problem with Homebrew libc++ based on upstream fix
 
 Developer-oriented changes: Testing System
 ------------------------------------------
