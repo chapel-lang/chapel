@@ -195,9 +195,9 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
     ResolvedExpression& opR = rv.byAst(ast);
     resolver.handleResolvedAssociatedCall(opR, ast, ci, c);
   } else {
-    // if it's move initialization, check that the types are compatable
+    // if it's move initialization, check that the types are compatible
     if (!canPass(context, rhsType, lhsType).passes()) {
-      context->error(ast, "types not compatable for move-init");
+      context->error(ast, "types not compatible for move-init");
     }
   }
 }
