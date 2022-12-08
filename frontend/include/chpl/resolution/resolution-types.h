@@ -411,7 +411,7 @@ class CallInfo {
       This is a helper function for CallInfo::create that is sometimes
       useful to call separately.
 
-      Sets 'actuals' and 'hasQuesionArg'.
+      Sets 'actuals' and 'hasQuestionArg'.
 
       If actualIds is not 'nullptr', then the toID value of each actual is
       pushed to that array.
