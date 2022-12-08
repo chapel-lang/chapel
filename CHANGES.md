@@ -158,6 +158,7 @@ Performance Optimizations / Improvements
 ----------------------------------------
 * optimized the creation of distributed domains and arrays
 * optimized the flushing performed in the 'CopyAggregation' module
+* added prototype support for dedicating a core for AM handling with 'comm=ofi'
 
 Platform-specific Performance Optimizations / Improvements
 ----------------------------------------------------------
@@ -238,6 +239,8 @@ Generated Executable Flags
 
 Runtime Library Changes
 -----------------------
+* made 'binders' the default 'qthreads' topolgy module
+* started binding 'qthreads' shepherds to specific cores
 
 Launchers
 ---------
@@ -302,7 +305,6 @@ Developer-oriented changes: Module changes
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
-* enabled support for a dedicated core for `comm=ofi` active message handler
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
@@ -353,8 +355,6 @@ Developer-oriented changes: 'dyno' Compiler improvements/changes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
-* made 'binders' the default 'qthreads' topolgy module
-* started binding 'qthreads' shepherds to specific cores
 * replaced 'sprintf()' uses with 'snprintf()' in sources
 
 Developer-oriented changes: Platform-specific bug fixes
