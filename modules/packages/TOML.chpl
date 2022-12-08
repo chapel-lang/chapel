@@ -88,7 +88,7 @@ Use the following code in chapel.
 proc parseToml(input: file) : shared Toml {
   var tomlStr: string;
   var tomlFile = input.reader();
-  tomlFile.readString(tomlStr);
+  tomlFile.readAll(tomlStr);
   tomlFile.close();
   return parseToml(tomlStr);
 }
@@ -97,7 +97,7 @@ proc parseToml(input: file) : shared Toml {
 */
 proc parseToml(input: fileReader) : shared Toml {
   var tomlStr: string;
-  input.readString(tomlStr);
+  input.readAll(tomlStr);
   return parseToml(tomlStr);
 }
 
