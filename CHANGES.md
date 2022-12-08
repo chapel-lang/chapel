@@ -60,6 +60,8 @@ Feature Improvements
   (see https://chapel-lang.org/docs/1.29/language/spec/arrays.html#rectangular-array-literals)
 * improved domain methods like `expand()` to accept any integer width  
   (see https://chapel-lang.org/docs/1.29/language/spec/domains.html#ChapelDomain.expand)
+* improved how atomic types are printed  
+  (e.g., `atomic bool` rather than `AtomicT(bool)`)
 * added support for `throw`ing errors from legacy first-class functions
 
 Namespace Changes
@@ -130,11 +132,13 @@ Standard Library Modules
    and https://chapel-lang.org/docs/1.29/modules/standard/Time.html#Time.stopwatch.restart)
 * added a new `version` type that can be constructed/modified at run-time  
   (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.version)
+* 'CommDiagnostics' no longer counts communications for tracking remote tasks
 
 
 Package Modules
 ---------------
 * improved support for matrices made of het. array literals in 'LinearAlgebra'
+* optimized the flushing performed in the 'CopyAggregation' module
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -147,6 +151,8 @@ Tool Improvements
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* optimized the creation of distributed domains and arrays
+* optimized the flushing performed in the 'CopyAggregation' module
 
 Platform-specific Performance Optimizations / Improvements
 ----------------------------------------------------------
@@ -239,6 +245,7 @@ Bug Fixes
 Bug Fixes for Build Issues
 --------------------------
 * fixed `make install` bug that installed the legacy version of `chpldoc`
+* fixed support for building with `gmake` version 4.4
 
 Bug Fixes for GPU Computing
 ---------------------------
@@ -259,6 +266,7 @@ Platform-specific Bug Fixes
 
 Third-Party Software Changes
 ----------------------------
+* updated GASNet-EX to version 2022.9.0
 
 Developer-oriented changes: Process
 -----------------------------------
