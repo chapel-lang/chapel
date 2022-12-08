@@ -113,7 +113,8 @@ Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
 * deprecated 'file.localesForRegion()' in the 'IO' module
   (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.file.localesForRegion)
-* deprecated `unicodeSupported` from 'IO' because it always returned `true`
+* deprecated `unicodeSupported` from 'IO' because it always returned `true`  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.unicodeSupported)
 * deprecated `string`/`bytes` casts to `regex` in favor of `Regex.compile()`  
   (see https://chapel-lang.org/docs/1.29/modules/standard/Regex.html#Regex.compile)
 * deprecated `copyMode()`, `getMode()`, and `chmod()` from 'FileSystem'
