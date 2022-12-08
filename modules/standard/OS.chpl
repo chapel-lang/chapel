@@ -1311,7 +1311,7 @@ module OS {
 
   /*
      :class:`EofError` is the subclass of :class:`IoError` corresponding to
-     :const:`IO.EEOF`.
+     encountering end-of-file.
   */
   class EofError : IoError {
     proc init(details: string = "", err: errorCode = EEOF:errorCode) {
@@ -1321,7 +1321,8 @@ module OS {
 
   /*
      :class:`UnexpectedEofError` is the subclass of :class:`IoError`
-     corresponding to :const:`IO.ESHORT`.
+     corresponding to encountering end-of-file before the requested amount of
+     input could be read.
   */
   class UnexpectedEofError : IoError {
     proc init(details: string = "", err: errorCode = ESHORT:errorCode) {
@@ -1331,7 +1332,7 @@ module OS {
 
   /*
      :class:`BadFormatError` is the subclass of :class:`IoError` corresponding
-     to :const:`IO.EFORMAT`.
+     to incorrectly-formatted input.
   */
   class BadFormatError : IoError {
     proc init(details: string = "", err: errorCode = EFORMAT:errorCode) {
