@@ -21,8 +21,7 @@ Highlights (see subsequent sections for further details)
 
 Packaging / Configuration Changes
 ---------------------------------
-* made our 'Dockerfile' use the current source rather than a specific release  
-  (see https://hub.docker.com/r/chapel/chapel)
+* made our 'Dockerfile' use the current source rather than a specific release
 * LLVM 14 is now required when using the LLVM back-end on a Mac OS X  
   (see https://chapel-lang.org/docs/1.29/usingchapel/prereqs.html)
 * doxygen 1.8.17 is now required to make the compiler developer documentation  
@@ -65,8 +64,6 @@ Feature Improvements
 
 Namespace Changes
 -----------------
-* moved `EEOF`, `ESHORT`, `EFORMAT` to the 'IO' module  
-  (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.EEOF)
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
@@ -101,7 +98,7 @@ Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
 * deprecated 'file.localesForRegion()' in the 'IO' module
   (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.file.localesForRegion)
-* deprecated `unicodeSupported` from the 'IO' module (always returned `true`)
+* deprecated `unicodeSupported` from 'IO' because it always returned `true`
 * deprecated `string`/`bytes` casts to `regex` in favor of `Regex.compile()`  
   (see https://chapel-lang.org/docs/1.29/modules/standard/Regex.html#Regex.compile)
 * deprecated `copyMode()`, `getMode()`, and `chmod()` from 'FileSystem'
@@ -109,7 +106,7 @@ Deprecated / Unstable / Removed Library Features
   (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.createVersion)
 * removed `"version "` prefix when casting a `sourceVersion` to string  
   (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.sourceVersion)
-* deprecated the 'SysBasic' module
+* deprecated the 'SysBasic' module including `EEOF`, `ESHORT`, `EFORMAT`
 * marked `iostringstyle`, `iostringformat` as unstable in the 'IO' module
 * removed the deprecated 'SysError' module and some related deprecated symbols
 * removed the deprecated 'DateTime' module
@@ -238,7 +235,6 @@ Bug Fixes
 * fixed an internal error for `forall` statements containing conditionals
 * fixed a bug involving virtual method calls with `ref` arguments
 * improved the deprecation message for `init=` on `sync` variables
-* fixed a bug when gathering types with method calls in a searched scope TODO
 
 Bug Fixes for Build Issues
 --------------------------
