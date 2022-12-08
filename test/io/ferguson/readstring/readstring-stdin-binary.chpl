@@ -7,10 +7,6 @@ var style = stdin._styleInternal();
 style.binary = 1;
 stdin._set_styleInternal(style);
 
-// read 10 bytes
-stdin.readString(str, 10);
-writeln("Read\n", str);
-
-// read the rest of the file in
-stdin.readString(str);
+// read 21 bytes
+stdin.readString(str, 21);
 writeln("Read\n", str);

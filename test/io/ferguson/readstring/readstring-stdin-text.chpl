@@ -2,12 +2,6 @@ use IO;
 
 var str:string;
 
-// read 10 characters
-stdin.readString(str, 10);
-
-writeln("Read\n", str);
-
-// read the rest of the file in
-stdin.readString(str);
-
+// read 21 characters
+stdin.readString(str, 21);
 writeln("Read\n", str);

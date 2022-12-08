@@ -15,7 +15,7 @@ proc main() {
   {
     var r = f.reader();
     var contents : string;
-    r.readString(contents);
+    r.readAll(contents);
     writeln("Wrote:");
     writeln("==========");
     writeln(contents.strip());
