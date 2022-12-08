@@ -6195,7 +6195,7 @@ proc readln(type t ...?numTypes) throws {
 /*
    :returns: `true` if this version of the Chapel runtime supports UTF-8 output.
  */
-deprecated "unicodeSupported is deprecated"
+deprecated "unicodeSupported is deprecated due to always returning true"
 proc unicodeSupported():bool {
   return true;
 }
