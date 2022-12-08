@@ -44,7 +44,10 @@ Semantic Changes / Changes to the Chapel Language
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* deprecated support for operator-based subtype comparisons
+  (e.g., `type1 <= type2`)
 * deprecated `.alignedLow`/`High` on ranges and domains (use `.low`/`.high`)
+* deprecated support for `.sorted()` and `.reverse()` on arrays
 * deprecated non-functional support for the `%=` operator on `real` values
 * removed support for the deprecated `<~>` operator
 
@@ -110,6 +113,7 @@ Deprecated / Unstable / Removed Library Features
 * removed `"version "` prefix when casting a `sourceVersion` to string  
   (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.sourceVersion)
 * deprecated the 'SysBasic' module including `EEOF`, `ESHORT`, `EFORMAT`
+* marked 'GPU'/'GPUDiagnostics' modules as unstable (due to still being new))
 * marked `iostringstyle`, `iostringformat` as unstable in the 'IO' module
 * removed the deprecated 'SysError' module and some related deprecated symbols
 * removed the deprecated 'DateTime' module
@@ -214,6 +218,9 @@ Portability / Platform-specific Improvements
 GPU Computing
 -------------
 * added prototype support for generating and building AMD GPU binary files
+* added a `gpuClock()` procedure to time kernel codes
+* added a `debugGPU` config constant rather than tying behavior to `--verbose`
+* marked 'GPU'/'GPUDiagnostics' modules as unstable (due to still being new))
 
 Compiler Improvements
 ---------------------
