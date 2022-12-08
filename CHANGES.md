@@ -8,6 +8,7 @@ TODO:
 * example codes
 * spellcheck
 * move renamings in deprecation section to name changes section
+* TODOs
 
 version 1.29.0
 ==============
@@ -19,9 +20,13 @@ Highlights (see subsequent sections for further details)
 
 Packaging / Configuration Changes
 ---------------------------------
+* made our 'Dockerfile' use the current source rather than a specific release  
+  (see https://hub.docker.com/r/chapel/chapel)
 
 Syntactic / Naming Changes
 --------------------------
+* renamed `makeIndexBuffer()` on domains to `createIndexBuffer()`  
+  (see https://chapel-lang.org/docs/1.29/language/spec/domains.html#ChapelDomain.createIndexBuffer)
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
@@ -48,6 +53,8 @@ Feature Improvements
 
 Namespace Changes
 -----------------
+* moved `EEOF`, `ESHORT`, `EFORMAT` to the 'IO' module  
+  (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.EEOF)
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
@@ -72,12 +79,15 @@ Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
 * deprecated 'file.localesForRegion()' in the 'IO' module
   (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.file.localesForRegion)
+* deprecated `unicodeSupported` from the 'IO' module (always returned `true`)
 * deprecated `string`/`bytes` casts to `regex` in favor of `Regex.compile()`  
   (see https://chapel-lang.org/docs/1.29/modules/standard/Regex.html#Regex.compile)
 * deprecated `createVersion()` in favor of `new versionValue()`  
   (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.createVersion)
 * removed `"version "` prefix when casting a `sourceVersion` to string  
   (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.sourceVersion)
+* deprecated the 'SysBasic' module
+* marked `iostringstyle`, `iostringformat` as unstable in the 'IO' module
 * removed deprecated support for `start`/`end` arguments from 'IO' routines
 * removed deprecated `iohint` type from the 'IO' module
 * removed deprecated `map` operators
@@ -141,6 +151,8 @@ Documentation
   (https://chapel-lang.org/docs/1.29/modules/standard/BigInteger.html)
 * moved Mason documentation to 'Tools' section  
   (see https://chapel-lang.org/docs/1.29/tools/mason/mason.html)
+* updated Docker README to reflect Dockerfile changes and clarify usage  
+  (see https://hub.docker.com/r/chapel/chapel)
 * fixed broken external hyperlinks in 'BLAS' documentation  
   (see https://chapel-lang.org/docs/1.29/modules/packages/BLAS.html#BLAS.gemm, e.g.)
 * fixed outdated link in the 'NetCDF' module documentation  
@@ -182,11 +194,13 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* made several minor improvements to parser error messages
 
 Bug Fixes
 ---------
 * fixed an internal error for `forall` statements containing conditionals
 * improved the deprecation message for `init=` on `sync` variables
+* fixed a bug when gathering types with method calls in a searched scope TODO
 
 Bug Fixes for Build Issues
 --------------------------
@@ -240,10 +254,18 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
+* updated parser errors to use the new 'dyno' error-reporting framework
 
 Developer-oriented changes: 'dyno' Compiler improvements/changes
 ----------------------------------------------------------------
+* addressed an issue in which parser errors could be issued twice
+* updated 'dyno' errors in scope-resolver to use the new reporting framework
+* made `use` statements transitively private by default, as expected
+* fixed `public use` to not bring in the module's name itself
+* added support for detecting conflicting imported symbol names properly
+* improved scope resolution of `except` lists in 'dyno'
 * added initial support for resolving initializers
+* added ability to resolve operator overloads
 * added ability to toggle dyno asserts with `CHPL_DEVELOPER` or `--[no-]devel`
 * made `--ignore-errors` continue compilation after a dyno assertion failure
 
