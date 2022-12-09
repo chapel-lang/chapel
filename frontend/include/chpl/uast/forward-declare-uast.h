@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_ASTTYPES_H
-#define CHPL_UAST_ASTTYPES_H
+#ifndef CHPL_FORWARD_DECLARE_UAST_H
+#define CHPL_FORWARD_DECLARE_UAST_H
 
 namespace chpl {
 namespace uast {

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/ASTTypes.h"
+#include "chpl/uast/AstList.h"
 
 #include "chpl/framework/Context.h"
 #include "chpl/uast/AstNode.h"

@@ -21,11 +21,11 @@
 #define CHPL_UAST_ASTNODE_H
 
 #include "chpl/framework/ID.h"
+#include "chpl/framework/stringify-functions.h"
 #include "chpl/uast/AstList.h"
 #include "chpl/uast/AstTag.h"
-#include "chpl/uast/ASTTypes.h"
+#include "chpl/uast/forward-declare-uast.h"
 #include "chpl/util/memory.h"
-#include "chpl/framework/stringify-functions.h"
 
 #include <functional>
 

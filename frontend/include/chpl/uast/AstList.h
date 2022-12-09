@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_ASTLIST_H
 #define CHPL_UAST_ASTLIST_H
 
-#include "chpl/uast/ASTTypes.h"
+#include "chpl/uast/forward-declare-uast.h"
 #include "chpl/util/memory.h"
 
 #include <iterator>

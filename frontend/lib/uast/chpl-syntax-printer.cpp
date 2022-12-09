@@ -19,7 +19,9 @@
 
 
 #include "chpl/uast/chpl-syntax-printer.h"
+
 #include "chpl/framework/global-strings.h"
+#include "chpl/uast/all-uast.h"
 
 
 using namespace chpl;

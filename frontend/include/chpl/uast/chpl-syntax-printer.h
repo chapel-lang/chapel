@@ -23,8 +23,7 @@
 
 #include "chpl/framework/Context.h"
 #include "chpl/uast/AstTag.h"
-#include "chpl/uast/ASTTypes.h"
-#include "chpl/uast/all-uast.h"
+#include "chpl/uast/forward-declare-uast.h"
 
 
 #include<iostream>
