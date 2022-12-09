@@ -10,8 +10,6 @@ var Forest: [ForestSpace] int;
 for (r,c) in ForestSpace do
   Forest[r,c] = ForestAsText[r][c]:int;
 
-writeln(Forest);
-
 writeln(+ reduce visible(Forest, ForestSpace, Forest));
 
 proc visible(Trees, (myR,myC), myHeight: int) {
@@ -31,25 +29,10 @@ proc visible(Trees, (myR,myC), myHeight: int) {
 
 
 
-/*
-scenicScore(Forest, (1,2), 5);
-writeln("----");
-scenicScore(Forest, (3,2), 5);
-writeln("----");
-scenicScore(Forest, (2,3), 3);
-writeln("----");
-*/
-/*
-for (r,c) in ForestSpace {
-  writeln("------", (r,c));
-  writeln(scenicScore(Forest, (r,c), Forest(r,c)));
-}
-*/
 writeln(max reduce (scenicScore(Forest, ForestSpace, Forest)));
 
 
 proc scenicScore(Trees, (myR, myC), myHeight: int) {
-  writeln("Considering: ", ((myR, myC), myHeight));
   var score = 1;
 
   {
@@ -57,12 +40,10 @@ proc scenicScore(Trees, (myR, myC), myHeight: int) {
     for r in 0..<myR by -1 {
       count += 1;
       const treeHeight = Trees[r, myC];
-      writeln("Considering ", (r, myC), " with height ", treeHeight, " vs. ", myHeight);
       if treeHeight >= myHeight then
         break;
     }
     score *= count;
-    writeln((count, score));
   }
 
 {
@@ -70,12 +51,11 @@ proc scenicScore(Trees, (myR, myC), myHeight: int) {
   for r in myR+1..<numrows {
       count += 1;
     const treeHeight = Trees[r, myC];
-    writeln("Considering ", (r, myC), " with height ", treeHeight, " vs. ", myHeight);
+
     if treeHeight >= myHeight then
       break;
   }
   score *= count;
-    writeln((count, score));
 }
 
 {
@@ -83,12 +63,10 @@ proc scenicScore(Trees, (myR, myC), myHeight: int) {
   for c in 0..<myC by -1 {
       count += 1;
     const treeHeight = Trees[myR, c];
-    writeln("Considering ", (myR, c), " with height ", treeHeight, " vs. ", myHeight);
     if treeHeight >= myHeight then
       break;
    }
   score *= count;
-    writeln((count, score));
 }
 
 {
@@ -96,15 +74,12 @@ proc scenicScore(Trees, (myR, myC), myHeight: int) {
   for c in myC+1..<numcols {
       count += 1;
     const treeHeight = Trees[myR, c];
-    writeln("Considering ", (myR, c), " with height ", treeHeight, " vs. ", myHeight);
     if treeHeight >= myHeight then
       break;
   }
   score *= count;
-    writeln((count, score));
 }
 
-  writeln("Score = ", score);
   return score;
 }
 
