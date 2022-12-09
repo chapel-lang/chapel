@@ -134,7 +134,7 @@ class ErrorBase {
 
     This method should call methods on the ErrorWriterBase class to
     provide information about the error.
-    * All ErrorBase::write implemenations must call ErrorWriterBase::heading to
+    * All ErrorBase::write implementations must call ErrorWriterBase::heading to
       provide a concise description of the error message.
     * After this, ErrorWriterBase::note can be used to print notes, which are
       always shown to the user.
@@ -292,6 +292,6 @@ namespace std {
       return key;
     }
   };
-} // end namesapce std
+} // end namespace std
 
 #endif

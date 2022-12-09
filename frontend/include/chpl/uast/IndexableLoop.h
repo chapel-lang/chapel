@@ -48,7 +48,7 @@ class IndexableLoop : public Loop {
       withClauseChildNum_(withClauseChildNum),
       isExpressionLevel_(isExpressionLevel) {
 
-    assert(iterandChildNum >= 0);
+    CHPL_ASSERT(iterandChildNum >= 0);
   }
 
   bool indexableLoopContentsMatchInner(const IndexableLoop* other) const {
@@ -92,7 +92,7 @@ class IndexableLoop : public Loop {
   const Decl* index() const {
     if (indexChildNum_ < 0) return nullptr;
     const AstNode* ast = child(indexChildNum_);
-    assert(ast->isDecl());
+    CHPL_ASSERT(ast->isDecl());
     return (const Decl*) ast;
   }
 
@@ -112,7 +112,7 @@ class IndexableLoop : public Loop {
   const WithClause* withClause() const {
     if (withClauseChildNum_ < 0) return nullptr;
     auto ret = child(withClauseChildNum_);
-    assert(ret->isWithClause());
+    CHPL_ASSERT(ret->isWithClause());
     return (const WithClause*)ret;
   }
 

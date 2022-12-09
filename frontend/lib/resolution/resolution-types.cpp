@@ -97,7 +97,7 @@ getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
         // This should not be possible. Currently varargs with a default value
         // will be considered a syntax error.
         hasDefault = false;
-        assert(varargs->initExpression() == nullptr);
+        CHPL_ASSERT(varargs->initExpression() == nullptr);
       }
 
       auto fd = UntypedFnSignature::FormalDetail(name, hasDefault,
@@ -165,7 +165,7 @@ CallInfo CallInfo::createSimple(const uast::FnCall* call) {
     }
   }
 
-  assert(!name.isEmpty());
+  CHPL_ASSERT(!name.isEmpty());
 
   int i = 0;
   for (auto actual : call->actuals()) {
@@ -302,7 +302,7 @@ CallInfo CallInfo::create(Context* context,
     } else if (auto calledDot = called->toDot()) {
       name = calledDot->field();
     } else {
-      assert(false && "Unexpected called expression");
+      CHPL_ASSERT(false && "Unexpected called expression");
     }
   }
 
@@ -360,7 +360,7 @@ CallInfo CallInfo::create(Context* context,
                  actuals, questionArg, actualAsts);
 
   if (actualAsts != nullptr) {
-    assert(actualAsts->size() == actuals.size());
+    CHPL_ASSERT(actualAsts->size() == actuals.size());
   }
 
   auto ret = CallInfo(name, calledType, isMethodCall,
@@ -373,7 +373,7 @@ CallInfo CallInfo::create(Context* context,
 
 
 void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
-  assert(Builder::astTagIndicatesNewIdScope(ast->tag()));
+  CHPL_ASSERT(Builder::astTagIndicatesNewIdScope(ast->tag()));
   vec.resize(ast->id().numContainedChildren());
 
   symbolId = ast->id();
@@ -382,7 +382,7 @@ void ResolutionResultByPostorderID::setupForSignature(const Function* func) {
   int maxPostorderId = 0;
   if (func && func->numChildren() > 0)
     maxPostorderId = func->child(func->numChildren() - 1)->id().postOrderId();
-  assert(0 <= maxPostorderId);
+  CHPL_ASSERT(0 <= maxPostorderId);
   vec.resize(maxPostorderId + 1);
 
   symbolId = func->id();
@@ -391,7 +391,7 @@ void ResolutionResultByPostorderID::setupForParamLoop(const For* loop, Resolutio
   int bodyPostorder = 0;
   if (loop && loop->body())
     bodyPostorder = loop->body()->id().postOrderId();
-  assert(0 <= bodyPostorder);
+  CHPL_ASSERT(0 <= bodyPostorder);
   vec.resize(bodyPostorder);
 
   this->symbolId = parent.symbolId;
@@ -411,7 +411,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
                                        const CallInfo& call) {
 
   // untyped must be provided but typed can be nullptr.
-  assert(untyped);
+  CHPL_ASSERT(untyped);
 
   // create the mapping handling named and default arguments
 
@@ -479,7 +479,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
       QualifiedType starQT;
       if (formalQT.type() != nullptr) {
         const TupleType* tup = formalQT.type()->toTupleType();
-        assert(tup);
+        CHPL_ASSERT(tup);
         if (tup->isStarTuple()) {
           starQT = tup->starType();
         }
@@ -495,7 +495,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
           // try to pull the type out of the formalQT if it
           // is after instantiation.
           const TupleType* tup = formalQT.type()->toTupleType();
-          assert(tup);
+          CHPL_ASSERT(tup);
           qt = tup->elementType(j);
         }
 
@@ -513,7 +513,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
     }
   }
 
-  assert(entryIdx == numEntries);
+  CHPL_ASSERT(entryIdx == numEntries);
 
   // Match named actuals against formal names in the function signature.
   // Record successful matches in actualIdxToFormalIdx.
@@ -527,7 +527,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
       for (int i = 0; i < numFormals; i++) {
         FormalActual& entry = byFormalIdx_[entryIdx];
         match = actual.byName() == untyped->formalName(i);
-        assert(entry.formal_ == untyped->formalDecl(i));
+        CHPL_ASSERT(entry.formal_ == untyped->formalDecl(i));
 
         if (entry.isVarArgEntry_) {
           // TODO: production compiler doesn't support named VarArgs, but
@@ -581,7 +581,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
         }
         entryIdx++;
       }
-      assert(entryIdx < numEntries);
+      CHPL_ASSERT(entryIdx < numEntries);
 
       // if this is a call to an operator method, skip the 'this' formal
       if (call.isOpCall() && untyped->formalName(entryIdx) == USTR("this")) {
@@ -749,7 +749,7 @@ void PoiInfo::accumulate(const PoiInfo& addPoiInfo) {
 // this is a resolved function
 // check is a not-yet-resolved function
 bool PoiInfo::canReuse(const PoiInfo& check) const {
-  assert(resolved_ && !check.resolved_);
+  CHPL_ASSERT(resolved_ && !check.resolved_);
 
   return false; // TODO -- consider function names etc -- see PR #16261
 }

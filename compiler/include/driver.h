@@ -145,6 +145,8 @@ extern const char* CHPL_TARGET_BUNDLED_LINK_ARGS;
 extern const char* CHPL_TARGET_SYSTEM_LINK_ARGS;
 
 extern const char* CHPL_CUDA_LIBDEVICE_PATH;
+extern const char* CHPL_GPU_CODEGEN;
+extern const char* CHPL_GPU_ARCH;
 
 extern bool  printPasses;
 extern FILE* printPassesFile;
@@ -256,7 +258,8 @@ extern int breakOnID;
 extern int breakOnRemoveID;
 
 extern int fGPUBlockSize;
-extern char fCUDAArch[16];
+extern char fGpuArch[16];
+extern const char* gGpuSdkPath;
 
 extern char stopAfterPass[128];
 

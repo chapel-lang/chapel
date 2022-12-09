@@ -93,9 +93,9 @@ class Select final : public AstNode {
     Return the i'th when statement in this select statement.
   */
   const When* whenStmt(int i) const {
-    assert(i >= 0 && i < numWhenStmts_);
+    CHPL_ASSERT(i >= 0 && i < numWhenStmts_);
     auto ret = child(whenStmtStartChildNum_ + i);
-    assert(ret->isWhen());
+    CHPL_ASSERT(ret->isWhen());
     return (const When*)ret;
   }
 

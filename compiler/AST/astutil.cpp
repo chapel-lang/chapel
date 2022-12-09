@@ -902,6 +902,9 @@ bool isTypeExpr(Expr* expr) {
       getPrimGetRuntimeTypeFieldReturnType(call, isType);
       retval = isType;
 
+    } else if (call->isPrimitive(PRIM_COERCE)) {
+      retval = isTypeExpr(call->get(1));
+
     } else if (call->numActuals() == 1 &&
                call->baseExpr &&
                isNumericTypeSymExpr(call->baseExpr)) {

@@ -295,9 +295,9 @@ module LocaleModel {
       }
       _node_id = chpl_nodeID: int;
 
-      extern proc cudaGetDeviceCount(ref n: int);
+      extern proc chpl_gpu_get_device_count(ref n: int);
       var nDevices: int;
-      cudaGetDeviceCount(nDevices);
+      chpl_gpu_get_device_count(nDevices);
 
       //number of GPU devices on a node
       numSublocales = nDevices;
@@ -317,9 +317,9 @@ module LocaleModel {
 
       _node_id = chpl_nodeID: int;
 
-      extern proc cudaGetDeviceCount(ref n: int);
+      extern proc chpl_gpu_get_device_count(ref n: int);
       var nDevices: int;
-      cudaGetDeviceCount(nDevices);
+      chpl_gpu_get_device_count(nDevices);
 
       //1 cpu and number of GPU devices on a node
       numSublocales = nDevices;

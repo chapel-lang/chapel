@@ -26,17 +26,13 @@
 #include <fstream>
 #include <limits>
 #include <regex>
-#include <sstream>
 #include <unordered_map>
-#include <unordered_set>
 #include <queue>
-
-#include <sys/stat.h>
-#include <unistd.h>
 
 #include "arg.h"
 #include "arg-helpers.h"
 #include "version_num.h"
+#include "configured_prefix.h"
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/parsing/parsing-queries.h"
@@ -45,8 +41,6 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/framework/stringify-functions.h"
 #include "chpl/framework/update-functions.h"
-#include "chpl/uast/AstTag.h"
-#include "chpl/uast/ASTTypes.h"
 #include "chpl/uast/TypeDecl.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/util/string-escapes.h"
@@ -55,6 +49,7 @@
 #include "chpl/framework/global-strings.h"
 #include "chpl/resolution/scope-queries.h"
 
+#include "llvm/Support/FileSystem.h"
 
 
 using namespace chpl;
@@ -192,6 +187,130 @@ static std::string get_version() {
   }
   return ret;
 }
+
+static std::string getMajorMinorVersion() {
+  std::string version = std::to_string(MAJOR_VERSION);
+  version += ".";
+  version += std::to_string(MINOR_VERSION);
+  return version;
+}
+
+static bool isMaybeChplHome(std::string path) {
+  // assume if we find subfolder util/ containing chplenv, we might be home
+  path += "/util/chplenv";
+  return llvm::sys::fs::exists(path);
+}
+
+static std::error_code findChplHome(char* argv0, void* mainAddr,
+                             std::string& chplHomeOut,
+                             bool& installed, bool& fromEnv,
+                             std::string& warningMessage) {
+  std::string versionString = getMajorMinorVersion();
+  std::string guess = getExecutablePath(argv0, mainAddr);
+
+  const char* chpl_home = getenv("CHPL_HOME");
+
+  if (!guess.empty()) {
+    // truncate path at /bin
+    char* tmp_guess = strdup(guess.c_str());
+    if ( tmp_guess[0] ) {
+      int j = strlen(tmp_guess) - 5; // /bin and '\0'
+      for ( ; j >= 0; j-- ) {
+        if ( tmp_guess[j] == '/' &&
+            tmp_guess[j+1] == 'b' &&
+            tmp_guess[j+2] == 'i' &&
+            tmp_guess[j+3] == 'n' ) {
+          tmp_guess[j] = '\0';
+          break;
+        }
+      }
+    }
+    guess = std::string(tmp_guess);
+    if (isMaybeChplHome(guess)) {
+      chplHomeOut = guess;
+    } else {
+      guess = "";
+    }
+  }
+
+  if (chpl_home) {
+    fromEnv = true;
+    if(strlen(chpl_home) > FILENAME_MAX)
+      // USR_FATAL("$CHPL_HOME=%s path too long", chpl_home);
+      // error_state
+      // TODO: customize error message?
+      return std::make_error_code(std::errc::filename_too_long);
+    if (guess.empty()) {
+      // Could not find exe path, but have a env var set
+      chplHomeOut = std::string(chpl_home);
+    } else {
+      // We have env var and found exe path.
+      // Check that they match and emit a warning if not.
+      if (!isSameFile(chpl_home, guess.c_str())) {
+        // Not the same. Emit warning.
+        //USR_WARN("$CHPL_HOME=%s mismatched with executable home=%s",
+        //         chpl_home, guess);
+        warningMessage = "$CHPL_HOME=" + std::string(chpl_home) + " is mismatched with executable home=" + guess;
+      }
+      // Since we have an enviro var, always use that.
+      chplHomeOut = std::string(chpl_home);
+    }
+  } else {
+    // Check in a default location too
+    if (guess.empty()) {
+      char TEST_HOME[FILENAME_MAX+1] = "";
+
+      // Check for Chapel libraries at installed prefix
+      // e.g. /usr/share/chapel/<vers>
+      int rc;
+      rc = snprintf(TEST_HOME, FILENAME_MAX, "%s/%s/%s",
+                    CONFIGURED_PREFIX, // e.g. /usr
+                    "share/chapel",
+                    versionString.c_str());
+      if (rc >= FILENAME_MAX) {
+        // USR_FATAL("Installed pathname too long");
+        // TODO: return an error here
+        return std::make_error_code(std::errc::filename_too_long);
+      }
+
+      if (isMaybeChplHome(TEST_HOME)) {
+        guess = strdup(TEST_HOME);
+        installed = true;
+       }
+    }
+
+    if (guess.empty()) {
+      // Could not find enviro var, and could not
+      // guess at exe's path name.
+      // USR_FATAL("$CHPL_HOME must be set to run chpl");
+      // TODO: customize the error message
+      return std::make_error_code(std::errc::no_such_file_or_directory);
+    } else {
+      int rc;
+
+      if (guess.length() > FILENAME_MAX) {
+      // USR_FATAL("chpl guessed home %s too long", guess);
+        return std::make_error_code(std::errc::filename_too_long);
+      }
+      // Determined exe path, but don't have a env var set
+        rc = setenv("CHPL_HOME", guess.c_str(), 0);
+        if ( rc ) {
+          // USR_FATAL("Could not setenv CHPL_HOME");
+          // TODO: customize the error message
+          return std::make_error_code(std::errc::no_such_file_or_directory);
+         }
+         chplHomeOut = guess;
+    }
+  }
+  // Check that the resulting path is a Chapel distribution.
+  if (!isMaybeChplHome(chplHomeOut.c_str())) {
+    // Bad enviro var.
+    //USR_WARN("CHPL_HOME=%s is not a Chapel distribution", CHPL_HOME);
+    warningMessage = "CHPL_HOME=" + chplHomeOut + " is not a Chapel distribution";
+  }
+  return std::error_code();
+}
+
 
 static void printStuff(const char* argv0, void* mainAddr) {
   bool shouldExit       = false;
@@ -2082,22 +2201,27 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
 
 
 int main(int argc, char** argv) {
-  // initial value of CHPL_HOME may be overridden by cmdline arg
-  if (getenv("CHPL_HOME") != NULL) {
-    CHPL_HOME = getenv("CHPL_HOME");
-  }
   Args args = parseArgs(argc, argv, (void*)main);
+  std::string warningMsg;
+  bool foundEnv = false;
+  bool installed = false;
+  // if user overrides CHPL_HOME from command line, don't go looking for trouble
   if (CHPL_HOME.empty()) {
-    fprintf(stderr, "CHPL_HOME not set. Please set CHPL_HOME or pass a value "
-                     "using the --home option\n" );
-    clean_exit(1);
+    std::error_code err = findChplHome(argv[0], (void*)main, CHPL_HOME, installed, foundEnv, warningMsg);
+    if (!warningMsg.empty()) {
+      fprintf(stderr, "%s\n", warningMsg.c_str());
+    }
+    if (err) {
+      fprintf(stderr, "CHPL_HOME not set to a valid value. Please set CHPL_HOME or pass a value "
+                      "using the --home option\n" );
+      clean_exit(1);
+    }
   }
+
   // TODO: there is a future for this, asking for a better error message and I
   // think we can provide it by checking here.
   // see test/chpldoc/compflags/folder/save-sphinx/saveSphinxInDocs.doc.future
-  // if (args.saveSphinx == "docs") {
-
-  // }
+  // if (args.saveSphinx == "docs") { }
 
   textOnly_ = args.textOnly;
   if (args.commentStyle.substr(0,2) != "/*") {

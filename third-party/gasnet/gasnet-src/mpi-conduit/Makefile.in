@@ -257,6 +257,7 @@ ADDR2LINE_PATH = @ADDR2LINE_PATH@
 ALLOCA = @ALLOCA@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
+APRUN_PATH = @APRUN_PATH@
 AR = @AR@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
@@ -420,6 +421,7 @@ SIZEOF_SIZE_T = @SIZEOF_SIZE_T@
 SIZEOF_VOID_P = @SIZEOF_VOID_P@
 SIZEOF__BOOL = @SIZEOF__BOOL@
 SMP_LIBS = @SMP_LIBS@
+SRUN_PATH = @SRUN_PATH@
 SSH_SPAWNER_LIBS = @SSH_SPAWNER_LIBS@
 STRIP = @STRIP@
 SYSTEM_NAME = @SYSTEM_NAME@
@@ -830,8 +832,8 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-@USE_MPI_CONDUIT_FALSE@install-data-local:
 @USE_MPI_CONDUIT_FALSE@uninstall-local:
+@USE_MPI_CONDUIT_FALSE@install-data-local:
 @USE_MPI_CONDUIT_FALSE@clean-local:
 clean: clean-recursive
 

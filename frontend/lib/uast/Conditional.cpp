@@ -32,7 +32,7 @@ owned<Conditional> Conditional::build(Builder* builder, Location loc,
                                       BlockStyle elseBlockStyle,
                                       owned<Block> elseBlock,
                                       bool isExpressionLevel) {
-  assert(condition.get() != nullptr);
+  CHPL_ASSERT(condition.get() != nullptr);
 
   AstList lst;
 
@@ -56,7 +56,7 @@ owned<Conditional> Conditional::build(Builder* builder, Location loc,
                                       BlockStyle thenBlockStyle,
                                       owned<Block> thenBlock,
                                       bool isExpressionLevel) {
-  assert(condition.get() != nullptr);
+  CHPL_ASSERT(condition.get() != nullptr);
   AstList lst;
 
   lst.push_back(std::move(condition));

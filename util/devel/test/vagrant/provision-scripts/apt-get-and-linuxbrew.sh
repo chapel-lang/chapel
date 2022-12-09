@@ -25,8 +25,14 @@ eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 brew install gcc
 
 # install some dependencies in homebrew
-brew install cmake python gmp llvm@12
+brew install cmake python gmp llvm@14
 
+# we could use Homebrew's gcc if that becomes important in the future:
+# # link the homebrew-installed gcc-* to gcc
+# cd /home/linuxbrew/.linuxbrew/bin/
+# GCC_VER=`ls g++-* | cut -d - -f 2`
+# ln -s gcc-$GCC_VER gcc
+# ln -s g++-$GCC_VER g++
 
   # /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   # echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> /home/vagrant/.profile

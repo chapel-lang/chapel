@@ -17,7 +17,9 @@ jobs:
       - name: print GitHub context
         env:
           GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"  
+        run: echo "$GITHUB_CONTEXT" 
+     # This workflow step will parse github env. The parsed env will be used in the email body.
+     #  MERGE_LOG env holds the request body(PR description) that is parsed to replace \n\r with <br> for html formatting    
       - name: get commits payload
         env:
           COMMIT_URL: ${{github.event.pull_request._links.commits.href}}
@@ -30,7 +32,7 @@ jobs:
               echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
               echo "FILES_CHANGED=$(echo '${{github.event.pull_request._links.html.href}}/files' )" >> $GITHUB_ENV
               echo $LOG
-              echo "MERGE_LOG= $(echo $LOG | sed 's/\\n/<br>/g' | sed 's/\\r/ /g' ) " >> $GITHUB_ENV
+              echo "MERGE_LOG= $(echo $LOG | sed 's/\\r\\n\\r\\n/<p>/g'| sed 's/\\r\\n/<br>/g' ) " >> $GITHUB_ENV
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
@@ -40,7 +42,16 @@ jobs:
         id: changed-files
         uses: tj-actions/changed-files@v34
         with:
-          separator: ","                 
+          separator: "," 
+      # tj-actions' limitation prevents the user from using "\n" as output seperator.
+      # Solution: parse the list of changed files and replace each comma delimiter with a <br>.   
+      - name: Parse changed files
+        id: parsed-output
+        run: |      
+                echo "MODIFIED= $(echo ${{steps.changed-files.outputs.modified_files}} |  sed 's/\,/<br>/g' )" >> $GITHUB_ENV
+                echo "ADDED= $(echo ${{steps.changed-files.outputs.added_files}} |  sed 's/\,/<br>/g' )" >> $GITHUB_ENV
+                echo "DELETED= $(echo ${{steps.changed-files.outputs.deleted_files}} |  sed 's/\,/<br>/g' )" >> $GITHUB_ENV
+
       - name: Send mail  
         uses: dawidd6/action-send-mail@v3
         with:
@@ -74,11 +85,11 @@ jobs:
               Compare: ${{env.COMPARE_URL}} <br> 
               Diff: ${{github.event.pull_request.diff_url}} <br>
               Modified Files: <br>
-                   ${{steps.changed-files.outputs.modified_files}} <br><br>
+                   ${{env.MODIFIED}} <br><br>
               Added Files: <br>
-                   ${{steps.changed-files.outputs.added_files}} <br><br>    
+                   ${{env.ADDED}} <br><br>    
               Removed Files: <br>     
-                   ${{steps.changed-files.outputs.deleted_files}} <br>
+                   ${{env.DELETED}} <br>
              
               </p>
               </body>

@@ -681,11 +681,11 @@ module BigInteger {
   //
   // Unary operators
   //
-  operator bigint.+(const ref a: bigint) {
+  operator bigint.+(const ref a: bigint): bigint {
     return new bigint(a);
   }
 
-  operator bigint.-(const ref a: bigint) {
+  operator bigint.-(const ref a: bigint): bigint {
     var c = new bigint(a);
 
     mpz_neg(c.mpz, c.mpz);
@@ -693,7 +693,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.~(const ref a: bigint) {
+  operator bigint.~(const ref a: bigint): bigint {
     var c = new bigint(a);
 
     mpz_com(c.mpz, c.mpz);
@@ -706,7 +706,7 @@ module BigInteger {
   //
 
   // Addition
-  operator bigint.+(const ref a: bigint, const ref b: bigint) {
+  operator bigint.+(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
 
     if _local {
@@ -725,7 +725,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.+(const ref a: bigint, b: int) {
+  operator bigint.+(const ref a: bigint, b: int): bigint {
     var c = new bigint();
 
     if b >= 0 {
@@ -762,7 +762,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.+(a: int, const ref b: bigint) {
+  operator bigint.+(a: int, const ref b: bigint): bigint {
     var c = new bigint();
 
     if a >= 0 {
@@ -799,7 +799,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.+(const ref a: bigint, b: uint) {
+  operator bigint.+(const ref a: bigint, b: uint): bigint {
     const b_ = b.safeCast(c_ulong);
     var   c  = new bigint();
 
@@ -818,7 +818,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.+(a: uint, const ref b: bigint) {
+  operator bigint.+(a: uint, const ref b: bigint): bigint {
     const a_ = a.safeCast(c_ulong);
     var   c  = new bigint();
 
@@ -840,7 +840,7 @@ module BigInteger {
 
 
   // Subtraction
-  operator bigint.-(const ref a: bigint, const ref b: bigint) {
+  operator bigint.-(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
 
     if _local {
@@ -859,7 +859,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.-(const ref a: bigint, b: int) {
+  operator bigint.-(const ref a: bigint, b: int): bigint {
     var c = new bigint();
 
     if b >= 0 {
@@ -896,7 +896,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.-(a: int, const ref b: bigint) {
+  operator bigint.-(a: int, const ref b: bigint): bigint {
     var c = new bigint();
 
     if a >= 0 {
@@ -933,7 +933,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.-(const ref a: bigint, b: uint) {
+  operator bigint.-(const ref a: bigint, b: uint): bigint {
     const b_ = b.safeCast(c_ulong);
     var   c  = new bigint();
 
@@ -952,7 +952,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.-(a: uint, const ref b: bigint) {
+  operator bigint.-(a: uint, const ref b: bigint): bigint {
     const a_ = a.safeCast(c_ulong);
     var   c  = new bigint();
 
@@ -973,7 +973,7 @@ module BigInteger {
 
 
   // Multiplication
-  operator bigint.*(const ref a: bigint, const ref b: bigint) {
+  operator bigint.*(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
 
     if _local {
@@ -992,7 +992,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.*(const ref a: bigint, b: int) {
+  operator bigint.*(const ref a: bigint, b: int): bigint {
     const b_ = b.safeCast(c_long);
     var   c  = new bigint();
 
@@ -1011,7 +1011,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.*(a: int, const ref b: bigint) {
+  operator bigint.*(a: int, const ref b: bigint): bigint {
     const a_ = a.safeCast(c_long);
     var   c  = new bigint();
 
@@ -1030,7 +1030,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.*(const ref a: bigint, b: uint) {
+  operator bigint.*(const ref a: bigint, b: uint): bigint {
     const b_ = b.safeCast(c_ulong);
     var   c  = new bigint();
 
@@ -1049,7 +1049,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.*(a: uint, const ref b: bigint) {
+  operator bigint.*(a: uint, const ref b: bigint): bigint {
     const a_ = a.safeCast(c_ulong);
     var   c  = new bigint();
 
@@ -1095,7 +1095,7 @@ module BigInteger {
   }
 
   // Exponentiation
-  operator bigint.**(const ref base: bigint, const ref exp: bigint) {
+  operator bigint.**(const ref base: bigint, const ref exp: bigint): bigint {
     var c = new bigint();
 
     if _local {
@@ -1114,7 +1114,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.**(const ref base: bigint, exp: int) {
+  operator bigint.**(const ref base: bigint, exp: int): bigint {
     var c = new bigint();
 
     if (exp >= 0) {
@@ -1151,7 +1151,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.**(const ref base: bigint, exp: uint) {
+  operator bigint.**(const ref base: bigint, exp: uint): bigint {
     const exp_ = exp.safeCast(c_ulong);
     var   c    = new bigint();
 
@@ -1178,7 +1178,7 @@ module BigInteger {
      The result is always >= 0 if `a` > 0.
      It is an error if `b` == 0.
   */
-  operator bigint.%(const ref a: bigint, const ref b: bigint) {
+  operator bigint.%(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
 
     if _local {
@@ -1199,7 +1199,7 @@ module BigInteger {
      The result is always >= 0 if `a` > 0.
      It is an error if `b` == 0.
   */
-  operator bigint.%(const ref a: bigint, b: int) {
+  operator bigint.%(const ref a: bigint, b: int): bigint {
     var c = new bigint();
     var b_ : c_ulong;
 
@@ -1226,7 +1226,7 @@ module BigInteger {
      The result is always >= 0 if `a` > 0.
      It is an error if `b` == 0.
   */
-  operator bigint.%(const ref a: bigint, b: uint) {
+  operator bigint.%(const ref a: bigint, b: uint): bigint {
     var   c  = new bigint();
     const b_ = b.safeCast(c_ulong);
 
@@ -1248,7 +1248,7 @@ module BigInteger {
 
 
   // Bit-shift left
-  operator bigint.<<(const ref a: bigint, b: int) {
+  operator bigint.<<(const ref a: bigint, b: int): bigint {
     var c = new bigint();
 
     if b >= 0 {
@@ -1285,7 +1285,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.<<(const ref a: bigint, b: uint) {
+  operator bigint.<<(const ref a: bigint, b: uint): bigint {
     const b_ = b.safeCast(mp_bitcnt_t);
     var   c  = new bigint();
 
@@ -1307,7 +1307,7 @@ module BigInteger {
 
 
   // Bit-shift right
-  operator bigint.>>(const ref a: bigint, b: int) {
+  operator bigint.>>(const ref a: bigint, b: int): bigint {
     var c = new bigint();
 
     if b >= 0 {
@@ -1345,7 +1345,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.>>(const ref a: bigint, b: uint) {
+  operator bigint.>>(const ref a: bigint, b: uint): bigint {
     const b_ = b.safeCast(mp_bitcnt_t);
     var   c  = new bigint();
 
@@ -1367,7 +1367,7 @@ module BigInteger {
 
 
   // Bitwise and
-  operator bigint.&(const ref a: bigint, const ref b: bigint) {
+  operator bigint.&(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
 
     if _local {
@@ -1389,7 +1389,7 @@ module BigInteger {
 
 
   // Bitwise ior
-  operator bigint.|(const ref a: bigint, const ref b: bigint) {
+  operator bigint.|(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
 
     if _local {
@@ -1411,7 +1411,7 @@ module BigInteger {
 
 
   // Bitwise xor
-  operator bigint.^(const ref a: bigint, const ref b: bigint) {
+  operator bigint.^(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
 
     if _local {
@@ -1533,137 +1533,137 @@ module BigInteger {
 
 
   // Equality
-  operator bigint.==(const ref a: bigint, const ref b: bigint) {
+  operator bigint.==(const ref a: bigint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) == 0;
   }
 
-  operator bigint.==(const ref a: bigint, b: int) {
+  operator bigint.==(const ref a: bigint, b: int): bool {
     return BigInteger.cmp(a, b) == 0;
   }
 
-  operator bigint.==(a: int, const ref b: bigint) {
+  operator bigint.==(a: int, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) == 0;
   }
 
-  operator bigint.==(const ref a: bigint, b: uint) {
+  operator bigint.==(const ref a: bigint, b: uint): bool {
     return BigInteger.cmp(a, b) == 0;
   }
 
-  operator bigint.==(a: uint, const ref b: bigint) {
+  operator bigint.==(a: uint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) == 0;
   }
 
 
 
   // Inequality
-  operator bigint.!=(const ref a: bigint, const ref b: bigint) {
+  operator bigint.!=(const ref a: bigint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) != 0;
   }
 
-  operator bigint.!=(const ref a: bigint, b: int) {
+  operator bigint.!=(const ref a: bigint, b: int): bool {
     return BigInteger.cmp(a, b) != 0;
   }
 
-  operator bigint.!=(a: int, const ref b: bigint) {
+  operator bigint.!=(a: int, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) != 0;
   }
 
-  operator bigint.!=(const ref a: bigint, b: uint) {
+  operator bigint.!=(const ref a: bigint, b: uint): bool {
     return BigInteger.cmp(a, b) != 0;
   }
 
-  operator bigint.!=(a: uint, const ref b: bigint) {
+  operator bigint.!=(a: uint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) != 0;
   }
 
 
 
   // Greater than
-  operator bigint.>(const ref a: bigint, const ref b: bigint) {
+  operator bigint.>(const ref a: bigint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) > 0;
   }
 
-  operator bigint.>(const ref a: bigint, b: int) {
+  operator bigint.>(const ref a: bigint, b: int): bool {
     return BigInteger.cmp(a, b) > 0;
   }
 
-  operator bigint.>(a: int, const ref b: bigint) {
+  operator bigint.>(a: int, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) > 0;
   }
 
-  operator bigint.>(const ref a: bigint, b: uint) {
+  operator bigint.>(const ref a: bigint, b: uint): bool {
     return BigInteger.cmp(a, b) > 0;
   }
 
-  operator bigint.>(a: uint, const ref b: bigint) {
+  operator bigint.>(a: uint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) > 0;
   }
 
 
 
   // Less than
-  operator bigint.<(const ref a: bigint, const ref b: bigint) {
+  operator bigint.<(const ref a: bigint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) < 0;
   }
 
-  operator bigint.<(const ref a: bigint, b: int) {
+  operator bigint.<(const ref a: bigint, b: int): bool {
     return BigInteger.cmp(a, b) < 0;
   }
 
-  operator bigint.<(a: int, const ref b: bigint) {
+  operator bigint.<(a: int, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) < 0;
   }
 
-  operator bigint.<(const ref a: bigint, b: uint) {
+  operator bigint.<(const ref a: bigint, b: uint): bool {
     return BigInteger.cmp(a, b) < 0;
   }
 
-  operator bigint.<(a: uint, const ref b: bigint) {
+  operator bigint.<(a: uint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) < 0;
   }
 
 
   // Greater than or equal
-  operator bigint.>=(const ref a: bigint, const ref b: bigint) {
+  operator bigint.>=(const ref a: bigint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) >= 0;
   }
 
-  operator bigint.>=(const ref a: bigint, b: int) {
+  operator bigint.>=(const ref a: bigint, b: int): bool {
     return BigInteger.cmp(a, b) >= 0;
   }
 
-  operator bigint.>=(a: int, const ref b: bigint) {
+  operator bigint.>=(a: int, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) >= 0;
   }
 
-  operator bigint.>=(const ref a: bigint, b: uint) {
+  operator bigint.>=(const ref a: bigint, b: uint): bool {
     return BigInteger.cmp(a, b) >= 0;
   }
 
-  operator bigint.>=(a: uint, const ref b: bigint) {
+  operator bigint.>=(a: uint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) >= 0;
   }
 
 
 
   // Less than or equal
-  operator bigint.<=(const ref a: bigint, const ref b: bigint) {
+  operator bigint.<=(const ref a: bigint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) <= 0;
   }
 
-  operator bigint.<=(const ref a: bigint, b: int) {
+  operator bigint.<=(const ref a: bigint, b: int): bool {
     return BigInteger.cmp(a, b) <= 0;
   }
 
-  operator bigint.<=(a: int, const ref b: bigint) {
+  operator bigint.<=(a: int, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) <= 0;
   }
 
-  operator bigint.<=(const ref a: bigint, b: uint) {
+  operator bigint.<=(const ref a: bigint, b: uint): bool {
     return BigInteger.cmp(a, b) <= 0;
   }
 
-  operator bigint.<=(a: uint, const ref b: bigint) {
+  operator bigint.<=(a: uint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) <= 0;
   }
 

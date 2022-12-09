@@ -43,7 +43,7 @@
 namespace chpl {
   class Context;
 
-class ErrorBase;
+  class ErrorBase;
 
 namespace uast {
   class AstNode;
@@ -114,7 +114,7 @@ class Context {
   bool computedChplEnv = false;
   ChplEnvMap chplEnv;
 
-  // Whether or no to use detailed error output
+  // Whether or not to use detailed error output
   bool detailedErrors = true;
 
   // map that supports uniqueCString / UniqueString
@@ -724,7 +724,7 @@ class Context {
           if (enableQueryTimingTrace) {
             auto ticks = elapsed.count();
             auto os = queryTimingTraceOutput.get();
-            assert(os != nullptr);
+            CHPL_ASSERT(os != nullptr);
             *os << depth << ' ' << base->queryName << ' ' << ticks << '\n';
           }
         });

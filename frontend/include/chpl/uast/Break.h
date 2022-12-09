@@ -45,7 +45,7 @@ class Break : public AstNode {
   Break(AstList children, int8_t targetChildNum)
     : AstNode(asttags::Break, std::move(children)),
       targetChildNum_(targetChildNum) {
-    assert(numChildren() <= 1);
+    CHPL_ASSERT(numChildren() <= 1);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -78,7 +78,7 @@ class Break : public AstNode {
   const Identifier* target() const {
     if (targetChildNum_ < 0) return nullptr;
     auto ret = child(targetChildNum_);
-    assert(ret->isIdentifier());
+    CHPL_ASSERT(ret->isIdentifier());
     return (const Identifier*)ret;
   }
 

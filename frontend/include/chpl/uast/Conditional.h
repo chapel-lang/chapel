@@ -53,31 +53,31 @@ class Conditional final : public AstNode {
         elseBlockStyle_(elseBlockStyle),
         isExpressionLevel_(isExpressionLevel) {
 
-    assert(children_[thenBodyChildNum_]->isBlock());
+    CHPL_ASSERT(children_[thenBodyChildNum_]->isBlock());
 
     if (hasElseBlock()) {
-      assert(0 <= elseBodyChildNum_);
-      assert(elseBodyChildNum_ <= children_.size());
-      assert(children_[elseBodyChildNum_]->isBlock());
+      CHPL_ASSERT(0 <= elseBodyChildNum_);
+      CHPL_ASSERT(elseBodyChildNum_ <= children_.size());
+      CHPL_ASSERT(children_[elseBodyChildNum_]->isBlock());
     } else {
-      assert(elseBlockStyle_ == BlockStyle::IMPLICIT);
-      assert(numElseStmts() == 0);
+      CHPL_ASSERT(elseBlockStyle_ == BlockStyle::IMPLICIT);
+      CHPL_ASSERT(numElseStmts() == 0);
     }
 
-    assert(elseBlockStyle_ != BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK);
+    CHPL_ASSERT(elseBlockStyle_ != BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK);
 
 
     if (isExpressionLevel_) {
-      assert(thenBlockStyle_ == BlockStyle::IMPLICIT);
-      assert(elseBlockStyle_ == BlockStyle::IMPLICIT);
-      assert(numThenStmts() == 1);
+      CHPL_ASSERT(thenBlockStyle_ == BlockStyle::IMPLICIT);
+      CHPL_ASSERT(elseBlockStyle_ == BlockStyle::IMPLICIT);
+      CHPL_ASSERT(numThenStmts() == 1);
 
       // May not have an else block if it's used in a filter expression.
-      assert(numElseStmts() <= 1);
+      CHPL_ASSERT(numElseStmts() <= 1);
     }
 
-    assert(conditionChildNum_ < (int) children_.size());
-    assert(thenBodyChildNum_ < (int) children_.size());
+    CHPL_ASSERT(conditionChildNum_ < (int) children_.size());
+    CHPL_ASSERT(thenBodyChildNum_ < (int) children_.size());
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -193,7 +193,7 @@ class Conditional final : public AstNode {
       return nullptr;
 
     auto ret = child(elseBodyChildNum_);
-    assert(ret->isBlock());
+    CHPL_ASSERT(ret->isBlock());
 
     return (const Block*) ret;
   }
@@ -232,7 +232,7 @@ class Conditional final : public AstNode {
   */
   const AstNode* elseStmt(int i) const {
     const Block* elseB = elseBlock();
-    assert(elseB != nullptr);
+    CHPL_ASSERT(elseB != nullptr);
 
     return elseB->stmt(i);
   }

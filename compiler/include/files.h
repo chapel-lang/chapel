@@ -99,7 +99,7 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]);
 
 std::string getChplDepsApp();
 bool compilingWithPrgEnv();
-std::string runCommand(std::string& command);
+std::string runCommand(const std::string& command);
 
 const char* filenameToModulename(const char* filename);
 
@@ -112,6 +112,7 @@ void expandInstallationPaths(std::string& arg);
 void expandInstallationPaths(std::vector<std::string>& args);
 
 bool isDirectory(const char* path);
+bool pathExists(const char* path);
 
 char*       chplRealPath(const char* path);
 char*       dirHasFile(const char* dir, const char* file);

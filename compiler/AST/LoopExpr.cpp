@@ -579,6 +579,11 @@ static bool considerForOuter(Symbol* sym) {
     return true;
   }
 
+  if (isModuleSymbol(sym)) {
+    // Modules are not considered for outer.
+    return false;
+  }
+
   if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
       sym->hasFlag(FLAG_PARAM))
     return false;  // these will be eliminated anyway

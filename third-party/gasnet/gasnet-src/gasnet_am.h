@@ -51,7 +51,7 @@
     GASNETI_CHECK_ERRR((lc_opt == NULL),BAD_ARG,"lc_opt=NULL is invalid");                   \
     GASNETI_CHECK_ERRR((lc_opt == GEX_EVENT_DEFER),BAD_ARG,"EVENT_DEFER is invalid for Requests"); \
     GASNETI_CHECK_ERRR(nbytes /* 0-byte case must pass dest_addr unchecked */  &&            \
-                       !gasneti_in_segment_allowoutseg(tm,rank,dest_addr,nbytes),            \
+                       !gasneti_in_segment(tm,rank,dest_addr,nbytes),                        \
                        BAD_ARG,"destination address out of segment range");                  \
   } while (0)
 #define GASNETI_COMMON_AMREPLYSHORT(token,handler,flags,numargs) do {    \
@@ -91,7 +91,7 @@
     gex_Token_Info_t _crl_info;                                                             \
     gex_Token_Info(token, &_crl_info, GEX_TI_SRCRANK);                                      \
     GASNETI_CHECK_ERRR(nbytes /* 0-byte case must pass dest_addr unchecked */  &&           \
-                       !gasneti_in_segment_allowoutseg(gasneti_THUNK_TM,_crl_info.gex_srcrank,\
+                       !gasneti_in_segment(gasneti_THUNK_TM,_crl_info.gex_srcrank,          \
                                                        dest_addr,nbytes),                   \
                        BAD_ARG,"destination address out of segment range");                 \
   } while (0)

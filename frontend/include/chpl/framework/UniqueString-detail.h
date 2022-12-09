@@ -28,7 +28,8 @@
 #include "chpl/util/memory.h"
 #include "chpl/util/string-escapes.h"
 #include "chpl/framework/stringify-functions.h"
-#include <cassert>
+#include "chpl/util/assertions.h"
+
 #include <cstring>
 #include <functional>
 #include <string>
@@ -117,8 +118,8 @@ struct InlinedString {
     if (s == nullptr || len == 0)
       return {{ nullptr }};
 
-    assert(len <= MAX_SIZE_INLINED);
-    assert(!stringContainsZeroBytes(s, len));
+    CHPL_ASSERT(len <= MAX_SIZE_INLINED);
+    CHPL_ASSERT(!stringContainsZeroBytes(s, len));
 
     uintptr_t val = INLINE_TAG; // store the tag in the low-order bits, 0s
     char* dst = dataAssumingTag(&val);
@@ -134,7 +135,7 @@ struct InlinedString {
     The pointer must have the property that alignmentIndicatesTag(s)==false.
    */
   static inline InlinedString buildFromAlignedPtr(const char* s, size_t len) {
-    assert(!alignmentIndicatesTag(s));
+    CHPL_ASSERT(!alignmentIndicatesTag(s));
     return {{ s }};
   }
 

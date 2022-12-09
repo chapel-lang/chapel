@@ -54,11 +54,11 @@ class Enum final : public TypeDecl {
 
     #ifndef NDEBUG
       for (auto ast : declOrComments()) {
-        assert(ast->isEnumElement() || ast->isComment());
+        CHPL_ASSERT(ast->isEnumElement() || ast->isComment());
       }
 
       if (attributes()) {
-        assert(declOrCommentChildNum() > 0);
+        CHPL_ASSERT(declOrCommentChildNum() > 0);
       }
     #endif
   }
@@ -107,9 +107,9 @@ class Enum final : public TypeDecl {
    Return the i'th EnumElement or Comment in this Enum.
    */
   const AstNode* declOrComment(int i) const {
-    assert(0 <= i && i < numDeclOrComments());
+    CHPL_ASSERT(0 <= i && i < numDeclOrComments());
     const AstNode* ast = this->child(declOrCommentChildNum() + i);
-    assert(ast->isDecl() || ast->isComment());
+    CHPL_ASSERT(ast->isDecl() || ast->isComment());
     return ast;
   }
 

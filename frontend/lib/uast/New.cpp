@@ -35,7 +35,7 @@ const char* New::managementToString(New::Management management) {
     default: break;
   }
 
-  assert(false && "Should not reach here");
+  CHPL_ASSERT(false && "Should not reach here");
   return nullptr;
 }
 

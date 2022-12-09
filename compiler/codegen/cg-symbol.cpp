@@ -94,6 +94,7 @@ const char* llvmStageName[llvmStageNum::LAST] = {
   "none", //llvmStageNum::NONE
   "basic", //llvmStageNum::BASIC
   "full", //llvmStageNum::FULL
+  "asm", //llvmStageNum::ASM
   "every", //llvmStageNum::EVERY
   "early-as-possible",
   "module-optimizer-early",
@@ -142,6 +143,17 @@ bool shouldLlvmPrintIrCName(const char* name) {
 
 bool shouldLlvmPrintIrFn(FnSymbol* fn) {
   return shouldLlvmPrintIrName(fn->name) || shouldLlvmPrintIrCName(fn->cname);
+}
+
+std::vector<std::string> gatherPrintLlvmIrCNames() {
+  std::vector<std::string> ret;
+  for (auto elt : llvmPrintIrCNames) {
+    ret.push_back(std::string(elt));
+  }
+
+  // sort the symbols by value to have deterministic ordering
+  std::sort(ret.begin(), ret.end());
+  return ret;
 }
 
 #ifdef HAVE_LLVM
@@ -2321,7 +2333,14 @@ void FnSymbol::codegenPrototype() {
     if (generatingGPUKernel) {
       func->setConvergent();
       if (!hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
-        func->setCallingConv(llvm::CallingConv::PTX_Kernel);
+        switch (getGpuCodegenType()) {
+          case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
+            func->setCallingConv(llvm::CallingConv::PTX_Kernel);
+            break;
+          case GpuCodegenType::GPU_CG_AMD_HIP:
+            func->setCallingConv(llvm::CallingConv::AMDGPU_KERNEL);
+            break;
+        }
       }
     }
 

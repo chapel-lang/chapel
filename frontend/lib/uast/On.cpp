@@ -29,7 +29,7 @@ owned<On> On::build(Builder* builder, Location loc,
                     owned<AstNode> destination,
                     BlockStyle blockStyle,
                     AstList stmts) {
-  assert(destination.get() != nullptr);
+  CHPL_ASSERT(destination.get() != nullptr);
 
   AstList lst;
 

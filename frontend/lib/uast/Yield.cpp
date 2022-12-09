@@ -27,7 +27,7 @@ namespace uast {
 
 owned<Yield> Yield::build(Builder* builder, Location loc,
                           owned<AstNode> value) {
-  assert(value.get() != nullptr);
+  CHPL_ASSERT(value.get() != nullptr);
 
   AstList lst;
 

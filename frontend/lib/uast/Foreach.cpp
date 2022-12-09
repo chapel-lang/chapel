@@ -33,8 +33,8 @@ owned<Foreach> Foreach::build(Builder* builder,
                               BlockStyle blockStyle,
                               owned<Block> body) {
 
-  assert(iterand.get() != nullptr);
-  assert(body.get() != nullptr);
+  CHPL_ASSERT(iterand.get() != nullptr);
+  CHPL_ASSERT(body.get() != nullptr);
 
   AstList lst;
   int8_t indexChildNum = -1;

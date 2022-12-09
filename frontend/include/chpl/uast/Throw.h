@@ -44,7 +44,7 @@ class Throw final : public AstNode {
  private:
   Throw(AstList children)
       : AstNode(asttags::Throw, std::move(children)) {
-    assert(numChildren() == 1);
+    CHPL_ASSERT(numChildren() == 1);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

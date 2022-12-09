@@ -25,6 +25,7 @@ target_sources(libdyno-obj
                my_strerror_r.c
 
                # C++ sources
+               assertions.cpp
                bitmap.cpp
                break.cpp
                chplenv.cpp

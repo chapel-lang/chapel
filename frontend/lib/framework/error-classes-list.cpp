@@ -233,7 +233,7 @@ void ErrorUnsupportedAsIdent::write(ErrorWriterBase& wr) const {
   } else if (expectedIdentifier == as->rename()) {
     whichName = "new";
   } else {
-    assert(false && "should not be reachable");
+    CHPL_ASSERT(false && "should not be reachable");
   }
   wr.message("'as' requires the ", whichName,
              " name to be a simple identifier, but instead got the following:");
@@ -329,13 +329,13 @@ void ErrorIncompatibleKinds::write(ErrorWriterBase& wr) const {
                "the left of the '=', try using '.type'?");
   } else if (typeToValue) {
     if (initType.type() && initType.type()->isCompositeType()) {
-      auto compsiteType = initType.type()->toCompositeType();
+      auto compositeType = initType.type()->toCompositeType();
       auto initIdent = initExpr->toIdentifier();
-      if (initIdent && initIdent->name() == compsiteType->name()) {
+      if (initIdent && initIdent->name() == compositeType->name()) {
         // There's no aliasing involved, the user is just using the record name.
         wr.message("If you're trying to create a new value of type '",
                    initType.type()->toCompositeType()->name(),
-                   "', try writing 'new ", compsiteType->name(), "()' instead");
+                   "', try writing 'new ", compositeType->name(), "()' instead");
       } else {
         // They are referring to a composite type, but through an alias. Not
         // quite sure how to report this better.
@@ -558,7 +558,7 @@ void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
 void ErrorParseErr::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto errorMessage = std::get<std::string>(info);
-  assert(errorMessage.back() == '.' &&
+  CHPL_ASSERT(errorMessage.back() == '.' &&
          "expected a period at the end of ErrorParseErr message");
   wr.heading(kind_, type_, loc, errorMessage);
   wr.code(loc);
@@ -568,7 +568,7 @@ void ErrorParseErr::write(ErrorWriterBase& wr) const {
 void ErrorParseSyntax::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto errorMessage = std::get<std::string>(info);
-  assert(errorMessage.back() == '.' &&
+  CHPL_ASSERT(errorMessage.back() == '.' &&
          "expected a period at the end of ErrorParseSyntax message");
   wr.heading(kind_, type_, loc, errorMessage);
   wr.code(loc);
@@ -610,8 +610,8 @@ void ErrorRecordInheritanceNotSupported::write(ErrorWriterBase& wr) const {
 void ErrorInvalidNumericLiteral::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto errMessage = std::get<std::string>(info);
-  assert(!errMessage.empty());
-  assert(errMessage.back() == '.' &&
+  CHPL_ASSERT(!errMessage.empty());
+  CHPL_ASSERT(errMessage.back() == '.' &&
          "expected a period at the end of InvalidNumericLiteral message");
   errMessage[0] = std::tolower(errMessage[0]);
   wr.heading(kind_, type_, loc, errMessage);

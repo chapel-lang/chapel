@@ -207,6 +207,19 @@ see the instructions in other/cross-configure-help.c.
 [NOTE: We currently don't distribute the cross-configure-help.c in our
 normal distribution.  If you think you need it, contact us at gasnet-devel@lbl.gov]
 
+  On HPE Cray EX (aka "Shasta") systems, we recommend the following configure
+  arguments to use the vendor's compiler wrappers:
+    --with-cc=cc --with-cxx=CC --with-mpi-cc=cc
+  Additionally, exactly one of the following is recommended to ensure that
+  ofi-conduit is built for the appropriate libfabric provider:
+    * HPE Cray EX with Slingshot-10 (100Gbps) NICs: --with-ofi-provider=verbs
+    * HPE Cray EX with Slingshot-11 (200Gbps) NICs: --with-ofi-provider=cxi
+    * HPE Cray EX with BOTH NIC types: --with-ofi-provider=generic
+
+  On Linux clusters with Intel Omni-Path networks, we recommend the following
+  configure arguments to avoid using ibv-conduit over an emulated libibverbs:
+    --disable-ibv --enable-ofi --with-ofi-provider=psm2
+
 * Step 2: make all
   Build the GASNet libraries. A number of other useful makefile targets 
   are available from the top-level:
@@ -428,12 +441,12 @@ ucx-conduit: Unified Communication X framework [EXPERIMENTAL]
  This conduit is currently experimental, and is not yet carefully tuned for performance.
  It has only been validated on Mellanox InfiniBand devices starting from ConnectX-5.
 
-ofi-conduit: Open Fabrics Interfaces [EXPERIMENTAL]
+ofi-conduit: Open Fabrics Interfaces (most providers)
  GASNet over the Open Fabrics Interface framework (libfabric).
- This conduit is currently experimental, and is not yet carefully tuned for performance.
- With the exception of HPE Slingshot and Intel OmniPath networks (where ofi-conduit is
- either the best or only option), users are advised to use other conduits compatible
- with their hardware.
+ This conduit is functionally complete but not yet carefully tuned for performance.
+ With the exception of HPE Slingshot and Intel Omni-Path networks (where ofi-conduit
+ is either the best or only option and considered "native"), users are advised to
+ use other conduits compatible with their hardware.
 
 Native, high-performance conduits:
 ---------------------------------
@@ -446,6 +459,13 @@ ibv-conduit: InfiniBand Verbs
  GASNet over the OpenFabrics Verbs API.
  Rigorously tested and supported over InfiniBand hardware on all supported systems (see below).
  Believed to also work on other hardware offering a standard-compliant Verbs layer.
+
+ofi-conduit: Open Fabrics Interfaces (select providers/networks)
+ GASNet over the Open Fabrics Interface framework (libfabric).
+ This conduit is functionally complete but not yet carefully tuned for performance.
+ On HPE Slingshot and Intel OmniPath networks, ofi-conduit is either the best
+ or only option available.  On only those systems, ofi-conduit is categorized as a
+ native, high-performance conduit.
 
 Single-node Development Options
 ===============================
@@ -554,7 +574,7 @@ although we generally recommend the vendor C compiler for performance reasons.
 
 The following compilers are believed to work on platforms listed above, 
 with the provided minimum version:
-Gnu (gcc 3.0+), LLVM (clang 3.6+), Apple (Xcode 7.1+), PGI (pgcc 10.9 to 20.4),
+Gnu (gcc 3.0+), LLVM (clang 3.6+), Apple (Xcode 7.1+), PGI (pgcc 11.0 to 20.4),
 NVHPC (20.9+), Intel (icc 16+), Intel oneAPI (icx 21+), IBM XL (xlc 13+),
 Cray (CCE 8.6+)
 
@@ -710,6 +730,9 @@ these aliases.
  through non-GASNet spawn scripts, in to order to ensure their safe delivery
  to the GASNet client program.
 
+* GASNET_SPAWN_VERBOSE - Boolean setting to enable console debugging output of
+ operations related to job creation and teardown. Details vary by configuration.
+
 * GASNET_BARRIER - select the communication algorithm for use in GASNet barriers.
  The following values are available on all conduits:
   AMDISSEM - uses Active Messages to implement the Dissemination barrier
@@ -742,10 +765,14 @@ these aliases.
  The default is 0 (linear) on most platforms.
 
 * GASNET_PSHM_NETWORK_DEPTH - set depth of the intra-node AM network
- For configurations using PSHM (a function of OS and conduit) GASNet implements
- intra-node Active Messages using a shared-memory queue.  This variable sets the
- "network depth" of this implementation: the minimum number of outgoing AMs it
- must be capable of buffering before possibly stalling.
+ For configurations using PSHM (the default on most systems) GASNet implements
+ intra-node Active Messages using a shared-memory queue.  This variable sets
+ the "network depth" of this implementation in units of maximum-sized messages.
+ A process can send at least this many out-bound intra-node AMs concurrently
+ (to any peer) before the implementation might stall awaiting peer attentiveness
+ to retire AMs.  When sending smaller messages, the effective depth is greater
+ due to allocating less space in the queue than would be needed for a
+ maximum-sized message.
  The default is 32 and the minimum is 4.
 
 * GASNET_NODEMAP_EXACT - Boolean setting to enable an exact algorithm for
@@ -864,8 +891,8 @@ these aliases.
  a unique identifier for each host.  This string-valued setting selects the
  identifier used.
  The following are implemented for most conduits:
-   "hostid" - the 32-bit value retuned by gethostid()
-   "hostname" - a 64-bit hash of the hostname
+   "gethostid" - the 32-bit value returned by POSIX gethostid()
+   "hostname" - a 64-bit hash of the hostname (as reported by POSIX gethostname())
  Some conduits support:
    "conduit" - a network-specific identifier (such as a MAC address)
  On networks providing the "conduit" option, conduit-specific documentation will
@@ -1118,14 +1145,6 @@ For Linux systems with libhugetlbfs and a hugetlbfs mount, there is also
 experimental support for mmap()ed files on hugetlbfs, which can be
 enabled with:
     HUGETLBFS: --disable-pshm-posix --enable-pshm-hugetlbfs
-
-PSHM includes an environment variable for controlling use of memory for
-intra-memory AM traffic:
-
-  GASNET_PSHMNET_QUEUE_DEPTH
-     Minimum number of PSHM-AMs a process must be capable of sending before
-     it may stall (default 32).  The shared memory allocated on a compute
-     node with P processes is roughly (2 * P * Depth * MaxMsgSz).
 
 System Settings for POSIX Shared Memory:
 ---------------------------------------

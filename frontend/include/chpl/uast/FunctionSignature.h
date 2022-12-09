@@ -76,13 +76,13 @@ class FunctionSignature final : public AstNode {
       throws_(throws),
       isParenless_(isParenless) {
 
-    assert(-1 <= formalsChildNum_ &&
+    CHPL_ASSERT(-1 <= formalsChildNum_ &&
                  formalsChildNum_ < (ssize_t)children_.size());
-    assert(-1 <= thisFormalChildNum_ &&
+    CHPL_ASSERT(-1 <= thisFormalChildNum_ &&
                  thisFormalChildNum_ < (ssize_t)children_.size());
-    assert(0 <= numFormals_ &&
+    CHPL_ASSERT(0 <= numFormals_ &&
                 numFormals_ <= (ssize_t)children_.size());
-    assert(-1 <= returnTypeChildNum_ &&
+    CHPL_ASSERT(-1 <= returnTypeChildNum_ &&
                  returnTypeChildNum_ < (ssize_t)children_.size());
   }
 
@@ -135,7 +135,7 @@ class FunctionSignature final : public AstNode {
     Return the i'th formal
   */
   const Decl* formal(int i) const {
-    assert(0 <= i && i < numFormals_);
+    CHPL_ASSERT(0 <= i && i < numFormals_);
     auto ret = this->child(formalsChildNum_ + i);
     return (const Decl*) ret;
   }
@@ -147,7 +147,7 @@ class FunctionSignature final : public AstNode {
   const Formal* thisFormal() const {
     if (thisFormalChildNum_ == NO_CHILD) return nullptr;
     auto ret = this->child(thisFormalChildNum_);
-    assert(ret->isFormal());
+    CHPL_ASSERT(ret->isFormal());
     return (const Formal*) ret;
   }
 

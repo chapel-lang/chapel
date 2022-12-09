@@ -53,7 +53,7 @@ class DoWhile final : public Loop {
            blockStyle,
            loopBodyChildNum),
       conditionChildNum_(conditionChildNum) {
-    assert(condition());
+    CHPL_ASSERT(condition());
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

@@ -158,7 +158,7 @@ void FindElidedCopies::saveElidedCopies(VarFrame* frame) {
 
 void FindElidedCopies::saveLocalVarElidedCopies(VarFrame* frame) {
   for (auto id : frame->eligibleVars) {
-    assert(frame->declaredVars.count(id) > 0);
+    CHPL_ASSERT(frame->declaredVars.count(id) > 0);
     if (lastMentionIsCopy(frame, id)) {
       const CopyElisionState& state = frame->copyElisionState[id];
       allElidedCopyFromIds.insert(state.points.begin(), state.points.end());

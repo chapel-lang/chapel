@@ -60,7 +60,7 @@ class ReduceIntent final : public NamedDecl {
                   Decl::DEFAULT_LINKAGE,
                   /*linkageNameChildNum=*/ AstNode::NO_CHILD,
                   name) {
-    assert(numChildren() == 1);
+    CHPL_ASSERT(numChildren() == 1);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

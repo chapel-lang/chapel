@@ -1,1 +1,1 @@
-generic-inherit6.chpl:13: error: non-Identifier expression cannot be inherited
+generic-inherit6.chpl:13: syntax error: non-Identifier expression cannot be inherited

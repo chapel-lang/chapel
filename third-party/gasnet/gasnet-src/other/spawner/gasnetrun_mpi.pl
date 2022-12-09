@@ -289,7 +289,7 @@ sub usage
     print "      -N <n>                number of nodes to run on (not supported on all mpiruns)\n";
     print "      -c <n>                number of cpus per process (not supported on all mpiruns)\n";
     print "      -E <VAR1[,VAR2...]>   list of environment vars to propagate\n";
-    print "      -v                    be verbose about what is happening\n";
+    print "      -v                    enable verbose output, repeated use increases verbosity\\n";
     print "      -t                    test only, don't execute anything (implies -v)\n";
     print "      -k                    keep any temporary files created (implies -v)\n";
     print "      -(no)encode[-args,-env]   use encoding of args, env or both to help with buggy spawners\n";
@@ -358,13 +358,13 @@ sub expand {
 	} elsif ($_ =~ /^(-c)([0-9]+)$/) {
 	    $numcpu = $2;
 	} elsif ($_ eq '-v') {
-	    $verbose = 1;
+	    $verbose++;
 	} elsif ($_ eq '-t') {
 	    $dryrun = 1;
-	    $verbose = 1;
+            $verbose = 1 if (!$verbose);
 	} elsif ($_ eq '-k') {
 	    $keep = 1;
-	    $verbose = 1;
+            $verbose = 1 if (!$verbose);
 	} elsif ($_ =~ /^-+(no)?encode-args$/) {
           $encode_args = !(defined $1);
 	} elsif ($_ =~ /^-+(no)?encode-env$/) {
@@ -425,7 +425,12 @@ sub expand {
 
 # We need to gather a list of important environment variables
     # Form a list of the vars given by -E, plus any GASNET_* vars
-    $ENV{"GASNET_VERBOSEENV"} = "1" if ($verbose);
+    if ($verbose >= 1) {
+      $ENV{"GASNET_VERBOSEENV"} = "1" unless (exists($ENV{"GASNET_VERBOSEENV"}));
+    }
+    if ($verbose >= 2) {
+      $ENV{"GASNET_SPAWN_VERBOSE"} = "1" unless (exists($ENV{"GASNET_SPAWN_VERBOSE"}));
+    }
     my @envvars = ((grep {+exists($ENV{$_})} split(',', $envlist)),
 		   (grep {+m/^GASNET_/} keys(%ENV)));
 

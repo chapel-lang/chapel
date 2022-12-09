@@ -103,7 +103,7 @@ class SimpleBlockLike : public AstNode {
     Return the i'th statement in this.
   */
   const AstNode* stmt(int i) const {
-    assert(i >= 0 && i < numBodyStmts_);
+    CHPL_ASSERT(i >= 0 && i < numBodyStmts_);
     const AstNode* ast = this->child(i + bodyChildNum_);
     return ast;
   }

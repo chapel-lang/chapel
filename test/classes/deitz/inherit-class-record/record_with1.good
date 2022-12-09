@@ -1,2 +1,2 @@
-p { 3.0, 4.5 }
-cp { 2.2, 3.3, 5 }
+record_with1.chpl:6: error: inheritance is not currently supported for records
+record_with1.chpl:6: note: cpoint declared as a record here

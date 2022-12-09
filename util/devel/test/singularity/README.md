@@ -1,3 +1,7 @@
+# Getting started with singularity
+
+See https://docs.sylabs.io/guides/latest/user-guide/
+
 # Where to find images
 
 * You can use 'singularity search' to look for containers;
@@ -15,8 +19,11 @@ From: ubuntu:16.04
 BootStrap: docker
 From: ubuntu:16.04
 
+## Example using a docker image from quay.io
+BootStrap: docker
+From: quay.io/centos/centos:stream9
 
-
+## Notes about command sections
 %post commands run as root
 %runscript commands run as regular user
 

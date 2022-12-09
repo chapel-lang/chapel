@@ -117,7 +117,7 @@ class VarScopeVisitor {
   /** Return the current frame. This should always be safe to call
       from one of the handle* methods. */
   VarFrame* currentFrame() {
-    assert(!scopeStack.empty());
+    CHPL_ASSERT(!scopeStack.empty());
     return scopeStack.back().get();
   }
 

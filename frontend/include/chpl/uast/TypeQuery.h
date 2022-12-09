@@ -54,7 +54,7 @@ class TypeQuery final : public NamedDecl {
   TypeQuery(UniqueString name)
     : NamedDecl(asttags::TypeQuery, DEFAULT_VISIBILITY, DEFAULT_LINKAGE,
                 /* attributesChildNum */ -1, name) {
-    assert(!name.isEmpty() && name.c_str()[0] != '?');
+    CHPL_ASSERT(!name.isEmpty() && name.c_str()[0] != '?');
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

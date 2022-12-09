@@ -33,9 +33,9 @@ owned<For> For::build(Builder* builder,
                       owned<Block> body,
                       bool isExpressionLevel,
                       bool isParam) {
-  assert(iterand.get() != nullptr);
-  assert(body.get() != nullptr);
-  if (isParam) assert(!isExpressionLevel);
+  CHPL_ASSERT(iterand.get() != nullptr);
+  CHPL_ASSERT(body.get() != nullptr);
+  if (isParam) CHPL_ASSERT(!isExpressionLevel);
 
   AstList lst;
   int8_t indexChildNum = -1;

@@ -325,8 +325,12 @@ do-run-testexit: force
 	@echo "else"                                              >> $(TESTEXIT_SCRIPT)
 	@echo '  RUNCMD="$$INTERACTIVE_RUNCMD"'                   >> $(TESTEXIT_SCRIPT)
 	@echo "fi"                                                >> $(TESTEXIT_SCRIPT)
+	@if test -z "$$TIMECMD" ; then                                    \
+	   TIMECMD="@TIMECMD@" ;                                          \
+	 fi ;                                                             \
+	 echo "TIMECMD='$$TIMECMD'"                               >> $(TESTEXIT_SCRIPT)
 	@echo "@DEBUGMALLOC_VAR@=$${@DEBUGMALLOC_VAR@-@DEBUGMALLOC_VAL@}; export @DEBUGMALLOC_VAR@" >> $(TESTEXIT_SCRIPT)
-	@if test "`echo ' mpi udp ofi ' | grep ' $(CONDUIT_NAME) '`" != "" ; then \
+	@if test "`echo ' mpi udp ' | grep ' $(CONDUIT_NAME) '`" != "" ; then \
 	   echo "have_interrupt=0"                                >> $(TESTEXIT_SCRIPT) ; \
 	 else                                                                             \
 	   echo "have_interrupt=1"                                >> $(TESTEXIT_SCRIPT) ; \
@@ -346,7 +350,7 @@ do-run-testexit: force
 	   echo 'echo "$$line"'                      >> $(TESTEXIT_SCRIPT) ; \
 	   echo 'echo "$$ID: testexit '$$i'"'        >> $(TESTEXIT_SCRIPT) ; \
 	   echo 'echo "$$RUNCMD"'" $$i"              >> $(TESTEXIT_SCRIPT) ; \
-	   echo '$$RUNCMD'" $$i"                     >> $(TESTEXIT_SCRIPT) ; \
+	   echo '$$TIMECMD $$RUNCMD'" $$i"           >> $(TESTEXIT_SCRIPT) ; \
 	   echo 'echo "$$ID: result=$$?"'            >> $(TESTEXIT_SCRIPT) ; \
 	   echo "sleep 1"                            >> $(TESTEXIT_SCRIPT) ; \
 	   if test "`echo ' '$$needinterrupt' ' | grep ' '$$i' '`" != "" ; then  \

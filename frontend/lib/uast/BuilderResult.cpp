@@ -63,7 +63,7 @@ void computeIdMaps(
       if (!parentAst->id().isEmpty()) {
         idToParentId[ast->id()] = parentAst->id();
       } else {
-        assert(false && "parentAst does not have valid ID");
+        CHPL_ASSERT(false && "parentAst does not have valid ID");
       }
     }
   }
@@ -183,7 +183,7 @@ Location BuilderResult::idToLocation(ID id, UniqueString path) const {
 
 Location BuilderResult::commentToLocation(const Comment *c) const {
   int idx = c->commentId().index();
-  assert(idx >= 0 && "Cant lookup comment that has -1 id");
+  CHPL_ASSERT(idx >= 0 && "Cant lookup comment that has -1 id");
   if (idx < 0 || (size_t)idx >= commentIdToLocation_.size()) {
     return Location();
   }

@@ -37,7 +37,7 @@ owned<Try> Try::build(Builder* builder, Location loc,
   lst.push_back(std::move(body));
 
   for (auto& ast : catches) {
-    assert(ast->isCatch());
+    CHPL_ASSERT(ast->isCatch());
     lst.push_back(std::move(ast));
   }
 

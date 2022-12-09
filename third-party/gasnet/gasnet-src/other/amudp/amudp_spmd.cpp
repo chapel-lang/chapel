@@ -399,7 +399,10 @@ extern int AMUDP_SPMDStartup(int *argc, char ***argv,
     #if AMX_DEBUG_VERBOSE
       AMX_SilentMode = 0;
     #else
-      AMX_SilentMode = !AMUDP_getenv_prefixed("VERBOSEENV");
+      /* Approximate match to GASNet's acceptance of 'no|NO|n|N|0' */
+      char *envval = AMUDP_getenv_prefixed_withdefault("SPAWN_VERBOSE", "NO");
+      char c = envval[0];
+      AMX_SilentMode = ((c == '0') || (c == 'n') || (c == 'N'));
     #endif
 
     /* defaulting */
@@ -1560,7 +1563,15 @@ extern char *AMUDP_getenv_prefixed_withdefault(const char *basekey, const char *
     #if AMX_DEBUG_VERBOSE
       verboseenv = 1;
     #else
-      verboseenv = !!AMUDP_getenv_prefixed("VERBOSEENV");
+      const char *v = AMUDP_getenv_prefixed("VERBOSEENV");
+      if (!v) verboseenv = 0; // default off
+      else {
+        char s[10];
+        strncpy(s, v, sizeof(s)-1); s[sizeof(s)-1] = '\0';
+        for (size_t i = 0; i < sizeof(s) && s[i]; i++) s[i] = toupper(s[i]);
+        if (!strcmp(s, "N") || !strcmp(s, "NO") || !strcmp(s, "0")) verboseenv = 0;
+        else verboseenv = 1; // for legacy reasons accept anything else including empty as yes
+      }
     #endif
     firsttime = 0;
   }

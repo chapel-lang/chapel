@@ -33,8 +33,8 @@ owned<BracketLoop> BracketLoop::build(Builder* builder, Location loc,
                                       owned<Block> body,
                                       bool isExpressionLevel) {
 
-  assert(iterand.get() != nullptr);
-  assert(body.get() != nullptr);
+  CHPL_ASSERT(iterand.get() != nullptr);
+  CHPL_ASSERT(body.get() != nullptr);
 
   AstList lst;
   int8_t indexChildNum = -1;

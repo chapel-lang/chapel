@@ -57,7 +57,8 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
   const ErrorParseErr* parseError = nullptr;
   if (!readfile(path.c_str(), text, error)) {
     error = "error reading file: " + error;
-    context->report(ErrorParseErr::get(context, {Location(), error}));
+    context->report(
+        ErrorParseErr::get(context, std::make_tuple(Location(), error)));
   }
   auto result = FileContents(std::move(text), parseError);
   return QUERY_END(result);
@@ -175,7 +176,7 @@ const Location& locateId(Context* context, ID id) {
 
 // this is just a convenient wrapper around locating with the id
 const Location& locateAst(Context* context, const AstNode* ast) {
-  assert(!ast->isComment() && "cant locate comment like this");
+  CHPL_ASSERT(!ast->isComment() && "cant locate comment like this");
   return locateId(context, ast->id());
 }
 
@@ -375,9 +376,9 @@ void setupModuleSearchPaths(Context* context,
                             const std::vector<std::string>& cmdLinePaths,
                             const std::vector<std::string>& inputFilenames) {
   auto& chplHomeStr = context->chplHome();
-  assert(chplHomeStr != "");
+  CHPL_ASSERT(chplHomeStr != "");
   auto chplEnv = context->getChplEnv();
-  assert(!chplEnv.getError() && "printchplenv error handling not implemented");
+  CHPL_ASSERT(!chplEnv.getError() && "printchplenv error handling not implemented");
 
   // CHPL_MODULE_PATH isn't always in the output; check if it's there.
   auto it = chplEnv->find("CHPL_MODULE_PATH");
@@ -604,7 +605,7 @@ static const AstNode* const& astForIDQuery(Context* context, ID id) {
 
 const AstNode* idToAst(Context* context, ID id) {
   if (id.isEmpty()) {
-    assert(false && "bad query of uAST for empty ID");
+    CHPL_ASSERT(false && "bad query of uAST for empty ID");
     return nullptr;
   }
 
@@ -697,7 +698,7 @@ static const ID& getModuleForId(Context* context, ID id) {
   AstTag tag;
   ID result = id;
 
-  assert(!result.isEmpty() && "should be handled at call site");
+  CHPL_ASSERT(!result.isEmpty() && "should be handled at call site");
 
   while (!result.isEmpty()) {
     tag = idToTag(context, result);
@@ -707,7 +708,7 @@ static const ID& getModuleForId(Context* context, ID id) {
     result = result.parentSymbolId(context);
   }
 
-  assert(!result.isEmpty() && "not expected");
+  CHPL_ASSERT(!result.isEmpty() && "not expected");
 
   return QUERY_END(result);
 }
@@ -765,7 +766,7 @@ idToContainingMultiDeclIdQuery(Context* context, ID id) {
   QUERY_BEGIN(idToContainingMultiDeclIdQuery, context, id);
 
   ID cur = id;
-  assert(isVariable(idToTag(context, id)));
+  CHPL_ASSERT(isVariable(idToTag(context, id)));
 
   while (true) {
     ID parent = idToParentId(context, cur);

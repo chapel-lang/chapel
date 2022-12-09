@@ -57,12 +57,12 @@ class Manage final : public SimpleBlockLike {
                       numBodyStmts),
       managerExprChildNum_(managerExprChildNum),
       numManagerExprs_(numManagerExprs) {
-    assert(0 <= managerExprChildNum_);
-    assert(managerExprChildNum_ < numChildren());
+    CHPL_ASSERT(0 <= managerExprChildNum_);
+    CHPL_ASSERT(managerExprChildNum_ < numChildren());
 
     #ifndef NDEBUG
       for (auto mgr : managers()) {
-        if (auto as = mgr->toAs()) assert(as->rename()->isVariable());
+        if (auto as = mgr->toAs()) CHPL_ASSERT(as->rename()->isVariable());
       }
     #endif
   }
@@ -113,7 +113,7 @@ class Manage final : public SimpleBlockLike {
     Return the i'th manager in this manage statement.
   */
   const AstNode* manager(int i) const {
-    assert(0 <= i && i < numManagerExprs_);
+    CHPL_ASSERT(0 <= i && i < numManagerExprs_);
     auto ret = child(managerExprChildNum_ + i);
     return ret;
   }

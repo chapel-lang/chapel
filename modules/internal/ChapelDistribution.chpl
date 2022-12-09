@@ -221,7 +221,7 @@ module ChapelDistribution {
     proc dsiIndexOrder(i)         { dnsError("indexOrder"); }
 
     pragma "no doc" pragma "last resort"
-    proc dsiMakeIndexBuffer(size) { dnsError("makeIndexBuffer"); }
+    proc dsiCreateIndexBuffer(size) { dnsError("createIndexBuffer"); }
 
     // end of default overloads to provide clear compile-time error messages
 
@@ -706,7 +706,7 @@ module ChapelDistribution {
     override proc dsiAlignedLow { return parentDom.low; }
     override proc dsiAlignedHigh { return parentDom.high; }
 
-    override proc dsiMakeIndexBuffer(size) {
+    override proc dsiCreateIndexBuffer(size) {
       return new SparseIndexBuffer(rank=this.rank, obj=this, size=size);
     }
 

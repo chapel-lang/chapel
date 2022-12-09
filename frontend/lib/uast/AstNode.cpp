@@ -56,7 +56,7 @@ bool AstNode::isLeaf() const {
   }
 
   if (ret) {
-    assert(numChildren() == 0);
+    CHPL_ASSERT(numChildren() == 0);
   }
 
   return ret;
@@ -182,7 +182,7 @@ bool AstNode::mayContainStatements(AstTag tag) {
     // no default to get compiler warning if any are added
   }
 
-  assert(false && "should not be reachable");
+  CHPL_ASSERT(false && "should not be reachable");
   return true;
 }
 

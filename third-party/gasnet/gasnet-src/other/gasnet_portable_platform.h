@@ -29,9 +29,9 @@
 /* Publish and enforce version number for the public interface to this header */
 /* YOU ARE NOT PERMITTED TO CHANGE THIS SECTION WITHOUT DIRECT APPROVAL FROM DAN BONACHEA */
 #if _PORTABLE_PLATFORM_H != PLATFORM_HEADER_VERSION \
-     || PLATFORM_HEADER_VERSION < 17
+     || PLATFORM_HEADER_VERSION < 18
 #undef  PLATFORM_HEADER_VERSION 
-#define PLATFORM_HEADER_VERSION 17
+#define PLATFORM_HEADER_VERSION 18
 #undef  _PORTABLE_PLATFORM_H
 #define _PORTABLE_PLATFORM_H PLATFORM_HEADER_VERSION
 /* End Header versioning handshake */
@@ -115,14 +115,17 @@
 #undef PLATFORM_COMPILER_UNKNOWN
 
 #undef PLATFORM_OS_FAMILYNAME
+#undef PLATFORM_OS_SUBFAMILYNAME
 #undef PLATFORM_OS_CATAMOUNT
-#undef PLATFORM_OS_CNL
 #undef PLATFORM_OS_BGP
 #undef PLATFORM_OS_BGQ
-#undef PLATFORM_OS_WSL
 #undef PLATFORM_OS_K42
 #undef PLATFORM_OS_UCLINUX
 #undef PLATFORM_OS_LINUX
+#undef PLATFORM_OS_CNL
+#undef PLATFORM_OS_SUBFAMILY_CNL
+#undef PLATFORM_OS_WSL
+#undef PLATFORM_OS_SUBFAMILY_WSL
 #undef PLATFORM_OS_BLRTS
 #undef PLATFORM_OS_CYGWIN
 #undef PLATFORM_OS_MSWINDOWS
@@ -167,6 +170,7 @@
 #undef PLATFORM_ARCH_AARCH64
 #undef PLATFORM_ARCH_TILE
 #undef PLATFORM_ARCH_S390
+#undef PLATFORM_ARCH_RISCV
 #undef PLATFORM_ARCH_UNKNOWN
 
 /* prevent known old/broken versions of this header from loading */
@@ -750,16 +754,16 @@
    PLATFORM_OS_<family>:
      defined to a positive value if OS belongs to a given family, undef otherwise
    PLATFORM_OS_FAMILYNAME:
-     unquoted token which provides the compiler family name
+     unquoted token which provides the OS family name
+
+   Some systems also define a subfamily:
+    PLATFORM_OS_SUBFAMILY_<subfamily>: positive value or undef
+    PLATFORM_OS_SUBFAMILYNAME: unquoted token for subfamily name or undef
 */
 
 #if defined(__LIBCATAMOUNT__) || defined(__QK_USER__)
   #define PLATFORM_OS_CATAMOUNT 1
   #define PLATFORM_OS_FAMILYNAME CATAMOUNT
-
-#elif defined(__CRAYXT_COMPUTE_LINUX_TARGET)
-  #define PLATFORM_OS_CNL 1
-  #define PLATFORM_OS_FAMILYNAME CNL
 
 #elif defined(GASNETI_ARCH_BGP) || defined(__bgp__)
   #define PLATFORM_OS_BGP 1
@@ -768,10 +772,6 @@
 #elif defined(GASNETI_ARCH_BGQ) || defined(__bgq__)
   #define PLATFORM_OS_BGQ 1
   #define PLATFORM_OS_FAMILYNAME BGQ
-
-#elif defined(GASNETI_ARCH_WSL)
-  #define PLATFORM_OS_WSL 1
-  #define PLATFORM_OS_FAMILYNAME WSL
 
 #elif defined(__K42)
   #define PLATFORM_OS_K42 1
@@ -784,6 +784,14 @@
 #elif defined(__linux) || defined(__linux__) || defined(__gnu_linux__)
   #define PLATFORM_OS_LINUX 1
   #define PLATFORM_OS_FAMILYNAME LINUX
+  #if defined(GASNETI_ARCH_WSL)
+    #define PLATFORM_OS_SUBFAMILY_WSL 1
+    #define PLATFORM_OS_SUBFAMILYNAME WSL
+  #elif defined(__CRAYXT_COMPUTE_LINUX_TARGET)
+    // NOTE: As of 2022-07 this is ONLY defined for the Cray cc/CC wrappers, and not the raw PrgEnv compilers
+    #define PLATFORM_OS_SUBFAMILY_CNL 1
+    #define PLATFORM_OS_SUBFAMILYNAME CNL
+  #endif
 
 #elif defined(__blrts) || defined(__blrts__) || defined(__gnu_blrts__)
   #define PLATFORM_OS_BLRTS 1
@@ -1031,6 +1039,16 @@
     #define _PLATFORM_ARCH_32 1
   #endif
 
+#elif defined(__riscv)
+  #define PLATFORM_ARCH_RISCV 1
+  #define PLATFORM_ARCH_FAMILYNAME RISCV
+  #define _PLATFORM_ARCH_LITTLE_ENDIAN 1
+  #if __riscv_xlen == 32
+    #define _PLATFORM_ARCH_32 1
+  #else  // (__riscv_xlen == 64) || (__riscv_xlen == 128)
+    #define _PLATFORM_ARCH_64 1
+  #endif
+
 #else /* unknown CPU */
   #define PLATFORM_ARCH_UNKNOWN 1
   #define PLATFORM_ARCH_FAMILYNAME UNKNOWN
@@ -1136,6 +1154,10 @@ int main(void) {
     printf("WARNING: Missing PLATFORM_COMPILER_C(XX)_LANGLVL!");
   #endif
   PLATFORM_DISP(OS_FAMILYNAME);
+  #if PLATFORM_OS_SUBFAMILYNAME
+    const char * OS_SUBFAMILYNAME = PLATFORM_STRINGIFY(PLATFORM_OS_SUBFAMILYNAME);
+    PLATFORM_DISP(OS_SUBFAMILYNAME);
+  #endif
   PLATFORM_DISP(ARCH_FAMILYNAME);
   #if PLATFORM_ARCH_32
     PLATFORM_DISPI(ARCH_32);

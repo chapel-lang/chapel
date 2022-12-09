@@ -31,7 +31,7 @@ owned<Dot> Dot::build(Builder* builder,
                       UniqueString fieldName) {
   AstList list;
 
-  assert(receiver.get() != nullptr);
+  CHPL_ASSERT(receiver.get() != nullptr);
 
   list.push_back(std::move(receiver));
 
