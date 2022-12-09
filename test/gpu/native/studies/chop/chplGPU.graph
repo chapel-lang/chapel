@@ -1,0 +1,5 @@
+perfkeys: Elapsed time:, Elapsed time:, Elapsed time:
+files: chop-15.dat, chop-16.dat, chop-17.dat
+graphkeys: Size 15, Size 16, Size 17
+ylabel: Time (s)
+graphtitle: ChOp Time
