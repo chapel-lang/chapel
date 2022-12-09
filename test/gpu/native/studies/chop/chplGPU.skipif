@@ -15,8 +15,8 @@ if ! [ $status -eq 0 ]; then
 fi
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-#CHOP_URL=https://github.com/tcarneirop/ChOp.git
-CHOP_URL=git@github.com:tcarneirop/ChOp.git
+CHOP_URL=https://github.com/tcarneirop/ChOp.git
+#CHOP_URL=git@github.com:tcarneirop/ChOp.git
 CHOP_BRANCH=main
 
 # Clone ChOp, skipif clone failed, add extra output to fail nightly job
