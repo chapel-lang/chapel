@@ -1014,7 +1014,7 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const CStringLiteral* l) {
-    os_ << "c\"" << escapeStringC(l->str().c_str()) << '"';
+    os_ << "c\"" << escapeStringC(l->value().str()) << '"';
     return false;
   }
 
@@ -1251,7 +1251,7 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const StringLiteral* l) {
-    os_ << '"' << escapeStringC(l->str().c_str()) << '"';
+    os_ << '"' << escapeStringC(l->value().str()) << '"';
     return false;
   }
 

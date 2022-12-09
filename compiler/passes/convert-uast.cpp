@@ -223,7 +223,7 @@ struct Converter {
     if (auto linkageName = node->linkageName()) {
       auto linkageStr = linkageName->toStringLiteral();
       INT_ASSERT(linkageStr);
-      auto ret = astr(linkageStr->str());
+      auto ret = astr(linkageStr->value());
       return ret;
     }
 
@@ -1840,7 +1840,7 @@ struct Converter {
 
   /// StringLikeLiterals ///
   Expr* visit(const uast::BytesLiteral* node) {
-    std::string quoted = escapeStringC(node->str().str());
+    std::string quoted = escapeStringC(node->value().str());
     SymExpr* se = buildBytesLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate);
@@ -1850,7 +1850,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::CStringLiteral* node) {
-    std::string quoted = escapeStringC(node->str().str());
+    std::string quoted = escapeStringC(node->value().str());
     SymExpr* se = buildCStringLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate);
@@ -1861,7 +1861,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::StringLiteral* node) {
-    std::string quoted = escapeStringC(node->str().str());
+    std::string quoted = escapeStringC(node->value().str());
     SymExpr* se = buildStringLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate);
