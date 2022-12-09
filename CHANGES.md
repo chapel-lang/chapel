@@ -24,8 +24,6 @@ Packaging / Configuration Changes
 * made our 'Dockerfile' use the current source rather than a specific release
 * LLVM 14 is now required when using the LLVM back-end on a Mac OS X  
   (see https://chapel-lang.org/docs/1.29/usingchapel/prereqs.html)
-* doxygen 1.8.17 is now required to make the compiler developer documentation  
-  (see https://chapel-lang.org/docs/1.29/usingchapel/prereqs.html)
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
@@ -43,9 +41,9 @@ Syntactic / Naming Changes
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
-* deprecated support for operator-based subtype comparisons  
+* deprecated operator-based subtype comparisons in favor of `isSubtype()`  
   (e.g., `type1 <= type2`)
-* deprecated `.alignedLow`/`High` on ranges and domains (use `.low`/`.high`)
+* deprecated `.alignedLow`/`alignedHigh` on ranges/domains (use `.low`/`.high`)
 * deprecated support for `.sorted()` and `.reverse()` on arrays
 * deprecated non-functional support for the `%=` operator on `real` values
 * removed deprecated operators on rectangular domains: `|`, `&`, `^`
@@ -65,7 +63,7 @@ New Features
 
 Feature Improvements
 --------------------
-* improved type inference for array literals to consider all elements' types  
+* improved type inference for array literals to consider type of all elements  
   (see https://chapel-lang.org/docs/1.29/language/spec/arrays.html#rectangular-array-literals)
 * improved domain methods like `expand()` to accept any integer width  
   (see https://chapel-lang.org/docs/1.29/language/spec/domains.html#ChapelDomain.expand)
@@ -135,7 +133,7 @@ Standard Library Modules
 ------------------------
 * added `readAll()` methods to read the entire contents of a `fileReader`  
   (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.channel.readAll)
-* added six new overloads of `read`|`writeBinary()` for a variety of types  
+* added six new overloads of `readBinary()`|`writeBinary()` for various types  
   (see https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.channel.readBinary  
    and https://chapel-lang.org/docs/1.29/modules/standard/IO.html#IO.fileWriter.writeBinary)
 * modified `file.path` to exclusively return absolute, not relative, paths  
@@ -151,7 +149,7 @@ Standard Library Modules
 Package Modules
 ---------------
 * optimized the flushing performed in the 'CopyAggregation' module
-* improved support for matrices made of het. array literals in 'LinearAlgebra'
+* improved 'LinearAlgebra' support for matrices of heterogeneous array literals
 
 Tool Improvements
 -----------------
@@ -209,7 +207,7 @@ Example Codes
 
 Portability / Platform-specific Improvements
 --------------------------------------------
-* expanded the set of target arch. modules recognized on HPE Cray systems
+* expanded target architecture modules recognized on HPE Cray systems
 
 GPU Computing
 -------------
@@ -292,6 +290,7 @@ Developer-oriented changes: Makefile / Build-time changes
 * stopped 'chpldoc' sources from contributing to 'chpl's tags/ebrowse data
 * added debugging flags for 'topo' and tasking runtime layers
 * quieted `doxygen` output during docs builds
+* doxygen 1.8.17 is now required to make the compiler developer documentation  
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -352,9 +351,6 @@ Developer-oriented changes: Testing System
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
 * factored code from `chpl2rst.py` into `literate_chapel.py`
-
-Developer-oriented changes: Utilities
--------------------------------------
 
 
 version 1.28.0
