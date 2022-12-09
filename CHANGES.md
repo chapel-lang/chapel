@@ -9,6 +9,15 @@ released December 15, 2022
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
+* the compiler is now built with 'jemalloc' by default, reducing compile times
+* reduced overheads and improved scalability of creating distributed arrays
+* made significant additions and improvements to the 'IO' module
+* added a new compilation error framework and improved several error messages
+* improved choices made by procedure overload resolution to improve usability
+* added an experimental 'weak pointer' type with the goal of getting user input
+* added a prototype mode to capture the generated assembly for a given routine
+* made numerous renamings, deprecations, and improvements to standard modules
+* fixed a number of user-reported bugs
 
 Packaging / Configuration Changes
 ---------------------------------
@@ -18,11 +27,6 @@ Packaging / Configuration Changes
 * doxygen 1.8.17 is now required to make the compiler developer documentation  
   (see https://chapel-lang.org/docs/1.29/usingchapel/prereqs.html)
 
-Syntactic / Naming Changes
---------------------------
-* renamed `makeIndexBuffer()` on domains to `createIndexBuffer()`  
-  (see https://chapel-lang.org/docs/1.29/language/spec/domains.html#ChapelDomain.createIndexBuffer)
-
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
 * zippered for-loops led by unbounded ranges are now considered infinite  
@@ -31,6 +35,11 @@ Semantic Changes / Changes to the Chapel Language
   (see https://chapel-lang.org/docs/1.29/language/spec/procedures.html#better-argument-mapping)
 * unary negation of `uint` now results in a compilation error for all widths  
   (see https://chapel-lang.org/docs/1.29/language/spec/expressions.html#unary-minus-operators)
+
+Syntactic / Naming Changes
+--------------------------
+* renamed `makeIndexBuffer()` on domains to `createIndexBuffer()`  
+  (see https://chapel-lang.org/docs/1.29/language/spec/domains.html#ChapelDomain.createIndexBuffer)
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
@@ -94,7 +103,6 @@ Name Changes in Libraries
 * renamed `sourceVersion` type to `versionValue` in the 'Version' module  
   (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.versionValue)
 
-
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
 * deprecated 'file.localesForRegion()' in the 'IO' module  
@@ -140,11 +148,10 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.29/modules/standard/Version.html#Version.version)
 * 'CommDiagnostics' no longer counts communications for tracking remote tasks
 
-
 Package Modules
 ---------------
-* improved support for matrices made of het. array literals in 'LinearAlgebra'
 * optimized the flushing performed in the 'CopyAggregation' module
+* improved support for matrices made of het. array literals in 'LinearAlgebra'
 
 Tool Improvements
 -----------------
@@ -219,11 +226,6 @@ Compiler Improvements
 * improved internal error messages to avoid referring to nonexistent line #s
 * improved error-checking for C code within `extern` blocks
 
-Compiler Flags
---------------
-* added a flag to show the generated assembly for a given Chapel routine  
-  (see https://chapel-lang.org/docs/1.29/technotes/llvm.html#inspecting-the-generated-code)
-
 Runtime Library Changes
 -----------------------
 * made 'binders' the default 'qthreads' topology module
@@ -294,6 +296,8 @@ Developer-oriented changes: Makefile / Build-time changes
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
 * added `--detailed-errors` to enable new verbose/helpful error message output
+* added a flag to show the generated assembly for a given Chapel routine  
+  (see https://chapel-lang.org/docs/1.29/technotes/llvm.html#inspecting-the-generated-code)
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
