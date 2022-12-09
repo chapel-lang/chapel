@@ -1,61 +1,102 @@
+
+
+
+
+
+
+
+
 use IO;
 
-config var n = 6;
+config const debug = false;
 
-enum piece {o, T, H};
-
+// This creates an arbitrarily-sized starting board, just based
+// (loosely) on the picture in the instructions (I think it was 5 x 6?)
+// We will grow it as we go...
+//
+config var n = 6;  // starting size of the array, just to almost match
 var BoardSpace = {1..n, 1..n};
-
-//var Board: [BoardSpace] piece;
 var Visited: [BoardSpace] bool;
+//
+// I'll be interpreting its coordinate scheme as follows:
+//
+// (n,1)      (n,n)
+// :
+// :
+// (1,1)......(1,n)
+
 
 var rope: [0..9] (int,int) = (1,1);
 
-
-printBoard();
-
 var decoder = ["R" => (0,1), "L" => (0,-1), "U" => (1, 0), "D" => (-1, 0)];
 
-var line: string;
-writeln("Before loop!");
-while readLine(line, stripNewline=true) {
-  writeln("in loop!");
-  var (dir, _, num) = line.partition(" ");
-  writeln((dir,num));
+proc main() {
+  var line: string;
+  while readLine(line, stripNewline=true) {
+    debugBoard();
+    var (dir, _, num) = line.partition(" ");
+    if debug then writeln("Next command: ", (dir,num));
 
-  for i in 1..num:int {
-    rope[0] = rope[0] + decoder[dir];
-    if !BoardSpace.contains(rope[0]) {
-      writeln("headloc out of bounds: ", rope[0]);
-      growBoard(rope[0]);
+    for i in 1..num:int {
+      rope[0] = rope[0] + decoder[dir];
+      if !BoardSpace.contains(rope[0]) {
+        growBoard(rope[0]);
+      }
+      computeTail();
+      Visited[rope[9]] = true;
     }
-    computeTail();
-//    printBoard();
   }
-}
-printVisited();
-writeln(+ reduce Visited);
+  debugBoard();
+  debugVisited();
 
+  writeln(+ reduce Visited);
+}
+
+// re-assigning a domain in Chapel will re-allocate arrays declared over
+// it (not cheap, but productive!  Gives us an arbitrarily growing canvas!
+// (up to memory limits))
+//
 proc growBoard((r,c)) {
   const (rows,cols) = BoardSpace.dims();
-  var (newrows, newcols) = (rows, cols);
-  if !rows.contains(r) {
-    if r < rows.low {
-      newrows = rows.low-1..rows.high;
-    } else {
-      newrows = rows.low..rows.high+1;
-    }
-  }
-  if !cols.contains(c) {
-    if c < cols.low {
-      newcols = cols.low-1..cols.high;
-    } else {
-      newcols = cols.low..cols.high+1;
-    }
-  }
-  writeln("Regrowing board to ", (newrows, newcols));
+  const (newrows, newcols) = (growRange(r,rows),growRange(c, cols));
   BoardSpace = {newrows, newcols};
 }
+
+
+// Grow the range if we fall outside of it; could use recursive doubling
+// or something to amortize the overheads of reallocation...
+//
+proc growRange(i, rng) {
+  if rng.contains(i) {
+    return rng;
+  } else {
+    if i < rng.low {
+      return rng.low-1..rng.high;  // there's probably a grow or extend methd
+    } else {                       // I could use here?  can never quite recall
+      return rng.low..rng.high+1;
+    }
+  }
+}
+
+
+proc computeTail() {
+  for i in 1..9 {
+    var delta = rope[i-1] - rope[i];
+    var tailstep = computeStep(delta);
+    rope[i] += tailstep;
+  }
+}
+
+
+proc computeStep(d) {
+  const manDist = abs(d(0)) + abs(d(1));
+  if manDist <= 2 {
+    return (computeDiff(d(0)), computeDiff(d(1)));
+  } else {
+    return (computeCatchUp(d(0)), computeCatchUp(d(1)));
+  }
+}
+
 
 proc computeDiff(d) {
   if (abs(d) <=1 ) {
@@ -69,6 +110,7 @@ proc computeDiff(d) {
   }
 }
 
+
 proc computeCatchUp(d) {
   if d < 0 {
     return -1;
@@ -79,32 +121,11 @@ proc computeCatchUp(d) {
   }
 }
 
-proc computeStep(d) {
-  const manDist = abs(d(0)) + abs(d(1));
-  if manDist <= 2 {
-    return (computeDiff(d(0)), computeDiff(d(1)));
-  } else {
-    writeln("Here's the hard case");
-    return (computeCatchUp(d(0)), computeCatchUp(d(1)));
-//    return (computeDiff(d(0)), computeDiff(d(1)));
-//    return (0,0);
-  }
-}
 
-proc computeTail() {
-  for i in 1..9 {
-    var delta = rope[i-1] - rope[i];
-    writeln(delta);
-    var tailstep = computeStep(delta);
-    writeln(tailstep);
-    rope[i] += tailstep;
-  }
-  Visited[rope[9]] = true;
-}
-
-proc printBoard() {
-  for r in 1..n by -1 {
-    for c in 1..n {
+proc debugBoard() {
+  if !debug then return;
+  for r in BoardSpace.dim(0) by -1 {
+    for c in BoardSpace.dim(1) {
       if rope[0] == (r,c) {
         write("H");
       } else {
@@ -130,7 +151,8 @@ proc printBoard() {
   writeln();
 }
 
-proc printVisited() {
+proc debugVisited() {
+  if !debug then return;
   for r in 1..n by -1 {
     for c in 1..n {
       if Visited[r,c] {
@@ -145,14 +167,3 @@ proc printVisited() {
   }
   writeln();
 }
-
-/*
-var A = readIt();
-writeln(A);
-
-iter readIt() {
-  var s: string;
-  while (readLine(s)) {
-    yield s;
-  }
-}*/

@@ -3,6 +3,9 @@
 // - tuple math-y stuff (could I be even more clever, though?)
 // - associative array (though plenty of other ways to do it)
 
+// That said, Daniel's decision to use a set seems much smarter than
+// using an array, efficiency-wise
+
 use IO;
 
 config const debug = false;
