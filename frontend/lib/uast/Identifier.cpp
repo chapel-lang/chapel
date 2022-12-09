@@ -26,6 +26,12 @@ namespace chpl {
 namespace uast {
 
 
+void Identifier::dumpFieldsInner(const DumpSettings& s) const {
+  if (!name_.isEmpty()) {
+    s.out << " " << name_.str();
+  }
+}
+
 owned<Identifier> Identifier::build(Builder* builder,
                                     Location loc, UniqueString name) {
   Identifier* ret = new Identifier(name);

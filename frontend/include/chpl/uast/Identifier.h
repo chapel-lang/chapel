@@ -59,6 +59,8 @@ class Identifier final : public AstNode {
     this->name_.mark(context);
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
  public:
   ~Identifier() override = default;
   static owned<Identifier> build(Builder* builder, Location loc, UniqueString name);

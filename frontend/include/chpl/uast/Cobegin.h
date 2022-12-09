@@ -74,6 +74,8 @@ class Cobegin final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
+  std::string dumpChildLabelInner(int i) const override;
+
   int8_t withClauseChildNum_;
   int bodyChildNum_;
   int numTaskBodies_;

@@ -50,6 +50,8 @@ class Call : public AstNode {
   void callMarkUniqueStringsInner(Context* context) const {
   }
 
+  virtual std::string dumpChildLabelInner(int i) const override;
+
  public:
   ~Call() override = 0;
 

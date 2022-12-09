@@ -25,37 +25,76 @@
 namespace chpl {
 namespace uast {
 
-std::string
-Function::returnIntentToString(Function::ReturnIntent intent) {
-  switch ((IntentList) intent) {
-    case uast::IntentList::CONST_INTENT: return "const";
-    case uast::IntentList::VAR: return "var";
-    case uast::IntentList::CONST_VAR: return "const var";
-    case uast::IntentList::CONST_REF: return "const ref";
-    case uast::IntentList::REF: return "ref";
-    case uast::IntentList::IN: return "in";
-    case uast::IntentList::CONST_IN: return "const in";
-    case uast::IntentList::OUT: return "out";
-    case uast::IntentList::INOUT: return "inout";
-    case uast::IntentList::PARAM: return "param";
-    case uast::IntentList::TYPE: return "type";
-    default: break;
-  }
 
-  return "<error>";
+void Function::dumpFieldsInner(const DumpSettings& s) const {
+  if (inline_) {
+    s.out << " inline";
+  }
+  if (override_) {
+    s.out << " override";
+  }
+  const char* kindStr = kindToString(kind_);
+  const char* returnIntentStr = returnIntentToString(returnIntent_);
+  if (kindStr[0] != '\0') {
+    s.out << " " << kindStr;
+  }
+  if (returnIntentStr[0] != '\0') {
+    s.out << " " << returnIntentStr;
+  }
+  if (throws_) {
+    s.out << " throws";
+  }
+  if (primaryMethod_) {
+    s.out << " primary";
+  }
+  if (parenless_) {
+    s.out << " parenless";
+  }
 }
 
-std::string Function::kindToString(Function::Kind kind) {
+std::string Function::dumpChildLabelInner(int i) const {
+  if (i == thisFormalChildNum_) {
+    return "this-formal";
+  } else if (formalsChildNum_ <= i && i < formalsChildNum_ + numFormals_) {
+    return "formal " + std::to_string(i - formalsChildNum_);
+  } else if (i == returnTypeChildNum_) {
+    return "ret-type";
+  } else if (i == whereChildNum_) {
+    return "where";
+  } else if (lifetimeChildNum_ <= i &&
+             i < lifetimeChildNum_ + numLifetimeParts_) {
+    return "lifetime " + std::to_string(i - lifetimeChildNum_);
+  } else if (i == bodyChildNum_) {
+    return "body";
+  }
+
+  return "";
+}
+
+const char* Function::returnIntentToString(ReturnIntent intent) {
+  switch (intent) {
+    case Function::DEFAULT_RETURN_INTENT: return "";
+    case Function::CONST:                 return "const";
+    case Function::CONST_REF:             return "const ref";
+    case Function::REF:                   return "ref";
+    case Function::PARAM:                 return "param";
+    case Function::TYPE:                  return "type";
+  }
+
+  return "<unknown>";
+}
+
+const char* Function::kindToString(Kind kind) {
   switch (kind) {
-    case uast::Function::Kind::PROC: return "proc";
-    case uast::Function::Kind::ITER: return "iter";
-    case uast::Function::Kind::OPERATOR: return "operator";
-    case uast::Function::Kind::LAMBDA: return "lambda";
-    default: break;
+    case Function::PROC:     return "proc";
+    case Function::ITER:     return "iter";
+    case Function::OPERATOR: return "operator";
+    case Function::LAMBDA:   return "lambda";
   }
 
-  return "<error>";
+  return "<unknown>";
 }
+
 
 owned<Function> Function::build(Builder* builder, Location loc,
                                 owned<Attributes> attributes,

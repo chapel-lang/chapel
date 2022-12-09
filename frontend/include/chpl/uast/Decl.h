@@ -102,6 +102,8 @@ class Decl : public AstNode {
   void declMarkUniqueStringsInner(Context* context) const {
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
 
   int attributesChildNum() const {
     return attributesChildNum_;
@@ -151,6 +153,15 @@ class Decl : public AstNode {
     return (const Attributes*)ret;
   }
 
+  /**
+    Convert Decl::Visibility to a string
+    */
+  static const char* visibilityToString(Visibility v);
+
+  /**
+    Convert Decl::Linkage to a string
+    */
+  static const char* linkageToString(Linkage x);
 };
 
 

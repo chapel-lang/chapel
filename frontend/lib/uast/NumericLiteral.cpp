@@ -25,6 +25,16 @@ namespace chpl {
 namespace uast {
 
 
+/*template void NumericLiteral<double, types::RealParam>::dumpFieldsInner(const DumpSettings& s) const {
+  s.out << " " << value();
+}
+void NumericLiteral<int64_t, types::RealParam>::dumpFieldsInner(const DumpSettings& s) const {
+  s.out << " " << value();
+}
+void NumericLiteral<uint64_t, types::RealParam>::dumpFieldsInner(const DumpSettings& s) const {
+  s.out << " " << value();
+}*/
+
 template NumericLiteral<double, types::RealParam>::~NumericLiteral();
 template NumericLiteral<int64_t, types::IntParam>::~NumericLiteral();
 template NumericLiteral<uint64_t, types::UintParam>::~NumericLiteral();

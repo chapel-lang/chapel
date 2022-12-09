@@ -52,6 +52,8 @@ class As final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
+  void dumpInner(const DumpSettings& s) const;
+
   // These always exist and their position will never change.
   static const int8_t symbolChildNum_ = 0;
   static const int8_t renameChildNum_ = 1;

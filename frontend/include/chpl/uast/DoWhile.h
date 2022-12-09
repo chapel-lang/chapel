@@ -73,6 +73,8 @@ class DoWhile final : public Loop {
     loopMarkUniqueStringsInner(context);
   }
 
+  std::string dumpChildLabelInner(int i) const override;
+
   int conditionChildNum_;
 
  public:

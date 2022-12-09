@@ -26,6 +26,10 @@ namespace chpl {
 namespace uast {
 
 
+void OpCall::dumpFieldsInner(const DumpSettings& s) const {
+  s.out << " " << op_.str();
+}
+
 owned<OpCall> OpCall::build(Builder* builder,
                             Location loc,
                             UniqueString op,

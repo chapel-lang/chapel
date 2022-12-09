@@ -25,6 +25,14 @@ namespace chpl {
 namespace uast {
 
 
+std::string Continue::dumpChildLabelInner(int i) const {
+  if (i == targetChildNum_) {
+    return "label";
+  }
+
+  return "";
+}
+
 owned<Continue> Continue::build(Builder* builder, Location loc,
                                 owned<Identifier> target) {
   AstList lst;

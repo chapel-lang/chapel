@@ -82,6 +82,8 @@ class Attributes final : public AstNode {
     unstableMessage_.mark(context);
   }
 
+  void dumpInner(const DumpSettings& s) const;
+
  public:
   ~Attributes() override = default;
 

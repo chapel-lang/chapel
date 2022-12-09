@@ -61,6 +61,8 @@ class Loop: public AstNode {
   void loopMarkUniqueStringsInner(Context* context) const {
   }
 
+  virtual std::string dumpChildLabelInner(int i) const override;
+
   BlockStyle blockStyle_;
   int loopBodyChildNum_;
 

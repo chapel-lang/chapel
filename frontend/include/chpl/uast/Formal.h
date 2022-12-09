@@ -99,7 +99,7 @@ class Formal final : public VarLikeDecl {
    */
   Intent intent() const { return (Intent)((int)storageKind()); }
 
-  static std::string intentToString(Intent intent);
+  static const char* intentToString(Intent intent);
 
   /**
     If `true`, then this formal's name is '_', as in `proc(_: int)`. This is

@@ -23,6 +23,21 @@ namespace chpl {
 namespace uast {
 
 
+std::string Call::dumpChildLabelInner(int i) const {
+  if (hasCalledExpression_ && i == 0) {
+    return "called-expr";
+  }
+
+  int shift = 0;
+  if (hasCalledExpression_) {
+    shift = 1;
+  }
+
+  std::string ret = "actual ";
+  ret += std::to_string(i - shift);
+  return ret;
+}
+
 Call::~Call() {
 }
 

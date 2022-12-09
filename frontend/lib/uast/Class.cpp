@@ -25,6 +25,14 @@ namespace chpl {
 namespace uast {
 
 
+std::string Class::dumpChildLabelInner(int i) const {
+  if (i == parentClassChildNum_) {
+    return "parent-class";
+  }
+
+  return "";
+}
+
 owned<Class> Class::build(Builder* builder, Location loc,
                           owned<Attributes> attributes,
                           Decl::Visibility vis,

@@ -63,6 +63,8 @@ class OpCall final : public Call {
     op_.mark(context);
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
  public:
   ~OpCall() override = default;
   static owned<OpCall> build(Builder* builder,

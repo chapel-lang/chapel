@@ -25,6 +25,14 @@ namespace chpl {
 namespace uast {
 
 
+std::string Begin::dumpChildLabelInner(int i) const {
+  if (withClauseChildNum_ >= 0 && i == withClauseChildNum_) {
+    return "with";
+  }
+
+  return "";
+}
+
 owned<Begin> Begin::build(Builder* builder,
                           Location loc,
                           owned<WithClause> withClause,

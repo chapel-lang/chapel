@@ -57,6 +57,8 @@ class StringLikeLiteral : public Literal {
     literalMarkUniqueStringsInner(context);
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
  public:
   virtual ~StringLikeLiteral() = 0; // this is an abstract base class
 
@@ -74,6 +76,12 @@ class StringLikeLiteral : public Literal {
    Returns the type of quotes used for this string literal.
    */
   QuoteStyle quoteStyle() const { return this->quotes_; }
+
+  /**
+    Returns a string containing the characters to open a quote with the
+    passed quote style
+   */
+  static const char* quoteStyleToString(QuoteStyle q);
 };
 
 
