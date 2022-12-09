@@ -9,7 +9,7 @@ released December 15, 2022
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
-* the compiler is now built with 'jemalloc' by default, reducing compile times
+* compile times have been reduced for most platforms via the use of 'jemalloc'
 * reduced overheads and improved scalability of creating distributed arrays
 * made significant additions and improvements to the 'IO' module
 * added a new compilation error framework and improved several error messages
