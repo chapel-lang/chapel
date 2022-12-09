@@ -190,6 +190,9 @@ class Function final : public NamedDecl {
     namedDeclMarkUniqueStringsInner(context);
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
+
  public:
   ~Function() override = default;
 
@@ -379,9 +382,9 @@ class Function final : public NamedDecl {
     return b->stmt(i);
   }
 
-  static std::string returnIntentToString(ReturnIntent intent);
+  static const char* returnIntentToString(ReturnIntent intent);
 
-  static std::string kindToString(Kind kind);
+  static const char* kindToString(Kind kind);
 };
 
 } // end namespace uast

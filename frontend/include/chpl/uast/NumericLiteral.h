@@ -51,6 +51,9 @@ class NumericLiteral : public Literal {
     literalMarkUniqueStringsInner(context);
     text_.mark(context);
   }
+  void dumpFieldsInner(const DumpSettings& s) const override {
+    s.out << " " << value();
+  }
 
  public:
   virtual ~NumericLiteral() = 0; // this is an abstract base class

@@ -25,6 +25,16 @@ namespace chpl {
 namespace uast {
 
 
+std::string Catch::dumpChildLabelInner(int i) const {
+  if (i == errorChildNum_) {
+    return "error";
+  } else if (i == bodyChildNum_) {
+    return "body";
+  }
+
+  return "";
+}
+
 owned<Catch> Catch::build(Builder* builder, Location loc,
                           owned<Variable> error,
                           owned<Block> body,

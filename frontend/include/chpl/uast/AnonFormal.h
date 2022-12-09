@@ -86,6 +86,8 @@ class AnonFormal final : public AstNode {
 
   void markUniqueStringsInner(Context* context) const override {}
 
+  void dumpInner(const DumpSettings& s) const;
+
  public:
   ~AnonFormal() override = default;
 

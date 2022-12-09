@@ -46,6 +46,8 @@ class BoolLiteral final : public Literal {
     literalMarkUniqueStringsInner(context);
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
  public:
   ~BoolLiteral() override = default;
 

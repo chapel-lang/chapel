@@ -25,6 +25,14 @@ namespace chpl {
 namespace uast {
 
 
+std::string DoWhile::dumpChildLabelInner(int i) const {
+  if (i == conditionChildNum_) {
+    return "condition";
+  }
+
+  return "";
+}
+
 owned<DoWhile> DoWhile::build(Builder* builder, Location loc,
                               BlockStyle blockStyle,
                               owned<Block> body,

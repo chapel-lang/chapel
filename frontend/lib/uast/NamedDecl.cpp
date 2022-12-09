@@ -22,6 +22,12 @@
 namespace chpl {
 namespace uast {
 
+void NamedDecl::dumpFieldsInner(const DumpSettings& s) const {
+  Decl::dumpFieldsInner(s);
+  if (!name_.isEmpty()) {
+    s.out << " " << name_.str();
+  }
+}
 
 NamedDecl::~NamedDecl() {
 }

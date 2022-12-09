@@ -68,6 +68,8 @@ class Dot final : public AstNode {
     fieldName_.mark(context);
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
  public:
   ~Dot() override = default;
   static owned<Dot> build(Builder* builder,

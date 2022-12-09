@@ -25,6 +25,24 @@ namespace chpl {
 namespace uast {
 
 
+void IndexableLoop::dumpFieldsInner(const DumpSettings& s) const {
+  if (isExpressionLevel_) {
+    s.out << " expr";
+  }
+}
+
+std::string IndexableLoop::dumpChildLabelInner(int i) const {
+  if (i == indexChildNum_) {
+    return "index";
+  } else if (i == iterandChildNum_) {
+    return "iterand";
+  } else if (i == withClauseChildNum_) {
+    return "with";
+  }
+
+  return Loop::dumpChildLabelInner(i);
+}
+
 IndexableLoop::~IndexableLoop(){
 }
 

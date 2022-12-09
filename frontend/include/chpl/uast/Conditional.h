@@ -99,6 +99,9 @@ class Conditional final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
+
   // Condition always exists, and its position is always the same.
   static const int8_t conditionChildNum_ = 0;
   // Ditto then

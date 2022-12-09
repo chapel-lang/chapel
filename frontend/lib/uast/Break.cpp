@@ -25,6 +25,14 @@ namespace chpl {
 namespace uast {
 
 
+std::string Break::dumpChildLabelInner(int i) const {
+  if (i == targetChildNum_) {
+    return "label";
+  }
+
+  return "";
+}
+
 owned<Break> Break::build(Builder* builder, Location loc,
                           owned<Identifier> target) {
   AstList lst;
