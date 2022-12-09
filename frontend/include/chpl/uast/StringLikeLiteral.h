@@ -61,6 +61,16 @@ class StringLikeLiteral : public Literal {
   virtual ~StringLikeLiteral() = 0; // this is an abstract base class
 
   /**
+    Returns the value of this bytes literal as a UniqueString
+    which does not include the quotes.
+   */
+  UniqueString value() const {
+    CHPL_ASSERT(value_->isStringParam());
+    const types::StringParam* p = (const types::StringParam*) value_;
+    return p->value();
+  }
+
+  /**
    Returns the type of quotes used for this string literal.
    */
   QuoteStyle quoteStyle() const { return this->quotes_; }

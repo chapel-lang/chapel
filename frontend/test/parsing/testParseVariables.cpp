@@ -294,7 +294,7 @@ static void test4(Parser* parser) {
   assert(var3->linkage() == Decl::EXTERN);
   assert(var3->linkageName() &&  var3->linkageName()->isStringLiteral());
   auto v3LinkageName = var3->linkageName()->toStringLiteral();
-  assert(v3LinkageName->str() == "foo");
+  assert(v3LinkageName->value() == "foo");
   assert(var3->visibility() == Decl::PRIVATE);
 }
 

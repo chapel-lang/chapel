@@ -47,16 +47,6 @@ class StringLiteral final : public StringLikeLiteral {
   static owned<StringLiteral> build(Builder* builder, Location loc,
                                     const std::string& value,
                                     StringLikeLiteral::QuoteStyle quotes);
-
-  /**
-    Returns the value of this string literal as a UniqueString
-    which does not include the quotes.
-   */
-  UniqueString str() const {
-    CHPL_ASSERT(value_->isStringParam());
-    const types::StringParam* p = (const types::StringParam*) value_;
-    return p->value();
-  }
 };
 
 
