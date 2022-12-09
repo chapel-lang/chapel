@@ -1,3 +1,5 @@
+// This test isn't compiling yet. `staticRefsManager` is still under development.
+
 use DistributedMap;
 
 var dm = new distributedMap(int, int);

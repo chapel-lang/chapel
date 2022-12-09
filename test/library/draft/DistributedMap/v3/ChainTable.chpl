@@ -17,6 +17,7 @@ module ChainTable {
     // ----------------------------------------------------
 
     // empty needs to be 0 so memset 0 sets it
+    //   (this happens in _ddata_allocate_noinit in _allocateData)
     enum entryStatus { empty=0, full, deleted };
 
     // an entry in the hash table
