@@ -8,6 +8,8 @@ module DistributedMap {
     private use Reflection;
     private use ChapelLocks;
 
+    // in order to support aggregators, this will eventually need to be
+    // a record-wrapped-class.
     record distributedMap {
         type keyType;
         type valType;
