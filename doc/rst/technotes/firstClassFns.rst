@@ -4,28 +4,32 @@
 First-class Functions in Chapel
 ===============================
 
-First-class functions are under active development. The first part of
-this document describes new features which we are in the process of
-adding and stabilizing. These new features are currently only
-provided in a prototype mode, and are not yet stable enough to be
-considered for use in user applications outside of experimentation.
+.. note::
 
-The remaining sections of this document describe legacy support for
-first-class functions which Chapel has supported for many releases.
-While these features may be considered stable for the time being, we
-do not intend to advance these features further, and will likely
-deprecate them after new prototype features become stable.
+  First-class functions are under active development and are provided
+  in their prototype form as a preview and to gather user feedback.
+  The features described in the first part of this document are not
+  yet stable enough to consider for use in user applications, outside
+  of experimentation.
 
-Remaining sections have had their headers prefixed with 'Legacy' to
-indicate that they describe legacy syntax or semantics.
+The first part of this document describes new prototype features which
+we are in the process of adding and stabilizing. The remaining sections
+describe legacy support for first-class functions which have been
+included with Chapel for many releases.
+
+While these legacy features may be considered stable for the time
+being, we do not intend to advance them further, and will likely
+deprecate them after new prototype features become stable. These
+sections have had their headers prefixed with 'Legacy' to indicate
+that they describe legacy syntax or semantics.
 
 New Syntax for Constructing Function Types
 ------------------------------------------
 
 Function types may now be constructed using new syntax which mirrors
-the syntax for procedure definitions.
+the syntax for function definition.
 
-To construct the type of a procedure which takes two integers and
+To construct the type of a function which takes two integers and
 returns an integer, users may write the following:
 
 .. code-block:: chapel
@@ -57,7 +61,7 @@ Formals in Function Types May Be Anonymous
 ------------------------------------------
 
 A formal in a function type may be anonymous. This may be done by
-naming the formal ``_``, similar to what is done when discarding
+naming the formal ``_``, similar to what is written to discard
 tuple elements when de-tupling.
 
 An anonymous formal in a function type indicates that values of this
@@ -72,7 +76,7 @@ a significant role in typing.
   // Here the formals of 'T' are anonymous.
   type T = proc(_: int, _: int): int;
 
-  var x: T = foo;             // OK, T's formals are anonymous.
+  var x: T = foo;             // OK, T's formals are anonymous '_'.
   writeln(foo.type:string);   // 'proc(x: int, y: int): int'
   writeln(x.type:string);     // 'proc(_: int, _: int): int'
   writeln(bar.type:string);   // 'proc(a: int, b: int): int'
@@ -85,22 +89,22 @@ to be assigned freely to the variable.
 
 .. note::
 
-  Currently, it is not possible for function values to declare anonymous
-  formals. It has been indicated that such a feature might be useful,
-  so this may change in the future.
+  Currently, it is not possible for function definitions to declare
+  anonymous formals. It has been indicated that such a feature might
+  be useful, so this may change in the future.
 
 New Syntax for Constructing Anonymous Functions
 -----------------------------------------------
 
 A new syntax for constructing anonymous functions has been introduced
-which more closely mirrors traditional procedure definition.
+which more closely mirrors traditional function definition.
 
 .. code-block:: chapel
 
-  // Define a procedure named 'foo'.
+  // Define a function named 'foo'.
   proc foo(x: int, y: int): int { return x + y; }
 
-  // Define an anonymous procedure bound to the constant variable 'bar'.
+  // Define an anonymous function bound to the constant variable 'bar'.
   const bar = proc(a: int, b: int): int { return a + b; };
 
 Legacy: Manipulating first-class functions
