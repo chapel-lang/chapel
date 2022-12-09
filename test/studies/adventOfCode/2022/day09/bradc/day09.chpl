@@ -7,8 +7,6 @@ use IO;
 
 config const debug = false;
 
-                   // what the site used
-
 
 // This creates an arbitrarily-sized starting board, just based
 // (loosely) on the picture in the instructions (I think it was 5 x 6?)
