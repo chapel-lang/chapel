@@ -1186,7 +1186,7 @@ module String {
     .. code-block:: chapel
 
       var str = "abcd";
-      for c in str {
+      for c in str.items() {
         writeln(c);
       }
 
