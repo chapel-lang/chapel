@@ -398,8 +398,8 @@ module Map {
     proc const this(k: keyType)
     where isNonNilableClass(valType) {
       _warnForParSafeIndexing();
-      compilerError("Cannot access nilable class directly. Use an",
-                    " appropriate accessor method instead.");
+      compilerError("Cannot index into a map with non-nilable class values. ",
+                    "Use an appropriate accessor method instead.");
     }
 
     /* Get a borrowed reference to the element at position `k`.
