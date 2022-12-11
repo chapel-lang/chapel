@@ -5,7 +5,7 @@ config const practice = true;
 const numMonkeys = if practice then 4 else 8;
 
 var MonkeySpace = {0..<numMonkeys};
-var Source: [MonkeySpace] list(int, parSafe=true) =
+var CurrentItems: [MonkeySpace] list(int, parSafe=true) =
   if practice then [new list([79,98], parSafe=true),
                     new list([54,65,75,74], parSafe=true),
                     new list([79,60,97], parSafe=true),
@@ -18,7 +18,7 @@ var Source: [MonkeySpace] list(int, parSafe=true) =
                     new list([69, 70, 85, 83], parSafe=true),
                     new list([89, ], parSafe=true),
                     new list([62, 80, 58, 57, 93, 56], parSafe=true)];
-var Dest: [MonkeySpace] list(int, parSafe=true);
+var NextItems: [MonkeySpace] list(int, parSafe=true);
                     
 var NumInspected: [MonkeySpace] int;
 var TargetMonkey: [MonkeySpace] 2*int =
@@ -34,21 +34,21 @@ var b = new Barrier(numMonkeys);
 coforall m in MonkeySpace {
   for r in 1..numRounds {
     do {
-//      writeln((quiesced.read(), Source[m].size));
+//      writeln((quiesced.read(), CurrentItems[m].size));
       // wait until we're either told we can go on or have items to process
-      while (quiesced.read() != m && Source[m].size == 0) {
+      while (quiesced.read() != m && CurrentItems[m].size == 0) {
         chpl_task_yield();
       }
 
       // if we've been told to go on and we have no items to process
-      if (quiesced.read() == m && Source[m].size == 0) {
+      if (quiesced.read() == m && CurrentItems[m].size == 0) {
 //        writeln("Passing the torch");
         // tell the next monkey it can go on
         quiesced.write(m+1);
         break;
       } else {
         // otherwise, inspect our next item
-        var item = Source[m].pop();
+        var item = CurrentItems[m].pop();
 //        writeln("Monkey ", m, " inspecting ", item);
         NumInspected[m] += 1;
         select m {
@@ -96,21 +96,21 @@ coforall m in MonkeySpace {
         item /= 3;
         const target = TargetMonkey[m](item % divisor[m] == 0);
         if (target < m) {
-          Dest[target].append(item);
+          NextItems[target].append(item);
         } else {
-          Source[target].append(item);
+          CurrentItems[target].append(item);
         }
       }
     } while (true);
     b.barrier();
-    for i in 1..Dest[m].size {
-      Source[m].append(Dest[m].pop());
+    for i in 1..NextItems[m].size {
+      CurrentItems[m].append(NextItems[m].pop());
     }
-    Dest[m].clear();
+    NextItems[m].clear();
     quiesced.write(0);
     b.barrier();
   }
 }
 
 writeln(NumInspected);
-writeln(Source);
+writeln(CurrentItems);
