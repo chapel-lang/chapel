@@ -1,4 +1,4 @@
-use IO, List, Set, Barriers;
+use IO, List, Barriers;
 
 config const numRounds = 20;
 config const practice = true;
@@ -18,7 +18,7 @@ var Source: [MonkeySpace] list(int, parSafe=true) =
                     new list([69, 70, 85, 83], parSafe=true),
                     new list([89, ], parSafe=true),
                     new list([62, 80, 58, 57, 93, 56], parSafe=true)];
-var Dest: [MonkeySpace] set(int, parSafe=true);
+var Dest: [MonkeySpace] list(int, parSafe=true);
                     
 var NumInspected: [MonkeySpace] int;
 var TargetMonkey: [MonkeySpace] 2*int =
@@ -96,15 +96,15 @@ coforall m in MonkeySpace {
         item /= 3;
         const target = TargetMonkey[m](item % divisor[m] == 0);
         if (target < m) {
-          Dest[target].add(item);
+          Dest[target].append(item);
         } else {
           Source[target].append(item);
         }
       }
     } while (true);
     b.barrier();
-    for item in Dest[m] {
-      Source[m].append(item);
+    for i in 1..Dest[m].size {
+      Source[m].append(Dest[m].pop());
     }
     Dest[m].clear();
     quiesced.write(0);
@@ -113,3 +113,4 @@ coforall m in MonkeySpace {
 }
 
 writeln(NumInspected);
+writeln(Source);
