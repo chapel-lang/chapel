@@ -34,6 +34,7 @@
 
 namespace chpl {
 
+std::string vprintToString(const char* format, ...);
 std::string vprintToString(const char* format, va_list vl);
 
 } // end namespace chpl
