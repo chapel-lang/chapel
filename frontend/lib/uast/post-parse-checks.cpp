@@ -341,7 +341,7 @@ bool Visitor::handleNestedDecoratorsInNew(const FnCall* node) {
     CHPL_ASSERT(outerMgt != defMgt);
 
     // TODO: Also error about 'please use class? instead of %s?'...
-    CHPL_POSTPARSE_REPORT(builder_, MultipleClassKinds, outerPin, outerMgt,
+    CHPL_POSTPARSE_REPORT(builder_, MultipleManagementStrategies, outerPin, outerMgt,
                           innerMgt);
 
     // Cycle _once_, to try and catch something like 'new owned owned'.
@@ -374,7 +374,7 @@ Visitor::handleNestedDecoratorsInTypeConstructors(const FnCall* node) {
     CHPL_ASSERT(outerMgt != defMgt);
 
     // TODO: Also error about 'please use class? instead of %s?'...
-    CHPL_POSTPARSE_REPORT(builder_, MultipleClassKinds, node, outerMgt,
+    CHPL_POSTPARSE_REPORT(builder_, MultipleManagementStrategies, node, outerMgt,
                           innerMgt);
   }
 
@@ -619,7 +619,7 @@ void Visitor::checkNoReceiverClauseOnPrimaryMethod(const Function* node) {
 void Visitor::checkLambdaReturnIntent(const Function* node) {
   if (node->kind() != Function::LAMBDA) return;
 
-  std::string disallowedReturnType;
+  const char* disallowedReturnType = NULL;
   switch (node->returnIntent()) {
     case Function::CONST_REF:
     case Function::REF:
@@ -634,9 +634,9 @@ void Visitor::checkLambdaReturnIntent(const Function* node) {
     default:
       break;
   }
-  if (!disallowedReturnType.empty()) {
+  if (disallowedReturnType) {
     CHPL_POSTPARSE_ERR_SIMPLE(builder_, node,
-                              "'" + disallowedReturnType +
+                              "'" + std::string(disallowedReturnType) +
                                   "' return types are not allowed in lambdas.");
   }
 }

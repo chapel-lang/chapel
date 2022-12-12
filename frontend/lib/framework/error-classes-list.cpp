@@ -740,16 +740,21 @@ void ErrorPostParseWarn::write(ErrorWriterBase& wr) const {
   wr.code(id);
 }
 
-void ErrorMultipleClassKinds::write(ErrorWriterBase& wr) const {
+void ErrorMultipleManagementStrategies::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
   auto outerMgt = std::get<1>(info);
   auto innerMgt = std::get<2>(info);
   wr.heading(kind_, type_, id,
-             "type expression uses multiple class kinds: ", outerMgt, " ",
-             innerMgt, ".");
+             "type expression uses multiple memory management strategies ('",
+             outerMgt, "' and '", innerMgt, "').");
   wr.message("Multiple class kinds used in type expression here:");
   wr.code(id);
-  wr.message("Only a single management kind can be used in a type expression.");
+  if (outerMgt == innerMgt) {
+    wr.message(
+        "The same strategy is listed twice; one instance should be removed.");
+  } else {
+    wr.message("These strategies are incompatible; one should be removed.");
+  }
 }
 
 void ErrorCantApplyPrivate::write(ErrorWriterBase& wr) const {
@@ -757,7 +762,7 @@ void ErrorCantApplyPrivate::write(ErrorWriterBase& wr) const {
   auto appliedToWhat = std::get<std::string>(info);
   wr.heading(kind_, type_, id, "can't apply private to ", appliedToWhat,
              " yet.");
-  wr.message("Disallowed private applied here:");
+  wr.message("The following declaration has unsupported 'private' modifier:");
   wr.code(id);
 }
 
