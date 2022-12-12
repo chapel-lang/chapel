@@ -8,9 +8,36 @@ module DistributedMap {
     private use Reflection;
     private use ChapelLocks;
 
-    // in order to support aggregators, this will eventually need to be
-    // a record-wrapped-class.
+
     record distributedMap {
+        type keyType;
+        type valType;
+
+        var instance: shared distMapInternal(keyType, valType)?;
+        forwarding instance!;
+
+        proc init(type keyType, type valType) {
+            this.keyType = keyType;
+            this.valType = valType;
+            this.instance = new shared distMapInternal(keyType, valType);
+        }
+
+        proc init(type keyType, type valType, hasher) {
+            this.keyType = keyType;
+            this.valType = valType;
+            this.instance = new shared distMapInternal(keyType, valType, hasher);
+        }
+
+        proc clear() {
+            this.instance!.clear();
+        }
+
+        proc writeThis(fr) throws {
+            this.instance!.writeThis(fr);
+        }
+    }
+
+    class distMapInternal {
         type keyType;
         type valType;
 
@@ -30,7 +57,6 @@ module DistributedMap {
 
         pragma "no doc"
         var localeHasher;
-
 
         // -------------------------------------------
         //  Initializers
@@ -320,6 +346,25 @@ module DistributedMap {
             if !this.locDom.contains(lidx) then halt("Invalid locale hash!");
             return this.targetLocales[lidx];
         }
+
+        proc _incrementStaticCounts() {
+            for t in this.tables do t.__incrementStaticCount();
+        }
+
+        proc _decrementStaticCounts() {
+            for t in this.tables do t.__decrementStaticCount();
+        }
+
+        proc _maybeResizeAndBallance() {
+            for idx in locDom {
+                this.locks[idx].lock();
+                this.tables[idx].__maybeResize();
+                this.locks[idx].unlock();
+            }
+
+            // TODO: this might also be a good place to do a load ballance
+            //          among locales (iff using default hasher)
+        }
     }
 
     record defaultLocaleHasher {
@@ -347,15 +392,13 @@ module DistributedMap {
         }
 
         proc ref enterThis() ref: dmType {
-            for t in this.dm.tables do t.__incrementStaticCount();
+            this.dm._incrementStaticCounts();
             return this.dm;
         }
 
         proc ref leaveThis(in err: owned Error?) {
-            for t in this.dm.tables {
-                t.__decrementStaticCount();
-                t.__maybeResize();
-            }
+            this.dm._decrementStaticCounts();
+            this.dm._maybeResizeAndBallance();
             if err then try! { throw err; }
         }
     }

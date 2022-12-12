@@ -160,8 +160,8 @@ module ChainTable {
         var numBuckets : uint;
         var numEntries : uint;
 
-        var rehashing : atomic bool;
         var numStaticManagers: atomic uint;
+        var isRehashing: atomic bool;
 
         var buckets: _ddata(Bucket(keyType, valType));
 
@@ -215,7 +215,7 @@ module ChainTable {
             select entry.status {
                 when entryStatus.full do _deinitSlot(entry);
                 when entryStatus.empty do this.numEntries += 1;
-                when entryStatus.deleted do this.numEntries += 1;
+                when entryStatus.deleted do this.numEntries -= 1;
             }
 
             entry.status = entryStatus.full;
@@ -245,28 +245,31 @@ module ChainTable {
 
         iter items() ref : rawTableEntry(this.keyType, this.valType) {
             for bIdx in 0..<this.numBuckets do
-                for entry in this.buckets[bIdx]._allEntries() do
-                    if entry.isFull() then
-                        yield entry;
+                if this.buckets[bIdx].isInit() then
+                    for entry in this.buckets[bIdx]._allEntries() do
+                        if entry.isFull() then
+                            yield entry;
         }
 
         proc __incrementStaticCount() {
-            // TODO: probably should be a compareExchange loop
-            this.numStaticManagers.write(this.numStaticManagers.read() + 1);
+            this.numStaticManagers.fetchAdd(1);
         }
 
         proc __decrementStaticCount() {
-            // TODO: probably should be a compareExchange loop
-            this.numStaticManagers.write(this.numStaticManagers.read() - 1);
+            this.numStaticManagers.fetchSub(1);
         }
 
         // TODO: the context manager should wrap the distributed map's lock around this
         proc __maybeResize() {
-            if this.numStaticManagers.read() == 0 {
-                if this._loadFactor() > loadFactorGrowThreshold {
+            var expectedNumManagers = this.numStaticManagers.read();
+            do {
+                if expectedNumManagers > 0 then return;
+            } while !this.numStaticManagers.compareExchange(expectedNumManagers, 0);
+
+            if this._loadFactor() > loadFactorGrowThreshold {
+                if !isRehashing.testAndSet() {
                     this.__rehash(this.numBuckets * 2);
-                } else if this._loadFactor() < loadFactorShrinkThreshold {
-                    this.__rehash(this.numBuckets / 2);
+                    this.isRehashing.clear();
                 }
             }
         }
@@ -274,22 +277,25 @@ module ChainTable {
         // replace the current array of buckets with a new array of different size
         proc __rehash(newNumBuckets: uint) {
             if newNumBuckets == 0 then halt("cannot rehash into zero buckets");
-            this.rehashing.write(true); defer this.rehashing.write(false);
+            var newBuckets = _allocateData(newNumBuckets, Bucket(this.keyType, this.valType));
 
-            const oldBuckets = this.buckets;
-            const oldNumBuckets = this.numBuckets;
+            for i in 0..this.numBuckets {
+                for e in this.items() {
+                    const new_bucket_idx = chpl__defaultHashWrapper(e.key):uint & (newNumBuckets - 1);
+                    if !newBuckets[new_bucket_idx].isInit()
+                        then newBuckets[new_bucket_idx] = new Bucket(keyType, valType);
 
-            this.buckets = _allocateData(this.numBuckets, Bucket(this.keyType, this.valType));
-            this.numBuckets = newNumBuckets;
-
-            for i in 0..oldNumBuckets {
-                ref b = oldBuckets[i];
-                for e in b._allEntries() {
-                    this.fillSlot(this.getSlotFor(e.key), e.key, e.val);
+                    const chain_idx = newBuckets[new_bucket_idx].firstAvailableIndex();
+                    ref entry = newBuckets[new_bucket_idx][chain_idx];
+                    entry.key = e.key;
+                    entry.val = e.val;
                 }
             }
 
-            if oldBuckets != nil then _ddata_free(oldBuckets, oldNumBuckets);
+            if this.buckets != nil then _ddata_free(this.buckets, this.numBuckets);
+
+            this.buckets = newBuckets;
+            this.numBuckets = newNumBuckets;
         }
 
         proc _bucketIdx(key: keyType) : uint {
