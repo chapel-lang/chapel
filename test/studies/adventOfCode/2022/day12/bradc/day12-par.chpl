@@ -31,8 +31,8 @@ iter nextSteps() {
 }
 
 proc Explore(pos, elevation = Elevation[startLoc], steps = 0): int {
+  var prevDist = Steps[pos].read();
   do {
-    var prevDist = Steps[pos].read();
     if steps >= prevDist {
       return;
     }
