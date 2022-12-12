@@ -12,12 +12,13 @@ ping -c 1 github.com &> /dev/null
 status=$?
 if ! [ $status -eq 0 ]; then
   echo "True"
+  exit 1
 fi
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-CHOP_URL=https://github.com/tcarneirop/ChOp.git
-#CHOP_URL=git@github.com:tcarneirop/ChOp.git
 CHOP_BRANCH=main
+CHOP_URL=${CHOP_URL:-https://github.com/tcarneirop/ChOp.git}
+CHOP_BRANCH=${CHOP_BRANCH:-main}
 
 # Clone ChOp, skipif clone failed, add extra output to fail nightly job
 rm -rf ChOp
@@ -29,4 +30,3 @@ if ! git clone ${CHOP_URL} --branch=${CHOP_BRANCH} --depth=1 2>gitClone.out; the
 fi
 
 echo "False"
-exit 0
