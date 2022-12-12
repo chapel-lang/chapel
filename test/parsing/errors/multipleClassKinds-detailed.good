@@ -1,8 +1,0 @@
-─── error in multipleClassKinds.chpl:2 [MultipleClassKinds] ───
-  Type expression uses multiple class kinds: owned owned.
-  Multiple class kinds used in type expression here:
-      |
-    2 | var a : Foo = new owned owned Foo();
-      |
-  Only a single management kind can be used in a type expression.
-
