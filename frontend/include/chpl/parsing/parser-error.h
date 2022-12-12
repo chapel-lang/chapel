@@ -81,10 +81,12 @@
   BUILDER__.addError(                                        \
       CHPL_GET_ERROR(BUILDER__.context(), NAME__, NODE__->id(), EINFO__))
 
-#define CHPL_POSTPARSE_ERR_SIMPLE(BUILDER__, NODE__, MSG__) \
-  CHPL_POSTPARSE_REPORT(BUILDER__, PostParseErr, NODE__, MSG__)
+#define CHPL_POSTPARSE_ERR_SIMPLE(BUILDER__, NODE__, FMT__, ...) \
+  CHPL_POSTPARSE_REPORT(BUILDER__, PostParseErr, NODE__,         \
+                        vprintToString(FMT__, ##__VA_ARGS__))
 
-#define CHPL_POSTPARSE_WARN_SIMPLE(BUILDER__, NODE__, MSG__) \
-  CHPL_POSTPARSE_REPORT(BUILDER__, PostParseWarn, NODE__, MSG__)
+#define CHPL_POSTPARSE_WARN_SIMPLE(BUILDER__, NODE__, FMT__, ...) \
+  CHPL_POSTPARSE_REPORT(BUILDER__, PostParseWarn, NODE__,         \
+                        vprintToString(FMT__, ##__VA_ARGS__))
 
 #endif
