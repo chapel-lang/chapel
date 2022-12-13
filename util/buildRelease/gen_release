@@ -135,7 +135,6 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
        "util/setchplenv.sh",
        "util/start_test",
        "util/chpltags",
-       "tools/chpldoc/COPYRIGHT",
        "frontend/include/chpl/config/config.h.cmake",
 );
 
