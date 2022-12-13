@@ -10,51 +10,35 @@ record monkey {
   var divisor: int;
   var currentItems, nextItems: list(int, parSafe=true);
   var numInspected: int;
+
+  proc init(id=-1, targetMonkey=(-1,-1), divisor=1, items: [] int = [-1,]) {
+    this.id = id;
+    this.targetMonkey = targetMonkey;
+    this.divisor = divisor;
+    this.currentItems = items;
+  }
 }
 
 var MonkeySpace = {0..<numMonkeys};
 var Monkeys: [MonkeySpace] monkey;
 
 if practice {
-  Monkeys = [new monkey(0, (3,2),
-                        23,
-                        new list([79,98], parSafe=true)),
-             new monkey(1, (0,2),
-                        19,
-                        new list([54,65,75,74], parSafe=true)),
-             new monkey(2, (3,1),
-                        13,
-                        new list([79,60,97], parSafe=true)),
-             new monkey(3, (1,0),
-                        17,
-                        new list([74], parSafe=true))
+  Monkeys = [new monkey(0, (3, 2), 23, [79, 98]),
+             new monkey(1, (0, 2), 19, [54, 65, 75, 74]),
+             new monkey(2, (3, 1), 13, [79, 60, 97]),
+             new monkey(3, (1, 0), 17, [74, ])
             ];
 } else {
-  halt("Can't do non-practice run yet");
+  Monkeys = [new monkey(0, (3, 5), 17, [54, 89, 94]),
+             new monkey(1, (3, 0), 3, [66, 71]),
+             new monkey(2, (4, 7), 5, [76, 55, 80, 55, 55, 96, 78]),
+             new monkey(3, (2, 5), 7, [93, 69, 76, 66, 89, 54, 59, 94]),
+             new monkey(4, (6, 1), 11, [80, 54, 58, 75, 99]),
+             new monkey(5, (7, 2), 19, [69, 70, 85, 83]),
+             new monkey(6, (1, 0), 2, [89, ]),
+             new monkey(7, (4, 6), 13, [62, 80, 58, 57, 93, 56])
+            ];
 }
-
-/*
-var CurrentItems: [MonkeySpace] list(int, parSafe=true) =
-  if practice then [
-                    ,
-              else [new list([54, 89, 94], parSafe=true),
-                    new list([66,71], parSafe=true),
-                    new list([76,55,80,55,55,96,78], parSafe=true),
-                    new list([93, 69, 76, 66, 89, 54, 59, 94], parSafe=true),
-                    new list([80, 54, 58, 75, 99], parSafe=true),
-                    new list([69, 70, 85, 83], parSafe=true),
-                    new list([89, ], parSafe=true),
-                    new list([62, 80, 58, 57, 93, 56], parSafe=true)];
-var NextItems: [MonkeySpace] list(int, parSafe=true);
-                    
-var NumInspected: [MonkeySpace] int;
-var TargetMonkey: [MonkeySpace] 2*int =
-  if practice then [
-              else [(3,5), (3,0), (4,7), (2, 5), (6, 1), (7, 2), (1, 0), (4, 6)];
-const divisor: [MonkeySpace] int =
-  if practice then 
-              else [17, 3, 5, 7, 11, 19, 2, 13];
-*/
 
 var quiesced: atomic int = 0;
 
