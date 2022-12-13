@@ -52,7 +52,7 @@ var canProceed: sync int = 0;
 var b = new Barrier(numMonkeys);
 coforall m in Monkeys {
   for r in 1..numRounds {
-    while true {
+    do {
 //      writeln((canProceed.readXX(), CurrentItems[m].size));
 
       // Process any items that are in our currentItems list
@@ -77,15 +77,8 @@ coforall m in Monkeys {
 //          writeln("Peeking at canProceed");
       }
 
-      // if we've been told to go on and we have no items to process
-      if (canProceed.readXX() == m.id && m.currentItems.size == 0) {
-        const me = canProceed.readFE();
-//        writeln("Passing the torch");
-        // tell the next monkey it can go on
-        canProceed.writeEF(me+1);
-        break;
-      }
-    }
+    } while (m.currentItems.size > 0 || canProceed.readXX() != m.id);
+    canProceed.writeFF(m.id+1);
     b.barrier();
     for i in 1..m.nextItems.size {
       m.currentItems.append(m.nextItems.pop());
