@@ -1137,11 +1137,8 @@ class ResolvedExpression {
   // resolving functions in mostSpecific?
   const PoiScope *poiScope_ = nullptr;
 
-  // functions associated with or used to implement this expression
-  // TODO: change to associatedActions
-  //   * with action (an enum)
-  //   * with ID (for e.g. a var or tmp deinit)
-  //   * with TypedFnSignature
+  // actions associated with this expression
+  // (e.g. default init, copy init, deinit)
   std::vector<AssociatedAction> associatedActions_;
 
   const ResolvedParamLoop* paramLoop_ = nullptr;
