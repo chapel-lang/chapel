@@ -109,6 +109,12 @@ class Builder final {
   void addError(const ErrorBase*);
 
   /**
+    Construct and save a generic post-parse error/warning.
+   */
+  void addPostParseError(const AstNode* node, const char* fmt, ...);
+  void addPostParseWarning(const AstNode* node, const char* fmt, ...);
+
+  /**
     Record the location of an AST element.
    */
   void noteLocation(AstNode* ast, Location loc);
