@@ -54,20 +54,9 @@ coforall m in Monkeys {
   for r in 1..numRounds {
     while true {
 //      writeln((canProceed.readXX(), CurrentItems[m].size));
-      // wait until we're either told we can go on or have items to process
-      while m.currentItems.size == 0 &&
-        canProceed.readXX() != m.id {
-//          writeln("Peeking at canProceed");
-      }
 
-      // if we've been told to go on and we have no items to process
-      if (canProceed.readXX() == m.id && m.currentItems.size == 0) {
-        const me = canProceed.readFE();
-//        writeln("Passing the torch");
-        // tell the next monkey it can go on
-        canProceed.writeEF(me+1);
-        break;
-      } else {
+      // Process any items that are in our currentItems list
+      while m.currentItems.size > 0 {
         // otherwise, inspect our next item
         var item = m.currentItems.pop();
 //        writeln("Monkey ", m, " inspecting ", item);
@@ -80,6 +69,21 @@ coforall m in Monkeys {
         } else {
           Monkeys[target].currentItems.append(item);
         }
+      }
+
+      // wait until we're either told we can go on or have items to process
+      while m.currentItems.size == 0 &&
+            canProceed.readXX() != m.id {
+//          writeln("Peeking at canProceed");
+      }
+
+      // if we've been told to go on and we have no items to process
+      if (canProceed.readXX() == m.id && m.currentItems.size == 0) {
+        const me = canProceed.readFE();
+//        writeln("Passing the torch");
+        // tell the next monkey it can go on
+        canProceed.writeEF(me+1);
+        break;
       }
     }
     b.barrier();
