@@ -233,22 +233,9 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
   } else if (vt->isTupleType()) {
     // TODO: probably need to do something here, at least in some cases
   } else if (auto ct = vt->toClassType()) {
-    auto decorator = ct->decorator();
-    // check that the class is a nilable class type
-    if (!decorator.isNilable()) {
-      // TODO: improve this error
-      context->error(ast, "cannot default initialize variable using non-nilable class type");
-      return;
-    }
-    // no action needed for 'borrowed' or 'unmanaged'
-    // (these should just default initialized to 'nil',
-    //  so nothing else needs to be resolved)
-    if (decorator.isBorrowed() || decorator.isUnmanaged()) {
-      return;
-    }
-
     // otherwise, need to resolve an 'init' e.g. shared.init
     classType = ct;
+    CHPL_ASSERT(ct->manager());
     compositeType = ct->manager()->toCompositeType();
   } else if (auto ct = vt->toCompositeType()) {
     compositeType = ct;
@@ -260,7 +247,8 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
     std::vector<CallInfoActual> actuals;
     actuals.push_back(CallInfoActual(varType, USTR("this")));
     if (classType != nullptr && classType->manager() != nullptr) {
-      // always pass chpl_t=borrowed class type
+      // when default-initializing a shared C? or owned C?,
+      // call e.g. shared.init(chpl_t=borrowed C?).
       auto dec = classType->decorator().toBorrowed();
       auto t = ClassType::get(context,
                               classType->basicClassType(),
@@ -451,7 +439,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
       // not inited here and not split-inited, so default-initialize it
       resolveDefaultInit(ast, rv);
       ID id = ast->id();
-      frame->initedVars.insert(id);
+      frame->addToInitedVars(id);
       frame->localsAndDefers.push_back(id);
     }
   }
