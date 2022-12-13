@@ -82,7 +82,7 @@ proc explore(
         var currRecord = shortestSoFar.read();
         do {
             if pathLen >= currRecord then return;
-        } while shortestSoFar.compareExchange(currRecord, pathLen);
+        } while !shortestSoFar.compareExchange(currRecord, pathLen);
         return;
     }
 
