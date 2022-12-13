@@ -288,7 +288,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     fprintf(slurmFile, "#SBATCH --nodes=%d\n", numNodes);
     fprintf(slurmFile, "#SBATCH --ntasks=%d\n", numLocales);
-    fprintf(slurmFile, "#SBATCH --ntasks-per-node=%d\n", localesPerNode);
     int localesOnNode = (numLocales < localesPerNode) ?
                         numLocales : localesPerNode;
     int cpusPerTask = getCoresPerLocale(localesOnNode);
@@ -416,8 +415,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     len += snprintf(iCom+len, sizeof(iCom)-len, "--nodes=%d ",numNodes);
     len += snprintf(iCom+len, sizeof(iCom)-len, "--ntasks=%d ", numLocales);
-    len += snprintf(iCom+len, sizeof(iCom)-len, "--ntasks-per-node=%d ",
-                    localesPerNode);
     int localesOnNode = (numLocales < localesPerNode) ?
                         numLocales : localesPerNode;
     int cpusPerTask = getCoresPerLocale(localesOnNode);
