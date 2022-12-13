@@ -247,7 +247,7 @@ void Visitor::checkDomainTypeQueryUsage(const TypeQuery* node) {
   }
 
   if (doEmitError) {
-    CHPL_POSTPARSE_ERR_SIMPLE(builder_, node,
+    builder_.addPostParseError(node,
                               "domain query expressions may currently only be "
                               "used in formal argument types.");
   }
@@ -264,7 +264,7 @@ void Visitor::checkNoDuplicateNamedArguments(const FnCall* node) {
       if (!actualNames.insert(name).second) {
         auto actual = node->actual(i);
         CHPL_ASSERT(actual);
-        CHPL_POSTPARSE_ERR_SIMPLE(builder_, actual,
+        builder_.addPostParseError(actual,
                                   "the named argument '%s' is used more than "
                                   "once in the same function call.",
                                   name.c_str());
@@ -408,7 +408,7 @@ void Visitor::checkExplicitDeinitCalls(const FnCall* node) {
   }
 
   if (doEmitError) {
-    CHPL_POSTPARSE_ERR_SIMPLE(builder_, node, "direct calls to deinit() are not allowed.");
+    builder_.addPostParseError(node, "direct calls to deinit() are not allowed.");
   }
 }
 
@@ -423,7 +423,7 @@ void Visitor::checkConstVarNoInit(const Variable* node) {
 
   if (auto ident = node->initExpression()->toIdentifier()) {
     if (ident->name() == USTR("noinit")) {
-      CHPL_POSTPARSE_ERR_SIMPLE(builder_, node, "const variables specified with noinit must be "
+      builder_.addPostParseError(node, "const variables specified with noinit must be "
                   "explicitly initialized.");
     }
   }
@@ -470,15 +470,14 @@ void Visitor::checkConfigVar(const Variable* node) {
     const char* varTypeStr = configVarStr(node->kind());
     CHPL_ASSERT(varTypeStr);
 
-    CHPL_POSTPARSE_ERR_SIMPLE(
-        builder_, node, "configuration %s are allowed only at module scope.",
+    builder_.addPostParseError(node, "configuration %s are allowed only at module scope.",
         varTypeStr);
   }
 }
 
 void Visitor::checkExportVar(const Variable* node) {
   if (node->linkage() == Decl::EXPORT) {
-    CHPL_POSTPARSE_ERR_SIMPLE(builder_, node,
+    builder_.addPostParseError(node,
                               "export variables are not yet supported.");
   }
 }
@@ -487,15 +486,14 @@ void Visitor::checkOperatorNameValidity(const Function* node) {
   if (node->kind() == Function::Kind::OPERATOR) {
     // operators must have valid operator names
     if (!isOpName(node->name())) {
-      CHPL_POSTPARSE_ERR_SIMPLE(builder_, node,
+      builder_.addPostParseError(node,
                                 "'%s' is not a legal operator name.",
                                 node->name().c_str());
     }
   } else {
     // functions with operator names must be declared as operators
     if (isOpName(node->name())) {
-      CHPL_POSTPARSE_ERR_SIMPLE(
-          builder_, node,
+      builder_.addPostParseError(node,
           "operators cannot be declared without the operator keyword.");
     }
   }
@@ -505,8 +503,7 @@ void Visitor::checkEmptyProcedureBody(const Function* node) {
   if (!node->body() && node->linkage() != Decl::EXTERN) {
     auto decl = searchParentsForDecl(nullptr);
     if (!decl || !decl->isInterface()) {
-      CHPL_POSTPARSE_ERR_SIMPLE(
-          builder_, node,
+      builder_.addPostParseError(node,
           "no-op procedures are only legal for extern functions.");
     }
   }
@@ -516,17 +513,17 @@ void Visitor::checkExternProcedure(const Function* node) {
   if (node->linkage() != Decl::EXTERN) return;
 
   if (node->body()) {
-    CHPL_POSTPARSE_ERR_SIMPLE(builder_, node,
+    builder_.addPostParseError(node,
                               "extern functions cannot have a body.");
   }
 
   if (node->throws()) {
-    CHPL_POSTPARSE_ERR_SIMPLE(builder_, node,
+    builder_.addPostParseError(node,
                               "extern functions cannot throw errors.");
   }
 
   if (node->kind() == Function::ITER) {
-    CHPL_POSTPARSE_ERR_SIMPLE(builder_, node,
+    builder_.addPostParseError(node,
                               "'iter' is not legal with 'extern'.");
   }
 }
@@ -535,7 +532,7 @@ void Visitor::checkExportProcedure(const Function* node) {
   if (node->linkage() != Decl::EXPORT) return;
 
   if (node->whereClause()) {
-    CHPL_POSTPARSE_ERR_SIMPLE(builder_, node,
+    builder_.addPostParseError(node,
                               "exported functions cannot have where clauses.");
   }
 }
@@ -543,20 +540,19 @@ void Visitor::checkExportProcedure(const Function* node) {
 // TODO: Should this be confirming that the function is a method?
 void Visitor::checkProcedureRequiresParens(const Function* node) {
   if (node->name() == "this" && node->isParenless()) {
-    CHPL_POSTPARSE_ERR_SIMPLE(builder_, node,
+    builder_.addPostParseError(node,
                               "method 'this' must have parentheses.");
   }
 
   if (node->name() == "these" && node->isParenless()) {
-    CHPL_POSTPARSE_ERR_SIMPLE(builder_, node,
+    builder_.addPostParseError(node,
                               "method 'these' must have parentheses.");
   }
 }
 
 void Visitor::checkOverrideNonMethod(const Function* node) {
   if (!node->isMethod() && node->isOverride()) {
-    CHPL_POSTPARSE_ERR_SIMPLE(
-        builder_, node, "'override' cannot be applied to non-method '%s'.",
+    builder_.addPostParseError(node, "'override' cannot be applied to non-method '%s'.",
         node->name().c_str());
   }
 }
@@ -584,8 +580,7 @@ void Visitor::checkFormalsForTypeOrParamProcs(const Function* node) {
 
     if (doEmitError) {
       CHPL_ASSERT(formalIntentStr);
-      CHPL_POSTPARSE_ERR_SIMPLE(
-          builder_, decl,
+      builder_.addPostParseError(decl,
           "cannot use '%s' intent in a function returning with '%s' intent.",
           formalIntentStr, returnIntentStr);
     }
@@ -611,7 +606,7 @@ void Visitor::checkNoReceiverClauseOnPrimaryMethod(const Function* node) {
           receiverTypeStr = ss.str().c_str();
         }
 
-        CHPL_POSTPARSE_ERR_SIMPLE(builder_, node,
+        builder_.addPostParseError(node,
                                   "type binding clauses ('%s.' in this case) "
                                   "are not supported in declarations within a "
                                   "class, record or union.",
@@ -640,7 +635,7 @@ void Visitor::checkLambdaReturnIntent(const Function* node) {
       break;
   }
   if (disallowedReturnType) {
-    CHPL_POSTPARSE_ERR_SIMPLE(builder_, node,
+    builder_.addPostParseError(node,
                               "'%s' return types are not allowed in lambdas.",
                               disallowedReturnType);
   }
@@ -688,8 +683,7 @@ void Visitor::checkPrivateDecl(const Decl* node) {
   if (!enclosingDecl) return;
 
   if (enclosingDecl->isFunction()) {
-    CHPL_POSTPARSE_WARN_SIMPLE(
-        builder_, node,
+    builder_.addPostParseWarning(node,
         "private declarations within function bodies are meaningless.");
 
   } else if (enclosingDecl->isAggregateDecl() && !node->isTypeDecl()) {
@@ -704,12 +698,11 @@ void Visitor::checkPrivateDecl(const Decl* node) {
       }
 
     } else if (parent(0)->isBlock() && !isParentFalseBlock(0)) {
-      CHPL_POSTPARSE_WARN_SIMPLE(
-          builder_, node,
+      builder_.addPostParseWarning(node,
           "private declarations within nested blocks are meaningless.");
 
     } else if (parent(0) != mod) {
-      CHPL_POSTPARSE_WARN_SIMPLE(builder_, node,
+      builder_.addPostParseWarning(node,
                                  "private declarations are meaningless outside "
                                  "of module level declarations.");
     }
@@ -780,12 +773,10 @@ void Visitor::checkReservedSymbolName(const NamedDecl* node) {
   if (node->isTaskVar()) return;
 
   if (isNameReservedWord(node)) {
-    CHPL_POSTPARSE_ERR_SIMPLE(
-        builder_, node,
+    builder_.addPostParseError(node,
         "attempt to redefine reserved word '%s'.", name.c_str());
   } else if (isNameReservedType(name)) {
-    CHPL_POSTPARSE_ERR_SIMPLE(
-        builder_, node,
+    builder_.addPostParseError(node,
         "attempt to redefine reserved type '%s'.", name.c_str());
   }
 }
@@ -800,8 +791,7 @@ void Visitor::checkLinkageName(const NamedDecl* node) {
   if (node->isFunction()) return;
 
   if (!linkageName->isStringLiteral()) {
-    CHPL_POSTPARSE_ERR_SIMPLE(
-        builder_, linkageName,
+    builder_.addPostParseError(linkageName,
         "the linkage name for '%s' must be a string literal.",
         node->name().c_str());
   }
@@ -810,8 +800,7 @@ void Visitor::checkLinkageName(const NamedDecl* node) {
 // TODO: This relies on the "warn unstable" flag that we do not have.
 void Visitor::warnUnstableUnions(const Union* node) {
   if (!isFlagSet(CompilerFlags::WARN_UNSTABLE)) return;
-  CHPL_POSTPARSE_WARN_SIMPLE(
-      builder_, node,
+  builder_.addPostParseWarning(node,
       "unions are currently unstable and are expected to change in ways that "
       "will break their current uses.");
 }
@@ -823,15 +812,13 @@ void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
   auto name = node->name();
 
   if (name.startsWith("_")) {
-    CHPL_POSTPARSE_WARN_SIMPLE(
-        builder_, node,
+    builder_.addPostParseWarning(node,
         "symbol names with leading underscores (%s) are unstable.",
         name.c_str());
   }
 
   if (name.startsWith("chpl_")) {
-    CHPL_POSTPARSE_WARN_SIMPLE(
-        builder_, node,
+    builder_.addPostParseWarning(node,
         "symbol names beginning with 'chpl_' (%s) are unstable.", name.c_str());
   }
 }

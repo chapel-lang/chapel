@@ -72,21 +72,11 @@
     CHPL_PARSER_REPORT(pContext, NAME__, loc, ##EINFO__);                     \
   }
 
-
 /**
- * Helper macros to report errors in post-parse-checks to the Builder
+ * Helper macro to report errors in post-parse-checks to the Builder
  */
-
 #define CHPL_POSTPARSE_REPORT(BUILDER__, NAME__, NODE__, EINFO__...) \
-  BUILDER__.addError(                                        \
-      CHPL_GET_ERROR(BUILDER__.context(), NAME__, NODE__->id(), EINFO__))
-
-#define CHPL_POSTPARSE_ERR_SIMPLE(BUILDER__, NODE__, FMT__, ...) \
-  CHPL_POSTPARSE_REPORT(BUILDER__, PostParseErr, NODE__,         \
-                        vprintToString(FMT__, ##__VA_ARGS__))
-
-#define CHPL_POSTPARSE_WARN_SIMPLE(BUILDER__, NODE__, FMT__, ...) \
-  CHPL_POSTPARSE_REPORT(BUILDER__, PostParseWarn, NODE__,         \
-                        vprintToString(FMT__, ##__VA_ARGS__))
+  (BUILDER__).addError(                                                \
+      CHPL_GET_ERROR((BUILDER__).context(), NAME__, NODE__->id(), EINFO__))
 
 #endif
