@@ -70,13 +70,6 @@ coforall m in Monkeys {
           Monkeys[target].currentItems.append(item);
         }
       }
-
-      // wait until we're either told we can go on or have items to process
-      while m.currentItems.size == 0 &&
-            canProceed.readXX() != m.id {
-//          writeln("Peeking at canProceed");
-      }
-
     } while (m.currentItems.size > 0 || canProceed.readXX() != m.id);
     canProceed.writeFF(m.id+1);
     b.barrier();
