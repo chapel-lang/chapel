@@ -47,23 +47,25 @@ if practice {
             ];
 }
 
-var quiesced: atomic int = 0;
+var canProceed: sync int = 0;
 
 var b = new Barrier(numMonkeys);
 coforall m in Monkeys {
   for r in 1..numRounds {
-    do {
-//      writeln((quiesced.read(), CurrentItems[m].size));
+    while true {
+//      writeln((canProceed.readXX(), CurrentItems[m].size));
       // wait until we're either told we can go on or have items to process
-      while (quiesced.read() != m.id && m.currentItems.size == 0) {
-        chpl_task_yield();
+      while m.currentItems.size == 0 &&
+        canProceed.readXX() != m.id {
+//          writeln("Peeking at canProceed");
       }
 
       // if we've been told to go on and we have no items to process
-      if (quiesced.read() == m.id && m.currentItems.size == 0) {
+      if (canProceed.readXX() == m.id && m.currentItems.size == 0) {
+        const me = canProceed.readFE();
 //        writeln("Passing the torch");
         // tell the next monkey it can go on
-        quiesced.write(m.id+1);
+        canProceed.writeEF(me+1);
         break;
       } else {
         // otherwise, inspect our next item
@@ -79,13 +81,16 @@ coforall m in Monkeys {
           Monkeys[target].currentItems.append(item);
         }
       }
-    } while (true);
+    }
     b.barrier();
     for i in 1..m.nextItems.size {
       m.currentItems.append(m.nextItems.pop());
     }
     m.nextItems.clear();
-    quiesced.write(0);
+//    writeln("Resetting canProceed");
+    if m.id == 0 {
+      canProceed.writeFF(0);
+    }
     b.barrier();
   }
 }
