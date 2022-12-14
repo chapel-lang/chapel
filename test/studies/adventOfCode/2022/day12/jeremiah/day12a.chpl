@@ -37,10 +37,10 @@ proc findValidMoves(elevs: [?d] int(8)) : [d] uint(8) {
     var _elevs : [d.expand(1)] int(8) = 28;
     _elevs[d] = elevs;
 
-    forall (i, j) in d do
-       for (m, di, dj) in ((1, 0, 1), (2, 0, -1), (4, 1, 0), (8, -1, 0)) do
-            moves[i, j] +=
-                (if elevs[i, j] - _elevs[i+di, j+dj] >= -1 then m else 0) : uint(8);
+    forall idx in d do
+        for (mask, dir) in ((1, (0, 1)), (2, (0, -1)), (4, (1, 0)), (8, (-1, 0))) do
+            moves[idx] +=
+                (if elevs[idx] - _elevs[idx+dir] >= -1 then mask else 0) : uint(8);
 
     return moves;
 }
