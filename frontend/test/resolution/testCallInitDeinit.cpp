@@ -468,6 +468,53 @@ static void test4c() {
     });
 }
 
+// test cross-type variable init
+static void test5a() {
+  testActions("test5a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: int) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+        proc makeR() {
+          return new R();
+        }
+        proc test() {
+          var x:R = 4;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::INIT_OTHER,   "x",        ""},
+      {AssociatedAction::DEINIT,       "M.test@3", "x"}
+    });
+}
+
+static void test5b() {
+  testActions("test5b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: int) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+        proc makeR() {
+          return new R();
+        }
+        proc test() {
+          var x:R;
+          x = 4; // split init
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::INIT_OTHER,   "M.test@4", ""},
+      {AssociatedAction::DEINIT,       "M.test@5", "x"},
+    });
+}
 
 int main() {
   test1();
@@ -484,6 +531,9 @@ int main() {
   test4a();
   test4b();
   test4c();
+
+  test5a();
+  test5b();
 
   return 0;
 }

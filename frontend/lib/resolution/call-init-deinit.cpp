@@ -350,8 +350,12 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
   auto c = resolveGeneratedCall(context, ast, ci, scope,
                                 resolver.poiScope);
   ResolvedExpression& opR = rv.byAst(ast);
-  resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
-                                        AssociatedAction::COPY_INIT, ast->id());
+
+  auto action = AssociatedAction::COPY_INIT;
+  if (lhsType.type() != rhsType.type()) {
+    action = AssociatedAction::INIT_OTHER;
+  }
+  resolver.handleResolvedAssociatedCall(opR, ast, ci, c, action, ast->id());
 }
 
 static bool isValue(QualifiedType::Kind kind) {
@@ -431,6 +435,7 @@ void CallInitDeinit::processInit(VarFrame* frame,
     // these are basically 'move' initialization
     resolveMoveInit(ast, lhsType, rhsType, rv);
   } else {
+    printf("H1\n");
     if (isRef(lhsType.kind())) {
       // e.g. ref x = returnAValue();
       CHPL_ASSERT(false && "TODO");
@@ -444,7 +449,8 @@ void CallInitDeinit::processInit(VarFrame* frame,
       // copy elision with '=' should only apply to myVar = myOtherVar
       CHPL_ASSERT(!rhsId.isEmpty());
       frame->deinitedVars.insert(rhsId);
-    } else if (rv.byAst(rhsAst).toId().isEmpty() && !isRef(rhsType.kind())) {
+    } else if (lhsType.type() == rhsType.type() &&
+               rv.byAst(rhsAst).toId().isEmpty() && !isRef(rhsType.kind())) {
       // e.g. var x; x = callReturningValue();
       resolveMoveInit(ast, lhsType, rhsType, rv);
     } else {
@@ -701,7 +707,6 @@ void callInitDeinit(Resolver& resolver) {
                                                        resolver.byPostorder,
                                                        splitInitedVars);
 
-  /*
   auto symName = UniqueString::get(resolver.context, "unknown");
   if (auto nd = resolver.symbol->toNamedDecl()) {
     symName = nd->name();
@@ -725,7 +730,6 @@ void callInitDeinit(Resolver& resolver) {
            id.str().c_str());
   }
   printf("\n");
-  */
 
   CallInitDeinit uv(resolver.context, resolver,
                     splitInitedVars, elidedCopyFromIds);

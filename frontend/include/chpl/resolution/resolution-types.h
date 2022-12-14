@@ -1075,7 +1075,8 @@ class AssociatedAction {
  public:
   enum Action {
     ASSIGN,
-    COPY_INIT,
+    COPY_INIT,  // init= from same type
+    INIT_OTHER, // init= from other type
     DEFAULT_INIT,
     DEINIT,
     ITERATE, // aka "these"

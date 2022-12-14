@@ -841,6 +841,9 @@ const char* AssociatedAction::kindToString(Action a) {
     case DEFAULT_INIT:
       s = "default-init";
       break;
+    case INIT_OTHER:
+      s = "init-from-other";
+      break;
     case DEINIT:
       s = "deinit";
       break;
