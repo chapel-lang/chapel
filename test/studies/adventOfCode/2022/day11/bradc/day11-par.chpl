@@ -3,7 +3,7 @@ use IO, List, Barriers;
 config const numRounds = 20;
 
 // things that define a monkey
-class monkey {
+class Monkey {
   var id: int,                 // an integer ID
       Items: [0..1] list(int, parSafe=true),  // two lists of its items
       current = 0, next=1,     // which list is the current vs. next one
@@ -13,6 +13,12 @@ class monkey {
       numInspected: int;       // the count of how many inspections we've done
 }
 
+/*
+var m1 = new Monkey();
+var m2 = new Monkey();
+var m3 = new Monkey();
+var m4 = new Monkey();
+*/
 
 // An array of monkeys
 var Monkeys = readMonkeys();
@@ -51,7 +57,7 @@ writeln(Monkeys.numInspected);
 
 
 // Here's how one monkey processes its items
-proc monkey.processItems(canPause) {
+proc Monkey.processItems(canPause) {
   // subtle MCM issue here if these two expressions are swapped... woof
   while (canPause.readXX() != id || Items[current].size > 0) {
     while Items[current].size > 0 {
@@ -72,7 +78,7 @@ proc monkey.processItems(canPause) {
 }
 
 
-proc monkey.resetForNextRound(canPause) {
+proc Monkey.resetForNextRound(canPause) {
   current <=> next;
   // When we start up the next round, only monkey 0 can pause
   if id == 0 then
@@ -80,7 +86,7 @@ proc monkey.resetForNextRound(canPause) {
 }
 
 
-proc monkey.runOp(item) {
+proc Monkey.runOp(item) {
   return op!.apply(item);
 }
 
@@ -108,44 +114,49 @@ class MulOp : Op {
 
 
 iter readMonkeys() {
-  try {
-    while true {
-      var m = new monkey();
-      m.readMonkey();
+  while readf("Monkey ") {
+    var m = new Monkey();
 //      writeln("read and yielding ", m);
-      yield m;
-    }
-  } catch {
+    yield m;
   }
 }
 
 
 // TODO: Can I write this as an initializer?  Get rid of the nilable class?
 
-proc monkey.readMonkey() throws {
-  readf("Monkey %i:", this.id);
-  readf(" Starting items:");
+proc Monkey.init() {
+//  readf("Monkey ");
+  this.id = read(int);
+  readf(":");
 
-  var val: int;
+  var val: int,
+      tempItems: list(int);
+  readf(" Starting items:");
   do {
     readf(" %i", val);
-    Items[current].append(val);
+    tempItems.append(val);
   } while (stdin.matchLiteral(","));
 
   var operation, operand: string;
   readf(" Operation: new = old %s %s", operation, operand);
-  select operation {
-    when "+" do op = new AddOp(operand:int);
-    when "*" do select operand {
-      when "old" do op = new SquareOp();
-      otherwise do op = new MulOp(operand:int);
-    }
-  }
+  this.op = opStringsToOp(operation, operand);
 
-  readf(" Test: divisible by %i", divisor);
+  readf(" Test: divisible by ");
+  this.divisor = read(int);
+
+  var targetMonkey: 2*int;
   readf(" If true: throw to monkey %i", targetMonkey(true));
   readf(" If false: throw to monkey %i", targetMonkey(false));
   readf(" ");
+  this.targetMonkey = targetMonkey;
 
-  return this;
+  this.complete();
+  for item in tempItems do
+    Items[current].append(item);
+}
+
+proc opStringsToOp(operation, operand): owned Op {
+  if operation == "+" then return new AddOp(operand:int): Op;
+  else if operand == "old" then return new SquareOp(): Op;
+  else return new MulOp(operand:int): Op;
 }
