@@ -30,8 +30,6 @@ namespace chpl {
 // Convenience shorthands for DIAGNOSTIC_CLASS.
 #define ERROR_CLASS(NAME, EINFO...) DIAGNOSTIC_CLASS(NAME, ERROR, EINFO)
 #define WARNING_CLASS(NAME, EINFO...) DIAGNOSTIC_CLASS(NAME, WARNING, EINFO)
-#define SYNTAX_CLASS(NAME, EINFO...) DIAGNOSTIC_CLASS(NAME, SYNTAX, EINFO)
-#define NOTE_CLASS(NAME, EINFO...) DIAGNOSTIC_CLASS(NAME, NOTE, EINFO)
 
 // Shorthands specific to parser errors, which provide explicit Locations
 #define PARSER_DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) \
@@ -42,8 +40,6 @@ namespace chpl {
   PARSER_DIAGNOSTIC_CLASS(NAME, WARNING, ##EINFO)
 #define PARSER_SYNTAX_CLASS(NAME, EINFO...) \
   PARSER_DIAGNOSTIC_CLASS(NAME, SYNTAX, ##EINFO)
-#define PARSER_NOTE_CLASS(NAME, EINFO...) \
-  PARSER_DIAGNOSTIC_CLASS(NAME, NOTE, ##EINFO)
 
 // Shorthands specific to post-parse-checks errors, which provide node IDs
 // that should connect to locations by the time we report out errors
@@ -53,10 +49,6 @@ namespace chpl {
   POSTPARSE_DIAGNOSTIC_CLASS(NAME, ERROR, ##EINFO)
 #define POSTPARSE_WARNING_CLASS(NAME, EINFO...) \
   POSTPARSE_DIAGNOSTIC_CLASS(NAME, WARNING, ##EINFO)
-#define POSTPARSE_SYNTAX_CLASS(NAME, EINFO...) \
-  POSTPARSE_DIAGNOSTIC_CLASS(NAME, SYNTAX, ##EINFO)
-#define POSTPARSE_NOTE_CLASS(NAME, EINFO...) \
-  POSTPARSE_DIAGNOSTIC_CLASS(NAME, NOTE, ##EINFO)
 
 class ErrorWriterBase;
 
