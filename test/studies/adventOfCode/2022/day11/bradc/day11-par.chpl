@@ -5,7 +5,7 @@ config const practice = true;
 const numMonkeys = if practice then 4 else 8;
 
 // things that define a monkey
-record monkey {
+class monkey {
   var id: int,                 // an integer ID
       op: owned Op?,            // the operator the monkey does
       targetMonkey: 2*int,     // the target monkeys it throws items to
@@ -26,19 +26,36 @@ record monkey {
       this.Items[current].append(item);
   }
 */
-
-  /*
+/*  This is really hard:
   proc init(ch) {
-    ch.matchLiteral("Monkey");
+    readf("Monkey");
     this.id = read(int);
+    writeln("reading monkey ", id);
+
+    readf("\n Starting items:");
+    var val: int;
+    var tmpItems: list(int, parSafe=true);
+    do {
+      val = read(int);
+      tmpItems.append(val);
+    } while (stdin.matchLiteral(","));
+    Items = [tmpItems, new list(int, parSafe=true)];
+/*
+    while readf(" %i,", val) {
+      writeln("read item ", val);
+    }
+    Items[current].append(read(int));
+*/
+    writeln(Items[0]);
   }
 */
+
   
-  proc readMonkey(id) {
+  proc readMonkey() throws {
 //    this.id = id;
     readf("Monkey %i:", this.id);
 //    stdin.readLine();
-    writeln("reading monkey ", id);
+//    writeln("reading monkey ", id);
     readf(" Starting items:");
 
     var val: int;
@@ -48,15 +65,15 @@ record monkey {
     } while (stdin.matchLiteral(","));
 /*
     while readf(" %i,", val) {
-      writeln("read item ", val);
+//      writeln("read item ", val);
     }
     Items[current].append(read(int));
 */
-    writeln(Items[0]);
+//    writeln(Items[0]);
 
     var operation, operand: string;
     readf(" Operation: new = old %s %s", operation, operand);
-    writeln("read ", (operation, operand));
+//    writeln("read ", (operation, operand));
     select operation {
       when "+" do op = new AddOp(operand:int);
       when "*" do select operand {
@@ -66,10 +83,10 @@ record monkey {
     }
 
     readf(" Test: divisible by %i", divisor);
-    writeln("read ", divisor);
+//    writeln("read ", divisor);
     readf(" If true: throw to monkey %i", targetMonkey(true));
     readf(" If false: throw to monkey %i\n", targetMonkey(false));
-    writeln("read ", targetMonkey);
+//    writeln("read ", targetMonkey);
     //    stdin.readLine();
     readf("\n");
 
@@ -82,10 +99,25 @@ record monkey {
 }
 
 
+iter readMonkeys() {
+  while true {
+    try {
+      var m = new monkey();
+      m.readMonkey();
+
+      yield m;
+    } catch {
+      break;
+    }
+  }
+}
+
+
 
 // An array of monkeys
 var MonkeySpace = {0..<numMonkeys};
-var Monkeys = for i in MonkeySpace do (new monkey()).readMonkey(i);
+//var Monkeys: [MonkeySpace] monkey = for i in MonkeySpace do (new monkey()).readMonkey();
+var Monkeys = readMonkeys();
 //var Monkeys = for i in MonkeySpace do new monkey(stdin);
 
 // This tells whether a given monkey can proceed when it is out of items.
