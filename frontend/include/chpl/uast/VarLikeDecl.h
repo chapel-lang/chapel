@@ -77,6 +77,9 @@ class VarLikeDecl : public NamedDecl {
     namedDeclMarkUniqueStringsInner(context);
   }
 
+  virtual void dumpFieldsInner(const DumpSettings& s) const override;
+  virtual std::string dumpChildLabelInner(int i) const override;
+
  public:
   ~VarLikeDecl() = 0; // this is an abstract base class
 

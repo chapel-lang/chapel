@@ -25,6 +25,16 @@ namespace chpl {
 namespace uast {
 
 
+std::string Scan::dumpChildLabelInner(int i) const {
+  if (i == opChildNum_) {
+    return "op";
+  } else if (i == iterandChildNum_) {
+    return "iterand";
+  }
+
+  return Call::dumpChildLabelInner(i);
+}
+
 owned<Scan> Scan::build(Builder* builder, Location loc,
                         owned<AstNode> op,
                         owned<AstNode> iterand) {

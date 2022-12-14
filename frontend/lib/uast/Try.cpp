@@ -25,6 +25,24 @@ namespace chpl {
 namespace uast {
 
 
+void Try::dumpFieldsInner(const DumpSettings& s) const {
+  if (isTryBang_) {
+    s.out << " try!";
+  }
+  if (isExpressionLevel_) {
+    s.out << " expr";
+  }
+}
+
+std::string Try::dumpChildLabelInner(int i) const {
+  if (i == bodyChildNum_) {
+    return "body";
+  } else if (numBodyStmts_ <= i && i < numBodyStmts_ + numHandlers_) {
+    return "handler " + std::to_string(i - numBodyStmts_);
+  }
+  return "";
+}
+
 owned<Try> Try::build(Builder* builder, Location loc,
                       owned<Block> body,
                       AstList catches,

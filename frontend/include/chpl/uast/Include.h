@@ -70,6 +70,8 @@ class Include final : public AstNode {
     name_.mark(context);
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
  public:
 
   /**

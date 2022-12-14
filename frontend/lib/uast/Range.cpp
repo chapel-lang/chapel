@@ -25,6 +25,31 @@ namespace chpl {
 namespace uast {
 
 
+const char* Range::opKindToString(OpKind kind) {
+  switch (kind) {
+    case DEFAULT: return "";
+    case OPEN_HIGH: return "open-high";
+  }
+
+  return "<unknown>";
+}
+
+void Range::dumpFieldsInner(const DumpSettings& s) const {
+  const char* kindStr = opKindToString(opKind_);
+  if (kindStr[0] != '\0') {
+    s.out << " " << kindStr;
+  }
+}
+std::string Range::dumpChildLabelInner(int i) const {
+  if (i == lowerBoundChildNum_) {
+    return "lower";
+  } else if (i == upperBoundChildNum_) {
+    return "upper";
+  }
+
+  return "";
+}
+
 owned<Range> Range::build(Builder* builder, Location loc,
                           OpKind opKind,
                           owned<AstNode> lowerBound,

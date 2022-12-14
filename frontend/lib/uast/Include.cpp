@@ -25,6 +25,17 @@ namespace chpl {
 namespace uast {
 
 
+void Include::dumpFieldsInner(const DumpSettings& s) const {
+  const char* vis = Decl::visibilityToString(visibility_);
+  if (vis[0]) {
+    s.out << " " << vis;
+  }
+  if (isPrototype_) {
+    s.out << " prototype";
+  }
+  s.out << name_.str();
+}
+
 owned<Include> Include::build(Builder* builder, Location loc,
                               Decl::Visibility visibility,
                               bool isPrototype,

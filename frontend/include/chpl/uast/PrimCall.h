@@ -69,6 +69,8 @@ class PrimCall final : public Call {
     callMarkUniqueStringsInner(context);
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
  public:
   ~PrimCall() override = default;
   static owned<PrimCall> build(Builder* builder,

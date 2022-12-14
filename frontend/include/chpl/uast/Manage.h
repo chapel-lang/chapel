@@ -79,6 +79,8 @@ class Manage final : public SimpleBlockLike {
     simpleBlockLikeMarkUniqueStringsInner(context);
   }
 
+  std::string dumpChildLabelInner(int i) const override;
+
  public:
   ~Manage() override = default;
 

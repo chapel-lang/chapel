@@ -50,6 +50,7 @@ void Function::dumpFieldsInner(const DumpSettings& s) const {
   if (parenless_) {
     s.out << " parenless";
   }
+  NamedDecl::dumpFieldsInner(s);
 }
 
 std::string Function::dumpChildLabelInner(int i) const {
@@ -68,7 +69,7 @@ std::string Function::dumpChildLabelInner(int i) const {
     return "body";
   }
 
-  return "";
+  return NamedDecl::dumpChildLabelInner(i);
 }
 
 const char* Function::returnIntentToString(ReturnIntent intent) {

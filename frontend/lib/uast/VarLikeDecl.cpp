@@ -25,6 +25,26 @@ namespace chpl {
 namespace uast {
 
 
+void VarLikeDecl::dumpFieldsInner(const DumpSettings& s) const {
+  const char* kind = intentToString(storageKind_);
+  if (storageKind_ == IntentList::CONST_VAR) {
+    kind = "const";
+  }
+  s.out << " " << kind;
+  NamedDecl::dumpFieldsInner(s);
+}
+
+std::string VarLikeDecl::dumpChildLabelInner(int i) const {
+  if (i == typeExpressionChildNum_) {
+    return "type";
+  } else if (i == initExpressionChildNum_) {
+    return "init";
+  }
+
+  return NamedDecl::dumpChildLabelInner(i);
+}
+
+
 VarLikeDecl::~VarLikeDecl() {
 }
 

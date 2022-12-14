@@ -25,6 +25,14 @@ namespace chpl {
 namespace uast {
 
 
+std::string Manage::dumpChildLabelInner(int i) const {
+  if (managerExprChildNum_ <= i &&
+      i <= managerExprChildNum_ + numManagerExprs_) {
+    return "manager " + std::to_string(i - managerExprChildNum_);
+  }
+  return SimpleBlockLike::dumpChildLabelInner(i);
+}
+
 owned<Manage> Manage::build(Builder* builder, Location loc,
                             AstList managers,
                             BlockStyle blockStyle,

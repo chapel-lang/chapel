@@ -25,6 +25,13 @@ namespace chpl {
 namespace uast {
 
 
+void When::dumpFieldsInner(const DumpSettings& s) const {
+  if (isOtherwise()) {
+    s.out << " otherwise";
+  }
+  return SimpleBlockLike::dumpFieldsInner(s);
+}
+
 owned<When> When::build(Builder* builder, Location loc,
                         AstList caseExprs,
                         BlockStyle blockStyle,

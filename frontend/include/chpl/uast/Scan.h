@@ -59,6 +59,8 @@ class Scan final : public Call {
     callMarkUniqueStringsInner(context);
   }
 
+  std::string dumpChildLabelInner(int i) const override;
+
  public:
   ~Scan() override = default;
 

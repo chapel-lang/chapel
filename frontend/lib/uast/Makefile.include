@@ -72,8 +72,9 @@ FRONTEND_UAST_SRCS = \
   Import.cpp \
   Include.cpp \
   IndexableLoop.cpp \
-  Interface.cpp \
   IntLiteral.cpp \
+  IntentList.cpp \
+  Interface.cpp \
   Label.cpp \
   Let.cpp \
   Literal.cpp \

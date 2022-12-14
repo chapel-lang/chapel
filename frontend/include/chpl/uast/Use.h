@@ -73,6 +73,8 @@ class Use final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
   Decl::Visibility visibility_;
 
  public:

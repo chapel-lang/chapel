@@ -24,6 +24,36 @@ namespace chpl {
 namespace uast {
 
 
+void FunctionSignature::dumpFieldsInner(const DumpSettings& s) const {
+  const char* kindStr = Function::kindToString(kind_);
+  const char* returnIntentStr = Function::returnIntentToString(returnIntent_);
+  if (kindStr[0] != '\0') {
+    s.out << " " << kindStr;
+  }
+  if (returnIntentStr[0] != '\0') {
+    s.out << " " << returnIntentStr;
+  }
+  if (throws_) {
+    s.out << " throws";
+  }
+  if (isParenless_) {
+    s.out << " parenless";
+  }
+}
+
+std::string FunctionSignature::dumpChildLabelInner(int i) const {
+  if (i == thisFormalChildNum_) {
+    return "this-formal";
+  } else if (formalsChildNum_ <= i && i < formalsChildNum_ + numFormals_) {
+    return "formal " + std::to_string(i - formalsChildNum_);
+  } else if (i == returnTypeChildNum_) {
+    return "ret-type";
+  }
+
+  return "";
+}
+
+
 owned<FunctionSignature>
 FunctionSignature::build(Builder* builder, Location loc,
                          FunctionSignature::Kind kind,

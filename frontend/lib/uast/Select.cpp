@@ -25,6 +25,14 @@ namespace chpl {
 namespace uast {
 
 
+std::string Select::dumpChildLabelInner(int i) const {
+  if (i == exprChildNum_) {
+    return "expr";
+  }
+
+  return "";
+}
+
 owned<Select> Select::build(Builder* builder, Location loc,
                             owned<AstNode> expr,
                             AstList whenStmts) {

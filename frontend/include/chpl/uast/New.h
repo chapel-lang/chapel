@@ -80,6 +80,8 @@ class New : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
   Management management_;
 
  public:

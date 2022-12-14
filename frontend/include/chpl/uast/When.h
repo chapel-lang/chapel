@@ -53,6 +53,8 @@ class When final : public SimpleBlockLike {
   void markUniqueStringsInner(Context* context) const override {
     simpleBlockLikeMarkUniqueStringsInner(context);
   }
+  
+  void dumpFieldsInner(const DumpSettings& s) const override;
 
   // The position of this never changes.
   static const int8_t caseExprChildNum_ = 0;

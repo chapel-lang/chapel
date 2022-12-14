@@ -69,8 +69,9 @@ target_sources(libdyno-obj
                Import.cpp
                Include.cpp
                IndexableLoop.cpp
-               Interface.cpp
                IntLiteral.cpp
+               IntentList.cpp
+               Interface.cpp
                Label.cpp
                Let.cpp
                Literal.cpp

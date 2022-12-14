@@ -20,6 +20,8 @@
 #ifndef CHPL_UAST_INTENTLIST_H
 #define CHPL_UAST_INTENTLIST_H
 
+#include <string> // to get the definition of std::hash
+
 namespace chpl {
 namespace uast {
 
@@ -95,6 +97,8 @@ enum struct IntentList {
   /** A module */
   MODULE,
 };
+
+const char* intentToString(IntentList intent);
 
 
 } // end namespace uast
