@@ -58,8 +58,9 @@ class monkey {
 
     readf(" Test: divisible by %i", divisor);
     readf(" If true: throw to monkey %i", targetMonkey(true));
-    readf(" If false: throw to monkey %i\n", targetMonkey(false));
-    readf("\n");
+    readf(" If false: throw to monkey %i", targetMonkey(false));
+    readf(" ");
+//    readf("\n");
 
     return this;
   }
@@ -71,15 +72,14 @@ class monkey {
 
 
 iter readMonkeys() {
-  while true {
-    try {
+  try {
+    while true {
       var m = new monkey();
       m.readMonkey();
-
+      writeln("read and yielding ", m);
       yield m;
-    } catch {
-      break;
     }
+  } catch {
   }
 }
 
@@ -87,6 +87,7 @@ iter readMonkeys() {
 
 // An array of monkeys
 var Monkeys = readMonkeys();
+writeln(Monkeys);
 
 // This tells whether a given monkey can proceed when it is out of items.
 // Initially, only monkey 0 can since nobody can throw items into its
