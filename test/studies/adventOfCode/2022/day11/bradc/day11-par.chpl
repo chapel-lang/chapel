@@ -7,7 +7,7 @@ class Monkey {
   var id: int,                 // an integer ID
       Items: [0..1] list(int, parSafe=true),  // two lists of its items
       current = 0, next=1,     // which list is the current vs. next one
-      op: owned Op?,           // the operator the monkey does
+      op: owned Op,            // the operator the monkey does
       divisor: int,            // the divisor for its % operation check
       targetMonkey: 2*int,     // the target monkeys it throws items to
       numInspected: int;       // the count of how many inspections we've done
@@ -87,7 +87,7 @@ proc Monkey.resetForNextRound(canPause) {
 
 
 proc Monkey.runOp(item) {
-  return op!.apply(item);
+  return op.apply(item);
 }
 
 
