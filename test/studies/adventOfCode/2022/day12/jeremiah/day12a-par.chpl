@@ -1,30 +1,21 @@
-param a = b"a".toByte(),
-      S = b"S".toByte(),
-      E = b"E".toByte();
+use IO;
+
+param a : int(8) = b"a".toByte(),
+      S : int(8) = b"S".toByte(),
+      E : int(8) = b"E".toByte();
 
 const (elevations, start, end) = readElevations();
 const validMoves = findValidMoves(elevations);
 writeln(findShortestPath(start, end, validMoves));
 
 proc readElevations() {
-    use IO;
+    const elevBytes = stdin.lines().strip(),
+          grid = {0..<elevBytes.size, 0..<elevBytes[0].size};
 
-    const elevBytes = stdin.readAll(bytes),
-          w = elevBytes.find(b"\n"),
-          h = elevBytes.count(b"\n");
+    var elevs = [(i, j) in grid] elevBytes[i][j].toByte():int(8) - a;
 
-    var elevs : [0..<h, 0..<w] int(8),
-        start, end = (0, 0);
-
-    for (row, i) in zip(elevBytes.split(b"\n"), 0..) {
-        foreach (byte, j) in zip(row, 0..) {
-            select byte {
-                when S do start = (i, j);
-                when E do end = (i, j);
-                otherwise do elevs[i, j] = (byte - a) : int(8);
-            }
-        }
-    }
+    const (_, start) = maxloc reduce zip((elevs == (S - a)), grid),
+          (_, end) = maxloc reduce zip((elevs == (E - a)), grid);
 
     elevs[start] = 0;
     elevs[end] = 25;
@@ -32,7 +23,7 @@ proc readElevations() {
     return (elevs, start, end);
 }
 
-proc findValidMoves(elevs: [?d] int(8)) : [d] uint(8) {
+proc findValidMoves(elevs: [?d] int(8)) {
     var moves: [d] uint(8);
     var _elevs : [d.expand(1)] int(8) = 28;
     _elevs[d] = elevs;
@@ -52,7 +43,7 @@ iter openMoves(m: uint(8)) {
     if m & 8 then yield (-1, 0);
 }
 
-proc findShortestPath(start, end, moves: [?d] uint(8)): int {
+proc findShortestPath(start, end, moves: [?d] uint(8)) {
     var minDistances: [d] atomic int = max(int);
     var shortestSoFar : atomic int = max(int);
     sync { explore(start, end, moves, minDistances, shortestSoFar, 0); }
