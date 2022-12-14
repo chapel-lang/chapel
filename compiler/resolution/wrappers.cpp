@@ -1856,8 +1856,6 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
 static void handleOutIntents(FnSymbol* fn, CallExpr* call,
                              SymbolMap& inTmpToActualMap) {
 
-  int j = 0;
-
   // Function with no actuals can't use out intent
   // Returning early in that event simplifies the following code.
   if (call->numActuals() == 0)
@@ -1952,7 +1950,6 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
     }
 
     currActual = nextActual;
-    j++;
   }
 }
 
