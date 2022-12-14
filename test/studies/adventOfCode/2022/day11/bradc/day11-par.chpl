@@ -2,28 +2,6 @@ use IO, List, Barriers;
 
 config const numRounds = 20;
 
-// Operators a monkey may choose to do
-
-// This is effectively an abstract base class
-class Op {
-  proc apply(x: ?t) return x;
-}
-
-class SquareOp : Op {
-  override proc apply(x) return x * x;
-}
-
-class AddOp : Op {
-  var toAdd;
-  override proc apply(x) return x + toAdd;
-}
-
-class MulOp : Op {
-  var toMul;
-  override proc apply(x) return x * toMul;
-}
-
-
 // things that define a monkey
 class monkey {
   var id: int,                 // an integer ID
@@ -33,61 +11,13 @@ class monkey {
       divisor: int,            // the divisor for its % operation check
       targetMonkey: 2*int,     // the target monkeys it throws items to
       numInspected: int;       // the count of how many inspections we've done
-
-  // TODO: Can I write this as an initializer?  Get rid of the nilable class?
-  
-  proc readMonkey() throws {
-    readf("Monkey %i:", this.id);
-    readf(" Starting items:");
-
-    var val: int;
-    do {
-      readf(" %i", val);
-      Items[current].append(val);
-    } while (stdin.matchLiteral(","));
-
-    var operation, operand: string;
-    readf(" Operation: new = old %s %s", operation, operand);
-    select operation {
-      when "+" do op = new AddOp(operand:int);
-      when "*" do select operand {
-        when "old" do op = new SquareOp();
-        otherwise do op = new MulOp(operand:int);
-      }
-    }
-
-    readf(" Test: divisible by %i", divisor);
-    readf(" If true: throw to monkey %i", targetMonkey(true));
-    readf(" If false: throw to monkey %i", targetMonkey(false));
-    readf(" ");
-//    readf("\n");
-
-    return this;
-  }
-  
-  proc runOp(item) {
-    return op!.apply(item);
-  }
 }
-
-
-iter readMonkeys() {
-  try {
-    while true {
-      var m = new monkey();
-      m.readMonkey();
-//      writeln("read and yielding ", m);
-      yield m;
-    }
-  } catch {
-  }
-}
-
 
 
 // An array of monkeys
 var Monkeys = readMonkeys();
 //writeln(Monkeys);
+
 
 // This tells whether a given monkey can proceed when it is out of items.
 // Initially, only monkey 0 can since nobody can throw items into its
@@ -150,3 +80,72 @@ proc monkey.resetForNextRound(canPause) {
 }
 
 
+proc monkey.runOp(item) {
+  return op!.apply(item);
+}
+
+
+// Operators a monkey may choose to do
+
+// This is effectively an abstract base class
+class Op {
+  proc apply(x: ?t) return x;
+}
+
+class SquareOp : Op {
+  override proc apply(x) return x * x;
+}
+
+class AddOp : Op {
+  var toAdd;
+  override proc apply(x) return x + toAdd;
+}
+
+class MulOp : Op {
+  var toMul;
+  override proc apply(x) return x * toMul;
+}
+
+
+iter readMonkeys() {
+  try {
+    while true {
+      var m = new monkey();
+      m.readMonkey();
+//      writeln("read and yielding ", m);
+      yield m;
+    }
+  } catch {
+  }
+}
+
+
+// TODO: Can I write this as an initializer?  Get rid of the nilable class?
+
+proc monkey.readMonkey() throws {
+  readf("Monkey %i:", this.id);
+  readf(" Starting items:");
+
+  var val: int;
+  do {
+    readf(" %i", val);
+    Items[current].append(val);
+  } while (stdin.matchLiteral(","));
+
+  var operation, operand: string;
+  readf(" Operation: new = old %s %s", operation, operand);
+  select operation {
+    when "+" do op = new AddOp(operand:int);
+    when "*" do select operand {
+      when "old" do op = new SquareOp();
+      otherwise do op = new MulOp(operand:int);
+    }
+  }
+
+  readf(" Test: divisible by %i", divisor);
+  readf(" If true: throw to monkey %i", targetMonkey(true));
+  readf(" If false: throw to monkey %i", targetMonkey(false));
+  readf(" ");
+
+  return this;
+}
