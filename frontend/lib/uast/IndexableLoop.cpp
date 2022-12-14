@@ -29,6 +29,7 @@ void IndexableLoop::dumpFieldsInner(const DumpSettings& s) const {
   if (isExpressionLevel_) {
     s.out << " expr";
   }
+  return Loop::dumpFieldsInner(s);
 }
 
 std::string IndexableLoop::dumpChildLabelInner(int i) const {

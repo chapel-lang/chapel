@@ -72,6 +72,7 @@ class ReduceIntent final : public NamedDecl {
     namedDeclMarkUniqueStringsInner(context);
   }
 
+  std::string dumpChildLabelInner(int i) const override;
 
  public:
   ~ReduceIntent() override = default;

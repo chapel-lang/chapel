@@ -59,6 +59,8 @@ class Select final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
+  std::string dumpChildLabelInner(int i) const override;
+
   // The position of these never change.
   static const int8_t exprChildNum_ = 0;
   static const int8_t whenStmtStartChildNum_ = 1;

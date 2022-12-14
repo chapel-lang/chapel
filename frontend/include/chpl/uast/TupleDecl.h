@@ -109,6 +109,9 @@ class TupleDecl final : public Decl {
     declMarkUniqueStringsInner(context);
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
+
   int declChildNum() const {
     return attributes() ? 1 : 0;
   }
@@ -184,6 +187,11 @@ class TupleDecl final : public Decl {
       return nullptr;
     }
   }
+
+  /**
+    Returns a string describing the passed intentOrKind.
+   */
+  static const char* intentOrKindToString(IntentOrKind kind);
 };
 
 

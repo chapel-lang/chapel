@@ -99,7 +99,10 @@ class FunctionSignature final : public AstNode {
            lhs->returnTypeChildNum_ == rhs->returnTypeChildNum_;
   }
 
-  void markUniqueStringsInner(Context* context) const override {}
+  void markUniqueStringsInner(Context* context) const override { }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
 
  public:
   ~FunctionSignature() override = default;

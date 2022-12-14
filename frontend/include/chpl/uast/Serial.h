@@ -76,6 +76,8 @@ class Serial final : public SimpleBlockLike {
     simpleBlockLikeMarkUniqueStringsInner(context);
   }
 
+  std::string dumpChildLabelInner(int i) const override;
+
   int8_t condChildNum_;
 
  public:

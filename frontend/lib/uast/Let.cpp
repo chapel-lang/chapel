@@ -25,6 +25,16 @@ namespace chpl {
 namespace uast {
 
 
+std::string Let::dumpChildLabelInner(int i) const {
+  if (0 <= i && i < numDecls_) {
+    return "decl " + std::to_string(i);
+  } else if (i == numDecls_) {
+    return "expr";
+  }
+
+  return "";
+}
+
 owned<Let> Let::build(Builder* builder, Location loc, AstList decls,
                       owned<AstNode> expression) {
   CHPL_ASSERT(decls.size() >= 1);

@@ -79,6 +79,8 @@ class For final : public IndexableLoop {
     indexableLoopMarkUniqueStringsInner(context);
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
   bool isParam_;
 
  public:

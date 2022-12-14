@@ -25,6 +25,14 @@ namespace chpl {
 namespace uast {
 
 
+std::string VarArgFormal::dumpChildLabelInner(int i) const {
+  if (i == countChildNum_) {
+    return "count";
+  }
+
+  return VarLikeDecl::dumpChildLabelInner(i);
+}
+
 owned<VarArgFormal> VarArgFormal::build(Builder* builder, Location loc,
                                         owned<Attributes> attributes,
                                         UniqueString name,

@@ -82,6 +82,7 @@ class Reduce final : public Call {
     callMarkUniqueStringsInner(context);
   }
 
+  std::string dumpChildLabelInner(int i) const override;
 
  public:
   ~Reduce() override = default;

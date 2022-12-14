@@ -50,7 +50,8 @@ class Interface final : public NamedDecl {
   int interfaceFormalsChildNum_;
   int numInterfaceFormals_;
   int bodyChildNum_;
-  int numBodyStmts_;
+  int numBodyStmts_; // TODO is this field necessary?
+                     // isn't the body always the last thing here?
   bool isFormalListExplicit_;
 
   Interface(AstList children, int attributesChildNum,
@@ -89,6 +90,9 @@ class Interface final : public NamedDecl {
   void markUniqueStringsInner(Context* context) const override {
     namedDeclMarkUniqueStringsInner(context);
   }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
 
  public:
   ~Interface() override = default;

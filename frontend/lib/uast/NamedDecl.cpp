@@ -27,6 +27,7 @@ void NamedDecl::dumpFieldsInner(const DumpSettings& s) const {
   if (!name_.isEmpty()) {
     s.out << " " << name_.str();
   }
+  Decl::dumpFieldsInner(s);
 }
 
 NamedDecl::~NamedDecl() {

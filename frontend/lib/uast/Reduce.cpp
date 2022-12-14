@@ -24,6 +24,16 @@ namespace chpl {
 namespace uast {
 
 
+std::string Reduce::dumpChildLabelInner(int i) const {
+  if (i == opChildNum_) {
+    return "op";
+  } else if (i == iterandExprChildNum_) {
+    return "iterand";
+  }
+
+  return Call::dumpChildLabelInner(i);
+}
+
 owned<Reduce> Reduce::build(Builder* builder,
                             Location loc,
                             owned<AstNode> op,

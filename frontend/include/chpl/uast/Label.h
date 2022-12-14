@@ -64,6 +64,8 @@ class Label final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
     name_.mark(context);
   }
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
   // This always exists and its position can never change.
   static const int8_t loopChildNum_ = 0;
 

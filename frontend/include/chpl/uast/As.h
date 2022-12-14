@@ -52,7 +52,7 @@ class As final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
-  void dumpInner(const DumpSettings& s) const;
+  std::string dumpChildLabelInner(int i) const override;
 
   // These always exist and their position will never change.
   static const int8_t symbolChildNum_ = 0;

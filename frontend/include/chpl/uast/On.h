@@ -59,6 +59,8 @@ class On final : public SimpleBlockLike {
     simpleBlockLikeMarkUniqueStringsInner(context);
   }
 
+  std::string dumpChildLabelInner(int i) const override;
+
   static const int8_t destChildNum_ = 0;
 
  public:

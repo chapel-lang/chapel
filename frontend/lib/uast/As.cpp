@@ -25,6 +25,15 @@ namespace chpl {
 namespace uast {
 
 
+std::string As::dumpChildLabelInner(int i) const {
+  if (i == symbolChildNum_) {
+    return "sym";
+  } else if (i == renameChildNum_) {
+    return "rename";
+  }
+  return "";
+}
+
 owned<As> As::build(Builder* builder, Location loc,
                     owned<AstNode> symbol,
                     owned<AstNode> rename) {

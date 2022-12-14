@@ -25,6 +25,19 @@ namespace chpl {
 namespace uast {
 
 
+void Implements::dumpFieldsInner(const DumpSettings& s) const {
+  if (isExpressionLevel_) {
+    s.out << " expr";
+  }
+}
+
+std::string Implements::dumpChildLabelInner(int i) const {
+  if (i == typeIdentChildNum_) {
+    return "type-ident";
+  }
+  return "";
+}
+
 UniqueString Implements::interfaceName() const {
   auto expr = interfaceExpr();
   CHPL_ASSERT(expr);

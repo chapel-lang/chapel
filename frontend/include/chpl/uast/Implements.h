@@ -87,6 +87,9 @@ class Implements final : public AstNode {
 
   void markUniqueStringsInner(Context* context) const override {}
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
+
  public:
   ~Implements() override = default;
 

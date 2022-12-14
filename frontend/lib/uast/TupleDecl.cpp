@@ -24,6 +24,30 @@
 namespace chpl {
 namespace uast {
 
+const char* TupleDecl::intentOrKindToString(IntentOrKind kind) {
+  return intentToString((IntentList)kind);
+}
+
+void TupleDecl::dumpFieldsInner(const DumpSettings& s) const {
+  const char* intentStr = intentOrKindToString(intentOrKind_);
+  if (intentStr[0] != '\0') {
+    s.out << " " << intentStr;
+  }
+  Decl::dumpFieldsInner(s);
+}
+
+std::string TupleDecl::dumpChildLabelInner(int i) const {
+  if (declChildNum() <= i && i < declChildNum() + numElements_) {
+    return "decl " + std::to_string(i - declChildNum());
+  } else if (i == typeExpressionChildNum_) {
+    return "type";
+  } else if (i == initExpressionChildNum_) {
+    return "init";
+  }
+
+  return Decl::dumpChildLabelInner(i);
+}
+
 bool TupleDecl::assertAcceptableTupleDecl() {
   asttags::AstTag firstNonTupleTag = asttags::AST_TAG_UNKNOWN;;
   int i = 0;

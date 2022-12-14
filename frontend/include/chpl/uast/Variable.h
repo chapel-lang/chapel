@@ -96,6 +96,8 @@ class Variable final : public VarLikeDecl {
     varLikeDeclMarkUniqueStringsInner(context);
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
   bool isConfig_;
   bool isField_;
 

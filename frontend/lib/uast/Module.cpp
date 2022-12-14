@@ -25,6 +25,24 @@ namespace chpl {
 namespace uast {
 
 
+const char* Module::moduleKindToString(Kind kind) {
+  switch (kind) {
+    case DEFAULT_MODULE_KIND: return "";
+    case PROTOTYPE:           return "prototype";
+    case IMPLICIT:            return "implicit";
+  }
+
+  return "<unknown>";
+}
+
+void Module::dumpFieldsInner(const DumpSettings& s) const {
+  const char* kindStr = moduleKindToString(kind_);
+  if (kindStr[0] != '\0') {
+    s.out << " " << kindStr;
+  }
+  NamedDecl::dumpFieldsInner(s);
+}
+
 owned<Module>
 Module::build(Builder* builder, Location loc,
               owned<Attributes> attributes,

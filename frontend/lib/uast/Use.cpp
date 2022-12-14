@@ -25,6 +25,13 @@ namespace chpl {
 namespace uast {
 
 
+void Use::dumpFieldsInner(const DumpSettings& s) const {
+  const char* visStr = Decl::visibilityToString(visibility_);
+  if (visStr[0] != '\0') {
+    s.out << " " << visStr;
+  }
+}
+
 owned<Use> Use::build(Builder* builder, Location loc,
                       Decl::Visibility visibility,
                       AstList visibilityClauses) {

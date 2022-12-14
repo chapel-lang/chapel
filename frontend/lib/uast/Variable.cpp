@@ -25,6 +25,16 @@ namespace chpl {
 namespace uast {
 
 
+void Variable::dumpFieldsInner(const DumpSettings& s) const {
+  if (isConfig_) {
+    s.out << " config";
+  }
+  if (isField_) {
+    s.out << " field";
+  }
+  VarLikeDecl::dumpFieldsInner(s);
+}
+
 owned<Variable>
 Variable::build(Builder* builder, Location loc,
                 owned<Attributes> attributes,

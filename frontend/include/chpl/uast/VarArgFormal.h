@@ -75,6 +75,8 @@ class VarArgFormal final : public VarLikeDecl {
     varLikeDeclMarkUniqueStringsInner(context);
   }
 
+  std::string dumpChildLabelInner(int i) const override;
+
  public:
   ~VarArgFormal() override = default;
 

@@ -24,6 +24,15 @@ namespace chpl {
 namespace uast {
 
 
+std::string ReduceIntent::dumpChildLabelInner(int i) const {
+  if (i == opChildNum_) {
+    return "op";
+  }
+
+  return NamedDecl::dumpChildLabelInner(i);
+}
+
+
 owned<ReduceIntent> ReduceIntent::build(Builder* builder,
                                         Location loc,
                                         owned<AstNode> op,

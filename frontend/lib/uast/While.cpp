@@ -25,6 +25,14 @@ namespace chpl {
 namespace uast {
 
 
+std::string While::dumpChildLabelInner(int i) const {
+  if (i == conditionChildNum_) {
+    return "cond";
+  }
+
+  return Loop::dumpChildLabelInner(i);
+}
+
 owned<While> While::build(Builder* builder, Location loc,
                       owned<AstNode> condition,
                       BlockStyle blockStyle,
