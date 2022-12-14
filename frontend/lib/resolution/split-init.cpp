@@ -63,9 +63,9 @@ struct FindSplitInits : VarScopeVisitor {
                          RV& rv) override;
 
   void handleReturnOrThrow(const uast::AstNode* ast, RV& rv) override;
-  void handleConditional(const Conditional* cond) override;
-  void handleTry(const Try* t) override;
-  void handleScope(const AstNode* ast) override;
+  void handleConditional(const Conditional* cond, RV& rv) override;
+  void handleTry(const Try* t, RV& rv) override;
+  void handleScope(const AstNode* ast, RV& rv) override;
 };
 
 struct SplitInitVarStatus {
@@ -209,7 +209,7 @@ void FindSplitInits::handleReturnOrThrow(const uast::AstNode* ast, RV& rv) {
 
 // updates the back frame with the combined result from
 // the then/else blocks from the conditional
-void FindSplitInits::handleConditional(const Conditional* cond) {
+void FindSplitInits::handleConditional(const Conditional* cond, RV& rv) {
   VarFrame* frame = currentFrame();
   VarFrame* thenFrame = currentThenFrame();
   VarFrame* elseFrame = currentElseFrame();
@@ -377,15 +377,15 @@ void FindSplitInits::handleConditional(const Conditional* cond) {
     }
   }
 
-  handleScope(cond);
+  handleScope(cond, rv);
 }
 
-void FindSplitInits::handleTry(const Try* t) {
+void FindSplitInits::handleTry(const Try* t, RV& rv) {
   VarFrame* tryFrame = currentFrame();
   int nCatchFrames = currentNumCatchFrames();
   // if there are no catch clauses, treat it like any other scope
   if (nCatchFrames == 0) {
-    handleScope(t);
+    handleScope(t, rv);
     return;
   }
 
@@ -461,7 +461,7 @@ void FindSplitInits::handleTry(const Try* t) {
   tryFrame->initedVarsVec.swap(tryInitedVarsVec);
   tryFrame->mentionedVars.swap(tryMentionedVars);
 
-  handleScope(t);
+  handleScope(t, rv);
 }
 
 static bool allowsSplitInit(const AstNode* ast) {
@@ -472,7 +472,7 @@ static bool allowsSplitInit(const AstNode* ast) {
          ast->isTry();
 }
 
-void FindSplitInits::handleScope(const AstNode* ast) {
+void FindSplitInits::handleScope(const AstNode* ast, RV& rv) {
   VarFrame* frame = currentFrame();
   VarFrame* parent = currentParentFrame();
 

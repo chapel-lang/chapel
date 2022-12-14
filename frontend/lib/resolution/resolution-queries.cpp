@@ -1813,6 +1813,10 @@ const ResolvedFunction* resolveFunction(Context* context,
                                         const TypedFnSignature* sig,
                                         const PoiScope* poiScope) {
 
+  // Forget about any inferred signature (to avoid resolving the
+  // same function twice when working with inferred 'out' formals)
+  sig = sig->inferredFrom();
+
   // this should only be applied to concrete fns or instantiations
   CHPL_ASSERT(!sig->needsInstantiation());
 
@@ -2271,6 +2275,67 @@ const QualifiedType& returnType(Context* context,
 
   return QUERY_END(result);
 }
+
+static const TypedFnSignature* const&
+inferOutFormalsQuery(Context* context,
+                     const TypedFnSignature* sig,
+                     const PoiScope* instantiationPoiScope) {
+  QUERY_BEGIN(inferOutFormalsQuery, context, sig, instantiationPoiScope);
+
+  const UntypedFnSignature* untyped = sig->untyped();
+
+  std::vector<types::QualifiedType> formalTypes;
+
+  // resolve the function body
+  const ResolvedFunction* rFn = resolveFunction(context, sig,
+                                                instantiationPoiScope);
+  const ResolutionResultByPostorderID& rr = rFn->resolutionById();
+
+  int numFormals = sig->numFormals();
+  for (int i = 0; i < numFormals; i++) {
+    const types::QualifiedType& ft = sig->formalType(i);
+    if (ft.kind() == QualifiedType::OUT && ft.isGenericOrUnknown()) {
+      formalTypes.push_back(rr.byAst(untyped->formalDecl(i)).type());
+    } else {
+      formalTypes.push_back(ft);
+    }
+  }
+
+  const TypedFnSignature* result = nullptr;
+  result = TypedFnSignature::getInferred(context,
+                                         std::move(formalTypes),
+                                         sig);
+
+  return QUERY_END(result);
+}
+
+const TypedFnSignature* inferOutFormals(Context* context,
+                                        const TypedFnSignature* sig,
+                                        const PoiScope* instantiationPoiScope) {
+  if (sig == nullptr) {
+    return nullptr;
+  }
+
+  bool anyGenericOutFormals = false;
+  int numFormals = sig->numFormals();
+  for (int i = 0; i < numFormals; i++) {
+    const types::QualifiedType& ft = sig->formalType(i);
+    if (ft.kind() == QualifiedType::OUT && ft.isGenericOrUnknown()) {
+      anyGenericOutFormals = true;
+      break;
+    }
+  }
+
+  // if there are no 'out' formals with generic type, just return 'sig'.
+  // also just return 'sig' if the function needs instantiation;
+  // in that case, we can't infer the 'out' formals by resolving the body.
+  if (anyGenericOutFormals && !sig->needsInstantiation()) {
+    return inferOutFormalsQuery(context, sig, instantiationPoiScope);
+  } else {
+    return sig;
+  }
+}
+
 
 static bool
 isUntypedSignatureApplicable(Context* context,
@@ -3112,6 +3177,9 @@ CallResolutionResult resolveFnCall(Context* context,
       }
     }
   }
+
+  // infer types of generic 'out' formals from function bodies
+  mostSpecific.inferOutFormals(context, instantiationPoiScope);
 
   // Make sure that we are resolving initializer bodies even when the
   // signature is concrete, because there are semantic checks.

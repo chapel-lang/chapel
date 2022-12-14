@@ -499,6 +499,13 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
           qt = tup->elementType(j);
         }
 
+        // if the formal has concrete intent (e.g. 'out' or 'in' or 'ref'),
+        // use the intent of the formal for the intent of the actual->formal
+        // mapping entry.
+        if (!formalQT.isNonConcreteIntent()) {
+          qt = QualifiedType(formalQT.kind(), qt.type(), qt.param());
+        }
+
         entry.formal_ = decl;
         entry.hasActual_ = false;
         entry.formalIdx_ = i;
@@ -646,18 +653,20 @@ TypedFnSignature::getTypedFnSignature(Context* context,
                     std::vector<types::QualifiedType> formalTypes,
                     TypedFnSignature::WhereClauseResult whereClauseResult,
                     bool needsInstantiation,
+                    bool isRefinementOnly,
                     const TypedFnSignature* instantiatedFrom,
                     const TypedFnSignature* parentFn,
                     Bitmap formalsInstantiated) {
   QUERY_BEGIN(getTypedFnSignature, context,
               untypedSignature, formalTypes, whereClauseResult,
-              needsInstantiation, instantiatedFrom, parentFn,
+              needsInstantiation, isRefinementOnly, instantiatedFrom, parentFn,
               formalsInstantiated);
 
   auto result = toOwned(new TypedFnSignature(untypedSignature,
                                              std::move(formalTypes),
                                              whereClauseResult,
                                              needsInstantiation,
+                                             isRefinementOnly,
                                              instantiatedFrom,
                                              parentFn,
                                              std::move(formalsInstantiated)));
@@ -678,14 +687,39 @@ TypedFnSignature::get(Context* context,
                              std::move(formalTypes),
                              whereClauseResult,
                              needsInstantiation,
+                             /* isRefinementOnly */ false,
                              instantiatedFrom,
                              parentFn,
                              std::move(formalsInstantiated)).get();
 }
 
+const TypedFnSignature*
+TypedFnSignature::getInferred(
+                      Context* context,
+                      std::vector<types::QualifiedType> formalTypes,
+                      const TypedFnSignature* inferredFrom) {
+  return getTypedFnSignature(context,
+                             inferredFrom->untyped(),
+                             formalTypes,
+                             inferredFrom->whereClauseResult(),
+                             inferredFrom->needsInstantiation(),
+                             /* isRefinementOnly */ true,
+                             inferredFrom->inferredFrom(),
+                             inferredFrom->parentFn(),
+                             inferredFrom->formalsInstantiatedBitmap()).get();
+}
+
+
 void TypedFnSignature::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
-  id().stringify(ss, stringKind);
+
+
+  if (!id().isEmpty()) {
+    ss << "id ";
+    id().stringify(ss, stringKind);
+    ss << " ";
+  }
+  untyped()->name().stringify(ss, stringKind);
   ss << "(";
   int nFormals = numFormals();
   for (int i = 0; i < nFormals; i++) {
@@ -754,6 +788,88 @@ bool PoiInfo::canReuse(const PoiInfo& check) const {
   return false; // TODO -- consider function names etc -- see PR #16261
 }
 
+void
+MostSpecificCandidates::inferOutFormals(Context* context,
+                                        const PoiScope* instantiationPoiScope) {
+  for (int i = 0; i < NUM_INTENTS; i++) {
+    const TypedFnSignature*& c = candidates[i];
+    if (c != nullptr) {
+      c = chpl::resolution::inferOutFormals(context, c, instantiationPoiScope);
+    }
+  }
+}
+
+void MostSpecificCandidates::stringify(std::ostream& ss,
+                                       chpl::StringifyKind stringKind) const {
+  auto onlyFn = only();
+  if (onlyFn) {
+    ss << " calls ";
+    onlyFn->stringify(ss, stringKind);
+  } else {
+    if (auto sig = bestRef()) {
+      ss << " calls ref ";
+      sig->stringify(ss, stringKind);
+    }
+    if (auto sig = bestConstRef()) {
+      ss << " calls const ref ";
+      sig->stringify(ss, stringKind);
+    }
+    if (auto sig = bestValue()) {
+      ss << " calls value ";
+      sig->stringify(ss, stringKind);
+    }
+  }
+}
+
+void CallResolutionResult::stringify(std::ostream& ss,
+                                     chpl::StringifyKind stringKind) const {
+  mostSpecific_.stringify(ss, stringKind);
+  ss << " : ";
+  exprType_.stringify(ss, stringKind);
+}
+
+
+const char* AssociatedAction::kindToString(Action a) {
+  const char* s = "<unknown>";
+  switch (a) {
+    case ASSIGN:
+      s = "assign";
+      break;
+    case COPY_INIT:
+      s = "copy-init";
+      break;
+    case DEFAULT_INIT:
+      s = "default-init";
+      break;
+    case DEINIT:
+      s = "deinit";
+      break;
+    case ITERATE:
+      s = "these";
+      break;
+    case NEW_INIT:
+      s = "new-init";
+      break;
+  }
+
+  return s;
+}
+
+void AssociatedAction::stringify(std::ostream& ss,
+                                 chpl::StringifyKind stringKind) const {
+  const char* kind = AssociatedAction::kindToString(action_);
+
+  ss << "assoc " << kind;
+  if (fn_ != nullptr) {
+    ss << " fn=";
+    fn_->stringify(ss, stringKind);
+  }
+  if (!id_.isEmpty()) {
+    ss << " id=";
+    id_.stringify(ss, stringKind);
+  }
+}
+
 void ResolvedExpression::stringify(std::ostream& ss,
                                    chpl::StringifyKind stringKind) const {
   ss << " : ";
@@ -763,24 +879,11 @@ void ResolvedExpression::stringify(std::ostream& ss,
     ss << " refers to ";
     toId_.stringify(ss, stringKind);
   } else {
-    auto onlyFn = mostSpecific_.only();
-    if (onlyFn) {
-      ss << " calls ";
-      onlyFn->stringify(ss, stringKind);
-    } else {
-      if (auto sig = mostSpecific_.bestRef()) {
-        ss << " calls ref ";
-        sig->stringify(ss, stringKind);
-      }
-      if (auto sig = mostSpecific_.bestConstRef()) {
-        ss << " calls const ref ";
-        sig->stringify(ss, stringKind);
-      }
-      if (auto sig = mostSpecific_.bestValue()) {
-        ss << " calls value ";
-        sig->stringify(ss, stringKind);
-      }
-    }
+    mostSpecific_.stringify(ss, stringKind);
+  }
+
+  for (auto a : associatedActions_) {
+    a.stringify(ss, stringKind);
   }
 }
 
@@ -791,6 +894,8 @@ IMPLEMENT_DUMP(TypedFnSignature);
 IMPLEMENT_DUMP(ResolvedExpression);
 IMPLEMENT_DUMP(CallInfoActual);
 IMPLEMENT_DUMP(CallInfo);
+IMPLEMENT_DUMP(MostSpecificCandidates);
+IMPLEMENT_DUMP(CallResolutionResult);
 
 } // end namespace resolution
 } // end namespace chpl

@@ -313,7 +313,7 @@ class CallInfoActual {
 
  public:
   CallInfoActual(types::QualifiedType type, UniqueString byName)
-      : type_(type), byName_(byName) {}
+      : type_(std::move(type)), byName_(byName) {}
 
   /** return the qualified type */
   const types::QualifiedType& type() const { return type_; }
@@ -351,6 +351,8 @@ class CallInfo {
   bool isOpCall_ = false;               // is an operator call
   bool hasQuestionArg_ = false;         // includes ? arg for type constructor
   bool isParenless_ = false;            // is a parenless call
+
+  // Performance TODO: use SmallVector here?
   std::vector<CallInfoActual> actuals_; // types/params/names of actuals
 
  public:
@@ -630,6 +632,14 @@ class TypedFnSignature {
   // Are any of the formals generic or unknown at this point?
   bool needsInstantiation_ = true;
 
+  // Does this TypedFnSignature represent a refinement of another
+  // TypedFnSignature with no new instantiation information?
+  // This is used for TypedFnSignatures that represent the inferred type
+  // of an 'out' formal.
+  // In that case, instantiatedFrom_ stores the TypedFnSignature
+  // that was refined.
+  bool isRefinementOnly_ = false;
+
   // Is this TypedFnSignature representing an instantiation?
   // If so, what is the generic TypedFnSignature that was instantiated?
   const TypedFnSignature* instantiatedFrom_ = nullptr;
@@ -645,6 +655,7 @@ class TypedFnSignature {
                    std::vector<types::QualifiedType> formalTypes,
                    WhereClauseResult whereClauseResult,
                    bool needsInstantiation,
+                   bool isRefinementOnly,
                    const TypedFnSignature* instantiatedFrom,
                    const TypedFnSignature* parentFn,
                    Bitmap formalsInstantiated)
@@ -652,6 +663,7 @@ class TypedFnSignature {
       formalTypes_(std::move(formalTypes)),
       whereClauseResult_(whereClauseResult),
       needsInstantiation_(needsInstantiation),
+      isRefinementOnly_(isRefinementOnly),
       instantiatedFrom_(instantiatedFrom),
       parentFn_(parentFn),
       formalsInstantiated_(std::move(formalsInstantiated)) { }
@@ -662,6 +674,7 @@ class TypedFnSignature {
                       std::vector<types::QualifiedType> formalTypes,
                       TypedFnSignature::WhereClauseResult whereClauseResult,
                       bool needsInstantiation,
+                      bool isRefinementOnly,
                       const TypedFnSignature* instantiatedFrom,
                       const TypedFnSignature* parentFn,
                       Bitmap formalsInstantiated);
@@ -678,11 +691,22 @@ class TypedFnSignature {
                               const TypedFnSignature* parentFn,
                               Bitmap formalsInstantiated);
 
+  /** Get the unique TypedFnSignature containing these components
+      for a refinement where some types are inferred (e.g. generic 'out'
+      formals have their type inferred from the body). */
+  static
+  const TypedFnSignature* getInferred(
+                              Context* context,
+                              std::vector<types::QualifiedType> formalTypes,
+                              const TypedFnSignature* inferredFrom);
+
+
   bool operator==(const TypedFnSignature& other) const {
     return untypedSignature_ == other.untypedSignature_ &&
            formalTypes_ == other.formalTypes_ &&
            whereClauseResult_ == other.whereClauseResult_ &&
            needsInstantiation_ == other.needsInstantiation_ &&
+           isRefinementOnly_ == other.isRefinementOnly_ &&
            instantiatedFrom_ == other.instantiatedFrom_ &&
            parentFn_ == other.parentFn_ &&
            formalsInstantiated_ == other.formalsInstantiated_;
@@ -727,6 +751,18 @@ class TypedFnSignature {
     return needsInstantiation_;
   }
 
+  /** If this TypedFnSignature represents the result of additional
+      inference, return the most basic TypedFnSignature that was
+      inferred from. */
+  const TypedFnSignature* inferredFrom() const {
+    const TypedFnSignature* ret = this;
+    if (ret->isRefinementOnly_) {
+      ret = ret->instantiatedFrom_;
+      CHPL_ASSERT(!ret->isRefinementOnly_);
+    }
+    return ret;
+  }
+
   /**
     Is this TypedFnSignature representing an instantiation?  If so, returns the
     generic TypedFnSignature that was instantiated.  Otherwise, returns nullptr.
@@ -736,9 +772,10 @@ class TypedFnSignature {
     will either be nullptr or result->instantiatedFrom() will be nullptr.
    */
   const TypedFnSignature* instantiatedFrom() const {
-    CHPL_ASSERT(instantiatedFrom_ == nullptr ||
-           instantiatedFrom_->instantiatedFrom_ == nullptr);
-    return instantiatedFrom_;
+    const TypedFnSignature* sig = inferredFrom();
+    CHPL_ASSERT(sig->instantiatedFrom_ == nullptr ||
+                sig->instantiatedFrom_->instantiatedFrom_ == nullptr);
+    return sig->instantiatedFrom_;
   }
 
   /**
@@ -746,10 +783,16 @@ class TypedFnSignature {
     it was present in the SubstitutionsMap when instantiating.
    */
   bool formalIsInstantiated(int i) const {
-    if (instantiatedFrom_ == nullptr)
+    const TypedFnSignature* sig = inferredFrom();
+    if (sig->instantiatedFrom_ == nullptr)
       return false;
 
-    return formalsInstantiated_[i];
+    return sig->formalsInstantiated_[i];
+  }
+
+  const Bitmap& formalsInstantiatedBitmap() const {
+    const TypedFnSignature* sig = inferredFrom();
+    return sig->formalsInstantiated_;
   }
 
   /**
@@ -757,7 +800,8 @@ class TypedFnSignature {
      function signature?
    */
   const TypedFnSignature* parentFn() const {
-    return parentFn_;
+    const TypedFnSignature* sig = inferredFrom();
+    return sig->parentFn_;
   }
 
   /** Returns the number of formals */
@@ -837,6 +881,12 @@ class MostSpecificCandidates {
     ret.emptyDueToAmbiguity = true;
     return ret;
   }
+
+  /**
+    Adjust each candidate signature by inferring generic 'out' intent formals
+    if there are any.
+   */
+  void inferOutFormals(Context* context, const PoiScope* instantiationPoiScope);
 
   const TypedFnSignature* const* begin() const {
     return &candidates[0];
@@ -950,6 +1000,12 @@ class MostSpecificCandidates {
       context->markPointer(sig);
     }
   }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /** CallResolutionResult */
@@ -999,9 +1055,66 @@ class CallResolutionResult {
     exprType_.swap(other.exprType_);
     poiInfo_.swap(other.poiInfo_);
   }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 class ResolvedParamLoop;
+
+/**
+
+  This type represents an associated action (for use within a
+  ResolvedExpression)
+
+ */
+class AssociatedAction {
+ public:
+  enum Action {
+    ASSIGN,
+    COPY_INIT,
+    DEFAULT_INIT,
+    DEINIT,
+    ITERATE, // aka "these"
+    NEW_INIT,
+  };
+
+ private:
+  Action action_;
+  const TypedFnSignature* fn_;
+  ID id_;
+
+ public:
+  AssociatedAction(Action action, const TypedFnSignature* fn, ID id)
+    : action_(action), fn_(fn), id_(id) {
+  }
+  bool operator==(const AssociatedAction& other) const {
+    return action_ == other.action_ &&
+           fn_ == other.fn_ &&
+           id_ == other.id_;
+  }
+  bool operator!=(const AssociatedAction& other) const {
+    return !(*this == other);
+  }
+  /** Returns which action this represents */
+  Action action() const { return action_; }
+  /** Return which function is called to help with the action */
+  const TypedFnSignature* fn() const { return fn_; }
+  /** Return the ID is associated with the action */
+  const ID& id() const { return id_; }
+
+  void mark(Context* context) const {
+    if (fn_ != nullptr) fn_->mark(context);
+    id_.mark(context);
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  static const char* kindToString(Action a);
+};
 
 /**
   This type represents a resolved expression.
@@ -1024,13 +1137,14 @@ class ResolvedExpression {
   // resolving functions in mostSpecific?
   const PoiScope *poiScope_ = nullptr;
 
-  // functions associated with or used to implement this expression
-  std::vector<const TypedFnSignature*> associatedFns_;
+  // actions associated with this expression
+  // (e.g. default init, copy init, deinit)
+  std::vector<AssociatedAction> associatedActions_;
 
   const ResolvedParamLoop* paramLoop_ = nullptr;
 
  public:
-  using AssociatedFns = std::vector<const TypedFnSignature*>;
+  using AssociatedActions = std::vector<AssociatedAction>;
 
   ResolvedExpression() { }
 
@@ -1050,8 +1164,8 @@ class ResolvedExpression {
 
   const PoiScope* poiScope() const { return poiScope_; }
 
-  const AssociatedFns& associatedFns() const {
-    return associatedFns_;
+  const AssociatedActions& associatedActions() const {
+    return associatedActions_;
   }
 
   const ResolvedParamLoop* paramLoop() const {
@@ -1073,8 +1187,10 @@ class ResolvedExpression {
   void setPoiScope(const PoiScope* poiScope) { poiScope_ = poiScope; }
 
   /** add an associated function */
-  void addAssociatedFn(const TypedFnSignature* fn) {
-    associatedFns_.push_back(fn);
+  void addAssociatedAction(AssociatedAction::Action action,
+                           const TypedFnSignature* fn,
+                           ID id) {
+    associatedActions_.push_back(AssociatedAction(action, fn, id));
   }
 
   void setParamLoop(const ResolvedParamLoop* paramLoop) { paramLoop_ = paramLoop; }
@@ -1084,7 +1200,7 @@ class ResolvedExpression {
            toId_ == other.toId_ &&
            mostSpecific_ == other.mostSpecific_ &&
            poiScope_ == other.poiScope_ &&
-           associatedFns_ == other.associatedFns_ &&
+           associatedActions_ == other.associatedActions_ &&
            paramLoop_ == other.paramLoop_;
   }
   bool operator!=(const ResolvedExpression& other) const {
@@ -1095,7 +1211,7 @@ class ResolvedExpression {
     toId_.swap(other.toId_);
     mostSpecific_.swap(other.mostSpecific_);
     std::swap(poiScope_, other.poiScope_);
-    std::swap(associatedFns_, other.associatedFns_);
+    std::swap(associatedActions_, other.associatedActions_);
     std::swap(paramLoop_, other.paramLoop_);
   }
   static bool update(ResolvedExpression& keep, ResolvedExpression& addin) {
@@ -1106,7 +1222,9 @@ class ResolvedExpression {
     toId_.mark(context);
     mostSpecific_.mark(context);
     context->markPointer(poiScope_);
-    for (auto tfs : associatedFns_) tfs->mark(context);
+    for (auto a : associatedActions_) {
+      a.mark(context);
+    }
     context->markPointer(paramLoop_);
   }
 

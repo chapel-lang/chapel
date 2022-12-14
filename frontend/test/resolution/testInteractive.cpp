@@ -167,6 +167,15 @@ computeAndPrintStuff(Context* context,
         }
       }
     }
+    for (auto a : r->associatedActions()) {
+      auto sig = a.fn();
+      if (sig != nullptr) {
+        if (sig->untyped()->idIsFunction()) {
+          auto fn = resolveFunction(context, sig, r->poiScope());
+          calledFns.insert(fn);
+        }
+      }
+    }
 
     printId(ast);
     std::ostringstream ss;
