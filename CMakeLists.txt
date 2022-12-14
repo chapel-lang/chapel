@@ -173,7 +173,7 @@ if (NOT DEFINED ${CHPL_DEVELOPER})
     message(NOTICE "CHPL_DEVELOPER is not set, using ${CHPL_DEVELOPER}")
   endif()
 else()
-  set(ENV{CHPL_DEVELOPER} ${CHPL_DEVELOPER})
+  # set(ENV{CHPL_DEVELOPER} ${CHPL_DEVELOPER})
   message(STATUS "CHPL_DEVELOPER environment var updated to ${CHPL_DEVELOPER}")
 endif()
 
@@ -182,7 +182,7 @@ if ((NOT DEFINED ${CHPL_LLVM_GCC_PREFIX}) AND (NOT $ENV{CHPL_LLVM_GCC_PREFIX} ST
   message(NOTICE "CHPL_LLVM_GCC_PREFIX not set, using $ENV{CHPL_LLVM_GCC_PREFIX}")
   set(CHPL_LLVM_GCC_PREFIX $ENV{CHPL_LLVM_GCC_PREFIX} CACHE STRING "Override CHPL_LLVM_GCC_PREFIX flag" FORCE)
 elseif(DEFINED ${CHPL_LLVM_GCC_PREFIX})
-  set(ENV{CHPL_LLVM_GCC_PREFIX} ${CHPL_LLVM_GCC_PREFIX})
+  # set(ENV{CHPL_LLVM_GCC_PREFIX} ${CHPL_LLVM_GCC_PREFIX})
   message(STATUS "CHPL_LLVM_GCC_PREFIX updated to ${CHPL_LLVM_GCC_PREFIX}")
 else()
   message(STATUS "No CHPL_LLVM_GCC_PREFIX env var or value given from command line.")
@@ -279,7 +279,11 @@ set(PRINTCHPLENV_COMMAND printchplenv --compiler --internal --cmake)
 # TODO: we should support the standard cmake way of overriding these and have
 # setting them from the command-line be an error, e.g., `cmake -DCHPL_HOST_CC=bla`
 execute_process(COMMAND ${CMAKE_COMMAND} -E env
-                  CHPL_HOST_CC=${CMAKE_C_COMPILER} CHPL_HOST_CXX=${CMAKE_CXX_COMPILER} ${CMAKE_CURRENT_SOURCE_DIR}/util/${PRINTCHPLENV_COMMAND}
+                CHPL_LLVM_GCC_PREFIX=${CHPL_LLVM_GCC_PREFIX}
+                CHPL_DEVELOPER=${CHPL_DEVELOPER}
+                CHPL_HOST_CC=${CMAKE_C_COMPILER}
+                CHPL_HOST_CXX=${CMAKE_CXX_COMPILER}
+                ${CMAKE_CURRENT_SOURCE_DIR}/util/${PRINTCHPLENV_COMMAND}
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/util
                 TIMEOUT 30
                 RESULT_VARIABLE CHPLENV_RETURNCODE

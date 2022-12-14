@@ -41,20 +41,16 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "timer.h"
 #include "version.h"
 #include "visibleFunctions.h"
 
 #include "chpl/framework/Context.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/util/chplenv.h"
-#include "chpl/framework/compiler-configuration.h"
-#include "chpl/util/assertions.h"
-#include "chpl/util/filesystem.h"
 
-#include <inttypes.h>
+#include "chpl/util/assertions.h"
+
 #include <string>
-#include <sstream>
 #include <map>
 
 #ifdef HAVE_LLVM
