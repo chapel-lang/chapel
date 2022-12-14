@@ -110,7 +110,38 @@ class New : public AstNode {
 };
 
 
+
 } // end namespace uast
+
+/// \cond DO_NOT_DOCUMENT
+
+template <>
+struct mark<uast::New::Management> {
+  void operator()(Context* context, uast::New::Management t) {
+    // No need to mark enums
+  }
+};
+template <>
+struct stringify<uast::New::Management> {
+  void operator()(std::ostream& os, StringifyKind stringKind,
+                  uast::New::Management k) {
+    os << uast::New::managementToString(k);
+  }
+};
+
+/// \endcond
+
 } // end namespace chpl
+
+namespace std {
+
+template <>
+struct hash<chpl::uast::New::Management> {
+  size_t operator()(const chpl::uast::New::Management& key) const {
+    return (size_t)key;
+  }
+};
+
+}  // end namespace std
 
 #endif

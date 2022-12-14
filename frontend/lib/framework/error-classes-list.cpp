@@ -24,6 +24,7 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/uast/VisibilityClause.h"
 #include "chpl/uast/AstTag.h"
+/* #include "chpl/uast/New.h" */
 #include "chpl/types/all-types.h"
 #include <sstream>
 #include <cstring>
@@ -718,6 +719,51 @@ void ErrorBisonSyntaxError::write(ErrorWriterBase& wr) const {
                                    : "near '" + nearestToken + "'"),
              ":");
   wr.code(loc);
+}
+
+/* post-parse-checks errors */
+void ErrorPostParseErr::write(ErrorWriterBase& wr) const {
+  auto id = std::get<const ID>(info);
+  auto errorMessage = std::get<std::string>(info);
+  CHPL_ASSERT(errorMessage.back() == '.' &&
+         "expected a period at the end of ErrorPostParseErr message");
+  wr.heading(kind_, type_, id, errorMessage);
+  wr.code(id);
+}
+
+void ErrorPostParseWarn::write(ErrorWriterBase& wr) const {
+  auto id = std::get<const ID>(info);
+  auto errorMessage = std::get<std::string>(info);
+  CHPL_ASSERT(errorMessage.back() == '.' &&
+         "expected a period at the end of ErrorPostParseWarn message");
+  wr.heading(kind_, type_, id, errorMessage);
+  wr.code(id);
+}
+
+void ErrorMultipleManagementStrategies::write(ErrorWriterBase& wr) const {
+  auto id = std::get<const ID>(info);
+  auto outerMgt = std::get<1>(info);
+  auto innerMgt = std::get<2>(info);
+  wr.heading(kind_, type_, id,
+             "type expression uses multiple memory management strategies ('",
+             outerMgt, "' and '", innerMgt, "').");
+  wr.message("Multiple class kinds used in type expression here:");
+  wr.code(id);
+  if (outerMgt == innerMgt) {
+    wr.message(
+        "The same strategy is listed twice; one instance should be removed.");
+  } else {
+    wr.message("These strategies are incompatible; one should be removed.");
+  }
+}
+
+void ErrorCantApplyPrivate::write(ErrorWriterBase& wr) const {
+  auto id = std::get<const ID>(info);
+  auto appliedToWhat = std::get<std::string>(info);
+  wr.heading(kind_, type_, id, "can't apply private to ", appliedToWhat,
+             " yet.");
+  wr.message("The following declaration has unsupported 'private' modifier:");
+  wr.code(id);
 }
 
 /* lexer errors */
