@@ -24,10 +24,12 @@ record monkey {
   proc runOp(item) {
     return op.apply(item);
   }
+
 }
 
 var MonkeySpace = {0..<numMonkeys};
 var Monkeys: [MonkeySpace] monkey;
+var canProceed: sync int = 0;
 
 if practice {
   Monkeys = [new monkey(0, (3, 2), 23, [79, 98], new MulOp(19)),
@@ -47,31 +49,35 @@ if practice {
             ];
 }
 
-var canProceed: sync int = 0;
+proc monkey.processItems() {
+  do {
+    while currentItems.size > 0 {
+      // otherwise, inspect our next item
+      var item = currentItems.pop();
+      //        writeln("Monkey ", m, " inspecting ", item);
+      numInspected += 1;
+      item = runOp(item);
+      item /= 3;
+      const target = targetMonkey(item % divisor == 0);
+      if (target < id) {
+        Monkeys[target].nextItems.append(item);
+      } else {
+        Monkeys[target].currentItems.append(item);
+      }
+    }
+  } while (currentItems.size > 0 || canProceed.readXX() != id);
+  canProceed.writeFF(id+1);
+}
+
+
 
 var b = new Barrier(numMonkeys);
 coforall m in Monkeys {
   for r in 1..numRounds {
-    do {
+    m.processItems();
 //      writeln((canProceed.readXX(), CurrentItems[m].size));
 
       // Process any items that are in our currentItems list
-      while m.currentItems.size > 0 {
-        // otherwise, inspect our next item
-        var item = m.currentItems.pop();
-//        writeln("Monkey ", m, " inspecting ", item);
-        m.numInspected += 1;
-        item = m.runOp(item);
-        item /= 3;
-        const target = m.targetMonkey(item % m.divisor == 0);
-        if (target < m.id) {
-          Monkeys[target].nextItems.append(item);
-        } else {
-          Monkeys[target].currentItems.append(item);
-        }
-      }
-    } while (m.currentItems.size > 0 || canProceed.readXX() != m.id);
-    canProceed.writeFF(m.id+1);
     b.barrier();
     for i in 1..m.nextItems.size {
       m.currentItems.append(m.nextItems.pop());
