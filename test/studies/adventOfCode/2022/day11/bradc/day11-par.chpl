@@ -33,6 +33,8 @@ class monkey {
       divisor: int,            // the divisor for its % operation check
       targetMonkey: 2*int,     // the target monkeys it throws items to
       numInspected: int;       // the count of how many inspections we've done
+
+  // TODO: Can I write this as an initializer?  Get rid of the nilable class?
   
   proc readMonkey() throws {
     readf("Monkey %i:", this.id);
