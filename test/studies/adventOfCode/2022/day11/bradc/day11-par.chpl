@@ -108,10 +108,20 @@ proc Monkey.init() {
   readf(" Starting items:");
   var val: int,
       tempItems: list(int);
+//  try {
   do {
     readf(" %i", val);
     tempItems.append(val);
-  } while (stdin.matchLiteral(","));
+  } while stdin.matchLiteral(",");
+  // Want to use this:
+  //  } while readf(",");
+  //
+  // But it throws when it doesn't find a comma... why is this
+  // different than the while readf("Monkey ") above?  Because
+  // we're not at EOF
+  // Can't wrap it in a try...catch b/c "Only catch-less try!
+  // statements are allowed in initializers for now"
+//  } catch { }
 
   // read the monkey's operator and convert it to a MathOp
   var operation, operand: string;
