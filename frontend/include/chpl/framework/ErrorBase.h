@@ -60,7 +60,7 @@ namespace chpl {
 
 class ErrorWriterBase;
 
-using Note = std::tuple<ID, Location, std::string>;
+using Note = std::tuple<IdOrLocation, std::string>;
 
 /** Enum representing the different types of errors in Dyno. */
 enum ErrorType {
