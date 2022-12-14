@@ -63,7 +63,6 @@ static chpl_bool debug = true;
 static chpl_bool debug = false;
 #endif
 
-static chpl_bool initialized = false;
 static chpl_bool haveTopology = false;
 
 static hwloc_topology_t topology;

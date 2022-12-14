@@ -244,7 +244,7 @@ void chpl_rt_init(int argc, char* argv[]) {
   recordExecutionCommand(argc, argv);
 
   chpl_topo_post_args_init();
-  
+
   //
   // If the user specified a number of locales, have the comm layer
   // verify that it is reasonable.
