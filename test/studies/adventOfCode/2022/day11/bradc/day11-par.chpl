@@ -92,15 +92,16 @@ proc Monkey.runOp(item) {
 
 
 iter readMonkeys() {
-  while readf("Monkey ") {
+  do {
     var m = new Monkey();
 //      writeln("read and yielding ", m);
     yield m;
-  }
+  } while stdin.matchNewline();
 }
 
 proc Monkey.init() {
   // Read the monkey ID; assumes "Monkey " has already been read
+  readf("Monkey ");
   this.id = read(int);
   readf(":");
 
@@ -135,8 +136,7 @@ proc Monkey.init() {
   // read the monkey's targets to throw to
   var targetMonkey: 2*int;
   readf(" If true: throw to monkey %i", targetMonkey(true));
-  readf(" If false: throw to monkey %i", targetMonkey(false));
-  readf(" ");
+  readf(" If false: throw to monkey %i\n", targetMonkey(false));
   this.targetMonkey = targetMonkey;
 
   // copy our temporary item list into the current items list
