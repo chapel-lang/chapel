@@ -10,22 +10,27 @@ record monkey {
       op: owned Op,            // the operator the monkey does
       targetMonkey: 2*int,     // the target monkeys it throws items to
       divisor: int,            // the divisor for its % operation check
-      currentItems, nextItems: list(int, parSafe=true),  // its items
+      current = 0, next=1,
+      Items: [0..1] list(int, parSafe=true),  // its items
       numInspected: int;
 
-  proc init(id=-1, targetMonkey=(-1,-1), divisor=1, items: [] int = [-1,],
+  proc init(id=-1, targetMonkey=(-1,-1), divisor=1, Items: [] int = [-1,],
             in op: Op = new Op()) {
     this.id = id;
     this.op = op; 
     this.targetMonkey = targetMonkey;
     this.divisor = divisor;
-    this.currentItems = items;
+    this.complete();
+    for item in Items do
+      this.Items[current].append(item);
   }
 
   proc runOp(item) {
     return op.apply(item);
   }
 }
+
+
 
 // An array of monkeys
 var MonkeySpace = {0..<numMonkeys};
@@ -34,7 +39,8 @@ var Monkeys: [MonkeySpace] monkey;
 // This tells whether a given monkey can proceed when it is out of items.
 // Initially, only monkey 0 can since nobody can throw items into its
 // list for this round, only for subsequent rounds.
-var canProceed: sync int = 0;
+var canPause: sync int = 0;
+
 
 // hard-coded monkey population
 if practice {
@@ -55,12 +61,14 @@ if practice {
             ];
 }
 
+//writeln(Monkeys);
+
 // Our main parallel simulation loop for the monkeys
 var b = new Barrier(numMonkeys);
 coforall m in Monkeys {
   for r in 1..numRounds {
     // Process any items that are in our list of current items
-    m.processItems();
+    m.processItems(canPause);
 
     // Make sure everyone is done so that we don't start changing our
     // items list for the next round while monkeys are still adding
@@ -69,7 +77,7 @@ coforall m in Monkeys {
 
     // Reset our items lists so that the list for the next round
     // bcomes the new one
-    m.resetForNextRound();
+    m.resetForNextRound(canPause);
 
     // Make sure everyone has swapped their item lists so that we
     // don't start throwing things into their next list of items
@@ -81,35 +89,32 @@ writeln(Monkeys.numInspected);
 
 
 // Here's how one monkey processes its items
-proc monkey.processItems() {
+proc monkey.processItems(canPause) {
   // subtle MCM issue here if these two expressions are swapped... woof
-  while (canProceed.readXX() != id || currentItems.size > 0) {
-    while currentItems.size > 0 {
-      var item = currentItems.pop();
+  while (canPause.readXX() != id || Items[current].size > 0) {
+    while Items[current].size > 0 {
+      var item = Items[current].pop();
       numInspected += 1;
       item = runOp(item);
       item /= 3;
       const target = targetMonkey(item % divisor == 0);
       if (target < id) {
-        Monkeys[target].nextItems.append(item);
+        Monkeys[target].Items[next].append(item);
       } else {
-        Monkeys[target].currentItems.append(item);
+        Monkeys[target].Items[current].append(item);
       }
     }
   }
   // let the next monkey know that they can proceed when they're out of items
-  canProceed.writeFF(id+1);
+  canPause.writeFF(id+1);
 }
 
 
-proc monkey.resetForNextRound() {
-  for i in 1..nextItems.size do
-    currentItems.append(nextItems.pop());
-
-  nextItems.clear();
-//    writeln("Resetting canProceed");
+proc monkey.resetForNextRound(canPause) {
+  current <=> next;
+  // When we start up the next round, only monkey 0 can pause
   if id == 0 then
-    canProceed.writeFF(0);
+    canPause.writeFF(0);
 }
 
 
