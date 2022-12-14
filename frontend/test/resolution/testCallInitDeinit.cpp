@@ -31,8 +31,6 @@
 
 #include "./ErrorGuard.h"
 
-static const bool ERRORS_EXPECTED=true;
-
 using ActionElt = std::tuple<AssociatedAction::Action,
                              std::string, /* ID where action occurs */
                              std::string /* ID acted upon or "" */ >;
