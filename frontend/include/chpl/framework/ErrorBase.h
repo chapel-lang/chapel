@@ -165,32 +165,22 @@ class ErrorBase {
  */
 class BasicError : public ErrorBase {
  private:
-  /**
-    The ID where the error occurred. Much like ErrorMessage, if the ID
-    is empty, then BasicError::loc_ should be used instead.
-   */
-  ID id_;
-  /**
-    The location of the error message. Should be used only if BasicError::id_
-    is empty.
-   */
-  Location loc_;
+  IdOrLocation idOrLoc_;
   /** The error's message. */
   std::string message_;
   /** Additional notes / details attached to the error. */
   std::vector<Note> notes_;
 
  protected:
-  BasicError(Kind kind, ErrorType type, ID id, Location loc,
+  BasicError(Kind kind, ErrorType type, IdOrLocation idOrLoc,
              std::string message,
              std::vector<Note> notes) :
-    ErrorBase(kind, type), id_(std::move(id)), loc_(std::move(loc)),
+    ErrorBase(kind, type), idOrLoc_(std::move(idOrLoc)),
     message_(std::move(message)), notes_(std::move(notes)) {}
 
   bool contentsMatchInner(const ErrorBase* other) const override {
     auto otherBasic = static_cast<const BasicError*>(other);
-    return id_ == otherBasic->id_ &&
-      loc_ == otherBasic->loc_ &&
+    return idOrLoc_ == otherBasic->idOrLoc_ &&
       message_ == otherBasic->message_ &&
       notes_ == otherBasic->notes_;
   }
@@ -205,14 +195,9 @@ class BasicError : public ErrorBase {
  */
 class GeneralError : public BasicError {
  protected:
-  GeneralError(ErrorBase::Kind kind, ID id,
+  GeneralError(ErrorBase::Kind kind, IdOrLocation idOrLoc,
                std::string message, std::vector<Note> notes)
-    : BasicError(kind, GENERAL, std::move(id), Location(),
-                 std::move(message), std::move(notes)) {}
-
-  GeneralError(ErrorBase::Kind kind, Location loc,
-               std::string message, std::vector<Note> notes)
-    : BasicError(kind, GENERAL, ID(), std::move(loc),
+    : BasicError(kind, GENERAL, std::move(idOrLoc),
                  std::move(message), std::move(notes)) {}
 
   static const owned<GeneralError>&

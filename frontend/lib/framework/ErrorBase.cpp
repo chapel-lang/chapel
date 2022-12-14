@@ -56,7 +56,9 @@ class CompatibilityWriter : public ErrorWriterBase {
 
   void writeHeading(ErrorBase::Kind kind, ErrorType type,
                     IdOrLocation idOrLoc, const std::string& message) override {
-    this->computedLoc_ = errordetail::locate(context, idOrLoc);
+    // We may not have a context e.g. if we are just figuring out the error
+    // message text. Trust that `computedLoc_` is not important for that.
+    if (context) this->computedLoc_ = errordetail::locate(context, idOrLoc);
     this->idOrLoc_ = std::move(idOrLoc);
     this->message_ = message;
   }
@@ -147,11 +149,7 @@ ErrorMessage ErrorBase::toErrorMessage(Context* context) const {
 
 void BasicError::write(ErrorWriterBase& wr) const {
   // if the ID is set, determine the location from that
-  if (!id_.isEmpty()) {
-    wr.heading(kind_, type_, id_, message_);
-  } else {
-    wr.heading(kind_, type_, loc_, message_);
-  }
+  wr.heading(kind_, type_, idOrLoc_, message_);
   for (auto note : notes_) {
     auto& idOrLoc = std::get<IdOrLocation>(note);
     auto& message = std::get<std::string>(note);
@@ -161,8 +159,7 @@ void BasicError::write(ErrorWriterBase& wr) const {
 
 void BasicError::mark(Context* context) const {
   chpl::mark<Note> marker;
-  id_.mark(context);
-  loc_.mark(context);
+  idOrLoc_.mark(context);
   for (auto& note : notes_) {
     marker(context, note);
   }
