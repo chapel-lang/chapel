@@ -7,7 +7,7 @@ class Monkey {
   var id: int,                 // an integer ID
       Items: [0..1] list(int, parSafe=true),  // two lists of its items
       current = 0, next=1,     // which list is the current vs. next one
-      op: owned Op,            // the operator the monkey does
+      op: owned MathOp,            // the operator the monkey does
       divisor: int,            // the divisor for its % operation check
       targetMonkey: 2*int,     // the target monkeys it throws items to
       numInspected: int;       // the count of how many inspections we've done
@@ -91,28 +91,6 @@ proc Monkey.runOp(item) {
 }
 
 
-// Operators a monkey may choose to do
-
-// This is effectively an abstract base class
-class Op {
-  proc apply(x: ?t) return x;
-}
-
-class SquareOp : Op {
-  override proc apply(x) return x * x;
-}
-
-class AddOp : Op {
-  var toAdd;
-  override proc apply(x) return x + toAdd;
-}
-
-class MulOp : Op {
-  var toMul;
-  override proc apply(x) return x * toMul;
-}
-
-
 iter readMonkeys() {
   while readf("Monkey ") {
     var m = new Monkey();
@@ -155,8 +133,35 @@ proc Monkey.init() {
     Items[current].append(item);
 }
 
-proc opStringsToOp(operation, operand): owned Op {
-  if operation == "+" then return new AddOp(operand:int): Op;
-  else if operand == "old" then return new SquareOp(): Op;
-  else return new MulOp(operand:int): Op;
+proc opStringsToOp(operation, operand): owned MathOp {
+  if operation == "+" {
+    return new AddOp(operand:int): MathOp;
+  } else {  // operation is "*"
+    if operand == "old" {
+      return new SquareOp(): MathOp;
+    } else {
+      return new MulOp(operand:int): MathOp;
+    }
+  }
+}
+
+// Operators a monkey may choose to do
+
+// This is effectively an abstract base class
+class MathOp {
+  proc apply(x: ?t) return x;
+}
+
+class SquareOp : MathOp {
+  override proc apply(x) return x * x;
+}
+
+class AddOp : MathOp {
+  var toAdd;
+  override proc apply(x) return x + toAdd;
+}
+
+class MulOp : MathOp {
+  var toMul;
+  override proc apply(x) return x * toMul;
 }
