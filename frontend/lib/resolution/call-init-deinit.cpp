@@ -75,7 +75,8 @@ struct CallInitDeinit : VarScopeVisitor {
   void resolveCopyInit(const AstNode* ast,
                        const QualifiedType& lhsType,
                        const QualifiedType& rhsType,
-                       RV& rv);
+                       RV& rv,
+                       bool& formalUsesInIntent);
   void resolveMoveInit(const AstNode* ast,
                        const AstNode* rhsAst,
                        const QualifiedType& lhsType,
@@ -332,7 +333,8 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
 void CallInitDeinit::resolveCopyInit(const AstNode* ast,
                                      const QualifiedType& lhsType,
                                      const QualifiedType& rhsType,
-                                     RV& rv) {
+                                     RV& rv,
+                                     bool& formalUsesInIntent) {
   if (!typeNeedsInitDeinitCall(lhsType.type())) {
     // TODO: we could resolve it anyway
     return;
@@ -350,6 +352,24 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
   const Scope* scope = scopeForId(context, ast->id());
   auto c = resolveGeneratedCall(context, ast, ci, scope,
                                 resolver.poiScope);
+
+  std::vector<const AstNode*> actualAsts;
+  actualAsts.push_back(ast);
+  actualAsts.push_back(ast);
+  std::vector<IntentList> intents;
+  std::vector<QualifiedType> types;
+
+  computeActualFormalIntents(context, c.mostSpecific(), ci, actualAsts,
+                             intents, types);
+
+  CHPL_ASSERT(intents.size() >= 1);
+  if (intents.size() >= 1 &&
+      (intents[1] == IntentList::IN || intents[1] == IntentList::CONST_IN)) {
+    formalUsesInIntent = true;
+  } else {
+    formalUsesInIntent = false;
+  }
+
   ResolvedExpression& opR = rv.byAst(ast);
 
   auto action = AssociatedAction::COPY_INIT;
@@ -403,8 +423,11 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
         // TODO: this should not happen
         printf("Warning: should not be reached\n");
       } else {
-        resolveCopyInit(ast, lhsType, rhsType, rv);
-        resolveDeinit(ast, rhsAst->id(), rhsType, rv);
+        bool formalUsesInIntent = false;
+        resolveCopyInit(ast, lhsType, rhsType, rv, formalUsesInIntent);
+        if (!formalUsesInIntent) {
+          resolveDeinit(ast, rhsAst->id(), rhsType, rv);
+        }
       }
     }
   } else {
@@ -461,7 +484,8 @@ void CallInitDeinit::processInit(VarFrame* frame,
       // it is copy initialization, so use init= for records
       // and assign for other stuff
       if (lhsType.type() != nullptr && isRecordLike(lhsType.type())) {
-        resolveCopyInit(ast, lhsType, rhsType, rv);
+        bool formalUsesInIntent = false;
+        resolveCopyInit(ast, lhsType, rhsType, rv, formalUsesInIntent);
       } else {
         resolveAssign(ast, lhsType, rhsType, rv);
       }
