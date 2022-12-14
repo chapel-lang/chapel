@@ -7,13 +7,14 @@ const numMonkeys = if practice then 4 else 8;
 // things that define a monkey
 record monkey {
   var id: int,                 // an integer ID
-      op: owned Op,            // the operator the monkey does
+      op: owned Op?,            // the operator the monkey does
       targetMonkey: 2*int,     // the target monkeys it throws items to
       divisor: int,            // the divisor for its % operation check
       current = 0, next=1,
       Items: [0..1] list(int, parSafe=true),  // its items
       numInspected: int;
 
+  /*
   proc init(id=-1, targetMonkey=(-1,-1), divisor=1, Items: [] int = [-1,],
             in op: Op = new Op()) {
     this.id = id;
@@ -24,9 +25,59 @@ record monkey {
     for item in Items do
       this.Items[current].append(item);
   }
+*/
 
+  /*
+  proc init(ch) {
+    ch.matchLiteral("Monkey");
+    this.id = read(int);
+  }
+*/
+  
+  proc readMonkey(id) {
+//    this.id = id;
+    readf("Monkey %i:", this.id);
+//    stdin.readLine();
+    writeln("reading monkey ", id);
+    readf(" Starting items:");
+
+    var val: int;
+    do {
+      readf(" %i", val);
+      Items[current].append(val);
+    } while (stdin.matchLiteral(","));
+/*
+    while readf(" %i,", val) {
+      writeln("read item ", val);
+    }
+    Items[current].append(read(int));
+*/
+    writeln(Items[0]);
+
+    var operation, operand: string;
+    readf(" Operation: new = old %s %s", operation, operand);
+    writeln("read ", (operation, operand));
+    select operation {
+      when "+" do op = new AddOp(operand:int);
+      when "*" do select operand {
+        when "old" do op = new SquareOp();
+        otherwise do op = new MulOp(operand:int);
+      }
+    }
+
+    readf(" Test: divisible by %i", divisor);
+    writeln("read ", divisor);
+    readf(" If true: throw to monkey %i", targetMonkey(true));
+    readf(" If false: throw to monkey %i\n", targetMonkey(false));
+    writeln("read ", targetMonkey);
+    //    stdin.readLine();
+    readf("\n");
+
+    return this;
+  }
+  
   proc runOp(item) {
-    return op.apply(item);
+    return op!.apply(item);
   }
 }
 
@@ -34,7 +85,8 @@ record monkey {
 
 // An array of monkeys
 var MonkeySpace = {0..<numMonkeys};
-var Monkeys: [MonkeySpace] monkey;
+var Monkeys = for i in MonkeySpace do (new monkey()).readMonkey(i);
+//var Monkeys = for i in MonkeySpace do new monkey(stdin);
 
 // This tells whether a given monkey can proceed when it is out of items.
 // Initially, only monkey 0 can since nobody can throw items into its
@@ -42,7 +94,8 @@ var Monkeys: [MonkeySpace] monkey;
 var canPause: sync int = 0;
 
 
-// hard-coded monkey population
+               // hard-coded monkey population
+               /*
 if practice {
   Monkeys = [new monkey(0, (3, 2), 23, [79, 98], new MulOp(19)),
              new monkey(1, (0, 2), 19, [54, 65, 75, 74], new AddOp(6)),
@@ -60,6 +113,7 @@ if practice {
              new monkey(7, (4, 6), 13, [62, 80, 58, 57, 93, 56], new SquareOp())
             ];
 }
+*/
 
 //writeln(Monkeys);
 
