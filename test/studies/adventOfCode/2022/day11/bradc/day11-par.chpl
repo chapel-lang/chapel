@@ -1,19 +1,17 @@
 use IO, List, Barriers;
 
 config const numRounds = 20;
-config const practice = true;
-const numMonkeys = if practice then 4 else 8;
 
 // things that define a monkey
 class monkey {
   var id: int,                 // an integer ID
-      op: owned Op?,            // the operator the monkey does
-      targetMonkey: 2*int,     // the target monkeys it throws items to
+      Items: [0..1] list(int, parSafe=true),  // two lists of its items
+      current = 0, next=1,     // which list is the current vs. next one
+      op: owned Op?,           // the operator the monkey does
       divisor: int,            // the divisor for its % operation check
-      current = 0, next=1,
-      Items: [0..1] list(int, parSafe=true),  // its items
-      numInspected: int;
-
+      targetMonkey: 2*int,     // the target monkeys it throws items to
+      numInspected: int;       // the count of how many inspections we've done
+  
   /*
   proc init(id=-1, targetMonkey=(-1,-1), divisor=1, Items: [] int = [-1,],
             in op: Op = new Op()) {
@@ -115,7 +113,6 @@ iter readMonkeys() {
 
 
 // An array of monkeys
-var MonkeySpace = {0..<numMonkeys};
 //var Monkeys: [MonkeySpace] monkey = for i in MonkeySpace do (new monkey()).readMonkey();
 var Monkeys = readMonkeys();
 //var Monkeys = for i in MonkeySpace do new monkey(stdin);
@@ -150,25 +147,25 @@ if practice {
 //writeln(Monkeys);
 
 // Our main parallel simulation loop for the monkeys
-var b = new Barrier(numMonkeys);
-coforall m in Monkeys {
+var bar = new Barrier(Monkeys.size);
+coforall monkey in Monkeys {
   for r in 1..numRounds {
     // Process any items that are in our list of current items
-    m.processItems(canPause);
+    monkey.processItems(canPause);
 
     // Make sure everyone is done so that we don't start changing our
     // items list for the next round while monkeys are still adding
     // things to it.
-    b.barrier();
+    bar.barrier();
 
     // Reset our items lists so that the list for the next round
     // bcomes the new one
-    m.resetForNextRound(canPause);
+    monkey.resetForNextRound(canPause);
 
     // Make sure everyone has swapped their item lists so that we
     // don't start throwing things into their next list of items
     // before they're done swapping it for this round
-    b.barrier();
+    bar.barrier();
   }
 }
 writeln(Monkeys.numInspected);
