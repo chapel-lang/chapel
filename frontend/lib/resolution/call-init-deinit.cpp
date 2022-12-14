@@ -80,6 +80,12 @@ struct CallInitDeinit : VarScopeVisitor {
                        const QualifiedType& lhsType,
                        const QualifiedType& rhsType,
                        RV& rv);
+  void processInit(VarFrame* frame,
+                   const AstNode* ast,
+                   const QualifiedType& lhsType,
+                   const QualifiedType& rhsType,
+                   RV& rv);
+
   void resolveDeinit(const AstNode* ast,
                      ID deinitedId,
                      const QualifiedType& type,
@@ -162,6 +168,23 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
   }
 }
 
+static bool isRecordLike(const Type* t) {
+  if (auto ct = t->toClassType()) {
+    auto decorator = ct->decorator();
+    // no action needed for 'borrowed' or 'unmanaged'
+    // (these should just default initialized to 'nil',
+    //  so nothing else needs to be resolved)
+    if (! (decorator.isBorrowed() || decorator.isUnmanaged())) {
+      return true;
+    }
+  } else if (t->isRecordType() || t->isUnionType()) {
+    return true;
+  }
+  // TODO: tuples?
+
+  return false;
+}
+
 static bool typeNeedsInitDeinitCall(const Type* t) {
   if (t->isUnknownType() || t->isErroneousType()) {
     // can't do anything with these
@@ -178,17 +201,9 @@ static bool typeNeedsInitDeinitCall(const Type* t) {
     return false;
   } else if (t->isFunctionType()) {
     return false;
-  } else if (auto ct = t->toClassType()) {
-    auto decorator = ct->decorator();
-    // no action needed for 'borrowed' or 'unmanaged'
-    // (these should just default initialized to 'nil',
-    //  so nothing else needs to be resolved)
-    if (decorator.isBorrowed() || decorator.isUnmanaged()) {
-      return false;
-    }
   }
 
-  return true;
+  return isRecordLike(t);
 }
 
 
@@ -387,6 +402,62 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
   }
 }
 
+void CallInitDeinit::processInit(VarFrame* frame,
+                                 const AstNode* ast,
+                                 const QualifiedType& lhsType,
+                                 const QualifiedType& rhsType,
+                                 RV& rv) {
+  if (lhsType.type() == rhsType.type() &&
+      !typeNeedsInitDeinitCall(lhsType.type())) {
+    // TODO: we should resolve it anyway
+    return;
+  }
+
+  // ast should be:
+  //  * a '=' call
+  //  * a VarLikeDecl
+  //  * an actual passed by 'in' intent
+  const AstNode* rhsAst = nullptr;
+  auto op = ast->toOpCall();
+  if (op != nullptr&& op->op() == USTR("=")) {
+    rhsAst = op->actual(1);
+  } else if (auto vd = ast->toVarLikeDecl()) {
+    rhsAst = vd->initExpression();
+  } else {
+    rhsAst = ast;
+  }
+
+  if (lhsType.isType() || lhsType.isParam()) {
+    // these are basically 'move' initialization
+    resolveMoveInit(ast, lhsType, rhsType, rv);
+  } else {
+    if (isRef(lhsType.kind())) {
+      // e.g. ref x = returnAValue();
+      CHPL_ASSERT(false && "TODO");
+    } else if (elidedCopyFromIds.count(ast->id()) > 0) {
+      // it is move initialization
+      resolveMoveInit(ast, lhsType, rhsType, rv);
+
+      // The RHS must represent a variable that is now dead,
+      // so note that in deinitedVars.
+      ID rhsId = refersToId(rhsAst, rv);
+      // copy elision with '=' should only apply to myVar = myOtherVar
+      CHPL_ASSERT(!rhsId.isEmpty());
+      frame->deinitedVars.insert(rhsId);
+    } else if (rv.byAst(rhsAst).toId().isEmpty() && !isRef(rhsType.kind())) {
+      // e.g. var x; x = callReturningValue();
+      resolveMoveInit(ast, lhsType, rhsType, rv);
+    } else {
+      // it is copy initialization, so use init= for records
+      // and assign for other stuff
+      if (lhsType.type() != nullptr && isRecordLike(lhsType.type())) {
+        resolveCopyInit(ast, lhsType, rhsType, rv);
+      } else {
+        resolveAssign(ast, lhsType, rhsType, rv);
+      }
+    }
+  }
+}
 
 void CallInitDeinit::resolveDeinit(const AstNode* ast,
                                    ID deinitedId,
@@ -422,22 +493,52 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
 void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   VarFrame* frame = currentFrame();
 
-  auto formal = ast->toFormal();
-  if (formal != nullptr && formal->intent() != Formal::OUT) {
-    // don't try to default init formal values unless they are 'out'.
-  } else if (auto vaf = ast->toVarArgFormal()) {
-    // don't try to default init var-arg formals
-    if (vaf->intent() == Formal::OUT) {
-      // at least it's not supported right now...
-      context->error(vaf, "cannot have out intent varargs");
-    }
-  } else {
-    bool inited = processDeclarationInit(ast, rv);
-    bool splitInited = (splitInitedVars.count(ast->id()) > 0);
+  // check for use of deinited variables in type or init exprs
+  if (auto init = ast->initExpression()) {
+    processMentions(init, rv);
+  }
+  if (auto init = ast->initExpression()) {
+    processMentions(init, rv);
+  }
 
-    if (!inited && !splitInited) {
+  bool inited = processDeclarationInit(ast, rv);
+  bool splitInited = (splitInitedVars.count(ast->id()) > 0);
+
+  if (splitInited) {
+    // Will be inited later, don't default init,
+    // and also don't try to deinit it on e.g. a return before that point
+
+  } else if (inited) {
+    auto lhsAst = ast;
+    auto rhsAst = ast->initExpression();
+
+    ResolvedExpression& lhsRe = rv.byAst(lhsAst);
+    QualifiedType lhsType = lhsRe.type();
+
+    ResolvedExpression& rhsRe = rv.byAst(rhsAst);
+    QualifiedType rhsType = rhsRe.type();
+
+    processInit(frame, ast, lhsType, rhsType, rv);
+    // note that the variable is now initialized
+    ID id = ast->id();
+    frame->addToInitedVars(id);
+    frame->localsAndDefers.push_back(id);
+
+  } else {
+    // default init it
+    auto formal = ast->toFormal();
+    if (formal != nullptr && formal->intent() != Formal::OUT) {
+      // don't try to default init formal values unless they are 'out'.
+    } else if (auto vaf = ast->toVarArgFormal()) {
+      // don't try to default init var-arg formals
+      if (vaf->intent() == Formal::OUT) {
+        // at least it's not supported right now...
+        context->error(vaf, "cannot have out intent varargs");
+      }
+    } else {
       // not inited here and not split-inited, so default-initialize it
       resolveDefaultInit(ast, rv);
+      // note that the variable is now initialized
       ID id = ast->id();
       frame->addToInitedVars(id);
       frame->localsAndDefers.push_back(id);
@@ -465,7 +566,6 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
   ResolvedExpression& rhsRe = rv.byAst(rhsAst);
   QualifiedType rhsType = rhsRe.type();
 
-
   // update initedVars if it is initializing a variable
   bool splitInited = processSplitInitAssign(ast, splitInitedVars, rv);
 
@@ -482,31 +582,7 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
     // these are basically 'move' initialization
     resolveMoveInit(ast, lhsType, rhsType, rv);
   } else if (splitInited) {
-    if (isRef(lhsType.kind())) {
-      // e.g. ref x = returnAValue();
-      CHPL_ASSERT(false && "TODO");
-    } else if (elidedCopyFromIds.count(ast->id()) > 0) {
-      // it is move initialization
-      resolveMoveInit(ast, lhsType, rhsType, rv);
-
-      // The RHS must represent a variable that is now dead,
-      // so note that in deinitedVars.
-      ID rhsId = refersToId(rhsAst, rv);
-      // copy elision with '=' should only apply to myVar = myOtherVar
-      CHPL_ASSERT(!rhsId.isEmpty());
-      frame->deinitedVars.insert(rhsId);
-    } else if (rhsRe.toId().isEmpty() && !isRef(rhsType.kind())) {
-      // e.g. var x; x = callReturningValue();
-      resolveMoveInit(ast, lhsType, rhsType, rv);
-    } else {
-      // it is copy initialization, so use init= for records
-      // TODO: and tuples?
-      if (lhsType.type() != nullptr && lhsType.type()->isRecordType()) {
-        resolveCopyInit(ast, lhsType, rhsType, rv);
-      } else {
-        resolveAssign(ast, lhsType, rhsType, rv);
-      }
-    }
+    processInit(frame, ast, lhsType, rhsType, rv);
   } else {
     // it is assignment, so resolve the '=' call
     resolveAssign(ast, lhsType, rhsType, rv);

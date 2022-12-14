@@ -174,7 +174,7 @@ static void testActions(const char* test,
     assert(false && "Failure: extra action");
   }
 
-  if (j < actions.size()) {
+  if (j < expected.size()) {
     assert(false && "Failure: expected action is missing");
   }
 
@@ -396,16 +396,94 @@ static void test3d() {
     });
 }
 
+// test copy-initialization from variable decl with init
+static void test4a() {
+  testActions("test4a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+        proc makeR() {
+          return new R();
+        }
+        proc test() {
+          var x:R = makeR();
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEINIT,       "M.test@4", "x"}
+    });
+}
+
+static void test4b() {
+  testActions("test4b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+        proc makeR() {
+          return new R();
+        }
+        proc test() {
+          var x:R = makeR();
+          var y:R = x;
+          x; // prevent copy elision
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::COPY_INIT,    "y",        ""},
+      {AssociatedAction::DEINIT,       "M.test@8", "y"},
+      {AssociatedAction::DEINIT,       "M.test@8", "x"}
+    });
+}
+
+static void test4c() {
+  testActions("test4c",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+        proc makeR() {
+          return new R();
+        }
+        proc test() {
+          var x:R = makeR();
+          var y:R = x; // copy is elided
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEINIT,       "M.test@7", "y"}
+    });
+}
+
 
 int main() {
   test1();
+
   test2a();
   test2b();
   test2c();
+
   test3a();
   test3b();
   test3c();
   test3d();
+
+  test4a();
+  test4b();
+  test4c();
 
   return 0;
 }
