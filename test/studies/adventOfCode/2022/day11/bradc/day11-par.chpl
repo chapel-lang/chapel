@@ -99,41 +99,45 @@ iter readMonkeys() {
   }
 }
 
-
-// TODO: Can I write this as an initializer?  Get rid of the nilable class?
-
 proc Monkey.init() {
-//  readf("Monkey ");
+  // Read the monkey ID; assumes "Monkey " has already been read
   this.id = read(int);
   readf(":");
 
+  // read the monkey's item list
+  readf(" Starting items:");
   var val: int,
       tempItems: list(int);
-  readf(" Starting items:");
   do {
     readf(" %i", val);
     tempItems.append(val);
   } while (stdin.matchLiteral(","));
 
+  // read the monkey's operator and convert it to a MathOp
   var operation, operand: string;
   readf(" Operation: new = old %s %s", operation, operand);
   this.op = opStringsToOp(operation, operand);
 
+  // read the monkey's divisor
   readf(" Test: divisible by ");
   this.divisor = read(int);
 
+  // read the monkey's targets to throw to
   var targetMonkey: 2*int;
   readf(" If true: throw to monkey %i", targetMonkey(true));
   readf(" If false: throw to monkey %i", targetMonkey(false));
   readf(" ");
   this.targetMonkey = targetMonkey;
 
+  // copy our temporary item list into the current items list
+  // (this was hard to do inline above as a whole-field assignent)
   this.complete();
   for item in tempItems do
     Items[current].append(item);
 }
 
-proc opStringsToOp(operation, operand): owned MathOp {
+// convert strings representing the operation and operand into a MathOp class
+proc opStringsToOp(operation, operand) {
   if operation == "+" {
     return new AddOp(operand:int): MathOp;
   } else {  // operation is "*"
