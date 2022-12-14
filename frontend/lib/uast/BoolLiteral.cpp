@@ -25,6 +25,10 @@ namespace chpl {
 namespace uast {
 
 
+void BoolLiteral::dumpFieldsInner(const DumpSettings& s) const {
+  s.out << " " << value();
+}
+
 owned<BoolLiteral> BoolLiteral::build(Builder* builder, Location loc,
                                       bool value) {
   // construct the Param

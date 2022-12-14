@@ -21,11 +21,11 @@
 #define CHPL_UAST_ASTNODE_H
 
 #include "chpl/framework/ID.h"
+#include "chpl/framework/stringify-functions.h"
 #include "chpl/uast/AstList.h"
 #include "chpl/uast/AstTag.h"
-#include "chpl/uast/ASTTypes.h"
+#include "chpl/uast/forward-declare-uast.h"
 #include "chpl/util/memory.h"
-#include "chpl/framework/stringify-functions.h"
 
 #include <functional>
 
@@ -76,6 +76,34 @@ class AstNode {
    or the UniqueStrings stored in the ID.
    */
   virtual void markUniqueStringsInner(Context* context) const = 0;
+
+  struct DumpSettings {
+    chpl::StringifyKind kind = StringifyKind::DEBUG_DETAIL;
+    bool printId = true;
+    int idWidth = 0;
+    std::ostream& out;
+    DumpSettings(std::ostream& out) : out(out) { }
+  };
+
+  /**
+    This function can be defined by subclasses to include fields
+    in the uAST dump just after the tag. It should print a " "
+    before any fields printed. It is not expected
+    to print a newline.
+   */
+  virtual void dumpFieldsInner(const DumpSettings& s) const;
+
+  /**
+    This function can be defined by subclasses to emit a label for child 'i',
+    for example to indicate which Block is the Then part of a Conditional.
+   */
+  virtual std::string dumpChildLabelInner(int i) const;
+
+  static void dumpHelper(const DumpSettings& s,
+                         const AstNode* ast,
+                         int indent,
+                         const AstNode* parent,
+                         int parentIdx);
 
  protected:
   AstNode(AstTag tag)
@@ -188,6 +216,9 @@ class AstNode {
   void mark(Context* context) const;
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  // compute the maximum width of all of the IDs
+  int computeMaxIdStringWidth() const;
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;

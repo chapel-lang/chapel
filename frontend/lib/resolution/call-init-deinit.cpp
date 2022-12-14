@@ -625,6 +625,7 @@ void callInitDeinit(Resolver& resolver) {
                                                        resolver.byPostorder,
                                                        splitInitedVars);
 
+  /*
   auto symName = UniqueString::get(resolver.context, "unknown");
   if (auto nd = resolver.symbol->toNamedDecl()) {
     symName = nd->name();
@@ -648,7 +649,7 @@ void callInitDeinit(Resolver& resolver) {
            id.str().c_str());
   }
   printf("\n");
-
+  */
 
   CallInitDeinit uv(resolver.context, resolver,
                     splitInitedVars, elidedCopyFromIds);

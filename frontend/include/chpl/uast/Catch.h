@@ -64,6 +64,8 @@ class Catch final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
+  std::string dumpChildLabelInner(int i) const override;
+
   int8_t errorChildNum_;
   int8_t bodyChildNum_;
   bool hasParensAroundError_;

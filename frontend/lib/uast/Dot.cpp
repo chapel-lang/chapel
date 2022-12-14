@@ -25,6 +25,10 @@ namespace chpl {
 namespace uast {
 
 
+void Dot::dumpFieldsInner(const DumpSettings& s) const {
+  s.out << " ." << fieldName_.str();
+}
+
 owned<Dot> Dot::build(Builder* builder,
                       Location loc,
                       owned<AstNode> receiver,

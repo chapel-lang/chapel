@@ -77,6 +77,9 @@ class IndexableLoop : public Loop {
     loopMarkUniqueStringsInner(context);
   }
 
+  virtual void dumpFieldsInner(const DumpSettings& s) const override;
+  virtual std::string dumpChildLabelInner(int i) const override;
+
   int8_t indexChildNum_;
   int8_t iterandChildNum_;
   int8_t withClauseChildNum_;

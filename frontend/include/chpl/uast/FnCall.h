@@ -87,6 +87,7 @@ class FnCall : public Call {
       str.mark(context);
     }
   }
+  void dumpFieldsInner(const DumpSettings& s) const override;
 
  public:
   ~FnCall() override = default;

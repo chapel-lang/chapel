@@ -494,7 +494,7 @@ static void test11(Parser* parser) {
   assert(rec2->linkage() == Decl::Linkage::EXTERN);
   assert(rec2->linkageName());
   assert(rec2->linkageName()->isStringLiteral());
-  assert(rec2->linkageName()->toStringLiteral()->str() == "struct bar");
+  assert(rec2->linkageName()->toStringLiteral()->value() == "struct bar");
   assert(rec2->numDeclOrComments() == 0);
 
   auto rec3 = mod->stmt(2)->toRecord();
@@ -508,7 +508,7 @@ static void test11(Parser* parser) {
   assert(rec4->linkage() == Decl::Linkage::EXPORT);
   assert(rec4->linkageName());
   assert(rec4->linkageName()->isStringLiteral());
-  assert(rec4->linkageName()->toStringLiteral()->str() == "meow");
+  assert(rec4->linkageName()->toStringLiteral()->value() == "meow");
   assert(rec4->numDeclOrComments() == 1);
 
   auto uni5 = mod->stmt(4)->toUnion();
@@ -522,7 +522,7 @@ static void test11(Parser* parser) {
   assert(uni6->linkage() == Decl::Linkage::EXTERN);
   assert(uni6->linkageName());
   assert(uni6->linkageName()->isStringLiteral());
-  assert(uni6->linkageName()->toStringLiteral()->str() == "union thing");
+  assert(uni6->linkageName()->toStringLiteral()->value() == "union thing");
   assert(uni6->numDeclOrComments() == 0);
 }
 

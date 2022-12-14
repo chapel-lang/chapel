@@ -63,6 +63,8 @@ class NamedDecl : public Decl {
     name_.mark(context);
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
  public:
   virtual ~NamedDecl() = 0; // this is an abstract base class
 

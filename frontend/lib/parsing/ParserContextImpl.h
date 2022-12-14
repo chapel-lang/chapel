@@ -156,12 +156,12 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
 
   // Extract the string literal and convert it into a pragma flag.
   if (auto strLit = pragmaStr->toStringLiteral()) {
-    ret = PODUniqueString::get(context(), strLit->str().c_str());
+    ret = PODUniqueString::get(context(), strLit->value().c_str());
     auto tag = pragmaNameToTag(ret.c_str());
 
     if (tag == PRAGMA_UNKNOWN)
       CHPL_PARSER_REPORT_ERR(
-          this, loc, "unknown pragma \"" + strLit->str().str() + "\".");
+          this, loc, "unknown pragma \"" + strLit->value().str() + "\".");
 
     // Initialize the pragma flags if needed.
     auto& pragmas = attributeParts.pragmas;
@@ -190,7 +190,7 @@ void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
 
   if (messageStr) {
     if (auto strLit = messageStr->toStringLiteral()) {
-      attributeParts.deprecationMessage = strLit->str();
+      attributeParts.deprecationMessage = strLit->value();
     }
 
     delete messageStr;
@@ -210,7 +210,7 @@ void ParserContext::noteUnstable(YYLTYPE loc, AstNode* messageStr) {
 
   if (messageStr) {
     if (auto strLit = messageStr->toStringLiteral()) {
-      attributeParts.unstableMessage = strLit->str();
+      attributeParts.unstableMessage = strLit->value();
     }
 
     delete messageStr;
@@ -630,11 +630,11 @@ AstNode* ParserContext::buildPrimCall(YYLTYPE location,
   // first argument must be a string literal, might be a cstring though
   if (actuals.size() > 0) {
     if (auto lit = actuals[0]->toCStringLiteral()) {
-      primName = lit->str();
+      primName = lit->value();
       // and erase that element
       actuals.erase(actuals.begin());
     } else if (auto lit = actuals[0]->toStringLiteral()) {
-      primName = lit->str();
+      primName = lit->value();
       // and erase that element
       actuals.erase(actuals.begin());
     }

@@ -25,6 +25,18 @@ namespace chpl {
 namespace uast {
 
 
+std::string Cobegin::dumpChildLabelInner(int i) const {
+  if (i == withClauseChildNum_) {
+    return "with";
+  } else if (i > bodyChildNum_) {
+    std::string ret = "task-body ";
+    ret += std::to_string(i - bodyChildNum_);
+    return ret;
+  }
+
+  return "";
+}
+
 owned<Cobegin> Cobegin::build(Builder* builder,
                               Location loc,
                               owned<WithClause> withClause,

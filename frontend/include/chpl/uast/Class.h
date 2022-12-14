@@ -75,6 +75,8 @@ class Class final : public AggregateDecl {
     aggregateDeclMarkUniqueStringsInner(context);
   }
 
+  std::string dumpChildLabelInner(int i) const override;
+
  public:
   ~Class() override = default;
 

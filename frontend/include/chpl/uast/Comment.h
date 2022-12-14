@@ -57,6 +57,8 @@ class Comment final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
  public:
   ~Comment() override = default;
   static owned<Comment> build(Builder* builder, Location loc, std::string c);
