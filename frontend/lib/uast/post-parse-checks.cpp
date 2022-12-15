@@ -599,18 +599,18 @@ void Visitor::checkNoReceiverClauseOnPrimaryMethod(const Function* node) {
       auto parentDecl = searchParentsForDecl(&last);
       if (parentDecl->isAggregateDecl()) {
         // stringify the receiver type uAST for use in the error message
-        const char* receiverTypeStr = "<unknown>";
+        std::string receiverTypeStr = "<unknown>";
         if (auto receiverType = receiver->typeExpression()) {
           std::ostringstream ss;
           receiverType->stringify(ss, StringifyKind::CHPL_SYNTAX);
-          receiverTypeStr = ss.str().c_str();
+          receiverTypeStr = ss.str();
         }
 
         builder_.addPostParseError(node,
                                   "type binding clauses ('%s.' in this case) "
                                   "are not supported in declarations within a "
                                   "class, record or union.",
-                                  receiverTypeStr);
+                                  receiverTypeStr.c_str());
       }
     }
   }
