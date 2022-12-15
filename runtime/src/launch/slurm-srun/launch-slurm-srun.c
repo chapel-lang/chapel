@@ -28,7 +28,6 @@
 #include "chpllaunch.h"
 #include "chpl-env.h"
 #include "chpl-mem.h"
-#include "chplcgfns.h"
 #include "chpltypes.h"
 #include "error.h"
 
@@ -297,12 +296,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       fprintf(slurmFile, "#SBATCH --cpu-bind=none\n");
     }
 
-    // On the EX create a VNI even if we only launch on one node. Otherwise
-    // we won't be able to create an authorization key.
-    if (!strcmp(CHPL_TARGET_PLATFORM, "hpe-cray-ex")) {
-      fprintf(slurmFile, "#SBATCH --network=single_node_vni\n");
-    }
-
     // request specified node access
     if (nodeAccessStr != NULL)
       fprintf(slurmFile, "#SBATCH --%s\n", nodeAccessStr);
@@ -415,8 +408,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // suppress informational messages, will still display errors
     len += snprintf(iCom+len, sizeof(iCom)-len, "--quiet ");
 
-    // request the number of locales and number of cores
-    // cpus-per-task.
+    // request the number of locales, with 1 task per node, and number of cores
+    // cpus-per-task. We probably don't need --nodes and --ntasks specified
+    // since 1 task-per-node with n --tasks implies -n nodes
     int32_t numNodes = (numLocales + localesPerNode - 1) / localesPerNode;
 
     len += snprintf(iCom+len, sizeof(iCom)-len, "--nodes=%d ",numNodes);
@@ -428,15 +422,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
                     cpusPerTask);
 
     if (localesPerNode > 1) {
-      len += snprintf(iCom+len, sizeof(iCom)-len, "--cpu-bind=none ");
+      len += sprintf(iCom+len, "--cpu-bind=none ");
     }
 
-    // On the EX create a VNI even if we only launch on one node. Otherwise
-    // we won't be able to create an authorization key.
-    if (!strcmp(CHPL_TARGET_PLATFORM, "hpe-cray-ex")) {
-      len += snprintf(iCom+len, sizeof(iCom)-len,
-                      "--network=single_node_vni ");
-    }
     // request specified node access
     if (nodeAccessStr != NULL)
       len += snprintf(iCom+len, sizeof(iCom)-len, "--%s ", nodeAccessStr);
