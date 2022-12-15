@@ -1876,16 +1876,16 @@ module BigInteger {
   // **=
   operator bigint.**=(ref base: bigint, const ref exp: bigint) {
     if _local {
-      base.pow(base, exp);
+      base = base ** exp;
 
     } else if base.localeId == chpl_nodeID && exp.localeId == chpl_nodeID {
-      base.pow(base, exp);
+      base = base ** exp;
 
     } else {
       const base_ = base;
       const exp_  = exp;
 
-      base_.pow(base_, exp_);
+      base = base_ ** exp_;
     }
   }
 
