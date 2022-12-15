@@ -4,12 +4,13 @@ config const numRounds = 20;
 
 // things that define a monkey
 class Monkey {
-  var id: int,                 // an integer ID
-      Items: [0..1] list(int, parSafe=true),  // two lists of its items
+  const id: int,                 // an integer ID
+        op: owned MathOp,        // the operator the monkey does
+        divisor: int,            // the divisor for its % operation check
+        targetMonkey: 2*int;     // the target monkeys it throws items to
+
+  var items: [0..1] list(int, parSafe=true),  // two lists of its items
       current = 0, next=1,     // which list is the current vs. next one
-      op: owned MathOp,            // the operator the monkey does
-      divisor: int,            // the divisor for its % operation check
-      targetMonkey: 2*int,     // the target monkeys it throws items to
       numInspected: int;       // the count of how many inspections we've done
 }
 
@@ -59,17 +60,17 @@ writeln(Monkeys.numInspected);
 // Here's how one monkey processes its items
 proc Monkey.processItems(canPause) {
   // subtle MCM issue here if these two expressions are swapped... woof
-  while (canPause.readXX() != id || Items[current].size > 0) {
-    while Items[current].size > 0 {
-      var item = Items[current].pop();
+  while (canPause.readXX() != id || items[current].size > 0) {
+    while items[current].size > 0 {
+      var item = items[current].pop();
       numInspected += 1;
       item = runOp(item);
       item /= 3;
       const target = targetMonkey(item % divisor == 0);
       if (target < id) {
-        Monkeys[target].Items[next].append(item);
+        Monkeys[target].items[next].append(item);
       } else {
-        Monkeys[target].Items[current].append(item);
+        Monkeys[target].items[current].append(item);
       }
     }
   }
@@ -143,7 +144,7 @@ proc Monkey.init() {
   // (this was hard to do inline above as a whole-field assignent)
   this.complete();
   for item in tempItems do
-    Items[current].append(item);
+    items[current].append(item);
 }
 
 // convert strings representing the operation and operand into a MathOp class
