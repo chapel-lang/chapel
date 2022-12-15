@@ -62,6 +62,10 @@ coforall monkey in Monkeys {
   }
 }
 writeln(Monkeys.numInspected);
+const (max, loc) = maxloc reduce zip(Monkeys.numInspected, Monkeys.domain);
+Monkeys[loc].numInspected = 0;
+const max2 = max reduce Monkeys.numInspected;
+writeln(max * max2);
 
 
 // Here's how one monkey processes its items
