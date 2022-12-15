@@ -20,15 +20,25 @@
 # If one exists, the write-git-sha script will only update it if the
 # values are different.
 # If CHPL_DONT_BUILD_SHA is set in the ENV, the git-sha will always be xxxxxxxxxx
-execute_process(COMMAND ${CMAKE_SOURCE_DIR}/util/config/write-git-sha
+if (EXISTS ${CMAKE_SOURCE_DIR}/.git)
+        execute_process(COMMAND ${CMAKE_SOURCE_DIR}/util/config/write-git-sha
+                                ${CMAKE_CURRENT_SOURCE_DIR}/util
+                                --build-version
+                                --chpl-home=${CHPL_HOME})
+        message(STATUS "wrote git-version.cpp")
+elseif(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/util/git-version.cpp)
+# if we are not in a git repo, but we don't already have a git-version.cpp file,
+# write one as if CHPL_DONT_BUILD_SHA was set so we dont execute the git command
+        execute_process(COMMAND ${CMAKE_COMMAND} -E env
+                        CHPL_DONT_BUILD_SHA=1
+                        ${CMAKE_SOURCE_DIR}/util/config/write-git-sha
                         ${CMAKE_CURRENT_SOURCE_DIR}/util
-                        --build-version
-                        --chpl-home=${CHPL_HOME})
-message(STATUS "wrote git-version.cpp")
-# endif()
-# target_sources(libdyno-obj PUBLIC git-sha-obj)
-add_library(git-sha-obj OBJECT ${CMAKE_CURRENT_SOURCE_DIR}/util/git-version.cpp)
+        --build-version
+        --chpl-home=${CHPL_HOME})
+        message(STATUS "wrote git-version.cpp")
+endif()
 
+add_library(git-sha-obj OBJECT ${CMAKE_CURRENT_SOURCE_DIR}/util/git-version.cpp)
 
 add_library(libdyno-obj OBJECT)
 # turn on position-independent code so we can use the same
