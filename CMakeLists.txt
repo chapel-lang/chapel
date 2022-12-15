@@ -17,6 +17,11 @@
 
 cmake_minimum_required(VERSION 3.13.4)
 
+###### ENV VARIABLES TO CHANGE CMAKE BEHAVIOR #####
+# CMAKE_VERBOSE_MAKEFILE          turn verbose makefiles on to see compiler flags
+# CHPL_CMAKE_PRINTCHPLENV_RESULTS hide or display output from printchplenv
+#######
+
 
 ### BEGIN config.h value setting ###
 # Handle all (most?) the versioning information in one place
