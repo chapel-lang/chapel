@@ -34,14 +34,15 @@ proc explore(
 ) {
     if pos == end then return;
 
-    coforall nextPos in nextPositions(pos, end, elevs, minTo, pathLen + 1) do
+    // stop searching if another path has reached 'end' in fewer steps
+    if pathLen >= minTo[end].read() then return;
+
+    // explore the next positions in parallel
+    coforall nextPos in nextPositions(pos, elevs, minTo, pathLen + 1) do
         explore(nextPos, end, elevs, minTo, pathLen + 1);
 }
 
-iter nextPositions(pos, end, elevs, minTo, nextPathLen) {
-    // stop searching if another path has reached 'end' in fewer steps
-    if nextPathLen >= minTo[end].read() then return;
-
+iter nextPositions(pos, elevs, minTo, nextPathLen) {
     // try moving in each direction
     label checkingMoves for move in ((1, 0), (-1, 0), (0, 1), (0, -1)) {
         const next = pos + move;

@@ -34,14 +34,15 @@ proc explore(
 ) {
     if pos == end then return;
 
-    for nextPos in nextPositions(pos, end, elevs, minTo, pathLen + 1) do
+    // stop searching if another path has reached 'end' in fewer steps
+    if pathLen >= minTo[end] then return;
+
+    // explore the next positions
+    for nextPos in nextPositions(pos, elevs, minTo, pathLen + 1) do
         explore(nextPos, end, elevs, minTo, pathLen + 1);
 }
 
-iter nextPositions(pos, end, const ref elevs, ref minTo, nextPathLen) {
-    // stop searching if another path has reached 'end' in fewer steps
-    if nextPathLen >= minTo[end] then return;
-
+iter nextPositions(pos, const ref elevs, ref minTo, nextPathLen) {
     // try moving in each direction
     for move in ((1, 0), (-1, 0), (0, 1), (0, -1)) {
         const next = pos + move;
