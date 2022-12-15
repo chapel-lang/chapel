@@ -1115,7 +1115,7 @@ module BigInteger {
 
   operator bigint.**(const ref base: bigint, exp: int): bigint {
     var c = new bigint();
-    
+
     if exp >= 0 {
       if exp.fitsInto(c_ulong) then
         c.pow(base, exp: c_ulong);
