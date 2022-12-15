@@ -25,6 +25,14 @@ namespace chpl {
 namespace uast {
 
 
+void PrimCall::dumpFieldsInner(const DumpSettings& s) const {
+  const char* primName = primtags::primTagToName(prim_);
+  if (primName[0] != '\0') {
+    s.out << " " << primName;
+  }
+  Call::dumpFieldsInner(s);
+}
+
 owned<PrimCall> PrimCall::build(Builder* builder,
                                 Location loc,
                                 PrimitiveTag prim,

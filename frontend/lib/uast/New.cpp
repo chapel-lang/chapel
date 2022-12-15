@@ -47,6 +47,13 @@ New::Management New::stringToManagement(UniqueString ustr) {
   return New::DEFAULT_MANAGEMENT;
 }
 
+void New::dumpFieldsInner(const DumpSettings& s) const {
+  const char* mgmtString = managementToString(management_);
+  if (mgmtString[0] != '\0') {
+    s.out << " " << mgmtString;
+  }
+}
+
 owned<New> New::build(Builder* builder,
                       Location loc,
                       owned<AstNode> typeExpression,

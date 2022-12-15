@@ -25,6 +25,13 @@ namespace chpl {
 namespace uast {
 
 
+void For::dumpFieldsInner(const DumpSettings& s) const {
+  IndexableLoop::dumpFieldsInner(s);
+  if (isParam_) {
+    s.out << " param";
+  }
+}
+
 owned<For> For::build(Builder* builder,
                       Location loc,
                       owned<Decl> index,

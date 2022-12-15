@@ -25,6 +25,10 @@ namespace chpl {
 namespace uast {
 
 
+void Label::dumpFieldsInner(const DumpSettings& s) const {
+  s.out << " " << name_.str();
+}
+
 owned<Label> Label::build(Builder* builder, Location loc, UniqueString name,
                           owned<Loop> loop) {
   CHPL_ASSERT(loop.get() != nullptr);

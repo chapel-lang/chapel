@@ -25,6 +25,13 @@ namespace chpl {
 namespace uast {
 
 
+std::string On::dumpChildLabelInner(int i) const {
+  if (i == destChildNum_) {
+    return "dest";
+  }
+  return SimpleBlockLike::dumpChildLabelInner(i);
+}
+
 owned<On> On::build(Builder* builder, Location loc,
                     owned<AstNode> destination,
                     BlockStyle blockStyle,

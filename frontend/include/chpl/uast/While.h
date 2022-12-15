@@ -72,6 +72,8 @@ class While final : public Loop {
     loopMarkUniqueStringsInner(context);
   }
 
+  std::string dumpChildLabelInner(int i) const override;
+
   int8_t conditionChildNum_;
 
  public:

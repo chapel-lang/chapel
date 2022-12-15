@@ -85,6 +85,9 @@ class Try final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
+
   // body position is always the same
   static const int8_t bodyChildNum_ = 0;
   // try expressions always contain a body expression

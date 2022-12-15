@@ -89,6 +89,9 @@ class VisibilityClause final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
+
   // These always exist and their position never changes.
   static const int8_t symbolChildNum_ = 0;
   static const int8_t limitationChildNum_ = 1;
@@ -160,6 +163,10 @@ class VisibilityClause final : public AstNode {
     return ast;
   }
 
+  /**
+    Return a string describing the passed LimitationKind.
+   */
+  static const char* limitationKindToString(LimitationKind kind);
 };
 
 

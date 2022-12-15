@@ -25,6 +25,14 @@ namespace chpl {
 namespace uast {
 
 
+std::string Serial::dumpChildLabelInner(int i) const {
+  if (i == condChildNum_) {
+    return "cond";
+  }
+
+  return SimpleBlockLike::dumpChildLabelInner(i);
+}
+
 owned<Serial> Serial::build(Builder* builder,
                           Location loc,
                           BlockStyle blockStyle,

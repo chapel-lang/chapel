@@ -60,6 +60,8 @@ class Let final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
+  std::string dumpChildLabelInner(int i) const override;
+
  public:
   ~Let() override = default;
 
