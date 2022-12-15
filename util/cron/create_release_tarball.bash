@@ -34,11 +34,10 @@ if [ "${CHPL_VERSION}" = "detect" ] ; then
         log_error "Expected \$CHPL_HOME to be a git repo. .git dir does not exist at: ${CHPL_HOME}/.git"
         exit 1
     fi
-
-    version_num_text=$(cat $CHPL_HOME/CMakeLists.txt)
-    major=$(echo "${version_num_text}" | grep 'set(CHPL_MAJOR_VERSION' | cut -f2 -d" " | sed "s/\)//g")
-    minor=$(echo "${version_num_text}" | grep 'set(CHPL_MINOR_VERSION' | cut -f2 -d" " | sed "s/\)//g")
-    patch=$(echo "${version_num_text}" | grep 'set(CHPL_PATCH_VERSION' | cut -f2 -d" " | sed "s/\)//g")
+    source $CHPL_HOME/util/build_configs/functions.bash
+    major=$(get_src_major_version $CHPL_HOME)
+    minor=$(get_src_minor_version $CHPL_HOME)
+    patch=$(get_src_patch_version $CHPL_HOME)
     sha1=$(git rev-parse --short HEAD)
 
     export CHPL_VERSION="${major}.${minor}.${patch}.${sha1}"
