@@ -1098,17 +1098,16 @@ module BigInteger {
   operator bigint.**(const ref base: bigint, const ref exp: bigint): bigint {
     var c = new bigint();
 
-    if _local {
-      mpz_powm(c.mpz, base.mpz,  exp.mpz,  base.mpz);
-
-    } else if base.localeId == chpl_nodeID && exp.localeId == chpl_nodeID {
-      mpz_powm(c.mpz, base.mpz,  exp.mpz,  base.mpz);
-
+    if exp >= 0 {
+      if exp.fitsInto(c_ulong) then
+        c.pow(base, exp: c_ulong);
+      else
+        halt("Exponent too large to compute result.");
     } else {
-      const base_ = base;
-      const exp_  = exp;
-
-      mpz_powm(c.mpz, base_.mpz, exp_.mpz, base_.mpz);
+      if exp.fitsInto(int) then
+        c.pow(base, exp: int);
+      else
+        halt("Exponent too large to compute result.");
     }
 
     return c;
@@ -1116,36 +1115,17 @@ module BigInteger {
 
   operator bigint.**(const ref base: bigint, exp: int): bigint {
     var c = new bigint();
-
-    if (exp >= 0) {
-      const exp_ = exp.safeCast(c_ulong);
-
-      if _local {
-        mpz_pow_ui(c.mpz, base.mpz,  exp_);
-
-      } else if base.localeId == chpl_nodeID {
-        mpz_pow_ui(c.mpz, base.mpz,  exp_);
-
-      } else {
-        const base_ = base;
-
-        mpz_pow_ui(c.mpz, base_.mpz, exp_);
-      }
-
+    
+    if exp >= 0 {
+      if exp.fitsInto(c_ulong) then
+        c.pow(base, exp: c_ulong);
+      else
+        halt("Exponent too large to compute result.");
     } else {
-      const exp_ = new bigint(exp);
-
-      if _local {
-        mpz_powm(c.mpz, base.mpz,  exp_.mpz, base.mpz);
-
-      } else if base.localeId == chpl_nodeID {
-        mpz_powm(c.mpz, base.mpz,  exp_.mpz, base.mpz);
-
-      } else {
-        const base_ = base;
-
-        mpz_powm(c.mpz, base_.mpz, exp_.mpz, base_.mpz);
-      }
+      if exp.fitsInto(int) then
+        c.pow(base, exp: int);
+      else
+        halt("Exponent too large to compute result.");
     }
 
     return c;
@@ -1155,17 +1135,7 @@ module BigInteger {
     const exp_ = exp.safeCast(c_ulong);
     var   c    = new bigint();
 
-    if _local {
-      mpz_pow_ui(c.mpz, base.mpz,  exp_);
-
-    } else if base.localeId == chpl_nodeID {
-      mpz_pow_ui(c.mpz, base.mpz,  exp_);
-
-    } else {
-      const base_ = base;
-
-      mpz_pow_ui(c.mpz, base_.mpz, exp_);
-    }
+    c.pow(base, exp_);
 
     return c;
   }
@@ -1906,49 +1876,31 @@ module BigInteger {
   // **=
   operator bigint.**=(ref base: bigint, const ref exp: bigint) {
     if _local {
-      mpz_powm(base.mpz, base.mpz,  exp.mpz,  base.mpz);
+      base.pow(base, exp);
 
     } else if base.localeId == chpl_nodeID && exp.localeId == chpl_nodeID {
-      mpz_powm(base.mpz, base.mpz,  exp.mpz,  base.mpz);
+      base.pow(base, exp);
 
     } else {
       const base_ = base;
       const exp_  = exp;
 
-      mpz_powm(base.mpz, base_.mpz, exp_.mpz, base_.mpz);
+      base_.pow(base_, exp_);
     }
   }
 
   operator bigint.**=(ref base: bigint, exp: int) {
-    if (exp >= 0) {
-      const exp_ = exp.safeCast(c_ulong);
+    if _local {
+      base.pow(base, exp);
 
-      if _local {
-        mpz_pow_ui(base.mpz, base.mpz,  exp_);
-
-      } else if base.localeId == chpl_nodeID {
-        mpz_pow_ui(base.mpz, base.mpz,  exp_);
-
-      } else {
-        const base_ = base;
-
-        mpz_pow_ui(base.mpz, base_.mpz, exp_);
-      }
+    } else if base.localeId == chpl_nodeID {
+      base.pow(base, exp);
 
     } else {
-      const exp_ = new bigint(exp);
+      const base_ = base;
+      const exp_ = exp;
 
-      if _local {
-        mpz_powm(base.mpz, base.mpz,  exp_.mpz, base.mpz);
-
-      } else if base.localeId == chpl_nodeID {
-        mpz_powm(base.mpz, base.mpz,  exp_.mpz, base.mpz);
-
-      } else {
-        const base_ = base;
-
-        mpz_powm(base_.mpz, base_.mpz, exp_.mpz, base_.mpz);
-      }
+      base.pow(base_, exp_);
     }
   }
 
@@ -1956,16 +1908,16 @@ module BigInteger {
     const exp_ = exp.safeCast(c_ulong);
 
     if _local {
-      mpz_pow_ui(base.mpz, base.mpz, exp_);
+      base.pow(base, exp_);
 
     } else if base.localeId == chpl_nodeID {
-      mpz_pow_ui(base.mpz, base.mpz, exp_);
+      base.pow(base, exp_);
 
     } else {
       const baseLoc = chpl_buildLocaleID(base.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", baseLoc) {
-        mpz_pow_ui(base.mpz, base.mpz, exp_);
+        base.pow(base, exp_);
       }
     }
   }
