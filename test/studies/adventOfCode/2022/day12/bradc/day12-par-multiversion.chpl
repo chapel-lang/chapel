@@ -1,5 +1,9 @@
 use IO;
 
+config const debug = false,
+             version = 0,
+             printTaskCount = false;
+
 const AlphaGrid = readGrid();
 
 const numRows = AlphaGrid.size,
@@ -20,7 +24,7 @@ Elevation[endLoc] = 25;
 
 var numTasks: atomic int;
 
-Explore(startLoc);
+sync { Explore(startLoc); }
 
 iter nextSteps() {
   yield (0,1);
@@ -39,8 +43,6 @@ iter nextPositions(pos, elevation, in steps) {
   if steps >= Steps[endLoc].read() then
     return;
 
-  // TODO: Anyone clever enough to avoid the labeled 'continue'?
-  // Maybe a helper procedure or the like would help?
   label outer for off in nextSteps() {
     const nextPos = pos + off;
 
@@ -52,8 +54,7 @@ iter nextPositions(pos, elevation, in steps) {
       if nextElev > elevation+1 then
         continue;
 
-      // Bail out and on to the next possibility if someone has gotten
-      // here faster than us
+      // Bail out if someone has gotten here faster than us
       var prevDist = Steps[nextPos].read();
       do {
         if steps >= prevDist then
@@ -66,16 +67,43 @@ iter nextPositions(pos, elevation, in steps) {
 }
 
 proc Explore(pos, elevation = Elevation[startLoc], steps = 0): int {
+  numTasks.add(1);
+
   if pos == endLoc then
     return;
 
-  coforall (nextPos, nextElev) in nextPositions(pos, elevation, steps) do
-    Explore(nextPos, nextElev, steps+1);
+  if version == 0 {
+
+    // Asynchronous version using 'begin'
+    for (nextPos, nextElev) in nextPositions(pos, elevation, steps) do
+      begin with (in nextPos) { Explore(nextPos, nextElev, steps+1); }
+
+  } else if version == 1 {
+
+    // Asynchronous version using 'begin' that doesn't, seemingly due
+    // to either sharing 'nextPos' or corrupting it somehow...?
+    for (nextPos, nextElev) in nextPositions(pos, elevation, steps) do
+
+      begin { Explore(nextPos, nextElev, steps+1); }
+  } else if version == 2 {
+
+    // A bit more synchronous than the 'begin' version but makes far
+    // fewer recursive calls on average...?
+    coforall (nextPos, nextElev) in nextPositions(pos, elevation, steps) do
+      Explore(nextPos, nextElev, steps+1);
+
+  } else {
+    // Serial version
+    for (nextPos, nextElev) in nextPositions(pos, elevation, steps) do
+      Explore(nextPos, nextElev, steps+1);
+  }    
 }
 
 //writeln(Steps);
 
 writeln(Steps[endLoc]);
+if printTaskCount then
+  writeln("numTasks = ", numTasks.read());  // 2686803 for the real input, serially
 
 iter readGrid() {
   var line: bytes;
