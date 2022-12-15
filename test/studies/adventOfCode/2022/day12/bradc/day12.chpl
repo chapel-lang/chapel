@@ -21,6 +21,8 @@ writeln(endLoc);
 Elevation[startLoc] = 0;
 Elevation[endLoc] = 25;
 
+var numSteps = 0;
+
 Explore(startLoc);
 
 iter nextSteps() {
@@ -31,6 +33,7 @@ iter nextSteps() {
 }
 
 proc Explore(pos, elevation = Elevation[startLoc], steps = 0): int {
+  numSteps += 1;
   if steps >= Steps[pos] {
     return;
   } else { // steps < Steps[pos]
@@ -55,6 +58,7 @@ proc Explore(pos, elevation = Elevation[startLoc], steps = 0): int {
 //writeln(Steps);
 
 writeln(Steps[endLoc]);
+writeln("numSteps = ", numSteps);  // 4822392 for the real input, 191 for fake
 
 iter readGrid() {
   var line: bytes;
