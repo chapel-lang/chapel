@@ -121,7 +121,8 @@ set(CHPL_SANITIZE CACHE STRING "Override chplenv value")
 set(CHPL_HOME CACHE STRING "Override home directory for Chapel")
 set(CHPL_DEVELOPER CACHE BOOL "Override chplenv value")
 set(CHPL_LLVM_GCC_PREFIX CACHE STRING "Override chplenv value")
-
+set(CHPL_CXX_FLAGS CACHE STRING "Compiler flags from our Makefile")
+set(CHPL_LD_FLAGS CACHE STRING "Linker flags from our Makefile")
 # Internal CHPL variables
 set(CHPL_HOST_CC CACHE INTERNAL "Description")
 set(CHPL_HOST_CXX CACHE INTERNAL "Description")
@@ -253,6 +254,7 @@ endif()
 # TODO: replace this with above, get proper values depending on compiler/version
 #  see make/compiler/Makefile.gnu, make/compiler/Makefile.clang
 add_compile_options(SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_CXX_FLAGS}>)
+add_link_options(SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LD_FLAGS}>)
 
 # TODO: Update the C/CXX flags with the proper values for DEBUG
 # if (${DEBUG})

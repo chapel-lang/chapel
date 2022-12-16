@@ -39,6 +39,9 @@ elseif(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/util/git-version.cpp)
 endif()
 
 add_library(git-sha-obj OBJECT ${CMAKE_CURRENT_SOURCE_DIR}/util/git-version.cpp)
+# turn on position-independent code so we can use the same
+# git-sha-obj for both a static and dynamic library
+set_property(TARGET git-sha-obj PROPERTY POSITION_INDEPENDENT_CODE 1)
 
 add_library(libdyno-obj OBJECT)
 # turn on position-independent code so we can use the same
