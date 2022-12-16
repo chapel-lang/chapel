@@ -703,41 +703,37 @@ static void handleIncDir(const ArgumentDescription* desc, const char* arg_unused
   addIncInfo(incFilename);
 }
 
-static int invokeChplWithFlags(int argc, char* argv[],
-                               const std::vector<std::string>& additionalFlags,
-                               const char* description) {
+static int invokeChplWithArgs(int argc, char* argv[],
+                              const std::vector<std::string>& additionalArgs,
+                              const char* description) {
   // invoke the compiler again with arguments forwarded
-  assert(!additionalFlags.empty() &&
+  assert(!additionalArgs.empty() &&
          "expected additional flags to be specified for chpl invocation");
-  std::ostringstream command;
+  std::vector<std::string> commandVec;
   for (int i = 0; i < argc; i++) {
-    if (i > 0) {
-      command << " ";
-    }
-    command << argv[i];
+    commandVec.emplace_back(argv[i]);
     if (i == 0) {
-      for (const auto& flag : additionalFlags) {
-        command << " " << flag;
-      }
+      commandVec.insert(commandVec.end(), additionalArgs.begin(),
+                        additionalArgs.end());
     }
   }
 
-  return mysystem(astr(command.str().c_str()), description,
+  return mysystem(commandVec, description,
                   /* ignoreStatus */ true, /* quiet */ true);
 }
 
 static int runCompilation(int argc, char* argv[]) {
-  std::vector<std::string> additionalFlags = {
-      "--do-compilation", std::string("--driver-tmp-dir ") + tmpdirname};
-  return invokeChplWithFlags(argc, argv, additionalFlags,
-                             "invoking compiler front- and mid-end");
+  std::vector<std::string> additionalArgs = {"--do-compilation",
+                                             "--driver-tmp-dir", tmpdirname};
+  return invokeChplWithArgs(argc, argv, additionalArgs,
+                            "invoking compiler front- and mid-end");
 }
 
 static int runBackend(int argc, char* argv[]) {
-  std::vector<std::string> additionalFlags = {
-      "--do-backend", std::string("--driver-tmp-dir ") + tmpdirname};
-  return invokeChplWithFlags(argc, argv, additionalFlags,
-                             "invoking compiler back-end");
+  std::vector<std::string> additionalArgs = {"--do-backend", "--driver-tmp-dir",
+                                             tmpdirname};
+  return invokeChplWithArgs(argc, argv, additionalArgs,
+                            "invoking compiler back-end");
 }
 
 static void runCompilerInGDB(int argc, char* argv[]) {
