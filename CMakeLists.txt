@@ -17,45 +17,114 @@
 
 cmake_minimum_required(VERSION 3.13.4)
 
-# TODO: Handle BUILD_VERSION for devops
-# set(CHPL_BUILD_VERSION 0 CACHE ) - gets into generated.h along with version info,
+###### ENV VARIABLES TO CHANGE CMAKE BEHAVIOR #####
+# CMAKE_VERBOSE_MAKEFILE          turn verbose makefiles on to see compiler flags
+# CHPL_CMAKE_PRINTCHPLENV_RESULTS hide or display output from printchplenv
+#######
 
-# TODO: Write this to generated configured_prefix file
-# CMAKE_INSTALL_PREFIX
 
-# TODO: Work with config.h for version info
-project(Chapel VERSION 1.29.0)
+### BEGIN config.h value setting ###
+# Handle all (most?) the versioning information in one place
+# These values will be written to <build_dir>/frontend/include/chpl/config/config.h
+set(CHPL_MAJOR_VERSION 1)
+set(CHPL_MINOR_VERSION 30)
+set(CHPL_PATCH_VERSION 0)
+set(CHPL_BUILD_VERSION 0)
+
+# Flip this to 'true' when we're ready to roll out a release; then back
+# after branching
+set(CHPL_OFFICIAL_RELEASE false)
+
+### END config.h version value setting - configured_prefix set below ###
+
+set(CHPL_VERSION ${CHPL_MAJOR_VERSION}.${CHPL_MINOR_VERSION}.${CHPL_PATCH_VERSION})
+if (${CHPL_OFFICIAL_RELEASE} AND CHPL_BUILD_VERSION GREATER 0)
+  set(CHPL_VERSION ${CHPL_MAJOR_VERSION}.${CHPL_MINOR_VERSION}.${CHPL_PATCH_VERSION}.${CHPL_BUILD_VERSION})
+endif()
+
+project(Chapel VERSION ${CHPL_VERSION})
+
+message(STATUS "Configuring Chapel version: ${CMAKE_PROJECT_VERSION}")
 
 # This built-in module allows us to print variables easily, using
 # cmake_print_variables(MY_VARIABLE)
 include(CMakePrintHelpers)
 
+### BEGIN Debug options ###
+
 # Turns on verbose output from Makefile builds. Having it ON displays each
 # command line as it is launched.
 # https://cmake.org/cmake/help/latest/variable/CMAKE_VERBOSE_MAKEFILE.html
-# set(CMAKE_VERBOSE_MAKEFILE 1)
+if (DEFINED ENV{CMAKE_VERBOSE_MAKEFILE})
+  set(CMAKE_VERBOSE_MAKEFILE $ENV{CMAKE_VERBOSE_MAKEFILE})
+else()
+  set(CMAKE_VERBOSE_MAKEFILE OFF)
+endif()
+
+# Turn this OFF to stop seeing the results of printchplenv everytime it's called
+# from the cmake configure step
+if (DEFINED ENV{CHPL_CMAKE_PRINTCHPLENV_RESULTS})
+  SET(PRINTCHPLENV_RESULTS $ENV{CHPL_CMAKE_PRINTCHPLENV_RESULTS})
+else()
+  SET(PRINTCHPLENV_RESULTS ON)
+endif()
+
+### END Debug options ###
+
+### BEGIN handling installation mode from ./configure - prefix or home are allowed ###
+if (NOT DEFINED INSTALLATION_MODE)
+  set(INSTALLATION_MODE "prefix" CACHE STRING "prefix or home installation mode")
+endif()
 
 
-# Options that correspond to printchplenv --compiler
+# Handle Installation Prefix by writing CONFIGURED_PREFIX if it's not found,
+# or checking the value against the incomming CMAKE_INSTALL_PREFIX and writing
+# a new one if they don't match.
+set(CONFIGURED_PREFIX_CONTENTS " ")
+if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/CONFIGURED_PREFIX)
+  message(STATUS "CONFIGURED_PREFIX not found: Writing CONFIGURED_PREFIX file")
+  file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/CONFIGURED_PREFIX" "\"${CMAKE_INSTALL_PREFIX}\"")
+else()
+  message(STATUS "Reading CONFIGURED_PREFIX")
+  file(STRINGS "${CMAKE_BINARY_DIR}/CONFIGURED_PREFIX" CONFIGURED_PREFIX_CONTENTS)
+  message(STATUS "previously configured to install to ${CONFIGURED_PREFIX_CONTENTS}")
+endif()
+
+# TODO: eventually remove the quotes from the file(WRITE) call below and we can be free of them!
+# TODO: Do we still need the CONFIGURED_PREFIX file for anything if we are writing it to config.h?
+string(COMPARE NOTEQUAL "\"${CMAKE_INSTALL_PREFIX}\"" ${CONFIGURED_PREFIX_CONTENTS} DO_UPDATE_PREFIX)
+if(${DO_UPDATE_PREFIX})
+    message(STATUS "CMAKE_INSTALL_PREFIX updated to ${CMAKE_INSTALL_PREFIX}: Writing CONFIGURED_PREFIX file")
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/CONFIGURED_PREFIX" "\"${CMAKE_INSTALL_PREFIX}\"")
+else()
+  message(STATUS "CMAKE_INSTALL_PREFIX is ${CMAKE_INSTALL_PREFIX}")
+endif()
+message(STATUS "Installation Mode: ${INSTALLATION_MODE}")
+
+### END handling installation mode - CMAKE_INSTALL_PREFIX will be written to config.h ###
+
+
+# Handle options that correspond to printchplenv --compiler
 # Could be set from environment or command-line
-# TODO: Update these "Description" values to meaningful values
-set(CHPL_HOST_PLATFORM CACHE STRING "Description")
-set(CHPL_HOST_COMPILER CACHE STRING "Description")
-set(CHPL_HOST_CC CACHE STRING "Description")
-set(CHPL_HOST_CXX CACHE STRING "Description")
-set(CHPL_HOST_ARCH CACHE STRING "Description")
-set(CHPL_HOST_MEM CACHE STRING "Description")
-set(CHPL_LLVM CACHE STRING "Description")
-set(CHPL_LLVM_SUPPORT CACHE STRING "Description")
-set(CHPL_LLVM_CONFIG CACHE STRING "Description")
-set(CHPL_SANITIZE CACHE STRING "Description")
+# See https://chapel-lang.org/docs/usingchapel/chplenv.html# for details on each
+# TODO: Update these "Description" values to meaningful values, maybe the link to the docs?
+set(CHPL_HOST_PLATFORM CACHE STRING "Override chplenv value")
+set(CHPL_HOST_COMPILER CACHE STRING "Override chplenv value")
+set(CHPL_HOST_ARCH CACHE STRING "Override chplenv value")
+set(CHPL_HOST_MEM CACHE STRING "Override chplenv value")
+set(CHPL_LLVM CACHE STRING "Override chplenv value")
+set(CHPL_LLVM_SUPPORT CACHE STRING "Override chplenv value")
+set(CHPL_LLVM_CONFIG CACHE STRING "Override chplenv value")
+set(CHPL_SANITIZE CACHE STRING "Override chplenv value")
 
 # Some variables that aren't in printchplenv output, but are/might be useful
 set(CHPL_HOME CACHE STRING "Override home directory for Chapel")
-set(CHPL_DEVELOPER CACHE BOOL "Description")
-set(CHPL_LLVM_GCC_PREFIX CACHE STRING "Description")
+set(CHPL_DEVELOPER CACHE BOOL "Override chplenv value")
+set(CHPL_LLVM_GCC_PREFIX CACHE STRING "Override chplenv value")
 
 # Internal CHPL variables
+set(CHPL_HOST_CC CACHE INTERNAL "Description")
+set(CHPL_HOST_CXX CACHE INTERNAL "Description")
 set(CHPL_HOST_BUNDLED_COMPILE_ARGS CACHE INTERNAL "Description")
 set(CHPL_HOST_CPU CACHE INTERNAL "Description")
 set(CHPL_HOST_SYSTEM_COMPILE_ARGS CACHE INTERNAL "Description")
@@ -97,23 +166,31 @@ set(CHPL_QTHREAD_UNIQ_CFG_PATH CACHE INTERNAL "Description")
 set(CHPL_RE2_UNIQ_CFG_PATH CACHE INTERNAL "Description")
 set(CHPL_PE_CHPL_PKGCONFIG_LIBS CACHE INTERNAL "Description")
 
+
 # Set ENV versions of CHPL_ vars that are not in printchplenv output, in the
 # case when they are set from the cmdline, otherwise get them from the environment
 if (NOT DEFINED ${CHPL_DEVELOPER})
-  message(NOTICE "CHPL_DEVELOPER not given, using $ENV{CHPL_DEVELOPER}")
-  set(CHPL_DEVELOPER $ENV{CHPL_DEVELOPER} CACHE BOOL "Override CHPL_DEVELOPER flag" FORCE)
+  if(DEFINED ENV{CHPL_DEVELOPER})
+    set(CHPL_DEVELOPER $ENV{CHPL_DEVELOPER} CACHE BOOL "Override CHPL_DEVELOPER flag" FORCE)
+    message(NOTICE "CHPL_DEVELOPER found in ENV, using $ENV{CHPL_DEVELOPER}")
+  else()
+    set(CHPL_DEVELOPER OFF CACHE BOOL "Override CHPL_DEVELOPER flag" FORCE)
+    message(NOTICE "CHPL_DEVELOPER is not set, using ${CHPL_DEVELOPER}")
+  endif()
 else()
-  set(ENV{CHPL_DEVELOPER} ${CHPL_DEVELOPER})
-  message(STATUS "CHPL_DEVELOPER updated to ${CHPL_DEVELOPER}")
+  # set(ENV{CHPL_DEVELOPER} ${CHPL_DEVELOPER})
+  message(STATUS "CHPL_DEVELOPER environment var updated to ${CHPL_DEVELOPER}")
 endif()
 
 # If we didn't get a value from the cmdline and the environment has a value, use it
 if ((NOT DEFINED ${CHPL_LLVM_GCC_PREFIX}) AND (NOT $ENV{CHPL_LLVM_GCC_PREFIX} STREQUAL ""))
   message(NOTICE "CHPL_LLVM_GCC_PREFIX not set, using $ENV{CHPL_LLVM_GCC_PREFIX}")
   set(CHPL_LLVM_GCC_PREFIX $ENV{CHPL_LLVM_GCC_PREFIX} CACHE STRING "Override CHPL_LLVM_GCC_PREFIX flag" FORCE)
-else()
-  set(ENV{CHPL_LLVM_GCC_PREFIX} ${CHPL_LLVM_GCC_PREFIX})
+elseif(DEFINED ${CHPL_LLVM_GCC_PREFIX})
+  # set(ENV{CHPL_LLVM_GCC_PREFIX} ${CHPL_LLVM_GCC_PREFIX})
   message(STATUS "CHPL_LLVM_GCC_PREFIX updated to ${CHPL_LLVM_GCC_PREFIX}")
+else()
+  message(STATUS "No CHPL_LLVM_GCC_PREFIX env var or value given from command line.")
 endif()
 
 
@@ -165,28 +242,40 @@ if (DEFINED ${CHPL_SANITIZE})
 endif()
 
 # Makefile arguments we still want to support
-# TODO: SEE IF CMAKE COVERS THESE VARIABLES
-# TODO: Wire these up to do something
-set(ASSERTS OFF CACHE BOOL "ASSERTS flag from make")
-set(WARNINGS OFF CACHE BOOL "WARNINGS flag from make")
-set(OPTIMIZE OFF CACHE BOOL "OPTIMIZE flag from make")
-set(DEBUG OFF CACHE BOOL "DEBUG flag from make")
-set(PROFILE OFF CACHE BOOL "PROFILE flag from make")
+# TODO: Wire these up to do something based on compiler type and version
+# as in Makefile.clang, Makefile.gnu
+# set(ASSERTS OFF CACHE BOOL "ASSERTS flag from make")
+# set(WARNINGS OFF CACHE BOOL "WARNINGS flag from make")
+# set(OPTIMIZE OFF CACHE BOOL "OPTIMIZE flag from make")
+# set(DEBUG OFF CACHE BOOL "DEBUG flag from make") # CMake Debug?
+# set(PROFILE OFF CACHE BOOL "PROFILE flag from make")
 
-# TODO: Update the C/CXX flags with the proper values for each of the above options
-if (${DEBUG})
-  set(CMAKE_BUILD_TYPE CACHE BOOL Debug "Debug build" FORCE)
-endif()
+# TODO: replace this with above, get proper values depending on compiler/version
+#  see make/compiler/Makefile.gnu, make/compiler/Makefile.clang
+add_compile_options(SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_CXX_FLAGS}>)
 
-if (${WARNINGS})
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-endif()
+# TODO: Update the C/CXX flags with the proper values for DEBUG
+# if (${DEBUG})
+#   set(CMAKE_BUILD_TYPE CACHE BOOL Debug "Debug build" FORCE)
+# endif()
 
-if (${OPTIMIZE})
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
-endif()
+# TODO: Update the C/CXX flags with the proper values for WARNINGS
+# if (${WARNINGS})
+#   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+#   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+# endif()
+
+# TODO: Update the C/CXX flags with the proper values for OPTIMIZE
+# if (${OPTIMIZE})
+#   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
+#   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+# endif()
+
+# TODO: Update the C/CXX flags with the proper values for PROFILE
+# if (${PROFILE})
+#   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pg")
+#   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg")
+# endif()
 
 set(PRINTCHPLENV_COMMAND printchplenv --compiler --internal --cmake)
 # message(STATUS "running ${PRINTCHPLENV_COMMAND} from ${CMAKE_CURRENT_SOURCE_DIR}/util")
@@ -195,14 +284,20 @@ set(PRINTCHPLENV_COMMAND printchplenv --compiler --internal --cmake)
 # TODO: we should support the standard cmake way of overriding these and have
 # setting them from the command-line be an error, e.g., `cmake -DCHPL_HOST_CC=bla`
 execute_process(COMMAND ${CMAKE_COMMAND} -E env
-                  CHPL_HOST_CC=${CMAKE_C_COMPILER} CHPL_HOST_CXX=${CMAKE_CXX_COMPILER} ${CMAKE_CURRENT_SOURCE_DIR}/util/${PRINTCHPLENV_COMMAND}
+                CHPL_LLVM_GCC_PREFIX=${CHPL_LLVM_GCC_PREFIX}
+                CHPL_DEVELOPER=${CHPL_DEVELOPER}
+                CHPL_HOST_CC=${CMAKE_C_COMPILER}
+                CHPL_HOST_CXX=${CMAKE_CXX_COMPILER}
+                ${CMAKE_CURRENT_SOURCE_DIR}/util/${PRINTCHPLENV_COMMAND}
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/util
                 TIMEOUT 30
                 RESULT_VARIABLE CHPLENV_RETURNCODE
                 OUTPUT_VARIABLE CHPLENV_OUTPUT
                 OUTPUT_STRIP_TRAILING_WHITESPACE
                 )
-message(NOTICE "Updating build configuration with results from printchplenv:\n${CHPLENV_OUTPUT}")
+if (${PRINTCHPLENV_RESULTS})
+  message(NOTICE "Updating build configuration with results from printchplenv:\n${CHPLENV_OUTPUT}")
+endif()
 
 # This is a workaround for CMake not having any in-built way to
 # split a string into a list.  It's not perfect, but it works for this purpose
@@ -214,7 +309,9 @@ foreach (CHPLENV_LINE IN LISTS CHPLENV_OUTPUT)
   # Split the line into the parts we want, variable name and value
   string(FIND "${CHPLENV_LINE}" " " SPLIT_POS)
   if (SPLIT_POS LESS 1)
-    message(NOTICE "${CHPLENV_LINE} did not contain a value - unsetting")
+    if (NOT ${PRINTCHPLENV_RESULTS})
+      message(NOTICE "${CHPLENV_LINE} did not contain a value - unsetting")
+    endif()
     unset(${CHPLENV_LINE} CACHE)
     continue()
   endif()
@@ -235,6 +332,33 @@ if ((CHPL_HOME STREQUAL CMAKE_BINARY_DIR) OR
   message(FATAL_ERROR "It won't work to run cmake from the Chapel source directory. Please run 'rm CMakeCache.txt' and then cd to a different directory before running cmake.")
 endif()
 
+# TODO: This is a hack to get past the safe directory failure from git
+# when running in github CI. It looks like this same command is executed
+# as part of the github workflow, but I'm not sure why it doesn't seem
+# to be taking effect when cmake calls the python script to generate
+# the git-version file.
+if (DEFINED ENV{GITHUB_ACTIONS})
+  if($ENV{GITHUB_ACTIONS} STREQUAL "true")
+    message(STATUS "Running in GitHub Actions - set safe.directory")
+    execute_process(COMMAND git config --global --add safe.directory ${CHPL_HOME})
+  endif()
+endif()
+
 # message(DEBUG "${CHPL_HOST_BUNDLED_LINK_ARGS} ${CHPL_HOST_SYSTEM_LINK_ARGS}")
 add_subdirectory(compiler)
 add_subdirectory(frontend)
+add_subdirectory(tools)
+
+# Adjust the install rpath for chpl and chpldoc
+set_target_properties(chpl PROPERTIES
+                      INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+set_target_properties(chpldoc PROPERTIES
+                      INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+
+if (INSTALLATION_MODE STREQUAL "home")
+  install(TARGETS chpl chpldoc
+          RUNTIME DESTINATION "bin/${CHPL_HOST_BIN_SUBDIR}")
+else()
+  install(TARGETS chpl chpldoc
+          RUNTIME DESTINATION bin)
+endif()

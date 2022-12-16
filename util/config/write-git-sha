@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+
+import os
+import errno
+import argparse
+import subprocess
+
+parser = argparse.ArgumentParser(description='Write the git SHA to git-version.cpp')
+parser.add_argument('location', help='The location to write git-version.cpp')
+parser.add_argument('--build-version', dest='build_version', action='store_true',
+                     help='also write the BUILD_VERSION file')
+parser.add_argument('--chpl-home', dest='chpl_home', help='the location of the chapel source')
+
+args = parser.parse_args()
+
+out_file = os.path.join(args.location, 'git-version.cpp')
+tmp_file = os.path.join(args.location, 'git-version.cpp.in')
+update_if_diff = os.path.join(args.chpl_home,'util/config/update-if-different')
+build_version_file = os.path.join(args.chpl_home, 'compiler/main/BUILD_VERSION')
+
+# If CHPL_DONT_BUILD_SHA is set, the git-sha will always be xxxxxxxxxx
+dont_build_sha = False if os.getenv('CHPL_DONT_BUILD_SHA') is None else True
+
+if dont_build_sha:
+    git_sha = "xxxxxxxxxx"
+else:
+    git_sha = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'],
+                            encoding='utf-8',
+                            check=True,
+                            stdout=subprocess.PIPE,
+                            timeout=5).stdout.strip()
+
+if not os.path.exists(args.location):
+    os.makedirs(args.location)
+
+if os.path.isfile(out_file):
+    with open(tmp_file, 'w') as f:
+        f.write('namespace chpl {\n')
+        f.write(f'  const char* GIT_SHA = "{git_sha}";\n')
+        f.write('}\n')
+
+    out = subprocess.run([update_if_diff, '--update', out_file, tmp_file ],
+                     encoding='utf-8',
+                     check=True,
+                     stdout=subprocess.PIPE,
+                     timeout=5).stdout.strip()
+    print(out)
+else:
+    with open(out_file, 'w') as f:
+        f.write('namespace chpl {\n')
+        f.write(f'  const char* GIT_SHA = "{git_sha}";\n')
+        f.write('}\n')
+
+
+if args.build_version:
+    if (not os.path.isdir(args.chpl_home)):
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), args.chpl_home)
+    with open(build_version_file, 'w') as f:
+        f.write(f'"{git_sha}"\n')

@@ -16,8 +16,31 @@
 # limitations under the License.
 
 
-add_library(libdyno-obj OBJECT)
+# generate a git-version.cpp file during the cmake configure step.
+# If one exists, the write-git-sha script will only update it if the
+# values are different.
+# If CHPL_DONT_BUILD_SHA is set in the ENV, the git-sha will always be xxxxxxxxxx
+if (EXISTS ${CMAKE_SOURCE_DIR}/.git)
+        execute_process(COMMAND ${CMAKE_SOURCE_DIR}/util/config/write-git-sha
+                                ${CMAKE_CURRENT_SOURCE_DIR}/util
+                                --build-version
+                                --chpl-home=${CHPL_HOME})
+        message(STATUS "wrote git-version.cpp")
+elseif(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/util/git-version.cpp)
+# if we are not in a git repo, but we don't already have a git-version.cpp file,
+# write one as if CHPL_DONT_BUILD_SHA was set so we dont execute the git command
+        execute_process(COMMAND ${CMAKE_COMMAND} -E env
+                        CHPL_DONT_BUILD_SHA=1
+                        ${CMAKE_SOURCE_DIR}/util/config/write-git-sha
+                        ${CMAKE_CURRENT_SOURCE_DIR}/util
+        --build-version
+        --chpl-home=${CHPL_HOME})
+        message(STATUS "wrote git-version.cpp")
+endif()
 
+add_library(git-sha-obj OBJECT ${CMAKE_CURRENT_SOURCE_DIR}/util/git-version.cpp)
+
+add_library(libdyno-obj OBJECT)
 # turn on position-independent code so we can use the same
 # dyno-obj for both a static and dynamic library
 set_property(TARGET libdyno-obj PROPERTY POSITION_INDEPENDENT_CODE 1)
@@ -26,7 +49,6 @@ set_property(TARGET libdyno-obj PROPERTY POSITION_INDEPENDENT_CODE 1)
 target_include_directories(libdyno-obj PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
                            ${CHPL_INCLUDE_DIR})
-
 
 # Library code can also use headers from the lib/ directory
 # but these are not to be public
@@ -45,10 +67,25 @@ add_subdirectory(types)
 add_subdirectory(uast)
 add_subdirectory(util)
 
-add_library(libdyno SHARED $<TARGET_OBJECTS:libdyno-obj>)
+
+# Don't build the git-sha-obj into libdyno if CHPL_DONT_BUILD_SHA is set in the
+# environment * note that the value doesn't matter, just the presence of the var
+add_library(libdyno SHARED $<TARGET_OBJECTS:libdyno-obj> $<TARGET_OBJECTS:git-sha-obj>)
+
 target_include_directories(libdyno PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
                            ${CHPL_INCLUDE_DIR})
+
 target_link_libraries(libdyno PUBLIC ${CHPL_LLVM_LINK_ARGS})
 # TODO: Get printchplenv output proper so that we don't need to SHELL here
 target_compile_options(libdyno PUBLIC SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
+
+
+# TODO: ADDITIONAL_CLEAN_FILES requires cmake v3.15 ... Can we find another way to mark these files for cleanup?
+set_target_properties(libdyno PROPERTIES ADDITIONAL_CLEAN_FILES ${CMAKE_CURRENT_SOURCE_DIR}/util/git-version.cpp)
+
+
+# install libdyno
+# TODO: also install headers with PUBLIC_HEADER DESTINATION <dir>
+install(TARGETS libdyno
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
