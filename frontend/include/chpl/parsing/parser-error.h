@@ -28,20 +28,12 @@
   Evaluates to an ErroneousExpression error sentinel at the location of the
   error, which may be used or ignored.
  */
-#define CHPL_PARSER_REPORT(P_CONTEXT__, NAME__, LOC__, EINFO__...)         \
-  (P_CONTEXT__->saveError(CHPL_REPORT(P_CONTEXT__->context(), NAME__,      \
-                                      P_CONTEXT__->convertLocation(LOC__), \
-                                      ##EINFO__)),                         \
-   ErroneousExpression::build(P_CONTEXT__->builder,                        \
-                              P_CONTEXT__->convertLocation(LOC__))         \
-       .release())
-
-// Simplified versions of CHPL_PARSER_REPORT which report an error/syntax error
-// message without a specialized error class or additional info
-#define CHPL_PARSER_REPORT_ERR(P_CONTEXT__, LOC__, MSG__) \
-  CHPL_PARSER_REPORT(P_CONTEXT__, ParseErr, LOC__, MSG__)
-#define CHPL_PARSER_REPORT_SYNTAX(P_CONTEXT__, LOC__, MSG__) \
-  CHPL_PARSER_REPORT(P_CONTEXT__, ParseSyntax, LOC__, MSG__)
+#define CHPL_PARSER_REPORT(P_CONTEXT__, NAME__, LOC__, EINFO__...) \
+  P_CONTEXT__->report(LOC__,                                       \
+    CHPL_PARSER_GET_ERROR(P_CONTEXT__, NAME__, LOC__, ##EINFO__))
+#define CHPL_PARSER_GET_ERROR(P_CONTEXT__, NAME__, LOC__, EINFO__...) \
+  CHPL_GET_ERROR(P_CONTEXT__->context(), NAME__,                      \
+                 P_CONTEXT__->convertLocation(LOC__), ##EINFO__)
 
 /**
   Helper macros to report errors from the lexer, including retrieving the
