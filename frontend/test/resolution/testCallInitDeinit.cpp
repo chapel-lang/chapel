@@ -401,6 +401,7 @@ static void test3d() {
 }
 
 // test copy-initialization from variable decl with init
+// variable initialization from a value call
 static void test4a() {
   testActions("test4a",
     R""""(
@@ -423,6 +424,7 @@ static void test4a() {
     });
 }
 
+// variable initialization from a local var mentioned again
 static void test4b() {
   testActions("test4b",
     R""""(
@@ -449,6 +451,7 @@ static void test4b() {
     });
 }
 
+// variable initialization from a local var last mention
 static void test4c() {
   testActions("test4c",
     R""""(
@@ -729,6 +732,122 @@ static void test7c() {
     });
 }
 
+// variable initialization from a module-scope variable
+static void test8a() {
+  testActions("test8a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        var x:R;
+        proc test() {
+          var y:R = x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::COPY_INIT,    "y",        ""},
+      {AssociatedAction::DEINIT,       "M.test@3", "y"}
+    });
+}
+// variable initialization from a ref variable
+static void test8b() {
+  testActions("test8b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() {
+          var x:R;
+          ref r = x;
+          var y:R = r;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",        ""},
+      // no associated action recorded to initialize r
+      {AssociatedAction::COPY_INIT,    "y",        ""},
+      {AssociatedAction::DEINIT,       "M.test@7", "y"},
+      {AssociatedAction::DEINIT,       "M.test@7", "x"}
+    });
+}
+
+// value return from a value call (no return type declared)
+static void test9a() {
+  testActions("test9a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc makeR() {
+          return new R();
+        }
+
+        proc test() {
+          return makeR();
+        }
+      }
+    )"""",
+    { });
+}
+
+// value return from a value call (return type declared)
+static void test9b() {
+  testActions("test9b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc makeR() {
+          return new R();
+        }
+
+        proc test() : R {
+          return makeR();
+        }
+      }
+    )"""",
+    { });
+}
+
+// value return from a 'new' record construction call
+static void test9c() {
+  testActions("test9c",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() : R {
+          return new R();
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT, "M.test@3", ""}
+    });
+}
+
 
 int main() {
   test1();
@@ -757,6 +876,13 @@ int main() {
   test7a();
   test7b();
   test7c();
+
+  test8a();
+  test8b();
+
+  test9a();
+  test9b();
+  test9c();
 
   return 0;
 }

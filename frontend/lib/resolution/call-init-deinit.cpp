@@ -186,7 +186,10 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
       ResolvedExpression& re = rv.byId(varOrDeferId);
       QualifiedType type = re.type();
 
-      resolveDeinit(frame->scopeAst, varOrDeferId, type, rv);
+      // don't deinit reference variables
+      if (isValue(type.kind())) {
+        resolveDeinit(frame->scopeAst, varOrDeferId, type, rv);
+      }
     }
   }
 
@@ -515,8 +518,11 @@ void CallInitDeinit::processInit(VarFrame* frame,
     resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
   } else {
     if (isRef(lhsType.kind())) {
-      // e.g. ref x = returnAValue();
-      CHPL_ASSERT(false && "TODO");
+      // e.g. ref x = localVariable;
+      //  or  ref y = returnAValue();
+      if (isCallProducingValue(rhsAst, rhsType, rv)) {
+        resolveDeinit(ast, rhsAst->id(), rhsType, rv);
+      }
     } else if (elidedCopyFromIds.count(ast->id()) > 0) {
       // it is move initialization
       resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
@@ -572,13 +578,13 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
   auto c = resolveGeneratedCall(context, ast, ci, scope,
                                 resolver.poiScope);
 
+  // Should we associate it with the current statement or the current block?
   const AstNode* assocAst = currentStatement();
   if (assocAst && assocAst->isVarLikeDecl()) {
     assocAst = currentFrame()->scopeAst;
   }
 
   ResolvedExpression& opR = rv.byAst(assocAst);
-  // Should we associate it with the current statement or the current frame?
   resolver.handleResolvedAssociatedCall(opR, assocAst, ci, c,
                                         AssociatedAction::DEINIT,
                                         deinitedId);
