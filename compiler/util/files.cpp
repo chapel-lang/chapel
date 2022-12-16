@@ -124,16 +124,17 @@ const char* makeTempDir(const char* dirPrefix) {
 }
 
 void ensureTmpDirExists() {
- if (saveCDir[0]) {
-  // setup savec dir, which is also tmp dir
-  ensureDirExists(saveCDir, "ensuring --savec directory exists");
-  tmpdirname = saveCDir;
-  intDirName = tmpdirname;
- } else if (!tmpdirname) {
-  // setup default tmp dir
-  tmpdirname = makeTempDir("chpl-");
-  intDirName = tmpdirname;
- }
+  // create tmp dir if not done already
+  if (!tmpdirname) {
+    tmpdirname = makeTempDir("chpl-");
+  }
+  // set intermediates dir to savec dir if it exists, tmp dir otherwise
+  if (saveCDir[0] && intDirName != saveCDir) {
+    ensureDirExists(saveCDir, "ensuring --savec directory exists");
+    intDirName = saveCDir;
+  } else  {
+    intDirName = tmpdirname;
+  }
 }
 
 void deleteDir(const char* dirname) {
