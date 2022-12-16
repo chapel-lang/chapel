@@ -39,7 +39,7 @@ struct PassInfo {
   char        logTag;
 };
 
-// These entries should be kept in the same order as the entries in passlist.h.
+// These entries should be kept in the same order as those in the pass list
 #define LOG_parse                              'p'
 #define LOG_checkParsed                        LOG_NEVER
 #define LOG_readExternC                        LOG_NO_SHORT
@@ -160,6 +160,21 @@ void runPasses(PhaseTracker& tracker) {
 
   if (printPasses == true || printPassesFile != 0) {
     tracker.ReportPass();
+  }
+
+  // verify that user-specified pass to stop after actually exists
+  if (stopAfterPass[0]) {
+    bool stopAfterPassValid = false;
+    for (size_t i = 0; i < passListSize; i++) {
+      if (strcmp(sPassList[i].name, stopAfterPass) == 0) {
+        stopAfterPassValid = true;
+        break;
+      }
+    }
+    if (!stopAfterPassValid) {
+      USR_FATAL("Requested to stop after pass '%s', but no such pass exists",
+                stopAfterPass);
+    }
   }
 
   for (size_t i = 0; i < passListSize; i++) {
