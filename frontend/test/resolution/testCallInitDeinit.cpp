@@ -85,10 +85,14 @@ static void printAction(const ActionElt& a) {
   gotInId = std::get<1>(a);
   gotActId = std::get<2>(a);
 
-  printf("  %s %s %s\n",
+  printf("  %s in %s",
          AssociatedAction::kindToString(gotAction),
-         gotInId.c_str(),
-         gotActId.c_str());
+         gotInId.c_str());
+
+  if (!gotActId.empty()) {
+    printf(" for id %s", gotActId.c_str());
+  }
+  printf("\n");
 }
 
 static void printActions(const Actions& actions) {
@@ -587,6 +591,38 @@ static void test6b() {
         }
         proc test() {
           var x:R;
+          var y:U;
+          x = y;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "y",        ""},
+      {AssociatedAction::INIT_OTHER,   "M.test@6", ""},
+      {AssociatedAction::DEINIT,       "M.test@7", "x"},
+      {AssociatedAction::DEINIT,       "M.test@7", "y"}
+    });
+}
+
+static void test6c() {
+  testActions("test6c",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        proc R.init=(other: U) { }
+        proc R.deinit() { }
+        record U { }
+        proc U.init() { }
+        proc U.init=(other: U) { }
+        proc U.deinit() { }
+
+        proc makeU() {
+          return new U();
+        }
+        proc test() {
+          var x:R;
           x = makeU();
         }
       }
@@ -597,6 +633,7 @@ static void test6b() {
       {AssociatedAction::DEINIT,       "M.test@6", "x"}
     });
 }
+
 
 
 // testing cross-type init= with 'in' intent
@@ -684,9 +721,9 @@ static void test7c() {
     )"""",
     {
       {AssociatedAction::DEFAULT_INIT, "y",        ""},
-      // TODO: COPY_INIT for y -> in intent
-      // but no deinit needed for that b/c it occurs inside of the called fn
+      {AssociatedAction::COPY_INIT,    "x",        ""},
       {AssociatedAction::INIT_OTHER,   "x",        ""},
+      {AssociatedAction::DEINIT,       "M.test@6", "M.test@3"},
       {AssociatedAction::DEINIT,       "M.test@6", "x"},
       {AssociatedAction::DEINIT,       "M.test@6", "y"}
     });
@@ -715,6 +752,7 @@ int main() {
 
   test6a();
   test6b();
+  test6c();
 
   test7a();
   test7b();

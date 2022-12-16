@@ -65,6 +65,10 @@ struct CallInitDeinit : VarScopeVisitor {
       elidedCopyFromIds(elidedCopyFromIds)
   { }
 
+  bool isCallProducingValue(const AstNode* rhsAst,
+                            const QualifiedType& rhsType,
+                            RV& rv);
+
   void recordInitializationOrder(VarFrame* frame, ID varId);
   void checkUseOfDeinited(const AstNode* useAst, ID varId);
   void processDeinitsAndPropagate(VarFrame* frame, VarFrame* parent, RV& rv);
@@ -75,10 +79,11 @@ struct CallInitDeinit : VarScopeVisitor {
                      const QualifiedType& rhsType,
                      RV& rv);
   void resolveCopyInit(const AstNode* ast,
+                       const AstNode* rhsAst,
                        const QualifiedType& lhsType,
                        const QualifiedType& rhsType,
-                       RV& rv,
-                       bool& formalUsesInIntent);
+                       bool forMoveInit,
+                       RV& rv);
   void resolveMoveInit(const AstNode* ast,
                        const AstNode* rhsAst,
                        const QualifiedType& lhsType,
@@ -128,6 +133,32 @@ void CallInitDeinit::recordInitializationOrder(VarFrame* frame, ID varId) {
     // it is declared in an outer scope
     frame->initedOuterVars.push_back(varId);
   }
+}
+
+static bool isValue(QualifiedType::Kind kind) {
+  return (kind == QualifiedType::VAR ||
+          kind == QualifiedType::CONST_VAR ||
+          kind == QualifiedType::IN ||
+          kind == QualifiedType::CONST_IN ||
+          kind == QualifiedType::OUT ||
+          kind == QualifiedType::INOUT);
+}
+static bool isValueOrParam(QualifiedType::Kind kind) {
+  return isValue(kind) || kind == QualifiedType::PARAM;
+}
+static bool isRef(QualifiedType::Kind kind) {
+  return (kind == QualifiedType::CONST_REF ||
+          kind == QualifiedType::REF);
+}
+static bool isTypeParam(QualifiedType::Kind kind) {
+  return (kind == QualifiedType::PARAM ||
+          kind == QualifiedType::TYPE);
+}
+
+bool CallInitDeinit::isCallProducingValue(const AstNode* rhsAst,
+                                          const QualifiedType& rhsType,
+                                          RV& rv) {
+  return rv.byAst(rhsAst).toId().isEmpty() && !isRef(rhsType.kind());
 }
 
 void CallInitDeinit::checkUseOfDeinited(const AstNode* useAst, ID varId) {
@@ -342,10 +373,11 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
 }
 
 void CallInitDeinit::resolveCopyInit(const AstNode* ast,
+                                     const AstNode* rhsAst,
                                      const QualifiedType& lhsType,
                                      const QualifiedType& rhsType,
-                                     RV& rv,
-                                     bool& formalUsesInIntent) {
+                                     bool forMoveInit,
+                                     RV& rv) {
   /*if (lhsType.type() != rhsType.type()) {
     // Should have been handled by ResolveConv
     return;
@@ -372,17 +404,30 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
   actualAsts.push_back(ast);
   actualAsts.push_back(ast);
   std::vector<IntentList> intents;
-  std::vector<QualifiedType> types;
+  std::vector<QualifiedType> formalTypes;
 
   computeActualFormalIntents(context, c.mostSpecific(), ci, actualAsts,
-                             intents, types);
+                             intents, formalTypes);
 
+  bool formalUsesInIntent = false;
   CHPL_ASSERT(intents.size() >= 1);
   if (intents.size() >= 1 &&
       (intents[1] == IntentList::IN || intents[1] == IntentList::CONST_IN)) {
     formalUsesInIntent = true;
-  } else {
-    formalUsesInIntent = false;
+  }
+
+  if (formalUsesInIntent && !forMoveInit &&
+      formalTypes[0].type() != formalTypes[1].type()) {
+    // for init= with mixed type and 'in' intent:
+    // also resolve the same-type copy initializer and add a note to call that.
+    // Do this before recording so that the actions are in the order they
+    // would need to be taken.
+    // The idea is to copy-initialize and then move that copy into the
+    // mixed-type init= 'in' formal.
+    resolveCopyInit(ast, rhsAst,
+                    formalTypes[1], rhsType,
+                    /* forMoveInit */ true,
+                    rv);
   }
 
   ResolvedExpression& opR = rv.byAst(ast);
@@ -392,26 +437,13 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
     action = AssociatedAction::INIT_OTHER;
   }
   resolver.handleResolvedAssociatedCall(opR, ast, ci, c, action, ast->id());
-}
 
-static bool isValue(QualifiedType::Kind kind) {
-  return (kind == QualifiedType::VAR ||
-          kind == QualifiedType::CONST_VAR ||
-          kind == QualifiedType::IN ||
-          kind == QualifiedType::CONST_IN ||
-          kind == QualifiedType::OUT ||
-          kind == QualifiedType::INOUT);
-}
-static bool isValueOrParam(QualifiedType::Kind kind) {
-  return isValue(kind) || kind == QualifiedType::PARAM;
-}
-static bool isRef(QualifiedType::Kind kind) {
-  return (kind == QualifiedType::CONST_REF ||
-          kind == QualifiedType::REF);
-}
-static bool isTypeParam(QualifiedType::Kind kind) {
-  return (kind == QualifiedType::PARAM ||
-          kind == QualifiedType::TYPE);
+  // If we were trying to move, but had to run an init= to change types,
+  // and that init= did not accept its argument by 'in' intent, we need
+  // to deinit the temporary created.
+  if (forMoveInit && !formalUsesInIntent) {
+    resolveDeinit(ast, rhsAst->id(), rhsType, rv);
+  }
 }
 
 void CallInitDeinit::resolveMoveInit(const AstNode* ast,
@@ -443,11 +475,9 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
         // TODO: this should not happen
         printf("Warning: should not be reached\n");
       } else {
-        bool formalUsesInIntent = false;
-        resolveCopyInit(ast, lhsType, rhsType, rv, formalUsesInIntent);
-        if (!formalUsesInIntent) {
-          resolveDeinit(ast, rhsAst->id(), rhsType, rv);
-        }
+        resolveCopyInit(ast, rhsAst, lhsType, rhsType,
+                        /* forMoveInit */ true,
+                        rv);
       }
     }
   } else {
@@ -497,15 +527,17 @@ void CallInitDeinit::processInit(VarFrame* frame,
       // copy elision with '=' should only apply to myVar = myOtherVar
       CHPL_ASSERT(!rhsId.isEmpty());
       frame->deinitedVars.insert(rhsId);
-    } else if (rv.byAst(rhsAst).toId().isEmpty() && !isRef(rhsType.kind())) {
+    } else if (isCallProducingValue(rhsAst, rhsType, rv)) {
       // e.g. var x; x = callReturningValue();
       resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
     } else {
       // it is copy initialization, so use init= for records
       // and assign for other stuff
       if (lhsType.type() != nullptr && isRecordLike(lhsType.type())) {
-        bool formalUsesInIntent = false;
-        resolveCopyInit(ast, lhsType, rhsType, rv, formalUsesInIntent);
+        resolveCopyInit(ast, rhsAst,
+                        lhsType, rhsType,
+                        /* forMoveInit */ false,
+                        rv);
       } else {
         resolveAssign(ast, lhsType, rhsType, rv);
       }
