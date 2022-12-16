@@ -1171,6 +1171,14 @@ static void codegen_aggregate_def(AggregateType* ct) {
   ct->symbol->codegenDef();
 }
 
+static void retrieveCompileCommand() {
+  fileinfo* file = openTmpFile(compileCommandFilename, "r");
+  char buf[4096];
+  fgets(buf, sizeof(buf), file->fptr);
+  compileCommand = astr(buf);
+  closefile(file);
+}
+
 static void genConfigGlobalsAndAbout() {
   GenInfo* info = gGenInfo;
 
@@ -1179,6 +1187,8 @@ static void genConfigGlobalsAndAbout() {
     fprintf(info->cfile, "\n#include <stdio.h>");
     fprintf(info->cfile, "\n#include \"chpltypes.h\"\n\n");
   }
+
+  retrieveCompileCommand();
 
   genGlobalString("chpl_compileCommand", compileCommand);
   genGlobalString("chpl_compileVersion", compileVersion);

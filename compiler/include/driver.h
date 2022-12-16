@@ -267,6 +267,7 @@ extern const char* gGpuSdkPath;
 extern char stopAfterPass[128];
 
 // code generation strings
+extern const char* compileCommandFilename;
 extern const char* compileCommand;
 extern char compileVersion[64];
 

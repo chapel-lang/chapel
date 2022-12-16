@@ -299,6 +299,7 @@ bool preserveInlinedLineNumbers = false;
 
 char stopAfterPass[128];
 
+const char* compileCommandFilename = "compileCommand.tmp";
 const char* compileCommand = NULL;
 char compileVersion[64];
 
@@ -560,7 +561,7 @@ static void setupChplLLVM(void) {
 #endif
 }
 
-static void recordCodeGenStrings(int argc, char* argv[]) {
+static void saveCompileCommand(int argc, char* argv[]) {
   compileCommand = astr("chpl ");
   // WARNING: This does not handle arbitrary sequences of escaped characters
   //  in string arguments
@@ -585,6 +586,15 @@ static void recordCodeGenStrings(int argc, char* argv[]) {
     if (arg)
       compileCommand = astr(compileCommand, arg, " ");
   }
+
+  // save compile command to file for later use in codegen
+  fileinfo* file = openTmpFile(compileCommandFilename, "w");
+  fprintf(file->fptr, "%s", compileCommand);
+  closefile(file);
+}
+
+static void recordCodeGenStrings(int argc, char* argv[]) {
+  saveCompileCommand(argc, argv);
   get_version(compileVersion, sizeof(compileVersion));
 }
 
@@ -1975,7 +1985,9 @@ int main(int argc, char* argv[]) {
 
     setupModulePaths();
 
-    recordCodeGenStrings(argc, argv);
+    if (!driverInSubInvocation) {
+      recordCodeGenStrings(argc, argv);
+    }
   } // astlocMarker scope
 
   // We print things (--help*, --copyright, etc.) before validating
