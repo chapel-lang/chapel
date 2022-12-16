@@ -195,12 +195,12 @@ void runPasses(PhaseTracker& tracker) {
     }
 
     // Break early if this is a parse-only run
-    if (fParseOnly ==  true && strcmp(sPassList[i].name, "checkParsed") == 0) {
+    if (fParseOnly && strcmp(sPassList[i].name, "checkParsed") == 0) {
       break;
     }
 
     // Breaks early if the user specified to stop after this pass
-    if (stopAfterPass[0] != '\0' && strcmp(sPassList[i].name, stopAfterPass) == 0) {
+    if (stopAfterPass[0] && strcmp(sPassList[i].name, stopAfterPass) == 0) {
       break;
     }
   }

@@ -2012,18 +2012,27 @@ int main(int argc, char* argv[]) {
   if (!fDoMonolithic && !driverInSubInvocation) {
     // treat 'chpl' as a driver, re-invoking itself with flags that trigger
     // components of the actual compilation work to be performed
-
     int status = 0;
+
     // initialize resources that need to be carried over between invocations
     ensureTmpDirExists();
+
     // invoke front- and mid-end
     if ((status = runCompilation(argc, argv)) != 0) {
       clean_exit(status);
     }
-    // invoke back-end
-    if ((status = runBackend(argc, argv)) != 0) {
-      clean_exit(status);
+
+    // skip backend if the compile command does not require it
+    bool shouldSkipBackend =
+        fParseOnly ||
+        (stopAfterPass[0] && strcmp(stopAfterPass, "makeBinary") != 0);
+    if (!shouldSkipBackend) {
+      // invoke back-end
+      if ((status = runBackend(argc, argv)) != 0) {
+        clean_exit(status);
+      }
     }
+
     // clean up shared resources
     deleteTmpDir();
     clean_exit(status);
