@@ -690,9 +690,10 @@ module DefaultRectangular {
                                        rank=rank,
                                        idxType=idxType,
                                        stridable=stridable,
-                                       /* this means consider elements
-                                          already initialized */
-                                       initElts=true,
+                                       // consider the elements already inited
+                                       initElts=false,
+                                       // but the array should deinit them
+                                       deinitElts=true,
                                        dom=_to_unmanaged(this),
                                        data=data);
     }
@@ -1034,6 +1035,7 @@ module DefaultRectangular {
               dom:unmanaged DefaultRectangularDom(rank=rank, idxType=idxType,
                                                   stridable=stridable),
               param initElts = true,
+              param deinitElts = initElts,
               data:_ddata(eltType) = nil,
               externArr = false,
               _borrowed = false,
@@ -1046,7 +1048,7 @@ module DefaultRectangular {
       this.externArr = externArr;
       this._borrowed = _borrowed;
       this.callPostAlloc = false;
-      this.deinitElts = initElts;
+      this.deinitElts = deinitElts;
 
       this.complete();
       this.setupFieldsAndAllocate(initElts);
