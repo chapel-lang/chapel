@@ -32,9 +32,15 @@
 // order their compilation stages occur in.
 
 /* begin parser errors */
+// Bison* errors are reported by the Bison parser to yyerror
+PARSER_ERROR_CLASS(BisonMemoryExhausted)
+PARSER_SYNTAX_CLASS(BisonSyntaxError, std::string)
+PARSER_ERROR_CLASS(BisonUnknownError, std::string, std::string)
 PARSER_SYNTAX_CLASS(CannotAttachPragmas, const uast::AstNode*)
+PARSER_SYNTAX_CLASS(CommentEOF, Location, Location)
 PARSER_SYNTAX_CLASS(ExceptOnlyInvalidExpr,
                     uast::VisibilityClause::LimitationKind)
+PARSER_SYNTAX_CLASS(ExternUnclosedPair, std::string)
 PARSER_SYNTAX_CLASS(InvalidIndexExpr)
 PARSER_SYNTAX_CLASS(InvalidNewForm, const uast::AstNode*)
 PARSER_SYNTAX_CLASS(InvalidNumericLiteral, std::string)
@@ -47,18 +53,8 @@ PARSER_ERROR_CLASS(ParseErr, std::string)
 PARSER_SYNTAX_CLASS(ParseSyntax, std::string)
 PARSER_WARNING_CLASS(PreIncDecOp, bool)
 PARSER_ERROR_CLASS(RecordInheritanceNotSupported, std::string)
-PARSER_SYNTAX_CLASS(UseImportNeedsModule, bool)
-/* begin Bison-specific parser errors */
-// Bison* errors are reported by the Bison parser to yyerror
-PARSER_ERROR_CLASS(BisonMemoryExhausted)
-PARSER_SYNTAX_CLASS(BisonSyntaxError, std::string)
-PARSER_ERROR_CLASS(BisonUnknownError, std::string, std::string)
-/* end Bison-specific parser errors */
-/* begin lexer-specific parser errors */
-PARSER_SYNTAX_CLASS(CommentEOF, Location, Location)
-PARSER_SYNTAX_CLASS(ExternUnclosedPair, std::string)
 PARSER_SYNTAX_CLASS(StringLiteralEOF, char, int)
-/* end lexer-specific parser errors */
+PARSER_SYNTAX_CLASS(UseImportNeedsModule, bool)
 /* end parser errors */
 
 /* begin post-parse-checks errors */
@@ -133,4 +129,3 @@ ERROR_CLASS(UseImportUnknownSym, const uast::VisibilityClause*,
 ERROR_CLASS(UseOfLaterVariable, const uast::AstNode*, ID)
 ERROR_CLASS(ValueUsedAsType, const uast::AstNode*, types::QualifiedType)
 /* end resolution errors */
-
