@@ -65,12 +65,20 @@ struct CallInitDeinit : VarScopeVisitor {
       elidedCopyFromIds(elidedCopyFromIds)
   { }
 
+  void analyzeReturnedExpr(ResolvedExpression& re,
+                           bool& needsCopyOrConv,
+                           ID& skipDeinitId,
+                           RV& rv);
   bool isCallProducingValue(const AstNode* rhsAst,
                             const QualifiedType& rhsType,
                             RV& rv);
 
   void recordInitializationOrder(VarFrame* frame, ID varId);
   void checkUseOfDeinited(const AstNode* useAst, ID varId);
+  bool isInitedAnyFrame(ID varId);
+  void processDeinitsForReturn(const AstNode* atAst,
+                               ID skipVarId,
+                               RV& rv);
   void processDeinitsAndPropagate(VarFrame* frame, VarFrame* parent, RV& rv);
 
   void resolveDefaultInit(const VarLikeDecl* ast, RV& rv);
@@ -161,6 +169,60 @@ bool CallInitDeinit::isCallProducingValue(const AstNode* rhsAst,
   return rv.byAst(rhsAst).toId().isEmpty() && !isRef(rhsType.kind());
 }
 
+void CallInitDeinit::analyzeReturnedExpr(ResolvedExpression& re,
+                                         bool& needsCopyOrConv,
+                                         ID& skipDeinitId,
+                                         RV& rv) {
+  bool fnReturnsRegularValue = false;
+  if (resolver.symbol) {
+    if (auto inFn = resolver.symbol->toFunction()) {
+      switch (inFn->returnIntent()) {
+        case Function::DEFAULT_RETURN_INTENT:
+        case Function::CONST:
+          fnReturnsRegularValue = true;
+          break;
+        case Function::CONST_REF:
+        case Function::REF:
+        case Function::PARAM:
+        case Function::TYPE:
+          // leave returnsByValue false
+          break;
+      }
+    }
+  }
+
+  if (fnReturnsRegularValue) {
+    ID toId = re.toId();
+    if (!toId.isEmpty()) {
+      if (resolver.symbol->id().contains(toId)) {
+        if (isValue(re.type().kind())) {
+          skipDeinitId = toId;
+        } else {
+          // returning a local reference by value
+          needsCopyOrConv = true;
+        }
+      } else {
+        // returning e.g. a module-scope variable by value
+        needsCopyOrConv = true;
+      }
+    } else {
+      // it wasn't a simple variable
+      // consider the type of the returned expression.
+      auto kind = re.type().kind();
+      if (isValue(kind)) {
+        // no action required to return a value expression by value
+        // e.g. return makeSomeRecord();
+      } else if (isRef(kind)) {
+        // need to copy if we are returning a reference by value
+        // e.g. return someReference;
+        needsCopyOrConv = true;
+      } else {
+        // do nothing for other types (PARAM, TYPE, FUNCTION, etc)
+      }
+    }
+  }
+}
+
 void CallInitDeinit::checkUseOfDeinited(const AstNode* useAst, ID varId) {
   // check that the variable is not dead
   ssize_t n = scopeStack.size();
@@ -174,18 +236,71 @@ void CallInitDeinit::checkUseOfDeinited(const AstNode* useAst, ID varId) {
   }
 }
 
+bool CallInitDeinit::isInitedAnyFrame(ID varId) {
+  ssize_t n = scopeStack.size();
+  for (ssize_t i = n - 1; i >= 0; i--) {
+    VarFrame* frame = scopeStack[i].get();
+    if (frame->initedVars.count(varId) > 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+
+void CallInitDeinit::processDeinitsForReturn(const AstNode* atAst,
+                                             ID skipVarId,
+                                             RV& rv) {
+  std::set<ID> initedAnyFrame;
+  std::set<ID> deinitedAnyFrame;
+
+  ssize_t n = scopeStack.size();
+
+  // compute initedAnyFrame and deinitedAnyFrame
+  // * don't deinit if it hasn't been inited yet
+  // * don't deinit if it was moved from so already deinited
+  for (ssize_t i = 0; i < n; i++) {
+    VarFrame* frame = scopeStack[i].get();
+    initedAnyFrame.insert(frame->initedVars.begin(),
+                          frame->initedVars.end());
+    deinitedAnyFrame.insert(frame->deinitedVars.begin(),
+                            frame->deinitedVars.end());
+  }
+
+  for (ssize_t i = n - 1; i >= 0; i--) {
+    VarFrame* frame = scopeStack[i].get();
+    ssize_t nv = frame->localsAndDefers.size();
+    for (ssize_t j = nv - 1; j >= 0; j--) {
+      ID varOrDeferId = frame->localsAndDefers[j];
+
+      if (varOrDeferId != skipVarId &&
+          initedAnyFrame.count(varOrDeferId) > 0 &&
+          deinitedAnyFrame.count(varOrDeferId) == 0) {
+
+        ResolvedExpression& re = rv.byId(varOrDeferId);
+        QualifiedType type = re.type();
+
+        // don't deinit reference variables
+        if (isValue(type.kind())) {
+          resolveDeinit(atAst, varOrDeferId, type, rv);
+        }
+
+        deinitedAnyFrame.insert(varOrDeferId);
+      }
+    }
+  }
+}
+
 void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
                                                 VarFrame* parent,
                                                 RV& rv) {
   ssize_t n = frame->localsAndDefers.size();
   for (ssize_t i = n - 1; i >= 0; i--) {
     ID varOrDeferId = frame->localsAndDefers[i];
-
     // don't deinit it if it was already destroyed by moving from it
     if (frame->deinitedVars.count(varOrDeferId) == 0) {
       ResolvedExpression& re = rv.byId(varOrDeferId);
       QualifiedType type = re.type();
-
       // don't deinit reference variables
       if (isValue(type.kind())) {
         resolveDeinit(frame->scopeAst, varOrDeferId, type, rv);
@@ -503,12 +618,17 @@ void CallInitDeinit::processInit(VarFrame* frame,
   //  * a '=' call
   //  * a VarLikeDecl
   //  * an actual passed by 'in' intent
+  //  * a Return or Yield
   const AstNode* rhsAst = nullptr;
   auto op = ast->toOpCall();
   if (op != nullptr&& op->op() == USTR("=")) {
     rhsAst = op->actual(1);
   } else if (auto vd = ast->toVarLikeDecl()) {
     rhsAst = vd->initExpression();
+  } else if (auto r = ast->toReturn()) {
+    rhsAst = r->value();
+  } else if (auto y = ast->toYield()) {
+    rhsAst = y->value();
   } else {
     rhsAst = ast;
   }
@@ -761,6 +881,34 @@ void CallInitDeinit::handleInoutFormal(const FnCall* ast,
 void CallInitDeinit::handleReturnOrThrow(const uast::AstNode* ast, RV& rv) {
   // check for use of deinited variables
   processMentions(ast, rv);
+
+  const AstNode* retValue = nullptr;
+  if (auto rtn = ast->toReturn()) {
+    retValue = rtn->value();
+  } else if (auto y = ast->toYield()) {
+    retValue = y->value();
+  }
+
+  ID skipDeinitId;
+
+  if (retValue) {
+    bool needsCopyOrConv = false;
+    ResolvedExpression& re = rv.byAst(retValue);
+
+    // decide what needs to happen for this return
+    analyzeReturnedExpr(re, needsCopyOrConv, skipDeinitId, rv);
+
+    if (needsCopyOrConv) {
+      QualifiedType fnRetType = re.type();
+      // TODO: the above is a wrong simplification
+      // consider the function's declared or inferred return type instead.
+
+      // init the return value from the return expression
+      processInit(currentFrame(), ast, fnRetType, re.type(), rv);
+    }
+  }
+
+  processDeinitsForReturn(ast, skipDeinitId, rv);
 }
 void CallInitDeinit::handleConditional(const Conditional* cond, RV& rv) {
   // Any outer variables inited in the 'then' frame can be propagated up
@@ -770,8 +918,10 @@ void CallInitDeinit::handleConditional(const Conditional* cond, RV& rv) {
   VarFrame* elseFrame = currentElseFrame();
 
   // process end-of-block deinits in then/else blocks and then propagate
-  processDeinitsAndPropagate(thenFrame, frame, rv);
-  if (elseFrame) {
+  if (!thenFrame->returnsOrThrows) {
+    processDeinitsAndPropagate(thenFrame, frame, rv);
+  }
+  if (elseFrame && !elseFrame->returnsOrThrows) {
     processDeinitsAndPropagate(elseFrame, frame, rv);
   }
 
@@ -785,7 +935,9 @@ void CallInitDeinit::handleTry(const Try* t, RV& rv) {
   int nCatch = currentNumCatchFrames();
   for (int i = 0; i < nCatch; i++) {
     VarFrame* catchFrame = currentCatchFrame(i);
-    processDeinitsAndPropagate(catchFrame, frame, rv);
+    if (!catchFrame->returnsOrThrows) {
+      processDeinitsAndPropagate(catchFrame, frame, rv);
+    }
   }
 
   // propagate information out of the Try itself

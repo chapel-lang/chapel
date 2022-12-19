@@ -848,6 +848,174 @@ static void test9c() {
     });
 }
 
+// value return from a local variable's last mention (no return type)
+static void test10a() {
+  testActions("test10a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() {
+          const x:R;
+          return x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",        ""},
+      {AssociatedAction::DEINIT,       "M.test@4", "x"} // but dead code
+    });
+}
+
+// value return from a local variable's last mention (declared return type)
+static void test10b() {
+  testActions("test10b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() : R {
+          const x:R;
+          return x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",        ""},
+      // end of block actions -- note that these are dead code
+      {AssociatedAction::DEINIT,       "M.test@5", "x"}
+    });
+}
+
+// similar, but checks that other locals are deinited at return
+static void test10c() {
+  testActions("test10c",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() : R {
+          var x:R;
+          var y:R;
+          return x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",        ""},
+      {AssociatedAction::DEFAULT_INIT, "y",        ""},
+      {AssociatedAction::DEINIT,       "M.test@6", "y"}, // at return
+      // end of block actions -- note that these are dead code
+      {AssociatedAction::DEINIT,       "M.test@7", "y"},
+      {AssociatedAction::DEINIT,       "M.test@7", "x"}
+    });
+}
+
+// similar, but returns in a conditional
+static void test10d() {
+  testActions("test10d",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        config const cond = true;
+
+        proc test() : R {
+          var x:R;
+          var y:R;
+          if cond {
+            return x;
+          }
+          return new R();
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",         ""},
+      {AssociatedAction::DEFAULT_INIT, "y",         ""},
+      // for 'return x'
+      {AssociatedAction::DEINIT,       "M.test@7",  "y"},
+      // after that
+      {AssociatedAction::NEW_INIT,     "M.test@12", ""},
+      // for 'return new R()'
+      {AssociatedAction::DEINIT,       "M.test@13", "y"},
+      {AssociatedAction::DEINIT,       "M.test@13", "x"},
+      // end of block actions -- note that these are dead code
+      {AssociatedAction::DEINIT,       "M.test@14", "y"},
+      {AssociatedAction::DEINIT,       "M.test@14", "x"}
+    });
+}
+
+// return a module-scope variable, inferred return type
+static void test11a() {
+  testActions("test11a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        var modScope: R;
+
+        proc test() {
+          return modScope;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::COPY_INIT,    "M.test@1",  ""}
+    });
+}
+
+// return a module-scope variable, declared return type
+static void test11b() {
+  testActions("test11b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        var modScope: R;
+
+        proc test() : R {
+          return modScope;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::COPY_INIT,    "M.test@2",  ""}
+    });
+}
+
+
+// TODO: test a function returning by ref
+
+// TODO: test with a return before a split-inited var is initialized
+
+// TODO: yield
+
+// TODO: defer
 
 int main() {
   test1();
@@ -883,6 +1051,14 @@ int main() {
   test9a();
   test9b();
   test9c();
+
+  test10a();
+  test10b();
+  test10c();
+  test10d();
+
+  test11a();
+  test11b();
 
   return 0;
 }
