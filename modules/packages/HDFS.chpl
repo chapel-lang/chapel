@@ -495,7 +495,7 @@ module HDFS {
         var rc = hdfsPread(file.fs.hfs, file.hfile, offset, ptr, len:int(32));
         if rc == 0 {
           // end of file
-          return EEOF;
+          return EIO;
         } else if rc < 0 {
           // error
           return qio_mkerror_errno();
