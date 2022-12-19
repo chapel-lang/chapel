@@ -188,128 +188,150 @@ struct ReturnTypeInferrer {
       resolutionById(resolvedFn.resolutionById()) {
   }
 
-  bool enter(const Function* fn) {
-    return false;
-  }
-  void exit(const Function* fn) {
-  }
+  bool enter(const Function* fn);
+  void exit(const Function* fn);
 
-  void checkReturn(const AstNode* inExpr, const QualifiedType& qt) {
-    if (qt.type()->isVoidType()) {
-      if (returnIntent == Function::REF) {
-        context->error(inExpr, "Cannot return void with ref return intent");
-      } else if (returnIntent == Function::PARAM) {
-        context->error(inExpr, "Cannot return void with param return intent");
-      } else if (returnIntent == Function::TYPE) {
-        context->error(inExpr, "Cannot return void with type return intent");
-      }
-    } else {
-      bool ok = true;
-      if ((qt.isType() || qt.isParam()) &&
-          (returnIntent == Function::CONST_REF ||
-           returnIntent == Function::REF)) {
-        ok = false;
-      } else if (returnIntent == Function::TYPE && !qt.isType()) {
-        ok = false;
-      } else if (returnIntent == Function::PARAM && !qt.isParam()) {
-        ok = false;
-      }
-      if (!ok) {
-        context->error(inExpr, "cannot return it with provided return intent");
-      }
-    }
-  }
+  void checkReturn(const AstNode* inExpr, const QualifiedType& qt);
+  void noteVoidReturnType(const AstNode* inExpr);
+  void noteReturnType(const AstNode* expr, const AstNode* inExpr);
 
-  void noteVoidReturnType(const AstNode* inExpr) {
-    auto voidType = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
-    returnedTypes.push_back(voidType);
+  QualifiedType returnedType();
 
-    checkReturn(inExpr, voidType);
-  }
-  void noteReturnType(const AstNode* expr, const AstNode* inExpr) {
-    QualifiedType qt = resolutionById.byAst(expr).type();
+  bool enter(const Conditional* cond);
+  void exit(const Conditional* cond);
 
-    QualifiedType::Kind kind = qt.kind();
-    const Type* type = qt.type();
-
-    // Functions that return tuples need to return
-    // a value tuple (for value returns and type returns)
-    // or a reference to a value tuple (for ref/const ref returns)
-    if (type && type->isTupleType()) {
-      auto tt = type->toTupleType();
-      type = tt->toValueTuple(context);
-      qt = QualifiedType(kind, type);
-    }
-
-    checkReturn(inExpr, qt);
-    returnedTypes.push_back(std::move(qt));
-  }
-
-  QualifiedType returnedType() {
-    if (returnedTypes.size() == 0) {
-      return QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
-    } else {
-      auto retType = commonType(context, returnedTypes,
-                                (QualifiedType::Kind) returnIntent);
-      if (!retType) {
-        // Couldn't find common type, so return type is incorrect.
-        context->error(astForErr, "could not determine return type for function");
-        retType = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
-      }
-      return retType.getValue();
-    }
-  }
-
-  bool enter(const Conditional* cond) {
-    auto condition = cond->condition();
-    CHPL_ASSERT(condition != nullptr);
-    const ResolvedExpression& r = resolutionById.byAst(condition);
-    if (r.type().isParamTrue()) {
-      auto then = cond->thenBlock();
-      CHPL_ASSERT(then != nullptr);
-      then->traverse(*this);
-      return false;
-    } else if (r.type().isParamFalse()) {
-      auto else_ = cond->elseBlock();
-      if (else_) {
-        else_->traverse(*this);
-      }
-      return false;
-    }
-    return true;
-  }
-  void exit(const Conditional* cond){
-  }
-
-  bool enter(const Return* ret) {
-    if (const AstNode* expr = ret->value()) {
-      noteReturnType(expr, ret);
-      if (const Function* fn = astForErr->toFunction()) {
-        if (fn->name() == "init" && fn->isMethod()) {
-          context->error(ret, "initializers can only return 'void'");
-        }
-      }
-    } else {
-      noteVoidReturnType(ret);
-    }
-    return false;
-  }
-  void exit(const Return* ret) {
-  }
-
-  bool enter(const Yield* ret) {
-    noteReturnType(ret->value(), ret);
-    return false;
-  }
-  void exit(const Yield* ret) {
-  }
-
-  bool enter(const AstNode* ast) {
-    return true;
-  }
-  void exit(const AstNode* ast) {
-  }
+  bool enter(const Return* ret);
+  void exit(const Return* ret);
+  bool enter(const Yield* ret);
+  void exit(const Yield* ret);
+  bool enter(const AstNode* ast);
+  void exit(const AstNode* ast);
 };
+
+bool ReturnTypeInferrer::enter(const Function* fn) {
+  return false;
+}
+void ReturnTypeInferrer::exit(const Function* fn) {
+}
+
+void ReturnTypeInferrer::checkReturn(const AstNode* inExpr,
+                                     const QualifiedType& qt) {
+  if (qt.type()->isVoidType()) {
+    if (returnIntent == Function::REF) {
+      context->error(inExpr, "Cannot return void with ref return intent");
+    } else if (returnIntent == Function::PARAM) {
+      context->error(inExpr, "Cannot return void with param return intent");
+    } else if (returnIntent == Function::TYPE) {
+      context->error(inExpr, "Cannot return void with type return intent");
+    }
+  } else {
+    bool ok = true;
+    if ((qt.isType() || qt.isParam()) &&
+        (returnIntent == Function::CONST_REF ||
+         returnIntent == Function::REF)) {
+      ok = false;
+    } else if (returnIntent == Function::TYPE && !qt.isType()) {
+      ok = false;
+    } else if (returnIntent == Function::PARAM && !qt.isParam()) {
+      ok = false;
+    }
+    if (!ok) {
+      context->error(inExpr, "cannot return it with provided return intent");
+    }
+  }
+}
+
+void ReturnTypeInferrer::noteVoidReturnType(const AstNode* inExpr) {
+  auto voidType = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
+  returnedTypes.push_back(voidType);
+
+  checkReturn(inExpr, voidType);
+}
+void ReturnTypeInferrer::noteReturnType(const AstNode* expr,
+                                        const AstNode* inExpr) {
+  QualifiedType qt = resolutionById.byAst(expr).type();
+
+  QualifiedType::Kind kind = qt.kind();
+  const Type* type = qt.type();
+
+  // Functions that return tuples need to return
+  // a value tuple (for value returns and type returns)
+  // or a reference to a value tuple (for ref/const ref returns)
+  if (type && type->isTupleType()) {
+    auto tt = type->toTupleType();
+    type = tt->toValueTuple(context);
+    qt = QualifiedType(kind, type);
+  }
+
+  checkReturn(inExpr, qt);
+  returnedTypes.push_back(std::move(qt));
+}
+
+QualifiedType ReturnTypeInferrer::returnedType() {
+  if (returnedTypes.size() == 0) {
+    return QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
+  } else {
+    auto retType = commonType(context, returnedTypes,
+                              (QualifiedType::Kind) returnIntent);
+    if (!retType) {
+      // Couldn't find common type, so return type is incorrect.
+      context->error(astForErr, "could not determine return type for function");
+      retType = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
+    }
+    return retType.getValue();
+  }
+}
+
+bool ReturnTypeInferrer::enter(const Conditional* cond) {
+  auto condition = cond->condition();
+  CHPL_ASSERT(condition != nullptr);
+  const ResolvedExpression& r = resolutionById.byAst(condition);
+  if (r.type().isParamTrue()) {
+    auto then = cond->thenBlock();
+    CHPL_ASSERT(then != nullptr);
+    then->traverse(*this);
+    return false;
+  } else if (r.type().isParamFalse()) {
+    auto else_ = cond->elseBlock();
+    if (else_) {
+      else_->traverse(*this);
+    }
+    return false;
+  }
+  return true;
+}
+void ReturnTypeInferrer::exit(const Conditional* cond){
+}
+
+bool ReturnTypeInferrer::enter(const Return* ret) {
+  if (const AstNode* expr = ret->value()) {
+    noteReturnType(expr, ret);
+    if (const Function* fn = astForErr->toFunction()) {
+      if (fn->name() == "init" && fn->isMethod()) {
+        context->error(ret, "initializers can only return 'void'");
+      }
+    }
+  } else {
+    noteVoidReturnType(ret);
+  }
+  return false;
+}
+void ReturnTypeInferrer::exit(const Return* ret) {
+}
+
+bool ReturnTypeInferrer::enter(const Yield* ret) {
+  noteReturnType(ret->value(), ret);
+  return false;
+}
+void ReturnTypeInferrer::exit(const Yield* ret) {
+}
+
+bool ReturnTypeInferrer::enter(const AstNode* ast) {
+  return true;
+}
+void ReturnTypeInferrer::exit(const AstNode* ast) {
+}
+
 
 // For a class type construction, returns a BasicClassType
 static const Type* const&
