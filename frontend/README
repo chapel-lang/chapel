@@ -105,3 +105,49 @@ So we have e.g. NumericLiteral.h / NumericLiteral.cpp.
 In contrast, .h and .cpp files defining a collection of things that
 aren't a specific type should go into a file using lower case and dashes.
 For example, we have scope-queries.h and scope-queries.cpp.
+
+### error system policy and recommendations
+
+Dyno is home to the new error system, which is inteded to provide friendlier,
+more helpful, and better looking error messages than the production compiler
+currently does. This is accomplished in part by letting the C++ programmer
+working on Dyno create specialized sub-classes of `ErrorBase`, which have
+customized output functionality and can store additional context about the
+error. For example, an error message class might store the type of a variable,
+a reference to a variable's declaration, etc. However, Dyno also provides a
+simpler error reporting mechanism, via `Context::error` and similar methods,
+which does not require creating a new class. This means that a Dyno programmer
+is faced with a few choices when they need to report an error.
+
+#### When to use simple errors over class-based errors?
+In general, we want to avoid pointless boilerplate. Thus, if your error's
+output format is no different than the "usual" format for simple errors
+(that is, if the error you need to report will simply print the error message
+and the code location, without any additional help or information), it doesn't
+make sense to duplicate that functionality in a new error class. Thus, you
+should opt for using a simple (class-less) error.
+
+On the other hand, you probably want a class-based error if you want to do any
+of the following:
+* Specialize the error message for particular situations (e.g., "can't use
+  `new owned` for non-class datatypes" in general, and "can't use
+  `new owned` for records, which are not the same as classes").
+* Print additional help for the error message (e.g., "did you mean to write X?").
+* Show code from more than the default location, or not show any code at all.
+
+#### One class or many classes?
+Sometimes, many related errors are reported in the same place in the code.
+The error are typically similar, and might even require the same "contextual
+information". So, where do you draw the line between specializing error messages
+and creating new classes?
+
+The _heuristic_ we have been using is "if the same code reports many versions
+of the error, make it one class". For instance, we might report an error if
+an actual has a type incompatible with a formal; the error is reported if
+a value is passed to a type, a type is passed to a value, or a param is passed
+to a type. Since the same code, within a few lines of each other, reports
+each version of this error, it seems best to make the error a single class.
+In this case, the error message is specialized in the `write` method. Beyond
+that, it seems to make sense to make separate classes for different types of
+errors. Note that this is a heuristic; it's not clear if there is a hard rule
+to this question.
