@@ -23,5 +23,5 @@ with open(os.path.join(args.destination, 'COPYRIGHT'), 'w') as f:
     for line in copyright_contents:
       line = line.replace('"','')
       line = line.strip("\n")
-      line = f'"{line}\\n"\n'
+      line = '"{}\\n"\n'.format(line)
       f.write(line)
