@@ -977,10 +977,10 @@ module Curl {
           return cc.saved_error;
       }
 
-      // Return EEOF if the connection is no longer running
+      // Return EIO if the connection is no longer running
       space = qio_channel_nbytes_available_unlocked(ch);
       if cc.running_handles == 0 && space < amt then
-        return EEOF;
+        return EIO;
 
       return 0;
     }
@@ -1119,11 +1119,11 @@ module Curl {
           return cc.saved_error;
       }
 
-      // Return EEOF if the connection is no longer running
+      // Return EIO if the connection is no longer running
       space = qio_channel_nbytes_write_behind_unlocked(ch);
       if cc.running_handles == 0 && space > target_space {
-        writeln("RETURNING EOF");
-        return EEOF;
+        writeln("RETURNING EIO");
+        return EIO;
       }
 
       return 0;
