@@ -5232,7 +5232,7 @@ proc _channel.writebits(v:integral, nbits:integral) throws {
 */
 proc fileWriter.writeString(s: string, size = s.size) throws {
   // TODO: use a separate implementation when `fileWriter`s start supporting
-  //        non UTF-8 charachter encodings
+  //        non UTF-8 character encodings
   try this.writeBinary(s, size);
 }
 
