@@ -71,6 +71,33 @@ static types::QualifiedType decayToValue(const types::QualifiedType& qt) {
 
 /* begin parser errors */
 
+void ErrorBisonMemoryExhausted::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc, "memory exhausted while parsing.");
+}
+
+void ErrorBisonSyntaxError::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto nearestToken = std::get<std::string>(info);
+  wr.heading(kind_, type_, loc,
+             (nearestToken.empty() ? "(no token given)"
+                                   : "near '" + nearestToken + "'"),
+             ":");
+  wr.code(loc);
+}
+
+void ErrorBisonUnknownError::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto errorMessage = std::get<1>(info);
+  auto nearestToken = std::get<2>(info);
+  wr.heading(kind_, type_, loc,
+             "unknown error from Bison parser: ", errorMessage, ".");
+  if (!nearestToken.empty()) {
+    wr.note(loc, "Nearest token when error was encountered: '", nearestToken,
+            "'");
+  }
+}
+
 void ErrorCannotAttachPragmas::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto stmt = std::get<const uast::AstNode*>(info);
@@ -83,12 +110,34 @@ void ErrorCannotAttachPragmas::write(ErrorWriterBase& wr) const {
       "attached to them.");
 }
 
+void ErrorCommentEOF::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<0>(info);
+  auto startLoc = std::get<1>(info);
+  auto nestedLoc = std::get<2>(info);
+  wr.heading(kind_, type_, loc, "end-of-file in comment.");
+  wr.note(startLoc, "unterminated comment here:");
+  wr.code(startLoc);
+  if (!nestedLoc.isEmpty()) {
+    wr.note(nestedLoc, "nested comment here:");
+    wr.code(nestedLoc);
+  }
+}
+
 void ErrorExceptOnlyInvalidExpr::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto limitationKind = std::get<uast::VisibilityClause::LimitationKind>(info);
   wr.heading(kind_, type_, loc, "incorrect expression in '", limitationKind,
              "' list, identifier expected.");
   wr.message("In the '", limitationKind, "' list here:");
+  wr.code(loc);
+}
+
+void ErrorExternUnclosedPair::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto pairSymbol = std::get<std::string>(info);
+  wr.heading(kind_, type_, loc, "missing closing ", pairSymbol,
+             " symbol in extern block.");
+  wr.message("In this extern block:");
   wr.code(loc);
 }
 
@@ -197,70 +246,6 @@ void ErrorRecordInheritanceNotSupported::write(ErrorWriterBase& wr) const {
       "https://github.com/chapel-lang/chapel/issues/6851.");
 }
 
-void ErrorUseImportNeedsModule::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto isImport = std::get<bool>(info);
-  std::string useOrImport = isImport ? "import" : "use";
-  wr.heading(kind_, type_, loc, "'", useOrImport,
-             "' statements must refer to module",
-             (isImport ? "" : " or 'enum'"), " symbols.");
-  wr.message("In the following '", useOrImport, "' statement:");
-  wr.code(loc);
-}
-
-/* begin Bison-specific parser errors */
-void ErrorBisonMemoryExhausted::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc, "memory exhausted while parsing.");
-}
-
-void ErrorBisonSyntaxError::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto nearestToken = std::get<std::string>(info);
-  wr.heading(kind_, type_, loc,
-             (nearestToken.empty() ? "(no token given)"
-                                   : "near '" + nearestToken + "'"),
-             ":");
-  wr.code(loc);
-}
-
-void ErrorBisonUnknownError::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto errorMessage = std::get<1>(info);
-  auto nearestToken = std::get<2>(info);
-  wr.heading(kind_, type_, loc,
-             "unknown error from Bison parser: ", errorMessage, ".");
-  if (!nearestToken.empty()) {
-    wr.note(loc, "Nearest token when error was encountered: '", nearestToken,
-            "'");
-  }
-}
-
-/* end Bison-specific parser errors */
-
-/* begin lexer-specific parser errors */
-void ErrorCommentEOF::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<0>(info);
-  auto startLoc = std::get<1>(info);
-  auto nestedLoc = std::get<2>(info);
-  wr.heading(kind_, type_, loc, "end-of-file in comment.");
-  wr.note(startLoc, "unterminated comment here:");
-  wr.code(startLoc);
-  if (!nestedLoc.isEmpty()) {
-    wr.note(nestedLoc, "nested comment here:");
-    wr.code(nestedLoc);
-  }
-}
-
-void ErrorExternUnclosedPair::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto pairSymbol = std::get<std::string>(info);
-  wr.heading(kind_, type_, loc, "missing closing ", pairSymbol,
-             " symbol in extern block.");
-  wr.message("In this extern block:");
-  wr.code(loc);
-}
-
 void ErrorStringLiteralEOF::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto startChar = std::get<char>(info);
@@ -273,7 +258,17 @@ void ErrorStringLiteralEOF::write(ErrorWriterBase& wr) const {
              " and must end with the same un-escaped delimiter.");
 }
 
-/* end lexer-specific parser errors */
+void ErrorUseImportNeedsModule::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto isImport = std::get<bool>(info);
+  std::string useOrImport = isImport ? "import" : "use";
+  wr.heading(kind_, type_, loc, "'", useOrImport,
+             "' statements must refer to module",
+             (isImport ? "" : " or 'enum'"), " symbols.");
+  wr.message("In the following '", useOrImport, "' statement:");
+  wr.code(loc);
+}
+
 /* end parser errors */
 
 /* begin post-parse-checks errors */
