@@ -24,6 +24,7 @@
 #include "chpl/framework/global-strings.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/ResolvedVisitor.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/disambiguation.h"
 #include "chpl/resolution/intents.h"
@@ -33,10 +34,6 @@
 #include "chpl/uast/all-uast.h"
 
 #include "Resolver.h"
-#include "call-init-deinit.h"
-#include "default-functions.h"
-#include "prims.h"
-#include "signature-checks.h"
 
 #include <cstdio>
 #include <set>
@@ -170,48 +167,55 @@ const CompositeType* helpGetTypeForDecl(Context* context,
 }
 
 struct ReturnTypeInferrer {
+  using RV = ResolvedVisitor<ReturnTypeInferrer>;
+
   // input
   Context* context;
   const AstNode* astForErr;
   Function::ReturnIntent returnIntent;
-  const ResolutionResultByPostorderID& resolutionById;
+  const Type* declaredReturnType;
 
   // output
   std::vector<QualifiedType> returnedTypes;
 
   ReturnTypeInferrer(Context* context,
-                     const AstNode* astForErr,
-                     const ResolvedFunction& resolvedFn)
+                     const Function* fn,
+                     const Type* declaredReturnType)
     : context(context),
-      astForErr(astForErr),
-      returnIntent(resolvedFn.returnIntent()),
-      resolutionById(resolvedFn.resolutionById()) {
+      astForErr(fn),
+      returnIntent(fn->returnIntent()),
+      declaredReturnType(declaredReturnType) {
   }
 
-  bool enter(const Function* fn);
-  void exit(const Function* fn);
+  void process(const uast::AstNode* symbol,
+               ResolutionResultByPostorderID& byPostorder);
 
   void checkReturn(const AstNode* inExpr, const QualifiedType& qt);
   void noteVoidReturnType(const AstNode* inExpr);
-  void noteReturnType(const AstNode* expr, const AstNode* inExpr);
+  void noteReturnType(const AstNode* expr, const AstNode* inExpr, RV& rv);
 
   QualifiedType returnedType();
 
-  bool enter(const Conditional* cond);
-  void exit(const Conditional* cond);
+  bool enter(const Function* fn, RV& rv);
+  void exit(const Function* fn, RV& rv);
 
-  bool enter(const Return* ret);
-  void exit(const Return* ret);
-  bool enter(const Yield* ret);
-  void exit(const Yield* ret);
-  bool enter(const AstNode* ast);
-  void exit(const AstNode* ast);
+  bool enter(const Conditional* cond, RV& rv);
+  void exit(const Conditional* cond, RV& rv);
+
+  bool enter(const Return* ret, RV& rv);
+  void exit(const Return* ret, RV& rv);
+
+  bool enter(const Yield* ret, RV& rv);
+  void exit(const Yield* ret, RV& rv);
+
+  bool enter(const AstNode* ast, RV& rv);
+  void exit(const AstNode* ast, RV& rv);
 };
 
-bool ReturnTypeInferrer::enter(const Function* fn) {
-  return false;
-}
-void ReturnTypeInferrer::exit(const Function* fn) {
+void ReturnTypeInferrer::process(const uast::AstNode* symbol,
+                                 ResolutionResultByPostorderID& byPostorder) {
+  ResolvedVisitor<ReturnTypeInferrer> rv(context, symbol, *this, byPostorder);
+  symbol->traverse(rv);
 }
 
 void ReturnTypeInferrer::checkReturn(const AstNode* inExpr,
@@ -248,8 +252,9 @@ void ReturnTypeInferrer::noteVoidReturnType(const AstNode* inExpr) {
   checkReturn(inExpr, voidType);
 }
 void ReturnTypeInferrer::noteReturnType(const AstNode* expr,
-                                        const AstNode* inExpr) {
-  QualifiedType qt = resolutionById.byAst(expr).type();
+                                        const AstNode* inExpr,
+                                        RV& rv) {
+  QualifiedType qt = rv.byAst(expr).type();
 
   QualifiedType::Kind kind = qt.kind();
   const Type* type = qt.type();
@@ -282,54 +287,56 @@ QualifiedType ReturnTypeInferrer::returnedType() {
   }
 }
 
-bool ReturnTypeInferrer::enter(const Conditional* cond) {
+bool ReturnTypeInferrer::enter(const Function* fn, RV& rv) {
+  return false;
+}
+void ReturnTypeInferrer::exit(const Function* fn, RV& rv) {
+}
+
+
+bool ReturnTypeInferrer::enter(const Conditional* cond, RV& rv) {
   auto condition = cond->condition();
   CHPL_ASSERT(condition != nullptr);
-  const ResolvedExpression& r = resolutionById.byAst(condition);
+  const ResolvedExpression& r = rv.byAst(condition);
   if (r.type().isParamTrue()) {
     auto then = cond->thenBlock();
     CHPL_ASSERT(then != nullptr);
-    then->traverse(*this);
+    then->traverse(rv);
     return false;
   } else if (r.type().isParamFalse()) {
     auto else_ = cond->elseBlock();
     if (else_) {
-      else_->traverse(*this);
+      else_->traverse(rv);
     }
     return false;
   }
   return true;
 }
-void ReturnTypeInferrer::exit(const Conditional* cond){
+void ReturnTypeInferrer::exit(const Conditional* cond, RV& rv) {
 }
 
-bool ReturnTypeInferrer::enter(const Return* ret) {
+bool ReturnTypeInferrer::enter(const Return* ret, RV& rv) {
   if (const AstNode* expr = ret->value()) {
-    noteReturnType(expr, ret);
-    if (const Function* fn = astForErr->toFunction()) {
-      if (fn->name() == "init" && fn->isMethod()) {
-        context->error(ret, "initializers can only return 'void'");
-      }
-    }
+    noteReturnType(expr, ret, rv);
   } else {
     noteVoidReturnType(ret);
   }
   return false;
 }
-void ReturnTypeInferrer::exit(const Return* ret) {
+void ReturnTypeInferrer::exit(const Return* ret, RV& rv) {
 }
 
-bool ReturnTypeInferrer::enter(const Yield* ret) {
-  noteReturnType(ret->value(), ret);
+bool ReturnTypeInferrer::enter(const Yield* ret, RV& rv) {
+  noteReturnType(ret->value(), ret, rv);
   return false;
 }
-void ReturnTypeInferrer::exit(const Yield* ret) {
+void ReturnTypeInferrer::exit(const Yield* ret, RV& rv) {
 }
 
-bool ReturnTypeInferrer::enter(const AstNode* ast) {
+bool ReturnTypeInferrer::enter(const AstNode* ast, RV& rv) {
   return true;
 }
-void ReturnTypeInferrer::exit(const AstNode* ast) {
+void ReturnTypeInferrer::exit(const AstNode* ast, RV& rv) {
 }
 
 
@@ -437,22 +444,149 @@ static QualifiedType computeTypeOfField(Context* context,
   return QualifiedType(QualifiedType::VAR, ErroneousType::get(context));
 }
 
-const QualifiedType& returnType(Context* context,
-                                const TypedFnSignature* sig,
-                                const PoiScope* poiScope) {
-  QUERY_BEGIN(returnType, context, sig, poiScope);
+static QualifiedType adjustForReturnIntent(uast::Function::ReturnIntent ri,
+                                           QualifiedType retType) {
 
+  QualifiedType::Kind kind = (QualifiedType::Kind) ri;
+  // adjust default / const return intent to 'var'
+  if (kind == QualifiedType::DEFAULT_INTENT ||
+      kind == QualifiedType::CONST_VAR) {
+    kind = QualifiedType::VAR;
+  }
+  return QualifiedType(kind, retType.type(), retType.param());
+}
+
+
+struct CountReturns {
+  // input
+  Context* context;
+
+  // output
+  int nReturnsWithValue = 0;
+  int nReturnsWithoutValue = 0;
+  const AstNode* firstWithValue = nullptr;
+  const AstNode* firstWithoutValue = nullptr;
+
+  CountReturns(Context* context)
+    : context(context) {
+  }
+
+  void countWithValue(const AstNode* ast);
+  void countWithoutValue(const AstNode* ast);
+
+  bool enter(const Function* fn);
+  void exit(const Function* fn);
+
+  bool enter(const Return* ret);
+  void exit(const Return* ret);
+
+  bool enter(const Yield* ret);
+  void exit(const Yield* ret);
+
+  bool enter(const AstNode* ast);
+  void exit(const AstNode* ast);
+};
+
+void CountReturns::countWithValue(const AstNode* ast) {
+  if (firstWithValue == nullptr) {
+    firstWithValue = ast;
+  }
+  nReturnsWithValue++;
+}
+
+void CountReturns::countWithoutValue(const AstNode* ast) {
+  if (firstWithoutValue == nullptr) {
+    firstWithoutValue = ast;
+  }
+  nReturnsWithoutValue++;
+}
+
+bool CountReturns::enter(const Function* fn) {
+  return false;
+}
+void CountReturns::exit(const Function* fn) {
+}
+
+bool CountReturns::enter(const Return* ret) {
+  if (ret->value() != nullptr) {
+    countWithValue(ret);
+  } else {
+    countWithoutValue(ret);
+  }
+  return false;
+}
+void CountReturns::exit(const Return* ret) {
+}
+
+bool CountReturns::enter(const Yield* ret) {
+  if (ret->value() != nullptr) {
+    countWithValue(ret);
+  } else {
+    countWithoutValue(ret);
+  }
+  return false;
+}
+void CountReturns::exit(const Yield* ret) {
+}
+
+bool CountReturns::enter(const AstNode* ast) {
+  return true;
+}
+void CountReturns::exit(const AstNode* ast) {
+}
+
+struct ReturnCount {
+  int nReturnsWithValue = 0;
+  int nReturnsWithoutValue = 0;
+  ID firstWithValue;
+  ID firstWithoutValue;
+};
+
+// vs. just returning 'void'
+static const bool& fnAstReturnsNonVoid(Context* context, ID fnId) {
+  QUERY_BEGIN(fnAstReturnsNonVoid, context, fnId);
+
+  bool result = false;
+
+  const AstNode* ast = parsing::idToAst(context, fnId);
+  const Function* fn = ast->toFunction();
+  CHPL_ASSERT(fn);
+
+  CountReturns cr(context);
+  fn->body()->traverse(cr);
+
+  result = (cr.nReturnsWithValue > 0);
+
+  if (cr.nReturnsWithValue > 0 && cr.nReturnsWithoutValue > 0) {
+    // TODO: make this a real error message
+    context->error(cr.firstWithoutValue, "Mix of return types");
+  }
+
+  if (cr.nReturnsWithValue > 0 &&
+      (fn->name() == USTR("init") || fn->name() == USTR("init="))) {
+    context->error(cr.firstWithValue, "initializers can only return 'void'");
+  }
+
+  return QUERY_END(result);
+}
+
+// returns 'true' if it was a case handled here & sets 'result' in that case
+// returns 'false' if it needs to be computed with a ResolvedVisitor traversal
+static bool helpComputeReturnType(Context* context,
+                                  const TypedFnSignature* sig,
+                                  const PoiScope* poiScope,
+                                  QualifiedType& result) {
   const UntypedFnSignature* untyped = sig->untyped();
-
-  QualifiedType result;
 
   if (untyped->idIsFunction() && sig->needsInstantiation()) {
     // if it needs instantiation, we don't know the return type yet.
     result = QualifiedType(QualifiedType::UNKNOWN, UnknownType::get(context));
+    return true;
   } else if (untyped->idIsFunction()) {
     const AstNode* ast = parsing::idToAst(context, untyped->id());
     const Function* fn = ast->toFunction();
     CHPL_ASSERT(fn);
+
     if (const AstNode* retType = fn->returnType()) {
       // resolve the return type
       ResolutionResultByPostorderID resolutionById;
@@ -460,34 +594,22 @@ const QualifiedType& returnType(Context* context,
                                                  resolutionById);
       retType->traverse(visitor);
       result = resolutionById.byAst(retType).type();
-    } else {
-      // resolve the function body
-      const ResolvedFunction* rFn = resolveFunction(context, sig, poiScope);
-      // infer the return type
-      ReturnTypeInferrer visitor(context, fn, *rFn);
-      fn->body()->traverse(visitor);
-      result = visitor.returnedType();
+
+      auto g = getTypeGenericity(context, result.type());
+      if (g == Type::CONCRETE) {
+        result = adjustForReturnIntent(fn->returnIntent(), result);
+        return true;
+      }
     }
 
-    // Figure out the kind for the QualifiedType based on the return intent
-    // Need to do this if the return type is declared.
-    QualifiedType::Kind kind = (QualifiedType::Kind) fn->returnIntent();
-    // adjust default / const return intent to 'var'
-    if (kind == QualifiedType::DEFAULT_INTENT ||
-        kind == QualifiedType::CONST_VAR) {
-        kind = QualifiedType::VAR;
+    // if there are no returns with a value, use void return type
+    if (fnAstReturnsNonVoid(context, ast->id()) == false) {
+      result = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
+      return true;
     }
-    result = QualifiedType(kind, result.type(), result.param());
 
-    // Functions that return tuples need to return
-    // a value tuple (for value returns and type returns)
-    // or a reference to a value tuple (for ref/const ref returns)
-    if (result.type() && result.type()->isTupleType()) {
-      auto tt = result.type()->toTupleType();
-      auto vt = tt->toValueTuple(context);
-      CHPL_ASSERT(tt == vt); // this should already be done in return type inference
-      result = QualifiedType(kind, vt);
-    }
+    // otherwise, need to use visitor to get the return type
+    return false;
 
   } else if (untyped->isTypeConstructor()) {
     const Type* t = returnTypeForTypeCtorQuery(context, sig, poiScope);
@@ -503,6 +625,7 @@ const QualifiedType& returnType(Context* context,
     }
 
     result = QualifiedType(QualifiedType::TYPE, t);
+    return true;
 
   // if method call and the receiver points to a composite type definition,
   // then it's some sort of compiler-generated method
@@ -510,6 +633,7 @@ const QualifiedType& returnType(Context* context,
     if (untyped->name() == USTR("init")) {
       result = QualifiedType(QualifiedType::CONST_VAR,
                              VoidType::get(context));
+      return true;
     } else if (untyped->idIsField() && untyped->isMethod()) {
       // method accessor - compute the type of the field
       QualifiedType ft = computeTypeOfField(context,
@@ -525,11 +649,39 @@ const QualifiedType& returnType(Context* context,
         // return a ref
         result = QualifiedType(QualifiedType::REF, ft.type());
       }
+      return true;
     } else {
       CHPL_ASSERT(false && "unhandled compiler-generated method");
+      return true;
     }
   } else {
     CHPL_ASSERT(false && "case not handled");
+    return true;
+  }
+
+  return false;
+}
+
+const QualifiedType& returnType(Context* context,
+                                const TypedFnSignature* sig,
+                                const PoiScope* poiScope) {
+  QUERY_BEGIN(returnType, context, sig, poiScope);
+
+  const UntypedFnSignature* untyped = sig->untyped();
+
+  QualifiedType result;
+
+  bool computed = helpComputeReturnType(context, sig, poiScope, result);
+  if (!computed) {
+    const AstNode* ast = parsing::idToAst(context, untyped->id());
+    const Function* fn = ast->toFunction();
+    CHPL_ASSERT(fn);
+
+    // resolve the function body
+    // resolveFunction will arrange to call computeReturnType
+    // and store the return type in the result.
+    const ResolvedFunction* rFn = resolveFunction(context, sig, poiScope);
+    result = rFn->returnType();
   }
 
   return QUERY_END(result);
@@ -592,6 +744,33 @@ const TypedFnSignature* inferOutFormals(Context* context,
     return inferOutFormalsQuery(context, sig, instantiationPoiScope);
   } else {
     return sig;
+  }
+}
+
+void computeReturnType(Resolver& resolver) {
+
+  QualifiedType returnType;
+  bool computed = helpComputeReturnType(resolver.context,
+                                        resolver.typedSignature,
+                                        resolver.poiScope,
+                                        returnType);
+  if (computed) {
+    resolver.returnType = returnType;
+  } else if (auto fn = resolver.symbol->toFunction()) {
+    const Type* declaredReturnType = nullptr;
+    if (auto retTypeExpr = fn->returnType()) {
+      auto qt = resolver.byPostorder.byAst(retTypeExpr).type();
+      declaredReturnType = qt.type();
+
+      if (declaredReturnType && declaredReturnType->isUnknownType()) {
+        declaredReturnType = nullptr;
+      }
+    }
+
+    // infer the return type
+    auto v = ReturnTypeInferrer(resolver.context, fn, declaredReturnType);
+    v.process(fn->body(), resolver.byPostorder);
+    resolver.returnType = v.returnedType();
   }
 }
 

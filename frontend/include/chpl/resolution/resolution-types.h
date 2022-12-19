@@ -1360,21 +1360,29 @@ class ResolvedFunction {
   PoiInfo poiInfo_;
 
   // the return type computed for this function
-  //types::QualifiedType returnType;
+  types::QualifiedType returnType_;
 
  public:
   ResolvedFunction(const TypedFnSignature *signature,
                    uast::Function::ReturnIntent returnIntent,
                    ResolutionResultByPostorderID resolutionById,
-                   PoiInfo poiInfo)
+                   PoiInfo poiInfo,
+                   types::QualifiedType returnType)
       : signature_(signature), returnIntent_(returnIntent),
-        resolutionById_(std::move(resolutionById)), poiInfo_(poiInfo) {}
+        resolutionById_(std::move(resolutionById)),
+        poiInfo_(std::move(poiInfo)),
+        returnType_(std::move(returnType)) {}
 
   /** The type signature */
   const TypedFnSignature* signature() const { return signature_; }
 
   /** the return intent */
   uast::Function::ReturnIntent returnIntent() const { return returnIntent_; }
+
+  /** the return type */
+  const types::QualifiedType& returnType() const {
+    return returnType_;
+  }
 
   /** this is the output of the resolution process */
   const ResolutionResultByPostorderID& resolutionById() const {

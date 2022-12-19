@@ -30,6 +30,8 @@ namespace resolution {
 struct Resolver;
 
 
+// this helper function computes a CompositeType based upon
+// a decl and some substitutions
 const types::CompositeType*
 helpGetTypeForDecl(Context* context,
                    const uast::AggregateDecl* ad,
@@ -37,8 +39,9 @@ helpGetTypeForDecl(Context* context,
                    const PoiScope* poiScope,
                    const types::Type* instantiatedFrom);
 
-/* Compute or infer the return type for this function */
-types::QualifiedType computeReturnType(Resolver& resolver);
+/* Compute or infer the return type for this function
+   and store the result in resolver.returnType. */
+void computeReturnType(Resolver& resolver);
 
 
 } // end namespace resolution
