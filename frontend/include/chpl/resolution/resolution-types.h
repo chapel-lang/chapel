@@ -1359,6 +1359,9 @@ class ResolvedFunction {
   // the set of point-of-instantiation scopes used by the instantiation
   PoiInfo poiInfo_;
 
+  // the return type computed for this function
+  //types::QualifiedType returnType;
+
  public:
   ResolvedFunction(const TypedFnSignature *signature,
                    uast::Function::ReturnIntent returnIntent,

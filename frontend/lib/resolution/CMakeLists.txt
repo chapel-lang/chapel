@@ -30,6 +30,7 @@ target_sources(libdyno-obj
                prims.cpp
                resolution-queries.cpp
                resolution-types.cpp
+               return-type-inference.cpp
                scope-queries.cpp
                scope-types.cpp
                split-init.cpp
