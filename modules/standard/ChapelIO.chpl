@@ -148,6 +148,7 @@ module ChapelIO {
 
   use IO;
   import CTypes.{c_int};
+
   /*
    Local copies of IO.{EEOF,ESHORT,EFORMAT} as these are being phased out
    and are now private in IO
@@ -155,8 +156,11 @@ module ChapelIO {
   private extern proc chpl_macro_int_EEOF():c_int;
   private extern proc chpl_macro_int_ESHORT():c_int;
   private extern proc chpl_macro_int_EFORMAT():c_int;
+  pragma "no doc"
   private inline proc EEOF return chpl_macro_int_EEOF():c_int;
+  pragma "no doc"
   private inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
+  pragma "no doc"
   private inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
 
     private
