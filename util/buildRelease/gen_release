@@ -100,6 +100,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
 
     if ($version eq "" or $version eq "developer") {
       print "[gen_release] Copying BUILD_VERSION file.\n";
+      SystemOrDie("util/config/write-git-sha frontend/lib/util --build-version --chpl-home=$archive_dir");
       SystemOrDie("cp $rootdir/compiler/main/BUILD_VERSION $archive_dir/compiler/main/BUILD_VERSION");
     }
 
@@ -192,7 +193,7 @@ print "[gen_release] CHPL_HOME is set to: $ENV{'CHPL_HOME'}\n";
 
 if (not exists($ENV{"CHPL_GEN_RELEASE_SKIP_DOCS"})) {
   print "[gen_release] Building the html docs...\n";
-  SystemOrDie("make docs");
+  SystemOrDie("make -j$(nproc) docs");
 
   # TODO - make this more elegant / maintainable
   print "[gen_release] Pruning the docs directory...\n";
