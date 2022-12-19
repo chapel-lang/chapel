@@ -1636,7 +1636,10 @@ module List {
       const osz = _size;
       const minChunkSize = 64;
       const hasOneChunk = osz <= minChunkSize;
-      const numTasks = if hasOneChunk then 1 else here.maxTaskPar;
+      const numTasks = if hasOneChunk then 1
+        else if dataParTasksPerLocale > 0
+          then dataParTasksPerLocale
+            else here.maxTaskPar;
       const chunkSize = floor(osz / numTasks):int;
       const trailing = osz - chunkSize * numTasks;
 
@@ -1669,7 +1672,10 @@ module List {
       const osz = _size;
       const minChunkSize = 32;
       const hasOneChunk = osz <= minChunkSize;
-      const numTasks = if hasOneChunk then 1 else dataParTasksPerLocale;
+      const numTasks = if hasOneChunk then 1
+        else if dataParTasksPerLocale > 0
+          then dataParTasksPerLocale
+            else here.maxTaskPar;
       const chunkSize = floor(osz / numTasks):int;
       const trailing = osz - chunkSize * numTasks;
 
