@@ -888,7 +888,7 @@ static DynoErrorHandler* gDynoErrorHandler = nullptr;
 
 static bool dynoRealizeErrors(void) {
   INT_ASSERT(gDynoErrorHandler);
-  bool hadErrors;
+  bool hadErrors = false;
   llvm::SmallPtrSet<const chpl::ErrorBase*, 10> issuedErrors;
   for (auto err : gDynoErrorHandler->errors()) {
     hadErrors = true;
