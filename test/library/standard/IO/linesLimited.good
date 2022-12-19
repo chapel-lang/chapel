@@ -1,3 +1,7 @@
+linesLimited.chpl:6: warning: `file.lines` is deprecated; please use `fileReader.lines` instead
+linesLimited.chpl:10: warning: `file.lines` is deprecated; please use `fileReader.lines` instead
+linesLimited.chpl:14: warning: `file.lines` is deprecated; please use `fileReader.lines` instead
+linesLimited.chpl:18: warning: `file.lines` is deprecated; please use `fileReader.lines` instead
 doe, a deer, a female deer
 ray, a drop of golden sun
 me, a name, I call myself
