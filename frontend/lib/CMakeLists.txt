@@ -21,7 +21,8 @@
 # values are different.
 # If CHPL_DONT_BUILD_SHA is set in the ENV, the git-sha will always be xxxxxxxxxx
 if (EXISTS ${CMAKE_SOURCE_DIR}/.git)
-        execute_process(COMMAND ${CMAKE_SOURCE_DIR}/util/config/write-git-sha
+        execute_process(COMMAND ${CHPL_CMAKE_PYTHON}
+                                ${CMAKE_SOURCE_DIR}/util/config/write-git-sha
                                 ${CMAKE_CURRENT_SOURCE_DIR}/util
                                 --build-version
                                 --chpl-home=${CHPL_HOME})
@@ -31,6 +32,7 @@ elseif(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/util/git-version.cpp)
 # write one as if CHPL_DONT_BUILD_SHA was set so we dont execute the git command
         execute_process(COMMAND ${CMAKE_COMMAND} -E env
                         CHPL_DONT_BUILD_SHA=1
+                        ${CHPL_CMAKE_PYTHON}
                         ${CMAKE_SOURCE_DIR}/util/config/write-git-sha
                         ${CMAKE_CURRENT_SOURCE_DIR}/util
         --build-version
