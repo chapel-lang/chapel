@@ -135,6 +135,13 @@ static void testActions(const char* test,
   const ResolvedFunction* r = resolveConcreteFunction(context, func->id());
   assert(r);
 
+  size_t errCount = guard.realizeErrors();
+  if (expectErrors) {
+    assert(errCount > 0);
+  } else {
+    assert(errCount == 0);
+  }
+
   Actions actions;
   gatherActions(context, func, r, actions);
 
@@ -182,12 +189,7 @@ static void testActions(const char* test,
     assert(false && "Failure: expected action is missing");
   }
 
-  size_t errCount = guard.realizeErrors();
-  if (expectErrors) {
-    assert(errCount > 0);
-  } else {
-    assert(errCount == 0);
-  }
+
 }
 
 // test very basic default init & deinit
