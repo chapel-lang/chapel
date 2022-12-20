@@ -151,8 +151,13 @@ module BigInteger {
   use GMP;
   use HaltWrappers;
   use CTypes;
-  use IO only EFORMAT;
   use OS;
+
+
+  /*
+   Local copy of IO.EFORMAT as it is being phased out and is private in IO
+   */
+  private extern proc chpl_macro_int_EFORMAT():c_int;
 
   /*
     .. warning::
@@ -259,7 +264,7 @@ module BigInteger {
       if mpz_init_set_str(this.mpz, str_, base_) != 0 {
         mpz_clear(this.mpz);
 
-        error = EFORMAT;
+        error = chpl_macro_int_EFORMAT();
       } else {
         error = 0;
       }
