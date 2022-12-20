@@ -1258,7 +1258,192 @@ static void test15b() {
     });
 }
 
-// 'in' intent
+// 'in' intent : formal handling
+static void test16a() {
+  testActions("test16a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test(in arg: R) {
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEINIT,       "M.test@2",   "arg"},
+    });
+}
+static void test16b() {
+  testActions("test16b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test(const in arg: R) {
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEINIT,       "M.test@2",   "arg"},
+    });
+}
+// calling a function using 'in' intent with copy elision
+static void test16c() {
+  testActions("test16c",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc acceptsIn(in arg: R) { }
+
+        proc test() {
+          var x: R;
+          acceptsIn(x);
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",          ""},
+      // everything else is copy elided
+    });
+}
+// calling a function using 'in' intent without copy elision
+static void test16d() {
+  testActions("test16d",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc acceptsIn(in arg: R) { }
+
+        proc test() {
+          var x: R;
+          acceptsIn(x);
+          x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",          ""},
+      {AssociatedAction::COPY_INIT,    "M.test@3",   ""},
+      {AssociatedAction::DEINIT,       "M.test@6",   "x"},
+    });
+}
+// calling a function using 'in' intent with nested call
+static void test16e() {
+  testActions("test16e",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc makeR(): R { var x: R; return x; }
+        proc acceptsIn(in arg: R) { }
+
+        proc test() {
+          acceptsIn(makeR());
+        }
+      }
+    )"""",
+    {
+    });
+}
+// calling a function using 'in' intent with nested call returning ref
+static void test16f() {
+  testActions("test16f",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        var modVar : R;
+        proc getRef() ref : R { return modVar; }
+        proc acceptsIn(in arg: R) { }
+
+        proc test() {
+          acceptsIn(getRef());
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::COPY_INIT,    "M.test@2",   ""},
+    });
+}
+// 'in' intent argument passed to 'in' intent function
+static void test16g() {
+  testActions("test16g",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc acceptsIn(in arg: R) { }
+
+        proc test(in x: R) {
+          acceptsIn(x);
+        }
+      }
+    )"""",
+    {
+    });
+}
+// 'in' intent argument returned
+static void test16h() {
+  testActions("test16h",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test(in x: R) {
+          return x;
+        }
+      }
+    )"""",
+    {
+      // note: this is dead code
+      {AssociatedAction::DEINIT,       "M.test@4",   "x"},
+    });
+}
+
+
+
+
+
+
+
+
+
+
+
 
 // 'out' intent
 
@@ -1322,6 +1507,15 @@ int main() {
 
   test15a();
   test15b();
+
+  test16a();
+  test16b();
+  test16c();
+  test16d();
+  test16e();
+  test16f();
+  test16g();
+  test16h();
 
   return 0;
 }

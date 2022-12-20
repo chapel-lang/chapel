@@ -723,7 +723,7 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
 
   // Should we associate it with the current statement or the current block?
   const AstNode* assocAst = currentStatement();
-  if (assocAst && assocAst->isVarLikeDecl()) {
+  if (assocAst == nullptr || assocAst->isVarLikeDecl()) {
     assocAst = currentFrame()->scopeAst;
   }
 
@@ -751,8 +751,21 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   bool splitInited = (splitInitedVars.count(ast->id()) > 0);
 
   if (ast->isFormal() || ast->isVarArgFormal()) {
-    // ignore formals for now
-    // TODO: pretty sure they need to be considered, in some cases
+
+    // consider the formal's intent
+    ResolvedExpression& formalRe = rv.byAst(ast);
+    QualifiedType formalType = formalRe.type();
+    auto intent = formalType.kind();
+    if (intent == QualifiedType::IN || intent == QualifiedType::CONST_IN) {
+      // note that the variable is now initialized
+      ID id = ast->id();
+      frame->addToInitedVars(id);
+      frame->localsAndDefers.push_back(id);
+    } else if (intent == QualifiedType::OUT) {
+      CHPL_ASSERT(false && "TODO");
+    } else if (intent == QualifiedType::INOUT) {
+      CHPL_ASSERT(false && "TODO");
+    }
 
   } else if (splitInited) {
     // Will be inited later, don't default init,
@@ -884,6 +897,8 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
     // copy elision should only apply to copies from variables
     CHPL_ASSERT(!actualId.isEmpty());
     frame->deinitedVars.insert(actualId);
+  } else {
+    processInit(frame, actual, formalType, actualType, rv);
   }
 }
 
