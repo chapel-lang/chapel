@@ -62,7 +62,8 @@ target_include_directories(libdyno-obj PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 # SHELL: is needed here to remove unwanted quotes from the list of arguments
 # COMPILE_LANGUAGE:CXX is needed here to make sure we only set the flags
 # for C++ files, not C files.
-target_compile_options(libdyno-obj PUBLIC SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
+target_compile_options(libdyno-obj PUBLIC
+                       SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
 
 add_subdirectory(immediates)
 add_subdirectory(parsing)
@@ -75,7 +76,9 @@ add_subdirectory(util)
 
 # Don't build the git-sha-obj into libdyno if CHPL_DONT_BUILD_SHA is set in the
 # environment * note that the value doesn't matter, just the presence of the var
-add_library(libdyno SHARED $<TARGET_OBJECTS:libdyno-obj> $<TARGET_OBJECTS:git-sha-obj>)
+add_library(libdyno SHARED
+            $<TARGET_OBJECTS:libdyno-obj>
+            $<TARGET_OBJECTS:git-sha-obj>)
 
 target_include_directories(libdyno PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
@@ -83,14 +86,25 @@ target_include_directories(libdyno PUBLIC
 
 target_link_libraries(libdyno PUBLIC ${CHPL_LLVM_LINK_ARGS})
 # TODO: Get printchplenv output proper so that we don't need to SHELL here
-target_compile_options(libdyno PUBLIC SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
+target_compile_options(libdyno PUBLIC
+                       SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
 
 
-# TODO: ADDITIONAL_CLEAN_FILES requires cmake v3.15 ... Can we find another way to mark these files for cleanup?
-set_target_properties(libdyno PROPERTIES ADDITIONAL_CLEAN_FILES ${CMAKE_CURRENT_SOURCE_DIR}/util/git-version.cpp)
+# TODO: ADDITIONAL_CLEAN_FILES requires cmake v3.15 ...
+#       Can we find another way to mark these files for cleanup?
+set_target_properties(libdyno PROPERTIES
+                      ADDITIONAL_CLEAN_FILES
+                      ${CMAKE_CURRENT_SOURCE_DIR}/util/git-version.cpp)
 
 
 # install libdyno
 # TODO: also install headers with PUBLIC_HEADER DESTINATION <dir>
-install(TARGETS libdyno
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+if (INSTALLATION_MODE STREQUAL "prefix")
+  install(TARGETS libdyno
+          LIBRARY DESTINATION
+          "lib/chapel/${CHPL_MAJOR_VERSION}.${CHPL_MINOR_VERSION}/compiler")
+else()
+  install(TARGETS libdyno
+          LIBRARY DESTINATION
+          "lib/compiler/${CHPL_HOST_BIN_SUBDIR}")
+endif()
