@@ -54,6 +54,9 @@ struct CallInitDeinit : VarScopeVisitor {
   const std::set<ID>& splitInitedVars;
   const std::set<ID>& elidedCopyFromIds;
 
+  // local state
+  std::set<ID> outIntentFormals;
+
   // methods
   CallInitDeinit(Context* context,
                  Resolver& resolver,
@@ -282,6 +285,7 @@ void CallInitDeinit::processDeinitsForReturn(const AstNode* atAst,
   // compute initedAnyFrame and deinitedAnyFrame
   // * don't deinit if it hasn't been inited yet
   // * don't deinit if it was moved from so already deinited
+  // * don't deinit out formals
   for (ssize_t i = 0; i < n; i++) {
     VarFrame* frame = scopeStack[i].get();
     initedAnyFrame.insert(frame->initedVars.begin(),
@@ -289,6 +293,9 @@ void CallInitDeinit::processDeinitsForReturn(const AstNode* atAst,
     deinitedAnyFrame.insert(frame->deinitedVars.begin(),
                             frame->deinitedVars.end());
   }
+
+  // also count outIntentFormals as already deinited
+  deinitedAnyFrame.insert(outIntentFormals.begin(), outIntentFormals.end());
 
   for (ssize_t i = n - 1; i >= 0; i--) {
     VarFrame* frame = scopeStack[i].get();
@@ -320,8 +327,11 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
   ssize_t n = frame->localsAndDefers.size();
   for (ssize_t i = n - 1; i >= 0; i--) {
     ID varOrDeferId = frame->localsAndDefers[i];
-    // don't deinit it if it was already destroyed by moving from it
-    if (frame->deinitedVars.count(varOrDeferId) == 0) {
+    if (outIntentFormals.count(varOrDeferId) > 0) {
+      // don't deinit out formals
+    } else if (frame->deinitedVars.count(varOrDeferId) > 0) {
+      // don't deinit it if it was already destroyed by moving from it
+    } else {
       ResolvedExpression& re = rv.byId(varOrDeferId);
       QualifiedType type = re.type();
       // don't deinit reference variables
@@ -750,6 +760,8 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   bool inited = processDeclarationInit(ast, rv);
   bool splitInited = (splitInitedVars.count(ast->id()) > 0);
 
+  bool handledFormal = false;
+
   if (ast->isFormal() || ast->isVarArgFormal()) {
 
     // consider the formal's intent
@@ -761,12 +773,21 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
       ID id = ast->id();
       frame->addToInitedVars(id);
       frame->localsAndDefers.push_back(id);
+      handledFormal = true;
     } else if (intent == QualifiedType::OUT) {
-      CHPL_ASSERT(false && "TODO");
+      // treat it like any other variable declaration
+      handledFormal = false;
+      outIntentFormals.insert(ast->id());
     } else if (intent == QualifiedType::INOUT) {
       CHPL_ASSERT(false && "TODO");
+      handledFormal = false;
+    } else {
+      handledFormal = true;
     }
+  }
 
+  if (handledFormal) {
+    // already handled above
   } else if (splitInited) {
     // Will be inited later, don't default init,
     // and also don't try to deinit it on e.g. a return before that point

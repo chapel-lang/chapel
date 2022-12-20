@@ -1434,22 +1434,33 @@ static void test16h() {
     });
 }
 
+// 'out' intent: formal not deinitialized (deinited at call site)
+static void test17a() {
+  testActions("test17a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
 
+        proc test(out x: R) {
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",          ""},
+    });
+}
 
-
-
-
-
-
-
-
-
-
-// 'out' intent
+// calling function with 'out' intent formal
 
 // 'inout' intent
 
 // defer
+
+// call-expr temporaries not passed by 'in' intent
 
 int main() {
   test1();
@@ -1516,6 +1527,8 @@ int main() {
   test16f();
   test16g();
   test16h();
+
+  test17a();
 
   return 0;
 }

@@ -1178,6 +1178,54 @@ static void test46() {
     {"x"});
 }
 
+// not split inited because otherwise 'x' would be uninitialized
+// when the conditional returns
+// (alternative design would be to default-init it for the return,
+//  but that is not what we have)
+static void test47() {
+  testSplitInit("test47",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        config var cond = true;
+
+        proc test(out x: int) {
+          if cond {
+            return;
+          } else {
+            x = 5;
+          }
+        }
+      }
+    )"""",
+    {});
+}
+
+// similar to the above but with try/catch
+static void test48() {
+  testSplitInit("test48",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test(out x: int) {
+          try {
+          } catch {
+            return;
+          }
+        }
+      }
+    )"""",
+    {});
+}
+
 
 int main() {
   test1();
@@ -1228,6 +1276,8 @@ int main() {
   test44();
   test45();
   test46();
+  test47();
+  test48();
 
   return 0;
 }

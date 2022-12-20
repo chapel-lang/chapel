@@ -38,6 +38,7 @@ struct SplitInitVarStatus;
 struct FindSplitInits : VarScopeVisitor {
   // result of the process
   std::set<ID> allSplitInitedVars;
+  std::set<ID> outFormals;
 
   // methods
   FindSplitInits(Context* context)
@@ -47,7 +48,6 @@ struct FindSplitInits : VarScopeVisitor {
 
   SplitInitVarStatus findVarStatus(ID varId);
   static void addInit(VarFrame* frame, ID varId, QualifiedType rhsType);
-  static void addDeclaration(VarFrame* frame, const VarLikeDecl* ast);
   void handleInitOrAssign(ID varId, QualifiedType rhsType, RV& rv);
 
   // overrides
@@ -114,15 +114,6 @@ void FindSplitInits::addInit(VarFrame* frame,
     frame->initedVarsVec.emplace_back(varId, rhsType);
   }
 }
-void FindSplitInits::addDeclaration(VarFrame* frame,
-                                    const VarLikeDecl* ast) {
-  bool inserted = frame->addToDeclaredVars(ast->id());
-  if (inserted) {
-    if (ast->initExpression() == nullptr) {
-      frame->eligibleVars.insert(ast->id());
-    }
-  }
-}
 
 void FindSplitInits::handleInitOrAssign(ID varId,
                                         QualifiedType rhsType,
@@ -153,7 +144,18 @@ void FindSplitInits::handleInitOrAssign(ID varId,
 }
 
 void FindSplitInits::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
-  addDeclaration(currentFrame(), ast);
+  VarFrame* frame = currentFrame();
+  bool inserted = frame->addToDeclaredVars(ast->id());
+  if (inserted) {
+    if (ast->initExpression() == nullptr) {
+      frame->eligibleVars.insert(ast->id());
+    }
+    if (ast->isFormal() || ast->isVarArgFormal()) {
+      if (ast->storageKind() == IntentList::OUT) {
+        outFormals.insert(ast->id());
+      }
+    }
+  }
 }
 
 void FindSplitInits::handleMention(const Identifier* ast, ID varId, RV& rv) {
@@ -267,9 +269,12 @@ void FindSplitInits::handleConditional(const Conditional* cond, RV& rv) {
       elseInits = elseFrame->initedVars.count(id) > 0;
     }
 
-    if ((thenInits         && elseInits) ||
-        (thenInits         && elseReturnsThrows) ||
-        (thenReturnsThrows && elseInits)) {
+    if (thenInits && elseInits) {
+      locSplitInitedVars.insert(id);
+    } else if (outFormals.count(id) == 0 &&
+               ((thenInits         && elseReturnsThrows) ||
+                (thenReturnsThrows && elseInits))) {
+      // one branch returns or throws and it's not an 'out' formal
       locSplitInitedVars.insert(id);
     } else {
       frame->mentionedVars.insert(id);
@@ -427,7 +432,7 @@ void FindSplitInits::handleTry(const Try* t, RV& rv) {
       // gather variables to be split-inited for parent frames
       // into trySplitInitVars
       bool allowSplitInit = false;
-      if (allThrowOrReturn) {
+      if (allThrowOrReturn && outFormals.count(id) == 0) {
         bool mentionedOrInitedInCatch = false;
         for (int i = 0; i < nCatchFrames; i++) {
           VarFrame* catchFrame = currentCatchFrame(i);
