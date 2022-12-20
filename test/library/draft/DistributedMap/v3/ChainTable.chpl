@@ -215,7 +215,7 @@ module ChainTable {
             select entry.status {
                 when entryStatus.full do _deinitSlot(entry);
                 when entryStatus.empty do this.numEntries += 1;
-                when entryStatus.deleted do this.numEntries -= 1;
+                when entryStatus.deleted do this.numEntries += 1;
             }
 
             entry.status = entryStatus.full;
@@ -280,15 +280,21 @@ module ChainTable {
             var newBuckets = _allocateData(newNumBuckets, Bucket(this.keyType, this.valType));
 
             for i in 0..this.numBuckets {
-                for e in this.items() {
-                    const new_bucket_idx = chpl__defaultHashWrapper(e.key):uint & (newNumBuckets - 1);
-                    if !newBuckets[new_bucket_idx].isInit()
-                        then newBuckets[new_bucket_idx] = new Bucket(keyType, valType);
+                if this.buckets[i].isInit() {
+                    for e in this.buckets[i]._allEntries() {
+                        if e.isFull() {
+                            const new_bucket_idx = chpl__defaultHashWrapper(e.key):uint & (newNumBuckets - 1);
 
-                    const chain_idx = newBuckets[new_bucket_idx].firstAvailableIndex();
-                    ref entry = newBuckets[new_bucket_idx][chain_idx];
-                    entry.key = e.key;
-                    entry.val = e.val;
+                            if !newBuckets[new_bucket_idx].isInit()
+                                then newBuckets[new_bucket_idx] = new Bucket(this.keyType, this.valType);
+
+                            const chain_idx = newBuckets[new_bucket_idx].firstAvailableIndex();
+                            ref entry = newBuckets[new_bucket_idx][chain_idx];
+                            entry.key = e.key;
+                            entry.val = e.val;
+                            entry.status = entryStatus.full;
+                        }
+                    }
                 }
             }
 

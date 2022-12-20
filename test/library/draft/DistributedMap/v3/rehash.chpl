@@ -6,10 +6,12 @@ for (letter, number) in zip(["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "
     table.fillSlot(table.getSlotFor(letter), letter, number);
 }
 
+writeln("2 buckets:");
 writeln(table.buckets[0]);
 writeln(table.buckets[1]);
 
 table.__rehash(4); // 4 buckets
+writeln("4 buckets:");
 writeln(table.buckets[0]);
 writeln(table.buckets[1]);
 writeln(table.buckets[2]);
