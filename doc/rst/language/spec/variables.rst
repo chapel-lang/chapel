@@ -234,13 +234,23 @@ Split initialization does not apply:
  * when an applicable assignment statement setting the variable could not
    be identified
  * when an applicable assignment statement is in one branch of a
-   conditional but not in the other, and when the other branch
-   does not always return or throw. This rule prevents
-   split-initialization when the applicable assignment statement is
-   in a conditional that has no ``else`` branch.
+   conditional but not in the other, unless:
+
+     * the variable is not an ``out`` intent formal, and
+     * the other branch always returns or throws.
+
+   This rule prevents split-initialization when the applicable assignment
+   statement is in a conditional that has no ``else`` branch and the
+   ``if`` branch does not return or throw.
+
  * when an applicable assignment statement is in a ``try`` or ``try!``
    block which has ``catch`` clauses that mention the variable
-   or which has ``catch`` clauses that do not always throw or return.
+
+ * when an applicable assignment statement is in a ``try`` or ``try!``
+   with ``catch`` clauses unless:
+
+     * the variable is not an ``out`` intent formal, and
+     * all catch clauses return or throw
 
 In the case that the variable is declared with no ``type-part`` or with a
 generic declared type, and where multiple applicable assignment
