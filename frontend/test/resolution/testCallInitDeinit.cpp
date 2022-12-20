@@ -1010,6 +1010,84 @@ static void test11b() {
     });
 }
 
+// return a reference variable by value
+static void test12a() {
+  testActions("test12a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() : R {
+          var value : R;
+          ref myref = value;
+          return myref;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "value",     ""},
+      {AssociatedAction::COPY_INIT,    "M.test@6",  ""},
+      {AssociatedAction::DEINIT,       "M.test@6",  "value"},
+      {AssociatedAction::DEINIT,       "M.test@7",  "value"}
+    });
+}
+static void test12b() {
+  testActions("test12b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() : R {
+          var value : R;
+          const ref myref = value;
+          return myref;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "value",     ""},
+      {AssociatedAction::COPY_INIT,    "M.test@6",  ""},
+      {AssociatedAction::DEINIT,       "M.test@6",  "value"},
+      {AssociatedAction::DEINIT,       "M.test@7",  "value"}
+    });
+}
+// and with inferred return type
+static void test12c() {
+  testActions("test12c",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() {
+          var value : R;
+          ref myref = value;
+          return myref;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "value",     ""},
+      {AssociatedAction::COPY_INIT,    "M.test@5",  ""},
+      {AssociatedAction::DEINIT,       "M.test@5",  "value"},
+      {AssociatedAction::DEINIT,       "M.test@6",  "value"}
+    });
+}
+
+
+
+
 
 // TODO: test a function returning by ref
 
@@ -1018,6 +1096,8 @@ static void test11b() {
 // TODO: yield
 
 // TODO: defer
+
+// TODO: in intent
 
 int main() {
   test1();
@@ -1061,6 +1141,10 @@ int main() {
 
   test11a();
   test11b();
+
+  test12a();
+  test12b();
+  test12c();
 
   return 0;
 }

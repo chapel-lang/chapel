@@ -899,12 +899,12 @@ void CallInitDeinit::handleReturnOrThrow(const uast::AstNode* ast, RV& rv) {
     analyzeReturnedExpr(re, needsCopyOrConv, skipDeinitId, rv);
 
     if (needsCopyOrConv) {
-      QualifiedType fnRetType = re.type();
-      // TODO: the above is a wrong simplification
-      // consider the function's declared or inferred return type instead.
+      QualifiedType fnRetType = resolver.returnType;
 
-      // init the return value from the return expression
-      processInit(currentFrame(), ast, fnRetType, re.type(), rv);
+      if (!fnRetType.isUnknown() && !fnRetType.isErroneousType()) {
+        // init the return value from the return expression
+        processInit(currentFrame(), ast, fnRetType, re.type(), rv);
+      }
     }
   }
 

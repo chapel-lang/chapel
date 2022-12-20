@@ -1656,11 +1656,11 @@ resolveFunctionByInfoQuery(Context* context,
                                                resolutionById);
     fn->body()->traverse(visitor);
 
-    // then, resolve '=' and add any copy init/deinit calls as needed
-    callInitDeinit(visitor);
-
     // then, compute the return type
     computeReturnType(visitor);
+
+    // then, resolve '=' and add any copy init/deinit calls as needed
+    callInitDeinit(visitor);
 
     // TODO: can this be encapsulated in a method?
     resolvedPoiInfo.swap(visitor.poiInfo);
