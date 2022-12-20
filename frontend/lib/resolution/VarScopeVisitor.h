@@ -58,7 +58,7 @@ class VarScopeVisitor {
 
   // ----- inputs to the process
   Context* context = nullptr;
-
+  types::QualifiedType fnReturnType;
 
   // ----- internal variables
   std::vector<owned<VarFrame>> scopeStack;
@@ -87,8 +87,14 @@ class VarScopeVisitor {
                                  const types::QualifiedType& formalType,
                                  RV& rv) = 0;
 
-  /** Called for an unconditional return or throw */
-  virtual void handleReturnOrThrow(const uast::AstNode* ast, RV& rv) = 0;
+  /** Called for a 'return' */
+  virtual void handleReturn(const uast::Return* ast, RV& rv) = 0;
+
+  /** Called for a 'throw' */
+  virtual void handleThrow(const uast::Throw* ast, RV& rv) = 0;
+
+  /** Called for a 'yield' */
+  virtual void handleYield(const uast::Yield* ast, RV& rv) = 0;
 
   /** Called to process a Conditional after handling its contents --
       should update currentFrame() which is the frame for the Conditional.
@@ -106,7 +112,8 @@ class VarScopeVisitor {
 
   // ----- methods for use by specific analysis subclasses
 
-  VarScopeVisitor(Context* context) : context(context), scopeStack() { }
+  VarScopeVisitor(Context* context, types::QualifiedType fnReturnType)
+    : context(context), fnReturnType(std::move(fnReturnType)) { }
 
  public:
   void process(const uast::AstNode* symbol,
@@ -172,6 +179,9 @@ class VarScopeVisitor {
   /** Update initedVars for a declaration with an initExpression. */
   bool processDeclarationInit(const VarLikeDecl* ast, RV& rv);
 
+  /** Returns the return or yield type of the function being processed */
+  const types::QualifiedType& returnOrYieldType();
+
   /** Handle associated conversion calls, if any.
       If there are any, calls handle*Formal calls as needed. */
   //void processAssociatedConvCalls(const AstNode* ast, RV& rv);
@@ -198,6 +208,9 @@ class VarScopeVisitor {
 
   bool enter(const Throw* ast, RV& rv);
   void exit(const Throw* ast, RV& rv);
+
+  bool enter(const Yield* ast, RV& rv);
+  void exit(const Yield* ast, RV& rv);
 
   bool enter(const Identifier* ast, RV& rv);
   void exit(const Identifier* ast, RV& rv);

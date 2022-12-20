@@ -59,14 +59,16 @@ struct CallInitDeinit : VarScopeVisitor {
                  Resolver& resolver,
                  const std::set<ID>& splitInitedVars,
                  const std::set<ID>& elidedCopyFromIds)
-    : VarScopeVisitor(context),
+    : VarScopeVisitor(context, resolver.returnType),
       resolver(resolver),
       splitInitedVars(splitInitedVars),
       elidedCopyFromIds(elidedCopyFromIds)
   { }
 
   void analyzeReturnedExpr(ResolvedExpression& re,
+                           const AstNode* returnOrYield,
                            bool& needsCopyOrConv,
+                           bool& copyElidesFromSkip,
                            ID& skipDeinitId,
                            RV& rv);
   bool isCallProducingValue(const AstNode* rhsAst,
@@ -109,6 +111,8 @@ struct CallInitDeinit : VarScopeVisitor {
                      RV& rv);
 
 
+  void processReturnThrowYield(const uast::AstNode* ast, RV& rv);
+
   // overrides
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
@@ -122,7 +126,9 @@ struct CallInitDeinit : VarScopeVisitor {
   void handleInoutFormal(const FnCall* ast, const AstNode* actual,
                          const QualifiedType& formalType,
                          RV& rv) override;
-  void handleReturnOrThrow(const uast::AstNode* ast, RV& rv) override;
+  void handleReturn(const uast::Return* ast, RV& rv) override;
+  void handleThrow(const uast::Throw* ast, RV& rv) override;
+  void handleYield(const uast::Yield* ast, RV& rv) override;
   void handleConditional(const Conditional* cond, RV& rv) override;
   void handleTry(const Try* t, RV& rv) override;
   void handleScope(const AstNode* ast, RV& rv) override;
@@ -170,7 +176,9 @@ bool CallInitDeinit::isCallProducingValue(const AstNode* rhsAst,
 }
 
 void CallInitDeinit::analyzeReturnedExpr(ResolvedExpression& re,
+                                         const AstNode* returnOrYield,
                                          bool& needsCopyOrConv,
+                                         bool& copyElidesFromSkip,
                                          ID& skipDeinitId,
                                          RV& rv) {
   bool fnReturnsRegularValue = false;
@@ -192,11 +200,26 @@ void CallInitDeinit::analyzeReturnedExpr(ResolvedExpression& re,
   }
 
   if (fnReturnsRegularValue) {
-    ID toId = re.toId();
+    ID toId = re.toId(); // what variable was returned/yielded?
     if (!toId.isEmpty()) {
-      if (resolver.symbol->id().contains(toId)) {
+      if (resolver.symbol->id().contains(toId)) { // is it a local variable?
         if (isValue(re.type().kind())) {
-          skipDeinitId = toId;
+          if (returnOrYield->isYield()) {
+            // for a yield, it depends on if the yield was copy elided
+            if (elidedCopyFromIds.count(returnOrYield->id()) > 0) {
+              // from last mention of a variable
+              skipDeinitId = toId;
+              copyElidesFromSkip = true;
+            } else {
+              // yield of a variable mentioned again needs to be a copy
+              // (since iterator will come back and continue)
+              needsCopyOrConv = true;
+            }
+          } else {
+            // for a return of a local by value, always move to return it,
+            // but no need to mark it dead since the return will end the block!
+            skipDeinitId = toId;
+          }
         } else {
           // returning a local reference by value
           needsCopyOrConv = true;
@@ -878,7 +901,7 @@ void CallInitDeinit::handleInoutFormal(const FnCall* ast,
   resolveAssign(actual, actualType, formalType, rv);
 }
 
-void CallInitDeinit::handleReturnOrThrow(const uast::AstNode* ast, RV& rv) {
+void CallInitDeinit::processReturnThrowYield(const uast::AstNode* ast, RV& rv) {
   // check for use of deinited variables
   processMentions(ast, rv);
 
@@ -893,13 +916,21 @@ void CallInitDeinit::handleReturnOrThrow(const uast::AstNode* ast, RV& rv) {
 
   if (retValue) {
     bool needsCopyOrConv = false;
+    bool copyElidesFromSkip = false;
     ResolvedExpression& re = rv.byAst(retValue);
 
     // decide what needs to happen for this return
-    analyzeReturnedExpr(re, needsCopyOrConv, skipDeinitId, rv);
+    analyzeReturnedExpr(re, ast,
+                        needsCopyOrConv, copyElidesFromSkip, skipDeinitId,
+                        rv);
 
-    if (needsCopyOrConv) {
-      QualifiedType fnRetType = resolver.returnType;
+    if (copyElidesFromSkip) {
+      // if it's a yield, we need to also mark the rhs ID variable dead
+      VarFrame* frame = currentFrame();
+      frame->deinitedVars.insert(skipDeinitId);
+
+    } else if (needsCopyOrConv) {
+      QualifiedType fnRetType = returnOrYieldType();
 
       if (!fnRetType.isUnknown() && !fnRetType.isErroneousType()) {
         // init the return value from the return expression
@@ -908,8 +939,24 @@ void CallInitDeinit::handleReturnOrThrow(const uast::AstNode* ast, RV& rv) {
     }
   }
 
-  processDeinitsForReturn(ast, skipDeinitId, rv);
+  if (!ast->isYield()) {
+    processDeinitsForReturn(ast, skipDeinitId, rv);
+  }
 }
+
+void CallInitDeinit::handleReturn(const uast::Return* ast, RV& rv) {
+  processReturnThrowYield(ast, rv);
+}
+
+void CallInitDeinit::handleThrow(const uast::Throw* ast, RV& rv) {
+  processReturnThrowYield(ast, rv);
+}
+
+void CallInitDeinit::handleYield(const uast::Yield* ast, RV& rv) {
+  processReturnThrowYield(ast, rv);
+}
+
+
 void CallInitDeinit::handleConditional(const Conditional* cond, RV& rv) {
   // Any outer variables inited in the 'then' frame can be propagated up
   VarFrame* frame = currentFrame();
@@ -1205,7 +1252,8 @@ void callInitDeinit(Resolver& resolver) {
                                                        resolver.symbol,
                                                        resolver.byPostorder,
                                                        resolver.poiScope,
-                                                       splitInitedVars);
+                                                       splitInitedVars,
+                                                       resolver.returnType);
 
   auto symName = UniqueString::get(resolver.context, "unknown");
   if (auto nd = resolver.symbol->toNamedDecl()) {

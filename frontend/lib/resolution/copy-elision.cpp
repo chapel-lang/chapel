@@ -47,10 +47,12 @@ struct FindElidedCopies : VarScopeVisitor {
   // methods
   FindElidedCopies(Context* context,
                    const PoiScope* poiScope,
-                   const std::set<ID>& allSplitInitedVars)
-    : VarScopeVisitor(context),
+                   const std::set<ID>& allSplitInitedVars,
+                   QualifiedType fnReturnType)
+    : VarScopeVisitor(context, std::move(fnReturnType)),
       allSplitInitedVars(allSplitInitedVars),
-      poiScope(poiScope) { }
+      poiScope(poiScope) {
+  }
 
   bool hasCrossTypeInitAssignWithIn(const QualifiedType& lhsType,
                                     const QualifiedType& rhsType,
@@ -87,7 +89,9 @@ struct FindElidedCopies : VarScopeVisitor {
                          const QualifiedType& formalType,
                          RV& rv) override;
 
-  void handleReturnOrThrow(const uast::AstNode* ast, RV& rv) override;
+  void handleReturn(const uast::Return* ast, RV& rv) override;
+  void handleThrow(const uast::Throw* ast, RV& rv) override;
+  void handleYield(const uast::Yield* ast, RV& rv) override;
   void handleConditional(const Conditional* cond, RV& rv) override;
   void handleTry(const Try* t, RV& rv) override;
   void handleScope(const AstNode* ast, RV& rv) override;
@@ -340,9 +344,39 @@ void FindElidedCopies::handleInoutFormal(const FnCall* ast,
   processMentions(actual, rv);
 }
 
-void FindElidedCopies::handleReturnOrThrow(const uast::AstNode* ast, RV& rv) {
+void FindElidedCopies::handleReturn(const uast::Return* ast, RV& rv) {
   VarFrame* frame = currentFrame();
   saveElidedCopies(frame);
+}
+
+void FindElidedCopies::handleThrow(const uast::Throw* ast, RV& rv) {
+  VarFrame* frame = currentFrame();
+  saveElidedCopies(frame);
+}
+
+void FindElidedCopies::handleYield(const uast::Yield* ast, RV& rv) {
+  // if a variable is yielded by value & the variable is not used again,
+  // the copy can be elided
+  VarFrame* frame = currentFrame();
+  ID yieldedToId = refersToId(ast->value(), rv);
+  bool elide = false;
+  if (!yieldedToId.isEmpty() && isEligibleVarInAnyFrame(yieldedToId)) {
+    // check that the types are the same
+    if (rv.hasId(yieldedToId)) {
+      QualifiedType actualType = rv.byId(yieldedToId).type();
+      const QualifiedType& yieldType = returnOrYieldType();
+      if (copyElisionAllowedForTypes(yieldType, actualType, ast, rv)) {
+        elide = true;
+      }
+    }
+  }
+
+  if (elide) {
+    addCopyInit(frame, yieldedToId, ast->id());
+  } else {
+    processMentions(ast, rv);
+  }
+
 }
 
 void FindElidedCopies::handleConditional(const Conditional* cond, RV& rv) {
@@ -533,7 +567,8 @@ computeElidedCopies(Context* context,
                     const uast::AstNode* symbol,
                     const ResolutionResultByPostorderID& byPostorder,
                     const PoiScope* poiScope,
-                    const std::set<ID>& allSplitInitedVars) {
+                    const std::set<ID>& allSplitInitedVars,
+                    QualifiedType fnYieldedType) {
   std::set<ID> elidedCopyFromIds;
 
   if (!symbol->isFunction()) {
@@ -542,7 +577,8 @@ computeElidedCopies(Context* context,
     return elidedCopyFromIds;
   }
 
-  FindElidedCopies uv(context, poiScope, allSplitInitedVars);
+  FindElidedCopies uv(context, poiScope, allSplitInitedVars,
+                      std::move(fnYieldedType));
 
   uv.process(symbol,
              // cast here allows VarScopeVisitor to be simple

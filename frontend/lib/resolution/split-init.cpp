@@ -41,7 +41,9 @@ struct FindSplitInits : VarScopeVisitor {
 
   // methods
   FindSplitInits(Context* context)
-    : VarScopeVisitor(context), allSplitInitedVars() { }
+    : VarScopeVisitor(context, QualifiedType()),
+      allSplitInitedVars() {
+  }
 
   SplitInitVarStatus findVarStatus(ID varId);
   static void addInit(VarFrame* frame, ID varId, QualifiedType rhsType);
@@ -62,7 +64,9 @@ struct FindSplitInits : VarScopeVisitor {
                          const QualifiedType& formalType,
                          RV& rv) override;
 
-  void handleReturnOrThrow(const uast::AstNode* ast, RV& rv) override;
+  void handleReturn(const uast::Return* ast, RV& rv) override;
+  void handleThrow(const uast::Throw* ast, RV& rv) override;
+  void handleYield(const uast::Yield* ast, RV& rv) override;
   void handleConditional(const Conditional* cond, RV& rv) override;
   void handleTry(const Try* t, RV& rv) override;
   void handleScope(const AstNode* ast, RV& rv) override;
@@ -203,7 +207,15 @@ void FindSplitInits::handleInoutFormal(const FnCall* ast, const AstNode* actual,
   processMentions(actual, rv);
 }
 
-void FindSplitInits::handleReturnOrThrow(const uast::AstNode* ast, RV& rv) {
+void FindSplitInits::handleReturn(const uast::Return* ast, RV& rv) {
+  // no action needed
+}
+
+void FindSplitInits::handleThrow(const uast::Throw* ast, RV& rv) {
+  // no action needed
+}
+
+void FindSplitInits::handleYield(const uast::Yield* ast, RV& rv) {
   // no action needed
 }
 

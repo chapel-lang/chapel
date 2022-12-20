@@ -964,6 +964,31 @@ static void test10d() {
     });
 }
 
+// value return from a local variable that isn't last mention
+static void test10e() {
+  testActions("test10e",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() {
+          const x:R;
+          return x;
+          x; // this is dead code
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",        ""},
+      {AssociatedAction::DEINIT,       "M.test@5", "x"} // but dead code
+    });
+}
+
+
 // return a module-scope variable, inferred return type
 static void test11a() {
   testActions("test11a",
@@ -1086,18 +1111,160 @@ static void test12c() {
 }
 
 
+// test with a return before a split-inited var is initialized
+static void test13a() {
+  testActions("test13a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
 
+        config const cond = true;
 
+        proc test() {
+          var x : R;
+          if cond {
+            return;
+          }
+          x = new R();
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,     "M.test@9",   ""},
+      {AssociatedAction::DEINIT,       "M.test@11",  "x"}
+    });
+}
 
-// TODO: test a function returning by ref
+// test a few patterns with 'yield'
+static void test14a() {
+  testActions("test14a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
 
-// TODO: test with a return before a split-inited var is initialized
+        config const cond = true;
 
-// TODO: yield
+        iter test() {
+          var x : R;
+          yield x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",          ""}
+      // x not deinited because it was copy elided to return it
+    });
+}
+static void test14b() {
+  testActions("test14b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
 
-// TODO: defer
+        config const cond = true;
 
-// TODO: in intent
+        iter test() {
+          var x : R;
+          yield x;
+          x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",          ""},
+      {AssociatedAction::COPY_INIT,    "M.test@3",   ""},
+      {AssociatedAction::DEINIT,       "M.test@5",   "x"},
+    });
+}
+static void test14c() {
+  testActions("test14c",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        config const cond = true;
+
+        iter test() {
+          var x : R;
+          ref myref = x;
+          yield myref;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",          ""},
+      {AssociatedAction::COPY_INIT,    "M.test@5",   ""},
+      {AssociatedAction::DEINIT,       "M.test@6",   "x"},
+    });
+}
+
+// returning by 'ref'
+static void test15a() {
+  testActions("test15a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        var moduleVar : R;
+
+        proc test() ref {
+          return moduleVar;
+        }
+      }
+    )"""",
+    {
+    });
+}
+
+// yielding by 'ref'
+static void test15b() {
+  testActions("test15b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        var moduleVar : R;
+
+        iter test() ref {
+          yield moduleVar;
+        }
+      }
+    )"""",
+    {
+    });
+}
+
+// 'in' intent
+
+// 'out' intent
+
+// 'inout' intent
+
+// defer
 
 int main() {
   test1();
@@ -1138,6 +1305,7 @@ int main() {
   test10b();
   test10c();
   test10d();
+  test10e();
 
   test11a();
   test11b();
@@ -1145,6 +1313,15 @@ int main() {
   test12a();
   test12b();
   test12c();
+
+  test13a();
+
+  test14a();
+  test14b();
+  test14c();
+
+  test15a();
+  test15b();
 
   return 0;
 }
