@@ -1987,12 +1987,14 @@ static void loadModuleFromBitcode() {
   INT_ASSERT(!info->module);
 
   std::string bitcodeFilename = info->llvmGenFilenames.preOptFilename;
-  std::unique_ptr<llvm::MemoryBuffer> bitcodeFile =
-      std::move(MemoryBuffer::getFile(bitcodeFilename).get());
-  info->module =
-      llvm::parseBitcodeFile(bitcodeFile->getMemBufferRef(), info->llvmContext)
-          .get()
-          .release();
+  auto fileResult = MemoryBuffer::getFile(bitcodeFilename);
+  INT_ASSERT(fileResult && "could not load bitcode file into memory");
+  std::unique_ptr<llvm::MemoryBuffer> bitcodeFile = std::move(fileResult.get());
+  auto bitcodeResult =
+      llvm::parseBitcodeFile(bitcodeFile->getMemBufferRef(), info->llvmContext);
+  INT_ASSERT(bitcodeResult &&
+             "could not deserialize module from loaded bitcode");
+  info->module = bitcodeResult.get().release();
 }
 
 static void setupModule()
