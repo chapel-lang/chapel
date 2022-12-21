@@ -71,7 +71,8 @@ static void testCopyElision(const char* test,
     elisionPoints = computeElidedCopies(context, func,
                                         r->resolutionById(),
                                         /* poiScope */ nullptr,
-                                        splitIds);
+                                        splitIds,
+                                        r->returnType());
   } else {
     printf("Resolving module\n");
     // check the module init function
@@ -82,7 +83,9 @@ static void testCopyElision(const char* test,
     elisionPoints = computeElidedCopies(context, M,
                                         rr,
                                         /* poiScope */ nullptr,
-                                        splitIds);
+                                        splitIds,
+                                        QualifiedType(QualifiedType::VAR,
+                                                      VoidType::get(context)));
   }
 
   std::set<std::string> pointNames;
