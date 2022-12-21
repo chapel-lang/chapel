@@ -84,7 +84,27 @@ target_include_directories(libdyno PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
                            ${CHPL_INCLUDE_DIR})
 
-target_link_libraries(libdyno PUBLIC ${CHPL_LLVM_LINK_ARGS})
+if(APPLE)
+  if (CHPL_LLVM_VERSION VERSION_LESS 14.0)
+    # we see problems with statically linking and using PUBLIC
+    # here because we are building a shared object & that would
+    # include some of the LLVM libraries. But this pattern seems
+    # to work OK with LLVM 14.
+    message(FATAL_ERROR "LLVM >= 14.0 required for MacOS builds")
+  endif()
+  # link the LLVM dependencies with the generated .dylib
+  # (we get linker errors on Mac OS X here if it uses INTERFACE)
+  # an alternative would be to add link option -undefined dynamic_lookup
+  target_link_libraries(libdyno PUBLIC ${CHPL_LLVM_LINK_ARGS})
+else()
+  # Using PUBLIC here causes problems in some configurations with LLVM<14
+  # when the LLVM libraries are included in the .so generated here
+  # and also linked in statically with the resulting executable.
+  # With INTERFACE, the LLVM libraries are only linked with at
+  # the time that this library is used.
+  target_link_libraries(libdyno INTERFACE ${CHPL_LLVM_LINK_ARGS})
+endif()
+
 # TODO: Get printchplenv output proper so that we don't need to SHELL here
 target_compile_options(libdyno PUBLIC
                        SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
