@@ -208,7 +208,7 @@ module ChainTable {
 
         // copy a key-value pair into a slot with the given indices
         proc fillSlot((bucket_idx, chain_idx): (uint, uint), in key: keyType, in val: valType) {
-            use Memory.Initialization;
+            use MemMove;
 
             ref entry = this.buckets[bucket_idx][chain_idx];
 
@@ -225,12 +225,12 @@ module ChainTable {
 
         // copy a key-value pair out of a slot with the given indices
         proc remove((bucket_idx, chain_idx): (uint, uint), out key: keyType, out val: valType) {
-            use Memory.Initialization;
+            use MemMove;
 
             ref entry = this.buckets[bucket_idx][chain_idx];
 
-            key = moveToValue(entry.key);
-            val = moveToValue(entry.val);
+            key = moveFrom(entry.key);
+            val = moveFrom(entry.val);
             entry.status = entryStatus.deleted;
 
             this.numEntries -= 1;
