@@ -57,6 +57,12 @@ static void testCopyElision(const char* test,
 
   const Function* func = M->stmt(M->numStmts()-1)->toFunction();
 
+  if (func) {
+    func->dump();
+  } else {
+    M->dump();
+  }
+
   std::set<ID> splitIds;
   std::set<ID> elisionPoints;
 
@@ -565,6 +571,105 @@ static void test25() {
     {});
 }
 
+// test that copy elision only applies to the first assignment
+// when using split init
+static void test26() {
+  testCopyElision("test26",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x: int;
+          var y: int;
+          var z;
+          z = x;
+          z = y;
+        }
+      }
+    )"""",
+    {"M.test@7"});
+}
+// including with an inner block
+static void test27() {
+  testCopyElision("test27",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x: int;
+          var y: int;
+          var z;
+          {
+            z = x;
+          }
+          z = y;
+        }
+      }
+    )"""",
+    {"M.test@7"});
+}
+// including with a conditional
+static void test28() {
+  testCopyElision("test28",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        config const cond = true;
+
+        proc test() {
+          var a: int;
+          var z;
+          if cond {
+            z = a;
+          } else {
+            z = a;
+          }
+          z = c;
+        }
+      }
+    )"""",
+    {"M.test@6", "M.test@10"});
+}
+// including with a try/catch
+static void test29() {
+  testCopyElision("test29",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        config const cond = true;
+
+        proc test() {
+          var a: int;
+          var b: int;
+          var z;
+          try {
+            z = a;
+          } catch {
+            return;
+          }
+          z = b;
+        }
+      }
+    )"""",
+    {"M.test@7"});
+}
+
 
 int main() {
   test1();
@@ -592,6 +697,10 @@ int main() {
   test23();
   test24();
   test25();
+  test26();
+  test27();
+  test28();
+  test29();
 
   return 0;
 }
