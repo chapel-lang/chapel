@@ -7,7 +7,11 @@ outfile = sys.argv[2]
 with open (outfile, 'r') as f:
     lines = f.readlines()
 
+final_text = ""
 with open (outfile, 'w') as f:
     for line in lines:
         if 'halt reached - Timed out' in line:
-            f.write(line)
+            final_text += line.strip()
+        if 'C is' in line:
+            final_text += line.strip()
+    f.write(final_text+'\n')
