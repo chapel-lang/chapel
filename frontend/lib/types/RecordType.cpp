@@ -20,6 +20,7 @@
 #include "chpl/types/RecordType.h"
 
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
 
 namespace chpl {
 namespace types {
@@ -70,6 +71,18 @@ const RecordType* RecordType::getBytesType(Context* context) {
   return RecordType::get(context, id, name,
                          /* instantiatedFrom */ nullptr,
                          SubstitutionsMap());
+}
+
+bool RecordType::isMissingBundledRecordType(Context* context, ID id) {
+  bool noLibrary = parsing::bundledModulePath(context).isEmpty();
+  if (noLibrary) {
+    auto path = id.symbolPath();
+    return path == "String._string" ||
+           path == "ChapelRange.range" ||
+           path == "Bytes._bytes";
+  }
+
+  return false;
 }
 
 

@@ -58,16 +58,9 @@ static void test2() {
   assert(qt.isUnknown());
 }
 
-static void test3() {
+static void helpTest3(const std::string& theFunction) {
   // Make sure that types depending on earlier actual types are properly
   // enforced
-  const std::string theFunction =
-    R""""(
-    proc f(param a: bool,
-           const ref b: if a then string else int,
-           const ref c: b.type) const ref {
-      return c;
-    })"""";
   {
     Context ctx;
     auto context = &ctx;
@@ -117,9 +110,33 @@ static void test3() {
   }
 }
 
+static void test3a() {
+  const std::string theFunction =
+    R""""(
+    proc f(param a: bool,
+           const ref b: if a then string else int,
+           const ref c: b.type) const ref {
+      return c;
+    })"""";
+  helpTest3(theFunction);
+}
+
+static void test3b() {
+  const std::string theFunction =
+    R""""(
+    proc f(param a: bool,
+           b: if a then string else int,
+           c: b.type) {
+      return c;
+    })"""";
+  helpTest3(theFunction);
+}
+
+
 int main() {
   test1();
   test2();
-  test3();
+  test3a();
+  test3b();
   return 0;
 }
