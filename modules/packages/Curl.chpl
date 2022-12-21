@@ -165,6 +165,11 @@ module Curl {
   require "-lcurl";
 
 
+  /*
+   Local copy of IO.EEOF as it is being phased out and is private in IO
+   */
+  private extern proc chpl_macro_int_EEOF():c_int;
+
   /* Returns the ``CURL`` handle connected to a channel opened with
      :proc:`URL.openUrlReader` or :proc:`URL.openUrlWriter`.
    */
@@ -980,7 +985,7 @@ module Curl {
       // Return EEOF if the connection is no longer running
       space = qio_channel_nbytes_available_unlocked(ch);
       if cc.running_handles == 0 && space < amt then
-        return EEOF;
+        return chpl_macro_int_EEOF():errorCode;
 
       return 0;
     }
@@ -1122,8 +1127,8 @@ module Curl {
       // Return EEOF if the connection is no longer running
       space = qio_channel_nbytes_write_behind_unlocked(ch);
       if cc.running_handles == 0 && space > target_space {
-        writeln("RETURNING EOF");
-        return EEOF;
+        writeln("RETURNING EEOF");
+        return chpl_macro_int_EEOF():errorCode;
       }
 
       return 0;

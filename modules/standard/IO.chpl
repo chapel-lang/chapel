@@ -2481,14 +2481,14 @@ inline operator :(x: ioBits, type t:string) {
 }
 
 /*
- EEOF, ESHORT, and EFORMAT are Chapel-specific IO error codes.
+ EEOF, ESHORT, and EFORMAT are internal, Chapel-specific IO error codes.
  */
 
 private extern proc chpl_macro_int_EEOF():c_int;
 /* An error code indicating the end of file has been reached (Chapel specific)
  */
 pragma "no doc"
-inline proc EEOF return chpl_macro_int_EEOF():c_int;
+private inline proc EEOF return chpl_macro_int_EEOF():c_int;
 
 private extern proc chpl_macro_int_ESHORT():c_int;
 /* An error code indicating that the end of file or the end of the
@@ -2496,7 +2496,7 @@ private extern proc chpl_macro_int_ESHORT():c_int;
    (Chapel specific)
   */
 pragma "no doc"
-inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
+private inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
 
 private extern proc chpl_macro_int_EFORMAT():c_int;
 /* An error code indicating a format error; for example when reading a quoted
@@ -2504,7 +2504,7 @@ private extern proc chpl_macro_int_EFORMAT():c_int;
    opening quote. (Chapel specific)
   */
 pragma "no doc"
-inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
+private inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
 
 
 pragma "no doc"

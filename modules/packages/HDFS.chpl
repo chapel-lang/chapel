@@ -130,6 +130,11 @@ module HDFS {
 
   require "hdfs.h";
 
+  /*
+   Local copy of IO.EEOF as it is being phased out and is private in IO
+   */
+  private extern proc chpl_macro_int_EEOF():c_int;
+
   pragma "no doc"
   extern "struct hdfs_internal" record hdfs_internal { }
   pragma "no doc"
@@ -495,7 +500,7 @@ module HDFS {
         var rc = hdfsPread(file.fs.hfs, file.hfile, offset, ptr, len:int(32));
         if rc == 0 {
           // end of file
-          return EEOF;
+          return chpl_macro_int_EEOF():errorCode;
         } else if rc < 0 {
           // error
           return qio_mkerror_errno();
