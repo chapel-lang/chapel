@@ -450,7 +450,13 @@ void AstNode::dumpHelper(const DumpSettings& s,
   // output the id if desired
   if (s.printId) {
     std::string idStr = getIdStr(ast);
-    s.out << std::setw(s.idWidth) << idStr << std::setw(0);
+    // save the stream format state
+    std::ios state(nullptr);
+    state.copyfmt(s.out);
+    // output ID left justified and padded
+    s.out << std::setw(s.idWidth) << std::left << idStr;
+    // restore the stream format state
+    s.out.copyfmt(state);
   }
 
   if (s.kind == StringifyKind::DEBUG_DETAIL) {

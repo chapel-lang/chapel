@@ -155,7 +155,9 @@ computeAndPrintStuff(Context* context,
     std::string nameStr = nameForAst(ast);
 
     // output the ID
-    std::cout << std::setw(maxIdWidth) << idStr << std::setw(0);
+    std::cout << std::setw(maxIdWidth) << std::left << idStr;
+    // restore format to default
+    std::cout.copyfmt(std::ios(NULL));
 
     // output the tag and name (if any name)
     std::string tagNameStr = " " + tagStr;
