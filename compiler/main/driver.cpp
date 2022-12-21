@@ -2023,6 +2023,7 @@ int main(int argc, char* argv[]) {
     // skip backend if the compile command does not require it
     bool shouldSkipBackend =
         fParseOnly ||
+        countTokens || printTokens ||
         (stopAfterPass[0] && strcmp(stopAfterPass, "makeBinary") != 0);
     if (!shouldSkipBackend) {
       // invoke back-end
