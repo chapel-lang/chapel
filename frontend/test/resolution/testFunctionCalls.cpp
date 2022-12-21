@@ -64,8 +64,8 @@ static void test3() {
   const std::string theFunction =
     R""""(
     proc f(param a: bool,
-           b: if a then string else int,
-           c: b.type) {
+           const ref b: if a then string else int,
+           const ref c: b.type) const ref {
       return c;
     })"""";
   {
