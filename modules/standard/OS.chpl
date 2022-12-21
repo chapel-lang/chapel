@@ -1120,13 +1120,13 @@ module OS {
     } else if err == ETIMEDOUT {
       return new owned TimeoutError(details, err);
     } else if err == EEOF {
-      return new owned EofError(details, err);
+      return new owned EofError(details);
     } else if err == ESHORT {
-      return new owned UnexpectedEofError(details, err);
+      return new owned UnexpectedEofError(details);
     } else if err == EFORMAT {
-      return new owned BadFormatError(details, err);
+      return new owned BadFormatError(details);
     } else if err == EIO {
-      return new owned IoError(err, details);
+      return new owned IoError(details, err);
     }
 
     return new owned SystemError(err, details);
@@ -1304,8 +1304,28 @@ module OS {
      used and emitted by the IO module.
   */
   class IoError : SystemError {
-    proc init(err: errorCode, details: string = "") {
-      super.init(err, details);
+    proc init(details: string = "", err: errorCode = EIO:errorCode) {
+      super.init(EIO:errorCode, details);
+      internalError = err;
+    }
+
+    // Keep a copy of the originally-provided Chapel-internal error code so we
+    // can give a more specific error message
+    var internalError: errorCode;
+
+    // Issue an error message specific to the internal error code
+    override proc message() {
+      var strerror_err: c_int = 0;
+      var errstr = sys_strerror_syserr_str(internalError, strerror_err);
+      var err_msg: string;
+      try! {
+        err_msg = createStringWithOwnedBuffer(errstr);
+      }
+
+      if !details.isEmpty() then
+        err_msg += " (" + details + ")";
+
+      return err_msg;
     }
   }
 
@@ -1315,7 +1335,7 @@ module OS {
   */
   class EofError : IoError {
     proc init(details: string = "", err: errorCode = EEOF:errorCode) {
-      super.init(err, details);
+      super.init(details, err);
     }
   }
 
@@ -1326,7 +1346,7 @@ module OS {
   */
   class UnexpectedEofError : IoError {
     proc init(details: string = "", err: errorCode = ESHORT:errorCode) {
-      super.init(err, details);
+      super.init(details, err);
     }
   }
 
@@ -1336,7 +1356,7 @@ module OS {
   */
   class BadFormatError : IoError {
     proc init(details: string = "", err: errorCode = EFORMAT:errorCode) {
-      super.init(err, details);
+      super.init(details, err);
     }
   }
 
