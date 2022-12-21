@@ -561,7 +561,14 @@ static void setupChplLLVM(void) {
 #endif
 }
 
-static void saveCompileCommand(int argc, char* argv[]) {
+static void saveCompileCommand() {
+  // save compile command to file for later use in codegen
+  fileinfo* file = openTmpFile(compileCommandFilename, "w");
+  fprintf(file->fptr, "%s", compileCommand);
+  closefile(file);
+}
+
+static void recordCodeGenStrings(int argc, char* argv[]) {
   compileCommand = astr("chpl ");
   // WARNING: This does not handle arbitrary sequences of escaped characters
   //  in string arguments
@@ -587,14 +594,6 @@ static void saveCompileCommand(int argc, char* argv[]) {
       compileCommand = astr(compileCommand, arg, " ");
   }
 
-  // save compile command to file for later use in codegen
-  fileinfo* file = openTmpFile(compileCommandFilename, "w");
-  fprintf(file->fptr, "%s", compileCommand);
-  closefile(file);
-}
-
-static void recordCodeGenStrings(int argc, char* argv[]) {
-  saveCompileCommand(argc, argv);
   get_version(compileVersion, sizeof(compileVersion));
 }
 
@@ -1981,9 +1980,7 @@ int main(int argc, char* argv[]) {
 
     setupModulePaths();
 
-    if (!driverInSubInvocation) {
-      recordCodeGenStrings(argc, argv);
-    }
+    recordCodeGenStrings(argc, argv);
   } // astlocMarker scope
 
   // We print things (--help*, --copyright, etc.) before validating
@@ -2016,6 +2013,7 @@ int main(int argc, char* argv[]) {
 
     // initialize resources that need to be carried over between invocations
     ensureTmpDirExists();
+    saveCompileCommand();
 
     // invoke front- and mid-end
     if ((status = runCompilation(argc, argv)) != 0) {
