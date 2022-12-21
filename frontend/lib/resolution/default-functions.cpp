@@ -279,6 +279,42 @@ generateInitCopySignature(Context* context, const CompositeType* inCompType) {
   return ret;
 }
 
+static const TypedFnSignature*
+generateDeinitSignature(Context* context, const CompositeType* inCompType) {
+  const CompositeType* compType = nullptr;
+  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
+  std::vector<QualifiedType> formalTypes;
+
+  generateInitParts(context, inCompType, compType, ufsFormals, formalTypes);
+
+  // build the untyped signature
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ compType->id(),
+                        /*name*/ USTR("init"),
+                        /*isMethod*/ true,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*idTag*/ parsing::idToTag(context, compType->id()),
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(ufsFormals),
+                        /*whereClause*/ nullptr);
+
+  // now build the other pieces of the typed signature
+  auto g = getTypeGenericity(context, formalTypes[0].type());
+  bool needsInstantiation = (g == Type::GENERIC ||
+                             g == Type::GENERIC_WITH_DEFAULTS);
+
+  auto ret = TypedFnSignature::get(context,
+                                   ufs,
+                                   std::move(formalTypes),
+                                   TypedFnSignature::WHERE_NONE,
+                                   needsInstantiation,
+                                   /* instantiatedFrom */ nullptr,
+                                   /* parentFn */ nullptr,
+                                   /* formalsInstantiated */ Bitmap());
+
+  return ret;
+}
 
 static const TypedFnSignature* const&
 fieldAccessorQuery(Context* context,
@@ -356,6 +392,8 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
       result = generateInitSignature(context, compType);
     } else if (name == USTR("init=")) {
       result = generateInitCopySignature(context, compType);
+    } else if (name == USTR("deinit")) {
+      result = generateDeinitSignature(context, compType);
     } else {
       CHPL_ASSERT(false && "Not implemented yet!");
     }

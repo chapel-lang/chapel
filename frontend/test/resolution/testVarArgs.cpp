@@ -37,8 +37,8 @@
 #include <sstream>
 #include <map>
 
-static bool debug = false;
-static bool verbose = false;
+static bool debug = true;
+static bool verbose = true;
 
 static std::vector<Context*> globalContexts;
 static Context* getNewContext() {
