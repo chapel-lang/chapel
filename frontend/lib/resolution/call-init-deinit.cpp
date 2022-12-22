@@ -56,6 +56,7 @@ struct CallInitDeinit : VarScopeVisitor {
 
   // local state
   std::set<ID> outIntentFormals;
+  std::set<ID> inoutIntentFormals;
 
   // methods
   CallInitDeinit(Context* context,
@@ -779,8 +780,8 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
       handledFormal = false;
       outIntentFormals.insert(ast->id());
     } else if (intent == QualifiedType::INOUT) {
-      CHPL_ASSERT(false && "TODO");
       handledFormal = false;
+      inoutIntentFormals.insert(ast->id());
     } else {
       handledFormal = true;
     }

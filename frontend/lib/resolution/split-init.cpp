@@ -38,6 +38,8 @@ struct SplitInitVarStatus;
 struct FindSplitInits : VarScopeVisitor {
   // result of the process
   std::set<ID> allSplitInitedVars;
+
+  // internal variables
   std::set<ID> outFormals;
 
   // methods
@@ -210,7 +212,11 @@ void FindSplitInits::handleInoutFormal(const FnCall* ast, const AstNode* actual,
 }
 
 void FindSplitInits::handleReturn(const uast::Return* ast, RV& rv) {
-  // no action needed
+  // consider all 'out' formals to be mentioned by the return
+  VarFrame* frame = currentFrame();
+  for (auto id : outFormals) {
+    frame->mentionedVars.insert(id);
+  }
 }
 
 void FindSplitInits::handleThrow(const uast::Throw* ast, RV& rv) {

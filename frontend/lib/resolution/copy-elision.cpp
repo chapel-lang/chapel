@@ -38,8 +38,11 @@ using namespace types;
 struct FindElidedCopies : VarScopeVisitor {
   // inputs
   const std::set<ID>& allSplitInitedVars;
-
   const PoiScope* poiScope = nullptr; // used for checking init= calls
+  const Block* fnBody = nullptr; // used for handling implicit return
+
+  // internal variables
+  std::set<ID> outOrInoutFormals;
 
   // result of the process
   std::set<ID> allElidedCopyFromIds;
@@ -47,11 +50,13 @@ struct FindElidedCopies : VarScopeVisitor {
   // methods
   FindElidedCopies(Context* context,
                    const PoiScope* poiScope,
+                   const Block* fnBody,
                    const std::set<ID>& allSplitInitedVars,
                    QualifiedType fnReturnType)
     : VarScopeVisitor(context, std::move(fnReturnType)),
       allSplitInitedVars(allSplitInitedVars),
-      poiScope(poiScope) {
+      poiScope(poiScope),
+      fnBody(fnBody) {
   }
 
   bool hasCrossTypeInitAssignWithIn(const QualifiedType& lhsType,
@@ -74,6 +79,8 @@ struct FindElidedCopies : VarScopeVisitor {
   void saveLocalVarElidedCopies(VarFrame* frame);
 
   bool isEligibleVarInAnyFrame(ID varId);
+
+  void noteMentionsForOutFormals(VarFrame* frame);
 
   // overrides
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
@@ -253,6 +260,14 @@ bool FindElidedCopies::isEligibleVarInAnyFrame(ID varId) {
   return false;
 }
 
+void FindElidedCopies::noteMentionsForOutFormals(VarFrame* frame) {
+  // consider all 'out' or 'inout' variables to be mentioned by a 'return'
+  // (since they will be communicated back to the call site)
+  for (auto id : outOrInoutFormals) {
+    addMention(frame, id);
+  }
+}
+
 void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   addDeclaration(currentFrame(), ast);
   processDeclarationInit(ast, rv);
@@ -270,6 +285,13 @@ void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
           addCopyInit(frame, rhsVarId, ast->id());
         }
       }
+    }
+  }
+
+  if (ast->isFormal() || ast->isVarArgFormal()) {
+    if (ast->storageKind() == IntentList::OUT ||
+        ast->storageKind() == IntentList::INOUT) {
+      outOrInoutFormals.insert(ast->id());
     }
   }
 }
@@ -346,6 +368,8 @@ void FindElidedCopies::handleInoutFormal(const FnCall* ast,
 
 void FindElidedCopies::handleReturn(const uast::Return* ast, RV& rv) {
   VarFrame* frame = currentFrame();
+
+  noteMentionsForOutFormals(frame);
   saveElidedCopies(frame);
 }
 
@@ -539,6 +563,12 @@ void FindElidedCopies::handleScope(const AstNode* ast, RV& rv) {
   VarFrame* frame = currentFrame();
   VarFrame* parent = currentParentFrame();
 
+  // if it's the function's body block, consider out/inout formals mentioned
+  // (since they will be used by the implicit return)
+  if (frame->scopeAst == fnBody) {
+    noteMentionsForOutFormals(frame);
+  }
+
   // handle any local variables
   saveLocalVarElidedCopies(frame);
 
@@ -571,13 +601,17 @@ computeElidedCopies(Context* context,
                     QualifiedType fnYieldedType) {
   std::set<ID> elidedCopyFromIds;
 
-  if (!symbol->isFunction()) {
+  auto fn = symbol->toFunction();
+
+  if (fn == nullptr) {
+    // assume this is running on a Module
+
     // module-scope variables can't be copy elided, so don't run
     // the analysis on them.
     return elidedCopyFromIds;
   }
 
-  FindElidedCopies uv(context, poiScope, allSplitInitedVars,
+  FindElidedCopies uv(context, poiScope, fn->body(), allSplitInitedVars,
                       std::move(fnYieldedType));
 
   uv.process(symbol,

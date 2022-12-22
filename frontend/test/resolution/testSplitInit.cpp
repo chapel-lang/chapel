@@ -1226,6 +1226,25 @@ static void test48() {
     {});
 }
 
+static void test49() {
+  testSplitInit("test49",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test(out x: int) {
+          return;
+          x = 23;
+        }
+      }
+    )"""",
+    {});
+}
+
+
 
 int main() {
   test1();
@@ -1278,6 +1297,7 @@ int main() {
   test46();
   test47();
   test48();
+  test49();
 
   return 0;
 }

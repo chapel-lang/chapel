@@ -670,6 +670,70 @@ static void test29() {
     {"M.test@7"});
 }
 
+// out variable can't be copy elided from b/c it is mentioned by return
+static void test30() {
+  testCopyElision("test30",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        proc test(out x: int) {
+          var y = x;
+          return;
+        }
+      }
+    )"""",
+    {});
+}
+static void test31() {
+  testCopyElision("test31",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        proc test(out x: int) {
+          var y = x;
+        }
+      }
+    )"""",
+    {});
+}
+static void test32() {
+  testCopyElision("test32",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        proc test(inout x: int) {
+          var y = x;
+          return;
+        }
+      }
+    )"""",
+    {});
+}
+static void test33() {
+  testCopyElision("test33",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        proc test(inout x: int) {
+          var y = x;
+        }
+      }
+    )"""",
+    {});
+}
+
 
 int main() {
   test1();
@@ -701,6 +765,10 @@ int main() {
   test27();
   test28();
   test29();
+  test30();
+  test31();
+  test32();
+  test33();
 
   return 0;
 }
