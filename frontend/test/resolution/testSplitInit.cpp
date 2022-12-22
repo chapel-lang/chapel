@@ -1244,6 +1244,72 @@ static void test49() {
     {});
 }
 
+// the next three are similar to the previous three, but with
+// throwing instead of returning.
+//
+// initializing an 'out' formal in a conditional is OK if the
+// other branch returns or throws
+static void test50() {
+  testSplitInit("test50",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        config var cond = false;
+
+        proc test(out x: int) {
+          if cond {
+            throw nil;
+          } else {
+            x = 5;
+          }
+        }
+      }
+    )"""",
+    {"x"});
+}
+static void test51() {
+  testSplitInit("test51",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test(out x: int) {
+          try {
+            x = 5;
+          } catch {
+            throw nil;
+          }
+        }
+      }
+    )"""",
+    {"x"});
+}
+
+static void test52() {
+  testSplitInit("test52",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test(out x: int) {
+          throw nil;
+          x = 23;
+        }
+      }
+    )"""",
+    {});
+}
+
 
 
 int main() {
@@ -1298,6 +1364,9 @@ int main() {
   test47();
   test48();
   test49();
+  test50();
+  test51();
+  test52();
 
   return 0;
 }

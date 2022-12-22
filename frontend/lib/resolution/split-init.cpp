@@ -241,7 +241,9 @@ void FindSplitInits::handleConditional(const Conditional* cond, RV& rv) {
     if (thenFrame->eligibleVars.count(id) > 0) {
       // variable declared in this scope, so save the result
       allSplitInitedVars.insert(id);
-    } else {
+    } else if (elseFrame == nullptr ||
+               elseFrame->mentionedVars.count(id) == 0) {
+      // variable inited in 'then' but not mentioned in 'else'
       locInitedVars.insert(id);
     }
   }
@@ -250,7 +252,8 @@ void FindSplitInits::handleConditional(const Conditional* cond, RV& rv) {
       if (elseFrame->eligibleVars.count(id) > 0) {
         // variable declared in this scope, so save the result
         allSplitInitedVars.insert(id);
-      } else {
+      } else if (thenFrame->mentionedVars.count(id) == 0) {
+        // variable inited in 'else' and not mentioned in 'then'
         locInitedVars.insert(id);
       }
     }
@@ -277,7 +280,7 @@ void FindSplitInits::handleConditional(const Conditional* cond, RV& rv) {
 
     if (thenInits && elseInits) {
       locSplitInitedVars.insert(id);
-    } else if (outFormals.count(id) == 0 &&
+    } else if (//outFormals.count(id) == 0 &&
                ((thenInits         && elseReturnsThrows) ||
                 (thenReturnsThrows && elseInits))) {
       // one branch returns or throws and it's not an 'out' formal
@@ -438,7 +441,7 @@ void FindSplitInits::handleTry(const Try* t, RV& rv) {
       // gather variables to be split-inited for parent frames
       // into trySplitInitVars
       bool allowSplitInit = false;
-      if (allThrowOrReturn && outFormals.count(id) == 0) {
+      if (allThrowOrReturn) { // && outFormals.count(id) == 0) {
         bool mentionedOrInitedInCatch = false;
         for (int i = 0; i < nCatchFrames; i++) {
           VarFrame* catchFrame = currentCatchFrame(i);
