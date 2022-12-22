@@ -165,7 +165,9 @@ if [ "$GITHUB_ACTIONS" != "true" ]; then
 fi
 
 # Disable GMP and re2 to speed up build.
-export CHPL_GMP=none
+if [ "$ARKOUDA_SMOKE_TEST" != "true" ]; then
+    export CHPL_GMP=none
+fi
 
 # mason currently requires CHPL_COMM=none -- https://github.com/chapel-lang/chapel/issues/12626
 COMM=`$CHPL_HOME/util/chplenv/chpl_comm.py`
