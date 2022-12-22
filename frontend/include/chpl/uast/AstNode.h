@@ -202,6 +202,12 @@ class AstNode {
    */
   static bool mayContainStatements(AstTag tag);
 
+  /**
+    Returns 'true' if this uAST node is a inherently a statement.
+    Note that anything contained directly in a Block is also a statement.
+   */
+  bool isInherentlyStatement() const;
+
   bool shallowMatch(const AstNode* other) const;
   bool completeMatch(const AstNode* other) const;
 

@@ -62,7 +62,7 @@ class VarScopeVisitor {
 
   // ----- internal variables
   std::vector<owned<VarFrame>> scopeStack;
-
+  std::vector<const AstNode*> inAstStack;
 
   // ----- methods to be implemented by specific analysis subclass
 
@@ -121,6 +121,9 @@ class VarScopeVisitor {
     return scopeStack.back().get();
   }
 
+  /** Returns the current statement being traversed */
+  const AstNode* currentStatement();
+
   /** Return the parent frame or nullptr if there is none. */
   VarFrame* currentParentFrame() {
     VarFrame* parent = nullptr;
@@ -173,6 +176,9 @@ class VarScopeVisitor {
   // ----- visitor implementation
   void enterScope(const uast::AstNode* ast, RV& rv);
   void exitScope(const uast::AstNode* ast, RV& rv);
+
+  void enterAst(const uast::AstNode* ast);
+  void exitAst(const uast::AstNode* ast);
 
   bool enter(const VarLikeDecl* ast, RV& rv);
   void exit(const VarLikeDecl* ast, RV& rv);
