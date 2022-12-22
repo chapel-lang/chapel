@@ -96,6 +96,9 @@ if(APPLE)
   # (we get linker errors on Mac OS X here if it uses INTERFACE)
   # an alternative would be to add link option -undefined dynamic_lookup
   target_link_libraries(libdyno PUBLIC ${CHPL_LLVM_LINK_ARGS})
+elseif(CYGWIN)
+  # (we also get linker errors on Cygwin if it uses INTERFACE here)
+  target_link_libraries(libdyno PUBLIC ${CHPL_LLVM_LINK_ARGS})
 else()
   # Using PUBLIC here causes problems in some configurations with LLVM<14
   # when the LLVM libraries are included in the .so generated here
