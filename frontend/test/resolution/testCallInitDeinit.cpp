@@ -468,7 +468,7 @@ static void test4c() {
     });
 }
 
-// test cross-type variable init
+// test cross-type variable init from an integer
 static void test5a() {
   testActions("test5a",
     R""""(
@@ -476,7 +476,6 @@ static void test5a() {
         record R { }
         proc R.init() { }
         proc R.init=(other: int) { }
-        operator R.=(ref lhs: R, rhs: R) { }
         proc R.deinit() { }
         proc makeR() {
           return new R();
@@ -499,7 +498,6 @@ static void test5b() {
         record R { }
         proc R.init() { }
         proc R.init=(other: int) { }
-        operator R.=(ref lhs: R, rhs: R) { }
         proc R.deinit() { }
         proc makeR() {
           return new R();
@@ -515,6 +513,91 @@ static void test5b() {
       {AssociatedAction::DEINIT,       "M.test@5", "x"},
     });
 }
+
+static void test5c() {
+  testActions("test5c",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: int) { }
+        proc R.deinit() { }
+        proc makeR() {
+          return new R();
+        }
+        proc test() {
+          var i = 4;
+          var x:R = i;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::INIT_OTHER,   "x",        ""},
+      {AssociatedAction::DEINIT,       "M.test@5", "x"},
+    });
+}
+
+
+// test cross-type variable init from another record
+static void test6a() {
+  testActions("test6a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        proc R.init=(other: U) { }
+        proc R.deinit() { }
+        record U { }
+        proc U.init() { }
+        proc U.init=(other: U) { }
+        proc U.deinit() { }
+
+        proc makeU() {
+          return new U();
+        }
+        proc test() {
+          var x:R = makeU();
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::INIT_OTHER,   "x",        ""},
+      {AssociatedAction::DEINIT,       "M.test@4", "M.test@2"},
+      {AssociatedAction::DEINIT,       "M.test@4", "x"}
+    });
+}
+
+static void test6b() {
+  testActions("test6b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        proc R.init=(other: U) { }
+        proc R.deinit() { }
+        record U { }
+        proc U.init() { }
+        proc U.init=(other: U) { }
+        proc U.deinit() { }
+
+        proc makeU() {
+          return new U();
+        }
+        proc test() {
+          var x:R;
+          x = makeU();
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::INIT_OTHER,   "M.test@5", ""},
+      {AssociatedAction::DEINIT,       "M.test@5", "M.test@4"},
+      {AssociatedAction::DEINIT,       "M.test@6", "x"}
+    });
+}
+
 
 int main() {
   test1();
@@ -534,6 +617,10 @@ int main() {
 
   test5a();
   test5b();
+  test5c();
+
+  test6a();
+  test6b();
 
   return 0;
 }

@@ -77,6 +77,7 @@ struct CallInitDeinit : VarScopeVisitor {
                        const QualifiedType& rhsType,
                        RV& rv);
   void resolveMoveInit(const AstNode* ast,
+                       const AstNode* rhsAst,
                        const QualifiedType& lhsType,
                        const QualifiedType& rhsType,
                        RV& rv);
@@ -379,6 +380,7 @@ static bool isTypeParam(QualifiedType::Kind kind) {
 }
 
 void CallInitDeinit::resolveMoveInit(const AstNode* ast,
+                                     const AstNode* rhsAst,
                                      const QualifiedType& lhsType,
                                      const QualifiedType& rhsType,
                                      RV& rv) {
@@ -392,13 +394,17 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
 
       // Otherwise, no need to resolve anything else.
     } else {
+      bool lhsGenUnk = lhsType.isUnknown() ||
+                       getTypeGenericity(context, lhsType) != Type::CONCRETE;
+      bool rhsGenUnk = rhsType.isUnknown() ||
+                       getTypeGenericity(context, rhsType) != Type::CONCRETE;
       // resolve a copy init and a deinit to deinit the temporary
-      if (lhsType.isGenericOrUnknown() || rhsType.isGenericOrUnknown()) {
+      if (lhsGenUnk || rhsGenUnk) {
         // TODO: this should not happen
         printf("Warning: should not be reached\n");
       } else {
         resolveCopyInit(ast, lhsType, rhsType, rv);
-        resolveDeinit(ast, ast->id(), rhsType, rv);
+        resolveDeinit(ast, rhsAst->id(), rhsType, rv);
       }
     }
   } else {
@@ -433,15 +439,14 @@ void CallInitDeinit::processInit(VarFrame* frame,
 
   if (lhsType.isType() || lhsType.isParam()) {
     // these are basically 'move' initialization
-    resolveMoveInit(ast, lhsType, rhsType, rv);
+    resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
   } else {
-    printf("H1\n");
     if (isRef(lhsType.kind())) {
       // e.g. ref x = returnAValue();
       CHPL_ASSERT(false && "TODO");
     } else if (elidedCopyFromIds.count(ast->id()) > 0) {
       // it is move initialization
-      resolveMoveInit(ast, lhsType, rhsType, rv);
+      resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
 
       // The RHS must represent a variable that is now dead,
       // so note that in deinitedVars.
@@ -449,10 +454,9 @@ void CallInitDeinit::processInit(VarFrame* frame,
       // copy elision with '=' should only apply to myVar = myOtherVar
       CHPL_ASSERT(!rhsId.isEmpty());
       frame->deinitedVars.insert(rhsId);
-    } else if (lhsType.type() == rhsType.type() &&
-               rv.byAst(rhsAst).toId().isEmpty() && !isRef(rhsType.kind())) {
+    } else if (rv.byAst(rhsAst).toId().isEmpty() && !isRef(rhsType.kind())) {
       // e.g. var x; x = callReturningValue();
-      resolveMoveInit(ast, lhsType, rhsType, rv);
+      resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
     } else {
       // it is copy initialization, so use init= for records
       // and assign for other stuff
@@ -464,6 +468,7 @@ void CallInitDeinit::processInit(VarFrame* frame,
     }
   }
 }
+
 
 void CallInitDeinit::resolveDeinit(const AstNode* ast,
                                    ID deinitedId,
@@ -490,8 +495,15 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
   const Scope* scope = scopeForId(context, ast->id());
   auto c = resolveGeneratedCall(context, ast, ci, scope,
                                 resolver.poiScope);
-  ResolvedExpression& opR = rv.byAst(ast);
-  resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
+
+  const AstNode* assocAst = currentStatement();
+  if (assocAst && assocAst->isVarLikeDecl()) {
+    assocAst = currentFrame()->scopeAst;
+  }
+
+  ResolvedExpression& opR = rv.byAst(assocAst);
+  // Should we associate it with the current statement or the current frame?
+  resolver.handleResolvedAssociatedCall(opR, assocAst, ci, c,
                                         AssociatedAction::DEINIT,
                                         deinitedId);
 }
@@ -586,7 +598,7 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
 
   if (lhsType.isType() || lhsType.isParam()) {
     // these are basically 'move' initialization
-    resolveMoveInit(ast, lhsType, rhsType, rv);
+    resolveMoveInit(ast, rhsAst, lhsType, rhsType, rv);
   } else if (splitInited) {
     processInit(frame, ast, lhsType, rhsType, rv);
   } else {
@@ -614,7 +626,7 @@ void CallInitDeinit::handleOutFormal(const FnCall* ast,
     recordInitializationOrder(frame, actualId);
 
     // we can skip the copy if the types match
-    resolveMoveInit(actual, actualType, formalType, rv);
+    resolveMoveInit(actual, actual, actualType, formalType, rv);
   } else {
     // not initializing a variable, so just resolve the '=' call
     resolveAssign(actual, actualType, formalType, rv);
@@ -634,7 +646,7 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
   // is the copy for 'in' elided?
   if (elidedCopyFromIds.count(ast->id()) > 0 && isValue(actualType.kind())) {
     // it is move initialization
-    resolveMoveInit(actual, formalType, actualType, rv);
+    resolveMoveInit(actual, actual, formalType, actualType, rv);
 
     // The RHS must represent a variable that is now dead,
     // so note that in deinitedVars.
@@ -712,6 +724,7 @@ void callInitDeinit(Resolver& resolver) {
     symName = nd->name();
   }
 
+  /*
   printf("\nSplit Init Report for '%s':\n", symName.c_str());
   for (auto varId : splitInitedVars) {
     auto ast = parsing::idToAst(resolver.context, varId);
@@ -730,6 +743,7 @@ void callInitDeinit(Resolver& resolver) {
            id.str().c_str());
   }
   printf("\n");
+  */
 
   CallInitDeinit uv(resolver.context, resolver,
                     splitInitedVars, elidedCopyFromIds);
