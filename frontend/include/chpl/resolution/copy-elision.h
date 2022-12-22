@@ -48,6 +48,7 @@ std::set<ID>
 computeElidedCopies(Context* context,
                     const uast::AstNode* symbol,
                     const ResolutionResultByPostorderID& byPostorder,
+                    const PoiScope* poiScope,
                     const std::set<ID>& allSplitInitedVars);
 
 

@@ -1074,12 +1074,13 @@ class ResolvedParamLoop;
 class AssociatedAction {
  public:
   enum Action {
-    ASSIGN,
-    COPY_INIT,  // init= from same type
-    INIT_OTHER, // init= from other type
+    ASSIGN,       // = from the same type
+    ASSIGN_OTHER, // = from other type
+    COPY_INIT,    // init= from same type
+    INIT_OTHER,   // init= from other type
     DEFAULT_INIT,
     DEINIT,
-    ITERATE, // aka "these"
+    ITERATE,      // aka "these"
     NEW_INIT,
   };
 

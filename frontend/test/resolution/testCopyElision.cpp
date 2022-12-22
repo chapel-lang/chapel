@@ -70,6 +70,7 @@ static void testCopyElision(const char* test,
 
     elisionPoints = computeElidedCopies(context, func,
                                         r->resolutionById(),
+                                        /* poiScope */ nullptr,
                                         splitIds);
   } else {
     printf("Resolving module\n");
@@ -80,6 +81,7 @@ static void testCopyElision(const char* test,
 
     elisionPoints = computeElidedCopies(context, M,
                                         rr,
+                                        /* poiScope */ nullptr,
                                         splitIds);
   }
 

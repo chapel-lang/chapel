@@ -835,6 +835,9 @@ const char* AssociatedAction::kindToString(Action a) {
     case ASSIGN:
       s = "assign";
       break;
+    case ASSIGN_OTHER:
+      s = "assign-from-other";
+      break;
     case COPY_INIT:
       s = "copy-init";
       break;

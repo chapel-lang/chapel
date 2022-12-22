@@ -172,6 +172,10 @@ class VarScopeVisitor {
   /** Update initedVars for a declaration with an initExpression. */
   bool processDeclarationInit(const VarLikeDecl* ast, RV& rv);
 
+  /** Handle associated conversion calls, if any.
+      If there are any, calls handle*Formal calls as needed. */
+  //void processAssociatedConvCalls(const AstNode* ast, RV& rv);
+
  public:
   // ----- visitor implementation
   void enterScope(const uast::AstNode* ast, RV& rv);

@@ -598,8 +598,10 @@ static void test6b() {
     });
 }
 
-static void test6c() {
-  testActions("test6c",
+
+// testing cross-type init= with 'in' intent
+static void test7a() {
+  testActions("test7a",
     R""""(
       module M {
         record R { }
@@ -626,8 +628,38 @@ static void test6c() {
     });
 }
 
-static void test6d() {
-  testActions("test6d",
+static void test7b() {
+  testActions("test7b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        proc R.init=(in other: U) { }
+        proc R.deinit() { }
+        record U { }
+        proc U.init() { }
+        proc U.init=(other: U) { }
+        proc U.deinit() { }
+
+        proc makeU() {
+          return new U();
+        }
+        proc test() {
+          var y:U;
+          var x:R = y; // the copy to 'init=(in)' is elided
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "y",        ""},
+      {AssociatedAction::INIT_OTHER,   "x",        ""},
+      {AssociatedAction::DEINIT,       "M.test@5", "x"},
+    });
+}
+
+static void test7c() {
+  testActions("test7c",
     R""""(
       module M {
         record R { }
@@ -661,8 +693,6 @@ static void test6d() {
 }
 
 
-
-
 int main() {
   test1();
 
@@ -685,8 +715,10 @@ int main() {
 
   test6a();
   test6b();
-  test6c();
-  test6d();
+
+  test7a();
+  test7b();
+  test7c();
 
   return 0;
 }

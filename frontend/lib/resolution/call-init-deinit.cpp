@@ -43,6 +43,8 @@ using namespace types;
 //         even though it is 'in' intent. As such, it would require
 //         a copy, but it's hard to associate that information
 //         with a call actual (because the actual doesn't exist).
+// TODO -- and, what would happen if 'init=' had default arguments?
+
 
 // Resolves default-init, copy-init, assign, and deinit
 // TODO: should it be renamed to include Assign?
@@ -112,6 +114,7 @@ struct CallInitDeinit : VarScopeVisitor {
   void handleTry(const Try* t, RV& rv) override;
   void handleScope(const AstNode* ast, RV& rv) override;
 };
+
 
 // When varId is initialized, record that fact in the
 // localsAndDefers/initedOuterVars vectors.
@@ -306,10 +309,18 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
                                    const QualifiedType& rhsType,
                                    RV& rv) {
 
-  if (lhsType.type() == rhsType.type() &&
-      !typeNeedsInitDeinitCall(lhsType.type())) {
+  /*if (lhsType.type() != rhsType.type()) {
+    // Should have been handled by ResolveConv
+    return;
+  }
+  if (!typeNeedsInitDeinitCall(lhsType.type())) {
     // TODO: we should resolve it anyway
     return;
+  }*/
+  if (lhsType.type() == rhsType.type() &&
+      !typeNeedsInitDeinitCall(lhsType.type())) {
+     // TODO: we should resolve it anyway
+     return;
   }
 
   std::vector<CallInfoActual> actuals;
@@ -335,6 +346,10 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
                                      const QualifiedType& rhsType,
                                      RV& rv,
                                      bool& formalUsesInIntent) {
+  /*if (lhsType.type() != rhsType.type()) {
+    // Should have been handled by ResolveConv
+    return;
+  }*/
   if (!typeNeedsInitDeinitCall(lhsType.type())) {
     // TODO: we could resolve it anyway
     return;
@@ -404,6 +419,11 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
                                      const QualifiedType& lhsType,
                                      const QualifiedType& rhsType,
                                      RV& rv) {
+  /*if (lhsType.type() != rhsType.type()) {
+    // Should have been handled by ResolveConv
+    return;
+  }*/
+
   if (isTypeParam(lhsType.kind())) {
     // OK, nothing else to do
   } else if (isValue(lhsType.kind()) && isValueOrParam(rhsType.kind())) {
@@ -543,10 +563,17 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     processMentions(init, rv);
   }
 
+  // handle any 'in' intents from implicitly added type conversion calls
+  //processAssociatedConvCalls(ast, rv);
+
   bool inited = processDeclarationInit(ast, rv);
   bool splitInited = (splitInitedVars.count(ast->id()) > 0);
 
-  if (splitInited) {
+  if (ast->isFormal() || ast->isVarArgFormal()) {
+    // ignore formals for now
+    // TODO: pretty sure they need to be considered, in some cases
+
+  } else if (splitInited) {
     // Will be inited later, don't default init,
     // and also don't try to deinit it on e.g. a return before that point
 
@@ -568,23 +595,12 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
 
   } else {
     // default init it
-    auto formal = ast->toFormal();
-    if (formal != nullptr && formal->intent() != Formal::OUT) {
-      // don't try to default init formal values unless they are 'out'.
-    } else if (auto vaf = ast->toVarArgFormal()) {
-      // don't try to default init var-arg formals
-      if (vaf->intent() == Formal::OUT) {
-        // at least it's not supported right now...
-        context->error(vaf, "cannot have out intent varargs");
-      }
-    } else {
-      // not inited here and not split-inited, so default-initialize it
-      resolveDefaultInit(ast, rv);
-      // note that the variable is now initialized
-      ID id = ast->id();
-      frame->addToInitedVars(id);
-      frame->localsAndDefers.push_back(id);
-    }
+    // not inited here and not split-inited, so default-initialize it
+    resolveDefaultInit(ast, rv);
+    // note that the variable is now initialized
+    ID id = ast->id();
+    frame->addToInitedVars(id);
+    frame->localsAndDefers.push_back(id);
   }
 
   // record it in declaredVars
@@ -598,6 +614,10 @@ void CallInitDeinit::handleMention(const Identifier* ast, ID varId, RV& rv) {
 
 void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
   VarFrame* frame = currentFrame();
+
+  // handle any 'in' intents from implicitly added type conversion calls
+  //processAssociatedConvCalls(ast, rv);
+
   // What is the RHS and LHS of the '=' call?
   auto lhsAst = ast->actual(0);
   auto rhsAst = ast->actual(1);
@@ -664,11 +684,16 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
   // check for use of deinited variables
   processMentions(actual, rv);
 
+  // handle any 'in' intents from implicitly added type conversion calls
+  /*if (ast != nullptr) {
+    processAssociatedConvCalls(actual, rv);
+  }*/
+
   // compute the actual type
   QualifiedType actualType = rv.byAst(actual).type();
 
   // is the copy for 'in' elided?
-  if (elidedCopyFromIds.count(ast->id()) > 0 && isValue(actualType.kind())) {
+  if (elidedCopyFromIds.count(actual->id()) > 0 && isValue(actualType.kind())) {
     // it is move initialization
     resolveMoveInit(actual, actual, formalType, actualType, rv);
 
@@ -682,9 +707,9 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
 }
 
 void CallInitDeinit::handleInoutFormal(const FnCall* ast,
-                                         const AstNode* actual,
-                                         const QualifiedType& formalType,
-                                         RV& rv) {
+                                       const AstNode* actual,
+                                       const QualifiedType& formalType,
+                                       RV& rv) {
   // check for use of deinited variables
   processMentions(actual, rv);
 
@@ -734,13 +759,262 @@ void CallInitDeinit::handleScope(const AstNode* ast, RV& rv) {
   processDeinitsAndPropagate(frame, parent, rv);
 }
 
+
+#if 0
+ Replaced by having copy elision analysis check for cross-type init= + in
+
+// Resolves cross-type init= and =
+//
+// This is important to do before computing copy elision points
+// so that 'myrecord.init=(in other: someothertype)' can work correctly.
+//
+// The idea is to resolve these before copy elision analysis
+// so that the copy elision can take into account any 'in' intent
+// formals that are called by the 'init=' or '=' doing the conversion.
+//
+// This is a VarScopeVisitor just to track which '=' are split-inits
+// vs. assignments (since only the 1st '=' in a block could be a split init)
+struct ResolveConv : VarScopeVisitor {
+  // inputs to the process
+  Resolver& resolver;
+  const std::set<ID>& splitInitedVars;
+
+  // methods
+  ResolveConv(Context* context,
+              Resolver& resolver,
+              const std::set<ID>& splitInitedVars)
+    : VarScopeVisitor(context),
+      resolver(resolver),
+      splitInitedVars(splitInitedVars)
+  { }
+
+  void resolveConvAssign(const AstNode* ast,
+                         const QualifiedType& lhsType,
+                         const QualifiedType& rhsType,
+                         RV& rv);
+  void resolveConvInit(const AstNode* ast,
+                       const QualifiedType& lhsType,
+                       const QualifiedType& rhsType,
+                       RV& rv);
+
+  void propagate(VarFrame* frame, VarFrame* parent);
+
+  // ----- visitor implementation
+  void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
+  void handleMention(const Identifier* ast, ID varId, RV& rv) override;
+  void handleAssign(const OpCall* ast, RV& rv) override;
+  void handleOutFormal(const FnCall* ast, const AstNode* actual,
+                       const QualifiedType& formalType,
+                       RV& rv) override;
+  void handleInFormal(const FnCall* ast, const AstNode* actual,
+                      const QualifiedType& formalType,
+                      RV& rv) override;
+  void handleInoutFormal(const FnCall* ast, const AstNode* actual,
+                         const QualifiedType& formalType,
+                         RV& rv) override;
+  void handleReturnOrThrow(const uast::AstNode* ast, RV& rv) override;
+  void handleConditional(const Conditional* cond, RV& rv) override;
+  void handleTry(const Try* t, RV& rv) override;
+  void handleScope(const AstNode* ast, RV& rv) override;
+};
+
+void ResolveConv::resolveConvAssign(const AstNode* ast,
+                                    const QualifiedType& lhsType,
+                                    const QualifiedType& rhsType,
+                                    RV& rv) {
+
+  if (lhsType.type() == rhsType.type()) {
+    // Here we are only interested in conversions
+    return;
+  }
+
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back(CallInfoActual(lhsType, UniqueString()));
+  actuals.push_back(CallInfoActual(rhsType, UniqueString()));
+  auto ci = CallInfo (/* name */ USTR("="),
+                      /* calledType */ QualifiedType(),
+                      /* isMethodCall */ false,
+                      /* hasQuestionArg */ false,
+                      /* isParenless */ false,
+                      actuals);
+  const Scope* scope = scopeForId(context, ast->id());
+  auto c = resolveGeneratedCall(context, ast, ci, scope,
+                                resolver.poiScope);
+  ResolvedExpression& opR = rv.byAst(ast);
+  resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
+                                        AssociatedAction::ASSIGN, ast->id());
+}
+
+void ResolveConv::resolveConvInit(const AstNode* ast,
+                                  const QualifiedType& lhsType,
+                                  const QualifiedType& rhsType,
+                                  RV& rv) {
+  if (lhsType.type() == rhsType.type()) {
+    // Here we are only interested in conversions
+    return;
+  }
+  if (!typeNeedsInitDeinitCall(lhsType.type())) {
+    // TODO: we could resolve it anyway
+    return;
+  }
+
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back(CallInfoActual(lhsType, USTR("this")));
+  actuals.push_back(CallInfoActual(rhsType, UniqueString()));
+  auto ci = CallInfo (/* name */ USTR("init="),
+                      /* calledType */ QualifiedType(),
+                      /* isMethodCall */ true,
+                      /* hasQuestionArg */ false,
+                      /* isParenless */ false,
+                      actuals);
+  const Scope* scope = scopeForId(context, ast->id());
+  auto c = resolveGeneratedCall(context, ast, ci, scope,
+                                resolver.poiScope);
+
+  ResolvedExpression& opR = rv.byAst(ast);
+
+  auto action = AssociatedAction::INIT_OTHER;
+  resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
+                                        action, ast->id());
+}
+
+void ResolveConv::propagate(VarFrame* frame, VarFrame* parent) {
+  if (frame != nullptr && parent != nullptr) {
+    for (auto id : frame->initedVars) {
+      parent->addToInitedVars(id);
+    }
+  }
+}
+
+void ResolveConv::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
+  bool inited = processDeclarationInit(ast, rv);
+
+  if (inited) {
+    auto lhsAst = ast;
+    auto rhsAst = ast->initExpression();
+
+    ResolvedExpression& lhsRe = rv.byAst(lhsAst);
+    QualifiedType lhsType = lhsRe.type();
+
+    ResolvedExpression& rhsRe = rv.byAst(rhsAst);
+    QualifiedType rhsType = rhsRe.type();
+
+    if (lhsType.type() != rhsType.type()) {
+      resolveConvInit(ast, lhsType, rhsType, rv);
+    }
+  }
+}
+
+void ResolveConv::handleMention(const Identifier* ast, ID varId, RV& rv) {
+}
+
+void ResolveConv::handleAssign(const OpCall* ast, RV& rv) {
+  // What is the RHS and LHS of the '=' call?
+  auto lhsAst = ast->actual(0);
+  auto rhsAst = ast->actual(1);
+
+  ResolvedExpression& lhsRe = rv.byAst(lhsAst);
+  QualifiedType lhsType = lhsRe.type();
+
+  ResolvedExpression& rhsRe = rv.byAst(rhsAst);
+  QualifiedType rhsType = rhsRe.type();
+
+  // update initedVars if it is initializing a variable
+  bool splitInited = processSplitInitAssign(ast, splitInitedVars, rv);
+
+  if (splitInited) {
+    resolveConvInit(ast, lhsType, rhsType, rv);
+  } else {
+    resolveConvAssign(ast, lhsType, rhsType, rv);
+  }
+}
+
+void ResolveConv::handleOutFormal(const FnCall* ast,
+                                  const AstNode* actual,
+                                  const QualifiedType& formalType,
+                                  RV& rv) {
+  // compute the actual type
+  QualifiedType actualType = rv.byAst(actual).type();
+
+  // update initedVars if it is initializing a variable
+  bool splitInited = processSplitInitOut(ast, actual, splitInitedVars, rv);
+  if (splitInited) {
+    resolveConvInit(actual, actualType, formalType, rv);
+  } else {
+    // not initializing a variable, so just resolve the '=' call
+    resolveConvAssign(actual, actualType, formalType, rv);
+  }
+}
+void ResolveConv::handleInFormal(const FnCall* ast, const AstNode* actual,
+                                 const QualifiedType& formalType,
+                                 RV& rv) {
+  // compute the actual type
+  QualifiedType actualType = rv.byAst(actual).type();
+
+  resolveConvInit(actual, actualType, formalType, rv);
+}
+
+void ResolveConv::handleInoutFormal(const FnCall* ast,
+                                    const AstNode* actual,
+                                    const QualifiedType& formalType,
+                                    RV& rv) {
+  // compute the actual type
+  QualifiedType actualType = rv.byAst(actual).type();
+
+  // resolve '=' for storing and writeback
+  resolveConvAssign(actual, actualType, formalType, rv);
+  resolveConvAssign(actual, formalType, actualType, rv);
+}
+
+void ResolveConv::handleReturnOrThrow(const uast::AstNode* ast, RV& rv) {
+}
+
+void ResolveConv::handleConditional(const Conditional* cond, RV& rv) {
+  // Any outer variables inited in the 'then' frame can be propagated up
+  VarFrame* frame = currentFrame();
+  VarFrame* parent = currentParentFrame();
+  VarFrame* thenFrame = currentThenFrame();
+  VarFrame* elseFrame = currentElseFrame();
+
+  propagate(thenFrame, frame);
+  propagate(elseFrame, frame);
+  propagate(frame, parent);
+}
+void ResolveConv::handleTry(const Try* t, RV& rv) {
+  VarFrame* frame = currentFrame();
+  VarFrame* parent = currentParentFrame();
+
+  int nCatch = currentNumCatchFrames();
+  for (int i = 0; i < nCatch; i++) {
+    VarFrame* catchFrame = currentCatchFrame(i);
+    propagate(catchFrame, frame);
+  }
+
+  // propagate information out of the Try itself
+  propagate(frame, parent);
+}
+void ResolveConv::handleScope(const AstNode* ast, RV& rv) {
+  VarFrame* frame = currentFrame();
+  VarFrame* parent = currentParentFrame();
+  propagate(frame, parent);
+}
+#endif
+
 void callInitDeinit(Resolver& resolver) {
   std::set<ID> splitInitedVars = computeSplitInits(resolver.context,
                                                    resolver.symbol,
                                                    resolver.byPostorder);
+
+  // resolve conversions here in case they affect copy elision
+  /*{
+    ResolveConv rc(resolver.context, resolver, splitInitedVars);
+    rc.process(resolver.symbol, resolver.byPostorder);
+  }*/
+
   std::set<ID> elidedCopyFromIds = computeElidedCopies(resolver.context,
                                                        resolver.symbol,
                                                        resolver.byPostorder,
+                                                       resolver.poiScope,
                                                        splitInitedVars);
 
   auto symName = UniqueString::get(resolver.context, "unknown");
@@ -748,7 +1022,6 @@ void callInitDeinit(Resolver& resolver) {
     symName = nd->name();
   }
 
-  /*
   printf("\nSplit Init Report for '%s':\n", symName.c_str());
   for (auto varId : splitInitedVars) {
     auto ast = parsing::idToAst(resolver.context, varId);
@@ -767,7 +1040,6 @@ void callInitDeinit(Resolver& resolver) {
            id.str().c_str());
   }
   printf("\n");
-  */
 
   CallInitDeinit uv(resolver.context, resolver,
                     splitInitedVars, elidedCopyFromIds);

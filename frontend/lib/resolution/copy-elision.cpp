@@ -20,8 +20,10 @@
 #include "chpl/resolution/copy-elision.h"
 
 #include "chpl/resolution/ResolvedVisitor.h"
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/types/ClassType.h"
 #include "chpl/uast/all-uast.h"
 
 #include "VarScopeVisitor.h"
@@ -37,15 +39,27 @@ struct FindElidedCopies : VarScopeVisitor {
   // inputs
   const std::set<ID>& allSplitInitedVars;
 
+  const PoiScope* poiScope = nullptr; // used for checking init= calls
+
   // result of the process
   std::set<ID> allElidedCopyFromIds;
 
   // methods
-  FindElidedCopies(Context* context, const std::set<ID>& allSplitInitedVars)
-    : VarScopeVisitor(context), allSplitInitedVars(allSplitInitedVars) { }
+  FindElidedCopies(Context* context,
+                   const PoiScope* poiScope,
+                   const std::set<ID>& allSplitInitedVars)
+    : VarScopeVisitor(context),
+      allSplitInitedVars(allSplitInitedVars),
+      poiScope(poiScope) { }
 
-  static bool copyElisionAllowedForTypes(const QualifiedType& lhsType,
-                                         const QualifiedType& rhsType);
+  bool hasCrossTypeInitAssignWithIn(const QualifiedType& lhsType,
+                                    const QualifiedType& rhsType,
+                                    const AstNode* ast,
+                                    RV& rv);
+  bool copyElisionAllowedForTypes(const QualifiedType& lhsType,
+                                  const QualifiedType& rhsType,
+                                  const AstNode* ast,
+                                  RV& rv);
   static bool lastMentionIsCopy(VarFrame* frame, ID varId);
   static void gatherLastMentionIsCopyVars(VarFrame* frame, std::set<ID>& vars);
   static void addDeclaration(VarFrame* frame, const VarLikeDecl* ast);
@@ -88,13 +102,69 @@ static bool kindAllowsCopyElision(IntentList kind) {
           kind == IntentList::INOUT);
 }
 
+// if this ends up representing any significant overhead,
+// we can cache the result in the ResolvedExpression,
+// or try to build up a map from type to type indicating convertability.
+bool FindElidedCopies::hasCrossTypeInitAssignWithIn(
+                                           const QualifiedType& lhsType,
+                                           const QualifiedType& rhsType,
+                                           const AstNode* ast,
+                                           RV& rv) {
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back(CallInfoActual(lhsType, USTR("this")));
+  actuals.push_back(CallInfoActual(rhsType, UniqueString()));
+  auto ci = CallInfo (/* name */ USTR("init="),
+                      /* calledType */ QualifiedType(),
+                      /* isMethodCall */ true,
+                      /* hasQuestionArg */ false,
+                      /* isParenless */ false,
+                      actuals);
+  const Scope* scope = scopeForId(context, ast->id());
+  auto c = resolveGeneratedCall(context, ast, ci, scope, poiScope);
+  const MostSpecificCandidates& fns = c.mostSpecific();
+  // return intent overloading should not be possible with an init=
+  CHPL_ASSERT(fns.numBest() <= 1);
+  if (const TypedFnSignature* fn = fns.only()) {
+    // check for 'in' intent on the 'other' formal
+    if (fn->numFormals() >= 2) {
+      auto intent = fn->formalType(1).kind();
+      if (isInIntent(intent)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+static bool isRecordLike(const Type* t) {
+  if (auto ct = t->toClassType()) {
+    auto decorator = ct->decorator();
+    if (! (decorator.isBorrowed() || decorator.isUnmanaged())) {
+      return true;
+    }
+  } else if (t->isRecordType() || t->isUnionType()) {
+    return true;
+  }
+  // TODO: tuples?
+
+  return false;
+}
+
 bool
 FindElidedCopies::copyElisionAllowedForTypes(const QualifiedType& lhsType,
-                                             const QualifiedType& rhsType) {
+                                             const QualifiedType& rhsType,
+                                             const AstNode* ast,
+                                             RV& rv) {
   if (kindAllowsCopyElision(lhsType.kind()) &&
       kindAllowsCopyElision(rhsType.kind())) {
     if (lhsType.type() == rhsType.type()) {
       return true;
+    } else if (isRecordLike(lhsType.type())) {
+      // check to see if an there is an init= to initialize
+      // lhsType from rhsType but that uses the 'in' intent on the
+      // formal.
+      return hasCrossTypeInitAssignWithIn(lhsType, rhsType, ast, rv);
     }
   }
 
@@ -192,7 +262,7 @@ void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
       if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
         QualifiedType lhsType = rv.byId(lhsVarId).type();
         QualifiedType rhsType = rv.byId(rhsVarId).type();
-        if (copyElisionAllowedForTypes(lhsType, rhsType)) {
+        if (copyElisionAllowedForTypes(lhsType, rhsType, ast, rv)) {
           addCopyInit(frame, rhsVarId, ast->id());
         }
       }
@@ -219,7 +289,7 @@ void FindElidedCopies::handleAssign(const OpCall* ast, RV& rv) {
       if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
         QualifiedType lhsType = rv.byId(lhsVarId).type();
         QualifiedType rhsType = rv.byId(rhsVarId).type();
-        if (copyElisionAllowedForTypes(lhsType, rhsType)) {
+        if (copyElisionAllowedForTypes(lhsType, rhsType, ast, rv)) {
           addCopyInit(frame, rhsVarId, ast->id());
         }
       }
@@ -250,7 +320,7 @@ void FindElidedCopies::handleInFormal(const FnCall* ast, const AstNode* actual,
     // check that the types are the same
     if (rv.hasId(actualToId)) {
       QualifiedType actualType = rv.byId(actualToId).type();
-      if (copyElisionAllowedForTypes(formalType, actualType)) {
+      if (copyElisionAllowedForTypes(formalType, actualType, actual, rv)) {
         elide = true;
       }
     }
@@ -462,6 +532,7 @@ std::set<ID>
 computeElidedCopies(Context* context,
                     const uast::AstNode* symbol,
                     const ResolutionResultByPostorderID& byPostorder,
+                    const PoiScope* poiScope,
                     const std::set<ID>& allSplitInitedVars) {
   std::set<ID> elidedCopyFromIds;
 
@@ -471,7 +542,7 @@ computeElidedCopies(Context* context,
     return elidedCopyFromIds;
   }
 
-  FindElidedCopies uv(context, allSplitInitedVars);
+  FindElidedCopies uv(context, poiScope, allSplitInitedVars);
 
   uv.process(symbol,
              // cast here allows VarScopeVisitor to be simple
