@@ -55,8 +55,7 @@ struct CallInitDeinit : VarScopeVisitor {
   const std::set<ID>& elidedCopyFromIds;
 
   // local state
-  std::set<ID> outIntentFormals;
-  std::set<ID> inoutIntentFormals;
+  std::set<ID> outOrInoutFormals;
 
   // methods
   CallInitDeinit(Context* context,
@@ -295,8 +294,8 @@ void CallInitDeinit::processDeinitsForReturn(const AstNode* atAst,
                             frame->deinitedVars.end());
   }
 
-  // also count outIntentFormals as already deinited
-  deinitedAnyFrame.insert(outIntentFormals.begin(), outIntentFormals.end());
+  // also count outOrInoutFormals as already deinited
+  deinitedAnyFrame.insert(outOrInoutFormals.begin(), outOrInoutFormals.end());
 
   for (ssize_t i = n - 1; i >= 0; i--) {
     VarFrame* frame = scopeStack[i].get();
@@ -328,7 +327,7 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
   ssize_t n = frame->localsAndDefers.size();
   for (ssize_t i = n - 1; i >= 0; i--) {
     ID varOrDeferId = frame->localsAndDefers[i];
-    if (outIntentFormals.count(varOrDeferId) > 0) {
+    if (outOrInoutFormals.count(varOrDeferId) > 0) {
       // don't deinit out formals
     } else if (frame->deinitedVars.count(varOrDeferId) > 0) {
       // don't deinit it if it was already destroyed by moving from it
@@ -778,10 +777,15 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     } else if (intent == QualifiedType::OUT) {
       // treat it like any other variable declaration
       handledFormal = false;
-      outIntentFormals.insert(ast->id());
+      outOrInoutFormals.insert(ast->id());
     } else if (intent == QualifiedType::INOUT) {
-      handledFormal = false;
-      inoutIntentFormals.insert(ast->id());
+      // note that the variable is now initialized
+      ID id = ast->id();
+      frame->addToInitedVars(id);
+      frame->localsAndDefers.push_back(id);
+      handledFormal = true;
+      // also note it as in inout or out formal (for return handling)
+      outOrInoutFormals.insert(ast->id());
     } else {
       handledFormal = true;
     }

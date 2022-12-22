@@ -1475,8 +1475,8 @@ static void test17b() {
     });
 }
 
-static void test17c() {
-  testActions("test17c",
+static void test18a() {
+  testActions("test18a",
     R""""(
       module M {
         record R { }
@@ -1484,26 +1484,39 @@ static void test17c() {
         proc R.init=(other: R) { }
         operator R.=(ref lhs: R, rhs: R) { }
         proc R.deinit() { }
-        proc makeR() {
-          return new R();
-        }
 
         proc test(out x: R) {
-          return;
-          x = makeR();
+          return x;
         }
       }
     )"""",
     {
       {AssociatedAction::DEFAULT_INIT, "x",          ""},
-      {AssociatedAction::ASSIGN,       "M.test@6",   ""},
     });
 }
 
+static void test18b() {
+  testActions("test18b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test(inout x: R) {
+          return x;
+        }
+      }
+    )"""",
+    {
+    });
+}
 
 // calling function with 'out' intent formal
 
-// 'inout' intent
+// calling functions with 'inout' intent formal
 
 // defer
 
@@ -1577,7 +1590,9 @@ int main() {
 
   test17a();
   test17b();
-  test17c();
+
+  test18a();
+  test18b();
 
   return 0;
 }
