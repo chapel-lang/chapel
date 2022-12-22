@@ -1396,7 +1396,8 @@ class ResolvedFunction {
     return signature_ == other.signature_ &&
            returnIntent_ == other.returnIntent_ &&
            resolutionById_ == other.resolutionById_ &&
-           PoiInfo::updateEquals(poiInfo_, other.poiInfo_);
+           PoiInfo::updateEquals(poiInfo_, other.poiInfo_) &&
+           returnType_ == other.returnType_;
   }
   bool operator!=(const ResolvedFunction& other) const {
     return !(*this == other);
@@ -1406,6 +1407,7 @@ class ResolvedFunction {
     std::swap(returnIntent_, other.returnIntent_);
     resolutionById_.swap(other.resolutionById_);
     poiInfo_.swap(other.poiInfo_);
+    returnType_.swap(other.returnType_);
   }
   static bool update(owned<ResolvedFunction>& keep,
                      owned<ResolvedFunction>& addin) {
@@ -1415,6 +1417,7 @@ class ResolvedFunction {
     context->markPointer(signature_);
     resolutionById_.mark(context);
     poiInfo_.mark(context);
+    returnType_.mark(context);
   }
 
   const ResolvedExpression& byId(const ID& id) const {
