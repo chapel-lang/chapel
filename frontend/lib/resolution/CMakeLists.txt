@@ -21,6 +21,7 @@ target_sources(libdyno-obj
                Resolver.cpp
                call-init-deinit.cpp
                can-pass.cpp
+               signature-checks.cpp
                copy-elision.cpp
                default-functions.cpp
                disambiguation.cpp

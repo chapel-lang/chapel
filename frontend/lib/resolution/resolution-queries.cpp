@@ -31,10 +31,11 @@
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 
-#include "call-init-deinit.h"
 #include "Resolver.h"
+#include "call-init-deinit.h"
 #include "default-functions.h"
 #include "prims.h"
+#include "signature-checks.h"
 
 #include <cstdio>
 #include <set>
@@ -432,6 +433,7 @@ typedSignatureInitialQuery(Context* context,
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ parentFnTyped,
                                    /* formalsInstantiated */ Bitmap());
+
   }
 
   return QUERY_END(result);
@@ -441,8 +443,12 @@ const TypedFnSignature*
 typedSignatureInitial(Context* context,
                       const UntypedFnSignature* untypedSig) {
 
-  return typedSignatureInitialQuery(context, untypedSig);
-
+  auto ret = typedSignatureInitialQuery(context, untypedSig);
+  // also check the signature at this point if it is concrete
+  if (!ret->needsInstantiation()) {
+    checkSignature(context, ret);
+  }
+  return ret;
 }
 
 // Get a Type for an AggregateDecl
@@ -3107,6 +3113,13 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
                                                                    ci,
                                                                    inScope,
                                                                    inPoiScope);
+
+  // perform fn signature checking for any instantiated candidates that are used
+  for (const TypedFnSignature* candidate : mostSpecific) {
+    if (candidate && candidate->instantiatedFrom()) {
+      checkSignature(context, candidate);
+    }
+  }
 
   // note any most specific candidates from POI in poiInfo.
   {
