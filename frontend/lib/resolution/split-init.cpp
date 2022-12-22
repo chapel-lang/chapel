@@ -280,10 +280,9 @@ void FindSplitInits::handleConditional(const Conditional* cond, RV& rv) {
 
     if (thenInits && elseInits) {
       locSplitInitedVars.insert(id);
-    } else if (//outFormals.count(id) == 0 &&
-               ((thenInits         && elseReturnsThrows) ||
-                (thenReturnsThrows && elseInits))) {
-      // one branch returns or throws and it's not an 'out' formal
+    } else if ((thenInits         && elseReturnsThrows) ||
+               (thenReturnsThrows && elseInits)) {
+      // one branch returns or throws and the other inits
       locSplitInitedVars.insert(id);
     } else {
       frame->mentionedVars.insert(id);
@@ -441,7 +440,7 @@ void FindSplitInits::handleTry(const Try* t, RV& rv) {
       // gather variables to be split-inited for parent frames
       // into trySplitInitVars
       bool allowSplitInit = false;
-      if (allThrowOrReturn) { // && outFormals.count(id) == 0) {
+      if (allThrowOrReturn) {
         bool mentionedOrInitedInCatch = false;
         for (int i = 0; i < nCatchFrames; i++) {
           VarFrame* catchFrame = currentCatchFrame(i);

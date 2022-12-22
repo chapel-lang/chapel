@@ -1520,7 +1520,7 @@ static void test18b() {
 
 // defer
 
-// call-expr temporaries not passed by 'in' intent
+// call-expr temporaries not passed by 'in' intent need deinit
 
 int main() {
   test1();
