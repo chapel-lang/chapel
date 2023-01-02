@@ -1,0 +1,4 @@
+error message: Improve this error message for mismatched iterators
+#24215
+
+The error message shouldn't refer to an internal module.

@@ -1,0 +1,5 @@
+bug: mismatched serial/leader/follower iterators should fail to compile
+#24214
+
+This leader iterator doesn't create any parallelism, so the output in
+the .bad file is deterministic.
