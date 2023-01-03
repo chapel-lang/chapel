@@ -45,24 +45,17 @@
   CHPL_LEXER_REPORT_ACTUAL(SCANNER__, NLINES__, NCOLS__,                    \
                            /* MOVE_TO_END__ */ false, NAME__, ##EINFO__)
 
-#define CHPL_LEXER_REPORT_SYNTAX(SCANNER__, NLINES__, NCOLS__, MSG__) \
-  CHPL_LEXER_REPORT(SCANNER__, NLINES__, NCOLS__, ParseSyntax, MSG__)
-
 // this variant moves the beginning of the reported location to its current end
 #define CHPL_LEXER_REPORT_END(SCANNER__, NLINES__, NCOLS__, NAME__, \
                               EINFO__...)                           \
   CHPL_LEXER_REPORT_ACTUAL(SCANNER__, NLINES__, NCOLS__,            \
                            /* MOVE_TO_END__ */ true, NAME__, ##EINFO__)
 
-#define CHPL_LEXER_REPORT_ACTUAL(SCANNER__, NLINES__, NCOLS__, MOVE_TO_END__, \
-                                 NAME__, EINFO__...)                          \
-  {                                                                           \
-    ParserContext* pContext = yyget_extra(SCANNER__);                         \
-    YYLTYPE loc = *yyget_lloc(SCANNER__);                                     \
-    updateLocation(&loc, NLINES__, NCOLS__);                                  \
-    if (MOVE_TO_END__) loc = pContext->makeLocationAtLast(loc);               \
-    CHPL_PARSER_REPORT(pContext, NAME__, loc, ##EINFO__);                     \
-  }
+#define CHPL_LEXER_REPORT_ACTUAL(SCANNER__, NLINES__, NCOLS__, MOVE_TO_END__,  \
+                                 NAME__, EINFO__...)                           \
+  CHPL_PARSER_REPORT(yyget_extra(SCANNER__), NAME__,                           \
+                     getLocation(SCANNER__, NLINES__, NCOLS__, MOVE_TO_END__), \
+                     ##EINFO__);
 
 /**
  * Helper macro to report errors in post-parse-checks to the Builder
