@@ -81,12 +81,7 @@ void checkArgsAndLocals()
 // resolution).
 void checkNoUnresolveds()
 {
-  // BHARSH INIT TODO: Can this be '0' now that the tuple constructor is gone?
-  //
-  // TODO: This value should really be cranked down to 0.
-  // But in some cases _construct__tuple remains unresolved after
-  // resolution ... .
-  if (gUnresolvedSymExprs.n > 1)
+  if (gUnresolvedSymExprs.n > 0)
     INT_FATAL("Structural error: "
       "At this point, the AST should not contain any unresolved symbols.");
 }
