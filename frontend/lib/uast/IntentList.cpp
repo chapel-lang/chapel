@@ -1,5 +1,6 @@
 /*
  * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -10,8 +11,6 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * 
- * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
