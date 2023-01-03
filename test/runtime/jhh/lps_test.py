@@ -38,6 +38,10 @@ class LocalePerSocket(unittest.TestCase):
         # We need the qthread output
         os.environ['QTHREAD_INFO'] = '2'
 
+        # Should not be set by default
+        if 'CHPL_RT_LOCALES_PER_NODE' in os.environ:
+            del os.environ['CHPL_RT_LOCALES_PER_NODE'] 
+
         # Compile the test program
         run('chpl hello.chpl')
 
