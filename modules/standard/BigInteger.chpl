@@ -904,7 +904,7 @@ module BigInteger {
   operator bigint.-(a: int, const ref b: bigint): bigint {
     var c = new bigint();
 
-    if a >= 0 {
+    if a >= 0 && b >= 0 {
       const a_ = a.safeCast(c_ulong);
 
       if _local {
@@ -920,18 +920,18 @@ module BigInteger {
       }
 
     } else {
-      const a_ = (0 - a).safeCast(c_ulong);
+      const a_ = a:bigint;
 
       if _local {
-        mpz_add_ui(c.mpz, b.mpz,  a_);
+        mpz_sub(c.mpz, a_.mpz, b.mpz);
 
       } else if b.localeId == chpl_nodeID {
-        mpz_add_ui(c.mpz, b.mpz,  a_);
+        mpz_sub(c.mpz, a_.mpz, b.mpz);
 
       } else {
         const b_ = b;
 
-        mpz_add_ui(c.mpz, b_.mpz, a_);
+        mpz_sub(c.mpz, a_.mpz, b.mpz);
       }
     }
 
