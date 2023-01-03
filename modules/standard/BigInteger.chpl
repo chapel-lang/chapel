@@ -904,7 +904,7 @@ module BigInteger {
   operator bigint.-(a: int, const ref b: bigint): bigint {
     var c = new bigint();
 
-    if a >= 0 && b >= 0 {
+    if a >= 0 {
       const a_ = a.safeCast(c_ulong);
 
       if _local {
