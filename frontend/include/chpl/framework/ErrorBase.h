@@ -212,6 +212,11 @@ class GeneralError : public BasicError {
                                  ErrorBase::Kind kind,
                                  Location loc,
                                  std::string msg);
+
+  /* Convenience overload to call ::get with the ERROR kind. */
+  static const GeneralError* error(Context* context,
+                                   Location loc,
+                                   std::string msg);
 };
 
 // The error-classes-list.h header will expand the DIAGNOSTIC_CLASS macro

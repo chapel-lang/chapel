@@ -193,4 +193,8 @@ const GeneralError* GeneralError::get(Context* context, Kind kind, Location loc,
   return getGeneralErrorForLocation(context, kind, loc, std::move(msg)).get();
 }
 
+const GeneralError* GeneralError::error(Context* context, Location loc, std::string msg) {
+  return GeneralError::get(context, ErrorBase::ERROR, std::move(loc), std::move(msg));
+}
+
 } // end namespace 'chpl'
