@@ -66,10 +66,11 @@ static bool        handle_erroneous_fns = true;
 astlocT            last_error_loc(0, NULL);
 
 static bool forceWidePtrs();
+static const char* cleanCompilerFilename(const char* name);
 
 void setupError(const char* subdir, const char* filename, int lineno, int tag) {
   err_subdir        = subdir;
-  err_filename      = filename;
+  err_filename      = cleanCompilerFilename(filename);
   err_lineno        = lineno;
   err_fatal         = tag == 1 || tag == 2 || tag == 3;
   err_user          = tag != 1;
@@ -166,6 +167,20 @@ const char* cleanFilename(const BaseAST* ast) {
 
   } else {
     retval = astr("<unknown>");
+  }
+
+  return retval;
+}
+
+static const char* cleanCompilerFilename(const char* name) {
+  // it depends on the details of the build whether __FILE__ is
+  // an absolute path, but for the purposes of this error reporting,
+  // we only need the file name.
+  const char* retval = name;
+
+  // compute the basename
+  if (const char* slash = (const char*) strrchr(name, '/')) {
+    retval = astr(slash+1);
   }
 
   return retval;
