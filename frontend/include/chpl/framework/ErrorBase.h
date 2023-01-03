@@ -59,7 +59,7 @@ enum ErrorType {
   // GeneralError is not defined via macro to make it easier to provide special
   // behavior for it (e.g. vbuild). Its tags are thus also not provided via the
   // macro.
-  GENERAL,
+  General,
 // Include each error specified in error-classes-list.h as an enum element here
 #define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) NAME,
 #include "chpl/framework/error-classes-list.h"
@@ -189,7 +189,7 @@ class GeneralError : public BasicError {
  protected:
   GeneralError(ErrorBase::Kind kind, IdOrLocation idOrLoc,
                std::string message, std::vector<Note> notes)
-    : BasicError(kind, GENERAL, std::move(idOrLoc),
+    : BasicError(kind, General, std::move(idOrLoc),
                  std::move(message), std::move(notes)) {}
 
   static const owned<GeneralError>&
