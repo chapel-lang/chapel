@@ -66,6 +66,7 @@ static chpl_bool debug = false;
 static chpl_bool haveTopology = false;
 
 static hwloc_topology_t topology;
+static hwloc_topology_t wholeTopology;
 
 static const struct hwloc_topology_support* topoSupport;
 static chpl_bool do_set_area_membind;
@@ -157,11 +158,17 @@ void chpl_topo_init(void) {
   // Allocate and initialize topology object.
   //
   CHK_ERR_ERRNO(hwloc_topology_init(&topology) == 0);
+  CHK_ERR_ERRNO(hwloc_topology_init(&wholeTopology) == 0);
 
   //
   // Perform the topology detection.
   //
   CHK_ERR_ERRNO(hwloc_topology_load(topology) == 0);
+
+  // See what we are missing.
+  int flags = HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM;
+  CHK_ERR_ERRNO(hwloc_topology_set_flags(wholeTopology, flags) == 0);
+  CHK_ERR_ERRNO(hwloc_topology_load(wholeTopology) == 0);
 
   //
   // What is supported?
@@ -218,6 +225,7 @@ void chpl_topo_exit(void) {
     numaSet = NULL;
   }
   hwloc_topology_destroy(topology);
+  hwloc_topology_destroy(wholeTopology);
 }
 
 
@@ -290,7 +298,7 @@ void chpl_topo_post_comm_init(void) {
   //
   // all PUs
   //
-  numCPUsLogAll = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PU);
+  numCPUsLogAll = hwloc_get_nbobjs_by_type(wholeTopology, HWLOC_OBJ_PU);
   CHK_ERR(numCPUsLogAll > 0);
 
 
@@ -319,7 +327,7 @@ void chpl_topo_post_comm_init(void) {
   //
   // all cores
   //
-  numCPUsPhysAll = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE);
+  numCPUsPhysAll = hwloc_get_nbobjs_by_type(wholeTopology, HWLOC_OBJ_CORE);
   CHK_ERR(numCPUsPhysAll > 0);
 
   int numLocalesOnNode = chpl_get_num_locales_on_node();
