@@ -65,7 +65,7 @@ $(LIBCOMPILER_BUILD_DIR):
 	    -DBUILD_SHARED_LIBS=OFF
 
 parser: $(LIBCOMPILER_BUILD_DIR) FORCE
-	cd $(LIBCOMPILER_BUILD_DIR)/lib/parsing && $(CMAKE) --build . --target parser
+	cd $(LIBCOMPILER_BUILD_DIR)/frontend/lib/parsing && $(CMAKE) --build . --target parser
 
 chpldoc: $(LIBCOMPILER_BUILD_DIR) FORCE
 	+cd $(LIBCOMPILER_BUILD_DIR)/tools/chpldoc && $(CMAKE) --build . --target chpldoc
