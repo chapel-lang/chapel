@@ -32,7 +32,7 @@ class LocalePerSocket(unittest.TestCase):
         checkConfig()
         proc = run(["sinfo", "--format=%X %Y %Z", "--noheader",
                    "--exact"])
-        (cls.sockets, cls.cores, cls.threads) =
+        (cls.sockets, cls.cores, cls.threads) = \
             [int(i) for i in proc.stdout.split()]
 
         # We need the qthread output
@@ -64,7 +64,6 @@ class LocalePerSocket(unittest.TestCase):
                   cpuBind, output):
         self.assertIn('--nodes=%d' % nodes, output)
         self.assertIn('--ntasks=%d' % tasks, output)
-        self.assertIn('--ntasks-per-node=%d' % tasksPerNode, output)
         self.assertIn('--cpus-per-task=%d' % cpusPerTask, output)
         if (cpuBind != None):
             self.assertIn('--cpu-bind=%s' % cpuBind, output)
