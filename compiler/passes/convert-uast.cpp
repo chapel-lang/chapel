@@ -4255,8 +4255,12 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
 
     se->setSymbol(sym);
     // Not all symExprs are noted as fixups (due to lowering and AST
-    // transformations), so visit the temporary converion symbol's recorded
+    // transformations), so visit the temporary conversion symbol's recorded
     // symExprs to try handle these stragglers.
+    //
+    // This is a workaround; ideally, we'd not perform as many AST
+    // transformations, and not need to walk all the SymExprs for each
+    // tcsymbol.
     for_SymbolSymExprs(se, tcsymbol) {
       se->setSymbol(sym);
       fixedUp.insert(se);
