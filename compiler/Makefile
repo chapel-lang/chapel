@@ -46,7 +46,7 @@ endif
 
 #
 # include source subdirectories here
-#
+# include these subdirs so ETAGS builds tags for .cpp files too
 include ../frontend/lib/immediates/Makefile.include
 include ../frontend/lib/parsing/Makefile.include
 include ../frontend/lib/framework/Makefile.include
@@ -54,6 +54,19 @@ include ../frontend/lib/resolution/Makefile.include
 include ../frontend/lib/types/Makefile.include
 include ../frontend/lib/uast/Makefile.include
 include ../frontend/lib/util/Makefile.include
+
+include adt/Makefile.include
+include AST/Makefile.include
+include backend/Makefile.include
+include codegen/Makefile.include
+include llvm/Makefile.include
+include main/Makefile.include
+include optimizations/Makefile.include
+include parser/Makefile.include
+include passes/Makefile.include
+include resolution/Makefile.include
+include util/Makefile.include
+
 
 TARGETS = $(CHPL)
 
