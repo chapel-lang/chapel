@@ -35,7 +35,7 @@ inline proc join(i:uint(16), j) {
 proc main(args: [] string) {
   const offs = eol..<cmpl.size;
   forall i in offs do
-    forall j in offs do
+    foreach j in offs do
       pairCmpl[join(i,j)] = join(cmpl(j), cmpl(i));
 
   var seqCap = readSize,
@@ -66,14 +66,10 @@ proc main(args: [] string) {
 // TODO: Try a memmove()-style logic for shifting?
         bytesRead -= prevBytes+1;
         // abstract into a mem-move type of routine?
-        if seqStart > bytesRead {
+        serial (seqStart < bytesRead) do
+          // TODO: Would foreach be better?
           forall j in 0..bytesRead do
             seq[j] = seq[j+seqStart];
-        } else {          
-          for j in 0..bytesRead {
-            seq[j] = seq[j+seqStart];
-          }
-        }
 
           seqSize = 1;
 
