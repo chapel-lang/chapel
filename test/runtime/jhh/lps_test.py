@@ -4,16 +4,17 @@ import unittest
 import subprocess
 import os
 import sys
+from pprint import pprint
 
 def run(cmd, env=None):
     if type(cmd) is str:
         cmd = cmd.split()
     if env is None:
-        proc = subprocess.run(cmd, capture_output=True, text=True,
-                              check=True)
+        proc = subprocess.run(cmd, text=True, check=True,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     else:
-        proc = subprocess.run(cmd, capture_output=True, text=True,
-                              check=True, env=env)
+        proc = subprocess.run(cmd, text=True, check=True, env=env,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     return proc
 
 def checkConfig():
@@ -33,7 +34,7 @@ class LocalePerSocket(unittest.TestCase):
         proc = run(["sinfo", "--format=%X %Y %Z", "--noheader",
                    "--exact"])
         (cls.sockets, cls.cores, cls.threads) = \
-            [int(i) for i in proc.stdout.split()]
+            [int(i) for i in proc.stdout.splitlines()[0].split()]
 
         # We need the qthread output
         os.environ['QTHREAD_INFO'] = '2'
@@ -43,7 +44,7 @@ class LocalePerSocket(unittest.TestCase):
             del os.environ['CHPL_RT_LOCALES_PER_NODE'] 
 
         # Compile the test program
-        run('chpl hello.chpl')
+        run('chpl lps_test.chpl')
 
     def setUp(self):
         pass
@@ -74,8 +75,18 @@ class LocalePerSocket(unittest.TestCase):
         else:
             self.assertNotIn('--cpu-bind', output)
 
+    def mrAllocatedRequired(self):
+        proc = run("fi_info -v")
+        for line in proc.stdout.splitlines():
+            if "mr_mode" in line:
+                if "FI_MR_ALLOCATED" in line:
+                    return True
+                else:
+                    return False
+        return None # should not get here
+
     def test_00_base(self):
-        proc = run("./hello -nl 2 -v")
+        proc = run("./lps_test -nl 2 -v")
         self.checkArgs(2, 2, 1, 256, None, proc.stdout)
         self.assertIn('oversubscribed = False', proc.stdout)
         self.assertIn('Using 128 Shepherds', proc.stdout)
@@ -85,9 +96,13 @@ class LocalePerSocket(unittest.TestCase):
     def test_01_oversubscribed_env(self):
         # Being oversubscribed should have no effect on the number
         # of shepherds.
+        if self.mrAllocatedRequired():
+            self.skipTest("FI_MR_ALLOCATED is required by provider")
         env = os.environ.copy()
         env['CHPL_RT_OVERSUBSCRIBED'] = 'true'
-        proc = run("./hello -nl 2 -v", env=env)
+        proc = run("./lps_test -nl 2 -v", env=env)
+        print("XXX")
+        print(proc.stdout)
         self.checkArgs(2, 2, 1, 256, None, proc.stdout)
         self.assertIn('oversubscribed = True', proc.stdout)
         self.assertIn('Using 128 Shepherds', proc.stdout)
@@ -98,7 +113,7 @@ class LocalePerSocket(unittest.TestCase):
         # its socket.
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
-        proc = run("./hello -nl 2 -v", env=env)
+        proc = run("./lps_test -nl 2 -v", env=env)
         self.checkArgs(1, 2, 2, 128, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('using socket 1', proc.stdout)
@@ -111,16 +126,16 @@ class LocalePerSocket(unittest.TestCase):
         # is set.
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '4'
-        proc = run(['./hello', '-nl', '4', '-v'], env=env)
+        proc = run(['./lps_test', '-nl', '4', '-v'], env=env)
         self.assertIn('error: The number of locales on the node does '
                       'not equal the number of sockets (4 != 2).',
-                      proc.stderr)
+                      proc.stdout)
 
     def test_04_one_locale(self):
         # One locale uses only the cores in its socket.
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
-        proc = run(['./hello', '-nl', '1', '-v'], env=env)
+        proc = run(['./lps_test', '-nl', '1', '-v'], env=env)
         self.checkArgs(1, 1, 2, 256, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('Using 64 Shepherds', proc.stdout)
@@ -129,10 +144,12 @@ class LocalePerSocket(unittest.TestCase):
     def test_05_two_lpn_oversubscribed(self):
         # CHPL_RT_OVERSUBSCRIBED should have no effect when there is
         # one locale per socket
+        if self.mrAllocatedRequired():
+            self.skipTest("FI_MR_ALLOCATED is required by provider")
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         env['CHPL_RT_OVERSUBSCRIBED'] = 'true'
-        proc = run("./hello -nl 2 -v", env=env)
+        proc = run("./lps_test -nl 2 -v", env=env)
         self.checkArgs(1, 2, 2, 128, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('using socket 1', proc.stdout)
@@ -146,7 +163,7 @@ class LocalePerSocket(unittest.TestCase):
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         env['SLURM_HINT'] = 'nomultithread'
-        proc = run("./hello -nl 2 -v", env=env)
+        proc = run("./lps_test -nl 2 -v", env=env)
         self.checkArgs(1, 2, 2, 128, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('using socket 1', proc.stdout)
@@ -159,7 +176,7 @@ class LocalePerSocket(unittest.TestCase):
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         env['CHPL_RT_NUM_THREADS_PER_LOCALE'] = '128'
-        proc = run("./hello -nl 2 -v", env=env)
+        proc = run("./lps_test -nl 2 -v", env=env)
         self.checkArgs(1, 2, 2, 128, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('using socket 1', proc.stdout)
@@ -175,7 +192,7 @@ class LocalePerSocket(unittest.TestCase):
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         env['CHPL_RT_NUM_THREADS_PER_LOCALE'] = '128'
         env['SLURM_HINT'] = 'nomultithread'
-        proc = run("./hello -nl 2 -v", env=env)
+        proc = run("./lps_test -nl 2 -v", env=env)
         self.checkArgs(1, 2, 2, 128, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('using socket 1', proc.stdout)
@@ -188,7 +205,7 @@ class LocalePerSocket(unittest.TestCase):
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         env['CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES'] = 'true'
-        proc = run("./hello -nl 2 -v", env=env)
+        proc = run("./lps_test -nl 2 -v", env=env)
         self.checkArgs(1, 2, 2, 128, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('using socket 1', proc.stdout)
@@ -203,7 +220,7 @@ class LocalePerSocket(unittest.TestCase):
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         env['CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES'] = 'true'
         env['CHPL_RT_NUM_THREADS_PER_LOCALE'] = '128'
-        proc = run("./hello -nl 2 -v", env=env)
+        proc = run("./lps_test -nl 2 -v", env=env)
         self.checkArgs(1, 2, 2, 128, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('using socket 1', proc.stdout)
@@ -223,7 +240,7 @@ class LocalePerSocket(unittest.TestCase):
         proc = run(['srun', '-l', '--quiet', '--nodes=1', '--ntasks=3',
                     '--ntasks-per-node=3', '--cpus-per-task=16',
                     '--exclusive', '--kill-on-bad-exit',
-                    './hello_real', '-nl', '3', '-v'], env=env)
+                    './lps_test_real', '-nl', '3', '-v'], env=env)
         self.assertIn('oversubscribed = True', proc.stdout)
         self.assertIn('Using 8 Shepherds', proc.stdout)
 
@@ -231,7 +248,7 @@ def main(argv):
     failfast = False
     if "-f" in argv:
         failfast = True
-        del argv["-f"]
+        argv.remove("-f")
     unittest.main(argv=argv, failfast=failfast)
 
 if __name__ == '__main__':
