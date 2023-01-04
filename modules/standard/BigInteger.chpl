@@ -883,18 +883,18 @@ module BigInteger {
       }
 
     } else {
-      const b_ = (0 - b).safeCast(c_ulong);
+      const b_ = b:bigint;
 
       if _local {
-        mpz_add_ui(c.mpz, a.mpz,  b_);
+        mpz_sub(c.mpz, a.mpz, b_.mpz);
 
       } else if a.localeId == chpl_nodeID {
-        mpz_add_ui(c.mpz, a.mpz,  b_);
+        mpz_sub(c.mpz, a.mpz, b_.mpz);
 
       } else {
         const a_ = a;
 
-        mpz_add_ui(c.mpz, a_.mpz, b_);
+        mpz_sub(c.mpz, a_.mpz, b_.mpz);
       }
     }
 
@@ -920,18 +920,18 @@ module BigInteger {
       }
 
     } else {
-      const a_ = (0 - a).safeCast(c_ulong);
+      const a_ = a:bigint;
 
       if _local {
-        mpz_add_ui(c.mpz, b.mpz,  a_);
+        mpz_sub(c.mpz, a_.mpz, b.mpz);
 
       } else if b.localeId == chpl_nodeID {
-        mpz_add_ui(c.mpz, b.mpz,  a_);
+        mpz_sub(c.mpz, a_.mpz, b.mpz);
 
       } else {
         const b_ = b;
 
-        mpz_add_ui(c.mpz, b_.mpz, a_);
+        mpz_sub(c.mpz, a_.mpz, b.mpz);
       }
     }
 
