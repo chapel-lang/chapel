@@ -2,11 +2,9 @@
 
 import os
 import argparse
-import subprocess
 
 parser = argparse.ArgumentParser(description='Write the reservedSymbolNames.h file')
 parser.add_argument('location', help='The location to read the reservedSymbolNames and write the reservedSymbolNames.h file')
-parser.add_argument('--chpl-home', dest='chpl_home', help='the location of the chapel source')
 
 args = parser.parse_args()
 
@@ -14,15 +12,13 @@ if not os.path.exists(args.location):
   raise Exception('Location {} does not exist'.format(args.location))
 
 out_file = os.path.join(args.location, 'reservedSymbolNames.h')
-tmp_file = os.path.join(args.location, 'reservedSymbolNames.h.in')
-update_if_diff = os.path.join(args.chpl_home,'util/config/update-if-different')
 
 file_contents = []
 
 with open(os.path.join(args.location, 'reservedSymbolNames'), 'r') as l:
   file_contents = l.readlines()
 
-with open(tmp_file, 'w') as f:
+with open(out_file, 'w') as f:
     for line in file_contents:
       if line.strip().startswith('//'):
         f.write(line)
@@ -31,5 +27,3 @@ with open(tmp_file, 'w') as f:
       parts = line.partition('//')
       line = '  cnames.insert(astr("{}")); {}{}\n'.format(parts[0].strip(),parts[1], parts[2])
       f.write(line)
-
-subprocess.call([update_if_diff, '--update', out_file, tmp_file, '--quiet'])

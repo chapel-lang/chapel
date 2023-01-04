@@ -24,6 +24,8 @@ set(SRCS
     PhaseTracker.cpp
     runpasses.cpp
     version.cpp
+    LICENSE
+    COPYRIGHT
    )
 target_sources(chpl
                PRIVATE

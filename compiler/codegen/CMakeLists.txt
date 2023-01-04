@@ -27,6 +27,7 @@ set(SRCS
     codegen.cpp
     library.cpp
     mli.cpp
+    reservedSymbolNames.h
    )
 target_sources(chpl
                PRIVATE
