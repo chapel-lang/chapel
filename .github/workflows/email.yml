@@ -26,9 +26,9 @@ jobs:
           LOG: ${{github.event.pull_request.body}}
         uses: nick-fields/retry@v2
         with:
-				max_attempts: 3
-				retry_on: error
-				timeout_seconds: 60  
+        max_attempts: 3
+			  retry_on: error
+			  timeout_seconds: 60  
         run: |
               curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
               echo "AUTHOR=$(jq -r '.[0].commit.author.name' commits.json)" >> $GITHUB_ENV   
