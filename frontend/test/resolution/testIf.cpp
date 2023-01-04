@@ -101,7 +101,7 @@ static void test6() {
   assert(qt.kind() == QualifiedType::UNKNOWN);
 }
 
-static void testIfVarErrorUseInElseBranch() {
+static void testIfVarErrorUseInElseBranch1() {
   Context context;
   auto ctx = &context;
   ErrorGuard guard(ctx);
@@ -109,9 +109,9 @@ static void testIfVarErrorUseInElseBranch() {
   auto path = TEST_NAME_FROM_FN_NAME(ctx);
   std::string contents =
     R""""(
-      class C {}
-      proc foo(x) {}
-      if var x = new C() then foo(x); else foo(x);
+    class C {}
+    proc foo(x) {}
+    if var x = new C() then foo(x); else foo(x);
     )"""";
   setFileText(ctx, path, contents);
 
@@ -121,20 +121,32 @@ static void testIfVarErrorUseInElseBranch() {
 
   assert(mod->numStmts() == 3 && mod->stmt(2)->isConditional());
   auto cond = mod->stmt(2)->toConditional();
+  assert(cond->hasElseBlock());
+  assert(cond->numThenStmts() == 1 && cond->numElseStmts() == 1);
   auto var = cond->condition()->toVariable();
   assert(var);
+
+  auto ifCall = cond->thenStmt(0)->toFnCall();
+  assert(ifCall && ifCall->numActuals() == 1);
+  auto ifUse = ifCall->actual(0)->toIdentifier();
+  assert(ifUse);
+
   auto elseCall = cond->elseStmt(0)->toFnCall();
   assert(elseCall && elseCall->numActuals() == 1);
   auto elseUse = elseCall->actual(0)->toIdentifier();
   assert(elseUse);
 
   auto& rr = resolveModule(ctx, mod->id());
+  auto& reIfUse = rr.byAst(ifUse);
   auto& reElseUse = rr.byAst(elseUse);
+
+  assert(reIfUse.toId() == var->id());
   assert(reElseUse.toId().isEmpty());
   assert(reElseUse.type().isUnknown());
 }
 
-static void testIfVarErrorUseInElseBranchNested() {
+// In this variation the use is in a 'else-if'.
+static void testIfVarErrorUseInElseBranch2() {
   Context context;
   auto ctx = &context;
   ErrorGuard guard(ctx);
@@ -142,9 +154,58 @@ static void testIfVarErrorUseInElseBranchNested() {
   auto path = TEST_NAME_FROM_FN_NAME(ctx);
   std::string contents =
     R""""(
-      class C {}
-      proc foo(x) {}
-      if var x = new C() then foo(x); else { { { foo(x); } } }
+    class C {}
+    proc foo(x) {}
+    if var x = new C() {
+      foo(x);
+    } else if var y = new C() {
+      foo(y);
+      foo(x);
+    }
+    )"""";
+  setFileText(ctx, path, contents);
+
+  auto& br = parseAndReportErrors(ctx, path);
+  auto mod = br.singleModule();
+  assert(mod && mod->numStmts() == 3);
+  auto cond = mod->stmt(2)->toConditional();
+  assert(cond && cond->hasElseBlock() && cond->numElseStmts() == 1);
+  auto var = cond->condition()->toVariable();
+  assert(var);
+
+  auto elseIf = cond->elseStmt(0)->toConditional();
+  assert(elseIf && elseIf->numThenStmts() == 2);
+  auto elseIfVar = elseIf->condition()->toVariable();
+  assert(elseIfVar);
+  auto elseIfCall1 = elseIf->thenStmt(0)->toFnCall();
+  auto elseIfCall2 = elseIf->thenStmt(1)->toFnCall();
+  assert(elseIfCall1 && elseIfCall1->numActuals() == 1);
+  assert(elseIfCall2 && elseIfCall2->numActuals() == 1);
+  auto useY = elseIfCall1->actual(0)->toIdentifier();
+  auto useX = elseIfCall2->actual(0)->toIdentifier();
+  assert(useY && useX);
+
+  auto& rr = resolveModule(ctx, mod->id());
+  auto& reUseY = rr.byAst(useY);
+  auto& reUseX = rr.byAst(useX);
+
+  assert(reUseY.toId() == elseIfVar->id());
+  assert(reUseX.toId().isEmpty());
+  assert(reUseX.type().isUnknown());
+}
+
+// In this variation the use is in a deeply nested block.
+static void testIfVarErrorUseInElseBranch3() {
+  Context context;
+  auto ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME_FROM_FN_NAME(ctx);
+  std::string contents =
+    R""""(
+    class C {}
+    proc foo(x) {}
+    if var x = new C() then foo(x); else { { { foo(x); } } }
     )"""";
   setFileText(ctx, path, contents);
 
@@ -183,8 +244,8 @@ static void testIfVarErrorNonClassType() {
   auto path = TEST_NAME_FROM_FN_NAME(ctx);
   std::string contents =
     R""""(
-      proc foo(x) {}
-      if var x = 1 then foo(x); else;
+    proc foo(x) {}
+    if var x = 1 then foo(x); else;
     )"""";
   setFileText(ctx, path, contents);
 
@@ -215,8 +276,9 @@ int main() {
   test4();
   test5();
   test6();
-  testIfVarErrorUseInElseBranch();
-  testIfVarErrorUseInElseBranchNested();
+  testIfVarErrorUseInElseBranch1();
+  testIfVarErrorUseInElseBranch2();
+  testIfVarErrorUseInElseBranch3();
   testIfVarErrorNonClassType();
   return 0;
 }

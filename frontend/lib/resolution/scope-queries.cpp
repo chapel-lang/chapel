@@ -292,11 +292,10 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
       }
     }
 
+    // Normally, we won't open a scope unless a variable is declared.
     // We need the scope in this case so that we can know we're coming
     // from the else branch of such a conditional when scope-resolving.
-    if (!newScope && isElseBlockOfConditionalWithIfVar(context, ast)) {
-      newScope = true;
-    }
+    newScope = newScope || isElseBlockOfConditionalWithIfVar(context, ast);
 
     if (newScope) {
       // Construct the new scope.
@@ -515,13 +514,14 @@ static bool doLookupInScope(Context* context,
     const Scope* cur = nullptr;
     bool reachedModule = false;
     bool skipClosestConditional = false;
-    bool didSkipConditional = false;
 
     // This trickiness is required to implement correct scoping behavior
     // for 'if-vars' in conditionals. The 'if-var' lives in the scope
     // for the conditional, but it is not visible within the 'else'
     // branch. Without this hack, we'd be able to see the 'if-var' in
     // both branches. First, detect if the start scope is the else-block.
+    //
+    // TODO: Consider query-caching some part of this pattern matching.
     if (!scope->id().isEmpty())
       if (auto ast = parsing::idToAst(context, scope->id()))
         if (isElseBlockOfConditionalWithIfVar(context, ast))
@@ -543,9 +543,9 @@ static bool doLookupInScope(Context* context,
           skipClosestConditional = true;
 
       // Skip the first conditional's scope if we need to.
-      if (skipClosestConditional && !didSkipConditional) {
+      if (skipClosestConditional) {
         if (ast && ast->isConditional()) {
-          didSkipConditional = true;
+          skipClosestConditional = false;
           continue;
         }
       }
@@ -555,7 +555,8 @@ static bool doLookupInScope(Context* context,
       if (onlyInnermost && got) return true;
     }
 
-    CHPL_ASSERT(!skipClosestConditional || didSkipConditional);
+    // Skip should have been performed if needed, at least once.
+    CHPL_ASSERT(!skipClosestConditional);
 
     if (reachedModule) {
       // Assumption: If a module is encountered, and if there is a receiver
