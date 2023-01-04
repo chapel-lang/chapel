@@ -9,8 +9,6 @@ parser.add_argument('destination', help='The location to write the updated COPYR
 
 args = parser.parse_args()
 
-out_file = os.path.join(args.destination, 'COPYRIGHT')
-
 if not os.path.exists(args.source):
   raise Exception('Source directory does not exist')
 
@@ -21,7 +19,7 @@ copyright_contents = []
 with open(os.path.join(args.source, 'COPYRIGHT'), 'r') as l:
   copyright_contents = l.readlines()
 
-with open(out_file, 'w') as f:
+with open(os.path.join(args.destination, 'COPYRIGHT'), 'w') as f:
     for line in copyright_contents:
       line = line.replace('"','')
       line = line.strip("\n")

@@ -11,14 +11,12 @@ args = parser.parse_args()
 if not os.path.exists(args.location):
   raise Exception('Location {} does not exist'.format(args.location))
 
-out_file = os.path.join(args.location, 'reservedSymbolNames.h')
-
 file_contents = []
 
 with open(os.path.join(args.location, 'reservedSymbolNames'), 'r') as l:
   file_contents = l.readlines()
 
-with open(out_file, 'w') as f:
+with open(os.path.join(args.location, 'reservedSymbolNames.h'), 'w') as f:
     for line in file_contents:
       if line.strip().startswith('//'):
         f.write(line)
