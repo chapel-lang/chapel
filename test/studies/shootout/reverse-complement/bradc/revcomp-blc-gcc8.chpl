@@ -95,13 +95,13 @@ config const numTasks = here.maxTaskPar;
 
 proc revcomp(seq, size) {
 //  return;
-  var i = 0;
-  while seq[i] != eol {
-    i += 1;
+  var headerSize = 0;
+  while seq[headerSize] != eol {
+    headerSize += 1;
   }
-  stdoutBin.write(seq[0..i]);
-  //  stdoutBin.write(seq[i+1..<size]);
-  var sharedCharsLeft, writtenChars: atomic int = size-(i+1);
+  stdoutBin.write(seq[0..headerSize]);
+  //  stdoutBin.write(seq[headerSize+1..<size]);
+  var sharedCharsLeft, writtenChars: atomic int = size-(headerSize+1);
   coforall tid in 0..<numTasks { // TODO: update to here.maxTaskPar {
     var chunkToWrite: [0..<linesPerChunk*cols] uint(8);
     do {
@@ -128,7 +128,7 @@ proc revcomp(seq, size) {
         chunkSize = charsLeft;
       }
 
-      var lastProc = charsLeft + i,  // sharedFront.fetchSub(chunkSize),
+      var lastProc = charsLeft + headerSize,  // sharedFront.fetchSub(chunkSize),
           chunkLeft = chunkSize;
 //      stderr.writeln(tid, ": ", (fullLineFrontSpanLength, fullLineRearSpanLength, chunkSize, lastProc));
 
