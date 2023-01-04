@@ -695,7 +695,7 @@ void ErrorIfVarNonClassType::write(ErrorWriterBase& wr) const {
   auto ifKindStr = cond->isExpressionLevel() ? "expression" : "statement";
   wr.heading(kind_, type_, var, "a variable declared in the condition of "
                                 "an if ", ifKindStr, " must be a class, "
-                                "not ", decayToValue(qtVar), ".");
+                                "not type '", qtVar.type(), "'.");
   wr.code(cond, {var});
 }
 

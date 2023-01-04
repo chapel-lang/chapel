@@ -57,6 +57,7 @@ static void test3() {
                          var x = if b then 0 else "string";
                          )"""");
   qt.dump();
+  std::cout << std::endl;
   assert(qt.isErroneousType());
 }
 
@@ -69,6 +70,7 @@ static void test4() {
                          var x = if b then 1 else 0;
                          )"""");
   qt.dump();
+  std::cout << std::endl;
   assert(qt.kind() == QualifiedType::CONST_VAR);
   assert(qt.type() && qt.type()->isIntType());
 }
@@ -85,6 +87,7 @@ static void test5() {
                          var x = if b then tempRef else new r();
                          )"""");
   qt.dump();
+  std::cout << std::endl;
   assert(qt.kind() == QualifiedType::CONST_VAR);
   assert(qt.type() && qt.type()->isRecordType());
 }
@@ -98,6 +101,7 @@ static void test6() {
                          var x = if b then 1 else "hello";
                          )"""", false);
   qt.dump();
+  std::cout << std::endl;
   assert(qt.kind() == QualifiedType::UNKNOWN);
 }
 
@@ -262,7 +266,7 @@ static void testIfVarErrorNonClassType() {
   assert(guard.numErrors() == 1);
   assert(guard.error(0)->message() ==
          "a variable declared in the condition of an if statement must "
-         "be a class, not a value of type 'int(64)'");
+         "be a class, not type 'int(64)'");
   auto& reVar = rr.byAst(var);
   assert(reVar.type().kind() == QualifiedType::VAR);
   assert(reVar.type().type() == IntType::get(ctx, 64));
