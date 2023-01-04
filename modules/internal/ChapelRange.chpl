@@ -876,6 +876,13 @@ module ChapelRange {
     if ! isBoundedRange(this) then
       compilerError("'size' is not defined on unbounded ranges");
 
+    return sizeAsHelp(t);
+  }
+
+  pragma "no doc"
+  proc range.sizeAsHelp(type t: integral,
+                                al = this.alignedLowAsInt,
+                                ah = this.alignedHighAsInt) {
     if chpl__singleValIdxType(idxType) {
       if _low > _high then return 0;
     }
@@ -894,6 +901,17 @@ module ChapelRange {
       HaltWrappers.boundsCheckHalt("range.size exceeds max("+t:string+") for: '" + this:string + "'");
     }
     return lenAsUint: t;
+  }
+
+  pragma "no doc"
+  proc range.impliedSizeAs(type t: integral): t {
+    if !isBoundedRange(this) && isFiniteIdxType(idxType) {
+      return sizeAsHelp(t,
+                        this.impliedAlignedLowAsInt,
+                        this.impliedAlignedHighAsInt);
+    } else {
+      return sizeAs(t);
+    }
   }
 
   /* Returns ``true`` if the range has a first index, ``false``
@@ -2835,7 +2853,7 @@ operator :(r: range(?), type t: range(?)) {
       }
 
     } else {
-      var v = this.sizeAs(intIdxType);
+      var v = this.impliedSizeAs(intIdxType);
       const numChunks = if __primitive("task_get_serial") then
                         1 else _computeNumChunks(v);
 
