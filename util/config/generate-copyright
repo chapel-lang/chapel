@@ -2,12 +2,18 @@
 
 import os
 import argparse
+import subprocess
 
 parser = argparse.ArgumentParser(description='Write the COPYRIGHT file suitable for importing')
 parser.add_argument('source', help='The source directory where COPYRIGHT is found')
 parser.add_argument('destination', help='The location to write the updated COPYRIGHT file')
+parser.add_argument('--chpl-home', dest='chpl_home', help='the location of the chapel source')
 
 args = parser.parse_args()
+
+out_file = os.path.join(args.destination, 'COPYRIGHT')
+tmp_file = os.path.join(args.destination, 'COPYRIGHT.in')
+update_if_diff = os.path.join(args.chpl_home,'util/config/update-if-different')
 
 if not os.path.exists(args.source):
   raise Exception('Source directory does not exist')
@@ -19,9 +25,11 @@ copyright_contents = []
 with open(os.path.join(args.source, 'COPYRIGHT'), 'r') as l:
   copyright_contents = l.readlines()
 
-with open(os.path.join(args.destination, 'COPYRIGHT'), 'w') as f:
+with open(tmp_file, 'w') as f:
     for line in copyright_contents:
       line = line.replace('"','')
       line = line.strip("\n")
       line = '"{}\\n"\n'.format(line)
       f.write(line)
+
+subprocess.call([update_if_diff, '--update', out_file, tmp_file, '--quiet'])

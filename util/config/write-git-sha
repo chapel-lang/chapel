@@ -36,7 +36,7 @@ if os.path.isfile(out_file):
         f.write('  const char* GIT_SHA = "{}";\n'.format(git_sha))
         f.write('}\n')
 
-    subprocess.call([update_if_diff, '--update', out_file, tmp_file])
+    subprocess.call([update_if_diff, '--update', out_file, tmp_file, '--quiet'])
 else:
     with open(out_file, 'w') as f:
         f.write('namespace chpl {\n')

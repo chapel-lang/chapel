@@ -56,28 +56,29 @@ include_directories(
 
 add_executable(chpl)
 set(CHPL_CMAKE_PYTHON $ENV{CHPL_MAKE_PYTHON})
-if (NOT EXISTS ${SRC_DIR}/main/LICENSE)
-  execute_process(COMMAND ${CHPL_CMAKE_PYTHON}
-                          ${SRC_DIR}/../util/config/generate-license
-                          ${SRC_DIR}/../
-                          ${SRC_DIR}/main
-                  OUTPUT_FILE ${SRC_DIR}/main/LICENSE)
-endif()
 
-if (NOT EXISTS ${SRC_DIR}/main/COPYRIGHT)
-  execute_process(COMMAND ${CHPL_CMAKE_PYTHON}
-                          ${SRC_DIR}/../util/config/generate-copyright
-                          ${SRC_DIR}/../
-                          ${SRC_DIR}/main
-                  OUTPUT_FILE ${SRC_DIR}/main/COPYRIGHT)
-endif()
+# Write the LICENSE file, or update the existing file if the contents are different
+execute_process(COMMAND ${CHPL_CMAKE_PYTHON}
+                        ${SRC_DIR}/../util/config/generate-license
+                        ${SRC_DIR}/../
+                        ${SRC_DIR}/main
+                        --chpl-home=${CHPL_HOME})
 
-if (NOT EXISTS ${SRC_DIR}/codegen/reservedSymbolNames.h)
-  execute_process(COMMAND ${CHPL_CMAKE_PYTHON}
-                          ${SRC_DIR}/../util/config/generate-reservedSymbolNames
-                          ${SRC_DIR}/codegen
-                  OUTPUT_FILE ${SRC_DIR}/codegen/reservedSymbolNames.h)
-endif()
+
+# Write the COPYRIGHT file, or update the existing file if the contents are different
+execute_process(COMMAND ${CHPL_CMAKE_PYTHON}
+                        ${SRC_DIR}/../util/config/generate-copyright
+                        ${SRC_DIR}/../
+                        ${SRC_DIR}/main
+                        --chpl-home=${CHPL_HOME})
+
+
+# Write the reservedSymbolNames.h file, or update the existing file if the contents are different
+execute_process(COMMAND ${CHPL_CMAKE_PYTHON}
+                        ${SRC_DIR}/../util/config/generate-reservedSymbolNames
+                        ${SRC_DIR}/codegen
+                        --chpl-home=${CHPL_HOME})
+
 
 add_subdirectory(AST)
 add_subdirectory(adt)
