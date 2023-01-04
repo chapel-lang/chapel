@@ -881,8 +881,8 @@ module ChapelRange {
 
   pragma "no doc"
   proc range.sizeAsHelp(type t: integral,
-                                al = this.alignedLowAsInt,
-                                ah = this.alignedHighAsInt) {
+                        al = this.alignedLowAsInt,
+                        ah = this.alignedHighAsInt): t {
     if chpl__singleValIdxType(idxType) {
       if _low > _high then return 0;
     }
