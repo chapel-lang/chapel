@@ -63,14 +63,20 @@ proc main(args: [] string) {
 
 //          stderr.writeln("Shifting from ", seqStart..#(bytesRead-prevBytes), " to ",
 //                  0..<bytesRead-prevBytes);
-          for j in 0..<bytesRead-prevBytes {
+// TODO: Try a memmove()-style logic for shifting?
+        bytesRead -= prevBytes+1;
+        // abstract into a mem-move type of routine?
+        if seqStart > bytesRead {
+          forall j in 0..bytesRead do
+            seq[j] = seq[j+seqStart];
+        } else {          
+          for j in 0..bytesRead {
             seq[j] = seq[j+seqStart];
           }
+        }
 
-          seqSize = 0;
+          seqSize = 1;
 
-        seqSize += 1;
-        bytesRead -= prevBytes+1;
       }
     } while seqStart != -1;
 
