@@ -45,13 +45,15 @@ proc main(args: [] string) {
       seq: [seqDom] uint(8);
 
   do {
-    const more = stdinBin.read(seq[seqSize..#readSize]);
-    var bytesRead = stdinBin.offset() - totRead;
-    totRead += readSize;
-//    writef("read %i bytes\n", bytesRead);
+//    const more = stdinBin.read(seq[seqSize..#readSize]);
+//    var bytesRead = stdinBin.offset() - totRead;
+    var bytesRead = stdinBin.readBinary(c_ptrTo(seq[seqSize]), readSize);
+//    totRead += readSize;
+    totRead += bytesRead;
+//    stderr.writef("read %i bytes\n", bytesRead);
     do {
-//      writeln("Looking for sep");
-      const seqStart = findSep(seq[seqSize..#bytesRead]);
+//      stderr.writeln("Looking for sep in ", seqSize..#bytesRead);
+      const seqStart = findSep(seq, seqSize, bytesRead);
       if seqStart != 0 {
         const prevBytes = seqStart - seqSize;
         seqSize += prevBytes;
@@ -59,7 +61,7 @@ proc main(args: [] string) {
         if seqSize {   // TODO: Is this ever not true?
           revcomp(seq, seqSize);
 
-//          writeln("Shifting from ", seqStart..#(bytesRead-prevBytes), " to ",
+//          stderr.writeln("Shifting from ", seqStart..#(bytesRead-prevBytes), " to ",
 //                  0..<bytesRead-prevBytes);
           for j in 0..<bytesRead-prevBytes {
             seq[j] = seq[j+seqStart];
@@ -75,11 +77,13 @@ proc main(args: [] string) {
 
     seqSize += bytesRead;
 
-    if seqSize > seqCap-readSize {
+    if seqSize+readSize > seqCap {
       seqCap *= 2;
+//      stderr.writeln("Doubling capacity to ", seqCap);
       seqDom = {0..<seqCap};
     }
-  } while (more);
+//  } while more;
+   } while bytesRead;
 
   if seqSize {
     revcomp(seq, seqSize);
@@ -89,6 +93,7 @@ proc main(args: [] string) {
 config const numTasks = here.maxTaskPar;
 
 proc revcomp(seq, size) {
+//  return;
   var i = 0;
   while seq[i] != eol {
     i += 1;
@@ -188,6 +193,17 @@ proc revcomp(seq, size) {
   }
 
 
+proc findSep(chunk: [?inds], low=inds.low, count=inds.size) {
+  for i in low..#count {
+    if chunk[i] == '>'.toByte() && i != inds.low {
+//      writeln("Found sep at ", i);
+      return i;
+    }
+  }
+  return 0;
+}
+
+/*
 proc findSep(chunk: [?inds]) {
   for i in inds {
     if chunk[i] == '>'.toByte() && i != inds.low {
@@ -197,9 +213,11 @@ proc findSep(chunk: [?inds]) {
   }
   return 0;
 }
+*/
 
-
+/*
 proc revcomp(buf, lo, hi) {
+//  return;
   // shift all of the linefeeds into the right places
   const len = hi - lo + 1,
         off = (len - 1) % cols,
@@ -217,3 +235,4 @@ proc revcomp(buf, lo, hi) {
   forall (i,j) in zip(lo..#(len/2), ..<hi by -1) do
     (buf[i], buf[j]) = (cmpl[buf[j]], cmpl[buf[i]]);
 }
+*/
