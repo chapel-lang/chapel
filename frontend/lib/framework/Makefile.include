@@ -18,7 +18,7 @@
 
 FRONTEND_FRAMEWORK_OBJDIR = $(COMPILER_BUILD)/frontend/lib/framework
 
-ALL_SRCS += ../frontend/lib/framework/*.h ../frontend/lib/framework/*.cpp
+ALL_SRCS += ../frontend/lib/framework/*.cpp
 
 FRONTEND_FRAMEWORK_SRCS =                           \
            compiler-configuration.cpp               \
