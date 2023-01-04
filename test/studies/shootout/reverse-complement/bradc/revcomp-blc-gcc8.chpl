@@ -53,7 +53,9 @@ proc main(args: [] string) {
     do {
 //      stderr.writeln("Looking for sep in ", seqSize..#bytesRead);
       const seqStart = findSep(seq, seqSize, bytesRead);
-      if seqStart != 0 {
+      // TODO: any way to not duplicate check in this conditional and 'while'?
+      // Should our while loops support variable declarations?
+      if seqStart != -1 {
         const prevBytes = seqStart - seqSize;
         seqSize += prevBytes;
 
@@ -72,7 +74,7 @@ proc main(args: [] string) {
         seqSize += 1;
         bytesRead -= prevBytes+1;
       }
-    } while seqStart;
+    } while seqStart != -1;
 
     seqSize += bytesRead;
 
@@ -192,6 +194,7 @@ proc revcomp(seq, size) {
   }
 
 
+// TODO: any clever way to avoid the inds.low conditional?
 proc findSep(chunk: [?inds], low, count) {
   for i in low..#count {
     if chunk[i] == '>'.toByte() && i != inds.low {
@@ -199,5 +202,5 @@ proc findSep(chunk: [?inds], low, count) {
       return i;
     }
   }
-  return 0;
+  return -1;
 }
