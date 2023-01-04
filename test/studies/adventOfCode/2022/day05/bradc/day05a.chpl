@@ -1,0 +1,47 @@
+// NOTE: Not cleaned up at all since earning my star; turned
+// attention to the blog instead.  Could bring nice qualities
+// from day05.chpl over here now that it's been cleaned up.
+
+use IO, List;
+
+enum alphabet {A, B, C, D, E, F, G, H, I, J, K, L, M,
+               N, O, P, Q, R, S, T, U, V, W, X, Y, Z};
+
+const State = readInitState();
+
+var numStacks = max reduce ([s in State] s.size/4);
+
+var Stacks: [1..numStacks] list(alphabet);
+
+for i in 0..<State.size-2 by -1 {
+  for s in 1..numStacks do {
+    const char = State[i][(s-1)*4 + 1];
+    if (char != " ") {
+      Stacks[s].append(char:alphabet);
+    }
+  }
+}
+
+var num, src, dst: int;
+while readf("move %i from %i to %i\n", num, src, dst) {
+  var TmpStack: list(alphabet);
+  for i in 1..num {
+    TmpStack.append(Stacks[src].pop());
+  }
+  for i in 1..num do
+    Stacks[dst].append(TmpStack.pop());
+}
+
+for s in Stacks do
+  write(s.pop());
+writeln();
+
+iter readInitState() {
+  do {
+// BUG:
+    var line: string;
+    readLine(line);
+    yield line;
+  } while (line.size > 1);
+}
+

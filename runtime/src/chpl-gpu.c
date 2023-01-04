@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -16,6 +16,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+// We need to define this variable outside of the commented out HAS_GPU_LOCALE
+// section due to the fact that GPUDiagnostics module accesses it (and this
+// module can be used despite what locale model you're using).
+#include <stdbool.h>
+bool chpl_gpu_debug = false;
 
 #ifdef HAS_GPU_LOCALE
 

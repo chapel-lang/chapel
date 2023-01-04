@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -80,6 +80,8 @@ class New : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
   Management management_;
 
  public:
@@ -96,7 +98,7 @@ class New : public AstNode {
     Returns the type expression of this new expression.
   */
   const AstNode* typeExpression() const {
-    assert(children_.size() > 0);
+    CHPL_ASSERT(children_.size() > 0);
     return children_[0].get();
   }
 
@@ -110,7 +112,38 @@ class New : public AstNode {
 };
 
 
+
 } // end namespace uast
+
+/// \cond DO_NOT_DOCUMENT
+
+template <>
+struct mark<uast::New::Management> {
+  void operator()(Context* context, uast::New::Management t) {
+    // No need to mark enums
+  }
+};
+template <>
+struct stringify<uast::New::Management> {
+  void operator()(std::ostream& os, StringifyKind stringKind,
+                  uast::New::Management k) {
+    os << uast::New::managementToString(k);
+  }
+};
+
+/// \endcond
+
 } // end namespace chpl
+
+namespace std {
+
+template <>
+struct hash<chpl::uast::New::Management> {
+  size_t operator()(const chpl::uast::New::Management& key) const {
+    return (size_t)key;
+  }
+};
+
+}  // end namespace std
 
 #endif

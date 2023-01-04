@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -75,7 +75,7 @@ static bool resolvedVisitorEnterAst(ResolvedVisitorImpl& v,
       { \
         const NAME* casted = (const NAME*) ast; \
         v.userVisitor().enter(casted, v); \
-        assert(ast->numChildren() == 0); \
+        CHPL_ASSERT(ast->numChildren() == 0); \
         v.userVisitor().exit(casted, v); \
         break; \
       }
@@ -97,7 +97,7 @@ static bool resolvedVisitorEnterAst(ResolvedVisitorImpl& v,
     #define CASE_OTHER(NAME) \
       case asttags::NAME: \
       { \
-        assert(false && "this code should never be run"); \
+        CHPL_ASSERT(false && "this code should never be run"); \
         break; \
       }
 

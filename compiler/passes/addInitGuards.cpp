@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -178,7 +178,7 @@ void AddInitGuards::addPrintModInitOrder(FnSymbol* fn) {
   const char* s2 = astr(fn->getModule()->name);
   int myLen = strlen(s2);
   char lenStr[25];
-  sprintf(lenStr, "%d", myLen);
+  snprintf(lenStr, sizeof(lenStr), "%d", myLen);
   Expr *es1 = buildCStringLiteral(s1);
   Expr *es2 = buildCStringLiteral(s2);
   Expr *elen = buildIntLiteral(lenStr);

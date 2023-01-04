@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,11 +25,18 @@ namespace chpl {
 namespace uast {
 
 
+std::string On::dumpChildLabelInner(int i) const {
+  if (i == destChildNum_) {
+    return "dest";
+  }
+  return SimpleBlockLike::dumpChildLabelInner(i);
+}
+
 owned<On> On::build(Builder* builder, Location loc,
                     owned<AstNode> destination,
                     BlockStyle blockStyle,
                     AstList stmts) {
-  assert(destination.get() != nullptr);
+  CHPL_ASSERT(destination.get() != nullptr);
 
   AstList lst;
 

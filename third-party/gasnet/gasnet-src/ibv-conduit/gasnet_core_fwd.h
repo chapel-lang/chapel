@@ -15,7 +15,7 @@
   #error "VAPI-conduit is no longer supported"
 #endif
 
-#define GASNET_CORE_VERSION      2.10
+#define GASNET_CORE_VERSION      2.11
 #define GASNET_CORE_VERSION_STR  _STRINGIFY(GASNET_CORE_VERSION)
 #define GASNET_CORE_NAME         IBV
 #define GASNET_CORE_NAME_STR     _STRINGIFY(GASNET_CORE_NAME)
@@ -64,11 +64,10 @@
   #define GASNET_ALIGNED_SEGMENTS   1
 #endif
 
-  /* define to 1 if conduit allows internal GASNet fns to issue put/get for remote
-     addrs out of segment - not true when PSHM is used */
-#if 0
-#define GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET 1
-#endif
+  // If this conduit is considered a "portable conduit" only *conditionally*,
+  // uncomment to enable calls to gasnetc_check_portable_conduit(void) as
+  // described in gasnet_internal.c.
+//#define GASNETC_CHECK_PORTABLE_CONDUIT_HOOK 1
 
   // uncomment for each MK_CLASS which the conduit supports. leave commented otherwise
 #define GASNET_HAVE_MK_CLASS_CUDA_UVA (GASNETI_MK_CLASS_CUDA_UVA_ENABLED && GASNET_SEGMENT_FAST)
@@ -185,6 +184,7 @@
 #define GASNETC_SEGMENT_ATTACH_HOOK 1
 #define GASNETC_SEGMENT_CREATE_HOOK 1
 #define GASNETC_SEGMENT_DESTROY_HOOK 1
+//#define GASNETC_EP_BINDSEGMENT_HOOK 1
 #define GASNETC_EP_PUBLISHBOUNDSEGMENT_HOOK 1
 
   // Uncomment the following defines if conduit provides the corresponding hook.

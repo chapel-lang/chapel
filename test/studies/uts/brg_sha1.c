@@ -111,14 +111,14 @@ int rng_nextrand(RNG_state *mystate){
 
 /* condense state into string to display during debugging */
 char * rng_showstate(RNG_state *state, char *s){
-  sprintf(s,"%.2X%.2X...", state[0],state[1]);
+  snprintf(s, 8 * sizeof(char), "%.2X%.2X...", state[0],state[1]);
   return s;
 }
 
 /* describe random number generator type into string */
 int rng_showtype(char *strBuf, int ind) {
-  ind += sprintf(strBuf+ind, "SHA-1 (state size = %uB)",
-                 (unsigned) sizeof(struct state_t));
+  ind += snprintf(strBuf + ind, 25 * sizeof(char), "SHA-1 (state size = %uB)",
+                  (unsigned)sizeof(struct state_t));
   return ind;
 }
 

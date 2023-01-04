@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -99,7 +99,7 @@ void zlineToFileIfNeeded(BaseAST* ast, FILE* outfile) {
 static char idCommentBuffer[32];
 
 const char* idCommentTemp(BaseAST* ast) {
-  sprintf(idCommentBuffer, "/* %7d */ ", ast->id);
+  snprintf(idCommentBuffer, sizeof(idCommentBuffer), "/* %7d */ ", ast->id);
   return idCommentBuffer;
 }
 
@@ -2183,7 +2183,7 @@ static const char* generateFileName(ChainHashMap<char*, StringHashFns, int>& fil
 
   // create the lowercase filename
   char lowerFilename[FILENAME_MAX];
-  sprintf(lowerFilename, "%s", currentModuleName);
+  snprintf(lowerFilename, sizeof(lowerFilename), "%s", currentModuleName);
   for (unsigned int i=0; i<strlen(lowerFilename); i++) {
     lowerFilename[i] = tolower(lowerFilename[i]);
   }
@@ -2191,7 +2191,7 @@ static const char* generateFileName(ChainHashMap<char*, StringHashFns, int>& fil
   // create a filename by bumping a version number until we get a
   // filename we haven't seen before
   char filename[FILENAME_MAX];
-  sprintf(filename, "%s", lowerFilename);
+  snprintf(filename, sizeof(filename), "%s", lowerFilename);
   int version = 1;
   while (filenames.get(filename)) {
     version++;
@@ -2210,9 +2210,9 @@ static const char* generateFileName(ChainHashMap<char*, StringHashFns, int>& fil
   // case by default by going back to currentModule->name rather
   // than using the lowercase filename
   if (version == 1) {
-    sprintf(filename, "%s", currentModuleName);
+    snprintf(filename, sizeof(filename), "%s", currentModuleName);
   } else {
-    sprintf(filename, "%s%d", currentModuleName, version);
+    snprintf(filename, sizeof(filename), "%s%d", currentModuleName, version);
   }
 
   name = astr(filename);
@@ -2504,10 +2504,10 @@ static void embedGpuCode() {
   SET_LINENO(rootModule);
   std::string fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
   std::string buffer;
-  chpl::ErrorMessage err;
+  std::string err;
   chpl::readfile(fatbinFilename.c_str(), buffer, err);
-  if(!err.isEmpty()) {
-    USR_FATAL("%s", err.message().c_str());
+  if (!err.empty()) {
+    USR_FATAL("%s", err.c_str());
   }
 
   genGlobalRawString("chpl_gpuBinary", buffer, buffer.length());
@@ -2758,7 +2758,7 @@ void makeBinary(void) {
     const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
     char parMakeFlags[32] = "";
     if (fParMake > 0) {
-      sprintf(parMakeFlags, "-j %d ", fParMake);
+      snprintf(parMakeFlags, sizeof(parMakeFlags), "-j %d ", fParMake);
     }
     const char* command = astr(astr(CHPL_MAKE, " "),
                                parMakeFlags, makeflags,

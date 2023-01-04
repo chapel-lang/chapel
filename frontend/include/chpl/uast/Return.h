@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -46,7 +46,7 @@ class Return final : public AstNode {
   Return(AstList children,  int8_t valueChildNum)
     : AstNode(asttags::Return, std::move(children)),
       valueChildNum_(valueChildNum) {
-    assert(valueChildNum_ <= 0);
+    CHPL_ASSERT(valueChildNum_ <= 0);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

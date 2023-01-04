@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,6 +21,8 @@
 #include "chpl/types/Param.h"
 #include "chpl/uast/Pragma.h"
 #include "chpl/framework/global-strings.h"
+#include "chpl/framework/ErrorBase.h"
+#include "chpl/parsing/parser-error.h"
 
 #include <cerrno>
 #include <cfloat>
@@ -33,16 +35,6 @@
 
 using chpl::types::Param;
 using chpl::owned;
-
-static const char* kindToString(VisibilityClause::LimitationKind kind) {
-  switch (kind) {
-    case VisibilityClause::LimitationKind::ONLY: return "only";
-    case VisibilityClause::LimitationKind::EXCEPT: return "except";
-    case VisibilityClause::LimitationKind::BRACES: assert(false);
-    case VisibilityClause::LimitationKind::NONE: assert(false);
-    default: return "";
-  }
-}
 
 static bool locationLessEq(YYLTYPE lhs, YYLTYPE rhs) {
   return (lhs.first_line < rhs.first_line) ||
@@ -119,14 +111,14 @@ Decl::Linkage ParserContext::noteLinkage(Decl::Linkage linkage) {
 }
 
 Variable::Kind ParserContext::noteVarDeclKind(Variable::Kind varDeclKind) {
-  assert(!hasNotedVarDeclKind);
+  CHPL_ASSERT(!hasNotedVarDeclKind);
   this->hasNotedVarDeclKind = true;
   this->varDeclKind = varDeclKind;
   return this->varDeclKind;
 }
 
 void ParserContext::storeVarDeclLinkageName(AstNode* linkageName) {
-  assert(this->varDeclLinkageName == nullptr);
+  CHPL_ASSERT(this->varDeclLinkageName == nullptr);
   this->varDeclLinkageName = linkageName;
 }
 
@@ -164,16 +156,12 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
 
   // Extract the string literal and convert it into a pragma flag.
   if (auto strLit = pragmaStr->toStringLiteral()) {
-    ret = PODUniqueString::get(context(), strLit->str().c_str());
+    ret = PODUniqueString::get(context(), strLit->value().c_str());
     auto tag = pragmaNameToTag(ret.c_str());
 
-    if (tag == PRAGMA_UNKNOWN) {
-      std::string msg;
-      msg += "unknown pragma: \"";
-      msg += ret.c_str();
-      msg += "\"";
-      noteError(loc, msg.c_str());
-    }
+    if (tag == PRAGMA_UNKNOWN)
+      CHPL_PARSER_REPORT_ERR(
+          this, loc, "unknown pragma \"" + strLit->value().str() + "\".");
 
     // Initialize the pragma flags if needed.
     auto& pragmas = attributeParts.pragmas;
@@ -194,15 +182,15 @@ void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
   if (!hasAttributeParts) {
     hasAttributeParts = true;
   } else {
-    assert(!attributeParts.isDeprecated);
-    assert(attributeParts.deprecationMessage.isEmpty());
+    CHPL_ASSERT(!attributeParts.isDeprecated);
+    CHPL_ASSERT(attributeParts.deprecationMessage.isEmpty());
   }
 
   attributeParts.isDeprecated = true;
 
   if (messageStr) {
     if (auto strLit = messageStr->toStringLiteral()) {
-      attributeParts.deprecationMessage = strLit->str();
+      attributeParts.deprecationMessage = strLit->value();
     }
 
     delete messageStr;
@@ -214,15 +202,15 @@ void ParserContext::noteUnstable(YYLTYPE loc, AstNode* messageStr) {
     hasAttributeParts = true;
   }
   else {
-    assert(!attributeParts.isUnstable);
-    assert(attributeParts.unstableMessage.isEmpty());
+    CHPL_ASSERT(!attributeParts.isUnstable);
+    CHPL_ASSERT(attributeParts.unstableMessage.isEmpty());
   }
 
   attributeParts.isUnstable = true;
 
   if (messageStr) {
     if (auto strLit = messageStr->toStringLiteral()) {
-      attributeParts.unstableMessage = strLit->str();
+      attributeParts.unstableMessage = strLit->value();
     }
 
     delete messageStr;
@@ -236,12 +224,12 @@ void ParserContext::resetAttributePartsState() {
     hasAttributeParts = false;
   }
 
-  assert(attributeParts.pragmas == nullptr);
-  assert(!attributeParts.isDeprecated);
-  assert(!attributeParts.isUnstable);
-  assert(attributeParts.deprecationMessage.isEmpty());
-  assert(attributeParts.unstableMessage.isEmpty());
-  assert(!hasAttributeParts);
+  CHPL_ASSERT(attributeParts.pragmas == nullptr);
+  CHPL_ASSERT(!attributeParts.isDeprecated);
+  CHPL_ASSERT(!attributeParts.isUnstable);
+  CHPL_ASSERT(attributeParts.deprecationMessage.isEmpty());
+  CHPL_ASSERT(attributeParts.unstableMessage.isEmpty());
+  CHPL_ASSERT(!hasAttributeParts);
 
   numAttributesBuilt = 0;
 }
@@ -255,7 +243,7 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
 
   // If statement is not a decl, we should not have built any, otherwise
   // it was and the counter got reset at some point before this.
-  assert(numAttributesBuilt == 0);
+  CHPL_ASSERT(numAttributesBuilt == 0);
 
   if (cs.stmt && cs.stmt->isDecl()) {
 
@@ -265,20 +253,19 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
     // TODO: Can we just make deprecated_stmt and pragma_ls alternates?
     // This solves that problem.
     if (hasAttributeParts) {
-      assert(attributeParts.pragmas == nullptr);
-      assert(attributeParts.isDeprecated);
-      assert(attributeParts.isUnstable);
-      auto msg = "pragma list must come before deprecation statement";
-      noteError(loc, msg);
+      CHPL_ASSERT(attributeParts.pragmas == nullptr);
+      CHPL_ASSERT(attributeParts.isDeprecated);
+      CHPL_ASSERT(attributeParts.isUnstable);
+      CHPL_PARSER_REPORT_SYNTAX(
+          this, loc, "pragma list must come before deprecation statement.");
     }
 
   } else {
-    assert(numAttributesBuilt == 0);
-    if(cs.stmt) assert(hasAttributeParts);
-    auto msg = "cannot attach pragmas to this statement";
+    CHPL_ASSERT(numAttributesBuilt == 0);
+    if(cs.stmt) CHPL_ASSERT(hasAttributeParts);
 
     // TODO: The original builder also states the first pragma.
-    noteError(loc, msg);
+    CHPL_PARSER_REPORT(this, CannotAttachPragmas, loc, cs.stmt);
 
     // Clean up the attribute parts.
     resetAttributePartsState();
@@ -306,8 +293,7 @@ YYLTYPE ParserContext::declStartLoc(YYLTYPE curLoc) {
 
 void ParserContext::resetDeclStateOnError() {
   // Consume the linkage name just to clean it up.
-  auto droppedLinkageName = consumeVarDeclLinkageName();
-  (void) droppedLinkageName;
+  std::ignore = consumeVarDeclLinkageName();
   this->resetDeclState();
 }
 
@@ -341,9 +327,9 @@ bool ParserContext::currentScopeIsAggregate() {
           scope.tag == asttags::Union);
 }
 void ParserContext::exitScope(asttags::AstTag tag, UniqueString name) {
-  assert(scopeStack.size() > 0);
-  assert(scopeStack.back().tag == tag);
-  assert(scopeStack.back().name == name);
+  CHPL_ASSERT(scopeStack.size() > 0);
+  CHPL_ASSERT(scopeStack.back().tag == tag);
+  CHPL_ASSERT(scopeStack.back().name == name);
   scopeStack.pop_back();
 }
 
@@ -377,7 +363,7 @@ void ParserContext::clearComments(std::vector<ParserComment>* comments) {
 void ParserContext::clearComments(ParserExprList* comments) {
   if (comments != nullptr) {
     for (AstNode* expr : *comments) {
-      assert(expr->isComment());
+      CHPL_ASSERT(expr->isComment());
       delete expr;
     }
     delete comments;
@@ -400,7 +386,7 @@ ParserExprList* ParserContext::makeList(ParserExprList* lst) {
   return lst;
 }
 ParserExprList* ParserContext::makeList(AstNode* e) {
-  assert(e != nullptr);
+  CHPL_ASSERT(e != nullptr);
   ParserExprList* ret = new ParserExprList();
   ret->push_back(e);
   return ret;
@@ -422,7 +408,7 @@ ParserExprList* ParserContext::appendList(ParserExprList* dst,
 }
 
 ParserExprList* ParserContext::appendList(ParserExprList* dst, AstNode* e) {
-  assert(e != nullptr);
+  CHPL_ASSERT(e != nullptr);
   dst->push_back(e);
   return dst;
 }
@@ -505,7 +491,7 @@ ParserContext::gatherCommentsFromList(ParserExprList* lst,
     AstNode* e = (*lst)[nToMove];
     if (Comment* c = e->toComment()) {
       auto search = this->commentLocations.find(c);
-      assert(search != this->commentLocations.end());
+      CHPL_ASSERT(search != this->commentLocations.end());
       YYLTYPE commentLocation = search->second;
       if (locationLessEq(commentLocation, location)) {
         nToMove++;
@@ -522,9 +508,9 @@ ParserContext::gatherCommentsFromList(ParserExprList* lst,
   std::vector<ParserComment>* ret = new std::vector<ParserComment>();
   for (size_t i = 0; i < nToMove; i++) {
     Comment* c = (*lst)[i]->toComment();
-    assert(c);
+    CHPL_ASSERT(c);
     auto search = this->commentLocations.find(c);
-    assert(search != this->commentLocations.end());
+    CHPL_ASSERT(search != this->commentLocations.end());
     YYLTYPE commentLocation = search->second;
     ParserComment pc;
     pc.location = commentLocation;
@@ -641,14 +627,14 @@ AstNode* ParserContext::buildPrimCall(YYLTYPE location,
       anyNames = true;
     }
   }
-  // first argument must be a string literal, might be a cstring tho
+  // first argument must be a string literal, might be a cstring though
   if (actuals.size() > 0) {
     if (auto lit = actuals[0]->toCStringLiteral()) {
-      primName = lit->str();
+      primName = lit->value();
       // and erase that element
       actuals.erase(actuals.begin());
     } else if (auto lit = actuals[0]->toStringLiteral()) {
-      primName = lit->str();
+      primName = lit->value();
       // and erase that element
       actuals.erase(actuals.begin());
     }
@@ -656,16 +642,19 @@ AstNode* ParserContext::buildPrimCall(YYLTYPE location,
 
   if (anyNames || primName.isEmpty()) {
     if (anyNames)
-      noteError(location, "primitive calls cannot use named arguments");
+      CHPL_PARSER_REPORT_SYNTAX(this, location,
+                                "primitive calls cannot use named arguments.");
     else
-      noteError(location, "primitive calls must start with string literal");
+      CHPL_PARSER_REPORT_SYNTAX(
+          this, location, "primitive calls must start with string literal.");
 
     return ErroneousExpression::build(builder, loc).release();
   }
 
   PrimitiveTag tag = primNameToTag(primName.c_str());
   if (tag == PRIM_UNKNOWN) {
-    noteError(location, "unknown primitive");
+    CHPL_PARSER_REPORT_ERR(this, location,
+                              "unknown primitive '" + primName.str() + "'.");
     return ErroneousExpression::build(builder, loc).release();
   }
 
@@ -687,7 +676,7 @@ OpCall* ParserContext::buildUnaryOp(YYLTYPE location,
   // may reassign op here to match old parser
   // as in buildPreDecIncWarning
   if (ustrOp == "++") {
-    noteWarning(location, "++ is not a pre-increment");
+    CHPL_PARSER_REPORT(this, PreIncDecOp, location, /* isDoublePlus */ true);
     ustrOp = USTR("+");
     // conver the ++a to +(+a)
     auto innerOp = OpCall::build(builder, convertLocation(location),
@@ -695,7 +684,7 @@ OpCall* ParserContext::buildUnaryOp(YYLTYPE location,
     return OpCall::build(builder, convertLocation(location),
                        ustrOp, toOwned(innerOp)).release();
   } else if (ustrOp == "--") {
-    noteWarning(location, "-- is not a pre-decrement");
+    CHPL_PARSER_REPORT(this, PreIncDecOp, location, /* isDoublePlus */ false);
     ustrOp = USTR("-");
     // convert the --a to -(-a)
     auto innerOp = OpCall::build(builder, convertLocation(location),
@@ -805,7 +794,7 @@ findErrorInFnSignatureParts(ParserContext* context, YYLTYPE location,
 
 AstNode*
 ParserContext::buildFunctionExpr(YYLTYPE location, FunctionParts& fp) {
-  if (fp.isBodyNonBlockExpression) assert(false && "Not handled!");
+  if (fp.isBodyNonBlockExpression) CHPL_ASSERT(false && "Not handled!");
   auto ret = buildLambda(location, fp);
   return ret;
 }
@@ -891,14 +880,14 @@ AstNode*
 ParserContext::consumeFormalToAnonFormal(AstNode* ast) {
   auto formal = ast->toFormal();
 
-  assert(formal);
-  assert(!formal->initExpression() && !formal->typeExpression());
-  assert(!formal->name().isEmpty());
-  assert(!formal->attributes());
-  assert(formal->visibility() == Decl::DEFAULT_VISIBILITY);
+  CHPL_ASSERT(formal);
+  CHPL_ASSERT(!formal->initExpression() && !formal->typeExpression());
+  CHPL_ASSERT(!formal->name().isEmpty());
+  CHPL_ASSERT(!formal->attributes());
+  CHPL_ASSERT(formal->visibility() == Decl::DEFAULT_VISIBILITY);
 
   auto loc = builder->getLocation(formal);
-  assert(!loc.isEmpty());
+  CHPL_ASSERT(!loc.isEmpty());
 
   // TODO: Fix the location...
   auto typeExpr = Identifier::build(builder, loc, formal->name());
@@ -974,7 +963,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   }
 
   CommentsAndStmt cs = {fp.comments, nullptr};
-  assert(!fp.errorExpr);
+  CHPL_ASSERT(!fp.errorExpr);
 
   bool parenless = (fp.formals == parenlessMarker);
   if (parenless) fp.formals = nullptr; // Don't free the marker.
@@ -1003,9 +992,9 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
 
   // Own the recorded identifier to clean it up, but grab its location.
   owned<Identifier> identName = toOwned(fp.name);
-  assert(identName.get());
+  CHPL_ASSERT(identName.get());
   auto identNameLoc = builder->getLocation(identName.get());
-  assert(!identNameLoc.isEmpty());
+  CHPL_ASSERT(!identNameLoc.isEmpty());
 
   // TODO: It would be nice to get both the location of the entire function
   // as well as the location of the symbol.
@@ -1035,10 +1024,16 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   // TODO: I think we should redundantly store the receiver intent
   // in the function as well as the receiver formal.
   if (!f->isMethod() && fp.thisIntent != Formal::DEFAULT_INTENT) {
-    const char* msg = fp.thisIntent == Formal::TYPE
-        ? "Missing type for secondary type method"
-        : "'this' intents can only be applied to methods";
-    noteError(location, msg);
+    if (fp.thisIntent == Formal::TYPE) {
+      CHPL_PARSER_REPORT_ERR(this, location,
+                                "missing type for secondary type method '" +
+                                    identName->name().str() + "'.");
+    } else {
+      CHPL_PARSER_REPORT_ERR(
+          this, location,
+          "'this' intents can only be applied to methods, but '" +
+              identName->name().str() + "' is not a method.");
+    }
   }
 
   this->clearComments();
@@ -1061,9 +1056,9 @@ AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
 
     // Own the recorded identifier to clean it up, but grab its location.
     owned<Identifier> identName = toOwned(fp.name);
-    assert(identName.get());
+    CHPL_ASSERT(identName.get());
     auto identNameLoc = builder->getLocation(identName.get());
-    assert(!identNameLoc.isEmpty());
+    CHPL_ASSERT(!identNameLoc.isEmpty());
 
     // TODO: Right now this location is the start of the function, and
     // it seems more natural for the location to be the symbol.
@@ -1199,7 +1194,7 @@ buildTupleComponent(YYLTYPE location, PODUniqueString name) {
     ret = node.release();
   }
 
-  assert(ret != nullptr);
+  CHPL_ASSERT(ret != nullptr);
 
   return ret;
 }
@@ -1238,7 +1233,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
     for (auto expr : tup->actuals()) {
       auto decl = buildLoopIndexDecl(location, expr);
       if (decl.get() != nullptr) {
-        assert(decl->isDecl());
+        CHPL_ASSERT(decl->isDecl());
         elements.push_back(std::move(decl));
       } else {
         auto err = ErroneousExpression::build(builder, convLoc);
@@ -1254,8 +1249,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                             /*typeExpression*/ nullptr,
                             /*initExpression*/ nullptr);
   } else {
-    const char* msg = "invalid index expression";
-    noteError(location, msg);
+    CHPL_PARSER_REPORT(this, InvalidIndexExpr, location);
     return nullptr;
   }
 }
@@ -1271,13 +1265,12 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                                               ParserExprList* indexExprs) {
   // TODO: We have to handle the possibility of [1..2, 3..4] here.
   if (indexExprs->size() > 1) {
-    const char* msg = "invalid index expression";
-    noteError(location, msg);
+    CHPL_PARSER_REPORT(this, InvalidIndexExpr, location);
     return nullptr;
   } else {
     auto uncastedIndexExpr = consumeList(indexExprs)[0].release();
     auto indexExpr = uncastedIndexExpr;
-    assert(indexExpr);
+    CHPL_ASSERT(indexExpr);
     return buildLoopIndexDecl(location, toOwned(indexExpr));
   }
 }
@@ -1288,7 +1281,7 @@ AstNode* ParserContext::buildNewExpr(YYLTYPE location,
   if (FnCall* fnCall = expr->toFnCall()) {
     return this->wrapCalledExpressionInNew(location, management, fnCall);
   } else if (OpCall* opCall = expr->toOpCall()) {
-    assert(opCall->numActuals() == 1);
+    CHPL_ASSERT(opCall->numActuals() == 1);
     auto& child = builder->mutableRefToChildren(opCall)[0];
     if (FnCall* fnCall = child->toFnCall()) {
       child.release();
@@ -1297,25 +1290,23 @@ AstNode* ParserContext::buildNewExpr(YYLTYPE location,
       child.reset(wrappedFn);
       return expr;
     } else {
-      //something wrong, as below
-      this->raiseError(location, "Invalid form for 'new' expression");
+      CHPL_PARSER_REPORT(this, InvalidNewForm, location, expr);
     }
   } else {
     if (expr->isIdentifier() && expr->toIdentifier()->numChildren() == 0) {
       // try to capture case of new A; (new without parens)
-      raiseError(location, "type in 'new' expression is missing its "
-                           "argument list");
+      CHPL_PARSER_REPORT(this, NewWithoutArgs, location, expr);
     } else if (expr->isDot() ) {
       // try to capture case of var z20a = new C().tmeth;
       // and var z20c = new C()?.tmeth;
       if (expr->toDot()->receiver()->isFnCall() ||
           expr->toDot()->receiver()->isOpCall()) {
-        raiseError(location, "Please use parentheses to disambiguate "
-                             "dot expression after new");
+        CHPL_PARSER_REPORT_SYNTAX(
+            this, location,
+            "must use parentheses to disambiguate dot expression after 'new'.");
       } else {
         // try to capture case of new M.Q;
-        raiseError(location, "type in 'new' expression is missing its "
-                             "argument list");
+        CHPL_PARSER_REPORT(this, NewWithoutArgs, location, expr);
       }
     } else {
       // It's an error for one reason or another. TODO: Specialize these
@@ -1323,7 +1314,7 @@ AstNode* ParserContext::buildNewExpr(YYLTYPE location,
       // the expression 'a.field'; 'new foo' would require an argument
       // list for 'foo'; and something like 'new __primitive()' just
       // doesn't make any sense...
-      this->raiseError(location, "Invalid form for 'new' expression");
+      CHPL_PARSER_REPORT(this, InvalidNewForm, location, expr);
     }
   }
   auto loc = convertLocation(location);
@@ -1333,7 +1324,7 @@ AstNode* ParserContext::buildNewExpr(YYLTYPE location,
 FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
                                                  New::Management management,
                                                  FnCall* fnCall) {
-  assert(fnCall->calledExpression());
+  CHPL_ASSERT(fnCall->calledExpression());
   bool wrappedBaseExpression = false;
 
   // Find the child slot containing the called expression. Then remove it,
@@ -1343,7 +1334,7 @@ FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
 
     // We have the base expression.
     auto calledExpr = std::move(child).release();
-    assert(calledExpr);
+    CHPL_ASSERT(calledExpr);
     auto newExpr = New::build(builder, convertLocation(location),
                               toOwned(calledExpr),
                               management);
@@ -1351,7 +1342,7 @@ FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
 
     // Extend the location of the call to the left and patch the location.
     auto fnCallLoc = builder->getLocation(fnCall);
-    assert(!fnCallLoc.isEmpty());
+    CHPL_ASSERT(!fnCallLoc.isEmpty());
 
     auto updatedLoc = Location(fnCallLoc.path(), location.first_line,
                                location.first_column,
@@ -1363,8 +1354,7 @@ FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
     break;
   }
 
-  assert(wrappedBaseExpression);
-  (void) wrappedBaseExpression;
+  CHPL_ASSERT(wrappedBaseExpression);
 
   return fnCall;
 }
@@ -1469,7 +1459,7 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                     WithClause* withClause,
                                     CommentsAndStmt cs) {
   // Should not be nullptr, use other overload instead.
-  assert(indexExprs && indexExprs->size() >= 1);
+  CHPL_ASSERT(indexExprs && indexExprs->size() >= 1);
 
   std::vector<ParserComment>* comments;
   ParserExprList* exprLst;
@@ -1483,14 +1473,14 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
   AstNode* indexExpr = nullptr;
 
   if (indexExprs->size() > 1) {
-    const char* msg = "Invalid index expression";
-    return { .comments=comments, .stmt=raiseError(locIndex, msg) };
+    return {.comments = comments,
+            .stmt = CHPL_PARSER_REPORT(this, InvalidIndexExpr, locIndex)};
   } else {
     auto uncastedIndexExpr = consumeList(indexExprs)[0].release();
     indexExpr = uncastedIndexExpr;
   }
 
-  assert(indexExpr);
+  CHPL_ASSERT(indexExpr);
   auto index = buildLoopIndexDecl(locIndex, toOwned(indexExpr));
 
   auto body = consumeToBlock(locBodyAnchor, exprLst);
@@ -1512,7 +1502,7 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                                     ParserExprList* iterExprs,
                                                     WithClause* withClause,
                                                     CommentsAndStmt cs) {
-  assert(iterExprs && iterExprs->size() >= 1);
+  CHPL_ASSERT(iterExprs && iterExprs->size() >= 1);
 
   std::vector<ParserComment>* comments;
   ParserExprList* exprLst;
@@ -1526,14 +1516,15 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
   AstNode* iterandExpr = nullptr;
 
   if (iterExprs->size() > 1) {
-    const char* msg = "Invalid iterand expression";
-    return { .comments=comments, .stmt=raiseError(locIterExprs, msg) };
+    return {.comments = comments,
+            .stmt = CHPL_PARSER_REPORT_ERR(this, locIterExprs,
+                                              "invalid iterand expression.")};
   } else {
     auto uncastedIterandExpr = consumeList(iterExprs)[0].release();
     iterandExpr = uncastedIterandExpr;
   }
 
-  assert(iterandExpr);
+  CHPL_ASSERT(iterandExpr);
 
   auto body = consumeToBlock(locBodyAnchor, exprLst);
 
@@ -1795,8 +1786,8 @@ AstNode* ParserContext::buildNumericLiteral(YYLTYPE location,
     }
 
     if (!err.empty()) {
-      noteError(location, err);
-      ret = ErroneousExpression::build(builder, loc).release();
+      ret =
+          CHPL_PARSER_REPORT(this, InvalidNumericLiteral, location, err + ".");
     } else if (ull <= 9223372036854775807ull) {
       ret = IntLiteral::build(builder, loc, ull, text).release();
     } else {
@@ -1807,7 +1798,7 @@ AstNode* ParserContext::buildNumericLiteral(YYLTYPE location,
     if (type == IMAGLITERAL) {
       // Remove the trailing `i` from the noUnderscores number
       if (noUnderscores[noUnderscoresLen-1] != 'i') {
-        err = "invalid imag literal - does not end in i";
+        err = "invalid imaginary literal - does not end in 'i'";
       }
       noUnderscoresLen--;
       noUnderscores[noUnderscoresLen] = '\0';
@@ -1816,8 +1807,8 @@ AstNode* ParserContext::buildNumericLiteral(YYLTYPE location,
     double num = Param::str2double(noUnderscores, noUnderscoresLen, err);
 
     if (!err.empty()) {
-      noteError(location, err);
-      ret = ErroneousExpression::build(builder, loc).release();
+      ret =
+          CHPL_PARSER_REPORT(this, InvalidNumericLiteral, location, err + ".");
     } else if (type == IMAGLITERAL) {
       ret = ImagLiteral::build(builder, loc, num, text).release();
     } else {
@@ -1825,7 +1816,7 @@ AstNode* ParserContext::buildNumericLiteral(YYLTYPE location,
     }
 
   } else {
-    assert(false && "Case note handled in buildNumericLiteral");
+    CHPL_ASSERT(false && "Case not handled in buildNumericLiteral");
   }
 
   free(noUnderscores);
@@ -1837,21 +1828,12 @@ buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol,
                       VisibilityClause::LimitationKind limitationKind,
                       AstList limitations, bool isImport) {
   if (!symbol->isAs() && !symbol->isIdentifier() && !symbol->isDot()) {
-    std::string msg;
-    if (isImport) {
-      msg = "'import' statement paths must start with at least one module "
-            "symbol (e.g., 'import <module>[.<submodule>]*;')";
-    } else {
-      msg = "'use' statements must refer to module or enum symbols (e.g., "
-            "'use <module>[.<submodule>]*;')";
-    }
-    return raiseError(location, msg);
+    return CHPL_PARSER_REPORT(this, UseImportNeedsModule, location, isImport);
   }
 
   for (auto& expr : limitations) {
     auto asExpr = expr->toAs();
-    bool error = false;
-    std::string msg;
+    ErroneousExpression* error = nullptr;
 
     // TODO: Sanitize dot expressions?
     if (expr->isIdentifier() || expr->isDot() || expr->isComment())
@@ -1860,29 +1842,28 @@ buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol,
     if (limitationKind == VisibilityClause::LimitationKind::EXCEPT ||
         limitationKind == VisibilityClause::LimitationKind::ONLY) {
       if (!asExpr) {
-        msg = "incorrect expression in '";
-        msg += kindToString(limitationKind);
-        msg += "' list, identifier expected";
-        error = true;
+        error = CHPL_PARSER_REPORT(this, ExceptOnlyInvalidExpr, location,
+                                   limitationKind);
       }
     } else if (limitationKind == VisibilityClause::LimitationKind::BRACES) {
+      CHPL_ASSERT(isImport && "braces should only be used with import statements");
       if (asExpr) {
         if (!asExpr->symbol()->isIdentifier() ||
             !asExpr->rename()->isIdentifier()) {
-          msg = "incorrect expression in 'import' list rename, "
-                "identifier expected";
-          error = true;
+          error = CHPL_PARSER_REPORT_SYNTAX(this, location,
+                                            "incorrect expression in 'import' "
+                                            "list rename, identifier expected.");
         }
       } else {
-        msg = "incorrect expression in 'import' for unqualified "
-              "access, identifier expected";
-        error = true;
+        error = CHPL_PARSER_REPORT_SYNTAX(
+            this, location,
+            "incorrect expression in 'import' for unqualified access, "
+            "identifier expected.");
       }
     }
 
     if (error) {
-      assert(!msg.empty());
-      return raiseError(location, msg);
+      return error;
     }
   }
 
@@ -1910,7 +1891,8 @@ buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
 
   auto comments = gatherComments(location);
   if (attributes && attributes->isDeprecated()) {
-    raiseError(location, "Can't deprecate a forwarding statement");
+    CHPL_PARSER_REPORT_ERR(this, location,
+                              "can't deprecate a forwarding statement.");
   }
   if (limitationKind == VisibilityClause::NONE) {
     auto node = ForwardingDecl::build(builder, convertLocation(location),
@@ -1938,10 +1920,10 @@ CommentsAndStmt ParserContext::
 buildForwardingDecl(YYLTYPE location,
                     owned<Attributes> attributes,
                     CommentsAndStmt cs) {
-  assert(cs.stmt->isVariable() || cs.stmt->isMultiDecl() || cs.stmt->isTupleDecl());
+  CHPL_ASSERT(cs.stmt->isVariable() || cs.stmt->isMultiDecl() || cs.stmt->isTupleDecl());
   auto decl = cs.stmt->toDecl();
-  assert(decl);
-  assert(!decl->attributes());
+  CHPL_ASSERT(decl);
+  CHPL_ASSERT(!decl->attributes());
   // TODO: pattern for composing comments should be extracted to helper
   auto commentExprs = appendList(makeList(), cs.comments);
   auto comments = gatherCommentsFromList(commentExprs, location);
@@ -2069,8 +2051,8 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
     }
   }
 
-  assert(numDecls > 0);
-  assert(firstDecl && lastDecl);
+  CHPL_ASSERT(numDecls > 0);
+  CHPL_ASSERT(firstDecl && lastDecl);
 
   auto comments = gatherCommentsFromList(vars, locEverything);
   CommentsAndStmt cs = { .comments=comments, .stmt=nullptr };
@@ -2095,8 +2077,7 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
       }
 
       if (!isTypeVar) {
-        noteError(locEverything, "external symbol renaming can only be "
-                                 "applied to one symbol at a time");
+        CHPL_PARSER_REPORT(this, MultipleExternalRenaming, locEverything);
       }
     }
 
@@ -2109,7 +2090,7 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
     cs.stmt = multi.release();
   }
 
-  assert(cs.stmt);
+  CHPL_ASSERT(cs.stmt);
 
   resetDeclState();
 
@@ -2154,17 +2135,16 @@ static void clearTypeDeclPartsLinkage(TypeDeclParts& parts) {
 void ParserContext::validateExternTypeDeclParts(YYLTYPE location,
                                                 TypeDeclParts& parts) {
   if (parts.tag == asttags::Class) {
-    assert(parts.linkage != Decl::DEFAULT_LINKAGE);
-    auto msg = "Cannot declare class types as export or extern";
-    noteError(location, msg);
+    CHPL_ASSERT(parts.linkage != Decl::DEFAULT_LINKAGE);
+    CHPL_PARSER_REPORT_ERR(this, location,
+                       "cannot declare class types as export or extern.");
 
     // Clear the linkage state for this so that parsing can continue.
     clearTypeDeclPartsLinkage(parts);
   }
 
   if (parts.tag == asttags::Union && parts.linkage == Decl::EXPORT) {
-    auto msg = "Cannot export union types";
-    noteError(location, msg);
+    CHPL_PARSER_REPORT_ERR(this, location, "cannot export union types.");
 
     // Clear the linkage state for this so that parsing can continue.
     clearTypeDeclPartsLinkage(parts);
@@ -2183,7 +2163,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
   if (parts.linkage != Decl::DEFAULT_LINKAGE) {
     validateExternTypeDeclParts(location, parts);
   } else {
-    assert(parts.linkageName == nullptr);
+    CHPL_ASSERT(parts.linkageName == nullptr);
   }
 
   CommentsAndStmt cs = {parts.comments, nullptr};
@@ -2197,19 +2177,22 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
   if (optInherit != nullptr) {
     if (optInherit->size() > 0) {
       if (parts.tag == asttags::Record) {
-        noteError(inheritLoc, "inheritance is not currently supported for records");
-        noteNote(inheritLoc, "thoughts on what record inheritance should entail can be added to https://github.com/chapel-lang/chapel/issues/6851");
+        CHPL_PARSER_REPORT(this, RecordInheritanceNotSupported, inheritLoc,
+                           parts.name.str());
       } else if (parts.tag == asttags::Union) {
-        noteError(inheritLoc, "unions cannot inherit");
+        CHPL_PARSER_REPORT_ERR(this, inheritLoc, "unions cannot inherit.");
       } else {
         if (optInherit->size() > 1)
-          noteError(inheritLoc, "only single inheritance is supported");
+          CHPL_PARSER_REPORT_ERR(this, inheritLoc,
+                                    "only single inheritance is supported.");
         AstNode* ast = (*optInherit)[0];
         if (ast->isIdentifier()) {
           inheritIdentifier = toOwned(ast->toIdentifier());
           (*optInherit)[0] = nullptr;
         } else {
-          noteError(inheritLoc, "non-Identifier expression cannot be inherited");
+          CHPL_PARSER_REPORT_SYNTAX(
+              this, inheritLoc,
+              "non-Identifier expression cannot be inherited.");
         }
       }
     }
@@ -2222,8 +2205,8 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
     // These should have been cleared when validated above (the Class node
     // constructor and builder function would have to change if we ever
     // wanted to permit export/extern classes.
-    assert(parts.linkage == Decl::DEFAULT_LINKAGE);
-    assert(!parts.linkageName);
+    CHPL_ASSERT(parts.linkage == Decl::DEFAULT_LINKAGE);
+    CHPL_ASSERT(!parts.linkageName);
 
     decl = Class::build(builder, convertLocation(location),
                         toOwned(parts.attributes),
@@ -2242,7 +2225,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
   } else if (parts.tag == asttags::Union) {
 
     // Should have been cleared because this is not possible right now.
-    assert(parts.linkage != Decl::EXPORT);
+    CHPL_ASSERT(parts.linkage != Decl::EXPORT);
 
     decl = Union::build(builder, convertLocation(location),
                         toOwned(parts.attributes),
@@ -2252,7 +2235,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
                         parts.name,
                         std::move(contentsList)).release();
   } else {
-    assert(false && "case not handled");
+    CHPL_ASSERT(false && "case not handled");
   }
 
   cs.stmt = decl;
@@ -2293,9 +2276,8 @@ AstNode* ParserContext::buildReduceIntent(YYLTYPE location,
   (void) locOp;
   const Identifier* ident = iterand->toIdentifier();
   if (ident == nullptr) {
-    noteError(location, "Expected identifier for reduce intent name");
-    auto loc = convertLocation(location);
-    return ErroneousExpression::build(builder, loc).release();
+    return CHPL_PARSER_REPORT_SYNTAX(
+        this, location, "expected identifier for reduce intent name.");
   }
   auto node = ReduceIntent::build(builder, convertLocation(location),
                                   toOwned(op),
@@ -2324,8 +2306,8 @@ AstNode* ParserContext::buildScan(YYLTYPE location,
 
 AstNode* ParserContext::buildTypeQuery(YYLTYPE location,
                                        PODUniqueString queriedIdent) {
-  assert(!queriedIdent.isEmpty() && queriedIdent.c_str()[0] == '?');
-  assert(queriedIdent.length() >= 2);
+  CHPL_ASSERT(!queriedIdent.isEmpty() && queriedIdent.c_str()[0] == '?');
+  CHPL_ASSERT(queriedIdent.length() >= 2);
   const char* adjust = queriedIdent.c_str() + 1;
   auto name = UniqueString::get(context(), adjust);
   auto node = TypeQuery::build(builder, convertLocation(location), name);
@@ -2439,7 +2421,7 @@ ParserContext::buildTryCatchStmt(YYLTYPE location, CommentsAndStmt block,
   auto comments = gatherCommentsFromList(commentList, location);
   clearComments(commentList);
 
-  assert(block.stmt != nullptr && block.stmt->isBlock());
+  CHPL_ASSERT(block.stmt != nullptr && block.stmt->isBlock());
   Block* bodyBlock = block.stmt->toBlock();
   auto catches = consumeList(handlers);
   auto node = Try::build(builder, convertLocation(location),
@@ -2454,8 +2436,8 @@ ParserContext::buildTryCatchStmt(YYLTYPE location, CommentsAndStmt block,
 AstNode* ParserContext::buildCatch(YYLTYPE location, AstNode* error,
                                    CommentsAndStmt cs,
                                    bool hasParensAroundError) {
-  assert(cs.stmt->isBlock());
-  if (error != nullptr) assert(error->isVariable());
+  CHPL_ASSERT(cs.stmt->isBlock());
+  if (error != nullptr) CHPL_ASSERT(error->isVariable());
 
   clearComments(cs.comments);
   cs.comments = nullptr;
@@ -2515,13 +2497,14 @@ ParserContext::buildSelectStmt(YYLTYPE location, owned<AstNode> expr,
   // Return an error if there is more than one otherwise.
   for (auto& ast : stmts) {
     auto when = ast->toWhen();
-    assert(when != nullptr);
+    CHPL_ASSERT(when != nullptr);
 
     // TODO: Do we also care about the position of the otherwise?
     if (when->isOtherwise() && numOtherwise++) {
-      const char* msg = "Select has multiple otherwise clauses";
-      auto error = raiseError(location, msg);
-      CommentsAndStmt cs = { .comments=comments, .stmt=error };
+      CommentsAndStmt cs = {
+          .comments = comments,
+          .stmt = CHPL_PARSER_REPORT_SYNTAX(
+              this, location, "select has multiple otherwise clauses.")};
       return cs;
     }
   }
@@ -2537,7 +2520,10 @@ ParserContext::buildSelectStmt(YYLTYPE location, owned<AstNode> expr,
 
 AstNode* ParserContext::buildInterfaceFormal(YYLTYPE location,
                                              PODUniqueString name) {
-  return buildIdent(location, name);
+  return buildFormal(location, Formal::Intent::TYPE, name,
+                    /* typeExpr */ nullptr,
+                    /* initExpr */ nullptr,
+                    /* consumeAttributes */ false);
 }
 
 CommentsAndStmt ParserContext::buildInterfaceStmt(YYLTYPE location,
@@ -2554,7 +2540,14 @@ CommentsAndStmt ParserContext::buildInterfaceStmt(YYLTYPE location,
                     locBody,
                     body);
 
-  AstList formalList = formals ? consumeList(formals) : AstList();
+  AstList formalList;
+  if (formals != nullptr) {
+    formalList = consumeList(formals);
+  } else {
+    auto selfStr = PODUniqueString::get(context(), "Self");
+    formalList.push_back(toOwned(buildInterfaceFormal(location, selfStr)));
+  }
+
   AstList bodyStmts = bodyExprLst
       ? consumeAndFlattenTopLevelBlocks(bodyExprLst)
       : AstList();
@@ -2593,7 +2586,7 @@ ParserContext::buildInterfaceExpr(YYLTYPE location,
                         false);
   }
 
-  assert(ret.get() != nullptr);
+  CHPL_ASSERT(ret.get() != nullptr);
 
   return ret;
 }
@@ -2700,14 +2693,12 @@ ParserContext::buildLabelStmt(YYLTYPE location, PODUniqueString name,
         break;
       }
     }
-    assert(loop);
+    CHPL_ASSERT(loop);
     auto node = Label::build(builder, convertLocation(location), name,
                              toOwned(loop));
     return { .comments=comments, .stmt=node.release() };
   } else {
-    const char* msg = "can only label for-, while-do- "
-                      "and do-while-statements";
-    auto err = raiseError(location, msg);
-    return finishStmt(err);
+    return finishStmt(
+        CHPL_PARSER_REPORT(this, LabelIneligibleStmt, location, cs.stmt));
   }
 }

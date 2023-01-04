@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -203,20 +203,20 @@ gatherByReturnIntent(const DisambiguationContext& dctx,
     switch (returnIntent) {
       case Function::DEFAULT_RETURN_INTENT:
       case Function::CONST:
-        assert(ret.bestValue() == nullptr);
+        CHPL_ASSERT(ret.bestValue() == nullptr);
         ret.setBestValue(fn);
         break;
       case Function::CONST_REF:
-        assert(ret.bestConstRef() == nullptr);
+        CHPL_ASSERT(ret.bestConstRef() == nullptr);
         ret.setBestConstRef(fn);
         break;
       case Function::REF:
-        assert(ret.bestRef() == nullptr);
+        CHPL_ASSERT(ret.bestRef() == nullptr);
         ret.setBestRef(fn);
         break;
       case Function::PARAM:
       case Function::TYPE:
-        assert(false && "should not be reachable");
+        CHPL_ASSERT(false && "should not be reachable");
         break;
     }
   }
@@ -648,7 +648,7 @@ static int compareSpecificity(const DisambiguationContext& dctx,
     }
   }
 
-  assert(!(prefer1 && prefer2));
+  CHPL_ASSERT(!(prefer1 && prefer2));
 
   if (prefer1) {
     EXPLAIN("\nW: Fn %d is more specific than Fn %d\n",
@@ -812,13 +812,13 @@ static void testArgMapping(const DisambiguationContext& dctx,
   if (fa1 == nullptr || fa2 == nullptr) {
     // TODO: call testOpArgMapping if one was an operator but the
     // other is not
-    assert(false && "TODO -- handle operator calls");
+    CHPL_ASSERT(false && "TODO -- handle operator calls");
   }
 
   QualifiedType f1Type = fa1->formalType();
   QualifiedType f2Type = fa2->formalType();
   QualifiedType actualType = fa1->actualType();
-  assert(actualType == fa2->actualType());
+  CHPL_ASSERT(actualType == fa2->actualType());
 
   // Give up early for out intent arguments
   // (these don't impact candidate selection)
@@ -1058,7 +1058,7 @@ static void testArgMapHelper(const DisambiguationContext& dctx,
   // since that affects the disambiguation.
 
   CanPassResult result = canPass(dctx.context, actualType, formalType);
-  assert(result.passes());
+  CHPL_ASSERT(result.passes());
   *formalPromotes = result.promotes();
   *formalNarrows = result.convertsWithParamNarrowing();
 
@@ -1067,7 +1067,7 @@ static void testArgMapHelper(const DisambiguationContext& dctx,
   } else if (fnNum == 2) {
     ds.fn2Promotes |= *formalPromotes;
   } else {
-    assert(false && "fnNum should be either 1 or 2");
+    CHPL_ASSERT(false && "fnNum should be either 1 or 2");
   }
 
   EXPLAIN("Formal %d's type: ", fnNum);
@@ -1103,7 +1103,7 @@ static bool isFormalInstantiatedAny(const DisambiguationCandidate& candidate,
 
   if (candidate.fn->instantiatedFrom() != nullptr) {
     auto initial = candidate.fn->instantiatedFrom();
-    assert(initial->instantiatedFrom() == nullptr);
+    CHPL_ASSERT(initial->instantiatedFrom() == nullptr);
 
     int formalIdx = fa->formalIdx();
     const QualifiedType& qt = initial->formalType(formalIdx);
@@ -1256,7 +1256,7 @@ static bool prefersConvToOtherNumeric(const DisambiguationContext& dctx,
 static QualifiedType computeActualScalarType(Context* context,
                                              QualifiedType actualType) {
   // TODO: fill this in
-  assert(false && "not implemented yet");
+  CHPL_ASSERT(false && "not implemented yet");
   return actualType;
 }
 

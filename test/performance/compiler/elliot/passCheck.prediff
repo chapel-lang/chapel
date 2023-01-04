@@ -43,6 +43,9 @@ with open(logfile, 'r') as f:
 # '<passname> : <time for pass>' and we want to remove <time for pass>
 with open(logfile, 'w') as f:
     for line in loglines:
+      # temporarily ignore group timings as we transition to coarser timings
+      if line.strip().startswith('total time (') :
+        continue
       splitline = line.split(':')[0].strip() + ' :'
       f.write(splitline + '\n')
       # --print-passes prints detailed output after printing the total

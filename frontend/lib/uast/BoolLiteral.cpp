@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,10 @@
 namespace chpl {
 namespace uast {
 
+
+void BoolLiteral::dumpFieldsInner(const DumpSettings& s) const {
+  s.out << " " << value();
+}
 
 owned<BoolLiteral> BoolLiteral::build(Builder* builder, Location loc,
                                       bool value) {

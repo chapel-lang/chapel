@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -91,6 +91,19 @@ __device__ __host__ static inline void chpl_gpu_write(const char *str) { printf(
 __device__ static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) { /* no op */ }
 __host__ static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) {
   chpl_error("assertOnGpu() failed", lineno, filenameIdx);
+}
+
+__device__ static inline unsigned int chpl_gpu_clock(void) {
+  return (unsigned int)clock();
+}
+__host__ static inline unsigned int chpl_gpu_clock(void) {
+  return 0;
+}
+
+__device__ __host__ static inline void chpl_gpu_printTimeDelta(
+  const char *msg, unsigned int start, unsigned int end)
+{
+  printf("%s%u\n", msg, end - start);
 }
 
 #endif // HAS_GPU_LOCALE

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -75,7 +75,7 @@ class IntType final : public PrimitiveType {
       case 64:
         return "int(64)";
       default:
-        assert(false && "int bit width case not handled");
+        CHPL_ASSERT(false && "int bit width case not handled");
         return "int(<unknown>)";
     }
   }

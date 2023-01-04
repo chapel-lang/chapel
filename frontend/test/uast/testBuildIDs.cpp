@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,7 +20,6 @@
 #include "test-common.h"
 
 #include "chpl/framework/Context.h"
-#include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/Location.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/uast/AstNode.h"

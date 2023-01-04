@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -50,9 +50,7 @@
    :proc:`remove`
    :proc:`rmTree`
    :proc:`symlink`
-   :proc:`chmod`
    :proc:`chown`
-   :proc:`copyMode`
    :proc:`rename`
 
    .. _file-status:
@@ -60,13 +58,12 @@
    File/Directory Properties
    -------------------------
    :proc:`getGid`
-   :proc:`getMode`
    :proc:`getFileSize`
    :proc:`getUid`
    :proc:`exists`
    :proc:`isDir`
    :proc:`isFile`
-   :proc:`isLink`
+   :proc:`isSymlink`
    :proc:`isMount`
    :proc:`sameFile`
 
@@ -107,8 +104,7 @@ module FileSystem {
    idea of these constants as visible at `GNU Permissions
    <http://www.gnu.org/software/libc/manual/html_node/Permission-Bits.html>`_.
    They are intended for use when dealing with the permissions of files or
-   directories, such as with :proc:`chmod`, :proc:`getMode`, :proc:`mkdir`,
-   or :proc:`~locale.umask`
+   directories, such as with :proc:`mkdir`, or :proc:`~locale.umask`
 
    S_IRUSR refers to the user's read permission
 */
@@ -211,6 +207,7 @@ proc locale.chdir(name: string) throws {
    :throws PermissionError: Thrown when the current user does not have
                             permission to change the permissions
 */
+deprecated "'FileSystem.chmod()' is deprecated. Please use 'OS.POSIX.chmod()' instead"
 proc chmod(name: string, mode: int) throws {
   extern proc chpl_fs_chmod(name: c_string, mode: int): errorCode;
 
@@ -269,6 +266,45 @@ proc chown(name: string, uid: int, gid: int) throws {
 */
 proc copy(src: string, dest: string, metadata: bool = false) throws {
   var destFile = dest;
+
+  proc copyMode(src: string, dest: string) throws {
+    proc getMode(name: string): int throws {
+      extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): errorCode;
+
+      var ret:c_int;
+      var err = chpl_fs_viewmode(ret, unescape(name).c_str());
+      if err then try ioerror(err, "in getMode", name);
+      return ret;
+    }
+
+    proc chmod(name: string, mode: int) throws {
+      extern proc chpl_fs_chmod(name: c_string, mode: int): errorCode;
+
+      var err = chpl_fs_chmod(unescape(name).c_str(), mode);
+      if err then try ioerror(err, "in chmod", name);
+    }
+
+    try {
+      // Gets the mode from the source file.
+      var srcMode = getMode(src);
+      // Sets the mode of the destination to the source's mode.
+      chmod(dest, srcMode);
+    } catch e: SystemError {
+      // Hide implementation details.
+      try ioerror(e.err, "in copyMode " + src, dest);
+    }
+
+/*
+    use OS.POSIX;
+    var statStruct: struct_stat;
+    const statRet = stat(src.c_str(), c_ptrTo(statStruct));
+
+    if statRet != 0 then try ioerror(statRet:errorCode, "in copy's stat");;
+    const chmodRet = chmod(dest.c_str(), statStruct.st_mode);
+    if chmodRet != 0 then try ioerror(chmodRet:errorCode, "in copy's chmod");;
+*/
+  }
+
   try {
     if (isDir(destFile)) {
       // destFile = joinPath(destFile, basename(src));
@@ -417,6 +453,7 @@ proc copyFile(src: string, dest: string) throws {
    :throws PermissionError: Thrown when the current user does not have
                             permission to change the permissions
 */
+deprecated "'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead."
 proc copyMode(src: string, dest: string) throws {
   try {
     // Gets the mode from the source file.
@@ -430,6 +467,7 @@ proc copyMode(src: string, dest: string) throws {
 }
 
 pragma "no doc"
+deprecated "'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead."
 proc copyMode(out error: errorCode, src: string, dest: string) {
   var err: errorCode = 0;
   try {
@@ -479,15 +517,20 @@ proc copyTree(src: string, dest: string, copySymbolically: bool=false) throws {
 }
 
 private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=false) throws {
+  extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): errorCode;
+
   // Create dest
-  var oldMode = try getMode(src);
+  var oldMode:c_int;
+  var err = chpl_fs_viewmode(oldMode, unescape(src).c_str());
+  if err then try ioerror(err, "in copyTreeHelper", src);
+
   try mkdir(dest, mode=oldMode, parents=true);
 
   for filename in listDir(path=src, dirs=false, files=true, listlinks=true) {
     // Take care of files in src
     var fileDestName = dest + "/" + filename;
     var fileSrcName = src + "/" + filename;
-    if (try isLink(fileSrcName) && copySymbolically) {
+    if (try isSymlink(fileSrcName) && copySymbolically) {
       // Copy symbolically means symlinks should be copied as symlinks
       var realp = try realPath(fileSrcName);
       try symlink(realp, fileDestName);
@@ -501,7 +544,7 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
   for dirname in listDir(path=src, dirs=true, files=false, listlinks=true) {
     var dirDestName = dest+"/"+dirname;
     var dirSrcName = src+"/"+dirname;
-    if (try isLink(dirSrcName) && copySymbolically) {
+    if (try isSymlink(dirSrcName) && copySymbolically) {
       // Copy symbolically means symlinks should be copied as symlinks
       var realp = try realPath(dirSrcName);
       try symlink(realp, dirDestName);
@@ -691,6 +734,7 @@ proc getGid(name: string): int throws {
 
    :throws SystemError: Thrown to describe an error if one occurs.
 */
+deprecated "'FileSystem.getMode()' is deprecated, please use 'OS.POSIX.stat()' instead"
 proc getMode(name: string): int throws {
   extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): errorCode;
 
@@ -946,7 +990,7 @@ proc isFile(name:string):bool throws {
                         including the case where the path does not refer
                         to a valid file or directory.
 */
-proc isLink(name: string): bool throws {
+proc isSymlink(name: string): bool throws {
   extern proc chpl_fs_is_link(ref result:c_int, name: c_string): errorCode;
 
   if (name.isEmpty()) {
@@ -958,8 +1002,13 @@ proc isLink(name: string): bool throws {
 
   var ret:c_int;
   var err = chpl_fs_is_link(ret, unescape(name).c_str());
-  if err then try ioerror(err, "in isLink", name);
+  if err then try ioerror(err, "in isSymlink", name);
   return ret != 0;
+}
+
+deprecated "'isLink' is deprecated. Please use 'isSymlink' instead"
+proc isLink(name: string): bool throws {
+  return isSymlink(name);
 }
 
 /* Determine if the provided path `name` corresponds to a mount point and
@@ -1053,7 +1102,7 @@ iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
 
           // TODO: revisit error handling for this method
           try {
-            if (listlinks || !isLink(fullpath)) {
+            if (listlinks || !isSymlink(fullpath)) {
               if (dirs && isDir(fullpath)) then
                 yield filename;
               else if (files && isFile(fullpath)) then
@@ -1247,7 +1296,7 @@ private proc rmTreeHelper(root: string) throws {
   // them handle cleaning up their contents and themselves
   for dirname in listDir(path=root, dirs=true, files=false, listlinks=true, hidden=true) {
     var fullpath = root + "/" + dirname;
-    var dirIsLink = try isLink(fullpath);
+    var dirIsLink = try isSymlink(fullpath);
     if (dirIsLink) {
       try remove(fullpath);
     } else {

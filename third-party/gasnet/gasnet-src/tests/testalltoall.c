@@ -9,7 +9,8 @@
 
 #include <test.h>
 
-static gasnett_atomic_t reply_counter;
+static int do_reply = 0;
+static gasnett_atomic_t counter;
 
 enum {
   hidx_ping_shorthandler = GEX_AM_INDEX_BASE,
@@ -19,17 +20,19 @@ enum {
 };
 
 void ping_shorthandler(gex_Token_t token) {
-  gex_AM_ReplyShort0(token, hidx_pong_shorthandler, 0);
+  if (do_reply) gex_AM_ReplyShort0(token, hidx_pong_shorthandler, 0);
+  else gasnett_atomic_increment(&counter,0);
 }
 void ping_medhandler(gex_Token_t token, void *buf, size_t nbytes) {
-  gex_AM_ReplyMedium0(token, hidx_pong_medhandler, buf, nbytes, GEX_EVENT_NOW, 0);
+  if (do_reply) gex_AM_ReplyMedium0(token, hidx_pong_medhandler, buf, nbytes, GEX_EVENT_NOW, 0);
+  else gasnett_atomic_increment(&counter,0);
 }
 
 void pong_shorthandler(gex_Token_t token) {
-  gasnett_atomic_increment(&reply_counter,0);
+  gasnett_atomic_increment(&counter,0);
 }
 void pong_medhandler(gex_Token_t token, void *buf, size_t nbytes) {
-  gasnett_atomic_increment(&reply_counter,0);
+  gasnett_atomic_increment(&counter,0);
 }
 
 gex_AM_Entry_t htable[] = {
@@ -92,6 +95,8 @@ void init_ranks(void) {
 
 int main(int argc, char **argv) {
   int progress = 0;
+  int min_size = 0;
+  int step_size = 0;
   int help = 0;
   
   GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testalltoall", &argc, &argv, 0));
@@ -116,6 +121,20 @@ int main(int argc, char **argv) {
     } else if (!strcmp(argv[argi], "-progress")) { // UNDOCUMENTED
       progress = 1;
       ++argi;
+    } else if (!strcmp(argv[argi], "-min-size")) {
+      ++argi;
+      if (argc > argi) { min_size = atoi(argv[argi]); argi++; }
+      else help = 1;
+    } else if (!strcmp(argv[argi], "-step-size")) {
+      ++argi;
+      if (argc > argi) { step_size = atoi(argv[argi]); argi++; }
+      else help = 1;
+    } else if (!strcmp(argv[argi], "-reply")) {
+      do_reply = 1;
+      ++argi;
+    } else if (!strcmp(argv[argi], "-no-reply")) {
+      do_reply = 0;
+      ++argi;
     } else if (argv[argi][0] == '-') {
       help = 1;
       ++argi;
@@ -135,12 +154,33 @@ int main(int argc, char **argv) {
   if (!seed) seed = ((unsigned int)TIME() ^ myrank) & 0xFFFF;
   TEST_SRAND(seed);
 
+  if ((min_size < 0) || (min_size > med_sz)) min_size = med_sz;
+  if ((step_size < 0) || (step_size > med_sz)) step_size = 0;
+
   // TODO: test sections
   test_init("testalltoall",0,"[options] (iters) (maxsz) (seed)\n"
              "  The following options determine the communication pattern:\n"
              "      -random:  each process sends to others in a distinct random order\n"
              "      -polite:  each process sends round-robin starting with itself\n"
-             "      -hotspot: each process sends round-robin starting with process 0\n");
+             "      -hotspot: each process sends round-robin starting with process 0\n"
+             "      The default for this option group is '-random'.\n"
+             "  The following options control the use of AM Replies:\n"
+             "      -no-reply: no Replies will be sent\n"
+             "      -reply:    every Request will send a corresponding Reply\n"
+             "      The default for this option group is '-no-reply'.\n"
+             "  The following options determine the Medium payload size(s):\n"
+             "      -min-size N\n"
+             "           Sets the minimum payload size.\n"
+             "           Invalid values (less than zero or larger than the maximum)\n"
+             "           will set the minimum equal to the maximum.\n"
+             "      -step-size N\n"
+             "           Sets a value by which the payload size increases at each\n"
+             "           successive Request, starting from the minimum and wrapping\n"
+             "           back to the minimum when the size would exceed the maximum.\n"
+             "           Invalid values (zero or larger than the maximum) select\n"
+             "           uniformly distributed random payload sizes, rather than\n"
+             "           fixed-width steps.\n"
+             "      The default for this option group is '-min-size 0 -step-size 0'.");
   if (help || argc > argi) test_usage();
 
   int rounds = (iters + numranks - 1) / numranks;
@@ -149,12 +189,24 @@ int main(int argc, char **argv) {
 
   void *payload = test_calloc(med_sz,1);
 
-  gasnett_atomic_set(&reply_counter,0,0);
+  gasnett_atomic_set(&counter,0,0);
 
   fflush(stdout); fflush(stderr); sleep(1);
   BARRIER();
 
   MSG0("Running %d iterations", iters);
+  switch (seq_type) {
+    case SEQUENCE_RANDOM:
+      MSG0("    peer sequence: random");
+      break;
+    case SEQUENCE_POLITE:
+      MSG0("    peer sequence: polite");
+      break;
+    case SEQUENCE_HOTSPOT:
+      MSG0("    peer sequence: hotspot");
+      break;
+  }
+  MSG0("    replies: %s", do_reply?"YES":"NO");
 
   MSG0("Starting Short0 test");
   for (int r = 0, sent = 1; r < rounds; ++r) {
@@ -162,29 +214,52 @@ int main(int argc, char **argv) {
     for (gex_Rank_t i = 0; i < numranks; ++i, ++sent) {
       gex_AM_RequestShort0(myteam, rank_array[i], hidx_ping_shorthandler, 0);
       if (progress && !((iters-sent) % tick)) {
-        MSG0("Sent %d of %d (%d received)", sent, iters, (int)gasnett_atomic_read(&reply_counter,0));
+        MSG0("Sent %d of %d (%d %s received)",
+             sent, iters, (int)gasnett_atomic_read(&counter,0), do_reply ? "replies" : "requests");
       }
     }
   }
 
-  GASNET_BLOCKUNTIL(gasnett_atomic_read(&reply_counter,0) == iters);
-  gasnett_atomic_set(&reply_counter,0,0);
+  GASNET_BLOCKUNTIL(gasnett_atomic_read(&counter,0) == iters);
+  gasnett_atomic_set(&counter,0,0);
   BARRIER();
 
-  MSG0("Starting Medium0 test (payload = %"PRIuSZ")", med_sz);
+  MSG0("Starting Medium0 test");
+  if (min_size == med_sz) {
+    MSG0("    payload size: %"PRIuSZ, med_sz);
+  } else if (step_size) {
+    MSG0("    payload size: in [%d, %"PRIuSZ"] with step size of %d",
+         min_size, med_sz, step_size);
+  } else {
+    MSG0("    payload size: in [%d, %"PRIuSZ"] with uniform random distribution",
+         min_size, med_sz);
+  }
+
+  size_t prev_sz = med_sz; // wrap to min in first iteration
   for (int r = 0, sent = 1; r < rounds; ++r) {
     init_ranks();
     for (gex_Rank_t i = 0; i < numranks; ++i, ++sent) {
-      gex_AM_RequestMedium0(myteam, rank_array[i], hidx_ping_medhandler, payload, med_sz, GEX_EVENT_GROUP, 0);
+      size_t sz;
+      if (step_size) {
+        sz = prev_sz + step_size;
+        if (sz > med_sz) sz = min_size;
+      } else {
+        sz = TEST_RAND(min_size, med_sz);
+      }
+      assert(sz <= med_sz);
+      assert(sz >= min_size);
+      prev_sz = sz;
+      gex_AM_RequestMedium0(myteam, rank_array[i], hidx_ping_medhandler, payload, sz, GEX_EVENT_GROUP, 0);
       if (progress && !((iters-sent) % tick)) {
-        MSG0("Sent %d of %d (%d received)", sent, iters, (int)gasnett_atomic_read(&reply_counter,0));
+        MSG0("Sent %d of %d (%d %s received)",
+             sent, iters, (int)gasnett_atomic_read(&counter,0), do_reply ? "replies" : "requests");
       }
     }
   }
   gex_NBI_Wait(GEX_EC_AM,0);
 
-  GASNET_BLOCKUNTIL(gasnett_atomic_read(&reply_counter,0) == iters);
-  gasnett_atomic_set(&reply_counter,0,0);
+  GASNET_BLOCKUNTIL(gasnett_atomic_read(&counter,0) == iters);
+  gasnett_atomic_set(&counter,0,0);
   BARRIER();
 
   // TODO: Long0

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -105,7 +105,7 @@ void debug_data::create_compile_unit(const char *file, const char *directory, bo
   this->optimized = is_optimized;
   char version[128];
   char chapel_string[256];
-  get_version(version);
+  get_version(version, sizeof(version));
   snprintf(chapel_string, 256, "Chapel version %s", version);
   strncpy(current_dir, directory,sizeof(current_dir)-1);
 

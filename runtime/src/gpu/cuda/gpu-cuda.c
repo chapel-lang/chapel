@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,6 +37,7 @@
 #include <stdbool.h>
 
 static CUcontext *chpl_gpu_primary_ctx;
+static int *deviceClockRates;
 
 static bool chpl_gpu_has_context() {
   CUcontext cuda_context = NULL;
@@ -91,6 +92,7 @@ void chpl_gpu_impl_init() {
   CUDA_CALL(cuDeviceGetCount(&num_devices));
 
   chpl_gpu_primary_ctx = chpl_malloc(sizeof(CUcontext)*num_devices);
+  deviceClockRates = chpl_malloc(sizeof(int)*num_devices);
 
   int i;
   for (i=0 ; i<num_devices ; i++) {
@@ -100,6 +102,7 @@ void chpl_gpu_impl_init() {
     CUDA_CALL(cuDeviceGet(&device, i));
     CUDA_CALL(cuDevicePrimaryCtxSetFlags(device, CU_CTX_SCHED_BLOCKING_SYNC));
     CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
+    cuDeviceGetAttribute(&deviceClockRates[i], CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device);
 
     chpl_gpu_primary_ctx[i] = context;
   }
@@ -128,6 +131,9 @@ void chpl_gpu_impl_on_std_modules_finished_initializing(void) {
   chpl_gpu_device_alloc = true;
 }
 
+void chpl_gpu_get_device_count(int* into) {
+  cudaGetDeviceCount(into);
+}
 
 bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
   return chpl_gpu_common_is_device_ptr(ptr);
@@ -382,6 +388,8 @@ size_t chpl_gpu_impl_get_alloc_size(void* ptr) {
   return chpl_gpu_common_get_alloc_size(ptr);
 }
 
+unsigned int chpl_gpu_device_clock_rate(int32_t devNum) {
+  return (unsigned int)deviceClockRates[devNum];
+}
 
 #endif // HAS_GPU_LOCALE
-

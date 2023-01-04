@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,6 +32,13 @@ namespace chpl {
 namespace uast {
 
 
+void AstNode::dumpFieldsInner(const DumpSettings& s) const {
+}
+
+std::string AstNode::dumpChildLabelInner(int i) const {
+  return "";
+}
+
 AstNode::~AstNode() {
 }
 
@@ -56,7 +63,7 @@ bool AstNode::isLeaf() const {
   }
 
   if (ret) {
-    assert(numChildren() == 0);
+    CHPL_ASSERT(numChildren() == 0);
   }
 
   return ret;
@@ -182,7 +189,7 @@ bool AstNode::mayContainStatements(AstTag tag) {
     // no default to get compiler warning if any are added
   }
 
-  assert(false && "should not be reachable");
+  CHPL_ASSERT(false && "should not be reachable");
   return true;
 }
 
@@ -275,16 +282,11 @@ void AstNode::mark(Context* context) const {
 }
 
 static std::string getIdStr(const AstNode* ast) {
-  std::string idStr;
   if (ast == nullptr || ast->id().isEmpty()) {
-    idStr = "<no id>";
+    return "<no id>";
   } else {
-    std::ostringstream ss;
-    ast->id().stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
-    idStr = ss.str();
+    return ast->id().str();
   }
-
-  return idStr;
 }
 
 static void dumpMaxIdLen(const AstNode* ast, int& maxIdLen) {
@@ -299,61 +301,87 @@ static void dumpMaxIdLen(const AstNode* ast, int& maxIdLen) {
   }
 }
 
-static void dumpHelper(std::ostream& ss,
-                       const AstNode* ast,
-                       int maxIdLen,
-                       int depth,
-                       StringifyKind stringKind) {
-  std::string idStr = getIdStr(ast);
-  ss << std::setw(maxIdLen) << idStr;
+int AstNode::computeMaxIdStringWidth() const {
+  int maxIdLen = 0;
+  dumpMaxIdLen(this, maxIdLen);
+  return maxIdLen;
+}
 
+void AstNode::dumpHelper(const DumpSettings& s,
+                         const AstNode* ast,
+                         int indent,
+                         const AstNode* parent,
+                         int parentIdx) {
 
-  if (depth == 0) {
-    ss << " ";
-  }
-  for (int i = 0; i < depth; i++) {
-    ss << "  ";
-  }
-
-  if (ast == nullptr) {
-    ss << "nullptr\n";
-    return;
+  // output the id if desired
+  if (s.printId) {
+    std::string idStr = getIdStr(ast);
+    s.out << std::setw(s.idWidth) << idStr << std::setw(0);
   }
 
-  ss << asttags::tagToString(ast->tag()) << " ";
-
-  if (const NamedDecl* named = ast->toNamedDecl()) {
-    ss << named->name().str() << " ";
-  } else if (const Identifier* ident = ast->toIdentifier()) {
-    ss << ident->name().str() << " ";
-  } else if (const Comment* comment = ast->toComment()) {
-    ss << comment->str() << " ";
-  } else if (const Dot* dot = ast->toDot()) {
-    ss << "." << dot->field() << " ";
-  } else if (const OpCall* op = ast->toOpCall()) {
-    ss << op->op().str() << " ";
+  if (s.kind == StringifyKind::DEBUG_DETAIL) {
+    // add spacing according to depth
+    // (includes one space to separate id from the rest)
+    for (int i = 0; i <= indent; i++) {
+      s.out << "  ";
+    }
   }
 
-  //printf("(containing %i) ", ast->id().numContainedChildren());
-  //printf("%p", ast);
-  if (stringKind == StringifyKind::DEBUG_DETAIL)
-    ss << "\n";
+  // output the label if there is one
+  if (parent != nullptr) {
+    std::string label = parent->dumpChildLabelInner(parentIdx);
+    if (!label.empty()) {
+      s.out << label << " ";
+    }
+  }
 
+  // output the tag
+  s.out << asttags::tagToString(ast->tag());
+
+  // output the fields
+  ast->dumpFieldsInner(s);
+
+  if (s.kind == StringifyKind::DEBUG_DETAIL) {
+    s.out << "\n";
+  }
+
+  // output the child nodes
+  int i = 0;
   for (const AstNode* child : ast->children()) {
-    dumpHelper(ss, child, maxIdLen, depth+1, stringKind);
+    if (child != nullptr) {
+      dumpHelper(s, child, indent+1, ast, i);
+    } else {
+      s.out << "nullptr";
+    }
+    i++;
   }
+
+  return;
 }
 
 void AstNode::stringify(std::ostream& ss,
                         StringifyKind stringKind) const {
 
-  if (stringKind == StringifyKind::CHPL_SYNTAX) {
-    printChapelSyntax(ss, this);
-  } else {
-    int maxIdLen = 0;
-    int leadingSpaces = 0;
-    dumpMaxIdLen(this, maxIdLen);
-    dumpHelper(ss, this, maxIdLen, leadingSpaces, stringKind);
+  switch (stringKind) {
+    case StringifyKind::CHPL_SYNTAX:
+      // use the Chapel Syntax printer
+      printChapelSyntax(ss, this);
+      break;
+    case StringifyKind::DEBUG_SUMMARY:
+      // just print the ID
+      this->id().stringify(ss, stringKind);
+      break;
+    case StringifyKind::DEBUG_DETAIL:
+      {
+        auto s = DumpSettings(ss);
+        s.kind = stringKind;
+        s.printId = true;
+        // compute the maximum id width so it's a nice column
+        int maxIdLen = computeMaxIdStringWidth();
+        s.idWidth = maxIdLen;
+        dumpHelper(s, this, 0, /*parent*/ nullptr, /*parentIdx*/-1);
+      }
+      break;
   }
 }
 

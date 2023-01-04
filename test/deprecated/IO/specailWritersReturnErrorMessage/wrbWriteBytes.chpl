@@ -1,6 +1,6 @@
 use IO;
 
-var fw = opentmp().writer();
+var fw = openTempFile().writer();
 if fw.writeBytes(63, 2) {
     writeln("nope");
 }

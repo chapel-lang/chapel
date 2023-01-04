@@ -7,7 +7,7 @@ record MyRecord {
   var b: MyEnum;
 }
 
-var f = opentmp();
+var f = openTempFile();
 
 {
   var writer = f.writer();

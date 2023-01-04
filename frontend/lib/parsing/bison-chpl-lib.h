@@ -56,7 +56,8 @@ extern int yychpl_debug;
 #line 72 "chpl.ypp"
 
   #include "parser-dependencies.h"
-#line 77 "chpl.ypp"
+  #include "chpl/util/assertions.h"
+#line 78 "chpl.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_0_
   #define _BISON_CHAPEL_DEFINES_0_
@@ -72,7 +73,7 @@ extern int yychpl_debug;
   }
 
   #endif
-#line 103 "chpl.ypp"
+#line 104 "chpl.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_1_
   #define _BISON_CHAPEL_DEFINES_1_
@@ -256,12 +257,12 @@ extern int yychpl_debug;
   #define YYCHPL_STYPE_IS_TRIVIAL 1
 
   #endif
-#line 302 "chpl.ypp"
+#line 303 "chpl.ypp"
 
   // forward declare ParserContext
   struct ParserContext;
 
-#line 265 "bison-chpl-lib.h"
+#line 266 "bison-chpl-lib.h"
 
 /* Token kinds.  */
 #ifndef YYCHPL_TOKENTYPE
@@ -489,14 +490,14 @@ yychpl_pstate *yychpl_pstate_new (void);
 void yychpl_pstate_delete (yychpl_pstate *ps);
 
 /* "%code provides" blocks.  */
-#line 310 "chpl.ypp"
+#line 311 "chpl.ypp"
 
   extern int yychpl_debug;
 
   void yychpl_error(YYLTYPE*       loc,
                     ParserContext* context,
                     const char*    errorMessage);
-#line 318 "chpl.ypp"
+#line 319 "chpl.ypp"
 
   // include ParserContext.h here because it depends
   // upon YYLTYPE and other types defined by the generated parser
@@ -505,6 +506,6 @@ void yychpl_pstate_delete (yychpl_pstate *ps);
   // include override of macro used to compute locations
   #include "parser-yylloc-default.h"
 
-#line 509 "bison-chpl-lib.h"
+#line 510 "bison-chpl-lib.h"
 
 #endif /* !YY_YYCHPL_BISON_CHPL_LIB_H_INCLUDED  */

@@ -1,0 +1,1 @@
+makeIndexBuffer.chpl:4: warning: makeIndexBuffer has been renamed to createIndexBuffer

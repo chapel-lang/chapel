@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -184,36 +184,6 @@ void BasicError::mark(Context* context) const {
   for (auto& note : notes_) {
     marker(context, note);
   }
-}
-
-const owned<ParseError>&
-ParseError::getParseError(Context* context,
-                          ErrorBase::Kind kind,
-                          ID id,
-                          Location loc,
-                          std::string message,
-                          std::vector<Note> notes) {
-  QUERY_BEGIN(getParseError, context, kind, id, loc, message, notes);
-  auto result = std::unique_ptr<ParseError>(new ParseError(kind, id, loc, message, notes));
-  return QUERY_END(result);
-}
-
-const ParseError* ParseError::get(Context* context, const ErrorMessage& error) {
-  Kind kind = NOTE;
-  switch (error.kind()) {
-    case ErrorMessage::ERROR: kind = ERROR; break;
-    case ErrorMessage::WARNING: kind = WARNING; break;
-    case ErrorMessage::NOTE: kind = NOTE; break;
-    case ErrorMessage::SYNTAX: kind = SYNTAX; break;
-  }
-  std::vector<Note> notes;
-  for (auto& note : error.details()) {
-    assert(note.kind() == ErrorMessage::NOTE);
-    notes.push_back(std::make_tuple(note.id(), note.location(), note.message()));
-  }
-  return ParseError::getParseError(context, kind, error.id(),
-                                   error.location(), error.message(),
-                                   std::move(notes)).get();
 }
 
 const owned<GeneralError>&

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1047,7 +1047,8 @@ makeHeapAllocations() {
           call->insertBefore(new DefExpr(tmp));
           call->insertBefore(new CallExpr(PRIM_MOVE, tmp, new CallExpr(PRIM_GET_MEMBER, var, heapType->getField(1))));
           def->replace(new SymExpr(tmp));
-        } else if (call->isResolved()) {
+        } else if (call->isResolved() ||
+                   call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
             ArgSymbol* formal = actual_to_formal(def);
             if (formal->isRef()) {
               VarSymbol* tmp = newTemp(var->type);

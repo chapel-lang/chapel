@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -54,7 +54,7 @@ class Defer final : public SimpleBlockLike {
     : SimpleBlockLike(asttags::Defer, std::move(stmts), blockStyle,
                       bodyChildNum,
                       numBodyStmts) {
-    assert(bodyChildNum_ >= 0);
+    CHPL_ASSERT(bodyChildNum_ >= 0);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

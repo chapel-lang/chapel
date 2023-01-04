@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,6 +34,7 @@
 
 
 */
+deprecated "The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead"
 module Initialization {
 
   // Mark as "unsafe" to silence lifetime errors.
@@ -88,6 +89,8 @@ module Initialization {
 
     :arg rhs: A value to move-initialize from
   */
+  pragma "last resort"
+  deprecated "The formals 'lhs' and 'rhs' are deprecated, please use 'dst' and 'src' instead"
   proc moveInitialize(ref lhs,
                       pragma "no auto destroy"
                       pragma "error on copy" in rhs) {
@@ -95,6 +98,47 @@ module Initialization {
       compilerError("type mismatch move-initializing an expression of type '"+lhs.type:string+"' from one of type '"+rhs.type:string+"'");
     } else if __primitive("static typeof", lhs) != nothing {
       _move(lhs, rhs);
+    }
+  }
+
+  /*
+    Move-initialize ``dst`` with the value in ``src``. The contents of ``dst``
+    are not deinitialized before the move, and ``src`` is not deinitialized
+    after the move.
+
+    .. warning::
+
+      If ``dst`` references an already initialized variable, it will be
+      overwritten by the contents of ``src`` without being deinitialized
+      first. Call :proc:`explicitDeinit()` to deinitialize ``dst`` if
+      necessary.
+
+    .. warning::
+
+      The static types of ``dst`` and ``src`` must match, or else a
+      compile-time error will be issued.
+
+    .. note::
+
+      If the compiler inserts a copy for the argument to ``src``, then a
+      compile-time error will be issued. The most likely cause is that the
+      argument is used elsewhere following the call to ``moveInitialize``.
+      The ``moveFrom`` function can be used with the ``src`` argument to avoid
+      the copy when certain of the variable's usage:
+
+      moveInitialize(myDst, moveFrom(mySrc));
+
+    :arg dst: A variable to move-initialize, whose type matches ``src``
+
+    :arg src: A value to move-initialize from
+  */
+  proc moveInitialize(ref dst,
+                      pragma "no auto destroy"
+                      pragma "error on copy" in src) {
+    if __primitive("static typeof", dst) != __primitive("static typeof", src) {
+      compilerError("type mismatch move-initializing an expression of type '"+dst.type:string+"' from one of type '"+src.type:string+"'");
+    } else if __primitive("static typeof", dst) != nothing {
+      _move(dst, src);
     }
   }
 
@@ -111,6 +155,7 @@ module Initialization {
 
     :return: The contents of ``arg`` moved into a new value
   */
+  deprecated "'moveToValue' is deprecated; please use 'moveFrom' instead"
   proc moveToValue(const ref arg: ?t) {
     if t == nothing {
       return none;
@@ -125,6 +170,32 @@ module Initialization {
   }
 
   /*
+    Move the contents of the variable or constant referred to by ``src`` into
+    a new returned value.
+
+    .. warning::
+
+      The variable or constant referred to by ``src`` should be considered
+      uninitialized after a call to this function.
+
+    :arg src: A variable or constant to move
+
+    :return: The contents of ``src`` moved into a new value
+  */
+  proc moveFrom(const ref src: ?t) {
+    if t == nothing {
+      return none;
+    } else {
+      pragma "no init"
+      pragma "no copy"
+      pragma "no auto destroy"
+      var result: t;
+      _move(result, src);
+      return result;
+    }
+  }
+
+  /*
     Swap the contents of the variables referred to by ``lhs`` and ``rhs``.
     This function does not call the ``<=>`` operator. Unlike the ``<=>``
     operator, :proc:`moveSwap()` does not perform assignment or
@@ -134,15 +205,31 @@ module Initialization {
 
     :arg rhs: A variable to swap
   */
+  pragma "last resort"
+  deprecated "the formals 'lhs' and 'rhs' are deprecated, please use 'x' and 'y' instead"
   proc moveSwap(ref lhs: ?t, ref rhs: t) {
+    moveSwap(x=lhs, y=rhs);
+  }
+
+  /*
+    Swap the contents of the variables referred to by ``x`` and ``y``.
+    This function does not call the ``<=>`` operator. Unlike the ``<=>``
+    operator, :proc:`moveSwap()` does not perform assignment or
+    initialization.
+
+    :arg x: A variable to swap
+
+    :arg y: A variable to swap
+  */
+  proc moveSwap(ref x: ?t, ref y: t) {
     if t != nothing {
       pragma "no init"
       pragma "no copy"
       pragma "no auto destroy"
       var temp: t;
-      _move(temp, lhs);
-      _move(lhs, rhs);
-      _move(rhs, temp);
+      _move(temp, x);
+      _move(x, y);
+      _move(y, temp);
     }
   }
 

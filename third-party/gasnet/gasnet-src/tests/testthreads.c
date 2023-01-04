@@ -188,7 +188,9 @@ main(int argc, char **argv)
         int opt_S=0, opt_M=0, opt_L=0;
 
         #if TEST_MPI
+         #if TEST_INIT_MPI_FIRST
           init_test_mpi(&argc, &argv);
+         #endif
           getopt_str = "pgSMLamlvtdi:";
         #else
           getopt_str = "pgSMLalvtdi:";
@@ -203,6 +205,9 @@ main(int argc, char **argv)
 	myseg = TEST_SEG(myrank);
 
         #if TEST_MPI
+         #if !TEST_INIT_MPI_FIRST
+          init_test_mpi(&argc, &argv);
+         #endif
           #define TEST_MPI_USAGE  "  -m  use MPI calls                              \n"
         #else
           #define TEST_MPI_USAGE  ""

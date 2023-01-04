@@ -1,0 +1,2 @@
+# Asm printing currently only works with LLVM backend
+CHPL_TARGET_COMPILER != llvm

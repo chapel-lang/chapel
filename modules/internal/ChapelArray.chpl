@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -610,18 +610,6 @@ module ChapelArray {
 
   proc chpl__buildIndexType(d: domain) type
     return chpl__buildIndexType(d.rank, d._value.idxType);
-
-  deprecated "isRectangularArr is deprecated - please use isRectangular method on array"
-  proc isRectangularArr(a: []) param return a.isRectangular();
-
-  deprecated "isIrregularArr is deprecated - please use isIrregular method on array"
-  proc isIrregularArr(a: []) param return a.isIrregular();
-
-  deprecated "isAssociativeArr is deprecated - please use isAssociative method on array"
-  proc isAssociativeArr(a: []) param return a.isAssociative();
-
-  deprecated "isSparseArr is deprecated - please use isSparse method on array"
-  proc isSparseArr(a: []) param return a.isSparse();
 
   // Helper function used to ensure a returned array matches the declared
   // return type when the declared return type specifies a particular element

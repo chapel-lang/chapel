@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2022-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,9 @@
 
 #include "arg-helpers.h"
 #include "chpl/util/filesystem.h"
+
+#include <iostream>
+#include <cstring>
 
 bool developer = false;
 
@@ -52,7 +55,7 @@ uint64_t hexStr2uint64(const char* str, bool userSupplied,
 
   if (strlen(str+startPos) > 16) {
     std::cerr << "error: Integer literal overflow: '" + std::string(str) +
-                  "' is too big for type 'uint64'" << std::endl;
+                  "' is too big for a 64-bit unsigned integer" << std::endl;
     clean_exit(1);
   }
 

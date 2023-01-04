@@ -32,14 +32,14 @@
 // This takes the form YEAR.MONTH.PATCH in GASNet-EX releases,
 // providing a clear distinction from GASNet-1 with MAJOR==1.
 #define GASNET_RELEASE_VERSION_MAJOR 2022
-#define GASNET_RELEASE_VERSION_MINOR 3
+#define GASNET_RELEASE_VERSION_MINOR 9
 #define GASNET_RELEASE_VERSION_PATCH 0
 
 // Major and Minor versions of the GASNet-EX specification.
 //
 // This is currently a version number for *this* document.
 #define GEX_SPEC_VERSION_MAJOR 0
-#define GEX_SPEC_VERSION_MINOR 15
+#define GEX_SPEC_VERSION_MINOR 16
 
 // Major and Minor versions of the GASNet-1 specification.
 //
@@ -2486,6 +2486,8 @@ extern void gex_System_QueryHostInfo(
 // build will be defined in a later release.
 //
 // Information returned by this query is guaranteed to be self consistent:
+// (where the value received into the variable referenced by "PROPERTY_p"
+//  is referred to below as "PROPERTY")
 //   + All callers receive identical nbrhd_set_size.
 //   + Callers in the same neighborhood receive identical nbrhd_set_rank.
 //   + Callers in distinct neighborhoods receive distinct nbrhd_set_rank.
@@ -2496,10 +2498,10 @@ extern void gex_System_QueryHostInfo(
 // guarantees as to how the ranks are assigned.
 
 extern void gex_System_QueryMyPosition(
-            gex_Rank_t *nbrhd_set_size,
-            gex_Rank_t *nbrhd_set_rank,
-            gex_Rank_t *host_set_size,
-            gex_Rank_t *host_set_rank);
+            gex_Rank_t *nbrhd_set_size_p,
+            gex_Rank_t *nbrhd_set_rank_p,
+            gex_Rank_t *host_set_size_p,
+            gex_Rank_t *host_set_rank_p);
 
 //
 // Handler-safe locks (HSLs)
@@ -3785,7 +3787,7 @@ void gex_Segment_Destroy(
       // Valid flags:
       //   NONE - zero is currently required
 
-void gex_EP_BindSegment(
+int gex_EP_BindSegment(
             gex_EP_t        ep,
             gex_Segment_t   segment,
             gex_Flags_t     flags);
@@ -3797,8 +3799,8 @@ typedef [some integer type] gex_EP_Capabilities_t;
 
 #define GEX_FLAG_HINT_ACCEL_{AD,COLL,ALL} ???
 
-// NOTE: implemented only by ibv-conduit and ucx-conduit, and
-// only for capabilities == GEX_EP_CAPABILITY_RMA
+// NOTE: implemented only by ibv, ofi and ucx conduits,
+// and only for capabilities == GEX_EP_CAPABILITY_RMA
 int gex_EP_Create(
             gex_EP_t               *ep_p,        // OUT
             gex_Client_t           client,

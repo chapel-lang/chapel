@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -103,8 +103,8 @@ module ChapelSyncvar {
     }
   }
 
-  // This could be replaced with Memory.Initialization but I didn't
-  // want to compile it by default at this time.
+  // TODO: Should we replace this with functionality from 'MemMove'? Would
+  // that cause problems with the module initialization order?
   pragma "no doc"
   pragma "unsafe"
   private inline proc _moveSet(ref dst: ?t, ref src: t) lifetime src == dst {

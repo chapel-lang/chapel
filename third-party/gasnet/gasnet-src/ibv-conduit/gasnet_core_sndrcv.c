@@ -2614,8 +2614,8 @@ extern int gasnetc_sndrcv_limits(void) {
     const int min_wr_per_qp = 2;
     if (srq_wr_per_qp && (srq_wr_per_qp < min_wr_per_qp)) {
       srq_wr_per_qp = min_wr_per_qp;
-      fprintf(stderr,
-              "WARNING: Requested GASNET_RBUF_COUNT %d increased to %d\n",
+      gasneti_console_message(
+              "WARNING","Requested GASNET_RBUF_COUNT %d increased to %d",
               orig, gasnetc_num_qps * srq_wr_per_qp + rcv_spares);
     }
 
@@ -2630,8 +2630,8 @@ extern int gasnetc_sndrcv_limits(void) {
 
     /* Warn only if reduced relative to an explicit  non-zero value */
     if (gasnetc_rbuf_set && orig && (gasnetc_rbuf_limit < orig)) {
-      fprintf(stderr,
-              "WARNING: Requested GASNET_RBUF_COUNT %d reduced by HCA's max_srq_wr to %d\n",
+      gasneti_console_message(
+              "WARNING","Requested GASNET_RBUF_COUNT %d reduced by HCA's max_srq_wr to %d",
               orig, gasnetc_rbuf_limit);
     }
 

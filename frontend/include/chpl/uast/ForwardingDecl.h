@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -66,7 +66,7 @@ private:
                 /*linkageNameChildNum*/ -1
                 ) {
 
-    assert(children_.size() >= 0 && children_.size() <= 2);
+    CHPL_ASSERT(children_.size() >= 0 && children_.size() <= 2);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

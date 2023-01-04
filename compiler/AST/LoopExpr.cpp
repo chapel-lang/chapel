@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -577,6 +577,11 @@ static bool considerForOuter(Symbol* sym) {
   if (isTypeSymbol(sym->defPoint->parentSymbol)) {
     // Fields are considered 'outer'
     return true;
+  }
+
+  if (isModuleSymbol(sym)) {
+    // Modules are not considered for outer.
+    return false;
   }
 
   if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||

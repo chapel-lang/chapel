@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,7 +22,7 @@
 
 #include "chpl/framework/UniqueString.h"
 #include "chpl/util/hash.h"
-
+#include "chpl/util/assertions.h"
 
 namespace chpl {
 /**
@@ -37,7 +37,7 @@ class CommentID {
  public:
   CommentID() = default;
   CommentID(int index) : index_(index) {
-    assert(index >= 0);
+    CHPL_ASSERT(index >= 0);
   }
 
   /** Return the index of the comment id */

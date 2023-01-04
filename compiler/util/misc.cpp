@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -96,6 +96,19 @@ void setupDynoError(chpl::ErrorBase::Kind errKind) {
 
   exit_immediately = false;
   exit_eventually |= err_fatal;
+}
+
+GpuCodegenType getGpuCodegenType() {
+  static const GpuCodegenType cached = []() {
+    INT_ASSERT(usingGpuLocaleModel());
+    if (0 == strcmp(CHPL_GPU_CODEGEN, "cuda")) {
+      return GpuCodegenType::GPU_CG_NVIDIA_CUDA;
+    } else {
+      INT_ASSERT(!strcmp(CHPL_GPU_CODEGEN, "rocm"));
+      return GpuCodegenType::GPU_CG_AMD_HIP;
+    }
+  }();
+  return cached;
 }
 
 // Return true if the current locale model needs GPU code generation
@@ -246,7 +259,7 @@ static void print_user_internal_error() {
 
   error[idx++] = '-';
   // next 4 characters are the line number
-  sprintf(&error[idx], "%04d", err_lineno);
+  snprintf(&error[idx], 5 * sizeof(char), "%04d", err_lineno);
 
   // now make the error string upper case
   for (int i = 0; i < (int)sizeof(error) && error[i]; i++) {
@@ -257,7 +270,7 @@ static void print_user_internal_error() {
 
   print_error("%s ", error);
 
-  get_version(version);
+  get_version(version, sizeof(version));
 
   print_error("chpl version %s", version);
 }

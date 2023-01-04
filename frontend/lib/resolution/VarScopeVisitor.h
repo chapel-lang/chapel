@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -93,15 +93,15 @@ class VarScopeVisitor {
   /** Called to process a Conditional after handling its contents --
       should update currentFrame() which is the frame for the Conditional.
       The then/else frames are sitting in currentFrame().subBlocks. */
-  virtual void handleConditional(const uast::Conditional* cond) = 0;
+  virtual void handleConditional(const uast::Conditional* cond, RV& rv) = 0;
   /** Called to process a Try after handling its contents --
       should update currentFrame() which is the frame for the Try.
       The catch clause frames are sitting in currentFrame().subBlocks. */
-  virtual void handleTry(const uast::Try* t) = 0;
+  virtual void handleTry(const uast::Try* t, RV& rv) = 0;
   /** Called to process any other Scope after handling its contents --
       should update scopeStack.back() which is the frame for the Try.
       Not called for Conditional or Try. */
-  virtual void handleScope(const uast::AstNode* ast) = 0;
+  virtual void handleScope(const uast::AstNode* ast, RV& rv) = 0;
 
 
   // ----- methods for use by specific analysis subclasses
@@ -117,7 +117,7 @@ class VarScopeVisitor {
   /** Return the current frame. This should always be safe to call
       from one of the handle* methods. */
   VarFrame* currentFrame() {
-    assert(!scopeStack.empty());
+    CHPL_ASSERT(!scopeStack.empty());
     return scopeStack.back().get();
   }
 
@@ -171,8 +171,8 @@ class VarScopeVisitor {
 
  public:
   // ----- visitor implementation
-  void enterScope(const uast::AstNode* ast);
-  void exitScope(const uast::AstNode* ast);
+  void enterScope(const uast::AstNode* ast, RV& rv);
+  void exitScope(const uast::AstNode* ast, RV& rv);
 
   bool enter(const VarLikeDecl* ast, RV& rv);
   void exit(const VarLikeDecl* ast, RV& rv);
@@ -215,7 +215,7 @@ struct CopyElisionState {
     Keeping them declared here keeps things simple. */
 struct VarFrame {
   // ----- variables used by VarScopeVisitor
-  const AstNode* scopeAst = nullptr; // for debugging
+  const AstNode* scopeAst = nullptr;
 
   // Which variables are declared in this scope?
   // For split init, only variables without init expressions.
@@ -257,7 +257,9 @@ struct VarFrame {
   // order to create a single stack for cleanup operations to be executed.
   // In particular, the ordering between defer blocks and locals matters,
   // in addition to the ordering within each group.
-  std::vector<const AstNode*> localsAndDefers;
+  // It stores variables in initialization order. It does not store
+  // declared but not-yet-initialized variables.
+  std::vector<ID> localsAndDefers;
 
   // Which outer variables have been initialized in this scope?
   // This vector lists them in initialization order.

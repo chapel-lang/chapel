@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -170,7 +170,6 @@ UniqueString internalModulePath(Context* context);
  */
 void setInternalModulePath(Context* context, UniqueString path);
 
-
 /**
   Return the current standard module path, i.e. CHPL_HOME/modules/
  */
@@ -195,18 +194,31 @@ void setBundledModulePath(Context* context, UniqueString path);
     chplComm             -- CHPL_COMM
     chplSysModulesSubdir -- CHPL_SYS_MODULES_SUBDIR
     chplModulePath       -- CHPL_MODULE_PATH
+
+  The arguments 'prependInternalModulePaths' and 'prependStandardModulePaths',
+  if non-empty, allow one to override where the context will search for
+  internal and standard modules, respectively. It will search each successive
+  path in the vector before consulting the default locations.
+
+  These arguments facilitate support for frontend flags with similar names,
+  allowing users to diagnose problems with internal/standard modules in the
+  field. Instead of upgrading their Chapel installation, patched versions
+  of problematic modules can be swapped in instead.
  */
-void setupModuleSearchPaths(Context* context,
-                            const std::string& chplHome,
-                            bool minimalModules,
-                            const std::string& chplLocaleModel,
-                            bool enableTaskTracking,
-                            const std::string& chplTasks,
-                            const std::string& chplComm,
-                            const std::string& chplSysModulesSubdir,
-                            const std::string& chplModulePath,
-                            const std::vector<std::string>& cmdLinePaths,
-                            const std::vector<std::string>& inputFilenames);
+void setupModuleSearchPaths(
+                  Context* context,
+                  const std::string& chplHome,
+                  bool minimalModules,
+                  const std::string& chplLocaleModel,
+                  bool enableTaskTracking,
+                  const std::string& chplTasks,
+                  const std::string& chplComm,
+                  const std::string& chplSysModulesSubdir,
+                  const std::string& chplModulePath,
+                  const std::vector<std::string>& prependInternalModulePaths,
+                  const std::vector<std::string>& prependStandardModulePaths,
+                  const std::vector<std::string>& cmdLinePaths,
+                  const std::vector<std::string>& inputFilenames);
 
 /**
   Overload of the more general setupModuleSearchPaths that uses the
@@ -258,6 +270,12 @@ uast::AstTag idToTag(Context* context, ID id);
 bool idIsParenlessFunction(Context* context, ID id);
 
 /**
+ If the ID represents a field in a record/class/union, returns
+ the name of that field. Otherwise, returns the empty string.
+ */
+UniqueString fieldIdToName(Context* context, ID id);
+
+/**
  Returns true if the ID is a field in a record/class/union.
  */
 bool idIsField(Context* context, ID id);
@@ -266,6 +284,11 @@ bool idIsField(Context* context, ID id);
  Returns the parent ID given an ID
  */
 const ID& idToParentId(Context* context, ID id);
+
+/**
+ Returns the parent AST node given an AST node
+ */
+const uast::AstNode* parentAst(Context* context, const uast::AstNode* node);
 
 /**
   Returns the ID for the module containing the given ID,

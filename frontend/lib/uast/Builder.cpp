@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,6 +28,7 @@
 #include "chpl/uast/Variable.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/parsing/Parser.h"
+#include "chpl/parsing/parser-error.h"
 #include "chpl/uast/OpCall.h"
 #include "chpl/framework/query-impl.h"
 
@@ -107,9 +108,18 @@ void Builder::addError(const ErrorBase* e) {
   this->errors_.push_back(e);
 }
 
-void Builder::addError(const ErrorMessage& e) {
-  if (!e.isDefaultConstructed())
-    this->errors_.push_back(ParseError::get(context_, e));
+void Builder::addPostParseError(const AstNode* node, const char* fmt, ...) {
+  va_list vl;
+  va_start(vl, fmt);
+  CHPL_POSTPARSE_REPORT(*this, PostParseErr, node, vprintToString(fmt, vl));
+  va_end(vl);
+}
+
+void Builder::addPostParseWarning(const AstNode* node, const char* fmt, ...) {
+  va_list vl;
+  va_start(vl, fmt);
+  CHPL_POSTPARSE_REPORT(*this, PostParseWarn, node, vprintToString(fmt, vl));
+  va_end(vl);
 }
 
 void Builder::noteLocation(AstNode* ast, Location loc) {
@@ -141,6 +151,7 @@ bool Builder::astTagIndicatesNewIdScope(asttags::AstTag tag) {
   return asttags::isNamedDecl(tag) &&
         (asttags::isFunction(tag) ||
          asttags::isModule(tag) ||
+         asttags::isInterface(tag) ||
          asttags::isTypeDecl(tag));
 }
 
@@ -223,7 +234,7 @@ void Builder::assignIDs() {
       UniqueString emptyString;
       doAssignIDs(ast, emptyString, i, commentIndex, pathVec, duplicates);
     } else {
-      assert(false && "topLevelExpressions should only be module decls or comments");
+      CHPL_ASSERT(false && "topLevelExpressions should only be module decls or comments");
     }
   }
 }
@@ -274,10 +285,10 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
 
     auto search = notedLocations_.find(ast);
     if (search != notedLocations_.end()) {
-      assert(!search->second.isEmpty());
+      CHPL_ASSERT(!search->second.isEmpty());
       commentToLocation_.push_back(search->second);
     } else {
-      assert(false && "Location for all ast should be set by noteLocation");
+      CHPL_ASSERT(false && "Location for all ast should be set by noteLocation");
     }
     return;
   }
@@ -339,7 +350,7 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
       }
     }
     auto newSymbolPath = UniqueString::get(context_, pathStr);
-    assert(ID::expandSymbolPath(context_, newSymbolPath) == pathVec);
+    CHPL_ASSERT(ID::expandSymbolPath(context_, newSymbolPath) == pathVec);
 
     // get a fresh postorder traversal counter and duplicates map
     int freshId = 0;
@@ -382,15 +393,15 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
   // update locations_ for the visited ast
   auto search = notedLocations_.find(ast);
   if (search != notedLocations_.end()) {
-    assert(!search->second.isEmpty());
+    CHPL_ASSERT(!search->second.isEmpty());
     idToLocation_[ast->id()] = search->second;
     // if a config's initExpr was updated, mark it as used and make sure it wasn't used previously
     if (ieNode) {
-      assert(ast->isVariable());
+      CHPL_ASSERT(ast->isVariable());
       checkConfigPreviouslyUsed(ast->toVariable(), configName);
     }
   } else {
-    assert(false && "Location for all ast should be set by noteLocation");
+    CHPL_ASSERT(false && "Location for all ast should be set by noteLocation");
   }
 }
 
@@ -418,7 +429,7 @@ void Builder::checkConfigPreviouslyUsed(const Variable* var, std::string& config
  */
 void Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec, std::string& name, std::string& value) {
   std::pair<std::string, std::string> configMatched;
-  assert(var->isConfig());
+  CHPL_ASSERT(var->isConfig());
   const auto &configs = parsing::configSettings(this->context());
   // inspect pathVec to build possible matching module prefix
   std::string possibleModule;
@@ -467,8 +478,8 @@ void Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec, std::
  */
 AstNode* Builder::updateConfig(Variable* var, std::string configName, std::string configVal) {
   AstNode* ret = nullptr;
-  assert(var->isConfig());
-  assert(!configName.empty());
+  CHPL_ASSERT(var->isConfig());
+  CHPL_ASSERT(!configName.empty());
   // TODO: how to handle nested module configs e.g., -sFoo.Baz.bar=10
   owned<AstNode> initNode = parseDummyNodeForInitExpr(var, configVal);
   ret = initNode.get();
@@ -505,7 +516,7 @@ owned <AstNode> Builder::parseDummyNodeForInitExpr(Variable* var, std::string va
    }
   }
   auto mod = parseResult.singleModule();
-  assert(mod);
+  CHPL_ASSERT(mod);
   owned<AstNode> initNode;
   if (mod->stmt(0)->isVariable()) {
     // steal the init expression, children_ will have nullptr in place
@@ -513,7 +524,7 @@ owned <AstNode> Builder::parseDummyNodeForInitExpr(Variable* var, std::string va
     // clean out the nullptr
     mod->children_[0]->children_.pop_back();
   } else {
-    assert(false && "should only be an assignment or type initializer");
+    CHPL_ASSERT(false && "should only be an assignment or type initializer");
   }
   return initNode;
 }

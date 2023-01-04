@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -89,9 +89,9 @@ static void testEmptyRecordUserInit() {
   assert(qtNewExpr == qtNewCall);
 
   // The 'new' call should have 'init' as an associated function.
-  auto& associatedFns = reNewCall.associatedFns();
-  assert(associatedFns.size() == 1);
-  auto initTfs = associatedFns[0];
+  auto& associatedActions = reNewCall.associatedActions();
+  assert(associatedActions.size() == 1);
+  auto initTfs = associatedActions[0].fn();
   assert(initTfs->id() == fnInit->id());
   assert(initTfs->numFormals() == 1);
   assert(initTfs->formalName(0) == "this");
@@ -153,9 +153,9 @@ static void testEmptyRecordCompilerGenInit() {
 
   // The 'new' call should have 'init' as an associated function.
   // This 'init' is compiler generated.
-  auto& associatedFns = reNewCall.associatedFns();
-  assert(associatedFns.size() == 1);
-  auto initTfs = associatedFns[0];
+  auto& associatedActions = reNewCall.associatedActions();
+  assert(associatedActions.size() == 1);
+  auto initTfs = associatedActions[0].fn();
   assert(initTfs->id() == r->id());
   assert(initTfs->numFormals() == 1);
   assert(initTfs->formalName(0) == "this");
@@ -243,8 +243,8 @@ static void testTertMethodCallCrossModule() {
   auto& reNewExpr = rr.byAst(newExpr);
   assert(reNewExpr.type() == reInitExpr.type());
 
-  assert(reInitExpr.associatedFns().size() == 1);
-  auto tfsInit = reInitExpr.associatedFns()[0];
+  assert(reInitExpr.associatedActions().size() == 1);
+  auto tfsInit = reInitExpr.associatedActions()[0].fn();
   assert(tfsInit);
   auto ufsInit = tfsInit->untyped();
   assert(ufsInit);
@@ -503,8 +503,8 @@ static void testGenericRecordUserInitDependentField() {
   auto newCall = obj->initExpression();
   auto reNewCall = rr.byAst(newCall);
   assert(reNewCall.type() == reObj.type());
-  assert(reNewCall.associatedFns().size() == 1);
-  auto initTfs = reNewCall.associatedFns()[0];
+  assert(reNewCall.associatedActions().size() == 1);
+  auto initTfs = reNewCall.associatedActions()[0].fn();
   assert(initTfs);
   assert(initTfs->untyped()->name() == "init");
   assert(initTfs->untyped()->numFormals() == 3);

@@ -147,22 +147,30 @@ static int gasnete_coll_pf_tm_reduce_BinomialEager(gasnete_coll_op_t *op GASNETI
   gex_Rank_t tree_root = (args->root == GEX_RANK_INVALID) ? 0 : args->root;
   gex_Rank_t rel_rank = gasnete_tm_binom_rel_root(tm, tree_root);
   gex_Rank_t child_cnt = gasnete_tm_binom_children(tm, rel_rank);
-
-  gasneti_assert(p2p != NULL);
-  gasneti_assert(p2p->state != NULL);
-  gasneti_assert(p2p->data != NULL);
   
   switch (data->state) {
-    case 0: {   // Wait for arrival of data from children, if any
+    case 0: {
+      // Local/explicit allocation of p2p fields deferred to just prior to first use.
+      // for reduce-to-all case, leaves need 1 state and space to receive the bcast (but otherwise nothing)
+      size_t effective_child_cnt = child_cnt ? child_cnt : (args->root == GEX_RANK_INVALID);
+      size_t nstates = effective_child_cnt;
+      size_t ndata = args->dt_sz * args->dt_cnt * effective_child_cnt;
+      data->p2p = gasnete_coll_p2p_get_final(op->team, op->sequence, nstates, 0, ndata);
+      data->options |= GASNETE_COLL_GENERIC_OPT_P2P;
+      p2p = data->p2p;
+      data->state = 1; GASNETI_FALLTHROUGH
+    }
+
+    case 1: {   // Wait for arrival of data from children, if any
       volatile uint32_t *state = p2p->state;
       for (gex_Rank_t r = 0; r < child_cnt; ++r) {
         if (! state[r]) return 0; // At least one child has not contributed their value
       } 
       gasneti_sync_reads();
-      data->state = 1; GASNETI_FALLTHROUGH
+      data->state = 2; GASNETI_FALLTHROUGH
     }
       
-    case 1: {
+    case 2: {
       const size_t nbytes = args->dt_sz * args->dt_cnt; // TODO-EX: compute *once*
 
       // Compute reduction (if any)
@@ -180,10 +188,10 @@ static int gasnete_coll_pf_tm_reduce_BinomialEager(gasnete_coll_op_t *op GASNETI
       }
       flags = GEX_FLAG_IMMEDIATE;
       data->private_data = payload;
-      data->state = 2; GASNETI_FALLTHROUGH
+      data->state = 3; GASNETI_FALLTHROUGH
     }
 
-    case 2: {   // Data movement to parent (IMM on first try only)
+    case 3: {   // Data movement to parent (IMM on first try only)
       const size_t nbytes = args->dt_sz * args->dt_cnt;
       gex_Rank_t parent = gasnete_tm_binom_parent(tm, rel_rank);
       gex_Rank_t offset = gasnete_tm_binom_age(tm, rel_rank);
@@ -200,9 +208,9 @@ static int gasnete_coll_pf_tm_reduce_BinomialEager(gasnete_coll_op_t *op GASNETI
       // ReduceToOne case is done.
       // ReduceToAll proceeds to broadcast
       if (args->root != GEX_RANK_INVALID) goto done;
-      data->state = 3; GASNETI_FALLTHROUGH
+      data->state = 4; GASNETI_FALLTHROUGH
 
-    case 3: { // For ReduceToAll case, broadcast down same binomial tree
+    case 4: { // For ReduceToAll case, broadcast down same binomial tree
       const size_t nbytes = args->dt_sz * args->dt_cnt;
       if (rel_rank) {
         // Wait for arrival of data from parent (if any)
@@ -248,11 +256,10 @@ GASNETE_TM_DECLARE_REDUCE_ALG(BinomialEager)
   gasneti_assert(gex_AM_LUBRequestMedium() >= dt_sz * dt_cnt );
 #endif
 
-  const int options = GASNETE_COLL_GENERIC_OPT_P2P_IF(1);
   return gasnete_tm_generic_reduce_nb(tm, root, dst, src, dt, dt_sz, dt_cnt,
                                       op, op_fnptr, op_cdata, coll_flags,
                                       &gasnete_coll_pf_tm_reduce_BinomialEager,
-                                      options, NULL, sequence, 0, NULL, NULL
+                                      0, NULL, sequence, 0, NULL, NULL
                                       GASNETI_THREAD_PASS);
 }
 
@@ -320,13 +327,27 @@ static int gasnete_coll_pf_tm_reduce_BinomialEagerSeg(gasnete_coll_op_t *op GASN
     gasneti_assert(pdata->offset == 0);
     gasneti_assert(pdata->last == 0);
 
+    // Local/explicit allocation of p2p fields deferred to first run of PF.
+    gasneti_assert_uint(pdata->width ,>=, pdata->child_cnt);
+    size_t nstates = pdata->width + 1;
+    size_t ndata = pdata->chunk_len * pdata->child_cnt;
+    if (args->root == GEX_RANK_INVALID) {
+      // final bcast payload may be larger than that of the reduction
+      size_t bcast_chunk_len = MIN(op->team->p2p_eager_buffersz, gex_AM_LUBRequestMedium());
+      bcast_chunk_len = MIN(bcast_chunk_len, args->dt_sz * args->dt_cnt);
+      ndata = MAX(ndata, bcast_chunk_len);
+    }
+    data->p2p = gasnete_coll_p2p_get_final(op->team, op->sequence, nstates, 0, ndata);
+    data->options |= GASNETE_COLL_GENERIC_OPT_P2P;
+
+    p2p = data->p2p;
     p2p->state[pdata->width] = 1; // Initial CTS
     data->state = 1;
   }
 
   gasneti_assert(p2p != NULL);
   gasneti_assert(p2p->state != NULL);
-  gasneti_assert(p2p->data != NULL);
+  gasneti_assert(p2p->data != NULL || (!pdata->child_cnt && (args->root != GEX_RANK_INVALID)));
   
   switch (data->state) {
     // case 0: pdata allocation/initialization, above
@@ -539,11 +560,10 @@ GASNETE_TM_DECLARE_REDUCE_ALG(BinomialEagerSeg)
   gasneti_assert(gex_AM_LUBRequestMedium() >= dt_sz);
 #endif
 
-  const int options = GASNETE_COLL_GENERIC_OPT_P2P_IF(1);
   return gasnete_tm_generic_reduce_nb(tm, root, dst, src, dt, dt_sz, dt_cnt,
                                       op, op_fnptr, op_cdata, coll_flags,
                                       &gasnete_coll_pf_tm_reduce_BinomialEagerSeg,
-                                      options, NULL, sequence, 0, NULL, NULL
+                                      0, NULL, sequence, 0, NULL, NULL
                                       GASNETI_THREAD_PASS);
 }
 
@@ -560,20 +580,23 @@ static int gasnete_coll_pf_tm_reduce_TreePut(gasnete_coll_op_t *op GASNETI_THREA
   void *payload;
   int result = 0;
 
-  gasneti_assert(p2p != NULL);
-  gasneti_assert(p2p->state != NULL);
-  gasneti_assert(op->scratch_req);
-
   gasnete_coll_team_t team = op->team;
   gasnete_coll_local_tree_geom_t *geom = data->tree_geom;
   const gex_Rank_t child_cnt = GASNETE_COLL_TREE_GEOM_CHILD_COUNT(geom);
   const gex_Rank_t myrank = gex_TM_QueryRank(tm);
   
   switch (data->state) {
-    case 0:     // Wait for scratch allocation
+    case 0:
+      // Wait for scratch allocation
       if (!gasnete_coll_scratch_alloc_nb(op GASNETI_THREAD_PASS)) {
         break;
       }
+
+      // Local/explicit allocation of p2p fields deferred to just prior to first use.
+      data->p2p = gasnete_coll_p2p_get_final(op->team, op->sequence, child_cnt, 0, 0);
+      data->options |= GASNETE_COLL_GENERIC_OPT_P2P;
+      p2p = data->p2p;
+
       data->state = 1; GASNETI_FALLTHROUGH
 
     case 1: {   // Wait for arrival of data from children, if any
@@ -672,7 +695,7 @@ GASNETE_TM_DECLARE_REDUCE_ALG(TreePut)
     scratch_req->out_peers = &(GASNETE_COLL_TREE_GEOM_PARENT(geom));
   }
 
-  const int options = GASNETE_COLL_GENERIC_OPT_P2P | GASNETE_COLL_USE_SCRATCH;
+  const int options = GASNETE_COLL_USE_SCRATCH;
   return gasnete_tm_generic_reduce_nb(tm, root, dst, src, dt, dt_sz, dt_cnt,
                                       op, op_fnptr, op_cdata, coll_flags,
                                       &gasnete_coll_pf_tm_reduce_TreePut,
@@ -715,8 +738,6 @@ static int gasnete_coll_pf_tm_reduce_TreePutSeg(gasnete_coll_op_t *op GASNETI_TH
   gex_Flags_t flags = 0; // TODO-EX: GEX_FLAG_SELF_SEG_SOME (scratch resides in client or aux seg)
   int result = 0;
 
-  gasneti_assert(p2p != NULL);
-  gasneti_assert(p2p->state != NULL);
   gasneti_assert(op->scratch_req);
 
   gasnete_coll_local_tree_geom_t *geom = data->tree_geom;
@@ -749,13 +770,7 @@ static int gasnete_coll_pf_tm_reduce_TreePutSeg(gasnete_coll_op_t *op GASNETI_TH
     pdata = data->private_data;
   } else {
     // Allocate and initialize pdata
-    if (sizeof(struct pdata) <= op->team->p2p_eager_buffersz) {
-      // Store in p2p space, unused by this algorithm
-      // TODO-EX: need a more general way to avoid small dynamic allocations
-      pdata = (struct pdata *) p2p->data;
-    } else {
-      pdata = gasneti_calloc(1, sizeof(struct pdata));
-    }
+    pdata = gasneti_calloc(1, sizeof(struct pdata));
     gasneti_assert(!data->private_data);
     data->private_data = pdata;
 
@@ -766,9 +781,6 @@ static int gasnete_coll_pf_tm_reduce_TreePutSeg(gasnete_coll_op_t *op GASNETI_TH
     gasneti_assert(pdata->offset == 0);
     gasneti_assert(pdata->phase == 0);
 
-    p2p->state[0] = GASNETE_COLL_TREE_GEOM_SIBLING_ID(geom); // initial CTS
-    data->state = 1;
-
     // Used for ReduceToAll case
     if (args->root == GEX_RANK_INVALID) {
       gex_TM_t const tm = op->e_tm;
@@ -778,6 +790,24 @@ static int gasnete_coll_pf_tm_reduce_TreePutSeg(gasnete_coll_op_t *op GASNETI_TH
       pdata->child_cnt = gasnete_tm_binom_children(tm, pdata->rel_rank);
       pdata->width = 1 + gasnete_coll_log2_rank(gasneti_import_tm_nonpair(tm)->_size - 1);
     }
+
+    // Local/explicit allocation of p2p fields deferred to first run of PF
+    gasneti_assert_uint(pdata->width ,>=, pdata->child_cnt);
+    size_t nstates = 1 + MAX(child_cnt, pdata->width);
+    size_t ndata;
+    if (args->root == GEX_RANK_INVALID) {
+      size_t bcast_chunk_len = MIN(op->team->p2p_eager_buffersz, gex_AM_LUBRequestMedium());
+      bcast_chunk_len = MIN(bcast_chunk_len, args->dt_sz * args->dt_cnt);
+      ndata = bcast_chunk_len;
+    } else {
+      ndata = 0;
+    }
+    data->p2p = gasnete_coll_p2p_get_final(op->team, op->sequence, nstates, 0, ndata);
+    data->options |= GASNETE_COLL_GENERIC_OPT_P2P;
+
+    p2p = data->p2p;
+    p2p->state[0] = GASNETE_COLL_TREE_GEOM_SIBLING_ID(geom); // initial CTS
+    data->state = 1;
   }
 
   switch (data->state) {
@@ -1053,9 +1083,7 @@ static int gasnete_coll_pf_tm_reduce_TreePutSeg(gasnete_coll_op_t *op GASNETI_TH
 
     done:
       gasneti_assert(result);
-      if (pdata != (struct pdata *)p2p->data) {
-        gasneti_free(pdata);
-      }
+      gasneti_free(pdata);
       gasnete_coll_free_scratch(op);
       gasnete_coll_generic_free(op->team, data GASNETI_THREAD_PASS);
       break;
@@ -1117,7 +1145,7 @@ GASNETE_TM_DECLARE_REDUCE_ALG(TreePutSeg)
     scratch_req->out_peers = &(GASNETE_COLL_TREE_GEOM_PARENT(geom));
   }
 
-  const int options = GASNETE_COLL_GENERIC_OPT_P2P | GASNETE_COLL_USE_SCRATCH;
+  const int options = GASNETE_COLL_USE_SCRATCH;
   return gasnete_tm_generic_reduce_nb(tm, root, dst, src, dt, dt_sz, dt_cnt,
                                       op, op_fnptr, op_cdata, coll_flags,
                                       &gasnete_coll_pf_tm_reduce_TreePutSeg,

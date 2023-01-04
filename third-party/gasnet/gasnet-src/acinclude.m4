@@ -2759,6 +2759,9 @@ case "$$3" in
     case "$_gasnet_$2_clang_version_string" in
       *Apple*) $2_SUBFAMILY='APPLE';;
       *Cray*) $2_SUBFAMILY='CRAY';;
+      *AMD*) $2_SUBFAMILY='AMD';;
+      *Arm*) $2_SUBFAMILY='ARM';;
+      *Intel*) $2_SUBFAMILY='INTEL';;
     esac
     ;;
   *)

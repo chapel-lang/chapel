@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -35,12 +35,12 @@ namespace chpl {
 /**
   Open a file. If the open failed, return nullptr and set errorOut.
  */
-FILE* openfile(const char* path, const char* mode, ErrorMessage& errorOut);
+FILE* openfile(const char* path, const char* mode, std::string& errorOut);
 
 /**
   Close a file. If the close failed, return false and set errorOut.
  */
-bool closefile(FILE* fp, const char* path, ErrorMessage& errorOut);
+bool closefile(FILE* fp, const char* path, std::string& errorOut);
 
 
 } // end namespace chpl

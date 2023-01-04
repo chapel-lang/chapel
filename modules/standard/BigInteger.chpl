@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -151,8 +151,13 @@ module BigInteger {
   use GMP;
   use HaltWrappers;
   use CTypes;
-  use IO only EFORMAT;
   use OS;
+
+
+  /*
+   Local copy of IO.EFORMAT as it is being phased out and is private in IO
+   */
+  private extern proc chpl_macro_int_EFORMAT():c_int;
 
   /*
     .. warning::
@@ -259,7 +264,7 @@ module BigInteger {
       if mpz_init_set_str(this.mpz, str_, base_) != 0 {
         mpz_clear(this.mpz);
 
-        error = EFORMAT;
+        error = chpl_macro_int_EFORMAT();
       } else {
         error = 0;
       }
@@ -681,11 +686,11 @@ module BigInteger {
   //
   // Unary operators
   //
-  operator bigint.+(const ref a: bigint) {
+  operator bigint.+(const ref a: bigint): bigint {
     return new bigint(a);
   }
 
-  operator bigint.-(const ref a: bigint) {
+  operator bigint.-(const ref a: bigint): bigint {
     var c = new bigint(a);
 
     mpz_neg(c.mpz, c.mpz);
@@ -693,7 +698,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.~(const ref a: bigint) {
+  operator bigint.~(const ref a: bigint): bigint {
     var c = new bigint(a);
 
     mpz_com(c.mpz, c.mpz);
@@ -706,7 +711,7 @@ module BigInteger {
   //
 
   // Addition
-  operator bigint.+(const ref a: bigint, const ref b: bigint) {
+  operator bigint.+(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
 
     if _local {
@@ -725,7 +730,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.+(const ref a: bigint, b: int) {
+  operator bigint.+(const ref a: bigint, b: int): bigint {
     var c = new bigint();
 
     if b >= 0 {
@@ -762,7 +767,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.+(a: int, const ref b: bigint) {
+  operator bigint.+(a: int, const ref b: bigint): bigint {
     var c = new bigint();
 
     if a >= 0 {
@@ -799,7 +804,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.+(const ref a: bigint, b: uint) {
+  operator bigint.+(const ref a: bigint, b: uint): bigint {
     const b_ = b.safeCast(c_ulong);
     var   c  = new bigint();
 
@@ -818,7 +823,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.+(a: uint, const ref b: bigint) {
+  operator bigint.+(a: uint, const ref b: bigint): bigint {
     const a_ = a.safeCast(c_ulong);
     var   c  = new bigint();
 
@@ -840,7 +845,7 @@ module BigInteger {
 
 
   // Subtraction
-  operator bigint.-(const ref a: bigint, const ref b: bigint) {
+  operator bigint.-(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
 
     if _local {
@@ -859,7 +864,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.-(const ref a: bigint, b: int) {
+  operator bigint.-(const ref a: bigint, b: int): bigint {
     var c = new bigint();
 
     if b >= 0 {
@@ -896,7 +901,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.-(a: int, const ref b: bigint) {
+  operator bigint.-(a: int, const ref b: bigint): bigint {
     var c = new bigint();
 
     if a >= 0 {
@@ -933,7 +938,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.-(const ref a: bigint, b: uint) {
+  operator bigint.-(const ref a: bigint, b: uint): bigint {
     const b_ = b.safeCast(c_ulong);
     var   c  = new bigint();
 
@@ -952,7 +957,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.-(a: uint, const ref b: bigint) {
+  operator bigint.-(a: uint, const ref b: bigint): bigint {
     const a_ = a.safeCast(c_ulong);
     var   c  = new bigint();
 
@@ -973,7 +978,7 @@ module BigInteger {
 
 
   // Multiplication
-  operator bigint.*(const ref a: bigint, const ref b: bigint) {
+  operator bigint.*(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
 
     if _local {
@@ -992,7 +997,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.*(const ref a: bigint, b: int) {
+  operator bigint.*(const ref a: bigint, b: int): bigint {
     const b_ = b.safeCast(c_long);
     var   c  = new bigint();
 
@@ -1011,7 +1016,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.*(a: int, const ref b: bigint) {
+  operator bigint.*(a: int, const ref b: bigint): bigint {
     const a_ = a.safeCast(c_long);
     var   c  = new bigint();
 
@@ -1030,7 +1035,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.*(const ref a: bigint, b: uint) {
+  operator bigint.*(const ref a: bigint, b: uint): bigint {
     const b_ = b.safeCast(c_ulong);
     var   c  = new bigint();
 
@@ -1049,7 +1054,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.*(a: uint, const ref b: bigint) {
+  operator bigint.*(a: uint, const ref b: bigint): bigint {
     const a_ = a.safeCast(c_ulong);
     var   c  = new bigint();
 
@@ -1095,77 +1100,41 @@ module BigInteger {
   }
 
   // Exponentiation
-  operator bigint.**(const ref base: bigint, const ref exp: bigint) {
+  operator bigint.**(const ref base: bigint, const ref exp: bigint): bigint {
     var c = new bigint();
 
-    if _local {
-      mpz_powm(c.mpz, base.mpz,  exp.mpz,  base.mpz);
-
-    } else if base.localeId == chpl_nodeID && exp.localeId == chpl_nodeID {
-      mpz_powm(c.mpz, base.mpz,  exp.mpz,  base.mpz);
-
+    if exp >= 0 {
+      if exp.fitsInto(c_ulong) then
+        c.pow(base, exp: c_ulong);
+      else
+        halt("Exponent too large to compute result.");
     } else {
-      const base_ = base;
-      const exp_  = exp;
-
-      mpz_powm(c.mpz, base_.mpz, exp_.mpz, base_.mpz);
+      if exp.fitsInto(int) then
+        c.pow(base, exp: int);
+      else
+        halt("Exponent too large to compute result.");
     }
 
     return c;
   }
 
-  operator bigint.**(const ref base: bigint, exp: int) {
+  operator bigint.**(const ref base: bigint, exp: int): bigint {
     var c = new bigint();
 
-    if (exp >= 0) {
-      const exp_ = exp.safeCast(c_ulong);
-
-      if _local {
-        mpz_pow_ui(c.mpz, base.mpz,  exp_);
-
-      } else if base.localeId == chpl_nodeID {
-        mpz_pow_ui(c.mpz, base.mpz,  exp_);
-
-      } else {
-        const base_ = base;
-
-        mpz_pow_ui(c.mpz, base_.mpz, exp_);
-      }
-
+    if exp >= 0 {
+      c.pow(base, exp: c_ulong);
     } else {
-      const exp_ = new bigint(exp);
-
-      if _local {
-        mpz_powm(c.mpz, base.mpz,  exp_.mpz, base.mpz);
-
-      } else if base.localeId == chpl_nodeID {
-        mpz_powm(c.mpz, base.mpz,  exp_.mpz, base.mpz);
-
-      } else {
-        const base_ = base;
-
-        mpz_powm(c.mpz, base_.mpz, exp_.mpz, base_.mpz);
-      }
+      c.pow(base, exp: int);
     }
 
     return c;
   }
 
-  operator bigint.**(const ref base: bigint, exp: uint) {
+  operator bigint.**(const ref base: bigint, exp: uint): bigint {
     const exp_ = exp.safeCast(c_ulong);
     var   c    = new bigint();
 
-    if _local {
-      mpz_pow_ui(c.mpz, base.mpz,  exp_);
-
-    } else if base.localeId == chpl_nodeID {
-      mpz_pow_ui(c.mpz, base.mpz,  exp_);
-
-    } else {
-      const base_ = base;
-
-      mpz_pow_ui(c.mpz, base_.mpz, exp_);
-    }
+    c.pow(base, exp_);
 
     return c;
   }
@@ -1178,7 +1147,7 @@ module BigInteger {
      The result is always >= 0 if `a` > 0.
      It is an error if `b` == 0.
   */
-  operator bigint.%(const ref a: bigint, const ref b: bigint) {
+  operator bigint.%(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
 
     if _local {
@@ -1199,7 +1168,7 @@ module BigInteger {
      The result is always >= 0 if `a` > 0.
      It is an error if `b` == 0.
   */
-  operator bigint.%(const ref a: bigint, b: int) {
+  operator bigint.%(const ref a: bigint, b: int): bigint {
     var c = new bigint();
     var b_ : c_ulong;
 
@@ -1226,7 +1195,7 @@ module BigInteger {
      The result is always >= 0 if `a` > 0.
      It is an error if `b` == 0.
   */
-  operator bigint.%(const ref a: bigint, b: uint) {
+  operator bigint.%(const ref a: bigint, b: uint): bigint {
     var   c  = new bigint();
     const b_ = b.safeCast(c_ulong);
 
@@ -1248,7 +1217,7 @@ module BigInteger {
 
 
   // Bit-shift left
-  operator bigint.<<(const ref a: bigint, b: int) {
+  operator bigint.<<(const ref a: bigint, b: int): bigint {
     var c = new bigint();
 
     if b >= 0 {
@@ -1285,7 +1254,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.<<(const ref a: bigint, b: uint) {
+  operator bigint.<<(const ref a: bigint, b: uint): bigint {
     const b_ = b.safeCast(mp_bitcnt_t);
     var   c  = new bigint();
 
@@ -1307,12 +1276,11 @@ module BigInteger {
 
 
   // Bit-shift right
-  operator bigint.>>(const ref a: bigint, b: int) {
+  operator bigint.>>(const ref a: bigint, b: int): bigint {
     var c = new bigint();
 
     if b >= 0 {
       const b_ = b.safeCast(mp_bitcnt_t);
-      var   c  = new bigint();
 
       if _local {
         mpz_tdiv_q_2exp(c.mpz, a.mpz,  b_);
@@ -1345,7 +1313,7 @@ module BigInteger {
     return c;
   }
 
-  operator bigint.>>(const ref a: bigint, b: uint) {
+  operator bigint.>>(const ref a: bigint, b: uint): bigint {
     const b_ = b.safeCast(mp_bitcnt_t);
     var   c  = new bigint();
 
@@ -1367,7 +1335,7 @@ module BigInteger {
 
 
   // Bitwise and
-  operator bigint.&(const ref a: bigint, const ref b: bigint) {
+  operator bigint.&(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
 
     if _local {
@@ -1389,7 +1357,7 @@ module BigInteger {
 
 
   // Bitwise ior
-  operator bigint.|(const ref a: bigint, const ref b: bigint) {
+  operator bigint.|(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
 
     if _local {
@@ -1411,7 +1379,7 @@ module BigInteger {
 
 
   // Bitwise xor
-  operator bigint.^(const ref a: bigint, const ref b: bigint) {
+  operator bigint.^(const ref a: bigint, const ref b: bigint): bigint {
     var c = new bigint();
 
     if _local {
@@ -1533,137 +1501,137 @@ module BigInteger {
 
 
   // Equality
-  operator bigint.==(const ref a: bigint, const ref b: bigint) {
+  operator bigint.==(const ref a: bigint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) == 0;
   }
 
-  operator bigint.==(const ref a: bigint, b: int) {
+  operator bigint.==(const ref a: bigint, b: int): bool {
     return BigInteger.cmp(a, b) == 0;
   }
 
-  operator bigint.==(a: int, const ref b: bigint) {
+  operator bigint.==(a: int, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) == 0;
   }
 
-  operator bigint.==(const ref a: bigint, b: uint) {
+  operator bigint.==(const ref a: bigint, b: uint): bool {
     return BigInteger.cmp(a, b) == 0;
   }
 
-  operator bigint.==(a: uint, const ref b: bigint) {
+  operator bigint.==(a: uint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) == 0;
   }
 
 
 
   // Inequality
-  operator bigint.!=(const ref a: bigint, const ref b: bigint) {
+  operator bigint.!=(const ref a: bigint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) != 0;
   }
 
-  operator bigint.!=(const ref a: bigint, b: int) {
+  operator bigint.!=(const ref a: bigint, b: int): bool {
     return BigInteger.cmp(a, b) != 0;
   }
 
-  operator bigint.!=(a: int, const ref b: bigint) {
+  operator bigint.!=(a: int, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) != 0;
   }
 
-  operator bigint.!=(const ref a: bigint, b: uint) {
+  operator bigint.!=(const ref a: bigint, b: uint): bool {
     return BigInteger.cmp(a, b) != 0;
   }
 
-  operator bigint.!=(a: uint, const ref b: bigint) {
+  operator bigint.!=(a: uint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) != 0;
   }
 
 
 
   // Greater than
-  operator bigint.>(const ref a: bigint, const ref b: bigint) {
+  operator bigint.>(const ref a: bigint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) > 0;
   }
 
-  operator bigint.>(const ref a: bigint, b: int) {
+  operator bigint.>(const ref a: bigint, b: int): bool {
     return BigInteger.cmp(a, b) > 0;
   }
 
-  operator bigint.>(a: int, const ref b: bigint) {
+  operator bigint.>(a: int, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) > 0;
   }
 
-  operator bigint.>(const ref a: bigint, b: uint) {
+  operator bigint.>(const ref a: bigint, b: uint): bool {
     return BigInteger.cmp(a, b) > 0;
   }
 
-  operator bigint.>(a: uint, const ref b: bigint) {
+  operator bigint.>(a: uint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) > 0;
   }
 
 
 
   // Less than
-  operator bigint.<(const ref a: bigint, const ref b: bigint) {
+  operator bigint.<(const ref a: bigint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) < 0;
   }
 
-  operator bigint.<(const ref a: bigint, b: int) {
+  operator bigint.<(const ref a: bigint, b: int): bool {
     return BigInteger.cmp(a, b) < 0;
   }
 
-  operator bigint.<(a: int, const ref b: bigint) {
+  operator bigint.<(a: int, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) < 0;
   }
 
-  operator bigint.<(const ref a: bigint, b: uint) {
+  operator bigint.<(const ref a: bigint, b: uint): bool {
     return BigInteger.cmp(a, b) < 0;
   }
 
-  operator bigint.<(a: uint, const ref b: bigint) {
+  operator bigint.<(a: uint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) < 0;
   }
 
 
   // Greater than or equal
-  operator bigint.>=(const ref a: bigint, const ref b: bigint) {
+  operator bigint.>=(const ref a: bigint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) >= 0;
   }
 
-  operator bigint.>=(const ref a: bigint, b: int) {
+  operator bigint.>=(const ref a: bigint, b: int): bool {
     return BigInteger.cmp(a, b) >= 0;
   }
 
-  operator bigint.>=(a: int, const ref b: bigint) {
+  operator bigint.>=(a: int, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) >= 0;
   }
 
-  operator bigint.>=(const ref a: bigint, b: uint) {
+  operator bigint.>=(const ref a: bigint, b: uint): bool {
     return BigInteger.cmp(a, b) >= 0;
   }
 
-  operator bigint.>=(a: uint, const ref b: bigint) {
+  operator bigint.>=(a: uint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) >= 0;
   }
 
 
 
   // Less than or equal
-  operator bigint.<=(const ref a: bigint, const ref b: bigint) {
+  operator bigint.<=(const ref a: bigint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) <= 0;
   }
 
-  operator bigint.<=(const ref a: bigint, b: int) {
+  operator bigint.<=(const ref a: bigint, b: int): bool {
     return BigInteger.cmp(a, b) <= 0;
   }
 
-  operator bigint.<=(a: int, const ref b: bigint) {
+  operator bigint.<=(a: int, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) <= 0;
   }
 
-  operator bigint.<=(const ref a: bigint, b: uint) {
+  operator bigint.<=(const ref a: bigint, b: uint): bool {
     return BigInteger.cmp(a, b) <= 0;
   }
 
-  operator bigint.<=(a: uint, const ref b: bigint) {
+  operator bigint.<=(a: uint, const ref b: bigint): bool {
     return BigInteger.cmp(a, b) <= 0;
   }
 
@@ -1906,49 +1874,31 @@ module BigInteger {
   // **=
   operator bigint.**=(ref base: bigint, const ref exp: bigint) {
     if _local {
-      mpz_powm(base.mpz, base.mpz,  exp.mpz,  base.mpz);
+      base = base ** exp;
 
     } else if base.localeId == chpl_nodeID && exp.localeId == chpl_nodeID {
-      mpz_powm(base.mpz, base.mpz,  exp.mpz,  base.mpz);
+      base = base ** exp;
 
     } else {
       const base_ = base;
       const exp_  = exp;
 
-      mpz_powm(base.mpz, base_.mpz, exp_.mpz, base_.mpz);
+      base = base_ ** exp_;
     }
   }
 
   operator bigint.**=(ref base: bigint, exp: int) {
-    if (exp >= 0) {
-      const exp_ = exp.safeCast(c_ulong);
+    if _local {
+      base.pow(base, exp);
 
-      if _local {
-        mpz_pow_ui(base.mpz, base.mpz,  exp_);
-
-      } else if base.localeId == chpl_nodeID {
-        mpz_pow_ui(base.mpz, base.mpz,  exp_);
-
-      } else {
-        const base_ = base;
-
-        mpz_pow_ui(base.mpz, base_.mpz, exp_);
-      }
+    } else if base.localeId == chpl_nodeID {
+      base.pow(base, exp);
 
     } else {
-      const exp_ = new bigint(exp);
+      const base_ = base;
+      const exp_ = exp;
 
-      if _local {
-        mpz_powm(base.mpz, base.mpz,  exp_.mpz, base.mpz);
-
-      } else if base.localeId == chpl_nodeID {
-        mpz_powm(base.mpz, base.mpz,  exp_.mpz, base.mpz);
-
-      } else {
-        const base_ = base;
-
-        mpz_powm(base_.mpz, base_.mpz, exp_.mpz, base_.mpz);
-      }
+      base.pow(base_, exp_);
     }
   }
 
@@ -1956,16 +1906,16 @@ module BigInteger {
     const exp_ = exp.safeCast(c_ulong);
 
     if _local {
-      mpz_pow_ui(base.mpz, base.mpz, exp_);
+      base.pow(base, exp_);
 
     } else if base.localeId == chpl_nodeID {
-      mpz_pow_ui(base.mpz, base.mpz, exp_);
+      base.pow(base, exp_);
 
     } else {
       const baseLoc = chpl_buildLocaleID(base.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", baseLoc) {
-        mpz_pow_ui(base.mpz, base.mpz, exp_);
+        base.pow(base, exp_);
       }
     }
   }

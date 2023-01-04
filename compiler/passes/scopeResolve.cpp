@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -174,39 +174,36 @@ static void handleReceiverFormals() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
 
     if (fn->_this == NULL) continue; // not a method
+    SET_LINENO(fn->_this);
 
     if (fn->_this->type == dtUnknown) {
       Expr* stmt = toArgSymbol(fn->_this)->typeExpr->body.only();
 
-      if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(stmt)) {
-        SET_LINENO(fn->_this);
-
-        Symbol* rsym = lookup(sym->unresolved, sym);
-        if (TypeSymbol* ts = toTypeSymbol(rsym)) {
-          sym->replace(new SymExpr(ts));
-
-          fn->_this->type = ts->type;
-          fn->_this->type->methods.add(fn);
-
-          AggregateType::setCreationStyle(ts, fn);
-
-        } else if (InterfaceSymbol* isym = toInterfaceSymbol(rsym)) {
-          // Convert fn(this: IFC, ...) to
-          //   fn(this: ?t_IFC, ...) where t_IFC implements IFC
-          TypeSymbol* ctSym = desugarInterfaceAsType(fn,
-                                toArgSymbol(fn->_this), sym, isym);
-          sym->replace(new SymExpr(ctSym));
-          fn->_this->type = ctSym->type;
-          recordIfcThis(isym, fn, ctSym);
-        }
-
-      } else if (SymExpr* sym = toSymExpr(stmt)) {
-        fn->_this->type = sym->symbol()->type;
-        fn->_this->type->methods.add(fn);
-
-        AggregateType::setCreationStyle(sym->symbol()->type->symbol, fn);
+      UnresolvedSymExpr* unresolvedSymExpr = toUnresolvedSymExpr(stmt);
+      Symbol* symbol = nullptr;
+      if (unresolvedSymExpr) {
+        symbol = lookup(unresolvedSymExpr->unresolved, unresolvedSymExpr);
+      } else if (SymExpr* symExpr = toSymExpr(stmt)) {
+        symbol = symExpr->symbol();
       }
 
+      if (TypeSymbol* ts = toTypeSymbol(symbol)) {
+        if (unresolvedSymExpr) unresolvedSymExpr->replace(new SymExpr(ts));
+
+        fn->_this->type = ts->type;
+        fn->_this->type->methods.add(fn);
+
+        AggregateType::setCreationStyle(ts, fn);
+
+      } else if (InterfaceSymbol* isym = toInterfaceSymbol(symbol)) {
+        // Convert fn(this: IFC, ...) to
+        //   fn(this: ?t_IFC, ...) where t_IFC implements IFC
+        TypeSymbol* ctSym = desugarInterfaceAsType(fn,
+                              toArgSymbol(fn->_this), stmt, isym);
+        if (unresolvedSymExpr) unresolvedSymExpr->replace(new SymExpr(ctSym));
+        fn->_this->type = ctSym->type;
+        recordIfcThis(isym, fn, ctSym);
+      }
     } else {
       AggregateType::setCreationStyle(fn->_this->type->symbol, fn);
     }

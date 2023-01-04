@@ -507,6 +507,17 @@ all:
   07/09/22:
     - text: Bring block dist scan performance on par with local DR arrays (#19999)
       config: 16-node-xc, 16-node-cs-hdr
+  10/25/22:
+    - text: Hardware changes
+      config: 16-node-xc
+  11/05/22:
+    - Don't count the comms from end counts (#20985)
+  11/11/22:
+    - text: Switch away from tree-based privatization (#20241)
+      config: 16-node-xc, 16-node-cs-hdr, chapcs.comm-counts
+  11/15/22:
+    - text: Optimize distributed rectangular domain creation (#21038)
+      config: 16-node-xc, 16-node-cs-hdr, chapcs.comm-counts
 
 
 # End all
@@ -564,6 +575,10 @@ allocate:
     - Add a field to the string record to store a cached size (#15758)
   07/29/20:
     - Optimize ASCII strings (#16092)
+
+allocation:
+  11/10/22:
+    - weakPointer prototype implementation (#20918)
 
 arguments:
   09/20/17:
@@ -2184,6 +2199,8 @@ compilerAndTestingStats: &compiler-perf-base
     - Cache module-level scope resolution (#19900)
   07/17/22:
     - Use LLVM ADTs to improve compile times (#19561)
+  10/12/22:
+    - Default to jemalloc for host allocator on most platforms (#20774)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2324,6 +2341,12 @@ arkouda: &arkouda-base
     - Closes 1783 SegArray.__getitem__ to Server (Bears-R-Us/arkouda#1790)
   10/27/22:
     - Closes 1776 GroupBy Strings Optimization (Bears-R-Us/arkouda#1851)
+  11/22/22:
+    - Closes 1901 Reduce SymEntry creation overheads (Bears-R-Us/arkouda#1921)
+  12/01/22:
+    - Closes 1935 Increase encode benchmark size (Bears-R-Us/arkouda#1936)
+  12/02/22:
+    - Create local copies of remote strings for encoding (Bears-R-Us/arkouda#1937)
 
 
 arkouda-string:

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -145,6 +145,8 @@ extern const char* CHPL_TARGET_BUNDLED_LINK_ARGS;
 extern const char* CHPL_TARGET_SYSTEM_LINK_ARGS;
 
 extern const char* CHPL_CUDA_LIBDEVICE_PATH;
+extern const char* CHPL_GPU_CODEGEN;
+extern const char* CHPL_GPU_ARCH;
 
 extern bool  printPasses;
 extern FILE* printPassesFile;
@@ -256,7 +258,8 @@ extern int breakOnID;
 extern int breakOnRemoveID;
 
 extern int fGPUBlockSize;
-extern char fCUDAArch[16];
+extern char fGpuArch[16];
+extern const char* gGpuSdkPath;
 
 extern char stopAfterPass[128];
 
@@ -296,5 +299,8 @@ namespace chpl {
 extern chpl::Context* gContext;
 
 extern std::vector<std::pair<std::string, std::string>> gDynoParams;
+
+extern std::vector<std::string> gDynoPrependInternalModulePaths;
+extern std::vector<std::string> gDynoPrependStandardModulePaths;
 
 #endif

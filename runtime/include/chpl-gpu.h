@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,10 +29,15 @@
 extern "C" {
 #endif
 
+// We need to declare this variable outside of the commented out HAS_GPU_LOCALE
+// section due to the fact that GPUDiagnostics module accesses it (and this
+// module can be used despite what locale model you're using).
+extern bool chpl_gpu_debug;
+
 #ifdef HAS_GPU_LOCALE
 
 static inline void CHPL_GPU_DEBUG(const char *str, ...) {
-  if (verbosity >= 2) {
+  if (chpl_gpu_debug) {
     va_list args;
     va_start(args, str);
     vfprintf(stdout, str, args);
@@ -47,6 +52,8 @@ static inline bool chpl_gpu_running_on_gpu_locale(void) {
 
 void chpl_gpu_init(void);
 void chpl_gpu_on_std_modules_finished_initializing(void);
+
+void chpl_gpu_get_device_count(int* into);
 
 void chpl_gpu_launch_kernel(int ln, int32_t fn,
                             const char* fatbinData, const char* name,
@@ -79,6 +86,8 @@ void chpl_gpu_copy_host_to_device(void* dst, const void* src, size_t n);
 
 bool chpl_gpu_is_device_ptr(const void* ptr);
 bool chpl_gpu_is_host_ptr(const void* ptr);
+
+unsigned int chpl_gpu_device_clock_rate(int32_t devNum);
 
 // TODO do we really need to expose this?
 size_t chpl_gpu_get_alloc_size(void* ptr);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -487,11 +487,14 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
       fn->retType = retType;
     }
 
-    if (fn->isIterator() == true && fn->iteratorInfo == NULL) {
+    if (fn->isIterator() && fn->iteratorInfo == NULL &&
+        ! retType->symbol->hasFlag(FLAG_GENERIC)) {
       // Note: protoIteratorClass changes fn->retType to the iterator record.
       // The original return type is stored here in retType.
       protoIteratorClass(fn, retType);
     }
+    // Note: if not here, we will protoIteratorClass()
+    // in resolveFunction() after resolveReturnTypeAndYieldedType().
 
   } else {
     fn->retType = retType;
@@ -1325,7 +1328,6 @@ static void gatherTempsDeadLastMention(VarSymbol* v,
       // also handle out intent variables being inited here
       FnSymbol* fn = subCall ? subCall->resolvedOrVirtualFunction() : NULL;
       if (fn != NULL) {
-        int i = 1;
         for_formals_actuals(formal, actual, subCall) {
           bool outIntent = (formal->intent == INTENT_OUT ||
                             formal->originalIntent == INTENT_OUT);
@@ -1346,7 +1348,6 @@ static void gatherTempsDeadLastMention(VarSymbol* v,
               }
             }
           }
-          i++;
         }
       }
     }
@@ -1903,8 +1904,17 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
     // For iterators, the return symbol / return type is void
     // or the iterator record. Here we want to compute the yielded
     // type.
+    // We have three cases of the iterator's declared return (yielded) type:
+    // * not declared ==> retType==dtUnknown
+    // * declared concrete ==> retType is an IR; we have fn->iteratorInfo
+    // * declared generic ==> retType has it; no fn->iteratorInfo
     ret = NULL;
-    retType = dtUnknown;
+    if (retType == dtUnknown)
+      ; // keep dtUnknown
+    else if (retType->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+      retType = fn->iteratorInfo->yieldedType;
+    else
+      INT_ASSERT(retType->symbol->hasFlag(FLAG_GENERIC)); // fyi
   }
 
   Vec<Type*>   retTypes;
@@ -1985,6 +1995,13 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
     }
 
   }
+
+  if (fn->retTag != RET_TYPE && retType->symbol->hasFlag(FLAG_GENERIC))
+    // The compiler should have reported an error earlier. If it has not,
+    // give user-friendly error here - avoid potential confusion at callsite.
+    USR_FATAL(fn, "could not determine the concrete type"
+              " for the generic %s type '%s'",
+              isIterator ? "yielded" : "return", toString(retType));
 
   if (isIterator == false) {
     ret->type = retType;
@@ -2869,6 +2886,15 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn,
               toType = lhsType->symbol;
             }
 
+            if (from != NULL && from->hasFlag(FLAG_TYPE_VARIABLE)) {
+              INT_ASSERT(lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE));
+              // The lhs and rhs types differ when the return type is inferred
+              // from return statements with different types, ex. see #20481.
+              if (lhsType == rhs->typeInfo()) {
+                // move from a type to the same type -- nothing else to do
+                from = NULL;
+              }
+            }
             // If rewriting this operation is required, do it
             if (from != NULL) {
               SET_LINENO(rhs);

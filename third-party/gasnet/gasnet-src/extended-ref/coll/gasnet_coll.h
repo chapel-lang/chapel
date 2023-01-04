@@ -188,16 +188,31 @@ extern void gasnet_coll_set_dissem_limit(gasnet_team_handle_t _team, size_t _dis
   #define GASNETI_TRACE_COLL_EXCHANGE(name,team,dst,src,nbytes,flags) \
 	GASNETI_TRACE_COLL_GATHER_ALL(name,team,dst,src,nbytes,flags)
   // GEX Collective Ops
+  #define GASNETI_TRACE_TM_BROADCAST(name,tm,root,dst,src,nbytes,flags) do { \
+    GASNETI_TRACE_EVENT_VAL(W,name,nbytes);                                                             \
+    if (GASNETI_TRACE_ENABLED(D)) {                                                                     \
+      GASNETI_TRACE_PRINTF(D, (#name ": root = " GASNETI_TMRANKFMT ", nbytes = %" PRIuSZ,               \
+                               GASNETI_TMRANKSTR((tm),(root)), (size_t)nbytes));                        \
+      if ((root) == gex_TM_QueryRank(tm)) {                                                             \
+        GASNETI_TRACE_PRINTF(D, (#name ": dst = " GASNETI_LADDRFMT ", src = " GASNETI_LADDRFMT,         \
+                                 GASNETI_LADDRSTR(dst), GASNETI_LADDRSTR(src)));                        \
+      } else {                                                                                          \
+        GASNETI_TRACE_PRINTF(D, (#name ": dst = " GASNETI_LADDRFMT, GASNETI_LADDRSTR(dst)));            \
+      }                                                                                                 \
+    }                                                                                                   \
+  } while (0)
   #define GASNETI_TRACE_TM_REDUCE(name,tm,root,dst,src,dt,dt_sz,dt_cnt,op,op_fnptr,op_cdata,flags) do { \
-    GASNETI_TRACE_EVENT_VAL(W,name,dt_cnt);                                                             \
+    GASNETI_TRACE_EVENT_VAL(W,name,dt_cnt*dt_sz);                                                       \
     if (GASNETI_TRACE_ENABLED(D)) {                                                                     \
       char *_tr_dtstr = (char *)gasneti_extern_malloc(gasneti_format_dt(NULL,(dt)));                    \
       gasneti_format_dt(_tr_dtstr,(dt));                                                                \
+      const char *_tr_dtsz = (dt == GEX_DT_USER)                                                        \
+                           ? gasneti_dynsprintf(" (dt_sz = %" PRIuSZ ")", dt_sz) : "";                  \
       char *_tr_opstr = (char *)gasneti_extern_malloc(gasneti_format_op(NULL,(op)));                    \
       gasneti_format_op(_tr_opstr,(op));                                                                \
-      GASNETI_TRACE_PRINTF(D, (#name ": root = " GASNETI_TMRANKFMT ", dt = %" PRIuSZ "*%s, op = %s",    \
+      GASNETI_TRACE_PRINTF(D, (#name ": root = " GASNETI_TMRANKFMT ", dt = %" PRIuSZ "*%s%s, op = %s",  \
                                GASNETI_TMRANKSTR((tm),(root)),                                          \
-                               (size_t)(dt_cnt), 7+_tr_dtstr, 7+_tr_opstr));                            \
+                               (size_t)(dt_cnt), 7+_tr_dtstr, _tr_dtsz, 7+_tr_opstr));                  \
       if ((root) == gex_TM_QueryRank(tm)) {                                                             \
         GASNETI_TRACE_PRINTF(D, (#name ": src = " GASNETI_LADDRFMT ", dst = " GASNETI_LADDRFMT,         \
                                  GASNETI_LADDRSTR(src), GASNETI_LADDRSTR(dst)));                        \
@@ -214,14 +229,17 @@ extern void gasnet_coll_set_dissem_limit(gasnet_team_handle_t _team, size_t _dis
     }                                                                                                   \
   } while (0)
   #define GASNETI_TRACE_TM_REDUCE_ALL(name,tm,dst,src,dt,dt_sz,dt_cnt,op,op_fnptr,op_cdata,flags) do {  \
-    GASNETI_TRACE_EVENT_VAL(W,name,dt_cnt);                                                             \
+    GASNETI_TRACE_EVENT_VAL(W,name,dt_cnt*dt_sz);                                                       \
     if (GASNETI_TRACE_ENABLED(D)) {                                                                     \
       char *_tr_dtstr = (char *)gasneti_extern_malloc(gasneti_format_dt(NULL,(dt)));                    \
       gasneti_format_dt(_tr_dtstr,(dt));                                                                \
+      const char *_tr_dtsz = (dt == GEX_DT_USER)                                                        \
+                           ? gasneti_dynsprintf(" (dt_sz = %" PRIuSZ ")", dt_sz) : "";                  \
       char *_tr_opstr = (char *)gasneti_extern_malloc(gasneti_format_op(NULL,(op)));                    \
       gasneti_format_op(_tr_opstr,(op));                                                                \
-      GASNETI_TRACE_PRINTF(D, (#name ": dt = %" PRIuSZ "*%s, op = %s",                                  \
-                               (size_t)(dt_cnt), 7+_tr_dtstr, 7+_tr_opstr));                            \
+      GASNETI_TRACE_PRINTF(D, (#name ": team = " GASNETI_TMFMT ", dt = %" PRIuSZ "*%s%s, op = %s",      \
+                               GASNETI_TMSTR(tm),                                                       \
+                               (size_t)(dt_cnt), 7+_tr_dtstr, _tr_dtsz, 7+_tr_opstr));                  \
       GASNETI_TRACE_PRINTF(D, (#name ": src = " GASNETI_LADDRFMT ", dst = " GASNETI_LADDRFMT,           \
                                GASNETI_LADDRSTR(src), GASNETI_LADDRSTR(dst)));                          \
       if (op == GEX_OP_USER || op == GEX_OP_USER_NC) {                                                  \
@@ -239,6 +257,7 @@ extern void gasnet_coll_set_dissem_limit(gasnet_team_handle_t _team, size_t _dis
   #define GASNETI_TRACE_COLL_GATHER(name,team,root,dst,src,nbytes,flags)
   #define GASNETI_TRACE_COLL_GATHER_ALL(name,team,dst,src,nbytes,flags)
   #define GASNETI_TRACE_COLL_EXCHANGE(name,team,dst,src,nbytes,flags)
+  #define GASNETI_TRACE_TM_BROADCAST(name,tm,root,dst,src,nbytes,flags)
   #define GASNETI_TRACE_TM_REDUCE(name,tm,root,dst,src,dt,dt_sz,dt_cnt,op,op_fnptr,op_cdata,flags)
   #define GASNETI_TRACE_TM_REDUCE_ALL(name,tm,dst,src,dt,dt_sz,dt_cnt,op,op_fnptr,op_cdata,flags)
 #endif

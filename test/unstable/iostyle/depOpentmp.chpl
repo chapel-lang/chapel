@@ -1,5 +1,5 @@
 use IO;
 
 var style = defaultIOStyleInternal();
-var f = opentmp(style=style);
+var f = openTempFile(style=style);
 f.close();

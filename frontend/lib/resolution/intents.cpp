@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -58,7 +58,7 @@ static QualifiedType::Kind constIntentForType(const Type* t) {
 
   // Otherwise, it should be a generic type that we will
   // instantiate before computing the final intent.
-  assert(t->genericity() != Type::CONCRETE);
+  CHPL_ASSERT(t->genericity() != Type::CONCRETE);
   return QualifiedType::CONST_INTENT; // leave the intent generic
 }
 
@@ -89,7 +89,7 @@ static QualifiedType::Kind defaultIntentForType(const Type* t) {
 
   // Otherwise, it should be a generic type that we will
   // instantiate before computing the final intent.
-  assert(t->genericity() != Type::CONCRETE);
+  CHPL_ASSERT(t->genericity() != Type::CONCRETE);
   return QualifiedType::DEFAULT_INTENT; // leave the intent generic
 }
 

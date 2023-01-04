@@ -1,0 +1,2 @@
+stringLiteralEOF.chpl:1: syntax error: end-of-line in a string literal without a preceding backslash
+stringLiteralEOF.chpl:1: syntax error: end-of-file in string literal

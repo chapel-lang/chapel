@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +24,9 @@
 *                                                                           *
 ************************************* | ************************************/
 
+#include "chpl/framework/ErrorBase.h"
+#include "chpl/parsing/parser-error.h"
+
 #include <algorithm>
 #include <cctype>
 #include <climits>
@@ -39,7 +42,7 @@ static void updateLocation(YYLTYPE* loc, int nLines, int nCols) {
   loc->first_line = loc->last_line;
   loc->first_column = loc->last_column;
   loc->last_line = loc->first_line + nLines;
-  int startColumn = (nLines==0)?(loc->first_column):(1);
+  int startColumn = (nLines == 0) ? (loc->first_column) : (1);
   loc->last_column = startColumn + nCols;
 }
 
@@ -145,7 +148,7 @@ static int processStringLiteral(yyscan_t scanner,
                                 std::move(value),
                                 quotes).release();
   } else {
-    assert(false && "unknown type in processStringLiteral");
+    CHPL_ASSERT(false && "unknown type in processStringLiteral");
   }
 
   YYSTYPE* val = yyget_lval(scanner);
@@ -194,35 +197,13 @@ static int processTripleStringLiteral(yyscan_t scanner,
                                 std::move(value),
                                 quotes).release();
   } else {
-    assert(false && "unknown type in processStringLiteral");
+    CHPL_ASSERT(false && "unknown type in processStringLiteral");
   }
 
   YYSTYPE* val = yyget_lval(scanner);
   val->expr = lit;
 
   return type;
-}
-
-static void
-noteErrInString(yyscan_t scanner, int nLines, int nCols, const char* msg,
-                bool moveLocToEnd=false) {
-  ParserContext* context = yyget_extra(scanner);
-  YYLTYPE* loc = yyget_lloc(scanner);
-  YYLTYPE myloc = *loc;
-  updateLocation(&myloc, nLines, nCols);
-  if (moveLocToEnd) myloc = context->makeLocationAtLast(myloc);
-  context->noteError(myloc, msg);
-}
-
-static void
-noteNoteInString(yyscan_t scanner, int nLines, int nCols, const char* msg,
-                bool moveLocToEnd=false) {
-  ParserContext* context = yyget_extra(scanner);
-  YYLTYPE* loc = yyget_lloc(scanner);
-  YYLTYPE myloc = *loc;
-  updateLocation(&myloc, nLines, nCols);
-  if (moveLocToEnd) myloc = context->makeLocationAtLast(myloc);
-  context->noteNote(myloc, msg);
 }
 
 static
@@ -279,7 +260,9 @@ static std::string eatStringLiteral(yyscan_t scanner,
     if (c == '\n') {
       // TODO: string literals with newline after backslash
       // are not documented in the spec
-      noteErrInString(scanner, nLines, nCols, "end-of-line in a string literal without a preceding backslash");
+      CHPL_LEXER_REPORT_SYNTAX(
+          scanner, nLines, nCols,
+          "end-of-line in a string literal without a preceding backslash.");
       isErroneousOut = true;
       s += c;
       nLines++;
@@ -322,25 +305,20 @@ static std::string eatStringLiteral(yyscan_t scanner,
 
         long hexChar = strtol(buf, NULL, 16);
 
-        if (foundHex == false) {
-          noteErrInString(scanner, nLines, nCols,
-                          "non-hexadecimal character follows \\x");
-          isErroneousOut = true;
-        } else if (hexChar == LONG_MIN) {
-          noteErrInString(scanner, nLines, nCols,
-                          "underflow when reading \\x escape");
-          isErroneousOut = true;
-        } else if (hexChar == LONG_MAX) {
-          noteErrInString(scanner, nLines, nCols,
-                          "overflow when reading \\x escape");
+        CHPL_ASSERT((hexChar != LONG_MIN && hexChar != LONG_MAX) &&
+               "overflow/underflow shouldn't be possible in the allowed number "
+               "of digits");
+        if (!foundHex) {
+          CHPL_LEXER_REPORT_SYNTAX(scanner, nLines, nCols,
+                                   "non-hexadecimal character follows \\x.");
           isErroneousOut = true;
         } else if (0 <= hexChar && hexChar <= 255) {
           // append the character
-          char cc = (char) hexChar;
+          char cc = (char)hexChar;
           s += cc;
         } else {
-          noteErrInString(scanner, nLines, nCols,
-                          "unknown problem when reading \\x escape");
+          CHPL_LEXER_REPORT_SYNTAX(scanner, nLines, nCols,
+                                   "unknown problem while reading \\x escape.");
           isErroneousOut = true;
         }
 
@@ -348,11 +326,15 @@ static std::string eatStringLiteral(yyscan_t scanner,
           continue; // need to process c as the next character
 
       } else if (c == 'u' || c == 'U') {
-        noteErrInString(scanner, nLines, nCols, "universal character name not yet supported in string literal");
+        CHPL_LEXER_REPORT_SYNTAX(
+            scanner, nLines, nCols,
+            "universal character name not yet supported in string literal.");
         s += "\\u"; // this is a dummy value
         isErroneousOut = true;
       } else if ('0' <= c && c <= '7' ) {
-        noteErrInString(scanner, nLines, nCols, "octal escape not supported in string literal");
+        CHPL_LEXER_REPORT_SYNTAX(
+            scanner, nLines, nCols,
+            "octal escape not supported in string literal.");
         s += "\\";
         s += c; // a dummy value
         isErroneousOut = true;
@@ -361,10 +343,9 @@ static std::string eatStringLiteral(yyscan_t scanner,
         s += "\\";
         break; // EOF reached, so stop
       } else {
-        std::string msg = "Unexpected string escape: '\\";
-        msg+=c;
-        msg+="'";
-        noteErrInString(scanner, nLines, nCols, msg.c_str());
+        CHPL_LEXER_REPORT_SYNTAX(
+            scanner, nLines, nCols,
+            std::string("unexpected string escape: '\\") + (char)c + "'.");
         isErroneousOut = true;
       }
     } else {
@@ -375,7 +356,8 @@ static std::string eatStringLiteral(yyscan_t scanner,
   } /* eat up string */
 
   if (c == 0) {
-    noteErrInString(scanner, nLines, nCols, "EOF in string");
+    CHPL_LEXER_REPORT(scanner, nLines, nCols, StringLiteralEOF, startCh,
+                      /* startCharCount */ 1);
     isErroneousOut = true;
   }
 
@@ -424,7 +406,8 @@ static std::string eatTripleStringLiteral(yyscan_t scanner,
   } /* eat up string */
 
   if (c == 0) {
-    noteErrInString(scanner, nLines, nCols, "EOF in string");
+    CHPL_LEXER_REPORT(scanner, nLines, nCols, StringLiteralEOF, startCh,
+                      startChCount);
     isErroneousOut = true;
   }
 
@@ -529,30 +512,26 @@ static SizedStr eatExternCode(yyscan_t scanner) {
       switch (state) {
         case in_code:
           // there was no match to the {
-          noteErrInString(scanner, nLines, nCols,
-                          "Missing } in extern block");
+          CHPL_LEXER_REPORT(scanner, nLines, nCols, ExternUnclosedPair, "}");
           break;
 
         case in_single_quote:
         case in_single_quote_backslash:
-          noteErrInString(scanner, nLines, nCols,
-                          "Runaway \'string\' in extern block");
+          CHPL_LEXER_REPORT(scanner, nLines, nCols, ExternUnclosedPair, "'");
           break;
 
         case in_double_quote:
         case in_double_quote_backslash:
-          noteErrInString(scanner, nLines, nCols,
-                          "Runaway \"string\" in extern block");
+          CHPL_LEXER_REPORT(scanner, nLines, nCols, ExternUnclosedPair, "\"");
           break;
 
         case in_single_line_comment:
-          noteErrInString(scanner, nLines, nCols,
-                          "Missing newline after extern block // comment");
+          CHPL_LEXER_REPORT_SYNTAX(scanner, nLines, nCols,
+                            "missing newline after // comment in extern block.");
           break;
 
         case in_multi_line_comment:
-          noteErrInString(scanner, nLines, nCols,
-                          "Runaway /* comment */ in extern block");
+          CHPL_LEXER_REPORT(scanner, nLines, nCols, ExternUnclosedPair, "*/");
           break;
       }
       break;
@@ -765,17 +744,21 @@ static int processBlockComment(yyscan_t scanner) {
       nestedStartLine = nLines;
       nestedStartCol = nCols;
     } else if (c == 0) {
-      const bool moveLocToEnd = true;
-      noteErrInString(scanner, nLines, nCols,
-                      "EOF in comment",
-                      moveLocToEnd);
-      noteNoteInString(scanner, startLine, startCol,
-                       "unterminated comment started here");
+      // report error with location of EOF, as well as unterminated comment
+      // start and nested comment (if present) start
+      ParserContext* pContext = yyget_extra(scanner);
+      YYLTYPE loc = *yyget_lloc(scanner);
+      updateLocation(&loc, startLine, startCol);
+      const Location startLoc = pContext->convertLocation(loc);
+      Location nestedLoc = Location();
       if (nestedStartLine >= 0) {
-        noteNoteInString(scanner, nestedStartLine, nestedStartCol,
-                         "nested comment started here",
-                         moveLocToEnd);
+        loc = *yyget_lloc(scanner);
+        updateLocation(&loc, nestedStartLine, nestedStartCol);
+        loc = pContext->makeLocationAtLast(loc);
+        nestedLoc = pContext->convertLocation(loc);
       }
+      CHPL_LEXER_REPORT_END(scanner, nLines, nCols, CommentEOF, startLoc,
+                            nestedLoc);
       break;
     }
   }
@@ -802,11 +785,9 @@ static int processBlockComment(yyscan_t scanner) {
 ************************************* | ************************************/
 
 static void processInvalidToken(yyscan_t scanner) {
-  const char* pch = yyget_text(scanner);
-  YYLTYPE* loc = yyget_lloc(scanner);
-  updateLocation(loc, 0, strlen(pch));
-  ParserContext* context = yyget_extra(scanner);
-  yychpl_error(loc, context, "Invalid token");
+  std::string pch = std::string(yyget_text(scanner));
+  CHPL_LEXER_REPORT_SYNTAX(scanner, 0, pch.length(),
+                           "invalid token: " + pch + ".");
 }
 
 static int getNextYYChar(yyscan_t scanner) {

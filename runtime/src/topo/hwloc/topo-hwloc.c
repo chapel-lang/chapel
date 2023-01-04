@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,6 +29,7 @@
 #include "chplcgfns.h"
 #include "chplsys.h"
 #include "chpl-topo.h"
+#include "chpl-comm.h"
 #include "chpltypes.h"
 #include "error.h"
 
@@ -44,10 +45,18 @@
 
 #ifdef DEBUG
 // note: format arg 'f' must be a string constant
+#ifdef DEBUG_NODEID
+#define _DBG_P(f, ...)                                                  \
+        do {                                                            \
+          printf("%d:%s:%d: " f "\n", chpl_nodeID, __FILE__, __LINE__,  \
+                                      ## __VA_ARGS__);                  \
+        } while (0)
+#else
 #define _DBG_P(f, ...)                                                  \
         do {                                                            \
           printf("%s:%d: " f "\n", __FILE__, __LINE__, ## __VA_ARGS__); \
         } while (0)
+#endif
 #else
 #define _DBG_P(f, ...)
 #endif
@@ -256,7 +265,7 @@ int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
 }
 
 //
-// Gets information about CPUs (cores and PUs) from the toplogy.
+// Gets information about CPUs (cores and PUs) from the topology.
 //
 static
 void getCPUInfo(void) {

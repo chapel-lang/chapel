@@ -654,7 +654,7 @@ extern int gex_EP_RegisterHandlers(
             gex_AM_Entry_t *_table,
             size_t         _numentries);
 
-extern void gex_EP_BindSegment(
+extern int gex_EP_BindSegment(
             gex_EP_t       _ep,
             gex_Segment_t  _segment,
             gex_Flags_t    _flags);
@@ -890,16 +890,17 @@ typedef struct gasneti_srcdesc_s *gex_AM_SrcDesc_t;
   #define GASNETC_MAX_ARGS_NBRHD   (gex_AM_MaxArgs())
 #endif
 #ifndef GASNETC_MAX_MEDIUM_NBRHD
-  // Assumes gex_AM_LUB{Request,Reply}Medium() expand to compile-time constants
-  // AND that the LUB is the *greatest* upper-bound.  If either property is not
-  // true for a given conduit, then it must define GASNETC_MAX_MEDIUM_NBRHD to
-  // an appropriate compile-time constant bound in its gasnet_core_fwd.h.
+  // This default assumes gex_AM_LUB{Request,Reply}Medium() expand to their
+  // *greatest* upper-bound.  If that is not true for a given conduit, then it
+  // must define GASNETC_MAX_MEDIUM_NBRHD in its gasnet_core_fwd.h to an
+  // expression which evaluates to the correct value no later than execution
+  // of gasneti_pshm_init().
   // The value may be a conservative upper-bound if the real value cannot be
-  // known until run time (at the cost of wasted memory).
+  // known that early (at the cost of wasted memory).
   #define GASNETC_MAX_MEDIUM_NBRHD MAX(gex_AM_LUBRequestMedium(),gex_AM_LUBReplyMedium())
 #endif
 #ifndef GASNETC_MAX_LONG_NBRHD
-  // Same assumptions and usage as GASNETC_MAX_MEDIUM_NBRHD, above, but for Long.
+  // Same assumption and usage as GASNETC_MAX_MEDIUM_NBRHD, above, but for Long.
   #define GASNETC_MAX_LONG_NBRHD MAX(gex_AM_LUBRequestLong(),gex_AM_LUBReplyLong())
 #endif
 
@@ -1032,6 +1033,9 @@ extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CACHE_LINE_BYTES_,GASNETI_CACHE
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(GASNETI_TM0_ALIGN_,GASNETI_TM0_ALIGN));
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CORE_,GASNET_CORE_NAME));
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(EXTENDED_,GASNET_EXTENDED_NAME));
+#if GASNET_CONDUIT_OFI
+  extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(OFI_PROVIDER_,GASNETC_OFI_PROVIDER_IDENT));
+#endif
 
 static int *gasneti_linkconfig_idiotcheck(void);
 #if !PLATFORM_COMPILER_TINY /* avoid a tinyc bug */
@@ -1068,6 +1072,9 @@ static int *gasneti_linkconfig_idiotcheck(void) {
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(GASNETI_TM0_ALIGN_,GASNETI_TM0_ALIGN))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CORE_,GASNET_CORE_NAME))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(EXTENDED_,GASNET_EXTENDED_NAME))
+  #if GASNET_CONDUIT_OFI
+        + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(OFI_PROVIDER_,GASNETC_OFI_PROVIDER_IDENT))
+  #endif
         ;
   #if GASNETI_IDIOTCHECK_RECURSIVE_REFERENCE
   if (_gasneti_linkconfig_idiotcheck == &gasneti_linkconfig_idiotcheck)

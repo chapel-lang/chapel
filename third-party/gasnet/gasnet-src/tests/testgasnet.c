@@ -1788,7 +1788,7 @@ void doit8(int partner, int *partnerseg) {
     assert_always(d==1); assert_always(e==1);
   }
 
-  #if PLATFORM_COMPILER_GNU_CXX && GASNETI_HAVE_CC_PRAGMA_GCC_DIAGNOSTIC
+  #if PLATFORM_COMPILER_GNU_CXX && GASNETT_USE_PRAGMA_GCC_DIAGNOSTIC
   #pragma GCC diagnostic pop
   #endif
 #endif

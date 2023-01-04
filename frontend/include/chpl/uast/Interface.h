@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -50,8 +50,9 @@ class Interface final : public NamedDecl {
   int interfaceFormalsChildNum_;
   int numInterfaceFormals_;
   int bodyChildNum_;
-  int numBodyStmts_;
-  bool isFormalListPresent_;
+  int numBodyStmts_; // TODO is this field necessary?
+                     // isn't the body always the last thing here?
+  bool isFormalListExplicit_;
 
   Interface(AstList children, int attributesChildNum,
             Visibility visibility,
@@ -60,7 +61,7 @@ class Interface final : public NamedDecl {
             int numInterfaceFormals,
             int bodyChildNum,
             int numBodyStmts,
-            bool isFormalListPresent)
+            bool isFormalListExplicit)
       : NamedDecl(asttags::Interface, std::move(children),
                   attributesChildNum,
                   visibility,
@@ -71,7 +72,7 @@ class Interface final : public NamedDecl {
         numInterfaceFormals_(numInterfaceFormals),
         bodyChildNum_(bodyChildNum),
         numBodyStmts_(numBodyStmts),
-        isFormalListPresent_(isFormalListPresent) {
+        isFormalListExplicit_(isFormalListExplicit) {
     // TODO: Some assertions here...
   }
 
@@ -83,12 +84,15 @@ class Interface final : public NamedDecl {
       lhs->numInterfaceFormals_ == rhs->numInterfaceFormals_ &&
       lhs->bodyChildNum_ == rhs->bodyChildNum_ &&
       lhs->numBodyStmts_ == rhs->numBodyStmts_ &&
-      lhs->isFormalListPresent_ == rhs->isFormalListPresent_;
+      lhs->isFormalListExplicit_ == rhs->isFormalListExplicit_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
     namedDeclMarkUniqueStringsInner(context);
   }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
 
  public:
   ~Interface() override = default;
@@ -109,8 +113,8 @@ class Interface final : public NamedDecl {
 
     The formal list '(T)' is present, so this method returns 'true'.
   */
-  bool isFormalListPresent() const {
-    return isFormalListPresent_;
+  bool isFormalListExplicit() const {
+    return isFormalListExplicit_;
   }
 
   /**
@@ -144,9 +148,9 @@ class Interface final : public NamedDecl {
     Return the i'th interface formal.
   */
   const AstNode* formal(int i) const {
-    assert(i >= 0 && i < numBodyStmts_);
+    CHPL_ASSERT(i >= 0 && i < numBodyStmts_);
     auto ret = child(i + interfaceFormalsChildNum_);
-    assert(ret);
+    CHPL_ASSERT(ret);
     return ret;
   }
 
@@ -170,9 +174,9 @@ class Interface final : public NamedDecl {
     Get the i'th statement in the body of this interface.
   */
   const AstNode* stmt(int i) const {
-    assert(i >= 0 && i < numBodyStmts_);
+    CHPL_ASSERT(i >= 0 && i < numBodyStmts_);
     auto ret = child(i + bodyChildNum_);
-    assert(ret);
+    CHPL_ASSERT(ret);
     return ret;
   }
 
@@ -180,7 +184,7 @@ class Interface final : public NamedDecl {
                                 owned<Attributes> attributes,
                                 Decl::Visibility visibility,
                                 UniqueString name,
-                                bool isFormalListPresent,
+                                bool isFormalListExplicit,
                                 AstList formals,
                                 AstList body);
 };

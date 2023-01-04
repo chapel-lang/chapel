@@ -95,6 +95,7 @@ Contributors to GASNet-EX include:
  * Sean Treichler <sean@nvidia.com>
  * Ralph Castain <rhc@open-mpi.org>
  * Elliot Ronaghan <elliot.ronaghan@hpe.com>
+ * Farzad Fatollahi-Fard <ffard@lbl.gov>
 
 The authors/contributors of GASNet-1 (upon which GASNet-EX is based) include:
 

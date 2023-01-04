@@ -9,7 +9,7 @@ record MyRecord {
 writef("testing default stdout: %t\n", new MyRecord(1,2));
 writef("testing json stdout: %jt\n", new MyRecord(1,2));
 
-var f = opentmp();
+var f = openTempFile();
 
 {
   var writer = f.writer();

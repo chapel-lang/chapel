@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,7 @@
 #include "chpl/framework/ID.h"
 #include "chpl/framework/CommentID.h"
 #include "chpl/framework/UniqueString.h"
+#include "chpl/framework/Location.h"
 #include "chpl/util/memory.h"
 #include "chpl/util/hash.h"
 #include "chpl/util/break.h"
@@ -42,7 +43,7 @@
 namespace chpl {
   class Context;
 
-class ErrorBase;
+  class ErrorBase;
 
 namespace uast {
   class AstNode;
@@ -113,7 +114,7 @@ class Context {
   bool computedChplEnv = false;
   ChplEnvMap chplEnv;
 
-  // Whether or no to use detailed error output
+  // Whether or not to use detailed error output
   bool detailedErrors = true;
 
   // map that supports uniqueCString / UniqueString
@@ -508,8 +509,10 @@ class Context {
     with the error handler set by setErrorHandler.
 
     If no query is currently running, it just reports the error.
+
+    Returns the passed-in error for convenience.
    */
-  void report(const ErrorBase* error);
+  const ErrorBase* report(const ErrorBase* error);
 
   /**
     Note an error for the currently running query.
@@ -721,7 +724,7 @@ class Context {
           if (enableQueryTimingTrace) {
             auto ticks = elapsed.count();
             auto os = queryTimingTraceOutput.get();
-            assert(os != nullptr);
+            CHPL_ASSERT(os != nullptr);
             *os << depth << ' ' << base->queryName << ' ' << ticks << '\n';
           }
         });

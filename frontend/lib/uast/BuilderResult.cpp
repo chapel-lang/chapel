@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,6 +22,7 @@
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/ErrorBase.h"
+#include "chpl/framework/mark-functions.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Comment.h"
@@ -62,7 +63,7 @@ void computeIdMaps(
       if (!parentAst->id().isEmpty()) {
         idToParentId[ast->id()] = parentAst->id();
       } else {
-        assert(false && "parentAst does not have valid ID");
+        CHPL_ASSERT(false && "parentAst does not have valid ID");
       }
     }
   }
@@ -140,9 +141,7 @@ void BuilderResult::mark(Context* context) const {
     loc.mark(context);
   }
 
-  for (const auto& em : errors_) {
-    em->mark(context);
-  }
+  chpl::mark<decltype(errors_)>{}(context, errors_);
 
   // update the filePathForModuleName query
   BuilderResult::updateFilePaths(context, *this);
@@ -184,7 +183,7 @@ Location BuilderResult::idToLocation(ID id, UniqueString path) const {
 
 Location BuilderResult::commentToLocation(const Comment *c) const {
   int idx = c->commentId().index();
-  assert(idx >= 0 && "Cant lookup comment that has -1 id");
+  CHPL_ASSERT(idx >= 0 && "Cant lookup comment that has -1 id");
   if (idx < 0 || (size_t)idx >= commentIdToLocation_.size()) {
     return Location();
   }

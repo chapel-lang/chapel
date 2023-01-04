@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/ASTTypes.h"
+#include "chpl/uast/AstList.h"
 
 #include "chpl/framework/Context.h"
 #include "chpl/uast/AstNode.h"
@@ -170,7 +170,7 @@ bool updateAstList(AstList& keep, AstList& addin) {
     anyChanged = true;
   }
 
-  assert(newList.size() == addin.size());
+  CHPL_ASSERT(newList.size() == addin.size());
   // Swap the lists into place.
   keep.swap(newList);
   addin.swap(junkList);

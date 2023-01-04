@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -53,7 +53,7 @@ class Dot final : public AstNode {
   Dot(AstList children, UniqueString fieldName)
     : AstNode(asttags::Dot, std::move(children)),
       fieldName_(fieldName) {
-    assert(children_.size() == 1);
+    CHPL_ASSERT(children_.size() == 1);
   }
   bool contentsMatchInner(const AstNode* other) const override {
     const Dot* lhs = this;
@@ -67,6 +67,8 @@ class Dot final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
     fieldName_.mark(context);
   }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
 
  public:
   ~Dot() override = default;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,9 +19,10 @@
 
 #include "default-functions.h"
 
-#include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
@@ -71,11 +72,13 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
   // nothing found
   if (vec.size() == 0) return false;
 
+  auto haveQt = QualifiedType(QualifiedType::VAR, type);
+
   // loop through IDs and see if any are methods on the same type
   for (auto& ids : vec) {
     for (auto id : ids) {
       auto node = parsing::idToAst(context, id);
-      assert(node);
+      CHPL_ASSERT(node);
 
       if (auto fn = node->toFunction()) {
         if (!fn->isMethod()) continue;
@@ -86,8 +89,11 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
         auto tfs = typedSignatureInitial(context, ufs);
         auto receiverQualType = tfs->formalType(0);
 
-        // receiver type matches, return true
-        if (receiverQualType.type() == type) {
+        // return true if the receiver type matches or
+        // if the receiver type is a generic type and we have
+        // an instantiation.
+        auto result = canPass(context, haveQt, receiverQualType);
+        if (result.passes() && !result.converts() && !result.promotes()) {
           return true;
         }
       }
@@ -137,10 +143,10 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
     auto nonNilBorrowed  = ClassTypeDecorator::BORROWED_NONNIL;
     auto decor = ClassTypeDecorator(nonNilBorrowed);
     auto receiverType = ClassType::get(context, basic, manager, decor);
-    assert(receiverType);
+    CHPL_ASSERT(receiverType);
     qtReceiver = QualifiedType(QualifiedType::CONST_IN, receiverType);
   } else {
-    assert(false && "Not handled yet!");
+    CHPL_ASSERT(false && "Not handled yet!");
   }
 
   formalTypes.push_back(std::move(qtReceiver));
@@ -151,14 +157,14 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
 
   // TODO: generic types
   if (rf.isGeneric()) {
-    assert(false && "Not handled yet!");
+    CHPL_ASSERT(false && "Not handled yet!");
   }
 
   // TODO: super fields and invoking super
   if (auto basic = compType->toBasicClassType()) {
     if (auto parent = basic->parentClassType()) {
       if (!parent->isObjectType()) {
-        assert(false && "Not handled yet!");
+        CHPL_ASSERT(false && "Not handled yet!");
       }
     }
   }
@@ -279,12 +285,12 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
 
   if (needCompilerGeneratedMethod(context, type, name, parenless)) {
     auto compType = type->getCompositeType();
-    assert(compType);
+    CHPL_ASSERT(compType);
 
     if (name == USTR("init")) {
       result = generateInitSignature(context, compType);
     } else {
-      assert(false && "Not implemented yet!");
+      CHPL_ASSERT(false && "Not implemented yet!");
     }
   }
 

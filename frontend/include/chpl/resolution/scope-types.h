@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -314,6 +314,13 @@ class Scope {
   /** Return the module scope containing this scope,
       or if it is a module scope, this scope. */
   const Scope* moduleScope() const;
+
+  /** Return the parent module of the module containing
+      this scope. This is equivalent to:
+
+      'scope->moduleScope()->parentScope()->moduleScope()'
+   */
+  const Scope* parentModuleScope() const;
 
   /** Returns the AST tag of the construct that this Scope represents. */
   uast::asttags::AstTag tag() const { return tag_; }
@@ -728,7 +735,7 @@ struct stringify<resolution::VisibilityStmtKind> {
         streamOut << "import";
         break;
       default:
-        assert(false && "should not reach this point");
+        CHPL_ASSERT(false && "should not reach this point");
     }
   }
 };

@@ -1,6 +1,6 @@
 use IO;
 
-var f = opentmp();
+var f = openTempFile();
 
 // not checking OS-specific implementations for now...
 try {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,6 +27,7 @@
 #include "chpl/uast/Include.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
+#include "./ErrorGuard.h"
 
 // helper functions
 
@@ -525,6 +526,50 @@ static void test12() {
   assert(reC.toId() == y->id());
 }
 
+static void test13() {
+  printf("test13\n");
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = UniqueString::get(ctx, "Foo.chpl");
+  std::string contents = R""""(
+      module Foo {
+        import super.bar;
+        import super.super;
+        import super.super.bar;
+        use super.bar;
+        use super.super;
+        use super.super.bar;
+        var x: int;
+      }
+   )"""";
+
+  setFileText(ctx, path, contents);
+
+  const ModuleVec& vec = parseToplevel(ctx, path);
+
+  // Variable triggers resolution of use/import statements.
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+
+  std::ignore = scopeResolveIt(ctx, x);
+  assert(guard.errors().size() == 6);
+
+  for (int i = 0; i < 3; i++) {
+    auto& e = guard.errors()[i];
+    assert(e->message() == "invalid use of 'super' in 'import'; 'Foo' is a "
+                           "top-level module");
+  }
+  for (int i = 3; i < 6; i++) {
+    auto& e = guard.errors()[i];
+    assert(e->message() == "invalid use of 'super' in 'use'; 'Foo' is a "
+                           "top-level module");
+  }
+
+  assert(guard.realizeErrors());
+}
+
 int main() {
   test1();
   test2();
@@ -538,6 +583,7 @@ int main() {
   test10();
   test11();
   test12();
+  test13();
 
   return 0;
 }

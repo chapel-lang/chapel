@@ -1,0 +1,2 @@
+opentmp.chpl:3: warning: opentmp is deprecated, please use openTempFile instead
+didn't throw

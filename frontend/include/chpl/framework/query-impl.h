@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -267,7 +267,7 @@ Context::queryUseSaved(
     if (useSaved) {
       //printf("QUERY END       %s (...) REUSING BASED ON DEPS %p\n",
       //       traceQueryName, r);
-      assert(r->lastChecked == this->currentRevisionNumber);
+      CHPL_ASSERT(r->lastChecked == this->currentRevisionNumber);
     } else {
       //printf("QUERY COMPUTING %s (...) %p\n", traceQueryName, r);
     }
@@ -326,7 +326,7 @@ Context::queryEnd(
               const char* traceQueryName) {
 
   // must be in a query to be running one!
-  assert(queryStack.size() > 0);
+  CHPL_ASSERT(queryStack.size() > 0);
 
   const QueryMapResult<ResultType, ArgTs...>* ret =
     this->updateResultForQueryMapR(queryMap, r, tupleOfArgs,
@@ -354,7 +354,7 @@ Context::queryEnd(
               << clearTerminalColor()
               << std::endl;
     queryTraceDepth--;
-    assert(r->lastChecked == this->currentRevisionNumber);
+    CHPL_ASSERT(r->lastChecked == this->currentRevisionNumber);
     //for (auto dep : r->dependencies) {
     //  printf("  with dependency %p %s\n", dep, dep->parentQueryMap->queryName);
     //}
@@ -373,7 +373,7 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
                                   const std::tuple<ArgTs...>& tupleOfArgs,
                                   ResultType result,
                                   bool forSetter) {
-  assert(r != nullptr);
+  CHPL_ASSERT(r != nullptr);
 
   // If we already have found a result, use that.
   //
@@ -536,7 +536,7 @@ Context::querySetterUpdateResult(
   auto* BEGIN_QUERY_FUNCTION = func; \
   Context* BEGIN_QUERY_CONTEXT = context; \
   const char* BEGIN_QUERY_FUNC_NAME = #func; \
-  assert(0 == strcmp(BEGIN_QUERY_FUNC_NAME, __func__)); \
+  CHPL_ASSERT(0 == strcmp(BEGIN_QUERY_FUNC_NAME, __func__)); \
   auto BEGIN_QUERY_ARGS = std::make_tuple(__VA_ARGS__); \
   auto BEGIN_QUERY_MAP = context->queryBeginGetMap(BEGIN_QUERY_FUNCTION, \
                                                    BEGIN_QUERY_ARGS, \

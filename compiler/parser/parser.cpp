@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -158,6 +158,7 @@ static const char*   searchThePath(const char*      modName,
 *                                                                             *
 ************************************** | *************************************/
 
+// TODO: Remove these, dyno should be handling this.
 static Vec<const char*> sModPathSet;
 
 static Vec<const char*> sIntModPath;
@@ -172,10 +173,16 @@ static Vec<VisibilityStmt*> sModReqdByInt;
 
 void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
   sIntModPath.add(astr(newpath));
+  if (fDynoCompilerLibrary) {
+    gDynoPrependInternalModulePaths.push_back(newpath);
+  }
 }
 
 void addStandardModulePath(const ArgumentDescription* desc, const char* newpath) {
   sStdModPath.add(astr(newpath));
+  if (fDynoCompilerLibrary) {
+    gDynoPrependInternalModulePaths.push_back(newpath);
+  }
 }
 
 void setupModulePaths() {
@@ -746,6 +753,8 @@ static chpl::ID findIdForContainingDecl(chpl::ID id) {
 }
 
 static const char* labelForContainingDeclFromId(chpl::ID id) {
+  if (id.isEmpty()) return nullptr;
+
   auto ast = chpl::parsing::idToAst(gContext, id);
   const char* preface = "function";
   const char* name = nullptr;
@@ -786,7 +795,7 @@ static void maybePrintErrorHeader(chpl::ID id) {
 
   auto declId = findIdForContainingDecl(id);
 
-  if (declId != idForLastContainingDecl) {
+  if (!declId.isEmpty() && declId != idForLastContainingDecl) {
     auto declLabelStr = labelForContainingDeclFromId(declId);
 
     // No label was created, so we have nothing to print.
@@ -821,24 +830,23 @@ static void dynoDisplayError(chpl::Context* context,
     } else {
       fprintf(stderr, "\n");
     }
-    return;
-  }
+  } else {
+    maybePrintErrorHeader(id);
 
-  maybePrintErrorHeader(id);
-
-  switch (err.kind()) {
-    case chpl::ErrorMessage::NOTE:
-      USR_PRINT(loc, "%s", msg);
-      break;
-    case chpl::ErrorMessage::WARNING:
-      USR_WARN(loc, "%s", msg);
-      break;
-    case chpl::ErrorMessage::ERROR:
-      USR_FATAL_CONT(loc,"%s", msg);
-      break;
-    default:
-      INT_FATAL("Should not reach here!");
-      break;
+    switch (err.kind()) {
+      case chpl::ErrorMessage::NOTE:
+        USR_PRINT(loc, "%s", msg);
+        break;
+      case chpl::ErrorMessage::WARNING:
+        USR_WARN(loc, "%s", msg);
+        break;
+      case chpl::ErrorMessage::ERROR:
+        USR_FATAL_CONT(loc, "%s", msg);
+        break;
+      default:
+        INT_FATAL("Should not reach here!");
+        break;
+    }
   }
 
   // Also show the details if there is additional information.
@@ -880,7 +888,7 @@ static DynoErrorHandler* gDynoErrorHandler = nullptr;
 
 static bool dynoRealizeErrors(void) {
   INT_ASSERT(gDynoErrorHandler);
-  bool hadErrors;
+  bool hadErrors = false;
   llvm::SmallPtrSet<const chpl::ErrorBase*, 10> issuedErrors;
   for (auto err : gDynoErrorHandler->errors()) {
     hadErrors = true;

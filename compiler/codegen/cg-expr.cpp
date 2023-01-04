@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -274,7 +274,7 @@ llvm::AllocaInst* createVarLLVM(llvm::Type* type, const char* name)
 llvm::AllocaInst* createVarLLVM(llvm::Type* type)
 {
   char name[32];
-  sprintf(name, "chpl_macro_tmp_%d", codegen_tmp++);
+  snprintf(name, sizeof(name), "chpl_macro_tmp_%d", codegen_tmp++);
   return createVarLLVM(type, name);
 }
 
@@ -1395,7 +1395,7 @@ GenRet createTempVar(const char* ctype)
   GenInfo* info = gGenInfo;
   GenRet ret;
   char name[32];
-  sprintf(name, "chpl_macro_tmp_%d", codegen_tmp++);
+  snprintf(name, sizeof(name), "chpl_macro_tmp_%d", codegen_tmp++);
 
   ret.isLVPtr = GEN_PTR;
   if( info->cfile ) {
@@ -2147,7 +2147,7 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
         ifTrueVal.val, ifFalseVal.val, ifTrueSigned, ifFalseSigned);
 
     char name[32];
-    sprintf(name, "chpl_macro_tmp_tv_%d", codegen_tmp++);
+    snprintf(name, sizeof(name), "chpl_macro_tmp_tv_%d", codegen_tmp++);
 
     llvm::Value* tmp = createVarLLVM(values.a->getType(), name);
 

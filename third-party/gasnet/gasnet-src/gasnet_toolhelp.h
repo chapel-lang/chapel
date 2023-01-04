@@ -284,12 +284,22 @@ extern uint64_t gasneti_getPhysMemSz(int _failureIsFatal);
 
 extern const char *gasneti_procid_str; // process identifier for error messages
 
-GASNETI_COLD
-GASNETI_FORMAT_PRINTF(gasneti_console_message,2,3, // output a formatted message with a prefix type
+// gasneti_console_message(): output a formatted message with a prefix string
+GASNETI_COLD 
+GASNETI_FORMAT_PRINTF(gasneti_console_message,2,3,
 extern void gasneti_console_message(const char *_prefix, const char *_msg, ...));
+
+// gasneti_console0_message(): Like gasneti_console_message(), except ONLY proc 0 writes to console,
+//   and the procid is omitted from the message. All procs still write to tracefile (if any).
+//   This should ONLY be used in contexts where proc 0 is guaranteed to call with all relevant info
+GASNETI_COLD
+GASNETI_FORMAT_PRINTF(gasneti_console0_message,2,3, 
+extern void gasneti_console0_message(const char *_prefix, const char *_msg, ...));
+
 GASNETI_COLD
 GASNETI_FORMAT_PRINTF(gasneti_console_messageVA,5,0,
 extern void gasneti_console_messageVA(const char *_funcname, const char *_filename, int _linenum,
+                                      int _console_procid, // -1 == wildcard
                                       const char *_prefix, const char *_msg, va_list _argptr));
 
 // gasneti_fatalerror(format, ...) - print a fatal error with func/file/line info, then abort
@@ -376,6 +386,8 @@ size_t gasneti_strnlen(const char *_s, size_t _maxlen) {
   while ((_len < _maxlen) && _s[_len]) ++_len;
   return _len;
 }
+
+extern size_t gasneti_utoa(uint64_t _val, char *_buffer, size_t _buflen, unsigned int _base);
 
 /* ------------------------------------------------------------------------------------ */
 /* Count zero bytes in a region w/ or w/o a memcpy(), or in a "register" */
@@ -1093,6 +1105,7 @@ typedef enum {
 extern char *gasneti_format_number(int64_t _val, char *_buf, size_t _bufsz, int _is_mem_size);
 extern int64_t gasneti_parse_int(const char *_str, uint64_t _mem_size_multiplier);
 extern int gasneti_parse_dbl(const char *_str, double *_result_ptr);
+extern int gasneti_parse_yesno(const char *_str);
 extern void gasneti_setenv(const char *_key, const char *_value);
 extern void gasneti_unsetenv(const char *_key);
 

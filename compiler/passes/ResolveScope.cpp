@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -308,7 +308,7 @@ std::string ResolveScope::name() const {
   } else if (BlockStmt*    block   = toBlockStmt(mAstRef))    {
     char buff[1024];
 
-    sprintf(buff, "BlockStmt %9d", block->id);
+    snprintf(buff, sizeof(buff), "BlockStmt %9d", block->id);
 
     retval = buff;
 

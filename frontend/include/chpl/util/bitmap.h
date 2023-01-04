@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,8 +21,8 @@
 #define CHPL_UTIL_BITMAP_H
 
 #include "chpl/framework/stringify-functions.h"
+#include "chpl/util/assertions.h"
 
-#include <cassert>
 #include <cstddef>
 #include <vector>
 
@@ -51,12 +51,12 @@ class Bitmap {
   }
   /** Returns the value of bit index i */
   bool operator[](size_t i) const {
-    assert(0 <= i && i < bits_.size());
+    CHPL_ASSERT(0 <= i && i < bits_.size());
     return bits_[i];
   }
   /** Set the value of bit index i */
   void setBit(size_t i, bool value) {
-    assert(0 <= i && i < bits_.size());
+    CHPL_ASSERT(0 <= i && i < bits_.size());
     bits_[i] = value;
   }
 

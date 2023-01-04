@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -43,7 +43,7 @@ static void test0(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   auto intf = mod->stmt(1)->toInterface();
   assert(intf);
-  assert(intf->isFormalListPresent());
+  assert(intf->isFormalListExplicit());
   assert(intf->numFormals() == 3);
   assert(intf->numStmts() == 1);
   assert(intf->stmt(0)->isFunction());

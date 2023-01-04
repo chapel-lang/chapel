@@ -18,8 +18,6 @@ Initializing Modules:
         ChapelArray
          ChapelPrivatization
          ChapelDomain
-          Initialization
-           Memory
           IO
            FormattedIO
             Regex
@@ -46,6 +44,7 @@ Initializing Modules:
     MemTracking
     ChapelUtil
     ExportWrappers
+    ChapelGpuSupport
     Types
     AlignedTSupport
     CopyAggregation

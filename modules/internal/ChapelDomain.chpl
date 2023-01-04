@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -284,21 +284,9 @@ module ChapelDomain {
     return _getDomain(dom._value);
   }
 
-  deprecated "isRectangularDom is deprecated - please use isRectangular method on domain"
-  proc isRectangularDom(d: domain) param return d.isRectangular();
-
-  deprecated "isIrregularDom is deprecated - please use isIrregular method on domain"
-  proc isIrregularDom(d: domain) param return d.isIrregular();
-
-  deprecated "isAssociativeDom is deprecated - please use isAssociative method on domain"
-  proc isAssociativeDom(d: domain) param return d.isAssociative();
-
   proc chpl_isAssociativeDomClass(dc: BaseAssociativeDom) param return true;
   pragma "last resort"
   proc chpl_isAssociativeDomClass(dc) param return false;
-
-  deprecated "isSparseDom is deprecated - please use isSparse method on domain"
-  proc isSparseDom(d: domain) param return d.isSparse();
 
   private proc errorIfNotRectangular(dom: domain, param op, param arrays="") {
     if dom.isAssociative() || dom.isSparse() then
@@ -567,11 +555,6 @@ module ChapelDomain {
   }
 
   pragma "no doc"
-  deprecated "'|' on rectangular domains is deprecated"
-  operator |(a :domain, b: domain) where a.isRectangular() && b.isRectangular()
-    return forall (aa, bb) in zip(a, b) do aa|bb;
-
-  pragma "no doc"
   operator |=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     for e in b do
@@ -606,11 +589,6 @@ module ChapelDomain {
   }
 
   pragma "no doc"
-  deprecated "'&' on rectangular domains is deprecated"
-  operator &(a :domain, b: domain) where a.isRectangular() && b.isRectangular()
-    return forall (aa, bb) in zip(a, b) do aa&bb;
-
-  pragma "no doc"
   operator &=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     var removeSet: domain(a.idxType);
@@ -640,11 +618,6 @@ module ChapelDomain {
 
     return newDom;
   }
-
-  pragma "no doc"
-  deprecated "'^' on rectangular domains is deprecated"
-  operator ^(a :domain, b: domain) where a.isRectangular() && b.isRectangular()
-    return forall (aa, bb) in zip(a, b) do aa^bb;
 
   /*
      We remove elements in the RHS domain from those in the LHS domain only if
@@ -1614,7 +1587,7 @@ module ChapelDomain {
 
       pragma "no doc"
       proc _moveInitializeElement(arr, idx, in value) {
-        import Memory.Initialization.moveInitialize;
+        import MemMove.moveInitialize;
         ref elem = arr[idx];
         moveInitialize(elem, value);
       }
@@ -1836,12 +1809,6 @@ module ChapelDomain {
       return _value.dsiAdd(idx);
     }
 
-    pragma "last resort" pragma "no doc"
-    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
-    proc ref add(in i) {
-      return add(i);
-    }
-
     pragma "no doc"
     @unstable "bulkAdd() is subject to change in the future."
     proc ref bulkAdd(inds: [] _value.idxType, dataSorted=false,
@@ -1851,6 +1818,9 @@ module ChapelDomain {
 
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
     }
+
+    deprecated "makeIndexBuffer has been renamed to createIndexBuffer"
+    inline proc makeIndexBuffer(size: int) { return createIndexBuffer(size); }
 
     /*
      Creates an index buffer which can be used for faster index addition.
@@ -1868,7 +1838,7 @@ module ChapelDomain {
        .. code-block:: chapel
 
           var spsDom: sparse subdomain(parentDom);
-          var idxBuf = spsDom.makeIndexBuffer(size=N);
+          var idxBuf = spsDom.createIndexBuffer(size=N);
           for i in someIndexIterator() do
             idxBuf.add(i);
           idxBuf.commit();
@@ -1880,9 +1850,9 @@ module ChapelDomain {
      :arg size: Size of the buffer in number of indices.
      :type size: int
     */
-    @unstable "makeIndexBuffer() is subject to change in the future."
-    inline proc makeIndexBuffer(size: int) {
-      return _value.dsiMakeIndexBuffer(size);
+    @unstable "createIndexBuffer() is subject to change in the future."
+    inline proc createIndexBuffer(size: int) {
+      return _value.dsiCreateIndexBuffer(size);
     }
 
     /*
@@ -1947,12 +1917,6 @@ module ChapelDomain {
       return _value.dsiRemove(idx);
     }
 
-    pragma "last resort" pragma "no doc"
-    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
-    proc ref remove(i) {
-      return remove(i);
-    }
-
     /* Request space for a particular number of values in an
        domain.
 
@@ -1967,12 +1931,6 @@ module ChapelDomain {
         compilerError("domain.requestCapacity only applies to associative domains");
 
       _value.dsiRequestCapacity(capacity);
-    }
-
-    pragma "last resort" pragma "no doc"
-    deprecated "the formal 'i' is deprecated, please use 'capacity' instead"
-    proc ref requestCapacity(i) {
-      requestCapacity(i);
     }
 
     /*
@@ -2068,32 +2026,6 @@ module ChapelDomain {
      */
     inline proc contains(idx: _value.idxType ...rank) {
       return contains(idx);
-    }
-
-    pragma "last resort" pragma "no doc"
-    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
-    inline proc contains(i: _value.idxType) {
-      return contains(idx=i);
-    }
-
-    pragma "last resort" pragma "no doc"
-    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
-    inline proc contains(i: rank*_value.idxType) {
-      return contains(idx=i);
-    }
-
-    /* Return true if this domain is a subset of ``super``. Otherwise
-       returns false. */
-    deprecated "'domain1.isSubset(domain2)' is deprecated, instead please use 'domain2.contains(domain1)'"
-    proc isSubset(super : domain) {
-      return super.contains(this);
-    }
-
-    /* Return true if this domain is a superset of ``sub``. Otherwise
-       returns false. */
-    deprecated "'domain1.isSuper(domain2)' is deprecated, instead please use 'domain1.contains(domain2)'"
-    proc isSuper(sub : domain) {
-      return this.contains(sub);
     }
 
     /* Returns true if this domain contains all the indices in the domain

@@ -1,6 +1,6 @@
 use IO;
 
-var fw = opentmp().writer();
+var fw = openTempFile().writer();
 if fw.writeln("yep") {
     writeln("nope");
 }

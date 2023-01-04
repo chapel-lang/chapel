@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -111,14 +111,14 @@ class CompositeType : public Type {
       subs_(std::move(subs)) {
 
     // check instantiated only from same type of object
-    assert(instantiatedFrom_ == nullptr || instantiatedFrom_->tag() == tag);
+    CHPL_ASSERT(instantiatedFrom_ == nullptr || instantiatedFrom_->tag() == tag);
 
     // check instantiatedFrom_ is a root
-    assert(instantiatedFrom_ == nullptr ||
+    CHPL_ASSERT(instantiatedFrom_ == nullptr ||
            instantiatedFrom_->instantiatedFrom_ == nullptr);
 
     // check that subs is consistent with instantiatedFrom
-    assert((instantiatedFrom_ == nullptr) == subs_.empty());
+    CHPL_ASSERT((instantiatedFrom_ == nullptr) == subs_.empty());
   }
 
   bool compositeTypeContentsMatchInner(const CompositeType* other) const {
@@ -165,7 +165,7 @@ class CompositeType : public Type {
    */
   const CompositeType* instantiatedFromCompositeType() const {
     // at present, only expecting a single level of instantiated-from.
-    assert(instantiatedFrom_ == nullptr ||
+    CHPL_ASSERT(instantiatedFrom_ == nullptr ||
            instantiatedFrom_->instantiatedFrom_ == nullptr);
     return instantiatedFrom_;
   }

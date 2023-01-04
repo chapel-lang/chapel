@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,6 +47,8 @@ static auto recIter = std::string(R""""(
                         iter these() {
                           yield 1;
                         }
+                        proc init() { }
+                        proc deinit() { }
                       }
 
                       )"""");
@@ -294,10 +296,10 @@ static void testTheseNoIndex() {
   //
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   auto& iterandRE = rr.byAst(loop->iterand());
-  auto& associatedFns = iterandRE.associatedFns();
-  assert(associatedFns.size() == 1);
+  auto& associatedActions = iterandRE.associatedActions();
+  assert(associatedActions.size() == 1);
 
-  auto theseFn = associatedFns[0];
+  auto theseFn = associatedActions[0].fn();
   auto recR = m->stmt(0)->toRecord();
   auto recThese = recR->declOrComment(0)->toFunction();
   assert(theseFn->id() == recThese->id());

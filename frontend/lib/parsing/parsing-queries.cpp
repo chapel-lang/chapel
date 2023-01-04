@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -53,12 +53,12 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
   QUERY_BEGIN_INPUT(fileTextQuery, context, path);
 
   std::string text;
-  ErrorMessage error;
-  const ParseError* parseError = nullptr;
-  bool ok = readfile(path.c_str(), text, error);
-  if (!ok) {
-    parseError = ParseError::get(context, error);
-    context->report(parseError);
+  std::string error;
+  const ErrorParseErr* parseError = nullptr;
+  if (!readfile(path.c_str(), text, error)) {
+    error = "error reading file: " + error;
+    context->report(
+        ErrorParseErr::get(context, std::make_tuple(Location(), error)));
   }
   auto result = FileContents(std::move(text), parseError);
   return QUERY_END(result);
@@ -105,7 +105,7 @@ parseFileToBuilderResult(Context* context, UniqueString path,
   // Run the fileText query to get the file contents
   const FileContents& contents = fileText(context, path);
   const std::string& text = contents.text();
-  const ParseError* error = contents.error();
+  const ErrorParseErr* error = contents.error();
   BuilderResult result(path);
 
   if (error == nullptr) {
@@ -176,7 +176,7 @@ const Location& locateId(Context* context, ID id) {
 
 // this is just a convenient wrapper around locating with the id
 const Location& locateAst(Context* context, const AstNode* ast) {
-  assert(!ast->isComment() && "cant locate comment like this");
+  CHPL_ASSERT(!ast->isComment() && "cant locate comment like this");
   return locateId(context, ast->id());
 }
 
@@ -282,17 +282,20 @@ static void addFilePathModules(std::vector<std::string>& searchPath,
   }
 }
 
-void setupModuleSearchPaths(Context* context,
-                            const std::string& chplHome,
-                            bool minimalModules,
-                            const std::string& chplLocaleModel,
-                            bool enableTaskTracking,
-                            const std::string& chplTasks,
-                            const std::string& chplComm,
-                            const std::string& chplSysModulesSubdir,
-                            const std::string& chplModulePath,
-                            const std::vector<std::string>& cmdLinePaths,
-                            const std::vector<std::string>& inputFilenames) {
+void setupModuleSearchPaths(
+                  Context* context,
+                  const std::string& chplHome,
+                  bool minimalModules,
+                  const std::string& chplLocaleModel,
+                  bool enableTaskTracking,
+                  const std::string& chplTasks,
+                  const std::string& chplComm,
+                  const std::string& chplSysModulesSubdir,
+                  const std::string& chplModulePath,
+                  const std::vector<std::string>& prependInternalModulePaths,
+                  const std::vector<std::string>& prependStandardModulePaths,
+                  const std::vector<std::string>& cmdLinePaths,
+                  const std::vector<std::string>& inputFilenames) {
 
   std::string modRoot;
   if (!minimalModules) {
@@ -303,11 +306,17 @@ void setupModuleSearchPaths(Context* context,
 
   std::string internal = modRoot + "/internal";
   setInternalModulePath(context, UniqueString::get(context, internal));
+
   std::string bundled = modRoot + "/";
   setBundledModulePath(context, UniqueString::get(context, bundled));
 
   std::vector<std::string> searchPath;
 
+  for (auto& path : prependInternalModulePaths) {
+    searchPath.push_back(path);
+  }
+
+  // TODO: Shouldn't these use the internal path we just set?
   searchPath.push_back(modRoot + "/internal/localeModels/" + chplLocaleModel);
 
   const char* tt = enableTaskTracking ? "on" : "off";
@@ -319,6 +328,11 @@ void setupModuleSearchPaths(Context* context,
 
   searchPath.push_back(modRoot + "/internal");
 
+  for (auto& path : prependInternalModulePaths) {
+    searchPath.push_back(path);
+  }
+
+  // TODO: Shouldn't these use the standard path we just set?
   searchPath.push_back(modRoot + "/standard/gen/" + chplSysModulesSubdir);
 
   searchPath.push_back(modRoot + "/standard");
@@ -362,9 +376,9 @@ void setupModuleSearchPaths(Context* context,
                             const std::vector<std::string>& cmdLinePaths,
                             const std::vector<std::string>& inputFilenames) {
   auto& chplHomeStr = context->chplHome();
-  assert(chplHomeStr != "");
+  CHPL_ASSERT(chplHomeStr != "");
   auto chplEnv = context->getChplEnv();
-  assert(!chplEnv.getError() && "printchplenv error handling not implemented");
+  CHPL_ASSERT(!chplEnv.getError() && "printchplenv error handling not implemented");
 
   // CHPL_MODULE_PATH isn't always in the output; check if it's there.
   auto it = chplEnv->find("CHPL_MODULE_PATH");
@@ -378,6 +392,8 @@ void setupModuleSearchPaths(Context* context,
                          chplEnv->at("CHPL_COMM"),
                          chplEnv->at("CHPL_SYS_MODULES_SUBDIR"),
                          chplModulePath,
+                         {},  // prependInternalModulePaths
+                         {},  // prependStandardModulePaths
                          cmdLinePaths,
                          inputFilenames);
 }
@@ -589,7 +605,7 @@ static const AstNode* const& astForIDQuery(Context* context, ID id) {
 
 const AstNode* idToAst(Context* context, ID id) {
   if (id.isEmpty()) {
-    assert(false && "bad query of uAST for empty ID");
+    CHPL_ASSERT(false && "bad query of uAST for empty ID");
     return nullptr;
   }
 
@@ -634,19 +650,28 @@ bool idIsParenlessFunction(Context* context, ID id) {
   return idIsParenlessFunctionQuery(context, id);
 }
 
-static const bool& idIsFieldQuery(Context* context, ID id) {
-  QUERY_BEGIN(idIsFieldQuery, context, id);
+static const UniqueString& fieldIdToNameQuery(Context* context, ID id) {
+  QUERY_BEGIN(fieldIdToNameQuery, context, id);
 
-  bool result = false;
-  if (auto ast = astForIDQuery(context, id))
-    if (auto var = ast->toVariable())
-      result = var->isField();
+  UniqueString result;
+  if (auto ast = astForIDQuery(context, id)) {
+    if (auto var = ast->toVariable()) {
+      if (var->isField()) {
+        result = var->name();
+      }
+    }
+  }
 
   return QUERY_END(result);
 }
 
+UniqueString fieldIdToName(Context* context, ID id) {
+  return fieldIdToNameQuery(context, id);
+}
+
 bool idIsField(Context* context, ID id) {
-  return idIsFieldQuery(context, id);
+  UniqueString name = fieldIdToName(context, id);
+  return !name.isEmpty();
 }
 
 const ID& idToParentId(Context* context, ID id) {
@@ -666,6 +691,12 @@ const ID& idToParentId(Context* context, ID id) {
   return QUERY_END(result);
 }
 
+const uast::AstNode* parentAst(Context* context, const uast::AstNode* node) {
+  auto parentId = idToParentId(context, node->id());
+  if (parentId.isEmpty()) return nullptr;
+  return idToAst(context, parentId);
+}
+
 // Given an ID:
 //  if it is a module, return that ID
 //  if it is not a module, return the ID of the module containing it
@@ -676,7 +707,7 @@ static const ID& getModuleForId(Context* context, ID id) {
   AstTag tag;
   ID result = id;
 
-  assert(!result.isEmpty() && "should be handled at call site");
+  CHPL_ASSERT(!result.isEmpty() && "should be handled at call site");
 
   while (!result.isEmpty()) {
     tag = idToTag(context, result);
@@ -686,7 +717,7 @@ static const ID& getModuleForId(Context* context, ID id) {
     result = result.parentSymbolId(context);
   }
 
-  assert(!result.isEmpty() && "not expected");
+  CHPL_ASSERT(!result.isEmpty() && "not expected");
 
   return QUERY_END(result);
 }
@@ -744,7 +775,7 @@ idToContainingMultiDeclIdQuery(Context* context, ID id) {
   QUERY_BEGIN(idToContainingMultiDeclIdQuery, context, id);
 
   ID cur = id;
-  assert(isVariable(idToTag(context, id)));
+  CHPL_ASSERT(isVariable(idToTag(context, id)));
 
   while (true) {
     ID parent = idToParentId(context, cur);

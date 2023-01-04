@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2010,6 +2010,22 @@ record stopwatch {
       running      = false;
     } else {
       warning("stop called on a timer that has not been started");
+    }
+  }
+
+  /* Clear the elapsed time and ensure the stopwatch is stopped */
+  proc reset() {
+    if running {
+      stop();
+    }
+    clear();
+  }
+
+  /* Clear the elapsed time and ensure the stopwatch is running */
+  proc restart() {
+    clear();
+    if !running {
+      start();
     }
   }
 

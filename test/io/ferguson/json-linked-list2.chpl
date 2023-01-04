@@ -15,7 +15,7 @@ myEntry.numbers.push_back(3);
 
 writef("testing json write: %jt\n", myEntry);
 
-var f = opentmp();
+var f = openTempFile();
 {
   var writer = f.writer();
   var str = '{"numbers": []}';

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,8 +47,8 @@ class Let final : public AstNode {
   Let(AstList children, int numDecls)
     : AstNode(asttags::Let, std::move(children)),
       numDecls_(numDecls) {
-    assert(numChildren() >= 2);
-    assert(1 <= numDecls && (numDecls == numChildren() - 1));
+    CHPL_ASSERT(numChildren() >= 2);
+    CHPL_ASSERT(1 <= numDecls && (numDecls == numChildren() - 1));
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -59,6 +59,8 @@ class Let final : public AstNode {
 
   void markUniqueStringsInner(Context* context) const override {
   }
+
+  std::string dumpChildLabelInner(int i) const override;
 
  public:
   ~Let() override = default;
@@ -90,9 +92,9 @@ class Let final : public AstNode {
     Return the i'th declaration in this let statement.
   */
   const Decl* decl(int i) const {
-    assert(i >= 0 && i < numDecls_);
+    CHPL_ASSERT(i >= 0 && i < numDecls_);
     auto ret = child(i);
-    assert(ret && ret->isDecl());
+    CHPL_ASSERT(ret && ret->isDecl());
     return (const Decl*) ret;
   }
 
@@ -101,7 +103,7 @@ class Let final : public AstNode {
   */
   const AstNode* expression() const {
     auto ret = child(numDecls_);
-    assert(ret);
+    CHPL_ASSERT(ret);
     return ret;
   }
 

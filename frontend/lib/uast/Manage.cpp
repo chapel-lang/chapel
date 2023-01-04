@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,14 @@
 namespace chpl {
 namespace uast {
 
+
+std::string Manage::dumpChildLabelInner(int i) const {
+  if (managerExprChildNum_ <= i &&
+      i <= managerExprChildNum_ + numManagerExprs_) {
+    return "manager " + std::to_string(i - managerExprChildNum_);
+  }
+  return SimpleBlockLike::dumpChildLabelInner(i);
+}
 
 owned<Manage> Manage::build(Builder* builder, Location loc,
                             AstList managers,

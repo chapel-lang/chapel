@@ -6,7 +6,7 @@ config const noisy = false;
 proc testio(param typ:iokind, style:iostyleInternal, x)
 {
   if noisy then writeln("Testing ",typ:int(64)," ",x.type:string," ",style.binary:int(64)," ",style.byteorder:int(64)," ",style.str_style);
-  var f = opentmp();
+  var f = openTempFile();
   {
     var ch = f.writer(typ, style=style);
     if noisy then writeln("Writing ", x:string);
@@ -54,7 +54,7 @@ proc testio(x)
 proc test_readlines()
 {
 
-  var f = opentmp();
+  var f = openTempFile();
   {
     var ch = f.writer();
     ch.writeln("a b");

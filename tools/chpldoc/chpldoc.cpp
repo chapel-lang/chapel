@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,17 +26,11 @@
 #include <fstream>
 #include <limits>
 #include <regex>
-#include <sstream>
 #include <unordered_map>
-#include <unordered_set>
 #include <queue>
-
-#include <sys/stat.h>
-#include <unistd.h>
 
 #include "arg.h"
 #include "arg-helpers.h"
-#include "version_num.h"
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/parsing/parsing-queries.h"
@@ -45,8 +39,6 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/framework/stringify-functions.h"
 #include "chpl/framework/update-functions.h"
-#include "chpl/uast/AstTag.h"
-#include "chpl/uast/ASTTypes.h"
 #include "chpl/uast/TypeDecl.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/util/string-escapes.h"
@@ -55,6 +47,8 @@
 #include "chpl/framework/global-strings.h"
 #include "chpl/resolution/scope-queries.h"
 
+#include "llvm/Support/FileSystem.h"
+#include "chpl/util/version-info.h"
 
 
 using namespace chpl;
@@ -170,35 +164,13 @@ ArgumentDescription docs_arg_desc[] = {
  DRIVER_ARG_LAST
 };
 
-static std::string get_version() {
-  std::string ret;
-  ret = std::to_string(MAJOR_VERSION) + "." +
-        std::to_string(MINOR_VERSION) + "." +
-        std::to_string(UPDATE_VERSION);
-  if (!officialRelease) {
-    ret += " pre-release (" + std::string(BUILD_VERSION) + ")";
-  } else {
-    // It's is an official release.
-    // Try to decide whether or not to include the BUILD_VERSION
-    // based on its string length. A short git sha is 10 characters.
-    if (strlen(BUILD_VERSION) > 2 && !developer) {
-      // assume it is a sha, so don't include it
-    } else if (strcmp(BUILD_VERSION, "0") == 0) {
-      // no need to append a .0
-    } else {
-      // include the BUILD_VERSION contents to add e.g. a .1
-      ret += "." + std::string(BUILD_VERSION);
-    }
-  }
-  return ret;
-}
 
 static void printStuff(const char* argv0, void* mainAddr) {
   bool shouldExit       = false;
   bool printedSomething = false;
 
   if (fPrintVersion) {
-    std::string version = get_version();
+    std::string version = chpl::getVersion(developer);
     fprintf(stdout, "%s version %s\n", sArgState.program_name, version.c_str());
 
     fPrintCopyright  = true;
@@ -895,7 +867,7 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const CStringLiteral* l) {
-    os_ << "c\"" << escapeStringC(l->str().c_str()) << '"';
+    os_ << "c\"" << escapeStringC(l->value().str()) << '"';
     return false;
   }
 
@@ -1132,7 +1104,7 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const StringLiteral* l) {
-    os_ << '"' << escapeStringC(l->str().c_str()) << '"';
+    os_ << '"' << escapeStringC(l->value().str()) << '"';
     return false;
   }
 
@@ -2082,22 +2054,27 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
 
 
 int main(int argc, char** argv) {
-  // initial value of CHPL_HOME may be overridden by cmdline arg
-  if (getenv("CHPL_HOME") != NULL) {
-    CHPL_HOME = getenv("CHPL_HOME");
-  }
   Args args = parseArgs(argc, argv, (void*)main);
+  std::string warningMsg;
+  bool foundEnv = false;
+  bool installed = false;
+  // if user overrides CHPL_HOME from command line, don't go looking for trouble
   if (CHPL_HOME.empty()) {
-    fprintf(stderr, "CHPL_HOME not set. Please set CHPL_HOME or pass a value "
-                     "using the --home option\n" );
-    clean_exit(1);
+    std::error_code err = findChplHome(argv[0], (void*)main, CHPL_HOME, installed, foundEnv, warningMsg);
+    if (!warningMsg.empty()) {
+      fprintf(stderr, "%s\n", warningMsg.c_str());
+    }
+    if (err) {
+      fprintf(stderr, "CHPL_HOME not set to a valid value. Please set CHPL_HOME or pass a value "
+                      "using the --home option\n" );
+      clean_exit(1);
+    }
   }
+
   // TODO: there is a future for this, asking for a better error message and I
   // think we can provide it by checking here.
   // see test/chpldoc/compflags/folder/save-sphinx/saveSphinxInDocs.doc.future
-  // if (args.saveSphinx == "docs") {
-
-  // }
+  // if (args.saveSphinx == "docs") { }
 
   textOnly_ = args.textOnly;
   if (args.commentStyle.substr(0,2) != "/*") {
@@ -2175,6 +2152,8 @@ int main(int argc, char** argv) {
                          chplEnv->at("CHPL_COMM"),
                          chplEnv->at("CHPL_SYS_MODULES_SUBDIR"),
                          chplModulePath,
+                         {}, //prependInternalModulePaths,
+                         {}, //prependStandardModulePaths,
                          {}, //cmdLinePaths
                          args.files);
   GatherModulesVisitor gather(ctx);

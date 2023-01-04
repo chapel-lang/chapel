@@ -8,7 +8,7 @@
 //
 
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -65,6 +65,24 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <math.h>
+
+#ifdef DEBUG
+// note: format arg 'f' must be a string constant
+#ifdef DEBUG_NODEID
+#define _DBG_P(f, ...)                                                  \
+        do {                                                            \
+          printf("%d:%s:%d: " f "\n", chpl_nodeID, __FILE__, __LINE__,  \
+                                      ## __VA_ARGS__);                  \
+        } while (0)
+#else
+#define _DBG_P(f, ...)                                                  \
+        do {                                                            \
+          printf("%s:%d: " f "\n", __FILE__, __LINE__, ## __VA_ARGS__); \
+        } while (0)
+#endif
+#else
+#define _DBG_P(f, ...)
+#endif
 
 #define ALIGN_DN(i, size)  ((i) & ~((size) - 1))
 #define ALIGN_UP(i, size)  ALIGN_DN((i) + (size) - 1, size)

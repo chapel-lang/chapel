@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1901,8 +1901,12 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
   // We can reach 16k memory regions on Aries.
   max_mem_regions = chpl_env_rt_get_int("COMM_UGNI_MAX_MEM_REGIONS", 16384);
 
+  // Do extent MR checks to help catch subtle implementation bugs, but only
+  // when the cache is off. Our extent MR tracking is based on our allocation
+  // size, but the cache can read past an allocation to the end of a page
+  // (safe because the kernel MR extends that far, but our tracking doesn't.)
   do_mr_extent_checks = chpl_env_rt_get_bool("COMM_UGNI_DO_MR_EXTENT_CHECKS",
-                                             true);
+                                             !chpl_cache_enabled());
   cache_max_readahead_size = chpl_getSysPageSize();
 
   //

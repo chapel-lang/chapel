@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -52,7 +52,7 @@ class While final : public Loop {
     : Loop(asttags::While, std::move(children), blockStyle,
            loopBodyChildNum),
       conditionChildNum_(conditionChildNum) {
-    assert(condition());
+    CHPL_ASSERT(condition());
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -71,6 +71,8 @@ class While final : public Loop {
   void markUniqueStringsInner(Context* context) const override {
     loopMarkUniqueStringsInner(context);
   }
+
+  std::string dumpChildLabelInner(int i) const override;
 
   int8_t conditionChildNum_;
 

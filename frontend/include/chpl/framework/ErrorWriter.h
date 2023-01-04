@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -56,6 +56,9 @@ inline Location locate(Context* context, const ID& id) {
 }
 inline Location locate(Context* context, const uast::AstNode* node) {
   return locate(context, node->id());
+}
+inline Location locate(Context* context, const Location& loc) {
+  return loc;
 }
 
 /// \cond DO_NOT_DOCUMENT

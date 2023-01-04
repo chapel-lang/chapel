@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,7 +33,7 @@ owned<Attributes> Attributes::build(Builder* builder, Location loc,
                                     UniqueString unstableMessage) {
   #ifndef NDEBUG
     for (auto tag : pragmas) {
-      assert(tag >= 0 && tag < NUM_KNOWN_PRAGMAS);
+      CHPL_ASSERT(tag >= 0 && tag < NUM_KNOWN_PRAGMAS);
     }
   #endif
 

@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -16,7 +16,7 @@
 # limitations under the License.
 
 # define target for the common code for all dyno tests
-add_library(tests-common OBJECT test-parsing.cpp test-resolution.cpp)
+add_library(tests-common OBJECT EXCLUDE_FROM_ALL test-parsing.cpp test-resolution.cpp)
 target_link_libraries(tests-common libdyno)
 
 add_custom_target(tests)
@@ -24,8 +24,7 @@ set(CHPL_TEST_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR})
 
 # define a function to simplify adding tests
 function(comp_unit_test target)
-  add_executable(${target} "${target}.cpp")
-  set_property(TARGET ${target} PROPERTY EXCLUDE_FROM_ALL)
+  add_executable(${target} EXCLUDE_FROM_ALL "${target}.cpp")
   set_target_properties(${target}  PROPERTIES LINK_DEPENDS_NO_SHARED true)
   target_link_libraries(${target} libdyno tests-common)
   target_include_directories(${target} PUBLIC

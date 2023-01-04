@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -59,7 +59,7 @@ class For final : public IndexableLoop {
                     isExpressionLevel),
       isParam_(isParam) {
 
-    assert(withClause() == nullptr);
+    CHPL_ASSERT(withClause() == nullptr);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -78,6 +78,8 @@ class For final : public IndexableLoop {
   void markUniqueStringsInner(Context* context) const override {
     indexableLoopMarkUniqueStringsInner(context);
   }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
 
   bool isParam_;
 

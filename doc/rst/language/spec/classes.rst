@@ -238,7 +238,7 @@ available for this purpose
 
    .. BLOCK-test-chapeloutput
 
-      duplicate-management.chpl:2: error: type expression uses multiple class kinds: borrowed unmanaged
+      duplicate-management.chpl:2: error: type expression uses multiple memory management strategies ('borrowed' and 'unmanaged')
 
 ..
 
