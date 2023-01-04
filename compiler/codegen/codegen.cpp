@@ -1188,7 +1188,10 @@ static void genConfigGlobalsAndAbout() {
     fprintf(info->cfile, "\n#include \"chpltypes.h\"\n\n");
   }
 
-  retrieveCompileCommand();
+  // if we are running as compiler-driver, retrieve compile command saved to tmp
+  if (!fDoMonolithic) {
+    retrieveCompileCommand();
+  }
 
   genGlobalString("chpl_compileCommand", compileCommand);
   genGlobalString("chpl_compileVersion", compileVersion);

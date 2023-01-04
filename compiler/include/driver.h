@@ -160,6 +160,7 @@ extern char fExplainInstantiation[256];
 /// resolution.
 extern bool fExplainVerbose;
 extern bool fParseOnly;
+extern bool fDoMonolithic;
 extern bool fDoCompilation;
 extern bool fDoBackend;
 extern bool fPrintAllCandidates;

@@ -32,9 +32,6 @@ extern bool fPrintHelp;
 extern bool fPrintLicense;
 extern bool fPrintSettingsHelp;
 extern bool fPrintVersion;
-extern bool fDoMonolithic;
-extern bool fDoCompilation;
-extern bool fDoBackend;
 extern bool fRungdb;
 extern bool fRunlldb;
 
