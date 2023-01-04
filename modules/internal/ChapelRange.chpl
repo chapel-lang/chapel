@@ -565,11 +565,11 @@ module ChapelRange {
   /* Returns ``true`` if argument ``r`` is a fully bounded range,
      ``false`` otherwise. */
   proc isBoundedRange(r: range(?)) param
-    return r.hasLowBound() && r.hasHighBound();
+    return r.boundedType == BoundedRangeType.bounded;
 
   /* Returns ``true`` if this range is bounded, ``false`` otherwise. */
   proc range.isBounded() param
-    return hasLowBound() && hasHighBound();
+    return boundedType == BoundedRangeType.bounded;
 
   /* This used to control whether or not the
      :proc:`range.low`/:proc:`range.high` queries returned aligned
@@ -876,6 +876,10 @@ module ChapelRange {
     if ! isBoundedRange(this) then
       compilerError("'size' is not defined on unbounded ranges");
 
+    if chpl__singleValIdxType(idxType) {
+      if _low > _high then return 0;
+    }
+
     return sizeAsHelp(t);
   }
 
@@ -883,10 +887,6 @@ module ChapelRange {
   proc range.sizeAsHelp(type t: integral,
                         al = this.alignedLowAsInt,
                         ah = this.alignedHighAsInt): t {
-    if chpl__singleValIdxType(idxType) {
-      if _low > _high then return 0;
-    }
-
     // assumes alignedHigh/alignedLow always work, even for an empty range
     const ah = this.alignedHighAsInt,
           al = this.alignedLowAsInt;
@@ -905,6 +905,10 @@ module ChapelRange {
 
   pragma "no doc"
   proc range.impliedSizeAs(type t: integral): t {
+    if chpl__singleValIdxType(idxType) {
+      if _low > _high then return 0;
+    }
+
     if !isBoundedRange(this) && isFiniteIdxType(idxType) {
       return sizeAsHelp(t,
                         this.impliedAlignedLowAsInt,
