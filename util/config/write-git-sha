@@ -24,7 +24,8 @@ dont_build_sha = False if os.getenv('CHPL_DONT_BUILD_SHA') is None else True
 if dont_build_sha:
     git_sha = "xxxxxxxxxx"
 else:
-    git_sha = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).strip()
+    git_sha = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'],
+                                      universal_newlines=True).strip()
 
 if not os.path.exists(args.location):
     os.makedirs(args.location)
