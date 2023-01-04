@@ -21,20 +21,19 @@ config param readSize = 65536,
              linesPerChunk = 8192,
              n = 0;
 
-var pairCmpl: [0..<65536] uint(16);
+var pairCmpl: [0..<join(cmpl.size, cmpl.size)] uint(16);
 
 var stdinBin  = openfd(0).reader(iokind.native, locking=false,
                                  hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
     stdoutBin = openfd(1).writer(iokind.native, locking=false,
                                  hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
 
-// TODO: Shift by just 7?
 inline proc join(i:uint(16), j) {
   return i << 8 | j;
 }
 
 proc main(args: [] string) {
-  const offs = eol..<cmpl.size:int(16);
+  const offs = eol..<cmpl.size;
   forall i in offs do
     forall j in offs do
       pairCmpl[join(i,j)] = join(cmpl(j), cmpl(i));
