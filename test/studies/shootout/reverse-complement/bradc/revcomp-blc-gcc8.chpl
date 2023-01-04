@@ -16,7 +16,6 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
              //    ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
              //    ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
 
-// TODO: config param?
 config param readSize = 65536,
              linesPerChunk = 8192,
              n = 0;
@@ -63,7 +62,6 @@ proc main(args: [] string) {
 
 //          stderr.writeln("Shifting from ", seqStart..#(bytesRead-prevBytes), " to ",
 //                  0..<bytesRead-prevBytes);
-// TODO: Try a memmove()-style logic for shifting?
         bytesRead -= prevBytes+1;
         // abstract into a mem-move type of routine?
         serial (seqStart < bytesRead) do
@@ -91,8 +89,6 @@ proc main(args: [] string) {
   }
 }
 
-config const numTasks = here.maxTaskPar;
-
 proc revcomp(seq, size) {
 //  return;
   var headerSize = 0;
@@ -102,7 +98,7 @@ proc revcomp(seq, size) {
   stdoutBin.write(seq[0..headerSize]);
   //  stdoutBin.write(seq[headerSize+1..<size]);
   var sharedCharsLeft, writtenChars: atomic int = size-(headerSize+1);
-  coforall tid in 0..<numTasks { // TODO: update to here.maxTaskPar {
+  coforall tid in 0..<here.maxTaskPar {
     var chunkToWrite: [0..<linesPerChunk*cols] uint(8);
     do {
       var charsLeft = sharedCharsLeft.read(),
@@ -110,16 +106,12 @@ proc revcomp(seq, size) {
       do {
         if charsLeft <= 0 then
           break;
-//        writeln((charsLeft, linesPerChunk*cols));
+//        stderr.writeln((charsLeft, linesPerChunk*cols));
 //        stderr.writeln(tid, "trying to save ", charsLeft-chunkSize);
       } while !sharedCharsLeft.compareExchange(charsLeft, charsLeft-chunkSize);
 //      writeln("Help: ", (charsLeft, sharedCharsLeft.read()));
 
-      // TODO: This seems sloppy... is it because the compareExchange updates
-      // charsLeft even when it succeeds?
-//      charsLeft += chunkSize;
 
-// TODO: Is this necessary, or is it guaranteed?
       if charsLeft > 0 {
         const fullLineFrontSpanLength = (charsLeft-1)%cols,
               fullLineRearSpanLength = cols-1-fullLineFrontSpanLength;
@@ -132,8 +124,6 @@ proc revcomp(seq, size) {
           chunkLeft = chunkSize;
 //      stderr.writeln(tid, ": ", (fullLineFrontSpanLength, fullLineRearSpanLength, chunkSize, lastProc));
 
-// TODO: Is this necessary, or is it guaranteed?
-      if chunkLeft {
         var chunkPos = 0;
 
         if (!fullLineRearSpanLength) {
@@ -165,14 +155,11 @@ proc revcomp(seq, size) {
           revcompHelp(chunkPos, lastProc, fullLineFrontSpanLength+1, chunkToWrite, seq);
         }
 
-        // TODO: Need to coordinate here
         writtenChars.waitFor(charsLeft);
         stdoutBin.write(chunkToWrite[0..<chunkSize]);
         writtenChars.write(charsLeft-chunkSize);
       }
-      }
-    } while charsLeft > 0;  // TODO: This is part of the sloppiness mentioned above
-//    } while charsLeft - chunkSize > 0;  // TODO: This is part of the sloppiness mentioned above
+    } while charsLeft > 0;
   }
 }
 
