@@ -4520,8 +4520,7 @@ inline proc _channel._readInner(ref args ...?k):void throws {
 inline proc _channel.read(ref args ...?k):bool throws {
   try {
     this._readInner((...args));
-  } catch err: SystemError {
-    if err.err != EEOF then throw err;
+  } catch err: EofError {
     return false;
   }
 
@@ -4552,8 +4551,7 @@ proc _channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
         _readOne(kind, args[i], origLocale);
       }
     }
-  } catch err: SystemError {
-    if err.err != EEOF then throw err;
+  } catch err: EofError {
     return false;
   }
 
@@ -4718,8 +4716,7 @@ proc _channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
       this._set_styleInternal(myStyle);
       try _readOne(iokind.dynamic, arg, origLocale);
     }
-  } catch err: SystemError {
-    if err.err != EEOF then throw err;
+  } catch err: EofError {
     return false;
   }
 
@@ -8567,8 +8564,7 @@ proc _channel.readf(fmtStr:?t, ref args ...?k): bool throws
         // revert
         qio_channel_revert_unlocked(_channel_internal);
       }
-    } catch thrownError: SystemError {
-      if thrownError.err != EEOF then throw thrownError;
+    } catch thrownError: EofError {
       err = EEOF;
     }
   }
