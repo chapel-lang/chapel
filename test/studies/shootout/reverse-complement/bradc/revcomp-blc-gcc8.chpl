@@ -193,46 +193,12 @@ proc revcomp(seq, size) {
   }
 
 
-proc findSep(chunk: [?inds], low=inds.low, count=inds.size) {
+proc findSep(chunk: [?inds], low, count) {
   for i in low..#count {
     if chunk[i] == '>'.toByte() && i != inds.low {
-//      writeln("Found sep at ", i);
+//      stderr.writeln("Found sep at ", i);
       return i;
     }
   }
   return 0;
 }
-
-/*
-proc findSep(chunk: [?inds]) {
-  for i in inds {
-    if chunk[i] == '>'.toByte() && i != inds.low {
-//      writeln("Found sep at ", i);
-      return i;
-    }
-  }
-  return 0;
-}
-*/
-
-/*
-proc revcomp(buf, lo, hi) {
-//  return;
-  // shift all of the linefeeds into the right places
-  const len = hi - lo + 1,
-        off = (len - 1) % cols,
-        shift = cols - off - 1;
-
-  if off {
-    forall m in lo+off..<hi by cols {
-      for i in m..#shift by -1 do
-        buf[i+1] = buf[i];
-      buf[m] = eol;
-    }
-  }
-
-  // walk from both ends of the sequence, complementing and swapping
-  forall (i,j) in zip(lo..#(len/2), ..<hi by -1) do
-    (buf[i], buf[j]) = (cmpl[buf[j]], cmpl[buf[i]]);
-}
-*/
