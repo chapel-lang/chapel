@@ -1086,14 +1086,26 @@ module OS {
     simply the matching :class:`SystemError` subtype if this is not an IO error.
   */
   pragma "no doc"
-  proc createSystemOrIoError(err: errorCode, details: string = "") {
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc createSystemOrIoError(err: errorCode, details: string = ""): Error {
     select err {
-      when EEOF do return new owned EofError(details);
-      when ESHORT do return new owned UnexpectedEofError(details);
-      when EFORMAT do return new owned BadFormatError(details);
-      when EIO do return new owned IoError(details);
+      when EEOF do return new owned EofError(details, err);
+      when ESHORT do return new owned UnexpectedEofError(details, err);
+      when EFORMAT do return new owned BadFormatError(details, err);
+      when EIO do return new owned IoError(err, details);
       otherwise do return createSystemError(err, details);
     }
+  }
+
+  /*
+    Version of createSystemOrIoError accepting an integer error code.
+  */
+  pragma "no doc"
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc createSystemOrIoError(err: int, details: string = ""): Error {
+    return createSystemOrIoError(err:errorCode, details);
   }
 
   /*
@@ -1312,7 +1324,7 @@ module OS {
      Its subclasses use Chapel-specific error codes to provide more specific
      error information than we could with just EIO.
   */
-  class IoError {
+  class IoError : Error {
     var err: errorCode;
     var details: string;
 
@@ -1321,7 +1333,7 @@ module OS {
       this.details = details;
     }
 
-    proc message() {
+    override proc message() {
       var strerror_err: c_int = 0;
       var errstr = sys_strerror_syserr_str(err, strerror_err);
       var err_msg: string;
@@ -1432,7 +1444,7 @@ module OS {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
       var   details    = msg + " with path " + quotedpath +
                          " offset " + offset:string;
-      throw createSystemError(error, details);
+      throw createSystemOrIoError(error, details);
     }
   }
 
@@ -1444,7 +1456,7 @@ module OS {
     if error {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
       var   details    = msg + " with path " + quotedpath;
-      throw createSystemError(error, details);
+      throw createSystemOrIoError(error, details);
     }
   }
 
@@ -1453,7 +1465,7 @@ module OS {
   pragma "always propagate line file info"
   proc ioerror(error:errorCode, msg:string) throws
   {
-    if error then throw createSystemError(error, msg);
+    if error then throw createSystemOrIoError(error, msg);
   }
 
   /* Create and throw an :class:`IoError` and include a formatted message
@@ -1473,7 +1485,7 @@ module OS {
     const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
     const details    = errstr + " " + msg + " with path " + quotedpath +
                        " offset " + offset:string;
-    throw createSystemError(EIO:errorCode, details);
+    throw createSystemOrIoError(EIO:errorCode, details);
   }
 
   /* Convert a errorCode code to a human-readable string describing the error.

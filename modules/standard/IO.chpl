@@ -736,7 +736,7 @@ proc stringStyleWithLengthInternal(lengthBytes:int) throws {
     when 4 do x = iostringstyleInternal.len4b_data;
     when 8 do x = iostringstyleInternal.len8b_data;
     otherwise
-      throw createSystemError(EINVAL,
+      throw createSystemOrIoError(EINVAL,
                               "Invalid string length prefix " +
                               lengthBytes:string);
   }
@@ -1560,9 +1560,9 @@ operator file.=(ref ret:file, x:file) {
 pragma "no doc"
 proc file.checkAssumingLocal() throws {
   if is_c_nil(_file_internal) then
-    throw createSystemError(EBADF, "Operation attempted on an invalid file");
+    throw createSystemOrIoError(EBADF, "Operation attempted on an invalid file");
   if !qio_file_isopen(_file_internal) then
-    throw createSystemError(EBADF, "Operation attempted on closed file");
+    throw createSystemOrIoError(EBADF, "Operation attempted on closed file");
 }
 
 /* Throw an error if `this` is not a valid representation of an OS file.
@@ -1643,7 +1643,7 @@ proc file._style:iostyleInternal throws {
  */
 proc file.close() throws {
   if is_c_nil(_file_internal) then
-    throw createSystemError(EBADF, "Operation attempted on an invalid file");
+    throw createSystemOrIoError(EBADF, "Operation attempted on an invalid file");
 
   var err:errorCode = 0;
   on this._home {
@@ -2560,7 +2560,7 @@ inline proc _channel.lock() throws {
   var err:errorCode = 0;
 
   if is_c_nil(_channel_internal) then
-    throw createSystemError(EINVAL, "Operation attempted on an invalid channel");
+    throw createSystemOrIoError(EINVAL, "Operation attempted on an invalid channel");
 
   if locking {
     on this._home {
@@ -2677,7 +2677,7 @@ proc _channel.mark() throws where this.locking == false {
   const err = qio_channel_mark(false, _channel_internal);
 
   if err then
-    throw createSystemError(err);
+    throw createSystemOrIoError(err);
 
   return offset;
 }
@@ -2750,13 +2750,13 @@ proc _channel.seek(region: range(?)) throws where (!region.hasHighBound() ||
                                    region.high + 1);
 
       if err then
-        throw createSystemError(err);
+        throw createSystemOrIoError(err);
 
     } else {
       const err = qio_channel_seek(_channel_internal, region.low, max(int(64)));
 
       if err then
-        throw createSystemError(err);
+        throw createSystemOrIoError(err);
     }
   }
 }
@@ -2771,7 +2771,7 @@ proc _channel.seek(region: range(?)) throws where (region.hasHighBound() &&
     const err = qio_channel_seek(_channel_internal, region.low, region.high);
 
     if err then
-      throw createSystemError(err);
+      throw createSystemOrIoError(err);
   }
 }
 
@@ -2811,7 +2811,7 @@ proc _channel._mark() throws {
   const err = qio_channel_mark(false, _channel_internal);
 
   if err then
-    throw createSystemError(err);
+    throw createSystemOrIoError(err);
 
   return offset;
 }
@@ -5397,7 +5397,7 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
   e = try qio_channel_write(false, this._channel_internal, ptr[0], numBytesToWrite:c_ssize_t, numWritten);
 
   if (e != 0) {
-    throw createSystemError(e);
+    throw createSystemOrIoError(e);
   }
 }
 
@@ -5422,7 +5422,7 @@ proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
   e = try qio_channel_write(false, this._channel_internal, byte_ptr[0], numBytes:c_ssize_t, numWritten);
 
   if (e != 0) {
-    throw createSystemError(e);
+    throw createSystemOrIoError(e);
   }
 }
 
@@ -5450,7 +5450,7 @@ proc _channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) 
     }
   }
   if (e != 0) {
-    throw createSystemError(e);
+    throw createSystemOrIoError(e);
   }
 }
 
@@ -5491,7 +5491,7 @@ proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
   if size > s.size then
     throw new owned IllegalArgumentError("size", "cannot exceed length of provided string");
   if s.hasEscapes then
-    throw createSystemError(EILSEQ, "illegal use of escaped string characters in 'writeBinary'");
+    throw createSystemOrIoError(EILSEQ, "illegal use of escaped string characters in 'writeBinary'");
 
   on this._home {
     // count the number of bytes to write
@@ -5517,7 +5517,7 @@ proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
     );
 
     if e != 0 then
-      throw createSystemError(e);
+      throw createSystemOrIoError(e);
   }
 }
 
@@ -5548,7 +5548,7 @@ proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
     );
 
     if e != 0 then
-      throw createSystemError(e);
+      throw createSystemOrIoError(e);
   }
 }
 
@@ -5589,7 +5589,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
       if e == EEOF {
         throw new owned UnexpectedEofError("Unable to write entire array of values in 'writeBinary'");
       } else if e != 0 {
-        throw createSystemError(e);
+        throw createSystemOrIoError(e);
       }
     }
   }
@@ -5651,7 +5651,7 @@ proc _channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.nativ
   if (e == EEOF) {
     return false;
   } else if (e != 0) {
-    throw createSystemError(e);
+    throw createSystemOrIoError(e);
   }
   return true;
 }
@@ -5721,7 +5721,7 @@ proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
   if e == EEOF {
     return didRead;
   } else if e != 0 {
-    throw createSystemError(e);
+    throw createSystemOrIoError(e);
   }
   return true;
 }
@@ -5759,7 +5759,7 @@ proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
   if e == EEOF {
     return didRead;
   } else if e != 0 {
-    throw createSystemError(e);
+    throw createSystemOrIoError(e);
   }
   return true;
 }
@@ -5812,7 +5812,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): b
           throw new owned UnexpectedEofError("Unable to read entire array of values in 'readBinary'");
         }
       } else if e != 0 {
-        throw createSystemError(e);
+        throw createSystemOrIoError(e);
       } else {
         readSomething = true;
       }
@@ -5887,7 +5887,7 @@ proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
 
   e = qio_channel_read(false, this._channel_internal, ptr[0], numBytesToRead: c_ssize_t, numRead);
 
-  if e != 0 && e != EEOF then throw createSystemError(e);
+  if e != 0 && e != EEOF then throw createSystemOrIoError(e);
   return numRead;
 }
 
@@ -5911,7 +5911,7 @@ proc fileReader.readBinary(ptr: c_void_ptr, maxBytes: int): int throws {
 
   e = qio_channel_read(false, this._channel_internal, bytes_ptr[0], maxBytes: c_ssize_t, numRead);
 
-  if e != 0 && e != EEOF then throw createSystemError(e);
+  if e != 0 && e != EEOF then throw createSystemOrIoError(e);
   return numRead;
 }
 
@@ -6171,7 +6171,7 @@ proc _channel.close() throws {
   var err:errorCode = 0;
 
   if is_c_nil(_channel_internal) then
-    throw createSystemError(EINVAL, "cannot close invalid channel");
+    throw createSystemOrIoError(EINVAL, "cannot close invalid channel");
 
   on this._home {
     err = qio_channel_close(locking, _channel_internal);

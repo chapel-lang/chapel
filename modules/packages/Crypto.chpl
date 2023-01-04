@@ -905,7 +905,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     var retErrCode: c_int;
     retErrCode = RAND_bytes(c_ptrTo(buff): c_ptr(c_uchar), buffLen: c_int);
     if (!retErrCode) {
-      throw createSystemError(retErrCode);
+      throw createSystemOrIoError(retErrCode);
     }
     return buff;
   }

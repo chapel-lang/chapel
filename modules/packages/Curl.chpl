@@ -178,12 +178,12 @@ module Curl {
     use CurlQioIntegration;
 
     if ch._home != here {
-      throw createSystemError(EINVAL, "getCurlHandle only functions with local channels");
+      throw createSystemOrIoError(EINVAL, "getCurlHandle only functions with local channels");
     }
 
     var plugin = ch.channelPlugin():CurlChannel?;
     if plugin == nil then
-      throw createSystemError(EINVAL, "getCurlHandle called on a non-curl channel");
+      throw createSystemOrIoError(EINVAL, "getCurlHandle called on a non-curl channel");
 
     var curl = plugin!.curl;
     return curl;
@@ -206,13 +206,13 @@ module Curl {
     var err:CURLcode = CURLE_OK;
 
     if (arg.type == slist) && (arg._home != ch._home) {
-      throw createSystemError(EINVAL, "in channel.setopt(): slist, and curl handle do not reside on the same locale");
+      throw createSystemOrIoError(EINVAL, "in channel.setopt(): slist, and curl handle do not reside on the same locale");
     }
 
     on ch._home {
       var plugin = ch.channelPlugin():CurlChannel?;
       if plugin == nil then
-        throw createSystemError(EINVAL, "in channel.setopt(): not a curl channel");
+        throw createSystemOrIoError(EINVAL, "in channel.setopt(): not a curl channel");
 
       var curl = plugin!.curl;
       err = setopt(curl, opt, arg);

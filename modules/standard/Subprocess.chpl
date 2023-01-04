@@ -270,7 +270,7 @@ module Subprocess {
     proc stdin throws {
       try _throw_on_launch_error();
       if stdin_pipe == false {
-        throw createSystemError(
+        throw createSystemOrIoError(
             EINVAL, "subprocess was not configured with a stdin pipe");
       }
       return stdin_channel;
@@ -286,7 +286,7 @@ module Subprocess {
     proc stdout throws {
       try _throw_on_launch_error();
       if stdout_pipe == false {
-        throw createSystemError(
+        throw createSystemOrIoError(
             EINVAL, "subprocess was not configured with a stdout pipe");
       }
       return stdout_channel;
@@ -302,7 +302,7 @@ module Subprocess {
     proc stderr throws {
       try _throw_on_launch_error();
       if stderr_pipe == false {
-        throw createSystemError(
+        throw createSystemOrIoError(
             EINVAL, "subprocess was not configured with a stderr pipe");
       }
       return stderr_channel;
@@ -508,7 +508,7 @@ module Subprocess {
           if sys_getenv(c"PE_PRODUCT_LIST", env_c_str)==1 {
             env_str = createStringWithNewBuffer(env_c_str);
             if env_str.count("HUGETLB") > 0 then
-              throw createSystemError(
+              throw createSystemOrIoError(
                   EINVAL,
                   "spawn with more than 1 locale for CHPL_COMM=ugni with hugepages currently requires stdin, stdout, stderr=pipeStyle.forward");
           }
