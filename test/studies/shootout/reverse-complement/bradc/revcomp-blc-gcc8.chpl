@@ -59,7 +59,6 @@ proc main(args: [] string) {
         const prevBytes = seqStart - seqSize;
         seqSize += prevBytes;
 
-        if seqSize {   // TODO: Is this ever not true?
           revcomp(seq, seqSize);
 
 //          stderr.writeln("Shifting from ", seqStart..#(bytesRead-prevBytes), " to ",
@@ -69,7 +68,6 @@ proc main(args: [] string) {
           }
 
           seqSize = 0;
-        }
 
         seqSize += 1;
         bytesRead -= prevBytes+1;
