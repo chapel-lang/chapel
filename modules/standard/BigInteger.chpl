@@ -1156,7 +1156,8 @@ module BigInteger {
       mpz_tdiv_r(c.mpz, a.mpz, b.mpz);
     } else {
       const a_ = a;
-      mpz_tdiv_r(c.mpz, a_.mpz, b.mpz);
+      const b_ = b;
+      mpz_tdiv_r(c.mpz, a_.mpz, b_.mpz);
     }
 
     return c;
