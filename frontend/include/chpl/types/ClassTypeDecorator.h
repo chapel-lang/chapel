@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,8 +22,8 @@
 
 #include "chpl/util/hash.h"
 #include "chpl/framework/stringify-functions.h"
+#include "chpl/util/assertions.h"
 
-#include <cassert>
 #include <utility>
 
 namespace chpl {
@@ -65,7 +65,7 @@ class ClassTypeDecorator final {
       iterate over the possible decorators. */
   static
   ClassTypeDecoratorEnum getIthDecorator(int i) {
-    assert(0 <= i && i < NUM_DECORATORS);
+    CHPL_ASSERT(0 <= i && i < NUM_DECORATORS);
     switch (i) {
       case 0:  return BORROWED;
       case 1:  return BORROWED_NONNIL;
@@ -80,7 +80,7 @@ class ClassTypeDecorator final {
       case 10: return GENERIC_NONNIL;
       case 11: return GENERIC_NILABLE;
     }
-    assert(false && "case not handled");
+    CHPL_ASSERT(false && "case not handled");
     return BORROWED_NONNIL;
   }
   static

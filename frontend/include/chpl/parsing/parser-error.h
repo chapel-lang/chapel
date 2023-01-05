@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,7 +44,7 @@
   CHPL_PARSER_REPORT(P_CONTEXT__, ParseSyntax, LOC__, MSG__)
 
 /**
-  Helper macro(s) to report errors from the lexer, including retrieving the
+  Helper macros to report errors from the lexer, including retrieving the
   global Context and lexer-specific location adjustments.
 
   Errors reported via this are forwarded on to parser error reporting.
@@ -71,5 +71,12 @@
     if (MOVE_TO_END__) loc = pContext->makeLocationAtLast(loc);               \
     CHPL_PARSER_REPORT(pContext, NAME__, loc, ##EINFO__);                     \
   }
+
+/**
+ * Helper macro to report errors in post-parse-checks to the Builder
+ */
+#define CHPL_POSTPARSE_REPORT(BUILDER__, NAME__, NODE__, EINFO__...) \
+  (BUILDER__).addError(                                                \
+      CHPL_GET_ERROR((BUILDER__).context(), NAME__, NODE__->id(), EINFO__))
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -77,7 +77,7 @@ class RecordType final : public CompositeType {
    */
   const RecordType* instantiatedFrom() const {
     const CompositeType* ret = instantiatedFromCompositeType();
-    assert(ret == nullptr || ret->tag() == typetags::RecordType);
+    CHPL_ASSERT(ret == nullptr || ret->tag() == typetags::RecordType);
     return (const RecordType*) ret;
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -48,7 +48,7 @@ class IndexableLoop : public Loop {
       withClauseChildNum_(withClauseChildNum),
       isExpressionLevel_(isExpressionLevel) {
 
-    assert(iterandChildNum >= 0);
+    CHPL_ASSERT(iterandChildNum >= 0);
   }
 
   bool indexableLoopContentsMatchInner(const IndexableLoop* other) const {
@@ -77,6 +77,9 @@ class IndexableLoop : public Loop {
     loopMarkUniqueStringsInner(context);
   }
 
+  virtual void dumpFieldsInner(const DumpSettings& s) const override;
+  virtual std::string dumpChildLabelInner(int i) const override;
+
   int8_t indexChildNum_;
   int8_t iterandChildNum_;
   int8_t withClauseChildNum_;
@@ -92,7 +95,7 @@ class IndexableLoop : public Loop {
   const Decl* index() const {
     if (indexChildNum_ < 0) return nullptr;
     const AstNode* ast = child(indexChildNum_);
-    assert(ast->isDecl());
+    CHPL_ASSERT(ast->isDecl());
     return (const Decl*) ast;
   }
 
@@ -112,7 +115,7 @@ class IndexableLoop : public Loop {
   const WithClause* withClause() const {
     if (withClauseChildNum_ < 0) return nullptr;
     auto ret = child(withClauseChildNum_);
-    assert(ret->isWithClause());
+    CHPL_ASSERT(ret->isWithClause());
     return (const WithClause*)ret;
   }
 

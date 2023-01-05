@@ -63,6 +63,7 @@ Language Support
 
    Reflection <standard/Reflection>
    Types <standard/Types>
+   MemMove <standard/MemMove>
 
 
 Math/Numerical

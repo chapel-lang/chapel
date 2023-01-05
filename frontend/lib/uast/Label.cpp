@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,9 +25,13 @@ namespace chpl {
 namespace uast {
 
 
+void Label::dumpFieldsInner(const DumpSettings& s) const {
+  s.out << " " << name_.str();
+}
+
 owned<Label> Label::build(Builder* builder, Location loc, UniqueString name,
                           owned<Loop> loop) {
-  assert(loop.get() != nullptr);
+  CHPL_ASSERT(loop.get() != nullptr);
   AstList lst;
 
   lst.push_back(std::move(loop));

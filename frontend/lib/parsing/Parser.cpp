@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,6 +32,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <tuple>
 
 #define DEBUG_PARSER 0
 
@@ -93,8 +94,8 @@ BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
 
   FILE* fp = openfile(path, "r", fileError);
   if (fp == NULL) {
-    builder->addError(
-        ErrorParseErr::get(this->context(), {Location(), fileError}));
+    builder->addError(ErrorParseErr::get(
+        this->context(), std::make_tuple(Location(), fileError)));
     return builder->result();
   }
 
@@ -165,8 +166,8 @@ BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
   yychpl_lex_destroy(parserContext.scanner);
 
   if (closefile(fp, path, fileError)) {
-    builder->addError(
-        ErrorParseErr::get(this->context(), {Location(), fileError}));
+    builder->addError(ErrorParseErr::get(
+        this->context(), std::make_tuple(Location(), fileError)));
   }
 
   updateParseResult(&parserContext);

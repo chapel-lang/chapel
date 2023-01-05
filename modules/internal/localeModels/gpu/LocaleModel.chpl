@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -295,9 +295,9 @@ module LocaleModel {
       }
       _node_id = chpl_nodeID: int;
 
-      extern proc cudaGetDeviceCount(ref n: int);
+      extern proc chpl_gpu_get_device_count(ref n: int);
       var nDevices: int;
-      cudaGetDeviceCount(nDevices);
+      chpl_gpu_get_device_count(nDevices);
 
       //number of GPU devices on a node
       numSublocales = nDevices;
@@ -317,9 +317,9 @@ module LocaleModel {
 
       _node_id = chpl_nodeID: int;
 
-      extern proc cudaGetDeviceCount(ref n: int);
+      extern proc chpl_gpu_get_device_count(ref n: int);
       var nDevices: int;
-      cudaGetDeviceCount(nDevices);
+      chpl_gpu_get_device_count(nDevices);
 
       //1 cpu and number of GPU devices on a node
       numSublocales = nDevices;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -50,7 +50,8 @@ class Interface final : public NamedDecl {
   int interfaceFormalsChildNum_;
   int numInterfaceFormals_;
   int bodyChildNum_;
-  int numBodyStmts_;
+  int numBodyStmts_; // TODO is this field necessary?
+                     // isn't the body always the last thing here?
   bool isFormalListExplicit_;
 
   Interface(AstList children, int attributesChildNum,
@@ -89,6 +90,9 @@ class Interface final : public NamedDecl {
   void markUniqueStringsInner(Context* context) const override {
     namedDeclMarkUniqueStringsInner(context);
   }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
 
  public:
   ~Interface() override = default;
@@ -144,9 +148,9 @@ class Interface final : public NamedDecl {
     Return the i'th interface formal.
   */
   const AstNode* formal(int i) const {
-    assert(i >= 0 && i < numBodyStmts_);
+    CHPL_ASSERT(i >= 0 && i < numBodyStmts_);
     auto ret = child(i + interfaceFormalsChildNum_);
-    assert(ret);
+    CHPL_ASSERT(ret);
     return ret;
   }
 
@@ -170,9 +174,9 @@ class Interface final : public NamedDecl {
     Get the i'th statement in the body of this interface.
   */
   const AstNode* stmt(int i) const {
-    assert(i >= 0 && i < numBodyStmts_);
+    CHPL_ASSERT(i >= 0 && i < numBodyStmts_);
     auto ret = child(i + bodyChildNum_);
-    assert(ret);
+    CHPL_ASSERT(ret);
     return ret;
   }
 

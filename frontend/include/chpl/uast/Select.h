@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -59,6 +59,8 @@ class Select final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
+  std::string dumpChildLabelInner(int i) const override;
+
   // The position of these never change.
   static const int8_t exprChildNum_ = 0;
   static const int8_t whenStmtStartChildNum_ = 1;
@@ -93,9 +95,9 @@ class Select final : public AstNode {
     Return the i'th when statement in this select statement.
   */
   const When* whenStmt(int i) const {
-    assert(i >= 0 && i < numWhenStmts_);
+    CHPL_ASSERT(i >= 0 && i < numWhenStmts_);
     auto ret = child(whenStmtStartChildNum_ + i);
-    assert(ret->isWhen());
+    CHPL_ASSERT(ret->isWhen());
     return (const When*)ret;
   }
 

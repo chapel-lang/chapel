@@ -235,12 +235,7 @@ if example == 0 || example == 4 {
   w.writeln(" is ");
   w.writeln(" a test ");
 
-// We only write the UTF-8 characters if unicode is supported,
-// and that depends on the current unix locale environment
-// (e.g. setting the environment variable ``LC_ALL=C`` will disable unicode support).
-// Note that since UTF-8 strings are C strings, this should work even in a C locale.
-// We don't do it all the time for testing sanity reasons.
-  if unicodeSupported() then w.writeln(" of UTF-8 Euro Sign: €");
+  w.writeln(" of UTF-8 Euro Sign: €");
 
   // flush buffers, close the channel.
   w.close();

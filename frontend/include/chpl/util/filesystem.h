@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -90,6 +90,12 @@ std::error_code makeDir(std::string dirpath, bool makeParents=false);
 */
 std::string getExecutablePath(const char* argv0, void* MainExecAddr);
 
+
+/*
+  Compare two paths to see if they point to the same filesystem object.
+  Utilizes llvm::sys::fs:equivalent to do the comparison.
+*/
+bool isSameFile(const char* path1, const char* path2);
 
 
 } // end namespace chpl

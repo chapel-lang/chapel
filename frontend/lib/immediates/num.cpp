@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +24,7 @@
 
 #include "chpl/types/Param.h"
 #include "chpl/util/string-escapes.h"
+#include "chpl/util/assertions.h"
 
 #include <cfloat>
 #include <cinttypes>
@@ -104,7 +105,7 @@ snprint_imm(char *str, size_t max, const Immediate &imm) {
           res = snprintf(str, max, "%u", (unsigned)imm.v_uint32); break;
         case INT_SIZE_64:
           res = snprintf(str, max, "%" PRIu64, imm.v_uint64); break;
-        default: assert(false && "Unhandled case in switch statement");
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
       }
       break;
     }
@@ -118,7 +119,7 @@ snprint_imm(char *str, size_t max, const Immediate &imm) {
           res = snprintf(str, max, "%" PRId32, imm.v_int32); break;
         case INT_SIZE_64:
           res = snprintf(str, max, "%" PRId64, imm.v_int64); break;
-        default: assert(false && "Unhandled case in switch statement");
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
       }
       break;
     }
@@ -128,7 +129,7 @@ snprint_imm(char *str, size_t max, const Immediate &imm) {
           res = snprint_float_val(str, max, imm.v_float32, true); break;
         case FLOAT_SIZE_64:
           res = snprint_float_val(str, max, imm.v_float64, true); break;
-        default: assert(false && "Unhandled case in switch statement");
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
       }
       break;
     case NUM_KIND_COMPLEX:
@@ -141,7 +142,7 @@ snprint_imm(char *str, size_t max, const Immediate &imm) {
           res = snprint_complex_val(str, max,
                                     imm.v_complex128.r, imm.v_complex128.i);
           break;
-        default: assert(false && "Unhandled case in switch statement");
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
       }
       break;
     case CONST_KIND_STRING: {
@@ -191,7 +192,7 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
           res = fprintf(fp, "%" PRIu64, imm.v_uint64);
           if (showType) res += fputs(" :uint(64)", fp);
           break;
-        default: assert(false && "Unhandled case in switch statement");
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
       }
       break;
     }
@@ -213,7 +214,7 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
           res = fprintf(fp, "%" PRId64, imm.v_int64);
           if (showType) res += fputs(" :int(64)", fp);
           break;
-        default: assert(false && "Unhandled case in switch statement");
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
       }
       break;
     }
@@ -230,7 +231,7 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
           size = "(64)";
           break;
         }
-        default: assert(false && "Unhandled case in switch statement");
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
       }
       fputs(str, fp);
       if (showType) {
@@ -257,7 +258,7 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
           if (showType) res += fputs(" :complex(128)", fp);
           break;
         }
-        default: assert(false && "Unhandled case in switch statement");
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
       }
       break;
     case CONST_KIND_STRING: {
@@ -272,7 +273,7 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
       // obvious, skip: if (showType) res += fputs(" :string", fp);
       break;
     }
-    default: assert(false && "Unhandled case in switch statement");
+    default: CHPL_ASSERT(false && "Unhandled case in switch statement");
   }
   return res;
 }
@@ -299,7 +300,7 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
               imm->v_uint32 = im1.v_uint32 _op im2.v_uint32; break; \
             case INT_SIZE_64: \
               imm->v_uint64 = im1.v_uint64 _op im2.v_uint64; break; \
-            default: assert(false && "Unhandled case in switch statement"); \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
         } \
@@ -315,7 +316,7 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
               imm->v_int64 = im1.v_int64 _op im2.v_int64; \
               break; \
           } \
-            default: assert(false && "Unhandled case in switch statement"); \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
         } \
@@ -337,7 +338,7 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
               else \
                 imm->v_float64 = im1.v_float64 _op im2.v_float64; \
               break; \
-            default: assert(false && "Unhandled case in switch statement"); \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
         case NUM_KIND_COMPLEX: \
@@ -370,7 +371,7 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
               else \
                 imm->v_complex128.i = im1.v_complex128.i _op im2.v_complex128.i; \
               break; \
-            default: assert(false && "Unhandled case in switch statement"); \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
       }
@@ -380,7 +381,7 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
   type exp = e;                                          \
   type res = 1;                                          \
   if (base == 0 && exp < 0) {                            \
-    assert(false && "0 cannot be raised to a negative power"); \
+    CHPL_ASSERT(false && "0 cannot be raised to a negative power"); \
   } else if (exp < 0) {                                  \
     if (base == 1) {                                     \
       res = 1;                                           \
@@ -448,7 +449,7 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
                 imm->v_uint64 = res;                                     \
                 break;                                                  \
               }                                                         \
-            default: assert(false && "Unhandled case in switch statement"); \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
         } \
@@ -478,12 +479,12 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
                 imm->v_int64 = res;                                     \
                 break;                                                  \
               }                                                         \
-            default: assert(false && "Unhandled case in switch statement"); \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
         } \
         case NUM_KIND_REAL: case NUM_KIND_IMAG: case NUM_KIND_COMPLEX: \
-          assert(false && "Cannot fold ** on floating point values"); \
+          CHPL_ASSERT(false && "Cannot fold ** on floating point values"); \
           break; \
       }
 
@@ -504,7 +505,7 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
               imm->v_bool = im1.v_uint32 _op im2.v_uint32; break; \
             case INT_SIZE_64: \
               imm->v_bool = im1.v_uint64 _op im2.v_uint64; break; \
-            default: assert(false && "Unhandled case in switch statement"); \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
         } \
@@ -518,7 +519,7 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
               imm->v_bool = im1.v_int32 _op im2.v_int32; break; \
             case INT_SIZE_64: \
               imm->v_bool = im1.v_int64 _op im2.v_int64; break; \
-            default: assert(false && "Unhandled case in switch statement"); \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
         } \
@@ -528,7 +529,7 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
               imm->v_bool = im1.v_float32 _op im2.v_float32; break; \
             case FLOAT_SIZE_64: \
               imm->v_bool = im1.v_float64 _op im2.v_float64; break; \
-            default: assert(false && "Unhandled case in switch statement"); \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
         case NUM_KIND_COMPLEX: \
@@ -543,7 +544,7 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
                             _complex_combine \
                             (im1.v_complex128.i _op im2.v_complex128.i); \
               break; \
-            default: assert(false && "Unhandled case in switch statement"); \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
       }
@@ -565,7 +566,7 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
               imm->v_uint32 = im1.v_uint32 _op im2.v_uint32; break; \
             case INT_SIZE_64: \
               imm->v_uint64 = im1.v_uint64 _op im2.v_uint64; break; \
-            default: assert(false && "Unhandled case in switch statement"); \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
         } \
@@ -579,12 +580,12 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
               imm->v_int32 = im1.v_int32 _op im2.v_int32; break; \
             case INT_SIZE_64: \
               imm->v_int64 = im1.v_int64 _op im2.v_int64; break; \
-            default: assert(false && "Unhandled case in switch statement"); \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
         } \
         case NUM_KIND_REAL: case NUM_KIND_IMAG: case NUM_KIND_COMPLEX: \
-          assert(false && "Unhandled case in switch statement"); \
+          CHPL_ASSERT(false && "Unhandled case in switch statement"); \
       }
 
 #define DO_FOLD1(_op) \
@@ -604,7 +605,7 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
               imm->v_uint32 = _op im1.v_uint32; break; \
             case INT_SIZE_64: \
               imm->v_uint64 = _op im1.v_uint64; break; \
-            default: assert(false && "Unhandled case in switch statement"); \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
         } \
@@ -618,7 +619,7 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
               imm->v_int32 = _op im1.v_int32; break; \
             case INT_SIZE_64: \
               imm->v_int64 = _op im1.v_int64; break;        \
-            default: assert(false && "Unhandled case in switch statement"); \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
         } \
@@ -628,7 +629,7 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
               imm->v_float32 = _op im1.v_float32; break; \
             case FLOAT_SIZE_64: \
               imm->v_float64 =  _op im1.v_float64; break; \
-            default: assert(false && "Unhandled case in switch statement"); \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
         case NUM_KIND_COMPLEX: \
@@ -641,7 +642,7 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
               imm->v_complex128.r = _op im1.v_complex128.r; \
               imm->v_complex128.i = _op im1.v_complex128.i; \
               break; \
-            default: assert(false && "Unhandled case in switch statement"); \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
       }
@@ -663,7 +664,7 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
               imm->v_uint32 = _op im1.v_uint32; break; \
             case INT_SIZE_64: \
               imm->v_uint64 = _op im1.v_uint64; break; \
-            default: assert(false && "Unhandled case in switch statement"); \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
         } \
@@ -677,12 +678,12 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
               imm->v_int32 = _op im1.v_int32; break; \
             case INT_SIZE_64: \
               imm->v_int64 = _op im1.v_int64; break;        \
-            default: assert(false && "Unhandled case in switch statement"); \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           } \
           break; \
         } \
         case NUM_KIND_REAL: case NUM_KIND_IMAG: case NUM_KIND_COMPLEX: \
-          assert(false && "Unhandled case in switch statement"); \
+          CHPL_ASSERT(false && "Unhandled case in switch statement"); \
           break; \
       }
 
@@ -730,7 +731,7 @@ fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
       int index2 = num_kind_int_to_float(im2->num_index);
       imm->num_index = max(im1->num_index, index2);
     } else {  // else, im2 must be float?
-      assert(im2->const_kind == NUM_KIND_REAL ||
+      CHPL_ASSERT(im2->const_kind == NUM_KIND_REAL ||
              im2->const_kind == NUM_KIND_IMAG);
       imm->num_index = max(im1->num_index, im2->num_index);
     }
@@ -773,7 +774,7 @@ fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
       int index2 = num_kind_int_to_float(im2->num_index);
       imm->num_index = max(im1->num_index, index2);
     } else {  // else, im2 must be float?
-      assert(im2->const_kind == NUM_KIND_REAL ||
+      CHPL_ASSERT(im2->const_kind == NUM_KIND_REAL ||
              im2->const_kind == NUM_KIND_IMAG);
       imm->num_index = max(im1->num_index, im2->num_index);
     }
@@ -841,7 +842,7 @@ fold_constant(chpl::Context* context, int op,
   if (aim2)
     im2 = *aim2;
   switch (op) {
-    default: assert(false && "fold constant op not supported"); break;
+    default: CHPL_ASSERT(false && "fold constant op not supported"); break;
     case P_prim_mult:
     case P_prim_div:
     case P_prim_mod:
@@ -892,7 +893,7 @@ fold_constant(chpl::Context* context, int op,
     }
   }
   switch (op) {
-    default: assert(false && "fold constant op not supported"); break;
+    default: CHPL_ASSERT(false && "fold constant op not supported"); break;
     case P_prim_mult: DO_FOLD(*, false, false); break;
     case P_prim_div: DO_FOLD(/, false, false); break;
     case P_prim_mod: DO_FOLDI(%); break;
@@ -932,28 +933,28 @@ ImmString istrFromUserUint(chpl::Context* context,
                                           uint64_t i) {
   char s[64];
   if (snprintf(s, sizeof(s), "%llu", (long long unsigned)i) >= (int) sizeof(s))
-    assert(false && "istr buffer overflow");
+    CHPL_ASSERT(false && "istr buffer overflow");
   return ImmString::get(context, s);
 }
 
 ImmString istrFromUserInt(chpl::Context* context, int64_t i) {
   char s[64];
   if (snprintf(s, sizeof(s), "%lld", (long long)i) >= (int) sizeof(s))
-    assert(false && "istr buffer overflow");
+    CHPL_ASSERT(false && "istr buffer overflow");
   return ImmString::get(context, s);
 }
 
 ImmString istrFromUserDouble(chpl::Context* context, double i) {
   char s[64];
   if (snprint_float_val(s, sizeof(s), i, false) >= (int) sizeof(s))
-    assert(false && "istr buffer overflow");
+    CHPL_ASSERT(false && "istr buffer overflow");
   return ImmString::get(context, s);
 }
 
 ImmString istrFromUserImag(chpl::Context* context, double i) {
   char s[64];
   if (snprint_imag_val(s, sizeof(s), i, false) >= (int) sizeof(s))
-    assert(false && "istr buffer overflow");
+    CHPL_ASSERT(false && "istr buffer overflow");
   return ImmString::get(context, s);
 }
 
@@ -961,6 +962,6 @@ ImmString istrFromUserComplex(chpl::Context* context,
                                              double re, double im) {
   char s[140];
   if (snprint_complex_val(s, sizeof(s), re, im) >= (int) sizeof(s))
-    assert(false && "istr buffer overflow");
+    CHPL_ASSERT(false && "istr buffer overflow");
   return ImmString::get(context, s);
 }

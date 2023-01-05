@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -252,6 +252,23 @@ const ResolvedFunction* resolveOnlyCandidate(Context* context,
 const types::QualifiedType& returnType(Context* context,
                                        const TypedFnSignature* sig,
                                        const PoiScope* poiScope);
+
+/**
+  Compute the types for any generic 'out' formal types after instantiation
+  of any other generic arguments.
+
+  'out' formals with concrete type will already have their types
+  represented in the 'sig' passed here (through typedSignatureInitial and
+  potentially instantiateSignature).
+
+  For the generic 'out' formals, their types are inferred from the
+  body of the function.
+
+  The returned TypedFnSignature* will have the inferred out formal types.
+ */
+const TypedFnSignature* inferOutFormals(Context* context,
+                                        const TypedFnSignature* sig,
+                                        const PoiScope* poiScope);
 
 /////// call resolution
 

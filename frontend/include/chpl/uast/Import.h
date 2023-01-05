@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -48,13 +48,13 @@ class Import final : public AstNode {
   Import(AstList children, Decl::Visibility visibility)
     : AstNode(asttags::Import, std::move(children)),
       visibility_(visibility) {
-    assert(numChildren() >= 1);
+    CHPL_ASSERT(numChildren() >= 1);
 
     #ifndef NDEBUG
       for (auto vc : visibilityClauses()) {
         bool acceptable = vc->limitationKind() == VisibilityClause::NONE ||
                           vc->limitationKind() == VisibilityClause::BRACES;
-        assert(acceptable);
+        CHPL_ASSERT(acceptable);
       }
     #endif
   }
@@ -105,7 +105,7 @@ class Import final : public AstNode {
   */
   const VisibilityClause* visibilityClause(int i) const {
     auto ret = this->child(i);
-    assert(ret->isVisibilityClause());
+    CHPL_ASSERT(ret->isVisibilityClause());
     return (const VisibilityClause*)ret;
   }
 

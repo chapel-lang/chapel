@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -407,7 +407,7 @@ checkFunction(FnSymbol* fn) {
   collectMyCallExprs(fn, calls, fn);
   bool isIterator = fn->isIterator();
   bool notInAFunction = !isIterator && (fn->getModule()->initFn == fn);
-  int numVoidReturns = 0, numNonVoidReturns = 0, numYields = 0;
+  int numVoidReturns = 0, numNonVoidReturns = 0;
 
   for_vector(CallExpr, call, calls) {
     if (call->isPrimitive(PRIM_RETURN)) {
@@ -434,8 +434,6 @@ checkFunction(FnSymbol* fn) {
         USR_FATAL_CONT(call, "yield statement is outside an iterator");
       else if (!isIterator)
         USR_FATAL_CONT(call, "yield statement is in a non-iterator function");
-      else
-        numYields++;
     }
   }
 

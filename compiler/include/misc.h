@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -87,10 +87,16 @@
 
 class BaseAST;
 
+enum class GpuCodegenType {
+  GPU_CG_NVIDIA_CUDA,
+  GPU_CG_AMD_HIP,
+};
+
 bool        forceWidePtrsForLocal();
 bool        requireWideReferences();
 bool        requireOutlinedOn();
 bool        usingGpuLocaleModel();
+GpuCodegenType getGpuCodegenType();
 
 const char* cleanFilename(const BaseAST* ast);
 const char* cleanFilename(const char*    name);

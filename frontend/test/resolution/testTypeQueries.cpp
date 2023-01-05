@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -414,6 +414,10 @@ static void test15() {
   auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { type t1; type t2; }
+                  proc R.init(type t1, type t2) {
+                    this.t1 = t1;
+                    this.t2 = t2;
+                  }
                   proc f(a: R(?t, if t == bool then string else int)) {
                     return a;
                   }
@@ -431,6 +435,10 @@ static void test16() {
   std::string setup =
                 R""""(
                   record R { type t1; type t2; }
+                  proc R.init(type t1, type t2) {
+                    this.t1 = t1;
+                    this.t2 = t2;
+                  }
                   proc f(a: R(?t, if t == bool then string else int)...) type {
                     return t;
                   }
@@ -471,6 +479,10 @@ static void test17() {
   std::string setup =
                 R""""(
                   record R { type t1; type t2; }
+                  proc R.init(type t1, type t2) {
+                    this.t1 = t1;
+                    this.t2 = t2;
+                  }
                   proc f(a: R(?t, if t == bool then string else int)...) type {
                     return t;
                   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -74,6 +74,8 @@ class Cobegin final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
+  std::string dumpChildLabelInner(int i) const override;
+
   int8_t withClauseChildNum_;
   int bodyChildNum_;
   int numTaskBodies_;
@@ -94,7 +96,7 @@ class Cobegin final : public AstNode {
   const WithClause* withClause() const {
     if (withClauseChildNum_ < 0) return nullptr;
     auto ret = child(withClauseChildNum_);
-    assert(ret->isWithClause());
+    CHPL_ASSERT(ret->isWithClause());
     return (const WithClause*)ret;
   }
 
@@ -118,7 +120,7 @@ class Cobegin final : public AstNode {
     Return the i'th task body in this.
   */
   const AstNode* taskBody(int i) const {
-    assert(i >= 0 && i < numTaskBodies_);
+    CHPL_ASSERT(i >= 0 && i < numTaskBodies_);
     const AstNode* ast = this->child(i + bodyChildNum_);
     return ast;
   }

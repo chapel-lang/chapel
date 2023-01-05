@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,7 +23,6 @@
 #include "chpl/framework/update-functions.h"
 #include "chpl/util/string-escapes.h"
 
-#include <cassert>
 #include <cstring>
 
 namespace chpl {
@@ -35,7 +34,7 @@ InlinedString InlinedString::buildUsingContextTable(Context* context,
                                                     size_t len) {
   const char* u = context->uniqueCString(s, len);
   // assert that the address returned is even
-  assert( (((uintptr_t)u)&1)==0 );
+  CHPL_ASSERT( (((uintptr_t)u)&1)==0 );
   return InlinedString::buildFromAlignedPtr(u, len);
 }
 
@@ -127,7 +126,7 @@ InlinedString InlinedString::getConcat(Context* context,
                                                     s7, len7, s8, len8,
                                                     s9, len9);
     // assert that the address returned is even
-    assert( (((uintptr_t)u)&1)==0 );
+    CHPL_ASSERT( (((uintptr_t)u)&1)==0 );
     return InlinedString::buildFromAlignedPtr(u, len);
   }
 }

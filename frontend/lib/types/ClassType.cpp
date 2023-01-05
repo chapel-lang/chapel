@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -55,7 +55,7 @@ void ClassType::stringify(std::ostream& ss,
   // compute the manager, if any
   std::string manager;
   if (decorator_.isManaged()) {
-    assert(manager_);
+    CHPL_ASSERT(manager_);
     if (manager_->isAnyOwnedType()) {
       manager = "owned";
     } else if (manager_->isAnySharedType()) {
@@ -76,7 +76,7 @@ void ClassType::stringify(std::ostream& ss,
   ss << " ";
 
   // emit basic class name
-  assert(basicType_);
+  CHPL_ASSERT(basicType_);
   basicType_->stringify(ss, stringKind);
 
   // emit ? if nilable

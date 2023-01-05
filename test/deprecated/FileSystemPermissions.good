@@ -1,0 +1,3 @@
+FileSystemPermissions.chpl:1: warning: 'FileSystem.getMode()' is deprecated, please use 'OS.POSIX.stat()' instead
+FileSystemPermissions.chpl:2: warning: 'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead.
+FileSystemPermissions.chpl:3: warning: 'FileSystem.chmod()' is deprecated. Please use 'OS.POSIX.chmod()' instead

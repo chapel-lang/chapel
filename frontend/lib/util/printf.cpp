@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,9 +17,17 @@
  * limitations under the License.
  */
 #include "chpl/util/printf.h"
-#include <cassert>
+#include "chpl/util/assertions.h"
 
 namespace chpl {
+
+std::string vprintToString(const char* format, ...) {
+  va_list vl;
+  va_start(vl, format);
+  std::string result = vprintToString(format, vl);
+  va_end(vl);
+  return result;
+}
 
 std::string vprintToString(const char* format, va_list vl) {
   // using an argument list after va_end is undefined
@@ -40,7 +48,7 @@ std::string vprintToString(const char* format, va_list vl) {
     // output was truncated, so try again
     size = got+1; // include '\0' terminator
     char* newbuf = (char*) realloc(buf, size);
-    assert(newbuf != nullptr);
+    CHPL_ASSERT(newbuf != nullptr);
     if (newbuf == nullptr) {
       free(buf);
       return "<internal error in saving error>";
@@ -48,7 +56,7 @@ std::string vprintToString(const char* format, va_list vl) {
     buf = newbuf;
     // this call destructively consumes 'vl'
     got = vsnprintf(buf, size, format, vl);
-    assert(got < size);
+    CHPL_ASSERT(got < size);
     if (got >= size) {
       free(buf);
       return "<internal error in saving error>";

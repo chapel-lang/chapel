@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +25,24 @@ namespace chpl {
 namespace uast {
 
 
+void Try::dumpFieldsInner(const DumpSettings& s) const {
+  if (isTryBang_) {
+    s.out << " try!";
+  }
+  if (isExpressionLevel_) {
+    s.out << " expr";
+  }
+}
+
+std::string Try::dumpChildLabelInner(int i) const {
+  if (i == bodyChildNum_) {
+    return "body";
+  } else if (numBodyStmts_ <= i && i < numBodyStmts_ + numHandlers_) {
+    return "handler " + std::to_string(i - numBodyStmts_);
+  }
+  return "";
+}
+
 owned<Try> Try::build(Builder* builder, Location loc,
                       owned<Block> body,
                       AstList catches,
@@ -37,7 +55,7 @@ owned<Try> Try::build(Builder* builder, Location loc,
   lst.push_back(std::move(body));
 
   for (auto& ast : catches) {
-    assert(ast->isCatch());
+    CHPL_ASSERT(ast->isCatch());
     lst.push_back(std::move(ast));
   }
 

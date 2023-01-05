@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -54,6 +54,8 @@
 #include "chpl/uast/all-uast.h"
 #include "chpl/uast/chpl-syntax-printer.h"
 #include "chpl/util/string-escapes.h"
+#include "chpl/framework/compiler-configuration.h"
+#include "chpl/util/assertions.h"
 
 // If this is set then variables/formals will have their "qual" field set
 // now instead of later during resolution.
@@ -221,7 +223,7 @@ struct Converter {
     if (auto linkageName = node->linkageName()) {
       auto linkageStr = linkageName->toStringLiteral();
       INT_ASSERT(linkageStr);
-      auto ret = astr(linkageStr->str());
+      auto ret = astr(linkageStr->value());
       return ret;
     }
 
@@ -936,7 +938,7 @@ struct Converter {
 
     Expr* one = toExpr(convertAST(node->symbol()));
     auto renameIdent = node->rename()->toIdentifier();
-    assert(renameIdent);
+    CHPL_ASSERT(renameIdent);
     Expr* two = new UnresolvedSymExpr(renameIdent->name().c_str());
     return std::pair<Expr*, Expr*>(one, two);
   }
@@ -1626,18 +1628,19 @@ struct Converter {
     bool maybeArrayType = false;
     bool zippered = node->iterand()->isZip();
 
-    // Unpack things differently if body is a conditional.
-    if (auto origCond = node->stmt(0)->toConditional()) {
-      INT_ASSERT(origCond->numThenStmts() == 1);
-      INT_ASSERT(!origCond->hasElseBlock());
-      expr = singleExprFromStmts(origCond->thenStmts());
-      cond = toExpr(convertAST(origCond->condition()));
-      INT_ASSERT(cond);
-    } else {
-      expr = singleExprFromStmts(node->stmts());
+    // An 'if-expr' without an else is special pattern for the builder.
+    if (auto noElseCond = node->stmt(0)->toConditional()) {
+      if (!noElseCond->hasElseBlock()) {
+        expr = singleExprFromStmts(noElseCond->thenStmts());
+        cond = toExpr(convertAST(noElseCond->condition()));
+        INT_ASSERT(cond);
+      }
     }
 
-    INT_ASSERT(expr != nullptr);
+    if (!expr) {
+      INT_ASSERT(!cond);
+      expr = singleExprFromStmts(node->stmts());
+    }
 
     return buildForallLoopExpr(indices, iteratorExpr, expr, cond,
                                maybeArrayType,
@@ -1837,7 +1840,7 @@ struct Converter {
 
   /// StringLikeLiterals ///
   Expr* visit(const uast::BytesLiteral* node) {
-    std::string quoted = escapeStringC(node->str().str());
+    std::string quoted = escapeStringC(node->value().str());
     SymExpr* se = buildBytesLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate);
@@ -1847,7 +1850,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::CStringLiteral* node) {
-    std::string quoted = escapeStringC(node->str().str());
+    std::string quoted = escapeStringC(node->value().str());
     SymExpr* se = buildCStringLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate);
@@ -1858,7 +1861,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::StringLiteral* node) {
-    std::string quoted = escapeStringC(node->str().str());
+    std::string quoted = escapeStringC(node->value().str());
     SymExpr* se = buildStringLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate);
@@ -2959,7 +2962,7 @@ struct Converter {
     bool foundPath =
       context->filePathForId(node->id(), pathUstr, ignoredParentSymPath);
     (void)foundPath; // avoid unused variable warning
-    assert(foundPath);
+    CHPL_ASSERT(foundPath);
     const char* path = astr(pathUstr);
 
     // TODO (dlongnecke): For now, the tag is overridden by the caller.
@@ -4067,10 +4070,10 @@ void Converter::popFromSymStack(const uast::AstNode* ast, BaseAST* ret) {
   }
 
   if (symStack.size() > 0) {
-    assert(symStack.back().ast == ast);
+    CHPL_ASSERT(symStack.back().ast == ast);
     symStack.back().convertedSyms->applyFixups(context, ast, trace);
   } else {
-    assert(false && "stack error");
+    CHPL_ASSERT(false && "stack error");
   }
   if (trace) {
     printf("Exiting %s %s\n",

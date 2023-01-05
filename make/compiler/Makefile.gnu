@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -114,22 +114,22 @@ endif
 # query gcc version
 #
 ifndef GNU_GCC_MAJOR_VERSION
-export GNU_GCC_MAJOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
+export GNU_GCC_MAJOR_VERSION := $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
 endif
 ifndef GNU_GCC_MINOR_VERSION
-export GNU_GCC_MINOR_VERSION = $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
+export GNU_GCC_MINOR_VERSION := $(shell $(CC) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
 endif
 ifndef GNU_GPP_MAJOR_VERSION
-export GNU_GPP_MAJOR_VERSION = $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
+export GNU_GPP_MAJOR_VERSION := $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[1]);}')
 endif
 ifndef GNU_GPP_MINOR_VERSION
-export GNU_GPP_MINOR_VERSION = $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
+export GNU_GPP_MINOR_VERSION := $(shell $(CXX) -dumpversion | awk '{split($$1,a,"."); printf("%s", a[2]);}')
 endif
 ifndef GNU_GPP_SUPPORTS_MISSING_DECLS
-export GNU_GPP_SUPPORTS_MISSING_DECLS = $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
+export GNU_GPP_SUPPORTS_MISSING_DECLS := $(shell test $(GNU_GPP_MAJOR_VERSION) -lt 4 || (test $(GNU_GPP_MAJOR_VERSION) -eq 4 && test $(GNU_GPP_MINOR_VERSION) -le 2); echo "$$?")
 endif
 ifndef GNU_GCC_SUPPORTS_STRICT_OVERFLOW
-export GNU_GCC_SUPPORTS_STRICT_OVERFLOW = $(shell test $(GNU_GCC_MAJOR_VERSION) -lt 4 || (test $(GNU_GCC_MAJOR_VERSION) -eq 4 && test $(GNU_GCC_MINOR_VERSION) -le 2); echo "$$?")
+export GNU_GCC_SUPPORTS_STRICT_OVERFLOW := $(shell test $(GNU_GCC_MAJOR_VERSION) -lt 4 || (test $(GNU_GCC_MAJOR_VERSION) -eq 4 && test $(GNU_GCC_MINOR_VERSION) -le 2); echo "$$?")
 endif
 
 #

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,7 +32,7 @@ const owned<BoolType>& BoolType::getBoolType(Context* context, int bitwidth) {
 }
 
 const BoolType* BoolType::get(Context* context, int bitwidth) {
-  assert(bitwidth == 0 || bitwidth == 8 || bitwidth == 16 ||
+  CHPL_ASSERT(bitwidth == 0 || bitwidth == 8 || bitwidth == 16 ||
          bitwidth == 32 || bitwidth == 64);
   return getBoolType(context, bitwidth).get();
 }

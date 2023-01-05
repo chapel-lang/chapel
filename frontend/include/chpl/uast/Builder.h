@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -109,6 +109,12 @@ class Builder final {
   void addError(const ErrorBase*);
 
   /**
+    Construct and save a generic post-parse error/warning.
+   */
+  void addPostParseError(const AstNode* node, const char* fmt, ...);
+  void addPostParseWarning(const AstNode* node, const char* fmt, ...);
+
+  /**
     Record the location of an AST element.
    */
   void noteLocation(AstNode* ast, Location loc);
@@ -153,7 +159,7 @@ class Builder final {
   // as owned because it is consumed.
   AstList takeChildren(owned<AstNode> ast) {
     auto ret = std::move(ast->children_);
-    assert(ast->children_.size() == 0);
+    CHPL_ASSERT(ast->children_.size() == 0);
     return ret;
   }
 

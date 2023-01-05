@@ -1,0 +1,2 @@
+recursive-generic-return.chpl:12: warning: RR(int(64))
+recursive-generic-return.chpl:15: error: could not determine the concrete type for the generic return type 'RR'

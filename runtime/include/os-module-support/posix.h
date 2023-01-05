@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -141,7 +141,7 @@ int chpl_os_posix_stat(const char *restrict path,
   buf->st_gid = myBuf.st_gid;
   buf->st_rdev = myBuf.st_rdev;
   buf->st_size = myBuf.st_size;
-#if defined(__linux__)
+#if defined(__linux__) || defined(__CYGWIN__)
   buf->st_atim = myBuf.st_atim;
   buf->st_mtim = myBuf.st_mtim;
   buf->st_ctim = myBuf.st_ctim;

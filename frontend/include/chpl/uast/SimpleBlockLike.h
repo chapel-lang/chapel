@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -103,7 +103,7 @@ class SimpleBlockLike : public AstNode {
     Return the i'th statement in this.
   */
   const AstNode* stmt(int i) const {
-    assert(i >= 0 && i < numBodyStmts_);
+    CHPL_ASSERT(i >= 0 && i < numBodyStmts_);
     const AstNode* ast = this->child(i + bodyChildNum_);
     return ast;
   }

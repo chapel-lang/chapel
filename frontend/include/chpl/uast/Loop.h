@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -40,9 +40,9 @@ class Loop: public AstNode {
       blockStyle_(blockStyle),
       loopBodyChildNum_(loopBodyChildNum) {
 
-    assert(0 <= loopBodyChildNum_ &&
+    CHPL_ASSERT(0 <= loopBodyChildNum_ &&
            loopBodyChildNum_ < (int) children_.size());
-    assert(children_[loopBodyChildNum_]->isBlock());
+    CHPL_ASSERT(children_[loopBodyChildNum_]->isBlock());
   }
 
   bool loopContentsMatchInner(const Loop* other) const {
@@ -60,6 +60,8 @@ class Loop: public AstNode {
 
   void loopMarkUniqueStringsInner(Context* context) const {
   }
+
+  virtual std::string dumpChildLabelInner(int i) const override;
 
   BlockStyle blockStyle_;
   int loopBodyChildNum_;

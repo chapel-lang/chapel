@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,6 +44,19 @@ namespace chpl {
   PARSER_DIAGNOSTIC_CLASS(NAME, SYNTAX, ##EINFO)
 #define PARSER_NOTE_CLASS(NAME, EINFO...) \
   PARSER_DIAGNOSTIC_CLASS(NAME, NOTE, ##EINFO)
+
+// Shorthands specific to post-parse-checks errors, which provide node IDs
+// that should connect to locations by the time we report out errors
+#define POSTPARSE_DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) \
+  DIAGNOSTIC_CLASS(NAME, KIND, const ID, ##EINFO)
+#define POSTPARSE_ERROR_CLASS(NAME, EINFO...) \
+  POSTPARSE_DIAGNOSTIC_CLASS(NAME, ERROR, ##EINFO)
+#define POSTPARSE_WARNING_CLASS(NAME, EINFO...) \
+  POSTPARSE_DIAGNOSTIC_CLASS(NAME, WARNING, ##EINFO)
+#define POSTPARSE_SYNTAX_CLASS(NAME, EINFO...) \
+  POSTPARSE_DIAGNOSTIC_CLASS(NAME, SYNTAX, ##EINFO)
+#define POSTPARSE_NOTE_CLASS(NAME, EINFO...) \
+  POSTPARSE_DIAGNOSTIC_CLASS(NAME, NOTE, ##EINFO)
 
 class ErrorWriterBase;
 
@@ -134,7 +147,7 @@ class ErrorBase {
 
     This method should call methods on the ErrorWriterBase class to
     provide information about the error.
-    * All ErrorBase::write implemenations must call ErrorWriterBase::heading to
+    * All ErrorBase::write implementations must call ErrorWriterBase::heading to
       provide a concise description of the error message.
     * After this, ErrorWriterBase::note can be used to print notes, which are
       always shown to the user.
@@ -266,8 +279,10 @@ class GeneralError : public BasicError {
   This macro takes care of packaging the error information into a tuple;
   it's sufficient to provide it via varargs.
  */
-#define CHPL_REPORT(CONTEXT__, NAME__, EINFO__...)\
-  CONTEXT__->report(Error##NAME__::get(CONTEXT__, std::make_tuple(EINFO__)))
+#define CHPL_REPORT(CONTEXT__, NAME__, EINFO__...) \
+  CONTEXT__->report(CHPL_GET_ERROR(CONTEXT__, NAME__, EINFO__))
+#define CHPL_GET_ERROR(CONTEXT__, NAME__, EINFO__...) \
+  Error##NAME__::get(CONTEXT__, std::make_tuple(EINFO__))
 
 template <>
 struct stringify<chpl::ErrorBase::Kind> {
@@ -292,6 +307,6 @@ namespace std {
       return key;
     }
   };
-} // end namesapce std
+} // end namespace std
 
 #endif

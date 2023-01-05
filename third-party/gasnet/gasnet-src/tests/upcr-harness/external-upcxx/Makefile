@@ -279,6 +279,11 @@ _upcxx-inst: upcxx-built
 	@touch upcxx-install
 	@echo '#!/bin/sh' > $@ ; chmod +x $@
 
+_upcxx-smoke_test: upcxx-built
+	@( echo ======== UPCXX make check ========; set -x; \
+	   $(MAKE) -C $(UPCXX_BLDDIR) $(UPCXX_MAKE_J) check || exit 1; ) $(TO_LOG)
+	@echo '#!/bin/sh' > $@ ; chmod +x $@
+
 # Build a single test from the installed UPCXX directory
 inst_test: upcxx-install
 	@set -x ; $(DO_ENV) && \
@@ -384,6 +389,15 @@ jac3d% :: $(UPCXX_BLDDIR)/extras/examples/jac3d upcxx-install force
 	             UPCXX_INSTALL=$(UPCXX_INSTDIR) \
 	             clean jac3d
 	mv $</jac3d $@
+
+# upcxx-examples laplace2d
+laplace2d% :: $(UPCXX_BLDDIR)/extras/examples/laplace2d upcxx-install force
+	@case "$@" in *-seq) export UPCXX_THREADMODE=seq ;; \
+	              *-par) export UPCXX_THREADMODE=par ;; esac; \
+	 set -x ; env $(MAKE_TEST_ENV) $(MAKE) -C $< \
+	             UPCXX_INSTALL=$(UPCXX_INSTDIR) \
+	             clean lap2D
+	mv $</lap2D $@
 
 # upcxx-examples cannon
 canno%-seq canno%-par :: $(UPCXX_BLDDIR)/extras/examples/cannon upcxx-install force

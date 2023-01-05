@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -55,12 +55,12 @@ class VarLikeDecl : public NamedDecl {
       initExpressionChildNum_(initExpressionChildNum) {
 
     // Linkage name can be a child num.
-    assert(numChildren() <= 3);
+    CHPL_ASSERT(numChildren() <= 3);
     if (typeExpressionChildNum >= 0) {
-      assert(typeExpressionChildNum <= 3);
+      CHPL_ASSERT(typeExpressionChildNum <= 3);
     }
     if (initExpressionChildNum >= 0) {
-      assert(initExpressionChildNum <= 3);
+      CHPL_ASSERT(initExpressionChildNum <= 3);
     }
   }
 
@@ -76,6 +76,9 @@ class VarLikeDecl : public NamedDecl {
   void varLikeDeclMarkUniqueStringsInner(Context* context) const {
     namedDeclMarkUniqueStringsInner(context);
   }
+
+  virtual void dumpFieldsInner(const DumpSettings& s) const override;
+  virtual std::string dumpChildLabelInner(int i) const override;
 
  public:
   ~VarLikeDecl() = 0; // this is an abstract base class

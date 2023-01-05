@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,30 @@
 namespace chpl {
 namespace uast {
 
+const char* TupleDecl::intentOrKindToString(IntentOrKind kind) {
+  return intentToString((IntentList)kind);
+}
+
+void TupleDecl::dumpFieldsInner(const DumpSettings& s) const {
+  const char* intentStr = intentOrKindToString(intentOrKind_);
+  if (intentStr[0] != '\0') {
+    s.out << " " << intentStr;
+  }
+  Decl::dumpFieldsInner(s);
+}
+
+std::string TupleDecl::dumpChildLabelInner(int i) const {
+  if (declChildNum() <= i && i < declChildNum() + numElements_) {
+    return "decl " + std::to_string(i - declChildNum());
+  } else if (i == typeExpressionChildNum_) {
+    return "type";
+  } else if (i == initExpressionChildNum_) {
+    return "init";
+  }
+
+  return Decl::dumpChildLabelInner(i);
+}
+
 bool TupleDecl::assertAcceptableTupleDecl() {
   asttags::AstTag firstNonTupleTag = asttags::AST_TAG_UNKNOWN;;
   int i = 0;
@@ -42,15 +66,15 @@ bool TupleDecl::assertAcceptableTupleDecl() {
         }
 
         if (elt->tag() != firstNonTupleTag) {
-          assert(0 == "cannot mix formal and variable components");
+          CHPL_ASSERT(0 == "cannot mix formal and variable components");
           return false;
         }
       } else {
-        assert(0 == "variable, formal, or tuple decl components only");
+        CHPL_ASSERT(0 == "variable, formal, or tuple decl components only");
         return false;
       }
     } else {
-      assert(elt->isTupleDecl());
+      CHPL_ASSERT(elt->isTupleDecl());
     }
     i++;
   }

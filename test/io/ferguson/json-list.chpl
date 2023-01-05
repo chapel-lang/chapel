@@ -10,7 +10,7 @@ use List, IO;
   writef("testing json write: %jt\n", mylist);
 }
 
-var f = opentmp();
+var f = openTempFile();
 {
   var writer = f.writer();
   var str = '[]';

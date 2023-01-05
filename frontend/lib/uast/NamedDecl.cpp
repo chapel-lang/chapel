@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,6 +22,13 @@
 namespace chpl {
 namespace uast {
 
+void NamedDecl::dumpFieldsInner(const DumpSettings& s) const {
+  Decl::dumpFieldsInner(s);
+  if (!name_.isEmpty()) {
+    s.out << " " << name_.str();
+  }
+  Decl::dumpFieldsInner(s);
+}
 
 NamedDecl::~NamedDecl() {
 }

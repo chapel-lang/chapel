@@ -1,0 +1,1 @@
+modOnReal.chpl:2: warning: '%=' is deprecated for 'real' values for the time being because it does not work

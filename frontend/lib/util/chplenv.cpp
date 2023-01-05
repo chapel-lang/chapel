@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,6 +20,11 @@
 #include "chpl/util/chplenv.h"
 
 #include "chpl/util/subprocess.h"
+#include "chpl/util/filesystem.h"
+
+#include "llvm/Support/FileSystem.h"
+
+#include "chpl/util/version-info.h"
 
 namespace chpl {
 
@@ -89,6 +94,122 @@ llvm::ErrorOr<ChplEnvMap>
 getChplEnv(const std::unordered_map<std::string, std::string>& varMap,
            const char* chplHome) {
   return getChplEnvImpl(varMap, chplHome);
+}
+
+bool isMaybeChplHome(std::string path) {
+  // assume if we find subfolder util/ containing chplenv, we might be home
+  path += "/util/chplenv";
+  return llvm::sys::fs::exists(path);
+}
+
+std::error_code findChplHome(char* argv0, void* mainAddr,
+                             std::string& chplHomeOut,
+                             bool& installed, bool& fromEnv,
+                             std::string& warningMessage) {
+  std::string versionString = getMajorMinorVersion();
+  std::string guess = getExecutablePath(argv0, mainAddr);
+
+  const char* chpl_home = getenv("CHPL_HOME");
+
+  if (!guess.empty()) {
+    // truncate path at /bin
+    char* tmp_guess = strdup(guess.c_str());
+    if ( tmp_guess[0] ) {
+      int j = strlen(tmp_guess) - 5; // /bin and '\0'
+      for ( ; j >= 0; j-- ) {
+        if ( tmp_guess[j] == '/' &&
+            tmp_guess[j+1] == 'b' &&
+            tmp_guess[j+2] == 'i' &&
+            tmp_guess[j+3] == 'n' ) {
+          tmp_guess[j] = '\0';
+          break;
+        }
+      }
+    }
+    guess = std::string(tmp_guess);
+    if (isMaybeChplHome(guess)) {
+      chplHomeOut = guess;
+    } else {
+      guess = "";
+    }
+  }
+
+  if (chpl_home) {
+    fromEnv = true;
+    if(strlen(chpl_home) > FILENAME_MAX)
+      // USR_FATAL("$CHPL_HOME=%s path too long", chpl_home);
+      // error_state
+      // TODO: customize error message?
+      return std::make_error_code(std::errc::filename_too_long);
+    if (guess.empty()) {
+      // Could not find exe path, but have a env var set
+      chplHomeOut = std::string(chpl_home);
+    } else {
+      // We have env var and found exe path.
+      // Check that they match and emit a warning if not.
+      if ( ! isSameFile(chpl_home, guess.c_str()) ) {
+        // Not the same. Emit warning.
+        //USR_WARN("$CHPL_HOME=%s mismatched with executable home=%s",
+        //         chpl_home, guess);
+        warningMessage = "$CHPL_HOME=" + std::string(chpl_home) + " is mismatched with executable home=" + guess;
+      }
+      // Since we have an enviro var, always use that.
+      chplHomeOut = std::string(chpl_home);
+    }
+  } else {
+    // Check in a default location too
+    if (guess.empty()) {
+      char TEST_HOME[FILENAME_MAX+1] = "";
+
+      // Check for Chapel libraries at installed prefix
+      // e.g. /usr/share/chapel/<vers>
+      int rc;
+      rc = snprintf(TEST_HOME, FILENAME_MAX, "%s/%s/%s",
+                    getConfiguredPrefix(), // e.g. /usr
+                    "share/chapel",
+                    versionString.c_str());
+      if (rc >= FILENAME_MAX) {
+        // USR_FATAL("Installed pathname too long");
+        // TODO: return an error here
+        return std::make_error_code(std::errc::filename_too_long);
+      }
+
+      if (isMaybeChplHome(TEST_HOME)) {
+        guess = strdup(TEST_HOME);
+        installed = true;
+       }
+    }
+
+    if (guess.empty()) {
+      // Could not find enviro var, and could not
+      // guess at exe's path name.
+      // USR_FATAL("$CHPL_HOME must be set to run chpl");
+      // TODO: customize the error message
+      return std::make_error_code(std::errc::no_such_file_or_directory);
+    } else {
+      int rc;
+
+      if (guess.length() > FILENAME_MAX) {
+      // USR_FATAL("chpl guessed home %s too long", guess);
+        return std::make_error_code(std::errc::filename_too_long);
+      }
+      // Determined exe path, but don't have a env var set
+        rc = setenv("CHPL_HOME", guess.c_str(), 0);
+        if ( rc ) {
+          // USR_FATAL("Could not setenv CHPL_HOME");
+          // TODO: customize the error message
+          return std::make_error_code(std::errc::no_such_file_or_directory);
+         }
+         chplHomeOut = guess;
+    }
+  }
+  // Check that the resulting path is a Chapel distribution.
+  if (!isMaybeChplHome(chplHomeOut.c_str())) {
+    // Bad enviro var.
+    //USR_WARN("CHPL_HOME=%s is not a Chapel distribution", CHPL_HOME);
+    warningMessage = "CHPL_HOME=" + chplHomeOut + " is not a Chapel distribution";
+  }
+  return std::error_code();
 }
 
 } // namespace chpl

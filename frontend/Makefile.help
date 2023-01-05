@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -58,25 +58,14 @@ $(LIBCOMPILER_BUILD_DIR):
 	@echo "Configuring the compiler library..."
 	@mkdir -p $(LIBCOMPILER_BUILD_DIR)
 	cd $(LIBCOMPILER_BUILD_DIR) && \
-	  $(CMAKE) $(CHPL_MAKE_HOME)/frontend \
+	  $(CMAKE) $(CHPL_MAKE_HOME) \
 	    $(LIB_CMAKE_ARG) \
 	    $(SDKROOT_ARG) \
-	    -DCMAKE_C_COMPILER='$(CC)' \
-	    -DCMAKE_C_FLAGS='$(WARN_CFLAGS)' \
-	    -DCMAKE_CXX_COMPILER='$(CXX)' \
-	    -DCMAKE_CXX_FLAGS='$(COMP_CXXFLAGS) $(WARN_CXXFLAGS)' \
-	    -DCMAKE_EXE_LINKER_FLAGS='$(LDFLAGS)' \
-	    -DCMAKE_MODULE_LINKER_FLAGS='$(LDFLAGS)' \
-	    -DCHPL_HOME='$(CHPL_MAKE_HOME)' \
-	    -DCHPL_HOST_BUNDLED_COMPILE_ARGS='$(CHPL_MAKE_HOST_BUNDLED_COMPILE_ARGS)' \
-			-DCHPL_HOST_SYSTEM_COMPILE_ARGS='$(CHPL_MAKE_HOST_SYSTEM_COMPILE_ARGS)' \
-	    -DCHPL_HOST_BUNDLED_LINK_ARGS='$(CHPL_MAKE_HOST_BUNDLED_LINK_ARGS)' \
-			-DCHPL_HOST_SYSTEM_LINK_ARGS='$(CHPL_MAKE_HOST_SYSTEM_LINK_ARGS)' \
 	    -DDYNO_LINTERS_CLANG_CMAKE_PATH='$(CLANG_CMAKE_DIR)' \
 	    -DBUILD_SHARED_LIBS=OFF
 
 parser: $(LIBCOMPILER_BUILD_DIR) FORCE
-	cd $(LIBCOMPILER_BUILD_DIR)/lib/parsing && $(CMAKE) --build . --target parser
+	cd $(LIBCOMPILER_BUILD_DIR)/frontend/lib/parsing && $(CMAKE) --build . --target parser
 
 chpldoc: $(LIBCOMPILER_BUILD_DIR) FORCE
 	+cd $(LIBCOMPILER_BUILD_DIR)/tools/chpldoc && $(CMAKE) --build . --target chpldoc
@@ -84,10 +73,10 @@ chpldoc: $(LIBCOMPILER_BUILD_DIR) FORCE
 	cp -f $(LIBCOMPILER_BUILD_DIR)/tools/chpldoc/chpldoc $(CHPL_BIN_DIR)/chpldoc
 
 frontend-linters: $(LIBCOMPILER_BUILD_DIR) FORCE
-	+cd $(LIBCOMPILER_BUILD_DIR)/util && $(CMAKE) --build .
+	+cd $(LIBCOMPILER_BUILD_DIR)/frontend/util && $(CMAKE) --build .
 
 run-frontend-linters: frontend-linters
-	@env PATH=$(LIBCOMPILER_BUILD_DIR)/util/linters:$(PATH) ./util/lint --compile-commands $(LIBCOMPILER_BUILD_DIR) --jobs=-1
+	@env PATH=$(LIBCOMPILER_BUILD_DIR)/frontend/util/linters:$(PATH) ./util/lint --compile-commands $(LIBCOMPILER_BUILD_DIR) --jobs=-1
 
 run-frontend-linters: frontend-linters FORCE
 
@@ -119,9 +108,9 @@ test-frontend: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making and running the frontend tests..."
 	@if [ -f $(LIBCOMPILER_BUILD_DIR)/Makefile ]; then \
 	  JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n 's/.*\(-j\|--jobs=\) *\([0-9][0-9]*\).*/-j\2/p'` ; \
-	  cd $(LIBCOMPILER_BUILD_DIR) && $(MAKE) tests && ctest $$JOBSFLAG . ; \
+	  cd $(LIBCOMPILER_BUILD_DIR) && $(MAKE) tests && cd frontend/test && ctest $$JOBSFLAG . ; \
 	else \
-	  cd $(LIBCOMPILER_BUILD_DIR) && $(CMAKE) --build .  --target tests && ctest . ; \
+	  cd $(LIBCOMPILER_BUILD_DIR) && $(CMAKE) --build .  --target tests && cd frontend/test && ctest . ; \
 	fi
 
 test-dyno: test-frontend FORCE

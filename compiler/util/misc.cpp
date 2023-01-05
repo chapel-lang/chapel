@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -96,6 +96,19 @@ void setupDynoError(chpl::ErrorBase::Kind errKind) {
 
   exit_immediately = false;
   exit_eventually |= err_fatal;
+}
+
+GpuCodegenType getGpuCodegenType() {
+  static const GpuCodegenType cached = []() {
+    INT_ASSERT(usingGpuLocaleModel());
+    if (0 == strcmp(CHPL_GPU_CODEGEN, "cuda")) {
+      return GpuCodegenType::GPU_CG_NVIDIA_CUDA;
+    } else {
+      INT_ASSERT(!strcmp(CHPL_GPU_CODEGEN, "rocm"));
+      return GpuCodegenType::GPU_CG_AMD_HIP;
+    }
+  }();
+  return cached;
 }
 
 // Return true if the current locale model needs GPU code generation

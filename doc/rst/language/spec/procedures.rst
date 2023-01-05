@@ -652,7 +652,7 @@ type:
     | non-managed classes     | ``const in``         | ``const in``            |                                                      |
     |                         |                      |                         |                                                      |
     | (``borrowed``,          |                      |                         |                                                      |
-    | ``umanaged``)           |                      |                         |                                                      |
+    | ``unmanaged``)          |                      |                         |                                                      |
     +-------------------------+----------------------+-------------------------+------------------------------------------------------+
     | tuples                  | per-element          | per-element             | see :ref:`Tuple_Argument_Intents`                    |
     +-------------------------+----------------------+-------------------------+------------------------------------------------------+
@@ -1485,8 +1485,9 @@ mapping:
 1. If one of the formals requires promotion and the other does not, the
    formal not requiring promotion is better
 
-2. If one of the formals is less generic than the other formal, the
-   less-generic formal is better
+2. If both of the formals have the same type after instantiation and one
+   of the formals is less generic than the other formal, the less-generic
+   formal is better
 
 3. If one of the formals is ``param`` and the other is not, the ``param``
    formal is better

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -85,7 +85,7 @@ class QualifiedType final {
     : kind_(kind), type_(type), param_(param)
   {
     // should only set param_ for kind_ == PARAM
-    assert(param_ == nullptr || kind_ == Kind::PARAM);
+    CHPL_ASSERT(param_ == nullptr || kind_ == Kind::PARAM);
   }
 
   /** Returns the kind of the expression this QualifiedType represents */
@@ -197,6 +197,16 @@ class QualifiedType final {
            kind_ == Kind::TYPE ||
            kind_ == Kind::FUNCTION ||
            kind_ == Kind::MODULE;
+  }
+
+  /**
+    Returns true if the kind is one of the non-concrete intents
+    (unknown, default intent, or const intent) and false otherwise.
+   */
+  bool isNonConcreteIntent() const {
+    return (kind_ == Kind::UNKNOWN ||
+            kind_ == Kind::DEFAULT_INTENT ||
+            kind_ == Kind::CONST_INTENT);
   }
 
   bool operator==(const QualifiedType& other) const {

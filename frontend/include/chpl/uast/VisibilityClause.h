@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -73,9 +73,9 @@ class VisibilityClause final : public AstNode {
 
     switch (limitationKind_) {
       case BRACES:
-      case EXCEPT: assert(numLimitations >= 1); break;
-      case ONLY: assert(numLimitations_ >= 0); break;
-      case NONE: assert(numLimitations_ == 0); break;
+      case EXCEPT: CHPL_ASSERT(numLimitations >= 1); break;
+      case ONLY: CHPL_ASSERT(numLimitations_ >= 0); break;
+      case NONE: CHPL_ASSERT(numLimitations_ == 0); break;
     }
   }
 
@@ -88,6 +88,9 @@ class VisibilityClause final : public AstNode {
 
   void markUniqueStringsInner(Context* context) const override {
   }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
 
   // These always exist and their position never changes.
   static const int8_t symbolChildNum_ = 0;
@@ -119,7 +122,7 @@ class VisibilityClause final : public AstNode {
   */
   const AstNode* symbol() const {
     auto ret = child(symbolChildNum_);
-    assert(ret->isDot() || ret->isAs() || ret->isIdentifier());
+    CHPL_ASSERT(ret->isDot() || ret->isAs() || ret->isIdentifier());
     return ret;
   }
 
@@ -155,11 +158,15 @@ class VisibilityClause final : public AstNode {
     Identifier or As expressions.
   */
   const AstNode* limitation(int i) const {
-    assert(i >= 0 && i < numLimitations_);
+    CHPL_ASSERT(i >= 0 && i < numLimitations_);
     const AstNode* ast = this->child(limitationChildNum_+i);
     return ast;
   }
 
+  /**
+    Return a string describing the passed LimitationKind.
+   */
+  static const char* limitationKindToString(LimitationKind kind);
 };
 
 
@@ -185,7 +192,7 @@ struct stringify<uast::VisibilityClause::LimitationKind> {
         streamOut << "none";
         break;
       default:
-        assert(false && "should not reach this point");
+        CHPL_ASSERT(false && "should not reach this point");
     }
   }
 };

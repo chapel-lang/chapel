@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1221,6 +1221,8 @@ static void test40() {
                             return ret;
                           }
                           record R { }
+                          proc R.init() { }
+                          proc R.deinit() { }
                           var x = useType(R);
                         )"""");
 
@@ -1246,6 +1248,8 @@ static void test41() {
                           }
                           record R {
                             param p;
+                            proc init(param p) { this.p = p; }
+                            proc deinit() { }
                           }
                           var x = useType(R(1));
                         )"""");
@@ -1278,6 +1282,8 @@ static void test42() {
                           }
                           record R {
                             param p;
+                            proc init(param p) { this.p = p; }
+                            proc deinit() { }
                           }
                           var x = useType(R);
                         )"""");

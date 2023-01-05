@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,14 @@
 namespace chpl {
 namespace uast {
 
+
+std::string Local::dumpChildLabelInner(int i) const {
+  if (i == condChildNum_) {
+    return "cond";
+  }
+
+  return SimpleBlockLike::dumpChildLabelInner(i);
+}
 
 owned<Local> Local::build(Builder* builder,
                           Location loc,
@@ -52,7 +60,7 @@ owned<Local> Local::build(Builder* builder,
                           owned<AstNode> condition,
                           BlockStyle blockStyle,
                           AstList stmts) {
-  assert(condition.get() != nullptr);
+  CHPL_ASSERT(condition.get() != nullptr);
 
   AstList lst;
   int8_t condChildNum = -1;

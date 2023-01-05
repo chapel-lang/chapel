@@ -31,5 +31,6 @@ CONFIG VARS:
                            memLog: string
                       memLeaksLog: string
                    memLeaksByDesc: string
+                         debugGpu: bool
   defaultHashTableResizeThreshold: real(64)
                        numLocales: int(64)

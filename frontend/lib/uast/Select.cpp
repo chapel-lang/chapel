@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,10 +25,18 @@ namespace chpl {
 namespace uast {
 
 
+std::string Select::dumpChildLabelInner(int i) const {
+  if (i == exprChildNum_) {
+    return "expr";
+  }
+
+  return "";
+}
+
 owned<Select> Select::build(Builder* builder, Location loc,
                             owned<AstNode> expr,
                             AstList whenStmts) {
-  assert(expr.get() != nullptr);
+  CHPL_ASSERT(expr.get() != nullptr);
 
   AstList lst;
   const int numWhenStmts = whenStmts.size();
@@ -36,7 +44,7 @@ owned<Select> Select::build(Builder* builder, Location loc,
   lst.push_back(std::move(expr));
 
   for (auto& ast : whenStmts) {
-    assert(ast->isWhen());
+    CHPL_ASSERT(ast->isWhen());
     lst.push_back(std::move(ast));
   }
 

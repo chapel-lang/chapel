@@ -31,11 +31,14 @@ AMUDP_BEGIN_EXTERNC
 #define USE_SOCKET_SENDBUFFER_GROW  1   /* grow SNDBUF on UDP sockets */
 #endif
 #ifndef AMUDP_SOCKETBUFFER_MAX
-#define AMUDP_SOCKETBUFFER_MAX  4194304   /* socket *BUF max to never exceed: 4 MB (huge) */
+#define AMUDP_SOCKETBUFFER_MAX  4194304   /* default socket *BUF max to never exceed */
 #endif
 #ifndef AMUDP_EXTRA_CHECKSUM
 #define AMUDP_EXTRA_CHECKSUM 0 /* add extra checksums to each message to detect buggy IP */
 #endif
+
+extern uint32_t AMUDP_SocketBuffer_initial;
+extern uint32_t AMUDP_SocketBuffer_max;
 
 #define AMUDP_PROCID_NEXT -1  /* Use next unallocated procid */
 
@@ -88,7 +91,7 @@ extern void AMUDP_InitRetryCache();
 #endif
 
 #if !defined(USE_ASYNC_TCP_CONTROL) && \
-   ( PLATFORM_OS_LINUX )   // NOT functional on WSL
+   ( PLATFORM_OS_LINUX && !PLATFORM_OS_SUBFAMILY_WSL )   // NOT functional on WSL1
   #define USE_ASYNC_TCP_CONTROL     1   /* use O_ASYNC and signals to stat TCP coord sockets, saves overhead on AMPoll */
 #endif
 #ifndef AMUDP_SIGIO

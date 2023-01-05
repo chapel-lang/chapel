@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -288,7 +288,9 @@ struct Resolver {
   void handleResolvedAssociatedCall(ResolvedExpression& r,
                                     const uast::AstNode* astForErr,
                                     const CallInfo& ci,
-                                    const CallResolutionResult& c);
+                                    const CallResolutionResult& c,
+                                    AssociatedAction::Action action,
+                                    ID id);
 
   // If the variable with the passed ID has unknown or generic type,
   // and it has not yet been initialized, set its type to rhsType.
