@@ -56,28 +56,41 @@ include_directories(
 
 add_executable(chpl)
 set(CHPL_CMAKE_PYTHON $ENV{CHPL_MAKE_PYTHON})
-if (NOT EXISTS ${SRC_DIR}/main/LICENSE)
-  execute_process(COMMAND ${CHPL_CMAKE_PYTHON}
-                          ${SRC_DIR}/../util/config/generate-license
-                          ${SRC_DIR}/../
-                          ${SRC_DIR}/main
-                  OUTPUT_FILE ${SRC_DIR}/main/LICENSE)
-endif()
 
-if (NOT EXISTS ${SRC_DIR}/main/COPYRIGHT)
-  execute_process(COMMAND ${CHPL_CMAKE_PYTHON}
-                          ${SRC_DIR}/../util/config/generate-copyright
-                          ${SRC_DIR}/../
-                          ${SRC_DIR}/main
-                  OUTPUT_FILE ${SRC_DIR}/main/COPYRIGHT)
-endif()
+# Write the compiler/main/LICENSE file, or update the existing file if the
+# the $CHPL_HOME/LICENSE file has been modified
+add_custom_command(
+  OUTPUT ${SRC_DIR}/main/LICENSE
+  COMMAND ${CHPL_CMAKE_PYTHON}
+          ${SRC_DIR}/../util/config/generate-license
+          ${SRC_DIR}/../
+          ${SRC_DIR}/main
+  DEPENDS ${SRC_DIR}/../LICENSE
+  COMMENT "writing LICENSE file updates..."
+  VERBATIM)
 
-if (NOT EXISTS ${SRC_DIR}/codegen/reservedSymbolNames.h)
-  execute_process(COMMAND ${CHPL_CMAKE_PYTHON}
-                          ${SRC_DIR}/../util/config/generate-reservedSymbolNames
-                          ${SRC_DIR}/codegen
-                  OUTPUT_FILE ${SRC_DIR}/codegen/reservedSymbolNames.h)
-endif()
+# Write the compiler/main/COPYRIGHT file, or update the existing file if the
+# the $CHPL_HOME/COPYRIGHT file has been modified
+add_custom_command(
+  OUTPUT ${SRC_DIR}/main/COPYRIGHT
+  COMMAND ${CHPL_CMAKE_PYTHON}
+          ${SRC_DIR}/../util/config/generate-copyright
+          ${SRC_DIR}/../
+          ${SRC_DIR}/main
+  DEPENDS ${SRC_DIR}/../COPYRIGHT
+  COMMENT "writing COPYRIGHT file updates..."
+  VERBATIM)
+
+# Write the reservedSymbolNames.h file, or update the existing file if the
+# contents of ${SRC_DIR}/codegen/reservedSymbolNames have changed
+add_custom_command(
+  OUTPUT ${SRC_DIR}/codegen/reservedSymbolNames.h
+  COMMAND ${CHPL_CMAKE_PYTHON}
+          ${SRC_DIR}/../util/config/generate-reservedSymbolNames
+          ${SRC_DIR}/codegen
+  DEPENDS ${SRC_DIR}/codegen/reservedSymbolNames
+  COMMENT "writing reservedSymbolNames.h file updates..."
+  VERBATIM)
 
 add_subdirectory(AST)
 add_subdirectory(adt)
