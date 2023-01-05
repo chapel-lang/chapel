@@ -51,6 +51,10 @@ proc main(args: [] string) {
 //    stderr.writef("read %i bytes\n", bytesRead);
     do {
 //      stderr.writeln("Looking for sep in ", seqSize..#bytesRead);
+/*
+      stderr.writeln((findSep(seq, seqSize, bytesRead, true),
+                      findSep(seq, seqSize, bytesRead, true)));
+                      */
       const seqStart = findSep(seq, seqSize, bytesRead);
       // TODO: any way to not duplicate check in this conditional and 'while'?
       // Should our while loops support variable declarations?
@@ -181,10 +185,10 @@ proc revcomp(seq, size) {
   }
 
 
-config const useMemChr = true;
+config const useMemChr = false;
 
 // TODO: any clever way to avoid the inds.low conditional?
-proc findSep(chunk, in low, in count) {
+proc findSep(chunk, in low, in count, locUseMemChr = useMemChr) {
   // this seems silly... must be some way to avoid
   if low == 0 {
     low += 1;
@@ -193,8 +197,8 @@ proc findSep(chunk, in low, in count) {
       return -1;
   }
 
-//  var res: int;
-  if useMemChr {
+  var res: int;
+  if locUseMemChr {
     extern proc memchr(s, c, n): c_void_ptr;
     var ptr = memchr(c_ptrTo(chunk[low]), '>'.toByte(), count);
     if ptr == c_nil then
@@ -204,8 +208,33 @@ proc findSep(chunk, in low, in count) {
 //      res = ptr: c_ptr(uint(8)) - c_ptrTo(chunk[0]) + 1;
       return ptr: c_ptr(uint(8)) - c_ptrTo(chunk[low]) + 1;
   } else {
+    var (val, loc) = maxloc reduce zip([i in low..#count] chunk[i] == '>'.toByte(), low..#count);
+    if val == true then {
+//      stderr.writeln("returning ", loc);
+      return loc;
+    } else
+      return -1;
+  }
+
+/*
+var i = low;
+    var ptr2 = c_ptrTo(chunk[i]);
+    do {
+      i += 1;
+      if ptr2.deref() == '>'.toByte() then {
+//        stderr.writeln((res, i));
+        return i;
+      }
+      ptr2 += 1;
+    } while i != low + count;
+//  stderr.writeln((res, -1));
+  return -1;
+  }
+  */
+
+/*
     for i in low..#count {
-      if chunk[i] == '>'.toByte() {
+      if chunk[i] == 
 //      stderr.writeln("Found sep at ", i);
 //        stderr.writeln((i, res));
         return i;
@@ -214,4 +243,5 @@ proc findSep(chunk, in low, in count) {
 //    stderr.writeln((-1, res));
     return -1;
   }
+  */
 }
