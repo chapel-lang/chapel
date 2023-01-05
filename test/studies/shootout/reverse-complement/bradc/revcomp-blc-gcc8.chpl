@@ -181,13 +181,37 @@ proc revcomp(seq, size) {
   }
 
 
+config const useMemChr = true;
+
 // TODO: any clever way to avoid the inds.low conditional?
-proc findSep(chunk: [?inds], low, count) {
-  for i in low..#count {
-    if chunk[i] == '>'.toByte() && i != inds.low {
-//      stderr.writeln("Found sep at ", i);
-      return i;
-    }
+proc findSep(chunk, in low, in count) {
+  // this seems silly... must be some way to avoid
+  if low == 0 {
+    low += 1;
+    count -= 1;
+    if count < 0 then
+      return -1;
   }
-  return -1;
+
+//  var res: int;
+  if useMemChr {
+    extern proc memchr(s, c, n): c_void_ptr;
+    var ptr = memchr(c_ptrTo(chunk[low]), '>'.toByte(), count);
+    if ptr == c_nil then
+//      res = -1;
+      return -1;
+    else
+//      res = ptr: c_ptr(uint(8)) - c_ptrTo(chunk[0]) + 1;
+      return ptr: c_ptr(uint(8)) - c_ptrTo(chunk[low]) + 1;
+  } else {
+    for i in low..#count {
+      if chunk[i] == '>'.toByte() {
+//      stderr.writeln("Found sep at ", i);
+//        stderr.writeln((i, res));
+        return i;
+      }
+    }
+//    stderr.writeln((-1, res));
+    return -1;
+  }
 }
