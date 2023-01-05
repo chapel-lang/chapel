@@ -176,14 +176,7 @@ static const char* cleanCompilerFilename(const char* name) {
   // it depends on the details of the build whether __FILE__ is
   // an absolute path, but for the purposes of this error reporting,
   // we only need the file name.
-  const char* retval = name;
-
-  // compute the basename
-  if (const char* slash = (const char*) strrchr(name, '/')) {
-    retval = astr(slash+1);
-  }
-
-  return retval;
+  return stripdirectories(name);
 }
 
 
