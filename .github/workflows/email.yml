@@ -26,7 +26,7 @@ jobs:
           COMMIT_URL: ${{github.event.pull_request._links.commits.href}}
           LOG: ${{github.event.pull_request.body}}
         uses: nick-fields/retry@v2
-          with:
+        with:
           max_attempts: 3
           retry_on: error
           timeout_seconds: 60   
