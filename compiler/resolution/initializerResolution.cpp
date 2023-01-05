@@ -23,6 +23,7 @@
 #include "AggregateType.h"
 #include "caches.h"
 #include "callInfo.h"
+#include "CatchStmt.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
 #include "expandVarArgs.h"
@@ -36,6 +37,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "TryStmt.h"
 #include "view.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
@@ -173,11 +175,19 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
 
   if (initFn->throwsError()) {
     fn->throwsErrorInit();
-    // TODO: insert try/catch around the init call
-    body->insertAtTail(innerInit);
-    // TODO: clean up allocated memory?
-    //body->insertAtTail(callChplHereFree(initTemp));
-    // TODO: rethrow error
+    BlockStmt* tryBody = new BlockStmt(innerInit);
+
+    const char* errorName = astr("e");
+    BlockStmt* catchBody = new BlockStmt(callChplHereFree(initTemp));
+    /*CallExpr* rethrow = new CallExpr(PRIM_THROW,
+                                     new UnresolvedSymExpr(errorName));
+    catchBody->insertAtTail(rethrow);
+    */
+
+    TryStmt* tryInit = new TryStmt(false, tryBody,
+                                   new BlockStmt(CatchStmt::build(errorName,
+                                                                  catchBody)));
+    body->insertAtTail(tryInit);
 
   } else {
     body->insertAtTail(innerInit);
