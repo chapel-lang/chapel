@@ -179,10 +179,25 @@ static FnSymbol* buildNewWrapper(FnSymbol* initFn) {
 
     const char* errorName = astr("e");
     BlockStmt* catchBody = new BlockStmt(callChplHereFree(initTemp));
-    /*CallExpr* rethrow = new CallExpr(PRIM_THROW,
-                                     new UnresolvedSymExpr(errorName));
+    VarSymbol* error = new VarSymbol(errorName);
+    DefExpr* errorDef = new DefExpr(error);
+
+    // recreate body of CatchStmt::cleanup() so that it can be well formed (for
+    // now)
+    VarSymbol* casted = newTemp();
+    Expr* castedCurrent = new CallExpr(PRIM_CURRENT_ERROR);
+    DefExpr* castedDef = new DefExpr(casted, castedCurrent);
+    Expr* nonNilC = new CallExpr(PRIM_TO_NON_NILABLE_CLASS, casted);
+    Expr* toOwned = new CallExpr(PRIM_NEW,
+                                 new CallExpr(new SymExpr(dtOwned->symbol),
+                                              nonNilC));
+    errorDef->init = toOwned;
+    catchBody->insertAtHead(errorDef);
+    catchBody->insertAtHead(castedDef);
+
+    CallExpr* rethrow = new CallExpr(PRIM_THROW,
+                                     new SymExpr(error));
     catchBody->insertAtTail(rethrow);
-    */
 
     TryStmt* tryInit = new TryStmt(false, tryBody,
                                    new BlockStmt(CatchStmt::build(errorName,
