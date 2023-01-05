@@ -6,6 +6,8 @@ import os
 import sys
 from pprint import pprint
 
+verbose = False
+
 def run(cmd, env=None):
     if type(cmd) is str:
         cmd = cmd.split()
@@ -30,11 +32,23 @@ def checkConfig():
 class LocalePerSocket(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        global verbose
         checkConfig()
-        proc = run(["sinfo", "--format=%X %Y %Z", "--noheader",
-                   "--exact"])
+        cmd = ["sinfo", "--format=%X %Y %Z", "--noheader", "--exact"]
+        if 'CHPL_LAUNCHER_PARTITION' in os.environ:
+            cmd += ["--partition", os.environ['CHPL_LAUNCHER_PARTITION']]
+            if verbose:
+                print("Partition: ", os.environ['CHPL_LAUNCHER_PARTITION'])
+
+        proc = run(cmd)
+
         (cls.sockets, cls.cores, cls.threads) = \
             [int(i) for i in proc.stdout.splitlines()[0].split()]
+
+        if verbose:
+            print("Sockets: ", cls.sockets)
+            print("Cores/Socket: ", cls.cores)
+            print("Threads/Core: ", cls.threads)
 
         # We need the qthread output
         os.environ['QTHREAD_INFO'] = '2'
@@ -44,7 +58,11 @@ class LocalePerSocket(unittest.TestCase):
             del os.environ['CHPL_RT_LOCALES_PER_NODE'] 
 
         # Compile the test program
+        if verbose:
+            print("Compiling test program")
         run('chpl lps_test.chpl')
+        if verbose:
+            print("Running tests")
 
     def setUp(self):
         pass
@@ -86,10 +104,11 @@ class LocalePerSocket(unittest.TestCase):
         return None # should not get here
 
     def test_00_base(self):
+        global cls 
         proc = run("./lps_test -nl 2 -v")
-        self.checkArgs(2, 2, 1, 256, None, proc.stdout)
+        self.checkArgs(2, 2, 1, self.sockets * self.cores * self.threads, None, proc.stdout)
         self.assertIn('oversubscribed = False', proc.stdout)
-        self.assertIn('Using 128 Shepherds', proc.stdout)
+        self.assertIn('Using %d Shepherds' % (self.sockets * self.cores), proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getCores("all"),
                       proc.stdout)
 
@@ -101,11 +120,9 @@ class LocalePerSocket(unittest.TestCase):
         env = os.environ.copy()
         env['CHPL_RT_OVERSUBSCRIBED'] = 'true'
         proc = run("./lps_test -nl 2 -v", env=env)
-        print("XXX")
-        print(proc.stdout)
-        self.checkArgs(2, 2, 1, 256, None, proc.stdout)
+        self.checkArgs(2, 2, 1, self.sockets * self.cores * self.threads, None, proc.stdout)
         self.assertIn('oversubscribed = True', proc.stdout)
-        self.assertIn('Using 128 Shepherds', proc.stdout)
+        self.assertIn('Using %s Shepherds' % (self.sockets * self.cores), proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getCores("all"), proc.stdout)
 
     def test_02_two_lpn(self):
@@ -114,10 +131,10 @@ class LocalePerSocket(unittest.TestCase):
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         proc = run("./lps_test -nl 2 -v", env=env)
-        self.checkArgs(1, 2, 2, 128, 'none', proc.stdout)
+        self.checkArgs(1, 2, 2, self.sockets * self.cores, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('using socket 1', proc.stdout)
-        self.assertIn('Using 64 Shepherds', proc.stdout)
+        self.assertIn('Using %s Shepherds' % self.cores, proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getCores(0), proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getCores(1), proc.stdout)
 
@@ -136,9 +153,9 @@ class LocalePerSocket(unittest.TestCase):
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         proc = run(['./lps_test', '-nl', '1', '-v'], env=env)
-        self.checkArgs(1, 1, 2, 256, 'none', proc.stdout)
+        self.checkArgs(1, 1, 2, self.sockets * self.cores * self.threads, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
-        self.assertIn('Using 64 Shepherds', proc.stdout)
+        self.assertIn('Using %s Shepherds' % self.cores, proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getCores(0), proc.stdout)
 
     def test_05_two_lpn_oversubscribed(self):
@@ -150,11 +167,11 @@ class LocalePerSocket(unittest.TestCase):
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         env['CHPL_RT_OVERSUBSCRIBED'] = 'true'
         proc = run("./lps_test -nl 2 -v", env=env)
-        self.checkArgs(1, 2, 2, 128, 'none', proc.stdout)
+        self.checkArgs(1, 2, 2, self.sockets * self.cores, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('using socket 1', proc.stdout)
         self.assertIn('oversubscribed = True', proc.stdout)
-        self.assertIn('Using 64 Shepherds', proc.stdout)
+        self.assertIn('Using %s Shepherds' % self.cores, proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getCores(0), proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getCores(1), proc.stdout)
 
@@ -164,10 +181,10 @@ class LocalePerSocket(unittest.TestCase):
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         env['SLURM_HINT'] = 'nomultithread'
         proc = run("./lps_test -nl 2 -v", env=env)
-        self.checkArgs(1, 2, 2, 128, 'none', proc.stdout)
+        self.checkArgs(1, 2, 2, self.sockets * self.cores, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('using socket 1', proc.stdout)
-        self.assertIn('Using 64 Shepherds', proc.stdout)
+        self.assertIn('Using %s Shepherds' % self.cores, proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getCores(0), proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getCores(1), proc.stdout)
 
@@ -175,12 +192,12 @@ class LocalePerSocket(unittest.TestCase):
         # One worker per PU.
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
-        env['CHPL_RT_NUM_THREADS_PER_LOCALE'] = '128'
+        env['CHPL_RT_NUM_THREADS_PER_LOCALE'] = '%s' % (self.sockets * self.cores)
         proc = run("./lps_test -nl 2 -v", env=env)
-        self.checkArgs(1, 2, 2, 128, 'none', proc.stdout)
+        self.checkArgs(1, 2, 2, self.sockets * self.cores, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('using socket 1', proc.stdout)
-        self.assertIn('Using 128 Shepherds', proc.stdout)
+        self.assertIn('Using %s Shepherds' % (self.sockets * self.cores), proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getThreads(0), proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getThreads(1), proc.stdout)
 
@@ -190,13 +207,13 @@ class LocalePerSocket(unittest.TestCase):
         # hyperthreading.
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
-        env['CHPL_RT_NUM_THREADS_PER_LOCALE'] = '128'
+        env['CHPL_RT_NUM_THREADS_PER_LOCALE'] = str(self.sockets * self.cores)
         env['SLURM_HINT'] = 'nomultithread'
         proc = run("./lps_test -nl 2 -v", env=env)
-        self.checkArgs(1, 2, 2, 128, 'none', proc.stdout)
+        self.checkArgs(1, 2, 2, self.sockets * self.cores, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('using socket 1', proc.stdout)
-        self.assertIn('Using 128 Shepherds', proc.stdout)
+        self.assertIn('Using %s Shepherds' % (self.sockets * self.cores), proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getThreads(0), proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getThreads(1), proc.stdout)
 
@@ -206,10 +223,10 @@ class LocalePerSocket(unittest.TestCase):
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         env['CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES'] = 'true'
         proc = run("./lps_test -nl 2 -v", env=env)
-        self.checkArgs(1, 2, 2, 128, 'none', proc.stdout)
+        self.checkArgs(1, 2, 2, self.sockets * self.cores, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('using socket 1', proc.stdout)
-        self.assertIn('Using 63 Shepherds', proc.stdout)
+        self.assertIn('Using %s Shepherds' % (self.cores - 1), proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getCores(0,1), proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getCores(1,1), proc.stdout)
 
@@ -219,12 +236,12 @@ class LocalePerSocket(unittest.TestCase):
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         env['CHPL_RT_COMM_OFI_DEDICATED_AMH_CORES'] = 'true'
-        env['CHPL_RT_NUM_THREADS_PER_LOCALE'] = '128'
+        env['CHPL_RT_NUM_THREADS_PER_LOCALE'] = str(self.sockets * self.cores)
         proc = run("./lps_test -nl 2 -v", env=env)
-        self.checkArgs(1, 2, 2, 128, 'none', proc.stdout)
+        self.checkArgs(1, 2, 2, self.sockets * self.cores, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('using socket 1', proc.stdout)
-        self.assertIn('Using 126 Shepherds', proc.stdout)
+        self.assertIn('Using %d Shepherds' % (self.sockets * self.cores - 2), proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getThreads(0,1),
                       proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getThreads(1,1),
@@ -245,10 +262,13 @@ class LocalePerSocket(unittest.TestCase):
         self.assertIn('Using 8 Shepherds', proc.stdout)
 
 def main(argv):
+    global verbose
     failfast = False
     if "-f" in argv:
         failfast = True
         argv.remove("-f")
+    if "-v" in argv:
+        verbose = True
     unittest.main(argv=argv, failfast=failfast)
 
 if __name__ == '__main__':
