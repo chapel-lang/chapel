@@ -1,8 +1,9 @@
+## Chapel Compiler Frontend Library
+
 This directory contains the implementation of the Chapel compiler
 frontend library. This has been created as part of an effort of revamping
 the Chapel compiler called "dyno". This file contains some information
 about the structure of this effort as well as some style guidance.
-
 
 ### Directory Structure
 
@@ -33,7 +34,7 @@ We have these subdirectories:
      util/        -- utility capabilities
 
  test/            -- C++ tests of the frontend library
-     framework/   -- test of the query framework
+     framework/   -- tests of the query framework
      parsing/     -- tests of the parser
      resolution/  -- tests of scope resolution & type and call resolution
      uast/        -- tests for untyped uAST representation
@@ -53,7 +54,7 @@ installed.
 ### Namespaces
 
 Unless there is a good reason not to, the Chapel frontend library code
-should be in the 'chpl' namespace.
+should be in the `chpl` namespace.
 
 Other than that, it is a style matter to decide when to introduce a new
 namespace. Here is some guidance about when to do so:
@@ -62,25 +63,25 @@ namespace. Here is some guidance about when to do so:
  * when creating a bunch of free functions that we'd like to be able to
    bundle since they are related
 
-Generally speaking, all of the subdirectories of include/chpl have their
+Generally speaking, all of the subdirectories of `include/chpl` have their
 own namespace.
- * today we make an exception for 'util'
+ * today we make an exception for `util`
 
 
 ### File Names and File Organization
 
 It is a goal to have corresponding <something>.h and <something>.cpp
 files for the header and implementation. These should be in the
-appropriate topic directory in include/chpl/ and in lib/.
+appropriate topic directory in `include/chpl/` and in `lib/`.
 
 .h and .cpp source code that primarily defines a specific type should go
 into a file sharing that type name. Type names in the frontend library
-use an InitialUpperCase.  So we have e.g. NumericLiteral.h /
-NumericLiteral.cpp.
+use an InitialUpperCase.  So we have e.g. `NumericLiteral.h` /
+`NumericLiteral.cpp`.
 
 In contrast, .h and .cpp files defining a collection of things that
 aren't a specific type should go into a file using lower case and dashes.
-For example, we have can-pass.h and can-pass.cpp.
+For example, we have `can-pass.h` and `can-pass.cpp`.
 
 
 ### Error System Suggestions
