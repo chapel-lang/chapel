@@ -18,78 +18,92 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
            + b"    TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R",
              //    ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
              //    ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
-      maxChars = cmpl.size;
 
+      maxChars = cmpl.size; // upper bound on number of nucleotides used
+
+// map from pairs of nucleotide characters to their reversed complements
 var pairCmpl: [0..<join(maxChars, maxChars)] uint(16);
 
+// channels for doing efficient console I/O
 var stdinBin  = openfd(0).reader(iokind.native, locking=false,
                            hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
     stdoutBin = openfd(1).writer(iokind.native, locking=false,
                            hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
 
 proc main(args: [] string) {
+  // set up the 'pairCmpl' map
   const chars = eol..<maxChars;
   forall (i,j) in {chars, chars} do
     pairCmpl[join(i,j)] = join(cmpl(j), cmpl(i));
 
-  var buffCap = readSize,
-      buffDom = {0..<buffCap},
-      buff: [buffDom] uint(8),
-      readPos = 0;
+  // variables for reading into a dynamically growing buffer
+  var buffCap = readSize,       // capacity of our input buffer
+      buffDom = {0..<buffCap},  // index set for the input buffer
+      buff: [buffDom] uint(8),  // the buffer itself
+      readPos = 0;              // the current read position
 
   do {
-    // TODO: Would prefer to use the array form of readBinary(), but it
-    // doesn't currently return the number of elements read on EOF...
+    // read 'readSize' new characters
     var newChars = stdinBin.readBinary(c_ptrTo(buff[readPos]), readSize),
         nextSeqStart: int;
 
-    // TODO: would really just like an array.find() routine rather
-    // than writing my own
+    // if the new characters contain the start of the next sequence,
     while findSeqStart(buff, readPos, newChars, nextSeqStart) {
+      // process this one
       revcomp(buff, nextSeqStart);
 
+      // then shift the next sequence to the start of the buffer
       newChars -= nextSeqStart - readPos + 1;
 
-      // TODO: how much impact is this forall?
-      // TODO: abstract into a mem-move type of method on arrays?
       serial (nextSeqStart < newChars) do
         forall j in 0..newChars do
           buff[j] = buff[j+nextSeqStart];
 
+      // and reset to see whether there's another sequence ahead
       readPos = 1;
     }
 
+    // update the position to read to next
     readPos += newChars;
 
+    // if we're about to run out of space, grow the buffer by 2x
     if readPos + readSize > buffCap {
       buffCap *= 2;
       buffDom = {0..<buffCap};
     }
   } while newChars;
 
+  // if anything remains, process it
   if readPos then revcomp(buff, readPos);
 }
 
 proc revcomp(seq, size) {
-  param chunkSize = linesPerChunk*cols;
+  param chunkSize = linesPerChunk*cols;  // the size of the chunks to deal out
 
+  // compute how big the header is
   var headerSize = 1;
-  while seq[headerSize-1] != eol {
+  while seq[headerSize - 1] != eol {
     headerSize += 1;
   }
 
+  // write out the header
   stdoutBin.writeBinary(c_ptrTo(seq[0]), headerSize);
 
-  var charsLeft, charsWritten: atomic int = size - headerSize - 1;
+  // set up the atomic variables we'll use to coordinate between tasks
+  var charsLeft, charsWritten: atomic int = size - (headerSize + 1);
 
+  // create a task per core
   coforall tid in 0..<here.maxTaskPar {
-    var myChunk: [0..<chunkSize] uint(8);
+    var myBuff: [0..<chunkSize] uint(8);  // the task's buffer
 
     while true {
+      // atomically grab a chunk of work characterized by 'myStartChar'
       var myStartChar = charsLeft.read();
       while myStartChar > 0 &&
-            !charsLeft.compareExchange(myStartChar, myStartChar-chunkSize) { }
+            !charsLeft.compareExchange(myStartChar, myStartChar - chunkSize) {
+      }
 
+      // TODO: Move grab of startChar into helper routine
       if myStartChar < 0 then break;
 
       const myChunkSize = min(chunkSize, myStartChar + 1),
@@ -100,52 +114,52 @@ proc revcomp(seq, size) {
           chunkLeft = myChunkSize,
           chunkPos = 0;
 
-      if !lastLineGaps {
-        revcomp(chunkPos, cursor, chunkLeft, myChunk, seq);
-        chunkLeft = 0;
+      if lastLineGaps == 0 {
+        revcomp(chunkPos, cursor, chunkLeft, myBuff, seq);
+      } else {
+        while chunkLeft >= cols {
+          revcomp(chunkPos, cursor, lastLineChars, myBuff, seq);
+          chunkPos += lastLineChars;
+          cursor -= lastLineChars + 1;
+
+          revcomp(chunkPos, cursor, lastLineGaps, myBuff, seq);
+          chunkPos += lastLineGaps;
+          cursor -= lastLineGaps;
+
+          myBuff[chunkPos] = eol;
+          chunkPos += 1;
+
+          chunkLeft -= cols;
+        }
+
+        if chunkLeft then
+          revcomp(chunkPos, cursor, lastLineChars + 1, myBuff, seq);
       }
-
-      while chunkLeft >= cols {
-        revcomp(chunkPos, cursor, lastLineChars, myChunk, seq);
-        chunkPos += lastLineChars;
-        cursor -= lastLineChars+1;
-
-        revcomp(chunkPos, cursor, lastLineGaps, myChunk, seq);
-        chunkPos += lastLineGaps;
-        cursor -= lastLineGaps;
-
-        myChunk[chunkPos] = eol;
-        chunkPos += 1;
-
-        chunkLeft -= cols;
-      }
-
-      if chunkLeft then
-        revcomp(chunkPos, cursor, lastLineChars+1, myChunk, seq);
 
       charsWritten.waitFor(myStartChar);
-      stdoutBin.writeBinary(c_ptrTo(myChunk[0]), myChunkSize);
+      stdoutBin.writeBinary(c_ptrTo(myBuff[0]), myChunkSize);
       charsWritten.write(myStartChar-myChunkSize);
     }
   }
 }
 
-proc revcomp(in dstFront, in charAfter, spanLen, myChunk, seq) {
+proc revcomp(in dstFront, in charAfter, spanLen, buff, seq) {
   if spanLen%2 {
     charAfter -= 1;
-    myChunk[dstFront] = cmpl[seq[charAfter]];
+    buff[dstFront] = cmpl[seq[charAfter]];
     dstFront += 1;
   }
 
   for 2..spanLen by -2 {
     charAfter -= 2;
     const src = c_ptrTo(seq[charAfter]): c_ptr(uint(16)),
-          dst = c_ptrTo(myChunk[dstFront]): c_ptr(uint(16));
+          dst = c_ptrTo(buff[dstFront]): c_ptr(uint(16));
     dst.deref() = pairCmpl[src.deref()];
     dstFront += 2;
   }
 }
 
+// see whether there's a sequence start ('>') in 'buff[low..#count]'
 proc findSeqStart(buff, low, count, ref ltOff) {
   ltOff = max(int);
   forall i in low..#count with (min reduce ltOff) {
@@ -156,6 +170,7 @@ proc findSeqStart(buff, low, count, ref ltOff) {
   return ltOff != max(int);
 }
 
+// combine two nucleotide characters to create a 16-bit integer
 inline proc join(i: uint(16), j) {
   return i << 8 | j;
 }
