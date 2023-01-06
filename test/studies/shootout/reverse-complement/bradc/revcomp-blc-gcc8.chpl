@@ -85,37 +85,37 @@ proc revcomp(seq, size) {
     var myChunk: [0..<chunkSize] uint(8);
 
     do {
-      var myStartChar = charsLeft.read(),
-          myChunkSize = min(chunkSize, myStartChar);
+      var myStartChar = charsLeft.read();
 
       do {
         if myStartChar <= 0 then
           break;
       } while !charsLeft.compareExchange(myStartChar, myStartChar-chunkSize);
 
+      const myChunkSize = min(chunkSize, myStartChar);
 
       if myStartChar > 0 {
         const lastLineChars = (myStartChar-1)%cols,
               lastLineGaps = cols-1-lastLineChars;
 
-        var lastProc = myStartChar + headerSize,
+        var cursor = myStartChar + headerSize,
             chunkLeft = myChunkSize,
             chunkPos = 0;
 
         if !lastLineGaps {
-          revcompHelp(chunkPos, lastProc, chunkLeft, myChunk, seq);
+          revcompHelp(chunkPos, cursor, chunkLeft, myChunk, seq);
           chunkLeft = 0;
         }
 
         // TODO: Could this be a strided while loop?
         while chunkLeft >= cols {
-          revcompHelp(chunkPos, lastProc, lastLineChars, myChunk, seq);
+          revcompHelp(chunkPos, cursor, lastLineChars, myChunk, seq);
           chunkPos += lastLineChars;
-          lastProc -= lastLineChars+1;
+          cursor -= lastLineChars+1;
           
-          revcompHelp(chunkPos, lastProc, lastLineGaps, myChunk, seq);
+          revcompHelp(chunkPos, cursor, lastLineGaps, myChunk, seq);
           chunkPos += lastLineGaps;
-          lastProc -= lastLineGaps;
+          cursor -= lastLineGaps;
           
           myChunk[chunkPos] = eol;
           chunkPos += 1;
@@ -124,11 +124,11 @@ proc revcomp(seq, size) {
         }
         
         if chunkLeft {
-          revcompHelp(chunkPos, lastProc, lastLineChars+1, myChunk, seq);
+          revcompHelp(chunkPos, cursor, lastLineChars+1, myChunk, seq);
         }
 
         charsWritten.waitFor(myStartChar);
-        stdoutBin.write(myChunk[0..<myChunkSize]);
+        stdoutBin.writeBinary(c_ptrTo(myChunk[0]), myChunkSize);
         charsWritten.write(myStartChar-myChunkSize);
       }
     } while myStartChar > 0;
