@@ -39,6 +39,9 @@
 static CUcontext *chpl_gpu_primary_ctx;
 static int *deviceClockRates;
 
+static CUmodule chpl_gpu_cuda_module;
+static void* function_table[256];
+
 static bool chpl_gpu_has_context() {
   CUcontext cuda_context = NULL;
 
@@ -73,6 +76,7 @@ static void chpl_gpu_ensure_context() {
   }
 }
 
+
 void chpl_gpu_impl_init() {
   int         num_devices;
 
@@ -105,6 +109,10 @@ void chpl_gpu_impl_init() {
     cuDeviceGetAttribute(&deviceClockRates[i], CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device);
 
     chpl_gpu_primary_ctx[i] = context;
+  }
+
+  for (i=0 ; i<256 ; i++) {
+    function_table[i] = NULL;
   }
 }
 
@@ -162,6 +170,36 @@ bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
   return true;
 }
 
+static long double get_time_in_ms() {
+  struct timeval tv;
+
+  gettimeofday(&tv, NULL);
+
+  return (tv.tv_sec*1000000+tv.tv_usec)/1000.0;
+}
+
+static void chpl_gpu_load_module(const char* fatbin_data) {
+  if (chpl_gpu_cuda_module == NULL) {
+    CUDA_CALL(cuModuleLoadData(&chpl_gpu_cuda_module, fatbin_data));
+  }
+  assert(chpl_gpu_cuda_module);
+}
+
+
+static void* chpl_gpu_load_function(const char* name) {
+  int function_id = atoi(name+strlen("chpl_gpu_kernel"));
+
+  if (function_table[function_id] == NULL) {
+    assert(chpl_gpu_cuda_module);
+
+    CUfunction function;
+    CUDA_CALL(cuModuleGetFunction(&function, (CUmodule)chpl_gpu_cuda_module, name));
+
+    function_table[function_id] = (void*)function;
+  }
+  return function_table[function_id];
+}
+
 static void chpl_gpu_launch_kernel_help(int ln,
                                         int32_t fn,
                                         const char* fatbinData,
@@ -176,8 +214,23 @@ static void chpl_gpu_launch_kernel_help(int ln,
                                         va_list args) {
   chpl_gpu_ensure_context();
 
+  long double start_time = 0.0;
+
+  float load_time = 0.0;
+  float prep_time = 0.0;
+  float kernel_time = 0.0;
+  float teardown_time = 0.0;
+
+  start_time = get_time_in_ms();
+
   int i;
-  void* function = chpl_gpu_getKernel(fatbinData, name);
+  chpl_gpu_load_module(fatbinData);
+  void* function = chpl_gpu_load_function(name);
+
+  load_time = get_time_in_ms() - start_time;
+
+  start_time = get_time_in_ms();
+
   // TODO: this should use chpl_mem_alloc
   void*** kernel_params = chpl_malloc(nargs*sizeof(void**));
 
@@ -218,6 +271,10 @@ static void chpl_gpu_launch_kernel_help(int ln,
     }
   }
 
+  prep_time = get_time_in_ms() - start_time;
+
+  start_time = get_time_in_ms();
+
   CUDA_CALL(cuLaunchKernel((CUfunction)function,
                            grd_dim_x, grd_dim_y, grd_dim_z,
                            blk_dim_x, blk_dim_y, blk_dim_z,
@@ -230,7 +287,11 @@ static void chpl_gpu_launch_kernel_help(int ln,
 
   CUDA_CALL(cudaDeviceSynchronize());
 
+  kernel_time = get_time_in_ms() - start_time;
+
   CHPL_GPU_DEBUG("Synchronization complete %s\n", name);
+
+  start_time = get_time_in_ms();
 
   // free GPU memory allocated for kernel parameters
   for (i=0 ; i<nargs ; i++) {
@@ -241,6 +302,11 @@ static void chpl_gpu_launch_kernel_help(int ln,
 
   // TODO: this should use chpl_mem_free
   chpl_free(kernel_params);
+
+  teardown_time = get_time_in_ms() - start_time;
+
+  printf("<%20s> Load: %3.6f, Prep: %3.6f, Kernel: %3.6f, Teardown: %3.6f\n",
+         name, load_time, prep_time, kernel_time, teardown_time);
 }
 
 void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,

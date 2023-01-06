@@ -88,7 +88,12 @@ proc main() {
       //
       // This forall loop will be offloaded onto the GPU.
       forall (a, b, c) in zip(A, B, C) do
-        a = b + alpha * c;
+        a = b + c;
+
+      // can we do direct indexing? And what would be the difference?
+      // we will have separate induction variables here, that may cause multiple
+      // muls
+      // try changing the array iterator do a memory walk.
 
       execTime(trial) = getCurrentTime() - startTime;  // store the elapsed time
     }
