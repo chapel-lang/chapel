@@ -8,8 +8,7 @@
 use CTypes, IO;
 
 config param readSize = 65536,
-             linesPerChunk = 8192,
-             n = 0;  // TODO: How can this work?  Why does --n=0 work?
+             linesPerChunk = 8192;
 
 param eol = '\n'.toByte(),  // end-of-line, as an integer
       cols = 61,            // # of characters per full row (including '\n')
@@ -84,53 +83,49 @@ proc revcomp(seq, size) {
   coforall tid in 0..<here.maxTaskPar {
     var myChunk: [0..<chunkSize] uint(8);
 
-    do {
+    while true {
       var myStartChar = charsLeft.read();
+      while myStartChar > 0 &&
+            !charsLeft.compareExchange(myStartChar, myStartChar-chunkSize) { }
 
-      do {
-        if myStartChar <= 0 then
-          break;
-      } while !charsLeft.compareExchange(myStartChar, myStartChar-chunkSize);
+      if myStartChar < 0 then break;
 
-      const myChunkSize = min(chunkSize, myStartChar);
+      const myChunkSize = min(chunkSize, myStartChar),
+            lastLineChars = (myStartChar-1)%cols,
+            lastLineGaps = cols-1-lastLineChars;
 
-      if myStartChar > 0 {
-        const lastLineChars = (myStartChar-1)%cols,
-              lastLineGaps = cols-1-lastLineChars;
+      var cursor = myStartChar + headerSize,
+          chunkLeft = myChunkSize,
+          chunkPos = 0;
 
-        var cursor = myStartChar + headerSize,
-            chunkLeft = myChunkSize,
-            chunkPos = 0;
-
-        if !lastLineGaps {
-          revcomp(chunkPos, cursor, chunkLeft, myChunk, seq);
-          chunkLeft = 0;
-        }
-
-        while chunkLeft >= cols {
-          revcomp(chunkPos, cursor, lastLineChars, myChunk, seq);
-          chunkPos += lastLineChars;
-          cursor -= lastLineChars+1;
-          
-          revcomp(chunkPos, cursor, lastLineGaps, myChunk, seq);
-          chunkPos += lastLineGaps;
-          cursor -= lastLineGaps;
-          
-          myChunk[chunkPos] = eol;
-          chunkPos += 1;
-          
-          chunkLeft -= cols;
-        }
-        
-        if chunkLeft {
-          revcomp(chunkPos, cursor, lastLineChars+1, myChunk, seq);
-        }
-
-        charsWritten.waitFor(myStartChar);
-        stdoutBin.writeBinary(c_ptrTo(myChunk[0]), myChunkSize);
-        charsWritten.write(myStartChar-myChunkSize);
+      if !lastLineGaps {
+        revcomp(chunkPos, cursor, chunkLeft, myChunk, seq);
+        chunkLeft = 0;
       }
-    } while myStartChar > 0;
+
+      while chunkLeft >= cols {
+        revcomp(chunkPos, cursor, lastLineChars, myChunk, seq);
+        chunkPos += lastLineChars;
+        cursor -= lastLineChars+1;
+
+        revcomp(chunkPos, cursor, lastLineGaps, myChunk, seq);
+        chunkPos += lastLineGaps;
+        cursor -= lastLineGaps;
+
+        myChunk[chunkPos] = eol;
+        chunkPos += 1;
+
+        chunkLeft -= cols;
+      }
+
+      if chunkLeft {
+        revcomp(chunkPos, cursor, lastLineChars+1, myChunk, seq);
+      }
+
+      charsWritten.waitFor(myStartChar);
+      stdoutBin.writeBinary(c_ptrTo(myChunk[0]), myChunkSize);
+      charsWritten.write(myStartChar-myChunkSize);
+    }
   }
 }
 
@@ -143,9 +138,9 @@ proc revcomp(in dstFront, in charAfter, spanLen, myChunk, seq) {
 
   for 2..spanLen by -2 {
     charAfter -= 2;
-    const pair = ((c_ptrTo(seq[charAfter])):c_ptr(uint(16))).deref();
-    const dest = c_ptrTo(myChunk[dstFront]):c_ptr(uint(16));
-    dest.deref() = pairCmpl[pair];
+    const src = c_ptrTo(seq[charAfter]): c_ptr(uint(16)),
+          dst = c_ptrTo(myChunk[dstFront]):c_ptr(uint(16));
+    dst.deref() = pairCmpl[src.deref()];
     dstFront += 2;
   }
 }
