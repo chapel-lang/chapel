@@ -702,7 +702,7 @@ void Visitor::checkPrivateDecl(const Decl* node) {
   if (!enclosingDecl) return;
 
   if (enclosingDecl->isFunction()) {
-    error(node, "private declarations within function bodies are meaningless.");
+    warn(node, "private declarations within function bodies are meaningless.");
 
   } else if (enclosingDecl->isAggregateDecl() && !node->isTypeDecl()) {
     CHPL_POSTPARSE_REPORT(builder_, CantApplyPrivate, node,
@@ -716,11 +716,11 @@ void Visitor::checkPrivateDecl(const Decl* node) {
       }
 
     } else if (parent(0)->isBlock() && !isParentFalseBlock(0)) {
-      error(node, "private declarations within nested blocks are meaningless.");
+      warn(node, "private declarations within nested blocks are meaningless.");
 
     } else if (parent(0) != mod) {
-      error(node, "private declarations are meaningless outside "
-                  "of module level declarations.");
+      warn(node, "private declarations are meaningless outside "
+                 "of module level declarations.");
     }
   }
 }
