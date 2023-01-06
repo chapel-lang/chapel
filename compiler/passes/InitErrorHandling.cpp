@@ -24,7 +24,6 @@
 #include "AstVisitorTraverse.h"
 #include "ForallStmt.h"
 #include "IfExpr.h"
-#include "initializerRules.h" // Dunno if need this
 #include "LoopExpr.h"
 #include "stmt.h"
 #include "astutil.h"
@@ -177,6 +176,100 @@ bool InitErrorHandling::inOnInCoforall() const {
 bool InitErrorHandling::inOnInForall() const {
   return inOn() && mPrevBlockType == cBlockForall;
 }
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+static const char* initName(CallExpr* stmt);
+
+static bool isSuperInit(CallExpr* stmt) {
+  const char* name = initName(stmt);
+
+  return name != NULL && strcmp(name, "super") == 0 ? true : false;
+}
+static bool isThisInit (CallExpr* stmt) {
+  const char* name = initName(stmt);
+
+  return name != NULL && strcmp(name, "this") == 0 ? true: false;
+}
+
+bool InitErrorHandling::isInitDone (CallExpr* stmt) const {
+  bool retval = false;
+
+  if (stmt->isPrimitive(PRIM_SETCID)) {
+    // PRIM_SETCID is used to indicate that we've moved on to the next phase of
+    // operation.  However, it is also used when the parent initializer has been
+    // inlined into the contents of this one, at this stage in compilation.  So
+    // we need to ensure we have the right argument being called for it.
+    INT_ASSERT(stmt->numActuals() >= 1); // Check my assumptions
+    SymExpr* firstArg = toSymExpr(stmt->get(1));
+    if (firstArg->symbol() == mFn->_this) {
+      retval = true;
+    }
+  }
+  return retval;
+}
+
+bool isInitStmt(CallExpr* stmt) {
+  return isSuperInit(stmt) == true || isThisInit(stmt) == true;
+}
+
+static const char* initName(CallExpr* stmt) {
+  const char* retval = NULL;
+
+  // Not in a primitive
+  if (stmt->baseExpr != NULL) {
+    SymExpr* base = toSymExpr(stmt->baseExpr);
+    INT_ASSERT(base); // Check my assumptions
+
+    // Call is to an initializer
+    if (strcmp(base->symbol()->name, "init") == 0 &&
+        stmt->numActuals() >= 1) {
+      SymExpr* firstArg = toSymExpr(stmt->get(1));
+      if (strcmp(firstArg->symbol()->name, "super") == 0 ||
+          strcmp(firstArg->symbol()->name, "super_tmp") == 0) {
+        retval = "super";
+      } else if (firstArg->symbol()->hasFlag(FLAG_ARG_THIS)) {
+        retval = "this";
+      }
+    }
+  }
+
+  return retval;
+}
+
+bool InitErrorHandling::hasInitDone(BlockStmt* block) {
+  Expr* stmt   = block->body.head;
+  bool  retval = false;
+
+  while (stmt != NULL && retval == false) {
+    if (CallExpr* callExpr = toCallExpr(stmt)) {
+      retval = isInitDone(callExpr);
+
+    } else if (CondStmt* cond = toCondStmt(stmt)) {
+      if (cond->elseStmt == NULL) {
+        retval = hasInitDone(cond->thenStmt);
+
+      } else {
+        retval = hasInitDone(cond->thenStmt) || hasInitDone(cond->elseStmt);
+      }
+
+    } else if (BlockStmt* block = toBlockStmt(stmt)) {
+      retval = hasInitDone(block);
+
+    } else if (ForallStmt* block = toForallStmt(stmt)) {
+      retval = hasInitDone(block->loopBody());
+    }
+
+    stmt = stmt->next;
+  }
+
+  return retval;
+}
+
+
 
 /************************************* | **************************************
 *                                                                             *

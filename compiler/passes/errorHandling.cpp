@@ -26,6 +26,7 @@
 #include "DeferStmt.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "InitErrorHandling.h"
 #include "driver.h"
 #include "resolution.h"
 #include "stmt.h"
@@ -170,7 +171,8 @@ static AList castToErrorNilable(Symbol* error, SymExpr* &castedError);
 class ErrorHandlingVisitor final : public AstVisitorTraverse {
 
 public:
-  ErrorHandlingVisitor       (ArgSymbol* _outFormal, LabelSymbol* _epilogue);
+  ErrorHandlingVisitor       (ArgSymbol* _outFormal, LabelSymbol* _epilogue,
+                              InitErrorHandling* _state);
 
   bool enterTryStmt  (TryStmt*   node) override;
   void exitTryStmt   (TryStmt*   node) override;
@@ -197,6 +199,7 @@ private:
   int                 deferDepth;
   ArgSymbol*          outError;
   LabelSymbol*        epilogue;
+  InitErrorHandling*  state;
 
   void   lowerCatches      (const TryInfo& info);
   AList  setOutGotoEpilogue(VarSymbol*     error);
@@ -215,10 +218,12 @@ private:
 };
 
 ErrorHandlingVisitor::ErrorHandlingVisitor(ArgSymbol*   _outError,
-                                           LabelSymbol* _epilogue) {
+                                           LabelSymbol* _epilogue,
+                                           InitErrorHandling* _state) {
   deferDepth = 0;
   outError   = _outError;
   epilogue   = _epilogue;
+  state = _state;
 }
 
 bool ErrorHandlingVisitor::enterTryStmt(TryStmt* node) {
@@ -1336,7 +1341,13 @@ static void lowerErrorHandling(FnSymbol* fn)
     INT_ASSERT(epilogue); // throws requires an epilogue
   }
 
-  ErrorHandlingVisitor visitor = ErrorHandlingVisitor(outError, epilogue);
+  InitErrorHandling* state = NULL;
+  if (fn->isInitializer() == true) {
+    state = new InitErrorHandling(fn);
+  }
+
+  ErrorHandlingVisitor visitor = ErrorHandlingVisitor(outError, epilogue,
+                                                      state);
   fn->accept(&visitor);
 }
 

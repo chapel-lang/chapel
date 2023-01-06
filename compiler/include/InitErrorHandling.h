@@ -88,6 +88,8 @@ private:
                   InitErrorHandling();
 
   InitPhase       startPhase(FnSymbol*  fn)                              const;
+  bool isInitDone(CallExpr* stmt) const;
+  bool hasInitDone(BlockStmt* block);
 
   const char*     phaseToString(InitPhase phase)                         const;
 
@@ -97,5 +99,7 @@ private:
   BlockType       mPrevBlockType;
 
 };
+
+bool isInitStmt(CallExpr* stmt);
 
 #endif
