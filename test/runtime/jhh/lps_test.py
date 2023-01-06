@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 
-import unittest 
+"""
+Locale-per-socket tests. Usage: ./lps_test.py. The -v flag prints
+verbose output, the -f flag will cause testing to stop when the
+first test fails.
+"""
+
+import unittest
 import subprocess
 import os
 import sys
@@ -55,7 +61,7 @@ class LocalePerSocket(unittest.TestCase):
 
         # Should not be set by default
         if 'CHPL_RT_LOCALES_PER_NODE' in os.environ:
-            del os.environ['CHPL_RT_LOCALES_PER_NODE'] 
+            del os.environ['CHPL_RT_LOCALES_PER_NODE']
 
         # Compile the test program
         if verbose:
@@ -100,15 +106,17 @@ class LocalePerSocket(unittest.TestCase):
                 if "FI_MR_ALLOCATED" in line:
                     return True
                 else:
-                    return False
-        return None # should not get here
+                    break
+        return False
 
     def test_00_base(self):
-        global cls 
+        global cls
         proc = run("./lps_test -nl 2 -v")
-        self.checkArgs(2, 2, 1, self.sockets * self.cores * self.threads, None, proc.stdout)
+        self.checkArgs(2, 2, 1, self.sockets * self.cores * self.threads,
+                       None, proc.stdout)
         self.assertIn('oversubscribed = False', proc.stdout)
-        self.assertIn('Using %d Shepherds' % (self.sockets * self.cores), proc.stdout)
+        self.assertIn('Using %d Shepherds' % (self.sockets * self.cores),
+                      proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getCores("all"),
                       proc.stdout)
 
@@ -120,9 +128,11 @@ class LocalePerSocket(unittest.TestCase):
         env = os.environ.copy()
         env['CHPL_RT_OVERSUBSCRIBED'] = 'true'
         proc = run("./lps_test -nl 2 -v", env=env)
-        self.checkArgs(2, 2, 1, self.sockets * self.cores * self.threads, None, proc.stdout)
+        self.checkArgs(2, 2, 1, self.sockets * self.cores * self.threads,
+                       None, proc.stdout)
         self.assertIn('oversubscribed = True', proc.stdout)
-        self.assertIn('Using %s Shepherds' % (self.sockets * self.cores), proc.stdout)
+        self.assertIn('Using %s Shepherds' % (self.sockets * self.cores),
+                      proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getCores("all"), proc.stdout)
 
     def test_02_two_lpn(self):
@@ -153,7 +163,8 @@ class LocalePerSocket(unittest.TestCase):
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         proc = run(['./lps_test', '-nl', '1', '-v'], env=env)
-        self.checkArgs(1, 1, 2, self.sockets * self.cores * self.threads, 'none', proc.stdout)
+        self.checkArgs(1, 1, 2, self.sockets * self.cores * self.threads,
+                       'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('Using %s Shepherds' % self.cores, proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getCores(0), proc.stdout)
@@ -192,12 +203,14 @@ class LocalePerSocket(unittest.TestCase):
         # One worker per PU.
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
-        env['CHPL_RT_NUM_THREADS_PER_LOCALE'] = '%s' % (self.sockets * self.cores)
+        env['CHPL_RT_NUM_THREADS_PER_LOCALE'] = \
+            '%s' % (self.sockets * self.cores)
         proc = run("./lps_test -nl 2 -v", env=env)
         self.checkArgs(1, 2, 2, self.sockets * self.cores, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('using socket 1', proc.stdout)
-        self.assertIn('Using %s Shepherds' % (self.sockets * self.cores), proc.stdout)
+        self.assertIn('Using %s Shepherds' % (self.sockets * self.cores),
+                      proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getThreads(0), proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getThreads(1), proc.stdout)
 
@@ -213,7 +226,8 @@ class LocalePerSocket(unittest.TestCase):
         self.checkArgs(1, 2, 2, self.sockets * self.cores, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('using socket 1', proc.stdout)
-        self.assertIn('Using %s Shepherds' % (self.sockets * self.cores), proc.stdout)
+        self.assertIn('Using %s Shepherds' % (self.sockets * self.cores),
+                      proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getThreads(0), proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getThreads(1), proc.stdout)
 
@@ -241,7 +255,8 @@ class LocalePerSocket(unittest.TestCase):
         self.checkArgs(1, 2, 2, self.sockets * self.cores, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('using socket 1', proc.stdout)
-        self.assertIn('Using %d Shepherds' % (self.sockets * self.cores - 2), proc.stdout)
+        self.assertIn('Using %d Shepherds' % (self.sockets * self.cores - 2),
+                      proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getThreads(0,1),
                       proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getThreads(1,1),
