@@ -96,8 +96,8 @@ proc revcomp(seq, size) {
   coforall tid in 0..<here.maxTaskPar {
     var myBuff: [0..<chunkSize] uint(8);  // the task's buffer
 
-    var myStartChar = 0;
-    while getWork(myStartChar) {
+    var myStartChar = charsLeft.fetchSub(chunkSize);
+    while myStartChar >= 0 {
       const myChunkSize = min(chunkSize, myStartChar + 1),
             lastLineChars = myStartChar % cols,
             lastLineGaps = cols - (lastLineChars + 1);
@@ -131,14 +131,9 @@ proc revcomp(seq, size) {
       while charsWritten.read() != myStartChar {}
       stdoutBin.writeBinary(c_ptrTo(myBuff[0]), myChunkSize);
       charsWritten.write(myStartChar-myChunkSize);
+
+      myStartChar = charsLeft.fetchSub(chunkSize);
     }
-  }
-
-  // helper to atomically grab a chunk of work characterized by 'myStartChar'
-  inline proc getWork(ref myStartChar) {
-    myStartChar = charsLeft.fetchSub(chunkSize);
-
-    return myStartChar >= 0;
   }
 }
 
