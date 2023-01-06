@@ -926,6 +926,124 @@ ConfigSettingsList& configSettings(Context* context) {
   return QUERY_END(result);
 }
 
+const uast::Attributes* idToAttributes(Context* context, ID id) {
+  const uast::Attributes* ret = nullptr;
+  if (id.isEmpty()) return ret;
+
+  auto ast = parsing::idToAst(context, id);
+  if (ast && ast->isDecl()) {
+    auto decl = ast->toDecl();
+    ret = decl->attributes();
+  }
+
+  return ret;
+}
+
+static std::string
+createDefaultDeprecationMessage(Context* context, const NamedDecl* target) {
+  std::string ret = target->name().c_str();
+  ret += " is deprecated";
+  return ret;
+}
+
+static std::string
+createDefaultUnstableMessage(Context* context, const NamedDecl* target) {
+  std::string ret = target->name().c_str();
+  ret += " is unstable";
+  return ret;
+}
+
+static bool const&
+reportDeprecationWarningForIdQuery(Context* context, ID idMention,
+                                   ID idTarget) {
+  QUERY_BEGIN(reportDeprecationWarningForIdQuery, context, idMention,
+              idTarget);
+  bool ret = false;
+
+  if (idMention.isEmpty() || idTarget.isEmpty()) return QUERY_END(ret);
+
+  auto attributes = parsing::idToAttributes(context, idTarget);
+  if (!attributes) return QUERY_END(ret);
+
+  bool isDeprecated = attributes->hasPragma(PRAGMA_DEPRECATED) ||
+                      attributes->isDeprecated();
+  if (!isDeprecated) return QUERY_END(ret);
+
+  auto mention = parsing::idToAst(context, idMention);
+  auto target = parsing::idToAst(context, idTarget);
+  CHPL_ASSERT(mention && target);
+
+  auto targetNamedDecl  = target->toNamedDecl();
+  if (!targetNamedDecl) return QUERY_END(ret);
+
+  auto storedMsg = attributes->deprecationMessage();
+  std::string msg = storedMsg.isEmpty()
+      ? createDefaultDeprecationMessage(context, targetNamedDecl)
+      : storedMsg.c_str();
+
+  CHPL_ASSERT(msg.size() > 0);
+
+  CHPL_REPORT(context, Deprecation, msg, mention, targetNamedDecl);
+  ret = true;
+
+  return QUERY_END(ret);
+}
+
+static bool const&
+reportUnstableWarningForIdQuery(Context* context, ID idMention,
+                                ID idTarget) {
+  QUERY_BEGIN(reportUnstableWarningForIdQuery, context, idMention,
+              idTarget);
+  bool ret = false;
+
+  if (idMention.isEmpty() || idTarget.isEmpty()) return QUERY_END(ret);
+
+  auto attributes = parsing::idToAttributes(context, idTarget);
+  if (!attributes) return QUERY_END(ret);
+
+  bool isUnstable = attributes->hasPragma(PRAGMA_UNSTABLE) ||
+                    attributes->isUnstable();
+  if (!isUnstable) return QUERY_END(ret);
+
+  auto mention = parsing::idToAst(context, idMention);
+  auto target = parsing::idToAst(context, idTarget);
+  CHPL_ASSERT(mention && target);
+
+  auto targetNamedDecl  = target->toNamedDecl();
+  if (!targetNamedDecl) return QUERY_END(ret);
+
+  auto storedMsg = attributes->unstableMessage();
+  std::string msg = storedMsg.isEmpty()
+      ? createDefaultUnstableMessage(context, targetNamedDecl)
+      : storedMsg.c_str();
+
+  CHPL_ASSERT(msg.size() > 0);
+
+  CHPL_REPORT(context, Deprecation, msg, mention, targetNamedDecl);
+  ret = true;
+
+  return QUERY_END(ret);
+}
+
+// TODO: Use context flags to check when we should emit errors. Do not call
+// the query if an error should not fire - we do not want to add a pointless
+// entry to the query cache.
+void
+deprecationWarningForId(Context* context, ID idMention, ID idTarget) {
+  auto attr = parsing::idToAttributes(context, idTarget);
+  if (!attr || !attr->isDeprecated()) return;
+  std::ignore = reportDeprecationWarningForIdQuery(context, idMention,
+                                                   idTarget);
+}
+
+// TODO: As above.
+void
+unstableWarningForId(Context* context, ID idMention, ID idTarget) {
+  auto attr = parsing::idToAttributes(context, idTarget);
+  if (!attr || !attr->isUnstable()) return;
+  std::ignore = reportUnstableWarningForIdQuery(context, idMention,
+                                                idTarget);
+}
 
 } // end namespace parsing
 } // end namespace chpl

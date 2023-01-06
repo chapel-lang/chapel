@@ -188,6 +188,46 @@ class UniqueString final {
     return this->startsWith(prefix.c_str());
   }
 
+  /**
+    Checks to see if the string ends with another string.
+    \rst
+    .. note::
+
+      will not handle prefix strings with embedded ``'\0'`` bytes
+    \endrst
+  */
+  bool endsWith(const char* suffix) const {
+    auto suffixLength = strlen(suffix);
+    if (suffixLength < this->length()) return false;
+    auto offset = suffixLength - this->length();
+    bool ret = (0 == strncmp(this->c_str() + offset, suffix, suffixLength));
+    return ret;
+  }
+
+  /**
+    Checks to see if the string ends with another string.
+    \rst
+    .. note::
+
+      will not handle prefix strings with embedded ``'\0'`` bytes
+    \endrst
+   */
+  bool endsWith(const UniqueString suffix) const {
+    return this->endsWith(suffix.c_str());
+  }
+
+  /**
+    Checks to see if the string ends with another string.
+    \rst
+    .. note::
+
+      will not handle prefix strings with embedded ``'\0'`` bytes
+    \endrst
+   */
+  bool endsWith(const std::string& suffix) const {
+    return this->endsWith(suffix.c_str());
+  }
+
   inline bool operator==(const UniqueString other) const {
     return this->s.i.v == other.s.i.v;
   }
