@@ -5,7 +5,7 @@
    based on the C gcc #8 version by Jeremy Zerfas
 */
 
-use CTypes, IO;
+use IO, CTypes;
 
 config param readSize = 65536,
              linesPerChunk = 8192;
@@ -42,6 +42,8 @@ proc main(args: [] string) {
     var newChars = stdinBin.readBinary(c_ptrTo(buff[endOfSeq]), readSize),
         nextSeq: int;
 
+    // TODO: would really just like an array.find() routine rather
+    // than writing my own
     while findSeqStart(buff, endOfSeq, newChars, nextSeq) {
       revcomp(buff, nextSeq);
 
@@ -145,29 +147,17 @@ proc revcomp(in dstFront, in charAfter, spanLen, myChunk, seq) {
   }
 }
 
-
 // TODO: any clever way to avoid the inds.low conditional?
-proc findSeqStart(buff, in low, in count, ref ltOff) {
-  // TODO: this seems silly... must be some way to avoid?
-  // TODO: If we can, could make 'in' arguments not be anymore
-  if low == 0 {
-    low += 1;
-    count -= 1;
-    if count < 0 then
-      return false;
-  }
-
+proc findSeqStart(buff, low, count, ref ltOff) {
   ltOff = max(int);
   forall i in low..#count with (min reduce ltOff) {
-    if buff[i] == '>'.toByte() {
+    if buff[i] == '>'.toByte() && i != 0 {
       ltOff = i;
     }
   }
   return ltOff != max(int);
 }
 
-
 inline proc join(i: uint(16), j) {
   return i << 8 | j;
 }
-
