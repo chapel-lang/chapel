@@ -103,17 +103,16 @@ proc revcomp(seq, size) {
             chunkPos = 0;
 
         if !lastLineGaps {
-          revcompHelp(chunkPos, cursor, chunkLeft, myChunk, seq);
+          revcomp(chunkPos, cursor, chunkLeft, myChunk, seq);
           chunkLeft = 0;
         }
 
-        // TODO: Could this be a strided while loop?
         while chunkLeft >= cols {
-          revcompHelp(chunkPos, cursor, lastLineChars, myChunk, seq);
+          revcomp(chunkPos, cursor, lastLineChars, myChunk, seq);
           chunkPos += lastLineChars;
           cursor -= lastLineChars+1;
           
-          revcompHelp(chunkPos, cursor, lastLineGaps, myChunk, seq);
+          revcomp(chunkPos, cursor, lastLineGaps, myChunk, seq);
           chunkPos += lastLineGaps;
           cursor -= lastLineGaps;
           
@@ -124,7 +123,7 @@ proc revcomp(seq, size) {
         }
         
         if chunkLeft {
-          revcompHelp(chunkPos, cursor, lastLineChars+1, myChunk, seq);
+          revcomp(chunkPos, cursor, lastLineChars+1, myChunk, seq);
         }
 
         charsWritten.waitFor(myStartChar);
@@ -135,19 +134,18 @@ proc revcomp(seq, size) {
   }
 }
 
-proc revcompHelp(in dstFront, in charAfter, in spanLen, myChunk, seq) {
+proc revcomp(in dstFront, in charAfter, spanLen, myChunk, seq) {
   if spanLen%2 {
     charAfter -= 1;
     myChunk[dstFront] = cmpl[seq[charAfter]];
     dstFront += 1;
   }
 
-  while spanLen >= 2 {
+  for 2..spanLen by -2 {
     charAfter -= 2;
     const pair = ((c_ptrTo(seq[charAfter])):c_ptr(uint(16))).deref();
     const dest = c_ptrTo(myChunk[dstFront]):c_ptr(uint(16));
     dest.deref() = pairCmpl[pair];
-    spanLen -= 2;
     dstFront += 2;
   }
 }
