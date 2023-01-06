@@ -71,20 +71,22 @@ proc main(args: [] string) {
 }
 
 proc revcomp(seq, size) {
+  param chunkSize = linesPerChunk*cols;
+
   var headerSize = 0;
   while seq[headerSize] != eol {
     headerSize += 1;
   }
   stdoutBin.write(seq[0..headerSize]);
 
-  var charsLeft, writtenChars: atomic int = size-(headerSize+1);
+  var charsLeft, charsWritten: atomic int = size-(headerSize+1);
 
   coforall tid in 0..<here.maxTaskPar {
-    var chunkToWrite: [0..<linesPerChunk*cols] uint(8);
+    var myChunk: [0..<chunkSize] uint(8);
 
     do {
       var myCharsLeft = charsLeft.read(),
-          chunkSize = linesPerChunk * cols;
+          myChunkSize = min(chunkSize, myCharsLeft);
 
       do {
         if myCharsLeft <= 0 then
@@ -96,58 +98,54 @@ proc revcomp(seq, size) {
         const fullLineFrontSpanLength = (myCharsLeft-1)%cols,
               fullLineRearSpanLength = cols-1-fullLineFrontSpanLength;
 
-        if chunkSize > myCharsLeft {
-          chunkSize = myCharsLeft;
-        }
-
         var lastProc = myCharsLeft + headerSize,
-            chunkLeft = chunkSize,
+            chunkLeft = myChunkSize,
             chunkPos = 0;
 
         if !fullLineRearSpanLength {
-          revcompHelp(chunkPos, lastProc, chunkLeft, chunkToWrite, seq);
+          revcompHelp(chunkPos, lastProc, chunkLeft, myChunk, seq);
           chunkLeft = 0;
         }
 
         // TODO: Could this be a strided while loop?
         while chunkLeft >= cols {
-          revcompHelp(chunkPos, lastProc, fullLineFrontSpanLength, chunkToWrite, seq);
+          revcompHelp(chunkPos, lastProc, fullLineFrontSpanLength, myChunk, seq);
           chunkPos += fullLineFrontSpanLength;
           lastProc -= fullLineFrontSpanLength+1;
           
-          revcompHelp(chunkPos, lastProc, fullLineRearSpanLength, chunkToWrite, seq);
+          revcompHelp(chunkPos, lastProc, fullLineRearSpanLength, myChunk, seq);
           chunkPos += fullLineRearSpanLength;
           lastProc -= fullLineRearSpanLength;
           
-          chunkToWrite[chunkPos] = eol;
+          myChunk[chunkPos] = eol;
           chunkPos += 1;
           
           chunkLeft -= cols;
         }
         
         if chunkLeft {
-          revcompHelp(chunkPos, lastProc, fullLineFrontSpanLength+1, chunkToWrite, seq);
+          revcompHelp(chunkPos, lastProc, fullLineFrontSpanLength+1, myChunk, seq);
         }
 
-        writtenChars.waitFor(myCharsLeft);
-        stdoutBin.write(chunkToWrite[0..<chunkSize]);
-        writtenChars.write(myCharsLeft-chunkSize);
+        charsWritten.waitFor(myCharsLeft);
+        stdoutBin.write(myChunk[0..<myChunkSize]);
+        charsWritten.write(myCharsLeft-myChunkSize);
       }
     } while myCharsLeft > 0;
   }
 }
 
-proc revcompHelp(in dstFront, in charAfter, in spanLen, chunkToWrite, seq) {
+proc revcompHelp(in dstFront, in charAfter, in spanLen, myChunk, seq) {
   if spanLen%2 {
     charAfter -= 1;
-    chunkToWrite[dstFront] = cmpl[seq[charAfter]];
+    myChunk[dstFront] = cmpl[seq[charAfter]];
     dstFront += 1;
   }
 
   while spanLen >= 2 {
     charAfter -= 2;
     const pair = ((c_ptrTo(seq[charAfter])):c_ptr(uint(16))).deref();
-    const dest = c_ptrTo(chunkToWrite[dstFront]):c_ptr(uint(16));
+    const dest = c_ptrTo(myChunk[dstFront]):c_ptr(uint(16));
     dest.deref() = pairCmpl[pair];
     spanLen -= 2;
     dstFront += 2;
@@ -158,8 +156,9 @@ proc revcompHelp(in dstFront, in charAfter, in spanLen, chunkToWrite, seq) {
 config const useMemChr = false;
 
 // TODO: any clever way to avoid the inds.low conditional?
-proc findSeqStart(chunk, in low, in count, ref ltOff, locUseMemChr = useMemChr) {
-  // this seems silly... must be some way to avoid?
+proc findSeqStart(buff, in low, in count, ref ltOff, locUseMemChr = useMemChr) {
+  // TODO: this seems silly... must be some way to avoid?
+  // TODO: If we can, could make 'in' arguments not be anymore
   if low == 0 {
     low += 1;
     count -= 1;
@@ -169,16 +168,16 @@ proc findSeqStart(chunk, in low, in count, ref ltOff, locUseMemChr = useMemChr) 
 
   if locUseMemChr {
     extern proc memchr(s, c, n): c_void_ptr;
-    var ptr = memchr(c_ptrTo(chunk[low]), '>'.toByte(), count);
+    var ptr = memchr(c_ptrTo(buff[low]), '>'.toByte(), count);
     if ptr == c_nil then
       return false;
     else {
-      ltOff = ptr: c_ptr(uint(8)) - c_ptrTo(chunk[low]) + 1;
+      ltOff = ptr: c_ptr(uint(8)) - c_ptrTo(buff[low]) + 1;
       return true;
     }
   } else {
     var (val, loc) = maxloc reduce zip([i in low..#count]
-                                       chunk[i] == '>'.toByte(),
+                                       buff[i] == '>'.toByte(),
                                        low..#count);
     if val {
       ltOff = loc;
