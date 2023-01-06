@@ -166,7 +166,7 @@ void PhaseTracker::ReportPass() const
 static const char* passGroups[][2] = {
   {"total time (front end)", "parallel"},
   {"total time (middle end)", "denormalize"},
-  {"total time (back end)", "makeBinary"},
+  {"total time (back end)", "driverCleanup"},
 };
 
 void PhaseTracker::ReportTotal() const
