@@ -158,7 +158,7 @@ proc findSeqStart(buff, low, count, ref ltOff) {
   ltOff = max(int);
   forall i in low..#count with (min reduce ltOff) {
     if buff[i] == '>'.toByte() && i != 0 {
-      ltOff = i;
+      ltOff = min(ltOff, i);
     }
   }
   return ltOff != max(int);
