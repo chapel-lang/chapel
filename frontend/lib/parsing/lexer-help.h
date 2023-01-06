@@ -363,7 +363,7 @@ static std::string eatStringLiteral(yyscan_t scanner,
         break; // EOF reached, so stop
       } else {
         syntax(scanner, nLines, nCols,
-               "unexpected string escape: '%c'.", (char) c);
+               "unexpected string escape: '\\%c'.", (char) c);
         isErroneousOut = true;
       }
     } else {
