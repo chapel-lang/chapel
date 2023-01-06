@@ -7,6 +7,10 @@
 
 use CTypes, IO;
 
+config param readSize = 65536,
+             linesPerChunk = 8192,
+             n = 0;  // TODO: How can this work?  Why does --n=0 work?
+
 param eol = '\n'.toByte(),  // end-of-line, as an integer
       cols = 61,            // # of characters per full row (including '\n')
 
@@ -16,10 +20,6 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
              //    ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
              //    ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
       maxNucls = cmpl.size;
-
-config param readSize = 65536,
-             linesPerChunk = 8192,
-             n = 0;
 
 var pairCmpl: [0..<join(maxNucls, maxNucls)] uint(16);
 
@@ -43,18 +43,12 @@ proc main(args: [] string) {
     var newChars = stdinBin.readBinary(c_ptrTo(buff[endOfSeq]), readSize),
         nextSeq: int;
 
-    while findSeq(buff, endOfSeq, newChars, nextSeq) {
-      // TODO: This seems convoluted
-      const finalChars = nextSeq - endOfSeq;
-      endOfSeq += finalChars;
-      // endOfSeq = endOfSeq + (nextSeq - endOfSeq)
+    while findSeqStart(buff, endOfSeq, newChars, nextSeq) {
+      revcomp(buff, nextSeq);
 
-      revcomp(buff, endOfSeq);
+      newChars -= nextSeq - endOfSeq + 1;
 
-      // TODO: Why this +1?
-      // TODO: Move up?
-      newChars -= finalChars+1;
-
+      // TODO: how much impact?
       // TODO: abstract into a mem-move type of method on arrays?
       serial (nextSeq < newChars) do
         forall j in 0..newChars do
@@ -65,7 +59,7 @@ proc main(args: [] string) {
 
     endOfSeq += newChars;
 
-    if endOfSeq+readSize > buffCap {
+    if endOfSeq + readSize > buffCap {
       buffCap *= 2;
       buffDom = {0..<buffCap};
     }
@@ -77,38 +71,36 @@ proc main(args: [] string) {
 }
 
 proc revcomp(seq, size) {
-//  return;
-
   var headerSize = 0;
   while seq[headerSize] != eol {
     headerSize += 1;
   }
   stdoutBin.write(seq[0..headerSize]);
 
-  var sharedCharsLeft, writtenChars: atomic int = size-(headerSize+1);
+  var charsLeft, writtenChars: atomic int = size-(headerSize+1);
 
   coforall tid in 0..<here.maxTaskPar {
     var chunkToWrite: [0..<linesPerChunk*cols] uint(8);
 
     do {
-      var charsLeft = sharedCharsLeft.read(),
+      var myCharsLeft = charsLeft.read(),
           chunkSize = linesPerChunk * cols;
 
       do {
-        if charsLeft <= 0 then
+        if myCharsLeft <= 0 then
           break;
-      } while !sharedCharsLeft.compareExchange(charsLeft, charsLeft-chunkSize);
+      } while !charsLeft.compareExchange(myCharsLeft, myCharsLeft-chunkSize);
 
 
-      if charsLeft > 0 {
-        const fullLineFrontSpanLength = (charsLeft-1)%cols,
+      if myCharsLeft > 0 {
+        const fullLineFrontSpanLength = (myCharsLeft-1)%cols,
               fullLineRearSpanLength = cols-1-fullLineFrontSpanLength;
 
-        if chunkSize > charsLeft {
-          chunkSize = charsLeft;
+        if chunkSize > myCharsLeft {
+          chunkSize = myCharsLeft;
         }
 
-        var lastProc = charsLeft + headerSize,
+        var lastProc = myCharsLeft + headerSize,
             chunkLeft = chunkSize,
             chunkPos = 0;
 
@@ -137,11 +129,11 @@ proc revcomp(seq, size) {
           revcompHelp(chunkPos, lastProc, fullLineFrontSpanLength+1, chunkToWrite, seq);
         }
 
-        writtenChars.waitFor(charsLeft);
+        writtenChars.waitFor(myCharsLeft);
         stdoutBin.write(chunkToWrite[0..<chunkSize]);
-        writtenChars.write(charsLeft-chunkSize);
+        writtenChars.write(myCharsLeft-chunkSize);
       }
-    } while charsLeft > 0;
+    } while myCharsLeft > 0;
   }
 }
 
@@ -166,7 +158,7 @@ proc revcompHelp(in dstFront, in charAfter, in spanLen, chunkToWrite, seq) {
 config const useMemChr = false;
 
 // TODO: any clever way to avoid the inds.low conditional?
-proc findSeq(chunk, in low, in count, ref ltOff, locUseMemChr = useMemChr) {
+proc findSeqStart(chunk, in low, in count, ref ltOff, locUseMemChr = useMemChr) {
   // this seems silly... must be some way to avoid?
   if low == 0 {
     low += 1;
