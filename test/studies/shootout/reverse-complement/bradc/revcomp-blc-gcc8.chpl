@@ -29,58 +29,58 @@ var stdinBin  = openfd(0).reader(iokind.native, locking=false,
 
 proc main(args: [] string) {
   const chars = eol..<maxChars;
-  forall i in chars do
-    foreach j in chars do
-      pairCmpl[join(i,j)] = join(cmpl(j), cmpl(i));
+  forall (i,j) in {chars, chars} do
+    pairCmpl[join(i,j)] = join(cmpl(j), cmpl(i));
 
   var buffCap = readSize,
       buffDom = {0..<buffCap},
       buff: [buffDom] uint(8),
-      endOfSeq = 0;
+      readPos = 0;
 
   do {
-    var newChars = stdinBin.readBinary(c_ptrTo(buff[endOfSeq]), readSize),
-        nextSeq: int;
+    // TODO: Would prefer to use the array form of readBinary(), but it
+    // doesn't currently return the number of elements read on EOF...
+    var newChars = stdinBin.readBinary(c_ptrTo(buff[readPos]), readSize),
+        nextSeqStart: int;
 
     // TODO: would really just like an array.find() routine rather
     // than writing my own
-    while findSeqStart(buff, endOfSeq, newChars, nextSeq) {
-      revcomp(buff, nextSeq);
+    while findSeqStart(buff, readPos, newChars, nextSeqStart) {
+      revcomp(buff, nextSeqStart);
 
-      newChars -= nextSeq - endOfSeq + 1;
+      newChars -= nextSeqStart - readPos + 1;
 
-      // TODO: how much impact?
+      // TODO: how much impact is this forall?
       // TODO: abstract into a mem-move type of method on arrays?
-      serial (nextSeq < newChars) do
+      serial (nextSeqStart < newChars) do
         forall j in 0..newChars do
-          buff[j] = buff[j+nextSeq];
+          buff[j] = buff[j+nextSeqStart];
 
-      endOfSeq = 1;
+      readPos = 1;
     }
 
-    endOfSeq += newChars;
+    readPos += newChars;
 
-    if endOfSeq + readSize > buffCap {
+    if readPos + readSize > buffCap {
       buffCap *= 2;
       buffDom = {0..<buffCap};
     }
   } while newChars;
 
-  if endOfSeq {
-    revcomp(buff, endOfSeq);
-  }
+  if readPos then revcomp(buff, readPos);
 }
 
 proc revcomp(seq, size) {
   param chunkSize = linesPerChunk*cols;
 
-  var headerSize = 0;
-  while seq[headerSize] != eol {
+  var headerSize = 1;
+  while seq[headerSize-1] != eol {
     headerSize += 1;
   }
-  stdoutBin.write(seq[0..headerSize]);
 
-  var charsLeft, charsWritten: atomic int = size-(headerSize+1);
+  stdoutBin.writeBinary(c_ptrTo(seq[0]), headerSize);
+
+  var charsLeft, charsWritten: atomic int = size - headerSize;
 
   coforall tid in 0..<here.maxTaskPar {
     var myChunk: [0..<chunkSize] uint(8);
@@ -96,7 +96,7 @@ proc revcomp(seq, size) {
             lastLineChars = (myStartChar-1)%cols,
             lastLineGaps = cols-1-lastLineChars;
 
-      var cursor = myStartChar + headerSize,
+      var cursor = myStartChar + headerSize - 1,
           chunkLeft = myChunkSize,
           chunkPos = 0;
 
