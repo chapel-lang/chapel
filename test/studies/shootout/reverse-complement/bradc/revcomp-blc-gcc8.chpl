@@ -139,17 +139,15 @@ proc revcomp(in dstFront, in charAfter, spanLen, myChunk, seq) {
   for 2..spanLen by -2 {
     charAfter -= 2;
     const src = c_ptrTo(seq[charAfter]): c_ptr(uint(16)),
-          dst = c_ptrTo(myChunk[dstFront]):c_ptr(uint(16));
+          dst = c_ptrTo(myChunk[dstFront]): c_ptr(uint(16));
     dst.deref() = pairCmpl[src.deref()];
     dstFront += 2;
   }
 }
 
 
-config const useMemChr = false;
-
 // TODO: any clever way to avoid the inds.low conditional?
-proc findSeqStart(buff, in low, in count, ref ltOff, locUseMemChr = useMemChr) {
+proc findSeqStart(buff, in low, in count, ref ltOff) {
   // TODO: this seems silly... must be some way to avoid?
   // TODO: If we can, could make 'in' arguments not be anymore
   if low == 0 {
@@ -159,30 +157,17 @@ proc findSeqStart(buff, in low, in count, ref ltOff, locUseMemChr = useMemChr) {
       return false;
   }
 
-  if locUseMemChr {
-    extern proc memchr(s, c, n): c_void_ptr;
-    var ptr = memchr(c_ptrTo(buff[low]), '>'.toByte(), count);
-    if ptr == c_nil then
-      return false;
-    else {
-      ltOff = ptr: c_ptr(uint(8)) - c_ptrTo(buff[low]) + 1;
-      return true;
-    }
-  } else {
-    var (val, loc) = maxloc reduce zip([i in low..#count]
-                                       buff[i] == '>'.toByte(),
-                                       low..#count);
-    if val {
-      ltOff = loc;
-      return true;
-    } else {
-      return false;
+  ltOff = max(int);
+  forall i in low..#count with (min reduce ltOff) {
+    if buff[i] == '>'.toByte() {
+      ltOff = i;
     }
   }
+  return ltOff != max(int);
 }
 
 
-inline proc join(i:uint(16), j) {
+inline proc join(i: uint(16), j) {
   return i << 8 | j;
 }
 
