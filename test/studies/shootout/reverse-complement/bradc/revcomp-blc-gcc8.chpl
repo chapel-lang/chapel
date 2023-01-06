@@ -128,7 +128,7 @@ proc revcomp(seq, size) {
           revcomp(chunkPos, cursor, lastLineChars + 1, myBuff, seq);
       }
 
-      charsWritten.waitFor(myStartChar);
+      while charsWritten.read() != myStartChar {}
       stdoutBin.writeBinary(c_ptrTo(myBuff[0]), myChunkSize);
       charsWritten.write(myStartChar-myChunkSize);
     }
@@ -136,12 +136,9 @@ proc revcomp(seq, size) {
 
   // helper to atomically grab a chunk of work characterized by 'myStartChar'
   inline proc getWork(ref myStartChar) {
-    myStartChar = charsLeft.read();
-    do {
-      if myStartChar < 0 then return false;
-    } while !charsLeft.compareExchange(myStartChar, myStartChar - chunkSize);
+    myStartChar = charsLeft.fetchSub(chunkSize);
 
-    return true;
+    return myStartChar >= 0;
   }
 }
 
