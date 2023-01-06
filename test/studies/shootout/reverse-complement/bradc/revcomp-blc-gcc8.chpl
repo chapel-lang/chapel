@@ -12,138 +12,117 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
 
       // A 'bytes' value that stores the complement of each base at its index
       cmpl = b"          \n                                                  "
-           + b"    TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R";
+           + b"    TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R",
              //    ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
              //    ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
+      maxNucls = cmpl.size;
 
 config param readSize = 65536,
              linesPerChunk = 8192,
              n = 0;
 
-var pairCmpl: [0..<join(cmpl.size, cmpl.size)] uint(16);
+var pairCmpl: [0..<join(maxNucls, maxNucls)] uint(16);
 
 var stdinBin  = openfd(0).reader(iokind.native, locking=false,
-                                 hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
+                           hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
     stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                 hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
-
-inline proc join(i:uint(16), j) {
-  return i << 8 | j;
-}
+                           hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
 
 proc main(args: [] string) {
-  const offs = eol..<cmpl.size;
-  forall i in offs do
-    foreach j in offs do
+  const nucls = eol..<maxNucls;
+  forall i in nucls do
+    foreach j in nucls do
       pairCmpl[join(i,j)] = join(cmpl(j), cmpl(i));
 
-  var seqCap = readSize,
-      totRead, seqSize = 0,
-      seqDom = {0..<seqCap},
-      seq: [seqDom] uint(8);
+  var buffCap = readSize,
+      buffDom = {0..<buffCap},
+      buff: [buffDom] uint(8),
+      endOfSeq = 0;
 
   do {
-//    const more = stdinBin.read(seq[seqSize..#readSize]);
-//    var bytesRead = stdinBin.offset() - totRead;
-    var bytesRead = stdinBin.readBinary(c_ptrTo(seq[seqSize]), readSize);
-//    totRead += readSize;
-    totRead += bytesRead;
-//    stderr.writef("read %i bytes\n", bytesRead);
-    do {
-//      stderr.writeln("Looking for sep in ", seqSize..#bytesRead);
-/*
-      stderr.writeln((findSep(seq, seqSize, bytesRead, true),
-                      findSep(seq, seqSize, bytesRead, true)));
-                      */
-      const seqStart = findSep(seq, seqSize, bytesRead);
-      // TODO: any way to not duplicate check in this conditional and 'while'?
-      // Should our while loops support variable declarations?
-      if seqStart != -1 {
-        const prevBytes = seqStart - seqSize;
-        seqSize += prevBytes;
+    var newChars = stdinBin.readBinary(c_ptrTo(buff[endOfSeq]), readSize),
+        nextSeq: int;
 
-          revcomp(seq, seqSize);
+    while findSeq(buff, endOfSeq, newChars, nextSeq) {
+      // TODO: This seems convoluted
+      const finalChars = nextSeq - endOfSeq;
+      endOfSeq += finalChars;
+      // endOfSeq = endOfSeq + (nextSeq - endOfSeq)
 
-//          stderr.writeln("Shifting from ", seqStart..#(bytesRead-prevBytes), " to ",
-//                  0..<bytesRead-prevBytes);
-        bytesRead -= prevBytes+1;
-        // abstract into a mem-move type of routine?
-        serial (seqStart < bytesRead) do
-          // TODO: Would foreach be better?
-          forall j in 0..bytesRead do
-            seq[j] = seq[j+seqStart];
+      revcomp(buff, endOfSeq);
 
-          seqSize = 1;
+      // TODO: Why this +1?
+      // TODO: Move up?
+      newChars -= finalChars+1;
 
-      }
-    } while seqStart != -1;
+      // TODO: abstract into a mem-move type of method on arrays?
+      serial (nextSeq < newChars) do
+        forall j in 0..newChars do
+          buff[j] = buff[j+nextSeq];
 
-    seqSize += bytesRead;
-
-    if seqSize+readSize > seqCap {
-      seqCap *= 2;
-//      stderr.writeln("Doubling capacity to ", seqCap);
-      seqDom = {0..<seqCap};
+      endOfSeq = 1;
     }
-//  } while more;
-   } while bytesRead;
 
-  if seqSize {
-    revcomp(seq, seqSize);
+    endOfSeq += newChars;
+
+    if endOfSeq+readSize > buffCap {
+      buffCap *= 2;
+      buffDom = {0..<buffCap};
+    }
+  } while newChars;
+
+  if endOfSeq {
+    revcomp(buff, endOfSeq);
   }
 }
 
 proc revcomp(seq, size) {
 //  return;
+
   var headerSize = 0;
   while seq[headerSize] != eol {
     headerSize += 1;
   }
   stdoutBin.write(seq[0..headerSize]);
-  //  stdoutBin.write(seq[headerSize+1..<size]);
+
   var sharedCharsLeft, writtenChars: atomic int = size-(headerSize+1);
+
   coforall tid in 0..<here.maxTaskPar {
     var chunkToWrite: [0..<linesPerChunk*cols] uint(8);
+
     do {
       var charsLeft = sharedCharsLeft.read(),
           chunkSize = linesPerChunk * cols;
+
       do {
         if charsLeft <= 0 then
           break;
-//        stderr.writeln((charsLeft, linesPerChunk*cols));
-//        stderr.writeln(tid, "trying to save ", charsLeft-chunkSize);
       } while !sharedCharsLeft.compareExchange(charsLeft, charsLeft-chunkSize);
-//      writeln("Help: ", (charsLeft, sharedCharsLeft.read()));
 
 
       if charsLeft > 0 {
         const fullLineFrontSpanLength = (charsLeft-1)%cols,
               fullLineRearSpanLength = cols-1-fullLineFrontSpanLength;
 
-      if chunkSize > charsLeft {
-        chunkSize = charsLeft;
-      }
+        if chunkSize > charsLeft {
+          chunkSize = charsLeft;
+        }
 
-      var lastProc = charsLeft + headerSize,  // sharedFront.fetchSub(chunkSize),
-          chunkLeft = chunkSize;
-//      stderr.writeln(tid, ": ", (fullLineFrontSpanLength, fullLineRearSpanLength, chunkSize, lastProc));
+        var lastProc = charsLeft + headerSize,
+            chunkLeft = chunkSize,
+            chunkPos = 0;
 
-        var chunkPos = 0;
-
-        if (!fullLineRearSpanLength) {
-//        writeln("Calling with ", (chunkPos, lastProc, chunkLeft));
+        if !fullLineRearSpanLength {
           revcompHelp(chunkPos, lastProc, chunkLeft, chunkToWrite, seq);
           chunkLeft = 0;
         }
 
         // TODO: Could this be a strided while loop?
-        while (chunkLeft >= cols) {
-//        writeln("B: Calling with ", (chunkPos, lastProc, chunkLeft));
+        while chunkLeft >= cols {
           revcompHelp(chunkPos, lastProc, fullLineFrontSpanLength, chunkToWrite, seq);
           chunkPos += fullLineFrontSpanLength;
           lastProc -= fullLineFrontSpanLength+1;
           
-//        writeln("C: Calling with ", (chunkPos, lastProc, chunkLeft));
           revcompHelp(chunkPos, lastProc, fullLineRearSpanLength, chunkToWrite, seq);
           chunkPos += fullLineRearSpanLength;
           lastProc -= fullLineRearSpanLength;
@@ -154,8 +133,7 @@ proc revcomp(seq, size) {
           chunkLeft -= cols;
         }
         
-        if (chunkLeft) {
-//        writeln("D: Calling with ", (chunkPos, lastProc, chunkLeft));
+        if chunkLeft {
           revcompHelp(chunkPos, lastProc, fullLineFrontSpanLength+1, chunkToWrite, seq);
         }
 
@@ -167,81 +145,60 @@ proc revcomp(seq, size) {
   }
 }
 
-  proc revcompHelp(in dstFront, in charAfter, in spanLen, chunkToWrite, seq) {
-    if spanLen%2 {
-      charAfter -= 1;
-      chunkToWrite[dstFront] = cmpl[seq[charAfter]];
-      dstFront += 1;
-    }
-
-    while (spanLen >= 2) {
-      charAfter -= 2;
-      const pair = ((c_ptrTo(seq[charAfter])):c_ptr(uint(16))).deref();
-      const dest = c_ptrTo(chunkToWrite[dstFront]):c_ptr(uint(16));
-      dest.deref() = pairCmpl[pair];
-      spanLen -= 2;
-      dstFront += 2;
-    }
+proc revcompHelp(in dstFront, in charAfter, in spanLen, chunkToWrite, seq) {
+  if spanLen%2 {
+    charAfter -= 1;
+    chunkToWrite[dstFront] = cmpl[seq[charAfter]];
+    dstFront += 1;
   }
+
+  while spanLen >= 2 {
+    charAfter -= 2;
+    const pair = ((c_ptrTo(seq[charAfter])):c_ptr(uint(16))).deref();
+    const dest = c_ptrTo(chunkToWrite[dstFront]):c_ptr(uint(16));
+    dest.deref() = pairCmpl[pair];
+    spanLen -= 2;
+    dstFront += 2;
+  }
+}
 
 
 config const useMemChr = false;
 
 // TODO: any clever way to avoid the inds.low conditional?
-proc findSep(chunk, in low, in count, locUseMemChr = useMemChr) {
-  // this seems silly... must be some way to avoid
+proc findSeq(chunk, in low, in count, ref ltOff, locUseMemChr = useMemChr) {
+  // this seems silly... must be some way to avoid?
   if low == 0 {
     low += 1;
     count -= 1;
     if count < 0 then
-      return -1;
+      return false;
   }
 
-  var res: int;
   if locUseMemChr {
     extern proc memchr(s, c, n): c_void_ptr;
     var ptr = memchr(c_ptrTo(chunk[low]), '>'.toByte(), count);
     if ptr == c_nil then
-//      res = -1;
-      return -1;
-    else
-//      res = ptr: c_ptr(uint(8)) - c_ptrTo(chunk[0]) + 1;
-      return ptr: c_ptr(uint(8)) - c_ptrTo(chunk[low]) + 1;
-  } else {
-    var (val, loc) = maxloc reduce zip([i in low..#count] chunk[i] == '>'.toByte(), low..#count);
-    if val == true then {
-//      stderr.writeln("returning ", loc);
-      return loc;
-    } else
-      return -1;
-  }
-
-/*
-var i = low;
-    var ptr2 = c_ptrTo(chunk[i]);
-    do {
-      i += 1;
-      if ptr2.deref() == '>'.toByte() then {
-//        stderr.writeln((res, i));
-        return i;
-      }
-      ptr2 += 1;
-    } while i != low + count;
-//  stderr.writeln((res, -1));
-  return -1;
-  }
-  */
-
-/*
-    for i in low..#count {
-      if chunk[i] == 
-//      stderr.writeln("Found sep at ", i);
-//        stderr.writeln((i, res));
-        return i;
-      }
+      return false;
+    else {
+      ltOff = ptr: c_ptr(uint(8)) - c_ptrTo(chunk[low]) + 1;
+      return true;
     }
-//    stderr.writeln((-1, res));
-    return -1;
+  } else {
+    var (val, loc) = maxloc reduce zip([i in low..#count]
+                                       chunk[i] == '>'.toByte(),
+                                       low..#count);
+    if val {
+      ltOff = loc;
+      return true;
+    } else {
+      return false;
+    }
   }
-  */
 }
+
+
+inline proc join(i:uint(16), j) {
+  return i << 8 | j;
+}
+
