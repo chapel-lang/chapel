@@ -1329,9 +1329,8 @@ module OS {
   }
 
   /*
-     :class:`EofError` is the subclass of :class:`Error` corresponding to
+     :class:`EofError` is the the Chapel-specific error corresponding to
      encountering end-of-file.
-     This is a Chapel-specific error.
   */
   class EofError : Error {
     var details: string;
@@ -1357,10 +1356,9 @@ module OS {
   }
 
   /*
-     :class:`UnexpectedEofError` is the subclass of :class:`IoError`
+     :class:`UnexpectedEofError` is the Chapel-specific error
      corresponding to encountering end-of-file before the requested amount of
      input could be read.
-     This is a Chapel-specific error.
   */
   class UnexpectedEofError : Error {
     var details: string;
@@ -1386,9 +1384,8 @@ module OS {
   }
 
   /*
-     :class:`BadFormatError` is the subclass of :class:`IoError` corresponding
+     :class:`BadFormatError` is the Chapel-specific error corresponding
      to incorrectly-formatted input.
-     This is a Chapel-specific error.
   */
   class BadFormatError : Error {
     var details: string;
