@@ -93,8 +93,8 @@ proc revcomp(seq, size) {
       if myStartChar < 0 then break;
 
       const myChunkSize = min(chunkSize, myStartChar),
-            lastLineChars = (myStartChar-1)%cols,
-            lastLineGaps = cols-1-lastLineChars;
+            lastLineChars = (myStartChar - 1) % cols,
+            lastLineGaps = cols - (lastLineChars + 1);
 
       var cursor = myStartChar + headerSize - 1,
           chunkLeft = myChunkSize,
@@ -120,9 +120,8 @@ proc revcomp(seq, size) {
         chunkLeft -= cols;
       }
 
-      if chunkLeft {
+      if chunkLeft then
         revcomp(chunkPos, cursor, lastLineChars+1, myChunk, seq);
-      }
 
       charsWritten.waitFor(myStartChar);
       stdoutBin.writeBinary(c_ptrTo(myChunk[0]), myChunkSize);
@@ -147,7 +146,6 @@ proc revcomp(in dstFront, in charAfter, spanLen, myChunk, seq) {
   }
 }
 
-// TODO: any clever way to avoid the inds.low conditional?
 proc findSeqStart(buff, low, count, ref ltOff) {
   ltOff = max(int);
   forall i in low..#count with (min reduce ltOff) {
