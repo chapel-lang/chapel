@@ -1091,9 +1091,9 @@ module OS {
   pragma "always propagate line file info"
   proc createSystemOrIoError(err: errorCode, details: string = ""): Error {
     select err {
-      when EEOF do return new owned EofError(details, err);
-      when ESHORT do return new owned UnexpectedEofError(details, err);
-      when EFORMAT do return new owned BadFormatError(details, err);
+      when EEOF do return new owned EofError(details);
+      when ESHORT do return new owned UnexpectedEofError(details);
+      when EFORMAT do return new owned BadFormatError(details);
       otherwise do return createSystemError(err, details);
     }
   }
@@ -1117,7 +1117,7 @@ module OS {
   */
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc createSystemError(err: errorCode, details: string = "") {
+  proc createSystemError(err: errorCode, details: string = ""): SystemError {
     if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
       return new owned BlockingIoError(details, err);
     } else if err == ECHILD {
@@ -1334,15 +1334,14 @@ module OS {
      This is a Chapel-specific error.
   */
   class EofError : Error {
-    var err: errorCode;
     var details: string;
 
-    proc init(details: string = "", err: errorCode = EEOF:errorCode) {
-      this.err = err;
+    proc init(details: string = "") {
       this.details = details;
     }
 
     override proc message() {
+      var err:errorCode = EEOF;
       var strerror_err: c_int = 0;
       var errstr = sys_strerror_syserr_str(err, strerror_err);
       var err_msg: string;
@@ -1364,15 +1363,14 @@ module OS {
      This is a Chapel-specific error.
   */
   class UnexpectedEofError : Error {
-    var err: errorCode;
     var details: string;
 
-    proc init(details: string = "", err: errorCode = ESHORT:errorCode) {
-      this.err = err;
+    proc init(details: string = "") {
       this.details = details;
     }
 
     override proc message() {
+      var err:errorCode = ESHORT;
       var strerror_err: c_int = 0;
       var errstr = sys_strerror_syserr_str(err, strerror_err);
       var err_msg: string;
@@ -1393,15 +1391,14 @@ module OS {
      This is a Chapel-specific error.
   */
   class BadFormatError : Error {
-    var err: errorCode;
     var details: string;
 
-    proc init(details: string = "", err: errorCode = EFORMAT:errorCode) {
-      this.err = err;
+    proc init(details: string = "") {
       this.details = details;
     }
 
     override proc message() {
+      var err:errorCode = EFORMAT;
       var strerror_err: c_int = 0;
       var errstr = sys_strerror_syserr_str(err, strerror_err);
       var err_msg: string;
