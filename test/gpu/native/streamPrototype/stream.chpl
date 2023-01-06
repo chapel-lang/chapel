@@ -87,7 +87,8 @@ proc main() {
       // Compute the multiply-add on b and c, storing the result to a.
       //
       // This forall loop will be offloaded onto the GPU.
-      forall (a, b, c) in zip(A, B, C) do
+      /*forall (a, b, c) in zip(A, B, C) do*/
+      foreach (a, b, c) in zip(A, B, C) do
         a = b + c;
 
       // can we do direct indexing? And what would be the difference?

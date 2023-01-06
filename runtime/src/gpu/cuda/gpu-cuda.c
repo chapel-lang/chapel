@@ -226,6 +226,9 @@ static void chpl_gpu_launch_kernel_help(int ln,
   int i;
   chpl_gpu_load_module(fatbinData);
   void* function = chpl_gpu_load_function(name);
+  /*void* function = chpl_gpu_getKernel(fatbinData, name);*/
+
+  
 
   load_time = get_time_in_ms() - start_time;
 
