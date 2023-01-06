@@ -896,7 +896,7 @@ local var mentioned again
   means a use of a function-local variable which is mentioned again
 
 outer/ref
-  means a use of a module-scope variable, an variable in an outer
+  means a use of a module-scope variable, a variable in an outer
   function, or reference variable or argument
 
 
