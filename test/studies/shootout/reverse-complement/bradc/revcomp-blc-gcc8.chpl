@@ -80,7 +80,7 @@ proc revcomp(seq, size) {
 
   stdoutBin.writeBinary(c_ptrTo(seq[0]), headerSize);
 
-  var charsLeft, charsWritten: atomic int = size - headerSize;
+  var charsLeft, charsWritten: atomic int = size - headerSize - 1;
 
   coforall tid in 0..<here.maxTaskPar {
     var myChunk: [0..<chunkSize] uint(8);
@@ -92,11 +92,11 @@ proc revcomp(seq, size) {
 
       if myStartChar < 0 then break;
 
-      const myChunkSize = min(chunkSize, myStartChar),
-            lastLineChars = (myStartChar - 1) % cols,
+      const myChunkSize = min(chunkSize, myStartChar + 1),
+            lastLineChars = myStartChar % cols,
             lastLineGaps = cols - (lastLineChars + 1);
 
-      var cursor = myStartChar + headerSize - 1,
+      var cursor = myStartChar + headerSize,
           chunkLeft = myChunkSize,
           chunkPos = 0;
 
