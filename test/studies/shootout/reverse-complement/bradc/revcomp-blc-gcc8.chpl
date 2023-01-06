@@ -19,9 +19,9 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
            + b"    TVGH  CD  M KN   YSAABW R       TVGH  CD  M KN   YSAABW R",
              //    ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑       ↑↑↑↑  ↑↑  ↑ ↑↑   ↑↑↑↑↑↑ ↑
              //    ABCDEFGHIJKLMNOPQRSTUVWXYZ      abcdefghijklmnopqrstuvwxyz
-      maxNucls = cmpl.size;
+      maxChars = cmpl.size;
 
-var pairCmpl: [0..<join(maxNucls, maxNucls)] uint(16);
+var pairCmpl: [0..<join(maxChars, maxChars)] uint(16);
 
 var stdinBin  = openfd(0).reader(iokind.native, locking=false,
                            hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
@@ -29,9 +29,9 @@ var stdinBin  = openfd(0).reader(iokind.native, locking=false,
                            hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
 
 proc main(args: [] string) {
-  const nucls = eol..<maxNucls;
-  forall i in nucls do
-    foreach j in nucls do
+  const chars = eol..<maxChars;
+  forall i in chars do
+    foreach j in chars do
       pairCmpl[join(i,j)] = join(cmpl(j), cmpl(i));
 
   var buffCap = readSize,
@@ -85,37 +85,37 @@ proc revcomp(seq, size) {
     var myChunk: [0..<chunkSize] uint(8);
 
     do {
-      var myCharsLeft = charsLeft.read(),
-          myChunkSize = min(chunkSize, myCharsLeft);
+      var myStartChar = charsLeft.read(),
+          myChunkSize = min(chunkSize, myStartChar);
 
       do {
-        if myCharsLeft <= 0 then
+        if myStartChar <= 0 then
           break;
-      } while !charsLeft.compareExchange(myCharsLeft, myCharsLeft-chunkSize);
+      } while !charsLeft.compareExchange(myStartChar, myStartChar-chunkSize);
 
 
-      if myCharsLeft > 0 {
-        const fullLineFrontSpanLength = (myCharsLeft-1)%cols,
-              fullLineRearSpanLength = cols-1-fullLineFrontSpanLength;
+      if myStartChar > 0 {
+        const lastLineChars = (myStartChar-1)%cols,
+              lastLineGaps = cols-1-lastLineChars;
 
-        var lastProc = myCharsLeft + headerSize,
+        var lastProc = myStartChar + headerSize,
             chunkLeft = myChunkSize,
             chunkPos = 0;
 
-        if !fullLineRearSpanLength {
+        if !lastLineGaps {
           revcompHelp(chunkPos, lastProc, chunkLeft, myChunk, seq);
           chunkLeft = 0;
         }
 
         // TODO: Could this be a strided while loop?
         while chunkLeft >= cols {
-          revcompHelp(chunkPos, lastProc, fullLineFrontSpanLength, myChunk, seq);
-          chunkPos += fullLineFrontSpanLength;
-          lastProc -= fullLineFrontSpanLength+1;
+          revcompHelp(chunkPos, lastProc, lastLineChars, myChunk, seq);
+          chunkPos += lastLineChars;
+          lastProc -= lastLineChars+1;
           
-          revcompHelp(chunkPos, lastProc, fullLineRearSpanLength, myChunk, seq);
-          chunkPos += fullLineRearSpanLength;
-          lastProc -= fullLineRearSpanLength;
+          revcompHelp(chunkPos, lastProc, lastLineGaps, myChunk, seq);
+          chunkPos += lastLineGaps;
+          lastProc -= lastLineGaps;
           
           myChunk[chunkPos] = eol;
           chunkPos += 1;
@@ -124,14 +124,14 @@ proc revcomp(seq, size) {
         }
         
         if chunkLeft {
-          revcompHelp(chunkPos, lastProc, fullLineFrontSpanLength+1, myChunk, seq);
+          revcompHelp(chunkPos, lastProc, lastLineChars+1, myChunk, seq);
         }
 
-        charsWritten.waitFor(myCharsLeft);
+        charsWritten.waitFor(myStartChar);
         stdoutBin.write(myChunk[0..<myChunkSize]);
-        charsWritten.write(myCharsLeft-myChunkSize);
+        charsWritten.write(myStartChar-myChunkSize);
       }
-    } while myCharsLeft > 0;
+    } while myStartChar > 0;
   }
 }
 
