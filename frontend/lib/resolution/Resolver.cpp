@@ -49,7 +49,11 @@ using namespace uast;
 using namespace types;
 
 
-static QualifiedType::Kind qualifiedTypeKindForTag(AstTag tag) {
+static QualifiedType::Kind qualifiedTypeKindForId(Context* context, ID id) {
+  if (parsing::idIsParenlessFunction(context, id))
+    return QualifiedType::PARENLESS_FUNCTION;
+
+  auto tag = parsing::idToTag(context, id);
   if (isFunction(tag)) {
     return QualifiedType::FUNCTION;
   } else if (isModule(tag) || isInclude(tag)) {
@@ -61,13 +65,14 @@ static QualifiedType::Kind qualifiedTypeKindForTag(AstTag tag) {
   return QualifiedType::UNKNOWN;
 }
 
-static QualifiedType::Kind qualifiedTypeKindForDecl(const NamedDecl* decl) {
+static QualifiedType::Kind
+qualifiedTypeKindForDecl(Context* context, const NamedDecl* decl) {
   if (const VarLikeDecl* vd = decl->toVarLikeDecl()) {
     Qualifier storageKind = vd->storageKind();
     return storageKind;
   }
 
-  QualifiedType::Kind ret = qualifiedTypeKindForTag(decl->tag());
+  QualifiedType::Kind ret = qualifiedTypeKindForId(context, decl->id());
   CHPL_ASSERT(ret != QualifiedType::UNKNOWN && "case not handled");
   return ret;
 }
@@ -821,7 +826,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
     return;
 
   // Figure out the Kind of the declaration
-  auto qtKind = qualifiedTypeKindForDecl(decl);
+  auto qtKind = qualifiedTypeKindForDecl(context, decl);
 
   // Figure out the Type of the declaration
   // Nested Identifiers and Expressions should already be resolved
@@ -1474,8 +1479,7 @@ bool Resolver::resolveSpecialCall(const Call* call) {
 
 QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   if (scopeResolveOnly) {
-    auto tag = parsing::idToTag(context, id);
-    auto kind = qualifiedTypeKindForTag(tag);
+    auto kind = qualifiedTypeKindForId(context, id);
     const Type* type = nullptr;
     return QualifiedType(kind, type);
   }
@@ -1781,58 +1785,73 @@ bool Resolver::resolveIdentifier(const Identifier* ident,
     // vec.size() == 1 and vec[0].numIds() <= 1
     const ID& id = vec[0].firstId();
     QualifiedType type;
+
+    // empty IDs from the scope resolution process are builtins
     if (id.isEmpty()) {
-      // empty IDs from the scope resolution process are builtins
       type = typeForBuiltin(context, ident->name());
-    } else {
-      // use the type established at declaration/initialization,
-      // but for things with generic type, use unknown.
-      type = typeForId(id, /*localGenericToUnknown*/ true);
-      if (type.kind() == QualifiedType::TYPE) {
-        // now, for a type that is generic with defaults,
-        // compute the default version when needed. e.g.
-        //   record R { type t = int; }
-        //   var x: R; // should refer to R(int)
-        bool computeDefaults = true;
-        bool resolvingCalledIdent = (inLeafCall &&
-                                     ident == inLeafCall->calledExpression());
-        if (resolvingCalledIdent) {
-          computeDefaults = false;
-        }
-        if (computeDefaults) {
-          if (auto t = type.type()) {
-            if (auto ct = t->getCompositeType()) {
-              // test if that type is generic
-              auto g = getTypeGenericity(context, ct);
-              if (g == Type::GENERIC_WITH_DEFAULTS) {
-                // fill in the defaults
-                type = typeWithDefaults(context, type);
-              }
+      result.setToId(id);
+      result.setType(type);
+      return false;
+    }
+
+    // use the type established at declaration/initialization,
+    // but for things with generic type, use unknown.
+    type = typeForId(id, /*localGenericToUnknown*/ true);
+
+    // Emit deprecation or unstable warnings if needed. Note that components
+    // of use/import statements are handled entirely by the scope resolver
+    // and will never be reached here. Overloaded functions are skipped via
+    // the previous branch, and warnings will not be emitted until the parent
+    // call is resolved. If the target ID is unambiguous, we can go ahead
+    // and emit an error even if there might be a typing error for e.g.,
+    // the containing call.
+    parsing::deprecationWarningForId(context, ident->id(), id);
+    parsing::unstableWarningForId(context, ident->id(), id);
+
+    if (type.kind() == QualifiedType::TYPE) {
+      // now, for a type that is generic with defaults,
+      // compute the default version when needed. e.g.
+      //   record R { type t = int; }
+      //   var x: R; // should refer to R(int)
+      bool computeDefaults = true;
+      bool resolvingCalledIdent = (inLeafCall &&
+                                   ident == inLeafCall->calledExpression());
+      if (resolvingCalledIdent) {
+        computeDefaults = false;
+      }
+      if (computeDefaults) {
+        if (auto t = type.type()) {
+          if (auto ct = t->getCompositeType()) {
+            // test if that type is generic
+            auto g = getTypeGenericity(context, ct);
+            if (g == Type::GENERIC_WITH_DEFAULTS) {
+              // fill in the defaults
+              type = typeWithDefaults(context, type);
             }
           }
         }
-      // Do not resolve function calls under 'scopeResolveOnly'
-      } else if (type.kind() == QualifiedType::PARENLESS_FUNCTION) {
-        if (!scopeResolveOnly) {
-          // resolve a parenless call
-          std::vector<CallInfoActual> actuals;
-          auto ci = CallInfo (/* name */ ident->name(),
-                              /* calledType */ QualifiedType(),
-                              /* isMethodCall */ false,
-                              /* hasQuestionArg */ false,
-                              /* isParenless */ true,
-                              actuals);
-          auto inScope = scopeStack.back();
-          auto c = resolveGeneratedCall(context, ident, ci, inScope, poiScope);
-          // save the most specific candidates in the resolution result for the id
-          ResolvedExpression& r = byPostorder.byAst(ident);
-          handleResolvedCall(r, ident, ci, c);
-        }
-        return false;
-      } else if (scopeResolveOnly &&
-                 type.kind() == QualifiedType::FUNCTION) {
-        return false;
       }
+    // Do not resolve function calls under 'scopeResolveOnly'
+    } else if (type.kind() == QualifiedType::PARENLESS_FUNCTION) {
+      if (!scopeResolveOnly) {
+        // resolve a parenless call
+        std::vector<CallInfoActual> actuals;
+        auto ci = CallInfo (/* name */ ident->name(),
+                            /* calledType */ QualifiedType(),
+                            /* isMethodCall */ false,
+                            /* hasQuestionArg */ false,
+                            /* isParenless */ true,
+                            actuals);
+        auto inScope = scopeStack.back();
+        auto c = resolveGeneratedCall(context, ident, ci, inScope, poiScope);
+        // save the most specific candidates in the resolution result for the id
+        ResolvedExpression& r = byPostorder.byAst(ident);
+        handleResolvedCall(r, ident, ci, c);
+      }
+      return false;
+    } else if (scopeResolveOnly &&
+               type.kind() == QualifiedType::FUNCTION) {
+      return false;
     }
 
     validateAndSetToId(result, ident, id);
@@ -2872,6 +2891,27 @@ void Resolver::exit(const Try* node) {
   }
   exitScope(node);
 }
+
+// Do not visit children. Un-ambiguous symbols will have warnings emitted
+// for them in scope resolve.
+bool Resolver::enter(const Use* node) {
+  const Scope* scope = scopeStack.back();
+  CHPL_ASSERT(scope);
+  resolveUsesAndImportsInScope(context, scope);
+  return false;
+}
+
+void Resolver::exit(const Use* node) {}
+
+// Ditto the above.
+bool Resolver::enter(const Import* node) {
+  const Scope* scope = scopeStack.back();
+  CHPL_ASSERT(scope);
+  resolveUsesAndImportsInScope(context, scope);
+  return false;
+}
+
+void Resolver::exit(const Import* node) {}
 
 bool Resolver::enter(const AstNode* ast) {
   enterScope(ast);

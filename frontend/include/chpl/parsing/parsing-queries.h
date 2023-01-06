@@ -332,7 +332,6 @@ bool idContainsFieldWithName(Context* context, ID typeDeclId,
 ID fieldIdWithName(Context* context, ID typeDeclId,
                    UniqueString fieldName);
 
-
 /**
  * Store config settings that were set from the command line using -s flags
  */
@@ -344,6 +343,45 @@ void setConfigSettings(Context* context, ConfigSettingsList keys);
 const
 ConfigSettingsList& configSettings(Context* context);
 
+/**
+  Given an ID, returns the attributes associated with the ID. Only
+  declarations can have associated attributes.
+ */
+const uast::Attributes* idToAttributes(Context* context, ID id);
+
+/**
+  Given an ID representing a mention of a symbol, and an ID representing
+  the symbol, determine if a deprecation warning should be produced
+  for the symbol. If so, the warning will be reported to the context
+  and returned. Returns nullptr if no deprecation warning is needed.
+
+  If a warning is produced, it will only be reported to the context
+  once per revision. The warning may not be reported if the context
+  is configured to suppress deprecation warnings, but it will still
+  be returned.
+
+  The mention ID may refer to any AST but will most often be an
+  Identifier. The target ID should refer to a NamedDecl. If it does
+  not, then nullptr is returned.
+*/
+void deprecationWarningForId(Context* context, ID idMention, ID idTarget);
+
+/**
+  Given an ID representing a mention of a symbol, and an ID representing
+  the symbol, determine if an unstable warning should be produced
+  for the symbol. If so, the warning will be reported to the context
+  and returned. Returns nullptr if no unstable warning is needed.
+
+  If a warning is produced, it will only be reported to the context
+  once per revision. The warning may not be reported if the context
+  is configured to suppress unstable warnings, but it will still
+  be returned.
+
+  The mention ID may refer to any AST but will most often be an
+  Identifier. The target ID should refer to a NamedDecl. If it does
+  not, then nullptr is returned.
+*/
+void unstableWarningForId(Context* context, ID idMention, ID idTarget);
 
 } // end namespace parsing
 } // end namespace chpl

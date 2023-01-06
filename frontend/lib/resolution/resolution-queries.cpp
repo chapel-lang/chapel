@@ -121,9 +121,9 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
         if (child->isComment() ||
             child->isTypeDecl() ||
             child->isFunction() ||
-            child->isModule() ||
-            child->isUse() ||
-            child->isImport()) {
+            child->isModule()) {
+            // child->isUse() ||
+            // child->isImport()) {
           // ignore this statement since it is not relevant to
           // the resolution of module initializers and module-level
           // variables.
@@ -165,9 +165,9 @@ scopeResolveModule(Context* context, ID id) {
             child->isTypeDecl() ||
             child->isFunction() ||
             child->isModule() ||
-            child->isInterface() ||
-            child->isUse() ||
-            child->isImport()) {
+            child->isInterface()) {
+            // child->isUse() ||
+            // child->isImport()) {
           // ignore this statement since it is not relevant to
           // the resolution of module initializers and module-level
           // variables.

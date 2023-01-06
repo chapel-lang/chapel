@@ -205,12 +205,14 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
 
         validateList();
 
-        if (modSym->hasFlag(FLAG_DEPRECATED)) {
-          modSym->generateDeprecationWarning(this);
-        }
+        if (!fDynoCompilerLibrary) {
+          if (modSym->hasFlag(FLAG_DEPRECATED)) {
+            modSym->generateDeprecationWarning(this);
+          }
 
-        if (modSym->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
-          modSym->generateUnstableWarning(this);
+          if (modSym->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
+            modSym->generateUnstableWarning(this);
+          }
         }
 
       } else {
@@ -394,12 +396,14 @@ void ImportStmt::validateUnqualified() {
                            name);
           }
 
-          if (sym->hasFlag(FLAG_DEPRECATED)) {
-            sym->generateDeprecationWarning(this);
-          }
+          if (!fDynoCompilerLibrary) {
+            if (sym->hasFlag(FLAG_DEPRECATED)) {
+              sym->generateDeprecationWarning(this);
+            }
 
-          if (sym->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
-            sym->generateUnstableWarning(this);
+            if (sym->hasFlag(FLAG_UNSTABLE)) {
+              if (fWarnUnstable) sym->generateUnstableWarning(this);
+            }
           }
         }
       }

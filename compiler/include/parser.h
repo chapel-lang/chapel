@@ -24,6 +24,7 @@
 class BlockStmt;
 class VisibilityStmt;
 
+#include "chpl/framework/ID.h"
 #include "symbol.h"
 
 extern bool fDetailedErrors;
@@ -43,6 +44,10 @@ extern bool parsingPrivate;
 
 extern bool countTokens;
 extern bool printTokens;
+
+// Used to communicate to production the last declaration we used to print
+// the "In {function|module|class} 'foo'" header for error messages.
+extern chpl::ID dynoIdForLastContainingDecl;
 
 void               parse();
 
