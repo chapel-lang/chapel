@@ -48,7 +48,7 @@ proc main(args: [] string) {
         nextSeqStart: int;
 
     // if the new characters contain the start of the next sequence,
-    var endOfRead = readPos+newChars;
+    var endOfRead = readPos + newChars;
     while findSeqStart(buff, max(readPos,1)..<endOfRead, nextSeqStart) {
       // process this one
       revcomp(buff, nextSeqStart);
@@ -60,7 +60,7 @@ proc main(args: [] string) {
       // shift the remaining characters down (only in parallel if no overlap)
       serial (nextSeqStart < endOfRead) do
         forall j in 0..<endOfRead do
-          buff[j] = buff[j+nextSeqStart];
+          buff[j] = buff[j + nextSeqStart];
     }
 
     // update where we'll read from next
@@ -78,7 +78,7 @@ proc main(args: [] string) {
 }
 
 proc revcomp(seq, size) {
-  param chunkSize = linesPerChunk*cols;  // the size of the chunks to deal out
+  param chunkSize = linesPerChunk * cols; // the size of the chunks to deal out
 
   // compute how big the header is
   var headerSize = 1;
@@ -96,19 +96,23 @@ proc revcomp(seq, size) {
   coforall tid in 0..<here.maxTaskPar {
     var myBuff: [0..<chunkSize] uint(8);  // the task's buffer
 
+    // grab  chunk of work
     var myStartChar = charsLeft.fetchSub(chunkSize);
     while myStartChar >= 0 {
       const myChunkSize = min(chunkSize, myStartChar + 1),
-            lastLineChars = myStartChar % cols,
-            lastLineGaps = cols - (lastLineChars + 1);
+            lastLineChars = myStartChar % cols,        // # of chars and
+            lastLineGaps = cols - (lastLineChars + 1); // spaces on last line
 
       var cursor = myStartChar + headerSize,
           chunkLeft = myChunkSize,
           chunkPos = 0;
 
+      // reverse the chunk
       if lastLineGaps == 0 {
+        // if last line is full, it's easy to reverse-complement
         revcomp(chunkPos, cursor, chunkLeft, myBuff, seq);
       } else {
+        // otherwise, it's trickier
         while chunkLeft >= cols {
           revcomp(chunkPos, cursor, lastLineChars, myBuff, seq);
           chunkPos += lastLineChars;
@@ -128,10 +132,12 @@ proc revcomp(seq, size) {
           revcomp(chunkPos, cursor, lastLineChars + 1, myBuff, seq);
       }
 
-      while charsWritten.read() != myStartChar {}
+      // take turns writing out our chunks
+      charsWritten.waitFor(myStartChar);
       stdoutBin.writeBinary(c_ptrTo(myBuff[0]), myChunkSize);
-      charsWritten.write(myStartChar-myChunkSize);
+      charsWritten.write(myStartChar - myChunkSize);
 
+      // grab the next chunk of work
       myStartChar = charsLeft.fetchSub(chunkSize);
     }
   }
@@ -153,15 +159,15 @@ proc revcomp(in dstFront, in charAfter, spanLen, buff, seq) {
   }
 }
 
-// see whether there's a sequence start ('>') in 'buff[low..#count]'
-proc findSeqStart(buff, inds, ref ltOff) {
-  ltOff = max(int);
-  forall i in inds with (min reduce ltOff) {
+// check whether there's a sequence start ('>') in 'buff[low..#count]'
+proc findSeqStart(buff, inds, ref ltLoc) {
+  ltLoc = max(int);
+  forall i in inds with (min reduce ltLoc) {
     if buff[i] == '>'.toByte() {
-      ltOff = min(ltOff, i);
+      ltLoc = min(ltLoc, i);
     }
   }
-  return ltOff != max(int);
+  return ltLoc != max(int);
 }
 
 // combine two nucleotide characters to create a 16-bit integer
