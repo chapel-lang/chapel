@@ -94,8 +94,8 @@ proc main(args: [] string) {
 
 proc revcomp(seq, size) {
 //  writeln("Printing ", size);
-  stdoutBin.writeBinary(c_ptrTo(seq[0]), size);
-  return;
+//  stdoutBin.writeBinary(c_ptrTo(seq[0]), size);
+//  return;
   param chunkSize = linesPerChunk*cols;  // the size of the chunks to deal out
 
   // compute how big the header is
