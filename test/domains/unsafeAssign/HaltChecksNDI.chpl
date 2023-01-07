@@ -6,7 +6,7 @@ record foo {
 
 proc test() {
   var D = {0..0};
-  var A: [D] foo = [new foo(0)];
+  var A: [D] foo = [new foo(0), ];
   writeln(A);
 
   // Intentially leave new element of 'A' uninitialized, this should

@@ -6,7 +6,7 @@ config const count = 8;
 // Single element array, no looping.
 proc test1() {
   var D = {0..0};
-  var A: [D] shared C = [new shared C()];
+  var A: [D] shared C = [new shared C(), ];
 
   writeln(A);
 
@@ -21,7 +21,7 @@ test1();
 // methods on the manager to make iterating over new indices easy.
 proc test2() {
   var D = {0..0};
-  var A: [D] shared C = [new shared C()];
+  var A: [D] shared C = [new shared C(), ];
 
   for i in 0..#count {
     manage D.unsafeAssign({0..i}, checks=true) as mgr do

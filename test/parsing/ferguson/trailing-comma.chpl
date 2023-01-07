@@ -14,8 +14,6 @@ proc testtuples() {
 }
 
 proc testarrays() {
-  var a = [1];
-  assert(a.size==1);
   var at = [1,];
   assert(at.size==1);
   var b = [1,2];

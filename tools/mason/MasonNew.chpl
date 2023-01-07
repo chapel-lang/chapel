@@ -40,10 +40,10 @@ proc masonNew(args: [] string) throws {
   var parser = new argumentParser(helpHandler=new MasonNewHelpHandler());
 
   var vcsFlag = parser.addFlag(name="vcs",
-                               opts=["--no-vcs"],
+                               opts=["--no-vcs", ],
                                defaultValue=false);
   var nameOpt = parser.addOption(name="legalname",
-                                 opts=["--name"]);
+                                 opts=["--name", ]);
 
   var showFlag = parser.addFlag(name="show", defaultValue=false);
   var appFlag = parser.addFlag(name="app", defaultValue=false);
