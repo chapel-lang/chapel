@@ -48,25 +48,23 @@ proc main(args: [] string) {
         nextSeqStart: int;
 
     // if the new characters contain the start of the next sequence,
-    var stop = readPos+newChars;
-    while findSeqStart(buff, max(readPos,1)..<stop, nextSeqStart) {
+    var endOfRead = readPos+newChars;
+    while findSeqStart(buff, max(readPos,1)..<endOfRead, nextSeqStart) {
       // process this one
       revcomp(buff, nextSeqStart);
 
-      // then shift the next sequence to the start of the buffer
-      const extras = stop - nextSeqStart;
-      stop = extras;
-
-      serial (nextSeqStart < extras) do
-        forall j in 0..<extras do
-          buff[j] = buff[j+nextSeqStart];
-
-      // and reset to see whether there's another sequence ahead
+      // then reset to check for the next sequence
       readPos = 0;
+      endOfRead -= nextSeqStart;
+
+      // shift the remaining characters down (only in parallel if no overlap)
+      serial (nextSeqStart < endOfRead) do
+        forall j in 0..<endOfRead do
+          buff[j] = buff[j+nextSeqStart];
     }
 
-    // update the position to read to next
-    readPos = stop;
+    // update where we'll read from next
+    readPos = endOfRead;
 
     // if we're about to run out of space, grow the buffer by 2x
     if readPos + readSize > buffCap {
