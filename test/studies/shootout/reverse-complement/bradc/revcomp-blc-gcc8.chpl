@@ -47,24 +47,39 @@ proc main(args: [] string) {
     var newChars = stdinBin.readBinary(c_ptrTo(buff[readPos]), readSize),
         nextSeqStart: int;
 
+//    stdout.writeln("Read ", newChars);
+//    revcomp(buff, newChars);
+
     // if the new characters contain the start of the next sequence,
-    while findSeqStart(buff, readPos, newChars, nextSeqStart) {
+    var stop = readPos+newChars;
+    while findSeqStart(buff, max(readPos,1)..<stop, nextSeqStart) {
       // process this one
       revcomp(buff, nextSeqStart);
 
       // then shift the next sequence to the start of the buffer
-      newChars -= nextSeqStart - readPos + 1;
+      const extras = stop - nextSeqStart;
+      stop = extras;
 
-      serial (nextSeqStart < newChars) do
-        forall j in 0..newChars do
+//      writeln("Shifting ", extras);
+
+      serial (nextSeqStart < extras) do
+        forall j in 0..<extras do
           buff[j] = buff[j+nextSeqStart];
 
       // and reset to see whether there's another sequence ahead
-      readPos = 1;
+      readPos = 0;
+
+//      stdoutBin.writeln(buff[readPos]);
+//      stdoutBin.writeln(buff[readPos]);
+//      stdoutBin.writeln(buff[readPos]);
+//      stdoutBin.writeln(buff[readPos]);
+
+//      revcomp(buff, stop);
     }
+//    stdout.writeln("Exiting loop");
 
     // update the position to read to next
-    readPos += newChars;
+    readPos = stop;
 
     // if we're about to run out of space, grow the buffer by 2x
     if readPos + readSize > buffCap {
@@ -78,6 +93,9 @@ proc main(args: [] string) {
 }
 
 proc revcomp(seq, size) {
+//  writeln("Printing ", size);
+  stdoutBin.writeBinary(c_ptrTo(seq[0]), size);
+  return;
   param chunkSize = linesPerChunk*cols;  // the size of the chunks to deal out
 
   // compute how big the header is
@@ -154,10 +172,10 @@ proc revcomp(in dstFront, in charAfter, spanLen, buff, seq) {
 }
 
 // see whether there's a sequence start ('>') in 'buff[low..#count]'
-proc findSeqStart(buff, low, count, ref ltOff) {
+proc findSeqStart(buff, inds, ref ltOff) {
   ltOff = max(int);
-  forall i in low..#count with (min reduce ltOff) {
-    if buff[i] == '>'.toByte() && i != 0 {
+  forall i in inds with (min reduce ltOff) {
+    if buff[i] == '>'.toByte() {
       ltOff = min(ltOff, i);
     }
   }
