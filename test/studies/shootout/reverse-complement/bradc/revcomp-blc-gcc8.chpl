@@ -47,9 +47,6 @@ proc main(args: [] string) {
     var newChars = stdinBin.readBinary(c_ptrTo(buff[readPos]), readSize),
         nextSeqStart: int;
 
-//    stdout.writeln("Read ", newChars);
-//    revcomp(buff, newChars);
-
     // if the new characters contain the start of the next sequence,
     var stop = readPos+newChars;
     while findSeqStart(buff, max(readPos,1)..<stop, nextSeqStart) {
@@ -60,23 +57,13 @@ proc main(args: [] string) {
       const extras = stop - nextSeqStart;
       stop = extras;
 
-//      writeln("Shifting ", extras);
-
       serial (nextSeqStart < extras) do
         forall j in 0..<extras do
           buff[j] = buff[j+nextSeqStart];
 
       // and reset to see whether there's another sequence ahead
       readPos = 0;
-
-//      stdoutBin.writeln(buff[readPos]);
-//      stdoutBin.writeln(buff[readPos]);
-//      stdoutBin.writeln(buff[readPos]);
-//      stdoutBin.writeln(buff[readPos]);
-
-//      revcomp(buff, stop);
     }
-//    stdout.writeln("Exiting loop");
 
     // update the position to read to next
     readPos = stop;
@@ -93,9 +80,6 @@ proc main(args: [] string) {
 }
 
 proc revcomp(seq, size) {
-//  writeln("Printing ", size);
-//  stdoutBin.writeBinary(c_ptrTo(seq[0]), size);
-//  return;
   param chunkSize = linesPerChunk*cols;  // the size of the chunks to deal out
 
   // compute how big the header is
