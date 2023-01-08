@@ -1,5 +1,5 @@
 /* This test record keeps a class pointer hanging off of
-   a field an tracks allocation/free operations on that
+   a field and tracks allocation/free operations on that
    class pointer.
  */
 
