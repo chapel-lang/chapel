@@ -42,7 +42,7 @@ void chpl_gpu_on_std_modules_finished_initializing(void) {
   chpl_gpu_impl_on_std_modules_finished_initializing();
 }
 
-inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
+void chpl_gpu_launch_kernel(int ln, int32_t fn,
                             const char* fatbinData, const char* name,
                             int grd_dim_x, int grd_dim_y, int grd_dim_z,
                             int blk_dim_x, int blk_dim_y, int blk_dim_z,
@@ -74,7 +74,7 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
                  name);
 }
 
-inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
+void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                                  const char* fatbinData, const char* name,
                                  int num_threads, int blk_dim, int nargs, ...) {
 
