@@ -33,7 +33,7 @@ log_info "Moving to ${CHPL_HOME}"
 cd $CHPL_HOME
 
 log_info "Building tarball with version: ${version}"
-# ./util/buildRelease/gen_release ${version}
+./util/buildRelease/gen_release ${version}
 # cp /homebrew-core/homebrew-core/Formula/chapel.rb util/packaging/homebrew/chapel.rb
 source $CWD/common-homebrew.bash
 
