@@ -178,7 +178,7 @@ void Builder::createImplicitModuleIfNeeded() {
     stmts.swap(topLevelExpressions_);
     auto loc = Location(filepath_, 1, 1, 1, 1);
     auto ownedModule = Module::build(this, std::move(loc),
-                                     /*attributes*/ nullptr,
+                                     /*attributeGroup*/ nullptr,
                                      Decl::DEFAULT_VISIBILITY,
                                      inferredModuleName,
                                      Module::IMPLICIT,
@@ -427,7 +427,7 @@ void Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec, std::
         || configPair.first == possibleModule + var->name().str()) {
       // found a config that was set via cmd line
       // handle deprecations
-      if (auto attribs = var->attributes()) {
+      if (auto attribs = var->attributeGroup()) {
         if (attribs->isDeprecated()) {
           // TODO: Need proper message handling here
           std::string msg = "'" + var->name().str() + "' was set via a compiler flag";

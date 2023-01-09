@@ -927,14 +927,14 @@ ConfigSettingsList& configSettings(Context* context) {
   return QUERY_END(result);
 }
 
-const uast::Attributes* idToAttributes(Context* context, ID id) {
-  const uast::Attributes* ret = nullptr;
+const uast::AttributeGroup* idToAttributeGroup(Context* context, ID id) {
+  const uast::AttributeGroup* ret = nullptr;
   if (id.isEmpty()) return ret;
 
   auto ast = parsing::idToAst(context, id);
   if (ast && ast->isDecl()) {
     auto decl = ast->toDecl();
-    ret = decl->attributes();
+    ret = decl->attributeGroup();
   }
 
   return ret;
@@ -956,12 +956,12 @@ anyParentMatches(Context* context, ID id,
 }
 
 static bool isAstDeprecated(Context* context, const AstNode* ast) {
-  auto attr = parsing::idToAttributes(context, ast->id());
+  auto attr = parsing::idToAttributeGroup(context, ast->id());
   return attr && attr->isDeprecated();
 }
 
 static bool isAstUnstable(Context* context, const AstNode* ast) {
-  auto attr = parsing::idToAttributes(context, ast->id());
+  auto attr = parsing::idToAttributeGroup(context, ast->id());
   return attr && attr->isDeprecated();
 }
 
@@ -983,7 +983,7 @@ static bool
 deprecationWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
   if (idMention.isEmpty() || idTarget.isEmpty()) return false;
 
-  auto attributes = parsing::idToAttributes(context, idTarget);
+  auto attributes = parsing::idToAttributeGroup(context, idTarget);
   if (!attributes) return false;
 
   bool isDeprecated = attributes->hasPragma(PRAGMA_DEPRECATED) ||
@@ -1018,7 +1018,7 @@ static bool
 unstableWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
   if (idMention.isEmpty() || idTarget.isEmpty()) return false;
 
-  auto attributes = parsing::idToAttributes(context, idTarget);
+  auto attributes = parsing::idToAttributeGroup(context, idTarget);
   if (!attributes) return false;
 
   bool isUnstable = attributes->hasPragma(PRAGMA_UNSTABLE) ||
@@ -1051,7 +1051,7 @@ unstableWarningForIdQuery(Context* context, ID idMention, ID idTarget) {
 
 void
 reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget) {
-  auto attr = parsing::idToAttributes(context, idTarget);
+  auto attr = parsing::idToAttributeGroup(context, idTarget);
 
   // Nothing to do, symbol is not deprecated.
   if (!attr || !attr->isDeprecated()) return;
@@ -1064,7 +1064,7 @@ reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget) {
 
 void
 reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
-  auto attr = parsing::idToAttributes(context, idTarget);
+  auto attr = parsing::idToAttributeGroup(context, idTarget);
 
   // Nothing to do, symbol is not unstable.
   if (!attr || !attr->isUnstable()) return;

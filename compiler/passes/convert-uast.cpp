@@ -257,7 +257,7 @@ struct Converter {
     return nullptr;
   }
 
-  Expr* visit(const uast::Attributes* node) {
+  Expr* visit(const uast::AttributeGroup* node) {
     INT_FATAL("Should not be called directly!");
     return nullptr;
   }
@@ -276,7 +276,7 @@ struct Converter {
   }
 
   void attachSymbolAttributes(const uast::Decl* node, Symbol* sym) {
-    auto attr = node->attributes();
+    auto attr = node->attributeGroup();
 
     if (!attr) return;
 
