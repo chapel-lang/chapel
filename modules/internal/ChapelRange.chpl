@@ -115,39 +115,39 @@ module ChapelRange {
     return isBoolType(t) || isEnumType(t);
   }
 
-  private proc implicitLowBound(type t) param {
+  private proc finiteIdxTypeLow(type t) param {
     if isFiniteIdxType(t) then
       return 0;
-    compilerError("implicitLowBound() undefined for type '" + t:string + "'");
+    compilerError("finiteIdxTypeLow() undefined for type '" + t:string + "'");
   }
 
-  private proc implicitHighBound(type t) param {
+  private proc finiteIdxTypeHigh(type t) param {
     if isBoolType(t) then
       return 1;
     if isEnumType(t) then
       return t.size-1;
-    compilerError("implicitHighBound() undefined for type '" + t:string + "'");
+    compilerError("finiteIdxTypeHigh() undefined for type '" + t:string + "'");
   }
 
-  private inline proc impliedLowBound(r) {
+  private inline proc lowBoundForIter(r) {
     if r.hasLowBound() then
       return r.lowBound;
     else
-      return chpl__intToIdx(r.idxType, implicitLowBound(r.idxType));
+      return chpl__intToIdx(r.idxType, finiteIdxTypeLow(r.idxType));
   }
 
-  private inline proc impliedHighBound(r) {
+  private inline proc highBoundForIter(r) {
     if r.hasHighBound() then
       return r.highBound;
     else
-      return chpl__intToIdx(r.idxType, implicitHighBound(r.idxType));
+      return chpl__intToIdx(r.idxType, finiteIdxTypeHigh(r.idxType));
   }
 
-  private proc hasImpliedLowBound(r) param {
+  private proc hasLowBoundForIter(r) param {
     return r.hasLowBound() || isFiniteIdxType(r.idxType);
   }
 
-  private proc hasImpliedHighBound(r) param {
+  private proc hasHighBoundForIter(r) param {
     return r.hasHighBound() || isFiniteIdxType(r.idxType);
   }
 
@@ -174,7 +174,7 @@ module ChapelRange {
     this._low = chpl__idxToInt(low);
     this.complete();
     if isFiniteIdxType(idxType) {
-      this._high = implicitHighBound(idxType);
+      this._high = finiteIdxTypeHigh(idxType);
     }
   }
 
@@ -187,7 +187,7 @@ module ChapelRange {
     this._high = chpl__idxToInt(high);
     this.complete();
     if isFiniteIdxType(idxType) {
-      this._low = implicitLowBound(idxType);
+      this._low = finiteIdxTypeLow(idxType);
     }
   }
 
@@ -199,8 +199,8 @@ module ChapelRange {
     this.boundedType = BoundedRangeType.boundedNone;
     this.complete();
     if isFiniteIdxType(idxType) {
-      this._low = implicitLowBound(idxType);
-      this._high = implicitHighBound(idxType);
+      this._low = finiteIdxTypeLow(idxType);
+      this._high = finiteIdxTypeHigh(idxType);
     }
   }
 
@@ -261,10 +261,10 @@ module ChapelRange {
     param isEnumBool = isFiniteIdxType(idxType);
     type bt = other.intIdxType;
     const low  = if isEnumBool && !other.hasLowBound()
-                 then implicitLowBound(idxType):bt
+                 then finiteIdxTypeLow(idxType):bt
                  else other._low;
     const high = if isEnumBool && !other.hasHighBound()
-                 then implicitHighBound(idxType):bt
+                 then finiteIdxTypeHigh(idxType):bt
                  else other._high;
 
     const str = if stridable && s then other.stride else 1:chpl__rangeStrideType(idxType);
@@ -272,9 +272,9 @@ module ChapelRange {
     var alignment = chpl__idxToInt(other.alignment);
     if isEnumBool && !other.aligned {
       if (str > 0) {
-        alignment = implicitLowBound(idxType);;
+        alignment = finiteIdxTypeLow(idxType);;
       } else {
-        alignment = implicitHighBound(idxType);
+        alignment = finiteIdxTypeHigh(idxType);
       }
     }
 
@@ -649,7 +649,7 @@ module ChapelRange {
   pragma "no doc"
   inline proc range.impliedAlignedLowAsInt {
     if stridable && !hasLowBound() && isFiniteIndexType() {
-      return helpAlignLow(chpl__idxToInt(impliedLowBound(this)), _alignment, stride);
+      return helpAlignLow(chpl__idxToInt(lowBoundForIter(this)), _alignment, stride);
     } else {
       return alignedLowAsInt;
     }
@@ -685,7 +685,7 @@ module ChapelRange {
     }
     if !hasHighBound() {
       if isFiniteIdxType(idxType) {
-        return chpl_intToIdx(implicitHighBound(idxType));
+        return chpl_intToIdx(finiteIdxTypeHigh(idxType));
       } else {
         compilerError("can't query the high bound of a range without one");
       }
@@ -756,7 +756,7 @@ module ChapelRange {
   pragma "no doc"
   inline proc range.impliedAlignedHighAsInt {
     if stridable && !hasHighBound() && isFiniteIdxType(idxType) {
-      return helpAlignHigh(chpl__idxToInt(impliedHighBound(this)), _alignment, stride);
+      return helpAlignHigh(chpl__idxToInt(highBoundForIter(this)), _alignment, stride);
     } else {
       return alignedHighAsInt;
     }
@@ -951,19 +951,19 @@ module ChapelRange {
   pragma "no doc"
   inline proc range.impliedFirstAsInt {
     if ! stridable {
-      return chpl__idxToInt(impliedLowBound(this));
+      return chpl__idxToInt(lowBoundForIter(this));
     } else {
       if _stride > 0 {
         if hasLowBound() {
-          return helpAlignLow(chpl__idxToInt(impliedLowBound(this)), _alignment, _stride);
+          return helpAlignLow(chpl__idxToInt(lowBoundForIter(this)), _alignment, _stride);
         } else {
-          return chpl__idxToInt(impliedLowBound(this));
+          return chpl__idxToInt(lowBoundForIter(this));
         }
       } else {
         if hasHighBound() {
-          return helpAlignHigh(chpl__idxToInt(impliedHighBound(this)), _alignment, _stride);
+          return helpAlignHigh(chpl__idxToInt(highBoundForIter(this)), _alignment, _stride);
         } else {
-          return chpl__idxToInt(impliedHighBound(this));
+          return chpl__idxToInt(highBoundForIter(this));
         }
       }
     }
@@ -1002,20 +1002,20 @@ module ChapelRange {
   pragma "no doc"
   inline proc range.impliedLastAsInt {
     if ! stridable {
-      return chpl__idxToInt(impliedHighBound(this));
+      return chpl__idxToInt(highBoundForIter(this));
     } else if _stride > 0 {
 //      if hasHighBound() {
-        return helpAlignHigh(chpl__idxToInt(impliedHighBound(this)), _alignment, _stride);
+        return helpAlignHigh(chpl__idxToInt(highBoundForIter(this)), _alignment, _stride);
 //      } else {
-//        return chpl__idxToInt(impliedHighBound(this));
+//        return chpl__idxToInt(highBoundForIter(this));
 //      }
     } else {
 //      if hasLowBound() {
       //        writeln(_alignment);
-//      writeln("hey: ", (impliedLowBound(this), _alignment, _stride));
-        return helpAlignLow(chpl__idxToInt(impliedLowBound(this)), _alignment, _stride);
+//      writeln("hey: ", (lowBoundForIter(this), _alignment, _stride));
+        return helpAlignLow(chpl__idxToInt(lowBoundForIter(this)), _alignment, _stride);
 //      } else {
-//        return chpl__idxToInt(impliedLowBound(this));
+//        return chpl__idxToInt(lowBoundForIter(this));
 //      }
     }
   }
@@ -1736,8 +1736,8 @@ operator :(r: range(?), type t: range(?)) {
                        else (false, 0:r.intIdxType)
       else
         // we could talk about aligned bounds
-        if      hasImpliedLowBound(r)  && st > 0 then (true, r.impliedAlignedLowAsInt)
-        else if hasImpliedHighBound(r) && st < 0 then (true, r.impliedAlignedHighAsInt)
+        if      hasLowBoundForIter(r)  && st > 0 then (true, r.impliedAlignedLowAsInt)
+        else if hasHighBoundForIter(r) && st < 0 then (true, r.impliedAlignedHighAsInt)
         else
           if r.stridable then (r.aligned, r._alignment)
                          else (false, 0:r.intIdxType);
@@ -2539,7 +2539,7 @@ operator :(r: range(?), type t: range(?)) {
   // An error overload for trying to iterate over '..'
   pragma "no doc"
   pragma "order independent yielding loops"
-  iter range.these() where !hasImpliedLowBound(this) && !hasImpliedHighBound(this) {
+  iter range.these() where !hasLowBoundForIter(this) && !hasHighBoundForIter(this) {
     compilerError("iteration over a range with no bounds");
   }
 
@@ -2556,7 +2556,7 @@ operator :(r: range(?), type t: range(?)) {
   // The serial iterator for 'lo.. [by s]' ranges
   pragma "no doc"
   pragma "order independent yielding loops"
-  iter range.these() where hasImpliedLowBound(this) && !hasImpliedHighBound(this) {
+  iter range.these() where hasLowBoundForIter(this) && !hasHighBoundForIter(this) {
 
     boundsCheckUnboundedRange(this);
 
@@ -2593,7 +2593,7 @@ operator :(r: range(?), type t: range(?)) {
   // The serial iterator for '..hi [by s]' ranges
   pragma "no doc"
   pragma "order independent yielding loops"
-  iter range.these() where !hasImpliedLowBound(this) && hasImpliedHighBound(this) {
+  iter range.these() where !hasLowBoundForIter(this) && hasHighBoundForIter(this) {
 
     boundsCheckUnboundedRange(this);
 
@@ -2619,15 +2619,15 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   proc range.testit() {
-    writeln(impliedLowBound(this));
-    writeln(impliedHighBound(this));
+    writeln(lowBoundForIter(this));
+    writeln(highBoundForIter(this));
     writeln(this.impliedFirstAsInt);
     writeln(this.impliedLastAsInt);
     writeln(_alignment);
     for i in this.these() {
       writeln(i);
     }
-//    writeln(implicitHighBound(this.idxType));
+//    writeln(finiteIdxTypeHigh(this.idxType));
 //    writeln(chpl__intToIdx(this.idxType, true));
   }
   
@@ -2635,7 +2635,7 @@ operator :(r: range(?), type t: range(?)) {
   pragma "no doc"
   pragma "order independent yielding loops"
   iter range.these()
-    where hasImpliedLowBound(this) && hasImpliedHighBound(this) && stridable == true {
+    where hasLowBoundForIter(this) && hasHighBoundForIter(this) && stridable == true {
     if chpl__singleValIdxType(idxType) {
       if _low > _high then return;
     }
@@ -2656,7 +2656,7 @@ operator :(r: range(?), type t: range(?)) {
 //      writeln("Start");
       const start = impliedFirstAsInt;
 //      writeln("End");
-      const end: intIdxType = if chpl__idxToInt(impliedLowBound(this)) > chpl__idxToInt(impliedHighBound(this)) then start else impliedLastAsInt + stride: intIdxType;
+      const end: intIdxType = if chpl__idxToInt(lowBoundForIter(this)) > chpl__idxToInt(highBoundForIter(this)) then start else impliedLastAsInt + stride: intIdxType;
 //      writeln((start,end,stride));
 //      writeln("prim C");
       while __primitive("C for loop",
@@ -2676,7 +2676,7 @@ operator :(r: range(?), type t: range(?)) {
   pragma "no doc"
   pragma "order independent yielding loops"
   iter range.these()
-  where hasImpliedLowBound(this) && hasImpliedHighBound(this) && stridable == false {
+  where hasLowBoundForIter(this) && hasHighBoundForIter(this) && stridable == false {
     if chpl__singleValIdxType(idxType) {
       if _low > _high then return;
     }
@@ -2687,8 +2687,8 @@ operator :(r: range(?), type t: range(?)) {
 
       // can use low/high instead of first/last since stride is one
       var i: intIdxType;
-      const start = chpl__idxToInt(impliedLowBound(this));
-      const end = chpl__idxToInt(impliedHighBound(this));
+      const start = chpl__idxToInt(lowBoundForIter(this));
+      const end = chpl__idxToInt(highBoundForIter(this));
 
       while __primitive("C for loop",
                         __primitive( "=", i, start),
@@ -2729,7 +2729,7 @@ operator :(r: range(?), type t: range(?)) {
 
     while __primitive("C for loop",
                       __primitive( "=", i, start),
-                      __primitive(">=", impliedHighBound(this), impliedLowBound(this)),  // execute at least once?
+                      __primitive(">=", highBoundForIter(this), lowBoundForIter(this)),  // execute at least once?
                       __primitive("+=", i, stride: intIdxType)) {
       yield i;
       if i == end then break;
@@ -2744,7 +2744,7 @@ operator :(r: range(?), type t: range(?)) {
   iter range.these(param tag: iterKind) where tag == iterKind.standalone &&
     !localeModelPartitionsIterationOnSublocales
   {
-    if !(hasImpliedLowBound(this) && hasImpliedHighBound(this)) {
+    if !(hasLowBoundForIter(this) && hasHighBoundForIter(this)) {
       compilerError("parallel iteration is not currently supported over ranges without bounds");
     }
     if boundsChecking && hasAmbiguousAlignmentForIteration(this) {
@@ -2787,7 +2787,7 @@ operator :(r: range(?), type t: range(?)) {
   pragma "no doc"
   iter range.these(param tag: iterKind) where tag == iterKind.leader
   {
-    if !(hasImpliedLowBound(this) && hasImpliedHighBound(this)) then
+    if !(hasLowBoundForIter(this) && hasHighBoundForIter(this)) then
       compilerError("parallel iteration is not currently supported over ranges without bounds");
 
     if boundsChecking && hasAmbiguousAlignmentForIteration(this) then
@@ -3287,6 +3287,7 @@ operator :(r: range(?), type t: range(?)) {
     return isEnumType(t) && t.size == 1;
   }
 
+  // TODO: Can I remove these changes based on 'boundedType'?
   proc chpl__defaultLowBound(type t, boundedType: BoundedRangeType) {
     if chpl__singleValIdxType(t) {
       return 0:chpl__idxTypeToIntIdxType(t);
@@ -3304,7 +3305,7 @@ operator :(r: range(?), type t: range(?)) {
     } else if (boundedType == BoundedRangeType.boundedLow ||
                boundedType == BoundedRangeType.boundedNone) {
       if isFiniteIdxType(t) {
-        return implicitHighBound(t):chpl__idxTypeToIntIdxType(t);
+        return finiteIdxTypeHigh(t):chpl__idxTypeToIntIdxType(t);
       } else {
         return 0:chpl__idxTypeToIntIdxType(t);
       }
