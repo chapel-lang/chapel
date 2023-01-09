@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "chpl/uast/all-uast.h"
 #include "chpl/uast/AstNode.h"
 
 
