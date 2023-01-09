@@ -45,7 +45,7 @@ void Module::dumpFieldsInner(const DumpSettings& s) const {
 
 owned<Module>
 Module::build(Builder* builder, Location loc,
-              owned<Attributes> attributes,
+              owned<AttributeGroup> attributes,
               Decl::Visibility vis,
               UniqueString name,
               Module::Kind kind, AstList stmts) {

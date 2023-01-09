@@ -128,7 +128,7 @@ owned<AstNode> ParserContext::consumeVarDeclLinkageName(void) {
   return toOwned(ret);
 }
 
-owned<Attributes> ParserContext::buildAttributes(YYLTYPE locationOfDecl) {
+owned<AttributeGroup> ParserContext::buildAttributes(YYLTYPE locationOfDecl) {
   numAttributesBuilt += 1;
 
   // There may be nothing to return.
@@ -141,7 +141,7 @@ owned<Attributes> ParserContext::buildAttributes(YYLTYPE locationOfDecl) {
       ? *(attributeParts.pragmas)
       : std::set<PragmaTag>();
 
-  auto node = Attributes::build(builder, convertLocation(locationOfDecl),
+  auto node = AttributeGroup::build(builder, convertLocation(locationOfDecl),
                                 std::move(pragmaCopy),
                                 attributeParts.isDeprecated,
                                 attributeParts.isUnstable,
@@ -215,6 +215,7 @@ void ParserContext::noteUnstable(YYLTYPE loc, AstNode* messageStr) {
     delete messageStr;
   }
 }
+
 void ParserContext::resetAttributePartsState() {
   if (hasAttributeParts) {
     auto& pragmas = attributeParts.pragmas;
@@ -1899,7 +1900,7 @@ buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol, bool isImport) {
 
 
 CommentsAndStmt ParserContext::
-buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
+buildForwardingDecl(YYLTYPE location, owned<AttributeGroup> attributes,
                     owned<AstNode> expr,
                     VisibilityClause::LimitationKind limitationKind,
                     ParserExprList* limitations) {
@@ -1932,7 +1933,7 @@ buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
 
 CommentsAndStmt ParserContext::
 buildForwardingDecl(YYLTYPE location,
-                    owned<Attributes> attributes,
+                    owned<AttributeGroup> attributes,
                     CommentsAndStmt cs) {
   CHPL_ASSERT(cs.stmt->isVariable() || cs.stmt->isMultiDecl() || cs.stmt->isTupleDecl());
   auto decl = cs.stmt->toDecl();

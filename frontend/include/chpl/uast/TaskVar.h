@@ -88,7 +88,7 @@ class TaskVar final : public VarLikeDecl {
   ~TaskVar() override = default;
 
   static owned<TaskVar> build(Builder* builder, Location loc,
-                              owned<Attributes> attributes,
+                              owned<AttributeGroup> attributes,
                               UniqueString name,
                               TaskVar::Intent intent,
                               owned<AstNode> typeExpression,

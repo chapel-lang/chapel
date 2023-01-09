@@ -26,7 +26,7 @@ namespace uast {
 
 
 owned<Record> Record::build(Builder* builder, Location loc,
-                            owned<Attributes> attributes,
+                            owned<AttributeGroup> attributes,
                             Decl::Visibility vis,
                             Decl::Linkage linkage,
                             owned<AstNode> linkageName,

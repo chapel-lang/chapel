@@ -98,7 +98,7 @@ const char* Function::kindToString(Kind kind) {
 
 
 owned<Function> Function::build(Builder* builder, Location loc,
-                                owned<Attributes> attributes,
+                                owned<AttributeGroup> attributes,
                                 Decl::Visibility vis,
                                 Function::Linkage linkage,
                                 owned<AstNode> linkageNameExpr,

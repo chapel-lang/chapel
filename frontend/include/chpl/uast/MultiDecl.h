@@ -82,7 +82,7 @@ class MultiDecl final : public Decl {
   ~MultiDecl() override = default;
 
   static owned<MultiDecl> build(Builder* builder, Location loc,
-                                owned<Attributes> attributes,
+                                owned<AttributeGroup> attributes,
                                 Decl::Visibility vis,
                                 Decl::Linkage linkage,
                                 AstList varDecls);

@@ -34,7 +34,7 @@ std::string VarArgFormal::dumpChildLabelInner(int i) const {
 }
 
 owned<VarArgFormal> VarArgFormal::build(Builder* builder, Location loc,
-                                        owned<Attributes> attributes,
+                                        owned<AttributeGroup> attributes,
                                         UniqueString name,
                                         Formal::Intent intent,
                                         owned<AstNode> typeExpression,

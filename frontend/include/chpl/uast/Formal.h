@@ -87,7 +87,7 @@ class Formal final : public VarLikeDecl {
   ~Formal() override = default;
 
   static owned<Formal> build(Builder* builder, Location loc,
-                             owned<Attributes> attributes,
+                             owned<AttributeGroup> attributes,
                              UniqueString name,
                              Intent intent,
                              owned<AstNode> typeExpression,

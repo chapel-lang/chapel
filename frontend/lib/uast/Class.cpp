@@ -34,7 +34,7 @@ std::string Class::dumpChildLabelInner(int i) const {
 }
 
 owned<Class> Class::build(Builder* builder, Location loc,
-                          owned<Attributes> attributes,
+                          owned<AttributeGroup> attributes,
                           Decl::Visibility vis,
                           UniqueString name,
                           owned<AstNode> parentClass,

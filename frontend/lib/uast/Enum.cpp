@@ -26,7 +26,7 @@ namespace uast {
 
 
 owned<Enum> Enum::build(Builder* builder, Location loc,
-                        owned<Attributes> attributes,
+                        owned<AttributeGroup> attributes,
                         Decl::Visibility vis,
                         UniqueString name,
                         AstList stmts) {

@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_ATTRIBUTES_H
-#define CHPL_UAST_ATTRIBUTES_H
+#ifndef CHPL_UAST_ATTRIBUTE_GROUP_H
+#define CHPL_UAST_ATTRIBUTE_GROUP_H
 
 #include "chpl/framework/Location.h"
 #include "chpl/uast/AstNode.h"
@@ -36,7 +36,7 @@ namespace uast {
   Compiler pragmas and deprecation messages (both intended for internal
   use only) are both examples of attributes.
 */
-class Attributes final : public AstNode {
+class AttributeGroup final : public AstNode {
  private:
   std::set<PragmaTag> pragmas_;
   bool isDeprecated_;
@@ -46,12 +46,12 @@ class Attributes final : public AstNode {
 
   // TODO: Do we want to preserve the location of string literals used in
   // pragmas and deprecation messages?
-  Attributes(std::set<PragmaTag> pragmas,
+  AttributeGroup(std::set<PragmaTag> pragmas,
              bool isDeprecated,
              bool isUnstable,
              UniqueString deprecationMessage,
              UniqueString unstableMessage)
-    : AstNode(asttags::Attributes),
+    : AstNode(asttags::AttributeGroup),
       pragmas_(std::move(pragmas)),
       isDeprecated_(isDeprecated),
       isUnstable_(isUnstable),
@@ -69,7 +69,7 @@ class Attributes final : public AstNode {
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
-    const Attributes* rhs = (const Attributes*)other;
+    const AttributeGroup* rhs = (const AttributeGroup*)other;
     return this->pragmas_ == rhs->pragmas_ &&
       this->isDeprecated_ == rhs->isDeprecated_ &&
       this->isUnstable_ == rhs->isUnstable_ &&
@@ -85,9 +85,9 @@ class Attributes final : public AstNode {
   void dumpInner(const DumpSettings& s) const;
 
  public:
-  ~Attributes() override = default;
+  ~AttributeGroup() override = default;
 
-  static owned<Attributes> build(Builder* builder, Location loc,
+  static owned<AttributeGroup> build(Builder* builder, Location loc,
                                  std::set<PragmaTag> pragmas,
                                  bool isDeprecated,
                                  bool isUnstable,
@@ -121,6 +121,13 @@ class Attributes final : public AstNode {
   }
 
   /**
+    Returns a deprecation message, or the empty string if it is not set.
+  */
+  UniqueString deprecationMessage() const {
+    return deprecationMessage_;
+  }
+
+  /**
     Returns true if the declaration associated with this attribute is
     unstable.
   */
@@ -129,18 +136,41 @@ class Attributes final : public AstNode {
   }
 
   /**
-    Returns a deprecation message, or the empty string if it is not set.
-  */
-  UniqueString deprecationMessage() const {
-    return deprecationMessage_;
-  }
-
-  /**
     Returns an unstable message, or the empty string if it is not set.
   */
   UniqueString unstableMessage() const {
     return unstableMessage_;
   }
+
+  // using AttributeInfo = Iterable<std::vector<Attribute>>;
+
+  // // instead of storing just a map, store vector of attributes and use the
+  // // map to index into the vector
+  // // key of map (toolname, attributeName): idx
+  // // then in the iterator we don't ever touch the map allows map to just be an
+  // // optimization when finding by name
+
+  // // general attribute iterator
+  // AttributeInfo attributes() {
+  //   // iterate over values of the map, ignoring keys
+  //   return AttributeInfo(map); // the field holding attribute
+  // }
+
+  // Attribute* getAttributeNamed(UniqueString attributeName) {
+  //   // if map (only 1 of each allowed) do map lookup with pair(UniqueStrings)
+  //   // if vector, do walk and find
+
+  //   // redirects to get idx from map and then
+  //   // attribute from vector
+  //   return getAttributeNamed(UniqueString::get(""), attributeName);
+  // }
+
+
+  // Attribute* getAttributeNamed(UniqueString toolName, UniqueString attributeName) {
+
+  // }
+
+
 
 };
 

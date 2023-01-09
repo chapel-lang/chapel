@@ -257,7 +257,7 @@ struct Converter {
     return nullptr;
   }
 
-  Expr* visit(const uast::Attributes* node) {
+  Expr* visit(const uast::AttributeGroup* node) {
     INT_FATAL("Should not be called directly!");
     return nullptr;
   }

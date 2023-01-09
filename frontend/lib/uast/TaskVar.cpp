@@ -26,7 +26,7 @@ namespace uast {
 
 
 owned<TaskVar> TaskVar::build(Builder* builder, Location loc,
-                              owned<Attributes> attributes,
+                              owned<AttributeGroup> attributes,
                               UniqueString name,
                               TaskVar::Intent intent,
                               owned<AstNode> typeExpression,

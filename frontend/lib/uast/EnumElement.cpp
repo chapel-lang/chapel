@@ -26,7 +26,7 @@ namespace uast {
 
 
 owned<EnumElement> EnumElement::build(Builder* builder, Location loc,
-                                      owned<Attributes> attributes,
+                                      owned<AttributeGroup> attributes,
                                       UniqueString name,
                                       owned<AstNode> initExpression) {
   AstList lst;
@@ -48,7 +48,7 @@ owned<EnumElement> EnumElement::build(Builder* builder, Location loc,
 }
 
 owned<EnumElement> EnumElement::build(Builder* builder, Location loc,
-                                      owned<Attributes> attributes,
+                                      owned<AttributeGroup> attributes,
                                       UniqueString name) {
   return EnumElement::build(builder, loc, std::move(attributes),
                             name,

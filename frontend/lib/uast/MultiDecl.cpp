@@ -36,7 +36,7 @@ bool MultiDecl::isAcceptableMultiDecl() {
 }
 
 owned<MultiDecl> MultiDecl::build(Builder* builder, Location loc,
-                                  owned<Attributes> attributes,
+                                  owned<AttributeGroup> attributes,
                                   Decl::Visibility vis,
                                   Decl::Linkage linkage,
                                   AstList varDecls) {

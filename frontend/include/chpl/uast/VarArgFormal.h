@@ -81,7 +81,7 @@ class VarArgFormal final : public VarLikeDecl {
   ~VarArgFormal() override = default;
 
   static owned<VarArgFormal> build(Builder* builder, Location loc,
-                                   owned<Attributes> attributes,
+                                   owned<AttributeGroup> attributes,
                                    UniqueString name,
                                    Formal::Intent intent,
                                    owned<AstNode> typeExpression,

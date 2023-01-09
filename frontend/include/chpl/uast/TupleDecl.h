@@ -120,7 +120,7 @@ class TupleDecl final : public Decl {
   ~TupleDecl() override = default;
 
   static owned<TupleDecl> build(Builder* builder, Location loc,
-                                owned<Attributes> attributes,
+                                owned<AttributeGroup> attributes,
                                 Decl::Visibility vis,
                                 Decl::Linkage linkage,
                                 IntentOrKind intentOrKind,

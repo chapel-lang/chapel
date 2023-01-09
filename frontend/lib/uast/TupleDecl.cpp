@@ -82,7 +82,7 @@ bool TupleDecl::assertAcceptableTupleDecl() {
 }
 
 owned<TupleDecl> TupleDecl::build(Builder* builder, Location loc,
-                                  owned<Attributes> attributes,
+                                  owned<AttributeGroup> attributes,
                                   Decl::Visibility vis,
                                   Decl::Linkage linkage,
                                   TupleDecl::IntentOrKind intentOrKind,

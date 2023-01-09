@@ -126,7 +126,7 @@ static std::string pragmaFlagsToString(const Decl* node) {
 }
 
 
-// TODO: Attributes
+// TODO: AttributeGroup
 
 struct ChplSyntaxVisitor {
   std::stringstream ss_;
@@ -472,7 +472,7 @@ struct ChplSyntaxVisitor {
     printAst(node->rename());
   }
 
-  //Attributes
+  //AttributeGroup
 
   void visit(const Begin* node) {
     ss_ << "begin ";

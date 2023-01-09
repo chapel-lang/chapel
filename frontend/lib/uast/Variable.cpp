@@ -37,7 +37,7 @@ void Variable::dumpFieldsInner(const DumpSettings& s) const {
 
 owned<Variable>
 Variable::build(Builder* builder, Location loc,
-                owned<Attributes> attributes,
+                owned<AttributeGroup> attributes,
                 Decl::Visibility vis,
                 Decl::Linkage linkage,
                 owned<AstNode> linkageName,

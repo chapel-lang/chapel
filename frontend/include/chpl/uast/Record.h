@@ -74,7 +74,7 @@ class Record final : public AggregateDecl {
   ~Record() override = default;
 
   static owned<Record> build(Builder* builder, Location loc,
-                             owned<Attributes> attributes,
+                             owned<AttributeGroup> attributes,
                              Decl::Visibility vis,
                              Decl::Linkage linkage,
                              owned<AstNode> linkageName,

@@ -77,7 +77,7 @@ bool AstNode::mayContainStatements(AstTag tag) {
     case asttags::AnonFormal:
     case asttags::As:
     case asttags::Array:
-    case asttags::Attributes:
+    case asttags::AttributeGroup:
     case asttags::Break:
     case asttags::Comment:
     case asttags::Continue:

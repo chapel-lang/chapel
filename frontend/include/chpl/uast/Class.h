@@ -81,7 +81,7 @@ class Class final : public AggregateDecl {
   ~Class() override = default;
 
   static owned<Class> build(Builder* builder, Location loc,
-                            owned<Attributes> attributes,
+                            owned<AttributeGroup> attributes,
                             Decl::Visibility vis,
                             UniqueString name,
                             owned<AstNode> parentClass,

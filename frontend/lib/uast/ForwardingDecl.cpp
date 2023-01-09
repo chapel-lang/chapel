@@ -26,7 +26,7 @@ namespace uast {
 
 
 owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
-                                            owned<Attributes> attributes,
+                                            owned<AttributeGroup> attributes,
                                             owned<AstNode> expr) {
   CHPL_ASSERT(expr.get() != nullptr);
 
@@ -36,7 +36,7 @@ owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
 }
 
 owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
-                                            owned<Attributes> attributes,
+                                            owned<AttributeGroup> attributes,
                                             owned<AstNode> expr,
                                             Decl::Visibility visibility) {
   CHPL_ASSERT(expr.get() != nullptr);

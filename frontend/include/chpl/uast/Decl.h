@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_DECL_H
 #define CHPL_UAST_DECL_H
 
-#include "chpl/uast/Attributes.h"
+#include "chpl/uast/AttributeGroup.h"
 #include "chpl/uast/AstNode.h"
 
 namespace chpl {
@@ -83,7 +83,7 @@ class Decl : public AstNode {
                  attributesChildNum_ < (ssize_t)children_.size());
 
     if (attributesChildNum_ >= 0) {
-      CHPL_ASSERT(child(attributesChildNum_)->isAttributes());
+      CHPL_ASSERT(child(attributesChildNum_)->isAttributeGroup());
     }
 
     CHPL_ASSERT(-1 <= linkageNameChildNum_ &&
@@ -146,11 +146,11 @@ class Decl : public AstNode {
     Return the attributes associated with this declaration, or nullptr
     if none exist.
   */
-  const Attributes* attributes() const {
+  const AttributeGroup* attributes() const {
     if (attributesChildNum_ < 0) return nullptr;
     auto ret = child(attributesChildNum_);
-    CHPL_ASSERT(ret->isAttributes());
-    return (const Attributes*)ret;
+    CHPL_ASSERT(ret->isAttributeGroup());
+    return (const AttributeGroup*)ret;
   }
 
   /**

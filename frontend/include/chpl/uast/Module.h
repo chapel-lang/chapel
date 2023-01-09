@@ -82,7 +82,7 @@ class Module final : public NamedDecl {
   ~Module() override = default;
 
   static owned<Module> build(Builder* builder, Location loc,
-                             owned<Attributes> attributes,
+                             owned<AttributeGroup> attributes,
                              Decl::Visibility vis,
                              UniqueString name,
                              Module::Kind kind,

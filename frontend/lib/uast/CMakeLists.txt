@@ -25,7 +25,7 @@ target_sources(libdyno-obj
                AstNode.cpp
                AstTag.cpp
                As.cpp
-               Attributes.cpp
+               AttributeGroup.cpp
                Begin.cpp
                Block.cpp
                BoolLiteral.cpp

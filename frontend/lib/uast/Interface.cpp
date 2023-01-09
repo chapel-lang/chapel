@@ -45,7 +45,7 @@ std::string Interface::dumpChildLabelInner(int i) const {
 
 
 owned<Interface> Interface::build(Builder* builder, Location loc,
-                                  owned<Attributes> attributes,
+                                  owned<AttributeGroup> attributes,
                                   Decl::Visibility visibility,
                                   UniqueString name,
                                   bool isFormalListPresent,

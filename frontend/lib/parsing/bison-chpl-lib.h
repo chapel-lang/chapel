@@ -127,7 +127,7 @@ extern int yychpl_debug;
     bool isBodyNonBlockExpression;
     std::vector<ParserComment>* comments;
     ErroneousExpression* errorExpr; // only used for parser error
-    Attributes* attributes;
+    AttributeGroup* attributes;
     Decl::Visibility visibility;
     Decl::Linkage linkage;
     AstNode* linkageNameExpr;
@@ -149,7 +149,7 @@ extern int yychpl_debug;
   // A struct to thread along some pieces of a module before it is built.
   struct ModuleParts {
     std::vector<ParserComment>* comments;
-    Attributes* attributes;
+    AttributeGroup* attributes;
     Decl::Visibility visibility;
     Module::Kind kind;
     PODUniqueString name;
@@ -161,7 +161,7 @@ extern int yychpl_debug;
     Decl::Visibility visibility;
     Decl::Linkage linkage;
     AstNode* linkageName;
-    Attributes* attributes;
+    AttributeGroup* attributes;
     PODUniqueString name;
     asttags::AstTag tag;
   };
@@ -225,7 +225,7 @@ extern int yychpl_debug;
     Variable::Kind variableKind;
 
     // simple pointer values
-    Attributes* attribute;
+    AttributeGroup* attribute;
     Block* block;
     Call* call;
     Function* function;

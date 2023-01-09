@@ -130,7 +130,7 @@ struct ParserContext {
   owned<AstNode> consumeVarDeclLinkageName(void);
 
   // If attributes do not exist yet, returns nullptr.
-  owned<Attributes> buildAttributes(YYLTYPE locationOfDecl);
+  owned<AttributeGroup> buildAttributes(YYLTYPE locationOfDecl);
   PODUniqueString notePragma(YYLTYPE loc, AstNode* pragmaStr);
   void noteDeprecation(YYLTYPE loc, AstNode* messageStr);
   void noteUnstable(YYLTYPE loc, AstNode* messageStr);
@@ -579,13 +579,13 @@ struct ParserContext {
                                   ParserExprList* whenStmts);
 
   CommentsAndStmt
-  buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
+  buildForwardingDecl(YYLTYPE location, owned<AttributeGroup> attributes,
                       owned<AstNode> expr,
                       VisibilityClause::LimitationKind limitationKind,
                       ParserExprList* limitations);
 
   CommentsAndStmt
-  buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
+  buildForwardingDecl(YYLTYPE location, owned<AttributeGroup> attributes,
                       CommentsAndStmt cs);
 
   AstNode* buildInterfaceFormal(YYLTYPE location, PODUniqueString name);

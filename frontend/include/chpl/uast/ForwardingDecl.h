@@ -88,11 +88,11 @@ private:
 
 
   static owned<ForwardingDecl> build(Builder* builder, Location loc,
-                                     owned<Attributes> attributes,
+                                     owned<AttributeGroup> attributes,
                                      owned<AstNode> expr);
 
   static owned<ForwardingDecl> build(Builder* builder, Location loc,
-                                     owned<Attributes> attributes,
+                                     owned<AttributeGroup> attributes,
                                      owned<AstNode> expr,
                                      Decl::Visibility visibility);
 

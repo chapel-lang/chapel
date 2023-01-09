@@ -181,7 +181,7 @@ class Interface final : public NamedDecl {
   }
 
   static owned<Interface> build(Builder* builder, Location loc,
-                                owned<Attributes> attributes,
+                                owned<AttributeGroup> attributes,
                                 Decl::Visibility visibility,
                                 UniqueString name,
                                 bool isFormalListExplicit,

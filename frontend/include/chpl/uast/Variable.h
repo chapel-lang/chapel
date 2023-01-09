@@ -111,7 +111,7 @@ class Variable final : public VarLikeDecl {
   ~Variable() override = default;
 
   static owned<Variable> build(Builder* builder, Location loc,
-                               owned<Attributes> attributes,
+                               owned<AttributeGroup> attributes,
                                Decl::Visibility vis,
                                Decl::Linkage linkage,
                                owned<AstNode> linkageName,

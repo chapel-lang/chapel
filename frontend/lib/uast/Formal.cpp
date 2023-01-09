@@ -42,7 +42,7 @@ const char* Formal::intentToString(Formal::Intent intent) {
 }
 
 owned<Formal>
-Formal::build(Builder* builder, Location loc, owned<Attributes> attributes,
+Formal::build(Builder* builder, Location loc, owned<AttributeGroup> attributes,
               UniqueString name,
               Formal::Intent intent,
               owned<AstNode> typeExpression,
