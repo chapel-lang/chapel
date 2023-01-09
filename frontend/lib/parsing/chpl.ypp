@@ -146,6 +146,14 @@
     return makeCommentsAndStmt(comments, stmt.release());
   }
 
+  // A struct for storing the AttributeParts to later turn into an Attribute node
+  // and add to an AttributeGroup
+  // struct AttributeParts {
+  //   PODUniqueString name; //identifier
+  //   std::vector<PODUniqueString>* toolSpace; // list of identifiers <ParserExprList>
+  //   ParserExprList* actuals;
+  // };
+
   // A struct for storing a partially constructed function prototype
   // during parsing for linkage_spec/fn_decl_stmt/etc
   // It is just saving some components of a function to be used
@@ -415,6 +423,7 @@
 %token <uniqueStr> TASSIGNLAND TASSIGNLOR TASSIGNMINUS TASSIGNMOD
 %token <uniqueStr> TASSIGNMULTIPLY TASSIGNPLUS TASSIGNREDUCE
 %token <uniqueStr> TASSIGNSL TASSIGNSR
+%token <uniqueStr> TATMARK
 %token <uniqueStr> TBANG TBAND TBNOT TBOR TBXOR
 %token <uniqueStr> TCOLON TCOMMA
 %token <uniqueStr> TDIVIDE TDOT TDOTDOT TDOTDOTDOT
@@ -481,6 +490,10 @@
 %left TDOT TLP
 %nonassoc TPRAGMA TALIAS
 
+%type <expr> attribute_decl_stmt attribute_actual  attribute_decl_begin
+%type <exprList> attribute_actuals_ls opt_attribute_actuals attribute_decl_stmt_ls
+%type <exprList> opt_attribute_decl_toolspace attribute_group
+
 %type <throwsTag> opt_throws_error
 %type <moduleKind> opt_prototype
 %type <visibilityTag> opt_access_control
@@ -528,7 +541,7 @@
 
 %type <exprList> class_level_stmt_ls
 
-%type <commentsAndStmt> stmt tryable_stmt
+%type <commentsAndStmt> stmt tryable_stmt stmt_base
 %type <blockOrDo> do_stmt
 %type <commentsAndStmt> if_stmt loop_stmt
 %type <commentsAndStmt> select_stmt
@@ -661,6 +674,30 @@ pragma_ls:
 ;
 
 stmt:
+  attribute_group
+  {
+    // take $1 which is the ast node
+    // add a noteAttributeGroup method to parserContextImpl.h
+    // look at noteDeprecation
+
+  } // ye olde Mid-Rule Actione - increments counts!
+  attribute_receiver
+  {
+
+  }
+  // note that allowing all stmts here leads to a shift/reduce conflict
+  /* stmt_base
+  {
+    $$ = $3;
+  } */
+  |
+  stmt_base
+  {
+    $$ = $1;
+  }
+;
+
+stmt_base:
   tryable_stmt      // (no '->finishStmt()' required b/c 'tryable_stmt' did it)
 | deprecated_decl_stmt      { $$ = context->finishStmt($1); }
 | unstable_decl_stmt        { $$ = context->finishStmt($1); }
@@ -864,6 +901,78 @@ deprecated_decl_stmt:
 decl_base:
   module_decl_stmt
 | class_level_stmt
+;
+
+attribute_receiver:
+loop_stmt
+| decl_base
+;
+
+attribute_group:
+  attribute_decl_stmt_ls
+  {
+    // $$ = context->buildAttributeGroup(@1, $1);
+  }
+;
+
+attribute_decl_stmt_ls:
+  attribute_decl_stmt
+{
+  // produce uAST
+  $$ = context->makeList($1);
+}
+| attribute_decl_stmt_ls attribute_decl_stmt
+{
+  $$ = context->appendList($1, $2);
+}
+;
+
+attribute_decl_stmt:
+ attribute_decl_begin opt_attribute_decl_toolspace opt_attribute_actuals
+ {
+  // $$ = context->buildAttribute();
+ }
+;
+
+attribute_decl_begin:
+  TATMARK TIDENT
+  { // type of $$ is attributeParts
+    auto ident = context->buildIdent(@2, $2);
+    $$ = ident;
+  }
+;
+
+opt_attribute_decl_toolspace:
+  {
+    $$ = context->makeList();
+  }
+  | TDOT TIDENT opt_attribute_decl_toolspace
+  {
+    // if toolspace is list of identifiers, we can use exprList for toolspace
+    $$ = context->appendList($3, context->buildIdent(@2, $2));
+  }
+;
+
+opt_attribute_actuals:
+  { }
+  | TLP TRP
+  { }
+  | TLP attribute_actuals_ls TRP
+  {
+    // consume the list built up in attribute_actuals_ls
+  }
+;
+
+attribute_actuals_ls:
+  attribute_actual
+  { $$ = context->makeList(); }
+  | attribute_actuals_ls TCOMMA attribute_actual
+ { $$ = context->appendList($1, $3); }
+;
+
+attribute_actual:
+  literal_expr
+  | range_literal_expr
 ;
 
 unstable_decl_stmt:

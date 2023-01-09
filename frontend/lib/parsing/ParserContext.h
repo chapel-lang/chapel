@@ -627,11 +627,9 @@ struct ParserContext {
                       ParserExprList* limitations);
 
   CommentsAndStmt
+
   buildForwardingDecl(YYLTYPE location, owned<AttributeGroup> attributeGroup,
                       CommentsAndStmt cs);
-
-  AstNode* buildInterfaceFormal(YYLTYPE location, PODUniqueString name);
-
   CommentsAndStmt buildInterfaceStmt(YYLTYPE location,
                                      PODUniqueString name,
                                      ParserExprList* formals,

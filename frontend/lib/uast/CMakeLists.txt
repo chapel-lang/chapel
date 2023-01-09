@@ -25,6 +25,7 @@ target_sources(ChplFrontend-obj
                AstNode.cpp
                AstTag.cpp
                As.cpp
+               Attribute.cpp
                AttributeGroup.cpp
                Begin.cpp
                Block.cpp
