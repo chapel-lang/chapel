@@ -1,0 +1,3 @@
+CHPL_COMM != ofi
+CHPL_TASKS != qthreads
+CHPL_HWLOC != bundled

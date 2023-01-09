@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# Extract only QT_CPUBIND from the output
+grep -e "^QT_CPUBIND" $2 > $2.tmp &&
+mv $2.tmp $2
