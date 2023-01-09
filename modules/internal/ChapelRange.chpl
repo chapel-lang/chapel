@@ -565,10 +565,12 @@ module ChapelRange {
   inline proc range.aligned where stridable return _aligned;
 
   pragma "no doc"
-  proc range.aligned param where !stridable && hasLowBound()
+  proc range.aligned param where !stridable &&
+                                 (boundedType == BoundedRangeType.bounded ||
+                                  boundedType == BoundedRangeType.boundedLow)
     return true;
   pragma "no doc"
-  proc range.aligned param /* !stridable && !hasLowBound() */
+  proc range.aligned param /* !stridable && (boundedHigh || boundedNone) */
     return false;
 
   //################################################################################
