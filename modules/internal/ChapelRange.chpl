@@ -110,17 +110,24 @@ module ChapelRange {
   }
 
   // Helper routines for unbounded ranges of enum or bool types
+  // ----------------------------------------------------------
+  //
+  // Is this an idxType whose values are conceptually finite?
   //
   private proc isFiniteIdxType(type t) param {
     return isBoolType(t) || isEnumType(t);
   }
 
+  // For a finite idxType, what is its '_low' integer?
+  //
   private proc finiteIdxTypeLow(type t) param {
     if isFiniteIdxType(t) then
       return 0;
     compilerError("finiteIdxTypeLow() undefined for type '" + t:string + "'");
   }
 
+  // For a finite idxType, what is its '_high' integer?
+  //
   private proc finiteIdxTypeHigh(type t) param {
     if isBoolType(t) then
       return 1;
@@ -129,6 +136,11 @@ module ChapelRange {
     compilerError("finiteIdxTypeHigh() undefined for type '" + t:string + "'");
   }
 
+  // When iterating over this range, what is its low bound?
+  // (typically, this is just its low bound, but for unbounded ranges
+  // with finite idxType, it may be implied, e.g., '..true' has an
+  // implied low bound of 'false')
+  //
   private inline proc lowBoundForIter(r) {
     if r.hasLowBound() then
       return r.lowBound;
@@ -136,6 +148,11 @@ module ChapelRange {
       return chpl__intToIdx(r.idxType, finiteIdxTypeLow(r.idxType));
   }
 
+  // When iterating over this range, what is its low bound?
+  // (typically, this is just its low bound, but for unbounded ranges
+  // with finite idxType, it may be implied, e.g., 'false..' has an
+  // implied high bound of 'true')
+  //
   private inline proc highBoundForIter(r) {
     if r.hasHighBound() then
       return r.highBound;
