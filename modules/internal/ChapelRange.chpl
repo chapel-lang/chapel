@@ -584,7 +584,11 @@ module ChapelRange {
   /* Returns ``true`` if argument ``r`` is a fully bounded range,
      ``false`` otherwise. */
   proc isBoundedRange(r: range(?)) param
-    return r.boundedType == BoundedRangeType.bounded;
+    return isBoundedRange(r.boundedType);
+
+  pragma "no doc"
+  proc isBoundedRange(param B: BoundedRangeType) param
+    return B == BoundedRangeType.bounded;
 
   /* Returns ``true`` if this range is bounded, ``false`` otherwise. */
   proc range.isBounded() param
@@ -599,8 +603,8 @@ module ChapelRange {
   /* Returns ``true`` if this range's low bound is *not* -:math:`\infty`,
      and ``false`` otherwise. */
   proc range.hasLowBound() param
-    return (boundedType == BoundedRangeType.bounded ||
-            boundedType == BoundedRangeType.boundedLow);
+    return boundedType == BoundedRangeType.bounded ||
+           boundedType == BoundedRangeType.boundedLow;
 
   /* Returns the range's low bound. If the range does not have a low
      bound (e.g., ``..10``), the behavior is undefined.  See also
