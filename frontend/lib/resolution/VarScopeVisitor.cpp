@@ -75,6 +75,30 @@ VarScopeVisitor::process(const uast::AstNode* symbol,
   }
 }
 
+const AstNode* VarScopeVisitor::currentStatement() {
+  if (inAstStack.empty()) {
+    return nullptr;
+  }
+
+  for (ssize_t i = inAstStack.size() - 1; i >= 0; i--) {
+    const AstNode* ast = inAstStack[i];
+    const AstNode* parent = nullptr;
+    if (i > 0) {
+      parent = inAstStack[i-1];
+    }
+
+    if (ast->isInherentlyStatement()) {
+      return ast;
+    }
+
+    if (parent && parent->isSimpleBlockLike()) {
+      return ast;
+    }
+  }
+
+  return nullptr;
+}
+
 VarFrame* VarScopeVisitor::currentThenFrame() {
   VarFrame* frame = currentFrame();
   CHPL_ASSERT(frame->scopeAst->isConditional());
@@ -264,8 +288,16 @@ void VarScopeVisitor::exitScope(const AstNode* ast, RV& rv) {
   }
 }
 
+void VarScopeVisitor::enterAst(const uast::AstNode* ast) {
+  inAstStack.push_back(ast);
+}
+void VarScopeVisitor::exitAst(const uast::AstNode* ast) {
+  CHPL_ASSERT(!inAstStack.empty() && ast == inAstStack.back());
+  inAstStack.pop_back();
+}
 
 bool VarScopeVisitor::enter(const VarLikeDecl* ast, RV& rv) {
+  enterAst(ast);
   enterScope(ast, rv);
 
   return true;
@@ -277,10 +309,12 @@ void VarScopeVisitor::exit(const VarLikeDecl* ast, RV& rv) {
   }
 
   exitScope(ast, rv);
+  exitAst(ast);
 }
 
 
 bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
+  enterAst(ast);
 
   if (ast->op() == USTR("=")) {
     // What is the RHS of the '=' call?
@@ -296,10 +330,12 @@ bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
 }
 
 void VarScopeVisitor::exit(const OpCall* ast, RV& rv) {
+  exitAst(ast);
 }
 
 
 bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
+  enterAst(callAst);
 
   if (rv.hasAst(callAst)) {
     // Does any return-intent-overload use 'in', 'out', or 'inout'?
@@ -380,10 +416,12 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
 }
 
 void VarScopeVisitor::exit(const FnCall* ast, RV& rv) {
+  exitAst(ast);
 }
 
 
 bool VarScopeVisitor::enter(const Return* ast, RV& rv) {
+  enterAst(ast);
   return true;
 }
 void VarScopeVisitor::exit(const Return* ast, RV& rv) {
@@ -392,10 +430,12 @@ void VarScopeVisitor::exit(const Return* ast, RV& rv) {
     frame->returnsOrThrows = true;
     handleReturnOrThrow(ast, rv);
   }
+  exitAst(ast);
 }
 
 
 bool VarScopeVisitor::enter(const Throw* ast, RV& rv) {
+  enterAst(ast);
   return true;
 }
 void VarScopeVisitor::exit(const Throw* ast, RV& rv) {
@@ -404,10 +444,12 @@ void VarScopeVisitor::exit(const Throw* ast, RV& rv) {
     frame->returnsOrThrows = true;
     handleReturnOrThrow(ast, rv);
   }
+  exitAst(ast);
 }
 
 
 bool VarScopeVisitor::enter(const Identifier* ast, RV& rv) {
+  enterAst(ast);
   return true;
 }
 void VarScopeVisitor::exit(const Identifier* ast, RV& rv) {
@@ -420,15 +462,18 @@ void VarScopeVisitor::exit(const Identifier* ast, RV& rv) {
       handleMention(ast, toId, rv);
     }
   }
+  exitAst(ast);
 }
 
 bool VarScopeVisitor::enter(const AstNode* ast, RV& rv) {
+  enterAst(ast);
   enterScope(ast, rv);
 
   return true;
 }
 void VarScopeVisitor::exit(const AstNode* ast, RV& rv) {
   exitScope(ast, rv);
+  exitAst(ast);
 }
 
 

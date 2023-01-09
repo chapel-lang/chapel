@@ -1359,19 +1359,30 @@ class ResolvedFunction {
   // the set of point-of-instantiation scopes used by the instantiation
   PoiInfo poiInfo_;
 
+  // the return type computed for this function
+  types::QualifiedType returnType_;
+
  public:
   ResolvedFunction(const TypedFnSignature *signature,
                    uast::Function::ReturnIntent returnIntent,
                    ResolutionResultByPostorderID resolutionById,
-                   PoiInfo poiInfo)
+                   PoiInfo poiInfo,
+                   types::QualifiedType returnType)
       : signature_(signature), returnIntent_(returnIntent),
-        resolutionById_(std::move(resolutionById)), poiInfo_(poiInfo) {}
+        resolutionById_(std::move(resolutionById)),
+        poiInfo_(std::move(poiInfo)),
+        returnType_(std::move(returnType)) {}
 
   /** The type signature */
   const TypedFnSignature* signature() const { return signature_; }
 
   /** the return intent */
   uast::Function::ReturnIntent returnIntent() const { return returnIntent_; }
+
+  /** the return type */
+  const types::QualifiedType& returnType() const {
+    return returnType_;
+  }
 
   /** this is the output of the resolution process */
   const ResolutionResultByPostorderID& resolutionById() const {
@@ -1385,7 +1396,8 @@ class ResolvedFunction {
     return signature_ == other.signature_ &&
            returnIntent_ == other.returnIntent_ &&
            resolutionById_ == other.resolutionById_ &&
-           PoiInfo::updateEquals(poiInfo_, other.poiInfo_);
+           PoiInfo::updateEquals(poiInfo_, other.poiInfo_) &&
+           returnType_ == other.returnType_;
   }
   bool operator!=(const ResolvedFunction& other) const {
     return !(*this == other);
@@ -1395,6 +1407,7 @@ class ResolvedFunction {
     std::swap(returnIntent_, other.returnIntent_);
     resolutionById_.swap(other.resolutionById_);
     poiInfo_.swap(other.poiInfo_);
+    returnType_.swap(other.returnType_);
   }
   static bool update(owned<ResolvedFunction>& keep,
                      owned<ResolvedFunction>& addin) {
@@ -1404,6 +1417,7 @@ class ResolvedFunction {
     context->markPointer(signature_);
     resolutionById_.mark(context);
     poiInfo_.mark(context);
+    returnType_.mark(context);
   }
 
   const ResolvedExpression& byId(const ID& id) const {

@@ -72,10 +72,14 @@ struct Resolver {
 
   // the resolution results for the contained AstNodes
   ResolutionResultByPostorderID& byPostorder;
+
   // the set of POI scopes from which POI functions were used --
   // these are gathered here during resolution in order to
   // allow accurate caching and reuse of instantiations
   PoiInfo poiInfo;
+
+  // the return type of the function (inferred or not)
+  types::QualifiedType returnType;
 
   static PoiInfo makePoiInfo(const PoiScope* poiScope) {
     if (poiScope == nullptr)

@@ -98,6 +98,14 @@ enum struct IntentList {
   MODULE,
 };
 
+bool isGenericIntent(IntentList kind);
+// it might not be known if it is const, in which case it returns false
+bool isConstIntent(IntentList kind);
+// it might not be known if it is ref, in which case it returns false
+bool isRefIntent(IntentList kind);
+// it might not be known if it is 'in', in which case it returns false
+bool isInIntent(IntentList kind);
+
 const char* intentToString(IntentList intent);
 
 
