@@ -606,25 +606,6 @@ void GpuKernel::generateEarlyReturn() {
   fn_->insertAtTail(new CondStmt(new SymExpr(isOOB), thenBlock));
 }
 
-void GpuKernel::optimizeBody(FnSymbol *outlinedFunction) {
-
-  if (outlinedFunction->getModule()->modTag == MOD_USER) {
-    std::vector<CallExpr*> calls;
-    collectCallExprs(outlinedFunction, calls);
-
-    int numDerefs = 0;
-    for_vector(CallExpr, call, calls) {
-      if (call->isPrimitive(PRIM_DEREF)) {
-        numDerefs += 1;
-      }
-    }
-
-    if (numDerefs == 2) {
-      std::cout << "Kernel found" << std::endl;
-    }
-  }
-}
-
 void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
   std::set<Symbol*> handledSymbols;
   for_alist(node, loop->body) {
