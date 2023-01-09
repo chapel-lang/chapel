@@ -76,6 +76,7 @@ X(uint_          , "uint")
 X(unmanaged      , "unmanaged")
 X(void_          , "void")
 
+X(atMark         , "@")
 X(equals         , "=")
 X(question       , "?")
 X(tripleDot      , "...")

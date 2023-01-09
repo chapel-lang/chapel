@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_DECL_H
 #define CHPL_UAST_DECL_H
 
-#include "chpl/uast/Attributes.h"
+#include "chpl/uast/AttributeGroup.h"
 #include "chpl/uast/AstNode.h"
 
 namespace chpl {
@@ -48,28 +48,24 @@ class Decl : public AstNode {
 
  private:
 
-  // Use -1 to indicate that there is no such child.
-  int attributesChildNum_;
   Visibility visibility_;
   Linkage linkage_;
   int linkageNameChildNum_;
 
  protected:
-  Decl(AstTag tag, int attributesChildNum, Visibility visibility,
+  Decl(AstTag tag, Visibility visibility,
        Linkage linkage)
     : AstNode(tag),
-      attributesChildNum_(attributesChildNum),
       visibility_(visibility),
       linkage_(linkage),
-      linkageNameChildNum_(-1) {
+      linkageNameChildNum_(NO_CHILD) {
   }
 
-  Decl(AstTag tag, AstList children, int attributesChildNum,
+  Decl(AstTag tag, AstList children, int attributeGroupChildNum,
        Visibility visibility,
        Linkage linkage,
        int linkageNameChildNum)
-    : AstNode(tag, std::move(children)),
-      attributesChildNum_(attributesChildNum),
+    : AstNode(tag, std::move(children), attributeGroupChildNum),
       visibility_(visibility),
       linkage_(linkage),
       linkageNameChildNum_(linkageNameChildNum) {
@@ -79,22 +75,14 @@ class Decl : public AstNode {
       CHPL_ASSERT(linkage_ != DEFAULT_LINKAGE);
     }
 
-    CHPL_ASSERT(-1 <= attributesChildNum_ &&
-                 attributesChildNum_ < (ssize_t)children_.size());
-
-    if (attributesChildNum_ >= 0) {
-      CHPL_ASSERT(child(attributesChildNum_)->isAttributes());
-    }
-
-    CHPL_ASSERT(-1 <= linkageNameChildNum_ &&
+    CHPL_ASSERT(NO_CHILD <= linkageNameChildNum_ &&
                  linkageNameChildNum_ < (ssize_t)children_.size());
-    CHPL_ASSERT(-1 <= linkageNameChildNum_ &&
+    CHPL_ASSERT(NO_CHILD <= linkageNameChildNum_ &&
                  linkageNameChildNum_ < (ssize_t)children_.size());
   }
 
   Decl(AstTag tag, Deserializer& des)
     : AstNode(tag, des) {
-      attributesChildNum_ = (int)des.read<int32_t>();
       visibility_ = des.read<Decl::Visibility>();
       linkage_ = des.read<Decl::Linkage>();
       linkageNameChildNum_ = (int)des.read<int32_t>();
@@ -103,8 +91,7 @@ class Decl : public AstNode {
   bool declContentsMatchInner(const Decl* other) const {
     return this->visibility_ == other->visibility_ &&
            this->linkage_ == other->linkage_ &&
-           this->linkageNameChildNum_ == other->linkageNameChildNum_ &&
-           this->attributesChildNum_ == other->attributesChildNum_;
+           this->linkageNameChildNum_ == other->linkageNameChildNum_;
   }
 
   void declMarkUniqueStringsInner(Context* context) const {
@@ -112,10 +99,6 @@ class Decl : public AstNode {
 
   void dumpFieldsInner(const DumpSettings& s) const override;
   std::string dumpChildLabelInner(int i) const override;
-
-  int attributesChildNum() const {
-    return attributesChildNum_;
-  }
 
  public:
   virtual ~Decl() = 0; // this is an abstract base class
@@ -151,17 +134,6 @@ class Decl : public AstNode {
   }
 
   /**
-    Return the attributes associated with this declaration, or nullptr
-    if none exist.
-  */
-  const Attributes* attributes() const {
-    if (attributesChildNum_ < 0) return nullptr;
-    auto ret = child(attributesChildNum_);
-    CHPL_ASSERT(ret->isAttributes());
-    return (const Attributes*)ret;
-  }
-
-  /**
     Convert Decl::Visibility to a string
     */
   static const char* visibilityToString(Visibility v);
@@ -174,7 +146,6 @@ class Decl : public AstNode {
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
 
-    ser.write((int32_t)attributesChildNum_);
     ser.write(visibility_);
     ser.write(linkage_);
     ser.write((int32_t)linkageNameChildNum_);

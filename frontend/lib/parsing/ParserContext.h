@@ -30,7 +30,8 @@ struct ParserComment {
 };
 
 // To store the different attributes of a symbol as they are built.
-struct AttributeParts {
+struct AttributeGroupParts {
+  ParserExprList* attributeGroup; // this is where the attributes are accumulated
   std::set<PragmaTag>* pragmas;
   bool isDeprecated;
   bool isUnstable;
@@ -65,8 +66,8 @@ struct ParserContext {
   Variable::Kind varDeclKind;
   bool isVarDeclConfig;
   bool isBuildingFormal;
-  AttributeParts attributeParts;
-  bool hasAttributeParts;
+  AttributeGroupParts attributeGroupParts;
+  bool hasAttributeGroupParts;
   int numAttributesBuilt;
   YYLTYPE declStartLocation;
 
@@ -100,8 +101,8 @@ struct ParserContext {
     this->varDeclKind             = Variable::VAR;
     this->isBuildingFormal        = false;
     this->isVarDeclConfig         = false;
-    this->attributeParts          = { nullptr, false, false, UniqueString(), UniqueString() };
-    this->hasAttributeParts       = false;
+    this->attributeGroupParts     = {nullptr, nullptr, false, false, UniqueString(), UniqueString() };
+    this->hasAttributeGroupParts  = false;
     this->numAttributesBuilt      = 0;
     YYLTYPE emptyLoc = {0};
     this->declStartLocation       = emptyLoc;
@@ -129,11 +130,11 @@ struct ParserContext {
   owned<AstNode> consumeVarDeclLinkageName(void);
 
   // If attributes do not exist yet, returns nullptr.
-  owned<Attributes> buildAttributes(YYLTYPE locationOfDecl);
+  owned<AttributeGroup> buildAttributeGroup(YYLTYPE locationOfDecl);
   PODUniqueString notePragma(YYLTYPE loc, AstNode* pragmaStr);
   void noteDeprecation(YYLTYPE loc, AstNode* messageStr);
   void noteUnstable(YYLTYPE loc, AstNode* messageStr);
-  void resetAttributePartsState();
+  void resetAttributeGroupPartsState();
 
   CommentsAndStmt buildPragmaStmt(YYLTYPE loc, CommentsAndStmt stmt);
 
@@ -278,14 +279,14 @@ struct ParserContext {
               PODUniqueString name,
               AstNode* typeExpr,
               AstNode* initExpr,
-              bool consumeAttributes=false);
+              bool consumeAttributeGroup=false);
 
   AstNode*
   buildVarArgFormal(YYLTYPE location, Formal::Intent intent,
                     PODUniqueString name,
                     AstNode* typeExpr,
                     AstNode* initExpr,
-                    bool consumeAttributes=false);
+                    bool consumeAttributeGroup=false);
 
   AstNode*
   buildTupleFormal(YYLTYPE location, Formal::Intent intent,
@@ -578,13 +579,13 @@ struct ParserContext {
                                   ParserExprList* whenStmts);
 
   CommentsAndStmt
-  buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
+  buildForwardingDecl(YYLTYPE location, owned<AttributeGroup> attributeGroup,
                       owned<AstNode> expr,
                       VisibilityClause::LimitationKind limitationKind,
                       ParserExprList* limitations);
 
   CommentsAndStmt
-  buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
+  buildForwardingDecl(YYLTYPE location, owned<AttributeGroup> attributeGroup,
                       CommentsAndStmt cs);
 
   AstNode* buildInterfaceFormal(YYLTYPE location, PODUniqueString name);

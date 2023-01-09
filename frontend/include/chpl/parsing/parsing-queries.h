@@ -347,7 +347,7 @@ ConfigSettingsList& configSettings(Context* context);
   Given an ID, returns the attributes associated with the ID. Only
   declarations can have associated attributes.
  */
-const uast::Attributes* idToAttributes(Context* context, ID id);
+const uast::AttributeGroup* idToAttributeGroup(Context* context, ID id);
 
 /**
   Given an ID 'idMention' representing a mention of a symbol, and an

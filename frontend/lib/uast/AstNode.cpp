@@ -39,6 +39,10 @@ void AstNode::dumpFieldsInner(const DumpSettings& s) const {
 }
 
 std::string AstNode::dumpChildLabelInner(int i) const {
+  if (i == attributeGroupChildNum_) {
+    return "attributeGroup";
+  }
+
   return "";
 }
 
@@ -78,7 +82,7 @@ bool AstNode::mayContainStatements(AstTag tag) {
     case asttags::AnonFormal:
     case asttags::As:
     case asttags::Array:
-    case asttags::Attributes:
+    case asttags::AttributeGroup:
     case asttags::Break:
     case asttags::Comment:
     case asttags::Continue:
@@ -202,7 +206,7 @@ bool AstNode::isInherentlyStatement() const {
     case asttags::AnonFormal:
     case asttags::As:
     case asttags::Array:
-    case asttags::Attributes:
+    case asttags::AttributeGroup:
     case asttags::Break:
     case asttags::Comment:
     case asttags::Continue:
@@ -335,6 +339,8 @@ bool AstNode::shallowMatch(const AstNode* other) const {
     return false;
   if (lhs->id().symbolPath() != rhs->id().symbolPath())
     return false;
+  if (lhs->attributeGroupChildNum() != rhs->attributeGroupChildNum())
+    return false;
   if (!lhs->contentsMatchInner(rhs))
     return false;
 
@@ -350,7 +356,8 @@ bool AstNode::completeMatch(const AstNode* other) const {
     return false;
   }
 
-  // check the numeric elements of the id and the number of children
+  // check the numeric elements of the id and the number of children and
+  // the attributeGroupChildNum
   if (lhs->id().postOrderId() != rhs->id().postOrderId() ||
       lhs->id().numContainedChildren() != rhs->id().numContainedChildren() ||
       lhs->children_.size() != rhs->children_.size()) {
@@ -527,7 +534,7 @@ void AstNode::stringify(std::ostream& ss,
         // compute the maximum id width so it's a nice column
         int maxIdLen = computeMaxIdStringWidth();
         s.idWidth = maxIdLen;
-        dumpHelper(s, this, 0, /*parent*/ nullptr, /*parentIdx*/-1);
+        dumpHelper(s, this, 0, /*parent*/ nullptr, /*parentIdx*/NO_CHILD);
       }
       break;
   }
@@ -535,6 +542,7 @@ void AstNode::stringify(std::ostream& ss,
 
 void AstNode::serialize(Serializer& ser) const {
   ser.write(tag_);
+  ser.write(attributeGroupChildNum_);
   ser.write(id_);
   ser.write(children_);
 }
@@ -543,6 +551,7 @@ AstNode::AstNode(AstTag tag, Deserializer& des)
   : tag_(tag) {
   // Note: Assumes that the tag was already serialized in order to invoke
   // the correct class' deserializer.
+  attributeGroupChildNum_ = (int)des.read<int32_t>();
   id_ = des.read<ID>();
   children_ = des.read<AstList>();
 }

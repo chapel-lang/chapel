@@ -46,7 +46,7 @@
   AST_NODE(AnonFormal)                 //
   AST_NODE(As)                         //
   AST_NODE(Array)                      //
-  AST_LEAF(Attributes)                 //
+  AST_LEAF(AttributeGroup)             //
   //AST_NODE(AssociativeArray)         //
   AST_NODE(Break)                      // old AST: GotoStmt
   AST_NODE(Catch)                      // old AST: CatchStmt

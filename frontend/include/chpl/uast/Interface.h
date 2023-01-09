@@ -54,7 +54,7 @@ class Interface final : public NamedDecl {
                      // isn't the body always the last thing here?
   bool isFormalListExplicit_;
 
-  Interface(AstList children, int attributesChildNum,
+  Interface(AstList children, int attributeGroupChildNum,
             Visibility visibility,
             UniqueString name,
             int interfaceFormalsChildNum,
@@ -63,7 +63,7 @@ class Interface final : public NamedDecl {
             int numBodyStmts,
             bool isFormalListExplicit)
       : NamedDecl(asttags::Interface, std::move(children),
-                  attributesChildNum,
+                  attributeGroupChildNum,
                   visibility,
                   Decl::DEFAULT_LINKAGE,
                   /*linkageNameChildNum*/ AstNode::NO_CHILD,
@@ -190,7 +190,7 @@ class Interface final : public NamedDecl {
   }
 
   static owned<Interface> build(Builder* builder, Location loc,
-                                owned<Attributes> attributes,
+                                owned<AttributeGroup> attributeGroup,
                                 Decl::Visibility visibility,
                                 UniqueString name,
                                 bool isFormalListExplicit,
