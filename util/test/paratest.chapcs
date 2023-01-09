@@ -16,8 +16,6 @@ paratest.server options can be passed as additional command-line arguments
 (e.g. -compopts --fast).
 """
 
-from __future__ import print_function
-
 import datetime
 import os.path
 import sys
@@ -26,7 +24,6 @@ import timeit
 chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
-import chpl_comm
 import utils
 
 
@@ -110,30 +107,12 @@ def get_num_non_exclusive_nodes():
     return num_non_exclusive_nodes
 
 
-def get_num_oversub_jobs():
-    """
-    Get the number of jobs that allow oversubscription (permit node sharing)
-    """
-    squeue_cmd = ['squeue',
-                  '--partition={0}'.format(get_partition()),
-                  '--noheader',
-                  '--format="%h"']
-    squeue_out = [s.upper() for s in run_command_wrapper(squeue_cmd)]
-    return squeue_out.count('YES')
-
-
 def get_good_nodepara():
     """
-    Get a "good" nodepara value: default to 4 for comm=none testing, and
-    3 for comm!=none since that's already oversubscribed. If no other shared
-    jobs are running bump the nodepara by 1.
+    Get a "good" nodepara value. Currently defaults to 6, but we could adjust
+    based on parition, comm, or whether other jobs are running.
     """
-
-    nodepara = 4
-    if chpl_comm.get() != 'none':
-        nodepara = 3
-    if get_num_oversub_jobs() == 0:
-        nodepara += 1
+    nodepara = 6
     return nodepara
 
 
