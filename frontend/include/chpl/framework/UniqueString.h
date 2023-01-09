@@ -198,8 +198,8 @@ class UniqueString final {
   */
   bool endsWith(const char* suffix) const {
     auto suffixLength = strlen(suffix);
-    if (suffixLength < this->length()) return false;
-    auto offset = suffixLength - this->length();
+    if (suffixLength > this->length()) return false;
+    auto offset = this->length() - suffixLength;
     bool ret = (0 == strncmp(this->c_str() + offset, suffix, suffixLength));
     return ret;
   }
