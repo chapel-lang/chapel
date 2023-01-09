@@ -42,9 +42,12 @@ namespace uast {
  */
 class Array final : public AstNode {
  private:
-  // TODO: Record if initializer list has trailing comma?
-  Array(AstList children)
+
+  bool trailingComma_;
+  
+  Array(AstList children, bool trailingComma)
     : AstNode(asttags::Array, std::move(children)) {
+    trailingComma_ = trailingComma;
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -61,8 +64,10 @@ class Array final : public AstNode {
    Create and return an Array expression.
    */
   static owned<Array> build(Builder* builder, Location loc,
-                            AstList exprs);
+                            AstList exprs, bool trailingComma=false);
 
+  bool hasTrailingComma() const { return this->trailingComma_; }
+  
   /**
     Return a way to iterate over the expressions of this array.
   */

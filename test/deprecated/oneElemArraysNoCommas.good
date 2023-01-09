@@ -1,0 +1,1 @@
+oneElemArraysNoCommas.chpl:1: error: single-element array literals without a trailing comma are deprecated; please rewrite as '[myElem, ]'
