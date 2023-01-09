@@ -570,6 +570,137 @@ static void test13() {
   assert(guard.realizeErrors());
 }
 
+// There's specal handling for the rightmost field access. Make sure this
+// special handling properly handles super.
+static void test14() {
+  printf("test14\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module A {
+        var x : int;
+        module B {
+          import this.super as C;
+          var y = C.x;
+        }
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+  const Variable* y = findVariable(vec, "y");
+  assert(y);
+
+  const ResolvedExpression& reY = scopeResolveIt(context, y->initExpression());
+  assert(reY.toId() == x->id());
+}
+
+
+// Make sure that the dot-expression handling of "this" works in addition
+// to the idenifier-expression handling of "this". Technically this is
+// redundant, but our goal is to issue a warning, not fail to resolve in
+// this case.
+static void test15() {
+  printf("test15\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  // Note this.super.this instead of this.super in the previous test.
+  std::string contents = R""""(
+      module A {
+        var x : int;
+        module B {
+          import this.super.this as C;
+          var y = C.x;
+        }
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+  const Variable* y = findVariable(vec, "y");
+  assert(y);
+
+  const ResolvedExpression& reY = scopeResolveIt(context, y->initExpression());
+  assert(reY.toId() == x->id());
+}
+
+// Ensures that a module declared private and then imported renamed is
+// not accessible externally (renaming doesn't change visibility).
+static void test16() {
+  printf("test16\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module A {
+        private module B {
+          var x = 1;
+        };
+        public use B as C;
+      }
+      module D {
+        use A;
+        import C;
+        var y = C.x;
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+  const Variable* y = findVariable(vec, "y");
+  assert(y);
+
+  const ResolvedExpression& reY = scopeResolveIt(context, y->initExpression());
+  assert(reY.toId().isEmpty());
+  assert(guard.realizeErrors() == 1);
+}
+
+// Makes sure a user can't use a module as a variable (like var x = M).
+static void test17() {
+  printf("test17\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module TopLevel {
+        module A {}
+        var x = A;
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+  // Trigger scope resolution
+  const ResolvedExpression& reX = scopeResolveIt(context, x->initExpression());
+  (void) reX;
+
+  assert(guard.errors().size() == 1);
+  auto& e = guard.errors()[0];
+  assert(e->message() == "modules (like 'A' here) cannot be "
+                         "mentioned like variables");
+  guard.realizeErrors();
+}
+
 int main() {
   test1();
   test2();
@@ -584,6 +715,10 @@ int main() {
   test11();
   test12();
   test13();
+  test14();
+  test15();
+  test16();
+  test17();
 
   return 0;
 }

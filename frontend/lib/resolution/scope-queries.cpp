@@ -379,8 +379,17 @@ static bool doLookupInImports(Context* context,
       }
 
       if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
-        result.push_back(BorrowedIdsWithName(is.scope()->id(), uast::Decl::PUBLIC));
-        found = true;
+        // Make sure the module / enum being renamed isn't private.
+        auto scopeAst = parsing::idToAst(context, is.scope()->id());
+        auto visibility = scopeAst->toDecl()->visibility();
+        auto foundIds =
+          BorrowedIdsWithName::createWithSingleId(is.scope()->id(),
+                                                  visibility,
+                                                  skipPrivateVisibilities);
+        if (foundIds) {
+          result.push_back(std::move(foundIds.getValue()));
+          found = true;
+        }
       }
     }
 
@@ -419,7 +428,7 @@ static bool doLookupInToplevelModules(Context* context,
   if (mod == nullptr)
     return false;
 
-  result.push_back(BorrowedIdsWithName(mod->id(), uast::Decl::PUBLIC));
+  result.push_back(BorrowedIdsWithName::createWithSinglePublicId(mod->id()));
   return true;
 }
 
@@ -680,7 +689,8 @@ static void errorIfNameNotInScope(Context* context,
                                   const ResolvedVisibilityScope* resolving,
                                   UniqueString name,
                                   const VisibilityClause* clauseForError,
-                                  VisibilityStmtKind useOrImport) {
+                                  VisibilityStmtKind useOrImport,
+                                  bool isRename) {
   NamedScopeSet checkedScopes;
   std::vector<BorrowedIdsWithName> result;
   LookupConfig config = LOOKUP_INNERMOST |
@@ -692,7 +702,7 @@ static void errorIfNameNotInScope(Context* context,
 
   if (got == false || result.size() == 0) {
     CHPL_REPORT(context, UseImportUnknownSym, clauseForError, scope, useOrImport,
-                name.c_str());
+                isRename, name.c_str());
   }
 }
 
@@ -705,11 +715,11 @@ errorIfAnyLimitationNotInScope(Context* context,
   for (const AstNode* e : clause->limitations()) {
     if (auto ident = e->toIdentifier()) {
       errorIfNameNotInScope(context, scope, resolving, ident->name(),
-                            clause, useOrImport);
+                            clause, useOrImport, /* isRename */ false);
     } else if (auto as = e->toAs()) {
       if (auto ident = as->symbol()->toIdentifier()) {
         errorIfNameNotInScope(context, scope, resolving, ident->name(),
-                              clause, useOrImport);
+                              clause, useOrImport, /* isRename */ true);
       }
     }
   }
@@ -891,6 +901,8 @@ findUseImportTarget(Context* context,
                                        expr,
                                        useOrImport);
       return ret;
+    } else if (dot->field() == USTR("this")) {
+      return innerScope->moduleScope();
     }
 
     if (innerScope != nullptr) {
@@ -937,8 +949,14 @@ doResolveUseStmt(Context* context, const Use* use,
       // Per the spec, we only have visibility of the symbol itself if the
       // use is renamed (with 'as') or non-public.
       if (!newName.isEmpty()) {
-        r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
-                               isPrivate, convertOneRename(oldName, newName));
+        if (newName == USTR("_")) {
+          // Do not introduce the name at all.
+          r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
+                                 isPrivate, emptyNames());
+        } else {
+          r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
+                                 isPrivate, convertOneRename(oldName, newName));
+        }
       } else if (isPrivate) {
         r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
                                isPrivate, convertOneName(oldName));
@@ -1010,9 +1028,13 @@ doResolveImportStmt(Context* context, const Import* imp,
     // on it matching just one thing).
     // But, we don't do that for 'import M.f.{a,b,c}'
     if (auto dot = expr->toDot()) {
-      if (clause->limitationKind() != VisibilityClause::BRACES) {
-        expr = dot->receiver();
-        dotName = dot->field();
+      // super and this are special keywords, they should not be resolved
+      // via the dot-name mechanism here.
+      if (dot->field() != USTR("super") && dot->field() != USTR("this")) {
+        if (clause->limitationKind() != VisibilityClause::BRACES) {
+          expr = dot->receiver();
+          dotName = dot->field();
+        }
       }
     }
 
@@ -1033,7 +1055,8 @@ doResolveImportStmt(Context* context, const Import* imp,
           case VisibilityClause::NONE:
             kind = VisibilitySymbols::ONLY_CONTENTS;
             errorIfNameNotInScope(context, foundScope, r,
-                                  dotName, clause, VIS_IMPORT);
+                                  dotName, clause, VIS_IMPORT,
+                                  /* isRename */ !newName.isEmpty());
             if (newName.isEmpty()) {
               // e.g. 'import M.f'
               r->addVisibilityClause(foundScope, kind, isPrivate,
@@ -1063,6 +1086,9 @@ doResolveImportStmt(Context* context, const Import* imp,
               // e.g. 'import OtherModule'
               r->addVisibilityClause(foundScope, kind, isPrivate,
                                      convertOneName(oldName));
+            } if (newName == USTR("_")) {
+              // e.g. 'import OtherModule as _'
+              r->addVisibilityClause(foundScope, kind, isPrivate, emptyNames());
             } else {
               // e.g. 'import OtherModule as Foo'
               r->addVisibilityClause(foundScope, kind, isPrivate,

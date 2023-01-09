@@ -453,29 +453,6 @@ struct Converter {
             SymExpr* se = new SymExpr(sym);
             Expr* ret = se;
 
-
-            // TODO(Resolver): This logic should probably be handled from
-            //                 within Dyno.
-            if (!inImportOrUse && rr->type().kind() == types::QualifiedType::MODULE) {
-              const char* reason = "cannot be mentioned like variables";
-              auto parentId = parsing::idToParentId(context, node->id());
-              auto parentAst = parsing::idToAst(context, parentId);
-              if (auto callAst = parentAst->toCall()) {
-                if (callAst->calledExpression() == node) {
-                  reason = "cannot be called like procedures";
-                }
-              } else if (auto dotAst = parentAst->toDot()) {
-                if (dotAst->receiver() == node) {
-                  // Not an error to reference a module name in a dot expression.
-                  reason = nullptr;
-                }
-              }
-
-              if (reason != nullptr) {
-                USR_FATAL_CONT(se, "modules (like '%s' here) %s", node->name().c_str(), reason);
-              }
-            }
-
             if (parsing::idIsParenlessFunction(context, id)) {
               // it's a parenless function call so add a CallExpr
               ret = new CallExpr(se);

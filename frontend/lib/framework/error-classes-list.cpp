@@ -541,12 +541,31 @@ void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
   }
 }
 
+
 void ErrorMissingInclude::write(ErrorWriterBase& wr) const {
   auto moduleInclude = std::get<const uast::Include*>(info);
   auto& filePath = std::get<std::string>(info);
   wr.heading(kind_, type_, moduleInclude, "cannot find included submodule");
   wr.code(moduleInclude);
   wr.note(moduleInclude, "expected file at path '", filePath, "'");
+}
+
+void ErrorModuleAsVariable::write(ErrorWriterBase& wr) const {
+  auto node = std::get<0>(info);
+  auto parent = std::get<1>(info);
+  auto mod = std::get<const uast::Module*>(info);
+  const char* reason = "cannot be mentioned like variables";
+
+  if (parent) {
+    if (auto call = parent->toCall()) {
+      if (call->calledExpression() == node) {
+        reason = "cannot be called like procedures";
+      }
+    }
+  }
+  wr.heading(kind_, type_, node, "modules (like '", mod->name(), "' here) ",
+             reason, ".");
+  wr.code(parent, { node });
 }
 
 void ErrorMultipleEnumElems::write(ErrorWriterBase& wr) const {
@@ -768,8 +787,24 @@ void ErrorUseImportUnknownSym::write(ErrorWriterBase& wr) const {
   auto symbolName = std::get<std::string>(info);
   auto searchedScope = std::get<const resolution::Scope*>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
-  wr.heading(kind_, type_, locationOnly(visibilityClause),
-             "cannot find symbol '", symbolName, "' for ", useOrImport, ".");
+  auto isRename = std::get<bool>(info);
+
+  auto limitationKind = visibilityClause->limitationKind();
+  if (isRename) {
+    wr.heading(kind_, type_, visibilityClause,
+               "cannot rename symbol '", symbolName, "' as it is not defined in '",
+               searchedScope->name(),"'.");
+  } else if (limitationKind == uast::VisibilityClause::ONLY ||
+      limitationKind == uast::VisibilityClause::EXCEPT) {
+    wr.heading(kind_, type_, visibilityClause,
+               "cannot use '", limitationKind, "' clause with symbol '",
+               symbolName, "' as it is not defined in '",
+               searchedScope->name(),"'.");
+  } else {
+    wr.heading(kind_, type_, visibilityClause,
+               "cannot '", useOrImport, "' symbol '", symbolName, "' "
+               "as it is not defined in '", searchedScope->name(), "'.");
+  }
   wr.message("In the following '", useOrImport, "' statement:");
   wr.code(visibilityClause, { visibilityClause });
   // get class name of AstNode that generated scope (probably Module or Enum)

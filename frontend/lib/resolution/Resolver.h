@@ -328,6 +328,10 @@ struct Resolver {
   void resolveTupleDecl(const uast::TupleDecl* td,
                         const types::Type* useType);
 
+  void validateAndSetToId(ResolvedExpression& r,
+                          const uast::AstNode* exr,
+                          const ID& id);
+
   // e.g. new shared C(a, 0)
   // also resolves initializer call as a side effect
   bool resolveSpecialNewCall(const uast::Call* call);
