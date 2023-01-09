@@ -182,10 +182,6 @@ class VarScopeVisitor {
   /** Returns the return or yield type of the function being processed */
   const types::QualifiedType& returnOrYieldType();
 
-  /** Handle associated conversion calls, if any.
-      If there are any, calls handle*Formal calls as needed. */
-  //void processAssociatedConvCalls(const AstNode* ast, RV& rv);
-
  public:
   // ----- visitor implementation
   void enterScope(const uast::AstNode* ast, RV& rv);

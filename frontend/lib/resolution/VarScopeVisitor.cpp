@@ -200,40 +200,6 @@ const QualifiedType& VarScopeVisitor::returnOrYieldType() {
   return fnReturnType;
 }
 
-/*
-void VarScopeVisitor::processAssociatedConvCalls(const AstNode* ast, RV& rv) {
-  if (ast != nullptr && rv.hasAst(ast)) {
-    ResolvedExpression& r = rv.byAst(ast);
-    for (auto action : r.associatedActions()) {
-      auto type = action.action();
-      if (type == AssociatedAction::ASSIGN_OTHER ||
-          type == AssociatedAction::INIT_OTHER) {
-        const TypedFnSignature* fn = action.fn();
-        const ID& actualId = action.id();
-        if (!actualId.isEmpty()) {
-          int formalIdx = 0;
-          if (type == AssociatedAction::ASSIGN_OTHER) {
-            formalIdx = fn->untyped()->isMethod() ? 1 : 0;
-          } else if (type == AssociatedAction::INIT_OTHER) {
-            formalIdx = 1;
-          }
-
-          const QualifiedType& formalType = fn->formalType(formalIdx);
-          auto kind = formalType.kind();
-          if (kind == IntentList::OUT) {
-            handleOutFormal(nullptr, ast, formalType, rv);
-          } else if (kind == IntentList::IN || kind == IntentList::CONST_IN) {
-            handleInFormal(nullptr, ast, formalType, rv);
-          } else if (kind == IntentList::INOUT) {
-            handleInoutFormal(nullptr, ast, formalType, rv);
-          }
-        }
-      }
-    }
-  }
-}
-*/
-
 void VarScopeVisitor::enterScope(const AstNode* ast, RV& rv) {
   if (createsScope(ast->tag())) {
     scopeStack.push_back(toOwned(new VarFrame(ast)));

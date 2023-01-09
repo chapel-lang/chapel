@@ -491,14 +491,6 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
                                    const QualifiedType& rhsType,
                                    RV& rv) {
 
-  /*if (lhsType.type() != rhsType.type()) {
-    // Should have been handled by ResolveConv
-    return;
-  }
-  if (!typeNeedsInitDeinitCall(lhsType.type())) {
-    // TODO: we should resolve it anyway
-    return;
-  }*/
   if (lhsType.type() == rhsType.type() &&
       !typeNeedsInitDeinitCall(lhsType.type())) {
      // TODO: we should resolve it anyway
@@ -529,10 +521,6 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
                                      const QualifiedType& rhsType,
                                      bool forMoveInit,
                                      RV& rv) {
-  /*if (lhsType.type() != rhsType.type()) {
-    // Should have been handled by ResolveConv
-    return;
-  }*/
   if (!typeNeedsInitDeinitCall(lhsType.type())) {
     // TODO: we could resolve it anyway
     return;
@@ -602,11 +590,6 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
                                      const QualifiedType& lhsType,
                                      const QualifiedType& rhsType,
                                      RV& rv) {
-  /*if (lhsType.type() != rhsType.type()) {
-    // Should have been handled by ResolveConv
-    return;
-  }*/
-
   if (isTypeParam(lhsType.kind())) {
     // OK, nothing else to do
   } else if (isValue(lhsType.kind()) && isValueOrParam(rhsType.kind())) {
@@ -754,9 +737,6 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     processMentions(init, rv);
   }
 
-  // handle any 'in' intents from implicitly added type conversion calls
-  //processAssociatedConvCalls(ast, rv);
-
   bool inited = processDeclarationInit(ast, rv);
   bool splitInited = (splitInitedVars.count(ast->id()) > 0);
 
@@ -835,9 +815,6 @@ void CallInitDeinit::handleMention(const Identifier* ast, ID varId, RV& rv) {
 void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
   VarFrame* frame = currentFrame();
 
-  // handle any 'in' intents from implicitly added type conversion calls
-  //processAssociatedConvCalls(ast, rv);
-
   // What is the RHS and LHS of the '=' call?
   auto lhsAst = ast->actual(0);
   auto rhsAst = ast->actual(1);
@@ -903,11 +880,6 @@ void CallInitDeinit::handleInFormal(const FnCall* ast, const AstNode* actual,
 
   // check for use of deinited variables
   processMentions(actual, rv);
-
-  // handle any 'in' intents from implicitly added type conversion calls
-  /*if (ast != nullptr) {
-    processAssociatedConvCalls(actual, rv);
-  }*/
 
   // compute the actual type
   QualifiedType actualType = rv.byAst(actual).type();
@@ -1042,12 +1014,6 @@ void callInitDeinit(Resolver& resolver) {
   std::set<ID> splitInitedVars = computeSplitInits(resolver.context,
                                                    resolver.symbol,
                                                    resolver.byPostorder);
-
-  // resolve conversions here in case they affect copy elision
-  /*{
-    ResolveConv rc(resolver.context, resolver, splitInitedVars);
-    rc.process(resolver.symbol, resolver.byPostorder);
-  }*/
 
   std::set<ID> elidedCopyFromIds = computeElidedCopies(resolver.context,
                                                        resolver.symbol,
