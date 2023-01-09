@@ -45,7 +45,6 @@ void* chpl_gpu_load_function(CUmodule cuda_module, const char* kernel_name) {
   assert(function);
 
   return (void*)function;
-
 }
 
 // this is part of the interface (used by the module code as an extern)

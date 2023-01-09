@@ -43,10 +43,10 @@ void chpl_gpu_on_std_modules_finished_initializing(void) {
 }
 
 inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
-                            const char* fatbinData, const char* name,
-                            int grd_dim_x, int grd_dim_y, int grd_dim_z,
-                            int blk_dim_x, int blk_dim_y, int blk_dim_z,
-                            int nargs, ...) {
+                                   const char* fatbinData, const char* name,
+                                   int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                                   int blk_dim_x, int blk_dim_y, int blk_dim_z,
+                                   int nargs, ...) {
   CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
                  "\tKernel: %s\n"
                  "\tNumArgs: %d\n",
@@ -75,8 +75,9 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
 }
 
 inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
-                                 const char* fatbinData, const char* name,
-                                 int num_threads, int blk_dim, int nargs, ...) {
+                                        const char* fatbinData, const char* name,
+                                        int num_threads, int blk_dim, int nargs,
+                                        ...) {
 
   CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
                  "\tKernel: %s\n"
