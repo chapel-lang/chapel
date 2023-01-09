@@ -51,6 +51,7 @@ $show_all_errors = 0;
 $junit_xml = 0;
 $junit_xml_file = "";
 $junit_remove_prefix = "";
+$timing_file = "";
 # Once a node has timed out, we don't send it any more work, so this timeout
 # should be set higher than the time needed to process the largest directory.
 # -1 means "never time out".
@@ -164,6 +165,11 @@ sub collect_logs {
 
     systemd ("cat $fin_log.summary >> $fin_log");
 
+    # generate subtest/dir timings
+    if ($timing_file ne "" &&  int($failures) < 10) {
+        systemd ("grep -a '^\\[Finished subtest' $fin_log > $timing_file");
+    }
+
     print "\n[Summary: #Successes = $successes | #Failures = $failures | #Futures = $futures]\n";
 
 }
@@ -220,7 +226,6 @@ sub feed_nodes {
       print $activate_venv_output;
       systemd ("echo '$activate_venv_output' >> $fin_logfile");
     } else {
-      @testdir_list = sort @testdir_list;
       print $nodeCount; print " worker(s) (@node_list)\n";
       print "timeout = $timeout\n" if $debug > 0;
       my $startCount = $#testdir_list + 1;
@@ -784,6 +789,11 @@ sub main {
         } else {
             print "[Collecting test directories in $cwd]\n";
             @testdir_list = find_subdirs (".", 0);
+            $comm = `$ENV{CHPL_HOME}/util/chplenv/chpl_comm.py`; chomp $comm;
+            $timing_dir = "$ENV{HOME}/.chpl/paratest_times";
+            systemd ("mkdir -p $timing_dir");
+            $timing_file = "$timing_dir/comm-$comm-dir-times";
+            @testdir_list = split(' ', `$ENV{CHPL_HOME}/util/test/find_slow_tests.py --directory --timefile $timing_file --sort-list @testdir_list`);
         }
     }
 
