@@ -19,6 +19,8 @@
 
 #ifdef HAS_GPU_LOCALE
 
+// #define CHPL_GPU_ENABLE_PROFILE // define this before including chpl-gpu.h
+
 #include "sys_basic.h"
 #include "chplrt.h"
 #include "chpl-mem.h"
@@ -35,8 +37,6 @@
 #include <cuda_runtime.h>
 #include <assert.h>
 #include <stdbool.h>
-
-/*#define CHPL_GPU_PROFILE*/
 
 static CUcontext *chpl_gpu_primary_ctx;
 static int *deviceClockRates;
@@ -173,13 +173,6 @@ bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
 }
 
 #ifdef CHPL_GPU_PROFILE
-static long long get_time_in_ms() {
-  struct timeval tv;
-
-  gettimeofday(&tv, NULL);
-
-  return (tv.tv_sec*1000000.0+tv.tv_usec);
-}
 #endif
 
 static void chpl_gpu_launch_kernel_help(int ln,
@@ -194,37 +187,20 @@ static void chpl_gpu_launch_kernel_help(int ln,
                                         int blk_dim_z,
                                         int nargs,
                                         va_list args) {
-#ifdef CHPL_GPU_PROFILE
-  long long start_time = 0.0;
-
-  long long context_time = 0.0;
-  long long load_time = 0.0;
-  long long prep_time = 0.0;
-  long long kernel_time = 0.0;
-  long long teardown_time = 0.0;
-
-  start_time = get_time_in_ms();
-#endif
+  CHPL_GPU_START_TIMER(context_time);
 
   chpl_gpu_ensure_context();
 
-#ifdef CHPL_GPU_PROFILE
-  context_time = get_time_in_ms() - start_time;
-
-  start_time = get_time_in_ms();
-#endif
-
+  CHPL_GPU_STOP_TIMER(context_time);
+  CHPL_GPU_START_TIMER(load_time);
 
   if (chpl_gpu_cuda_module == NULL) {
     chpl_gpu_cuda_module = chpl_gpu_load_module(fatbinData);
   }
   void* function = chpl_gpu_load_function(chpl_gpu_cuda_module, name);
 
-#ifdef CHPL_GPU_PROFILE
-  load_time = get_time_in_ms() - start_time;
-
-  start_time = get_time_in_ms();
-#endif
+  CHPL_GPU_STOP_TIMER(load_time);
+  CHPL_GPU_START_TIMER(prep_time);
 
   // TODO: this should use chpl_mem_alloc
   void*** kernel_params = chpl_malloc(nargs*sizeof(void**));
@@ -267,11 +243,8 @@ static void chpl_gpu_launch_kernel_help(int ln,
     }
   }
 
-#ifdef CHPL_GPU_PROFILE
-  prep_time = get_time_in_ms() - start_time;
-
-  start_time = get_time_in_ms();
-#endif
+  CHPL_GPU_STOP_TIMER(prep_time);
+  CHPL_GPU_START_TIMER(kernel_time);
 
   CUDA_CALL(cuLaunchKernel((CUfunction)function,
                            grd_dim_x, grd_dim_y, grd_dim_z,
@@ -286,12 +259,8 @@ static void chpl_gpu_launch_kernel_help(int ln,
   CUDA_CALL(cudaDeviceSynchronize());
 
   CHPL_GPU_DEBUG("Synchronization complete %s\n", name);
-
-#ifdef CHPL_GPU_PROFILE
-  kernel_time = get_time_in_ms() - start_time;
-
-  start_time = get_time_in_ms();
-#endif
+  CHPL_GPU_STOP_TIMER(kernel_time);
+  CHPL_GPU_START_TIMER(teardown_time);
 
   // free GPU memory allocated for kernel parameters
   for (i=0 ; i<nargs ; i++) {
@@ -303,13 +272,13 @@ static void chpl_gpu_launch_kernel_help(int ln,
   // TODO: this should use chpl_mem_free
   chpl_free(kernel_params);
 
-
-#ifdef CHPL_GPU_PROFILE
-  teardown_time = get_time_in_ms() - start_time;
-
-  printf("<%20s> Context: %Ld, Load: %Ld, Prep: %Ld, Kernel: %Ld, Teardown: %Ld\n",
+  CHPL_GPU_STOP_TIMER(teardown_time);
+  CHPL_GPU_PRINT_TIMERS("<%20s> Context: %Lf, "
+                               "Load: %Lf, "
+                               "Prep: %Lf, "
+                               "Kernel: %Lf, "
+                               "Teardown: %Lf\n",
          name, context_time, load_time, prep_time, kernel_time, teardown_time);
-#endif
 }
 
 inline void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
