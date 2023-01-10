@@ -261,7 +261,7 @@ static void chpl_gpu_launch_kernel_help(int ln,
   CHPL_GPU_START_TIMER(teardown_time);
 
   // free GPU memory allocated for kernel parameters
-  for (i=0 ; i<nargs ; i++) {
+  for (int i=0 ; i<nargs ; i++) {
     if (was_memory_dynamically_allocated_for_kernel_param[i]) {
       chpl_gpu_mem_free(*kernel_params[i], ln, fn);
     }
