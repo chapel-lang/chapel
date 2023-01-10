@@ -931,22 +931,26 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
 
 
   if (fDynoSerialize) {
-    //auto sfname = builderResult.serializeToDir(dynoBinAstDir);
-    //// 'res' = AstList for now - eventually will be a BuilderResult
-    //auto res = chpl::uast::BuilderResult::deserializeFromFile(gContext, sfname);
 
-    std::stringstream ss;
-    builderResult.serializeToDir(ss);
-    // 'res' = AstList for now - eventually will be a BuilderResult
-    auto res = chpl::uast::BuilderResult::deserializeFromFile(gContext, ss);
+    if (strcmp(dynoBinAstDir, "") != 0) {
+      auto sfname = builderResult.serializeToDir(dynoBinAstDir);
+      if (fVerify) {
+        // 'res' = AstList for now - eventually will be a BuilderResult
+        auto result = chpl::uast::BuilderResult::deserializeFromFile(gContext, sfname);
 
-    if (builderResult.compare(res) == false) {
-      //printf("FAIL: %s\n", builderResult.filePath().c_str());
-      USR_FATAL("FAILED TO (DE)SERIALIZE %s\n", builderResult.filePath().c_str());
-//    } else {
-      //printf("SUCCESS: %s\n", builderResult.filePath().c_str());
+        if (builderResult.compare(result) == false) {
+          USR_FATAL("FAILED TO (DE)SERIALIZE %s\n", builderResult.filePath().c_str());
+        }
+      }
+    } else if (fVerify) {
+      // unspecified output directory, verify only
+      std::stringstream ss;
+      builderResult.serializeToDir(ss);
+      auto res = chpl::uast::BuilderResult::deserializeFromFile(gContext, ss);
+      if (builderResult.compare(res) == false) {
+        USR_FATAL("FAILED TO (DE)SERIALIZE %s\n", builderResult.filePath().c_str());
+      }
     }
-//    builderResult.printNumNodes();
   }
 
   ModuleSymbol* lastModSym = nullptr;
