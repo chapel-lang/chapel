@@ -38,6 +38,9 @@
 #include <assert.h>
 #include <stdbool.h>
 
+// this is compiler-generated
+extern const char* chpl_gpuBinary;
+
 static CUcontext *chpl_gpu_primary_ctx;
 static int *deviceClockRates;
 
@@ -111,6 +114,8 @@ void chpl_gpu_impl_init() {
 
     chpl_gpu_primary_ctx[i] = context;
   }
+
+  chpl_gpu_cuda_module = chpl_gpu_load_module(chpl_gpuBinary);
 }
 
 static bool chpl_gpu_device_alloc = false;
@@ -189,9 +194,7 @@ static void chpl_gpu_launch_kernel_help(int ln,
   CHPL_GPU_STOP_TIMER(context_time);
   CHPL_GPU_START_TIMER(load_time);
 
-  if (chpl_gpu_cuda_module == NULL) {
-    chpl_gpu_cuda_module = chpl_gpu_load_module(fatbinData);
-  }
+  assert(chpl_gpu_cuda_module);
   void* function = chpl_gpu_load_function(chpl_gpu_cuda_module, name);
 
   CHPL_GPU_STOP_TIMER(load_time);
