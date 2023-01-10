@@ -240,6 +240,75 @@ static void testIfVarErrorUseInElseBranch3() {
   assert(reElseUse.type().isUnknown());
 }
 
+// Uses of two if-vars with the same name across multiple branches.
+static void testIfVarErrorUseInElseBranch4() {
+  Context context;
+  auto ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME_FROM_FN_NAME(ctx);
+  std::string contents =
+    R""""(
+    class C {}
+    proc foo(x) {}
+    if var x = new C() {
+      foo(x);
+    } else if var x = new C() {
+      foo(x);
+    } else {
+      x;
+    }
+    )"""";
+  setFileText(ctx, path, contents);
+
+  auto& br = parseAndReportErrors(ctx, path);
+  auto mod = br.singleModule();
+  assert(mod && mod->numStmts() == 3);
+
+  auto cond = mod->stmt(2)->toConditional();
+  assert(cond && cond->hasElseBlock() && cond->numElseStmts() == 1);
+  assert(cond->numThenStmts() == 1);
+
+  auto ifVar = cond->condition()->toVariable();
+  assert(ifVar);
+
+  auto ifCall = cond->thenStmt(0)->toFnCall();
+  assert(ifCall->numActuals() == 1 && ifCall->actual(0)->isIdentifier());
+  auto ifUseX = ifCall->actual(0)->toIdentifier();
+
+  auto elseIf = cond->elseStmt(0)->toConditional();
+  assert(elseIf && elseIf->numThenStmts() == 1);
+  assert(elseIf->hasElseBlock());
+
+  auto elseIfVar = elseIf->condition()->toVariable();
+  assert(elseIfVar);
+
+  auto elseIfCall = elseIf->thenStmt(0)->toFnCall();
+  assert(elseIfCall && elseIfCall->numActuals() == 1);
+  auto elseIfUseX = elseIfCall->actual(0)->toIdentifier();
+  assert(elseIfUseX);
+
+  assert(elseIf->numElseStmts() == 1);
+  auto elseUseX = elseIf->elseStmt(0)->toIdentifier();
+  assert(elseUseX);
+
+  auto& rr = resolveModule(ctx, mod->id());
+  auto& reIfVar = rr.byAst(ifVar);
+  auto& reIfUseX = rr.byAst(ifUseX);
+  auto& reElseIfVar = rr.byAst(elseIfVar);
+  auto& reElseIfUseX = rr.byAst(elseIfUseX);
+  auto& reElseUseX = rr.byAst(elseUseX);
+
+  assert(reIfUseX.toId() == ifVar->id());
+  assert(reIfUseX.type().type() == reIfVar.type().type());
+
+  assert(reElseIfUseX.toId() == elseIfVar->id());
+  assert(reElseIfUseX.type().type() == reElseIfVar.type().type());
+
+  assert(reElseUseX.toId().isEmpty());
+  assert(reElseUseX.type().isUnknown());
+}
+
 static void testIfVarErrorNonClassType() {
   Context context;
   auto ctx = &context;
@@ -266,7 +335,7 @@ static void testIfVarErrorNonClassType() {
   assert(guard.numErrors() == 1);
   assert(guard.error(0)->message() ==
          "a variable declared in the condition of an if statement must "
-         "be a class, not type 'int(64)'");
+         "be a class, but it has non-class type 'int(64)'");
   auto& reVar = rr.byAst(var);
   assert(reVar.type().kind() == QualifiedType::VAR);
   assert(reVar.type().type() == IntType::get(ctx, 64));
@@ -283,6 +352,7 @@ int main() {
   testIfVarErrorUseInElseBranch1();
   testIfVarErrorUseInElseBranch2();
   testIfVarErrorUseInElseBranch3();
+  testIfVarErrorUseInElseBranch4();
   testIfVarErrorNonClassType();
   return 0;
 }
