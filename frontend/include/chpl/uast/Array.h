@@ -43,11 +43,13 @@ namespace uast {
 class Array final : public AstNode {
  private:
 
-  bool trailingComma_;
+  bool trailingComma_,
+       associative_;
   
-  Array(AstList children, bool trailingComma)
+  Array(AstList children, bool trailingComma, bool associative)
     : AstNode(asttags::Array, std::move(children)) {
     trailingComma_ = trailingComma;
+    associative_ = associative;
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -64,9 +66,11 @@ class Array final : public AstNode {
    Create and return an Array expression.
    */
   static owned<Array> build(Builder* builder, Location loc,
-                            AstList exprs, bool trailingComma=false);
+                            AstList exprs, bool trailingComma=false,
+                            bool associative=false);
 
   bool hasTrailingComma() const { return this->trailingComma_; }
+  bool isAssociative() const { return this->associative_; }
   
   /**
     Return a way to iterate over the expressions of this array.
