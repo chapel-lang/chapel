@@ -112,7 +112,7 @@ def get_good_nodepara():
     Get a "good" nodepara value. Currently defaults to 6, but we could adjust
     based on parition, comm, or whether other jobs are running.
     """
-    nodepara = 6
+    nodepara = int(os.getenv('CHPL_TEST_NODEPARA', '6'))
     return nodepara
 
 
