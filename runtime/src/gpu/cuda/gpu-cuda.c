@@ -42,7 +42,6 @@ static CUcontext *chpl_gpu_primary_ctx;
 static int *deviceClockRates;
 
 static CUmodule chpl_gpu_cuda_module;
-static void* function_table[256];
 
 static bool chpl_gpu_has_context() {
   CUcontext cuda_context = NULL;
@@ -111,10 +110,6 @@ void chpl_gpu_impl_init() {
     cuDeviceGetAttribute(&deviceClockRates[i], CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device);
 
     chpl_gpu_primary_ctx[i] = context;
-  }
-
-  for (i=0 ; i<256 ; i++) {
-    function_table[i] = NULL;
   }
 }
 
