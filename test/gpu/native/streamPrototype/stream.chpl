@@ -11,6 +11,8 @@ use GPUDiagnostics;
 //
 use HPCCProblemSize;
 
+config param useForeach = true;
+
 //
 // The number of vectors and element type of those vectors
 //
@@ -87,13 +89,12 @@ proc main() {
       // Compute the multiply-add on b and c, storing the result to a.
       //
       // This forall loop will be offloaded onto the GPU.
-      foreach (a, b, c) in zip(A, B, C) do
-        a = b + alpha * c;
-
-      // can we do direct indexing? And what would be the difference?
-      // we will have separate induction variables here, that may cause multiple
-      // muls
-      // try changing the array iterator do a memory walk.
+      if useForeach then
+        foreach (a, b, c) in zip(A, B, C) do
+          a = b + alpha * c;
+      else
+        forall (a, b, c) in zip(A, B, C) do
+          a = b + alpha * c;
 
       execTime(trial) = getCurrentTime() - startTime;  // store the elapsed time
     }
