@@ -54,11 +54,9 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
 
   std::string text;
   std::string error;
-  const ErrorParseErr* parseError = nullptr;
+  const ErrorBase* parseError = nullptr;
   if (!readfile(path.c_str(), text, error)) {
-    error = "error reading file: " + error;
-    context->report(
-        ErrorParseErr::get(context, std::make_tuple(Location(), error)));
+    parseError = context->error(Location(), "error reading file: %s\n", error.c_str());
   }
   auto result = FileContents(std::move(text), parseError);
   return QUERY_END(result);
@@ -105,7 +103,7 @@ parseFileToBuilderResult(Context* context, UniqueString path,
   // Run the fileText query to get the file contents
   const FileContents& contents = fileText(context, path);
   const std::string& text = contents.text();
-  const ErrorParseErr* error = contents.error();
+  const ErrorBase* error = contents.error();
   BuilderResult result(path);
 
   if (error == nullptr) {

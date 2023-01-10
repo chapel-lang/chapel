@@ -169,7 +169,9 @@ struct ParserContext {
     };
   }
 
-  void saveError(const ErrorBase* error) { errors.push_back(error); }
+  ErroneousExpression* report(YYLTYPE loc, const ErrorBase* error);
+  ErroneousExpression* error(YYLTYPE loc, const char* fmt, ...);
+  ErroneousExpression* syntax(YYLTYPE loc, const char* fmt, ...);
 
   void noteComment(YYLTYPE loc, const char* data, long size);
   std::vector<ParserComment>* gatherComments(YYLTYPE location);

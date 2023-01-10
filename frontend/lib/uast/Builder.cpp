@@ -108,20 +108,6 @@ void Builder::addError(const ErrorBase* e) {
   this->errors_.push_back(e);
 }
 
-void Builder::addPostParseError(const AstNode* node, const char* fmt, ...) {
-  va_list vl;
-  va_start(vl, fmt);
-  CHPL_POSTPARSE_REPORT(*this, PostParseErr, node, vprintToString(fmt, vl));
-  va_end(vl);
-}
-
-void Builder::addPostParseWarning(const AstNode* node, const char* fmt, ...) {
-  va_list vl;
-  va_start(vl, fmt);
-  CHPL_POSTPARSE_REPORT(*this, PostParseWarn, node, vprintToString(fmt, vl));
-  va_end(vl);
-}
-
 void Builder::noteLocation(AstNode* ast, Location loc) {
   notedLocations_[ast] = loc;
 }
