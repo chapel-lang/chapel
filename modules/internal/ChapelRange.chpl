@@ -657,20 +657,15 @@ module ChapelRange {
     if isAmbiguous() {
       halt("Can't query the aligned bounds of an ambiguously aligned range");
     }
-    // TODO: This is a bit sloppy, and makes me wonder where else we could
-    // run into it.  I think that the fixes would be to (a) make an
-    // internal equivalent to the '._low' query that did something like
-    // this without ever triggering a compiler error and/or (b) optimize
-    // away _high and _low fields when they don't need to be stored.
-    const low = if hasLowBound() then chpl__idxToInt(lowBound) else _low;
     if !stridable then
-      return low;
+      return _low;
     else
-      return helpAlignLow(low, _alignment, stride);
+      // Adjust _low upward by the difference between _alignment and _low.
+      return _low + chpl__diffMod(_alignment, _low, stride);
   }
 
   pragma "no doc"
-  inline proc range.impliedAlignedLowAsInt {
+  inline proc range.chpl_alignedLowAsIntForIter {
     if stridable && !hasLowBound() && isFiniteIndexType() {
       return helpAlignLow(chpl__idxToInt(lowBoundForIter(this)), _alignment, stride);
     } else {
@@ -777,7 +772,7 @@ module ChapelRange {
   }
 
   pragma "no doc"
-  inline proc range.impliedAlignedHighAsInt {
+  inline proc range.chpl_alignedHighAsIntForIter {
     if stridable && !hasHighBound() && isFiniteIdxType(idxType) {
       return helpAlignHigh(chpl__idxToInt(highBoundForIter(this)), _alignment, stride);
     } else {
@@ -927,15 +922,15 @@ module ChapelRange {
   }
 
   pragma "no doc"
-  proc range.impliedSizeAs(type t: integral): t {
+  proc range.chpl_sizeAsForIter(type t: integral): t {
     if chpl__singleValIdxType(idxType) {
       if _low > _high then return 0;
     }
 
     if !isBoundedRange(this) && isFiniteIdxType(idxType) {
       return sizeAsHelp(t,
-                        this.impliedAlignedLowAsInt,
-                        this.impliedAlignedHighAsInt);
+                        this.chpl_alignedLowAsIntForIter,
+                        this.chpl_alignedHighAsIntForIter);
     } else {
       return sizeAs(t);
     }
@@ -972,7 +967,7 @@ module ChapelRange {
   }
 
   pragma "no doc"
-  inline proc range.impliedFirstAsInt {
+  inline proc range.chpl_firstAsIntForIter {
     if ! stridable {
       return chpl__idxToInt(lowBoundForIter(this));
     } else {
@@ -1023,7 +1018,7 @@ module ChapelRange {
   }
 
   pragma "no doc"
-  inline proc range.impliedLastAsInt {
+  inline proc range.chpl_lastAsIntForIter {
     if ! stridable {
       return chpl__idxToInt(highBoundForIter(this));
     } else if _stride > 0 {
@@ -1759,8 +1754,8 @@ operator :(r: range(?), type t: range(?)) {
                        else (false, 0:r.intIdxType)
       else
         // we could talk about aligned bounds
-        if      hasLowBoundForIter(r)  && st > 0 then (true, r.impliedAlignedLowAsInt)
-        else if hasHighBoundForIter(r) && st < 0 then (true, r.impliedAlignedHighAsInt)
+        if      hasLowBoundForIter(r)  && st > 0 then (true, r.chpl_alignedLowAsIntForIter)
+        else if hasHighBoundForIter(r) && st < 0 then (true, r.chpl_alignedHighAsIntForIter)
         else
           if r.stridable then (r.aligned, r._alignment)
                          else (false, 0:r.intIdxType);
@@ -2244,7 +2239,7 @@ operator :(r: range(?), type t: range(?)) {
     if isFiniteIdxType(idxType) then
       return false;
     return chpl_checkIfRangeIterWillOverflow(this.intIdxType, this._low, this._high,
-        this.stride, this.impliedFirstAsInt, this.impliedLastAsInt, shouldHalt);
+        this.stride, this.chpl_firstAsIntForIter, this.chpl_lastAsIntForIter, shouldHalt);
   }
 
 
@@ -2644,8 +2639,8 @@ operator :(r: range(?), type t: range(?)) {
   proc range.testit() {
     writeln(lowBoundForIter(this));
     writeln(highBoundForIter(this));
-    writeln(this.impliedFirstAsInt);
-    writeln(this.impliedLastAsInt);
+    writeln(this.chpl_firstAsIntForIter);
+    writeln(this.chpl_lastAsIntForIter);
     writeln(_alignment);
     for i in this.these() {
       writeln(i);
@@ -2677,9 +2672,9 @@ operator :(r: range(?), type t: range(?)) {
       // relational operator. Such ranges are supposed to iterate 0 times
       var i: intIdxType;
 //      writeln("Start");
-      const start = impliedFirstAsInt;
+      const start = chpl_firstAsIntForIter;
 //      writeln("End");
-      const end: intIdxType = if chpl__idxToInt(lowBoundForIter(this)) > chpl__idxToInt(highBoundForIter(this)) then start else impliedLastAsInt + stride: intIdxType;
+      const end: intIdxType = if chpl__idxToInt(lowBoundForIter(this)) > chpl__idxToInt(highBoundForIter(this)) then start else chpl_lastAsIntForIter + stride: intIdxType;
 //      writeln((start,end,stride));
 //      writeln("prim C");
       while __primitive("C for loop",
@@ -2880,7 +2875,7 @@ operator :(r: range(?), type t: range(?)) {
       }
 
     } else {
-      var v = this.impliedSizeAs(intIdxType);
+      var v = this.chpl_sizeAsForIter(intIdxType);
       const numChunks = if __primitive("task_get_serial") then
                         1 else _computeNumChunks(v);
 
