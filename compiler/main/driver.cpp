@@ -314,7 +314,7 @@ bool fDynoScopeBundled = false;
 bool fDynoDebugTrace = false;
 size_t fDynoBreakOnHash = 0;
 bool fDynoSerialize = false;
-char dynoBinAstDir[FILENAME_MAX + 1] = "dyno.ast/";
+char dynoBinAstDir[FILENAME_MAX + 1] = "";
 
 std::vector<std::string> gDynoPrependInternalModulePaths;
 std::vector<std::string> gDynoPrependStandardModulePaths;
