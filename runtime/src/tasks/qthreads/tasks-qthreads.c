@@ -445,6 +445,7 @@ static int32_t chpl_qt_getenv_num_workers(void) {
 static void setupAvailableParallelism(int32_t maxThreads) {
     int32_t   numThreadsPerLocale;
     int32_t   qtEnvThreads;
+    chpl_bool noMultithread;
     int32_t   hwpar;
     char      newenv_workers[QT_ENV_S] = { 0 };
 
@@ -454,6 +455,7 @@ static void setupAvailableParallelism(int32_t maxThreads) {
     // vars, we override the default.
     numThreadsPerLocale = chpl_task_getenvNumThreadsPerLocale();
     qtEnvThreads = chpl_qt_getenv_num_workers();
+    noMultithread = chpl_env_rt_get_bool("NO_MULTITHREAD", false);
     hwpar = 0;
 
     // User set chapel level env var (CHPL_RT_NUM_THREADS_PER_LOCALE)
@@ -463,7 +465,11 @@ static void setupAvailableParallelism(int32_t maxThreads) {
 
         hwpar = numThreadsPerLocale;
 
-        numPUsPerLocale = chpl_topo_getNumCPUsLogical(true);
+        if (noMultithread) {
+            numPUsPerLocale = chpl_topo_getNumCPUsPhysical(true);
+        } else {
+            numPUsPerLocale = chpl_topo_getNumCPUsLogical(true);
+        }
         if (0 < numPUsPerLocale && numPUsPerLocale < hwpar) {
             char msg[256];
             snprintf(msg, sizeof(msg),

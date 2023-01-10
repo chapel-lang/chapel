@@ -90,11 +90,20 @@ static sbatchVersion determineSlurmVersion(void) {
   }
 }
 
+static int nomultithread(int batch) {
+  char* hint;
+  if ((hint = getenv("SLURM_HINT")) && strcmp(hint, "nomultithread") == 0)
+    return 1;
+  if (batch && (hint = getenv("SBATCH_HINT")) && strcmp(hint, "nomultithread") == 0)
+    return 1;
+  return 0;
+}
+
 
 // Get the number of locales from the environment variable or if that is not
 // set just use sinfo to get the number of cpus and divide by the number
 // of locales per node.
-static int getCoresPerLocale(int32_t localesPerNode) {
+static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
   int numCores = -1;
   int threadsPerCore = -1;
   const int buflen = 1024;
@@ -138,6 +147,13 @@ static int getCoresPerLocale(int32_t localesPerNode) {
     chpl_error("unable to determine number of cores per locale; "
                "please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
 
+  if (nomultithread) {
+    if (localesPerNode == 1) {
+      numCores /= threadsPerCore;
+    } else {
+      chpl_env_set("CHPL_RT_NO_MULTITHREAD", "true", 0);
+    }
+  }
   return numCores / localesPerNode;
 }
 #define MAX_COM_LEN (FILENAME_MAX + 128)
@@ -290,7 +306,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     fprintf(slurmFile, "#SBATCH --ntasks=%d\n", numLocales);
     int localesOnNode = (numLocales < localesPerNode) ?
                         numLocales : localesPerNode;
-    int cpusPerTask = getCoresPerLocale(localesOnNode);
+    int cpusPerTask = getCoresPerLocale(nomultithread(true), localesOnNode);
     fprintf(slurmFile, "#SBATCH --cpus-per-task=%d\n", cpusPerTask);
     if (localesPerNode > 1) {
       fprintf(slurmFile, "#SBATCH --cpu-bind=none\n");
@@ -417,12 +433,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     len += snprintf(iCom+len, sizeof(iCom)-len, "--ntasks=%d ", numLocales);
     int localesOnNode = (numLocales < localesPerNode) ?
                         numLocales : localesPerNode;
-    int cpusPerTask = getCoresPerLocale(localesOnNode);
+    int cpusPerTask = getCoresPerLocale(nomultithread(false), localesOnNode);
     len += snprintf(iCom+len, sizeof(iCom)-len, "--cpus-per-task=%d ",
                     cpusPerTask);
 
     if (localesPerNode > 1) {
-      len += sprintf(iCom+len, "--cpu-bind=none ");
+      len += snprintf(iCom+len, sizeof(iCom)-len, "--cpu-bind=none ");
     }
 
     // request specified node access

@@ -154,8 +154,8 @@ class LocalePerSocket(unittest.TestCase):
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '4'
         proc = run(['./lps_test', '-nl', '4', '-v'], env=env)
-        self.assertIn('error: The number of locales on the node does '
-                      'not equal the number of sockets (4 != 2).',
+        self.assertIn('error: The number of locales on the node is '
+                      'greater than the number of sockets (4 > 2).',
                       proc.stdout)
 
     def test_04_one_locale(self):
@@ -187,7 +187,22 @@ class LocalePerSocket(unittest.TestCase):
         self.assertIn("QT_CPUBIND = " + self.getCores(1), proc.stdout)
 
     def test_06_no_ht(self):
-        # SLURM_HINT=nomultithread should have no effect.
+        # If SLURM_HINT=nomultithread then the launcher should request
+        # only one PU per core and the locales should only use the
+        # same.
+        env = os.environ.copy()
+        env['SLURM_HINT'] = 'nomultithread'
+        proc = run("./lps_test -nl 2 -v", env=env)
+        self.checkArgs(2, 2, 1, self.sockets * self.cores, None, proc.stdout)
+        self.assertNotIn('using socket', proc.stdout)
+        self.assertNotIn('using socket', proc.stdout)
+        self.assertIn('Using %s Shepherds' % (self.sockets * self.cores),
+                      proc.stdout)
+        self.assertIn("QT_CPUBIND = " + self.getCores("all"), proc.stdout)
+
+    def test_07_two_lpn_no_ht(self):
+        # If SLURM_HINT=nomultithread then each locale should only use one PU
+        # per core.
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         env['SLURM_HINT'] = 'nomultithread'
@@ -199,8 +214,8 @@ class LocalePerSocket(unittest.TestCase):
         self.assertIn("QT_CPUBIND = " + self.getCores(0), proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getCores(1), proc.stdout)
 
-    def test_07_ht_shepherds(self):
-        # One worker per PU.
+    def test_08_ht_shepherds(self):
+        # One worker per PU with hyperthreading.
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         env['CHPL_RT_NUM_THREADS_PER_LOCALE'] = \
@@ -209,29 +224,29 @@ class LocalePerSocket(unittest.TestCase):
         self.checkArgs(1, 2, 2, self.sockets * self.cores, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('using socket 1', proc.stdout)
-        self.assertIn('Using %s Shepherds' % (self.sockets * self.cores),
+        self.assertIn('Using %s Shepherds' % (self.cores * self.threads),
                       proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getThreads(0), proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getThreads(1), proc.stdout)
 
-    def test_08_no_ht_ht_shepherds(self):
-        # SLURM_HINT=nomultithread should have no effect when
+    def test_09_no_ht_ht_shepherds(self):
+        # When SLURM_HINT=nomultithread and
         # CHPL_RT_NUM_THREADS_PER_LOCALE indicates to use
-        # hyperthreading.
+        # hyperthreading, the number of threads/shepherds should be
+        # recuded to the number of cores.
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         env['CHPL_RT_NUM_THREADS_PER_LOCALE'] = str(self.sockets * self.cores)
         env['SLURM_HINT'] = 'nomultithread'
         proc = run("./lps_test -nl 2 -v", env=env)
-        self.checkArgs(1, 2, 2, self.sockets * self.cores, 'none', proc.stdout)
+        self.checkArgs(1, 2, 2, self.cores * self.threads, 'none', proc.stdout)
         self.assertIn('using socket 0', proc.stdout)
         self.assertIn('using socket 1', proc.stdout)
-        self.assertIn('Using %s Shepherds' % (self.sockets * self.cores),
-                      proc.stdout)
-        self.assertIn("QT_CPUBIND = " + self.getThreads(0), proc.stdout)
-        self.assertIn("QT_CPUBIND = " + self.getThreads(1), proc.stdout)
+        self.assertIn('Using %s Shepherds' % self.cores, proc.stdout)
+        self.assertIn("QT_CPUBIND = " + self.getCores(0), proc.stdout)
+        self.assertIn("QT_CPUBIND = " + self.getCores(1), proc.stdout)
 
-    def test_09_reserved(self):
+    def test_10_reserved(self):
         # One core is reserved for the AM handler thread
         env = os.environ.copy()
         env['CHPL_RT_LOCALES_PER_NODE'] = '2'
@@ -244,7 +259,7 @@ class LocalePerSocket(unittest.TestCase):
         self.assertIn("QT_CPUBIND = " + self.getCores(0,1), proc.stdout)
         self.assertIn("QT_CPUBIND = " + self.getCores(1,1), proc.stdout)
 
-    def test_10_ht_reserved(self):
+    def test_11_ht_reserved(self):
         # One core is reserved for the AM handler thread when using
         # hyperthreading.
         env = os.environ.copy()
@@ -263,7 +278,7 @@ class LocalePerSocket(unittest.TestCase):
                       proc.stdout)
 
     @unittest.skip("should not be considered oversubscribed")
-    def test_11_oversubscribed_no_env(self):
+    def test_12_oversubscribed_no_env(self):
         # Detect and allow oversubscription w/out CHPL_RT_OVERSUBSCRIBED
         # and CHPL_RT_LOCALES_PER_NODE set.
         env = os.environ.copy()

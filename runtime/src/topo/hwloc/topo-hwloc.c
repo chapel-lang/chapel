@@ -351,10 +351,10 @@ void chpl_topo_post_comm_init(void) {
     }
 
     // We get our own socket if all cores are accessible, we know our local
-    // rank, and the number of locales on the node equals the number of
-    // sockets. It is an error if the number of locales on the node is greater
-    // than the number of sockets and CHPL_RT_LOCALES_PER_NODE is set,
-    // otherwise we are oversubscribed.
+    // rank, and the number of locales on the node is less than or equal to
+    // the number of sockets. It is an error if the number of locales on the
+    // node is greater than the number of sockets and CHPL_RT_LOCALES_PER_NODE
+    // is set, otherwise we are oversubscribed.
 
     // TODO: The oversubscription determination is incorrect. A node is only
     // oversubscribed if locales are sharing cores. Need to figure out how
@@ -392,8 +392,8 @@ void chpl_topo_post_comm_init(void) {
         }
       } else if (expectedLocalesOnNode > 0) {
         char msg[100];
-        snprintf(msg, sizeof(msg), "The number of locales on the node does "
-                 "not equal the number of sockets (%d != %d).",
+        snprintf(msg, sizeof(msg), "The number of locales on the node is "
+                 "greater than the number of sockets (%d > %d).",
                  numLocalesOnNode, numSockets);
         chpl_error(msg, 0, 0);
       }
