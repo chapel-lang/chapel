@@ -115,6 +115,11 @@ void chpl_gpu_impl_init() {
     chpl_gpu_primary_ctx[i] = context;
   }
 
+  // TODO should we have a current context set at this point?
+  // we need it to load the module, but how does that work with multi GPU setup?
+  if (!chpl_gpu_has_context()) {
+    CUDA_CALL(cuCtxPushCurrent(chpl_gpu_primary_ctx[0]));
+  }
   chpl_gpu_cuda_module = chpl_gpu_load_module(chpl_gpuBinary);
 }
 
@@ -177,7 +182,6 @@ bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
 
 static void chpl_gpu_launch_kernel_help(int ln,
                                         int32_t fn,
-                                        const char* fatbinData,
                                         const char* name,
                                         int grd_dim_x,
                                         int grd_dim_y,
@@ -280,7 +284,6 @@ static void chpl_gpu_launch_kernel_help(int ln,
 }
 
 inline void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
-                                        const char* fatbinData,
                                         const char* name,
                                         int grd_dim_x,
                                         int grd_dim_y,
@@ -290,14 +293,13 @@ inline void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
                                         int blk_dim_z,
                                         int nargs, va_list args) {
   chpl_gpu_launch_kernel_help(ln, fn,
-                              fatbinData, name,
+                              name,
                               grd_dim_x, grd_dim_y, grd_dim_z,
                               blk_dim_x, blk_dim_y, blk_dim_z,
                               nargs, args);
 }
 
 inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
-                                             const char* fatbinData,
                                              const char* name,
                                              int num_threads,
                                              int blk_dim,
@@ -306,7 +308,7 @@ inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
   int grd_dim = (num_threads+blk_dim-1)/blk_dim;
 
   chpl_gpu_launch_kernel_help(ln, fn,
-                              fatbinData, name,
+                              name,
                               grd_dim, 1, 1,
                               blk_dim, 1, 1,
                               nargs, args);
