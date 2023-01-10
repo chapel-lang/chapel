@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef FRONTEND_TEST_RESOLUTION_ERROR_GUARD_H
-#define FRONTEND_TEST_RESOLUTION_ERROR_GUARD_H
+#ifndef FRONTEND_TEST_ERROR_GUARD_H
+#define FRONTEND_TEST_ERROR_GUARD_H
 
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorWriter.h"
@@ -65,21 +65,40 @@ class ErrorGuard {
 
   inline chpl::Context* context() const { return ctx_; }
 
+  /** A way to iterate over the errors contained in the guard. */
   const std::vector<const chpl::ErrorBase*>& errors() const {
     assert(handler_);
     return handler_->errors();
   }
 
+  /** Get the number of errors contained in the guard. */
+  inline size_t numErrors() const { return this->errors().size(); }
+
+  const chpl::ErrorBase* error(size_t idx) const {
+    assert(idx < numErrors());
+    return this->errors()[idx];
+  }
+
+  /** Print the errors contained in this guard and then clear the guard
+      of errors. Returns the number of errors. */
   int realizeErrors() {
     assert(handler_);
     if (!handler_->errors().size()) return false;
-    chpl::ErrorWriter ew(ctx_, std::cerr, chpl::ErrorWriter::BRIEF, false);
-    for (auto err : handler_->errors()) err->write(ew);
+    this->printErrors();
     int ret = (int) handler_->errors().size();
     handler_->clear();
     return ret;
   }
 
+  /** Print the errors contained in this guard in a detailed manner. */
+  void printErrors() const {
+    chpl::ErrorWriter ew(this->context(), std::cout,
+                         chpl::ErrorWriter::DETAILED,
+                         false);
+    for (auto err: this->errors()) err->write(ew);
+  }
+
+  /** The guard destructor will assert that no errors have occurred. */
   ~ErrorGuard() {
     assert(!this->realizeErrors());
     std::ignore = ctx_->installErrorHandler(std::move(oldErrorHandler_));

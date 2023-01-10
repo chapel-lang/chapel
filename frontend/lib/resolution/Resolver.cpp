@@ -1599,6 +1599,17 @@ bool Resolver::enter(const uast::Conditional* cond) {
 
   // Try short-circuiting. Visit the condition to see if it is a param
   cond->condition()->traverse(*this);
+
+  // Make sure the 'if-var' is a class type, if it exists.
+  if (auto var = cond->condition()->toVariable()) {
+    auto& reVar = byPostorder.byAst(var);
+    if (!reVar.type().isUnknown()) {
+      auto t = reVar.type().type();
+      bool ok = t->isClassType() || t->isBasicClassType();
+      if (!ok) CHPL_REPORT(context, IfVarNonClassType, cond, reVar.type());
+    }
+  }
+
   auto& condType = byPostorder.byAst(cond->condition()).type();
   if (condType.isParamTrue()) {
     // condition is param true, might as well only resolve `then` branch

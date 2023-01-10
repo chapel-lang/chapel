@@ -195,6 +195,17 @@ bool createsScope(asttags::AstTag tag) {
          || asttags::isSync(tag);
 }
 
+static bool
+isElseBlockOfConditionalWithIfVar(Context* context,
+                                  const uast::AstNode* ast) {
+  if (!ast) return false;
+  if (auto parent = parsing::parentAst(context, ast))
+    if (auto cond = parent->toConditional())
+      if (cond->condition()->isVariable())
+        return ast == cond->elseBlock();
+  return false;
+}
+
 static const Scope* const& scopeForIdQuery(Context* context, ID id);
 
 static void populateScopeWithBuiltins(Context* context, Scope* scope) {
@@ -280,6 +291,11 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
         newScope = !(declared.empty() && containsUseImport == false);
       }
     }
+
+    // Normally, we won't open a scope unless a variable is declared.
+    // We need the scope in this case so that we can know we're coming
+    // from the else branch of such a conditional when scope-resolving.
+    newScope = newScope || isElseBlockOfConditionalWithIfVar(context, ast);
 
     if (newScope) {
       // Construct the new scope.
@@ -432,6 +448,8 @@ static bool doLookupInToplevelModules(Context* context,
   return true;
 }
 
+
+
 // appends to result
 static bool doLookupInScope(Context* context,
                             const Scope* scope,
@@ -495,16 +513,50 @@ static bool doLookupInScope(Context* context,
     // Search parent scopes, if any, until a module is encountered
     const Scope* cur = nullptr;
     bool reachedModule = false;
+    bool skipClosestConditional = false;
+
+    // This trickiness is required to implement correct scoping behavior
+    // for 'if-vars' in conditionals. The 'if-var' lives in the scope
+    // for the conditional, but it is not visible within the 'else'
+    // branch. Without this hack, we'd be able to see the 'if-var' in
+    // both branches. First, detect if the start scope is the else-block.
+    //
+    // TODO: Consider query-caching some part of this pattern matching.
+    if (!scope->id().isEmpty())
+      if (auto ast = parsing::idToAst(context, scope->id()))
+        if (isElseBlockOfConditionalWithIfVar(context, ast))
+          skipClosestConditional = true;
+
     for (cur = scope->parentScope(); cur != nullptr; cur = cur->parentScope()) {
       if (asttags::isModule(cur->tag())) {
         reachedModule = true;
         break;
       }
 
+      auto ast = !cur->id().isEmpty() ? parsing::idToAst(context, cur->id())
+                                      : nullptr;
+
+      // We could be in a nested block, so check for the else-block to
+      // trigger the pattern matching as we walk up...
+      if (!skipClosestConditional && ast)
+        if (isElseBlockOfConditionalWithIfVar(context, ast))
+          skipClosestConditional = true;
+
+      // Skip the first conditional's scope if we need to.
+      if (skipClosestConditional) {
+        if (ast && ast->isConditional()) {
+          skipClosestConditional = false;
+          continue;
+        }
+      }
+
       bool got = doLookupInScope(context, cur, receiverScope, resolving, name,
                                  newConfig, checkedScopes, result);
       if (onlyInnermost && got) return true;
     }
+
+    // Skip should have been performed if needed, at least once.
+    CHPL_ASSERT(!skipClosestConditional);
 
     if (reachedModule) {
       // Assumption: If a module is encountered, and if there is a receiver

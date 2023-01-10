@@ -31,7 +31,6 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/While.h"
-#include "./ErrorGuard.h"
 
 #include <map>
 

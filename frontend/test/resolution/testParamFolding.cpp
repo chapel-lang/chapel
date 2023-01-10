@@ -24,7 +24,6 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
-#include "./ErrorGuard.h"
 
 // assumes the last statement is a variable declaration for x
 // with an initialization expression.

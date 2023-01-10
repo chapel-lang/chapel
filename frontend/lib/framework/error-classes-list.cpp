@@ -687,6 +687,19 @@ void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {
              type->numElements(), "-tuple, '", type, "'.");
 }
 
+void ErrorIfVarNonClassType::write(ErrorWriterBase& wr) const {
+  auto cond = std::get<const uast::Conditional*>(info);
+  auto qtVar = std::get<types::QualifiedType>(info);
+  auto var = cond->condition()->toVariable();
+  CHPL_ASSERT(var);
+  auto ifKindStr = cond->isExpressionLevel() ? "expression" : "statement";
+  wr.heading(kind_, type_, var, "a variable declared in the condition of "
+                                "an if ", ifKindStr, " must be a class, "
+                                "but it has non-class type '",
+                                qtVar.type(), "'.");
+  wr.code(cond, {var});
+}
+
 void ErrorTupleDeclNotTuple::write(ErrorWriterBase& wr) const {
   auto decl = std::get<const uast::TupleDecl*>(info);
   auto type = std::get<const types::Type*>(info);

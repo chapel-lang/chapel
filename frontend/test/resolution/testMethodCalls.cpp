@@ -24,7 +24,6 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
-#include "./ErrorGuard.h"
 
 // Test resolving a simple primary and secondary method in defining scope.
 static void test1() {

@@ -17,38 +17,16 @@
  * limitations under the License.
  */
 
-#include "test-resolution.h"
+#include "test-common.h"
 
-#include "chpl/framework/ErrorWriter.h"
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/resolution/resolution-queries.h"
-#include "chpl/resolution/scope-queries.h"
-#include "chpl/types/all-types.h"
-#include "chpl/uast/all-uast.h"
 
-static void test1() {
-  Context ctx;
-  Context* context = &ctx;
-  ErrorGuard guard(context);
+using namespace chpl;
 
-  QualifiedType qt = resolveTypeOfXInit(context,
-                R""""(
-                  module M {
-                    record R { }
-                    proc R.this(arg: int) { return 1.0; }
-                    var a: R;
-                    var x = a(0);
-                  }
-                )"""");
-
-  assert(!guard.realizeErrors());
-  assert(qt.type());
-  assert(qt.type() == RealType::get(context, 0));
-}
-
-int main() {
-  test1();
-
-  return 0;
+const uast::BuilderResult&
+parseAndReportErrors(Context* context, UniqueString path) {
+  auto& ret = parsing::parseFileToBuilderResult(context, path, {});
+  for (auto e : ret.errors()) context->report(e);
+  return ret;
 }
 

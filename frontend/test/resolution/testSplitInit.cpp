@@ -29,8 +29,6 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
 
-#include "./ErrorGuard.h"
-
 static const bool ERRORS_EXPECTED=true;
 
 // resolves the last function

@@ -24,17 +24,8 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
-#include "./ErrorGuard.h"
 
-#define TEST_NAME(ctx__)\
-  chpl::UniqueString::getConcat(ctx__, __FUNCTION__, ".chpl")
-
-static const BuilderResult&
-parseAndReportErrors(Context* ctx, UniqueString path) {
-  auto& ret = parseFileToBuilderResult(ctx, path, UniqueString());
-  for (auto& err : ret.errors()) ctx->report(err);
-  return ret;
-}
+#define TEST_NAME(ctx__) TEST_NAME_FROM_FN_NAME(ctx__)
 
 static void testEmptyRecordUserInit() {
   Context context;

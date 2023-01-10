@@ -27,7 +27,6 @@
 #include "chpl/uast/Include.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
-#include "./ErrorGuard.h"
 
 // helper functions
 
