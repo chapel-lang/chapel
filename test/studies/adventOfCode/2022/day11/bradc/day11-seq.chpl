@@ -81,4 +81,8 @@ for 1..numRounds {
     }
   }
 }
-writeln(NumInspected);
+
+const (max, loc) = maxloc reduce zip(NumInspected, MonkeySpace);
+NumInspected[loc] = 0;
+const max2 = max reduce NumInspected;
+writeln(max * max2);

@@ -114,5 +114,7 @@ coforall m in MonkeySpace {
   }
 }
 
-writeln(NumInspected);
-writeln(CurrentItems);
+const (max, loc) = maxloc reduce zip(NumInspected, MonkeySpace);
+NumInspected[loc] = 0;
+const max2 = max reduce NumInspected;
+writeln(max * max2);

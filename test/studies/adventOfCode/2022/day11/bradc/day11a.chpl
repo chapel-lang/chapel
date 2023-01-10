@@ -80,8 +80,8 @@ for i in 1..numRounds {
       Items[TargetMonkey[m](item % divisor[m] == 0)].append(item);
     }
   }
-  if i % 10 == 0 {
-    writeln("round ", i);
-  }
 }
-writeln(NumInspected);
+const (max, loc) = maxloc reduce zip(NumInspected, MonkeySpace);
+NumInspected[loc] = 0;
+const max2 = max reduce NumInspected;
+writeln(max * max2);
