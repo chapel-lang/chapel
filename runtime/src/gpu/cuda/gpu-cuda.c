@@ -177,9 +177,6 @@ bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
   return true;
 }
 
-#ifdef CHPL_GPU_PROFILE
-#endif
-
 static void chpl_gpu_launch_kernel_help(int ln,
                                         int32_t fn,
                                         const char* name,
@@ -217,8 +214,7 @@ static void chpl_gpu_launch_kernel_help(int ln,
   bool* was_memory_dynamically_allocated_for_kernel_param =
     chpl_malloc(nargs*sizeof(bool));
 
-  int i;
-  for (i=0 ; i<nargs ; i++) {
+  for (int i=0 ; i<nargs ; i++) {
     void* cur_arg = va_arg(args, void*);
     size_t cur_arg_size = va_arg(args, size_t);
 
