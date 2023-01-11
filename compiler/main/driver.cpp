@@ -2000,12 +2000,6 @@ int main(int argc, char* argv[]) {
     validateSettings();
   }
 
-  if (fRungdb)
-    runCompilerInGDB(argc, argv);
-
-  if (fRunlldb)
-    runCompilerInLLDB(argc, argv);
-
   if (!fDoMonolithic && !driverInSubInvocation) {
     // treat 'chpl' as a driver, re-invoking itself with flags that trigger
     // components of the actual compilation work to be performed
@@ -2036,6 +2030,12 @@ int main(int argc, char* argv[]) {
     deleteTmpDir();
     clean_exit(status);
   }
+
+  if (fRungdb)
+    runCompilerInGDB(argc, argv);
+
+  if (fRunlldb)
+    runCompilerInLLDB(argc, argv);
 
   assertSourceFilesFound();
 
