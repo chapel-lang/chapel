@@ -1,2 +1,7 @@
-warn-field-generic-declared-type.chpl:2: warning: please use type variable for generic-typed field myfield
+warn-field-generic-declared-type.chpl:2: warning: field with generic declared type
+warn-field-generic-declared-type.chpl:10: warning: field with generic declared type
+warn-field-generic-declared-type.chpl:17: warning: field with generic declared type
+warn-field-generic-declared-type.chpl:24: warning: field with generic declared type
 (myfield = 0)
+(myfield = {}) : A(owned MyClass?)
+(myfield = nil) : B(owned MyClass?)

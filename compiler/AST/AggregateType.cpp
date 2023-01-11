@@ -1149,13 +1149,6 @@ static Type* resolveFieldTypeExpr(Symbol* field, CallExpr* call, const char* cal
       USR_FATAL_CONT(errExpr, "error while resolving type '%s'", errTypeString);
       USR_PRINT(expr, "unable to resolve type of field '%s'", field->name);
       USR_STOP();
-    } else {
-      // warn if it's generic and it's not a type variable
-      if (ret->symbol->hasFlag(FLAG_GENERIC) &&
-          !field->hasFlag(FLAG_TYPE_VARIABLE)) {
-        USR_WARN(field, "please use type variable for generic-typed field %s",
-                 field->name);
-      }
     }
   }
 
@@ -1875,6 +1868,15 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
   }
 
   instantiations.push_back(retval);
+
+  {
+    if (field->defPoint->exprType) {
+      Type* fieldType = field->defPoint->exprType->typeInfo();
+      if (fieldType->symbol->hasFlag(FLAG_GENERIC)) {
+        USR_WARN(field, "field with generic declared type");
+      }
+    }
+  }
 
   return retval;
 }
