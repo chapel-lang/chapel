@@ -50,8 +50,8 @@ void setHome(const ArgumentDescription* desc, const char* arg);
 #define DRIVER_ARG_CHPLDRIVER \
   {"driver-tmp-dir", ' ', "<tmpDir>", "Run compiler as monolithic without driver", "P", NULL, NULL, setTmpDir}, \
   {"do-monolithic", ' ', NULL, "Run compiler as monolithic without driver", "F", &fDoMonolithic, NULL, NULL}, \
-  {"do-compilation", ' ', NULL, "Run compilation driver step", "F", &fDoCompilation, NULL, setSubInvocation}, \
-  {"do-make-binary", ' ', NULL, "Run make binary driver step", "F", &fDoMakeBinary, NULL, setSubInvocation} \
+  {"do-compilation", ' ', NULL, "Run driver compilation step", "F", &fDoCompilation, NULL, setSubInvocation}, \
+  {"do-make-binary", ' ', NULL, "Run driver make binary step", "F", &fDoMakeBinary, NULL, setSubInvocation} \
 
 #define DRIVER_ARG_DEBUGGERS                                            \
   {"gdb", ' ', NULL, "Run compiler in gdb", "F", &fRungdb, NULL, NULL}, \

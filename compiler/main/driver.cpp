@@ -725,14 +725,14 @@ static int runCompilation(int argc, char* argv[]) {
   std::vector<std::string> additionalArgs = {"--do-compilation",
                                              "--driver-tmp-dir", tmpdirname};
   return invokeChplWithArgs(argc, argv, additionalArgs,
-                            "invoking compiler front- and mid-end");
+                            "invoking compilation");
 }
 
-static int runBackend(int argc, char* argv[]) {
+static int runMakeBinary(int argc, char* argv[]) {
   std::vector<std::string> additionalArgs = {"--do-make-binary",
                                              "--driver-tmp-dir", tmpdirname};
   return invokeChplWithArgs(argc, argv, additionalArgs,
-                            "invoking compiler back-end");
+                            "invoking makeBinary");
 }
 
 static void runCompilerInGDB(int argc, char* argv[]) {
@@ -2009,19 +2009,19 @@ int main(int argc, char* argv[]) {
     ensureTmpDirExists();
     saveCompileCommand();
 
-    // invoke front- and mid-end
+    // invoke compilation
     if ((status = runCompilation(argc, argv)) != 0) {
       clean_exit(status);
     }
 
-    // skip backend if the compile command does not require it
-    bool shouldSkipBackend =
+    // skip make binary if the compile command does not require it
+    bool shouldSkipMakeBinary =
         fParseOnly ||
         countTokens || printTokens ||
         (stopAfterPass[0] && strcmp(stopAfterPass, "makeBinary") != 0);
-    if (!shouldSkipBackend) {
-      // invoke back-end
-      if ((status = runBackend(argc, argv)) != 0) {
+    if (!shouldSkipMakeBinary) {
+      // invoke make binary
+      if ((status = runMakeBinary(argc, argv)) != 0) {
         clean_exit(status);
       }
     }
