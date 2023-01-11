@@ -3439,6 +3439,23 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
         again->remove();
       }
     }
+
+    bool foundQuestionMarkArg = false;
+    for_actuals(actual, call) {
+      if (SymExpr* se = toSymExpr(actual)) {
+        if (se->symbol() == gUninstantiated) {
+          foundQuestionMarkArg = true;
+        }
+      }
+    }
+
+    // is the resulting type generic?
+    if (ret && !foundQuestionMarkArg && call->numActuals() > 0) {
+      Type* t = canonicalClassType(ret);
+      if (t && t->symbol->hasFlag(FLAG_GENERIC)) {
+        USR_WARN(call, "partial instantiation should use ?");
+      }
+    }
   }
 
   if (ret != NULL) {
