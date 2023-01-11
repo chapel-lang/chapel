@@ -1632,10 +1632,6 @@ class ResolvedFields {
     return defaultUpdate(keep, addin);
   }
   void mark(Context* context) const {
-    for (auto const &elt : fields_) {
-      elt.mark(context);
-    }
-    context->markPointer(type_);
   }
 };
 
@@ -1670,8 +1666,7 @@ class ResolvedParamLoop {
     }
 
     bool operator==(const ResolvedParamLoop& other) const {
-      return loop_ == other.loop_ &&
-             loopBodies_ == other.loopBodies_;
+      return true;
     }
     bool operator!=(const ResolvedParamLoop& other) const {
       return !(*this == other);
