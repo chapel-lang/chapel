@@ -179,7 +179,7 @@ void runPasses(PhaseTracker& tracker) {
 
   for (size_t i = 0; i < passListSize; i++) {
     // skip until makeBinary if in backend invocation
-    if (fDoBackend && strcmp(sPassList[i].name, "makeBinary") != 0) {
+    if (fDoMakeBinary && strcmp(sPassList[i].name, "makeBinary") != 0) {
       continue;
     }
 
@@ -245,7 +245,7 @@ static void runPass(PhaseTracker& tracker, size_t passIndex) {
   // Skip if we're on the backend invocation of the compiler, in which case
   // there is no AST.
   //
-  if (!fDoBackend) {
+  if (!fDoMakeBinary) {
     tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
     cleanAst();
   }

@@ -56,8 +56,8 @@ _chpl ()
 --detailed-errors \
 --devel \
 --div-by-zero-checks \
---do-backend \
 --do-compilation \
+--do-make-binary \
 --do-monolithic \
 --driver-tmp-dir \
 --dynamic \

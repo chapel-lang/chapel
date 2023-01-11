@@ -1980,7 +1980,7 @@ static llvm::TargetOptions getTargetOptions(
 // deserialize the module from previously-outputted LLVM bitcode file
 static void loadModuleFromBitcode() {
   // should only be used for the backend to retrieve codegen results
-  INT_ASSERT(fDoBackend);
+  INT_ASSERT(fDoMakeBinary);
 
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
@@ -4188,7 +4188,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
 }
 
 void makeBinaryLLVM(void) {
-  if (fDoBackend) {
+  if (fDoMakeBinary) {
     // generate necessary info for a backend-only invocation
     initializeGenInfo();
 

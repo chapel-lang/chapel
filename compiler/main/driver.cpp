@@ -729,8 +729,8 @@ static int runCompilation(int argc, char* argv[]) {
 }
 
 static int runBackend(int argc, char* argv[]) {
-  std::vector<std::string> additionalArgs = {"--do-backend", "--driver-tmp-dir",
-                                             tmpdirname};
+  std::vector<std::string> additionalArgs = {"--do-make-binary",
+                                             "--driver-tmp-dir", tmpdirname};
   return invokeChplWithArgs(argc, argv, additionalArgs,
                             "invoking compiler back-end");
 }

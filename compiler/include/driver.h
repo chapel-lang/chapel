@@ -162,7 +162,7 @@ extern bool fExplainVerbose;
 extern bool fParseOnly;
 extern bool fDoMonolithic;
 extern bool fDoCompilation;
-extern bool fDoBackend;
+extern bool fDoMakeBinary;
 extern bool fPrintAllCandidates;
 extern bool fPrintCallGraph;
 extern bool fPrintCallStackOnError;
