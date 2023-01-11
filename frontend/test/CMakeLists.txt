@@ -26,7 +26,10 @@ set(CHPL_TEST_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR})
 # define a function to simplify adding tests
 function(comp_unit_test target)
   add_executable(${target} EXCLUDE_FROM_ALL "${target}.cpp")
-  set_target_properties(${target}  PROPERTIES LINK_DEPENDS_NO_SHARED true)
+  # don't rebuild if shared library changes, and store in the build directory
+  set_target_properties(${target}  PROPERTIES
+                        LINK_DEPENDS_NO_SHARED true
+                        RUNTIME_OUTPUT_DIRECTORY . )
   target_link_libraries(${target} ChplFrontend tests-common)
   target_include_directories(${target} PUBLIC
                              ${CHPL_MAIN_INCLUDE_DIR}
