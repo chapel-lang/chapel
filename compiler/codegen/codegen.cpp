@@ -1174,7 +1174,7 @@ static void codegen_aggregate_def(AggregateType* ct) {
 static void retrieveCompileCommand() {
   fileinfo* file = openTmpFile(compileCommandFilename, "r");
   char buf[4096];
-  fgets(buf, sizeof(buf), file->fptr);
+  INT_ASSERT(fgets(buf, sizeof(buf), file->fptr));
   compileCommand = astr(buf);
   closefile(file);
 }
@@ -2343,7 +2343,7 @@ static const char* getMainModuleFilename() {
     // we are in the backend, retrieve saved result from tmpdir
     mainModTmpFile = openTmpFile(mainModTmpFilename, "r");
     char nameReadIn[FILENAME_MAX];
-    fgets(nameReadIn, sizeof(nameReadIn), mainModTmpFile->fptr);
+    INT_ASSERT(fgets(nameReadIn, sizeof(nameReadIn), mainModTmpFile->fptr));
     filename = astr(nameReadIn);
   } else {
     ModuleSymbol* mainMod = ModuleSymbol::mainModule();
