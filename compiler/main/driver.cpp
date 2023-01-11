@@ -721,6 +721,41 @@ static int invokeChplWithArgs(int argc, char* argv[],
                   /* ignoreStatus */ true, /* quiet */ true);
 }
 
+static int runCompilation(int argc, char* argv[]);
+static int runMakeBinary(int argc, char* argv[]);
+
+// Use 'chpl' executable as a compiler-driver, re-invoking itself with flags
+// that trigger components of the actual compilation work to be performed.
+static void runAsCompilerDriver(int argc, char* argv[]) {
+  int status = 0;
+
+  // initialize resources that need to be carried over between invocations
+  ensureTmpDirExists();
+  saveCompileCommand();
+
+  // invoke compilation
+  if ((status = runCompilation(argc, argv)) != 0) {
+    clean_exit(status);
+  }
+
+  // skip make binary if the compile command does not require it
+  bool shouldSkipMakeBinary =
+      fParseOnly || countTokens || printTokens ||
+      (stopAfterPass[0] && strcmp(stopAfterPass, "makeBinary") != 0);
+  if (!shouldSkipMakeBinary) {
+    // invoke make binary
+    if ((status = runMakeBinary(argc, argv)) != 0) {
+      clean_exit(status);
+    }
+  }
+
+  // clean up shared resources
+  deleteTmpDir();
+
+  clean_exit(status);
+}
+
+// Run compilation step of compiler-driver
 static int runCompilation(int argc, char* argv[]) {
   std::vector<std::string> additionalArgs = {"--do-compilation",
                                              "--driver-tmp-dir", tmpdirname};
@@ -728,6 +763,7 @@ static int runCompilation(int argc, char* argv[]) {
                             "invoking compilation");
 }
 
+// Run make binary step of compiler-driver
 static int runMakeBinary(int argc, char* argv[]) {
   std::vector<std::string> additionalArgs = {"--do-make-binary",
                                              "--driver-tmp-dir", tmpdirname};
@@ -2000,36 +2036,8 @@ int main(int argc, char* argv[]) {
     validateSettings();
   }
 
-  if (!fDoMonolithic && !driverInSubInvocation) {
-    // treat 'chpl' as a driver, re-invoking itself with flags that trigger
-    // components of the actual compilation work to be performed
-    int status = 0;
-
-    // initialize resources that need to be carried over between invocations
-    ensureTmpDirExists();
-    saveCompileCommand();
-
-    // invoke compilation
-    if ((status = runCompilation(argc, argv)) != 0) {
-      clean_exit(status);
-    }
-
-    // skip make binary if the compile command does not require it
-    bool shouldSkipMakeBinary =
-        fParseOnly ||
-        countTokens || printTokens ||
-        (stopAfterPass[0] && strcmp(stopAfterPass, "makeBinary") != 0);
-    if (!shouldSkipMakeBinary) {
-      // invoke make binary
-      if ((status = runMakeBinary(argc, argv)) != 0) {
-        clean_exit(status);
-      }
-    }
-
-    // clean up shared resources
-    deleteTmpDir();
-    clean_exit(status);
-  }
+  if (!fDoMonolithic && !driverInSubInvocation)
+    runAsCompilerDriver(argc, argv);
 
   if (fRungdb)
     runCompilerInGDB(argc, argv);
