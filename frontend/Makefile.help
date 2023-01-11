@@ -85,9 +85,9 @@ run-frontend-linters: frontend-linters FORCE
 frontend: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making the compiler library..."
 	@if [ -f $(LIBCOMPILER_BUILD_DIR)/Makefile ]; then \
-	  cd $(LIBCOMPILER_BUILD_DIR) && $(MAKE) libdyno ; \
+	  cd $(LIBCOMPILER_BUILD_DIR) && $(MAKE) ChplFrontend ; \
 	else \
-	  cd $(LIBCOMPILER_BUILD_DIR) && $(CMAKE) --build .  --target libdyno ; \
+	  cd $(LIBCOMPILER_BUILD_DIR) && $(CMAKE) --build .  --target ChplFrontend ; \
 	fi
 
 COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --quiet --copy
