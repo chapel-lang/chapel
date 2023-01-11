@@ -41,10 +41,10 @@ owned<MultiDecl> MultiDecl::build(Builder* builder, Location loc,
                                   Decl::Linkage linkage,
                                   AstList varDecls) {
   AstList lst;
-  int attributesChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
 
   if (attributes.get() != nullptr) {
-    attributesChildNum = lst.size();
+    attributeGroupChildNum = lst.size();
     lst.push_back(std::move(attributes));
   }
 
@@ -53,7 +53,7 @@ owned<MultiDecl> MultiDecl::build(Builder* builder, Location loc,
   }
 
 
-  MultiDecl* ret = new MultiDecl(std::move(lst), attributesChildNum,
+  MultiDecl* ret = new MultiDecl(std::move(lst), attributeGroupChildNum,
                                  vis,
                                  linkage);
   builder->noteLocation(ret, loc);

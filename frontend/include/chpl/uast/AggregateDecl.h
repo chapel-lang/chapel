@@ -62,14 +62,14 @@ class AggregateDecl : public TypeDecl {
   }
 
  public:
-  AggregateDecl(AstTag tag, AstList children, int attributesChildNum,
+  AggregateDecl(AstTag tag, AstList children, int attributeGroupChildNum,
                 Decl::Visibility vis,
                 Decl::Linkage linkage,
                 int linkageNameChildNum,
                 UniqueString name,
                 int elementsChildNum,
                 int numElements)
-    : TypeDecl(tag, std::move(children), attributesChildNum, vis, linkage,
+    : TypeDecl(tag, std::move(children), attributeGroupChildNum, vis, linkage,
                linkageNameChildNum,
                name),
       elementsChildNum_(elementsChildNum),

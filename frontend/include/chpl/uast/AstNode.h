@@ -57,6 +57,7 @@ class AstNode {
  private:
   AstTag tag_;
   ID id_;
+  int attributeGroupChildNum_;
 
  protected:
   AstList children_;
@@ -106,15 +107,26 @@ class AstNode {
                          int parentIdx);
 
  protected:
-  AstNode(AstTag tag)
-    : tag_(tag), id_(), children_() {
-  }
-  AstNode(AstTag tag, AstList children)
-    : tag_(tag), id_(), children_(std::move(children)) {
-  }
-
   // Magic constant to indicate no such child exists.
   static const int NO_CHILD = -1;
+
+  AstNode(AstTag tag)
+    : tag_(tag), id_(), attributeGroupChildNum_(NO_CHILD), children_() {
+  }
+  AstNode(AstTag tag, AstList children)
+    : tag_(tag), id_(), attributeGroupChildNum_(NO_CHILD),
+                        children_(std::move(children)) {
+  }
+  AstNode(AstTag tag, AstList children, int attributeGroupChildNum)
+    : tag_(tag), id_(), attributeGroupChildNum_(attributeGroupChildNum),
+                        children_(std::move(children)) {
+    CHPL_ASSERT(NO_CHILD <= attributeGroupChildNum_ &&
+                attributeGroupChildNum_ < (ssize_t)children_.size());
+
+    if (attributeGroupChildNum_ >= 0) {
+      CHPL_ASSERT(child(attributeGroupChildNum_)->isAttributeGroup());
+    }
+  }
 
   // Quick way to return an already exhausted iterator.
   template <typename T>
@@ -186,6 +198,21 @@ class AstNode {
   const AstNode* child(int i) const {
     CHPL_ASSERT(0 <= i && i < (int) children_.size());
     return children_[i].get();
+  }
+
+  int attributeGroupChildNum() const {
+    return attributeGroupChildNum_;
+  }
+
+  /**
+  Return the attributes associated with this declaration, or nullptr
+  if none exist.
+*/
+  const AttributeGroup* attributes() const {
+    if (attributeGroupChildNum_ < 0) return nullptr;
+    auto ret = child(attributeGroupChildNum_);
+    CHPL_ASSERT(ret->isAttributeGroup());
+    return (const AttributeGroup*)ret;
   }
 
   /**

@@ -225,7 +225,7 @@ extern int yychpl_debug;
     Variable::Kind variableKind;
 
     // simple pointer values
-    AttributeGroup* attribute;
+    AttributeGroup* attributeGroup;
     Block* block;
     Call* call;
     Function* function;

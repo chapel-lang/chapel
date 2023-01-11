@@ -32,12 +32,12 @@ owned<TaskVar> TaskVar::build(Builder* builder, Location loc,
                               owned<AstNode> typeExpression,
                               owned<AstNode> initExpression) {
   AstList lst;
-  int attributesChildNum = -1;
-  int8_t typeExpressionChildNum = -1;
-  int8_t initExpressionChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
+  int8_t typeExpressionChildNum = NO_CHILD;
+  int8_t initExpressionChildNum = NO_CHILD;
 
   if (attributes.get() != nullptr) {
-    attributesChildNum = lst.size();
+    attributeGroupChildNum = lst.size();
     lst.push_back(std::move(attributes));
   }
 
@@ -51,7 +51,7 @@ owned<TaskVar> TaskVar::build(Builder* builder, Location loc,
     lst.push_back(std::move(initExpression));
   }
 
-  TaskVar* ret = new TaskVar(std::move(lst), attributesChildNum,
+  TaskVar* ret = new TaskVar(std::move(lst), attributeGroupChildNum,
                              name,
                              intent,
                              typeExpressionChildNum,

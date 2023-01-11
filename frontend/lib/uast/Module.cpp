@@ -50,10 +50,10 @@ Module::build(Builder* builder, Location loc,
               UniqueString name,
               Module::Kind kind, AstList stmts) {
   AstList lst;
-  int attributesChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
 
   if (attributes.get() != nullptr) {
-    attributesChildNum = lst.size();
+    attributeGroupChildNum = lst.size();
     lst.push_back(std::move(attributes));
   }
 
@@ -61,7 +61,7 @@ Module::build(Builder* builder, Location loc,
     lst.push_back(std::move(ast));
   }
 
-  Module* ret = new Module(std::move(lst), attributesChildNum, vis,
+  Module* ret = new Module(std::move(lst), attributeGroupChildNum, vis,
                            name,
                            kind);
   builder->noteLocation(ret, loc);

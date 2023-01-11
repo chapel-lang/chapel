@@ -91,7 +91,7 @@ class Function final : public NamedDecl {
   int bodyChildNum_;
 
   Function(AstList children,
-           int attributesChildNum,
+           int attributeGroupChildNum,
            Decl::Visibility vis,
            Decl::Linkage linkage,
            UniqueString name,
@@ -112,7 +112,7 @@ class Function final : public NamedDecl {
            int numLifetimeParts,
            int bodyChildNum)
     : NamedDecl(asttags::Function, std::move(children),
-                attributesChildNum,
+                attributeGroupChildNum,
                 vis,
                 linkage,
                 linkageNameChildNum,
@@ -133,17 +133,17 @@ class Function final : public NamedDecl {
       numLifetimeParts_(numLifetimeParts),
       bodyChildNum_(bodyChildNum) {
 
-    CHPL_ASSERT(-1 <= formalsChildNum_ &&
+    CHPL_ASSERT(NO_CHILD <= formalsChildNum_ &&
                  formalsChildNum_ < (ssize_t)children_.size());
-    CHPL_ASSERT(-1 <= thisFormalChildNum_ &&
+    CHPL_ASSERT(NO_CHILD <= thisFormalChildNum_ &&
                  thisFormalChildNum_ < (ssize_t)children_.size());
     CHPL_ASSERT(0 <= numFormals_ &&
                 numFormals_ <= (ssize_t)children_.size());
-    CHPL_ASSERT(-1 <= returnTypeChildNum_ &&
+    CHPL_ASSERT(NO_CHILD <= returnTypeChildNum_ &&
                  returnTypeChildNum_ < (ssize_t)children_.size());
-    CHPL_ASSERT(-1 <= whereChildNum_ &&
+    CHPL_ASSERT(NO_CHILD <= whereChildNum_ &&
                  whereChildNum_ < (ssize_t)children_.size());
-    CHPL_ASSERT(-1 <= lifetimeChildNum_ &&
+    CHPL_ASSERT(NO_CHILD <= lifetimeChildNum_ &&
                  lifetimeChildNum_ < (ssize_t)children_.size());
     CHPL_ASSERT(0 <= numLifetimeParts_ &&
                 numLifetimeParts_ <= (ssize_t)children_.size());
@@ -152,7 +152,7 @@ class Function final : public NamedDecl {
       CHPL_ASSERT(bodyChildNum_ < (ssize_t)children_.size());
       CHPL_ASSERT(children_[bodyChildNum_]->isBlock());
     } else {
-      CHPL_ASSERT(bodyChildNum_ == -1);
+      CHPL_ASSERT(bodyChildNum_ == NO_CHILD);
     }
 
     #ifndef NDEBUG

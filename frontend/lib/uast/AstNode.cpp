@@ -38,6 +38,10 @@ void AstNode::dumpFieldsInner(const DumpSettings& s) const {
 }
 
 std::string AstNode::dumpChildLabelInner(int i) const {
+  if (i == attributeGroupChildNum_) {
+    return "attributes";
+  }
+
   return "";
 }
 
@@ -201,7 +205,7 @@ bool AstNode::isInherentlyStatement() const {
     case asttags::AnonFormal:
     case asttags::As:
     case asttags::Array:
-    case asttags::Attributes:
+    case asttags::AttributeGroup:
     case asttags::Break:
     case asttags::Comment:
     case asttags::Continue:
@@ -349,10 +353,12 @@ bool AstNode::completeMatch(const AstNode* other) const {
     return false;
   }
 
-  // check the numeric elements of the id and the number of children
+  // check the numeric elements of the id and the number of children and
+  // the attributeGroupChildNum
   if (lhs->id().postOrderId() != rhs->id().postOrderId() ||
       lhs->id().numContainedChildren() != rhs->id().numContainedChildren() ||
-      lhs->children_.size() != rhs->children_.size()) {
+      lhs->children_.size() != rhs->children_.size() ||
+      lhs->attributeGroupChildNum_ != rhs->attributeGroupChildNum_) {
     return false;
   }
 
@@ -519,7 +525,7 @@ void AstNode::stringify(std::ostream& ss,
         // compute the maximum id width so it's a nice column
         int maxIdLen = computeMaxIdStringWidth();
         s.idWidth = maxIdLen;
-        dumpHelper(s, this, 0, /*parent*/ nullptr, /*parentIdx*/-1);
+        dumpHelper(s, this, 0, /*parent*/ nullptr, /*parentIdx*/NO_CHILD);
       }
       break;
   }

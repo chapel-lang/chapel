@@ -30,7 +30,9 @@ struct ParserComment {
 };
 
 // To store the different attributes of a symbol as they are built.
-struct AttributeParts {
+struct AttributeGroupParts {
+  ParserExprList* attributes; // this is where the attributes are accumulated
+  // then when we build the AttributeGroup we read this list to populate the fields
   std::set<PragmaTag>* pragmas;
   bool isDeprecated;
   bool isUnstable;
@@ -66,8 +68,8 @@ struct ParserContext {
   Variable::Kind varDeclKind;
   bool isVarDeclConfig;
   bool isBuildingFormal;
-  AttributeParts attributeParts;
-  bool hasAttributeParts;
+  AttributeGroupParts attributeGroupParts;
+  bool hasAttributeGroupParts;
   int numAttributesBuilt;
   YYLTYPE declStartLocation;
 
@@ -101,8 +103,8 @@ struct ParserContext {
     this->varDeclKind             = Variable::VAR;
     this->isBuildingFormal        = false;
     this->isVarDeclConfig         = false;
-    this->attributeParts          = { nullptr, false, false, UniqueString(), UniqueString() };
-    this->hasAttributeParts       = false;
+    this->attributeGroupParts     = {nullptr, nullptr, false, false, UniqueString(), UniqueString() };
+    this->hasAttributeGroupParts  = false;
     this->numAttributesBuilt      = 0;
     YYLTYPE emptyLoc = {0};
     this->declStartLocation       = emptyLoc;

@@ -46,21 +46,21 @@ class Class final : public AggregateDecl {
  private:
   int parentClassChildNum_;
 
-  Class(AstList children, int attributesChildNum, Decl::Visibility vis,
+  Class(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
         UniqueString name,
         int elementsChildNum,
         int numElements,
         int parentClassChildNum)
     : AggregateDecl(asttags::Class, std::move(children),
-                    attributesChildNum,
+                    attributeGroupChildNum,
                     vis,
                     Decl::DEFAULT_LINKAGE,
-                    /*linkageNameChildNum*/ -1,
+                    /*linkageNameChildNum*/ NO_CHILD,
                     name,
                     elementsChildNum,
                     numElements),
       parentClassChildNum_(parentClassChildNum) {
-    CHPL_ASSERT(parentClassChildNum_ == -1 ||
+    CHPL_ASSERT(parentClassChildNum_ == NO_CHILD ||
            child(parentClassChildNum_)->isIdentifier());
   }
 

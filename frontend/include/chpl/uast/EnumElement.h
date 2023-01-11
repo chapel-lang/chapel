@@ -41,13 +41,13 @@ namespace uast {
  */
 class EnumElement final : public NamedDecl {
  private:
-  EnumElement(AstList children, int attributesChildNum,
+  EnumElement(AstList children, int attributeGroupChildNum,
               UniqueString name)
     : NamedDecl(asttags::EnumElement, std::move(children),
-                attributesChildNum,
+                attributeGroupChildNum,
                 Decl::DEFAULT_VISIBILITY,
                 Decl::DEFAULT_LINKAGE,
-                /*linkageNameChildNum*/ -1,
+                /*linkageNameChildNum*/ NO_CHILD,
                 name) {
 
     CHPL_ASSERT(children_.size() <= 2);
@@ -67,7 +67,7 @@ class EnumElement final : public NamedDecl {
     // if you blindly read this and try to access the underlying children_
     // array, you can segfault in the case that there is an attribute
     // but no init expression on this enum element.
-    return this->attributesChildNum() + 1;
+    return this->attributeGroupChildNum() + 1;
   }
 
  public:

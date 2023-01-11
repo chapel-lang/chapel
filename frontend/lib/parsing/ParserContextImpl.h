@@ -128,25 +128,27 @@ owned<AstNode> ParserContext::consumeVarDeclLinkageName(void) {
   return toOwned(ret);
 }
 
+
+
 owned<AttributeGroup> ParserContext::buildAttributes(YYLTYPE locationOfDecl) {
   numAttributesBuilt += 1;
 
   // There may be nothing to return.
-  if (!hasAttributeParts) {
+  if (!hasAttributeGroupParts) {
     return nullptr;
   }
 
   // Create a local copy of the attributes we can move into the node.
-  auto pragmaCopy = attributeParts.pragmas
-      ? *(attributeParts.pragmas)
+  auto pragmaCopy = attributeGroupParts.pragmas
+      ? *(attributeGroupParts.pragmas)
       : std::set<PragmaTag>();
 
   auto node = AttributeGroup::build(builder, convertLocation(locationOfDecl),
                                 std::move(pragmaCopy),
-                                attributeParts.isDeprecated,
-                                attributeParts.isUnstable,
-                                attributeParts.deprecationMessage,
-                                attributeParts.unstableMessage);
+                                attributeGroupParts.isDeprecated,
+                                attributeGroupParts.isUnstable,
+                                attributeGroupParts.deprecationMessage,
+                                attributeGroupParts.unstableMessage);
   return node;
 }
 
@@ -163,9 +165,9 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
       error(loc, "unknown pragma \"%s\".", strLit->value().c_str());
 
     // Initialize the pragma flags if needed.
-    auto& pragmas = attributeParts.pragmas;
+    auto& pragmas = attributeGroupParts.pragmas;
     if (pragmas == nullptr) pragmas = new std::set<PragmaTag>();
-    hasAttributeParts = true;
+    hasAttributeGroupParts = true;
 
     // Always insert, even if PRAGMA_UNKNOWN.
     pragmas->insert(tag);
@@ -177,19 +179,24 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
   return ret;
 }
 
+
+// void ParserContext::noteAttribute(YYLTYPE loc) {
+
+// }
+
 void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
-  if (!hasAttributeParts) {
-    hasAttributeParts = true;
+  if (!hasAttributeGroupParts) {
+    hasAttributeGroupParts = true;
   } else {
-    CHPL_ASSERT(!attributeParts.isDeprecated);
-    CHPL_ASSERT(attributeParts.deprecationMessage.isEmpty());
+    CHPL_ASSERT(!attributeGroupParts.isDeprecated);
+    CHPL_ASSERT(attributeGroupParts.deprecationMessage.isEmpty());
   }
 
-  attributeParts.isDeprecated = true;
+  attributeGroupParts.isDeprecated = true;
 
   if (messageStr) {
     if (auto strLit = messageStr->toStringLiteral()) {
-      attributeParts.deprecationMessage = strLit->value();
+      attributeGroupParts.deprecationMessage = strLit->value();
     }
 
     delete messageStr;
@@ -197,19 +204,19 @@ void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
 }
 
 void ParserContext::noteUnstable(YYLTYPE loc, AstNode* messageStr) {
-  if (!hasAttributeParts) {
-    hasAttributeParts = true;
+  if (!hasAttributeGroupParts) {
+    hasAttributeGroupParts = true;
   }
   else {
-    CHPL_ASSERT(!attributeParts.isUnstable);
-    CHPL_ASSERT(attributeParts.unstableMessage.isEmpty());
+    CHPL_ASSERT(!attributeGroupParts.isUnstable);
+    CHPL_ASSERT(attributeGroupParts.unstableMessage.isEmpty());
   }
 
-  attributeParts.isUnstable = true;
+  attributeGroupParts.isUnstable = true;
 
   if (messageStr) {
     if (auto strLit = messageStr->toStringLiteral()) {
-      attributeParts.unstableMessage = strLit->value();
+      attributeGroupParts.unstableMessage = strLit->value();
     }
 
     delete messageStr;
@@ -217,19 +224,19 @@ void ParserContext::noteUnstable(YYLTYPE loc, AstNode* messageStr) {
 }
 
 void ParserContext::resetAttributePartsState() {
-  if (hasAttributeParts) {
-    auto& pragmas = attributeParts.pragmas;
+  if (hasAttributeGroupParts) {
+    auto& pragmas = attributeGroupParts.pragmas;
     if (pragmas) delete pragmas;
-    attributeParts = { nullptr, false, false, UniqueString(), UniqueString() };
-    hasAttributeParts = false;
+    attributeGroupParts = {nullptr, nullptr, false, false, UniqueString(), UniqueString() };
+    hasAttributeGroupParts = false;
   }
 
-  CHPL_ASSERT(attributeParts.pragmas == nullptr);
-  CHPL_ASSERT(!attributeParts.isDeprecated);
-  CHPL_ASSERT(!attributeParts.isUnstable);
-  CHPL_ASSERT(attributeParts.deprecationMessage.isEmpty());
-  CHPL_ASSERT(attributeParts.unstableMessage.isEmpty());
-  CHPL_ASSERT(!hasAttributeParts);
+  CHPL_ASSERT(attributeGroupParts.pragmas == nullptr);
+  CHPL_ASSERT(!attributeGroupParts.isDeprecated);
+  CHPL_ASSERT(!attributeGroupParts.isUnstable);
+  CHPL_ASSERT(attributeGroupParts.deprecationMessage.isEmpty());
+  CHPL_ASSERT(attributeGroupParts.unstableMessage.isEmpty());
+  CHPL_ASSERT(!hasAttributeGroupParts);
 
   numAttributesBuilt = 0;
 }
@@ -252,16 +259,16 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
     // came before a pragma list.
     // TODO: Can we just make deprecated_stmt and pragma_ls alternates?
     // This solves that problem.
-    if (hasAttributeParts) {
-      CHPL_ASSERT(attributeParts.pragmas == nullptr);
-      CHPL_ASSERT(attributeParts.isDeprecated);
-      CHPL_ASSERT(attributeParts.isUnstable);
+    if (hasAttributeGroupParts) {
+      CHPL_ASSERT(attributeGroupParts.pragmas == nullptr);
+      CHPL_ASSERT(attributeGroupParts.isDeprecated);
+      CHPL_ASSERT(attributeGroupParts.isUnstable);
       syntax(loc, "pragma list must come before deprecation statement.");
     }
 
   } else {
     CHPL_ASSERT(numAttributesBuilt == 0);
-    if(cs.stmt) CHPL_ASSERT(hasAttributeParts);
+    if(cs.stmt) CHPL_ASSERT(hasAttributeGroupParts);
 
     // TODO: The original builder also states the first pragma.
     CHPL_PARSER_REPORT(this, CannotAttachPragmas, loc, cs.stmt);

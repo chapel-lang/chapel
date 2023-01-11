@@ -33,13 +33,13 @@ owned<Union> Union::build(Builder* builder, Location loc,
                           UniqueString name,
                           AstList contents) {
   AstList lst;
-  int attributesChildNum = -1;
-  int elementsChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
+  int elementsChildNum = NO_CHILD;
   int numElements = contents.size();
-  int linkageNameChildNum = -1;
+  int linkageNameChildNum = NO_CHILD;
 
   if (attributes.get()) {
-    attributesChildNum = lst.size();
+    attributeGroupChildNum = lst.size();
     lst.push_back(std::move(attributes));
   }
 
@@ -53,7 +53,7 @@ owned<Union> Union::build(Builder* builder, Location loc,
     lst.push_back(std::move(ast));
   }
 
-  Union* ret = new Union(std::move(lst), attributesChildNum, vis,
+  Union* ret = new Union(std::move(lst), attributeGroupChildNum, vis,
                          linkage,
                          linkageNameChildNum,
                          name,

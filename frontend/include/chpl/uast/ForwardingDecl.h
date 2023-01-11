@@ -59,11 +59,11 @@ class ForwardingDecl final : public Decl {
 
 private:
   ForwardingDecl(AstList children, Decl::Visibility visibility,
-                 int attributesChildNum)
-    : Decl(asttags::ForwardingDecl, std::move(children), attributesChildNum,
+                 int attributeGroupChildNum)
+    : Decl(asttags::ForwardingDecl, std::move(children), attributeGroupChildNum,
                 visibility,
                 Decl::DEFAULT_LINKAGE,
-                /*linkageNameChildNum*/ -1
+                /*linkageNameChildNum*/ NO_CHILD
                 ) {
 
     CHPL_ASSERT(children_.size() >= 0 && children_.size() <= 2);
@@ -80,7 +80,7 @@ private:
   }
 
   int exprChildNum() const {
-    return this->attributesChildNum() + 1;
+    return this->attributeGroupChildNum() + 1;
   }
 
  public:

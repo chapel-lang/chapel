@@ -90,13 +90,13 @@ owned<TupleDecl> TupleDecl::build(Builder* builder, Location loc,
                                   owned<AstNode> typeExpression,
                                   owned<AstNode> initExpression) {
   AstList list;
-  int attributesChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
   int numElements = 0;
-  int typeExpressionChildNum = -1;
-  int initExpressionChildNum = -1;
+  int typeExpressionChildNum = NO_CHILD;
+  int initExpressionChildNum = NO_CHILD;
 
   if (attributes.get() != nullptr) {
-    attributesChildNum = list.size();
+    attributeGroupChildNum = list.size();
     list.push_back(std::move(attributes));
   }
 
@@ -117,7 +117,7 @@ owned<TupleDecl> TupleDecl::build(Builder* builder, Location loc,
     list.push_back(std::move(initExpression));
   }
 
-  TupleDecl* ret = new TupleDecl(std::move(list), attributesChildNum,
+  TupleDecl* ret = new TupleDecl(std::move(list), attributeGroupChildNum,
                                  vis,
                                  linkage,
                                  intentOrKind,

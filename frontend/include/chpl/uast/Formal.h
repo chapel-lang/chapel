@@ -58,15 +58,15 @@ class Formal final : public VarLikeDecl {
   };
 
  private:
-  Formal(AstList children, int attributesChildNum, UniqueString name,
+  Formal(AstList children, int attributeGroupChildNum, UniqueString name,
          Formal::Intent intent,
          int8_t typeExpressionChildNum,
          int8_t initExpressionChildNum)
     : VarLikeDecl(asttags::Formal, std::move(children),
-                  attributesChildNum,
+                  attributeGroupChildNum,
                   Decl::DEFAULT_VISIBILITY,
                   Decl::DEFAULT_LINKAGE,
-                  /*linkageNameChildNum*/ -1,
+                  /*linkageNameChildNum*/ NO_CHILD,
                   name,
                   (IntentList)((int)intent),
                   typeExpressionChildNum,

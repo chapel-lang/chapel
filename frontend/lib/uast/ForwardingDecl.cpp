@@ -40,12 +40,12 @@ owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
                                             owned<AstNode> expr,
                                             Decl::Visibility visibility) {
   CHPL_ASSERT(expr.get() != nullptr);
-  int attributesChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
   AstList lst;
 
   // store the attributes and the location of the attributes node if one exists
   if (attributes.get() != nullptr) {
-    attributesChildNum = lst.size();
+    attributeGroupChildNum = lst.size();
     lst.push_back(std::move(attributes));
   }
 
@@ -54,7 +54,7 @@ owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
 
   ForwardingDecl* ret = new ForwardingDecl(std::move(lst),
                                            visibility,
-                                           attributesChildNum);
+                                           attributeGroupChildNum);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

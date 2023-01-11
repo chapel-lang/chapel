@@ -38,7 +38,7 @@ class VarLikeDecl : public NamedDecl {
   int8_t typeExpressionChildNum_;
   int8_t initExpressionChildNum_;
 
-  VarLikeDecl(AstTag tag, AstList children, int attributesChildNum,
+  VarLikeDecl(AstTag tag, AstList children, int attributeGroupChildNum,
               Decl::Visibility vis,
               Decl::Linkage linkage,
               int linkageNameChildNum,
@@ -46,7 +46,7 @@ class VarLikeDecl : public NamedDecl {
               IntentList storageKind,
               int8_t typeExpressionChildNum,
               int8_t initExpressionChildNum)
-    : NamedDecl(tag, std::move(children), attributesChildNum, vis,
+    : NamedDecl(tag, std::move(children), attributeGroupChildNum, vis,
                 linkage,
                 linkageNameChildNum,
                 name),

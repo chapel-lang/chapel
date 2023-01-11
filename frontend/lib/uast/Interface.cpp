@@ -52,14 +52,14 @@ owned<Interface> Interface::build(Builder* builder, Location loc,
                                   AstList formals,
                                   AstList body) {
   AstList children;
-  int attributesChildNum = AstNode::NO_CHILD;
+  int attributeGroupChildNum = AstNode::NO_CHILD;
   int interfaceFormalsChildNum = AstNode::NO_CHILD;
   int numInterfaceFormals = 0;
   int bodyChildNum = AstNode::NO_CHILD;
   int numBodyStmts = 0;
 
   if (attributes.get() != nullptr) {
-    attributesChildNum = children.size();
+    attributeGroupChildNum = children.size();
     children.push_back(std::move(attributes));
   }
 
@@ -75,7 +75,7 @@ owned<Interface> Interface::build(Builder* builder, Location loc,
     for (auto& ast : body) children.push_back(std::move(ast));
   }
 
-  Interface* ret = new Interface(std::move(children), attributesChildNum,
+  Interface* ret = new Interface(std::move(children), attributeGroupChildNum,
                                  visibility,
                                  name,
                                  interfaceFormalsChildNum,

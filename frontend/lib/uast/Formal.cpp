@@ -48,12 +48,12 @@ Formal::build(Builder* builder, Location loc, owned<AttributeGroup> attributes,
               owned<AstNode> typeExpression,
               owned<AstNode> initExpression) {
   AstList lst;
-  int attributesChildNum = -1;
-  int8_t typeExpressionChildNum = -1;
-  int8_t initExpressionChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
+  int8_t typeExpressionChildNum = NO_CHILD;
+  int8_t initExpressionChildNum = NO_CHILD;
 
   if (attributes.get() != nullptr) {
-    attributesChildNum = lst.size();
+    attributeGroupChildNum = lst.size();
     lst.push_back(std::move(attributes));
   }
 
@@ -67,7 +67,7 @@ Formal::build(Builder* builder, Location loc, owned<AttributeGroup> attributes,
     lst.push_back(std::move(initExpression));
   }
 
-  Formal* ret = new Formal(std::move(lst), attributesChildNum,
+  Formal* ret = new Formal(std::move(lst), attributeGroupChildNum,
                            name,
                            intent,
                            typeExpressionChildNum,

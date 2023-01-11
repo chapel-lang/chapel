@@ -49,13 +49,13 @@ class Module final : public NamedDecl {
  private:
   Kind kind_;
 
-  Module(AstList children, int attributesChildNum, Decl::Visibility vis,
+  Module(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
          UniqueString name,
          Kind kind)
-    : NamedDecl(asttags::Module, std::move(children), attributesChildNum,
+    : NamedDecl(asttags::Module, std::move(children), attributeGroupChildNum,
                 vis,
                 Decl::DEFAULT_LINKAGE,
-                /*linkageNameChildNum*/ -1,
+                /*linkageNameChildNum*/ NO_CHILD,
                 name),
                 kind_(kind) {
 

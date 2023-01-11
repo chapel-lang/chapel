@@ -40,13 +40,13 @@ owned<Class> Class::build(Builder* builder, Location loc,
                           owned<AstNode> parentClass,
                           AstList contents) {
   AstList lst;
-  int attributesChildNum = -1;
-  int parentClassChildNum = -1;
-  int elementsChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
+  int parentClassChildNum = NO_CHILD;
+  int elementsChildNum = NO_CHILD;
   int numElements = 0;
 
   if (attributes.get() != nullptr) {
-    attributesChildNum = lst.size();
+    attributeGroupChildNum = lst.size();
     lst.push_back(std::move(attributes));
   }
 
@@ -62,7 +62,7 @@ owned<Class> Class::build(Builder* builder, Location loc,
     }
   }
 
-  Class* ret = new Class(std::move(lst), attributesChildNum, vis, name,
+  Class* ret = new Class(std::move(lst), attributeGroupChildNum, vis, name,
                          elementsChildNum,
                          numElements,
                          parentClassChildNum);

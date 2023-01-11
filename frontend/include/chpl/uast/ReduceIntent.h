@@ -55,7 +55,7 @@ class ReduceIntent final : public NamedDecl {
 
   ReduceIntent(AstList children, UniqueString name)
       : NamedDecl(asttags::ReduceIntent, std::move(children),
-                  /* attributesChildNum= */ AstNode::NO_CHILD,
+                  /* attributeGroupChildNum= */ AstNode::NO_CHILD,
                   Decl::DEFAULT_VISIBILITY,
                   Decl::DEFAULT_LINKAGE,
                   /*linkageNameChildNum=*/ AstNode::NO_CHILD,

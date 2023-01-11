@@ -31,10 +31,10 @@ owned<Enum> Enum::build(Builder* builder, Location loc,
                         UniqueString name,
                         AstList stmts) {
   AstList lst;
-  int attributesChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
 
   if (attributes.get() != nullptr) {
-    attributesChildNum = lst.size();
+    attributeGroupChildNum = lst.size();
     lst.push_back(std::move(attributes));
   }
 
@@ -42,7 +42,7 @@ owned<Enum> Enum::build(Builder* builder, Location loc,
     lst.push_back(std::move(ast));
   }
 
-  Enum* ret = new Enum(std::move(lst), attributesChildNum, vis, name);
+  Enum* ret = new Enum(std::move(lst), attributeGroupChildNum, vis, name);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

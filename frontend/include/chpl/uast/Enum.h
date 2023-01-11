@@ -44,12 +44,12 @@ namespace uast {
  */
 class Enum final : public TypeDecl {
  private:
-  Enum(AstList children, int attributesChildNum, Decl::Visibility vis,
+  Enum(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
        UniqueString name)
-    : TypeDecl(asttags::Enum, std::move(children), attributesChildNum,
+    : TypeDecl(asttags::Enum, std::move(children), attributeGroupChildNum,
                vis,
                Decl::DEFAULT_LINKAGE,
-               /*linkageNameChildNum*/ -1,
+               /*linkageNameChildNum*/ NO_CHILD,
                name) {
 
     #ifndef NDEBUG

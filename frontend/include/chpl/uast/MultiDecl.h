@@ -52,12 +52,12 @@ namespace uast {
  */
 class MultiDecl final : public Decl {
  private:
-  MultiDecl(AstList children, int attributesChildNum, Decl::Visibility vis,
+  MultiDecl(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
             Decl::Linkage linkage)
-    : Decl(asttags::MultiDecl, std::move(children), attributesChildNum,
+    : Decl(asttags::MultiDecl, std::move(children), attributeGroupChildNum,
            vis,
            linkage,
-           /*linkageNameChildNum*/ -1) {
+           /*linkageNameChildNum*/ NO_CHILD) {
 
     CHPL_ASSERT(isAcceptableMultiDecl());
   }

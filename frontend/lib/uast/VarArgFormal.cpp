@@ -40,12 +40,12 @@ owned<VarArgFormal> VarArgFormal::build(Builder* builder, Location loc,
                                         owned<AstNode> typeExpression,
                                         owned<AstNode> count) {
   AstList lst;
-  int attributesChildNum = -1;
-  int8_t typeExpressionChildNum = -1;
-  int8_t countChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
+  int8_t typeExpressionChildNum = NO_CHILD;
+  int8_t countChildNum = NO_CHILD;
 
   if (attributes.get() != nullptr) {
-    attributesChildNum = lst.size();
+    attributeGroupChildNum = lst.size();
     lst.push_back(std::move(attributes));
   }
 
@@ -59,7 +59,7 @@ owned<VarArgFormal> VarArgFormal::build(Builder* builder, Location loc,
     lst.push_back(std::move(count));
   }
 
-  VarArgFormal* ret = new VarArgFormal(std::move(lst), attributesChildNum,
+  VarArgFormal* ret = new VarArgFormal(std::move(lst), attributeGroupChildNum,
                                        name,
                                        intent,
                                        typeExpressionChildNum,

@@ -142,27 +142,29 @@ class AttributeGroup final : public AstNode {
     return unstableMessage_;
   }
 
-  // using AttributeInfo = Iterable<std::vector<Attribute>>;
+  // using AttributeIterator = Iterable<std::vector<Attribute>>;
 
-  // // instead of storing just a map, store vector of attributes and use the
-  // // map to index into the vector
-  // // key of map (toolname, attributeName): idx
-  // // then in the iterator we don't ever touch the map allows map to just be an
-  // // optimization when finding by name
+  // instead of storing just a map, store vector of attributes and use the
+  // map to index into the vector
+  // key of map (toolname, attributeName): idx
+  // then in the iterator we don't ever touch the map allows map to just be an
+  // optimization when finding by name
 
-  // // general attribute iterator
-  // AttributeInfo attributes() {
+  // general attribute iterator
+  // AttributeIterator attributes() {
   //   // iterate over values of the map, ignoring keys
-  //   return AttributeInfo(map); // the field holding attribute
+  //   return AttributeIterator(map); // the field holding attribute
   // }
 
   // Attribute* getAttributeNamed(UniqueString attributeName) {
-  //   // if map (only 1 of each allowed) do map lookup with pair(UniqueStrings)
-  //   // if vector, do walk and find
+    // could just get this using a Query instead of accessing here
 
-  //   // redirects to get idx from map and then
-  //   // attribute from vector
-  //   return getAttributeNamed(UniqueString::get(""), attributeName);
+    // if map (only 1 of each allowed) do map lookup with pair(UniqueStrings)
+    // if vector, do walk and find
+
+    // redirects to get idx from map and then
+    // attribute from vector
+    // return getAttributeNamed(UniqueString::get(""), attributeName);
   // }
 
 

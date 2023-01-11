@@ -75,16 +75,16 @@ class TupleDecl final : public Decl {
   int typeExpressionChildNum_;
   int initExpressionChildNum_;
 
-  TupleDecl(AstList children, int attributesChildNum, Decl::Visibility vis,
+  TupleDecl(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
             Decl::Linkage linkage,
             IntentOrKind intentOrKind,
             int numElements,
             int typeExpressionChildNum,
             int initExpressionChildNum)
-    : Decl(asttags::TupleDecl, std::move(children), attributesChildNum,
+    : Decl(asttags::TupleDecl, std::move(children), attributeGroupChildNum,
            vis,
            linkage,
-           /*linkageNameChildNum*/ -1),
+           /*linkageNameChildNum*/ NO_CHILD),
       intentOrKind_(intentOrKind),
       numElements_(numElements),
       typeExpressionChildNum_(typeExpressionChildNum),

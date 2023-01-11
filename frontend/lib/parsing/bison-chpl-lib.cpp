@@ -7714,7 +7714,7 @@ yyreduce:
   case 178: /* forwarding_decl_stmt: forwarding_decl_start expr TSEMI  */
 #line 1418 "chpl.ypp"
     {
-      (yyval.commentsAndStmt) = context->buildForwardingDecl((yyloc), toOwned((yyvsp[-2].attribute)), toOwned((yyvsp[-1].expr)),
+      (yyval.commentsAndStmt) = context->buildForwardingDecl((yyloc), toOwned((yyvsp[-2].attributeGroup)), toOwned((yyvsp[-1].expr)),
                                         VisibilityClause::NONE, nullptr);
     }
 #line 7721 "bison-chpl-lib.cpp"
@@ -7723,7 +7723,7 @@ yyreduce:
   case 179: /* forwarding_decl_stmt: forwarding_decl_start expr TEXCEPT renames_ls TSEMI  */
 #line 1423 "chpl.ypp"
     {
-      (yyval.commentsAndStmt) = context->buildForwardingDecl((yyloc), toOwned((yyvsp[-4].attribute)), toOwned((yyvsp[-3].expr)),
+      (yyval.commentsAndStmt) = context->buildForwardingDecl((yyloc), toOwned((yyvsp[-4].attributeGroup)), toOwned((yyvsp[-3].expr)),
                                         VisibilityClause::EXCEPT, (yyvsp[-1].exprList));
     }
 #line 7730 "bison-chpl-lib.cpp"
@@ -7732,7 +7732,7 @@ yyreduce:
   case 180: /* forwarding_decl_stmt: forwarding_decl_start expr TONLY opt_only_ls TSEMI  */
 #line 1428 "chpl.ypp"
     {
-      (yyval.commentsAndStmt) = context->buildForwardingDecl((yyloc), toOwned((yyvsp[-4].attribute)), toOwned((yyvsp[-3].expr)),
+      (yyval.commentsAndStmt) = context->buildForwardingDecl((yyloc), toOwned((yyvsp[-4].attributeGroup)), toOwned((yyvsp[-3].expr)),
                                         VisibilityClause::ONLY, (yyvsp[-1].exprList));
     }
 #line 7739 "bison-chpl-lib.cpp"
@@ -7741,7 +7741,7 @@ yyreduce:
   case 181: /* forwarding_decl_stmt: forwarding_decl_start var_decl_stmt  */
 #line 1433 "chpl.ypp"
     {
-      (yyval.commentsAndStmt) = context->buildForwardingDecl((yyloc), toOwned((yyvsp[-1].attribute)), (yyvsp[0].commentsAndStmt));
+      (yyval.commentsAndStmt) = context->buildForwardingDecl((yyloc), toOwned((yyvsp[-1].attributeGroup)), (yyvsp[0].commentsAndStmt));
     }
 #line 7747 "bison-chpl-lib.cpp"
     break;
@@ -7749,7 +7749,7 @@ yyreduce:
   case 182: /* forwarding_decl_start: TFORWARDING  */
 #line 1440 "chpl.ypp"
   {
-    (yyval.attribute) = context->buildAttributes((yyloc)).release();
+    (yyval.attributeGroup) = context->buildAttributes((yyloc)).release();
     context->resetAttributePartsState();
   }
 #line 7756 "bison-chpl-lib.cpp"

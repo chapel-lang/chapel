@@ -30,10 +30,10 @@ owned<EnumElement> EnumElement::build(Builder* builder, Location loc,
                                       UniqueString name,
                                       owned<AstNode> initExpression) {
   AstList lst;
-  int attributesChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
 
   if (attributes.get() != nullptr) {
-    attributesChildNum = lst.size();
+    attributeGroupChildNum = lst.size();
     lst.push_back(std::move(attributes));
   }
 
@@ -41,7 +41,7 @@ owned<EnumElement> EnumElement::build(Builder* builder, Location loc,
     lst.push_back(std::move(initExpression));
   }
 
-  EnumElement* ret = new EnumElement(std::move(lst), attributesChildNum,
+  EnumElement* ret = new EnumElement(std::move(lst), attributeGroupChildNum,
                                      name);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
