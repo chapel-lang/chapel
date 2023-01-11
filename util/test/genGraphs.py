@@ -644,12 +644,17 @@ class GraphClass:
         fname = graphInfo.datdir+'/'+self.datfname
         f = open(fname, 'w')
         f.write('Date,')
+        graphskeys = []
         for i in range(len(self.graphkeys)):
-            f.write(self.graphkeys[i])
-            if i < len(self.graphkeys)-1:
-                f.write(',')
-            else:
-                f.write('\n')
+            # The file may be missing (in the case where only a subdirectory
+            # has been tested for performance).  If so, we don't want to
+            # try to access a non-existent datfile
+            if not datfiles or not self.datfilenames[i] in datfiles:
+                continue
+            graphskeys.append(self.graphkeys[i])
+
+        f.write(','.join(graphskeys))
+        f.write('\n')
 
         numKeys = len(self.perfkeys)
         # currLines stores the current merged line number of each dat file
@@ -940,8 +945,9 @@ class GraphClass:
                 raise
 
         # generate the new data files
-        self.generateData(graphInfo, datfiles)
-        graphInfo.genGraphInfo(self)
+        if datfiles:
+            self.generateData(graphInfo, datfiles)
+            graphInfo.genGraphInfo(self)
 
         for n, d in datfiles.items():
             del d
