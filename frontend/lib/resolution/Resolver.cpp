@@ -63,7 +63,7 @@ static QualifiedType::Kind qualifiedTypeKindForTag(AstTag tag) {
 
 static QualifiedType::Kind qualifiedTypeKindForDecl(const NamedDecl* decl) {
   if (const VarLikeDecl* vd = decl->toVarLikeDecl()) {
-    IntentList storageKind = vd->storageKind();
+    Qualifier storageKind = vd->storageKind();
     return storageKind;
   }
 
@@ -1127,7 +1127,7 @@ Resolver::adjustTypesForOutFormals(const CallInfo& ci,
                                    const MostSpecificCandidates& fns) {
 
   std::vector<QualifiedType> actualFormalTypes;
-  std::vector<IntentList> actualIntents;
+  std::vector<Qualifier> actualIntents;
   computeActualFormalIntents(context, fns, ci, asts,
                              actualIntents, actualFormalTypes);
 
@@ -1141,7 +1141,7 @@ Resolver::adjustTypesForOutFormals(const CallInfo& ci,
     if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
       id = byPostorder.byAst(actualAst).toId();
     }
-    if (actualIntents[actualIdx] == IntentList::OUT && !id.isEmpty()) {
+    if (actualIntents[actualIdx] == Qualifier::OUT && !id.isEmpty()) {
       QualifiedType formalType = actualFormalTypes[actualIdx];
       adjustTypesForSplitInit(id, formalType, actualAst, actualAst);
     }
@@ -1259,7 +1259,7 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
     return;
   }
 
-  QualifiedType::Kind declKind = (IntentList) td->intentOrKind();
+  QualifiedType::Kind declKind = (Qualifier) td->intentOrKind();
   QualifiedType useT;
 
   // Figure out the type to use for this tuple

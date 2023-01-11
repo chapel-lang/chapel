@@ -27,8 +27,8 @@
 #include "chpl/types/all-types.h"
 #include "chpl/uast/For.h"
 #include "chpl/uast/Identifier.h"
-#include "chpl/uast/IntentList.h"
 #include "chpl/uast/Module.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/While.h"
@@ -164,19 +164,19 @@ struct Collector {
   }
 };
 
-static const char* kindToString(IntentList kind) {
+static const char* kindToString(Qualifier kind) {
   switch (kind) {
-    case IntentList::REF: return "ref";
-    case IntentList::CONST_INTENT: return "const";
-    case IntentList::CONST_REF: return "const ref";
-    case IntentList::IN: return "in";
-    case IntentList::CONST_IN: return "const in";
-    case IntentList::OUT: return "out";
-    case IntentList::PARAM: return "param";
-    case IntentList::TYPE: return "type";
-    case IntentList::VAR: return "var";
-    case IntentList::CONST_VAR: return "const";
-    case IntentList::DEFAULT_INTENT: return "";
+    case Qualifier::REF: return "ref";
+    case Qualifier::CONST_INTENT: return "const";
+    case Qualifier::CONST_REF: return "const ref";
+    case Qualifier::IN: return "in";
+    case Qualifier::CONST_IN: return "const in";
+    case Qualifier::OUT: return "out";
+    case Qualifier::PARAM: return "param";
+    case Qualifier::TYPE: return "type";
+    case Qualifier::VAR: return "var";
+    case Qualifier::CONST_VAR: return "const";
+    case Qualifier::DEFAULT_INTENT: return "";
     default: assert(false);
   }
   return "";
@@ -203,11 +203,11 @@ static bool isParamEq(QualifiedType qt, int n) {
 
 
 struct ArgInfo {
-  using Pair = std::pair<IntentList,std::string>;
+  using Pair = std::pair<Qualifier,std::string>;
   std::vector<Pair> args;
   bool isValuesOnly = false;
 
-  static ArgInfo IRS(IntentList argKind = IntentList::VAR) {
+  static ArgInfo IRS(Qualifier argKind = Qualifier::VAR) {
     std::vector<std::string> types = {"int", "real", "string"};
     return ArgInfo(argKind, types);
   }
@@ -222,20 +222,20 @@ struct ArgInfo {
 
   ArgInfo(std::vector<Pair> args) : args(args) {}
 
-  ArgInfo(IntentList argKind, int count, std::string type) {
+  ArgInfo(Qualifier argKind, int count, std::string type) {
     for (int i = 0; i < count; i++) {
       args.push_back(Pair(argKind, type));
     }
   }
   ArgInfo(int count,
-          std::string type) : ArgInfo(IntentList::VAR, count, type) {}
+          std::string type) : ArgInfo(Qualifier::VAR, count, type) {}
 
-  ArgInfo(IntentList argKind, std::vector<std::string> types) {
+  ArgInfo(Qualifier argKind, std::vector<std::string> types) {
     for (auto s : types) {
       args.push_back(Pair(argKind, s));
     }
   }
-  ArgInfo(std::vector<std::string> types) : ArgInfo(IntentList::VAR, types) {}
+  ArgInfo(std::vector<std::string> types) : ArgInfo(Qualifier::VAR, types) {}
 
   int minFormals() {
     if (args.size() == 0) {
@@ -256,7 +256,7 @@ struct ArgInfo {
       i += 1;
 
       if (!isValuesOnly) {
-        bool isTypeActual = p.first == IntentList::TYPE;
+        bool isTypeActual = p.first == Qualifier::TYPE;
         std::string initExpr = isTypeActual ? p.second : typeToVal(p.second);
         //stream << kindToString(p.first) << " " << argName;
         std::string kind(kindToString(p.first));
@@ -276,7 +276,7 @@ struct ArgInfo {
   }
 };
 
-static void printBuiltProgram(IntentList formalIntent,
+static void printBuiltProgram(Qualifier formalIntent,
                               std::string formalType,
                               std::string count,
                               ArgInfo info,
@@ -316,7 +316,7 @@ static void printBuiltProgram(IntentList formalIntent,
   }
 }
 
-static std::string buildProgram(IntentList formalIntent,
+static std::string buildProgram(Qualifier formalIntent,
                                 std::string formalType,
                                 std::string count,
                                 ArgInfo info,
@@ -485,7 +485,7 @@ static void validate(std::string formalType,
   }
 }
 
-static void testMatcher(IntentList formalIntent,
+static void testMatcher(Qualifier formalIntent,
                        std::string formalType,
                        std::string count,
                        ArgInfo info,
@@ -566,58 +566,58 @@ customHelper(std::string program, bool fail = false,
 static void testGenericType() {
   printHeader("fully-generic varargs");
 
-  auto irsVar = ArgInfo::IRS(IntentList::VAR);
-  testMatcher(IntentList::DEFAULT_INTENT , "" , "" , irsVar);
-  testMatcher(IntentList::IN             , "" , "" , irsVar);
-  testMatcher(IntentList::REF            , "" , "" , irsVar);
-  testMatcher(IntentList::CONST_REF      , "" , "" , irsVar);
-  testMatcher(IntentList::CONST_INTENT   , "" , "" , irsVar);
-  testMatcher(IntentList::CONST_IN       , "" , "" , irsVar);
+  auto irsVar = ArgInfo::IRS(Qualifier::VAR);
+  testMatcher(Qualifier::DEFAULT_INTENT , "" , "" , irsVar);
+  testMatcher(Qualifier::IN             , "" , "" , irsVar);
+  testMatcher(Qualifier::REF            , "" , "" , irsVar);
+  testMatcher(Qualifier::CONST_REF      , "" , "" , irsVar);
+  testMatcher(Qualifier::CONST_INTENT   , "" , "" , irsVar);
+  testMatcher(Qualifier::CONST_IN       , "" , "" , irsVar);
 
-  testMatcher(IntentList::PARAM, "", "", ArgInfo::IRS(IntentList::PARAM));
-  testMatcher(IntentList::TYPE, "", "", ArgInfo::IRS(IntentList::TYPE));
+  testMatcher(Qualifier::PARAM, "", "", ArgInfo::IRS(Qualifier::PARAM));
+  testMatcher(Qualifier::TYPE, "", "", ArgInfo::IRS(Qualifier::TYPE));
 
-  testMatcher(IntentList::DEFAULT_INTENT, "int(?)", "",
+  testMatcher(Qualifier::DEFAULT_INTENT, "int(?)", "",
               ArgInfo({"int(8)", "int", "int(32)"}));
 
   // TODO: Expressions like 'param x : int(8) = 42' are not currently working.
-  //testMatcher(IntentList::PARAM, "int(?)", "",
-  //           ArgInfo(IntentList::PARAM, {"int(8)", "int", "int(32)"}));
+  //testMatcher(Qualifier::PARAM, "int(?)", "",
+  //           ArgInfo(Qualifier::PARAM, {"int(8)", "int", "int(32)"}));
 
   // Errors
 
-  testMatcher(IntentList::DEFAULT_INTENT, "int(?)", "",
+  testMatcher(Qualifier::DEFAULT_INTENT, "int(?)", "",
               ArgInfo(3, "string"), true);
 }
 
 static void intentActualMismatch() {
   printHeader("passing args to wrong intent");
 
-  testMatcher(IntentList::PARAM, "", "",
+  testMatcher(Qualifier::PARAM, "", "",
               ArgInfo::IRS(), true);
-  testMatcher(IntentList::TYPE, "", "",
+  testMatcher(Qualifier::TYPE, "", "",
               ArgInfo::IRS(), true);
 }
 
 static void typeQuery() {
   printHeader("varargs with type query");
 
-  testMatcher(IntentList::DEFAULT_INTENT, "?i", "",
+  testMatcher(Qualifier::DEFAULT_INTENT, "?i", "",
               ArgInfo(3, "int"));
-  testMatcher(IntentList::DEFAULT_INTENT, "?s", "",
+  testMatcher(Qualifier::DEFAULT_INTENT, "?s", "",
               ArgInfo(3, "string"));
-  testMatcher(IntentList::PARAM, "?i", "",
-              ArgInfo(IntentList::PARAM, 3, "int"));
+  testMatcher(Qualifier::PARAM, "?i", "",
+              ArgInfo(Qualifier::PARAM, 3, "int"));
 
   // Passing in params to default-intent should not result in the formals
   // being treated as params
-  testMatcher(IntentList::DEFAULT_INTENT, "?t", "",
+  testMatcher(Qualifier::DEFAULT_INTENT, "?t", "",
               ArgInfo::Values({"true","false","true"}));
 
   // Errors
 
   // pass different types to type query
-  testMatcher(IntentList::DEFAULT_INTENT, "?t", "",
+  testMatcher(Qualifier::DEFAULT_INTENT, "?t", "",
               ArgInfo::IRS(), true);
 
   // TODO: Consider the following:
@@ -632,7 +632,7 @@ static void typeQuery() {
   // We currently issue a somewhat helpful error recognizing that we can't make
   // a type query from this argument, but this doesn't prevent resolving the
   // call.
-  testMatcher(IntentList::DEFAULT_INTENT, "int(?t)", "",
+  testMatcher(Qualifier::DEFAULT_INTENT, "int(?t)", "",
               ArgInfo({"int(8)", "int", "int(32)"}), true);
 }
 
@@ -640,25 +640,25 @@ static void testConcrete() {
   printHeader("varargs with type exprs");
 
   // simple 1:1 cases
-  testMatcher(IntentList::DEFAULT_INTENT, "int", "",
+  testMatcher(Qualifier::DEFAULT_INTENT, "int", "",
               ArgInfo(3, "int"));
 
   // int coercion
-  testMatcher(IntentList::DEFAULT_INTENT, "int", "",
+  testMatcher(Qualifier::DEFAULT_INTENT, "int", "",
               ArgInfo({"int", "int(8)", "int(32)"}));
 
   // varargs specifiying a tuple as the formal type
-  testMatcher(IntentList::DEFAULT_INTENT, "(int,int,int)", "",
+  testMatcher(Qualifier::DEFAULT_INTENT, "(int,int,int)", "",
               ArgInfo(3, "(int,int,int)"));
 
   // Errors
 
   // pass int(64) to int(8)
-  testMatcher(IntentList::DEFAULT_INTENT, "int(8)", "",
+  testMatcher(Qualifier::DEFAULT_INTENT, "int(8)", "",
               ArgInfo(3, "int"), true);
 
 
-  testMatcher(IntentList::DEFAULT_INTENT, "(int(8),int,int)", "",
+  testMatcher(Qualifier::DEFAULT_INTENT, "(int(8),int,int)", "",
               ArgInfo(3, "(int,int,int)"), true);
 }
 
@@ -706,37 +706,37 @@ fn(true, true);
 
 static void testCount() {
   printHeader("testing count expressions");
-  testMatcher(IntentList::DEFAULT_INTENT, "int", "3",
+  testMatcher(Qualifier::DEFAULT_INTENT, "int", "3",
               ArgInfo(3, "int"));
 
-  testMatcher(IntentList::DEFAULT_INTENT, "int", "?",
+  testMatcher(Qualifier::DEFAULT_INTENT, "int", "?",
               ArgInfo(5, "int"));
-  testMatcher(IntentList::DEFAULT_INTENT, "int", "?n",
+  testMatcher(Qualifier::DEFAULT_INTENT, "int", "?n",
               ArgInfo(5, "int"));
 
   // With type queries
-  testMatcher(IntentList::DEFAULT_INTENT, "?t", "?n",
+  testMatcher(Qualifier::DEFAULT_INTENT, "?t", "?n",
               ArgInfo(4, "int"));
-  testMatcher(IntentList::DEFAULT_INTENT, "?t", "3",
+  testMatcher(Qualifier::DEFAULT_INTENT, "?t", "3",
               ArgInfo(3, "int"));
 
   testParamCount();
 
   // Errors
 
-  testMatcher(IntentList::DEFAULT_INTENT, "int", "3",
+  testMatcher(Qualifier::DEFAULT_INTENT, "int", "3",
               ArgInfo(5, "int"), true);
-  testMatcher(IntentList::DEFAULT_INTENT, "int", "3",
+  testMatcher(Qualifier::DEFAULT_INTENT, "int", "3",
               ArgInfo(2, "int"), true);
-  testMatcher(IntentList::DEFAULT_INTENT, "int", "1",
+  testMatcher(Qualifier::DEFAULT_INTENT, "int", "1",
               ArgInfo(2, "int"), true);
 
   // TODO: Better error message
-  testMatcher(IntentList::DEFAULT_INTENT, "int", "0",
+  testMatcher(Qualifier::DEFAULT_INTENT, "int", "0",
               ArgInfo(2, "int"), true);
 
   // zero actuals, varargs require at least one
-  testMatcher(IntentList::DEFAULT_INTENT, "int", "",
+  testMatcher(Qualifier::DEFAULT_INTENT, "int", "",
               ArgInfo(), true);
 
   auto countTypeFn = std::string(

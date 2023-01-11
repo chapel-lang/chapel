@@ -43,7 +43,7 @@ static const bool& checkSignatureQuery(Context* context,
   for (int i = 0; i < nFormals; i++) {
     if (u->formalIsVarArgs(i)) {
       auto varArgIntent = sig->formalType(i).kind();
-      if (varArgIntent == IntentList::OUT) {
+      if (varArgIntent == Qualifier::OUT) {
         context->error(errId, "cannot have out intent varargs");
       }
     }
@@ -61,11 +61,11 @@ static const bool& checkSignatureQuery(Context* context,
     auto thisIntent = sig->formalType(0).kind();
     auto rhsIntent = sig->formalType(1).kind();
     // check the intent of the 'this' argument
-    if (!(isGenericIntent(thisIntent) || isRefIntent(thisIntent))) {
+    if (!(isGenericQualifier(thisIntent) || isRefQualifier(thisIntent))) {
       context->error(errId, "Bad 'this' intent for init=");
     }
-    bool rhsIntentGenericOrRef = isGenericIntent(rhsIntent) ||
-                                 isRefIntent(rhsIntent);
+    bool rhsIntentGenericOrRef = isGenericQualifier(rhsIntent) ||
+                                 isRefQualifier(rhsIntent);
     // check the intent of the rhs argument
     if (sig->formalType(0).type() == sig->formalType(1).type()) {
       // same-type case: only const/default/ref/const ref RHS is allowed
@@ -74,7 +74,7 @@ static const bool& checkSignatureQuery(Context* context,
       }
     } else {
       // different-type case: RHS can be 'in' intent in addition
-      if (!(rhsIntentGenericOrRef || isInIntent(rhsIntent))) {
+      if (!(rhsIntentGenericOrRef || isInQualifier(rhsIntent))) {
         context->error(errId, "Bad intent for cross-type init= other argument");
       }
     }
@@ -87,11 +87,11 @@ static const bool& checkSignatureQuery(Context* context,
     }
     auto lhsIntent = sig->formalType(numThisArgs).kind();
     auto rhsIntent = sig->formalType(numThisArgs+1).kind();
-    if (!(isGenericIntent(lhsIntent) || isRefIntent(lhsIntent))) {
+    if (!(isGenericQualifier(lhsIntent) || isRefQualifier(lhsIntent))) {
       context->error(errId, "Bad intent for = LHS formal");
     }
-    if (!(isGenericIntent(rhsIntent) || isRefIntent(rhsIntent) ||
-          isInIntent(rhsIntent))) {
+    if (!(isGenericQualifier(rhsIntent) || isRefQualifier(rhsIntent) ||
+          isInQualifier(rhsIntent))) {
       context->error(errId, "Bad intent for = RHS formal");
     }
   }

@@ -3139,42 +3139,42 @@ struct Converter {
   }
 
   void attachSymbolStorage(const uast::Variable::Kind kind, Symbol* vs) {
-    return attachSymbolStorage((uast::IntentList) kind, vs);
+    return attachSymbolStorage((uast::Qualifier) kind, vs);
   }
 
   void attachSymbolStorage(const uast::TupleDecl::IntentOrKind iok,
                            Symbol* vs) {
-    return attachSymbolStorage((uast::IntentList) iok, vs);
+    return attachSymbolStorage((uast::Qualifier) iok, vs);
   }
 
-  void attachSymbolStorage(const uast::IntentList kind, Symbol* vs) {
+  void attachSymbolStorage(const uast::Qualifier kind, Symbol* vs) {
     auto qual = QUAL_UNKNOWN;
 
     switch (kind) {
-      case uast::IntentList::VAR:
+      case uast::Qualifier::VAR:
         qual = QUAL_VAL;
         break;
-      case uast::IntentList::CONST_VAR:
+      case uast::Qualifier::CONST_VAR:
         vs->addFlag(FLAG_CONST);
         qual = QUAL_CONST;
         break;
-      case uast::IntentList::CONST_REF:
+      case uast::Qualifier::CONST_REF:
         vs->addFlag(FLAG_CONST);
         vs->addFlag(FLAG_REF_VAR);
         qual = QUAL_CONST_REF;
         break;
-      case uast::IntentList::REF:
+      case uast::Qualifier::REF:
         vs->addFlag(FLAG_REF_VAR);
         qual = QUAL_REF;
         break;
-      case uast::IntentList::PARAM:
+      case uast::Qualifier::PARAM:
         vs->addFlag(FLAG_PARAM);
         qual = QUAL_PARAM;
         break;
-      case uast::IntentList::TYPE:
+      case uast::Qualifier::TYPE:
         vs->addFlag(FLAG_TYPE_VARIABLE);
         break;
-      case uast::IntentList::INDEX:
+      case uast::Qualifier::INDEX:
         vs->addFlag(FLAG_INDEX_VAR);
         break;
       default:

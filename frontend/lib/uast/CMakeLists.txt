@@ -70,7 +70,6 @@ target_sources(libdyno-obj
                Include.cpp
                IndexableLoop.cpp
                IntLiteral.cpp
-               IntentList.cpp
                Interface.cpp
                Label.cpp
                Let.cpp
@@ -89,6 +88,7 @@ target_sources(libdyno-obj
                Pragma.cpp
                PrimCall.cpp
                PrimOp.cpp
+               Qualifier.cpp
                Range.cpp
                RealLiteral.cpp
                Record.cpp

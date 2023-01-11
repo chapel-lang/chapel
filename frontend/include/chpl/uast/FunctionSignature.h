@@ -23,8 +23,8 @@
 #include "chpl/framework/Location.h"
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/Function.h"
-#include "chpl/uast/IntentList.h"
 #include "chpl/uast/NamedDecl.h"
+#include "chpl/uast/Qualifier.h"
 
 namespace chpl {
 namespace uast {

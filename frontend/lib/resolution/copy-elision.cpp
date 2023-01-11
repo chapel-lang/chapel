@@ -79,13 +79,13 @@ struct FindElidedCopies : VarScopeVisitor {
   void handleScope(const AstNode* ast, RV& rv) override;
 };
 
-static bool kindAllowsCopyElision(IntentList kind) {
-  return (kind == IntentList::VAR ||
-          kind == IntentList::CONST_VAR ||
-          kind == IntentList::IN ||
-          kind == IntentList::CONST_IN ||
-          kind == IntentList::OUT ||
-          kind == IntentList::INOUT);
+static bool kindAllowsCopyElision(Qualifier kind) {
+  return (kind == Qualifier::VAR ||
+          kind == Qualifier::CONST_VAR ||
+          kind == Qualifier::IN ||
+          kind == Qualifier::CONST_IN ||
+          kind == Qualifier::OUT ||
+          kind == Qualifier::INOUT);
 }
 
 bool
