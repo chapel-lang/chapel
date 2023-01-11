@@ -1,0 +1,2 @@
+warn-field-generic-declared-type.chpl:2: warning: please use type variable for generic-typed field myfield
+(myfield = 0)
