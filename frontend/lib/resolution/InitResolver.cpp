@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,7 +37,7 @@
 //       (for types and params)
 // - [ ] "cannot take a reference to 'this' before this.complete()"
 // - [ ] "cannot initialize a variable from 'this' before this.complete()"
-// - [ ] "cannot pass 'this' to a funciton before calling super.init() "
+// - [ ] "cannot pass 'this' to a function before calling super.init() "
 //       "or this.init()"
 // - [ ] "cannot pass a record to a function before this.complete()"
 //
@@ -217,14 +217,14 @@ InitResolver::computeTypedSignature(const Type* newRecvType) {
 
   ret = TypedFnSignature::get(ctx_, ufs, formalTypes,
                               tfs->whereClauseResult(),
-                              false,
+                              /* needsInstantiation */ false,
                               tfs->instantiatedFrom(),
                               tfs->parentFn(),
                               formalsInstantiated);
   return ret;
 }
 
-// TODO: Identifiy cases where we don't need to do anything.
+// TODO: Identify cases where we don't need to do anything.
 const TypedFnSignature* InitResolver::finalize(void) {
   if (fn_ == nullptr) CHPL_ASSERT(false && "Not handled yet!");
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1328,7 +1328,6 @@ static void gatherTempsDeadLastMention(VarSymbol* v,
       // also handle out intent variables being inited here
       FnSymbol* fn = subCall ? subCall->resolvedOrVirtualFunction() : NULL;
       if (fn != NULL) {
-        int i = 1;
         for_formals_actuals(formal, actual, subCall) {
           bool outIntent = (formal->intent == INTENT_OUT ||
                             formal->originalIntent == INTENT_OUT);
@@ -1349,7 +1348,6 @@ static void gatherTempsDeadLastMention(VarSymbol* v,
               }
             }
           }
-          i++;
         }
       }
     }

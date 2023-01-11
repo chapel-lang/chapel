@@ -71,6 +71,7 @@ case $launcher in
   slurm-srun) sed -e "s/ \(--cpus-per-task\)=[1-9][0-9]* / \1=N /" \
                   -e "s/ \(--partition\)=[^ ]* / \1=P /" \
                   -e "s/ \(--exclude\)=[^ ]* / \1=E /" \
+                  -e "s/ \(--mem\)=[^ ]* / \1=M /" \
                   -e "s/ --time=[^ ]*//" \
                   -e 's/ *$//' \
                   $2 > $2.tmp &&

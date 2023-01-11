@@ -8,6 +8,9 @@ PREFIX=""
 # (to mirror release / source checkout)
 DEST_DIR=""
 
+# set MAKE=make if it is not set yet
+: "${MAKE:=make}"
+
 # Argument parsing
 for arg in "$@"
 do
@@ -235,17 +238,10 @@ myinstallfileto () {
   fi
 }
 
+# run 'cmake' to install the compiler library, 'chpl' and 'chpldoc'
+(cd compiler && "$MAKE" install-chpl-chpldoc)
 
-# copy chpl
-if [ ! -z "$PREFIX" ]
-then
-  myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpl "$PREFIX/bin"
-else
-  tmp_bin_dir="bin/$CHPL_BIN_SUBDIR"
-  myinstallfile "$tmp_bin_dir"/chpl "$DEST_DIR/$tmp_bin_dir"
-fi
-
-# copy runtime lib
+# copy compiler and runtime lib
 myinstalldir  lib                     "$DEST_RUNTIME_LIB"
 
 # copy runtime include
@@ -347,16 +343,6 @@ then
   fi
 fi
 
-if [ -f "bin/$CHPL_BIN_SUBDIR/chpldoc" ]
-then
-  # create a symbolic link for chpldoc
-  if [ ! -z "$PREFIX" ]
-  then
-    (cd "$PREFIX/bin" && rm -f chpldoc && ln -s chpl chpldoc)
-  else
-    (cd "$DEST_DIR/bin/$CHPL_BIN_SUBDIR" && rm -f chpldoc && ln -s chpl chpldoc)
-  fi
-fi
 
 # copy chplconfig
 if [ -f chplconfig ]

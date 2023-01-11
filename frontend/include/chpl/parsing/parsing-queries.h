@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -268,6 +268,12 @@ uast::AstTag idToTag(Context* context, ID id);
  Returns true if the ID is a parenless function.
  */
 bool idIsParenlessFunction(Context* context, ID id);
+
+/**
+ If the ID represents a field in a record/class/union, returns
+ the name of that field. Otherwise, returns the empty string.
+ */
+UniqueString fieldIdToName(Context* context, ID id);
 
 /**
  Returns true if the ID is a field in a record/class/union.

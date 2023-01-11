@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,6 +28,7 @@
 #include "chpl/uast/Variable.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/parsing/Parser.h"
+#include "chpl/parsing/parser-error.h"
 #include "chpl/uast/OpCall.h"
 #include "chpl/framework/query-impl.h"
 

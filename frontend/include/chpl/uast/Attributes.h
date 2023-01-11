@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -81,6 +81,8 @@ class Attributes final : public AstNode {
     deprecationMessage_.mark(context);
     unstableMessage_.mark(context);
   }
+
+  void dumpInner(const DumpSettings& s) const;
 
  public:
   ~Attributes() override = default;

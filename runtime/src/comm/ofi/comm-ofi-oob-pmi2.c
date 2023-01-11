@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -105,8 +105,9 @@ void chpl_comm_ofi_oob_init(void) {
     chpl_numNodes = (int32_t) size;
   }
 
-  DBG_PRINTF(DBG_OOB, "OOB init: node %" PRI_c_nodeid_t " of %" PRId32,
-             chpl_nodeID, chpl_numNodes);
+  chpl_comm_oob = "PMI/PMI2";
+  DBG_PRINTF(DBG_OOB, "OOB %s init: node %" PRI_c_nodeid_t " of %" PRId32,
+             chpl_comm_oob, chpl_nodeID, chpl_numNodes);
 }
 
 

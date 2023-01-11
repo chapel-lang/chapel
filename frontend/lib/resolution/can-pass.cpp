@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -975,34 +975,6 @@ CanPassResult CanPassResult::canPass(Context* context,
   // TODO: implement promotion check
 
   return fail();
-}
-
-static bool isConstIntent(QualifiedType::Kind kind) {
-  switch (kind) {
-    case QualifiedType::CONST_INTENT:
-    case QualifiedType::CONST_VAR:
-    case QualifiedType::CONST_REF:
-    case QualifiedType::CONST_IN:
-    case QualifiedType::PARAM:
-    case QualifiedType::TYPE:
-    case QualifiedType::FUNCTION:
-    case QualifiedType::MODULE:
-      return true;
-    default:
-      return false;
-  }
-}
-
-static bool isRefIntent(QualifiedType::Kind kind) {
-  switch (kind) {
-    // assume we don't get CONST_INTENT or DEFAULT_INTENT here,
-    // since we don't know how to translate them.
-    case QualifiedType::CONST_REF:
-    case QualifiedType::REF:
-      return true;
-    default:
-      return false;
-  }
 }
 
 // When trying to combine two kinds, you can't just pick one.

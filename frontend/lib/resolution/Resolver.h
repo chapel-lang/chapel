@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -72,10 +72,14 @@ struct Resolver {
 
   // the resolution results for the contained AstNodes
   ResolutionResultByPostorderID& byPostorder;
+
   // the set of POI scopes from which POI functions were used --
   // these are gathered here during resolution in order to
   // allow accurate caching and reuse of instantiations
   PoiInfo poiInfo;
+
+  // the return type of the function (inferred or not)
+  types::QualifiedType returnType;
 
   static PoiInfo makePoiInfo(const PoiScope* poiScope) {
     if (poiScope == nullptr)
@@ -288,7 +292,9 @@ struct Resolver {
   void handleResolvedAssociatedCall(ResolvedExpression& r,
                                     const uast::AstNode* astForErr,
                                     const CallInfo& ci,
-                                    const CallResolutionResult& c);
+                                    const CallResolutionResult& c,
+                                    AssociatedAction::Action action,
+                                    ID id);
 
   // If the variable with the passed ID has unknown or generic type,
   // and it has not yet been initialized, set its type to rhsType.
@@ -325,6 +331,10 @@ struct Resolver {
   // e.g. var (a, b) = mytuple
   void resolveTupleDecl(const uast::TupleDecl* td,
                         const types::Type* useType);
+
+  void validateAndSetToId(ResolvedExpression& r,
+                          const uast::AstNode* exr,
+                          const ID& id);
 
   // e.g. new shared C(a, 0)
   // also resolves initializer call as a side effect

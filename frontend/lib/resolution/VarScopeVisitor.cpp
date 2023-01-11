@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -58,7 +58,7 @@ VarScopeVisitor::process(const uast::AstNode* symbol,
     // traverse formals and then traverse the body
     if (auto body = fn->body()) {
       // make a pretend scope for the formals
-      enterScope(body);
+      enterScope(body, rv);
 
       // traverse the formals
       for (auto formal : fn->formals()) {
@@ -68,11 +68,35 @@ VarScopeVisitor::process(const uast::AstNode* symbol,
       // traverse the real body
       body->traverse(rv);
 
-      exitScope(body);
+      exitScope(body, rv);
     }
   } else {
     symbol->traverse(rv);
   }
+}
+
+const AstNode* VarScopeVisitor::currentStatement() {
+  if (inAstStack.empty()) {
+    return nullptr;
+  }
+
+  for (ssize_t i = inAstStack.size() - 1; i >= 0; i--) {
+    const AstNode* ast = inAstStack[i];
+    const AstNode* parent = nullptr;
+    if (i > 0) {
+      parent = inAstStack[i-1];
+    }
+
+    if (ast->isInherentlyStatement()) {
+      return ast;
+    }
+
+    if (parent && parent->isSimpleBlockLike()) {
+      return ast;
+    }
+  }
+
+  return nullptr;
 }
 
 VarFrame* VarScopeVisitor::currentThenFrame() {
@@ -172,7 +196,7 @@ bool VarScopeVisitor::processDeclarationInit(const VarLikeDecl* ast, RV& rv) {
   return inserted;
 }
 
-void VarScopeVisitor::enterScope(const AstNode* ast) {
+void VarScopeVisitor::enterScope(const AstNode* ast, RV& rv) {
   if (createsScope(ast->tag())) {
     scopeStack.push_back(toOwned(new VarFrame(ast)));
   }
@@ -189,7 +213,7 @@ void VarScopeVisitor::enterScope(const AstNode* ast) {
     }
   }
 }
-void VarScopeVisitor::exitScope(const AstNode* ast) {
+void VarScopeVisitor::exitScope(const AstNode* ast, RV& rv) {
   if (createsScope(ast->tag())) {
     CHPL_ASSERT(!scopeStack.empty());
     size_t n = scopeStack.size();
@@ -215,7 +239,7 @@ void VarScopeVisitor::exitScope(const AstNode* ast) {
       CHPL_ASSERT(parentFrame->scopeAst->isConditional() ||
              parentFrame->scopeAst->isTry());
     } else if (auto cond = ast->toConditional()) {
-      handleConditional(cond);
+      handleConditional(cond, rv);
       if (parentFrame != nullptr) {
         // if both branches return or throw, update the parent frame.
         VarFrame* thenFrame = currentThenFrame();
@@ -226,7 +250,7 @@ void VarScopeVisitor::exitScope(const AstNode* ast) {
         }
       }
     } else if (auto t = ast->toTry()) {
-      handleTry(t);
+      handleTry(t, rv);
       // if the try returns/throws
       // and any catch clauses also return/throws, update the parent frame
       if (parentFrame != nullptr) {
@@ -247,7 +271,7 @@ void VarScopeVisitor::exitScope(const AstNode* ast) {
         }
       }
     } else {
-      handleScope(ast);
+      handleScope(ast, rv);
       // update the parent frame with the returns/throws status
       if (parentFrame != nullptr) {
         if (!ast->isLoop()) {
@@ -264,9 +288,17 @@ void VarScopeVisitor::exitScope(const AstNode* ast) {
   }
 }
 
+void VarScopeVisitor::enterAst(const uast::AstNode* ast) {
+  inAstStack.push_back(ast);
+}
+void VarScopeVisitor::exitAst(const uast::AstNode* ast) {
+  CHPL_ASSERT(!inAstStack.empty() && ast == inAstStack.back());
+  inAstStack.pop_back();
+}
 
 bool VarScopeVisitor::enter(const VarLikeDecl* ast, RV& rv) {
-  enterScope(ast);
+  enterAst(ast);
+  enterScope(ast, rv);
 
   return true;
 }
@@ -276,11 +308,13 @@ void VarScopeVisitor::exit(const VarLikeDecl* ast, RV& rv) {
     handleDeclaration(ast, rv);
   }
 
-  exitScope(ast);
+  exitScope(ast, rv);
+  exitAst(ast);
 }
 
 
 bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
+  enterAst(ast);
 
   if (ast->op() == USTR("=")) {
     // What is the RHS of the '=' call?
@@ -296,10 +330,12 @@ bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
 }
 
 void VarScopeVisitor::exit(const OpCall* ast, RV& rv) {
+  exitAst(ast);
 }
 
 
 bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
+  enterAst(callAst);
 
   if (rv.hasAst(callAst)) {
     // Does any return-intent-overload use 'in', 'out', or 'inout'?
@@ -380,10 +416,12 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
 }
 
 void VarScopeVisitor::exit(const FnCall* ast, RV& rv) {
+  exitAst(ast);
 }
 
 
 bool VarScopeVisitor::enter(const Return* ast, RV& rv) {
+  enterAst(ast);
   return true;
 }
 void VarScopeVisitor::exit(const Return* ast, RV& rv) {
@@ -392,10 +430,12 @@ void VarScopeVisitor::exit(const Return* ast, RV& rv) {
     frame->returnsOrThrows = true;
     handleReturnOrThrow(ast, rv);
   }
+  exitAst(ast);
 }
 
 
 bool VarScopeVisitor::enter(const Throw* ast, RV& rv) {
+  enterAst(ast);
   return true;
 }
 void VarScopeVisitor::exit(const Throw* ast, RV& rv) {
@@ -404,10 +444,12 @@ void VarScopeVisitor::exit(const Throw* ast, RV& rv) {
     frame->returnsOrThrows = true;
     handleReturnOrThrow(ast, rv);
   }
+  exitAst(ast);
 }
 
 
 bool VarScopeVisitor::enter(const Identifier* ast, RV& rv) {
+  enterAst(ast);
   return true;
 }
 void VarScopeVisitor::exit(const Identifier* ast, RV& rv) {
@@ -420,15 +462,18 @@ void VarScopeVisitor::exit(const Identifier* ast, RV& rv) {
       handleMention(ast, toId, rv);
     }
   }
+  exitAst(ast);
 }
 
 bool VarScopeVisitor::enter(const AstNode* ast, RV& rv) {
-  enterScope(ast);
+  enterAst(ast);
+  enterScope(ast, rv);
 
   return true;
 }
 void VarScopeVisitor::exit(const AstNode* ast, RV& rv) {
-  exitScope(ast);
+  exitScope(ast, rv);
+  exitAst(ast);
 }
 
 
@@ -465,7 +510,7 @@ computeActualFormalIntents(Context* context,
 
   int nFns = candidates.numBest();
   if (nFns == 0) {
-    // return early if there are no actual candidates
+    // return early if there are no candidates
     return;
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,8 +28,6 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
-
-#include "./ErrorGuard.h"
 
 static const bool ERRORS_EXPECTED=true;
 
@@ -567,6 +565,8 @@ static void test21() {
     {"x", "y"},
     /* expect errors for now as a temporary workaround */ ERRORS_EXPECTED);
 }
+
+/* not tested -- "ount intent varargs are not supported"
 static void test22() {
   testSplitInit("test22",
     R""""(
@@ -589,6 +589,7 @@ static void test22() {
     )"""",
     {"x"});
 }
+
 static void test23() {
   testSplitInit("test23",
     R""""(
@@ -612,7 +613,7 @@ static void test23() {
     )"""",
     {"x", "y"});
 }
-/* Uncomment these tests after we enough tuple support implemented
+
 static void test24() {
   testSplitInit("test24",
     R""""(
@@ -1167,7 +1168,7 @@ static void test46() {
           } else {
             try {
               return;
-            } catch e {
+            } catch {
               return;
             }
           }
@@ -1200,10 +1201,10 @@ int main() {
   test19();
   test20();
   test21();
-  test22();
-  test23();
-  //test24(); TODO
-  //test25(); TODO
+  //test22(); out intent varargs
+  //test23(); out intent varargs
+  //test24(); out intent varargs
+  //test25(); out intent varargs
   test26a();
   test26b();
   test26c();

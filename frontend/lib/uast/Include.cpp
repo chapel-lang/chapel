@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,17 @@
 namespace chpl {
 namespace uast {
 
+
+void Include::dumpFieldsInner(const DumpSettings& s) const {
+  const char* vis = Decl::visibilityToString(visibility_);
+  if (vis[0]) {
+    s.out << " " << vis;
+  }
+  if (isPrototype_) {
+    s.out << " prototype";
+  }
+  s.out << name_.str();
+}
 
 owned<Include> Include::build(Builder* builder, Location loc,
                               Decl::Visibility visibility,

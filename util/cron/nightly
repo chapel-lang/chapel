@@ -297,8 +297,13 @@ if ($basetmpdir eq "") {
 # Number of logical processes on current system. Will be used as number of jobs
 # when calling make with parallel execution.
 $here = dirname(__FILE__);
-$num_procs = `$here/../buildRelease/chpl-make-cpu_count`;
+$python = `$here/util/config/find-python.sh`;
+$num_procs = `$python $here/../buildRelease/chpl-make-cpu_count`;
 chomp($num_procs);
+if ($num_procs eq "") {
+  # whatever happens, don't to an unbounded make -j !
+  $num_procs = 4;
+}
 
 $cronlogdir = $ENV{'CHPL_NIGHTLY_CRON_LOGDIR'};
 

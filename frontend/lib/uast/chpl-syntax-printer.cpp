@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,7 +19,9 @@
 
 
 #include "chpl/uast/chpl-syntax-printer.h"
+
 #include "chpl/framework/global-strings.h"
+#include "chpl/uast/all-uast.h"
 
 
 using namespace chpl;
@@ -533,7 +535,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const BytesLiteral* node) {
-    ss_ << "b\"" << escapeStringC(node->str().str()) << '"';
+    ss_ << "b\"" << escapeStringC(node->value().str()) << '"';
   }
 
   void visit(const Catch* node) {
@@ -635,7 +637,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const CStringLiteral* node) {
-    ss_ << "c\"" << escapeStringC(node->str().str()) << '"';
+    ss_ << "c\"" << escapeStringC(node->value().str()) << '"';
   }
 
   void visit(const Defer* node) {
@@ -1176,7 +1178,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const StringLiteral* node) {
-    ss_ << '"' << escapeStringC(node->str().str()) << '"';
+    ss_ << '"' << escapeStringC(node->value().str()) << '"';
   }
 
   void visit(const Sync* node) {

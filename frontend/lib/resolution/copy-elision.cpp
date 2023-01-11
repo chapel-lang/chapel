@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -74,9 +74,9 @@ struct FindElidedCopies : VarScopeVisitor {
                          RV& rv) override;
 
   void handleReturnOrThrow(const uast::AstNode* ast, RV& rv) override;
-  void handleConditional(const Conditional* cond) override;
-  void handleTry(const Try* t) override;
-  void handleScope(const AstNode* ast) override;
+  void handleConditional(const Conditional* cond, RV& rv) override;
+  void handleTry(const Try* t, RV& rv) override;
+  void handleScope(const AstNode* ast, RV& rv) override;
 };
 
 static bool kindAllowsCopyElision(IntentList kind) {
@@ -275,7 +275,7 @@ void FindElidedCopies::handleReturnOrThrow(const uast::AstNode* ast, RV& rv) {
   saveElidedCopies(frame);
 }
 
-void FindElidedCopies::handleConditional(const Conditional* cond) {
+void FindElidedCopies::handleConditional(const Conditional* cond, RV& rv) {
   VarFrame* frame = currentFrame();
   VarFrame* thenFrame = currentThenFrame();
   VarFrame* elseFrame = currentElseFrame();
@@ -364,10 +364,10 @@ void FindElidedCopies::handleConditional(const Conditional* cond) {
   }
 
   // now that the current frame is updated, propagate to the parent
-  handleScope(cond);
+  handleScope(cond, rv);
 }
 
-void FindElidedCopies::handleTry(const Try* t) {
+void FindElidedCopies::handleTry(const Try* t, RV& rv) {
 
   VarFrame* tryFrame = currentFrame();
 
@@ -375,7 +375,7 @@ void FindElidedCopies::handleTry(const Try* t) {
   // if there are no catch clauses, treat it like any other scope
   if (nCatchFrames == 0) {
     // will handle variables local to the try
-    handleScope(t);
+    handleScope(t, rv);
     return;
   }
 
@@ -420,7 +420,7 @@ void FindElidedCopies::handleTry(const Try* t) {
 
   tryFrame->copyElisionState.swap(updatedState);
 
-  handleScope(t);
+  handleScope(t, rv);
 }
 
 static bool allowsCopyElision(const AstNode* ast) {
@@ -431,7 +431,7 @@ static bool allowsCopyElision(const AstNode* ast) {
          ast->isTry();
 }
 
-void FindElidedCopies::handleScope(const AstNode* ast) {
+void FindElidedCopies::handleScope(const AstNode* ast, RV& rv) {
   VarFrame* frame = currentFrame();
   VarFrame* parent = currentParentFrame();
 

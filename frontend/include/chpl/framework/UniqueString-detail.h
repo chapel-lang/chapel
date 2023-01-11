@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -199,6 +199,16 @@ struct InlinedString {
     return std::string(c_str(), length());
   }
 
+  bool isEmpty() const {
+    if (isInline()) {
+      return c_str()[0] == '\0';
+    }
+
+    // otherwise, the pointed-to string should not be empty
+    CHPL_ASSERT(length() > 0);
+    return false;
+  }
+
   // mark the string as used this revision (so it is not GC'd)
   void mark(Context* context) const;
 };
@@ -253,7 +263,7 @@ struct PODUniqueString {
   }
 
   bool isEmpty() const {
-    return i.c_str()[0] == '\0';
+    return i.isEmpty();
   }
   inline bool operator==(const PODUniqueString other) const {
     return this->i.v == other.i.v;

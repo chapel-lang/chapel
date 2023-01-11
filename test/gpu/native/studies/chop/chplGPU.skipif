@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+# Skip if not doing performance testing
+if [ -z "$CHPL_TEST_PERF" ]; then
+  echo "True"
+  exit
+fi
+
+# Skip this test if we cannot connect to github, which is required to
+# run the test.
+ping -c 1 github.com &> /dev/null
+status=$?
+if ! [ $status -eq 0 ]; then
+  echo "True"
+  # exit 0 as we want test to be considered a success as to not fail nightly
+  # Jenkins job.
+  exit 0  
+fi
+
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+CHOP_BRANCH=main
+CHOP_URL=${CHOP_URL:-https://github.com/tcarneirop/ChOp.git}
+CHOP_BRANCH=${CHOP_BRANCH:-main}
+
+# Clone ChOp, skipif clone failed, add extra output to fail nightly job
+rm -rf ChOp
+if ! git clone ${CHOP_URL} --branch=${CHOP_BRANCH} --depth=1 2>gitClone.out; then
+  echo "git clone failed; output:"
+  cat gitClone.out
+  echo "True"
+  exit
+fi
+
+echo "False"

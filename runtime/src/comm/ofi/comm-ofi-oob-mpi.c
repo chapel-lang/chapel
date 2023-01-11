@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -55,8 +55,9 @@ void chpl_comm_ofi_oob_init(void) {
   MPI_CHK(MPI_Comm_size(MPI_COMM_WORLD, &size));
   chpl_numNodes = (int32_t) size;
 
-  DBG_PRINTF(DBG_OOB, "OOB init: node %" PRI_c_nodeid_t " of %" PRId32,
-             chpl_nodeID, chpl_numNodes);
+  chpl_comm_oob = "MPI";
+  DBG_PRINTF(DBG_OOB, "OOB %s init: node %" PRI_c_nodeid_t " of %" PRId32,
+             chpl_comm_oob, chpl_nodeID, chpl_numNodes);
 }
 
 

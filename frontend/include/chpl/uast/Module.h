@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -76,6 +76,8 @@ class Module final : public NamedDecl {
     return attributes() ? 1 : 0;
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
  public:
   ~Module() override = default;
 
@@ -117,6 +119,11 @@ class Module final : public NamedDecl {
     const AstNode* ast = this->child(i + stmtChildNum());
     return ast;
   }
+
+  /**
+    Return a string describing a Module::Kind
+   */
+  static const char* moduleKindToString(Kind kind);
 };
 
 

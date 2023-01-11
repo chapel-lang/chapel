@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -109,6 +109,9 @@ class TupleDecl final : public Decl {
     declMarkUniqueStringsInner(context);
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
+
   int declChildNum() const {
     return attributes() ? 1 : 0;
   }
@@ -184,6 +187,11 @@ class TupleDecl final : public Decl {
       return nullptr;
     }
   }
+
+  /**
+    Returns a string describing the passed intentOrKind.
+   */
+  static const char* intentOrKindToString(IntentOrKind kind);
 };
 
 

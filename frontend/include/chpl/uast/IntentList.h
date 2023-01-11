@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,8 @@
 
 #ifndef CHPL_UAST_INTENTLIST_H
 #define CHPL_UAST_INTENTLIST_H
+
+#include <string> // to get the definition of std::hash
 
 namespace chpl {
 namespace uast {
@@ -95,6 +97,16 @@ enum struct IntentList {
   /** A module */
   MODULE,
 };
+
+bool isGenericIntent(IntentList kind);
+// it might not be known if it is const, in which case it returns false
+bool isConstIntent(IntentList kind);
+// it might not be known if it is ref, in which case it returns false
+bool isRefIntent(IntentList kind);
+// it might not be known if it is 'in', in which case it returns false
+bool isInIntent(IntentList kind);
+
+const char* intentToString(IntentList intent);
 
 
 } // end namespace uast
