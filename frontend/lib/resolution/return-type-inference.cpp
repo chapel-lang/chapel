@@ -535,13 +535,6 @@ bool CountReturns::enter(const AstNode* ast) {
 void CountReturns::exit(const AstNode* ast) {
 }
 
-struct ReturnCount {
-  int nReturnsWithValue = 0;
-  int nReturnsWithoutValue = 0;
-  ID firstWithValue;
-  ID firstWithoutValue;
-};
-
 // vs. just returning 'void'
 static const bool& fnAstReturnsNonVoid(Context* context, ID fnId) {
   QUERY_BEGIN(fnAstReturnsNonVoid, context, fnId);

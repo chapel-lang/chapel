@@ -45,7 +45,7 @@ namespace resolution {
    */
   const Scope* scopeForModule(Context* context, ID moduleId);
 
- /**
+  /**
     Find what a name might refer to.
 
     'scope' is the context in which the name occurs (e.g. as an Identifier)

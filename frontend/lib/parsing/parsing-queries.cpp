@@ -19,10 +19,11 @@
 
 #include "chpl/parsing/parsing-queries.h"
 
-#include "chpl/parsing/Parser.h"
-#include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/ErrorBase.h"
+#include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/Parser.h"
+#include "chpl/types/RecordType.h"
 #include "chpl/uast/AggregateDecl.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Function.h"
@@ -616,8 +617,11 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
   AstTag result = asttags::AST_TAG_UNKNOWN;
 
   const AstNode* ast = astForIDQuery(context, id);
-  if (ast != nullptr)
+  if (ast != nullptr) {
     result = ast->tag();
+  } else if (types::RecordType::isMissingBundledRecordType(context, id)) {
+    result = asttags::Record;
+  }
 
   return QUERY_END(result);
 }

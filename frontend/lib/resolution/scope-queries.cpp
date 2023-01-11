@@ -19,10 +19,11 @@
 
 #include "chpl/resolution/scope-queries.h"
 
-#include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
+#include "chpl/types/RecordType.h"
 #include "chpl/uast/all-uast.h"
 
 #include "scope-help.h"
@@ -269,42 +270,54 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
     ID id = idIn;
     const uast::AstNode* ast = parsing::idToAst(context, id);
     if (ast == nullptr) {
-      CHPL_ASSERT(false && "could not find ast for id");
-    } else if (ast->isInclude()) {
-      // parse 'module include' and use the result of parsing instead
-      // of the 'module include' itself.
-      ast = parsing::getIncludedSubmodule(context, id);
-      id = ast->id();
-    }
-
-    if (createsScope(ast->tag())) {
-      if (Builder::astTagIndicatesNewIdScope(ast->tag())) {
-        // always create a new scope for a Function etc
-        newScope = true;
+      if (RecordType::isMissingBundledRecordType(context, id)) {
+        // if there are no bundled modules selected,
+        // to enable testing, just return the top-level scope for these
+        // built-in types
+        result = scopeForIdQuery(context, ID());
       } else {
-        DeclMap declared;
-        bool containsUseImport = false;
-        bool containsFns = false;
-        gatherDeclsWithin(ast, declared, containsUseImport, containsFns);
-
-        // create a new scope if we found any decls/uses immediately in it
-        newScope = !(declared.empty() && containsUseImport == false);
+        CHPL_ASSERT(false && "could not find ast for id");
       }
-    }
 
-    // Normally, we won't open a scope unless a variable is declared.
-    // We need the scope in this case so that we can know we're coming
-    // from the else branch of such a conditional when scope-resolving.
-    newScope = newScope || isElseBlockOfConditionalWithIfVar(context, ast);
-
-    if (newScope) {
-      // Construct the new scope.
-      const owned<Scope>& newScope = constructScopeQuery(context, id);
-      result = newScope.get();
     } else {
-      // find the scope for the parent node and return that.
-      ID parentId = parsing::idToParentId(context, id);
-      result = scopeForIdQuery(context, parentId);
+      // found ast
+
+      if (ast->isInclude()) {
+        // parse 'module include' and use the result of parsing instead
+        // of the 'module include' itself.
+        ast = parsing::getIncludedSubmodule(context, id);
+        id = ast->id();
+      }
+
+      if (createsScope(ast->tag())) {
+        if (Builder::astTagIndicatesNewIdScope(ast->tag())) {
+          // always create a new scope for a Function etc
+          newScope = true;
+        } else {
+          DeclMap declared;
+          bool containsUseImport = false;
+          bool containsFns = false;
+          gatherDeclsWithin(ast, declared, containsUseImport, containsFns);
+
+          // create a new scope if we found any decls/uses immediately in it
+          newScope = !(declared.empty() && containsUseImport == false);
+        }
+      }
+
+      // Normally, we won't open a scope unless a variable is declared.
+      // We need the scope in this case so that we can know we're coming
+      // from the else branch of such a conditional when scope-resolving.
+      newScope = newScope || isElseBlockOfConditionalWithIfVar(context, ast);
+
+      if (newScope) {
+        // Construct the new scope.
+        const owned<Scope>& newScope = constructScopeQuery(context, id);
+        result = newScope.get();
+      } else {
+        // find the scope for the parent node and return that.
+        ID parentId = parsing::idToParentId(context, id);
+        result = scopeForIdQuery(context, parentId);
+      }
     }
   }
 

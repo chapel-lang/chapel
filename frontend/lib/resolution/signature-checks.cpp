@@ -56,7 +56,7 @@ static const bool& checkSignatureQuery(Context* context,
     }
     // check that there is just one argument in addition to the 'this' argument
     if (u->numFormals() != 2) {
-      context->error(errId, "Too many formals for init="); 
+      context->error(errId, "Too many formals for init=");
     }
     auto thisIntent = sig->formalType(0).kind();
     auto rhsIntent = sig->formalType(1).kind();
@@ -83,7 +83,7 @@ static const bool& checkSignatureQuery(Context* context,
     // check that there is just one argument in addition to the 'this' argument
     int numThisArgs = u->isMethod() ? 1 : 0;
     if (u->numFormals() - numThisArgs != 2) {
-      context->error(errId, "Too many formals for operator ="); 
+      context->error(errId, "Too many formals for operator =");
     }
     auto lhsIntent = sig->formalType(numThisArgs).kind();
     auto rhsIntent = sig->formalType(numThisArgs+1).kind();
@@ -95,7 +95,7 @@ static const bool& checkSignatureQuery(Context* context,
       context->error(errId, "Bad intent for = RHS formal");
     }
   }
-  
+
   return QUERY_END(unusedResult);
 }
 

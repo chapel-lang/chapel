@@ -196,6 +196,10 @@ bool VarScopeVisitor::processDeclarationInit(const VarLikeDecl* ast, RV& rv) {
   return inserted;
 }
 
+const QualifiedType& VarScopeVisitor::returnOrYieldType() {
+  return fnReturnType;
+}
+
 void VarScopeVisitor::enterScope(const AstNode* ast, RV& rv) {
   if (createsScope(ast->tag())) {
     scopeStack.push_back(toOwned(new VarFrame(ast)));
@@ -428,7 +432,7 @@ void VarScopeVisitor::exit(const Return* ast, RV& rv) {
   if (!scopeStack.empty()) {
     VarFrame* frame = scopeStack.back().get();
     frame->returnsOrThrows = true;
-    handleReturnOrThrow(ast, rv);
+    handleReturn(ast, rv);
   }
   exitAst(ast);
 }
@@ -442,11 +446,23 @@ void VarScopeVisitor::exit(const Throw* ast, RV& rv) {
   if (!scopeStack.empty()) {
     VarFrame* frame = scopeStack.back().get();
     frame->returnsOrThrows = true;
-    handleReturnOrThrow(ast, rv);
+    handleThrow(ast, rv);
   }
   exitAst(ast);
 }
 
+bool VarScopeVisitor::enter(const Yield* ast, RV& rv) {
+  enterAst(ast);
+  return true;
+}
+void VarScopeVisitor::exit(const Yield* ast, RV& rv) {
+  if (!scopeStack.empty()) {
+    // does not set returnsOrThrows because iterators
+    // are continued after the yield.
+    handleYield(ast, rv);
+  }
+  exitAst(ast);
+}
 
 bool VarScopeVisitor::enter(const Identifier* ast, RV& rv) {
   enterAst(ast);

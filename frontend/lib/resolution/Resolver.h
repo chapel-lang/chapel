@@ -257,6 +257,12 @@ struct Resolver {
                          types::QualifiedType declaredType,
                          types::QualifiedType initExprType);
 
+  // helper for getTypeForDecl
+  // tries to resolve an init= that initializes one type from another
+  const types::Type* tryResolveCrossTypeInitEq(const uast::AstNode* ast,
+                                               types::QualifiedType lhsType,
+                                               types::QualifiedType rhsType);
+
   // Helper to figure out what type to use for a declaration
   // that can have both a declared type and an init expression.
   // If both are provided, checks that they are compatible.
