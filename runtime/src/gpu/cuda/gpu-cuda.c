@@ -42,9 +42,9 @@
 extern const char* chpl_gpuBinary;
 
 static CUcontext *chpl_gpu_primary_ctx;
+static CUmodule *chpl_gpu_cuda_modules;
 static int *deviceClockRates;
 
-static CUmodule chpl_gpu_cuda_module;
 
 static bool chpl_gpu_has_context() {
   CUcontext cuda_context = NULL;
@@ -100,6 +100,7 @@ void chpl_gpu_impl_init() {
   CUDA_CALL(cuDeviceGetCount(&num_devices));
 
   chpl_gpu_primary_ctx = chpl_malloc(sizeof(CUcontext)*num_devices);
+  chpl_gpu_cuda_modules = chpl_malloc(sizeof(CUmodule)*num_devices);
   deviceClockRates = chpl_malloc(sizeof(int)*num_devices);
 
   int i;
@@ -110,17 +111,15 @@ void chpl_gpu_impl_init() {
     CUDA_CALL(cuDeviceGet(&device, i));
     CUDA_CALL(cuDevicePrimaryCtxSetFlags(device, CU_CTX_SCHED_BLOCKING_SYNC));
     CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
+
+    CUDA_CALL(cuCtxPushCurrent(context));
+    chpl_gpu_cuda_modules[i] = chpl_gpu_load_module(chpl_gpuBinary);
+    CUDA_CALL(cuCtxPopCurrent(&context));
+
     cuDeviceGetAttribute(&deviceClockRates[i], CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device);
 
     chpl_gpu_primary_ctx[i] = context;
   }
-
-  // TODO should we have a current context set at this point?
-  // we need it to load the module, but how does that work with multi GPU setup?
-  if (!chpl_gpu_has_context()) {
-    CUDA_CALL(cuCtxPushCurrent(chpl_gpu_primary_ctx[0]));
-  }
-  chpl_gpu_cuda_module = chpl_gpu_load_module(chpl_gpuBinary);
 }
 
 static bool chpl_gpu_device_alloc = false;
@@ -195,8 +194,8 @@ static void chpl_gpu_launch_kernel_help(int ln,
   CHPL_GPU_STOP_TIMER(context_time);
   CHPL_GPU_START_TIMER(load_time);
 
-  assert(chpl_gpu_cuda_module);
-  void* function = chpl_gpu_load_function(chpl_gpu_cuda_module, name);
+  CUmodule cuda_module = chpl_gpu_cuda_modules[chpl_task_getRequestedSubloc()];
+  void* function = chpl_gpu_load_function(cuda_module, name);
 
   CHPL_GPU_STOP_TIMER(load_time);
   CHPL_GPU_START_TIMER(prep_time);
