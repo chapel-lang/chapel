@@ -121,6 +121,9 @@ else ifeq ($(shell test -e $(CHPL_MAKE_HOME)/configured-chpl-home; echo "$$?"), 
 	CMAKE_FLAGS += -DINSTALLATION_MODE=home -DCMAKE_INSTALL_PREFIX=$(shell cat $(CHPL_MAKE_HOME)/configured-chpl-home)
 endif
 
+# used in test-frontend to make sure cmake is configured with assertions on
+CMAKE_FLAGS_NO_NDEBUG=$(subst -DNDEBUG,,$(CMAKE_FLAGS))
+
 # these frontend targets are here to make use of CMAKE_FLAGS etc
 # and ideally we would have a different way to share CMAKE_FLAGS between
 # files.
@@ -129,7 +132,7 @@ frontend: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 
 test-frontend: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 	@echo "Making and running the frontend tests..."
-	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) tests
+	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS_NO_NDEBUG) && $(MAKE) tests
 	JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n 's/.*\(-j\|--jobs=\) *\([0-9][0-9]*\).*/-j\2/p'` ; \
 	  cd $(COMPILER_BUILD)/frontend/test && ctest $$JOBSFLAG . ;
 	@echo "Making symbolic link to frontend tests in build/frontend-test"
