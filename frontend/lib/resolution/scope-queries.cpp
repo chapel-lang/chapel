@@ -540,32 +540,34 @@ static bool doLookupInScope(Context* context,
         if (isElseBlockOfConditionalWithIfVar(context, ast))
           skipClosestConditional = true;
 
-    for (cur = scope->parentScope(); cur != nullptr; cur = cur->parentScope()) {
-      if (asttags::isModule(cur->tag())) {
-        reachedModule = true;
-        break;
-      }
-
-      auto ast = !cur->id().isEmpty() ? parsing::idToAst(context, cur->id())
-                                      : nullptr;
-
-      // We could be in a nested block, so check for the else-block to
-      // trigger the pattern matching as we walk up...
-      if (!skipClosestConditional && ast)
-        if (isElseBlockOfConditionalWithIfVar(context, ast))
-          skipClosestConditional = true;
-
-      // Skip the first conditional's scope if we need to.
-      if (skipClosestConditional) {
-        if (ast && ast->isConditional()) {
-          skipClosestConditional = false;
-          continue;
+    if (!asttags::isModule(scope->tag())) {
+      for (cur = scope->parentScope(); cur != nullptr; cur = cur->parentScope()) {
+        if (asttags::isModule(cur->tag())) {
+          reachedModule = true;
+          break;
         }
-      }
 
-      bool got = doLookupInScope(context, cur, receiverScope, resolving, name,
-                                 newConfig, checkedScopes, result);
-      if (onlyInnermost && got) return true;
+        auto ast = !cur->id().isEmpty() ? parsing::idToAst(context, cur->id())
+                                        : nullptr;
+
+        // We could be in a nested block, so check for the else-block to
+        // trigger the pattern matching as we walk up...
+        if (!skipClosestConditional && ast)
+          if (isElseBlockOfConditionalWithIfVar(context, ast))
+            skipClosestConditional = true;
+
+        // Skip the first conditional's scope if we need to.
+        if (skipClosestConditional) {
+          if (ast && ast->isConditional()) {
+            skipClosestConditional = false;
+            continue;
+          }
+        }
+
+        bool got = doLookupInScope(context, cur, receiverScope, resolving, name,
+                                   newConfig, checkedScopes, result);
+        if (onlyInnermost && got) return true;
+      }
     }
 
     // Skip should have been performed if needed, at least once.
