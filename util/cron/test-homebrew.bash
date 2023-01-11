@@ -1,11 +1,5 @@
 #!/usr/bin/env bash
-
-
-
-
-# Create a tarball from current repo. Beware, this will corrupt the state of
-# the repo.
-#
+# Create a tarball from current repo.
 # The tarball is left in root of repo in tar/ directory.
 
 CWD=$(cd $(dirname $0) ; pwd)
@@ -38,5 +32,3 @@ log_info "Building tarball with version: ${version}"
 source $CWD/common-homebrew.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="homebrew"
-
-$CWD/nightly -cron -hellos
