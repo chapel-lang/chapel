@@ -18,12 +18,8 @@
  */
 
 /*
-  This file implements the generic chpl::stringify
+  This file implements the generic chpl::serialize and chpl::deserialize
   as well as specializations for some common types.
-
-  stringify can be used to get a string representation of an object
-  for debugging purposes or whenever a string representation of an
-  object is needed
  */
 
 #ifndef CHPL_QUERIES_SERIALIZE_FUNCTIONS_H
@@ -109,7 +105,7 @@ template<typename T> struct serialize {
   };
 };
 
-// define serialize for pointers to call stringify on a reference to avoid
+// define serialize for pointers to call serialize on a reference to avoid
 //  duplication for types that appear both as references and as pointers
 template<typename T> struct serialize<const T*> {
   void operator()(Serializer& ser,
@@ -208,59 +204,32 @@ template<> struct deserialize<std::string> {
       buf = (char*)malloc(len+1);
       des.is().read(buf, len);
       buf[len] = '\0';
+      auto ret = std::string(buf, len);
+      free(buf);
+      return ret;
+    } else {
+      return std::string();
     }
-    return std::string(buf, len);
   }
 };
 
-// stringify a vector by stringifying each element; uses [a, b, c] formatting
-template<typename T>
-static inline void defaultSerializeVec(Serializer& ser,
-                                       const std::vector<T>& stringVec) {
-  ser((uint64_t)stringVec.size());
-  for (const auto &elt : stringVec ) {
-    ser(elt);
-  }
-}
-
-template<typename T>
-static inline void defaultDeserializeVec(Deserializer& des,
-                                         std::vector<T>& vec) {
-  auto n = des.read<uint64_t>();
-  for (uint64_t i = 0; i < n; i++) {
-    vec.push_back(des.read<T>());
-  }
-}
-
-template<typename T>
-static inline void defaultSerializeSet(Serializer& ser,
-                                       const std::set<T>& val) {
-  ser((uint64_t)val.size());
-  for (const auto& elt : val) {
-    ser(elt);
-  }
-}
-
-template<typename T>
-static inline void defaultDeserializeSet(Deserializer& des,
-                                         std::set<T>& val) {
-  auto len = des.read<uint64_t>();
-  for (uint64_t i = 0; i < len; i++) {
-    val.insert(des.read<T>());
-  }
-}
-
 template<typename T> struct serialize<std::vector<T>> {
  void operator()(Serializer& ser,
-                 const std::vector<T>& stringMe) const {
-   defaultSerializeVec(ser, stringMe);
+                 const std::vector<T>& stringVec) const {
+   ser((uint64_t)stringVec.size());
+   for (const auto &elt : stringVec ) {
+     ser(elt);
+   }
  }
 };
 
 template<typename T> struct deserialize<std::vector<T>> {
   std::vector<T> operator()(Deserializer& des) const {
     std::vector<T> ret;
-    defaultDeserializeVec(des, ret);
+    auto n = des.read<uint64_t>();
+    for (uint64_t i = 0; i < n; i++) {
+      ret.push_back(des.read<T>());
+    }
     return ret;
   }
 };
@@ -268,14 +237,20 @@ template<typename T> struct deserialize<std::vector<T>> {
 template<typename T> struct serialize<std::set<T>> {
  void operator()(Serializer& ser,
                  const std::set<T>& val) const {
-   defaultSerializeSet(ser, val);
+   ser((uint64_t)val.size());
+   for (const auto& elt : val) {
+     ser(elt);
+   }
  }
 };
 
 template<typename T> struct deserialize<std::set<T>> {
   std::set<T> operator()(Deserializer& des) const {
     std::set<T> ret;
-    defaultDeserializeSet(des, ret);
+    auto len = des.read<uint64_t>();
+    for (uint64_t i = 0; i < len; i++) {
+      ret.insert(des.read<T>());
+    }
     return ret;
   }
 };
