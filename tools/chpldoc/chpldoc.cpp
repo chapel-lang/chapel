@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -607,20 +607,20 @@ static const char* kindToString(Function::Kind kind) {
   return "";
 }
 
-static const char* kindToString(IntentList kind) {
+static const char* kindToString(Qualifier kind) {
   switch (kind) {
-    case IntentList::CONST_INTENT: return "const";
-    case IntentList::VAR: return "var";
-    case IntentList::CONST_VAR: return "const";
-    case IntentList::CONST_REF: return "const ref";
-    case IntentList::REF: return "ref";
-    case IntentList::IN: return "in";
-    case IntentList::CONST_IN: return "const in";
-    case IntentList::OUT: return "out";
-    case IntentList::INOUT: return "inout";
-    case IntentList::PARAM: return "param";
-    case IntentList::TYPE: return "type";
-    case IntentList::DEFAULT_INTENT: assert(false);
+    case Qualifier::CONST_INTENT: return "const";
+    case Qualifier::VAR: return "var";
+    case Qualifier::CONST_VAR: return "const";
+    case Qualifier::CONST_REF: return "const ref";
+    case Qualifier::REF: return "ref";
+    case Qualifier::IN: return "in";
+    case Qualifier::CONST_IN: return "const in";
+    case Qualifier::OUT: return "out";
+    case Qualifier::INOUT: return "inout";
+    case Qualifier::PARAM: return "param";
+    case Qualifier::TYPE: return "type";
+    case Qualifier::DEFAULT_INTENT: assert(false);
     default: return "";
   }
   return "";
@@ -939,7 +939,7 @@ struct RstSignatureVisitor {
 
   bool enter(const Formal* f) {
     if (f->intent() != Formal::DEFAULT_INTENT) {
-      os_ << kindToString((IntentList) f->intent()) << " ";
+      os_ << kindToString((Qualifier) f->intent()) << " ";
     }
     os_ << f->name().c_str();
     if (const AstNode* te = f->typeExpression()) {
@@ -975,9 +975,9 @@ struct RstSignatureVisitor {
 
     // storage kind
     if (f->thisFormal() != nullptr
-        && f->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT
-        && f->thisFormal()->storageKind() != IntentList::CONST_INTENT
-        && f->thisFormal()->storageKind() != IntentList::CONST_REF) {
+        && f->thisFormal()->storageKind() != Qualifier::DEFAULT_INTENT
+        && f->thisFormal()->storageKind() != Qualifier::CONST_INTENT
+        && f->thisFormal()->storageKind() != Qualifier::CONST_REF) {
       os_ << kindToString(f->thisFormal()->storageKind()) <<" ";
     }
 
@@ -1031,7 +1031,7 @@ struct RstSignatureVisitor {
     // Return Intent
     if (f->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT &&
         f->returnIntent() != Function::ReturnIntent::CONST) {
-      os_ << " " << kindToString((IntentList) f->returnIntent());
+      os_ << " " << kindToString((Qualifier) f->returnIntent());
     }
 
     // Return type
@@ -1143,7 +1143,7 @@ struct RstSignatureVisitor {
       os_ << "config ";
     }
     if (v->kind() != Variable::Kind::INDEX) {
-      os_ << kindToString((IntentList) v->kind()) << " ";
+      os_ << kindToString((Qualifier) v->kind()) << " ";
     }
     os_ << v->name().c_str();
     if (const AstNode* te = v->typeExpression()) {
@@ -1154,10 +1154,10 @@ struct RstSignatureVisitor {
     }
     if (const AstNode* ie = v->initExpression()) {
       os_ << " = ";
-      if (v->storageKind() == chpl::uast::IntentList::TYPE)
+      if (v->storageKind() == chpl::uast::Qualifier::TYPE)
         printingType_ = true;
       ie->traverse(*this);
-      if (v->storageKind() == chpl::uast::IntentList::TYPE)
+      if (v->storageKind() == chpl::uast::Qualifier::TYPE)
         printingType_ = false;
     }
     return false;
@@ -1579,7 +1579,7 @@ struct RstResultBuilder {
       // write kind
       if (!textOnly_) os_ << ".. " << kind << ":: ";
       if (decl->toVariable()->kind() != Variable::Kind::INDEX) {
-        os_ << kindToString((IntentList) decl->toVariable()->kind()) << " ";
+        os_ << kindToString((Qualifier) decl->toVariable()->kind()) << " ";
       }
       // write name
       os_ << decl->toVariable()->name();
@@ -1654,7 +1654,7 @@ struct RstResultBuilder {
       show("attribute", v);
       indentDepth_ --;
     }
-    else if (v->storageKind() == IntentList::TYPE)
+    else if (v->storageKind() == Qualifier::TYPE)
       show("type", v);
     else
       show("data", v);

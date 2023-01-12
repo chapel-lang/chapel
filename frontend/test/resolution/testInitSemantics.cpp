@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,24 +24,14 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
-#include "./ErrorGuard.h"
 
-#define TEST_NAME(ctx__)\
-  chpl::UniqueString::getConcat(ctx__, __FUNCTION__, ".chpl")
+#define TEST_NAME(ctx__) TEST_NAME_FROM_FN_NAME(ctx__)
 
 std::string opEquals = R"""(
     operator =(ref lhs: int, rhs: int) {
       __primitive("=", lhs, rhs);
     }
     )""";
-
-static const BuilderResult&
-parseAndReportErrors(Context* ctx, UniqueString path) {
-  auto& ret = parseFileToBuilderResult(ctx, path, UniqueString());
-  for (auto& err : ret.errors()) ctx->report(err);
-  return ret;
-}
-
 
 static void testFieldUseBeforeInit1(void) {
   Context context;

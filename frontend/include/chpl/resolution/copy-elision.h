@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,6 +37,9 @@ namespace resolution {
        the ID of the OpCall is stored in the set.
      * If the elided initialization point is an actual passed by 'in'
        intent, the ID of the actual is stored in the set.
+     * If the elided initialization point is a 'yield' statement, the
+       ID of the 'yield' is stored in the set.
+
    Does not consider copy elision that only work with temporary
    variables (e.g. acceptsWithIn(returnsByValue())).
 
@@ -48,7 +51,9 @@ std::set<ID>
 computeElidedCopies(Context* context,
                     const uast::AstNode* symbol,
                     const ResolutionResultByPostorderID& byPostorder,
-                    const std::set<ID>& allSplitInitedVars);
+                    const PoiScope* poiScope,
+                    const std::set<ID>& allSplitInitedVars,
+                    types::QualifiedType fnYieldedType);
 
 
 } // end namespace resolution

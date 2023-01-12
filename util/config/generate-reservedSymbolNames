@@ -9,7 +9,7 @@ parser.add_argument('location', help='The location to read the reservedSymbolNam
 args = parser.parse_args()
 
 if not os.path.exists(args.location):
-  raise Exception(f'Location {args.location} does not exist')
+  raise Exception('Location {} does not exist'.format(args.location))
 
 file_contents = []
 
@@ -23,6 +23,5 @@ with open(os.path.join(args.location, 'reservedSymbolNames.h'), 'w') as f:
         continue
       line = line.strip("\n")
       parts = line.partition('//')
-      line = f'  cnames.insert(astr("{parts[0].strip()}")); {parts[1]}{parts[2]}\n'
+      line = '  cnames.insert(astr("{}")); {}{}\n'.format(parts[0].strip(),parts[1], parts[2])
       f.write(line)
-

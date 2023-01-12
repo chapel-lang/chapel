@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,10 +19,11 @@
 
 #include "chpl/resolution/scope-queries.h"
 
-#include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
+#include "chpl/types/RecordType.h"
 #include "chpl/uast/all-uast.h"
 
 #include "scope-help.h"
@@ -195,6 +196,17 @@ bool createsScope(asttags::AstTag tag) {
          || asttags::isSync(tag);
 }
 
+static bool
+isElseBlockOfConditionalWithIfVar(Context* context,
+                                  const uast::AstNode* ast) {
+  if (!ast) return false;
+  if (auto parent = parsing::parentAst(context, ast))
+    if (auto cond = parent->toConditional())
+      if (cond->condition()->isVariable())
+        return ast == cond->elseBlock();
+  return false;
+}
+
 static const Scope* const& scopeForIdQuery(Context* context, ID id);
 
 static void populateScopeWithBuiltins(Context* context, Scope* scope) {
@@ -258,37 +270,54 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
     ID id = idIn;
     const uast::AstNode* ast = parsing::idToAst(context, id);
     if (ast == nullptr) {
-      CHPL_ASSERT(false && "could not find ast for id");
-    } else if (ast->isInclude()) {
-      // parse 'module include' and use the result of parsing instead
-      // of the 'module include' itself.
-      ast = parsing::getIncludedSubmodule(context, id);
-      id = ast->id();
-    }
-
-    if (createsScope(ast->tag())) {
-      if (Builder::astTagIndicatesNewIdScope(ast->tag())) {
-        // always create a new scope for a Function etc
-        newScope = true;
+      if (RecordType::isMissingBundledRecordType(context, id)) {
+        // if there are no bundled modules selected,
+        // to enable testing, just return the top-level scope for these
+        // built-in types
+        result = scopeForIdQuery(context, ID());
       } else {
-        DeclMap declared;
-        bool containsUseImport = false;
-        bool containsFns = false;
-        gatherDeclsWithin(ast, declared, containsUseImport, containsFns);
-
-        // create a new scope if we found any decls/uses immediately in it
-        newScope = !(declared.empty() && containsUseImport == false);
+        CHPL_ASSERT(false && "could not find ast for id");
       }
-    }
 
-    if (newScope) {
-      // Construct the new scope.
-      const owned<Scope>& newScope = constructScopeQuery(context, id);
-      result = newScope.get();
     } else {
-      // find the scope for the parent node and return that.
-      ID parentId = parsing::idToParentId(context, id);
-      result = scopeForIdQuery(context, parentId);
+      // found ast
+
+      if (ast->isInclude()) {
+        // parse 'module include' and use the result of parsing instead
+        // of the 'module include' itself.
+        ast = parsing::getIncludedSubmodule(context, id);
+        id = ast->id();
+      }
+
+      if (createsScope(ast->tag())) {
+        if (Builder::astTagIndicatesNewIdScope(ast->tag())) {
+          // always create a new scope for a Function etc
+          newScope = true;
+        } else {
+          DeclMap declared;
+          bool containsUseImport = false;
+          bool containsFns = false;
+          gatherDeclsWithin(ast, declared, containsUseImport, containsFns);
+
+          // create a new scope if we found any decls/uses immediately in it
+          newScope = !(declared.empty() && containsUseImport == false);
+        }
+      }
+
+      // Normally, we won't open a scope unless a variable is declared.
+      // We need the scope in this case so that we can know we're coming
+      // from the else branch of such a conditional when scope-resolving.
+      newScope = newScope || isElseBlockOfConditionalWithIfVar(context, ast);
+
+      if (newScope) {
+        // Construct the new scope.
+        const owned<Scope>& newScope = constructScopeQuery(context, id);
+        result = newScope.get();
+      } else {
+        // find the scope for the parent node and return that.
+        ID parentId = parsing::idToParentId(context, id);
+        result = scopeForIdQuery(context, parentId);
+      }
     }
   }
 
@@ -379,8 +408,17 @@ static bool doLookupInImports(Context* context,
       }
 
       if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
-        result.push_back(BorrowedIdsWithName(is.scope()->id(), uast::Decl::PUBLIC));
-        found = true;
+        // Make sure the module / enum being renamed isn't private.
+        auto scopeAst = parsing::idToAst(context, is.scope()->id());
+        auto visibility = scopeAst->toDecl()->visibility();
+        auto foundIds =
+          BorrowedIdsWithName::createWithSingleId(is.scope()->id(),
+                                                  visibility,
+                                                  skipPrivateVisibilities);
+        if (foundIds) {
+          result.push_back(std::move(foundIds.getValue()));
+          found = true;
+        }
       }
     }
 
@@ -419,9 +457,11 @@ static bool doLookupInToplevelModules(Context* context,
   if (mod == nullptr)
     return false;
 
-  result.push_back(BorrowedIdsWithName(mod->id(), uast::Decl::PUBLIC));
+  result.push_back(BorrowedIdsWithName::createWithSinglePublicId(mod->id()));
   return true;
 }
+
+
 
 // appends to result
 static bool doLookupInScope(Context* context,
@@ -486,16 +526,50 @@ static bool doLookupInScope(Context* context,
     // Search parent scopes, if any, until a module is encountered
     const Scope* cur = nullptr;
     bool reachedModule = false;
+    bool skipClosestConditional = false;
+
+    // This trickiness is required to implement correct scoping behavior
+    // for 'if-vars' in conditionals. The 'if-var' lives in the scope
+    // for the conditional, but it is not visible within the 'else'
+    // branch. Without this hack, we'd be able to see the 'if-var' in
+    // both branches. First, detect if the start scope is the else-block.
+    //
+    // TODO: Consider query-caching some part of this pattern matching.
+    if (!scope->id().isEmpty())
+      if (auto ast = parsing::idToAst(context, scope->id()))
+        if (isElseBlockOfConditionalWithIfVar(context, ast))
+          skipClosestConditional = true;
+
     for (cur = scope->parentScope(); cur != nullptr; cur = cur->parentScope()) {
       if (asttags::isModule(cur->tag())) {
         reachedModule = true;
         break;
       }
 
+      auto ast = !cur->id().isEmpty() ? parsing::idToAst(context, cur->id())
+                                      : nullptr;
+
+      // We could be in a nested block, so check for the else-block to
+      // trigger the pattern matching as we walk up...
+      if (!skipClosestConditional && ast)
+        if (isElseBlockOfConditionalWithIfVar(context, ast))
+          skipClosestConditional = true;
+
+      // Skip the first conditional's scope if we need to.
+      if (skipClosestConditional) {
+        if (ast && ast->isConditional()) {
+          skipClosestConditional = false;
+          continue;
+        }
+      }
+
       bool got = doLookupInScope(context, cur, receiverScope, resolving, name,
                                  newConfig, checkedScopes, result);
       if (onlyInnermost && got) return true;
     }
+
+    // Skip should have been performed if needed, at least once.
+    CHPL_ASSERT(!skipClosestConditional);
 
     if (reachedModule) {
       // Assumption: If a module is encountered, and if there is a receiver
@@ -680,7 +754,8 @@ static void errorIfNameNotInScope(Context* context,
                                   const ResolvedVisibilityScope* resolving,
                                   UniqueString name,
                                   const VisibilityClause* clauseForError,
-                                  VisibilityStmtKind useOrImport) {
+                                  VisibilityStmtKind useOrImport,
+                                  bool isRename) {
   NamedScopeSet checkedScopes;
   std::vector<BorrowedIdsWithName> result;
   LookupConfig config = LOOKUP_INNERMOST |
@@ -692,7 +767,7 @@ static void errorIfNameNotInScope(Context* context,
 
   if (got == false || result.size() == 0) {
     CHPL_REPORT(context, UseImportUnknownSym, clauseForError, scope, useOrImport,
-                name.c_str());
+                isRename, name.c_str());
   }
 }
 
@@ -705,11 +780,11 @@ errorIfAnyLimitationNotInScope(Context* context,
   for (const AstNode* e : clause->limitations()) {
     if (auto ident = e->toIdentifier()) {
       errorIfNameNotInScope(context, scope, resolving, ident->name(),
-                            clause, useOrImport);
+                            clause, useOrImport, /* isRename */ false);
     } else if (auto as = e->toAs()) {
       if (auto ident = as->symbol()->toIdentifier()) {
         errorIfNameNotInScope(context, scope, resolving, ident->name(),
-                              clause, useOrImport);
+                              clause, useOrImport, /* isRename */ true);
       }
     }
   }
@@ -891,6 +966,8 @@ findUseImportTarget(Context* context,
                                        expr,
                                        useOrImport);
       return ret;
+    } else if (dot->field() == USTR("this")) {
+      return innerScope->moduleScope();
     }
 
     if (innerScope != nullptr) {
@@ -937,8 +1014,14 @@ doResolveUseStmt(Context* context, const Use* use,
       // Per the spec, we only have visibility of the symbol itself if the
       // use is renamed (with 'as') or non-public.
       if (!newName.isEmpty()) {
-        r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
-                               isPrivate, convertOneRename(oldName, newName));
+        if (newName == USTR("_")) {
+          // Do not introduce the name at all.
+          r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
+                                 isPrivate, emptyNames());
+        } else {
+          r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
+                                 isPrivate, convertOneRename(oldName, newName));
+        }
       } else if (isPrivate) {
         r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
                                isPrivate, convertOneName(oldName));
@@ -1010,9 +1093,13 @@ doResolveImportStmt(Context* context, const Import* imp,
     // on it matching just one thing).
     // But, we don't do that for 'import M.f.{a,b,c}'
     if (auto dot = expr->toDot()) {
-      if (clause->limitationKind() != VisibilityClause::BRACES) {
-        expr = dot->receiver();
-        dotName = dot->field();
+      // super and this are special keywords, they should not be resolved
+      // via the dot-name mechanism here.
+      if (dot->field() != USTR("super") && dot->field() != USTR("this")) {
+        if (clause->limitationKind() != VisibilityClause::BRACES) {
+          expr = dot->receiver();
+          dotName = dot->field();
+        }
       }
     }
 
@@ -1033,7 +1120,8 @@ doResolveImportStmt(Context* context, const Import* imp,
           case VisibilityClause::NONE:
             kind = VisibilitySymbols::ONLY_CONTENTS;
             errorIfNameNotInScope(context, foundScope, r,
-                                  dotName, clause, VIS_IMPORT);
+                                  dotName, clause, VIS_IMPORT,
+                                  /* isRename */ !newName.isEmpty());
             if (newName.isEmpty()) {
               // e.g. 'import M.f'
               r->addVisibilityClause(foundScope, kind, isPrivate,
@@ -1063,6 +1151,9 @@ doResolveImportStmt(Context* context, const Import* imp,
               // e.g. 'import OtherModule'
               r->addVisibilityClause(foundScope, kind, isPrivate,
                                      convertOneName(oldName));
+            } if (newName == USTR("_")) {
+              // e.g. 'import OtherModule as _'
+              r->addVisibilityClause(foundScope, kind, isPrivate, emptyNames());
             } else {
               // e.g. 'import OtherModule as Foo'
               r->addVisibilityClause(foundScope, kind, isPrivate,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,7 +31,6 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/While.h"
-#include "./ErrorGuard.h"
 
 #include <map>
 
@@ -64,8 +63,8 @@ struct ParamCollector {
   ParamCollector() { }
 
   bool enter(const uast::VarLikeDecl* decl, RV& rv) {
-    if (decl->storageKind() == IntentList::PARAM ||
-        decl->storageKind() == IntentList::INDEX) {
+    if (decl->storageKind() == Qualifier::PARAM ||
+        decl->storageKind() == Qualifier::INDEX) {
       const ResolvedExpression& rr = rv.byAst(decl);
       auto val = rr.type().param()->toIntParam();
       assert(val != nullptr);

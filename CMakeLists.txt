@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -16,6 +16,16 @@
 # limitations under the License.
 
 cmake_minimum_required(VERSION 3.13.4)
+
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)
+  # request new behavior for INSTALL_RPATH quoting
+  cmake_policy(SET CMP0095 NEW)
+endif()
+if (CMAKE_VERSION VERSION_LESS 3.20)
+  # warn that cmake 3.20 will be required in a future release
+  message(WARNING "cmake 3.20 or newer will be required in a future \
+                  release. You have ${CMAKE_VERSION}")
+endif()
 
 ###### ENV VARIABLES TO CHANGE CMAKE BEHAVIOR #####
 # CMAKE_VERBOSE_MAKEFILE          turn verbose makefiles on to see compiler flags
@@ -73,12 +83,13 @@ endif()
 
 ### BEGIN handling installation mode from ./configure - prefix or home are allowed ###
 if (NOT DEFINED INSTALLATION_MODE)
-  set(INSTALLATION_MODE "prefix" CACHE STRING "prefix or home installation mode")
+    # it can be set to empty string if no installation mode is selected yet
+    set(INSTALLATION_MODE "" CACHE STRING "prefix or home installation mode")
 endif()
 
 
 # Handle Installation Prefix by writing CONFIGURED_PREFIX if it's not found,
-# or checking the value against the incomming CMAKE_INSTALL_PREFIX and writing
+# or checking the value against the incoming CMAKE_INSTALL_PREFIX and writing
 # a new one if they don't match.
 set(CONFIGURED_PREFIX_CONTENTS " ")
 if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/CONFIGURED_PREFIX)
@@ -345,22 +356,44 @@ if (DEFINED ENV{GITHUB_ACTIONS})
     execute_process(COMMAND git config --global --add safe.directory ${CHPL_HOME})
   endif()
 endif()
-
+set(CHPL_CMAKE_PYTHON $ENV{CHPL_MAKE_PYTHON})
+message(STATUS "Using Python: ${CHPL_CMAKE_PYTHON}")
 # message(DEBUG "${CHPL_HOST_BUNDLED_LINK_ARGS} ${CHPL_HOST_SYSTEM_LINK_ARGS}")
 add_subdirectory(compiler)
 add_subdirectory(frontend)
 add_subdirectory(tools)
 
 # Adjust the install rpath for chpl and chpldoc
-set_target_properties(chpl PROPERTIES
-                      INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-set_target_properties(chpldoc PROPERTIES
-                      INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-
-if (INSTALLATION_MODE STREQUAL "home")
-  install(TARGETS chpl chpldoc
-          RUNTIME DESTINATION "bin/${CHPL_HOST_BIN_SUBDIR}")
-else()
+if (INSTALLATION_MODE STREQUAL "prefix")
+  # let the build and install rpaths be absolute (which is the default)
+  set_target_properties(chpl chpldoc
+                        PROPERTIES
+                        INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib/chapel/${CHPL_MAJOR_VERSION}.${CHPL_MINOR_VERSION}/compiler")
   install(TARGETS chpl chpldoc
           RUNTIME DESTINATION bin)
+else()
+  # use relative rpaths for the build and do not change them on install
+  if (CMAKE_VERSION VERSION_LESS 3.16)
+    # do nothing to adjust the rpath because we don't know how to
+    # write $ORIGIN quoted correctly
+    if (INSTALLATION_MODE STREQUAL "home")
+      # Error out if a 'home' installation was requested
+      message(FATAL_ERROR "--chpl-home installation requires cmake 3.16 or newer")
+    endif()
+  else()
+    set(CHPL_INSTALL_RPATH "$ORIGIN/../../lib/compiler/${CHPL_HOST_BIN_SUBDIR}")
+    # handle differently on MacOS by writing @executable_path instead of $ORIGIN
+    if(APPLE)
+      message(STATUS "Updating RPATH for MACOS")
+      set(CHPL_INSTALL_RPATH "@executable_path/../../lib/compiler/${CHPL_HOST_BIN_SUBDIR}")
+    endif()
+
+    set_target_properties(chpl chpldoc
+                          PROPERTIES
+                          BUILD_WITH_INSTALL_RPATH TRUE
+                          INSTALL_RPATH ${CHPL_INSTALL_RPATH})
+  endif()
+
+  install(TARGETS chpl chpldoc
+          RUNTIME DESTINATION "bin/${CHPL_HOST_BIN_SUBDIR}")
 endif()

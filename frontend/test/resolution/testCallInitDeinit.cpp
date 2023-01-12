@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -85,10 +85,14 @@ static void printAction(const ActionElt& a) {
   gotInId = std::get<1>(a);
   gotActId = std::get<2>(a);
 
-  printf("  %s %s %s\n",
+  printf("  %s in %s",
          AssociatedAction::kindToString(gotAction),
-         gotInId.c_str(),
-         gotActId.c_str());
+         gotInId.c_str());
+
+  if (!gotActId.empty()) {
+    printf(" for id %s", gotActId.c_str());
+  }
+  printf("\n");
 }
 
 static void printActions(const Actions& actions) {
@@ -130,6 +134,13 @@ static void testActions(const char* test,
   // resolve runM1
   const ResolvedFunction* r = resolveConcreteFunction(context, func->id());
   assert(r);
+
+  size_t errCount = guard.realizeErrors();
+  if (expectErrors) {
+    assert(errCount > 0);
+  } else {
+    assert(errCount == 0);
+  }
 
   Actions actions;
   gatherActions(context, func, r, actions);
@@ -174,16 +185,11 @@ static void testActions(const char* test,
     assert(false && "Failure: extra action");
   }
 
-  if (j < actions.size()) {
+  if (j < expected.size()) {
     assert(false && "Failure: expected action is missing");
   }
 
-  size_t errCount = guard.realizeErrors();
-  if (expectErrors) {
-    assert(errCount > 0);
-  } else {
-    assert(errCount == 0);
-  }
+
 }
 
 // test very basic default init & deinit
@@ -396,16 +402,1197 @@ static void test3d() {
     });
 }
 
+// test copy-initialization from variable decl with init
+// variable initialization from a value call
+static void test4a() {
+  testActions("test4a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+        proc makeR() {
+          return new R();
+        }
+        proc test() {
+          var x:R = makeR();
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEINIT,       "M.test@4", "x"}
+    });
+}
+
+// variable initialization from a local var mentioned again
+static void test4b() {
+  testActions("test4b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+        proc makeR() {
+          return new R();
+        }
+        proc test() {
+          var x:R = makeR();
+          var y:R = x;
+          x; // prevent copy elision
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::COPY_INIT,    "y",        ""},
+      {AssociatedAction::DEINIT,       "M.test@8", "y"},
+      {AssociatedAction::DEINIT,       "M.test@8", "x"}
+    });
+}
+
+// variable initialization from a local var last mention
+static void test4c() {
+  testActions("test4c",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+        proc makeR() {
+          return new R();
+        }
+        proc test() {
+          var x:R = makeR();
+          var y:R = x; // copy is elided
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEINIT,       "M.test@7", "y"}
+    });
+}
+
+// test cross-type variable init from an integer
+static void test5a() {
+  testActions("test5a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: int) { }
+        proc R.deinit() { }
+        proc makeR() {
+          return new R();
+        }
+        proc test() {
+          var x:R = 4;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::INIT_OTHER,   "x",        ""},
+      {AssociatedAction::DEINIT,       "M.test@3", "x"}
+    });
+}
+
+static void test5b() {
+  testActions("test5b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: int) { }
+        proc R.deinit() { }
+        proc makeR() {
+          return new R();
+        }
+        proc test() {
+          var x:R;
+          x = 4; // split init
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::INIT_OTHER,   "M.test@4", ""},
+      {AssociatedAction::DEINIT,       "M.test@5", "x"},
+    });
+}
+
+static void test5c() {
+  testActions("test5c",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: int) { }
+        proc R.deinit() { }
+        proc makeR() {
+          return new R();
+        }
+        proc test() {
+          var i = 4;
+          var x:R = i;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::INIT_OTHER,   "x",        ""},
+      {AssociatedAction::DEINIT,       "M.test@5", "x"},
+    });
+}
+
+
+// test cross-type variable init from another record
+static void test6a() {
+  testActions("test6a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        proc R.init=(other: U) { }
+        proc R.deinit() { }
+        record U { }
+        proc U.init() { }
+        proc U.init=(other: U) { }
+        proc U.deinit() { }
+
+        proc makeU() {
+          return new U();
+        }
+        proc test() {
+          var x:R = makeU();
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::INIT_OTHER,   "x",        ""},
+      {AssociatedAction::DEINIT,       "M.test@4", "M.test@2"},
+      {AssociatedAction::DEINIT,       "M.test@4", "x"}
+    });
+}
+
+static void test6b() {
+  testActions("test6b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        proc R.init=(other: U) { }
+        proc R.deinit() { }
+        record U { }
+        proc U.init() { }
+        proc U.init=(other: U) { }
+        proc U.deinit() { }
+
+        proc makeU() {
+          return new U();
+        }
+        proc test() {
+          var x:R;
+          var y:U;
+          x = y;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "y",        ""},
+      {AssociatedAction::INIT_OTHER,   "M.test@6", ""},
+      {AssociatedAction::DEINIT,       "M.test@7", "x"},
+      {AssociatedAction::DEINIT,       "M.test@7", "y"}
+    });
+}
+
+static void test6c() {
+  testActions("test6c",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        proc R.init=(other: U) { }
+        proc R.deinit() { }
+        record U { }
+        proc U.init() { }
+        proc U.init=(other: U) { }
+        proc U.deinit() { }
+
+        proc makeU() {
+          return new U();
+        }
+        proc test() {
+          var x:R;
+          x = makeU();
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::INIT_OTHER,   "M.test@5", ""},
+      {AssociatedAction::DEINIT,       "M.test@5", "M.test@4"},
+      {AssociatedAction::DEINIT,       "M.test@6", "x"}
+    });
+}
+
+
+
+// testing cross-type init= with 'in' intent
+static void test7a() {
+  testActions("test7a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        proc R.init=(in other: U) { }
+        proc R.deinit() { }
+        record U { }
+        proc U.init() { }
+        proc U.init=(other: U) { }
+        proc U.deinit() { }
+
+        proc makeU() {
+          return new U();
+        }
+        proc test() {
+          var x:R = makeU();
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::INIT_OTHER,   "x",        ""},
+      {AssociatedAction::DEINIT,       "M.test@4", "x"}
+    });
+}
+
+static void test7b() {
+  testActions("test7b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        proc R.init=(in other: U) { }
+        proc R.deinit() { }
+        record U { }
+        proc U.init() { }
+        proc U.init=(other: U) { }
+        proc U.deinit() { }
+
+        proc makeU() {
+          return new U();
+        }
+        proc test() {
+          var y:U;
+          var x:R = y; // the copy to 'init=(in)' is elided
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "y",        ""},
+      {AssociatedAction::INIT_OTHER,   "x",        ""},
+      {AssociatedAction::DEINIT,       "M.test@5", "x"},
+    });
+}
+
+static void test7c() {
+  testActions("test7c",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        proc R.init=(in other: U) { }
+        proc R.deinit() { }
+        record U { }
+        proc U.init() { }
+        proc U.init=(other: U) { }
+        proc U.deinit() { }
+
+        proc makeU() {
+          return new U();
+        }
+        proc test() {
+          var y:U;
+          var x:R = y;
+          y;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "y",        ""},
+      {AssociatedAction::COPY_INIT,    "x",        ""},
+      {AssociatedAction::INIT_OTHER,   "x",        ""},
+      {AssociatedAction::DEINIT,       "M.test@6", "M.test@3"},
+      {AssociatedAction::DEINIT,       "M.test@6", "x"},
+      {AssociatedAction::DEINIT,       "M.test@6", "y"}
+    });
+}
+
+// variable initialization from a module-scope variable
+static void test8a() {
+  testActions("test8a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        var x:R;
+        proc test() {
+          var y:R = x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::COPY_INIT,    "y",        ""},
+      {AssociatedAction::DEINIT,       "M.test@3", "y"}
+    });
+}
+// variable initialization from a ref variable
+static void test8b() {
+  testActions("test8b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() {
+          var x:R;
+          ref r = x;
+          var y:R = r;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",        ""},
+      // no associated action recorded to initialize r
+      {AssociatedAction::COPY_INIT,    "y",        ""},
+      {AssociatedAction::DEINIT,       "M.test@7", "y"},
+      {AssociatedAction::DEINIT,       "M.test@7", "x"}
+    });
+}
+
+// value return from a value call (no return type declared)
+static void test9a() {
+  testActions("test9a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc makeR() {
+          return new R();
+        }
+
+        proc test() {
+          return makeR();
+        }
+      }
+    )"""",
+    { });
+}
+
+// value return from a value call (return type declared)
+static void test9b() {
+  testActions("test9b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc makeR() {
+          return new R();
+        }
+
+        proc test() : R {
+          return makeR();
+        }
+      }
+    )"""",
+    { });
+}
+
+// value return from a 'new' record construction call
+static void test9c() {
+  testActions("test9c",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() : R {
+          return new R();
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT, "M.test@3", ""}
+    });
+}
+
+// value return from a local variable's last mention (no return type)
+static void test10a() {
+  testActions("test10a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() {
+          const x:R;
+          return x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",        ""},
+      {AssociatedAction::DEINIT,       "M.test@4", "x"} // but dead code
+    });
+}
+
+// value return from a local variable's last mention (declared return type)
+static void test10b() {
+  testActions("test10b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() : R {
+          const x:R;
+          return x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",        ""},
+      // end of block actions -- note that these are dead code
+      {AssociatedAction::DEINIT,       "M.test@5", "x"}
+    });
+}
+
+// similar, but checks that other locals are deinited at return
+static void test10c() {
+  testActions("test10c",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() : R {
+          var x:R;
+          var y:R;
+          return x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",        ""},
+      {AssociatedAction::DEFAULT_INIT, "y",        ""},
+      {AssociatedAction::DEINIT,       "M.test@6", "y"}, // at return
+      // end of block actions -- note that these are dead code
+      {AssociatedAction::DEINIT,       "M.test@7", "y"},
+      {AssociatedAction::DEINIT,       "M.test@7", "x"}
+    });
+}
+
+// similar, but returns in a conditional
+static void test10d() {
+  testActions("test10d",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        config const cond = true;
+
+        proc test() : R {
+          var x:R;
+          var y:R;
+          if cond {
+            return x;
+          }
+          return new R();
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",         ""},
+      {AssociatedAction::DEFAULT_INIT, "y",         ""},
+      // for 'return x'
+      {AssociatedAction::DEINIT,       "M.test@7",  "y"},
+      // after that
+      {AssociatedAction::NEW_INIT,     "M.test@12", ""},
+      // for 'return new R()'
+      {AssociatedAction::DEINIT,       "M.test@13", "y"},
+      {AssociatedAction::DEINIT,       "M.test@13", "x"},
+      // end of block actions -- note that these are dead code
+      {AssociatedAction::DEINIT,       "M.test@14", "y"},
+      {AssociatedAction::DEINIT,       "M.test@14", "x"}
+    });
+}
+
+// value return from a local variable that isn't last mention
+static void test10e() {
+  testActions("test10e",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() {
+          const x:R;
+          return x;
+          x; // this is dead code
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",        ""},
+      {AssociatedAction::DEINIT,       "M.test@5", "x"} // but dead code
+    });
+}
+
+
+// return a module-scope variable, inferred return type
+static void test11a() {
+  testActions("test11a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        var modScope: R;
+
+        proc test() {
+          return modScope;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::COPY_INIT,    "M.test@1",  ""}
+    });
+}
+
+// return a module-scope variable, declared return type
+static void test11b() {
+  testActions("test11b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        var modScope: R;
+
+        proc test() : R {
+          return modScope;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::COPY_INIT,    "M.test@2",  ""}
+    });
+}
+
+// return a reference variable by value
+static void test12a() {
+  testActions("test12a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() : R {
+          var value : R;
+          ref myref = value;
+          return myref;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "value",     ""},
+      {AssociatedAction::COPY_INIT,    "M.test@6",  ""},
+      {AssociatedAction::DEINIT,       "M.test@6",  "value"},
+      {AssociatedAction::DEINIT,       "M.test@7",  "value"}
+    });
+}
+static void test12b() {
+  testActions("test12b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() : R {
+          var value : R;
+          const ref myref = value;
+          return myref;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "value",     ""},
+      {AssociatedAction::COPY_INIT,    "M.test@6",  ""},
+      {AssociatedAction::DEINIT,       "M.test@6",  "value"},
+      {AssociatedAction::DEINIT,       "M.test@7",  "value"}
+    });
+}
+// and with inferred return type
+static void test12c() {
+  testActions("test12c",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test() {
+          var value : R;
+          ref myref = value;
+          return myref;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "value",     ""},
+      {AssociatedAction::COPY_INIT,    "M.test@5",  ""},
+      {AssociatedAction::DEINIT,       "M.test@5",  "value"},
+      {AssociatedAction::DEINIT,       "M.test@6",  "value"}
+    });
+}
+
+
+// test with a return before a split-inited var is initialized
+static void test13a() {
+  testActions("test13a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        config const cond = true;
+
+        proc test() {
+          var x : R;
+          if cond {
+            return;
+          }
+          x = new R();
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::NEW_INIT,     "M.test@9",   ""},
+      {AssociatedAction::DEINIT,       "M.test@11",  "x"}
+    });
+}
+
+// test a few patterns with 'yield'
+static void test14a() {
+  testActions("test14a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        config const cond = true;
+
+        iter test() {
+          var x : R;
+          yield x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",          ""}
+      // x not deinited because it was copy elided to return it
+    });
+}
+static void test14b() {
+  testActions("test14b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        config const cond = true;
+
+        iter test() {
+          var x : R;
+          yield x;
+          x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",          ""},
+      {AssociatedAction::COPY_INIT,    "M.test@3",   ""},
+      {AssociatedAction::DEINIT,       "M.test@5",   "x"},
+    });
+}
+static void test14c() {
+  testActions("test14c",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        config const cond = true;
+
+        iter test() {
+          var x : R;
+          ref myref = x;
+          yield myref;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",          ""},
+      {AssociatedAction::COPY_INIT,    "M.test@5",   ""},
+      {AssociatedAction::DEINIT,       "M.test@6",   "x"},
+    });
+}
+
+// returning by 'ref'
+static void test15a() {
+  testActions("test15a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        var moduleVar : R;
+
+        proc test() ref {
+          return moduleVar;
+        }
+      }
+    )"""",
+    {
+    });
+}
+
+// yielding by 'ref'
+static void test15b() {
+  testActions("test15b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        var moduleVar : R;
+
+        iter test() ref {
+          yield moduleVar;
+        }
+      }
+    )"""",
+    {
+    });
+}
+
+// 'in' intent : formal handling
+static void test16a() {
+  testActions("test16a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test(in arg: R) {
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEINIT,       "M.test@2",   "arg"},
+    });
+}
+static void test16b() {
+  testActions("test16b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test(const in arg: R) {
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEINIT,       "M.test@2",   "arg"},
+    });
+}
+// calling a function using 'in' intent with copy elision
+static void test16c() {
+  testActions("test16c",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc acceptsIn(in arg: R) { }
+
+        proc test() {
+          var x: R;
+          acceptsIn(x);
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",          ""},
+      // everything else is copy elided
+    });
+}
+// calling a function using 'in' intent without copy elision
+static void test16d() {
+  testActions("test16d",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc acceptsIn(in arg: R) { }
+
+        proc test() {
+          var x: R;
+          acceptsIn(x);
+          x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",          ""},
+      {AssociatedAction::COPY_INIT,    "M.test@3",   ""},
+      {AssociatedAction::DEINIT,       "M.test@6",   "x"},
+    });
+}
+// calling a function using 'in' intent with nested call
+static void test16e() {
+  testActions("test16e",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc makeR(): R { var x: R; return x; }
+        proc acceptsIn(in arg: R) { }
+
+        proc test() {
+          acceptsIn(makeR());
+        }
+      }
+    )"""",
+    {
+    });
+}
+// calling a function using 'in' intent with nested call returning ref
+static void test16f() {
+  testActions("test16f",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        var modVar : R;
+        proc getRef() ref : R { return modVar; }
+        proc acceptsIn(in arg: R) { }
+
+        proc test() {
+          acceptsIn(getRef());
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::COPY_INIT,    "M.test@2",   ""},
+    });
+}
+// 'in' intent argument passed to 'in' intent function
+static void test16g() {
+  testActions("test16g",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc acceptsIn(in arg: R) { }
+
+        proc test(in x: R) {
+          acceptsIn(x);
+        }
+      }
+    )"""",
+    {
+    });
+}
+// 'in' intent argument returned
+static void test16h() {
+  testActions("test16h",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test(in x: R) {
+          return x;
+        }
+      }
+    )"""",
+    {
+      // note: this is dead code
+      {AssociatedAction::DEINIT,       "M.test@4",   "x"},
+    });
+}
+
+// 'out' intent: formal not deinitialized (deinited at call site)
+static void test17a() {
+  testActions("test17a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test(out x: R) {
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",          ""},
+    });
+}
+static void test17b() {
+  testActions("test17b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+        proc makeR() {
+          return new R();
+        }
+
+        proc test(out x: R) {
+          x = makeR();
+        }
+      }
+    )"""",
+    {
+    });
+}
+
+static void test18a() {
+  testActions("test18a",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test(out x: R) {
+          return x;
+        }
+      }
+    )"""",
+    {
+      {AssociatedAction::DEFAULT_INIT, "x",          ""},
+    });
+}
+
+static void test18b() {
+  testActions("test18b",
+    R""""(
+      module M {
+        record R { }
+        proc R.init() { }
+        proc R.init=(other: R) { }
+        operator R.=(ref lhs: R, rhs: R) { }
+        proc R.deinit() { }
+
+        proc test(inout x: R) {
+          return x;
+        }
+      }
+    )"""",
+    {
+    });
+}
+
+// calling function with 'out' intent formal
+
+// calling functions with 'inout' intent formal
+
+// defer
+
+// call-expr temporaries not passed by 'in' intent need deinit
 
 int main() {
   test1();
+
   test2a();
   test2b();
   test2c();
+
   test3a();
   test3b();
   test3c();
   test3d();
+
+  test4a();
+  test4b();
+  test4c();
+
+  test5a();
+  test5b();
+  test5c();
+
+  test6a();
+  test6b();
+  test6c();
+
+  test7a();
+  test7b();
+  test7c();
+
+  test8a();
+  test8b();
+
+  test9a();
+  test9b();
+  test9c();
+
+  test10a();
+  test10b();
+  test10c();
+  test10d();
+  test10e();
+
+  test11a();
+  test11b();
+
+  test12a();
+  test12b();
+  test12c();
+
+  test13a();
+
+  test14a();
+  test14b();
+  test14c();
+
+  test15a();
+  test15b();
+
+  test16a();
+  test16b();
+  test16c();
+  test16d();
+  test16e();
+  test16f();
+  test16g();
+  test16h();
+
+  test17a();
+  test17b();
+
+  test18a();
+  test18b();
 
   return 0;
 }

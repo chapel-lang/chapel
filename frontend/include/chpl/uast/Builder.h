@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -107,12 +107,6 @@ class Builder final {
     Save an error.
    */
   void addError(const ErrorBase*);
-
-  /**
-    Construct and save a generic post-parse error/warning.
-   */
-  void addPostParseError(const AstNode* node, const char* fmt, ...);
-  void addPostParseWarning(const AstNode* node, const char* fmt, ...);
 
   /**
     Record the location of an AST element.

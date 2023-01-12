@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -129,7 +129,7 @@ endif()
 # set include directories for -I
 #include_directories(include)
 
-# lib/CMakeLists.txt defines the target libdyno
+# lib/CMakeLists.txt defines the target ChplFrontend
 add_subdirectory(lib)
 # also make sure headers are included in the target
 add_subdirectory(include/chpl)

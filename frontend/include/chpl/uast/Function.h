@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,7 +23,7 @@
 #include "chpl/framework/Location.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Formal.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/uast/NamedDecl.h"
 
 namespace chpl {
@@ -57,13 +57,13 @@ class Function final : public NamedDecl {
   };
 
   enum ReturnIntent {
-    // Use IntentList here for consistent enum values.
-    DEFAULT_RETURN_INTENT   = (int) IntentList::DEFAULT_INTENT,
-    CONST                   = (int) IntentList::CONST_VAR,
-    CONST_REF               = (int) IntentList::CONST_REF,
-    REF                     = (int) IntentList::REF,
-    PARAM                   = (int) IntentList::PARAM,
-    TYPE                    = (int) IntentList::TYPE
+    // Use Qualifier here for consistent enum values.
+    DEFAULT_RETURN_INTENT   = (int) Qualifier::DEFAULT_INTENT,
+    CONST                   = (int) Qualifier::CONST_VAR,
+    CONST_REF               = (int) Qualifier::CONST_REF,
+    REF                     = (int) Qualifier::REF,
+    PARAM                   = (int) Qualifier::PARAM,
+    TYPE                    = (int) Qualifier::TYPE
   };
 
  private:

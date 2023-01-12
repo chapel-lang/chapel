@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -55,20 +55,42 @@ include_directories(
         )
 
 add_executable(chpl)
-if (NOT EXISTS ${SRC_DIR}/main/LICENSE)
-  execute_process(COMMAND ${SRC_DIR}/../util/config/generate-license ${SRC_DIR}/../ ${SRC_DIR}/main
-                  OUTPUT_FILE ${SRC_DIR}/main/LICENSE)
-endif()
+set(CHPL_CMAKE_PYTHON $ENV{CHPL_MAKE_PYTHON})
 
-if (NOT EXISTS ${SRC_DIR}/main/COPYRIGHT)
-  execute_process(COMMAND ${SRC_DIR}/../util/config/generate-copyright ${SRC_DIR}/../ ${SRC_DIR}/main
-  OUTPUT_FILE ${SRC_DIR}/main/COPYRIGHT)
-endif()
+# Write the compiler/main/LICENSE file, or update the existing file if the
+# the $CHPL_HOME/LICENSE file has been modified
+add_custom_command(
+  OUTPUT ${SRC_DIR}/main/LICENSE
+  COMMAND ${CHPL_CMAKE_PYTHON}
+          ${SRC_DIR}/../util/config/generate-license
+          ${SRC_DIR}/../
+          ${SRC_DIR}/main
+  DEPENDS ${SRC_DIR}/../LICENSE
+  COMMENT "writing LICENSE file updates..."
+  VERBATIM)
 
-if (NOT EXISTS ${SRC_DIR}/codegen/reservedSymbolNames.h)
-  execute_process(COMMAND ${SRC_DIR}/../util/config/generate-reservedSymbolNames ${SRC_DIR}/codegen
-  OUTPUT_FILE ${SRC_DIR}/codegen/reservedSymbolNames.h)
-endif()
+# Write the compiler/main/COPYRIGHT file, or update the existing file if the
+# the $CHPL_HOME/COPYRIGHT file has been modified
+add_custom_command(
+  OUTPUT ${SRC_DIR}/main/COPYRIGHT
+  COMMAND ${CHPL_CMAKE_PYTHON}
+          ${SRC_DIR}/../util/config/generate-copyright
+          ${SRC_DIR}/../
+          ${SRC_DIR}/main
+  DEPENDS ${SRC_DIR}/../COPYRIGHT
+  COMMENT "writing COPYRIGHT file updates..."
+  VERBATIM)
+
+# Write the reservedSymbolNames.h file, or update the existing file if the
+# contents of ${SRC_DIR}/codegen/reservedSymbolNames have changed
+add_custom_command(
+  OUTPUT ${SRC_DIR}/codegen/reservedSymbolNames.h
+  COMMAND ${CHPL_CMAKE_PYTHON}
+          ${SRC_DIR}/../util/config/generate-reservedSymbolNames
+          ${SRC_DIR}/codegen
+  DEPENDS ${SRC_DIR}/codegen/reservedSymbolNames
+  COMMENT "writing reservedSymbolNames.h file updates..."
+  VERBATIM)
 
 add_subdirectory(AST)
 add_subdirectory(adt)
@@ -82,6 +104,6 @@ add_subdirectory(parser)
 add_subdirectory(passes)
 add_subdirectory(resolution)
 add_subdirectory(util)
-add_dependencies(chpl libdyno)
+add_dependencies(chpl ChplFrontend)
 target_compile_options(chpl PUBLIC SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
-target_link_libraries(chpl PUBLIC ${CHPL_LLVM_LINK_ARGS} libdyno)
+target_link_libraries(chpl PUBLIC ${CHPL_LLVM_LINK_ARGS} ChplFrontend)

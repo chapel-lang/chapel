@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -201,6 +201,12 @@ class AstNode {
     transitively.
    */
   static bool mayContainStatements(AstTag tag);
+
+  /**
+    Returns 'true' if this uAST node is a inherently a statement.
+    Note that anything contained directly in a Block is also a statement.
+   */
+  bool isInherentlyStatement() const;
 
   bool shallowMatch(const AstNode* other) const;
   bool completeMatch(const AstNode* other) const;

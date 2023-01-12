@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -106,20 +106,6 @@ void Builder::addToplevelExpression(owned<AstNode> e) {
 
 void Builder::addError(const ErrorBase* e) {
   this->errors_.push_back(e);
-}
-
-void Builder::addPostParseError(const AstNode* node, const char* fmt, ...) {
-  va_list vl;
-  va_start(vl, fmt);
-  CHPL_POSTPARSE_REPORT(*this, PostParseErr, node, vprintToString(fmt, vl));
-  va_end(vl);
-}
-
-void Builder::addPostParseWarning(const AstNode* node, const char* fmt, ...) {
-  va_list vl;
-  va_start(vl, fmt);
-  CHPL_POSTPARSE_REPORT(*this, PostParseWarn, node, vprintToString(fmt, vl));
-  va_end(vl);
 }
 
 void Builder::noteLocation(AstNode* ast, Location loc) {

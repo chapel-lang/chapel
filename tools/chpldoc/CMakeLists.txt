@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -17,9 +17,9 @@
 add_executable(chpldoc "chpldoc.cpp")
 set_property(TARGET chpldoc PROPERTY CXX_STANDARD 14)
 target_sources(chpldoc PRIVATE arg.h arg.cpp arg-helpers.h arg-helpers.cpp)
-target_link_libraries(chpldoc libdyno)
+target_link_libraries(chpldoc ChplFrontend)
 target_include_directories(chpldoc PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
                            ${CHPL_INCLUDE_DIR})
 
-add_dependencies(chpldoc libdyno)
+add_dependencies(chpldoc ChplFrontend)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,8 +26,8 @@ namespace uast {
 
 
 void VarLikeDecl::dumpFieldsInner(const DumpSettings& s) const {
-  const char* kind = intentToString(storageKind_);
-  if (storageKind_ == IntentList::CONST_VAR) {
+  const char* kind = qualifierToString(storageKind_);
+  if (storageKind_ == Qualifier::CONST_VAR) {
     kind = "const";
   }
   s.out << " " << kind;

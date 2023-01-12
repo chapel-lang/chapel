@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -835,11 +835,17 @@ const char* AssociatedAction::kindToString(Action a) {
     case ASSIGN:
       s = "assign";
       break;
+    case ASSIGN_OTHER:
+      s = "assign-from-other";
+      break;
     case COPY_INIT:
       s = "copy-init";
       break;
     case DEFAULT_INIT:
       s = "default-init";
+      break;
+    case INIT_OTHER:
+      s = "init-from-other";
       break;
     case DEINIT:
       s = "deinit";

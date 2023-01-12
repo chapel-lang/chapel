@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -73,6 +73,30 @@ VarScopeVisitor::process(const uast::AstNode* symbol,
   } else {
     symbol->traverse(rv);
   }
+}
+
+const AstNode* VarScopeVisitor::currentStatement() {
+  if (inAstStack.empty()) {
+    return nullptr;
+  }
+
+  for (ssize_t i = inAstStack.size() - 1; i >= 0; i--) {
+    const AstNode* ast = inAstStack[i];
+    const AstNode* parent = nullptr;
+    if (i > 0) {
+      parent = inAstStack[i-1];
+    }
+
+    if (ast->isInherentlyStatement()) {
+      return ast;
+    }
+
+    if (parent && parent->isSimpleBlockLike()) {
+      return ast;
+    }
+  }
+
+  return nullptr;
 }
 
 VarFrame* VarScopeVisitor::currentThenFrame() {
@@ -172,6 +196,10 @@ bool VarScopeVisitor::processDeclarationInit(const VarLikeDecl* ast, RV& rv) {
   return inserted;
 }
 
+const QualifiedType& VarScopeVisitor::returnOrYieldType() {
+  return fnReturnType;
+}
+
 void VarScopeVisitor::enterScope(const AstNode* ast, RV& rv) {
   if (createsScope(ast->tag())) {
     scopeStack.push_back(toOwned(new VarFrame(ast)));
@@ -264,8 +292,16 @@ void VarScopeVisitor::exitScope(const AstNode* ast, RV& rv) {
   }
 }
 
+void VarScopeVisitor::enterAst(const uast::AstNode* ast) {
+  inAstStack.push_back(ast);
+}
+void VarScopeVisitor::exitAst(const uast::AstNode* ast) {
+  CHPL_ASSERT(!inAstStack.empty() && ast == inAstStack.back());
+  inAstStack.pop_back();
+}
 
 bool VarScopeVisitor::enter(const VarLikeDecl* ast, RV& rv) {
+  enterAst(ast);
   enterScope(ast, rv);
 
   return true;
@@ -277,10 +313,12 @@ void VarScopeVisitor::exit(const VarLikeDecl* ast, RV& rv) {
   }
 
   exitScope(ast, rv);
+  exitAst(ast);
 }
 
 
 bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
+  enterAst(ast);
 
   if (ast->op() == USTR("=")) {
     // What is the RHS of the '=' call?
@@ -296,10 +334,12 @@ bool VarScopeVisitor::enter(const OpCall* ast, RV& rv) {
 }
 
 void VarScopeVisitor::exit(const OpCall* ast, RV& rv) {
+  exitAst(ast);
 }
 
 
 bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
+  enterAst(callAst);
 
   if (rv.hasAst(callAst)) {
     // Does any return-intent-overload use 'in', 'out', or 'inout'?
@@ -344,7 +384,7 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
         // compute a vector indicating which actuals are passed to
         // an 'out' formal in all return intent overloads
         std::vector<QualifiedType> actualFormalTypes;
-        std::vector<IntentList> actualFormalIntents;
+        std::vector<Qualifier> actualFormalIntents;
         computeActualFormalIntents(context, candidates, ci, actualAsts,
                                    actualFormalIntents, actualFormalTypes);
 
@@ -353,16 +393,16 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
           (void) actual; // avoid compilation error about unused variable
 
           const AstNode* actualAst = actualAsts[actualIdx];
-          IntentList kind = actualFormalIntents[actualIdx];
+          Qualifier kind = actualFormalIntents[actualIdx];
 
           // handle an actual that is passed to an 'out'/'in'/'inout' formal
-          if (kind == IntentList::OUT) {
+          if (kind == Qualifier::OUT) {
             handleOutFormal(callAst, actualAst,
                             actualFormalTypes[actualIdx], rv);
-          } else if (kind == IntentList::IN || kind == IntentList::CONST_IN) {
+          } else if (kind == Qualifier::IN || kind == Qualifier::CONST_IN) {
             handleInFormal(callAst, actualAst,
                            actualFormalTypes[actualIdx], rv);
-          } else if (kind == IntentList::INOUT) {
+          } else if (kind == Qualifier::INOUT) {
             handleInoutFormal(callAst, actualAst,
                               actualFormalTypes[actualIdx], rv);
           } else {
@@ -380,34 +420,52 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
 }
 
 void VarScopeVisitor::exit(const FnCall* ast, RV& rv) {
+  exitAst(ast);
 }
 
 
 bool VarScopeVisitor::enter(const Return* ast, RV& rv) {
+  enterAst(ast);
   return true;
 }
 void VarScopeVisitor::exit(const Return* ast, RV& rv) {
   if (!scopeStack.empty()) {
     VarFrame* frame = scopeStack.back().get();
     frame->returnsOrThrows = true;
-    handleReturnOrThrow(ast, rv);
+    handleReturn(ast, rv);
   }
+  exitAst(ast);
 }
 
 
 bool VarScopeVisitor::enter(const Throw* ast, RV& rv) {
+  enterAst(ast);
   return true;
 }
 void VarScopeVisitor::exit(const Throw* ast, RV& rv) {
   if (!scopeStack.empty()) {
     VarFrame* frame = scopeStack.back().get();
     frame->returnsOrThrows = true;
-    handleReturnOrThrow(ast, rv);
+    handleThrow(ast, rv);
   }
+  exitAst(ast);
 }
 
+bool VarScopeVisitor::enter(const Yield* ast, RV& rv) {
+  enterAst(ast);
+  return true;
+}
+void VarScopeVisitor::exit(const Yield* ast, RV& rv) {
+  if (!scopeStack.empty()) {
+    // does not set returnsOrThrows because iterators
+    // are continued after the yield.
+    handleYield(ast, rv);
+  }
+  exitAst(ast);
+}
 
 bool VarScopeVisitor::enter(const Identifier* ast, RV& rv) {
+  enterAst(ast);
   return true;
 }
 void VarScopeVisitor::exit(const Identifier* ast, RV& rv) {
@@ -420,32 +478,35 @@ void VarScopeVisitor::exit(const Identifier* ast, RV& rv) {
       handleMention(ast, toId, rv);
     }
   }
+  exitAst(ast);
 }
 
 bool VarScopeVisitor::enter(const AstNode* ast, RV& rv) {
+  enterAst(ast);
   enterScope(ast, rv);
 
   return true;
 }
 void VarScopeVisitor::exit(const AstNode* ast, RV& rv) {
   exitScope(ast, rv);
+  exitAst(ast);
 }
 
 
-static IntentList normalizeFormalIntent(IntentList intent) {
+static Qualifier normalizeFormalIntent(Qualifier intent) {
   switch (intent) {
-    case IntentList::OUT:
-      return IntentList::OUT;
+    case Qualifier::OUT:
+      return Qualifier::OUT;
 
-    case IntentList::IN:
-    case IntentList::CONST_IN:
-      return IntentList::IN;
+    case Qualifier::IN:
+    case Qualifier::CONST_IN:
+      return Qualifier::IN;
 
-    case IntentList::INOUT:
-      return IntentList::INOUT;
+    case Qualifier::INOUT:
+      return Qualifier::INOUT;
 
     default:
-      return IntentList::UNKNOWN;
+      return Qualifier::UNKNOWN;
   }
 }
 
@@ -454,7 +515,7 @@ computeActualFormalIntents(Context* context,
                            const MostSpecificCandidates& candidates,
                            const CallInfo& ci,
                            const std::vector<const AstNode*>& actualAsts,
-                           std::vector<IntentList>& actualFormalIntents,
+                           std::vector<Qualifier>& actualFormalIntents,
                            std::vector<QualifiedType>& actualFormalTypes) {
 
   int nActuals = ci.numActuals();
@@ -480,7 +541,7 @@ computeActualFormalIntents(Context* context,
 
         if (firstCandidate) {
           actualFormalIntents[actualIdx] = intent;
-          if (intent != IntentList::UNKNOWN) {
+          if (intent != Qualifier::UNKNOWN) {
             aft = fa->formalType();
           }
         } else {
@@ -489,8 +550,8 @@ computeActualFormalIntents(Context* context,
             // TODO: fix this error once return intent overloading implemented.
             context->error(actualAsts[actualIdx],
                   "return intent overloading but intent does not match");
-            actualFormalIntents[actualIdx] = IntentList::UNKNOWN;
-          } else if (intent != IntentList::UNKNOWN && aft != fa->formalType()) {
+            actualFormalIntents[actualIdx] = Qualifier::UNKNOWN;
+          } else if (intent != Qualifier::UNKNOWN && aft != fa->formalType()) {
             // TODO: fix this error once return intent overloading implemented.
             context->error(actualAsts[actualIdx],
                 "using return intent overloads but the return "

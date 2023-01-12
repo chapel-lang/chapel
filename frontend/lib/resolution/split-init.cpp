@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,13 +39,17 @@ struct FindSplitInits : VarScopeVisitor {
   // result of the process
   std::set<ID> allSplitInitedVars;
 
+  // internal variables
+  std::set<ID> outFormals;
+
   // methods
   FindSplitInits(Context* context)
-    : VarScopeVisitor(context), allSplitInitedVars() { }
+    : VarScopeVisitor(context, QualifiedType()),
+      allSplitInitedVars() {
+  }
 
   SplitInitVarStatus findVarStatus(ID varId);
   static void addInit(VarFrame* frame, ID varId, QualifiedType rhsType);
-  static void addDeclaration(VarFrame* frame, const VarLikeDecl* ast);
   void handleInitOrAssign(ID varId, QualifiedType rhsType, RV& rv);
 
   // overrides
@@ -62,7 +66,9 @@ struct FindSplitInits : VarScopeVisitor {
                          const QualifiedType& formalType,
                          RV& rv) override;
 
-  void handleReturnOrThrow(const uast::AstNode* ast, RV& rv) override;
+  void handleReturn(const uast::Return* ast, RV& rv) override;
+  void handleThrow(const uast::Throw* ast, RV& rv) override;
+  void handleYield(const uast::Yield* ast, RV& rv) override;
   void handleConditional(const Conditional* cond, RV& rv) override;
   void handleTry(const Try* t, RV& rv) override;
   void handleScope(const AstNode* ast, RV& rv) override;
@@ -110,15 +116,6 @@ void FindSplitInits::addInit(VarFrame* frame,
     frame->initedVarsVec.emplace_back(varId, rhsType);
   }
 }
-void FindSplitInits::addDeclaration(VarFrame* frame,
-                                    const VarLikeDecl* ast) {
-  bool inserted = frame->addToDeclaredVars(ast->id());
-  if (inserted) {
-    if (ast->initExpression() == nullptr) {
-      frame->eligibleVars.insert(ast->id());
-    }
-  }
-}
 
 void FindSplitInits::handleInitOrAssign(ID varId,
                                         QualifiedType rhsType,
@@ -149,7 +146,18 @@ void FindSplitInits::handleInitOrAssign(ID varId,
 }
 
 void FindSplitInits::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
-  addDeclaration(currentFrame(), ast);
+  VarFrame* frame = currentFrame();
+  bool inserted = frame->addToDeclaredVars(ast->id());
+  if (inserted) {
+    if (ast->initExpression() == nullptr) {
+      frame->eligibleVars.insert(ast->id());
+    }
+    if (ast->isFormal() || ast->isVarArgFormal()) {
+      if (ast->storageKind() == Qualifier::OUT) {
+        outFormals.insert(ast->id());
+      }
+    }
+  }
 }
 
 void FindSplitInits::handleMention(const Identifier* ast, ID varId, RV& rv) {
@@ -203,7 +211,19 @@ void FindSplitInits::handleInoutFormal(const FnCall* ast, const AstNode* actual,
   processMentions(actual, rv);
 }
 
-void FindSplitInits::handleReturnOrThrow(const uast::AstNode* ast, RV& rv) {
+void FindSplitInits::handleReturn(const uast::Return* ast, RV& rv) {
+  // consider all 'out' formals to be mentioned by the return
+  VarFrame* frame = currentFrame();
+  for (auto id : outFormals) {
+    frame->mentionedVars.insert(id);
+  }
+}
+
+void FindSplitInits::handleThrow(const uast::Throw* ast, RV& rv) {
+  // no action needed
+}
+
+void FindSplitInits::handleYield(const uast::Yield* ast, RV& rv) {
   // no action needed
 }
 
@@ -221,7 +241,9 @@ void FindSplitInits::handleConditional(const Conditional* cond, RV& rv) {
     if (thenFrame->eligibleVars.count(id) > 0) {
       // variable declared in this scope, so save the result
       allSplitInitedVars.insert(id);
-    } else {
+    } else if (elseFrame == nullptr ||
+               elseFrame->mentionedVars.count(id) == 0) {
+      // variable inited in 'then' but not mentioned in 'else'
       locInitedVars.insert(id);
     }
   }
@@ -230,7 +252,8 @@ void FindSplitInits::handleConditional(const Conditional* cond, RV& rv) {
       if (elseFrame->eligibleVars.count(id) > 0) {
         // variable declared in this scope, so save the result
         allSplitInitedVars.insert(id);
-      } else {
+      } else if (thenFrame->mentionedVars.count(id) == 0) {
+        // variable inited in 'else' and not mentioned in 'then'
         locInitedVars.insert(id);
       }
     }
@@ -255,9 +278,11 @@ void FindSplitInits::handleConditional(const Conditional* cond, RV& rv) {
       elseInits = elseFrame->initedVars.count(id) > 0;
     }
 
-    if ((thenInits         && elseInits) ||
-        (thenInits         && elseReturnsThrows) ||
-        (thenReturnsThrows && elseInits)) {
+    if (thenInits && elseInits) {
+      locSplitInitedVars.insert(id);
+    } else if ((thenInits         && elseReturnsThrows) ||
+               (thenReturnsThrows && elseInits)) {
+      // one branch returns or throws and the other inits
       locSplitInitedVars.insert(id);
     } else {
       frame->mentionedVars.insert(id);

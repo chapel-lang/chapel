@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,18 +25,10 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Module.h"
-#include "./ErrorGuard.h"
 
 static const Module* oneModule(const ModuleVec& vec) {
   assert(vec.size() == 1);
   return vec[0];
-}
-
-static void printErrors(ErrorGuard& guard) {
-  ErrorWriter ew(guard.context(), std::cout, ErrorWriter::DETAILED, false);
-  for (auto& err: guard.errors()) {
-    err->write(ew);
-  }
 }
 
 // Reparsing gets updated location information
@@ -100,7 +92,7 @@ static void test2() {
     printf("e loc is line %d\n", l.firstLine());
     assert(l.firstLine() == 1);
 
-    printErrors(guard);
+    guard.printErrors();
     assert(guard.errors().size() == 1);
     assert(guard.errors()[0]->location(context).firstLine() == 1);
     assert(guard.realizeErrors());
@@ -125,7 +117,7 @@ static void test2() {
     fflush(stdout);
     assert(l.firstLine() == 3);
 
-    printErrors(guard);
+    guard.printErrors();
     assert(guard.errors().size() == 1);
     printf("%d\n", guard.errors()[0]->location(context).firstLine());
     assert(guard.errors()[0]->location(context).firstLine() == 3);

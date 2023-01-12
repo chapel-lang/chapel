@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -16,6 +16,9 @@
 # limitations under the License.
 
 add_executable(fieldsUsed "fieldsUsed.cpp")
+
+# store it in the build directory
+set_target_properties(fieldsUsed  PROPERTIES RUNTIME_OUTPUT_DIRECTORY . )
 
 # This option is set from the call to CMake from compiler/dyno/Makefile.help
 # TODO: use DYNO_LLVM_COMP_ARGS DYNO_LLVM_LINK_ARGS instead since
