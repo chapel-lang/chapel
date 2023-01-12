@@ -154,16 +154,7 @@ class UniqueString final {
     }
   }
 
-  static UniqueString deserialize(Deserializer& des) {
-    auto len = des.read<uint64_t>();
-    char* buf = nullptr;
-    if (len > 0) {
-      buf = (char*)malloc(len+1);
-      des.is().read(buf, len);
-      buf[len] = '\0';
-    }
-    return UniqueString::get(des.context(), buf, len);
-  }
+  static UniqueString deserialize(Deserializer& des);
 
   bool isEmpty() const {
     return s.isEmpty();

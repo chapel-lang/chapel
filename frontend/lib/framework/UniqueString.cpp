@@ -200,4 +200,19 @@ std::ostream& operator<<(std::ostream& os, const chpl::UniqueString& uStr) {
   return os;
 }
 
+
+UniqueString UniqueString::deserialize(Deserializer& des) {
+  auto len = des.read<uint64_t>();
+  if (len > 0) {
+    auto buf = (char*)malloc(len+1);
+    des.is().read(buf, len);
+    buf[len] = '\0';
+    auto unique = des.context()->uniqueCString(buf);
+    free(buf);
+    return UniqueString::get(des.context(), unique, len);
+  } else {
+    return UniqueString();
+  }
+}
+
 } // end namespace chpl
