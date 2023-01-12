@@ -185,6 +185,9 @@ public:
   bool enterDeferStmt(DeferStmt* node) override;
   void exitDeferStmt (DeferStmt* node) override;
 
+  // Specifically for ensuring we track initializer state appropriately
+  bool enterCondStmt(CondStmt* node) override;
+
 private:
   struct TryInfo {
     VarSymbol*   errorVar;
@@ -447,6 +450,22 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
     SET_LINENO(node);
     node->replace(new SymExpr(info.errorVar));
   }
+
+  // If appropriate, advance the phase after we've done our other checks.
+  // This will allow us to check if the `this.init` or `super.init` call would
+  // throw (which shouldn't be allowed yet)
+  if (state != NULL) {
+    if (isInitStmt(node) == true) {
+      if (isResolvedThisInit(node) == true) {
+        state->completePhase1(node);
+      } else if (isResolvedSuperInit(node) == true) {
+        state->completePhase0(node);
+      }
+    } else if (state->isInitDone(node) == true) {
+      state->completePhase1(node);
+    }
+  }
+
   return true;
 }
 
@@ -593,6 +612,29 @@ bool ErrorHandlingVisitor::enterDeferStmt(DeferStmt* node) {
 
 void ErrorHandlingVisitor::exitDeferStmt(DeferStmt* node) {
   deferDepth--;
+}
+
+bool ErrorHandlingVisitor::enterCondStmt(CondStmt* node) {
+  if (state != NULL) {
+    InitErrorHandling* oldState = state;
+
+    node->thenStmt->accept(this);
+
+    InitErrorHandling* thenState = state; // May be different than before
+
+    if (node->elseStmt != NULL) {
+      state = oldState; // Restore previous state to ensure proper checking
+      node->elseStmt->accept(this);
+
+      // Handling during normalize should ensure that both branches result in
+      // the same final state
+      INT_ASSERT(thenState == state);
+    }
+
+    return false; // Already handled, no need to traverse again
+  } else {
+    return true; // Normal behavior
+  }
 }
 
 

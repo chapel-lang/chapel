@@ -71,6 +71,7 @@ public:
   bool            inOnInCoforall()                                       const;
   bool            inOnInForall()                                         const;
 
+  bool isInitDone(CallExpr* stmt) const;
 
   void            describe(int offset = 0)                               const;
 
@@ -88,7 +89,6 @@ private:
                   InitErrorHandling();
 
   InitPhase       startPhase(FnSymbol*  fn)                              const;
-  bool isInitDone(CallExpr* stmt) const;
   bool hasInitDone(BlockStmt* block);
 
   const char*     phaseToString(InitPhase phase)                         const;
@@ -101,5 +101,6 @@ private:
 };
 
 bool isInitStmt(CallExpr* stmt);
-
+bool isResolvedSuperInit(CallExpr* stmt);
+bool isResolvedThisInit (CallExpr* stmt);
 #endif

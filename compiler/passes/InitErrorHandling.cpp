@@ -184,12 +184,13 @@ bool InitErrorHandling::inOnInForall() const {
 ************************************** | *************************************/
 static const char* initName(CallExpr* stmt);
 
-static bool isSuperInit(CallExpr* stmt) {
+bool isResolvedSuperInit(CallExpr* stmt) {
   const char* name = initName(stmt);
 
   return name != NULL && strcmp(name, "super") == 0 ? true : false;
 }
-static bool isThisInit (CallExpr* stmt) {
+
+bool isResolvedThisInit (CallExpr* stmt) {
   const char* name = initName(stmt);
 
   return name != NULL && strcmp(name, "this") == 0 ? true: false;
@@ -213,7 +214,7 @@ bool InitErrorHandling::isInitDone (CallExpr* stmt) const {
 }
 
 bool isInitStmt(CallExpr* stmt) {
-  return isSuperInit(stmt) == true || isThisInit(stmt) == true;
+  return isResolvedSuperInit(stmt) == true || isResolvedThisInit(stmt) == true;
 }
 
 static const char* initName(CallExpr* stmt) {
@@ -282,7 +283,7 @@ void InitErrorHandling::completePhase1(CallExpr* initStmt) {
 }
 
 void InitErrorHandling::completePhase0(CallExpr* initStmt) {
-  if (isSuperInit(initStmt) == true) {
+  if (isResolvedSuperInit(initStmt) == true) {
     mPhase = cPhase1;
   } else {
     INT_FATAL("completePhase0 expected to be called with super.init");
@@ -309,11 +310,11 @@ InitErrorHandling::InitPhase InitErrorHandling::startPhase(BlockStmt* block) con
       stmt = stmt->next;
 
     } else if (CallExpr* callExpr = toCallExpr(stmt)) {
-      if        (isThisInit(callExpr)  == true) {
+      if        (isResolvedThisInit(callExpr)  == true) {
         retval = cPhase0;
         break;
 
-      } else if (isSuperInit(callExpr) == true) {
+      } else if (isResolvedSuperInit(callExpr) == true) {
         retval = cPhase0;
         break;
 
