@@ -63,6 +63,8 @@ char fortranModulename[FILENAME_MAX + 1]  = "";
 char pythonModulename[FILENAME_MAX + 1]   = "";
 char saveCDir[FILENAME_MAX + 1]           = "";
 
+const char* additionalFilenamesListFilename = "additionalSourceFiles.tmp";
+
 std::string ccflags;
 std::string ldflags;
 
@@ -104,6 +106,18 @@ void addLibFile(const char* libFile) {
 
 void addIncInfo(const char* incDir) {
   addPath(incDir, &incDirs);
+}
+
+void restoreAdditionalSourceFiles() {
+  INT_ASSERT(fDoMakeBinary &&
+             "should only be restoring filenames in makeBinary stage");
+  fileinfo* additionalFilenamesList =
+      openTmpFile(additionalFilenamesListFilename, "r");
+  char filename[FILENAME_MAX + 1];
+  while (fgets(filename, sizeof(filename), additionalFilenamesList->fptr)) {
+    addSourceFile(filename, NULL);
+  }
+  closefile(additionalFilenamesList);
 }
 
 void ensureDirExists(const char* dirname, const char* explanation) {
@@ -361,6 +375,10 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
   numInputFiles += numNewFilenames;
   inputFilenames = (const char**)realloc(inputFilenames,
                                          (numInputFiles+1)*sizeof(char*));
+  fileinfo* additionalFilenamesList = NULL;
+  if (fDoCompilation) {
+    additionalFilenamesList = openTmpFile(additionalFilenamesListFilename, "a");
+  }
 
   for (int i = 0; i < numNewFilenames; i++) {
     if (!isRecognizedSource(filename[i])) {
@@ -392,10 +410,19 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
     if (duplicate) {
       numInputFiles--;
     } else {
+      // add file
       inputFilenames[cursor++] = newFilename;
+      if (additionalFilenamesList) {
+        // also save to file for use in makeBinary later
+        fprintf(additionalFilenamesList->fptr, "%s\n", newFilename);
+      }
     }
   }
   inputFilenames[cursor] = NULL;
+
+  if (additionalFilenamesList) {
+    closefile(additionalFilenamesList);
+  }
 }
 
 void assertSourceFilesFound() {

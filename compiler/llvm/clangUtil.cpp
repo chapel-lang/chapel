@@ -4192,6 +4192,11 @@ void makeBinaryLLVM(void) {
     // generate necessary info for a backend-only invocation
     initializeGenInfo();
 
+    // setup filenames to be referenced
+    setupLLVMCodegenFilenames();
+    setupDefaultFilenames();
+    restoreAdditionalSourceFiles();
+
     // regenerate ClangInfo
     assert(!gGenInfo->clangInfo);
     runClang(NULL);
@@ -4199,10 +4204,6 @@ void makeBinaryLLVM(void) {
     gGenInfo->clangInfo->cCodeGen->ReleaseModule();
     delete gGenInfo->module;
     gGenInfo->module = nullptr;
-
-    // setup filenames to be referenced
-    setupLLVMCodegenFilenames();
-    setupDefaultFilenames();
 
     // load in module from codegen'd bitcode
     loadModuleFromBitcode();

@@ -96,6 +96,9 @@ void addLibPath(const char* filename);
 void addLibFile(const char* filename);
 void addIncInfo(const char* incDir);
 
+// Restore source file names that were saved to disk, for compiler-driver use.
+void restoreAdditionalSourceFiles();
+
 void genIncludeCommandLineHeaders(FILE* outfile);
 
 const char* createDebuggerFile(const char* debugger, int argc, char* argv[]);
