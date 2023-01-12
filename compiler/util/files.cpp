@@ -115,6 +115,8 @@ void restoreAdditionalSourceFiles() {
       openTmpFile(additionalFilenamesListFilename, "r");
   char filename[FILENAME_MAX + 1];
   while (fgets(filename, sizeof(filename), additionalFilenamesList->fptr)) {
+    // strip trailing newline from filename
+    filename[strcspn(filename, "\n")] = '\0';
     addSourceFile(filename, NULL);
   }
   closefile(additionalFilenamesList);
