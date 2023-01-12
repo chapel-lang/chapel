@@ -71,6 +71,7 @@
 #include <stdint.h>
 
 #ifdef HAVE_LLVM
+#include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
@@ -1396,7 +1397,7 @@ void TypeSymbol::codegenDef() {
       USR_FATAL(this, "Could not find C type for %s", cname);
     }
 
-    llvmType = type;
+    llvmImplType = type;
     if(debug_info) debug_info->get_type(this->type);
 #endif
   }
@@ -1436,8 +1437,8 @@ void TypeSymbol::codegenMetadata() {
     parent = superType->symbol->llvmTbaaTypeDescriptor;
   } else {
     llvm::Type *ty = NULL;
-    if (llvmType) {
-      ty = llvmType;
+    if (getLLVMType()) {
+      ty = getLLVMType();
     } else if (hasFlag(FLAG_EXTERN)) {
       ty = info->lvt->getType(cname);
     } else {
@@ -1561,7 +1562,7 @@ void TypeSymbol::codegenCplxMetadata() {
   re->codegenMetadata();
   im->codegenMetadata();
 
-  uint64_t fieldSize = dl.getTypeStoreSize(re->llvmType);
+  uint64_t fieldSize = dl.getTypeStoreSize(re->getLLVMType());
   llvm::Type *int64Ty = llvm::Type::getInt64Ty(ctx);
   llvm::ConstantAsMetadata *zero =
     info->mdBuilder->createConstant(llvm::ConstantInt::get(int64Ty, 0));
@@ -1723,6 +1724,28 @@ void TypeSymbol::codegenAggMetadata() {
 #endif
 }
 
+#ifdef HAVE_LLVM
+#if 0
+// get structure type for class
+llvm::Type* TypeSymbol::getLLVMStructureType() {
+  return llvmImplType;
+}
+#endif
+
+// get pointer to structure type for class
+llvm::Type* TypeSymbol::getLLVMType() {
+  if (auto* stype = llvm::dyn_cast_or_null<llvm::StructType>(llvmImplType)) {
+    if (auto* aggType = toAggregateType(this->type)) {
+      if (aggType->isClass()) {
+        return stype->getPointerTo();
+      }
+    }
+  }
+
+  return llvmImplType;
+}
+#endif
+
 GenRet TypeSymbol::codegen() {
   GenInfo *info = gGenInfo;
   GenRet ret;
@@ -1741,19 +1764,22 @@ GenRet TypeSymbol::codegen() {
     }
   } else {
 #ifdef HAVE_LLVM
-    if( ! llvmType ) {
+    if( ! getLLVMType() ) {
       // If we don't have an LLVM type yet, the type hasn't been
       // code generated, so code generate it now. This can get called
       // when adding types partway through code generation.
       codegenDef();
       // codegenMetadata(); //TODO -- enable TBAA generation in the future.
     }
-    ret.type = llvmType;
+    ret.type = getLLVMType();
 #endif
   }
 
   return ret;
 }
+
+
+
 
 /******************************** | *********************************
 *                                                                   *

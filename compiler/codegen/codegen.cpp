@@ -1861,7 +1861,7 @@ static void codegen_header(std::set<const char*> & cnames,
     forv_Vec(TypeSymbol, typeSymbol, gTypeSymbols) {
       if (typeSymbol->defPoint->parentExpr == rootModule->block &&
           isPrimitiveType(typeSymbol->type) &&
-          typeSymbol->llvmType) {
+          typeSymbol->getLLVMType()) {
         typeSymbol->codegenMetadata();
       }
     }
