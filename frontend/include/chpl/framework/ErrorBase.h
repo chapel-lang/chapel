@@ -253,6 +253,23 @@ class GeneralError : public BasicError {
 #include "chpl/framework/error-classes-list.h"
 #undef DIAGNOSTIC_CLASS
 
+// Generate query function implementations, like ErrorMessage::get for an
+// error type. This is meant to be invoked via DIAGNOSTIC_CLASS and
+// including error-classes-list.h
+#define DIAGNOSTIC_CLASS_IMPL(NAME__, KIND__, EINFO__...)\
+  const owned<Error##NAME__>&\
+  Error##NAME__::getError##NAME__(Context* context,\
+                                  std::tuple<EINFO__> tuple) {\
+    QUERY_BEGIN(getError##NAME__, context, tuple);\
+    auto result = owned<Error##NAME__>(new Error##NAME__(tuple));\
+    return QUERY_END(result);\
+  }\
+\
+  const Error##NAME__*\
+  Error##NAME__::get(Context* context, std::tuple<EINFO__> tuple) {\
+    return Error##NAME__::getError##NAME__(context, std::move(tuple)).get();\
+  }
+
 /**
   Helper macro to report an error message in a Context. Accepts
   the context, error type, and the additional error information specific
