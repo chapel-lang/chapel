@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -66,10 +66,11 @@ static bool        handle_erroneous_fns = true;
 astlocT            last_error_loc(0, NULL);
 
 static bool forceWidePtrs();
+static const char* cleanCompilerFilename(const char* name);
 
 void setupError(const char* subdir, const char* filename, int lineno, int tag) {
   err_subdir        = subdir;
-  err_filename      = filename;
+  err_filename      = cleanCompilerFilename(filename);
   err_lineno        = lineno;
   err_fatal         = tag == 1 || tag == 2 || tag == 3;
   err_user          = tag != 1;
@@ -96,6 +97,19 @@ void setupDynoError(chpl::ErrorBase::Kind errKind) {
 
   exit_immediately = false;
   exit_eventually |= err_fatal;
+}
+
+GpuCodegenType getGpuCodegenType() {
+  static const GpuCodegenType cached = []() {
+    INT_ASSERT(usingGpuLocaleModel());
+    if (0 == strcmp(CHPL_GPU_CODEGEN, "cuda")) {
+      return GpuCodegenType::GPU_CG_NVIDIA_CUDA;
+    } else {
+      INT_ASSERT(!strcmp(CHPL_GPU_CODEGEN, "rocm"));
+      return GpuCodegenType::GPU_CG_AMD_HIP;
+    }
+  }();
+  return cached;
 }
 
 // Return true if the current locale model needs GPU code generation
@@ -156,6 +170,13 @@ const char* cleanFilename(const BaseAST* ast) {
   }
 
   return retval;
+}
+
+static const char* cleanCompilerFilename(const char* name) {
+  // it depends on the details of the build whether __FILE__ is
+  // an absolute path, but for the purposes of this error reporting,
+  // we only need the file name.
+  return stripdirectories(name);
 }
 
 

@@ -576,6 +576,10 @@ allocate:
   07/29/20:
     - Optimize ASCII strings (#16092)
 
+allocation:
+  11/10/22:
+    - weakPointer prototype implementation (#20918)
+
 arguments:
   09/20/17:
     - Adjust string pass/return test (#7360)
@@ -2202,10 +2206,6 @@ allTotalTime:
   <<: *compiler-perf-base
 allPasses:
   <<: *compiler-perf-base
-topTotalTime:
-  <<: *compiler-perf-base
-topPasses:
-  <<: *compiler-perf-base
 
 arkouda: &arkouda-base
   04/22/20:
@@ -2337,6 +2337,12 @@ arkouda: &arkouda-base
     - Closes 1783 SegArray.__getitem__ to Server (Bears-R-Us/arkouda#1790)
   10/27/22:
     - Closes 1776 GroupBy Strings Optimization (Bears-R-Us/arkouda#1851)
+  11/22/22:
+    - Closes 1901 Reduce SymEntry creation overheads (Bears-R-Us/arkouda#1921)
+  12/01/22:
+    - Closes 1935 Increase encode benchmark size (Bears-R-Us/arkouda#1936)
+  12/02/22:
+    - Create local copies of remote strings for encoding (Bears-R-Us/arkouda#1937)
 
 
 arkouda-string:

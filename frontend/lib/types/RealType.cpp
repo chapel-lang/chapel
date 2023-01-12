@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,7 +33,7 @@ const owned<RealType>& RealType::getRealType(Context* context, int bitwidth) {
 }
 
 const RealType* RealType::get(Context* context, int bitwidth) {
-  assert(bitwidth == 0 || bitwidth == 32 || bitwidth == 64);
+  CHPL_ASSERT(bitwidth == 0 || bitwidth == 32 || bitwidth == 64);
   if (bitwidth == 0) bitwidth = defaultBitwidth(); // canonicalize default width
   return getRealType(context, bitwidth).get();
 }

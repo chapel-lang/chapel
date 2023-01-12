@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -64,6 +64,8 @@ class Catch final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
+  std::string dumpChildLabelInner(int i) const override;
+
   int8_t errorChildNum_;
   int8_t bodyChildNum_;
   bool hasParensAroundError_;
@@ -85,7 +87,7 @@ class Catch final : public AstNode {
   const Variable* error() const {
     if (errorChildNum_ < 0) return nullptr;
     auto ret = child(errorChildNum_);
-    assert(ret && ret->isVariable());
+    CHPL_ASSERT(ret && ret->isVariable());
     return (const Variable*)ret;
   }
 
@@ -94,7 +96,7 @@ class Catch final : public AstNode {
   */
   const Block* body() const {
     auto ret = child(bodyChildNum_);
-    assert(ret && ret->isBlock());
+    CHPL_ASSERT(ret && ret->isBlock());
     return (const Block*)ret;
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -63,12 +63,12 @@ static QualifiedType::Kind qualifiedTypeKindForTag(AstTag tag) {
 
 static QualifiedType::Kind qualifiedTypeKindForDecl(const NamedDecl* decl) {
   if (const VarLikeDecl* vd = decl->toVarLikeDecl()) {
-    IntentList storageKind = vd->storageKind();
+    Qualifier storageKind = vd->storageKind();
     return storageKind;
   }
 
   QualifiedType::Kind ret = qualifiedTypeKindForTag(decl->tag());
-  assert(ret != QualifiedType::UNKNOWN && "case not handled");
+  CHPL_ASSERT(ret != QualifiedType::UNKNOWN && "case not handled");
   return ret;
 }
 
@@ -162,8 +162,8 @@ Resolver::createForFunction(Context* context,
   ret.signatureOnly = false;
   ret.fnBody = fn->body();
 
-  assert(typedFnSignature);
-  assert(typedFnSignature->untyped());
+  CHPL_ASSERT(typedFnSignature);
+  CHPL_ASSERT(typedFnSignature->untyped());
 
   ret.byPostorder.setupForFunction(fn);
 
@@ -236,8 +236,8 @@ Resolver::createForScopeResolvingFunction(Context* context,
   ret.typedSignature = sig;
   ret.signatureOnly = false;
 
-  assert(sig);
-  assert(sig->untyped());
+  CHPL_ASSERT(sig);
+  CHPL_ASSERT(sig->untyped());
 
   // set the resolution results for the formals according to
   // the typedFnSignature (which just has UnknownType in it for all args
@@ -423,7 +423,7 @@ bool Resolver::shouldUseUnknownTypeForGeneric(const ID& id) {
       int nFormals = untyped->numFormals();
       for (int i = 0; i < nFormals; i++) {
         if (typedSignature->formalIsInstantiated(i)) {
-          assert(!untyped->formalDecl(i)->id().isEmpty());
+          CHPL_ASSERT(!untyped->formalDecl(i)->id().isEmpty());
           instantiatedFieldOrFormals.insert(untyped->formalDecl(i)->id());
         }
       }
@@ -490,7 +490,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
       actualTypePtr->isAnyType())
     return;
 
-  assert(formalTypeExpr != nullptr);
+  CHPL_ASSERT(formalTypeExpr != nullptr);
 
   // Give up if typeExpr is an Identifier
   if (formalTypeExpr->isIdentifier())
@@ -562,7 +562,7 @@ void Resolver::resolveTypeQueries(const AstNode* formalTypeExpr,
           continue;
 
         const FormalActual* fa = faMap.byActualIdx(i);
-        assert(fa != nullptr && fa->formal() != nullptr);
+        CHPL_ASSERT(fa != nullptr && fa->formal() != nullptr);
 
         // get the substitution for that field from the CompositeType
         // and recurse with the result to set types for nested TypeQuery nodes
@@ -641,6 +641,38 @@ bool Resolver::checkForKindError(const AstNode* typeForErr,
 }
 
 
+const Type* Resolver::tryResolveCrossTypeInitEq(const AstNode* ast,
+                                                QualifiedType lhsType,
+                                                QualifiedType rhsType) {
+
+  const Type* t = lhsType.type();
+  if (t->isRecordType() || t->isUnionType()) {
+    // use the regular VAR kind for this query
+    // (don't want a type-expr lhsType to be considered a TYPE here)
+    lhsType = QualifiedType(QualifiedType::VAR, lhsType.type());
+    rhsType = QualifiedType(QualifiedType::VAR, rhsType.type());
+
+    std::vector<CallInfoActual> actuals;
+    actuals.push_back(CallInfoActual(lhsType, USTR("this")));
+    actuals.push_back(CallInfoActual(rhsType, UniqueString()));
+    auto ci = CallInfo (/* name */ USTR("init="),
+                        /* calledType */ QualifiedType(),
+                        /* isMethodCall */ true,
+                        /* hasQuestionArg */ false,
+                        /* isParenless */ false,
+                        actuals);
+    const Scope* scope = scopeForId(context, ast->id());
+    auto c = resolveGeneratedCall(context, ast, ci, scope, poiScope);
+    if (c.mostSpecific().isEmpty()) {
+      return nullptr;
+    } else {
+      return lhsType.type(); // TODO: this might need to be an instantiation
+    }
+  }
+
+  return nullptr;
+}
+
 QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
                                        const AstNode* typeForErr,
                                        const AstNode* initForErr,
@@ -682,9 +714,17 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
     auto got = canPass(context, initExprType,
                        QualifiedType(declKind, declaredType.type()));
     if (!got.passes()) {
-      CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
-                  initForErr, declaredType.type(), initExprType.type());
-      typePtr = ErroneousType::get(context);
+      // For a record/union, check for an init= from the provided type
+      const Type* foundInitEqResultType =
+        tryResolveCrossTypeInitEq(declForErr, declaredType, initExprType);
+
+      if (!foundInitEqResultType) {
+        CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
+                    initForErr, declaredType.type(), initExprType.type());
+        typePtr = ErroneousType::get(context);
+      } else {
+        typePtr = foundInitEqResultType;
+      }
     } else if (!got.instantiates()) {
       // use the declared type since no conversion/promotion was needed
       typePtr = declaredType.type();
@@ -707,7 +747,7 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
     }
   }
 
-  assert(typePtr != nullptr); // should always be set above.
+  CHPL_ASSERT(typePtr != nullptr); // should always be set above.
   return QualifiedType(declKind, typePtr, paramPtr);
 }
 
@@ -933,7 +973,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
   }
 
   // param value should not be set if the QualifiedType is not param
-  assert(qtKind == QualifiedType::PARAM || paramPtr == nullptr);
+  CHPL_ASSERT(qtKind == QualifiedType::PARAM || paramPtr == nullptr);
 
   auto declaredKind = qtKind;
 
@@ -992,7 +1032,7 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
     context->error(astForErr, "Cannot establish type for call expression");
 
     // expecting call site to check for hasTypePtr.
-    assert(!c.exprType().hasTypePtr());
+    CHPL_ASSERT(!c.exprType().hasTypePtr());
   }
 }
 
@@ -1016,14 +1056,16 @@ void Resolver::handleResolvedCall(ResolvedExpression& r,
 void Resolver::handleResolvedAssociatedCall(ResolvedExpression& r,
                                             const uast::AstNode* astForErr,
                                             const CallInfo& ci,
-                                            const CallResolutionResult& c) {
+                                            const CallResolutionResult& c,
+                                            AssociatedAction::Action action,
+                                            ID id) {
   if (!c.exprType().hasTypePtr()) {
     issueErrorForFailedCallResolution(astForErr, ci, c);
   } else {
     // save candidates as associated functions
     for (auto sig : c.mostSpecific()) {
       if (sig != nullptr) {
-        r.addAssociatedFn(sig);
+        r.addAssociatedAction(action, sig, id);
       }
     }
     // gather the poi scopes used when resolving the call
@@ -1061,7 +1103,7 @@ void Resolver::adjustTypesForSplitInit(ID id,
      // includes nullptr type, UnknownType, and param with unknown value
      g = Type::GENERIC;
   } else {
-    assert(lhsType.type()); // should not be nullptr b/c of isUnknownKindOrType
+    CHPL_ASSERT(lhsType.type()); // should not be nullptr b/c of isUnknownKindOrType
     g = getTypeGenericity(context, lhsType.type());
   }
 
@@ -1125,7 +1167,7 @@ Resolver::adjustTypesForOutFormals(const CallInfo& ci,
                                    const MostSpecificCandidates& fns) {
 
   std::vector<QualifiedType> actualFormalTypes;
-  std::vector<IntentList> actualIntents;
+  std::vector<Qualifier> actualIntents;
   computeActualFormalIntents(context, fns, ci, asts,
                              actualIntents, actualFormalTypes);
 
@@ -1139,7 +1181,7 @@ Resolver::adjustTypesForOutFormals(const CallInfo& ci,
     if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
       id = byPostorder.byAst(actualAst).toId();
     }
-    if (actualIntents[actualIdx] == IntentList::OUT && !id.isEmpty()) {
+    if (actualIntents[actualIdx] == Qualifier::OUT && !id.isEmpty()) {
       QualifiedType formalType = actualFormalTypes[actualIdx];
       adjustTypesForSplitInit(id, formalType, actualAst, actualAst);
     }
@@ -1186,7 +1228,7 @@ void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
     return;
   }
 
-  assert(scopeStack.size() > 0);
+  CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
   // Finally, try to resolve = between the elements
@@ -1208,7 +1250,9 @@ void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
                           actuals);
 
       auto c = resolveGeneratedCall(context, actual, ci, scope, poiScope);
-      handleResolvedAssociatedCall(r, astForErr, ci, c);
+      handleResolvedAssociatedCall(r, astForErr, ci, c,
+                                   AssociatedAction::ASSIGN,
+                                   lhsTuple->id());
     }
     i++;
   }
@@ -1243,7 +1287,7 @@ void Resolver::resolveTupleUnpackDecl(const TupleDecl* lhsTuple,
     } else if (auto namedDecl = actual->toNamedDecl()) {
       resolveNamedDecl(namedDecl, rhsEltType.type());
     } else {
-      assert(false && "case not handled");
+      CHPL_ASSERT(false && "case not handled");
     }
     i++;
   }
@@ -1255,7 +1299,7 @@ void Resolver::resolveTupleDecl(const TupleDecl* td,
     return;
   }
 
-  QualifiedType::Kind declKind = (IntentList) td->intentOrKind();
+  QualifiedType::Kind declKind = (Qualifier) td->intentOrKind();
   QualifiedType useT;
 
   // Figure out the type to use for this tuple
@@ -1317,7 +1361,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
     auto oldDecor = clsType->decorator();
     auto newDecor = oldDecor.addNonNil();
     initReceiverType = clsType->withDecorator(context, newDecor);
-    assert(initReceiverType);
+    CHPL_ASSERT(initReceiverType);
   }
 
   // The 'new' will produce an 'init' call as a side effect.
@@ -1325,7 +1369,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
 
   /*
   auto cls = qtNewExpr.type()->toClassType();
-  assert(cls);
+  CHPL_ASSERT(cls);
   auto calledIntent = cls->manager() ? QualifiedType::REF
                                      : QualifiedType::CONST_IN;
   */
@@ -1342,7 +1386,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   // Remaining actuals.
   if (call->numActuals()) {
     prepareCallInfoActuals(call, actuals, questionArg);
-    assert(!questionArg);
+    CHPL_ASSERT(!questionArg);
   }
 
   auto ci = CallInfo(name, calledType, isMethodCall,
@@ -1355,11 +1399,13 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   // note: the resolution machinery will get compiler generated candidates
   auto crr = resolveGeneratedCall(context, call, ci, inScope, inPoiScope);
 
-  assert(crr.mostSpecific().numBest() <= 1);
+  CHPL_ASSERT(crr.mostSpecific().numBest() <= 1);
 
   // there should be one or zero applicable candidates
   if (auto initTfs = crr.mostSpecific().only()) {
-    handleResolvedAssociatedCall(re, call, ci, crr);
+    handleResolvedAssociatedCall(re, call, ci, crr,
+                                 AssociatedAction::NEW_INIT,
+                                 call->id());
 
     // Set the final output type based on the result of the 'new' call.
     auto qtInitReceiver = initTfs->formalType(0);
@@ -1368,9 +1414,9 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
     // Preserve original management if receiver is a class.
     if (auto cls = type->toClassType()) {
       auto newCls = qtNewExpr.type()->toClassType();
-      assert(newCls);
-      assert(!cls->manager() && cls->decorator().isNonNilable());
-      assert(cls->decorator().isBorrowed());
+      CHPL_ASSERT(newCls);
+      CHPL_ASSERT(!cls->manager() && cls->decorator().isNonNilable());
+      CHPL_ASSERT(cls->decorator().isBorrowed());
       type = ClassType::get(context, cls->basicClassType(),
                             newCls->manager(),
                             newCls->decorator());
@@ -1518,7 +1564,7 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
       // TODO: in this case, we should look for parenless methods.
       ct = methodReceiverType();
     } else {
-      assert(false && "case not handled");
+      CHPL_ASSERT(false && "case not handled");
     }
 
     if (ct) {
@@ -1546,13 +1592,13 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
         }
       }
 
-      assert(false && "could not find resolved field");
+      CHPL_ASSERT(false && "could not find resolved field");
     }
   }
 
   // Otherwise it is a case not handled yet
   // TODO: handle outer function variables
-  assert(false && "not yet handled");
+  CHPL_ASSERT(false && "not yet handled");
   auto unknownType = UnknownType::get(context);
   return QualifiedType(QualifiedType::UNKNOWN, unknownType);
 }
@@ -1571,11 +1617,11 @@ void Resolver::enterScope(const AstNode* ast) {
 }
 void Resolver::exitScope(const AstNode* ast) {
   if (createsScope(ast->tag())) {
-    assert(!scopeStack.empty());
+    CHPL_ASSERT(!scopeStack.empty());
     scopeStack.pop_back();
   }
   if (ast->isDecl()) {
-    assert(!declStack.empty());
+    CHPL_ASSERT(!declStack.empty());
     declStack.pop_back();
   }
   tagTracker[ast->tag()] -= 1;
@@ -1593,6 +1639,17 @@ bool Resolver::enter(const uast::Conditional* cond) {
 
   // Try short-circuiting. Visit the condition to see if it is a param
   cond->condition()->traverse(*this);
+
+  // Make sure the 'if-var' is a class type, if it exists.
+  if (auto var = cond->condition()->toVariable()) {
+    auto& reVar = byPostorder.byAst(var);
+    if (!reVar.type().isUnknown()) {
+      auto t = reVar.type().type();
+      bool ok = t->isClassType() || t->isBasicClassType();
+      if (!ok) CHPL_REPORT(context, IfVarNonClassType, cond, reVar.type());
+    }
+  }
+
   auto& condType = byPostorder.byAst(cond->condition()).type();
   if (condType.isParamTrue()) {
     // condition is param true, might as well only resolve `then` branch
@@ -1659,7 +1716,7 @@ void Resolver::exit(const Literal* literal) {
 std::vector<BorrowedIdsWithName>
 Resolver::lookupIdentifier(const Identifier* ident,
                            const Scope* receiverScope) {
-  assert(scopeStack.size() > 0);
+  CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
   bool resolvingCalledIdent = (inLeafCall &&
@@ -1676,12 +1733,37 @@ Resolver::lookupIdentifier(const Identifier* ident,
   return vec;
 }
 
+void Resolver::validateAndSetToId(ResolvedExpression& r,
+                                  const AstNode* node,
+                                  const ID& id) {
+  r.setToId(id);
+  if (id.isEmpty()) return;
+
+  // Validate the newly set to ID. It shouldn't refer to a module unless
+  // the node is an identifier in one of the places where module references
+  // are allowed (e.g. imports).
+  auto toAst = parsing::idToAst(context, id);
+  if (toAst != nullptr) {
+    if (auto mod = toAst->toModule()) {
+      auto parentId = parsing::idToParentId(context, node->id());
+      if (!parentId.isEmpty()) {
+        auto parentAst = parsing::idToAst(context, parentId);
+        if (!parentAst->isUse() && !parentAst->isImport() &&
+            !parentAst->isAs() && !parentAst->isVisibilityClause() &&
+            !parentAst->isDot()) {
+          CHPL_REPORT(context, ModuleAsVariable, node, parentAst, mod);
+        }
+      }
+    }
+  }
+}
+
 bool Resolver::resolveIdentifier(const Identifier* ident,
                                  const Scope* receiverScope) {
   ResolvedExpression& result = byPostorder.byAst(ident);
 
   // for 'proc f(arg:?)' need to set 'arg' to have type AnyType
-  assert(declStack.size() > 0);
+  CHPL_ASSERT(declStack.size() > 0);
   const Decl* inDecl = declStack.back();
   if (inDecl->isVarLikeDecl() && ident->name() == USTR("?")) {
     result.setType(QualifiedType(QualifiedType::TYPE, AnyType::get(context)));
@@ -1753,7 +1835,7 @@ bool Resolver::resolveIdentifier(const Identifier* ident,
       }
     }
 
-    result.setToId(id);
+    validateAndSetToId(result, ident, id);
     result.setType(type);
     // if there are multiple ids we should have gotten
     // a multiple definition error at the declarations.
@@ -1832,7 +1914,7 @@ void Resolver::exit(const TypeQuery* tq) {
 }
 
 bool Resolver::enter(const NamedDecl* decl) {
-  assert(scopeStack.size() > 0);
+  CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
   // All functions can be overloaded, even parenless ones (via return
@@ -2030,9 +2112,9 @@ void Resolver::exit(const Range* range) {
   // fetch default fields for `stridable` and `idxType`
   const ResolvedFields& resolvedFields = fieldsForTypeDecl(context, rangeType,
       DefaultsPolicy::USE_DEFAULTS);
-  assert(resolvedFields.fieldName(0) == "idxType");
-  assert(resolvedFields.fieldName(1) == "boundedType");
-  assert(resolvedFields.fieldName(2) == "stridable");
+  CHPL_ASSERT(resolvedFields.fieldName(0) == "idxType");
+  CHPL_ASSERT(resolvedFields.fieldName(1) == "boundedType");
+  CHPL_ASSERT(resolvedFields.fieldName(2) == "stridable");
 
   // Determine index type, either via inference or by using the default.
   QualifiedType idxType;
@@ -2122,7 +2204,7 @@ types::QualifiedType Resolver::typeForBooleanOp(const uast::OpCall* op) {
     return QualifiedType(QualifiedType::CONST_VAR,
                          UnknownType::get(context));
   } else {
-    assert(rhs.type()->isBoolType() && lhs.type()->isBoolType());
+    CHPL_ASSERT(rhs.type()->isBoolType() && lhs.type()->isBoolType());
     if (rhs.isParam() && lhs.isParam()) {
       // preserve param-ness
       // this case is only hit when the result is false (for &&)
@@ -2176,7 +2258,7 @@ QualifiedType Resolver::typeForTypeOperator(const OpCall* op,
                          BoolType::get(context, 0),
                          BoolParam::get(context, opNotEqual ^ compareResult));
   }
-  assert(false && "not implemented!");
+  CHPL_ASSERT(false && "not implemented!");
   return QualifiedType();
 }
 
@@ -2209,7 +2291,7 @@ void Resolver::exit(const Call* call) {
     }
   }
 
-  assert(scopeStack.size() > 0);
+  CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
   // try to resolve it as a special call (e.g. Tuple assignment)
@@ -2370,13 +2452,13 @@ void Resolver::exit(const Dot* dot) {
       QualifiedType type;
       if (id.isEmpty()) {
         // empty IDs from the scope resolution process are builtins
-        assert(false && "Not handled yet!");
+        CHPL_ASSERT(false && "Not handled yet!");
       } else {
         // use the type established at declaration/initialization,
         // but for things with generic type, use unknown.
         type = typeForId(id, /*localGenericToUnknown*/ true);
       }
-      r.setToId(id);
+      validateAndSetToId(r, dot, id);
       r.setType(type);
     }
     return;
@@ -2387,14 +2469,14 @@ void Resolver::exit(const Dot* dot) {
       receiver.type().type()->isEnumType()) {
     // resolve E.x where E is an enum.
     const EnumType* enumType = receiver.type().type()->toEnumType();
-    assert(enumType != nullptr);
-    assert(receiver.toId().isEmpty() == false);
+    CHPL_ASSERT(enumType != nullptr);
+    CHPL_ASSERT(receiver.toId().isEmpty() == false);
 
     ResolvedExpression& r = byPostorder.byAst(dot);
     ID elemId = r.toId(); // store the original in case we don't get a new one
     auto qt = typeForEnumElement(enumType, dot->field(), dot, elemId);
     r.setType(std::move(qt));
-    r.setToId(std::move(elemId));
+    validateAndSetToId(r, dot, std::move(elemId));
 
     return;
   }
@@ -2521,7 +2603,7 @@ void Resolver::exit(const New* node) {
   }
 
   if (qtTypeExpr.type()->isBasicClassType()) {
-    assert(false && "Expected fully decorated class type");
+    CHPL_ASSERT(false && "Expected fully decorated class type");
 
   } else if (auto classType = qtTypeExpr.type()->toClassType()) {
     resolveNewForClass(node, classType);
@@ -2579,7 +2661,9 @@ static QualifiedType resolveSerialIterType(Resolver& resolver,
 
     if (c.mostSpecific().only() != nullptr) {
       idxType = c.exprType();
-      resolver.handleResolvedAssociatedCall(iterandRE, loop, ci, c);
+      resolver.handleResolvedAssociatedCall(iterandRE, loop, ci, c,
+                                            AssociatedAction::ITERATE,
+                                            iterand->id());
     } else {
       idxType = CHPL_TYPE_ERROR(context, NonIterable, loop, iterand, iterandRE.type());
     }
@@ -2711,7 +2795,7 @@ bool Resolver::enter(const ReduceIntent* reduce) {
   ResolvedExpression& result = byPostorder.byAst(reduce);
 
   if (computeTaskIntentInfo(*this, reduce, id, type)) {
-    result.setToId(id);
+    validateAndSetToId(result, reduce, id);
   } else if (!scopeResolveOnly) {
     context->error(reduce, "Unable to find declaration of \"%s\" for reduction", reduce->name().c_str());
   }
@@ -2736,7 +2820,7 @@ bool Resolver::enter(const TaskVar* taskVar) {
     if (computeTaskIntentInfo(*this, taskVar, id, type)) {
       QualifiedType taskVarType = QualifiedType(taskVar->storageKind(),
                                                 type.type());
-      result.setToId(id);
+      validateAndSetToId(result, taskVar, id);
 
       // TODO: Handle in-intents where type can change (e.g. array slices)
       result.setType(taskVarType);

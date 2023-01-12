@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +25,23 @@ namespace chpl {
 namespace uast {
 
 
+void Conditional::dumpFieldsInner(const DumpSettings& s) const {
+  if (isExpressionLevel_) {
+    s.out << " expr";
+  }
+}
+std::string Conditional::dumpChildLabelInner(int i) const {
+  if (i == conditionChildNum_) {
+    return "condition";
+  } else if (i == thenBodyChildNum_) {
+    return "then";
+  } else if (i == elseBodyChildNum_) {
+    return "else";
+  }
+
+  return "";
+}
+
 owned<Conditional> Conditional::build(Builder* builder, Location loc,
                                       owned<AstNode> condition,
                                       BlockStyle thenBlockStyle,
@@ -32,7 +49,7 @@ owned<Conditional> Conditional::build(Builder* builder, Location loc,
                                       BlockStyle elseBlockStyle,
                                       owned<Block> elseBlock,
                                       bool isExpressionLevel) {
-  assert(condition.get() != nullptr);
+  CHPL_ASSERT(condition.get() != nullptr);
 
   AstList lst;
 
@@ -56,7 +73,7 @@ owned<Conditional> Conditional::build(Builder* builder, Location loc,
                                       BlockStyle thenBlockStyle,
                                       owned<Block> thenBlock,
                                       bool isExpressionLevel) {
-  assert(condition.get() != nullptr);
+  CHPL_ASSERT(condition.get() != nullptr);
   AstList lst;
 
   lst.push_back(std::move(condition));

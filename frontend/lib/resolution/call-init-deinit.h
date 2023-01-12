@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,11 +23,13 @@
 namespace chpl {
 namespace resolution {
 
+
 struct Resolver;
 
 /* Add calls to default init, copy init, deinit, etc to the Resolver's
    results after analyzing for split-init and copy-elision. */
 void callInitDeinit(Resolver& resolver);
+
 
 } // end namespace resolution
 } // end namespace chpl

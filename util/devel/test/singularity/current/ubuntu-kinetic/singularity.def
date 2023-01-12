@@ -6,8 +6,8 @@ From: ubuntu:kinetic
 
 %post
     /provision-scripts/apt-get-deps.sh
-    # installs LLVM 14
-    /provision-scripts/apt-get-llvm.sh
+    # default would install LLVM 15
+    /provision-scripts/apt-get-llvm-14.sh
 
 %runscript
     ../../provision-scripts/run.sh

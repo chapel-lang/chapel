@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,17 +26,11 @@
 #include <fstream>
 #include <limits>
 #include <regex>
-#include <sstream>
 #include <unordered_map>
-#include <unordered_set>
 #include <queue>
-
-#include <sys/stat.h>
-#include <unistd.h>
 
 #include "arg.h"
 #include "arg-helpers.h"
-#include "version_num.h"
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/parsing/parsing-queries.h"
@@ -45,8 +39,6 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/framework/stringify-functions.h"
 #include "chpl/framework/update-functions.h"
-#include "chpl/uast/AstTag.h"
-#include "chpl/uast/ASTTypes.h"
 #include "chpl/uast/TypeDecl.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/util/string-escapes.h"
@@ -55,6 +47,8 @@
 #include "chpl/framework/global-strings.h"
 #include "chpl/resolution/scope-queries.h"
 
+#include "llvm/Support/FileSystem.h"
+#include "chpl/util/version-info.h"
 
 
 using namespace chpl;
@@ -170,35 +164,13 @@ ArgumentDescription docs_arg_desc[] = {
  DRIVER_ARG_LAST
 };
 
-static std::string get_version() {
-  std::string ret;
-  ret = std::to_string(MAJOR_VERSION) + "." +
-        std::to_string(MINOR_VERSION) + "." +
-        std::to_string(UPDATE_VERSION);
-  if (!officialRelease) {
-    ret += " pre-release (" + std::string(BUILD_VERSION) + ")";
-  } else {
-    // It's is an official release.
-    // Try to decide whether or not to include the BUILD_VERSION
-    // based on its string length. A short git sha is 10 characters.
-    if (strlen(BUILD_VERSION) > 2 && !developer) {
-      // assume it is a sha, so don't include it
-    } else if (strcmp(BUILD_VERSION, "0") == 0) {
-      // no need to append a .0
-    } else {
-      // include the BUILD_VERSION contents to add e.g. a .1
-      ret += "." + std::string(BUILD_VERSION);
-    }
-  }
-  return ret;
-}
 
 static void printStuff(const char* argv0, void* mainAddr) {
   bool shouldExit       = false;
   bool printedSomething = false;
 
   if (fPrintVersion) {
-    std::string version = get_version();
+    std::string version = chpl::getVersion(developer);
     fprintf(stdout, "%s version %s\n", sArgState.program_name, version.c_str());
 
     fPrintCopyright  = true;
@@ -635,20 +607,20 @@ static const char* kindToString(Function::Kind kind) {
   return "";
 }
 
-static const char* kindToString(IntentList kind) {
+static const char* kindToString(Qualifier kind) {
   switch (kind) {
-    case IntentList::CONST_INTENT: return "const";
-    case IntentList::VAR: return "var";
-    case IntentList::CONST_VAR: return "const";
-    case IntentList::CONST_REF: return "const ref";
-    case IntentList::REF: return "ref";
-    case IntentList::IN: return "in";
-    case IntentList::CONST_IN: return "const in";
-    case IntentList::OUT: return "out";
-    case IntentList::INOUT: return "inout";
-    case IntentList::PARAM: return "param";
-    case IntentList::TYPE: return "type";
-    case IntentList::DEFAULT_INTENT: assert(false);
+    case Qualifier::CONST_INTENT: return "const";
+    case Qualifier::VAR: return "var";
+    case Qualifier::CONST_VAR: return "const";
+    case Qualifier::CONST_REF: return "const ref";
+    case Qualifier::REF: return "ref";
+    case Qualifier::IN: return "in";
+    case Qualifier::CONST_IN: return "const in";
+    case Qualifier::OUT: return "out";
+    case Qualifier::INOUT: return "inout";
+    case Qualifier::PARAM: return "param";
+    case Qualifier::TYPE: return "type";
+    case Qualifier::DEFAULT_INTENT: assert(false);
     default: return "";
   }
   return "";
@@ -895,7 +867,7 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const CStringLiteral* l) {
-    os_ << "c\"" << escapeStringC(l->str().c_str()) << '"';
+    os_ << "c\"" << escapeStringC(l->value().str()) << '"';
     return false;
   }
 
@@ -967,7 +939,7 @@ struct RstSignatureVisitor {
 
   bool enter(const Formal* f) {
     if (f->intent() != Formal::DEFAULT_INTENT) {
-      os_ << kindToString((IntentList) f->intent()) << " ";
+      os_ << kindToString((Qualifier) f->intent()) << " ";
     }
     os_ << f->name().c_str();
     if (const AstNode* te = f->typeExpression()) {
@@ -1003,9 +975,9 @@ struct RstSignatureVisitor {
 
     // storage kind
     if (f->thisFormal() != nullptr
-        && f->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT
-        && f->thisFormal()->storageKind() != IntentList::CONST_INTENT
-        && f->thisFormal()->storageKind() != IntentList::CONST_REF) {
+        && f->thisFormal()->storageKind() != Qualifier::DEFAULT_INTENT
+        && f->thisFormal()->storageKind() != Qualifier::CONST_INTENT
+        && f->thisFormal()->storageKind() != Qualifier::CONST_REF) {
       os_ << kindToString(f->thisFormal()->storageKind()) <<" ";
     }
 
@@ -1059,7 +1031,7 @@ struct RstSignatureVisitor {
     // Return Intent
     if (f->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT &&
         f->returnIntent() != Function::ReturnIntent::CONST) {
-      os_ << " " << kindToString((IntentList) f->returnIntent());
+      os_ << " " << kindToString((Qualifier) f->returnIntent());
     }
 
     // Return type
@@ -1132,7 +1104,7 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const StringLiteral* l) {
-    os_ << '"' << escapeStringC(l->str().c_str()) << '"';
+    os_ << '"' << escapeStringC(l->value().str()) << '"';
     return false;
   }
 
@@ -1171,7 +1143,7 @@ struct RstSignatureVisitor {
       os_ << "config ";
     }
     if (v->kind() != Variable::Kind::INDEX) {
-      os_ << kindToString((IntentList) v->kind()) << " ";
+      os_ << kindToString((Qualifier) v->kind()) << " ";
     }
     os_ << v->name().c_str();
     if (const AstNode* te = v->typeExpression()) {
@@ -1182,10 +1154,10 @@ struct RstSignatureVisitor {
     }
     if (const AstNode* ie = v->initExpression()) {
       os_ << " = ";
-      if (v->storageKind() == chpl::uast::IntentList::TYPE)
+      if (v->storageKind() == chpl::uast::Qualifier::TYPE)
         printingType_ = true;
       ie->traverse(*this);
-      if (v->storageKind() == chpl::uast::IntentList::TYPE)
+      if (v->storageKind() == chpl::uast::Qualifier::TYPE)
         printingType_ = false;
     }
     return false;
@@ -1607,7 +1579,7 @@ struct RstResultBuilder {
       // write kind
       if (!textOnly_) os_ << ".. " << kind << ":: ";
       if (decl->toVariable()->kind() != Variable::Kind::INDEX) {
-        os_ << kindToString((IntentList) decl->toVariable()->kind()) << " ";
+        os_ << kindToString((Qualifier) decl->toVariable()->kind()) << " ";
       }
       // write name
       os_ << decl->toVariable()->name();
@@ -1682,7 +1654,7 @@ struct RstResultBuilder {
       show("attribute", v);
       indentDepth_ --;
     }
-    else if (v->storageKind() == IntentList::TYPE)
+    else if (v->storageKind() == Qualifier::TYPE)
       show("type", v);
     else
       show("data", v);
@@ -2082,22 +2054,27 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
 
 
 int main(int argc, char** argv) {
-  // initial value of CHPL_HOME may be overridden by cmdline arg
-  if (getenv("CHPL_HOME") != NULL) {
-    CHPL_HOME = getenv("CHPL_HOME");
-  }
   Args args = parseArgs(argc, argv, (void*)main);
+  std::string warningMsg;
+  bool foundEnv = false;
+  bool installed = false;
+  // if user overrides CHPL_HOME from command line, don't go looking for trouble
   if (CHPL_HOME.empty()) {
-    fprintf(stderr, "CHPL_HOME not set. Please set CHPL_HOME or pass a value "
-                     "using the --home option\n" );
-    clean_exit(1);
+    std::error_code err = findChplHome(argv[0], (void*)main, CHPL_HOME, installed, foundEnv, warningMsg);
+    if (!warningMsg.empty()) {
+      fprintf(stderr, "%s\n", warningMsg.c_str());
+    }
+    if (err) {
+      fprintf(stderr, "CHPL_HOME not set to a valid value. Please set CHPL_HOME or pass a value "
+                      "using the --home option\n" );
+      clean_exit(1);
+    }
   }
+
   // TODO: there is a future for this, asking for a better error message and I
   // think we can provide it by checking here.
   // see test/chpldoc/compflags/folder/save-sphinx/saveSphinxInDocs.doc.future
-  // if (args.saveSphinx == "docs") {
-
-  // }
+  // if (args.saveSphinx == "docs") { }
 
   textOnly_ = args.textOnly;
   if (args.commentStyle.substr(0,2) != "/*") {

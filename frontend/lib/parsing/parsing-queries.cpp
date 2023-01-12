@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,10 +19,11 @@
 
 #include "chpl/parsing/parsing-queries.h"
 
-#include "chpl/parsing/Parser.h"
-#include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/ErrorBase.h"
+#include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/Parser.h"
+#include "chpl/types/RecordType.h"
 #include "chpl/uast/AggregateDecl.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Function.h"
@@ -54,11 +55,9 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
 
   std::string text;
   std::string error;
-  const ErrorParseErr* parseError = nullptr;
+  const ErrorBase* parseError = nullptr;
   if (!readfile(path.c_str(), text, error)) {
-    error = "error reading file: " + error;
-    context->report(
-        ErrorParseErr::get(context, std::make_tuple(Location(), error)));
+    parseError = context->error(Location(), "error reading file: %s\n", error.c_str());
   }
   auto result = FileContents(std::move(text), parseError);
   return QUERY_END(result);
@@ -105,7 +104,7 @@ parseFileToBuilderResult(Context* context, UniqueString path,
   // Run the fileText query to get the file contents
   const FileContents& contents = fileText(context, path);
   const std::string& text = contents.text();
-  const ErrorParseErr* error = contents.error();
+  const ErrorBase* error = contents.error();
   BuilderResult result(path);
 
   if (error == nullptr) {
@@ -176,7 +175,7 @@ const Location& locateId(Context* context, ID id) {
 
 // this is just a convenient wrapper around locating with the id
 const Location& locateAst(Context* context, const AstNode* ast) {
-  assert(!ast->isComment() && "cant locate comment like this");
+  CHPL_ASSERT(!ast->isComment() && "cant locate comment like this");
   return locateId(context, ast->id());
 }
 
@@ -352,12 +351,12 @@ void setupModuleSearchPaths(
     }
   }
 
+  addFilePathModules(searchPath, inputFilenames);
+
   // Add paths from the command line
   for (const auto& p : cmdLinePaths) {
     searchPath.push_back(p);
   }
-
-  addFilePathModules(searchPath, inputFilenames);
 
   // Convert them all to UniqueStrings.
   std::vector<UniqueString> uSearchPath;
@@ -376,9 +375,9 @@ void setupModuleSearchPaths(Context* context,
                             const std::vector<std::string>& cmdLinePaths,
                             const std::vector<std::string>& inputFilenames) {
   auto& chplHomeStr = context->chplHome();
-  assert(chplHomeStr != "");
+  CHPL_ASSERT(chplHomeStr != "");
   auto chplEnv = context->getChplEnv();
-  assert(!chplEnv.getError() && "printchplenv error handling not implemented");
+  CHPL_ASSERT(!chplEnv.getError() && "printchplenv error handling not implemented");
 
   // CHPL_MODULE_PATH isn't always in the output; check if it's there.
   auto it = chplEnv->find("CHPL_MODULE_PATH");
@@ -605,7 +604,7 @@ static const AstNode* const& astForIDQuery(Context* context, ID id) {
 
 const AstNode* idToAst(Context* context, ID id) {
   if (id.isEmpty()) {
-    assert(false && "bad query of uAST for empty ID");
+    CHPL_ASSERT(false && "bad query of uAST for empty ID");
     return nullptr;
   }
 
@@ -618,8 +617,11 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
   AstTag result = asttags::AST_TAG_UNKNOWN;
 
   const AstNode* ast = astForIDQuery(context, id);
-  if (ast != nullptr)
+  if (ast != nullptr) {
     result = ast->tag();
+  } else if (types::RecordType::isMissingBundledRecordType(context, id)) {
+    result = asttags::Record;
+  }
 
   return QUERY_END(result);
 }
@@ -650,19 +652,28 @@ bool idIsParenlessFunction(Context* context, ID id) {
   return idIsParenlessFunctionQuery(context, id);
 }
 
-static const bool& idIsFieldQuery(Context* context, ID id) {
-  QUERY_BEGIN(idIsFieldQuery, context, id);
+static const UniqueString& fieldIdToNameQuery(Context* context, ID id) {
+  QUERY_BEGIN(fieldIdToNameQuery, context, id);
 
-  bool result = false;
-  if (auto ast = astForIDQuery(context, id))
-    if (auto var = ast->toVariable())
-      result = var->isField();
+  UniqueString result;
+  if (auto ast = astForIDQuery(context, id)) {
+    if (auto var = ast->toVariable()) {
+      if (var->isField()) {
+        result = var->name();
+      }
+    }
+  }
 
   return QUERY_END(result);
 }
 
+UniqueString fieldIdToName(Context* context, ID id) {
+  return fieldIdToNameQuery(context, id);
+}
+
 bool idIsField(Context* context, ID id) {
-  return idIsFieldQuery(context, id);
+  UniqueString name = fieldIdToName(context, id);
+  return !name.isEmpty();
 }
 
 const ID& idToParentId(Context* context, ID id) {
@@ -698,7 +709,7 @@ static const ID& getModuleForId(Context* context, ID id) {
   AstTag tag;
   ID result = id;
 
-  assert(!result.isEmpty() && "should be handled at call site");
+  CHPL_ASSERT(!result.isEmpty() && "should be handled at call site");
 
   while (!result.isEmpty()) {
     tag = idToTag(context, result);
@@ -708,7 +719,7 @@ static const ID& getModuleForId(Context* context, ID id) {
     result = result.parentSymbolId(context);
   }
 
-  assert(!result.isEmpty() && "not expected");
+  CHPL_ASSERT(!result.isEmpty() && "not expected");
 
   return QUERY_END(result);
 }
@@ -766,7 +777,7 @@ idToContainingMultiDeclIdQuery(Context* context, ID id) {
   QUERY_BEGIN(idToContainingMultiDeclIdQuery, context, id);
 
   ID cur = id;
-  assert(isVariable(idToTag(context, id)));
+  CHPL_ASSERT(isVariable(idToTag(context, id)));
 
   while (true) {
     ID parent = idToParentId(context, cur);

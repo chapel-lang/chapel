@@ -1,0 +1,3 @@
+num buckets before loop: 16
+num buckets after loop: 32
+correct values: true

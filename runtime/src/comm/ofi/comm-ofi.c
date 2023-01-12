@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -977,6 +977,12 @@ static void init_bar(void);
 
 static void init_broadcast_private(void);
 
+////////////////////////////////////////
+//
+// Misc.
+//
+
+const char *chpl_comm_oob = "unknown";
 
 //
 // forward decls
@@ -2317,6 +2323,7 @@ void init_ofiEp(void) {
   numRxCtxs = numAmHandlers;
 
   tciTabLen = numTxCtxs;
+  CHK_TRUE(tciTabLen > 0);
   CHPL_CALLOC(tciTab, tciTabLen);
 
   // Use "hybrid" MR mode for the cxi provider if it's available
@@ -5574,6 +5581,8 @@ struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool bindToAmHandler) {
   //
   const int numWorkerTxCtxs = tciTabLen - numAmHandlers;
   struct perTxCtxInfo_t* tcip;
+
+  CHK_TRUE(numWorkerTxCtxs > 0);
 
   if (bindToAmHandler) {
     //

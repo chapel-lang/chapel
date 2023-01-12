@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -57,12 +57,12 @@ class Manage final : public SimpleBlockLike {
                       numBodyStmts),
       managerExprChildNum_(managerExprChildNum),
       numManagerExprs_(numManagerExprs) {
-    assert(0 <= managerExprChildNum_);
-    assert(managerExprChildNum_ < numChildren());
+    CHPL_ASSERT(0 <= managerExprChildNum_);
+    CHPL_ASSERT(managerExprChildNum_ < numChildren());
 
     #ifndef NDEBUG
       for (auto mgr : managers()) {
-        if (auto as = mgr->toAs()) assert(as->rename()->isVariable());
+        if (auto as = mgr->toAs()) CHPL_ASSERT(as->rename()->isVariable());
       }
     #endif
   }
@@ -78,6 +78,8 @@ class Manage final : public SimpleBlockLike {
   void markUniqueStringsInner(Context* context) const override {
     simpleBlockLikeMarkUniqueStringsInner(context);
   }
+
+  std::string dumpChildLabelInner(int i) const override;
 
  public:
   ~Manage() override = default;
@@ -113,7 +115,7 @@ class Manage final : public SimpleBlockLike {
     Return the i'th manager in this manage statement.
   */
   const AstNode* manager(int i) const {
-    assert(0 <= i && i < numManagerExprs_);
+    CHPL_ASSERT(0 <= i && i < numManagerExprs_);
     auto ret = child(managerExprChildNum_ + i);
     return ret;
   }

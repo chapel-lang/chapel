@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,7 +33,7 @@ using namespace types;
 
 static bool fitsInIntHelper(int width, int64_t val) {
   switch (width) {
-    default: assert(false && "bad width in fits_in_int_helper");
+    default: CHPL_ASSERT(false && "bad width in fits_in_int_helper");
     case 1:
       return (val == 0 || val == 1);
     case 8:
@@ -63,7 +63,7 @@ static bool paramFitsInInt(int width, const Param* p) {
 
 static bool fitsInUintHelper(int width, uint64_t val) {
   switch (width) {
-  default: assert(false && "bad width in fits_in_uint_helper");
+  default: CHPL_ASSERT(false && "bad width in fits_in_uint_helper");
   case 8:
     return (val <= UINT8_MAX);
   case 16:
@@ -137,7 +137,7 @@ static void getMantissaExponentWidth(const Type *t,
       return;
     }
   }
-  assert(false && "unknown mantissa width");
+  CHPL_ASSERT(false && "unknown mantissa width");
   mantissa = 0;
   exponent = 0;
 }
@@ -153,7 +153,7 @@ static bool fitsInBitsNoSign(int width, int64_t i) {
 static bool fitsInTwosComplement(int width, int64_t i) {
   // would it fit in a width-bit 2's complement representation?
 
-  assert(width < 64);
+  CHPL_ASSERT(width < 64);
 
   int64_t max_pos = 1;
   max_pos <<= width-1;
@@ -197,7 +197,7 @@ static bool fitsInMantissaExponent(int mantissaWidth,
     else
       v = cp->value().im;
   } else {
-    assert(false && "unsupported number kind");
+    CHPL_ASSERT(false && "unsupported number kind");
   }
 
   double frac = 0.0;
@@ -224,7 +224,7 @@ static bool isConsideredGeneric(Type::Genericity g) {
     case Type::GENERIC:
       return true;
     case Type::MAYBE_GENERIC:
-      assert(false && "Should not be reachable");
+      CHPL_ASSERT(false && "Should not be reachable");
   }
 
   return false;
@@ -516,10 +516,10 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
   auto formalBct = formalCt->basicClassType();
 
   // code below assumes this
-  assert(decResult.passes_);
-  assert(decResult.conversionKind_ == NONE ||
+  CHPL_ASSERT(decResult.passes_);
+  CHPL_ASSERT(decResult.conversionKind_ == NONE ||
          decResult.conversionKind_ == SUBTYPE);
-  assert(!decResult.promotes_);
+  CHPL_ASSERT(!decResult.promotes_);
 
   bool converts = decResult.conversionKind_ != NONE;
   bool instantiates = decResult.instantiates_;
@@ -643,7 +643,7 @@ CanPassResult CanPassResult::canConvert(Context* context,
     auto got = canPassSubtype(context, actualT, formalT);
     if (got.passes()) {
       // canPassSubtype should always return NONE or SUBTYPE conversion.
-      assert(got.conversionKind_ == NONE || got.conversionKind_ == SUBTYPE);
+      CHPL_ASSERT(got.conversionKind_ == NONE || got.conversionKind_ == SUBTYPE);
       return got;
     }
   }
@@ -714,10 +714,10 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
     return true;
 
   if (formalT->isAnyIteratorClassType())
-    assert(false && "Not implemented yet"); // TODO: represent iterators
+    CHPL_ASSERT(false && "Not implemented yet"); // TODO: represent iterators
 
   if (formalT->isAnyIteratorRecordType())
-    assert(false && "Not implemented yet"); // TODO: represent iterators
+    CHPL_ASSERT(false && "Not implemented yet"); // TODO: represent iterators
 
   if (formalT->isAnyManagementAnyNilableType())
     if (actualT->isClassType())
@@ -744,7 +744,7 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
             return true;
 
   if (formalT->isAnyPodType())
-    assert(false && "Not implemented yet"); // TODO: compute POD-ness
+    CHPL_ASSERT(false && "Not implemented yet"); // TODO: compute POD-ness
 
   if (formalT->isAnyRealType() && actualT->isRealType())
     return true;
@@ -798,7 +798,7 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
 
   const Type* actualT = actualQT.type();
   const Type* formalT = formalQT.type();
-  assert(actualT && formalT);
+  CHPL_ASSERT(actualT && formalT);
 
   // check for builtin generic types
   if (canInstantiateBuiltin(context, actualT, formalT)) {
@@ -833,16 +833,14 @@ CanPassResult CanPassResult::canPass(Context* context,
 
   const Type* actualT = actualQT.type();
   const Type* formalT = formalQT.type();
-  assert(actualT && formalT);
+  CHPL_ASSERT(actualT && formalT);
 
   // if the formal type is unknown, allow passing
   // this can come up with e.g.
   //   proc f(a: int(?w), b: int(2*w))
   // when computing an initial candidate, 'b' is unknown
   // but we should allow passing an argument to it.
-  if (formalQT.kind() == QualifiedType::UNKNOWN &&
-      formalT->isUnknownType() &&
-      !actualQT.isType()) {
+  if (formalT->isUnknownType() && !actualQT.isType()) {
     return passAsIs();
   }
 
@@ -874,7 +872,7 @@ CanPassResult CanPassResult::canPass(Context* context,
     } // otherwise continue with type information
   } else if (formalParam && !actualParam) {
     // this case doesn't make sense
-    assert(false && "case not expected");
+    CHPL_ASSERT(false && "case not expected");
     return fail();
   }
 
@@ -977,34 +975,6 @@ CanPassResult CanPassResult::canPass(Context* context,
   return fail();
 }
 
-static bool isConstIntent(QualifiedType::Kind kind) {
-  switch (kind) {
-    case QualifiedType::CONST_INTENT:
-    case QualifiedType::CONST_VAR:
-    case QualifiedType::CONST_REF:
-    case QualifiedType::CONST_IN:
-    case QualifiedType::PARAM:
-    case QualifiedType::TYPE:
-    case QualifiedType::FUNCTION:
-    case QualifiedType::MODULE:
-      return true;
-    default:
-      return false;
-  }
-}
-
-static bool isRefIntent(QualifiedType::Kind kind) {
-  switch (kind) {
-    // assume we don't get CONST_INTENT or DEFAULT_INTENT here,
-    // since we don't know how to translate them.
-    case QualifiedType::CONST_REF:
-    case QualifiedType::REF:
-      return true;
-    default:
-      return false;
-  }
-}
-
 // When trying to combine two kinds, you can't just pick one.
 // For instance, if any type in the list is a value, the result
 // should be a value, and if any type in the list is const, the
@@ -1038,8 +1008,8 @@ class KindProperties {
       // Mark params as const to cover the case in which a
       // param decays to a const var.
       return KindProperties(true, false, false, true);
-    auto isConst = isConstIntent(kind);
-    auto isRef = isRefIntent(kind);
+    auto isConst = isConstQualifier(kind);
+    auto isRef = isRefQualifier(kind);
     return KindProperties(isConst, isRef, false, false);
   }
 
@@ -1117,7 +1087,7 @@ llvm::Optional<QualifiedType>
 commonType(Context* context,
            const std::vector<QualifiedType>& types,
            KindRequirement requiredKind) {
-  assert(types.size() > 0);
+  CHPL_ASSERT(types.size() > 0);
 
   // figure out the kind
   auto properties = KindProperties::fromKind(types.front().kind());

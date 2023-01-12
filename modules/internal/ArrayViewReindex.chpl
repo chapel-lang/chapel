@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -314,7 +314,7 @@ module ArrayViewReindex {
     override proc dsiAlignedLow return updom.dsiAlignedLow;
     override proc dsiAlignedHigh return updom.dsiAlignedHigh;
     override proc dsiIndexOrder(i) return updom.dsiIndexOrder(i);
-    override proc dsiMakeIndexBuffer(size) return updom.dsiMakeIndexBuffer(size);
+    override proc dsiCreateIndexBuffer(size) return updom.dsiCreateIndexBuffer(size);
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -901,6 +901,9 @@ bool isTypeExpr(Expr* expr) {
       bool isType = false;
       getPrimGetRuntimeTypeFieldReturnType(call, isType);
       retval = isType;
+
+    } else if (call->isPrimitive(PRIM_COERCE)) {
+      retval = isTypeExpr(call->get(1));
 
     } else if (call->numActuals() == 1 &&
                call->baseExpr &&

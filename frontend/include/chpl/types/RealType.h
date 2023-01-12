@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -70,7 +70,7 @@ class RealType final : public PrimitiveType {
       case 64:
           return "real(64)";
       default:
-        assert(false && "real bit width case not handled");
+        CHPL_ASSERT(false && "real bit width case not handled");
         return "real(<unknown>)";
     }
   }

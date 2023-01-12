@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,7 +19,9 @@
 
 
 #include "chpl/uast/chpl-syntax-printer.h"
+
 #include "chpl/framework/global-strings.h"
+#include "chpl/uast/all-uast.h"
 
 
 using namespace chpl;
@@ -29,9 +31,9 @@ static const char* kindToString(Decl::Linkage kind) {
   switch (kind) {
     case Decl::Linkage::EXTERN: return "extern";
     case Decl::Linkage::EXPORT: return "export";
-    case Decl::Linkage::DEFAULT_LINKAGE: assert(false);
+    case Decl::Linkage::DEFAULT_LINKAGE: CHPL_ASSERT(false);
   }
-  assert(false);
+  CHPL_ASSERT(false);
   return "";
 }
 
@@ -42,7 +44,7 @@ static const char* kindToString(Function::Kind kind) {
     case Function::Kind::OPERATOR: return "operator";
     case Function::Kind::LAMBDA: return "lambda";
   }
-  assert(false);
+  CHPL_ASSERT(false);
   return "";
 }
 
@@ -50,26 +52,26 @@ static const char* kindToString(Function::Visibility kind) {
   switch (kind) {
     case Function::Visibility::PRIVATE: return "private";
     case Function::Visibility::PUBLIC: return "public";
-    case Function::Visibility::DEFAULT_VISIBILITY: assert(false);
+    case Function::Visibility::DEFAULT_VISIBILITY: CHPL_ASSERT(false);
   }
-  assert(false);
+  CHPL_ASSERT(false);
   return "";
 }
 
-static const char* kindToString(IntentList kind) {
+static const char* kindToString(Qualifier kind) {
   switch (kind) {
-    case IntentList::CONST_INTENT: return "const";
-    case IntentList::VAR: return "var";
-    case IntentList::CONST_VAR: return "const";
-    case IntentList::CONST_REF: return "const ref";
-    case IntentList::REF: return "ref";
-    case IntentList::IN: return "in";
-    case IntentList::CONST_IN: return "const in";
-    case IntentList::OUT: return "out";
-    case IntentList::INOUT: return "inout";
-    case IntentList::PARAM: return "param";
-    case IntentList::TYPE: return "type";
-    case IntentList::DEFAULT_INTENT: assert(false);
+    case Qualifier::CONST_INTENT: return "const";
+    case Qualifier::VAR: return "var";
+    case Qualifier::CONST_VAR: return "const";
+    case Qualifier::CONST_REF: return "const ref";
+    case Qualifier::REF: return "ref";
+    case Qualifier::IN: return "in";
+    case Qualifier::CONST_IN: return "const in";
+    case Qualifier::OUT: return "out";
+    case Qualifier::INOUT: return "inout";
+    case Qualifier::PARAM: return "param";
+    case Qualifier::TYPE: return "type";
+    case Qualifier::DEFAULT_INTENT: CHPL_ASSERT(false);
     default: return "";
   }
   return "";
@@ -79,9 +81,9 @@ static const char* kindToString(Module::Kind kind) {
   switch (kind) {
     case Module::Kind::IMPLICIT: return "";
     case Module::Kind::PROTOTYPE: return "prototype";
-    case Module::Kind::DEFAULT_MODULE_KIND: assert(false);
+    case Module::Kind::DEFAULT_MODULE_KIND: CHPL_ASSERT(false);
   }
-  assert(false);
+  CHPL_ASSERT(false);
   return "";
 }
 
@@ -91,11 +93,11 @@ static const char* kindToString(New::Management kind) {
     case New::Management::OWNED: return "owned";
     case New::Management::SHARED: return "shared";
     case New::Management::UNMANAGED: return "unmanaged";
-    case New::Management::DEFAULT_MANAGEMENT: assert(false);
+    case New::Management::DEFAULT_MANAGEMENT: CHPL_ASSERT(false);
     default:
-      assert(false);
+      CHPL_ASSERT(false);
   }
-  assert(false);
+  CHPL_ASSERT(false);
   return "";
 }
 
@@ -103,8 +105,8 @@ static const char* kindToString(VisibilityClause::LimitationKind kind) {
   switch (kind) {
     case VisibilityClause::LimitationKind::ONLY: return "only";
     case VisibilityClause::LimitationKind::EXCEPT: return "except";
-    case VisibilityClause::LimitationKind::BRACES: assert(false);
-    case VisibilityClause::LimitationKind::NONE: assert(false);
+    case VisibilityClause::LimitationKind::BRACES: CHPL_ASSERT(false);
+    case VisibilityClause::LimitationKind::NONE: CHPL_ASSERT(false);
     default: return "";
   }
 }
@@ -339,14 +341,14 @@ struct ChplSyntaxVisitor {
   void printFunctionHelper(const Function* node) {
      // storage kind
     if (node->thisFormal() != nullptr
-        && node->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT) {
+        && node->thisFormal()->storageKind() != Qualifier::DEFAULT_INTENT) {
       ss_ << kindToString(node->thisFormal()->storageKind()) <<" ";
     }
 
     // print out the receiver type for secondary methods
     if (node->isMethod() && !node->isPrimaryMethod()) {
       auto typeExpr = node->thisFormal()->typeExpression();
-      assert(typeExpr);
+      CHPL_ASSERT(typeExpr);
 
       if (auto ident = typeExpr->toIdentifier()) {
         ss_ << ident->name().str();
@@ -457,7 +459,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const uast::AstNode* node) {
-    assert(false && "Unhandled uAST node");
+    CHPL_ASSERT(false && "Unhandled uAST node");
   }
 
   void visit(const Array* node) {
@@ -533,7 +535,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const BytesLiteral* node) {
-    ss_ << "b\"" << escapeStringC(node->str().str()) << '"';
+    ss_ << "b\"" << escapeStringC(node->value().str()) << '"';
   }
 
   void visit(const Catch* node) {
@@ -635,7 +637,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const CStringLiteral* node) {
-    ss_ << "c\"" << escapeStringC(node->str().str()) << '"';
+    ss_ << "c\"" << escapeStringC(node->value().str()) << '"';
   }
 
   void visit(const Defer* node) {
@@ -711,7 +713,7 @@ struct ChplSyntaxVisitor {
 
   void visit(const FnCall* node) {
     const AstNode* callee = node->calledExpression();
-    assert(callee);
+    CHPL_ASSERT(callee);
     printAst(callee);
     if (isCalleeReservedWord(callee)) {
       ss_ << " ";
@@ -804,7 +806,7 @@ struct ChplSyntaxVisitor {
 
   void visit(const AnonFormal* node) {
     if (node->intent() != Formal::DEFAULT_INTENT) {
-      ss_ << kindToString((IntentList) node->intent()) << " ";
+      ss_ << kindToString((Qualifier) node->intent()) << " ";
     }
 
     if (auto te = node->typeExpression()) {
@@ -816,7 +818,7 @@ struct ChplSyntaxVisitor {
     if (node->attributes()) ss_ << pragmaFlagsToString(node);
 
     if (node->intent() != Formal::DEFAULT_INTENT) {
-      ss_ << kindToString((IntentList) node->intent()) << " ";
+      ss_ << kindToString((Qualifier) node->intent()) << " ";
     }
     declHelper(node);
   }
@@ -837,10 +839,10 @@ struct ChplSyntaxVisitor {
     }
 
     if (node->isOverride()) {
-      assert(node->linkage() == Decl::Linkage::DEFAULT_LINKAGE);
+      CHPL_ASSERT(node->linkage() == Decl::Linkage::DEFAULT_LINKAGE);
       ss_ << "override ";
     } else if (node->isInline()) {
-      assert(node->linkage() == Decl::Linkage::DEFAULT_LINKAGE);
+      CHPL_ASSERT(node->linkage() == Decl::Linkage::DEFAULT_LINKAGE);
       ss_ << "inline ";
     }
 
@@ -852,7 +854,7 @@ struct ChplSyntaxVisitor {
 
     // Return Intent
     if (node->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
-      ss_ << " " << kindToString((IntentList) node->returnIntent());
+      ss_ << " " << kindToString((Qualifier) node->returnIntent());
     }
 
     // Return type
@@ -888,7 +890,7 @@ struct ChplSyntaxVisitor {
 
     // Return Intent
     if (node->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT) {
-      ss_ << " " << kindToString((IntentList) node->returnIntent());
+      ss_ << " " << kindToString((Qualifier) node->returnIntent());
     }
 
     // Return type
@@ -986,12 +988,12 @@ struct ChplSyntaxVisitor {
         if (auto var = decl->toVariable()) {
           if (var->isConfig())
             isConfig = true;
-          kind = kindToString((IntentList)var->kind());
+          kind = kindToString((Qualifier)var->kind());
         }
         else if (auto tup = decl->toTupleDecl()) {
           if (isTupleDeclConfig(tup))
             isConfig = true;
-          kind = kindToString((IntentList)tup->intentOrKind());
+          kind = kindToString((Qualifier)tup->intentOrKind());
         }
       }
     }
@@ -1027,7 +1029,7 @@ struct ChplSyntaxVisitor {
   }
 
   void printUnaryOp(const OpCall* node) {
-    assert(node->numActuals() == 1);
+    CHPL_ASSERT(node->numActuals() == 1);
     UniqueString unaryOp;
     bool isPostFixBang = false;
     bool isNilable = false;
@@ -1070,7 +1072,7 @@ struct ChplSyntaxVisitor {
   }
 
   void printBinaryOp(const OpCall* node) {
-    assert(node->numActuals() == 2);
+    CHPL_ASSERT(node->numActuals() == 2);
     bool addSpace = wantSpaces(node->op(), printingType_) ||
                     node->op() == USTR("by") ||
                     node->op() == USTR("align") ||
@@ -1176,7 +1178,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const StringLiteral* node) {
-    ss_ << '"' << escapeStringC(node->str().str()) << '"';
+    ss_ << '"' << escapeStringC(node->value().str()) << '"';
   }
 
   void visit(const Sync* node) {
@@ -1185,7 +1187,7 @@ struct ChplSyntaxVisitor {
   }
 
   void visit(const TaskVar* node) {
-    ss_ << kindToString((IntentList) node->intent());
+    ss_ << kindToString((Qualifier) node->intent());
     ss_ << " ";
     declHelper(node);
   }
@@ -1223,7 +1225,7 @@ struct ChplSyntaxVisitor {
       ss_ << "config ";
     if (node->intentOrKind() != TupleDecl::IntentOrKind::DEFAULT_INTENT &&
         node->intentOrKind() != TupleDecl::IntentOrKind::INDEX) {
-      ss_ << kindToString((IntentList) node->intentOrKind()) << " ";
+      ss_ << kindToString((Qualifier) node->intentOrKind()) << " ";
     }
     declHelper(node);
   }
@@ -1259,7 +1261,7 @@ struct ChplSyntaxVisitor {
 
   void visit(const VarArgFormal* node) {
     if (node->intent() != Formal::Intent::DEFAULT_INTENT) {
-      ss_ << kindToString((IntentList) node->intent()) << " ";
+      ss_ << kindToString((Qualifier) node->intent()) << " ";
     }
     // TODO: same pattern as declHelper, in Formal* and TupleDecl*
     declHelper(node);
@@ -1278,7 +1280,7 @@ struct ChplSyntaxVisitor {
     }
 
     if (node->kind() != Variable::Kind::INDEX) {
-      ss_ << kindToString((IntentList) node->kind()) << " ";
+      ss_ << kindToString((Qualifier) node->kind()) << " ";
     }
     declHelper(node);
   }
@@ -1291,7 +1293,7 @@ struct ChplSyntaxVisitor {
       interpose(node->limitations(), ", ", "{","}");
     } else if (limit == VisibilityClause::LimitationKind::NONE &&
                node->numLimitations() == 1) {
-      assert(node->limitation(0)->isIdentifier());
+      CHPL_ASSERT(node->limitation(0)->isIdentifier());
       ss_ << ".";
       printAst(node->limitation(0));
     } else {

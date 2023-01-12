@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,14 +47,14 @@ class Label final : public AstNode {
   Label(AstList children, UniqueString name)
     : AstNode(asttags::Label, std::move(children)),
       name_(name) {
-    assert(numChildren() == 1);
+    CHPL_ASSERT(numChildren() == 1);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Label* lhs = this;
     const Label* rhs = other->toLabel();
 
-    assert(lhs->loopChildNum_ == rhs->loopChildNum_);
+    CHPL_ASSERT(lhs->loopChildNum_ == rhs->loopChildNum_);
 
     if (lhs->name_ != rhs->name_)
       return false;
@@ -64,6 +64,8 @@ class Label final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
     name_.mark(context);
   }
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
   // This always exists and its position can never change.
   static const int8_t loopChildNum_ = 0;
 
@@ -84,7 +86,7 @@ class Label final : public AstNode {
   */
   const Loop* loop() const {
     auto ret = child(loopChildNum_);
-    assert(ret->isLoop());
+    CHPL_ASSERT(ret->isLoop());
     return (const Loop*)ret;
   }
 

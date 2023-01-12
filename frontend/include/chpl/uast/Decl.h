@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -76,19 +76,19 @@ class Decl : public AstNode {
 
 
     if (linkageNameChildNum_ >= 0) {
-      assert(linkage_ != DEFAULT_LINKAGE);
+      CHPL_ASSERT(linkage_ != DEFAULT_LINKAGE);
     }
 
-    assert(-1 <= attributesChildNum_ &&
+    CHPL_ASSERT(-1 <= attributesChildNum_ &&
                  attributesChildNum_ < (ssize_t)children_.size());
 
     if (attributesChildNum_ >= 0) {
-      assert(child(attributesChildNum_)->isAttributes());
+      CHPL_ASSERT(child(attributesChildNum_)->isAttributes());
     }
 
-    assert(-1 <= linkageNameChildNum_ &&
+    CHPL_ASSERT(-1 <= linkageNameChildNum_ &&
                  linkageNameChildNum_ < (ssize_t)children_.size());
-    assert(-1 <= linkageNameChildNum_ &&
+    CHPL_ASSERT(-1 <= linkageNameChildNum_ &&
                  linkageNameChildNum_ < (ssize_t)children_.size());
   }
 
@@ -102,6 +102,8 @@ class Decl : public AstNode {
   void declMarkUniqueStringsInner(Context* context) const {
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
 
   int attributesChildNum() const {
     return attributesChildNum_;
@@ -147,10 +149,19 @@ class Decl : public AstNode {
   const Attributes* attributes() const {
     if (attributesChildNum_ < 0) return nullptr;
     auto ret = child(attributesChildNum_);
-    assert(ret->isAttributes());
+    CHPL_ASSERT(ret->isAttributes());
     return (const Attributes*)ret;
   }
 
+  /**
+    Convert Decl::Visibility to a string
+    */
+  static const char* visibilityToString(Visibility v);
+
+  /**
+    Convert Decl::Linkage to a string
+    */
+  static const char* linkageToString(Linkage x);
 };
 
 

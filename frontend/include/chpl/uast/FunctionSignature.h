@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,8 +23,8 @@
 #include "chpl/framework/Location.h"
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/Function.h"
-#include "chpl/uast/IntentList.h"
 #include "chpl/uast/NamedDecl.h"
+#include "chpl/uast/Qualifier.h"
 
 namespace chpl {
 namespace uast {
@@ -76,13 +76,13 @@ class FunctionSignature final : public AstNode {
       throws_(throws),
       isParenless_(isParenless) {
 
-    assert(-1 <= formalsChildNum_ &&
+    CHPL_ASSERT(-1 <= formalsChildNum_ &&
                  formalsChildNum_ < (ssize_t)children_.size());
-    assert(-1 <= thisFormalChildNum_ &&
+    CHPL_ASSERT(-1 <= thisFormalChildNum_ &&
                  thisFormalChildNum_ < (ssize_t)children_.size());
-    assert(0 <= numFormals_ &&
+    CHPL_ASSERT(0 <= numFormals_ &&
                 numFormals_ <= (ssize_t)children_.size());
-    assert(-1 <= returnTypeChildNum_ &&
+    CHPL_ASSERT(-1 <= returnTypeChildNum_ &&
                  returnTypeChildNum_ < (ssize_t)children_.size());
   }
 
@@ -99,7 +99,10 @@ class FunctionSignature final : public AstNode {
            lhs->returnTypeChildNum_ == rhs->returnTypeChildNum_;
   }
 
-  void markUniqueStringsInner(Context* context) const override {}
+  void markUniqueStringsInner(Context* context) const override { }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
 
  public:
   ~FunctionSignature() override = default;
@@ -135,7 +138,7 @@ class FunctionSignature final : public AstNode {
     Return the i'th formal
   */
   const Decl* formal(int i) const {
-    assert(0 <= i && i < numFormals_);
+    CHPL_ASSERT(0 <= i && i < numFormals_);
     auto ret = this->child(formalsChildNum_ + i);
     return (const Decl*) ret;
   }
@@ -147,7 +150,7 @@ class FunctionSignature final : public AstNode {
   const Formal* thisFormal() const {
     if (thisFormalChildNum_ == NO_CHILD) return nullptr;
     auto ret = this->child(thisFormalChildNum_);
-    assert(ret->isFormal());
+    CHPL_ASSERT(ret->isFormal());
     return (const Formal*) ret;
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1426,6 +1426,9 @@ module BytesStringCommon {
         }
       }
     }
+
+    // ensure that there is a null byte at the end of the buffer
+    if x.buffLen > 0 then x.buff[x.buffLen] = 0;
   }
 
   private proc _isSingleWord(const ref x: ?t) {

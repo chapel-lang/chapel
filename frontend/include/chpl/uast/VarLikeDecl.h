@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,7 +22,7 @@
 
 #include "chpl/framework/Location.h"
 #include "chpl/uast/NamedDecl.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 
 namespace chpl {
 namespace uast {
@@ -34,7 +34,7 @@ namespace uast {
  */
 class VarLikeDecl : public NamedDecl {
  protected:
-  IntentList storageKind_;
+  Qualifier storageKind_;
   int8_t typeExpressionChildNum_;
   int8_t initExpressionChildNum_;
 
@@ -43,7 +43,7 @@ class VarLikeDecl : public NamedDecl {
               Decl::Linkage linkage,
               int linkageNameChildNum,
               UniqueString name,
-              IntentList storageKind,
+              Qualifier storageKind,
               int8_t typeExpressionChildNum,
               int8_t initExpressionChildNum)
     : NamedDecl(tag, std::move(children), attributesChildNum, vis,
@@ -55,12 +55,12 @@ class VarLikeDecl : public NamedDecl {
       initExpressionChildNum_(initExpressionChildNum) {
 
     // Linkage name can be a child num.
-    assert(numChildren() <= 3);
+    CHPL_ASSERT(numChildren() <= 3);
     if (typeExpressionChildNum >= 0) {
-      assert(typeExpressionChildNum <= 3);
+      CHPL_ASSERT(typeExpressionChildNum <= 3);
     }
     if (initExpressionChildNum >= 0) {
-      assert(initExpressionChildNum <= 3);
+      CHPL_ASSERT(initExpressionChildNum <= 3);
     }
   }
 
@@ -77,6 +77,9 @@ class VarLikeDecl : public NamedDecl {
     namedDeclMarkUniqueStringsInner(context);
   }
 
+  virtual void dumpFieldsInner(const DumpSettings& s) const override;
+  virtual std::string dumpChildLabelInner(int i) const override;
+
  public:
   ~VarLikeDecl() = 0; // this is an abstract base class
 
@@ -85,7 +88,7 @@ class VarLikeDecl : public NamedDecl {
     Subclasses have more specific functions that return the
     subset appropriate for that subclass.
    */
-  IntentList storageKind() const {
+  Qualifier storageKind() const {
     return storageKind_;
   }
 

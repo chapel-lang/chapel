@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -66,7 +66,7 @@ class UnionType final : public CompositeType {
    */
   const UnionType* instantiatedFrom() const {
     const CompositeType* ret = instantiatedFromCompositeType();
-    assert(ret == nullptr || ret->tag() == typetags::UnionType);
+    CHPL_ASSERT(ret == nullptr || ret->tag() == typetags::UnionType);
     return (const UnionType*) ret;
   }
 };

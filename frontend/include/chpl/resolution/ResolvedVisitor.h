@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -75,7 +75,7 @@ static bool resolvedVisitorEnterAst(ResolvedVisitorImpl& v,
       { \
         const NAME* casted = (const NAME*) ast; \
         v.userVisitor().enter(casted, v); \
-        assert(ast->numChildren() == 0); \
+        CHPL_ASSERT(ast->numChildren() == 0); \
         v.userVisitor().exit(casted, v); \
         break; \
       }
@@ -97,7 +97,7 @@ static bool resolvedVisitorEnterAst(ResolvedVisitorImpl& v,
     #define CASE_OTHER(NAME) \
       case asttags::NAME: \
       { \
-        assert(false && "this code should never be run"); \
+        CHPL_ASSERT(false && "this code should never be run"); \
         break; \
       }
 
@@ -136,6 +136,23 @@ static bool resolvedVisitorEnterAst(ResolvedVisitorImpl& v,
   The enter/exit calls invoke enter/exit on the User Visitor while passing in a
   reference to the current ResolvedVisitor. It is possible to get the type of a
   uAST node from the current ResolvedVisitor.
+
+  To use this, create a custom class, and within it, declare enter/exit
+  calls like so:
+
+    class MyResolvedVisitor {
+      ...
+      bool enter(const AstNode* ast, RV& rv);
+      void exit(const AstNode* ast, RV& rv);
+      ...
+    }
+
+  Then, use this pattern to visit:
+
+    ResolvedVisitor<MyResolvedVisitor> rv(context, symbol,
+                                          myResolvedVisitor, byPostorder);
+    symbol->traverse(rv);
+
   */
 template <typename UV>
 class ResolvedVisitor {

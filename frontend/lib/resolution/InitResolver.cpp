@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,7 +37,7 @@
 //       (for types and params)
 // - [ ] "cannot take a reference to 'this' before this.complete()"
 // - [ ] "cannot initialize a variable from 'this' before this.complete()"
-// - [ ] "cannot pass 'this' to a funciton before calling super.init() "
+// - [ ] "cannot pass 'this' to a function before calling super.init() "
 //       "or this.init()"
 // - [ ] "cannot pass a record to a function before this.complete()"
 //
@@ -49,7 +49,7 @@ using namespace uast;
 
 static const Type* receiverTypeFromTfs(const TypedFnSignature* tfs) {
   auto ret = tfs->formalType(0).type();
-  assert(ret);
+  CHPL_ASSERT(ret);
   return ret;
 }
 
@@ -65,7 +65,7 @@ static const CompositeType* typeToCompType(const Type* type) {
 owned<InitResolver>
 InitResolver::create(Context* ctx, Resolver& visitor, const Function* fn) {
   auto tfs = visitor.typedSignature;
-  assert(tfs);
+  CHPL_ASSERT(tfs);
   auto recvType = receiverTypeFromTfs(tfs);
   auto ret = toOwned(new InitResolver(ctx, visitor, fn, recvType));
   ret->doSetupInitialState();
@@ -124,7 +124,7 @@ bool InitResolver::isFinalReceiverStateValid(void) {
     }
 
     if (state->qt.genericity() == Type::GENERIC) {
-      assert(false && "Not handled yet!");
+      CHPL_ASSERT(false && "Not handled yet!");
       ret = false;
     }
   }
@@ -174,10 +174,10 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
     auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
     ret = ClassType::get(ctx_, basic, manager, dec);
   } else {
-    assert(false && "Not handled!");
+    CHPL_ASSERT(false && "Not handled!");
   }
 
-  assert(ret);
+  CHPL_ASSERT(ret);
 
   return ret;
 }
@@ -186,7 +186,7 @@ QualifiedType::Kind InitResolver::determineReceiverIntent(void) {
   if (initialRecvType_->isClassType()) {
     return QualifiedType::CONST_IN;
   } else {
-    assert(initialRecvType_->isRecordType());
+    CHPL_ASSERT(initialRecvType_->isRecordType());
     return QualifiedType::REF;
   }
 }
@@ -217,16 +217,16 @@ InitResolver::computeTypedSignature(const Type* newRecvType) {
 
   ret = TypedFnSignature::get(ctx_, ufs, formalTypes,
                               tfs->whereClauseResult(),
-                              false,
+                              /* needsInstantiation */ false,
                               tfs->instantiatedFrom(),
                               tfs->parentFn(),
                               formalsInstantiated);
   return ret;
 }
 
-// TODO: Identifiy cases where we don't need to do anything.
+// TODO: Identify cases where we don't need to do anything.
 const TypedFnSignature* InitResolver::finalize(void) {
-  if (fn_ == nullptr) assert(false && "Not handled yet!");
+  if (fn_ == nullptr) CHPL_ASSERT(false && "Not handled yet!");
 
   auto ret = initResolver_.typedSignature;
 
@@ -237,7 +237,7 @@ const TypedFnSignature* InitResolver::finalize(void) {
       auto id = fieldIdsByOrdinal_[i];
       bool handled = implicitlyResolveFieldType(id);
       if (!handled) {
-        assert(false && "Not handled yet!");
+        CHPL_ASSERT(false && "Not handled yet!");
       }
     }
   }
@@ -264,17 +264,17 @@ bool InitResolver::implicitlyResolveFieldType(ID id) {
   if (!state || !state->initPointId.isEmpty()) return false;
 
   if (state->qt.isParam()) {
-    assert(0 == "Not handled yet!");
+    CHPL_ASSERT(0 == "Not handled yet!");
   } else if (state->qt.isType()) {
-    assert(0 == "Not handled yet!");
+    CHPL_ASSERT(0 == "Not handled yet!");
   } else {
     auto ct = typeToCompType(currentRecvType_);
     auto& rf = resolveFieldDecl(ctx_, ct, id, USE_DEFAULTS);
     for (int i = 0; i < rf.numFields(); i++) {
       auto id = rf.fieldDeclId(i);
       auto state = fieldStateFromId(id);
-      assert(state);
-      assert(state->qt.kind() == rf.fieldType(i).kind());
+      CHPL_ASSERT(state);
+      CHPL_ASSERT(state->qt.kind() == rf.fieldType(i).kind());
       state->qt = rf.fieldType(i);
       state->isInitialized = true;
     }
@@ -374,7 +374,7 @@ bool InitResolver::handleCallToThisComplete(const FnCall* node) {
 
   // TODO: Better/more appropriate user facing error message for this?
   if (!idForCompleteCall_.isEmpty()) {
-    assert(phase_ == PHASE_COMPLETE);
+    CHPL_ASSERT(phase_ == PHASE_COMPLETE);
     ctx_->error(node, "use of this.complete() call in phase 2");
   } else {
     idForCompleteCall_ = node->id();
@@ -413,7 +413,7 @@ static void checkInsideBadTag(Context* context,
 
 bool InitResolver::handleAssignmentToField(const OpCall* node) {
   if (node->op() != USTR("=")) return false;
-  assert(node->numActuals() == 2);
+  CHPL_ASSERT(node->numActuals() == 2);
   auto lhs = node->actual(0);
   auto rhs = node->actual(1);
 
@@ -422,7 +422,7 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
   if (fieldId.isEmpty()) return false;
 
   auto state = fieldStateFromId(fieldId);
-  assert(state);
+  CHPL_ASSERT(state);
 
   bool isAlreadyInitialized = !state->initPointId.isEmpty();
   bool isOutOfOrder = state->ordinalPos < currentFieldIndex_;
@@ -456,7 +456,7 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
     }
 
   } else {
-    assert(0 == "Not handled yet!");
+    CHPL_ASSERT(0 == "Not handled yet!");
   }
 
   if (isOutOfOrder) {
@@ -513,11 +513,11 @@ ID InitResolver::solveNameConflictByIgnoringField(const NameVec& vec) {
   if (vec[0].numIds() > 1 || vec[1].numIds() > 1) return ID();
   auto one = vec[0].firstId();
   auto two = vec[1].firstId();
-  assert(one != two);
+  CHPL_ASSERT(one != two);
   if (!parsing::idIsField(ctx_, one) &&
       !parsing::idIsField(ctx_, two)) return ID();
   auto ret = parsing::idIsField(ctx_, one) ? two : one;
-  assert(!parsing::idIsField(ctx_, ret));
+  CHPL_ASSERT(!parsing::idIsField(ctx_, ret));
   return ret;
 }
 
@@ -541,7 +541,7 @@ bool InitResolver::handleResolvingFieldAccess(const Identifier* node) {
   // If there are two names and one is a field, get the other name.
   auto id = solveNameConflictByIgnoringField(vec);
   if (!id.isEmpty()) {
-    assert(!parsing::idIsField(ctx_, id));
+    CHPL_ASSERT(!parsing::idIsField(ctx_, id));
     const bool localGenericToUnknown = true;
     auto qt = initResolver_.typeForId(id, localGenericToUnknown);
     auto& re = initResolver_.byPostorder.byAst(node);
@@ -562,7 +562,7 @@ bool InitResolver::handleResolvingFieldAccess(const Dot* node) {
       auto id = fieldIdFromName(name);
       if (!id.isEmpty()) {
         auto state = fieldStateFromId(id);
-        assert(state);
+        CHPL_ASSERT(state);
         auto qt = state->qt;
         auto& re = initResolver_.byPostorder.byAst(node);
         re.setToId(id);

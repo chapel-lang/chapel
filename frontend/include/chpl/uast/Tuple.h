@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,7 +45,7 @@ class Tuple final : public Call {
   Tuple(AstList children)
     : Call(asttags::Tuple, std::move(children),
            /*hasCalledExpression*/ false) {
-    assert(numChildren() >= 1);
+    CHPL_ASSERT(numChildren() >= 1);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -54,6 +54,10 @@
 #include "chpl/uast/all-uast.h"
 #include "chpl/uast/chpl-syntax-printer.h"
 #include "chpl/util/string-escapes.h"
+#include "chpl/framework/compiler-configuration.h"
+#include "chpl/util/assertions.h"
+
+#include "llvm/ADT/SmallPtrSet.h"
 
 // If this is set then variables/formals will have their "qual" field set
 // now instead of later during resolution.
@@ -221,7 +225,7 @@ struct Converter {
     if (auto linkageName = node->linkageName()) {
       auto linkageStr = linkageName->toStringLiteral();
       INT_ASSERT(linkageStr);
-      auto ret = astr(linkageStr->str());
+      auto ret = astr(linkageStr->value());
       return ret;
     }
 
@@ -450,29 +454,6 @@ struct Converter {
 
             SymExpr* se = new SymExpr(sym);
             Expr* ret = se;
-
-
-            // TODO(Resolver): This logic should probably be handled from
-            //                 within Dyno.
-            if (!inImportOrUse && rr->type().kind() == types::QualifiedType::MODULE) {
-              const char* reason = "cannot be mentioned like variables";
-              auto parentId = parsing::idToParentId(context, node->id());
-              auto parentAst = parsing::idToAst(context, parentId);
-              if (auto callAst = parentAst->toCall()) {
-                if (callAst->calledExpression() == node) {
-                  reason = "cannot be called like procedures";
-                }
-              } else if (auto dotAst = parentAst->toDot()) {
-                if (dotAst->receiver() == node) {
-                  // Not an error to reference a module name in a dot expression.
-                  reason = nullptr;
-                }
-              }
-
-              if (reason != nullptr) {
-                USR_FATAL_CONT(se, "modules (like '%s' here) %s", node->name().c_str(), reason);
-              }
-            }
 
             if (parsing::idIsParenlessFunction(context, id)) {
               // it's a parenless function call so add a CallExpr
@@ -936,7 +917,7 @@ struct Converter {
 
     Expr* one = toExpr(convertAST(node->symbol()));
     auto renameIdent = node->rename()->toIdentifier();
-    assert(renameIdent);
+    CHPL_ASSERT(renameIdent);
     Expr* two = new UnresolvedSymExpr(renameIdent->name().c_str());
     return std::pair<Expr*, Expr*>(one, two);
   }
@@ -1104,9 +1085,10 @@ struct Converter {
         svs = convertTaskVar(tv);
         INT_ASSERT(svs);
 
-        isTaskVarDecl = tv->intent() == uast::TaskVar::Intent::VAR ||
-                        tv->intent() == uast::TaskVar::Intent::CONST;
-
+        // (const x) is a task intent, but (const x: int) and (const x = 1)
+        // are task-private variable declarations.
+        isTaskVarDecl = tv->initExpression() != nullptr ||
+                        tv->typeExpression() != nullptr;
       // Handle reductions in with clauses explicitly here.
       } else if (const uast::ReduceIntent* rd = expr->toReduceIntent()) {
         astlocMarker markAstLoc(rd->id());
@@ -1626,18 +1608,19 @@ struct Converter {
     bool maybeArrayType = false;
     bool zippered = node->iterand()->isZip();
 
-    // Unpack things differently if body is a conditional.
-    if (auto origCond = node->stmt(0)->toConditional()) {
-      INT_ASSERT(origCond->numThenStmts() == 1);
-      INT_ASSERT(!origCond->hasElseBlock());
-      expr = singleExprFromStmts(origCond->thenStmts());
-      cond = toExpr(convertAST(origCond->condition()));
-      INT_ASSERT(cond);
-    } else {
-      expr = singleExprFromStmts(node->stmts());
+    // An 'if-expr' without an else is special pattern for the builder.
+    if (auto noElseCond = node->stmt(0)->toConditional()) {
+      if (!noElseCond->hasElseBlock()) {
+        expr = singleExprFromStmts(noElseCond->thenStmts());
+        cond = toExpr(convertAST(noElseCond->condition()));
+        INT_ASSERT(cond);
+      }
     }
 
-    INT_ASSERT(expr != nullptr);
+    if (!expr) {
+      INT_ASSERT(!cond);
+      expr = singleExprFromStmts(node->stmts());
+    }
 
     return buildForallLoopExpr(indices, iteratorExpr, expr, cond,
                                maybeArrayType,
@@ -1837,7 +1820,7 @@ struct Converter {
 
   /// StringLikeLiterals ///
   Expr* visit(const uast::BytesLiteral* node) {
-    std::string quoted = escapeStringC(node->str().str());
+    std::string quoted = escapeStringC(node->value().str());
     SymExpr* se = buildBytesLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate);
@@ -1847,7 +1830,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::CStringLiteral* node) {
-    std::string quoted = escapeStringC(node->str().str());
+    std::string quoted = escapeStringC(node->value().str());
     SymExpr* se = buildCStringLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate);
@@ -1858,7 +1841,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::StringLiteral* node) {
-    std::string quoted = escapeStringC(node->str().str());
+    std::string quoted = escapeStringC(node->value().str());
     SymExpr* se = buildStringLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate);
@@ -2959,7 +2942,7 @@ struct Converter {
     bool foundPath =
       context->filePathForId(node->id(), pathUstr, ignoredParentSymPath);
     (void)foundPath; // avoid unused variable warning
-    assert(foundPath);
+    CHPL_ASSERT(foundPath);
     const char* path = astr(pathUstr);
 
     // TODO (dlongnecke): For now, the tag is overridden by the caller.
@@ -3156,42 +3139,42 @@ struct Converter {
   }
 
   void attachSymbolStorage(const uast::Variable::Kind kind, Symbol* vs) {
-    return attachSymbolStorage((uast::IntentList) kind, vs);
+    return attachSymbolStorage((uast::Qualifier) kind, vs);
   }
 
   void attachSymbolStorage(const uast::TupleDecl::IntentOrKind iok,
                            Symbol* vs) {
-    return attachSymbolStorage((uast::IntentList) iok, vs);
+    return attachSymbolStorage((uast::Qualifier) iok, vs);
   }
 
-  void attachSymbolStorage(const uast::IntentList kind, Symbol* vs) {
+  void attachSymbolStorage(const uast::Qualifier kind, Symbol* vs) {
     auto qual = QUAL_UNKNOWN;
 
     switch (kind) {
-      case uast::IntentList::VAR:
+      case uast::Qualifier::VAR:
         qual = QUAL_VAL;
         break;
-      case uast::IntentList::CONST_VAR:
+      case uast::Qualifier::CONST_VAR:
         vs->addFlag(FLAG_CONST);
         qual = QUAL_CONST;
         break;
-      case uast::IntentList::CONST_REF:
+      case uast::Qualifier::CONST_REF:
         vs->addFlag(FLAG_CONST);
         vs->addFlag(FLAG_REF_VAR);
         qual = QUAL_CONST_REF;
         break;
-      case uast::IntentList::REF:
+      case uast::Qualifier::REF:
         vs->addFlag(FLAG_REF_VAR);
         qual = QUAL_REF;
         break;
-      case uast::IntentList::PARAM:
+      case uast::Qualifier::PARAM:
         vs->addFlag(FLAG_PARAM);
         qual = QUAL_PARAM;
         break;
-      case uast::IntentList::TYPE:
+      case uast::Qualifier::TYPE:
         vs->addFlag(FLAG_TYPE_VARIABLE);
         break;
-      case uast::IntentList::INDEX:
+      case uast::Qualifier::INDEX:
         vs->addFlag(FLAG_INDEX_VAR);
         break;
       default:
@@ -4067,10 +4050,10 @@ void Converter::popFromSymStack(const uast::AstNode* ast, BaseAST* ret) {
   }
 
   if (symStack.size() > 0) {
-    assert(symStack.back().ast == ast);
+    CHPL_ASSERT(symStack.back().ast == ast);
     symStack.back().convertedSyms->applyFixups(context, ast, trace);
   } else {
-    assert(false && "stack error");
+    CHPL_ASSERT(false && "stack error");
   }
   if (trace) {
     printf("Exiting %s %s\n",
@@ -4227,20 +4210,38 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
 
   // Note: we should be able to minimize the fixups needed
   // by converting the modules in the initialization order
+  llvm::SmallPtrSet<SymExpr*, 4> fixedUp;
 
   // Fix up any SymExprs needing to be re-targeted
   for (const auto& p : identFixups) {
     SymExpr* se = p.first;
     ID target = p.second;
 
-    INT_ASSERT(isTemporaryConversionSymbol(se->symbol()));
+    // Already fixed up by following the symExprs linked list on a
+    // TemporaryConversionSymbol (see below). Skip here.
+    if (fixedUp.count(se) > 0) continue;
+
+    auto tcsymbol = se->symbol();
+    INT_ASSERT(isTemporaryConversionSymbol(tcsymbol));
 
     Symbol* sym = findConvertedSym(target, /* trace */ false);
     if (sym == nullptr) {
       INT_FATAL("could not find target symbol for sym fixup for %s within %s",
                 target.str().c_str(), inSymbolId.str().c_str());
     }
+
     se->setSymbol(sym);
+    // Not all symExprs are noted as fixups (due to lowering and AST
+    // transformations), so visit the temporary conversion symbol's recorded
+    // symExprs to try handle these stragglers.
+    //
+    // This is a workaround; ideally, we'd not perform as many AST
+    // transformations, and not need to walk all the SymExprs for each
+    // tcsymbol.
+    for_SymbolSymExprs(se, tcsymbol) {
+      se->setSymbol(sym);
+      fixedUp.insert(se);
+    }
   }
   // clear gIdentFixups since these have now been processed
   identFixups.clear();

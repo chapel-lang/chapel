@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -96,7 +96,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_CALL_AND_FN_RESOLVES:
     case PRIM_METHOD_CALL_AND_FN_RESOLVES:
     case PRIM_RESOLVES:
-      assert(false && "not implemented yet");
+      CHPL_ASSERT(false && "not implemented yet");
       break;
 
     case PRIM_IS_STAR_TUPLE_TYPE:
@@ -130,7 +130,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_TO_UNDECORATED_CLASS:
     case PRIM_TO_NILABLE_CLASS:
     case PRIM_TO_NON_NILABLE_CLASS:
-      assert(false && "not implemented yet");
+      CHPL_ASSERT(false && "not implemented yet");
       break;
 
     /* string operations */
@@ -372,7 +372,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_REF_DESERIALIZE:
     case PRIM_UNKNOWN:
     case NUM_KNOWN_PRIMS:
-      assert(false && "not implemented yet");
+      CHPL_ASSERT(false && "not implemented yet");
 
     // no default to get a warning when new primitives are added
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -35,7 +35,7 @@ const char* New::managementToString(New::Management management) {
     default: break;
   }
 
-  assert(false && "Should not reach here");
+  CHPL_ASSERT(false && "Should not reach here");
   return nullptr;
 }
 
@@ -45,6 +45,13 @@ New::Management New::stringToManagement(UniqueString ustr) {
   if (ustr == USTR("borrowed")) return New::BORROWED;
   if (ustr == USTR("unmanaged")) return New::UNMANAGED;
   return New::DEFAULT_MANAGEMENT;
+}
+
+void New::dumpFieldsInner(const DumpSettings& s) const {
+  const char* mgmtString = managementToString(management_);
+  if (mgmtString[0] != '\0') {
+    s.out << " " << mgmtString;
+  }
 }
 
 owned<New> New::build(Builder* builder,

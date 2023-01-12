@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -55,7 +55,7 @@ static void testStringLiteral(Parser* parser,
   auto strLit = initExpr->toStringLiteral();
   assert(strLit);
   assert(strLit->quoteStyle() == expectQuoteStyle);
-  assert(strLit->str().str() == expectValue);
+  assert(strLit->value().str() == expectValue);
 }
 static void testBytesLiteral(Parser* parser,
                              const std::string& testname,
@@ -67,7 +67,7 @@ static void testBytesLiteral(Parser* parser,
   auto bytesLit = initExpr->toBytesLiteral();
   assert(bytesLit);
   assert(bytesLit->quoteStyle() == expectQuoteStyle);
-  assert(bytesLit->str().str() == expectValue);
+  assert(bytesLit->value().str() == expectValue);
 }
 static void testCStringLiteral(Parser* parser,
                                const std::string& testname,
@@ -79,7 +79,7 @@ static void testCStringLiteral(Parser* parser,
   auto strLit = initExpr->toCStringLiteral();
   assert(strLit);
   assert(strLit->quoteStyle() == expectQuoteStyle);
-  assert(strLit->str().str() == expectValue);
+  assert(strLit->value().str() == expectValue);
 }
 
 static void testTripleLiteral(Parser* parser,

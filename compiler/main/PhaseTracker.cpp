@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -41,6 +41,8 @@ public:
 
   void                     ReportPass (unsigned long now)   const;
   static void              ReportTotal(unsigned long totalTime);
+  static void              ReportPassGroup(const char* text,
+                                           unsigned long totalTime);
 
   static void              ReportTime(const char* name, double secs);
   static void              ReportText(const char* text);
@@ -161,9 +163,44 @@ void PhaseTracker::ReportPass() const
   mPhases[index]->ReportPass(mTimer.elapsedUsecs());
 }
 
+static const char* passGroups[][2] = {
+  {"total time (front end)", "parallel"},
+  {"total time (middle end)", "denormalize"},
+  {"total time (back end)", "driverCleanup"},
+};
+
 void PhaseTracker::ReportTotal() const
 {
-  Phase::ReportTotal(mTimer.elapsedUsecs());
+  unsigned long totalTime = mTimer.elapsedUsecs();
+
+  auto currentPass = mPhases.begin();
+  unsigned long lastStart = 0;
+  unsigned long passTime;
+  size_t numMetapasses = sizeof(passGroups) / sizeof(passGroups[0]);
+  for (size_t i = 0; i < numMetapasses; i++) {
+    const char* groupName = passGroups[i][0];
+    const char* groupLastPhase = passGroups[i][1];
+
+    currentPass = std::find_if(currentPass, mPhases.end(), [&](auto pass) {
+      if (pass->mName == nullptr) return false;
+      return strcmp(pass->mName, groupLastPhase) == 0;
+    });
+
+    // No such pass, we might've exited early.
+    if (currentPass == mPhases.end()) break;
+    auto nextPass = currentPass + 1;
+
+    if (nextPass != mPhases.end()) {
+      passTime = (*nextPass)->mStartTime - lastStart;
+      lastStart = (*nextPass)->mStartTime;
+    } else {
+      passTime = totalTime - lastStart;
+      lastStart = totalTime;
+    }
+    Phase::ReportPassGroup(groupName, passTime);
+  }
+
+  Phase::ReportTotal(totalTime);
 }
 
 void PhaseTracker::ReportRollup() const
@@ -325,6 +362,12 @@ void Phase::ReportTotal(unsigned long totalTime)
 {
   ReportTime("total time", totalTime / 1e6);
   ReportText("\n\n\n\n");
+}
+
+void Phase::ReportPassGroup(const char* label, unsigned long totalTime)
+{
+  ReportTime(label, totalTime / 1e6);
+  ReportText("\n");
 }
 
 void Phase::ReportTime(const char* name, double secs)

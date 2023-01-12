@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -43,7 +43,7 @@
 namespace chpl {
   class Context;
 
-class ErrorBase;
+  class ErrorBase;
 
 namespace uast {
   class AstNode;
@@ -114,7 +114,7 @@ class Context {
   bool computedChplEnv = false;
   ChplEnvMap chplEnv;
 
-  // Whether or no to use detailed error output
+  // Whether or not to use detailed error output
   bool detailedErrors = true;
 
   // map that supports uniqueCString / UniqueString
@@ -519,7 +519,7 @@ class Context {
     This is a convenience overload.
     This version takes in a Location and a printf-style format string.
    */
-  void error(Location loc, const char* fmt, ...)
+  const ErrorBase* error(Location loc, const char* fmt, ...)
   #ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
@@ -533,7 +533,7 @@ class Context {
     This version takes in an ID and a printf-style format string.
     The ID is used to compute a Location using parsing::locateId.
    */
-  void error(ID id, const char* fmt, ...)
+  const ErrorBase* error(ID id, const char* fmt, ...)
   #ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
@@ -547,7 +547,7 @@ class Context {
     This version takes in an AST node and a printf-style format string.
     The AST node is used to compute a Location by using a parsing::locateAst.
    */
-  void error(const uast::AstNode* ast, const char* fmt, ...)
+  const ErrorBase* error(const uast::AstNode* ast, const char* fmt, ...)
   #ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
@@ -563,7 +563,7 @@ class Context {
     The AST node is used to compute a Location by using a parsing::locateAst.
     The TypedFnSignature is used to print out instantiation information.
    */
-  void error(const resolution::TypedFnSignature* inFn,
+  const ErrorBase* error(const resolution::TypedFnSignature* inFn,
              const uast::AstNode* ast,
              const char* fmt, ...)
   #ifndef DOXYGEN
@@ -724,7 +724,7 @@ class Context {
           if (enableQueryTimingTrace) {
             auto ticks = elapsed.count();
             auto os = queryTimingTraceOutput.get();
-            assert(os != nullptr);
+            CHPL_ASSERT(os != nullptr);
             *os << depth << ' ' << base->queryName << ' ' << ticks << '\n';
           }
         });

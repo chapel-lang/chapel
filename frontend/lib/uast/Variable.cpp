@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,16 @@
 namespace chpl {
 namespace uast {
 
+
+void Variable::dumpFieldsInner(const DumpSettings& s) const {
+  if (isConfig_) {
+    s.out << " config";
+  }
+  if (isField_) {
+    s.out << " field";
+  }
+  VarLikeDecl::dumpFieldsInner(s);
+}
 
 owned<Variable>
 Variable::build(Builder* builder, Location loc,
@@ -86,9 +96,9 @@ void Variable::setInitExprForConfig(owned<AstNode> ie) {
     initExpressionChildNum_ = children_.size();
     children_.push_back(std::move(ie));
     if (this->typeExpressionChildNum_ > -1 || this->attributesChildNum() > -1) {
-      assert(numChildren() > 1);
+      CHPL_ASSERT(numChildren() > 1);
     } else {
-      assert(numChildren() == 1);
+      CHPL_ASSERT(numChildren() == 1);
     }
   }
 }

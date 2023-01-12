@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,6 +31,7 @@
     For the most up-to-date information about GPU support see the
     :ref:`technical note <readme-gpu>` about it.
 */
+@unstable "The GPU module is unstable and its interface is subject to change in the future."
 module GPU
 {
   pragma "no doc"
@@ -106,9 +107,10 @@ module GPU
   }
 
   /*
-    Returns value of a per-multiprocessor counter that increments every clock cycle
+    Returns value of a per-multiprocessor counter that increments every clock cycle.
+    This function is meant to be called to time sections of code within a GPU
+    enabled loop.
   */
-  pragma "no doc"
   proc gpuClock() : uint {
     return chpl_gpu_clock();
   }
@@ -125,9 +127,8 @@ module GPU
 
   /*
     Returns the number of clock cycles per second of a GPU multiprocessor.
-    Currently we don't support calling this function from within a kernel.
+    Note: currently we don't support calling this function from within a kernel.
    */
-  pragma "no doc"
   proc gpuClocksPerSec(devNum : int) {
     return chpl_gpu_device_clock_rate(devNum : int(32));
   }

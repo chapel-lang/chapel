@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -41,7 +41,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "timer.h"
 #include "version.h"
 #include "visibleFunctions.h"
 
@@ -49,9 +48,9 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/util/chplenv.h"
 
-#include <inttypes.h>
+#include "chpl/util/assertions.h"
+
 #include <string>
-#include <sstream>
 #include <map>
 
 #ifdef HAVE_LLVM
@@ -114,6 +113,8 @@ const char* CHPL_TARGET_BUNDLED_LINK_ARGS = NULL;
 const char* CHPL_TARGET_SYSTEM_LINK_ARGS = NULL;
 
 const char* CHPL_CUDA_LIBDEVICE_PATH = NULL;
+const char* CHPL_GPU_CODEGEN = NULL;
+const char* CHPL_GPU_ARCH = NULL;
 
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
@@ -317,7 +318,8 @@ std::vector<std::string> gDynoPrependInternalModulePaths;
 std::vector<std::string> gDynoPrependStandardModulePaths;
 
 int fGPUBlockSize = 0;
-char fCUDAArch[16] = "sm_60";
+char fGpuArch[16];
+const char* gGpuSdkPath = NULL;
 
 chpl::Context* gContext = nullptr;
 std::vector<std::pair<std::string, std::string>> gDynoParams;
@@ -326,6 +328,8 @@ static bool compilerSetChplLLVM = false;
 
 static std::vector<std::string> cmdLineModPaths;
 
+// TODO: with the updates to filesystem that utilize GetExecutablePath,
+// do we still need this block comment?
 /* Note -- LLVM provides a way to get the path to the executable...
 // This function isn't referenced outside its translation unit, but it
 // can't use the "static" keyword because its address is used for
@@ -342,15 +346,8 @@ llvm::sys::Path GetExecutablePath(const char *Argv0) {
 
 static bool isMaybeChplHome(const char* path)
 {
-  bool  ret  = false;
-  char* real = dirHasFile(path, "util/chplenv");
+  return chpl::isMaybeChplHome(std::string(path));
 
-  if (real)
-    ret = true;
-
-  free(real);
-
-  return ret;
 }
 
 static void setChplHomeDerivedVars() {
@@ -1191,7 +1188,7 @@ static ArgumentDescription arg_desc[] = {
  {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},
  {"infer-const-refs", ' ', NULL, "Enable [disable] inferring const refs", "n", &fNoInferConstRefs, NULL, NULL},
  {"gpu-block-size", ' ', "<block-size>", "Block size for GPU launches", "I", &fGPUBlockSize, "CHPL_GPU_BLOCK_SIZE", NULL},
- {"gpu-arch", ' ', "<cuda-architecture>", "CUDA architecture to use", "S16", &fCUDAArch, "CHPL_CUDA_ARCH", NULL},
+ {"gpu-arch", ' ', "<cuda-architecture>", "CUDA architecture to use", "S16", &fGpuArch, "_CHPL_GPU_ARCH", setEnv},
  {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
  {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
  {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, NULL, setLibmode},
@@ -1454,6 +1451,18 @@ static void setChapelEnvs() {
 
   if (usingGpuLocaleModel()) {
     CHPL_CUDA_LIBDEVICE_PATH = envMap["CHPL_CUDA_LIBDEVICE_PATH"];
+    CHPL_GPU_CODEGEN = envMap["CHPL_GPU_CODEGEN"];
+    CHPL_GPU_ARCH = envMap["CHPL_GPU_ARCH"];
+    switch (getGpuCodegenType()) {
+      case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
+        gGpuSdkPath = envMap["CHPL_CUDA_PATH"];
+        break;
+      case GpuCodegenType::GPU_CG_AMD_HIP:
+        gGpuSdkPath = envMap["CHPL_ROCM_PATH"];
+        break;
+      default:
+        INT_ASSERT(0 && "Should be unreachable");
+    }
   }
 
   // Make sure there are no NULLs in envMap
@@ -1780,6 +1789,7 @@ static void validateSettings() {
   checkRuntimeBuilt();
 }
 
+
 int main(int argc, char* argv[]) {
   PhaseTracker tracker;
 
@@ -1849,6 +1859,11 @@ int main(int argc, char* argv[]) {
     }
 
     initCompilerGlobals(); // must follow argument parsing
+
+    // set whether dyno assertions should fire based on developer flag
+    chpl::setAssertions(developer);
+    // set whether dyno assertions are fatal based on ignore_errors flag
+    chpl::setAssertionsFatal(!ignore_errors);
 
     setupModulePaths();
 

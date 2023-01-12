@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,7 +33,7 @@ const owned<IntType>& IntType::getIntType(Context* context, int bitwidth) {
 }
 
 const IntType* IntType::get(Context* context, int bitwidth) {
-  assert(bitwidth == 0 || bitwidth == 8 || bitwidth == 16 ||
+  CHPL_ASSERT(bitwidth == 0 || bitwidth == 8 || bitwidth == 16 ||
          bitwidth == 32 || bitwidth == 64);
   if (bitwidth == 0) bitwidth = defaultBitwidth(); // canonicalize default width
   return getIntType(context, bitwidth).get();

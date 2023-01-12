@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -97,7 +97,7 @@ getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
         // This should not be possible. Currently varargs with a default value
         // will be considered a syntax error.
         hasDefault = false;
-        assert(varargs->initExpression() == nullptr);
+        CHPL_ASSERT(varargs->initExpression() == nullptr);
       }
 
       auto fd = UntypedFnSignature::FormalDetail(name, hasDefault,
@@ -165,7 +165,7 @@ CallInfo CallInfo::createSimple(const uast::FnCall* call) {
     }
   }
 
-  assert(!name.isEmpty());
+  CHPL_ASSERT(!name.isEmpty());
 
   int i = 0;
   for (auto actual : call->actuals()) {
@@ -302,7 +302,7 @@ CallInfo CallInfo::create(Context* context,
     } else if (auto calledDot = called->toDot()) {
       name = calledDot->field();
     } else {
-      assert(false && "Unexpected called expression");
+      CHPL_ASSERT(false && "Unexpected called expression");
     }
   }
 
@@ -360,7 +360,7 @@ CallInfo CallInfo::create(Context* context,
                  actuals, questionArg, actualAsts);
 
   if (actualAsts != nullptr) {
-    assert(actualAsts->size() == actuals.size());
+    CHPL_ASSERT(actualAsts->size() == actuals.size());
   }
 
   auto ret = CallInfo(name, calledType, isMethodCall,
@@ -373,7 +373,7 @@ CallInfo CallInfo::create(Context* context,
 
 
 void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
-  assert(Builder::astTagIndicatesNewIdScope(ast->tag()));
+  CHPL_ASSERT(Builder::astTagIndicatesNewIdScope(ast->tag()));
   vec.resize(ast->id().numContainedChildren());
 
   symbolId = ast->id();
@@ -382,7 +382,7 @@ void ResolutionResultByPostorderID::setupForSignature(const Function* func) {
   int maxPostorderId = 0;
   if (func && func->numChildren() > 0)
     maxPostorderId = func->child(func->numChildren() - 1)->id().postOrderId();
-  assert(0 <= maxPostorderId);
+  CHPL_ASSERT(0 <= maxPostorderId);
   vec.resize(maxPostorderId + 1);
 
   symbolId = func->id();
@@ -391,7 +391,7 @@ void ResolutionResultByPostorderID::setupForParamLoop(const For* loop, Resolutio
   int bodyPostorder = 0;
   if (loop && loop->body())
     bodyPostorder = loop->body()->id().postOrderId();
-  assert(0 <= bodyPostorder);
+  CHPL_ASSERT(0 <= bodyPostorder);
   vec.resize(bodyPostorder);
 
   this->symbolId = parent.symbolId;
@@ -411,7 +411,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
                                        const CallInfo& call) {
 
   // untyped must be provided but typed can be nullptr.
-  assert(untyped);
+  CHPL_ASSERT(untyped);
 
   // create the mapping handling named and default arguments
 
@@ -479,7 +479,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
       QualifiedType starQT;
       if (formalQT.type() != nullptr) {
         const TupleType* tup = formalQT.type()->toTupleType();
-        assert(tup);
+        CHPL_ASSERT(tup);
         if (tup->isStarTuple()) {
           starQT = tup->starType();
         }
@@ -495,8 +495,15 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
           // try to pull the type out of the formalQT if it
           // is after instantiation.
           const TupleType* tup = formalQT.type()->toTupleType();
-          assert(tup);
+          CHPL_ASSERT(tup);
           qt = tup->elementType(j);
+        }
+
+        // if the formal has concrete intent (e.g. 'out' or 'in' or 'ref'),
+        // use the intent of the formal for the intent of the actual->formal
+        // mapping entry.
+        if (!formalQT.isNonConcreteIntent()) {
+          qt = QualifiedType(formalQT.kind(), qt.type(), qt.param());
         }
 
         entry.formal_ = decl;
@@ -513,7 +520,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
     }
   }
 
-  assert(entryIdx == numEntries);
+  CHPL_ASSERT(entryIdx == numEntries);
 
   // Match named actuals against formal names in the function signature.
   // Record successful matches in actualIdxToFormalIdx.
@@ -527,7 +534,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
       for (int i = 0; i < numFormals; i++) {
         FormalActual& entry = byFormalIdx_[entryIdx];
         match = actual.byName() == untyped->formalName(i);
-        assert(entry.formal_ == untyped->formalDecl(i));
+        CHPL_ASSERT(entry.formal_ == untyped->formalDecl(i));
 
         if (entry.isVarArgEntry_) {
           // TODO: production compiler doesn't support named VarArgs, but
@@ -581,7 +588,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
         }
         entryIdx++;
       }
-      assert(entryIdx < numEntries);
+      CHPL_ASSERT(entryIdx < numEntries);
 
       // if this is a call to an operator method, skip the 'this' formal
       if (call.isOpCall() && untyped->formalName(entryIdx) == USTR("this")) {
@@ -646,18 +653,20 @@ TypedFnSignature::getTypedFnSignature(Context* context,
                     std::vector<types::QualifiedType> formalTypes,
                     TypedFnSignature::WhereClauseResult whereClauseResult,
                     bool needsInstantiation,
+                    bool isRefinementOnly,
                     const TypedFnSignature* instantiatedFrom,
                     const TypedFnSignature* parentFn,
                     Bitmap formalsInstantiated) {
   QUERY_BEGIN(getTypedFnSignature, context,
               untypedSignature, formalTypes, whereClauseResult,
-              needsInstantiation, instantiatedFrom, parentFn,
+              needsInstantiation, isRefinementOnly, instantiatedFrom, parentFn,
               formalsInstantiated);
 
   auto result = toOwned(new TypedFnSignature(untypedSignature,
                                              std::move(formalTypes),
                                              whereClauseResult,
                                              needsInstantiation,
+                                             isRefinementOnly,
                                              instantiatedFrom,
                                              parentFn,
                                              std::move(formalsInstantiated)));
@@ -678,14 +687,39 @@ TypedFnSignature::get(Context* context,
                              std::move(formalTypes),
                              whereClauseResult,
                              needsInstantiation,
+                             /* isRefinementOnly */ false,
                              instantiatedFrom,
                              parentFn,
                              std::move(formalsInstantiated)).get();
 }
 
+const TypedFnSignature*
+TypedFnSignature::getInferred(
+                      Context* context,
+                      std::vector<types::QualifiedType> formalTypes,
+                      const TypedFnSignature* inferredFrom) {
+  return getTypedFnSignature(context,
+                             inferredFrom->untyped(),
+                             formalTypes,
+                             inferredFrom->whereClauseResult(),
+                             inferredFrom->needsInstantiation(),
+                             /* isRefinementOnly */ true,
+                             inferredFrom->inferredFrom(),
+                             inferredFrom->parentFn(),
+                             inferredFrom->formalsInstantiatedBitmap()).get();
+}
+
+
 void TypedFnSignature::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
-  id().stringify(ss, stringKind);
+
+
+  if (!id().isEmpty()) {
+    ss << "id ";
+    id().stringify(ss, stringKind);
+    ss << " ";
+  }
+  untyped()->name().stringify(ss, stringKind);
   ss << "(";
   int nFormals = numFormals();
   for (int i = 0; i < nFormals; i++) {
@@ -749,9 +783,97 @@ void PoiInfo::accumulate(const PoiInfo& addPoiInfo) {
 // this is a resolved function
 // check is a not-yet-resolved function
 bool PoiInfo::canReuse(const PoiInfo& check) const {
-  assert(resolved_ && !check.resolved_);
+  CHPL_ASSERT(resolved_ && !check.resolved_);
 
   return false; // TODO -- consider function names etc -- see PR #16261
+}
+
+void
+MostSpecificCandidates::inferOutFormals(Context* context,
+                                        const PoiScope* instantiationPoiScope) {
+  for (int i = 0; i < NUM_INTENTS; i++) {
+    const TypedFnSignature*& c = candidates[i];
+    if (c != nullptr) {
+      c = chpl::resolution::inferOutFormals(context, c, instantiationPoiScope);
+    }
+  }
+}
+
+void MostSpecificCandidates::stringify(std::ostream& ss,
+                                       chpl::StringifyKind stringKind) const {
+  auto onlyFn = only();
+  if (onlyFn) {
+    ss << " calls ";
+    onlyFn->stringify(ss, stringKind);
+  } else {
+    if (auto sig = bestRef()) {
+      ss << " calls ref ";
+      sig->stringify(ss, stringKind);
+    }
+    if (auto sig = bestConstRef()) {
+      ss << " calls const ref ";
+      sig->stringify(ss, stringKind);
+    }
+    if (auto sig = bestValue()) {
+      ss << " calls value ";
+      sig->stringify(ss, stringKind);
+    }
+  }
+}
+
+void CallResolutionResult::stringify(std::ostream& ss,
+                                     chpl::StringifyKind stringKind) const {
+  mostSpecific_.stringify(ss, stringKind);
+  ss << " : ";
+  exprType_.stringify(ss, stringKind);
+}
+
+
+const char* AssociatedAction::kindToString(Action a) {
+  const char* s = "<unknown>";
+  switch (a) {
+    case ASSIGN:
+      s = "assign";
+      break;
+    case ASSIGN_OTHER:
+      s = "assign-from-other";
+      break;
+    case COPY_INIT:
+      s = "copy-init";
+      break;
+    case DEFAULT_INIT:
+      s = "default-init";
+      break;
+    case INIT_OTHER:
+      s = "init-from-other";
+      break;
+    case DEINIT:
+      s = "deinit";
+      break;
+    case ITERATE:
+      s = "these";
+      break;
+    case NEW_INIT:
+      s = "new-init";
+      break;
+  }
+
+  return s;
+}
+
+void AssociatedAction::stringify(std::ostream& ss,
+                                 chpl::StringifyKind stringKind) const {
+  const char* kind = AssociatedAction::kindToString(action_);
+
+  ss << "assoc " << kind;
+  if (fn_ != nullptr) {
+    ss << " fn=";
+    fn_->stringify(ss, stringKind);
+  }
+  if (!id_.isEmpty()) {
+    ss << " id=";
+    id_.stringify(ss, stringKind);
+  }
 }
 
 void ResolvedExpression::stringify(std::ostream& ss,
@@ -763,24 +885,11 @@ void ResolvedExpression::stringify(std::ostream& ss,
     ss << " refers to ";
     toId_.stringify(ss, stringKind);
   } else {
-    auto onlyFn = mostSpecific_.only();
-    if (onlyFn) {
-      ss << " calls ";
-      onlyFn->stringify(ss, stringKind);
-    } else {
-      if (auto sig = mostSpecific_.bestRef()) {
-        ss << " calls ref ";
-        sig->stringify(ss, stringKind);
-      }
-      if (auto sig = mostSpecific_.bestConstRef()) {
-        ss << " calls const ref ";
-        sig->stringify(ss, stringKind);
-      }
-      if (auto sig = mostSpecific_.bestValue()) {
-        ss << " calls value ";
-        sig->stringify(ss, stringKind);
-      }
-    }
+    mostSpecific_.stringify(ss, stringKind);
+  }
+
+  for (auto a : associatedActions_) {
+    a.stringify(ss, stringKind);
   }
 }
 
@@ -791,6 +900,8 @@ IMPLEMENT_DUMP(TypedFnSignature);
 IMPLEMENT_DUMP(ResolvedExpression);
 IMPLEMENT_DUMP(CallInfoActual);
 IMPLEMENT_DUMP(CallInfo);
+IMPLEMENT_DUMP(MostSpecificCandidates);
+IMPLEMENT_DUMP(CallResolutionResult);
 
 } // end namespace resolution
 } // end namespace chpl

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -58,14 +58,14 @@ class Attributes final : public AstNode {
       deprecationMessage_(deprecationMessage),
       unstableMessage_(unstableMessage) {
     if (!deprecationMessage_.isEmpty()) {
-      assert(isDeprecated_);
+      CHPL_ASSERT(isDeprecated_);
     }
     if (!unstableMessage_.isEmpty()) {
-      assert(isUnstable_);
+      CHPL_ASSERT(isUnstable_);
     }
 
     // This might already be a compile-time invariant? Not sure...
-    assert(pragmas_.size() <= NUM_KNOWN_PRAGMAS);
+    CHPL_ASSERT(pragmas_.size() <= NUM_KNOWN_PRAGMAS);
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -82,6 +82,8 @@ class Attributes final : public AstNode {
     unstableMessage_.mark(context);
   }
 
+  void dumpInner(const DumpSettings& s) const;
+
  public:
   ~Attributes() override = default;
 
@@ -96,7 +98,7 @@ class Attributes final : public AstNode {
     Returns true if the given pragma is set for this attributes.
   */
   bool hasPragma(PragmaTag tag) const {
-    assert(tag >= 0 && tag < NUM_KNOWN_PRAGMAS);
+    CHPL_ASSERT(tag >= 0 && tag < NUM_KNOWN_PRAGMAS);
     return pragmas_.find(tag) != pragmas_.end();
   }
 

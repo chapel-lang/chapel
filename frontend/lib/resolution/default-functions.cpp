@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,9 +19,10 @@
 
 #include "default-functions.h"
 
-#include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
@@ -71,11 +72,13 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
   // nothing found
   if (vec.size() == 0) return false;
 
+  auto haveQt = QualifiedType(QualifiedType::VAR, type);
+
   // loop through IDs and see if any are methods on the same type
   for (auto& ids : vec) {
     for (auto id : ids) {
       auto node = parsing::idToAst(context, id);
-      assert(node);
+      CHPL_ASSERT(node);
 
       if (auto fn = node->toFunction()) {
         if (!fn->isMethod()) continue;
@@ -86,8 +89,11 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
         auto tfs = typedSignatureInitial(context, ufs);
         auto receiverQualType = tfs->formalType(0);
 
-        // receiver type matches, return true
-        if (receiverQualType.type() == type) {
+        // return true if the receiver type matches or
+        // if the receiver type is a generic type and we have
+        // an instantiation.
+        auto result = canPass(context, haveQt, receiverQualType);
+        if (result.passes() && !result.converts() && !result.promotes()) {
           return true;
         }
       }
@@ -109,14 +115,18 @@ needCompilerGeneratedMethod(Context* context, const Type* type,
   return false;
 }
 
-static const TypedFnSignature*
-generateInitSignature(Context* context, const CompositeType* inCompType) {
-  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
-  std::vector<QualifiedType> formalTypes;
-
+// generates the untyped function signature and typed function
+// signature formal entries for the 'this' method receiver for
+// some kind of 'init' or 'init='
+static void
+generateInitParts(Context* context,
+                  const CompositeType* inCompType,
+                  const CompositeType*& compType,
+                  std::vector<UntypedFnSignature::FormalDetail>& ufsFormals,
+                  std::vector<QualifiedType>& formalTypes) {
   // adjust to refer to fully generic signature if needed
   auto genericCompType = inCompType->instantiatedFromCompositeType();
-  auto compType = genericCompType ? genericCompType : inCompType;
+  compType = genericCompType ? genericCompType : inCompType;
 
   // start by adding a formal for the receiver
   auto ufsReceiver = UntypedFnSignature::FormalDetail(USTR("this"),
@@ -137,13 +147,23 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
     auto nonNilBorrowed  = ClassTypeDecorator::BORROWED_NONNIL;
     auto decor = ClassTypeDecorator(nonNilBorrowed);
     auto receiverType = ClassType::get(context, basic, manager, decor);
-    assert(receiverType);
+    CHPL_ASSERT(receiverType);
     qtReceiver = QualifiedType(QualifiedType::CONST_IN, receiverType);
   } else {
-    assert(false && "Not handled yet!");
+    CHPL_ASSERT(false && "Not handled yet!");
   }
 
   formalTypes.push_back(std::move(qtReceiver));
+}
+
+
+static const TypedFnSignature*
+generateInitSignature(Context* context, const CompositeType* inCompType) {
+  const CompositeType* compType = nullptr;
+  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
+  std::vector<QualifiedType> formalTypes;
+
+  generateInitParts(context, inCompType, compType, ufsFormals, formalTypes);
 
   // consult the fields to build up the remaining untyped formals
   const DefaultsPolicy defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
@@ -151,14 +171,14 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
 
   // TODO: generic types
   if (rf.isGeneric()) {
-    assert(false && "Not handled yet!");
+    CHPL_ASSERT(false && "Not handled yet!");
   }
 
   // TODO: super fields and invoking super
   if (auto basic = compType->toBasicClassType()) {
     if (auto parent = basic->parentClassType()) {
       if (!parent->isObjectType()) {
-        assert(false && "Not handled yet!");
+        CHPL_ASSERT(false && "Not handled yet!");
       }
     }
   }
@@ -196,6 +216,93 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
 
   // now build the other pieces of the typed signature
   bool needsInstantiation = rf.isGeneric();
+
+  auto ret = TypedFnSignature::get(context,
+                                   ufs,
+                                   std::move(formalTypes),
+                                   TypedFnSignature::WHERE_NONE,
+                                   needsInstantiation,
+                                   /* instantiatedFrom */ nullptr,
+                                   /* parentFn */ nullptr,
+                                   /* formalsInstantiated */ Bitmap());
+
+  return ret;
+}
+
+static const TypedFnSignature*
+generateInitCopySignature(Context* context, const CompositeType* inCompType) {
+  const CompositeType* compType = nullptr;
+  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
+  std::vector<QualifiedType> formalTypes;
+
+  generateInitParts(context, inCompType, compType, ufsFormals, formalTypes);
+
+  // add a formal for the 'other' argument
+  auto name = UniqueString::get(context, "other");
+  bool hasDefault = false;
+  const uast::Decl* node = nullptr;
+
+  auto fd = UntypedFnSignature::FormalDetail(name, hasDefault, node);
+  ufsFormals.push_back(std::move(fd));
+
+  CHPL_ASSERT(formalTypes.size() == 1);
+  auto otherType = QualifiedType(QualifiedType::CONST_REF,
+                                 formalTypes[0].type());
+  formalTypes.push_back(std::move(otherType));
+
+  // build the untyped signature
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ compType->id(),
+                        /*name*/ USTR("init"),
+                        /*isMethod*/ true,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*idTag*/ parsing::idToTag(context, compType->id()),
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(ufsFormals),
+                        /*whereClause*/ nullptr);
+
+  // now build the other pieces of the typed signature
+  auto g = getTypeGenericity(context, formalTypes[1]);
+  bool needsInstantiation = (g == Type::GENERIC ||
+                             g == Type::GENERIC_WITH_DEFAULTS);
+
+  auto ret = TypedFnSignature::get(context,
+                                   ufs,
+                                   std::move(formalTypes),
+                                   TypedFnSignature::WHERE_NONE,
+                                   needsInstantiation,
+                                   /* instantiatedFrom */ nullptr,
+                                   /* parentFn */ nullptr,
+                                   /* formalsInstantiated */ Bitmap());
+
+  return ret;
+}
+
+static const TypedFnSignature*
+generateDeinitSignature(Context* context, const CompositeType* inCompType) {
+  const CompositeType* compType = nullptr;
+  std::vector<UntypedFnSignature::FormalDetail> ufsFormals;
+  std::vector<QualifiedType> formalTypes;
+
+  generateInitParts(context, inCompType, compType, ufsFormals, formalTypes);
+
+  // build the untyped signature
+  auto ufs = UntypedFnSignature::get(context,
+                        /*id*/ compType->id(),
+                        /*name*/ USTR("init"),
+                        /*isMethod*/ true,
+                        /*isTypeConstructor*/ false,
+                        /*isCompilerGenerated*/ true,
+                        /*idTag*/ parsing::idToTag(context, compType->id()),
+                        /*kind*/ uast::Function::Kind::PROC,
+                        /*formals*/ std::move(ufsFormals),
+                        /*whereClause*/ nullptr);
+
+  // now build the other pieces of the typed signature
+  auto g = getTypeGenericity(context, formalTypes[0].type());
+  bool needsInstantiation = (g == Type::GENERIC ||
+                             g == Type::GENERIC_WITH_DEFAULTS);
 
   auto ret = TypedFnSignature::get(context,
                                    ufs,
@@ -279,12 +386,16 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
 
   if (needCompilerGeneratedMethod(context, type, name, parenless)) {
     auto compType = type->getCompositeType();
-    assert(compType);
+    CHPL_ASSERT(compType);
 
     if (name == USTR("init")) {
       result = generateInitSignature(context, compType);
+    } else if (name == USTR("init=")) {
+      result = generateInitCopySignature(context, compType);
+    } else if (name == USTR("deinit")) {
+      result = generateDeinitSignature(context, compType);
     } else {
-      assert(false && "Not implemented yet!");
+      CHPL_ASSERT(false && "Not implemented yet!");
     }
   }
 

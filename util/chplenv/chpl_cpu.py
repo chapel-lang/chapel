@@ -14,14 +14,19 @@ from utils import memoize, run_command, warning
 # It is intended to map from PrgEnv target cpus (e.g. craype-sandybridge)
 # when these names differ from the LLVM ones.
 cpu_llvm_synonyms = {
-  'knc':             'none',
-  'mic-knl':         'knl',
-  'x86-skylake':     'skylake-avx512',
-  'x86-cascadelake': 'cascadelake',
-  'x86-rome':        'znver2',
-  'x86-milan':       'znver3',
   'arm-thunderx':    'thunderx',
   'arm-thunderx2':   'thunderx2t99',
+  'knc':             'none',
+  'mic-knl':         'knl',
+  'x86-cascadelake': 'cascadelake',
+  'x86-icelake':     'icelake-server',
+  'x86-milan':       'znver3',
+  'x86-milan-x':     'znver3',
+  'x86-rome':        'znver2',
+  'x86-skylake':     'skylake-avx512',
+  'x86-spr':         'sapphirerapids',
+  'x86-spr-hbm':     'sapphirerapids',
+  'x86-trento':      'znver3',
 }
 
 # This gets the generic machine type, e.g. x86_64, i686, aarch64.

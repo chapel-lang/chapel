@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,7 +28,8 @@
 #include "chpl/util/memory.h"
 #include "chpl/util/string-escapes.h"
 #include "chpl/framework/stringify-functions.h"
-#include <cassert>
+#include "chpl/util/assertions.h"
+
 #include <cstring>
 #include <functional>
 #include <string>
@@ -117,8 +118,8 @@ struct InlinedString {
     if (s == nullptr || len == 0)
       return {{ nullptr }};
 
-    assert(len <= MAX_SIZE_INLINED);
-    assert(!stringContainsZeroBytes(s, len));
+    CHPL_ASSERT(len <= MAX_SIZE_INLINED);
+    CHPL_ASSERT(!stringContainsZeroBytes(s, len));
 
     uintptr_t val = INLINE_TAG; // store the tag in the low-order bits, 0s
     char* dst = dataAssumingTag(&val);
@@ -134,7 +135,7 @@ struct InlinedString {
     The pointer must have the property that alignmentIndicatesTag(s)==false.
    */
   static inline InlinedString buildFromAlignedPtr(const char* s, size_t len) {
-    assert(!alignmentIndicatesTag(s));
+    CHPL_ASSERT(!alignmentIndicatesTag(s));
     return {{ s }};
   }
 
@@ -198,6 +199,16 @@ struct InlinedString {
     return std::string(c_str(), length());
   }
 
+  bool isEmpty() const {
+    if (isInline()) {
+      return c_str()[0] == '\0';
+    }
+
+    // otherwise, the pointed-to string should not be empty
+    CHPL_ASSERT(length() > 0);
+    return false;
+  }
+
   // mark the string as used this revision (so it is not GC'd)
   void mark(Context* context) const;
 };
@@ -252,7 +263,7 @@ struct PODUniqueString {
   }
 
   bool isEmpty() const {
-    return i.c_str()[0] == '\0';
+    return i.isEmpty();
   }
   inline bool operator==(const PODUniqueString other) const {
     return this->i.v == other.i.v;

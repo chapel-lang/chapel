@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,13 @@
 namespace chpl {
 namespace uast {
 
+
+void When::dumpFieldsInner(const DumpSettings& s) const {
+  if (isOtherwise()) {
+    s.out << " otherwise";
+  }
+  return SimpleBlockLike::dumpFieldsInner(s);
+}
 
 owned<When> When::build(Builder* builder, Location loc,
                         AstList caseExprs,

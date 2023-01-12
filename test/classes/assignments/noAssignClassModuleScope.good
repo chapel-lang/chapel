@@ -1,0 +1,1 @@
+noAssignClassModuleScope.chpl:13: error: Can't overload assignments for class types

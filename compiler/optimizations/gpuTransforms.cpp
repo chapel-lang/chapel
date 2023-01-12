@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,6 +35,7 @@
 #include "astutil.h"
 #include "optimizations.h"
 #include "timer.h"
+#include "misc.h"
 
 #include "global-ast-vecs.h"
 
@@ -910,6 +911,13 @@ static void logGpuizableLoops() {
 }
 
 void gpuTransforms() {
+  if (usingGpuLocaleModel() && getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP) {
+    // TODO: the AMD GPU prototype is not currently in a state
+    // where gpuTransforms can be applied. Do not apply them
+    // for the time being.
+    return;
+  }
+
   if (debugPrintGPUChecks) {
     logGpuizableLoops();
   }

@@ -32,7 +32,7 @@ https://github.com/Homebrew/homebrew-core/blob/master/CONTRIBUTING.md
 
 The container is executed using the following instructions: 
 ```
-docker run --interactive --tty --rm --pull always homebrew/ubuntu16.04:latest /bin/bash
+docker run --interactive --tty --rm --pull always homebrew/ubuntu22.04:latest /bin/bash
 ```
 
 Formulas can be copied to the container using the following command: 

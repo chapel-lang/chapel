@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -113,7 +113,7 @@ class BuilderResult final {
 
   /** return the i'th top-level expression */
   const AstNode* topLevelExpression(int i) const {
-    assert(0 <= i && (size_t) i < topLevelExpressions_.size());
+    CHPL_ASSERT(0 <= i && (size_t) i < topLevelExpressions_.size());
     return topLevelExpressions_[i].get();
   }
 

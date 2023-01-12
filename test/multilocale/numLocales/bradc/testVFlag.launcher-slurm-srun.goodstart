@@ -1,7 +1,14 @@
 #!/bin/sh
+
+if [[ -z ${CHPL_LAUNCHER_MEM:+x} ]] ; then
+    export CHPL_LAUNCHER_MEM=0
+elif [[ $CHPL_LAUNCHER_MEM == "unset" ]] ; then
+    unset CHPL_LAUNCHER_MEM
+fi
+
 echo "EVARS=vals" \
      "srun --job-name=CHPL-testVFlag --quiet" \
      "--nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=N" \
-     "--exclusive --mem=0" \
+     "--exclusive${CHPL_LAUNCHER_MEM:+ --mem=M}" \
      "--kill-on-bad-exit${CHPL_LAUNCHER_PARTITION:+ --partition=P}${CHPL_LAUNCHER_EXCLUDE:+ --exclude=E} " \
      "./testVFlag_real -v -nl 1${EXECOPTS:+ $EXECOPTS}"

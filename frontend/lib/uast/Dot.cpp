@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,13 +25,17 @@ namespace chpl {
 namespace uast {
 
 
+void Dot::dumpFieldsInner(const DumpSettings& s) const {
+  s.out << " ." << fieldName_.str();
+}
+
 owned<Dot> Dot::build(Builder* builder,
                       Location loc,
                       owned<AstNode> receiver,
                       UniqueString fieldName) {
   AstList list;
 
-  assert(receiver.get() != nullptr);
+  CHPL_ASSERT(receiver.get() != nullptr);
 
   list.push_back(std::move(receiver));
 

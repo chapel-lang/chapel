@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,7 +32,7 @@ const owned<ComplexType>& ComplexType::getComplexType(Context* context, int bitw
 }
 
 const ComplexType* ComplexType::get(Context* context, int bitwidth) {
-  assert(bitwidth == 0 || bitwidth == 64 || bitwidth == 128);
+  CHPL_ASSERT(bitwidth == 0 || bitwidth == 64 || bitwidth == 128);
   if (bitwidth == 0) bitwidth = defaultBitwidth(); // canonicalize default width
   return getComplexType(context, bitwidth).get();
 }

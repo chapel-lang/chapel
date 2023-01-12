@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -106,7 +106,7 @@ Immediate paramToImmediate(const Param* p, const Type* t) {
         auto cp = (const ComplexParam*) p;
         auto v = cp->value();
         auto ct = t->toComplexType();
-        assert(ct);
+        CHPL_ASSERT(ct);
         if (ct == nullptr) return ret;
         ret.const_kind = NUM_KIND_COMPLEX;
         if (ct->bitwidth() == 64) {
@@ -118,20 +118,20 @@ Immediate paramToImmediate(const Param* p, const Type* t) {
           ret.v_complex128.r = v.re;
           ret.v_complex128.i = v.im;
         } else {
-          assert(false && "case not handled");
+          CHPL_ASSERT(false && "case not handled");
         }
         return ret;
       }
     case paramtags::EnumParam:
       {
-        assert(false && "case not handled");
+        CHPL_ASSERT(false && "case not handled");
       }
     case paramtags::IntParam:
       {
         auto ip = (const IntParam*) p;
         auto v = ip->value();
         auto it = t->toIntType();
-        assert(it);
+        CHPL_ASSERT(it);
         if (it == nullptr) return ret;
         ret.const_kind = NUM_KIND_INT;
         if (it->bitwidth() == 8) {
@@ -147,7 +147,7 @@ Immediate paramToImmediate(const Param* p, const Type* t) {
           ret.num_index = INT_SIZE_64;
           ret.v_int64 = v;
         } else {
-          assert(false && "case not handled");
+          CHPL_ASSERT(false && "case not handled");
         }
         return ret;
       }
@@ -171,7 +171,7 @@ Immediate paramToImmediate(const Param* p, const Type* t) {
             ret.num_index = FLOAT_SIZE_64;
             ret.v_float64 = v;
           } else {
-            assert(false && "case not handled");
+            CHPL_ASSERT(false && "case not handled");
           }
         } else if (auto it = t->toImagType()) {
           ret.const_kind = NUM_KIND_IMAG;
@@ -182,10 +182,10 @@ Immediate paramToImmediate(const Param* p, const Type* t) {
             ret.num_index = FLOAT_SIZE_64;
             ret.v_float64 = v;
           } else {
-            assert(false && "case not handled");
+            CHPL_ASSERT(false && "case not handled");
           }
         } else {
-          assert(false && "case not handled");
+          CHPL_ASSERT(false && "case not handled");
         }
         return ret;
       }
@@ -207,7 +207,7 @@ Immediate paramToImmediate(const Param* p, const Type* t) {
           ret.num_index = 0;
           ret.v_string = v;
         } else {
-          assert(false && "case not handled");
+          CHPL_ASSERT(false && "case not handled");
         }
         return ret;
       }
@@ -216,7 +216,7 @@ Immediate paramToImmediate(const Param* p, const Type* t) {
         auto up = (const UintParam*) p;
         auto v = up->value();
         auto ut = t->toUintType();
-        assert(ut);
+        CHPL_ASSERT(ut);
         if (ut == nullptr) return ret;
         ret.const_kind = NUM_KIND_UINT;
         if (ut->bitwidth() == 8) {
@@ -232,12 +232,12 @@ Immediate paramToImmediate(const Param* p, const Type* t) {
           ret.num_index = INT_SIZE_64;
           ret.v_uint64 = v;
         } else {
-          assert(false && "case not handled");
+          CHPL_ASSERT(false && "case not handled");
         }
         return ret;
       }
   }
-  assert(false && "case not handled");
+  CHPL_ASSERT(false && "case not handled");
   return ret;
 }
 
@@ -260,7 +260,7 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
         return {IntParam::get(context, imm.v_int64),
                 IntType::get(context, 64)};
       default:
-        assert(false && "case not handled");
+        CHPL_ASSERT(false && "case not handled");
     }
   case NUM_KIND_BOOL:
     return {BoolParam::get(context, imm.v_bool!=0), BoolType::get(context, 0)};
@@ -276,7 +276,7 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
         return {StringParam::get(context, imm.v_string),
                 CStringType::get(context)};
       default:
-        assert(false && "case not handled");
+        CHPL_ASSERT(false && "case not handled");
       }
   case NUM_KIND_REAL:
     switch (imm.num_index) {
@@ -287,7 +287,7 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
         return {RealParam::get(context, imm.v_float64),
                 RealType::get(context, 64)};
       default:
-        assert(false && "case not handled");
+        CHPL_ASSERT(false && "case not handled");
     }
   case NUM_KIND_IMAG:
     switch (imm.num_index) {
@@ -298,7 +298,7 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
         return {RealParam::get(context, imm.v_float64),
                 ImagType::get(context, 64)};
       default:
-        assert(false && "case not handled");
+        CHPL_ASSERT(false && "case not handled");
     }
   case NUM_KIND_COMPLEX:
     switch (imm.num_index) {
@@ -313,10 +313,10 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
                                                        imm.v_complex128.i)),
                 ComplexType::get(context, 128)};
       default:
-        assert(false && "case not handled");
+        CHPL_ASSERT(false && "case not handled");
     }
   default:
-    assert(false && "case not handled");
+    CHPL_ASSERT(false && "case not handled");
   }
   return {nullptr, nullptr};
 }
@@ -325,8 +325,8 @@ QualifiedType Param::fold(Context* context,
                           chpl::uast::PrimitiveTag op,
                           QualifiedType a,
                           QualifiedType b) {
-  assert(a.hasTypePtr() && a.hasParamPtr());
-  assert(b.hasTypePtr() && b.hasParamPtr());
+  CHPL_ASSERT(a.hasTypePtr() && a.hasParamPtr());
+  CHPL_ASSERT(b.hasTypePtr() && b.hasParamPtr());
 
   // convert Param to Immediate
   Immediate aImm = paramToImmediate(a.param(), a.type());
@@ -337,14 +337,14 @@ QualifiedType Param::fold(Context* context,
   int immOp = op;
 
   if (!Param::isParamOpFoldable(op)) {
-    assert(false && "param primitive op not foldable");
+    CHPL_ASSERT(false && "param primitive op not foldable");
   }
 
   fold_constant(context, immOp, &aImm, &bImm, &result);
 
   // convert from Immediate
   std::pair<const Param*, const Type*> pair = immediateToParam(context, result);
-  return QualifiedType(IntentList::PARAM, pair.second, pair.first);
+  return QualifiedType(Qualifier::PARAM, pair.second, pair.first);
 }
 
 void Param::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
@@ -370,12 +370,12 @@ uint64_t Param::binStr2uint64(const char* str, size_t len, std::string& err) {
   if (str == nullptr ||
       !(str[0] == '0' && (str[1] == 'b' || str[1] == 'B')) ||
       stringContainsZeroBytes(str, len)) {
-    assert(false && "should not be reached");
+    CHPL_ASSERT(false && "should not be reached");
     err = "Invalid binary string";
     return 0;
   }
 
-  assert(len >= 3);
+  CHPL_ASSERT(len >= 3);
 
   // Remove leading 0s
   size_t startPos = 2;
@@ -413,7 +413,7 @@ uint64_t Param::octStr2uint64(const char* str, size_t len, std::string& err) {
   if (str == nullptr ||
       !(str[0] == '0' && (str[1] == 'o' || str[1] == 'O')) ||
       stringContainsZeroBytes(str, len)) {
-    assert(false && "should not be reached");
+    CHPL_ASSERT(false && "should not be reached");
     err = "Invalid octal string";
     return 0;
   }
@@ -456,12 +456,12 @@ uint64_t Param::decStr2uint64(const char* str, size_t len, std::string& err) {
   if (str == nullptr ||
       str[0] == 0 ||
       stringContainsZeroBytes(str, len)) {
-    assert(false && "should not be reached");
+    CHPL_ASSERT(false && "should not be reached");
     err = "Invalid decimal string";
     return 0;
   }
 
-  assert(len >= 1);
+  CHPL_ASSERT(len >= 1);
 
   /* Remove leading 0s */
   size_t startPos = 0;
@@ -504,12 +504,12 @@ int64_t Param::decStr2int64(const char* str, size_t len, std::string& err) {
   if (str == nullptr ||
       str[0] == 0 ||
       stringContainsZeroBytes(str, len)) {
-    assert(false && "should not be reached");
+    CHPL_ASSERT(false && "should not be reached");
     err = "Invalid decimal string";
     return 0;
   }
 
-  assert(len >= 1);
+  CHPL_ASSERT(len >= 1);
 
   size_t startPos = 0;
   bool negate = false;
@@ -564,12 +564,12 @@ uint64_t Param::hexStr2uint64(const char* str, size_t len, std::string &err) {
   if (str == nullptr ||
       !(str[0] == '0' && (str[1] == 'x' || str[1] == 'X')) ||
       stringContainsZeroBytes(str, len)) {
-    assert(false && "should not be reached");
+    CHPL_ASSERT(false && "should not be reached");
     err = "Invalid hexadecimal string";
     return 0;
   }
 
-  assert(len >= 3);
+  CHPL_ASSERT(len >= 3);
 
   /* Remove leading 0s */
   size_t startPos = 2;
@@ -610,7 +610,7 @@ double Param::str2double(const char* str, size_t len, std::string& err) {
   if (str == nullptr ||
       str[0] == 0 ||
       stringContainsZeroBytes(str, len)) {
-    assert(false && "should not be reached");
+    CHPL_ASSERT(false && "should not be reached");
     err = "Invalid decimal string";
     return 0;
   }

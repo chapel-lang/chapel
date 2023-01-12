@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -60,10 +60,6 @@ Chapel supports both string and bytes regular expressions.
 
 Now you can use these methods on regular expressions: :proc:`regex.search`,
 :proc:`regex.match`, :proc:`regex.split`, :proc:`regex.matches`.
-
-You can also use the string versions of these methods: :proc:`string.search`,
-:proc:`string.match`, :proc:`string.split`, or :proc:`string.matches`. Methods
-with same prototypes exist for :type:`~Bytes.bytes` type, as well.
 
 Lastly, you can include regular expressions in the format string for
 :proc:`~FormattedIO.readf` for searching on QIO channels using the ``%/<regex>/``
@@ -411,19 +407,6 @@ class BadRegexError : Error {
   }
 }
 
-// Until Issue 17275 is fixed:
-deprecated "Regex: 'BadRegexpError' is deprecated; please use 'BadRegexError' instead"
-type BadRegexpError = owned BadRegexError;
-
-// When Issue 17275 is fixed:
-
-// pragma "no doc"
-// proc BadRegexpError type
-// {
-//   compilerWarning("Regex: 'BadRegexpError' is deprecated; please use 'BadRegexError' instead");
-//   return BadRegexError;
-// }
-
 /*
    Compile a regular expression. This routine will throw a
    class:`BadRegexError` if compilation failed.
@@ -506,15 +489,6 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
   return ret;
 }
 
-pragma "no doc"
-pragma "last resort"
-proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
-             /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotnl=false,
-             /*U*/ nonGreedy=false): regex(t) throws where t==string || t==bytes {
-  compilerWarning("Regex.compile(): 'dotnl' is deprecated. Please use 'dotAll' instead.");
-  return compile(pattern, posix, literal, noCapture, ignoreCase, multiLine, dotnl, nonGreedy);
-}
-
 /*  The regexMatch record records a regular expression search match
     or a capture group.
 
@@ -528,11 +502,6 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
       var m:regexMatch = ...;
       if m then do_something_if_matched();
       if !m then do_something_if_not_matched();
-
-    .. warning::
-      offset field is deprecated, use byteOffset instead
-    .. warning::
-      size field is deprecated, use numBytes instead
  */
 record regexMatch {
   /* true if the regular expression search matched successfully */
@@ -541,18 +510,6 @@ record regexMatch {
   var byteOffset:byteIndex;
   /* the length of the match. 0 if matched==false */
   var numBytes:int;
-
-  pragma "no doc"
-  deprecated "field offset is deprecated, use byteOffset instead"
-  proc offset:byteIndex {
-    return this.byteOffset;
-  }
-
-  pragma "no doc"
-  deprecated "field size is deprecated, use numBytes instead"
-  proc size:int {
-    return this.numBytes;
-  }
 }
 
 pragma "no doc"
@@ -1166,20 +1123,6 @@ proc string.find(pattern: regex(string)):byteIndex
   return (pattern.search(this)).byteOffset;
 }
 
-pragma "no doc"
-pragma "last resort"
-proc string.search(needle: regex(string)):regexMatch
-{
-  return needle.search(this);
-}
-
-pragma "no doc"
-deprecated "string.search is deprecated, use regex search instead"
-proc string.search(pattern: regex(string)):regexMatch
-{
-  return pattern.search(this);
-}
-
 /* Search the receiving bytes for the result of a compiled regular
    expression. Search for matches at any offset.
 
@@ -1190,89 +1133,6 @@ proc string.search(pattern: regex(string)):regexMatch
 proc bytes.find(pattern: regex(bytes)):byteIndex
 {
   return (pattern.search(this)).byteOffset;
-}
-
-pragma "no doc"
-pragma "last resort"
-proc bytes.search(needle: regex(bytes)):regexMatch
-{
-  return needle.search(this);
-}
-
-pragma "no doc"
-deprecated "bytes.search is deprecated, use regex search instead"
-proc bytes.search(pattern: regex(bytes)):regexMatch
-{
-  return pattern.search(this);
-}
-
-
-pragma "last resort"
-deprecated "string.search with needle argument is deprecated, use regex search instead"
-proc string.search(needle: regex(string), ref captures ...?k):regexMatch
-{
-  return needle.search(this, (...captures));
-}
-
-/* Search the receiving string for a regular expression already compiled
-   by calling :proc:`regex.search`. Search for matches at any offset.
-
-   .. warning:: the search function with a receiving string is deprecated,
-                use regex search instead
-
-   :arg pattern: the compiled regular expression to search for
-   :arg captures: (optional) what to capture from the regular expression. These
-                  should be strings or types that strings can cast to.
-   :returns: an :record:`regexMatch` object representing the offset in the
-             receiving string where a match occurred
- */
-
-deprecated "string.search is deprecated, use regex search instead"
-proc string.search(pattern: regex(string), ref captures ...?k):regexMatch
-{
-  return pattern.search(this, (...captures));
-}
-
-
-pragma "last resort"
-deprecated "bytes.search with needle argument is deprecated, use regex search instead"
-proc bytes.search(needle: regex(bytes), ref captures ...?k):regexMatch
-{
-  return needle.search(this, (...captures));
-}
-
-/* Search the receiving bytes for a regular expression already compiled
-   by calling :proc:`regex.search`. Search for matches at any offset.
-
-   .. warning:: the search function with receiving bytes is deprecated,
-                use regex search instead
-
-   :arg pattern: the compiled regular expression to search for
-   :arg captures: (optional) what to capture from the regular expression. These
-                  should be bytes or types that bytes can cast to.
-   :returns: an :record:`regexMatch` object representing the offset in the
-             receiving bytes where a match occurred
- */
-deprecated "bytes.search is deprecated, use regex search instead"
-proc bytes.search(pattern: regex(bytes), ref captures ...?k):regexMatch
-{
-  return pattern.search(this, (...captures));
-}
-
-// documented in the captures version
-pragma "no doc"
-deprecated "string.match is deprecated"
-proc string.match(pattern: regex(string)):regexMatch
-{
-  return pattern.match(this);
-}
-
-// documented in the captures version
-pragma "no doc"
-deprecated "bytes.match is deprecated"
-proc bytes.match(pattern: regex(bytes)):regexMatch
-{
-  return pattern.match(this);
 }
 
 /* Returns true if the start of the string matches the pattern.
@@ -1286,7 +1146,6 @@ proc string.startsWith(pattern: regex(string)):bool
   return rm.byteOffset == 0;
 }
 
-
 /* Returns true if the start of the bytes matches the pattern.
 
    :arg pattern: the compiled regular expression to match
@@ -1297,30 +1156,6 @@ proc bytes.startsWith(pattern: regex(bytes)):bool
   var rm = pattern.match(this);
   return rm.byteOffset == 0;
 }
-
-
-deprecated "string.match with captures argument is deprecated"
-proc string.match(pattern: regex(string), ref captures ...?k):regexMatch
-{
-  return pattern.match(this, (...captures));
-}
-
-deprecated "bytes.match with captures argument is deprecated"
-proc bytes.match(pattern: regex(bytes), ref captures ...?k):regexMatch
-{
-  return pattern.match(this, (...captures));
-}
-
-pragma "no doc"
-pragma "last resort"
-deprecated "the split function with pattern argument is deprecated, use sep instead"
-iter string.split(pattern: regex(string), maxsplit: int = 0)
-{
-   for v in pattern.split(this, maxsplit) {
-    yield v;
-  }
-}
-
 
 /*
    Split the receiving string by occurrences of the passed regular
@@ -1337,17 +1172,6 @@ iter string.split(sep: regex(string), maxsplit: int = 0)
   }
 }
 
-pragma "no doc"
-pragma "last resort"
-deprecated "the split function with pattern argument is deprecated, use sep instead"
-iter bytes.split(pattern: regex(bytes), maxsplit: int = 0)
-{
-  for v in pattern.split(this, maxsplit) {
-    yield v;
-  }
-}
-
-
 /*
    Split the receiving bytes by occurrences of the passed regular
    expression by calling :proc:`regex.split`.
@@ -1360,50 +1184,6 @@ iter bytes.split(pattern: regex(bytes), maxsplit: int = 0)
 iter bytes.split(sep: regex(bytes), maxsplit: int = 0)
 {
   for v in sep.split(this, maxsplit) {
-    yield v;
-  }
-}
-
-/*
-   Enumerates matches in the receiving string as well as capture groups
-   by calling :proc:`regex.matches`.
-
-   .. warning:: the matches function is deprecated
-
-   :arg pattern: the regular expression to find matches
-   :arg captures: (compile-time constant) the size of the captures to return
-   :arg maxmatches: the maximum number of matches to return
-   :yields: tuples of :record:`regexMatch` objects, the 1st is always
-            the match for the whole pattern and the rest are the capture groups.
-
-*/
-deprecated "the matches function is deprecated"
-iter string.matches(pattern:regex(string), param captures=0,
-                    maxmatches:int=max(int))
-{
-  for v in pattern.matches(this, captures, maxmatches) {
-    yield v;
-  }
-}
-
-/*
-   Enumerates matches in the receiving bytes as well as capture groups
-   by calling :proc:`regex.matches`.
-
-   .. warning:: the matches function is deprecated
-
-   :arg pattern: the regular expression to find matches
-   :arg captures: (compile-time constant) the size of the captures to return
-   :arg maxmatches: the maximum number of matches to return
-   :yields: tuples of :record:`regexMatch` objects, the 1st is always
-            the match for the whole pattern and the rest are the capture groups.
-
-*/
-deprecated "the matches function is deprecated"
-iter bytes.matches(pattern:regex(bytes), param captures=0,
-                   maxmatches:int=max(int))
-{
-  for v in pattern.matches(this, captures, maxmatches) {
     yield v;
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -67,6 +67,14 @@ class RecordType final : public CompositeType {
   /** Get the bytes type */
   static const RecordType* getBytesType(Context* context);
 
+  /** When compiling without a standard library (for testing purposes),
+      the compiler code needs to work around the fact that there
+      is no definition available for the record types needed
+      by the language but provided in the library (such as 'string').
+      This function allows code to easily detect that case.
+   */
+  static bool isMissingBundledRecordType(Context* context, ID id);
+
   ~RecordType() = default;
 
   /** If this type represents an instantiated type,
@@ -77,7 +85,7 @@ class RecordType final : public CompositeType {
    */
   const RecordType* instantiatedFrom() const {
     const CompositeType* ret = instantiatedFromCompositeType();
-    assert(ret == nullptr || ret->tag() == typetags::RecordType);
+    CHPL_ASSERT(ret == nullptr || ret->tag() == typetags::RecordType);
     return (const RecordType*) ret;
   }
 

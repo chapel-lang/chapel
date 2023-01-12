@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -55,7 +55,7 @@ class Include final : public AstNode {
       visibility_(visibility),
       isPrototype_(isPrototype),
       name_(name) {
-    assert(!name_.isEmpty());
+    CHPL_ASSERT(!name_.isEmpty());
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -69,6 +69,8 @@ class Include final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
     name_.mark(context);
   }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
 
  public:
 

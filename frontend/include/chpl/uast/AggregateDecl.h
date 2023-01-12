@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -75,7 +75,7 @@ class AggregateDecl : public TypeDecl {
       elementsChildNum_(elementsChildNum),
       numElements_(numElements) {
 
-    assert(validAggregateChildren(declOrComments()));
+    CHPL_ASSERT(validAggregateChildren(declOrComments()));
   }
 
   ~AggregateDecl() = 0; // this is an abstract base class
@@ -103,7 +103,7 @@ class AggregateDecl : public TypeDecl {
    Return the i'th Decl in this AggregateDecl.
    */
   const AstNode* declOrComment(int i) const {
-    assert(0 <= i && i < numElements_);
+    CHPL_ASSERT(0 <= i && i < numElements_);
     const AstNode* ast = this->child(elementsChildNum_ + i);
     return ast;
   }

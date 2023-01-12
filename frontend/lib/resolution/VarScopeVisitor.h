@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -58,11 +58,11 @@ class VarScopeVisitor {
 
   // ----- inputs to the process
   Context* context = nullptr;
-
+  types::QualifiedType fnReturnType;
 
   // ----- internal variables
   std::vector<owned<VarFrame>> scopeStack;
-
+  std::vector<const AstNode*> inAstStack;
 
   // ----- methods to be implemented by specific analysis subclass
 
@@ -87,26 +87,33 @@ class VarScopeVisitor {
                                  const types::QualifiedType& formalType,
                                  RV& rv) = 0;
 
-  /** Called for an unconditional return or throw */
-  virtual void handleReturnOrThrow(const uast::AstNode* ast, RV& rv) = 0;
+  /** Called for a 'return' */
+  virtual void handleReturn(const uast::Return* ast, RV& rv) = 0;
+
+  /** Called for a 'throw' */
+  virtual void handleThrow(const uast::Throw* ast, RV& rv) = 0;
+
+  /** Called for a 'yield' */
+  virtual void handleYield(const uast::Yield* ast, RV& rv) = 0;
 
   /** Called to process a Conditional after handling its contents --
       should update currentFrame() which is the frame for the Conditional.
       The then/else frames are sitting in currentFrame().subBlocks. */
-  virtual void handleConditional(const uast::Conditional* cond) = 0;
+  virtual void handleConditional(const uast::Conditional* cond, RV& rv) = 0;
   /** Called to process a Try after handling its contents --
       should update currentFrame() which is the frame for the Try.
       The catch clause frames are sitting in currentFrame().subBlocks. */
-  virtual void handleTry(const uast::Try* t) = 0;
+  virtual void handleTry(const uast::Try* t, RV& rv) = 0;
   /** Called to process any other Scope after handling its contents --
       should update scopeStack.back() which is the frame for the Try.
       Not called for Conditional or Try. */
-  virtual void handleScope(const uast::AstNode* ast) = 0;
+  virtual void handleScope(const uast::AstNode* ast, RV& rv) = 0;
 
 
   // ----- methods for use by specific analysis subclasses
 
-  VarScopeVisitor(Context* context) : context(context), scopeStack() { }
+  VarScopeVisitor(Context* context, types::QualifiedType fnReturnType)
+    : context(context), fnReturnType(std::move(fnReturnType)) { }
 
  public:
   void process(const uast::AstNode* symbol,
@@ -117,9 +124,12 @@ class VarScopeVisitor {
   /** Return the current frame. This should always be safe to call
       from one of the handle* methods. */
   VarFrame* currentFrame() {
-    assert(!scopeStack.empty());
+    CHPL_ASSERT(!scopeStack.empty());
     return scopeStack.back().get();
   }
+
+  /** Returns the current statement being traversed */
+  const AstNode* currentStatement();
 
   /** Return the parent frame or nullptr if there is none. */
   VarFrame* currentParentFrame() {
@@ -169,10 +179,16 @@ class VarScopeVisitor {
   /** Update initedVars for a declaration with an initExpression. */
   bool processDeclarationInit(const VarLikeDecl* ast, RV& rv);
 
+  /** Returns the return or yield type of the function being processed */
+  const types::QualifiedType& returnOrYieldType();
+
  public:
   // ----- visitor implementation
-  void enterScope(const uast::AstNode* ast);
-  void exitScope(const uast::AstNode* ast);
+  void enterScope(const uast::AstNode* ast, RV& rv);
+  void exitScope(const uast::AstNode* ast, RV& rv);
+
+  void enterAst(const uast::AstNode* ast);
+  void exitAst(const uast::AstNode* ast);
 
   bool enter(const VarLikeDecl* ast, RV& rv);
   void exit(const VarLikeDecl* ast, RV& rv);
@@ -188,6 +204,9 @@ class VarScopeVisitor {
 
   bool enter(const Throw* ast, RV& rv);
   void exit(const Throw* ast, RV& rv);
+
+  bool enter(const Yield* ast, RV& rv);
+  void exit(const Yield* ast, RV& rv);
 
   bool enter(const Identifier* ast, RV& rv);
   void exit(const Identifier* ast, RV& rv);
@@ -215,7 +234,7 @@ struct CopyElisionState {
     Keeping them declared here keeps things simple. */
 struct VarFrame {
   // ----- variables used by VarScopeVisitor
-  const AstNode* scopeAst = nullptr; // for debugging
+  const AstNode* scopeAst = nullptr;
 
   // Which variables are declared in this scope?
   // For split init, only variables without init expressions.
@@ -257,7 +276,9 @@ struct VarFrame {
   // order to create a single stack for cleanup operations to be executed.
   // In particular, the ordering between defer blocks and locals matters,
   // in addition to the ordering within each group.
-  std::vector<const AstNode*> localsAndDefers;
+  // It stores variables in initialization order. It does not store
+  // declared but not-yet-initialized variables.
+  std::vector<ID> localsAndDefers;
 
   // Which outer variables have been initialized in this scope?
   // This vector lists them in initialization order.
@@ -278,10 +299,10 @@ struct VarFrame {
   Compute a vector indicating which actuals are passed to an 'out'/'in'/'inout'
   formal in all return intent overloads. For each actual 'i',
   actualFormalIntent[i] will be set to one of the following:
-   * uast::IntentList::OUT if it is passed to an 'out' formal
-   * uast::IntentList::IN if it is passed to an 'in' or 'const in' formal
-   * uast::IntentList::INOUT if it is passed to an 'inout' formal
-   * uast::IntentList::UNKNOWN otherwise
+   * uast::Qualifier::OUT if it is passed to an 'out' formal
+   * uast::Qualifier::IN if it is passed to an 'in' or 'const in' formal
+   * uast::Qualifier::INOUT if it is passed to an 'inout' formal
+   * uast::Qualifier::UNKNOWN otherwise
 
   actualFormalTypes will be set so that for actual 'i', if it is passed
   to an 'out'/'in'/'inout' formal, actualFormalTypes[i] will be set to the
@@ -296,7 +317,7 @@ computeActualFormalIntents(Context* context,
                            const MostSpecificCandidates& candidates,
                            const CallInfo& ci,
                            const std::vector<const AstNode*>& actualAsts,
-                           std::vector<uast::IntentList>& actualFrmlIntents,
+                           std::vector<uast::Qualifier>& actualFrmlIntents,
                            std::vector<types::QualifiedType>& actualFrmlTypes);
 
 } // end namespace resolution

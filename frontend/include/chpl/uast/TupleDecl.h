@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,11 +21,9 @@
 #define CHPL_UAST_TUPLEDECL_H
 
 #include "chpl/uast/Decl.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/framework/Location.h"
-
-#include <cassert>
 
 namespace chpl {
 namespace uast {
@@ -56,19 +54,19 @@ namespace uast {
 class TupleDecl final : public Decl {
  public:
   enum IntentOrKind {
-    DEFAULT_INTENT = (int) IntentList::DEFAULT_INTENT,
-    CONST_INTENT   = (int) IntentList::CONST_INTENT,
-    VAR            = (int) IntentList::VAR,
-    CONST_VAR      = (int) IntentList::CONST_VAR,
-    CONST_REF      = (int) IntentList::CONST_REF,
-    REF            = (int) IntentList::REF,
-    IN             = (int) IntentList::IN,
-    CONST_IN       = (int) IntentList::CONST_IN,
-    OUT            = (int) IntentList::OUT,
-    INOUT          = (int) IntentList::INOUT,
-    INDEX          = (int) IntentList::INDEX,
-    PARAM          = (int) IntentList::PARAM,
-    TYPE           = (int) IntentList::TYPE
+    DEFAULT_INTENT = (int) Qualifier::DEFAULT_INTENT,
+    CONST_INTENT   = (int) Qualifier::CONST_INTENT,
+    VAR            = (int) Qualifier::VAR,
+    CONST_VAR      = (int) Qualifier::CONST_VAR,
+    CONST_REF      = (int) Qualifier::CONST_REF,
+    REF            = (int) Qualifier::REF,
+    IN             = (int) Qualifier::IN,
+    CONST_IN       = (int) Qualifier::CONST_IN,
+    OUT            = (int) Qualifier::OUT,
+    INOUT          = (int) Qualifier::INOUT,
+    INDEX          = (int) Qualifier::INDEX,
+    PARAM          = (int) Qualifier::PARAM,
+    TYPE           = (int) Qualifier::TYPE
   };
 
  private:
@@ -92,7 +90,7 @@ class TupleDecl final : public Decl {
       typeExpressionChildNum_(typeExpressionChildNum),
       initExpressionChildNum_(initExpressionChildNum) {
 
-    assert(assertAcceptableTupleDecl());
+    CHPL_ASSERT(assertAcceptableTupleDecl());
   }
 
   bool assertAcceptableTupleDecl();
@@ -110,6 +108,9 @@ class TupleDecl final : public Decl {
   void markUniqueStringsInner(Context* context) const override {
     declMarkUniqueStringsInner(context);
   }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
 
   int declChildNum() const {
     return attributes() ? 1 : 0;
@@ -154,10 +155,10 @@ class TupleDecl final : public Decl {
    Return the i'th contained Decl.
    */
   const Decl* decl(int i) const {
-    assert(i >= 0 && i < numDecls());
+    CHPL_ASSERT(i >= 0 && i < numDecls());
     const AstNode* ast = this->child(i + declChildNum());
-    assert(ast->isVariable() || ast->isTupleDecl());
-    assert(ast->isDecl());
+    CHPL_ASSERT(ast->isVariable() || ast->isTupleDecl());
+    CHPL_ASSERT(ast->isDecl());
     return (const Decl*)ast;
   }
 
@@ -186,6 +187,11 @@ class TupleDecl final : public Decl {
       return nullptr;
     }
   }
+
+  /**
+    Returns a string describing the passed intentOrKind.
+   */
+  static const char* intentOrKindToString(IntentOrKind kind);
 };
 
 

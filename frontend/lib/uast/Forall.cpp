@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,8 +32,8 @@ owned<Forall> Forall::build(Builder* builder, Location loc,
                             BlockStyle blockStyle,
                             owned<Block> body,
                             bool isExpressionLevel) {
-  assert(iterand.get() != nullptr);
-  assert(body.get() != nullptr);
+  CHPL_ASSERT(iterand.get() != nullptr);
+  CHPL_ASSERT(body.get() != nullptr);
 
   AstList lst;
   int8_t indexChildNum = -1;

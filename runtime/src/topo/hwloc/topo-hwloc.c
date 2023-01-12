@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -265,7 +265,7 @@ int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
 }
 
 //
-// Gets information about CPUs (cores and PUs) from the toplogy.
+// Gets information about CPUs (cores and PUs) from the topology.
 //
 static
 void getCPUInfo(void) {
