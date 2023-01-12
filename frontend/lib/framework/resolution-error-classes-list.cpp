@@ -52,6 +52,14 @@ static types::QualifiedType decayToValue(const types::QualifiedType& qt) {
   return qt;
 }
 
+static const char* allowedItem(resolution::VisibilityStmtKind kind) {
+  return kind == resolution::VIS_USE ? "module or 'enum'" : "module";
+}
+
+static const char* allowedItems(resolution::VisibilityStmtKind kind) {
+  return kind == resolution::VIS_USE ? "modules or enums" : "modules";
+}
+
 //
 // Below are the implementations of 'write' for each error class, which does
 // the specialized work.
@@ -516,20 +524,22 @@ void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
   auto moduleName = std::get<std::string>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
+
   wr.heading(kind_, type_, id, "cannot '", useOrImport, "' '", moduleName,
-             "', which is not a module.");
+             "', which is not a ", allowedItem(useOrImport), ".");
   wr.message("In the following '", useOrImport, "' statement:");
   wr.code<ID, ID>(id, { id });
-  wr.message("Only modules and enums can be used with '", useOrImport,
-             "' statements.");
+  wr.message("Only ", allowedItems(useOrImport), " can be used with '",
+             useOrImport, "' statements.");
 }
 
 void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
   auto moduleName = std::get<std::string>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
-  wr.heading(kind_, type_, id, "cannot find module '", moduleName,
-             "' for '", useOrImport, "'.");
+
+  wr.heading(kind_, type_, id, "cannot find ", allowedItem(useOrImport),
+             " '", moduleName, "' for '", useOrImport, "' statement.");
   wr.message("In the following '", useOrImport, "' statement:");
   wr.code<ID, ID>(id, { id });
 }
