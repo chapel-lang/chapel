@@ -1,0 +1,42 @@
+i: 0
+s: (0, 0)
+f: (true, (0, 0))
+(localEntries = ((key = 0, val = 0, status = full), (key = 0, val = 0, status = empty)), chainHead = nil, initState = initialized)
+------------------------
+i: 5
+s: (0, 1)
+f: (true, (0, 1))
+(localEntries = ((key = 0, val = 0, status = full), (key = 5, val = 500, status = full)), chainHead = nil, initState = initialized)
+------------------------
+i: 8
+s: (0, 2)
+f: (true, (0, 2))
+(localEntries = ((key = 0, val = 0, status = full), (key = 5, val = 500, status = full)), chainHead = {entry = (key = 8, val = 800, status = full), next = nil}, initState = initialized)
+------------------------
+i: 13
+s: (0, 3)
+f: (true, (0, 3))
+(localEntries = ((key = 0, val = 0, status = full), (key = 5, val = 500, status = full)), chainHead = {entry = (key = 8, val = 800, status = full), next = {entry = (key = 13, val = 1300, status = full), next = nil}}, initState = initialized)
+------------------------
+size: 4
+
+5, 500
+(localEntries = ((key = 0, val = 0, status = full), (key = 5, val = 500, status = deleted)), chainHead = {entry = (key = 8, val = 800, status = full), next = {entry = (key = 13, val = 1300, status = full), next = nil}}, initState = initialized)
+13, 1300
+(localEntries = ((key = 0, val = 0, status = full), (key = 5, val = 500, status = deleted)), chainHead = {entry = (key = 8, val = 800, status = full), next = {entry = (key = 13, val = 1300, status = deleted), next = nil}}, initState = initialized)
+size: 2
+
+i: 5
+s: (0, 1)
+f: (true, (0, 1))
+(localEntries = ((key = 0, val = 0, status = full), (key = 5, val = 500, status = full)), chainHead = {entry = (key = 8, val = 800, status = full), next = {entry = (key = 13, val = 1300, status = deleted), next = nil}}, initState = initialized)
+------------------------
+i: 16
+s: (0, 3)
+f: (true, (0, 3))
+(localEntries = ((key = 0, val = 0, status = full), (key = 5, val = 500, status = full)), chainHead = {entry = (key = 8, val = 800, status = full), next = {entry = (key = 16, val = 1600, status = full), next = nil}}, initState = initialized)
+------------------------
+size: 4
+
+(localEntries = ((key = 0, val = 0, status = full), (key = 5, val = 500, status = full)), chainHead = {entry = (key = 8, val = 88, status = full), next = {entry = (key = 16, val = 1600, status = full), next = nil}}, initState = initialized)
+size: 4

@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -26,12 +26,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED True)
 
-
-
 set(SRC_DIR     ${CMAKE_CURRENT_SOURCE_DIR})
 
 # TODO: See if we can use these directly, I am not sure we can because
-# the way to concat strings requires an output variable
+# the CMake way to concat strings requires an output variable
 string(CONCAT CHPL_LLVM_COMP_ARGS ${CHPL_HOST_BUNDLED_COMPILE_ARGS} " " ${CHPL_HOST_SYSTEM_COMPILE_ARGS})
 string(CONCAT CHPL_LLVM_LINK_ARGS ${CHPL_HOST_BUNDLED_LINK_ARGS} " " ${CHPL_HOST_SYSTEM_LINK_ARGS})
 
@@ -57,6 +55,43 @@ include_directories(
         )
 
 add_executable(chpl)
+set(CHPL_CMAKE_PYTHON $ENV{CHPL_MAKE_PYTHON})
+
+# Write the compiler/main/LICENSE file, or update the existing file if the
+# the $CHPL_HOME/LICENSE file has been modified
+add_custom_command(
+  OUTPUT ${SRC_DIR}/main/LICENSE
+  COMMAND ${CHPL_CMAKE_PYTHON}
+          ${SRC_DIR}/../util/config/generate-license
+          ${SRC_DIR}/../
+          ${SRC_DIR}/main
+  DEPENDS ${SRC_DIR}/../LICENSE
+  COMMENT "writing LICENSE file updates..."
+  VERBATIM)
+
+# Write the compiler/main/COPYRIGHT file, or update the existing file if the
+# the $CHPL_HOME/COPYRIGHT file has been modified
+add_custom_command(
+  OUTPUT ${SRC_DIR}/main/COPYRIGHT
+  COMMAND ${CHPL_CMAKE_PYTHON}
+          ${SRC_DIR}/../util/config/generate-copyright
+          ${SRC_DIR}/../
+          ${SRC_DIR}/main
+  DEPENDS ${SRC_DIR}/../COPYRIGHT
+  COMMENT "writing COPYRIGHT file updates..."
+  VERBATIM)
+
+# Write the reservedSymbolNames.h file, or update the existing file if the
+# contents of ${SRC_DIR}/codegen/reservedSymbolNames have changed
+add_custom_command(
+  OUTPUT ${SRC_DIR}/codegen/reservedSymbolNames.h
+  COMMAND ${CHPL_CMAKE_PYTHON}
+          ${SRC_DIR}/../util/config/generate-reservedSymbolNames
+          ${SRC_DIR}/codegen
+  DEPENDS ${SRC_DIR}/codegen/reservedSymbolNames
+  COMMENT "writing reservedSymbolNames.h file updates..."
+  VERBATIM)
+
 add_subdirectory(AST)
 add_subdirectory(adt)
 add_subdirectory(backend)
@@ -69,6 +104,6 @@ add_subdirectory(parser)
 add_subdirectory(passes)
 add_subdirectory(resolution)
 add_subdirectory(util)
-add_dependencies(chpl libdyno)
+add_dependencies(chpl ChplFrontend)
 target_compile_options(chpl PUBLIC SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
-target_link_libraries(chpl PUBLIC ${CHPL_LLVM_LINK_ARGS} libdyno)
+target_link_libraries(chpl PUBLIC ${CHPL_LLVM_LINK_ARGS} ChplFrontend)

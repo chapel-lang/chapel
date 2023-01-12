@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,31 @@
 namespace chpl {
 namespace uast {
 
+const char* VisibilityClause::limitationKindToString(LimitationKind kind) {
+  switch (kind) {
+    case BRACES: return "braces";
+    case EXCEPT: return "except";
+    case ONLY:   return "only";
+    case NONE:   return "none";
+  }
+  return "<unknown>";
+}
+
+void VisibilityClause::dumpFieldsInner(const DumpSettings& s) const {
+  const char* kindStr = limitationKindToString(limitationKind_);
+  if (kindStr[0] != '\0') {
+    s.out << " " << kindStr;
+  }
+}
+std::string VisibilityClause::dumpChildLabelInner(int i) const {
+  if (i == symbolChildNum_) {
+    return "symbol";
+  } else if (limitationChildNum_ <= i &&
+             i < limitationChildNum_ + numLimitations_) {
+    return "limitation " + std::to_string(i - limitationChildNum_);
+  }
+  return "";
+}
 
 owned<VisibilityClause>
 VisibilityClause::build(Builder* builder, Location loc,

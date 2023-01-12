@@ -1,0 +1,8 @@
+2 buckets:
+(localEntries = ((key = a, val = 0, status = full), (key = c, val = 2, status = full)), chainHead = {entry = (key = e, val = 4, status = full), next = {entry = (key = g, val = 6, status = full), next = {entry = (key = i, val = 8, status = full), next = {entry = (key = k, val = 10, status = full), next = nil}}}}, initState = initialized)
+(localEntries = ((key = b, val = 1, status = full), (key = d, val = 3, status = full)), chainHead = {entry = (key = f, val = 5, status = full), next = {entry = (key = h, val = 7, status = full), next = {entry = (key = j, val = 9, status = full), next = nil}}}, initState = initialized)
+4 buckets:
+(localEntries = ((key = a, val = 0, status = full), (key = e, val = 4, status = full)), chainHead = {entry = (key = i, val = 8, status = full), next = nil}, initState = initialized)
+(localEntries = ((key = d, val = 3, status = full), (key = h, val = 7, status = full)), chainHead = nil, initState = initialized)
+(localEntries = ((key = c, val = 2, status = full), (key = g, val = 6, status = full)), chainHead = {entry = (key = k, val = 10, status = full), next = nil}, initState = initialized)
+(localEntries = ((key = b, val = 1, status = full), (key = f, val = 5, status = full)), chainHead = {entry = (key = j, val = 9, status = full), next = nil}, initState = initialized)

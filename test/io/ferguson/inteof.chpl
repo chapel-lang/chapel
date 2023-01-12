@@ -38,10 +38,14 @@ for i in 0..sizes.size-1
       }
 
       var badint: int;
+      var dataRemains: bool = false;
       try! {
-        reader.read(badint);
+        dataRemains = reader.read(badint);
       } catch e: SystemError {
-        if (e.err != EEOF) then halt("Data remains at end of file");
+        dataRemains = true;
+      }
+      if (dataRemains) {
+        halt("Data remains at end of file");
       }
 
       infile.close();
@@ -74,10 +78,14 @@ for i in 0..sizes.size-1
       }
 
       var badint: int;
+      var dataRemains: bool = false;
       try! {
-        reader.read(badint);
+        dataRemains = reader.read(badint);
       } catch e: SystemError {
-        if (e.err != EEOF) then halt("Data remains at end of file");
+        dataRemains = true;
+      }
+      if (dataRemains) {
+        halt("Data remains at end of file");
       }
 
       infile.close();
@@ -110,10 +118,14 @@ for i in 0..sizes.size-1
       }
 
       var badint: int;
+      var dataRemains: bool = false;
       try! {
-        reader.read(badint);
+        dataRemains = reader.read(badint);
       } catch e: SystemError {
-        if (e.err != EEOF) then halt("Data remains at end of file");
+        dataRemains = true;
+      }
+      if (dataRemains) {
+        halt("Data remains at end of file");
       }
 
       infile.close();

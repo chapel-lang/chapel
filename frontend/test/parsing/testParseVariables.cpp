@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -294,7 +294,7 @@ static void test4(Parser* parser) {
   assert(var3->linkage() == Decl::EXTERN);
   assert(var3->linkageName() &&  var3->linkageName()->isStringLiteral());
   auto v3LinkageName = var3->linkageName()->toStringLiteral();
-  assert(v3LinkageName->str() == "foo");
+  assert(v3LinkageName->value() == "foo");
   assert(var3->visibility() == Decl::PRIVATE);
 }
 

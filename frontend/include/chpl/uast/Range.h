@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -69,6 +69,9 @@ class Range final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
+
   OpKind opKind_;
   int8_t lowerBoundChildNum_;
   int8_t upperBoundChildNum_;
@@ -109,6 +112,10 @@ class Range final : public AstNode {
     return ret;
   }
 
+  /**
+    Returns a string describing the passed OpKind
+    */
+  static const char* opKindToString(OpKind kind);
 };
 
 

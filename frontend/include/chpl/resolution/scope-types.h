@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -208,11 +208,34 @@ class BorrowedIdsWithName {
       if (isIdVisible(id)) numVisibleIds_ += 1;
     }
   }
+
+  /** Construct a BorrowedIdsWithName referring to one ID. Requires
+      that the ID is visible. */
+  BorrowedIdsWithName(IdAndVis id, bool arePrivateIdsIgnored = true)
+    : arePrivateIdsIgnored(arePrivateIdsIgnored),
+      numVisibleIds_(1), id_(std::move(id)) {
+    assert(isIdVisible(id_, arePrivateIdsIgnored));
+  }
  public:
-  /** Construct a BorrowedIdsWithName referring to one ID */
-  BorrowedIdsWithName(ID id, uast::Decl::Visibility vis)
-    : arePrivateIdsIgnored(true), numVisibleIds_(1),
-      id_(std::make_pair(std::move(id), vis)) { }
+
+  static llvm::Optional<BorrowedIdsWithName>
+  createWithSingleId(ID id, uast::Decl::Visibility vis,
+                     bool arePrivateIdsIgnored = true) {
+    auto idAndVis = std::make_pair(id, vis);
+    if (isIdVisible(idAndVis, arePrivateIdsIgnored)) {
+      return BorrowedIdsWithName(std::move(idAndVis), arePrivateIdsIgnored);
+    }
+    return llvm::None;
+  }
+
+  static BorrowedIdsWithName
+  createWithSinglePublicId(ID id, bool arePrivateIdsIgnored = true) {
+    auto maybeIds = createWithSingleId(std::move(id),
+                                       uast::Decl::Visibility::PUBLIC,
+                                       arePrivateIdsIgnored);
+    assert(maybeIds);
+    return maybeIds.getValue();
+  }
 
   /** Return the number of IDs stored here */
   int numIds() const {
