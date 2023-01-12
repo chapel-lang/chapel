@@ -542,7 +542,7 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
   std::vector<const AstNode*> actualAsts;
   actualAsts.push_back(ast);
   actualAsts.push_back(ast);
-  std::vector<IntentList> intents;
+  std::vector<Qualifier> intents;
   std::vector<QualifiedType> formalTypes;
 
   computeActualFormalIntents(context, c.mostSpecific(), ci, actualAsts,
@@ -551,7 +551,7 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
   bool formalUsesInIntent = false;
   CHPL_ASSERT(intents.size() >= 1);
   if (intents.size() >= 1 &&
-      (intents[1] == IntentList::IN || intents[1] == IntentList::CONST_IN)) {
+      (intents[1] == Qualifier::IN || intents[1] == Qualifier::CONST_IN)) {
     formalUsesInIntent = true;
   }
 

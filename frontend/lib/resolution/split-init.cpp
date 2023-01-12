@@ -153,7 +153,7 @@ void FindSplitInits::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
       frame->eligibleVars.insert(ast->id());
     }
     if (ast->isFormal() || ast->isVarArgFormal()) {
-      if (ast->storageKind() == IntentList::OUT) {
+      if (ast->storageKind() == Qualifier::OUT) {
         outFormals.insert(ast->id());
       }
     }
