@@ -66,7 +66,6 @@ static chpl_bool debug = false;
 static chpl_bool haveTopology = false;
 
 static hwloc_topology_t topology;
-static hwloc_topology_t wholeTopology;
 
 static const struct hwloc_topology_support* topoSupport;
 static chpl_bool do_set_area_membind;
@@ -158,17 +157,11 @@ void chpl_topo_init(void) {
   // Allocate and initialize topology object.
   //
   CHK_ERR_ERRNO(hwloc_topology_init(&topology) == 0);
-  CHK_ERR_ERRNO(hwloc_topology_init(&wholeTopology) == 0);
 
   //
   // Perform the topology detection.
   //
   CHK_ERR_ERRNO(hwloc_topology_load(topology) == 0);
-
-  // See what we are missing.
-  int flags = HWLOC_TOPOLOGY_FLAG_WHOLE_SYSTEM;
-  CHK_ERR_ERRNO(hwloc_topology_set_flags(wholeTopology, flags) == 0);
-  CHK_ERR_ERRNO(hwloc_topology_load(wholeTopology) == 0);
 
   //
   // What is supported?
@@ -225,7 +218,6 @@ void chpl_topo_exit(void) {
     numaSet = NULL;
   }
   hwloc_topology_destroy(topology);
-  hwloc_topology_destroy(wholeTopology);
 }
 
 
@@ -260,6 +252,7 @@ int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
 //
 
 void chpl_topo_post_comm_init(void) {
+  _DBG_P("chpl_topo_post_comm_init");
   //
   // accessible cores and PUs
   //
@@ -294,16 +287,22 @@ void chpl_topo_post_comm_init(void) {
                    hwloc_topology_get_online_cpuset(topology));
   numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
   CHK_ERR(numCPUsLogAcc > 0);
+  _DBG_P("numCPUsLogAcc = %d", numCPUsLogAcc);
 
   //
-  // all PUs
+  // all PUs. The online set doesn't include PUs that cannot be
+  // used, e.g., if hyperthreading is turned off
   //
-  numCPUsLogAll = hwloc_get_nbobjs_by_type(wholeTopology, HWLOC_OBJ_PU);
+  hwloc_const_cpuset_t onlineSet = hwloc_topology_get_online_cpuset(
+                                                              topology);
+  numCPUsLogAll = hwloc_bitmap_weight(onlineSet);
   CHK_ERR(numCPUsLogAll > 0);
+  _DBG_P("numCPUsLogAll = %d", numCPUsLogAll);
 
 
   // accessible cores
 
+  int pusPerCore = 0;
 #define NEXT_PU(pu)                                                \
   hwloc_get_next_obj_inside_cpuset_by_type(topology, logAccSet,    \
                                            HWLOC_OBJ_PU, pu)
@@ -313,6 +312,9 @@ void chpl_topo_post_comm_init(void) {
     CHK_ERR_ERRNO(core = hwloc_get_ancestor_obj_by_type(topology,
                                                          HWLOC_OBJ_CORE,
                                                          pu));
+    int numPus = hwloc_bitmap_weight(core->cpuset);
+    CHK_ERR((pusPerCore == 0) || (pusPerCore == numPus));
+    pusPerCore = numPus;
     // Use the smallest PU to represent the core.
     int smallest = hwloc_bitmap_first(core->cpuset);
     CHK_ERR(smallest != -1);
@@ -323,16 +325,26 @@ void chpl_topo_post_comm_init(void) {
 
   numCPUsPhysAcc = hwloc_bitmap_weight(physAccSet);
   CHK_ERR(numCPUsPhysAcc > 0);
+  _DBG_P("numCPUsPhysAcc = %d", numCPUsPhysAcc);
 
   //
   // all cores
   //
-  numCPUsPhysAll = hwloc_get_nbobjs_by_type(wholeTopology, HWLOC_OBJ_CORE);
+  // Note: hwloc_get_nbobjs_inside_cpuset_by_type cannot be called on
+  // onlineSet because inaccessible PUs and their cores do not have
+  // objects in the topology. pusPerCore might vary by core, but that is
+  // checked above.
+
+  numCPUsPhysAll = numCPUsLogAll / pusPerCore;
   CHK_ERR(numCPUsPhysAll > 0);
+  _DBG_P("numCPUsPhysAll = %d", numCPUsPhysAll);
 
   int numLocalesOnNode = chpl_get_num_locales_on_node();
   int expectedLocalesOnNode = chpl_env_rt_get_int("LOCALES_PER_NODE", 0);
   int rank = chpl_get_local_rank();
+  _DBG_P("numLocalesOnNode = %d", numLocalesOnNode);
+  _DBG_P("expectedLocalesOnNode = %d", expectedLocalesOnNode);
+  _DBG_P("rank = %d", rank);
   if ((numLocalesOnNode > 1) || (expectedLocalesOnNode > 1)) {
     if (numLocalesOnNode > 1) {
       oversubscribed = true;
@@ -414,6 +426,25 @@ void chpl_topo_post_comm_init(void) {
            buf);
     hwloc_bitmap_list_snprintf(buf, sizeof(buf), numaSet);
     _DBG_P("numaSet: %s", buf);
+
+    hwloc_const_cpuset_t set;
+
+    set = hwloc_topology_get_allowed_cpuset(topology);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
+    _DBG_P("allowed cpuset: %s", buf);
+
+    set = hwloc_topology_get_complete_cpuset(topology);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
+    _DBG_P("complete cpuset: %s", buf);
+
+    set = hwloc_topology_get_online_cpuset(topology);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
+    _DBG_P("online cpuset: %s", buf);
+
+    set = hwloc_topology_get_topology_cpuset(topology);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
+    _DBG_P("topology cpuset: %s", buf);
+
   }
 }
 
