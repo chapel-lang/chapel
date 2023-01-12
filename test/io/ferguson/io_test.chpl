@@ -80,9 +80,9 @@ proc test_readlines()
   }
 
 
-  if noisy then writeln("Testing readlines: file.lines()");
+  if noisy then writeln("Testing readlines: fileReader.lines()");
   {
-    for (line,i) in zip(f.lines(),1..) {
+    for (line,i) in zip(f.reader().lines(),1..) {
       if i == 1 {
         assert(line == "a b\n");
       } else if i == 2 {

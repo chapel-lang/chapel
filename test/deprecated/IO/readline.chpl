@@ -12,9 +12,10 @@ proc test_readlines()
     ch.flush();
   }
 
+  var ch = f.reader();
+
   // try reading it in a few ways.
   {
-    var ch = f.reader();
     var line:dataType;
     var got:bool;
     got = ch.readline(line);
@@ -27,7 +28,7 @@ proc test_readlines()
 
 
   {
-    for (line,i) in zip(f.lines(),1..) {
+    for (line,i) in zip(ch.lines(),1..) {
       if i == 1 {
         assert(line == "a b\n");
       } else if i == 2 {
