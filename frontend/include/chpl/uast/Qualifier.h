@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_INTENTLIST_H
-#define CHPL_UAST_INTENTLIST_H
+#ifndef CHPL_UAST_QUALIFIER_H
+#define CHPL_UAST_QUALIFIER_H
 
 #include <string> // to get the definition of std::hash
 
@@ -29,7 +29,7 @@ namespace uast {
 /**
   A centralized list containing all intent and storage specifiers.
 */
-enum struct IntentList {
+enum struct Qualifier {
   /** Represents an unknown intent / variable type. This
       is only used within the compiler. */
   UNKNOWN,
@@ -98,15 +98,15 @@ enum struct IntentList {
   MODULE,
 };
 
-bool isGenericIntent(IntentList kind);
+bool isGenericQualifier(Qualifier kind);
 // it might not be known if it is const, in which case it returns false
-bool isConstIntent(IntentList kind);
+bool isConstQualifier(Qualifier kind);
 // it might not be known if it is ref, in which case it returns false
-bool isRefIntent(IntentList kind);
+bool isRefQualifier(Qualifier kind);
 // it might not be known if it is 'in', in which case it returns false
-bool isInIntent(IntentList kind);
+bool isInQualifier(Qualifier kind);
 
-const char* intentToString(IntentList intent);
+const char* qualifierToString(Qualifier intent);
 
 
 } // end namespace uast
@@ -114,9 +114,9 @@ const char* intentToString(IntentList intent);
 
 namespace std {
 
-template<> struct hash<chpl::uast::IntentList>
+template<> struct hash<chpl::uast::Qualifier>
 {
-  size_t operator()(const chpl::uast::IntentList& key) const {
+  size_t operator()(const chpl::uast::Qualifier& key) const {
     return (size_t) key;
   }
 };

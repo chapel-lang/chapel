@@ -26,8 +26,8 @@ namespace uast {
 
 
 void VarLikeDecl::dumpFieldsInner(const DumpSettings& s) const {
-  const char* kind = intentToString(storageKind_);
-  if (storageKind_ == IntentList::CONST_VAR) {
+  const char* kind = qualifierToString(storageKind_);
+  if (storageKind_ == Qualifier::CONST_VAR) {
     kind = "const";
   }
   s.out << " " << kind;

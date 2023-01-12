@@ -73,7 +73,6 @@ FRONTEND_UAST_SRCS = \
   Include.cpp \
   IndexableLoop.cpp \
   IntLiteral.cpp \
-  IntentList.cpp \
   Interface.cpp \
   Label.cpp \
   Let.cpp \
@@ -92,6 +91,7 @@ FRONTEND_UAST_SRCS = \
   Pragma.cpp \
   PrimCall.cpp \
   PrimOp.cpp \
+  Qualifier.cpp \
   Range.cpp \
   RealLiteral.cpp \
   Record.cpp \

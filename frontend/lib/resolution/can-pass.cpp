@@ -1008,8 +1008,8 @@ class KindProperties {
       // Mark params as const to cover the case in which a
       // param decays to a const var.
       return KindProperties(true, false, false, true);
-    auto isConst = isConstIntent(kind);
-    auto isRef = isRefIntent(kind);
+    auto isConst = isConstQualifier(kind);
+    auto isRef = isRefQualifier(kind);
     return KindProperties(isConst, isRef, false, false);
   }
 

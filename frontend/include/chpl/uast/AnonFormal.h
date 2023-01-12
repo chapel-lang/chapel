@@ -23,7 +23,7 @@
 #include "chpl/framework/Location.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Formal.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 
 
 namespace chpl {
@@ -101,7 +101,7 @@ class AnonFormal final : public AstNode {
   */
   Intent intent() const { return intent_; }
 
-  IntentList storageKind() const { return ((IntentList) intent_); }
+  Qualifier storageKind() const { return ((Qualifier) intent_); }
 
   /**
     Returns the type expression of the formal.

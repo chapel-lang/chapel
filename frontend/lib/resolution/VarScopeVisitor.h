@@ -299,10 +299,10 @@ struct VarFrame {
   Compute a vector indicating which actuals are passed to an 'out'/'in'/'inout'
   formal in all return intent overloads. For each actual 'i',
   actualFormalIntent[i] will be set to one of the following:
-   * uast::IntentList::OUT if it is passed to an 'out' formal
-   * uast::IntentList::IN if it is passed to an 'in' or 'const in' formal
-   * uast::IntentList::INOUT if it is passed to an 'inout' formal
-   * uast::IntentList::UNKNOWN otherwise
+   * uast::Qualifier::OUT if it is passed to an 'out' formal
+   * uast::Qualifier::IN if it is passed to an 'in' or 'const in' formal
+   * uast::Qualifier::INOUT if it is passed to an 'inout' formal
+   * uast::Qualifier::UNKNOWN otherwise
 
   actualFormalTypes will be set so that for actual 'i', if it is passed
   to an 'out'/'in'/'inout' formal, actualFormalTypes[i] will be set to the
@@ -317,7 +317,7 @@ computeActualFormalIntents(Context* context,
                            const MostSpecificCandidates& candidates,
                            const CallInfo& ci,
                            const std::vector<const AstNode*>& actualAsts,
-                           std::vector<uast::IntentList>& actualFrmlIntents,
+                           std::vector<uast::Qualifier>& actualFrmlIntents,
                            std::vector<types::QualifiedType>& actualFrmlTypes);
 
 } // end namespace resolution
