@@ -1982,9 +1982,8 @@ bool Resolver::enter(const NamedDecl* decl) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
-  LookupConfig config = LOOKUP_DECLS          |
-                        LOOKUP_IMPORT_AND_USE |
-                        LOOKUP_SKIP_PRIVATE_VIS;
+  LookupConfig config = LOOKUP_IMPORT_AND_USE;
+  config |= LOOKUP_DECLS;
 
   const Scope* receiverScope = nullptr;
   auto vec = lookupNameInScope(context, scope, receiverScope,
@@ -2006,8 +2005,8 @@ bool Resolver::enter(const NamedDecl* decl) {
     }
 
     // TODO: We will need to extend the scope-resolver to optionally
-    // record where a "trace" of how each conflict became visible in
-    // the current scope.
+    // record a "trace" of how each conflict became visible in the
+    // current scope.
     // TODO: We may want to also do this at the point where a use or
     // import statement is resolved.
     if (conflictingIds.size() > 1 && !areIdsAllFunctions) {
