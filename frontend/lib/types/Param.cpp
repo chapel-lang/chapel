@@ -370,7 +370,7 @@ void Param::serialize(Serializer& ser) const {
   ser(tag_);
 }
 
-const Param* Param::deserializeFromFile(Deserializer& des) {
+const Param* Param::deserialize(Deserializer& des) {
   ParamTag tag = des.read<ParamTag>();
 
   switch (tag) {

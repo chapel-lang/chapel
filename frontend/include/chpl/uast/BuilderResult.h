@@ -160,10 +160,10 @@ class BuilderResult final {
   // these two should only be called by the parser
   static void updateFilePaths(Context* context, const BuilderResult& keep);
 
-  std::string serializeToDir(const char* dirName) const;
-  void serializeToDir(std::ostream& os) const;
-  static AstList deserializeFromFile(Context* context, std::string& sfname);
-  static AstList deserializeFromFile(Context* context, std::istream& is);
+  std::string serialize(const char* dirName) const;
+  void serialize(std::ostream& os) const;
+  static AstList deserialize(Context* context, std::string& sfname);
+  static AstList deserialize(Context* context, std::istream& is);
   bool compare(const AstList& other) const;
   void printNumNodes() const;
 };

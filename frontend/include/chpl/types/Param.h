@@ -162,7 +162,7 @@ class Param {
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   virtual void serialize(Serializer& ser) const;
-  static const Param* deserializeFromFile(Deserializer& des);
+  static const Param* deserialize(Deserializer& des);
 
   static uint64_t binStr2uint64(const char* str, size_t len, std::string& err);
   static uint64_t octStr2uint64(const char* str, size_t len, std::string& err);

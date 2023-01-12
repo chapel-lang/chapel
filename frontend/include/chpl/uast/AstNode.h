@@ -232,7 +232,6 @@ class AstNode {
   //static void deserializeRoot(Context* context, std::istream& is);
   virtual void serialize(Serializer& os) const;
 
-  static owned<AstNode> deserializeFromFile(Deserializer& des);
   static owned<AstNode> deserialize(Deserializer& des);
 
   /// \cond DO_NOT_DOCUMENT
@@ -499,7 +498,7 @@ template<> struct deserialize<uast::AstList> {
     uast::AstList ret;
     auto len = des.read<uint64_t>();
     for (uint64_t i = 0; i < len; i++) {
-      ret.push_back(uast::AstNode::deserializeFromFile(des));
+      ret.push_back(uast::AstNode::deserialize(des));
     }
     return ret;
   }
