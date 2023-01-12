@@ -933,10 +933,10 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   if (fDynoSerialize) {
 
     if (strcmp(dynoBinAstDir, "") != 0) {
-      auto sfname = builderResult.serializeToDir(dynoBinAstDir);
+      auto sfname = builderResult.serialize(dynoBinAstDir);
       if (fVerify) {
         // 'res' = AstList for now - eventually will be a BuilderResult
-        auto result = chpl::uast::BuilderResult::deserializeFromFile(gContext, sfname);
+        auto result = chpl::uast::BuilderResult::deserialize(gContext, sfname);
 
         if (builderResult.compare(result) == false) {
           USR_FATAL("FAILED TO (DE)SERIALIZE %s\n", builderResult.filePath().c_str());
@@ -945,8 +945,8 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
     } else if (fVerify) {
       // unspecified output directory, verify only
       std::stringstream ss;
-      builderResult.serializeToDir(ss);
-      auto res = chpl::uast::BuilderResult::deserializeFromFile(gContext, ss);
+      builderResult.serialize(ss);
+      auto res = chpl::uast::BuilderResult::deserialize(gContext, ss);
       if (builderResult.compare(res) == false) {
         USR_FATAL("FAILED TO (DE)SERIALIZE %s\n", builderResult.filePath().c_str());
       }

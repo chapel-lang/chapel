@@ -195,7 +195,7 @@ ID BuilderResult::idToParentId(ID id) const {
 const uint64_t magic = 0x4C5048434550487F;
 const uint32_t version = 0x00000001;
 
-std::string BuilderResult::serializeToDir(const char* dn) const {
+std::string BuilderResult::serialize(const char* dn) const {
   std::string dirName = dn;
   chpl::makeDir(dirName, true);
   std::string baseName;
@@ -213,12 +213,12 @@ std::string BuilderResult::serializeToDir(const char* dn) const {
   std::ofstream myFile;
   myFile.open(fileName, std::ios::out | std::ios::trunc | std::ios::binary);
 
-  serializeToDir(myFile);
+  serialize(myFile);
 
   return fileName;
 }
 
-void BuilderResult::serializeToDir(std::ostream& os) const {
+void BuilderResult::serialize(std::ostream& os) const {
   Serializer ser(os);
   ser(magic);
   ser(version);
@@ -231,14 +231,14 @@ void BuilderResult::serializeToDir(std::ostream& os) const {
 }
 
 // TODO: handle Locations
-AstList BuilderResult::deserializeFromFile(Context* context, std::string& sfname) {
+AstList BuilderResult::deserialize(Context* context, std::string& sfname) {
   std::ifstream myFile;
   myFile.open(sfname, std::ios::in | std::ios::binary);
 
-  return deserializeFromFile(context, myFile);
+  return deserialize(context, myFile);
 }
 
-AstList BuilderResult::deserializeFromFile(Context* context, std::istream& is) {
+AstList BuilderResult::deserialize(Context* context, std::istream& is) {
   AstList ret;
   Deserializer des(context, is);
 
@@ -252,7 +252,7 @@ AstList BuilderResult::deserializeFromFile(Context* context, std::istream& is) {
   const auto numEntries = des.read<uint32_t>();
 
   for (uint32_t i = 0; i < numEntries; i++) {
-    ret.push_back(AstNode::deserializeFromFile(des));
+    ret.push_back(AstNode::deserialize(des));
   }
 
   is.peek();

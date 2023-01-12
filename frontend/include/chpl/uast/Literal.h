@@ -42,7 +42,7 @@ class Literal : public AstNode {
   }
 
   Literal(AstTag tag, Deserializer& des)
-    : AstNode(tag, des), value_(types::Param::deserializeFromFile(des)) {
+    : AstNode(tag, des), value_(types::Param::deserialize(des)) {
     assert(value_ != nullptr);
   }
 

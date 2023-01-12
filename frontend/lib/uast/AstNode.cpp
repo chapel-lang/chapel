@@ -552,15 +552,7 @@ void AstNode::serialize(Serializer& ser) const {
   serializePart(ser);
 }
 
-// Serves as a default implementation while serialization is in development
 owned<AstNode> AstNode::deserialize(Deserializer& des) {
-  des.read<ID>();
-  des.read<AstList>();
-  owned<AstNode> ret = nullptr;
-  return ret;
-}
-
-owned<AstNode> AstNode::deserializeFromFile(Deserializer& des) {
   AstTag tag = des.read<AstTag>();
 
   switch (tag) {
