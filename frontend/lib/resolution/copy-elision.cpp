@@ -139,7 +139,7 @@ bool FindElidedCopies::hasCrossTypeInitAssignWithIn(
     // check for 'in' intent on the 'other' formal
     if (fn->numFormals() >= 2) {
       auto intent = fn->formalType(1).kind();
-      if (isInIntent(intent)) {
+      if (isInQualifier(intent)) {
         return true;
       }
     }
@@ -289,8 +289,8 @@ void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   }
 
   if (ast->isFormal() || ast->isVarArgFormal()) {
-    if (ast->storageKind() == IntentList::OUT ||
-        ast->storageKind() == IntentList::INOUT) {
+    if (ast->storageKind() == Qualifier::OUT ||
+        ast->storageKind() == Qualifier::INOUT) {
       outOrInoutFormals.insert(ast->id());
     }
   }
