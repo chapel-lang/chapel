@@ -113,11 +113,11 @@ class Serial final : public SimpleBlockLike {
   }
 
   void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serializePart(ser);
+    SimpleBlockLike::serialize(ser);
     ser(condChildNum_);
   }
 
-  DECLARE_STATIC_DES(Serial);
+  DECLARE_STATIC_DESERIALIZE(Serial);
 
 };
 

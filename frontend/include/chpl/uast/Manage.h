@@ -128,12 +128,12 @@ class Manage final : public SimpleBlockLike {
   }
 
   void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serializePart(ser);
+    SimpleBlockLike::serialize(ser);
     ser(managerExprChildNum_);
     ser(numManagerExprs_);
   }
 
-  DECLARE_STATIC_DES(Manage);
+  DECLARE_STATIC_DESERIALIZE(Manage);
 
 };
 

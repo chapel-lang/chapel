@@ -111,11 +111,11 @@ class When final : public SimpleBlockLike {
   }
 
   void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serializePart(ser);
+    SimpleBlockLike::serialize(ser);
     ser(numCaseExprs_);
   }
 
-  DECLARE_STATIC_DES(When);
+  DECLARE_STATIC_DESERIALIZE(When);
 
 };
 
