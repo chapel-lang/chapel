@@ -1715,9 +1715,10 @@ const ResolvedFunction* resolveInitializer(Context* context,
   return resolveFunctionByInfoQuery(context, sig, std::move(poiInfo));
 }
 
-const ResolvedFunction* resolveFunction(Context* context,
-                                        const TypedFnSignature* sig,
-                                        const PoiScope* poiScope) {
+static const ResolvedFunction* helpResolveFunction(Context* context,
+                                                   const TypedFnSignature* sig,
+                                                   const PoiScope* poiScope,
+                                                   bool skipIfRunning) {
 
   // Forget about any inferred signature (to avoid resolving the
   // same function twice when working with inferred 'out' formals)
@@ -1729,10 +1730,22 @@ const ResolvedFunction* resolveFunction(Context* context,
   // construct the PoiInfo for this case
   auto poiInfo = PoiInfo(poiScope);
 
+  if (skipIfRunning) {
+    if (context->isQueryRunning(resolveFunctionByInfoQuery,
+                                std::make_tuple(sig, poiInfo))) {
+      return nullptr;
+    }
+  }
+
   // lookup in the map using this PoiInfo
   return resolveFunctionByInfoQuery(context, sig, std::move(poiInfo));
 }
 
+const ResolvedFunction* resolveFunction(Context* context,
+                                        const TypedFnSignature* sig,
+                                        const PoiScope* poiScope) {
+  return helpResolveFunction(context, sig, poiScope, /* skipIfRunning */ false);
+}
 
 const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
   if (id.isEmpty())
@@ -2115,11 +2128,18 @@ void accumulatePoisUsedByResolvingBody(Context* context,
     return;
   }
 
-  // resolve the body
-  const ResolvedFunction* r = resolveFunction(context, signature, poiScope);
-
-  // gather the POI scopes from instantiating the function body
-  poiInfo.accumulate(r->poiInfo());
+  // resolve the body, if it is not already being resolved
+  const ResolvedFunction* r = helpResolveFunction(context, signature, poiScope,
+                                                  /* skipIfRunning */ true);
+  if (r == nullptr) {
+    // If it's a recursive call, ignore it. This assumes
+    // that we will accumulate the poi info some other path to
+    // the recursive call.
+    // TODO: add some tests to check that this is always correct.
+  } else {
+    // gather the POI scopes from instantiating the function body
+    poiInfo.accumulate(r->poiInfo());
+  }
 }
 
 // if the call's name matches a class management type construction,
