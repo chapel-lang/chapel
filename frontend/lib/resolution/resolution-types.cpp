@@ -777,7 +777,14 @@ void CallInfo::stringify(std::ostream& ss,
 
 void PoiInfo::accumulate(const PoiInfo& addPoiInfo) {
   poiFnIdsUsed_.insert(addPoiInfo.poiFnIdsUsed_.begin(),
-                      addPoiInfo.poiFnIdsUsed_.end());
+                       addPoiInfo.poiFnIdsUsed_.end());
+  recursiveFnsUsed_.insert(addPoiInfo.recursiveFnsUsed_.begin(),
+                           addPoiInfo.recursiveFnsUsed_.end());
+}
+
+void PoiInfo::accumulateRecursive(const TypedFnSignature* signature,
+                                  const PoiScope* poiScope) {
+  recursiveFnsUsed_.insert(std::make_pair(signature, poiScope));
 }
 
 // this is a resolved function
