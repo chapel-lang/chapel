@@ -534,9 +534,9 @@ void AstNode::stringify(std::ostream& ss,
 }
 
 void AstNode::serialize(Serializer& ser) const {
-  ser(tag_);
-  ser(id_);
-  ser(children_);
+  ser.write(tag_);
+  ser.write(id_);
+  ser.write(children_);
 }
 
 AstNode::AstNode(AstTag tag, Deserializer& des)

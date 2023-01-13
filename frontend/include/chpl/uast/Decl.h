@@ -174,10 +174,10 @@ class Decl : public AstNode {
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
 
-    ser((int32_t)attributesChildNum_);
-    ser(visibility_);
-    ser(linkage_);
-    ser((int32_t)linkageNameChildNum_);
+    ser.write((int32_t)attributesChildNum_);
+    ser.write(visibility_);
+    ser.write(linkage_);
+    ser.write((int32_t)linkageNameChildNum_);
   }
 
 };

@@ -220,10 +220,10 @@ class Try final : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(numHandlers_);
-    ser(containsBlock_);
-    ser(isExpressionLevel_);
-    ser(isTryBang_);
+    ser.write(numHandlers_);
+    ser.write(containsBlock_);
+    ser.write(isExpressionLevel_);
+    ser.write(isTryBang_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Try);

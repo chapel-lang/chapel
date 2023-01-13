@@ -126,9 +126,9 @@ class Range final : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(opKind_);
-    ser(lowerBoundChildNum_);
-    ser(upperBoundChildNum_);
+    ser.write(opKind_);
+    ser.write(lowerBoundChildNum_);
+    ser.write(upperBoundChildNum_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Range);

@@ -207,9 +207,9 @@ class ID final {
   std::string str() const;
 
   void serialize(Serializer& ser) const {
-    ser(symbolPath_);
-    ser(postOrderId_);
-    ser(numChildIds_);
+    ser.write(symbolPath_);
+    ser.write(postOrderId_);
+    ser.write(numChildIds_);
   }
   static ID deserialize(Deserializer& des) {
     auto path = des.read<UniqueString>();

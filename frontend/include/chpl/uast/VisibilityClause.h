@@ -176,7 +176,7 @@ class VisibilityClause final : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(limitationKind_);
+    ser.write(limitationKind_);
     ser.write<int32_t>(numLimitations_);
   }
 

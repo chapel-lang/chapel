@@ -199,11 +199,11 @@ class Interface final : public NamedDecl {
 
   void serialize(Serializer& ser) const override {
     NamedDecl::serialize(ser);
-    ser(interfaceFormalsChildNum_);
-    ser(numInterfaceFormals_);
-    ser(bodyChildNum_);
-    ser(numBodyStmts_);
-    ser(isFormalListExplicit_);
+    ser.write(interfaceFormalsChildNum_);
+    ser.write(numInterfaceFormals_);
+    ser.write(bodyChildNum_);
+    ser.write(numBodyStmts_);
+    ser.write(isFormalListExplicit_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Interface);

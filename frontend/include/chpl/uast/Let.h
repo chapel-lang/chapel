@@ -114,7 +114,7 @@ class Let final : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(numDecls_);
+    ser.write(numDecls_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Let);

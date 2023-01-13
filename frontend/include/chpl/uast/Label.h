@@ -104,7 +104,7 @@ class Label final : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(name_);
+    ser.write(name_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Label);

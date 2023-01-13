@@ -93,7 +93,7 @@ class Dot final : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(fieldName_);
+    ser.write(fieldName_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Dot);

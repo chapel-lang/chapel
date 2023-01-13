@@ -114,7 +114,7 @@ class Serial final : public SimpleBlockLike {
 
   void serialize(Serializer& ser) const override {
     SimpleBlockLike::serialize(ser);
-    ser(condChildNum_);
+    ser.write(condChildNum_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Serial);

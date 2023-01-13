@@ -90,7 +90,7 @@ class Return final : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(valueChildNum_);
+    ser.write(valueChildNum_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Return);

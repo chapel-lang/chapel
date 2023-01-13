@@ -104,7 +104,7 @@ class Domain final : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(usedCurlyBraces_);
+    ser.write(usedCurlyBraces_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Domain);

@@ -263,9 +263,9 @@ class Conditional final : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(thenBlockStyle_);
-    ser(elseBlockStyle_);
-    ser(isExpressionLevel_);
+    ser.write(thenBlockStyle_);
+    ser.write(elseBlockStyle_);
+    ser.write(isExpressionLevel_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Conditional);

@@ -106,7 +106,7 @@ class Class final : public AggregateDecl {
 
   void serialize(Serializer& ser) const override {
     AggregateDecl::serialize(ser);
-    ser(parentClassChildNum_);
+    ser.write(parentClassChildNum_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Class);

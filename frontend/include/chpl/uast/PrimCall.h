@@ -87,7 +87,7 @@ class PrimCall final : public Call {
 
   void serialize(Serializer& ser) const override {
     Call::serialize(ser);
-    ser(prim_);
+    ser.write(prim_);
   }
 
   DECLARE_STATIC_DESERIALIZE(PrimCall);

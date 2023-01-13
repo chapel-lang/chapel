@@ -128,9 +128,9 @@ class VarLikeDecl : public NamedDecl {
 
   void serialize(Serializer& ser) const override {
     NamedDecl::serialize(ser);
-    ser(storageKind_);
-    ser(typeExpressionChildNum_);
-    ser(initExpressionChildNum_);
+    ser.write(storageKind_);
+    ser.write(typeExpressionChildNum_);
+    ser.write(initExpressionChildNum_);
   }
 };
 

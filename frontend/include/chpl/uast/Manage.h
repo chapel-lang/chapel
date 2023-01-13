@@ -129,8 +129,8 @@ class Manage final : public SimpleBlockLike {
 
   void serialize(Serializer& ser) const override {
     SimpleBlockLike::serialize(ser);
-    ser(managerExprChildNum_);
-    ser(numManagerExprs_);
+    ser.write(managerExprChildNum_);
+    ser.write(numManagerExprs_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Manage);

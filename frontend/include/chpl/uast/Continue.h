@@ -90,7 +90,7 @@ class Continue : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(targetChildNum_);
+    ser.write(targetChildNum_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Continue);

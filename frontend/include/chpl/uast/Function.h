@@ -409,13 +409,13 @@ class Function final : public NamedDecl {
 
   void serialize(Serializer& ser) const override {
     NamedDecl::serialize(ser);
-    ser(inline_);
-    ser(override_);
-    ser(kind_);
-    ser(returnIntent_);
-    ser(throws_);
-    ser(primaryMethod_);
-    ser(parenless_);
+    ser.write(inline_);
+    ser.write(override_);
+    ser.write(kind_);
+    ser.write(returnIntent_);
+    ser.write(throws_);
+    ser.write(primaryMethod_);
+    ser.write(parenless_);
 
     ser.write<int32_t>(formalsChildNum_);
     ser.write<int32_t>(thisFormalChildNum_);

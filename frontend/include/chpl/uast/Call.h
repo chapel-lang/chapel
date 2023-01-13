@@ -97,7 +97,7 @@ class Call : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(hasCalledExpression_);
+    ser.write(hasCalledExpression_);
   }
 };
 

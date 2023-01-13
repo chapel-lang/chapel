@@ -118,7 +118,7 @@ class Select final : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(numWhenStmts_);
+    ser.write(numWhenStmts_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Select);
