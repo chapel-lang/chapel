@@ -197,20 +197,7 @@ bool isResolvedThisInit (CallExpr* stmt) {
 }
 
 bool InitErrorHandling::isInitDone (CallExpr* stmt) const {
-  bool retval = false;
-
-  if (stmt->isPrimitive(PRIM_SETCID)) {
-    // PRIM_SETCID is used to indicate that we've moved on to the next phase of
-    // operation.  However, it is also used when the parent initializer has been
-    // inlined into the contents of this one, at this stage in compilation.  So
-    // we need to ensure we have the right argument being called for it.
-    INT_ASSERT(stmt->numActuals() >= 1); // Check my assumptions
-    SymExpr* firstArg = toSymExpr(stmt->get(1));
-    if (firstArg->symbol() == mFn->_this) {
-      retval = true;
-    }
-  }
-  return retval;
+  return stmt->isPrimitive(PRIM_INIT_DONE);
 }
 
 bool isInitStmt(CallExpr* stmt) {
@@ -493,4 +480,15 @@ InitErrorHandling::phaseToString(InitErrorHandling::InitPhase phase) const {
   }
 
   return retval;
+}
+
+void InitErrorHandling::removeInitDone() {
+  // Clean up after ourselves - remove PRIM_INIT_DONE from the function
+  for_alist(node, mFn->body->body) {
+    if (CallExpr* call = toCallExpr(node)) {
+      if (isInitDone(call)) {
+        call->remove();
+      }
+    }
+  }
 }

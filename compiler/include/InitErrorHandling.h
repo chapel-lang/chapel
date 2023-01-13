@@ -75,6 +75,8 @@ public:
 
   void            describe(int offset = 0)                               const;
 
+  void removeInitDone();
+
 private:
   enum BlockType {
     cBlockNormal,

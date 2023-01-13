@@ -523,7 +523,7 @@ static InitNormalize preNormalize(AggregateType* at,
         checkInvalidInit(state, callExpr);
         state.completePhase1(callExpr);
 
-        stmt->remove();
+        stmt->replace(new CallExpr(PRIM_INIT_DONE));
 
         stmt = next;
 

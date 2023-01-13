@@ -171,6 +171,8 @@ static AList castToErrorNilable(Symbol* error, SymExpr* &castedError);
 class ErrorHandlingVisitor final : public AstVisitorTraverse {
 
 public:
+  InitErrorHandling*  state;
+
   ErrorHandlingVisitor       (ArgSymbol* _outFormal, LabelSymbol* _epilogue,
                               InitErrorHandling* _state);
 
@@ -202,7 +204,6 @@ private:
   int                 deferDepth;
   ArgSymbol*          outError;
   LabelSymbol*        epilogue;
-  InitErrorHandling*  state;
 
   void   lowerCatches      (const TryInfo& info);
   AList  setOutGotoEpilogue(VarSymbol*     error);
@@ -1384,13 +1385,20 @@ static void lowerErrorHandling(FnSymbol* fn)
   }
 
   InitErrorHandling* state = NULL;
-  if (fn->isInitializer() == true) {
+  if (fn->isInitializer() == true ||
+      fn->isCopyInit() == true) {
     state = new InitErrorHandling(fn);
   }
 
   ErrorHandlingVisitor visitor = ErrorHandlingVisitor(outError, epilogue,
                                                       state);
   fn->accept(&visitor);
+
+  if (state != NULL) {
+    visitor.state->removeInitDone();
+    visitor.state = NULL;
+    delete state;
+  }
 }
 
 void lowerCheckErrorPrimitive()
