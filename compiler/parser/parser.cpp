@@ -34,7 +34,6 @@
 #include "misc.h"
 
 #include "chpl/parsing/parsing-queries.h"
-#include "llvm/ADT/SmallPtrSet.h"
 
 // Turn this on to dump AST/uAST when using --dyno.
 #define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
@@ -889,11 +888,9 @@ static DynoErrorHandler* gDynoErrorHandler = nullptr;
 static bool dynoRealizeErrors(void) {
   INT_ASSERT(gDynoErrorHandler);
   bool hadErrors = false;
-  llvm::SmallPtrSet<const chpl::ErrorBase*, 10> issuedErrors;
   for (auto& err : gDynoErrorHandler->errors()) {
     hadErrors = true;
     // skip issuing errors that have already been issued
-    if (!issuedErrors.insert(err.get()).second) continue;
     if (fDetailedErrors) {
       chpl::Context::defaultReportError(gContext, err.get());
       // Use production compiler's exit-on-error functionality for errors
