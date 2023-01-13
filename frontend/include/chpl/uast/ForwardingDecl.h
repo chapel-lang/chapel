@@ -112,10 +112,10 @@ private:
   }
 
   void serialize(Serializer& ser) const override {
-    Decl::serializePart(ser);
+    Decl::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(ForwardingDecl);
+  DECLARE_STATIC_DESERIALIZE(ForwardingDecl);
 
 };
 

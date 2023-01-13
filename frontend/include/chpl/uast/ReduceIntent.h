@@ -97,10 +97,10 @@ class ReduceIntent final : public NamedDecl {
   }
 
   void serialize(Serializer& ser) const override {
-    NamedDecl::serializePart(ser);
+    NamedDecl::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(ReduceIntent);
+  DECLARE_STATIC_DESERIALIZE(ReduceIntent);
 
 };
 

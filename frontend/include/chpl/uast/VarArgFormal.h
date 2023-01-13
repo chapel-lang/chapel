@@ -114,11 +114,11 @@ class VarArgFormal final : public VarLikeDecl {
   }
 
   void serialize(Serializer& ser) const override {
-    VarLikeDecl::serializePart(ser);
+    VarLikeDecl::serialize(ser);
     ser(countChildNum_);
   }
 
-  DECLARE_STATIC_DES(VarArgFormal);
+  DECLARE_STATIC_DESERIALIZE(VarArgFormal);
 
 };
 
