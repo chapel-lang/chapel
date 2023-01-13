@@ -1555,8 +1555,10 @@ const TypedFnSignature* instantiateSignature(Context* context,
 static const owned<ResolvedFunction>&
 resolveFunctionByPoisQuery(Context* context,
                            const TypedFnSignature* sig,
-                           std::set<std::pair<ID, ID>> poiFnIdsUsed) {
-  QUERY_BEGIN(resolveFunctionByPoisQuery, context, sig, poiFnIdsUsed);
+                           PoiCallIdFnIds poiFnIdsUsed,
+                           PoiRecursiveCalls recursiveFnsUsed) {
+  QUERY_BEGIN(resolveFunctionByPoisQuery,
+              context, sig, poiFnIdsUsed, recursiveFnsUsed);
 
   owned<ResolvedFunction> result;
   // the actual value is set in resolveFunctionByInfoQuery after it is
@@ -1616,14 +1618,16 @@ resolveFunctionByInfoQuery(Context* context,
                                   std::move(resolutionByIdCopy),
                                   resolvedPoiInfo,
                                   visitor.returnType));
-      auto idsUsed = resolvedPoiInfo.poiFnIdsUsed();
       QUERY_STORE_RESULT(resolveFunctionByPoisQuery,
                          context,
                          resolvedInit,
                          newTfsForInitializer,
-                         idsUsed);
-      auto& saved = resolveFunctionByPoisQuery(context, newTfsForInitializer,
-                                               idsUsed);
+                         resolvedPoiInfo.poiFnIdsUsed(),
+                         resolvedPoiInfo.recursiveFnsUsed());
+      auto& saved =
+        resolveFunctionByPoisQuery(context, newTfsForInitializer,
+                                   resolvedPoiInfo.poiFnIdsUsed(),
+                                   resolvedPoiInfo.recursiveFnsUsed());
       const ResolvedFunction* resultInit = saved.get();
       QUERY_STORE_RESULT(resolveFunctionByInfoQuery,
                          context,
@@ -1651,7 +1655,8 @@ resolveFunctionByInfoQuery(Context* context,
                        context,
                        resolved,
                        sig,
-                       resolvedPoiInfo.poiFnIdsUsed());
+                       resolvedPoiInfo.poiFnIdsUsed(),
+                       resolvedPoiInfo.recursiveFnsUsed());
 
   // On this path we are just resolving a normal function.
   } else if (fn) {
@@ -1685,7 +1690,8 @@ resolveFunctionByInfoQuery(Context* context,
                        context,
                        resolved,
                        sig,
-                       resolvedPoiInfo.poiFnIdsUsed());
+                       resolvedPoiInfo.poiFnIdsUsed(),
+                       resolvedPoiInfo.recursiveFnsUsed());
 
   } else {
     CHPL_ASSERT(false && "this query should be called on Functions");
@@ -1693,7 +1699,9 @@ resolveFunctionByInfoQuery(Context* context,
 
   // Return the unique result from the query (that might have been saved above)
   const owned<ResolvedFunction>& resolved =
-    resolveFunctionByPoisQuery(context, sig, resolvedPoiInfo.poiFnIdsUsed());
+    resolveFunctionByPoisQuery(context, sig,
+                               resolvedPoiInfo.poiFnIdsUsed(),
+                               resolvedPoiInfo.recursiveFnsUsed());
 
   const ResolvedFunction* result = resolved.get();
 
@@ -2132,10 +2140,8 @@ void accumulatePoisUsedByResolvingBody(Context* context,
   const ResolvedFunction* r = helpResolveFunction(context, signature, poiScope,
                                                   /* skipIfRunning */ true);
   if (r == nullptr) {
-    // If it's a recursive call, ignore it. This assumes
-    // that we will accumulate the poi info some other path to
-    // the recursive call.
-    // TODO: add some tests to check that this is always correct.
+    // If it's a recursive call, track it in the PoiInfo
+    poiInfo.accumulateRecursive(signature, poiScope);
   } else {
     // gather the POI scopes from instantiating the function body
     poiInfo.accumulate(r->poiInfo());

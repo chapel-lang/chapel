@@ -485,6 +485,10 @@ class CallInfo {
 };
 
 
+using PoiCallIdFnIds = std::set<std::pair<ID, ID>>;
+using PoiRecursiveCalls = std::set<std::pair<const TypedFnSignature*,
+                                             const PoiScope*>>;
+
 /**
   Contains information about symbols available from point-of-instantiation
   in order to implement caching of instantiations.
@@ -506,8 +510,15 @@ class PoiInfo {
   // Tracking how calls using POI were resolved.
   // This is a set of pairs of (Call ID, Function ID).
   // This includes POI calls from functions called in this Function,
-  // transitively
-  std::set<std::pair<ID, ID>> poiFnIdsUsed_;
+  // transitively, unless they are recursive (being resolved)
+  // in which case they go into recursiveFnsUsed_.
+  PoiCallIdFnIds poiFnIdsUsed_;
+
+  // Tracking recursive calls not analyzed
+  // (because queries cannot be recursive).
+  // This PoiInfo should be considered to include the
+  // PoiInfo from resolving each signature+poi scope in this list.
+  PoiRecursiveCalls recursiveFnsUsed_;
 
  public:
   // default construct a PoiInfo
@@ -531,12 +542,14 @@ class PoiInfo {
   /** set resolved */
   void setResolved(bool resolved) { resolved_ = resolved; }
 
-  // TODO callers copy and store this elsewhere, do we return as is? change the
-  // getter to poiFnIdsUsedAsSet? make callers do std::set(poiFnIdsUsed.begin(),
-  // poiFnIdsUsed.end()) ?
-  const std::set<std::pair<ID, ID>> &poiFnIdsUsed() const {
+  const PoiCallIdFnIds& poiFnIdsUsed() const {
     return poiFnIdsUsed_;
   }
+
+  const PoiRecursiveCalls& recursiveFnsUsed() const {
+    return recursiveFnsUsed_;
+  }
+
 
   void addIds(ID a, ID b) {
     poiFnIdsUsed_.emplace(a, b);
@@ -558,6 +571,10 @@ class PoiInfo {
 
   // accumulate PoiInfo from a call into this PoiInfo
   void accumulate(const PoiInfo& addPoiInfo);
+
+  // accumulate PoiInfo from a recursive call into this PoiInfo
+  void accumulateRecursive(const TypedFnSignature* signature,
+                           const PoiScope* poiScope);
 
   // return true if 'this' represents a resolved function that can
   // be reused given the PoiInfo for a not-yet-resolved function in 'check'.
