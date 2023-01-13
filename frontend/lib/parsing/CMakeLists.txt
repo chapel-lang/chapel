@@ -27,7 +27,7 @@
 #  ADD_FLEX_BISON_DEPENDENCY(MyScanner MyParser)
 #ENDIF(BISON_FOUND AND FLEX_FOUND)
 
-target_sources(libdyno-obj
+target_sources(ChplFrontend-obj
                PRIVATE
 
                # these are generated

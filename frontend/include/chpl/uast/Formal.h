@@ -22,7 +22,7 @@
 
 #include "chpl/framework/global-strings.h"
 #include "chpl/framework/Location.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/uast/VarLikeDecl.h"
 
 namespace chpl {
@@ -44,17 +44,17 @@ namespace uast {
 class Formal final : public VarLikeDecl {
  public:
   enum Intent {
-    // Use IntentList here for consistent enum values.
-    DEFAULT_INTENT    = (int) IntentList::DEFAULT_INTENT,
-    CONST             = (int) IntentList::CONST_INTENT,
-    CONST_REF         = (int) IntentList::CONST_REF,
-    REF               = (int) IntentList::REF,
-    IN                = (int) IntentList::IN,
-    CONST_IN          = (int) IntentList::CONST_IN,
-    OUT               = (int) IntentList::OUT,
-    INOUT             = (int) IntentList::INOUT,
-    PARAM             = (int) IntentList::PARAM,
-    TYPE              = (int) IntentList::TYPE
+    // Use Qualifier here for consistent enum values.
+    DEFAULT_INTENT    = (int) Qualifier::DEFAULT_INTENT,
+    CONST             = (int) Qualifier::CONST_INTENT,
+    CONST_REF         = (int) Qualifier::CONST_REF,
+    REF               = (int) Qualifier::REF,
+    IN                = (int) Qualifier::IN,
+    CONST_IN          = (int) Qualifier::CONST_IN,
+    OUT               = (int) Qualifier::OUT,
+    INOUT             = (int) Qualifier::INOUT,
+    PARAM             = (int) Qualifier::PARAM,
+    TYPE              = (int) Qualifier::TYPE
   };
 
  private:
@@ -68,7 +68,7 @@ class Formal final : public VarLikeDecl {
                   Decl::DEFAULT_LINKAGE,
                   /*linkageNameChildNum*/ -1,
                   name,
-                  (IntentList)((int)intent),
+                  (Qualifier)((int)intent),
                   typeExpressionChildNum,
                   initExpressionChildNum) {
   }

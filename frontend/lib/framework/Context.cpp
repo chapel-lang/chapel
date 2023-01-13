@@ -573,55 +573,59 @@ const ErrorBase* Context::report(const ErrorBase* error) {
   return error;
 }
 
-static void logErrorInContext(Context* context,
+static const ErrorBase* logErrorInContext(Context* context,
                               ErrorBase::Kind kind,
                               Location loc,
                               const char* fmt,
                               va_list vl) {
   auto err = GeneralError::vbuild(context, kind, loc, fmt, vl);
   context->report(err);
+  return err;
 }
 
-static void logErrorInContext(Context* context,
+static const ErrorBase* logErrorInContext(Context* context,
                               ErrorBase::Kind kind,
                               ID id,
                               const char* fmt,
                               va_list vl) {
   auto err = GeneralError::vbuild(context, kind, id, fmt, vl);
   context->report(err);
+  return err;
 }
 
-static void logErrorInContext(Context* context,
+static const ErrorBase* logErrorInContext(Context* context,
                               ErrorBase::Kind kind,
                               const uast::AstNode* ast,
                               const char* fmt,
                               va_list vl) {
   auto err = GeneralError::vbuild(context, kind, ast->id(), fmt, vl);
   context->report(err);
+  return err;
 }
 
 #define CHPL_CONTEXT_LOG_ERROR_HELPER(context__, kind__, pin__, fmt__) \
   do { \
     va_list vl; \
     va_start(vl, fmt__); \
-    logErrorInContext(context__, kind__, pin__, fmt__, vl); \
+    auto err = logErrorInContext(context__, kind__, pin__, fmt__, vl); \
     va_end(vl); \
+    return err; \
   } while (0)
 
 // TODO: Similar overloads for NOTE, WARN, etc.
-void Context::error(Location loc, const char* fmt, ...) {
+const ErrorBase* Context::error(Location loc, const char* fmt, ...) {
   CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, loc, fmt);
 }
 
-void Context::error(ID id, const char* fmt, ...) {
+const ErrorBase* Context::error(ID id, const char* fmt, ...) {
   CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, id, fmt);
 }
 
-void Context::error(const uast::AstNode* ast, const char* fmt, ...) {
+const ErrorBase* Context::error(const uast::AstNode* ast, const char* fmt, ...) {
   CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, ast, fmt);
 }
 
-void Context::error(const resolution::TypedFnSignature* inFn,
+const ErrorBase* Context::error(const resolution::TypedFnSignature* inFn,
                     const uast::AstNode* ast,
                     const char* fmt, ...) {
   CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, ast, fmt);

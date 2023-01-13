@@ -121,6 +121,43 @@ else ifeq ($(shell test -e $(CHPL_MAKE_HOME)/configured-chpl-home; echo "$$?"), 
 	CMAKE_FLAGS += -DINSTALLATION_MODE=home -DCMAKE_INSTALL_PREFIX=$(shell cat $(CHPL_MAKE_HOME)/configured-chpl-home)
 endif
 
+# used in test-frontend to make sure cmake is configured with assertions on
+CMAKE_FLAGS_NO_NDEBUG=$(subst -DNDEBUG,,$(CMAKE_FLAGS))
+
+# these frontend targets are here to make use of CMAKE_FLAGS etc
+# and ideally we would have a different way to share CMAKE_FLAGS between
+# files.
+frontend: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
+	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) ChplFrontend
+
+test-frontend: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
+	@echo "Making and running the frontend tests..."
+	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS_NO_NDEBUG) && $(MAKE) tests
+	JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n 's/.*\(-j\|--jobs=\) *\([0-9][0-9]*\).*/-j\2/p'` ; \
+	  cd $(COMPILER_BUILD)/frontend/test && ctest $$JOBSFLAG . ;
+	@echo "Making symbolic link to frontend tests in build/frontend-test"
+	@cd ../build && rm -f frontend-test && ln -s $(COMPILER_BUILD)/frontend/test frontend-test
+
+COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --quiet --copy
+
+frontend-docs: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
+	@echo "Making the compiler library docs..."
+	cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) api-docs
+	@# copy the generated doxygen output to the build directory
+	@if [ -d $(COMPILER_BUILD)/frontend/doc/doxygen ]; then \
+	  $(COPY_IF_DIFFERENT) $(COMPILER_BUILD)/frontend/doc/doxygen $(CHPL_MAKE_HOME)/build/doc/doxygen ; \
+	fi
+
+frontend-linters: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
+	@echo "Making the frontend linters"
+	cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && cd frontend/util && $(MAKE)
+
+run-frontend-linters: frontend-linters
+	@echo "Running the frontend linters"
+	@env PATH=$(COMPILER_BUILD)/frontend/util/linters:$(PATH) $(CHPL_MAKE_HOME)/frontend/util/lint --compile-commands $(COMPILER_BUILD) --jobs=-1
+
+parser: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
+	cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) parser
 
 $(CHPL): FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD) | $(CHPL_BIN_DIR)
 	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) chpl
@@ -132,7 +169,7 @@ MAKEALLCHPLDOCSUBDIRS = $(CHPLDOC_SUBDIRS:%=%.makedir)
 $(CHPLDOC): FORCE $(MAKEALLCHPLDOCSUBDIRS) $(CHPLDOC_OBJS) | $(CHPL_BIN_DIR) $(CHPL)
 	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) chpldoc
 
-chpldoc: $(CHPLDOC)
+chpldoc: FORCE $(CHPLDOC)
 
 $(COMPILER_BUILD):
 	mkdir -p $@

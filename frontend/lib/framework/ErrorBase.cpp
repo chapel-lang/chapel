@@ -42,10 +42,7 @@ const char* ErrorBase::getTypeName(ErrorType type) {
  */
 class CompatibilityWriter : public ErrorWriterBase {
  private:
-  /** The ID of where the error occurred. */
-  ID id_;
-  /** The location of where the error occurred. Only used if ::id_ is empty. */
-  Location loc_;
+  IdOrLocation idOrLoc_;
   /** The computed location (derived from the ::id_ or ::loc_) */
   Location computedLoc_;
   /** The error's brief message */
@@ -58,16 +55,11 @@ class CompatibilityWriter : public ErrorWriterBase {
     : ErrorWriterBase(context, OutputFormat::BRIEF) {}
 
   void writeHeading(ErrorBase::Kind kind, ErrorType type,
-                    Location loc, const std::string& message) override {
-    this->loc_ = loc;
-    this->computedLoc_ = std::move(loc);
-    this->message_ = message;
-  }
-  void writeHeading(ErrorBase::Kind kind, ErrorType type,
-                    const ID& id, const std::string& message) override {
-    // Just store the ID, but don't pollute the output stream.
-    this->id_ = id;
-    this->computedLoc_ = errordetail::locate(context, id);
+                    IdOrLocation idOrLoc, const std::string& message) override {
+    // We may not have a context e.g. if we are just figuring out the error
+    // message text. Trust that `computedLoc_` is not important for that.
+    if (context) this->computedLoc_ = errordetail::locate(context, idOrLoc);
+    this->idOrLoc_ = std::move(idOrLoc);
     this->message_ = message;
   }
 
@@ -75,11 +67,8 @@ class CompatibilityWriter : public ErrorWriterBase {
   void writeCode(const Location& loc,
                  const std::vector<Location>& hl) override {}
 
-  void writeNote(Location loc, const std::string& message) override {
-    this->notes_.push_back(std::make_tuple(ID(), std::move(loc), message));
-  }
-  void writeNote(const ID& id, const std::string& message) override {
-    this->notes_.push_back(std::make_tuple(std::move(id), Location(), message));
+  void writeNote(IdOrLocation loc, const std::string& message) override {
+    this->notes_.push_back(std::make_tuple(std::move(loc), message));
   }
 
   /**
@@ -88,14 +77,14 @@ class CompatibilityWriter : public ErrorWriterBase {
     This only works after ErrorBase::write was invoked with this
     CompatibilityWriter.
    */
-  inline ID id() const { return id_; }
+  inline ID id() const { return idOrLoc_.id(); }
   /**
     Get the error's location (could be empty in favor of the ID)
 
     This only works after ErrorBase::write was invoked with this
     CompatibilityWriter.
    */
-  inline Location location() const { return loc_; }
+  inline Location location() const { return idOrLoc_.location(); }
   /**
     Return the location that should be reported to the user.
 
@@ -150,37 +139,27 @@ ErrorMessage ErrorBase::toErrorMessage(Context* context) const {
   for (auto note : ew.notes()) {
     auto detailKind = ErrorMessage::NOTE;
     auto detailmessage = std::get<std::string>(note);
-    message.addDetail(std::get<ID>(note).isEmpty() ?
-        ErrorMessage(detailKind, std::get<Location>(note), std::move(detailmessage)) :
-        ErrorMessage(detailKind, std::get<ID>(note), std::move(detailmessage))
-    );
+    message.addDetail(
+        ErrorMessage(detailKind,
+                     std::get<IdOrLocation>(note),
+                     std::get<std::string>(note)));
   }
   return message;
 }
 
 void BasicError::write(ErrorWriterBase& wr) const {
   // if the ID is set, determine the location from that
-  if (!id_.isEmpty()) {
-    wr.heading(kind_, type_, id_, message_);
-  } else {
-    wr.heading(kind_, type_, loc_, message_);
-  }
+  wr.heading(kind_, type_, idOrLoc_, message_);
   for (auto note : notes_) {
-    auto& id = std::get<ID>(note);
-    auto& location = std::get<Location>(note);
+    auto& idOrLoc = std::get<IdOrLocation>(note);
     auto& message = std::get<std::string>(note);
-    if (!id.isEmpty()) {
-      wr.note(id, message);
-    } else {
-      wr.note(location, message);
-    }
+    wr.note(idOrLoc, message);
   }
 }
 
 void BasicError::mark(Context* context) const {
   chpl::mark<Note> marker;
-  id_.mark(context);
-  loc_.mark(context);
+  idOrLoc_.mark(context);
   for (auto& note : notes_) {
     marker(context, note);
   }
@@ -212,6 +191,10 @@ const GeneralError* GeneralError::vbuild(Context* context, Kind kind, Location l
 
 const GeneralError* GeneralError::get(Context* context, Kind kind, Location loc, std::string msg) {
   return getGeneralErrorForLocation(context, kind, loc, std::move(msg)).get();
+}
+
+const GeneralError* GeneralError::error(Context* context, Location loc, std::string msg) {
+  return GeneralError::get(context, ErrorBase::ERROR, std::move(loc), std::move(msg));
 }
 
 } // end namespace 'chpl'

@@ -72,10 +72,14 @@ struct Resolver {
 
   // the resolution results for the contained AstNodes
   ResolutionResultByPostorderID& byPostorder;
+
   // the set of POI scopes from which POI functions were used --
   // these are gathered here during resolution in order to
   // allow accurate caching and reuse of instantiations
   PoiInfo poiInfo;
+
+  // the return type of the function (inferred or not)
+  types::QualifiedType returnType;
 
   static PoiInfo makePoiInfo(const PoiScope* poiScope) {
     if (poiScope == nullptr)
@@ -253,6 +257,12 @@ struct Resolver {
                          types::QualifiedType declaredType,
                          types::QualifiedType initExprType);
 
+  // helper for getTypeForDecl
+  // tries to resolve an init= that initializes one type from another
+  const types::Type* tryResolveCrossTypeInitEq(const uast::AstNode* ast,
+                                               types::QualifiedType lhsType,
+                                               types::QualifiedType rhsType);
+
   // Helper to figure out what type to use for a declaration
   // that can have both a declared type and an init expression.
   // If both are provided, checks that they are compatible.
@@ -327,6 +337,10 @@ struct Resolver {
   // e.g. var (a, b) = mytuple
   void resolveTupleDecl(const uast::TupleDecl* td,
                         const types::Type* useType);
+
+  void validateAndSetToId(ResolvedExpression& r,
+                          const uast::AstNode* exr,
+                          const ID& id);
 
   // e.g. new shared C(a, 0)
   // also resolves initializer call as a side effect

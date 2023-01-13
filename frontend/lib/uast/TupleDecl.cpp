@@ -25,7 +25,7 @@ namespace chpl {
 namespace uast {
 
 const char* TupleDecl::intentOrKindToString(IntentOrKind kind) {
-  return intentToString((IntentList)kind);
+  return qualifierToString((Qualifier)kind);
 }
 
 void TupleDecl::dumpFieldsInner(const DumpSettings& s) const {

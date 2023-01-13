@@ -21,7 +21,7 @@
 #define CHPL_UAST_TUPLEDECL_H
 
 #include "chpl/uast/Decl.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/framework/Location.h"
 
@@ -54,19 +54,19 @@ namespace uast {
 class TupleDecl final : public Decl {
  public:
   enum IntentOrKind {
-    DEFAULT_INTENT = (int) IntentList::DEFAULT_INTENT,
-    CONST_INTENT   = (int) IntentList::CONST_INTENT,
-    VAR            = (int) IntentList::VAR,
-    CONST_VAR      = (int) IntentList::CONST_VAR,
-    CONST_REF      = (int) IntentList::CONST_REF,
-    REF            = (int) IntentList::REF,
-    IN             = (int) IntentList::IN,
-    CONST_IN       = (int) IntentList::CONST_IN,
-    OUT            = (int) IntentList::OUT,
-    INOUT          = (int) IntentList::INOUT,
-    INDEX          = (int) IntentList::INDEX,
-    PARAM          = (int) IntentList::PARAM,
-    TYPE           = (int) IntentList::TYPE
+    DEFAULT_INTENT = (int) Qualifier::DEFAULT_INTENT,
+    CONST_INTENT   = (int) Qualifier::CONST_INTENT,
+    VAR            = (int) Qualifier::VAR,
+    CONST_VAR      = (int) Qualifier::CONST_VAR,
+    CONST_REF      = (int) Qualifier::CONST_REF,
+    REF            = (int) Qualifier::REF,
+    IN             = (int) Qualifier::IN,
+    CONST_IN       = (int) Qualifier::CONST_IN,
+    OUT            = (int) Qualifier::OUT,
+    INOUT          = (int) Qualifier::INOUT,
+    INDEX          = (int) Qualifier::INDEX,
+    PARAM          = (int) Qualifier::PARAM,
+    TYPE           = (int) Qualifier::TYPE
   };
 
  private:

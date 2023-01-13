@@ -23,7 +23,7 @@
 #include "chpl/framework/Location.h"
 #include "chpl/uast/Decl.h"
 #include "chpl/uast/Formal.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/uast/VarLikeDecl.h"
 
 namespace chpl {
@@ -48,13 +48,13 @@ namespace uast {
 class TaskVar final : public VarLikeDecl {
  public:
   enum Intent {
-    // Use IntentList here for consistent enum values.
-    VAR           = (int) IntentList::VAR,
-    CONST         = (int) IntentList::CONST_VAR,
-    CONST_REF     = (int) IntentList::CONST_REF,
-    REF           = (int) IntentList::REF,
-    IN            = (int) IntentList::IN,
-    CONST_IN      = (int) IntentList::CONST_IN
+    // Use Qualifier here for consistent enum values.
+    VAR           = (int) Qualifier::VAR,
+    CONST         = (int) Qualifier::CONST_VAR,
+    CONST_REF     = (int) Qualifier::CONST_REF,
+    REF           = (int) Qualifier::REF,
+    IN            = (int) Qualifier::IN,
+    CONST_IN      = (int) Qualifier::CONST_IN
   };
 
  private:
@@ -68,7 +68,7 @@ class TaskVar final : public VarLikeDecl {
                     Decl::DEFAULT_LINKAGE,
                     /*linkageNameChildNum*/ -1,
                     name,
-                    (IntentList)((int)intent),
+                    (Qualifier)((int)intent),
                     typeExpressionChildNum,
                     initExpressionChildNum) {
   }

@@ -835,11 +835,17 @@ const char* AssociatedAction::kindToString(Action a) {
     case ASSIGN:
       s = "assign";
       break;
+    case ASSIGN_OTHER:
+      s = "assign-from-other";
+      break;
     case COPY_INIT:
       s = "copy-init";
       break;
     case DEFAULT_INIT:
       s = "default-init";
+      break;
+    case INIT_OTHER:
+      s = "init-from-other";
       break;
     case DEINIT:
       s = "deinit";

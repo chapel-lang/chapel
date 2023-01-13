@@ -96,6 +96,10 @@ ERROR_CLASS(IncompatibleTypeAndInit,
 ERROR_CLASS(InvalidNewTarget, const uast::New*, types::QualifiedType)
 ERROR_CLASS(MemManagementNonClass, const uast::New*, const types::Type*)
 ERROR_CLASS(MissingInclude, const uast::Include*, std::string)
+ERROR_CLASS(ModuleAsVariable,
+            const uast::AstNode*,
+            const uast::AstNode*,
+            const uast::Module*)
 ERROR_CLASS(MultipleEnumElems, const uast::AstNode*, chpl::UniqueString, const types::EnumType*, std::vector<ID>)
 ERROR_CLASS(MultipleQuestionArgs, const uast::FnCall*, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(NonIterable, const uast::IndexableLoop*, const uast::AstNode*, types::QualifiedType)
@@ -123,9 +127,15 @@ ERROR_CLASS(UseImportNotModule, const ID, const resolution::VisibilityStmtKind,
             std::string)
 ERROR_CLASS(UseImportUnknownMod, const ID, const resolution::VisibilityStmtKind,
             std::string)
-ERROR_CLASS(UseImportUnknownSym, const uast::VisibilityClause*,
-            const resolution::Scope*, const resolution::VisibilityStmtKind,
+ERROR_CLASS(UseImportUnknownSym,
+            const uast::VisibilityClause*,
+            const resolution::Scope*,
+            const resolution::VisibilityStmtKind,
+            bool,
             std::string)
 ERROR_CLASS(UseOfLaterVariable, const uast::AstNode*, ID)
 ERROR_CLASS(ValueUsedAsType, const uast::AstNode*, types::QualifiedType)
+ERROR_CLASS(IfVarNonClassType,
+    const uast::Conditional*,
+    types::QualifiedType)
 /* end resolution errors */
