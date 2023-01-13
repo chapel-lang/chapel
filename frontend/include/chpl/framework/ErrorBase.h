@@ -195,29 +195,25 @@ class GeneralError : public BasicError {
                  std::move(message), std::move(notes)) {}
 
   static const owned<GeneralError>&
-  getGeneralErrorForID(Context* context, ErrorBase::Kind kind, ID id, std::string message);
+  getGeneralErrorForID(ErrorBase::Kind kind, ID id, std::string message);
 
   static const owned<GeneralError>&
-  getGeneralErrorForLocation(Context* context, ErrorBase::Kind kind, Location loc, std::string message);
+  getGeneralErrorForLocation(ErrorBase::Kind kind, Location loc, std::string message);
  public:
 
-  static owned<GeneralError> vbuild(Context* context,
-                                    ErrorBase::Kind kind, ID id,
+  static owned<GeneralError> vbuild(ErrorBase::Kind kind, ID id,
                                     const char* fmt,
                                     va_list vl);
-  static owned<GeneralError> vbuild(Context* context,
-                                    ErrorBase::Kind kind, Location loc,
+  static owned<GeneralError> vbuild(ErrorBase::Kind kind, Location loc,
                                     const char* fmt,
                                     va_list vl);
 
-  static owned<GeneralError> get(Context* context,
-                                 ErrorBase::Kind kind,
+  static owned<GeneralError> get(ErrorBase::Kind kind,
                                  Location loc,
                                  std::string msg);
 
   /* Convenience overload to call ::get with the ERROR kind. */
-  static owned<GeneralError> error(Context* context,
-                                   Location loc,
+  static owned<GeneralError> error(Location loc,
                                    std::string msg);
 
   owned<ErrorBase> clone() const override;
@@ -238,8 +234,6 @@ class GeneralError : public BasicError {
     Error##NAME__(ErrorInfo info) :\
       ErrorBase(KIND__, NAME__), info(std::move(info)) {}\
 \
-    static const owned<Error##NAME__>&\
-    getError##NAME__(Context* context, ErrorInfo info);\
    protected:\
     bool contentsMatchInner(const ErrorBase* other) const override {\
       auto otherCast = static_cast<const Error##NAME__*>(other);\

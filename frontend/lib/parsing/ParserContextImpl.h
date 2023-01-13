@@ -344,7 +344,7 @@ ErroneousExpression* ParserContext::report(YYLTYPE loc, owned<ErrorBase> error) 
     va_start(vl, fmt); \
     auto reportLoc = p_context__->convertLocation(loc__); \
     auto result = p_context__->report(loc__, \
-        GeneralError::vbuild(context(), kind__, reportLoc, fmt__, vl)); \
+        GeneralError::vbuild(kind__, reportLoc, fmt__, vl)); \
     va_end(vl); \
     return result; \
   } while(false)

@@ -165,22 +165,22 @@ void BasicError::mark(Context* context) const {
   }
 }
 
-owned<GeneralError> GeneralError::vbuild(Context* context, Kind kind, ID id, const char* fmt, va_list vl) {
+owned<GeneralError> GeneralError::vbuild(Kind kind, ID id, const char* fmt, va_list vl) {
   auto message = vprintToString(fmt, vl);
   return owned<GeneralError>(new GeneralError(kind, std::move(id), std::move(message), {}));
 }
 
-owned<GeneralError> GeneralError::vbuild(Context* context, Kind kind, Location loc, const char* fmt, va_list vl) {
+owned<GeneralError> GeneralError::vbuild(Kind kind, Location loc, const char* fmt, va_list vl) {
   auto message = vprintToString(fmt, vl);
   return owned<GeneralError>(new GeneralError(kind, std::move(loc), std::move(message), {}));
 }
 
-owned<GeneralError> GeneralError::get(Context* context, Kind kind, Location loc, std::string msg) {
+owned<GeneralError> GeneralError::get(Kind kind, Location loc, std::string msg) {
   return owned<GeneralError>(new GeneralError(kind, std::move(loc), std::move(msg), {}));
 }
 
-owned<GeneralError> GeneralError::error(Context* context, Location loc, std::string msg) {
-  return GeneralError::get(context, ErrorBase::ERROR, std::move(loc), std::move(msg));
+owned<GeneralError> GeneralError::error(Location loc, std::string msg) {
+  return GeneralError::get(ErrorBase::ERROR, std::move(loc), std::move(msg));
 }
 
 owned<ErrorBase> GeneralError::clone() const {

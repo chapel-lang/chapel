@@ -581,7 +581,7 @@ static void logErrorInContext(Context* context,
                               Location loc,
                               const char* fmt,
                               va_list vl) {
-  auto err = GeneralError::vbuild(context, kind, loc, fmt, vl);
+  auto err = GeneralError::vbuild(kind, loc, fmt, vl);
   context->report(std::move(err));
 }
 
@@ -590,7 +590,7 @@ static void logErrorInContext(Context* context,
                               ID id,
                               const char* fmt,
                               va_list vl) {
-  auto err = GeneralError::vbuild(context, kind, id, fmt, vl);
+  auto err = GeneralError::vbuild(kind, id, fmt, vl);
   context->report(std::move(err));
 }
 
@@ -599,7 +599,7 @@ void logErrorInContext(Context* context,
                               const uast::AstNode* ast,
                               const char* fmt,
                               va_list vl) {
-  auto err = GeneralError::vbuild(context, kind, ast->id(), fmt, vl);
+  auto err = GeneralError::vbuild(kind, ast->id(), fmt, vl);
   context->report(std::move(err));
 }
 
