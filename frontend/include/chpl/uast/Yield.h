@@ -82,10 +82,10 @@ class Yield final : public AstNode {
   }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(Yield);
+  DECLARE_STATIC_DESERIALIZE(Yield);
 
 };
 

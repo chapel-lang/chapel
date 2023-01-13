@@ -176,7 +176,7 @@ class FunctionSignature final : public AstNode {
   }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
     ser(kind_);
     ser(returnIntent_);
     ser(formalsChildNum_);
@@ -187,7 +187,7 @@ class FunctionSignature final : public AstNode {
     ser(isParenless_);
   }
 
-  DECLARE_STATIC_DES(FunctionSignature);
+  DECLARE_STATIC_DESERIALIZE(FunctionSignature);
 
 };
 

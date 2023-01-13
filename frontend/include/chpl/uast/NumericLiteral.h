@@ -71,8 +71,8 @@ class NumericLiteral : public Literal {
     return p->value();
   }
 
-  void serializePart(Serializer& ser) const {
-    Literal::serializePart(ser);
+  void serialize(Serializer& ser) const override {
+    Literal::serialize(ser);
     ser(text_);
   }
 

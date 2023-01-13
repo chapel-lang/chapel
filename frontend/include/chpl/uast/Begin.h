@@ -104,11 +104,11 @@ class Begin final : public SimpleBlockLike {
   }
 
   void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serializePart(ser);
+    SimpleBlockLike::serialize(ser);
     ser(withClauseChildNum_);
   }
 
-  DECLARE_STATIC_DES(Begin);
+  DECLARE_STATIC_DESERIALIZE(Begin);
 
 };
 

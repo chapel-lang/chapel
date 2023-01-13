@@ -408,7 +408,7 @@ class Function final : public NamedDecl {
   static const char* kindToString(Kind kind);
 
   void serialize(Serializer& ser) const override {
-    NamedDecl::serializePart(ser);
+    NamedDecl::serialize(ser);
     ser(inline_);
     ser(override_);
     ser(kind_);
@@ -427,7 +427,7 @@ class Function final : public NamedDecl {
     ser.write<int32_t>(bodyChildNum_);
   }
 
-  DECLARE_STATIC_DES(Function);
+  DECLARE_STATIC_DESERIALIZE(Function);
 };
 
 } // end namespace uast

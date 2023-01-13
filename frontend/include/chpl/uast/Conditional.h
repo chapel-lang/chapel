@@ -262,13 +262,13 @@ class Conditional final : public AstNode {
   }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
     ser(thenBlockStyle_);
     ser(elseBlockStyle_);
     ser(isExpressionLevel_);
   }
 
-  DECLARE_STATIC_DES(Conditional);
+  DECLARE_STATIC_DESERIALIZE(Conditional);
 
 };
 

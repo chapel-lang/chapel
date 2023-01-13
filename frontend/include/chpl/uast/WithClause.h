@@ -91,10 +91,10 @@ class WithClause final : public AstNode {
   }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(WithClause);
+  DECLARE_STATIC_DESERIALIZE(WithClause);
 
 };
 

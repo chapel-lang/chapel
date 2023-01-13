@@ -87,10 +87,10 @@ class Delete final : public AstNode {
   }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(Delete);
+  DECLARE_STATIC_DESERIALIZE(Delete);
 
 
 };

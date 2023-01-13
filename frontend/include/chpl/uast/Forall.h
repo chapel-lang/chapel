@@ -88,10 +88,10 @@ class Forall final : public IndexableLoop {
                              bool isExpressionLevel);
 
   void serialize(Serializer& ser) const override {
-    IndexableLoop::serializePart(ser);
+    IndexableLoop::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(Forall);
+  DECLARE_STATIC_DESERIALIZE(Forall);
 
 };
 

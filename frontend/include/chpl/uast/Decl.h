@@ -171,8 +171,8 @@ class Decl : public AstNode {
     */
   static const char* linkageToString(Linkage x);
 
-  void serializePart(Serializer& ser) const {
-    AstNode::serializePart(ser);
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
 
     ser((int32_t)attributesChildNum_);
     ser(visibility_);

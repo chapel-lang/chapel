@@ -533,7 +533,7 @@ void AstNode::stringify(std::ostream& ss,
   }
 }
 
-void AstNode::serializePart(Serializer& ser) const {
+void AstNode::serialize(Serializer& ser) const {
   ser(tag_);
   ser(id_);
   ser(children_);
@@ -545,11 +545,6 @@ AstNode::AstNode(AstTag tag, Deserializer& des)
   // the correct class' deserializer.
   id_ = des.read<ID>();
   children_ = des.read<AstList>();
-}
-
-// Serves as a default implementation while serialization is in development
-void AstNode::serialize(Serializer& ser) const {
-  serializePart(ser);
 }
 
 owned<AstNode> AstNode::deserialize(Deserializer& des) {

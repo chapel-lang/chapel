@@ -83,10 +83,10 @@ class Coforall final : public IndexableLoop {
                                owned<Block> body);
 
   void serialize(Serializer& ser) const override {
-    IndexableLoop::serializePart(ser);
+    IndexableLoop::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(Coforall);
+  DECLARE_STATIC_DESERIALIZE(Coforall);
 
 };
 

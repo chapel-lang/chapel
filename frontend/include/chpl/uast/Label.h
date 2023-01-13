@@ -103,11 +103,11 @@ class Label final : public AstNode {
   }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
     ser(name_);
   }
 
-  DECLARE_STATIC_DES(Label);
+  DECLARE_STATIC_DESERIALIZE(Label);
 
 
 };

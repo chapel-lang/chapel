@@ -128,10 +128,10 @@ class Enum final : public TypeDecl {
   }
 
   void serialize(Serializer& ser) const override {
-    TypeDecl::serializePart(ser);
+    TypeDecl::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(Enum);
+  DECLARE_STATIC_DESERIALIZE(Enum);
 
 };
 

@@ -105,11 +105,11 @@ class Class final : public AggregateDecl {
   }
 
   void serialize(Serializer& ser) const override {
-    AggregateDecl::serializePart(ser);
+    AggregateDecl::serialize(ser);
     ser(parentClassChildNum_);
   }
 
-  DECLARE_STATIC_DES(Class);
+  DECLARE_STATIC_DESERIALIZE(Class);
 
 };
 

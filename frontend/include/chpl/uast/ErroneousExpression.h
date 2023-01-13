@@ -51,10 +51,10 @@ class ErroneousExpression final : public AstNode {
   static owned<ErroneousExpression> build(Builder* builder, Location loc);
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(ErroneousExpression);
+  DECLARE_STATIC_DESERIALIZE(ErroneousExpression);
 
 };
 

@@ -122,11 +122,11 @@ class Use final : public AstNode {
   }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
     ser(visibility_);
   }
 
-  DECLARE_STATIC_DES(Use);
+  DECLARE_STATIC_DESERIALIZE(Use);
 
 };
 

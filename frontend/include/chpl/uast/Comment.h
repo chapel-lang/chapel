@@ -87,12 +87,12 @@ class Comment final : public AstNode {
   CommentID commentId() const { return commentId_; }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
     ser(comment_);
     ser(commentId_);
   }
 
-  DECLARE_STATIC_DES(Comment);
+  DECLARE_STATIC_DESERIALIZE(Comment);
 
  protected:
   /**

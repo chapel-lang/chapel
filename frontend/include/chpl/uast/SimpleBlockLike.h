@@ -123,8 +123,8 @@ class SimpleBlockLike : public AstNode {
     return blockStyle_;
   }
 
-  void serializePart(Serializer& ser) const {
-    AstNode::serializePart(ser);
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
     ser(blockStyle_);
     ser.write<int32_t>(bodyChildNum_);
     ser.write<int32_t>(numBodyStmts_);

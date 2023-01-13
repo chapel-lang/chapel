@@ -89,11 +89,11 @@ class Return final : public AstNode {
   }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
     ser(valueChildNum_);
   }
 
-  DECLARE_STATIC_DES(Return);
+  DECLARE_STATIC_DESERIALIZE(Return);
 
 };
 

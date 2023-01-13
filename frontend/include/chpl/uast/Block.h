@@ -62,10 +62,10 @@ class Block final : public SimpleBlockLike {
   static owned<Block> build(Builder* builder, Location loc, AstList stmts);
 
   void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serializePart(ser);
+    SimpleBlockLike::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(Block);
+  DECLARE_STATIC_DESERIALIZE(Block);
 
 };
 

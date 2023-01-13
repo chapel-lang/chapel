@@ -144,12 +144,12 @@ class Variable final : public VarLikeDecl {
   bool isField() const { return this->isField_; }
 
   void serialize(Serializer& ser) const override {
-    VarLikeDecl::serializePart(ser);
+    VarLikeDecl::serialize(ser);
     ser(isConfig_);
     ser(isField_);
   }
 
-  DECLARE_STATIC_DES(Variable);
+  DECLARE_STATIC_DESERIALIZE(Variable);
 
 };
 

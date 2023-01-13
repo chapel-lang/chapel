@@ -85,10 +85,10 @@ class Record final : public AggregateDecl {
                              AstList contents);
 
   void serialize(Serializer& ser) const override {
-    AggregateDecl::serializePart(ser);
+    AggregateDecl::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(Record);
+  DECLARE_STATIC_DESERIALIZE(Record);
 };
 
 

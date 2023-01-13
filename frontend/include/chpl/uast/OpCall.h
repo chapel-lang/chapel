@@ -89,11 +89,11 @@ class OpCall final : public Call {
   bool isUnaryOp() const { return children_.size() == 1; }
 
   void serialize(Serializer& ser) const override {
-    Call::serializePart(ser);
+    Call::serialize(ser);
     ser(op_);
   }
 
-  DECLARE_STATIC_DES(OpCall);
+  DECLARE_STATIC_DESERIALIZE(OpCall);
 };
 
 // Returns true if the given string is an operator name

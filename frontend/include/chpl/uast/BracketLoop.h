@@ -89,10 +89,10 @@ class BracketLoop final : public IndexableLoop {
   bool isMaybeArrayType() const;
 
   void serialize(Serializer& ser) const override {
-    IndexableLoop::serializePart(ser);
+    IndexableLoop::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(BracketLoop);
+  DECLARE_STATIC_DESERIALIZE(BracketLoop);
 
 };
 

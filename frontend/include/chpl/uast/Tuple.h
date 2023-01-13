@@ -70,10 +70,10 @@ class Tuple final : public Call {
                             AstList exprs);
 
   void serialize(Serializer& ser) const override {
-    Call::serializePart(ser);
+    Call::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(Tuple);
+  DECLARE_STATIC_DESERIALIZE(Tuple);
 
 };
 

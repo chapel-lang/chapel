@@ -130,10 +130,10 @@ class MultiDecl final : public Decl {
   }
 
   void serialize(Serializer& ser) const override {
-    Decl::serializePart(ser);
+    Decl::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(MultiDecl);
+  DECLARE_STATIC_DESERIALIZE(MultiDecl);
 
 };
 

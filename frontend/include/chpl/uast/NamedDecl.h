@@ -74,8 +74,8 @@ class NamedDecl : public Decl {
  public:
   virtual ~NamedDecl() = 0; // this is an abstract base class
 
-  void serializePart(Serializer& ser) const {
-    Decl::serializePart(ser);
+  void serialize(Serializer& ser) const override {
+    Decl::serialize(ser);
     ser(name_);
   }
 

@@ -115,10 +115,10 @@ class Reduce final : public Call {
   }
 
   void serialize(Serializer& ser) const override {
-    Call::serializePart(ser);
+    Call::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(Reduce);
+  DECLARE_STATIC_DESERIALIZE(Reduce);
 
 };
 

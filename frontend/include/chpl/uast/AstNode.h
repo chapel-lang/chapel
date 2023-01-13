@@ -227,9 +227,6 @@ class AstNode {
   // compute the maximum width of all of the IDs
   int computeMaxIdStringWidth() const;
 
-  // TODO: verification that all fields are mentioned in these methods
-  void serializePart(Serializer& os) const;
-  //static void deserializeRoot(Context* context, std::istream& is);
   virtual void serialize(Serializer& os) const;
 
   static owned<AstNode> deserialize(Deserializer& des);
@@ -540,7 +537,7 @@ AST_LESS(AstNode)
 #undef AST_LESS
 /// \endcond
 
-#define DECLARE_STATIC_DES(NAME) \
+#define DECLARE_STATIC_DESERIALIZE(NAME) \
 static owned<NAME> deserialize(Deserializer& des) { \
   return owned<NAME>(new NAME(des)); \
 }

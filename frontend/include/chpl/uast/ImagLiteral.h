@@ -50,10 +50,10 @@ class ImagLiteral final : public NumericLiteral<double, types::RealParam> {
                                   double value, UniqueString text);
 
   void serialize(Serializer& ser) const override {
-    NumericLiteral::serializePart(ser);
+    NumericLiteral::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(ImagLiteral);
+  DECLARE_STATIC_DESERIALIZE(ImagLiteral);
 };
 
 

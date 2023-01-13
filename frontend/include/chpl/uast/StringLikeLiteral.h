@@ -88,8 +88,8 @@ class StringLikeLiteral : public Literal {
    */
   static const char* quoteStyleToString(QuoteStyle q);
 
-  void serializePart(Serializer& ser) const {
-    Literal::serializePart(ser);
+  void serialize(Serializer& ser) const override {
+    Literal::serialize(ser);
     ser(quotes_);
   }
 };

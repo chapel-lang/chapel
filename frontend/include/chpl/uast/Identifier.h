@@ -73,11 +73,11 @@ class Identifier final : public AstNode {
   UniqueString name() const { return name_; }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
     ser(name_);
   }
 
-  DECLARE_STATIC_DES(Identifier);
+  DECLARE_STATIC_DESERIALIZE(Identifier);
 };
 
 /*

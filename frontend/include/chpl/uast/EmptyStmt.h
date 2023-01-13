@@ -67,10 +67,10 @@ public:
   static owned<EmptyStmt> build(Builder* builder, Location loc);
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(EmptyStmt);
+  DECLARE_STATIC_DESERIALIZE(EmptyStmt);
 
 }; // end EmptyStmt
 

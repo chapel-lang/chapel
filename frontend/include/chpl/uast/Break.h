@@ -90,11 +90,11 @@ class Break : public AstNode {
   }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
     ser(targetChildNum_);
   }
 
-  DECLARE_STATIC_DES(Break);
+  DECLARE_STATIC_DESERIALIZE(Break);
 
 };
 
