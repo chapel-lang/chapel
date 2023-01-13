@@ -91,6 +91,7 @@ static void stringifyNode(const AstNode* node, chpl::StringifyKind kind) {
 
 
 static void test1(Parser* parser) {
+  ErrorGuard guard(parser->context());
   // the one test to rule them all
   std::string testCode;
   testCode = R""""(
@@ -345,13 +346,14 @@ static void test1(Parser* parser) {
   )"""";
   auto parseResult = parser->parseString("Test1.chpl",
                                          testCode.c_str());
-  for (int i = 0; i < parseResult.numErrors(); i++) {
-    const ErrorBase* err = parseResult.error(i);
+  for (auto& error : guard.errors()) {
+    const ErrorBase* err = error.get();
     // ignore implicit module warning
     assert(err->kind() != ErrorBase::SYNTAX);
     std::cout << err->message().c_str() << std::endl;
     assert(err->kind() != ErrorBase::ERROR);
   }
+  guard.clearErrors();
   auto mod = parseResult.singleModule();
   assert(mod);
   stringifyNode(mod, CHPL_SYNTAX);

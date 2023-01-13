@@ -29,10 +29,11 @@
 #include "chpl/framework/Context.h"
 
 static void test0(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test0.chpl",
       "foo();\n"
       "//c2");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->stmt(0)->isFnCall());

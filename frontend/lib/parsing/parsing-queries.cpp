@@ -116,10 +116,6 @@ parseFileToBuilderResult(Context* context, UniqueString path,
     BuilderResult tmpResult = parser.parseString(pathc, textc);
     result.swap(tmpResult);
     BuilderResult::updateFilePaths(context, result);
-  } else {
-    // Error should have already been reported in the fileText query.
-    // Just record an error here as well so follow-ons are clear
-    BuilderResult::appendError(result, error);
   }
 
   return QUERY_END(result);

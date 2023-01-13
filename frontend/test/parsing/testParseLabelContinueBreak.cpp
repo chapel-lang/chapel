@@ -35,6 +35,7 @@
 #include <iostream>
 
 static void test0(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test0.chpl",
     "/*c1*/\n"
     "var thing = 0;\n"
@@ -45,7 +46,7 @@ static void test0(Parser* parser) {
     "  /*c3*/\n"
     "}\n"
     "/*c12*/\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 4);
@@ -77,6 +78,7 @@ static void test0(Parser* parser) {
 }
 
 static void test1(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test1.chpl",
     "/*c1*/\n"
     "label outer for i in myRange {\n"
@@ -85,7 +87,7 @@ static void test1(Parser* parser) {
     "  /*c5*/\n"
     "}\n"
     "/*c6*/\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);

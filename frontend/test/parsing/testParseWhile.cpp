@@ -30,12 +30,13 @@
 #include <iostream>
 
 static void test0(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test0.chpl",
       "/* comment 1 */\n"
       "while foo() do\n"
       "  /* comment 2 */\n"
       "  bar();\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 2);
@@ -52,13 +53,14 @@ static void test0(Parser* parser) {
 }
 
 static void test1(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test1.chpl",
       "/* comment 1 */\n"
       "while foo() {\n"
       "  /* comment 2 */\n"
       "  bar();\n"
       "}\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 2);
@@ -75,13 +77,14 @@ static void test1(Parser* parser) {
 }
 
 static void test2(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test2.chpl",
       "/* comment 1 */\n"
       "while foo() do {\n"
       "  /* comment 2 */\n"
       "  bar();\n"
       "}\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 2);
@@ -98,6 +101,7 @@ static void test2(Parser* parser) {
 }
 
 static void test3(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test3.chpl",
       "/* comment 1 */\n"
       "while condition1 {\n"
@@ -107,7 +111,7 @@ static void test3(Parser* parser) {
       "   bar();\n"
       "  /* comment 4 */\n"
       "}\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 2);

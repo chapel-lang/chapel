@@ -28,13 +28,14 @@
 #include "chpl/uast/Serial.h"
 
 static void test0(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test0.chpl",
       "/* comment 1 */\n"
       "serial /* comment 2 */ do\n"
       "  /* comment 3 */\n"
       "  var a;\n"
       "/*comment 4 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -51,13 +52,14 @@ static void test0(Parser* parser) {
 }
 
 static void test1(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test1.chpl",
       "/* comment 1 */\n"
       "serial /* comment 2 */ foo /* comment 3 */ do\n"
       "  /* comment 4 */\n"
       "  var a;\n"
       "/* comment 5 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -75,6 +77,7 @@ static void test1(Parser* parser) {
 }
 
 static void test2(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test2.chpl",
       "/* comment 1 */\n"
       "serial /* comment 2 */ {\n"
@@ -83,7 +86,7 @@ static void test2(Parser* parser) {
       "  /* comment 4 */\n"
       "}\n"
       "/* comment 5 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -100,6 +103,7 @@ static void test2(Parser* parser) {
 }
 
 static void test3(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test3.chpl",
       "/* comment 1 */\n"
       "serial /* comment 2 */ foo /* comment 3 */ {\n"
@@ -108,7 +112,7 @@ static void test3(Parser* parser) {
       "  /* comment 5 */\n"
       "}\n"
       "/* comment 6 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -127,10 +131,11 @@ static void test3(Parser* parser) {
 }
 
 static void test4(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test4.chpl",
       "/* comment 1 */\n"
       "serial do { var a; }\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 2);
@@ -145,10 +150,11 @@ static void test4(Parser* parser) {
 }
 
 static void test5(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test5.chpl",
       "/* comment 1 */\n"
       "serial foo do { var a; }\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 2);

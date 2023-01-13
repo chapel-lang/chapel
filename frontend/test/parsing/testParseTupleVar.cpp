@@ -28,8 +28,9 @@
 #include "chpl/uast/Variable.h"
 
 static void test1(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test1.chpl", "var (x, y);");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -55,8 +56,9 @@ static void test1(Parser* parser) {
 }
 
 static void test2(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test2.chpl", "const (x, y);");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -80,8 +82,9 @@ static void test2(Parser* parser) {
 }
 
 static void test3(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test3.chpl", "var (x, y): typ;");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -105,8 +108,9 @@ static void test3(Parser* parser) {
 }
 
 static void test4(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test4.chpl", "var (x, y) = tup;");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -130,9 +134,10 @@ static void test4(Parser* parser) {
 }
 
 static void test5(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test5.chpl",
                                          "var (x, y):typ = tup;");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -156,8 +161,9 @@ static void test5(Parser* parser) {
 }
 
 static void check6(Parser* parser, const char* path, const char* str) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString(path, str);
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -236,9 +242,10 @@ static void test6(Parser* parser) {
 }
 
 static void test7(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test7.chpl",
                                          "var (x, y), z;");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);

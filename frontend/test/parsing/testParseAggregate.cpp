@@ -213,7 +213,6 @@ static void test8(Parser* parser) {
                             "  /*F*/\n"
                             "}\n"
                             "/*G*/\n");
-  assert(!res.numErrors());
   auto mod = res.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);

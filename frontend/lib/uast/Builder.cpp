@@ -104,10 +104,6 @@ void Builder::addToplevelExpression(owned<AstNode> e) {
   this->topLevelExpressions_.push_back(std::move(e));
 }
 
-void Builder::addError(const ErrorBase* e) {
-  this->errors_.push_back(e);
-}
-
 void Builder::noteLocation(AstNode* ast, Location loc) {
   notedLocations_[ast] = loc;
 }
@@ -125,7 +121,6 @@ BuilderResult Builder::result() {
 
   BuilderResult ret(filepath_);
   ret.topLevelExpressions_.swap(topLevelExpressions_);
-  ret.errors_.swap(errors_);
   ret.idToAst_.swap(idToAst_);
   ret.idToLocation_.swap(idToLocation_);
   ret.commentIdToLocation_.swap(commentToLocation_);
@@ -497,12 +492,6 @@ owned <AstNode> Builder::parseDummyNodeForInitExpr(Variable* var, std::string va
   path += var->name().str();
   path += ")";
   auto parseResult = parser.parseString(path.c_str(), inputText.c_str());
-  // Propagate any parse errors from the dummy node to builder errors
-  if (parseResult.numErrors() > 0) {
-   for (const ErrorBase* error : parseResult.errors()) {
-     addError(error);
-   }
-  }
   auto mod = parseResult.singleModule();
   CHPL_ASSERT(mod);
   owned<AstNode> initNode;

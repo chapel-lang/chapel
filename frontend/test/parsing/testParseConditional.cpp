@@ -37,6 +37,7 @@
 #include <iostream>
 
 static void test0(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test0.chpl",
       "/* c1 */\n"
       "if /* c2 */ foo /* c3 */ then\n"
@@ -47,7 +48,7 @@ static void test0(Parser* parser) {
       "  /* c6 */\n"
       "  baz();\n"
       "/* c7 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -101,6 +102,7 @@ static void test0(Parser* parser) {
 }
 
 static void test1(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test1.chpl",
       "/* c1 */\n"
       "if /* c2 */ foo() /* c3 */ {\n"
@@ -113,7 +115,7 @@ static void test1(Parser* parser) {
       "  /* c9 */\n"
       "}\n"
       "/* c10 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -171,6 +173,7 @@ static void test1(Parser* parser) {
 }
 
 static void test2(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test2.chpl",
       "/* c1 */\n"
       "if /* c2 */ foo /* c3 */ then {\n"
@@ -180,7 +183,7 @@ static void test2(Parser* parser) {
       "  /* c5 */\n"
       "} /* c6 */ else /* c7 */ ding();\n"
       "/* c8 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -206,13 +209,14 @@ static void test2(Parser* parser) {
 }
 
 static void test3(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test3.chpl",
       "/* c1 */\n"
       "if /* c2 */ foo /* c3 */ then\n"
       "  /* c4 */\n"
       "  bar();\n"
       "/* c5 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -247,12 +251,13 @@ static void test3(Parser* parser) {
 }
 
 static void test4(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test4.chpl",
       "/* c1 */\n"
       "if foo += bar() then\n"
       "  baz();\n"
       "/* c2 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -273,12 +278,13 @@ static void test4(Parser* parser) {
 }
 
 static void test5(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test5.chpl",
       "/* c1 */\n"
       "if var foo = bar() then\n"
       "  baz();\n"
       "/* c2 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);

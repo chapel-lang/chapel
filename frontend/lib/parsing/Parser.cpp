@@ -74,11 +74,6 @@ static void updateParseResult(ParserContext* parserContext) {
     }
     delete parserContext->comments;
   }
-
-  // Save the parse errors to the builder
-  for (const auto* error : parserContext->errors) {
-    builder->addError(error);
-  }
 }
 
 
@@ -94,9 +89,6 @@ BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
 
   FILE* fp = openfile(path, "r", fileError);
   if (fp == NULL) {
-    // TODO: do we need to track errors in the builder?
-    // builder->addError(
-    //     GeneralError::error(this->context(), Location(), fileError));
     context_->report(GeneralError::error(this->context(), Location(), fileError));
     return builder->result();
   }
