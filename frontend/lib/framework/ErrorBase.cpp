@@ -183,4 +183,8 @@ owned<GeneralError> GeneralError::error(Context* context, Location loc, std::str
   return GeneralError::get(context, ErrorBase::ERROR, std::move(loc), std::move(msg));
 }
 
+owned<ErrorBase> GeneralError::clone() const {
+  return owned<ErrorBase>(new GeneralError(*this));
+}
+
 } // end namespace 'chpl'

@@ -149,6 +149,7 @@ class ErrorBase {
    */
   virtual void write(ErrorWriterBase& wr) const = 0;
   virtual void mark(Context* context) const = 0;
+  virtual owned<ErrorBase> clone() const = 0;
 };
 
 /**
@@ -187,6 +188,7 @@ class BasicError : public ErrorBase {
  */
 class GeneralError : public BasicError {
  protected:
+  GeneralError(const GeneralError& other) = default;
   GeneralError(ErrorBase::Kind kind, IdOrLocation idOrLoc,
                std::string message, std::vector<Note> notes)
     : BasicError(kind, General, std::move(idOrLoc),
@@ -217,6 +219,8 @@ class GeneralError : public BasicError {
   static owned<GeneralError> error(Context* context,
                                    Location loc,
                                    std::string msg);
+
+  owned<ErrorBase> clone() const override;
 };
 
 // The error-classes-list.h header will expand the DIAGNOSTIC_CLASS macro
@@ -230,6 +234,7 @@ class GeneralError : public BasicError {
     using ErrorInfo = std::tuple<EINFO__>;\
     ErrorInfo info;\
 \
+    Error##NAME__(const Error##NAME__& other) = default;\
     Error##NAME__(ErrorInfo info) :\
       ErrorBase(KIND__, NAME__), info(std::move(info)) {}\
 \
@@ -248,6 +253,9 @@ class GeneralError : public BasicError {
     void mark(Context* context) const override {\
       ::chpl::mark<ErrorInfo> marker;\
       marker(context, info);\
+    }\
+    owned<ErrorBase> clone() const override {\
+      return owned<ErrorBase>(new Error##NAME__(*this));\
     }\
   };
 #include "chpl/framework/error-classes-list.h"

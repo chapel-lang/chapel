@@ -72,8 +72,8 @@ namespace chpl {
 
 using namespace chpl::querydetail;
 
-void Context::reportError(Context* context, owned<ErrorBase> err) {
-  handler_->report(context, std::move(err));
+void Context::reportError(Context* context, const ErrorBase* err) {
+  handler_->report(context, err);
 }
 
 const std::string& Context::chplHome() const {
@@ -568,15 +568,12 @@ void Context::collectGarbage() {
 void Context::report(owned<ErrorBase> error) {
   gdbShouldBreakHere();
 
-  // TODO: how do we track it in both places?
-  // if (queryStack.size() > 0) {
-  //   queryStack.back()->errors.push_back(std::move(error));
-  //   reportError(this, queryStack.back()->errors.back());
-  // } else {
-  //   reportError(this, error);
-  // }
-
-  reportError(this, std::move(error));
+  if (queryStack.size() > 0) {
+    queryStack.back()->errors.push_back(std::move(error));
+    reportError(this, queryStack.back()->errors.back().get());
+  } else {
+    reportError(this, error.get());
+  }
 }
 
 static void logErrorInContext(Context* context,
@@ -710,10 +707,9 @@ void Context::updateForReuse(const QueryMapResultBase* resultEntry) {
   resultEntry->lastChecked = this->currentRevisionNumber;
 
   // Update error locations if needed and re-report the error
-  // TODO what to do here?
-  // for (auto& err: resultEntry->errors) {
-  //   reportError(this, err);
-  // }
+  for (auto& err: resultEntry->errors) {
+    reportError(this, err.get());
+  }
 }
 
 bool Context::queryCanUseSavedResult(
@@ -860,6 +856,16 @@ namespace querydetail {
 
 void queryArgsPrintSep() {
   printf(", ");
+}
+
+QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
+                   RevisionNumber lastChanged,
+                   QueryMapBase* parentQueryMap)
+  : lastChecked(lastChecked),
+    lastChanged(lastChanged),
+    dependencies(),
+    errors(),
+    parentQueryMap(parentQueryMap) {
 }
 
 QueryMapResultBase::~QueryMapResultBase() {

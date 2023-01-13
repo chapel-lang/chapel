@@ -80,7 +80,7 @@ class Context {
   class ErrorHandler {
    public:
     virtual ~ErrorHandler() = default;
-    virtual void report(Context* context, owned<ErrorBase> err) = 0;
+    virtual void report(Context* context, const ErrorBase* err) = 0;
   };
 
  private:
@@ -90,8 +90,8 @@ class Context {
    public:
     DefaultErrorHandler() = default;
     ~DefaultErrorHandler() = default;
-    virtual void report(Context* context, owned<ErrorBase> err) override {
-      defaultReportError(context, err.get());
+    virtual void report(Context* context, const ErrorBase* err) override {
+      defaultReportError(context, err);
     }
   };
 
@@ -100,7 +100,7 @@ class Context {
     = toOwned<ErrorHandler>(new DefaultErrorHandler());
 
   // Report an error to the current handler.
-  void reportError(Context* context, owned<ErrorBase> err);
+  void reportError(Context* context, const ErrorBase* err);
 
   // The CHPL_HOME variable
   const std::string chplHome_;

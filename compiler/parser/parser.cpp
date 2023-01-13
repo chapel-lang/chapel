@@ -111,8 +111,8 @@ class DynoErrorHandler : public chpl::Context::ErrorHandler {
   }
 
   virtual void
-  report(chpl::Context* context, chpl::owned<chpl::ErrorBase> err) override {
-    errors_.push_back(std::move(err));
+  report(chpl::Context* context, const chpl::ErrorBase* err) override {
+    errors_.push_back(err->clone());
   }
 
   inline void clear() { errors_.clear(); }
