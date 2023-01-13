@@ -484,11 +484,12 @@ InitErrorHandling::phaseToString(InitErrorHandling::InitPhase phase) const {
 
 void InitErrorHandling::removeInitDone() {
   // Clean up after ourselves - remove PRIM_INIT_DONE from the function
-  for_alist(node, mFn->body->body) {
-    if (CallExpr* call = toCallExpr(node)) {
-      if (isInitDone(call)) {
-        call->remove();
-      }
+  std::vector<CallExpr*> calls;
+  collectCallExprs(mFn, calls);
+
+  for_vector(CallExpr, call, calls) {
+    if (isInitDone(call)) {
+      call->remove();
     }
   }
 }

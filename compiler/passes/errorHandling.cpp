@@ -618,19 +618,26 @@ void ErrorHandlingVisitor::exitDeferStmt(DeferStmt* node) {
 bool ErrorHandlingVisitor::enterCondStmt(CondStmt* node) {
   if (state != NULL) {
     InitErrorHandling* oldState = state;
+    InitErrorHandling* thenState = new InitErrorHandling(node, *state);
+    state = thenState;
 
     node->thenStmt->accept(this);
 
-    InitErrorHandling* thenState = state; // May be different than before
-
     if (node->elseStmt != NULL) {
-      state = oldState; // Restore previous state to ensure proper checking
+      InitErrorHandling* elseState = new InitErrorHandling(node, *oldState);
+      state = elseState;
       node->elseStmt->accept(this);
 
       // Handling during normalize should ensure that both branches result in
       // the same final state
-      INT_ASSERT(thenState == state);
+      INT_ASSERT(thenState->currPhase() == elseState->currPhase());
+      thenState->merge(*elseState);
+      delete elseState;
     }
+    state = oldState; // To ensure we don't strand the memory
+
+    state->merge(*thenState);
+    delete thenState;
 
     return false; // Already handled, no need to traverse again
   } else {
