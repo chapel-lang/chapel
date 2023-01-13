@@ -162,8 +162,9 @@ struct Visitor {
 void Visitor::report(const AstNode* node, ErrorBase::Kind kind,
                      const char* fmt,
                      va_list vl) {
-  auto err = GeneralError::vbuild(context_, kind, node->id(), fmt, vl);
-  builder_.addError(std::move(err));
+  // TODO no longer storing the error in builder, passing straight to ctx.
+  // builder_.addError(std::move(err));
+  context_->report(GeneralError::vbuild(context_, kind, node->id(), fmt, vl));
 }
 
 void Visitor::error(const AstNode* node, const char* fmt, ...) {

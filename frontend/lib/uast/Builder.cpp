@@ -193,12 +193,13 @@ void Builder::createImplicitModuleIfNeeded() {
     topLevelExpressions_.push_back(std::move(ownedModule));
 
     // emit warnings as needed
+    // TODO no longer saving the errors but logging them directly
     if (firstUseImportOrRequire && !containsOther && nModules == 1) {
-      addError(ErrorImplicitFileModule::get(context(),
-            std::make_tuple(firstUseImportOrRequire, lastModule, implicitModule)));
+      CHPL_REPORT(context(), ImplicitFileModule,
+                  firstUseImportOrRequire, lastModule, implicitModule);
     } else if (nModules >= 1 && !containsOnlyModules) {
-      addError(ErrorImplicitFileModule::get(context(),
-            std::make_tuple(firstNonModule, lastModule, implicitModule)));
+      CHPL_REPORT(context(), ImplicitFileModule,
+                  firstNonModule, lastModule, implicitModule);
     }
   }
 }
@@ -404,9 +405,9 @@ void Builder::checkConfigPreviouslyUsed(const Variable* var, std::string& config
   useConfigSetting(context(), configNameUsed, var->id());
   auto usedId = nameToConfigSettingId(context(), configNameUsed);
 
+  // TODO no longer saving the errors but logging them directly
   if (usedId != var->id()) {
-    addError(ErrorAmbiguousConfigName::get(context(),
-          std::make_tuple(configNameUsed, var, usedId)));
+    CHPL_REPORT(context(), AmbiguousConfigName, configNameUsed, var, usedId);
   }
 }
 
@@ -449,8 +450,9 @@ void Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec, std::
       if (!configMatched.first.empty() &&
           configMatched.first != configPair.first) {
 
-        addError(ErrorAmbiguousConfigSet::get(context(),
-              std::make_tuple(var, configMatched.first, configPair.first)));
+        // TODO no longer saving the errors but logging them directly
+        CHPL_REPORT(context(), AmbiguousConfigSet,
+                    var, configMatched.first, configPair.first);
       }
       configMatched = configPair;
     }

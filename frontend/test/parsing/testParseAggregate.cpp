@@ -35,8 +35,9 @@ static BuilderResult parseAggregate(Parser* parser,
                                     const AggregateDecl*& agg,
                                     const char* testname,
                                     const char* prog) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString(testname, prog);
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
 
@@ -470,6 +471,7 @@ static void test10(Parser* parser) {
 }
 
 static void test11(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test11.chpl",
         "extern record foo {}\n"
         "extern \"struct bar\" record bar {}\n"
@@ -478,7 +480,7 @@ static void test11(Parser* parser) {
         "extern union baz {}\n"
         "extern \"union thing\" union thing {}\n");
 
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 6);
@@ -529,6 +531,7 @@ static void test11(Parser* parser) {
 // Test failure for exporting or externing a class.
 // Test failure for exporting a union.
 static void test12(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("test12.chpl",
         "extern class foo {};\n"
         "extern \"foo\" class foo {};\n"
@@ -537,7 +540,7 @@ static void test12(Parser* parser) {
         "export union baz {}\n"
         "export \"baz\" union baz {}\n");
 
-  assert(parseResult.numErrors() == 6);
+  assert(guard.realizeErrors() == 6);
   auto mod = parseResult.singleModule();
   assert(mod);
 }

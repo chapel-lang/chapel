@@ -199,22 +199,22 @@ class GeneralError : public BasicError {
   getGeneralErrorForLocation(Context* context, ErrorBase::Kind kind, Location loc, std::string message);
  public:
 
-  static const GeneralError* vbuild(Context* context,
+  static owned<GeneralError> vbuild(Context* context,
                                     ErrorBase::Kind kind, ID id,
                                     const char* fmt,
                                     va_list vl);
-  static const GeneralError* vbuild(Context* context,
+  static owned<GeneralError> vbuild(Context* context,
                                     ErrorBase::Kind kind, Location loc,
                                     const char* fmt,
                                     va_list vl);
 
-  static const GeneralError* get(Context* context,
+  static owned<GeneralError> get(Context* context,
                                  ErrorBase::Kind kind,
                                  Location loc,
                                  std::string msg);
 
   /* Convenience overload to call ::get with the ERROR kind. */
-  static const GeneralError* error(Context* context,
+  static owned<GeneralError> error(Context* context,
                                    Location loc,
                                    std::string msg);
 };
@@ -242,7 +242,7 @@ class GeneralError : public BasicError {
     }\
    public:\
     ~Error##NAME__() = default;\
-    static const Error##NAME__* get(Context* context, ErrorInfo info);\
+    static owned<Error##NAME__> get(ErrorInfo info);\
 \
     void write(ErrorWriterBase& writer) const override;\
     void mark(Context* context) const override {\
@@ -257,17 +257,8 @@ class GeneralError : public BasicError {
 // error type. This is meant to be invoked via DIAGNOSTIC_CLASS and
 // including error-classes-list.h
 #define DIAGNOSTIC_CLASS_IMPL(NAME__, KIND__, EINFO__...)\
-  const owned<Error##NAME__>&\
-  Error##NAME__::getError##NAME__(Context* context,\
-                                  std::tuple<EINFO__> tuple) {\
-    QUERY_BEGIN(getError##NAME__, context, tuple);\
-    auto result = owned<Error##NAME__>(new Error##NAME__(tuple));\
-    return QUERY_END(result);\
-  }\
-\
-  const Error##NAME__*\
-  Error##NAME__::get(Context* context, std::tuple<EINFO__> tuple) {\
-    return Error##NAME__::getError##NAME__(context, std::move(tuple)).get();\
+  owned<Error##NAME__> Error##NAME__::get(std::tuple<EINFO__> tuple) {\
+    return owned<Error##NAME__>(new Error##NAME__(std::move(tuple)));\
   }
 
 /**
@@ -279,9 +270,9 @@ class GeneralError : public BasicError {
   it's sufficient to provide it via varargs.
  */
 #define CHPL_REPORT(CONTEXT__, NAME__, EINFO__...) \
-  CONTEXT__->report(CHPL_GET_ERROR(CONTEXT__, NAME__, EINFO__))
-#define CHPL_GET_ERROR(CONTEXT__, NAME__, EINFO__...) \
-  Error##NAME__::get(CONTEXT__, std::make_tuple(EINFO__))
+  CONTEXT__->report(CHPL_GET_ERROR(NAME__, EINFO__))
+#define CHPL_GET_ERROR(NAME__, EINFO__...) \
+  Error##NAME__::get(std::make_tuple(EINFO__))
 
 template <>
 struct stringify<chpl::ErrorBase::Kind> {

@@ -94,8 +94,10 @@ BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
 
   FILE* fp = openfile(path, "r", fileError);
   if (fp == NULL) {
-    builder->addError(
-        GeneralError::error(this->context(), Location(), fileError));
+    // TODO: do we need to track errors in the builder?
+    // builder->addError(
+    //     GeneralError::error(this->context(), Location(), fileError));
+    context_->report(GeneralError::error(this->context(), Location(), fileError));
     return builder->result();
   }
 
@@ -166,8 +168,10 @@ BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
   yychpl_lex_destroy(parserContext.scanner);
 
   if (closefile(fp, path, fileError)) {
-    builder->addError(
-        GeneralError::error(this->context(), Location(), fileError));
+    // TODO do we need to add errors to the builder?
+    // builder->addError(
+    //     GeneralError::error(this->context(), Location(), fileError));
+    context_->report(GeneralError::error(this->context(), Location(), fileError));
   }
 
   updateParseResult(&parserContext);

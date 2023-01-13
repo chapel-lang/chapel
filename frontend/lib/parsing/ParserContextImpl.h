@@ -332,8 +332,9 @@ void ParserContext::exitScope(asttags::AstTag tag, UniqueString name) {
 }
 
 
-ErroneousExpression* ParserContext::report(YYLTYPE loc, const ErrorBase* error) {
-  errors.push_back(context()->report(error));
+ErroneousExpression* ParserContext::report(YYLTYPE loc, owned<ErrorBase> error) {
+  // TODO do we need to track the errors in the list?
+  context()->report(std::move(error));
   return ErroneousExpression::build(builder, convertLocation(loc)).release();
 }
 

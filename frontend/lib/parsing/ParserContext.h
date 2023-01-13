@@ -169,7 +169,7 @@ struct ParserContext {
     };
   }
 
-  ErroneousExpression* report(YYLTYPE loc, const ErrorBase* error);
+  ErroneousExpression* report(YYLTYPE loc, owned<ErrorBase> error);
   ErroneousExpression* error(YYLTYPE loc, const char* fmt, ...);
   ErroneousExpression* syntax(YYLTYPE loc, const char* fmt, ...);
 

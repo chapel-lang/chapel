@@ -73,7 +73,7 @@ static void syntax(yyscan_t scanner, int nLines, int nCols,
   va_start(args, fmt);
   auto error = GeneralError::vbuild(pContext->context(),
                                     ErrorBase::SYNTAX, loc, fmt, args);
-  pContext->report(flexLoc, error);
+  pContext->report(flexLoc, std::move(error));
   va_end(args);
 }
 

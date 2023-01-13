@@ -57,7 +57,8 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
   std::string error;
   const ErrorBase* parseError = nullptr;
   if (!readfile(path.c_str(), text, error)) {
-    parseError = context->error(Location(), "error reading file: %s\n", error.c_str());
+    // TODO does this need to be stored in FileContents?
+    context->error(Location(), "error reading file: %s\n", error.c_str());
   }
   auto result = FileContents(std::move(text), parseError);
   return QUERY_END(result);
@@ -188,9 +189,10 @@ const ModuleVec& parse(Context* context, UniqueString path,
                                                     parentSymbolPath);
 
   // Report any errors encountered to the context.
-  for (auto& e : p.errors())
-    if (e != nullptr)
-      context->report(e);
+  // TODO: have these not been reported already?
+  // for (auto& e : p.errors())
+  //   if (e != nullptr)
+  //     context->report(e);
 
   // Compute a vector of Modules
   ModuleVec result;

@@ -32,8 +32,7 @@
   P_CONTEXT__->report(LOC__,                                       \
     CHPL_PARSER_GET_ERROR(P_CONTEXT__, NAME__, LOC__, ##EINFO__))
 #define CHPL_PARSER_GET_ERROR(P_CONTEXT__, NAME__, LOC__, EINFO__...) \
-  CHPL_GET_ERROR(P_CONTEXT__->context(), NAME__,                      \
-                 P_CONTEXT__->convertLocation(LOC__), ##EINFO__)
+  CHPL_GET_ERROR(NAME__, P_CONTEXT__->convertLocation(LOC__), ##EINFO__)
 
 /**
   Helper macros to report errors from the lexer, including retrieving the
@@ -60,8 +59,8 @@
 /**
  * Helper macro to report errors in post-parse-checks to the Builder
  */
+// TODO: no longer storing errors in the builder
 #define CHPL_POSTPARSE_REPORT(BUILDER__, NAME__, NODE__, EINFO__...) \
-  (BUILDER__).addError(                                                \
-      CHPL_GET_ERROR((BUILDER__).context(), NAME__, NODE__->id(), EINFO__))
+  CHPL_REPORT((BUILDER__).context(), NAME__, NODE__->id(), EINFO__)
 
 #endif

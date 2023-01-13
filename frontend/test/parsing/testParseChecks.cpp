@@ -38,8 +38,8 @@ buildErrorStr(const char* file, int line, const char* msg) {
   return ret;
 }
 
-static void displayErrors(Context* ctx, const BuilderResult& br) {
-  for (const auto& err : br.errors()) {
+static void displayErrors(Context* ctx, ErrorGuard& guard) {
+  for (const auto& err : guard.errors()) {
     auto loc = err->location(ctx);
     auto out = buildErrorStr(loc.path().c_str(), loc.firstLine(),
                              err->message().c_str());
@@ -47,12 +47,12 @@ static void displayErrors(Context* ctx, const BuilderResult& br) {
   }
 }
 
-static void assertErrorMatches(Context* ctx, const BuilderResult& br,
+static void assertErrorMatches(Context* ctx, ErrorGuard& guard,
                                int idx,
                                const char* file,
                                int line,
                                const char* msg) {
-  const auto& err = br.error(idx);
+  const auto& err = guard.error(idx);
   auto loc = err->location(ctx);
   auto output = buildErrorStr(loc.path().c_str(), loc.firstLine(),
                               err->message().c_str());
@@ -63,65 +63,73 @@ static void assertErrorMatches(Context* ctx, const BuilderResult& br,
 static void test0(void) {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
   std::string text =
     R""""(
     var x: [?d] int;
     )"""";
   auto path = UniqueString::get(ctx, "test0.chpl");
   setFileText(ctx, path, text);
-  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
-  assert(br.numErrors() == 1);
-  displayErrors(ctx, br);
-  assertErrorMatches(ctx, br, 0, "test0.chpl", 2,
+  parseFileToBuilderResult(ctx, path, UniqueString());
+
+  assert(guard.numErrors() == 1);
+  displayErrors(ctx, guard);
+  assertErrorMatches(ctx, guard, 0, "test0.chpl", 2,
                      "domain query expressions may currently only be used "
                      "in formal argument types");
+  guard.clearErrors();
 }
 
 static void test1(void) {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
   std::string text =
     R""""(
     foo(bar=0, bar=1);
     )"""";
   auto path = UniqueString::get(ctx, "test1.chpl");
   setFileText(ctx, path, text);
-  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResult(ctx, path, UniqueString());
 
-  assert(br.numErrors() == 1);
-  displayErrors(ctx, br);
-  assertErrorMatches(ctx, br, 0, "test1.chpl", 2,
+  assert(guard.numErrors() == 1);
+  displayErrors(ctx, guard);
+  assertErrorMatches(ctx, guard, 0, "test1.chpl", 2,
                      "the named argument 'bar' is used more than once in "
                      "the same function call");
+  guard.clearErrors();
 }
 
 static void test2(void) {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
   std::string text =
     R""""(
     var x = new owned shared borrowed unmanaged C();
     )"""";
   auto path = UniqueString::get(ctx, "test2.chpl");
   setFileText(ctx, path, text);
-  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResult(ctx, path, UniqueString());
 
-  assert(br.numErrors() == 3);
-  displayErrors(ctx, br);
-  assertErrorMatches(ctx, br, 0, "test2.chpl", 2,
+  assert(guard.numErrors() == 3);
+  displayErrors(ctx, guard);
+  assertErrorMatches(ctx, guard, 0, "test2.chpl", 2,
                      "type expression uses multiple memory management "
                      "strategies ('owned' and 'shared')");
-  assertErrorMatches(ctx, br, 1, "test2.chpl", 2,
+  assertErrorMatches(ctx, guard, 1, "test2.chpl", 2,
                      "type expression uses multiple memory management "
                      "strategies ('shared' and 'borrowed')");
-  assertErrorMatches(ctx, br, 2, "test2.chpl", 2,
+  assertErrorMatches(ctx, guard, 2, "test2.chpl", 2,
                      "type expression uses multiple memory management "
                      "strategies ('borrowed' and 'unmanaged')");
+  guard.clearErrors();
 }
 
 static void test3(void) {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
   std::string text =
     R""""(
     deinit(foo);
@@ -130,21 +138,23 @@ static void test3(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test3.chpl");
   setFileText(ctx, path, text);
-  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResult(ctx, path, UniqueString());
 
-  assert(br.numErrors() == 3);
-  displayErrors(ctx, br);
-  assertErrorMatches(ctx, br, 0, "test3.chpl", 2,
+  assert(guard.numErrors() == 3);
+  displayErrors(ctx, guard);
+  assertErrorMatches(ctx, guard, 0, "test3.chpl", 2,
                      "direct calls to deinit() are not allowed");
-  assertErrorMatches(ctx, br, 1, "test3.chpl", 3,
+  assertErrorMatches(ctx, guard, 1, "test3.chpl", 3,
                      "direct calls to deinit() are not allowed");
-  assertErrorMatches(ctx, br, 2, "test3.chpl", 4,
+  assertErrorMatches(ctx, guard, 2, "test3.chpl", 4,
                      "direct calls to deinit() are not allowed");
+  guard.clearErrors();
 }
 
 static void test4(void) {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
   std::string text =
     R""""(
     private class C {}
@@ -166,41 +176,43 @@ static void test4(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test4.chpl");
   setFileText(ctx, path, text);
-  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResult(ctx, path, UniqueString());
 
-  assert(br.numErrors() == 10);
-  displayErrors(ctx, br);
-  assertErrorMatches(ctx, br, 0, "test4.chpl", 2,
+  assert(guard.numErrors() == 10);
+  displayErrors(ctx, guard);
+  assertErrorMatches(ctx, guard, 0, "test4.chpl", 2,
                      "can't apply private to types yet");
-  assertErrorMatches(ctx, br, 1, "test4.chpl", 3,
+  assertErrorMatches(ctx, guard, 1, "test4.chpl", 3,
                      "can't apply private to types yet");
-  assertErrorMatches(ctx, br, 2, "test4.chpl", 4,
+  assertErrorMatches(ctx, guard, 2, "test4.chpl", 4,
                      "can't apply private to types yet");
-  assertErrorMatches(ctx, br, 3, "test4.chpl", 6,
+  assertErrorMatches(ctx, guard, 3, "test4.chpl", 6,
                      "private declarations within function bodies "
                      "are meaningless");
-  assertErrorMatches(ctx, br, 4, "test4.chpl", 9,
+  assertErrorMatches(ctx, guard, 4, "test4.chpl", 9,
                      "can't apply private to the fields or methods of "
                      "a class or record yet");
-  assertErrorMatches(ctx, br, 5, "test4.chpl", 10,
+  assertErrorMatches(ctx, guard, 5, "test4.chpl", 10,
                      "can't apply private to the fields or methods of "
                      "a class or record yet");
-  assertErrorMatches(ctx, br, 6, "test4.chpl", 12,
+  assertErrorMatches(ctx, guard, 6, "test4.chpl", 12,
                      "can't apply private to the fields or methods of "
                      "a class or record yet");
-  assertErrorMatches(ctx, br, 7, "test4.chpl", 14,
+  assertErrorMatches(ctx, guard, 7, "test4.chpl", 14,
                      "private declarations within nested blocks are "
                      "meaningless");
-  assertErrorMatches(ctx, br, 8, "test4.chpl", 16,
+  assertErrorMatches(ctx, guard, 8, "test4.chpl", 16,
                      "private declarations are meaningless outside of "
                      "module level declarations");
-  assertErrorMatches(ctx, br, 9, "test4.chpl", 17,
+  assertErrorMatches(ctx, guard, 9, "test4.chpl", 17,
                      "can't apply private to types yet");
+  guard.clearErrors();
 }
 
 static void test5(void) {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
   std::string text =
     R""""(
     const x = noinit;
@@ -208,21 +220,23 @@ static void test5(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test5.chpl");
   setFileText(ctx, path, text);
-  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResult(ctx, path, UniqueString());
 
-  assert(br.numErrors() == 2);
-  displayErrors(ctx, br);
-  assertErrorMatches(ctx, br, 0, "test5.chpl", 2,
+  assert(guard.numErrors() == 2);
+  displayErrors(ctx, guard);
+  assertErrorMatches(ctx, guard, 0, "test5.chpl", 2,
                      "const variables specified with noinit must be "
                      "explicitly initialized");
-  assertErrorMatches(ctx, br, 1, "test5.chpl", 3,
+  assertErrorMatches(ctx, guard, 1, "test5.chpl", 3,
                      "const variables specified with noinit must be "
                      "explicitly initialized");
+  guard.clearErrors();
 }
 
 static void test6(void) {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
   std::string text =
     R""""(
     proc foo() {
@@ -234,61 +248,67 @@ static void test6(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test6.chpl");
   setFileText(ctx, path, text);
-  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResult(ctx, path, UniqueString());
 
-  assert(br.numErrors() == 4);
-  displayErrors(ctx, br);
-  assertErrorMatches(ctx, br, 0, "test6.chpl", 3,
+  assert(guard.numErrors() == 4);
+  displayErrors(ctx, guard);
+  assertErrorMatches(ctx, guard, 0, "test6.chpl", 3,
                      "configuration constants are allowed only at module "
                      "scope");
-  assertErrorMatches(ctx, br, 1, "test6.chpl", 4,
+  assertErrorMatches(ctx, guard, 1, "test6.chpl", 4,
                      "configuration constants are allowed only at module "
                      "scope");
-  assertErrorMatches(ctx, br, 2, "test6.chpl", 5,
+  assertErrorMatches(ctx, guard, 2, "test6.chpl", 5,
                      "configuration parameters are allowed only at module "
                      "scope");
-  assertErrorMatches(ctx, br, 3, "test6.chpl", 6,
+  assertErrorMatches(ctx, guard, 3, "test6.chpl", 6,
                      "configuration variables are allowed only at module "
                      "scope");
+  guard.clearErrors();
 }
 
 static void test7(void) {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
   std::string text =
     R""""(
     export var x = 0;
     )"""";
   auto path = UniqueString::get(ctx, "test7.chpl");
   setFileText(ctx, path, text);
-  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResult(ctx, path, UniqueString());
 
-  assert(br.numErrors() == 1);
-  displayErrors(ctx, br);
-  assertErrorMatches(ctx, br, 0, "test7.chpl", 2,
+  assert(guard.numErrors() == 1);
+  displayErrors(ctx, guard);
+  assertErrorMatches(ctx, guard, 0, "test7.chpl", 2,
                      "export variables are not yet supported");
+  guard.clearErrors();
 }
 
 static void test8(void) {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
   std::string text =
     R""""(
     proc emptyBody();
     )"""";
   auto path = UniqueString::get(ctx, "test8.chpl");
   setFileText(ctx, path, text);
-  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResult(ctx, path, UniqueString());
 
-  assert(br.numErrors() == 1);
-  displayErrors(ctx, br);
-  assertErrorMatches(ctx, br, 0, "test8.chpl", 2,
+  assert(guard.numErrors() == 1);
+  displayErrors(ctx, guard);
+  assertErrorMatches(ctx, guard, 0, "test8.chpl", 2,
                      "no-op procedures are only legal for extern functions");
+  guard.clearErrors();
 }
 
 static void test9(void) {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
   std::string text =
     R""""(
     extern proc shouldNotHaveBody() { writeln(0); }
@@ -297,40 +317,44 @@ static void test9(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test9.chpl");
   setFileText(ctx, path, text);
-  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResult(ctx, path, UniqueString());
 
-  assert(br.numErrors() == 4);
-  displayErrors(ctx, br);
-  assertErrorMatches(ctx, br, 0, "test9.chpl", 2,
+  assert(guard.numErrors() == 4);
+  displayErrors(ctx, guard);
+  assertErrorMatches(ctx, guard, 0, "test9.chpl", 2,
                      "extern functions cannot have a body");
-  assertErrorMatches(ctx, br, 1, "test9.chpl", 3,
+  assertErrorMatches(ctx, guard, 1, "test9.chpl", 3,
                      "extern functions cannot throw errors");
-  assertErrorMatches(ctx, br, 2, "test9.chpl", 4,
+  assertErrorMatches(ctx, guard, 2, "test9.chpl", 4,
                      "extern functions cannot have a body");
-  assertErrorMatches(ctx, br, 3, "test9.chpl", 4,
+  assertErrorMatches(ctx, guard, 3, "test9.chpl", 4,
                      "extern functions cannot throw errors");
+  guard.clearErrors();
 }
 
 static void test10(void) {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
   std::string text =
     R""""(
     export proc foo() where false {}
     )"""";
   auto path = UniqueString::get(ctx, "test10.chpl");
   setFileText(ctx, path, text);
-  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResult(ctx, path, UniqueString());
 
-  assert(br.numErrors() == 1);
-  displayErrors(ctx, br);
-  assertErrorMatches(ctx, br, 0, "test10.chpl", 2,
+  assert(guard.numErrors() == 1);
+  displayErrors(ctx, guard);
+  assertErrorMatches(ctx, guard, 0, "test10.chpl", 2,
                      "exported functions cannot have where clauses");
+  guard.clearErrors();
 }
 
 static void test11(void) {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
   std::string text =
     R""""(
     class C {
@@ -340,19 +364,21 @@ static void test11(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test11.chpl");
   setFileText(ctx, path, text);
-  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResult(ctx, path, UniqueString());
 
-  assert(br.numErrors() == 2);
-  displayErrors(ctx, br);
-  assertErrorMatches(ctx, br, 0, "test11.chpl", 3,
+  assert(guard.numErrors() == 2);
+  displayErrors(ctx, guard);
+  assertErrorMatches(ctx, guard, 0, "test11.chpl", 3,
                      "method 'this' must have parentheses");
-  assertErrorMatches(ctx, br, 1, "test11.chpl", 4,
+  assertErrorMatches(ctx, guard, 1, "test11.chpl", 4,
                      "method 'these' must have parentheses");
+  guard.clearErrors();
 }
 
 static void test12(void) {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
   std::string text =
     R""""(
     proc f1(out x: int) type {}
@@ -362,28 +388,30 @@ static void test12(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test12.chpl");
   setFileText(ctx, path, text);
-  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResult(ctx, path, UniqueString());
 
-  assert(br.numErrors() == 4);
-  displayErrors(ctx, br);
-  assertErrorMatches(ctx, br, 0, "test12.chpl", 2,
+  assert(guard.numErrors() == 4);
+  displayErrors(ctx, guard);
+  assertErrorMatches(ctx, guard, 0, "test12.chpl", 2,
                      "cannot use 'out' intent in a function returning "
                      "with 'type' intent");
-  assertErrorMatches(ctx, br, 1, "test12.chpl", 3,
+  assertErrorMatches(ctx, guard, 1, "test12.chpl", 3,
                      "cannot use 'inout' intent in a function returning "
                      "with 'type' intent");
-  assertErrorMatches(ctx, br, 2, "test12.chpl", 4,
+  assertErrorMatches(ctx, guard, 2, "test12.chpl", 4,
                      "cannot use 'out' intent in a function returning "
                      "with 'param' intent");
-  assertErrorMatches(ctx, br, 3, "test12.chpl", 5,
+  assertErrorMatches(ctx, guard, 3, "test12.chpl", 5,
                      "cannot use 'inout' intent in a function returning "
                      "with 'param' intent");
+  guard.clearErrors();
 }
 
 // TODO: Cannot get the internal/bundled module stuff to work properly.
 static void test13(void) {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
 
   // Turn on the --warn-unstable flag for some warnings.
   CompilerFlags list;
@@ -402,33 +430,35 @@ static void test13(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test13.chpl");
   setFileText(ctx, path, text);
-  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResult(ctx, path, UniqueString());
 
-  assert(br.numErrors() == 6);
-  displayErrors(ctx, br);
-  assertErrorMatches(ctx, br, 0, "test13.chpl", 2,
+  assert(guard.numErrors() == 6);
+  displayErrors(ctx, guard);
+  assertErrorMatches(ctx, guard, 0, "test13.chpl", 2,
                      "symbol names with leading underscores (_bad1) "
                      "are unstable");
-  assertErrorMatches(ctx, br, 1, "test13.chpl", 3,
+  assertErrorMatches(ctx, guard, 1, "test13.chpl", 3,
                      "symbol names with leading underscores (_bad2) "
                      "are unstable");
-  assertErrorMatches(ctx, br, 2, "test13.chpl", 4,
+  assertErrorMatches(ctx, guard, 2, "test13.chpl", 4,
                      "symbol names with leading underscores (_bad3) "
                      "are unstable");
-  assertErrorMatches(ctx, br, 3, "test13.chpl", 5,
+  assertErrorMatches(ctx, guard, 3, "test13.chpl", 5,
                      "symbol names beginning with 'chpl_' (chpl_bad4) "
                      "are unstable");
-  assertErrorMatches(ctx, br, 4, "test13.chpl", 6,
+  assertErrorMatches(ctx, guard, 4, "test13.chpl", 6,
                      "symbol names beginning with 'chpl_' (chpl_bad5) "
                      "are unstable");
-  assertErrorMatches(ctx, br, 5, "test13.chpl", 7,
+  assertErrorMatches(ctx, guard, 5, "test13.chpl", 7,
                      "symbol names beginning with 'chpl_' (chpl_bad6) "
                      "are unstable");
+  guard.clearErrors();
 }
 
 static void test14(void) {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
 
   // Turn on the --warn-unstable flag for some warnings.
   CompilerFlags list;
@@ -441,20 +471,22 @@ static void test14(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test14.chpl");
   setFileText(ctx, path, text);
-  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResult(ctx, path, UniqueString());
 
-  assert(br.numErrors() == 1);
-  displayErrors(ctx, br);
-  assertErrorMatches(ctx, br, 0, "test14.chpl", 2,
+  assert(guard.numErrors() == 1);
+  displayErrors(ctx, guard);
+  assertErrorMatches(ctx, guard, 0, "test14.chpl", 2,
                      "unions are currently unstable and are expected "
                      "to change in ways that will break their "
                      "current uses");
+  guard.clearErrors();
 }
 
 // test that operators must have valid operator names
 static void test15(void) {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
   std::string text =
     R""""(
       record R {
@@ -464,18 +496,20 @@ static void test15(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test15.chpl");
   setFileText(ctx, path, text);
-  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResult(ctx, path, UniqueString());
 
-  assert(br.numErrors() == 1);
-  displayErrors(ctx, br);
-  assertErrorMatches(ctx, br, 0, "test15.chpl", 5,
+  assert(guard.numErrors() == 1);
+  displayErrors(ctx, guard);
+  assertErrorMatches(ctx, guard, 0, "test15.chpl", 5,
                      "'notAnOpName' is not a legal operator name");
+  guard.clearErrors();
 }
 
 // test that non-operator procs cannot have operator names
 static void test16(void) {
   Context context;
   Context* ctx = &context;
+  ErrorGuard guard(ctx);
   std::string text =
     R""""(
       record R {
@@ -485,12 +519,13 @@ static void test16(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test16.chpl");
   setFileText(ctx, path, text);
-  auto& br = parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResult(ctx, path, UniqueString());
 
-  assert(br.numErrors() == 1);
-  displayErrors(ctx, br);
-  assertErrorMatches(ctx, br, 0, "test16.chpl", 5,
+  assert(guard.numErrors() == 1);
+  displayErrors(ctx, guard);
+  assertErrorMatches(ctx, guard, 0, "test16.chpl", 5,
                      "operators cannot be declared without the operator keyword");
+  guard.clearErrors();
 }
 
 int main() {

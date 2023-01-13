@@ -80,7 +80,7 @@ class Context {
   class ErrorHandler {
    public:
     virtual ~ErrorHandler() = default;
-    virtual void report(Context* context, const ErrorBase* err) = 0;
+    virtual void report(Context* context, owned<ErrorBase> err) = 0;
   };
 
  private:
@@ -90,8 +90,8 @@ class Context {
    public:
     DefaultErrorHandler() = default;
     ~DefaultErrorHandler() = default;
-    virtual void report(Context* context, const ErrorBase* err) override {
-      defaultReportError(context, err);
+    virtual void report(Context* context, owned<ErrorBase> err) override {
+      defaultReportError(context, err.get());
     }
   };
 
@@ -100,9 +100,7 @@ class Context {
     = toOwned<ErrorHandler>(new DefaultErrorHandler());
 
   // Report an error to the current handler.
-  void reportError(Context* context, const ErrorBase* err) {
-    handler_->report(context, err);
-  }
+  void reportError(Context* context, owned<ErrorBase> err);
 
   // The CHPL_HOME variable
   const std::string chplHome_;
@@ -510,16 +508,15 @@ class Context {
 
     If no query is currently running, it just reports the error.
 
-    Returns the passed-in error for convenience.
    */
-  const ErrorBase* report(const ErrorBase* error);
+  void report(owned<ErrorBase> error);
 
   /**
     Note an error for the currently running query.
     This is a convenience overload.
     This version takes in a Location and a printf-style format string.
    */
-  const ErrorBase* error(Location loc, const char* fmt, ...)
+  void error(Location loc, const char* fmt, ...)
   #ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
@@ -533,7 +530,7 @@ class Context {
     This version takes in an ID and a printf-style format string.
     The ID is used to compute a Location using parsing::locateId.
    */
-  const ErrorBase* error(ID id, const char* fmt, ...)
+  void error(ID id, const char* fmt, ...)
   #ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
@@ -547,7 +544,7 @@ class Context {
     This version takes in an AST node and a printf-style format string.
     The AST node is used to compute a Location by using a parsing::locateAst.
    */
-  const ErrorBase* error(const uast::AstNode* ast, const char* fmt, ...)
+  void error(const uast::AstNode* ast, const char* fmt, ...)
   #ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
@@ -563,7 +560,7 @@ class Context {
     The AST node is used to compute a Location by using a parsing::locateAst.
     The TypedFnSignature is used to print out instantiation information.
    */
-  const ErrorBase* error(const resolution::TypedFnSignature* inFn,
+  void error(const resolution::TypedFnSignature* inFn,
              const uast::AstNode* ast,
              const char* fmt, ...)
   #ifndef DOXYGEN
