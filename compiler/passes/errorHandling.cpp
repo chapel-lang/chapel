@@ -218,6 +218,8 @@ private:
                             BlockStmt* body);
   void exitForallLoop(Stmt* node);
 
+  void checkThrowingFuncInInit(CallExpr* node, bool insideTry);
+
   ErrorHandlingVisitor();
 };
 
@@ -362,6 +364,8 @@ bool ErrorHandlingVisitor::enterCallExpr(CallExpr* node) {
 
   if (calledFn != NULL) {
     if (calledFn->throwsError()) {
+      checkThrowingFuncInInit(node, insideTry);
+
       SET_LINENO(node);
 
       VarSymbol* errorVar    = NULL;
@@ -643,6 +647,33 @@ bool ErrorHandlingVisitor::enterCondStmt(CondStmt* node) {
   } else {
     return true; // Normal behavior
   }
+}
+
+void ErrorHandlingVisitor::checkThrowingFuncInInit(CallExpr* node,
+                                                   bool insideTry) {
+  if (state != NULL) {
+    if (insideTry) {
+      TryInfo info = tryStack.top();
+      if (info.tryStmt->tryBang()) {
+        if (info.tryStmt->_catches.length != 0) {
+          if (!state->isPhase2()) {
+            USR_FATAL_CONT(node,
+                           "cannot call a throwing function in a try! with catch clauses before phase 2");
+          }
+        }
+      } else {
+        if (!state->isPhase2()) {
+          USR_FATAL_CONT(node,
+                         "cannot call a throwing function outside of a try! before phase 2");
+        }
+      }
+    } else {
+      if (!state->isPhase2()) {
+        USR_FATAL_CONT(node,
+                       "cannot call a throwing function outside of a try! before phase 2");
+      }
+    }
+  } // not in an initializer
 }
 
 
