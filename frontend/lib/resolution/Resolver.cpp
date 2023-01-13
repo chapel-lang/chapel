@@ -1998,6 +1998,8 @@ bool Resolver::enter(const NamedDecl* decl) {
 
     for (auto& borrowedIds : vec) {
       for (auto id : borrowedIds) {
+        if (parsing::idIsImplicitThisFormal(context, id)) continue;
+
         if (id != decl->id()) conflictingIds.push_back(id);
         auto ast = parsing::idToAst(context, id);
         areIdsAllFunctions &= ast->isFunction();
