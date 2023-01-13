@@ -1982,7 +1982,9 @@ bool Resolver::enter(const NamedDecl* decl) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
+  // TODO: Need to adjust lookup so that it can skip shadow scopes.
   LookupConfig config = LOOKUP_IMPORT_AND_USE;
+  config |= LOOKUP_SKIP_PRIVATE_VIS;
   config |= LOOKUP_DECLS;
 
   const Scope* receiverScope = nullptr;
