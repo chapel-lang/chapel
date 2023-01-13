@@ -26,8 +26,6 @@ using namespace chpl;
 const uast::BuilderResult&
 parseAndReportErrors(Context* context, UniqueString path) {
   auto& ret = parsing::parseFileToBuilderResult(context, path, {});
-  // TODO should no longer need to do this since they get logged right away
-  // for (auto e : ret.errors()) context->report(e);
   return ret;
 }
 

@@ -188,7 +188,6 @@ void Builder::createImplicitModuleIfNeeded() {
     topLevelExpressions_.push_back(std::move(ownedModule));
 
     // emit warnings as needed
-    // TODO no longer saving the errors but logging them directly
     if (firstUseImportOrRequire && !containsOther && nModules == 1) {
       CHPL_REPORT(context(), ImplicitFileModule,
                   firstUseImportOrRequire, lastModule, implicitModule);
@@ -400,7 +399,6 @@ void Builder::checkConfigPreviouslyUsed(const Variable* var, std::string& config
   useConfigSetting(context(), configNameUsed, var->id());
   auto usedId = nameToConfigSettingId(context(), configNameUsed);
 
-  // TODO no longer saving the errors but logging them directly
   if (usedId != var->id()) {
     CHPL_REPORT(context(), AmbiguousConfigName, configNameUsed, var, usedId);
   }
@@ -445,7 +443,6 @@ void Builder::lookupConfigSettingsForVar(Variable* var, pathVecT& pathVec, std::
       if (!configMatched.first.empty() &&
           configMatched.first != configPair.first) {
 
-        // TODO no longer saving the errors but logging them directly
         CHPL_REPORT(context(), AmbiguousConfigSet,
                     var, configMatched.first, configPair.first);
       }

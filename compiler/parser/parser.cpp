@@ -929,10 +929,6 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
     chpl::parsing::parseFileToBuilderResult(gContext, path, emptySymbolPath);
   gFilenameLookup.push_back(path.c_str());
 
-  // Manually report any parsing errors collected by the builder.
-  // TODO skipping this now, since the builder shouldn't have any errors
-  // for (auto e : builderResult.errors()) gContext->report(e);
-
   if (dynoRealizeErrors()) USR_STOP();
 
   ModuleSymbol* lastModSym = nullptr;

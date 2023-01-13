@@ -184,12 +184,6 @@ const ModuleVec& parse(Context* context, UniqueString path,
   const BuilderResult& p = parseFileToBuilderResult(context, path,
                                                     parentSymbolPath);
 
-  // Report any errors encountered to the context.
-  // TODO: have these not been reported already?
-  // for (auto& e : p.errors())
-  //   if (e != nullptr)
-  //     context->report(e);
-
   // Compute a vector of Modules
   ModuleVec result;
   for (auto topLevelExpression : p.topLevelExpressions()) {
