@@ -218,7 +218,7 @@ private:
                             BlockStmt* body);
   void exitForallLoop(Stmt* node);
 
-  void checkThrowingFuncInInit(CallExpr* node, bool insideTry);
+  void checkThrowingFuncInInit(CallExpr* node, bool insideTryStack);
 
   ErrorHandlingVisitor();
 };
@@ -650,9 +650,9 @@ bool ErrorHandlingVisitor::enterCondStmt(CondStmt* node) {
 }
 
 void ErrorHandlingVisitor::checkThrowingFuncInInit(CallExpr* node,
-                                                   bool insideTry) {
+                                                   bool insideTryStack) {
   if (state != NULL) {
-    if (insideTry) {
+    if (insideTryStack && node->tryTag != TRY_TAG_IN_TRYBANG) {
       TryInfo info = tryStack.top();
       if (info.tryStmt->tryBang()) {
         if (info.tryStmt->_catches.length != 0) {
@@ -668,7 +668,7 @@ void ErrorHandlingVisitor::checkThrowingFuncInInit(CallExpr* node,
         }
       }
     } else {
-      if (!state->isPhase2()) {
+      if (!state->isPhase2() && node->tryTag != TRY_TAG_IN_TRYBANG) {
         USR_FATAL_CONT(node,
                        "cannot call a throwing function outside of a try! before phase 2");
       }
