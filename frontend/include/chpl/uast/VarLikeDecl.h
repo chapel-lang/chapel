@@ -66,7 +66,7 @@ class VarLikeDecl : public NamedDecl {
 
   VarLikeDecl(AstTag tag, Deserializer& des)
     : NamedDecl(tag, des) {
-    storageKind_ = des.read<IntentList>();
+    storageKind_ = des.read<Qualifier>();
     typeExpressionChildNum_ = des.read<int8_t>();
     initExpressionChildNum_ = des.read<int8_t>();
   }
