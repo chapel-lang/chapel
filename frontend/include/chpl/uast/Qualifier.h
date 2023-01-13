@@ -112,7 +112,7 @@ const char* qualifierToString(Qualifier intent);
 
 } // end namespace uast
 
-DECLARE_SERDE_ENUM(uast::IntentList, uint8_t);
+DECLARE_SERDE_ENUM(uast::Qualifier, uint8_t);
 
 } // end namespace chpl
 
