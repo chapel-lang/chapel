@@ -51,10 +51,10 @@ class RealLiteral final : public NumericLiteral<double, types::RealParam> {
                                   double value, UniqueString text);
 
   void serialize(Serializer& ser) const override {
-    NumericLiteral::serializePart(ser);
+    NumericLiteral::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(RealLiteral);
+  DECLARE_STATIC_DESERIALIZE(RealLiteral);
 };
 
 

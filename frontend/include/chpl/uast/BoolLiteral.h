@@ -71,10 +71,10 @@ class BoolLiteral final : public Literal {
   }
 
   void serialize(Serializer& ser) const override {
-    Literal::serializePart(ser);
+    Literal::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(BoolLiteral);
+  DECLARE_STATIC_DESERIALIZE(BoolLiteral);
 
 };
 

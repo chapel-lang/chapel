@@ -174,12 +174,12 @@ class Implements final : public AstNode {
                                  bool isExpressionLevel);
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
     ser(typeIdentChildNum_);
     ser(isExpressionLevel_);
   }
 
-  DECLARE_STATIC_DES(Implements);
+  DECLARE_STATIC_DESERIALIZE(Implements);
 
 };
 

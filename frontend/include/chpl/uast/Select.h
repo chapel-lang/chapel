@@ -117,11 +117,11 @@ class Select final : public AstNode {
   }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
     ser(numWhenStmts_);
   }
 
-  DECLARE_STATIC_DES(Select);
+  DECLARE_STATIC_DESERIALIZE(Select);
 
 };
 

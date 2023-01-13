@@ -77,10 +77,10 @@ class TypeQuery final : public NamedDecl {
                                 UniqueString name);
 
   void serialize(Serializer& ser) const override {
-    NamedDecl::serializePart(ser);
+    NamedDecl::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(TypeQuery);
+  DECLARE_STATIC_DESERIALIZE(TypeQuery);
 };
 
 

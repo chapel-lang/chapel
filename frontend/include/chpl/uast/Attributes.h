@@ -153,7 +153,7 @@ class Attributes final : public AstNode {
   }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
 
     ser(pragmas_);
     ser(isDeprecated_);
@@ -162,7 +162,7 @@ class Attributes final : public AstNode {
     ser(unstableMessage_);
   }
 
-  DECLARE_STATIC_DES(Attributes);
+  DECLARE_STATIC_DESERIALIZE(Attributes);
 
 };
 

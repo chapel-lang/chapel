@@ -111,8 +111,8 @@ class Loop: public AstNode {
     return blockStyle_;
   }
 
-  void serializePart(Serializer& ser) const {
-    AstNode::serializePart(ser);
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
     ser(blockStyle_);
     ser(loopBodyChildNum_);
   }

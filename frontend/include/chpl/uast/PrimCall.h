@@ -86,11 +86,11 @@ class PrimCall final : public Call {
   PrimitiveTag prim() const { return prim_; }
 
   void serialize(Serializer& ser) const override {
-    Call::serializePart(ser);
+    Call::serialize(ser);
     ser(prim_);
   }
 
-  DECLARE_STATIC_DES(PrimCall);
+  DECLARE_STATIC_DESERIALIZE(PrimCall);
 };
 
 

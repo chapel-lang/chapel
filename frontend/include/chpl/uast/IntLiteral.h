@@ -54,10 +54,10 @@ class IntLiteral final : public NumericLiteral<int64_t, types::IntParam> {
                                  int64_t value, UniqueString text);
 
   void serialize(Serializer& ser) const override {
-    NumericLiteral::serializePart(ser);
+    NumericLiteral::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(IntLiteral);
+  DECLARE_STATIC_DESERIALIZE(IntLiteral);
 };
 
 

@@ -136,12 +136,12 @@ class FnCall : public Call {
   }
 
   void serialize(Serializer& ser) const override {
-    Call::serializePart(ser);
+    Call::serialize(ser);
     ser(actualNames_);
     ser(callUsedSquareBrackets_);
   }
 
-  DECLARE_STATIC_DES(FnCall);
+  DECLARE_STATIC_DESERIALIZE(FnCall);
 };
 
 

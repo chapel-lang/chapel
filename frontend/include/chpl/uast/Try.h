@@ -219,14 +219,14 @@ class Try final : public AstNode {
   }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
     ser(numHandlers_);
     ser(containsBlock_);
     ser(isExpressionLevel_);
     ser(isTryBang_);
   }
 
-  DECLARE_STATIC_DES(Try);
+  DECLARE_STATIC_DESERIALIZE(Try);
 
 };
 

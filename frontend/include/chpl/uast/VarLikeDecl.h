@@ -126,8 +126,8 @@ class VarLikeDecl : public NamedDecl {
     }
   }
 
-  void serializePart(Serializer& ser) const {
-    NamedDecl::serializePart(ser);
+  void serialize(Serializer& ser) const override {
+    NamedDecl::serialize(ser);
     ser(storageKind_);
     ser(typeExpressionChildNum_);
     ser(initExpressionChildNum_);

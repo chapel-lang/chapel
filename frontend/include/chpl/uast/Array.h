@@ -93,10 +93,10 @@ class Array final : public AstNode {
   }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(Array);
+  DECLARE_STATIC_DESERIALIZE(Array);
 
 };
 

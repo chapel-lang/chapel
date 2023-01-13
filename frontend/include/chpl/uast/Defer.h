@@ -79,10 +79,10 @@ class Defer final : public SimpleBlockLike {
                             AstList stmts);
 
   void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serializePart(ser);
+    SimpleBlockLike::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(Defer);
+  DECLARE_STATIC_DESERIALIZE(Defer);
 
 };
 

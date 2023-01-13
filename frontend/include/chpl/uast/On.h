@@ -85,10 +85,10 @@ class On final : public SimpleBlockLike {
   }
 
   void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serializePart(ser);
+    SimpleBlockLike::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(On);
+  DECLARE_STATIC_DESERIALIZE(On);
 
 };
 

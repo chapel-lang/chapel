@@ -134,8 +134,8 @@ class IndexableLoop : public Loop {
     return isExpressionLevel_;
   }
 
-  void serializePart(Serializer& ser) const {
-    Loop::serializePart(ser);
+  void serialize(Serializer& ser) const override {
+    Loop::serialize(ser);
     ser(indexChildNum_);
     ser(iterandChildNum_);
     ser(withClauseChildNum_);

@@ -175,12 +175,12 @@ class VisibilityClause final : public AstNode {
   static const char* limitationKindToString(LimitationKind kind);
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
     ser(limitationKind_);
     ser.write<int32_t>(numLimitations_);
   }
 
-  DECLARE_STATIC_DES(VisibilityClause);
+  DECLARE_STATIC_DESERIALIZE(VisibilityClause);
 
 };
 

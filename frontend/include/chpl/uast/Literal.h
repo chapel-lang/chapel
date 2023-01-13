@@ -63,8 +63,8 @@ class Literal : public AstNode {
     return value_;
   }
 
-  void serializePart(Serializer& ser) const {
-    AstNode::serializePart(ser);
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
     value_->serialize(ser);
   }
 };

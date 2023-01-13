@@ -53,10 +53,10 @@ class StringLiteral final : public StringLikeLiteral {
                                     StringLikeLiteral::QuoteStyle quotes);
 
   void serialize(Serializer& ser) const override {
-    StringLikeLiteral::serializePart(ser);
+    StringLikeLiteral::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(StringLiteral);
+  DECLARE_STATIC_DESERIALIZE(StringLiteral);
 };
 
 

@@ -82,11 +82,11 @@ class ExternBlock final : public AstNode {
   }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
     ser(code_);
   }
 
-  DECLARE_STATIC_DES(ExternBlock);
+  DECLARE_STATIC_DESERIALIZE(ExternBlock);
 
 };
 

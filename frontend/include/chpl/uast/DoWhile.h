@@ -103,11 +103,11 @@ class DoWhile final : public Loop {
   }
 
   void serialize(Serializer& ser) const override {
-    Loop::serializePart(ser);
+    Loop::serialize(ser);
     ser(conditionChildNum_);
   }
 
-  DECLARE_STATIC_DES(DoWhile);
+  DECLARE_STATIC_DESERIALIZE(DoWhile);
 
 };
 

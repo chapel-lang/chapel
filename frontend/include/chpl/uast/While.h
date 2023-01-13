@@ -102,11 +102,11 @@ class While final : public Loop {
   }
 
   void serialize(Serializer& ser) const override {
-    Loop::serializePart(ser);
+    Loop::serialize(ser);
     ser(conditionChildNum_);
   }
 
-  DECLARE_STATIC_DES(While);
+  DECLARE_STATIC_DESERIALIZE(While);
 
 };
 

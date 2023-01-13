@@ -115,10 +115,10 @@ class Formal final : public VarLikeDecl {
   }
 
   void serialize(Serializer& ser) const override {
-    VarLikeDecl::serializePart(ser);
+    VarLikeDecl::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(Formal);
+  DECLARE_STATIC_DESERIALIZE(Formal);
 
 };
 

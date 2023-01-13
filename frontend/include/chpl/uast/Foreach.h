@@ -87,10 +87,10 @@ class Foreach final : public IndexableLoop {
 
 
   void serialize(Serializer& ser) const override {
-    IndexableLoop::serializePart(ser);
+    IndexableLoop::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(Foreach);
+  DECLARE_STATIC_DESERIALIZE(Foreach);
 
 };
 

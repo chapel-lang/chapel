@@ -77,10 +77,10 @@ class Throw final : public AstNode {
   }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(Throw);
+  DECLARE_STATIC_DESERIALIZE(Throw);
 
 };
 

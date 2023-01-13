@@ -132,11 +132,11 @@ class Module final : public NamedDecl {
   static const char* moduleKindToString(Kind kind);
 
   void serialize(Serializer& ser) const override {
-    NamedDecl::serializePart(ser);
+    NamedDecl::serialize(ser);
     ser(kind_);
   }
 
-  DECLARE_STATIC_DES(Module);
+  DECLARE_STATIC_DESERIALIZE(Module);
 };
 
 

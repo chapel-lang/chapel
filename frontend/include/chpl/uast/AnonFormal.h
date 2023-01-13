@@ -122,11 +122,11 @@ class AnonFormal final : public AstNode {
   }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
     ser(intent_);
   }
 
-  DECLARE_STATIC_DES(AnonFormal);
+  DECLARE_STATIC_DESERIALIZE(AnonFormal);
 
 };
 

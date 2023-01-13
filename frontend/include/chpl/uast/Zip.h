@@ -57,10 +57,10 @@ class Zip final : public Call {
   static owned<Zip> build(Builder* builder, Location loc, AstList actuals);
 
   void serialize(Serializer& ser) const override {
-    Call::serializePart(ser);
+    Call::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(Zip);
+  DECLARE_STATIC_DESERIALIZE(Zip);
 
 };
 

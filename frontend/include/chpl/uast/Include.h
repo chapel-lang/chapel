@@ -112,13 +112,13 @@ class Include final : public AstNode {
   }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
     ser(visibility_);
     ser(isPrototype_);
     ser(name_);
   }
 
-  DECLARE_STATIC_DES(Include);
+  DECLARE_STATIC_DESERIALIZE(Include);
 
 };
 

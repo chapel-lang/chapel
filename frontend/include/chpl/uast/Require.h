@@ -87,10 +87,10 @@ class Require final : public AstNode {
   }
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(Require);
+  DECLARE_STATIC_DESERIALIZE(Require);
 
 };
 

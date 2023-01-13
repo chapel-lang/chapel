@@ -125,13 +125,13 @@ class Range final : public AstNode {
   static const char* opKindToString(OpKind kind);
 
   void serialize(Serializer& ser) const override {
-    AstNode::serializePart(ser);
+    AstNode::serialize(ser);
     ser(opKind_);
     ser(lowerBoundChildNum_);
     ser(upperBoundChildNum_);
   }
 
-  DECLARE_STATIC_DES(Range);
+  DECLARE_STATIC_DESERIALIZE(Range);
 
 };
 

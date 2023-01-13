@@ -95,8 +95,8 @@ class Call : public AstNode {
     }
   }
 
-  void serializePart(Serializer& ser) const {
-    AstNode::serializePart(ser);
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
     ser(hasCalledExpression_);
   }
 };
