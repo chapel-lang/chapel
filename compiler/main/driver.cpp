@@ -1353,16 +1353,12 @@ static void setupLLVMCodeGen() {
     fLlvmCodegen = false;
 }
 
-bool useDefaultEnv(std::string key) {
+bool useDefaultEnv(std::string key, bool isCrayPrgEnv) {
   // Check conditions for which default value should override argument provided
 
   // For Cray programming environments, we must infer CHPL_TARGET_CPU
-  // Note: When CHPL_TARGET_CPU is processed, CHPL_HOST_COMPILER is already
-  // set in envMap, due to the order of printchplenv output
-  if (key == "CHPL_TARGET_CPU") {
-    if (strstr(envMap["CHPL_TARGET_COMPILER"], "cray-prgenv") != NULL) {
-      return true;
-    }
+  if (key == "CHPL_TARGET_CPU" && isCrayPrgEnv) {
+    return true;
   }
 
   // Always use default env for internal variables that could include spaces
@@ -1391,10 +1387,20 @@ static void populateEnvMap() {
               err.message().c_str());
   }
 
+  // figure out if it's a Cray programing environment so we can infer
+  // CHPL_TARGET_CPU
+  bool isCrayPrgEnv = false;
+  {
+    std::string targetCompiler = chplEnvResult.get()["CHPL_TARGET_COMPILER"];
+    if (strstr(targetCompiler.c_str(), "cray-prgenv") != NULL) {
+      isCrayPrgEnv = true;
+    }
+  }
+
   for (auto kvPair : chplEnvResult.get()){
     if (envMap.find(kvPair.first) == envMap.end()) {
       envMap[kvPair.first] = strdup(kvPair.second.c_str());
-    } else if (useDefaultEnv(kvPair.first)) {
+    } else if (useDefaultEnv(kvPair.first, isCrayPrgEnv)) {
       envMap.erase(kvPair.first);
       envMap[kvPair.first] = strdup(kvPair.second.c_str());
     }
