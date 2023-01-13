@@ -209,18 +209,22 @@ static const char* initName(CallExpr* stmt) {
 
   // Not in a primitive
   if (stmt->baseExpr != NULL) {
-    SymExpr* base = toSymExpr(stmt->baseExpr);
-    INT_ASSERT(base); // Check my assumptions
+    if (SymExpr* base = toSymExpr(stmt->baseExpr)) {
 
-    // Call is to an initializer
-    if (strcmp(base->symbol()->name, "init") == 0 &&
-        stmt->numActuals() >= 1) {
-      SymExpr* firstArg = toSymExpr(stmt->get(1));
-      if (strcmp(firstArg->symbol()->name, "super") == 0 ||
-          strcmp(firstArg->symbol()->name, "super_tmp") == 0) {
-        retval = "super";
-      } else if (firstArg->symbol()->hasFlag(FLAG_ARG_THIS)) {
-        retval = "this";
+      // Call is to an initializer
+      if (strcmp(base->symbol()->name, "init") == 0 &&
+          stmt->numActuals() >= 1) {
+        SymExpr* firstArg = toSymExpr(stmt->get(1));
+        if (strcmp(firstArg->symbol()->name, "super") == 0 ||
+            strcmp(firstArg->symbol()->name, "super_tmp") == 0) {
+          retval = "super";
+        } else if (firstArg->symbol()->hasFlag(FLAG_ARG_THIS)) {
+          retval = "this";
+        }
+      }
+    } else if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(stmt->baseExpr)) {
+      if (strcmp(urse->unresolved, "init") == 0) {
+        INT_ASSERT(false); // This shouldn't happen
       }
     }
   }
