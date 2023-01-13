@@ -115,7 +115,7 @@ class Import final : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(visibility_);
+    ser.write(visibility_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Import);

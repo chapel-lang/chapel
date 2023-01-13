@@ -123,7 +123,7 @@ class AnonFormal final : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(intent_);
+    ser.write(intent_);
   }
 
   DECLARE_STATIC_DESERIALIZE(AnonFormal);

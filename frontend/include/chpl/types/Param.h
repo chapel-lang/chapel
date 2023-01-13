@@ -236,7 +236,7 @@ class Param {
     } \
     void serialize(Serializer& ser) const override { \
       Param::serialize(ser); \
-      ser(value_); \
+      ser.write(value_); \
     } \
     static const NAME* deserialize(Deserializer& des) { \
       VALTYPE val = des.read<VALTYPE>(); \
@@ -272,8 +272,8 @@ template<> struct stringify<chpl::types::Param::NoneValue> {
 
 template<> struct serialize<types::Param::ComplexDouble> {
   void operator()(Serializer& ser, types::Param::ComplexDouble val) const {
-    ser(val.re);
-    ser(val.im);
+    ser.write(val.re);
+    ser.write(val.im);
   }
 };
 

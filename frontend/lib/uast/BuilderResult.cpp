@@ -220,10 +220,10 @@ std::string BuilderResult::serialize(const char* dn) const {
 
 void BuilderResult::serialize(std::ostream& os) const {
   Serializer ser(os);
-  ser(magic);
-  ser(version);
+  ser.write(magic);
+  ser.write(version);
   const uint32_t numEntries = numTopLevelExpressions();
-  ser(numEntries);
+  ser.write(numEntries);
 
   for (auto ast : topLevelExpressions()) {
     ast->serialize(ser);

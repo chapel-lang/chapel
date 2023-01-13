@@ -113,8 +113,8 @@ class Loop: public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(blockStyle_);
-    ser(loopBodyChildNum_);
+    ser.write(blockStyle_);
+    ser.write(loopBodyChildNum_);
   }
 };
 

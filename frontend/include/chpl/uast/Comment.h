@@ -88,8 +88,8 @@ class Comment final : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(comment_);
-    ser(commentId_);
+    ser.write(comment_);
+    ser.write(commentId_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Comment);

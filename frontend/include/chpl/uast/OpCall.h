@@ -90,7 +90,7 @@ class OpCall final : public Call {
 
   void serialize(Serializer& ser) const override {
     Call::serialize(ser);
-    ser(op_);
+    ser.write(op_);
   }
 
   DECLARE_STATIC_DESERIALIZE(OpCall);

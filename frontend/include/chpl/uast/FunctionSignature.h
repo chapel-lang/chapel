@@ -177,14 +177,14 @@ class FunctionSignature final : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(kind_);
-    ser(returnIntent_);
-    ser(formalsChildNum_);
-    ser(thisFormalChildNum_);
-    ser(numFormals_);
-    ser(returnTypeChildNum_);
-    ser(throws_);
-    ser(isParenless_);
+    ser.write(kind_);
+    ser.write(returnIntent_);
+    ser.write(formalsChildNum_);
+    ser.write(thisFormalChildNum_);
+    ser.write(numFormals_);
+    ser.write(returnTypeChildNum_);
+    ser.write(throws_);
+    ser.write(isParenless_);
   }
 
   DECLARE_STATIC_DESERIALIZE(FunctionSignature);

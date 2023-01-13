@@ -90,7 +90,7 @@ class StringLikeLiteral : public Literal {
 
   void serialize(Serializer& ser) const override {
     Literal::serialize(ser);
-    ser(quotes_);
+    ser.write(quotes_);
   }
 };
 

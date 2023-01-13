@@ -116,7 +116,7 @@ class New : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(management_);
+    ser.write(management_);
   }
 
   DECLARE_STATIC_DESERIALIZE(New);

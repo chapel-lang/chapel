@@ -111,7 +111,7 @@ class For final : public IndexableLoop {
 
   void serialize(Serializer& ser) const override {
     IndexableLoop::serialize(ser);
-    ser(isParam_);
+    ser.write(isParam_);
   }
 
   DECLARE_STATIC_DESERIALIZE(For);

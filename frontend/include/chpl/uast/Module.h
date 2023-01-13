@@ -133,7 +133,7 @@ class Module final : public NamedDecl {
 
   void serialize(Serializer& ser) const override {
     NamedDecl::serialize(ser);
-    ser(kind_);
+    ser.write(kind_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Module);

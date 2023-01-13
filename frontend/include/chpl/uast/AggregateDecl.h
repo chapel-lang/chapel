@@ -129,8 +129,8 @@ class AggregateDecl : public TypeDecl {
 
   void serialize(Serializer& ser) const override {
     TypeDecl::serialize(ser);
-    ser(elementsChildNum_);
-    ser(numElements_);
+    ser.write(elementsChildNum_);
+    ser.write(numElements_);
   }
 };
 

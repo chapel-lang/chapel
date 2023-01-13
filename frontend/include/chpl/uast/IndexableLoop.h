@@ -136,10 +136,10 @@ class IndexableLoop : public Loop {
 
   void serialize(Serializer& ser) const override {
     Loop::serialize(ser);
-    ser(indexChildNum_);
-    ser(iterandChildNum_);
-    ser(withClauseChildNum_);
-    ser(isExpressionLevel_);
+    ser.write(indexChildNum_);
+    ser.write(iterandChildNum_);
+    ser.write(withClauseChildNum_);
+    ser.write(isExpressionLevel_);
   }
 
 };

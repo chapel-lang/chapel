@@ -76,7 +76,7 @@ class NamedDecl : public Decl {
 
   void serialize(Serializer& ser) const override {
     Decl::serialize(ser);
-    ser(name_);
+    ser.write(name_);
   }
 
   UniqueString name() const { return name_; }

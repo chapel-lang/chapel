@@ -138,9 +138,9 @@ class Catch final : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(errorChildNum_);
-    ser(bodyChildNum_);
-    ser(hasParensAroundError_);
+    ser.write(errorChildNum_);
+    ser.write(bodyChildNum_);
+    ser.write(hasParensAroundError_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Catch);

@@ -203,10 +203,10 @@ class TupleDecl final : public Decl {
 
   void serialize(Serializer& ser) const override {
     Decl::serialize(ser);
-    ser(intentOrKind_);
-    ser(numElements_);
-    ser(typeExpressionChildNum_);
-    ser(initExpressionChildNum_);
+    ser.write(intentOrKind_);
+    ser.write(numElements_);
+    ser.write(typeExpressionChildNum_);
+    ser.write(initExpressionChildNum_);
   }
 
   DECLARE_STATIC_DESERIALIZE(TupleDecl);

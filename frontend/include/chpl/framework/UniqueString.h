@@ -148,7 +148,7 @@ class UniqueString final {
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   void serialize(Serializer& ser) const {
-    ser((uint64_t)length());
+    ser.write((uint64_t)length());
     if (length() > 0) {
       ser.os().write(c_str(), length());
     }

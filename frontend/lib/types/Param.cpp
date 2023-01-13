@@ -367,7 +367,7 @@ void Param::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
 }
 
 void Param::serialize(Serializer& ser) const {
-  ser(tag_);
+  ser.write(tag_);
 }
 
 const Param* Param::deserialize(Deserializer& des) {

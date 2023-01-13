@@ -63,11 +63,6 @@ public:
   void write(const T& data) {
     chpl::serialize<T>{}(*this, data);
   }
-
-  template <typename T>
-  void operator()(const T& data) {
-    chpl::serialize<T>{}(*this, data);
-  }
 };
 
 class Deserializer {
@@ -129,7 +124,7 @@ template<typename T> struct deserialize {
 #define DECLARE_SERDE_ENUM(TYPE, CONV) \
 template<> struct serialize<TYPE> { \
   void operator()(Serializer& ser, TYPE val) { \
-    ser((CONV)val); \
+    ser.write((CONV)val); \
   } \
 }; \
 template<> struct deserialize<TYPE> { \
@@ -189,7 +184,7 @@ template<> struct deserialize<bool> {
  */
 template<> struct serialize<std::string> {
   void operator()(Serializer& ser, const std::string& val) const {
-    ser((uint64_t)val.size());
+    ser.write((uint64_t)val.size());
     if (val.size() > 0) {
       ser.os().write(val.c_str(), val.size());
     }
@@ -216,9 +211,9 @@ template<> struct deserialize<std::string> {
 template<typename T> struct serialize<std::vector<T>> {
  void operator()(Serializer& ser,
                  const std::vector<T>& stringVec) const {
-   ser((uint64_t)stringVec.size());
+   ser.write((uint64_t)stringVec.size());
    for (const auto &elt : stringVec ) {
-     ser(elt);
+     ser.write(elt);
    }
  }
 };
@@ -237,9 +232,9 @@ template<typename T> struct deserialize<std::vector<T>> {
 template<typename T> struct serialize<std::set<T>> {
  void operator()(Serializer& ser,
                  const std::set<T>& val) const {
-   ser((uint64_t)val.size());
+   ser.write((uint64_t)val.size());
    for (const auto& elt : val) {
-     ser(elt);
+     ser.write(elt);
    }
  }
 };

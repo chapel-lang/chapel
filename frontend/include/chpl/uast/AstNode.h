@@ -483,7 +483,7 @@ class AstNode {
 
 template<> struct serialize<uast::AstList> {
   void operator()(Serializer& ser, const uast::AstList& list) {
-    ser((uint64_t)list.size());
+    ser.write((uint64_t)list.size());
     for (const auto& node : list) {
       node->serialize(ser);
     }

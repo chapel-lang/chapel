@@ -73,7 +73,7 @@ class NumericLiteral : public Literal {
 
   void serialize(Serializer& ser) const override {
     Literal::serialize(ser);
-    ser(text_);
+    ser.write(text_);
   }
 
   /**

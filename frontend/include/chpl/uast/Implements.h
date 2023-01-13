@@ -175,8 +175,8 @@ class Implements final : public AstNode {
 
   void serialize(Serializer& ser) const override {
     AstNode::serialize(ser);
-    ser(typeIdentChildNum_);
-    ser(isExpressionLevel_);
+    ser.write(typeIdentChildNum_);
+    ser.write(isExpressionLevel_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Implements);
