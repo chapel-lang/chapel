@@ -38,7 +38,7 @@ module DistributedList {
             [i in locDom] new owned _LockWrapper();
 
         pragma "no doc"
-        var locListBlocks: [locDom] blockList(eltType);
+        var blockLists: [locDom] blockList(eltType);
 
         pragma "no doc"
         var lastIdx atomic int;
@@ -55,15 +55,17 @@ module DistributedList {
             const (locIdx, blockIdx, eltIdx) = indicesFor(lastIdxVal);
 
             this.locks[locIdx].lock();
-                this.locListBlocks[locIdx].set(blockIdx, eltIdx, x);
-                this.locListBlocks[locIdx].numFilled += 1;
+            this.blockLists[locIdx].set(blockIdx, eltIdx, x);
+            this.blockLists[locIdx].numFilled += 1;
             this.locks[locIdx].unlock();
 
             return this.lastIdx.fetchAdd(1);
         }
 
         proc contains(x: eltType): bool {
-
+            for e in this do
+                if e == x then return true;
+            return false;
         }
 
         proc first(): ref {
@@ -82,18 +84,17 @@ module DistributedList {
                 // acquire memory for the new element if needed
                 const (nLoc, nBlock, nIdx) = indicesFor(lastIdxVal+1);
                 on this.targetLocales[nLoc] do
-                    if this.locListBlocks[nLoc].numBlocks < nBlock
-                        then this.locListBlocks[nLoc].acquireBlocks();
+                    if this.blockLists[nLoc].numBlocks < nBlock
+                        then this.blockLists[nLoc].acquireBlocks();
 
                 // shift elements to the right
-                // TODO: aggregate the communication instead of doing inter-locale shifts one element at a time
                 for i in (idx+1)..this.lastIdx.read() by -1 {
                     const (dLoc, dBlock, dIdx) = indicesFor(i);
                     const (sLoc, sBlock, sIdx) = indicesFor(i-1);
 
                     on this.targetLocales[dLoc] {
-                        this.locListBlocks[dLoc].set(dBlock, dIdx,
-                            this.locListBlocks[sLoc].take(sBlock, sIdx)
+                        this.blockLists[dLoc].set(dBlock, dIdx,
+                            this.blockLists[sLoc].take(sBlock, sIdx)
                         );
                     }
                 }
@@ -101,10 +102,10 @@ module DistributedList {
                 // insert the new element
                 const (locIdx, blockIdx, eltIdx) = indicesFor(idx);
                 on this.targetLocales[locIdx] {
-                    this.locListBlocks[locIdx].set(blockIdx, eltIdx, x);
-                    this.locListBlocks[locIdx].numFilled += 1;
+                    this.blockLists[locIdx].set(blockIdx, eltIdx, x);
+                    this.blockLists[locIdx].numFilled += 1;
                 }
-
+                this.lastIdx.add(1);
 
                 for l in this.locks do l.unlock();
                 return true;
@@ -125,11 +126,11 @@ module DistributedList {
 
                     on this.targetLocales[dLoc] {
                         // acquire memory if needed
-                        if this.locListBlocks[dLoc].numBlocks < dBlock
-                            then this.locListBlocks[dLoc].acquireBlocks();
+                        if this.blockLists[dLoc].numBlocks < dBlock
+                            then this.blockLists[dLoc].acquireBlocks();
 
-                        this.locListBlocks[dLoc].set(dBlock, dIdx,
-                            this.locListBlocks[sLoc].take(sBlock, sIdx)
+                        this.blockLists[dLoc].set(dBlock, dIdx,
+                            this.blockLists[sLoc].take(sBlock, sIdx)
                         );
                     }
                 }
@@ -138,10 +139,11 @@ module DistributedList {
                 for (e, eIdx) in zip(arr, idx..) {
                     const (locIdx, blockIdx, eltIdx) = indicesFor(eIdx);
                     on this.targetLocales[locIdx] {
-                        this.locListBlocks[locIdx].set(blockIdx, eltIdx, e);
-                        this.locListBlocks[locIdx].numFilled += 1;
+                        this.blockLists[locIdx].set(blockIdx, eltIdx, e);
+                        this.blockLists[locIdx].numFilled += 1;
                     }
                 }
+                this.lastIdx.add(d.size);
 
                 for l in this.locks do l.unlock();
                 return true;
@@ -155,11 +157,41 @@ module DistributedList {
         }
 
         proc ref pop(): eltType {
+            const lastIdxVal = this.lastIdx.read();
+            const (locIdx, blockIdx, eltIdx) = indicesFor(lastIdxVal);
+            this.lastIdx.sub(1);
+            this.blockLists[locIdx].numFilled -= 1;
+            return this.blockLists[locIdx].take(blockIdx, eltIdx);
+        }
 
+        proc ref pop(idx: int): eltType {
+            const lastIdxVal = this.lastIdx.read();
+
+            // take the value at idx
+            const (locIdx, blockIdx, eltIdx) = indicesFor(idx);
+            const ret = this.blockLists[locIdx].take(blockIdx, eltIdx);
+
+            // shift values to the left
+            for i in (idx + 1)..<lastIdxVal {
+                const (dLoc, dBlock, dIdx) = indicesFor(i+1);
+                const (sLoc, sBlock, sIdx) = indicesFor(i);
+
+                on this.targetLocales[dLoc] {
+                    this.blockLists[dLoc].set(dBlock, dIdx,
+                        this.blockLists[sLoc].take(sBlock, sIdx)
+                    );
+                }
+            }
+
+            const (locIdx, _, _) = indicesFor(lastIdxVal);
+            this.blockLists[locIdx].numFilled -= 1;locIdx
+
+            this.lastIdx.sub(1);
+            return ret;
         }
 
         proc ref clear() {
-
+            
         }
 
         proc find(x: eltType, start: int = 0, end: int = -1) {
@@ -192,16 +224,23 @@ module DistributedList {
 
             var a : [dom] this.eltType;
 
-            for (loc, locIdx) in zip(this.locks, this.locDom) do on loc {
+            for (loc, locIdx) in zip(this.targetLocales, this.locDom) do on loc {
                 this.locks[locIdx].lock();
 
-                for (elt, idx) in this.locListBlocks[locIdx] do
+                for (elt, idx) in this.blockLists[locIdx] do
                     a[idx] = elt;
 
                 this.locks[locIdx].unlock();
             }
 
             return a;
+        }
+
+        iter these() {
+            for i in 0..<this.lastIdx.read() {
+                const (locIdx, blockIdx, eltIdx) = indicesFor(i);
+                yield this.blockLists[locIdx].getRef(blockIdx, eltIdx);
+            }
         }
 
         // ---------------------
@@ -274,6 +313,11 @@ module DistributedList {
         proc take(block_idx: int, elt_idx: int) {
             use MemMove;
             return moveFrom(this.blocks[block_idx][elt_idx]);
+        }
+
+        proc getRef(block_idx: int, elt_idx: int) ref {
+            ref ret = this.blocks[block_idx][elt_idx];
+            return ret;
         }
 
         iter these() {
