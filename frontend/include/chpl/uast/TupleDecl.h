@@ -202,14 +202,14 @@ class TupleDecl final : public Decl {
   static const char* intentOrKindToString(IntentOrKind kind);
 
   void serialize(Serializer& ser) const override {
-    Decl::serializePart(ser);
+    Decl::serialize(ser);
     ser(intentOrKind_);
     ser(numElements_);
     ser(typeExpressionChildNum_);
     ser(initExpressionChildNum_);
   }
 
-  DECLARE_STATIC_DES(TupleDecl);
+  DECLARE_STATIC_DESERIALIZE(TupleDecl);
 
 };
 

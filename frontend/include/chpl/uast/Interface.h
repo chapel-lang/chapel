@@ -198,7 +198,7 @@ class Interface final : public NamedDecl {
                                 AstList body);
 
   void serialize(Serializer& ser) const override {
-    NamedDecl::serializePart(ser);
+    NamedDecl::serialize(ser);
     ser(interfaceFormalsChildNum_);
     ser(numInterfaceFormals_);
     ser(bodyChildNum_);
@@ -206,7 +206,7 @@ class Interface final : public NamedDecl {
     ser(isFormalListExplicit_);
   }
 
-  DECLARE_STATIC_DES(Interface);
+  DECLARE_STATIC_DESERIALIZE(Interface);
 
 };
 

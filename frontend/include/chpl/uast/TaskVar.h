@@ -105,10 +105,10 @@ class TaskVar final : public VarLikeDecl {
   Intent intent() const { return (Intent)((int)storageKind()); }
 
   void serialize(Serializer& ser) const override {
-    VarLikeDecl::serializePart(ser);
+    VarLikeDecl::serialize(ser);
   }
 
-  DECLARE_STATIC_DES(TaskVar);
+  DECLARE_STATIC_DESERIALIZE(TaskVar);
 
 };
 
