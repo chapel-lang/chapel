@@ -113,11 +113,11 @@ class Local final : public SimpleBlockLike {
   }
 
   void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serializePart(ser);
+    SimpleBlockLike::serialize(ser);
     ser(condChildNum_);
   }
 
-  DECLARE_STATIC_DES(Local);
+  DECLARE_STATIC_DESERIALIZE(Local);
 
 };
 
