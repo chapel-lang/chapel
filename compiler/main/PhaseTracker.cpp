@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -166,7 +166,7 @@ void PhaseTracker::ReportPass() const
 static const char* passGroups[][2] = {
   {"total time (front end)", "parallel"},
   {"total time (middle end)", "denormalize"},
-  {"total time (back end)", "makeBinary"},
+  {"total time (back end)", "driverCleanup"},
 };
 
 void PhaseTracker::ReportTotal() const

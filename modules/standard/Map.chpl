@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -398,8 +398,8 @@ module Map {
     proc const this(k: keyType)
     where isNonNilableClass(valType) {
       _warnForParSafeIndexing();
-      compilerError("Cannot access nilable class directly. Use an",
-                    " appropriate accessor method instead.");
+      compilerError("Cannot index into a map with non-nilable class values. ",
+                    "Use an appropriate accessor method instead.");
     }
 
     /* Get a borrowed reference to the element at position `k`.

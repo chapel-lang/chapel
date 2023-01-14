@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -169,7 +169,9 @@ struct ParserContext {
     };
   }
 
-  void saveError(const ErrorBase* error) { errors.push_back(error); }
+  ErroneousExpression* report(YYLTYPE loc, const ErrorBase* error);
+  ErroneousExpression* error(YYLTYPE loc, const char* fmt, ...);
+  ErroneousExpression* syntax(YYLTYPE loc, const char* fmt, ...);
 
   void noteComment(YYLTYPE loc, const char* data, long size);
   std::vector<ParserComment>* gatherComments(YYLTYPE location);

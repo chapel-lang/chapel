@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,7 +22,7 @@
 
 #include "chpl/framework/Location.h"
 #include "chpl/uast/Formal.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/uast/VarLikeDecl.h"
 
 namespace chpl {
@@ -58,7 +58,7 @@ class VarArgFormal final : public VarLikeDecl {
                   // Use -1 to indicate so such child exists.
                   /*linkageNameChildNum*/ -1,
                   name,
-                  (IntentList)((int)intent),
+                  (Qualifier)((int)intent),
                   typeExpressionChildNum,
                   /*initExpressionChildNum*/ -1),
       countChildNum_(countChildNum) {
@@ -74,6 +74,8 @@ class VarArgFormal final : public VarLikeDecl {
   void markUniqueStringsInner(Context* context) const override {
     varLikeDeclMarkUniqueStringsInner(context);
   }
+
+  std::string dumpChildLabelInner(int i) const override;
 
  public:
   ~VarArgFormal() override = default;

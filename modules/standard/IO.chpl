@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2435,7 +2435,7 @@ Used to represent a constant string we want to read or write.
 When writing, the ``ioLiteral`` is output without any quoting or escaping.
 
 When reading, the ``ioLiteral`` must be matched exactly - or else the read call
-will return an error with code :data:`EFORMAT`.
+will return an error for incorrectly formatted input
 
 */
 record ioLiteral {
@@ -2481,27 +2481,30 @@ inline operator :(x: ioBits, type t:string) {
 }
 
 /*
- EEOF, ESHORT, and EFORMAT are Chapel-specific IO error codes.
+ EEOF, ESHORT, and EFORMAT are internal, Chapel-specific IO error codes.
  */
 
 private extern proc chpl_macro_int_EEOF():c_int;
 /* An error code indicating the end of file has been reached (Chapel specific)
  */
-inline proc EEOF return chpl_macro_int_EEOF():c_int;
+pragma "no doc"
+private inline proc EEOF return chpl_macro_int_EEOF():c_int;
 
 private extern proc chpl_macro_int_ESHORT():c_int;
 /* An error code indicating that the end of file or the end of the
    input was reached before the requested amount of data could be read.
    (Chapel specific)
   */
-inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
+pragma "no doc"
+private inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
 
 private extern proc chpl_macro_int_EFORMAT():c_int;
 /* An error code indicating a format error; for example when reading a quoted
    string literal, this would be returned if we never encountered the
    opening quote. (Chapel specific)
   */
-inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
+pragma "no doc"
+private inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
 
 
 pragma "no doc"
@@ -3239,6 +3242,7 @@ config param useNewLinesRegionBounds = false;
 
    :throws SystemError: Thrown if an object could not be returned.
  */
+deprecated "`file.lines` is deprecated; please use `fileReader.lines` instead"
 proc file.lines(param locking:bool = true, region: range(?) = 0..,
                 hints = ioHintSet.empty) throws where (!region.hasHighBound() ||
                                                        useNewLinesRegionBounds) {
@@ -6195,7 +6199,7 @@ proc readln(type t ...?numTypes) throws {
 /*
    :returns: `true` if this version of the Chapel runtime supports UTF-8 output.
  */
-deprecated "unicodeSupported is deprecated"
+deprecated "unicodeSupported is deprecated due to always returning true"
 proc unicodeSupported():bool {
   return true;
 }

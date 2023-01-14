@@ -8,6 +8,9 @@ PREFIX=""
 # (to mirror release / source checkout)
 DEST_DIR=""
 
+# set MAKE=make if it is not set yet
+: "${MAKE:=make}"
+
 # Argument parsing
 for arg in "$@"
 do
@@ -235,16 +238,10 @@ myinstallfileto () {
   fi
 }
 
+# run 'cmake' to install the compiler library, 'chpl' and 'chpldoc'
+(cd compiler && "$MAKE" install-chpl-chpldoc)
 
-# copy chpl
-if [ ! -z "$PREFIX" ]
-then
-  myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpl "$PREFIX/bin"
-else
-  myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpl "$DEST_DIR/bin/$CHPL_BIN_SUBDIR"
-fi
-
-# copy runtime lib
+# copy compiler and runtime lib
 myinstalldir  lib                     "$DEST_RUNTIME_LIB"
 
 # copy runtime include
@@ -343,21 +340,6 @@ then
   else
     myinstallfile "$MASON" "$DEST_CHPL_HOME/tools/mason"
     ln -s "$DEST_CHPL_HOME/tools/mason/mason" "$DEST_DIR/bin/$CHPL_BIN_SUBDIR"/mason
-  fi
-fi
-
-# copy chpldoc
-# and create symlink for chpldoc-legacy
-if [ -f "bin/$CHPL_BIN_SUBDIR/chpldoc" ]
-then
-  # Choose destination depending on installation mode {prefix, home}
-  if [ ! -z "$PREFIX" ]
-  then
-    myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpldoc "$PREFIX/bin"
-    (cd "$PREFIX/bin" && rm -f chpldoc-legacy && ln -s chpl chpldoc-legacy)
-  else
-    myinstallfile "bin/$CHPL_BIN_SUBDIR"/chpldoc "$DEST_DIR/bin/$CHPL_BIN_SUBDIR"
-    (cd "$DEST_DIR/bin/$CHPL_BIN_SUBDIR" && rm -f chpldoc-legacy && ln -s chpl chpldoc-legacy)
   fi
 fi
 

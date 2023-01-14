@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -16,7 +16,7 @@
 # limitations under the License.
 
 file(GLOB_RECURSE headers CONFIGURE_DEPENDS "*.h")
-target_sources(libdyno-obj
+target_sources(ChplFrontend-obj
                PUBLIC
 
                ${headers})

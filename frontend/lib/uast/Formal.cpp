@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,20 +24,21 @@
 namespace chpl {
 namespace uast {
 
-std::string Formal::intentToString(Formal::Intent intent) {
+
+const char* Formal::intentToString(Formal::Intent intent) {
   switch (intent) {
     case DEFAULT_INTENT: return "";
-    case CONST: return "const";
-    case CONST_REF: return "const ref";
-    case REF: return "ref";
-    case IN: return "in";
-    case CONST_IN: return "const in";
-    case OUT: return "out";
-    case INOUT: return "inout";
-    case PARAM: return "param";
-    case TYPE: return "type";
+    case CONST:          return "const";
+    case CONST_REF:      return "const ref";
+    case REF:            return "ref";
+    case IN:             return "in";
+    case CONST_IN:       return "const in";
+    case OUT:            return "out";
+    case INOUT:          return "inout";
+    case PARAM:          return "param";
+    case TYPE:           return "type";
   }
-  return "<error>";
+  return "<unknown>";
 }
 
 owned<Formal>

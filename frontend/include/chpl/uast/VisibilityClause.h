@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -89,6 +89,9 @@ class VisibilityClause final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
+
   // These always exist and their position never changes.
   static const int8_t symbolChildNum_ = 0;
   static const int8_t limitationChildNum_ = 1;
@@ -160,6 +163,10 @@ class VisibilityClause final : public AstNode {
     return ast;
   }
 
+  /**
+    Return a string describing the passed LimitationKind.
+   */
+  static const char* limitationKindToString(LimitationKind kind);
 };
 
 

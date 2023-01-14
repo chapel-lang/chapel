@@ -234,10 +234,14 @@ writeln("Doing EOF check");
 
 // Make sure we're at the end of the input file, for sanity
 var badint: int;
+var dataRemains: bool = false;
 try! {
-  reader.read(badint);
+  dataRemains = reader.read(badint);
 } catch e: SystemError {
-  if (e.err != EEOF) then halt("Data remains at end of file");
+  dataRemains = true;
+}
+if (dataRemains) {
+  halt("Data remains at end of file");
 }
 
 writeln("Made it past EOF check");

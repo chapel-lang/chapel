@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,47 @@ namespace uast {
 
 
 Decl::~Decl() {
+}
+
+void Decl::dumpFieldsInner(const DumpSettings& s) const {
+  const char* v = visibilityToString(visibility_);
+  const char* k = linkageToString(linkage_);
+  if (v[0] != 0) {
+    s.out << " " << v;
+  }
+  if (k[0] != 0) {
+    s.out << " " << k;
+  }
+}
+std::string Decl::dumpChildLabelInner(int i) const {
+  if (i == attributesChildNum_) {
+    return "attributes";
+  } else if (i == linkageNameChildNum_) {
+    return "linkage-name";
+  }
+
+  return "";
+}
+
+const char* Decl::visibilityToString(Visibility v) {
+  switch (v) {
+    case Visibility::DEFAULT_VISIBILITY: return "";
+    case Visibility::PUBLIC:             return "public";
+    case Visibility::PRIVATE:            return "private";
+  }
+  CHPL_ASSERT(false);
+  return "<unknown>";
+}
+
+
+const char* Decl::linkageToString(Linkage x) {
+  switch (x) {
+    case Linkage::DEFAULT_LINKAGE: return "";
+    case Linkage::EXTERN:          return "extern";
+    case Linkage::EXPORT:          return "export";
+  }
+  CHPL_ASSERT(false);
+  return "<unknown>";
 }
 
 

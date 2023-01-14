@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -62,18 +62,15 @@ test: spectests FORCE
 	cd examples && start_test
 
 frontend-docs: FORCE
-	@cd frontend && $(MAKE) -f Makefile.help frontend-docs
+	@cd compiler && $(MAKE) frontend-docs
 
-clobber-frontend: FORCE
-	@cd frontend && $(MAKE) -f Makefile.help clobber-frontend
+test-frontend: FORCE
+	@cd compiler && $(MAKE) test-frontend
 
-test-frontend: frontend FORCE
-	@cd frontend && $(MAKE) -f Makefile.help test-frontend
-
-test-dyno: test-frontend FORCE
+test-dyno: FORCE test-frontend
 
 run-frontend-linters: FORCE
-	@cd frontend && $(MAKE) -f Makefile.help run-frontend-linters
+	@cd compiler && $(MAKE) run-frontend-linters
 
 run-dyno-linters: run-frontend-linters FORCE
 

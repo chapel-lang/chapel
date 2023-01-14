@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,8 +23,7 @@
 
 #include "chpl/framework/Context.h"
 #include "chpl/uast/AstTag.h"
-#include "chpl/uast/ASTTypes.h"
-#include "chpl/uast/all-uast.h"
+#include "chpl/uast/forward-declare-uast.h"
 
 
 #include<iostream>

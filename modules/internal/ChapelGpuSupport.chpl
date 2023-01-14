@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,7 +23,7 @@ module ChapelGpuSupport {
 
   extern var chpl_gpu_debug : bool;
 
-  private config const debugGpu = false;
+  config const debugGpu = false;
 
   // by virtue of module initialization:
   chpl_gpu_debug = debugGpu;

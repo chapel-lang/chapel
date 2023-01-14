@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -73,9 +73,7 @@ frontend: FORCE
 	@echo "Making the frontend compiler library..."
 	@cd third-party && $(MAKE) llvm
 	@cd third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host jemalloc
-	@cd frontend && $(MAKE) -f Makefile.help frontend
-
-dyno: frontend FORCE
+	@cd compiler && $(MAKE) frontend
 
 compiler: FORCE
 	@echo "Making the compiler..."
@@ -85,7 +83,7 @@ compiler: FORCE
 
 parser: FORCE
 	@echo "Making the parser..."
-	@cd frontend && $(MAKE) -f Makefile.help parser
+	@cd compiler && $(MAKE) parser
 
 modules: FORCE
 	@echo "Making the modules..."
