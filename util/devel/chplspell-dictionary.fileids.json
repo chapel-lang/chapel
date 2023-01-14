@@ -584,11 +584,17 @@
   "9a17c742-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/all-global-strings.h"
   ],
+  "645372f0-945c-11ed-b9f6-7def56659a0b": [
+    "frontend/include/chpl/framework/error-classes-list.h"
+  ],
   "a1dfe432-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/global-strings.h"
   ],
   "712148ae-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/stringify-functions.h"
+  ],
+  "5d6b5c0a-945c-11ed-b9f6-7def56659a0b": [
+    "frontend/include/chpl/parsing/parser-error.h"
   ],
   "b6b773fa-e3ab-11ec-a8be-cd81bce0efc4": [
     "frontend/include/chpl/parsing/parser-stats.h"
@@ -965,6 +971,9 @@
   "0cc92926-9f75-11ec-866d-111c8d7a1817": [
     "frontend/lib/resolution/Resolver.h"
   ],
+  "a1123384-945c-11ed-b9f6-7def56659a0b": [
+    "frontend/lib/resolution/VarScopeVisitor.h"
+  ],
   "fcb9430e-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/resolution/can-pass.cpp"
   ],
@@ -1000,6 +1009,9 @@
   ],
   "079d1948-12c1-11ed-a8be-cd81bce0efc4": [
     "frontend/lib/uast/post-parse-checks.cpp"
+  ],
+  "689a30e2-945c-11ed-b9f6-7def56659a0b": [
+    "frontend/lib/util/chplenv.cpp"
   ],
   "b4d7b308-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/lib/util/filesystem.cpp"
@@ -1285,6 +1297,9 @@
   ],
   "e9347814-1f30-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/Types.chpl"
+  ],
+  "a89bd786-945c-11ed-b9f6-7def56659a0b": [
+    "modules/standard/Version.chpl"
   ],
   "d0707fc2-f562-11eb-bb15-35b7469d4b43": [
     "runtime/etc/src/mli/chpl-mli-common-runtime.c"
