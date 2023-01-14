@@ -1,5 +1,11 @@
-feature request: improve slicing with unaligned unbounded ranges
+bug: slicing with unaligned bool/enum unbounded range ignores array bounds
 
-Vass and I have talked a bit about what slicing with unaligned unbounded
-ranges might look like.  This test captures some of my intuition about
-some easy cases.
+In the current range implementation, when we apply 'by' to an
+unbounded enum/bool range, we use its implied missing bound so that
+iteration will work correctly.  However, this can make it not inherit
+the array's bound when slicing as it should.
+
+I think the fix here is probably to have 'by' store a sentinel
+alignment (like -1 if we switch to always storing the alignment as
+0..<stride?)  and then have the iterator(s) compute the aligned bound
+on the fly when that sentinel value is present.
