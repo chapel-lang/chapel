@@ -664,6 +664,7 @@ module ChapelRange {
       return helpAlignLow(_low, _alignment, stride);
   }
 
+  pragma "no doc"
   inline proc range.chpl_alignedLowAsIntForIter {
     if stridable && !hasLowBound() && isFiniteIndexType() {
       return helpAlignLow(chpl__idxToInt(lowBoundForIter(this)), _alignment, stride);
@@ -928,7 +929,7 @@ module ChapelRange {
      and at least partially bounded, the return value will not
      be a ``param``.
   */
-  proc range.hasFirst() param where !stridable && !(hasLowBound() && hasHighBound())
+  proc range.hasFirst() param where !stridable && !hasHighBound()
     return hasLowBound();
 
   pragma "no doc"
@@ -978,7 +979,7 @@ module ChapelRange {
      Note that in the event that the range is stridable and at least
      partially bounded, the return value will not be a ``param``.
   */
-  proc range.hasLast() param where !stridable && !(hasLowBound() && hasHighBound())
+  proc range.hasLast() param where !stridable && !hasLowBound()
     return hasHighBound();
 
   pragma "no doc"
