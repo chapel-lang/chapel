@@ -950,7 +950,7 @@ module ChapelRange {
 
   pragma "no doc"
   inline proc range.firstAsInt {
-    if ! stridable then return chpl__idxToInt(lowBound);
+    if ! stridable then return _low;
     else return if _stride > 0 then this.alignedLowAsInt else this.alignedHighAsInt;
   }
 
@@ -1001,7 +1001,7 @@ module ChapelRange {
 
   pragma "no doc"
   inline proc range.lastAsInt {
-    if ! stridable then return chpl__idxToInt(highBound);
+    if ! stridable then return _high;
     else return if stride > 0 then this.alignedHighAsInt else this.alignedLowAsInt;
   }
 
