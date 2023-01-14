@@ -2624,19 +2624,6 @@ operator :(r: range(?), type t: range(?)) {
     }
   }
 
-  proc range.testit() {
-    writeln(lowBoundForIter(this));
-    writeln(highBoundForIter(this));
-    writeln(this.chpl_firstAsIntForIter);
-    writeln(this.chpl_lastAsIntForIter);
-    writeln(_alignment);
-    for i in this.these() {
-      writeln(i);
-    }
-//    writeln(finiteIdxTypeHigh(this.idxType));
-//    writeln(chpl__intToIdx(this.idxType, true));
-  }
-
   // A bounded and strided range iterator
   pragma "no doc"
   pragma "order independent yielding loops"
@@ -2645,12 +2632,9 @@ operator :(r: range(?), type t: range(?)) {
     if chpl__singleValIdxType(idxType) {
       if _low > _high then return;
     }
-//      writeln("Before cond");
     if (useOptimizedRangeIterators) {
       if boundsChecking {
-//        writeln("Check");
         checkIfIterWillOverflow();
-//        writeln("Ambig");
         if hasAmbiguousAlignmentForIter(this) then
           HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
       }
@@ -2659,12 +2643,8 @@ operator :(r: range(?), type t: range(?)) {
       // must check if low > high (something like 10..1) because of the !=
       // relational operator. Such ranges are supposed to iterate 0 times
       var i: intIdxType;
-//      writeln("Start");
       const start = chpl_firstAsIntForIter;
-//      writeln("End");
       const end: intIdxType = if chpl__idxToInt(lowBoundForIter(this)) > chpl__idxToInt(highBoundForIter(this)) then start else chpl_lastAsIntForIter + stride: intIdxType;
-//      writeln((start,end,stride));
-//      writeln("prim C");
       while __primitive("C for loop",
                         __primitive( "=", i, start),
                         __primitive("!=", i, end),
@@ -2673,7 +2653,6 @@ operator :(r: range(?), type t: range(?)) {
         yield chpl_intToIdx(i);
       }
     } else {
-//      writeln("gen iter");
       foreach i in this.generalIterator() do yield i;
     }
   }
