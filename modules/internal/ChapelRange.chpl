@@ -1010,19 +1010,9 @@ module ChapelRange {
     if ! stridable {
       return chpl__idxToInt(highBoundForIter(this));
     } else if _stride > 0 {
-//      if hasHighBound() {
-        return helpAlignHigh(chpl__idxToInt(highBoundForIter(this)), _alignment, _stride);
-//      } else {
-//        return chpl__idxToInt(highBoundForIter(this));
-//      }
+      return helpAlignHigh(chpl__idxToInt(highBoundForIter(this)), _alignment, _stride);
     } else {
-//      if hasLowBound() {
-      //        writeln(_alignment);
-//      writeln("hey: ", (lowBoundForIter(this), _alignment, _stride));
-        return helpAlignLow(chpl__idxToInt(lowBoundForIter(this)), _alignment, _stride);
-//      } else {
-//        return chpl__idxToInt(lowBoundForIter(this));
-//      }
+      return helpAlignLow(chpl__idxToInt(lowBoundForIter(this)), _alignment, _stride);
     }
   }
 
@@ -2567,9 +2557,7 @@ operator :(r: range(?), type t: range(?)) {
     // worth it just for that.
     var i: intIdxType;
     const start = chpl__idxToInt(this.first);
-    const end = if isFiniteIdxType(idxType)
-                then chpl__idxToInt(this.last)
-                else max(intIdxType) - stride: intIdxType;
+    const end = max(intIdxType) - stride: intIdxType;
 
     while __primitive("C for loop",
                       __primitive( "=", i, start),
@@ -2602,10 +2590,8 @@ operator :(r: range(?), type t: range(?)) {
     // terminate the C for loop, this iterator follows the boundedLow
     // case above.  See it for additional comments.
     var i: intIdxType;
-    const start = alignedHighAsInt;
-    const end = if isFiniteIdxType(idxType)
-                  then chpl__idxToInt(this.last)
-                  else min(intIdxType) - stride: intIdxType;
+    const start = chpl__idxToInt(this.first);
+    const end = min(intIdxType) - stride: intIdxType;
     while __primitive("C for loop",
                       __primitive( "=", i, start),
                       __primitive(">=", i, end),
@@ -2644,7 +2630,6 @@ operator :(r: range(?), type t: range(?)) {
                         __primitive( "=", i, start),
                         __primitive("!=", i, end),
                         __primitive("+=", i, stride: intIdxType)) {
-//        writeln(i);
         yield chpl_intToIdx(i);
       }
     } else {
