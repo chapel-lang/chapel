@@ -501,7 +501,7 @@ module DefaultRectangular {
       if chpl__testParFlag then
         chpl__testPar("default rectangular domain follower invoked on ", followThis);
       if debugDefaultDist then
-        chpl_debug_writeln(here.id, ": In domain follower code: Following ", followThis);
+        chpl_debug_writeln("In domain follower code: Following ", followThis);
 
       param stridable = this.stridable || anyStridable(followThis);
       var block: rank*range(idxType=intIdxType, stridable=stridable);
