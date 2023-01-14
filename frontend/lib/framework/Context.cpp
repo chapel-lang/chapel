@@ -594,7 +594,7 @@ static void logErrorInContext(Context* context,
   context->report(std::move(err));
 }
 
-void logErrorInContext(Context* context,
+static void logErrorInContext(Context* context,
                               ErrorBase::Kind kind,
                               const uast::AstNode* ast,
                               const char* fmt,
