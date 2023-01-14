@@ -661,7 +661,7 @@ module ChapelRange {
       return _low;
     else
       // Adjust _low upward by the difference between _alignment and _low.
-      return _low + chpl__diffMod(_alignment, _low, stride);
+      return helpAlignLow(_low, _alignment, stride);
   }
 
   pragma "no doc"
@@ -682,10 +682,9 @@ module ChapelRange {
 
   /* Returns ``true`` if this range's high bound is *not* :math:`\infty`,
      and ``false`` otherwise. */
-  proc range.hasHighBound() param {
-    return (boundedType == BoundedRangeType.bounded ||
-            boundedType == BoundedRangeType.boundedHigh);
-  }
+  proc range.hasHighBound() param
+    return boundedType == BoundedRangeType.bounded ||
+           boundedType == BoundedRangeType.boundedHigh;
 
   /* Return the range's high bound. If the range does not have a high
      bound (e.g., ``1..``), the behavior is undefined.  See also
@@ -698,14 +697,7 @@ module ChapelRange {
     if chpl__singleValIdxType(idxType) {
       if _low > _high { // avoid circularity of calling .size which calls .high
         warning("This range is empty and has a single-value idxType, so its high bound isn't trustworthy");
-        return lowBound;
-      }
-    }
-    if !hasHighBound() {
-      if isFiniteIdxType(idxType) {
-        return chpl_intToIdx(finiteIdxTypeHigh(idxType));
-      } else {
-        compilerError("can't query the high bound of a range without one");
+        return chpl_intToIdx(_low);
       }
     }
     return chpl_intToIdx(_high);
@@ -764,11 +756,10 @@ module ChapelRange {
     if isAmbiguous() {
       halt("Can't query the aligned bounds of an ambiguously aligned range");
     }
-    const high = if hasHighBound() then chpl__idxToInt(highBound) else _high;
     if ! stridable then
-      return high;
+      return _high;
     else
-      return helpAlignHigh(high, _alignment, stride);
+      return helpAlignHigh(_high, _alignment, stride);
   }
 
   pragma "no doc"
@@ -809,14 +800,14 @@ module ChapelRange {
   inline proc range.isNaturallyAligned()
     where !stridable && this.boundedType == BoundedRangeType.boundedLow
   {
-    return this.alignedLowAsInt == chpl__idxToInt(lowBound);
+    return this.alignedLowAsInt == _low;
   }
 
   pragma "no doc"
   inline proc range.isNaturallyAligned()
     where stridable && this.boundedType == BoundedRangeType.boundedLow
   {
-    return stride > 0 && this.alignedLowAsInt == chpl__idxToInt(lowBound);
+    return stride > 0 && this.alignedLowAsInt == _low;
   }
 
   pragma "no doc"
