@@ -839,7 +839,7 @@ module ChapelRange {
   private inline proc hasAmbiguousAlignmentForIter(r) {
     return r.isAmbiguous();
   }
-  
+
   /* Returns ``true`` if the sequence represented by the range is
      empty and ``false`` otherwise.  If the range is ambiguous, the
      behavior is undefined.
@@ -2635,7 +2635,7 @@ operator :(r: range(?), type t: range(?)) {
 //    writeln(finiteIdxTypeHigh(this.idxType));
 //    writeln(chpl__intToIdx(this.idxType, true));
   }
-  
+
   // A bounded and strided range iterator
   pragma "no doc"
   pragma "order independent yielding loops"
