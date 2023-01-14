@@ -1048,11 +1048,11 @@ module ChapelRange {
 
     if hasHighBound()
     {
-      if i > chpl__idxToInt(highBound) then return false;
+      if i > _high then return false;
     }
     if hasLowBound()
     {
-      if i < chpl__idxToInt(lowBound) then return false;
+      if i < _low then return false;
     }
     if stridable
     {
@@ -1099,8 +1099,13 @@ module ChapelRange {
   }
 
   pragma "no doc"
+  operator ==(r1: range(?), r2: range(?)) param
+    where r1.boundedType != r2.boundedType
+  return false;
+
+  pragma "no doc"
   operator ==(r1: range(?), r2: range(?)): bool
-    where r1.hasLowBound() == r2.hasLowBound() && r1.hasHighBound() == r2.hasHighBound()
+    where r1.boundedType == r2.boundedType
   {
     // An ambiguous ranges cannot equal an unambiguous one
     //  even if all their parameters match.
@@ -1135,11 +1140,6 @@ module ChapelRange {
       return true;
     }
   }
-
-  // This is the catch-all if the previous overload doesn't catch
-  pragma "no doc"
-  operator ==(r1: range(?), r2: range(?)) param
-  return false;
 
   pragma "no doc"
   operator !=(r1: range(?), r2: range(?))  return !(r1 == r2);
@@ -1285,10 +1285,8 @@ operator :(r: range(?), type t: range(?)) {
     var boundedOther = new range(
                           idxType, BoundedRangeType.bounded,
                           s || this.stridable,
-                          if other.hasLowBound()
-                            then other._low else _low,
-                          if other.hasHighBound()
-                            then other._high else _high,
+                          if other.hasLowBound() then other._low else _low,
+                          if other.hasHighBound() then other._high else _high,
                           other.stride,
                           chpl__idxToInt(other.alignment),
                           true);
@@ -1729,13 +1727,10 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   proc chpl_by_help(r: range(?i,?b,?s), step) {
-    const lw = if !r.hasLowBound() then r._low else chpl__idxToInt(r.lowBound),
-          hh = if (chpl__singleValIdxType(r.idxType) && r._low > r._high) ||
-                  !r.hasHighBound()
-               then r._high else chpl__idxToInt(r.highBound),
+    const lw = r._low,
+          hh = r._high,
           st: r.strType = r.stride * step:r.strType;
 
-//    writeln(r.isAmbiguous());
     const (ald, alt) =
       if r.isAmbiguous() then
         if r.stridable then (false, r._alignment)
