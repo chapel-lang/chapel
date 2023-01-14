@@ -664,7 +664,6 @@ module ChapelRange {
       return helpAlignLow(_low, _alignment, stride);
   }
 
-  pragma "no doc"
   inline proc range.chpl_alignedLowAsIntForIter {
     if stridable && !hasLowBound() && isFiniteIndexType() {
       return helpAlignLow(chpl__idxToInt(lowBoundForIter(this)), _alignment, stride);
@@ -673,7 +672,6 @@ module ChapelRange {
     }
   }
 
-  pragma "no doc"
   private inline proc helpAlignLow(l, a, s) {
     // Adjust _low upward by the difference between _alignment and _low.
     return l + chpl__diffMod(a, l, s);
@@ -834,13 +832,11 @@ module ChapelRange {
   proc range.isAmbiguous()       where stridable
     return !aligned && (stride > 1 || stride < -1);
 
-  pragma "no doc"
-  private inline proc hasAmbiguousAlignmentForIteration(r) param where !r.stridable || isFiniteIdxType(r.idxType) {
+  private inline proc hasAmbiguousAlignmentForIter(r) param where !r.stridable || isFiniteIdxType(r.idxType) {
     return false;
   }
 
-  pragma "no doc"
-  private inline proc hasAmbiguousAlignmentForIteration(r) {
+  private inline proc hasAmbiguousAlignmentForIter(r) {
     return r.isAmbiguous();
   }
   
@@ -2557,7 +2553,7 @@ operator :(r: range(?), type t: range(?)) {
       if ! r.hasFirst() then
         HaltWrappers.boundsCheckHalt("iteration over range that has no first index");
 
-      if hasAmbiguousAlignmentForIteration(r) then
+      if hasAmbiguousAlignmentForIter(r) then
         HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
     }
   }
@@ -2654,7 +2650,7 @@ operator :(r: range(?), type t: range(?)) {
 //        writeln("Check");
         checkIfIterWillOverflow();
 //        writeln("Ambig");
-        if hasAmbiguousAlignmentForIteration(this) then
+        if hasAmbiguousAlignmentForIter(this) then
           HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
       }
 
@@ -2729,7 +2725,7 @@ operator :(r: range(?), type t: range(?)) {
   pragma "no doc"
   pragma "order independent yielding loops"
   iter range.generalIterator() {
-    if boundsChecking && hasAmbiguousAlignmentForIteration(this) then
+    if boundsChecking && hasAmbiguousAlignmentForIter(this) then
       HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
 
     var i: intIdxType;
@@ -2756,7 +2752,7 @@ operator :(r: range(?), type t: range(?)) {
     if !(hasLowBoundForIter(this) && hasHighBoundForIter(this)) {
       compilerError("parallel iteration is not currently supported over ranges without bounds");
     }
-    if boundsChecking && hasAmbiguousAlignmentForIteration(this) {
+    if boundsChecking && hasAmbiguousAlignmentForIter(this) {
       HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
     }
     if debugChapelRange {
@@ -2799,7 +2795,7 @@ operator :(r: range(?), type t: range(?)) {
     if !(hasLowBoundForIter(this) && hasHighBoundForIter(this)) then
       compilerError("parallel iteration is not currently supported over ranges without bounds");
 
-    if boundsChecking && hasAmbiguousAlignmentForIteration(this) then
+    if boundsChecking && hasAmbiguousAlignmentForIter(this) then
       HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
 
     if debugChapelRange then
@@ -2889,7 +2885,7 @@ operator :(r: range(?), type t: range(?)) {
   pragma "no doc"
   iter range.these(param tag: iterKind, followThis) where tag == iterKind.follower
   {
-    if boundsChecking && hasAmbiguousAlignmentForIteration(this) then
+    if boundsChecking && hasAmbiguousAlignmentForIter(this) then
       HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
 
     if boundedType == BoundedRangeType.boundedNone then
@@ -3296,7 +3292,6 @@ operator :(r: range(?), type t: range(?)) {
     return isEnumType(t) && t.size == 1;
   }
 
-  // TODO: Can I remove these changes based on 'boundedType'?
   proc chpl__defaultLowBound(type t, boundedType: BoundedRangeType) {
     if chpl__singleValIdxType(t) {
       return 0:chpl__idxTypeToIntIdxType(t);
