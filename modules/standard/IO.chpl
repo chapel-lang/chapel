@@ -4456,7 +4456,7 @@ proc stringify(const args ...?k):string {
       var r = f.reader(locking=false);
       defer try! r.close();
 
-      r.readBytes(buf, offset:c_ssize_t);
+      r._readBytes(buf, offset:c_ssize_t);
       // Add the terminating NULL byte to make C string conversion easy.
       buf[offset] = 0;
 
@@ -5095,6 +5095,7 @@ proc _channel.readAll(ref a: [?d] ?t): int throws
 
    :throws SystemError: Thrown if the bytes could not be read from the channel.
  */
+deprecated "'readstring' is deprecated; please use 'readString' instead"
 proc _channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
   var (err, _) = readBytesOrString(this, str_out, len);
 
@@ -5108,6 +5109,50 @@ proc _channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
   return false;
 }
 
+/*
+  Read a given number of codepoints from a ``fileReader``, returning a new
+  :type:`~String.string`.
+
+  The ``string``'s length may be less than ``maxSize`` if EOF is reached while
+  reading. If nothing is read, the empty string (``""``) will be returned.
+
+  :arg maxSize: the maximum number of codepoints to read from the ``fileReader``
+  :returns: a new ``string`` containing up to the next ``maxSize`` codepoints
+              from the ``fileReader``
+
+  :throws SystemError: Thrown if a ``string`` could not be read from the ``fileReader``.
+*/
+proc fileReader.readString(maxSize: int): string throws {
+  var ret: string = "";
+  var (e, _) = readBytesOrString(this, ret, maxSize);
+
+  if e != 0 && e != EEOF then throw createSystemError(e);
+
+  return ret;
+}
+
+/*
+  Read a given number of codepoints from a ``fileReader`` into a
+  :type:`~String.string`.
+
+  The updated ``string``'s length may be less than ``maxSize`` if EOF is
+  reached while reading. If nothing is read, it will be set to the empty
+  string (``""``).
+
+  :arg s: the ``string`` to read into — contents will be overwritten
+  :arg maxSize: the maximum number of codepoints to read from the ``fileReader``
+  :returns: ``false`` if nothing could be read, or ``true`` if something was read.
+
+  :throws SystemError: Thrown if a ``string`` could not be read from the ``fileReader``.
+*/
+proc fileReader.readString(ref s: string, maxSize: int): bool throws {
+  var (e, lenRead) = readBytesOrString(this, s, maxSize);
+
+  if e != 0 && e != EEOF then throw createSystemError(e);
+
+  return lenRead > 0;
+}
+
 /* read a given number of bytes from a channel
 
    :arg bytes_out: The bytes to be read into
@@ -5119,6 +5164,7 @@ proc _channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
 
    :throws SystemError: Thrown if the bytes could not be read from the channel.
  */
+deprecated "'readbytes' is deprecated; please use 'readBytes' instead"
 proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
   var (err, _) = readBytesOrString(this, bytes_out, len);
 
@@ -5130,6 +5176,50 @@ proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
     try this._ch_ioerror(err, "in channel.readbytes(ref str_out:bytes, len:int(64))");
   }
   return false;
+}
+
+/*
+  Read a given number of bytes from a ``fileReader``, returning a new
+  :type:`~Bytes.bytes`.
+
+  The ``bytes``'s length may be less than ``maxSize`` if EOF is reached while
+  reading. If nothing is read, the empty bytes (``b""``) will be returned.
+
+  :arg maxSize: the maximum number of bytes to read from the ``fileReader``
+  :returns: a new ``bytes`` containing up to the next ``maxSize`` bytes
+              from the ``fileReader``
+
+  :throws SystemError: Thrown if a ``bytes`` could not be read from the ``fileReader``.
+*/
+proc fileReader.readBytes(maxSize: int): bytes throws {
+  var ret: bytes = b"";
+  var (e, _) = readBytesOrString(this, ret, maxSize);
+
+  if e != 0 && e != EEOF then throw createSystemError(e);
+
+  return ret;
+}
+
+/*
+  Read a given number of bytes from a ``fileReader`` into a
+  :type:`~Bytes.bytes`.
+
+  The updated ``bytes``'s length may be less than ``maxSize`` if EOF is
+  reached while reading. If nothing is read, it will be set to the empty
+  bytes (``b""``).
+
+  :arg b: the ``bytes`` to read into — contents will be overwritten
+  :arg maxSize: the maximum number of bytes to read from the ``fileReader``
+  :returns: ``false`` if nothing could be read, or ``true`` if something was read.
+
+  :throws SystemError: Thrown if a ``bytes`` could not be read from the ``fileReader``.
+*/
+proc fileReader.readBytes(ref b: bytes, maxSize: int): bool throws {
+  var (e, lenRead) = readBytesOrString(this, b, maxSize);
+
+  if e != 0 && e != EEOF then throw createSystemError(e);
+
+  return lenRead > 0;
 }
 
 private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : (errorCode, int(64))
@@ -6077,11 +6167,11 @@ proc _channel.isclosed() : bool {
 // in the type of the argument will only be caught by a type mismatch
 // in the call to qio_channel_read_amt.
 pragma "no doc"
-proc _channel.readBytes(x, len:c_ssize_t) throws {
+proc _channel._readBytes(x, len:c_ssize_t) throws {
   if here != this._home then
-    throw new owned IllegalArgumentError("bad remote channel.readBytes");
+    throw new owned IllegalArgumentError("bad remote channel._readBytes");
   var err = qio_channel_read_amt(false, _channel_internal, x, len);
-  if err then try this._ch_ioerror(err, "in channel.readBytes");
+  if err then try this._ch_ioerror(err, "in channel._readBytes");
 }
 
 pragma "no doc"
@@ -8642,7 +8732,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
     } catch { /* ignore deferred close error */ }
   }
 
-  try r.readBytes(buf, offset:c_ssize_t);
+  try r._readBytes(buf, offset:c_ssize_t);
 
   // close errors are thrown instead of ignored
   try r.close();

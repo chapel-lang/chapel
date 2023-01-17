@@ -7,7 +7,7 @@ var chnl = f.reader(kind=ionative);
 
 var line: string;
 var lineSizeLimit = 1024;
-while (chnl.readstring(line, lineSizeLimit)) {
+while (chnl.readString(line, lineSizeLimit)) {
   write(line);
 }
 f.close();

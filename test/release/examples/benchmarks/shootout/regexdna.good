@@ -1,3 +1,5 @@
+regexdna.chpl:11: In function 'main':
+regexdna.chpl:31: warning: 'readstring' is deprecated; please use 'readString' instead
 agggtaaa|tttaccct 0
 [cgt]gggtaaa|tttaccc[acg] 3
 a[act]ggtaaa|tttacc[agt]t 9
