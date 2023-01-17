@@ -1,0 +1,1 @@
+default-argument-ref-with-const-default.chpl:2: error: const actual is passed as default to 'ref' formal 'x' of foo()
