@@ -70,6 +70,29 @@ bool isConstQualifier(Qualifier kind) {
   return false;
 }
 
+bool isImmutableQualifier(Qualifier kind) {
+  switch (kind) {
+    case Qualifier::UNKNOWN:            return false;
+    case Qualifier::DEFAULT_INTENT:     return false;
+    case Qualifier::CONST_INTENT:       return false;
+    case Qualifier::VAR:                return false;
+    case Qualifier::CONST_VAR:          return true;
+    case Qualifier::CONST_REF:          return false;
+    case Qualifier::REF:                return false;
+    case Qualifier::IN:                 return false;
+    case Qualifier::CONST_IN:           return true;
+    case Qualifier::OUT:                return false;
+    case Qualifier::INOUT:              return false;
+    case Qualifier::PARAM:              return true;
+    case Qualifier::TYPE:               return true;
+    case Qualifier::TYPE_QUERY:         return true;
+    case Qualifier::INDEX:              return false;
+    case Qualifier::FUNCTION:           return true;
+    case Qualifier::PARENLESS_FUNCTION: return true;
+    case Qualifier::MODULE:             return true;
+  }
+  return false;
+}
 
 bool isRefQualifier(Qualifier kind) {
   switch (kind) {
