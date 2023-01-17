@@ -32,4 +32,3 @@ log_info "Building tarball with version: ${version}"
 source $CWD/common-homebrew.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="homebrew"
-$CWD/nightly -cron
