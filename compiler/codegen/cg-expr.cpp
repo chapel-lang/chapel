@@ -4924,7 +4924,7 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   return codegenCallExprWithArgs(fn, args);
 #else
   INT_FATAL("Unexpected code path: gpu code generation without LLVM as target");
-  return NULL;
+  return nullptr;
 #endif
 }
 

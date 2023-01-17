@@ -42,7 +42,10 @@
 extern const char* chpl_gpuBinary;
 
 static CUcontext *chpl_gpu_primary_ctx;
+//
+// array indexed by device ID (we load the same module once for each GPU). 
 static CUmodule *chpl_gpu_cuda_modules;
+
 static int *deviceClockRates;
 
 
