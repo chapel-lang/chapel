@@ -70,7 +70,7 @@ static void test0(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test0.chpl");
   setFileText(ctx, path, text);
-  parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
 
   assert(guard.numErrors() == 1);
   displayErrors(ctx, guard);
@@ -90,7 +90,7 @@ static void test1(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test1.chpl");
   setFileText(ctx, path, text);
-  parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
 
   assert(guard.numErrors() == 1);
   displayErrors(ctx, guard);
@@ -110,7 +110,7 @@ static void test2(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test2.chpl");
   setFileText(ctx, path, text);
-  parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
 
   assert(guard.numErrors() == 3);
   displayErrors(ctx, guard);
@@ -138,7 +138,7 @@ static void test3(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test3.chpl");
   setFileText(ctx, path, text);
-  parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
 
   assert(guard.numErrors() == 3);
   displayErrors(ctx, guard);
@@ -176,7 +176,7 @@ static void test4(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test4.chpl");
   setFileText(ctx, path, text);
-  parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
 
   assert(guard.numErrors() == 10);
   displayErrors(ctx, guard);
@@ -220,7 +220,7 @@ static void test5(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test5.chpl");
   setFileText(ctx, path, text);
-  parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
 
   assert(guard.numErrors() == 2);
   displayErrors(ctx, guard);
@@ -248,7 +248,7 @@ static void test6(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test6.chpl");
   setFileText(ctx, path, text);
-  parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
 
   assert(guard.numErrors() == 4);
   displayErrors(ctx, guard);
@@ -277,7 +277,7 @@ static void test7(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test7.chpl");
   setFileText(ctx, path, text);
-  parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
 
   assert(guard.numErrors() == 1);
   displayErrors(ctx, guard);
@@ -296,7 +296,7 @@ static void test8(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test8.chpl");
   setFileText(ctx, path, text);
-  parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
 
   assert(guard.numErrors() == 1);
   displayErrors(ctx, guard);
@@ -317,7 +317,7 @@ static void test9(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test9.chpl");
   setFileText(ctx, path, text);
-  parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
 
   assert(guard.numErrors() == 4);
   displayErrors(ctx, guard);
@@ -342,7 +342,7 @@ static void test10(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test10.chpl");
   setFileText(ctx, path, text);
-  parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
 
   assert(guard.numErrors() == 1);
   displayErrors(ctx, guard);
@@ -364,7 +364,7 @@ static void test11(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test11.chpl");
   setFileText(ctx, path, text);
-  parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
 
   assert(guard.numErrors() == 2);
   displayErrors(ctx, guard);
@@ -388,7 +388,7 @@ static void test12(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test12.chpl");
   setFileText(ctx, path, text);
-  parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
 
   assert(guard.numErrors() == 4);
   displayErrors(ctx, guard);
@@ -430,7 +430,7 @@ static void test13(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test13.chpl");
   setFileText(ctx, path, text);
-  parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
 
   assert(guard.numErrors() == 6);
   displayErrors(ctx, guard);
@@ -471,7 +471,7 @@ static void test14(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test14.chpl");
   setFileText(ctx, path, text);
-  parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
 
   assert(guard.numErrors() == 1);
   displayErrors(ctx, guard);
@@ -496,7 +496,7 @@ static void test15(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test15.chpl");
   setFileText(ctx, path, text);
-  parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
 
   assert(guard.numErrors() == 1);
   displayErrors(ctx, guard);
@@ -519,7 +519,7 @@ static void test16(void) {
     )"""";
   auto path = UniqueString::get(ctx, "test16.chpl");
   setFileText(ctx, path, text);
-  parseFileToBuilderResult(ctx, path, UniqueString());
+  parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
 
   assert(guard.numErrors() == 1);
   displayErrors(ctx, guard);

@@ -2208,9 +2208,8 @@ int main(int argc, char** argv) {
     // TODO: Change which query we use to parse files as suggested by @mppf
     // parseFileContainingIdToBuilderResult(Context* context, ID id);
     // and then work with the module ID to find the preceding comment.
-    const BuilderResult& builderResult = parseFileToBuilderResult(ctx,
-                                                                  path,
-                                                                  emptyParent);
+    const BuilderResult& builderResult =
+      parseFileToBuilderResultAndCheck(ctx, path, emptyParent);
 
     if (erroHandler->numErrors() > 0) {
       erroHandler->printAndExitIfError(ctx);

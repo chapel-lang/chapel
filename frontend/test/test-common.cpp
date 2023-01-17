@@ -25,7 +25,7 @@ using namespace chpl;
 
 const uast::BuilderResult&
 parseAndReportErrors(Context* context, UniqueString path) {
-  auto& ret = parsing::parseFileToBuilderResult(context, path, {});
+  auto& ret = parsing::parseFileToBuilderResultAndCheck(context, path, {});
   return ret;
 }
 

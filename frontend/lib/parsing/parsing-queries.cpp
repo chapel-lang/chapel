@@ -181,8 +181,8 @@ const ModuleVec& parse(Context* context, UniqueString path,
   QUERY_BEGIN(parse, context, path, parentSymbolPath);
 
   // Get the result of parsing
-  const BuilderResult& p = parseFileToBuilderResult(context, path,
-                                                    parentSymbolPath);
+  const BuilderResult& p = parseFileToBuilderResultAndCheck(context, path,
+                                                            parentSymbolPath);
 
   // Compute a vector of Modules
   ModuleVec result;

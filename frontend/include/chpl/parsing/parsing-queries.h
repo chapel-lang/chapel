@@ -78,10 +78,6 @@ bool hasFileText(Context* context, const std::string& path);
 /**
   This query reads a file (with the fileText query) and then parses it.
 
-  Errors encountered are stored in the returned 'BuilderResult' and are
-  not reported to the Context. They must be handled manually, or they
-  can be reported by calling the 'parse' query instead.
-
   The 'parentSymbolPath' is relevant for submodules that are in separate files
   with 'module include'. When parsing the included module for a 'module
   include', 'parentSymbolPath' should match the symbolPath of the ID of the
@@ -92,6 +88,14 @@ bool hasFileText(Context* context, const std::string& path);
 const uast::BuilderResult&
 parseFileToBuilderResult(Context* context, UniqueString path,
                          UniqueString parentSymbolPath);
+
+/**
+  Like parseFileToBuilderResult but also runs post-parse checks on the resulting
+  builder result.
+ */
+const uast::BuilderResult&
+parseFileToBuilderResultAndCheck(Context* context, UniqueString path,
+                                 UniqueString parentSymbolPath);
 
 /**
   Like parseFileToBuilderResult but parses whatever file contained 'id'.

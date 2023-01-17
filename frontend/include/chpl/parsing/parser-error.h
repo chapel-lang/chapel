@@ -56,10 +56,4 @@
                      getLocation(SCANNER__, NLINES__, NCOLS__, MOVE_TO_END__), \
                      ##EINFO__);
 
-/**
- * Helper macro to report errors in post-parse-checks to the Builder
- */
-#define CHPL_POSTPARSE_REPORT(BUILDER__, NAME__, NODE__, EINFO__...) \
-  CHPL_REPORT((BUILDER__).context(), NAME__, NODE__->id(), EINFO__)
-
 #endif

@@ -923,7 +923,8 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   // see if there were any parse errors.
   chpl::UniqueString emptySymbolPath;
   auto& builderResult =
-    chpl::parsing::parseFileToBuilderResult(gContext, path, emptySymbolPath);
+    chpl::parsing::parseFileToBuilderResultAndCheck(gContext, path,
+                                                    emptySymbolPath);
   gFilenameLookup.push_back(path.c_str());
 
   if (dynoRealizeErrors()) USR_STOP();
