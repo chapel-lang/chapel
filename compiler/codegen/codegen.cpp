@@ -1855,6 +1855,7 @@ static void codegen_header(std::set<const char*> & cnames,
   }
 
   if(!info->cfile) {
+#ifdef HAVE_LLVM
     // Codegen any type annotations that are necessary.
     // Start with primitive types in case they are referenced by
     // records or classes.
@@ -1875,6 +1876,7 @@ static void codegen_header(std::set<const char*> & cnames,
       if (isClass(typeSymbol->type))
         typeSymbol->codegenAggMetadata();
     }
+#endif
   }
 
   genComment("Function Prototypes");
