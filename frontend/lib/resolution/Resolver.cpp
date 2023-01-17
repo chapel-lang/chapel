@@ -1081,7 +1081,7 @@ void Resolver::adjustTypesForSplitInit(ID id,
     return;
   }
 
-  // what variable does the LHS refer to? is it within the purvue of this
+  // what variable does the LHS refer to? is it within the purview of this
   // Resolver?
   bool useLocalResult = (id.symbolPath() == symbol->id().symbolPath() &&
                          id.postOrderId() >= 0);
