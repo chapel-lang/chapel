@@ -4375,7 +4375,14 @@ proc _channel.writeIt(const x) throws {
 
      :throws SystemError: Thrown if the byte sequence could not be written.
   */
+  pragma "last resort"
+  deprecated "'writeBytes' with a generic pointer argument is deprecated; please use the variant that takes a 'bytes' object"
   proc _channel.writeBytes(x, len:c_ssize_t) throws {
+    try this._writeBytes(x, len);
+  }
+
+  pragma "no doc"
+  proc _channel._writeBytes(x, len:c_ssize_t) throws {
     var err:errorCode = 0;
     on this._home {
       try this.lock(); defer { this.unlock(); }
@@ -5333,6 +5340,34 @@ proc _channel.writebits(v:integral, nbits:integral) throws {
   }
 
   try this.write(new ioBits(v:uint(64), nbits:int(8)));
+}
+
+/*
+  Write ``size`` coidpoints from a :type:`~String.string` to a ``filewriter``
+
+  :arg s: the ``string`` to write
+  :arg size: the number of codepoints to write from the ``string``
+
+  :throws SystemError: Thrown if the string could not be written to the fileWriter.
+  :throws IllegalArgumentError: Thrown if ``size`` is larger than ``s.size``
+*/
+proc fileWriter.writeString(s: string, size = s.size) throws {
+  // TODO: use a separate implementation when `fileWriter`s start supporting
+  //        non UTF-8 character encodings
+  try this.writeBinary(s, size);
+}
+
+/*
+  Write ``size`` bytes from a :type:`~Bytes.bytes` to a ``fileWriter``
+
+  :arg b: the ``bytes`` to write
+  :arg size: the number of bytes to write from the ``bytes``
+
+  :throws SystemError: Thrown if the bytes could not be written to the fileWriter.
+  :throws IllegalArgumentError: Thrown if ``size`` is larger than ``b.size``
+*/
+proc fileWriter.writeBytes(b: bytes, size = b.size) throws {
+  try this.writeBinary(b, size);
 }
 
 /*
