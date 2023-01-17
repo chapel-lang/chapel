@@ -7,6 +7,7 @@ module ChainTable {
   const loadFactorGrowThreshold : real = 1.5,
       loadFactorShrinkThreshold: real = 0.125;
 
+  // a hash-table implementation composed of a list of buckets (linked-lists of entries)
   record chainTable {
     type keyType;
     type valType;
@@ -77,7 +78,7 @@ module ChainTable {
     }
 
 
-    // yeild references to all the full entries in the map
+    // yield references to all the full entries in the map
     iter items() ref : rawTableEntry(this.keyType, this.valType) {
       for bucket in this.buckets do
           for entry in bucket.allEntries() do
@@ -85,6 +86,7 @@ module ChainTable {
               yield entry;
     }
 
+    // move the current entries into a new array of buckets with the given size
     proc __rehash(newNumBuckets: uint) {
       use MemMove;
 
@@ -191,7 +193,7 @@ module ChainTable {
       halt("Bucket index out of bounds!");
     }
 
-    // yeild references to all the entries in the linked list
+    // yield references to all the entries in the linked list
     iter allEntries() ref : rawTableEntry(this.keyType, this.valType) {
       var h = this.head.borrow();
       while h != nil {
@@ -202,6 +204,7 @@ module ChainTable {
     }
   }
 
+  // A linked-list node with a key-value entry and pointer to next node
   class ChainTableEntry {
     type keyType;
     type valType;
@@ -210,7 +213,6 @@ module ChainTable {
     var next: owned ChainTableEntry(keyType, valType)?;
 
     // allocate a new entry on the heap
-    // zero-initialize memory for the key and value
     proc init(type keyType, type valType) {
       this.keyType = keyType;
       this.valType = valType;
@@ -235,6 +237,8 @@ module ChainTable {
     }
   }
 
+  // a key-value pair
+  //  when zero-initialized, this record will have an 'entryStatus' of 'empty'
   record rawTableEntry {
     type keyType;
     type valType;
