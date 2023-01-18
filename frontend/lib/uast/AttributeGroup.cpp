@@ -45,6 +45,28 @@ owned<AttributeGroup> AttributeGroup::build(Builder* builder, Location loc,
   return toOwned(ret);
 }
 
+owned<AttributeGroup> AttributeGroup::build(Builder* builder, Location loc,
+                                    std::set<PragmaTag> pragmas,
+                                    bool isDeprecated,
+                                    bool isUnstable,
+                                    UniqueString deprecationMessage,
+                                    UniqueString unstableMessage,
+                                    AstList attributes) {
+  #ifndef NDEBUG
+    for (auto tag : pragmas) {
+      CHPL_ASSERT(tag >= 0 && tag < NUM_KNOWN_PRAGMAS);
+    }
+  #endif
+
+  AttributeGroup* ret = new AttributeGroup(std::move(pragmas), isDeprecated,
+                                   isUnstable,
+                                   deprecationMessage,
+                                   unstableMessage,
+                                   std::move(attributes));
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
+}
+
 
 } // namespace uast
 } // namespace chpl

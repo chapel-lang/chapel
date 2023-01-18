@@ -24,6 +24,7 @@
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Pragma.h"
 #include "chpl/util/iteration.h"
+#include "chpl/uast/StringLiteral.h"
 #include <set>
 
 namespace chpl {
@@ -32,19 +33,12 @@ namespace uast {
 class Attribute final: public AstNode {
 
 private:
-  UniqueString name_; // the attribute name - nodoc or deprecated for example
-  std::vector<UniqueString> toolspace_; //outername.innername, for example
-  // what's the purpose of a single actual index here?
-  int8_t actualChildNum_;
-
+  UniqueString name_; // the attribute name - nodoc or deprecated for example, or name outer.inner.part.name
   int numActuals_; // number of child actuals
 
-  Attribute(UniqueString name, std::vector<UniqueString> toolspace,
-            int8_t actualChildNum, int numActuals)
-    : AstNode(asttags::Attribute),
+  Attribute(UniqueString name, int numActuals, AstList actuals)
+    : AstNode(asttags::Attribute, std::move(actuals)),
       name_(name),
-      toolspace_(std::move(toolspace)),
-      actualChildNum_(actualChildNum),
       numActuals_(numActuals) {
   }
 
@@ -52,29 +46,80 @@ private:
     const Attribute* lhs = this;
     const Attribute* rhs = (const Attribute*) other;
     return lhs->name_ == rhs->name_ &&
-           lhs->toolspace_ == rhs->toolspace_ &&
-           lhs->actualChildNum_ == rhs->actualChildNum_ &&
            lhs->numActuals_ == rhs->numActuals_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
     name_.mark(context);
-    for (auto& ts : toolspace_) {
-      ts.mark(context);
-    }
   }
 
-  void dumpInner(const DumpSettings& s) const;
+  void dumpFieldsInner(const DumpSettings& s) const override;
 
 public:
   ~Attribute() override = default;
 
   static owned<Attribute> build(Builder* builder, Location loc,
                                 UniqueString name,
-                                std::vector<UniqueString> toolspace,
-                                int8_t actualChildNum, int numActuals);
+                                AstList actuals);
 
 
+  /**
+    returns the name of the attribute without the toolspace
+  */
+  UniqueString name() const {
+    return name_;
+  }
+
+  /**
+   Returns an iterable expression over the actuals of an attribute.
+   */
+  AstListIteratorPair<AstNode> actuals() const {
+    return AstListIteratorPair<AstNode>(children_.begin(), children_.end());
+  }
+
+
+  /*
+    Returns the number of actuals of an attribute.
+  */
+  int numActuals() const {
+    return numActuals_;
+  }
+
+  /*
+    Returns the i'th actual of an attribute.
+  */
+  const AstNode* actual(int i) const {
+    const AstNode* ast = this->child(i);
+    return ast;
+  }
+
+  // return uniquestring or nullptr if no argument, if more than 1 arg or arg not a string raise error i
+  // TODO: how to raise an error here?
+  UniqueString getOnlyStringActualOrNullptr() const {
+    UniqueString dummy;
+    if (numActuals() == 0) {
+      return dummy;
+    } else if (numActuals() > 1) {
+      //USR_FATAL(this, "Attribute %s takes only one argument", name_.c_str());
+    } else {
+      const StringLiteral* str = actual(0)->toStringLiteral();
+      if (str == nullptr) {
+        //USR_FATAL(this, "Attribute %s takes only a string argument", name_.c_str());
+      } else {
+        return str->value();
+      }
+    }
+    return dummy;
+  }
+
+
+  /*
+    Returns the full name of an attribute including its toolspace, if any.
+    ex: "deprecated" or "chpldoc.noDoc", etc.
+  */
+  const std::string fullyQualifiedAttributeName() const {
+    return name_.str();
+  }
 
 
 }; // end Attribute

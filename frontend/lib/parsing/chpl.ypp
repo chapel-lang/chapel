@@ -146,14 +146,6 @@
     return makeCommentsAndStmt(comments, stmt.release());
   }
 
-  // A struct for storing the AttributeParts to later turn into an Attribute node
-  // and add to an AttributeGroup
-  // struct AttributeParts {
-  //   PODUniqueString name; //identifier
-  //   std::vector<PODUniqueString>* toolSpace; // list of identifiers <ParserExprList>
-  //   ParserExprList* actuals;
-  // };
-
   // A struct for storing a partially constructed function prototype
   // during parsing for linkage_spec/fn_decl_stmt/etc
   // It is just saving some components of a function to be used
@@ -541,7 +533,7 @@
 
 %type <exprList> class_level_stmt_ls
 
-%type <commentsAndStmt> stmt tryable_stmt stmt_base
+%type <commentsAndStmt> stmt tryable_stmt stmt_base attribute_receiver
 %type <blockOrDo> do_stmt
 %type <commentsAndStmt> if_stmt loop_stmt
 %type <commentsAndStmt> select_stmt
@@ -681,9 +673,9 @@ stmt:
     // look at noteDeprecation
 
   } // ye olde Mid-Rule Actione - increments counts!
-  attribute_receiver
+   attribute_receiver
   {
-
+    $$ = $3;
   }
   // note that allowing all stmts here leads to a shift/reduce conflict
   /* stmt_base
@@ -882,7 +874,7 @@ deprecated_decl_stmt:
   decl_base
 | TDEPRECATED STRINGLITERAL
   {
-    context->noteDeprecation(@$, $2);
+    context->noteAttribute(@$, context->buildIdent(@1, $1), nullptr, context->makeList($2));
   }
   decl_base
   {
@@ -890,7 +882,7 @@ deprecated_decl_stmt:
   }
 | TDEPRECATED
   {
-    context->noteDeprecation(@$, nullptr);
+    context->noteAttribute(@$, context->buildIdent(@1, $1), nullptr, nullptr);
   }
   decl_base
   {
@@ -905,32 +897,33 @@ decl_base:
 
 attribute_receiver:
 loop_stmt
-| decl_base
+| deprecated_decl_stmt // here to allow @deprecated
+| unstable_decl_stmt   // here to allow @unstable
 ;
 
 attribute_group:
   attribute_decl_stmt_ls
   {
-    // $$ = context->buildAttributeGroup(@1, $1);
+    // $$ = context->buildAttributeGroup(@1, $1).release();
   }
 ;
 
 attribute_decl_stmt_ls:
   attribute_decl_stmt
-{
-  // produce uAST
-  $$ = context->makeList($1);
-}
+  {
+   // produce uAST
+   //$$ = context->makeList($1);
+  }
 | attribute_decl_stmt_ls attribute_decl_stmt
-{
-  $$ = context->appendList($1, $2);
-}
+ {
+   //$$ = context->appendList($1, $2);
+  }
 ;
 
 attribute_decl_stmt:
  attribute_decl_begin opt_attribute_decl_toolspace opt_attribute_actuals
  {
-  // $$ = context->buildAttribute();
+  context->noteAttribute(@1, $1, $2, $3);
  }
 ;
 
@@ -944,30 +937,32 @@ attribute_decl_begin:
 
 opt_attribute_decl_toolspace:
   {
-    $$ = context->makeList();
+    $$=context->makeList();
   }
   | TDOT TIDENT opt_attribute_decl_toolspace
   {
-    // if toolspace is list of identifiers, we can use exprList for toolspace
-    $$ = context->appendList($3, context->buildIdent(@2, $2));
+    // had to create this as a list first, otherwise they get inserted in the
+    // wrong order.
+    auto lst = context->makeList(context->buildIdent(@2, $2));
+    $$ = context->appendList(lst, $3);
   }
 ;
 
 opt_attribute_actuals:
-  { }
+  { $$=context->makeList(); }
   | TLP TRP
-  { }
+  { $$=context->makeList(); }
   | TLP attribute_actuals_ls TRP
   {
-    // consume the list built up in attribute_actuals_ls
+    $$ = $2;
   }
 ;
 
 attribute_actuals_ls:
   attribute_actual
-  { $$ = context->makeList(); }
+  { $$ = context->makeList($1); }
   | attribute_actuals_ls TCOMMA attribute_actual
- { $$ = context->appendList($1, $3); }
+  { $$ = context->appendList($1, $3); }
 ;
 
 attribute_actual:
@@ -978,7 +973,7 @@ attribute_actual:
 unstable_decl_stmt:
   TUNSTABLE STRINGLITERAL
   {
-    context->noteUnstable(@$, $2);
+    context->noteAttribute(@$, context->buildIdent(@1, $1), nullptr, context->makeList($2));
   }
   decl_base
   {
@@ -986,7 +981,7 @@ unstable_decl_stmt:
   }
 | TUNSTABLE
   {
-    context->noteUnstable(@$, nullptr);
+    context->noteAttribute(@$, context->buildIdent(@1, $1), nullptr, nullptr);
   }
   decl_base
   {

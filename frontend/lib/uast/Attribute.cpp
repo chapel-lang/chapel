@@ -26,16 +26,20 @@ namespace uast {
 
 owned<Attribute> Attribute::build(Builder* builder, Location loc,
                                 UniqueString name,
-                                std::vector<UniqueString> toolspace,
-                                int8_t actualChildNum, int numActuals) {
+                                AstList actuals) {
+  int numActuals = actuals.size();
 
-  Attribute* ret = new Attribute(name, std::move(toolspace),
-                                 actualChildNum, numActuals);
+  Attribute* ret = new Attribute(name, numActuals, std::move(actuals));
 
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
 
+
+void Attribute::dumpFieldsInner(const DumpSettings& s) const {
+  // TODO: What else should this dump here?
+  s.out << " " << fullyQualifiedAttributeName();
+}
 
 } // end namespace uast
 

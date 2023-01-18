@@ -31,7 +31,7 @@ struct ParserComment {
 
 // To store the different attributes of a symbol as they are built.
 struct AttributeGroupParts {
-  ParserExprList* attributeGroup; // this is where the attributes are accumulated
+  ParserExprList* attributeList; // this is where the attributes are accumulated
   std::set<PragmaTag>* pragmas;
   bool isDeprecated;
   bool isUnstable;
@@ -128,6 +128,13 @@ struct ParserContext {
   // name expression.
   void storeVarDeclLinkageName(AstNode* linkageName);
   owned<AstNode> consumeVarDeclLinkageName(void);
+
+  void noteAttribute(YYLTYPE loc, AstNode* firstIdent,
+                                  ParserExprList* toolspace,
+                                  ParserExprList* actuals);
+  owned<Attribute> buildAttribute(YYLTYPE loc, AstNode* firstIdent,
+                                  ParserExprList* toolspace,
+                                  ParserExprList* actuals);
 
   // If attributes do not exist yet, returns nullptr.
   owned<AttributeGroup> buildAttributeGroup(YYLTYPE locationOfDecl);

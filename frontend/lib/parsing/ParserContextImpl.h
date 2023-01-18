@@ -128,7 +128,37 @@ owned<AstNode> ParserContext::consumeVarDeclLinkageName(void) {
   return toOwned(ret);
 }
 
+owned<Attribute> ParserContext::buildAttribute(YYLTYPE loc, AstNode* firstIdent,
+                                               ParserExprList* toolspace,
+                                               ParserExprList* actuals) {
 
+  UniqueString fullName;
+  std::string tmpName;
+
+  // the firstIdentifier may be the name of the attribute of the first element
+  // of the toolspace. If so, we need to move it into the toolspace and get the
+  // name of the attribute from the last entry in the toolspace.
+  // e.g. @toolspace.attribute vs @attribute
+  if (toolspace == nullptr) {
+    toolspace = makeList();
+  }
+  if (actuals == nullptr) {
+    actuals = makeList();
+  }
+  if (toolspace->size() == 0) {
+    fullName = firstIdent->toIdentifier()->name();
+  } else {
+    tmpName = firstIdent->toIdentifier()->name().str();
+    for (auto& tool : *toolspace) {
+      tmpName += "." + tool->toIdentifier()->name().str();
+    }
+    fullName = UniqueString::get(context(), tmpName);
+  }
+
+  auto node = Attribute::build(builder, convertLocation(loc),
+                               fullName, std::move(consumeList(actuals)));
+  return node;
+}
 
 owned<AttributeGroup> ParserContext::buildAttributeGroup(YYLTYPE locationOfDecl) {
   numAttributesBuilt += 1;
@@ -148,7 +178,8 @@ owned<AttributeGroup> ParserContext::buildAttributeGroup(YYLTYPE locationOfDecl)
                                 attributeGroupParts.isDeprecated,
                                 attributeGroupParts.isUnstable,
                                 attributeGroupParts.deprecationMessage,
-                                attributeGroupParts.unstableMessage);
+                                attributeGroupParts.unstableMessage,
+                                std::move(consumeList(attributeGroupParts.attributeList)));
   return node;
 }
 
@@ -179,10 +210,42 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
   return ret;
 }
 
+void ParserContext::noteAttribute(YYLTYPE loc, AstNode* firstIdent,
+                                  ParserExprList* toolspace,
+                                  ParserExprList* actuals) {
+  hasAttributeGroupParts = true;
+  // TODO: Should we check that we don't have a duplicate attribute? maybe not here?
+  // put the attribute into a list and appendList to avoid segfault when unstable, pragma, or deprecated
+  // has previously set hasAttributeGroupParts to true
+  auto& attrs = attributeGroupParts.attributeList;
+  if (attributeGroupParts.attributeList == nullptr) {
+    attrs = makeList();
+  }
 
-// void ParserContext::noteAttribute(YYLTYPE loc) {
+  auto ident = firstIdent->toIdentifier();
+  if (ident->name()==UniqueString::get(context(), "@unstable")) {
+    ident = buildIdent(loc, PODUniqueString::get(context(), "unstable"));
+    AstNode* msg = nullptr;
+    if (actuals != nullptr) {
+      msg = actuals->back();
+    }
+    noteUnstable(loc, msg);
+  } else if (ident->name()==UniqueString::get(context(),"deprecated")) {
+    AstNode* msg = nullptr;
+    if (actuals != nullptr) {
+      msg = actuals->back();
+    }
+    noteDeprecation(loc, msg);
+  }
+  auto attr = buildAttribute(loc, ident, toolspace, actuals);
+  for (auto& attribute : *attrs) {
+    if (attribute->toAttribute()->name() == attr->toAttribute()->name()) {
+      error(loc, "duplicate attribute \"%s\"", attr->toAttribute()->name().c_str());
+    }
+  }
+  attrs = appendList(attrs, attr.release());
+}
 
-// }
 
 void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
   hasAttributeGroupParts = true;
@@ -194,7 +257,7 @@ void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
       attributeGroupParts.deprecationMessage = strLit->value();
     }
 
-    delete messageStr;
+   // delete messageStr;
   }
 }
 
@@ -208,7 +271,7 @@ void ParserContext::noteUnstable(YYLTYPE loc, AstNode* messageStr) {
       attributeGroupParts.unstableMessage = strLit->value();
     }
 
-    delete messageStr;
+    //delete messageStr;
   }
 }
 
