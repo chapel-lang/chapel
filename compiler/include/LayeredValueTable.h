@@ -99,6 +99,8 @@ class LayeredValueTable
       bool addedToChapelAST;
       // Line and file info for the C declaration
       astlocT astloc;
+      // Store the type of the value so we can figure out the element type of
+      // LLVM opaque pointers.
       Type* chplType;
 
       Storage() : astloc(0, NULL) {
@@ -130,7 +132,7 @@ class LayeredValueTable
     void addLayer();
     void removeLayer();
     void addValue(llvm::StringRef name, llvm::Value *value, uint8_t isLVPtr, bool isUnsigned);
-    void addGlobalValue(llvm::StringRef name, llvm::Value *value, uint8_t isLVPtr, bool isUnsigned, Type* type=NULL);
+    void addGlobalValue(llvm::StringRef name, llvm::Value *value, uint8_t isLVPtr, bool isUnsigned, Type* type);
     void addGlobalValue(llvm::StringRef name, GenRet gend);
     void addGlobalType(llvm::StringRef name, llvm::Type *type, bool isUnsigned);
     void addGlobalCDecl(clang::NamedDecl* cdecl);
