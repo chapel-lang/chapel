@@ -88,10 +88,7 @@ static void testEmptyRecordUserInit() {
   assert(initTfs->formalName(0) == "this");
   auto receiverQualType = initTfs->formalType(0);
   assert(receiverQualType.type() == qtR.type());
-
-  // TODO: should dyno mark this 'init' as 'REF'? The current behavior
-  // seems deceptive since an initializer is always going to mutate state.
-  assert(receiverQualType.kind() == QualifiedType::CONST_REF);
+  assert(receiverQualType.kind() == QualifiedType::REF);
 }
 
 static void testEmptyRecordCompilerGenInit() {

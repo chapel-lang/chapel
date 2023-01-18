@@ -932,6 +932,7 @@ CanPassResult CanPassResult::canPass(Context* context,
         return fail(); // ref type requires same time which is ruled out above
 
       case QualifiedType::CONST_REF:
+      case QualifiedType::REF_MAYBE_CONST:
       case QualifiedType::TYPE:
         {
           auto got = canPassSubtype(context, actualT, formalT);

@@ -51,6 +51,7 @@ class QualifiedType final {
   static const Kind UNKNOWN = uast::Qualifier::UNKNOWN;
   static const Kind DEFAULT_INTENT = uast::Qualifier::DEFAULT_INTENT;
   static const Kind CONST_INTENT = uast::Qualifier::CONST_INTENT;
+  static const Kind REF_MAYBE_CONST = uast::Qualifier::REF_MAYBE_CONST;
   static const Kind VAR = uast::Qualifier::VAR;
   static const Kind CONST_VAR = uast::Qualifier::CONST_VAR;
   static const Kind CONST_REF = uast::Qualifier::CONST_REF;
