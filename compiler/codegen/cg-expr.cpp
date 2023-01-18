@@ -5003,7 +5003,18 @@ DEFINE_PRIM(GPU_SYNC_THREADS) {
     return;
   }
 #ifdef HAVE_LLVM
-  /*Type *chplReturnType = dtVoid;
+  /* One approach to generating the barrier to call the
+   llvm intrinsic function for it, however
+   this approach ended up causing issues for us likely due this bug
+   reported here:
+
+    https://github.com/llvm/llvm-project/issues/58626
+
+   So instead we call a function in our runtime that includes inline
+   assembly to make the barrier call. If the llvm issue is resolved
+   we may want to change this back:
+
+  Type *chplReturnType = dtVoid;
   llvm::Function *fun = llvm::Intrinsic::getDeclaration(gGenInfo->module,
     llvm::Intrinsic::nvvm_barrier0);
   ret.val = gGenInfo->irBuilder->CreateCall(fun);
