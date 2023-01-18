@@ -81,6 +81,11 @@ struct Resolver {
   // the return type of the function (inferred or not)
   types::QualifiedType returnType;
 
+  // Analysis for ref-maybe-const formals might skip a recursive call
+  // to avoid recursive query invocation.
+  // In that case, details of what was skipped will be stored here.
+  std::vector<ResolvedFunction::SkippedRefMaybeConst> skippedRefMaybeConst;
+
   static PoiInfo makePoiInfo(const PoiScope* poiScope) {
     if (poiScope == nullptr)
       return PoiInfo();

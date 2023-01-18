@@ -1366,6 +1366,13 @@ class ResolutionResultByPostorderID {
   This type represents a resolved function.
 */
 class ResolvedFunction {
+ public:
+  struct SkippedRefMaybeConst {
+    const TypedFnSignature* calledFn = nullptr;
+    int thisFnFormalIdx = -1;
+    int calledFnFormalIdx = -1;
+  };
+
  private:
   const TypedFnSignature* signature_ = nullptr;
 
@@ -1380,6 +1387,11 @@ class ResolvedFunction {
 
   // the return type computed for this function
   types::QualifiedType returnType_;
+
+  // Analysis for ref-maybe-const formals might skip a recursive call
+  // to avoid recursive query invocation.
+  // In that case, details of what was skipped will be stored here.
+  std::vector<SkippedRefMaybeConst> skippedRefMaybeConst;
 
  public:
   ResolvedFunction(const TypedFnSignature *signature,
