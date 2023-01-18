@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1856,8 +1856,6 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
 static void handleOutIntents(FnSymbol* fn, CallExpr* call,
                              SymbolMap& inTmpToActualMap) {
 
-  int j = 0;
-
   // Function with no actuals can't use out intent
   // Returning early in that event simplifies the following code.
   if (call->numActuals() == 0)
@@ -1952,7 +1950,6 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
     }
 
     currActual = nextActual;
-    j++;
   }
 }
 

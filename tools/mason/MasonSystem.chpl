@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -149,7 +149,7 @@ proc printPkgPc(args) throws {
       //
       var pcDir = "".join(getPkgVariable(pkgName, "--variable=pcfiledir").these()).strip();
       var pcFile = joinPath(pcDir, pkgName + ".pc");
-      var pc = open(pcFile, iomode.r);
+      var pc = openreader(pcFile);
       writeln("\n------- " + pkgName + ".pc -------\n");
       for line in pc.lines() {
         write(line);

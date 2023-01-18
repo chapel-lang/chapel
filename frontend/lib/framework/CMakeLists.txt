@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -15,17 +15,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-target_sources(libdyno-obj
+target_sources(ChplFrontend-obj
                PRIVATE
 
                compiler-configuration.cpp
                Context.cpp
                ErrorBase.cpp
-               error-classes-list.cpp
                ErrorMessage.cpp
                ErrorWriter.cpp
                ID.cpp
                Location.cpp
+               parser-error-classes-list.cpp
+               resolution-error-classes-list.cpp
                UniqueString.cpp
 
               )

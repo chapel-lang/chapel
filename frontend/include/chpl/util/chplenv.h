@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,6 +51,25 @@ getChplEnv(const std::map<std::string, const char*>& varMap,
 llvm::ErrorOr<ChplEnvMap>
 getChplEnv(const std::unordered_map<std::string, std::string>& varMap,
            const char* chplHome);
+
+/*
+  Check if a given path might be CHPL_HOME based on it containing
+  util/chplenv
+*/
+bool isMaybeChplHome(std::string path);
+
+/*
+  Try to locate a proper CHPL_HOME value given the `main` executable's name
+  and memory address. Output variables chplHomeOut, installed, fromEnv, and
+  warningMessage are used to capture probable CHPL_HOME, whether chpl appears
+  to be installed, whether we got the value of CHPL_HOME from the environment var,
+  and a possible warning message if CHPL_HOME and the chpl executable's location
+  do not match.
+*/
+std::error_code findChplHome(char* argv0, void* mainAddr,
+                             std::string& chplHomeOut,
+                             bool& installed, bool& fromEnv,
+                             std::string& warningMessage);
 
 } // namespace chpl
 

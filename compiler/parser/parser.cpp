@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -888,7 +888,7 @@ static DynoErrorHandler* gDynoErrorHandler = nullptr;
 
 static bool dynoRealizeErrors(void) {
   INT_ASSERT(gDynoErrorHandler);
-  bool hadErrors;
+  bool hadErrors = false;
   llvm::SmallPtrSet<const chpl::ErrorBase*, 10> issuedErrors;
   for (auto err : gDynoErrorHandler->errors()) {
     hadErrors = true;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,8 +23,8 @@
 #include "chpl/framework/Location.h"
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/Function.h"
-#include "chpl/uast/IntentList.h"
 #include "chpl/uast/NamedDecl.h"
+#include "chpl/uast/Qualifier.h"
 
 namespace chpl {
 namespace uast {
@@ -99,7 +99,10 @@ class FunctionSignature final : public AstNode {
            lhs->returnTypeChildNum_ == rhs->returnTypeChildNum_;
   }
 
-  void markUniqueStringsInner(Context* context) const override {}
+  void markUniqueStringsInner(Context* context) const override { }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
 
  public:
   ~FunctionSignature() override = default;

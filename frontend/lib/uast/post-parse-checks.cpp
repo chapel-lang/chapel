@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,6 +21,7 @@
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/parsing/parser-error.h"
 #include "chpl/uast/all-uast.h"
 #include <vector>
 
@@ -156,6 +157,7 @@ struct Visitor {
   void visit(const Union* node);
 };
 
+
 // Note that even though we pass in the IDs for error messages here, the
 // locations map is not actually populated for the user until after the
 // builder wraps up and produces a builder result.
@@ -286,8 +288,8 @@ void Visitor::checkDomainTypeQueryUsage(const TypeQuery* node) {
   }
 
   if (doEmitError) {
-    error(node, "domain query expressions may currently "
-                "only be used in formal argument types.");
+    error(node, "domain query expressions may currently only be "
+                "used in formal argument types.");
   }
 }
 
@@ -302,9 +304,10 @@ void Visitor::checkNoDuplicateNamedArguments(const FnCall* node) {
       if (!actualNames.insert(name).second) {
         auto actual = node->actual(i);
         CHPL_ASSERT(actual);
-        error(actual, "the named argument '%s' is used more "
-                      "than once in the same function call.",
-                      name.c_str());
+        error(actual,
+              "the named argument '%s' is used more than "
+              "once in the same function call.",
+              name.c_str());
       }
     }
   }
@@ -378,9 +381,8 @@ bool Visitor::handleNestedDecoratorsInNew(const FnCall* node) {
     CHPL_ASSERT(outerMgt != defMgt);
 
     // TODO: Also error about 'please use class? instead of %s?'...
-    error(outerPin, "type expression uses multiple class kinds: %s %s.",
-                    New::managementToString(outerMgt),
-                    New::managementToString(innerMgt));
+    CHPL_POSTPARSE_REPORT(builder_, MultipleManagementStrategies, outerPin, outerMgt,
+                          innerMgt);
 
     // Cycle _once_, to try and catch something like 'new owned owned'.
     // Note that if a third pair of duplicate decorators exists, then
@@ -412,9 +414,8 @@ Visitor::handleNestedDecoratorsInTypeConstructors(const FnCall* node) {
     CHPL_ASSERT(outerMgt != defMgt);
 
     // TODO: Also error about 'please use class? instead of %s?'...
-    error(node, "type expression uses multiple class kinds: %s %s.",
-               New::managementToString(outerMgt),
-               New::managementToString(innerMgt));
+    CHPL_POSTPARSE_REPORT(builder_, MultipleManagementStrategies, node, outerMgt,
+                          innerMgt);
   }
 
   return true;
@@ -510,7 +511,7 @@ void Visitor::checkConfigVar(const Variable* node) {
     CHPL_ASSERT(varTypeStr);
 
     error(node, "configuration %s are allowed only at module scope.",
-                varTypeStr);
+          varTypeStr);
   }
 }
 
@@ -529,8 +530,7 @@ void Visitor::checkOperatorNameValidity(const Function* node) {
   } else {
     // functions with operator names must be declared as operators
     if (isOpName(node->name())) {
-      error(node, "operators cannot be declared without the operator keyword.",
-            node->name().c_str());
+      error(node, "operators cannot be declared without the operator keyword.");
     }
   }
 }
@@ -582,7 +582,7 @@ void Visitor::checkProcedureRequiresParens(const Function* node) {
 void Visitor::checkOverrideNonMethod(const Function* node) {
   if (!node->isMethod() && node->isOverride()) {
     error(node, "'override' cannot be applied to non-method '%s'.",
-                node->name().c_str());
+          node->name().c_str());
   }
 }
 
@@ -609,10 +609,9 @@ void Visitor::checkFormalsForTypeOrParamProcs(const Function* node) {
 
     if (doEmitError) {
       CHPL_ASSERT(formalIntentStr);
-      error(decl, "cannot use '%s' intent in a function returning "
-                  "with '%s' intent.",
-                  formalIntentStr,
-                  returnIntentStr);
+      error(decl,
+            "cannot use '%s' intent in a function returning with '%s' intent.",
+            formalIntentStr, returnIntentStr);
     }
   }
 }
@@ -636,10 +635,10 @@ void Visitor::checkNoReceiverClauseOnPrimaryMethod(const Function* node) {
           receiverTypeStr = ss.str();
         }
 
-        error(node, "type binding clauses ('%s.' in this case) are not "
-                    "supported in declarations within a class, record "
-                    "or union.",
-                    receiverTypeStr.c_str());
+        error(node,
+              "type binding clauses ('%s.' in this case) are not supported in "
+              "declarations within a class, record or union.",
+              receiverTypeStr.c_str());
       }
     }
   }
@@ -648,19 +647,24 @@ void Visitor::checkNoReceiverClauseOnPrimaryMethod(const Function* node) {
 void Visitor::checkLambdaReturnIntent(const Function* node) {
   if (node->kind() != Function::LAMBDA) return;
 
+  const char* disallowedReturnType = NULL;
   switch (node->returnIntent()) {
     case Function::CONST_REF:
     case Function::REF:
-      error(node, "'ref' return types are not allowed in lambdas.");
+      disallowedReturnType = "ref";
       break;
     case Function::PARAM:
-      error(node, "'param' return types are not allowed in lambdas.");
+      disallowedReturnType = "param";
       break;
     case Function::TYPE:
-      error(node, "'type' return types are not allowed in lambdas.");
+      disallowedReturnType = "type";
       break;
     default:
       break;
+  }
+  if (disallowedReturnType) {
+    error(node, "'%s' return types are not allowed in lambdas.",
+          disallowedReturnType);
   }
 }
 
@@ -688,16 +692,17 @@ void Visitor::checkProcDefFormalsAreNamed(const Function* node) {
 void Visitor::checkPrivateDecl(const Decl* node) {
   if (node->visibility() != Decl::PRIVATE) return;
 
+  bool privateOnType = false;
   if (node->isTypeDecl()) {
-    error(node, "can't apply private to types yet.");
-    return;
-  }
-
-  if (auto var = node->toVariable()) {
+    privateOnType = true;
+  } else if (auto var = node->toVariable()) {
     if (var->kind() == Variable::TYPE) {
-      error(node, "can't apply private to types yet.");
-      return;
+      privateOnType = true;
     }
+  }
+  if (privateOnType) {
+    CHPL_POSTPARSE_REPORT(builder_, CantApplyPrivate, node, "types");
+    return;
   }
 
   // Fetch the enclosing declaration. If we are top level then return.
@@ -705,28 +710,25 @@ void Visitor::checkPrivateDecl(const Decl* node) {
   if (!enclosingDecl) return;
 
   if (enclosingDecl->isFunction()) {
-    warn(node, "private declarations within function bodies are "
-               "meaningless.");
+    warn(node, "private declarations within function bodies are meaningless.");
 
   } else if (enclosingDecl->isAggregateDecl() && !node->isTypeDecl()) {
-    error(node, "can't apply private to the fields or methods of a class "
-                "or record yet.");
-
-  // TODO: Might need to adjust the order of the stuff in this branch.
+    CHPL_POSTPARSE_REPORT(builder_, CantApplyPrivate, node,
+                          "the fields or methods of a class or record");
+    // TODO: Might need to adjust the order of the stuff in this branch.
   } else if (auto mod = enclosingDecl->toModule()) {
     if (auto fn = node->toFunction()) {
       if (fn->isMethod()) {
-        error(node, "can't apply private to the fields or methods of a "
-                    "class or record yet.");
+        CHPL_POSTPARSE_REPORT(builder_, CantApplyPrivate, node,
+                              "the fields or methods of a class or record");
       }
 
     } else if (parent(0)->isBlock() && !isParentFalseBlock(0)) {
-      warn(node, "private declarations within nested blocks are "
-                 "meaningless.");
+      warn(node, "private declarations within nested blocks are meaningless.");
 
     } else if (parent(0) != mod) {
-      warn(node, "private declarations are meaningless outside of module "
-                 "level declarations.");
+      warn(node, "private declarations are meaningless outside "
+                 "of module level declarations.");
     }
   }
 }
@@ -812,15 +814,16 @@ void Visitor::checkLinkageName(const NamedDecl* node) {
 
   if (!linkageName->isStringLiteral()) {
     error(linkageName, "the linkage name for '%s' must be a string literal.",
-                       node->name().c_str());
+          node->name().c_str());
   }
 }
 
 // TODO: This relies on the "warn unstable" flag that we do not have.
 void Visitor::warnUnstableUnions(const Union* node) {
   if (!isFlagSet(CompilerFlags::WARN_UNSTABLE)) return;
-  warn(node, "unions are currently unstable and are expected to change "
-             "in ways that will break their current uses.");
+  warn(node,
+       "unions are currently unstable and are expected to change in ways that "
+       "will break their current uses.");
 }
 
 void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
@@ -830,13 +833,14 @@ void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
   auto name = node->name();
 
   if (name.startsWith("_")) {
-    warn(node, "symbol names with leading underscores (%s) are unstable.",
-               name.c_str());
+    warn(node,
+         "symbol names with leading underscores (%s) are unstable.",
+         name.c_str());
   }
 
   if (name.startsWith("chpl_")) {
-    warn(node, "symbol names beginning with 'chpl_' (%s) are unstable.",
-               name.c_str());
+    warn(node,
+        "symbol names beginning with 'chpl_' (%s) are unstable.", name.c_str());
   }
 }
 

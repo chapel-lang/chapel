@@ -93,7 +93,7 @@ proc checkAllocations() {
 
   proc printthem(arr)
   {
-    for id in sorted(arr.valuesToArray()) {
+    for id in sorted(arr.keysToArray()) {
       write("(id=", id, " x=", to_x[id], ") ");
     }
   }
@@ -131,4 +131,3 @@ proc checkAllocations() {
   }
   return true;
 }
-

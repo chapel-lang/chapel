@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,11 +31,42 @@
 
 namespace chpl {
 
+class IdOrLocation {
+ protected:
+  // if id_ is set, it is used instead of location_
+  ID id_;
+  // location_ should only be used if id_ is empty which happens for
+  // parser errors
+  Location location_;
+
+ public:
+  IdOrLocation() = default;
+  IdOrLocation(ID id) : id_(std::move(id)) {}
+  IdOrLocation(Location location) : location_(std::move(location)) {}
+
+  /**
+    Return the location in the source code where this error occurred.
+  */
+  Location computeLocation(Context* context) const;
+  const ID& id() const { return id_; }
+  const Location& location() const { return location_; }
+
+  bool operator==(const IdOrLocation& other) const {
+    return id_ == other.id_ &&
+           location_ == other.location_;
+  }
+
+  void mark(Context* context) const {
+    id_.mark(context);
+    location_.mark(context);
+  }
+};
+
 /**
   This class represents an error/warning message. The message
   is saved (in the event it needs to be reported again).
  */
-class ErrorMessage final {
+class ErrorMessage final : public IdOrLocation {
  public:
   enum Kind {
     NOTE,
@@ -46,11 +77,6 @@ class ErrorMessage final {
 
  private:
   Kind kind_;
-  // if id_ is set, it is used instead of location_
-  ID id_;
-  // location_ should only be used if id_ is empty
-  // which happens for parser errors
-  Location location_;
 
   std::string message_;
 
@@ -61,8 +87,7 @@ class ErrorMessage final {
   // TODO: how to handle a callstack of sorts?
 
  public:
-  ErrorMessage(Kind kind, Location location, std::string message);
-  ErrorMessage(Kind kind, ID id, std::string message);
+  ErrorMessage(Kind kind, IdOrLocation idOrLoc, std::string message);
 
   /** Add an ErrorMessage as detail information to this ErrorMessage. */
   void addDetail(ErrorMessage err);
@@ -74,25 +99,15 @@ class ErrorMessage final {
   */
   bool isEmpty() const { return message_.empty() && details_.empty(); }
 
-  /**
-    Return the location in the source code where this error occurred.
-  */
-  Location computeLocation(Context* context) const;
-
   const std::string& message() const { return message_; }
 
   const std::vector<ErrorMessage>& details() const { return details_; }
 
   Kind kind() const { return kind_; }
 
-  inline ID id() const { return id_; }
-
-  inline Location location() const { return location_; }
-
   inline bool operator==(const ErrorMessage& other) const {
-    return kind_ == other.kind_ &&
-           id_ == other.id_ &&
-           location_ == other.location_ &&
+    return IdOrLocation::operator==(other) &&
+           kind_ == other.kind_ &&
            message_ == other.message_ &&
            details_ == other.details_;
   }

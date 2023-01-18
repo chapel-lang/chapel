@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -41,19 +41,16 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "timer.h"
 #include "version.h"
 #include "visibleFunctions.h"
 
 #include "chpl/framework/Context.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/util/chplenv.h"
-#include "chpl/framework/compiler-configuration.h"
+
 #include "chpl/util/assertions.h"
 
-#include <inttypes.h>
 #include <string>
-#include <sstream>
 #include <map>
 
 #ifdef HAVE_LLVM
@@ -331,6 +328,8 @@ static bool compilerSetChplLLVM = false;
 
 static std::vector<std::string> cmdLineModPaths;
 
+// TODO: with the updates to filesystem that utilize GetExecutablePath,
+// do we still need this block comment?
 /* Note -- LLVM provides a way to get the path to the executable...
 // This function isn't referenced outside its translation unit, but it
 // can't use the "static" keyword because its address is used for
@@ -347,15 +346,8 @@ llvm::sys::Path GetExecutablePath(const char *Argv0) {
 
 static bool isMaybeChplHome(const char* path)
 {
-  bool  ret  = false;
-  char* real = dirHasFile(path, "util/chplenv");
+  return chpl::isMaybeChplHome(std::string(path));
 
-  if (real)
-    ret = true;
-
-  free(real);
-
-  return ret;
 }
 
 static void setChplHomeDerivedVars() {
@@ -1361,16 +1353,12 @@ static void setupLLVMCodeGen() {
     fLlvmCodegen = false;
 }
 
-bool useDefaultEnv(std::string key) {
+bool useDefaultEnv(std::string key, bool isCrayPrgEnv) {
   // Check conditions for which default value should override argument provided
 
   // For Cray programming environments, we must infer CHPL_TARGET_CPU
-  // Note: When CHPL_TARGET_CPU is processed, CHPL_HOST_COMPILER is already
-  // set in envMap, due to the order of printchplenv output
-  if (key == "CHPL_TARGET_CPU") {
-    if (strstr(envMap["CHPL_TARGET_COMPILER"], "cray-prgenv") != NULL) {
-      return true;
-    }
+  if (key == "CHPL_TARGET_CPU" && isCrayPrgEnv) {
+    return true;
   }
 
   // Always use default env for internal variables that could include spaces
@@ -1399,10 +1387,20 @@ static void populateEnvMap() {
               err.message().c_str());
   }
 
+  // figure out if it's a Cray programing environment so we can infer
+  // CHPL_TARGET_CPU
+  bool isCrayPrgEnv = false;
+  {
+    std::string targetCompiler = chplEnvResult.get()["CHPL_TARGET_COMPILER"];
+    if (strstr(targetCompiler.c_str(), "cray-prgenv") != NULL) {
+      isCrayPrgEnv = true;
+    }
+  }
+
   for (auto kvPair : chplEnvResult.get()){
     if (envMap.find(kvPair.first) == envMap.end()) {
       envMap[kvPair.first] = strdup(kvPair.second.c_str());
-    } else if (useDefaultEnv(kvPair.first)) {
+    } else if (useDefaultEnv(kvPair.first, isCrayPrgEnv)) {
       envMap.erase(kvPair.first);
       envMap[kvPair.first] = strdup(kvPair.second.c_str());
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1855,13 +1855,14 @@ static void codegen_header(std::set<const char*> & cnames,
   }
 
   if(!info->cfile) {
+#ifdef HAVE_LLVM
     // Codegen any type annotations that are necessary.
     // Start with primitive types in case they are referenced by
     // records or classes.
     forv_Vec(TypeSymbol, typeSymbol, gTypeSymbols) {
       if (typeSymbol->defPoint->parentExpr == rootModule->block &&
           isPrimitiveType(typeSymbol->type) &&
-          typeSymbol->llvmType) {
+          typeSymbol->getLLVMType()) {
         typeSymbol->codegenMetadata();
       }
     }
@@ -1875,6 +1876,7 @@ static void codegen_header(std::set<const char*> & cnames,
       if (isClass(typeSymbol->type))
         typeSymbol->codegenAggMetadata();
     }
+#endif
   }
 
   genComment("Function Prototypes");

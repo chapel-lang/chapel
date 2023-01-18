@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,8 +30,6 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
 
-#include "./ErrorGuard.h"
-
 // resolves the last function, or module if testModule=true
 // checks that the copy elision points match the string IDs provided
 static void testCopyElision(const char* test,
@@ -59,6 +57,12 @@ static void testCopyElision(const char* test,
 
   const Function* func = M->stmt(M->numStmts()-1)->toFunction();
 
+  if (func) {
+    func->dump();
+  } else {
+    M->dump();
+  }
+
   std::set<ID> splitIds;
   std::set<ID> elisionPoints;
 
@@ -72,7 +76,9 @@ static void testCopyElision(const char* test,
 
     elisionPoints = computeElidedCopies(context, func,
                                         r->resolutionById(),
-                                        splitIds);
+                                        /* poiScope */ nullptr,
+                                        splitIds,
+                                        r->returnType());
   } else {
     printf("Resolving module\n");
     // check the module init function
@@ -82,7 +88,10 @@ static void testCopyElision(const char* test,
 
     elisionPoints = computeElidedCopies(context, M,
                                         rr,
-                                        splitIds);
+                                        /* poiScope */ nullptr,
+                                        splitIds,
+                                        QualifiedType(QualifiedType::VAR,
+                                                      VoidType::get(context)));
   }
 
   std::set<std::string> pointNames;
@@ -562,6 +571,169 @@ static void test25() {
     {});
 }
 
+// test that copy elision only applies to the first assignment
+// when using split init
+static void test26() {
+  testCopyElision("test26",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x: int;
+          var y: int;
+          var z;
+          z = x;
+          z = y;
+        }
+      }
+    )"""",
+    {"M.test@7"});
+}
+// including with an inner block
+static void test27() {
+  testCopyElision("test27",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x: int;
+          var y: int;
+          var z;
+          {
+            z = x;
+          }
+          z = y;
+        }
+      }
+    )"""",
+    {"M.test@7"});
+}
+// including with a conditional
+static void test28() {
+  testCopyElision("test28",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        config const cond = true;
+
+        proc test() {
+          var a: int;
+          var z;
+          if cond {
+            z = a;
+          } else {
+            z = a;
+          }
+          z = c;
+        }
+      }
+    )"""",
+    {"M.test@6", "M.test@10"});
+}
+// including with a try/catch
+static void test29() {
+  testCopyElision("test29",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        config const cond = true;
+
+        proc test() {
+          var a: int;
+          var b: int;
+          var z;
+          try {
+            z = a;
+          } catch {
+            return;
+          }
+          z = b;
+        }
+      }
+    )"""",
+    {"M.test@7"});
+}
+
+// out variable can't be copy elided from b/c it is mentioned by return
+static void test30() {
+  testCopyElision("test30",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        proc test(out x: int) {
+          var y = x;
+          return;
+        }
+      }
+    )"""",
+    {});
+}
+static void test31() {
+  testCopyElision("test31",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        proc test(out x: int) {
+          var y = x;
+        }
+      }
+    )"""",
+    {});
+}
+static void test32() {
+  testCopyElision("test32",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        proc test(inout x: int) {
+          var y = x;
+          return;
+        }
+      }
+    )"""",
+    {});
+}
+static void test33() {
+  testCopyElision("test33",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        proc test(inout x: int) {
+          var y = x;
+        }
+      }
+    )"""",
+    {});
+}
+
 
 int main() {
   test1();
@@ -589,6 +761,14 @@ int main() {
   test23();
   test24();
   test25();
+  test26();
+  test27();
+  test28();
+  test29();
+  test30();
+  test31();
+  test32();
+  test33();
 
   return 0;
 }

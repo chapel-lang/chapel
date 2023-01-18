@@ -59,14 +59,14 @@ help-source:
 
 docs: FORCE
 	@COMP_DOCS_ERROR=0 ; \
-	(cd ../frontend && $(MAKE) -f Makefile.help frontend-docs) || \
+	(cd ../compiler && $(MAKE) frontend-docs) || \
 	 COMP_DOCS_ERROR=1 ; \
 	$(MAKE) html-release && \
 	if [ $$COMP_DOCS_ERROR -ne 0 -o ! -d $(COMPILER_INTERNALS_DOXYGEN) ] ; \
 	  then \
 	  echo ; \
 	  echo " This docs build does not include frontend library API docs" ; \
-	  echo " Try 'make clobber-frontend && make frontend-docs'" ; \
+	  echo " Try 'make frontend-docs'" ; \
 	fi
 
 
@@ -191,7 +191,7 @@ clean-symlinks: FORCE
 	find $(SOURCEDIR) -type l -delete
 
 clean-doxygen: FORCE
-	cd ../frontend && $(MAKE) -f Makefile.help clean-frontend-docs
+	rm -rf $(CHPL_MAKE_HOME)/build/doc/doxygen
 
 FORCE:
 

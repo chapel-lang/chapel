@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,8 +28,6 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
-
-#include "./ErrorGuard.h"
 
 static const bool ERRORS_EXPECTED=true;
 
@@ -567,6 +565,8 @@ static void test21() {
     {"x", "y"},
     /* expect errors for now as a temporary workaround */ ERRORS_EXPECTED);
 }
+
+/* not tested -- "ount intent varargs are not supported"
 static void test22() {
   testSplitInit("test22",
     R""""(
@@ -589,6 +589,7 @@ static void test22() {
     )"""",
     {"x"});
 }
+
 static void test23() {
   testSplitInit("test23",
     R""""(
@@ -612,7 +613,7 @@ static void test23() {
     )"""",
     {"x", "y"});
 }
-/* Uncomment these tests after we enough tuple support implemented
+
 static void test24() {
   testSplitInit("test24",
     R""""(
@@ -1167,7 +1168,7 @@ static void test46() {
           } else {
             try {
               return;
-            } catch e {
+            } catch {
               return;
             }
           }
@@ -1175,6 +1176,163 @@ static void test46() {
       }
     )"""",
     {"x"});
+}
+
+// not split inited because otherwise 'x' would be uninitialized
+// when the conditional returns
+// (alternative design would be to default-init it for the return,
+//  but that is not what we have)
+static void test47() {
+  testSplitInit("test47",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        config var cond = true;
+
+        proc test(out x: int) {
+          if cond {
+            return;
+          } else {
+            x = 5;
+          }
+        }
+      }
+    )"""",
+    {});
+}
+
+// similar to the above but with try/catch
+static void test48() {
+  testSplitInit("test48",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test(out x: int) {
+          try {
+          } catch {
+            return;
+          }
+        }
+      }
+    )"""",
+    {});
+}
+
+static void test49() {
+  testSplitInit("test49",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test(out x: int) {
+          return;
+          x = 23;
+        }
+      }
+    )"""",
+    {});
+}
+
+// the next three are similar to the previous three, but with
+// throwing instead of returning.
+//
+// initializing an 'out' formal in a conditional is OK if the
+// other branch returns or throws
+static void test50() {
+  testSplitInit("test50",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        config var cond = false;
+
+        proc test(out x: int) {
+          if cond {
+            throw nil;
+          } else {
+            x = 5;
+          }
+        }
+      }
+    )"""",
+    {"x"});
+}
+static void test51() {
+  testSplitInit("test51",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test(out x: int) {
+          try {
+            x = 5;
+          } catch {
+            throw nil;
+          }
+        }
+      }
+    )"""",
+    {"x"});
+}
+
+static void test52() {
+  testSplitInit("test52",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test(out x: int) {
+          throw nil;
+          x = 23;
+        }
+      }
+    )"""",
+    {});
+}
+
+static void test53() {
+  testSplitInit("test53",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        config var cond = false;
+
+        proc test() {
+          var x: int;
+          if cond {
+            throw nil;
+            x = 5;
+          } else {
+          }
+          x;
+        }
+      }
+    )"""",
+    {});
 }
 
 
@@ -1200,10 +1358,10 @@ int main() {
   test19();
   test20();
   test21();
-  test22();
-  test23();
-  //test24(); TODO
-  //test25(); TODO
+  //test22(); out intent varargs
+  //test23(); out intent varargs
+  //test24(); out intent varargs
+  //test25(); out intent varargs
   test26a();
   test26b();
   test26c();
@@ -1227,6 +1385,13 @@ int main() {
   test44();
   test45();
   test46();
+  test47();
+  test48();
+  test49();
+  test50();
+  test51();
+  test52();
+  test53();
 
   return 0;
 }

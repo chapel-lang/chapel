@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -179,7 +179,7 @@ module ProtobufProtocolSupport {
     proc bytesConsumeBase(ch: readingChannel): bytes throws {
       const (byteLen, len) = unsignedVarintConsume(ch);
       var s:bytes;
-      ch.readbytes(s, byteLen:int);
+      ch.readBytes(s, byteLen:int);
       return s;
     }
 
@@ -290,7 +290,7 @@ module ProtobufProtocolSupport {
                            memReader:readingChannel) throws {
      var s: bytes;
      var (payloadLength, _) = unsignedVarintConsume(ch);
-     ch.readbytes(s, payloadLength:int);
+     ch.readBytes(s, payloadLength:int);
      memWriter.write(s);
      memWriter.close();
      messageObj._deserialize(memReader);
@@ -649,7 +649,7 @@ module ProtobufProtocolSupport {
       }
 
       memWriter.close();
-      memReader.readbytes(s);
+      memReader.readAll(s);
       tmpMem.close();
       return s;
     }
@@ -666,7 +666,7 @@ module ProtobufProtocolSupport {
 
         messageAppend(messageObj, 2, memWriter);
         memWriter.close();
-        memReader.readbytes(s);
+        memReader.readAll(s);
         tmpMem.close();
 
         this.value = s;
@@ -710,7 +710,7 @@ module ProtobufProtocolSupport {
               this.typeUrl = stringConsume(binCh);
             }
             when 2 {
-              binCh.readbytes(this.value);
+              binCh.readAll(this.value);
             }
             when -1 {
               break;

@@ -21,7 +21,7 @@ proc main() {
   var temp = open(lf, iomode.cw);
   {
     var w = temp.writer();
-    for line in open(goodLock, iomode.r).lines() do
+    for line in openreader(goodLock).lines() do
       w.write(line.replace('CHPL_CUR_FULL', currentVersion));
     w.close();
   }

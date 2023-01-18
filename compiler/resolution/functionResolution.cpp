@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -6395,7 +6395,6 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
   bool                prefer1 = false;
   bool                prefer2 = false;
 
-  int                 nArgsSame = 0;
   int                 nArgsIncomparable = 0;
 
   for (int k = start; k < DC.actuals->n; ++k) {
@@ -6438,8 +6437,6 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
 
     if (p == -1) {
       nArgsIncomparable++;
-    } else if (p == 0) {
-      nArgsSame++;
     }
 
     if (actualParam) {

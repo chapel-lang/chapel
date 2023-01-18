@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -171,6 +171,8 @@ static void test6() {
   auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { }
+                  proc R.init() { }
+                  proc R.deinit() { }
                   proc f() {
                     var r: R;
                     return (r, r);

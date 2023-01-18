@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +25,11 @@
 namespace chpl {
 namespace uast {
 
+
+void OpCall::dumpFieldsInner(const DumpSettings& s) const {
+  s.out << " " << op_.str();
+  Call::dumpFieldsInner(s);
+}
 
 owned<OpCall> OpCall::build(Builder* builder,
                             Location loc,

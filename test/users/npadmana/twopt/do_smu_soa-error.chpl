@@ -114,10 +114,10 @@ class Particle3D {
 
 
 proc countLines(fn : string) : int {
-  var ff = open(fn, iomode.r);
+  var fr = openreader(fn);
   var ipart = 0;
-  for iff in ff.lines() do ipart +=1;
-  ff.close();
+  for iff in fr.lines() do ipart +=1;
+  fr.close();
   return ipart;
 }
 
@@ -355,4 +355,3 @@ proc initialPP12() {
     writeHist(stdout,hh,"%20.5er ");
   }
 }
-
