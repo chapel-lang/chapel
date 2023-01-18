@@ -357,10 +357,11 @@ Resolver::getFormalTypes(const Function* fn) {
     QualifiedType t = byPostorder.byAst(formal).type();
     // compute concrete intent
     bool isThis = false;
+    bool isInit = fn->name() == USTR("init") || fn->name() == USTR("init=");
     if (auto namedDecl = formal->toNamedDecl()) {
       isThis = namedDecl->name() == USTR("this");
     }
-    t = QualifiedType(resolveIntent(t, isThis), t.type(), t.param());
+    t = QualifiedType(resolveIntent(t, isThis, isInit), t.type(), t.param());
 
     formalTypes.push_back(std::move(t));
   }
@@ -811,7 +812,8 @@ static const Type* computeVarArgTuple(Resolver& resolver,
     if (invalid) {
       typePtr = ErroneousType::get(context);
     } else {
-      auto newKind = resolveIntent(QualifiedType(qtKind, typePtr), false);
+      auto newKind = resolveIntent(QualifiedType(qtKind, typePtr),
+                                   /* isThis */ false, /* isInit */ false);
       QualifiedType elt = QualifiedType(newKind, typePtr);
       typePtr = TupleType::getVarArgTuple(context, paramSize, elt);
     }
@@ -988,9 +990,16 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
   } else if (isFormal || (signatureOnly && isField)) {
     // compute the intent for formals (including type constructor formals)
     bool isThis = decl->name() == USTR("this");
+    bool isInit = false;
+    if (symbol) {
+      if (auto named = symbol->toNamedDecl()) {
+        isInit = named->name() == USTR("init") ||
+                 named->name() == USTR("init=");
+      }
+    }
     auto formalQt = QualifiedType(qtKind, typePtr, paramPtr);
     // update qtKind with the result of resolving the intent
-    qtKind = resolveIntent(formalQt, isThis);
+    qtKind = resolveIntent(formalQt, isThis, isInit);
   }
 
   // adjust tuple declarations for value / referential tuples

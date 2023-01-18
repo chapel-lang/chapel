@@ -1342,7 +1342,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
       QualifiedType::Kind qtKind = formalType.kind();
       auto tempQT = QualifiedType(qtKind, useType.type());
-      auto newKind = resolveIntent(tempQT, false);
+      auto newKind = resolveIntent(tempQT, /*isThis*/ false, /*isInit*/false);
 
       auto param = formalType.isParam() ? useType.param() : nullptr;
       useType = QualifiedType(newKind, useType.type(), param);

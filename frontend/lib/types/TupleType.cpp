@@ -131,7 +131,7 @@ TupleType::getReferentialTuple(Context* context,
   for (auto t : eltTypes) {
     // is the default intent for this type a variation of ref?
     QualifiedType testFormal = QualifiedType(QualifiedType::DEFAULT_INTENT, t);
-    auto kind = resolution::resolveIntent(testFormal, false);
+    auto kind = resolution::resolveIntent(testFormal, false, false);
     bool defaultIntentRef = (kind == QualifiedType::CONST_REF ||
                              kind == QualifiedType::REF);
     if (defaultIntentRef) {

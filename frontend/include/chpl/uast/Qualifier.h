@@ -43,6 +43,10 @@ enum struct Qualifier {
   /** Represents a const in / const ref depending on the type */
   CONST_INTENT,
 
+  /** Represents a formal that will be passed with 'ref' or 'const ref'
+      depending on subsequent analysis. */
+  REF_MAYBE_CONST,
+
   // 'concrete' intents
 
   /** Represents a mutable variable declared with 'var' */
