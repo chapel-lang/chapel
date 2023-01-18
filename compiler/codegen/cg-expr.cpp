@@ -4838,9 +4838,6 @@ static bool isCStringImmediate(Symbol* sym) {
 }
 
 static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
-#ifdef HAVE_LLVM  // Needed to suppress warning; should always be true in code
-                  // path for GPU codegen
-
   // Used to codegen for PRIM_GPU_KERNEL_LAUNCH_FLAT and PRIM_GPU_KERNEL_LAUNCH.
   // They differ in number of arguments only. The first passes 1 integer for
   // grid and block size each, the other passes 3 for each.
@@ -4922,11 +4919,6 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   }
 
   return codegenCallExprWithArgs(fn, args);
-#else
-  INT_FATAL("Unexpected code path: gpu code generation without LLVM as target");
-  GenRet dummy;
-  return dummy;
-#endif
 }
 
 DEFINE_PRIM(GPU_KERNEL_LAUNCH_FLAT) {
