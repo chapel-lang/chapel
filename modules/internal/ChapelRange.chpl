@@ -3252,6 +3252,9 @@ operator :(r: range(?), type t: range(?)) {
     return isEnumType(t) && t.size == 1;
   }
 
+  // These two routines return the default values for the _low and
+  // _high fields when default-initing a range
+  //
   private proc chpl__defaultLowBound(type t, param boundedType: BoundedRangeType) param {
     if chpl__singleValIdxType(t) {
       return 0:chpl__idxTypeToIntIdxType(t);
