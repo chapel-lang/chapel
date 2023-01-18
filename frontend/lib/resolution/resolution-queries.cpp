@@ -34,6 +34,7 @@
 #include "Resolver.h"
 #include "call-init-deinit.h"
 #include "default-functions.h"
+#include "maybe-const.h"
 #include "prims.h"
 #include "return-type-inference.h"
 #include "signature-checks.h"
@@ -1598,6 +1599,8 @@ resolveFunctionByInfoQuery(Context* context,
       visitor.returnType = retType;
       // then, resolve '=' and add any copy init/deinit calls as needed
       callInitDeinit(visitor);
+      // then, handle return intent overloads and maybe-const formals
+      adjustReturnIntentOverloadsAndMaybeConstRefs(visitor);
     }
 
     auto newTfsForInitializer = visitor.initResolver->finalize();
@@ -1670,6 +1673,9 @@ resolveFunctionByInfoQuery(Context* context,
 
     // then, resolve '=' and add any copy init/deinit calls as needed
     callInitDeinit(visitor);
+
+    // then, handle return intent overloads and maybe-const formals
+    adjustReturnIntentOverloadsAndMaybeConstRefs(visitor);
 
     // TODO: can this be encapsulated in a method?
     resolvedPoiInfo.swap(visitor.poiInfo);
@@ -1747,6 +1753,55 @@ static const ResolvedFunction* helpResolveFunction(Context* context,
 
   // lookup in the map using this PoiInfo
   return resolveFunctionByInfoQuery(context, sig, std::move(poiInfo));
+}
+
+const TypedFnSignature* inferRefMaybeConstFormals(Context* context,
+                                                  const TypedFnSignature* sig,
+                                                  const PoiScope* poiScope) {
+  if (sig == nullptr) {
+    return nullptr;
+  }
+
+  bool anyRefMaybeConstFormals = false;
+  int numFormals = sig->numFormals();
+  for (int i = 0; i < numFormals; i++) {
+    const types::QualifiedType& ft = sig->formalType(i);
+    if (ft.kind() == QualifiedType::REF_MAYBE_CONST) {
+      anyRefMaybeConstFormals = true;
+      break;
+    }
+  }
+
+  if (anyRefMaybeConstFormals == false) {
+    // nothing else to do here
+    return sig;
+  }
+
+  // otherwise, try to resolve the body of the function
+  const ResolvedFunction* rFn =
+    helpResolveFunction(context, sig, poiScope, /* skipIfRunning */ true);
+
+  if (rFn == nullptr)
+    return nullptr; // give up if it would be a recursive query invocation
+
+  // resolve the function body
+  const UntypedFnSignature* untyped = sig->untyped();
+  const ResolutionResultByPostorderID& rr = rFn->resolutionById();
+  std::vector<types::QualifiedType> formalTypes;
+  for (int i = 0; i < numFormals; i++) {
+    const types::QualifiedType& ft = sig->formalType(i);
+    if (ft.kind() == QualifiedType::REF_MAYBE_CONST) {
+      formalTypes.push_back(rr.byAst(untyped->formalDecl(i)).type());
+    } else {
+      formalTypes.push_back(ft);
+    }
+  }
+
+  const TypedFnSignature* result = nullptr;
+  result = TypedFnSignature::getInferred(context,
+                                         std::move(formalTypes),
+                                         sig);
+  return result;
 }
 
 const ResolvedFunction* resolveFunction(Context* context,
