@@ -99,6 +99,7 @@ class LayeredValueTable
       bool addedToChapelAST;
       // Line and file info for the C declaration
       astlocT astloc;
+      Type* chplType;
 
       Storage() : astloc(0, NULL) {
         u.value = NULL;
@@ -113,6 +114,7 @@ class LayeredValueTable
         isLVPtr = GEN_VAL;
         isUnsigned = false;
         addedToChapelAST = false;
+        chplType = NULL;
       }
     };
 
@@ -128,7 +130,7 @@ class LayeredValueTable
     void addLayer();
     void removeLayer();
     void addValue(llvm::StringRef name, llvm::Value *value, uint8_t isLVPtr, bool isUnsigned);
-    void addGlobalValue(llvm::StringRef name, llvm::Value *value, uint8_t isLVPtr, bool isUnsigned); //, Type* type=NULL);
+    void addGlobalValue(llvm::StringRef name, llvm::Value *value, uint8_t isLVPtr, bool isUnsigned, Type* type=NULL);
     void addGlobalValue(llvm::StringRef name, GenRet gend);
     void addGlobalType(llvm::StringRef name, llvm::Type *type, bool isUnsigned);
     void addGlobalCDecl(clang::NamedDecl* cdecl);

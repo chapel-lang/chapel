@@ -855,7 +855,7 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
                                  : llvm::GlobalVariable::InternalLinkage,
             llvm::Constant::getNullValue(llTy), /* initializer, */
             cname);
-      info->lvt->addGlobalValue(cname, gVar, GEN_PTR, ! is_signed(type) );
+      info->lvt->addGlobalValue(cname, gVar, GEN_PTR, ! is_signed(type), type);
 
       gVar->setDSOLocal(true);
 
@@ -922,7 +922,7 @@ void VarSymbol::codegenDef() {
         globalValue->setInitializer(llvm::cast<llvm::Constant>(
               codegenImmediateLLVM(immediate)));
       }
-      info->lvt->addGlobalValue(cname, globalValue, GEN_VAL, ! is_signed(type));
+      info->lvt->addGlobalValue(cname, globalValue, GEN_VAL, ! is_signed(type), type);
     }
 
 #if HAVE_LLVM_VER >= 100

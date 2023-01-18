@@ -3000,7 +3000,7 @@ void LayeredValueTable::addValue(
 }
 
 void LayeredValueTable::addGlobalValue(
-    StringRef name, Value *value, uint8_t isLVPtr, bool isUnsigned) {
+    StringRef name, Value *value, uint8_t isLVPtr, bool isUnsigned, ::Type* type) {
   Storage store;
   store.u.value = value;
   store.isLVPtr = isLVPtr;
@@ -3009,7 +3009,7 @@ void LayeredValueTable::addGlobalValue(
 }
 
 void LayeredValueTable::addGlobalValue(StringRef name, GenRet gend) {
-  addGlobalValue(name, gend.val, gend.isLVPtr, gend.isUnsigned);
+  addGlobalValue(name, gend.val, gend.isLVPtr, gend.isUnsigned, gend.chplType);
 }
 
 void LayeredValueTable::addGlobalType(StringRef name, llvm::Type *type, bool isUnsigned) {
@@ -3127,6 +3127,7 @@ GenRet LayeredValueTable::getValue(StringRef name) {
       ret.val = store->u.value;
       ret.isLVPtr = store->isLVPtr;
       ret.isUnsigned = store->isUnsigned;
+      ret.chplType = store->chplType;
       return ret;
     }
     if( store->u.cValueDecl ) {
@@ -3140,6 +3141,7 @@ GenRet LayeredValueTable::getValue(StringRef name) {
       store->u.value = ret.val;
       store->isLVPtr = ret.isLVPtr;
       store->isUnsigned = ret.isUnsigned;
+
       return ret;
     }
     if( store->u.chplVar && isVarSymbol(store->u.chplVar) ) {
