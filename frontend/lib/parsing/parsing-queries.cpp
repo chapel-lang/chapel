@@ -19,6 +19,7 @@
 
 #include "chpl/parsing/parsing-queries.h"
 
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/query-impl.h"
@@ -954,10 +955,8 @@ createDefaultUnstableMessage(Context* context, const NamedDecl* target) {
 }
 
 static bool const&
-reportDeprecationWarningForIdQuery(Context* context, ID idMention,
-                                   ID idTarget) {
-  QUERY_BEGIN(reportDeprecationWarningForIdQuery, context, idMention,
-              idTarget);
+deprecationWarningForIdQuery(Context* context, ID idMention, ID idTarget) {
+  QUERY_BEGIN(deprecationWarningForIdQuery, context, idMention, idTarget);
   bool ret = false;
 
   if (idMention.isEmpty() || idTarget.isEmpty()) return QUERY_END(ret);
@@ -990,10 +989,8 @@ reportDeprecationWarningForIdQuery(Context* context, ID idMention,
 }
 
 static bool const&
-reportUnstableWarningForIdQuery(Context* context, ID idMention,
-                                ID idTarget) {
-  QUERY_BEGIN(reportUnstableWarningForIdQuery, context, idMention,
-              idTarget);
+unstableWarningForIdQuery(Context* context, ID idMention, ID idTarget) {
+  QUERY_BEGIN(unstableWarningForIdQuery, context, idMention, idTarget);
   bool ret = false;
 
   if (idMention.isEmpty() || idTarget.isEmpty()) return QUERY_END(ret);
@@ -1025,24 +1022,27 @@ reportUnstableWarningForIdQuery(Context* context, ID idMention,
   return QUERY_END(ret);
 }
 
-// TODO: Use context flags to check when we should emit errors. Do not call
-// the query if an error should not fire - we do not want to add a pointless
-// entry to the query cache.
 void
-deprecationWarningForId(Context* context, ID idMention, ID idTarget) {
+reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget) {
   auto attr = parsing::idToAttributes(context, idTarget);
+
+  // Nothing to do, symbol is not deprecated.
   if (!attr || !attr->isDeprecated()) return;
-  std::ignore = reportDeprecationWarningForIdQuery(context, idMention,
-                                                   idTarget);
+
+  std::ignore = deprecationWarningForIdQuery(context, idMention, idTarget);
 }
 
-// TODO: As above.
 void
-unstableWarningForId(Context* context, ID idMention, ID idTarget) {
+reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
   auto attr = parsing::idToAttributes(context, idTarget);
+
+  // Nothing to do, symbol is not unstable.
   if (!attr || !attr->isUnstable()) return;
-  std::ignore = reportUnstableWarningForIdQuery(context, idMention,
-                                                idTarget);
+
+  // Nothing to do, we do not report unstable things this revision.
+  if (!isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE)) return;
+
+  std::ignore = unstableWarningForIdQuery(context, idMention, idTarget);
 }
 
 } // end namespace parsing

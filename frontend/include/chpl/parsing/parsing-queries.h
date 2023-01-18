@@ -350,38 +350,38 @@ ConfigSettingsList& configSettings(Context* context);
 const uast::Attributes* idToAttributes(Context* context, ID id);
 
 /**
-  Given an ID representing a mention of a symbol, and an ID representing
-  the symbol, determine if a deprecation warning should be produced
-  for the symbol. If so, the warning will be reported to the context
-  and returned. Returns nullptr if no deprecation warning is needed.
+  Given an ID 'idMention' representing a mention of a symbol, and an
+  ID 'idTarget' representing the symbol, determine if a deprecation
+  warning should be produced for 'idTarget' at 'idMention'. If so,
+  the warning will be reported to the context.
 
-  If a warning is produced, it will only be reported to the context
-  once per revision. The warning may not be reported if the context
-  is configured to suppress deprecation warnings, but it will still
-  be returned.
+  A warning will be reported to the context only once per revision.
+  It may not be reported if the context or compiler is configured
+  to suppress deprecation warnings.
 
-  The mention ID may refer to any AST but will most often be an
-  Identifier. The target ID should refer to a NamedDecl. If it does
-  not, then nullptr is returned.
+  The 'idMention' may refer to any AST but will most often be an
+  Identifier. The 'idTarget' should refer to a NamedDecl. If it does
+  not, then nothing is reported.
 */
-void deprecationWarningForId(Context* context, ID idMention, ID idTarget);
+void reportDeprecationWarningForId(Context* context, ID idMention,
+                                   ID idTarget);
 
 /**
-  Given an ID representing a mention of a symbol, and an ID representing
-  the symbol, determine if an unstable warning should be produced
-  for the symbol. If so, the warning will be reported to the context
-  and returned. Returns nullptr if no unstable warning is needed.
+  Given an ID 'idMention' representing a mention of a symbol, and an
+  ID 'idTarget' representing the symbol, determine if an unstable
+  warning should be produced for 'idTarget' at 'idMention'. If so,
+  the warning will be reported to the context.
 
-  If a warning is produced, it will only be reported to the context
-  once per revision. The warning may not be reported if the context
-  is configured to suppress unstable warnings, but it will still
-  be returned.
+  A warning will be reported to the context only once per revision.
+  It may not be reported if the context or compiler is configured
+  to suppress unstable warnings.
 
-  The mention ID may refer to any AST but will most often be an
-  Identifier. The target ID should refer to a NamedDecl. If it does
-  not, then nullptr is returned.
+  The 'idMention' may refer to any AST but will most often be an
+  Identifier. The 'idTarget' should refer to a NamedDecl. If it does
+  not, then nothing is reported.
 */
-void unstableWarningForId(Context* context, ID idMention, ID idTarget);
+void reportUnstableWarningForId(Context* context, ID idMention,
+                                ID idTarget);
 
 } // end namespace parsing
 } // end namespace chpl
