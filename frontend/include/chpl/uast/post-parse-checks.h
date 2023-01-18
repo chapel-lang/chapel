@@ -17,32 +17,25 @@
  * limitations under the License.
  */
 
-#ifndef TEST_COMMON_H
-#define TEST_COMMON_H
+#ifndef CHPL_UAST_POST_PARSE_CHECKS_H
+#define CHPL_UAST_POST_PARSE_CHECKS_H
 
-// always check assertions in the tests
-#ifdef NDEBUG
-#undef NDEBUG
-#endif
-
-#include "chpl/parsing/Parser.h"
 #include "chpl/framework/Context.h"
-#include "chpl/framework/UniqueString.h"
 #include "chpl/uast/BuilderResult.h"
-#include <cassert>
-#include "./ErrorGuard.h"
 
-/** Use the name of the enclosing CPP function as the name for a Chapel
-    source file. Returns a UniqueString. */
-#define TEST_NAME_FROM_FN_NAME(context__) \
-  chpl::UniqueString::getConcat(context__, __FUNCTION__, ".chpl")
+namespace chpl {
+namespace uast {
 
-/** Parse to BuilderResult but report encountered errors to the context. */
-const chpl::uast::BuilderResult&
-parseAndReportErrors(chpl::Context* context, chpl::UniqueString path);
+/**
+  Runs post-parse checks on the given given builder result, constructed from
+  the contents of the file at path. This is not itself a query, and thus
+  errors are reported to the calling query.
+  */
+void
+checkBuilderResult(Context* context, UniqueString path,
+                   const BuilderResult& result);
 
-chpl::uast::BuilderResult
-parseStringAndReportErrors(chpl::parsing::Parser* parser, const char* filename,
-                           const char* content);
+} // end namespace uast
+} // end namespace chpl
 
 #endif

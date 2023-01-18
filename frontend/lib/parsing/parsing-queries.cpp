@@ -24,6 +24,7 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/Parser.h"
 #include "chpl/types/RecordType.h"
+#include "chpl/uast/post-parse-checks.h"
 #include "chpl/uast/AggregateDecl.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Function.h"
@@ -57,7 +58,8 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
   std::string error;
   const ErrorBase* parseError = nullptr;
   if (!readfile(path.c_str(), text, error)) {
-    parseError = context->error(Location(), "error reading file: %s\n", error.c_str());
+    // TODO does this need to be stored in FileContents?
+    context->error(Location(), "error reading file: %s\n", error.c_str());
   }
   auto result = FileContents(std::move(text), parseError);
   return QUERY_END(result);
@@ -115,13 +117,23 @@ parseFileToBuilderResult(Context* context, UniqueString path,
     BuilderResult tmpResult = parser.parseString(pathc, textc);
     result.swap(tmpResult);
     BuilderResult::updateFilePaths(context, result);
-  } else {
-    // Error should have already been reported in the fileText query.
-    // Just record an error here as well so follow-ons are clear
-    BuilderResult::appendError(result, error);
   }
 
   return QUERY_END(result);
+}
+
+// TODO: can't make this a query because can't store the uast::BuilderResult&
+//       as a query result. Might be some template specialization magic we
+//       can do to support this use case, but for now, this will just end up
+//       reporting errors to the caller query.
+const uast::BuilderResult&
+parseFileToBuilderResultAndCheck(Context* context, UniqueString path,
+                                 UniqueString parentSymbolPath) {
+  auto& result = parseFileToBuilderResult(context, path, parentSymbolPath);
+  if (result.numTopLevelExpressions() == 0) return result;
+
+  checkBuilderResult(context, path, result);
+  return result;
 }
 
 // parses whatever file exists that contains the passed ID and returns it
@@ -184,13 +196,8 @@ const ModuleVec& parse(Context* context, UniqueString path,
   QUERY_BEGIN(parse, context, path, parentSymbolPath);
 
   // Get the result of parsing
-  const BuilderResult& p = parseFileToBuilderResult(context, path,
-                                                    parentSymbolPath);
-
-  // Report any errors encountered to the context.
-  for (auto& e : p.errors())
-    if (e != nullptr)
-      context->report(e);
+  const BuilderResult& p = parseFileToBuilderResultAndCheck(context, path,
+                                                            parentSymbolPath);
 
   // Compute a vector of Modules
   ModuleVec result;

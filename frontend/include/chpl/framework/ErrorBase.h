@@ -44,7 +44,7 @@ namespace chpl {
 // Shorthands specific to post-parse-checks errors, which provide node IDs
 // that should connect to locations by the time we report out errors
 #define POSTPARSE_DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) \
-  DIAGNOSTIC_CLASS(NAME, KIND, const ID, ##EINFO)
+  DIAGNOSTIC_CLASS(NAME, KIND, const uast::AstNode*, ##EINFO)
 #define POSTPARSE_ERROR_CLASS(NAME, EINFO...) \
   POSTPARSE_DIAGNOSTIC_CLASS(NAME, ERROR, ##EINFO)
 #define POSTPARSE_WARNING_CLASS(NAME, EINFO...) \
@@ -149,6 +149,7 @@ class ErrorBase {
    */
   virtual void write(ErrorWriterBase& wr) const = 0;
   virtual void mark(Context* context) const = 0;
+  virtual owned<ErrorBase> clone() const = 0;
 };
 
 /**
@@ -187,36 +188,35 @@ class BasicError : public ErrorBase {
  */
 class GeneralError : public BasicError {
  protected:
+  GeneralError(const GeneralError& other) = default;
   GeneralError(ErrorBase::Kind kind, IdOrLocation idOrLoc,
                std::string message, std::vector<Note> notes)
     : BasicError(kind, General, std::move(idOrLoc),
                  std::move(message), std::move(notes)) {}
 
   static const owned<GeneralError>&
-  getGeneralErrorForID(Context* context, ErrorBase::Kind kind, ID id, std::string message);
+  getGeneralErrorForID(ErrorBase::Kind kind, ID id, std::string message);
 
   static const owned<GeneralError>&
-  getGeneralErrorForLocation(Context* context, ErrorBase::Kind kind, Location loc, std::string message);
+  getGeneralErrorForLocation(ErrorBase::Kind kind, Location loc, std::string message);
  public:
 
-  static const GeneralError* vbuild(Context* context,
-                                    ErrorBase::Kind kind, ID id,
+  static owned<GeneralError> vbuild(ErrorBase::Kind kind, ID id,
                                     const char* fmt,
                                     va_list vl);
-  static const GeneralError* vbuild(Context* context,
-                                    ErrorBase::Kind kind, Location loc,
+  static owned<GeneralError> vbuild(ErrorBase::Kind kind, Location loc,
                                     const char* fmt,
                                     va_list vl);
 
-  static const GeneralError* get(Context* context,
-                                 ErrorBase::Kind kind,
+  static owned<GeneralError> get(ErrorBase::Kind kind,
                                  Location loc,
                                  std::string msg);
 
   /* Convenience overload to call ::get with the ERROR kind. */
-  static const GeneralError* error(Context* context,
-                                   Location loc,
+  static owned<GeneralError> error(Location loc,
                                    std::string msg);
+
+  owned<ErrorBase> clone() const override;
 };
 
 // The error-classes-list.h header will expand the DIAGNOSTIC_CLASS macro
@@ -230,11 +230,10 @@ class GeneralError : public BasicError {
     using ErrorInfo = std::tuple<EINFO__>;\
     ErrorInfo info;\
 \
+    Error##NAME__(const Error##NAME__& other) = default;\
     Error##NAME__(ErrorInfo info) :\
       ErrorBase(KIND__, NAME__), info(std::move(info)) {}\
 \
-    static const owned<Error##NAME__>&\
-    getError##NAME__(Context* context, ErrorInfo info);\
    protected:\
     bool contentsMatchInner(const ErrorBase* other) const override {\
       auto otherCast = static_cast<const Error##NAME__*>(other);\
@@ -242,12 +241,15 @@ class GeneralError : public BasicError {
     }\
    public:\
     ~Error##NAME__() = default;\
-    static const Error##NAME__* get(Context* context, ErrorInfo info);\
+    static owned<Error##NAME__> get(ErrorInfo info);\
 \
     void write(ErrorWriterBase& writer) const override;\
     void mark(Context* context) const override {\
       ::chpl::mark<ErrorInfo> marker;\
       marker(context, info);\
+    }\
+    owned<ErrorBase> clone() const override {\
+      return owned<ErrorBase>(new Error##NAME__(*this));\
     }\
   };
 #include "chpl/framework/error-classes-list.h"
@@ -257,17 +259,8 @@ class GeneralError : public BasicError {
 // error type. This is meant to be invoked via DIAGNOSTIC_CLASS and
 // including error-classes-list.h
 #define DIAGNOSTIC_CLASS_IMPL(NAME__, KIND__, EINFO__...)\
-  const owned<Error##NAME__>&\
-  Error##NAME__::getError##NAME__(Context* context,\
-                                  std::tuple<EINFO__> tuple) {\
-    QUERY_BEGIN(getError##NAME__, context, tuple);\
-    auto result = owned<Error##NAME__>(new Error##NAME__(tuple));\
-    return QUERY_END(result);\
-  }\
-\
-  const Error##NAME__*\
-  Error##NAME__::get(Context* context, std::tuple<EINFO__> tuple) {\
-    return Error##NAME__::getError##NAME__(context, std::move(tuple)).get();\
+  owned<Error##NAME__> Error##NAME__::get(std::tuple<EINFO__> tuple) {\
+    return owned<Error##NAME__>(new Error##NAME__(std::move(tuple)));\
   }
 
 /**
@@ -279,9 +272,9 @@ class GeneralError : public BasicError {
   it's sufficient to provide it via varargs.
  */
 #define CHPL_REPORT(CONTEXT__, NAME__, EINFO__...) \
-  CONTEXT__->report(CHPL_GET_ERROR(CONTEXT__, NAME__, EINFO__))
-#define CHPL_GET_ERROR(CONTEXT__, NAME__, EINFO__...) \
-  Error##NAME__::get(CONTEXT__, std::make_tuple(EINFO__))
+  CONTEXT__->report(CHPL_GET_ERROR(NAME__, EINFO__))
+#define CHPL_GET_ERROR(NAME__, EINFO__...) \
+  Error##NAME__::get(std::make_tuple(EINFO__))
 
 template <>
 struct stringify<chpl::ErrorBase::Kind> {

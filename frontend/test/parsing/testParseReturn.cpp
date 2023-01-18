@@ -29,7 +29,8 @@
 #include "chpl/uast/Return.h"
 
 static void test0(Parser* parser) {
-  auto parseResult = parser->parseString("test0.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       "/* comment 1 */\n"
       "proc foo() {\n"
       "  /* comment 2 */\n"
@@ -38,7 +39,7 @@ static void test0(Parser* parser) {
       "  /* comment 6 */\n"
       "}\n"
       "/* comment 7 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -59,7 +60,8 @@ static void test0(Parser* parser) {
 }
 
 static void test1(Parser* parser) {
-  auto parseResult = parser->parseString("test1.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
       "/* comment 1 */\n"
       "proc foo() {\n"
       "  /* comment 2 */\n"
@@ -68,7 +70,7 @@ static void test1(Parser* parser) {
       "  /* comment 5 */\n"
       "}\n"
       "/* comment 6 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);

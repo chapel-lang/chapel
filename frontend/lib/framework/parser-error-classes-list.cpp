@@ -245,23 +245,23 @@ void ErrorUseImportNeedsModule::write(ErrorWriterBase& wr) const {
 /* begin post-parse-checks errors */
 
 void ErrorCantApplyPrivate::write(ErrorWriterBase& wr) const {
-  auto id = std::get<const ID>(info);
+  auto node = std::get<const uast::AstNode*>(info);
   auto appliedToWhat = std::get<std::string>(info);
-  wr.heading(kind_, type_, id, "can't apply private to ", appliedToWhat,
+  wr.heading(kind_, type_, node, "can't apply private to ", appliedToWhat,
              " yet.");
   wr.message("The following declaration has unsupported 'private' modifier:");
-  wr.code(id);
+  wr.code(node);
 }
 
 void ErrorMultipleManagementStrategies::write(ErrorWriterBase& wr) const {
-  auto id = std::get<const ID>(info);
+  auto node = std::get<const uast::AstNode*>(info);
   auto outerMgt = std::get<1>(info);
   auto innerMgt = std::get<2>(info);
-  wr.heading(kind_, type_, id,
+  wr.heading(kind_, type_, node,
              "type expression uses multiple memory management strategies ('",
              outerMgt, "' and '", innerMgt, "').");
   wr.message("Multiple class kinds used in type expression here:");
-  wr.code(id);
+  wr.code(node);
   if (outerMgt == innerMgt) {
     wr.message(
         "The same strategy is listed twice; one instance should be removed.");
@@ -271,21 +271,21 @@ void ErrorMultipleManagementStrategies::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorPostParseErr::write(ErrorWriterBase& wr) const {
-  auto id = std::get<const ID>(info);
+  auto node = std::get<const uast::AstNode*>(info);
   auto errorMessage = std::get<std::string>(info);
   CHPL_ASSERT(errorMessage.back() == '.' &&
          "expected a period at the end of ErrorPostParseErr message");
-  wr.heading(kind_, type_, id, errorMessage);
-  wr.code(id);
+  wr.heading(kind_, type_, node, errorMessage);
+  wr.code(node);
 }
 
 void ErrorPostParseWarn::write(ErrorWriterBase& wr) const {
-  auto id = std::get<const ID>(info);
+  auto node = std::get<const uast::AstNode*>(info);
   auto errorMessage = std::get<std::string>(info);
   CHPL_ASSERT(errorMessage.back() == '.' &&
          "expected a period at the end of ErrorPostParseWarn message");
-  wr.heading(kind_, type_, id, errorMessage);
-  wr.code(id);
+  wr.heading(kind_, type_, node, errorMessage);
+  wr.code(node);
 }
 
 /* end post-parse-checks errors */

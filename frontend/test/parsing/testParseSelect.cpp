@@ -32,7 +32,8 @@
 #include <iostream>
 
 static void test0(Parser* parser) {
-  auto parseResult = parser->parseString("test0.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       "/* c1 */\n"
       "select /* c2 */ foo /* c3 */ {\n"
       "  when /* c4 */ x do /* c5 */ f1();\n"
@@ -42,7 +43,7 @@ static void test0(Parser* parser) {
       "  otherwise /* c10 */ { f5(); }\n"
       "}\n"
       "/* c11 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -104,7 +105,8 @@ static void test0(Parser* parser) {
 
 // Should be parse error.
 static void test1(Parser* parser) {
-  auto parseResult = parser->parseString("test1.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
       "/* c1 */\n"
       "select foo {\n"
       "  when x do f1();\n"
@@ -113,27 +115,29 @@ static void test1(Parser* parser) {
       "  otherwise do { f4(); }\n"
       "}\n"
       "/* c2 */\n");
-  assert(parseResult.numErrors() == 1);
+  assert(guard.numErrors() == 1);
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isErroneousExpression());
   assert(mod->stmt(2)->isComment());
-  auto error = parseResult.error(0);
+  auto& error = guard.error(0);
   const char* expected = "select has multiple otherwise clauses";
   auto actual = error->message();
   assert(actual == expected);
+  guard.clearErrors();
 }
 
 static void test2(Parser* parser) {
-  auto parseResult = parser->parseString("test2.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
       "/* c1 */\n"
       "select foo {\n"
       "  when x, y do f1();\n"
       "  otherwise do f2();\n"
       "}\n"
       "/* c2 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -153,13 +157,14 @@ static void test2(Parser* parser) {
 }
 
 static void test3(Parser* parser) {
-  auto parseResult = parser->parseString("test3.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
       "/* c1 */\n"
       "select foo {\n"
       "  otherwise do { f1(); }\n"
       "}\n"
       "/* c2 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);

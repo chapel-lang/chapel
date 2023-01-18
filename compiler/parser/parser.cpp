@@ -34,7 +34,6 @@
 #include "misc.h"
 
 #include "chpl/parsing/parsing-queries.h"
-#include "llvm/ADT/SmallPtrSet.h"
 
 // Turn this on to dump AST/uAST when using --dyno.
 #define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
@@ -101,18 +100,18 @@ static ModuleSymbol* parseFile(const char* fileName,
 static void maybePrintModuleFile(ModTag modTag, const char* path);
 
 class DynoErrorHandler : public chpl::Context::ErrorHandler {
-  std::vector<const chpl::ErrorBase*> errors_;
+  std::vector<chpl::owned<chpl::ErrorBase>> errors_;
  public:
   DynoErrorHandler() = default;
   ~DynoErrorHandler() = default;
 
-  const std::vector<const chpl::ErrorBase*>& errors() const {
+  const std::vector<chpl::owned<chpl::ErrorBase>>& errors() const {
     return errors_;
   }
 
   virtual void
   report(chpl::Context* context, const chpl::ErrorBase* err) override {
-    errors_.push_back(err);
+    errors_.push_back(err->clone());
   }
 
   inline void clear() { errors_.clear(); }
@@ -889,13 +888,11 @@ static DynoErrorHandler* gDynoErrorHandler = nullptr;
 static bool dynoRealizeErrors(void) {
   INT_ASSERT(gDynoErrorHandler);
   bool hadErrors = false;
-  llvm::SmallPtrSet<const chpl::ErrorBase*, 10> issuedErrors;
-  for (auto err : gDynoErrorHandler->errors()) {
+  for (auto& err : gDynoErrorHandler->errors()) {
     hadErrors = true;
     // skip issuing errors that have already been issued
-    if (!issuedErrors.insert(err).second) continue;
     if (fDetailedErrors) {
-      chpl::Context::defaultReportError(gContext, err);
+      chpl::Context::defaultReportError(gContext, err.get());
       // Use production compiler's exit-on-error functionality for errors
       // reported via new Dyno mechanism
       setupDynoError(err->kind());
@@ -926,11 +923,9 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   // see if there were any parse errors.
   chpl::UniqueString emptySymbolPath;
   auto& builderResult =
-    chpl::parsing::parseFileToBuilderResult(gContext, path, emptySymbolPath);
+    chpl::parsing::parseFileToBuilderResultAndCheck(gContext, path,
+                                                    emptySymbolPath);
   gFilenameLookup.push_back(path.c_str());
-
-  // Manually report any parsing errors collected by the builder.
-  for (auto e : builderResult.errors()) gContext->report(e);
 
   if (dynoRealizeErrors()) USR_STOP();
 

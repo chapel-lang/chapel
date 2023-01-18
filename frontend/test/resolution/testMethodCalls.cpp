@@ -219,7 +219,7 @@ static void test4() {
 
   // Get the modules.
   auto& br = parseFileToBuilderResult(context, path, UniqueString());
-  assert(!br.numErrors());
+  assert(!guard.realizeErrors());
   assert(br.numTopLevelExpressions() == 2);
   auto modA = br.topLevelExpression(0)->toModule();
   assert(modA);

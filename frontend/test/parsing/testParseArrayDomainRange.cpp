@@ -37,6 +37,7 @@ static void testRange(Parser* parser, const char* testName,
                       const char* intervalStr,
                       bool hasLowerBound,
                       bool hasUpperBound) {
+  ErrorGuard guard(parser->context());
   const char* lowerStr = hasLowerBound ? "0" : "";
   const char* upperStr = hasUpperBound ? "8" : "";
 
@@ -46,9 +47,9 @@ static void testRange(Parser* parser, const char* testName,
   test += upperStr;
   test += ";\n";
 
-  auto parseResult = parser->parseString(testName, test.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, testName, test.c_str());
 
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -86,6 +87,7 @@ static void testArrayDomain(Parser* parser, const char* testName,
   // These initializers must have at least one element.
   assert(numElements > 0);
 
+  ErrorGuard guard(parser->context());
   std::string test = isArray ? "var a = " : "var d = ";
   test += isArray ? "[" : "{";
 
@@ -102,9 +104,9 @@ static void testArrayDomain(Parser* parser, const char* testName,
   test += isArray ? "]" : "}";
   test += ";\n";
 
-  auto parseResult = parser->parseString(testName, test.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, testName, test.c_str());
 
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
