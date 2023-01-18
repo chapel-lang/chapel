@@ -77,7 +77,7 @@ ERROR_CLASS(UnsupportedAsIdent, const uast::As*, const uast::AstNode*)
 ERROR_CLASS(UseImportNotModule, const ID, const resolution::VisibilityStmtKind,
             std::string)
 ERROR_CLASS(UseImportUnknownMod, const ID, const resolution::VisibilityStmtKind,
-            std::string)
+            std::string, std::set<std::pair<ID, uast::asttags::AstTag>>)
 ERROR_CLASS(UseImportUnknownSym,
             std::string,
             const uast::AstNode*,

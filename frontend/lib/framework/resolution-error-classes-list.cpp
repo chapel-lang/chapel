@@ -537,11 +537,53 @@ void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
   auto moduleName = std::get<std::string>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
+  auto& improperMatches = std::get<std::set<std::pair<ID, uast::asttags::AstTag>>>(info);
 
   wr.heading(kind_, type_, id, "cannot find ", allowedItem(useOrImport),
              " '", moduleName, "' for '", useOrImport, "' statement.");
   wr.message("In the following '", useOrImport, "' statement:");
   wr.code<ID, ID>(id, { id });
+  if (!improperMatches.empty()) {
+    wr.message("The following declarations are not covered by the '", useOrImport,
+               "' statement but seem similar to what you meant.");
+    // Do we need to tell the user how to use super.M or this.M?
+    bool explainRelativeImport = false;
+
+    for (auto idAndTag : improperMatches) {
+      // Separate out the various suggestions.
+      wr.message("");
+
+      // Use locationOnly to avoid printing 'in module M' for every suggestion.
+
+      auto& improperId = idAndTag.first;
+      auto tag = idAndTag.second;
+      if (tag == uast::asttags::AstTag::Module) {
+        wr.note(locationOnly(improperId),
+                "a module named '", moduleName, "' is defined here:");
+        wr.code<ID, ID>(improperId, { improperId });
+        wr.note(locationOnly(improperId),
+                "however, a full path or an explicit relative ", useOrImport,
+                " is required for modules that are not at the root level.");
+        explainRelativeImport = true;
+      } else {
+        wr.note(locationOnly(improperId), "a declaration of '", moduleName,
+                "' is here:");
+        wr.code<ID, ID>(improperId, { improperId });
+        wr.note(locationOnly(improperId), "however, '", useOrImport,
+                "' statements can only be used with ",
+                allowedItems(useOrImport), " (and this '", moduleName,
+                "' is not a ", allowedItem(useOrImport), ").");
+      }
+
+      // Comment out if we want to show all improper matches, not just one.
+      break;
+    }
+
+    if (explainRelativeImport) {
+      wr.message("");
+      wr.note(id, "For non-root-level modules, please specify the full path to the module or use a relative import e.g. 'import this.M' or 'import super.M'");
+    }
+  }
 }
 
 void ErrorUseImportUnknownSym::write(ErrorWriterBase& wr) const {

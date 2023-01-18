@@ -618,6 +618,7 @@ enum {
   LOOKUP_TOPLEVEL = 8,
   LOOKUP_INNERMOST = 16,
   LOOKUP_SKIP_PRIVATE_VIS = 32,
+  LOOKUP_GO_PAST_MODULES = 64,
 };
 
 using LookupConfig = unsigned int;

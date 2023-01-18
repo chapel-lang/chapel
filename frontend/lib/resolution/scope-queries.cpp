@@ -487,6 +487,11 @@ static bool doLookupInScope(Context* context,
   bool checkToplevel = (config & LOOKUP_TOPLEVEL) != 0;
   bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
   bool skipPrivateVisibilities = (config & LOOKUP_SKIP_PRIVATE_VIS) != 0;
+  bool goPastModules = (config & LOOKUP_GO_PAST_MODULES) != 0;
+
+  // goPastModules should imply checkParents; otherwise, why would we proceed
+  // through module boundaries if we aren't traversing the scope chain?
+  CHPL_ASSERT(!goPastModules || checkParents);
 
   // TODO: to include checking for symbol privacy,
   // add a findPrivate argument to doLookupInScope and set it
@@ -548,9 +553,9 @@ static bool doLookupInScope(Context* context,
         if (isElseBlockOfConditionalWithIfVar(context, ast))
           skipClosestConditional = true;
 
-    if (!asttags::isModule(scope->tag())) {
+    if (!asttags::isModule(scope->tag()) || goPastModules) {
       for (cur = scope->parentScope(); cur != nullptr; cur = cur->parentScope()) {
-        if (asttags::isModule(cur->tag())) {
+        if (asttags::isModule(cur->tag()) && !goPastModules) {
           reachedModule = true;
           break;
         }
@@ -635,7 +640,8 @@ static bool lookupInScopeViz(Context* context,
                              UniqueString name,
                              VisibilityStmtKind useOrImport,
                              bool isFirstPart,
-                             std::vector<BorrowedIdsWithName>& result) {
+                             std::vector<BorrowedIdsWithName>& result,
+                             std::vector<BorrowedIdsWithName>& improperMatches) {
   NamedScopeSet checkedScopes;
 
   LookupConfig config = LOOKUP_INNERMOST;
@@ -669,6 +675,28 @@ static bool lookupInScopeViz(Context* context,
   bool got = doLookupInScope(context, scope, nullptr, resolving,
                              name, config,
                              checkedScopes, result);
+
+  if (!got && isFirstPart) {
+    // Relax the rules a little bit and look for more potential matches.
+    // They aren't valid, but they might be what the user intended to use
+    // or import, so collect them and include them in the error message.
+    NamedScopeSet checkedScopes;
+
+    LookupConfig config = 0;
+
+    // Search all scopes for improper matches.
+    config |= LOOKUP_PARENTS;
+
+    // Don't stop at module boundaries (find things that are technically not
+    // in scope at the point of use/import)
+    config |= LOOKUP_GO_PAST_MODULES;
+
+    // check for submodules of the current module, even if we're an import
+    config |= LOOKUP_DECLS;
+
+    doLookupInScope(context, scope, nullptr, resolving, name, config,
+                    checkedScopes, improperMatches);
+  }
 
   return got;
 }
@@ -882,8 +910,9 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
                                  bool isFirstPart) {
   // lookup 'field' in that scope
   std::vector<BorrowedIdsWithName> vec;
+  std::vector<BorrowedIdsWithName> improperMatches;
   bool got = lookupInScopeViz(context, scope, resolving, nameInScope,
-                              useOrImport, isFirstPart, vec);
+                              useOrImport, isFirstPart, vec, improperMatches);
 
   // We might've discovered the same ID multiple times, via different
   // scopes (i.e., via multiple BorrowedIdsWithName). Delete duplicates by
@@ -896,6 +925,7 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
   // This will _not_ turn x,y,x into x,y, but that's fine, since distinct
   // IDs in this vector represent an error.
   allIds.erase(std::unique(allIds.begin(), allIds.end()), allIds.end());
+
 
   // Note that this logic isn't needed for regular identifiers, since
   // they aren't aliased in the same way, i.e.,
@@ -910,8 +940,21 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
   // scope).
 
   if (got == false || vec.size() == 0) {
+    // If we failed to find a proper import, we could've gotten back any number
+    // of IDs that could be what the user meant to import. Store them in a set
+    // and give them to the error.
+    std::set<std::pair<ID, asttags::AstTag>> improperMatchSet;
+    for (auto& bids : improperMatches) {
+      // For each improper match, also compute its tag, to make the error
+      // message be able to provide more concrete results.
+      for (auto id : bids) {
+        auto tag = parsing::idToTag(context, id);
+        improperMatchSet.insert(std::make_pair(id, tag));
+      }
+    }
+
     CHPL_REPORT(context, UseImportUnknownMod, idForErrs, useOrImport,
-                nameInScope.c_str());
+                nameInScope.c_str(), std::move(improperMatchSet));
     return nullptr;
   }
 
