@@ -13,7 +13,7 @@ module ChainTable {
     type valType;
 
     var numBuckets : uint;
-    var numEntries : uint;
+    var numEntries : atomic uint;
 
     var numStaticManagers: atomic uint;
     var isRehashing: atomic bool;
@@ -28,7 +28,8 @@ module ChainTable {
       this.keyType = keyType;
       this.valType = valType;
       this.numBuckets = initialCapacity;
-      this.numEntries = 0;
+      this.complete();
+      this.numEntries.write(0);
     }
 
     // determine if the map has an entry for the given key
@@ -56,7 +57,7 @@ module ChainTable {
         use MemMove;
 
         ref entry = this.buckets[bucket_idx][chain_idx];
-        if entry.status != entryStatus.full then this.numEntries += 1;
+        if entry.status != entryStatus.full then this.numEntries.add(1);
 
         entry.status = entryStatus.full;
         moveInitialize(entry.key, key);
@@ -74,7 +75,7 @@ module ChainTable {
       val = moveFrom(entry.val);
       entry.status = entryStatus.deleted;
 
-      this.numEntries -= 1;
+      this.numEntries.sub(1);
     }
 
 
@@ -139,7 +140,7 @@ module ChainTable {
     }
 
     inline proc _loadFactor() : real {
-      return (this.numEntries : real) / (this.numBuckets: real);
+      return (this.numEntries.read() : real) / (this.numBuckets: real);
     }
   }
 
@@ -230,11 +231,6 @@ module ChainTable {
         return this.next!.appendToTail(idx + 1);
       }
     }
-
-    proc deinit() {
-      // this.entry.clear();
-      // c_free(this.entry);
-    }
   }
 
   // a key-value pair
@@ -250,11 +246,6 @@ module ChainTable {
     inline proc isFull() {
       return this.status == entryStatus.full;
     }
-
-    proc clear() {
-      if _typeNeedsDeinit(this.keyType) then chpl__autoDestroy(this.key);
-      if _typeNeedsDeinit(this.valType) then chpl__autoDestroy(this.val);
-    }
   }
 
   enum entryStatus { empty=0, full, deleted };
@@ -268,17 +259,4 @@ module ChainTable {
       return key1 == key2;
     }
   }
-
-  private proc _typeNeedsDeinit(type t) param {
-        return __primitive("needs auto destroy", t);
-    }
-  private proc _deinitSlot(ref aSlot: rawTableEntry) {
-      if _typeNeedsDeinit(aSlot.key.type) {
-          chpl__autoDestroy(aSlot.key);
-      }
-      if _typeNeedsDeinit(aSlot.val.type) {
-          chpl__autoDestroy(aSlot.val);
-      }
-  }
-
 }
