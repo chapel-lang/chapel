@@ -45,6 +45,7 @@ struct AdjustMaybeRefs {
     REF = 1,
     CONST_REF = 2,
     VALUE = 3,
+    REF_MAYBE_CONST = 4, // used temporarily for recursive cases
   } Access;
 
   struct ExprStackEntry {
@@ -151,6 +152,10 @@ AdjustMaybeRefs::Access AdjustMaybeRefs::accessForQualifier(Qualifier q) {
     return CONST_REF;
   }
 
+  if (q == Qualifier::REF_MAYBE_CONST) {
+    return REF_MAYBE_CONST;
+  }
+
   return VALUE;
 }
 
@@ -207,11 +212,6 @@ void AdjustMaybeRefs::exit(const Identifier* ast, RV& rv) {
 }
 
 bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
-  std::vector<const AstNode*> actualAsts;
-  auto ci = CallInfo::create(context, ast, rv.byPostorder(),
-                             /* raiseErrors */ false,
-                             &actualAsts);
-
   ResolvedExpression& re = rv.byAst(ast);
   const MostSpecificCandidates& candidates = re.mostSpecific();
 
@@ -230,6 +230,12 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
       if (bestConstRef) best = bestConstRef;
       else if (bestRef) best = bestRef;
       else best = bestValue;
+    } else if (access == REF_MAYBE_CONST) {
+      // raise an error
+      context->error(ast, "Too much recursion to infer return intent overload");
+      if (bestConstRef) best = bestConstRef;
+      else if (bestRef) best = bestRef;
+      else best = bestValue;
     } else { // access == VALUE
       if (bestValue) best = bestValue;
       else if (bestConstRef) best = bestConstRef;
@@ -244,6 +250,15 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
 
   // then, traverse nested call-expressions
   if (const TypedFnSignature* fn = candidates.only()) {
+    auto resolvedFn = inferRefMaybeConstFormals(context, fn, resolver.poiScope);
+    if (resolvedFn) {
+      fn = resolvedFn;
+    }
+    std::vector<const AstNode*> actualAsts;
+    auto ci = CallInfo::create(context, ast, rv.byPostorder(),
+                               /* raiseErrors */ false,
+                               &actualAsts);
+
     auto formalActualMap = FormalActualMap(fn, ci);
     int nActuals = ci.numActuals();
     for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
@@ -251,8 +266,8 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
       int formalIdx = fa->formalIdx();
 
       if (fa->hasActual()) {
-        const AstNode* actualAst = ast->actual(actualIdx);
-        Access access = accessForQualifier(fn->formalType(formalIdx).kind());
+        const AstNode* actualAst = actualAsts[actualIdx];
+        Access access = accessForQualifier(fa->formalType().kind());
         exprStack.push_back(ExprStackEntry(actualAst, access,
                                            fn, formalIdx));
 

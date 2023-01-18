@@ -270,6 +270,17 @@ const TypedFnSignature* inferOutFormals(Context* context,
                                         const TypedFnSignature* sig,
                                         const PoiScope* poiScope);
 
+/**
+  Try to compute the TypedFnSignature with REF_MAYBE_CONST formals computed
+  as 'ref' or 'const ref'. If the TypedFnSignature is currently being resolved,
+  instead of returning a new TypedFnSignature, this function returns
+  'nullptr'. In that case, the caller is responsible for attempting this
+  again later once the current set of recursive functions is resolved.
+ */
+const TypedFnSignature* inferRefMaybeConstFormals(Context* context,
+                                                  const TypedFnSignature* sig,
+                                                  const PoiScope* poiScope);
+
 /////// call resolution
 
 /**

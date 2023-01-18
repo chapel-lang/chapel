@@ -1367,11 +1367,11 @@ class ResolutionResultByPostorderID {
 */
 class ResolvedFunction {
  public:
-  struct SkippedRefMaybeConst {
+  /*struct SkippedRefMaybeConst {
     const TypedFnSignature* calledFn = nullptr;
     int thisFnFormalIdx = -1;
     int calledFnFormalIdx = -1;
-  };
+  };*/
 
  private:
   const TypedFnSignature* signature_ = nullptr;
@@ -1391,7 +1391,7 @@ class ResolvedFunction {
   // Analysis for ref-maybe-const formals might skip a recursive call
   // to avoid recursive query invocation.
   // In that case, details of what was skipped will be stored here.
-  std::vector<SkippedRefMaybeConst> skippedRefMaybeConst;
+  //std::vector<SkippedRefMaybeConst> skippedRefMaybeConst;
 
  public:
   ResolvedFunction(const TypedFnSignature *signature,
