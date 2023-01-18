@@ -26,7 +26,7 @@ proc main(args: [] string) {
   ];
 
   var data: string;
-  stdin.readAll(data); // read in the entire file
+  stdin.readstring(data); // read in the entire file
   const initLen = data.size;
 
   // remove newlines
