@@ -1802,11 +1802,11 @@ bool Resolver::resolveIdentifier(const Identifier* ident,
     // of use/import statements are handled entirely by the scope resolver
     // and will never be reached here. Overloaded functions are skipped via
     // the previous branch, and warnings will not be emitted until the parent
-    // call is resolved. If the target ID is unambiguous, we can go ahead
-    // and emit an error even if there might be a typing error for e.g.,
-    // the containing call.
-    parsing::deprecationWarningForId(context, ident->id(), id);
-    parsing::unstableWarningForId(context, ident->id(), id);
+    // call is resolved. However, if the target ID is unambiguous, we can
+    // emit warnings even if there might be a typing error for e.g., the
+    // containing call.
+    parsing::reportDeprecationWarningForId(context, ident->id(), id);
+    parsing::reportUnstableWarningForId(context, ident->id(), id);
 
     if (type.kind() == QualifiedType::TYPE) {
       // now, for a type that is generic with defaults,

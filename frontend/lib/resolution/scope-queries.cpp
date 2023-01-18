@@ -785,8 +785,8 @@ static void errorIfNameNotInScope(Context* context,
     if (!idTarget.isEmpty()) {
       ID idMention = exprForError->id();
       CHPL_ASSERT(!idMention.isEmpty());
-      parsing::deprecationWarningForId(context, idMention, idTarget);
-      parsing::unstableWarningForId(context, idMention, idTarget);
+      parsing::reportDeprecationWarningForId(context, idMention, idTarget);
+      parsing::reportUnstableWarningForId(context, idMention, idTarget);
     }
   }
 }
@@ -1036,8 +1036,8 @@ doResolveUseStmt(Context* context, const Use* use,
       // Maybe emit a deprecating warning for the target only.
       ID idTarget = foundScope->id();
       if (!idTarget.isEmpty()) {
-        parsing::deprecationWarningForId(context, expr->id(), idTarget);
-        parsing::unstableWarningForId(context, expr->id(), idTarget);
+        parsing::reportDeprecationWarningForId(context, expr->id(), idTarget);
+        parsing::reportUnstableWarningForId(context, expr->id(), idTarget);
       }
 
       // First, add VisibilitySymbols entry for the symbol itself.
@@ -1141,8 +1141,8 @@ doResolveImportStmt(Context* context, const Import* imp,
       // Maybe emit a deprecating warning for the target only.
       ID idTarget = foundScope->id();
       if (!idTarget.isEmpty()) {
-        parsing::deprecationWarningForId(context, expr->id(), idTarget);
-        parsing::unstableWarningForId(context, expr->id(), idTarget);
+        parsing::reportDeprecationWarningForId(context, expr->id(), idTarget);
+        parsing::reportUnstableWarningForId(context, expr->id(), idTarget);
       }
 
       if (!dotName.isEmpty()) {
