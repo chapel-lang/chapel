@@ -106,6 +106,14 @@ __device__ __host__ static inline void chpl_gpu_printTimeDelta(
   printf("%s%u\n", msg, end - start);
 }
 
+__device__ static inline void chpl_gpu_force_sync() {
+  asm volatile("bar.sync 0;" : : : "memory");
+}
+
+__host__ static inline void chpl_gpu_force_sync() {
+  // TODO
+}
+
 #endif // HAS_GPU_LOCALE
 
 #endif // _CHPL_GPU_GEN_INCLUDES_H

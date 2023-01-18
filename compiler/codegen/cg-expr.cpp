@@ -5003,12 +5003,14 @@ DEFINE_PRIM(GPU_SYNC_THREADS) {
     return;
   }
 #ifdef HAVE_LLVM
-  Type *chplReturnType = dtVoid;
+  /*Type *chplReturnType = dtVoid;
   llvm::Function *fun = llvm::Intrinsic::getDeclaration(gGenInfo->module,
     llvm::Intrinsic::nvvm_barrier0);
   ret.val = gGenInfo->irBuilder->CreateCall(fun);
   ret.isLVPtr = GEN_VAL;
-  ret.chplType = chplReturnType;
+  ret.chplType = chplReturnType;*/
+
+  ret = codegenCallExpr("chpl_gpu_force_sync");
 #endif
 }
 
