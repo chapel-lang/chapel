@@ -3252,7 +3252,7 @@ operator :(r: range(?), type t: range(?)) {
     return isEnumType(t) && t.size == 1;
   }
 
-  proc chpl__defaultLowBound(type t, boundedType: BoundedRangeType) {
+  private proc chpl__defaultLowBound(type t, param boundedType: BoundedRangeType) param {
     if chpl__singleValIdxType(t) {
       return 0:chpl__idxTypeToIntIdxType(t);
     } else if (boundedType == BoundedRangeType.boundedHigh ||
@@ -3263,7 +3263,7 @@ operator :(r: range(?), type t: range(?)) {
     }
   }
 
-  proc chpl__defaultHighBound(type t, boundedType: BoundedRangeType) {
+  private proc chpl__defaultHighBound(type t, param boundedType: BoundedRangeType) param {
     if chpl__singleValIdxType(t) {
       return -1:chpl__idxTypeToIntIdxType(t);
     } else if (boundedType == BoundedRangeType.boundedLow ||
