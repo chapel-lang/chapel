@@ -197,7 +197,7 @@ module HDFS {
     if fs.hfs == c_nil {
       var err = qio_mkerror_errno();
       delete fs;
-      throw createSystemOrIoError(err, "in hdfsConnect");
+      throw createSystemError(err, "in hdfsConnect");
     }
     return new hdfs(fs);
   }
@@ -341,7 +341,7 @@ module HDFS {
         writeln("after hdfsOpenFile");
 
       if hfile == c_nil {
-        throw createSystemOrIoError(qio_mkerror_errno(), "in hdfsOpenFile");
+        throw createSystemError(qio_mkerror_errno(), "in hdfsOpenFile");
       }
 
       // Create an HDFSFile and return the QIO file containing it
