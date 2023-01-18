@@ -49,7 +49,9 @@ using namespace parsing;
 #define TEST_USER_STRING(funcDef, val)                           \
 {                                                                \
   std::ostringstream ss;                                         \
-  auto parseResult = parser->parseString("test3.chpl", funcDef); \
+  auto parseResult = parseStringAndReportErrors(parser,          \
+                                                "test3.chpl",    \
+                                                funcDef);        \
   auto mod = parseResult.singleModule();                         \
   auto funcDecl = mod->stmt(0)->toFunction();                    \
   assert(funcDecl);                                              \
@@ -62,7 +64,9 @@ using namespace parsing;
 #define TEST_CHPL_SYNTAX(src, val)                           \
 {                                                            \
   std::ostringstream ss;                                     \
-  auto parseResult = parser->parseString("test5.chpl", src); \
+  auto parseResult = parseStringAndReportErrors(parser,      \
+                                                "test5.chpl",\
+                                                src);        \
   auto mod = parseResult.singleModule();                     \
   assert(mod);                                               \
   printChapelSyntax(ss, mod);                                \
@@ -344,7 +348,7 @@ static void test1(Parser* parser) {
   XNew(ij) = (X(ij+north) + X(ij+south) + X(ij+east) + X(ij+west)) / 4.0;
   proc multiDimension(): [1..3, 2..8] string {}
   )"""";
-  auto parseResult = parser->parseString("Test1.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "Test1.chpl",
                                          testCode.c_str());
   for (auto& error : guard.errors()) {
     const ErrorBase* err = error.get();
@@ -445,7 +449,7 @@ static void test3(Parser* parser) {
 }
 
 static void test4(Parser* parser) {
-  auto parseResult = parser->parseString("test4.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
                                           "class C {\n"
                                           "proc ref setClt(rhs: borrowed C) {\n}\n}\n");
   auto mod = parseResult.singleModule();

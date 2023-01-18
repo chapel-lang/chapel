@@ -35,7 +35,7 @@ static uast::BuilderResult parseExprAsVarInit(Parser* parser,
   std::string toparse = "var x = ";
   toparse += init;
   toparse += ";\n";
-  auto parseResult = parser->parseString(testname.c_str(), toparse.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, testname.c_str(), toparse.c_str());
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -146,7 +146,7 @@ static void testBadLiteral(Parser* parser,
   std::string toparse = "var x = ";
   toparse += str;
   toparse += ";\n";
-  auto parseResult = parser->parseString(testname, toparse.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, testname, toparse.c_str());
   assert(guard.realizeErrors() > 0);
   auto mod = parseResult.singleModule();
   assert(mod);

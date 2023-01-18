@@ -28,7 +28,7 @@
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
                                          "enum myEnum { a }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -45,7 +45,7 @@ static void test1(Parser* parser) {
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test2.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
                                          "enum myEnum { a=ii }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -64,7 +64,7 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test3.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
                                          "enum myEnum { a=ii, b=jj }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -92,7 +92,7 @@ static void checkTest4(const Enum* enumDecl,
 
 static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
                                          "enum myEnum { a=ii, b }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -130,7 +130,7 @@ static void checkTest4(const Enum* enumDecl,
 
 static void test4a(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4a.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4a.chpl",
                                          "/* c */ enum myEnum { a=ii, b }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -147,7 +147,7 @@ static void test4a(Parser* parser) {
 
 static void test4b(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4b.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4b.chpl",
                                          "enum /* c */ myEnum { a=ii, b }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -163,7 +163,7 @@ static void test4b(Parser* parser) {
 
 static void test4c(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4c.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4c.chpl",
                                          "enum myEnum /* c */ { a=ii, b }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -179,7 +179,7 @@ static void test4c(Parser* parser) {
 
 static void test4d(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4d.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4d.chpl",
                                          "enum myEnum { /* c */ a=ii, b }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -196,7 +196,7 @@ static void test4d(Parser* parser) {
 
 static void test4e(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4e.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4e.chpl",
                                          "enum myEnum { a /* c */ =ii, b }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -212,7 +212,7 @@ static void test4e(Parser* parser) {
 
 static void test4f(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4f.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4f.chpl",
                                          "enum myEnum { a = /* c */ ii, b }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -228,7 +228,7 @@ static void test4f(Parser* parser) {
 
 static void test4g(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4g.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4g.chpl",
                                          "enum myEnum { a = ii /* c */, b }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -244,7 +244,7 @@ static void test4g(Parser* parser) {
 
 static void test4h(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4h.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4h.chpl",
                                          "enum myEnum { a = ii, /* c */ b }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -261,7 +261,7 @@ static void test4h(Parser* parser) {
 
 static void test4i(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4i.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4i.chpl",
                                          "enum myEnum { a = ii, b /* c */ }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -278,7 +278,7 @@ static void test4i(Parser* parser) {
 
 static void test4j(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4i.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4i.chpl",
                                          "enum myEnum { a = ii, b, /*c*/ }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();

@@ -47,7 +47,7 @@ static void testRange(Parser* parser, const char* testName,
   test += upperStr;
   test += ";\n";
 
-  auto parseResult = parser->parseString(testName, test.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, testName, test.c_str());
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -104,7 +104,7 @@ static void testArrayDomain(Parser* parser, const char* testName,
   test += isArray ? "]" : "}";
   test += ";\n";
 
-  auto parseResult = parser->parseString(testName, test.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, testName, test.c_str());
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();

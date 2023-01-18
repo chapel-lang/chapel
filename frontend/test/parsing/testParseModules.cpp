@@ -26,7 +26,7 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test0.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
                                          "x;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -41,7 +41,7 @@ static void test0(Parser* parser) {
 
 static void test0a(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test0.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
                                          "/* comment1 */\n"
                                          "x;\n"
                                          "/* comment2 */\n");
@@ -58,7 +58,7 @@ static void test0a(Parser* parser) {
 
 static void test0b(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test0.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
                                          "/* comment1 */\n"
                                          "/* comment2 */\n");
   assert(!guard.realizeErrors());
@@ -75,7 +75,7 @@ static void test0b(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
                                          "module M { x; }\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -90,7 +90,7 @@ static void test1(Parser* parser) {
 
 static void test1a(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1a.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test1a.chpl",
                                          "/* comment 1 */\n"
                                          "module M {\n"
                                          "  /* comment 2 */\n"
@@ -114,7 +114,7 @@ static void test1a(Parser* parser) {
 
 static void test1b(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1b.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test1b.chpl",
                                          "module M {\n"
                                          "}\n");
   assert(!guard.realizeErrors());
@@ -127,7 +127,7 @@ static void test1b(Parser* parser) {
 
 static void test1c(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1c.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test1c.chpl",
                                          "/* comment 1 */\n"
                                          "module M {\n"
                                          "  /* comment 2 */\n"
@@ -149,7 +149,7 @@ static void test1c(Parser* parser) {
 
 static void test1d(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1d.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test1d.chpl",
                                          "module /* comment */ M {\n"
                                          "}\n");
   assert(!guard.realizeErrors());
@@ -162,7 +162,7 @@ static void test1d(Parser* parser) {
 
 static void test1e(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1d.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test1d.chpl",
                                          "prototype /* comment */ module M {\n"
                                          "}\n");
   assert(!guard.realizeErrors());
@@ -175,7 +175,7 @@ static void test1e(Parser* parser) {
 
 static void test1f(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1f.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test1f.chpl",
                                          "public /* comment */ module M {\n"
                                          "}\n");
   assert(!guard.realizeErrors());
@@ -189,7 +189,7 @@ static void test1f(Parser* parser) {
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test2.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
                                          "module M { x; }\n"
                                          "module N { y; }\n");
   assert(!guard.realizeErrors());
@@ -218,7 +218,7 @@ static void test2(Parser* parser) {
 
 static void test2a(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test2a.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test2a.chpl",
                                          "/* comment 1 */\n"
                                          "module M {\n"
                                          "  /* comment 2 */\n"
@@ -271,7 +271,7 @@ static void test2a(Parser* parser) {
 
 static void test2b(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test2b.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test2b.chpl",
                                          "/* comment */\n"
                                          "module M { x; }\n"
                                          "module N { y; }\n");
@@ -284,7 +284,7 @@ static void test2b(Parser* parser) {
 
 static void test2c(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test2c.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test2c.chpl",
                                          "module M { x; }\n"
                                          "/* comment */\n"
                                          "module N { y; }\n");
@@ -297,7 +297,7 @@ static void test2c(Parser* parser) {
 
 static void test2d(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test2d.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test2d.chpl",
                                          "module M { x; }\n"
                                          "module N { y; }\n"
                                          "/* comment */\n");

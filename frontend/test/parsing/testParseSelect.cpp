@@ -33,7 +33,7 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test0.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       "/* c1 */\n"
       "select /* c2 */ foo /* c3 */ {\n"
       "  when /* c4 */ x do /* c5 */ f1();\n"
@@ -106,7 +106,7 @@ static void test0(Parser* parser) {
 // Should be parse error.
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
       "/* c1 */\n"
       "select foo {\n"
       "  when x do f1();\n"
@@ -130,7 +130,7 @@ static void test1(Parser* parser) {
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test2.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
       "/* c1 */\n"
       "select foo {\n"
       "  when x, y do f1();\n"
@@ -158,7 +158,7 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test3.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
       "/* c1 */\n"
       "select foo {\n"
       "  otherwise do { f1(); }\n"

@@ -32,7 +32,7 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test0.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       "/* c1 */\n"
       "var x = try /* c2 */ foo();\n"
       "var y = try! bar();\n"
@@ -126,7 +126,7 @@ static void tryCatchTest(Parser* parser, const char* testName,
                          bool hasErrorType) {
   ErrorGuard guard(parser->context());
   auto test = constructTryCatchTest(isTryBang, hasError, hasErrorType);
-  auto parseResult = parser->parseString(testName, test.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, testName, test.c_str());
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -180,7 +180,7 @@ static void test1(Parser* parser) {
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test2.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
       "/* c1 */\n"
       "try {\n"
       "  throw fooError();\n"
@@ -220,7 +220,7 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test3.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
       R""""(
         module M {
           try {

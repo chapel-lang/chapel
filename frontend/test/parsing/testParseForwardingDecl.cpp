@@ -38,7 +38,7 @@ static void test0(Parser* parser) {
           "forwarding var impl: MyCircleImpl;\n"
         "}\n";
 
-  auto parseResult = parser->parseString("test0.chpl", myCircle.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl", myCircle.c_str());
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -72,7 +72,7 @@ static void test1(Parser* parser) {
                       "forwarding getImplOrFail();\n"
                      "}\n";
 
-  auto parseResult = parser->parseString("test1.chpl", myCircle.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl", myCircle.c_str());
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -102,7 +102,7 @@ static void test2(Parser* parser) {
                       "/* some comments after forwarding*/\n"
                     "}\n";
 
-  auto parseResult = parser->parseString("test2.chpl", myCircle.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl", myCircle.c_str());
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -138,7 +138,7 @@ static void test3(Parser* parser) {
                       "forwarding impl except circumference;\n"
                     "}\n";
 
-  auto parseResult = parser->parseString("test3.chpl", myCircle.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl", myCircle.c_str());
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -172,7 +172,7 @@ static void test4(Parser* parser) {
                       "forwarding var x = 10;\n"
                     "}\n";
 
-  auto parseResult = parser->parseString("test4.chpl", myCircle.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl", myCircle.c_str());
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -218,7 +218,7 @@ static void test5(Parser* parser) {
                           "// writeln(c.area());\n"
                         "}\n";
 
-  auto parseResult = parser->parseString("test5.chpl", myCircle.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl", myCircle.c_str());
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -259,7 +259,7 @@ static void test5(Parser* parser) {
 //           "forwarding private var impl: MyCircleImpl;\n"
 //         "}\n";
 
-//   auto parseResult = parser->parseString("test6.chpl", myCircle.c_str());
+//   auto parseResult = parseStringAndReportErrors(parser, "test6.chpl", myCircle.c_str());
 //   for (int i=0;i<guard.realizeErrors();i++){
 //     fprintf(stderr, "parse error: %s\n", parseResult.error(i).message().c_str());
 //   }
@@ -293,7 +293,7 @@ static void test5(Parser* parser) {
 //           "forwarding public var impl: MyCircleImpl;\n"
 //         "}\n";
 
-//   auto parseResult = parser->parseString("test7.chpl", myCircle.c_str());
+//   auto parseResult = parseStringAndReportErrors(parser, "test7.chpl", myCircle.c_str());
 
 //   assert(!guard.realizeErrors());
 //   auto mod = parseResult.singleModule();
@@ -320,7 +320,7 @@ static void test8(Parser* parser) {
           "forwarding var impl: MyCircleImpl;\n"
         "}\n";
 
-  auto parseResult = parser->parseString("test8.chpl", myCircle.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, "test8.chpl", myCircle.c_str());
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -352,7 +352,7 @@ static void test9(Parser* parser) {
           "forwarding var impl: MyCircleImpl;\n"
         "}\n";
 
-  auto parseResult = parser->parseString("test9.chpl", myCircle.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, "test9.chpl", myCircle.c_str());
 
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();

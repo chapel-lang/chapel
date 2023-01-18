@@ -38,7 +38,7 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test0.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       "/* c1 */\n"
       "if /* c2 */ foo /* c3 */ then\n"
       "  /* c4 */\n"
@@ -103,7 +103,7 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
       "/* c1 */\n"
       "if /* c2 */ foo() /* c3 */ {\n"
       "  /* c4 */\n"
@@ -174,7 +174,7 @@ static void test1(Parser* parser) {
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test2.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
       "/* c1 */\n"
       "if /* c2 */ foo /* c3 */ then {\n"
       "  /* c4 */\n"
@@ -210,7 +210,7 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test3.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
       "/* c1 */\n"
       "if /* c2 */ foo /* c3 */ then\n"
       "  /* c4 */\n"
@@ -252,7 +252,7 @@ static void test3(Parser* parser) {
 
 static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
       "/* c1 */\n"
       "if foo += bar() then\n"
       "  baz();\n"
@@ -279,7 +279,7 @@ static void test4(Parser* parser) {
 
 static void test5(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test5.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
       "/* c1 */\n"
       "if var foo = bar() then\n"
       "  baz();\n"

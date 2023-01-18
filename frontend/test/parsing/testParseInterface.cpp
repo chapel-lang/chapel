@@ -29,7 +29,7 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test0.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       " /* c1 */\n"
       " interface Foo(a, b, c) {\n"
       "   proc foo() {}\n"

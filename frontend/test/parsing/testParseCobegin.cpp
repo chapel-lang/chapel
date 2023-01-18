@@ -31,7 +31,7 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test0.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       "/* comment 1 */\n"
       "cobegin /* comment 2 */\n"
       "with /* comment 3 */ (ref a, var b = foo()) /* comment 4 */ {\n"
@@ -81,7 +81,7 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
       "/* comment 1 */\n"
       "cobegin /* comment 2 */ {\n"
       "  /* comment 5 */\n"

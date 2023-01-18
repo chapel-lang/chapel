@@ -29,7 +29,7 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test0.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       "/* comment 1 */\n"
       "serial /* comment 2 */ do\n"
       "  /* comment 3 */\n"
@@ -53,7 +53,7 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
       "/* comment 1 */\n"
       "serial /* comment 2 */ foo /* comment 3 */ do\n"
       "  /* comment 4 */\n"
@@ -78,7 +78,7 @@ static void test1(Parser* parser) {
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test2.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
       "/* comment 1 */\n"
       "serial /* comment 2 */ {\n"
       "  /* comment 3 */\n"
@@ -104,7 +104,7 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test3.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
       "/* comment 1 */\n"
       "serial /* comment 2 */ foo /* comment 3 */ {\n"
       "  /* comment 4 */\n"
@@ -132,7 +132,7 @@ static void test3(Parser* parser) {
 
 static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
       "/* comment 1 */\n"
       "serial do { var a; }\n");
   assert(!guard.realizeErrors());
@@ -151,7 +151,7 @@ static void test4(Parser* parser) {
 
 static void test5(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test5.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
       "/* comment 1 */\n"
       "serial foo do { var a; }\n");
   assert(!guard.realizeErrors());

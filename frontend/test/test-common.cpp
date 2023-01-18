@@ -20,6 +20,7 @@
 #include "test-common.h"
 
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/uast/post-parse-checks.h"
 
 using namespace chpl;
 
@@ -29,3 +30,11 @@ parseAndReportErrors(Context* context, UniqueString path) {
   return ret;
 }
 
+uast::BuilderResult
+parseStringAndReportErrors(parsing::Parser* parser, const char* filename,
+                           const char* content) {
+  auto path = UniqueString::get(parser->context(), filename);
+  auto result = parser->parseString(filename, content);
+  uast::checkBuilderResult(parser->context(), path, result);
+  return result;
+}

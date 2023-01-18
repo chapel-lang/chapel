@@ -27,7 +27,7 @@
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1.chpl", "var x, y;");
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl", "var x, y;");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -57,7 +57,7 @@ static void test1(Parser* parser) {
 }
 static void test1a(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1a.chpl", "const x, y;");
+  auto parseResult = parseStringAndReportErrors(parser, "test1a.chpl", "const x, y;");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -78,7 +78,7 @@ static void test1a(Parser* parser) {
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test2.chpl", "var x, y = ii;");
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl", "var x, y = ii;");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -107,7 +107,7 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test3.chpl", "var x, y: int;");
+  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl", "var x, y: int;");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -141,7 +141,7 @@ static void checkTest4Decls(const MultiDecl* multi,
 
 static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
                                          "var a,\n"
                                          "    b: int,\n"
                                          "    c,\n"
@@ -204,7 +204,7 @@ static void checkTest4Decls(const MultiDecl* multi,
 
 static void test4a(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4a.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4a.chpl",
                                          "/* comment */\n"
                                          "var a,\n"
                                          "    b: int,\n"
@@ -226,7 +226,7 @@ static void test4a(Parser* parser) {
 
 static void test4b(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4b.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4b.chpl",
                                          "var /*comment*/ a,\n"
                                          "    b: int,\n"
                                          "    c,\n"
@@ -247,7 +247,7 @@ static void test4b(Parser* parser) {
 
 static void test4c(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4c.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4c.chpl",
                                          "var a,\n"
                                          "    /*comment*/ b: int,\n"
                                          "    c,\n"
@@ -268,7 +268,7 @@ static void test4c(Parser* parser) {
 
 static void test4d(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4d.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4d.chpl",
                                          "var a,\n"
                                          "    b /* comment */ : int,\n"
                                          "    c,\n"
@@ -288,7 +288,7 @@ static void test4d(Parser* parser) {
 
 static void test4e(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4e.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4e.chpl",
                                          "var a,\n"
                                          "    b : /* comment */ int,\n"
                                          "    c,\n"
@@ -308,7 +308,7 @@ static void test4e(Parser* parser) {
 
 static void test4f(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4f.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4f.chpl",
                                          "var a,\n"
                                          "    b : int,\n"
                                          "    /*comment */ c,\n"
@@ -329,7 +329,7 @@ static void test4f(Parser* parser) {
 
 static void test4g(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4g.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4g.chpl",
                                          "var a,\n"
                                          "    b : int,\n"
                                          "    c,\n"
@@ -350,7 +350,7 @@ static void test4g(Parser* parser) {
 
 static void test4h(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4h.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4h.chpl",
                                          "var a,\n"
                                          "    b : int,\n"
                                          "    c,\n"
@@ -370,7 +370,7 @@ static void test4h(Parser* parser) {
 
 static void test4i(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4i.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4i.chpl",
                                          "var a,\n"
                                          "    b : int,\n"
                                          "    c,\n"
@@ -390,7 +390,7 @@ static void test4i(Parser* parser) {
 
 static void test4j(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4j.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4j.chpl",
                                          "var a,\n"
                                          "    b : int,\n"
                                          "    c,\n"
@@ -410,7 +410,7 @@ static void test4j(Parser* parser) {
 
 static void test4k(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4k.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4k.chpl",
       "config var a,\n"
       "           b : int,\n"
       "           c,\n"
@@ -431,7 +431,7 @@ static void test4k(Parser* parser) {
 
 static void test5(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test5.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
       "type vec3 = 3*real,\n"
       "     arr33 = 3*vec3;");
   assert(!guard.realizeErrors());

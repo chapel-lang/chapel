@@ -24,6 +24,7 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/Parser.h"
 #include "chpl/types/RecordType.h"
+#include "chpl/uast/post-parse-checks.h"
 #include "chpl/uast/AggregateDecl.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Function.h"
@@ -119,6 +120,20 @@ parseFileToBuilderResult(Context* context, UniqueString path,
   }
 
   return QUERY_END(result);
+}
+
+// TODO: can't make this a query because can't store the uast::BuilderResult&
+//       as a query result. Might be some template specialization magic we
+//       can do to support this use case, but for now, this will just end up
+//       reporting errors to the caller query.
+const uast::BuilderResult&
+parseFileToBuilderResultAndCheck(Context* context, UniqueString path,
+                                 UniqueString parentSymbolPath) {
+  auto& result = parseFileToBuilderResult(context, path, parentSymbolPath);
+  if (result.numTopLevelExpressions() == 0) return result;
+
+  checkBuilderResult(context, path, result);
+  return result;
 }
 
 // parses whatever file exists that contains the passed ID and returns it

@@ -30,7 +30,7 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test0.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       "/* comment 1 */\n"
       "on /* comment 2 */ foo /* comment 3 */ do\n"
       "  var a;\n"
@@ -53,7 +53,7 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
       "/* comment 1 */\n"
       "on /* comment 2 */ foo /* comment 3 */ {\n"
       "  /* comment 4 */\n"
@@ -81,7 +81,7 @@ static void test1(Parser* parser) {
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test2.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
       "/* comment 1 */\n"
       "on foo do { var a; }\n");
   assert(!guard.realizeErrors());

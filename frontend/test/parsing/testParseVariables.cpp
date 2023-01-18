@@ -37,7 +37,7 @@
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
                                          "var a: int;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -60,7 +60,7 @@ static void test1(Parser* parser) {
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test2.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
                                          "var a = b;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -83,7 +83,7 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test3.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
                                          "var a: int = b;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -106,7 +106,7 @@ static void test3(Parser* parser) {
 
 static void test3a(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test3a.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test3a.chpl",
                                          "var /* comment */ a: int = b;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -129,7 +129,7 @@ static void test3a(Parser* parser) {
 
 static void test3b(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test3b.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test3b.chpl",
                                          "var a /* comment */ : int = b;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -152,7 +152,7 @@ static void test3b(Parser* parser) {
 
 static void test3c(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test3c.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test3c.chpl",
                                          "var a : /* comment */ int = b;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -175,7 +175,7 @@ static void test3c(Parser* parser) {
 
 static void test3d(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test3d.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test3d.chpl",
                                          "var a : int /* comment */ = b;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -198,7 +198,7 @@ static void test3d(Parser* parser) {
 
 static void test3e(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test3e.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test3e.chpl",
                                          "var a : int = /* comment */ b;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -221,7 +221,7 @@ static void test3e(Parser* parser) {
 
 static void test3f(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test3f.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test3f.chpl",
                                          "var a : int = b /* comment */;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -244,7 +244,7 @@ static void test3f(Parser* parser) {
 
 static void test3g(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test3g.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test3g.chpl",
       "config var a : int = b /* comment */;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -271,7 +271,7 @@ static void test3g(Parser* parser) {
 // Extern variables.
 static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
     "extern var x: int = 0;\n"
     "public extern var y = 0.0;\n"
     "private extern \"foo\" ref z: int;\n");
@@ -314,7 +314,7 @@ static void test4(Parser* parser) {
 /*
 static void test5(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test5.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
     "export var foo = 0;\n"
     "export \"bar\" var bar: real = 0.0;\n");
 
@@ -328,7 +328,7 @@ static void test5(Parser* parser) {
 // Type variables (also config and extern).
 static void test6(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test6.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test6.chpl",
     "public type foo = bar;\n"
     "type foo;\n"
     "public config type foo = bar;\n"
@@ -386,7 +386,7 @@ static void test6(Parser* parser) {
 
 static void test7(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test7.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test7.chpl",
                                          "var foo = noinit;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();

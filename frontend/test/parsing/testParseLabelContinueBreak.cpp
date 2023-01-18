@@ -36,7 +36,7 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test0.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
     "/*c1*/\n"
     "var thing = 0;\n"
     "label outer for i in myRange1 {\n"
@@ -79,7 +79,7 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
     "/*c1*/\n"
     "label outer for i in myRange {\n"
     "  if i%2 then /*c2*/ continue /*c3*/ outer /*c4*/;\n"

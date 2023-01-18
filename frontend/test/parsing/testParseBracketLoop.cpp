@@ -35,7 +35,7 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test0.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       "/* comment 1 */\n"
       "[x in foo]\n"
       "  /* comment 2 */\n"
@@ -65,7 +65,7 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
       "/* comment 1 */\n"
       "[x in foo with (ref thing)] {\n"
       "  /* comment 2 */\n"
@@ -104,7 +104,7 @@ static void test1(Parser* parser) {
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test2.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
       "/* comment 1 */\n"
       "[x in zip(a, b)] {\n"
       "  foo();\n"
@@ -135,7 +135,7 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test3.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
       "/* comment 1 */\n"
       "[x in zip(a, b, foo()) with (const ref thing1, in thing2=d)] {\n"
       "  writeln(thing1);\n"
@@ -183,7 +183,7 @@ static void test3(Parser* parser) {
 
 static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
       "/* comment 1 */\n"
       "[foo()]\n"
       "  /* comment 2 */\n"
@@ -212,7 +212,7 @@ static void test4(Parser* parser) {
 
 static void test5(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test5.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
       "/* comment 1 */\n"
       "[zip(a, b) with (var r=thing1)] {\n"
       "  writeln(r);\n"

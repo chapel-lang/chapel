@@ -55,7 +55,7 @@ static bool areAttributesEqual(const Decl* lhs, const Decl* rhs) {
 // Make sure MultiDecl attributes equal component attributes.
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test0.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       "pragma \"no doc\"\n"
       "var a, b, c = 0;\n");
   assert(!guard.realizeErrors());
@@ -81,7 +81,7 @@ static void test0(Parser* parser) {
 // Make sure TupleDecl attributes equal component attributes.
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
       "pragma \"no doc\"\n"
       "var (a, b, c) = foo;\n");
   assert(!guard.realizeErrors());
@@ -182,7 +182,7 @@ static void testAggregateAttributes(Parser* parser,
                                          numPragmas,
                                          doChildrenHavePragmas,
                                          numChildVars);
-  auto parseResult = parser->parseString("test-aggregate.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test-aggregate.chpl",
                                          code.c_str());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -285,7 +285,7 @@ static void test2(Parser* parser) {
 // Simple test for deprecation message on a variable.
 static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test3.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
       "pragma \"no doc\"\n"
       "deprecated \"Thingy is deprecated\"\n"
       "var x = 0;\n");
@@ -308,7 +308,7 @@ static void test3(Parser* parser) {
 // Module, enum, and a var decl.
 static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test4.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
       "pragma \"no doc\"\n"
       "deprecated \"Module is deprecated\"\n"
       "module Foo {\n"
@@ -332,7 +332,7 @@ static void test4(Parser* parser) {
 // Procedures, formals, nested procedures.
 static void test5(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test5.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
       "pragma \"no doc\"\n"
       "deprecated \"P1 is deprecated\"\n"
       "proc p1() {}\n"
@@ -440,7 +440,7 @@ static void test5(Parser* parser) {
 // Enum elements can be deprecated.
 static void test6(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test7.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test7.chpl",
       "pragma \"no doc\"\n"
       "deprecated \"Enum is deprecated\"\n"
       "enum Foo {\n"

@@ -36,7 +36,7 @@ static void testIntLiteral(Parser* parser,
   std::string toparse = "var x = ";
   toparse += lit;
   toparse += ";\n";
-  auto parseResult = parser->parseString(testname, toparse.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, testname, toparse.c_str());
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -56,7 +56,7 @@ static void testUintLiteral(Parser* parser,
   std::string toparse = "var x = ";
   toparse += lit;
   toparse += ";\n";
-  auto parseResult = parser->parseString(testname, toparse.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, testname, toparse.c_str());
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -76,7 +76,7 @@ static void testRealLiteral(Parser* parser,
   std::string toparse = "var x = ";
   toparse += lit;
   toparse += ";\n";
-  auto parseResult = parser->parseString(testname, toparse.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, testname, toparse.c_str());
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -96,7 +96,7 @@ static void testImagLiteral(Parser* parser,
   std::string toparse = "var x = ";
   toparse += lit;
   toparse += ";\n";
-  auto parseResult = parser->parseString(testname, toparse.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, testname, toparse.c_str());
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -117,7 +117,7 @@ static void testBadLiteral(Parser* parser,
   std::string toparse = "var x = ";
   toparse += lit;
   toparse += ";\n";
-  auto parseResult = parser->parseString(testname, toparse.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, testname, toparse.c_str());
   assert(guard.realizeErrors() >= 1);
   auto mod = parseResult.singleModule();
   assert(mod);

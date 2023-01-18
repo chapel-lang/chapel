@@ -17,6 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "chpl/uast/post-parse-checks.h"
 
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/global-strings.h"
@@ -882,18 +883,11 @@ bool Visitor::isUserFilePath(Context* context, UniqueString filepath) {
 } // end anonymous namespace
 
 namespace chpl {
-namespace parsing {
+namespace uast {
 
-// TODO: can't make this a query because can't store the uast::BuilderResult&
-//       as a query result. Might me some template specialization magic we
-//       can do to support this use case, but for now, this will just end up
-//       reporting errors to the caller query.
-const uast::BuilderResult&
-parseFileToBuilderResultAndCheck(Context* context, UniqueString path,
-                                 UniqueString parentSymbolPath) {
-  auto& result = parseFileToBuilderResult(context, path, parentSymbolPath);
-  if (result.numTopLevelExpressions() == 0) return result;
-
+void
+checkBuilderResult(Context* context, UniqueString path,
+                   const BuilderResult& result) {
   bool isUserCode = Visitor::isUserFilePath(context, path);
   auto v = Visitor(context, isUserCode);
 
@@ -901,8 +895,6 @@ parseFileToBuilderResultAndCheck(Context* context, UniqueString path,
     if (ast->isComment()) continue;
     v.check(ast);
   }
-
-  return result;
 }
 
 } // end namespace uast

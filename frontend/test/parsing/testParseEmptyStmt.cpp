@@ -31,7 +31,7 @@
 
 static void test0(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test0.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
         "hi();\n"
          ";\n"
          ";\n"
@@ -85,7 +85,7 @@ static void test0(Parser* parser) {
 
 static void test1(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test1.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
         "while true do\n"
          ";\n");
 
@@ -114,7 +114,7 @@ static void test1(Parser* parser) {
 
 static void test2(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test2.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
         "cobegin { ; writeln['']; }\n");
 
   assert(!guard.realizeErrors());
@@ -143,7 +143,7 @@ static void test3(Parser* parser) {
   // It originated from test/users/thom/topLevelCode.chpl and causes some
   // discrepancy in the test result between dyno and production
   ErrorGuard guard(parser->context());
-  auto parseResult = parser->parseString("test3.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
         "proc myProc();\n"
         "{\n //comment;\n"
         "}");
