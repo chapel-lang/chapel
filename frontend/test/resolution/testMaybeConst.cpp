@@ -153,6 +153,7 @@ static void test2() {
     {});
 }
 
+// test ref/const ref return intent overload
 static void test3a() {
   testMaybeRef("test3a",
     R""""(
@@ -302,10 +303,470 @@ static void test3i() {
     {{"M.test@2", "M.foo"}});
 }
 
+// test ref/value return intent overload
+static void test4a() {
+  testMaybeRef("test4a",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() ref { return global; }         // M.foo
+        proc foo() { return global; }             // M.foo#1
+        proc test() {
+          var x = foo();
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@1", "M.foo#1"}});
+}
+
+static void test4b() {
+  testMaybeRef("test4b",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() { return global; }             // M.foo
+        proc foo() ref { return global; }         // M.foo#1
+        proc test() {
+          var x = foo();
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@1", "M.foo"}});
+}
+
+static void test4c() {
+  testMaybeRef("test4c",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() { return global; }             // M.foo
+        proc foo() ref { return global; }         // M.foo#1
+        proc test() {
+          const ref x = foo();
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@1", "M.foo"}});
+}
+
+static void test4d() {
+  testMaybeRef("test4d",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() { return global; }             // M.foo
+        proc foo() ref { return global; }         // M.foo#1
+        proc test() {
+          ref x = foo();
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@1", "M.foo#1"}});
+}
+
+static void test4e() {
+  testMaybeRef("test4e",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() ref { return global; }         // M.foo
+        proc foo() { return global; }             // M.foo#1
+        proc acceptsRef(ref arg: int) { }
+        proc test() {
+          acceptsRef(foo());
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@2", "M.foo"}});
+}
+
+static void test4f() {
+  testMaybeRef("test4f",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() ref { return global; }         // M.foo
+        proc foo() { return global; }             // M.foo#1
+        proc acceptsConstRef(const ref arg: int) { }
+        proc test() {
+          acceptsConstRef(foo());
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@2", "M.foo#1"}});
+}
+
+static void test4g() {
+  testMaybeRef("test4g",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() ref { return global; }         // M.foo
+        proc foo() { return global; }             // M.foo#1
+        proc acceptsIn(in arg: int) { }
+        proc test() {
+          acceptsIn(foo());
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@2", "M.foo#1"}});
+}
+
+static void test4h() {
+  testMaybeRef("test4h",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() ref { return global; }         // M.foo
+        proc foo() { return global; }             // M.foo#1
+        proc acceptsOut(out arg: int) { }
+        proc test() {
+          acceptsOut(foo());
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@2", "M.foo"}});
+}
+
+static void test4i() {
+  testMaybeRef("test4i",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() ref { return global; }         // M.foo
+        proc foo() { return global; }             // M.foo#1
+        proc acceptsInout(inout arg: int) { }
+        proc test() {
+          acceptsInout(foo());
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@2", "M.foo"}});
+}
+
+// test const ref/value return intent overload
+static void test5a() {
+  testMaybeRef("test5a",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() const ref { return global; }   // M.foo
+        proc foo() { return global; }             // M.foo#1
+        proc test() {
+          var x = foo();
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@1", "M.foo#1"}});
+}
+
+static void test5b() {
+  testMaybeRef("test5b",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() { return global; }               // M.foo
+        proc foo() const ref { return global; }     // M.foo#1
+        proc test() {
+          var x = foo();
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@1", "M.foo"}});
+}
+
+static void test5c() {
+  testMaybeRef("test5c",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() { return global; }               // M.foo
+        proc foo() const ref { return global; }     // M.foo#1
+        proc test() {
+          const ref x = foo();
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@1", "M.foo#1"}});
+}
+
+static void test5d() {
+  testMaybeRef("test5d",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() { return global; }               // M.foo
+        proc foo() const ref { return global; }     // M.foo#1
+        proc test() {
+          ref x = foo();
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@1", "M.foo#1"}});
+}
+
+static void test5e() {
+  testMaybeRef("test5e",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() const ref { return global; }    // M.foo
+        proc foo() { return global; }              // M.foo#1
+        proc acceptsRef(ref arg: int) { }
+        proc test() {
+          acceptsRef(foo());
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@2", "M.foo"}});
+}
+
+static void test5f() {
+  testMaybeRef("test5f",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() const ref { return global; }    // M.foo
+        proc foo() { return global; }              // M.foo#1
+        proc acceptsConstRef(const ref arg: int) { }
+        proc test() {
+          acceptsConstRef(foo());
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@2", "M.foo"}});
+}
+
+static void test5g() {
+  testMaybeRef("test5g",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() const ref { return global; }   // M.foo
+        proc foo() { return global; }             // M.foo#1
+        proc acceptsIn(in arg: int) { }
+        proc test() {
+          acceptsIn(foo());
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@2", "M.foo#1"}});
+}
+
+static void test5h() {
+  testMaybeRef("test5h",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() const ref { return global; }     // M.foo
+        proc foo() { return global; }               // M.foo#1
+        proc acceptsOut(out arg: int) { }
+        proc test() {
+          acceptsOut(foo());
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@2", "M.foo"}});
+}
+
+static void test5i() {
+  testMaybeRef("test5i",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() const ref { return global; }  // M.foo
+        proc foo() { return global; }            // M.foo#1
+        proc acceptsInout(inout arg: int) { }
+        proc test() {
+          acceptsInout(foo());
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@2", "M.foo"}});
+}
+
+// test ref/const ref/value return intent overload
+static void test6a() {
+  testMaybeRef("test6a",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() const ref { return global; }   // M.foo
+        proc foo() { return global; }             // M.foo#1
+        proc foo() ref { return global; }         // M.foo#2
+        proc test() {
+          var x = foo();
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@1", "M.foo#1"}});
+}
+
+static void test6b() {
+  testMaybeRef("test6b",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() ref { return global; }           // M.foo
+        proc foo() { return global; }               // M.foo#1
+        proc foo() const ref { return global; }     // M.foo#2
+        proc test() {
+          var x = foo();
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@1", "M.foo#1"}});
+}
+
+static void test6c() {
+  testMaybeRef("test6c",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() { return global; }               // M.foo
+        proc foo() const ref { return global; }     // M.foo#1
+        proc foo() ref { return global; }           // M.foo#2
+        proc test() {
+          const ref x = foo();
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@1", "M.foo#1"}});
+}
+
+static void test6d() {
+  testMaybeRef("test6d",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() ref { return global; }           // M.foo
+        proc foo() { return global; }               // M.foo#1
+        proc foo() const ref { return global; }     // M.foo#2
+        proc test() {
+          ref x = foo();
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@1", "M.foo"}});
+}
+
+static void test6e() {
+  testMaybeRef("test6e",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() const ref { return global; }    // M.foo
+        proc foo() ref { return global; }          // M.foo#1
+        proc foo() { return global; }              // M.foo#2
+        proc acceptsRef(ref arg: int) { }
+        proc test() {
+          acceptsRef(foo());
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@2", "M.foo#1"}});
+}
+
+static void test6f() {
+  testMaybeRef("test6f",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() const ref { return global; }    // M.foo
+        proc foo() { return global; }              // M.foo#1
+        proc foo() ref { return global; }          // M.foo#2
+        proc acceptsConstRef(const ref arg: int) { }
+        proc test() {
+          acceptsConstRef(foo());
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@2", "M.foo"}});
+}
+
+static void test6g() {
+  testMaybeRef("test6g",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() const ref { return global; }   // M.foo
+        proc foo() ref { return global; }         // M.foo#1
+        proc foo() { return global; }             // M.foo#2
+        proc acceptsIn(in arg: int) { }
+        proc test() {
+          acceptsIn(foo());
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@2", "M.foo#2"}});
+}
+
+static void test6h() {
+  testMaybeRef("test6h",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() const ref { return global; }     // M.foo
+        proc foo() { return global; }               // M.foo#1
+        proc foo() ref { return global; }           // M.foo#2
+        proc acceptsOut(out arg: int) { }
+        proc test() {
+          acceptsOut(foo());
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@2", "M.foo#2"}});
+}
+
+static void test6i() {
+  testMaybeRef("test6i",
+    R""""(
+      module M {
+        var global: int;
+        proc foo() ref { return global; }        // M.foo
+        proc foo() const ref { return global; }  // M.foo#1
+        proc foo() { return global; }            // M.foo#2
+        proc acceptsInout(inout arg: int) { }
+        proc test() {
+          acceptsInout(foo());
+        }
+      }
+    )"""",
+    {},
+    {{"M.test@2", "M.foo"}});
+}
+
 
 int main() {
   test1();
   test2();
+
   test3a();
   test3b();
   test3c();
@@ -315,6 +776,36 @@ int main() {
   test3g();
   test3h();
   test3i();
+
+  test4a();
+  test4b();
+  test4c();
+  test4d();
+  test4e();
+  test4f();
+  test4g();
+  test4h();
+  test4i();
+
+  test5a();
+  test5b();
+  test5c();
+  test5d();
+  test5e();
+  test5f();
+  test5g();
+  test5h();
+  test5i();
+
+  test6a();
+  test6b();
+  test6c();
+  test6d();
+  test6e();
+  test6f();
+  test6g();
+  test6h();
+  test6i();
 
   return 0;
 }
