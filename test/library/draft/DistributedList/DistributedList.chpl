@@ -83,7 +83,7 @@ module DistributedList {
 
         proc contains(x: eltType): bool {
             this.lockAll(); defer this.unlockAll();
-            for e in this do
+            for e in this.these() do
                 if e == x then return true;
             return false;
         }
@@ -181,10 +181,11 @@ module DistributedList {
         proc ref remove(x: eltType, count: int = 1): int {
             this.lockAll();
             var numRemoved = 0;
-            for i in 0..<(if count > 0 then count else max(int)) {
+            const numToRemove = if count > 0 then count else max(int);
+            for 0..#numToRemove {
                 const idx = this._find(x);
                 if idx > -1 {
-                    this.pop(idx);
+                    this._pop(idx);
                     numRemoved += 1;
                 } else break;
             }
@@ -203,8 +204,12 @@ module DistributedList {
 
         proc ref pop(idx: int): eltType {
             assert(boundsCheck(idx), "'idx' out of bounds in 'pop'");
+            this.lockAll(); defer this.unlockAll();
+            return this._pop(idx);
+        }
 
-            this.lockAll();
+        pragma "no doc"
+        proc _pop(idx: int): eltType {
             const lastIdx = this.numEntries.read() - 1;
 
             // take the value at idx
@@ -225,9 +230,8 @@ module DistributedList {
 
             const (lastLocIdx, _, _) = indicesFor(lastIdx);
             this.blockLists[lastLocIdx].numFilled -= 1;
-            this.unlockAll();
-
             this.numEntries.sub(1);
+
             return ret;
         }
 
@@ -247,11 +251,11 @@ module DistributedList {
 
         pragma "no doc"
         proc _find(x: eltType, start: int = 0, end: int = -1) {
+            // TODO: do this in parallel across locales instead of one index at a time
             var idx = -1;
             for i in start..<(if end == -1 then this.numEntries.read() else end) {
                 const (locIdx, blockIdx, eltIdx) = indicesFor(i);
                 on this.targetLocales[locIdx] do
-                    writeln("i: ", i);
                     if this.blockLists[locIdx].getRef(blockIdx, eltIdx) == x {
                         idx = i;
                         // break;
@@ -291,18 +295,17 @@ module DistributedList {
             return 0..<this.numEntries.read();
         }
 
-        proc const toArray(): [] eltType {
+        proc toArray(): [] eltType {
             const dom = {0..<this.numEntries.read()} dmapped
-                BlockCyclic(startIdx=0, blockSize=this.blockSize, targetLocales=this.targetLocales);
+                BlockCyclic(startIdx=0, blocksize=this.blockSize, targetLocales=this.targetLocales);
 
             var a : [dom] this.eltType;
 
             this.lockAll();
-
             // Do we know that BlockCyclic will align indices to locales in the same fashion we have?
             for (loc, locIdx) in zip(this.targetLocales, this.locDom) do on loc {
-                for (elt, idx) in this.blockLists[locIdx] do
-                    a[idx] = elt;
+                for (elt, blockIdx, eltIdx) in this.blockLists[locIdx] do
+                    a[locIdx * blockIdx * this.blockSize + eltIdx] = elt; // not sure about this...
             }
             this.unlockAll();
 
@@ -438,13 +441,16 @@ module DistributedList {
         }
 
         iter these() {
-            for i in 0..<(this.numBlocks-1) {
+            const nFilled = this.numFilled / this.blockSize - 1;
+            // yield the first n full blocks
+            for i in 0..<nFilled {
                 for j in 0..<this.blockSize {
-                    yield this.blocks[i][j];
+                    yield (this.blocks[i][j], i, j);
                 }
             }
+            // yield the partial last block
             for j in 0..<(this.numFilled % this.blockSize) {
-                yield this.blocks[this.numBlocks-1][j];
+                yield (this.blocks[nFilled+1][j], nFilled+1, j);
             }
         }
     }
