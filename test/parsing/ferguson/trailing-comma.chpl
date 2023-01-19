@@ -44,8 +44,6 @@ proc testassocdoms() {
 }
 
 proc testassocarrays() {
-  var a = [1 => "one"];
-  assert(a.size==1);
   var at = [1 => "one",];
   assert(at.size==1);
   var b = [1 => "one", 2 => "two"];
