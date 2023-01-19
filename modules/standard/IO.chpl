@@ -4522,12 +4522,6 @@ inline proc _channel.read(ref args ...?k):bool throws {
     this._readInner((...args));
   } catch err: EofError {
     return false;
-  } catch err: UnexpectedEofError {
-    throw err;
-  } catch err: BadFormatError {
-    throw err;
-  } catch err: SystemError {
-    throw err;
   }
 
   return true;
@@ -4559,12 +4553,6 @@ proc _channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
     }
   } catch err: EofError {
     return false;
-  } catch err: UnexpectedEofError {
-    throw err;
-  } catch err: BadFormatError {
-    throw err;
-  } catch err: SystemError {
-    throw err;
   }
 
   return true;
@@ -4730,12 +4718,6 @@ proc _channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
     }
   } catch err: EofError {
     return false;
-  } catch err: UnexpectedEofError {
-    throw err;
-  } catch err: BadFormatError {
-    throw err;
-  } catch err: SystemError {
-    throw err;
   }
 
   return true;
@@ -8584,12 +8566,6 @@ proc _channel.readf(fmtStr:?t, ref args ...?k): bool throws
       }
     } catch thrownError: EofError {
       err = EEOF;
-    } catch e: UnexpectedEofError {
-      throw e;
-    } catch e: BadFormatError {
-      throw e;
-    } catch e: SystemError {
-      throw e;
     }
   }
 
