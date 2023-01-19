@@ -1,21 +1,67 @@
 #!/usr/bin/env bash
 
 # Script used in docker exec command to run homebrew install inside the container
-brew install --build-from-source chapel.rb
-INSTALL_STATUS=$?
-    if [ $INSTALL_STATUS -ne 0 ]
+brew test-bot --only-tap-syntax
+    if [$? -ne 0 ]
     then
-      echo "brew install --build-from-source chapel.rb failed" 
+      echo "brew test-bot --only-tap-syntax failed" 
       exit 1
       else
-      echo "brew install --build-from-source chapel.rb succeeded"
+      echo "brew test-bot --only-tap-syntax succeeded"
     fi
-chpl --version
-CHPL_INSTALL=$?
-    if [ $CHPL_INSTALL -ne 0 ]
+
+brew test-bot --only-formulae-detect
+    if [$? -ne 0 ]
     then
-      echo "chpl --version failed" 
+      echo "brew test-bot --only-formulae-detect failed" 
       exit 1
-    else
-      echo "chpl --version succeeded"
+      else
+      echo "brew test-bot --only-formulae-detect succeeded"
+    fi
+
+brew test-bot --only-setup
+    if [$? -ne 0 ]
+    then
+      echo "brew test-bot --only-setup failed" 
+      exit 1
+      else
+      echo "brew test-bot --only-setup succeeded"
+    fi
+
+# tests commands
+brew-test --only-cleanup-before
+
+    if [$? -ne 0 ]
+    then
+      echo "brew-test --only-cleanup-before failed" 
+      exit 1
+      else
+      echo "brew-test --only-cleanup-before succeeded"
+    fi
+brew test-bot --only-setup
+
+    if [$? -ne 0 ]
+    then
+      echo "brew test-bot --only-setup failed" 
+      exit 1
+      else
+      echo "brew test-bot --only-setup succeeded"
+    fi
+brew test-bot --only-formulae --junit --only-json-tab --skip-dependents --testing-formula=chapel --added-formulae= --deleted-formulae=
+
+    if [$? -ne 0 ]
+    then
+      echo "brew test-bot --only-formulae --junit --only-json-tab --skip-dependents --testing-formula=chapel --added-formulae= --deleted-formulae= failed" 
+      exit 1
+      else
+      echo "brew test-bot --only-formulae --junit --only-json-tab --skip-dependents --testing-formula=chapel --added-formulae= --deleted-formulae= succeeded"
+    fi
+brew test-bot --only-formulae-dependents --junit --testing-formulae=chapel --skipped-or-failed-formulae=chapel
+
+    if [$? -ne 0 ]
+    then
+      echo "brew test-bot --only-formulae-dependents --junit --testing-formulae=chapel --skipped-or-failed-formulae=chapel failed" 
+      exit 1
+      else
+      echo "brew test-bot --only-formulae-dependents --junit --testing-formulae=chapel --skipped-or-failed-formulae=chapel succeeded"
     fi
