@@ -15,8 +15,8 @@ docker run -i homebrew_ci /bin/bash < ${CHPL_HOME}/packaging/docker/test/brew_in
 CONTAINER_RUN=$?
     if [ $CONTAINER_RUN -ne 0 ]
     then
-      echo "brew install --build-from-source chapel.rb failed inside ubuntu container" 
+      echo "brew test bot commands failed inside ubuntu container" 
       exit 1
       else
-      echo "brew install --build-from-source chapel.rb succeeded inside ubuntu container"
+      echo "brew test bot commands succeeded inside ubuntu container"
     fi
