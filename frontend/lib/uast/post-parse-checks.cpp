@@ -266,7 +266,9 @@ bool Visitor::isParentFalseBlock(int depth) const {
 
 void Visitor::checkForOneElementArraysWithoutComma(const Array* node) {
   if (!node->hasTrailingComma() && node->numChildren() == 1) {
-    error(node, "single-element array literals without a trailing comma are deprecated; please rewrite as '[myElem, ]'");
+    warn(node, "single-element array literals without a trailing comma are "
+         "deprecated; please rewrite as '%s'",
+         node->isAssociative() ? "[myKey => myElem, ]" : "[myElem, ]");
   }
 }
   

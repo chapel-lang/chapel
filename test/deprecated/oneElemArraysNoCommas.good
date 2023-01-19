@@ -1,1 +1,10 @@
-oneElemArraysNoCommas.chpl:1: error: single-element array literals without a trailing comma are deprecated; please rewrite as '[myElem, ]'
+oneElemArraysNoCommas.chpl:1: warning: single-element array literals without a trailing comma are deprecated; please rewrite as '[myElem, ]'
+oneElemArraysNoCommas.chpl:11: warning: single-element array literals without a trailing comma are deprecated; please rewrite as '[myKey => myElem, ]'
+1
+2
+3 4
+5 6
+1
+1
+1 2
+1 2
