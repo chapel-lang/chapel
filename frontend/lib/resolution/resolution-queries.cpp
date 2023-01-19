@@ -1814,9 +1814,6 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
   if (id.isEmpty())
     return nullptr;
 
-  if (id.str() == "M.R.method")
-    gdbShouldBreakHere();
-
   const UntypedFnSignature* uSig = UntypedFnSignature::get(context, id);
   const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
   if (sig->needsInstantiation()) {
