@@ -327,7 +327,8 @@ module ChapelDomain {
     var ranges = dom.dims();
     for param i in 0..dom.rank-1 do
       ranges(i) = ranges(i) # counts(i);
-    return dom[(...ranges)];
+
+    return new _domain(dom.dist, dom.rank, dom.idxType, dom.stridable, ranges);
   }
 
   pragma "no doc"
@@ -1201,9 +1202,10 @@ module ChapelDomain {
       var r: rank*range(_value.idxType,
                         BoundedRangeType.bounded,
                         stridable);
+      const myDims = dims();
 
       for param i in 0..rank-1 {
-        r(i) = _value.dsiDim(i)(ranges(i));
+        r(i) = myDims(i)[ranges(i)];
       }
       return new _domain(dist, rank, _value.idxType, stridable, r);
     }

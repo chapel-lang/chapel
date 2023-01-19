@@ -1529,21 +1529,25 @@ module ChapelArray {
         compilerError("rank mismatch: cannot reindex() from " + this.rank:string +
                       " dimension(s) to " + newDims.size:string);
 
-      for param i in 0..rank-1 do
-        if newDims(i).sizeAs(uint) != _value.dom.dsiDim(i).sizeAs(uint) then
-          halt("extent in dimension ", i, " does not match actual");
+      const dom = this._value.dom;
+      const origDims = dom.dsiDims();
 
-      const thisDomClass = this._value.dom;
-      const (dom, dompid) = (thisDomClass, thisDomClass.pid);
+      for param i in 0..rank-1 {
+        if newDims(i).sizeAs(uint) != origDims(i).sizeAs(uint) then
+          halt("extent mismatch in dimension ", i+1, ": cannot reindex() from ",
+               origDims(i), " to ", newDims(i));
+        if ! noNegativeStrideWarnings && origDims(i).chpl_hasPositiveStride()
+           && ! newDims(i).chpl_hasPositiveStride() then
+          warning("arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; in reindex() from ", origDims, " to ", newDims);
+      }
 
       pragma "no auto destroy"
       const updom = {(...newDims)};
 
-
       const redist = new unmanaged ArrayViewReindexDist(downDistPid = this.domain.dist._pid,
                                               downDistInst=this.domain.dist._instance,
                                               updom = updom._value,
-                                              downdomPid = dompid,
+                                              downdomPid = dom.pid,
                                               downdomInst = dom);
       const redistRec = new _distribution(redist);
       // redist._free_when_no_doms = true;

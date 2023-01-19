@@ -1125,6 +1125,8 @@ private proc canDoAnyToCyclic(A, aView, B, bView) param : bool {
 // DefaultRectangular
 proc CyclicArr.doiBulkTransferFromAny(destDom, Src, srcDom) : bool
 where canDoAnyToCyclic(this, destDom, Src, srcDom) {
+  if !chpl_allStridesArePositive(this, destDom, Src, srcDom) then return false;
+
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicDist.doiBulkTransferFromAny");
 
@@ -1164,6 +1166,7 @@ where canDoAnyToCyclic(this, destDom, Src, srcDom) {
 // For assignments of the form: DefaultRectangular = Cyclic
 proc CyclicArr.doiBulkTransferToKnown(srcDom, Dest:DefaultRectangularArr, destDom) : bool
 where useBulkTransferDist {
+  if !chpl_allStridesArePositive(this, srcDom, Dest, destDom) then return false;
 
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicDist.doiBulkTransferToKnown(DefaultRectangular)");
@@ -1207,6 +1210,7 @@ where useBulkTransferDist {
 // For assignments of the form: Cyclic = DefaultRectangular
 proc CyclicArr.doiBulkTransferFromKnown(destDom, Src:DefaultRectangularArr, srcDom) : bool
 where useBulkTransferDist {
+  if !chpl_allStridesArePositive(this, destDom, Src, srcDom) then return false;
 
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicArr.doiBulkTransferFromKnown(DefaultRectangular)");

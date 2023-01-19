@@ -767,14 +767,17 @@ iter StencilDom.these(param tag: iterKind) where tag == iterKind.leader {
       else ignoreRunning;
     // Use the internal function for untranslate to avoid having to do
     // extra work to negate the offset
-    type strType = chpl__signedType(idxType);
-    const tmpStencil = locDom.myBlock.chpl__unTranslate(wholeLow);
+    const tmpBlock = locDom.myBlock.chpl__unTranslate(wholeLow);
     var locOffset: rank*idxType;
-    for param i in 0..tmpStencil.rank-1 do
-      locOffset(i) = tmpStencil.dim(i).first/tmpStencil.dim(i).stride:strType;
+    for param i in 0..tmpBlock.rank-1 {
+      const dim = tmpBlock.dim(i);
+      const aStr = if dim.chpl_hasPositiveStride()
+                   then dim.stride else -dim.stride;
+      locOffset(i) = dim.low / aStr:idxType;
+    }
     // Forward to defaultRectangular
-    for followThis in tmpStencil.these(iterKind.leader, maxTasks,
-                                       myIgnoreRunning, minSize, locOffset) do
+    for followThis in tmpBlock.these(iterKind.leader, maxTasks,
+                                     myIgnoreRunning, minSize, locOffset) do
       yield followThis;
   }
 }
@@ -800,13 +803,14 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
     chpl__testPar("Stencil domain follower invoked on ", followThis);
 
   var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
-  type strType = chpl__signedType(idxType);
   for param i in 0..rank-1 {
-    var stride = whole.dim(i).stride: strType;
-    // not checking here whether the new low and high fit into idxType
-    var low = (stride * followThis(i).lowBound:strType):idxType;
-    var high = (stride * followThis(i).highBound:strType):idxType;
-    t(i) = ((low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType).safeCast(t(i).type);
+    const wholeDim  = whole.dim(i);
+    const followDim = followThis(i);
+    var low  = wholeDim.orderToIndex(followDim.low);
+    var high = wholeDim.orderToIndex(followDim.high);
+    if ! wholeDim.chpl_hasPositiveStride() then low <=> high;
+    t(i) = ( low..high by (wholeDim.stride*followDim.stride)
+           ).safeCast(t(i).type);
   }
   for i in {(...t)} {
     yield i;
@@ -1312,7 +1316,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
   var lowIdx: rank*idxType;
 
   for param i in 0..rank-1 {
-    var stride = dom.whole.dim(i).stride;
+    const stride = dom.whole.dim(i).stride;
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).lowBound * abs(stride):idxType;
     var high = followThis(i).highBound * abs(stride):idxType;
@@ -1340,7 +1344,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     local {
       use CTypes; // Needed to cast from c_void_ptr in the next line
       const narrowArrSection =
-        __primitive("_wide_get_addr", arrSection):(arrSection.type?);
+        __primitive("_wide_get_addr", arrSection):arrSection.type?;
       ref myElems = _to_nonnil(narrowArrSection).myElems;
       foreach i in myFollowThisDom do yield myElems[i];
     }
@@ -1958,17 +1962,17 @@ private proc canDoAnyToStencil(Dest, destDom, Src, srcDom) param : bool {
 
 proc StencilArr.doiBulkTransferToKnown(srcDom, destClass:StencilArr, destDom) : bool
 where !disableStencilDistBulkTransfer {
-  _doSimpleStencilTransfer(destClass, destDom, this, srcDom);
-  return true;
+  return _doSimpleStencilTransfer(destClass, destDom, this, srcDom);
 }
 
 proc StencilArr.doiBulkTransferFromKnown(destDom, srcClass:StencilArr, srcDom) : bool
 where !disableStencilDistBulkTransfer {
-  _doSimpleStencilTransfer(this, destDom, srcClass, srcDom);
-  return true;
+  return _doSimpleStencilTransfer(this, destDom, srcClass, srcDom);
 }
 
 private proc _doSimpleStencilTransfer(Dest, destDom, Src, srcDom) {
+  if !chpl_allStridesArePositive(Dest, destDom, Src, srcDom) then return false;
+
   if debugStencilDistBulkTransfer then
     writeln("In Stencil=Stencil Bulk Transfer: Dest[", destDom, "] = Src[", srcDom, "]");
 
@@ -2008,12 +2012,14 @@ private proc _doSimpleStencilTransfer(Dest, destDom, Src, srcDom) {
       }
     }
   }
+  return true;
 }
 
 // Overload for any transfer *to* Stencil, if the RHS supports transfers to a
 // DefaultRectangular
 proc StencilArr.doiBulkTransferFromAny(destDom, Src, srcDom) : bool
 where canDoAnyToStencil(this, destDom, Src, srcDom) {
+  if !chpl_allStridesArePositive(this, destDom, Src, srcDom) then return false;
 
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiBulkTransferFromAny");
@@ -2038,6 +2044,8 @@ where canDoAnyToStencil(this, destDom, Src, srcDom) {
 // For assignments of the form: DefaultRectangular = Stencil
 proc StencilArr.doiBulkTransferToKnown(srcDom, Dest:DefaultRectangularArr, destDom) : bool
 where !disableStencilDistBulkTransfer {
+  if !chpl_allStridesArePositive(this, srcDom, Dest, destDom) then return false;
+
 
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiBulkTransferToKnown(DefaultRectangular)");
@@ -2063,6 +2071,8 @@ where !disableStencilDistBulkTransfer {
 // For assignments of the form: Stencil = DefaultRectangular
 proc StencilArr.doiBulkTransferFromKnown(destDom, Src:DefaultRectangularArr, srcDom) : bool
 where !disableStencilDistBulkTransfer {
+  if !chpl_allStridesArePositive(this, destDom, Src, srcDom) then return false;
+
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiBulkTransferFromKnown(DefaultRectangular)");
 

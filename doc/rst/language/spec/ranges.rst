@@ -765,13 +765,15 @@ Count Operator
 ~~~~~~~~~~~~~~
 
 The ``#`` operator takes a range and an integral count and creates a
-new range containing the specified number of indices. The low or high
-bound of the left operand is preserved, and the other bound adjusted to
-provide the specified number of indices. If the count is positive,
-indices are taken from the start of the range; if the count is negative,
-indices are taken from the end of the range.
+new range containing the specified number of indices. Specifically:
 
+-  If the count is positive, :math:`count` indices are taken starting from
+   the first index of the range argument.
 
+-  If the count is negative, :math:`-count` indices are taken starting from
+   the last index of the range argument.
+
+-  If the count is zero, the result is an empty range.
 
 .. code-block:: syntax
 
@@ -779,23 +781,25 @@ indices are taken from the end of the range.
      range-expression # expression
 
 The count expression can be any integral or boolean value, where
-boolean values are interpreted as 0 or 1, respectively.  The count
-value must be less than or equal to the ``size`` of the range.
+boolean values are interpreted as 0 or 1, respectively.
 
-The type of the result of the ``#`` operator is the type of the range
-argument.
+In detail, the result of the ``#`` operator is calculated as follows.
+The type, stride, and alignment of the result are those of the range
+argument, except the result is always bounded.
 
 Depending on the sign of the count and the stride, the high or low bound
-is unchanged and the other bound is adjusted so that it is
-:math:`c * stride - 1` units away. Specifically:
+is unchanged and the other bound is adjusted to provide
+the specified number of indices. Specifically:
 
--  If the count times the stride is positive, the low bound is preserved
-   and the high bound is adjusted to be one less than the low bound plus
-   that product.
+-  If the count and the stride are both positive or both negative,
+   the indices are taken starting from the range's low bound.
+   In this case, the low bound is preserved and the high bound is set to
+   :math:`low bound + count * stride - 1`.
 
--  If the count times the stride is negative, the high bound is
-   preserved and the low bound is adjusted to be one greater than the
-   high bound plus that product.
+-  If the count and the stride have opposite signs,
+   the indices are taken starting from the range's high bound.
+   In this case, the high bound is preserved and the low bound is set to
+   :math:`high bound + count * stride + 1`.
 
 ..
 
@@ -823,6 +827,7 @@ range that has no first index. It is also an error to apply the count
 operator with a negative count to a range that has no last index. It is
 an error to apply the count operator to a range that is ambiguously
 aligned.
+It is an error if the count is greater than the ``size`` of the range.
 
    *Example (rangeCountOperator.chpl)*.
 
