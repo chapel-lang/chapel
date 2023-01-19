@@ -1351,9 +1351,10 @@ module OS {
     }
 
     override proc message() {
+      var msg: string = err_msg;
       if !details.isEmpty() then
-        err_msg += " (" + details + ")";
-      return err_msg;
+        msg += " (" + details + ")";
+      return msg;
     }
   }
 
@@ -1372,9 +1373,10 @@ module OS {
     }
 
     override proc message() {
+      var msg: string = err_msg;
       if !details.isEmpty() then
-        err_msg += " (" + details + ")";
-      return err_msg;
+        msg += " (" + details + ")";
+      return msg;
     }
   }
 
@@ -1392,9 +1394,10 @@ module OS {
     }
 
     override proc message() {
+      var msg: string = err_msg;
       if !details.isEmpty() then
-        err_msg += " (" + details + ")";
-      return err_msg;
+        msg += " (" + details + ")";
+      return msg;
     }
   }
 
