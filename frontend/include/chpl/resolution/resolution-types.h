@@ -560,13 +560,15 @@ class PoiInfo {
   static bool updateEquals(const PoiInfo& a, const PoiInfo& b) {
     return a.resolved_ == b.resolved_ &&
            a.poiScope_ == b.poiScope_ &&
-           a.poiFnIdsUsed_ == b.poiFnIdsUsed_;
+           a.poiFnIdsUsed_ == b.poiFnIdsUsed_ &&
+           a.recursiveFnsUsed_ == b.recursiveFnsUsed_;
   }
 
   void swap(PoiInfo& other) {
     std::swap(resolved_, other.resolved_);
     std::swap(poiScope_, other.poiScope_);
     poiFnIdsUsed_.swap(other.poiFnIdsUsed_);
+    recursiveFnsUsed_.swap(other.recursiveFnsUsed_);
   }
 
   // accumulate PoiInfo from a call into this PoiInfo
@@ -610,6 +612,10 @@ class PoiInfo {
     for (auto const &elt : poiFnIdsUsed_) {
       elt.first.mark(context);
       elt.second.mark(context);
+    }
+    for (auto const &elt : recursiveFnsUsed_) {
+      context->markPointer(elt.first);
+      context->markPointer(elt.second);
     }
   }
 
