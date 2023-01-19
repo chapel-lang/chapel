@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -690,9 +690,10 @@ module DefaultRectangular {
                                        rank=rank,
                                        idxType=idxType,
                                        stridable=stridable,
-                                       /* this means consider elements
-                                          already initialized */
-                                       initElts=true,
+                                       // consider the elements already inited
+                                       initElts=false,
+                                       // but the array should deinit them
+                                       deinitElts=true,
                                        dom=_to_unmanaged(this),
                                        data=data);
     }
@@ -1034,6 +1035,7 @@ module DefaultRectangular {
               dom:unmanaged DefaultRectangularDom(rank=rank, idxType=idxType,
                                                   stridable=stridable),
               param initElts = true,
+              param deinitElts = initElts,
               data:_ddata(eltType) = nil,
               externArr = false,
               _borrowed = false,
@@ -1046,7 +1048,7 @@ module DefaultRectangular {
       this.externArr = externArr;
       this._borrowed = _borrowed;
       this.callPostAlloc = false;
-      this.deinitElts = initElts;
+      this.deinitElts = deinitElts;
 
       this.complete();
       this.setupFieldsAndAllocate(initElts);
@@ -1816,9 +1818,9 @@ module DefaultRectangular {
       const size = len:c_ssize_t*elemSize:c_ssize_t;
       try {
         if f.writing {
-          f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f._writeBytes(_ddata_shift(arr.eltType, src, idx), size);
         } else {
-          f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f._readBytes(_ddata_shift(arr.eltType, src, idx), size);
         }
       } catch err {
         // Setting errors in channels has no effect, so just rethrow.

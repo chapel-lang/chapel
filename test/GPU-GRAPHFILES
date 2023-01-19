@@ -11,3 +11,5 @@ gpu/native/studies/compiler-performance/transform.graph
 gpu/native/studies/compiler-performance/end-to-end.graph
 
 gpu/native/studies/kernelLaunch/emptyKernelLaunch.graph
+
+gpu/native/studies/chop/chplGPU.graph

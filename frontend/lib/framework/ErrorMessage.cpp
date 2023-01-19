@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,21 +26,7 @@
 
 namespace chpl {
 
-ErrorMessage::ErrorMessage(Kind kind, Location location, std::string message)
-    : kind_(kind), id_(), location_(location), message_(message) {
-  gdbShouldBreakHere();
-}
-
-ErrorMessage::ErrorMessage(Kind kind, ID id, std::string message)
-    : kind_(kind), id_(id), location_(), message_(message) {
-  gdbShouldBreakHere();
-}
-
-void ErrorMessage::addDetail(ErrorMessage err) {
-  details_.push_back(std::move(err));
-}
-
-Location ErrorMessage::computeLocation(Context* context) const {
+Location IdOrLocation::computeLocation(Context* context) const {
   // if the ID is set, determine the location from that
   if (!id_.isEmpty()) {
     Location loc = parsing::locateId(context, id_);
@@ -49,6 +35,15 @@ Location ErrorMessage::computeLocation(Context* context) const {
 
   // otherwise, use the location stored here
   return location_;
+}
+
+ErrorMessage::ErrorMessage(Kind kind, IdOrLocation idOrLoc, std::string message)
+    : IdOrLocation(std::move(idOrLoc)), kind_(kind), message_(std::move(message)) {
+
+}
+
+void ErrorMessage::addDetail(ErrorMessage err) {
+  details_.push_back(std::move(err));
 }
 
 } // namespace chpl

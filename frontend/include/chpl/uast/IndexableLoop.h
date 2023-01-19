@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -76,6 +76,9 @@ class IndexableLoop : public Loop {
   void indexableLoopMarkUniqueStringsInner(Context* context) const {
     loopMarkUniqueStringsInner(context);
   }
+
+  virtual void dumpFieldsInner(const DumpSettings& s) const override;
+  virtual std::string dumpChildLabelInner(int i) const override;
 
   int8_t indexChildNum_;
   int8_t iterandChildNum_;

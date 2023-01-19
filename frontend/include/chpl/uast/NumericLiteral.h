@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -50,6 +50,9 @@ class NumericLiteral : public Literal {
   void markUniqueStringsInner(Context* context) const override {
     literalMarkUniqueStringsInner(context);
     text_.mark(context);
+  }
+  void dumpFieldsInner(const DumpSettings& s) const override {
+    s.out << " " << value();
   }
 
  public:

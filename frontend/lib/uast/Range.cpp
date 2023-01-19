@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,31 @@
 namespace chpl {
 namespace uast {
 
+
+const char* Range::opKindToString(OpKind kind) {
+  switch (kind) {
+    case DEFAULT: return "";
+    case OPEN_HIGH: return "open-high";
+  }
+
+  return "<unknown>";
+}
+
+void Range::dumpFieldsInner(const DumpSettings& s) const {
+  const char* kindStr = opKindToString(opKind_);
+  if (kindStr[0] != '\0') {
+    s.out << " " << kindStr;
+  }
+}
+std::string Range::dumpChildLabelInner(int i) const {
+  if (i == lowerBoundChildNum_) {
+    return "lower";
+  } else if (i == upperBoundChildNum_) {
+    return "upper";
+  }
+
+  return "";
+}
 
 owned<Range> Range::build(Builder* builder, Location loc,
                           OpKind opKind,

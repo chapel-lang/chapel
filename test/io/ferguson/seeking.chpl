@@ -2,7 +2,7 @@ use Random, IO, CTypes;
 
 config const path = "binary-output.bin";
 config const maxbyte = 255;
-config const maxint = 32*1024;
+config const maxint = 1024;
 config const seed = SeedGenerator.oddCurrentTime;
 
 config const bufsz = 0;

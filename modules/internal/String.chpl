@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1186,7 +1186,7 @@ module String {
     .. code-block:: chapel
 
       var str = "abcd";
-      for c in str {
+      for c in str.items() {
         writeln(c);
       }
 

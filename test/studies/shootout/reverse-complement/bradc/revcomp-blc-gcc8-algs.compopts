@@ -1,0 +1,11 @@
+-swaitAlg=WaitFor -sshiftAlg=SerForall -ssearchAlg=MaxLoc
+# -swaitAlg=Spin
+# #-sshiftAlg=Forall
+# -sshiftAlg=Foreach
+# -sshiftAlg=For
+# -sshiftAlg=MemMove
+# -ssearchAlg=Forall
+# -ssearchAlg=OptForall
+# -ssearchAlg=Foreach
+# -ssearchAlg=For
+# -ssearchAlg=MemChr

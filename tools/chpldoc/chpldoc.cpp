@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,8 +31,6 @@
 
 #include "arg.h"
 #include "arg-helpers.h"
-#include "version_num.h"
-#include "configured_prefix.h"
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/parsing/parsing-queries.h"
@@ -50,6 +48,7 @@
 #include "chpl/resolution/scope-queries.h"
 
 #include "llvm/Support/FileSystem.h"
+#include "chpl/util/version-info.h"
 
 
 using namespace chpl;
@@ -165,159 +164,13 @@ ArgumentDescription docs_arg_desc[] = {
  DRIVER_ARG_LAST
 };
 
-static std::string get_version() {
-  std::string ret;
-  ret = std::to_string(MAJOR_VERSION) + "." +
-        std::to_string(MINOR_VERSION) + "." +
-        std::to_string(UPDATE_VERSION);
-  if (!officialRelease) {
-    ret += " pre-release (" + std::string(BUILD_VERSION) + ")";
-  } else {
-    // It's is an official release.
-    // Try to decide whether or not to include the BUILD_VERSION
-    // based on its string length. A short git sha is 10 characters.
-    if (strlen(BUILD_VERSION) > 2 && !developer) {
-      // assume it is a sha, so don't include it
-    } else if (strcmp(BUILD_VERSION, "0") == 0) {
-      // no need to append a .0
-    } else {
-      // include the BUILD_VERSION contents to add e.g. a .1
-      ret += "." + std::string(BUILD_VERSION);
-    }
-  }
-  return ret;
-}
-
-static std::string getMajorMinorVersion() {
-  std::string version = std::to_string(MAJOR_VERSION);
-  version += ".";
-  version += std::to_string(MINOR_VERSION);
-  return version;
-}
-
-static bool isMaybeChplHome(std::string path) {
-  // assume if we find subfolder util/ containing chplenv, we might be home
-  path += "/util/chplenv";
-  return llvm::sys::fs::exists(path);
-}
-
-static std::error_code findChplHome(char* argv0, void* mainAddr,
-                             std::string& chplHomeOut,
-                             bool& installed, bool& fromEnv,
-                             std::string& warningMessage) {
-  std::string versionString = getMajorMinorVersion();
-  std::string guess = getExecutablePath(argv0, mainAddr);
-
-  const char* chpl_home = getenv("CHPL_HOME");
-
-  if (!guess.empty()) {
-    // truncate path at /bin
-    char* tmp_guess = strdup(guess.c_str());
-    if ( tmp_guess[0] ) {
-      int j = strlen(tmp_guess) - 5; // /bin and '\0'
-      for ( ; j >= 0; j-- ) {
-        if ( tmp_guess[j] == '/' &&
-            tmp_guess[j+1] == 'b' &&
-            tmp_guess[j+2] == 'i' &&
-            tmp_guess[j+3] == 'n' ) {
-          tmp_guess[j] = '\0';
-          break;
-        }
-      }
-    }
-    guess = std::string(tmp_guess);
-    if (isMaybeChplHome(guess)) {
-      chplHomeOut = guess;
-    } else {
-      guess = "";
-    }
-  }
-
-  if (chpl_home) {
-    fromEnv = true;
-    if(strlen(chpl_home) > FILENAME_MAX)
-      // USR_FATAL("$CHPL_HOME=%s path too long", chpl_home);
-      // error_state
-      // TODO: customize error message?
-      return std::make_error_code(std::errc::filename_too_long);
-    if (guess.empty()) {
-      // Could not find exe path, but have a env var set
-      chplHomeOut = std::string(chpl_home);
-    } else {
-      // We have env var and found exe path.
-      // Check that they match and emit a warning if not.
-      if (!isSameFile(chpl_home, guess.c_str())) {
-        // Not the same. Emit warning.
-        //USR_WARN("$CHPL_HOME=%s mismatched with executable home=%s",
-        //         chpl_home, guess);
-        warningMessage = "$CHPL_HOME=" + std::string(chpl_home) + " is mismatched with executable home=" + guess;
-      }
-      // Since we have an enviro var, always use that.
-      chplHomeOut = std::string(chpl_home);
-    }
-  } else {
-    // Check in a default location too
-    if (guess.empty()) {
-      char TEST_HOME[FILENAME_MAX+1] = "";
-
-      // Check for Chapel libraries at installed prefix
-      // e.g. /usr/share/chapel/<vers>
-      int rc;
-      rc = snprintf(TEST_HOME, FILENAME_MAX, "%s/%s/%s",
-                    CONFIGURED_PREFIX, // e.g. /usr
-                    "share/chapel",
-                    versionString.c_str());
-      if (rc >= FILENAME_MAX) {
-        // USR_FATAL("Installed pathname too long");
-        // TODO: return an error here
-        return std::make_error_code(std::errc::filename_too_long);
-      }
-
-      if (isMaybeChplHome(TEST_HOME)) {
-        guess = strdup(TEST_HOME);
-        installed = true;
-       }
-    }
-
-    if (guess.empty()) {
-      // Could not find enviro var, and could not
-      // guess at exe's path name.
-      // USR_FATAL("$CHPL_HOME must be set to run chpl");
-      // TODO: customize the error message
-      return std::make_error_code(std::errc::no_such_file_or_directory);
-    } else {
-      int rc;
-
-      if (guess.length() > FILENAME_MAX) {
-      // USR_FATAL("chpl guessed home %s too long", guess);
-        return std::make_error_code(std::errc::filename_too_long);
-      }
-      // Determined exe path, but don't have a env var set
-        rc = setenv("CHPL_HOME", guess.c_str(), 0);
-        if ( rc ) {
-          // USR_FATAL("Could not setenv CHPL_HOME");
-          // TODO: customize the error message
-          return std::make_error_code(std::errc::no_such_file_or_directory);
-         }
-         chplHomeOut = guess;
-    }
-  }
-  // Check that the resulting path is a Chapel distribution.
-  if (!isMaybeChplHome(chplHomeOut.c_str())) {
-    // Bad enviro var.
-    //USR_WARN("CHPL_HOME=%s is not a Chapel distribution", CHPL_HOME);
-    warningMessage = "CHPL_HOME=" + chplHomeOut + " is not a Chapel distribution";
-  }
-  return std::error_code();
-}
-
 
 static void printStuff(const char* argv0, void* mainAddr) {
   bool shouldExit       = false;
   bool printedSomething = false;
 
   if (fPrintVersion) {
-    std::string version = get_version();
+    std::string version = chpl::getVersion(developer);
     fprintf(stdout, "%s version %s\n", sArgState.program_name, version.c_str());
 
     fPrintCopyright  = true;
@@ -754,20 +607,20 @@ static const char* kindToString(Function::Kind kind) {
   return "";
 }
 
-static const char* kindToString(IntentList kind) {
+static const char* kindToString(Qualifier kind) {
   switch (kind) {
-    case IntentList::CONST_INTENT: return "const";
-    case IntentList::VAR: return "var";
-    case IntentList::CONST_VAR: return "const";
-    case IntentList::CONST_REF: return "const ref";
-    case IntentList::REF: return "ref";
-    case IntentList::IN: return "in";
-    case IntentList::CONST_IN: return "const in";
-    case IntentList::OUT: return "out";
-    case IntentList::INOUT: return "inout";
-    case IntentList::PARAM: return "param";
-    case IntentList::TYPE: return "type";
-    case IntentList::DEFAULT_INTENT: assert(false);
+    case Qualifier::CONST_INTENT: return "const";
+    case Qualifier::VAR: return "var";
+    case Qualifier::CONST_VAR: return "const";
+    case Qualifier::CONST_REF: return "const ref";
+    case Qualifier::REF: return "ref";
+    case Qualifier::IN: return "in";
+    case Qualifier::CONST_IN: return "const in";
+    case Qualifier::OUT: return "out";
+    case Qualifier::INOUT: return "inout";
+    case Qualifier::PARAM: return "param";
+    case Qualifier::TYPE: return "type";
+    case Qualifier::DEFAULT_INTENT: assert(false);
     default: return "";
   }
   return "";
@@ -1014,7 +867,7 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const CStringLiteral* l) {
-    os_ << "c\"" << escapeStringC(l->str().c_str()) << '"';
+    os_ << "c\"" << escapeStringC(l->value().str()) << '"';
     return false;
   }
 
@@ -1086,7 +939,7 @@ struct RstSignatureVisitor {
 
   bool enter(const Formal* f) {
     if (f->intent() != Formal::DEFAULT_INTENT) {
-      os_ << kindToString((IntentList) f->intent()) << " ";
+      os_ << kindToString((Qualifier) f->intent()) << " ";
     }
     os_ << f->name().c_str();
     if (const AstNode* te = f->typeExpression()) {
@@ -1122,9 +975,9 @@ struct RstSignatureVisitor {
 
     // storage kind
     if (f->thisFormal() != nullptr
-        && f->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT
-        && f->thisFormal()->storageKind() != IntentList::CONST_INTENT
-        && f->thisFormal()->storageKind() != IntentList::CONST_REF) {
+        && f->thisFormal()->storageKind() != Qualifier::DEFAULT_INTENT
+        && f->thisFormal()->storageKind() != Qualifier::CONST_INTENT
+        && f->thisFormal()->storageKind() != Qualifier::CONST_REF) {
       os_ << kindToString(f->thisFormal()->storageKind()) <<" ";
     }
 
@@ -1178,7 +1031,7 @@ struct RstSignatureVisitor {
     // Return Intent
     if (f->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT &&
         f->returnIntent() != Function::ReturnIntent::CONST) {
-      os_ << " " << kindToString((IntentList) f->returnIntent());
+      os_ << " " << kindToString((Qualifier) f->returnIntent());
     }
 
     // Return type
@@ -1251,7 +1104,7 @@ struct RstSignatureVisitor {
   }
 
   bool enter(const StringLiteral* l) {
-    os_ << '"' << escapeStringC(l->str().c_str()) << '"';
+    os_ << '"' << escapeStringC(l->value().str()) << '"';
     return false;
   }
 
@@ -1290,7 +1143,7 @@ struct RstSignatureVisitor {
       os_ << "config ";
     }
     if (v->kind() != Variable::Kind::INDEX) {
-      os_ << kindToString((IntentList) v->kind()) << " ";
+      os_ << kindToString((Qualifier) v->kind()) << " ";
     }
     os_ << v->name().c_str();
     if (const AstNode* te = v->typeExpression()) {
@@ -1301,10 +1154,10 @@ struct RstSignatureVisitor {
     }
     if (const AstNode* ie = v->initExpression()) {
       os_ << " = ";
-      if (v->storageKind() == chpl::uast::IntentList::TYPE)
+      if (v->storageKind() == chpl::uast::Qualifier::TYPE)
         printingType_ = true;
       ie->traverse(*this);
-      if (v->storageKind() == chpl::uast::IntentList::TYPE)
+      if (v->storageKind() == chpl::uast::Qualifier::TYPE)
         printingType_ = false;
     }
     return false;
@@ -1726,7 +1579,7 @@ struct RstResultBuilder {
       // write kind
       if (!textOnly_) os_ << ".. " << kind << ":: ";
       if (decl->toVariable()->kind() != Variable::Kind::INDEX) {
-        os_ << kindToString((IntentList) decl->toVariable()->kind()) << " ";
+        os_ << kindToString((Qualifier) decl->toVariable()->kind()) << " ";
       }
       // write name
       os_ << decl->toVariable()->name();
@@ -1801,7 +1654,7 @@ struct RstResultBuilder {
       show("attribute", v);
       indentDepth_ --;
     }
-    else if (v->storageKind() == IntentList::TYPE)
+    else if (v->storageKind() == Qualifier::TYPE)
       show("type", v);
     else
       show("data", v);

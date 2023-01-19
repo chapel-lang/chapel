@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -4838,6 +4838,9 @@ static bool isCStringImmediate(Symbol* sym) {
 }
 
 static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
+#ifdef HAVE_LLVM  // Needed to suppress warning; should always be true in code
+                  // path for GPU codegen
+
   // Used to codegen for PRIM_GPU_KERNEL_LAUNCH_FLAT and PRIM_GPU_KERNEL_LAUNCH.
   // They differ in number of arguments only. The first passes 1 integer for
   // grid and block size each, the other passes 3 for each.
@@ -4871,15 +4874,6 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   std::vector<GenRet> args;
   args.push_back(new_IntSymbol(call->astloc.lineno()));
   args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
-
-  // We will emit the gpu code into a global variable named chpl_gpuBinary. Pass
-  // this variable to the launch call.
-  #ifdef HAVE_LLVM  // Needed to suppress warning; should always be true in code path for GPU codegen
-    GenInfo* info = gGenInfo;
-    args.push_back(info->lvt->getValue("chpl_gpuBinary"));
-  #else
-    INT_FATAL("Unexpected code path: gpu code generation without LLVM as target");
-  #endif
 
   // "Copy" arguments from primitive call to runtime library function call.
   int curArg = 1;
@@ -4928,6 +4922,11 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   }
 
   return codegenCallExprWithArgs(fn, args);
+#else
+  INT_FATAL("Unexpected code path: gpu code generation without LLVM as target");
+  GenRet dummy;
+  return dummy;
+#endif
 }
 
 DEFINE_PRIM(GPU_KERNEL_LAUNCH_FLAT) {

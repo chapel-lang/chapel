@@ -2206,10 +2206,6 @@ allTotalTime:
   <<: *compiler-perf-base
 allPasses:
   <<: *compiler-perf-base
-topTotalTime:
-  <<: *compiler-perf-base
-topPasses:
-  <<: *compiler-perf-base
 
 arkouda: &arkouda-base
   04/22/20:

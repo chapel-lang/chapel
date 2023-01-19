@@ -2676,6 +2676,7 @@ FILEID: 613bf236-1d80-11e6-a3a6-10ddb1d4c3d5
 breakflags
 hdrs
 libdevice
+rocm
 rungdb
 runlldb
 savec
@@ -2790,6 +2791,7 @@ iidx
 intpart
 multipledestructor
 otharrs
+pullrequestreview
 replmt
 rhsv
 shetag
@@ -3331,6 +3333,7 @@ dndebug
 eigvalsh
 envs
 geany
+gemm
 gemv
 gengraphs
 getcid
@@ -3354,6 +3357,7 @@ nodbg
 nomail
 ousing
 parentlocid
+pascalcase
 pshm
 readbytes
 readthis
@@ -3370,6 +3374,7 @@ stripdirectories
 structors
 subsymbols
 teardowns
+tmbundle
 vundle
 whereami
 whymason
@@ -3378,6 +3383,7 @@ writethis
 xbabe
 
 FILEID: f91458ec-2adb-11e6-a3a6-10ddb1d4c3d5
+anitab
 awski
 bloomu
 cecs
@@ -3593,6 +3599,7 @@ isamax
 izamax
 latlas
 lblas
+onemkl
 pblas
 rotm
 rotmg
@@ -4974,8 +4981,11 @@ maxiters
 FILEID: f765ca54-d1a9-11e8-954d-10ddb1d4c3d5
 addrsig
 altivec
+amdgcn
+amdhsa
 bdynamic
 binutils
+bundler
 casttype
 coroutines
 dndebug
@@ -4984,6 +4994,7 @@ ffast
 fsin
 fsyntax
 hashhash
+hipv
 imodules
 infs
 inparens
@@ -4992,6 +5003,7 @@ isysroot
 lessless
 libdevice
 maino
+mcpu
 mfile
 mpicxx
 myshell
@@ -5451,6 +5463,7 @@ FILEID: a4a99de4-f560-11eb-bb15-35b7469d4b43
 istms
 
 FILEID: a7eb801c-f560-11eb-bb15-35b7469d4b43
+datatypes
 oast
 
 FILEID: dbcaace6-f560-11eb-bb15-35b7469d4b43
@@ -5464,6 +5477,7 @@ strcount
 
 FILEID: e818580e-f560-11eb-bb15-35b7469d4b43
 parenless
+tcsymbol
 tnew
 tunmanaged
 umod
@@ -6036,7 +6050,9 @@ FILEID: 66fb22e4-a729-11ec-866d-111c8d7a1817
 filenamelookupposition
 
 FILEID: 70eb8f46-a729-11ec-866d-111c8d7a1817
+triadchpl
 vidia
+worksharing
 
 FILEID: 757a38be-a729-11ec-866d-111c8d7a1817
 strval
@@ -6071,6 +6087,7 @@ FILEID: 202a65c2-e3ac-11ec-a8be-cd81bce0efc4
 attribs
 
 FILEID: 2c60856a-e3ac-11ec-a8be-cd81bce0efc4
+copyfmt
 iomanip
 setw
 
@@ -6205,6 +6222,7 @@ vbuild
 vprint
 
 FILEID: 079d1948-12c1-11ed-a8be-cd81bce0efc4
+postparse
 vbuild
 
 FILEID: 22756090-12c1-11ed-a8be-cd81bce0efc4
@@ -6296,6 +6314,7 @@ ivrs
 FILEID: 331f0602-5a61-11ed-baec-ef9f14c5b529
 einfo
 errorbase
+postparse
 
 FILEID: 59352e34-5a61-11ed-baec-ef9f14c5b529
 cbegin
@@ -6316,6 +6335,25 @@ einfo
 
 FILEID: 8eccc1ce-5a61-11ed-baec-ef9f14c5b529
 inserter
+
+FILEID: 5d6b5c0a-945c-11ed-b9f6-7def56659a0b
+einfo
+nlines
+postparse
+yyget
+
+FILEID: 645372f0-945c-11ed-b9f6-7def56659a0b
+postparse
+yyerror
+
+FILEID: 689a30e2-945c-11ed-b9f6-7def56659a0b
+errc
+
+FILEID: a1123384-945c-11ed-b9f6-7def56659a0b
+frml
+
+FILEID: a89bd786-945c-11ed-b9f6-7def56659a0b
+semver
 
 NATURAL:
 aarch
@@ -6341,6 +6379,7 @@ afterwards
 aggregatable
 aggregator
 aggregators
+ahayashi
 ahmad
 akash
 akihiro
@@ -6365,6 +6404,7 @@ allocs
 alnum
 altix
 alvis
+amdgpu
 american
 amos
 amudprun
@@ -6528,6 +6568,7 @@ blockreport
 blocksize
 blockstmt
 blog
+blogs
 bloomsburg
 blowfish
 bmcdonald
@@ -6721,6 +6762,7 @@ colostate
 combinable
 combit
 commid
+comms
 comparetype
 compenv
 compileline
@@ -6938,6 +6980,7 @@ dlmalloc
 dlongnecke
 dmapped
 dmitry
+dockerfile
 doctests
 docutils
 doinit
@@ -7512,6 +7555,7 @@ initialised
 initializable
 initializer
 initializers
+initing
 inits
 initseq
 inlined
@@ -7955,6 +7999,7 @@ memreg
 mergeable
 mersenne
 metaop
+metapasses
 mfac
 mferguson
 mgmt
@@ -8237,6 +8282,7 @@ nupdate
 nuses
 nvidia
 nview
+objdump
 objs
 october
 offsetof
@@ -8562,6 +8608,7 @@ rebase
 recomputation
 reconverge
 recordio
+recursed
 recurses
 recursing
 recv
@@ -8639,6 +8686,7 @@ roald
 robbins
 robert
 rochester
+rocm
 roland
 roldan
 rolinger
@@ -8843,6 +8891,7 @@ smoketests
 smtp
 smtps
 sndbuf
+snprintf
 snum
 snyder
 sobel
@@ -9312,6 +9361,7 @@ virtualenv
 virtualenvs
 virtualizable
 virtualized
+vivian
 vlsi
 vosteen
 vprint

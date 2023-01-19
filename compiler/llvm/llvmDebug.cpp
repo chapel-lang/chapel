@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -127,7 +127,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
   GenInfo* info = gGenInfo;
   const llvm::DataLayout& layout = info->module->getDataLayout();
 
-  llvm::Type* ty = type->symbol->llvmType;
+  llvm::Type* ty = type->symbol->getLLVMType();
   const char* name = type->symbol->name;
   ModuleSymbol* defModule = type->symbol->getModule();
   const char* defFile = type->symbol->fname();
@@ -274,7 +274,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
               const char* fieldDefFile = field->defPoint->fname();
               int fieldDefLine = field->defPoint->linenum();
               TypeSymbol* fts = field->type->symbol;
-              llvm::Type* fty = fts->llvmType;
+              llvm::Type* fty = fts->getLLVMType();
               llvm::DIType* mty;
               llvm::DIType* fditype =  get_type(field->type);
               if(fditype == NULL)
@@ -351,7 +351,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
       const char* fieldDefFile = field->defPoint->fname();
       int fieldDefLine = field->defPoint->linenum();
       TypeSymbol* fts = field->type->symbol;
-      llvm::Type* fty = fts->llvmType;
+      llvm::Type* fty = fts->getLLVMType();
       llvm::DIType* fditype =  get_type(field->type);
       if(fditype == NULL)
       // See line 270 for a comment about this if
@@ -453,11 +453,11 @@ llvm::DIType* debug_data::construct_type(Type *type)
   // These are some debug prints for helping find these types.
   //
   /*printf("Unhandled type: %s\n\ttype->astTag=%i\n", type->symbol->name, type->astTag);
-  if(type->symbol->llvmType) {
-    printf("\tllvmType->getTypeID() = %i\n", type->symbol->llvmType->getTypeID());
+  if(type->symbol->getLLVMType()) {
+    printf("\tllvmImplType->getTypeID() = %i\n", type->symbol->getLLVMType()->getTypeID());
   }
   else {
-    printf("\tllvmType is NULL\n");
+    printf("\tllvmImplType is NULL\n");
   }*/
 
   return NULL;

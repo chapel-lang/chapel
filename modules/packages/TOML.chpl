@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -88,7 +88,7 @@ Use the following code in chapel.
 proc parseToml(input: file) : shared Toml {
   var tomlStr: string;
   var tomlFile = input.reader();
-  tomlFile.readstring(tomlStr);
+  tomlFile.readAll(tomlStr);
   tomlFile.close();
   return parseToml(tomlStr);
 }
@@ -97,7 +97,7 @@ proc parseToml(input: file) : shared Toml {
 */
 proc parseToml(input: fileReader) : shared Toml {
   var tomlStr: string;
-  input.readstring(tomlStr);
+  input.readAll(tomlStr);
   return parseToml(tomlStr);
 }
 

@@ -53,7 +53,7 @@ proc main(args:[] string)
         on f do {
           var data:string;
           var reader = f.reader();
-          reader.readstring(data);
+          reader.readAll(data);
           sorter.stdin.writeln(data);
         }
       }
@@ -84,6 +84,3 @@ proc main(args:[] string)
 
   sorter.wait();
 }
-
-
-

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,19 @@
 namespace chpl {
 namespace uast {
 
+
+void Implements::dumpFieldsInner(const DumpSettings& s) const {
+  if (isExpressionLevel_) {
+    s.out << " expr";
+  }
+}
+
+std::string Implements::dumpChildLabelInner(int i) const {
+  if (i == typeIdentChildNum_) {
+    return "type-ident";
+  }
+  return "";
+}
 
 UniqueString Implements::interfaceName() const {
   auto expr = interfaceExpr();

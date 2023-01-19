@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -147,6 +147,21 @@ module ChapelIO {
   }
 
   use IO;
+  import CTypes.{c_int};
+
+  /*
+   Local copies of IO.{EEOF,ESHORT,EFORMAT} as these are being phased out
+   and are now private in IO
+   */
+  private extern proc chpl_macro_int_EEOF():c_int;
+  private extern proc chpl_macro_int_ESHORT():c_int;
+  private extern proc chpl_macro_int_EFORMAT():c_int;
+  pragma "no doc"
+  private inline proc EEOF return chpl_macro_int_EEOF():c_int;
+  pragma "no doc"
+  private inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
+  pragma "no doc"
+  private inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
 
     private
     proc isIoField(x, param i) param {
@@ -642,10 +657,12 @@ module ChapelIO {
       alignCheckRange.normalizeAlignment();
     }
 
-    if hasLowBound() then
+    if (boundedType == BoundedRangeType.bounded ||
+        boundedType == BoundedRangeType.boundedLow) then
       f.write(lowBound);
     f._writeLiteral("..");
-    if hasHighBound() {
+    if (boundedType == BoundedRangeType.bounded ||
+        boundedType == BoundedRangeType.boundedHigh) {
       if (chpl__singleValIdxType(this.idxType) && this._low != this._high) {
         f._writeLiteral("<");
         f.write(lowBound);
