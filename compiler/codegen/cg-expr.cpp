@@ -3227,13 +3227,17 @@ void codegenCopy(GenRet dest, GenRet src, Type* chplType=NULL)
       // Consider using memcpy instead of stack allocating a possibly
       // large structure.
 
-      llvm::Type* ptrTy = src.val->getType();
-      llvm::Type* eltTy = ptrTy->getPointerElementType();
+      llvm::Type* eltTy = nullptr;
+
+      if (chplType) {
+        eltTy = chplType->codegen().type;
+      }
 
       if( chplType && chplType->symbol->hasFlag(FLAG_STAR_TUPLE) ) {
         // Always use memcpy for star tuples.
         useMemcpy = true;
-      } else if( isTypeSizeSmallerThan(info->module->getDataLayout(), eltTy,
+      } else if( eltTy && isTypeSizeSmallerThan(info->module->getDataLayout(),
+                                       eltTy,
                                        256 /* max bytes to load/store */)) {
         // OK
       } else {
