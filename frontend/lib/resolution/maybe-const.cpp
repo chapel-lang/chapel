@@ -230,14 +230,14 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
       else best = bestValue;
     } else if (access == CONST_REF) {
       if (bestConstRef) best = bestConstRef;
-      else if (bestRef) best = bestRef;
-      else best = bestValue;
+      else if (bestValue) best = bestValue;
+      else best = bestRef;
     } else if (access == REF_MAYBE_CONST) {
       // raise an error
       context->error(ast, "Too much recursion to infer return intent overload");
       if (bestConstRef) best = bestConstRef;
-      else if (bestRef) best = bestRef;
-      else best = bestValue;
+      else if (bestValue) best = bestValue;
+      else best = bestRef;
     } else { // access == VALUE
       if (bestValue) best = bestValue;
       else if (bestConstRef) best = bestConstRef;
