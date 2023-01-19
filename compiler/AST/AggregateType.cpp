@@ -1787,6 +1787,19 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
   AggregateType* retval = toAggregateType(symbol->copy()->type);
   Symbol*        field  = retval->getField(genericField);
 
+  bool hasQuestionArg = false;
+  if (field && field->defPoint && field->defPoint->exprType) {
+    if (CallExpr* call = toCallExpr(field->defPoint->exprType)) {
+      for_actuals(actual, call) {
+        if (SymExpr* act = toSymExpr(actual)) {
+          if (act->symbol() == gUninstantiated) {
+            hasQuestionArg = true;
+          }
+        }
+      }
+    }
+  }
+
   for (unsigned int idx = 0; idx < retval->genericFields.size(); idx++) {
     if (retval->genericFields[idx] == field) {
       retval->genericFields.erase(retval->genericFields.begin() + idx);
@@ -1872,7 +1885,7 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
   {
     if (field->defPoint->exprType) {
       Type* fieldType = field->defPoint->exprType->typeInfo();
-      if (fieldType->symbol->hasFlag(FLAG_GENERIC)) {
+      if (fieldType->symbol->hasFlag(FLAG_GENERIC) && !hasQuestionArg) {
         USR_WARN(field, "field with generic declared type");
       }
     }
