@@ -1351,9 +1351,26 @@ module OS {
     }
 
     override proc message() {
-      var msg: string = err_msg;
+      var msg: string;
+
+      if !err_msg.isEmpty() {
+        msg += err_msg;
+      } else {
+        // use default err_msg based on error code
+        var err:errorCode = EEOF;
+        var strerror_err_ignore: c_int = 0;
+        var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
+        var errorcode_msg: string;
+        try! {
+          errorcode_msg = createStringWithOwnedBuffer(errstr);
+        }
+        msg += errorcode_msg;
+      }
+
+      // add details if present
       if !details.isEmpty() then
         msg += " (" + details + ")";
+
       return msg;
     }
   }
@@ -1373,9 +1390,26 @@ module OS {
     }
 
     override proc message() {
-      var msg: string = err_msg;
+      var msg: string;
+
+      if !err_msg.isEmpty() {
+        msg += err_msg;
+      } else {
+        // use default err_msg based on error code
+        var err:errorCode = ESHORT;
+        var strerror_err_ignore: c_int = 0;
+        var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
+        var errorcode_msg: string;
+        try! {
+          errorcode_msg = createStringWithOwnedBuffer(errstr);
+        }
+        msg += errorcode_msg;
+      }
+
+      // add details if present
       if !details.isEmpty() then
         msg += " (" + details + ")";
+
       return msg;
     }
   }
@@ -1394,9 +1428,26 @@ module OS {
     }
 
     override proc message() {
-      var msg: string = err_msg;
+      var msg: string;
+
+      if !err_msg.isEmpty() {
+        msg += err_msg;
+      } else {
+        // use default err_msg based on error code
+        var err:errorCode = EFORMAT;
+        var strerror_err_ignore: c_int = 0;
+        var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
+        var errorcode_msg: string;
+        try! {
+          errorcode_msg = createStringWithOwnedBuffer(errstr);
+        }
+        msg += errorcode_msg;
+      }
+
+      // add details if present
       if !details.isEmpty() then
         msg += " (" + details + ")";
+
       return msg;
     }
   }
