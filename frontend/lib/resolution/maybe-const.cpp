@@ -144,7 +144,9 @@ void AdjustMaybeRefs::process(const uast::AstNode* symbol,
 }
 
 AdjustMaybeRefs::Access AdjustMaybeRefs::accessForQualifier(Qualifier q) {
-  if (q == Qualifier::REF) {
+  if (q == Qualifier::REF ||
+      q == Qualifier::OUT ||
+      q == Qualifier::INOUT) {
     return REF;
   }
 
@@ -156,7 +158,7 @@ AdjustMaybeRefs::Access AdjustMaybeRefs::accessForQualifier(Qualifier q) {
     return REF_MAYBE_CONST;
   }
 
-  return VALUE;
+  return VALUE; // including IN at least
 }
 
 AdjustMaybeRefs::Access AdjustMaybeRefs::currentAccess() {

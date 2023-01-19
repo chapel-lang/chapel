@@ -44,8 +44,9 @@ class ID final {
   // The symbol itself has ID -1.
   int postOrderId_ = -1;
 
-  // How many of the previous ids would be considered within
-  // this node?
+  // How many of the previous ids would be considered within this node?
+  // Note that this field is not compared or hashed, so IDs without it
+  // can be used as a key.
   int numChildIds_ = 0;
 
  public:
@@ -154,7 +155,7 @@ class ID final {
   expandSymbolPath(Context* context, UniqueString symbolPath);
 
   bool operator==(const ID& other) const {
-    (void)numChildIds_; // quiet nextLinter
+    (void)numChildIds_; // this field is intentionally not compared
     return symbolPath_ == other.symbolPath_ &&
            postOrderId_ == other.postOrderId_;
   }
@@ -181,7 +182,7 @@ class ID final {
   }
 
   size_t hash() const {
-    (void)numChildIds_; // quiet nextLinter
+    (void)numChildIds_; // this field is intentionally not hashed
     std::hash<int> hasher;
     return hash_combine(symbolPath_.hash(), hasher(postOrderId_));
   }
@@ -204,7 +205,11 @@ class ID final {
   DECLARE_DUMP;
   /// \endcond
 
+  /** Return a string encoding this ID */
   std::string str() const;
+
+  /** The inverse of str() -- converts a string encoding an ID to an ID */
+  static ID fromString(Context* context, const char* idStr);
 
   void serialize(Serializer& ser) const {
     ser.write(symbolPath_);
