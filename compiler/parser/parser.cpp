@@ -174,16 +174,12 @@ static Vec<VisibilityStmt*> sModReqdByInt;
 
 void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
   sIntModPath.add(astr(newpath));
-  if (fDynoCompilerLibrary) {
-    gDynoPrependInternalModulePaths.push_back(newpath);
-  }
+  gDynoPrependInternalModulePaths.push_back(newpath);
 }
 
 void addStandardModulePath(const ArgumentDescription* desc, const char* newpath) {
   sStdModPath.add(astr(newpath));
-  if (fDynoCompilerLibrary) {
-    gDynoPrependInternalModulePaths.push_back(newpath);
-  }
+  gDynoPrependInternalModulePaths.push_back(newpath);
 }
 
 void setupModulePaths() {
