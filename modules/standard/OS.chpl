@@ -1090,10 +1090,19 @@ module OS {
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc createSystemOrChplError(err: errorCode, details: string = ""): Error {
+    // extract qioerr pointer error message, if present
+    var strerror_err: c_int = 0;
+    var errstr = sys_strerror_syserr_str(err, strerror_err);
+    var err_msg: string;
+    try! {
+      err_msg = createStringWithOwnedBuffer(errstr);
+    }
+
+    // return appropriate error
     select err {
-      when EEOF do return new owned EofError(details);
-      when ESHORT do return new owned UnexpectedEofError(details);
-      when EFORMAT do return new owned BadFormatError(details);
+      when EEOF do return new owned EofError(details, err_msg);
+      when ESHORT do return new owned UnexpectedEofError(details, err_msg);
+      when EFORMAT do return new owned BadFormatError(details, err_msg);
       otherwise do return createSystemError(err, details);
     }
   }
@@ -1334,23 +1343,16 @@ module OS {
   */
   class EofError : Error {
     var details: string;
+    var err_msg: string;
 
-    proc init(details: string = "") {
+    proc init(details: string = "", err_msg: string = "") {
       this.details = details;
+      this.err_msg = err_msg;
     }
 
     override proc message() {
-      var err:errorCode = EEOF;
-      var strerror_err: c_int = 0;
-      var errstr = sys_strerror_syserr_str(err, strerror_err);
-      var err_msg: string;
-      try! {
-        err_msg = createStringWithOwnedBuffer(errstr);
-      }
-
       if !details.isEmpty() then
         err_msg += " (" + details + ")";
-
       return err_msg;
     }
   }
@@ -1362,23 +1364,16 @@ module OS {
   */
   class UnexpectedEofError : Error {
     var details: string;
+    var err_msg: string;
 
-    proc init(details: string = "") {
+    proc init(details: string = "", err_msg: string = "") {
       this.details = details;
+      this.err_msg = err_msg;
     }
 
     override proc message() {
-      var err:errorCode = ESHORT;
-      var strerror_err: c_int = 0;
-      var errstr = sys_strerror_syserr_str(err, strerror_err);
-      var err_msg: string;
-      try! {
-        err_msg = createStringWithOwnedBuffer(errstr);
-      }
-
       if !details.isEmpty() then
         err_msg += " (" + details + ")";
-
       return err_msg;
     }
   }
@@ -1389,23 +1384,16 @@ module OS {
   */
   class BadFormatError : Error {
     var details: string;
+    var err_msg: string;
 
-    proc init(details: string = "") {
+    proc init(details: string = "", err_msg: string = "") {
       this.details = details;
+      this.err_msg = err_msg;
     }
 
     override proc message() {
-      var err:errorCode = EFORMAT;
-      var strerror_err: c_int = 0;
-      var errstr = sys_strerror_syserr_str(err, strerror_err);
-      var err_msg: string;
-      try! {
-        err_msg = createStringWithOwnedBuffer(errstr);
-      }
-
       if !details.isEmpty() then
         err_msg += " (" + details + ")";
-
       return err_msg;
     }
   }
@@ -1459,7 +1447,7 @@ module OS {
     }
 }
 
-  /* Create and throw a :class:`SystemError` if an error occurred, formatting a
+  /* Create and throw an :class:`Error` if an error occurred, formatting a
      useful message based on the provided arguments. Do nothing if the error
      argument does not indicate an error occurred.
 
@@ -1468,7 +1456,7 @@ module OS {
      :arg path: optionally, a path to include in the thrown error
      :arg offset: optionally, an offset to include in the thrown error
 
-     :throws SystemError: A subtype is thrown when the error argument
+     :throws Error: A subtype is thrown when the error argument
                           indicates an error occurred
  */
   pragma "insert line file info"
