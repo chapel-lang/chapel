@@ -1885,7 +1885,8 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
   {
     if (field->defPoint->exprType) {
       Type* fieldType = field->defPoint->exprType->typeInfo();
-      if (fieldType->symbol->hasFlag(FLAG_GENERIC) && !hasQuestionArg) {
+      if (fieldType->symbol->hasFlag(FLAG_GENERIC) && !hasQuestionArg &&
+          symbol->defPoint->getModule()->modTag == MOD_USER) {
         USR_WARN(field, "field with generic declared type");
       }
     }
