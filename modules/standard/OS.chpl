@@ -1501,7 +1501,7 @@ module OS {
     }
 }
 
-  /* Create and throw an :class:`Error` if an error occurred, formatting a
+  /* Create and throw an :class:`SystemError` if an error occurred, formatting a
      useful message based on the provided arguments. Do nothing if the error
      argument does not indicate an error occurred.
 
@@ -1521,7 +1521,7 @@ module OS {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
       var   details    = msg + " with path " + quotedpath +
                          " offset " + offset:string;
-      throw createSystemOrChplError(error, details);
+      throw createSystemError(error, details);
     }
   }
 
@@ -1533,7 +1533,7 @@ module OS {
     if error {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
       var   details    = msg + " with path " + quotedpath;
-      throw createSystemOrChplError(error, details);
+      throw createSystemError(error, details);
     }
   }
 
@@ -1542,7 +1542,7 @@ module OS {
   pragma "always propagate line file info"
   proc ioerror(error:errorCode, msg:string) throws
   {
-    if error then throw createSystemOrChplError(error, msg);
+    if error then throw createSystemError(error, msg);
   }
 
   /* Create and throw an :class:`IoError` and include a formatted message
