@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Script used in docker exec command to run homebrew install inside the container
+# Script used in docker exec command to test homebrew formula
 brew test-bot --only-tap-syntax
     if [$? -ne 0 ]
     then
