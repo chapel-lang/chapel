@@ -2166,11 +2166,8 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
 
     func->getBasicBlockList().push_back(blockEnd);
     info->irBuilder->SetInsertPoint(blockEnd);
-#if HAVE_LLVM_VER >= 130
-    ret.val = info->irBuilder->CreateLoad(tmp->getType()->getPointerElementType(), tmp);
-#else
-    ret.val = info->irBuilder->CreateLoad(tmp);
-#endif
+    ret.val = info->irBuilder->CreateLoad(ret.chplType->symbol->getLLVMStructureType(), tmp);
+
     ret.isUnsigned = !values.isSigned;
 #endif
   }
