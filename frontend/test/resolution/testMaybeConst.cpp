@@ -63,19 +63,21 @@ testMaybeRef(const char* test,
   // (this assumes that they are concrete functions)
   for (auto pair : expectedRefs) {
     ID id = ID::fromString(context, pair.first);
+    auto ast = idToAst(context, id);
+    assert(ast && ast->isFormal());
     ID parentId = id.parentSymbolId(context);
+    auto parentAst = idToAst(context, parentId);
+    assert(parentAst && parentAst->isFunction());
     const ResolvedFunction* r = resolveConcreteFunction(context, parentId);
     auto sig = inferRefMaybeConstFormals(context,
                                          r->signature(),
                                          /* poiScope */ nullptr);
-    auto ast = idToAst(context, id);
-    assert(ast && ast->isFormal());
     auto untyped = sig->untyped();
     for (int i = 0; i < untyped->numFormals(); i++) {
       if (untyped->formalDecl(i) == ast) {
         QualifiedType t = sig->formalType(i);
         // it's formal i
-        if (pair.first) { // ref
+        if (pair.second) { // ref
           if (t.kind() != QualifiedType::REF) {
             printf("For Formal ID %s, expected 'ref' but got '%s'\n",
                     ast->id().str().c_str(),
@@ -98,6 +100,8 @@ testMaybeRef(const char* test,
     ID id = ID::fromString(context, pair.first);
     ID expectedCalledFnId = ID::fromString(context, pair.second);
     ID parentId = id.parentSymbolId(context);
+    auto parentAst = idToAst(context, parentId);
+    assert(parentAst && parentAst->isFunction());
     const ResolvedFunction* r = resolveConcreteFunction(context, parentId);
     // what is the called function
     auto ast = idToAst(context, id);
@@ -762,6 +766,56 @@ static void test6i() {
     {{"M.test@2", "M.foo"}});
 }
 
+static void test7a() {
+  testMaybeRef("test7a",
+    R""""(
+      module M {
+        config const cond = false;
+        proc foo(pragma "intent ref maybe const formal" arg: int) {
+          if cond then foo(arg);
+        }
+      }
+    )"""",
+    {{"M.foo@2", false}},
+    {},
+    /* expectErrors */ true);
+}
+static void test7b() {
+  testMaybeRef("test7b",
+    R""""(
+      module M {
+        config const cond = false;
+        proc acceptsRef(ref arg: int) { }
+        proc foo(pragma "intent ref maybe const formal" arg: int) {
+          if cond then foo(arg);
+          acceptsRef(arg);
+        }
+      }
+    )"""",
+    {{"M.foo@2", true}},
+    {},
+    /* expectErrors */ true);
+}
+static void test7c() {
+  testMaybeRef("test7c",
+    R""""(
+      module M {
+        config const cond = false;
+        proc acceptsRef(ref arg: int) { }
+        proc foo(pragma "intent ref maybe const formal" arg: int) {
+          acceptsRef(arg);
+          if cond then foo(arg);
+        }
+      }
+    )"""",
+    {{"M.foo@2", true}},
+    {},
+    /* expectErrors */ true);
+}
+
+// TODO: setting a maybe-const formal with =
+// TODO: check param loops
+// TODO: do we need ref-maybe-const tuples?
 
 int main() {
   test1();
@@ -806,6 +860,10 @@ int main() {
   test6g();
   test6h();
   test6i();
+
+  test7a();
+  test7b();
+  test7c();
 
   return 0;
 }

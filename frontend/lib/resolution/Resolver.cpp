@@ -361,7 +361,13 @@ Resolver::getFormalTypes(const Function* fn) {
     if (auto namedDecl = formal->toNamedDecl()) {
       isThis = namedDecl->name() == USTR("this");
     }
-    t = QualifiedType(resolveIntent(t, isThis, isInit), t.type(), t.param());
+    Qualifier intent = resolveIntent(t, isThis, isInit);
+    if (auto attributes = formal->attributes()) {
+      if (attributes->hasPragma(PRAGMA_INTENT_REF_MAYBE_CONST_FORMAL)) {
+        intent = Qualifier::REF_MAYBE_CONST;
+      }
+    }
+    t = QualifiedType(intent, t.type(), t.param());
 
     formalTypes.push_back(std::move(t));
   }
