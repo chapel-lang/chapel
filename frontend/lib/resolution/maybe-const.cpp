@@ -255,6 +255,8 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
     auto resolvedFn = inferRefMaybeConstFormals(context, fn, resolver.poiScope);
     if (resolvedFn) {
       fn = resolvedFn;
+    } else {
+      context->error(ast, "Too much recursion to infer ref/const ref formal");
     }
     std::vector<const AstNode*> actualAsts;
     auto ci = CallInfo::create(context, ast, rv.byPostorder(),
