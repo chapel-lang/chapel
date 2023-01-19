@@ -1027,6 +1027,7 @@ void callInitDeinit(Resolver& resolver) {
     symName = nd->name();
   }
 
+  /*
   printf("\nSplit Init Report for '%s':\n", symName.c_str());
   for (auto varId : splitInitedVars) {
     auto ast = parsing::idToAst(resolver.context, varId);
@@ -1045,6 +1046,7 @@ void callInitDeinit(Resolver& resolver) {
            id.str().c_str());
   }
   printf("\n");
+  */
 
   CallInitDeinit uv(resolver.context, resolver,
                     splitInitedVars, elidedCopyFromIds);
