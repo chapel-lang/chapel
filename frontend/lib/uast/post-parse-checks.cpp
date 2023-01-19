@@ -890,7 +890,8 @@ void Visitor::visit(const Union* node) {
 // setter query may not have been run yet.
 bool Visitor::isUserFilePath(Context* context, UniqueString filepath) {
   UniqueString modules = chpl::parsing::bundledModulePath(context);
-  auto ret = filepath.startsWith(modules);
+  if (modules.isEmpty()) return true;
+  bool ret = !filepath.startsWith(modules);
   return ret;
 }
 
