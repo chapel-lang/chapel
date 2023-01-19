@@ -1,0 +1,2 @@
+readstring.chpl:5: warning: 'readstring' is deprecated; please use 'readString' instead
+this is a file

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -147,7 +147,7 @@ class UniqueString final {
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   bool isEmpty() const {
-    return s.i.c_str()[0] == '\0';
+    return s.isEmpty();
   }
 
   detail::PODUniqueString podUniqueString() const {

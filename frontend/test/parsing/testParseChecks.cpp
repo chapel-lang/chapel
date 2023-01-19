@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -109,14 +109,14 @@ static void test2(void) {
   assert(br.numErrors() == 3);
   displayErrors(ctx, br);
   assertErrorMatches(ctx, br, 0, "test2.chpl", 2,
-                     "type expression uses multiple class kinds: "
-                     "owned shared");
+                     "type expression uses multiple memory management "
+                     "strategies ('owned' and 'shared')");
   assertErrorMatches(ctx, br, 1, "test2.chpl", 2,
-                     "type expression uses multiple class kinds: "
-                     "shared borrowed");
+                     "type expression uses multiple memory management "
+                     "strategies ('shared' and 'borrowed')");
   assertErrorMatches(ctx, br, 2, "test2.chpl", 2,
-                     "type expression uses multiple class kinds: "
-                     "borrowed unmanaged");
+                     "type expression uses multiple memory management "
+                     "strategies ('borrowed' and 'unmanaged')");
 }
 
 static void test3(void) {

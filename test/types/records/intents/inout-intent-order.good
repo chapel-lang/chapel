@@ -40,6 +40,26 @@ deinit 3 3
 deinit 4 4
 deinit 3 3
 
+test_inout_inout3
+init 1 1
+init 2 2
+init= 1 1
+init= 2 2
+a is (x = 1, ptr = {xx = 1})
+b is (x = 2, ptr = {xx = 2})
+init 3 3
+lhs(1 1) = rhs(3 3)
+deinit 3 3
+init 4 4
+lhs(2 2) = rhs(4 4)
+deinit 4 4
+lhs(1 1) = rhs(3 3)
+lhs(2 2) = rhs(4 4)
+deinit 4 4
+deinit 3 3
+deinit 4 4
+deinit 3 3
+
 test_in_inout
 init 1 1
 init 2 2

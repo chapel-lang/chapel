@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,24 @@
 namespace chpl {
 namespace uast {
 
+
+const char* Module::moduleKindToString(Kind kind) {
+  switch (kind) {
+    case DEFAULT_MODULE_KIND: return "";
+    case PROTOTYPE:           return "prototype";
+    case IMPLICIT:            return "implicit";
+  }
+
+  return "<unknown>";
+}
+
+void Module::dumpFieldsInner(const DumpSettings& s) const {
+  const char* kindStr = moduleKindToString(kind_);
+  if (kindStr[0] != '\0') {
+    s.out << " " << kindStr;
+  }
+  NamedDecl::dumpFieldsInner(s);
+}
 
 owned<Module>
 Module::build(Builder* builder, Location loc,

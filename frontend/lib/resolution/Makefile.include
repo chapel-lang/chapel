@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -24,6 +24,7 @@ FRONTEND_RESOLUTION_SRCS =                          \
            Resolver.cpp                             \
            call-init-deinit.cpp                     \
            can-pass.cpp                             \
+           signature-checks.cpp                     \
            copy-elision.cpp                         \
            default-functions.cpp                    \
            disambiguation.cpp                       \
@@ -32,6 +33,7 @@ FRONTEND_RESOLUTION_SRCS =                          \
            prims.cpp                                \
            resolution-queries.cpp                   \
            resolution-types.cpp                     \
+           return-type-inference.cpp                \
            scope-queries.cpp                        \
            scope-types.cpp                          \
            split-init.cpp                           \

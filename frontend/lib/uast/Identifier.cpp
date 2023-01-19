@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +25,12 @@
 namespace chpl {
 namespace uast {
 
+
+void Identifier::dumpFieldsInner(const DumpSettings& s) const {
+  if (!name_.isEmpty()) {
+    s.out << " " << name_.str();
+  }
+}
 
 owned<Identifier> Identifier::build(Builder* builder,
                                     Location loc, UniqueString name) {

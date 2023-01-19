@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -51,6 +51,8 @@ class As final : public AstNode {
 
   void markUniqueStringsInner(Context* context) const override {
   }
+
+  std::string dumpChildLabelInner(int i) const override;
 
   // These always exist and their position will never change.
   static const int8_t symbolChildNum_ = 0;

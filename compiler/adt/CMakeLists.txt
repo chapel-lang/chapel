@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -14,9 +14,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+set(SRCS
+    bitVec.cpp
+    vec.cpp
+   )
 target_sources(chpl
                PRIVATE
-               bitVec.cpp
-               vec.cpp
-              )
+               ${SRCS})
+get_filename_component(DIR_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+set_property(SOURCE ${SRCS}
+             TARGET_DIRECTORY chpl
+             PROPERTY COMPILE_DEFINITIONS COMPILER_SUBDIR=${DIR_NAME}
+             APPEND)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,10 +19,11 @@
 
 #include "chpl/parsing/parsing-queries.h"
 
-#include "chpl/parsing/Parser.h"
-#include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/ErrorBase.h"
+#include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/parsing/Parser.h"
+#include "chpl/types/RecordType.h"
 #include "chpl/uast/AggregateDecl.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Function.h"
@@ -54,11 +55,9 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
 
   std::string text;
   std::string error;
-  const ErrorParseErr* parseError = nullptr;
+  const ErrorBase* parseError = nullptr;
   if (!readfile(path.c_str(), text, error)) {
-    error = "error reading file: " + error;
-    context->report(
-        ErrorParseErr::get(context, std::make_tuple(Location(), error)));
+    parseError = context->error(Location(), "error reading file: %s\n", error.c_str());
   }
   auto result = FileContents(std::move(text), parseError);
   return QUERY_END(result);
@@ -105,7 +104,7 @@ parseFileToBuilderResult(Context* context, UniqueString path,
   // Run the fileText query to get the file contents
   const FileContents& contents = fileText(context, path);
   const std::string& text = contents.text();
-  const ErrorParseErr* error = contents.error();
+  const ErrorBase* error = contents.error();
   BuilderResult result(path);
 
   if (error == nullptr) {
@@ -352,12 +351,12 @@ void setupModuleSearchPaths(
     }
   }
 
+  addFilePathModules(searchPath, inputFilenames);
+
   // Add paths from the command line
   for (const auto& p : cmdLinePaths) {
     searchPath.push_back(p);
   }
-
-  addFilePathModules(searchPath, inputFilenames);
 
   // Convert them all to UniqueStrings.
   std::vector<UniqueString> uSearchPath;
@@ -618,8 +617,11 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
   AstTag result = asttags::AST_TAG_UNKNOWN;
 
   const AstNode* ast = astForIDQuery(context, id);
-  if (ast != nullptr)
+  if (ast != nullptr) {
     result = ast->tag();
+  } else if (types::RecordType::isMissingBundledRecordType(context, id)) {
+    result = asttags::Record;
+  }
 
   return QUERY_END(result);
 }
@@ -650,19 +652,28 @@ bool idIsParenlessFunction(Context* context, ID id) {
   return idIsParenlessFunctionQuery(context, id);
 }
 
-static const bool& idIsFieldQuery(Context* context, ID id) {
-  QUERY_BEGIN(idIsFieldQuery, context, id);
+static const UniqueString& fieldIdToNameQuery(Context* context, ID id) {
+  QUERY_BEGIN(fieldIdToNameQuery, context, id);
 
-  bool result = false;
-  if (auto ast = astForIDQuery(context, id))
-    if (auto var = ast->toVariable())
-      result = var->isField();
+  UniqueString result;
+  if (auto ast = astForIDQuery(context, id)) {
+    if (auto var = ast->toVariable()) {
+      if (var->isField()) {
+        result = var->name();
+      }
+    }
+  }
 
   return QUERY_END(result);
 }
 
+UniqueString fieldIdToName(Context* context, ID id) {
+  return fieldIdToNameQuery(context, id);
+}
+
 bool idIsField(Context* context, ID id) {
-  return idIsFieldQuery(context, id);
+  UniqueString name = fieldIdToName(context, id);
+  return !name.isEmpty();
 }
 
 const ID& idToParentId(Context* context, ID id) {

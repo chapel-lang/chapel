@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -458,7 +458,7 @@ void AggregateType::codegenDef() {
         }
 
         if (aggregateTag == AGGREGATE_CLASS) {
-          type = stype->getPointerTo();
+          type = stype;
         }
       }
 
@@ -468,9 +468,9 @@ void AggregateType::codegenDef() {
 
   if( !outfile ) {
 #ifdef HAVE_LLVM
-    if( ! this->symbol->llvmType ) {
+    if( ! this->symbol->getLLVMType() ) {
       info->lvt->addGlobalType(this->symbol->cname, type, false);
-      this->symbol->llvmType = type;
+      this->symbol->llvmImplType = type;
     }
 #endif
   }
@@ -496,7 +496,7 @@ void AggregateType::codegenPrototype() {
 
       llvm::PointerType* pt = llvm::PointerType::getUnqual(st);
       info->lvt->addGlobalType(symbol->cname, pt, false);
-      symbol->llvmType = pt;
+      symbol->llvmImplType = pt;
 #endif
     }
   }
