@@ -211,6 +211,9 @@ class VarScopeVisitor {
   bool enter(const Identifier* ast, RV& rv);
   void exit(const Identifier* ast, RV& rv);
 
+  bool enter(const uast::Conditional* node, RV& rv);
+  void exit(const uast::Conditional* node, RV& rv);
+
   bool enter(const uast::AstNode* node, RV& rv);
   void exit(const uast::AstNode* node, RV& rv);
 };

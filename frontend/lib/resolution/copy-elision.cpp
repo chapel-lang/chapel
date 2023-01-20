@@ -408,7 +408,10 @@ void FindElidedCopies::handleConditional(const Conditional* cond, RV& rv) {
   VarFrame* thenFrame = currentThenFrame();
   VarFrame* elseFrame = currentElseFrame();
 
-  bool thenReturnsThrows = thenFrame->returnsOrThrows;
+  bool thenReturnsThrows = false;
+  if (thenFrame != nullptr) {
+    thenReturnsThrows = thenFrame->returnsOrThrows;
+  }
   bool elseReturnsThrows = false;
   if (elseFrame != nullptr) {
     elseReturnsThrows = elseFrame->returnsOrThrows;
@@ -424,12 +427,24 @@ void FindElidedCopies::handleConditional(const Conditional* cond, RV& rv) {
   } else if (elseFrame == nullptr && thenReturnsThrows) {
     // then returns, no else block, so then copy elisions
     // have already been saved and nothing else to do
-  } else if (elseFrame == nullptr && !thenReturnsThrows) {
+  } else if (elseFrame == nullptr && !thenReturnsThrows && thenFrame != nullptr) {
     // then does not return, no else block.
     // allow copy elision only for local variables
     // outer variables aren't eligible because they wouldn't
     // aways be copy elided.
     saveLocalVarElidedCopies(thenFrame);
+  } else if (thenFrame == nullptr && elseReturnsThrows) {
+    // else returns, then block not considered due to param false, so then
+    // copy elisions have already been saved and nothing else to do
+  } else if (thenFrame == nullptr && !elseReturnsThrows && elseFrame != nullptr) {
+    // else does not return, then block not considered due to param false.
+    // allow copy elision only for local variables
+    // outer variables aren't eligible because they wouldn't
+    // aways be copy elided.
+    saveLocalVarElidedCopies(elseFrame);
+  } else if (thenFrame == nullptr && elseFrame == nullptr) {
+    // no else block, then block ignored due to param false.
+    // Nothing to do.
   } else if (!thenReturnsThrows && !elseReturnsThrows) {
     // Both then and else blocks exist.
     // Neither if nor else block returns. Promote elision points from
@@ -484,8 +499,10 @@ void FindElidedCopies::handleConditional(const Conditional* cond, RV& rv) {
   }
 
   // propagate inited variables from the then/else scopes
-  frame->initedVars.insert(thenFrame->initedVars.begin(),
-                           thenFrame->initedVars.end());
+  if (thenFrame) {
+    frame->initedVars.insert(thenFrame->initedVars.begin(),
+                             thenFrame->initedVars.end());
+  }
   if (elseFrame) {
     frame->initedVars.insert(elseFrame->initedVars.begin(),
                              elseFrame->initedVars.end());
