@@ -253,6 +253,7 @@ class UniqueString final {
     \endrst
    */
   inline bool operator==(const std::string& other) const {
+    (void)s;                    // mark field as used for linter
     return 0 == this->compare(other.c_str());
   }
 
