@@ -940,6 +940,31 @@ const uast::Attributes* idToAttributes(Context* context, ID id) {
   return ret;
 }
 
+// TODO: Might be worth figuring out how to generalize this pattern so that
+// more parts of the compiler can use it.
+static bool
+anyParentMatches(Context* context, ID id,
+                 const std::function<bool(Context*, const AstNode*)>& f) {
+  if (id.isEmpty()) return false;
+  auto ast = idToAst(context, id);
+  auto p = parentAst(context, ast);
+  if (!ast || !p) return false;
+  for (; p != nullptr; p = parentAst(context, p))
+    if (f(context, p))
+      return true;
+  return false;
+}
+
+static bool isAstDeprecated(Context* context, const AstNode* ast) {
+  auto attr = parsing::idToAttributes(context, ast->id());
+  return attr && attr->isDeprecated();
+}
+
+static bool isAstUnstable(Context* context, const AstNode* ast) {
+  auto attr = parsing::idToAttributes(context, ast->id());
+  return attr && attr->isDeprecated();
+}
+
 static std::string
 createDefaultDeprecationMessage(Context* context, const NamedDecl* target) {
   std::string ret = target->name().c_str();
@@ -1029,6 +1054,9 @@ reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget) {
   // Nothing to do, symbol is not deprecated.
   if (!attr || !attr->isDeprecated()) return;
 
+  // Current policy is to skip if the mention is in a deprecated symbol.
+  if (anyParentMatches(context, idMention, isAstDeprecated)) return;
+
   std::ignore = deprecationWarningForIdQuery(context, idMention, idTarget);
 }
 
@@ -1041,6 +1069,9 @@ reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
 
   // Nothing to do, we do not report unstable things this revision.
   if (!isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE)) return;
+
+  // Current policy is to skip if the mention is in an unstable symbol.
+  if (anyParentMatches(context, idMention, isAstUnstable)) return;
 
   std::ignore = unstableWarningForIdQuery(context, idMention, idTarget);
 }

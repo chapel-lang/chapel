@@ -1762,6 +1762,45 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
   }
 }
 
+bool isCalledExpression(Resolver* rv, const AstNode* ast) {
+  if (!ast) return false;
+
+  auto p = parsing::parentAst(rv->context, ast);
+  if (!p) return false;
+
+  if (auto call = p->toCall())
+    if (auto ce = call->calledExpression())
+      return ce == ast;
+
+  return false;
+}
+
+static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
+                                   const AstNode* astMention,
+                                   ID idTarget) {
+  if (astMention == nullptr || idTarget.isEmpty()) return;
+
+  // Emit deprecation or unstable warnings if needed. Note that components
+  // of use/import statements are handled entirely by the scope resolver
+  // and will never be reached here. Overloaded functions are skipped via
+  // the previous branch, and warnings will not be emitted until the parent
+  // call is resolved. For consistency, have all calls emit errors at the
+  // same place. Emit errors for other identifiers here.
+  //
+  // TODO: If we adjust production to emit errors for unambiguous calls
+  // (and to skip doing so under '--dyno'), we can remove this branch.
+  // TODO: We can skip all parenless functions using the below check, but
+  // I'm not sure we can write something similar for functions, since it's
+  // possible for function names to appear in other places besides calls.
+  if (qt.kind() != QualifiedType::PARENLESS_FUNCTION &&
+      !isCalledExpression(rv, astMention)) {
+    ID idMention = astMention->id();
+    Context* context = rv->context;
+    parsing::reportDeprecationWarningForId(context, idMention, idTarget);
+    parsing::reportUnstableWarningForId(context, idMention, idTarget);
+  }
+}
+
 bool Resolver::resolveIdentifier(const Identifier* ident,
                                  const Scope* receiverScope) {
   ResolvedExpression& result = byPostorder.byAst(ident);
@@ -1798,15 +1837,7 @@ bool Resolver::resolveIdentifier(const Identifier* ident,
     // but for things with generic type, use unknown.
     type = typeForId(id, /*localGenericToUnknown*/ true);
 
-    // Emit deprecation or unstable warnings if needed. Note that components
-    // of use/import statements are handled entirely by the scope resolver
-    // and will never be reached here. Overloaded functions are skipped via
-    // the previous branch, and warnings will not be emitted until the parent
-    // call is resolved. However, if the target ID is unambiguous, we can
-    // emit warnings even if there might be a typing error for e.g., the
-    // containing call.
-    parsing::reportDeprecationWarningForId(context, ident->id(), id);
-    parsing::reportUnstableWarningForId(context, ident->id(), id);
+    maybeEmitWarningsForId(this, type, ident, id);
 
     if (type.kind() == QualifiedType::TYPE) {
       // now, for a type that is generic with defaults,
@@ -2477,6 +2508,7 @@ void Resolver::exit(const Dot* dot) {
         // but for things with generic type, use unknown.
         type = typeForId(id, /*localGenericToUnknown*/ true);
       }
+      maybeEmitWarningsForId(this, type, dot, id);
       validateAndSetToId(r, dot, id);
       r.setType(type);
     }
@@ -2494,9 +2526,9 @@ void Resolver::exit(const Dot* dot) {
     ResolvedExpression& r = byPostorder.byAst(dot);
     ID elemId = r.toId(); // store the original in case we don't get a new one
     auto qt = typeForEnumElement(enumType, dot->field(), dot, elemId);
-    r.setType(std::move(qt));
-    validateAndSetToId(r, dot, std::move(elemId));
-
+    validateAndSetToId(r, dot, elemId);
+    r.setType(qt);
+    maybeEmitWarningsForId(this, qt, dot, elemId);
     return;
   }
 
