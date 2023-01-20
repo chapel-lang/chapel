@@ -3440,20 +3440,33 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
       }
     }
 
-    bool foundQuestionMarkArg = false;
-    for_actuals(actual, call) {
-      if (SymExpr* se = toSymExpr(actual)) {
-        if (se->symbol() == gUninstantiated) {
-          foundQuestionMarkArg = true;
+    // is the resulting type generic?
+    if (ret != nullptr) {
+      CallExpr* checkCall = call;
+      if (call->numActuals() >= 1) {
+        // check for 'owned C' e.g.
+        if (SymExpr* se = toSymExpr(call->baseExpr)) {
+          if (se->symbol()->hasFlag(FLAG_MANAGED_POINTER)) {
+            checkCall = toCallExpr(call->get(1));
+          }
         }
       }
-    }
+      if (checkCall != nullptr && checkCall->numActuals() > 0) {
+        bool foundQuestionMarkArg = false;
+        for_actuals(actual, checkCall) {
+          if (SymExpr* se = toSymExpr(actual)) {
+            if (se->symbol() == gUninstantiated) {
+              foundQuestionMarkArg = true;
+            }
+          }
+        }
 
-    // is the resulting type generic?
-    if (ret && !foundQuestionMarkArg && call->numActuals() > 0) {
-      Type* t = canonicalClassType(ret);
-      if (t && t->symbol->hasFlag(FLAG_GENERIC)) {
-        USR_WARN(call, "partial instantiation should use ?");
+        if (!foundQuestionMarkArg) {
+          Type* t = canonicalClassType(ret);
+          if (t && t->symbol->hasFlag(FLAG_GENERIC)) {
+            USR_WARN(checkCall, "partial instantiation should use ?");
+          }
+        }
       }
     }
   }
