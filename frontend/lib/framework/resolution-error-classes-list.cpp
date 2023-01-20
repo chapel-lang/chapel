@@ -438,6 +438,45 @@ void ErrorRedefinition::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorReductionInvalidName::write(ErrorWriterBase& wr) const {
+  auto reduce = std::get<const uast::Reduce*>(info);
+  auto name = std::get<UniqueString>(info);
+  auto& iterType = std::get<types::QualifiedType>(info);
+  wr.heading(kind_, type_, reduce->op(),
+            "identifier '", name, "' does not represent "
+            "a valid reduction operation.");
+  wr.message("In the following 'reduce' expression:");
+  wr.code(reduce, { reduce->op() });
+  wr.message("Identifiers on the left of the 'reduce' expression are applied "
+             "to the type of the iterator's elements ('", iterType.type(), "' "
+             "in this case)");
+  wr.message("Is '", name, "(", iterType.type(), ")' a valid reduction operation?");
+}
+
+void ErrorReductionNotReduceScanOp::write(ErrorWriterBase& wr) const {
+  auto reduce = std::get<const uast::Reduce*>(info);
+  auto actualType = std::get<types::QualifiedType>(info);
+  const types::BasicClassType* actualClassType = nullptr;
+
+  wr.heading(kind_, type_, reduce->op(), "invalid operation in 'reduce' expression.");
+  wr.code(reduce, { reduce->op() });
+
+  // Don't print the details of managed / unmanaged / etc.
+  if (auto classType = actualType.type()->toClassType()) {
+    actualClassType = classType->basicClassType();
+    while (auto instFrom = actualClassType->instantiatedFrom()) {
+      actualClassType = instFrom;
+    }
+    actualType = types::QualifiedType(actualType.kind(), actualClassType);
+  }
+  wr.message("The operation must be a type extending 'ReduceScanOp', but "
+             "it is ", actualType);
+  if (actualClassType) {
+    wr.message("Did you mean for class '", actualClassType,
+        "' to extend 'ReduceScanOp'?");
+  }
+}
+
 void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
   auto use = std::get<const uast::AstNode*>(info);
   auto mod = std::get<const uast::Module*>(info);

@@ -3137,19 +3137,25 @@ constructReduceScanOpClass(Resolver& resolver,
                       actuals);
   const Scope* scope = scopeForId(context, reduce->id());
   auto c = resolveGeneratedCall(context, reduce, ci, scope, resolver.poiScope);
-
   auto opType = c.exprType();
+
+  // Couldn't resolve the call; is opName a valid reduction?
   if (opType.isUnknown()) {
-    context->error(reduce, "unable to instantiate scan-reduce op with given name (TODO bad error message)");
+    CHPL_REPORT(context, ReductionInvalidName, reduce, opName, iterType);
     return nullptr;
   }
-  auto reduceScanOp = BasicClassType::getReduceScanOpType(context);
-  auto classType = opType.type()->toClassType();
-  bool convertsOut, instantiatesOut;
-  if (!classType || !classType->basicClassType()->isSubtypeOf(reduceScanOp, convertsOut, instantiatesOut)) {
-    context->error(reduce, "reduce-scan operation is not a class (TODO bad error message)");
+
+  // We found some type; is it a subclass of ReduceScanOp?
+  auto baseClass = BasicClassType::getReduceScanOpType(context);
+  auto actualClass = opType.type()->toClassType();
+  bool converts, instantiates;
+  if (opType.kind() != QualifiedType::TYPE ||
+      !actualClass ||
+      !actualClass->basicClassType()->isSubtypeOf(baseClass, converts, instantiates)) {
+    CHPL_REPORT(context, ReductionNotReduceScanOp, reduce, opType);
   }
-  return classType;
+
+  return actualClass;
 }
 
 static const ClassType* determineReduceScanOp(Resolver& resolver,
