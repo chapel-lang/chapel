@@ -2171,13 +2171,17 @@ void AggregateType::processGenericFields() {
   }
 
   // convert domain(?) into domain
+  // but do not convert range(?) into range (if it is generic with defaults)
   for_fields(field, this) {
     if (CallExpr* call = toCallExpr(field->defPoint->exprType)) {
       if (call->numActuals() == 1) {
         if (SymExpr* se = toSymExpr(call->get(1))) {
           if (se->symbol() == gUninstantiated) {
-            call->replace(call->baseExpr->remove());
-            field->addFlag(FLAG_MARKED_GENERIC);
+            auto baseType = toAggregateType(call->baseExpr->typeInfo());
+            if (!baseType->mIsGenericWithDefaults) {
+              call->replace(call->baseExpr->remove());
+              field->addFlag(FLAG_MARKED_GENERIC);
+            }
           }
         }
       }
