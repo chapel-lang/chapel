@@ -730,10 +730,11 @@ static void testPrimCall1(Parser* parser) {
 }
 
 static void testAttributeOnClass(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("testAttributeOnClass.chpl",
                                          "@thekitchensink.inner.attribute(true, 'life', 42, 4.2, 1.28..)\n \
                                           class MyClass { \n }");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -762,15 +763,16 @@ static void testAttributeOnClass(Parser* parser) {
 }
 
 static void testMultiAttributesOnClass(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("testAttributeOnClass.chpl",
                                          R""""(
                                           @attribute(true)
                                           @attribute1()
                                           @attribute2('words')
                                           @attribute3(42)
-                                          @attribute4
+                                          @attribute4()
                                           class MyClass { })"""");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -802,6 +804,7 @@ static void testMultiAttributesOnClass(Parser* parser) {
 }
 
 static void testMultiAttributesAndPragma(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("testAttributeOnClass.chpl",
                                          R""""(
                                           pragma "no doc"
@@ -809,9 +812,9 @@ static void testMultiAttributesAndPragma(Parser* parser) {
                                           @attribute1()
                                           @attribute2('words')
                                           @attribute3(42)
-                                          @attribute4
+                                          @attribute4()
                                           class MyClass { })"""");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -845,12 +848,13 @@ static void testMultiAttributesAndPragma(Parser* parser) {
 static void testAttributeAndPragmaLast(Parser* parser) {
   // TODO: this test fails, currently the pragma must be first, before any
   // attributes
+  // ErrorGuard guard(parser->context());
   // auto parseResult = parser->parseString("testAttributeOnClass.chpl",
   //                                        R""""(
   //                                         @attribute(true)
   //                                         pragma "no doc"
   //                                         class MyClass { })"""");
-  // assert(!parseResult.numErrors());
+  // assert(!guard.realizeErrors());
   // auto mod = parseResult.singleModule();
   // assert(mod);
   // assert(mod->numStmts() == 1);
@@ -869,38 +873,40 @@ static void testAttributeAndPragmaLast(Parser* parser) {
 
 
 static void testAttributeAndUnstable(Parser* parser) {
-  // TODO: this test fails, currently the unstable attribute must be last,
-  //  after any other attributes
-//  auto parseResult = parser->parseString("testAttributeOnClass.chpl",
-//                                         R""""(
-//                                          @unstable
-//                                          @attribute(true)
-//                                          class MyClass { })"""");
-//  assert(!parseResult.numErrors());
-//  auto mod = parseResult.singleModule();
-//  assert(mod);
-//  assert(mod->numStmts() == 1);
-//
-//  auto cls = mod->stmt(0)->toClass();
-//  assert(cls);
-//  assert(cls->attributeGroupChildNum() > -1);
-//  auto attrGrp = cls->attributeGroup()->toAttributeGroup();
-//  assert(attrGrp);
-//  assert(attrGrp->numAttributes() == 1);
-//  auto attr0 = attrGrp->child(0)->toAttribute();
-//  assert(attrGrp->isUnstable());
-//  assert(attr0);
-//  assert(attr0->name() == "attribute");
+ ErrorGuard guard(parser->context());
+ auto parseResult = parser->parseString("testAttributeOnClass.chpl",
+                                        R""""(
+                                         @unstable "we're not sure about this"
+                                         @attribute(true)
+                                         class MyClass { })"""");
+ assert(!guard.realizeErrors());
+ auto mod = parseResult.singleModule();
+ assert(mod);
+ assert(mod->numStmts() == 1);
+
+ auto cls = mod->stmt(0)->toClass();
+ assert(cls);
+ assert(cls->attributeGroupChildNum() > -1);
+ auto attrGrp = cls->attributeGroup()->toAttributeGroup();
+ assert(attrGrp);
+ assert(attrGrp->numAttributes() == 2);
+ auto attr0 = attrGrp->getAttributeNamed(UniqueString::get(parser->context(), "attribute"));
+ auto attrUnstable = attrGrp->getAttributeNamed(USTR("unstable"));
+ assert(attrUnstable);
+ assert(attrGrp->isUnstable());
+ assert(attr0);
+ assert(attr0->name() == "attribute");
 }
 
 
 static void testAttributeAndUnstableLast(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("testAttributeOnClass.chpl",
                                          R""""(
-                                          @attribute(true)
-                                          @unstable
-                                          class MyClass { })"""");
-  assert(!parseResult.numErrors());
+                                         @attribute(true)
+                                         @unstable()
+                                         class MyClass { })"""");
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -913,7 +919,7 @@ static void testAttributeAndUnstableLast(Parser* parser) {
   assert(attrGrp->isUnstable());
   assert(attrGrp->numAttributes() == 2);
   auto attr0 = attrGrp->getAttributeNamed(UniqueString::get(parser->context(), "attribute"));
-  auto attrUnstable = attrGrp->getAttributeNamed(UniqueString::get(parser->context(), "unstable"));
+  auto attrUnstable = attrGrp->getAttributeNamed(USTR("unstable"));
   assert(attrUnstable);
   assert(attr0);
   assert(attr0->name() == "attribute");
@@ -921,12 +927,13 @@ static void testAttributeAndUnstableLast(Parser* parser) {
 
 
 static void testAttributeAndUnstableMessage(Parser* parser) {
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("testAttributeOnClass.chpl",
                                          R""""(
-                                          @attribute(true)
-                                          @unstable "this will be changed later"
-                                          class MyClass { })"""");
-  assert(!parseResult.numErrors());
+                                         @attribute(true)
+                                         @unstable("this will be changed later")
+                                         class MyClass { })"""");
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -940,22 +947,23 @@ static void testAttributeAndUnstableMessage(Parser* parser) {
   assert(attrGrp->unstableMessage() == UniqueString::get(ctx, "this will be changed later"));
   assert(attrGrp->numAttributes() == 2);
   auto attr0 = attrGrp->getAttributeNamed(UniqueString::get(ctx, "attribute"));
-  auto attrUnstable = attrGrp->getAttributeNamed(UniqueString::get(ctx, "unstable"));
+  auto attrUnstable = attrGrp->getAttributeNamed(USTR("unstable"));
   assert(attrUnstable);
   assert(attr0);
   assert(attr0->name() == "attribute");
   assert(attrUnstable->numActuals() == 1);
-  assert(attrUnstable->getOnlyStringActualOrNullptr() == UniqueString::get(ctx, "this will be changed later"));
-
+  assert(attrUnstable->getOnlyStringActualOrError(ctx) == UniqueString::get(ctx, "this will be changed later"));
 }
 
 static void testAttributeAndDeprecatedLast(Parser* parser) {
+  // deprecated as a token, last, no arg
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("testAttributeOnClass.chpl",
                                          R""""(
-                                          @attribute("word")
-                                          deprecated
-                                          class MyClass { })"""");
-  assert(!parseResult.numErrors());
+                                         @attribute("word")
+                                         deprecated
+                                         class MyClass { })"""");
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -968,20 +976,23 @@ static void testAttributeAndDeprecatedLast(Parser* parser) {
   assert(attrGrp->isDeprecated());
   assert(attrGrp->numAttributes() == 2);
   auto attr0 = attrGrp->getAttributeNamed(UniqueString::get(ctx, "attribute"));
-  auto attrDeprecated = attrGrp->getAttributeNamed(UniqueString::get(ctx, "deprecated"));
+  auto attrDeprecated = attrGrp->getAttributeNamed(USTR("deprecated"));
   assert(attrDeprecated);
   assert(attr0);
   assert(attr0->name() == "attribute");
-  assert(attr0->getOnlyStringActualOrNullptr() == UniqueString::get(ctx,"word"));
+  assert(
+      attr0->getOnlyStringActualOrError(ctx) == UniqueString::get(ctx, "word"));
 }
 
 static void testAttributeAndDeprecatedMessage(Parser* parser) {
+  // deprecated as a token TDEPRECATED, last, with arg
+  ErrorGuard guard(parser->context());
   auto parseResult = parser->parseString("testAttributeOnClass.chpl",
                                          R""""(
-                                          @attribute("word")
-                                          deprecated "try using something else"
-                                          class MyClass { })"""");
-  assert(!parseResult.numErrors());
+                                         @attribute("word")
+                                         deprecated "try using something else"
+                                         class MyClass { })"""");
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -995,38 +1006,40 @@ static void testAttributeAndDeprecatedMessage(Parser* parser) {
   assert(attrGrp->deprecationMessage() == UniqueString::get(ctx,"try using something else"));
   assert(attrGrp->numAttributes() == 2);
   auto attr0 = attrGrp->getAttributeNamed(UniqueString::get(ctx, "attribute"));
-  auto attrDeprecated = attrGrp->getAttributeNamed(UniqueString::get(ctx, "deprecated"));
+  auto attrDeprecated = attrGrp->getAttributeNamed(USTR("deprecated"));
   assert(attrDeprecated);
   assert(attr0);
   assert(attr0->name() == "attribute");
-  assert(attr0->getOnlyStringActualOrNullptr() == UniqueString::get(ctx,"word"));
-  assert(attrDeprecated->getOnlyStringActualOrNullptr() == UniqueString::get(ctx,"try using something else"));
+  assert(
+      attr0->getOnlyStringActualOrError(ctx) == UniqueString::get(ctx, "word"));
+  assert(attrDeprecated->getOnlyStringActualOrError(ctx) == UniqueString::get(ctx, "try using something else"));
 }
 
 static void testAttributeAndDeprecated(Parser* parser) {
-  // TODO: this test fails, currently the deprecated attribute must be first,
-  //  before any other attributes
+  // deprecated as an attribute @deprecated, first, no arg
+  ErrorGuard guard(parser->context());
+  auto parseResult = parser->parseString("testAttributeOnClass.chpl",
+                                        R""""(
+                                        @deprecated()
+                                        @attribute(true)
+                                        class MyClass { })"""");
+   assert(!guard.realizeErrors());
+   auto mod = parseResult.singleModule();
+   assert(mod);
+   assert(mod->numStmts() == 1);
 
-//    auto parseResult = parser->parseString("testAttributeOnClass.chpl",
-//                                           R""""(
-//                                            deprecated
-//                                            @attribute(true)
-//                                            class MyClass { })"""");
-//    assert(!parseResult.numErrors());
-//    auto mod = parseResult.singleModule();
-//    assert(mod);
-//    assert(mod->numStmts() == 1);
-//
-//    auto cls = mod->stmt(0)->toClass();
-//    assert(cls);
-//    assert(cls->attributeGroupChildNum() > -1);
-//    auto attrGrp = cls->attributeGroup()->toAttributeGroup();
-//    assert(attrGrp);
-//    assert(attrGrp->isDeprecated());
-//    assert(attrGrp->numAttributes() == 1);
-//    auto attr0 = attrGrp->child(0)->toAttribute();
-//    assert(attr0);
-//    assert(attr0->name() == "attribute");
+   auto cls = mod->stmt(0)->toClass();
+   assert(cls);
+   assert(cls->attributeGroupChildNum() > -1);
+   auto attrGrp = cls->attributeGroup()->toAttributeGroup();
+   assert(attrGrp);
+   assert(attrGrp->isDeprecated());
+   assert(attrGrp->numAttributes() == 2);
+   auto attr0 = attrGrp->getAttributeNamed(UniqueString::get(parser->context(), "attribute"));
+   auto attrDeprecated = attrGrp->getAttributeNamed(USTR("deprecated"));
+   assert(attrDeprecated);
+   assert(attr0);
+   assert(attr0->name() == "attribute");
 }
 
 int main() {

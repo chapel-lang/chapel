@@ -1,4 +1,4 @@
-@unstable param a: bool = true;
+@unstable() param a: bool = true;
 param b: bool = false;
 
 proc main() {

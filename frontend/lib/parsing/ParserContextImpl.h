@@ -214,29 +214,31 @@ void ParserContext::noteAttribute(YYLTYPE loc, AstNode* firstIdent,
                                   ParserExprList* toolspace,
                                   ParserExprList* actuals) {
   hasAttributeGroupParts = true;
-  // TODO: Should we check that we don't have a duplicate attribute? maybe not here?
-  // put the attribute into a list and appendList to avoid segfault when unstable, pragma, or deprecated
-  // has previously set hasAttributeGroupParts to true
+
+  // initialize the list if it wasn't already
   auto& attrs = attributeGroupParts.attributeList;
   if (attributeGroupParts.attributeList == nullptr) {
     attrs = makeList();
   }
 
+  // do some special handling for unstable and deprecated, because they
+  // existed before the changes to allow general attributes
   auto ident = firstIdent->toIdentifier();
-  if (ident->name()==UniqueString::get(context(), "@unstable")) {
-    ident = buildIdent(loc, PODUniqueString::get(context(), "unstable"));
+  if (ident->name()==UniqueString::get(context(), "unstable")) {
     AstNode* msg = nullptr;
-    if (actuals != nullptr) {
+    if (actuals != nullptr && actuals->size() > 0) {
       msg = actuals->back();
     }
     noteUnstable(loc, msg);
   } else if (ident->name()==UniqueString::get(context(),"deprecated")) {
     AstNode* msg = nullptr;
-    if (actuals != nullptr) {
+    if (actuals != nullptr && actuals->size() > 0) {
       msg = actuals->back();
     }
     noteDeprecation(loc, msg);
   }
+
+  // make sure we don't put duplicate attributes (based on names) on one symbol
   auto attr = buildAttribute(loc, ident, toolspace, actuals);
   for (auto& attribute : *attrs) {
     if (attribute->toAttribute()->name() == attr->toAttribute()->name()) {
@@ -256,8 +258,6 @@ void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
     if (auto strLit = messageStr->toStringLiteral()) {
       attributeGroupParts.deprecationMessage = strLit->value();
     }
-
-   // delete messageStr;
   }
 }
 
@@ -270,8 +270,6 @@ void ParserContext::noteUnstable(YYLTYPE loc, AstNode* messageStr) {
     if (auto strLit = messageStr->toStringLiteral()) {
       attributeGroupParts.unstableMessage = strLit->value();
     }
-
-    //delete messageStr;
   }
 }
 
@@ -284,6 +282,7 @@ void ParserContext::resetAttributeGroupPartsState() {
   }
 
   CHPL_ASSERT(attributeGroupParts.pragmas == nullptr);
+  CHPL_ASSERT(attributeGroupParts.attributeList == nullptr);
   CHPL_ASSERT(!attributeGroupParts.isDeprecated);
   CHPL_ASSERT(!attributeGroupParts.isUnstable);
   CHPL_ASSERT(attributeGroupParts.deprecationMessage.isEmpty());

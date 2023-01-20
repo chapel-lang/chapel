@@ -20,12 +20,9 @@
 #ifndef CHPL_UAST_ATTRIBUTE_H
 #define CHPL_UAST_ATTRIBUTE_H
 
-#include "chpl/framework/Location.h"
+
 #include "chpl/uast/AstNode.h"
-#include "chpl/uast/Pragma.h"
-#include "chpl/util/iteration.h"
 #include "chpl/uast/StringLiteral.h"
-#include <set>
 
 namespace chpl {
 namespace uast {
@@ -33,7 +30,8 @@ namespace uast {
 class Attribute final: public AstNode {
 
 private:
-  UniqueString name_; // the attribute name - nodoc or deprecated for example, or name outer.inner.part.name
+  // the attribute name - deprecated or unstable or chpldoc.nodoc, for example
+  UniqueString name_;
   int numActuals_; // number of child actuals
 
   Attribute(UniqueString name, int numActuals, AstList actuals)
@@ -41,6 +39,12 @@ private:
       name_(name),
       numActuals_(numActuals) {
   }
+
+  Attribute(Deserializer& des)
+    : AstNode(asttags::Attribute, des) {
+      name_ = des.read<UniqueString>();
+      numActuals_ = des.read<int>();
+    }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Attribute* lhs = this;
@@ -77,7 +81,6 @@ public:
     return AstListIteratorPair<AstNode>(children_.begin(), children_.end());
   }
 
-
   /*
     Returns the number of actuals of an attribute.
   */
@@ -93,18 +96,18 @@ public:
     return ast;
   }
 
-  // return uniquestring or nullptr if no argument, if more than 1 arg or arg not a string raise error i
-  // TODO: how to raise an error here?
-  UniqueString getOnlyStringActualOrNullptr() const {
+  // returns a UniqueString or nullptr if no actual.
+  // if more than 1 actual or actual not a string, raise error
+  UniqueString getOnlyStringActualOrError(Context* ctx) const {
     UniqueString dummy;
     if (numActuals() == 0) {
       return dummy;
     } else if (numActuals() > 1) {
-      //USR_FATAL(this, "Attribute %s takes only one argument", name_.c_str());
+      ctx->error(this, "Attribute %s takes only one argument", name_.c_str());
     } else {
       const StringLiteral* str = actual(0)->toStringLiteral();
       if (str == nullptr) {
-        //USR_FATAL(this, "Attribute %s takes only a string argument", name_.c_str());
+        ctx->error(this, "Attribute %s takes only a string argument", name_.c_str());
       } else {
         return str->value();
       }
@@ -120,6 +123,15 @@ public:
   const std::string fullyQualifiedAttributeName() const {
     return name_.str();
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+
+    ser.write(name_);
+    ser.write(numActuals_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Attribute);
 
 
 }; // end Attribute

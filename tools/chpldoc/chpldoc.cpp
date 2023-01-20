@@ -236,7 +236,10 @@ or
 
 static bool isNoDoc(const Decl* e) {
   if (auto attrs = e->attributeGroup()) {
-    return attrs->hasPragma(pragmatags::PRAGMA_NO_DOC);
+    auto attr = attrs->getAttributeNamed(USTR("chpldoc.nodoc"));
+    if (attr || attrs->hasPragma(pragmatags::PRAGMA_NO_DOC)) {
+      return true;
+    }
   }
   return false;
 }

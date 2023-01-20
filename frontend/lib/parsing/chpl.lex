@@ -211,7 +211,6 @@ type             return processToken(yyscanner, TTYPE);
 uint             return processToken(yyscanner, TUINT);
 union            return processToken(yyscanner, TUNION);
 unmanaged        return processToken(yyscanner, TUNMANAGED);
-"@unstable"      return processToken(yyscanner, TUNSTABLE);
 use              return processToken(yyscanner, TUSE);
 var              return processToken(yyscanner, TVAR);
 void             return processToken(yyscanner, TVOID);

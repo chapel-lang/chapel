@@ -128,6 +128,7 @@ struct Visitor {
   void checkGenericArrayTypeUsage(const BracketLoop* node);
   void checkVisibilityClauseValid(const AstNode* parentNode,
                                   const VisibilityClause* clause);
+  void checkAttributeNameRecognizedOrToolSpaced(const Attribute* node);
 
   /*
   TODO
@@ -156,6 +157,7 @@ struct Visitor {
 
   void visit(const Array* node);
   void visit(const BracketLoop* node);
+  void visit(const Attribute* node);
   void visit(const FnCall* node);
   void visit(const Variable* node);
   void visit(const TypeQuery* node);
@@ -388,7 +390,6 @@ void Visitor::checkForArraysOfRanges(const Array* node) {
   }
 }
 
-  
 void Visitor::checkDomainTypeQueryUsage(const TypeQuery* node) {
   if (!parent(0)) return;
   if (!parent(0)->isBracketLoop() && !parent(0)->isDomain()) return;
@@ -840,9 +841,9 @@ void Visitor::checkGenericArrayTypeUsage(const BracketLoop* node) {
   // TODO: These are treated the same right now, but in the future we might
   // like to allow things like '[]' in type expressions, while
   // default initialized variables such as 'var x: [] bytes;' would need
-  // a domain expression. 
+  // a domain expression.
   bool isDomainEmpty = isBracketLoopDomainExpressionEmpty(node);
-  bool isBodyEmpty = isBracketLoopBodyEmpty(node); 
+  bool isBodyEmpty = isBracketLoopBodyEmpty(node);
 
   // Expression is fully adorned, so nothing to do.
   if (!isDomainEmpty && !isBodyEmpty) return;
@@ -1094,7 +1095,30 @@ void Visitor::visit(const Array* node) {
 void Visitor::visit(const BracketLoop* node) {
   checkGenericArrayTypeUsage(node);
 }
-  
+
+void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
+  // Store attributes we recognize in "all-global-strings.h"
+  // then a USTR() on the attribute name will work or not work
+  if (node->name() == USTR("deprecated") ||
+      node->name() == USTR("unstable") ||
+      node->name() == USTR("chpldoc.nodoc")) {
+      // TODO: should we only match chpldoc.nodoc or anything toolspaced with chpldoc.?
+      return;
+  } else if (node->fullyQualifiedAttributeName().find('.') == std::string::npos) {
+    // we don't recognize the named attribute that we found (no toolspace to specify a different tool)
+    error(node, "unrecognized attribute '%s'", node->name().c_str());
+    // TODO: this relies on the WARN_UNKNOWN_TOOL_SPACED_ATTRS flag that we do not yet have
+  } else if (isFlagSet(CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS)) {
+    // there's a toolspaced attribute given, and the user asked us to warn them
+    // about those things
+    warn(node, "unrecognized attribute '%s'", node->name().c_str());
+  }
+}
+
+void Visitor::visit(const Attribute* node) {
+  checkAttributeNameRecognizedOrToolSpaced(node);
+}
+
 void Visitor::visit(const FnCall* node) {
   checkNoDuplicateNamedArguments(node);
   checkForNestedClassDecorators(node);

@@ -128,6 +128,9 @@ X(rangeCount     , "#")
 X(swap           , "<=>")
 X(chplBy         , "chpl_by")
 X(chplAlign      , "chpl_align")
+X(chpldocNoDoc   , "chpldoc.nodoc")
+X(deprecated     , "deprecated")
+X(unstable       , "unstable")
 
 /* A string too long is checked at compile time */
 /* X(somethingtoolong      , "somethingtoolongforthemacro") */

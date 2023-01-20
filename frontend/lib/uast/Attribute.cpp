@@ -25,8 +25,8 @@ namespace chpl {
 namespace uast {
 
 owned<Attribute> Attribute::build(Builder* builder, Location loc,
-                                UniqueString name,
-                                AstList actuals) {
+                                  UniqueString name,
+                                  AstList actuals) {
   int numActuals = actuals.size();
 
   Attribute* ret = new Attribute(name, numActuals, std::move(actuals));
@@ -37,7 +37,6 @@ owned<Attribute> Attribute::build(Builder* builder, Location loc,
 
 
 void Attribute::dumpFieldsInner(const DumpSettings& s) const {
-  // TODO: What else should this dump here?
   s.out << " " << fullyQualifiedAttributeName();
 }
 

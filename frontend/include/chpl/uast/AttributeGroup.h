@@ -156,7 +156,8 @@ class AttributeGroup final : public AstNode {
   /*
     returns the attribute with the given name, or nullptr if it is not found.
   */
-  // call with UniqueString::get(context(), "deprecated") etc.
+  // call as getAttributeNamed(USTR("deprecated"))
+  // or getAttributeNamed(UniqueString::get(<context>, "attrib.name")) etc.
   const Attribute* getAttributeNamed(UniqueString attributeName) const {
     const Attribute* ret = nullptr;
     for (auto child : children()) {

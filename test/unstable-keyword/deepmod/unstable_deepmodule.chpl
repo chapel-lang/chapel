@@ -2,7 +2,7 @@ module TestUnstableModule {
   @unstable "x is unstable, use y instead" var x: int = 0;
   var y: int = 1;
 
-  @unstable module TestUnstableModule2 {
+  @unstable() module TestUnstableModule2 {
     // checks deep uses
     module Deeper {
       proc foo() {
