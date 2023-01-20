@@ -1,3 +1,4 @@
+bare-owned-leak.chpl:54: warning: field with generic declared type
 C.init
 C.deinit
 C.init
