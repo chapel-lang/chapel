@@ -2912,9 +2912,9 @@ void Resolver::exit(const New* node) {
 }
 
 static QualifiedType resolveSerialIterType(Resolver& resolver,
-                                           const IndexableLoop* loop) {
+                                           const AstNode* astForErr,
+                                           const AstNode* iterand) {
   Context* context = resolver.context;
-  const AstNode* iterand = loop->iterand();
   iterand->traverse(resolver);
   ResolvedExpression& iterandRE = resolver.byPostorder.byAst(iterand);
 
@@ -2953,11 +2953,11 @@ static QualifiedType resolveSerialIterType(Resolver& resolver,
 
     if (c.mostSpecific().only() != nullptr) {
       idxType = c.exprType();
-      resolver.handleResolvedAssociatedCall(iterandRE, loop, ci, c,
+      resolver.handleResolvedAssociatedCall(iterandRE, astForErr, ci, c,
                                             AssociatedAction::ITERATE,
                                             iterand->id());
     } else {
-      idxType = CHPL_TYPE_ERROR(context, NonIterable, loop, iterand, iterandRE.type());
+      idxType = CHPL_TYPE_ERROR(context, NonIterable, astForErr, iterand, iterandRE.type());
     }
   } else {
     idxType = QualifiedType(QualifiedType::UNKNOWN,
@@ -3020,7 +3020,7 @@ bool Resolver::enter(const IndexableLoop* loop) {
 
     return false;
   } else {
-    QualifiedType idxType = resolveSerialIterType(*this, loop);
+    QualifiedType idxType = resolveSerialIterType(*this, loop, loop->iterand());
 
     enterScope(loop);
 

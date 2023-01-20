@@ -375,8 +375,8 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorNonIterable::write(ErrorWriterBase &wr) const {
-  auto loop = std::get<const uast::IndexableLoop*>(info);
-  auto iterand = std::get<const uast::AstNode*>(info);
+  auto loop = std::get<0>(info);
+  auto iterand = std::get<1>(info);
   auto& iterandType = std::get<types::QualifiedType>(info);
   wr.heading(kind_, type_, loop, "cannot iterate over ", decayToValue(iterandType), ".");
   wr.message("In the following loop:");
