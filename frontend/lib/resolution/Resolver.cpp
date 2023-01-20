@@ -1762,7 +1762,7 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
   }
 }
 
-bool isCalledExpression(Resolver* rv, const AstNode* ast) {
+static bool isCalledExpression(Resolver* rv, const AstNode* ast) {
   if (!ast) return false;
 
   auto p = parsing::parentAst(rv->context, ast);
