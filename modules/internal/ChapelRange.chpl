@@ -2625,7 +2625,8 @@ operator :(r: range(?), type t: range(?)) {
       // relational operator. Such ranges are supposed to iterate 0 times
       var i: intIdxType;
       const start = chpl_firstAsIntForIter;
-      const end: intIdxType = if chpl__idxToInt(lowBoundForIter(this)) > chpl__idxToInt(highBoundForIter(this)) then start else chpl_lastAsIntForIter + stride: intIdxType;
+      const end: intIdxType = if this._low > this._high then start
+                              else chpl_lastAsIntForIter + stride: intIdxType;
       while __primitive("C for loop",
                         __primitive( "=", i, start),
                         __primitive("!=", i, end),
