@@ -277,19 +277,6 @@ bool BuilderResult::compare(const AstList& other) const {
   return true;
 }
 
-void BuilderResult::printNumNodes() const {
-  std::map<uast::AstTag, int> counter;
-  for (const auto& pair : idToAst_) {
-    counter[pair.second->tag()] += 1;
-    // pair.first.mark(context); // redundant
-    //context->markPointer(pair.second);
-  }
-
-  for (const auto& pair : counter) {
-    printf("%s :: %d\n", tagToString(pair.first), pair.second);
-  }
-}
-
 
 } // namespace uast
 } // namespace chpl

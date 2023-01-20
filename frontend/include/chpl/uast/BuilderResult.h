@@ -165,7 +165,6 @@ class BuilderResult final {
   static AstList deserialize(Context* context, std::string& sfname);
   static AstList deserialize(Context* context, std::istream& is);
   bool compare(const AstList& other) const;
-  void printNumNodes() const;
 };
 
 
