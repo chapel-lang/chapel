@@ -1,1 +1,2 @@
+nilable-anymanaged-member-given-value.chpl:2: warning: field with generic declared type
 {thing2 = {}}

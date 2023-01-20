@@ -1,3 +1,4 @@
+generic-management-field2-borrow.chpl:6: warning: field with generic declared type
 {x = 3}
 In the explicit initializer
 (f = {x = 3})

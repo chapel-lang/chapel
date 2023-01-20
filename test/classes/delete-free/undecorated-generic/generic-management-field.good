@@ -1,2 +1,3 @@
+generic-management-field.chpl:8: warning: field with generic declared type
 {x = 3}
 (f = {x = 3})

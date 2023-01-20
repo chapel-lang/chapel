@@ -1,3 +1,7 @@
+generic-field-unmanaged-borrowed.chpl:10: warning: field with generic declared type
+generic-field-unmanaged-borrowed.chpl:10: warning: field with generic declared type
+generic-field-unmanaged-borrowed.chpl:17: warning: field with generic declared type
+generic-field-unmanaged-borrowed.chpl:17: warning: field with generic declared type
 borrowed GenericClassUnmanaged(unmanaged ClassA) {f = {a = 1}}
 borrowed GenericClassUnmanaged(unmanaged ClassA) {f = {a = 2}}
 borrowed GenericClassUnmanaged(unmanaged ClassA) {f = {a = 3}}

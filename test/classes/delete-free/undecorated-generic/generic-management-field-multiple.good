@@ -1,3 +1,7 @@
+generic-management-field-multiple.chpl:10: warning: field with generic declared type
+generic-management-field-multiple.chpl:10: warning: field with generic declared type
+generic-management-field-multiple.chpl:10: warning: field with generic declared type
+generic-management-field-multiple.chpl:10: warning: field with generic declared type
 {x = 1}
 (f = {x = 1})
 {x = 2}

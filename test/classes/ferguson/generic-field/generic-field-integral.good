@@ -1,2 +1,3 @@
+generic-field-integral.chpl:2: warning: field with generic declared type
 borrowed GenericClass(int(64)) {f = 1}
 borrowed GenericClass(int(64)) {f = 2}

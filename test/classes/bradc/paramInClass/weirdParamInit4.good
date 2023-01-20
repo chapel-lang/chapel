@@ -1,2 +1,3 @@
+weirdParamInit4.chpl:6: warning: field with generic declared type
 c is: {}
 d is: {c = {}}
