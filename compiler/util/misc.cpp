@@ -575,7 +575,7 @@ static bool interestingModuleInit(FnSymbol* fn) {
 // If so, then we return nullptr to avoid having the production compiler
 // print out a duplicate header.
 static FnSymbol* determineIfHeaderIsRedundantWithDyno(FnSymbol* fn) {
-  static FnSymbol* fnForBridge = nullptr;
+  static FnSymbol* fnForSkip = nullptr;
   static bool once = false;
 
   // There is no input function.
@@ -584,27 +584,28 @@ static FnSymbol* determineIfHeaderIsRedundantWithDyno(FnSymbol* fn) {
   // We've already bridged from ID to FnSymbol, or there is no ID.
   if (once || dynoIdForLastContainingDecl.isEmpty()) return fn;
 
-  // If we have a bridge...
-  if (fnForBridge) {
+  // If we are skipping...
+  if (fnForSkip) {
 
-    // And we hit a different function, return the new header.
-    if (fnForBridge != fn) {
+    // We hit a different function, so stop skipping forever.
+    if (fnForSkip != fn) {
       once = true;
       return fn;
-    }
 
-    // Otherwise, keep bridging.
-    return nullptr;
+    // Otherwise, keep skipping.
+    } else {
+      return nullptr;
+    }
   }
 
-  // If no match to begin with, set 'once' and return a new header.
+  // If the very first input function is different, never skip.
   if (fn->astloc.id() != dynoIdForLastContainingDecl) {
     once = true;
     return fn;
   }
 
-  // Otherwise, start bridging...
-  fnForBridge = fn;
+  // Otherwise, start skipping...
+  fnForSkip = fn;
 
   return nullptr;
 }

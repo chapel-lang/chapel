@@ -979,26 +979,23 @@ createDefaultUnstableMessage(Context* context, const NamedDecl* target) {
   return ret;
 }
 
-static bool const&
-deprecationWarningForIdQuery(Context* context, ID idMention, ID idTarget) {
-  QUERY_BEGIN(deprecationWarningForIdQuery, context, idMention, idTarget);
-  bool ret = false;
-
-  if (idMention.isEmpty() || idTarget.isEmpty()) return QUERY_END(ret);
+static bool
+deprecationWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
+  if (idMention.isEmpty() || idTarget.isEmpty()) return false;
 
   auto attributes = parsing::idToAttributes(context, idTarget);
-  if (!attributes) return QUERY_END(ret);
+  if (!attributes) return false;
 
   bool isDeprecated = attributes->hasPragma(PRAGMA_DEPRECATED) ||
                       attributes->isDeprecated();
-  if (!isDeprecated) return QUERY_END(ret);
+  if (!isDeprecated) return false;
 
   auto mention = parsing::idToAst(context, idMention);
   auto target = parsing::idToAst(context, idTarget);
   CHPL_ASSERT(mention && target);
 
-  auto targetNamedDecl  = target->toNamedDecl();
-  if (!targetNamedDecl) return QUERY_END(ret);
+  auto targetNamedDecl = target->toNamedDecl();
+  if (!targetNamedDecl) return false;
 
   auto storedMsg = attributes->deprecationMessage();
   std::string msg = storedMsg.isEmpty()
@@ -1006,33 +1003,34 @@ deprecationWarningForIdQuery(Context* context, ID idMention, ID idTarget) {
       : storedMsg.c_str();
 
   CHPL_ASSERT(msg.size() > 0);
-
   CHPL_REPORT(context, Deprecation, msg, mention, targetNamedDecl);
-  ret = true;
-
-  return QUERY_END(ret);
+  return true;
 }
 
 static bool const&
-unstableWarningForIdQuery(Context* context, ID idMention, ID idTarget) {
-  QUERY_BEGIN(unstableWarningForIdQuery, context, idMention, idTarget);
-  bool ret = false;
+deprecationWarningForIdQuery(Context* context, ID idMention, ID idTarget) {
+  QUERY_BEGIN(deprecationWarningForIdQuery, context, idMention, idTarget);
+  bool ret = deprecationWarningForIdImpl(context, idMention, idTarget);
+  return QUERY_END(ret);
+}
 
-  if (idMention.isEmpty() || idTarget.isEmpty()) return QUERY_END(ret);
+static bool
+unstableWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
+  if (idMention.isEmpty() || idTarget.isEmpty()) return false;
 
   auto attributes = parsing::idToAttributes(context, idTarget);
-  if (!attributes) return QUERY_END(ret);
+  if (!attributes) return false;
 
   bool isUnstable = attributes->hasPragma(PRAGMA_UNSTABLE) ||
                     attributes->isUnstable();
-  if (!isUnstable) return QUERY_END(ret);
+  if (!isUnstable) return false;
 
   auto mention = parsing::idToAst(context, idMention);
   auto target = parsing::idToAst(context, idTarget);
   CHPL_ASSERT(mention && target);
 
-  auto targetNamedDecl  = target->toNamedDecl();
-  if (!targetNamedDecl) return QUERY_END(ret);
+  auto targetNamedDecl = target->toNamedDecl();
+  if (!targetNamedDecl) return false;
 
   auto storedMsg = attributes->unstableMessage();
   std::string msg = storedMsg.isEmpty()
@@ -1040,10 +1038,14 @@ unstableWarningForIdQuery(Context* context, ID idMention, ID idTarget) {
       : storedMsg.c_str();
 
   CHPL_ASSERT(msg.size() > 0);
-
   CHPL_REPORT(context, Deprecation, msg, mention, targetNamedDecl);
-  ret = true;
+  return true;
+}
 
+static bool const&
+unstableWarningForIdQuery(Context* context, ID idMention, ID idTarget) {
+  QUERY_BEGIN(unstableWarningForIdQuery, context, idMention, idTarget);
+  bool ret = unstableWarningForIdImpl(context, idMention, idTarget);
   return QUERY_END(ret);
 }
 
