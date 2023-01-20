@@ -1233,10 +1233,9 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
     for (auto req : requireNodes) {
       for (const AstNode* child : req->children()) {
         if (const StringLiteral* str = child->toStringLiteral()) {
-          const auto& path = str->value().str();
-          const std::string suffix = ".chpl";
-          if (path.compare(path.size() - suffix.size(), suffix.size(), suffix) == 0) {
-            parsing::parseFileToBuilderResult(context, str->value(), UniqueString());
+          const UniqueString path = str->value();
+          if (path.endsWith(".chpl")) {
+            parsing::parseFileToBuilderResult(context, path, UniqueString());
           }
         }
       }
