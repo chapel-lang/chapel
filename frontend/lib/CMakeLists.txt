@@ -39,7 +39,7 @@ elseif(NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/util/git-version.cpp)
                           ${CMAKE_CURRENT_SOURCE_DIR}/util
                           --build-version
                           --chpl-home=${CHPL_HOME})
-  message(STATUS "wrote git-version.cpp with dummy xxxxxxxxxx git sha")
+  message(STATUS "wrote git-version.cpp with dummy sha")
 endif()
 
 add_library(git-sha-obj OBJECT ${CMAKE_CURRENT_SOURCE_DIR}/util/git-version.cpp)
