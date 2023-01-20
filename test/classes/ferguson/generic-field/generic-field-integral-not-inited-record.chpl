@@ -1,5 +1,5 @@
 record R {
-  var i:integral(?);
+  var i:integral;
 }
 
 proc test() {

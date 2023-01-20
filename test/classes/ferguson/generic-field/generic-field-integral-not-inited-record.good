@@ -1,1 +1,2 @@
+generic-field-integral-not-inited-record.chpl:2: warning: field with generic declared type
 R(int(64)) (i = 0)

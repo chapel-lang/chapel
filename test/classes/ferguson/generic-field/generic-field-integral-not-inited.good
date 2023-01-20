@@ -1,1 +1,2 @@
+generic-field-integral-not-inited.chpl:2: warning: field with generic declared type
 borrowed GenericClass(int(64))? nil
