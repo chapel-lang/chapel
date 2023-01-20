@@ -973,6 +973,8 @@ typeConstructorInitialQuery(Context* context, const Type* t)
       idTag = uast::asttags::Class;
     } else if (t->isRecordType()) {
       idTag = uast::asttags::Record;
+    } else if (t->isUnionType()) {
+      idTag = uast::asttags::Union;
     }
   } else {
     CHPL_ASSERT(false && "case not handled");

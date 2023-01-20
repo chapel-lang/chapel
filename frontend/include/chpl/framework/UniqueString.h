@@ -243,11 +243,27 @@ class UniqueString final {
     (void)s;                    // mark field as used for linter
     return 0 == this->compare(other);
   }
+
+  /**
+    Checks to see if the string contents match a C++ std::string.
+    \rst
+    .. note::
+
+      will only compare up to the first null byte.
+    \endrst
+   */
+  inline bool operator==(const std::string& other) const {
+    return 0 == this->compare(other.c_str());
+  }
+
   inline bool operator!=(const UniqueString other) const {
     return !(*this == other);
   }
   inline bool operator!=(const char* other) const {
     return 0 != this->compare(other);
+  }
+  inline bool operator!=(const std::string& other) const {
+    return !(*this == other);
   }
 
   /**

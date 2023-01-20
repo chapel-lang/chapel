@@ -29,6 +29,165 @@
 #define TEST_NAME(ctx__)\
   chpl::UniqueString::getConcat(ctx__, __FUNCTION__, ".chpl")
 
+static std::string debugDeclName = "";
+
+static void testDebuggingBreakpoint() {}
+
+static const AstNode*
+mentionAstFromExpression(const AstNode* ast, bool isReceiver) {
+  if (ast == nullptr) return nullptr;
+
+  if (auto ident = ast->toIdentifier()) {
+    return ident;
+  } else if (auto dot = ast->toDot()) {
+    if (isReceiver) return dot->receiver();
+    return dot;
+  } else if (auto call = ast->toCall()) {
+    return mentionAstFromExpression(call->calledExpression(), isReceiver);
+  } else if (auto newExpr = ast->toNew()) {
+    return mentionAstFromExpression(newExpr->typeExpression(), isReceiver);
+  }
+
+  return nullptr;
+}
+
+static UniqueString
+mentionNameFromExpression(const AstNode* ast, bool isReceiver) {
+  if (auto ident = ast->toIdentifier()) {
+    return ident->name();
+  } else if (auto dot = ast->toDot()) {
+    if (isReceiver) {
+      return mentionNameFromExpression(dot->receiver(), isReceiver);
+    } else {
+      return dot->field();
+    }
+  }
+  return UniqueString();
+}
+
+std::vector<const NamedDecl*> collectAllNamedDecls(const AstNode* ast) {
+  std::vector<const NamedDecl*> ret;
+  for (auto ast : ast->children()) {
+    auto v = collectAllNamedDecls(ast);
+    ret.insert(ret.end(), v.begin(), v.end());
+  }
+  if (auto nd = ast->toNamedDecl()) ret.push_back(nd);
+  return ret;
+}
+
+
+static void
+assertMatchesWarningPattern(const ErrorGuard& guard,
+                            const Module* mod,
+                            std::string declName,
+                            std::string nameForAstContainingMention,
+                            std::string warningLabel,
+                            bool isDefaultMessage,
+                            bool isMentionInUseImport) {
+  if (declName == debugDeclName) testDebuggingBreakpoint();
+  bool isReceiver = false;
+
+  CHPL_ASSERT(declName.size() > 0);
+  if (declName[declName.size() - 1] == '.') {
+    declName.erase(declName.end() - 1);
+    isReceiver = true;
+  }
+
+  const NamedDecl* named = nullptr;
+  const AstNode* astContainingMention = nullptr;
+  auto namedDecls = collectAllNamedDecls(mod);
+
+  // Unpack the declaration.
+  for (auto nd : namedDecls) {
+    if (nd->name() == declName) {
+      assert(named == nullptr);
+      named = nd;
+      break;
+    }
+  }
+
+  // Maybe unpack the mention.
+  for (auto nd : namedDecls) {
+    if (nd->name() == nameForAstContainingMention) {
+      assert(astContainingMention == nullptr);
+      astContainingMention = nd;
+      break;
+    }
+  }
+
+  assert(named);
+  assert(astContainingMention); // TODO: Remove for use/import.
+
+  const AstNode* mention = nullptr;
+
+  // Now hone in on the exact point of mention.
+  if (astContainingMention->isUse() || astContainingMention->isImport()) {
+    assert(false && "Not handled yet!");
+
+  } else if (auto varLike = astContainingMention->toVarLikeDecl()) {
+    auto initExpr = varLike->initExpression();
+    assert(initExpr);
+
+    // Make sure the mention point is correct.
+    mention = mentionAstFromExpression(initExpr, isReceiver);
+
+  } else {
+    assert(false && "Not handled!");
+  }
+
+  assert(mention);
+
+  // Confirm that the mention point matches.
+  if (mention->isIdentifier() || mention->isDot()) {
+    auto nameForMentionAst = mentionNameFromExpression(mention, isReceiver);
+    assert(!nameForMentionAst.isEmpty());
+    assert(nameForMentionAst == named->name());
+  } else {
+    assert(false && "Not handled!");
+  }
+
+  // Get the corresponding error.
+  auto mentionLoc = locateAst(guard.context(), mention);
+  const ErrorBase* err = nullptr;
+
+  for (auto& e : guard.errors()) {
+    auto loc = e->location(guard.context());
+    if (loc == mentionLoc) {
+      err = e.get();
+      break;
+    }
+  }
+  assert(err);
+
+  // The expected default error message.
+  std::string defaultMsg =
+      std::string(named->name().c_str()) + " is " + warningLabel;
+
+  // Check some things about the error.
+  assert(err->message().size() != 0);
+  if (err->message() == defaultMsg) {
+    assert(isDefaultMessage);
+  } else {
+    assert(err->message()[0] == '-');
+    assert(err->message().find(named->name().c_str()));
+    assert(err->message().find(warningLabel));
+  }
+}
+
+static void assertIsDeprecated(const ErrorGuard& guard,
+                               const Module* mod,
+                               std::string declName,
+                               int varNum,
+                               bool isDefaultMessage) {
+  auto nameForAstContainingMention = std::string("v") + std::to_string(varNum);
+  bool isMentionInUseImport = false;
+  assertMatchesWarningPattern(guard, mod, declName,
+                              nameForAstContainingMention,
+                              "deprecated",
+                              isDefaultMessage,
+                              isMentionInUseImport);
+}
+
 static void testDeprecationWarningsForTypes(void) {
   Context context;
   Context* ctx = &context;
@@ -77,19 +236,19 @@ static void testDeprecationWarningsForTypes(void) {
       module mod2 {}
 
       enum e1 {
-        k1,
+        e1k1,
         deprecated
-        k2,
-        deprecated "- The enum element k3 is deprecated"
-        k3,
-        k4
+        e1k2,
+        deprecated "- The enum element e1k3 is deprecated"
+        e1k3,
+        e1k4
       }
 
       deprecated
-      enum e2 { k1 }
+      enum e2 { e2k1 }
 
       deprecated "- The enum e3 is deprecated"
-      enum e3 { k1 }
+      enum e3 { e3k1 }
 
       var v1 = new r1();
       var v2 = new r2();
@@ -114,13 +273,13 @@ static void testDeprecationWarningsForTypes(void) {
         import mod2;
       }
 
-      var v13 = e1.k1;  // OK
-      var v14 = e1.k2;
-      var v15 = e1.k3;
-      var v16 = e1.k4;  // OK
+      var v13 = e1.e1k1;  // OK
+      var v14 = e1.e1k2;
+      var v15 = e1.e1k3;
+      var v16 = e1.e1k4;  // OK
 
-      var v17 = e2.k1;
-      var v18 = e3.k1;
+      var v17 = e2.e2k1;
+      var v18 = e3.e3k1;
     }
     )"""";
 
@@ -133,11 +292,35 @@ static void testDeprecationWarningsForTypes(void) {
   assert(mod);
 
   // Scope-resolve the module.
-  std::ignore = scopeResolveModule(ctx, mod->id());
+  std::ignore = resolveModule(ctx, mod->id());
 
   // TODO: Helpers to make sure the errors are correct.
-  assert(guard.realizeErrors());
+  assert(guard.numErrors() > 0);
 
+  const bool isDefault = true;
+  int vn = 1;
+
+  assertIsDeprecated(guard, mod, "r1", vn++, isDefault);
+  assertIsDeprecated(guard, mod, "r2", vn++, !isDefault);
+  assertIsDeprecated(guard, mod, "c1", vn++, isDefault);
+  assertIsDeprecated(guard, mod, "c2", vn++, !isDefault);
+  assertIsDeprecated(guard, mod, "u1", vn++, isDefault);
+  assertIsDeprecated(guard, mod, "u2", vn++, !isDefault);
+  assertIsDeprecated(guard, mod, "foo1", vn++, isDefault);
+  assertIsDeprecated(guard, mod, "foo2", vn++, !isDefault);
+  assertIsDeprecated(guard, mod, "bar1", vn++, isDefault);
+  assertIsDeprecated(guard, mod, "bar2", vn++, !isDefault);
+  assertIsDeprecated(guard, mod, "baz1", vn++, isDefault);
+  assertIsDeprecated(guard, mod, "baz2", vn++, !isDefault);
+
+  vn++;   // Skip 'k1'
+  assertIsDeprecated(guard, mod, "e1k2", vn++, isDefault);
+  assertIsDeprecated(guard, mod, "e1k3", vn++, !isDefault);
+  vn++;   // Skip 'k4'
+  assertIsDeprecated(guard, mod, "e2.", vn++, isDefault);
+  assertIsDeprecated(guard, mod, "e3.", vn++, !isDefault);
+
+  assert(guard.realizeErrors());
   std::cout << std::endl;
 }
 
@@ -218,7 +401,7 @@ static void testDeprecationWarningsForUseImport(void) {
   assert(mod);
 
   // Scope-resolve the module.
-  std::ignore = scopeResolveModule(ctx, mod->id());
+  std::ignore = resolveModule(ctx, mod->id());
 
   // TODO: Helpers to make sure the errors are correct.
   assert(guard.realizeErrors());
