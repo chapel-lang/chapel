@@ -6,7 +6,7 @@ record R {
   param n : int;
 }
 
-proc foo(type T, x : T(int)) {
+proc foo(type T, x : T(int, ?)) {
   writeln(x.type:string, ": ", x);
 }
 

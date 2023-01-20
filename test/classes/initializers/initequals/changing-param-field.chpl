@@ -52,7 +52,7 @@ proc main() {
   var d:R = start; // specified generic type
   writeln(d.type:string, " ", d);
 
-  var e:R(true) = start; // specified partial type
+  var e:R(true, ?) = start; // specified partial type
   writeln(e.type:string, " ", e);
   
   var f:R(true, true) = start; // specified concrete type
