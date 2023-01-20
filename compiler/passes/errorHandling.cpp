@@ -652,6 +652,9 @@ bool ErrorHandlingVisitor::enterCondStmt(CondStmt* node) {
 void ErrorHandlingVisitor::checkThrowingFuncInInit(CallExpr* node,
                                                    bool insideTryStack) {
   if (state != NULL) {
+    FnSymbol* fn = toFnSymbol(node->parentSymbol);
+    INT_ASSERT(fn);
+
     if (insideTryStack && node->tryTag != TRY_TAG_IN_TRYBANG) {
       TryInfo info = tryStack.top();
       if (info.tryStmt->tryBang()) {
@@ -662,13 +665,14 @@ void ErrorHandlingVisitor::checkThrowingFuncInInit(CallExpr* node,
           }
         }
       } else {
-        if (!state->isPhase2()) {
+        if (!state->isPhase2() && fn->throwsError() == true) {
           USR_FATAL_CONT(node,
                          "cannot call a throwing function outside of a try! before phase 2");
         }
       }
     } else {
-      if (!state->isPhase2() && node->tryTag != TRY_TAG_IN_TRYBANG) {
+      if (!state->isPhase2() && node->tryTag != TRY_TAG_IN_TRYBANG &&
+          fn->throwsError() == true) {
         USR_FATAL_CONT(node,
                        "cannot call a throwing function outside of a try! before phase 2");
       }
