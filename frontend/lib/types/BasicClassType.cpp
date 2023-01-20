@@ -62,6 +62,19 @@ BasicClassType::getObjectType(Context* context) {
                            SubstitutionsMap()).get();
 }
 
+const BasicClassType*
+BasicClassType::getReduceScanOpType(Context* context) {
+  auto symbolPath = UniqueString::get(context, "ChapelReduce.ReduceScanOp");
+  auto name = UniqueString::get(context, "ReduceScanOp");
+  auto id = ID(symbolPath, -1, 0);
+  auto objectType = getObjectType(context);
+
+  return getBasicClassType(context, id, name,
+                           /* parentType */ objectType,
+                           /* instantiatedFrom */ nullptr,
+                           SubstitutionsMap()).get();
+}
+
 bool BasicClassType::isSubtypeOf(const BasicClassType* parentType,
                                  bool& converts,
                                  bool& instantiates) const {
