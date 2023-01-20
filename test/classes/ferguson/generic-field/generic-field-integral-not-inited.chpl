@@ -1,5 +1,5 @@
 class GenericClass {
-  var f:integral;
+  var f:integral(?);
 }
 
 
