@@ -1725,12 +1725,10 @@ void TypeSymbol::codegenAggMetadata() {
 }
 
 #ifdef HAVE_LLVM
-#if 0
 // get structure type for class
 llvm::Type* TypeSymbol::getLLVMStructureType() {
   return llvmImplType;
 }
-#endif
 
 // get pointer to structure type for class
 llvm::Type* TypeSymbol::getLLVMType() {
