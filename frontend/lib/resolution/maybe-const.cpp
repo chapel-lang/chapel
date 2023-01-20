@@ -203,10 +203,16 @@ bool AdjustMaybeRefs::enter(const Identifier* ast, RV& rv) {
     toId = rv.byAst(ast).toId();
   }
   if (!toId.isEmpty() &&
-      refMaybeConstFormals.count(toId) > 0 &&
-      currentAccess() == REF) {
-    // record that the formal must be 'REF'
-    refMaybeConstFormalsUsedRef.insert(toId);
+      refMaybeConstFormals.count(toId) > 0) {
+    auto access = currentAccess();
+    if (access == REF) {
+      // record that the formal must be 'REF'
+      refMaybeConstFormalsUsedRef.insert(toId);
+    } else if (access == REF_MAYBE_CONST) {
+      // issue an error for too much recursion
+      context->error(ast, "Too much recursion to infer ref-maybe-const");
+    }
+    // otherwise, leave it as 'const ref'
   }
   return false;
 }
@@ -255,8 +261,8 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
     auto resolvedFn = inferRefMaybeConstFormals(context, fn, resolver.poiScope);
     if (resolvedFn) {
       fn = resolvedFn;
-    } else {
-      context->error(ast, "Too much recursion to infer ref/const ref formal");
+      // use the version with ref-maybe-const formals, but
+      // issue an error later if we depended upon it
     }
     std::vector<const AstNode*> actualAsts;
     auto ci = CallInfo::create(context, ast, rv.byPostorder(),

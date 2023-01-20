@@ -812,6 +812,24 @@ static void test7c() {
     {},
     /* expectErrors */ true);
 }
+static void test7d() {
+  testMaybeRef("test7d",
+    R""""(
+      module M {
+        config const cond = false;
+        var global: int;
+        proc acceptsRef(ref arg: int) { }
+        proc foo(pragma "intent ref maybe const formal" arg: int) {
+          acceptsRef(arg);
+          if cond then foo(global);
+        }
+      }
+    )"""",
+    {{"M.foo@2", true}},
+    {},
+    /* expectErrors */ false);
+}
+
 
 // TODO: setting a maybe-const formal with =
 // TODO: check param loops
@@ -864,6 +882,7 @@ int main() {
   test7a();
   test7b();
   test7c();
+  test7d();
 
   return 0;
 }
