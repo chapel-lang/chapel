@@ -64,6 +64,46 @@ module DistributedList {
             this.numEntries.write(0);
         }
 
+        proc init(arr: [?d] ?t, param blockSize=DefaultBlockSize)
+            where d.rank == 1
+        {
+            this.eltType = t;
+            this.blockSize = blockSize;
+            this.complete();
+
+            const numBlocks = d.size / blockSize,
+                  remainder = d.size % blockSize,
+                  numBlocksPerLoc = numBlocks / this.locDom.size;
+
+            // acquire memory to store the array
+            for (loc, idx) in zip(this.targetLocales, this.locDom) do on loc do
+                this.blockLists[idx].acquireBlocks(numBlocksPerLoc + 1);
+
+            // store full blocks on the appropriate locales
+            for b in 0..#numBlocks {
+                const locIdx = b % this.locDom.size;
+                on this.targetLocales[locIdx] {
+                    // writeln(arr[(b*blockSize)..#blockSize]);
+                    this.blockLists[locIdx].appendBlock(arr[(b*blockSize)..#blockSize]);
+                }
+            }
+
+            // handle the final partial block if there is one
+            if remainder > 0 {
+                const rLocIdx = numBlocks % this.locDom.size;
+                on this.targetLocales[rLocIdx] {
+                    for r in 0..<remainder {
+                        const idx = blockSize * numBlocks + r,
+                              (_, blockLayerIdx, eltIdx) = indicesFor(idx);
+                        this.blockLists[rLocIdx].set(blockLayerIdx, eltIdx, arr[idx]);
+                    }
+                    this.blockLists[rLocIdx].numFilled += d.size;
+                }
+            }
+
+            this.numEntries.write(d.size);
+        }
+
         proc ref append(in x: eltType): int {
             this.lockAll();
             const nextIdx = this.numEntries.read(),
@@ -362,13 +402,13 @@ module DistributedList {
     // as elements are added, the number of blocks can be expanded to accommodate them
     record blockList {
         type eltType;
-        param blockSize : int;
+        param blockSize : int;  // the number of elements per block. Defaults to 16
 
         var blocks: _ddata(_ddata(eltType)) = nil;
 
-        var capacity: int;
-        var numBlocks: int;
-        var numFilled: int;
+        var capacity: int;      // the total number of elements this blockList can hold
+        var numBlocks: int;     // the total number of blocks
+        var numFilled: int;     // the number of elements currently in this blockList
 
         proc init(type eltType, param blockSize: int) {
             this.eltType = eltType;
@@ -382,6 +422,7 @@ module DistributedList {
             for i in 0..<DefaultNumBlocksPerLocale do this.blocks[i] = makeBlock();
         }
 
+        // allocate and return a new block
         proc makeBlock() {
             var callPostAlloc = false;
             var ret = _ddata_allocate_noinit(eltType, this.blockSize, callPostAlloc);
@@ -389,21 +430,28 @@ module DistributedList {
             return ret;
         }
 
+        // replace the current blocks with n new blocks
+        //  n defaults to twice the current number of blocks
         proc acquireBlocks(n: int = this.numBlocks * 2) {
             // allocate new blocks
             assert(n >= this.numBlocks);
             var blocks_new = _ddata_allocate(_ddata(this.eltType), n);
 
             // transfer the old data into the new blocks
-            for b in 0..<this.numBlocks do
-                blocks_new[b] = this.blocks[b];
+            //  and free the old blocks
+            for b in 0..#this.numBlocks do
+                if this.blocks[b] == nil
+                    then blocks_new[b] = makeBlock();
+                    else blocks_new[b] = this.blocks[b];
 
             // allocate the remaining space
-            for b in this.numBlocks..<n do
+            for b in this.numBlocks..<n {
+                assert(blocks_new[b] == nil);
                 blocks_new[b] = makeBlock();
+            }
 
             // free old blocks
-            _ddata_free(this.blocks, this.capacity);
+            _ddata_free(this.blocks, this.numBlocks);
 
             // set meta parameters
             this.blocks = blocks_new;
@@ -413,7 +461,7 @@ module DistributedList {
 
         proc set(block_idx: int, elt_idx: int, in x: eltType) {
             assert(block_idx < this.numBlocks);
-            this.blocks[block_idx][elt_idx] = x;
+            _move(x, this.blocks[block_idx][elt_idx]);
         }
 
         proc take(block_idx: int, elt_idx: int) {
@@ -426,9 +474,33 @@ module DistributedList {
             return ret;
         }
 
+        // assumes that the current block is full
+        // and that the next block has already been allocated
+        proc appendBlock(arr: [?d] eltType) {
+            assert(d.size == this.blockSize);
+            const nextBlockIdx = this.numFilled / this.blockSize;
+            assert(nextBlockIdx < this.numBlocks);
+            assert(this.blocks[nextBlockIdx] != nil);
+            writeln(nextBlockIdx, "\t", arr);
+            for (x, i) in zip(arr, d) {
+                this.set(nextBlockIdx, i, x);
+                // _move(x, this.blocks[nextBlockIdx][i]);
+                write(this.blocks[nextBlockIdx][i], " ");
+            }
+            writeln();
+            this.numFilled += d.size;
+        }
+
         proc clear() {
-            // free blocks
-            __ddata_free(this.blocks, this.capacity);
+            // free each block
+            for b in 0..#this.numBlocks {
+                if this.blocks[b] == nil
+                    then continue;
+                    else _ddata_free(this.blocks[b], this.blockSize);
+            }
+
+            // free blocks array
+            _ddata_free(this.blocks, this.numBlocks);
 
             // reallocate the default number of blocks
             this.blocks = _ddata_allocate(_ddata(this.eltType), DefaultNumBlocksPerLocale);
@@ -453,6 +525,12 @@ module DistributedList {
                 yield (this.blocks[nFilled+1][j], nFilled+1, j);
             }
         }
+    }
+
+    pragma "no doc"
+    pragma "unsafe"
+    inline proc _move(ref src: ?t, ref dst: t) lifetime src == dst {
+      __primitive("=", dst, src);
     }
 
 }
