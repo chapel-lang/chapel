@@ -207,7 +207,7 @@ UniqueString UniqueString::deserialize(Deserializer& des) {
     auto buf = (char*)malloc(len+1);
     des.is().read(buf, len);
     buf[len] = '\0';
-    auto unique = des.context()->uniqueCString(buf);
+    auto unique = des.context()->uniqueCString(buf, len);
     free(buf);
     return UniqueString::get(des.context(), unique, len);
   } else {
