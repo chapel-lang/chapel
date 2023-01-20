@@ -1885,7 +1885,9 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
   {
     if (field->defPoint->exprType) {
       Type* fieldType = field->defPoint->exprType->typeInfo();
-      if (fieldType->symbol->hasFlag(FLAG_GENERIC) && !hasQuestionArg &&
+      if (fieldType->symbol->hasFlag(FLAG_GENERIC) &&
+          !hasQuestionArg &&
+          !field->hasFlag(FLAG_MARKED_GENERIC) &&
           symbol->defPoint->getModule()->modTag == MOD_USER) {
         USR_WARN(field, "field with generic declared type");
       }
@@ -2166,6 +2168,20 @@ static const char* buildTypeSignature(AggregateType* at) {
 void AggregateType::processGenericFields() {
   if (foundGenericFields) {
     return;
+  }
+
+  // convert domain(?) into domain
+  for_fields(field, this) {
+    if (CallExpr* call = toCallExpr(field->defPoint->exprType)) {
+      if (call->numActuals() == 1) {
+        if (SymExpr* se = toSymExpr(call->get(1))) {
+          if (se->symbol() == gUninstantiated) {
+            call->replace(call->baseExpr->remove());
+            field->addFlag(FLAG_MARKED_GENERIC);
+          }
+        }
+      }
+    }
   }
 
   std::set<AggregateType*> visited;
