@@ -45,6 +45,14 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+// Mimicks helper in Resolver but without corresponding target constraints.
+static void maybeEmitWarningsForId(Context* context, ID idMention,
+                                   ID idTarget) {
+  if (idMention.isEmpty() || idTarget.isEmpty()) return;
+  parsing::reportDeprecationWarningForId(context, idMention, idTarget);
+  parsing::reportUnstableWarningForId(context, idMention, idTarget);
+}
+
 static void gather(DeclMap& declared, UniqueString name, const AstNode* d,
                    Decl::Visibility visibility) {
   auto search = declared.find(name);
@@ -755,6 +763,7 @@ static void errorIfNameNotInScope(Context* context,
                                   const Scope* scope,
                                   const ResolvedVisibilityScope* resolving,
                                   UniqueString name,
+                                  const AstNode* exprForError,
                                   const VisibilityClause* clauseForError,
                                   VisibilityStmtKind useOrImport,
                                   bool isRename) {
@@ -768,8 +777,21 @@ static void errorIfNameNotInScope(Context* context,
                              checkedScopes, result);
 
   if (got == false || result.size() == 0) {
-    CHPL_REPORT(context, UseImportUnknownSym, clauseForError, scope, useOrImport,
-                isRename, name.c_str());
+    CHPL_REPORT(context, UseImportUnknownSym, name.c_str(),
+                exprForError,
+                clauseForError,
+                scope,
+                useOrImport,
+                isRename);
+    return;
+  }
+
+  // If there is a single ID, then go ahead and try to emit warnings. If
+  // not, it's an overloaded routine, or it will get an ambiguity error.
+  if (result.size() == 1 && result[0].numIds() == 1) {
+    ID idMention = exprForError->id();
+    ID idTarget = result[0].firstId();
+    maybeEmitWarningsForId(context, idMention, idTarget);
   }
 }
 
@@ -782,11 +804,13 @@ errorIfAnyLimitationNotInScope(Context* context,
   for (const AstNode* e : clause->limitations()) {
     if (auto ident = e->toIdentifier()) {
       errorIfNameNotInScope(context, scope, resolving, ident->name(),
-                            clause, useOrImport, /* isRename */ false);
+                            ident, clause, useOrImport,
+                            /* isRename */ true);
     } else if (auto as = e->toAs()) {
       if (auto ident = as->symbol()->toIdentifier()) {
         errorIfNameNotInScope(context, scope, resolving, ident->name(),
-                              clause, useOrImport, /* isRename */ true);
+                              ident, clause, useOrImport,
+                              /* isRename */ true);
       }
     }
   }
@@ -896,9 +920,12 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
 
   ID foundId = vec[0].firstId();
   AstTag tag = parsing::idToTag(context, foundId);
+
   if (isModule(tag) || isInclude(tag) ||
       (useOrImport == VIS_USE && isEnum(tag))) {
-    return scopeForModule(context, foundId);
+    auto ret = scopeForModule(context, foundId);
+    maybeEmitWarningsForId(context, idForErrs, ret->id());
+    return ret;
   }
 
   CHPL_REPORT(context, UseImportNotModule, idForErrs, useOrImport,
@@ -1012,6 +1039,9 @@ doResolveUseStmt(Context* context, const Use* use,
     const Scope* foundScope = findUseImportTarget(context, scope, r,
                                                   expr, VIS_USE, oldName);
     if (foundScope != nullptr) {
+
+      maybeEmitWarningsForId(context, expr->id(), foundScope->id());
+
       // First, add VisibilitySymbols entry for the symbol itself.
       // Per the spec, we only have visibility of the symbol itself if the
       // use is renamed (with 'as') or non-public.
@@ -1110,6 +1140,8 @@ doResolveImportStmt(Context* context, const Import* imp,
     if (foundScope != nullptr) {
       VisibilitySymbols::Kind kind;
 
+      maybeEmitWarningsForId(context, expr->id(), foundScope->id());
+
       if (!dotName.isEmpty()) {
         // e.g. 'import M.f' - dotName is f and foundScope is for M
         // Note that 'f' could refer to multiple symbols in the case
@@ -1122,7 +1154,7 @@ doResolveImportStmt(Context* context, const Import* imp,
           case VisibilityClause::NONE:
             kind = VisibilitySymbols::ONLY_CONTENTS;
             errorIfNameNotInScope(context, foundScope, r,
-                                  dotName, clause, VIS_IMPORT,
+                                  dotName, expr, clause, VIS_IMPORT,
                                   /* isRename */ !newName.isEmpty());
             if (newName.isEmpty()) {
               // e.g. 'import M.f'
@@ -1233,10 +1265,12 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
     for (auto req : requireNodes) {
       for (const AstNode* child : req->children()) {
         if (const StringLiteral* str = child->toStringLiteral()) {
-          const auto& path = str->value().str();
-          const std::string suffix = ".chpl";
-          if (path.compare(path.size() - suffix.size(), suffix.size(), suffix) == 0) {
-            parsing::parseFileToBuilderResult(context, str->value(), UniqueString());
+          const auto path = str->value();
+          if (path.endsWith(".chpl")) {
+            parsing::parseFileToBuilderResult(context, path, UniqueString());
+          } else if (path.endsWith(".h")) {
+          } else {
+            // TODO: Unacceptable require...
           }
         }
       }
@@ -1250,7 +1284,7 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
   return QUERY_END(result);
 }
 
-static const ResolvedVisibilityScope*
+const ResolvedVisibilityScope*
 resolveVisibilityStmts(Context* context, const Scope* scope) {
   if (!scope->containsUseImport()) {
     // stop early if this scope has no use/import statements
@@ -1377,6 +1411,10 @@ std::vector<ID> findUsedImportedModules(Context* context,
   return ids;
 }
 
+void resolveUsesAndImportsInScope(Context* context, const Scope* scope) {
+  std::ignore = resolveVisibilityStmts(context, scope);
+  return;
+}
 
 } // end namespace resolution
 } // end namespace chpl

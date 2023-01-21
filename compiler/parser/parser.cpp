@@ -44,6 +44,8 @@
 
 #include <cstdlib>
 
+chpl::ID dynoIdForLastContainingDecl = chpl::ID();
+
 BlockStmt*           yyblock                       = NULL;
 const char*          yyfilename                    = NULL;
 int                  yystartlineno                 = 0;
@@ -172,16 +174,12 @@ static Vec<VisibilityStmt*> sModReqdByInt;
 
 void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
   sIntModPath.add(astr(newpath));
-  if (fDynoCompilerLibrary) {
-    gDynoPrependInternalModulePaths.push_back(newpath);
-  }
+  gDynoPrependInternalModulePaths.push_back(newpath);
 }
 
 void addStandardModulePath(const ArgumentDescription* desc, const char* newpath) {
   sStdModPath.add(astr(newpath));
-  if (fDynoCompilerLibrary) {
-    gDynoPrependInternalModulePaths.push_back(newpath);
-  }
+  gDynoPrependInternalModulePaths.push_back(newpath);
 }
 
 void setupModulePaths() {
@@ -771,13 +769,10 @@ static const char* labelForContainingDeclFromId(chpl::ID id) {
       preface = "method";
     }
   } else if (auto mod = ast->toModule()) {
-    if (mod->kind() == chpl::uast::Module::IMPLICIT) return nullptr;
-
     name = astr(mod->name());
     preface = "module";
   }
 
-  // TODO: Why is this thing always 'astr'?
   const char* ret = (doUseName && name)
       ? astr(preface, " '", name, "'")
       : astr(preface);
@@ -785,16 +780,42 @@ static const char* labelForContainingDeclFromId(chpl::ID id) {
   return ret;
 }
 
+static bool shouldPrintHeaderForDecl(chpl::ID declId) {
+  if (declId.isEmpty() || declId == dynoIdForLastContainingDecl) {
+    return false;
+  }
+
+  // Always print new headers in developer mode.
+  if (developer) return true;
+
+  bool ret = true;
+  auto ast = chpl::parsing::idToAst(gContext, declId);
+  INT_ASSERT(ast);
+
+  // TODO: Could we just simplify this logic down to 'if it's an implicit
+  // module, don't print the module? Or just always print the header?
+  // Would save a bit of pain.
+  if (auto mod = ast->toModule()) {
+    UniqueString path;
+    UniqueString parentSymbolPath;
+    if (gContext->filePathForId(mod->id(), path, parentSymbolPath)) {
+      auto name = chpl::uast::Builder::filenameToModulename(path.c_str());
+      if (name == mod->name().c_str()) ret = false;
+    }
+  }
+
+  return ret;
+}
+
 // Print out 'in function/module/initializer' etc...
 static void maybePrintErrorHeader(chpl::ID id) {
-  static chpl::ID idForLastContainingDecl = chpl::ID();
 
   // No ID associated with this error, so no UAST information.
   if (id.isEmpty()) return;
 
   auto declId = findIdForContainingDecl(id);
 
-  if (!declId.isEmpty() && declId != idForLastContainingDecl) {
+  if (shouldPrintHeaderForDecl(declId)) {
     auto declLabelStr = labelForContainingDeclFromId(declId);
 
     // No label was created, so we have nothing to print.
@@ -807,7 +828,7 @@ static void maybePrintErrorHeader(chpl::ID id) {
     fprintf(stderr, "%s:%d: In %s:\n", path.c_str(), line, declLabelStr);
 
     // Set so that we don't print out the same header over and over.
-    idForLastContainingDecl = declId;
+    dynoIdForLastContainingDecl = declId;
   }
 }
 

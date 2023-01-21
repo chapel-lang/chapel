@@ -590,6 +590,42 @@ void ErrorValueUsedAsType::write(ErrorWriterBase& wr) const {
   // wr.message("Did you mean to use '.type'?");
 }
 
+void ErrorDeprecation::write(ErrorWriterBase& wr) const {
+  auto msg = std::get<std::string>(info);
+  auto mention = std::get<const uast::AstNode*>(info);
+  auto target = std::get<const uast::NamedDecl*>(info);
+  CHPL_ASSERT(mention && target);
+
+  wr.heading(kind_, type_, mention, msg);
+  wr.code(mention, {mention});
+
+  /* TODO: Need to know whether the symbol is user or not:
+  wr.note(target, "declared here:");
+  wr.code(target);
+  */
+
+  std::ignore = target;
+  return;
+}
+
+void ErrorUnstable::write(ErrorWriterBase& wr) const {
+  auto msg = std::get<std::string>(info);
+  auto mention = std::get<const uast::AstNode*>(info);
+  auto target = std::get<const uast::NamedDecl*>(info);
+  CHPL_ASSERT(mention && target);
+
+  wr.heading(kind_, type_, mention, msg);
+  wr.code(mention, {mention});
+
+  /* TODO: Need to know whether the symbol is user or not:
+  wr.note(target, "declared here:");
+  wr.code(target);
+  */
+
+  std::ignore = target;
+  return;
+}
+
 /* end resolution errors */
 
 } // end namespace 'chpl'

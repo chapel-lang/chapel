@@ -79,13 +79,22 @@ ERROR_CLASS(UseImportNotModule, const ID, const resolution::VisibilityStmtKind,
 ERROR_CLASS(UseImportUnknownMod, const ID, const resolution::VisibilityStmtKind,
             std::string)
 ERROR_CLASS(UseImportUnknownSym,
+            std::string,
+            const uast::AstNode*,
             const uast::VisibilityClause*,
             const resolution::Scope*,
             const resolution::VisibilityStmtKind,
-            bool,
-            std::string)
+            bool)
 ERROR_CLASS(UseOfLaterVariable, const uast::AstNode*, ID)
 ERROR_CLASS(ValueUsedAsType, const uast::AstNode*, types::QualifiedType)
 ERROR_CLASS(IfVarNonClassType,
     const uast::Conditional*,
     types::QualifiedType)
+WARNING_CLASS(Deprecation,
+    std::string,
+    const uast::AstNode*,
+    const uast::NamedDecl*)
+WARNING_CLASS(Unstable,
+    std::string,
+    const uast::AstNode*,
+    const uast::NamedDecl*)
