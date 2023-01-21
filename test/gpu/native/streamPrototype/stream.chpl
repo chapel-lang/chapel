@@ -11,6 +11,8 @@ use GPUDiagnostics;
 //
 use HPCCProblemSize;
 
+config param useForeach = true;
+
 //
 // The number of vectors and element type of those vectors
 //
@@ -87,8 +89,12 @@ proc main() {
       // Compute the multiply-add on b and c, storing the result to a.
       //
       // This forall loop will be offloaded onto the GPU.
-      forall (a, b, c) in zip(A, B, C) do
-        a = b + alpha * c;
+      if useForeach then
+        foreach (a, b, c) in zip(A, B, C) do
+          a = b + alpha * c;
+      else
+        forall (a, b, c) in zip(A, B, C) do
+          a = b + alpha * c;
 
       execTime(trial) = getCurrentTime() - startTime;  // store the elapsed time
     }

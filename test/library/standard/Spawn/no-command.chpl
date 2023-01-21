@@ -1,6 +1,6 @@
 use Subprocess;
 
-var sub = spawn(["./junk"]);
+var sub = spawn(["./junk", ]);
 
 // Different systems report this kind of error
 // at different times. On Mac OS X, an error

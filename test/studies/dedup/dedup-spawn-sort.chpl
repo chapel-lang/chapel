@@ -45,7 +45,7 @@ proc main(args:[] string)
   for w in distributedWriters do
     w.close();
  
-  var sorter = spawn(["sort"], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);
+  var sorter = spawn(["sort", ], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);
   cobegin {
     {
       // Output all of the to the sort process
@@ -53,7 +53,7 @@ proc main(args:[] string)
         on f do {
           var data:string;
           var reader = f.reader();
-          reader.readstring(data);
+          reader.readAll(data);
           sorter.stdin.writeln(data);
         }
       }
@@ -84,6 +84,3 @@ proc main(args:[] string)
 
   sorter.wait();
 }
-
-
-

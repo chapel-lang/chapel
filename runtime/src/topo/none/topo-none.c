@@ -34,6 +34,10 @@
 void chpl_topo_init(void) { }
 
 
+void chpl_topo_post_comm_init(void) { }
+
+void chpl_topo_post_args_init(void) { }
+
 void chpl_topo_exit(void) { }
 
 
@@ -96,4 +100,8 @@ void chpl_topo_touchMemFromSubloc(void* p, size_t size, chpl_bool onlyInside,
 
 c_sublocid_t chpl_topo_getMemLocality(void* p) {
   return c_sublocid_any;
+}
+
+chpl_bool chpl_topo_isOversubscribed(void) {
+  return false;
 }

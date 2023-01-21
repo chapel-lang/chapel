@@ -15,12 +15,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-target_sources(libdyno-obj
+target_sources(ChplFrontend-obj
                PRIVATE
 
                Resolver.cpp
                call-init-deinit.cpp
                can-pass.cpp
+               signature-checks.cpp
                copy-elision.cpp
                default-functions.cpp
                disambiguation.cpp
@@ -29,6 +30,7 @@ target_sources(libdyno-obj
                prims.cpp
                resolution-queries.cpp
                resolution-types.cpp
+               return-type-inference.cpp
                scope-queries.cpp
                scope-types.cpp
                split-init.cpp

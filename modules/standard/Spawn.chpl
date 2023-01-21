@@ -26,7 +26,7 @@ Support launching and interacting with other programs (deprecated).
     This module has been deprecated - please use :mod:`Subprocess` instead.
  */
 
-deprecated "The Spawn module is deprecated. Please use Subprocess instead."
+deprecated "The Spawn module is deprecated. Please use Subprocess instead"
 module Spawn {
   public use Subprocess;
 }

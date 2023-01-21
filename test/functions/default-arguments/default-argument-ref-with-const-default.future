@@ -1,0 +1,2 @@
+bug: const global can be modified if passed as default to a ref arg
+#21215

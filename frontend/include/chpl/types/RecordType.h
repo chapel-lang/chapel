@@ -67,6 +67,14 @@ class RecordType final : public CompositeType {
   /** Get the bytes type */
   static const RecordType* getBytesType(Context* context);
 
+  /** When compiling without a standard library (for testing purposes),
+      the compiler code needs to work around the fact that there
+      is no definition available for the record types needed
+      by the language but provided in the library (such as 'string').
+      This function allows code to easily detect that case.
+   */
+  static bool isMissingBundledRecordType(Context* context, ID id);
+
   ~RecordType() = default;
 
   /** If this type represents an instantiated type,

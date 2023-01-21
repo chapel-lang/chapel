@@ -1,0 +1,17 @@
+unboundedBoolEnum3.chpl:12: warning: The behavior of zippered serial loops driven by unbounded ranges has been fixed in this release to act as though they were conceptually infinite; to maintain the previous behavior, swap a bounded iterand into the first expression of the 'zip(...)'.
+unboundedBoolEnum3.chpl:28: warning: The behavior of zippered serial loops driven by unbounded ranges has been fixed in this release to act as though they were conceptually infinite; to maintain the previous behavior, swap a bounded iterand into the first expression of the 'zip(...)'.
+color 2 = red
+color 3 = orange
+color 4 = yellow
+---
+color 1 = red
+color 2 = orange
+color 3 = yellow
+color 4 = green
+color 5 = blue
+color 6 = indigo
+color 7 = violet
+---
+red orange yellow green blue indigo violet
+---
+red orange yellow green blue indigo violet

@@ -45,7 +45,6 @@ struct ParserContext {
   parsing::ParserStats* parseStats;
 
   ParserExprList* topLevelStatements;
-  std::vector<const ErrorBase*> errors;
 
   // TODO: this should just hash on the pointer; the void* is a hack to do that
   std::unordered_map<void*, YYLTYPE> commentLocations;
@@ -169,7 +168,9 @@ struct ParserContext {
     };
   }
 
-  void saveError(const ErrorBase* error) { errors.push_back(error); }
+  ErroneousExpression* report(YYLTYPE loc, owned<ErrorBase> error);
+  ErroneousExpression* error(YYLTYPE loc, const char* fmt, ...);
+  ErroneousExpression* syntax(YYLTYPE loc, const char* fmt, ...);
 
   void noteComment(YYLTYPE loc, const char* data, long size);
   std::vector<ParserComment>* gatherComments(YYLTYPE location);

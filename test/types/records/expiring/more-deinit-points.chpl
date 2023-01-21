@@ -175,14 +175,14 @@ testRet7();
 
 proc testLit1() {
   writeln("testLit1");
-  var x = acceptTwoAndReturnNew([new R()], [makeR(), makeR()]);
+  var x = acceptTwoAndReturnNew([new R(), ], [makeR(), makeR()]);
   writeln("end");
 }
 testLit1();
 
 proc testLit2() {
   writeln("testLit2");
-  acceptTwoAndReturnNew([new R()], [makeR(), makeR()]);
+  acceptTwoAndReturnNew([new R(), ], [makeR(), makeR()]);
   writeln("end");
 }
 testLit2();

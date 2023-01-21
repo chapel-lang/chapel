@@ -1,0 +1,5 @@
+feature request: improve slicing with unaligned unbounded ranges
+
+Vass and I have talked a bit about what slicing with unaligned unbounded
+ranges might look like.  This test captures some of my intuition about
+some easy cases.

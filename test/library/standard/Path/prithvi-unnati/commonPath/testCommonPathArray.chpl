@@ -9,7 +9,7 @@ var EmptyArrayInput: [1..0] string;
 writeln(commonPath(EmptyArrayInput));
 
 //only one path has been sent as argument
-writeln(commonPath(["/home/user/Documents/foo/bar"]));
+writeln(commonPath(["/home/user/Documents/foo/bar", ]));
 
 //writing test for absolute path when one of the paths is substring of others
 writeln(commonPath(["/home/user/Documents/foo/bar","/home/user/Documents/foo","/home/user/Documents/foo/bar/baz"]));
