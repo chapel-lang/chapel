@@ -122,6 +122,7 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
             child->isTypeDecl() ||
             child->isFunction() ||
             child->isModule()) {
+            // Resolve use/import to find deprecation/unstable warnings.
             // child->isUse() ||
             // child->isImport()) {
           // ignore this statement since it is not relevant to
@@ -166,6 +167,7 @@ scopeResolveModule(Context* context, ID id) {
             child->isFunction() ||
             child->isModule() ||
             child->isInterface()) {
+            // Resolve use/import to find deprecation/unstable warnings.
             // child->isUse() ||
             // child->isImport()) {
           // ignore this statement since it is not relevant to
