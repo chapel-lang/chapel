@@ -45,6 +45,14 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+// Mimicks helper in Resolver but without corresponding target constraints.
+static void maybeEmitWarningsForId(Context* context, ID idMention,
+                                   ID idTarget) {
+  if (idMention.isEmpty() || idTarget.isEmpty()) return;
+  parsing::reportDeprecationWarningForId(context, idMention, idTarget);
+  parsing::reportUnstableWarningForId(context, idMention, idTarget);
+}
+
 static void gather(DeclMap& declared, UniqueString name, const AstNode* d,
                    Decl::Visibility visibility) {
   auto search = declared.find(name);
@@ -781,13 +789,9 @@ static void errorIfNameNotInScope(Context* context,
   // If there is a single ID, then go ahead and try to emit warnings. If
   // not, it's an overloaded routine, or it will get an ambiguity error.
   if (result.size() == 1 && result[0].numIds() == 1) {
+    ID idMention = exprForError->id();
     ID idTarget = result[0].firstId();
-    if (!idTarget.isEmpty()) {
-      ID idMention = exprForError->id();
-      CHPL_ASSERT(!idMention.isEmpty());
-      parsing::reportDeprecationWarningForId(context, idMention, idTarget);
-      parsing::reportUnstableWarningForId(context, idMention, idTarget);
-    }
+    maybeEmitWarningsForId(context, idMention, idTarget);
   }
 }
 
@@ -916,9 +920,12 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
 
   ID foundId = vec[0].firstId();
   AstTag tag = parsing::idToTag(context, foundId);
+
   if (isModule(tag) || isInclude(tag) ||
       (useOrImport == VIS_USE && isEnum(tag))) {
-    return scopeForModule(context, foundId);
+    auto ret = scopeForModule(context, foundId);
+    maybeEmitWarningsForId(context, idForErrs, ret->id());
+    return ret;
   }
 
   CHPL_REPORT(context, UseImportNotModule, idForErrs, useOrImport,
@@ -1033,12 +1040,7 @@ doResolveUseStmt(Context* context, const Use* use,
                                                   expr, VIS_USE, oldName);
     if (foundScope != nullptr) {
 
-      // Maybe emit a deprecating warning for the target only.
-      ID idTarget = foundScope->id();
-      if (!idTarget.isEmpty()) {
-        parsing::reportDeprecationWarningForId(context, expr->id(), idTarget);
-        parsing::reportUnstableWarningForId(context, expr->id(), idTarget);
-      }
+      maybeEmitWarningsForId(context, expr->id(), foundScope->id());
 
       // First, add VisibilitySymbols entry for the symbol itself.
       // Per the spec, we only have visibility of the symbol itself if the
@@ -1138,12 +1140,7 @@ doResolveImportStmt(Context* context, const Import* imp,
     if (foundScope != nullptr) {
       VisibilitySymbols::Kind kind;
 
-      // Maybe emit a deprecating warning for the target only.
-      ID idTarget = foundScope->id();
-      if (!idTarget.isEmpty()) {
-        parsing::reportDeprecationWarningForId(context, expr->id(), idTarget);
-        parsing::reportUnstableWarningForId(context, expr->id(), idTarget);
-      }
+      maybeEmitWarningsForId(context, expr->id(), foundScope->id());
 
       if (!dotName.isEmpty()) {
         // e.g. 'import M.f' - dotName is f and foundScope is for M
