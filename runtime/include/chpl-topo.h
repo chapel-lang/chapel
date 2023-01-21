@@ -37,6 +37,8 @@ extern "C" {
 // initialize the topology support
 //
 void chpl_topo_init(void);
+void chpl_topo_post_comm_init(void);
+void chpl_topo_post_args_init(void);
 void chpl_topo_exit(void);
 
 //
@@ -144,6 +146,11 @@ void chpl_topo_touchMemFromSubloc(void*, size_t, chpl_bool, c_sublocid_t);
 //   address
 //
 c_sublocid_t chpl_topo_getMemLocality(void*);
+
+//
+// Returns True if the node is oversubscribed (locales are sharing
+// cores).
+chpl_bool chpl_topo_isOversubscribed(void);
 
 
 #ifdef __cplusplus

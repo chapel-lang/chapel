@@ -55,6 +55,10 @@ namespace. The entries may not be exhaustive.
    :members:
    :undoc-members:
 
+.. doxygenclass:: chpl::IdOrLocation
+   :members:
+   :undoc-members:
+
 .. doxygenclass:: chpl::UniqueString
    :members:
    :undoc-members:

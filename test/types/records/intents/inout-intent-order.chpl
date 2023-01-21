@@ -28,6 +28,14 @@ proc test_inout_inout2() {
 }
 test_inout_inout2();
 
+proc test_inout_inout3() {
+  writeln();
+  writeln("test_inout_inout3");
+  var a = new R(1);
+  var b = new R(2);
+  inout_inout(b=b, a=a);
+}
+test_inout_inout3();
 
 proc in_inout(in a: R, inout b: R) {
   writeln("a is ", a);

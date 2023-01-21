@@ -424,7 +424,7 @@ class C7 {
 
 proc testC7() {
   writeln("testC7");
-  var A : [1..1] borrowed C = [new C(1)];
+  var A : [1..1] borrowed C = [new C(1), ];
   writeln(A);
 }
 testC7();

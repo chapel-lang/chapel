@@ -1,0 +1,3 @@
+./MapTest.chpl:6: In function 'testMap':
+./MapTest.chpl:39: error: Cannot index into a map with non-nilable class values. Use an appropriate accessor method instead.
+  testNonNilableUnmanagedIndexingError.chpl:11: called as testMap(type t = unmanaged T, param testIndexing = true)

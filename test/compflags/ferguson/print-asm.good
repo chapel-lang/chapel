@@ -1,4 +1,4 @@
-# Dissasembling symbol bar_chpl
+# Disassembling symbol bar_chpl
 ADDR <bar_chpl>:
-# Dissasembling symbol foo_chpl
+# Disassembling symbol foo_chpl
 ADDR <foo_chpl>:

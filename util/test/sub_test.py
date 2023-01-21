@@ -1535,9 +1535,12 @@ for testname in testsrc:
     clist = list()
     curFileTestStart = time.time()
 
+    redirectin_original_value = redirectin
+
     # For all compopts + execopts combos..
     compoptsnum = 0
     for compopts in compoptslist:
+        redirectin = redirectin_original_value
         sys.stdout.flush()
         del clist
         # use the remaining portion as a .good file for executing tests
@@ -1954,7 +1957,6 @@ for testname in testsrc:
             if len(clist[0].split('#')) > 1:
                 explicitcompgoodfile = clist[0].split('#')[1].strip()
         redirectin_set_in_loop = False
-        redirectin_original_value = redirectin
         for texecopts in execoptslist:
             sys.stdout.flush()
 

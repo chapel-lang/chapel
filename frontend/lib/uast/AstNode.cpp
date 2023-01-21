@@ -20,10 +20,12 @@
 #include "chpl/uast/AstNode.h"
 
 
-#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Comment.h"
+#include "chpl/uast/Conditional.h"
 #include "chpl/uast/Identifier.h"
+#include "chpl/uast/IndexableLoop.h"
 #include "chpl/uast/NamedDecl.h"
+#include "chpl/uast/Try.h"
 #include "chpl/uast/chpl-syntax-printer.h"
 
 #include <iomanip>
@@ -193,6 +195,138 @@ bool AstNode::mayContainStatements(AstTag tag) {
   return true;
 }
 
+bool AstNode::isInherentlyStatement() const {
+  switch (tag_) {
+    // cannot contain Chapel statements
+    case asttags::AnonFormal:
+    case asttags::As:
+    case asttags::Array:
+    case asttags::Attributes:
+    case asttags::Break:
+    case asttags::Comment:
+    case asttags::Continue:
+    case asttags::Delete:
+    case asttags::Domain:
+    case asttags::Dot:
+    case asttags::EmptyStmt:
+    case asttags::ErroneousExpression:
+    case asttags::ExternBlock:
+    case asttags::FunctionSignature:
+    case asttags::Identifier:
+    case asttags::Import:
+    case asttags::Include:
+    case asttags::Let:
+    case asttags::New:
+    case asttags::Range:
+    case asttags::Require:
+    case asttags::Return:
+    case asttags::Throw:
+    case asttags::TypeQuery:
+    case asttags::Use:
+    case asttags::VisibilityClause:
+    case asttags::WithClause:
+    case asttags::Yield:
+    case asttags::START_Literal:
+    case asttags::BoolLiteral:
+    case asttags::ImagLiteral:
+    case asttags::IntLiteral:
+    case asttags::RealLiteral:
+    case asttags::UintLiteral:
+    case asttags::START_StringLikeLiteral:
+    case asttags::BytesLiteral:
+    case asttags::CStringLiteral:
+    case asttags::StringLiteral:
+    case asttags::END_StringLikeLiteral:
+    case asttags::END_Literal:
+    case asttags::START_Call:
+    case asttags::FnCall:
+    case asttags::OpCall:
+    case asttags::PrimCall:
+    case asttags::Reduce:
+    case asttags::ReduceIntent:
+    case asttags::Scan:
+    case asttags::Tuple:
+    case asttags::Zip:
+    case asttags::END_Call:
+    case asttags::MultiDecl:
+    case asttags::TupleDecl:
+    case asttags::ForwardingDecl:
+    case asttags::EnumElement:
+    case asttags::START_VarLikeDecl:
+    case asttags::Formal:
+    case asttags::TaskVar:
+    case asttags::VarArgFormal:
+    case asttags::Variable:
+    case asttags::END_VarLikeDecl:
+    case asttags::Enum:
+      return false;
+
+    // might be a statement and might be an expr
+    case asttags::Conditional:
+      return !toConditional()->isExpressionLevel();
+
+    case asttags::Try:
+      return !toTry()->isExpressionLevel();
+
+    case asttags::START_IndexableLoop:
+    case asttags::BracketLoop:
+    case asttags::Coforall:
+    case asttags::For:
+    case asttags::Forall:
+    case asttags::Foreach:
+    case asttags::END_IndexableLoop:
+      return toIndexableLoop()->isExpressionLevel();
+
+    // is a statement
+    case asttags::Catch:
+    case asttags::Cobegin:
+    case asttags::Implements:
+    case asttags::Label: // contains a loop
+    case asttags::Select:
+    case asttags::Sync:
+    case asttags::START_SimpleBlockLike:
+    case asttags::Begin:
+    case asttags::Block:
+    case asttags::Defer:
+    case asttags::Local:
+    case asttags::Manage:
+    case asttags::On:
+    case asttags::Serial:
+    case asttags::When:
+    case asttags::END_SimpleBlockLike:
+    case asttags::START_Loop:
+    case asttags::DoWhile:
+    case asttags::While:
+    case asttags::END_Loop:
+    case asttags::START_Decl:
+    case asttags::START_NamedDecl:
+    case asttags::START_TypeDecl:
+    case asttags::Function:
+    case asttags::Interface:
+    case asttags::Module:
+    case asttags::START_AggregateDecl:
+    case asttags::Class:
+    case asttags::Record:
+    case asttags::Union:
+    case asttags::END_AggregateDecl:
+    case asttags::END_Decl:
+    case asttags::END_NamedDecl:
+    case asttags::END_TypeDecl:
+      return true;
+
+    // implementation details
+    case asttags::NUM_AST_TAGS:
+    case asttags::AST_TAG_UNKNOWN:
+      return true;
+
+    // no default to get compiler warning if any are added
+  }
+
+  CHPL_ASSERT(false && "should not be reachable");
+  return true;
+}
+
+
 bool AstNode::shallowMatch(const AstNode* other) const {
   const AstNode* lhs = this;
   const AstNode* rhs = other;
@@ -316,7 +450,13 @@ void AstNode::dumpHelper(const DumpSettings& s,
   // output the id if desired
   if (s.printId) {
     std::string idStr = getIdStr(ast);
-    s.out << std::setw(s.idWidth) << idStr << std::setw(0);
+    // save the stream format state
+    std::ios state(nullptr);
+    state.copyfmt(s.out);
+    // output ID left justified and padded
+    s.out << std::setw(s.idWidth) << std::left << idStr;
+    // restore the stream format state
+    s.out.copyfmt(state);
   }
 
   if (s.kind == StringifyKind::DEBUG_DETAIL) {

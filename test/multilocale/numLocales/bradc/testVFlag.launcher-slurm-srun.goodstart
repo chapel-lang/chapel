@@ -8,7 +8,7 @@ fi
 
 echo "EVARS=vals" \
      "srun --job-name=CHPL-testVFlag --quiet" \
-     "--nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=N" \
+     "--nodes=1 --ntasks=1 --cpus-per-task=N --cpu-bind=none" \
      "--exclusive${CHPL_LAUNCHER_MEM:+ --mem=M}" \
      "--kill-on-bad-exit${CHPL_LAUNCHER_PARTITION:+ --partition=P}${CHPL_LAUNCHER_EXCLUDE:+ --exclude=E} " \
      "./testVFlag_real -v -nl 1${EXECOPTS:+ $EXECOPTS}"

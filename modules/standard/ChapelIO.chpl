@@ -657,10 +657,12 @@ module ChapelIO {
       alignCheckRange.normalizeAlignment();
     }
 
-    if hasLowBound() then
+    if (boundedType == BoundedRangeType.bounded ||
+        boundedType == BoundedRangeType.boundedLow) then
       f.write(lowBound);
     f._writeLiteral("..");
-    if hasHighBound() {
+    if (boundedType == BoundedRangeType.bounded ||
+        boundedType == BoundedRangeType.boundedHigh) {
       if (chpl__singleValIdxType(this.idxType) && this._low != this._high) {
         f._writeLiteral("<");
         f.write(lowBound);

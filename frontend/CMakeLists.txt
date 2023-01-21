@@ -129,7 +129,7 @@ endif()
 # set include directories for -I
 #include_directories(include)
 
-# lib/CMakeLists.txt defines the target libdyno
+# lib/CMakeLists.txt defines the target ChplFrontend
 add_subdirectory(lib)
 # also make sure headers are included in the target
 add_subdirectory(include/chpl)

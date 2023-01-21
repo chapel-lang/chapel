@@ -283,6 +283,12 @@ PromotedPair convertValuesToLarger(
   //Pointers
   if(type1->isPointerTy() && type2->isPointerTy()) {
     llvm::Type *castTy;
+
+#if HAVE_LLVM_VER >= 150
+    // pointers are opaque, so equivalent to always being a void pointer;
+    // the below logic is moot
+    castTy = type1;
+#else
     llvm::Type* int8_type = llvm::Type::getInt8Ty(value1->getContext());
     bool t1isVoidStar = (type1->getPointerElementType() == int8_type);
     bool t2isVoidStar = (type2->getPointerElementType() == int8_type);
@@ -296,6 +302,7 @@ PromotedPair convertValuesToLarger(
     } else {
       castTy = type1;
     }
+#endif
 
     return PromotedPair(irBuilder->CreatePointerCast(value1, castTy),
                         irBuilder->CreatePointerCast(value2, castTy),
@@ -521,7 +528,9 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
       llvm::Value* tmp_cur = irBuilder->CreatePointerCast(tmp_alloc, curPtrType);
       llvm::Value* tmp_new = irBuilder->CreatePointerCast(tmp_alloc, newPtrType);
       irBuilder->CreateStore(value, tmp_cur);
-#if HAVE_LLVM_VER >= 130
+#if HAVE_LLVM_VER >= 150
+      return irBuilder->CreateLoad(newType, tmp_new);
+#elif HAVE_LLVM_VER >= 130
       return irBuilder->CreateLoad(tmp_new->getType()->getPointerElementType(), tmp_new);
 #else
       return irBuilder->CreateLoad(tmp_new);

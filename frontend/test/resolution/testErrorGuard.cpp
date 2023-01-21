@@ -17,9 +17,10 @@
  * limitations under the License.
  */
 
+#include "test-common.h"
+
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/uast/Module.h"
-#include "./ErrorGuard.h"
 
 // always check assertions in this test
 #ifdef NDEBUG

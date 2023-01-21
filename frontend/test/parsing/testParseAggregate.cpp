@@ -35,8 +35,9 @@ static BuilderResult parseAggregate(Parser* parser,
                                     const AggregateDecl*& agg,
                                     const char* testname,
                                     const char* prog) {
-  auto parseResult = parser->parseString(testname, prog);
-  assert(!parseResult.numErrors());
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, testname, prog);
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
 
@@ -212,7 +213,6 @@ static void test8(Parser* parser) {
                             "  /*F*/\n"
                             "}\n"
                             "/*G*/\n");
-  assert(!res.numErrors());
   auto mod = res.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -393,7 +393,7 @@ static void test9(Parser* parser) {
 }
 
 static void test10(Parser* parser) {
-  auto parseResult = parser->parseString("test10.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test10.chpl",
                                          "/*1*/ class C1 {\n"
                                          "  /*1a*/ var a;\n"
                                          "  /*1aa*/ var aa;\n"
@@ -470,7 +470,8 @@ static void test10(Parser* parser) {
 }
 
 static void test11(Parser* parser) {
-  auto parseResult = parser->parseString("test11.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test11.chpl",
         "extern record foo {}\n"
         "extern \"struct bar\" record bar {}\n"
         "export record dog { var x = 0; }\n"
@@ -478,7 +479,7 @@ static void test11(Parser* parser) {
         "extern union baz {}\n"
         "extern \"union thing\" union thing {}\n");
 
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 6);
@@ -529,7 +530,8 @@ static void test11(Parser* parser) {
 // Test failure for exporting or externing a class.
 // Test failure for exporting a union.
 static void test12(Parser* parser) {
-  auto parseResult = parser->parseString("test12.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test12.chpl",
         "extern class foo {};\n"
         "extern \"foo\" class foo {};\n"
         "export class bar { var x = 0; }\n"
@@ -537,7 +539,7 @@ static void test12(Parser* parser) {
         "export union baz {}\n"
         "export \"baz\" union baz {}\n");
 
-  assert(parseResult.numErrors() == 6);
+  assert(guard.realizeErrors() == 6);
   auto mod = parseResult.singleModule();
   assert(mod);
 }

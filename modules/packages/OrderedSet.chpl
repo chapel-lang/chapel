@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-deprecated "The OrderedSet module and the orderedSet type are deprecated in favor of SortedSet and sortedMap."
+deprecated "The OrderedSet module and the orderedSet type are deprecated in favor of SortedSet and sortedMap"
 module OrderedSet {
   public use SortedSet;
 
