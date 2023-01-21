@@ -18,7 +18,7 @@ module CannotThrow {
     try {
       var array1 = for i in 0..3 do willthrow(1, i);
       var array2 = forall i in 0..3 do willthrow(2, i);
-      var array3 = if true then [1, willthrow(3, 2), 3] else [0];
+      var array3 = if true then [1, willthrow(3, 2), 3] else [0, ];
     } catch (e) {
       writeln(e);
     }

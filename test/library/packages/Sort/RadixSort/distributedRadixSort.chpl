@@ -44,7 +44,7 @@ proc simpletest(input:[]) {
   simpletestcore(input.reindex(-1..#size));
 }
 
-simpletest([0:uint]);
+simpletest([0:uint, ]);
 simpletest([0:uint, 0:uint, 0:uint, 0:uint]);
 simpletest([0x0:uint,
             0xff00000000000000:uint,
