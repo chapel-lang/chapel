@@ -79,7 +79,6 @@ static void testRange(Parser* parser, const char* testName,
   }
 }
 
-// TODO: Check for trailing comma?
 static void testArrayDomain(Parser* parser, const char* testName,
                             bool isArray,
                             int numElements,
@@ -123,6 +122,7 @@ static void testArrayDomain(Parser* parser, const char* testName,
       assert(a->expr(i)->isIntLiteral());
       assert(a->expr(i)->toIntLiteral()->value() == i);
     }
+    assert(a->hasTrailingComma() == hasTrailingComma);
   } else if (const Domain* d = var->initExpression()->toDomain()) {
     assert(!isArray);
     assert(d->numExprs() == numElements);
@@ -161,10 +161,9 @@ int main() {
   testRange(p, "testRange4.chpl", "..<", true, true);
   testRange(p, "testRange5.chpl", "..<", false, true);
 
-  testArrayDomain(p, "testArray0.chpl", true, 1, false);
-  testArrayDomain(p, "testArray1.chpl", true, 1, true);
-  testArrayDomain(p, "testArray2.chpl", true, 8, false);
-  testArrayDomain(p, "testArray3.chpl", true, 8, true);
+  testArrayDomain(p, "testArray0.chpl", true, 1, true);
+  testArrayDomain(p, "testArray1.chpl", true, 8, false);
+  testArrayDomain(p, "testArray2.chpl", true, 8, true);
 
   testArrayDomain(p, "testDomain0.chpl", false, 1, false);
   testArrayDomain(p, "testDomain1.chpl", false, 1, true);

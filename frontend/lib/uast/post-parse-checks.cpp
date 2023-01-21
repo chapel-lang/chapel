@@ -101,6 +101,7 @@ struct Visitor {
   bool isNameReservedWord(const NamedDecl* node);
 
   // Checks.
+  void checkForOneElementArraysWithoutComma(const Array* node);
   void checkDomainTypeQueryUsage(const TypeQuery* node);
   void checkNoDuplicateNamedArguments(const FnCall* node);
   bool handleNestedDecoratorsInNew(const FnCall* node);
@@ -146,6 +147,7 @@ struct Visitor {
 
   // Visitors.
   inline void visit(const AstNode* node) {} // Do nothing by default.
+  void visit(const Array* node);
   void visit(const FnCall* node);
   void visit(const Variable* node);
   void visit(const TypeQuery* node);
@@ -260,6 +262,14 @@ bool Visitor::isParentFalseBlock(int depth) const {
   return false;
 }
 
+void Visitor::checkForOneElementArraysWithoutComma(const Array* node) {
+  if (!node->hasTrailingComma() && node->numChildren() == 1) {
+    warn(node, "single-element array literals without a trailing comma are "
+         "deprecated; please rewrite as '%s'",
+         node->isAssociative() ? "[myKey => myElem, ]" : "[myElem, ]");
+  }
+}
+  
 void Visitor::checkDomainTypeQueryUsage(const TypeQuery* node) {
   if (!parent(0) || !parent(1)) return;
 
@@ -834,6 +844,10 @@ void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
   }
 }
 
+void Visitor::visit(const Array* node) {
+  checkForOneElementArraysWithoutComma(node);
+}
+  
 void Visitor::visit(const FnCall* node) {
   checkNoDuplicateNamedArguments(node);
   checkForNestedClassDecorators(node);

@@ -3773,17 +3773,15 @@ literal_expr:
   }
 | TLSBR expr_ls TCOMMA TRSBR
   {
-    // TODO (dlongnecke): Record trailing comma?
-    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2), true).release();
   }
 | TLSBR assoc_expr_ls TRSBR
   {
-    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2), false, true).release();
   }
 | TLSBR assoc_expr_ls TCOMMA TRSBR
   {
-    // TODO (dlongnecke): Record trailing comma?
-    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2), true, true).release();
   }
 
 ;
