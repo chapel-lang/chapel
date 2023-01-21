@@ -956,20 +956,24 @@ module ChapelRange {
 
   pragma "no doc"
   inline proc range.chpl_firstAsIntForIter {
-    if ! stridable {
-      return chpl__idxToInt(lowBoundForIter(this));
+    if this.boundedType == BoundedRangeType.bounded {
+      return this.firstAsInt;
     } else {
-      if _stride > 0 {
-        if hasLowBound() {
-          return helpAlignLow(chpl__idxToInt(lowBoundForIter(this)), _alignment, _stride);
-        } else {
-          return chpl__idxToInt(lowBoundForIter(this));
-        }
+      if ! stridable {
+        return chpl__idxToInt(lowBoundForIter(this));
       } else {
-        if hasHighBound() {
-          return helpAlignHigh(chpl__idxToInt(highBoundForIter(this)), _alignment, _stride);
+        if _stride > 0 {
+          if hasLowBound() {
+            return helpAlignLow(chpl__idxToInt(lowBoundForIter(this)), _alignment, _stride);
+          } else {
+            return chpl__idxToInt(lowBoundForIter(this));
+          }
         } else {
-          return chpl__idxToInt(highBoundForIter(this));
+          if hasHighBound() {
+            return helpAlignHigh(chpl__idxToInt(highBoundForIter(this)), _alignment, _stride);
+          } else {
+            return chpl__idxToInt(highBoundForIter(this));
+          }
         }
       }
     }
@@ -1007,12 +1011,16 @@ module ChapelRange {
 
   pragma "no doc"
   inline proc range.chpl_lastAsIntForIter {
-    if ! stridable {
-      return chpl__idxToInt(highBoundForIter(this));
-    } else if _stride > 0 {
-      return helpAlignHigh(chpl__idxToInt(highBoundForIter(this)), _alignment, _stride);
+    if this.boundedType == BoundedRangeType.bounded {
+      return this.lastAsInt;
     } else {
-      return helpAlignLow(chpl__idxToInt(lowBoundForIter(this)), _alignment, _stride);
+      if ! stridable {
+        return chpl__idxToInt(highBoundForIter(this));
+      } else if _stride > 0 {
+        return helpAlignHigh(chpl__idxToInt(highBoundForIter(this)), _alignment, _stride);
+      } else {
+        return helpAlignLow(chpl__idxToInt(lowBoundForIter(this)), _alignment, _stride);
+      }
     }
   }
 
