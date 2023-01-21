@@ -574,12 +574,14 @@ checkExportedNames()
 }
 
 static void warnUnstableUnions(AggregateType* at) {
+  if (fDynoCompilerLibrary) return;
   if (fWarnUnstable && at->isUnion()) {
     USR_WARN(at, "Unions are currently unstable and are expected to change in ways that will break their current uses.");
   }
 }
 
 static void warnUnstableLeadingUnderscores() {
+  if (fDynoCompilerLibrary) return;
   if (fWarnUnstable) {
     forv_Vec(DefExpr, def, gDefExprs) {
       const char* name = def->name();
