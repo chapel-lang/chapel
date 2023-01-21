@@ -120,9 +120,13 @@ namespace resolution {
    * used or imported in that scope. May return an empty vector if no modules
    * were used or imported in the scope.
    */
-  const
-  std::vector<ID> findUsedImportedModules(Context* context,
-                                           const Scope* scope);
+  const std::vector<ID> findUsedImportedModules(Context* context,
+                                                const Scope* scope);
+
+  /**
+    Resolve the uses and imports in a given scope.
+  */
+  void resolveUsesAndImportsInScope(Context* context, const Scope* scope);
 
 } // end namespace resolution
 } // end namespace chpl

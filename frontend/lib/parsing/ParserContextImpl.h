@@ -178,12 +178,7 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
 }
 
 void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
-  if (!hasAttributeParts) {
-    hasAttributeParts = true;
-  } else {
-    CHPL_ASSERT(!attributeParts.isDeprecated);
-    CHPL_ASSERT(attributeParts.deprecationMessage.isEmpty());
-  }
+  hasAttributeParts = true;
 
   attributeParts.isDeprecated = true;
 
@@ -197,13 +192,7 @@ void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
 }
 
 void ParserContext::noteUnstable(YYLTYPE loc, AstNode* messageStr) {
-  if (!hasAttributeParts) {
-    hasAttributeParts = true;
-  }
-  else {
-    CHPL_ASSERT(!attributeParts.isUnstable);
-    CHPL_ASSERT(attributeParts.unstableMessage.isEmpty());
-  }
+  hasAttributeParts = true;
 
   attributeParts.isUnstable = true;
 
@@ -215,6 +204,7 @@ void ParserContext::noteUnstable(YYLTYPE loc, AstNode* messageStr) {
     delete messageStr;
   }
 }
+
 void ParserContext::resetAttributePartsState() {
   if (hasAttributeParts) {
     auto& pragmas = attributeParts.pragmas;

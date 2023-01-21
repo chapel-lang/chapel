@@ -43,8 +43,6 @@ static void includedStrictNames(ModuleSymbol* mod);
 static void checkModule(ModuleSymbol* mod);
 static void checkRecordInheritance(AggregateType* at);
 static void setupForCheckExplicitDeinitCalls();
-static void warnUnstableUnions(AggregateType* at);
-static void warnUnstableLeadingUnderscores();
 static void checkOperator(FnSymbol* fn);
 static void checkUseStmt(UseStmt* use);
 
@@ -97,11 +95,7 @@ checkParsed() {
 
   forv_Vec(AggregateType, at, gAggregateTypes) {
     checkRecordInheritance(at);
-
-    warnUnstableUnions(at);
   }
-
-  warnUnstableLeadingUnderscores();
 
   checkExportedNames();
 
@@ -570,45 +564,6 @@ checkExportedNames()
     if (names.get(name))
       USR_FATAL_CONT(fn, "The name %s cannot be exported twice from the same compilation unit.", name);
     names.put(name, true);
-  }
-}
-
-static void warnUnstableUnions(AggregateType* at) {
-  if (fWarnUnstable && at->isUnion()) {
-    USR_WARN(at, "Unions are currently unstable and are expected to change in ways that will break their current uses.");
-  }
-}
-
-static void warnUnstableLeadingUnderscores() {
-  if (fWarnUnstable) {
-    forv_Vec(DefExpr, def, gDefExprs) {
-      const char* name = def->name();
-      Symbol* sym = def->sym;
-      ModuleSymbol* mod = def->getModule();
-      FnSymbol* fn = def->getFunction();
-
-      if (name && name[0] == '_' &&
-          mod && mod->modTag == MOD_USER &&
-          !sym->hasFlag(FLAG_TEMP) &&
-          sym->type != dtMethodToken) {
-        USR_WARN(def,
-                 "Symbol names with leading underscores (%s) are unstable.", name);
-      }
-      if (name &&
-          name[0] == 'c' &&
-          name[1] == 'h' &&
-          name[2] == 'p' &&
-          name[3] == 'l' &&
-          name[4] == '_' &&
-          mod && mod->modTag == MOD_USER &&
-          !sym->hasFlag(FLAG_TEMP) &&
-          !sym->hasFlag(FLAG_INDEX_VAR) &&
-          !sym->hasFlag(FLAG_COMPILER_NESTED_FUNCTION) &&
-          !(fn && fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION))) {
-        USR_WARN(def,
-                 "Symbol names beginning with 'chpl_' (%s) are unstable.", name);
-      }
-    }
   }
 }
 
