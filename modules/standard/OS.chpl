@@ -1501,8 +1501,8 @@ module OS {
     }
 }
 
-  /* Create and throw an :class:`Error` if an error occurred, formatting a
-     useful message based on the provided arguments. Do nothing if the error
+  /* Create and throw an :class:`Errors.Error` if an error occurred, formatting
+     a useful message based on the provided arguments. Do nothing if the error
      argument does not indicate an error occurred.
 
      :arg error: the error code
