@@ -35,18 +35,11 @@ public:
 
 
                   InitErrorHandling(FnSymbol*   fn);
-                  InitErrorHandling(BlockStmt* block,
-                                    const InitErrorHandling& curr);
-                  InitErrorHandling(LoopStmt* loop,
-                                    const InitErrorHandling& curr);
-                  InitErrorHandling(ForallStmt* loop,
-                                    const InitErrorHandling& curr);
                   InitErrorHandling(CondStmt* cond,
                                     const InitErrorHandling& curr);
 
   void            merge(const InitErrorHandling& fork);
 
-  AggregateType*  type()                                                 const;
   FnSymbol*       theFn()                                                const;
 
   InitPhase       currPhase()                                            const;
@@ -56,20 +49,8 @@ public:
   bool            isPhase1()                                             const;
   bool            isPhase2()                                             const;
 
-  void            checkPhase(BlockStmt* block);
-
   void            completePhase1(CallExpr* insertBefore);
   void            completePhase0(CallExpr* initStmt);
-
-  bool            inLoopBody()                                           const;
-  bool            inParallelStmt()                                       const;
-  bool            inCoforall()                                           const;
-  bool            inForall()                                             const;
-  bool            inOn()                                                 const;
-  bool            inOnInLoopBody()                                       const;
-  bool            inOnInParallelStmt()                                   const;
-  bool            inOnInCoforall()                                       const;
-  bool            inOnInForall()                                         const;
 
   bool isInitDone(CallExpr* stmt) const;
 
@@ -78,15 +59,6 @@ public:
   void removeInitDone();
 
 private:
-  enum BlockType {
-    cBlockNormal,
-    cBlockLoop,
-    cBlockBegin,
-    cBlockCobegin,
-    cBlockCoforall,
-    cBlockForall,
-    cBlockOn
-  };
 
                   InitErrorHandling();
 
@@ -97,8 +69,6 @@ private:
 
   FnSymbol*       mFn;
   InitPhase       mPhase;
-  BlockType       mBlockType;
-  BlockType       mPrevBlockType;
 
 };
 

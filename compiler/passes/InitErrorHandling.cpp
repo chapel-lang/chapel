@@ -37,86 +37,15 @@
 InitErrorHandling::InitErrorHandling(FnSymbol* fn) {
   mFn            = fn;
   mPhase         = startPhase(fn);
-  mBlockType     = cBlockNormal;
-  mPrevBlockType = cBlockNormal;
-}
-
-InitErrorHandling::InitErrorHandling(BlockStmt* block, const InitErrorHandling& curr) {
-  mFn            = curr.mFn;
-  mPhase         = curr.mPhase;
-
-  if (CallExpr* blockInfo = block->blockInfoGet()) {
-    if        (blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)       == true ||
-               blockInfo->isPrimitive(PRIM_BLOCK_BEGIN_ON)    == true) {
-      mBlockType = cBlockBegin;
-
-    } else if (blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN)     == true) {
-      // Lydia NOTE 2017/07/26: If PRIM_BLOCK_COBEGIN_ONs are ever made, we
-      // should match against them here
-      mBlockType = cBlockCobegin;
-
-    } else if (blockInfo->isPrimitive(PRIM_BLOCK_COFORALL)    == true ||
-               blockInfo->isPrimitive(PRIM_BLOCK_COFORALL_ON) == true) {
-      mBlockType = cBlockCoforall;
-
-    } else if (blockInfo->isPrimitive(PRIM_BLOCK_ON) == true ||
-               blockInfo->isPrimitive(PRIM_BLOCK_ELIDED_ON)) {
-      mBlockType = cBlockOn;
-
-    } else {
-      INT_ASSERT(false);
-    }
-
-  } else {
-    mBlockType = curr.mBlockType;
-  }
-
-  if (mBlockType != curr.mBlockType) {
-    mPrevBlockType = curr.mBlockType;
-  } else {
-    mPrevBlockType = curr.mPrevBlockType;
-  }
 }
 
 InitErrorHandling::InitErrorHandling(CondStmt* cond, const InitErrorHandling& curr) {
   mFn            = curr.mFn;
   mPhase         = curr.mPhase;
-  mPrevBlockType = curr.mPrevBlockType;
-  mBlockType     = curr.mBlockType;
-}
-
-InitErrorHandling::InitErrorHandling(LoopStmt* loop, const InitErrorHandling& curr) {
-  mFn            = curr.mFn;
-  mPhase         = curr.mPhase;
-  mBlockType     = cBlockLoop;
-
-  if (mBlockType != curr.mBlockType) {
-    mPrevBlockType = curr.mBlockType;
-
-  } else {
-    mPrevBlockType = curr.mPrevBlockType;
-  }
-}
-
-InitErrorHandling::InitErrorHandling(ForallStmt* loop, const InitErrorHandling& curr) {
-  mFn            = curr.mFn;
-  mPhase         = curr.mPhase;
-  mBlockType     = cBlockForall;
-
-  if (mBlockType != curr.mBlockType) {
-    mPrevBlockType = curr.mBlockType;
-
-  } else {
-    mPrevBlockType = curr.mPrevBlockType;
-  }
 }
 
 void InitErrorHandling::merge(const InitErrorHandling& fork) {
   mPhase     = fork.mPhase;
-}
-
-AggregateType* InitErrorHandling::type() const {
-  return mFn != NULL ? toAggregateType(mFn->_this->type) : NULL;
 }
 
 FnSymbol* InitErrorHandling::theFn() const {
@@ -137,44 +66,6 @@ bool InitErrorHandling::isPhase1() const {
 
 bool InitErrorHandling::isPhase2() const {
   return mPhase == cPhase2;
-}
-
-bool InitErrorHandling::inLoopBody() const {
-  return mBlockType == cBlockLoop;
-}
-
-bool InitErrorHandling::inParallelStmt() const {
-  return mBlockType == cBlockBegin   ||
-         mBlockType == cBlockCobegin  ;
-}
-
-bool InitErrorHandling::inCoforall() const {
-  return mBlockType == cBlockCoforall;
-}
-
-bool InitErrorHandling::inForall() const {
-  return mBlockType == cBlockForall;
-}
-
-bool InitErrorHandling::inOn() const {
-  return mBlockType == cBlockOn;
-}
-
-bool InitErrorHandling::inOnInLoopBody() const {
-  return inOn() && mPrevBlockType == cBlockLoop;
-}
-
-bool InitErrorHandling::inOnInParallelStmt() const {
-  return inOn() && (mPrevBlockType == cBlockBegin ||
-                    mPrevBlockType == cBlockCobegin);
-}
-
-bool InitErrorHandling::inOnInCoforall() const {
-  return inOn() && mPrevBlockType == cBlockCoforall;
-}
-
-bool InitErrorHandling::inOnInForall() const {
-  return inOn() && mPrevBlockType == cBlockForall;
 }
 
 /************************************* | **************************************
@@ -374,49 +265,6 @@ InitErrorHandling::InitPhase InitErrorHandling::startPhase(BlockStmt* block) con
   return retval;
 }
 
-//
-// Catch case a case like:
-//
-// proc init(cond:bool) {
-//   if cond {
-//     this.initDone();
-//   } else {
-//     this.init();
-//   }
-// }
-//
-// The initializer begins in phase zero, which is the state we inherit upon
-// entering the 'then' branch of the conditional statement. This is the
-// incorrect phase though, so we need to re-check the start phase of the
-// 'then' block and use that instead.
-//
-// Note though that we don't want to update the state unless there is an
-// initDone. Otherwise simple conditionals like this would advance the outer
-// phase to phase 1:
-//
-// proc init(cond:bool) {
-//   if cond {
-//     writeln("then");
-//   } else {
-//     writeln("else");
-//   }
-//   super.init();
-// }
-//
-// INIT TODO: Can we restrict this operation to just conditionals?
-//
-void InitErrorHandling::checkPhase(BlockStmt* block) {
-  if (mPhase == cPhase0) {
-    InitPhase newPhase = startPhase(block);
-
-    if (newPhase == cPhase1) {
-      if (hasInitDone(block)) {
-        mPhase = newPhase;
-      }
-    }
-  }
-}
-
 void InitErrorHandling::describe(int offset) const {
   char pad[512];
 
@@ -429,39 +277,6 @@ void InitErrorHandling::describe(int offset) const {
   printf("%s#<InitErrorHandling\n", pad);
 
   printf("%s  Phase: %s\n", pad, phaseToString(mPhase));
-
-  printf("%s  Block: ",       pad);
-
-  switch (mBlockType) {
-    case cBlockNormal:
-      printf("normal\n");
-      break;
-
-    case cBlockLoop:
-      printf("loop\n");
-      break;
-
-    case cBlockBegin:
-      printf("begin\n");
-      break;
-
-    case cBlockCobegin:
-      printf("cobegin\n");
-      break;
-
-    case cBlockCoforall:
-      printf("coforall\n");
-      break;
-
-    case cBlockForall:
-      printf("forall\n");
-      break;
-
-    case cBlockOn:
-      printf("on\n");
-      break;
-  }
-
   printf("%s>\n", pad);
 }
 
