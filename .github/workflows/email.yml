@@ -2,14 +2,15 @@ name: email
 on:
     # this workflow is intended to run on merges from a forked repo to main(base-repo). Use pull_request_target
     # this will provide read access to the secrets in main
-    pull_request_target:
-      types:
-        - closed
+    #pull_request_target:
+    pull_request
+      #types:
+        #- closed
       
 jobs: 
   send_email:
    # run this workflow step only when the PR is merged 
-    if:  github.event.pull_request.merged == true 
+    #if:  github.event.pull_request.merged == true 
     runs-on: ubuntu-latest 
     steps:
       - name: print git events
@@ -26,10 +27,10 @@ jobs:
           LOG: ${{github.event.pull_request.body}}
         uses: nick-fields/retry@v2
         with:
-        max_attempts: 3
-        retry_on: error
-        timeout_seconds: 60  
-        run: |
+          max_attempts: 3
+          retry_on: error
+          timeout_seconds: 60  
+        command: |
               curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
               echo "AUTHOR=$(jq -r '.[0].commit.author.name' commits.json)" >> $GITHUB_ENV   
               echo "LINK=$(jq -r '.[0].html_url' commits.json)" >> $GITHUB_ENV
@@ -72,7 +73,8 @@ jobs:
            # Required mail subject:
            subject: "[Chapel Merge] ${{github.event.pull_request.title}}"
            # Required recipients' addresses:
-           to: chapel+commits@discoursemail.com
+           #to: chapel+commits@discoursemail.com
+           to: bhavani@hpe.com
            # Required sender full name (address can be skipped):
            from:  ${{env.AUTHOR}}
            html_body: |
