@@ -33,6 +33,8 @@ jobs:
           timeout_seconds: 60  
           command: |
               curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
+              if($? -ne 0 ); then exit 1 
+              fi 
               echo "AUTHOR=$(jq -r '.[0].commit.author.name' commits.json)" >> $GITHUB_ENV   
               echo "LINK=$(jq -r '.[0].html_url' commits.json)" >> $GITHUB_ENV
               echo "MESSAGE=$((jq  '.[0].commit.message' commits.json)| awk -F'\\\\n' '{print $1}' | sed 's/\"//g')" >> $GITHUB_ENV 
