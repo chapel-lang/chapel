@@ -333,6 +333,13 @@ ID fieldIdWithName(Context* context, ID typeDeclId,
                    UniqueString fieldName);
 
 /**
+  Given an ID for a Record/Union/Class Decl, returns 'true'
+  if that Record/Union/Class Decl directly contains one or more
+  'forwarding' declarations.
+ */
+bool aggregateUsesForwarding(Context* context, ID typeDeclId);
+
+/**
  * Store config settings that were set from the command line using -s flags
  */
 void setConfigSettings(Context* context, ConfigSettingsList keys);

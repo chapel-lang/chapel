@@ -1662,6 +1662,40 @@ class ResolvedFields {
   }
 };
 
+/** ResolvedForwarding represents the fully resolved expression
+    for forwarding within a class/record/union/tuple type. */
+class ResolvedForwarding {
+  std::vector<types::QualifiedType> receiverTypes_;
+
+ public:
+  int numReceiverTypes() const {
+    return receiverTypes_.size();
+  }
+  types::QualifiedType receiverType(int i) const {
+    assert(0 <= i && (size_t) i < receiverTypes_.size());
+    return receiverTypes_[i];
+  }
+
+  bool operator==(const ResolvedForwarding& other) const {
+    return receiverTypes_ == other.receiverTypes_;
+  }
+  bool operator!=(const ResolvedForwarding& other) const {
+    return !(*this == other);
+  }
+  void swap(ResolvedForwarding& other) {
+    receiverTypes_.swap(other.receiverTypes_);
+  }
+  static bool update(owned<ResolvedForwarding>& keep,
+                     owned<ResolvedForwarding>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+  void mark(Context* context) const {
+    for (auto const &elt : receiverTypes_) {
+      elt.mark(context);
+    }
+  }
+};
+
 class ResolvedParamLoop {
   public:
     using LoopBodies = std::vector<ResolutionResultByPostorderID>;

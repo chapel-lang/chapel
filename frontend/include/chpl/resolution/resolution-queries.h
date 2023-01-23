@@ -123,6 +123,14 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
                                         DefaultsPolicy defaultsPolicy);
 
 /**
+  Compute the types that this type can forward to.
+  Returns 'nullptr' if the type 'ct' does not use forwarding.
+ */
+const ResolvedForwarding* forwardingForTypeDecl(Context* context,
+                                                const types::CompositeType* ct);
+
+
+/**
   Return true if 'name' is the name of a field for type 't'
 */
 bool isNameOfField(Context* context, UniqueString name, const types::Type* t);

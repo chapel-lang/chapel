@@ -649,6 +649,39 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
   return f;
 }
 
+static const owned<ResolvedForwarding>&
+forwardingForTypeDeclQuery(Context* context, const CompositeType* ct) {
+  QUERY_BEGIN(forwardingForTypeDeclQuery, context, ct);
+
+  owned<ResolvedForwarding> result;
+
+  assert(false && "not implemented yet");
+
+  return QUERY_END(result);
+}
+
+static bool typeUsesForwarding(Context* context, const Type* receiverType) {
+  if (auto ct = receiverType->getCompositeType()) {
+    if (ct->isClassType() || ct->isRecordType() || ct->isUnionType()) {
+      ID ctId = ct->id();
+      if (!ctId.isEmpty()) {
+        return parsing::aggregateUsesForwarding(context, ctId);
+      }
+    }
+  }
+
+  return false;
+}
+
+const ResolvedForwarding* forwardingForTypeDecl(Context* context,
+                                                const CompositeType* ct) {
+  if (typeUsesForwarding(context, ct)) {
+    return forwardingForTypeDeclQuery(context, ct).get();
+  } else {
+    return nullptr;
+  }
+}
+
 static const CompositeType* getTypeWithDefaults(Context* context,
                                                 const CompositeType* ct) {
   // resolve the fields with DefaultsPolicy=FOR_OTHER_FIELDS
@@ -2523,18 +2556,14 @@ resolveFnCallForTypeCtor(Context* context,
 
 using CandidatesVec = std::vector<const TypedFnSignature*>;
 
-// returns true if one or more TypedFnSignature for compiler-generated
-// methods were added to the candidates vector, and false otherwise
-static bool
-considerCompilerGeneratedCandidates(Context* context,
-                                    const CallInfo& ci,
-                                    const Scope* inScope,
-                                    const PoiScope* inPoiScope,
-                                    PoiInfo& poiInfo,
-                                    CandidatesVec& candidates) {
+static void considerCompilerGeneratedCandidates(Context* context,
+                                                const CallInfo& ci,
+                                                const Scope* inScope,
+                                                const PoiScope* inPoiScope,
+                                                CandidatesVec& candidates) {
 
   // only consider compiler-generated methods, for now
-  if (!ci.isMethodCall()) return false;
+  if (!ci.isMethodCall()) return;
 
   // fetch the receiver type info
   CHPL_ASSERT(ci.numActuals() >= 1);
@@ -2544,7 +2573,7 @@ considerCompilerGeneratedCandidates(Context* context,
   // if not compiler-generated, then nothing to do
   if (!needCompilerGeneratedMethod(context, receiverType, ci.name(),
                                    ci.isParenless())) {
-    return false;
+    return;
   }
 
   // get the compiler-generated function, may be generic
@@ -2555,13 +2584,13 @@ considerCompilerGeneratedCandidates(Context* context,
   // check if the initial signature matches
   auto faMap = FormalActualMap(tfs->untyped(), ci);
   if (!isInitialTypedSignatureApplicable(context, tfs, faMap, ci)) {
-    return false;
+    return;
   }
 
   // OK, already concrete, store and return
   if (!tfs->needsInstantiation()) {
     candidates.push_back(tfs);
-    return true;
+    return;
   }
 
   // need to instantiate before storing
@@ -2573,17 +2602,7 @@ considerCompilerGeneratedCandidates(Context* context,
   CHPL_ASSERT(instantiated->untyped()->idIsFunction());
   CHPL_ASSERT(instantiated->instantiatedFrom());
 
-  auto instantiationScope = pointOfInstantiationScope(context, inScope,
-                                                      inPoiScope);
-  poiInfo.setPoiScope(instantiationScope);
-
-  accumulatePoisUsedByResolvingBody(context, instantiated,
-                                    instantiationScope,
-                                    poiInfo);
-
   candidates.push_back(instantiated);
-
-  return true;
 }
 
 static std::vector<BorrowedIdsWithName>
@@ -2618,24 +2637,145 @@ lookupCalledExprConsideringReceiver(Context* context,
   return ret;
 }
 
+
+static CandidatesVec
+gatherAndFilterCandidatesForwarding(Context* context,
+                                    const Call* call,
+                                    const CallInfo& ci,
+                                    const Scope* inScope,
+                                    const PoiScope* inPoiScope,
+                                    size_t& firstPoiCandidate) {
+  CandidatesVec candidates;
+  firstPoiCandidate = 0;
+
+  const Type* receiverType = ci.actual(0).type().type();
+
+  // Resolve the forwarding expression's type
+  const ResolvedForwarding* forwards = nullptr;
+  UniqueString name = ci.name();
+  if (name == USTR("init") || name == USTR("init=") || name == USTR("deinit")) {
+    // these are exempt from forwarding
+  } else if (auto ct = receiverType->getCompositeType()) {
+    forwards = forwardingForTypeDecl(context, ct);
+  }
+
+  if (forwards) {
+    // Construct CallInfos with the receiver replaced for each
+    // of the forwarded-to types.
+    std::vector<CallInfo> forwardingCis;
+
+    int numReceiverTypes = forwards->numReceiverTypes();
+    for (int i = 0; i < numReceiverTypes; i++) {
+      QualifiedType forwardType = forwards->receiverType(i);
+      std::vector<CallInfoActual> actuals;
+      // compute the actuals
+      // first, the method receiver (from the forwarded type)
+      actuals.push_back(CallInfoActual(forwardType, USTR("this")));
+      // then, the other actuals, if any, from ci
+      int numActuals = ci.numActuals();
+      for (int j = 1; j < numActuals; j++) {
+        actuals.push_back(ci.actual(j));
+      }
+
+      forwardingCis.push_back(CallInfo(ci.name(),
+                                       ci.calledType(),
+                                       ci.isMethodCall(),
+                                       ci.hasQuestionArg(),
+                                       ci.isParenless(),
+                                       std::move(actuals)));
+    }
+
+    // Now, consider each of the forwarding calls to gather and filter
+    // candidates.
+    // This should follow the same process as gatherAndFilterCandidates but:
+    // * in each stage, consider all of the forwarded method receiver types
+    //   equally as sources of candidates
+    // * do not consider forwarding (since we are considering it now!)
+
+    NamedScopeSet visited;
+
+    // consider compiler-generated candidates
+    for (auto fci : forwardingCis) {
+      considerCompilerGeneratedCandidates(context, fci, inScope, inPoiScope,
+                                          candidates);
+    }
+
+    // next, look for candidates without using POI.
+    for (auto fci : forwardingCis) {
+      // compute the potential functions that it could resolve to
+      auto v = lookupCalledExprConsideringReceiver(context, inScope, fci,
+                                                   visited);
+
+      // filter without instantiating yet
+      const auto& initialCandidates = filterCandidatesInitial(context, v, fci);
+
+      // find candidates, doing instantiation if necessary
+      filterCandidatesInstantiating(context,
+                                    initialCandidates,
+                                    fci,
+                                    inScope,
+                                    inPoiScope,
+                                    candidates);
+
+    }
+
+    // next, look for candidates using POI
+    firstPoiCandidate = candidates.size();
+    for (const PoiScope* curPoi = inPoiScope;
+         curPoi != nullptr;
+         curPoi = curPoi->inFnPoi()) {
+
+      // stop if any candidate has been found.
+      if (candidates.empty() == false) {
+        break;
+      }
+
+      for (auto fci : forwardingCis) {
+        // compute the potential functions that it could resolve to
+        auto v = lookupCalledExprConsideringReceiver(context, curPoi->inScope(),
+                                                     fci,
+                                                     visited);
+
+        // filter without instantiating yet
+        auto& initialCandidates = filterCandidatesInitial(context, v, fci);
+
+        // find candidates, doing instantiation if necessary
+        filterCandidatesInstantiating(context,
+                                      initialCandidates,
+                                      fci,
+                                      inScope,
+                                      inPoiScope,
+                                      candidates);
+      }
+    }
+
+    // do not try forwarding (to avoid infinite loops)
+  }
+
+  return candidates;
+}
+
+// Returns candidates (including instantiating candidates)
+// for resolving CallInfo 'ci'.
+//
 // call can be nullptr. in that event, ci.name() will be used
 // to find the call with that name.
-static MostSpecificCandidates
-resolveFnCallFilterAndFindMostSpecific(Context* context,
-                                       const Call* call,
-                                       const CallInfo& ci,
-                                       const Scope* inScope,
-                                       const PoiScope* inPoiScope,
-                                       PoiInfo& poiInfo) {
-  // search for candidates at each POI until we have found a candidate
+static CandidatesVec gatherAndFilterCandidates(Context* context,
+                                               const Call* call,
+                                               const CallInfo& ci,
+                                               const Scope* inScope,
+                                               const PoiScope* inPoiScope,
+                                               size_t& firstPoiCandidate) {
   CandidatesVec candidates;
-  size_t firstPoiCandidate = 0;
   NamedScopeSet visited;
+  firstPoiCandidate = 0;
 
   // inject compiler-generated candidates in a manner similar to below
-  // (note that any added candidates are already fully instantiated)
+  // (note that any added candidates are already fully instantiated &
+  //  the poiInfo from these is not gathered, because such methods should
+  //  always be available in any scope that can refer to the type & are
+  //  considered part of the custom type)
   considerCompilerGeneratedCandidates(context, ci, inScope, inPoiScope,
-                                      poiInfo,
                                       candidates);
 
   // next, look for candidates without using POI.
@@ -2654,11 +2794,10 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
                                   inScope,
                                   inPoiScope,
                                   candidates);
-
-    firstPoiCandidate = candidates.size();
   }
 
   // next, look for candidates using POI
+  firstPoiCandidate = candidates.size();
   for (const PoiScope* curPoi = inPoiScope;
        curPoi != nullptr;
        curPoi = curPoi->inFnPoi()) {
@@ -2685,6 +2824,32 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
                                   candidates);
   }
 
+  // If no candidates were found and it's a method, try forwarding
+  if (candidates.empty() && ci.isMethodCall() && ci.numActuals() >= 1) {
+    const Type* receiverType = ci.actual(0).type().type();
+    if (typeUsesForwarding(context, receiverType)) {
+      return gatherAndFilterCandidatesForwarding(context, call, ci,
+                                                 inScope, inPoiScope,
+                                                 firstPoiCandidate);
+    }
+  }
+
+  return candidates;
+}
+
+// * find the best candidates (disambiguate)
+// * check signatures of selected candidates
+// * gather POI info from any instantiations
+static MostSpecificCandidates
+findMostSpecificAndCheck(Context* context,
+                         const CandidatesVec& candidates,
+                         size_t firstPoiCandidate,
+                         const Call* call,
+                         const CallInfo& ci,
+                         const Scope* inScope,
+                         const PoiScope* inPoiScope,
+                         PoiInfo& poiInfo) {
+
   // find most specific candidates / disambiguate
   MostSpecificCandidates mostSpecific = findMostSpecificCandidates(context,
                                                                    candidates,
@@ -2699,7 +2864,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
     }
   }
 
-  // note any most specific candidates from POI in poiInfo.
+  // note any most-specific candidates from POI in poiInfo.
   {
     size_t n = candidates.size();
     for (size_t i = firstPoiCandidate; i < n; i++) {
@@ -2710,6 +2875,32 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
       }
     }
   }
+
+  return mostSpecific;
+}
+
+
+static MostSpecificCandidates
+resolveFnCallFilterAndFindMostSpecific(Context* context,
+                                       const Call* call,
+                                       const CallInfo& ci,
+                                       const Scope* inScope,
+                                       const PoiScope* inPoiScope,
+                                       PoiInfo& poiInfo) {
+  // search for candidates at each POI until we have found candidate(s)
+  size_t firstPoiCandidate = 0;
+  CandidatesVec candidates = gatherAndFilterCandidates(context, call, ci,
+                                                       inScope, inPoiScope,
+                                                       firstPoiCandidate);
+
+  // * find most specific candidates / disambiguate
+  // * check signatures
+  // * gather POI info
+
+  MostSpecificCandidates mostSpecific =
+    findMostSpecificAndCheck(context, candidates, firstPoiCandidate,
+                             call, ci,
+                             inScope, inPoiScope, poiInfo);
 
   return mostSpecific;
 }
