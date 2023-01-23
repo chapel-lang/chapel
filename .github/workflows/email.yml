@@ -20,12 +20,27 @@ jobs:
         run: echo "$GITHUB_CONTEXT" 
      # This workflow step will parse github env. The parsed env will be used in the email body.
      #  MERGE_LOG env holds the request body(PR description) that is parsed to replace \n\r with <br> for html formatting    
+     # This step will be retried if there are any timeouts or issues parsing the json due to timeouts in curl command to get commits url.
       - name: get commits payload
         env:
           COMMIT_URL: ${{github.event.pull_request._links.commits.href}}
           LOG: ${{github.event.pull_request.body}}
-        run: |
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 4
+          retry_on_exit_code: 2
+          timeout_seconds: 60  
+          command: |
               curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
+              if [ $? -ne 0 ]; then
+                echo "curl command to get commits payload failed"
+                exit 2
+              fi  
+              jq -r '.[0].commit.author.name' commits.json  
+              if [ $? -ne 0 ]  ; then
+                echo "error in processing .jq command"
+                exit 2
+              fi       
               echo "AUTHOR=$(jq -r '.[0].commit.author.name' commits.json)" >> $GITHUB_ENV   
               echo "LINK=$(jq -r '.[0].html_url' commits.json)" >> $GITHUB_ENV
               echo "MESSAGE=$((jq  '.[0].commit.message' commits.json)| awk -F'\\\\n' '{print $1}' | sed 's/\"//g')" >> $GITHUB_ENV 
