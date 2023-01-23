@@ -65,7 +65,7 @@ mentionNameFromExpression(const AstNode* ast, bool isReceiver) {
   return UniqueString();
 }
 
-std::vector<const NamedDecl*> collectAllNamedDecls(const AstNode* ast) {
+static std::vector<const NamedDecl*> collectAllNamedDecls(const AstNode* ast) {
   std::vector<const NamedDecl*> ret;
   for (auto ast : ast->children()) {
     auto v = collectAllNamedDecls(ast);
