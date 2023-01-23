@@ -4,7 +4,7 @@ class C {
 
 proc test() {
   var D = {0..0};
-  var A: [D] shared C = [new shared C(0)];
+  var A: [D] shared C = [new shared C(0), ];
   writeln(A);
 
   // Initialize the same slot twice to trigger a halt.

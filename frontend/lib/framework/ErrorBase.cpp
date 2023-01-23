@@ -165,36 +165,26 @@ void BasicError::mark(Context* context) const {
   }
 }
 
-const owned<GeneralError>&
-GeneralError::getGeneralErrorForID(Context* context, Kind kind, ID id, std::string message) {
-  QUERY_BEGIN(getGeneralErrorForID, context, kind, id, message);
-  auto result = owned<GeneralError>(new GeneralError(kind, id, std::move(message), {}));
-  return QUERY_END(result);
-}
-
-const owned<GeneralError>&
-GeneralError::getGeneralErrorForLocation(Context* context, Kind kind, Location loc, std::string message) {
-  QUERY_BEGIN(getGeneralErrorForLocation, context, kind, loc, message);
-  auto result = owned<GeneralError>(new GeneralError(kind, loc, std::move(message), {}));
-  return QUERY_END(result);
-}
-
-const GeneralError* GeneralError::vbuild(Context* context, Kind kind, ID id, const char* fmt, va_list vl) {
+owned<GeneralError> GeneralError::vbuild(Kind kind, ID id, const char* fmt, va_list vl) {
   auto message = vprintToString(fmt, vl);
-  return getGeneralErrorForID(context, kind, id, message).get();
+  return owned<GeneralError>(new GeneralError(kind, std::move(id), std::move(message), {}));
 }
 
-const GeneralError* GeneralError::vbuild(Context* context, Kind kind, Location loc, const char* fmt, va_list vl) {
+owned<GeneralError> GeneralError::vbuild(Kind kind, Location loc, const char* fmt, va_list vl) {
   auto message = vprintToString(fmt, vl);
-  return getGeneralErrorForLocation(context, kind, loc, message).get();
+  return owned<GeneralError>(new GeneralError(kind, std::move(loc), std::move(message), {}));
 }
 
-const GeneralError* GeneralError::get(Context* context, Kind kind, Location loc, std::string msg) {
-  return getGeneralErrorForLocation(context, kind, loc, std::move(msg)).get();
+owned<GeneralError> GeneralError::get(Kind kind, Location loc, std::string msg) {
+  return owned<GeneralError>(new GeneralError(kind, std::move(loc), std::move(msg), {}));
 }
 
-const GeneralError* GeneralError::error(Context* context, Location loc, std::string msg) {
-  return GeneralError::get(context, ErrorBase::ERROR, std::move(loc), std::move(msg));
+owned<GeneralError> GeneralError::error(Location loc, std::string msg) {
+  return GeneralError::get(ErrorBase::ERROR, std::move(loc), std::move(msg));
+}
+
+owned<ErrorBase> GeneralError::clone() const {
+  return owned<ErrorBase>(new GeneralError(*this));
 }
 
 } // end namespace 'chpl'

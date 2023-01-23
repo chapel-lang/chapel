@@ -997,8 +997,12 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   time_init();
   chpl_comm_ofi_oob_init();
   DBG_INIT();
-  int32_t count = chpl_comm_ofi_oob_locales_on_node();
+  int32_t rank;
+  int32_t count = chpl_comm_ofi_oob_locales_on_node(&rank);
   chpl_set_num_locales_on_node(count);
+  if (rank != -1) {
+    chpl_set_local_rank(rank);
+  }
   //
   // Gather run-invariant environment info as early as possible.
   //
@@ -1039,14 +1043,17 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
     }
   }
 
+  pthread_that_inited = pthread_self();
+}
+
+void chpl_comm_pre_mem_init(void) {
   //
-  // Reserve cores for the AM handlers. This has to be done early before
-  // calling other routines that use information about the cores, such as
-  // pinning the heap.
+  // Reserve cores for the AM handlers. This is done here because it has
+  // to happen after chpl_topo_post_comm_init has been called, but before
+  // other functions access information about the cores, such as pinning the
+  // heap.
   //
   init_ofiReserveCores();
-
-  pthread_that_inited = pthread_self();
 }
 
 

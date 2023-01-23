@@ -2166,11 +2166,8 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
 
     func->getBasicBlockList().push_back(blockEnd);
     info->irBuilder->SetInsertPoint(blockEnd);
-#if HAVE_LLVM_VER >= 130
-    ret.val = info->irBuilder->CreateLoad(tmp->getType()->getPointerElementType(), tmp);
-#else
-    ret.val = info->irBuilder->CreateLoad(tmp);
-#endif
+    ret.val = info->irBuilder->CreateLoad(ifTrue.chplType->symbol->getLLVMStructureType(), tmp);
+
     ret.isUnsigned = !values.isSigned;
 #endif
   }
@@ -3227,13 +3224,17 @@ void codegenCopy(GenRet dest, GenRet src, Type* chplType=NULL)
       // Consider using memcpy instead of stack allocating a possibly
       // large structure.
 
-      llvm::Type* ptrTy = src.val->getType();
-      llvm::Type* eltTy = ptrTy->getPointerElementType();
+      llvm::Type* eltTy = nullptr;
+
+      if (chplType) {
+        eltTy = chplType->codegen().type;
+      }
 
       if( chplType && chplType->symbol->hasFlag(FLAG_STAR_TUPLE) ) {
         // Always use memcpy for star tuples.
         useMemcpy = true;
-      } else if( isTypeSizeSmallerThan(info->module->getDataLayout(), eltTy,
+      } else if( eltTy && isTypeSizeSmallerThan(info->module->getDataLayout(),
+                                       eltTy,
                                        256 /* max bytes to load/store */)) {
         // OK
       } else {
@@ -4871,15 +4872,6 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   std::vector<GenRet> args;
   args.push_back(new_IntSymbol(call->astloc.lineno()));
   args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
-
-  // We will emit the gpu code into a global variable named chpl_gpuBinary. Pass
-  // this variable to the launch call.
-  #ifdef HAVE_LLVM  // Needed to suppress warning; should always be true in code path for GPU codegen
-    GenInfo* info = gGenInfo;
-    args.push_back(info->lvt->getValue("chpl_gpuBinary"));
-  #else
-    INT_FATAL("Unexpected code path: gpu code generation without LLVM as target");
-  #endif
 
   // "Copy" arguments from primitive call to runtime library function call.
   int curArg = 1;

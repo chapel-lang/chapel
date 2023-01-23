@@ -9,7 +9,7 @@ var Items: [MonkeySpace] list(int) =
   if practice then [new list([79,98]),
                     new list([54,65,75,74]),
                     new list([79,60,97]),
-                    new list([74])]
+                    new list([74, ])]
               else [new list([54, 89, 94]),
                     new list([66,71]),
                     new list([76,55,80,55,55,96,78]),

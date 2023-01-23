@@ -78,10 +78,6 @@ bool hasFileText(Context* context, const std::string& path);
 /**
   This query reads a file (with the fileText query) and then parses it.
 
-  Errors encountered are stored in the returned 'BuilderResult' and are
-  not reported to the Context. They must be handled manually, or they
-  can be reported by calling the 'parse' query instead.
-
   The 'parentSymbolPath' is relevant for submodules that are in separate files
   with 'module include'. When parsing the included module for a 'module
   include', 'parentSymbolPath' should match the symbolPath of the ID of the
@@ -92,6 +88,14 @@ bool hasFileText(Context* context, const std::string& path);
 const uast::BuilderResult&
 parseFileToBuilderResult(Context* context, UniqueString path,
                          UniqueString parentSymbolPath);
+
+/**
+  Like parseFileToBuilderResult but also runs post-parse checks on the resulting
+  builder result.
+ */
+const uast::BuilderResult&
+parseFileToBuilderResultAndCheck(Context* context, UniqueString path,
+                                 UniqueString parentSymbolPath);
 
 /**
   Like parseFileToBuilderResult but parses whatever file contained 'id'.
@@ -328,7 +332,6 @@ bool idContainsFieldWithName(Context* context, ID typeDeclId,
 ID fieldIdWithName(Context* context, ID typeDeclId,
                    UniqueString fieldName);
 
-
 /**
  * Store config settings that were set from the command line using -s flags
  */
@@ -340,6 +343,45 @@ void setConfigSettings(Context* context, ConfigSettingsList keys);
 const
 ConfigSettingsList& configSettings(Context* context);
 
+/**
+  Given an ID, returns the attributes associated with the ID. Only
+  declarations can have associated attributes.
+ */
+const uast::Attributes* idToAttributes(Context* context, ID id);
+
+/**
+  Given an ID 'idMention' representing a mention of a symbol, and an
+  ID 'idTarget' representing the symbol, determine if a deprecation
+  warning should be produced for 'idTarget' at 'idMention'. If so,
+  the warning will be reported to the context.
+
+  A warning will be reported to the context only once per revision.
+  It may not be reported if the context or compiler is configured
+  to suppress deprecation warnings.
+
+  The 'idMention' may refer to any AST but will most often be an
+  Identifier. The 'idTarget' should refer to a NamedDecl. If it does
+  not, then nothing is reported.
+*/
+void reportDeprecationWarningForId(Context* context, ID idMention,
+                                   ID idTarget);
+
+/**
+  Given an ID 'idMention' representing a mention of a symbol, and an
+  ID 'idTarget' representing the symbol, determine if an unstable
+  warning should be produced for 'idTarget' at 'idMention'. If so,
+  the warning will be reported to the context.
+
+  A warning will be reported to the context only once per revision.
+  It may not be reported if the context or compiler is configured
+  to suppress unstable warnings.
+
+  The 'idMention' may refer to any AST but will most often be an
+  Identifier. The 'idTarget' should refer to a NamedDecl. If it does
+  not, then nothing is reported.
+*/
+void reportUnstableWarningForId(Context* context, ID idMention,
+                                ID idTarget);
 
 } // end namespace parsing
 } // end namespace chpl

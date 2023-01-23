@@ -72,6 +72,10 @@ namespace chpl {
 
 using namespace chpl::querydetail;
 
+void Context::reportError(Context* context, const ErrorBase* err) {
+  handler_->report(context, err);
+}
+
 const std::string& Context::chplHome() const {
   return chplHome_;
 }
@@ -561,71 +565,66 @@ void Context::collectGarbage() {
   }
 }
 
-const ErrorBase* Context::report(const ErrorBase* error) {
+void Context::report(owned<ErrorBase> error) {
   gdbShouldBreakHere();
+
   if (queryStack.size() > 0) {
     queryStack.back()->errors.push_back(std::move(error));
-    reportError(this, queryStack.back()->errors.back());
+    reportError(this, queryStack.back()->errors.back().get());
   } else {
-    reportError(this, error);
+    reportError(this, error.get());
   }
-
-  return error;
 }
 
-static const ErrorBase* logErrorInContext(Context* context,
+static void logErrorInContext(Context* context,
                               ErrorBase::Kind kind,
                               Location loc,
                               const char* fmt,
                               va_list vl) {
-  auto err = GeneralError::vbuild(context, kind, loc, fmt, vl);
-  context->report(err);
-  return err;
+  auto err = GeneralError::vbuild(kind, loc, fmt, vl);
+  context->report(std::move(err));
 }
 
-static const ErrorBase* logErrorInContext(Context* context,
+static void logErrorInContext(Context* context,
                               ErrorBase::Kind kind,
                               ID id,
                               const char* fmt,
                               va_list vl) {
-  auto err = GeneralError::vbuild(context, kind, id, fmt, vl);
-  context->report(err);
-  return err;
+  auto err = GeneralError::vbuild(kind, id, fmt, vl);
+  context->report(std::move(err));
 }
 
-static const ErrorBase* logErrorInContext(Context* context,
+static void logErrorInContext(Context* context,
                               ErrorBase::Kind kind,
                               const uast::AstNode* ast,
                               const char* fmt,
                               va_list vl) {
-  auto err = GeneralError::vbuild(context, kind, ast->id(), fmt, vl);
-  context->report(err);
-  return err;
+  auto err = GeneralError::vbuild(kind, ast->id(), fmt, vl);
+  context->report(std::move(err));
 }
 
 #define CHPL_CONTEXT_LOG_ERROR_HELPER(context__, kind__, pin__, fmt__) \
   do { \
     va_list vl; \
     va_start(vl, fmt__); \
-    auto err = logErrorInContext(context__, kind__, pin__, fmt__, vl); \
+    logErrorInContext(context__, kind__, pin__, fmt__, vl); \
     va_end(vl); \
-    return err; \
   } while (0)
 
 // TODO: Similar overloads for NOTE, WARN, etc.
-const ErrorBase* Context::error(Location loc, const char* fmt, ...) {
+void Context::error(Location loc, const char* fmt, ...) {
   CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, loc, fmt);
 }
 
-const ErrorBase* Context::error(ID id, const char* fmt, ...) {
+void Context::error(ID id, const char* fmt, ...) {
   CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, id, fmt);
 }
 
-const ErrorBase* Context::error(const uast::AstNode* ast, const char* fmt, ...) {
+void Context::error(const uast::AstNode* ast, const char* fmt, ...) {
   CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, ast, fmt);
 }
 
-const ErrorBase* Context::error(const resolution::TypedFnSignature* inFn,
+void Context::error(const resolution::TypedFnSignature* inFn,
                     const uast::AstNode* ast,
                     const char* fmt, ...) {
   CHPL_CONTEXT_LOG_ERROR_HELPER(this, ErrorBase::ERROR, ast, fmt);
@@ -709,7 +708,7 @@ void Context::updateForReuse(const QueryMapResultBase* resultEntry) {
 
   // Update error locations if needed and re-report the error
   for (auto& err: resultEntry->errors) {
-    reportError(this, err);
+    reportError(this, err.get());
   }
 }
 
@@ -857,6 +856,16 @@ namespace querydetail {
 
 void queryArgsPrintSep() {
   printf(", ");
+}
+
+QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
+                   RevisionNumber lastChanged,
+                   QueryMapBase* parentQueryMap)
+  : lastChecked(lastChecked),
+    lastChanged(lastChanged),
+    dependencies(),
+    errors(),
+    parentQueryMap(parentQueryMap) {
 }
 
 QueryMapResultBase::~QueryMapResultBase() {

@@ -86,7 +86,7 @@ For example, we have `can-pass.h` and `can-pass.cpp`.
 
 ### Error System Suggestions
 
-This frontend library has a new error system, which is inteded to provide
+This frontend library has a new error system, which is intended to provide
 friendlier, more helpful, and better looking error messages than the
 production compiler currently does. This is accomplished in part by
 letting the C++ programmer working on the frontend library create

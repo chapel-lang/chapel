@@ -511,7 +511,7 @@ class TypeSymbol final : public Symbol {
   // for this type has already been codegen'd
   // and cache it if it has.
 #ifdef HAVE_LLVM
-  llvm::Type* llvmType;
+  llvm::Type* llvmImplType;
   llvm::MDNode* llvmTbaaTypeDescriptor;       // scalar type descriptor
   llvm::MDNode* llvmTbaaAccessTag;            // scalar access tag
   llvm::MDNode* llvmConstTbaaAccessTag;       // scalar const access tag
@@ -521,10 +521,12 @@ class TypeSymbol final : public Symbol {
   llvm::MDNode* llvmTbaaStructCopyNode;       // tbaa.struct for memcpy
   llvm::MDNode* llvmConstTbaaStructCopyNode;  // const tbaa.struct
   llvm::MDNode* llvmDIType;
+  llvm::Type* getLLVMStructureType();         // get structure type for class
+  llvm::Type* getLLVMType();                  // get pointer to structure type for class
 #else
   // Keep same layout so toggling HAVE_LLVM
   // will not lead to build errors without make clean
-  void* llvmType;
+  void* llvmImplType;
   void* llvmTbaaTypeDescriptor;
   void* llvmTbaaAccessTag;
   void* llvmConstTbaaAccessTag;

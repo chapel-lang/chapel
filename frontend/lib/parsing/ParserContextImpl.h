@@ -178,12 +178,7 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
 }
 
 void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
-  if (!hasAttributeParts) {
-    hasAttributeParts = true;
-  } else {
-    CHPL_ASSERT(!attributeParts.isDeprecated);
-    CHPL_ASSERT(attributeParts.deprecationMessage.isEmpty());
-  }
+  hasAttributeParts = true;
 
   attributeParts.isDeprecated = true;
 
@@ -197,13 +192,7 @@ void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
 }
 
 void ParserContext::noteUnstable(YYLTYPE loc, AstNode* messageStr) {
-  if (!hasAttributeParts) {
-    hasAttributeParts = true;
-  }
-  else {
-    CHPL_ASSERT(!attributeParts.isUnstable);
-    CHPL_ASSERT(attributeParts.unstableMessage.isEmpty());
-  }
+  hasAttributeParts = true;
 
   attributeParts.isUnstable = true;
 
@@ -215,6 +204,7 @@ void ParserContext::noteUnstable(YYLTYPE loc, AstNode* messageStr) {
     delete messageStr;
   }
 }
+
 void ParserContext::resetAttributePartsState() {
   if (hasAttributeParts) {
     auto& pragmas = attributeParts.pragmas;
@@ -332,8 +322,8 @@ void ParserContext::exitScope(asttags::AstTag tag, UniqueString name) {
 }
 
 
-ErroneousExpression* ParserContext::report(YYLTYPE loc, const ErrorBase* error) {
-  errors.push_back(context()->report(error));
+ErroneousExpression* ParserContext::report(YYLTYPE loc, owned<ErrorBase> error) {
+  context()->report(std::move(error));
   return ErroneousExpression::build(builder, convertLocation(loc)).release();
 }
 
@@ -343,7 +333,7 @@ ErroneousExpression* ParserContext::report(YYLTYPE loc, const ErrorBase* error) 
     va_start(vl, fmt); \
     auto reportLoc = p_context__->convertLocation(loc__); \
     auto result = p_context__->report(loc__, \
-        GeneralError::vbuild(context(), kind__, reportLoc, fmt__, vl)); \
+        GeneralError::vbuild(kind__, reportLoc, fmt__, vl)); \
     va_end(vl); \
     return result; \
   } while(false)
