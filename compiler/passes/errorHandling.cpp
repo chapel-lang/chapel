@@ -652,7 +652,7 @@ bool ErrorHandlingVisitor::enterCondStmt(CondStmt* node) {
 void ErrorHandlingVisitor::checkThrowingFuncInInit(CallExpr* node,
                                                    bool insideTryStack) {
   if (state != NULL) {
-    FnSymbol* fn = toFnSymbol(node->parentSymbol);
+    FnSymbol* fn = state->theFn();
     INT_ASSERT(fn);
 
     if (insideTryStack && node->tryTag != TRY_TAG_IN_TRYBANG) {
