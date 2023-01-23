@@ -11,7 +11,7 @@ config param readSize = 65536,
              linesPerChunk = 8192;
 
 enum alg {Spin, WaitFor, SerForall, Forall, Foreach, For, MemMove, MaxLoc,
-          OptForall, MemChr};
+          OptForall, MemChr, Find};
 use alg;
 
 // shift:
@@ -85,7 +85,7 @@ proc main(args: [] string) {
 
     // if the new characters contain the start of the next sequence,
     var endOfRead = readPos + newChars;
-    while findSeqStart(buff, max(readPos,1)..<endOfRead, nextSeqStart) {
+    while findSeqStart(buff, readPos..<endOfRead, nextSeqStart) {
       // process this one
       revcomp(buff, nextSeqStart);
 
@@ -275,6 +275,9 @@ proc findSeqStart(buff, inds, ref ltLoc) {
 
     ltLoc = ltptr - zeroptr;
     return ltptr != c_nil;
+  } else if searchAlg == Find {
+    ltLoc = buff[inds].find('>'.toByte());
+    return ltLoc > 0;
   } else {
     compilerError("Unexpected search algorithm" + searchAlg: string);
   }

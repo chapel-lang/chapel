@@ -255,6 +255,9 @@ module ChapelArray {
   pragma "no doc"
   config param capturedIteratorLowBound = defaultLowBound;
 
+  config param useNewArrayFind = false;
+
+
   pragma "ignore transfer errors"
   proc chpl__buildArrayExpr( pragma "no auto destroy" in elems ...?k ) {
 
@@ -1734,12 +1737,24 @@ module ChapelArray {
        tuple containing ``false`` and an unspecified value is returned.
      */
      @unstable "'Array.find' is unstable"
-     proc find(val: this.eltType): (bool, index(this.domain)) {
+     proc find(val: this.eltType): (bool, index(this.domain)) where !useNewArrayFind {
       for i in this.domain {
         if this[i] == val then return (true, i);
       }
       var arbInd: index(this.domain);
       return (false, arbInd);
+    }
+
+    proc chpl_indexType() type {
+      return if rank == 1 then idxType else rank*idxType;
+    }
+
+    proc find(val: this.eltType): chpl_indexType() {
+      for i in this.domain {
+        if this[i] == val then return i;
+      }
+
+      return this.domain.low - 1;
     }
 
     /* Return the number of times ``val`` occurs in the array. */
