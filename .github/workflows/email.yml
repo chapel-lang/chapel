@@ -24,7 +24,7 @@ jobs:
         env:
           COMMIT_URL: ${{github.event.pull_request._links.commits.href}}
           LOG: ${{github.event.pull_request.body}}
-          uses: nick-fields/retry@v2
+        uses: nick-fields/retry@v2
         with:
           max_attempts: 4
           retry_on_exit_code: 2
