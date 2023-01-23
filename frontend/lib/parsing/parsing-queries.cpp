@@ -913,6 +913,31 @@ ID fieldIdWithName(Context* context, ID typeDeclId, UniqueString fieldName) {
   return fieldIdWithNameQuery(context, typeDeclId, fieldName);
 }
 
+static const bool&
+aggregateUsesForwardingQuery(Context* context, ID typeDeclId) {
+  QUERY_BEGIN(aggregateUsesForwardingQuery, context, typeDeclId);
+
+  bool result = false;
+  auto ast = parsing::idToAst(context, typeDeclId);
+  if (ast && ast->isAggregateDecl()) {
+    auto ad = ast->toAggregateDecl();
+
+    for (auto child: ad->children()) {
+      // Check for a ForwardingDecl
+      if (child->isForwardingDecl()) {
+        result = true;
+        break;
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool aggregateUsesForwarding(Context* context, ID typeDeclId) {
+  return aggregateUsesForwardingQuery(context, typeDeclId);
+}
+
 void setConfigSettings(Context* context, ConfigSettingsList keys) {
   QUERY_STORE_INPUT_RESULT(configSettings, context, keys);
 }
