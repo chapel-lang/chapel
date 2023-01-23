@@ -1497,14 +1497,17 @@ static void resolveModuleCall(CallExpr* call) {
 
         if (sym != NULL) {
           if (sym->isVisible(call) == true) {
-            if (sym->hasFlag(FLAG_DEPRECATED) && !isFnSymbol(sym)) {
-              // Function symbols will generate a warning during function
-              // resolution, no need to warn here.
-              sym->generateDeprecationWarning(call);
-            }
+            if (!fDynoCompilerLibrary) {
+              if (sym->hasFlag(FLAG_DEPRECATED) && !isFnSymbol(sym)) {
+                // Function symbols will generate a warning during function
+                // resolution, no need to warn here.
+                sym->generateDeprecationWarning(call);
+              }
 
-            if (sym->hasFlag(FLAG_UNSTABLE) && (!isFnSymbol(sym)) && (fWarnUnstable)) {
-              sym->generateUnstableWarning(call);
+              if (sym->hasFlag(FLAG_UNSTABLE) &&
+                  (!isFnSymbol(sym)) && (fWarnUnstable)) {
+                sym->generateUnstableWarning(call);
+              }
             }
 
             if (FnSymbol* fn = toFnSymbol(sym)) {

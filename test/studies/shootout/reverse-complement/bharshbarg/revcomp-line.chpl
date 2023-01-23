@@ -10,9 +10,9 @@ private use IO, CTypes;
    This is very ugly because we don't have good IO support for
    reading/writing buffers. The 'data' buffer is included in the
    'buf' record so that we know exactly how many bytes to read
-   with 'readBytes'. This is so that we don't accidentally read
+   with 'readBinary'. This is so that we don't accidentally read
    past the end of the file and get an error. This would be bad
-   because 'readBytes' doesn't tell us how many bytes it actually
+   because 'readBinary' doesn't tell us how many bytes it actually
    read...
 */
 
@@ -42,7 +42,7 @@ record buf {
     if cur >= cap {
       if numLeft > 0 {
         cap = min(bufSize, numLeft);
-        chan.readBytes(c_ptrTo(buf), cap:c_ssize_t);
+        chan.readBinary(c_ptrTo(buf), cap:c_ssize_t);
         numLeft -= cap;
 
         // ensure we return an empty slice if we run out of bytes

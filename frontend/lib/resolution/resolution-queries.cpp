@@ -121,9 +121,10 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
         if (child->isComment() ||
             child->isTypeDecl() ||
             child->isFunction() ||
-            child->isModule() ||
-            child->isUse() ||
-            child->isImport()) {
+            child->isModule()) {
+            // Resolve use/import to find deprecation/unstable warnings.
+            // child->isUse() ||
+            // child->isImport()) {
           // ignore this statement since it is not relevant to
           // the resolution of module initializers and module-level
           // variables.
@@ -165,9 +166,10 @@ scopeResolveModule(Context* context, ID id) {
             child->isTypeDecl() ||
             child->isFunction() ||
             child->isModule() ||
-            child->isInterface() ||
-            child->isUse() ||
-            child->isImport()) {
+            child->isInterface()) {
+            // Resolve use/import to find deprecation/unstable warnings.
+            // child->isUse() ||
+            // child->isImport()) {
           // ignore this statement since it is not relevant to
           // the resolution of module initializers and module-level
           // variables.
@@ -973,6 +975,8 @@ typeConstructorInitialQuery(Context* context, const Type* t)
       idTag = uast::asttags::Class;
     } else if (t->isRecordType()) {
       idTag = uast::asttags::Record;
+    } else if (t->isUnionType()) {
+      idTag = uast::asttags::Union;
     }
   } else {
     CHPL_ASSERT(false && "case not handled");

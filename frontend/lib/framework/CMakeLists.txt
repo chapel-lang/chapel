@@ -21,11 +21,12 @@ target_sources(ChplFrontend-obj
                compiler-configuration.cpp
                Context.cpp
                ErrorBase.cpp
-               error-classes-list.cpp
                ErrorMessage.cpp
                ErrorWriter.cpp
                ID.cpp
                Location.cpp
+               parser-error-classes-list.cpp
+               resolution-error-classes-list.cpp
                UniqueString.cpp
 
               )

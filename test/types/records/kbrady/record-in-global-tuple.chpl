@@ -1,6 +1,6 @@
 module bar {
   record BadBaz {
-    var x = [1];
+    var x = [1, ];
 
     proc init(y) where y.type != BadBaz {
       this.complete();

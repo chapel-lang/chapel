@@ -829,7 +829,7 @@ void CallInitDeinit::handleAssign(const OpCall* ast, RV& rv) {
   bool splitInited = processSplitInitAssign(ast, splitInitedVars, rv);
 
   if (splitInited) {
-    // if initializating a variable, update localsAndDefers or initedOuterVars
+    // if initializing a variable, update localsAndDefers or initedOuterVars
     ID lhsId = refersToId(lhsAst, rv);
     recordInitializationOrder(frame, lhsId);
   }
@@ -862,7 +862,7 @@ void CallInitDeinit::handleOutFormal(const FnCall* ast,
   // update initedVars if it is initializing a variable
   bool splitInited = processSplitInitOut(ast, actual, splitInitedVars, rv);
   if (splitInited && isValue(actualType.kind())) {
-    // if initializating a variable, update localsAndDefers or initedOuterVars
+    // if initializing a variable, update localsAndDefers or initedOuterVars
     ID actualId = refersToId(actual, rv);
     recordInitializationOrder(frame, actualId);
 

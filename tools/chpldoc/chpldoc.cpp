@@ -1293,8 +1293,8 @@ struct RstResultBuilder {
       // process the warning about comments
       auto br = parseFileContainingIdToBuilderResult(context_, node->id());
       auto loc = br->commentToLocation(lastComment);
-      auto err = GeneralError::get(context_, ErrorBase::WARNING, loc, errMsg);
-      context_->report(err);
+      auto err = GeneralError::get(ErrorBase::WARNING, loc, errMsg);
+      context_->report(std::move(err));
     }
     // TODO: The presence of these node exceptions means we're probably missing
     //  something from the old implementation
@@ -1488,8 +1488,8 @@ struct RstResultBuilder {
             // process the warning about comments
             auto br = parseFileContainingIdToBuilderResult(context_, m->id());
             auto loc = br->commentToLocation(lastComment);
-            auto err = GeneralError::get(context_, GeneralError::WARNING, loc, errMsg);
-            context_->report(err);
+            auto err = GeneralError::get(GeneralError::WARNING, loc, errMsg);
+            context_->report(std::move(err));
           }
           if (!synopsis.empty()) {
             indentStream(os_, 1 * indentPerDepth);
@@ -2052,6 +2052,38 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
   }
 }
 
+class ChpldocErrorHandler : public Context::ErrorHandler {
+ private:
+  std::vector<owned<ErrorBase>> reportedErrors;
+
+ public:
+  void report(Context* context, const ErrorBase* error) override {
+    reportedErrors.push_back(error->clone());
+  }
+
+  size_t numErrors() const {
+    return reportedErrors.size();
+  }
+
+  void printAndExitIfError(Context* context) {
+    // TODO: handle errors better, don't rely on parse query to emit them
+    // per @mppf: if dyno-chpldoc wants to quit on an error, it should
+    // configure Context::reportError to have a custom function that does so.
+    bool fatal = false;
+    for (auto& e : reportedErrors) {
+    // just display the error messages right now, see TODO above
+      if (e->kind() == ErrorBase::Kind::ERROR ||
+          e->kind() == ErrorBase::Kind::SYNTAX) {
+            fatal = true;
+      }
+      Context::defaultReportError(context, e.get());
+    }
+    if (fatal) {
+      exit(1);
+    }
+    reportedErrors.clear();
+  }
+};
 
 int main(int argc, char** argv) {
   Args args = parseArgs(argc, argv, (void*)main);
@@ -2087,6 +2119,8 @@ int main(int argc, char** argv) {
 
   Context context(CHPL_HOME);
   Context *ctx = &context;
+  auto erroHandler = new ChpldocErrorHandler(); // wraped in owned on next line
+  ctx->installErrorHandler(owned<Context::ErrorHandler>(erroHandler));
   ctx->setDetailedErrorOutput(false);
   auto chplEnv = ctx->getChplEnv();
   assert(!chplEnv.getError() && "not handling chplenv errors yet");
@@ -2174,26 +2208,11 @@ int main(int argc, char** argv) {
     // TODO: Change which query we use to parse files as suggested by @mppf
     // parseFileContainingIdToBuilderResult(Context* context, ID id);
     // and then work with the module ID to find the preceding comment.
-    const BuilderResult& builderResult = parseFileToBuilderResult(ctx,
-                                                                  path,
-                                                                  emptyParent);
+    const BuilderResult& builderResult =
+      parseFileToBuilderResultAndCheck(ctx, path, emptyParent);
 
-    if (builderResult.numErrors() > 0) {
-      // TODO: handle errors better, don't rely on parse query to emit them
-      // per @mppf: if dyno-chpldoc wants to quit on an error, it should
-      // configure Context::reportError to have a custom function that does so.
-      bool fatal = false;
-      for (auto e : builderResult.errors()) {
-      // just display the error messages right now, see TODO above
-        if (e->kind() == ErrorBase::Kind::ERROR ||
-            e->kind() == ErrorBase::Kind::SYNTAX) {
-              fatal = true;
-        }
-        context.report(e);
-      }
-      if (fatal) {
-        return 1;
-      }
+    if (erroHandler->numErrors() > 0) {
+      erroHandler->printAndExitIfError(ctx);
     }
     // gather all the top level and used/imported/included module IDs
     for (const chpl::uast::AstNode* ast : builderResult.topLevelExpressions()) {
@@ -2235,6 +2254,9 @@ int main(int argc, char** argv) {
         r->outputModule(outdir, moduleName, indentPerDepth);
      }
    }
+
+  // chpldoc-specific warnings could've been issued, make sure they're printed.
+  erroHandler->printAndExitIfError(ctx);
 
   if (!textOnly_ && !args.noHTML) {
     generateSphinxOutput(docsSphinxDir, docsOutputDir,args.projectVersion,

@@ -115,7 +115,7 @@ static bool kindAllowsCopyElision(Qualifier kind) {
 
 // if this ends up representing any significant overhead,
 // we can cache the result in the ResolvedExpression,
-// or try to build up a map from type to type indicating convertability.
+// or try to build up a map from type to type indicating convertibility.
 bool FindElidedCopies::hasCrossTypeInitAssignWithIn(
                                            const QualifiedType& lhsType,
                                            const QualifiedType& rhsType,

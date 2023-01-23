@@ -29,12 +29,13 @@
 #include "chpl/uast/On.h"
 
 static void test0(Parser* parser) {
-  auto parseResult = parser->parseString("test0.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       "/* comment 1 */\n"
       "on /* comment 2 */ foo /* comment 3 */ do\n"
       "  var a;\n"
       "/* comment 4 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -51,7 +52,8 @@ static void test0(Parser* parser) {
 }
 
 static void test1(Parser* parser) {
-  auto parseResult = parser->parseString("test1.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
       "/* comment 1 */\n"
       "on /* comment 2 */ foo /* comment 3 */ {\n"
       "  /* comment 4 */\n"
@@ -59,7 +61,7 @@ static void test1(Parser* parser) {
       "  /* comment 5 */\n"
       "}\n"
       "/* comment 6 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -78,10 +80,11 @@ static void test1(Parser* parser) {
 }
 
 static void test2(Parser* parser) {
-  auto parseResult = parser->parseString("test2.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
       "/* comment 1 */\n"
       "on foo do { var a; }\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 2);

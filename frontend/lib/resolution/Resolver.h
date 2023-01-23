@@ -461,6 +461,12 @@ struct Resolver {
   bool enter(const uast::Try* ret);
   void exit(const uast::Try* ret);
 
+  bool enter(const uast::Use* node);
+  void exit(const uast::Use* node);
+
+  bool enter(const uast::Import* node);
+  void exit(const uast::Import* node);
+
   // if none of the above is called, fall back on this one
   bool enter(const uast::AstNode* ast);
   void exit(const uast::AstNode* ast);
