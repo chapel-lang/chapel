@@ -33,9 +33,6 @@
 
 void chpl_topo_init(void) { }
 
-
-void chpl_topo_post_comm_init(void) { }
-
 void chpl_topo_post_args_init(void) { }
 
 void chpl_topo_exit(void) { }
