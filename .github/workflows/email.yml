@@ -28,7 +28,7 @@ jobs:
           LOG: ${{github.event.pull_request.body}}
         uses: nick-fields/retry@v2
         with:
-          max_attempts: 3
+          max_attempts: 4
           retry_on_exit_code: 2
           timeout_seconds: 60  
           command: |
@@ -36,7 +36,11 @@ jobs:
               if [ $? -ne 0 ]; then
                 echo "curl command to get commits payload failed"
                 exit 2
-              fi              
+              fi    
+              if [ jq -r '.[0].commit.author.name' commits.json -ne 0]  ; then
+                 echo "curl command to get commits payload failed"
+                exit 2
+              fi       
               echo "AUTHOR=$(jq -r '.[0].commit.author.name' commits.json)" >> $GITHUB_ENV   
               echo "LINK=$(jq -r '.[0].html_url' commits.json)" >> $GITHUB_ENV
               echo "MESSAGE=$((jq  '.[0].commit.message' commits.json)| awk -F'\\\\n' '{print $1}' | sed 's/\"//g')" >> $GITHUB_ENV 
