@@ -37,8 +37,8 @@ jobs:
                 echo "curl command to get commits payload failed"
                 exit 2
               fi    
-              if [ jq -r '.[0].commit.author.name' commits.json -ne 0]  ; then
-                 echo "curl command to get commits payload failed"
+              if [ (jq -r '.[0].commit.author.name' commits.json) -ne 0]  ; then
+                echo "curl command to get commits payload failed"
                 exit 2
               fi       
               echo "AUTHOR=$(jq -r '.[0].commit.author.name' commits.json)" >> $GITHUB_ENV   
