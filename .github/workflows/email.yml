@@ -68,19 +68,19 @@ jobs:
         uses: dawidd6/action-send-mail@v3
         with:
            # Required mail server address if not connection_url:
-           server_address: ${{ secrets.SMTP_PROVIDER}}
+           server_address: ${{secrets.SMTP_PROVIDER}}
            server_port: 465
            # Optional whether this connection use TLS (default is true if server_port is 465)
            secure: true
            # Optional (recommended): mail server username:
-           username:  ${{ secrets.MAIL_USERNAME}} 
+           username:  ${{secrets.MAIL_USERNAME}} 
            # Optional (recommended) mail server password:
            password: ${{secrets.MAIL_PASSWORD}}
            # Required mail subject:
            subject: "[Chapel Merge] ${{github.event.pull_request.title}}"
            # Required recipients' addresses:
            #to: chapel+commits@discoursemail.com
-           to: bhavani@hpe.com
+           to: Bhavani@hpe.com
            # Required sender full name (address can be skipped):
            from:  ${{env.AUTHOR}}
            html_body: |
