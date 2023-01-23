@@ -107,11 +107,14 @@ __device__ __host__ static inline void chpl_gpu_printTimeDelta(
 }
 
 __device__ static inline void chpl_gpu_force_sync() {
+  // Using __syncThreads() directly causes issues when compiling programs with
+  // --fast.  It's likely due to an issue with clang discussed here:
+  // https://github.com/llvm/llvm-project/issues/58626
   asm volatile("bar.sync 0;" : : : "memory");
 }
 
 __host__ static inline void chpl_gpu_force_sync() {
-  // TODO
+  chpl_internal_error("chpl_gpu_force_sync called from host");
 }
 
 #endif // HAS_GPU_LOCALE
