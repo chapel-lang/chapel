@@ -5137,7 +5137,6 @@ proc _channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
   :returns: a new ``string`` containing up to the next ``maxSize`` codepoints
               from the ``fileReader``
 
-  :throws UnexpectedEofError
   :throws SystemError: Thrown if a ``string`` could not be read from the ``fileReader``.
 */
 proc fileReader.readString(maxSize: int): string throws {
@@ -5161,7 +5160,6 @@ proc fileReader.readString(maxSize: int): string throws {
   :arg maxSize: the maximum number of codepoints to read from the ``fileReader``
   :returns: ``false`` if nothing could be read, or ``true`` if something was read.
 
-  :throws UnexpectedEofError
   :throws SystemError: Thrown if a ``string`` could not be read from the ``fileReader``.
 */
 proc fileReader.readString(ref s: string, maxSize: int): bool throws {
@@ -5209,7 +5207,6 @@ proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
   :returns: a new ``bytes`` containing up to the next ``maxSize`` bytes
               from the ``fileReader``
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if a ``bytes`` could not be read from the ``fileReader``
                        for another reason.
 */
@@ -5234,7 +5231,6 @@ proc fileReader.readBytes(maxSize: int): bytes throws {
   :arg maxSize: the maximum number of bytes to read from the ``fileReader``
   :returns: ``false`` if nothing could be read, or ``true`` if something was read.
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if a ``bytes`` could not be read from the ``fileReader``
                        for another reason.
 */
