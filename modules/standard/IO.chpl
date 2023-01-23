@@ -2615,7 +2615,8 @@ proc _channel.offset():int(64) {
    other data if it is stored in the channel's buffer, for example with
    :proc:`channel._mark` and :proc:`channel._revert`.
 
-   :throws SystemError: Throws if the channel offset was not moved.
+   :throws EofError: If EOF is reached before the requested number of bytes can be consumed.
+   :throws SystemError: For other failures, for which channel offset is not moved.
  */
 proc _channel.advance(amount:int(64)) throws {
   var err:errorCode = 0;
@@ -2630,7 +2631,7 @@ proc _channel.advance(amount:int(64)) throws {
    Reads until ``byte`` is found and then leave the channel offset
    just after it.
 
-   :throws EofError: if the requested `byte` could not be found.
+   :throws UnexpectedEofError: if the requested `byte` could not be found.
    :throws SystemError: if another error occurred.
  */
 proc _channel.advancePastByte(byte:uint(8)) throws {
@@ -4373,7 +4374,8 @@ proc _channel.writeIt(const x) throws {
   /*
      Write a sequence of bytes.
 
-     :throws SystemError: Thrown if the byte sequence could not be written.
+     :throws UnexpectedEofError: Thrown if EOF encountered before all bytes could be written.
+     :throws SystemError: Thrown if the byte sequence could not be written for another reason.
   */
   pragma "last resort"
   deprecated "'writeBytes' with a generic pointer argument is deprecated; please use the variant that takes a 'bytes' object"
@@ -4515,6 +4517,7 @@ inline proc _channel._readInner(ref args ...?k):void throws {
               in :ref:`readThis-writeThis`.
    :returns: `true` if the read succeeded, and `false` on end of file.
 
+   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
    :throws SystemError: Thrown if the channel could not be read.
  */
 inline proc _channel.read(ref args ...?k):bool throws {
@@ -4621,7 +4624,8 @@ proc _channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lo
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: Returns `0` if EOF is reached and no data is read. Otherwise, returns the number of array elements that were set by this call.
 
-  :throws SystemError: Thrown if data could not be read from the channel.
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading line.
+  :throws SystemError: Thrown if data could not be read from the channel for another reason.
   :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
  */
 proc _channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
@@ -4696,6 +4700,7 @@ inline proc _channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false):
   :arg arg: a string or bytes to receive the line
   :returns: `true` if a line was read without error, `false` upon EOF
 
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if data could not be read from the channel.
 */
 deprecated "channel.readline is deprecated. Use :proc:`channel.readLine` instead"
@@ -4771,6 +4776,7 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: `true` if a line was read without error, `false` upon EOF
 
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if data could not be read from the channel.
   :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
@@ -4856,6 +4862,7 @@ proc _channel.readLine(ref s: string,
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: `true` if a line was read without error, `false` upon EOF
 
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if data could not be read from the channel.
   :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
@@ -4943,6 +4950,7 @@ proc _channel.readLine(ref b: bytes,
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: The data that was read.
 
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if data could not be read from the channel.
   :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
@@ -4958,7 +4966,8 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
   :arg t: the type to read into; must be ``string`` or ``bytes``. Defaults to ``bytes`` if not specified.
   :returns: the contents of the channel as a ``t``
 
-  :throws SystemError: Thrown if data could not be read from the channel
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if data could not be read from the channel for another reason.
 */
 proc _channel.readAll(type t=bytes): t throws
   where t==string || t==bytes
@@ -4987,7 +4996,8 @@ proc _channel.readAll(type t=bytes): t throws
   :returns: the number of codepoints that were stored in ``s``
   :rtype: int
 
-  :throws SystemError: Thrown if data could not be read from the channel
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if data could not be read from the channel for another reason.
 */
 proc _channel.readAll(ref s: string): int throws {
   if this.writing then compilerError("attempt to read on write-only channel");
@@ -5010,7 +5020,8 @@ proc _channel.readAll(ref s: string): int throws {
   :returns: the number of bytes that were stored in ``b``
   :rtype: int
 
-  :throws SystemError: Thrown if data could not be read from the channel
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if data could not be read from the channel for another reason.
 */
 proc _channel.readAll(ref b: bytes): int throws {
   if this.writing then compilerError("attempt to read on write-only channel");
@@ -5036,8 +5047,9 @@ proc _channel.readAll(ref b: bytes): int throws {
   :returns: the number of bytes that were stored in ``a``
   :rtype: int
 
-  :throws InsufficientCapacityError: Thrown if the channel's contents do not fit into ``a``
-  :throws SystemError: Thrown if data could not be read from the channel
+  :throws InsufficientCapacityError: Thrown if the channel's contents do not fit into ``a``.
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if data could not be read from the channel for another reason.
 */
 proc _channel.readAll(ref a: [?d] ?t): int throws
   where (t == uint(8) || t == int(8)) && d.rank == 1 && d.stridable == false
@@ -5097,6 +5109,7 @@ proc _channel.readAll(ref a: [?d] ?t): int throws
              current offset.
    :returns: `true` if we read something, `false` upon EOF
 
+   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
    :throws SystemError: Thrown if the bytes could not be read from the channel.
  */
 deprecated "'readstring' is deprecated; please use 'readString' instead"
@@ -5124,6 +5137,7 @@ proc _channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
   :returns: a new ``string`` containing up to the next ``maxSize`` codepoints
               from the ``fileReader``
 
+  :throws UnexpectedEofError
   :throws SystemError: Thrown if a ``string`` could not be read from the ``fileReader``.
 */
 proc fileReader.readString(maxSize: int): string throws {
@@ -5147,6 +5161,7 @@ proc fileReader.readString(maxSize: int): string throws {
   :arg maxSize: the maximum number of codepoints to read from the ``fileReader``
   :returns: ``false`` if nothing could be read, or ``true`` if something was read.
 
+  :throws UnexpectedEofError
   :throws SystemError: Thrown if a ``string`` could not be read from the ``fileReader``.
 */
 proc fileReader.readString(ref s: string, maxSize: int): bool throws {
@@ -5166,7 +5181,8 @@ proc fileReader.readString(ref s: string, maxSize: int): bool throws {
              current offset.
    :returns: `true` if we read something, `false` upon EOF
 
-   :throws SystemError: Thrown if the bytes could not be read from the channel.
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if data could not be read from the channel for another reason.
  */
 deprecated "'readbytes' is deprecated; please use 'readBytes' instead"
 proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
@@ -5193,7 +5209,9 @@ proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
   :returns: a new ``bytes`` containing up to the next ``maxSize`` bytes
               from the ``fileReader``
 
-  :throws SystemError: Thrown if a ``bytes`` could not be read from the ``fileReader``.
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if a ``bytes`` could not be read from the ``fileReader``
+                       for another reason.
 */
 proc fileReader.readBytes(maxSize: int): bytes throws {
   var ret: bytes = b"";
@@ -5216,7 +5234,9 @@ proc fileReader.readBytes(maxSize: int): bytes throws {
   :arg maxSize: the maximum number of bytes to read from the ``fileReader``
   :returns: ``false`` if nothing could be read, or ``true`` if something was read.
 
-  :throws SystemError: Thrown if a ``bytes`` could not be read from the ``fileReader``.
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if a ``bytes`` could not be read from the ``fileReader``
+                       for another reason.
 */
 proc fileReader.readBytes(ref b: bytes, maxSize: int): bool throws {
   var (e, lenRead) = readBytesOrString(this, b, maxSize);
@@ -5296,6 +5316,7 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
    :arg nbits: how many bits to read
    :returns: `true` if the bits were read without error, `false` upon EOF
 
+   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
    :throws SystemError: Thrown if the bits could not be read from the channel.
  */
 proc _channel.readbits(ref v:integral, nbits:integral):bool throws {
@@ -5322,6 +5343,7 @@ proc _channel.readbits(ref v:integral, nbits:integral):bool throws {
    :arg v: a value containing *nbits* bits to write the least-significant bits
    :arg nbits: how many bits to write
 
+   :throws UnexpectedEofError
    :throws IllegalArgumentError: Thrown if writing more bits than fit into `v`.
    :throws SystemError: Thrown if the bits could not be written to the channel.
  */
@@ -5345,6 +5367,7 @@ proc _channel.writebits(v:integral, nbits:integral) throws {
   :arg s: the ``string`` to write
   :arg size: the number of codepoints to write from the ``string``
 
+  :throws UnexpectedEofError
   :throws SystemError: Thrown if the string could not be written to the fileWriter.
   :throws IllegalArgumentError: Thrown if ``size`` is larger than ``s.size``
 */
@@ -5360,6 +5383,7 @@ proc fileWriter.writeString(s: string, size = s.size) throws {
   :arg b: the ``bytes`` to write
   :arg size: the number of bytes to write from the ``bytes``
 
+  :throws UnexpectedEofError
   :throws SystemError: Thrown if the bytes could not be written to the fileWriter.
   :throws IllegalArgumentError: Thrown if ``size`` is larger than ``b.size``
 */
@@ -5382,6 +5406,7 @@ proc fileWriter.writeBytes(b: bytes, size = b.size) throws {
    :arg ptr: a :class:`~CTypes.c_ptr` to some valid memory
    :arg numBytes: the number of bytes to write
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if an error occurred while writing to the ``fileWriter``
 */
 proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
@@ -5409,6 +5434,7 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
    :arg ptr: a typeless :type:`~CTypes.c_void_ptr` to some valid memory
    :arg numBytes: the number of bytes to write
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if an error occurred while writing to the ``fileWriter``
 */
 proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
@@ -5430,6 +5456,7 @@ proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
    :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
               to write the number. Defaults to ``ioendian.native``.
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if the number could not be written to the channel.
  */
 proc _channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) throws {
@@ -5458,6 +5485,7 @@ proc _channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) 
    :arg endian: :type:`ioendian` specifies the byte order in which
               to write the number.
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if the number could not be written to the channel.
  */
 proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
@@ -5480,6 +5508,7 @@ proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
    :arg s: the ``string`` to write
    :arg size: the number of codepoints to write from the ``string``
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if the string could not be written to the fileWriter.
    :throws IllegalArgumentError: Thrown if ``size`` is larger than ``s.size``
 */
@@ -5524,6 +5553,7 @@ proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
    :arg b: the ``bytes`` to write
    :arg size: the number of bytes to write from the ``bytes``
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if the bytes could not be written to the fileWriter.
    :throws IllegalArgumentError: Thrown if ``size`` is larger than ``b.size``
 */
@@ -5629,6 +5659,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, endian:ioendian) throws
               to read the number. Defaults to ``ioendian.native``.
    :returns: `true` if the number was read, `false` otherwise
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if an error occurred reading the number.
  */
 proc _channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native):bool throws {
@@ -5661,6 +5692,7 @@ proc _channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.nativ
               to read the number.
    :returns: `true` if the number was read, `false` otherwise
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if an error occurred reading the number.
  */
 proc _channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
@@ -5697,6 +5729,7 @@ proc _channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
    :arg maxSize: the number of codepoints to read from the fileReader
    :returns: `false` if EOF is reached before reading anything, `true` otherwise
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if an error occurred while reading from the fileReader.
 */
 proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
@@ -5735,6 +5768,7 @@ proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
    :arg maxSize: the number of bytes to read from the fileReader
    :returns: `false` if EOF is reached before reading anything, `true` otherwise
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if an error occurred while reading from the fileReader.
 */
 proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
@@ -5874,6 +5908,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
               number of bytes, or if ``maxBytes`` is not evenly divisible by
               the size of ``t``
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if an error occurred while reading from the ``fileReader``
 */
 proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
@@ -5899,6 +5934,7 @@ proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
    :returns: the number of bytes that were read. this can be less than ``maxBytes``
               if EOF was reached before reading the specified number of bytes
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if an error occurred while reading from the ``fileReader``
 */
 proc fileReader.readBinary(ptr: c_void_ptr, maxBytes: int): int throws {
@@ -5933,6 +5969,7 @@ proc _channel.readln():bool throws {
               in :ref:`readThis-writeThis`.
    :returns: `true` if the read succeeded, and `false` upon end of file.
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if a line could not be read from the channel.
  */
 proc _channel.readln(ref args ...?k):bool throws {
@@ -5967,6 +6004,7 @@ proc _channel.readlnHelper(ref args ...?k,
    :arg t: the type to read
    :returns: the value read
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if the type could not be read from the channel.
  */
 proc _channel.read(type t) throws {
@@ -5981,6 +6019,7 @@ proc _channel.read(type t) throws {
    :arg t: the type to read
    :returns: the value read
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if the type could not be read from the channel.
  */
 proc _channel.readln(type t) throws {
@@ -5997,6 +6036,7 @@ proc _channel.readln(type t) throws {
    :arg t: more than one type to read
    :returns: a tuple of the read values
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if the types could not be read from the channel.
  */
 proc _channel.readln(type t ...?numTypes) throws where numTypes > 1 {
@@ -6012,6 +6052,7 @@ proc _channel.readln(type t ...?numTypes) throws where numTypes > 1 {
    :arg t: more than one type to read
    :returns: a tuple of the read values
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if the types could not be read from the channel.
  */
 proc _channel.read(type t ...?numTypes) throws where numTypes > 1 {
@@ -6029,6 +6070,7 @@ proc _channel.read(type t ...?numTypes) throws where numTypes > 1 {
               internally, but for other types this function will call
               value.writeThis() with the channel as an argument.
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if the values could not be written to the channel.
    :throws EofError: Thrown if EOF is reached before all the arguments
                       could be written.
@@ -6089,8 +6131,9 @@ proc _channel.writeln() throws {
               internally, but for other types this function will call
               value.writeThis() with the channel as an argument.
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if the values could not be written to the channel.
-   :throws EofError: Thrown if EOF is reached before all the arguments
+   :throws UnexpectedEofError: Thrown if EOF is reached before all the arguments
                       could be written.
  */
 proc _channel.writeln(const args ...?k) throws {
@@ -8173,6 +8216,7 @@ proc _channel._writefOne(fmtStr, ref arg, i: int,
 
    :arg args: 0 or more arguments to write
 
+   :throws UnexpectedEofError
    :throws IllegalArgumentError: if an unsupported argument type is encountered.
    :throws SystemError: if the arguments could not be written.
  */
@@ -8300,6 +8344,7 @@ proc _channel.writef(fmtStr:?t) throws
    :returns: true if all arguments were read according to the format string,
              false on EOF.
 
+   :throws UnexpectedEofError
    :throws SystemError: Thrown if the arguments could not be read.
  */
 proc _channel.readf(fmtStr:?t, ref args ...?k): bool throws
@@ -8665,6 +8710,7 @@ proc readf(fmt:string):bool throws {
    this function will skip to (but leave unread) the comma after
    the first field value.
 
+   :throws UnexpectedEofError: Thrown if EOF encountered skipping field.
    :throws SystemError: Thrown if the field could not be skipped.
  */
 proc _channel.skipField() throws {
@@ -8690,9 +8736,9 @@ proc _channel.skipField() throws {
   :arg args: the arguments to format
   :returns: the resulting string
 
-  :throws EofError:
-  :throws UnexpectedEofError:
-  :throws BadFormatError:
+  :throws EofError
+  :throws UnexpectedEofError
+  :throws BadFormatError
   :throws SystemError: Thrown if the string could not be formatted for a less
                        specific reason.
  */
@@ -8726,9 +8772,9 @@ proc string.format(args ...?k): string throws {
   :arg args: the arguments to format
   :returns: the resulting bytes
 
-  :throws EofError:
-  :throws UnexpectedEofError:
-  :throws BadFormatError:
+  :throws EofError
+  :throws UnexpectedEofError
+  :throws BadFormatError
   :throws SystemError: Thrown if the bytes could not be formatted for a less
                        specific reason.
  */
