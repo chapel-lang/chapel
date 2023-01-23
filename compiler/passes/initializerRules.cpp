@@ -1418,6 +1418,9 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
 
   forv_Vec(FnSymbol, method, at->methods) {
     if (method->isPostInitializer()) {
+      if (method->throwsError() == true) {
+        USR_FATAL_CONT(method, "postinit cannot be declared as throws yet");
+      }
       if (method->where == NULL) {
         found = true;
       }
