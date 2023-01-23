@@ -89,6 +89,7 @@ jobs:
               <body>
               <p>
               Branch: ${{github.ref}} <br>
+              server_address: ${{secrets.SMTP_PROVIDER}}
               Revision: ${{ github.event.pull_request.merge_commit_sha }}  <br>
               Author: ${{ env.AUTHOR}} <br>
               Link: ${{github.event.pull_request._links.html.href}} <br>             
