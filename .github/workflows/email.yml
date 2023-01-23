@@ -32,7 +32,7 @@ jobs:
           retry_on_exit_code: 2
           timeout_seconds: 60  
           command: |
-              curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
+              curl --location --request GET "https://api.github.com/repos/chapel-lang/chapel/pulls/21412/commits" --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
               if [ $? -ne 0 ]; then
                 echo "curl command to get commits payload failed"
                 exit 2
