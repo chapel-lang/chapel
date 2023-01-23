@@ -85,6 +85,8 @@ static hwloc_cpuset_t physAccSet = NULL;
 static hwloc_cpuset_t physReservedSet = NULL;
 static hwloc_cpuset_t logAccSet = NULL;
 
+static void cpuInfoInit(void);
+
 // Accessible NUMA nodes
 
 static hwloc_nodeset_t numaSet = NULL;
@@ -193,6 +195,8 @@ void chpl_topo_init(void) {
   //
 
   root = hwloc_get_root_obj(topology);
+
+  cpuInfoInit();
 }
 
 
@@ -235,15 +239,22 @@ static int numCPUsLogAll  = -1;
 
 int chpl_topo_getNumCPUsPhysical(chpl_bool accessible_only) {
   okToReserveCPU = false;
-  return (accessible_only) ? numCPUsPhysAcc : numCPUsPhysAll;
+  int cpus = (accessible_only) ? numCPUsPhysAcc : numCPUsPhysAll;
+  if (cpus == -1) {
+    chpl_error("number of cpus is uninitialized", 0, 0);
+  }
+  return cpus;
 }
 
 
 int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
   okToReserveCPU = false;
-  return (accessible_only) ? numCPUsLogAcc : numCPUsLogAll;
+  int cpus = (accessible_only) ? numCPUsLogAcc : numCPUsLogAll;
+  if (cpus == -1) {
+    chpl_error("number of cpus is uninitialized", 0, 0);
+  }
+  return cpus;
 }
-
 
 
 //
@@ -251,8 +262,8 @@ int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
 // toplogy.
 //
 
-void chpl_topo_post_comm_init(void) {
-  _DBG_P("chpl_topo_post_comm_init");
+static void cpuInfoInit(void) {
+  _DBG_P("cpuInfoInit");
   //
   // accessible cores and PUs
   //
