@@ -8,7 +8,7 @@ use Subprocess;
 }
 
 {
-  var runit = spawn(["./return-10"]);
+  var runit = spawn(["./return-10", ]);
   runit.wait();
   assert(runit.exitCode == 10);
 }

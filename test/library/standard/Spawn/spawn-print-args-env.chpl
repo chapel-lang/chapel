@@ -8,14 +8,14 @@ use Subprocess;
 }
 
 {
-  var runit = spawn(["./print-args-env", "a", "bc", "def"], ["test=test"]);
+  var runit = spawn(["./print-args-env", "a", "bc", "def"], ["test=test", ]);
   runit.wait();
   assert(runit.exitCode == 0);
 }
 
 config const printEnv = false;
 if printEnv {
-  var runit = spawn(["./print-args-env"]);
+  var runit = spawn(["./print-args-env", ]);
   runit.wait();
   assert(runit.exitCode == 0);
 }
