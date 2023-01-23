@@ -56,6 +56,7 @@ studies/shootout/regexdna-redux/regexdna-redux.graph
 studies/shootout/reverse-complement/revcomp.graph
 studies/shootout/spectral-norm/spectralnorm.graph
 studies/shootout/thread-ring/thread-ring.graph
+studies/bigint/bigintops.graph
 npb/cg/cg-a.graph
 npb/ep/ep-b.graph
 npb/ft/ft-a.graph
