@@ -982,7 +982,7 @@ record regex {
      :arg global: if true, replace multiple matches
      :returns: the new string or bytes
    */
-  deprecated "regex.sub is deprecated. Please use string.replace(regex, string)."
+  deprecated "regex.sub is deprecated. Please use string.replace."
   proc sub(repl: exprType, text: exprType, global = true )
   {
     if global then
