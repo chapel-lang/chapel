@@ -2772,7 +2772,7 @@ proc _channel.seek(region: range(?)) throws where (region.hasHighBound() &&
     const err = qio_channel_seek(_channel_internal, region.low, region.high);
 
     if err then
-      throw createSystemOrChplError(err);
+      throw createSystemError(err);
   }
 }
 
@@ -5179,8 +5179,7 @@ proc fileReader.readString(ref s: string, maxSize: int): bool throws {
              current offset.
    :returns: `true` if we read something, `false` upon EOF
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
-  :throws SystemError: Thrown if data could not be read from the channel for another reason.
+  :throws SystemError: Thrown if data could not be read from the channel.
  */
 deprecated "'readbytes' is deprecated; please use 'readBytes' instead"
 proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
@@ -5339,7 +5338,8 @@ proc _channel.readbits(ref v:integral, nbits:integral):bool throws {
    :arg v: a value containing *nbits* bits to write the least-significant bits
    :arg nbits: how many bits to write
 
-   :throws UnexpectedEofError
+   :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                               `fileWriter`'s specified range.
    :throws IllegalArgumentError: Thrown if writing more bits than fit into `v`.
    :throws SystemError: Thrown if the bits could not be written to the channel.
  */
@@ -5363,7 +5363,8 @@ proc _channel.writebits(v:integral, nbits:integral) throws {
   :arg s: the ``string`` to write
   :arg size: the number of codepoints to write from the ``string``
 
-  :throws UnexpectedEofError
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                              `fileWriter`'s specified range.
   :throws SystemError: Thrown if the string could not be written to the fileWriter.
   :throws IllegalArgumentError: Thrown if ``size`` is larger than ``s.size``
 */
@@ -5379,7 +5380,8 @@ proc fileWriter.writeString(s: string, size = s.size) throws {
   :arg b: the ``bytes`` to write
   :arg size: the number of bytes to write from the ``bytes``
 
-  :throws UnexpectedEofError
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                              `fileWriter`'s specified range.
   :throws SystemError: Thrown if the bytes could not be written to the fileWriter.
   :throws IllegalArgumentError: Thrown if ``size`` is larger than ``b.size``
 */
@@ -5402,7 +5404,8 @@ proc fileWriter.writeBytes(b: bytes, size = b.size) throws {
    :arg ptr: a :class:`~CTypes.c_ptr` to some valid memory
    :arg numBytes: the number of bytes to write
 
-   :throws UnexpectedEofError
+   :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                               `fileWriter`'s specified range.
    :throws SystemError: Thrown if an error occurred while writing to the ``fileWriter``
 */
 proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
@@ -5430,7 +5433,8 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
    :arg ptr: a typeless :type:`~CTypes.c_void_ptr` to some valid memory
    :arg numBytes: the number of bytes to write
 
-   :throws UnexpectedEofError
+   :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                               `fileWriter`'s specified range.
    :throws SystemError: Thrown if an error occurred while writing to the ``fileWriter``
 */
 proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
@@ -5452,7 +5456,8 @@ proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
    :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
               to write the number. Defaults to ``ioendian.native``.
 
-   :throws UnexpectedEofError
+   :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                               `fileWriter`'s specified range.
    :throws SystemError: Thrown if the number could not be written to the channel.
  */
 proc _channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) throws {
@@ -5481,7 +5486,8 @@ proc _channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) 
    :arg endian: :type:`ioendian` specifies the byte order in which
               to write the number.
 
-   :throws UnexpectedEofError
+   :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                               `fileWriter`'s specified range.
    :throws SystemError: Thrown if the number could not be written to the channel.
  */
 proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
@@ -5504,7 +5510,8 @@ proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
    :arg s: the ``string`` to write
    :arg size: the number of codepoints to write from the ``string``
 
-   :throws UnexpectedEofError
+   :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                               `fileWriter`'s specified range.
    :throws SystemError: Thrown if the string could not be written to the fileWriter.
    :throws IllegalArgumentError: Thrown if ``size`` is larger than ``s.size``
 */
@@ -5549,7 +5556,8 @@ proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
    :arg b: the ``bytes`` to write
    :arg size: the number of bytes to write from the ``bytes``
 
-   :throws UnexpectedEofError
+   :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                               `fileWriter`'s specified range.
    :throws SystemError: Thrown if the bytes could not be written to the fileWriter.
    :throws IllegalArgumentError: Thrown if ``size`` is larger than ``b.size``
 */
@@ -8735,8 +8743,8 @@ proc _channel.skipField() throws {
   :throws EofError
   :throws UnexpectedEofError
   :throws BadFormatError
-  :throws SystemError: Thrown if the string could not be formatted for a less
-                       specific reason.
+  :throws SystemError: Thrown if the string could not be formatted for another
+  reason.
  */
 proc string.format(args ...?k): string throws {
   try {

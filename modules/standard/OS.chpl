@@ -1343,20 +1343,19 @@ module OS {
   */
   class EofError : Error {
     var details: string;
-    var err_msg: string;
 
     proc init(details: string = "", err_msg: string = "") {
       this.details = details;
-      this.err_msg = err_msg;
+      this._msg = err_msg;
     }
 
     override proc message() {
-      var msg: string;
+      var generatedMsg: string;
 
-      if !err_msg.isEmpty() {
-        msg += err_msg;
+      if !_msg.isEmpty() {
+        generatedMsg += _msg;
       } else {
-        // use default err_msg based on error code
+        // use default error message based on error code
         var err:errorCode = EEOF;
         var strerror_err_ignore: c_int = 0;
         var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
@@ -1364,14 +1363,14 @@ module OS {
         try! {
           errorcode_msg = createStringWithOwnedBuffer(errstr);
         }
-        msg += errorcode_msg;
+        generatedMsg += errorcode_msg;
       }
 
       // add details if present
       if !details.isEmpty() then
-        msg += " (" + details + ")";
+        generatedMsg += " (" + details + ")";
 
-      return msg;
+      return generatedMsg;
     }
   }
 
@@ -1379,23 +1378,26 @@ module OS {
      :class:`UnexpectedEofError` is the Chapel-specific error
      corresponding to encountering end-of-file before the requested amount of
      input could be read.
+
+     This error can also occur on some writing operations when a
+     :record:~IO.fileWriter's range has been specified, and the write exceeds
+     the valid range.
   */
   class UnexpectedEofError : Error {
     var details: string;
-    var err_msg: string;
 
     proc init(details: string = "", err_msg: string = "") {
       this.details = details;
-      this.err_msg = err_msg;
+      this._msg = err_msg;
     }
 
     override proc message() {
-      var msg: string;
+      var generatedMsg: string;
 
-      if !err_msg.isEmpty() {
-        msg += err_msg;
+      if !_msg.isEmpty() {
+        generatedMsg += _msg;
       } else {
-        // use default err_msg based on error code
+        // use default error message based on error code
         var err:errorCode = ESHORT;
         var strerror_err_ignore: c_int = 0;
         var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
@@ -1403,14 +1405,14 @@ module OS {
         try! {
           errorcode_msg = createStringWithOwnedBuffer(errstr);
         }
-        msg += errorcode_msg;
+        generatedMsg += errorcode_msg;
       }
 
       // add details if present
       if !details.isEmpty() then
-        msg += " (" + details + ")";
+        generatedMsg += " (" + details + ")";
 
-      return msg;
+      return generatedMsg;
     }
   }
 
@@ -1420,20 +1422,19 @@ module OS {
   */
   class BadFormatError : Error {
     var details: string;
-    var err_msg: string;
 
     proc init(details: string = "", err_msg: string = "") {
       this.details = details;
-      this.err_msg = err_msg;
+      this._msg = err_msg;
     }
 
     override proc message() {
-      var msg: string;
+      var generatedMsg: string;
 
-      if !err_msg.isEmpty() {
-        msg += err_msg;
+      if !_msg.isEmpty() {
+        generatedMsg += _msg;
       } else {
-        // use default err_msg based on error code
+        // use default error message based on error code
         var err:errorCode = EFORMAT;
         var strerror_err_ignore: c_int = 0;
         var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
@@ -1441,14 +1442,14 @@ module OS {
         try! {
           errorcode_msg = createStringWithOwnedBuffer(errstr);
         }
-        msg += errorcode_msg;
+        generatedMsg += errorcode_msg;
       }
 
       // add details if present
       if !details.isEmpty() then
-        msg += " (" + details + ")";
+        generatedMsg += " (" + details + ")";
 
-      return msg;
+      return generatedMsg;
     }
   }
 
