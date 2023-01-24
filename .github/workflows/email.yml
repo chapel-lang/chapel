@@ -57,13 +57,16 @@ jobs:
               echo "FILES_CHANGED=$(echo '${{github.event.pull_request._links.html.href}}/files' )" >> $GITHUB_ENV
               echo $LOG
               echo $MERGE_SHA
-              echo "MERGE_LOG= $(git show 2dbec007040cf5ad4ca3b3740da5adce429864ee) " >> $GITHUB_ENV
+             
 
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
         with:
-          fetch-depth: 0          
+          fetch-depth: 0    
+      - name: get_log
+        run: |
+           echo "MERGE_LOG= $(git show 2dbec007040cf5ad4ca3b3740da5adce429864ee) " >> $GITHUB_ENV  
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v34
