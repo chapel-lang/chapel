@@ -3,7 +3,7 @@ on:
     # this workflow is intended to run on merges from a forked repo to main(base-repo). Use pull_request_target
     # this will provide read access to the secrets in main
     #pull_request_target:
-    #push:
+    push:
     pull_request:
       #types:
         #- closed
