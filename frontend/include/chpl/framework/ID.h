@@ -81,6 +81,12 @@ class ID final {
   int postOrderId() const { return postOrderId_; }
 
   /**
+    Returns true if this ID is a path component - that is, it defines a
+    new symbol scope, and 'postOrderId()' returns -1.
+   */
+  bool isPathComponent() const { return !isEmpty() && postOrderId() == -1; }
+
+  /**
     Return the number of ids contained in this node, not including itself. In
     the postorder traversal numbering, the ids contained appear before the node.
 

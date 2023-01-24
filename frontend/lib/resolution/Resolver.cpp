@@ -1732,6 +1732,94 @@ bool Resolver::enter(const Literal* literal) {
 void Resolver::exit(const Literal* literal) {
 }
 
+// Note that this function does not capture all the nuances of identifying
+// a name conflict - some of it is handled by filters to the lookup query.
+static bool nameConflictForIds(Context* context, ID exists, ID other) {
+  if (exists.isEmpty() || other.isEmpty()) return false;
+
+  // An ID cannot conflict with itself...
+  if (exists == other) return false;
+
+  auto scopeExists = scopeForId(context, exists);
+  auto scopeOther = scopeForId(context, other);
+
+  // In the same scope. However...
+  if (scopeExists == scopeOther) {
+    bool isExistsOwner = scopeExists->id() == exists;
+    bool isOtherOwner = scopeOther->id() == other;
+    bool areBothOwners = isExistsOwner && isOtherOwner;
+
+    // This should not be possible.
+    CHPL_ASSERT(!areBothOwners);
+
+    // One ID is the scope owner and the other is not. No conflict.
+    // E.g., a function 'foo' with a formal 'foo'.
+    if (isExistsOwner || isOtherOwner) return false;
+
+    // Otherwise, neither owns the scope...
+    CHPL_ASSERT(!isExistsOwner && !isOtherOwner);
+
+    // So there is a name conflict.
+    return true;
+  }
+
+  // One of the scopes lexically contains the other, no conflict.
+  if (scopeExists->contains(scopeOther) ||
+      scopeOther->contains(scopeExists)) {
+    return false;
+  }
+
+  // By default, assume a conflict.
+  return true;
+}
+
+static void
+errorIfNameConflictsForLookup(Context* context,
+                              const std::vector<BorrowedIdsWithName>& vec,
+                              const AstNode* mention,
+                              const NamedDecl* optDecl) {
+  CHPL_ASSERT(mention != nullptr);
+
+  if (vec.size() == 0) return;
+  if (vec.size() == 1 && !optDecl) return;
+
+  bool areIdsAllFunctions = optDecl ? optDecl->isFunction() : true;
+  std::vector<ID> conflictingIds;
+
+  for (auto& borrowedIds : vec) {
+    for (auto id : borrowedIds) {
+
+      // Maybe determine if the challenging ID represents a name conflict.
+      if (optDecl && !nameConflictForIds(context, optDecl->id(), id)) {
+        continue;
+      }
+
+      // Record the conflict.
+      conflictingIds.push_back(id);
+
+      // TODO: Does not handle builtin/generated things.
+      if (!id.isEmpty()) {
+        auto ast = parsing::idToAst(context, id);
+        areIdsAllFunctions &= ast->isFunction();
+      }
+    }
+  }
+
+  // TODO: We will need to extend the scope-resolver to optionally
+  // record a "trace" of how each conflict became visible in the
+  // current scope.
+  // TODO: We may want to also do this at the point where a use or
+  // import statement is resolved.
+  if (conflictingIds.size() > 1 && !areIdsAllFunctions) {
+    if (optDecl) {
+      CHPL_REPORT(context, Redefinition, optDecl, conflictingIds);
+    } else {
+      // TODO: Emit some sort of error.
+      return;
+    }
+  }
+}
+
 std::vector<BorrowedIdsWithName>
 Resolver::lookupIdentifier(const Identifier* ident,
                            const Scope* receiverScope) {
@@ -1748,7 +1836,12 @@ Resolver::lookupIdentifier(const Identifier* ident,
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
   auto vec = lookupNameInScope(context, scope, receiverScope,
-                               ident->name(), config);
+                               ident->name(),
+                               config);
+
+  const uast::NamedDecl* optDecl = nullptr;
+  errorIfNameConflictsForLookup(context, vec, ident, optDecl);
+
   return vec;
 }
 
@@ -1982,41 +2075,13 @@ bool Resolver::enter(const NamedDecl* decl) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
-  // TODO: Need to adjust lookup so that it can skip shadow scopes.
-  LookupConfig config = LOOKUP_IMPORT_AND_USE;
-  config |= LOOKUP_SKIP_PRIVATE_VIS;
-  config |= LOOKUP_DECLS;
-
+  // Only lookup local declarations for this check.
   const Scope* receiverScope = nullptr;
   auto vec = lookupNameInScope(context, scope, receiverScope,
                                decl->name(),
-                               config);
+                               LOOKUP_DECLS);
 
-  if (vec.size() > 0) {
-
-    // The first one is always the ID we're looking at itself.
-    std::vector<ID> conflictingIds = { decl->id() };
-    bool areIdsAllFunctions = decl->isFunction();
-
-    for (auto& borrowedIds : vec) {
-      for (auto id : borrowedIds) {
-        if (parsing::idIsImplicitThisFormal(context, id)) continue;
-
-        if (id != decl->id()) conflictingIds.push_back(id);
-        auto ast = parsing::idToAst(context, id);
-        areIdsAllFunctions &= ast->isFunction();
-      }
-    }
-
-    // TODO: We will need to extend the scope-resolver to optionally
-    // record a "trace" of how each conflict became visible in the
-    // current scope.
-    // TODO: We may want to also do this at the point where a use or
-    // import statement is resolved.
-    if (conflictingIds.size() > 1 && !areIdsAllFunctions) {
-      CHPL_REPORT(context, Redefinition, decl, conflictingIds);
-    }
-  }
+  errorIfNameConflictsForLookup(context, vec, decl, decl);
 
   // don't visit e.g. nested functions - these will be resolved
   // when calling them.

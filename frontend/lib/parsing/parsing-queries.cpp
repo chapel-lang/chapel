@@ -660,15 +660,6 @@ bool idIsParenlessFunction(Context* context, ID id) {
   return idIsParenlessFunctionQuery(context, id);
 }
 
-bool idIsImplicitThisFormal(Context* context, ID id) {
-  if (id.isEmpty()) return false;
-  auto ast = idToAst(context, id);
-  if (auto formal = ast->toFormal())
-    if (formal->name() == USTR("this"))
-      return true;
-  return false;
-}
-
 static const UniqueString& fieldIdToNameQuery(Context* context, ID id) {
   QUERY_BEGIN(fieldIdToNameQuery, context, id);
 

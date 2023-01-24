@@ -390,6 +390,18 @@ class Scope {
     return false;
   }
 
+  bool contains(const Scope* other) const {
+    if (other == nullptr) return false;
+
+    if (this == other) {
+      CHPL_ASSERT(this->id_ == other->id_);
+      return true;
+    }
+
+    bool ret = this->id_.contains(other->id_);
+    return ret;
+  }
+
   bool operator==(const Scope& other) const {
     return parentScope_ == other.parentScope_ &&
            tag_ == other.tag_ &&
