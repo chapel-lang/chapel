@@ -3,7 +3,7 @@ on:
     # this workflow is intended to run on merges from a forked repo to main(base-repo). Use pull_request_target
     # this will provide read access to the secrets in main
     #pull_request_target:
-    push:
+    #push:
     pull_request:
       #types:
         #- closed
@@ -49,7 +49,7 @@ jobs:
               echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
               echo "FILES_CHANGED=$(echo '${{github.event.pull_request._links.html.href}}/files' )" >> $GITHUB_ENV
               echo $LOG
-              echo "MERGE_LOG= $(echo $LOG | sed 's/\\r\\n\\r\\n/<p>/g'| sed 's/\\r\\n/<br>/g' ) " >> $GITHUB_ENV
+              echo "MERGE_LOG= $(echo $LOG | sed 's/\\r\\n\\r\\n/<p>/g'| sed 's/\\r\\n/\\n/g' ) " >> $GITHUB_ENV
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
@@ -82,36 +82,31 @@ jobs:
            # Optional (recommended) mail server password:
            password: ${{secrets.MAIL_PASSWORD}}
            # Required mail subject:
-           subject: "[Chapel Merge] ${{github.event.pull_request.title}}"
+           subject: This is a test - Please ignore "[Chapel Merge] ${{github.event.pull_request.title}}"
            # Required recipients' addresses:
            #to: chapel+commits@discoursemail.com
            to: Bhavani@hpe.com
            # Required sender full name (address can be skipped):
            from:  ${{env.AUTHOR}}
-           html_body: |
-              <!DOCTYPE html>
-              <html>
-              <body>
-              <p>
-              Branch: ${{github.ref}} <br>
-              Revision: ${{ github.event.pull_request.merge_commit_sha }}  <br>
-              Author: ${{ env.AUTHOR}} <br>
-              Link: ${{github.event.pull_request._links.html.href}} <br>             
-              Log Message: <br><br>
-                           ${{env.MESSAGE}} <br> 
-                          ${{env.MERGE_LOG}} <br>
-              Compare: ${{env.COMPARE_URL}} <br> 
-              Diff: ${{github.event.pull_request.diff_url}} <br>
-              Modified Files: <br>
-                   ${{env.MODIFIED}} <br><br>
-              Added Files: <br>
-                   ${{env.ADDED}} <br><br>    
-              Removed Files: <br>     
-                   ${{env.DELETED}} <br>
+           body: |
              
-              </p>
-              </body>
-              </html>
+              Branch: ${{github.ref}} 
+              Revision: ${{ github.event.pull_request.merge_commit_sha }} 
+              Author: ${{ env.AUTHOR}} 
+              Link: ${{github.event.pull_request._links.html.href}}            
+              Log Message: 
+                          ${{env.MESSAGE}} 
+                          ${{env.MERGE_LOG}} 
+              Compare: ${{env.COMPARE_URL}}  
+              Diff: ${{github.event.pull_request.diff_url}} 
+              Modified Files: 
+                   ${{env.MODIFIED}} 
+              Added Files: 
+                   ${{env.ADDED}}   
+              Removed Files:     
+                   ${{env.DELETED}} 
+             
+              
            # Optional converting Markdown to HTML (set content_type to text/html too):
            convert_markdown: true
            # Optional priority: 'high', 'normal' (default) or 'low'
