@@ -76,9 +76,9 @@ proc runSort(){
     const numSortGroups = size / (4 * SORT_BLOCK_SIZE);
     var dCounters, dCounterSums, dBlockOffsets : [0..<WARP_SIZE*numSortGroups] uint(32);
 
-    var sortDb = new ResultDatabase("Sort Rate", "GB/s", atts="", attsSuffix="items");
-    var pciDb = new ResultDatabase("Sort Rate PCIe", "GB/s", atts="", attsSuffix="items");
-    var parityDb = new ResultDatabase("Sort Parity", "N", atts="", attsSuffix="items");
+    var sortDb = new ResultDatabase("Sort Rate", "GB/s", atts="", attsSuffix=" items");
+    var pciDb = new ResultDatabase("Sort Rate PCIe", "GB/s", atts="", attsSuffix=" items");
+    var parityDb = new ResultDatabase("Sort Parity", "N", atts="", attsSuffix=" items");
 
     const iterations = passes;
     // They do timing using cudaEvent, ig we will just use our timer.
@@ -161,7 +161,6 @@ proc runSort(){
         sortDb.printPerfStats();
         pciDb.printPerfStats();
         parityDb.printPerfStats();
-
     }
 }
 

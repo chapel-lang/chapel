@@ -4,6 +4,7 @@ gpu/native/studies/shoc/kernel.graph
 gpu/native/studies/shoc/kernel2.graph
 gpu/native/studies/shoc/triad2.graph
 gpu/native/studies/shoc/bandwidth.graph
+gpu/native/studies/shoc/sort.graph
 
 gpu/native/streamPrototype/gpuStream.graph
 
