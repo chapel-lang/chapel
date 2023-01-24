@@ -196,7 +196,7 @@ proc process_json(logfile:fileReader, fname:string, ref Pairs) {
       } catch e: BadFormatError {
         if verbose then
             stdout.writeln("error reading tweets ", fname, " offset ",
-              logfile.offset(), " : ", e.err_msg);
+              logfile.offset(), " : ", e._msg);
 
         // read over something else
         got = logfile.readf("%~jt", empty);
