@@ -25,6 +25,24 @@
 #undef NDEBUG
 #endif
 
+#include "chpl/parsing/Parser.h"
+#include "chpl/framework/Context.h"
+#include "chpl/framework/UniqueString.h"
+#include "chpl/uast/BuilderResult.h"
 #include <cassert>
+#include "./ErrorGuard.h"
+
+/** Use the name of the enclosing CPP function as the name for a Chapel
+    source file. Returns a UniqueString. */
+#define TEST_NAME_FROM_FN_NAME(context__) \
+  chpl::UniqueString::getConcat(context__, __FUNCTION__, ".chpl")
+
+/** Parse to BuilderResult but report encountered errors to the context. */
+const chpl::uast::BuilderResult&
+parseAndReportErrors(chpl::Context* context, chpl::UniqueString path);
+
+chpl::uast::BuilderResult
+parseStringAndReportErrors(chpl::parsing::Parser* parser, const char* filename,
+                           const char* content);
 
 #endif

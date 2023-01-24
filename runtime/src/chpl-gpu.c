@@ -42,11 +42,11 @@ void chpl_gpu_on_std_modules_finished_initializing(void) {
   chpl_gpu_impl_on_std_modules_finished_initializing();
 }
 
-void chpl_gpu_launch_kernel(int ln, int32_t fn,
-                            const char* fatbinData, const char* name,
-                            int grd_dim_x, int grd_dim_y, int grd_dim_z,
-                            int blk_dim_x, int blk_dim_y, int blk_dim_z,
-                            int nargs, ...) {
+inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
+                                   const char* name,
+                                   int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                                   int blk_dim_x, int blk_dim_y, int blk_dim_z,
+                                   int nargs, ...) {
   CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
                  "\tKernel: %s\n"
                  "\tNumArgs: %d\n",
@@ -62,7 +62,7 @@ void chpl_gpu_launch_kernel(int ln, int32_t fn,
   chpl_gpu_diags_incr(kernel_launch);
 
   chpl_gpu_impl_launch_kernel(ln, fn,
-                              fatbinData, name,
+                              name,
                               grd_dim_x, grd_dim_y, grd_dim_z,
                               blk_dim_x, blk_dim_y, blk_dim_z,
                               nargs, args);
@@ -74,9 +74,10 @@ void chpl_gpu_launch_kernel(int ln, int32_t fn,
                  name);
 }
 
-void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
-                                 const char* fatbinData, const char* name,
-                                 int num_threads, int blk_dim, int nargs, ...) {
+inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
+                                        const char* name,
+                                        int num_threads, int blk_dim, int nargs,
+                                        ...) {
 
   CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
                  "\tKernel: %s\n"
@@ -93,7 +94,7 @@ void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
   chpl_gpu_diags_incr(kernel_launch);
 
   chpl_gpu_impl_launch_kernel_flat(ln, fn,
-                                   fatbinData, name,
+                                   name,
                                    num_threads, blk_dim,
                                    nargs, args);
   va_end(args);

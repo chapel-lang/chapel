@@ -363,7 +363,7 @@ module DistributedMap {
             }
 
             // TODO: this might also be a good place to do a load ballance
-            //          among locales (iff using default hasher)
+            //         among locales (iff using default hasher)
         }
     }
 

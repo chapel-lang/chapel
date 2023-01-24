@@ -40,11 +40,11 @@ Initializes a library project in a project directory
 proc masonInit(args: [] string) throws {
   var parser = new argumentParser(helpHandler=new MasonInitHelpHandler());
   var nameOpt = parser.addOption(name="legalname",
-                                 opts=["--name"]);
+                                 opts=["--name", ]);
   var showFlag = parser.addFlag(name="show", defaultValue=false);
   var dirArg = parser.addArgument(name="directory", numArgs=0..1);
   var vcsFlag = parser.addFlag(name="vcs",
-                               opts=["--no-vcs"],
+                               opts=["--no-vcs", ],
                                defaultValue=false);
   var appFlag = parser.addFlag(name="app", defaultValue=false);
   var libFlag = parser.addFlag(name="lib", defaultValue=false);

@@ -22,7 +22,7 @@
 
 #include "chpl/framework/Location.h"
 #include "chpl/uast/Formal.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/uast/VarLikeDecl.h"
 
 namespace chpl {
@@ -58,7 +58,7 @@ class VarArgFormal final : public VarLikeDecl {
                   // Use -1 to indicate so such child exists.
                   /*linkageNameChildNum*/ -1,
                   name,
-                  (IntentList)((int)intent),
+                  (Qualifier)((int)intent),
                   typeExpressionChildNum,
                   /*initExpressionChildNum*/ -1),
       countChildNum_(countChildNum) {

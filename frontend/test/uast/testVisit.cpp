@@ -28,6 +28,7 @@ using namespace chpl;
 using namespace uast;
 
 static BuilderResult makeAST(Context* ctx, const uast::Module*& modOut) {
+  ErrorGuard guard(ctx);
   auto builder = Builder::createForTopLevelModule(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
   Location dummyLoc(UniqueString::get(ctx, "path/to/test.chpl"));
@@ -47,7 +48,7 @@ static BuilderResult makeAST(Context* ctx, const uast::Module*& modOut) {
   }
 
   BuilderResult r = b->result();
-  assert(!r.numErrors());
+  assert(!guard.numErrors());
   auto mod = r.singleModule();
   assert(mod);
   assert(0 == mod->name().compare("test"));

@@ -221,7 +221,7 @@ static inline void queryArgsPrint(const std::tuple<>& tuple) {
 }
 
 using QueryDependencyVec = std::vector<const QueryMapResultBase*>;
-using QueryErrorVec = std::vector<const ErrorBase*>;
+using QueryErrorVec = std::vector<owned<ErrorBase>>;
 
 class QueryMapResultBase {
  public:
@@ -244,13 +244,7 @@ class QueryMapResultBase {
 
   QueryMapResultBase(RevisionNumber lastChecked,
                      RevisionNumber lastChanged,
-                     QueryMapBase* parentQueryMap)
-    : lastChecked(lastChecked),
-      lastChanged(lastChanged),
-      dependencies(),
-      errors(),
-      parentQueryMap(parentQueryMap) {
-  }
+                     QueryMapBase* parentQueryMap);
   virtual ~QueryMapResultBase() = 0; // this is an abstract base class
   virtual void recompute(Context* context) const = 0;
   virtual void markUniqueStringsInResult(Context* context) const = 0;

@@ -840,9 +840,7 @@ CanPassResult CanPassResult::canPass(Context* context,
   //   proc f(a: int(?w), b: int(2*w))
   // when computing an initial candidate, 'b' is unknown
   // but we should allow passing an argument to it.
-  if (formalQT.kind() == QualifiedType::UNKNOWN &&
-      formalT->isUnknownType() &&
-      !actualQT.isType()) {
+  if (formalT->isUnknownType() && !actualQT.isType()) {
     return passAsIs();
   }
 
@@ -977,34 +975,6 @@ CanPassResult CanPassResult::canPass(Context* context,
   return fail();
 }
 
-static bool isConstIntent(QualifiedType::Kind kind) {
-  switch (kind) {
-    case QualifiedType::CONST_INTENT:
-    case QualifiedType::CONST_VAR:
-    case QualifiedType::CONST_REF:
-    case QualifiedType::CONST_IN:
-    case QualifiedType::PARAM:
-    case QualifiedType::TYPE:
-    case QualifiedType::FUNCTION:
-    case QualifiedType::MODULE:
-      return true;
-    default:
-      return false;
-  }
-}
-
-static bool isRefIntent(QualifiedType::Kind kind) {
-  switch (kind) {
-    // assume we don't get CONST_INTENT or DEFAULT_INTENT here,
-    // since we don't know how to translate them.
-    case QualifiedType::CONST_REF:
-    case QualifiedType::REF:
-      return true;
-    default:
-      return false;
-  }
-}
-
 // When trying to combine two kinds, you can't just pick one.
 // For instance, if any type in the list is a value, the result
 // should be a value, and if any type in the list is const, the
@@ -1038,8 +1008,8 @@ class KindProperties {
       // Mark params as const to cover the case in which a
       // param decays to a const var.
       return KindProperties(true, false, false, true);
-    auto isConst = isConstIntent(kind);
-    auto isRef = isRefIntent(kind);
+    auto isConst = isConstQualifier(kind);
+    auto isRef = isRefQualifier(kind);
     return KindProperties(isConst, isRef, false, false);
   }
 

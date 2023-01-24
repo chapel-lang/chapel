@@ -22,7 +22,7 @@
 
 #include "chpl/framework/Location.h"
 #include "chpl/uast/NamedDecl.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 
 namespace chpl {
 namespace uast {
@@ -34,7 +34,7 @@ namespace uast {
  */
 class VarLikeDecl : public NamedDecl {
  protected:
-  IntentList storageKind_;
+  Qualifier storageKind_;
   int8_t typeExpressionChildNum_;
   int8_t initExpressionChildNum_;
 
@@ -43,7 +43,7 @@ class VarLikeDecl : public NamedDecl {
               Decl::Linkage linkage,
               int linkageNameChildNum,
               UniqueString name,
-              IntentList storageKind,
+              Qualifier storageKind,
               int8_t typeExpressionChildNum,
               int8_t initExpressionChildNum)
     : NamedDecl(tag, std::move(children), attributesChildNum, vis,
@@ -88,7 +88,7 @@ class VarLikeDecl : public NamedDecl {
     Subclasses have more specific functions that return the
     subset appropriate for that subclass.
    */
-  IntentList storageKind() const {
+  Qualifier storageKind() const {
     return storageKind_;
   }
 

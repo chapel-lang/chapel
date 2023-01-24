@@ -66,10 +66,11 @@ static bool        handle_erroneous_fns = true;
 astlocT            last_error_loc(0, NULL);
 
 static bool forceWidePtrs();
+static const char* cleanCompilerFilename(const char* name);
 
 void setupError(const char* subdir, const char* filename, int lineno, int tag) {
   err_subdir        = subdir;
-  err_filename      = filename;
+  err_filename      = cleanCompilerFilename(filename);
   err_lineno        = lineno;
   err_fatal         = tag == 1 || tag == 2 || tag == 3;
   err_user          = tag != 1;
@@ -169,6 +170,13 @@ const char* cleanFilename(const BaseAST* ast) {
   }
 
   return retval;
+}
+
+static const char* cleanCompilerFilename(const char* name) {
+  // it depends on the details of the build whether __FILE__ is
+  // an absolute path, but for the purposes of this error reporting,
+  // we only need the file name.
+  return stripdirectories(name);
 }
 
 
@@ -559,6 +567,49 @@ static bool interestingModuleInit(FnSymbol* fn) {
   return strcmp(modulename, basename) != 0;
 }
 
+// If the new frontend emitted errors but did not terminate compilation,
+// (e.g., all it did was print deprecation warnings), then it printed
+// an error header based on 'chpl::ID'. The role of this function is
+// to see if the function we want to use for a header has the same
+// 'chpl::ID' as the last symbol used to print the dyno error header.
+// If so, then we return nullptr to avoid having the production compiler
+// print out a duplicate header.
+static FnSymbol* determineIfHeaderIsRedundantWithDyno(FnSymbol* fn) {
+  static FnSymbol* fnForSkip = nullptr;
+  static bool once = false;
+
+  // There is no input function.
+  if (!fn) return nullptr;
+
+  // We've already bridged from ID to FnSymbol, or there is no ID.
+  if (once || dynoIdForLastContainingDecl.isEmpty()) return fn;
+
+  // If we are skipping...
+  if (fnForSkip) {
+
+    // We hit a different function, so stop skipping forever.
+    if (fnForSkip != fn) {
+      once = true;
+      return fn;
+
+    // Otherwise, keep skipping.
+    } else {
+      return nullptr;
+    }
+  }
+
+  // If the very first input function is different, never skip.
+  if (fn->astloc.id() != dynoIdForLastContainingDecl) {
+    once = true;
+    return fn;
+  }
+
+  // Otherwise, start skipping...
+  fnForSkip = fn;
+
+  return nullptr;
+}
+
 // return values:
 //   -1 = no filename:line# was printed;
 //    0 = they were printed and were not the result of a guess
@@ -583,9 +634,12 @@ static int printErrorHeader(BaseAST* ast, astlocT astloc) {
         if (fn->defPoint == NULL || !fn->inTree())
           fn = NULL;
 
+      fn = determineIfHeaderIsRedundantWithDyno(fn);
+
       if (fn && fn->id != err_fn_id) {
         printCallstackForLastError();
         err_fn_header_printed = false;
+
         err_fn = fn;
 
         while ((fn = toFnSymbol(err_fn->defPoint->parentSymbol))) {

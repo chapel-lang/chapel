@@ -45,7 +45,7 @@ proc main(args: [] string) {
       input.revert();
 
       // Read until nextDescOffset into the data array.
-      input.readBytes(c_ptrTo(data[descOffset]),
+      input.readBinary(c_ptrTo(data[descOffset]),
           (nextDescOffset-descOffset):c_ssize_t);
       
 

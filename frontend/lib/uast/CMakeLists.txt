@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-target_sources(libdyno-obj
+target_sources(ChplFrontend-obj
                PRIVATE
 
                AggregateDecl.cpp
@@ -70,7 +70,6 @@ target_sources(libdyno-obj
                Include.cpp
                IndexableLoop.cpp
                IntLiteral.cpp
-               IntentList.cpp
                Interface.cpp
                Label.cpp
                Let.cpp
@@ -89,6 +88,7 @@ target_sources(libdyno-obj
                Pragma.cpp
                PrimCall.cpp
                PrimOp.cpp
+               Qualifier.cpp
                Range.cpp
                RealLiteral.cpp
                Record.cpp

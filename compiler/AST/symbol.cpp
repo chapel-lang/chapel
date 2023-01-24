@@ -1199,7 +1199,7 @@ bool isOuterVarOfShadowVar(Expr* expr) {
 
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
-    llvmType(NULL),
+    llvmImplType(NULL),
     llvmTbaaTypeDescriptor(NULL),
     llvmTbaaAccessTag(NULL), llvmConstTbaaAccessTag(NULL),
     llvmTbaaAggTypeDescriptor(NULL),

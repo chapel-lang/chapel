@@ -72,7 +72,6 @@ void computeIdMaps(
 void BuilderResult::swap(BuilderResult& other) {
   filePath_.swap(other.filePath_);
   topLevelExpressions_.swap(other.topLevelExpressions_);
-  errors_.swap(other.errors_);
   idToAst_.swap(other.idToAst_);
   idToLocation_.swap(other.idToLocation_);
   commentIdToLocation_.swap(other.commentIdToLocation_);
@@ -85,9 +84,6 @@ bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
 
   // update the filePath
   changed |= defaultUpdate(keep.filePath_, addin.filePath_);
-
-  // update the errors
-  changed |= defaultUpdate(keep.errors_, addin.errors_);
 
   // update the ASTs
   changed |= updateAstList(keep.topLevelExpressions_,
@@ -141,8 +137,6 @@ void BuilderResult::mark(Context* context) const {
     loc.mark(context);
   }
 
-  chpl::mark<decltype(errors_)>{}(context, errors_);
-
   // update the filePathForModuleName query
   BuilderResult::updateFilePaths(context, *this);
 }
@@ -156,11 +150,6 @@ void BuilderResult::updateFilePaths(Context* context,
       context->setFilePathForModuleId(mod->id(), path);
     }
   }
-}
-
-void BuilderResult::appendError(BuilderResult& keep,
-                                const ErrorBase* error) {
-  keep.errors_.push_back(error);
 }
 
 const AstNode* BuilderResult::idToAst(ID id) const {

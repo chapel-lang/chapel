@@ -344,7 +344,7 @@ QualifiedType Param::fold(Context* context,
 
   // convert from Immediate
   std::pair<const Param*, const Type*> pair = immediateToParam(context, result);
-  return QualifiedType(IntentList::PARAM, pair.second, pair.first);
+  return QualifiedType(Qualifier::PARAM, pair.second, pair.first);
 }
 
 void Param::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {

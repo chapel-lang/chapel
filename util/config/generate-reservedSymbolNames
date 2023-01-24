@@ -25,4 +25,3 @@ with open(os.path.join(args.location, 'reservedSymbolNames.h'), 'w') as f:
       parts = line.partition('//')
       line = '  cnames.insert(astr("{}")); {}{}\n'.format(parts[0].strip(),parts[1], parts[2])
       f.write(line)
-

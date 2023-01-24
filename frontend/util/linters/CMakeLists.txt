@@ -17,6 +17,9 @@
 
 add_executable(fieldsUsed "fieldsUsed.cpp")
 
+# store it in the build directory
+set_target_properties(fieldsUsed  PROPERTIES RUNTIME_OUTPUT_DIRECTORY . )
+
 # This option is set from the call to CMake from compiler/dyno/Makefile.help
 # TODO: use DYNO_LLVM_COMP_ARGS DYNO_LLVM_LINK_ARGS instead since
 # these should include clang arguments for CHPL_LLVM=system / CHPL_LLVM=bundled.

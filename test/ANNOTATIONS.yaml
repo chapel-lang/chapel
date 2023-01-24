@@ -518,6 +518,15 @@ all:
   11/15/22:
     - text: Optimize distributed rectangular domain creation (#21038)
       config: 16-node-xc, 16-node-cs-hdr, chapcs.comm-counts
+  01/18/23:
+    - text: Improvements for iterating over unbounded enum/bool ranges (#21332)
+      config: chapcs
+  01/18/23:
+    - text: Avoid loading CUDA module at each kernel launch (#21346)
+      config: gpu
+  01/19/23:
+    - text: Support for one locale per socket (#21057)
+      config: 16-node-xc, 16-node-cs-hdr
 
 
 # End all
@@ -2206,10 +2215,6 @@ allTotalTime:
   <<: *compiler-perf-base
 allPasses:
   <<: *compiler-perf-base
-topTotalTime:
-  <<: *compiler-perf-base
-topPasses:
-  <<: *compiler-perf-base
 
 arkouda: &arkouda-base
   04/22/20:
@@ -2347,6 +2352,8 @@ arkouda: &arkouda-base
     - Closes 1935 Increase encode benchmark size (Bears-R-Us/arkouda#1936)
   12/02/22:
     - Create local copies of remote strings for encoding (Bears-R-Us/arkouda#1937)
+  12/18/22:
+    - Upgrade Arkouda release testing from 1.27.0 to 1.29.0 (#21257)
 
 
 arkouda-string:

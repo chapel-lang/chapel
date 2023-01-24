@@ -1,6 +1,6 @@
 use Subprocess;
 
-var sub = spawn(["cat"], stdin=pipeStyle.pipe);
+var sub = spawn(["cat", ], stdin=pipeStyle.pipe);
 
 sub.stdin.writeln("Hello");
 sub.stdin.writeln("World");

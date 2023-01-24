@@ -4,6 +4,7 @@ import os
 import errno
 import argparse
 import subprocess
+import tempfile
 
 parser = argparse.ArgumentParser(description='Write the git SHA to git-version.cpp')
 parser.add_argument('location', help='The location to write git-version.cpp')
@@ -13,8 +14,15 @@ parser.add_argument('--chpl-home', dest='chpl_home', help='the location of the c
 
 args = parser.parse_args()
 
+# Write the git-sha to a .cpp file so we can include it in our version info string
+# Some users don't like the SHA being there because it causes re-linking after
+# every new commit, even when no source files changed. The CHPL_DONT_BUILD_SHA
+# env var will replace the actual SHA with a dummy, so re-linking will not occur
+# For normal usage, we write a temp file and then use the update-if-different
+# script to update the contents of git-version.cpp if they differ
+# The update-if-different script takes care of deleting the temp file
 out_file = os.path.join(args.location, 'git-version.cpp')
-tmp_file = os.path.join(args.location, 'git-version.cpp.in')
+(_,tmp_file) = tempfile.mkstemp(prefix='chpl-git-version-deleteme', suffix=".in", text=True)
 update_if_diff = os.path.join(args.chpl_home,'util/config/update-if-different')
 build_version_file = os.path.join(args.chpl_home, 'compiler/main/BUILD_VERSION')
 
@@ -24,7 +32,8 @@ dont_build_sha = False if os.getenv('CHPL_DONT_BUILD_SHA') is None else True
 if dont_build_sha:
     git_sha = "xxxxxxxxxx"
 else:
-    git_sha = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).strip()
+    git_sha = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD'],
+                                      universal_newlines=True).strip()
 
 if not os.path.exists(args.location):
     os.makedirs(args.location)
@@ -35,7 +44,7 @@ if os.path.isfile(out_file):
         f.write('  const char* GIT_SHA = "{}";\n'.format(git_sha))
         f.write('}\n')
 
-    subprocess.call([update_if_diff, '--update', out_file, tmp_file])
+    subprocess.call([update_if_diff, '--update', out_file, tmp_file, '--quiet'])
 else:
     with open(out_file, 'w') as f:
         f.write('namespace chpl {\n')

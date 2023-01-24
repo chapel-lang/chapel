@@ -33,5 +33,3 @@ else
   LIB_CMAKE_ARG := -DCMAKE_BUILD_TYPE=Debug
   LIBCOMPILER_BUILD_DIR := $(COMPILER_BUILD)/frontend/Debug
 endif
-
-CHPL_COMP_LIB = $(LIBCOMPILER_BUILD_DIR)/lib/libdyno.a

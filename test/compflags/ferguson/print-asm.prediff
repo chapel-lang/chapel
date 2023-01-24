@@ -5,8 +5,8 @@ LOG=$2
 # PREDIFF: Script to execute before diff'ing output (arguments: <test
 #    executable>, <log>, <compiler executable>)
 
-# Include only Dissasembling output and the symbol label
+# Include only Disassembling output and the symbol label
 # Hide addresses
 # Remove leading _ from symbol if it is present
-cat $LOG | grep -e 'Dissasembling\|foo_chpl>:\|bar_chpl>:' | sed 's/^[0-9a-fA-F][0-9a-fA-F]*/ADDR/' | sed 's/<_/</' > $LOG.tmp
+cat $LOG | grep -e 'Disassembling\|foo_chpl>:\|bar_chpl>:' | sed 's/^[0-9a-fA-F][0-9a-fA-F]*/ADDR/' | sed 's/<_/</' > $LOG.tmp
 mv $LOG.tmp $LOG

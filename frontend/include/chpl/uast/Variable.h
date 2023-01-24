@@ -22,7 +22,7 @@
 
 #include "chpl/framework/Location.h"
 #include "chpl/uast/Formal.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/uast/VarLikeDecl.h"
 
 namespace chpl {
@@ -52,14 +52,14 @@ class Variable final : public VarLikeDecl {
  friend class Builder;
  public:
   enum Kind {
-    // Use IntentList here for consistent enum values.
-    VAR         = (int) IntentList::VAR,
-    CONST       = (int) IntentList::CONST_VAR,
-    CONST_REF   = (int) IntentList::CONST_REF,
-    REF         = (int) IntentList::REF,
-    PARAM       = (int) IntentList::PARAM,
-    TYPE        = (int) IntentList::TYPE,
-    INDEX       = (int) IntentList::INDEX
+    // Use Qualifier here for consistent enum values.
+    VAR         = (int) Qualifier::VAR,
+    CONST       = (int) Qualifier::CONST_VAR,
+    CONST_REF   = (int) Qualifier::CONST_REF,
+    REF         = (int) Qualifier::REF,
+    PARAM       = (int) Qualifier::PARAM,
+    TYPE        = (int) Qualifier::TYPE,
+    INDEX       = (int) Qualifier::INDEX
   };
 
  private:
@@ -78,7 +78,7 @@ class Variable final : public VarLikeDecl {
                     linkage,
                     linkageNameChildNum,
                     name,
-                    (IntentList)((int)kind),
+                    (Qualifier)((int)kind),
                     typeExpressionChildNum,
                     initExpressionChildNum),
         isConfig_(isConfig),
