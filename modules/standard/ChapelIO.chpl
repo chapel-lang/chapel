@@ -400,10 +400,11 @@ module ChapelIO {
             try {
               const fieldName = ioFieldNameLiteral(reader, t, i);
               reader._readLiteral(fieldName);
-            } catch err: SystemError {
+            } catch e : BadFormatError {
               // Try reading again with a different union element.
-              if err.err == EFORMAT || err.err == EEOF then continue;
-              throw err;
+              continue;
+            } catch e : EofError {
+              continue;
             }
 
             hasReadFieldName = true;
@@ -473,11 +474,11 @@ module ChapelIO {
           try {
             const fieldName = ioFieldNameLiteral(reader, t, i);
             reader._readLiteral(fieldName);
-          } catch err: SystemError {
-
+          } catch e : BadFormatError {
             // Try reading again with a different union element.
-            if err.err == EFORMAT || err.err == EEOF then continue;
-            throw err;
+            continue;
+          } catch e : EofError {
+            continue;
           }
 
           hasFoundAtLeastOneField = true;
