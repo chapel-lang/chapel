@@ -1569,9 +1569,21 @@ proc file.checkAssumingLocal() throws {
 
    :throws SystemError: Indicates that `this` does not represent an OS file.
 */
+ deprecated "'file.check()' is deprecated, please use :proc:`file.isOpen` instead"
 proc file.check() throws {
   on this._home {
-    this.checkAssumingLocal();
+    this.checkAssumingLocal(); // Remove this function, too
+  }
+}
+
+/* Indicates if the file is currently open.  Will return ``false`` for both
+   closed and invalid files
+*/
+proc file.isOpen(): bool {
+  if (is_c_nil(_file_internal)) {
+    return false;
+  } else {
+    return qio_file_isopen(_file_internal);
   }
 }
 
