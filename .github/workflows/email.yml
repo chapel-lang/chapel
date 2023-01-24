@@ -55,7 +55,8 @@ jobs:
               echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
               echo "FILES_CHANGED=$(echo '${{github.event.pull_request._links.html.href}}/files' )" >> $GITHUB_ENV
               echo $LOG
-              echo "MERGE_LOG= $(echo $LOG | sed 's/\\r\\n\\r\\n/<p>/g'| sed 's/\\r\\n/\\n/g' ) " >> $GITHUB_ENV
+              merge_commit_sha
+              echo "MERGE_LOG= $(git show ${{github.event.pull_request.merge_commit_sha}}) " >> $GITHUB_ENV
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
@@ -88,7 +89,7 @@ jobs:
            # Optional (recommended) mail server password:
            password: ${{secrets.MAIL_PASSWORD}}
            # Required mail subject:
-           subject: This is a test - Please ignore "[Chapel Merge] ${{github.event.pull_request.title}}"
+           subject: Test merge message "[Chapel Merge] ${{github.event.pull_request.title}}"
            # Required recipients' addresses:
            #to: chapel+commits@discoursemail.com
            to: Bhavani@hpe.com
@@ -101,7 +102,6 @@ jobs:
               Author: ${{ env.AUTHOR}} 
               Link: ${{github.event.pull_request._links.html.href}}            
               Log Message: 
-                          ${{env.MESSAGE}} 
                           ${{env.MERGE_LOG}} 
               Compare: ${{env.COMPARE_URL}}  
               Diff: ${{github.event.pull_request.diff_url}} 
