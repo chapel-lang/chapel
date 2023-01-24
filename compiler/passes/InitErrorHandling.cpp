@@ -78,13 +78,13 @@ static const char* initName(CallExpr* stmt);
 bool isResolvedSuperInit(CallExpr* stmt) {
   const char* name = initName(stmt);
 
-  return name != NULL && strcmp(name, "super") == 0 ? true : false;
+  return name != NULL && name == astrSuper ? true : false;
 }
 
 bool isResolvedThisInit (CallExpr* stmt) {
   const char* name = initName(stmt);
 
-  return name != NULL && strcmp(name, "this") == 0 ? true: false;
+  return name != NULL && name == astrThis ? true: false;
 }
 
 bool InitErrorHandling::isInitDone (CallExpr* stmt) const {
@@ -103,18 +103,20 @@ static const char* initName(CallExpr* stmt) {
     if (SymExpr* base = toSymExpr(stmt->baseExpr)) {
 
       // Call is to an initializer
-      if (strcmp(base->symbol()->name, "init") == 0 &&
+      if (base->symbol()->name == astrInit &&
           stmt->numActuals() >= 1) {
         SymExpr* firstArg = toSymExpr(stmt->get(1));
-        if (strcmp(firstArg->symbol()->name, "super") == 0 ||
+        if (firstArg->symbol()->name == astrSuper ||
             strcmp(firstArg->symbol()->name, "super_tmp") == 0) {
-          retval = "super";
+          // In case the code has been normalized such that a temporary was
+          // inserted instead of leaving it directly in the call
+          retval = astrSuper;
         } else if (firstArg->symbol()->hasFlag(FLAG_ARG_THIS)) {
-          retval = "this";
+          retval = astrThis;
         }
       }
     } else if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(stmt->baseExpr)) {
-      if (strcmp(urse->unresolved, "init") == 0) {
+      if (urse->unresolved == astrInit) {
         INT_ASSERT(false); // This shouldn't happen
       }
     }
