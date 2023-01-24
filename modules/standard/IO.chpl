@@ -8779,8 +8779,8 @@ proc string.format(args ...?k): string throws {
   :throws EofError
   :throws UnexpectedEofError
   :throws BadFormatError
-  :throws SystemError: Thrown if the bytes could not be formatted for a less
-                       specific reason.
+  :throws SystemError: Thrown if the bytes could not be formatted for another
+  reason.
  */
 proc bytes.format(args ...?k): bytes throws {
   try {
