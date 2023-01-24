@@ -27,6 +27,7 @@ jobs:
         env:
           COMMIT_URL: ${{github.event.pull_request._links.commits.href}}
           LOG: ${{github.event.pull_request.body}}
+          MERGE_SHA: ${{github.event.pull_request.merge_commit_sha}}
         uses: nick-fields/retry@v2
         with:
           max_attempts: 4
@@ -55,8 +56,9 @@ jobs:
               echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
               echo "FILES_CHANGED=$(echo '${{github.event.pull_request._links.html.href}}/files' )" >> $GITHUB_ENV
               echo $LOG
-              merge_commit_sha
-              echo "MERGE_LOG= $(git show ${{github.event.pull_request.merge_commit_sha}}) " >> $GITHUB_ENV
+              echo $MERGE_SHA
+              echo "MERGE_LOG= $(git show 2dbec007040cf5ad4ca3b3740da5adce429864ee) " >> $GITHUB_ENV
+
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
