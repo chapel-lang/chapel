@@ -32,7 +32,9 @@ jobs:
         with:
           max_attempts: 4
           retry_on_exit_code: 2
-          timeout_seconds: 60  
+          retry_wait_seconds: 30
+          polling_interval_seconds: 30
+          timeout_seconds: 120  
           command: |
 
               curl --location --request GET "https://api.github.com/repos/chapel-lang/chapel/pulls/21412/commits" --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
