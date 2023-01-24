@@ -85,7 +85,7 @@ proc main(args: [] string) {
 
     // if the new characters contain the start of the next sequence,
     var endOfRead = readPos + newChars;
-    while findSeqStart(buff, readPos..<endOfRead, nextSeqStart) {
+    while findSeqStart(buff, max(readPos,1)..<endOfRead, nextSeqStart) {
       // process this one
       revcomp(buff, nextSeqStart);
 
@@ -277,7 +277,7 @@ proc findSeqStart(buff, inds, ref ltLoc) {
     return ltptr != c_nil;
   } else if searchAlg == Find {
     ltLoc = buff[inds].find('>'.toByte());
-    return ltLoc > 0;
+    return ltLoc != inds.low-1;
   } else {
     compilerError("Unexpected search algorithm" + searchAlg: string);
   }

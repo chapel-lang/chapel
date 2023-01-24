@@ -1,11 +1,11 @@
--swaitAlg=WaitFor -sshiftAlg=SerForall -ssearchAlg=Find -suseNewFind=true
-# -swaitAlg=Spin
-# #-sshiftAlg=Forall
-# -sshiftAlg=Foreach
-# -sshiftAlg=For
-# -sshiftAlg=MemMove
-# -ssearchAlg=Forall
-# -ssearchAlg=OptForall
-# -ssearchAlg=Foreach
-# -ssearchAlg=For
-# -ssearchAlg=MemChr
+-swaitAlg=WaitFor -sshiftAlg=SerForall -ssearchAlg=Find -suseNewArrayFind=true
+-swaitAlg=Spin
+#-sshiftAlg=Forall
+-sshiftAlg=Foreach
+-sshiftAlg=For
+-sshiftAlg=MemMove
+-ssearchAlg=Forall
+-ssearchAlg=OptForall
+-ssearchAlg=Foreach
+-ssearchAlg=For
+-ssearchAlg=MemChr

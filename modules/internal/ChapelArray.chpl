@@ -1736,7 +1736,7 @@ module ChapelArray {
        instance of ``val`` in the array, or if ``val`` is not found, a
        tuple containing ``false`` and an unspecified value is returned.
      */
-     @unstable "'Array.find' is unstable"
+     deprecated "The tuple-returning version of `array.find()` is deprecated; to opt into the new index-returning version, recompile with `-suseNewArrayFind`"
      proc find(val: this.eltType): (bool, index(this.domain)) where !useNewArrayFind {
       for i in this.domain {
         if this[i] == val then return (true, i);
@@ -1745,16 +1745,45 @@ module ChapelArray {
       return (false, arbInd);
     }
 
-    proc chpl_indexType() type {
-      return if rank == 1 then idxType else rank*idxType;
-    }
+    /*
 
-    proc find(val: this.eltType): chpl_indexType() {
-      for i in this.domain {
-        if this[i] == val then return i;
+      Search the array for ``val``, returning the index where it is
+      stored.  If the array contains multiple copies of ``val``, the
+      lexicographically earliest index will be returned.  If ``val``
+      is not found, ``domain.lowBound-1`` is returned instead.  If
+      ``domain.lowBound`` is ``min(idxType)``, the behavior is
+      undefined.
+
+      Support is currently limited to rectangular arrays.
+    */
+    proc find(val: this.eltType) /* TODO: return type is hard to express */ {
+      if this.isAssociative() then
+        compilerError("Associative arrays do not yet support '.find()'");
+
+      // For the sparse case, start by seeing if the IRV is what we're
+      // looking for.  If so, iterate over the parent domain to look
+      // for the value or an index not represented in the array.  This
+      // assumes that we're likely to find a case of the IRV fast.
+      // Otherwise, fall through to the normal case to just search the
+      // explicitly represented values.
+      if this.isSparse() && val == this.IRV {
+        for i in this.domain._value.parentDom {
+          // If we find an index representing the IRV, return it; if
+          // it has an explicit value, it may still be the IRV, so
+          // check it.
+          if !this.domain.contains(i) || this[i] == val {
+            return i;
+          }
+        }
+      } else {
+        for i in this.domain {
+          if this[i] == val then return i;
+        }
       }
 
-      return this.domain.low - 1;
+      // We didn't find it, so return the sentinel OOB index.  This
+      // relies on tuple promotion for multidimensional arrays.
+      return this.domain.lowBound - 1;
     }
 
     /* Return the number of times ``val`` occurs in the array. */
