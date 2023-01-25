@@ -1355,10 +1355,11 @@ proc sameFile(file1: file, file2: file): bool throws {
   extern proc chpl_fs_samefile(ref ret: c_int, file1: qio_file_ptr_t,
                                file2: qio_file_ptr_t): errorCode;
 
-  // If one of the files references a null file, propagate to avoid a segfault.
-  try {
-    file1.check();
-    file2.check();
+  // If one of the files references a null or closed file, throw to avoid a
+  // segfault.
+  if (!file1.isOpen() || !file2.isOpen()) {
+    throw createSystemError(EBADF,
+                            "Operation attempted on a file that is not open");
   }
 
   var ret:c_int;
