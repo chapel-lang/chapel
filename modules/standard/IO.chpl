@@ -5799,6 +5799,24 @@ proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
   return true;
 }
 
+
+/*
+  Controlls the return type of the ``readBinary`` overloads that take an
+  array argument. Those are:
+
+  ``fileReader.readBinary(ref data: [], param endian = ioendian.native)``
+  ``fileReader.readBinary(ref data: [], endian: ioendian)``
+
+  * when ``false``: the deprecated methods are called. These return a ``bool``
+    indicating whether any values were read. These variants will also throw
+    if EOF is reached before filling the array.
+  * when ``true``: the new methods are called. These return an ``int`` with the
+    number of values that were read.
+
+  This ``param`` can be set to true by compiling your program with ``-sReadBinaryArrayReturnInt=true``
+*/
+config param ReadBinaryArrayReturnInt = false;
+
 /*
    Read an array of binary numbers from a fileReader
 
@@ -5817,8 +5835,9 @@ proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
    :throws SystemError: Thrown if an error occurred while reading from the fileReader
    :throws UnexpectedEofError: Thrown if EOF is encountered before ``data.size`` values are read
 */
+deprecated "The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant"
 proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): bool throws
-  where (d.rank == 1 && d.stridable == false) && (
+  where ReadBinaryArrayReturnInt == false && (d.rank == 1 && d.stridable == false) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
   var e : errorCode = 0,
@@ -5861,6 +5880,59 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): b
    Read an array of binary numbers from a fileReader
 
    Binary values of the type ``data.eltType`` are consumed from the fileReader
+   until ``data`` is full or EOF is reached.
+
+   Note that this routine currently requires a 1D rectangular non-strided array.
+
+   :arg data: an array to read into – existing values are overwritten.
+   :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
+              to read the numbers. Defaults to ``ioendian.native``.
+   :returns: the number of values that were read into the array. This can be
+              less than ``data.size`` if EOF was reached, or an error occured,
+              before filling the array.
+
+   :throws SystemError: Thrown if an error occurred while reading from the fileReader
+*/
+proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): int throws
+  where ReadBinaryArrayReturnInt == true && (d.rank == 1 && d.stridable == false) && (
+          isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
+{
+  var e : errorCode = 0,
+      numRead = 0;
+
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    for (i, b) in zip(data.domain, data) {
+      select (endian) {
+        when ioendian.native {
+          e = try _read_binary_internal(this._channel_internal, iokind.native, b);
+        }
+        when ioendian.big {
+          e = try _read_binary_internal(this._channel_internal, iokind.big,    b);
+        }
+        when ioendian.little {
+          e = try _read_binary_internal(this._channel_internal, iokind.little, b);
+        }
+      }
+
+      if e == EEOF {
+        break;
+      } else if e != 0 {
+        throw createSystemOrChplError(e);
+      } else {
+        numRead += 1;
+      }
+    }
+  }
+
+  return numRead;
+}
+
+/*
+   Read an array of binary numbers from a fileReader
+
+   Binary values of the type ``data.eltType`` are consumed from the fileReader
    until ``data`` is full or EOF is reached. An :class:`~OS.UnexpectedEofError`
    is thrown if EOF is reached before the array is filled.
 
@@ -5875,8 +5947,9 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): b
    :throws SystemError: Thrown if an error occurred while reading the from fileReader
    :throws UnexpectedEofError: Thrown if EOF is encountered before ``data.size`` values are read
 */
+deprecated "The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant"
 proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
-  where (d.rank == 1 && d.stridable == false) && (
+  where ReadBinaryArrayReturnInt == false && (d.rank == 1 && d.stridable == false) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
   var rv: bool = false;
@@ -5894,6 +5967,44 @@ proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
   }
 
   return rv;
+}
+
+/*
+   Read an array of binary numbers from a fileReader
+
+   Binary values of the type ``data.eltType`` are consumed from the fileReader
+   until ``data`` is full or EOF is reached.
+
+   Note that this routine currently requires a 1D rectangular non-strided array.
+
+   :arg data: an array to read into – existing values are overwritten.
+   :arg endian: :type:`ioendian` specifies the byte order in which
+              to read the number.
+   :returns: the number of values that were read into the array. This can be
+              less than ``data.size`` if EOF was reached, or an error occured,
+              before filling the array.
+
+   :throws SystemError: Thrown if an error occurred while reading the from fileReader
+*/
+proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):int throws
+  where ReadBinaryArrayReturnInt == true && (d.rank == 1 && d.stridable == false) && (
+          isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
+{
+  var nr: int = 0;
+
+  select (endian) {
+    when ioendian.native {
+      nr = this.readBinary(data, ioendian.native);
+    }
+    when ioendian.big {
+      nr = this.readBinary(data, ioendian.big);
+    }
+    when ioendian.little {
+      nr = this.readBinary(data, ioendian.little);
+    }
+  }
+
+  return nr;
 }
 
 /*
