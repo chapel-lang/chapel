@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_ATTRIBUTES_H
-#define CHPL_UAST_ATTRIBUTES_H
+#ifndef CHPL_UAST_ATTRIBUTE_GROUP_H
+#define CHPL_UAST_ATTRIBUTE_GROUP_H
 
 #include "chpl/framework/Location.h"
 #include "chpl/uast/AstNode.h"
@@ -36,22 +36,22 @@ namespace uast {
   Compiler pragmas and deprecation messages (both intended for internal
   use only) are both examples of attributes.
 */
-class Attributes final : public AstNode {
+class AttributeGroup final : public AstNode {
  private:
   std::set<PragmaTag> pragmas_;
   bool isDeprecated_;
-  bool isUnstable_; //new
+  bool isUnstable_;
   UniqueString deprecationMessage_;
-  UniqueString unstableMessage_; //new
+  UniqueString unstableMessage_;
 
   // TODO: Do we want to preserve the location of string literals used in
   // pragmas and deprecation messages?
-  Attributes(std::set<PragmaTag> pragmas,
-             bool isDeprecated,
-             bool isUnstable,
-             UniqueString deprecationMessage,
-             UniqueString unstableMessage)
-    : AstNode(asttags::Attributes),
+  AttributeGroup(std::set<PragmaTag> pragmas,
+                 bool isDeprecated,
+                 bool isUnstable,
+                 UniqueString deprecationMessage,
+                 UniqueString unstableMessage)
+    : AstNode(asttags::AttributeGroup),
       pragmas_(std::move(pragmas)),
       isDeprecated_(isDeprecated),
       isUnstable_(isUnstable),
@@ -68,8 +68,8 @@ class Attributes final : public AstNode {
     CHPL_ASSERT(pragmas_.size() <= NUM_KNOWN_PRAGMAS);
   }
 
-  Attributes(Deserializer& des)
-    : AstNode(asttags::Attributes, des) {
+  AttributeGroup(Deserializer& des)
+    : AstNode(asttags::AttributeGroup, des) {
       pragmas_ = des.read<std::set<PragmaTag>>();
       isDeprecated_ = des.read<bool>();
       isUnstable_ = des.read<bool>();
@@ -79,12 +79,12 @@ class Attributes final : public AstNode {
 
 
   bool contentsMatchInner(const AstNode* other) const override {
-    const Attributes* rhs = (const Attributes*)other;
+    const AttributeGroup* rhs = (const AttributeGroup*)other;
     return this->pragmas_ == rhs->pragmas_ &&
-      this->isDeprecated_ == rhs->isDeprecated_ &&
-      this->isUnstable_ == rhs->isUnstable_ &&
-      this->deprecationMessage_ == rhs->deprecationMessage_ &&
-      this->unstableMessage_ == rhs->unstableMessage_;
+           this->isDeprecated_ == rhs->isDeprecated_ &&
+           this->isUnstable_ == rhs->isUnstable_ &&
+           this->deprecationMessage_ == rhs->deprecationMessage_ &&
+           this->unstableMessage_ == rhs->unstableMessage_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -95,17 +95,17 @@ class Attributes final : public AstNode {
   void dumpInner(const DumpSettings& s) const;
 
  public:
-  ~Attributes() override = default;
+  ~AttributeGroup() override = default;
 
-  static owned<Attributes> build(Builder* builder, Location loc,
-                                 std::set<PragmaTag> pragmas,
-                                 bool isDeprecated,
-                                 bool isUnstable,
-                                 UniqueString deprecationMessage,
-                                 UniqueString unstableMessage);
+  static owned<AttributeGroup> build(Builder* builder, Location loc,
+                                     std::set<PragmaTag> pragmas,
+                                     bool isDeprecated,
+                                     bool isUnstable,
+                                     UniqueString deprecationMessage,
+                                     UniqueString unstableMessage);
 
   /**
-    Returns true if the given pragma is set for this attributes.
+    Returns true if the given pragma is set for this attributeGroup.
   */
   bool hasPragma(PragmaTag tag) const {
     CHPL_ASSERT(tag >= 0 && tag < NUM_KNOWN_PRAGMAS);
@@ -123,7 +123,7 @@ class Attributes final : public AstNode {
   }
 
   /**
-    Returns true if the declaration associated with this attributes is
+    Returns true if the declaration associated with this attributeGroup is
     deprecated.
   */
   bool isDeprecated() const {
@@ -162,7 +162,7 @@ class Attributes final : public AstNode {
     ser.write(unstableMessage_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Attributes);
+  DECLARE_STATIC_DESERIALIZE(AttributeGroup);
 
 };
 

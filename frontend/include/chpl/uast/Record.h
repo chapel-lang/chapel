@@ -44,14 +44,14 @@ namespace uast {
  */
 class Record final : public AggregateDecl {
  private:
-  Record(AstList children, int attributesChildNum, Decl::Visibility vis,
+  Record(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
          Decl::Linkage linkage,
          int linkageNameChildNum,
          UniqueString name,
          int elementsChildNum,
          int numElements)
     : AggregateDecl(asttags::Record, std::move(children),
-                    attributesChildNum,
+                    attributeGroupChildNum,
                     vis,
                     linkage,
                     linkageNameChildNum,
@@ -77,7 +77,7 @@ class Record final : public AggregateDecl {
   ~Record() override = default;
 
   static owned<Record> build(Builder* builder, Location loc,
-                             owned<Attributes> attributes,
+                             owned<AttributeGroup> attributeGroup,
                              Decl::Visibility vis,
                              Decl::Linkage linkage,
                              owned<AstNode> linkageName,

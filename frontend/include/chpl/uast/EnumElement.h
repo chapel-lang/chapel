@@ -41,13 +41,13 @@ namespace uast {
  */
 class EnumElement final : public NamedDecl {
  private:
-  EnumElement(AstList children, int attributesChildNum,
+  EnumElement(AstList children, int attributeGroupChildNum,
               UniqueString name)
     : NamedDecl(asttags::EnumElement, std::move(children),
-                attributesChildNum,
+                attributeGroupChildNum,
                 Decl::DEFAULT_VISIBILITY,
                 Decl::DEFAULT_LINKAGE,
-                /*linkageNameChildNum*/ -1,
+                /*linkageNameChildNum*/ NO_CHILD,
                 name) {
 
     CHPL_ASSERT(children_.size() <= 2);
@@ -70,19 +70,19 @@ class EnumElement final : public NamedDecl {
     // if you blindly read this and try to access the underlying children_
     // array, you can segfault in the case that there is an attribute
     // but no init expression on this enum element.
-    return this->attributesChildNum() + 1;
+    return this->attributeGroupChildNum() + 1;
   }
 
  public:
   ~EnumElement() override = default;
 
   static owned<EnumElement> build(Builder* builder, Location loc,
-                                  owned<Attributes> attributes,
+                                  owned<AttributeGroup> attributeGroup,
                                   UniqueString name,
                                   owned<AstNode> initExpression);
 
   static owned<EnumElement> build(Builder* builder, Location loc,
-                                  owned<Attributes> attributes,
+                                  owned<AttributeGroup> attributeGroup,
                                   UniqueString name);
 
   /**
@@ -94,7 +94,7 @@ class EnumElement final : public NamedDecl {
     // in this case children_.size() is > 0, but initExpression should still be nullptr
     if (initExpressionChildNum() >= (int) children_.size()) {
       // either there are no children, or there's only an attribute
-      CHPL_ASSERT(children_.size() == 0 || this->child(0)->isAttributes());
+      CHPL_ASSERT(children_.size() == 0 || this->child(0)->isAttributeGroup());
       return nullptr;
     }
 

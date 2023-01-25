@@ -52,8 +52,7 @@ class TypeQuery final : public NamedDecl {
 
  private:
   TypeQuery(UniqueString name)
-    : NamedDecl(asttags::TypeQuery, DEFAULT_VISIBILITY, DEFAULT_LINKAGE,
-                /* attributesChildNum */ -1, name) {
+    : NamedDecl(asttags::TypeQuery, DEFAULT_VISIBILITY, DEFAULT_LINKAGE, name) {
     CHPL_ASSERT(!name.isEmpty() && name.c_str()[0] != '?');
   }
 

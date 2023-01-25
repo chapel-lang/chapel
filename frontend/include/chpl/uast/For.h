@@ -53,7 +53,7 @@ class For final : public IndexableLoop {
     : IndexableLoop(asttags::For, std::move(children),
                     indexChildNum,
                     iterandChildNum,
-                    /*withClauseChildNum*/ -1,
+                    /*withClauseChildNum*/ NO_CHILD,
                     blockStyle,
                     loopBodyChildNum,
                     isExpressionLevel),

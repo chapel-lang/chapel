@@ -45,8 +45,8 @@ owned<For> For::build(Builder* builder,
   if (isParam) CHPL_ASSERT(!isExpressionLevel);
 
   AstList lst;
-  int8_t indexChildNum = -1;
-  int8_t iterandChildNum = -1;
+  int8_t indexChildNum = NO_CHILD;
+  int8_t iterandChildNum = NO_CHILD;
 
   if (index.get() != nullptr) {
     indexChildNum = lst.size();

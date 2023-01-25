@@ -28,7 +28,7 @@ FRONTEND_UAST_SRCS = \
   AstNode.cpp \
   AstTag.cpp \
   As.cpp \
-  Attributes.cpp \
+  AttributeGroup.cpp \
   Begin.cpp \
   Block.cpp \
   BoolLiteral.cpp \

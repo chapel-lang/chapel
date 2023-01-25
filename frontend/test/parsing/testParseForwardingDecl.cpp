@@ -334,8 +334,8 @@ static void test8(Parser* parser) {
   const ForwardingDecl* fwd = record->child(0)->toForwardingDecl();
   assert(fwd);
   assert(fwd->expr()->isVariable());
-  assert(fwd->attributes());
-  auto attr = fwd->attributes();
+  assert(fwd->attributeGroup());
+  auto attr = fwd->attributeGroup();
   assert(attr);
   assert(!attr->isDeprecated());
   assert(attr->hasPragma(PRAGMA_NO_DOC));
@@ -367,8 +367,8 @@ static void test9(Parser* parser) {
   assert(fwd);
   assert(fwd->numChildren() == 2);
   assert(fwd->expr()->isVariable());
-  assert(fwd->attributes());
-  auto attr = fwd->attributes();
+  assert(fwd->attributeGroup());
+  auto attr = fwd->attributeGroup();
   assert(attr);
   assert(attr->isDeprecated());
   assert(!attr->hasPragma(PRAGMA_NO_DOC));

@@ -49,13 +49,13 @@ class Module final : public NamedDecl {
  private:
   Kind kind_;
 
-  Module(AstList children, int attributesChildNum, Decl::Visibility vis,
+  Module(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
          UniqueString name,
          Kind kind)
-    : NamedDecl(asttags::Module, std::move(children), attributesChildNum,
+    : NamedDecl(asttags::Module, std::move(children), attributeGroupChildNum,
                 vis,
                 Decl::DEFAULT_LINKAGE,
-                /*linkageNameChildNum*/ -1,
+                /*linkageNameChildNum*/ NO_CHILD,
                 name),
                 kind_(kind) {
 
@@ -79,7 +79,7 @@ class Module final : public NamedDecl {
   }
 
   int stmtChildNum() const {
-    return attributes() ? 1 : 0;
+    return attributeGroup() ? 1 : 0;
   }
 
   void dumpFieldsInner(const DumpSettings& s) const override;
@@ -88,7 +88,7 @@ class Module final : public NamedDecl {
   ~Module() override = default;
 
   static owned<Module> build(Builder* builder, Location loc,
-                             owned<Attributes> attributes,
+                             owned<AttributeGroup> attributeGroup,
                              Decl::Visibility vis,
                              UniqueString name,
                              Module::Kind kind,
@@ -114,7 +114,7 @@ class Module final : public NamedDecl {
     Return the number of statements in this module.
   */
   int numStmts() const {
-    return attributes() ? numChildren()-1 : numChildren();
+    return attributeGroup() ? numChildren()-1 : numChildren();
   }
 
   /**
