@@ -1,0 +1,2 @@
+--useNaive=false # transpose-coalesced
+--useNaive=true  # transpose-naive

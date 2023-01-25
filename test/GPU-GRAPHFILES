@@ -17,3 +17,5 @@ gpu/native/studies/chop/chplGPU.graph
 
 gpu/native/array_on_device/studies/shoc/triadAodBw1.graph
 gpu/native/array_on_device/studies/shoc/triadAodBw2.graph
+
+gpu/native/studies/transpose/transpose.graph
