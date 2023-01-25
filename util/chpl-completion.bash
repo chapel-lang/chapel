@@ -63,6 +63,8 @@ _chpl ()
 --dyno-debug-trace \
 --dyno-scope-bundled \
 --dyno-scope-production \
+--dyno-serialize \
+--dyno-serialize-dir \
 --early-deinit \
 --explain-call \
 --explain-call-id \
@@ -177,6 +179,7 @@ _chpl ()
 --no-dyno-debug-trace \
 --no-dyno-scope-bundled \
 --no-dyno-scope-production \
+--no-dyno-serialize \
 --no-early-deinit \
 --no-explain-verbose \
 --no-fast-followers \

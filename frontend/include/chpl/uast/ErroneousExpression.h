@@ -35,6 +35,11 @@ class ErroneousExpression final : public AstNode {
   ErroneousExpression()
     : AstNode(asttags::ErroneousExpression) {
   }
+
+  ErroneousExpression(Deserializer& des)
+    : AstNode(asttags::ErroneousExpression, des) {}
+
+
   bool contentsMatchInner(const AstNode* other) const override {
     return true;
   }
@@ -44,6 +49,13 @@ class ErroneousExpression final : public AstNode {
  public:
   ~ErroneousExpression() = default;
   static owned<ErroneousExpression> build(Builder* builder, Location loc);
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(ErroneousExpression);
+
 };
 
 

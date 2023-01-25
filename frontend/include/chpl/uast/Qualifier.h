@@ -21,6 +21,7 @@
 #define CHPL_UAST_QUALIFIER_H
 
 #include <string> // to get the definition of std::hash
+#include "chpl/framework/serialize-functions.h"
 
 namespace chpl {
 namespace uast {
@@ -110,6 +111,9 @@ const char* qualifierToString(Qualifier intent);
 
 
 } // end namespace uast
+
+DECLARE_SERDE_ENUM(uast::Qualifier, uint8_t);
+
 } // end namespace chpl
 
 namespace std {

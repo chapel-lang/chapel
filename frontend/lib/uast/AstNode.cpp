@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "chpl/uast/all-uast.h"
 #include "chpl/uast/AstNode.h"
 
 
@@ -362,6 +363,13 @@ bool AstNode::completeMatch(const AstNode* other) const {
   for (size_t i = 0; i < nChildren; i++) {
     const AstNode* lhsChild = lhs->children_[i].get();
     const AstNode* rhsChild = rhs->children_[i].get();
+
+    // TODO: This should only be possible while we're implementing
+    // serialization...
+    if (lhsChild == nullptr || rhsChild == nullptr) {
+      return false;
+    }
+
     bool childMatch = lhsChild->completeMatch(rhsChild);
     if (!childMatch) {
       allMatch = false;
@@ -523,6 +531,73 @@ void AstNode::stringify(std::ostream& ss,
       }
       break;
   }
+}
+
+void AstNode::serialize(Serializer& ser) const {
+  ser.write(tag_);
+  ser.write(id_);
+  ser.write(children_);
+}
+
+AstNode::AstNode(AstTag tag, Deserializer& des)
+  : tag_(tag) {
+  // Note: Assumes that the tag was already serialized in order to invoke
+  // the correct class' deserializer.
+  id_ = des.read<ID>();
+  children_ = des.read<AstList>();
+}
+
+owned<AstNode> AstNode::deserialize(Deserializer& des) {
+  AstTag tag = des.read<AstTag>();
+
+  switch (tag) {
+    #define CASE_LEAF(NAME) \
+      case asttags::NAME: \
+      { \
+        return NAME::deserialize(des); \
+        break; \
+      }
+
+    #define CASE_NODE(NAME) \
+      case asttags::NAME: \
+      { \
+        return NAME::deserialize(des); \
+        break; \
+      }
+
+    #define CASE_OTHER(NAME) \
+      case asttags::NAME: \
+      { \
+        assert(false && "this code should never be run"); \
+        break; \
+      }
+
+    #define AST_NODE(NAME) CASE_NODE(NAME)
+    #define AST_LEAF(NAME) CASE_LEAF(NAME)
+    #define AST_BEGIN_SUBCLASSES(NAME) CASE_OTHER(START_##NAME)
+    #define AST_END_SUBCLASSES(NAME) CASE_OTHER(END_##NAME)
+
+    // Apply the above macros to uast-classes-list.h
+    // to fill in the cases
+    #include "chpl/uast/uast-classes-list.h"
+    // and also for NUM_AST_TAGS
+    CASE_OTHER(NUM_AST_TAGS)
+    CASE_OTHER(AST_TAG_UNKNOWN)
+
+    // clear the macros
+    #undef AST_NODE
+    #undef AST_LEAF
+    #undef AST_BEGIN_SUBCLASSES
+    #undef AST_END_SUBCLASSES
+    #undef CASE_LEAF
+    #undef CASE_NODE
+    #undef CASE_OTHER
+  }
+
+  assert(false && "this code should never be run"); \
+
+  owned<AstNode> ret = nullptr;
+  return ret;
 }
 
 IMPLEMENT_DUMP(AstNode);

@@ -92,6 +92,14 @@ class Decl : public AstNode {
                  linkageNameChildNum_ < (ssize_t)children_.size());
   }
 
+  Decl(AstTag tag, Deserializer& des)
+    : AstNode(tag, des) {
+      attributesChildNum_ = (int)des.read<int32_t>();
+      visibility_ = des.read<Decl::Visibility>();
+      linkage_ = des.read<Decl::Linkage>();
+      linkageNameChildNum_ = (int)des.read<int32_t>();
+  }
+
   bool declContentsMatchInner(const Decl* other) const {
     return this->visibility_ == other->visibility_ &&
            this->linkage_ == other->linkage_ &&
@@ -162,10 +170,25 @@ class Decl : public AstNode {
     Convert Decl::Linkage to a string
     */
   static const char* linkageToString(Linkage x);
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+
+    ser.write((int32_t)attributesChildNum_);
+    ser.write(visibility_);
+    ser.write(linkage_);
+    ser.write((int32_t)linkageNameChildNum_);
+  }
+
 };
 
 
+
 } // end namespace uast
+
+DECLARE_SERDE_ENUM(uast::Decl::Visibility, uint8_t);
+DECLARE_SERDE_ENUM(uast::Decl::Linkage, uint8_t);
+
 } // end namespace chpl
 
 namespace std {

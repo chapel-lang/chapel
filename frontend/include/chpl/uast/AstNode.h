@@ -112,6 +112,7 @@ class AstNode {
   AstNode(AstTag tag, AstList children)
     : tag_(tag), id_(), children_(std::move(children)) {
   }
+  AstNode(AstTag tag, Deserializer& des);
 
   // Magic constant to indicate no such child exists.
   static const int NO_CHILD = -1;
@@ -225,6 +226,10 @@ class AstNode {
 
   // compute the maximum width of all of the IDs
   int computeMaxIdStringWidth() const;
+
+  virtual void serialize(Serializer& os) const;
+
+  static owned<AstNode> deserialize(Deserializer& des);
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
@@ -475,6 +480,26 @@ class AstNode {
   }
 };
 } // end namespace uast
+
+template<> struct serialize<uast::AstList> {
+  void operator()(Serializer& ser, const uast::AstList& list) {
+    ser.write((uint64_t)list.size());
+    for (const auto& node : list) {
+      node->serialize(ser);
+    }
+  }
+};
+
+template<> struct deserialize<uast::AstList> {
+  uast::AstList operator()(Deserializer& des) {
+    uast::AstList ret;
+    auto len = des.read<uint64_t>();
+    for (uint64_t i = 0; i < len; i++) {
+      ret.push_back(uast::AstNode::deserialize(des));
+    }
+    return ret;
+  }
+};
 } // end namespace chpl
 
 /// \cond DO_NOT_DOCUMENT
@@ -512,6 +537,10 @@ AST_LESS(AstNode)
 #undef AST_LESS
 /// \endcond
 
+#define DECLARE_STATIC_DESERIALIZE(NAME) \
+static owned<NAME> deserialize(Deserializer& des) { \
+  return owned<NAME>(new NAME(des)); \
+}
 
 } // end namespace std
 

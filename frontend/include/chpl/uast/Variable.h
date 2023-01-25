@@ -85,6 +85,12 @@ class Variable final : public VarLikeDecl {
         isField_(isField) {
   }
 
+  Variable(Deserializer& des)
+    : VarLikeDecl(asttags::Variable, des) {
+    isConfig_ = des.read<bool>();
+    isField_ = des.read<bool>();
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Variable* lhs = this;
     const Variable* rhs = (const Variable*) other;
@@ -137,10 +143,21 @@ class Variable final : public VarLikeDecl {
   */
   bool isField() const { return this->isField_; }
 
+  void serialize(Serializer& ser) const override {
+    VarLikeDecl::serialize(ser);
+    ser.write(isConfig_);
+    ser.write(isField_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Variable);
+
 };
 
 
 } // end namespace uast
+
+DECLARE_SERDE_ENUM(uast::Variable::Kind, uint8_t);
+
 } // end namespace chpl
 
 #endif

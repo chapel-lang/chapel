@@ -59,6 +59,10 @@ class Import final : public AstNode {
     #endif
   }
 
+  Import(Deserializer& des)
+    : AstNode(asttags::Import, des)
+      {visibility_=des.read<Decl::Visibility>();}
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Import* rhs = other->toImport();
     return this->visibility_ == rhs->visibility_;
@@ -108,6 +112,13 @@ class Import final : public AstNode {
     CHPL_ASSERT(ret->isVisibilityClause());
     return (const VisibilityClause*)ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(visibility_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Import);
 
 };
 

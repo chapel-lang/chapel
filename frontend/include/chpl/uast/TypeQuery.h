@@ -57,6 +57,9 @@ class TypeQuery final : public NamedDecl {
     CHPL_ASSERT(!name.isEmpty() && name.c_str()[0] != '?');
   }
 
+  TypeQuery(Deserializer& des)
+    : NamedDecl(asttags::TypeQuery, des) { }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const TypeQuery* lhs = this;
     const TypeQuery* rhs = (const TypeQuery*) other;
@@ -72,6 +75,12 @@ class TypeQuery final : public NamedDecl {
 
   static owned<TypeQuery> build(Builder* builder, Location loc,
                                 UniqueString name);
+
+  void serialize(Serializer& ser) const override {
+    NamedDecl::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(TypeQuery);
 };
 
 
