@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Attributes.h"
+#include "chpl/uast/AttributeGroup.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -25,7 +25,7 @@ namespace chpl {
 namespace uast {
 
 
-owned<Attributes> Attributes::build(Builder* builder, Location loc,
+owned<AttributeGroup> AttributeGroup::build(Builder* builder, Location loc,
                                     std::set<PragmaTag> pragmas,
                                     bool isDeprecated,
                                     bool isUnstable,
@@ -37,7 +37,7 @@ owned<Attributes> Attributes::build(Builder* builder, Location loc,
     }
   #endif
 
-  Attributes* ret = new Attributes(std::move(pragmas), isDeprecated,
+  AttributeGroup* ret = new AttributeGroup(std::move(pragmas), isDeprecated,
                                    isUnstable,
                                    deprecationMessage,
                                    unstableMessage);

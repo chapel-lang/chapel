@@ -42,8 +42,8 @@ owned<Catch> Catch::build(Builder* builder, Location loc,
   CHPL_ASSERT(body.get() != nullptr);
 
   AstList lst;
-  int8_t errorChildNum = -1;
-  int8_t bodyChildNum = -1;
+  int8_t errorChildNum = NO_CHILD;
+  int8_t bodyChildNum = NO_CHILD;
 
   if (error.get() != nullptr) {
     errorChildNum = lst.size();

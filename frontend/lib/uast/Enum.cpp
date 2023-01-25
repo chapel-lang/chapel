@@ -26,23 +26,23 @@ namespace uast {
 
 
 owned<Enum> Enum::build(Builder* builder, Location loc,
-                        owned<Attributes> attributes,
+                        owned<AttributeGroup> attributeGroup,
                         Decl::Visibility vis,
                         UniqueString name,
                         AstList stmts) {
   AstList lst;
-  int attributesChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
 
-  if (attributes.get() != nullptr) {
-    attributesChildNum = lst.size();
-    lst.push_back(std::move(attributes));
+  if (attributeGroup.get() != nullptr) {
+    attributeGroupChildNum = lst.size();
+    lst.push_back(std::move(attributeGroup));
   }
 
   for (auto& ast : stmts) {
     lst.push_back(std::move(ast));
   }
 
-  Enum* ret = new Enum(std::move(lst), attributesChildNum, vis, name);
+  Enum* ret = new Enum(std::move(lst), attributeGroupChildNum, vis, name);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

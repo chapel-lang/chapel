@@ -347,7 +347,7 @@ static void test4() {
       ii.push_back(Identifier::build(b, dummyLoc, strA));
       ii.push_back(Identifier::build(b, dummyLoc, strB));
       ii.push_back(Identifier::build(b, dummyLoc, strC));
-      inner.push_back(Module::build(b, dummyLoc, /*attributes*/ nullptr,
+      inner.push_back(Module::build(b, dummyLoc, /*attributeGroup*/ nullptr,
                                     Decl::DEFAULT_VISIBILITY,
                                     strI,
                                     Module::DEFAULT_MODULE_KIND,
@@ -355,7 +355,7 @@ static void test4() {
     }
     inner.push_back(Identifier::build(b, dummyLoc, strX));
 
-    auto mod = Module::build(b, dummyLoc, /*attributes*/ nullptr,
+    auto mod = Module::build(b, dummyLoc, /*attributeGroup*/ nullptr,
                              Decl::DEFAULT_VISIBILITY,
                              strM,
                              Module::DEFAULT_MODULE_KIND,

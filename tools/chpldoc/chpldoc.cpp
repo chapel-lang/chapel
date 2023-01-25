@@ -235,7 +235,7 @@ or
    import $MODULE;)RAW";
 
 static bool isNoDoc(const Decl* e) {
-  if (auto attrs = e->attributes()) {
+  if (auto attrs = e->attributeGroup()) {
     return attrs->hasPragma(pragmatags::PRAGMA_NO_DOC);
   }
   return false;
@@ -1330,7 +1330,7 @@ struct RstResultBuilder {
   }
 
   void showUnstableWarning(const Decl* node, bool indentComment=true) {
-    if (auto attrs = node->attributes()) {
+    if (auto attrs = node->attributeGroup()) {
       if (attrs->isUnstable()) {
         int commentShift = 0;
           if (indentComment) {
@@ -1346,7 +1346,7 @@ struct RstResultBuilder {
   }
 
   void showDeprecationMessage(const Decl* node, bool indentComment=true) {
-    if (auto attrs = node->attributes()) {
+    if (auto attrs = node->attributeGroup()) {
       if (attrs->isDeprecated() && !textOnly_) {
         auto comment = previousComment(context_, node->id());
         if (comment && !comment->str().empty() &&
@@ -1456,7 +1456,7 @@ struct RstResultBuilder {
     }
     assert(!moduleName.empty());
     const Comment* lastComment = nullptr;
-    if (auto attrs = m->attributes()) {
+    if (auto attrs = m->attributeGroup()) {
       if (attrs->hasPragma(pragmatags::PRAGMA_MODULE_INCLUDED_BY_DEFAULT)) {
         includedByDefault = true;
       }
@@ -1626,7 +1626,7 @@ struct RstResultBuilder {
       }
       showComment(md, true);
 
-      if (auto attrs = md->attributes()) {
+      if (auto attrs = md->attributeGroup()) {
         if (attrs->isDeprecated() && !textOnly_) {
           indentStream(os_, 1 * indentPerDepth) << ".. warning::\n";
           indentStream(os_, 2 * indentPerDepth) << attrs->deprecationMessage();

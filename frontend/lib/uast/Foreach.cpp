@@ -37,9 +37,9 @@ owned<Foreach> Foreach::build(Builder* builder,
   CHPL_ASSERT(body.get() != nullptr);
 
   AstList lst;
-  int8_t indexChildNum = -1;
-  int8_t iterandChildNum = -1;
-  int8_t withClauseChildNum = -1;
+  int8_t indexChildNum = NO_CHILD;
+  int8_t iterandChildNum = NO_CHILD;
+  int8_t withClauseChildNum = NO_CHILD;
 
   if (index.get() != nullptr) {
     indexChildNum = lst.size();

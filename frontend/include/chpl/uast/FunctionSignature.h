@@ -76,13 +76,13 @@ class FunctionSignature final : public AstNode {
       throws_(throws),
       isParenless_(isParenless) {
 
-    CHPL_ASSERT(-1 <= formalsChildNum_ &&
+    CHPL_ASSERT(NO_CHILD <= formalsChildNum_ &&
                  formalsChildNum_ < (ssize_t)children_.size());
-    CHPL_ASSERT(-1 <= thisFormalChildNum_ &&
+    CHPL_ASSERT(NO_CHILD <= thisFormalChildNum_ &&
                  thisFormalChildNum_ < (ssize_t)children_.size());
     CHPL_ASSERT(0 <= numFormals_ &&
                 numFormals_ <= (ssize_t)children_.size());
-    CHPL_ASSERT(-1 <= returnTypeChildNum_ &&
+    CHPL_ASSERT(NO_CHILD <= returnTypeChildNum_ &&
                  returnTypeChildNum_ < (ssize_t)children_.size());
   }
 

@@ -28,7 +28,7 @@ namespace uast {
 owned<Return> Return::build(Builder* builder, Location loc,
                             owned<AstNode> value) {
   AstList lst;
-  int8_t valueChildNum = -1;
+  int8_t valueChildNum = NO_CHILD;
 
   if (value.get() != nullptr) {
     valueChildNum = lst.size();

@@ -56,7 +56,9 @@ class AstNode {
 
  private:
   AstTag tag_;
+  int attributeGroupChildNum_;
   ID id_;
+
 
  protected:
   AstList children_;
@@ -106,16 +108,31 @@ class AstNode {
                          int parentIdx);
 
  protected:
-  AstNode(AstTag tag)
-    : tag_(tag), id_(), children_() {
-  }
-  AstNode(AstTag tag, AstList children)
-    : tag_(tag), id_(), children_(std::move(children)) {
-  }
-  AstNode(AstTag tag, Deserializer& des);
+
+
 
   // Magic constant to indicate no such child exists.
   static const int NO_CHILD = -1;
+
+  AstNode(AstTag tag)
+    : tag_(tag), attributeGroupChildNum_(NO_CHILD), id_(), children_() {
+  }
+  AstNode(AstTag tag, AstList children)
+    : tag_(tag), attributeGroupChildNum_(NO_CHILD), id_(),
+      children_(std::move(children)) {
+  }
+  AstNode(AstTag tag, AstList children, int attributeGroupChildNum)
+    : tag_(tag), attributeGroupChildNum_(attributeGroupChildNum), id_(),
+      children_(std::move(children)) {
+    CHPL_ASSERT(NO_CHILD <= attributeGroupChildNum_ &&
+                attributeGroupChildNum_ < (ssize_t)children_.size());
+
+    if (attributeGroupChildNum_ >= 0) {
+      CHPL_ASSERT(child(attributeGroupChildNum_)->isAttributeGroup());
+    }
+  }
+
+  AstNode(AstTag tag, Deserializer& des);
 
   // Quick way to return an already exhausted iterator.
   template <typename T>
@@ -187,6 +204,25 @@ class AstNode {
   const AstNode* child(int i) const {
     CHPL_ASSERT(0 <= i && i < (int) children_.size());
     return children_[i].get();
+  }
+
+  /**
+    Returns the index into children of the attributeGroup child node,
+    or AstNode::NO_CHILD if no attributeGroup exists on this node.
+   */
+  int attributeGroupChildNum() const {
+    return attributeGroupChildNum_;
+  }
+
+  /**
+    Return the attributeGroup associated with this AstNode, or nullptr
+    if none exists.
+   */
+  const AttributeGroup* attributeGroup() const {
+    if (attributeGroupChildNum_ < 0) return nullptr;
+    auto ret = child(attributeGroupChildNum_);
+    CHPL_ASSERT(ret->isAttributeGroup());
+    return (const AttributeGroup*)ret;
   }
 
   /**
