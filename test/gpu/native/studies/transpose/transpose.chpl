@@ -3,6 +3,8 @@ use GPUDiagnostics;
 use GPU;
 use Time;
 
+config const numTrials = 10;
+config const useNaive = false;
 config const sizeX = 2048*8,
              sizeY = 2048*8;
 config param blockSize = 16;
@@ -10,7 +12,8 @@ config param blockSize = 16;
 pragma "codegen for GPU"
 pragma "always resolve function"
 export proc transposeMatrix(odata: c_ptr(real(32)), idata: c_ptr(real(32)), width: int, height: int) {
-  var smVoidPtr = __primitive("gpu allocShared", numBytes(real(32))*blockSize*blockSize);
+  // Allocate extra columns for the shared 2D array to avoid bank conflicts.
+  var smVoidPtr = __primitive("gpu allocShared", numBytes(real(32))*(blockSize+1)*blockSize);
   var smArrPtr = smVoidPtr : c_ptr(real(32));
 
   const blockIdxX = __primitive("gpu blockIdx x"),
@@ -24,7 +27,7 @@ export proc transposeMatrix(odata: c_ptr(real(32)), idata: c_ptr(real(32)), widt
   // i.e., the below is effectively smArrPtr[y][x] instead of
   // smArrPtr[x][y] for copy
   if (idxX < width && idxY < height) {
-    smArrPtr[blockSize * threadIdxX + threadIdxY] = idata[idxY * width + idxX];
+    smArrPtr[(blockSize+1) * threadIdxX + threadIdxY] = idata[idxY * width + idxX];
   }
 
   // synchronize the threads
@@ -34,7 +37,7 @@ export proc transposeMatrix(odata: c_ptr(real(32)), idata: c_ptr(real(32)), widt
   idxX = blockIdxY * blockSize + threadIdxX;
   idxY = blockIdxX * blockSize + threadIdxY;
   if (idxX < height && idxY < width) {
-    odata[idxY * height + idxX] = smArrPtr[blockSize * threadIdxY + threadIdxX];
+    odata[idxY * height + idxX] = smArrPtr[(blockSize+1) * threadIdxY + threadIdxX];
   }
 }
 
@@ -50,8 +53,6 @@ proc transposeNaive(original, output) {
   foreach (x,y) in original.domain do output[y,x] = original[x,y];
 }
 
-config const useNaive = false;
-
 on here.gpus[0] {
   var original: [0..#sizeX, 0..#sizeY] real(32);
   var output: [0..#sizeY, 0..#sizeY] real(32);
@@ -63,15 +64,21 @@ on here.gpus[0] {
   // Make sure a is on device if we're using unified memory.
   foreach a in original do a = a + 1;
 
+  var elapsed = 0.0;
   var timer: stopwatch;
-  timer.start();
-  if useNaive {
-    transposeNaive(original, output);
-  } else {
-    transposeTiled(original, output);
+  for 1..#numTrials {
+    timer.start();
+    if useNaive {
+      transposeNaive(original, output);
+    } else {
+      transposeTiled(original, output);
+    }
+    timer.stop();
+    elapsed += timer.elapsed();
+    timer.reset();
   }
-  timer.stop();
-  var elapsed = timer.elapsed();
+  elapsed /= numTrials;
+
   var sizeInBytes = original.size * numBytes(real(32));
   var sizeInGb = sizeInBytes / (1000.0 * 1000.0 * 1000.0);
   var gbPerSec = sizeInGb / elapsed;
