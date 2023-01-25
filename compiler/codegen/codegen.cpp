@@ -2737,6 +2737,11 @@ void codegen() {
       while (wait(&status) != pid) {
         // wait for child process
       }
+
+      // The 'status' argument to 'wait' contains more info than just the value
+      // passed to 'exit()'. Extract the value passed to 'exit()' from 'status'.
+      status = WEXITSTATUS(status);
+
       // If there was an error in GPU code generation then the .fatbin file (containing
       // the generated GPU code) was not created and we won't be able to continue.
       if(status != 0) {
