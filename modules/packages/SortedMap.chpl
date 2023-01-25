@@ -56,7 +56,7 @@ module SortedMap {
     if isGenericType(keyType) {
       compilerWarning("creating a sortedMap with key type " +
                       keyType:string);
-      if isClassType(keyType) && !isGenericType(borrowed keyType) {
+      if isClassType(keyType) && !isGenericType(keyType:borrowed) {
         compilerWarning("which now means class type with generic management");
       }
       compilerError("sortedMap key type cannot currently be generic");
@@ -68,7 +68,7 @@ module SortedMap {
     if isGenericType(valType) {
       compilerWarning("creating a sortedMap with value type " +
                       valType:string);
-      if isClassType(valType) && !isGenericType(borrowed valType) {
+      if isClassType(valType) && !isGenericType(valType:borrowed) {
         compilerWarning("which now means class type with generic management");
       }
       compilerError("sortedMap value type cannot currently be generic");

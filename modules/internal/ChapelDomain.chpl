@@ -1329,7 +1329,7 @@ module ChapelDomain {
       if isGenericType(eltType) {
         compilerWarning("creating an array with element type " +
                         eltType:string);
-        if isClassType(eltType) && !isGenericType(borrowed eltType) {
+        if isClassType(eltType) && !isGenericType(eltType:borrowed) {
           compilerWarning("which now means class type with generic management");
         }
         compilerError("array element type cannot currently be generic");
