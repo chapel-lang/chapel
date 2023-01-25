@@ -255,6 +255,10 @@ struct VarFrame {
 
   // ----- variables declared here for use in particular subclasses
 
+  // TODO: These probably can't store ID because, for a variable
+  // declared within a param for loop, we want to have a different
+  // variable for each iteration, rather than considering them all the same.
+
   // for split init and copy elision:
   // which variables are declared here in a way that allows split init?
   std::set<ID> eligibleVars;

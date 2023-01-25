@@ -392,6 +392,90 @@ static void test7() {
   assert(fn->numFormals() == 0);
 }
 
+// check a simple recursive function
+static void test8() {
+  printf("test8\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+                           module M {
+                             proc f(arg: int) {
+                               f(arg);
+                             }
+                             var y: int;
+                             f(y);
+                           }
+                        )"""";
+
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 3);
+  const Call* call = m->stmt(2)->toCall();
+  assert(call);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  const ResolvedExpression& re = rr.byAst(call);
+
+  assert(re.type().type()->isVoidType());
+
+  const TypedFnSignature* fn = re.mostSpecific().only();
+  assert(fn != nullptr);
+  assert(fn->untyped()->name() == "f");
+
+  assert(fn->numFormals() == 1);
+  assert(fn->formalName(0) == "arg");
+  assert(fn->formalType(0).kind() == QualifiedType::CONST_IN);
+  assert(fn->formalType(0).type() == IntType::get(context, 64));
+}
+
+// check a generic recursive function
+static void test9() {
+  printf("test9\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+                           module M {
+                             proc f(arg) {
+                               f(arg);
+                             }
+                             var y: int;
+                             f(y);
+                           }
+                        )"""";
+
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 3);
+  const Call* call = m->stmt(2)->toCall();
+  assert(call);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  const ResolvedExpression& re = rr.byAst(call);
+
+  assert(re.type().type()->isVoidType());
+
+  const TypedFnSignature* fn = re.mostSpecific().only();
+  assert(fn != nullptr);
+  assert(fn->untyped()->name() == "f");
+
+  assert(fn->numFormals() == 1);
+  assert(fn->formalName(0) == "arg");
+  assert(fn->formalType(0).kind() == QualifiedType::CONST_IN);
+  assert(fn->formalType(0).type() == IntType::get(context, 64));
+}
+
 
 int main() {
   test1();
@@ -401,6 +485,8 @@ int main() {
   test5();
   test6();
   test7();
+  test8();
+  test9();
 
   return 0;
 }

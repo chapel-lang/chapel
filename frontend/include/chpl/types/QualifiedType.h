@@ -51,6 +51,7 @@ class QualifiedType final {
   static const Kind UNKNOWN = uast::Qualifier::UNKNOWN;
   static const Kind DEFAULT_INTENT = uast::Qualifier::DEFAULT_INTENT;
   static const Kind CONST_INTENT = uast::Qualifier::CONST_INTENT;
+  static const Kind REF_MAYBE_CONST = uast::Qualifier::REF_MAYBE_CONST;
   static const Kind VAR = uast::Qualifier::VAR;
   static const Kind CONST_VAR = uast::Qualifier::CONST_VAR;
   static const Kind CONST_REF = uast::Qualifier::CONST_REF;
@@ -179,24 +180,12 @@ class QualifiedType final {
     In particular, returns true for all kinds other than REF and VALUE.
    */
   bool isConst() const {
-    return kind_ == Kind::CONST_INTENT ||
-           kind_ == Kind::CONST_VAR ||
-           kind_ == Kind::CONST_REF ||
-           kind_ == Kind::CONST_IN ||
-           kind_ == Kind::PARAM ||
-           kind_ == Kind::TYPE ||
-           kind_ == Kind::FUNCTION ||
-           kind_ == Kind::MODULE;
+    return uast::isConstQualifier(kind_);
   }
   /** Returns true if the type refers to something immutable
       (that cannot be modified by any task / other reference to it). */
   bool isImmutable() const {
-    return kind_ == Kind::CONST_VAR ||
-           kind_ == Kind::CONST_IN ||
-           kind_ == Kind::PARAM ||
-           kind_ == Kind::TYPE ||
-           kind_ == Kind::FUNCTION ||
-           kind_ == Kind::MODULE;
+    return uast::isImmutableQualifier(kind_);
   }
 
   /**
@@ -204,9 +193,7 @@ class QualifiedType final {
     (unknown, default intent, or const intent) and false otherwise.
    */
   bool isNonConcreteIntent() const {
-    return (kind_ == Kind::UNKNOWN ||
-            kind_ == Kind::DEFAULT_INTENT ||
-            kind_ == Kind::CONST_INTENT);
+    return uast::isGenericQualifier(kind_);
   }
 
   bool operator==(const QualifiedType& other) const {

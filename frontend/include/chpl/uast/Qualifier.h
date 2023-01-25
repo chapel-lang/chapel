@@ -43,6 +43,10 @@ enum struct Qualifier {
   /** Represents a const in / const ref depending on the type */
   CONST_INTENT,
 
+  /** Represents a formal that will be passed with 'ref' or 'const ref'
+      depending on subsequent analysis. */
+  REF_MAYBE_CONST,
+
   // 'concrete' intents
 
   /** Represents a mutable variable declared with 'var' */
@@ -99,14 +103,37 @@ enum struct Qualifier {
   MODULE,
 };
 
+/** Returns 'true' for qualifiers that are generic such as DEFAULT_INTENT */
 bool isGenericQualifier(Qualifier kind);
-// it might not be known if it is const, in which case it returns false
+
+/** Returns 'true' for qualifiers that are known to be const,
+    that is, cannot be modified directly, (but might
+    be modified by some other aliasing variable).
+    Returns 'false' for qualifiers where it is unknown if it is const or not
+    (such as DEFAULT_INTENT).
+ */
 bool isConstQualifier(Qualifier kind);
-// it might not be known if it is ref, in which case it returns false
+
+/** Returns 'true' for qualifiers that are known to be immutable,
+    that is, cannot be modified by any task or reference, including
+    the current reference.
+    Returns 'false' for qualifiers where it is unknown if it is immutable
+    (such as DEFAULT_INTENT).
+ */
+bool isImmutableQualifier(Qualifier kind);
+
+/** Returns 'true' for qualifiers that are 'ref' or 'const ref',
+    and returns 'false' for qualifiers where it is unknown if it is ref or
+    not (such as DEFAULT_INTENT).
+ */
 bool isRefQualifier(Qualifier kind);
-// it might not be known if it is 'in', in which case it returns false
+
+/** Returns 'true' for qualifiers that are 'in' or 'const in'.
+    Returns 'false' for qualifiers where it is unknown if it is 'const in'
+    or not, such as DEFAULT_INTENT. */
 bool isInQualifier(Qualifier kind);
 
+/** Returns a string describing a Qualifier */
 const char* qualifierToString(Qualifier intent);
 
 
