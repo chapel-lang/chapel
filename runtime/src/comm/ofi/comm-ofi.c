@@ -991,7 +991,7 @@ static chpl_bool mrGetKey(uint64_t*, uint64_t*, int, void*, size_t);
 static chpl_bool mrGetLocalKey(void*, size_t);
 static chpl_bool mrGetDesc(void**, void*, size_t);
 
-void chpl_comm_init(int *argc_p, char ***argv_p) {
+void chpl_comm_pre_topo_init(void) {
   chpl_comm_ofi_abort_on_error =
     (chpl_env_rt_get("COMM_OFI_ABORT_ON_ERROR", NULL) != NULL);
   time_init();
@@ -1003,6 +1003,9 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   if (rank != -1) {
     chpl_set_local_rank(rank);
   }
+}
+
+void chpl_comm_init(int *argc_p, char ***argv_p) {
   //
   // Gather run-invariant environment info as early as possible.
   //
@@ -1048,10 +1051,9 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
 void chpl_comm_pre_mem_init(void) {
   //
-  // Reserve cores for the AM handlers. This is done here because it has
-  // to happen after chpl_topo_post_comm_init has been called, but before
-  // other functions access information about the cores, such as pinning the
-  // heap.
+  // Reserve cores for the AM handlers. This is done here because it has to
+  // happen after chpl_topo_init has been called, but before other functions
+  // access information about the cores, such as pinning the heap.
   //
   init_ofiReserveCores();
 }
