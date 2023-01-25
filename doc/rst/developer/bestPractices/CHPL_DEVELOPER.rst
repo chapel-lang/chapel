@@ -45,7 +45,7 @@ possible.  In particular:
 
    (a) Prints out ``hidden`` developer flags when invoking ``chpl --help``
        (these flags are equally available to developers and
-       non-developers
+       non-developers).
 
    (b) Causes internal errors to not be obfuscated as they are for an
        end-user.
