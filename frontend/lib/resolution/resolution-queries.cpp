@@ -34,6 +34,7 @@
 #include "Resolver.h"
 #include "call-init-deinit.h"
 #include "default-functions.h"
+#include "maybe-const.h"
 #include "prims.h"
 #include "return-type-inference.h"
 #include "signature-checks.h"
@@ -1342,7 +1343,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
       QualifiedType::Kind qtKind = formalType.kind();
       auto tempQT = QualifiedType(qtKind, useType.type());
-      auto newKind = resolveIntent(tempQT, false);
+      auto newKind = resolveIntent(tempQT, /*isThis*/ false, /*isInit*/false);
 
       auto param = formalType.isParam() ? useType.param() : nullptr;
       useType = QualifiedType(newKind, useType.type(), param);
@@ -1555,8 +1556,10 @@ const TypedFnSignature* instantiateSignature(Context* context,
 static const owned<ResolvedFunction>&
 resolveFunctionByPoisQuery(Context* context,
                            const TypedFnSignature* sig,
-                           std::set<std::pair<ID, ID>> poiFnIdsUsed) {
-  QUERY_BEGIN(resolveFunctionByPoisQuery, context, sig, poiFnIdsUsed);
+                           PoiCallIdFnIds poiFnIdsUsed,
+                           PoiRecursiveCalls recursiveFnsUsed) {
+  QUERY_BEGIN(resolveFunctionByPoisQuery,
+              context, sig, poiFnIdsUsed, recursiveFnsUsed);
 
   owned<ResolvedFunction> result;
   // the actual value is set in resolveFunctionByInfoQuery after it is
@@ -1596,6 +1599,8 @@ resolveFunctionByInfoQuery(Context* context,
       visitor.returnType = retType;
       // then, resolve '=' and add any copy init/deinit calls as needed
       callInitDeinit(visitor);
+      // then, handle return intent overloads and maybe-const formals
+      adjustReturnIntentOverloadsAndMaybeConstRefs(visitor);
     }
 
     auto newTfsForInitializer = visitor.initResolver->finalize();
@@ -1616,14 +1621,16 @@ resolveFunctionByInfoQuery(Context* context,
                                   std::move(resolutionByIdCopy),
                                   resolvedPoiInfo,
                                   visitor.returnType));
-      auto idsUsed = resolvedPoiInfo.poiFnIdsUsed();
       QUERY_STORE_RESULT(resolveFunctionByPoisQuery,
                          context,
                          resolvedInit,
                          newTfsForInitializer,
-                         idsUsed);
-      auto& saved = resolveFunctionByPoisQuery(context, newTfsForInitializer,
-                                               idsUsed);
+                         resolvedPoiInfo.poiFnIdsUsed(),
+                         resolvedPoiInfo.recursiveFnsUsed());
+      auto& saved =
+        resolveFunctionByPoisQuery(context, newTfsForInitializer,
+                                   resolvedPoiInfo.poiFnIdsUsed(),
+                                   resolvedPoiInfo.recursiveFnsUsed());
       const ResolvedFunction* resultInit = saved.get();
       QUERY_STORE_RESULT(resolveFunctionByInfoQuery,
                          context,
@@ -1651,7 +1658,8 @@ resolveFunctionByInfoQuery(Context* context,
                        context,
                        resolved,
                        sig,
-                       resolvedPoiInfo.poiFnIdsUsed());
+                       resolvedPoiInfo.poiFnIdsUsed(),
+                       resolvedPoiInfo.recursiveFnsUsed());
 
   // On this path we are just resolving a normal function.
   } else if (fn) {
@@ -1665,6 +1673,9 @@ resolveFunctionByInfoQuery(Context* context,
 
     // then, resolve '=' and add any copy init/deinit calls as needed
     callInitDeinit(visitor);
+
+    // then, handle return intent overloads and maybe-const formals
+    adjustReturnIntentOverloadsAndMaybeConstRefs(visitor);
 
     // TODO: can this be encapsulated in a method?
     resolvedPoiInfo.swap(visitor.poiInfo);
@@ -1685,7 +1696,8 @@ resolveFunctionByInfoQuery(Context* context,
                        context,
                        resolved,
                        sig,
-                       resolvedPoiInfo.poiFnIdsUsed());
+                       resolvedPoiInfo.poiFnIdsUsed(),
+                       resolvedPoiInfo.recursiveFnsUsed());
 
   } else {
     CHPL_ASSERT(false && "this query should be called on Functions");
@@ -1693,7 +1705,9 @@ resolveFunctionByInfoQuery(Context* context,
 
   // Return the unique result from the query (that might have been saved above)
   const owned<ResolvedFunction>& resolved =
-    resolveFunctionByPoisQuery(context, sig, resolvedPoiInfo.poiFnIdsUsed());
+    resolveFunctionByPoisQuery(context, sig,
+                               resolvedPoiInfo.poiFnIdsUsed(),
+                               resolvedPoiInfo.recursiveFnsUsed());
 
   const ResolvedFunction* result = resolved.get();
 
@@ -1715,9 +1729,10 @@ const ResolvedFunction* resolveInitializer(Context* context,
   return resolveFunctionByInfoQuery(context, sig, std::move(poiInfo));
 }
 
-const ResolvedFunction* resolveFunction(Context* context,
-                                        const TypedFnSignature* sig,
-                                        const PoiScope* poiScope) {
+static const ResolvedFunction* helpResolveFunction(Context* context,
+                                                   const TypedFnSignature* sig,
+                                                   const PoiScope* poiScope,
+                                                   bool skipIfRunning) {
 
   // Forget about any inferred signature (to avoid resolving the
   // same function twice when working with inferred 'out' formals)
@@ -1729,10 +1744,71 @@ const ResolvedFunction* resolveFunction(Context* context,
   // construct the PoiInfo for this case
   auto poiInfo = PoiInfo(poiScope);
 
+  if (skipIfRunning) {
+    if (context->isQueryRunning(resolveFunctionByInfoQuery,
+                                std::make_tuple(sig, poiInfo))) {
+      return nullptr;
+    }
+  }
+
   // lookup in the map using this PoiInfo
   return resolveFunctionByInfoQuery(context, sig, std::move(poiInfo));
 }
 
+const TypedFnSignature* inferRefMaybeConstFormals(Context* context,
+                                                  const TypedFnSignature* sig,
+                                                  const PoiScope* poiScope) {
+  if (sig == nullptr) {
+    return nullptr;
+  }
+
+  bool anyRefMaybeConstFormals = false;
+  int numFormals = sig->numFormals();
+  for (int i = 0; i < numFormals; i++) {
+    const types::QualifiedType& ft = sig->formalType(i);
+    if (ft.kind() == QualifiedType::REF_MAYBE_CONST) {
+      anyRefMaybeConstFormals = true;
+      break;
+    }
+  }
+
+  if (anyRefMaybeConstFormals == false) {
+    // nothing else to do here
+    return sig;
+  }
+
+  // otherwise, try to resolve the body of the function
+  const ResolvedFunction* rFn =
+    helpResolveFunction(context, sig, poiScope, /* skipIfRunning */ true);
+
+  if (rFn == nullptr)
+    return nullptr; // give up if it would be a recursive query invocation
+
+  // resolve the function body
+  const UntypedFnSignature* untyped = sig->untyped();
+  const ResolutionResultByPostorderID& rr = rFn->resolutionById();
+  std::vector<types::QualifiedType> formalTypes;
+  for (int i = 0; i < numFormals; i++) {
+    const types::QualifiedType& ft = sig->formalType(i);
+    if (ft.kind() == QualifiedType::REF_MAYBE_CONST) {
+      formalTypes.push_back(rr.byAst(untyped->formalDecl(i)).type());
+    } else {
+      formalTypes.push_back(ft);
+    }
+  }
+
+  const TypedFnSignature* result = nullptr;
+  result = TypedFnSignature::getInferred(context,
+                                         std::move(formalTypes),
+                                         sig);
+  return result;
+}
+
+const ResolvedFunction* resolveFunction(Context* context,
+                                        const TypedFnSignature* sig,
+                                        const PoiScope* poiScope) {
+  return helpResolveFunction(context, sig, poiScope, /* skipIfRunning */ false);
+}
 
 const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
   if (id.isEmpty())
@@ -2115,11 +2191,16 @@ void accumulatePoisUsedByResolvingBody(Context* context,
     return;
   }
 
-  // resolve the body
-  const ResolvedFunction* r = resolveFunction(context, signature, poiScope);
-
-  // gather the POI scopes from instantiating the function body
-  poiInfo.accumulate(r->poiInfo());
+  // resolve the body, if it is not already being resolved
+  const ResolvedFunction* r = helpResolveFunction(context, signature, poiScope,
+                                                  /* skipIfRunning */ true);
+  if (r == nullptr) {
+    // If it's a recursive call, track it in the PoiInfo
+    poiInfo.accumulateRecursive(signature, poiScope);
+  } else {
+    // gather the POI scopes from instantiating the function body
+    poiInfo.accumulate(r->poiInfo());
+  }
 }
 
 // if the call's name matches a class management type construction,
