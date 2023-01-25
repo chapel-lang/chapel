@@ -362,7 +362,7 @@ Resolver::getFormalTypes(const Function* fn) {
       isThis = namedDecl->name() == USTR("this");
     }
     Qualifier intent = resolveIntent(t, isThis, isInit);
-    if (auto attributes = formal->attributes()) {
+    if (auto attributes = formal->attributeGroup()) {
       if (attributes->hasPragma(PRAGMA_INTENT_REF_MAYBE_CONST_FORMAL)) {
         intent = Qualifier::REF_MAYBE_CONST;
       }
