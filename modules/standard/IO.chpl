@@ -1572,7 +1572,7 @@ proc file.checkAssumingLocal() throws {
  deprecated "'file.check()' is deprecated, please use :proc:`file.isOpen` instead"
 proc file.check() throws {
   on this._home {
-    this.checkAssumingLocal(); // Remove this function, too
+    this.checkAssumingLocal(); // Remove this function, too?
   }
 }
 
