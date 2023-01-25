@@ -19,7 +19,7 @@
  */
 
 /* Version as of Chapel 1.25 - to be updated each release */
-const spackVersion = new VersionInfo('0.15.4');
+const spackVersion = new VersionInfo('0.19.0');
 const major = spackVersion.major:string;
 const minor = spackVersion.minor:string;
 const spackBranch = 'releases/v' + '.'.join(major, minor);
@@ -261,11 +261,14 @@ proc getSpackVersion : VersionInfo {
   const command = "spack --version";
   const tmpVersion = getSpackResult(command,true).strip();
   // on systems with their own spack, spack --version can provide
-  // a version string like x.x.x-xxxx-hash
+  // a version string like:
+  //    x.x.x-xxxx-hash
+  //    x.x.x (hash)
   // partitioning the string allows us to separate the major.minor.bug
   // from the remaining values
-  const version = tmpVersion.partition("-");
-  return new VersionInfo(version[0]);
+  const nodash = tmpVersion.partition("-")(0);
+  const nospace = tmpVersion.partition(" ")(0);
+  return new VersionInfo(nospace);
 }
 
 /* Lists available spack packages */
