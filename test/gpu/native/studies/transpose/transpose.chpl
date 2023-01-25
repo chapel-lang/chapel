@@ -77,4 +77,15 @@ on here.gpus[0] {
   var gbPerSec = sizeInGb / elapsed;
   writeln("Wall clock time (s): ", elapsed);
   writeln("Performance (GB/s): ", gbPerSec);
+
+  var passed = true;
+  for (x,y) in original.domain {
+    if original[x,y] != output[y,x] {
+	writeln("Incorrect output at ", (x,y),
+                ". Expected ", original[x,y],
+                ", got ", output[y,x]);
+        passed = false;
+    }
+  }
+  writeln(if passed then "Passed" else "Failed");
 }
