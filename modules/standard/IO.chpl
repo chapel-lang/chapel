@@ -8736,8 +8736,7 @@ proc _channel.skipField() throws {
   :throws EofError: EOF encountered.
   :throws UnexpectedEofError: EOF encountered before all data could be read or written.
   :throws BadFormatError: Improperly formatted values.
-  :throws SystemError: Thrown if the string could not be formatted for another
-  reason.
+  :throws SystemError: Thrown if the string could not be formatted for another reason.
  */
 proc string.format(args ...?k): string throws {
   try {
@@ -8772,8 +8771,7 @@ proc string.format(args ...?k): string throws {
   :throws EofError: EOF encountered.
   :throws UnexpectedEofError: EOF encountered before all data could be read or written.
   :throws BadFormatError: Improperly formatted values.
-  :throws SystemError: Thrown if the bytes could not be formatted for another
-  reason.
+  :throws SystemError: Thrown if the bytes could not be formatted for another reason.
  */
 proc bytes.format(args ...?k): bytes throws {
   try {
