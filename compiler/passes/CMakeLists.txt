@@ -29,6 +29,7 @@ set(SRCS
     externCResolve.cpp
     flattenClasses.cpp
     flattenFunctions.cpp
+    InitErrorHandling.cpp
     initializerRules.cpp
     InitNormalize.cpp
     insertLineNumbers.cpp
