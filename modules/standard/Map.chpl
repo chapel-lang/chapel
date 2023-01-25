@@ -55,7 +55,7 @@ module Map {
   private proc _checkKeyAndValType(type K, type V) {
     if isGenericType(K) {
       compilerWarning('creating a map with key type ', K:string, 2);
-      if isClassType(K) && !isGenericType(borrowed K) {
+      if isClassType(K) && !isGenericType(K:borrowed) {
         compilerWarning('which now means class type with generic ',
                         'management', 2);
       }
@@ -63,7 +63,7 @@ module Map {
     }
     if isGenericType(V) {
       compilerWarning('creating a map with value type ', V:string, 2);
-      if isClassType(V) && !isGenericType(borrowed V) {
+      if isClassType(V) && !isGenericType(V:borrowed) {
         compilerWarning('which now means class type with generic ',
                         'management', 2);
       }
