@@ -20,6 +20,8 @@
 #ifndef CHPL_UAST_PRAGMA_H
 #define CHPL_UAST_PRAGMA_H
 
+#include "chpl/framework/serialize-functions.h"
+
 namespace chpl {
 namespace uast {
 namespace pragmatags {
@@ -47,6 +49,9 @@ PragmaTag pragmaNameToTag(const char* name);
 using namespace pragmatags;
 
 } // end namespace uast
+
+DECLARE_SERDE_ENUM(uast::PragmaTag, uint16_t);
+
 } // end namespace chpl
 
 #endif

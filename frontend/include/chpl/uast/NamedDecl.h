@@ -54,6 +54,12 @@ class NamedDecl : public Decl {
       name_(name) {
   }
 
+  NamedDecl(AstTag tag, Deserializer& des)
+    : Decl(tag, des) {
+    name_ = des.read<UniqueString>();
+  }
+
+
   bool namedDeclContentsMatchInner(const NamedDecl* other) const {
     return this->name_ == other->name_ &&
            declContentsMatchInner(other);
@@ -67,6 +73,11 @@ class NamedDecl : public Decl {
 
  public:
   virtual ~NamedDecl() = 0; // this is an abstract base class
+
+  void serialize(Serializer& ser) const override {
+    Decl::serialize(ser);
+    ser.write(name_);
+  }
 
   UniqueString name() const { return name_; }
 };

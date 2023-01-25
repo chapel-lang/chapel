@@ -289,6 +289,8 @@ extern bool fDynoCompilerLibrary;
 extern bool fDynoScopeProduction;
 extern bool fDynoScopeBundled;
 extern bool fDynoDebugTrace;
+extern bool fDynoSerialize;
+extern char dynoBinAstDir[FILENAME_MAX + 1];
 
 extern size_t fDynoBreakOnHash;
 

@@ -55,6 +55,11 @@ class While final : public Loop {
     CHPL_ASSERT(condition());
   }
 
+  While(Deserializer& des)
+    : Loop(asttags::While, des) {
+    conditionChildNum_ = des.read<int8_t>();
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const While* lhs = this;
     const While* rhs = (const While*) other;
@@ -95,6 +100,13 @@ class While final : public Loop {
     auto ret = child(conditionChildNum_);
     return ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    Loop::serialize(ser);
+    ser.write(conditionChildNum_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(While);
 
 };
 
