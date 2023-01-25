@@ -8733,8 +8733,8 @@ proc _channel.skipField() throws {
   :arg args: the arguments to format
   :returns: the resulting string
 
-  :throws EofError: EOF encountered.
-  :throws UnexpectedEofError: EOF encountered before all data could be read or written.
+  :throws UnexpectedEofError: The size of the temporary buffer was exceeded
+                              while writing the string.
   :throws BadFormatError: Improperly formatted values.
   :throws SystemError: Thrown if the string could not be formatted for another reason.
  */
@@ -8768,8 +8768,8 @@ proc string.format(args ...?k): string throws {
   :arg args: the arguments to format
   :returns: the resulting bytes
 
-  :throws EofError: EOF encountered.
-  :throws UnexpectedEofError: EOF encountered before all data could be read or written.
+  :throws UnexpectedEofError: The size of the temporary buffer was exceeded
+                              while writing the bytes.
   :throws BadFormatError: Improperly formatted values.
   :throws SystemError: Thrown if the bytes could not be formatted for another reason.
  */
