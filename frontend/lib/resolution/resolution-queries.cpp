@@ -704,7 +704,7 @@ forwardingForTypeDeclQuery(Context* context, const CompositeType* ct) {
 
 static bool typeUsesForwarding(Context* context, const Type* receiverType) {
   if (auto ct = receiverType->getCompositeType()) {
-    if (ct->isClassType() || ct->isRecordType() || ct->isUnionType()) {
+    if (ct->isBasicClassType() || ct->isRecordType() || ct->isUnionType()) {
       ID ctId = ct->id();
       if (!ctId.isEmpty()) {
         return parsing::aggregateUsesForwarding(context, ctId);
@@ -715,13 +715,76 @@ static bool typeUsesForwarding(Context* context, const Type* receiverType) {
   return false;
 }
 
-const ResolvedForwarding* forwardingForTypeDecl(Context* context,
-                                                const CompositeType* ct) {
+// returns 'true' if a cycle was detected
+static bool
+checkForwardingCycles(Context* context,
+                      const CompositeType* ct,
+                      llvm::SmallPtrSet<const CompositeType*, 8>& visited) {
+
   if (typeUsesForwarding(context, ct)) {
-    return forwardingForTypeDeclQuery(context, ct).get();
-  } else {
-    return nullptr;
+    auto pair = visited.insert(ct);
+    if (pair.second == false) {
+      // it was already in the visited set
+      context->error(ct->id(), "forwarding cycle detected");
+      return true;
+    }
+
+    const ResolvedForwarding* r = forwardingForTypeDeclQuery(context, ct).get();
+
+    // Check for cycles. If a cycle is detected, emit an error
+    // and return nulltpr.
+    int n = r->numForwards();
+    for (int i = 0; i < n; i++) {
+      auto qt = r->receiverType(i);
+      if (auto t = qt.type()) {
+        if (auto forwardingCt = t->getCompositeType()) {
+          bool cyc = checkForwardingCycles(context, forwardingCt, visited);
+          if (cyc) {
+            return true;
+          }
+        }
+      }
+    }
   }
+  return false;
+}
+
+
+// returns a 'true' if there was a cycle and reports an error in that case.
+// otherwise, returns 'false'.
+static const bool&
+forwardingCycleCheckQuery(Context* context, const CompositeType* ct) {
+  QUERY_BEGIN(forwardingCycleCheckQuery, context, ct);
+
+  bool result = false;
+  llvm::SmallPtrSet<const CompositeType*, 8> visited;
+
+  result = checkForwardingCycles(context, ct, visited);
+
+  return QUERY_END(result);
+}
+
+
+// runs forwardingForTypeDeclQuery as needed and then checks for cycles.
+//
+// if the type does not use forwarding or a cycle is detected, returns nullptr.
+// otherwise, returns a ResolvedForwarding that contains information
+// about the resolved forwarding expressions.
+const ResolvedForwarding*
+forwardingForTypeDecl(Context* context, const CompositeType* ct) {
+  if (typeUsesForwarding(context, ct)) {
+    const ResolvedForwarding* r = forwardingForTypeDeclQuery(context, ct).get();
+    if (r != nullptr) {
+      // check for cycles as well
+      bool cycleFound = forwardingCycleCheckQuery(context, ct);
+      if (!cycleFound) {
+        return r;
+      }
+      // fall through to return null if a cycle is found
+    }
+  }
+
+  return nullptr;
 }
 
 static const CompositeType* getTypeWithDefaults(Context* context,

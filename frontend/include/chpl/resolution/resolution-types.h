@@ -1700,11 +1700,11 @@ class ResolvedForwarding {
   int numForwards() const {
     return forwarding_.size();
   }
-  types::QualifiedType receiverType(int i) const {
+  const types::QualifiedType& receiverType(int i) const {
     assert(0 <= i && (size_t) i < forwarding_.size());
     return forwarding_[i].receiverType;
   }
-  ID forwardingStmt(int i) const {
+  const ID& forwardingStmt(int i) const {
     assert(0 <= i && (size_t) i < forwarding_.size());
     return forwarding_[i].forwardingStmt;
   }

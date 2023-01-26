@@ -25,6 +25,7 @@
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 
+// an initial example
 static void test1() {
   Context ctx;
   Context* context = &ctx;
@@ -54,6 +55,7 @@ static void test1() {
   assert(qt.type()->isRealType());
 }
 
+// forwarding -> forwarding
 static void test2() {
   Context ctx;
   Context* context = &ctx;
@@ -86,10 +88,36 @@ static void test2() {
   assert(qt.type()->isRealType());
 }
 
+// error for cycle of forwarding
+static void test3() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  const char* contents =
+    R""""(
+    module M {
+      operator +=(ref lhs: int, rhs: int) { }
+
+      class C {
+        forwarding var impl: unmanaged C;
+      }
+
+      var rec: borrowed C = new unmanaged C();
+      var x = rec.addOne();
+    }
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(context, contents);
+  assert(qt.type()->isRealType());
+}
+
+// TODO forwarding separate from forwarding var
 
 int main() {
   test1();
   test2();
+  test3();
 
   return 0;
 }
