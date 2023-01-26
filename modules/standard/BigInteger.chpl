@@ -150,7 +150,6 @@ module BigInteger {
   use CTypes;
   use GMP;
   use HaltWrappers;
-  use CTypes;
   use OS;
 
 
@@ -273,7 +272,7 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
-    deprecated "bigint initializers that return :type:`errorCode` via an 'out' argument are deprecated, please remove the argument and ensure the config param :config:`bigintInitThrows` is set to 'true' to opt in to using the new initializer that throws"
+    deprecated "bigint initializers that return the :type:`errorCode` type via an 'out' argument are deprecated, please remove the argument and ensure the config param :config:`bigintInitThrows` is set to 'true' to opt in to using the new initializer that throws"
     proc init(str: string, base: int = 0, out error: errorCode) {
 
       this.complete();
