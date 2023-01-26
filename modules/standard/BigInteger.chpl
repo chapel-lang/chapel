@@ -578,7 +578,7 @@ module BigInteger {
   }
 
   pragma "no doc"
-  inline operator :(src: string, type toType: bigint): bigint {
+  inline operator :(src: string, type toType: bigint): bigint throws {
     return new bigint(src);
   }
 
