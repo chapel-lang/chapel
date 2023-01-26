@@ -24,6 +24,8 @@
 #include "chpl/uast/all-uast.h"
 #include "InitResolver.h"
 
+#include "llvm/ADT/SmallVector.h"
+
 namespace chpl {
 namespace resolution {
 
@@ -63,7 +65,9 @@ struct Resolver {
   std::set<ID> splitInitTypeInferredVariables;
   const uast::Call* inLeafCall = nullptr;
   bool receiverScopeComputed = false;
-  const Scope* savedReceiverScope = nullptr;
+  llvm::SmallVector<const Scope*> savedReceiverScope =
+      llvm::SmallVector<const Scope*, 3>();
+  // TODO: use this for something or remove it
   const types::CompositeType* savedReceiverType = nullptr;
   Resolver* parentResolver = nullptr;
   owned<InitResolver> initResolver = nullptr;
@@ -207,7 +211,7 @@ struct Resolver {
   /* Compute the receiver scope (when resolving a method)
      and return nullptr if it is not applicable.
    */
-  const Scope* methodReceiverScope(bool recompute = false);
+  llvm::SmallVector<const Scope*> methodReceiverScope(bool recompute = false);
   /* Compute the receiver scope (when resolving a method)
      and return nullptr if it is not applicable.
    */
@@ -394,10 +398,10 @@ struct Resolver {
 
   std::vector<BorrowedIdsWithName>
   lookupIdentifier(const uast::Identifier* ident,
-                   const Scope* receiverScope);
+                   const llvm::SmallVector<const Scope*>& receiverScope);
 
   bool resolveIdentifier(const uast::Identifier* ident,
-                         const Scope* receiverScope);
+                         const llvm::SmallVector<const Scope*>& receiverScope);
 
   /* Resolver keeps a stack of scopes and a stack of decls.
      enterScope and exitScope update those stacks. */
