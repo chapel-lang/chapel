@@ -189,6 +189,22 @@ module BigInteger {
     up = 1
   }
 
+  /* A compile-time parameter to control the behavior of bigint initializers
+     that take a string argument.
+
+     When ``false``, the deprecated behavior is used (i.e., errors will trigger
+     a halt at execution.
+
+     When ``true``, the new behavior is used (i.e., errors will cause a
+     :type:`BadFormatError` to be thrown)
+  */
+  config param bigintInitThrows = false;
+
+  // TODO: remove when initializers can throw in their body
+  private proc throwingInitWorkaround() throws {
+    throw new BadFormatError("Error initializing big integer");
+  }
+
   pragma "ignore noinit"
   record bigint {
     // The underlying GMP C structure
@@ -242,7 +258,8 @@ module BigInteger {
       this.init(num);
     }
 
-    proc init(str: string, base: int = 0) {
+    deprecated "bigint initializers that halt are deprecated, please set the config param :config:`bigintInitThrows` to 'true' to opt in to using the new initializer that throws"
+    proc init(str: string, base: int = 0) where bigintInitThrows == false {
       this.complete();
       const str_  = str.localize().c_str();
       const base_ = base.safeCast(c_int);
@@ -256,7 +273,9 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
+    deprecated "bigint initializers that return :type:`errorCode` via an 'out' argument are deprecated, please remove the argument and ensure the config param :config:`bigintInitThrows` is set to 'true' to opt in to using the new initializer that throws"
     proc init(str: string, base: int = 0, out error: errorCode) {
+
       this.complete();
       const str_  = str.localize().c_str();
       const base_ = base.safeCast(c_int);
@@ -267,6 +286,23 @@ module BigInteger {
         error = chpl_macro_int_EFORMAT();
       } else {
         error = 0;
+      }
+
+      this.localeId = chpl_nodeID;
+    }
+
+    /* TODO: DOCUMENT
+
+     */
+    proc init(str: string, base: int = 0) throws where bigintInitThrows == true {
+      this.complete();
+      const str_  = str.localize().c_str();
+      const base_ = base.safeCast(c_int);
+
+      if mpz_init_set_str(this.mpz, str_, base_) != 0 {
+        mpz_clear(this.mpz);
+
+        throwingInitWorkaround();
       }
 
       this.localeId = chpl_nodeID;
