@@ -307,6 +307,20 @@ Resolver::createForInstantiatedFieldStmt(Context* context,
   return ret;
 }
 
+// set up Resolver to resolve Forwarding statements
+Resolver
+Resolver::createForForwarding(Context* context,
+                              const AggregateDecl* decl,
+                              const CompositeType* compositeType,
+                              ResolutionResultByPostorderID& byId) {
+  auto ret = Resolver(context, decl, byId, /*poiScope*/ nullptr);
+  ret.inCompositeType = compositeType;
+  ret.substitutions = &compositeType->substitutions();
+  ret.defaultsPolicy = DefaultsPolicy::IGNORE_DEFAULTS;
+  ret.byPostorder.setupForSymbol(decl);
+  return ret;
+}
+
 // set up Resolver to resolve instantiated field declaration types
 // without knowing the CompositeType
 Resolver

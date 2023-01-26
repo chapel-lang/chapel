@@ -655,7 +655,49 @@ forwardingForTypeDeclQuery(Context* context, const CompositeType* ct) {
 
   owned<ResolvedForwarding> result;
 
-  assert(false && "not implemented yet");
+  const AggregateDecl* ad = nullptr;
+  if (auto ast = parsing::idToAst(context, ct->id())) {
+    ad = ast->toAggregateDecl();
+  }
+
+  if (ad != nullptr) {
+    ResolutionResultByPostorderID rr;
+    auto visitor = Resolver::createForForwarding(context, ad, ct, rr);
+    // Performance: do the parent type & fields really need to be visited here?
+
+    // visit the parent type
+    if (auto cls = ad->toClass()) {
+      if (auto parentClassExpr = cls->parentClass()) {
+        parentClassExpr->traverse(visitor);
+      }
+    }
+    // visit the field declarations & forwarding declarations
+    for (auto child: ad->children()) {
+      if (child->isVariable() ||
+          child->isMultiDecl() ||
+          child->isTupleDecl() ||
+          child->isForwardingDecl()) {
+        child->traverse(visitor);
+      }
+    }
+
+    // extract the type information from the forwarding declarations
+    std::vector<ResolvedForwarding::ForwardingTo> forwarding;
+    for (auto child: ad->children()) {
+      if (auto fwd = child->toForwardingDecl()) {
+        if (auto expr = fwd->expr()) {
+          const ResolvedExpression& re = rr.byAst(expr);
+          auto fwd = ResolvedForwarding::ForwardingTo(expr->id(), re.type());
+          forwarding.push_back(std::move(fwd));
+        }
+      }
+    }
+
+    result = toOwned(new ResolvedForwarding(std::move(forwarding)));
+
+  } else {
+    CHPL_ASSERT(false && "case not handled");
+  }
 
   return QUERY_END(result);
 }
@@ -2637,7 +2679,6 @@ lookupCalledExprConsideringReceiver(Context* context,
   return ret;
 }
 
-
 static CandidatesVec
 gatherAndFilterCandidatesForwarding(Context* context,
                                     const Call* call,
@@ -2664,8 +2705,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
     // of the forwarded-to types.
     std::vector<CallInfo> forwardingCis;
 
-    int numReceiverTypes = forwards->numReceiverTypes();
-    for (int i = 0; i < numReceiverTypes; i++) {
+    int numForwards = forwards->numForwards();
+    for (int i = 0; i < numForwards; i++) {
       QualifiedType forwardType = forwards->receiverType(i);
       std::vector<CallInfoActual> actuals;
       // compute the actuals
@@ -2716,7 +2757,6 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                     inScope,
                                     inPoiScope,
                                     candidates);
-
     }
 
     // next, look for candidates using POI
@@ -2760,12 +2800,14 @@ gatherAndFilterCandidatesForwarding(Context* context,
 //
 // call can be nullptr. in that event, ci.name() will be used
 // to find the call with that name.
-static CandidatesVec gatherAndFilterCandidates(Context* context,
-                                               const Call* call,
-                                               const CallInfo& ci,
-                                               const Scope* inScope,
-                                               const PoiScope* inPoiScope,
-                                               size_t& firstPoiCandidate) {
+static CandidatesVec
+gatherAndFilterCandidates(Context* context,
+                          const Call* call,
+                          const CallInfo& ci,
+                          const Scope* inScope,
+                          const PoiScope* inPoiScope,
+                          size_t& firstPoiCandidate,
+                          std::vector<int>& candidateIdxToForwardingIdx) {
   CandidatesVec candidates;
   NamedScopeSet visited;
   firstPoiCandidate = 0;
@@ -2887,11 +2929,14 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
                                        const Scope* inScope,
                                        const PoiScope* inPoiScope,
                                        PoiInfo& poiInfo) {
+
   // search for candidates at each POI until we have found candidate(s)
   size_t firstPoiCandidate = 0;
+  std::vector<int> candidateIdxToForwardingIdx;
   CandidatesVec candidates = gatherAndFilterCandidates(context, call, ci,
                                                        inScope, inPoiScope,
-                                                       firstPoiCandidate);
+                                                       firstPoiCandidate,
+                                                       candidateIdxToForwardingIdx);
 
   // * find most specific candidates / disambiguate
   // * check signatures
@@ -2915,6 +2960,7 @@ CallResolutionResult resolveFnCall(Context* context,
                                    const PoiScope* inPoiScope) {
   PoiInfo poiInfo;
   MostSpecificCandidates mostSpecific;
+
   if (ci.calledType().kind() == QualifiedType::TYPE) {
     // handle invocation of a type constructor from a type
     // (note that we might have the type through a type alias)
