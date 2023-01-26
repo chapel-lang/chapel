@@ -1,1 +1,1 @@
--s InvertReturnInt=false
+-s InvertReturnInt=false -sbigintInitThrows=true
