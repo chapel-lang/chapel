@@ -33,6 +33,8 @@
 #include "InitResolver.h"
 #include "VarScopeVisitor.h"
 
+#include "llvm/ADT/SmallVector.h"
+
 #include <cstdio>
 #include <set>
 #include <string>
@@ -382,38 +384,46 @@ types::QualifiedType Resolver::typeErr(const uast::AstNode* ast,
   return t;
 }
 
-const Scope* Resolver::methodReceiverScope(bool recompute) {
+llvm::SmallVector<const Scope*> Resolver::methodReceiverScope(bool recompute) {
   if (recompute) {
     receiverScopeComputed = false;
   }
 
   if (receiverScopeComputed) return savedReceiverScope;
 
-  if (typedSignature && typedSignature->untyped()->isMethod()) {
-    if (scopeResolveOnly) {
-      auto* untyped = typedSignature->untyped();
-      auto thisFormal = untyped->formalDecl(0)->toFormal();
-      auto type = thisFormal->typeExpression();
-      if (type == nullptr) {
-        // `this` formals of primary methods have no type expression. They are,
-        // however, in primary methods, so the method's parent is the aggregate
-        // type whose scope should be used.
+  ID idForTypeDecl;
+  if (typedSignature) {
+    if (typedSignature->untyped()->isMethod()) {
+      if (scopeResolveOnly) {
+        auto* untyped = typedSignature->untyped();
+        auto thisFormal = untyped->formalDecl(0)->toFormal();
+        auto type = thisFormal->typeExpression();
+        if (type == nullptr) {
+          // `this` formals of primary methods have no type expression. They
+          // are, however, in primary methods, so the method's parent is the
+          // aggregate type whose scope should be used.
 
-        // TODO can typedSignature->id() ever not refer to a Function in this case?
-        auto recordOrClassId = parsing::idToParentId(context,
-                                                     typedSignature->id());
-        savedReceiverScope = scopeForId(context, recordOrClassId);
-      } else if (auto ident = type->toIdentifier()) {
-        auto re = byPostorder.byAst(ident);
-        if (re.toId().isEmpty() == false) {
-          savedReceiverScope = scopeForId(context, re.toId());
+          // TODO can typedSignature->id() ever not refer to a Function in this
+          // case?
+          idForTypeDecl = parsing::idToParentId(context, typedSignature->id());
+        } else if (auto ident = type->toIdentifier()) {
+          auto re = byPostorder.byAst(ident);
+          idForTypeDecl = re.toId();
+        }
+      } else if (auto receiverType = typedSignature->formalType(0).type()) {
+        if (auto compType = receiverType->getCompositeType()) {
+          idForTypeDecl = compType->id();
         }
       }
-    } else if (auto receiverType = typedSignature->formalType(0).type()) {
-      if (auto compType = receiverType->getCompositeType()) {
-        savedReceiverScope = scopeForId(context, compType->id());
-      }
     }
+  } else {
+    // fall back to computing receiver type without a typed signature
+    // TODO
+  }
+
+  if (!idForTypeDecl.isEmpty()) {
+    savedReceiverScope.clear();
+    savedReceiverScope.emplace_back(scopeForId(context, idForTypeDecl));
   }
 
   receiverScopeComputed = true;
@@ -1616,7 +1626,11 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   if (!parentId.isEmpty()) {
     parentTag = parsing::idToTag(context, parentId);
   }
-  const Scope* mReceiverScope = methodReceiverScope();
+  const Scope* mReceiverScope = nullptr;
+  auto receiverScopes = methodReceiverScope();
+  if (!receiverScopes.empty()) {
+    mReceiverScope = receiverScopes.front();
+  }
 
   if (asttags::isModule(parentTag)) {
     // If the id is contained within a module, use typeForModuleLevelSymbol.
@@ -1782,7 +1796,7 @@ void Resolver::exit(const Literal* literal) {
 
 std::vector<BorrowedIdsWithName>
 Resolver::lookupIdentifier(const Identifier* ident,
-                           const Scope* receiverScope) {
+                           const llvm::SmallVector<const Scope*>& receiverScope) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
@@ -1795,8 +1809,10 @@ Resolver::lookupIdentifier(const Identifier* ident,
 
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
-  auto vec = lookupNameInScope(context, scope, receiverScope,
-                               ident->name(), config);
+  auto vec = lookupNameInScope(
+      context, scope, (receiverScope.empty() ? nullptr : receiverScope.front()),
+      ident->name(), config);
+
   return vec;
 }
 
@@ -1893,7 +1909,7 @@ static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
 }
 
 bool Resolver::resolveIdentifier(const Identifier* ident,
-                                 const Scope* receiverScope) {
+                                 const llvm::SmallVector<const Scope*>& receiverScope) {
   ResolvedExpression& result = byPostorder.byAst(ident);
 
   // for 'proc f(arg:?)' need to set 'arg' to have type AnyType
@@ -2902,10 +2918,13 @@ static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
                         LOOKUP_PARENTS |
                         LOOKUP_INNERMOST;
 
-  const Scope* receiverScope = resolver.methodReceiverScope();
+  auto receiverScope = resolver.methodReceiverScope();
 
-  auto vec = lookupNameInScope(resolver.context, scope, receiverScope,
-                               intent->name(), config);
+  auto vec = lookupNameInScope(
+      resolver.context, scope,
+      (receiverScope.empty() ? nullptr : receiverScope.front()), intent->name(),
+      config);
+
   if (vec.size() == 1) {
     resolvedId = vec[0].firstId();
     if (resolver.scopeResolveOnly == false) {
