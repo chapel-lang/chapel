@@ -1053,7 +1053,8 @@ class CallResolutionResult {
                        PoiInfo poiInfo)
     : mostSpecific_(std::move(mostSpecific)),
       exprType_(std::move(exprType)),
-      poiInfo_(std::move(poiInfo)) {
+      poiInfo_(std::move(poiInfo))
+  {
   }
 
   /** get the most specific candidates for return-intent overloading */
@@ -1665,32 +1666,64 @@ class ResolvedFields {
 /** ResolvedForwarding represents the fully resolved expression
     for forwarding within a class/record/union/tuple type. */
 class ResolvedForwarding {
-  std::vector<types::QualifiedType> receiverTypes_;
+ public:
+  struct ForwardingTo {
+    ID forwardingStmt;
+    types::QualifiedType receiverType;
+    ForwardingTo(ID forwardingStmt, types::QualifiedType receiverType)
+     : forwardingStmt(std::move(forwardingStmt)),
+       receiverType(std::move(receiverType)) {
+    }
+    bool operator==(const ForwardingTo& other) const {
+      return forwardingStmt == other.forwardingStmt;
+    }
+    bool operator!=(const ForwardingTo& other) const {
+      return !(*this == other);
+    }
+    void swap(ForwardingTo& other) {
+      forwardingStmt.swap(other.forwardingStmt);
+      receiverType.swap(other.receiverType);
+    }
+    void mark(Context* context) const {
+      forwardingStmt.mark(context);
+      receiverType.mark(context);
+    }
+  };
+
+ private:
+  std::vector<ForwardingTo> forwarding_;
 
  public:
-  int numReceiverTypes() const {
-    return receiverTypes_.size();
+  ResolvedForwarding(std::vector<ForwardingTo> forwarding)
+    : forwarding_(forwarding) { }
+
+  int numForwards() const {
+    return forwarding_.size();
   }
   types::QualifiedType receiverType(int i) const {
-    assert(0 <= i && (size_t) i < receiverTypes_.size());
-    return receiverTypes_[i];
+    assert(0 <= i && (size_t) i < forwarding_.size());
+    return forwarding_[i].receiverType;
+  }
+  ID forwardingStmt(int i) const {
+    assert(0 <= i && (size_t) i < forwarding_.size());
+    return forwarding_[i].forwardingStmt;
   }
 
   bool operator==(const ResolvedForwarding& other) const {
-    return receiverTypes_ == other.receiverTypes_;
+    return forwarding_ == other.forwarding_;
   }
   bool operator!=(const ResolvedForwarding& other) const {
     return !(*this == other);
   }
   void swap(ResolvedForwarding& other) {
-    receiverTypes_.swap(other.receiverTypes_);
+    forwarding_.swap(other.forwarding_);
   }
   static bool update(owned<ResolvedForwarding>& keep,
                      owned<ResolvedForwarding>& addin) {
     return defaultUpdateOwned(keep, addin);
   }
   void mark(Context* context) const {
-    for (auto const &elt : receiverTypes_) {
+    for (auto const &elt : forwarding_) {
       elt.mark(context);
     }
   }
