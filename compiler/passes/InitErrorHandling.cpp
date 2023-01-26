@@ -248,9 +248,6 @@ InitErrorHandling::InitPhase InitErrorHandling::startPhase(BlockStmt* block) con
       }
 
     } else if (ForallStmt* forall = toForallStmt(stmt)) {
-      // Nothing to normalize in fRecIter*
-      INT_ASSERT(forall->fRecIterIRdef == NULL);
-
       InitPhase phase = startPhase(forall->loopBody());
 
       if (phase != defaultPhase) {
