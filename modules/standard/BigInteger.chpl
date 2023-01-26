@@ -257,7 +257,7 @@ module BigInteger {
       this.init(num);
     }
 
-    deprecated "bigint initializers that halt are deprecated, please set the config param :config:`bigintInitThrows` to 'true' to opt in to using the new initializer that throws"
+    deprecated "bigint initializers that halt are deprecated, please set the config param :param:`bigintInitThrows` to 'true' to opt in to using the new initializer that throws"
     proc init(str: string, base: int = 0) where bigintInitThrows == false {
       this.complete();
       const str_  = str.localize().c_str();
@@ -272,7 +272,7 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
-    deprecated "bigint initializers that return the :type:`errorCode` type via an 'out' argument are deprecated, please remove the argument and ensure the config param :config:`bigintInitThrows` is set to 'true' to opt in to using the new initializer that throws"
+    deprecated "bigint initializers that return the :type:`errorCode` type via an 'out' argument are deprecated, please remove the argument and ensure the config param :param:`bigintInitThrows` is set to 'true' to opt in to using the new initializer that throws"
     proc init(str: string, base: int = 0, out error: errorCode) {
 
       this.complete();
