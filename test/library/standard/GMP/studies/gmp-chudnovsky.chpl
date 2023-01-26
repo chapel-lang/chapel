@@ -111,12 +111,12 @@ var top: c_long = 0;
 proc main() {
   writeln("#terms=", terms, ", depth=", depth);
 
-  const start = getCurrentTime();
+  const start = timeSinceEpoch().totalSeconds();
   write("sieve   ");
 
   build_sieve(sieve);
 
-  const mid0 = getCurrentTime();
+  const mid0 = timeSinceEpoch().totalSeconds();
   if (printTimings) then
     writeln("time = ", mid0-start);
   else
@@ -144,7 +144,7 @@ proc main() {
     bs(0, terms: c_ulong, 0, 0);
   }
 
-  const mid1 = getCurrentTime();
+  const mid1 = timeSinceEpoch().totalSeconds();
   write("\nbs      ");
   if (printTimings) then
     writeln("time = ", mid1-mid0);
@@ -209,7 +209,7 @@ proc main() {
 
   stackdom2.clear();
 
-  const mid2 = getCurrentTime();
+  const mid2 = timeSinceEpoch().totalSeconds();
 
   /* initialize temp float variables for sqrt & div */
   mpf_init(t1);
@@ -219,7 +219,7 @@ proc main() {
   /* final step */
   write("div     ");
   my_div(qi, pi, qi);
-  const mid3 = getCurrentTime();
+  const mid3 = timeSinceEpoch().totalSeconds();
   if (printTimings) then
     writeln("time = ", mid3-mid2);
   else
@@ -227,7 +227,7 @@ proc main() {
 
   write("sqrt    ");
   my_sqrt_ui(pi, C);
-  const mid4 = getCurrentTime();
+  const mid4 = timeSinceEpoch().totalSeconds();
   if (printTimings) then
     writeln("time = ", mid4-mid3);
   else
@@ -235,7 +235,7 @@ proc main() {
 
   write("mul     ");
   mpf_mul(qi, qi, pi);
-  const end = getCurrentTime();
+  const end = timeSinceEpoch().totalSeconds();
   if (printTimings) then
     writeln("time = ", end - mid4);
   else
@@ -671,9 +671,9 @@ proc bs(a: c_ulong, b: c_ulong, gflag: c_uint, level: c_long) {
 
     if (level>=4) {           // tuning parameter
       if do_gcd_time {
-        const t = getCurrentTime();
+        const t = timeSinceEpoch().totalSeconds();
         fac_remove_gcd(p2, fp2, g1, fg1);
-        gcd_time += getCurrentTime() - t;
+        gcd_time += timeSinceEpoch().totalSeconds() - t;
       } else {
         fac_remove_gcd(p2, fp2, g1, fg1);
       }

@@ -13,11 +13,11 @@ writeln("n=", n, " m=", m);
 
 if initialize then
   fillRandom(B, 31415, algorithm=RNG.NPB);
-var st = getCurrentTime();
+var st = timeSinceEpoch().totalSeconds();
 for i in 1..n do
   for j in 1..m do
     A[i,j] = B[i,j];
-var dt = getCurrentTime()-st;
+var dt = timeSinceEpoch().totalSeconds()-st;
 if printOutput then
   writeln("assign serial:\n", A);
 if printTiming then
@@ -25,10 +25,10 @@ if printTiming then
 
 if initialize then
   fillRandom(B, 31415, algorithm=RNG.NPB);
-st = getCurrentTime();
+st = timeSinceEpoch().totalSeconds();
 for (a,b) in zip(A,B) do
   a = b;
-dt = getCurrentTime()-st;
+dt = timeSinceEpoch().totalSeconds()-st;
 if printOutput then
   writeln("assign serial zipper:\n", A);
 if printTiming then
@@ -36,11 +36,11 @@ if printTiming then
 
 if initialize then
   fillRandom(B, 31415, algorithm=RNG.NPB);
-st = getCurrentTime();
+st = timeSinceEpoch().totalSeconds();
 forall i in 1..n do
   forall j in 1..m do
     A[i,j] = B[i,j];
-dt = getCurrentTime()-st;
+dt = timeSinceEpoch().totalSeconds()-st;
 if printOutput then
   writeln("assign nested forall:\n", A);
 if printTiming then
@@ -48,11 +48,11 @@ if printTiming then
 
 if initialize then
   fillRandom(B, 31415, algorithm=RNG.NPB);
-st = getCurrentTime();
+st = timeSinceEpoch().totalSeconds();
 for i in 1..n do
   forall j in 1..m do
     A[i,j] = B[i,j];
-dt = getCurrentTime()-st;
+dt = timeSinceEpoch().totalSeconds()-st;
 if printOutput then
   writeln("assign for-forall:\n", A);
 if printTiming then
@@ -60,11 +60,11 @@ if printTiming then
 
 if initialize then
   fillRandom(B, 31415, algorithm=RNG.NPB);
-st = getCurrentTime();
+st = timeSinceEpoch().totalSeconds();
 forall i in 1..n do
   for j in 1..m do
     A[i,j] = B[i,j];
-dt = getCurrentTime()-st;
+dt = timeSinceEpoch().totalSeconds()-st;
 if printOutput then
   writeln("assign forall-for:\n", A);
 if printTiming then
@@ -72,10 +72,10 @@ if printTiming then
 
 if initialize then
   fillRandom(B, 31415, algorithm=RNG.NPB);
-st = getCurrentTime();
+st = timeSinceEpoch().totalSeconds();
 forall (a,b) in zip(A,B) do
   a = b;
-dt = getCurrentTime()-st;
+dt = timeSinceEpoch().totalSeconds()-st;
 if printOutput then
   writeln("assign forall zipper:\n", A);
 if printTiming then
@@ -83,9 +83,9 @@ if printTiming then
 
 if initialize then
   fillRandom(B, 31415, algorithm=RNG.NPB);
-st = getCurrentTime();
+st = timeSinceEpoch().totalSeconds();
 A = B;
-dt = getCurrentTime()-st;
+dt = timeSinceEpoch().totalSeconds()-st;
 if printOutput then
   writeln("assign whole array:\n", A);
 if printTiming then

@@ -21,9 +21,9 @@ var B: [Dom] real;
     fillRandom(Ref, 31415);
   }
   A = -1;
-  var st = getCurrentTime();
+  var st = timeSinceEpoch().totalSeconds();
   A = B;
-  var dt = getCurrentTime()-st;
+  var dt = timeSinceEpoch().totalSeconds()-st;
   for i in A.domain do
     if A[i] != Ref[i] then
       writeln("ERROR in whole array assignment: ", i);
@@ -40,9 +40,9 @@ var C: [Dom.translate(shift)] real;
     fillRandom(Ref, 92653);
   }
   A = -1;
-  var st = getCurrentTime();
+  var st = timeSinceEpoch().totalSeconds();
   A = C;
-  var dt = getCurrentTime()-st;
+  var dt = timeSinceEpoch().totalSeconds()-st;
   for i in A.domain do
     if A[i] != Ref[i] then
       writeln("ERROR in whole array assignment (+ offset): ", i);
@@ -59,9 +59,9 @@ var D: [Dom.translate(-shift)] real;
     fillRandom(Ref, 58979);
   }
   A = -1;
-  var st = getCurrentTime();
+  var st = timeSinceEpoch().totalSeconds();
   A = D;
-  var dt = getCurrentTime()-st;
+  var dt = timeSinceEpoch().totalSeconds()-st;
   for i in A.domain do
     if A[i] != Ref[i] then
       writeln("ERROR in whole array assignment (- offset): ", i);
@@ -83,9 +83,9 @@ ref Ba = B[DomSlice];
   }
   A = 0;
   Aa = -1;
-  var st = getCurrentTime();
+  var st = timeSinceEpoch().totalSeconds();
   Aa = Ba;
-  var dt = getCurrentTime()-st;
+  var dt = timeSinceEpoch().totalSeconds()-st;
   for i in Aa.domain do
     if Aa[i] != Refa[i] then
       writeln("ERROR in whole array assignment (alias): ", i);
@@ -103,9 +103,9 @@ ref Ca = C[DomSlice.translate(shift)];
   }
   A = 0;
   Aa = -1;
-  var st = getCurrentTime();
+  var st = timeSinceEpoch().totalSeconds();
   Aa = Ca;
-  var dt = getCurrentTime()-st;
+  var dt = timeSinceEpoch().totalSeconds()-st;
   for i in Aa.domain do
     if Aa[i] != Refa[i] then
       writeln("ERROR in whole array assignment (alias, + offset): ", i);
@@ -123,9 +123,9 @@ ref Da = D[DomSlice.translate(-shift)];
   }
   A = 0;
   Aa = -1;
-  var st = getCurrentTime();
+  var st = timeSinceEpoch().totalSeconds();
   Aa = Da;
-  var dt = getCurrentTime()-st;
+  var dt = timeSinceEpoch().totalSeconds()-st;
   for i in Aa.domain do
     if Aa[i] != Refa[i] then
       writeln("ERROR in whole array assignment (alias, - offset): ", i);

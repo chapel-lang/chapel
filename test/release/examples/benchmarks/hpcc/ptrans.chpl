@@ -90,7 +90,7 @@ proc main() {
   // Compute  C = beta C + A'
   // ------------------------
 
-  const startTime = getCurrentTime();
+  const startTime = timeSinceEpoch().totalSeconds();
     
   if (beta == 1.0) then
     forall (i,j) in TransposeDom do
@@ -104,7 +104,7 @@ proc main() {
     forall (i,j) in TransposeDom do
       C[i,j] = beta * C[i,j]  +  A[j,i];
 
-  const execTime = getCurrentTime() - startTime;
+  const execTime = timeSinceEpoch().totalSeconds() - startTime;
   
   const validAnswer = verifyResults(C, error_tolerance);
   printResults(validAnswer, execTime);

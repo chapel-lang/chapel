@@ -754,23 +754,23 @@ module Random {
     record SeedGenerator {
       /*
         Generate a seed based on the current time in microseconds as
-        reported by :proc:`Time.getCurrentTime`. This seed is not
+        reported by :proc:`Time.timeSinceEpoch`. This seed is not
         suitable for the NPB RNG since that requires an odd seed.
       */
       proc type currentTime: int(64) {
         use Time;
-        const seed = getCurrentTime(unit=TimeUnits.microseconds):int(64);
+        const seed = (timeSinceEpoch().totalSeconds()*1_000_000):int(64);
         return seed;
 
       }
       /*
         Generate an odd seed based on the current time in microseconds as
-        reported by :proc:`Time.getCurrentTime`. This seed is suitable
+        reported by :proc:`Time.timeSinceEpoch`. This seed is suitable
         for the NPB RNG.
       */
       proc type oddCurrentTime: int(64) {
         use Time;
-        const seed = getCurrentTime(unit=TimeUnits.microseconds):int(64);
+        const seed = (timeSinceEpoch().totalSeconds()*1_000_000): int;
         const oddseed = if seed % 2 == 0 then seed + 1 else seed;
         return oddseed;
       }
