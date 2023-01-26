@@ -2,37 +2,68 @@
 use DistributedList;
 var dl = new distributedList(int);
 
-writeln(dl.size);
+// ---------- additions -------------
 
-for i in 0..<10 do
-    dl.append(i);
-
+writeln("\nappend values...");
+writeln(dl.size == 0);
+for i in 0..<25 do write(dl.append(i), " ");
+writeln(dl.size == 25);
 writeln(dl);
-writeln(dl.size);
 
-dl.insert(5, 100);
+writeln("\nappend array...");
+writeln(dl.append([1, 2, 3, 4, 5]));
+writeln(dl.size == 30);
 writeln(dl);
-writeln(dl.size);
 
-writeln(dl.pop(2));
+writeln("\ninsert values...");
+writeln(dl.insert(5, -5));
+writeln(dl.insert(21, -20));
+writeln(dl.size == 32);
 writeln(dl);
-writeln(dl.size);
 
-dl.insert(7, [1, 2, 3, 4]);
+writeln("\ninsert array...");
+writeln(dl.insert(12, [1, 2, 3, 4, 5]));
+writeln(dl.size == 37);
 writeln(dl);
-writeln(dl.size);
 
-writeln(dl.contains(3));
-writeln(dl.remove(3, 2));
-writeln(dl.contains(3));
-writeln(dl);
-writeln(dl.size);
+// ---------- querires -------------
 
+writeln("\nfirst/last...");
 writeln(dl.first());
 writeln(dl.last());
 
-writeln(dl.set(4, 200));
-writeln(dl);
-writeln(dl.size);
+writeln("\ncontains...");
+writeln(dl.contains(5));
+writeln(dl.contains(99));
 
-writeln(dl.toArray());
+writeln("\ncount...");
+writeln(dl.count(1) == 3);
+
+writeln("\nfind...");
+writeln(dl.find(1));
+writeln(dl.find(1, 10));
+writeln(dl.find(1, 0, 10));
+writeln(dl.find(1, 6, 12));
+
+writeln("\nthis()...");
+writeln(dl[5] == -5);
+dl[5] = 100;
+writeln(dl[5] == 100);
+
+// ---------- removals -------------
+
+writeln("\nremove...");
+writeln(dl.remove(1, 2));
+writeln(dl);
+writeln(dl.size == 35);
+
+writeln("\npop...");
+writeln(dl.pop());
+writeln(dl.pop(6));
+writeln(dl);
+writeln(dl.size == 33);
+
+writeln("\nclear...");
+dl.clear();
+writeln(dl.size == 0);
+writeln(dl);

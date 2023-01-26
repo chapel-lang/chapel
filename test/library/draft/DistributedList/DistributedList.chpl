@@ -83,7 +83,6 @@ module DistributedList {
             for b in 0..#numBlocks {
                 const locIdx = b % this.locDom.size;
                 on this.targetLocales[locIdx] {
-                    // writeln(arr[(b*blockSize)..#blockSize]);
                     this.blockLists[locIdx].appendBlock(arr[(b*blockSize)..#blockSize]);
                 }
             }
@@ -97,7 +96,7 @@ module DistributedList {
                               (_, blockLayerIdx, eltIdx) = indicesFor(idx);
                         this.blockLists[rLocIdx].set(blockLayerIdx, eltIdx, arr[idx]);
                     }
-                    this.blockLists[rLocIdx].numFilled += d.size;
+                    this.blockLists[rLocIdx].numFilled += remainder;
                 }
             }
 
@@ -111,7 +110,7 @@ module DistributedList {
 
             // acquire memory if needed
             on this.targetLocales[locIdx] do
-                if this.blockLists[locIdx].numBlocks < blockIdx
+                if this.blockLists[locIdx].numBlocks <= blockIdx
                     then this.blockLists[locIdx].acquireBlocks();
 
             this.blockLists[locIdx].set(blockIdx, eltIdx, x);
@@ -119,6 +118,40 @@ module DistributedList {
             this.unlockAll();
 
             return this.numEntries.fetchAdd(1);
+        }
+
+        proc ref append(x: [?d] eltType): range(d.idxType) {
+            this.lockAll();
+
+            const nextIdx = this.numEntries.read(),
+                  (nextLocIdx, _, _) = indicesFor(nextIdx);
+
+            // acquire memory if needed
+            const numNewBlocksNeeded = d.size / this.blockSize,
+                  numNewBlocksNeededPerLoc = numNewBlocksNeeded / this.locDom.size +
+                                             numNewBlocksNeeded % this.locDom.size;
+
+            for l in nextLocIdx..#min(numNewBlocksNeeded, this.locDom.size) {
+                const locIdx = l % this.locDom.size;
+                on this.targetLocales[locIdx] {
+                    if this.blockLists[locIdx].numOpenBlocks() < numNewBlocksNeededPerLoc
+                        then this.blockLists[locIdx].acquireBlocks();
+                }
+            }
+
+            // add elements
+            // TODO: do this by block, one locale at a time
+            for (elt, idx) in zip(x, nextIdx..) {
+                const (locIdx, blockIdx, eltIdx) = indicesFor(idx);
+                on this.targetLocales[locIdx] {
+                    this.blockLists[locIdx].set(blockIdx, eltIdx, elt);
+                    this.blockLists[locIdx].numFilled += 1;
+                }
+            }
+
+            const start = this.numEntries.fetchAdd(d.size);
+            this.unlockAll();
+            return start..#d.size;
         }
 
         proc contains(x: eltType): bool {
@@ -148,7 +181,7 @@ module DistributedList {
                 // acquire memory for the new element if needed
                 const (nLoc, nBlock, nIdx) = indicesFor(nextIdx);
                 on this.targetLocales[nLoc] do
-                    if this.blockLists[nLoc].numBlocks < nBlock
+                    if this.blockLists[nLoc].numBlocks <= nBlock
                         then this.blockLists[nLoc].acquireBlocks();
 
                 // shift elements to the right
@@ -178,7 +211,9 @@ module DistributedList {
             }
         }
 
-        proc ref insert(idx: int, arr: [?d] eltType): bool {
+        proc ref insert(idx: int, arr: [?d] eltType): bool
+            where d.rank == 1
+        {
             if this.boundsCheck(idx) {
                 this.lockAll();
 
@@ -193,7 +228,7 @@ module DistributedList {
 
                     on this.targetLocales[dLoc] {
                         // acquire memory if needed
-                        if this.blockLists[dLoc].numBlocks < dBlock
+                        if this.blockLists[dLoc].numBlocks <= dBlock
                             then this.blockLists[dLoc].acquireBlocks();
 
                         this.blockLists[dLoc].set(dBlock, dIdx,
@@ -284,24 +319,46 @@ module DistributedList {
             this.unlockAll();
         }
 
+        proc count(x: eltType) {
+            this.lockAll();
+            var cnt = 0;
+            coforall locIdx in this.locDom with (+ reduce cnt) do
+                on this.targetLocales[locIdx] {
+                    for val in this.blockLists[locIdx] {
+                        if val == x then cnt += 1;
+                    }
+            }
+            this.unlockAll();
+            return cnt;
+        }
+
         proc find(x: eltType, start: int = 0, end: int = -1) {
             this.lockAll(); defer this.unlockAll();
-            return this.find(x, start, end);
+            return this._find(x, start, end);
         }
 
         pragma "no doc"
         proc _find(x: eltType, start: int = 0, end: int = -1) {
-            // TODO: do this in parallel across locales instead of one index at a time
-            var idx = -1;
-            for i in start..<(if end == -1 then this.numEntries.read() else end) {
-                const (locIdx, blockIdx, eltIdx) = indicesFor(i);
-                on this.targetLocales[locIdx] do
-                    if this.blockLists[locIdx].getRef(blockIdx, eltIdx) == x {
-                        idx = i;
-                        // break;
+            assert(boundsCheck(start));
+            const last = min(end, this.numEntries.read()),
+                  (_, maxBlockIdx, _) = indicesFor(last),
+                  locRanges = rangesOnEachLocale(start..last, maxBlockIdx);
+
+            var minIdx = max(int);
+
+            coforall locIdx in this.locDom with (min reduce minIdx) 
+                do on this.targetLocales[locIdx] {
+                    for (blockRange, blockIdx) in zip(locRanges[locIdx], 0..) {
+                        for i in blockRange {
+                            if this.blockLists[locIdx].blocks[blockIdx][i] == x {
+                                const full_idx = i + blockIdx * this.locDom.size * this.blockSize + locIdx * this.blockSize;
+                                minIdx = min(minIdx, full_idx);
+                            }
+                        }
                     }
             }
-            return idx;
+
+            return if minIdx < max(int) then minIdx else -1;
         }
 
         proc getValue(idx: int): eltType {
@@ -343,9 +400,13 @@ module DistributedList {
 
             this.lockAll();
             // Do we know that BlockCyclic will align indices to locales in the same fashion we have?
-            for (loc, locIdx) in zip(this.targetLocales, this.locDom) do on loc {
-                for (elt, blockIdx, eltIdx) in this.blockLists[locIdx] do
-                    a[locIdx * blockIdx * this.blockSize + eltIdx] = elt; // not sure about this...
+            coforall (loc, locIdx) in zip(this.targetLocales, this.locDom) do on loc {
+                for (elt, blockIdx, eltIdx) in this.blockLists[locIdx].valsAndIndices() do
+                    a[
+                        this.blockSize * this.locDom.size * blockIdx + // idx starting fomr the last full row
+                        this.blockSize * locIdx + // idx starting from the last full block
+                        eltIdx // idx within this block
+                    ] = elt;
             }
             this.unlockAll();
 
@@ -394,6 +455,27 @@ module DistributedList {
         pragma "no doc"
         inline proc boundsCheck(idx): bool {
             return idx >= 0 && idx < this.numEntries.read();
+        }
+
+        pragma "no doc"
+        proc rangesOnEachLocale(r: range(idxType=int), numLayers: int): [this.locDom][0..<numLayers] range(idxType=int) {
+            var locRanges : [this.locDom][0..<numLayers] range(idxType=int);
+            const rowSize = this.locDom.size * this.blockSize;
+
+            for locIdx in this.locDom {
+                for locBlockIdx in 0..<numLayers {
+                    const blockRange = 
+                        (locBlockIdx * rowSize + locIdx * this.blockSize)..#blockSize;
+
+                    locRanges[rowSize][locBlockIdx] =
+                        if r.contains(blockRange) then blockRange
+                        else if r.contains(blockRange.first) then blockRange.first..r.last
+                        else if r.contains(blockRange.last) then r.first..blockRange.last
+                        else 0..0;
+                }
+            }
+
+            return locRanges;
         }
 
     }
@@ -459,6 +541,10 @@ module DistributedList {
             this.numBlocks = n;
         }
 
+        inline proc numOpenBlocks(): int {
+            return this.numBlocks - (this.numFilled * this.blockSize);
+        }
+
         proc set(block_idx: int, elt_idx: int, in x: eltType) {
             assert(block_idx < this.numBlocks);
             _move(x, this.blocks[block_idx][elt_idx]);
@@ -477,17 +563,14 @@ module DistributedList {
         // assumes that the current block is full
         // and that the next block has already been allocated
         proc appendBlock(arr: [?d] eltType) {
-            assert(d.size == this.blockSize);
             const nextBlockIdx = this.numFilled / this.blockSize;
+            
+            assert(d.size == this.blockSize);
             assert(nextBlockIdx < this.numBlocks);
             assert(this.blocks[nextBlockIdx] != nil);
-            writeln(nextBlockIdx, "\t", arr);
-            for (x, i) in zip(arr, d) {
+            
+            for (x, i) in zip(arr, 0..) do
                 this.set(nextBlockIdx, i, x);
-                // _move(x, this.blocks[nextBlockIdx][i]);
-                write(this.blocks[nextBlockIdx][i], " ");
-            }
-            writeln();
             this.numFilled += d.size;
         }
 
@@ -512,17 +595,35 @@ module DistributedList {
             this.capacity = DefaultNumBlocksPerLocale * this.blockSize;
         }
 
-        iter these() {
-            const nFilled = this.numFilled / this.blockSize - 1;
+        iter valsAndIndices() {
+            const numFullBlocks = this.numFilled / this.blockSize;
+
             // yield the first n full blocks
-            for i in 0..<nFilled {
+            for i in 0..<numFullBlocks {
                 for j in 0..<this.blockSize {
                     yield (this.blocks[i][j], i, j);
                 }
             }
+
             // yield the partial last block
             for j in 0..<(this.numFilled % this.blockSize) {
-                yield (this.blocks[nFilled+1][j], nFilled+1, j);
+                yield (this.blocks[numFullBlocks][j], numFullBlocks, j);
+            }
+        }
+
+        iter these() ref {
+            const numFullBlocks = this.numFilled / this.blockSize;
+
+            // yield the first n full blocks
+            for i in 0..<numFullBlocks {
+                for j in 0..<this.blockSize {
+                    yield this.getRef(i, j);
+                }
+            }
+
+            // yield the partial last block
+            for j in 0..<(this.numFilled % this.blockSize) {
+                yield this.getRef(numFullBlocks, j);
             }
         }
     }
