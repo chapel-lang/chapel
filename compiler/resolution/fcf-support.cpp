@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#include "closures.h"
+#include "fcf-support.h"
 
 #include "astutil.h"
 #include "AstVisitorTraverse.h"
@@ -50,7 +50,7 @@
 #include <sstream>
 
 namespace {
-  using namespace closures;
+  using namespace fcfs;
 
   struct FcfFormalInfo {
     Type* type;
@@ -162,8 +162,6 @@ insertSharedParentFactory(const SharedFcfSuperInfo info,
                           AggregateType* child,
                           FnSymbol* payload);
 
-static bool checkAndResolveForClosure(FnSymbol* fn, Expr* use);
-
 static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use);
 
 /************************************* | *************************************
@@ -204,6 +202,10 @@ static FcfFormalInfo extractFormalInfo(ArgSymbol* formal) {
   return ret;
 }
 
+//
+// TODO: Looks like we just always propagate the underlying intent now.
+//
+/*
 static FcfFormalInfo extractFormalInfoWithLegacyRules(ArgSymbol* formal) {
   FcfFormalInfo ret;
 
@@ -222,6 +224,7 @@ static FcfFormalInfo extractFormalInfoWithLegacyRules(ArgSymbol* formal) {
 
   return ret;
 }
+*/
 
 static const SharedFcfSuperInfo
 buildWrapperSuperTypeAtProgram(FnSymbol* fn) {
@@ -231,9 +234,7 @@ buildWrapperSuperTypeAtProgram(FnSymbol* fn) {
   bool throws = fn->throwsError();
 
   for_formals(formal, fn) {
-    auto info = legacyFirstClassFunctions()
-        ? extractFormalInfoWithLegacyRules(formal)
-        : extractFormalInfo(formal);
+    auto info = extractFormalInfo(formal);
     formals.push_back(std::move(info));
   }
 
@@ -775,55 +776,21 @@ insertSharedParentFactory(const SharedFcfSuperInfo info,
   return ret;
 }
 
-// TODO: This will emit errors once-per-use, which may be too verbose.
-static bool checkAndResolveForClosure(FnSymbol* fn, Expr* use) {
-  bool ret = checkAndResolveSignatureAndBody(fn, use);
-
-  bool hasGenericFormal = false;
-  for_formals(formal, fn) {
-    hasGenericFormal |= formal->type->symbol->hasFlag(FLAG_GENERIC);
-    if (hasGenericFormal) break;
-  }
-
-  if (hasGenericFormal) {
-    USR_FATAL_CONT(use, "'%s' cannot be captured as a value because "
-                        "it is a generic function",
-                        fn->name);
-    ret = false;
-  }
-
-  // TODO: How to make this a call to 'USR_FATAL_CONT'?
-  if (fn->hasFlag(FLAG_ITERATOR_FN)) {
-    USR_FATAL(use, "passing iterators by name is not yet supported");
-    ret = false;
-  }
-
-  return ret;
-}
-
 static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use) {
-  INT_ASSERT(fn && fn->defPoint);
+  INT_ASSERT(fn && fn->defPoint && fn->type);
 
-  if (!checkAndResolveForClosure(fn, use)) {
-    auto dummy = closureErrorSink();
-    return new SymExpr(dummy);
-  }
+  auto ft = toFunctionType(fn->type);
+  INT_ASSERT(ft);
+
+  INT_ASSERT(!ft->isGeneric() && ft->returnType() != dtUnknown);
+  bool isBodyResolved = checkAndResolveSignatureAndBody(fn, use);
+  INT_ASSERT(isBodyResolved);
 
   // Reuse cached FCF wrapper if it already exists.
   if (payloadToSharedParentFactory.find(fn) !=
       payloadToSharedParentFactory.end()) {
     auto ret = new CallExpr(payloadToSharedParentFactory[fn]);
     return ret;
-  }
-
-  // TODO: Move me to dyno.
-  if (fWarnUnstable) {
-    USR_WARN(use, "first class functions are unstable");
-  }
-
-  auto& env = computeOuterVariables(fn);
-  if (!env.isEmpty()) {
-    INT_FATAL(use, "Not implemented yet!");
   }
 
   auto info = buildWrapperSuperTypeAtProgram(fn);
@@ -837,20 +804,14 @@ static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use) {
   }
 
   std::ignore = attachChildPayloadPtrGetter(info, child, fn);
-  auto wrapper = insertSharedParentFactory(info, child, fn);
+  auto factory = insertSharedParentFactory(info, child, fn);
 
-  payloadToSharedParentFactory[fn] = wrapper;
+  payloadToSharedParentFactory[fn] = factory;
 
-  auto invoke = new CallExpr(wrapper);
-  auto tmp = newTemp();
-  auto move = new CallExpr(PRIM_MOVE, tmp, invoke);
-  use->getStmtExpr()->insertBefore(new DefExpr(tmp));
-  use->getStmtExpr()->insertBefore(move);
-  std::ignore = resolveExpr(invoke);
-  std::ignore = resolveExpr(move);
-
-  auto ret = new SymExpr(tmp);
-
+  // Return an inserted call to the wrapper that creates the instance.
+  auto ret = new CallExpr(factory);
+  use->replace(ret);
+  normalize(ret);
   return ret;
 }
 
@@ -866,7 +827,7 @@ static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use) {
 
 } // end anonymous namespace
 
-namespace closures {
+namespace fcfs {
 
 /************************************* | **************************************
 *                                                                             *
@@ -876,33 +837,33 @@ namespace closures {
 
 // This visitor will collect all the uses of outer variables in a function.
 struct OuterVariableCollector : public AstVisitorTraverse {
-  using OuterVarToUseMap = std::map<Symbol*, std::vector<SymExpr*>>;
+  using OuterVarToMentionMap = std::map<Symbol*, std::vector<SymExpr*>>;
 
   FnSymbol* owner_;
   std::vector<Symbol*>& outerVariables_;
-  OuterVarToUseMap& outerVariableToUses_;
+  OuterVarToMentionMap& outerVariableToMentions_;
   std::vector<FnSymbol*>& childFunctions_;
 
   OuterVariableCollector(FnSymbol* owner,
                          std::vector<Symbol*>& outerVariables,
-                         OuterVarToUseMap& outerVariableToUses,
+                         OuterVarToMentionMap& outerVariableToMentions,
                          std::vector<FnSymbol*>& childFunctions)
       : owner_(owner),
         outerVariables_(outerVariables),
-        outerVariableToUses_(outerVariableToUses),
+        outerVariableToMentions_(outerVariableToMentions),
         childFunctions_(childFunctions) {
     return;
   }
 
  ~OuterVariableCollector() = default;
 
-  bool isOuterSymbol(Symbol* node) {
+  bool isOuterSymbol(Symbol* node) const {
     auto p = node->defPoint->parentSymbol;
     auto ret = p != owner_;
     return ret;
   }
 
-  bool isSymbolOfInterest(Symbol* node) {
+  bool isSymbolOfInterest(Symbol* node) const {
     auto ret = isLcnSymbol(node) && !isGlobal(node);
     return ret;
   }
@@ -912,14 +873,14 @@ struct OuterVariableCollector : public AstVisitorTraverse {
 
     if (!isOuterSymbol(sym) || !isSymbolOfInterest(sym)) return;
 
-    auto it = outerVariableToUses_.find(sym);
-    if (it != outerVariableToUses_.end()) {
+    auto it = outerVariableToMentions_.find(sym);
+    if (it != outerVariableToMentions_.end()) {
       it->second.push_back(node);
       return;
     }
 
     outerVariables_.push_back(sym);
-    auto& v = outerVariableToUses_[sym];
+    auto& v = outerVariableToMentions_[sym];
     v.push_back(node);
   }
 
@@ -935,9 +896,10 @@ ClosureEnv::ClosureEnv(FnSymbol* owner) : owner_(owner) {
 
   INT_ASSERT(p->getModule() == owner->getModule());
 
+  // Visitor takes our fields by reference and populates them.
   if (isFnSymbol(p) && p != owner->getModule()->initFn) {
     auto v = OuterVariableCollector(owner_, outerVariables_,
-                                    outerVariableToUses_,
+                                    outerVariableToMentions_,
                                     childFunctions_);
     owner->body->accept(&v);
   }
@@ -948,7 +910,7 @@ FnSymbol* ClosureEnv::owner() const {
 }
 
 bool ClosureEnv::isEmpty() const {
-  auto ret = numOuterVariables() == 0;
+  bool ret = numOuterVariables() == 0;
   return ret;
 }
 
@@ -963,26 +925,30 @@ Symbol* ClosureEnv::outerVariable(int idx) const {
   return ret;
 }
 
-int ClosureEnv::numUsesOf(Symbol* sym) const {
-  auto it = outerVariableToUses_.find(sym);
-  if (it == outerVariableToUses_.end()) return 0;
+int ClosureEnv::numMentions(Symbol* sym) const {
+  auto it = outerVariableToMentions_.find(sym);
+  if (it == outerVariableToMentions_.end()) return 0;
   auto ret = ((int) it->second.size());
   return ret;
 }
 
-SymExpr* ClosureEnv::firstUseOf(Symbol* sym) const {
-  INT_ASSERT(1 <= numUsesOf(sym));
-  auto ret = useOf(sym, 0);
+SymExpr* ClosureEnv::firstMention(Symbol* sym) const {
+  INT_ASSERT(1 <= numMentions(sym));
+  auto ret = mention(sym, 0);
   return ret;
 }
 
-SymExpr* ClosureEnv::useOf(Symbol* sym, int idx) const {
-  auto it = outerVariableToUses_.find(sym);
-  if (it == outerVariableToUses_.end()) return nullptr;
+SymExpr* ClosureEnv::mention(Symbol* sym, int idx) const {
+  auto it = outerVariableToMentions_.find(sym);
+  if (it == outerVariableToMentions_.end()) return nullptr;
   int hi = ((int) it->second.size());
   INT_ASSERT(0 <= idx && idx < hi);
   auto ret = it->second[idx];
   return ret;
+}
+
+const std::vector<FnSymbol*>& ClosureEnv::childFunctions() const {
+  return childFunctions_;
 }
 
 /************************************* | **************************************
@@ -991,54 +957,89 @@ SymExpr* ClosureEnv::useOf(Symbol* sym, int idx) const {
 *                                                                             *
 ************************************** | *************************************/
 
-bool legacyFirstClassFunctions(void) {
-  static VarSymbol* valueOfConfigParam = nullptr;
+static bool
+readConfigParamBool(ModuleSymbol* modSym, const char* configParamName,
+                    VarSymbol*& cachedValue) {
 
   // TODO: This is O(n) number of params, we need a better way to look
   // things up after resolve. I think that 'dyno' can always do the
   // elegant thing here. Just preserve the ID for 'ChapelBase', and then
-  // use it in conjunction with a lookup for the config name.
-  if (!valueOfConfigParam) {
-    if (!baseModule->initFn || !baseModule->initFn->isResolved()) {
-      INT_FATAL(baseModule, "Called before '%s' is resolved",
-                            baseModule->name);
+  // use it in conjunction with a lookup for the config name. You fetch
+  // the 'ResolvedExpression' and you're done.
+  if (!cachedValue) {
+    if (!modSym->initFn || !modSym->initFn->isResolved()) {
+      INT_FATAL(modSym, "Called before '%s' is resolved",
+                        modSym->name);
     }
 
-    auto configName = "legacyFirstClassFunctions";
     form_Map(SymbolMapElem, e, paramMap) {
       auto sym = e->key;
-      if (sym->defPoint && sym->defPoint->getModule() == baseModule) {
-        if (!strcmp(sym->name, configName)) {
-          valueOfConfigParam = toVarSymbol(e->value);
-          INT_ASSERT(valueOfConfigParam == gTrue ||
-                     valueOfConfigParam == gFalse);
+      if (sym->defPoint && sym->defPoint->getModule() == modSym) {
+        if (!strcmp(sym->name, configParamName)) {
+          auto vs = toVarSymbol(e->value);
+          if (!vs || (vs != gTrue && vs != gFalse)) {
+            INT_FATAL("Unexpected config param type or bad AST");
+            return false;
+          }
+          cachedValue = vs;
           break;
         }
       }
     }
 
     // Provide a hint, just in case.
-    if (!valueOfConfigParam) {
+    if (!cachedValue) {
       INT_FATAL("Could not find '%s', is it declared in '%s'?",
-                configName,
-                baseModule->name);
+                configParamName,
+                modSym->name);
     }
   }
 
-  bool ret = (valueOfConfigParam == gTrue);
+  bool ret = (cachedValue == gTrue);
   return ret;
 }
 
-Expr* createClassInstance(FnSymbol* fn, Expr* use) {
-  if (legacyFirstClassFunctions()) {
-    return createLegacyClassInstance(fn, use);
-  } else {
-    INT_FATAL(use, "Modern closures are not implemented yet!");
-    return nullptr;
-  }
+bool useLegacyBehavior(void) {
+  static VarSymbol* cachedValue = nullptr;
+  return readConfigParamBool(baseModule, "fcfsUseLegacyBehavior",
+                             cachedValue);
 }
 
-Type* legacySuperTypeForFuncConstructor(CallExpr* call) {
+bool usePointerImplementation(void) {
+  static VarSymbol* cachedValue = nullptr;
+  return readConfigParamBool(baseModule, "fcfsUsePointerImplementation",
+                             cachedValue);
+}
+
+Expr* createFunctionClassInstance(FnSymbol* fn, Expr* use) {
+  if (usePointerImplementation()) INT_FATAL(use, "Should not be called!");
+  return createLegacyClassInstance(fn, use);
+}
+
+Type* functionClassSuperTypeFromFunctionType(FunctionType* ft) {
+  std::vector<FcfFormalInfo> formals;
+  RetTag retTag = ft->returnIntent();
+  Type* retType = ft->returnType();
+  bool throws = ft->throws();
+
+  // Build up the formal types and intents.
+  for (int i = 0; i < ft->numFormals(); i++) {
+    auto formal = ft->formal(i);
+    FcfFormalInfo info;
+    info.type = formal->type;
+    info.concreteIntent = formal->intent;
+    info.name = formal->name;
+    formals.push_back(std::move(info));
+  }
+
+  auto info = buildWrapperSuperTypeAtProgram(formals, retTag, retType,
+                                             throws);
+  auto ret = info->sharedType;
+  return ret;
+
+}
+
+Type* functionClassSuperTypeForFuncConstructor(CallExpr* call) {
   INT_ASSERT(call && call->isPrimitive(PRIM_CREATE_FN_TYPE));
 
   AList& argList = call->argList;
@@ -1072,14 +1073,13 @@ Type* legacySuperTypeForFuncConstructor(CallExpr* call) {
 static bool isAnyErrorSinkType(Type* t) {
   if (t == errorSink(FunctionType::PROC)->type     ||
       t == errorSink(FunctionType::ITER)->type     ||
-      t == errorSink(FunctionType::OPERATOR)->type ||
-      t == closureErrorSink()->type) {
+      t == errorSink(FunctionType::OPERATOR)->type) {
     return true;
   }
   return false;
 }
 
-const char* closureTypeToString(Type* t) {
+const char* functionClassTypeToString(Type* t) {
   INT_ASSERT(t && t->symbol->hasFlag(FLAG_FUNCTION_CLASS));
 
   auto at = toAggregateType(t);
@@ -1105,6 +1105,7 @@ bool checkAndResolveSignature(FnSymbol* fn, Expr* use) {
 
   resolveSignature(fn);
 
+  // This just checks that the current tagging is valid.
   INT_ASSERT(fn->isGenericIsValid());
 
   // Now resolve the return type (and possibly the body).
@@ -1130,12 +1131,14 @@ bool checkAndResolveSignatureAndBody(FnSymbol* fn, Expr* use) {
     return payloadToResolved[fn];
   }
 
-  bool ret = checkAndResolveSignature(fn, use);
+  // TODO: What is the best way to detect if resolution failed?
+  bool ret = checkAndResolveSignature(fn, use) || fn->isResolved();
+
   if (!ret) {
-    if (!fn->isResolved() && !fn->isGeneric()) {
-      if (!fn->hasFlag(FLAG_NO_FN_BODY)) resolveFunction(fn);
-      INT_ASSERT(fn->isResolved());
-      ret = true;
+    INT_ASSERT(!fn->isResolved());
+    if (!fn->isGeneric() && !fn->hasFlag(FLAG_NO_FN_BODY)) {
+      resolveFunction(fn);
+      ret = fn->isResolved();
     }
   }
 
@@ -1211,4 +1214,4 @@ VarSymbol* closureErrorSink(void) {
   return ret;
 }
 
-} // end namespace 'closures'
+} // end namespace 'fcfs'

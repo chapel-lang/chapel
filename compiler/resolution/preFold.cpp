@@ -22,7 +22,7 @@
 
 #include "astutil.h"
 #include "buildDefaultFunctions.h"
-#include "closures.h"
+#include "fcf-support.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "driver.h"

@@ -23,7 +23,7 @@
 #include "baseAST.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
-#include "closures.h"
+#include "fcf-support.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "ForallStmt.h"

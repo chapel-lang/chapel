@@ -24,7 +24,7 @@
 
 #include "astutil.h"
 #include "CatchStmt.h"
-#include "closures.h"
+#include "fcf-support.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
 #include "expr.h"

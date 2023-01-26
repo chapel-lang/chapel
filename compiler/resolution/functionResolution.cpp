@@ -34,7 +34,7 @@
 #include "callInfo.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
-#include "closures.h"
+#include "fcf-support.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "driver.h"
@@ -3264,21 +3264,21 @@ static bool resolveClassBorrowMethod(CallExpr* call) {
 // resolving calls, but we may not be able to do that until dyno is used
 // to resolve code.
 static bool resolveFunctionPointerCall(CallExpr* call) {
-  FunctionType* fnType = nullptr;
+  FunctionType* ft = nullptr;
   if (auto base = call->baseExpr)
     if (auto se = toSymExpr(base))
       if (auto baseFnType = toFunctionType(se->getValType()))
-        fnType = baseFnType;
+        ft = baseFnType;
 
-  if (!fnType) return false;
+  if (!ft) return false;
 
   auto base = call->baseExpr;
 
   // TODO: Support default arguments?
-  if (call->numActuals() != fnType->numFormals()) {
+  if (call->numActuals() != ft->numFormals()) {
     USR_FATAL(call, "incorrect number of arguments - expected '%d', "
                     "but found '%d'",
-                    fnType->numFormals(),
+                    ft->numFormals(),
                     call->numActuals());
     return true;
   }
@@ -3305,13 +3305,13 @@ static bool resolveFunctionPointerCall(CallExpr* call) {
 
   // TODO: Can we rework 'ResolutionCandidate' to operate in terms of
   // function types? That might enable us to use that machinery here.
-  for (int i = 0; i < fnType->numFormals(); i++) {
+  for (int i = 0; i < ft->numFormals(); i++) {
     auto actual = call->get(i + 1);
 
     Type* actualType = actual->qualType().type();
     Symbol* actualSym = isSymExpr(actual) ? toSymExpr(actual)->symbol()
                                           : nullptr;
-    Type* formalType = fnType->formal(i)->type;
+    Type* formalType = ft->formal(i)->type;
     ArgSymbol* formalSym = nullptr;
     FnSymbol* fn = nullptr;
     bool promotes = false;
@@ -4636,18 +4636,18 @@ void printResolutionErrorUnresolved(CallInfo&       info,
                        "illegal access of iterator or promoted expression");
 
       } else if (t->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
-        const bool legacy = closures::legacyFirstClassFunctions();
-        auto str = legacy ? "first class function" : "closure";
+        const char* str = "first class function";
 
-        // TODO: Gotta be a better way to write this...
-        if (!legacy) {
-          if (t == closures::errorSink(FunctionType::OPERATOR)->type) {
-            str = FunctionType::kindToString(FunctionType::OPERATOR);
-          } else if (t == closures::errorSink(FunctionType::ITER)->type) {
-            str = FunctionType::kindToString(FunctionType::ITER);
-          } else if (t == closures::errorSink(FunctionType::PROC)->type) {
-            str = FunctionType::kindToString(FunctionType::PROC);
-          }
+        // Create an error sink, one per each category of kind of function
+        // type (though in practice, right now only 'PROC' will be used.
+        // We have to propagate some sort of type so that resolution can
+        // continue as far as possible without repeated errors.
+        if (t == fcfs::errorSink(FunctionType::OPERATOR)->type) {
+          str = "operator";
+        } else if (t == fcfs::errorSink(FunctionType::ITER)->type) {
+          str = "iterator";
+        } else if (t == fcfs::errorSink(FunctionType::PROC)->type) {
+          str = "procedure";
         }
 
         USR_FATAL_CONT(call, "illegal access of %s", str);
@@ -9990,56 +9990,6 @@ void resolveBlockStmt(BlockStmt* blockStmt) {
   }
 }
 
-static FunctionType::Kind determineFunctionTypeKind(FnSymbol* fn) {
-  if (fn->hasFlag(FLAG_ITERATOR_FN)) return FunctionType::ITER;
-  if (fn->hasFlag(FLAG_OPERATOR)) return FunctionType::OPERATOR;
-  return FunctionType::PROC;
-}
-
-using FunctionTypeCache =
-  std::unordered_set<FunctionType*, FunctionTypePtrHash,
-                     FunctionTypePtrEq>;
-
-// Cache to make sure that we don't produce duplicate function types.
-static FunctionTypeCache functionTypeCache;
-
-static FunctionType* constructFunctionTypeFromSignature(FnSymbol* fn) {
-  FunctionType::Kind kind = determineFunctionTypeKind(fn);
-  std::vector<FunctionType::Formal> formals;
-  RetTag returnIntent = fn->retTag;
-  Type* returnType = fn->retType;
-  bool throws = fn->throwsError();
-
-  for_formals(f, fn) {
-    FunctionType::Formal info;
-    info.type = f->type;
-    info.concreteIntent = f->intent;
-    info.name = f->name;
-    formals.push_back(std::move(info));
-  }
-
-  // TODO: Can we hash to lookup without creating a new type? Worth it?
-  auto ret = FunctionType::create(kind, formals, returnIntent,
-                                  returnType,
-                                  throws);
-  INT_ASSERT(ret);
-
-  // Return a cached function type if it exists.
-  auto got = functionTypeCache.find(ret);
-  if (got != functionTypeCache.end()) return *got;
-
-  auto ts = new TypeSymbol(ret->toString(), ret);
-  ts->cname = ret->toStringMangledForCodegen();
-  ret->symbol = ts;
-
-  rootModule->block->insertAtTail(new DefExpr(ts));
-
-  bool ok = functionTypeCache.insert(ret).second;
-  INT_ASSERT(ok);
-
-  return ret;
-}
-
 static Expr* resolveFunctionTypeConstructor(DefExpr* def) {
   auto fn = toFnSymbol(def->sym);
 
@@ -10050,37 +10000,49 @@ static Expr* resolveFunctionTypeConstructor(DefExpr* def) {
     gdbShouldBreakHere();
   }
 
-  if (closures::legacyFirstClassFunctions()) {
+  if (fcfs::useLegacyBehavior()) {
     USR_FATAL(def, "syntax for constructing procedure types is not "
                    "supported in legacy mode");
     return def;
   }
 
-  bool isBodyResolved = closures::checkAndResolveSignature(fn, def);
+  bool isBodyResolved = fcfs::checkAndResolveSignature(fn, def);
 
   // Signature only, so no body to resolve.
   INT_ASSERT(!isBodyResolved && !fn->isResolved());
 
-  auto fnType = constructFunctionTypeFromSignature(fn);
-  INT_ASSERT(fnType);
+  auto ft = FunctionType::get(fn);
+  INT_ASSERT(ft);
 
-  auto ret = new SymExpr(fnType->symbol);
+  Type* t = ft;
+
+  // If we aren't using pointers, have to convert to a function class type
+  // for type-based equality checks to work correctly.
+  if (!fcfs::usePointerImplementation()) {
+    t = fcfs::functionClassSuperTypeFromFunctionType(ft);
+    INT_ASSERT(t);
+  }
+
+  auto ret = new SymExpr(t->symbol);
   def->replace(ret);
-
   return ret;
 }
 
-// TODO: We want to support closures, obviously...
+// Intentionally does nothing for now, but is where we'd handle closures.
 static Expr* convertFunctionToClosureIfNeeded(FnSymbol* fn, Expr* use) {
-  INT_ASSERT(fn && fn->type);
-  FunctionType* fnType = toFunctionType(fn->type);
-  INT_ASSERT(fnType);
+  return nullptr;
+}
 
-  auto& env = closures::computeOuterVariables(fn);
+// TODO: We want to support closures, obviously...
+static bool errorIfFunctionCapturesAnyOuterVars(FnSymbol* fn, Expr* use) {
+  INT_ASSERT(fn && fn->type && isFunctionType(fn->type));
 
-  // TODO: We want to support closures, obviously...
+  FunctionType* ft = toFunctionType(fn->type);
+  auto& env = fcfs::computeOuterVariables(fn);
+
+  // Check to make sure the function does not refer to any outer variables.
   if (!env.isEmpty()) {
-    auto kindStr = FunctionType::kindToString(fnType->kind());
+    auto kindStr = FunctionType::kindToString(ft->kind());
     if (fn->hasFlag(FLAG_LEGACY_LAMBDA)) kindStr = "lambda";
 
     if (fn->hasFlag(FLAG_ANONYMOUS_FN)) {
@@ -10101,19 +10063,21 @@ static Expr* convertFunctionToClosureIfNeeded(FnSymbol* fn, Expr* use) {
 
     for (int i = 0; i < stop; i++) {
       auto sym = env.outerVariable(i);
-      auto use = env.firstUseOf(sym);
-      USR_PRINT(use, "such as '%s', here", sym->name);
+      auto mention = env.firstMention(sym);
+      USR_PRINT(mention, "such as '%s', here", sym->name);
     }
+
+    return true;
   }
 
-  return nullptr;
+  return false;
 }
 
 static FnSymbol*
 resolveNameToSingleFunctionOrError(const char* name, Expr* use) {
   FnSymbol* ret = nullptr;
 
-  auto v = closures::lookupFunctions(name, use);
+  auto v = fcfs::lookupFunctions(name, use);
 
   if (v.empty()) {
     USR_FATAL_CONT(use, "no routine with name '%s' is visible", name);
@@ -10141,11 +10105,26 @@ resolveNameToSingleFunctionOrError(const char* name, Expr* use) {
   return ret;
 }
 
-static Expr* swapInErrorSinkForCapture(FunctionType* ft, Expr* use) {
-  auto sink = closures::errorSink(ft->kind());
+static Expr* swapInErrorSinkForCapture(FunctionType::Kind kind, Expr* use) {
+  auto sink = fcfs::errorSink(kind);
   auto ret = new SymExpr(sink);
   use->replace(ret);
   return ret;
+}
+
+static Expr* swapInFunctionForCapture(FnSymbol* fn, Expr* use) {
+  auto ret = new SymExpr(fn);
+  use->replace(ret);
+  return ret;
+}
+
+static Expr*
+finalLoweringForFunctionCapture(FnSymbol* fn, Expr* use, bool useClass) {
+  if (useClass || !fcfs::usePointerImplementation()) {
+    return fcfs::createFunctionClassInstance(fn, use);
+  } else {
+    return swapInFunctionForCapture(fn, use);
+  }
 }
 
 // Create either a function pointer, a closure, or a 'c_fn_ptr' depending
@@ -10153,25 +10132,29 @@ static Expr* swapInErrorSinkForCapture(FunctionType* ft, Expr* use) {
 // could not be disambiguated to a single symbol).
 static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
                                     bool discardType,
-                                    bool promoteToClosure) {
+                                    bool useClass) {
   if (fn->id == breakOnResolveID || use->id == breakOnResolveID) {
     gdbShouldBreakHere();
   }
 
-  bool isBodyResolved = closures::checkAndResolveSignatureAndBody(fn, use);
+  if (fWarnUnstable) {
+    USR_WARN(use, "use of routines as values is unstable");
+  }
+
+  bool isBodyResolved = fcfs::checkAndResolveSignatureAndBody(fn, use);
   INT_ASSERT(isBodyResolved == fn->isResolved());
 
-  auto fnType = constructFunctionTypeFromSignature(fn);
-  INT_ASSERT(fnType);
-  fn->type = fnType;
+  auto ft = fn->computeAndSetType();
+  INT_ASSERT(ft);
 
   // TODO: We could relax this based on calling context, but only in dyno.
-  if (fnType->isGeneric() || fnType->returnType() == dtUnknown) {
-    auto kindStr = FunctionType::kindToString(fnType->kind());
+  if (ft->isGeneric() || ft->returnType() == dtUnknown) {
+    auto kindStr = FunctionType::kindToString(ft->kind());
     if (fn->hasFlag(FLAG_LEGACY_LAMBDA)) kindStr = "lambda";
 
+    // TODO: Maybe use 'iterator'/'procedure' instead of 'proc'/'iter'?
     if (fn->hasFlag(FLAG_ANONYMOUS_FN)) {
-      USR_FATAL_CONT(use, "the %s is generic and cannot be captured",
+      USR_FATAL_CONT(use, "anonymous %s is generic and cannot be captured",
                      kindStr);
     } else {
       USR_FATAL_CONT(use, "the %s '%s' is generic and cannot be captured",
@@ -10179,49 +10162,53 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
                      fn->name);
     }
 
-    // Bail out by returning a "sink" which will be handled later.
-    auto ret = swapInErrorSinkForCapture(fnType, use);
-    return ret;
+    // Return a "sink" to handle any "illegal access" errors later.
+    return swapInErrorSinkForCapture(ft->kind(), use);
   }
 
-  // There was another problem resolving.
-  if (!isBodyResolved) return use;
+  // There was some other problem resolving the body.
+  if (!isBodyResolved) {
+    return swapInErrorSinkForCapture(ft->kind(), use);
+  }
 
+  // For now, error if any function refers to outer variables. At this
+  // point we can just swap in the actual function symbol, since its
+  // signature is not the problem.
+  if (errorIfFunctionCapturesAnyOuterVars(fn, use)) {
+    return finalLoweringForFunctionCapture(fn, use, useClass);
+  }
+
+  // This path discards the function type by casting to 'dtCFnPtr'. It has
+  // a redundant check for outer variables, because even in a world with
+  // closure support, we cannot allow a pointer to a closure.
   if (discardType) {
-    auto& env = closures::computeOuterVariables(fn);
+    auto& env = fcfs::computeOuterVariables(fn);
     if (!env.isEmpty()) {
-      USR_FATAL_CONT(use, "cannot convert '%s' to type '%s' because it "
+      USR_FATAL_CONT(use, "cannot convert type '%s' to '%s' because it "
                           "refers to one or more outer variables",
                           fn->name,
                           dtCFnPtr->symbol->name);
-      auto ret = swapInErrorSinkForCapture(fnType, use);
-      return ret;
+      // TODO: Sink or function symbol here?
+      return swapInErrorSinkForCapture(ft->kind(), use);
+
     } else {
-      auto se = new SymExpr(fn);
-      auto tse = new SymExpr(dtCFnPtr->symbol);
-      auto ret = new CallExpr(PRIM_CAST_TO_TYPE, se, tse);
+      auto seFn = new SymExpr(fn);
+      auto seType = new SymExpr(dtCFnPtr->symbol);
+      auto ret = new CallExpr(PRIM_CAST_TO_TYPE, seFn, seType);
       use->replace(ret);
       return ret;
     }
   }
 
-  // Normally, create a closure only if needed.
+  // Normally, create a closure only if needed. Function is NOP for now,
+  // since we don't actually support closures yet, and the above check
+  // rules out the possibility.
   if (auto ret = convertFunctionToClosureIfNeeded(fn, use)) {
-    use->replace(ret);
     return ret;
   }
 
-  // In legacy mode, every capture creates a closure.
-  if (closures::legacyFirstClassFunctions() || promoteToClosure) {
-    auto ret = closures::createClassInstance(fn, use);
-    use->replace(ret);
-    return ret;
-  }
-
-  // Otherwise, refer to the function directly.
-  auto ret = new SymExpr(fn);
-  use->replace(ret);
-
+  // Otherwise, perform some last minute lowering based on mode.
+  auto ret = finalLoweringForFunctionCapture(fn, use, useClass);
   return ret;
 }
 
@@ -10265,29 +10252,34 @@ static Expr* maybeResolveFunctionCapturePrimitive(CallExpr* call) {
 
       if (!fn) return nullptr;
 
-      const bool discardType = (call->numActuals() > 1);
-      const bool promote = call->isPrimitive(PRIM_CAPTURE_FN_TO_CLASS);
+      bool discardType = (call->numActuals() > 1);
+      bool useClass = call->isPrimitive(PRIM_CAPTURE_FN_TO_CLASS);
 
       // Expression return will already be in tree.
-      auto ret = resolveFunctionCapture(fn, call, discardType, promote);
+      auto ret = resolveFunctionCapture(fn, call, discardType, useClass);
 
       return ret;
     } break;
 
-    // This legacy constructor always computes a closure type.
+    // TODO: Need to have this compute a function type.
     case PRIM_CREATE_FN_TYPE: {
-      Type* t = closures::legacySuperTypeForFuncConstructor(call);
-      auto ret = new SymExpr(t->symbol);
-      call->replace(ret);
-
-      if (!closures::legacyFirstClassFunctions()) {
-        USR_WARN(call, "the legacy function type constructor has "
-                       "been deprecated, and will always produce "
-                       "a closure type");
+      if (!fcfs::useLegacyBehavior()) {
+        USR_WARN(call, "the 'func(...)' function type constructor has "
+                       "been deprecated");
         USR_PRINT(call, "consider the builtin 'proc(...)' syntax "
                         "instead");
+      } else if (fWarnUnstable) {
+        USR_WARN(call, "the 'func(...)' function type constructor is "
+                       "unstable");
       }
 
+      if (fcfs::usePointerImplementation()) {
+        INT_FATAL(call, "Not supported!");
+      }
+
+      Type* t = fcfs::functionClassSuperTypeForFuncConstructor(call);
+      auto ret = new SymExpr(t->symbol);
+      call->replace(ret);
       return ret;
     } break;
 

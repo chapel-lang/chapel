@@ -1,11 +1,9 @@
-/***
-  This test contains tests for function types as a language feature.
-  It should be at parity with '$CHPL_HOME/test/functions/lambda',
-  which contains tests for legacy stuff.
-
-  These tests assume a non-pointer-based model.
-*/
 module FunctionTypes {
+
+  // Tests were written progressively with these things in mind.
+  compilerAssert(fcfsUsePointerImplementation);
+  compilerAssert(!fcfsUseLegacyBehavior);
+
   var globalCounter = 0;
 
   proc testSimpleProcTypeEquivalence() {
@@ -20,6 +18,11 @@ module FunctionTypes {
     type T1 = myAdd.type;
     type T2 = proc(x: int, y: int): int;
     assert(T1 == T2);
+  }
+
+  proc testEnsureProcTypeIsNotClass() {
+    type T1 = proc(): void;
+    assert(!isClassType(T1));
   }
 
   proc testEnsureProcTypeIsNotGeneric() {
@@ -45,6 +48,7 @@ module FunctionTypes {
   proc main() {
     testSimpleProcTypeEquivalence();
     testProcTypeFromNamedProcedure();
+    testEnsureProcTypeIsNotClass();
     testEnsureProcTypeIsNotGeneric();
     testPassAndCallAnonProc1();
     testPassAndCallAnonProc2();

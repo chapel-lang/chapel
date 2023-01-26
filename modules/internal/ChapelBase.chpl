@@ -69,7 +69,11 @@ module ChapelBase {
   // with this set to FALSE. At a certain point the old behavior will be
   // deprecated, and this flag will be removed.
   // TODO: Move to a separate module if we add closure stuff to module code.
-  config param legacyFirstClassFunctions = true;
+  config param fcfsUseLegacyBehavior = true;
+
+  // This flag toggles on the new pointer-based implementation.
+  // It is unstable and experimental.
+  config param fcfsUsePointerImplementation = false;
 
   //
   // assignment on primitive types

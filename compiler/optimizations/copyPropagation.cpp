@@ -478,7 +478,7 @@ static bool isUse(SymExpr* se)
     }
 
     INT_ASSERT(0 <= idx && idx < ft->numFormals());
-    auto intent = ft->formal(idx)->concreteIntent;
+    auto intent = ft->formal(idx)->intent;
 
     if (intent == INTENT_OUT || (intent & INTENT_FLAG_REF)) return false;
   } else {

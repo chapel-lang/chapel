@@ -200,6 +200,9 @@ public:
   // the return-by-ref transformation has been applied, it returns gVoid.
   Symbol*                    getReturnSymbol();
 
+  // Compute the type based on the current signature. Does not resolve.
+  FunctionType*             computeAndSetType();
+
   // Removes all statements from body and adds all statements from block.
   void                       replaceBodyStmtsWithStmts(BlockStmt* block);
   // Removes all statements from body and adds the passed statement.

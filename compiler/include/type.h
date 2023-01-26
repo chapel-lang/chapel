@@ -428,7 +428,7 @@ class FunctionType final : public Type {
 
   struct Formal {
     Type* type = nullptr;
-    IntentTag concreteIntent = INTENT_BLANK;
+    IntentTag intent = INTENT_BLANK;
     const char* name = nullptr;
     Formal() = default;
     bool operator==(const Formal& other) const;
@@ -457,6 +457,11 @@ class FunctionType final : public Type {
                bool isAnyFormalNamed,
                const char* userTypeString);
 
+  static FunctionType* create(Kind kind, std::vector<Formal> formals,
+                              RetTag returnIntent,
+                              Type* returnType,
+                              bool throws);
+
  public:
   void verify() override;
   void accept(AstVisitor* visitor) override;
@@ -465,10 +470,14 @@ class FunctionType final : public Type {
   void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
   void codegenDef() override;
 
-  static FunctionType* create(Kind kind, std::vector<Formal> formals,
-                              RetTag returnIntent,
-                              Type* returnType,
-                              bool throws);
+  /*** Result is shared by functions of the same type. */
+  static FunctionType* get(Kind kind, std::vector<Formal> formals,
+                           RetTag returnIntent,
+                           Type* returnType,
+                           bool throws);
+
+  /*** Result is shared by functions of the same type. Does not resolve. */
+  static FunctionType* get(FnSymbol* fn);
 
   Kind kind() const;
   int numFormals() const;
@@ -480,10 +489,10 @@ class FunctionType final : public Type {
   bool isGeneric() const;
   const char* toString() const;
   const char* toStringMangledForCodegen() const;
-
   size_t hash() const;
   bool equals(const FunctionType* rhs) const;
 
+  static FunctionType::Kind determineKind(FnSymbol* fn);
   static bool isIntentSameAsDefault(IntentTag intent, Type* t);
 
   // Prints things in a 'user facing' fashion, no mangling.
@@ -492,21 +501,11 @@ class FunctionType final : public Type {
   static const char* typeToString(Type* t);
   static const char* returnIntentToString(RetTag intent);
 
-  // Intended for codegen. Also used by closures.
+  // Intended for codegen.
   static const char* intentTagMnemonicMangled(IntentTag tag);
   static const char* retTagMnemonicMangled(RetTag tag);
-};
 
-struct FunctionTypePtrHash {
-  size_t operator()(const FunctionType* x) const {
-    return x->hash();
-  }
-};
 
-struct FunctionTypePtrEq {
-  bool operator()(const FunctionType* lhs, const FunctionType* rhs) const {
-    return lhs->equals(rhs);
-  }
 };
 
 /************************************* | **************************************

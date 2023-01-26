@@ -1,1 +1,1 @@
--slegacyFirstClassFunctions=false
+-sfcfsUsePointerImplementation=false -sfcfsUseLegacyBehavior=false
