@@ -192,10 +192,10 @@ module BigInteger {
      that take a string argument.
 
      When ``false``, the deprecated behavior is used (i.e., errors will trigger
-     a halt at execution.
+     a halt at execution.)
 
      When ``true``, the new behavior is used (i.e., errors will cause a
-     :type:`BadFormatError` to be thrown)
+     :type:`~OS.BadFormatError` to be thrown)
   */
   config param bigintInitThrows = false;
 
@@ -272,7 +272,7 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
-    deprecated "bigint initializers that return the :type:`errorCode` type via an 'out' argument are deprecated, please remove the argument and ensure the config param :param:`bigintInitThrows` is set to 'true' to opt in to using the new initializer that throws"
+    deprecated "bigint initializers that return the :type:`~OS.errorCode` type via an 'out' argument are deprecated, please remove the argument and ensure the config param :param:`bigintInitThrows` is set to 'true' to opt in to using the new initializer that throws"
     proc init(str: string, base: int = 0, out error: errorCode) {
 
       this.complete();
@@ -290,7 +290,23 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
-    /* TODO: DOCUMENT
+    /* Initialize a :type:`bigint` from a string and optionally a provided base
+       to use with the string.  If the string is not a correct base ``base``
+       number, will throw a :type:`~OS.BadFormatError`.
+
+       :arg str: The value to be stored in the resulting :type:`bigint`.
+       :type str: `string`
+
+       :arg base: The base to use when creating the :type:`bigint` from ``str``.
+                  May vary from ``2`` to ``62`` or be ``0``.  Defaults to ``0``,
+                  which causes the base to be read from the start of the ``str``
+                  itself (``0x`` and ``0X`` will give hexadecimal, ``0b`` and
+                  ``0B`` will give binary, ``0`` will give octal, and everything
+                  else will be interpreted as decimal).
+       :type base: `int`
+
+       :throws BadFormatError: Thrown when ``str`` is not a correctly formatted
+                               number in base ``base``.
 
      */
     proc init(str: string, base: int = 0) throws where bigintInitThrows == true {
