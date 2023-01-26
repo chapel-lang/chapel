@@ -32,7 +32,7 @@ RANLIB = ranlib
 # General Flags
 #
 
-DEBUG_CFLAGS = -g
+DEBUG_CFLAGS = -g -Og
 DEPEND_CFLAGS = -MMD -MP
 OPT_CFLAGS = -O3
 PROFILE_CFLAGS = -pg
