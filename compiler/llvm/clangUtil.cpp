@@ -447,8 +447,8 @@ static void handleCallMacro(const IdentifierInfo* origID,
       actual2 = *tok;
   }
 
-  IdentifierInfo* formal1;
-  IdentifierInfo* formal2;
+  IdentifierInfo* formal1 = nullptr;
+  IdentifierInfo* formal2 = nullptr;
   count = 0;
   for (MacroInfo::param_iterator param = calledMacro->param_begin();
        param != calledMacro->param_end(); ++param) {
