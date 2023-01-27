@@ -220,6 +220,9 @@ void ReturnTypeInferrer::process(const uast::AstNode* symbol,
 
 void ReturnTypeInferrer::checkReturn(const AstNode* inExpr,
                                      const QualifiedType& qt) {
+  if (!qt.type()) {
+    return;
+  }
   if (qt.type()->isVoidType()) {
     if (returnIntent == Function::REF) {
       context->error(inExpr, "Cannot return void with ref return intent");
