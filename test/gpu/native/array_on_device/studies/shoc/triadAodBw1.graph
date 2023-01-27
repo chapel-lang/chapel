@@ -1,0 +1,5 @@
+perfkeys: BW block size 64 =
+files: triadAodBw64.dat
+graphkeys: Triad
+ylabel: Time (s)
+graphtitle: SHOC Triad (array on device) - Bandwidth - 64KB
