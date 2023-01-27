@@ -32,7 +32,7 @@ jobs:
           timeout_seconds: 180
           polling_interval_seconds: 60  
           command: |
-              curl  --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
+              curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
               if [ $? -ne 0 ]; then
                 echo "curl command to get commits payload failed"
                 exit 2
