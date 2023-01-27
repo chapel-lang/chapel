@@ -1675,7 +1675,8 @@ class ResolvedForwarding {
        receiverType(std::move(receiverType)) {
     }
     bool operator==(const ForwardingTo& other) const {
-      return forwardingStmt == other.forwardingStmt;
+      return forwardingStmt == other.forwardingStmt &&
+             receiverType == other.receiverType;
     }
     bool operator!=(const ForwardingTo& other) const {
       return !(*this == other);
