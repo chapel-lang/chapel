@@ -527,6 +527,9 @@ all:
   01/19/23:
     - text: Support for one locale per socket (#21057)
       config: 16-node-xc, 16-node-cs-hdr
+  01/26/23:
+    - text: Fix topo/comm initialization sequence (#21427)
+      config: 16-node-xc, 16-node-cs-hdr
 
 
 # End all
@@ -740,6 +743,10 @@ cg:
     - Strided Array Support in Sort/Search Modules (#4569)
   09/22/16:
     - Added overloaded compileErrors for Sort/Search (#4621)
+  01/18/23:
+    - Improvements for iterating over unbounded enum/bool ranges (#21332)
+  01/21/23:
+    - Simplify the implementation of chpl__first|lastForIter for bounded ranges (#21407)
 
 cg-a:
   04/05/18:
