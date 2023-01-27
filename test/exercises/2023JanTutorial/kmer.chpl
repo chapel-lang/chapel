@@ -17,12 +17,11 @@
    https://www.ncbi.nlm.nih.gov/nuccore/NC_001422.1?report=fasta
  */
 
-use Map;
-use IO;
+use Map, IO;
 
 // to have it read a different input file, run as follows:
-//      ./kmer --infile="anotherFileName"
-config const infile = "kmer_large_input.txt";
+//      ./kmer --infilename="anotherFileName"
+config const infilename = "kmer_large_input.txt";
 
 // set k to something different on the commandline with
 //      ./kmer --k=7
@@ -30,19 +29,20 @@ config const k = 4;
 
 // read in the input sequence from the file infile
 var sequence : string;
-var f = open(infile, iomode.r);
-var fReader =  f.reader();
-fReader.read(sequence);
+var f = open(infilename, iomode.r);
+var infile =  f.reader();
+infile.read(sequence);
+writeln(sequence);
 
 // declare a dictionary/map to store the count per kmer
 var nkmerCounts : map(string, int);
 
 // count up the number of times each kmer occurs
 for ind in 0..<(sequence.size-k) {
-  nkmerCounts[sequence[ind..<ind+k]] += 1;
+  nkmerCounts[sequence[ind..#k]] += 1;
 }
 
-writeln("Number of unique k-mers in ", infile, " is ", nkmerCounts.size);
+writeln("Number of unique k-mers in ", infilename, " is ", nkmerCounts.size);
 writeln();
 writeln("nkmerCounts = ");
 writeln(nkmerCounts);
