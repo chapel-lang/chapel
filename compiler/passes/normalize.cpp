@@ -2105,6 +2105,8 @@ static void fixPrimNew(CallExpr* primNewToFix) {
 
   CallExpr* callInNew    = toCallExpr(primNewToFix->get(1));
   CallExpr* newNew       = new CallExpr(PRIM_NEW);
+  newNew->tryTag = primNewToFix->tryTag; // preserve the tryTag
+
   Expr*     exprModToken = NULL;
   Expr*     exprMod      = NULL;
 
