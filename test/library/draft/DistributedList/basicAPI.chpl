@@ -40,10 +40,11 @@ writeln("\ncount...");
 writeln(dl.count(1) == 3);
 
 writeln("\nfind...");
-writeln(dl.find(1));
-writeln(dl.find(1, 10));
-writeln(dl.find(1, 0, 10));
-writeln(dl.find(1, 6, 12));
+writeln("all: \t", dl.find(1));
+writeln("10..: \t", dl.find(1, 10));
+writeln("0..10: \t", dl.find(1, 0, 10));
+writeln("14..: \t", dl.find(1, 14));
+writeln("6..10: \t", dl.find(1, 6, 10));
 
 writeln("\nthis()...");
 writeln(dl[5] == -5);
@@ -59,7 +60,7 @@ writeln(dl.size == 35);
 
 writeln("\npop...");
 writeln(dl.pop());
-writeln(dl.pop(6));
+writeln(dl.pop(5));
 writeln(dl);
 writeln(dl.size == 33);
 
