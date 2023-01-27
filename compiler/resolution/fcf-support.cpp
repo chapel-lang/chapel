@@ -1201,17 +1201,4 @@ VarSymbol* errorSink(FunctionType::Kind kind) {
   return ret;
 }
 
-VarSymbol* closureErrorSink(void) {
-  static VarSymbol* closureError = nullptr;
-
-  if (closureError) return closureError;
-
-  auto super = insertFcfWrapperSuperTypeAtProgram("chpl_closure_error");
-  closureError = newTemp(super);
-  theProgram->block->body.insertAtTail(new DefExpr(closureError));
-  auto ret = closureError;
-
-  return ret;
-}
-
 } // end namespace 'fcfs'
