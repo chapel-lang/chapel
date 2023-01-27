@@ -26,7 +26,7 @@ writeln(dl.insert(12, [1, 2, 3, 4, 5]));
 writeln(dl.size == 37);
 writeln(dl);
 
-// ---------- querires -------------
+// ---------- queries -------------
 
 writeln("\nfirst/last...");
 writeln(dl.first());
@@ -46,10 +46,25 @@ writeln("0..10: \t", dl.find(1, 0, 10));
 writeln("14..: \t", dl.find(1, 14));
 writeln("6..10: \t", dl.find(1, 6, 10));
 
+writeln("\nindices...");
+writeln(dl.indices);
+
+writeln("\ngetValue...");
+writeln(dl.getValue(20));
+
+// ---------- modifications -------------
+
 writeln("\nthis()...");
 writeln(dl[5] == -5);
 dl[5] = 100;
 writeln(dl[5] == 100);
+
+writeln("\nset...");
+writeln(dl.set(100, -1));
+writeln(dl.set(0, -1));
+writeln(dl.set(20, -1));
+writeln(dl.size == 37);
+writeln(dl);
 
 // ---------- removals -------------
 
@@ -67,4 +82,5 @@ writeln(dl.size == 33);
 writeln("\nclear...");
 dl.clear();
 writeln(dl.size == 0);
+writeln(dl.isEmpty());
 writeln(dl);
