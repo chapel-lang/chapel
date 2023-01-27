@@ -33,10 +33,10 @@ docker buildx build --platform=linux/amd64,linux/arm64 . --push -t $registry/$im
 
     if [ $PUBLISHED -ne 0 ]
     then
-      echo "docker commands failed inside chapel $imageName container" 
+      echo "docker publish using buildx failed " 
       exit 1
       else
-      echo "docker commands succeeded inside chapel $imageName container"
+      echo "docker publish using buildx succeeded "
     fi   
 
 }
