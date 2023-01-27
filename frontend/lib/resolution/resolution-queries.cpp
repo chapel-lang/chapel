@@ -2623,6 +2623,9 @@ static bool resolveFnCallSpecial(Context* context,
   return false;
 }
 
+using CandidatesVec = std::vector<const TypedFnSignature*>;
+using ForwardingInfoVec = std::vector<QualifiedType>;
+
 static MostSpecificCandidates
 resolveFnCallForTypeCtor(Context* context,
                          const CallInfo& ci,
@@ -2630,8 +2633,8 @@ resolveFnCallForTypeCtor(Context* context,
                          const PoiScope* inPoiScope,
                          PoiInfo& poiInfo) {
 
-  std::vector<const TypedFnSignature*> initialCandidates;
-  std::vector<const TypedFnSignature*> candidates;
+  CandidatesVec initialCandidates;
+  CandidatesVec candidates;
 
   CHPL_ASSERT(ci.calledType().type() != nullptr);
   CHPL_ASSERT(!ci.calledType().type()->isUnknownType());
@@ -2648,18 +2651,18 @@ resolveFnCallForTypeCtor(Context* context,
                                 inPoiScope,
                                 candidates);
 
+
+  ForwardingInfoVec forwardingInfo;
+
   // find most specific candidates / disambiguate
   // Note: at present there can only be one candidate here
-  MostSpecificCandidates mostSpecific = findMostSpecificCandidates(context,
-                                                                   candidates,
-                                                                   ci,
-                                                                   inScope,
-                                                                   inPoiScope);
+  MostSpecificCandidates mostSpecific =
+    findMostSpecificCandidates(context,
+                               candidates, forwardingInfo,
+                               ci, inScope, inPoiScope);
 
   return mostSpecific;
 }
-
-using CandidatesVec = std::vector<const TypedFnSignature*>;
 
 static void considerCompilerGeneratedCandidates(Context* context,
                                                 const CallInfo& ci,
@@ -2742,15 +2745,38 @@ lookupCalledExprConsideringReceiver(Context* context,
   return ret;
 }
 
-static CandidatesVec
+static void helpComputeForwardingTo(const CallInfo& fci,
+                                    size_t start,
+                                    CandidatesVec& candidates,
+                                    std::vector<QualifiedType>& forwardingTo) {
+  QualifiedType forwardingReceiverActualType = fci.calledType();
+  size_t n = candidates.size();
+  forwardingTo.resize(start);
+  for (size_t i = start; i < n; i++) {
+    forwardingTo.push_back(forwardingReceiverActualType);
+  }
+}
+
+// this function gathers candidates not from POI and candidates
+// from POI into separate vectors.
+// For each of these vectors, the corresponding forwardingTo vector
+// will have an element for each of the returned candidates &
+// indicates the actual type that is passed as the method receiver
+// when using forwarding.
+static void
 gatherAndFilterCandidatesForwarding(Context* context,
                                     const Call* call,
                                     const CallInfo& ci,
                                     const Scope* inScope,
                                     const PoiScope* inPoiScope,
-                                    size_t& firstPoiCandidate) {
-  CandidatesVec candidates;
-  firstPoiCandidate = 0;
+                                    CandidatesVec& nonPoiCandidates,
+                                    CandidatesVec& poiCandidates,
+                                    ForwardingInfoVec& nonPoiForwardingTo,
+                                    ForwardingInfoVec& poiForwardingTo) {
+  nonPoiCandidates.empty();
+  poiCandidates.empty();
+  nonPoiForwardingTo.empty();
+  poiForwardingTo.empty();
 
   const Type* receiverType = ci.actual(0).type().type();
 
@@ -2798,14 +2824,18 @@ gatherAndFilterCandidatesForwarding(Context* context,
 
     NamedScopeSet visited;
 
-    // consider compiler-generated candidates
     for (auto fci : forwardingCis) {
+      size_t start = nonPoiCandidates.size();
+      // consider compiler-generated candidates
       considerCompilerGeneratedCandidates(context, fci, inScope, inPoiScope,
-                                          candidates);
+                                          nonPoiCandidates);
+      // update forwardingTo
+      helpComputeForwardingTo(fci, start, nonPoiCandidates, nonPoiForwardingTo);
     }
 
     // next, look for candidates without using POI.
     for (auto fci : forwardingCis) {
+      size_t start = nonPoiCandidates.size();
       // compute the potential functions that it could resolve to
       auto v = lookupCalledExprConsideringReceiver(context, inScope, fci,
                                                    visited);
@@ -2819,21 +2849,25 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                     fci,
                                     inScope,
                                     inPoiScope,
-                                    candidates);
+                                    nonPoiCandidates);
+
+      // update forwardingTo
+      helpComputeForwardingTo(fci, start, nonPoiCandidates, nonPoiForwardingTo);
     }
 
     // next, look for candidates using POI
-    firstPoiCandidate = candidates.size();
     for (const PoiScope* curPoi = inPoiScope;
          curPoi != nullptr;
          curPoi = curPoi->inFnPoi()) {
 
       // stop if any candidate has been found.
-      if (candidates.empty() == false) {
+      if (nonPoiCandidates.empty() == false || poiCandidates.empty() == false) {
         break;
       }
 
       for (auto fci : forwardingCis) {
+        size_t start = poiCandidates.size();
+
         // compute the potential functions that it could resolve to
         auto v = lookupCalledExprConsideringReceiver(context, curPoi->inScope(),
                                                      fci,
@@ -2848,50 +2882,31 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                       fci,
                                       inScope,
                                       inPoiScope,
-                                      candidates);
+                                      poiCandidates);
+
+        // update forwardingTo
+        helpComputeForwardingTo(fci, start, poiCandidates, poiForwardingTo);
       }
     }
 
     // If no candidates were found and it's a method, try forwarding
     // This supports the forwarding-to-forwarding case.
-    if (candidates.empty()) {
-      // We need to partition the candidates into POI candidates
-      // and non-POI candidates so that PoiInfo can be gathered
-      // only for candidates where that is relevant.
-      CandidatesVec nonPoiCandidates;
-      CandidatesVec poiCandidates;
+    if (nonPoiCandidates.empty() && poiCandidates.empty()) {
       for (auto fci : forwardingCis) {
-        candidates.clear();
         if (fci.isMethodCall() && fci.numActuals() >= 1) {
           const Type* receiverType = fci.actual(0).type().type();
           if (typeUsesForwarding(context, receiverType)) {
-            size_t firstPoi = 0;
-            auto c = gatherAndFilterCandidatesForwarding(context, call, fci,
-                                                         inScope, inPoiScope,
-                                                         firstPoi);
-            // store candidates in c into nonPoiCandidates / poiCandidates
-            // append the first (non-poi) candidates to nonPoiCandidates
-            nonPoiCandidates.insert(nonPoiCandidates.end(),
-                                    c.begin(), c.begin() + firstPoi);
-            // append the later (poi) candidates to poiCandidates
-            poiCandidates.insert(poiCandidates.end(),
-                                 c.begin() + firstPoi, c.end());
+            gatherAndFilterCandidatesForwarding(context, call, fci,
+                                                inScope, inPoiScope,
+                                                nonPoiCandidates,
+                                                poiCandidates,
+                                                nonPoiForwardingTo,
+                                                poiForwardingTo);
           }
         }
       }
-      // now store the candidates in the result vector with the non-poi
-      // candidates first.
-      firstPoiCandidate = nonPoiCandidates.size();
-      // append nonPoiCandidates to candidates
-      candidates.insert(candidates.end(),
-                        nonPoiCandidates.begin(), nonPoiCandidates.end());
-      // append poiCandidates to candidates
-      candidates.insert(candidates.end(),
-                        poiCandidates.begin(), poiCandidates.end());
     }
   }
-
-  return candidates;
 }
 
 // Returns candidates (including instantiating candidates)
@@ -2899,6 +2914,13 @@ gatherAndFilterCandidatesForwarding(Context* context,
 //
 // call can be nullptr. in that event, ci.name() will be used
 // to find the call with that name.
+//
+// forwardingTo is a vector that will be empty unless forwardiing
+// is used for some candidates.
+//
+// If forwarding is used, it will have an element for each of the returned
+// candidates and will indicate the actual type that is passed
+// to the 'this' reciever formal.
 static CandidatesVec
 gatherAndFilterCandidates(Context* context,
                           const Call* call,
@@ -2906,7 +2928,7 @@ gatherAndFilterCandidates(Context* context,
                           const Scope* inScope,
                           const PoiScope* inPoiScope,
                           size_t& firstPoiCandidate,
-                          std::vector<int>& candidateIdxToForwardingIdx) {
+                          ForwardingInfoVec& forwardingInfo) {
   CandidatesVec candidates;
   NamedScopeSet visited;
   firstPoiCandidate = 0;
@@ -2969,9 +2991,29 @@ gatherAndFilterCandidates(Context* context,
   if (candidates.empty() && ci.isMethodCall() && ci.numActuals() >= 1) {
     const Type* receiverType = ci.actual(0).type().type();
     if (typeUsesForwarding(context, receiverType)) {
-      return gatherAndFilterCandidatesForwarding(context, call, ci,
-                                                 inScope, inPoiScope,
-                                                 firstPoiCandidate);
+      CandidatesVec nonPoiCandidates;
+      CandidatesVec poiCandidates;
+      ForwardingInfoVec nonPoiForwardingTo;
+      ForwardingInfoVec poiForwardingTo;
+
+      gatherAndFilterCandidatesForwarding(context, call, ci,
+                                          inScope, inPoiScope,
+                                          nonPoiCandidates, poiCandidates,
+                                          nonPoiForwardingTo, poiForwardingTo);
+
+      // append non-poi candidates
+      candidates.insert(candidates.end(),
+                        nonPoiCandidates.begin(), nonPoiCandidates.end());
+      forwardingInfo.insert(forwardingInfo.end(),
+                            nonPoiForwardingTo.begin(),
+                            nonPoiForwardingTo.end());
+      // append poi candidates
+      firstPoiCandidate = candidates.size();
+      candidates.insert(candidates.end(),
+                        poiCandidates.begin(), poiCandidates.end());
+      forwardingInfo.insert(forwardingInfo.end(),
+                            poiForwardingTo.begin(),
+                            poiForwardingTo.end());
     }
   }
 
@@ -2984,6 +3026,7 @@ gatherAndFilterCandidates(Context* context,
 static MostSpecificCandidates
 findMostSpecificAndCheck(Context* context,
                          const CandidatesVec& candidates,
+                         const ForwardingInfoVec& forwardingInfo,
                          size_t firstPoiCandidate,
                          const Call* call,
                          const CallInfo& ci,
@@ -2992,11 +3035,9 @@ findMostSpecificAndCheck(Context* context,
                          PoiInfo& poiInfo) {
 
   // find most specific candidates / disambiguate
-  MostSpecificCandidates mostSpecific = findMostSpecificCandidates(context,
-                                                                   candidates,
-                                                                   ci,
-                                                                   inScope,
-                                                                   inPoiScope);
+  MostSpecificCandidates mostSpecific =
+    findMostSpecificCandidates(context, candidates, forwardingInfo,
+                               ci, inScope, inPoiScope);
 
   // perform fn signature checking for any instantiated candidates that are used
   for (const TypedFnSignature* candidate : mostSpecific) {
@@ -3031,18 +3072,19 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
 
   // search for candidates at each POI until we have found candidate(s)
   size_t firstPoiCandidate = 0;
-  std::vector<int> candidateIdxToForwardingIdx;
+  ForwardingInfoVec forwardingInfo;
   CandidatesVec candidates = gatherAndFilterCandidates(context, call, ci,
                                                        inScope, inPoiScope,
                                                        firstPoiCandidate,
-                                                       candidateIdxToForwardingIdx);
+                                                       forwardingInfo);
 
   // * find most specific candidates / disambiguate
   // * check signatures
   // * gather POI info
 
   MostSpecificCandidates mostSpecific =
-    findMostSpecificAndCheck(context, candidates, firstPoiCandidate,
+    findMostSpecificAndCheck(context,
+                             candidates, forwardingInfo, firstPoiCandidate,
                              call, ci,
                              inScope, inPoiScope, poiInfo);
 
