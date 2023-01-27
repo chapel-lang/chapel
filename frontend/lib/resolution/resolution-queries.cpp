@@ -2782,7 +2782,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
       }
 
       forwardingCis.push_back(CallInfo(ci.name(),
-                                       ci.calledType(),
+                                       forwardType,
                                        ci.isMethodCall(),
                                        ci.hasQuestionArg(),
                                        ci.isParenless(),
@@ -2852,7 +2852,43 @@ gatherAndFilterCandidatesForwarding(Context* context,
       }
     }
 
-    // do not try forwarding (to avoid infinite loops)
+    // If no candidates were found and it's a method, try forwarding
+    // This supports the forwarding-to-forwarding case.
+    if (candidates.empty()) {
+      // We need to partition the candidates into POI candidates
+      // and non-POI candidates so that PoiInfo can be gathered
+      // only for candidates where that is relevant.
+      CandidatesVec nonPoiCandidates;
+      CandidatesVec poiCandidates;
+      for (auto fci : forwardingCis) {
+        candidates.clear();
+        if (fci.isMethodCall() && fci.numActuals() >= 1) {
+          const Type* receiverType = fci.actual(0).type().type();
+          if (typeUsesForwarding(context, receiverType)) {
+            size_t firstPoi = 0;
+            auto c = gatherAndFilterCandidatesForwarding(context, call, fci,
+                                                         inScope, inPoiScope,
+                                                         firstPoi);
+            // store candidates in c into nonPoiCandidates / poiCandidates
+            // append the first (non-poi) candidates to nonPoiCandidates
+            nonPoiCandidates.insert(nonPoiCandidates.end(),
+                                    c.begin(), c.begin() + firstPoi);
+            // append the later (poi) candidates to poiCandidates
+            poiCandidates.insert(poiCandidates.end(),
+                                 c.begin() + firstPoi, c.end());
+          }
+        }
+      }
+      // now store the candidates in the result vector with the non-poi
+      // candidates first.
+      firstPoiCandidate = nonPoiCandidates.size();
+      // append nonPoiCandidates to candidates
+      candidates.insert(candidates.end(),
+                        nonPoiCandidates.begin(), nonPoiCandidates.end());
+      // append poiCandidates to candidates
+      candidates.insert(candidates.end(),
+                        poiCandidates.begin(), poiCandidates.end());
+    }
   }
 
   return candidates;
