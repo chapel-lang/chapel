@@ -109,10 +109,11 @@ static void test3() {
     )"""";
 
   auto qt = resolveQualifiedTypeOfX(context, contents);
-  assert(qt.type()->isErroneousType());
 
-  size_t errCount = guard.realizeErrors();
+  size_t errCount = guard.realizeErrors(); // expecting no candidates error
   assert(errCount > 0);
+
+  assert(qt.type()->isErroneousType());
 }
 
 // forwarding statement that isn't forwarding var
@@ -222,14 +223,15 @@ static void test5b() {
     )"""";
 
   auto qt = resolveQualifiedTypeOfX(context, contents);
-  assert(qt.type()->isErroneousType());
 
-  size_t errCount = guard.realizeErrors();
+  size_t errCount = guard.realizeErrors(); // expecting ambiguity error
   assert(errCount > 0);
+
+  assert(qt.type()->isErroneousType());
 }
 
 // two forwarding statements -> two forwarding statements
-/*static void test6() {
+static void test6a() {
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
@@ -249,11 +251,25 @@ static void test5b() {
       record Inner2 {
         proc init() { }
       }
-      proc foo() { var x: Inner1; return x; }
-      proc bar() { var x: Inner2; return x; }
+      record Inner3 {
+        proc init() { }
+      }
+      record Inner4 {
+        proc init() { }
+      }
+
+      record Middle1 {
+        forwarding var field: Inner1;
+        forwarding var field: Inner2;
+      }
+      record Middle2 {
+        forwarding var field: Inner3;
+        forwarding var field: Inner4;
+      }
+
       record Outer {
-        forwarding foo();
-        forwarding bar();
+        forwarding var impl: Middle1;
+        forwarding var impl: Middle2;
       }
 
       var rec: Outer;
@@ -264,7 +280,66 @@ static void test5b() {
   auto qt = resolveQualifiedTypeOfX(context, contents);
   assert(qt.type()->isRealType());
 }
-*/
+// same, but expecting ambiguity error
+static void test6b() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  const char* contents =
+    R""""(
+    module M {
+      operator +=(ref lhs: int, rhs: int) { }
+      record Inner1 {
+        var i: int;
+        proc init() { this.i = 0; };
+        proc ref addOne() {
+          i += 1;
+          return 1.0;
+        }
+      }
+      record Inner2 {
+        proc init() { }
+      }
+      record Inner3 {
+        proc init() { }
+      }
+      record Inner4 {
+        var i: int;
+        proc init() { this.i = 0; };
+        proc ref addOne() {
+          i += 1;
+          return 1.0;
+        }
+      }
+
+      record Middle1 {
+        forwarding var field: Inner1;
+        forwarding var field: Inner2;
+      }
+      record Middle2 {
+        forwarding var field: Inner3;
+        forwarding var field: Inner4;
+      }
+
+      record Outer {
+        forwarding var impl: Middle1;
+        forwarding var impl: Middle2;
+      }
+
+      var rec: Outer;
+      var x = rec.addOne();
+    }
+    )"""";
+
+  auto qt = resolveQualifiedTypeOfX(context, contents);
+
+  size_t errCount = guard.realizeErrors(); // expecting ambiguity error
+  assert(errCount > 0);
+
+  assert(qt.type()->isErroneousType());
+}
+
 
 int main() {
   test1();
@@ -273,6 +348,8 @@ int main() {
   test4();
   test5a();
   test5b();
+  test6a();
+  test6b();
 
   return 0;
 }
