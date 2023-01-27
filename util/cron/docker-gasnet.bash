@@ -32,9 +32,9 @@ then
 ./hello -nl 1
 if [ $? -ne 0 ]
 then
-      echo "./hello failed inside chapel gasnet container" 
+      echo "./hello -nl 1 failed inside chapel gasnet container" 
       exit 1
       else
-      echo "./hello succeeded inside chapel gasnet container"
+      echo "./hello -nl 1 succeeded inside chapel gasnet container"
     fi
 
