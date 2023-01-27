@@ -13,16 +13,6 @@ module DistributedList {
 
     /*
 
-    Questions:
-    - how should bounds checking be handled?
-        Should it be turned on/off with a configurable parameter like the serial list?
-        Should methods throw or halt when an index is out of bounds?
-
-    - How should locking/concurrency work?
-        do operations that have the potential to shift values between locales need
-        to lock the entire list?
-
-
     Block layout:
 
     |     locale 0     |     locale 1     |      ...         |     locale N     |
@@ -37,7 +27,6 @@ module DistributedList {
 
     record distributedList {
         type eltType;
-
         param blockSize: int;
 
         pragma "no doc"
@@ -56,6 +45,7 @@ module DistributedList {
 
         pragma "no doc"
         var numEntries: atomic int;
+
 
         proc init(type eltType, param blockSize=DefaultBlockSize) {
             this.eltType = eltType;
@@ -399,6 +389,26 @@ module DistributedList {
             const (locIdx, blockIdx, eltIdx) = indicesFor(idx);
             this.blockLists[locIdx].set(blockIdx, eltIdx, x);
             return true;
+        }
+
+        // apply an updater to the value at the given index
+        proc ref update(idx: int, updater) throws {
+            import Reflection;
+
+            this.lockAll(); defer this.unlockAll();
+            assert(this.boundsCheck(idx));
+
+            const (locIdx, blockIdx, eltIdx) = this.indicesFor(idx);
+            on this.targetLocales[locIdx] {
+                ref slot = this.blockLists[locIdx].getRef(blockIdx, eltIdx);
+
+                if !Reflection.canResolveMethod(updater, "this", idx, slot) then
+                    compilerError('`list.update()` failed to resolve method ' +
+                                updater.type:string + '.this() for arguments (' +
+                                idx.type:string + ', ' + slot.type:string + ')');
+
+                updater(idx, slot);
+            }
         }
 
         // return a reference to the element at 'idx'
