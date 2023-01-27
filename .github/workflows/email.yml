@@ -29,7 +29,8 @@ jobs:
         with:
           max_attempts: 4
           retry_on_exit_code: 2
-          timeout_seconds: 60  
+          timeout_seconds: 180
+          polling_interval_seconds: 60  
           command: |
               curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
               if [ $? -ne 0 ]; then
