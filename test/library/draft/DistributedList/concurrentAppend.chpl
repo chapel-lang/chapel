@@ -1,8 +1,8 @@
 use DistributedList;
 use Barriers;
 
-config const numTasks = 10,
-             numAppendsPerTask = 10;
+config const numTasks = 5,
+             numAppendsPerTask = 5;
 
 var b = new Barrier(numTasks),
     dl = new distributedList(int);

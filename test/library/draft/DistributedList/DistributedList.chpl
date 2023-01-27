@@ -67,7 +67,7 @@ module DistributedList {
 
             // acquire memory to store the array
             for (loc, idx) in zip(this.targetLocales, this.locDom) do on loc do
-                this.blockLists[idx].acquireBlocks(numBlocksPerLoc + 1);
+                this.blockLists[idx].acquireBlocks(numBlocksPerLoc + DefaultNumBlocksPerLocale);
 
             // store full blocks on the appropriate locales
             for b in 0..#numBlocks {
@@ -95,7 +95,7 @@ module DistributedList {
 
         // append a new element to the end of the list
         proc ref append(in x: eltType): int {
-            this.lockAll();
+            this.lockAll(); defer this.unlockAll();
             const nextIdx = this.numEntries.read(),
                   (locIdx, blockIdx, eltIdx) = indicesFor(nextIdx);
 
@@ -106,7 +106,6 @@ module DistributedList {
 
             this.blockLists[locIdx].set(blockIdx, eltIdx, x);
             this.blockLists[locIdx].numFilled += 1;
-            this.unlockAll();
 
             return this.numEntries.fetchAdd(1);
         }
@@ -165,6 +164,7 @@ module DistributedList {
             return this.blockLists[locIdx].getRef(blockIdx, eltIdx);
         }
 
+        // return a reference to the list's last element
         proc last() ref {
             this.lockAll(); defer this.unlockAll();
             const (locIdx, blockIdx, eltIdx) = indicesFor(this.numEntries.read() - 1);
@@ -174,9 +174,10 @@ module DistributedList {
 
         // insert a new element at the given index. Shift all subsequent elements to the right
         proc ref insert(idx: int, in x: eltType): bool {
-            const nextIdx = this.numEntries.read();
+            this.lockAll(); defer this.unlockAll();
+
             if boundsCheck(idx) {
-                this.lockAll();
+                const nextIdx = this.numEntries.read();
 
                 // acquire memory for the new element if needed
                 const (nLoc, nBlock, nIdx) = indicesFor(nextIdx);
@@ -204,7 +205,6 @@ module DistributedList {
                 }
                 this.numEntries.add(1);
 
-                this.unlockAll();
                 return true;
             } else {
                 return false;
@@ -215,8 +215,8 @@ module DistributedList {
         proc ref insert(idx: int, arr: [?d] eltType): bool
             where d.rank == 1
         {
+            this.lockAll(); defer this.unlockAll();
             if this.boundsCheck(idx) {
-                this.lockAll();
 
                 const lastIdx = this.numEntries.read();
                 this.numEntries.add(d.size);
@@ -247,7 +247,6 @@ module DistributedList {
                     }
                 }
 
-                this.unlockAll();
                 return true;
             } else {
                 return false;
@@ -438,7 +437,6 @@ module DistributedList {
             var a : [dom] this.eltType;
 
             this.lockAll();
-            // Do we know that BlockCyclic will align indices to locales in the same fashion we have?
             coforall (loc, locIdx) in zip(this.targetLocales, this.locDom) do on loc {
                 for (elt, blockIdx, eltIdx) in this.blockLists[locIdx].valsAndIndices() do
                     a[this.globalIndex(locIdx, blockIdx, eltIdx)] = elt;
