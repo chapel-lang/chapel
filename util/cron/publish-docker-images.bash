@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# This script will build the docker images for amd and arm platform using buildx and publish the images to the docker registry
+# This script will build the docker images for 'amd' and 'arm' platforms using buildx and publish the images to the docker registry
 
 # Check if the script is run with correct arguemnrt if not fail
 if [  $# -ne 2  ]
@@ -20,7 +20,7 @@ log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
 start_docker
  
-# build_publish will build multi platform chapel docker image, tags it, and pushes to the docker repository .
+# build_publish will build multi platform chapel docker images, tags them, and pushes the images to the docker repository .
 
 build_publish(){
 
@@ -42,12 +42,12 @@ docker buildx build --platform=linux/amd64,linux/arm64 . --push -t $registry/$im
 }
 
 # Get the repository name and chapel version, Build chapel docker images and push to docker hub repository . 
-#build and publisg chapel docker image
+#build and publish chapel docker image
 cd $CHPL_HOME
 build_publish $1  chapel $2
-#build and publisg chapel-gasnet docker image
+#build and publish chapel-gasnet docker image
 cd $CHPL_HOME/util/packaging/docker/gasnet
 build_publish $1  chapel-gasnet $2
-#build and publisg chapel-gasnet-smp docker image
+#build and publish chapel-gasnet-smp docker image
 cd $CHPL_HOME/util/packaging/docker/gasnet-smp
 build_publish $1  chapel-gasnet-smp $2
