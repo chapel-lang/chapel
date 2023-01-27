@@ -20,6 +20,7 @@ set(SRCS
     commonFlags.cpp
     config.cpp
     driver.cpp
+    error-logging.cpp
     log.cpp
     PhaseTracker.cpp
     runpasses.cpp

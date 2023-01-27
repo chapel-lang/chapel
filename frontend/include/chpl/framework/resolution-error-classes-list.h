@@ -22,9 +22,24 @@ ERROR_CLASS(AmbiguousConfigSet,
     const uast::Variable*,
     std::string,
     std::string)
+ERROR_CLASS(AmbiguousIdentifier,
+    UniqueString,
+    ID,
+    std::vector<ID>)
 ERROR_CLASS(AsWithUseExcept, const uast::Use*, const uast::As*)
+WARNING_CLASS(Deprecation,
+    std::string,
+    const uast::AstNode*,
+    const uast::NamedDecl*)
 ERROR_CLASS(DotExprInUseImport, const uast::VisibilityClause*,
             const uast::VisibilityClause::LimitationKind, const uast::Dot*)
+WARNING_CLASS(HiddenFormal,
+    const uast::Formal*,
+    const uast::VisibilityClause*,
+    const resolution::VisibilityStmtKind)
+ERROR_CLASS(IfVarNonClassType,
+    const uast::Conditional*,
+    types::QualifiedType)
 WARNING_CLASS(ImplicitFileModule,
     const uast::AstNode*,
     const uast::Module*,
@@ -85,6 +100,10 @@ ERROR_CLASS(TupleDeclUnknownType, const uast::TupleDecl*)
 ERROR_CLASS(TupleExpansionNamedArgs, const uast::OpCall*, const uast::FnCall*)
 ERROR_CLASS(TupleExpansionNonTuple, const uast::FnCall*, const uast::OpCall*, types::QualifiedType)
 ERROR_CLASS(UnknownEnumElem, const uast::AstNode*, chpl::UniqueString, const uast::Enum*)
+WARNING_CLASS(Unstable,
+    std::string,
+    const uast::AstNode*,
+    const uast::NamedDecl*)
 ERROR_CLASS(UnsupportedAsIdent, const uast::As*, const uast::AstNode*)
 ERROR_CLASS(UseImportMultiplyDefined,
             chpl::UniqueString,
@@ -117,22 +136,4 @@ ERROR_CLASS(UseImportUnknownSym,
             bool)
 ERROR_CLASS(UseOfLaterVariable, const uast::AstNode*, ID)
 ERROR_CLASS(ValueUsedAsType, const uast::AstNode*, types::QualifiedType)
-ERROR_CLASS(IfVarNonClassType,
-    const uast::Conditional*,
-    types::QualifiedType)
-WARNING_CLASS(Deprecation,
-    std::string,
-    const uast::AstNode*,
-    const uast::NamedDecl*)
-WARNING_CLASS(Unstable,
-    std::string,
-    const uast::AstNode*,
-    const uast::NamedDecl*)
-WARNING_CLASS(HiddenFormal,
-    const uast::Formal*,
-    const uast::VisibilityClause*,
-    const resolution::VisibilityStmtKind)
-ERROR_CLASS(AmbiguousIdentifier,
-    UniqueString,
-    ID,
-    std::vector<ID>)
+
