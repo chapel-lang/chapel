@@ -27,12 +27,13 @@ config const infilename = "kmer_large_input.txt";
 //      ./kmer --k=7
 config const k = 4;
 
-// read in the input sequence from the file infile
-var sequence : string;
+// read in the input sequence from the file infile and strip out newlines
+var sequence, line : string;
 var f = open(infilename, iomode.r);
 var infile =  f.reader();
-infile.read(sequence);
-writeln(sequence);
+while infile.readLine(line) {
+  sequence += line.strip();
+}
 
 // declare a dictionary/map to store the count per kmer
 var nkmerCounts : map(string, int);
