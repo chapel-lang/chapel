@@ -43,9 +43,10 @@ if (CHPL_LLVM_COMP_ARGS)
 endif()
 string(STRIP ${CHPL_LLVM_LINK_ARGS} CHPL_LLVM_LINK_ARGS)
 
+add_executable(chpl)
 
 # need many of the outputs from printchplenv for the following values
-include_directories(
+target_include_directories(chpl PRIVATE
         ${SRC_DIR}/include/${CHPL_HOST_PLATFORM} # for free-bsd support (work-around)
         ${SRC_DIR}/include # needed all the time
         ${SRC_DIR}/../build/compiler/${CHPL_COMPILER_SUBDIR} # for enabling CONFIGURED_PREFIX in configured_prefix.h
@@ -54,7 +55,6 @@ include_directories(
         ${SRC_DIR}/../frontend/include # headers for dyno, needed all the time
         )
 
-add_executable(chpl)
 set(CHPL_CMAKE_PYTHON $ENV{CHPL_MAKE_PYTHON})
 
 # Write the compiler/main/LICENSE file, or update the existing file if the
@@ -96,7 +96,6 @@ add_subdirectory(AST)
 add_subdirectory(adt)
 add_subdirectory(backend)
 add_subdirectory(codegen)
-add_subdirectory(include)
 add_subdirectory(llvm)
 add_subdirectory(main)
 add_subdirectory(optimizations)

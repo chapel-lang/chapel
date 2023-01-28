@@ -132,7 +132,7 @@ endif()
 # lib/CMakeLists.txt defines the target ChplFrontend
 add_subdirectory(lib)
 # also make sure headers are included in the target
-add_subdirectory(include/chpl)
+target_include_directories(ChplFrontend-obj PRIVATE include/chpl)
 # Support for documentation of AST header
 add_subdirectory(doc)
 # Utils like C++ linters for this codebase
