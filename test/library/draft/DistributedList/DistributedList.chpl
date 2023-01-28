@@ -84,7 +84,11 @@ module DistributedList {
                     for r in 0..<remainder {
                         const idx = blockSize * numBlocks + r,
                               (_, blockLayerIdx, eltIdx) = indicesFor(idx);
-                        this.blockLists[rLocIdx].set(blockLayerIdx, eltIdx, arr[idx]);
+
+                        pragma "no auto destroy"
+                        var cpy = arr[idx];
+
+                        this.blockLists[rLocIdx].set(blockLayerIdx, eltIdx, cpy);
                     }
                     this.blockLists[rLocIdx].numFilled += remainder;
                 }
@@ -94,7 +98,7 @@ module DistributedList {
         }
 
         // append a new element to the end of the list
-        proc ref append(in x: eltType): int {
+        proc ref append(pragma "no auto destroy" in x: eltType): int {
             this.lockAll(); defer this.unlockAll();
             const nextIdx = this.numEntries.read(),
                   (locIdx, blockIdx, eltIdx) = indicesFor(nextIdx);
@@ -127,16 +131,18 @@ module DistributedList {
                 if this.blockLists[locIdx].numOpenBlocks() < locRanges[locIdx].size then
                     this.blockLists[locIdx].acquireBlocks();
 
-                for (blockRange, blockIdx) in zip(locRanges[locIdx], 0..) {
-                    const startingGlobalIdx = blockRange.first;
+                for ((globBlockStartIdx, globIdxRange), blockIdx) in zip(locRanges[locIdx], 0..) {
                     // handle full block
-                    if blockRange.size == this.blockSize {
-                        this.blockLists[locIdx].appendBlock(x[blockRange - nextIdx]);
+                    if globIdxRange.size == this.blockSize {
+                        this.blockLists[locIdx].appendBlock(x[globIdxRange - nextIdx]);
                     }
                     // handle partial block
                     else {
-                        for i in blockRange {
-                            this.blockLists[locIdx].set(blockIdx, i % this.blockSize, x[i - nextIdx]);
+                        for i in globIdxRange {
+                            pragma "no auto destroy"
+                            var cpy = x[i - nextIdx];
+
+                            this.blockLists[locIdx].set(blockIdx, i - globBlockStartIdx, cpy);
                             this.blockLists[locIdx].numFilled += 1;
                         }
                     }
@@ -173,7 +179,7 @@ module DistributedList {
         }
 
         // insert a new element at the given index. Shift all subsequent elements to the right
-        proc ref insert(idx: int, in x: eltType): bool {
+        proc ref insert(idx: int, pragma "no auto destroy" in x: eltType): bool {
             this.lockAll(); defer this.unlockAll();
 
             if boundsCheck(idx) {
@@ -191,9 +197,13 @@ module DistributedList {
                     const (sLoc, sBlock, sIdx) = indicesFor(i-1);
 
                     on this.targetLocales[dLoc] {
-                        this.blockLists[dLoc].set(dBlock, dIdx,
-                            this.blockLists[sLoc].take(sBlock, sIdx)
-                        );
+                        ref src = this.blockLists[sLoc].getRef(sBlock, sIdx);
+                        ref dst = this.blockLists[dLoc].getRef(dBlock, dIdx);
+                        _move(src, dst);
+
+                        // this.blockLists[dLoc].set(dBlock, dIdx,
+                        //     this.blockLists[sLoc].take(sBlock, sIdx)
+                        // );
                     }
                 }
 
@@ -207,6 +217,7 @@ module DistributedList {
 
                 return true;
             } else {
+                _destroy(x);
                 return false;
             }
         }
@@ -232,18 +243,25 @@ module DistributedList {
                         if this.blockLists[dLoc].numBlocks <= dBlock
                             then this.blockLists[dLoc].acquireBlocks();
 
-                        this.blockLists[dLoc].set(dBlock, dIdx,
-                            this.blockLists[sLoc].take(sBlock, sIdx)
-                        );
+                        ref src = this.blockLists[sLoc].getRef(sBlock, sIdx);
+                        ref dst = this.blockLists[dLoc].getRef(dBlock, dIdx);
+                        _move(src, dst);
+
+                        // this.blockLists[dLoc].set(dBlock, dIdx,
+                        //     this.blockLists[sLoc].take(sBlock, sIdx)
+                        // );
                         this.blockLists[dLoc].numFilled += 1;
                     }
                 }
 
                 // insert the new elements starting at idx
-                for (e, eIdx) in zip(arr, idx..) {
+                for (x, eIdx) in zip(arr, idx..) {
+                    pragma "no auto destroy"
+                    var cpy = x;
+
                     const (locIdx, blockIdx, eltIdx) = indicesFor(eIdx);
                     on this.targetLocales[locIdx] {
-                        this.blockLists[locIdx].set(blockIdx, eltIdx, e);
+                        this.blockLists[locIdx].set(blockIdx, eltIdx, cpy);
                     }
                 }
 
@@ -279,6 +297,7 @@ module DistributedList {
                   (locIdx, blockIdx, eltIdx) = indicesFor(lastIdx);
             this.numEntries.sub(1);
             this.blockLists[locIdx].numFilled -= 1;
+
             return this.blockLists[locIdx].take(blockIdx, eltIdx);
         }
 
@@ -304,13 +323,18 @@ module DistributedList {
                 const (sLoc, sBlock, sIdx) = indicesFor(i+1);
 
                 on this.targetLocales[dLoc] {
-                    this.blockLists[dLoc].set(dBlock, dIdx,
-                        this.blockLists[sLoc].take(sBlock, sIdx)
-                    );
+                    ref src = this.blockLists[sLoc].getRef(sBlock, sIdx);
+                    ref dst = this.blockLists[dLoc].getRef(dBlock, dIdx);
+                    _move(src, dst);
+
+                    // this.blockLists[dLoc].set(dBlock, dIdx,
+                    //     this.blockLists[sLoc].take(sBlock, sIdx)
+                    // );
                 }
             }
 
-            const (lastLocIdx, _, _) = indicesFor(lastIdx);
+            const (lastLocIdx, lastBlockIdx, lastEltIdx) = indicesFor(lastIdx);
+            _destroy(this.blockLists[lastLocIdx].getRef(lastBlockIdx, lastEltIdx));
             this.blockLists[lastLocIdx].numFilled -= 1;
             this.numEntries.sub(1);
 
@@ -331,12 +355,13 @@ module DistributedList {
         proc count(x: eltType): int {
             this.lockAll();
             var cnt = 0;
-            coforall locIdx in this.locDom with (+ reduce cnt) do
+            // coforall locIdx in this.locDom with (+ reduce cnt) do
+            for locIdx in this.locDom do
                 on this.targetLocales[locIdx] {
                     for val in this.blockLists[locIdx] {
                         if val == x then cnt += 1;
                     }
-            }
+                }
             this.unlockAll();
             return cnt;
         }
@@ -357,12 +382,14 @@ module DistributedList {
                   locRanges = rangesOnEachLocale(start..last, maxBlockIdx);
 
             var minIdx = max(int);
-            coforall locIdx in this.locDom with (min reduce minIdx)
+            // coforall locIdx in this.locDom with (min reduce minIdx)
+            for locIdx in this.locDom
                 do on this.targetLocales[locIdx] {
-                    forall (blockRange, blockIdx) in zip(locRanges[locIdx], 0..) with (min reduce minIdx) {
-                        for i in blockRange do
-                            if this.blockLists[locIdx].blocks[blockIdx][i % this.blockSize] == x {
-                                minIdx = min(minIdx, this.globalIndex(locIdx, blockIdx, i % this.blockSize));
+                    // forall (blockRange, blockIdx) in zip(locRanges[locIdx], 0..) with (min reduce minIdx) {
+                    for ((globBlockStartIdx, globIdxRange), blockIdx) in zip(locRanges[locIdx], 0..) {
+                        for i in globIdxRange do
+                            if this.blockLists[locIdx].getRef(blockIdx, i - globBlockStartIdx) == x {
+                                minIdx = min(minIdx, this.globalIndex(locIdx, blockIdx, i - globBlockStartIdx));
                                 break;
                             }
                     }
@@ -380,10 +407,13 @@ module DistributedList {
         }
 
         // set the value at 'idx'
-        proc ref set(idx: int, in x: eltType): bool {
+        proc ref set(idx: int, pragma "no auto destroy" in x: eltType): bool {
             this.lockAll(); defer this.unlockAll();
 
-            if !this.boundsCheck(idx) then return false;
+            if !this.boundsCheck(idx) {
+                _destroy(x);
+                return false;
+            }
 
             const (locIdx, blockIdx, eltIdx) = indicesFor(idx);
             this.blockLists[locIdx].set(blockIdx, eltIdx, x);
@@ -405,7 +435,6 @@ module DistributedList {
                     compilerError('`list.update()` failed to resolve method ' +
                                 updater.type:string + '.this() for arguments (' +
                                 idx.type:string + ', ' + slot.type:string + ')');
-
                 updater(idx, slot);
             }
         }
@@ -466,6 +495,14 @@ module DistributedList {
         // ---------------------
 
         pragma "no doc"
+        inline proc deinit() {
+            for (loc, locIdx) in zip(this.targetLocales, this.locDom) do on loc {
+                this.blockLists[locIdx]._emtpy();
+                this.numEntries.write(0);
+            }
+        }
+
+        pragma "no doc"
         // (locale_idx, block_idx, entry_idx_in_block)
         inline proc indicesFor(idx: int): (int, int, int) {
             return (
@@ -500,27 +537,33 @@ module DistributedList {
         pragma "no doc"
         // split a set of global indices across the corresponding blocks on each locale
         proc rangesOnEachLocale(r: range(idxType=int), numBlockLayers: int):
-            [this.locDom][0..numBlockLayers] range(idxType=int)
+            [this.locDom][0..numBlockLayers] (int, range(idxType=int))
         {
-            var locRanges : [this.locDom][0..numBlockLayers] range(idxType=int);
+            var startsAndRanges : [this.locDom][0..numBlockLayers] (int, range(idxType=int));
 
             for locIdx in this.locDom {
                 for locBlockIdx in 0..numBlockLayers {
                     const blockStartingIdx = globalIndex(locIdx, locBlockIdx, 0),
                           blockRange = blockStartingIdx..#blockSize;
 
-                    locRanges[locIdx][locBlockIdx] =
+                    const globalIdxRange =
                         if r.contains(blockRange) then blockRange
                         else if r.contains(blockRange.first) then blockRange.first..r.last
                         else if r.contains(blockRange.last) then r.first..blockRange.last
                         else if blockRange.contains(r) then r
                         else 0..<0;
+
+                    startsAndRanges[locIdx][locBlockIdx] = (blockStartingIdx, globalIdxRange);
                 }
             }
 
-            return locRanges;
+            return startsAndRanges;
         }
 
+        pragma "no doc"
+        inline proc _destroy(ref item: eltType) {
+            chpl__autoDestroy(item);
+        }
     }
 
     // a list of blocks stored on a single locale
@@ -535,7 +578,6 @@ module DistributedList {
 
         var blocks: _ddata(_ddata(eltType)) = nil;
 
-        var capacity: int;      // the total number of elements this blockList can hold
         var numBlocks: int;     // the total number of blocks currently allocated
         var numFilled: int;     // the total number of occupied elements in this blockList
                                 //  (the caller is expected to update 'numFilled' manually
@@ -545,61 +587,58 @@ module DistributedList {
         proc init(type eltType, param blockSize: int) {
             this.eltType = eltType;
             this.blockSize = blockSize;
-            this.capacity = DefaultNumBlocksPerLocale * blockSize;
             this.numBlocks = DefaultNumBlocksPerLocale;
             this.numFilled = 0;
 
             this.complete();
-            this.blocks = _ddata_allocate(_ddata(this.eltType), DefaultNumBlocksPerLocale);
-            for i in 0..<DefaultNumBlocksPerLocale do this.blocks[i] = makeBlock();
-        }
-
-        // allocate and return a new block
-        proc makeBlock() {
-            var callPostAlloc = false;
-            var ret = _ddata_allocate_noinit(eltType, this.blockSize, callPostAlloc);
-            if callPostAlloc then _ddata_allocate_postalloc(ret, this.blockSize);
-            return ret;
+            on this {
+                this.blocks = this._makeBlockArray(this.numBlocks);
+                for i in 0..<this.numBlocks do this.blocks[i] = this._makeBlock();
+            }
         }
 
         // replace the current blocks with n new blocks
         //  n defaults to twice the current number of blocks
         proc acquireBlocks(n: int = this.numBlocks * 2) {
-            // allocate new blocks
-            assert(n >= this.numBlocks);
-            var blocks_new = _ddata_allocate(_ddata(this.eltType), n);
+            on this {
+                // allocate new blocks
+                assert(n >= this.numBlocks);
+                var blocks_new = this._makeBlockArray(n);
 
-            // transfer the old data into the new blocks
-            //  and free the old blocks
-            for b in 0..#this.numBlocks do
-                if this.blocks[b] == nil
-                    then blocks_new[b] = makeBlock();
-                    else blocks_new[b] = this.blocks[b];
+                // transfer the old data into the new blocks
+                //  and free the old blocks
+                for b in 0..#this.numBlocks do
+                    if this.blocks[b] == nil
+                        then blocks_new[b] = this._makeBlock();
+                        else blocks_new[b] = this.blocks[b];
 
-            // allocate the remaining space
-            for b in this.numBlocks..<n {
-                assert(blocks_new[b] == nil);
-                blocks_new[b] = makeBlock();
+                // allocate the remaining space
+                for b in this.numBlocks..<n {
+                    assert(blocks_new[b] == nil);
+                    blocks_new[b] = this._makeBlock();
+                    assert(blocks_new[b] != nil);
+                }
+
+                // replace old arrays
+                this._freeBlockArray(this.blocks, this.numBlocks);
+                this.blocks = nil;
+                this.blocks = blocks_new;
+                this.numBlocks = n;
             }
 
-            // free old blocks
-            _ddata_free(this.blocks, this.numBlocks);
-
-            // set meta parameters
-            this.blocks = blocks_new;
-            this.capacity = n * this.blockSize;
-            this.numBlocks = n;
         }
 
         // how many full blocks are allocated but not occupied?
         inline proc numOpenBlocks(): int {
-            return this.numBlocks - (this.numFilled * this.blockSize);
+            return this.numBlocks - (this.numFilled / this.blockSize);
         }
 
         // set the value of an element with a particular block_idx and elt_idx to a given value
-        proc set(block_idx: int, elt_idx: int, in x: eltType) {
+        proc set(block_idx: int, elt_idx: int, pragma "no auto destroy" in x: eltType) {
             assert(block_idx < this.numBlocks);
-            _move(x, this.blocks[block_idx][elt_idx]);
+            ref slot = this.blocks[block_idx][elt_idx];
+            _destroy(slot);
+            _move(x, slot);
         }
 
         // remove and return the value at a given block_idx and elt_idx
@@ -610,6 +649,7 @@ module DistributedList {
 
         // return a reference to an element at a particular block_idx and elt_idx
         proc getRef(block_idx: int, elt_idx: int) ref {
+            assert(this.blocks[block_idx] != nil);
             ref ret = this.blocks[block_idx][elt_idx];
             return ret;
         }
@@ -623,31 +663,46 @@ module DistributedList {
             assert(nextBlockIdx < this.numBlocks);
             assert(this.blocks[nextBlockIdx] != nil);
 
-            for (x, i) in zip(arr, 0..) do
-                this.set(nextBlockIdx, i, x);
+            for (x, i) in zip(arr, 0..) {
+                pragma "no auto destroy"
+                var cpy = x;
+                this.set(nextBlockIdx, i, cpy);
+            }
             this.numFilled += d.size;
         }
 
         // free this blockList's memory and reallocate the default # of blocks
         proc clear() {
-            // free each block
-            for b in 0..#this.numBlocks {
-                if this.blocks[b] == nil
-                    then continue;
-                    else _ddata_free(this.blocks[b], this.blockSize);
-            }
-
-            // free blocks array
-            _ddata_free(this.blocks, this.numBlocks);
+            // free all memory
+            this._emtpy();
 
             // reallocate the default number of blocks
-            this.blocks = _ddata_allocate(_ddata(this.eltType), DefaultNumBlocksPerLocale);
-            for i in 0..<DefaultNumBlocksPerLocale do this.blocks[i] = makeBlock();
+            this.blocks = this._makeBlockArray(DefaultNumBlocksPerLocale);
+            for i in 0..<DefaultNumBlocksPerLocale do this.blocks[i] = this._makeBlock();
 
             // set meta parameters
             this.numFilled = 0;
             this.numBlocks = DefaultNumBlocksPerLocale;
-            this.capacity = DefaultNumBlocksPerLocale * this.blockSize;
+            
+        }
+
+        proc _emtpy() {
+            // free each block
+            for b in 0..#this.numBlocks {
+                if this.blocks[b] == nil { continue; }
+                else {
+                    for i in 0..<this.blockSize {
+                        ref x = this.blocks[b][i];
+                        _destroy(x);
+                    }
+                    _ddata_free(this.blocks[b], this.blockSize);
+                    this.blocks[b] = nil;
+                }
+            }
+
+            // free blocks array
+            this._freeBlockArray(this.blocks, this.numBlocks);
+            this.blocks = nil;
         }
 
         // yield all values along with their corresponding block_idx and elt_idx
@@ -682,6 +737,26 @@ module DistributedList {
             for j in 0..<(this.numFilled % this.blockSize) {
                 yield this.getRef(numFullBlocks, j);
             }
+        }
+
+        proc _freeBlockArray(data: _ddata(_ddata(eltType)), size: int) {
+            _ddata_free(data, size);
+        }
+
+        proc _makeBlockArray(size: int) {
+            return _ddata_allocate(_ddata(eltType), size);
+        }
+
+        proc _makeBlock() {
+            var callPostAlloc = false;
+            var ret = _ddata_allocate_noinit(eltType, this.blockSize, callPostAlloc);
+            if callPostAlloc then _ddata_allocate_postalloc(ret, this.blockSize);
+            return ret;
+        }
+
+        pragma "no doc"
+        inline proc _destroy(ref item: eltType) {
+            chpl__autoDestroy(item);
         }
     }
 

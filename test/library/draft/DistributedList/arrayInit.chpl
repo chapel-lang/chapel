@@ -1,6 +1,8 @@
 use DistributedList;
 
-var a = [i in 0..<10000] i;
+config const n = 10000;
+
+var a = [i in 0..<n] i;
 var dl = new distributedList(a);
 var a_ = dl.toArray();
 
