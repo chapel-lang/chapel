@@ -152,6 +152,7 @@ WhileDoStmt* WhileDoStmt::copyInner(SymbolMap* map)
   WhileDoStmt* retval   = new WhileDoStmt(condExpr, body);
 
   retval->copyInnerShare(*this, map);
+  retval->userLabel = this->userLabel;
 
   return retval;
 }
