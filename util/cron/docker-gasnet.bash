@@ -2,8 +2,7 @@
 # This script will compile and execute hello world inside a docker-gasnet and docker-gasnet-smp container(s) and check if chapel is installed
 
 
-#check chpl install inside chapel(gasnet/gasnet-smp) container
-set -e 
+#check chpl install inside chapel(gasnet/gasnet-smp) container 
 which chpl
 if [ $? -ne 0 ]
 then
