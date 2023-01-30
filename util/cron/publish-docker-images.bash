@@ -2,7 +2,7 @@
 
 # This script will build the docker images for 'amd' and 'arm' platforms using buildx and publish the images to the docker registry
 
-# Check if the script is run with correct arguemnrt if not fail
+# Check if the script is run with correct arguement if not fail
 if [  $# -ne 2  ]
 then
     echo " Docker repository and/or image-version not supplied "
