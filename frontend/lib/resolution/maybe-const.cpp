@@ -278,6 +278,15 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
       if (fa->hasActual()) {
         const AstNode* actualAst = actualAsts[actualIdx];
         Access access = accessForQualifier(fa->formalType().kind());
+
+        // check for const-ness errors
+        if (access == REF) {
+          ResolvedExpression& actualRe = rv.byAst(actualAst);
+          if (actualRe.type().isConst()) {
+            context->error(actualAst, "cannot pass const to non-const");
+          }
+        }
+
         exprStack.push_back(ExprStackEntry(actualAst, access,
                                            fn, formalIdx));
 
