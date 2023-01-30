@@ -26,7 +26,7 @@ if [ $? -ne 0 ]
 then
       echo "hello.chpl compile failed inside chapel container" 
       exit 1
-      else
+else
       echo "hello.chpl compiled inside chapel container"
 fi
 
@@ -35,7 +35,7 @@ if [ $? -ne 0 ]
 then
       echo "./hello -nl 1 failed inside chapel gasnet container" 
       exit 1
-      else
+else
       echo "./hello -nl 1 succeeded inside chapel gasnet container"
 fi
 
