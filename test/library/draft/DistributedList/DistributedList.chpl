@@ -190,7 +190,7 @@ module DistributedList {
                 on this.targetLocales[nLoc] {
                     if this.blockLists[nLoc].numBlocks <= nBlock
                         then this.blockLists[nLoc].acquireBlocks();
-                    
+
                     this.blockLists[nLoc].numFilled += 1;
                 }
 
@@ -231,6 +231,7 @@ module DistributedList {
 
                 // shift all elements after 'idx' d.size indices to the right
                 // TODO: aggregate communication instead of doing inter-locale shifts one element at a time
+                // TODO: abstract out a separate method to shift elements (for use in both insert methods)
                 for destIdx in idx+d.size..lastIdx+d.size by -1 {
                     const (dLoc, dBlock, dIdx) = indicesFor(destIdx);
                     const (sLoc, sBlock, sIdx) = indicesFor(destIdx - d.size);
@@ -244,9 +245,6 @@ module DistributedList {
                         ref dst = this.blockLists[dLoc].getRef(dBlock, dIdx);
                         _move(src, dst);
 
-                        // this.blockLists[dLoc].set(dBlock, dIdx,
-                        //     this.blockLists[sLoc].take(sBlock, sIdx)
-                        // );
                         if destIdx > lastIdx
                             then this.blockLists[dLoc].numFilled += 1;
                     }
@@ -324,10 +322,6 @@ module DistributedList {
                     ref src = this.blockLists[sLoc].getRef(sBlock, sIdx);
                     ref dst = this.blockLists[dLoc].getRef(dBlock, dIdx);
                     _move(src, dst);
-
-                    // this.blockLists[dLoc].set(dBlock, dIdx,
-                    //     this.blockLists[sLoc].take(sBlock, sIdx)
-                    // );
                 }
             }
 
@@ -349,13 +343,13 @@ module DistributedList {
             this.unlockAll();
         }
 
-        // return the number times 'x' occurs in the list
+        // return the number of times 'x' occurs in the list
         proc count(x: eltType): int {
             this.lockAll();
             var cnt = 0;
-            // coforall locIdx in this.locDom with (+ reduce cnt) do
-            for locIdx in this.locDom do
-                on this.targetLocales[locIdx] {
+            coforall locIdx in this.locDom with (+ reduce cnt)
+            // for locIdx in this.locDom
+                do on this.targetLocales[locIdx] {
                     for val in this.blockLists[locIdx] {
                         if val == x then cnt += 1;
                     }
@@ -381,11 +375,11 @@ module DistributedList {
                   locRanges = rangesOnEachLocale(start..last, maxBlockIdx);
 
             var minIdx = max(int);
-            // coforall locIdx in this.locDom with (min reduce minIdx)
-            for locIdx in this.locDom
+            coforall locIdx in this.locDom with (min reduce minIdx)
+            // for locIdx in this.locDom
                 do on this.targetLocales[locIdx] {
-                    // forall (blockRange, blockIdx) in zip(locRanges[locIdx], 0..) with (min reduce minIdx) {
-                    for ((globBlockStartIdx, globIdxRange), blockIdx) in zip(locRanges[locIdx], 0..) {
+                    forall ((globBlockStartIdx, globIdxRange), blockIdx) in zip(locRanges[locIdx], 0..) with (min reduce minIdx) {
+                    // for ((globBlockStartIdx, globIdxRange), blockIdx) in zip(locRanges[locIdx], 0..) {
                         for i in globIdxRange do
                             if this.blockLists[locIdx].getRef(blockIdx, i - globBlockStartIdx) == x {
                                 minIdx = min(minIdx, this.globalIndex(locIdx, blockIdx, i - globBlockStartIdx));
@@ -440,7 +434,7 @@ module DistributedList {
 
         // return a reference to the element at 'idx'
         proc ref this(idx: int) ref {
-            assert(this.boundsCheck(idx));
+            assert(this.boundsCheck(idx), "invalid list index: " + idx:string);
             const (locIdx, blockIdx, eltIdx) = indicesFor(idx);
             return this.blockLists[locIdx].getRef(blockIdx, eltIdx);
         }
@@ -459,12 +453,11 @@ module DistributedList {
 
         // create a block-cyclic distributed array from the distributed list
         proc toArray(): [] eltType {
+            this.lockAll();
             const dom = {0..<this.numEntries.read()} dmapped
                 BlockCyclic(startIdx=0, blocksize=this.blockSize, targetLocales=this.targetLocales);
 
             var a : [dom] this.eltType;
-
-            this.lockAll();
             coforall (loc, locIdx) in zip(this.targetLocales, this.locDom) do on loc {
                 for (elt, blockIdx, eltIdx) in this.blockLists[locIdx].valsAndIndices() do
                     a[this.globalIndex(locIdx, blockIdx, eltIdx)] = elt;
@@ -474,6 +467,7 @@ module DistributedList {
             return a;
         }
 
+        // TODO: make a parallel iterator
         iter these() {
             for i in 0..<this.numEntries.read() {
                 const (locIdx, blockIdx, eltIdx) = indicesFor(i);
@@ -489,6 +483,8 @@ module DistributedList {
             fr.write(']');
         }
 
+        // TODO: readThis()?
+
         // ---------------------
         // Helper methods
         // ---------------------
@@ -497,8 +493,8 @@ module DistributedList {
         inline proc deinit() {
             for (loc, locIdx) in zip(this.targetLocales, this.locDom) do on loc {
                 this.blockLists[locIdx]._emtpy();
-                this.numEntries.write(0);
             }
+            this.numEntries.write(0);
         }
 
         pragma "no doc"
@@ -682,7 +678,6 @@ module DistributedList {
             // set meta parameters
             this.numFilled = 0;
             this.numBlocks = DefaultNumBlocksPerLocale;
-            
         }
 
         proc _emtpy() {
