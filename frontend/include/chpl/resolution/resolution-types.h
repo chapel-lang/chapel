@@ -38,7 +38,7 @@
 namespace chpl {
 namespace resolution {
 
-typedef enum {
+enum struct DefaultsPolicy {
   /** Do not use default values when determining field type. */
   IGNORE_DEFAULTS,
   /** Use default values when determining field type. */
@@ -48,7 +48,7 @@ typedef enum {
      for all other fields. This policy is useful when determining the
      genericity of individual fields. */
   USE_DEFAULTS_OTHER_FIELDS
-} DefaultsPolicy;
+};
 
 /**
   An untyped function signature. This is really just the part of a function
