@@ -3,19 +3,20 @@
 
 
 #check chpl install inside chapel(gasnet/gasnet-smp) container
+set -e 
 which chpl
 if [ $? -ne 0 ]
 then
       echo "which chpl failed inside chapel container"
       exit 1
-    fi
+fi
 
 chpl --version
 if [ $? -ne 0 ]
 then
       echo "chpl --version failed inside chapel container"
       exit 1
-    fi
+fi
 
   
 # Compile and execute chapel hello inside the container
@@ -27,7 +28,7 @@ then
       exit 1
       else
       echo "hello.chpl compiled inside chapel container"
-    fi
+fi
 
 ./hello -nl 1
 if [ $? -ne 0 ]
@@ -36,5 +37,5 @@ then
       exit 1
       else
       echo "./hello -nl 1 succeeded inside chapel gasnet container"
-    fi
+fi
 

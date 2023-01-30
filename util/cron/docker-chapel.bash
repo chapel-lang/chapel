@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 #This script will compile and execute helloworld inside a docker image and check if chapel is installed correctly
 
-# Check if chapel is isntalled correctly
+# Check if chapel is installed correctly
 which chpl
 if [ $? -ne 0 ]
 then
       echo "which chpl failed inside chapel container"
       exit 1
-    fi
+fi
 
 chpl --version
 if [ $? -ne 0 ]
 then
       echo "chpl --version failed inside chapel container"
       exit 1
-    fi
+fi
 
   
 # Compile and execute chapel hello
@@ -26,7 +26,7 @@ then
       exit 1
       else
       echo "hello.chpl compiled inside chapel container"
-    fi
+fi
 
 ./hello
 if [ $? -ne 0 ]
@@ -35,4 +35,4 @@ then
       exit 1
       else
       echo "./hello secceded inside chapel container"
-    fi
+fi

@@ -10,7 +10,7 @@ log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
 start_docker
  
-# build_image function takes image name and docker script location as argumants.
+# build_image function takes image name and docker script location as arguments.
 # Builds the image with the name from arg$1, runs the container and execute the install and verify script located in the location $2.
 build_image(){
 
