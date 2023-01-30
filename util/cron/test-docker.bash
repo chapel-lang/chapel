@@ -26,13 +26,13 @@ echo 'writeln("Hello, world!");' > hello.chpl
 docker run  -i $imageName  <  $script
  
 CONTAINER_RUN=$?
-    if [ $CONTAINER_RUN -ne 0 ]
-    then
+if [ $CONTAINER_RUN -ne 0 ]
+then
       echo "docker commands failed inside chapel $imageName container" 
       exit 1
-      else
+else
       echo "docker commands succeeded inside chapel $imageName container"
-    fi   
+fi   
 
 }
 
