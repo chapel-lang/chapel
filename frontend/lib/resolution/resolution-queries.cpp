@@ -2765,6 +2765,12 @@ gatherAndFilterCandidatesForwarding(Context* context,
       // compute the actuals
       // first, the method receiver (from the forwarded type)
       actuals.push_back(CallInfoActual(forwardType, USTR("this")));
+
+      // Check that ci was consistent with passing the receiver by name
+      // If it turns out to not always be the case for a good reason,
+      // this assert can be removed.
+      CHPL_ASSERT(ci.actual(0).byName() == USTR("this"));
+
       // then, the other actuals, if any, from ci
       int numActuals = ci.numActuals();
       for (int j = 1; j < numActuals; j++) {
