@@ -24,7 +24,7 @@ if [ $? -ne 0 ]
 then
       echo "hello.chpl compile failed inside chapel container" 
       exit 1
-      else
+else
       echo "hello.chpl compiled inside chapel container"
 fi
 
@@ -33,6 +33,6 @@ if [ $? -ne 0 ]
 then
       echo "./hello failed inside chapel container" 
       exit 1
-      else
+else
       echo "./hello secceded inside chapel container"
 fi
