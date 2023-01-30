@@ -173,13 +173,6 @@ struct Resolver {
                                  ResolutionResultByPostorderID& byPostorder,
                                  DefaultsPolicy defaultsPolicy);
 
-  // set up Resolver to resolve Forwarding statements
-  static Resolver
-  createForForwarding(Context* context,
-                      const uast::AggregateDecl* decl,
-                      const types::CompositeType* compositeType,
-                      ResolutionResultByPostorderID& byPostorder);
-
   // set up Resolver to resolve instantiated field declaration types
   // without knowing the CompositeType
   static Resolver

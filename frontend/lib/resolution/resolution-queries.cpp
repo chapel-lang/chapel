@@ -476,9 +476,17 @@ static void helpSetFieldTypes(const AstNode* ast,
     for (auto decl : tup->decls()) {
       helpSetFieldTypes(decl, r, hasInit, fields);
     }
+  } else if (auto fwd = ast->toForwardingDecl()) {
+    if (auto fwdTo = fwd->expr()) {
+      if (fwdTo->isDecl()) {
+        helpSetFieldTypes(fwd->expr(), r, initedInParent, fields);
+      }
+      fields.addForwarding(fwd->id(), r.byAst(fwdTo).type());
+    }
   }
 
-  // no action needed for other types of Decls since they aren't fields.
+  // no action needed for other types of Decls since they aren't fields
+  // and can't contain fields
 }
 
 static const Type* const&
@@ -598,7 +606,8 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
       // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
       if (child->isVarLikeDecl() ||
           child->isMultiDecl() ||
-          child->isTupleDecl()) {
+          child->isTupleDecl() ||
+          child->isForwardingDecl()) {
         const ResolvedFields& resolvedFields =
           resolveFieldDecl(context, ct, child->id(), defaultsPolicy);
         // Copy resolvedFields into result
@@ -608,6 +617,12 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
                           resolvedFields.fieldHasDefaultValue(i),
                           resolvedFields.fieldDeclId(i),
                           resolvedFields.fieldType(i));
+        }
+        // Copy resolved forwarding statements into the result
+        n = resolvedFields.numForwards();
+        for (int i = 0; i < n; i++) {
+          result.addForwarding(resolvedFields.forwardingStmt(i),
+                               resolvedFields.forwardingToType(i));
         }
       }
     }
@@ -649,59 +664,6 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
   return f;
 }
 
-static const owned<ResolvedForwarding>&
-forwardingForTypeDeclQuery(Context* context, const CompositeType* ct) {
-  QUERY_BEGIN(forwardingForTypeDeclQuery, context, ct);
-
-  owned<ResolvedForwarding> result;
-
-  const AggregateDecl* ad = nullptr;
-  if (auto ast = parsing::idToAst(context, ct->id())) {
-    ad = ast->toAggregateDecl();
-  }
-
-  if (ad != nullptr) {
-    ResolutionResultByPostorderID rr;
-    auto visitor = Resolver::createForForwarding(context, ad, ct, rr);
-    // Performance: do the parent type & fields really need to be visited here?
-
-    // visit the parent type
-    if (auto cls = ad->toClass()) {
-      if (auto parentClassExpr = cls->parentClass()) {
-        parentClassExpr->traverse(visitor);
-      }
-    }
-    // visit the field declarations & forwarding declarations
-    for (auto child: ad->children()) {
-      if (child->isVariable() ||
-          child->isMultiDecl() ||
-          child->isTupleDecl() ||
-          child->isForwardingDecl()) {
-        child->traverse(visitor);
-      }
-    }
-
-    // extract the type information from the forwarding declarations
-    std::vector<ResolvedForwarding::ForwardingTo> forwarding;
-    for (auto child: ad->children()) {
-      if (auto fwd = child->toForwardingDecl()) {
-        if (auto expr = fwd->expr()) {
-          const ResolvedExpression& re = rr.byAst(expr);
-          auto fwd = ResolvedForwarding::ForwardingTo(expr->id(), re.type());
-          forwarding.push_back(std::move(fwd));
-        }
-      }
-    }
-
-    result = toOwned(new ResolvedForwarding(std::move(forwarding)));
-
-  } else {
-    CHPL_ASSERT(false && "case not handled");
-  }
-
-  return QUERY_END(result);
-}
-
 static bool typeUsesForwarding(Context* context, const Type* receiverType) {
   if (auto ct = receiverType->getCompositeType()) {
     if (ct->isBasicClassType() || ct->isRecordType() || ct->isUnionType()) {
@@ -729,13 +691,14 @@ checkForwardingCycles(Context* context,
       return true;
     }
 
-    const ResolvedForwarding* r = forwardingForTypeDeclQuery(context, ct).get();
+    const ResolvedFields& r = fieldsForTypeDecl(context, ct,
+                                                DefaultsPolicy::USE_DEFAULTS);
 
     // Check for cycles. If a cycle is detected, emit an error
-    // and return nulltpr.
-    int n = r->numForwards();
+    // and return 'true'.
+    int n = r.numForwards();
     for (int i = 0; i < n; i++) {
-      auto qt = r->receiverType(i);
+      auto qt = r.forwardingToType(i);
       if (auto t = qt.type()) {
         if (auto forwardingCt = t->getCompositeType()) {
           bool cyc = checkForwardingCycles(context, forwardingCt, visited);
@@ -764,27 +727,16 @@ forwardingCycleCheckQuery(Context* context, const CompositeType* ct) {
   return QUERY_END(result);
 }
 
-
-// runs forwardingForTypeDeclQuery as needed and then checks for cycles.
-//
-// if the type does not use forwarding or a cycle is detected, returns nullptr.
-// otherwise, returns a ResolvedForwarding that contains information
-// about the resolved forwarding expressions.
-const ResolvedForwarding*
-forwardingForTypeDecl(Context* context, const CompositeType* ct) {
+// returns 'true' if a fowarding cycle was detected & error emitted
+static bool
+emitErrorForForwardingCycles(Context* context, const CompositeType* ct) {
+  bool cycleFound = false;
   if (typeUsesForwarding(context, ct)) {
-    const ResolvedForwarding* r = forwardingForTypeDeclQuery(context, ct).get();
-    if (r != nullptr) {
-      // check for cycles as well
-      bool cycleFound = forwardingCycleCheckQuery(context, ct);
-      if (!cycleFound) {
-        return r;
-      }
-      // fall through to return null if a cycle is found
-    }
+    // check for cycles
+    cycleFound = forwardingCycleCheckQuery(context, ct);
   }
 
-  return nullptr;
+  return cycleFound;
 }
 
 static const CompositeType* getTypeWithDefaults(Context* context,
@@ -1635,7 +1587,8 @@ const TypedFnSignature* instantiateSignature(Context* context,
     for (auto child: ad->children()) {
       if (child->isVariable() ||
           child->isMultiDecl() ||
-          child->isTupleDecl()) {
+          child->isTupleDecl() ||
+          child->isForwardingDecl()) {
         child->traverse(visitor);
       }
     }
@@ -2031,7 +1984,8 @@ const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
     for (auto child : ad->children()) {
       if (child->isVarLikeDecl() ||
           child->isMultiDecl() ||
-          child->isTupleDecl()) {
+          child->isTupleDecl() ||
+          child->isForwardingDecl()) {
         auto res = Resolver::createForScopeResolvingField(context, ad, child, result);
         child->traverse(res);
       }
@@ -2780,13 +2734,23 @@ gatherAndFilterCandidatesForwarding(Context* context,
 
   const Type* receiverType = ci.actual(0).type().type();
 
-  // Resolve the forwarding expression's type
-  const ResolvedForwarding* forwards = nullptr;
+  // Resolve the forwarding expression's types & decide if we
+  // want to consider forwarding.
+  const ResolvedFields* forwards = nullptr;
   UniqueString name = ci.name();
   if (name == USTR("init") || name == USTR("init=") || name == USTR("deinit")) {
     // these are exempt from forwarding
   } else if (auto ct = receiverType->getCompositeType()) {
-    forwards = forwardingForTypeDecl(context, ct);
+    auto useDefaults = DefaultsPolicy::USE_DEFAULTS;
+    const ResolvedFields& fields = fieldsForTypeDecl(context, ct,
+                                                     useDefaults);
+    if (fields.numForwards() > 0) {
+      // and check for cycles
+      bool cycleFound = emitErrorForForwardingCycles(context, ct);
+      if (cycleFound == false) {
+        forwards = &fields;
+      }
+    }
   }
 
   if (forwards) {
@@ -2796,7 +2760,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
 
     int numForwards = forwards->numForwards();
     for (int i = 0; i < numForwards; i++) {
-      QualifiedType forwardType = forwards->receiverType(i);
+      QualifiedType forwardType = forwards->forwardingToType(i);
       std::vector<CallInfoActual> actuals;
       // compute the actuals
       // first, the method receiver (from the forwarded type)
@@ -3326,7 +3290,8 @@ isNameOfFieldQuery(Context* context,
     // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
     if (child->isVarLikeDecl() ||
         child->isMultiDecl() ||
-        child->isTupleDecl()) {
+        child->isTupleDecl() ||
+        child->isForwardingDecl()) {
       bool found = helpFieldNameCheck(child, name);
       if (found) {
         result = true;
