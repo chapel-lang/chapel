@@ -38,7 +38,7 @@
 namespace chpl {
 namespace resolution {
 
-typedef enum {
+enum struct DefaultsPolicy {
   /** Do not use default values when determining field type. */
   IGNORE_DEFAULTS,
   /** Use default values when determining field type. */
@@ -48,7 +48,7 @@ typedef enum {
      for all other fields. This policy is useful when determining the
      genericity of individual fields. */
   USE_DEFAULTS_OTHER_FIELDS
-} DefaultsPolicy;
+};
 
 /**
   An untyped function signature. This is really just the part of a function
@@ -1053,7 +1053,8 @@ class CallResolutionResult {
                        PoiInfo poiInfo)
     : mostSpecific_(std::move(mostSpecific)),
       exprType_(std::move(exprType)),
-      poiInfo_(std::move(poiInfo)) {
+      poiInfo_(std::move(poiInfo))
+  {
   }
 
   /** get the most specific candidates for return-intent overloading */
@@ -1537,7 +1538,10 @@ class FormalActualMap {
 };
 
 /** ResolvedFields represents the fully resolved fields for a
-    class/record/union/tuple type. */
+    class/record/union/tuple type.
+
+    It also stores the result of computing the types of 'forwarding' statements.
+ */
 class ResolvedFields {
   struct FieldDetail {
     UniqueString name;
@@ -1569,18 +1573,34 @@ class ResolvedFields {
       declId.mark(context);
       type.mark(context);
     }
-
-    /*
-    void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
-      name.stringify(ss, stringKind);
-      //TODO: determine the proper way to do this
-      //decl.stringify(ss, stringKind);
-      type.stringify(ss, stringKind);
-    }*/
+  };
+  struct ForwardingDetail {
+    ID forwardingStmt;
+    types::QualifiedType receiverType;
+    ForwardingDetail(ID forwardingStmt, types::QualifiedType receiverType)
+     : forwardingStmt(std::move(forwardingStmt)),
+       receiverType(std::move(receiverType)) {
+    }
+    bool operator==(const ForwardingDetail& other) const {
+      return forwardingStmt == other.forwardingStmt &&
+             receiverType == other.receiverType;
+    }
+    bool operator!=(const ForwardingDetail& other) const {
+      return !(*this == other);
+    }
+    void swap(ForwardingDetail& other) {
+      forwardingStmt.swap(other.forwardingStmt);
+      receiverType.swap(other.receiverType);
+    }
+    void mark(Context* context) const {
+      forwardingStmt.mark(context);
+      receiverType.mark(context);
+    }
   };
 
   const types::CompositeType* type_ = nullptr;
   std::vector<FieldDetail> fields_;
+  std::vector<ForwardingDetail> forwarding_;
 
   // Summary information that is computed after the field types are known
   bool isGeneric_ = false;
@@ -1600,6 +1620,10 @@ class ResolvedFields {
     fields_.push_back(FieldDetail(name, hasDefaultValue, declId, type));
   }
 
+  void addForwarding(ID forwardingId, types::QualifiedType receiverType) {
+    forwarding_.push_back(ForwardingDetail(forwardingId, receiverType));
+  }
+
   void finalizeFields(Context* context);
 
   /** Returns true if this is a generic type */
@@ -1612,30 +1636,51 @@ class ResolvedFields {
     return isGeneric_ && allGenericFieldsHaveDefaultValues_;
   }
 
+  /** Returns the number of fields represented here */
   int numFields() const {
     return fields_.size();
   }
 
+  /** Returns the field name for the i'th field */
   UniqueString fieldName(int i) const {
     CHPL_ASSERT(0 <= i && (size_t) i < fields_.size());
     return fields_[i].name;
   }
+  /** Returns 'true' if the i'th field has a default value */
   bool fieldHasDefaultValue(int i) const {
     CHPL_ASSERT(0 <= i && (size_t) i < fields_.size());
     return fields_[i].hasDefaultValue;
   }
+  /** Returns the i'th field's declaration ID */
   ID fieldDeclId(int i) const {
     CHPL_ASSERT(0 <= i && (size_t) i < fields_.size());
     return fields_[i].declId;
   }
+  /** Returns the type of the i'th field */
   types::QualifiedType fieldType(int i) const {
     CHPL_ASSERT(0 <= i && (size_t) i < fields_.size());
     return fields_[i].type;
   }
 
+  /** Returns the number of 'forwarding' statements */
+  int numForwards() const {
+    return forwarding_.size();
+  }
+  /** Returns the ID of the i'th 'forwarding' statement */
+  const ID& forwardingStmt(int i) const {
+    assert(0 <= i && (size_t) i < forwarding_.size());
+    return forwarding_[i].forwardingStmt;
+  }
+  /** Returns the type that the i'th 'forwarding' statement forwards to */
+  const types::QualifiedType& forwardingToType(int i) const {
+    assert(0 <= i && (size_t) i < forwarding_.size());
+    return forwarding_[i].receiverType;
+  }
+
   bool operator==(const ResolvedFields& other) const {
     return type_ == other.type_ &&
            fields_ == other.fields_ &&
+           forwarding_ == other.forwarding_ &&
            isGeneric_ == other.isGeneric_ &&
            allGenericFieldsHaveDefaultValues_ ==
              other.allGenericFieldsHaveDefaultValues_;
@@ -1646,6 +1691,7 @@ class ResolvedFields {
   void swap(ResolvedFields& other) {
     std::swap(type_, other.type_);
     fields_.swap(other.fields_);
+    forwarding_.swap(other.forwarding_);
     std::swap(isGeneric_, other.isGeneric_);
     std::swap(allGenericFieldsHaveDefaultValues_,
               other.allGenericFieldsHaveDefaultValues_);
@@ -1656,6 +1702,9 @@ class ResolvedFields {
   }
   void mark(Context* context) const {
     for (auto const &elt : fields_) {
+      elt.mark(context);
+    }
+    for (auto const &elt : forwarding_) {
       elt.mark(context);
     }
     context->markPointer(type_);
@@ -1770,7 +1819,7 @@ namespace std {
 template<> struct hash<chpl::resolution::DefaultsPolicy>
 {
   size_t operator()(const chpl::resolution::DefaultsPolicy& key) const {
-    return key;
+    return (size_t) key;
   }
 };
 

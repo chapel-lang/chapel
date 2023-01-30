@@ -89,7 +89,7 @@ void InitResolver::doSetupInitialState(void) {
                                        : PHASE_NEED_COMPLETE;
 
   auto ct = typeToCompType(initialRecvType_);
-  auto& rf = fieldsForTypeDecl(ctx_, ct, USE_DEFAULTS);
+  auto& rf = fieldsForTypeDecl(ctx_, ct, DefaultsPolicy::USE_DEFAULTS);
 
   // Populate the fields with initial values.
   for (int i = 0; i < rf.numFields(); i++) {
@@ -103,7 +103,8 @@ void InitResolver::doSetupInitialState(void) {
 
 bool InitResolver::isFinalReceiverStateValid(void) {
   auto ctInitial = typeToCompType(initialRecvType_);
-  auto& rfInitial = fieldsForTypeDecl(ctx_, ctInitial, USE_DEFAULTS);
+  auto& rfInitial = fieldsForTypeDecl(ctx_, ctInitial,
+                                      DefaultsPolicy::USE_DEFAULTS);
   bool ret = true;
 
   for (int i = 0; i < rfInitial.numFields(); i++) {
@@ -134,7 +135,8 @@ bool InitResolver::isFinalReceiverStateValid(void) {
 
 const Type* InitResolver::computeReceiverTypeConsideringState(void) {
   auto ctInitial = typeToCompType(initialRecvType_);
-  auto& rfInitial = fieldsForTypeDecl(ctx_, ctInitial, USE_DEFAULTS);
+  auto& rfInitial = fieldsForTypeDecl(ctx_, ctInitial,
+                                      DefaultsPolicy::USE_DEFAULTS);
   CompositeType::SubstitutionsMap subs;
 
   if (!rfInitial.isGeneric()) return currentRecvType_;
@@ -269,7 +271,7 @@ bool InitResolver::implicitlyResolveFieldType(ID id) {
     CHPL_ASSERT(0 == "Not handled yet!");
   } else {
     auto ct = typeToCompType(currentRecvType_);
-    auto& rf = resolveFieldDecl(ctx_, ct, id, USE_DEFAULTS);
+    auto& rf = resolveFieldDecl(ctx_, ct, id, DefaultsPolicy::USE_DEFAULTS);
     for (int i = 0; i < rf.numFields(); i++) {
       auto id = rf.fieldDeclId(i);
       auto state = fieldStateFromId(id);
