@@ -34,5 +34,5 @@ then
       echo "./hello failed inside chapel container" 
       exit 1
 else
-      echo "./hello secceded inside chapel container"
+      echo "./hello succeeded inside chapel container"
 fi
