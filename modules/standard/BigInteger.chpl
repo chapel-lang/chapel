@@ -150,7 +150,6 @@ module BigInteger {
   use CTypes;
   use GMP;
   use HaltWrappers;
-  use CTypes;
   use OS;
 
 
@@ -187,6 +186,22 @@ module BigInteger {
     down = -1,
     zero = 0,
     up = 1
+  }
+
+  /* A compile-time parameter to control the behavior of bigint initializers
+     that take a string argument.
+
+     When ``false``, the deprecated behavior is used (i.e., errors will trigger
+     a halt at execution.)
+
+     When ``true``, the new behavior is used (i.e., errors will cause a
+     :type:`~OS.BadFormatError` to be thrown)
+  */
+  config param bigintInitThrows = false;
+
+  // TODO: remove when initializers can throw in their body
+  private proc throwingInitWorkaround() throws {
+    throw new BadFormatError("Error initializing big integer");
   }
 
   pragma "ignore noinit"
@@ -242,7 +257,8 @@ module BigInteger {
       this.init(num);
     }
 
-    proc init(str: string, base: int = 0) {
+    deprecated "bigint initializers that halt are deprecated, please set the config param :param:`bigintInitThrows` to 'true' to opt in to using the new initializer that throws"
+    proc init(str: string, base: int = 0) where bigintInitThrows == false {
       this.complete();
       const str_  = str.localize().c_str();
       const base_ = base.safeCast(c_int);
@@ -256,7 +272,9 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
+    deprecated "bigint initializers that return the errorCode type via an 'out' argument are deprecated, please remove the argument and ensure the config param :param:`bigintInitThrows` is set to 'true' to opt in to using the new initializer that throws"
     proc init(str: string, base: int = 0, out error: errorCode) {
+
       this.complete();
       const str_  = str.localize().c_str();
       const base_ = base.safeCast(c_int);
@@ -267,6 +285,39 @@ module BigInteger {
         error = chpl_macro_int_EFORMAT();
       } else {
         error = 0;
+      }
+
+      this.localeId = chpl_nodeID;
+    }
+
+    /* Initialize a :type:`bigint` from a string and optionally a provided base
+       to use with the string.  If the string is not a correct base ``base``
+       number, will throw a :type:`~OS.BadFormatError`.
+
+       :arg str: The value to be stored in the resulting :type:`bigint`.
+       :type str: `string`
+
+       :arg base: The base to use when creating the :type:`bigint` from ``str``.
+                  May vary from ``2`` to ``62`` or be ``0``.  Defaults to ``0``,
+                  which causes the base to be read from the start of the ``str``
+                  itself (``0x`` and ``0X`` will give hexadecimal, ``0b`` and
+                  ``0B`` will give binary, ``0`` will give octal, and everything
+                  else will be interpreted as decimal).
+       :type base: `int`
+
+       :throws BadFormatError: Thrown when ``str`` is not a correctly formatted
+                               number in base ``base``.
+
+     */
+    proc init(str: string, base: int = 0) throws where bigintInitThrows == true {
+      this.complete();
+      const str_  = str.localize().c_str();
+      const base_ = base.safeCast(c_int);
+
+      if mpz_init_set_str(this.mpz, str_, base_) != 0 {
+        mpz_clear(this.mpz);
+
+        throwingInitWorkaround();
       }
 
       this.localeId = chpl_nodeID;
@@ -527,7 +578,7 @@ module BigInteger {
   }
 
   pragma "no doc"
-  inline operator :(src: string, type toType: bigint): bigint {
+  inline operator :(src: string, type toType: bigint): bigint throws {
     return new bigint(src);
   }
 
