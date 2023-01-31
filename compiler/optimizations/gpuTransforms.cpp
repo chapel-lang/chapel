@@ -484,8 +484,8 @@ GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   , blockSize_(nullptr)
 {
   buildStubOutlinedFunction(insertionPoint);
-  populateBody(gpuLoop.loop(), fn_);
   normalizeOutlinedFunction();
+  populateBody(gpuLoop.loop(), fn_);
   if(!lateGpuizationFailure_) {
     finalize();
   }
@@ -635,7 +635,7 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
       DefExpr* newDef = def->copy();
       this->copyMap_.put(def->sym, newDef->sym);
 
-      outlinedFunction->insertAtTail(newDef);
+      outlinedFunction->insertBeforeEpilogue(newDef);
     }
     else {
       // We also need to copy any defs that appear in blocks.
@@ -644,7 +644,7 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
       for_vector(DefExpr, def, defExprsInBody) {
         DefExpr* newDef = def->copy();
         this->copyMap_.put(def->sym, newDef->sym);
-        outlinedFunction->insertAtTail(newDef);
+        outlinedFunction->insertBeforeEpilogue(newDef);
       }
 
       for_vector(SymExpr, symExpr, symExprsInBody) {
@@ -717,7 +717,7 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
     }
 
     if (copyNode) {
-      outlinedFunction->insertAtTail(node->copy());
+      outlinedFunction->insertBeforeEpilogue(node->copy());
     }
   }
 
