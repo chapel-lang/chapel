@@ -23,7 +23,7 @@
 module ChapelDomain {
 
   public use ChapelBase;
-  use ArrayViewRankChange;
+  use ArrayViewRankChange, ChapelTuple;
 
   /*
      Fractional value that specifies how full this domain can be
@@ -1320,9 +1320,7 @@ module ChapelDomain {
       compilerError(".shape not supported on this domain");
     }
 
-    pragma "no doc"
-    pragma "no copy return"
-    proc buildArray(type eltType, param initElts:bool) {
+    proc chpl_checkEltType(type eltType) /*private*/ {
       if eltType == void {
         compilerError("array element type cannot be void");
       }
@@ -1341,17 +1339,25 @@ module ChapelDomain {
           compilerError("sparse arrays of non-default-initializable types are not currently supported");
         }
       }
+    }
 
-      if chpl_warnUnstable then
-        if this.isRectangular() && this.stridable then
-          if rank == 1 {
-            if this.stride < 0 then
-              warning("arrays with negatively strided dimensions are not particularly stable");
-          } else {
-            for s in this.stride do
-              if s < 0 then
-                warning("arrays with negatively strided dimensions are not particularly stable");
+    proc chpl_checkNegativeStride() /*private*/ {
+      // add compile-time checks once ranges allow that
+      if this.isRectangular() && this.stridable {
+        for s in chpl__tuplify(this.stride) do
+          if s < 0 {
+            warning("arrays with negatively strided dimensions are deprecated;"
+                    + " the dimension(s) are: ", this.dsiDims());
+            break;
           }
+      }
+    }
+
+    pragma "no doc"
+    pragma "no copy return"
+    proc buildArray(type eltType, param initElts:bool) {
+      chpl_checkEltType(eltType);
+      chpl_checkNegativeStride();
 
       var x = _value.dsiBuildArray(eltType, initElts);
       pragma "dont disable remote value forwarding"
@@ -1497,8 +1503,8 @@ module ChapelDomain {
 
       pragma "no doc"
       proc _isBaseArrClassElementNil(baseArr: BaseArr, idx) {
-        var idxTup = if isTuple(idx) then idx else (idx,);
-        return baseArr.chpl_unsafeAssignIsClassElementNil(this, idxTup);
+        return baseArr.chpl_unsafeAssignIsClassElementNil(this,
+                                             chpl__tuplify(idx));
       }
 
       /*
