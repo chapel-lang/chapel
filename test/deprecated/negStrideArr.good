@@ -1,0 +1,13 @@
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+negStrideArr.chpl:3: warning: arrays with negatively strided dimensions are deprecated; the dimension(s) are: (1..10 by -1)
+negStrideArr.chpl:4: warning: arrays with negatively strided dimensions are deprecated; the dimension(s) are: (1..10, 1..10 by -2)

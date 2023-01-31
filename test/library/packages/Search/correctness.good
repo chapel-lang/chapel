@@ -1,0 +1,1 @@
+correctness.chpl:21: warning: arrays with negatively strided dimensions are deprecated; the dimension(s) are: (10..40 by -10)

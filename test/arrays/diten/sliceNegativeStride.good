@@ -4,3 +4,4 @@
 3
 2
 1
+sliceNegativeStride.chpl:2: warning: arrays with negatively strided dimensions are deprecated; the dimension(s) are: (1..6 by -1)

@@ -1,3 +1,5 @@
 1 2 3 4 5 6 7 8 9 10
 1 2 3 4 5 6 7 8 9 10
 10 9 8 7 6 5 4 3 2 1
+arrNegDom.chpl:3: warning: arrays with negatively strided dimensions are deprecated; the dimension(s) are: (1..10 by -1)
+arrNegDom.chpl:5: warning: arrays with negatively strided dimensions are deprecated; the dimension(s) are: (1..10 by -1)

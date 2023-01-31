@@ -77,7 +77,7 @@ proc main() {
   }
 
   {
-    var A, B : [2..6 by -2] int;
+    var A, B : [2..6 by -2] int;   // neg-stride
     stridedAssign(A, B);
   }
 
