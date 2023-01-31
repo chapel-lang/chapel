@@ -826,7 +826,7 @@ FunctionType* FunctionType::get(FunctionType::Kind kind,
   auto fnType = FunctionType::create(kind, formals, returnIntent,
                                      returnType,
                                      throws);
-  auto ret = cacheFunctionTypeOrReuse(fnType); 
+  auto ret = cacheFunctionTypeOrReuse(fnType);
   return ret;
 }
 
@@ -854,7 +854,7 @@ FunctionType* FunctionType::get(FnSymbol* fn) {
   auto fnType = FunctionType::create(kind, formals, returnIntent,
                                      returnType,
                                      throws);
-  auto ret = cacheFunctionTypeOrReuse(fnType); 
+  auto ret = cacheFunctionTypeOrReuse(fnType);
   return ret;
 }
 
