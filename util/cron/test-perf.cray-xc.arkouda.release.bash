@@ -33,4 +33,3 @@ export CHPL_LAUNCHER=slurm-srun
 nightly_args="${nightly_args} -no-buildcheck"
 
 test_release
-sync_graphs
