@@ -42,19 +42,6 @@ if (CHPL_LLVM_COMP_ARGS)
   string(STRIP ${CHPL_LLVM_COMP_ARGS} CHPL_LLVM_COMP_ARGS)
 endif()
 string(STRIP ${CHPL_LLVM_LINK_ARGS} CHPL_LLVM_LINK_ARGS)
-
-add_executable(chpl)
-
-# need many of the outputs from printchplenv for the following values
-target_include_directories(chpl PRIVATE
-        ${SRC_DIR}/include/${CHPL_HOST_PLATFORM} # for free-bsd support (work-around)
-        ${SRC_DIR}/include # needed all the time
-        ${SRC_DIR}/../build/compiler/${CHPL_COMPILER_SUBDIR} # for enabling CONFIGURED_PREFIX in configured_prefix.h
-        ${SRC_DIR}/../runtime/include/encoding # support for sharing unicode support between compiler and runtime
-        ${SRC_DIR}/../third-party/utf8-decoder # support for sharing unicode support between compiler and runtime
-        ${SRC_DIR}/../frontend/include # headers for dyno, needed all the time
-        )
-
 set(CHPL_CMAKE_PYTHON $ENV{CHPL_MAKE_PYTHON})
 
 # Write the compiler/main/LICENSE file, or update the existing file if the
@@ -92,6 +79,17 @@ add_custom_command(
   COMMENT "writing reservedSymbolNames.h file updates..."
   VERBATIM)
 
+
+add_executable(chpl)
+# need many of the outputs from printchplenv for the following values
+# note that headers for dyno are included by target_link_libraries(chpl PRIVATE ChplFrontend)
+target_include_directories(chpl PRIVATE
+        ${SRC_DIR}/include/${CHPL_HOST_PLATFORM} # for free-bsd support (work-around)
+        ${SRC_DIR}/include # headers for chpl, needed all the time
+        ${SRC_DIR}/../build/compiler/${CHPL_COMPILER_SUBDIR} # for enabling CONFIGURED_PREFIX in configured_prefix.h
+        ${SRC_DIR}/../runtime/include/encoding # support for sharing unicode support between compiler and runtime
+        ${SRC_DIR}/../third-party/utf8-decoder # support for sharing unicode support between compiler and runtime
+        )
 add_subdirectory(AST)
 add_subdirectory(adt)
 add_subdirectory(backend)
@@ -103,6 +101,5 @@ add_subdirectory(parser)
 add_subdirectory(passes)
 add_subdirectory(resolution)
 add_subdirectory(util)
-add_dependencies(chpl ChplFrontend)
-target_compile_options(chpl PUBLIC SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
-target_link_libraries(chpl PUBLIC ${CHPL_LLVM_LINK_ARGS} ChplFrontend)
+target_compile_options(chpl PRIVATE SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
+target_link_libraries(chpl PRIVATE ${CHPL_LLVM_LINK_ARGS} ChplFrontend)

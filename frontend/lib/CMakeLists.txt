@@ -75,10 +75,6 @@ add_subdirectory(types)
 add_subdirectory(uast)
 add_subdirectory(util)
 
-
-# Don't build the git-sha-obj into ChplFrontend if CHPL_DONT_BUILD_SHA is set
-# in the environment. Note that the value doesn't matter, just the presence of
-# the var
 add_library(ChplFrontend SHARED
             $<TARGET_OBJECTS:ChplFrontend-obj>
             $<TARGET_OBJECTS:git-sha-obj>)
