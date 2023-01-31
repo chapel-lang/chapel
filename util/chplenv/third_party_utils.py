@@ -397,8 +397,9 @@ def read_pkg_config_file(pcpath, find_third_party, replace_third_party):
 #   third-party/<pkg>/install/<ucp>/lib/pkgconfig/<pcfile>
 #   where pcfile defaults to pkg.pc
 #
-# If the .pc file could not be read, returns None
-# Otherwise, returns the dictionary of values read from the .pc file
+# Returns a tuple. The first member is None if the .pc file could not be read,
+# otherwise it's a dictionary of values read from the .pc file. The second
+# member is the name of the pc file, if it could be determined.
 def read_bundled_pkg_config_file(pkg, ucp='', pcfile=''):
     # compute the default ucp
     if ucp == '':
