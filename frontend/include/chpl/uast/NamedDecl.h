@@ -37,22 +37,27 @@ class NamedDecl : public Decl {
 
  protected:
   NamedDecl(AstTag tag, Decl::Visibility visibility, Decl::Linkage linkage,
-            int attributesChildNum,
             UniqueString name)
-    : Decl(tag, attributesChildNum, visibility, linkage),
+    : Decl(tag, visibility, linkage),
       name_(name) {
   }
 
-  NamedDecl(AstTag tag, AstList children, int attributesChildNum,
+  NamedDecl(AstTag tag, AstList children, int attributeGroupChildNum,
             Decl::Visibility visibility,
             Decl::Linkage linkage,
             int linkageNameChildNum,
             UniqueString name)
-    : Decl(tag, std::move(children), attributesChildNum, visibility,
+    : Decl(tag, std::move(children), attributeGroupChildNum, visibility,
            linkage,
            linkageNameChildNum),
       name_(name) {
   }
+
+  NamedDecl(AstTag tag, Deserializer& des)
+    : Decl(tag, des) {
+    name_ = des.read<UniqueString>();
+  }
+
 
   bool namedDeclContentsMatchInner(const NamedDecl* other) const {
     return this->name_ == other->name_ &&
@@ -67,6 +72,11 @@ class NamedDecl : public Decl {
 
  public:
   virtual ~NamedDecl() = 0; // this is an abstract base class
+
+  void serialize(Serializer& ser) const override {
+    Decl::serialize(ser);
+    ser.write(name_);
+  }
 
   UniqueString name() const { return name_; }
 };

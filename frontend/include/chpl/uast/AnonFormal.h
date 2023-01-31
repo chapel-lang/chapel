@@ -23,7 +23,7 @@
 #include "chpl/framework/Location.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Formal.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 
 
 namespace chpl {
@@ -77,6 +77,11 @@ class AnonFormal final : public AstNode {
       typeExpressionChildNum_(typeExpressionChildNum) {
   }
 
+  AnonFormal(Deserializer& des)
+    : AstNode(asttags::AnonFormal, des) {
+      intent_ = des.read<Formal::Intent>();
+    }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const AnonFormal* lhs = this;
     const AnonFormal* rhs = (const AnonFormal*) other;
@@ -101,7 +106,7 @@ class AnonFormal final : public AstNode {
   */
   Intent intent() const { return intent_; }
 
-  IntentList storageKind() const { return ((IntentList) intent_); }
+  Qualifier storageKind() const { return ((Qualifier) intent_); }
 
   /**
     Returns the type expression of the formal.
@@ -115,10 +120,23 @@ class AnonFormal final : public AstNode {
   static std::string intentToString(Intent intent) {
     return Formal::intentToString(intent);
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(intent_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(AnonFormal);
+
 };
 
 
 } // end namespace uast
+
+
+DECLARE_SERDE_ENUM(uast::Formal::Intent, uint8_t);
+
+
 } // end namespace chpl
 
 #endif

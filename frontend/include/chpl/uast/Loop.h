@@ -45,6 +45,12 @@ class Loop: public AstNode {
     CHPL_ASSERT(children_[loopBodyChildNum_]->isBlock());
   }
 
+  Loop(AstTag tag, Deserializer& des)
+    : AstNode(tag, des) {
+    blockStyle_ = des.read<BlockStyle>();
+    loopBodyChildNum_ = des.read<int>();
+  }
+
   bool loopContentsMatchInner(const Loop* other) const {
     const Loop* lhs = this;
     const Loop* rhs = other;
@@ -103,6 +109,12 @@ class Loop: public AstNode {
   */
   BlockStyle blockStyle() const {
     return blockStyle_;
+  }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(blockStyle_);
+    ser.write(loopBodyChildNum_);
   }
 };
 

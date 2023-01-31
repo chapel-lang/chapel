@@ -57,6 +57,8 @@
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/util/assertions.h"
 
+#include "llvm/ADT/SmallPtrSet.h"
+
 // If this is set then variables/formals will have their "qual" field set
 // now instead of later during resolution.
 #define ATTACH_QUALIFIED_TYPES_EARLY 0
@@ -255,7 +257,7 @@ struct Converter {
     return nullptr;
   }
 
-  Expr* visit(const uast::Attributes* node) {
+  Expr* visit(const uast::AttributeGroup* node) {
     INT_FATAL("Should not be called directly!");
     return nullptr;
   }
@@ -274,7 +276,7 @@ struct Converter {
   }
 
   void attachSymbolAttributes(const uast::Decl* node, Symbol* sym) {
-    auto attr = node->attributes();
+    auto attr = node->attributeGroup();
 
     if (!attr) return;
 
@@ -452,29 +454,6 @@ struct Converter {
 
             SymExpr* se = new SymExpr(sym);
             Expr* ret = se;
-
-
-            // TODO(Resolver): This logic should probably be handled from
-            //                 within Dyno.
-            if (!inImportOrUse && rr->type().kind() == types::QualifiedType::MODULE) {
-              const char* reason = "cannot be mentioned like variables";
-              auto parentId = parsing::idToParentId(context, node->id());
-              auto parentAst = parsing::idToAst(context, parentId);
-              if (auto callAst = parentAst->toCall()) {
-                if (callAst->calledExpression() == node) {
-                  reason = "cannot be called like procedures";
-                }
-              } else if (auto dotAst = parentAst->toDot()) {
-                if (dotAst->receiver() == node) {
-                  // Not an error to reference a module name in a dot expression.
-                  reason = nullptr;
-                }
-              }
-
-              if (reason != nullptr) {
-                USR_FATAL_CONT(se, "modules (like '%s' here) %s", node->name().c_str(), reason);
-              }
-            }
 
             if (parsing::idIsParenlessFunction(context, id)) {
               // it's a parenless function call so add a CallExpr
@@ -1106,9 +1085,10 @@ struct Converter {
         svs = convertTaskVar(tv);
         INT_ASSERT(svs);
 
-        isTaskVarDecl = tv->intent() == uast::TaskVar::Intent::VAR ||
-                        tv->intent() == uast::TaskVar::Intent::CONST;
-
+        // (const x) is a task intent, but (const x: int) and (const x = 1)
+        // are task-private variable declarations.
+        isTaskVarDecl = tv->initExpression() != nullptr ||
+                        tv->typeExpression() != nullptr;
       // Handle reductions in with clauses explicitly here.
       } else if (const uast::ReduceIntent* rd = expr->toReduceIntent()) {
         astlocMarker markAstLoc(rd->id());
@@ -3159,42 +3139,42 @@ struct Converter {
   }
 
   void attachSymbolStorage(const uast::Variable::Kind kind, Symbol* vs) {
-    return attachSymbolStorage((uast::IntentList) kind, vs);
+    return attachSymbolStorage((uast::Qualifier) kind, vs);
   }
 
   void attachSymbolStorage(const uast::TupleDecl::IntentOrKind iok,
                            Symbol* vs) {
-    return attachSymbolStorage((uast::IntentList) iok, vs);
+    return attachSymbolStorage((uast::Qualifier) iok, vs);
   }
 
-  void attachSymbolStorage(const uast::IntentList kind, Symbol* vs) {
+  void attachSymbolStorage(const uast::Qualifier kind, Symbol* vs) {
     auto qual = QUAL_UNKNOWN;
 
     switch (kind) {
-      case uast::IntentList::VAR:
+      case uast::Qualifier::VAR:
         qual = QUAL_VAL;
         break;
-      case uast::IntentList::CONST_VAR:
+      case uast::Qualifier::CONST_VAR:
         vs->addFlag(FLAG_CONST);
         qual = QUAL_CONST;
         break;
-      case uast::IntentList::CONST_REF:
+      case uast::Qualifier::CONST_REF:
         vs->addFlag(FLAG_CONST);
         vs->addFlag(FLAG_REF_VAR);
         qual = QUAL_CONST_REF;
         break;
-      case uast::IntentList::REF:
+      case uast::Qualifier::REF:
         vs->addFlag(FLAG_REF_VAR);
         qual = QUAL_REF;
         break;
-      case uast::IntentList::PARAM:
+      case uast::Qualifier::PARAM:
         vs->addFlag(FLAG_PARAM);
         qual = QUAL_PARAM;
         break;
-      case uast::IntentList::TYPE:
+      case uast::Qualifier::TYPE:
         vs->addFlag(FLAG_TYPE_VARIABLE);
         break;
-      case uast::IntentList::INDEX:
+      case uast::Qualifier::INDEX:
         vs->addFlag(FLAG_INDEX_VAR);
         break;
       default:
@@ -4230,20 +4210,38 @@ void ConvertedSymbolsMap::applyFixups(chpl::Context* context,
 
   // Note: we should be able to minimize the fixups needed
   // by converting the modules in the initialization order
+  llvm::SmallPtrSet<SymExpr*, 4> fixedUp;
 
   // Fix up any SymExprs needing to be re-targeted
   for (const auto& p : identFixups) {
     SymExpr* se = p.first;
     ID target = p.second;
 
-    INT_ASSERT(isTemporaryConversionSymbol(se->symbol()));
+    // Already fixed up by following the symExprs linked list on a
+    // TemporaryConversionSymbol (see below). Skip here.
+    if (fixedUp.count(se) > 0) continue;
+
+    auto tcsymbol = se->symbol();
+    INT_ASSERT(isTemporaryConversionSymbol(tcsymbol));
 
     Symbol* sym = findConvertedSym(target, /* trace */ false);
     if (sym == nullptr) {
       INT_FATAL("could not find target symbol for sym fixup for %s within %s",
                 target.str().c_str(), inSymbolId.str().c_str());
     }
+
     se->setSymbol(sym);
+    // Not all symExprs are noted as fixups (due to lowering and AST
+    // transformations), so visit the temporary conversion symbol's recorded
+    // symExprs to try handle these stragglers.
+    //
+    // This is a workaround; ideally, we'd not perform as many AST
+    // transformations, and not need to walk all the SymExprs for each
+    // tcsymbol.
+    for_SymbolSymExprs(se, tcsymbol) {
+      se->setSymbol(sym);
+      fixedUp.insert(se);
+    }
   }
   // clear gIdentFixups since these have now been processed
   identFixups.clear();

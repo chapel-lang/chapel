@@ -1,0 +1,1 @@
+internalWriteBytes.chpl:8: warning: 'writeBytes' with a generic pointer argument is deprecated; please use the variant that takes a 'bytes' object

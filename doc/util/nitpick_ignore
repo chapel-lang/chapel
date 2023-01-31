@@ -56,3 +56,5 @@ cpp:identifier uast::asttags::NUM_AST_TAGS
 cpp:identifier uast::Function::DEFAULT_RETURN_INTENT
 # Common symbols used as template typenames.
 cpp:identifier T
+cpp:identifier Deserializer
+cpp:identifier Serializer

@@ -247,12 +247,6 @@ if example == 0 || example == 4 {
   }
   r.close();
 
-  // Or, if we just want all the lines in the file, we can use file.lines,
-  // and we don't even have to make a reader:
-  for line in f.lines() {
-    write("Read line: ", line);
-  }
-
   f.close();
   remove(testfile);
 }

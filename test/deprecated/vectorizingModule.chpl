@@ -1,6 +1,6 @@
 use VectorizingIterator;
 
-var A = [1];
+var A = [1, ];
 
 for i in vectorizeOnly(1..1) do
   writeln(i);

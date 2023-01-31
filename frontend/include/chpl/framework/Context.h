@@ -100,9 +100,7 @@ class Context {
     = toOwned<ErrorHandler>(new DefaultErrorHandler());
 
   // Report an error to the current handler.
-  void reportError(Context* context, const ErrorBase* err) {
-    handler_->report(context, err);
-  }
+  void reportError(Context* context, const ErrorBase* err);
 
   // The CHPL_HOME variable
   const std::string chplHome_;
@@ -510,9 +508,8 @@ class Context {
 
     If no query is currently running, it just reports the error.
 
-    Returns the passed-in error for convenience.
    */
-  const ErrorBase* report(const ErrorBase* error);
+  void report(owned<ErrorBase> error);
 
   /**
     Note an error for the currently running query.

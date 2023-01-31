@@ -36,16 +36,14 @@ possible.  In particular:
    be the only one; others have existed in the past).
 
 4) Builds an emacs TAGS and BROWSE file for the compiler and a TAGS
-   file for the runtime.  (Note: it seems we currently do this whether
-   or not ``CHPL_DEVELOPER`` is set, though this seems inappropriate...
-   We should fix this).
+   file for the runtime.
 
 5) Turns on ``--devel`` by default when invoking the ``chpl`` compiler.  This
    in turn has the following effects:
 
    (a) Prints out ``hidden`` developer flags when invoking ``chpl --help``
        (these flags are equally available to developers and
-       non-developers
+       non-developers).
 
    (b) Causes internal errors to not be obfuscated as they are for an
        end-user.

@@ -17,22 +17,22 @@ def get(flag='host'):
     chpl_mem = overrides.get('CHPL_MEM')
 
     if flag == 'target':
-        if cygwin or mac_arm:
-            mem_val = 'cstdlib'
-        elif chpl_target_mem:
+        if chpl_target_mem:
             mem_val = chpl_target_mem
             if chpl_mem and chpl_target_mem != chpl_mem:
                 warning("CHPL_MEM and CHPL_TARGET_MEM are both set, "
                         "taking value from CHPL_TARGET_MEM")
         elif chpl_mem:
             mem_val = chpl_mem
+        elif cygwin or mac_arm:
+            mem_val = 'cstdlib'
         else:
             mem_val = 'jemalloc'
     elif flag == 'host':
-        if cygwin or mac:
-            mem_val = 'cstdlib'
-        elif chpl_host_mem:
+        if chpl_host_mem:
             mem_val = chpl_host_mem
+        elif cygwin or mac:
+            mem_val = 'cstdlib'
         else:
             mem_val = 'jemalloc'
     else:

@@ -107,7 +107,7 @@ module List {
     if isGenericType(eltType) {
       compilerWarning("creating a list with element type " +
                       eltType:string);
-      if isClassType(eltType) && !isGenericType(borrowed eltType) {
+      if isClassType(eltType) && !isGenericType(eltType:borrowed) {
         compilerWarning("which now means class type with generic management");
       }
       compilerError("list element type cannot currently be generic");

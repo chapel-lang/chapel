@@ -1,0 +1,15 @@
+#!/bin/bash
+outfile=$2
+
+mv $outfile $outfile.tmp
+
+# based on
+# test/memory/elliot/valgrind/I-fail-without-working-valgrind.prediff
+
+# grep for specific items in valgrind output
+# 'head -2' is to ignore the process ID
+grep -E 'Invalid read|Address 0x.* is|Conditional jump|Jump to the invalid' $outfile.tmp | head -1 \
+| sed 's@^.*Invalid read@Invalid read@; s@^.*Address .* is@Address xxx is@; s@^.*Conditional jump@Conditional jump@' \
+> $outfile
+
+rm $outfile.tmp

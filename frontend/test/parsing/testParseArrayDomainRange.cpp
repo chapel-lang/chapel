@@ -37,6 +37,7 @@ static void testRange(Parser* parser, const char* testName,
                       const char* intervalStr,
                       bool hasLowerBound,
                       bool hasUpperBound) {
+  ErrorGuard guard(parser->context());
   const char* lowerStr = hasLowerBound ? "0" : "";
   const char* upperStr = hasUpperBound ? "8" : "";
 
@@ -46,9 +47,9 @@ static void testRange(Parser* parser, const char* testName,
   test += upperStr;
   test += ";\n";
 
-  auto parseResult = parser->parseString(testName, test.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, testName, test.c_str());
 
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -78,7 +79,6 @@ static void testRange(Parser* parser, const char* testName,
   }
 }
 
-// TODO: Check for trailing comma?
 static void testArrayDomain(Parser* parser, const char* testName,
                             bool isArray,
                             int numElements,
@@ -86,6 +86,7 @@ static void testArrayDomain(Parser* parser, const char* testName,
   // These initializers must have at least one element.
   assert(numElements > 0);
 
+  ErrorGuard guard(parser->context());
   std::string test = isArray ? "var a = " : "var d = ";
   test += isArray ? "[" : "{";
 
@@ -102,9 +103,9 @@ static void testArrayDomain(Parser* parser, const char* testName,
   test += isArray ? "]" : "}";
   test += ";\n";
 
-  auto parseResult = parser->parseString(testName, test.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, testName, test.c_str());
 
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -121,6 +122,7 @@ static void testArrayDomain(Parser* parser, const char* testName,
       assert(a->expr(i)->isIntLiteral());
       assert(a->expr(i)->toIntLiteral()->value() == i);
     }
+    assert(a->hasTrailingComma() == hasTrailingComma);
   } else if (const Domain* d = var->initExpression()->toDomain()) {
     assert(!isArray);
     assert(d->numExprs() == numElements);
@@ -159,10 +161,9 @@ int main() {
   testRange(p, "testRange4.chpl", "..<", true, true);
   testRange(p, "testRange5.chpl", "..<", false, true);
 
-  testArrayDomain(p, "testArray0.chpl", true, 1, false);
-  testArrayDomain(p, "testArray1.chpl", true, 1, true);
-  testArrayDomain(p, "testArray2.chpl", true, 8, false);
-  testArrayDomain(p, "testArray3.chpl", true, 8, true);
+  testArrayDomain(p, "testArray0.chpl", true, 1, true);
+  testArrayDomain(p, "testArray1.chpl", true, 8, false);
+  testArrayDomain(p, "testArray2.chpl", true, 8, true);
 
   testArrayDomain(p, "testDomain0.chpl", false, 1, false);
   testArrayDomain(p, "testDomain1.chpl", false, 1, true);

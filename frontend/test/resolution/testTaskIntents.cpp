@@ -25,14 +25,13 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
-#include "chpl/uast/Identifier.h"
-#include "chpl/uast/IntentList.h"
 #include "chpl/uast/For.h"
+#include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/While.h"
-#include "./ErrorGuard.h"
 
 #include <algorithm>
 #include <sstream>
@@ -181,19 +180,19 @@ struct Collector {
   }
 };
 
-static const char* kindToString(IntentList kind) {
+static const char* kindToString(Qualifier kind) {
   switch (kind) {
-    case IntentList::REF: return "ref";
-    case IntentList::CONST_INTENT: return "const";
-    case IntentList::CONST_REF: return "const ref";
-    case IntentList::IN: return "in";
-    case IntentList::CONST_IN: return "const in";
-    case IntentList::OUT: return "out";
-    case IntentList::PARAM: return "param";
-    case IntentList::TYPE: return "type";
-    case IntentList::VAR: return "var";
-    case IntentList::CONST_VAR: return "const";
-    case IntentList::DEFAULT_INTENT: return "";
+    case Qualifier::REF: return "ref";
+    case Qualifier::CONST_INTENT: return "const";
+    case Qualifier::CONST_REF: return "const ref";
+    case Qualifier::IN: return "in";
+    case Qualifier::CONST_IN: return "const in";
+    case Qualifier::OUT: return "out";
+    case Qualifier::PARAM: return "param";
+    case Qualifier::TYPE: return "type";
+    case Qualifier::VAR: return "var";
+    case Qualifier::CONST_VAR: return "const";
+    case Qualifier::DEFAULT_INTENT: return "";
     default: assert(false);
   }
   return "";
@@ -204,10 +203,7 @@ static void printErrors(const ErrorGuard& guard) {
     printf("Found %lu errors.\n\n", guard.errors().size());
   } else {
     printf("======== Errors ========\n");
-    ErrorWriter ew(guard.context(), std::cout, ErrorWriter::DETAILED, false);
-    for (auto& err : guard.errors()) {
-      err->write(ew);
-    }
+    guard.printErrors();
     printf("========================\n\n");
   }
 }
@@ -244,7 +240,7 @@ static Collector customHelper(std::string program, Context* context, bool fail =
   return pc;
 }
 
-static void kindHelper(IntentList kind) {
+static void kindHelper(Qualifier kind) {
   Context* context = getNewContext();
 
   std::string program;
@@ -258,9 +254,9 @@ static void kindHelper(IntentList kind) {
   auto col = customHelper(program, context);
 
   {
-    IntentList useKind = kind;
-    if (useKind == IntentList::CONST_INTENT) {
-      useKind = IntentList::CONST_VAR;
+    Qualifier useKind = kind;
+    if (useKind == Qualifier::CONST_INTENT) {
+      useKind = Qualifier::CONST_VAR;
     }
     QualifiedType expected = QualifiedType(useKind, IntType::get(context, 0));
     QualifiedType shadowX = col.onlyIdent("x");
@@ -280,11 +276,11 @@ static void kindHelper(IntentList kind) {
 }
 
 static void testKinds() {
-  kindHelper(IntentList::REF);
-  kindHelper(IntentList::CONST_INTENT);
-  kindHelper(IntentList::CONST_REF);
-  kindHelper(IntentList::IN);
-  kindHelper(IntentList::CONST_IN);
+  kindHelper(Qualifier::REF);
+  kindHelper(Qualifier::CONST_INTENT);
+  kindHelper(Qualifier::CONST_REF);
+  kindHelper(Qualifier::IN);
+  kindHelper(Qualifier::CONST_IN);
 }
 
 static void testReduce() {

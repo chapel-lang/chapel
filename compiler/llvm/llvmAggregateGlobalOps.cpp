@@ -347,8 +347,7 @@ struct MemOpRanges { // from MemsetRanges in MemCpyOptimizer
   }
   // CUSTOM because MemsetRanges doesn't work with LoadInsts.
   void addLoad(int64_t OffsetFromFirst, LoadInst *LI) {
-    Type* ptrType = LI->getOperand(0)->getType();
-    int64_t LoadSize = DL.getTypeStoreSize(ptrType->getPointerElementType());
+    int64_t LoadSize = DL.getTypeStoreSize(LI->getType());
     int64_t Slack =  GET_EXTRA; // Pretend loads use more space...
 
     addRange(OffsetFromFirst, LoadSize, Slack,
@@ -671,7 +670,9 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
     // Determine alignment
     unsigned Alignment = Range.Alignment;
     if (Alignment == 0) {
-#if HAVE_LLVM_VER >= 130
+#if HAVE_LLVM_VER >= 150
+      Type *EltType = First->getType();
+#elif HAVE_LLVM_VER >= 130
       Type *EltType =
         cast<PointerType>(StartPtr->getType())->getPointerElementType();
 #else
@@ -715,8 +716,12 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
                                                    alloc,
                                                    offsets);
 
+#if HAVE_LLVM_VER >= 150
+        Type* DstTy = oldStore->getType();
+#else
         Type* origDstTy = oldStore->getPointerOperand()->getType();
         Type* DstTy = origDstTy->getPointerElementType()->getPointerTo(0);
+#endif
         Value* Dst = irBuilder.CreatePointerCast(i8Dst, DstTy);
 
         StoreInst* newStore =
@@ -814,11 +819,17 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         Value* i8Src = irBuilder.CreateInBoundsGEP(int8Ty,
                                                    alloc,
                                                    offsets);
+#if HAVE_LLVM_VER >= 150
+        Type* SrcTy = oldLoad->getType();
+#else
         Type* origSrcTy = oldLoad->getPointerOperand()->getType();
         Type* SrcTy = origSrcTy->getPointerElementType()->getPointerTo(0);
+#endif
         Value* Src = irBuilder.CreatePointerCast(i8Src, SrcTy);
 
-#if HAVE_LLVM_VER >= 130
+#if HAVE_LLVM_VER >= 150
+        LoadInst* newLoad = irBuilder.CreateLoad(SrcTy, Src);
+#elif HAVE_LLVM_VER >= 130
         LoadInst* newLoad = irBuilder.CreateLoad(Src->getType()->getPointerElementType(), Src);
 #else
         LoadInst* newLoad = irBuilder.CreateLoad(Src);

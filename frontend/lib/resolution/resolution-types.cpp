@@ -777,7 +777,14 @@ void CallInfo::stringify(std::ostream& ss,
 
 void PoiInfo::accumulate(const PoiInfo& addPoiInfo) {
   poiFnIdsUsed_.insert(addPoiInfo.poiFnIdsUsed_.begin(),
-                      addPoiInfo.poiFnIdsUsed_.end());
+                       addPoiInfo.poiFnIdsUsed_.end());
+  recursiveFnsUsed_.insert(addPoiInfo.recursiveFnsUsed_.begin(),
+                           addPoiInfo.recursiveFnsUsed_.end());
+}
+
+void PoiInfo::accumulateRecursive(const TypedFnSignature* signature,
+                                  const PoiScope* poiScope) {
+  recursiveFnsUsed_.insert(std::make_pair(signature, poiScope));
 }
 
 // this is a resolved function
@@ -835,11 +842,17 @@ const char* AssociatedAction::kindToString(Action a) {
     case ASSIGN:
       s = "assign";
       break;
+    case ASSIGN_OTHER:
+      s = "assign-from-other";
+      break;
     case COPY_INIT:
       s = "copy-init";
       break;
     case DEFAULT_INIT:
       s = "default-init";
+      break;
+    case INIT_OTHER:
+      s = "init-from-other";
       break;
     case DEINIT:
       s = "deinit";

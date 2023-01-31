@@ -59,6 +59,8 @@ class Coforall final : public IndexableLoop {
                     /*isExpressionLevel*/ false) {
   }
 
+  Coforall(Deserializer& des) : IndexableLoop(asttags::Coforall, des) { }
+
   bool contentsMatchInner(const AstNode* other) const override {
     return indexableLoopContentsMatchInner(other->toIndexableLoop());
   }
@@ -80,6 +82,11 @@ class Coforall final : public IndexableLoop {
                                BlockStyle blockStyle,
                                owned<Block> body);
 
+  void serialize(Serializer& ser) const override {
+    IndexableLoop::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Coforall);
 
 };
 

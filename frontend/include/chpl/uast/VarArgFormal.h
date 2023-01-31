@@ -22,7 +22,7 @@
 
 #include "chpl/framework/Location.h"
 #include "chpl/uast/Formal.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/uast/VarLikeDecl.h"
 
 namespace chpl {
@@ -47,22 +47,27 @@ class VarArgFormal final : public VarLikeDecl {
  private:
   int countChildNum_;
 
-  VarArgFormal(AstList children, int attributesChildNum, UniqueString name,
+  VarArgFormal(AstList children, int attributeGroupChildNum, UniqueString name,
                Formal::Intent intent,
                int8_t typeExpressionChildNum,
                int8_t countChildNum)
     : VarLikeDecl(asttags::VarArgFormal, std::move(children),
-                  attributesChildNum,
+                  attributeGroupChildNum,
                   Decl::DEFAULT_VISIBILITY,
                   Decl::DEFAULT_LINKAGE,
-                  // Use -1 to indicate so such child exists.
-                  /*linkageNameChildNum*/ -1,
+                  // Use NO_CHILD to indicate so such child exists.
+                  /*linkageNameChildNum*/ NO_CHILD,
                   name,
-                  (IntentList)((int)intent),
+                  (Qualifier)((int)intent),
                   typeExpressionChildNum,
-                  /*initExpressionChildNum*/ -1),
+                  /*initExpressionChildNum*/ NO_CHILD),
       countChildNum_(countChildNum) {
   }
+
+  VarArgFormal(Deserializer& des)
+    : VarLikeDecl(asttags::VarArgFormal, des) {
+      countChildNum_ = des.read<int>();
+    }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const VarArgFormal* lhs = this;
@@ -81,7 +86,7 @@ class VarArgFormal final : public VarLikeDecl {
   ~VarArgFormal() override = default;
 
   static owned<VarArgFormal> build(Builder* builder, Location loc,
-                                   owned<Attributes> attributes,
+                                   owned<AttributeGroup> attributeGroup,
                                    UniqueString name,
                                    Formal::Intent intent,
                                    owned<AstNode> typeExpression,
@@ -107,6 +112,13 @@ class VarArgFormal final : public VarLikeDecl {
     auto ret = child(countChildNum_);
     return ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    VarLikeDecl::serialize(ser);
+    ser.write(countChildNum_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(VarArgFormal);
 
 };
 

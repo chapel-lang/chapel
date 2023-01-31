@@ -19,6 +19,8 @@
 
 #ifdef HAS_GPU_LOCALE
 
+// #define CHPL_GPU_ENABLE_PROFILE // define this before including chpl-gpu.h
+
 #include "sys_basic.h"
 #include "chplrt.h"
 #include "chpl-mem.h"
@@ -36,8 +38,16 @@
 #include <assert.h>
 #include <stdbool.h>
 
+// this is compiler-generated
+extern const char* chpl_gpuBinary;
+
 static CUcontext *chpl_gpu_primary_ctx;
+
+// array indexed by device ID (we load the same module once for each GPU).
+static CUmodule *chpl_gpu_cuda_modules;
+
 static int *deviceClockRates;
+
 
 static bool chpl_gpu_has_context() {
   CUcontext cuda_context = NULL;
@@ -73,6 +83,7 @@ static void chpl_gpu_ensure_context() {
   }
 }
 
+
 void chpl_gpu_impl_init() {
   int         num_devices;
 
@@ -92,6 +103,7 @@ void chpl_gpu_impl_init() {
   CUDA_CALL(cuDeviceGetCount(&num_devices));
 
   chpl_gpu_primary_ctx = chpl_malloc(sizeof(CUcontext)*num_devices);
+  chpl_gpu_cuda_modules = chpl_malloc(sizeof(CUmodule)*num_devices);
   deviceClockRates = chpl_malloc(sizeof(int)*num_devices);
 
   int i;
@@ -102,6 +114,11 @@ void chpl_gpu_impl_init() {
     CUDA_CALL(cuDeviceGet(&device, i));
     CUDA_CALL(cuDevicePrimaryCtxSetFlags(device, CU_CTX_SCHED_BLOCKING_SYNC));
     CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
+
+    CUDA_CALL(cuCtxPushCurrent(context));
+    chpl_gpu_cuda_modules[i] = chpl_gpu_load_module(chpl_gpuBinary);
+    CUDA_CALL(cuCtxPopCurrent(&context));
+
     cuDeviceGetAttribute(&deviceClockRates[i], CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device);
 
     chpl_gpu_primary_ctx[i] = context;
@@ -164,7 +181,6 @@ bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
 
 static void chpl_gpu_launch_kernel_help(int ln,
                                         int32_t fn,
-                                        const char* fatbinData,
                                         const char* name,
                                         int grd_dim_x,
                                         int grd_dim_y,
@@ -174,10 +190,19 @@ static void chpl_gpu_launch_kernel_help(int ln,
                                         int blk_dim_z,
                                         int nargs,
                                         va_list args) {
+  CHPL_GPU_START_TIMER(context_time);
+
   chpl_gpu_ensure_context();
 
-  int i;
-  void* function = chpl_gpu_getKernel(fatbinData, name);
+  CHPL_GPU_STOP_TIMER(context_time);
+  CHPL_GPU_START_TIMER(load_time);
+
+  CUmodule cuda_module = chpl_gpu_cuda_modules[chpl_task_getRequestedSubloc()];
+  void* function = chpl_gpu_load_function(cuda_module, name);
+
+  CHPL_GPU_STOP_TIMER(load_time);
+  CHPL_GPU_START_TIMER(prep_time);
+
   // TODO: this should use chpl_mem_alloc
   void*** kernel_params = chpl_malloc(nargs*sizeof(void**));
 
@@ -191,7 +216,7 @@ static void chpl_gpu_launch_kernel_help(int ln,
   bool* was_memory_dynamically_allocated_for_kernel_param =
     chpl_malloc(nargs*sizeof(bool));
 
-  for (i=0 ; i<nargs ; i++) {
+  for (int i=0 ; i<nargs ; i++) {
     void* cur_arg = va_arg(args, void*);
     size_t cur_arg_size = va_arg(args, size_t);
 
@@ -218,6 +243,9 @@ static void chpl_gpu_launch_kernel_help(int ln,
     }
   }
 
+  CHPL_GPU_STOP_TIMER(prep_time);
+  CHPL_GPU_START_TIMER(kernel_time);
+
   CUDA_CALL(cuLaunchKernel((CUfunction)function,
                            grd_dim_x, grd_dim_y, grd_dim_z,
                            blk_dim_x, blk_dim_y, blk_dim_z,
@@ -231,9 +259,11 @@ static void chpl_gpu_launch_kernel_help(int ln,
   CUDA_CALL(cudaDeviceSynchronize());
 
   CHPL_GPU_DEBUG("Synchronization complete %s\n", name);
+  CHPL_GPU_STOP_TIMER(kernel_time);
+  CHPL_GPU_START_TIMER(teardown_time);
 
   // free GPU memory allocated for kernel parameters
-  for (i=0 ; i<nargs ; i++) {
+  for (int i=0 ; i<nargs ; i++) {
     if (was_memory_dynamically_allocated_for_kernel_param[i]) {
       chpl_gpu_mem_free(*kernel_params[i], ln, fn);
     }
@@ -241,28 +271,42 @@ static void chpl_gpu_launch_kernel_help(int ln,
 
   // TODO: this should use chpl_mem_free
   chpl_free(kernel_params);
+
+  CHPL_GPU_STOP_TIMER(teardown_time);
+  CHPL_GPU_PRINT_TIMERS("<%20s> Context: %Lf, "
+                               "Load: %Lf, "
+                               "Prep: %Lf, "
+                               "Kernel: %Lf, "
+                               "Teardown: %Lf\n",
+         name, context_time, load_time, prep_time, kernel_time, teardown_time);
 }
 
-void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
-                                 const char* fatbinData, const char* name,
-                                 int grd_dim_x, int grd_dim_y, int grd_dim_z,
-                                 int blk_dim_x, int blk_dim_y, int blk_dim_z,
-                                 int nargs, va_list args) {
+inline void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
+                                        const char* name,
+                                        int grd_dim_x,
+                                        int grd_dim_y,
+                                        int grd_dim_z,
+                                        int blk_dim_x,
+                                        int blk_dim_y,
+                                        int blk_dim_z,
+                                        int nargs, va_list args) {
   chpl_gpu_launch_kernel_help(ln, fn,
-                              fatbinData, name,
+                              name,
                               grd_dim_x, grd_dim_y, grd_dim_z,
                               blk_dim_x, blk_dim_y, blk_dim_z,
                               nargs, args);
 }
 
-void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
-                                      const char* fatbinData, const char* name,
-                                      int num_threads, int blk_dim, int nargs,
-                                      va_list args) {
+inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
+                                             const char* name,
+                                             int num_threads,
+                                             int blk_dim,
+                                             int nargs,
+                                             va_list args) {
   int grd_dim = (num_threads+blk_dim-1)/blk_dim;
 
   chpl_gpu_launch_kernel_help(ln, fn,
-                              fatbinData, name,
+                              name,
                               grd_dim, 1, 1,
                               blk_dim, 1, 1,
                               nargs, args);

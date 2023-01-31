@@ -44,6 +44,7 @@
 #include "version.h"
 #include "visibleFunctions.h"
 
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/Context.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/util/chplenv.h"
@@ -313,6 +314,8 @@ bool fDynoScopeProduction = true;
 bool fDynoScopeBundled = false;
 bool fDynoDebugTrace = false;
 size_t fDynoBreakOnHash = 0;
+bool fDynoSerialize = false;
+char dynoBinAstDir[FILENAME_MAX + 1] = "";
 
 std::vector<std::string> gDynoPrependInternalModulePaths;
 std::vector<std::string> gDynoPrependStandardModulePaths;
@@ -916,6 +919,10 @@ static void setLogDir(const ArgumentDescription* desc, const char* arg) {
   fLogDir = true;
 }
 
+static void setDynoSerialize(const ArgumentDescription* desc, const char* arg) {
+  fDynoSerialize = true;
+}
+
 static void setLogPass(const ArgumentDescription* desc, const char* arg) {
   logSelectPass(arg);
 }
@@ -1236,6 +1243,8 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-scope-bundled", ' ', NULL, "Enable [disable] using dyno to scope resolve bundled modules", "N", &fDynoScopeBundled, "CHPL_DYNO_SCOPE_BUNDLED", NULL},
  {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
  {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "X", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
+ {"dyno-serialize", ' ', NULL, "Serialize AST to binary files in a directory", "N", &fDynoSerialize, "CHPL_DYNO_COMPILER_LIBRARY", NULL},
+ {"dyno-serialize-dir", ' ', "<path>", "Specify directory for binary .dyno.ast files", "P", dynoBinAstDir, "CHPL_DYNO_SERIALIZE_DIR", setDynoSerialize},
 
 
  DRIVER_ARG_PRINT_CHPL_HOME,
@@ -1353,16 +1362,12 @@ static void setupLLVMCodeGen() {
     fLlvmCodegen = false;
 }
 
-bool useDefaultEnv(std::string key) {
+bool useDefaultEnv(std::string key, bool isCrayPrgEnv) {
   // Check conditions for which default value should override argument provided
 
   // For Cray programming environments, we must infer CHPL_TARGET_CPU
-  // Note: When CHPL_TARGET_CPU is processed, CHPL_HOST_COMPILER is already
-  // set in envMap, due to the order of printchplenv output
-  if (key == "CHPL_TARGET_CPU") {
-    if (strstr(envMap["CHPL_TARGET_COMPILER"], "cray-prgenv") != NULL) {
-      return true;
-    }
+  if (key == "CHPL_TARGET_CPU" && isCrayPrgEnv) {
+    return true;
   }
 
   // Always use default env for internal variables that could include spaces
@@ -1391,10 +1396,20 @@ static void populateEnvMap() {
               err.message().c_str());
   }
 
+  // figure out if it's a Cray programing environment so we can infer
+  // CHPL_TARGET_CPU
+  bool isCrayPrgEnv = false;
+  {
+    std::string targetCompiler = chplEnvResult.get()["CHPL_TARGET_COMPILER"];
+    if (strstr(targetCompiler.c_str(), "cray-prgenv") != NULL) {
+      isCrayPrgEnv = true;
+    }
+  }
+
   for (auto kvPair : chplEnvResult.get()){
     if (envMap.find(kvPair.first) == envMap.end()) {
       envMap[kvPair.first] = strdup(kvPair.second.c_str());
-    } else if (useDefaultEnv(kvPair.first)) {
+    } else if (useDefaultEnv(kvPair.first, isCrayPrgEnv)) {
       envMap.erase(kvPair.first);
       envMap[kvPair.first] = strdup(kvPair.second.c_str());
     }
@@ -1789,13 +1804,51 @@ static void validateSettings() {
   checkRuntimeBuilt();
 }
 
+static void dynoConfigureContext(std::string chpl_module_path) {
+  INT_ASSERT(gContext != nullptr);
+
+  // Set the config names/values we processed earlier and clear them.
+  chpl::parsing::setConfigSettings(gContext, gDynoParams);
+  gDynoParams.clear();
+
+  chpl::parsing::setupModuleSearchPaths(gContext,
+                                        CHPL_HOME,
+                                        fMinimalModules,
+                                        CHPL_LOCALE_MODEL,
+                                        fEnableTaskTracking,
+                                        CHPL_TASKS,
+                                        CHPL_COMM,
+                                        CHPL_SYS_MODULES_SUBDIR,
+                                        chpl_module_path,
+                                        gDynoPrependInternalModulePaths,
+                                        gDynoPrependStandardModulePaths,
+                                        cmdLineModPaths,
+                                        getChplFilenames());
+  gContext->setDebugTraceFlag(fDynoDebugTrace);
+  gContext->setBreakOnHash(fDynoBreakOnHash);
+
+  // set whether dyno assertions should fire based on developer flag
+  chpl::setAssertions(developer);
+
+  // set whether dyno assertions are fatal based on ignore_errors flag
+  chpl::setAssertionsFatal(!ignore_errors);
+
+  // Configure compilation flags for the context.
+  chpl::CompilerFlags flags;
+  flags.set(chpl::CompilerFlags::WARN_UNSTABLE, fWarnUnstable);
+
+  // Set the compilation flags all at once using a query.
+  chpl::setCompilerFlags(gContext, flags);
+}
+
 
 int main(int argc, char* argv[]) {
   PhaseTracker tracker;
 
   startCatchingSignals();
 
-  // create the compiler context
+  // Prepare the frontend context before executing any more code, because it
+  // is used for "global" operations like caching 'astr' strings.
   gContext = new chpl::Context();
 
   {
@@ -1823,11 +1876,6 @@ int main(int argc, char* argv[]) {
 
     setupChplGlobals(argv[0]);
 
-    // set the config names/values we processed earlier
-    chpl::parsing::setConfigSettings(gContext, gDynoParams);
-    // this should not be used after this point!
-    gDynoParams.clear();
-
     // set up the module paths
     std::string chpl_module_path;
     if (const char* envvarpath  = getenv("CHPL_MODULE_PATH")) {
@@ -1836,34 +1884,12 @@ int main(int argc, char* argv[]) {
 
     addSourceFiles(sArgState.nfile_arguments, sArgState.file_argument);
 
-    chpl::parsing::setupModuleSearchPaths(gContext,
-                                          CHPL_HOME,
-                                          fMinimalModules,
-                                          CHPL_LOCALE_MODEL,
-                                          fEnableTaskTracking,
-                                          CHPL_TASKS,
-                                          CHPL_COMM,
-                                          CHPL_SYS_MODULES_SUBDIR,
-                                          chpl_module_path,
-                                          gDynoPrependInternalModulePaths,
-                                          gDynoPrependStandardModulePaths,
-                                          cmdLineModPaths,
-                                          getChplFilenames());
-
     postprocess_args();
 
-    if (gContext != nullptr) {
-      gContext->setDebugTraceFlag(fDynoDebugTrace);
-      if (fDynoBreakOnHash != 0)
-        gContext->setBreakOnHash(fDynoBreakOnHash);
-    }
+    // Configure the frontend context with the flags we parsed.
+    dynoConfigureContext(chpl_module_path);
 
     initCompilerGlobals(); // must follow argument parsing
-
-    // set whether dyno assertions should fire based on developer flag
-    chpl::setAssertions(developer);
-    // set whether dyno assertions are fatal based on ignore_errors flag
-    chpl::setAssertionsFatal(!ignore_errors);
 
     setupModulePaths();
 

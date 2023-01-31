@@ -31,10 +31,13 @@
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 
-#include "call-init-deinit.h"
 #include "Resolver.h"
+#include "call-init-deinit.h"
 #include "default-functions.h"
+#include "maybe-const.h"
 #include "prims.h"
+#include "return-type-inference.h"
+#include "signature-checks.h"
 
 #include <cstdio>
 #include <set>
@@ -119,9 +122,10 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
         if (child->isComment() ||
             child->isTypeDecl() ||
             child->isFunction() ||
-            child->isModule() ||
-            child->isUse() ||
-            child->isImport()) {
+            child->isModule()) {
+            // Resolve use/import to find deprecation/unstable warnings.
+            // child->isUse() ||
+            // child->isImport()) {
           // ignore this statement since it is not relevant to
           // the resolution of module initializers and module-level
           // variables.
@@ -163,9 +167,10 @@ scopeResolveModule(Context* context, ID id) {
             child->isTypeDecl() ||
             child->isFunction() ||
             child->isModule() ||
-            child->isInterface() ||
-            child->isUse() ||
-            child->isImport()) {
+            child->isInterface()) {
+            // Resolve use/import to find deprecation/unstable warnings.
+            // child->isUse() ||
+            // child->isImport()) {
           // ignore this statement since it is not relevant to
           // the resolution of module initializers and module-level
           // variables.
@@ -432,6 +437,7 @@ typedSignatureInitialQuery(Context* context,
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ parentFnTyped,
                                    /* formalsInstantiated */ Bitmap());
+
   }
 
   return QUERY_END(result);
@@ -441,125 +447,14 @@ const TypedFnSignature*
 typedSignatureInitial(Context* context,
                       const UntypedFnSignature* untypedSig) {
 
-  return typedSignatureInitialQuery(context, untypedSig);
-
-}
-
-// Get a Type for an AggregateDecl
-// poiScope, instantiatedFrom are nullptr if not instantiating
-static
-const CompositeType* helpGetTypeForDecl(Context* context,
-                                        const AggregateDecl* ad,
-                                        const SubstitutionsMap& substitutions,
-                                        const PoiScope* poiScope,
-                                        const Type* instantiatedFrom) {
-
-  CHPL_ASSERT(ad);
-
-  // Filter out substitutions that aren't fields within 'ad'.
-  // In particular, there might be substitutions to do with a parent class.
-  SubstitutionsMap filteredSubs;
-  for (auto pair : substitutions) {
-    if (ad->id().contains(pair.first)) {
-      filteredSubs.insert(pair);
-    }
+  auto ret = typedSignatureInitialQuery(context, untypedSig);
+  // also check the signature at this point if it is concrete
+  if (!ret->needsInstantiation()) {
+    checkSignature(context, ret);
   }
-
-  if (filteredSubs.empty()) {
-    instantiatedFrom = nullptr;
-  }
-
-  const CompositeType* ret = nullptr;
-
-  if (const Class* c = ad->toClass()) {
-    const BasicClassType* parentClassType = nullptr;
-    if (const AstNode* parentClassExpr = c->parentClass()) {
-      // Resolve the parent class type expression
-      ResolutionResultByPostorderID r;
-      auto visitor =
-        Resolver::createForParentClass(context, c,
-                                       substitutions,
-                                       poiScope, r);
-      parentClassExpr->traverse(visitor);
-
-      QualifiedType qt = r.byAst(parentClassExpr).type();
-      if (auto t = qt.type()) {
-        if (auto bct = t->toBasicClassType())
-          parentClassType = bct;
-        else if (auto ct = t->toClassType())
-          parentClassType = ct->basicClassType();
-      }
-      if (qt.isType() && parentClassType != nullptr) {
-        // OK
-      } else {
-        context->error(parentClassExpr, "invalid parent class expression");
-        parentClassType = BasicClassType::getObjectType(context);
-      }
-    } else {
-      parentClassType = BasicClassType::getObjectType(context);
-    }
-
-    const BasicClassType* insnFromBct = nullptr;
-    if (instantiatedFrom != nullptr) {
-      if (auto bct = instantiatedFrom->toBasicClassType())
-        insnFromBct = bct;
-      else if (auto ct = instantiatedFrom->toClassType())
-        insnFromBct = ct->basicClassType();
-      else
-        CHPL_ASSERT(false && "unexpected instantiatedFrom type");
-    }
-
-
-    if (!parentClassType->isObjectType() && !substitutions.empty()) {
-      // recompute the parent class type with substitutions
-      auto parentAst = parsing::idToAst(context, parentClassType->id());
-      CHPL_ASSERT(parentAst);
-      auto parentAd = parentAst->toAggregateDecl();
-      CHPL_ASSERT(parentAd);
-      auto got = helpGetTypeForDecl(context,
-                                    parentAd,
-                                    substitutions,
-                                    poiScope,
-                                    parentClassType);
-      auto gotBct = got->toBasicClassType();
-      CHPL_ASSERT(gotBct);
-      parentClassType = gotBct;
-    }
-
-    ret = BasicClassType::get(context, c->id(), c->name(),
-                              parentClassType,
-                              insnFromBct, std::move(filteredSubs));
-
-  } else if (auto r = ad->toRecord()) {
-    const RecordType* insnFromRec = nullptr;
-    if (instantiatedFrom != nullptr) {
-      if (auto rec = instantiatedFrom->toRecordType())
-        insnFromRec = rec;
-      else
-        CHPL_ASSERT(false && "unexpected instantiatedFrom type");
-    }
-
-    ret = RecordType::get(context, r->id(), r->name(),
-                          insnFromRec, std::move(filteredSubs));
-
-  } else if (auto u = ad->toUnion()) {
-    const UnionType* insnFromUni = nullptr;
-    if (instantiatedFrom != nullptr) {
-      if (auto uni = instantiatedFrom->toUnionType())
-        insnFromUni = uni;
-      else
-        CHPL_ASSERT(false && "unexpected instantiatedFrom type");
-    }
-
-    ret = UnionType::get(context, u->id(), u->name(),
-                         insnFromUni, std::move(filteredSubs));
-
-  } else {
-    CHPL_ASSERT(false && "case not handled");
-  }
-
   return ret;
 }
+
 
 // initedInParent is true if the decl variable is inited due to a parent
 // uast node.  This comes up for TupleDecls.
@@ -581,9 +476,17 @@ static void helpSetFieldTypes(const AstNode* ast,
     for (auto decl : tup->decls()) {
       helpSetFieldTypes(decl, r, hasInit, fields);
     }
+  } else if (auto fwd = ast->toForwardingDecl()) {
+    if (auto fwdTo = fwd->expr()) {
+      if (fwdTo->isDecl()) {
+        helpSetFieldTypes(fwd->expr(), r, initedInParent, fields);
+      }
+      fields.addForwarding(fwd->id(), r.byAst(fwdTo).type());
+    }
   }
 
-  // no action needed for other types of Decls since they aren't fields.
+  // no action needed for other types of Decls since they aren't fields
+  // and can't contain fields
 }
 
 static const Type* const&
@@ -703,7 +606,8 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
       // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
       if (child->isVarLikeDecl() ||
           child->isMultiDecl() ||
-          child->isTupleDecl()) {
+          child->isTupleDecl() ||
+          child->isForwardingDecl()) {
         const ResolvedFields& resolvedFields =
           resolveFieldDecl(context, ct, child->id(), defaultsPolicy);
         // Copy resolvedFields into result
@@ -713,6 +617,12 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
                           resolvedFields.fieldHasDefaultValue(i),
                           resolvedFields.fieldDeclId(i),
                           resolvedFields.fieldType(i));
+        }
+        // Copy resolved forwarding statements into the result
+        n = resolvedFields.numForwards();
+        for (int i = 0; i < n; i++) {
+          result.addForwarding(resolvedFields.forwardingStmt(i),
+                               resolvedFields.forwardingToType(i));
         }
       }
     }
@@ -752,6 +662,81 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
 
   // Otherwise, use the value we just computed.
   return f;
+}
+
+static bool typeUsesForwarding(Context* context, const Type* receiverType) {
+  if (auto ct = receiverType->getCompositeType()) {
+    if (ct->isBasicClassType() || ct->isRecordType() || ct->isUnionType()) {
+      ID ctId = ct->id();
+      if (!ctId.isEmpty()) {
+        return parsing::aggregateUsesForwarding(context, ctId);
+      }
+    }
+  }
+
+  return false;
+}
+
+// returns 'true' if a cycle was detected
+static bool
+checkForwardingCycles(Context* context,
+                      const CompositeType* ct,
+                      llvm::SmallPtrSet<const CompositeType*, 8>& visited) {
+
+  if (typeUsesForwarding(context, ct)) {
+    auto pair = visited.insert(ct);
+    if (pair.second == false) {
+      // it was already in the visited set
+      context->error(ct->id(), "forwarding cycle detected");
+      return true;
+    }
+
+    const ResolvedFields& r = fieldsForTypeDecl(context, ct,
+                                                DefaultsPolicy::USE_DEFAULTS);
+
+    // Check for cycles. If a cycle is detected, emit an error
+    // and return 'true'.
+    int n = r.numForwards();
+    for (int i = 0; i < n; i++) {
+      auto qt = r.forwardingToType(i);
+      if (auto t = qt.type()) {
+        if (auto forwardingCt = t->getCompositeType()) {
+          bool cyc = checkForwardingCycles(context, forwardingCt, visited);
+          if (cyc) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+
+// returns a 'true' if there was a cycle and reports an error in that case.
+// otherwise, returns 'false'.
+static const bool&
+forwardingCycleCheckQuery(Context* context, const CompositeType* ct) {
+  QUERY_BEGIN(forwardingCycleCheckQuery, context, ct);
+
+  bool result = false;
+  llvm::SmallPtrSet<const CompositeType*, 8> visited;
+
+  result = checkForwardingCycles(context, ct, visited);
+
+  return QUERY_END(result);
+}
+
+// returns 'true' if a fowarding cycle was detected & error emitted
+static bool
+emitErrorForForwardingCycles(Context* context, const CompositeType* ct) {
+  bool cycleFound = false;
+  if (typeUsesForwarding(context, ct)) {
+    // check for cycles
+    cycleFound = forwardingCycleCheckQuery(context, ct);
+  }
+
+  return cycleFound;
 }
 
 static const CompositeType* getTypeWithDefaults(Context* context,
@@ -1081,6 +1066,8 @@ typeConstructorInitialQuery(Context* context, const Type* t)
       idTag = uast::asttags::Class;
     } else if (t->isRecordType()) {
       idTag = uast::asttags::Record;
+    } else if (t->isUnionType()) {
+      idTag = uast::asttags::Union;
     }
   } else {
     CHPL_ASSERT(false && "case not handled");
@@ -1446,7 +1433,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
       QualifiedType::Kind qtKind = formalType.kind();
       auto tempQT = QualifiedType(qtKind, useType.type());
-      auto newKind = resolveIntent(tempQT, false);
+      auto newKind = resolveIntent(tempQT, /*isThis*/ false, /*isInit*/false);
 
       auto param = formalType.isParam() ? useType.param() : nullptr;
       useType = QualifiedType(newKind, useType.type(), param);
@@ -1600,7 +1587,8 @@ const TypedFnSignature* instantiateSignature(Context* context,
     for (auto child: ad->children()) {
       if (child->isVariable() ||
           child->isMultiDecl() ||
-          child->isTupleDecl()) {
+          child->isTupleDecl() ||
+          child->isForwardingDecl()) {
         child->traverse(visitor);
       }
     }
@@ -1659,8 +1647,10 @@ const TypedFnSignature* instantiateSignature(Context* context,
 static const owned<ResolvedFunction>&
 resolveFunctionByPoisQuery(Context* context,
                            const TypedFnSignature* sig,
-                           std::set<std::pair<ID, ID>> poiFnIdsUsed) {
-  QUERY_BEGIN(resolveFunctionByPoisQuery, context, sig, poiFnIdsUsed);
+                           PoiCallIdFnIds poiFnIdsUsed,
+                           PoiRecursiveCalls recursiveFnsUsed) {
+  QUERY_BEGIN(resolveFunctionByPoisQuery,
+              context, sig, poiFnIdsUsed, recursiveFnsUsed);
 
   owned<ResolvedFunction> result;
   // the actual value is set in resolveFunctionByInfoQuery after it is
@@ -1687,6 +1677,8 @@ resolveFunctionByInfoQuery(Context* context,
 
   // Note that in this case the AST for the function can be nullptr.
   if (isTfsForInitializer(sig)) {
+    auto retType = QualifiedType(QualifiedType::VAR, VoidType::get(context));
+
     ResolutionResultByPostorderID resolutionById;
     auto visitor = Resolver::createForInitializer(context, fn, poiScope,
                                                   sig,
@@ -1694,8 +1686,12 @@ resolveFunctionByInfoQuery(Context* context,
     CHPL_ASSERT(visitor.initResolver.get());
     if (fn) {
       fn->body()->traverse(visitor);
+      // then, set the return type
+      visitor.returnType = retType;
       // then, resolve '=' and add any copy init/deinit calls as needed
       callInitDeinit(visitor);
+      // then, handle return intent overloads and maybe-const formals
+      adjustReturnIntentOverloadsAndMaybeConstRefs(visitor);
     }
 
     auto newTfsForInitializer = visitor.initResolver->finalize();
@@ -1714,15 +1710,18 @@ resolveFunctionByInfoQuery(Context* context,
       auto resolvedInit = toOwned(new ResolvedFunction(newTfsForInitializer,
                                   fn->returnIntent(),
                                   std::move(resolutionByIdCopy),
-                                  resolvedPoiInfo));
-      auto idsUsed = resolvedPoiInfo.poiFnIdsUsed();
+                                  resolvedPoiInfo,
+                                  visitor.returnType));
       QUERY_STORE_RESULT(resolveFunctionByPoisQuery,
                          context,
                          resolvedInit,
                          newTfsForInitializer,
-                         idsUsed);
-      auto& saved = resolveFunctionByPoisQuery(context, newTfsForInitializer,
-                                               idsUsed);
+                         resolvedPoiInfo.poiFnIdsUsed(),
+                         resolvedPoiInfo.recursiveFnsUsed());
+      auto& saved =
+        resolveFunctionByPoisQuery(context, newTfsForInitializer,
+                                   resolvedPoiInfo.poiFnIdsUsed(),
+                                   resolvedPoiInfo.recursiveFnsUsed());
       const ResolvedFunction* resultInit = saved.get();
       QUERY_STORE_RESULT(resolveFunctionByInfoQuery,
                          context,
@@ -1739,7 +1738,8 @@ resolveFunctionByInfoQuery(Context* context,
     owned<ResolvedFunction> resolved
         = toOwned(new ResolvedFunction(finalTfs, fn->returnIntent(),
                   std::move(resolutionById),
-                  resolvedPoiInfo));
+                  resolvedPoiInfo,
+                  visitor.returnType));
 
     // Store the result in the query under the POIs used.
     // If there was already a value for this revision, this
@@ -1749,7 +1749,8 @@ resolveFunctionByInfoQuery(Context* context,
                        context,
                        resolved,
                        sig,
-                       resolvedPoiInfo.poiFnIdsUsed());
+                       resolvedPoiInfo.poiFnIdsUsed(),
+                       resolvedPoiInfo.recursiveFnsUsed());
 
   // On this path we are just resolving a normal function.
   } else if (fn) {
@@ -1758,8 +1759,14 @@ resolveFunctionByInfoQuery(Context* context,
                                                resolutionById);
     fn->body()->traverse(visitor);
 
+    // then, compute the return type
+    computeReturnType(visitor);
+
     // then, resolve '=' and add any copy init/deinit calls as needed
     callInitDeinit(visitor);
+
+    // then, handle return intent overloads and maybe-const formals
+    adjustReturnIntentOverloadsAndMaybeConstRefs(visitor);
 
     // TODO: can this be encapsulated in a method?
     resolvedPoiInfo.swap(visitor.poiInfo);
@@ -1769,7 +1776,8 @@ resolveFunctionByInfoQuery(Context* context,
     owned<ResolvedFunction> resolved
         = toOwned(new ResolvedFunction(sig, fn->returnIntent(),
                   std::move(resolutionById),
-                  resolvedPoiInfo));
+                  resolvedPoiInfo,
+                  visitor.returnType));
 
     // Store the result in the query under the POIs used.
     // If there was already a value for this revision, this
@@ -1779,7 +1787,8 @@ resolveFunctionByInfoQuery(Context* context,
                        context,
                        resolved,
                        sig,
-                       resolvedPoiInfo.poiFnIdsUsed());
+                       resolvedPoiInfo.poiFnIdsUsed(),
+                       resolvedPoiInfo.recursiveFnsUsed());
 
   } else {
     CHPL_ASSERT(false && "this query should be called on Functions");
@@ -1787,7 +1796,9 @@ resolveFunctionByInfoQuery(Context* context,
 
   // Return the unique result from the query (that might have been saved above)
   const owned<ResolvedFunction>& resolved =
-    resolveFunctionByPoisQuery(context, sig, resolvedPoiInfo.poiFnIdsUsed());
+    resolveFunctionByPoisQuery(context, sig,
+                               resolvedPoiInfo.poiFnIdsUsed(),
+                               resolvedPoiInfo.recursiveFnsUsed());
 
   const ResolvedFunction* result = resolved.get();
 
@@ -1809,9 +1820,10 @@ const ResolvedFunction* resolveInitializer(Context* context,
   return resolveFunctionByInfoQuery(context, sig, std::move(poiInfo));
 }
 
-const ResolvedFunction* resolveFunction(Context* context,
-                                        const TypedFnSignature* sig,
-                                        const PoiScope* poiScope) {
+static const ResolvedFunction* helpResolveFunction(Context* context,
+                                                   const TypedFnSignature* sig,
+                                                   const PoiScope* poiScope,
+                                                   bool skipIfRunning) {
 
   // Forget about any inferred signature (to avoid resolving the
   // same function twice when working with inferred 'out' formals)
@@ -1823,10 +1835,71 @@ const ResolvedFunction* resolveFunction(Context* context,
   // construct the PoiInfo for this case
   auto poiInfo = PoiInfo(poiScope);
 
+  if (skipIfRunning) {
+    if (context->isQueryRunning(resolveFunctionByInfoQuery,
+                                std::make_tuple(sig, poiInfo))) {
+      return nullptr;
+    }
+  }
+
   // lookup in the map using this PoiInfo
   return resolveFunctionByInfoQuery(context, sig, std::move(poiInfo));
 }
 
+const TypedFnSignature* inferRefMaybeConstFormals(Context* context,
+                                                  const TypedFnSignature* sig,
+                                                  const PoiScope* poiScope) {
+  if (sig == nullptr) {
+    return nullptr;
+  }
+
+  bool anyRefMaybeConstFormals = false;
+  int numFormals = sig->numFormals();
+  for (int i = 0; i < numFormals; i++) {
+    const types::QualifiedType& ft = sig->formalType(i);
+    if (ft.kind() == QualifiedType::REF_MAYBE_CONST) {
+      anyRefMaybeConstFormals = true;
+      break;
+    }
+  }
+
+  if (anyRefMaybeConstFormals == false) {
+    // nothing else to do here
+    return sig;
+  }
+
+  // otherwise, try to resolve the body of the function
+  const ResolvedFunction* rFn =
+    helpResolveFunction(context, sig, poiScope, /* skipIfRunning */ true);
+
+  if (rFn == nullptr)
+    return nullptr; // give up if it would be a recursive query invocation
+
+  // resolve the function body
+  const UntypedFnSignature* untyped = sig->untyped();
+  const ResolutionResultByPostorderID& rr = rFn->resolutionById();
+  std::vector<types::QualifiedType> formalTypes;
+  for (int i = 0; i < numFormals; i++) {
+    const types::QualifiedType& ft = sig->formalType(i);
+    if (ft.kind() == QualifiedType::REF_MAYBE_CONST) {
+      formalTypes.push_back(rr.byAst(untyped->formalDecl(i)).type());
+    } else {
+      formalTypes.push_back(ft);
+    }
+  }
+
+  const TypedFnSignature* result = nullptr;
+  result = TypedFnSignature::getInferred(context,
+                                         std::move(formalTypes),
+                                         sig);
+  return result;
+}
+
+const ResolvedFunction* resolveFunction(Context* context,
+                                        const TypedFnSignature* sig,
+                                        const PoiScope* poiScope) {
+  return helpResolveFunction(context, sig, poiScope, /* skipIfRunning */ false);
+}
 
 const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
   if (id.isEmpty())
@@ -1882,7 +1955,8 @@ scopeResolveFunctionQuery(Context* context, ID id) {
 
   result = toOwned(new ResolvedFunction(sig, fn->returnIntent(),
                                         std::move(resolutionById),
-                                        PoiInfo()));
+                                        PoiInfo(),
+                                        QualifiedType()));
 
   return QUERY_END(result);
 }
@@ -1910,7 +1984,8 @@ const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
     for (auto child : ad->children()) {
       if (child->isVarLikeDecl() ||
           child->isMultiDecl() ||
-          child->isTupleDecl()) {
+          child->isTupleDecl() ||
+          child->isForwardingDecl()) {
         auto res = Resolver::createForScopeResolvingField(context, ad, child, result);
         child->traverse(res);
       }
@@ -1930,410 +2005,6 @@ const ResolvedFunction* resolveOnlyCandidate(Context* context,
     return nullptr;
 
   return resolveFunction(context, sig, poiScope);
-}
-
-struct ReturnTypeInferrer {
-  // input
-  Context* context;
-  const AstNode* astForErr;
-  Function::ReturnIntent returnIntent;
-  const ResolutionResultByPostorderID& resolutionById;
-
-  // output
-  std::vector<QualifiedType> returnedTypes;
-
-  ReturnTypeInferrer(Context* context,
-                     const AstNode* astForErr,
-                     const ResolvedFunction& resolvedFn)
-    : context(context),
-      astForErr(astForErr),
-      returnIntent(resolvedFn.returnIntent()),
-      resolutionById(resolvedFn.resolutionById()) {
-  }
-
-  bool enter(const Function* fn) {
-    return false;
-  }
-  void exit(const Function* fn) {
-  }
-
-  void checkReturn(const AstNode* inExpr, const QualifiedType& qt) {
-    if (qt.type()->isVoidType()) {
-      if (returnIntent == Function::REF) {
-        context->error(inExpr, "Cannot return void with ref return intent");
-      } else if (returnIntent == Function::PARAM) {
-        context->error(inExpr, "Cannot return void with param return intent");
-      } else if (returnIntent == Function::TYPE) {
-        context->error(inExpr, "Cannot return void with type return intent");
-      }
-    } else {
-      bool ok = true;
-      if ((qt.isType() || qt.isParam()) &&
-          (returnIntent == Function::CONST_REF ||
-           returnIntent == Function::REF)) {
-        ok = false;
-      } else if (returnIntent == Function::TYPE && !qt.isType()) {
-        ok = false;
-      } else if (returnIntent == Function::PARAM && !qt.isParam()) {
-        ok = false;
-      }
-      if (!ok) {
-        context->error(inExpr, "cannot return it with provided return intent");
-      }
-    }
-  }
-
-  void noteVoidReturnType(const AstNode* inExpr) {
-    auto voidType = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
-    returnedTypes.push_back(voidType);
-
-    checkReturn(inExpr, voidType);
-  }
-  void noteReturnType(const AstNode* expr, const AstNode* inExpr) {
-    QualifiedType qt = resolutionById.byAst(expr).type();
-
-    QualifiedType::Kind kind = qt.kind();
-    const Type* type = qt.type();
-
-    // Functions that return tuples need to return
-    // a value tuple (for value returns and type returns)
-    // or a reference to a value tuple (for ref/const ref returns)
-    if (type && type->isTupleType()) {
-      auto tt = type->toTupleType();
-      type = tt->toValueTuple(context);
-      qt = QualifiedType(kind, type);
-    }
-
-    checkReturn(inExpr, qt);
-    returnedTypes.push_back(std::move(qt));
-  }
-
-  QualifiedType returnedType() {
-    if (returnedTypes.size() == 0) {
-      return QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
-    } else {
-      auto retType = commonType(context, returnedTypes,
-                                (QualifiedType::Kind) returnIntent);
-      if (!retType) {
-        // Couldn't find common type, so return type is incorrect.
-        context->error(astForErr, "could not determine return type for function");
-        retType = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
-      }
-      return retType.getValue();
-    }
-  }
-
-  bool enter(const Conditional* cond) {
-    auto condition = cond->condition();
-    CHPL_ASSERT(condition != nullptr);
-    const ResolvedExpression& r = resolutionById.byAst(condition);
-    if (r.type().isParamTrue()) {
-      auto then = cond->thenBlock();
-      CHPL_ASSERT(then != nullptr);
-      then->traverse(*this);
-      return false;
-    } else if (r.type().isParamFalse()) {
-      auto else_ = cond->elseBlock();
-      if (else_) {
-        else_->traverse(*this);
-      }
-      return false;
-    }
-    return true;
-  }
-  void exit(const Conditional* cond){
-  }
-
-  bool enter(const Return* ret) {
-    if (const AstNode* expr = ret->value()) {
-      noteReturnType(expr, ret);
-      if (const Function* fn = astForErr->toFunction()) {
-        if (fn->name() == "init" && fn->isMethod()) {
-          context->error(ret, "initializers can only return 'void'");
-        }
-      }
-    } else {
-      noteVoidReturnType(ret);
-    }
-    return false;
-  }
-  void exit(const Return* ret) {
-  }
-
-  bool enter(const Yield* ret) {
-    noteReturnType(ret->value(), ret);
-    return false;
-  }
-  void exit(const Yield* ret) {
-  }
-
-  bool enter(const AstNode* ast) {
-    return true;
-  }
-  void exit(const AstNode* ast) {
-  }
-};
-
-// For a class type construction, returns a BasicClassType
-static const Type* const&
-returnTypeForTypeCtorQuery(Context* context,
-                           const TypedFnSignature* sig,
-                           const PoiScope* poiScope) {
-  QUERY_BEGIN(returnTypeForTypeCtorQuery, context, sig, poiScope);
-
-  const UntypedFnSignature* untyped = sig->untyped();
-
-  const Type* result = nullptr;
-
-  // handle type construction
-  const AggregateDecl* ad = nullptr;
-  if (!untyped->id().isEmpty())
-    if (auto ast = parsing::idToAst(context, untyped->id()))
-      ad = ast->toAggregateDecl();
-
-  if (ad) {
-    // compute instantiatedFrom
-    const CompositeType* instantiatedFrom = nullptr;
-    if (sig->instantiatedFrom()) {
-      const Type* t = initialTypeForTypeDecl(context, ad->id());
-      CHPL_ASSERT(t);
-
-      // ignore decorators etc for finding instantiatedFrom
-      if (auto ct = t->toClassType())
-        t = ct->basicClassType();
-
-      instantiatedFrom = t->toCompositeType();
-      CHPL_ASSERT(instantiatedFrom);
-    }
-
-    // compute the substitutions
-    SubstitutionsMap subs;
-
-    if (instantiatedFrom != nullptr) {
-      int nFormals = sig->numFormals();
-      for (int i = 0; i < nFormals; i++) {
-        const Decl* formalDecl = untyped->formalDecl(i);
-        const QualifiedType& formalType = sig->formalType(i);
-        // Note that the formalDecl should already be a fieldDecl
-        // based on typeConstructorInitialQuery.
-        bool hasInitExpression = false;
-        if (auto vd = formalDecl->toVarLikeDecl())
-          if (vd->initExpression() != nullptr)
-            hasInitExpression = true;
-
-        if (formalType.type()->isAnyType() && !hasInitExpression) {
-          // Ignore this substitution - easier to just leave it out
-          // of the map entirely.
-          // Note that we explicitly put a sub for AnyType for generics
-          // with default, where the default is not used. E.g.
-          //    record R { type t = int; }
-          //    type RR = R(?);
-          //    var x: RR;
-          // is a compilation error because x has generic type.
-          // In order to support that pattern, we need to be able to
-          // represent that RR is a version of R where it's not behaving
-          // as generic-with-default and substituting in AnyType does that.
-        } else {
-          subs.insert({formalDecl->id(), formalType});
-        }
-      }
-    }
-
-    // get a type using the substitutions
-    const CompositeType* theType = helpGetTypeForDecl(context, ad,
-                                                      subs,
-                                                      poiScope,
-                                                      instantiatedFrom);
-
-    result = theType;
-
-  } else {
-    // built-in type construction should be handled
-    // by resolveFnCallSpecialType and not reach this point.
-    CHPL_ASSERT(false && "case not handled");
-  }
-
-  return QUERY_END(result);
-}
-
-static QualifiedType computeTypeOfField(Context* context,
-                                        const Type* t,
-                                        ID fieldId) {
-  if (const CompositeType* ct = t->getCompositeType()) {
-    // Figure out the parent MultiDecl / TupleDecl
-    ID declId = parsing::idToContainingMultiDeclId(context, fieldId);
-
-    // Resolve the type of that field (or MultiDecl/TupleDecl)
-    const auto& fields = resolveFieldDecl(context, ct, declId,
-                                          DefaultsPolicy::IGNORE_DEFAULTS);
-    int n = fields.numFields();
-    for (int i = 0; i < n; i++) {
-      if (fields.fieldDeclId(i) == fieldId) {
-        return fields.fieldType(i);
-      }
-    }
-  }
-
-  CHPL_ASSERT(false && "should not be reachable");
-  return QualifiedType(QualifiedType::VAR, ErroneousType::get(context));
-}
-
-const QualifiedType& returnType(Context* context,
-                                const TypedFnSignature* sig,
-                                const PoiScope* poiScope) {
-  QUERY_BEGIN(returnType, context, sig, poiScope);
-
-  const UntypedFnSignature* untyped = sig->untyped();
-
-  QualifiedType result;
-
-  if (untyped->idIsFunction() && sig->needsInstantiation()) {
-    // if it needs instantiation, we don't know the return type yet.
-    result = QualifiedType(QualifiedType::UNKNOWN, UnknownType::get(context));
-  } else if (untyped->idIsFunction()) {
-    const AstNode* ast = parsing::idToAst(context, untyped->id());
-    const Function* fn = ast->toFunction();
-    CHPL_ASSERT(fn);
-    if (const AstNode* retType = fn->returnType()) {
-      // resolve the return type
-      ResolutionResultByPostorderID resolutionById;
-      auto visitor = Resolver::createForFunction(context, fn, poiScope, sig,
-                                                 resolutionById);
-      retType->traverse(visitor);
-      result = resolutionById.byAst(retType).type();
-    } else {
-      // resolve the function body
-      const ResolvedFunction* rFn = resolveFunction(context, sig, poiScope);
-      // infer the return type
-      ReturnTypeInferrer visitor(context, fn, *rFn);
-      fn->body()->traverse(visitor);
-      result = visitor.returnedType();
-    }
-
-    // Figure out the kind for the QualifiedType based on the return intent
-    // Need to do this if the return type is declared.
-    QualifiedType::Kind kind = (QualifiedType::Kind) fn->returnIntent();
-    // adjust default / const return intent to 'var'
-    if (kind == QualifiedType::DEFAULT_INTENT ||
-        kind == QualifiedType::CONST_VAR) {
-        kind = QualifiedType::VAR;
-    }
-    result = QualifiedType(kind, result.type(), result.param());
-
-    // Functions that return tuples need to return
-    // a value tuple (for value returns and type returns)
-    // or a reference to a value tuple (for ref/const ref returns)
-    if (result.type() && result.type()->isTupleType()) {
-      auto tt = result.type()->toTupleType();
-      auto vt = tt->toValueTuple(context);
-      CHPL_ASSERT(tt == vt); // this should already be done in return type inference
-      result = QualifiedType(kind, vt);
-    }
-
-  } else if (untyped->isTypeConstructor()) {
-    const Type* t = returnTypeForTypeCtorQuery(context, sig, poiScope);
-
-    // for a 'class C' declaration, the above query returns a BasicClassType,
-    // but 'C' normally means a generic-management non-nil C
-    // so adjust the result.
-    if (untyped->idIsClass()) {
-      auto bct = t->toBasicClassType();
-      CHPL_ASSERT(bct);
-      auto dec = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
-      t = ClassType::get(context, bct, /*manager*/ nullptr, dec);
-    }
-
-    result = QualifiedType(QualifiedType::TYPE, t);
-
-  // if method call and the receiver points to a composite type definition,
-  // then it's some sort of compiler-generated method
-  } else if (untyped->isCompilerGenerated()) {
-    if (untyped->name() == USTR("init")) {
-      result = QualifiedType(QualifiedType::CONST_VAR,
-                             VoidType::get(context));
-    } else if (untyped->idIsField() && untyped->isMethod()) {
-      // method accessor - compute the type of the field
-      QualifiedType ft = computeTypeOfField(context,
-                                            sig->formalType(0).type(),
-                                            untyped->id());
-      if (ft.isType() || ft.isParam()) {
-        // return the type as-is (preserving param/type-ness)
-        result = ft;
-      } else if (ft.isConst()) {
-        // return a const ref
-        result = QualifiedType(QualifiedType::CONST_REF, ft.type());
-      } else {
-        // return a ref
-        result = QualifiedType(QualifiedType::REF, ft.type());
-      }
-    } else {
-      CHPL_ASSERT(false && "unhandled compiler-generated method");
-    }
-  } else {
-    CHPL_ASSERT(false && "case not handled");
-  }
-
-  return QUERY_END(result);
-}
-
-static const TypedFnSignature* const&
-inferOutFormalsQuery(Context* context,
-                     const TypedFnSignature* sig,
-                     const PoiScope* instantiationPoiScope) {
-  QUERY_BEGIN(inferOutFormalsQuery, context, sig, instantiationPoiScope);
-
-  const UntypedFnSignature* untyped = sig->untyped();
-
-  std::vector<types::QualifiedType> formalTypes;
-
-  // resolve the function body
-  const ResolvedFunction* rFn = resolveFunction(context, sig,
-                                                instantiationPoiScope);
-  const ResolutionResultByPostorderID& rr = rFn->resolutionById();
-
-  int numFormals = sig->numFormals();
-  for (int i = 0; i < numFormals; i++) {
-    const types::QualifiedType& ft = sig->formalType(i);
-    if (ft.kind() == QualifiedType::OUT && ft.isGenericOrUnknown()) {
-      formalTypes.push_back(rr.byAst(untyped->formalDecl(i)).type());
-    } else {
-      formalTypes.push_back(ft);
-    }
-  }
-
-  const TypedFnSignature* result = nullptr;
-  result = TypedFnSignature::getInferred(context,
-                                         std::move(formalTypes),
-                                         sig);
-
-  return QUERY_END(result);
-}
-
-const TypedFnSignature* inferOutFormals(Context* context,
-                                        const TypedFnSignature* sig,
-                                        const PoiScope* instantiationPoiScope) {
-  if (sig == nullptr) {
-    return nullptr;
-  }
-
-  bool anyGenericOutFormals = false;
-  int numFormals = sig->numFormals();
-  for (int i = 0; i < numFormals; i++) {
-    const types::QualifiedType& ft = sig->formalType(i);
-    if (ft.kind() == QualifiedType::OUT && ft.isGenericOrUnknown()) {
-      anyGenericOutFormals = true;
-      break;
-    }
-  }
-
-  // if there are no 'out' formals with generic type, just return 'sig'.
-  // also just return 'sig' if the function needs instantiation;
-  // in that case, we can't infer the 'out' formals by resolving the body.
-  if (anyGenericOutFormals && !sig->needsInstantiation()) {
-    return inferOutFormalsQuery(context, sig, instantiationPoiScope);
-  } else {
-    return sig;
-  }
 }
 
 
@@ -2612,11 +2283,16 @@ void accumulatePoisUsedByResolvingBody(Context* context,
     return;
   }
 
-  // resolve the body
-  const ResolvedFunction* r = resolveFunction(context, signature, poiScope);
-
-  // gather the POI scopes from instantiating the function body
-  poiInfo.accumulate(r->poiInfo());
+  // resolve the body, if it is not already being resolved
+  const ResolvedFunction* r = helpResolveFunction(context, signature, poiScope,
+                                                  /* skipIfRunning */ true);
+  if (r == nullptr) {
+    // If it's a recursive call, track it in the PoiInfo
+    poiInfo.accumulateRecursive(signature, poiScope);
+  } else {
+    // gather the POI scopes from instantiating the function body
+    poiInfo.accumulate(r->poiInfo());
+  }
 }
 
 // if the call's name matches a class management type construction,
@@ -2901,6 +2577,9 @@ static bool resolveFnCallSpecial(Context* context,
   return false;
 }
 
+using CandidatesVec = std::vector<const TypedFnSignature*>;
+using ForwardingInfoVec = std::vector<QualifiedType>;
+
 static MostSpecificCandidates
 resolveFnCallForTypeCtor(Context* context,
                          const CallInfo& ci,
@@ -2908,8 +2587,8 @@ resolveFnCallForTypeCtor(Context* context,
                          const PoiScope* inPoiScope,
                          PoiInfo& poiInfo) {
 
-  std::vector<const TypedFnSignature*> initialCandidates;
-  std::vector<const TypedFnSignature*> candidates;
+  CandidatesVec initialCandidates;
+  CandidatesVec candidates;
 
   CHPL_ASSERT(ci.calledType().type() != nullptr);
   CHPL_ASSERT(!ci.calledType().type()->isUnknownType());
@@ -2926,31 +2605,27 @@ resolveFnCallForTypeCtor(Context* context,
                                 inPoiScope,
                                 candidates);
 
+
+  ForwardingInfoVec forwardingInfo;
+
   // find most specific candidates / disambiguate
   // Note: at present there can only be one candidate here
-  MostSpecificCandidates mostSpecific = findMostSpecificCandidates(context,
-                                                                   candidates,
-                                                                   ci,
-                                                                   inScope,
-                                                                   inPoiScope);
+  MostSpecificCandidates mostSpecific =
+    findMostSpecificCandidates(context,
+                               candidates, forwardingInfo,
+                               ci, inScope, inPoiScope);
 
   return mostSpecific;
 }
 
-using CandidatesVec = std::vector<const TypedFnSignature*>;
-
-// returns true if one or more TypedFnSignature for compiler-generated
-// methods were added to the candidates vector, and false otherwise
-static bool
-considerCompilerGeneratedCandidates(Context* context,
-                                    const CallInfo& ci,
-                                    const Scope* inScope,
-                                    const PoiScope* inPoiScope,
-                                    PoiInfo& poiInfo,
-                                    CandidatesVec& candidates) {
+static void considerCompilerGeneratedCandidates(Context* context,
+                                                const CallInfo& ci,
+                                                const Scope* inScope,
+                                                const PoiScope* inPoiScope,
+                                                CandidatesVec& candidates) {
 
   // only consider compiler-generated methods, for now
-  if (!ci.isMethodCall()) return false;
+  if (!ci.isMethodCall()) return;
 
   // fetch the receiver type info
   CHPL_ASSERT(ci.numActuals() >= 1);
@@ -2960,7 +2635,7 @@ considerCompilerGeneratedCandidates(Context* context,
   // if not compiler-generated, then nothing to do
   if (!needCompilerGeneratedMethod(context, receiverType, ci.name(),
                                    ci.isParenless())) {
-    return false;
+    return;
   }
 
   // get the compiler-generated function, may be generic
@@ -2971,13 +2646,13 @@ considerCompilerGeneratedCandidates(Context* context,
   // check if the initial signature matches
   auto faMap = FormalActualMap(tfs->untyped(), ci);
   if (!isInitialTypedSignatureApplicable(context, tfs, faMap, ci)) {
-    return false;
+    return;
   }
 
   // OK, already concrete, store and return
   if (!tfs->needsInstantiation()) {
     candidates.push_back(tfs);
-    return true;
+    return;
   }
 
   // need to instantiate before storing
@@ -2989,17 +2664,7 @@ considerCompilerGeneratedCandidates(Context* context,
   CHPL_ASSERT(instantiated->untyped()->idIsFunction());
   CHPL_ASSERT(instantiated->instantiatedFrom());
 
-  auto instantiationScope = pointOfInstantiationScope(context, inScope,
-                                                      inPoiScope);
-  poiInfo.setPoiScope(instantiationScope);
-
-  accumulatePoisUsedByResolvingBody(context, instantiated,
-                                    instantiationScope,
-                                    poiInfo);
-
   candidates.push_back(instantiated);
-
-  return true;
 }
 
 static std::vector<BorrowedIdsWithName>
@@ -3034,24 +2699,216 @@ lookupCalledExprConsideringReceiver(Context* context,
   return ret;
 }
 
+static void helpComputeForwardingTo(const CallInfo& fci,
+                                    size_t start,
+                                    CandidatesVec& candidates,
+                                    std::vector<QualifiedType>& forwardingTo) {
+  QualifiedType forwardingReceiverActualType = fci.calledType();
+  size_t n = candidates.size();
+  forwardingTo.resize(start);
+  for (size_t i = start; i < n; i++) {
+    forwardingTo.push_back(forwardingReceiverActualType);
+  }
+}
+
+// this function gathers candidates not from POI and candidates
+// from POI into separate vectors.
+// For each of these vectors, the corresponding forwardingTo vector
+// will have an element for each of the returned candidates &
+// indicates the actual type that is passed as the method receiver
+// when using forwarding.
+static void
+gatherAndFilterCandidatesForwarding(Context* context,
+                                    const Call* call,
+                                    const CallInfo& ci,
+                                    const Scope* inScope,
+                                    const PoiScope* inPoiScope,
+                                    CandidatesVec& nonPoiCandidates,
+                                    CandidatesVec& poiCandidates,
+                                    ForwardingInfoVec& nonPoiForwardingTo,
+                                    ForwardingInfoVec& poiForwardingTo) {
+  nonPoiCandidates.empty();
+  poiCandidates.empty();
+  nonPoiForwardingTo.empty();
+  poiForwardingTo.empty();
+
+  const Type* receiverType = ci.actual(0).type().type();
+
+  // Resolve the forwarding expression's types & decide if we
+  // want to consider forwarding.
+  const ResolvedFields* forwards = nullptr;
+  UniqueString name = ci.name();
+  if (name == USTR("init") || name == USTR("init=") || name == USTR("deinit")) {
+    // these are exempt from forwarding
+  } else if (auto ct = receiverType->getCompositeType()) {
+    auto useDefaults = DefaultsPolicy::USE_DEFAULTS;
+    const ResolvedFields& fields = fieldsForTypeDecl(context, ct,
+                                                     useDefaults);
+    if (fields.numForwards() > 0) {
+      // and check for cycles
+      bool cycleFound = emitErrorForForwardingCycles(context, ct);
+      if (cycleFound == false) {
+        forwards = &fields;
+      }
+    }
+  }
+
+  if (forwards) {
+    // Construct CallInfos with the receiver replaced for each
+    // of the forwarded-to types.
+    std::vector<CallInfo> forwardingCis;
+
+    int numForwards = forwards->numForwards();
+    for (int i = 0; i < numForwards; i++) {
+      QualifiedType forwardType = forwards->forwardingToType(i);
+      std::vector<CallInfoActual> actuals;
+      // compute the actuals
+      // first, the method receiver (from the forwarded type)
+      actuals.push_back(CallInfoActual(forwardType, USTR("this")));
+
+      // Check that ci was consistent with passing the receiver by name
+      // If it turns out to not always be the case for a good reason,
+      // this assert can be removed.
+      CHPL_ASSERT(ci.actual(0).byName() == USTR("this"));
+
+      // then, the other actuals, if any, from ci
+      int numActuals = ci.numActuals();
+      for (int j = 1; j < numActuals; j++) {
+        actuals.push_back(ci.actual(j));
+      }
+
+      forwardingCis.push_back(CallInfo(ci.name(),
+                                       forwardType,
+                                       ci.isMethodCall(),
+                                       ci.hasQuestionArg(),
+                                       ci.isParenless(),
+                                       std::move(actuals)));
+    }
+
+    // Now, consider each of the forwarding calls to gather and filter
+    // candidates.
+    // This should follow the same process as gatherAndFilterCandidates but:
+    // * in each stage, consider all of the forwarded method receiver types
+    //   equally as sources of candidates
+    // * do not consider forwarding (since we are considering it now!)
+
+    NamedScopeSet visited;
+
+    for (auto fci : forwardingCis) {
+      size_t start = nonPoiCandidates.size();
+      // consider compiler-generated candidates
+      considerCompilerGeneratedCandidates(context, fci, inScope, inPoiScope,
+                                          nonPoiCandidates);
+      // update forwardingTo
+      helpComputeForwardingTo(fci, start, nonPoiCandidates, nonPoiForwardingTo);
+    }
+
+    // next, look for candidates without using POI.
+    for (auto fci : forwardingCis) {
+      size_t start = nonPoiCandidates.size();
+      // compute the potential functions that it could resolve to
+      auto v = lookupCalledExprConsideringReceiver(context, inScope, fci,
+                                                   visited);
+
+      // filter without instantiating yet
+      const auto& initialCandidates = filterCandidatesInitial(context, v, fci);
+
+      // find candidates, doing instantiation if necessary
+      filterCandidatesInstantiating(context,
+                                    initialCandidates,
+                                    fci,
+                                    inScope,
+                                    inPoiScope,
+                                    nonPoiCandidates);
+
+      // update forwardingTo
+      helpComputeForwardingTo(fci, start, nonPoiCandidates, nonPoiForwardingTo);
+    }
+
+    // next, look for candidates using POI
+    for (const PoiScope* curPoi = inPoiScope;
+         curPoi != nullptr;
+         curPoi = curPoi->inFnPoi()) {
+
+      // stop if any candidate has been found.
+      if (nonPoiCandidates.empty() == false || poiCandidates.empty() == false) {
+        break;
+      }
+
+      for (auto fci : forwardingCis) {
+        size_t start = poiCandidates.size();
+
+        // compute the potential functions that it could resolve to
+        auto v = lookupCalledExprConsideringReceiver(context, curPoi->inScope(),
+                                                     fci,
+                                                     visited);
+
+        // filter without instantiating yet
+        auto& initialCandidates = filterCandidatesInitial(context, v, fci);
+
+        // find candidates, doing instantiation if necessary
+        filterCandidatesInstantiating(context,
+                                      initialCandidates,
+                                      fci,
+                                      inScope,
+                                      inPoiScope,
+                                      poiCandidates);
+
+        // update forwardingTo
+        helpComputeForwardingTo(fci, start, poiCandidates, poiForwardingTo);
+      }
+    }
+
+    // If no candidates were found and it's a method, try forwarding
+    // This supports the forwarding-to-forwarding case.
+    if (nonPoiCandidates.empty() && poiCandidates.empty()) {
+      for (auto fci : forwardingCis) {
+        if (fci.isMethodCall() && fci.numActuals() >= 1) {
+          const Type* receiverType = fci.actual(0).type().type();
+          if (typeUsesForwarding(context, receiverType)) {
+            gatherAndFilterCandidatesForwarding(context, call, fci,
+                                                inScope, inPoiScope,
+                                                nonPoiCandidates,
+                                                poiCandidates,
+                                                nonPoiForwardingTo,
+                                                poiForwardingTo);
+          }
+        }
+      }
+    }
+  }
+}
+
+// Returns candidates (including instantiating candidates)
+// for resolving CallInfo 'ci'.
+//
 // call can be nullptr. in that event, ci.name() will be used
 // to find the call with that name.
-static MostSpecificCandidates
-resolveFnCallFilterAndFindMostSpecific(Context* context,
-                                       const Call* call,
-                                       const CallInfo& ci,
-                                       const Scope* inScope,
-                                       const PoiScope* inPoiScope,
-                                       PoiInfo& poiInfo) {
-  // search for candidates at each POI until we have found a candidate
+//
+// forwardingTo is a vector that will be empty unless forwardiing
+// is used for some candidates.
+//
+// If forwarding is used, it will have an element for each of the returned
+// candidates and will indicate the actual type that is passed
+// to the 'this' reciever formal.
+static CandidatesVec
+gatherAndFilterCandidates(Context* context,
+                          const Call* call,
+                          const CallInfo& ci,
+                          const Scope* inScope,
+                          const PoiScope* inPoiScope,
+                          size_t& firstPoiCandidate,
+                          ForwardingInfoVec& forwardingInfo) {
   CandidatesVec candidates;
-  size_t firstPoiCandidate = 0;
   NamedScopeSet visited;
+  firstPoiCandidate = 0;
 
   // inject compiler-generated candidates in a manner similar to below
-  // (note that any added candidates are already fully instantiated)
+  // (note that any added candidates are already fully instantiated &
+  //  the poiInfo from these is not gathered, because such methods should
+  //  always be available in any scope that can refer to the type & are
+  //  considered part of the custom type)
   considerCompilerGeneratedCandidates(context, ci, inScope, inPoiScope,
-                                      poiInfo,
                                       candidates);
 
   // next, look for candidates without using POI.
@@ -3070,11 +2927,10 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
                                   inScope,
                                   inPoiScope,
                                   candidates);
-
-    firstPoiCandidate = candidates.size();
   }
 
   // next, look for candidates using POI
+  firstPoiCandidate = candidates.size();
   for (const PoiScope* curPoi = inPoiScope;
        curPoi != nullptr;
        curPoi = curPoi->inFnPoi()) {
@@ -3101,14 +2957,66 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
                                   candidates);
   }
 
-  // find most specific candidates / disambiguate
-  MostSpecificCandidates mostSpecific = findMostSpecificCandidates(context,
-                                                                   candidates,
-                                                                   ci,
-                                                                   inScope,
-                                                                   inPoiScope);
+  // If no candidates were found and it's a method, try forwarding
+  if (candidates.empty() && ci.isMethodCall() && ci.numActuals() >= 1) {
+    const Type* receiverType = ci.actual(0).type().type();
+    if (typeUsesForwarding(context, receiverType)) {
+      CandidatesVec nonPoiCandidates;
+      CandidatesVec poiCandidates;
+      ForwardingInfoVec nonPoiForwardingTo;
+      ForwardingInfoVec poiForwardingTo;
 
-  // note any most specific candidates from POI in poiInfo.
+      gatherAndFilterCandidatesForwarding(context, call, ci,
+                                          inScope, inPoiScope,
+                                          nonPoiCandidates, poiCandidates,
+                                          nonPoiForwardingTo, poiForwardingTo);
+
+      // append non-poi candidates
+      candidates.insert(candidates.end(),
+                        nonPoiCandidates.begin(), nonPoiCandidates.end());
+      forwardingInfo.insert(forwardingInfo.end(),
+                            nonPoiForwardingTo.begin(),
+                            nonPoiForwardingTo.end());
+      // append poi candidates
+      firstPoiCandidate = candidates.size();
+      candidates.insert(candidates.end(),
+                        poiCandidates.begin(), poiCandidates.end());
+      forwardingInfo.insert(forwardingInfo.end(),
+                            poiForwardingTo.begin(),
+                            poiForwardingTo.end());
+    }
+  }
+
+  return candidates;
+}
+
+// * find the best candidates (disambiguate)
+// * check signatures of selected candidates
+// * gather POI info from any instantiations
+static MostSpecificCandidates
+findMostSpecificAndCheck(Context* context,
+                         const CandidatesVec& candidates,
+                         const ForwardingInfoVec& forwardingInfo,
+                         size_t firstPoiCandidate,
+                         const Call* call,
+                         const CallInfo& ci,
+                         const Scope* inScope,
+                         const PoiScope* inPoiScope,
+                         PoiInfo& poiInfo) {
+
+  // find most specific candidates / disambiguate
+  MostSpecificCandidates mostSpecific =
+    findMostSpecificCandidates(context, candidates, forwardingInfo,
+                               ci, inScope, inPoiScope);
+
+  // perform fn signature checking for any instantiated candidates that are used
+  for (const TypedFnSignature* candidate : mostSpecific) {
+    if (candidate && candidate->instantiatedFrom()) {
+      checkSignature(context, candidate);
+    }
+  }
+
+  // note any most-specific candidates from POI in poiInfo.
   {
     size_t n = candidates.size();
     for (size_t i = firstPoiCandidate; i < n; i++) {
@@ -3123,6 +3031,36 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
   return mostSpecific;
 }
 
+
+static MostSpecificCandidates
+resolveFnCallFilterAndFindMostSpecific(Context* context,
+                                       const Call* call,
+                                       const CallInfo& ci,
+                                       const Scope* inScope,
+                                       const PoiScope* inPoiScope,
+                                       PoiInfo& poiInfo) {
+
+  // search for candidates at each POI until we have found candidate(s)
+  size_t firstPoiCandidate = 0;
+  ForwardingInfoVec forwardingInfo;
+  CandidatesVec candidates = gatherAndFilterCandidates(context, call, ci,
+                                                       inScope, inPoiScope,
+                                                       firstPoiCandidate,
+                                                       forwardingInfo);
+
+  // * find most specific candidates / disambiguate
+  // * check signatures
+  // * gather POI info
+
+  MostSpecificCandidates mostSpecific =
+    findMostSpecificAndCheck(context,
+                             candidates, forwardingInfo, firstPoiCandidate,
+                             call, ci,
+                             inScope, inPoiScope, poiInfo);
+
+  return mostSpecific;
+}
+
 // call can be nullptr. in that event ci.name() will be used to find
 // what is called.
 static
@@ -3133,6 +3071,7 @@ CallResolutionResult resolveFnCall(Context* context,
                                    const PoiScope* inPoiScope) {
   PoiInfo poiInfo;
   MostSpecificCandidates mostSpecific;
+
   if (ci.calledType().kind() == QualifiedType::TYPE) {
     // handle invocation of a type constructor from a type
     // (note that we might have the type through a type alias)
@@ -3357,7 +3296,8 @@ isNameOfFieldQuery(Context* context,
     // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
     if (child->isVarLikeDecl() ||
         child->isMultiDecl() ||
-        child->isTupleDecl()) {
+        child->isTupleDecl() ||
+        child->isForwardingDecl()) {
       bool found = helpFieldNameCheck(child, name);
       if (found) {
         result = true;

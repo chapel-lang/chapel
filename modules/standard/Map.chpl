@@ -55,7 +55,7 @@ module Map {
   private proc _checkKeyAndValType(type K, type V) {
     if isGenericType(K) {
       compilerWarning('creating a map with key type ', K:string, 2);
-      if isClassType(K) && !isGenericType(borrowed K) {
+      if isClassType(K) && !isGenericType(K:borrowed) {
         compilerWarning('which now means class type with generic ',
                         'management', 2);
       }
@@ -63,7 +63,7 @@ module Map {
     }
     if isGenericType(V) {
       compilerWarning('creating a map with value type ', V:string, 2);
-      if isClassType(V) && !isGenericType(borrowed V) {
+      if isClassType(V) && !isGenericType(V:borrowed) {
         compilerWarning('which now means class type with generic ',
                         'management', 2);
       }
@@ -398,8 +398,8 @@ module Map {
     proc const this(k: keyType)
     where isNonNilableClass(valType) {
       _warnForParSafeIndexing();
-      compilerError("Cannot access nilable class directly. Use an",
-                    " appropriate accessor method instead.");
+      compilerError("Cannot index into a map with non-nilable class values. ",
+                    "Use an appropriate accessor method instead.");
     }
 
     /* Get a borrowed reference to the element at position `k`.

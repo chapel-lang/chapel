@@ -55,13 +55,16 @@ class ReduceIntent final : public NamedDecl {
 
   ReduceIntent(AstList children, UniqueString name)
       : NamedDecl(asttags::ReduceIntent, std::move(children),
-                  /* attributesChildNum= */ AstNode::NO_CHILD,
+                  /* attributeGroupChildNum= */ AstNode::NO_CHILD,
                   Decl::DEFAULT_VISIBILITY,
                   Decl::DEFAULT_LINKAGE,
                   /*linkageNameChildNum=*/ AstNode::NO_CHILD,
                   name) {
     CHPL_ASSERT(numChildren() == 1);
   }
+
+  ReduceIntent(Deserializer& des)
+    : NamedDecl(asttags::ReduceIntent, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const ReduceIntent* rhs = other->toReduceIntent();
@@ -92,6 +95,12 @@ class ReduceIntent final : public NamedDecl {
   const AstNode* op() const {
     return this->child(opChildNum_);
   }
+
+  void serialize(Serializer& ser) const override {
+    NamedDecl::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(ReduceIntent);
 
 };
 

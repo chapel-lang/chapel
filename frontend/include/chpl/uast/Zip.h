@@ -37,6 +37,9 @@ class Zip final : public Call {
            /*hasCalledExpression*/ false) {
   }
 
+  Zip(Deserializer& des)
+    : Call(asttags::Zip, des) { }
+
   bool contentsMatchInner(const AstNode* other) const override {
     return callContentsMatchInner(other->toCall());
   }
@@ -52,6 +55,12 @@ class Zip final : public Call {
     Create and return a zip expression.
   */
   static owned<Zip> build(Builder* builder, Location loc, AstList actuals);
+
+  void serialize(Serializer& ser) const override {
+    Call::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Zip);
 
 };
 

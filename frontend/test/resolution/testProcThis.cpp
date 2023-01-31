@@ -25,7 +25,6 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
-#include "./ErrorGuard.h"
 
 static void test1() {
   Context ctx;

@@ -20,6 +20,8 @@
 #ifndef CHPL_UAST_PRIM_OP_H
 #define CHPL_UAST_PRIM_OP_H
 
+#include "chpl/framework/serialize-functions.h"
+
 namespace chpl {
 namespace uast {
 namespace primtags {
@@ -47,6 +49,9 @@ PrimitiveTag primNameToTag(const char* name);
 using namespace primtags;
 
 } // end namespace uast
+
+DECLARE_SERDE_ENUM(uast::PrimitiveTag, uint16_t);
+
 } // end namespace chpl
 
 #endif

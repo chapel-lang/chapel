@@ -58,11 +58,11 @@ class VarScopeVisitor {
 
   // ----- inputs to the process
   Context* context = nullptr;
-
+  types::QualifiedType fnReturnType;
 
   // ----- internal variables
   std::vector<owned<VarFrame>> scopeStack;
-
+  std::vector<const AstNode*> inAstStack;
 
   // ----- methods to be implemented by specific analysis subclass
 
@@ -87,8 +87,14 @@ class VarScopeVisitor {
                                  const types::QualifiedType& formalType,
                                  RV& rv) = 0;
 
-  /** Called for an unconditional return or throw */
-  virtual void handleReturnOrThrow(const uast::AstNode* ast, RV& rv) = 0;
+  /** Called for a 'return' */
+  virtual void handleReturn(const uast::Return* ast, RV& rv) = 0;
+
+  /** Called for a 'throw' */
+  virtual void handleThrow(const uast::Throw* ast, RV& rv) = 0;
+
+  /** Called for a 'yield' */
+  virtual void handleYield(const uast::Yield* ast, RV& rv) = 0;
 
   /** Called to process a Conditional after handling its contents --
       should update currentFrame() which is the frame for the Conditional.
@@ -106,7 +112,8 @@ class VarScopeVisitor {
 
   // ----- methods for use by specific analysis subclasses
 
-  VarScopeVisitor(Context* context) : context(context), scopeStack() { }
+  VarScopeVisitor(Context* context, types::QualifiedType fnReturnType)
+    : context(context), fnReturnType(std::move(fnReturnType)) { }
 
  public:
   void process(const uast::AstNode* symbol,
@@ -120,6 +127,9 @@ class VarScopeVisitor {
     CHPL_ASSERT(!scopeStack.empty());
     return scopeStack.back().get();
   }
+
+  /** Returns the current statement being traversed */
+  const AstNode* currentStatement();
 
   /** Return the parent frame or nullptr if there is none. */
   VarFrame* currentParentFrame() {
@@ -169,10 +179,16 @@ class VarScopeVisitor {
   /** Update initedVars for a declaration with an initExpression. */
   bool processDeclarationInit(const VarLikeDecl* ast, RV& rv);
 
+  /** Returns the return or yield type of the function being processed */
+  const types::QualifiedType& returnOrYieldType();
+
  public:
   // ----- visitor implementation
   void enterScope(const uast::AstNode* ast, RV& rv);
   void exitScope(const uast::AstNode* ast, RV& rv);
+
+  void enterAst(const uast::AstNode* ast);
+  void exitAst(const uast::AstNode* ast);
 
   bool enter(const VarLikeDecl* ast, RV& rv);
   void exit(const VarLikeDecl* ast, RV& rv);
@@ -188,6 +204,9 @@ class VarScopeVisitor {
 
   bool enter(const Throw* ast, RV& rv);
   void exit(const Throw* ast, RV& rv);
+
+  bool enter(const Yield* ast, RV& rv);
+  void exit(const Yield* ast, RV& rv);
 
   bool enter(const Identifier* ast, RV& rv);
   void exit(const Identifier* ast, RV& rv);
@@ -236,6 +255,10 @@ struct VarFrame {
 
   // ----- variables declared here for use in particular subclasses
 
+  // TODO: These probably can't store ID because, for a variable
+  // declared within a param for loop, we want to have a different
+  // variable for each iteration, rather than considering them all the same.
+
   // for split init and copy elision:
   // which variables are declared here in a way that allows split init?
   std::set<ID> eligibleVars;
@@ -280,10 +303,10 @@ struct VarFrame {
   Compute a vector indicating which actuals are passed to an 'out'/'in'/'inout'
   formal in all return intent overloads. For each actual 'i',
   actualFormalIntent[i] will be set to one of the following:
-   * uast::IntentList::OUT if it is passed to an 'out' formal
-   * uast::IntentList::IN if it is passed to an 'in' or 'const in' formal
-   * uast::IntentList::INOUT if it is passed to an 'inout' formal
-   * uast::IntentList::UNKNOWN otherwise
+   * uast::Qualifier::OUT if it is passed to an 'out' formal
+   * uast::Qualifier::IN if it is passed to an 'in' or 'const in' formal
+   * uast::Qualifier::INOUT if it is passed to an 'inout' formal
+   * uast::Qualifier::UNKNOWN otherwise
 
   actualFormalTypes will be set so that for actual 'i', if it is passed
   to an 'out'/'in'/'inout' formal, actualFormalTypes[i] will be set to the
@@ -298,7 +321,7 @@ computeActualFormalIntents(Context* context,
                            const MostSpecificCandidates& candidates,
                            const CallInfo& ci,
                            const std::vector<const AstNode*>& actualAsts,
-                           std::vector<uast::IntentList>& actualFrmlIntents,
+                           std::vector<uast::Qualifier>& actualFrmlIntents,
                            std::vector<types::QualifiedType>& actualFrmlTypes);
 
 } // end namespace resolution

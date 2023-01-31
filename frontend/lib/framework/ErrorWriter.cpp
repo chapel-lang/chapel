@@ -39,20 +39,11 @@ void ErrorWriterBase::tweakErrorString(std::string& str) const {
   }
 }
 
-void ErrorWriterBase::writeHeading(ErrorBase::Kind kind, ErrorType type,
-                                   const ID& id, const std::string& str) {
-  writeHeading(kind, type, errordetail::locate(context, id), str);
-}
-
 void ErrorWriterBase::writeHeading(ErrorBase::Kind kind,
                                    ErrorType type,
                                    const uast::AstNode* node,
                                    const std::string& str) {
   writeHeading(kind, type, node->id(), str);
-}
-
-void ErrorWriterBase::writeNote(const ID& id, const std::string& str) {
-  writeNote(errordetail::locate(context, id), str);
 }
 
 void ErrorWriterBase::writeNote(const uast::AstNode* ast, const std::string& str) {
@@ -125,7 +116,7 @@ static void writeFile(std::ostream& oss, const Location& loc) {
 }
 
 void ErrorWriter::writeHeading(ErrorBase::Kind kind, ErrorType type,
-                               Location loc, const std::string& str) {
+                               IdOrLocation loc, const std::string& str) {
   if (outputFormat_ == DETAILED) {
     // In detailed mode, print some error decoration
     oss_ << "─── ";
@@ -135,7 +126,7 @@ void ErrorWriter::writeHeading(ErrorBase::Kind kind, ErrorType type,
   oss_ << kindText(kind);
   setColor(CLEAR);
   oss_ << " in ";
-  writeFile(oss_, loc);
+  writeFile(oss_, errordetail::locate(context, loc));
   if (outputFormat_ == DETAILED) {
     // Second part of the error decoration
     const char* name = ErrorBase::getTypeName(type);
@@ -153,11 +144,11 @@ void ErrorWriter::writeHeading(ErrorBase::Kind kind, ErrorType type,
   oss_ << str << std::endl;
 }
 
-void ErrorWriter::writeNote(Location loc, const std::string& str) {
+void ErrorWriter::writeNote(IdOrLocation loc, const std::string& str) {
   if (outputFormat_ == BRIEF) {
     // Indent notes in brief mode to make things easier to organize
     oss_ << "  note in ";
-    writeFile(oss_, loc);
+    writeFile(oss_, errordetail::locate(context, loc));
     oss_ << ": ";
   } else {
     // In detailed mode, the body is indented.

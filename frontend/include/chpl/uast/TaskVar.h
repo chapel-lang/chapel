@@ -23,7 +23,7 @@
 #include "chpl/framework/Location.h"
 #include "chpl/uast/Decl.h"
 #include "chpl/uast/Formal.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/uast/VarLikeDecl.h"
 
 namespace chpl {
@@ -48,29 +48,34 @@ namespace uast {
 class TaskVar final : public VarLikeDecl {
  public:
   enum Intent {
-    // Use IntentList here for consistent enum values.
-    VAR           = (int) IntentList::VAR,
-    CONST         = (int) IntentList::CONST_VAR,
-    CONST_REF     = (int) IntentList::CONST_REF,
-    REF           = (int) IntentList::REF,
-    IN            = (int) IntentList::IN,
-    CONST_IN      = (int) IntentList::CONST_IN
+    // Use Qualifier here for consistent enum values.
+    VAR           = (int) Qualifier::VAR,
+    CONST         = (int) Qualifier::CONST_VAR,
+    CONST_REF     = (int) Qualifier::CONST_REF,
+    REF           = (int) Qualifier::REF,
+    IN            = (int) Qualifier::IN,
+    CONST_IN      = (int) Qualifier::CONST_IN
   };
 
  private:
-  TaskVar(AstList children, int attributesChildNum, UniqueString name,
+  TaskVar(AstList children, int attributeGroupChildNum, UniqueString name,
           TaskVar::Intent intent,
           int8_t typeExpressionChildNum,
           int8_t initExpressionChildNum)
       : VarLikeDecl(asttags::TaskVar, std::move(children),
-                    attributesChildNum,
+                    attributeGroupChildNum,
                     Decl::DEFAULT_VISIBILITY,
                     Decl::DEFAULT_LINKAGE,
-                    /*linkageNameChildNum*/ -1,
+                    /*linkageNameChildNum*/ NO_CHILD,
                     name,
-                    (IntentList)((int)intent),
+                    (Qualifier)((int)intent),
                     typeExpressionChildNum,
                     initExpressionChildNum) {
+  }
+
+  TaskVar(Deserializer& des)
+      : VarLikeDecl(asttags::TaskVar, des) {
+
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -88,7 +93,7 @@ class TaskVar final : public VarLikeDecl {
   ~TaskVar() override = default;
 
   static owned<TaskVar> build(Builder* builder, Location loc,
-                              owned<Attributes> attributes,
+                              owned<AttributeGroup> attributeGroup,
                               UniqueString name,
                               TaskVar::Intent intent,
                               owned<AstNode> typeExpression,
@@ -99,10 +104,21 @@ class TaskVar final : public VarLikeDecl {
   */
   Intent intent() const { return (Intent)((int)storageKind()); }
 
+  void serialize(Serializer& ser) const override {
+    VarLikeDecl::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(TaskVar);
+
 };
+
+// DECLARE_SERDE_ENUM(uast::TaskVar::Intent, uint8_t);
 
 
 } // end namespace uast
+
+
+
 } // end namespace chpl
 
 #endif

@@ -28,7 +28,7 @@ proc helper(param name : string) {
   {
     var s : string;
     var r = f.reader();
-    r.readstring(s);
+    r.readAll(s);
     writeln("file contents: ", s);
   }
 

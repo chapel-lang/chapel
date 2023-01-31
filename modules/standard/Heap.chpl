@@ -80,7 +80,7 @@ module Heap {
     if isGenericType(eltType) {
       compilerWarning("creating a heap with element type " +
                       eltType:string);
-      if isClassType(eltType) && !isGenericType(borrowed eltType) {
+      if isClassType(eltType) && !isGenericType(eltType:borrowed) {
         compilerWarning("which now means class type with generic management");
       }
       compilerError("heap element type cannot currently be generic");

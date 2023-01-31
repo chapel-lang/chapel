@@ -447,8 +447,8 @@ static void handleCallMacro(const IdentifierInfo* origID,
       actual2 = *tok;
   }
 
-  IdentifierInfo* formal1;
-  IdentifierInfo* formal2;
+  IdentifierInfo* formal1 = nullptr;
+  IdentifierInfo* formal2 = nullptr;
   count = 0;
   for (MacroInfo::param_iterator param = calledMacro->param_begin();
        param != calledMacro->param_end(); ++param) {
@@ -3000,7 +3000,7 @@ void LayeredValueTable::addValue(
 }
 
 void LayeredValueTable::addGlobalValue(
-    StringRef name, Value *value, uint8_t isLVPtr, bool isUnsigned) {
+    StringRef name, Value *value, uint8_t isLVPtr, bool isUnsigned, ::Type* type) {
   Storage store;
   store.u.value = value;
   store.isLVPtr = isLVPtr;
@@ -3009,7 +3009,7 @@ void LayeredValueTable::addGlobalValue(
 }
 
 void LayeredValueTable::addGlobalValue(StringRef name, GenRet gend) {
-  addGlobalValue(name, gend.val, gend.isLVPtr, gend.isUnsigned);
+  addGlobalValue(name, gend.val, gend.isLVPtr, gend.isUnsigned, gend.chplType);
 }
 
 void LayeredValueTable::addGlobalType(StringRef name, llvm::Type *type, bool isUnsigned) {
@@ -3127,6 +3127,7 @@ GenRet LayeredValueTable::getValue(StringRef name) {
       ret.val = store->u.value;
       ret.isLVPtr = store->isLVPtr;
       ret.isUnsigned = store->isUnsigned;
+      ret.chplType = store->chplType;
       return ret;
     }
     if( store->u.cValueDecl ) {
@@ -3140,6 +3141,7 @@ GenRet LayeredValueTable::getValue(StringRef name) {
       store->u.value = ret.val;
       store->isLVPtr = ret.isLVPtr;
       store->isUnsigned = ret.isUnsigned;
+
       return ret;
     }
     if( store->u.chplVar && isVarSymbol(store->u.chplVar) ) {
@@ -4614,7 +4616,7 @@ static void handlePrintAsm(std::string dotOFile) {
     }
 
     // Note: if we want to support GNU objdump, just need to use
-    // --dissasemble= instead of the LLVM flag --disassemble-symbols=
+    // --disassemble= instead of the LLVM flag --disassemble-symbols=
     // but this does not work with older GNU objdump versions.
     std::string disSymArg = "--disassemble-symbols=";
 
@@ -4626,16 +4628,16 @@ static void handlePrintAsm(std::string dotOFile) {
 
     std::vector<std::string> names = gatherPrintLlvmIrCNames();
     for (auto name : names) {
-      printf("\n\n# Dissasembling symbol %s\n\n", name.c_str());
+      printf("\n\n# Disassembling symbol %s\n\n", name.c_str());
       fflush(stdout);
       std::vector<std::string> cmd;
       cmd.push_back(llvmObjDump);
-      std::string arg = disSymArg; // e.g. --dissasemble=
+      std::string arg = disSymArg; // e.g. --disassemble=
       arg += name;
       cmd.push_back(arg);
       cmd.push_back(dotOFile);
 
-      mysystem(cmd, "dissassemble a symbol",
+      mysystem(cmd, "disassemble a symbol",
                /* ignoreStatus */ true,
                /* quiet */ false);
     }

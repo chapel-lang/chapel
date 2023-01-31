@@ -92,7 +92,7 @@ extern bool fReportOptimizeForallUnordered;
 extern bool report_inlining;
 
 // Chapel Envs
-bool useDefaultEnv(std::string key);
+bool useDefaultEnv(std::string key, bool isCrayPrgEnv);
 
 extern std::map<std::string, const char*> envMap;
 
@@ -289,6 +289,8 @@ extern bool fDynoCompilerLibrary;
 extern bool fDynoScopeProduction;
 extern bool fDynoScopeBundled;
 extern bool fDynoDebugTrace;
+extern bool fDynoSerialize;
+extern char dynoBinAstDir[FILENAME_MAX + 1];
 
 extern size_t fDynoBreakOnHash;
 

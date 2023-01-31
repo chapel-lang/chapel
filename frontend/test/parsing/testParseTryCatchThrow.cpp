@@ -31,7 +31,8 @@
 #include "chpl/uast/Try.h"
 
 static void test0(Parser* parser) {
-  auto parseResult = parser->parseString("test0.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       "/* c1 */\n"
       "var x = try /* c2 */ foo();\n"
       "var y = try! bar();\n"
@@ -39,7 +40,7 @@ static void test0(Parser* parser) {
       "try! bar();\n"
       "throw baz();\n"
       "/* c4 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 7);
@@ -123,9 +124,10 @@ static void tryCatchTest(Parser* parser, const char* testName,
                          bool isTryBang,
                          bool hasError,
                          bool hasErrorType) {
+  ErrorGuard guard(parser->context());
   auto test = constructTryCatchTest(isTryBang, hasError, hasErrorType);
-  auto parseResult = parser->parseString(testName, test.c_str());
-  assert(!parseResult.numErrors());
+  auto parseResult = parseStringAndReportErrors(parser, testName, test.c_str());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -177,7 +179,8 @@ static void test1(Parser* parser) {
 }
 
 static void test2(Parser* parser) {
-  auto parseResult = parser->parseString("test2.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
       "/* c1 */\n"
       "try {\n"
       "  throw fooError();\n"
@@ -189,7 +192,7 @@ static void test2(Parser* parser) {
       "  halt('Unknown error');\n"
       "}\n"
       "/* c2 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->stmt(0)->isComment());
@@ -216,7 +219,8 @@ static void test2(Parser* parser) {
 }
 
 static void test3(Parser* parser) {
-  auto parseResult = parser->parseString("test3.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
       R""""(
         module M {
           try {
@@ -227,7 +231,7 @@ static void test3(Parser* parser) {
           }
         }
       )"""");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);

@@ -299,7 +299,7 @@ Context::QueryStatus Context::queryStatus(
   // found an entry for this query
   QueryMapBase* base = search->second.get();
   auto queryMap = (QueryMap<ResultType, ArgTs...>*)base;
-  auto key = QueryMapResult<ResultType, ArgTs...>(queryMap, tupleOfArgs);
+  QueryMapResult<ResultType, ArgTs...> key(queryMap, tupleOfArgs);
   auto search2 = queryMap->map.find(key);
   if (search2 == queryMap->map.end()) {
     return NOT_CHECKED_NOT_CHANGED;
@@ -481,7 +481,7 @@ Context::hasCurrentResultForQuery(
   // found an entry for this query
   QueryMapBase* base = search->second.get();
   auto queryMap = (QueryMap<ResultType, ArgTs...>*)base;
-  auto key = QueryMapResult<ResultType, ArgTs...>(queryMap, tupleOfArgs);
+  QueryMapResult<ResultType, ArgTs...> key(queryMap, tupleOfArgs);
   auto search2 = queryMap->map.find(key);
   if (search2 == queryMap->map.end()) {
     return false;
@@ -507,7 +507,7 @@ Context::isQueryRunning(
   // found an entry for this query
   QueryMapBase* base = search->second.get();
   auto queryMap = (QueryMap<ResultType, ArgTs...>*)base;
-  auto key = QueryMapResult<ResultType, ArgTs...>(queryMap, tupleOfArgs);
+  QueryMapResult<ResultType, ArgTs...> key(queryMap, tupleOfArgs);
   auto search2 = queryMap->map.find(key);
   if (search2 == queryMap->map.end()) {
     return false;

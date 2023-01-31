@@ -400,10 +400,11 @@ module ChapelIO {
             try {
               const fieldName = ioFieldNameLiteral(reader, t, i);
               reader._readLiteral(fieldName);
-            } catch err: SystemError {
+            } catch e : BadFormatError {
               // Try reading again with a different union element.
-              if err.err == EFORMAT || err.err == EEOF then continue;
-              throw err;
+              continue;
+            } catch e : EofError {
+              continue;
             }
 
             hasReadFieldName = true;
@@ -473,11 +474,11 @@ module ChapelIO {
           try {
             const fieldName = ioFieldNameLiteral(reader, t, i);
             reader._readLiteral(fieldName);
-          } catch err: SystemError {
-
+          } catch e : BadFormatError {
             // Try reading again with a different union element.
-            if err.err == EFORMAT || err.err == EEOF then continue;
-            throw err;
+            continue;
+          } catch e : EofError {
+            continue;
           }
 
           hasFoundAtLeastOneField = true;
@@ -657,10 +658,12 @@ module ChapelIO {
       alignCheckRange.normalizeAlignment();
     }
 
-    if hasLowBound() then
+    if (boundedType == BoundedRangeType.bounded ||
+        boundedType == BoundedRangeType.boundedLow) then
       f.write(lowBound);
     f._writeLiteral("..");
-    if hasHighBound() {
+    if (boundedType == BoundedRangeType.bounded ||
+        boundedType == BoundedRangeType.boundedHigh) {
       if (chpl__singleValIdxType(this.idxType) && this._low != this._high) {
         f._writeLiteral("<");
         f.write(lowBound);
