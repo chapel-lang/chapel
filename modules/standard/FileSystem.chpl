@@ -260,11 +260,14 @@ proc chown(name: string, uid: int, gid: int) throws {
    :arg metadata: This argument indicates whether to copy metadata associated
                   with the source file.  It is set to `false` by default.
    :type metadata: `bool`
+   :arg permissions: This argument indicates whether to copy file permissions
+                     from the source file. It is set to `true` by default.
+   :type permissions: `bool`
 
    :throws IsADirectoryError: when `dest` is directory.
    :throws SystemError: thrown to describe another error if it occurs.
 */
-proc copy(src: string, dest: string, metadata: bool = false) throws {
+proc copy(src: string, dest: string, metadata: bool = false, permissions: bool = true) throws {
   var destFile = dest;
 
   proc copyMode(src: string, dest: string) throws {
@@ -319,8 +322,11 @@ proc copy(src: string, dest: string, metadata: bool = false) throws {
     // Destination didn't exist before, and we're overwriting it anyways.
   }
 
-  try copyFile(src, destFile);
-  try copyMode(src, destFile);
+  try copyFileImpl(src, destFile);
+
+  if permissions {
+    try copyMode(src, destFile);
+  }
 
   if (metadata) {
     extern proc chpl_fs_copy_metadata(source: c_string, dest: c_string): errorCode;
@@ -356,7 +362,7 @@ proc copy(src: string, dest: string, metadata: bool = false) throws {
                         when `dest` is not writable,
                         or to describe another error if it occurs.
 */
-proc copyFile(src: string, dest: string) throws {
+private proc copyFileImpl(src: string, dest: string) throws {
   // This implementation is based off of the python implementation for copyfile,
   // with some slight differences.  That implementation was found at:
   // https://bitbucket.org/mirror/cpython/src/c8ce5bca0fcda4307f7ac5d69103ce128a562705/Lib/shutil.py?at=default
@@ -438,6 +444,11 @@ proc copyFile(src: string, dest: string) throws {
   try srcChnl.close();
   try destFile.close();
   try srcFile.close();
+}
+
+deprecated "'FileSystem.copyFile' is deprecated. Please use 'FileSystem.copy' instead"
+proc copyFile(src: string, dest: string) throws {
+  copyFileImpl(src, dest);
 }
 
 /* Copies the permissions of the file indicated by `src` to the file indicated

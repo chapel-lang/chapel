@@ -11,7 +11,7 @@ proc main() {
 
   const tomlFile = basename + '.toml';
   const manifestFile = 'tmp/' + basename + '/Mason.toml';
-  FileSystem.copyFile(tomlFile, manifestFile);
+  FileSystem.copy(tomlFile, manifestFile, permissions=false);
 
   here.chdir('tmp/' + basename);
 
