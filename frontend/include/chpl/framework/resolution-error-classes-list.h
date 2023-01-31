@@ -53,6 +53,7 @@ ERROR_CLASS(ModuleAsVariable,
             const uast::Module*)
 ERROR_CLASS(MultipleEnumElems, const uast::AstNode*, chpl::UniqueString, const types::EnumType*, std::vector<ID>)
 ERROR_CLASS(MultipleQuestionArgs, const uast::FnCall*, const uast::AstNode*, const uast::AstNode*)
+ERROR_CLASS(NestedClassFieldRef, const uast::AggregateDecl*, const uast::AggregateDecl*, const uast::AstNode*, ID)
 ERROR_CLASS(NonIterable, const uast::IndexableLoop*, const uast::AstNode*, types::QualifiedType)
 ERROR_CLASS(PrivateToPublicInclude, const uast::Include*, const uast::Module*)
 ERROR_CLASS(ProcDefExplicitAnonFormal,

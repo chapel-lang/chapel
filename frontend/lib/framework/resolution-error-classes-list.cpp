@@ -336,6 +336,33 @@ void ErrorMultipleQuestionArgs::write(ErrorWriterBase& wr) const {
   wr.code(secondQuestion, { secondQuestion });
 }
 
+void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
+  auto outerDecl = std::get<0>(info);
+  auto innerDecl = std::get<1>(info);
+  auto reference = std::get<2>(info);
+  auto id = std::get<3>(info);
+
+  const char* outerName = outerDecl->isClass() ? "class" : "record";
+  const char* innerName = innerDecl->isClass() ? "class" : "record";
+
+  if (auto ident = reference->toIdentifier()) {
+    wr.heading(kind_, type_, reference, "illegal use of identifier '",
+               ident->name(), "' from enclosing type.");
+  } else {
+    wr.heading(kind_, type_, reference,
+               "illegal use of identifier from enclosing type.");
+  }
+  wr.code(reference, { reference });
+  wr.note(innerDecl, "the identifier is used within ", innerName, " '",
+          innerDecl->name(), "', declared here:");
+  wr.code(innerDecl);
+  wr.note(outerDecl, "however, the identifier refers to a field of an enclosing ",
+          outerName, " '", outerDecl->name(), "', declared here:");
+  wr.code(outerDecl);
+  wr.note(id, "field declared here:");
+  wr.code<ID, ID>(id, { id });
+}
+
 void ErrorNonIterable::write(ErrorWriterBase &wr) const {
   auto loop = std::get<const uast::IndexableLoop*>(info);
   auto iterand = std::get<const uast::AstNode*>(info);
