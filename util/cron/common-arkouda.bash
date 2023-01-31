@@ -11,6 +11,7 @@ fi
 
 # Perf configuration
 export CHPL_TEST_ARKOUDA_PERF=${CHPL_TEST_ARKOUDA_PERF:-true}
+export CHPL_TEST_SYNC_AK_GRAPHS=${CHPL_TEST_SYNC_ARKOUDA_GRAPHS:-true}
 if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ]; then
   source $CWD/common-perf.bash
   ARKOUDA_PERF_DIR=${ARKOUDA_PERF_DIR:-$COMMON_DIR/NightlyPerformance/arkouda}
