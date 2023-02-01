@@ -840,16 +840,7 @@ static void dynoDisplayError(chpl::Context* context,
 
   // For now have syntax errors just do their own thing (mimic old parser).
   if (err.kind() == chpl::ErrorMessage::SYNTAX) {
-    UniqueString path = loc.path();
-    const int line = loc.line();
-    const int tagUsrFatalCont = 3;
-    setupError("parser", path.c_str(), line, tagUsrFatalCont);
-    fprintf(stderr, "%s:%d: %s", path.c_str(), line, "syntax error");
-    if (strlen(msg) > 0) {
-      fprintf(stderr, ": %s\n", msg);
-    } else {
-      fprintf(stderr, "\n");
-    }
+    dynoPrintSyntaxError(err);
   } else {
     maybePrintErrorHeader(id);
 
@@ -916,7 +907,7 @@ static bool dynoRealizeErrors(void) {
       chpl::Context::defaultReportError(gContext, err.get());
       // Use production compiler's exit-on-error functionality for errors
       // reported via new Dyno mechanism
-      setupDynoError(err->kind());
+      dynoSetupError(err->kind());
     } else {
       // Try to maintain compatibility with the old reporting mechanism
       dynoDisplayError(gContext, err->toErrorMessage(gContext));
