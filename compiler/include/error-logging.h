@@ -24,48 +24,63 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "baseAST.h"
-
 #include "astlocs.h"
+#include "baseAST.h"
 #include "chpl/util/break.h"
 #include "chpl/framework/ErrorBase.h"
-
-#ifndef chpl_noreturn
-  #if defined(__GNUC__) && __GNUC__ >= 3
-    #define chpl_noreturn __attribute__((__noreturn__))
-  #else
-    #define chpl_noreturn
-  #endif
-#endif
 
 //
 // User facing error logging hooks. These are printf-style macros that make
 // calls to the underlying implementation.
 //
-
-#define DO_TOSTRING(tok) #tok
-#define TOSTRING(tok) DO_TOSTRING(tok)
-
 // INT_FATAL(ast, format, ...)
 //   where ast         == BaseAST* or NULL
 //         format, ... == normal printf stuff
 // results in something like:
 // INTERNAL ERROR in compilerSrc.c (lineno): your text here (usrSrc:usrLineno)
+//
 
-#define INT_FATAL      gdbShouldBreakHere(), \
-                       setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 1), handleError
+#ifndef COMPILER_SUBDIR
+  #define COMPILER_SUBDIR
+#endif
 
-#define USR_FATAL      gdbShouldBreakHere(), \
-                       setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 2), handleError
+#define DO_TOSTRING(tok) #tok
+#define TOSTRING(tok) DO_TOSTRING(tok)
+
+enum ErrorLevel {
+  ERR_INTERNAL_FATAL = 1,
+  ERR_USER_FATAL,
+  ERR_USER_FATAL_CONTINUE,
+  ERR_USER_WARN,
+  ERR_USER_PRINT
+};
+
+#define INT_FATAL gdbShouldBreakHere(), \
+  setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, \
+             ERR_INTERNAL_FATAL), \
+  handleError
+
+#define USR_FATAL gdbShouldBreakHere(), \
+  setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, \
+             ERR_USER_FATAL), \
+  handleError
 
 #define USR_FATAL_CONT gdbShouldBreakHere(), \
-                       setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 3), handleError
+  setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, \
+             ERR_USER_FATAL_CONTINUE), \
+  handleError
 
-#define USR_WARN       setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 4), handleError
+#define USR_WARN gdbShouldBreakHere(), \
+  setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, \
+             ERR_USER_WARN), \
+  handleError
 
-#define USR_PRINT      setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, 5), handleError
+#define USR_PRINT gdbShouldBreakHere(), \
+  setupError(TOSTRING(COMPILER_SUBDIR), __FILE__, __LINE__, \
+             ERR_USER_PRINT), \
+  handleError
 
-#define USR_STOP       exitIfFatalErrorsEncountered
+#define USR_STOP exitIfFatalErrorsEncountered
 
 // INT_ASSERT is intended to become no-op in production builds of compiler
 #define SELECT_ASSERT(_1, _2, NAME, ...) NAME
@@ -73,47 +88,27 @@
 #define INT_ASSERT1(x) do { if (!(x)) INT_FATAL("assertion error"); } while (0)
 #define INT_ASSERT2(s, x) do { if (!(x)) INT_FATAL((s), "assertion error"); } while (0)
 
-//
-// Error tag values:
-//
-//  1 = INT_FATAL
-//  2 = USR_FATAL
-//  3 = USR_FATAL_CONT
-//  4 = USR_WARN
-//  5 = USR_PRINT
-//
-void        setupError(const char* subdir, const char* filename, int lineno, int tag);
-void        setupDynoError(chpl::ErrorBase::Kind errKind);
+void setupError(const char* subdir, const char* filename, int lineno,
+                ErrorLevel tag);
 
-void        handleError(const char* fmt, ...) __attribute__ ((format (printf, 1, 2)));
-void        handleError(const BaseAST* ast, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
-void        handleError(astlocT astloc, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
-void        handleError(chpl::Location, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
+// This function mostly exists as a convenience to set exit_immediately and
+// exit_eventually, so both production and dyno errors can share the same
+// exit-on-error logic.
+void dynoSetupError(chpl::ErrorBase::Kind errKind);
 
-void        exitIfFatalErrorsEncountered();
+// TODO: The __attribute__ stuff can't be portable, can it?!?!
+void handleError(const char* fmt, ...) __attribute__ ((format (printf, 1, 2)));
+void handleError(const BaseAST* ast, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
+void handleError(astlocT astloc, const char* fmt, ...) __attribute__ ((format (printf, 2, 3)));
+void handleError(chpl::Location, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));
 
-void        considerExitingEndOfPass();
-
-void        startCatchingSignals();
-void        stopCatchingSignals();
-
-void        clean_exit(int status) chpl_noreturn;
-
-void        printCallStack();
-void        printCallStackCalls();
-
-bool        fatalErrorsEncountered();
-void        clearFatalErrors();
-
-bool printsSameLocationAsLastError(const BaseAST* ast);
+bool fatalErrorsEncountered();
+void clearFatalErrors();
+void exitIfFatalErrorsEncountered();
+void considerExitingEndOfPass();
 void clearLastErrorLocation();
 
-astlocT getUserInstantiationLocation(const BaseAST* ast);
-
-// Returns true if an error/warning at this location
-// (e.g. with USR_FATAL(ast, ...)) would print out
-// a user line number.
-bool        printsUserLocation(const BaseAST* ast);
+bool printsSameLocationAsLastError(const BaseAST* ast);
 
 // Supporting bold / colorful output to terminals
 // These are "" if stderr is not a tty we think supports them
@@ -121,5 +116,9 @@ bool        printsUserLocation(const BaseAST* ast);
 const char* boldErrorFormat();
 const char* underlineErrorFormat();
 const char* clearErrorFormat();
+
+// Unpacks a dyno syntax error and prints it. A hold-over from how the old
+// parser used to print syntax errors.
+void dynoPrintSyntaxError(const chpl::ErrorMessage& err);
 
 #endif
