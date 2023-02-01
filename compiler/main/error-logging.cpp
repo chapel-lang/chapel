@@ -738,10 +738,9 @@ static void reportErroneousFunctionCall(BaseAST* ast) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void vhandleError(const BaseAST* ast,
-                         astlocT        astloc,
-                         const char*    fmt,
-                         va_list        args);
+static void vhandleError(const BaseAST* ast, astlocT astloc,
+                         const char* fmt,
+                         va_list args);
 
 void handleError(const char *fmt, ...) {
   astlocT astloc(0, NULL);
@@ -791,16 +790,15 @@ void handleError(chpl::Location loc, const char *fmt, ...) {
 }
 
 
-static void vhandleError(const BaseAST* ast,
-                         astlocT        astloc,
-                         const char*    fmt,
-                         va_list        args) {
-  if (err_ignore) {
-    return;
-  }
+static void vhandleError(const BaseAST* inAst, astlocT astloc,
+                         const char* fmt,
+                         va_list args) {
+  if (err_ignore) return;
+
+  BaseAST* ast = const_cast<BaseAST*>(inAst);
 
   if (handle_erroneous_fns && err_fatal &&
-      isErrorInOrCallingErroneousFunction(const_cast<BaseAST*>(ast))) {
+      isErrorInOrCallingErroneousFunction(ast)) {
     bool save_exit_immediately = exit_immediately;
 
     // don't exit yet
@@ -810,7 +808,7 @@ static void vhandleError(const BaseAST* ast,
     }
 
     // Report the saved error at the call site
-    reportErroneousFunctionCall(const_cast<BaseAST*>(ast));
+    reportErroneousFunctionCall(ast);
 
     exit_immediately = save_exit_immediately;
 
@@ -824,7 +822,7 @@ static void vhandleError(const BaseAST* ast,
     // now the rest of this function will report the additional error
   }
 
-  int guess = printErrorHeader(const_cast<BaseAST*>(ast), astloc);
+  int guess = printErrorHeader(ast, astloc);
 
   //
   // Only print out the arguments if this is a user error or we're
