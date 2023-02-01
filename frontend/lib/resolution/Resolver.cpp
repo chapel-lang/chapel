@@ -394,7 +394,16 @@ const Scope* Resolver::methodReceiverScope(bool recompute) {
       auto* untyped = typedSignature->untyped();
       auto thisFormal = untyped->formalDecl(0)->toFormal();
       auto type = thisFormal->typeExpression();
-      if (auto ident = type->toIdentifier()) {
+      if (type == nullptr) {
+        // `this` formals of primary methods have no type expression. They are,
+        // however, in primary methods, so the method's parent is the aggregate
+        // type whose scope should be used.
+
+        // TODO can typedSignature->id() ever not refer to a Function in this case?
+        auto recordOrClassId = parsing::idToParentId(context,
+                                                     typedSignature->id());
+        savedReceiverScope = scopeForId(context, recordOrClassId);
+      } else if (auto ident = type->toIdentifier()) {
         auto re = byPostorder.byAst(ident);
         if (re.toId().isEmpty() == false) {
           savedReceiverScope = scopeForId(context, re.toId());
@@ -828,6 +837,23 @@ static const Type* computeVarArgTuple(Resolver& resolver,
   return typePtr;
 }
 
+/* If the type is generic with defaults, computes the defaults of a type.
+   Returns the original type if instantiating with defaults isn't necessary. */
+static QualifiedType computeTypeDefaults(Resolver& resolver,
+                                         const QualifiedType& type) {
+  if (auto t = type.type()) {
+    if (auto ct = t->getCompositeType()) {
+      // test if that type is generic
+      auto g = getTypeGenericity(resolver.context, ct);
+      if (g == Type::GENERIC_WITH_DEFAULTS) {
+        // fill in the defaults
+        return typeWithDefaults(resolver.context, type);
+      }
+    }
+  }
+  return type;
+}
+
 // useType will be used to set the type if it is not nullptr
 void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
   if (scopeResolveOnly)
@@ -845,6 +871,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
 
   bool isField = false;
   bool isFormal = false;
+  bool isFormalThis = false;
   bool isFieldOrFormal = false;
   bool isVarArgs = decl->isVarArgFormal();
 
@@ -862,6 +889,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
         isField = true;
 
     isFormal = decl->isFormal() || isVarArgs;
+    isFormalThis = isFormal && decl->name() == USTR("this");
     isFieldOrFormal = isField || isFormal;
 
     bool foundSubstitution = false;
@@ -890,16 +918,30 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       }
     }
 
-    if (typeExpr && (!foundSubstitution || ignoreSubstitutionFor == decl)) {
-      // get the type we should have already computed postorder
-      ResolvedExpression& r = byPostorder.byAst(typeExpr);
-      typeExprT = r.type();
-      // otherwise, typeExprT can be empty/null
+    // use the type from the type expression; if this is a `this` formal
+    // for a primary method, there's no type expression, but we should
+    // act as if there was one.
+    if (!foundSubstitution || ignoreSubstitutionFor == decl) {
+      if (typeExpr) {
+        // get the type we should have already computed postorder
+        ResolvedExpression& r = byPostorder.byAst(typeExpr);
+        typeExprT = r.type();
+        // otherwise, typeExprT can be empty/null
+      } else if (isFormalThis) {
+        // We're a primary method `this` formal (which do not have type
+        // expressions). This means we don't have to go through searching
+        // scopes for the ID the formal refers to: it's the ID of the
+        // enclosing record or class.
+        auto functionId = parsing::idToParentId(context, decl->id());
+        auto aggregateId = parsing::idToParentId(context, functionId);
+        auto parentType = typeForId(aggregateId, /* localGenericToUnknown */ true);
+        typeExprT = computeTypeDefaults(*this, parentType);
+      }
 
       // for 'this' formals of class type, adjust them to be borrowed, so
       // e.g. proc C.foo() { } has 'this' of type 'borrowed C'.
       // This should not apply to parenthesized expressions.
-      if (isFormal && decl->name() == USTR("this") &&
+      if (isFormalThis &&
           typeExprT.type() != nullptr && typeExprT.type()->isClassType() &&
           typeExpr->isIdentifier()) {
         auto ct = typeExprT.type()->toClassType();
@@ -927,8 +969,14 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       if (qtKind == QualifiedType::PARAM)
         paramPtr = typeExprT.param();
     } else {
-      if (isFieldOrFormal && typeExpr == nullptr && initExpr == nullptr) {
-        // Lack of initializer for a field/formal means the Any type
+      if (isFieldOrFormal &&
+          typeExpr == nullptr && !isFormalThis &&
+          initExpr == nullptr) {
+        // Lack of initializer for a field/formal means the Any type.
+        //
+        // However, a `this` formal lacks a type expression if it belongs to a
+        // primary method. This does not, however, mean that its type should be
+        // AnyType; it is not adjusted here.
         typeExprT = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
       } else if (isFieldOrFormal) {
         // figure out if we should potentially infer the type from the init expr
@@ -1866,16 +1914,7 @@ bool Resolver::resolveIdentifier(const Identifier* ident,
         computeDefaults = false;
       }
       if (computeDefaults) {
-        if (auto t = type.type()) {
-          if (auto ct = t->getCompositeType()) {
-            // test if that type is generic
-            auto g = getTypeGenericity(context, ct);
-            if (g == Type::GENERIC_WITH_DEFAULTS) {
-              // fill in the defaults
-              type = typeWithDefaults(context, type);
-            }
-          }
-        }
+        type = computeTypeDefaults(*this, type);
       }
     // Do not resolve function calls under 'scopeResolveOnly'
     } else if (type.kind() == QualifiedType::PARENLESS_FUNCTION) {

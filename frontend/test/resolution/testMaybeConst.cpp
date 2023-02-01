@@ -151,7 +151,7 @@ static void test2() {
 
       }
     )"""",
-    {{"M.R.method@1", true}},
+    {{"M.R.method@0", true}},
     {});
 }
 
