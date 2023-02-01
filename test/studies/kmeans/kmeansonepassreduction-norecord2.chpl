@@ -141,9 +141,9 @@ proc clone()
 
     //used to identify where should we insert a timer.
     writeln("start reduce");
-    const startTime = getCurrentTime();
+    const startTime = timeSinceEpoch().totalSeconds();
     var (error, counts, c1)  = kmeansReduction reduce data1;
-    const endTime = getCurrentTime() - startTime;
+    const endTime = timeSinceEpoch().totalSeconds() - startTime;
     
     write("finish reduce");
     if printTiming then

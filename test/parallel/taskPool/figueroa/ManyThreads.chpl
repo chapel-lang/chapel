@@ -6,7 +6,7 @@ use Time;
 
 config const numThreads = 3000;
 var total: sync int = 0;
-var seed = getCurrentTime() : uint(32);
+var seed = timeSinceEpoch().totalSeconds() : uint(32);
 
 proc foo (x) {
 

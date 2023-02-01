@@ -80,7 +80,7 @@ proc main() {
 
 
     for trial in 1..numTrials {                        // loop over the trials
-      const startTime = getCurrentTime();              // capture the start time
+      const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 
       //
       // The main loop: Iterate over the vectors A, B, and C in a
@@ -91,7 +91,7 @@ proc main() {
       foreach (a, b, c) in zip(A, B, C) do
         a = b + alpha * c;
 
-      execTime(trial) = getCurrentTime() - startTime;  // store the elapsed time
+      execTime(trial) = timeSinceEpoch().totalSeconds() - startTime;  // store the elapsed time
     }
 
     /*const validAnswer = verifyResults(A, B, C);        // verify...*/
