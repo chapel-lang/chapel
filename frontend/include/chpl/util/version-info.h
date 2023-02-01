@@ -58,10 +58,10 @@ const char* getConfiguredPrefix();
 std::string getMajorMinorVersion();
 
 /*
-  get the chpl version string. Developer flag helps decide if a git-sha is
-  included or not
+  get the chpl version string. release versions will have format Major.Minor.Patch or
+  Major.Minor.Patch.Build. Pre-release versions will be Major.Minor.Patch pre-release (git-sha)
 */
-std::string getVersion(bool developer);
+std::string getVersion();
 
 /*
   get the official release flag that was set through the top-level CMakeLists.txt
@@ -71,9 +71,9 @@ bool getIsOfficialRelease();
 
 /*
   get the build version value. This may be an integer or a git-sha depending on
-  the value of official_release and developer.
+  the value of official_release flag.
 */
-const char* getBuildVersion(bool developer);
+const char* getBuildVersion();
 
 } // namespace chpl
 
