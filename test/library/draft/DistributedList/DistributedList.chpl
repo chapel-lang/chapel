@@ -421,15 +421,15 @@ module DistributedList {
             assert(this.boundsCheck(idx));
 
             const (locIdx, blockIdx, eltIdx) = this.indicesFor(idx);
-            on this.targetLocales[locIdx] {
+            // on this.targetLocales[locIdx] {
                 ref slot = this.blockLists[locIdx].getRef(blockIdx, eltIdx);
 
                 if !Reflection.canResolveMethod(updater, "this", idx, slot) then
                     compilerError('`list.update()` failed to resolve method ' +
                                 updater.type:string + '.this() for arguments (' +
                                 idx.type:string + ', ' + slot.type:string + ')');
-                updater(idx, slot);
-            }
+                return updater(idx, slot);
+            // }
         }
 
         // return a reference to the element at 'idx'
