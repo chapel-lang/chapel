@@ -257,11 +257,65 @@ static void test4() {
   (void) tert;
 }
 
+// Test a field being named the same as the record.
+static void test5() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto path = UniqueString::get(context, "test1.chpl");
+  std::string contents =
+    " record r {\n"
+    "   var r = 1;\n"
+    "   proc doPrimary() {}\n"
+    " }\n"
+    " var obj: r;\n"
+    " obj.doPrimary();\n";
+
+  setFileText(context, path, contents);
+
+  // Get the module.
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+
+  // Unpack all the uAST we need for the test.
+  assert(m->numStmts() == 3);
+  auto r = m->stmt(0)->toRecord();
+  assert(r);
+  assert(r->numDeclOrComments() == 2);
+  auto fnPrimary = r->declOrComment(1)->toFunction();
+  assert(fnPrimary);
+  auto callPrimary = m->stmt(2)->toFnCall();
+  assert(callPrimary);
+
+  // Resolve the module.
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  // Get the type of 'r'.
+  auto& qtR = typeForModuleLevelSymbol(context, r->id());
+
+  // Assert some things about the primary call.
+  auto& reCallPrimary = rr.byAst(callPrimary);
+  auto& qtCallPrimary = reCallPrimary.type();
+  assert(qtCallPrimary.type()->isVoidType());
+  auto tfsCallPrimary = reCallPrimary.mostSpecific().only();
+  assert(tfsCallPrimary);
+
+  // Check the primary call receiver.
+  assert(tfsCallPrimary->id() == fnPrimary->id());
+  assert(tfsCallPrimary->numFormals() == 1);
+  assert(tfsCallPrimary->formalName(0) == "this");
+  assert(tfsCallPrimary->formalType(0).type() == qtR.type());
+}
+
 int main() {
   test1();
   test2();
   test3();
   test4();
+  test5();
 
   return 0;
 }
