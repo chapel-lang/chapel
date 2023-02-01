@@ -29,8 +29,6 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
 
-static const bool ERRORS_EXPECTED=true;
-
 static void
 testMaybeRef(const char* test,
              const char* program,
