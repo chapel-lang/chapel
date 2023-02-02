@@ -500,9 +500,6 @@
 %type <uniqueStr> implements_type_ident implements_type_error_ident
 
 %type <commentsAndStmt> decl_base
-%type <commentsAndStmt> deprecated_decl_stmt
-%type <commentsAndStmt> deprecated_enum_item
-%type <commentsAndStmt> deprecated_class_level_stmt
 
 // statement lists
 %type <exprList> program
@@ -666,11 +663,6 @@ stmt:
   {
     $$ = $2;
   }
-  // note that allowing all stmts here leads to a shift/reduce conflict
-  /* stmt_base
-  {
-    $$ = $3;
-  } */
   |
   stmt_base
   {
@@ -680,7 +672,7 @@ stmt:
 
 stmt_base:
   tryable_stmt      // (no '->finishStmt()' required b/c 'tryable_stmt' did it)
-| deprecated_decl_stmt      { $$ = context->finishStmt($1); }
+| decl_base                 { $$ = context->finishStmt($1); }
 | include_module_stmt       { $$ = context->finishStmt($1); }
 | block_stmt                { $$ = context->finishStmt($1); }
 | use_stmt                  { $$ = context->finishStmt($1); }
@@ -858,33 +850,15 @@ tryable_stmt:
   }
 ;
 
-deprecated_decl_stmt:
-  decl_base
-| TDEPRECATED STRINGLITERAL
-  {
-    context->noteAttribute(@$, context->buildIdent(@1, $1), nullptr, context->makeList($2));
-  }
-  decl_base
-  {
-    $$ = $4;
-  }
-| TDEPRECATED
-  {
-    context->noteAttribute(@$, context->buildIdent(@1, $1), nullptr, nullptr);
-  }
-  decl_base
-  {
-    $$ = $3;
-  }
-;
-
 decl_base:
   module_decl_stmt
 | class_level_stmt
 ;
 
 attribute_receiver:
-  stmt_base
+  loop_stmt
+  | decl_base
+  | block_stmt
 ;
 
 attribute_group:
@@ -912,9 +886,9 @@ attribute_decl_begin:
   | TATMARK TDEPRECATED {
     $$ = context->buildIdent(@2, $2);
   }
-  /* | TDEPRECATED {
+  | TDEPRECATED {
     $$ = context->buildIdent(@1, $1);
-  } */
+  }
 ;
 
 opt_attribute_decl_toolspace:
@@ -931,7 +905,8 @@ opt_attribute_decl_toolspace:
 ;
 
 opt_attribute_actuals:
-  TLP TRP
+  { $$=context->makeList(); }
+  | TLP TRP
   { $$=context->makeList(); }
   | TLP attribute_actuals_ls TRP
   {
@@ -1409,27 +1384,6 @@ return_stmt:
     auto node = Return::build(BUILDER, LOC(@$), toOwned($2));
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
-  }
-;
-
-deprecated_class_level_stmt:
-  class_level_stmt
-|
-TDEPRECATED STRINGLITERAL
-  {
-    context->noteAttribute(@$, context->buildIdent(@1, $1), nullptr, context->makeList($2));
-  }
-  class_level_stmt
-  {
-    $$ = $4;
-  }
-| TDEPRECATED
-  {
-    context->noteAttribute(@$, context->buildIdent(@1, $1), nullptr, nullptr);
-  }
-  class_level_stmt
-  {
-    $$ = $3;
   }
 ;
 
@@ -2131,7 +2085,7 @@ class_level_stmt_ls:
     /* nothing */
     $$ = context->makeList();
   }
-| class_level_stmt_ls deprecated_class_level_stmt
+ | class_level_stmt_ls class_level_stmt
   {
     context->appendList($1, $2);
   }
@@ -2139,7 +2093,7 @@ class_level_stmt_ls:
   {
     context->appendList($1, $3);
   }
-| class_level_stmt_ls pragma_ls deprecated_class_level_stmt
+| class_level_stmt_ls pragma_ls class_level_stmt
   {
     context->appendList($1, context->buildPragmaStmt(@3, $3));
   }
@@ -2187,12 +2141,13 @@ enum_header_lcbr:
 ;
 
 enum_ls:
-  deprecated_enum_item
+  enum_item
   {
     $$ = context->makeList($1);
     context->resetAttributeGroupPartsState();
   }
-| enum_ls TCOMMA
+|
+  enum_ls TCOMMA
   {
     $$ = $1;
     context->clearCommentsBefore(@2);
@@ -2203,7 +2158,7 @@ enum_ls:
     context->clearCommentsBefore(@2);
     context->resetAttributeGroupPartsState();
   }
-  deprecated_enum_item
+  enum_item
   {
     context->appendList($1, $4);
     context->resetAttributeGroupPartsState();
@@ -2227,25 +2182,6 @@ enum_ls:
 
 ;
 
-deprecated_enum_item:
-  enum_item
-| TDEPRECATED STRINGLITERAL
-  {
-    context->noteAttribute(@$, context->buildIdent(@1, $1), nullptr, context->makeList($2));
-  }
-  enum_item
-  {
-    $$ = $4;
-  }
-| TDEPRECATED
-  {
-    context->noteAttribute(@$, context->buildIdent(@1, $1), nullptr, nullptr);
-  }
-  enum_item
-  {
-    $$ = $3;
-  }
-;
 
 enum_item:
   ident_def
