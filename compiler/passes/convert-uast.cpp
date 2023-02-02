@@ -141,6 +141,7 @@ struct Converter {
   bool canScopeResolve = false;
   bool trace = false;
   int delegateCounter = 0;
+  FnSymbol* inForwardingMethod = nullptr;
 
   ModTag topLevelModTag;
   std::vector<ModStackEntry> modStack;
@@ -420,6 +421,11 @@ struct Converter {
           const uast::Formal* parentMethodThis = nullptr;
           Symbol* parentMethodConvertedThis = nullptr;
           if (parsing::idIsField(context, id)) {
+            if (inForwardingMethod != nullptr) {
+              parentMethodConvertedThis = inForwardingMethod->_this;
+              isFieldAccess = true;
+            }
+
             // are we in a method? if so, what is the 'this' formal?
             for (auto it = symStack.rbegin(); it != symStack.rend(); ++it) {
               if (it->ast != nullptr) {
@@ -429,11 +435,6 @@ struct Converter {
                     isFieldAccess = true;
                     break;
                   }
-                } else if (auto inFwd = it->ast->toForwardingDecl()) {
-                  FnSymbol* fwdFn = toFnSymbol(findConvertedSym(inFwd->id()));
-                  INT_ASSERT(fwdFn);
-                  parentMethodConvertedThis = fwdFn->_this;
-                  isFieldAccess = true;
                 }
               }
             }
@@ -2384,11 +2385,11 @@ struct Converter {
                                                  dtMethodToken)));
     fn->insertFormalAtTail(new DefExpr(arg));
 
-    // push the function to the symbol stack and note that
-    // the forwarding declaration turned into it, so that we can
-    // adjust Identifiers that refer to fields when converting those
-    pushToSymStack(node, /* resolved */ nullptr);
-    noteConvertedSym(node, fn);
+    // Should not be possible to nest forwarding decls
+    INT_ASSERT(!inForwardingMethod);
+
+    // note that we're in a forwarding declaration working with 'fn'
+    inForwardingMethod = fn;
 
     Expr* expr = nullptr;
 
@@ -2422,7 +2423,9 @@ struct Converter {
 
     // insert the forwarding expression into the forwarding method
     fn->body->insertAtTail(new CallExpr(PRIM_RETURN, expr));
-    popFromSymStack(node, fn);
+
+    // note, no longer working within forwarding method 'fn'
+    inForwardingMethod = nullptr;
 
     // Add the forwarding target method to the ret Block
     DefExpr* fnDef = new DefExpr(fn);
@@ -4156,16 +4159,7 @@ const resolution::ResolutionResultByPostorderID*
 Converter::currentResolutionResult() {
   const resolution::ResolutionResultByPostorderID* r = nullptr;
   if (symStack.size() > 0) {
-    if (symStack.size() > 0) {
-      r = symStack.back().resolved;
-      // ignore the symbol stack entry for a ForwardingDecl for this purpose
-      // (since this ForwardingDecl node only exists to store some
-      //  converted AST).
-      if (r == nullptr && symStack.back().ast->isForwardingDecl() &&
-          symStack.size() >= 2) {
-        r = symStack[symStack.size()-2].resolved;
-      }
-    }
+    r = symStack.back().resolved;
   }
   return r;
 }
