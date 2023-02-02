@@ -359,6 +359,19 @@ void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n) {
   CUDA_CALL(cuMemcpyDtoD((CUdeviceptr)dst, (CUdeviceptr)src, n));
 }
 
+
+void* chpl_gpu_impl_comm_async(void *dst, void *src, size_t n) {
+  CUstream stream;
+  cuStreamCreate(&stream, CU_STREAM_NON_BLOCKING);
+  cuMemcpyAsync((CUdeviceptr)dst, (CUdeviceptr)src, n, stream);
+  return stream;
+}
+
+void chpl_gpu_impl_comm_wait(void *stream) {
+  cuStreamSynchronize((CUstream)stream);
+  cuStreamDestroy((CUstream)stream);
+}
+
 void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
                                int32_t lineno, int32_t filename) {
   chpl_gpu_ensure_context();

@@ -110,6 +110,8 @@ void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename);
 void* chpl_gpu_memmove(void* dst, const void* src, size_t n);
 void chpl_gpu_copy_device_to_host(void* dst, const void* src, size_t n);
 void chpl_gpu_copy_host_to_device(void* dst, const void* src, size_t n);
+void* chpl_gpu_comm_async(void *dst, void *src, size_t n);
+void chpl_gpu_comm_wait(void *stream);
 
 bool chpl_gpu_is_device_ptr(const void* ptr);
 bool chpl_gpu_is_host_ptr(const void* ptr);
