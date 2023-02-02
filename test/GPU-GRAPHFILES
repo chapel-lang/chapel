@@ -14,3 +14,6 @@ gpu/native/studies/compiler-performance/end-to-end.graph
 gpu/native/studies/kernelLaunch/emptyKernelLaunch.graph
 
 gpu/native/studies/chop/chplGPU.graph
+
+gpu/native/array_on_device/studies/shoc/triadAodBw1.graph
+gpu/native/array_on_device/studies/shoc/triadAodBw2.graph
