@@ -1,0 +1,1 @@
+boolSizes.chpl:3: error: 'bool(w)' is deprecated, please use 'bool' instead
