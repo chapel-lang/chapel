@@ -294,6 +294,7 @@ static CallExpr* buildInitCall(CallExpr* newExpr,
 
   VarSymbol* tmp = newTemp("initTemp", rootType);
   CallExpr* call = new CallExpr("init", gMethodToken, new NamedExpr("this", new SymExpr(tmp)));
+  call->tryTag = newExpr->tryTag;
 
   insertNamedInstantiationInfo(newExpr, call, at);
 
@@ -372,7 +373,6 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
   if (manager == dtBorrowed) {
     USR_WARN(newExpr, "creating a 'new borrowed' type is deprecated");
   }
-  TryTag newTryTag = newExpr->tryTag;
 
   INT_ASSERT(newExpr->isPrimitive(PRIM_NEW));
   AggregateType* at = resolveNewFindType(newExpr);
@@ -403,7 +403,6 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
     initCall->get(1)->remove(); // '_mt'
     initCall->insertAtHead(new SymExpr(initType->symbol));
     CallExpr* newCall = toCallExpr(initCall->remove());
-    newCall->tryTag = newTryTag;
 
     initTemp->defPoint->remove();
 
