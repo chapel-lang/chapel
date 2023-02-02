@@ -537,7 +537,7 @@ void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
   auto moduleName = std::get<std::string>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
-  auto& improperMatches = std::get<std::set<std::pair<ID, uast::asttags::AstTag>>>(info);
+  auto& improperMatches = std::get<std::set<const uast::AstNode*>>(info);
 
   wr.heading(kind_, type_, id, "cannot find ", allowedItem(useOrImport),
              " '", moduleName, "' for '", useOrImport, "' statement.");
@@ -549,14 +549,14 @@ void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
     // Do we need to tell the user how to use super.M or this.M?
     bool explainRelativeImport = false;
 
-    for (auto idAndTag : improperMatches) {
+    for (auto ast : improperMatches) {
       // Separate out the various suggestions.
       wr.message("");
 
       // Use locationOnly to avoid printing 'in module M' for every suggestion.
 
-      auto& improperId = idAndTag.first;
-      auto tag = idAndTag.second;
+      auto improperId = ast->id();
+      auto tag = ast->tag();
       if (tag == uast::asttags::AstTag::Module) {
         wr.note(locationOnly(improperId),
                 "a module named '", moduleName, "' is defined here:");
