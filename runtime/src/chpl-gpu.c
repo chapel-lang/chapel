@@ -241,6 +241,11 @@ void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
   return NULL;
 }
 
+void chpl_gpu_hostmem_register(void *memAlloc, size_t size) {
+  CHPL_GPU_DEBUG("chpl_gpu_hostmem_register is called. Ptr %p, size: %d\n", memAlloc, size);
+  chpl_gpu_impl_hostmem_register(memAlloc, size);
+}
+
 bool chpl_gpu_is_device_ptr(const void* ptr) {
   return chpl_gpu_impl_is_device_ptr(ptr);
 }

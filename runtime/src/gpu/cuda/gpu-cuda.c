@@ -427,6 +427,16 @@ void chpl_gpu_impl_mem_free(void* memAlloc) {
   }
 }
 
+void chpl_gpu_impl_hostmem_register(void *memAlloc, size_t size) {
+  // The CUDA driver uses DMA to transfer page-locked memory to the GPU; if
+  // memory is not page-locked it must first be transfered into a page-locked
+  // buffer, which degrades performance. So in the array_on_device mode we
+  // choose to page-lock such memory even if it's on the host-side.
+  #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
+  cudaHostRegister(memAlloc, size, cudaHostRegisterPortable);
+  #endif
+}
+
 // This can be used for proper reallocation
 size_t chpl_gpu_impl_get_alloc_size(void* ptr) {
   return chpl_gpu_common_get_alloc_size(ptr);
