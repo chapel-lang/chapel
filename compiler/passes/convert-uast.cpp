@@ -378,9 +378,6 @@ struct Converter {
   }
 
   Expr* resolvedIdentifier(const uast::Identifier* node) {
-    if (node->id().str() == "array-member-nil-error.Wrapper@9")
-      gdbShouldBreakHere();
-
     // Don't try to resolve identifiers in use/import yet
     // (it messes up the current use/import build routines)
     if (inImportOrUse) {
