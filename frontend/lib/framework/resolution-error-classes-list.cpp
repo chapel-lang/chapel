@@ -344,6 +344,9 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
 
   const char* outerName = outerDecl->isClass() ? "class" : "record";
   const char* innerName = innerDecl->isClass() ? "class" : "record";
+  // Shouldn't even be possible to trigger this with unions.
+  CHPL_ASSERT(!outerDecl->isUnion());
+  CHPL_ASSERT(!innerDecl->isUnion());
 
   if (auto ident = reference->toIdentifier()) {
     wr.heading(kind_, type_, reference, "illegal use of identifier '",
