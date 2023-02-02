@@ -537,7 +537,7 @@ void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
   auto moduleName = std::get<std::string>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
-  auto& improperMatches = std::get<std::set<const uast::AstNode*>>(info);
+  auto& improperMatches = std::get<std::vector<const uast::AstNode*>>(info);
 
   wr.heading(kind_, type_, id, "cannot find ", allowedItem(useOrImport),
              " '", moduleName, "' for '", useOrImport, "' statement.");

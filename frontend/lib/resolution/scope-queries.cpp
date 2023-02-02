@@ -943,18 +943,19 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
     // If we failed to find a proper import, we could've gotten back any number
     // of IDs that could be what the user meant to import. Store them in a set
     // and give them to the error.
-    std::set<const AstNode*> improperMatchSet;
+    std::vector<const AstNode*> improperMatchVec;
     for (auto& bids : improperMatches) {
       // For each improper match, also compute its tag, to make the error
       // message be able to provide more concrete results.
       for (auto id : bids) {
         auto ast = parsing::idToAst(context, id);
-        improperMatchSet.insert(ast);
+        improperMatchVec.push_back(ast);
       }
     }
+    std::reverse(improperMatchVec.begin(), improperMatchVec.end());
 
     CHPL_REPORT(context, UseImportUnknownMod, idForErrs, useOrImport,
-                nameInScope.c_str(), std::move(improperMatchSet));
+                nameInScope.c_str(), std::move(improperMatchVec));
     return nullptr;
   }
 

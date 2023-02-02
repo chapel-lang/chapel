@@ -76,8 +76,11 @@ ERROR_CLASS(UnknownEnumElem, const uast::AstNode*, chpl::UniqueString, const typ
 ERROR_CLASS(UnsupportedAsIdent, const uast::As*, const uast::AstNode*)
 ERROR_CLASS(UseImportNotModule, const ID, const resolution::VisibilityStmtKind,
             std::string)
-ERROR_CLASS(UseImportUnknownMod, const ID, const resolution::VisibilityStmtKind,
-            std::string, std::set<const uast::AstNode*>)
+ERROR_CLASS(UseImportUnknownMod,
+            const ID,
+            const resolution::VisibilityStmtKind,
+            std::string,
+            std::vector<const uast::AstNode*>)
 ERROR_CLASS(UseImportUnknownSym,
             std::string,
             const uast::AstNode*,
