@@ -30,7 +30,7 @@ proc main(args: [] string) {
   const initLen = data.size;
 
   // remove newlines
-  data = compile(">.*\n|\n").sub("", data);
+  data = data.replace(compile(">.*\n|\n"), "");
 
   var copy = data; // make a copy so we can perform replacements in parallel
 
@@ -40,7 +40,7 @@ proc main(args: [] string) {
     // fire off a task to perform replacements
     begin with (ref copy) {
       for (f, r) in subst do
-        copy = compile(f).sub(r, copy);
+        copy = copy.replace(compile(f), r);
     }
 
     // count patterns
