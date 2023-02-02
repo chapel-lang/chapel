@@ -190,7 +190,8 @@ struct Converter {
        const uast::AstNode* ast,
        const resolution::ResolutionResultByPostorderID* resolved);
   void popFromSymStack(const uast::AstNode* ast, BaseAST* ret);
-
+  const resolution::ResolutionResultByPostorderID* currentResolutionResult();
+ 
   bool shouldScopeResolve(ID symbolId) {
     if (canScopeResolve) {
       return fDynoScopeBundled ||
@@ -376,6 +377,9 @@ struct Converter {
   }
 
   Expr* resolvedIdentifier(const uast::Identifier* node) {
+    if (node->id().str() == "array-member-nil-error.Wrapper@9")
+      gdbShouldBreakHere();
+
     // Don't try to resolve identifiers in use/import yet
     // (it messes up the current use/import build routines)
     if (inImportOrUse) {
@@ -388,100 +392,97 @@ struct Converter {
     }
 
     // Check for a resolution result that includes a target ID
-    if (symStack.size() > 0) {
-      auto r = symStack.back().resolved;
-      if (r != nullptr) {
-        const resolution::ResolvedExpression* rr = r->byAstOrNull(node);
-        if (rr != nullptr) {
-          auto id = rr->toId();
-          if (!id.isEmpty()) {
+    if (auto r = currentResolutionResult()) {
+      const resolution::ResolvedExpression* rr = r->byAstOrNull(node);
+      if (rr != nullptr) {
+        auto id = rr->toId();
+        if (!id.isEmpty()) {
 
-            // If we're referring to an associated type in an interface,
-            // leave it unconverted for now because the compiler does some
-            // mangling of the AST and breaks the "points-to" ID.
-            auto toAst = parsing::idToAst(context, id);
-            if (auto varLikeDecl = toAst->toVarLikeDecl()) {
-              if (varLikeDecl->storageKind() == types::QualifiedType::TYPE) {
-                auto toParentId = parsing::idToParentId(context, id);
-                auto toParentAst = parsing::idToAst(context, toParentId);
+          // If we're referring to an associated type in an interface,
+          // leave it unconverted for now because the compiler does some
+          // mangling of the AST and breaks the "points-to" ID.
+          auto toAst = parsing::idToAst(context, id);
+          if (auto varLikeDecl = toAst->toVarLikeDecl()) {
+            if (varLikeDecl->storageKind() == types::QualifiedType::TYPE) {
+              auto toParentId = parsing::idToParentId(context, id);
+              auto toParentAst = parsing::idToAst(context, toParentId);
 
-                if (toParentAst->isInterface()) {
-                  // We're looking at an associated type.
-                  Symbol* sym = new TemporaryConversionSymbol(id);
-                  return new SymExpr(sym);
-                }
+              if (toParentAst->isInterface()) {
+                // We're looking at an associated type.
+                Symbol* sym = new TemporaryConversionSymbol(id);
+                return new SymExpr(sym);
               }
             }
+          }
 
-            // figure out if it is field access
-            bool isFieldAccess = false;
-            const uast::Formal* parentMethodThis = nullptr;
-            Symbol* parentMethodConvertedThis = nullptr;
-            if (parsing::idIsField(context, id)) {
-              // are we in a method? if so, what is the 'this' formal?
-              for (auto it = symStack.rbegin(); it != symStack.rend(); ++it) {
-                if (it->ast != nullptr) {
-                  if (auto inFn = it->ast->toFunction()) {
-                    if (inFn->isMethod()) {
-                      parentMethodThis = inFn->thisFormal();
-                      isFieldAccess = true;
-                      break;
-                    }
-                  } else if (auto inFwd = it->ast->toForwardingDecl()) {
-                    FnSymbol* fwdFn = toFnSymbol(findConvertedSym(inFwd->id()));
-                    INT_ASSERT(fwdFn);
-                    parentMethodConvertedThis = fwdFn->_this;
+          // figure out if it is field access
+          bool isFieldAccess = false;
+          const uast::Formal* parentMethodThis = nullptr;
+          Symbol* parentMethodConvertedThis = nullptr;
+          if (parsing::idIsField(context, id)) {
+            // are we in a method? if so, what is the 'this' formal?
+            for (auto it = symStack.rbegin(); it != symStack.rend(); ++it) {
+              if (it->ast != nullptr) {
+                if (auto inFn = it->ast->toFunction()) {
+                  if (inFn->isMethod()) {
+                    parentMethodThis = inFn->thisFormal();
                     isFieldAccess = true;
+                    break;
                   }
+                } else if (auto inFwd = it->ast->toForwardingDecl()) {
+                  FnSymbol* fwdFn = toFnSymbol(findConvertedSym(inFwd->id()));
+                  INT_ASSERT(fwdFn);
+                  parentMethodConvertedThis = fwdFn->_this;
+                  isFieldAccess = true;
                 }
               }
             }
+          }
 
-            // handle field access when only scope resolving
-            if (!shouldResolve(node) && isFieldAccess) {
-              // if we are just scope resolving, convert field
-              // access to this.field using a string literal to
-              // match production scope resolve
-              Symbol* thisSym = nullptr;
-              if (parentMethodConvertedThis != nullptr) {
-                thisSym = parentMethodConvertedThis;
-              } else {
-                INT_ASSERT(parentMethodThis);
-                thisSym = findConvertedSym(parentMethodThis->id());
-              }
-              INT_ASSERT(thisSym != nullptr);
-              auto ast = parsing::idToAst(context, id);
-              INT_ASSERT(ast && ast->isVariable());
-              auto var = ast->toVariable();
-              auto str = new_CStringSymbol(var->name().c_str());
-              CallExpr* ret = new CallExpr(".", thisSym, str);
-              return ret;
+          // handle field access when only scope resolving
+          if (!shouldResolve(node) && isFieldAccess) {
+            // if we are just scope resolving, convert field
+            // access to this.field using a string literal to
+            // match production scope resolve
+            Symbol* thisSym = nullptr;
+            if (parentMethodConvertedThis != nullptr) {
+              thisSym = parentMethodConvertedThis;
+            } else {
+              INT_ASSERT(parentMethodThis);
+              thisSym = findConvertedSym(parentMethodThis->id());
             }
-
-            // handle other Identifiers
-            Symbol* sym = findConvertedSym(id);
-            if (sym == nullptr) {
-              // we will fix it later
-              sym = new TemporaryConversionSymbol(id);
-            }
-
-            SymExpr* se = new SymExpr(sym);
-            Expr* ret = se;
-
-            if (parsing::idIsParenlessFunction(context, id)) {
-              // it's a parenless function call so add a CallExpr
-              ret = new CallExpr(se);
-            }
-            if (isFieldAccess) {
-              INT_FATAL("resolving field access call not yet implemented");
-              // TODO: convert it to a call to the field accessor
-              // using the resolved TypedFnSignature from rr
-            }
-
-            // fixup, if any, will be noted in noteAllContainedFixups
-
+            INT_ASSERT(thisSym != nullptr);
+            auto ast = parsing::idToAst(context, id);
+            INT_ASSERT(ast && ast->isVariable());
+            auto var = ast->toVariable();
+            auto str = new_CStringSymbol(var->name().c_str());
+            CallExpr* ret = new CallExpr(".", thisSym, str);
             return ret;
           }
+
+          // handle other Identifiers
+          Symbol* sym = findConvertedSym(id);
+          if (sym == nullptr) {
+            // we will fix it later
+            sym = new TemporaryConversionSymbol(id);
+          }
+
+          SymExpr* se = new SymExpr(sym);
+          Expr* ret = se;
+
+          if (parsing::idIsParenlessFunction(context, id)) {
+            // it's a parenless function call so add a CallExpr
+            ret = new CallExpr(se);
+          }
+          if (isFieldAccess) {
+            INT_FATAL("resolving field access call not yet implemented");
+            // TODO: convert it to a call to the field accessor
+            // using the resolved TypedFnSignature from rr
+          }
+
+          // fixup, if any, will be noted in noteAllContainedFixups
+
+          return ret;
         }
       }
     }
@@ -3621,31 +3622,27 @@ static Qualifier convertQualifier(types::QualifiedType::Kind kind) {
 }
 
 void Converter::setVariableType(const uast::VarLikeDecl* v, Symbol* sym) {
-  if (symStack.size() > 0) {
-    auto r = symStack.back().resolved;
+  if (auto r = currentResolutionResult()) {
+    // Get the type of the variable itself
+    const resolution::ResolvedExpression* rr = r->byAstOrNull(v);
+    if (rr != nullptr) {
+      types::QualifiedType qt = rr->type();
+      if (!qt.isUnknown()) {
+        printf("SETTING VARIABLE TYPE!!\n");
 
-    if (r != nullptr) {
-      // Get the type of the variable itself
-      const resolution::ResolvedExpression* rr = r->byAstOrNull(v);
-      if (rr != nullptr) {
-        types::QualifiedType qt = rr->type();
-        if (!qt.isUnknown()) {
-          printf("SETTING VARIABLE TYPE!!\n");
+        // Set a type for the variable
+        sym->type = convertType(qt);
 
-          // Set a type for the variable
-          sym->type = convertType(qt);
+        // Set the Qualifier
+        Qualifier q = convertQualifier(qt.kind());
+        if (q != QUAL_UNKNOWN)
+          sym->qual = q;
 
-          // Set the Qualifier
-          Qualifier q = convertQualifier(qt.kind());
-          if (q != QUAL_UNKNOWN)
-            sym->qual = q;
-
-          // Set the param value for the variable in paramMap, if applicable
-          if (sym->hasFlag(FLAG_MAYBE_PARAM) || sym->hasFlag(FLAG_PARAM)) {
-            if (qt.hasParamPtr()) {
-              Symbol* val = convertParam(qt);
-              paramMap.put(sym, val);
-            }
+        // Set the param value for the variable in paramMap, if applicable
+        if (sym->hasFlag(FLAG_MAYBE_PARAM) || sym->hasFlag(FLAG_PARAM)) {
+          if (qt.hasParamPtr()) {
+            Symbol* val = convertParam(qt);
+            paramMap.put(sym, val);
           }
         }
       }
@@ -3654,33 +3651,29 @@ void Converter::setVariableType(const uast::VarLikeDecl* v, Symbol* sym) {
 }
 
 void Converter::setResolvedCall(const uast::FnCall* call, CallExpr* expr) {
-  if (symStack.size() > 0) {
-    auto r = symStack.back().resolved;
-
-    if (r != nullptr) {
-      const resolution::ResolvedExpression* rr = r->byAstOrNull(call);
-      if (rr != nullptr) {
-        const auto& candidates = rr->mostSpecific();
-        int nBest = candidates.numBest();
-        if (nBest == 0) {
-          // nothing to do
-        } else if (nBest > 1) {
-          INT_FATAL("return intent overloading not yet handled");
-        } else if (nBest == 1) {
-          const resolution::TypedFnSignature* sig = candidates.only();
-          Symbol* fn = findConvertedFn(sig);
-          if (fn == nullptr) {
-            // we will fix it later
-            fn = new TemporaryConversionSymbol(sig);
-          }
-
-          // TODO: Do we need to remove the old baseExpr?
-          SymExpr* se = new SymExpr(fn);
-          expr->baseExpr = se;
-          parent_insert_help(expr, expr->baseExpr);
-
-          // fixup, if any, will noted in noteAllContainedFixups
+  if (auto r = currentResolutionResult()) {
+    const resolution::ResolvedExpression* rr = r->byAstOrNull(call);
+    if (rr != nullptr) {
+      const auto& candidates = rr->mostSpecific();
+      int nBest = candidates.numBest();
+      if (nBest == 0) {
+        // nothing to do
+      } else if (nBest > 1) {
+        INT_FATAL("return intent overloading not yet handled");
+      } else if (nBest == 1) {
+        const resolution::TypedFnSignature* sig = candidates.only();
+        Symbol* fn = findConvertedFn(sig);
+        if (fn == nullptr) {
+          // we will fix it later
+          fn = new TemporaryConversionSymbol(sig);
         }
+
+        // TODO: Do we need to remove the old baseExpr?
+        SymExpr* se = new SymExpr(fn);
+        expr->baseExpr = se;
+        parent_insert_help(expr, expr->baseExpr);
+
+        // fixup, if any, will noted in noteAllContainedFixups
       }
     }
   }
@@ -4158,6 +4151,23 @@ void Converter::popFromSymStack(const uast::AstNode* ast, BaseAST* ret) {
            astName(ast).c_str(), ast->id().str().c_str());
   }
   symStack.pop_back();
+}
+const resolution::ResolutionResultByPostorderID*
+Converter::currentResolutionResult() {
+  const resolution::ResolutionResultByPostorderID* r = nullptr;
+  if (symStack.size() > 0) {
+    if (symStack.size() > 0) {
+      r = symStack.back().resolved;
+      // ignore the symbol stack entry for a ForwardingDecl for this purpose
+      // (since this ForwardingDecl node only exists to store some
+      //  converted AST).
+      if (r == nullptr && symStack.back().ast->isForwardingDecl() &&
+          symStack.size() >= 2) {
+        r = symStack[symStack.size()-2].resolved;
+      }
+    }
+  }
+  return r;
 }
 
 void ConvertedSymbolsMap::noteConvertedSym(const uast::AstNode* ast,
