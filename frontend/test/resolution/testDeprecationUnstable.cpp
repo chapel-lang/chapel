@@ -485,6 +485,7 @@ static void testNoUnstableWarningsForThisFormals(void) {
 
   assert(guard.error(0)->message() == "The class 'C' is unstable");
   assert(guard.error(1)->message() == "The record 'r' is unstable");
+  assert(guard.realizeErrors());
 }
 
 int main() {

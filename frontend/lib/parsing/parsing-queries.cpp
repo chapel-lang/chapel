@@ -990,6 +990,10 @@ static bool isAstUnstable(Context* context, const AstNode* ast) {
   return attr && attr->isDeprecated();
 }
 
+static bool isAstFormal(Context* context, const AstNode* ast) {
+  return ast->isFormal();
+}
+
 static std::string
 createDefaultDeprecationMessage(Context* context, const NamedDecl* target) {
   std::string ret = target->name().c_str();
@@ -1063,7 +1067,7 @@ unstableWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
       : storedMsg.c_str();
 
   CHPL_ASSERT(msg.size() > 0);
-  CHPL_REPORT(context, Deprecation, msg, mention, targetNamedDecl);
+  CHPL_REPORT(context, Unstable, msg, mention, targetNamedDecl);
   return true;
 }
 
@@ -1074,12 +1078,26 @@ unstableWarningForIdQuery(Context* context, ID idMention, ID idTarget) {
   return QUERY_END(ret);
 }
 
+static bool
+isMentionOfWarnedTypeInReceiver(Context* context, ID idMention,
+                                ID idTarget) {
+  if (idMention.isEmpty() || idTarget.isEmpty()) return false;
+  if (!anyParentMatches(context, idMention, isAstFormal)) return false;
+  auto attr = parsing::idToAttributeGroup(context, idTarget);
+  if (!attr) return false;
+  if (!attr->isDeprecated() && !attr->isUnstable()) return false;
+  return true;
+}
+
 void
 reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget) {
   auto attr = parsing::idToAttributeGroup(context, idTarget);
 
   // Nothing to do, symbol is not deprecated.
   if (!attr || !attr->isDeprecated()) return;
+
+  // Don't warn for 'this' formals with deprecated types.
+  if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
 
   // Current policy is to skip if the mention is in a deprecated symbol.
   if (anyParentMatches(context, idMention, isAstDeprecated)) return;
@@ -1096,6 +1114,9 @@ reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
 
   // Nothing to do, we do not report unstable things this revision.
   if (!isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE)) return;
+
+  // Don't warn for 'this' formals with unstable types.
+  if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
 
   // Current policy is to skip if the mention is in an unstable symbol.
   if (anyParentMatches(context, idMention, isAstUnstable)) return;
