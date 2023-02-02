@@ -998,7 +998,7 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
 
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST
     printf("> Dumping uAST for module %s\n", mod->name().c_str());
-    chpl::uast::ASTNode::dump(mod);
+    mod->dump();
 #endif
 
     initializeGlobalParserState(fileName, modTag, namedOnCommandLine);
