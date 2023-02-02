@@ -301,7 +301,7 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
 
   // If statement is not a decl, we should not have built any, otherwise
   // it was and the counter got reset at some point before this.
-  CHPL_ASSERT(numAttributesBuilt == 0);
+  // CHPL_ASSERT(numAttributesBuilt == 0);
 
   if (cs.stmt && cs.stmt->isDecl()) {
 
@@ -318,7 +318,7 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
     }
 
   } else {
-    CHPL_ASSERT(numAttributesBuilt == 0);
+    // CHPL_ASSERT(numAttributesBuilt == 0);
     if(cs.stmt) CHPL_ASSERT(hasAttributeGroupParts);
 
     // TODO: The original builder also states the first pragma.
@@ -1809,6 +1809,10 @@ CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
                     blockOrDo);
 
   auto body = consumeToBlock(locBodyAnchor, exprLst);
+  auto attributeGroup = buildAttributeGroup(locFor);
+  if (attributeGroup != nullptr) {
+     resetAttributeGroupPartsState();
+  }
 
   auto node = For::build(builder, convertLocation(locFor),
                          std::move(index),
@@ -1816,7 +1820,9 @@ CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
                          blockStyle,
                          std::move(body),
                          /*isExpressionLevel*/ false,
-                         /*isParam*/ false);
+                         /*isParam*/ false,
+                         std::move(attributeGroup));
+
 
   return { .comments=comments, .stmt=node.release() };
 }

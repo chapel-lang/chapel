@@ -57,7 +57,8 @@ class Foreach final : public IndexableLoop {
                     withClauseChildNum,
                     blockStyle,
                     loopBodyChildNum,
-                    /*isExpressionLevel*/ false) {
+                    /*isExpressionLevel*/ false,
+                    NO_CHILD /*attributeGroup*/) {
 
   }
 

@@ -51,7 +51,8 @@ class DoWhile final : public Loop {
           int conditionChildNum)
     : Loop(asttags::DoWhile, std::move(children),
            blockStyle,
-           loopBodyChildNum),
+           loopBodyChildNum,
+           NO_CHILD /*attributeGroup*/),
       conditionChildNum_(conditionChildNum) {
     CHPL_ASSERT(condition());
   }

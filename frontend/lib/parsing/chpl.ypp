@@ -1614,8 +1614,10 @@ loop_stmt:
                            blockStyle,
                            std::move(body),
                            /*isExpressionLevel*/ false,
-                           /*isParam*/ true);
+                           /*isParam*/ true,
+                           context->buildAttributeGroup(@$));
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    context->resetAttributeGroupPartsState();
     $$ = context->finishStmt(cs);
   }
 | TFORALL expr TIN expr                                   do_stmt
@@ -2995,7 +2997,9 @@ for_expr:
                     BlockStyle::IMPLICIT,
                     context->consumeToBlock(@6, $6),
                     /*isExpressionLevel*/ true,
-                    /*isParam*/ false).release();
+                    /*isParam*/ false,
+                    context->buildAttributeGroup(@$)).release();
+    context->resetAttributeGroupPartsState();
   }
 | TFOR expr TIN zippered_iterator TDO expr %prec TFOR
   {
@@ -3004,7 +3008,9 @@ for_expr:
                     BlockStyle::IMPLICIT,
                     context->consumeToBlock(@6, $6),
                     /*isExpressionLevel*/ true,
-                    /*isParam*/ false).release();
+                    /*isParam*/ false,
+                    context->buildAttributeGroup(@$)).release();
+                    context->resetAttributeGroupPartsState();
   }
 | TFOR expr TDO expr %prec TFOR
   {
@@ -3012,7 +3018,9 @@ for_expr:
                     BlockStyle::IMPLICIT,
                     context->consumeToBlock(@4, $4),
                     /*isExpressionLevel*/ true,
-                    /*isParam*/ false).release();
+                    /*isParam*/ false,
+                    context->buildAttributeGroup(@$)).release();
+                    context->resetAttributeGroupPartsState();
   }
 | TFOR expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
   {
@@ -3026,7 +3034,9 @@ for_expr:
                     BlockStyle::IMPLICIT,
                     context->consumeToBlock(ifLoc, ifExpr.release()),
                     /*isExpressionLevel*/ true,
-                    /*isParam*/ false).release();
+                    /*isParam*/ false,
+                    context->buildAttributeGroup(@$)).release();
+                    context->resetAttributeGroupPartsState();
   }
 | TFOR expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
   {
@@ -3040,7 +3050,9 @@ for_expr:
                     BlockStyle::IMPLICIT,
                     context->consumeToBlock(ifLoc, ifExpr.release()),
                     /*isExpressionLevel*/ true,
-                    /*isParam*/ false).release();
+                    /*isParam*/ false,
+                    context->buildAttributeGroup(@$)).release();
+                    context->resetAttributeGroupPartsState();
   }
 | TFOR expr TDO TIF expr TTHEN expr %prec TNOELSE
   {
@@ -3054,7 +3066,9 @@ for_expr:
                     BlockStyle::IMPLICIT,
                     context->consumeToBlock(ifLoc, ifExpr.release()),
                     /*isExpressionLevel*/ true,
-                    /*isParam*/ false).release();
+                    /*isParam*/ false,
+                    context->buildAttributeGroup(@$)).release();
+                    context->resetAttributeGroupPartsState();
   }
 | TFORALL expr TIN expr TDO expr %prec TFOR
   {
