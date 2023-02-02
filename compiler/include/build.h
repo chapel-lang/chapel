@@ -34,6 +34,7 @@ class CallExpr;
 class DefExpr;
 class Expr;
 class FnSymbol;
+class ForwardingStmt;
 class ImportStmt;
 class ModuleSymbol;
 class Type;
@@ -194,9 +195,10 @@ BlockStmt* buildFunctionDecl(FnSymbol*   fn,
                              Expr*       optLifetimeConstraints,
                              BlockStmt*  optFnBody);
 void applyPrivateToBlock(BlockStmt* block);
-BlockStmt* buildForwardingStmt(Expr* expr);
-BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names, bool except);
-BlockStmt* buildForwardingDeclStmt(BlockStmt*);
+ForwardingStmt* buildForwardingStmt(DefExpr* fnDef);
+ForwardingStmt* buildForwardingStmt(DefExpr* fnDef,
+                                    std::vector<PotentialRename*>* names,
+                                    bool except);
 BlockStmt* buildLocalStmt(Expr* condExpr, Expr* stmt);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,

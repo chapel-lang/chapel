@@ -140,6 +140,7 @@ struct Converter {
   bool inImportOrUse = false;
   bool canScopeResolve = false;
   bool trace = false;
+  int delegateCounter = 0;
 
   ModTag topLevelModTag;
   std::vector<ModStackEntry> modStack;
@@ -415,6 +416,7 @@ struct Converter {
             // figure out if it is field access
             bool isFieldAccess = false;
             const uast::Formal* parentMethodThis = nullptr;
+            Symbol* parentMethodConvertedThis = nullptr;
             if (parsing::idIsField(context, id)) {
               // are we in a method? if so, what is the 'this' formal?
               for (auto it = symStack.rbegin(); it != symStack.rend(); ++it) {
@@ -425,6 +427,11 @@ struct Converter {
                       isFieldAccess = true;
                       break;
                     }
+                  } else if (auto inFwd = it->ast->toForwardingDecl()) {
+                    FnSymbol* fwdFn = toFnSymbol(findConvertedSym(inFwd->id()));
+                    INT_ASSERT(fwdFn);
+                    parentMethodConvertedThis = fwdFn->_this;
+                    isFieldAccess = true;
                   }
                 }
               }
@@ -435,7 +442,13 @@ struct Converter {
               // if we are just scope resolving, convert field
               // access to this.field using a string literal to
               // match production scope resolve
-              Symbol* thisSym = findConvertedSym(parentMethodThis->id());
+              Symbol* thisSym = nullptr;
+              if (parentMethodConvertedThis != nullptr) {
+                thisSym = parentMethodConvertedThis;
+              } else {
+                INT_ASSERT(parentMethodThis);
+                thisSym = findConvertedSym(parentMethodThis->id());
+              }
               INT_ASSERT(thisSym != nullptr);
               auto ast = parsing::idToAst(context, id);
               INT_ASSERT(ast && ast->isVariable());
@@ -2310,36 +2323,121 @@ struct Converter {
 
   /// ForwardingDecl ///
   Expr* visit(const uast::ForwardingDecl* node) {
-    // ForwardingDecl may contain a VisibilityClause, an Expression,
-    // or a Variable declaration
-    if (node->expr()->isVisibilityClause()){
-      auto child = node->expr()->toVisibilityClause();
-      bool except=false;
-      if (child->limitationKind() == uast::VisibilityClause::ONLY) {
-        except=false;
+    // ForwardingDecl may contain a VisibilityClause and
+    // then an Expression or a Variable declaration
+
+    auto ret = new BlockStmt(BLOCK_SCOPELESS);
+
+    UniqueString varName;
+
+    // First, if we find a variable declaration, add that to the block
+    if (auto var = node->expr()->toVariable()) {
+      auto child = node->expr()->toVariable();
+      BlockStmt* varBlock = (BlockStmt*)visit(child);
+      // Remove the END_OF_STATEMENT marker, not used for fields
+      Expr* last = varBlock->body.last();
+      if (last && isEndOfStatementMarker(last)) {
+        last->remove();
       }
-      else if (child->limitationKind() == uast::VisibilityClause::EXCEPT) {
+      // Add the DefExpr for the VarSymbol to the ret Block
+      for_alist(tmp, varBlock->body) {
+        ret->insertAtTail(tmp->remove());
+      }
+      varName = var->name();
+    }
+
+    // Now construct the method (always a primary method) for the
+    // forwarding part
+    const char* name = astr("chpl_forwarding_expr", istr(++delegateCounter));
+    if (!varName.isEmpty()) {
+      name = astr(name, "_", varName.c_str());
+    }
+
+    FnSymbol* fn = new FnSymbol(name);
+
+    fn->addFlag(FLAG_INLINE);
+    fn->addFlag(FLAG_MAYBE_REF);
+    fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
+    fn->addFlag(FLAG_COMPILER_GENERATED);
+
+    // compute the 'this' formal type
+    const uast::AggregateDecl* decl = nullptr;
+    for (auto it = symStack.rbegin(); it != symStack.rend(); ++it) {
+      if (it->ast != nullptr) {
+        if (auto d = it->ast->toAggregateDecl()) {
+          decl = d;
+          break;
+        }
+      }
+    }
+    INT_ASSERT(decl);
+    auto thisTypeExpr = new UnresolvedSymExpr(decl->name().c_str());
+
+    // add a 'this' formal
+    ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this",
+                                   dtUnknown, thisTypeExpr);
+    fn->_this = arg;
+
+    fn->insertFormalAtTail(new DefExpr(new ArgSymbol(INTENT_BLANK,
+                                                 "_mt",
+                                                 dtMethodToken)));
+    fn->insertFormalAtTail(new DefExpr(arg));
+
+    // push the function to the symbol stack and note that
+    // the forwarding declaration turned into it, so that we can
+    // adjust Identifiers that refer to fields when converting those
+    pushToSymStack(node, /* resolved */ nullptr);
+    noteConvertedSym(node, fn);
+
+    Expr* expr = nullptr;
+
+    std::vector<PotentialRename*>* visNames = nullptr;
+    bool except=false;
+    if (auto vis = node->expr()->toVisibilityClause()) {
+      // compute the visibility clauses
+      if (vis->limitationKind() == uast::VisibilityClause::ONLY) {
+        except=false;
+      } else if (vis->limitationKind() == uast::VisibilityClause::EXCEPT) {
         except=true;
       }
       // convert the AstList of renames
-      std::vector<PotentialRename*>* names = new std::vector<PotentialRename*>;
-      for (auto lim:child->limitations()) {
-        PotentialRename* name = convertRename(lim);
-        names->push_back(name);
+      visNames = new std::vector<PotentialRename*>;
+      for (auto lim : vis->limitations()) {
+        PotentialRename* rename = convertRename(lim);
+        visNames->push_back(rename);
       }
-      return buildForwardingStmt(convertExprOrNull(child->symbol()),
-                                 names, except);
-    } else if (node->expr()->isVariable()) {
-        auto child = node->expr()->toVariable();
-        return buildForwardingDeclStmt((BlockStmt*)visit(child));
-    } else if (node->expr()->isIdentifier()
-               || node->expr()->isFnCall()
-               || node->expr()->isOpCall()) {
-      return buildForwardingStmt(convertExprOrNull(node->expr()));
+      // compute the forwarded-to expression
+      expr = convertExprOrNull(vis->symbol());
+    } else {
+      // convert the forwarding expression & insert it into fn
+      if (!varName.isEmpty()) {
+        // forwarding var bla;
+        expr = new UnresolvedSymExpr(varName.c_str());
+      } else {
+        // fowarding someExpression();
+        expr = convertExprOrNull(node->expr());
+      }
     }
 
-    INT_FATAL("Failed to convert ForwardingDecl");
-    return nullptr;
+    // insert the forwarding expression into the forwarding method
+    fn->body->insertAtTail(new CallExpr(PRIM_RETURN, expr));
+    popFromSymStack(node, fn);
+
+    // Add the forwarding target method to the ret Block
+    DefExpr* fnDef = new DefExpr(fn);
+    ret->insertAtTail(fnDef);
+
+    // Create a ForwardingStmt to help the production resolver
+    // It includes handling 'only' and 'except'
+    ForwardingStmt* forwardingStmt = nullptr;
+    if (node->expr()->isVisibilityClause()) {
+      forwardingStmt = buildForwardingStmt(fnDef, visNames, except);
+    } else {
+      forwardingStmt = buildForwardingStmt(fnDef);
+    }
+    ret->insertAtTail(forwardingStmt);
+
+    return ret;
   }
 
   /// NamedDecls ///
