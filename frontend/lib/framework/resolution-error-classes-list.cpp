@@ -581,7 +581,9 @@ void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
 
     if (explainRelativeImport) {
       wr.message("");
-      wr.note(id, "For non-root-level modules, please specify the full path to the module or use a relative import e.g. 'import this.M' or 'import super.M'");
+      wr.note(id, "For non-root-level modules, please specify the full path "
+                  "to the module or use a relative import e.g. 'import this.M' "
+                  "or 'import super.M'");
     }
   }
 }
