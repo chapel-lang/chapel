@@ -6,6 +6,7 @@ CWD=$(cd $(dirname $0) ; pwd)
 
 export CHPL_TEST_PERF_CONFIG_NAME='16-node-xc'
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-xc.arkouda.release"
+export GEN_ARKOUDA_GRAPHS="false"
 
 # setup arkouda
 source $CWD/common-arkouda.bash
@@ -32,4 +33,3 @@ export CHPL_LAUNCHER=slurm-srun
 nightly_args="${nightly_args} -no-buildcheck"
 
 test_release
-sync_graphs
