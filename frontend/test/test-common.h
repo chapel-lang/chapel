@@ -26,6 +26,7 @@
 #endif
 
 #include "chpl/parsing/Parser.h"
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/Context.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/uast/BuilderResult.h"

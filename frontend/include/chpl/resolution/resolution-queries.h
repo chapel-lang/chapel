@@ -333,6 +333,12 @@ CallResolutionResult resolveGeneratedCall(Context* context,
                                           const Scope* inScope,
                                           const PoiScope* inPoiScope);
 
+/**
+  Given a type 't', compute whether or not 't' is default initializable.
+  If 't' is a generic type, it is considered non-default-initializable.
+  Considers the fields and substitutions of composite types.
+*/
+bool isTypeDefaultInitializable(Context* context, const types::Type* t);
 
 } // end namespace resolution
 } // end namespace chpl

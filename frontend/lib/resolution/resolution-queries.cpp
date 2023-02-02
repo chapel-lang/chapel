@@ -3326,7 +3326,63 @@ bool isNameOfField(Context* context, UniqueString name, const Type* t) {
   return isNameOfFieldQuery(context, name, ct);
 }
 
+static bool
+isTypeDefaultInitializableImpl(Context* context, const Type* t) {
+  const auto g = t->genericity();
 
+  switch (g) {
+    case Type::CONCRETE: return true;
+    case Type::GENERIC: return false;
+
+    // For these, consider the fields.
+    case Type::GENERIC_WITH_DEFAULTS:
+    case Type::MAYBE_GENERIC:
+      break;
+  }
+
+  CHPL_ASSERT(!t->isPrimitiveType());
+
+  if (t->isBuiltinType()) {
+    CHPL_ASSERT(false && "Not handled!");
+  }
+
+  if (auto ct = t->toCompositeType()) {
+    const auto p = DefaultsPolicy::USE_DEFAULTS;
+    auto& rf = fieldsForTypeDecl(context, ct, p);
+
+    if (!rf.isGeneric()) return true;
+
+    // TODO: Do I still need to consider field genericity, here? I.E., if
+    // a field is marked 'GENERIC_WITH_DEFAULTS' is there more to do?
+    // If I can tell the thing is concrete from the ResolvedFields, then
+    // there's probably no need to recurse.
+    if (rf.isGenericWithDefaults()) {
+      for (int i = 0; i < rf.numFields(); i++) {
+        auto ft = rf.fieldType(i).type();
+
+        // Skip to avoid recursive query.
+        if (ft == t) continue;
+
+        if (!isTypeDefaultInitializable(context, ft)) return false;
+      }
+
+      return true;
+    }
+  }
+
+  return false;
+}
+
+const bool&
+isTypeDefaultInitializableQuery(Context* context, const Type* t) {
+  QUERY_BEGIN(isTypeDefaultInitializableQuery, context, t);
+  bool ret = isTypeDefaultInitializableImpl(context, t);
+  return QUERY_END(ret);
+}
+
+bool isTypeDefaultInitializable(Context* context, const Type* t) {
+  return isTypeDefaultInitializableQuery(context, t);
+}
 
 } // end namespace resolution
 } // end namespace chpl

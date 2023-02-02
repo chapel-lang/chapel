@@ -33,6 +33,15 @@ static std::string debugDeclName = "";
 
 static void testDebuggingBreakpoint() {}
 
+static Context*
+turnOnWarnUnstable(Context* ctx) {
+  CompilerFlags flags;
+  flags.set(CompilerFlags::WARN_UNSTABLE, true);
+  setCompilerFlags(ctx, std::move(flags));
+  assert(isCompilerFlagSet(ctx, CompilerFlags::WARN_UNSTABLE));
+  return ctx;
+}
+
 static const AstNode*
 mentionAstFromExpression(const AstNode* ast, bool isReceiver) {
   if (ast == nullptr) return nullptr;
@@ -296,6 +305,9 @@ static void testDeprecationWarningsForTypes(void) {
 
   // TODO: Helpers to make sure the errors are correct.
   assert(guard.numErrors() > 0);
+  for (auto& err : guard.errors()) {
+    assert(err->type() == ErrorType::Deprecation);
+  }
 
   const bool isDefault = true;
   int vn = 1;
@@ -404,14 +416,81 @@ static void testDeprecationWarningsForUseImport(void) {
   std::ignore = resolveModule(ctx, mod->id());
 
   // TODO: Helpers to make sure the errors are correct.
+  assert(guard.numErrors() > 0);
+  for (auto& err : guard.errors()) {
+    assert(err->type() == ErrorType::Deprecation);
+  }
+
   assert(guard.realizeErrors());
 
   std::cout << std::endl;
 }
 
+static void testNoUnstableWarningsForThisFormals(void) {
+  Context context;
+  Context* ctx = turnOnWarnUnstable(&context);
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  std::string contents =
+    R""""(
+    module M {
+      @unstable "The class 'C' is unstable"
+      class C {
+        proc foo() {}   // Primary
+      }
+      proc C.bar() {}   // Secondary
+
+      @unstable "The record 'r' is unstable"
+      record r {
+        proc foo() {}   // Primary
+      }
+      proc r.bar() {}   // Secondary
+    }
+    module N {
+      use M;
+      proc C.baz() {}   // Tertiary
+      proc r.baz() {}   // Tertiary
+
+      var a = new C();  // Unstable warning for this mention
+      a.foo();
+      a.bar();
+      a.baz();
+
+      var b = new r();  // Unstable warning for this mention
+      b.foo();
+      b.bar();
+      b.baz();
+    }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the 'N' module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 2);
+  auto mod = br.topLevelExpression(1)->toModule();
+  assert(mod);
+
+  // Scope-resolve the module.
+  std::ignore = resolveModule(ctx, mod->id());
+
+  // TODO: Helpers to make sure the errors are correct.
+  assert(guard.numErrors() == 2);
+  for (auto& err : guard.errors()) {
+    assert(err->type() == ErrorType::Unstable);
+  }
+
+  assert(guard.error(0)->message() == "The class 'C' is unstable");
+  assert(guard.error(1)->message() == "The record 'r' is unstable");
+}
+
 int main() {
   testDeprecationWarningsForTypes();
   testDeprecationWarningsForUseImport();
+  testNoUnstableWarningsForThisFormals();
   return 0;
 }
 
