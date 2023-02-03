@@ -430,10 +430,24 @@ llvm::SmallVector<const Scope*> Resolver::methodReceiverScope(bool recompute) {
     }
   }
 
-  // If we were able to get an identifier for the type declaration, retrieve it.
+  // If we were able to get an identifier for the type declaration,
+  // gather scope information.
   if (!idForTypeDecl.isEmpty()) {
+    auto receiverDeclaredType = initialTypeForTypeDecl(context, idForTypeDecl);
+    assert(receiverDeclaredType &&
+           "failed to look up declared type for method receiver");
+
+    // retrieve scope of this class and any parent classes
     savedReceiverScope.clear();
-    savedReceiverScope.emplace_back(scopeForId(context, idForTypeDecl));
+    const Type* currentType = receiverDeclaredType;
+    while (currentType) {
+      auto ct = currentType->toCompositeType();
+      assert(ct);
+      savedReceiverScope.emplace_back(scopeForId(context, ct->id()));
+      auto bct = ct->toBasicClassType();
+      assert(bct);
+      currentType = bct->parentClassType();
+    }
   }
 
   receiverScopeComputed = true;
