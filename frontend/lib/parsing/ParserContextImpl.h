@@ -986,16 +986,14 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
 
   // Detect primary methods and create a receiver for them
   bool primaryMethod = false;
-  auto scope = currentScope();
   if (currentScopeIsAggregate()) {
     if (fp.receiver == nullptr) {
       auto loc = convertLocation(location);
       auto ths = UniqueString::get(context(), "this");
-      UniqueString cls = scope.name;
       fp.receiver = Formal::build(builder, loc, /*attributeGroup*/ nullptr,
                                   ths,
                                   fp.thisIntent,
-                                  Identifier::build(builder, loc, cls),
+                                  nullptr,
                                   nullptr).release();
       primaryMethod = true;
     }
