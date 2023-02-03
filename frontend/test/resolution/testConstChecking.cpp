@@ -263,7 +263,35 @@ static void test4d() {
     {});
 }
 
+static void test5a() {
+  testConstChecking("test5a",
+    R""""(
+      module M {
+        proc acceptsOut(out arg: int) { }
+        proc test() {
+          const x: int;
+          acceptsOut(x);
+        }
+      }
+    )"""",
+    {6});
+}
+static void test5b() {
+  testConstChecking("test5b",
+    R""""(
+      module M {
+        proc acceptsInout(inout arg: int) { }
+        proc test() {
+          const x: int;
+          acceptsInout(x);
+        }
+      }
+    )"""",
+    {6});
+}
 
+// TODO: check mutating a const / const ref with =
+// TODO: ditto with split init
 
 int main() {
   test1a();
@@ -281,6 +309,9 @@ int main() {
   test4b();
   test4c();
   test4d();
+
+  test5a();
+  test5b();
 
   return 0;
 }
