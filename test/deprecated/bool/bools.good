@@ -1,3 +1,7 @@
+bools.chpl:2: warning: 'bool(w)' is deprecated, please use 'bool' instead
+bools.chpl:3: warning: 'bool(w)' is deprecated, please use 'bool' instead
+bools.chpl:4: warning: 'bool(w)' is deprecated, please use 'bool' instead
+bools.chpl:5: warning: 'bool(w)' is deprecated, please use 'bool' instead
 b is: true
 b8 is: true
 b16 is: true
