@@ -251,6 +251,10 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
     }
 
     re.setMostSpecific(MostSpecificCandidates::getOnly(best));
+
+    // recompute the return type
+    // (all that actually needs to change is the return intent)
+    re.setType(returnType(context, best, resolver.poiScope));
   }
 
   // there should be only one candidate at this point
@@ -279,18 +283,19 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
         const AstNode* actualAst = actualAsts[actualIdx];
         Access access = accessForQualifier(fa->formalType().kind());
 
-        // check for const-ness errors
+        exprStack.push_back(ExprStackEntry(actualAst, access,
+                                           fn, formalIdx));
+
+        actualAst->traverse(rv);
+
+        // check for const-ness errors after return-intent overloads
+        // are chosen
         if (access == REF) {
           ResolvedExpression& actualRe = rv.byAst(actualAst);
           if (actualRe.type().isConst()) {
             context->error(actualAst, "cannot pass const to non-const");
           }
         }
-
-        exprStack.push_back(ExprStackEntry(actualAst, access,
-                                           fn, formalIdx));
-
-        actualAst->traverse(rv);
 
         exprStack.pop_back();
       }

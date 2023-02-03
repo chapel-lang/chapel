@@ -534,7 +534,8 @@ static void test5e() {
       }
     )"""",
     {},
-    {{"M.test@2", "M.foo"}});
+    {{"M.test@2", "M.foo"}},
+    /* expectErrors */ true);
 }
 
 static void test5f() {
@@ -585,7 +586,8 @@ static void test5h() {
       }
     )"""",
     {},
-    {{"M.test@2", "M.foo"}});
+    {{"M.test@2", "M.foo"}},
+    /* expectErrors */ true);
 }
 
 static void test5i() {
@@ -602,7 +604,8 @@ static void test5i() {
       }
     )"""",
     {},
-    {{"M.test@2", "M.foo"}});
+    {{"M.test@2", "M.foo"}},
+    /* expectErrors */ true);
 }
 
 // test ref/const ref/value return intent overload
