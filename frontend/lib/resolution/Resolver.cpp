@@ -1806,9 +1806,10 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
   r.setToId(id);
   if (id.isEmpty()) return;
 
-  // Validate the newly set to ID. It shouldn't refer to a module unless
-  // the node is an identifier in one of the places where module references
-  // are allowed (e.g. imports).
+  // Validate the newly set to ID.
+
+  // It shouldn't refer to a module unless the node is an identifier in one of
+  // the places where module references are allowed (e.g. imports).
   auto toAst = parsing::idToAst(context, id);
   if (toAst != nullptr) {
     if (auto mod = toAst->toModule()) {
@@ -1821,6 +1822,33 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
           CHPL_REPORT(context, ModuleAsVariable, node, parentAst, mod);
         }
       }
+    }
+  }
+
+  // If we're in a nested class, it shouldn't refer to an outer class' field.
+  auto scope = scopeForId(context, id);
+  auto parentId = scope->id();
+  auto parentAst = parsing::idToAst(context, parentId);
+  if (parentAst && parentAst->isAggregateDecl() &&
+      parentId.contains(node->id())) {
+    // Referring to a field of a class that's surrounding the current node.
+    // Loop upwards looking for a composite type.
+    auto searchId = parsing::idToParentId(context, node->id());
+    while (!searchId.isEmpty()) {
+      auto searchAst = parsing::idToAst(context, searchId);
+      if (searchAst == parentAst) {
+        // We found the aggregate type in which the to-ID is declared,
+        // so there's no nested class issues.
+        break;
+      } else if (auto searchAD = searchAst->toAggregateDecl()) {
+        // It's an error!
+        CHPL_REPORT(context, NestedClassFieldRef, parentAst->toAggregateDecl(),
+                    searchAD, node, id);
+        break;
+      }
+
+      // Move on to the surrounding ID.
+      searchId = parsing::idToParentId(context, searchId);
     }
   }
 }
