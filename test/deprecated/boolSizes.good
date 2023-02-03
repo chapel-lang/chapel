@@ -1,1 +1,2 @@
-boolSizes.chpl:3: error: 'bool(w)' is deprecated, please use 'bool' instead
+boolSizes.chpl:3: warning: 'bool(w)' is deprecated, please use 'bool' instead
+(false, false)
