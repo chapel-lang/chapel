@@ -66,7 +66,7 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
   const LookupConfig config = LOOKUP_DECLS | LOOKUP_PARENTS;
 
   auto vec = lookupNameInScope(context, scopeForReceiverType,
-                               /* receiver scope */ nullptr,
+                               /* receiver scope */ {},
                                name, config);
 
   // nothing found

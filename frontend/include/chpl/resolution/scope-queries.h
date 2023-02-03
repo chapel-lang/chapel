@@ -21,7 +21,9 @@
 #define CHPL_RESOLUTION_SCOPE_QUERIES_H
 
 #include "chpl/resolution/scope-types.h"
+
 #include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/ADT/SmallVector.h"
 
 namespace chpl {
 namespace resolution {
@@ -73,7 +75,7 @@ namespace resolution {
   std::vector<BorrowedIdsWithName>
   lookupNameInScope(Context* context,
                     const Scope* scope,
-                    const Scope* receiverScope,
+                    const llvm::SmallVector<const Scope*>& receiverScope,
                     UniqueString name,
                     LookupConfig config);
 
@@ -83,7 +85,7 @@ namespace resolution {
   std::vector<BorrowedIdsWithName>
   lookupNameInScopeWithSet(Context* context,
                            const Scope* scope,
-                           const Scope* receiverScope,
+                           const llvm::SmallVector<const Scope*>& receiverScope,
                            UniqueString name,
                            LookupConfig config,
                            NamedScopeSet& visited);

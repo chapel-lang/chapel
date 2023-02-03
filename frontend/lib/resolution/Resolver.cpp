@@ -384,6 +384,23 @@ types::QualifiedType Resolver::typeErr(const uast::AstNode* ast,
   return t;
 }
 
+llvm::SmallVector<const Scope*> Resolver::gatherReceiverAndParentScopesForType(
+    Context* context, const Type* thisType) {
+  llvm::SmallVector<const Scope*> scopes;
+
+  const Type* currentType = thisType;
+  while (currentType) {
+    auto ct = currentType->toCompositeType();
+    assert(ct);
+    scopes.emplace_back(scopeForId(context, ct->id()));
+    auto bct = ct->toBasicClassType();
+    assert(bct);
+    currentType = bct->parentClassType();
+  }
+
+  return scopes;
+}
+
 llvm::SmallVector<const Scope*> Resolver::methodReceiverScope(bool recompute) {
   if (recompute) {
     receiverScopeComputed = false;
@@ -437,17 +454,8 @@ llvm::SmallVector<const Scope*> Resolver::methodReceiverScope(bool recompute) {
     assert(receiverDeclaredType &&
            "failed to look up declared type for method receiver");
 
-    // retrieve scope of this class and any parent classes
-    savedReceiverScope.clear();
-    const Type* currentType = receiverDeclaredType;
-    while (currentType) {
-      auto ct = currentType->toCompositeType();
-      assert(ct);
-      savedReceiverScope.emplace_back(scopeForId(context, ct->id()));
-      auto bct = ct->toBasicClassType();
-      assert(bct);
-      currentType = bct->parentClassType();
-    }
+    savedReceiverScope =
+        gatherReceiverAndParentScopesForType(context, receiverDeclaredType);
   }
 
   receiverScopeComputed = true;
@@ -1833,9 +1841,8 @@ Resolver::lookupIdentifier(const Identifier* ident,
 
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
-  auto vec = lookupNameInScope(
-      context, scope, (receiverScope.empty() ? nullptr : receiverScope.front()),
-      ident->name(), config);
+  auto vec =
+      lookupNameInScope(context, scope, receiverScope, ident->name(), config);
 
   return vec;
 }
@@ -2097,7 +2104,7 @@ bool Resolver::enter(const NamedDecl* decl) {
     // check for multiple definitions
     LookupConfig config = LOOKUP_DECLS;
     auto vec = lookupNameInScope(context, scope,
-                                 /* receiverScope */ nullptr,
+                                 /* receiverScope */ {},
                                  decl->name(), config);
 
     if (vec.size() > 0) {
@@ -2556,7 +2563,7 @@ QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
     LookupConfig config = LOOKUP_DECLS | LOOKUP_INNERMOST;
     auto enumScope = scopeForId(context, enumType->id());
     auto vec = lookupNameInScope(context, enumScope,
-                                 /* receiverScope */ nullptr,
+                                 /* receiverScope */ {},
                                  elementName, config);
     if (vec.size() == 0) {
       return CHPL_TYPE_ERROR(context, UnknownEnumElem, nodeForErr,
@@ -2610,7 +2617,7 @@ void Resolver::exit(const Dot* dot) {
 
     auto modScope = scopeForModule(context, receiver.toId());
     auto vec = lookupNameInScope(context, modScope,
-                                 /* receiverScope */ nullptr,
+                                 /* receiverScope */ {},
                                  dot->field(), config);
     ResolvedExpression& r = byPostorder.byAst(dot);
     if (vec.size() == 0) {
@@ -2944,10 +2951,8 @@ static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
 
   auto receiverScope = resolver.methodReceiverScope();
 
-  auto vec = lookupNameInScope(
-      resolver.context, scope,
-      (receiverScope.empty() ? nullptr : receiverScope.front()), intent->name(),
-      config);
+  auto vec = lookupNameInScope(resolver.context, scope, receiverScope,
+                               intent->name(), config);
 
   if (vec.size() == 1) {
     resolvedId = vec[0].firstId();

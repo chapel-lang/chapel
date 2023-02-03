@@ -2231,38 +2231,6 @@ filterCandidatesInstantiating(Context* context,
   }
 }
 
-// always uses ci.name
-static std::vector<BorrowedIdsWithName>
-lookupCalledExpr(Context* context,
-                 const Scope* scope,
-                 const CallInfo& ci,
-                 NamedScopeSet& visited) {
-  const LookupConfig config = LOOKUP_DECLS |
-                              LOOKUP_IMPORT_AND_USE |
-                              LOOKUP_PARENTS;
-  const Scope* receiverScope = nullptr;
-
-  // For method calls, also consider the receiver scope.
-  if (ci.isMethodCall() || ci.isOpCall()) {
-    CHPL_ASSERT(ci.numActuals() >= 1);
-    auto& qtReceiver = ci.actual(0).type();
-    if (auto t = qtReceiver.type()) {
-      if (auto compType = t->getCompositeType()) {
-        receiverScope = scopeForId(context, compType->id());
-      }
-    }
-  }
-
-  UniqueString name = ci.name();
-
-  std::vector<BorrowedIdsWithName> ret =
-    lookupNameInScopeWithSet(context, scope, receiverScope,
-                             name, config, visited);
-
-  return ret;
-}
-
-
 static
 void accumulatePoisUsedByResolvingBody(Context* context,
                                        const TypedFnSignature* signature,
@@ -2667,36 +2635,30 @@ static void considerCompilerGeneratedCandidates(Context* context,
   candidates.push_back(instantiated);
 }
 
-static std::vector<BorrowedIdsWithName>
-lookupCalledExprConsideringReceiver(Context* context,
-                                    const Scope* inScope,
-                                    const CallInfo& ci,
-                                    NamedScopeSet& visited) {
-  const Scope* receiverScope = nullptr;
-
+static std::vector<BorrowedIdsWithName> lookupCalledExprConsideringReceiver(
+    Context* context, const Scope* inScope, const CallInfo& ci,
+    NamedScopeSet& visited) {
   // For method and operator calls, also consider the receiver scope.
+  llvm::SmallVector<const Scope*> receiverScope = {};
   if (ci.isMethodCall() || ci.isOpCall()) {
     CHPL_ASSERT(ci.numActuals() >= 1);
     auto& qtReceiver = ci.actual(0).type();
     if (auto t = qtReceiver.type()) {
       if (auto compType = t->getCompositeType()) {
-        receiverScope = scopeForId(context, compType->id());
+        auto vec =
+            Resolver::gatherReceiverAndParentScopesForType(context, compType);
+        receiverScope.append(vec);
       }
     }
   }
 
-  // TODO: Ensure that secondary methods are considered as well.
-  std::vector<BorrowedIdsWithName> ret;
-  if (receiverScope) {
-    auto v = lookupCalledExpr(context, receiverScope, ci, visited);
-    ret.insert(ret.end(), v.begin(), v.end());
-  }
+  const LookupConfig config =
+      LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS;
 
-  // Consider tertiary methods starting at the callsite.
-  auto v = lookupCalledExpr(context, inScope, ci, visited);
-  ret.insert(ret.end(), v.begin(), v.end());
+  const UniqueString name = ci.name();
 
-  return ret;
+  return lookupNameInScopeWithSet(context, inScope, receiverScope, name, config,
+                                  visited);
 }
 
 static void helpComputeForwardingTo(const CallInfo& fci,
