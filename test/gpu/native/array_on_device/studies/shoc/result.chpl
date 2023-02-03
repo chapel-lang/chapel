@@ -1,1 +1,1 @@
-/home/stonea/chapel/test/gpu/native/studies/shoc/result.chpl
+../../../studies/shoc/result.chpl
