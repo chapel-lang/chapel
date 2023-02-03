@@ -1,3 +1,0 @@
-This is testing 'sameFile' on a default initialized 'file' record.
-'sameFile' on 'file' records is deprecated and getting the 'path' on
-a default initialized file record is an error.
