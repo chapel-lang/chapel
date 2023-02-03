@@ -93,7 +93,7 @@ def get_link_args():
 # (e.g. it might link with mpicc)
 @memoize
 def get_override_ld():
-    d = third_party_utils.read_bundled_pkg_config_file(
+    (d, _) = third_party_utils.read_bundled_pkg_config_file(
                        'gasnet', get_uniq_cfg_path(), get_gasnet_pc_file())
 
     if d == None:
