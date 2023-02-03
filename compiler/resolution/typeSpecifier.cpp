@@ -74,7 +74,7 @@ Type* typeForTypeSpecifier(Expr* expr, bool fatalOK) {
                     }
 
                     if (retval && retval != dtBools[BOOL_SIZE_SYS] && call->getModule()->modTag == MOD_USER) {
-                      USR_FATAL(call, "'bool(w)' is deprecated, please use 'bool' instead");
+                      USR_WARN(call, "'bool(w)' is deprecated, please use 'bool' instead");
                     }
 
                   } else if (type == dtInt[INT_SIZE_DEFAULT]->symbol) {
