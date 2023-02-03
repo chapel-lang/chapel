@@ -208,6 +208,10 @@ struct Resolver {
    */
   types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
 
+  /* Gather scopes for a given receiver type and all its parents */
+  static llvm::SmallVector<const Scope*> gatherReceiverAndParentScopesForType(
+      Context* context, const types::Type* thisType);
+
   /* Compute the receiver scope (when resolving a method)
      and return nullptr if it is not applicable.
    */
