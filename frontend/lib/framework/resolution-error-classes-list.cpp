@@ -52,6 +52,14 @@ static types::QualifiedType decayToValue(const types::QualifiedType& qt) {
   return qt;
 }
 
+static const char* allowedItem(resolution::VisibilityStmtKind kind) {
+  return kind == resolution::VIS_USE ? "module or 'enum'" : "module";
+}
+
+static const char* allowedItems(resolution::VisibilityStmtKind kind) {
+  return kind == resolution::VIS_USE ? "modules or enums" : "modules";
+}
+
 //
 // Below are the implementations of 'write' for each error class, which does
 // the specialized work.
@@ -546,22 +554,68 @@ void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
   auto moduleName = std::get<std::string>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
+
   wr.heading(kind_, type_, id, "cannot '", useOrImport, "' '", moduleName,
-             "', which is not a module.");
+             "', which is not a ", allowedItem(useOrImport), ".");
   wr.message("In the following '", useOrImport, "' statement:");
   wr.code<ID, ID>(id, { id });
-  wr.message("Only modules and enums can be used with '", useOrImport,
-             "' statements.");
+  wr.message("Only ", allowedItems(useOrImport), " can be used with '",
+             useOrImport, "' statements.");
 }
 
 void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
   auto moduleName = std::get<std::string>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
-  wr.heading(kind_, type_, id, "cannot find module '", moduleName,
-             "' for '", useOrImport, "'.");
+  auto& improperMatches = std::get<std::vector<const uast::AstNode*>>(info);
+
+  wr.heading(kind_, type_, id, "cannot find ", allowedItem(useOrImport),
+             " '", moduleName, "' for '", useOrImport, "' statement.");
   wr.message("In the following '", useOrImport, "' statement:");
   wr.code<ID, ID>(id, { id });
+  if (!improperMatches.empty()) {
+    wr.message("The following declarations are not covered by the '", useOrImport,
+               "' statement but seem similar to what you meant.");
+    // Do we need to tell the user how to use super.M or this.M?
+    bool explainRelativeImport = false;
+
+    for (auto ast : improperMatches) {
+      // Separate out the various suggestions.
+      wr.message("");
+
+      // Use locationOnly to avoid printing 'in module M' for every suggestion.
+
+      auto improperId = ast->id();
+      auto tag = ast->tag();
+      if (tag == uast::asttags::AstTag::Module) {
+        wr.note(locationOnly(improperId),
+                "a module named '", moduleName, "' is defined here:");
+        wr.code<ID, ID>(improperId, { improperId });
+        wr.note(locationOnly(improperId),
+                "however, a full path or an explicit relative ", useOrImport,
+                " is required for modules that are not at the root level.");
+        explainRelativeImport = true;
+      } else {
+        wr.note(locationOnly(improperId), "a declaration of '", moduleName,
+                "' is here:");
+        wr.code<ID, ID>(improperId, { improperId });
+        wr.note(locationOnly(improperId), "however, '", useOrImport,
+                "' statements can only be used with ",
+                allowedItems(useOrImport), " (and this '", moduleName,
+                "' is not a ", allowedItem(useOrImport), ").");
+      }
+
+      // Comment out if we want to show all improper matches, not just one.
+      break;
+    }
+
+    if (explainRelativeImport) {
+      wr.message("");
+      wr.note(id, "For non-root-level modules, please specify the full path "
+                  "to the module or use a relative import e.g. 'import this.M' "
+                  "or 'import super.M'");
+    }
+  }
 }
 
 void ErrorUseImportUnknownSym::write(ErrorWriterBase& wr) const {
