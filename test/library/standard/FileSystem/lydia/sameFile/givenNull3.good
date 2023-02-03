@@ -1,3 +1,0 @@
-uncaught SystemError: Bad file descriptor (Operation attempted on a file that is not open)
-  givenNull3.chpl:6: thrown here
-  givenNull3.chpl:6: uncaught here

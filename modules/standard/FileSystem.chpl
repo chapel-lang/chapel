@@ -1362,6 +1362,7 @@ proc sameFile(file1: string, file2: string): bool throws {
 
    :throws SystemError: Thrown to describe an error if one occurs.
 */
+deprecated "'sameFile(file, file)' is deprecated. Please use 'sameFile(string, string)' instead"
 proc sameFile(file1: file, file2: file): bool throws {
   extern proc chpl_fs_samefile(ref ret: c_int, file1: qio_file_ptr_t,
                                file2: qio_file_ptr_t): errorCode;
