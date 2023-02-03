@@ -18,6 +18,7 @@
 comp_unit_test(testCallInitDeinit)
 comp_unit_test(testCanPass)
 comp_unit_test(testClasses)
+comp_unit_test(testConstChecking)
 comp_unit_test(testCopyElision)
 comp_unit_test(testDeprecationUnstable)
 comp_unit_test(testDisambiguation)

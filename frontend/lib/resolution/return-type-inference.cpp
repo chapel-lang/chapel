@@ -50,6 +50,10 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+// forward declarations
+static QualifiedType adjustForReturnIntent(uast::Function::ReturnIntent ri,
+                                           QualifiedType retType);
+
 
 // Get a Type for an AggregateDecl
 // poiScope, instantiatedFrom are nullptr if not instantiating
@@ -286,7 +290,8 @@ QualifiedType ReturnTypeInferrer::returnedType() {
       context->error(astForErr, "could not determine return type for function");
       retType = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
     }
-    return retType.getValue();
+    auto adjType = adjustForReturnIntent(returnIntent, retType.getValue());
+    return adjType;
   }
 }
 
@@ -453,8 +458,8 @@ static QualifiedType adjustForReturnIntent(uast::Function::ReturnIntent ri,
   QualifiedType::Kind kind = (QualifiedType::Kind) ri;
   // adjust default / const return intent to 'var'
   if (kind == QualifiedType::DEFAULT_INTENT ||
-      kind == QualifiedType::CONST_VAR) {
-    kind = QualifiedType::VAR;
+      kind == QualifiedType::VAR) {
+    kind = QualifiedType::CONST_VAR;
   }
   return QualifiedType(kind, retType.type(), retType.param());
 }
