@@ -391,6 +391,8 @@ llvm::SmallVector<const Scope*> Resolver::methodReceiverScope(bool recompute) {
 
   if (receiverScopeComputed) return savedReceiverScope;
 
+  // If receiver type is specified by a simple identifier, determine it.
+  // For more complicated receiver types we cannot yet gather any information.
   ID idForTypeDecl;
   if (typedSignature) {
     if (typedSignature->untyped()->isMethod()) {
@@ -407,8 +409,7 @@ llvm::SmallVector<const Scope*> Resolver::methodReceiverScope(bool recompute) {
           // case?
           idForTypeDecl = parsing::idToParentId(context, typedSignature->id());
         } else if (auto ident = type->toIdentifier()) {
-          auto re = byPostorder.byAst(ident);
-          idForTypeDecl = re.toId();
+          idForTypeDecl = byPostorder.byAst(ident).toId();
         }
       } else if (auto receiverType = typedSignature->formalType(0).type()) {
         if (auto compType = receiverType->getCompositeType()) {
@@ -418,9 +419,18 @@ llvm::SmallVector<const Scope*> Resolver::methodReceiverScope(bool recompute) {
     }
   } else {
     // fall back to computing receiver type without a typed signature
-    // TODO
+    auto func = this->symbol->toFunction();
+    assert(func && "resolving receiver scope while not in a function");
+    if (auto thisFormal = func->thisFormal()) {
+      if (auto thisFormalType = thisFormal->typeExpression()) {
+        if (auto typeIdent = thisFormalType->toIdentifier()) {
+          idForTypeDecl = byPostorder.byAst(typeIdent).toId();
+        }
+      }
+    }
   }
 
+  // If we were able to get an identifier for the type declaration, retrieve it.
   if (!idForTypeDecl.isEmpty()) {
     savedReceiverScope.clear();
     savedReceiverScope.emplace_back(scopeForId(context, idForTypeDecl));
