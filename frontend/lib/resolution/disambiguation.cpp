@@ -724,7 +724,7 @@ computeIsMoreVisible(Context* context,
        curScope = curScope->parentScope()) {
 
     auto decls = lookupNameInScope(context, curScope,
-                                   /* receiver scope */ {},
+                                   /* receiver scopes */ {},
                                    callName, onlyDecls);
     auto declVis = checkVisibilityInVec(context, decls, fn1Id, fn2Id);
     if (declVis != MoreVisibleResult::FOUND_NEITHER) {
@@ -738,7 +738,7 @@ computeIsMoreVisible(Context* context,
       // within the used module.
       // see issue #19219
       auto more = lookupNameInScope(context, curScope,
-                                    /* receiver scope */ {},
+                                    /* receiver scopes */ {},
                                     callName, importAndUse);
       auto importUseVis = checkVisibilityInVec(context, more, fn1Id, fn2Id);
       if (importUseVis != MoreVisibleResult::FOUND_NEITHER) {

@@ -52,19 +52,19 @@ namespace resolution {
 
     'scope' is the context in which the name occurs (e.g. as an Identifier)
 
-    'receiverScope' is the scope of a type containing the name, in the case
+    'receiverScopes' is the scope of a type containing the name, in the case
     of method calls, field accesses, and resolving a name within a method.
     It is a Scope representing the record/class/union itself for the
-    receiver. If provided, the receiverScope will be consulted before
+    receiver. If provided, the receiverScopes will be consulted before
     'scope' and its parents.
 
     The config argument is a group of or-ed together bit flags
     that adjusts the behavior of the lookup:
 
     * If LOOKUP_DECLS is set, looks for symbols declared in 'scope'
-      and 'receiverScope'.
+      and 'receiverScopes'.
     * If LOOKUP_IMPORT_AND_USE is set, looks for symbols from use/import
-      statements in this 'scope' and 'receiverScope'.
+      statements in this 'scope' and 'receiverScopes'.
     * If LOOKUP_PARENTS is set, looks for symbols from parent scopes (but not
       parent modules of a module) including looking for declarations and
       handling imports, and including finding declarations in the root module.
@@ -75,7 +75,7 @@ namespace resolution {
   std::vector<BorrowedIdsWithName>
   lookupNameInScope(Context* context,
                     const Scope* scope,
-                    const llvm::SmallVector<const Scope*>& receiverScope,
+                    const llvm::SmallVector<const Scope*>& receiverScopes,
                     UniqueString name,
                     LookupConfig config);
 
@@ -85,7 +85,7 @@ namespace resolution {
   std::vector<BorrowedIdsWithName>
   lookupNameInScopeWithSet(Context* context,
                            const Scope* scope,
-                           const llvm::SmallVector<const Scope*>& receiverScope,
+                           const llvm::SmallVector<const Scope*>& receiverScopes,
                            UniqueString name,
                            LookupConfig config,
                            NamedScopeSet& visited);

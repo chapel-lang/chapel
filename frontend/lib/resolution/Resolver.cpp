@@ -401,12 +401,12 @@ llvm::SmallVector<const Scope*> Resolver::gatherReceiverAndParentScopesForType(
   return scopes;
 }
 
-llvm::SmallVector<const Scope*> Resolver::methodReceiverScope(bool recompute) {
+llvm::SmallVector<const Scope*> Resolver::methodReceiverScopes(bool recompute) {
   if (recompute) {
-    receiverScopeComputed = false;
+    receiverScopesComputed = false;
   }
 
-  if (receiverScopeComputed) return savedReceiverScope;
+  if (receiverScopesComputed) return savedReceiverScopes;
 
   // If receiver type is specified by a simple identifier, determine it.
   // For more complicated receiver types we cannot yet gather any information.
@@ -437,7 +437,7 @@ llvm::SmallVector<const Scope*> Resolver::methodReceiverScope(bool recompute) {
   } else {
     // fall back to computing receiver type without a typed signature
     auto func = this->symbol->toFunction();
-    assert(func && "resolving receiver scope while not in a function");
+    assert(func && "resolving receiver scopes while not in a function");
     if (auto thisFormal = func->thisFormal()) {
       if (auto thisFormalType = thisFormal->typeExpression()) {
         if (auto typeIdent = thisFormalType->toIdentifier()) {
@@ -454,12 +454,12 @@ llvm::SmallVector<const Scope*> Resolver::methodReceiverScope(bool recompute) {
     assert(receiverDeclaredType &&
            "failed to look up declared type for method receiver");
 
-    savedReceiverScope =
+    savedReceiverScopes =
         gatherReceiverAndParentScopesForType(context, receiverDeclaredType);
   }
 
-  receiverScopeComputed = true;
-  return savedReceiverScope;
+  receiverScopesComputed = true;
+  return savedReceiverScopes;
 }
 
 const CompositeType* Resolver::methodReceiverType() {
@@ -1658,22 +1658,22 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   if (!parentId.isEmpty()) {
     parentTag = parsing::idToTag(context, parentId);
   }
-  const Scope* mReceiverScope = nullptr;
-  auto receiverScopes = methodReceiverScope();
-  if (!receiverScopes.empty()) {
-    mReceiverScope = receiverScopes.front();
+  const Scope* mReceiverScopes = nullptr;
+  auto receiverScopess = methodReceiverScopes();
+  if (!receiverScopess.empty()) {
+    mReceiverScopes = receiverScopess.front();
   }
 
   if (asttags::isModule(parentTag)) {
     // If the id is contained within a module, use typeForModuleLevelSymbol.
     return typeForModuleLevelSymbol(context, id);
-  } else if (asttags::isAggregateDecl(parentTag) || mReceiverScope) {
+  } else if (asttags::isAggregateDecl(parentTag) || mReceiverScopes) {
     // If the id is contained within a class/record/union, get the
     // resolved field.
     const CompositeType* ct = nullptr;
     if (parentId == symbol->id()) {
       ct = inCompositeType;
-    } else if (mReceiverScope) {
+    } else if (mReceiverScopes) {
       // TODO: in this case, we should look for parenless methods.
       ct = methodReceiverType();
     } else {
@@ -1828,7 +1828,7 @@ void Resolver::exit(const Literal* literal) {
 
 std::vector<BorrowedIdsWithName>
 Resolver::lookupIdentifier(const Identifier* ident,
-                           const llvm::SmallVector<const Scope*>& receiverScope) {
+                           const llvm::SmallVector<const Scope*>& receiverScopes) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
@@ -1842,7 +1842,7 @@ Resolver::lookupIdentifier(const Identifier* ident,
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
   auto vec =
-      lookupNameInScope(context, scope, receiverScope, ident->name(), config);
+      lookupNameInScope(context, scope, receiverScopes, ident->name(), config);
 
   return vec;
 }
@@ -1940,7 +1940,7 @@ static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
 }
 
 bool Resolver::resolveIdentifier(const Identifier* ident,
-                                 const llvm::SmallVector<const Scope*>& receiverScope) {
+                                 const llvm::SmallVector<const Scope*>& receiverScopes) {
   ResolvedExpression& result = byPostorder.byAst(ident);
 
   // for 'proc f(arg:?)' need to set 'arg' to have type AnyType
@@ -1951,7 +1951,7 @@ bool Resolver::resolveIdentifier(const Identifier* ident,
     return false;
   }
 
-  auto vec = lookupIdentifier(ident, receiverScope);
+  auto vec = lookupIdentifier(ident, receiverScopes);
 
   if (vec.size() == 0) {
     result.setType(QualifiedType());
@@ -2027,7 +2027,7 @@ bool Resolver::enter(const Identifier* ident) {
     std::ignore = initResolver->handleUseOfField(ident);
     return false;
   } else {
-    auto ret = resolveIdentifier(ident, methodReceiverScope());
+    auto ret = resolveIdentifier(ident, methodReceiverScopes());
     return ret;
   }
 }
@@ -2104,7 +2104,7 @@ bool Resolver::enter(const NamedDecl* decl) {
     // check for multiple definitions
     LookupConfig config = LOOKUP_DECLS;
     auto vec = lookupNameInScope(context, scope,
-                                 /* receiverScope */ {},
+                                 /* receiverScopes */ {},
                                  decl->name(), config);
 
     if (vec.size() > 0) {
@@ -2563,7 +2563,7 @@ QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
     LookupConfig config = LOOKUP_DECLS | LOOKUP_INNERMOST;
     auto enumScope = scopeForId(context, enumType->id());
     auto vec = lookupNameInScope(context, enumScope,
-                                 /* receiverScope */ {},
+                                 /* receiverScopes */ {},
                                  elementName, config);
     if (vec.size() == 0) {
       return CHPL_TYPE_ERROR(context, UnknownEnumElem, nodeForErr,
@@ -2617,7 +2617,7 @@ void Resolver::exit(const Dot* dot) {
 
     auto modScope = scopeForModule(context, receiver.toId());
     auto vec = lookupNameInScope(context, modScope,
-                                 /* receiverScope */ {},
+                                 /* receiverScopes */ {},
                                  dot->field(), config);
     ResolvedExpression& r = byPostorder.byAst(dot);
     if (vec.size() == 0) {
@@ -2949,9 +2949,9 @@ static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
                         LOOKUP_PARENTS |
                         LOOKUP_INNERMOST;
 
-  auto receiverScope = resolver.methodReceiverScope();
+  auto receiverScopes = resolver.methodReceiverScopes();
 
-  auto vec = lookupNameInScope(resolver.context, scope, receiverScope,
+  auto vec = lookupNameInScope(resolver.context, scope, receiverScopes,
                                intent->name(), config);
 
   if (vec.size() == 1) {
