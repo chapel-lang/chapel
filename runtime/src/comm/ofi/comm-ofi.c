@@ -309,7 +309,6 @@ static const char* mcmModeNames[] = { "undefined",
 
 static bool cxiHybridMRMode = false;
 
-
 ////////////////////////////////////////
 //
 // Forward decls
@@ -1063,9 +1062,6 @@ void chpl_comm_pre_mem_init(void) {
 
 void chpl_comm_post_mem_init(void) {
   DBG_PRINTF(DBG_IFACE_SETUP, "%s()", __func__);
-
-
-
   chpl_comm_init_prv_bcast_tab();
   init_broadcast_private();
 
@@ -1080,7 +1076,6 @@ void chpl_comm_post_mem_init(void) {
   if (chpl_numNodes > 1) {
     init_ofiFabricDomain();
   }
-  init_ofiReserveCores();
 }
 
 
@@ -2798,14 +2793,12 @@ void init_ofiForMem(void) {
     bufAcc |= FI_SEND | FI_READ | FI_WRITE;
   }
 
-  DBG_PRINTF(DBG_MR, "memTabCount %d", memTabCount);
   for (int i = 0; i < memTabCount; i++) {
     DBG_PRINTF(DBG_MR, "[%d] fi_mr_reg(%p, %#zx, %#" PRIx64 ")",
                i, memTab[i].addr, memTab[i].size, bufAcc);
     OFI_CHK(fi_mr_reg(ofi_domain,
                       memTab[i].addr, memTab[i].size,
                       bufAcc, 0, (prov_key ? 0 : i), 0, &ofiMrTab[i], NULL));
-    DBG_PRINTF(DBG_MR, "[%d] fi_mr_reg complete", i);
     if ((ofi_info->domain_attr->mr_mode & FI_MR_ENDPOINT) != 0) {
       OFI_CHK(fi_mr_bind(ofiMrTab[i], &ofi_rxEp->fid, 0));
       OFI_CHK(fi_mr_enable(ofiMrTab[i]));
@@ -2816,7 +2809,6 @@ void init_ofiForMem(void) {
                prov_key ? "(prov)" : "");
     CHK_TRUE(prov_key || memTab[i].key == i);
   }
-  DBG_PRINTF(DBG_MR, "memory registration complete");
 
   //
   // Unless we're doing scalable registration of the entire address
@@ -4718,7 +4710,6 @@ void init_amHandling(void) {
   // least one is running.
   //
   atomic_init_bool(&amHandlersExit, false);
-  
   PTHREAD_CHK(pthread_mutex_lock(&amStartStopMutex));
   for (int i = 0; i < numAmHandlers; i++) {
     CHK_TRUE(chpl_task_createCommTask(amHandler, NULL, reservedCPUs[i]) == 0);

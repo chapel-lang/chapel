@@ -14,7 +14,7 @@
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific la/nguage governing permissions and
+ * See the License for the specific language governing permissions and
  * limitations under the License.
  */
 
@@ -807,29 +807,6 @@ c_sublocid_t chpl_topo_getMemLocality(void* p) {
 }
 
 
-
-//
-// Binds the current thread to the specified physical CPU (core). The core must
-// have previously been reserved via chpl_topo_reserveCPUPhysical.
-//
-// Returns 0 on success, 1 otherwise
-//
-int chpl_topo_bindCPUPhysical(int id) {
-  int status = 1;
-  if (hwloc_bitmap_isset(physReservedSet, id)) {
-    int flags = HWLOC_CPUBIND_THREAD | HWLOC_CPUBIND_STRICT;
-    hwloc_cpuset_t cpuset;
-    CHK_ERR_ERRNO((cpuset = hwloc_bitmap_alloc()) != NULL);
-    hwloc_bitmap_set(cpuset, id);
-    CHK_ERR_ERRNO(hwloc_set_cpubind(topology, cpuset, flags) == 0);
-    hwloc_bitmap_free(cpuset);
-    status = 0;
-  }
-  _DBG_P("chpl_topo_bindCPUPhysical id: %d status: %d", id, status);
-  return status;
-}
-
-
 //
 // Reserves a physical CPU (core) and returns its hwloc OS index. The core and
 // its PUs will not be returned by chpl_topo_getCPUs,
@@ -919,7 +896,7 @@ int chpl_topo_bindCPU(int id) {
     hwloc_bitmap_free(cpuset);
     status = 0;
   }
-  _DBG_P("chpl_topo_bindCPUPhysical id: %d status: %d", id, status);
+  _DBG_P("chpl_topo_bindCPU id: %d status: %d", id, status);
   return status;
 }
 
@@ -1081,6 +1058,7 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
   for (int lid = 0; lid < numLocales; lid++) {
     if (lid == chpl_nodeID) {
       rank = unmatchedLocales;
+      break;
     }
     if (assignedNics[lid] == -1) {
       unmatchedLocales++;
@@ -1096,7 +1074,7 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
 
     // Use an unassigned NIC, perhaps sharing one if necessary.
     // Note that this can lead to unbalanced loads, but should be uncommon.
-    
+
     rank %= (numNics - numAssignedNics);
 
     int count = 0;
