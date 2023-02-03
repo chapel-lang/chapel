@@ -362,11 +362,12 @@ static void cpuInfoInit(void) {
 
   int numLocalesOnNode = chpl_get_num_locales_on_node();
   int expectedLocalesOnNode = chpl_env_rt_get_int("LOCALES_PER_NODE", 0);
+  chpl_bool useSocket = chpl_env_rt_get_bool("USE_SOCKET", false);
   int rank = chpl_get_local_rank();
   _DBG_P("numLocalesOnNode = %d", numLocalesOnNode);
   _DBG_P("expectedLocalesOnNode = %d", expectedLocalesOnNode);
   _DBG_P("rank = %d", rank);
-  if ((numLocalesOnNode > 1) || (expectedLocalesOnNode > 1)) {
+  if ((numLocalesOnNode > 1) || (expectedLocalesOnNode > 1) || useSocket) {
     if (numLocalesOnNode > 1) {
       oversubscribed = true;
     }
