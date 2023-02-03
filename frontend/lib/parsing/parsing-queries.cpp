@@ -987,7 +987,7 @@ static bool isAstDeprecated(Context* context, const AstNode* ast) {
 
 static bool isAstUnstable(Context* context, const AstNode* ast) {
   auto attr = parsing::idToAttributeGroup(context, ast->id());
-  return attr && attr->isDeprecated();
+  return attr && attr->isUnstable();
 }
 
 static bool isAstFormal(Context* context, const AstNode* ast) {

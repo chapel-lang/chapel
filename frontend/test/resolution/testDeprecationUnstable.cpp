@@ -488,10 +488,89 @@ static void testNoUnstableWarningsForThisFormals(void) {
   assert(guard.realizeErrors());
 }
 
+static void testNoWarningsForUnstableMentionsInUnstable(void) {
+  Context context;
+  Context* ctx = turnOnWarnUnstable(&context);
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  std::string contents =
+    R""""(
+
+    module testNoWarningsForUnstableMentionsInUnstable {
+      @unstable "this variable is unstable"
+      var x: int = 0;
+      var y: int = 1;
+
+      proc foo(z) {}
+
+      @unstable "this module is unstable"
+      module TestUnstableModule2 {
+        // checks deep uses
+        module Deeper {
+          proc bar() {
+            use super.super;
+            foo(x);
+            return x;
+          }
+
+          // Even deeper!
+          module Deepest {
+            proc baz() {
+              use super.super.super;
+              foo(x);
+              return x;
+            }
+          }
+        }
+      }
+
+      proc main() {
+        use this.TestUnstableModule2.Deeper;
+        use this.TestUnstableModule2.Deeper.Deepest;
+
+        bar();
+        baz();
+      }
+    }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the top module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Force resolve 'main' since we may not always do that yet.
+  assert(mod->numStmts() == 5);
+  const Function* mainFn = mod->stmt(4)->toFunction();
+  std::ignore = resolveConcreteFunction(ctx, mainFn->id());
+
+  // TODO: Helpers to make sure the errors are correct.
+  assert(guard.numErrors() == 2);
+  for (auto& err : guard.errors()) {
+    assert(err->type() == ErrorType::Unstable);
+  }
+
+  auto& e0 = guard.error(0);
+  assert(e0->message() == "this module is unstable");
+  assert(e0->location(ctx).line() == 32);
+  auto& e1 = guard.error(1);
+  assert(e1->message() == "this module is unstable");
+  assert(e1->location(ctx).line() == 33);
+
+  assert(guard.realizeErrors());
+}
+
 int main() {
   testDeprecationWarningsForTypes();
   testDeprecationWarningsForUseImport();
   testNoUnstableWarningsForThisFormals();
+  testNoWarningsForUnstableMentionsInUnstable();
   return 0;
 }
 
