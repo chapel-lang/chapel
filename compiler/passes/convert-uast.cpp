@@ -147,6 +147,14 @@ struct Converter {
   std::vector<ModStackEntry> modStack;
   std::vector<SymStackEntry> symStack;
 
+  /* When working within a method, field accesses need to be code generated
+     as using 'this' rather than as SymExprs pointing to a field.
+     To enable that, this stack tracks the Symbol* for the 'this' formal
+     for a method currently being generated.
+     This is different from symStack above because the process of converting
+     ForwardingDecls will add a method that does not exist in the uAST. */
+  std::vector<Symbol*> methodThisStack;
+
 
   Converter(chpl::Context* context, ModTag topLevelModTag)
     : context(context),
@@ -414,26 +422,15 @@ struct Converter {
           }
 
           // figure out if it is field access
+          // TODO: Once we are using types for 'this', this should check
+          // that it is not a field access to some record/class unrelated
+          // to the current 'this' type.
           bool isFieldAccess = false;
-          const uast::Formal* parentMethodThis = nullptr;
           Symbol* parentMethodConvertedThis = nullptr;
           if (parsing::idIsField(context, id)) {
-            if (inForwardingMethod != nullptr) {
-              parentMethodConvertedThis = inForwardingMethod->_this;
+            if (methodThisStack.size() > 0) {
+              parentMethodConvertedThis = methodThisStack.back();
               isFieldAccess = true;
-            }
-
-            // are we in a method? if so, what is the 'this' formal?
-            for (auto it = symStack.rbegin(); it != symStack.rend(); ++it) {
-              if (it->ast != nullptr) {
-                if (auto inFn = it->ast->toFunction()) {
-                  if (inFn->isMethod()) {
-                    parentMethodThis = inFn->thisFormal();
-                    isFieldAccess = true;
-                    break;
-                  }
-                }
-              }
             }
           }
 
@@ -442,13 +439,7 @@ struct Converter {
             // if we are just scope resolving, convert field
             // access to this.field using a string literal to
             // match production scope resolve
-            Symbol* thisSym = nullptr;
-            if (parentMethodConvertedThis != nullptr) {
-              thisSym = parentMethodConvertedThis;
-            } else {
-              INT_ASSERT(parentMethodThis);
-              thisSym = findConvertedSym(parentMethodThis->id());
-            }
+            Symbol* thisSym = parentMethodConvertedThis;
             INT_ASSERT(thisSym != nullptr);
             auto ast = parsing::idToAst(context, id);
             INT_ASSERT(ast && ast->isVariable());
@@ -2361,15 +2352,14 @@ struct Converter {
 
     // compute the 'this' formal type
     const uast::AggregateDecl* decl = nullptr;
-    for (auto it = symStack.rbegin(); it != symStack.rend(); ++it) {
-      if (it->ast != nullptr) {
-        if (auto d = it->ast->toAggregateDecl()) {
-          decl = d;
-          break;
-        }
-      }
+    INT_ASSERT(symStack.size() > 0);
+    {
+      SymStackEntry& last = symStack.back();
+      INT_ASSERT(last.ast != nullptr);
+      decl = last.ast->toAggregateDecl();
+      INT_ASSERT(decl);
     }
-    INT_ASSERT(decl);
+    // TODO: use the resolved type for the contained declaration
     auto thisTypeExpr = new UnresolvedSymExpr(decl->name().c_str());
 
     // add a 'this' formal
@@ -2386,18 +2376,17 @@ struct Converter {
     INT_ASSERT(!inForwardingMethod);
 
     // note that we're in a forwarding declaration working with 'fn'
-    inForwardingMethod = fn;
+    // to get the field accesses to convert correctly
+    methodThisStack.push_back(fn->_this);
 
     Expr* expr = nullptr;
 
     std::vector<PotentialRename*>* visNames = nullptr;
-    bool except=false;
+    bool except = false;
     if (auto vis = node->expr()->toVisibilityClause()) {
       // compute the visibility clauses
-      if (vis->limitationKind() == uast::VisibilityClause::ONLY) {
-        except=false;
-      } else if (vis->limitationKind() == uast::VisibilityClause::EXCEPT) {
-        except=true;
+      if (vis->limitationKind() == uast::VisibilityClause::EXCEPT) {
+        except = true;
       }
       // convert the AstList of renames
       visNames = new std::vector<PotentialRename*>;
@@ -2422,7 +2411,7 @@ struct Converter {
     fn->body->insertAtTail(new CallExpr(PRIM_RETURN, expr));
 
     // note, no longer working within forwarding method 'fn'
-    inForwardingMethod = nullptr;
+    methodThisStack.pop_back();
 
     // Add the forwarding target method to the ret Block
     DefExpr* fnDef = new DefExpr(fn);
@@ -2716,6 +2705,7 @@ struct Converter {
       if (node->isPrimaryMethod()) {
         fn->addFlag(FLAG_METHOD_PRIMARY);
       }
+      methodThisStack.push_back(convertedReceiver);
     }
 
     if (fn->name == astrDeinit)
@@ -2801,6 +2791,9 @@ struct Converter {
 
     // pop the function from the symStack
     popFromSymStack(node, fn);
+    if (convertedReceiver) {
+      methodThisStack.pop_back();
+    }
 
     return fn;
   }
