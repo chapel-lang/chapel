@@ -38,6 +38,7 @@
 #include "../util/filesystem_help.h"
 
 #include <cstdio>
+#include <regex>
 #include <set>
 #include <string>
 #include <tuple>
@@ -994,6 +995,23 @@ static bool isAstFormal(Context* context, const AstNode* ast) {
   return ast->isFormal();
 }
 
+// When printing the deprecation message to the console we typically want to
+// filter out inline markup used for Sphinx (which is useful for when
+// generating the docs). See:
+// https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
+static std::string
+removeSphinxMarkupFromWarningMessage(const std::string msg) {
+
+  // TODO: Support explicit title and reference targets like in reST direct
+  // hyperlinks (and having only target show up in sanitized message).
+  // TODO: Prefixing content with ! (and filtering it out)
+  // TODO: Prefixing content with ~ (and displaying only the last component)
+  static const auto re = R"(\B\:(mod|proc|iter|data|const|var|param)"
+                         R"(|type|class|record|attr)\:`([!$\w\$\.]+)`\B)";
+  auto ret = std::regex_replace(msg, std::regex(re), "$2");
+  return ret;
+}
+
 static std::string
 createDefaultDeprecationMessage(Context* context, const NamedDecl* target) {
   std::string ret = target->name().c_str();
@@ -1030,6 +1048,8 @@ deprecationWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
   std::string msg = storedMsg.isEmpty()
       ? createDefaultDeprecationMessage(context, targetNamedDecl)
       : storedMsg.c_str();
+
+  msg = removeSphinxMarkupFromWarningMessage(msg);
 
   CHPL_ASSERT(msg.size() > 0);
   CHPL_REPORT(context, Deprecation, msg, mention, targetNamedDecl);
