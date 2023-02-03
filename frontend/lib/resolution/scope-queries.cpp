@@ -339,7 +339,7 @@ const Scope* scopeForId(Context* context, ID id) {
 
 static bool doLookupInScope(Context* context,
                             const Scope* scope,
-                            const llvm::SmallVector<const Scope*>& receiverScope,
+                            const llvm::SmallVector<const Scope*>& receiverScopes,
                             const ResolvedVisibilityScope* resolving,
                             UniqueString name,
                             LookupConfig config,
@@ -475,7 +475,7 @@ static bool doLookupInToplevelModules(Context* context,
 // appends to result
 static bool doLookupInScope(Context* context,
                             const Scope* scope,
-                            const llvm::SmallVector<const Scope*>& receiverScope,
+                            const llvm::SmallVector<const Scope*>& receiverScopes,
                             const ResolvedVisibilityScope* resolving,
                             UniqueString name,
                             LookupConfig config,
@@ -578,7 +578,7 @@ static bool doLookupInScope(Context* context,
           }
         }
 
-        bool got = doLookupInScope(context, cur, receiverScope, resolving, name,
+        bool got = doLookupInScope(context, cur, receiverScopes, resolving, name,
                                    newConfig, checkedScopes, result);
         if (onlyInnermost && got) return true;
       }
@@ -590,14 +590,14 @@ static bool doLookupInScope(Context* context,
     if (reachedModule) {
       // Assumption: If a module is encountered, and if there is a receiver
       // scope, then we were scope-resolving inside of a method call.  In this
-      // case we should perform a lookup in the receiver scope before looking
+      // case we should perform a lookup in the receiver scopes before looking
       // in the module scope. For example:
       // module M {
       //   type T = int;
       //   record R { type T; }
       //   proc R.foo() : T { } // should resolve 'T' to 'R.T', not 'M.T'
       // }
-      for (const auto& currentScope : receiverScope) {
+      for (const auto& currentScope : receiverScopes) {
         bool got = doLookupInScope(context, currentScope, {}, resolving,
                                    name, newConfig, checkedScopes, result);
         if (onlyInnermost && got) return true;
@@ -703,25 +703,25 @@ static bool lookupInScopeViz(Context* context,
 
 std::vector<BorrowedIdsWithName> lookupNameInScope(
     Context* context, const Scope* scope,
-    const llvm::SmallVector<const Scope*>& receiverScope, UniqueString name,
+    const llvm::SmallVector<const Scope*>& receiverScopes, UniqueString name,
     LookupConfig config) {
   NamedScopeSet checkedScopes;
 
-  return lookupNameInScopeWithSet(context, scope, receiverScope, name, config,
+  return lookupNameInScopeWithSet(context, scope, receiverScopes, name, config,
                                   checkedScopes);
 }
 
 std::vector<BorrowedIdsWithName>
 lookupNameInScopeWithSet(Context* context,
                          const Scope* scope,
-                         const llvm::SmallVector<const Scope*>& receiverScope,
+                         const llvm::SmallVector<const Scope*>& receiverScopes,
                          UniqueString name,
                          LookupConfig config,
                          NamedScopeSet& visited) {
   std::vector<BorrowedIdsWithName> vec;
 
   if (scope) {
-    doLookupInScope(context, scope, receiverScope,
+    doLookupInScope(context, scope, receiverScopes,
                     /* resolving scope */ nullptr,
                     name, config, visited, vec);
   }

@@ -1946,7 +1946,7 @@ scopeResolveFunctionQuery(Context* context, ID id) {
       // scope-resolved, when we might be able to gather some information
       // about the type on which the method is declared.
       if (fn->isMethod() && child == fn->thisFormal()) {
-        visitor.methodReceiverScope(/*recompute=*/true);
+        visitor.methodReceiverScopes(/*recompute=*/true);
       }
     }
 
@@ -2638,8 +2638,8 @@ static void considerCompilerGeneratedCandidates(Context* context,
 static std::vector<BorrowedIdsWithName> lookupCalledExprConsideringReceiver(
     Context* context, const Scope* inScope, const CallInfo& ci,
     NamedScopeSet& visited) {
-  // For method and operator calls, also consider the receiver scope.
-  llvm::SmallVector<const Scope*> receiverScope = {};
+  // For method and operator calls, also consider the receiver scopes.
+  llvm::SmallVector<const Scope*> receiverScopes = {};
   if (ci.isMethodCall() || ci.isOpCall()) {
     CHPL_ASSERT(ci.numActuals() >= 1);
     auto& qtReceiver = ci.actual(0).type();
@@ -2647,7 +2647,7 @@ static std::vector<BorrowedIdsWithName> lookupCalledExprConsideringReceiver(
       if (auto compType = t->getCompositeType()) {
         auto vec =
             Resolver::gatherReceiverAndParentScopesForType(context, compType);
-        receiverScope.append(vec);
+        receiverScopes.append(vec);
       }
     }
   }
@@ -2657,7 +2657,7 @@ static std::vector<BorrowedIdsWithName> lookupCalledExprConsideringReceiver(
 
   const UniqueString name = ci.name();
 
-  return lookupNameInScopeWithSet(context, inScope, receiverScope, name, config,
+  return lookupNameInScopeWithSet(context, inScope, receiverScopes, name, config,
                                   visited);
 }
 

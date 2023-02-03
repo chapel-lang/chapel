@@ -524,7 +524,7 @@ ID InitResolver::solveNameConflictByIgnoringField(const NameVec& vec) {
 }
 
 bool InitResolver::handleResolvingFieldAccess(const Identifier* node) {
-  auto scope = initResolver_.methodReceiverScope();
+  auto scope = initResolver_.methodReceiverScopes();
   auto vec = initResolver_.lookupIdentifier(node, scope);
 
   // Handle and exit early if there were no ambiguities.

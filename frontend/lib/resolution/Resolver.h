@@ -64,8 +64,8 @@ struct Resolver {
   std::set<ID> instantiatedFieldOrFormals;
   std::set<ID> splitInitTypeInferredVariables;
   const uast::Call* inLeafCall = nullptr;
-  bool receiverScopeComputed = false;
-  llvm::SmallVector<const Scope*> savedReceiverScope =
+  bool receiverScopesComputed = false;
+  llvm::SmallVector<const Scope*> savedReceiverScopes =
       llvm::SmallVector<const Scope*, 3>();
   // TODO: use this for something or remove it
   const types::CompositeType* savedReceiverType = nullptr;
@@ -212,11 +212,11 @@ struct Resolver {
   static llvm::SmallVector<const Scope*> gatherReceiverAndParentScopesForType(
       Context* context, const types::Type* thisType);
 
-  /* Compute the receiver scope (when resolving a method)
+  /* Compute the receiver scopes (when resolving a method)
      and return nullptr if it is not applicable.
    */
-  llvm::SmallVector<const Scope*> methodReceiverScope(bool recompute = false);
-  /* Compute the receiver scope (when resolving a method)
+  llvm::SmallVector<const Scope*> methodReceiverScopes(bool recompute = false);
+  /* Compute the receiver scopes (when resolving a method)
      and return nullptr if it is not applicable.
    */
   const types::CompositeType* methodReceiverType();
@@ -402,10 +402,10 @@ struct Resolver {
 
   std::vector<BorrowedIdsWithName>
   lookupIdentifier(const uast::Identifier* ident,
-                   const llvm::SmallVector<const Scope*>& receiverScope);
+                   const llvm::SmallVector<const Scope*>& receiverScopes);
 
   bool resolveIdentifier(const uast::Identifier* ident,
-                         const llvm::SmallVector<const Scope*>& receiverScope);
+                         const llvm::SmallVector<const Scope*>& receiverScopes);
 
   /* Resolver keeps a stack of scopes and a stack of decls.
      enterScope and exitScope update those stacks. */
