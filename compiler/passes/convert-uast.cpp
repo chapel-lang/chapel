@@ -200,7 +200,7 @@ struct Converter {
        const resolution::ResolutionResultByPostorderID* resolved);
   void popFromSymStack(const uast::AstNode* ast, BaseAST* ret);
   const resolution::ResolutionResultByPostorderID* currentResolutionResult();
- 
+
   bool shouldScopeResolve(ID symbolId) {
     if (canScopeResolve) {
       return fDynoScopeBundled ||
