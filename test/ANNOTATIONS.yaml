@@ -2361,6 +2361,8 @@ arkouda: &arkouda-base
     - Create local copies of remote strings for encoding (Bears-R-Us/arkouda#1937)
   12/18/22:
     - Upgrade Arkouda release testing from 1.27.0 to 1.29.0 (#21257)
+  01/23/23:
+    - 2060 add pdarray data type and size to metric (Bears-R-Us/arkouda#2067)
 
 
 arkouda-string:
