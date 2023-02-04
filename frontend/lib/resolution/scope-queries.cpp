@@ -1114,6 +1114,10 @@ doResolveUseStmt(Context* context, const Use* use,
               CHPL_REPORT(context, AsWithUseExcept, use, as);
             }
           }
+          // check that symbols named with 'except' actually exist
+          errorIfAnyLimitationNotInScope(context, clause, foundScope,
+                                         r, VIS_USE);
+
           // add the visibility clause for only/except
           r->addVisibilityClause(foundScope, kind, isPrivate,
                                  convertLimitations(context, clause));
