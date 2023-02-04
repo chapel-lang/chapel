@@ -79,10 +79,11 @@ add_custom_command(
   COMMENT "writing reservedSymbolNames.h file updates..."
   VERBATIM)
 
-
 add_executable(chpl)
 # need many of the outputs from printchplenv for the following values
 # note that headers for dyno are included by target_link_libraries(chpl PRIVATE ChplFrontend)
+# because the ChplFrontend target_include_directories command in the frontend/lib
+# CMakeLists.txt file specifies its includes as PUBLIC
 target_include_directories(chpl PRIVATE
         ${SRC_DIR}/include/${CHPL_HOST_PLATFORM} # for free-bsd support (work-around)
         ${SRC_DIR}/include # headers for chpl, needed all the time
@@ -90,6 +91,23 @@ target_include_directories(chpl PRIVATE
         ${SRC_DIR}/../runtime/include/encoding # support for sharing unicode support between compiler and runtime
         ${SRC_DIR}/../third-party/utf8-decoder # support for sharing unicode support between compiler and runtime
         )
+
+# all the compiler subdirectories with sources do these same things
+# the set_property command is here to define a macro that gives the
+# compiler the name of the source directory so it can be used in error reports
+# if the compiler segfaults
+function(add_compiler_sources srcs directory_name)
+  target_sources(chpl
+                 PRIVATE
+                 ${srcs})
+  get_filename_component(DIR_NAME ${directory_name} NAME)
+  set_property(SOURCE ${srcs}
+               TARGET_DIRECTORY chpl
+               PROPERTY COMPILE_DEFINITIONS COMPILER_SUBDIR=${DIR_NAME}
+               APPEND)
+endfunction()
+
+
 add_subdirectory(AST)
 add_subdirectory(adt)
 add_subdirectory(backend)

@@ -43,11 +43,4 @@ set(SRCS
     scopeResolve.cpp
     splitInit.cpp
    )
-target_sources(chpl
-               PRIVATE
-               ${SRCS})
-get_filename_component(DIR_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-set_property(SOURCE ${SRCS}
-             TARGET_DIRECTORY chpl
-             PROPERTY COMPILE_DEFINITIONS COMPILER_SUBDIR=${DIR_NAME}
-             APPEND)
+add_compiler_sources("${SRCS}" "${CMAKE_CURRENT_SOURCE_DIR}")
