@@ -141,7 +141,6 @@ struct Converter {
   bool canScopeResolve = false;
   bool trace = false;
   int delegateCounter = 0;
-  FnSymbol* inForwardingMethod = nullptr;
 
   ModTag topLevelModTag;
   std::vector<ModStackEntry> modStack;
@@ -2372,9 +2371,6 @@ struct Converter {
                                                  dtMethodToken)));
     fn->insertFormalAtTail(new DefExpr(arg));
 
-    // Should not be possible to nest forwarding decls
-    INT_ASSERT(!inForwardingMethod);
-
     // note that we're in a forwarding declaration working with 'fn'
     // to get the field accesses to convert correctly
     methodThisStack.push_back(fn->_this);
@@ -2649,6 +2645,7 @@ struct Converter {
 
             convertedReceiver = toArgSymbol(conv->sym);
             INT_ASSERT(convertedReceiver);
+            methodThisStack.push_back(convertedReceiver);
 
             conv->sym->addFlag(FLAG_ARG_THIS);
 
@@ -2705,7 +2702,6 @@ struct Converter {
       if (node->isPrimaryMethod()) {
         fn->addFlag(FLAG_METHOD_PRIMARY);
       }
-      methodThisStack.push_back(convertedReceiver);
     }
 
     if (fn->name == astrDeinit)
