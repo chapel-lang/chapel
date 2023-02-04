@@ -3373,7 +3373,7 @@ isTypeDefaultInitializableImpl(Context* context, const Type* t) {
   return false;
 }
 
-const bool&
+static const bool&
 isTypeDefaultInitializableQuery(Context* context, const Type* t) {
   QUERY_BEGIN(isTypeDefaultInitializableQuery, context, t);
   bool ret = isTypeDefaultInitializableImpl(context, t);
