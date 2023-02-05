@@ -482,9 +482,12 @@
 %left TDOT TLP
 %nonassoc TPRAGMA TALIAS
 
-%type <expr>  attribute_decl_begin attribute_actual
-%type <exprList> attribute_actuals_ls opt_attribute_actuals attribute_decl_stmt_ls
+%type <expr>  attribute_decl_begin
+%type <exprList>  attribute_decl_stmt_ls
 %type <exprList> opt_attribute_decl_toolspace attribute_group attribute_decl_stmt
+
+%type <maybeNamedActual> attribute_actual
+%type <maybeNamedActualList> attribute_actuals_ls opt_attribute_actuals
 
 %type <throwsTag> opt_throws_error
 %type <moduleKind> opt_prototype
@@ -905,9 +908,9 @@ opt_attribute_decl_toolspace:
 ;
 
 opt_attribute_actuals:
-  { $$=context->makeList(); }
+  { $$=new MaybeNamedActualList(); }
   | TLP TRP
-  { $$=context->makeList(); }
+  { $$=new MaybeNamedActualList(); }
   | TLP attribute_actuals_ls TRP
   {
     $$ = $2;
@@ -915,20 +918,28 @@ opt_attribute_actuals:
   // this allows us to maintain @unstable "message" without requiring parens
   | STRINGLITERAL
   {
-    $$ = context->makeList($1);
+    auto lst = new MaybeNamedActualList();
+    lst->push_back(makeMaybeNamedActual($1));
+    $$ = lst;
   }
 ;
 
 attribute_actuals_ls:
   attribute_actual
-  { $$ = context->makeList($1); }
+  { auto lst = new MaybeNamedActualList();
+    lst->push_back($1);
+    $$ = lst;
+  }
   | attribute_actuals_ls TCOMMA attribute_actual
-  { $$ = context->appendList($1, $3); }
+  {
+      MaybeNamedActualList* lst = $1;
+      lst->push_back($3);
+      $$ = lst;
+  }
 ;
 
 attribute_actual:
-  literal_expr
-  | range_literal_expr
+  actual_expr
 ;
 
 module_decl_start:

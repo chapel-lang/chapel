@@ -1042,6 +1042,120 @@ static void testAttributeAndDeprecated(Parser* parser) {
    assert(attr0->name() == "attribute");
 }
 
+static void testAttributeNamedArgs(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto program = R""""(
+    @myAttribute(reason="my rationale")
+    @myAttribute2(id=1234, feature="foo")
+    @myAttribute3(since=1.30, feature="bar", reason="my rationale", issue=5678)
+    proc foo { }
+  )"""";
+
+  auto parseResult = parseStringAndReportErrors(parser, "test7.chpl", program);
+  assert(guard.realizeErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto p = mod->stmt(0)->toFunction();
+  assert(p);
+  auto attr = p->attributeGroup();
+  assert(attr);
+  assert(attr->numAttributes() == 3);
+  auto attr1 = attr->getAttributeNamed(UniqueString::get(parser->context(), "myAttribute"));
+  assert(attr1);
+  assert(attr1->numActuals() == 1);
+  auto actual = attr1->actual(0);
+  assert(actual);
+  assert(attr1->isNamedActual(0));
+  assert(attr1->actualName(0) == UniqueString::get(parser->context(), "reason"));
+  assert(actual->isStringLiteral());
+  auto attr2 = attr->getAttributeNamed(UniqueString::get(parser->context(), "myAttribute2"));
+  assert(attr2);
+  assert(attr2->numActuals() == 2);
+  assert(attr2->isNamedActual(0));
+  assert(attr2->actualName(0) == UniqueString::get(parser->context(), "id"));
+  assert(attr2->isNamedActual(1));
+  assert(attr2->actualName(1) == UniqueString::get(parser->context(), "feature"));
+  assert(attr2->actual(0)->isIntLiteral());
+  assert(attr2->actual(1)->isStringLiteral());
+  auto attr3 = attr->getAttributeNamed(UniqueString::get(parser->context(), "myAttribute3"));
+  assert(attr3);
+  assert(attr3->numActuals() == 4);
+  assert(attr3->isNamedActual(0));
+  assert(attr3->actualName(0) == UniqueString::get(parser->context(), "since"));
+  assert(attr3->isNamedActual(1));
+  assert(attr3->actualName(1) == UniqueString::get(parser->context(), "feature"));
+  assert(attr3->isNamedActual(2));
+  assert(attr3->actualName(2) == UniqueString::get(parser->context(), "reason"));
+  assert(attr3->isNamedActual(3));
+  assert(attr3->actualName(3) == UniqueString::get(parser->context(), "issue"));
+  assert(attr3->actual(0)->isRealLiteral());
+  assert(attr3->actual(1)->isStringLiteral());
+  assert(attr3->actual(2)->isStringLiteral());
+  assert(attr3->actual(3)->isIntLiteral());
+}
+
+static void testAttributeMixedNamedArgs(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto program = R""""(
+    @myAttribute(1, fade=2, 3)
+    proc foo { }
+  )"""";
+
+  auto parseResult = parseStringAndReportErrors(parser, "test8.chpl", program);
+  assert(guard.realizeErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto p = mod->stmt(0)->toFunction();
+  assert(p);
+  auto attr = p->attributeGroup();
+  assert(attr);
+  assert(attr->numAttributes() == 1);
+  auto attr1 = attr->getAttributeNamed(UniqueString::get(parser->context(), "myAttribute"));
+  assert(attr1);
+  assert(attr1->numActuals() == 3);
+  assert(attr1->isNamedActual(1));
+  assert(attr1->actualName(1) == UniqueString::get(parser->context(), "fade"));
+  assert(attr1->actual(0)->isIntLiteral());
+  assert(attr1->actual(1)->isIntLiteral());
+  assert(attr1->actual(2)->isIntLiteral());
+}
+
+/* a test of the parser's ability to parse a proc with an attribute that has
+   3 named arguments
+*/
+static void testAttribute3NamedArgs(Parser* parser) {
+  ErrorGuard guard(parser->context());
+  auto program = R""""(
+    @myAttribute(reason="my rationale", feature="foo", issue=1234)
+    proc foo() { }
+  )"""";
+
+  auto parseResult = parseStringAndReportErrors(parser, "test9.chpl", program);
+  assert(guard.realizeErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto p = mod->stmt(0)->toFunction();
+  assert(p);
+  auto attr = p->attributeGroup();
+  assert(attr);
+  assert(attr->numAttributes() == 1);
+  auto attr1 = attr->getAttributeNamed(UniqueString::get(parser->context(), "myAttribute"));
+  assert(attr1);
+  assert(attr1->numActuals() == 3);
+  assert(attr1->isNamedActual(0));
+  assert(attr1->actualName(0) == UniqueString::get(parser->context(), "reason"));
+  assert(attr1->actual(0)->isStringLiteral());
+  assert(attr1->isNamedActual(1));
+  assert(attr1->actualName(1) == UniqueString::get(parser->context(), "feature"));
+  assert(attr1->actual(1)->isStringLiteral());
+  assert(attr1->isNamedActual(2));
+  assert(attr1->actualName(2) == UniqueString::get(parser->context(), "issue"));
+  assert(attr1->actual(2)->isIntLiteral());
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -1105,6 +1219,9 @@ int main() {
   testAttributeAndDeprecatedLast(p);
   testAttributeAndDeprecatedMessage(p);
   testAttributeAndUnstableMessage(p);
+  testAttributeNamedArgs(p);
+  testAttributeMixedNamedArgs(p);
+  testAttribute3NamedArgs(p);
 
   return 0;
 }

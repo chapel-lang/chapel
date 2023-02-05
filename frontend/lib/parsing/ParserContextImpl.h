@@ -130,7 +130,7 @@ owned<AstNode> ParserContext::consumeVarDeclLinkageName(void) {
 
 owned<Attribute> ParserContext::buildAttribute(YYLTYPE loc, AstNode* firstIdent,
                                                ParserExprList* toolspace,
-                                               ParserExprList* actuals) {
+                                               MaybeNamedActualList* actuals) {
 
   UniqueString fullName;
   std::string tmpName;
@@ -143,7 +143,7 @@ owned<Attribute> ParserContext::buildAttribute(YYLTYPE loc, AstNode* firstIdent,
     toolspace = makeList();
   }
   if (actuals == nullptr) {
-    actuals = makeList();
+    actuals = new MaybeNamedActualList();
   }
   if (toolspace->size() == 0) {
     fullName = firstIdent->toIdentifier()->name();
@@ -155,8 +155,11 @@ owned<Attribute> ParserContext::buildAttribute(YYLTYPE loc, AstNode* firstIdent,
     fullName = UniqueString::get(context(), tmpName);
   }
 
+  AstList actualsForReal;
+  std::vector<UniqueString> actualNames;
+  consumeNamedActuals(actuals, actualsForReal, actualNames);
   auto node = Attribute::build(builder, convertLocation(loc),
-                               fullName, std::move(consumeList(actuals)));
+                               fullName, std::move(actualsForReal), std::move(actualNames));
   return node;
 }
 
@@ -212,7 +215,7 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
 
 void ParserContext::noteAttribute(YYLTYPE loc, AstNode* firstIdent,
                                   ParserExprList* toolspace,
-                                  ParserExprList* actuals) {
+                                  MaybeNamedActualList* actuals) {
   hasAttributeGroupParts = true;
 
   // initialize the list if it wasn't already
@@ -227,13 +230,13 @@ void ParserContext::noteAttribute(YYLTYPE loc, AstNode* firstIdent,
   if (ident->name()==UniqueString::get(context(), "unstable")) {
     AstNode* msg = nullptr;
     if (actuals != nullptr && actuals->size() > 0) {
-      msg = actuals->back();
+      msg = actuals->back().expr;
     }
     noteUnstable(loc, msg);
   } else if (ident->name()==UniqueString::get(context(),"deprecated")) {
     AstNode* msg = nullptr;
     if (actuals != nullptr && actuals->size() > 0) {
-      msg = actuals->back();
+      msg = actuals->back().expr;
     }
     noteDeprecation(loc, msg);
   }

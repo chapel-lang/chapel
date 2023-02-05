@@ -131,10 +131,10 @@ struct ParserContext {
 
   void noteAttribute(YYLTYPE loc, AstNode* firstIdent,
                                   ParserExprList* toolspace,
-                                  ParserExprList* actuals);
+                                   MaybeNamedActualList* actuals);
   owned<Attribute> buildAttribute(YYLTYPE loc, AstNode* firstIdent,
                                   ParserExprList* toolspace,
-                                  ParserExprList* actuals);
+                                   MaybeNamedActualList* actuals);
 
   // If attributes do not exist yet, returns nullptr.
   owned<AttributeGroup> buildAttributeGroup(YYLTYPE locationOfDecl);

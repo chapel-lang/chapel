@@ -440,7 +440,7 @@ static void test5(Parser* parser) {
 // Enum elements can be deprecated.
 static void test6(Parser* parser) {
   ErrorGuard guard(parser->context());
-  auto parseResult = parseStringAndReportErrors(parser, "test7.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test6.chpl",
       "pragma \"no doc\"\n"
       "deprecated \"Enum is deprecated\"\n"
       "enum Foo {\n"
