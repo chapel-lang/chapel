@@ -185,7 +185,7 @@ static void usage(int argc, char** argv) {
          "  --trace enables query tracing\n"
          "  --time <outputFile> outputs query timing information to outputFile\n"
          "  --searchPath <path> adds to the module search path\n"
-         "  --warn-unstable path> turns on unstable warnings\n",
+         "  --warn-unstable turns on unstable warnings\n",
          argv[0]);
 }
 
