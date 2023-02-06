@@ -140,10 +140,19 @@ struct Converter {
   bool inImportOrUse = false;
   bool canScopeResolve = false;
   bool trace = false;
+  int delegateCounter = 0;
 
   ModTag topLevelModTag;
   std::vector<ModStackEntry> modStack;
   std::vector<SymStackEntry> symStack;
+
+  /* When working within a method, field accesses need to be code generated
+     as using 'this' rather than as SymExprs pointing to a field.
+     To enable that, this stack tracks the Symbol* for the 'this' formal
+     for a method currently being generated.
+     This is different from symStack above because the process of converting
+     ForwardingDecls will add a method that does not exist in the uAST. */
+  std::vector<Symbol*> methodThisStack;
 
 
   Converter(chpl::Context* context, ModTag topLevelModTag)
@@ -189,6 +198,7 @@ struct Converter {
        const uast::AstNode* ast,
        const resolution::ResolutionResultByPostorderID* resolved);
   void popFromSymStack(const uast::AstNode* ast, BaseAST* ret);
+  const resolution::ResolutionResultByPostorderID* currentResolutionResult();
 
   bool shouldScopeResolve(ID symbolId) {
     if (canScopeResolve) {
@@ -387,88 +397,80 @@ struct Converter {
     }
 
     // Check for a resolution result that includes a target ID
-    if (symStack.size() > 0) {
-      auto r = symStack.back().resolved;
-      if (r != nullptr) {
-        const resolution::ResolvedExpression* rr = r->byAstOrNull(node);
-        if (rr != nullptr) {
-          auto id = rr->toId();
-          if (!id.isEmpty()) {
+    if (auto r = currentResolutionResult()) {
+      const resolution::ResolvedExpression* rr = r->byAstOrNull(node);
+      if (rr != nullptr) {
+        auto id = rr->toId();
+        if (!id.isEmpty()) {
 
-            // If we're referring to an associated type in an interface,
-            // leave it unconverted for now because the compiler does some
-            // mangling of the AST and breaks the "points-to" ID.
-            auto toAst = parsing::idToAst(context, id);
-            if (auto varLikeDecl = toAst->toVarLikeDecl()) {
-              if (varLikeDecl->storageKind() == types::QualifiedType::TYPE) {
-                auto toParentId = parsing::idToParentId(context, id);
-                auto toParentAst = parsing::idToAst(context, toParentId);
+          // If we're referring to an associated type in an interface,
+          // leave it unconverted for now because the compiler does some
+          // mangling of the AST and breaks the "points-to" ID.
+          auto toAst = parsing::idToAst(context, id);
+          if (auto varLikeDecl = toAst->toVarLikeDecl()) {
+            if (varLikeDecl->storageKind() == types::QualifiedType::TYPE) {
+              auto toParentId = parsing::idToParentId(context, id);
+              auto toParentAst = parsing::idToAst(context, toParentId);
 
-                if (toParentAst->isInterface()) {
-                  // We're looking at an associated type.
-                  Symbol* sym = new TemporaryConversionSymbol(id);
-                  return new SymExpr(sym);
-                }
+              if (toParentAst->isInterface()) {
+                // We're looking at an associated type.
+                Symbol* sym = new TemporaryConversionSymbol(id);
+                return new SymExpr(sym);
               }
             }
+          }
 
-            // figure out if it is field access
-            bool isFieldAccess = false;
-            const uast::Formal* parentMethodThis = nullptr;
-            if (parsing::idIsField(context, id)) {
-              // are we in a method? if so, what is the 'this' formal?
-              for (auto it = symStack.rbegin(); it != symStack.rend(); ++it) {
-                if (it->ast != nullptr) {
-                  if (auto inFn = it->ast->toFunction()) {
-                    if (inFn->isMethod()) {
-                      parentMethodThis = inFn->thisFormal();
-                      isFieldAccess = true;
-                      break;
-                    }
-                  }
-                }
-              }
+          // figure out if it is field access
+          // TODO: Once we are using types for 'this', this should check
+          // that it is not a field access to some record/class unrelated
+          // to the current 'this' type.
+          bool isFieldAccess = false;
+          Symbol* parentMethodConvertedThis = nullptr;
+          if (parsing::idIsField(context, id)) {
+            if (methodThisStack.size() > 0) {
+              parentMethodConvertedThis = methodThisStack.back();
+              isFieldAccess = true;
             }
+          }
 
-            // handle field access when only scope resolving
-            if (!shouldResolve(node) && isFieldAccess) {
-              // if we are just scope resolving, convert field
-              // access to this.field using a string literal to
-              // match production scope resolve
-              Symbol* thisSym = findConvertedSym(parentMethodThis->id());
-              INT_ASSERT(thisSym != nullptr);
-              auto ast = parsing::idToAst(context, id);
-              INT_ASSERT(ast && ast->isVariable());
-              auto var = ast->toVariable();
-              auto str = new_CStringSymbol(var->name().c_str());
-              CallExpr* ret = new CallExpr(".", thisSym, str);
-              return ret;
-            }
-
-            // handle other Identifiers
-            Symbol* sym = findConvertedSym(id);
-            if (sym == nullptr) {
-              // we will fix it later
-              sym = new TemporaryConversionSymbol(id);
-            }
-
-            SymExpr* se = new SymExpr(sym);
-            Expr* ret = se;
-
-            if (parsing::idIsParenlessFunction(context, id)) {
-              // it's a parenless function call so add a CallExpr
-              ret = new CallExpr(se);
-            }
-            if (isFieldAccess) {
-              INT_FATAL("resolving field access call not yet implemented");
-              // TODO: convert it to a call to the field accessor
-              // using the resolved TypedFnSignature from rr
-            }
-
-            // fixup, if any, will be noted in noteAllContainedFixups
-
+          // handle field access when only scope resolving
+          if (!shouldResolve(node) && isFieldAccess) {
+            // if we are just scope resolving, convert field
+            // access to this.field using a string literal to
+            // match production scope resolve
+            Symbol* thisSym = parentMethodConvertedThis;
+            INT_ASSERT(thisSym != nullptr);
+            auto ast = parsing::idToAst(context, id);
+            INT_ASSERT(ast && ast->isVariable());
+            auto var = ast->toVariable();
+            auto str = new_CStringSymbol(var->name().c_str());
+            CallExpr* ret = new CallExpr(".", thisSym, str);
             return ret;
           }
+
+          // handle other Identifiers
+          Symbol* sym = findConvertedSym(id);
+          if (sym == nullptr) {
+            // we will fix it later
+            sym = new TemporaryConversionSymbol(id);
+          }
+
+          SymExpr* se = new SymExpr(sym);
+          Expr* ret = se;
+
+          if (parsing::idIsParenlessFunction(context, id)) {
+            // it's a parenless function call so add a CallExpr
+            ret = new CallExpr(se);
+          }
+          if (isFieldAccess) {
+            INT_FATAL("resolving field access call not yet implemented");
+            // TODO: convert it to a call to the field accessor
+            // using the resolved TypedFnSignature from rr
+          }
+
+          // fixup, if any, will be noted in noteAllContainedFixups
+
+          return ret;
         }
       }
     }
@@ -2310,36 +2312,118 @@ struct Converter {
 
   /// ForwardingDecl ///
   Expr* visit(const uast::ForwardingDecl* node) {
-    // ForwardingDecl may contain a VisibilityClause, an Expression,
-    // or a Variable declaration
-    if (node->expr()->isVisibilityClause()){
-      auto child = node->expr()->toVisibilityClause();
-      bool except=false;
-      if (child->limitationKind() == uast::VisibilityClause::ONLY) {
-        except=false;
+    // ForwardingDecl may contain a VisibilityClause and
+    // then an Expression or a Variable declaration
+
+    auto ret = new BlockStmt(BLOCK_SCOPELESS);
+
+    UniqueString varName;
+
+    // First, if we find a variable declaration, add that to the block
+    if (auto var = node->expr()->toVariable()) {
+      auto child = node->expr()->toVariable();
+      BlockStmt* varBlock = (BlockStmt*)visit(child);
+      // Remove the END_OF_STATEMENT marker, not used for fields
+      Expr* last = varBlock->body.last();
+      if (last && isEndOfStatementMarker(last)) {
+        last->remove();
       }
-      else if (child->limitationKind() == uast::VisibilityClause::EXCEPT) {
-        except=true;
+      // Add the DefExpr for the VarSymbol to the ret Block
+      for_alist(tmp, varBlock->body) {
+        ret->insertAtTail(tmp->remove());
       }
-      // convert the AstList of renames
-      std::vector<PotentialRename*>* names = new std::vector<PotentialRename*>;
-      for (auto lim:child->limitations()) {
-        PotentialRename* name = convertRename(lim);
-        names->push_back(name);
-      }
-      return buildForwardingStmt(convertExprOrNull(child->symbol()),
-                                 names, except);
-    } else if (node->expr()->isVariable()) {
-        auto child = node->expr()->toVariable();
-        return buildForwardingDeclStmt((BlockStmt*)visit(child));
-    } else if (node->expr()->isIdentifier()
-               || node->expr()->isFnCall()
-               || node->expr()->isOpCall()) {
-      return buildForwardingStmt(convertExprOrNull(node->expr()));
+      varName = var->name();
     }
 
-    INT_FATAL("Failed to convert ForwardingDecl");
-    return nullptr;
+    // Now construct the method (always a primary method) for the
+    // forwarding part
+    const char* name = astr("chpl_forwarding_expr", istr(++delegateCounter));
+    if (!varName.isEmpty()) {
+      name = astr(name, "_", varName.c_str());
+    }
+
+    FnSymbol* fn = new FnSymbol(name);
+
+    fn->addFlag(FLAG_INLINE);
+    fn->addFlag(FLAG_MAYBE_REF);
+    fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
+    fn->addFlag(FLAG_COMPILER_GENERATED);
+
+    // compute the 'this' formal type
+    const uast::AggregateDecl* decl = nullptr;
+    INT_ASSERT(symStack.size() > 0);
+    {
+      SymStackEntry& last = symStack.back();
+      INT_ASSERT(last.ast != nullptr);
+      decl = last.ast->toAggregateDecl();
+      INT_ASSERT(decl);
+    }
+    // TODO: use the resolved type for the contained declaration
+    auto thisTypeExpr = new UnresolvedSymExpr(decl->name().c_str());
+
+    // add a 'this' formal
+    ArgSymbol* arg = new ArgSymbol(fn->thisTag, "this",
+                                   dtUnknown, thisTypeExpr);
+    fn->_this = arg;
+
+    fn->insertFormalAtTail(new DefExpr(new ArgSymbol(INTENT_BLANK,
+                                                 "_mt",
+                                                 dtMethodToken)));
+    fn->insertFormalAtTail(new DefExpr(arg));
+
+    // note that we're in a forwarding declaration working with 'fn'
+    // to get the field accesses to convert correctly
+    methodThisStack.push_back(fn->_this);
+
+    Expr* expr = nullptr;
+
+    std::vector<PotentialRename*>* visNames = nullptr;
+    bool except = false;
+    if (auto vis = node->expr()->toVisibilityClause()) {
+      // compute the visibility clauses
+      if (vis->limitationKind() == uast::VisibilityClause::EXCEPT) {
+        except = true;
+      }
+      // convert the AstList of renames
+      visNames = new std::vector<PotentialRename*>;
+      for (auto lim : vis->limitations()) {
+        PotentialRename* rename = convertRename(lim);
+        visNames->push_back(rename);
+      }
+      // compute the forwarded-to expression
+      expr = convertExprOrNull(vis->symbol());
+    } else {
+      // convert the forwarding expression & insert it into fn
+      if (!varName.isEmpty()) {
+        // forwarding var bla;
+        expr = new UnresolvedSymExpr(varName.c_str());
+      } else {
+        // fowarding someExpression();
+        expr = convertExprOrNull(node->expr());
+      }
+    }
+
+    // insert the forwarding expression into the forwarding method
+    fn->body->insertAtTail(new CallExpr(PRIM_RETURN, expr));
+
+    // note, no longer working within forwarding method 'fn'
+    methodThisStack.pop_back();
+
+    // Add the forwarding target method to the ret Block
+    DefExpr* fnDef = new DefExpr(fn);
+    ret->insertAtTail(fnDef);
+
+    // Create a ForwardingStmt to help the production resolver
+    // It includes handling 'only' and 'except'
+    ForwardingStmt* forwardingStmt = nullptr;
+    if (node->expr()->isVisibilityClause()) {
+      forwardingStmt = buildForwardingStmt(fnDef, visNames, except);
+    } else {
+      forwardingStmt = buildForwardingStmt(fnDef);
+    }
+    ret->insertAtTail(forwardingStmt);
+
+    return ret;
   }
 
   /// NamedDecls ///
@@ -2561,6 +2645,7 @@ struct Converter {
 
             convertedReceiver = toArgSymbol(conv->sym);
             INT_ASSERT(convertedReceiver);
+            methodThisStack.push_back(convertedReceiver);
 
             conv->sym->addFlag(FLAG_ARG_THIS);
 
@@ -2702,6 +2787,9 @@ struct Converter {
 
     // pop the function from the symStack
     popFromSymStack(node, fn);
+    if (convertedReceiver) {
+      methodThisStack.pop_back();
+    }
 
     return fn;
   }
@@ -3523,31 +3611,27 @@ static Qualifier convertQualifier(types::QualifiedType::Kind kind) {
 }
 
 void Converter::setVariableType(const uast::VarLikeDecl* v, Symbol* sym) {
-  if (symStack.size() > 0) {
-    auto r = symStack.back().resolved;
+  if (auto r = currentResolutionResult()) {
+    // Get the type of the variable itself
+    const resolution::ResolvedExpression* rr = r->byAstOrNull(v);
+    if (rr != nullptr) {
+      types::QualifiedType qt = rr->type();
+      if (!qt.isUnknown()) {
+        printf("SETTING VARIABLE TYPE!!\n");
 
-    if (r != nullptr) {
-      // Get the type of the variable itself
-      const resolution::ResolvedExpression* rr = r->byAstOrNull(v);
-      if (rr != nullptr) {
-        types::QualifiedType qt = rr->type();
-        if (!qt.isUnknown()) {
-          printf("SETTING VARIABLE TYPE!!\n");
+        // Set a type for the variable
+        sym->type = convertType(qt);
 
-          // Set a type for the variable
-          sym->type = convertType(qt);
+        // Set the Qualifier
+        Qualifier q = convertQualifier(qt.kind());
+        if (q != QUAL_UNKNOWN)
+          sym->qual = q;
 
-          // Set the Qualifier
-          Qualifier q = convertQualifier(qt.kind());
-          if (q != QUAL_UNKNOWN)
-            sym->qual = q;
-
-          // Set the param value for the variable in paramMap, if applicable
-          if (sym->hasFlag(FLAG_MAYBE_PARAM) || sym->hasFlag(FLAG_PARAM)) {
-            if (qt.hasParamPtr()) {
-              Symbol* val = convertParam(qt);
-              paramMap.put(sym, val);
-            }
+        // Set the param value for the variable in paramMap, if applicable
+        if (sym->hasFlag(FLAG_MAYBE_PARAM) || sym->hasFlag(FLAG_PARAM)) {
+          if (qt.hasParamPtr()) {
+            Symbol* val = convertParam(qt);
+            paramMap.put(sym, val);
           }
         }
       }
@@ -3556,33 +3640,29 @@ void Converter::setVariableType(const uast::VarLikeDecl* v, Symbol* sym) {
 }
 
 void Converter::setResolvedCall(const uast::FnCall* call, CallExpr* expr) {
-  if (symStack.size() > 0) {
-    auto r = symStack.back().resolved;
-
-    if (r != nullptr) {
-      const resolution::ResolvedExpression* rr = r->byAstOrNull(call);
-      if (rr != nullptr) {
-        const auto& candidates = rr->mostSpecific();
-        int nBest = candidates.numBest();
-        if (nBest == 0) {
-          // nothing to do
-        } else if (nBest > 1) {
-          INT_FATAL("return intent overloading not yet handled");
-        } else if (nBest == 1) {
-          const resolution::TypedFnSignature* sig = candidates.only();
-          Symbol* fn = findConvertedFn(sig);
-          if (fn == nullptr) {
-            // we will fix it later
-            fn = new TemporaryConversionSymbol(sig);
-          }
-
-          // TODO: Do we need to remove the old baseExpr?
-          SymExpr* se = new SymExpr(fn);
-          expr->baseExpr = se;
-          parent_insert_help(expr, expr->baseExpr);
-
-          // fixup, if any, will noted in noteAllContainedFixups
+  if (auto r = currentResolutionResult()) {
+    const resolution::ResolvedExpression* rr = r->byAstOrNull(call);
+    if (rr != nullptr) {
+      const auto& candidates = rr->mostSpecific();
+      int nBest = candidates.numBest();
+      if (nBest == 0) {
+        // nothing to do
+      } else if (nBest > 1) {
+        INT_FATAL("return intent overloading not yet handled");
+      } else if (nBest == 1) {
+        const resolution::TypedFnSignature* sig = candidates.only();
+        Symbol* fn = findConvertedFn(sig);
+        if (fn == nullptr) {
+          // we will fix it later
+          fn = new TemporaryConversionSymbol(sig);
         }
+
+        // TODO: Do we need to remove the old baseExpr?
+        SymExpr* se = new SymExpr(fn);
+        expr->baseExpr = se;
+        parent_insert_help(expr, expr->baseExpr);
+
+        // fixup, if any, will noted in noteAllContainedFixups
       }
     }
   }
@@ -4060,6 +4140,14 @@ void Converter::popFromSymStack(const uast::AstNode* ast, BaseAST* ret) {
            astName(ast).c_str(), ast->id().str().c_str());
   }
   symStack.pop_back();
+}
+const resolution::ResolutionResultByPostorderID*
+Converter::currentResolutionResult() {
+  const resolution::ResolutionResultByPostorderID* r = nullptr;
+  if (symStack.size() > 0) {
+    r = symStack.back().resolved;
+  }
+  return r;
 }
 
 void ConvertedSymbolsMap::noteConvertedSym(const uast::AstNode* ast,
