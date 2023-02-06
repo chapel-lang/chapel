@@ -338,6 +338,8 @@ static void test6c() {
     {8});
 }
 
+// TODO: test const checking for associated functions
+
 
 int main() {
   test1a();
