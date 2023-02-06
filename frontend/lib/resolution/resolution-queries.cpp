@@ -2635,6 +2635,34 @@ static void considerCompilerGeneratedCandidates(Context* context,
   candidates.push_back(instantiated);
 }
 
+static std::vector<BorrowedIdsWithName> lookupCalledExpr(
+    Context* context, const Scope* scope, const CallInfo& ci,
+    NamedScopeSet& visited) {
+  const LookupConfig config =
+      LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS;
+  llvm::SmallVector<const Scope*> receiverScopes = {};
+
+  // For method calls, also consider the receiver scope.
+  if (ci.isMethodCall() || ci.isOpCall()) {
+    CHPL_ASSERT(ci.numActuals() >= 1);
+    auto& qtReceiver = ci.actual(0).type();
+    if (auto t = qtReceiver.type()) {
+      if (auto compType = t->getCompositeType()) {
+        auto vec =
+            Resolver::gatherReceiverAndParentScopesForType(context, compType);
+        receiverScopes.append(vec);
+      }
+    }
+  }
+
+  UniqueString name = ci.name();
+
+  std::vector<BorrowedIdsWithName> ret = lookupNameInScopeWithSet(
+      context, scope, receiverScopes, name, config, visited);
+
+  return ret;
+}
+
 static std::vector<BorrowedIdsWithName> lookupCalledExprConsideringReceiver(
     Context* context, const Scope* inScope, const CallInfo& ci,
     NamedScopeSet& visited) {
@@ -2652,13 +2680,19 @@ static std::vector<BorrowedIdsWithName> lookupCalledExprConsideringReceiver(
     }
   }
 
-  const LookupConfig config =
-      LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS;
+  // TODO: Ensure that secondary methods are considered as well.
+  std::vector<BorrowedIdsWithName> ret;
 
-  const UniqueString name = ci.name();
+  if (!receiverScopes.empty()) {
+    auto v = lookupCalledExpr(context, receiverScopes.front(), ci, visited);
+    ret.insert(ret.end(), v.begin(), v.end());
+  }
 
-  return lookupNameInScopeWithSet(context, inScope, receiverScopes, name, config,
-                                  visited);
+  // Consider tertiary methods starting at the callsite.
+  auto v = lookupCalledExpr(context, inScope, ci, visited);
+  ret.insert(ret.end(), v.begin(), v.end());
+
+  return ret;
 }
 
 static void helpComputeForwardingTo(const CallInfo& fci,
