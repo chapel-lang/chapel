@@ -3,7 +3,7 @@
 # This script will build the docker images for 'amd' and 'arm' platforms using buildx and publish the images to the docker registry
 
 # Check if the script is run with correct arguement if not fail
-if [  $# -ne 2  ]
+if [  $# -ne 4  ]
 then
     echo " Docker repository and/or image-version not supplied "
     echo " run with ./publish-docker-images.bash doc_repository image_version "
@@ -19,6 +19,7 @@ export CHPL_HOME=$(cd $CWD/../.. ; pwd)
 log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
 start_docker
+docker login -u $3 -p $4
  
 # build_publish will build multi platform chapel docker images, tags them, and pushes the images to the docker repository .
 
