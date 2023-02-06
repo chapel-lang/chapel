@@ -384,21 +384,21 @@ types::QualifiedType Resolver::typeErr(const uast::AstNode* ast,
   return t;
 }
 
-llvm::SmallVector<const Scope*> Resolver::gatherReceiverAndParentScopesForType(
-    Context* context, const Type* thisType) {
-  llvm::SmallVector<const Scope*> scopes;
+/* llvm::SmallVector<const Scope*> Resolver::gatherReceiverAndParentScopesForType( */
+/*     Context* context, const Type* thisType) { */
+/*   llvm::SmallVector<const Scope*> scopes; */
 
-  const Type* currentType = thisType->toCompositeType();
-  while (currentType) {
-    auto ct = currentType->toCompositeType();
-    scopes.emplace_back(scopeForId(context, ct->id()));
-    auto bct = ct->toBasicClassType();
-    if (!bct) break;
-    currentType = bct->parentClassType();
-  }
+/*   const Type* currentType = thisType->toCompositeType(); */
+/*   while (currentType) { */
+/*     auto ct = currentType->toCompositeType(); */
+/*     scopes.emplace_back(scopeForId(context, ct->id())); */
+/*     auto bct = ct->toBasicClassType(); */
+/*     if (!bct) break; */
+/*     currentType = bct->parentClassType(); */
+/*   } */
 
-  return scopes;
-}
+/*   return scopes; */
+/* } */
 
 llvm::SmallVector<const Scope*> Resolver::methodReceiverScopes(bool recompute) {
   if (recompute) {
@@ -453,8 +453,9 @@ llvm::SmallVector<const Scope*> Resolver::methodReceiverScopes(bool recompute) {
     assert(receiverDeclaredType &&
            "failed to look up declared type for method receiver");
 
-    savedReceiverScopes =
-        gatherReceiverAndParentScopesForType(context, receiverDeclaredType);
+    /* savedReceiverScopes = */
+    /*     gatherReceiverAndParentScopesForType(context, receiverDeclaredType); */
+    savedReceiverScopes.emplace_back(scopeForId(context, idForTypeDecl));
   }
 
   receiverScopesComputed = true;

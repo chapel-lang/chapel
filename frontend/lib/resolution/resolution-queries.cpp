@@ -2648,9 +2648,10 @@ static std::vector<BorrowedIdsWithName> lookupCalledExpr(
     auto& qtReceiver = ci.actual(0).type();
     if (auto t = qtReceiver.type()) {
       if (auto compType = t->getCompositeType()) {
-        auto vec =
-            Resolver::gatherReceiverAndParentScopesForType(context, compType);
-        receiverScopes.append(vec);
+        /* auto vec = */
+        /*     Resolver::gatherReceiverAndParentScopesForType(context, compType); */
+        /* receiverScopes.append(vec); */
+        receiverScopes.emplace_back(scopeForId(context, compType->id()));
       }
     }
   }
@@ -2673,9 +2674,10 @@ static std::vector<BorrowedIdsWithName> lookupCalledExprConsideringReceiver(
     auto& qtReceiver = ci.actual(0).type();
     if (auto t = qtReceiver.type()) {
       if (auto compType = t->getCompositeType()) {
-        auto vec =
-            Resolver::gatherReceiverAndParentScopesForType(context, compType);
-        receiverScopes.append(vec);
+        /* auto vec = */
+        /*     Resolver::gatherReceiverAndParentScopesForType(context, compType); */
+        /* receiverScopes.append(vec); */
+        receiverScopes.emplace_back(scopeForId(context, compType->id()));
       }
     }
   }
