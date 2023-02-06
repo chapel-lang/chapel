@@ -202,7 +202,7 @@ static void test4() {
   Context* context = &ctx;
   ErrorGuard guard(context);
 
-  auto path = UniqueString::get(context, "test3.chpl");
+  auto path = UniqueString::get(context, "test4.chpl");
   std::string contents =
     R""""(
     module A {
@@ -263,7 +263,7 @@ static void test5() {
   Context* context = &ctx;
   ErrorGuard guard(context);
 
-  auto path = UniqueString::get(context, "test1.chpl");
+  auto path = UniqueString::get(context, "test5.chpl");
   std::string contents =
     " record r {\n"
     "   var r = 1;\n"
