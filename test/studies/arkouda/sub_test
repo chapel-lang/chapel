@@ -67,6 +67,13 @@ if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
     grep "Statements emitted:" $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp > $ARKOUDA_EMITTED_CODE_SIZE_FILE
     rm -f $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp
   fi
+
+  # Where should perf logs go?
+  export ARKOUDA_TEST_PERF_DIR=${ARKOUDA_TEST_PERF_DIR:-$CWD/perfData}
+
+  if [ ! -d "${ARKOUDA_TEST_PERF_DIR}" ] ; then
+      mkdir -p $ARKOUDA_TEST_PERF_DIR
+  fi
 else
   if ! make ; then
     log_fatal_error "compiling arkouda"
@@ -102,10 +109,11 @@ if [ ${CHPL_TEST_ARKOUDA_STOP_AFTER_BUILD} = "false" ]; then
 
   # Run benchmarks
   if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
-    benchmark_opts="--save-data --dat-dir $CHPL_TEST_PERF_DIR"
-
     if [ "${GEN_ARKOUDA_GRAPHS}" = "true" ] ; then
-      benchmark_opts="${benchmark_opts} --gen-graphs --graph-dir $CHPL_TEST_PERF_DIR/html"
+        benchmark_opts="--save-data --dat-dir $CHPL_TEST_PERF_DIR --gen-graphs --graph-dir $CHPL_TEST_PERF_DIR/html"
+    else
+        # generate via a different script locally, rather than globally
+        benchmark_opts="--save-data --dat-dir $ARKOUDA_TEST_PERF_DIR"
     fi
 
     benchmark_opts="${benchmark_opts} --annotations $CHPL_HOME/test/ANNOTATIONS.yaml"
