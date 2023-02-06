@@ -6,7 +6,7 @@
 if [  $# -ne 4  ]
 then
     echo " Docker repository and/or image-version not supplied "
-    echo " run with ./publish-docker-images.bash doc_repository image_version "
+    echo " run with ./publish-docker-images.bash doc_repository image_version username password"
     exit 1
 fi
 echo "RepositoryName: $1"
