@@ -393,9 +393,11 @@ llvm::SmallVector<const Scope*> Resolver::gatherReceiverAndParentScopesForType(
     auto ct = currentType->toCompositeType();
     assert(ct);
     scopes.emplace_back(scopeForId(context, ct->id()));
-    auto bct = ct->toBasicClassType();
-    assert(bct);
-    currentType = bct->parentClassType();
+    if (auto bct = ct->toBasicClassType()) {
+      currentType = bct->parentClassType();
+    } else {
+      break;
+    }
   }
 
   return scopes;
@@ -436,12 +438,12 @@ llvm::SmallVector<const Scope*> Resolver::methodReceiverScopes(bool recompute) {
     }
   } else {
     // fall back to computing receiver type without a typed signature
-    auto func = this->symbol->toFunction();
-    assert(func && "resolving receiver scopes while not in a function");
-    if (auto thisFormal = func->thisFormal()) {
-      if (auto thisFormalType = thisFormal->typeExpression()) {
-        if (auto typeIdent = thisFormalType->toIdentifier()) {
-          idForTypeDecl = byPostorder.byAst(typeIdent).toId();
+    if (auto func = this->symbol->toFunction()) {
+      if (auto thisFormal = func->thisFormal()) {
+        if (auto thisFormalType = thisFormal->typeExpression()) {
+          if (auto typeIdent = thisFormalType->toIdentifier()) {
+            idForTypeDecl = byPostorder.byAst(typeIdent).toId();
+          }
         }
       }
     }
