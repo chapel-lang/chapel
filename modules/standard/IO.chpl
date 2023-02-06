@@ -2034,7 +2034,7 @@ private proc openfdHelper(fd: c_int, hints = ioHintSet.empty,
   return ret;
 }
 
-deprecated "openfp is deprecated, please use the file initializer with a :type:`c_FILE` argument instead"
+deprecated "openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead"
 proc openfp(fp: c_FILE, hints=ioHintSet.empty, style:iostyle):file throws {
   return openfpHelper(fp, hints, style: iostyleInternal);
 }
@@ -2062,7 +2062,7 @@ Once the Chapel file is created, you will need to use a :proc:`file.reader` or
 
 :throws SystemError: Thrown if the C file could not be retrieved.
  */
-deprecated "openfp is deprecated, please use the file initializer with a :type:`c_FILE` argument instead"
+deprecated "openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead"
 proc openfp(fp: c_FILE, hints=ioHintSet.empty):file throws {
   return openfpHelper(fp, hints);
 }
