@@ -20,7 +20,13 @@ log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
 start_docker
 docker login -u $3 -p $4
- 
+if [ $? -ne 0 ] 
+then
+      echo " Docker login failed "
+      exit 1
+else
+      echo "docker login succeeded "
+fi        
 # build_publish will build multi platform chapel docker images, tags them, and pushes the images to the docker repository .
 
 build_publish(){
