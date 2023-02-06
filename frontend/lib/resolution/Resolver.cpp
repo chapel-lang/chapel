@@ -941,7 +941,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       // for 'this' formals of class type, adjust them to be borrowed, so
       // e.g. proc C.foo() { } has 'this' of type 'borrowed C'.
       // This should not apply to parenthesized expressions.
-      if (isFormalThis &&
+      if (isFormalThis && typeExpr &&
           typeExprT.type() != nullptr && typeExprT.type()->isClassType() &&
           typeExpr->isIdentifier()) {
         auto ct = typeExprT.type()->toClassType();
