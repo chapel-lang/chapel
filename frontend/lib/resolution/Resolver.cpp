@@ -388,16 +388,13 @@ llvm::SmallVector<const Scope*> Resolver::gatherReceiverAndParentScopesForType(
     Context* context, const Type* thisType) {
   llvm::SmallVector<const Scope*> scopes;
 
-  const Type* currentType = thisType;
+  const Type* currentType = thisType->toCompositeType();
   while (currentType) {
     auto ct = currentType->toCompositeType();
-    assert(ct);
     scopes.emplace_back(scopeForId(context, ct->id()));
-    if (auto bct = ct->toBasicClassType()) {
-      currentType = bct->parentClassType();
-    } else {
-      break;
-    }
+    auto bct = ct->toBasicClassType();
+    if (!bct) break;
+    currentType = bct->parentClassType();
   }
 
   return scopes;
