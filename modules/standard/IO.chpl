@@ -437,7 +437,7 @@ module IO {
 import OS.POSIX.{ENOENT, ENOSYS, EINVAL, EILSEQ, EIO, ERANGE};
 import OS.POSIX.{EBADF};
 import OS.{errorCode};
-use CTypes;
+use CTypes, Regex;
 public use OS;
 
 
@@ -4975,31 +4975,60 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
 
 proc fileReader.readUntil(type t: string, separator: t, maxSize=-1, consumeSeparator=true, includeSeparator=false): t throws {
   var ret: string;
-  try this.readUntil(s, separator, maxSize, consumeSeparator, includeSeparator);
+  try this.readUntil(ret, separator, maxSize, consumeSeparator, includeSeparator);
   return ret;
 }
 
-
-proc fileReader.readUntil(ref s: string, separator: string, maxSize=-1, consumeSeparator=true, includeSeparator=false): bool {
-  var ret = false;
+proc fileReader.readUntil(ref s: string, separator: string, maxSize=-1, consumeSeparator=true, includeSeparator=false): bool throws {
+  var didRead = false;
 
   on this._home {
     const maxNumCodepoints = if maxSize < 0 then max(int) else maxSize,
-          numSepCodepoints = separator.numCodepoints,
-          numSepBytes = separator.numBytes,
-          sepLocal = separator.localize();
+          sepLocal = separator.localize(),
+          numSepCodepoints = sepLocal.numCodepoints,
+          numSepBytes = sepLocal.numBytes;
 
     var nextChar: int(32),
         numCodepoints = 0,
         err: errorCode = 0,
-        foundSeparator = false;
+        foundSeparator = false,
+        sepBuff : [0..<numSepBytes] uint(8);
 
-    this._mark();
-    const startOffset = this._offset();
-    while numCodepoints < maxNumCodepoints {
-      // read the next codepoint in the channel
+    this._mark(); // A
+    while numCodepoints < (maxNumCodepoints - numSepCodepoints) {
+      this._mark(); // B
+
+      // writeln("--------- ", numCodepoints, " ----------");
+
+      // speculatively read the next numSepCodepoints. Attempt to match with the separator
+      var numMatched = 0;
+      for i in 0..<numSepCodepoints {
+        err = qio_channel_read_char(false, this._channel_internal, nextChar);
+
+        if err == EEOF {
+          break;
+        } else if err {
+          this._revert(); // B
+          this._revert(); // A
+          try this._ch_ioerror(err, "in channel.readUntil(string)");
+        }
+
+        // writeln(i, ", ", nextChar, " : ", sepLocal.codepoint(i), "\t", numMatched);
+
+        if numMatched == i && nextChar == sepLocal.codepoint(i) {
+          numMatched += 1;
+        }
+      }
+      this._revert(); // B
+
+      // stop reading if a match was found starting at B
+      if numMatched == numSepCodepoints {
+        foundSeparator = true;
+        break;
+      }
+
+      // otherwise, advance the channel's pointer by one codepoint
       err = qio_channel_read_char(false, this._channel_internal, nextChar);
-
       if err == EEOF {
         break;
       } else if err {
@@ -5008,73 +5037,37 @@ proc fileReader.readUntil(ref s: string, separator: string, maxSize=-1, consumeS
       } else {
         numCodepoints += 1;
       }
+    }
 
-      // if the channel has read enough codepoints to check agianst the separator
-      // try matching the last 'numSepCodepoints' from the channel with the separator
-      if numCodepoints >= numSepCodepoints {
-        err = qio_channel_advance(false, this._channel_internal, -numSepBytes);
-        if err {
-          this._revert();
-          try this._ch_ioerror(err, "in channel.readUntil(string)");
+    // compute the total number of bytes read, and move the pointer back to A
+    const endOffset = this._offset();
+    this._revert(); // A
+    const numBytesRead: int = endOffset - this._offset();
+
+    if !foundSeparator {
+      err = readStringBytesData(s, this._channel_internal, numBytesRead, numCodepoints);
+    } else {
+      if consumeSeparator {
+        err = readStringBytesData(s, this._channel_internal, numBytesRead + numSepBytes, numCodepoints + numSepCodepoints);
+        if includeSeparator {
+          // nothing
+        } else {
+          s = s[0..<(numBytesRead-numSepBytes)];
         }
-
-        var i = 0;
-        while i < numSepCodepoints {
-          err = qio_channel_read(false, this._channel_internal, nextChar);
-
-          // shouldn't get errors here since these characters were already read above (check anyway)
-          if err {
-            this._revert();
-            try this._ch_ioerror(err, "in channel.readUntil(string)");
-          }
-
-          // check if the charachter matches the next cp index in the string
-          if nextChar == sepLocal.codepoint(i)
-            then i += 1;
-            else break;
-        }
-
-        // found a match, stop consumging charcters from the channel
-        if i == numSepCodepoints {
-          foundSeparator = true;
-          break;
-        }
-
-        // didn't find a match
-        // move the pointer back where it was
-        for i..<numSepCodepoints {
-          err = qio_channel_read(false, this._channel_internal, nextChar);
-
-          // shouldn't get errors here since these characters were already read above (check anyway)
-          if err == EEOF {
-            break;
-          } else if err {
-            this._revert();
-            try this._ch_ioerror(err, "in channel.readUntil(string)");
-          }
+      } else {
+        err = readStringBytesData(s, this._channel_internal, numBytesRead, numCodepoints);
+        if includeSeparator {
+          s += separator;
+        } else {
+          // nothing
         }
       }
     }
-    const endOffset = this._offset();
-    this._commit(); // move back to starting offset
-    const numBytesRead: int = endOffset - startOffset;
 
-    const numCodepointsToRead   = numCodepoints - if includeSeparator && foundSeparator then 0 else numSepCodepoints,
-          numBytesToRead,       = numBytesRead - if includeSeparator && foundSeparator then 0 else numSepBytes;
-
-    // will advance the channel 'numBytesToRead' bytes ahead
-    err = readStringBytesData(s, this._channel_internal, numBytesToRead, numCodepointsToRead);
-
-    if !consumeSeparator {
-      err = qio_channel_advance(false, this._channel_internal, -numSepBytes);
-      if err then try this._ch_ioerror(err, "in channel.readUntil(string)");
-    }
-
-    // return 'true' if we read anything
-    ret = numBytesRead > 0;
+    // return 'true' if anything was read
+    didRead = numBytesRead > 0;
   }
-
-  return ret;
+  return didRead;
 }
 
 proc fileReader.readUntil(type t: string, separator: regex(t), consumeSeparator=true, includeSeparator=false): t {
@@ -5084,80 +5077,81 @@ proc fileReader.readUntil(type t: string, separator: regex(t), consumeSeparator=
 }
 
 proc fileReader.readUntil(ref s: string, separator: regex(string), consumeSeparator=true, includeSeparator=false): bool {
-  var ret = false;
+  // var ret = false;
 
-  on this._home {
-    const maxNumCodepoints = if maxSize < 0 then max(int) else maxSize,
-          numSepCodepoints = separator.numCodepoints,
-          numSepBytes = separator.numBytes;
+  // on this._home {
+  //   const maxNumCodepoints = if maxSize < 0 then max(int) else maxSize,
+  //         numSepCodepoints = separator.numCodepoints,
+  //         numSepBytes = separator.numBytes;
 
-    var nextChar: int(32),
-        numCodepoints = 0,
-        err: errorCode = 0,
-        foundSeparator = false;
+  //   var nextChar: int(32),
+  //       numCodepoints = 0,
+  //       err: errorCode = 0,
+  //       foundSeparator = false;
 
-    this._mark();
-    const startOffset = this._offset();
-    while numCodepoints < maxNumCodepoints {
-      // read the next codepoint in the channel
-      err = qio_channel_read_char(false, this._channel_internal, nextChar);
+  //   this._mark();
+  //   const startOffset = this._offset();
+  //   while numCodepoints < maxNumCodepoints {
+  //     // read the next codepoint in the channel
+  //     err = qio_channel_read_char(false, this._channel_internal, nextChar);
 
-      if err == EEOF {
-        break;
-      } else if err {
-        this._revert();
-        try this._ch_ioerror(err, "in channel.readUntil(string)");
-      } else {
-        numCodepoints += 1;
-      }
+  //     if err == EEOF {
+  //       break;
+  //     } else if err {
+  //       this._revert();
+  //       try this._ch_ioerror(err, "in channel.readUntil(string)");
+  //     } else {
+  //       numCodepoints += 1;
+  //     }
 
-      // if the channel has read enough codepoints to check agianst the separator
-      // try matching the last 'numSepCodepoints' from the channel with the separator
-      if numCodepoints >= numSepCodepoints {
-        err = qio_channel_advance(false, this._channel_internal, -numSepBytes);
-        if err {
-          this._revert();
-          try this._ch_ioerror(err, "in channel.readUntil(string)");
-        }
+  //     // if the channel has read enough codepoints to check agianst the separator
+  //     // try matching the last 'numSepCodepoints' from the channel with the separator
+  //     if numCodepoints >= numSepCodepoints {
+  //       err = qio_channel_advance(false, this._channel_internal, -numSepBytes);
+  //       if err {
+  //         this._revert();
+  //         try this._ch_ioerror(err, "in channel.readUntil(string)");
+  //       }
 
-        var i = 0;
+  //       var i = 0;
 
 
-        // didn't find a match
-        // move the pointer back where it was
-        for i..<numSepCodepoints {
-          err = qio_channel_read(false, this._channel_internal, nextChar);
+  //       // didn't find a match
+  //       // move the pointer back where it was
+  //       for i..<numSepCodepoints {
+  //         err = qio_channel_read(false, this._channel_internal, nextChar);
 
-          // shouldn't get errors here since these characters were already read above (check anyway)
-          if err == EEOF {
-            break;
-          } else if err {
-            this._revert();
-            try this._ch_ioerror(err, "in channel.readUntil(string)");
-          }
-        }
-      }
-    }
-    const endOffset = this._offset();
-    this._commit(); // move back to starting offset
-    const numBytesRead: int = endOffset - startOffset;
+  //         // shouldn't get errors here since these characters were already read above (check anyway)
+  //         if err == EEOF {
+  //           break;
+  //         } else if err {
+  //           this._revert();
+  //           try this._ch_ioerror(err, "in channel.readUntil(string)");
+  //         }
+  //       }
+  //     }
+  //   }
+  //   const endOffset = this._offset();
+  //   this._commit(); // move back to starting offset
+  //   const numBytesRead: int = endOffset - startOffset;
 
-    const numCodepointsToRead   = numCodepoints - if includeSeparator && foundSeparator then 0 else numSepCodepoints,
-          numBytesToRead,       = numBytesRead - if includeSeparator && foundSeparator then 0 else numSepBytes;
+  //   const numCodepointsToRead   = numCodepoints - if includeSeparator && foundSeparator then 0 else numSepCodepoints,
+  //         numBytesToRead,       = numBytesRead - if includeSeparator && foundSeparator then 0 else numSepBytes;
 
-    // will advance the channel 'numBytesToRead' bytes ahead
-    err = readStringBytesData(s, this._channel_internal, numBytesToRead, numCodepointsToRead);
+  //   // will advance the channel 'numBytesToRead' bytes ahead
+  //   err = readStringBytesData(s, this._channel_internal, numBytesToRead, numCodepointsToRead);
 
-    if !consumeSeparator {
-      err = qio_channel_advance(false, this._channel_internal, -numSepBytes);
-      if err then try this._ch_ioerror(err, "in channel.readUntil(string)");
-    }
+  //   if !consumeSeparator {
+  //     err = qio_channel_advance(false, this._channel_internal, -numSepBytes);
+  //     if err then try this._ch_ioerror(err, "in channel.readUntil(string)");
+  //   }
 
-    // return 'true' if we read anything
-    ret = numBytesRead > 0;
-  }
+  //   // return 'true' if we read anything
+  //   ret = numBytesRead > 0;
+  // }
 
-  return ret;
+  // return ret;
+  return false;
 }
 
 /*
