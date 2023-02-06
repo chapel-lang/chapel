@@ -199,7 +199,7 @@ Files
 
 There are several functions that open a file and return a :record:`file`
 including :proc:`open`, :proc:`openTempFile`, :proc:`openmem`, :proc:`openfd`,
-and :proc:`openfp`.
+and the :record:`file` initializer that takes a :type:`~CTypes.c_FILE` argument.
 
 Once a file is open, it is necessary to create associated channel(s) - see
 :proc:`file.reader` and :proc:`file.writer` - to write to and/or read from the
@@ -276,7 +276,7 @@ more details on the situation in which this kind of data race can occur.
   descriptor's current position. Therefore, only one channel should be created
   for files created in the following situations:
 
-    * with :proc:`openfp`
+    * with the file initializer that takes a :type:`~CTypes.c_FILE` argument
     * with :proc:`openfd` when provided a non-seekable system file descriptor
 
 
@@ -1601,7 +1601,7 @@ Once the Chapel file is created, you will need to use a :proc:`file.reader` or
 
   The resulting file value should only be used with one :record:`channel` at a
   time. The I/O system will ignore the channel offsets when reading or writing
-  to a file opened with :proc:`openfp`.
+  to a file opened using this initializer.
 
 
 :arg fp: a pointer to a C ``FILE``. See :type:`~CTypes.c_FILE`.
