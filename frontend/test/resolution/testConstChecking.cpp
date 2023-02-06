@@ -290,8 +290,54 @@ static void test5b() {
     {6});
 }
 
-// TODO: check mutating a const / const ref with =
-// TODO: ditto with split init
+static void test6a() {
+  testConstChecking("test6a",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) { }
+
+        proc test() {
+          const x: int = 0;
+          x = 34;
+        }
+      }
+    )"""",
+    {8});
+}
+static void test6b() {
+  testConstChecking("test6b",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) { }
+
+        proc test() {
+          const x: int = 0;
+          const ref y = x;
+          y = 34;
+        }
+      }
+    )"""",
+    {9});
+}
+static void test6c() {
+  testConstChecking("test6c",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) { }
+
+        proc test() {
+          const x: int = 0;
+          ref y = x;
+          y = 34;
+        }
+      }
+    )"""",
+    {8});
+}
+
 
 int main() {
   test1a();
@@ -312,6 +358,10 @@ int main() {
 
   test5a();
   test5b();
+
+  test6a();
+  test6b();
+  test6c();
 
   return 0;
 }
