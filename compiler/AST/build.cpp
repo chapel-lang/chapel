@@ -102,11 +102,18 @@ void checkControlFlow(Expr* expr, const char* context) {
         continue; // break or continue target is in scope
       if (toSymExpr(gs->label) && toSymExpr(gs->label)->symbol() == gNil && loopSet.set_in(gs))
         continue; // break or continue loop is in scope
-      if (!strcmp(context, "on statement")) {
-        USR_PRINT(gs, "the following error is a current limitation");
-      }
       if (gs->gotoTag == GOTO_BREAK) {
-        USR_FATAL_CONT(gs, "break is not allowed in %s", context);
+        // BLC: This check is being too strict for labeled 'break's
+        // and is preventing correct programs from working, so skip it
+        // unless it's unlabeled.  From what I can tell with a quick
+        // look, the problem is that the 'loopSet' isn't being
+        // maintained properly in nested cases, or is preventing
+        // labels from being added to the 'labelSet' incorrectly.  I
+        // feel mildly optimistic an illegal labeled break will be
+        // caught later in compilation.
+        if (toSymExpr(gs->label) && toSymExpr(gs->label)->symbol() == gNil) {
+          USR_FATAL_CONT(gs, "break is not allowed in %s", context);
+        }
       } else if (gs->gotoTag == GOTO_CONTINUE) {
         // see also resolveGotoLabels() -> handleForallGoto()
         if (!strcmp(context, "forall statement")) {
