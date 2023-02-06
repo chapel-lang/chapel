@@ -1132,7 +1132,7 @@ proc bytes.find(pattern: regex(bytes)):byteIndex
                replaces all occurrences
  */
 proc string.replace(pattern: regex(string), replacement:string,
-    count=-1): string {
+                    count=-1): string {
   var (str, dummy) = doReplaceAndCount(this, pattern, replacement, count);
   return str;
 }
@@ -1145,8 +1145,7 @@ proc string.replace(pattern: regex(string), replacement:string,
    :arg count: number of maximum replacements to make, values less than zero
                replaces all occurrences
  */
-proc bytes.replace(pattern: regex(bytes), replacement:bytes,
-    count=-1): bytes {
+proc bytes.replace(pattern: regex(bytes), replacement:bytes, count=-1): bytes {
   var (str, dummy) = doReplaceAndCount(this, pattern, replacement, count);
   return str;
 }
@@ -1175,7 +1174,7 @@ proc string.replaceAndCount(pattern: regex(string), replacement:string,
                replaces all occurrences
  */
 proc bytes.replaceAndCount(pattern: regex(bytes), replacement:bytes,
-                            count=-1): (bytes, int) {
+                           count=-1): (bytes, int) {
   return doReplaceAndCount(this, pattern, replacement, count);
 }
 
