@@ -628,9 +628,9 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
   const AstNode* ast = astForIDQuery(context, id);
   if (ast != nullptr) {
     result = ast->tag();
-  } else if (types::RecordType::isMissingBundledRecordType(context, id)) {
+  } else if (types::CompositeType::isMissingBundledRecordType(context, id)) {
     result = asttags::Record;
-  } else if (types::BasicClassType::isMissingBundledClassType(context, id)) {
+  } else if (types::CompositeType::isMissingBundledClassType(context, id)) {
     result = asttags::Class;
   }
 

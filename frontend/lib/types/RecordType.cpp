@@ -20,7 +20,6 @@
 #include "chpl/types/RecordType.h"
 
 #include "chpl/framework/query-impl.h"
-#include "chpl/parsing/parsing-queries.h"
 
 namespace chpl {
 namespace types {
@@ -44,45 +43,6 @@ RecordType::get(Context* context, ID id, UniqueString name,
                 SubstitutionsMap subs) {
   return getRecordType(context, id, name,
                        instantiatedFrom, std::move(subs)).get();
-}
-
-const RecordType* RecordType::getRangeType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "ChapelRange.range");
-  auto name = UniqueString::get(context, "range");
-  auto id = ID(symbolPath, -1, 0);
-  return RecordType::get(context, id, name,
-                         /* instantiatedFrom */ nullptr,
-                         SubstitutionsMap());
-}
-
-const RecordType* RecordType::getStringType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "String._string");
-  auto name = UniqueString::get(context, "string");
-  auto id = ID(symbolPath, -1, 0);
-  return RecordType::get(context, id, name,
-                         /* instantiatedFrom */ nullptr,
-                         SubstitutionsMap());
-}
-
-const RecordType* RecordType::getBytesType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "Bytes._bytes");
-  auto name = UniqueString::get(context, "bytes");
-  auto id = ID(symbolPath, -1, 0);
-  return RecordType::get(context, id, name,
-                         /* instantiatedFrom */ nullptr,
-                         SubstitutionsMap());
-}
-
-bool RecordType::isMissingBundledRecordType(Context* context, ID id) {
-  bool noLibrary = parsing::bundledModulePath(context).isEmpty();
-  if (noLibrary) {
-    auto path = id.symbolPath();
-    return path == "String._string" ||
-           path == "ChapelRange.range" ||
-           path == "Bytes._bytes";
-  }
-
-  return false;
 }
 
 

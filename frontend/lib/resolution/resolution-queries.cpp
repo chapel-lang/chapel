@@ -284,13 +284,13 @@ QualifiedType typeForLiteral(Context* context, const Literal* literal) {
       typePtr = UintType::get(context, 0);
       break;
     case asttags::BytesLiteral:
-      typePtr = RecordType::getBytesType(context);
+      typePtr = CompositeType::getBytesType(context);
       break;
     case asttags::CStringLiteral:
       typePtr = CStringType::get(context);
       break;
     case asttags::StringLiteral:
-      typePtr = RecordType::getStringType(context);
+      typePtr = CompositeType::getStringType(context);
       break;
     default:
       CHPL_ASSERT(false && "case not handled");
@@ -589,14 +589,18 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
   result.setType(ct);
 
   bool isObjectType = false;
+  bool isMissingBundledType = false;
   if (auto bct = ct->toBasicClassType()) {
     isObjectType = bct->isObjectType();
+    auto id = bct->id();
+    isMissingBundledType = CompositeType::isMissingBundledType(context, id);
   }
 
-  if (isObjectType) {
+  if (isObjectType || isMissingBundledType) {
     // no need to try to resolve the fields for the object type,
     // which doesn't have a real uAST ID.
-
+    // for built-in types like Errors when we didn't parse the standard library
+    // don't try to resolve the fields
   } else {
     auto ast = parsing::idToAst(context, ct->id());
     CHPL_ASSERT(ast && ast->isAggregateDecl());
@@ -1078,6 +1082,7 @@ typeConstructorInitialQuery(Context* context, const Type* t)
                                          /* isMethod */ false,
                                          /* isTypeConstructor */ true,
                                          /* isCompilerGenerated */ true,
+                                         /* throws */ false,
                                          idTag,
                                          Function::PROC,
                                          std::move(formals),
