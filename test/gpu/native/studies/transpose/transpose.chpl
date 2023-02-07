@@ -9,14 +9,15 @@ config const sizeX = 2048*8,
              sizeY = 2048*8;
 config param blockSize = 16;
 config param blockPadding = 1;
+config type dataType = real(32);
 
 pragma "codegen for GPU"
 pragma "always resolve function"
-export proc transposeMatrix(odata: c_ptr(real(32)), idata: c_ptr(real(32)), width: int, height: int) {
+export proc transposeMatrix(odata: c_ptr(dataType), idata: c_ptr(dataType), width: int, height: int) {
   // Allocate extra columns for the shared 2D array to avoid bank conflicts.
   param paddedBlockSize = blockSize + blockPadding;
-  var smVoidPtr = __primitive("gpu allocShared", numBytes(real(32))*paddedBlockSize*blockSize);
-  var smArrPtr = smVoidPtr : c_ptr(real(32));
+  var smVoidPtr = __primitive("gpu allocShared", numBytes(dataType)*paddedBlockSize*blockSize);
+  var smArrPtr = smVoidPtr : c_ptr(dataType);
 
   const blockIdxX = __primitive("gpu blockIdx x"),
         threadIdxX = __primitive("gpu threadIdx x"),
@@ -56,8 +57,8 @@ proc transposeNaive(original, output) {
 }
 
 on here.gpus[0] {
-  var original: [0..#sizeX, 0..#sizeY] real(32);
-  var output: [0..#sizeY, 0..#sizeY] real(32);
+  var original: [0..#sizeX, 0..#sizeY] dataType;
+  var output: [0..#sizeY, 0..#sizeY] dataType;
 
   for (a, (x,y)) in zip(original, original.domain) {
     a = x*sizeY + y;
@@ -81,7 +82,7 @@ on here.gpus[0] {
   }
   elapsed /= numTrials;
 
-  var sizeInBytes = original.size * numBytes(real(32));
+  var sizeInBytes = original.size * numBytes(dataType);
   var sizeInGb = sizeInBytes / (1000.0 * 1000.0 * 1000.0);
   var gbPerSec = sizeInGb / elapsed;
   writeln("Wall clock time (s): ", elapsed);
