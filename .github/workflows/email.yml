@@ -77,7 +77,7 @@ jobs:
         uses: dawidd6/action-send-mail@v3
         with:
            # Required mail server address if not connection_url:
-           server_address: ${{ secrets.SMTP_PROVIDER}}
+           server_address: smtp.gmail.com
            server_port: 465
            # Optional whether this connection use TLS (default is true if server_port is 465)
            secure: true
