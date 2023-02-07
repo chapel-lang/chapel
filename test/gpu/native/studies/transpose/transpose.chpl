@@ -44,7 +44,7 @@ export proc transposeMatrix(odata: c_ptr(dataType), idata: c_ptr(dataType), widt
   }
 }
 
-proc transposeTiled(original, output) {
+proc transposeLowLevel(original, output) {
   __primitive("gpu kernel launch",
           c"transposeMatrix",
           /* grid size */  sizeX / blockSize, sizeY / blockSize, 1,
@@ -67,20 +67,17 @@ on here.gpus[0] {
   // Make sure a is on device if we're using unified memory.
   foreach a in original do a = a + 1;
 
-  var elapsed = 0.0;
   var timer: stopwatch;
   for 1..#numTrials {
     timer.start();
     if useNaive {
       transposeNaive(original, output);
     } else {
-      transposeTiled(original, output);
+      transposeLowLevel(original, output);
     }
     timer.stop();
-    elapsed += timer.elapsed();
-    timer.reset();
   }
-  elapsed /= numTrials;
+  var elapsed = timer.elapsed() / numTrials;
 
   var sizeInBytes = original.size * numBytes(dataType);
   var sizeInGb = sizeInBytes / (1000.0 * 1000.0 * 1000.0);
@@ -91,10 +88,10 @@ on here.gpus[0] {
   var passed = true;
   for (x,y) in original.domain {
     if original[x,y] != output[y,x] {
-	writeln("Incorrect output at ", (x,y),
-                ". Expected ", original[x,y],
-                ", got ", output[y,x]);
-        passed = false;
+      writeln("Incorrect output at ", (x,y),
+              ". Expected ", original[x,y],
+              ", got ", output[y,x]);
+      passed = false;
     }
   }
   writeln(if passed then "Passed" else "Failed");
