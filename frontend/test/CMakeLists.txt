@@ -31,11 +31,7 @@ function(comp_unit_test target)
                         LINK_DEPENDS_NO_SHARED true
                         RUNTIME_OUTPUT_DIRECTORY . )
   target_link_libraries(${target} ChplFrontend tests-common)
-  target_include_directories(${target} PUBLIC
-                             ${CHPL_MAIN_INCLUDE_DIR}
-                             ${CHPL_INCLUDE_DIR}
-                             ${CHPL_TEST_INCLUDE_DIR})
-  add_dependencies(${target} ChplFrontend)
+  target_include_directories(${target} PRIVATE ${CHPL_TEST_INCLUDE_DIR})
   add_test(NAME ${target} COMMAND ${target})
   set_tests_properties(${target} PROPERTIES
                        ENVIRONMENT "CHPL_HOME=${CHPL_HOME}")
