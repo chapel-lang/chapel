@@ -2,14 +2,15 @@ name: email
 on:
     # this workflow is intended to run on merges from a forked repo to main(base-repo). Use pull_request_target
     # this will provide read access to the secrets in main
-    pull_request_target:
-      types:
-        - closed
+    pull_request:
+    #pull_request_target:
+      #types:
+       # - closed
       
 jobs: 
   send_email:
    # run this workflow step only when the PR is merged 
-    if:  github.event.pull_request.merged == true 
+    #if:  github.event.pull_request.merged == true 
     runs-on: ubuntu-latest 
     steps:
       - name: print git events
@@ -29,7 +30,8 @@ jobs:
         with:
           max_attempts: 4
           retry_on_exit_code: 2
-          timeout_seconds: 60  
+          timeout_seconds: 180
+          polling_interval_seconds: 60  
           command: |
               curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
               if [ $? -ne 0 ]; then
@@ -47,12 +49,16 @@ jobs:
               echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
               echo "FILES_CHANGED=$(echo '${{github.event.pull_request._links.html.href}}/files' )" >> $GITHUB_ENV
               echo $LOG
-              echo "MERGE_LOG= $(git show ${{github.event.pull_request.merge_commit_sha}}) " >> $GITHUB_ENV
+              echo "MERGE_LOG= $(echo $LOG | sed 's/\\r\\n\\r\\n/<p>/g'| sed 's/\\r\\n/<br>/g' ) " >> $GITHUB_ENV
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
         with:
-          fetch-depth: 0          
+          fetch-depth: 0 
+      - name: Get merge log
+        id: merge-log
+        run: |
+              echo "MERGE= $(git show 036bd184ae  | tail -n +5 )"  >> $GITHUB_ENV    
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v34
@@ -82,33 +88,29 @@ jobs:
            # Required mail subject:
            subject: "[Chapel Merge] ${{github.event.pull_request.title}}"
            # Required recipients' addresses:
-           to: chapel+commits@discoursemail.com
+           #to: chapel+commits@discoursemail.com
+           to: bhavani@hpe.com
            # Required sender full name (address can be skipped):
            from:  ${{env.AUTHOR}}
-           html_body: |
-              <!DOCTYPE html>
-              <html>
-              <body>
-              <p>
-              Branch: ${{github.ref}} <br>
-              Revision: ${{ github.event.pull_request.merge_commit_sha }}  <br>
-              Author: ${{ env.AUTHOR}} <br>
-              Link: ${{github.event.pull_request._links.html.href}} <br>             
-              Log Message: <br><br>
-                           ${{env.MESSAGE}} <br> 
-                          ${{env.MERGE_LOG}} <br>
-              Compare: ${{env.COMPARE_URL}} <br> 
-              Diff: ${{github.event.pull_request.diff_url}} <br>
-              Modified Files: <br>
-                   ${{env.MODIFIED}} <br><br>
-              Added Files: <br>
-                   ${{env.ADDED}} <br><br>    
-              Removed Files: <br>     
-                   ${{env.DELETED}} <br>
-             
-              </p>
-              </body>
-              </html>
+           body: |
+               
+              Branch: ${{github.ref}} 
+              Revision: ${{ github.event.pull_request.merge_commit_sha }}  
+              Author: ${{ env.AUTHOR}} 
+              Link: ${{github.event.pull_request._links.html.href}}          
+              Log Message: 
+                          ${{env.MERGE}}
+                           ${{env.MESSAGE}} 
+                          ${{env.MERGE_LOG}} 
+              Compare: ${{env.COMPARE_URL}} 
+              Diff: ${{github.event.pull_request.diff_url}} 
+              Modified Files: 
+                   ${{env.MODIFIED}} 
+              Added Files: 
+                   ${{env.ADDED}} 
+              Removed Files:  
+                   ${{env.DELETED}} 
+           
            # Optional converting Markdown to HTML (set content_type to text/html too):
            convert_markdown: true
            # Optional priority: 'high', 'normal' (default) or 'low'
