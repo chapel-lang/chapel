@@ -4050,16 +4050,14 @@ static llvm::CodeGenFileType getCodeGenFileType() {
 static void stripPtxDebugDirective(const std::string& artifactFilename) {
   std::string line;
   std::vector<std::string> lines;
-  const char* prefix = ".target";
-  size_t prefixLen = strlen(prefix);
-  const char* suffix = ", debug";
-  size_t suffixLen = strlen(suffix);
+  std::string prefix = ".target";
+  std::string suffix = ", debug";
   {
     std::ifstream ptxFile(artifactFilename);
     while (std::getline(ptxFile, line)) {
-      if (strncmp(line.c_str(), prefix, prefixLen) == 0 /* line.starts_with(".target") */ &&
-          strncmp(line.c_str() + line.size() - suffixLen, suffix, suffixLen) == 0 /* line.ends_with(", debug") */) {
-        line.resize(line.size() - suffixLen);
+      if (line.compare(0, prefix.size(), prefix) == 0 /* line.starts_with(".target") */ &&
+          line.compare(line.size() - suffix.size(), suffix.size(), suffix) == 0 /* line.ends_with(", debug") */) {
+        line.resize(line.size() - suffix.size());
       }
       lines.push_back(std::move(line));
     }
