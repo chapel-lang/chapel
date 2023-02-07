@@ -404,6 +404,7 @@ module Map {
 
     /* Get a borrowed reference to the element at position `k`.
      */
+    deprecated "'Map.getBorrowed' is deprecated. Please rely on '[]' accessors instead."
     proc getBorrowed(k: keyType) where isClass(valType) {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
@@ -422,6 +423,7 @@ module Map {
     /* Get a reference to the element at position `k`. This method is not
        available for maps initialized with `parSafe=true`.
      */
+    deprecated "'Map.getReference' is deprecated. Please rely on '[]' accessors instead."
     proc getReference(k: keyType) ref {
       if parSafe then
         compilerError('cannot call `getReference()` on maps initialized ',
@@ -443,6 +445,7 @@ module Map {
 
       :returns: A copy of the value at position `k`
      */
+    deprecated "'Map.getValue' is deprecated. Please rely on '[]' accessors instead."
     proc getValue(k: keyType) const throws {
       if !isCopyableType(valType) then
         compilerError('cannot call `getValue()` for non-copyable ' +
@@ -468,6 +471,7 @@ module Map {
       :returns: A copy of the value at position `k` or a sentinel value
                 if the map does not have an entry at position `k`
     */
+    deprecated "'Map.getValue' is deprecated. Please rely on '[]' accessors instead."
     proc getValue(k: keyType, const sentinel: valType) const {
       if !isCopyableType(valType) then
         compilerError('cannot call `getValue()` for non-copyable ' +
@@ -787,7 +791,7 @@ module Map {
     lhs.clear();
     try! {
       for key in rhs.keys() {
-        lhs.add(key, rhs.getValue(key));
+        lhs.add(key, rhs[key]);
       }
     }
   }
