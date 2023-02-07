@@ -33,6 +33,7 @@
 #include "InitResolver.h"
 #include "VarScopeVisitor.h"
 
+#include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
 
 #include <cstdio>
@@ -336,6 +337,7 @@ Resolver::createForParentClass(Context* context,
   ret.substitutions = &substitutions;
   ret.defaultsPolicy = DefaultsPolicy::USE_DEFAULTS;
   ret.byPostorder.setupForSymbol(decl);
+  //ret.scopeResolveOnly = true;
   return ret;
 }
 
@@ -400,7 +402,7 @@ types::QualifiedType Resolver::typeErr(const uast::AstNode* ast,
 /*   return scopes; */
 /* } */
 
-llvm::SmallVector<const Scope*> Resolver::methodReceiverScopes(bool recompute) {
+Resolver::ReceiverScopesVec Resolver::methodReceiverScopes(bool recompute) {
   if (recompute) {
     receiverScopesComputed = false;
   }
@@ -1828,7 +1830,7 @@ void Resolver::exit(const Literal* literal) {
 
 std::vector<BorrowedIdsWithName>
 Resolver::lookupIdentifier(const Identifier* ident,
-                           const llvm::SmallVector<const Scope*>& receiverScopes) {
+                           llvm::ArrayRef<const Scope*> receiverScopes) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
@@ -1940,7 +1942,7 @@ static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
 }
 
 bool Resolver::resolveIdentifier(const Identifier* ident,
-                                 const llvm::SmallVector<const Scope*>& receiverScopes) {
+                                 llvm::ArrayRef<const Scope*> receiverScopes) {
   ResolvedExpression& result = byPostorder.byAst(ident);
 
   // for 'proc f(arg:?)' need to set 'arg' to have type AnyType

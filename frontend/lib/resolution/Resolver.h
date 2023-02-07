@@ -24,6 +24,7 @@
 #include "chpl/uast/all-uast.h"
 #include "InitResolver.h"
 
+#include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
 
 namespace chpl {
@@ -40,6 +41,9 @@ namespace resolution {
    QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(CONTEXT)))
 
 struct Resolver {
+  // types used below
+  using ReceiverScopesVec = llvm::SmallVector<const Scope*, 3>;
+
   // inputs to the resolution process
   Context* context = nullptr;
   const uast::AstNode* symbol = nullptr;
@@ -65,10 +69,7 @@ struct Resolver {
   std::set<ID> splitInitTypeInferredVariables;
   const uast::Call* inLeafCall = nullptr;
   bool receiverScopesComputed = false;
-  llvm::SmallVector<const Scope*> savedReceiverScopes =
-      llvm::SmallVector<const Scope*, 3>();
-  // TODO: use this for something or remove it
-  const types::CompositeType* savedReceiverType = nullptr;
+  ReceiverScopesVec savedReceiverScopes;
   Resolver* parentResolver = nullptr;
   owned<InitResolver> initResolver = nullptr;
 
@@ -209,13 +210,15 @@ struct Resolver {
   types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
 
   /* Gather scopes for a given receiver type and all its parents */
-  static llvm::SmallVector<const Scope*> gatherReceiverAndParentScopesForType(
-      Context* context, const types::Type* thisType);
+  static ReceiverScopesVec
+  gatherReceiverAndParentScopesForType(Context* context,
+                                       const types::Type* thisType);
 
   /* Compute the receiver scopes (when resolving a method)
-     and return nullptr if it is not applicable.
+     and return an empty vector if it is not applicable.
    */
-  llvm::SmallVector<const Scope*> methodReceiverScopes(bool recompute = false);
+  ReceiverScopesVec methodReceiverScopes(bool recompute = false);
+
   /* Compute the receiver scopes (when resolving a method)
      and return nullptr if it is not applicable.
    */
@@ -402,10 +405,10 @@ struct Resolver {
 
   std::vector<BorrowedIdsWithName>
   lookupIdentifier(const uast::Identifier* ident,
-                   const llvm::SmallVector<const Scope*>& receiverScopes);
+                   llvm::ArrayRef<const Scope*> receiverScopes);
 
   bool resolveIdentifier(const uast::Identifier* ident,
-                         const llvm::SmallVector<const Scope*>& receiverScopes);
+                         llvm::ArrayRef<const Scope*> receiverScopes);
 
   /* Resolver keeps a stack of scopes and a stack of decls.
      enterScope and exitScope update those stacks. */

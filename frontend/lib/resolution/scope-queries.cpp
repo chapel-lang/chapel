@@ -28,8 +28,8 @@
 
 #include "scope-help.h"
 
+#include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallPtrSet.h"
-#include "llvm/ADT/SmallVector.h"
 
 #include <cstdio>
 #include <set>
@@ -339,7 +339,7 @@ const Scope* scopeForId(Context* context, ID id) {
 
 static bool doLookupInScope(Context* context,
                             const Scope* scope,
-                            const llvm::SmallVector<const Scope*>& receiverScopes,
+                            llvm::ArrayRef<const Scope*> receiverScopes,
                             const ResolvedVisibilityScope* resolving,
                             UniqueString name,
                             LookupConfig config,
@@ -475,7 +475,7 @@ static bool doLookupInToplevelModules(Context* context,
 // appends to result
 static bool doLookupInScope(Context* context,
                             const Scope* scope,
-                            const llvm::SmallVector<const Scope*>& receiverScopes,
+                            llvm::ArrayRef<const Scope*> receiverScopes,
                             const ResolvedVisibilityScope* resolving,
                             UniqueString name,
                             LookupConfig config,
@@ -701,10 +701,12 @@ static bool lookupInScopeViz(Context* context,
   return got;
 }
 
-std::vector<BorrowedIdsWithName> lookupNameInScope(
-    Context* context, const Scope* scope,
-    const llvm::SmallVector<const Scope*>& receiverScopes, UniqueString name,
-    LookupConfig config) {
+std::vector<BorrowedIdsWithName>
+lookupNameInScope(Context* context,
+                  const Scope* scope,
+                  llvm::ArrayRef<const Scope*> receiverScopes,
+                  UniqueString name,
+                  LookupConfig config) {
   NamedScopeSet checkedScopes;
 
   return lookupNameInScopeWithSet(context, scope, receiverScopes, name, config,
@@ -714,7 +716,7 @@ std::vector<BorrowedIdsWithName> lookupNameInScope(
 std::vector<BorrowedIdsWithName>
 lookupNameInScopeWithSet(Context* context,
                          const Scope* scope,
-                         const llvm::SmallVector<const Scope*>& receiverScopes,
+                         llvm::ArrayRef<const Scope*> receiverScopes,
                          UniqueString name,
                          LookupConfig config,
                          NamedScopeSet& visited) {
