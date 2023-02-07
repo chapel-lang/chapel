@@ -55,10 +55,10 @@ jobs:
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
         with:
           fetch-depth: 0 
-      # - name: Get merge log
-      #   id: merge-log
-      #   run: |
-      #         echo "MERGE=$(echo '$(git show 036bd184ae  | tail -n +5 )' )"  >> $GITHUB_ENV    
+      - name: Get merge log
+        id: merge-log
+        run: |
+              echo "MERGE= $(echo '$(git show 036bd184ae  | tail -n +5 )' )"  >> $GITHUB_ENV    
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v34
@@ -89,9 +89,9 @@ jobs:
            subject: "[Chapel Merge] ${{github.event.pull_request.title}}"
            # Required recipients' addresses:
            #to: chapel+commits@discoursemail.com
-           to: bhavani@hpe.com
+           to: Bhavani@hpe.com
            # Required sender full name (address can be skipped):
-           from:  ${{env.AUTHOR}}
+           from:  Bhavani@hpe.com
            body: |             
               Branch: ${{github.ref}} 
               Revision: ${{ github.event.pull_request.merge_commit_sha }}  
