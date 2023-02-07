@@ -259,6 +259,7 @@ extern int breakOnRemoveID;
 
 extern int fGPUBlockSize;
 extern char fGpuArch[16];
+extern bool fGpuPtxasEnforceOpt;
 extern const char* gGpuSdkPath;
 
 extern char stopAfterPass[128];

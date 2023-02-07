@@ -4084,17 +4084,26 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
     USR_FATAL("Command 'fatbinary' not found\n");
   }
 
-  std::string ptxasFlags = fFastFlag ? "-O3" : "-O0";
-  if (debugCCode) ptxasFlags += " -lineinfo";
+  std::string ptxasFlags = "";
 
-  // Kind of a hack; manually turn
-  //   .target sm_60, debug
-  // into
-  //   .target sm_60
-  // because we can't configure clang to not force
-  // full debug info.
-  if (debugCCode && fFastFlag) {
-    stripPtxDebugDirective(artifactFilename);
+  if (fGpuPtxasEnforceOpt) {
+    // When --gpu-ptxas-enforce-opt is set and --fast is used,
+    // pass -O3 to ptxas even if -g is set. Clang's -g output
+    // produces code with debugging directives incompatible
+    // with -O3, so then strip those directives.
+
+    ptxasFlags = fFastFlag ? "-O3" : "-O0";
+    if (debugCCode) ptxasFlags += " -lineinfo";
+
+    // Kind of a hack; manually turn
+    //   .target sm_60, debug
+    // into
+    //   .target sm_60
+    // because we can't configure clang to not force
+    // full debug info.
+    if (debugCCode && fFastFlag) {
+      stripPtxDebugDirective(artifactFilename);
+    }
   }
 
   std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + CHPL_GPU_ARCH +
