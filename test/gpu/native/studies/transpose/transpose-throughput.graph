@@ -1,5 +1,5 @@
 perfkeys: Performance (GB/s):, Performance (GB/s):
-files: transpose-coalesced.dat, transpose-naive.dat
-graphkeys: Coalesced, Naive
+files: transpose-lowlevel.dat, transpose-naive.dat
+graphkeys: Low Level, Naive
 ylabel: Throughput (GB/s)
 graphtitle: Matrix Transpose Throughput

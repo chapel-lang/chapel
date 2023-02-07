@@ -1,2 +1,2 @@
---useNaive=false # transpose-coalesced
+--useNaive=false # transpose-lowlevel
 --useNaive=true  # transpose-naive

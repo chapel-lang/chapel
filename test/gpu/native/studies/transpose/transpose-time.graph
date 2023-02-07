@@ -1,5 +1,5 @@
 perfkeys: Wall clock time (s):, Wall clock time (s):
-files: transpose-coalesced.dat, transpose-naive.dat
-graphkeys: Coalesced, Naive
+files: transpose-lowlevel.dat, transpose-naive.dat
+graphkeys: Low Level, Naive
 ylabel: Wall Clock Time (s)
 graphtitle: Matrix Transpose Time
