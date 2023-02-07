@@ -18,8 +18,8 @@ set(SRCS
     addInitGuards.cpp
     buildDefaultFunctions.cpp
     checkNormalized.cpp
-    checkParsed.cpp
     checkResolved.cpp
+    checkUast.cpp
     cleanup.cpp
     convert-uast.cpp
     createTaskFunctions.cpp

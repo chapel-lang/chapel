@@ -1,1 +1,1 @@
---stop-after-pass checkParsed
+--stop-after-pass checkUast

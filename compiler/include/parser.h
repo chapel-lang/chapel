@@ -49,7 +49,7 @@ extern bool printTokens;
 // the "In {function|module|class} 'foo'" header for error messages.
 extern chpl::ID dynoIdForLastContainingDecl;
 
-void               parse();
+void               parseAndConvertUast();
 
 void addInternalModulePath(const ArgumentDescription* desc,
                            const char* newpath);
