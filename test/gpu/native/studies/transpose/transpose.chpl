@@ -44,7 +44,7 @@ export proc transposeMatrix(odata: c_ptr(dataType), idata: c_ptr(dataType), widt
   }
 }
 
-proc transposeLowLevel(original, output) {
+inline proc transposeLowLevel(original, output) {
   __primitive("gpu kernel launch",
           c"transposeMatrix",
           /* grid size */  sizeX / blockSize, sizeY / blockSize, 1,
@@ -52,7 +52,7 @@ proc transposeLowLevel(original, output) {
           /* kernel args */ c_ptrTo(output), c_ptrTo(original), sizeX, sizeY);
 }
 
-proc transposeNaive(original, output) {
+inline proc transposeNaive(original, output) {
   foreach (x,y) in original.domain do output[y,x] = original[x,y];
 }
 
