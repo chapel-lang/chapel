@@ -1736,7 +1736,7 @@ module ChapelArray {
        instance of ``val`` in the array, or if ``val`` is not found, a
        tuple containing ``false`` and an unspecified value is returned.
      */
-     deprecated "The tuple-returning version of `array.find()` is deprecated; to opt into the new index-returning version, recompile with `-suseNewArrayFind`"
+     deprecated "The tuple-returning version of `.find() on arrays` is deprecated; to opt into the new index-returning version, recompile with `-suseNewArrayFind`"
      proc find(val: this.eltType): (bool, index(this.domain)) where !useNewArrayFind {
       for i in this.domain {
         if this[i] == val then return (true, i);
@@ -1745,21 +1745,23 @@ module ChapelArray {
       return (false, arbInd);
     }
 
+    proc chpl__fullIdxType type {
+      if this.isAssociative() || this.rank == 1 {
+        return this.idxType;
+      } else {
+        return this.rank * this.idxType;
+      }
+    }
+    
     /*
 
-      Search the array for ``val``, returning the index where it is
-      stored.  If the array contains multiple copies of ``val``, the
-      lexicographically earliest index will be returned.  If ``val``
-      is not found, ``domain.lowBound-1`` is returned instead.  If
-      ``domain.lowBound`` is ``min(idxType)``, the behavior is
-      undefined.
+      Search an array for ``val``, returning whether or not it is
+      found.  If the value is found, the index storing it is returned
+      in ``idx``.  If it is not found, the final value of ``idx`` is
+      unspecified.
 
-      Support is currently limited to rectangular arrays.
     */
-    proc find(val: this.eltType) /* TODO: return type is hard to express */ {
-      if this.isAssociative() then
-        compilerError("Associative arrays do not yet support '.find()'");
-
+    proc find(val: this.eltType, ref idx: chpl__fullIdxType): bool {
       // For the sparse case, start by seeing if the IRV is what we're
       // looking for.  If so, iterate over the parent domain to look
       // for the value or an index not represented in the array.  This
@@ -1772,18 +1774,47 @@ module ChapelArray {
           // it has an explicit value, it may still be the IRV, so
           // check it.
           if !this.domain.contains(i) || this[i] == val {
-            return i;
+            idx = i;
+            return true;
           }
         }
       } else {
         for i in this.domain {
-          if this[i] == val then return i;
+          if this[i] == val {
+            idx = i;
+            return true;
+          }
         }
       }
 
-      // We didn't find it, so return the sentinel OOB index.  This
-      // relies on tuple promotion for multidimensional arrays.
-      return this.domain.lowBound - 1;
+      // We didn't find it, so return false.
+      return false;
+    }
+    
+    /*
+
+      Search a rectangular array with integral indices for ``val``,
+      returning the index where it is found.  If the array contains
+      multiple copies of ``val``, the lexicographically earliest index
+      will be returned.  If ``val`` is not found,
+      ``domain.lowBound-1`` will be returned instead.
+
+      Note that for arrays with ``idxType=int(?w)`` (signed ``int``
+      indices), if the low bound in a dimension is ``min(int(w))``,
+      the result will not be well-defined.
+
+    */
+    proc find(val: this.eltType): chpl__fullIdxType /* TODO: return type is hard to express */ {
+      if !(this.isRectangular() || this.isSparse()) ||
+         !isIntegralType(this.idxType) then
+        compilerError("This array type does not currently support the 1-argument '.find()' method; try using the 2-argument version'");
+
+      var idx: chpl__fullIdxType;
+      if find(val, idx) then
+        return idx;
+      else
+        // The following relies on tuple promotion for multidimensional arrays.
+        return this.domain.lowBound - 1;
     }
 
     /* Return the number of times ``val`` occurs in the array. */
