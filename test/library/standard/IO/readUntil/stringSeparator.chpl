@@ -1,18 +1,17 @@
 use IO;
 
-var r = openreader("hbb.txt");
 const methionine = "ATG";
-
-for cp in methionine.codepoints() {
-    writeln(cp);
-}
 
 var next: string,
     mCount = 0;
 
-while r.readUntil(next, methionine, -1, true, true) {
+var r = openreader("hbb.txt");
+
+while r.readUntil(next, methionine, -1, true, false) {
     mCount += 1;
     writeln(next);
 }
-
 writeln(mCount);
+
+const all = openreader("hbb.txt").readAll(string).split(methionine);
+for a in all do writeln(a);

@@ -5044,6 +5044,8 @@ proc fileReader.readUntil(ref s: string, separator: string, maxSize=-1, consumeS
     this._revert(); // A
     const numBytesRead: int = endOffset - this._offset();
 
+    // writeln(numBytesRead, ", ", numCodepoints, " fs: ", foundSeparator);
+
     if !foundSeparator {
       err = readStringBytesData(s, this._channel_internal, numBytesRead, numCodepoints);
     } else {
@@ -5052,7 +5054,7 @@ proc fileReader.readUntil(ref s: string, separator: string, maxSize=-1, consumeS
         if includeSeparator {
           // nothing
         } else {
-          s = s[0..<(numBytesRead-numSepBytes)];
+          s = s[0..<numBytesRead];
         }
       } else {
         err = readStringBytesData(s, this._channel_internal, numBytesRead, numCodepoints);
@@ -5062,6 +5064,10 @@ proc fileReader.readUntil(ref s: string, separator: string, maxSize=-1, consumeS
           // nothing
         }
       }
+    }
+
+    if err {
+      try this._ch_ioerror(err, "in channel.readUntil(string)");
     }
 
     // return 'true' if anything was read
