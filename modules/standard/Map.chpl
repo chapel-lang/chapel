@@ -657,7 +657,7 @@ module Map {
 
       return true;
     }
-    
+
     /*
       Sets the value associated with a key. Method returns `false` if the key
       does not exist in the map.
