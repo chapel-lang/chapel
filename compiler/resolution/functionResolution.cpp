@@ -8049,8 +8049,7 @@ void resolveInitVar(CallExpr* call) {
 
   if (isDomain &&
       srcType && !srcType->getValType()->symbol->hasFlag(FLAG_DOMAIN)) {
-    USR_FATAL_CONT(call,
-                   "Can't initialize a domain with a non-domain expression");
+    USR_FATAL(call, "Domains cannot be initialized using expressions of non-domain type");
   }
 
   if (dst->hasFlag(FLAG_NO_COPY) ||
