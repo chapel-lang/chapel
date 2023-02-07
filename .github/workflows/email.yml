@@ -58,7 +58,7 @@ jobs:
       - name: Get merge log
         id: merge-log
         run: |
-              echo "MERGE= $(echo '$(git show 036bd184ae)'  | tail -n +5 )"  >> $GITHUB_ENV    
+              echo "MERGE=$(echo '$(git show 036bd184ae)  | tail -n +5 ')"  >> $GITHUB_ENV    
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v34
@@ -99,7 +99,7 @@ jobs:
               Link: ${{github.event.pull_request._links.html.href}}          
               Log Message: 
                           ${{env.MERGE}}
-                           ${{env.MESSAGE}} 
+                          ${{env.MESSAGE}} 
                           ${{env.MERGE_LOG}} 
               Compare: ${{env.COMPARE_URL}} 
               Diff: ${{github.event.pull_request.diff_url}} 
