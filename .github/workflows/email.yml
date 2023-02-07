@@ -33,7 +33,7 @@ jobs:
           timeout_seconds: 180
           polling_interval_seconds: 60  
           command: |
-              curl --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
+              curl --max-time 30  --retry 5  --retry-max-time 180 --location --request GET $COMMIT_URL --header 'X-API-Key: ${{ secrets.GITHUB_TOKEN}}' -o commits.json
               if [ $? -ne 0 ]; then
                 echo "curl command to get commits payload failed"
                 exit 2
@@ -58,6 +58,7 @@ jobs:
       - name: Get merge log
         id: merge-log
         run: |
+              echo $(git show 036bd184ae)
               echo "MERGE= $(echo $(git show 036bd184ae) )"  >> $GITHUB_ENV    
       - name: Get changed files
         id: changed-files
