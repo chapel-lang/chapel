@@ -92,8 +92,7 @@ jobs:
            to: bhavani@hpe.com
            # Required sender full name (address can be skipped):
            from:  ${{env.AUTHOR}}
-           body: |
-               
+           body: |             
               Branch: ${{github.ref}} 
               Revision: ${{ github.event.pull_request.merge_commit_sha }}  
               Author: ${{ env.AUTHOR}} 
@@ -112,6 +111,6 @@ jobs:
                    ${{env.DELETED}} 
            
            # Optional converting Markdown to HTML (set content_type to text/html too):
-           convert_markdown: true
+           #convert_markdown: true
            # Optional priority: 'high', 'normal' (default) or 'low'
            priority: low
