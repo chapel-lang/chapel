@@ -3,6 +3,7 @@ use GPUDiagnostics;
 use GPU;
 use Time;
 
+config const perftest = false;
 config const numTrials = 10;
 config const useNaive = false;
 config const sizeX = 2048*8,
@@ -82,8 +83,10 @@ on here.gpus[0] {
   var sizeInBytes = original.size * numBytes(dataType);
   var sizeInGb = sizeInBytes / (1000.0 * 1000.0 * 1000.0);
   var gbPerSec = sizeInGb / elapsed;
-  writeln("Wall clock time (s): ", elapsed);
-  writeln("Performance (GB/s): ", gbPerSec);
+  if perftest {
+    writeln("Wall clock time (s): ", elapsed);
+    writeln("Performance (GB/s): ", gbPerSec);
+  }
 
   var passed = true;
   for (x,y) in original.domain {
