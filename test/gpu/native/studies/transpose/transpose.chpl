@@ -8,12 +8,14 @@ config const useNaive = false;
 config const sizeX = 2048*8,
              sizeY = 2048*8;
 config param blockSize = 16;
+config param blockPadding = 1;
 
 pragma "codegen for GPU"
 pragma "always resolve function"
 export proc transposeMatrix(odata: c_ptr(real(32)), idata: c_ptr(real(32)), width: int, height: int) {
   // Allocate extra columns for the shared 2D array to avoid bank conflicts.
-  var smVoidPtr = __primitive("gpu allocShared", numBytes(real(32))*(blockSize+1)*blockSize);
+  param paddedBlockSize = blockSize + blockPadding;
+  var smVoidPtr = __primitive("gpu allocShared", numBytes(real(32))*paddedBlockSize*blockSize);
   var smArrPtr = smVoidPtr : c_ptr(real(32));
 
   const blockIdxX = __primitive("gpu blockIdx x"),
@@ -27,7 +29,7 @@ export proc transposeMatrix(odata: c_ptr(real(32)), idata: c_ptr(real(32)), widt
   // i.e., the below is effectively smArrPtr[y][x] instead of
   // smArrPtr[x][y] for copy
   if (idxX < width && idxY < height) {
-    smArrPtr[(blockSize+1) * threadIdxX + threadIdxY] = idata[idxY * width + idxX];
+    smArrPtr[paddedBlockSize * threadIdxX + threadIdxY] = idata[idxY * width + idxX];
   }
 
   // synchronize the threads
@@ -37,7 +39,7 @@ export proc transposeMatrix(odata: c_ptr(real(32)), idata: c_ptr(real(32)), widt
   idxX = blockIdxY * blockSize + threadIdxX;
   idxY = blockIdxX * blockSize + threadIdxY;
   if (idxX < height && idxY < width) {
-    odata[idxY * height + idxX] = smArrPtr[(blockSize+1) * threadIdxY + threadIdxX];
+    odata[idxY * height + idxX] = smArrPtr[paddedBlockSize * threadIdxY + threadIdxX];
   }
 }
 
