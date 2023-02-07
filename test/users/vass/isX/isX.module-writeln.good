@@ -1,9 +1,5 @@
 === at the module level ===
 bool (b0)  isBool  isBoolValue  isBoolType  .
-bool(8) (b8)  isBool  isBoolValue  isBoolType  .
-bool(16) (b16)  isBool  isBoolValue  isBoolType  .
-bool(32) (b32)  isBool  isBoolValue  isBoolType  .
-bool(64) (b64)  isBool  isBoolValue  isBoolType  .
 int(8) (i8)  isInt  isIntValue  isIntType  .
 int(16) (i16)  isInt  isIntValue  isIntType  .
 int(32) (i32)  isInt  isIntValue  isIntType  .
@@ -45,6 +41,6 @@ isIntegralType:   i8  i16  i32  i64  u8  u16  u32  u64  .
 isNumeric:   i8  i16  i32  i64  u8  u16  u32  u64  r32  r64  m32  m64  z64  z128  .
 isNumericValue:   i8  i16  i32  i64  u8  u16  u32  u64  r32  r64  m32  m64  z64  z128  .
 isNumericType:   i8  i16  i32  i64  u8  u16  u32  u64  r32  r64  m32  m64  z64  z128  .
-isPrimitive:   b0  b8  b16  b32  b64  i8  i16  i32  i64  u8  u16  u32  u64  r32  r64  m32  m64  z64  z128  str  .
-isPrimitiveValue:   b0  b8  b16  b32  b64  i8  i16  i32  i64  u8  u16  u32  u64  r32  r64  m32  m64  z64  z128  str  .
-isPrimitiveType:   b0  b8  b16  b32  b64  i8  i16  i32  i64  u8  u16  u32  u64  r32  r64  m32  m64  z64  z128  str  .
+isPrimitive:   b0  i8  i16  i32  i64  u8  u16  u32  u64  r32  r64  m32  m64  z64  z128  str  .
+isPrimitiveValue:   b0  i8  i16  i32  i64  u8  u16  u32  u64  r32  r64  m32  m64  z64  z128  str  .
+isPrimitiveType:   b0  i8  i16  i32  i64  u8  u16  u32  u64  r32  r64  m32  m64  z64  z128  str  .

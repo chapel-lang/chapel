@@ -111,15 +111,7 @@ writeln();
 
 // initializing from bool of different sizes
 checkNoCoerce(complex(128), true);
-checkNoCoerce(complex(128), true:bool(64));
-checkNoCoerce(complex(128), true:bool(32));
-checkNoCoerce(complex(128), true:bool(16));
-checkNoCoerce(complex(128), true:bool(8));
 checkNoCoerce(complex(64), true);
-checkNoCoerce(complex(64), true:bool(64));
-checkNoCoerce(complex(64), true:bool(32));
-checkNoCoerce(complex(64), true:bool(16));
-checkNoCoerce(complex(64), true:bool(8));
 writeln();
 
 // Note, initializing a numeric param from a string param
