@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-// checkParsed.cpp
+// checkUast.cpp
 
 #include "passes.h"
 
@@ -47,7 +47,7 @@ static void checkOperator(FnSymbol* fn);
 static void checkUseStmt(UseStmt* use);
 
 void
-checkParsed() {
+checkUast() {
   setupForCheckExplicitDeinitCalls();
 
   forv_Vec(CallExpr, call, gCallExprs) {

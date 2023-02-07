@@ -1145,7 +1145,7 @@ static const char* searchThePath(const char*      modName,
   return retval;
 }
 
-void parse() {
+void parseAndConvertUast() {
 
   // TODO: Runtime configuration of debug level for dyno parser.
   if (debugParserLevel) {

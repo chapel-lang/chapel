@@ -40,8 +40,8 @@ struct PassInfo {
 };
 
 // These entries should be kept in the same order as those in the pass list
-#define LOG_parse                              'p'
-#define LOG_checkParsed                        LOG_NEVER
+#define LOG_parseAndConvertUast                'p'
+#define LOG_checkUast                          LOG_NEVER
 #define LOG_readExternC                        LOG_NO_SHORT
 #define LOG_cleanup                            LOG_NO_SHORT
 #define LOG_scopeResolve                       's'
@@ -89,8 +89,8 @@ struct PassInfo {
 //
 static PassInfo sPassList[] = {
   // Chapel to AST
-  RUN(parse),                   // parse files and create AST
-  RUN(checkParsed),             // checks semantics of parsed AST
+  RUN(parseAndConvertUast),     // parse files and create AST
+  RUN(checkUast),               // checks semantics of parsed AST
 
   // Read in runtime and included C header file types/prototypes
   RUN(readExternC),
