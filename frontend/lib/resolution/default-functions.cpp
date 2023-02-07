@@ -178,7 +178,7 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
   if (auto basic = compType->toBasicClassType()) {
     if (auto parent = basic->parentClassType()) {
       if (!parent->isObjectType()) {
-        CHPL_ASSERT(false && "Not handled yet!");
+        //CHPL_ASSERT(false && "Not handled yet!");
       }
     }
   }

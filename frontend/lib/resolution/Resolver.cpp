@@ -1068,7 +1068,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       // This should not apply to parenthesized expressions.
       if (isFormalThis &&
           typeExprT.type() != nullptr && typeExprT.type()->isClassType() &&
-          typeExpr->isIdentifier()) {
+          (typeExpr == nullptr || typeExpr->isIdentifier())) {
         auto ct = typeExprT.type()->toClassType();
         auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
         typeExprT = QualifiedType(typeExprT.kind(),

@@ -1757,7 +1757,10 @@ resolveFunctionByInfoQuery(Context* context,
     ResolutionResultByPostorderID resolutionById;
     auto visitor = Resolver::createForFunction(context, fn, poiScope, sig,
                                                resolutionById);
-    fn->body()->traverse(visitor);
+
+    if (fn->body()) {
+      fn->body()->traverse(visitor);
+    }
 
     // then, compute the return type
     computeReturnType(visitor);
@@ -2121,8 +2124,10 @@ doIsCandidateApplicableInitial(Context* context,
       // calling a field accessor
       auto ct = ci.actual(0).type().type()->getCompositeType();
       CHPL_ASSERT(ct);
-      CHPL_ASSERT(isNameOfField(context, ci.name(), ct));
-      return fieldAccessor(context, ct, ci.name());
+      CHPL_ASSERT(isNameOfField(context, ci.name(), ct) != nullptr);
+      auto containingType = isNameOfField(context, ci.name(), ct);
+      CHPL_ASSERT(containingType != nullptr);
+      return fieldAccessor(context, containingType, ci.name());
     } else {
       // not a candidate
       return nullptr;
@@ -2635,12 +2640,14 @@ static void considerCompilerGeneratedCandidates(Context* context,
   candidates.push_back(instantiated);
 }
 
-static std::vector<BorrowedIdsWithName> lookupCalledExpr(
-    Context* context, const Scope* scope, const CallInfo& ci,
-    NamedScopeSet& visited) {
+static std::vector<BorrowedIdsWithName>
+lookupCalledExpr(Context* context,
+                 const Scope* scope,
+                 const CallInfo& ci,
+                 NamedScopeSet& visited) {
   const LookupConfig config =
       LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS;
-  llvm::SmallVector<const Scope*> receiverScopes = {};
+  Resolver::ReceiverScopesVec receiverScopes;
 
   // For method calls, also consider the receiver scope.
   if (ci.isMethodCall() || ci.isOpCall()) {
@@ -2648,10 +2655,9 @@ static std::vector<BorrowedIdsWithName> lookupCalledExpr(
     auto& qtReceiver = ci.actual(0).type();
     if (auto t = qtReceiver.type()) {
       if (auto compType = t->getCompositeType()) {
-        /* auto vec = */
-        /*     Resolver::gatherReceiverAndParentScopesForType(context, compType); */
-        /* receiverScopes.append(vec); */
-        receiverScopes.emplace_back(scopeForId(context, compType->id()));
+        receiverScopes =
+          Resolver::gatherReceiverAndParentScopesForType(context, compType);
+        //receiverScopes.emplace_back(scopeForId(context, compType->id()));
       }
     }
   }
@@ -2664,20 +2670,21 @@ static std::vector<BorrowedIdsWithName> lookupCalledExpr(
   return ret;
 }
 
-static std::vector<BorrowedIdsWithName> lookupCalledExprConsideringReceiver(
-    Context* context, const Scope* inScope, const CallInfo& ci,
-    NamedScopeSet& visited) {
+static std::vector<BorrowedIdsWithName>
+lookupCalledExprConsideringReceiver(Context* context,
+                                    const Scope* inScope,
+                                    const CallInfo& ci,
+                                    NamedScopeSet& visited) {
   // For method and operator calls, also consider the receiver scopes.
-  llvm::SmallVector<const Scope*> receiverScopes = {};
+  Resolver::ReceiverScopesVec receiverScopes;
   if (ci.isMethodCall() || ci.isOpCall()) {
     CHPL_ASSERT(ci.numActuals() >= 1);
     auto& qtReceiver = ci.actual(0).type();
     if (auto t = qtReceiver.type()) {
       if (auto compType = t->getCompositeType()) {
-        /* auto vec = */
-        /*     Resolver::gatherReceiverAndParentScopesForType(context, compType); */
-        /* receiverScopes.append(vec); */
-        receiverScopes.emplace_back(scopeForId(context, compType->id()));
+        receiverScopes =
+          Resolver::gatherReceiverAndParentScopesForType(context, compType);
+        //receiverScopes.emplace_back(scopeForId(context, compType->id()));
       }
     }
   }
@@ -3276,16 +3283,20 @@ static bool helpFieldNameCheck(const AstNode* ast,
         return true;
       }
     }
+  } else if (auto fwd = ast->toForwardingDecl()) {
+    if (auto fwdVar = fwd->expr()->toVariable()) {
+      return fwdVar->name() == name;
+    }
   }
   return false;
 }
 
-static const bool&
+static const CompositeType* const&
 isNameOfFieldQuery(Context* context,
                    UniqueString name, const CompositeType* ct) {
   QUERY_BEGIN(isNameOfFieldQuery, context, name, ct);
 
-  bool result = false;
+  const CompositeType* result = nullptr;
   auto ast = parsing::idToAst(context, ct->id());
   CHPL_ASSERT(ast && ast->isAggregateDecl());
   auto ad = ast->toAggregateDecl();
@@ -3298,8 +3309,19 @@ isNameOfFieldQuery(Context* context,
         child->isForwardingDecl()) {
       bool found = helpFieldNameCheck(child, name);
       if (found) {
-        result = true;
+        result = ct;
         break;
+      }
+    }
+  }
+
+  if (result == nullptr) {
+    // check also superclass fields
+    if (auto bct = ct->toBasicClassType()) {
+      const CompositeType* found =
+        isNameOfField(context, name, bct->parentClassType());
+      if (found != nullptr) {
+        result = found;
       }
     }
   }
@@ -3307,19 +3329,25 @@ isNameOfFieldQuery(Context* context,
   return QUERY_END(result);
 }
 
-bool isNameOfField(Context* context, UniqueString name, const Type* t) {
+const CompositeType* isNameOfField(Context* context,
+                                   UniqueString name,
+                                   const Type* t) {
+
+  if (t == nullptr) {
+    return nullptr;
+  }
+
   const CompositeType* ct = t->getCompositeType();
 
   if (ct == nullptr) {
-    return false;
+    return nullptr;
   }
 
   if (auto bct = ct->toBasicClassType()) {
     if (bct->isObjectType()) {
-      return false;
+      return nullptr;
     }
   }
-
 
   return isNameOfFieldQuery(context, name, ct);
 }
