@@ -8002,6 +8002,10 @@ void resolveInitVar(CallExpr* call) {
         srcExpr->setSymbol(tmp);
 
       addedCoerce = true;
+    } else if (targetType && targetType->symbol->hasFlag(FLAG_DOMAIN) &&
+               srcType && !srcType->symbol->hasFlag(FLAG_DOMAIN)) {
+      USR_FATAL_CONT(call,
+                     "Can't initialize a domain with a non-domain expression");
     }
   } else {
     targetType = srcType;
