@@ -1460,5 +1460,6 @@ void resolveUsesAndImportsInScope(Context* context, const Scope* scope) {
   return;
 }
 
+
 } // end namespace resolution
 } // end namespace chpl

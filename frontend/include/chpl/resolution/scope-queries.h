@@ -130,6 +130,7 @@ namespace resolution {
   */
   void resolveUsesAndImportsInScope(Context* context, const Scope* scope);
 
+
 } // end namespace resolution
 } // end namespace chpl
 #endif

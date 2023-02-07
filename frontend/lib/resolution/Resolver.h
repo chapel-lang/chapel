@@ -195,6 +195,12 @@ struct Resolver {
                        const PoiScope* poiScope,
                        ResolutionResultByPostorderID& byPostorder);
 
+  // set up Resolver to scope resolve a parent class type expression
+  static Resolver
+  createForParentClassScopeResolve(Context* context,
+                                   const uast::AggregateDecl* decl,
+                                   ResolutionResultByPostorderID& byPostorder);
+
   // set up Resolver to resolve a param for loop body
   static Resolver paramLoopResolver(Resolver& parent,
                                     const uast::For* loop,
@@ -209,10 +215,15 @@ struct Resolver {
    */
   types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
 
+  /* Gather scopes for a given receiver decl and all its parents */
+  static ReceiverScopesVec
+  gatherReceiverAndParentScopesForDeclId(Context* context,
+                                         ID aggregateDeclId);
   /* Gather scopes for a given receiver type and all its parents */
   static ReceiverScopesVec
   gatherReceiverAndParentScopesForType(Context* context,
                                        const types::Type* thisType);
+
 
   /* Compute the receiver scopes (when resolving a method)
      and return an empty vector if it is not applicable.

@@ -337,9 +337,22 @@ Resolver::createForParentClass(Context* context,
   ret.substitutions = &substitutions;
   ret.defaultsPolicy = DefaultsPolicy::USE_DEFAULTS;
   ret.byPostorder.setupForSymbol(decl);
-  //ret.scopeResolveOnly = true;
   return ret;
 }
+
+// set up Resolver to scope resolve a parent class type expression
+Resolver
+Resolver::createForParentClassScopeResolve(Context* context,
+                                           const AggregateDecl* decl,
+                                           ResolutionResultByPostorderID& byId)
+{
+  auto ret = Resolver(context, decl, byId, /* poiScope */ nullptr);
+  ret.defaultsPolicy = DefaultsPolicy::USE_DEFAULTS;
+  ret.byPostorder.setupForSymbol(decl);
+  ret.scopeResolveOnly = true;
+  return ret;
+}
+
 
 // set up Resolver to resolve a param loop
 Resolver
@@ -386,21 +399,93 @@ types::QualifiedType Resolver::typeErr(const uast::AstNode* ast,
   return t;
 }
 
-/* llvm::SmallVector<const Scope*> Resolver::gatherReceiverAndParentScopesForType( */
-/*     Context* context, const Type* thisType) { */
-/*   llvm::SmallVector<const Scope*> scopes; */
+/**
+  Find scopes for superclasses of a class.  The passed ID should refer to a
+  Class declaration node.  If not, this function will return an empty vector.
 
-/*   const Type* currentType = thisType->toCompositeType(); */
-/*   while (currentType) { */
-/*     auto ct = currentType->toCompositeType(); */
-/*     scopes.emplace_back(scopeForId(context, ct->id())); */
-/*     auto bct = ct->toBasicClassType(); */
-/*     if (!bct) break; */
-/*     currentType = bct->parentClassType(); */
-/*   } */
+  This function is temporary and should only be used in scopeResolveOnly mode.
+  */
+static const std::vector<const Scope*>&
+gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
+  QUERY_BEGIN(gatherParentClassScopesForScopeResolving, context, classDeclId);
 
-/*   return scopes; */
-/* } */
+  std::vector<const Scope*> result;
+
+  ID curId = classDeclId;
+
+  while (!curId.isEmpty()) {
+    if (auto ast = parsing::idToAst(context, curId)) {
+      if (auto c = ast->toClass()) {
+        if (const AstNode* parentClassExpr = c->parentClass()) {
+          // Resolve the parent class type expression
+          ResolutionResultByPostorderID r;
+          auto visitor =
+            Resolver::createForParentClassScopeResolve(context, c, r);
+          parentClassExpr->traverse(visitor);
+
+          ResolvedExpression& re = r.byAst(parentClassExpr);
+          if (re.toId().isEmpty()) {
+            context->error(parentClassExpr, "invalid parent class expression");
+          } else {
+            result.push_back(scopeForId(context, re.toId()));
+            curId = re.toId();
+            continue; // keep going with parent classes of that class
+          }
+        }
+      }
+    }
+    break; // stop if we get to this point
+  }
+
+  return QUERY_END(result);
+}
+
+
+
+Resolver::ReceiverScopesVec
+Resolver::gatherReceiverAndParentScopesForDeclId(Context* context,
+                                                 ID aggregateDeclId) {
+  ReceiverScopesVec scopes;
+
+  if (aggregateDeclId.isEmpty()) {
+    return scopes;
+  }
+
+  // use temporary code to scope resolve the parent class Identifiers
+  scopes.push_back(scopeForId(context, aggregateDeclId));
+  // if it's a class type, also gather the parent class scopes
+  auto tag = parsing::idToTag(context, aggregateDeclId);
+  if (asttags::isClass(tag)) {
+    const std::vector<const Scope*>& v =
+      gatherParentClassScopesForScopeResolving(context, aggregateDeclId);
+
+    for (auto elt : v) {
+      scopes.push_back(elt);
+    }
+  }
+
+  return scopes;
+}
+
+Resolver::ReceiverScopesVec
+Resolver::gatherReceiverAndParentScopesForType(Context* context,
+                                               const types::Type* thisType) {
+  ReceiverScopesVec scopes;
+
+  if (thisType != nullptr) {
+    // use the regular type system to scope resolve parent classes
+    const Type* currentType = thisType->toCompositeType();
+    while (currentType) {
+      auto ct = currentType->toCompositeType();
+      scopes.push_back(scopeForId(context, ct->id()));
+      auto bct = ct->toBasicClassType();
+      if (!bct) break;
+      currentType = bct->parentClassType();
+    }
+  }
+
+  return scopes;
+}
 
 Resolver::ReceiverScopesVec Resolver::methodReceiverScopes(bool recompute) {
   if (recompute) {
@@ -409,55 +494,51 @@ Resolver::ReceiverScopesVec Resolver::methodReceiverScopes(bool recompute) {
 
   if (receiverScopesComputed) return savedReceiverScopes;
 
-  // If receiver type is specified by a simple identifier, determine it.
-  // For more complicated receiver types we cannot yet gather any information.
-  ID idForTypeDecl;
-  if (typedSignature) {
-    if (typedSignature->untyped()->isMethod()) {
-      if (scopeResolveOnly) {
-        auto* untyped = typedSignature->untyped();
-        auto thisFormal = untyped->formalDecl(0)->toFormal();
-        auto type = thisFormal->typeExpression();
-        if (type == nullptr) {
-          // `this` formals of primary methods have no type expression. They
-          // are, however, in primary methods, so the method's parent is the
-          // aggregate type whose scope should be used.
-
-          // TODO can typedSignature->id() ever not refer to a Function in this
-          // case?
-          idForTypeDecl = parsing::idToParentId(context, typedSignature->id());
-        } else if (auto ident = type->toIdentifier()) {
-          idForTypeDecl = byPostorder.byAst(ident).toId();
-        }
-      } else if (auto receiverType = typedSignature->formalType(0).type()) {
-        if (auto compType = receiverType->getCompositeType()) {
-          idForTypeDecl = compType->id();
-        }
-      }
-    }
+  if (!scopeResolveOnly &&
+      typedSignature &&
+      typedSignature->untyped()->isMethod()) {
+    // use type information to compute the receiver type
+    auto receiverType = typedSignature->formalType(0).type();
+    // and use that to compute the scopes
+    savedReceiverScopes =
+      gatherReceiverAndParentScopesForType(context, receiverType);
   } else {
-    // fall back to computing receiver type without a typed signature
-    if (auto func = this->symbol->toFunction()) {
-      if (auto thisFormal = func->thisFormal()) {
-        if (auto thisFormalType = thisFormal->typeExpression()) {
-          if (auto typeIdent = thisFormalType->toIdentifier()) {
-            idForTypeDecl = byPostorder.byAst(typeIdent).toId();
-          }
-        }
+    // Use scope-resolver logic to compute the receiver scopes.
+
+    // If receiver type is specified by a simple identifier, determine it.
+    // For more complicated receiver types we cannot yet gather any information.
+
+    ID methodId;
+    const Formal* thisFormal = nullptr;
+    if (typedSignature && typedSignature->untyped()->isMethod()) {
+      thisFormal = typedSignature->untyped()->formalDecl(0)->toFormal();
+      methodId = typedSignature->id();
+    }
+
+    if (thisFormal == nullptr) {
+      // if there is no typed signature, fall back to computing receiver type
+      // from an identifier
+      if (auto func = this->symbol->toFunction()) {
+        thisFormal = func->thisFormal();
+        methodId = this->symbol->id();
       }
     }
-  }
 
-  // If we were able to get an identifier for the type declaration,
-  // gather scope information.
-  if (!idForTypeDecl.isEmpty()) {
-    auto receiverDeclaredType = initialTypeForTypeDecl(context, idForTypeDecl);
-    assert(receiverDeclaredType &&
-           "failed to look up declared type for method receiver");
+    if (thisFormal) {
+      auto type = thisFormal->typeExpression();
+      ID idForTypeDecl;
+      if (type == nullptr) {
+        // `this` formals of primary methods have no type expression. They
+        // are, however, in primary methods, so the method's parent is the
+        // aggregate type whose scope should be used.
 
-    /* savedReceiverScopes = */
-    /*     gatherReceiverAndParentScopesForType(context, receiverDeclaredType); */
-    savedReceiverScopes.emplace_back(scopeForId(context, idForTypeDecl));
+        idForTypeDecl = parsing::idToParentId(context, methodId);
+      } else if (auto ident = type->toIdentifier()) {
+        idForTypeDecl = byPostorder.byAst(ident).toId();
+      }
+      savedReceiverScopes =
+        gatherReceiverAndParentScopesForDeclId(context, idForTypeDecl);
+    }
   }
 
   receiverScopesComputed = true;
