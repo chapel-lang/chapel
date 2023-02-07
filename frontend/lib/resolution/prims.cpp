@@ -30,6 +30,62 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+static const CompositeType* toCompositeTypeActual(const QualifiedType& type,
+                                                  bool shouldBeType = true) {
+  if ((type.kind() == QualifiedType::TYPE) == shouldBeType) {
+    if (auto t = type.type()) {
+      if (auto ct = t->toCompositeType()) {
+        return ct;
+      }
+    }
+  }
+  return nullptr;
+}
+
+static const ResolvedFields*
+toCompositeTypeActualFields(Context* context,
+                            const QualifiedType& type,
+                            bool shouldBeType = true) {
+  if (auto ct = toCompositeTypeActual(type, shouldBeType)) {
+    auto& resolvedFields = fieldsForTypeDecl(context, ct,
+                                             DefaultsPolicy::IGNORE_DEFAULTS);
+    return &resolvedFields;
+  }
+  return nullptr;
+}
+
+static bool toParamIntActual(const QualifiedType& type, int64_t& into) {
+  if (type.kind() == QualifiedType::PARAM) {
+    if (auto t = type.type()) {
+      if (t->isIntType()) {
+        if (auto p = type.param()) {
+          if (auto ip = p->toIntParam()) {
+            into = ip->value();
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
+static bool toParamStringActual(const QualifiedType& type, UniqueString& into) {
+  if (type.kind() == QualifiedType::PARAM) {
+    if (auto t = type.type()) {
+      if (t->isStringType()) {
+        if (auto p = type.param()) {
+          if (auto sp = p->toStringParam()) {
+            into = sp->value();
+            return true;
+          }
+        }
+      }
+    }
+  }
+  return false;
+}
+
 CallResolutionResult resolvePrimCall(Context* context,
                                      const PrimCall* call,
                                      const CallInfo& ci,
@@ -62,14 +118,118 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_INSTANTIATION_ALLOW_VALUES:
     case PRIM_IS_PROPER_SUBTYPE:
     case PRIM_IS_BOUND:
+      if (ci.numActuals() == 2) {
+        auto firstActual = ci.actual(0).type();
+        auto secondActual = ci.actual(1).type();
+        if (auto fields = toCompositeTypeActualFields(context, firstActual)) {
+          UniqueString fieldName;
+          if (toParamStringActual(secondActual, fieldName)) {
+            for (int i = 0; i < fields->numFields(); i++) {
+              if (fields->fieldName(i) != fieldName) continue;
+              // Production compiler only reports a field as unbound if it's
+              // generic and doesn't have a substitution. In other words,
+              // a field instantiated with a generic type is "bound". Dyno
+              // treats these fields as still-generic, so this primitive
+              // will only return true if the field's type is concrete.
+              auto isBound =
+                fields->fieldType(i).genericity() == Type::Genericity::CONCRETE;
+              type = QualifiedType(QualifiedType::PARAM,
+                                   BoolType::get(context, 0),
+                                   BoolParam::get(context, isBound));
+              break;
+            }
+          }
+        }
+      }
+      break;
+
     case PRIM_IS_COERCIBLE:
     case PRIM_TYPE_TO_STRING:
     case PRIM_HAS_LEADER:
     case PRIM_IS_TUPLE_TYPE:
+      CHPL_ASSERT(false && "not implemented yet");
+      break;
+
     case PRIM_NUM_FIELDS:
+      if (ci.numActuals() == 1) {
+        auto firstActual = ci.actual(0).type();
+        if (auto fields = toCompositeTypeActualFields(context, firstActual)) {
+          int64_t numFields = fields->numFields();
+          type = QualifiedType(QualifiedType::PARAM,
+                               IntType::get(context, 64),
+                               IntParam::get(context, numFields));
+        }
+      }
+      break;
+
     case PRIM_FIELD_NUM_TO_NAME:
+      if (ci.numActuals() == 2) {
+        auto firstActual = ci.actual(0).type();
+        auto secondActual = ci.actual(1).type();
+
+        if (auto fields = toCompositeTypeActualFields(context, firstActual)) {
+          int64_t fieldNum = 0;
+          if (toParamIntActual(secondActual, fieldNum)) {
+            // Fields in these primitives are 1-indexed.
+            if (fieldNum > fields->numFields() || fieldNum < 1) break;
+            auto fieldName = fields->fieldName(fieldNum - 1);
+            type = QualifiedType(QualifiedType::PARAM,
+                                 RecordType::getStringType(context),
+                                 StringParam::get(context, fieldName));
+          }
+        }
+      }
+      break;
+
     case PRIM_FIELD_NAME_TO_NUM:
+      if (ci.numActuals() == 2) {
+        auto firstActual = ci.actual(0).type();
+        auto secondActual = ci.actual(1).type();
+
+        if (auto fields = toCompositeTypeActualFields(context, firstActual)) {
+          UniqueString fieldName;
+          if (toParamStringActual(secondActual, fieldName)) {
+            bool foundField = false;
+            int field = 0;
+
+            // TODO move this into a method on fields?
+            for (int i = 0; i < fields->numFields(); i++) {
+              if (fields->fieldName(i) == fieldName) {
+                foundField = true;
+                // Fields in these primitives are 1-indexed.
+                field = i + 1;
+                break;
+              }
+            }
+
+            if (!foundField) break;
+            type = QualifiedType(QualifiedType::PARAM,
+                                 IntType::get(context, 64),
+                                 IntParam::get(context, field));
+          }
+        }
+      }
+      break;
+
     case PRIM_FIELD_BY_NUM:
+      if (ci.numActuals() == 2) {
+        auto firstActual = ci.actual(0).type();
+        auto secondActual = ci.actual(1).type();
+
+        auto fields = toCompositeTypeActualFields(context,
+                                                  firstActual,
+                                                  /* shouldBeType */ false);
+        if (fields) {
+          int64_t fieldNum = 0;
+          if (toParamIntActual(secondActual, fieldNum)) {
+            // Fields in these primitives are 1-indexed.
+            if (fieldNum > fields->numFields() || fieldNum < 1) break;
+            type = fields->fieldType(fieldNum - 1);
+          }
+        }
+      }
+      break;
+
     case PRIM_CLASS_NAME_BY_ID:
     case PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL:
     case PRIM_IS_GENERIC_TYPE:
