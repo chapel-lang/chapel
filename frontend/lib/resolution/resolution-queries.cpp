@@ -3326,6 +3326,14 @@ bool isNameOfField(Context* context, UniqueString name, const Type* t) {
   return isNameOfFieldQuery(context, name, ct);
 }
 
+// TODO: This is very early draft and is missing a lot, e.g.,
+//    - No valid default-initializer present
+//    - Instantiated generics must supply type/param arguments when
+//      searching for a default-initializer
+//    - Consideration of 'where' clauses
+//    - Composites with compilerError'd default-initializers
+//    - Mutually recursive class types
+//    - Non-nil 'owned' classes
 static bool
 isTypeDefaultInitializableImpl(Context* context, const Type* t) {
   const auto g = t->genericity();
@@ -3360,7 +3368,8 @@ isTypeDefaultInitializableImpl(Context* context, const Type* t) {
       for (int i = 0; i < rf.numFields(); i++) {
         auto ft = rf.fieldType(i).type();
 
-        // Skip to avoid recursive query.
+        // TODO: Skipping avoids a recursive query but doesn't handle
+        // mutually recursive classes.
         if (ft == t) continue;
 
         if (!isTypeDefaultInitializable(context, ft)) return false;
