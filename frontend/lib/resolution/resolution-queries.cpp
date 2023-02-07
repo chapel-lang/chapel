@@ -2657,7 +2657,6 @@ lookupCalledExpr(Context* context,
       if (auto compType = t->getCompositeType()) {
         receiverScopes =
           Resolver::gatherReceiverAndParentScopesForType(context, compType);
-        //receiverScopes.emplace_back(scopeForId(context, compType->id()));
       }
     }
   }
@@ -2684,7 +2683,6 @@ lookupCalledExprConsideringReceiver(Context* context,
       if (auto compType = t->getCompositeType()) {
         receiverScopes =
           Resolver::gatherReceiverAndParentScopesForType(context, compType);
-        //receiverScopes.emplace_back(scopeForId(context, compType->id()));
       }
     }
   }
