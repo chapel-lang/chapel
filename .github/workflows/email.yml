@@ -60,7 +60,7 @@ jobs:
         run: |
               merge_log=$(git show 036bd184ae | tail -n +5)
               echo "$merge_log" 
-              echo "MERGE="$merge_log"  "  >> $GITHUB_ENV    
+              echo "MERGE=$(echo $merge_log)"  >> $GITHUB_ENV    
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v34
