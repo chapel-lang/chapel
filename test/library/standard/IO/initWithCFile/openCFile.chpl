@@ -7,7 +7,7 @@ module m {
     extern proc openTestFile(): c_FILE;
 
     try! {
-        var f = openfp(openTestFile(), hints = ioHintSet.fromFlag(QIO_HINT_OWNED));
+        var f = new file(openTestFile(), hints = ioHintSet.fromFlag(QIO_HINT_OWNED));
         var r = f.reader();
         write(r.readLine());
     }

@@ -199,7 +199,7 @@ Files
 
 There are several functions that open a file and return a :record:`file`
 including :proc:`open`, :proc:`openTempFile`, :proc:`openmem`, :proc:`openfd`,
-and :proc:`openfp`.
+and the :record:`file` initializer that takes a :type:`~CTypes.c_FILE` argument.
 
 Once a file is open, it is necessary to create associated channel(s) - see
 :proc:`file.reader` and :proc:`file.writer` - to write to and/or read from the
@@ -276,7 +276,7 @@ more details on the situation in which this kind of data race can occur.
   descriptor's current position. Therefore, only one channel should be created
   for files created in the following situations:
 
-    * with :proc:`openfp`
+    * with the file initializer that takes a :type:`~CTypes.c_FILE` argument
     * with :proc:`openfd` when provided a non-seekable system file descriptor
 
 
@@ -1557,6 +1557,66 @@ operator file.=(ref ret:file, x:file) {
   ret._file_internal = x._file_internal;
 }
 
+private proc initHelper(ref f: file, fp: c_FILE, hints=ioHintSet.empty,
+                        style:iostyleInternal = defaultIOStyleInternal()) throws {
+  var local_style = style;
+  f._home = here;
+  var err = qio_file_init(f._file_internal, fp, -1, hints._internal,
+                          local_style, 1);
+
+  // On exit either f._file_internal.ref_cnt == 1, or f._file_internal is NULL.
+  // error should be nonzero in the latter case.
+  if err {
+    var path_cs:c_string;
+    var path_err = qio_file_path_for_fp(fp, path_cs);
+    var path = if path_err then "unknown"
+                           else createStringWithNewBuffer(path_cs,
+                                                          policy=decodePolicy.replace);
+    chpl_free_c_string(path_cs);
+    try ioerror(err, "in init", path);
+  }
+}
+
+@unstable "initializing a file with a style argument is unstable"
+proc file.init(fp: c_FILE, hints=ioHintSet.empty, style:iostyle) throws {
+  this.init();
+
+  initHelper(this, fp, hints, style: iostyleInternal);
+}
+
+/*
+Create a Chapel :record:`file` that wraps around an open C file. A pointer to
+a C ``FILE`` object can be obtained via Chapel's
+:ref:`C Interoperability <primers-C-interop-using-C>` functionality.
+
+.. note::
+
+  This is an alternative way to create a :record:`file`.  The main way to do so
+  is via the :proc:`open` function.
+
+Once the Chapel file is created, you will need to use a :proc:`file.reader` or
+:proc:`file.writer` to create a channel to perform I/O operations on the C file.
+
+.. note::
+
+  The resulting file value should only be used with one :record:`channel` at a
+  time. The I/O system will ignore the channel offsets when reading or writing
+  to a file opened using this initializer.
+
+
+:arg fp: a pointer to a C ``FILE``. See :type:`~CTypes.c_FILE`.
+:arg hints: optional argument to specify any hints to the I/O system about
+            this file. See :record:`ioHintSet`.
+:returns: an open :record:`file` corresponding to the C file.
+
+:throws SystemError: Thrown if the C file could not be retrieved.
+*/
+proc file.init(fp: c_FILE, hints=ioHintSet.empty) throws {
+  this.init();
+
+  initHelper(this, fp, hints);
+}
+
 pragma "no doc"
 proc file.checkAssumingLocal() throws {
   if is_c_nil(_file_internal) then
@@ -1974,7 +2034,7 @@ private proc openfdHelper(fd: c_int, hints = ioHintSet.empty,
   return ret;
 }
 
-@unstable "openfp with a style argument is unstable"
+deprecated "openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead"
 proc openfp(fp: c_FILE, hints=ioHintSet.empty, style:iostyle):file throws {
   return openfpHelper(fp, hints, style: iostyleInternal);
 }
@@ -2002,12 +2062,13 @@ Once the Chapel file is created, you will need to use a :proc:`file.reader` or
 
 :throws SystemError: Thrown if the C file could not be retrieved.
  */
+deprecated "openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead"
 proc openfp(fp: c_FILE, hints=ioHintSet.empty):file throws {
   return openfpHelper(fp, hints);
 }
 
 pragma "last resort"
-deprecated "'_file' is deprecated; use the variant of 'openfp' that takes a 'c_FILE' instead"
+deprecated "'_file' is deprecated; use the file initializer that takes a 'c_FILE' instead"
 proc openfp(fp: _file, hints=ioHintSet.empty):file throws {
   return openfpHelper(fp, hints);
 }
@@ -6409,13 +6470,15 @@ pragma "no doc"
 extern proc chpl_cstdout():c_FILE;
 /* standard output, otherwise known as file descriptor 1 */
 const stdout:fileWriter(iokind.dynamic, true);
-stdout = try! openfp(chpl_cstdout()).writer();
+stdout = try! (new file(chpl_cstdout())).writer();
+
 
 pragma "no doc"
 extern proc chpl_cstderr():c_FILE;
 /* standard error, otherwise known as file descriptor 2 */
 const stderr:fileWriter(iokind.dynamic, true);
-stderr = try! openfp(chpl_cstderr()).writer();
+stderr = try! (new file(chpl_cstderr())).writer();
+
 /* Equivalent to ``stdin.read``. See :proc:`channel.read` */
 proc read(ref args ...?n):bool throws {
   return stdin.read((...args));
