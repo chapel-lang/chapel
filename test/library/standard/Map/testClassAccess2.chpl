@@ -10,7 +10,7 @@ proc test() {
   m.add("one", new shared C(1));
   m.add("two", new shared C(2));
 
-  var x = m.getValue("one");
+  var x = m["one"];
   x!.i = -1;
 
   writeln(m);

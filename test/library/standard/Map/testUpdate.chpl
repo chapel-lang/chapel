@@ -29,18 +29,8 @@ proc test1() {
 }
 test1();
 
-// Similar test but with a parSafe=true map.
-proc test2() {
-  var m = new map(int, r, parSafe=true);
-  for i in 0..7 do m.add(i, new r(0));
-
-  coforall i in 0..7 do m.update(i, new myWorker2());
-  for i in 0..7 do assert(m.getValue(i).x == i);
-}
-test2();
-
 // Now a non-parsafe test using a FCF instead.
-proc test3() {
+proc test2() {
   var m = new map(int, r);
   for i in 0..7 do m.add(i, new r(0));
 
@@ -51,7 +41,7 @@ proc test3() {
       return none;
     });
 }
-test3();
+test2();
 
 record myWorker3 {
   proc this(const ref key, ref val) throws {
@@ -62,7 +52,7 @@ record myWorker3 {
   }
 }
 
-proc test4() {
+proc test3() {
   var m = new map(int, r);
   for i in 0..7 do m.add(i, new r(0));
 
@@ -70,12 +60,12 @@ proc test4() {
     try {
       m.update(i, new myWorker3());
     } catch e: IllegalArgumentError {
-      for i in 0..7 do assert(m.getValue(i).x == i);
+      for i in 0..7 do assert(m[i].x == i);
     } catch {
       halt("Should not reach here!");
     }
 
   return;
 }
-test4();
+test3();
 
