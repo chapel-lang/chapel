@@ -106,6 +106,7 @@ jobs:
            # Optional (recommended) mail server password:
            password: zdochkqdfehdtiek
            # Required mail subject:
+           
            subject: "TESTING -- IGNORE plain body + merge log changes [Chapel Merge] ${{github.event.pull_request.title}}"
            # Required recipients' addresses:
            #to: chapel+commits@discoursemail.com
