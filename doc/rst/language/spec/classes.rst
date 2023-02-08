@@ -1705,7 +1705,10 @@ omitted when the field access is within a method. In this case the
 receiver is the method’s receiver. The receiver clause can also be
 omitted when the field access is within a class declaration. In this
 case the receiver is the instance being implicitly defined or
-referenced.
+referenced. When the receiver clause is omitted, the compiler will
+consider the possibility that the identifier refers to a field after
+considering if it refers to a method formal argument but before
+considering if it refers to a variable in another parent scope.
 
 The identifier in the field access expression indicates which field is
 accessed.
