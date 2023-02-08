@@ -104,7 +104,8 @@ VarFrame* VarScopeVisitor::currentThenFrame() {
   CHPL_ASSERT(frame->scopeAst->isConditional());
   CHPL_ASSERT(frame->subBlocks.size() == 1 || frame->subBlocks.size() == 2);
   VarFrame* ret = frame->subBlocks[0].frame.get();
-  CHPL_ASSERT(ret);
+  // ret can be nullptr if the if branch was skipped at resolution time
+  // (i.e. if the condition was param false).
   return ret;
 }
 VarFrame* VarScopeVisitor::currentElseFrame() {
@@ -479,6 +480,31 @@ void VarScopeVisitor::exit(const Identifier* ast, RV& rv) {
     }
   }
   exitAst(ast);
+}
+
+bool VarScopeVisitor::enter(const Conditional* cond, RV& rv) {
+  enterAst(cond);
+  enterScope(cond, rv);
+
+  auto condRE = rv.byAst(cond->condition());
+  if (condRE.type().isParamTrue()) {
+    // Don't need to process the false branch.
+    cond->thenBlock()->traverse(rv);
+    return false;
+  } else if (condRE.type().isParamFalse()) {
+    if (auto elseBlock = cond->elseBlock()) {
+      elseBlock->traverse(rv);
+    }
+    return false;
+  }
+
+  // Not param-known condition; visit both branches as normal.
+  return true;
+}
+
+void VarScopeVisitor::exit(const Conditional* cond, RV& rv) {
+  exitScope(cond, rv);
+  exitAst(cond);
 }
 
 bool VarScopeVisitor::enter(const AstNode* ast, RV& rv) {

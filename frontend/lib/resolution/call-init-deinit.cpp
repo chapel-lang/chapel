@@ -979,7 +979,7 @@ void CallInitDeinit::handleConditional(const Conditional* cond, RV& rv) {
   VarFrame* elseFrame = currentElseFrame();
 
   // process end-of-block deinits in then/else blocks and then propagate
-  if (!thenFrame->returnsOrThrows) {
+  if (thenFrame && !thenFrame->returnsOrThrows) {
     processDeinitsAndPropagate(thenFrame, frame, rv);
   }
   if (elseFrame && !elseFrame->returnsOrThrows) {
