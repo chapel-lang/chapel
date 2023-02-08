@@ -645,7 +645,7 @@ module Map {
       return true;
     }
 
-    deprecated "'Map.set' is deprecated. Please use 'Map.replace instead."
+    deprecated "'Map.set' is deprecated. Please use 'Map.replace' instead."
     proc set(k: keyType, in v: valType): bool {
       _enter(); defer _leave();
       var (found, slot) = table.findAvailableSlot(k);
