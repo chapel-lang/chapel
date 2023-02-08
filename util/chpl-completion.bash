@@ -80,6 +80,7 @@ _chpl ()
 --gmp \
 --gpu-arch \
 --gpu-block-size \
+--gpu-ptxas-enforce-optimization \
 --hdr-search-path \
 --help \
 --help-env \
