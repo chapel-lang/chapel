@@ -65,7 +65,7 @@ static void testIt(const char* testName,
   assert(identAst->isIdentifier());
   auto fieldAst = parsing::idToAst(context, fieldId);
   assert(fieldAst);
-  assert(fieldAst->isVariable());
+  assert(fieldAst->isVariable() || fieldAst->isFormal());
 
   // check the scope resolver
   const ResolvedFunction* sr = scopeResolveFunction(context, methodId);
@@ -315,7 +315,27 @@ static void test7() {
   // TODO get the above case working with the full resolver
 }
 
+// test with a formal vs a parent class field
+static void test8() {
+  testIt("test8.chpl",
+         R""""(
+            module M {
+              class Base {
+                var x: int;
+              }
 
+              class C : Base {
+              }
+
+              proc C.secondary(x: real) {
+                x;
+              }
+            }
+         )"""",
+         "M.secondary",
+         "M.secondary@4",
+         "M.secondary@3" /* the formal */ );
+}
 
 
 int main() {
@@ -334,6 +354,8 @@ int main() {
 
   test6();
   test7();
+
+  test8();
 
   return 0;
 }
