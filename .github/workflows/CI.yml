@@ -12,9 +12,13 @@ env:
 # NOTE: each job has to specify the container section in its entirety, which is
 # certainly repetetive, but the `defaults` section can't be applied and the `env`
 # context isn't available in the `jobs` section
+
+
 #   [1] https://docs.github.com/en/actions/learn-github-actions/contexts#about-contexts
 #   [2] https://docs.github.com/en/actions/using-jobs/setting-default-values-for-jobs
 # And other yml features like anchors and merge aren't supported
+
+
 #   [3] https://github.com/actions/starter-workflows/issues/162
 
 jobs:

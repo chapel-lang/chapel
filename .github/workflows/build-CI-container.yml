@@ -13,6 +13,8 @@ on:
     # This limits the action so it only builds when this file changes
     paths:
       # unfortunately we can't use ${{env.DOCKERFILE}} here
+
+      
       # see https://docs.github.com/en/actions/learn-github-actions/contexts#context-availability
       - util/packaging/docker/github-ci/Dockerfile
       # also trigger on changes to this workflow file itself
