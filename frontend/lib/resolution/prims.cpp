@@ -254,6 +254,45 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_CALL_RESOLVES:
     case PRIM_METHOD_CALL_RESOLVES:
     case PRIM_CALL_AND_FN_RESOLVES:
+      if (ci.numActuals() >= 1) {
+        UniqueString fnName;
+        if (toParamStringActual(ci.actual(0).type(), fnName)) {
+          bool callAndFnResolved = false;
+
+          std::vector<CallInfoActual> actuals;
+          for (int i = 1; i < ci.numActuals(); i++) {
+            actuals.push_back(ci.actual(i));
+          }
+          auto callInfo = CallInfo(fnName,
+                                   /* calledType */ QualifiedType(),
+                                   /* isMethodCall */ false,
+                                   /* hasQuestionArg */ false,
+                                   /* isParenless */ false,
+                                   std::move(actuals));
+          auto resolvedCall = resolveGeneratedCall(context, call, callInfo,
+                                                   inScope, inPoiScope);
+          const TypedFnSignature* bestCandidate = nullptr;
+          for (auto candidate : resolvedCall.mostSpecific()) {
+            if (candidate != nullptr) {
+              bestCandidate = candidate;
+              break;
+            }
+          }
+
+          if (bestCandidate != nullptr) {
+            // We did find a candidate; resolve the function body.
+            auto resolvedFn = resolveFunction(context, bestCandidate, inPoiScope);
+            // TODO: check for actual resolution errors when resolving function
+            callAndFnResolved = !resolvedFn->returnType().isUnknownKindOrType();
+          }
+
+          type = QualifiedType(QualifiedType::PARAM,
+                               BoolType::get(context, 0),
+                               BoolParam::get(context, callAndFnResolved));
+        }
+      }
+      break;
+
     case PRIM_METHOD_CALL_AND_FN_RESOLVES:
     case PRIM_RESOLVES:
       CHPL_ASSERT(false && "not implemented yet");
