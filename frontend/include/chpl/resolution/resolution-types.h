@@ -1092,14 +1092,13 @@ class ResolvedParamLoop;
 /**
 
   This type represents an associated action (for use within a
-  ResolvedExpression)
+  ResolvedExpression).
 
  */
 class AssociatedAction {
  public:
   enum Action {
-    ASSIGN,       // = from the same type
-    ASSIGN_OTHER, // = from other type
+    ASSIGN,       // same type or different type assign
     COPY_INIT,    // init= from same type
     INIT_OTHER,   // init= from other type
     DEFAULT_INIT,
@@ -1127,8 +1126,10 @@ class AssociatedAction {
   }
   /** Returns which action this represents */
   Action action() const { return action_; }
+
   /** Return which function is called to help with the action */
   const TypedFnSignature* fn() const { return fn_; }
+
   /** Return the ID is associated with the action */
   const ID& id() const { return id_; }
 

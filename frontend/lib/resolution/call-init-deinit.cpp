@@ -490,13 +490,6 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
                                    const QualifiedType& lhsType,
                                    const QualifiedType& rhsType,
                                    RV& rv) {
-
-  if (lhsType.type() == rhsType.type() &&
-      !typeNeedsInitDeinitCall(lhsType.type())) {
-     // TODO: we should resolve it anyway
-     return;
-  }
-
   std::vector<CallInfoActual> actuals;
   actuals.push_back(CallInfoActual(lhsType, UniqueString()));
   actuals.push_back(CallInfoActual(rhsType, UniqueString()));
@@ -510,9 +503,17 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
   auto c = resolveGeneratedCall(context, ast, ci, scope,
                                 resolver.poiScope);
   ResolvedExpression& opR = rv.byAst(ast);
-  resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
-                                        AssociatedAction::ASSIGN,
-                                        ast->id());
+
+  auto op = ast->toOpCall();
+  if (op != nullptr && op->op() == USTR("=")) {
+    // if the syntax shows a '=' call, resolve that into the assign
+    resolver.handleResolvedCall(opR, ast, ci, c);
+  } else {
+    // otherwise, add an associated action
+    resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
+                                          AssociatedAction::ASSIGN,
+                                          ast->id());
+  }
 }
 
 void CallInitDeinit::resolveCopyInit(const AstNode* ast,
@@ -637,7 +638,7 @@ void CallInitDeinit::processInit(VarFrame* frame,
   //  * a Return or Yield
   const AstNode* rhsAst = nullptr;
   auto op = ast->toOpCall();
-  if (op != nullptr&& op->op() == USTR("=")) {
+  if (op != nullptr && op->op() == USTR("=")) {
     rhsAst = op->actual(1);
   } else if (auto vd = ast->toVarLikeDecl()) {
     rhsAst = vd->initExpression();

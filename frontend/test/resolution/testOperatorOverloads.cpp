@@ -50,7 +50,7 @@ static void test1() {
     )""""
   );
   assert(qt2.type() && qt2.type()->isIntType());
-  assert(qt2.kind() == QualifiedType::VAR);
+  assert(qt2.kind() == QualifiedType::CONST_VAR);
   ctx.advanceToNextRevision(false);
 
   // secondary operator method
@@ -65,7 +65,7 @@ static void test1() {
     )""""
   );
   assert(qt3.type() && qt3.type()->isIntType());
-  assert(qt3.kind() == QualifiedType::VAR);
+  assert(qt3.kind() == QualifiedType::CONST_VAR);
   ctx.advanceToNextRevision(false);
 
   // non-method operator
@@ -80,7 +80,7 @@ static void test1() {
     )""""
   );
   assert(qt4.type() && qt4.type()->isIntType());
-  assert(qt4.kind() == QualifiedType::VAR);
+  assert(qt4.kind() == QualifiedType::CONST_VAR);
   ctx.advanceToNextRevision(false);
 }
 
@@ -121,7 +121,7 @@ static void test2() {
     )""""
   );
   assert(qt2.type() && qt2.type()->isIntType());
-  assert(qt2.kind() == QualifiedType::VAR);
+  assert(qt2.kind() == QualifiedType::CONST_VAR);
   ctx.advanceToNextRevision(false);
 }
 
@@ -157,7 +157,7 @@ static void test3() {
     )""""
   );
   assert(qt2.type() && qt2.type()->isIntType());
-  assert(qt2.kind() == QualifiedType::VAR);
+  assert(qt2.kind() == QualifiedType::CONST_VAR);
   ctx.advanceToNextRevision(false);
 
   // overloading more operators
@@ -172,7 +172,7 @@ static void test3() {
     )""""
   );
   assert(qt3.type() && qt3.type()->isIntType());
-  assert(qt3.kind() == QualifiedType::VAR);
+  assert(qt3.kind() == QualifiedType::CONST_VAR);
   ctx.advanceToNextRevision(false);
 
   QualifiedType qt4 = resolveTypeOfXInit(context,
@@ -186,7 +186,7 @@ static void test3() {
     )""""
   );
   assert(qt4.type() && qt4.type()->isBoolType());
-  assert(qt4.kind() == QualifiedType::VAR);
+  assert(qt4.kind() == QualifiedType::CONST_VAR);
   ctx.advanceToNextRevision(false);
 
   QualifiedType qt5 = resolveTypeOfXInit(context,
@@ -201,7 +201,7 @@ static void test3() {
     )""""
   );
   assert(qt5.type() && qt5.type()->isIntType());
-  assert(qt5.kind() == QualifiedType::VAR);
+  assert(qt5.kind() == QualifiedType::CONST_VAR);
   ctx.advanceToNextRevision(false);
 
   // overloading operator for non-compound types
@@ -214,7 +214,7 @@ static void test3() {
     )""""
   );
   assert(qt6.type() && qt6.type()->isBoolType());
-  assert(qt6.kind() == QualifiedType::VAR);
+  assert(qt6.kind() == QualifiedType::CONST_VAR);
   ctx.advanceToNextRevision(false);
 }
 

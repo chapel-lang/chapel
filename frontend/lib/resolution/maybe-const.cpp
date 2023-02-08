@@ -85,6 +85,8 @@ struct AdjustMaybeRefs {
   static Access accessForQualifier(Qualifier q);
   Access currentAccess();
 
+  void constCheckAssociatedActions(const AstNode* ast, RV& rv);
+
   bool enter(const VarLikeDecl* ast, RV& rv);
   void exit(const VarLikeDecl* ast, RV& rv);
 
@@ -169,6 +171,23 @@ AdjustMaybeRefs::Access AdjustMaybeRefs::currentAccess() {
   return access;
 }
 
+void AdjustMaybeRefs::constCheckAssociatedActions(const AstNode* ast, RV& rv) {
+  //ResolvedExpression& re = rv.byAst(ast);
+
+  /*
+  TODO:
+  How do I know if it's assigning from or assigning to?
+   bar(foo())
+  bar could have in intent -> assign to formal from foo()
+  bar could have out intent -> assign from formal to foo()
+
+  what about an 'in' intent call to 'init='/'=' that has a 'ref' rhs?
+  like 'owned' ?
+  */
+
+  // consider each associated action
+}
+
 bool AdjustMaybeRefs::enter(const VarLikeDecl* ast, RV& rv) {
   // visit the type expression, if any
   if (auto typeExpr = ast->typeExpression()) {
@@ -189,11 +208,20 @@ bool AdjustMaybeRefs::enter(const VarLikeDecl* ast, RV& rv) {
     initExpr->traverse(rv);
 
     exprStack.pop_back();
+
+    // const checking for e.g. 'ref x = constVar;'
+    if (access == REF) {
+      ResolvedExpression& initExprRe = rv.byAst(initExpr);
+      if (initExprRe.type().isConst()) {
+        context->error(ast, "cannot create a mutable ref to const");
+      }
+    }
   }
 
   // ask traversal not to visit children since we just visited them
   return false;
 }
+
 void AdjustMaybeRefs::exit(const VarLikeDecl* ast, RV& rv) {
 }
 
@@ -251,6 +279,10 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
     }
 
     re.setMostSpecific(MostSpecificCandidates::getOnly(best));
+
+    // recompute the return type
+    // (all that actually needs to change is the return intent)
+    re.setType(returnType(context, best, resolver.poiScope));
   }
 
   // there should be only one candidate at this point
@@ -278,10 +310,20 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
       if (fa->hasActual()) {
         const AstNode* actualAst = actualAsts[actualIdx];
         Access access = accessForQualifier(fa->formalType().kind());
+
         exprStack.push_back(ExprStackEntry(actualAst, access,
                                            fn, formalIdx));
 
         actualAst->traverse(rv);
+
+        // check for const-ness errors after return-intent overloads
+        // are chosen
+        if (access == REF) {
+          ResolvedExpression& actualRe = rv.byAst(actualAst);
+          if (actualRe.type().isConst()) {
+            context->error(actualAst, "cannot pass const to non-const");
+          }
+        }
 
         exprStack.pop_back();
       }

@@ -837,35 +837,25 @@ void CallResolutionResult::stringify(std::ostream& ss,
 
 
 const char* AssociatedAction::kindToString(Action a) {
-  const char* s = "<unknown>";
   switch (a) {
     case ASSIGN:
-      s = "assign";
-      break;
-    case ASSIGN_OTHER:
-      s = "assign-from-other";
-      break;
+      return "assign";
     case COPY_INIT:
-      s = "copy-init";
-      break;
+      return "copy-init";
     case DEFAULT_INIT:
-      s = "default-init";
-      break;
+      return "default-init";
     case INIT_OTHER:
-      s = "init-from-other";
-      break;
+      return "init-from-other";
     case DEINIT:
-      s = "deinit";
-      break;
+      return "deinit";
     case ITERATE:
-      s = "these";
-      break;
+      return "these";
     case NEW_INIT:
-      s = "new-init";
-      break;
+      return "new-init";
+    // no default to get a warning if new Actions are added
   }
 
-  return s;
+  return "<unknown>";
 }
 
 void AssociatedAction::stringify(std::ostream& ss,

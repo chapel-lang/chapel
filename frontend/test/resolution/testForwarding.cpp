@@ -27,6 +27,8 @@
 
 // an initial example
 static void test1() {
+  printf("test1\n");
+
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
@@ -57,6 +59,8 @@ static void test1() {
 
 // forwarding -> forwarding
 static void test2() {
+  printf("test2\n");
+
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
@@ -90,6 +94,8 @@ static void test2() {
 
 // error for cycle of forwarding
 static void test3() {
+  printf("test3\n");
+
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
@@ -118,6 +124,8 @@ static void test3() {
 
 // forwarding statement that isn't forwarding var
 static void test4() {
+  printf("test4\n");
+
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
@@ -125,6 +133,7 @@ static void test4() {
   const char* contents =
     R""""(
     module M {
+      operator =(ref lhs: int, rhs: int) { }
       operator +=(ref lhs: int, rhs: int) { }
       record Inner {
         var i: int;
@@ -150,6 +159,8 @@ static void test4() {
 
 // two forwarding statements
 static void test5a() {
+  printf("test5a\n");
+
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
@@ -157,6 +168,7 @@ static void test5a() {
   const char* contents =
     R""""(
     module M {
+      operator =(ref lhs: int, rhs: int) { }
       operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;
@@ -186,6 +198,8 @@ static void test5a() {
 }
 // same but expecting ambiguity
 static void test5b() {
+  printf("test5b\n");
+
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
@@ -193,6 +207,7 @@ static void test5b() {
   const char* contents =
     R""""(
     module M {
+      operator =(ref lhs: int, rhs: int) { }
       operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;
@@ -232,6 +247,8 @@ static void test5b() {
 
 // two forwarding statements -> two forwarding statements
 static void test6a() {
+  printf("test6a\n");
+
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
@@ -239,6 +256,7 @@ static void test6a() {
   const char* contents =
     R""""(
     module M {
+      operator =(ref lhs: int, rhs: int) { }
       operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;
@@ -282,6 +300,8 @@ static void test6a() {
 }
 // same, but expecting ambiguity error
 static void test6b() {
+  printf("test6b\n");
+
   Context ctx;
   Context* context = &ctx;
   ErrorGuard guard(context);
@@ -289,6 +309,7 @@ static void test6b() {
   const char* contents =
     R""""(
     module M {
+      operator =(ref lhs: int, rhs: int) { }
       operator +=(ref lhs: int, rhs: int) { }
       record Inner1 {
         var i: int;

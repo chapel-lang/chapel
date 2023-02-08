@@ -180,7 +180,7 @@ static void test6() {
                   var x = f();
                 )"""");
 
-  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.kind() == QualifiedType::CONST_VAR);
   assert(qt.type()->isTupleType());
   auto tt = qt.type()->toTupleType();
   auto rt = tt->toReferentialTuple(context);
@@ -229,7 +229,7 @@ static void test8() {
                   var x = f();
                 )"""");
 
-  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.kind() == QualifiedType::CONST_VAR);
   assert(qt.type()->isTupleType());
   auto tt = qt.type()->toTupleType();
   auto rt = tt->toReferentialTuple(context);
@@ -317,7 +317,7 @@ static void test11() {
                   var x = f( (1,2) );
                 )"""");
 
-  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.kind() == QualifiedType::CONST_VAR);
   assert(qt.type()->isTupleType());
   auto tt = qt.type()->toTupleType();
 
@@ -342,7 +342,7 @@ static void test12() {
                 )"""");
 
 
-  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.kind() == QualifiedType::CONST_VAR);
   assert(qt.type()->isTupleType());
   auto tt = qt.type()->toTupleType();
 
@@ -372,7 +372,7 @@ static void test13() {
                 )"""");
 
 
-  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.kind() == QualifiedType::CONST_VAR);
   assert(qt.type()->isTupleType());
   auto tt = qt.type()->toTupleType();
 
@@ -401,7 +401,7 @@ static void test14() {
                   var x = f( 1, (2.0, 3) );
                 )"""");
 
-  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.kind() == QualifiedType::CONST_VAR);
   assert(qt.type()->isTupleType());
   auto tt = qt.type()->toTupleType();
 
