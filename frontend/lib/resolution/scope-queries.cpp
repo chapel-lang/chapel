@@ -562,19 +562,28 @@ static bool doLookupInScope(Context* context,
     if (onlyInnermost && got) return true;
   }
 
+  LookupConfig newConfig = LOOKUP_DECLS;
+  if (checkUseImport) {
+    newConfig |= LOOKUP_IMPORT_AND_USE;
+  }
+  if (skipPrivateVisibilities) {
+    newConfig |= LOOKUP_SKIP_PRIVATE_VIS;
+  }
+  if (onlyInnermost) {
+    newConfig |= LOOKUP_INNERMOST;
+  }
+
+  // consider the receiver scopes
+  {
+    bool got = false;
+    for (const auto& currentScope : receiverScopes) {
+      got |= doLookupInScope(context, currentScope, {}, resolving,
+                             name, newConfig, checkedScopes, result);
+    }
+    if (onlyInnermost && got) return true;
+  }
 
   if (checkParents) {
-    LookupConfig newConfig = LOOKUP_DECLS;
-    if (checkUseImport) {
-      newConfig |= LOOKUP_IMPORT_AND_USE;
-    }
-    if (skipPrivateVisibilities) {
-      newConfig |= LOOKUP_SKIP_PRIVATE_VIS;
-    }
-    if (onlyInnermost) {
-      newConfig |= LOOKUP_INNERMOST;
-    }
-
     // Search parent scopes, if any, until a module is encountered
     const Scope* cur = nullptr;
     bool reachedModule = false;
@@ -626,22 +635,7 @@ static bool doLookupInScope(Context* context,
     CHPL_ASSERT(!skipClosestConditional);
 
     if (reachedModule) {
-      // Assumption: If a module is encountered, and if there is a receiver
-      // scope, then we were scope-resolving inside of a method call.  In this
-      // case we should perform a lookup in the receiver scopes before looking
-      // in the module scope. For example:
-      // module M {
-      //   type T = int;
-      //   record R { type T; }
-      //   proc R.foo() : T { } // should resolve 'T' to 'R.T', not 'M.T'
-      // }
-      for (const auto& currentScope : receiverScopes) {
-        bool got = doLookupInScope(context, currentScope, {}, resolving,
-                                   name, newConfig, checkedScopes, result);
-        if (onlyInnermost && got) return true;
-      }
-
-      // ... then check the containing module scope
+      // check the containing module scope
       bool got = doLookupInScope(context, cur, {}, resolving, name,
                                  newConfig, checkedScopes, result);
       if (onlyInnermost && got) return true;

@@ -37,7 +37,8 @@ static void testIt(const char* testName,
                    const char* program,
                    const char* methodIdStr,
                    const char* identIdStr,
-                   const char* fieldIdStr) {
+                   const char* fieldIdStr,
+                   bool scopeResolveOnly=false) {
   printf("test %s\n", testName);
   Context ctx;
   Context* context = &ctx;
@@ -73,10 +74,12 @@ static void testIt(const char* testName,
   assert(sr->byId(identAst->id()).toId() == fieldAst->id());
 
   // check the full resolver
-  const ResolvedFunction* r = resolveConcreteFunction(context, methodId);
-  assert(r != nullptr);
+  if (!scopeResolveOnly) {
+    const ResolvedFunction* r = resolveConcreteFunction(context, methodId);
+    assert(r != nullptr);
 
-  assert(r->byId(identAst->id()).toId() == fieldAst->id());
+    assert(r->byId(identAst->id()).toId() == fieldAst->id());
+  }
 }
 
 static void test1r() {
@@ -259,6 +262,62 @@ static void test5() {
 }
 
 
+// test with a nested class
+static void test6() {
+  testIt("test6.chpl",
+         R""""(
+            module M {
+              class Base {
+                var x: int;
+              }
+              class Outer {
+                var x: int;
+                class Nested : Base {
+                  proc bar() {
+                    x;
+                  }
+                }
+              }
+            }
+         )"""",
+         "M.Outer.Nested.bar",
+         "M.Outer.Nested.bar@1",
+         "M.Base@1",
+         /* scope resolve only to avoid errors today */ true);
+  // TODO get the above case working with the full resolver
+}
+
+// test with an outer variable vs a parent class field
+static void test7() {
+  testIt("test7.chpl",
+         R""""(
+            module M {
+              class Base {
+                var x: int;
+              }
+
+              class C : Base {
+              }
+
+              {
+                var x: int;
+
+                proc C.secondary() {
+                  x;
+                }
+              }
+            }
+         )"""",
+         "M.secondary",
+         "M.secondary@2",
+         "M.Base@1",
+         /* scope resolve only to avoid errors today */ true);
+  // TODO get the above case working with the full resolver
+}
+
+
+
+
 int main() {
   test1r();
   test1c();
@@ -272,6 +331,9 @@ int main() {
   test4s();
 
   test5();
+
+  test6();
+  test7();
 
   return 0;
 }

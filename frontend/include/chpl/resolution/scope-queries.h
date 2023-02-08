@@ -55,8 +55,8 @@ namespace resolution {
     'receiverScopes' is the scope of a type containing the name, in the case
     of method calls, field accesses, and resolving a name within a method.
     It is a Scope representing the record/class/union itself for the
-    receiver. If provided, the receiverScopes will be consulted before
-    'scope' and its parents.
+    receiver. If provided, the receiverScopes will be consulted after
+    declarations within 'scope' but before its parents.
 
     The config argument is a group of or-ed together bit flags
     that adjusts the behavior of the lookup:
