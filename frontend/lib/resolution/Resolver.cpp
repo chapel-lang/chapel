@@ -473,14 +473,18 @@ Resolver::gatherReceiverAndParentScopesForType(Context* context,
   ReceiverScopesVec scopes;
 
   if (thisType != nullptr) {
-    // use the regular type system to scope resolve parent classes
-    const Type* currentType = thisType->toCompositeType();
-    while (currentType) {
-      auto ct = currentType->toCompositeType();
+    if (const CompositeType* ct = thisType->getCompositeType()) {
+      // add the scope declaring the type
       scopes.push_back(scopeForId(context, ct->id()));
-      auto bct = ct->toBasicClassType();
-      if (!bct) break;
-      currentType = bct->parentClassType();
+
+      if (auto bct = ct->toBasicClassType()) {
+        // also add scopes for all superclass types
+        auto cur = bct->parentClassType();
+        while (cur != nullptr) {
+          scopes.push_back(scopeForId(context, cur->id()));
+          cur = cur->parentClassType();
+        }
+      }
     }
   }
 
@@ -1741,27 +1745,34 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   if (!parentId.isEmpty()) {
     parentTag = parsing::idToTag(context, parentId);
   }
-  const Scope* mReceiverScopes = nullptr;
-  auto receiverScopess = methodReceiverScopes();
-  if (!receiverScopess.empty()) {
-    mReceiverScopes = receiverScopess.front();
-  }
 
   if (asttags::isModule(parentTag)) {
     // If the id is contained within a module, use typeForModuleLevelSymbol.
     return typeForModuleLevelSymbol(context, id);
-  } else if (asttags::isAggregateDecl(parentTag) || mReceiverScopes) {
+  } else {
     // If the id is contained within a class/record/union, get the
     // resolved field.
     const CompositeType* ct = nullptr;
-    if (parentId == symbol->id()) {
+    if (parentId == symbol->id() && inCompositeType) {
       ct = inCompositeType;
-    } else if (mReceiverScopes) {
-      // TODO: in this case, we should look for parenless methods.
-      ct = methodReceiverType();
     } else {
-      CHPL_ASSERT(false && "case not handled");
+      ct = methodReceiverType();
+      if (auto bct = ct->toBasicClassType()) {
+        // if it's a class, check for parent classes to decide
+        // which type corresponds to the uAST ID parentId
+        while (bct != nullptr) {
+          if (bct->id() == parentId) {
+            // found the matching type
+            ct = bct;
+            break;
+          }
+          // otherwise, try the parent class type
+          bct = bct->parentClassType();
+        }
+      }
     }
+
+    CHPL_ASSERT(ct); // or else, pattern not handled yet
 
     if (ct) {
       auto newDefaultsPolicy = defaultsPolicy;

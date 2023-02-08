@@ -73,7 +73,7 @@ static void testIt(const char* testName,
   assert(sr->byId(identAst->id()).toId() == fieldAst->id());
 
   // check the full resolver
-  const ResolvedFunction* r = scopeResolveFunction(context, methodId);
+  const ResolvedFunction* r = resolveConcreteFunction(context, methodId);
   assert(r != nullptr);
 
   assert(r->byId(identAst->id()).toId() == fieldAst->id());
