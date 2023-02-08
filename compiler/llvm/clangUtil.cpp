@@ -30,6 +30,7 @@
 #include <cstring>
 #include <cstdio>
 #include <sstream>
+#include <fstream>
 
 #ifdef HAVE_LLVM
 #include "clang/AST/GlobalDecl.h"
@@ -4046,6 +4047,30 @@ static llvm::CodeGenFileType getCodeGenFileType() {
   }
 }
 
+static void stripPtxDebugDirective(const std::string& artifactFilename) {
+  std::string line;
+  std::vector<std::string> lines;
+  std::string prefix = ".target";
+  std::string suffix = ", debug";
+  {
+    std::ifstream ptxFile(artifactFilename);
+    while (std::getline(ptxFile, line)) {
+      if (line.compare(0, prefix.size(), prefix) == 0 /* line.starts_with(".target") */ &&
+          line.compare(line.size() - suffix.size(), suffix.size(), suffix) == 0 /* line.ends_with(", debug") */) {
+        line.resize(line.size() - suffix.size());
+      }
+      lines.push_back(std::move(line));
+    }
+  }
+  {
+    std::ofstream ptxFile(artifactFilename);
+    for (const auto& line : lines) {
+      ptxFile << line << std::endl;
+    }
+  }
+
+}
+
 static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
                                   const std::string& ptxObjectFilename,
                                   const std::string& fatbinFilename) {
@@ -4057,7 +4082,30 @@ static void makeBinaryLLVMForCUDA(const std::string& artifactFilename,
     USR_FATAL("Command 'fatbinary' not found\n");
   }
 
+  std::string ptxasFlags = "";
+
+  if (fGpuPtxasEnforceOpt) {
+    // When --gpu-ptxas-enforce-opt is set and --fast is used,
+    // pass -O3 to ptxas even if -g is set. Clang's -g output
+    // produces code with debugging directives incompatible
+    // with -O3, so then strip those directives.
+
+    ptxasFlags = fFastFlag ? "-O3" : "-O0";
+    if (debugCCode) ptxasFlags += " -lineinfo";
+
+    // Kind of a hack; manually turn
+    //   .target sm_60, debug
+    // into
+    //   .target sm_60
+    // because we can't configure clang to not force
+    // full debug info.
+    if (debugCCode && fFastFlag) {
+      stripPtxDebugDirective(artifactFilename);
+    }
+  }
+
   std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + CHPL_GPU_ARCH +
+                       " " + ptxasFlags + " " +
                        std::string(" --output-file ") +
                        ptxObjectFilename.c_str() +
                        " " + artifactFilename.c_str();
