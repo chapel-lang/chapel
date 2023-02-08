@@ -101,7 +101,7 @@ jobs:
               Author: ${{ env.AUTHOR}} 
               Link: ${{github.event.pull_request._links.html.href}}            
               Log Message:
-                          ${{env.MERGE}} 
+                          "${{env.MERGE}}"
                           
               Compare: ${{env.COMPARE_URL}} 
               Diff: ${{github.event.pull_request.diff_url}}
