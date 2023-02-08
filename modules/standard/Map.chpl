@@ -647,15 +647,7 @@ module Map {
 
     deprecated "'Map.set' is deprecated. Please use 'Map.replace' instead."
     proc set(k: keyType, in v: valType): bool {
-      _enter(); defer _leave();
-      var (found, slot) = table.findAvailableSlot(k);
-      if !found {
-        return false;
-      }
-
-      table.fillSlot(slot, k, v);
-
-      return true;
+      return this.replace(k, v);
     }
 
     /*
