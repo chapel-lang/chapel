@@ -105,9 +105,9 @@ const Scope* Scope::parentModuleScope() const {
 void Scope::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
   ss << "Scope ";
   ss << tagToString(tag());
-  ss << " ";
+  ss << " kind=";
   id().stringify(ss, stringKind);
-  ss << " ";
+  ss << " numDeclared=";
   ss << std::to_string(numDeclared());
 }
 
@@ -161,7 +161,7 @@ void VisibilitySymbols::stringify(std::ostream& ss,
 
   for (auto pair : names_) {
     ss << " " << pair.first.c_str();
-    if (!pair.second.isEmpty()) {
+    if (pair.first != pair.second) {
       ss << " as " << pair.second.c_str();
     }
   }
@@ -178,7 +178,7 @@ void ResolvedVisibilityScope::stringify(std::ostream& ss,
 
   int i = 0;
   for (auto clause : visibilityClauses_) {
-    ss << "clause " << i << "(";
+    ss << "  clause " << i << "(";
     clause.stringify(ss, stringKind);
     ss << ")";
     i++;

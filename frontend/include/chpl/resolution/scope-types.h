@@ -613,14 +613,6 @@ class ResolvedVisibilityScope {
                                  std::move(n));
     visibilityClauses_.push_back(std::move(elt));
   }
-  // temporary function
-  void addVisibilityClause(const Scope* scope, VisibilitySymbols::Kind kind,
-                           bool isPrivate,
-                           std::vector<std::pair<UniqueString,UniqueString>> n)
-  {
-    return addVisibilityClause(scope, kind, isPrivate,
-                               VisibilitySymbols::REGULAR_SCOPE, std::move(n));
-  }
 
   bool operator==(const ResolvedVisibilityScope& other) const {
     return scope_ == other.scope_ &&
