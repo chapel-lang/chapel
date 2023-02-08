@@ -24,6 +24,9 @@
 #include "chpl/uast/all-uast.h"
 #include "InitResolver.h"
 
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/SmallVector.h"
+
 namespace chpl {
 namespace resolution {
 
@@ -38,6 +41,9 @@ namespace resolution {
    QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(CONTEXT)))
 
 struct Resolver {
+  // types used below
+  using ReceiverScopesVec = llvm::SmallVector<const Scope*, 3>;
+
   // inputs to the resolution process
   Context* context = nullptr;
   const uast::AstNode* symbol = nullptr;
@@ -62,9 +68,8 @@ struct Resolver {
   std::set<ID> instantiatedFieldOrFormals;
   std::set<ID> splitInitTypeInferredVariables;
   const uast::Call* inLeafCall = nullptr;
-  bool receiverScopeComputed = false;
-  const Scope* savedReceiverScope = nullptr;
-  const types::CompositeType* savedReceiverType = nullptr;
+  bool receiverScopesComputed = false;
+  ReceiverScopesVec savedReceiverScopes;
   Resolver* parentResolver = nullptr;
   owned<InitResolver> initResolver = nullptr;
 
@@ -190,6 +195,12 @@ struct Resolver {
                        const PoiScope* poiScope,
                        ResolutionResultByPostorderID& byPostorder);
 
+  // set up Resolver to scope resolve a parent class type expression
+  static Resolver
+  createForParentClassScopeResolve(Context* context,
+                                   const uast::AggregateDecl* decl,
+                                   ResolutionResultByPostorderID& byPostorder);
+
   // set up Resolver to resolve a param for loop body
   static Resolver paramLoopResolver(Resolver& parent,
                                     const uast::For* loop,
@@ -204,11 +215,22 @@ struct Resolver {
    */
   types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
 
-  /* Compute the receiver scope (when resolving a method)
-     and return nullptr if it is not applicable.
+  /* Gather scopes for a given receiver decl and all its parents */
+  static ReceiverScopesVec
+  gatherReceiverAndParentScopesForDeclId(Context* context,
+                                         ID aggregateDeclId);
+  /* Gather scopes for a given receiver type and all its parents */
+  static ReceiverScopesVec
+  gatherReceiverAndParentScopesForType(Context* context,
+                                       const types::Type* thisType);
+
+
+  /* Compute the receiver scopes (when resolving a method)
+     and return an empty vector if it is not applicable.
    */
-  const Scope* methodReceiverScope(bool recompute = false);
-  /* Compute the receiver scope (when resolving a method)
+  ReceiverScopesVec methodReceiverScopes(bool recompute = false);
+
+  /* Compute the receiver type (when resolving a method)
      and return nullptr if it is not applicable.
    */
   const types::CompositeType* methodReceiverType();
@@ -394,10 +416,10 @@ struct Resolver {
 
   std::vector<BorrowedIdsWithName>
   lookupIdentifier(const uast::Identifier* ident,
-                   const Scope* receiverScope);
+                   llvm::ArrayRef<const Scope*> receiverScopes);
 
   bool resolveIdentifier(const uast::Identifier* ident,
-                         const Scope* receiverScope);
+                         llvm::ArrayRef<const Scope*> receiverScopes);
 
   /* Resolver keeps a stack of scopes and a stack of decls.
      enterScope and exitScope update those stacks. */

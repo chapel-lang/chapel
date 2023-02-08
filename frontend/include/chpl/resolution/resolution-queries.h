@@ -123,9 +123,20 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
                                         DefaultsPolicy defaultsPolicy);
 
 /**
-  Return true if 'name' is the name of a field for type 't'
+  If 'name' is the name of a field for type 't', returns a non-null pointer;
+  Otherwise, returns 'nullptr'.
+
+  The returned pointer will point to the type containing the field.
+  For records and unions, that will just be 't'.
+  For classes, it won't necessarily be 't', since a field
+  might come from a superclass. If the field comes from a superclass,
+  this function will return the BasicClass type for the superclass
+  that contains the field directly.
+
 */
-bool isNameOfField(Context* context, UniqueString name, const types::Type* t);
+const types::CompositeType* isNameOfField(Context* context,
+                                          UniqueString name,
+                                          const types::Type* t);
 
 /**
   Computes the version of a type assuming that defaults for generics

@@ -33,13 +33,15 @@ static void test1() {
 
   auto path = UniqueString::get(context, "test1.chpl");
   std::string contents =
-    " record r {\n"
-    "   proc doPrimary() {}\n"
-    " }\n"
-    " proc r.doSecondary() {}\n"
-    " var obj: r;\n"
-    " obj.doPrimary();\n"
-    " obj.doSecondary();\n";
+    R""""(
+      record r {
+        proc doPrimary() {}
+      }
+      proc r.doSecondary() {}
+      var obj: r;
+      obj.doPrimary();
+      obj.doSecondary();
+    )"""";
 
   setFileText(context, path, contents);
 
@@ -202,7 +204,7 @@ static void test4() {
   Context* context = &ctx;
   ErrorGuard guard(context);
 
-  auto path = UniqueString::get(context, "test3.chpl");
+  auto path = UniqueString::get(context, "test4.chpl");
   std::string contents =
     R""""(
     module A {
@@ -263,14 +265,16 @@ static void test5() {
   Context* context = &ctx;
   ErrorGuard guard(context);
 
-  auto path = UniqueString::get(context, "test1.chpl");
+  auto path = UniqueString::get(context, "test5.chpl");
   std::string contents =
-    " record r {\n"
-    "   var r = 1;\n"
-    "   proc doPrimary() {}\n"
-    " }\n"
-    " var obj: r;\n"
-    " obj.doPrimary();\n";
+    R""""(
+      record r {
+        var r = 1;
+        proc doPrimary() {}
+      }
+      var obj: r;
+      obj.doPrimary();
+    )"""";
 
   setFileText(context, path, contents);
 
@@ -310,12 +314,41 @@ static void test5() {
   assert(tfsCallPrimary->formalType(0).type() == qtR.type());
 }
 
+static void test6() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+      class A {
+        var field: int;
+        proc init() { }
+      }
+      class B : A {
+        proc init() { }
+      }
+      class C : B {
+        proc init() { }
+      }
+
+      extern proc foo(): unmanaged C;
+      var obj = foo();
+      var x = obj.field;
+    )"""";
+
+  QualifiedType initType = resolveTypeOfXInit(context, program);
+  assert(initType.type()->isIntType());
+}
+
+
 int main() {
   test1();
   test2();
   test3();
   test4();
   test5();
+  test6();
 
   return 0;
 }

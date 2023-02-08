@@ -33,6 +33,9 @@
 #include "InitResolver.h"
 #include "VarScopeVisitor.h"
 
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/SmallVector.h"
+
 #include <cstdio>
 #include <set>
 #include <string>
@@ -337,6 +340,20 @@ Resolver::createForParentClass(Context* context,
   return ret;
 }
 
+// set up Resolver to scope resolve a parent class type expression
+Resolver
+Resolver::createForParentClassScopeResolve(Context* context,
+                                           const AggregateDecl* decl,
+                                           ResolutionResultByPostorderID& byId)
+{
+  auto ret = Resolver(context, decl, byId, /* poiScope */ nullptr);
+  ret.defaultsPolicy = DefaultsPolicy::USE_DEFAULTS;
+  ret.byPostorder.setupForSymbol(decl);
+  ret.scopeResolveOnly = true;
+  return ret;
+}
+
+
 // set up Resolver to resolve a param loop
 Resolver
 Resolver::paramLoopResolver(Resolver& parent,
@@ -382,42 +399,157 @@ types::QualifiedType Resolver::typeErr(const uast::AstNode* ast,
   return t;
 }
 
-const Scope* Resolver::methodReceiverScope(bool recompute) {
-  if (recompute) {
-    receiverScopeComputed = false;
-  }
+/**
+  Find scopes for superclasses of a class.  The passed ID should refer to a
+  Class declaration node.  If not, this function will return an empty vector.
 
-  if (receiverScopeComputed) return savedReceiverScope;
+  This function is temporary and should only be used in scopeResolveOnly mode.
+  */
+static const std::vector<const Scope*>&
+gatherParentClassScopesForScopeResolving(Context* context, ID classDeclId) {
+  QUERY_BEGIN(gatherParentClassScopesForScopeResolving, context, classDeclId);
 
-  if (typedSignature && typedSignature->untyped()->isMethod()) {
-    if (scopeResolveOnly) {
-      auto* untyped = typedSignature->untyped();
-      auto thisFormal = untyped->formalDecl(0)->toFormal();
-      auto type = thisFormal->typeExpression();
-      if (type == nullptr) {
-        // `this` formals of primary methods have no type expression. They are,
-        // however, in primary methods, so the method's parent is the aggregate
-        // type whose scope should be used.
+  std::vector<const Scope*> result;
 
-        // TODO can typedSignature->id() ever not refer to a Function in this case?
-        auto recordOrClassId = parsing::idToParentId(context,
-                                                     typedSignature->id());
-        savedReceiverScope = scopeForId(context, recordOrClassId);
-      } else if (auto ident = type->toIdentifier()) {
-        auto re = byPostorder.byAst(ident);
-        if (re.toId().isEmpty() == false) {
-          savedReceiverScope = scopeForId(context, re.toId());
+  ID curId = classDeclId;
+
+  while (!curId.isEmpty()) {
+    if (auto ast = parsing::idToAst(context, curId)) {
+      if (auto c = ast->toClass()) {
+        if (const AstNode* parentClassExpr = c->parentClass()) {
+          // Resolve the parent class type expression
+          ResolutionResultByPostorderID r;
+          auto visitor =
+            Resolver::createForParentClassScopeResolve(context, c, r);
+          parentClassExpr->traverse(visitor);
+
+          ResolvedExpression& re = r.byAst(parentClassExpr);
+          if (re.toId().isEmpty()) {
+            context->error(parentClassExpr, "invalid parent class expression");
+          } else {
+            result.push_back(scopeForId(context, re.toId()));
+            curId = re.toId();
+            continue; // keep going with parent classes of that class
+          }
         }
       }
-    } else if (auto receiverType = typedSignature->formalType(0).type()) {
-      if (auto compType = receiverType->getCompositeType()) {
-        savedReceiverScope = scopeForId(context, compType->id());
+    }
+    break; // stop if we get to this point
+  }
+
+  return QUERY_END(result);
+}
+
+
+
+Resolver::ReceiverScopesVec
+Resolver::gatherReceiverAndParentScopesForDeclId(Context* context,
+                                                 ID aggregateDeclId) {
+  ReceiverScopesVec scopes;
+
+  if (aggregateDeclId.isEmpty()) {
+    return scopes;
+  }
+
+  // use temporary code to scope resolve the parent class Identifiers
+  scopes.push_back(scopeForId(context, aggregateDeclId));
+  // if it's a class type, also gather the parent class scopes
+  auto tag = parsing::idToTag(context, aggregateDeclId);
+  if (asttags::isClass(tag)) {
+
+    const std::vector<const Scope*>& v =
+      gatherParentClassScopesForScopeResolving(context, aggregateDeclId);
+
+    scopes.append(v.begin(), v.end());
+  }
+
+  return scopes;
+}
+
+Resolver::ReceiverScopesVec
+Resolver::gatherReceiverAndParentScopesForType(Context* context,
+                                               const types::Type* thisType) {
+  ReceiverScopesVec scopes;
+
+  if (thisType != nullptr) {
+    if (const CompositeType* ct = thisType->getCompositeType()) {
+      // add the scope declaring the type
+      scopes.push_back(scopeForId(context, ct->id()));
+
+      if (auto bct = ct->toBasicClassType()) {
+        // also add scopes for all superclass types
+        auto cur = bct->parentClassType();
+        while (cur != nullptr) {
+          scopes.push_back(scopeForId(context, cur->id()));
+          cur = cur->parentClassType();
+        }
       }
     }
   }
 
-  receiverScopeComputed = true;
-  return savedReceiverScope;
+  return scopes;
+}
+
+Resolver::ReceiverScopesVec Resolver::methodReceiverScopes(bool recompute) {
+  if (recompute) {
+    receiverScopesComputed = false;
+  }
+
+  if (receiverScopesComputed) return savedReceiverScopes;
+
+  if (!scopeResolveOnly &&
+      typedSignature &&
+      typedSignature->untyped()->isMethod()) {
+    // use type information to compute the receiver type
+    auto receiverType = typedSignature->formalType(0).type();
+    // and use that to compute the scopes
+    savedReceiverScopes =
+      gatherReceiverAndParentScopesForType(context, receiverType);
+  } else {
+    // Use scope-resolver logic to compute the receiver scopes.
+
+    // If receiver type is specified by a simple identifier, determine it.
+    // For more complicated receiver types we cannot yet gather any information.
+
+    ID methodId;
+    const Formal* thisFormal = nullptr;
+    if (typedSignature && typedSignature->untyped()->isMethod()) {
+      thisFormal = typedSignature->untyped()->formalDecl(0)->toFormal();
+      methodId = typedSignature->id();
+    }
+
+    if (thisFormal == nullptr) {
+      // if there is no typed signature, fall back to computing receiver type
+      // from an identifier
+      if (auto func = this->symbol->toFunction()) {
+        thisFormal = func->thisFormal();
+        methodId = this->symbol->id();
+      }
+    }
+
+    if (thisFormal) {
+      auto type = thisFormal->typeExpression();
+      ID idForTypeDecl;
+      if (type == nullptr) {
+        // `this` formals of primary methods have no type expression. They
+        // are, however, in primary methods, so the method's parent is the
+        // aggregate type whose scope should be used.
+
+        idForTypeDecl = parsing::idToParentId(context, methodId);
+      } else if (auto ident = type->toIdentifier()) {
+        idForTypeDecl = byPostorder.byAst(ident).toId();
+      }
+
+      // TODO: gatherReceiverAndParentScopesForDeclId is intended
+      // to support scopeResolveOnly but this code is executed in other
+      // cases. Does it need to be?
+      savedReceiverScopes =
+        gatherReceiverAndParentScopesForDeclId(context, idForTypeDecl);
+    }
+  }
+
+  receiverScopesComputed = true;
+  return savedReceiverScopes;
 }
 
 const CompositeType* Resolver::methodReceiverType() {
@@ -428,6 +560,7 @@ const CompositeType* Resolver::methodReceiverType() {
       }
     }
   }
+
   return nullptr;
 }
 
@@ -943,7 +1076,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       // This should not apply to parenthesized expressions.
       if (isFormalThis &&
           typeExprT.type() != nullptr && typeExprT.type()->isClassType() &&
-          typeExpr->isIdentifier()) {
+          (typeExpr == nullptr || typeExpr->isIdentifier())) {
         auto ct = typeExprT.type()->toClassType();
         auto dec = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
         typeExprT = QualifiedType(typeExprT.kind(),
@@ -1616,23 +1749,34 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   if (!parentId.isEmpty()) {
     parentTag = parsing::idToTag(context, parentId);
   }
-  const Scope* mReceiverScope = methodReceiverScope();
 
   if (asttags::isModule(parentTag)) {
     // If the id is contained within a module, use typeForModuleLevelSymbol.
     return typeForModuleLevelSymbol(context, id);
-  } else if (asttags::isAggregateDecl(parentTag) || mReceiverScope) {
+  } else {
     // If the id is contained within a class/record/union, get the
     // resolved field.
     const CompositeType* ct = nullptr;
-    if (parentId == symbol->id()) {
+    if (parentId == symbol->id() && inCompositeType) {
       ct = inCompositeType;
-    } else if (mReceiverScope) {
-      // TODO: in this case, we should look for parenless methods.
-      ct = methodReceiverType();
     } else {
-      CHPL_ASSERT(false && "case not handled");
+      ct = methodReceiverType();
+      if (auto bct = ct->toBasicClassType()) {
+        // if it's a class, check for parent classes to decide
+        // which type corresponds to the uAST ID parentId
+        while (bct != nullptr) {
+          if (bct->id() == parentId) {
+            // found the matching type
+            ct = bct;
+            break;
+          }
+          // otherwise, try the parent class type
+          bct = bct->parentClassType();
+        }
+      }
     }
+
+    CHPL_ASSERT(ct); // or else, pattern not handled yet
 
     if (ct) {
       auto newDefaultsPolicy = defaultsPolicy;
@@ -1782,7 +1926,7 @@ void Resolver::exit(const Literal* literal) {
 
 std::vector<BorrowedIdsWithName>
 Resolver::lookupIdentifier(const Identifier* ident,
-                           const Scope* receiverScope) {
+                           llvm::ArrayRef<const Scope*> receiverScopes) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
@@ -1795,8 +1939,9 @@ Resolver::lookupIdentifier(const Identifier* ident,
 
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
-  auto vec = lookupNameInScope(context, scope, receiverScope,
-                               ident->name(), config);
+  auto vec =
+      lookupNameInScope(context, scope, receiverScopes, ident->name(), config);
+
   return vec;
 }
 
@@ -1893,7 +2038,7 @@ static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
 }
 
 bool Resolver::resolveIdentifier(const Identifier* ident,
-                                 const Scope* receiverScope) {
+                                 llvm::ArrayRef<const Scope*> receiverScopes) {
   ResolvedExpression& result = byPostorder.byAst(ident);
 
   // for 'proc f(arg:?)' need to set 'arg' to have type AnyType
@@ -1904,7 +2049,7 @@ bool Resolver::resolveIdentifier(const Identifier* ident,
     return false;
   }
 
-  auto vec = lookupIdentifier(ident, receiverScope);
+  auto vec = lookupIdentifier(ident, receiverScopes);
 
   if (vec.size() == 0) {
     result.setType(QualifiedType());
@@ -1980,7 +2125,7 @@ bool Resolver::enter(const Identifier* ident) {
     std::ignore = initResolver->handleUseOfField(ident);
     return false;
   } else {
-    auto ret = resolveIdentifier(ident, methodReceiverScope());
+    auto ret = resolveIdentifier(ident, methodReceiverScopes());
     return ret;
   }
 }
@@ -2057,7 +2202,7 @@ bool Resolver::enter(const NamedDecl* decl) {
     // check for multiple definitions
     LookupConfig config = LOOKUP_DECLS;
     auto vec = lookupNameInScope(context, scope,
-                                 /* receiverScope */ nullptr,
+                                 /* receiverScopes */ {},
                                  decl->name(), config);
 
     if (vec.size() > 0) {
@@ -2516,7 +2661,7 @@ QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
     LookupConfig config = LOOKUP_DECLS | LOOKUP_INNERMOST;
     auto enumScope = scopeForId(context, enumType->id());
     auto vec = lookupNameInScope(context, enumScope,
-                                 /* receiverScope */ nullptr,
+                                 /* receiverScopes */ {},
                                  elementName, config);
     if (vec.size() == 0) {
       return CHPL_TYPE_ERROR(context, UnknownEnumElem, nodeForErr,
@@ -2570,7 +2715,7 @@ void Resolver::exit(const Dot* dot) {
 
     auto modScope = scopeForModule(context, receiver.toId());
     auto vec = lookupNameInScope(context, modScope,
-                                 /* receiverScope */ nullptr,
+                                 /* receiverScopes */ {},
                                  dot->field(), config);
     ResolvedExpression& r = byPostorder.byAst(dot);
     if (vec.size() == 0) {
@@ -2902,10 +3047,11 @@ static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
                         LOOKUP_PARENTS |
                         LOOKUP_INNERMOST;
 
-  const Scope* receiverScope = resolver.methodReceiverScope();
+  auto receiverScopes = resolver.methodReceiverScopes();
 
-  auto vec = lookupNameInScope(resolver.context, scope, receiverScope,
+  auto vec = lookupNameInScope(resolver.context, scope, receiverScopes,
                                intent->name(), config);
+
   if (vec.size() == 1) {
     resolvedId = vec[0].firstId();
     if (resolver.scopeResolveOnly == false) {
