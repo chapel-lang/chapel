@@ -480,7 +480,6 @@ module Map {
       :returns: A copy of the value at position `k` or a sentinel value
                 if the map does not have an entry at position `k`
     */
-    deprecated "'Map.getValue' is deprecated. Please rely on '[]' accessors instead."
     proc getValue(k: keyType, const sentinel: valType) const {
       if !isCopyableType(valType) then
         compilerError('cannot call `getValue()` for non-copyable ' +
