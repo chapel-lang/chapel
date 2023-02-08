@@ -1761,17 +1761,19 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
       ct = inCompositeType;
     } else {
       ct = methodReceiverType();
-      if (auto bct = ct->toBasicClassType()) {
-        // if it's a class, check for parent classes to decide
-        // which type corresponds to the uAST ID parentId
-        while (bct != nullptr) {
-          if (bct->id() == parentId) {
-            // found the matching type
-            ct = bct;
-            break;
+      if (ct != nullptr) {
+        if (auto bct = ct->toBasicClassType()) {
+          // if it's a class, check for parent classes to decide
+          // which type corresponds to the uAST ID parentId
+          while (bct != nullptr) {
+            if (bct->id() == parentId) {
+              // found the matching type
+              ct = bct;
+              break;
+            }
+            // otherwise, try the parent class type
+            bct = bct->parentClassType();
           }
-          // otherwise, try the parent class type
-          bct = bct->parentClassType();
         }
       }
     }
