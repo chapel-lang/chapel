@@ -3290,13 +3290,15 @@ bool Resolver::enter(const uast::Reduce* reduce) {
 }
 
 void Resolver::exit(const uast::Reduce* reduce) {
+}
 
+static bool isTaskIntent(const TaskVar* taskVar) {
+  return taskVar->typeExpression() == nullptr &&
+         taskVar->initExpression() == nullptr;
 }
 
 bool Resolver::enter(const TaskVar* taskVar) {
-  const bool isTaskIntent = taskVar->typeExpression() == nullptr &&
-                            taskVar->initExpression() == nullptr;
-  if (isTaskIntent) {
+  if (isTaskIntent(taskVar)) {
     ID id;
     QualifiedType type;
     ResolvedExpression& result = byPostorder.byAst(taskVar);
@@ -3316,10 +3318,9 @@ bool Resolver::enter(const TaskVar* taskVar) {
     return true;
   }
 }
+
 void Resolver::exit(const TaskVar* taskVar) {
-  const bool isTaskIntent = taskVar->typeExpression() == nullptr &&
-                            taskVar->initExpression() == nullptr;
-  if (isTaskIntent == false) {
+  if (!isTaskIntent(taskVar)) {
     exitScope(taskVar);
   }
 }
