@@ -126,8 +126,13 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
   If 'name' is the name of a field for type 't', returns a non-null pointer;
   Otherwise, returns 'nullptr'.
 
-  For classes, a field might come from a superclass, in which case
-  this function returns the class type that contains the field directly.
+  The returned pointer will point to the type containing the field.
+  For records and unions, that will just be 't'.
+  For classes, it won't necessarily be 't', since a field
+  might come from a superclass. If the field comes from a superclass,
+  this function will return the BasicClass type for the superclass
+  that contains the field directly.
+
 */
 const types::CompositeType* isNameOfField(Context* context,
                                           UniqueString name,

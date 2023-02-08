@@ -2124,7 +2124,6 @@ doIsCandidateApplicableInitial(Context* context,
       // calling a field accessor
       auto ct = ci.actual(0).type().type()->getCompositeType();
       CHPL_ASSERT(ct);
-      CHPL_ASSERT(isNameOfField(context, ci.name(), ct) != nullptr);
       auto containingType = isNameOfField(context, ci.name(), ct);
       CHPL_ASSERT(containingType != nullptr);
       return fieldAccessor(context, containingType, ci.name());
@@ -2640,6 +2639,8 @@ static void considerCompilerGeneratedCandidates(Context* context,
   candidates.push_back(instantiated);
 }
 
+// TODO: merge this with lookupCalledExprConsideringReceiver since
+// it is only ever called within it.
 static std::vector<BorrowedIdsWithName>
 lookupCalledExpr(Context* context,
                  const Scope* scope,

@@ -175,7 +175,7 @@ static void test3c() {
 }
 
 
-// test with class inheritance
+// test with class inheritance & a primary method
 static void test4p() {
   testIt("test4p.chpl",
          R""""(
@@ -211,6 +211,7 @@ static void test4p2() {
          "N.C.primary@1",
          "M.Parent@1");
 }
+// test with class inheritance & a secondary method
 static void test4s() {
   testIt("test4s.chpl",
          R""""(

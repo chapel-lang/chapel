@@ -230,7 +230,7 @@ struct Resolver {
    */
   ReceiverScopesVec methodReceiverScopes(bool recompute = false);
 
-  /* Compute the receiver scopes (when resolving a method)
+  /* Compute the receiver type (when resolving a method)
      and return nullptr if it is not applicable.
    */
   const types::CompositeType* methodReceiverType();

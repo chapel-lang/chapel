@@ -456,12 +456,11 @@ Resolver::gatherReceiverAndParentScopesForDeclId(Context* context,
   // if it's a class type, also gather the parent class scopes
   auto tag = parsing::idToTag(context, aggregateDeclId);
   if (asttags::isClass(tag)) {
+
     const std::vector<const Scope*>& v =
       gatherParentClassScopesForScopeResolving(context, aggregateDeclId);
 
-    for (auto elt : v) {
-      scopes.push_back(elt);
-    }
+    scopes.append(v.begin(), v.end());
   }
 
   return scopes;
@@ -540,6 +539,10 @@ Resolver::ReceiverScopesVec Resolver::methodReceiverScopes(bool recompute) {
       } else if (auto ident = type->toIdentifier()) {
         idForTypeDecl = byPostorder.byAst(ident).toId();
       }
+
+      // TODO: gatherReceiverAndParentScopesForDeclId is intended
+      // to support scopeResolveOnly but this code is executed in other
+      // cases. Does it need to be?
       savedReceiverScopes =
         gatherReceiverAndParentScopesForDeclId(context, idForTypeDecl);
     }
@@ -557,6 +560,7 @@ const CompositeType* Resolver::methodReceiverType() {
       }
     }
   }
+
   return nullptr;
 }
 
