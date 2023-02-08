@@ -38,6 +38,7 @@
 #include "../util/filesystem_help.h"
 
 #include <cstdio>
+#include <regex>
 #include <set>
 #include <string>
 #include <tuple>
@@ -987,7 +988,28 @@ static bool isAstDeprecated(Context* context, const AstNode* ast) {
 
 static bool isAstUnstable(Context* context, const AstNode* ast) {
   auto attr = parsing::idToAttributeGroup(context, ast->id());
-  return attr && attr->isDeprecated();
+  return attr && attr->isUnstable();
+}
+
+static bool isAstFormal(Context* context, const AstNode* ast) {
+  return ast->isFormal();
+}
+
+// When printing the deprecation message to the console we typically want to
+// filter out inline markup used for Sphinx (which is useful for when
+// generating the docs). See:
+// https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
+static std::string
+removeSphinxMarkupFromWarningMessage(const std::string msg) {
+
+  // TODO: Support explicit title and reference targets like in reST direct
+  // hyperlinks (and having only target show up in sanitized message).
+  // TODO: Prefixing content with ! (and filtering it out)
+  // TODO: Prefixing content with ~ (and displaying only the last component)
+  static const auto re = R"(\B\:(mod|proc|iter|data|const|var|param)"
+                         R"(|type|class|record|attr)\:`([!$\w\$\.]+)`\B)";
+  auto ret = std::regex_replace(msg, std::regex(re), "$2");
+  return ret;
 }
 
 static std::string
@@ -1027,6 +1049,8 @@ deprecationWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
       ? createDefaultDeprecationMessage(context, targetNamedDecl)
       : storedMsg.c_str();
 
+  msg = removeSphinxMarkupFromWarningMessage(msg);
+
   CHPL_ASSERT(msg.size() > 0);
   CHPL_REPORT(context, Deprecation, msg, mention, targetNamedDecl);
   return true;
@@ -1063,7 +1087,7 @@ unstableWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
       : storedMsg.c_str();
 
   CHPL_ASSERT(msg.size() > 0);
-  CHPL_REPORT(context, Deprecation, msg, mention, targetNamedDecl);
+  CHPL_REPORT(context, Unstable, msg, mention, targetNamedDecl);
   return true;
 }
 
@@ -1074,12 +1098,26 @@ unstableWarningForIdQuery(Context* context, ID idMention, ID idTarget) {
   return QUERY_END(ret);
 }
 
+static bool
+isMentionOfWarnedTypeInReceiver(Context* context, ID idMention,
+                                ID idTarget) {
+  if (idMention.isEmpty() || idTarget.isEmpty()) return false;
+  if (!anyParentMatches(context, idMention, isAstFormal)) return false;
+  auto attr = parsing::idToAttributeGroup(context, idTarget);
+  if (!attr) return false;
+  if (!attr->isDeprecated() && !attr->isUnstable()) return false;
+  return true;
+}
+
 void
 reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget) {
   auto attr = parsing::idToAttributeGroup(context, idTarget);
 
   // Nothing to do, symbol is not deprecated.
   if (!attr || !attr->isDeprecated()) return;
+
+  // Don't warn for 'this' formals with deprecated types.
+  if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
 
   // Current policy is to skip if the mention is in a deprecated symbol.
   if (anyParentMatches(context, idMention, isAstDeprecated)) return;
@@ -1096,6 +1134,9 @@ reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
 
   // Nothing to do, we do not report unstable things this revision.
   if (!isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE)) return;
+
+  // Don't warn for 'this' formals with unstable types.
+  if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
 
   // Current policy is to skip if the mention is in an unstable symbol.
   if (anyParentMatches(context, idMention, isAstUnstable)) return;

@@ -406,14 +406,6 @@ struct Resolver {
   // prepare a CallInfo by inspecting the called expression and actuals
   CallInfo prepareCallInfoNormalCall(const uast::Call* call);
 
-  // resolve 'new R' for a given record type 'R'
-  void resolveNewForRecord(const uast::New* node,
-                           const types::RecordType* recordType);
-
-  // resolve 'new C' for a given class type 'C', including management
-  void resolveNewForClass(const uast::New* node,
-                          const types::ClassType* classType);
-
   std::vector<BorrowedIdsWithName>
   lookupIdentifier(const uast::Identifier* ident,
                    llvm::ArrayRef<const Scope*> receiverScopes);

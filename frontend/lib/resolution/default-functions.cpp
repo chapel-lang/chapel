@@ -138,7 +138,7 @@ generateInitParts(Context* context,
   QualifiedType qtReceiver;
 
   // If the receiver is a record type, just give it the 'ref' intent.
-  if (compType->isRecordType()) {
+  if (compType->isRecordType() || compType->isUnionType()) {
     qtReceiver = QualifiedType(QualifiedType::REF, compType);
 
   // If the receiver is a basic class C, use 'const in x: borrowed C'.
@@ -149,8 +149,9 @@ generateInitParts(Context* context,
     auto receiverType = ClassType::get(context, basic, manager, decor);
     CHPL_ASSERT(receiverType);
     qtReceiver = QualifiedType(QualifiedType::CONST_IN, receiverType);
+
   } else {
-    CHPL_ASSERT(false && "Not handled yet!");
+    CHPL_ASSERT(false && "Not possible!");
   }
 
   formalTypes.push_back(std::move(qtReceiver));
@@ -185,19 +186,27 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
 
   // push all fields -> formals in order
   for (int i = 0; i < rf.numFields(); i++) {
-    auto qualType = rf.fieldType(i);
-    auto name = rf.fieldName(i);
-    bool hasDefault = rf.fieldHasDefaultValue(i);
-    const uast::Decl* node = nullptr;
+    auto fieldQt = rf.fieldType(i);
+    auto formalName = rf.fieldName(i);
+    bool formalHasDefault = rf.fieldHasDefaultValue(i);
+    const uast::Decl* formalAst = nullptr;
 
-    auto fd = UntypedFnSignature::FormalDetail(name, hasDefault, node);
+    // A field may not have a default value. If it is default-initializable
+    // then the formal should still take a default value (in this case the
+    // default value is for the type, e.g., '0' for 'int'.
+    // TODO: If this isn't granular enough, we can introduce a 'DefaultValue'
+    // type that can be used as a sentinel.
+    formalHasDefault |= isTypeDefaultInitializable(context, fieldQt.type());
+
+    auto fd = UntypedFnSignature::FormalDetail(formalName, formalHasDefault,
+                                               formalAst);
     ufsFormals.push_back(std::move(fd));
 
     // for types & param, use the field kind, for values use 'in' intent
-    if (qualType.isType() || qualType.isParam()) {
-      formalTypes.push_back(qualType);
+    if (fieldQt.isType() || fieldQt.isParam()) {
+      formalTypes.push_back(fieldQt);
     } else {
-      auto qt = QualifiedType(QualifiedType::IN, qualType.type());
+      auto qt = QualifiedType(QualifiedType::IN, fieldQt.type());
       formalTypes.push_back(std::move(qt));
     }
   }

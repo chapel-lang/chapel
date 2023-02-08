@@ -1074,7 +1074,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       // for 'this' formals of class type, adjust them to be borrowed, so
       // e.g. proc C.foo() { } has 'this' of type 'borrowed C'.
       // This should not apply to parenthesized expressions.
-      if (isFormalThis &&
+      if (isFormalThis && typeExpr &&
           typeExprT.type() != nullptr && typeExprT.type()->isClassType() &&
           (typeExpr == nullptr || typeExpr->isIdentifier())) {
         auto ct = typeExprT.type()->toClassType();
@@ -2834,26 +2834,34 @@ getDecoratedClassForNew(Context* context, const New* node,
   return ret;
 }
 
-// TODO: Emit warning about 'new borrowed' being unstable.
-// TODO: How do we handle '?'.
-void Resolver::resolveNewForClass(const New* node,
-                                  const ClassType* classType) {
-  ResolvedExpression& re = byPostorder.byAst(node);
-
-  // TODO: Verify initial class type?
-  auto cls = getDecoratedClassForNew(context, node, classType);
+static void resolveNewForClass(Resolver& rv, const New* node,
+                               const ClassType* classType) {
+  ResolvedExpression& re = rv.byPostorder.byAst(node);
+  auto cls = getDecoratedClassForNew(rv.context, node, classType);
   auto qt = QualifiedType(QualifiedType::VAR, cls);
   re.setType(qt);
 }
 
-void Resolver::resolveNewForRecord(const New* node,
-                                   const RecordType* recordType) {
-  ResolvedExpression& re = byPostorder.byAst(node);
+static void resolveNewForRecord(Resolver& rv, const New* node,
+                                const RecordType* recordType) {
+  ResolvedExpression& re = rv.byPostorder.byAst(node);
 
   if (node->management() != New::DEFAULT_MANAGEMENT) {
-    CHPL_REPORT(context, MemManagementNonClass, node, recordType);
+    CHPL_REPORT(rv.context, MemManagementNonClass, node, recordType);
   } else {
     auto qt = QualifiedType(QualifiedType::VAR, recordType);
+    re.setType(qt);
+  }
+}
+
+static void resolveNewForUnion(Resolver& rv, const New* node,
+                               const UnionType* unionType) {
+  ResolvedExpression& re = rv.byPostorder.byAst(node);
+
+  if (node->management() != New::DEFAULT_MANAGEMENT) {
+    CHPL_REPORT(rv.context, MemManagementNonClass, node, unionType);
+  } else {
+    auto qt = QualifiedType(QualifiedType::VAR, unionType);
     re.setType(qt);
   }
 }
@@ -2884,10 +2892,13 @@ void Resolver::exit(const New* node) {
     CHPL_ASSERT(false && "Expected fully decorated class type");
 
   } else if (auto classType = qtTypeExpr.type()->toClassType()) {
-    resolveNewForClass(node, classType);
+    resolveNewForClass(*this, node, classType);
 
   } else if (auto recordType = qtTypeExpr.type()->toRecordType()) {
-    resolveNewForRecord(node, recordType);
+    resolveNewForRecord(*this, node, recordType);
+
+  } else if (auto unionType = qtTypeExpr.type()->toUnionType()) {
+    resolveNewForUnion(*this, node, unionType);
 
   } else {
     if (node->management() != New::DEFAULT_MANAGEMENT) {
