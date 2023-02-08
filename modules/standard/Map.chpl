@@ -396,10 +396,19 @@ module Map {
 
     pragma "no doc"
     proc const this(k: keyType)
-    where isNonNilableClass(valType) {
-      _warnForParSafeIndexing();
-      compilerError("Cannot index into a map with non-nilable class values. ",
-                    "Use an appropriate accessor method instead.");
+    where isClass(valType) {
+      _enter(); defer _leave();
+      var (found, slot) = table.findFullSlot(k);
+      if !found then
+        boundsCheckHalt("map index " + k:string + " out of bounds");
+      try! {
+        var result = table.table[slot].val.borrow();
+        if isNonNilableClass(valType) {
+          return result!;
+        } else {
+          return result;
+        }
+      }
     }
 
     /* Get a borrowed reference to the element at position `k`.
