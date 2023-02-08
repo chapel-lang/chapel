@@ -80,7 +80,7 @@ jobs:
                 echo "$modified" >> $GITHUB_ENV
                 echo 'EOF' >> $GITHUB_ENV
 
-                modified='$(echo ${{steps.changed-files.outputs.modified_files}} |  sed 's/\,/\\n/g' )''
+                modified='$(echo ${{steps.changed-files.outputs.modified_files}} |  sed 's/\,/\\n/g' )'
                 echo "$added" 
                 echo 'ADDED<<EOF' >> $GITHUB_ENV
                 echo "$ADDED" >> $GITHUB_ENV
