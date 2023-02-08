@@ -4065,8 +4065,15 @@ void Converter::noteAllContainedFixups(BaseAST* ast, int depth) {
   // can copy the AST freely.
 
   if (depth > 0) {
-    if (isModuleSymbol(ast) || isFnSymbol(ast)) {
+    if (isModuleSymbol(ast)) {
       return;
+    }
+    if (auto fn = toFnSymbol(ast)) {
+      if (!fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
+        // ignore functions that are created from building expressions
+        // but aren't represented in the uAST
+        return;
+      }
     }
     if (TypeSymbol* ts = toTypeSymbol(ast)) {
       if (isAggregateType(ts->type)) {
@@ -4400,6 +4407,7 @@ void postConvertApplyFixups(chpl::Context* context) {
     }
   }
 
+  // Fix method receivers
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->_this == nullptr) continue; // not a method
 
