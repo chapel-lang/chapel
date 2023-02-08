@@ -417,14 +417,7 @@ class Scope {
     }
   }
 
-  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
-    ss << "Scope ";
-    ss << tagToString(tag());
-    ss << " ";
-    id().stringify(ss, stringKind);
-    ss << " ";
-    ss << std::to_string(numDeclared());
-  }
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
@@ -478,12 +471,26 @@ class VisibilitySymbols {
     CONTENTS_EXCEPT,
   };
 
+  /** Indicating shadow scopes */
+  enum ShadowScope {
+    // public use / private import / public import all work at the same
+    // scope level as symbols declared within a module, and
+    // REGULAR_SCOPE indicates that.
+    REGULAR_SCOPE = 0,
+
+    // 'private use' aka just 'use' introduces 2 shadow scopes
+    // that appear to be between the module and any parent symbols
+    SHADOW_SCOPE_ONE = 1, // for module contents brought in by a 'private use'
+    SHADOW_SCOPE_TWO = 2, // for module name from a 'private use'
+  };
+
  private:
   const Scope* scope_; // Scope of the Module etc
                        // This could technically be an ID but basically
                        // anything we do with it needs a Scope* anyway.
   Kind kind_ = SYMBOL_ONLY;
   bool isPrivate_ = true;
+  int8_t shadowScopeLevel_ = REGULAR_SCOPE;
 
   // the names/renames:
   //  pair.first is the name as declared
@@ -492,11 +499,17 @@ class VisibilitySymbols {
 
  public:
   VisibilitySymbols() { }
-  VisibilitySymbols(const Scope* scope, Kind kind, bool isPrivate,
+  VisibilitySymbols(const Scope* scope, Kind kind,
+                    bool isPrivate, ShadowScope shadowScopeLevel,
                     std::vector<std::pair<UniqueString,UniqueString>> names)
-    : scope_(scope), kind_(kind), isPrivate_(isPrivate),
+    : scope_(scope), kind_(kind),
+      isPrivate_(isPrivate), shadowScopeLevel_(shadowScopeLevel),
       names_(std::move(names))
-  { }
+  {
+    CHPL_ASSERT(shadowScopeLevel == REGULAR_SCOPE ||
+                shadowScopeLevel == SHADOW_SCOPE_ONE ||
+                shadowScopeLevel == SHADOW_SCOPE_TWO);
+  }
 
   /** Return the imported scope */
   const Scope* scope() const { return scope_; }
@@ -506,6 +519,11 @@ class VisibilitySymbols {
 
   /** Return whether or not the imported symbol is private */
   bool isPrivate() const { return isPrivate_; }
+
+  /** Returns the shadow scope level of the symbols here */
+  ShadowScope shadowScopeLevel() const {
+    return (ShadowScope) shadowScopeLevel_;
+  }
 
   /** Lookup the declared name for a given name
       Returns true if `name` is found in the list of renamed names and
@@ -526,7 +544,8 @@ class VisibilitySymbols {
     return scope_ == other.scope_ &&
            kind_ == other.kind_ &&
            names_ == other.names_ &&
-           isPrivate_ == other.isPrivate_;
+           isPrivate_ == other.isPrivate_ &&
+           shadowScopeLevel_ == other.shadowScopeLevel_;
   }
   bool operator!=(const VisibilitySymbols& other) const {
     return !(*this == other);
@@ -537,6 +556,7 @@ class VisibilitySymbols {
     std::swap(kind_, other.kind_);
     names_.swap(other.names_);
     std::swap(isPrivate_, other.isPrivate_);
+    std::swap(shadowScopeLevel_, other.shadowScopeLevel_);
   }
 
   static bool update(VisibilitySymbols& keep,
@@ -551,6 +571,12 @@ class VisibilitySymbols {
       p.second.mark(context);
     }
   }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /**
@@ -579,9 +605,21 @@ class ResolvedVisibilityScope {
   /** Add a visibility clause */
   void addVisibilityClause(const Scope* scope, VisibilitySymbols::Kind kind,
                            bool isPrivate,
+                           VisibilitySymbols::ShadowScope shadowScopeLevel,
                            std::vector<std::pair<UniqueString,UniqueString>> n)
   {
-    visibilityClauses_.emplace_back(scope, kind, isPrivate, std::move(n));
+    auto elt = VisibilitySymbols(scope, kind,
+                                 isPrivate, shadowScopeLevel,
+                                 std::move(n));
+    visibilityClauses_.push_back(std::move(elt));
+  }
+  // temporary function
+  void addVisibilityClause(const Scope* scope, VisibilitySymbols::Kind kind,
+                           bool isPrivate,
+                           std::vector<std::pair<UniqueString,UniqueString>> n)
+  {
+    return addVisibilityClause(scope, kind, isPrivate,
+                               VisibilitySymbols::REGULAR_SCOPE, std::move(n));
   }
 
   bool operator==(const ResolvedVisibilityScope& other) const {
@@ -601,6 +639,10 @@ class ResolvedVisibilityScope {
       sym.mark(context);
     }
   }
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 /*

@@ -102,9 +102,94 @@ const Scope* Scope::parentModuleScope() const {
   return nullptr;
 }
 
+void Scope::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+  ss << "Scope ";
+  ss << tagToString(tag());
+  ss << " ";
+  id().stringify(ss, stringKind);
+  ss << " ";
+  ss << std::to_string(numDeclared());
+}
+
+void VisibilitySymbols::stringify(std::ostream& ss,
+                                  chpl::StringifyKind stringKind) const {
+  ss << "VisibilitySymbols";
+  if (scope_) {
+    ss << " mod-scope=(";
+    scope_->stringify(ss, stringKind);
+    ss << " )";
+  }
+  const char* kindStr = "<unknown>";
+  switch (kind_) {
+    case SYMBOL_ONLY:
+      kindStr = "symbol-only";
+      break;
+    case ALL_CONTENTS:
+      kindStr = "all-contents";
+      break;
+    case ONLY_CONTENTS:
+      kindStr = "only-contents";
+      break;
+    case CONTENTS_EXCEPT:
+      kindStr = "contents-except";
+      break;
+  }
+  ss << " kind=" << kindStr;
+
+  if (isPrivate_) {
+    ss << " private";
+  } else {
+    ss << " public";
+  }
+
+  const char* shadowStr = "<unknown>";
+  switch (shadowScopeLevel_) {
+    case REGULAR_SCOPE:
+      shadowStr = "regular";
+      break;
+    case SHADOW_SCOPE_ONE:
+      shadowStr = "shadow-scope-one";
+      break;
+    case SHADOW_SCOPE_TWO:
+      shadowStr = "shadow-scope-two";
+      break;
+  }
+
+  if (shadowScopeLevel_ != REGULAR_SCOPE) {
+    ss << " " << shadowStr;
+  }
+
+  for (auto pair : names_) {
+    ss << " " << pair.first.c_str();
+    if (!pair.second.isEmpty()) {
+      ss << " as " << pair.second.c_str();
+    }
+  }
+}
+
+void ResolvedVisibilityScope::stringify(std::ostream& ss,
+                                        chpl::StringifyKind stringKind) const {
+
+  if (scope_) {
+    ss << " cur-scope=(";
+    scope_->stringify(ss, stringKind);
+    ss << " )";
+  }
+
+  int i = 0;
+  for (auto clause : visibilityClauses_) {
+    ss << "clause " << i << "(";
+    clause.stringify(ss, stringKind);
+    ss << ")";
+    i++;
+  }
+}
+
 IMPLEMENT_DUMP(OwnedIdsWithName);
 IMPLEMENT_DUMP(BorrowedIdsWithName);
 IMPLEMENT_DUMP(Scope);
+IMPLEMENT_DUMP(VisibilitySymbols);
+IMPLEMENT_DUMP(ResolvedVisibilityScope);
 IMPLEMENT_DUMP(PoiScope);
 IMPLEMENT_DUMP(InnermostMatch);
 
