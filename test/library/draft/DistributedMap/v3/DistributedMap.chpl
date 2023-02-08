@@ -298,7 +298,7 @@ module DistributedMap {
             return ret;
         }
 
-        proc set(k : keyType, in v: valType) : bool {
+        proc replace(k : keyType, in v: valType) : bool {
             const loc = this._localeFor(k);
             var ret = true;
             on loc {
