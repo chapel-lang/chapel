@@ -74,19 +74,19 @@ jobs:
       - name: Parse changed files
         id: parsed-output
         run: |      
-              modified="$(echo ${{steps.changed-files.outputs.modified_files}} |  sed 's/\,/\\n/g' )"
+              modified="$(echo ${{steps.changed-files.outputs.modified_files}} |  sed 's/\,/\ /g' )"
                 echo "$modified" 
                 echo 'MODIFIED<<EOF' >> $GITHUB_ENV
                 echo "$modified" >> $GITHUB_ENV
                 echo 'EOF' >> $GITHUB_ENV
 
-                modified='$(echo ${{steps.changed-files.outputs.modified_files}} |  sed 's/\,/\\n/g' )'
+                modified='$(echo ${{steps.changed-files.outputs.modified_files}} |  sed 's/\,/\ /g' )'
                 echo "$added" 
                 echo 'ADDED<<EOF' >> $GITHUB_ENV
                 echo "$ADDED" >> $GITHUB_ENV
                 echo 'EOF' >> $GITHUB_ENV
 
-                deleted=$(echo ${{steps.changed-files.outputs.deleted_files}} |  sed 's/\,/\\n/g' )
+                deleted=$(echo ${{steps.changed-files.outputs.deleted_files}} |  sed 's/\,/\ /g' )
                 echo "$deleted" 
                 echo 'DELETED<<EOF' >> $GITHUB_ENV
                 echo "$deleted" >> $GITHUB_ENV
