@@ -75,9 +75,9 @@ jobs:
       - name: Parse changed files
         id: parsed-output
         run: |      
-                echo "MODIFIED= $(echo ${{steps.changed-files.outputs.modified_files}} |  sed 's/\,/\\\\n/g' )" >> $GITHUB_ENV
-                echo "ADDED= $(echo ${{steps.changed-files.outputs.added_files}} |  sed 's/\,/\\\\n/g' )" >> $GITHUB_ENV
-                echo "DELETED= $(echo ${{steps.changed-files.outputs.deleted_files}} |  sed 's/\,/\\\\n/g' )" >> $GITHUB_ENV
+                echo "MODIFIED= $(echo ${{steps.changed-files.outputs.modified_files}} |  sed 's/\,/\\n/g' )" >> $GITHUB_ENV
+                echo "ADDED= $(echo ${{steps.changed-files.outputs.added_files}} |  sed 's/\,/\\n/g' )" >> $GITHUB_ENV
+                echo "DELETED= $(echo ${{steps.changed-files.outputs.deleted_files}} |  sed 's/\,/\\n/g' )" >> $GITHUB_ENV
 
       - name: Send mail  
         uses: dawidd6/action-send-mail@v3
