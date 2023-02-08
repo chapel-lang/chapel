@@ -59,6 +59,7 @@ jobs:
         id: merge-log
         run: |
               merge_log=$(git show 036bd184ae | tail -n +5)
+              echo $merge_log
               echo "$merge_log" 
               echo '$merge_log'  >> $GITHUB_ENV    
       - name: Get changed files
