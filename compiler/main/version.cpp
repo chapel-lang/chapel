@@ -47,9 +47,6 @@ int get_minor_version() {
 int get_update_version() {
   return chpl::getUpdateVersion();
 }
-const char* get_build_version() {
-  return chpl::getBuildVersion();
-}
 bool get_is_official_release() {
   return chpl::getIsOfficialRelease();
 }

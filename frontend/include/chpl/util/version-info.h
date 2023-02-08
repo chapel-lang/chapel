@@ -28,7 +28,7 @@ namespace chpl
   Returns the gitSHA value from the most recent source modification that was
   committed.
 */
-const char* gitSHA();
+const char* getCommitHash();
 
 /*
   The chpl major version value
@@ -58,22 +58,17 @@ const char* getConfiguredPrefix();
 std::string getMajorMinorVersion();
 
 /*
-  get the chpl version string. release versions will have format Major.Minor.Patch or
+  Get the chpl version string. Release versions will have format Major.Minor.Patch or
   Major.Minor.Patch.Build. Pre-release versions will be Major.Minor.Patch pre-release (git-sha)
 */
 std::string getVersion();
 
 /*
-  get the official release flag that was set through the top-level CMakeLists.txt
-  file.
+  Get the official release flag that was set through the top-level CMakeLists.txt
+  file, defined there as CHPL_OFFICIAL_RELEASE.
 */
 bool getIsOfficialRelease();
 
-/*
-  get the build version value. This may be an integer or a git-sha depending on
-  the value of official_release flag.
-*/
-const char* getBuildVersion();
 
 } // namespace chpl
 
