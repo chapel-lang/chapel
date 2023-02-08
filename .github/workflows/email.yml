@@ -109,7 +109,7 @@ jobs:
            subject: "TESTING -- IGNORE plain body + merge log changes [Chapel Merge] ${{github.event.pull_request.title}}"
            # Required recipients' addresses:
            #to: chapel+commits@discoursemail.com
-           to: bhavani@hpe.com, chapel+staff@discoursemail.com 
+           to: chapel+staff@discoursemail.com 
            # Required sender full name (address can be skipped):
            from:  ${{env.AUTHOR}}
            body: |
