@@ -57,10 +57,8 @@ jobs:
           fetch-depth: 0 
       - name: Get merge log
         id: merge-log
-        run: |
-                 
+        run: |   
               merge_log=$(git show 036bd184ae | tail -n +5)
-              
               echo "$merge_log" 
               echo 'MERGE<<EOF' >> $GITHUB_ENV
               echo "$merge_log" >> $GITHUB_ENV
@@ -76,7 +74,7 @@ jobs:
       - name: Parse changed files
         id: parsed-output
         run: |      
-                modified=$(echo ${{steps.changed-files.outputs.modified_files}} |  sed 's/\,/\\n/g' )
+              modified=$(echo ${{steps.changed-files.outputs.modified_files}} |  sed 's/\,/\\n/g' )
                 echo "$modified" 
                 echo 'MODIFIED<<EOF' >> $GITHUB_ENV
                 echo "$modified" >> $GITHUB_ENV
