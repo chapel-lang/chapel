@@ -397,13 +397,23 @@ module Map {
     pragma "no doc"
     proc const this(k: keyType)
     where isNonNilableClass(valType) {
-      _warnForParSafeIndexing();
-      compilerError("Cannot index into a map with non-nilable class values. ",
-                    "Use an appropriate accessor method instead.");
+      _enter(); defer _leave();
+      var (found, slot) = table.findFullSlot(k);
+      if !found then
+        boundsCheckHalt("map index " + k:string + " out of bounds");
+      try! {
+        var result = table.table[slot].val.borrow();
+        if isNonNilableClass(valType) {
+          return result!;
+        } else {
+          return result;
+        }
+      }
     }
 
     /* Get a borrowed reference to the element at position `k`.
      */
+    deprecated "'Map.getBorrowed' is deprecated. Please rely on '[]' accessors instead."
     proc getBorrowed(k: keyType) where isClass(valType) {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
@@ -422,6 +432,7 @@ module Map {
     /* Get a reference to the element at position `k`. This method is not
        available for maps initialized with `parSafe=true`.
      */
+    deprecated "'Map.getReference' is deprecated. Please rely on '[]' accessors instead."
     proc getReference(k: keyType) ref {
       if parSafe then
         compilerError('cannot call `getReference()` on maps initialized ',
@@ -443,6 +454,7 @@ module Map {
 
       :returns: A copy of the value at position `k`
      */
+    deprecated "'Map.getValue' is deprecated. Please rely on '[]' accessors instead."
     proc getValue(k: keyType) const throws {
       if !isCopyableType(valType) then
         compilerError('cannot call `getValue()` for non-copyable ' +
@@ -468,6 +480,22 @@ module Map {
       :returns: A copy of the value at position `k` or a sentinel value
                 if the map does not have an entry at position `k`
     */
+    proc get(k: keyType, const sentinel: valType) const {
+      if !isCopyableType(valType) then
+        compilerError('cannot call `getValue()` for non-copyable ' +
+                      'map value type: ' + valType:string);
+
+      _enter(); defer _leave();
+      var (found, slot) = table.findFullSlot(k);
+      if !found then
+        return sentinel;
+      try! {
+        const result = table.table[slot].val: valType;
+        return result;
+      }
+    }
+
+    deprecated "'Map.getValue' is deprecated. Please use 'Map.get' instead."
     proc getValue(k: keyType, const sentinel: valType) const {
       if !isCopyableType(valType) then
         compilerError('cannot call `getValue()` for non-copyable ' +
@@ -485,6 +513,7 @@ module Map {
 
     /* Remove the element at position `k` from the map and return its value
      */
+    deprecated "'Map.getAndRemove' is deprecated. Please index into the map and then remove the value."
     proc getAndRemove(k: keyType) {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
@@ -787,7 +816,7 @@ module Map {
     lhs.clear();
     try! {
       for key in rhs.keys() {
-        lhs.add(key, rhs.getValue(key));
+        lhs.add(key, rhs[key]);
       }
     }
   }
