@@ -552,16 +552,12 @@ Resolver::ReceiverScopesVec Resolver::methodReceiverScopes(bool recompute) {
   return savedReceiverScopes;
 }
 
-const CompositeType* Resolver::methodReceiverType() {
+const QualifiedType Resolver::methodReceiverType() {
   if (typedSignature && typedSignature->untyped()->isMethod()) {
-    if (auto receiverType = typedSignature->formalType(0).type()) {
-      if (auto ret = receiverType->getCompositeType()) {
-        return ret;
-      }
-    }
+    return typedSignature->formalType(0);
   }
 
-  return nullptr;
+  return QualifiedType();
 }
 
 bool Resolver::shouldUseUnknownTypeForGeneric(const ID& id) {
@@ -816,8 +812,7 @@ const Type* Resolver::tryResolveCrossTypeInitEq(const AstNode* ast,
                         /* isParenless */ false,
                         actuals);
     const Scope* scope = scopeForId(context, ast->id());
-    auto c = resolveGeneratedCall(context, ast, ci, scope, poiScope,
-                                  /* implicitReceiver */ nullptr);
+    auto c = resolveGeneratedCall(context, ast, ci, scope, poiScope);
     if (c.mostSpecific().isEmpty()) {
       return nullptr;
     } else {
@@ -1451,8 +1446,7 @@ void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
                           /* isParenless */ false,
                           actuals);
 
-      auto c = resolveGeneratedCall(context, actual, ci, scope, poiScope,
-                                    /* implicitReciever */ nullptr);
+      auto c = resolveGeneratedCall(context, actual, ci, scope, poiScope);
       handleResolvedAssociatedCall(r, astForErr, ci, c,
                                    AssociatedAction::ASSIGN,
                                    lhsTuple->id());
@@ -1600,8 +1594,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   auto inPoiScope = poiScope;
 
   // note: the resolution machinery will get compiler generated candidates
-  auto crr = resolveGeneratedCall(context, call, ci, inScope, inPoiScope,
-                                  /* implicitReciever */ nullptr);
+  auto crr = resolveGeneratedCall(context, call, ci, inScope, inPoiScope);
 
   CHPL_ASSERT(crr.mostSpecific().numBest() <= 1);
 
@@ -1763,19 +1756,20 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     if (parentId == symbol->id() && inCompositeType) {
       ct = inCompositeType;
     } else {
-      ct = methodReceiverType();
-      if (ct != nullptr) {
-        if (auto bct = ct->toBasicClassType()) {
-          // if it's a class, check for parent classes to decide
-          // which type corresponds to the uAST ID parentId
-          while (bct != nullptr) {
-            if (bct->id() == parentId) {
-              // found the matching type
-              ct = bct;
-              break;
+      if (auto rt = methodReceiverType().type()) {
+        if (ct != rt->getCompositeType()) {
+          if (auto bct = ct->toBasicClassType()) {
+            // if it's a class, check for parent classes to decide
+            // which type corresponds to the uAST ID parentId
+            while (bct != nullptr) {
+              if (bct->id() == parentId) {
+                // found the matching type
+                ct = bct;
+                break;
+              }
+              // otherwise, try the parent class type
+              bct = bct->parentClassType();
             }
-            // otherwise, try the parent class type
-            bct = bct->parentClassType();
           }
         }
       }
@@ -2106,8 +2100,7 @@ bool Resolver::resolveIdentifier(const Identifier* ident,
                             /* isParenless */ true,
                             actuals);
         auto inScope = scopeStack.back();
-        auto c = resolveGeneratedCall(context, ident, ci, inScope, poiScope,
-                                      methodReceiverType());
+        auto c = resolveGeneratedCall(context, ident, ci, inScope, poiScope);
         // save the most specific candidates in the resolution result for the id
         ResolvedExpression& r = byPostorder.byAst(ident);
         handleResolvedCall(r, ident, ci, c);
@@ -2641,8 +2634,9 @@ void Resolver::exit(const Call* call) {
   }
 
   if (!skip) {
-    CallResolutionResult c = resolveCall(context, call, ci, scope, poiScope,
-                                         methodReceiverType());
+    CallResolutionResult c
+      = resolveCallInMethod(context, call, ci,
+                            scope, poiScope, methodReceiverType());
 
     // save the most specific candidates in the resolution result for the id
     ResolvedExpression& r = byPostorder.byAst(call);
@@ -2792,8 +2786,7 @@ void Resolver::exit(const Dot* dot) {
                       /* isParenless */ true,
                       actuals);
   auto inScope = scopeStack.back();
-  auto c = resolveGeneratedCall(context, dot, ci, inScope, poiScope,
-                                /* implicitReceiver */ nullptr);
+  auto c = resolveGeneratedCall(context, dot, ci, inScope, poiScope);
   // save the most specific candidates in the resolution result for the id
   ResolvedExpression& r = byPostorder.byAst(dot);
   handleResolvedCall(r, dot, ci, c);
@@ -2955,8 +2948,7 @@ static QualifiedType resolveSerialIterType(Resolver& resolver,
                         actuals);
     auto inScope = resolver.scopeStack.back();
     auto c = resolveGeneratedCall(context, iterand, ci,
-                                  inScope, resolver.poiScope,
-                                  /* implicitReceiver */ nullptr);
+                                  inScope, resolver.poiScope);
 
     if (c.mostSpecific().only() != nullptr) {
       idxType = c.exprType();

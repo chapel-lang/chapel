@@ -330,31 +330,56 @@ filterCandidatesInstantiating(Context* context,
   set to the 'this' type of the method. 'nullptr' is sufficient for
   operator calls and method calls.
  */
-CallResolutionResult
-resolveCall(Context* context,
-            const uast::Call* call,
-            const CallInfo& ci,
-            const Scope* inScope,
-            const PoiScope* inPoiScope,
-            const types::CompositeType* implicitReceiver);
+CallResolutionResult resolveCall(Context* context,
+                                 const uast::Call* call,
+                                 const CallInfo& ci,
+                                 const Scope* inScope,
+                                 const PoiScope* inPoiScope);
+
+/**
+  Similar to resolveCall, but handles the implicit scope provided by a method.
+
+  When a resolving a call within a method, the implicitReceiver should be
+  set to the 'this' type of the method.
+
+  If implicitReceiver.type() == nullptr, it will be ignored.
+ */
+CallResolutionResult resolveCallInMethod(Context* context,
+                                         const uast::Call* call,
+                                         const CallInfo& ci,
+                                         const Scope* inScope,
+                                         const PoiScope* inPoiScope,
+                                         types::QualifiedType implicitReceiver);
 
 /**
   Given a CallInfo representing a call, a Scope representing the
   scope of that call, and a PoiScope representing the point-of-instantiation
   scope of that call, find the most specific candidates as well
   as the point-of-instantiation scopes that were used when resolving them.
+ */
+CallResolutionResult resolveGeneratedCall(Context* context,
+                                          const uast::AstNode* astForErr,
+                                          const CallInfo& ci,
+                                          const Scope* inScope,
+                                          const PoiScope* inPoiScope);
 
-  When a resolving a call within a method, the implicitRcvr should be
-  set to the 'this' type of the method. 'nullptr' is sufficient for
-  operator calls and method calls.
+/**
+  Similar to resolveGeneratedCall but handles the implicit scope
+  provided by a method.
+
+  When a resolving a call within a method, the implicitReceiver should be
+  set to the 'this' type of the method.
+
+  If implicitReceiver.type() == nullptr, it will be ignored.
  */
 CallResolutionResult
-resolveGeneratedCall(Context* context,
-                     const uast::AstNode* astForErr,
-                     const CallInfo& ci,
-                     const Scope* inScope,
-                     const PoiScope* inPoiScope,
-                     const types::CompositeType* implicitRcvr);
+resolveGeneratedCallInMethod(Context* context,
+                             const uast::AstNode* astForErr,
+                             const CallInfo& ci,
+                             const Scope* inScope,
+                             const PoiScope* inPoiScope,
+                             types::QualifiedType implicitReceiver);
+
 
 /**
   Given a type 't', compute whether or not 't' is default initializable.
