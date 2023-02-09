@@ -325,24 +325,36 @@ filterCandidatesInstantiating(Context* context,
   scope of that call, and a PoiScope representing the point-of-instantiation
   scope of that call, find the most specific candidates as well
   as the point-of-instantiation scopes that were used when resolving them.
+
+  When a resolving a call within a method, the implicitReceiver should be
+  set to the 'this' type of the method. 'nullptr' is sufficient for
+  operator calls and method calls.
  */
-CallResolutionResult resolveCall(Context* context,
-                                 const uast::Call* call,
-                                 const CallInfo& ci,
-                                 const Scope* inScope,
-                                 const PoiScope* inPoiScope);
+CallResolutionResult
+resolveCall(Context* context,
+            const uast::Call* call,
+            const CallInfo& ci,
+            const Scope* inScope,
+            const PoiScope* inPoiScope,
+            const types::CompositeType* implicitReceiver);
 
 /**
   Given a CallInfo representing a call, a Scope representing the
   scope of that call, and a PoiScope representing the point-of-instantiation
   scope of that call, find the most specific candidates as well
   as the point-of-instantiation scopes that were used when resolving them.
+
+  When a resolving a call within a method, the implicitRcvr should be
+  set to the 'this' type of the method. 'nullptr' is sufficient for
+  operator calls and method calls.
  */
-CallResolutionResult resolveGeneratedCall(Context* context,
-                                          const uast::AstNode* astForErr,
-                                          const CallInfo& ci,
-                                          const Scope* inScope,
-                                          const PoiScope* inPoiScope);
+CallResolutionResult
+resolveGeneratedCall(Context* context,
+                     const uast::AstNode* astForErr,
+                     const CallInfo& ci,
+                     const Scope* inScope,
+                     const PoiScope* inPoiScope,
+                     const types::CompositeType* implicitRcvr);
 
 /**
   Given a type 't', compute whether or not 't' is default initializable.

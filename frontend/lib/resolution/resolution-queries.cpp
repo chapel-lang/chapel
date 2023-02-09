@@ -2590,13 +2590,16 @@ resolveFnCallForTypeCtor(Context* context,
   return mostSpecific;
 }
 
-static void considerCompilerGeneratedCandidates(Context* context,
-                                                const CallInfo& ci,
-                                                const Scope* inScope,
-                                                const PoiScope* inPoiScope,
-                                                CandidatesVec& candidates) {
+static void
+considerCompilerGeneratedCandidates(Context* context,
+                                   const CallInfo& ci,
+                                   const Scope* inScope,
+                                   const PoiScope* inPoiScope,
+                                   const CompositeType* implicitReceiver,
+                                   CandidatesVec& candidates) {
 
   // only consider compiler-generated methods, for now
+  // TODO: consider method calls working with the implicitReceiver
   if (!ci.isMethodCall()) return;
 
   // fetch the receiver type info
@@ -2639,15 +2642,21 @@ static void considerCompilerGeneratedCandidates(Context* context,
   candidates.push_back(instantiated);
 }
 
-// TODO: merge this with lookupCalledExprConsideringReceiver since
-// it is only ever called within it.
 static std::vector<BorrowedIdsWithName>
 lookupCalledExpr(Context* context,
                  const Scope* scope,
                  const CallInfo& ci,
+                 const CompositeType* implicitReceiver,
                  NamedScopeSet& visited) {
-  const LookupConfig config =
-      LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS;
+
+  // note: inside of a method, something that is not syntactically a method
+  // call end up being a method call to the implicit receiver.
+  // For example
+  //
+  //  proc R.foo() {
+  //     bar(); // not syntactically a method call but can call R.bar
+  //  }
+
   Resolver::ReceiverScopesVec receiverScopes;
 
   // For method calls, also consider the receiver scope.
@@ -2660,45 +2669,18 @@ lookupCalledExpr(Context* context,
           Resolver::gatherReceiverAndParentScopesForType(context, compType);
       }
     }
+  } else if (implicitReceiver != nullptr) {
+    receiverScopes =
+      Resolver::gatherReceiverAndParentScopesForType(context, implicitReceiver);
   }
+
+  const LookupConfig config =
+      LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS;
 
   UniqueString name = ci.name();
 
-  std::vector<BorrowedIdsWithName> ret = lookupNameInScopeWithSet(
-      context, scope, receiverScopes, name, config, visited);
-
-  return ret;
-}
-
-static std::vector<BorrowedIdsWithName>
-lookupCalledExprConsideringReceiver(Context* context,
-                                    const Scope* inScope,
-                                    const CallInfo& ci,
-                                    NamedScopeSet& visited) {
-  // For method and operator calls, also consider the receiver scopes.
-  Resolver::ReceiverScopesVec receiverScopes;
-  if (ci.isMethodCall() || ci.isOpCall()) {
-    CHPL_ASSERT(ci.numActuals() >= 1);
-    auto& qtReceiver = ci.actual(0).type();
-    if (auto t = qtReceiver.type()) {
-      if (auto compType = t->getCompositeType()) {
-        receiverScopes =
-          Resolver::gatherReceiverAndParentScopesForType(context, compType);
-      }
-    }
-  }
-
-  // TODO: Ensure that secondary methods are considered as well.
-  std::vector<BorrowedIdsWithName> ret;
-
-  if (!receiverScopes.empty()) {
-    auto v = lookupCalledExpr(context, receiverScopes.front(), ci, visited);
-    ret.insert(ret.end(), v.begin(), v.end());
-  }
-
-  // Consider tertiary methods starting at the callsite.
-  auto v = lookupCalledExpr(context, inScope, ci, visited);
-  ret.insert(ret.end(), v.begin(), v.end());
+  auto ret = lookupNameInScopeWithSet(context, scope, receiverScopes, name,
+                                      config, visited);
 
   return ret;
 }
@@ -2727,6 +2709,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                     const CallInfo& ci,
                                     const Scope* inScope,
                                     const PoiScope* inPoiScope,
+                                    const CompositeType* implicitReceiver,
                                     CandidatesVec& nonPoiCandidates,
                                     CandidatesVec& poiCandidates,
                                     ForwardingInfoVec& nonPoiForwardingTo,
@@ -2802,7 +2785,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
       size_t start = nonPoiCandidates.size();
       // consider compiler-generated candidates
       considerCompilerGeneratedCandidates(context, fci, inScope, inPoiScope,
-                                          nonPoiCandidates);
+                                          implicitReceiver, nonPoiCandidates);
       // update forwardingTo
       helpComputeForwardingTo(fci, start, nonPoiCandidates, nonPoiForwardingTo);
     }
@@ -2811,8 +2794,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
     for (auto fci : forwardingCis) {
       size_t start = nonPoiCandidates.size();
       // compute the potential functions that it could resolve to
-      auto v = lookupCalledExprConsideringReceiver(context, inScope, fci,
-                                                   visited);
+      auto v = lookupCalledExpr(context, inScope, fci, implicitReceiver,
+                                visited);
 
       // filter without instantiating yet
       const auto& initialCandidates = filterCandidatesInitial(context, v, fci);
@@ -2843,9 +2826,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
         size_t start = poiCandidates.size();
 
         // compute the potential functions that it could resolve to
-        auto v = lookupCalledExprConsideringReceiver(context, curPoi->inScope(),
-                                                     fci,
-                                                     visited);
+        auto v = lookupCalledExpr(context, curPoi->inScope(), fci,
+                                  implicitReceiver, visited);
 
         // filter without instantiating yet
         auto& initialCandidates = filterCandidatesInitial(context, v, fci);
@@ -2872,6 +2854,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
           if (typeUsesForwarding(context, receiverType)) {
             gatherAndFilterCandidatesForwarding(context, call, fci,
                                                 inScope, inPoiScope,
+                                                implicitReceiver,
                                                 nonPoiCandidates,
                                                 poiCandidates,
                                                 nonPoiForwardingTo,
@@ -2901,6 +2884,7 @@ gatherAndFilterCandidates(Context* context,
                           const CallInfo& ci,
                           const Scope* inScope,
                           const PoiScope* inPoiScope,
+                          const CompositeType* implicitReceiver,
                           size_t& firstPoiCandidate,
                           ForwardingInfoVec& forwardingInfo) {
   CandidatesVec candidates;
@@ -2913,13 +2897,21 @@ gatherAndFilterCandidates(Context* context,
   //  always be available in any scope that can refer to the type & are
   //  considered part of the custom type)
   considerCompilerGeneratedCandidates(context, ci, inScope, inPoiScope,
-                                      candidates);
+                                      implicitReceiver, candidates);
 
   // next, look for candidates without using POI.
   {
     // compute the potential functions that it could resolve to
-    auto v = lookupCalledExprConsideringReceiver(context, inScope, ci,
-                                                 visited);
+    auto v = lookupCalledExpr(context, inScope, ci, implicitReceiver, visited);
+
+    printf("Visible functions for\n");
+    ci.dump();
+    printf("\n");
+    for (auto c : v) {
+      c.dump();
+      printf("\n");
+    }
+    printf("\n\n");
 
     // filter without instantiating yet
     const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
@@ -2945,9 +2937,8 @@ gatherAndFilterCandidates(Context* context,
     }
 
     // compute the potential functions that it could resolve to
-    auto v = lookupCalledExprConsideringReceiver(context, curPoi->inScope(),
-                                                 ci,
-                                                 visited);
+    auto v = lookupCalledExpr(context, curPoi->inScope(), ci,
+                              implicitReceiver, visited);
 
     // filter without instantiating yet
     const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
@@ -2971,7 +2962,7 @@ gatherAndFilterCandidates(Context* context,
       ForwardingInfoVec poiForwardingTo;
 
       gatherAndFilterCandidatesForwarding(context, call, ci,
-                                          inScope, inPoiScope,
+                                          inScope, inPoiScope, implicitReceiver,
                                           nonPoiCandidates, poiCandidates,
                                           nonPoiForwardingTo, poiForwardingTo);
 
@@ -3042,6 +3033,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
                                        const CallInfo& ci,
                                        const Scope* inScope,
                                        const PoiScope* inPoiScope,
+                                       const CompositeType* implicitReceiver,
                                        PoiInfo& poiInfo) {
 
   // search for candidates at each POI until we have found candidate(s)
@@ -3049,6 +3041,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
   ForwardingInfoVec forwardingInfo;
   CandidatesVec candidates = gatherAndFilterCandidates(context, call, ci,
                                                        inScope, inPoiScope,
+                                                       implicitReceiver,
                                                        firstPoiCandidate,
                                                        forwardingInfo);
 
@@ -3067,12 +3060,17 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
 
 // call can be nullptr. in that event ci.name() will be used to find
 // what is called.
+//
+// implicitReceiver is the 'this' type for a method and it is used
+// since a method call within a method might appear without 'this',
+// e.g. as just 'bar()'.
 static
 CallResolutionResult resolveFnCall(Context* context,
                                    const Call* call,
                                    const CallInfo& ci,
                                    const Scope* inScope,
-                                   const PoiScope* inPoiScope) {
+                                   const PoiScope* inPoiScope,
+                                   const CompositeType* implicitReceiver) {
   PoiInfo poiInfo;
   MostSpecificCandidates mostSpecific;
 
@@ -3089,6 +3087,7 @@ CallResolutionResult resolveFnCall(Context* context,
     // * note any most specific candidates from POI in poiInfo.
     mostSpecific = resolveFnCallFilterAndFindMostSpecific(context, call, ci,
                                                           inScope, inPoiScope,
+                                                          implicitReceiver,
                                                           poiInfo);
   }
 
@@ -3225,7 +3224,8 @@ CallResolutionResult resolveCall(Context* context,
                                  const Call* call,
                                  const CallInfo& ci,
                                  const Scope* inScope,
-                                 const PoiScope* inPoiScope) {
+                                 const PoiScope* inPoiScope,
+                                 const CompositeType* implicitReceiver) {
   if (call->isFnCall() || call->isOpCall()) {
     // see if the call is handled directly by the compiler
     QualifiedType tmpRetType;
@@ -3236,7 +3236,8 @@ CallResolutionResult resolveCall(Context* context,
       return CallResolutionResult(std::move(tmpRetType));
     }
     // otherwise do regular call resolution
-    return resolveFnCall(context, call, ci, inScope, inPoiScope);
+    return resolveFnCall(context, call, ci,
+                         inScope, inPoiScope, implicitReceiver);
   } else if (auto prim = call->toPrimCall()) {
     return resolvePrimCall(context, prim, ci, inScope, inPoiScope);
   } else if (auto tuple = call->toTuple()) {
@@ -3254,14 +3255,16 @@ CallResolutionResult resolveGeneratedCall(Context* context,
                                           const AstNode* astForErr,
                                           const CallInfo& ci,
                                           const Scope* inScope,
-                                          const PoiScope* inPoiScope) {
+                                          const PoiScope* inPoiScope,
+                                          const CompositeType* implicitRcvr) {
   // see if the call is handled directly by the compiler
   QualifiedType tmpRetType;
   if (resolveFnCallSpecial(context, astForErr, ci, tmpRetType)) {
     return CallResolutionResult(std::move(tmpRetType));
   }
   // otherwise do regular call resolution
-  return resolveFnCall(context, /* call */ nullptr, ci, inScope, inPoiScope);
+  return resolveFnCall(context, /* call */ nullptr, ci,
+                       inScope, inPoiScope, implicitRcvr);
 }
 
 static bool helpFieldNameCheck(const AstNode* ast,
