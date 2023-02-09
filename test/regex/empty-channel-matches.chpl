@@ -3,7 +3,7 @@
 
 use Regex, IO;
 
-var f = openmem();
+var f = openMemFile();
 
 proc testEmpty(re:string) {
   var fr = f.reader();

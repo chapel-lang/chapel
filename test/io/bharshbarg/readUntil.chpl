@@ -4,7 +4,7 @@ config const delim = "!";
 assert(delim.numBytes == 1);
 config const lineLen = 100;
 
-var f = openmem();
+var f = openMemFile();
 var w = f.writer();
 
 for i in 1..lineLen-1 do w.write((i%9) + 1);
