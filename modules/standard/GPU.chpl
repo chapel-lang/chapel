@@ -139,21 +139,25 @@ module GPU
   type GpuAsyncCommHandle = c_void_ptr;
 
   /*
-    Copy srcArr to dstArr, atleast one array must be on a GPU; this function
+    Copy srcArr to dstArr, at least one array must be on a GPU; this function
     can be used for either communication to or from the GPU
 
     Returns a handle that can be passed to `waitGpuComm` to pause execution
     until completion of this asyhcronous transfer
   */
   pragma "no doc"
-  proc asyncGpuComm(dstArr, srcArr) : GpuAsyncCommHandle {
+  proc asyncGpuComm(dstArr, srcArr) : GpuAsyncCommHandle
+  {
+    if(!isArrayType(dstArr.type) || !isArrayType(srcArr.type)) {
+      compilerError("Non-array argument passed to asyncGpuComm.");
+    }
+
     extern proc chpl_gpu_comm_async(dstArr : c_void_ptr, srcArr : c_void_ptr,
        n : c_size_t) : c_void_ptr;
 
     if(dstArr.size != srcArr.size) {
-      writeln("SIZE MISMATCH: ", dstArr.size, " ", srcArr.size);
+      halt("SIZE MISMATCH: ", dstArr.size, " ", srcArr.size);
     }
-    assert(dstArr.size == srcArr.size);
     return chpl_gpu_comm_async(c_ptrTo(dstArr), c_ptrTo(srcArr),
       dstArr.size * numBytes(dstArr.eltType));
  }
