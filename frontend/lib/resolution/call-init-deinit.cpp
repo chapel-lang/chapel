@@ -373,7 +373,7 @@ static bool isRecordLike(const Type* t) {
 }
 
 static bool typeNeedsInitDeinitCall(const Type* t) {
-  if (t->isUnknownType() || t->isErroneousType()) {
+  if (t == nullptr || t->isUnknownType() || t->isErroneousType()) {
     // can't do anything with these
     return false;
   } else if (t->isPrimitiveType() || t->isBuiltinType() || t->isCStringType() ||
@@ -607,8 +607,7 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
                        getTypeGenericity(context, rhsType) != Type::CONCRETE;
       // resolve a copy init and a deinit to deinit the temporary
       if (lhsGenUnk || rhsGenUnk) {
-        // TODO: this should not happen
-        printf("Warning: should not be reached\n");
+        CHPL_ASSERT(false && "should not be reached");
       } else {
         resolveCopyInit(ast, rhsAst, lhsType, rhsType,
                         /* forMoveInit */ true,

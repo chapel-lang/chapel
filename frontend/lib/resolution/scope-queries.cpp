@@ -363,29 +363,28 @@ static const Scope* const& scopeForAutoModule(Context* context) {
   return QUERY_END(result);
 }
 
-static bool doLookupInImports(Context* context,
-                              const Scope* scope,
-                              const ResolvedVisibilityScope* resolving,
-                              UniqueString name,
-                              bool onlyInnermost,
-                              bool skipPrivateVisibilities,
-                              NamedScopeSet& checkedScopes,
-                              std::vector<BorrowedIdsWithName>& result) {
-  // Get the resolved visibility statements, if available
-  const ResolvedVisibilityScope* r = nullptr;
-  if (resolving && resolving->scope() == scope) {
-    r = resolving;
-  } else {
-    r = resolveVisibilityStmts(context, scope);
-  }
+static bool doLookupInImportsAndUses(Context* context,
+                                     const Scope* scope,
+                                     const ResolvedVisibilityScope* resolving,
+                                     const ResolvedVisibilityScope* cur,
+                                     UniqueString name,
+                                     bool onlyInnermost,
+                                     bool skipPrivateVisibilities,
+                                     VisibilitySymbols::ShadowScope shadowScope,
+                                     NamedScopeSet& checkedScopes,
+                                     std::vector<BorrowedIdsWithName>& result) {
+  bool found = false;
 
-  if (r != nullptr) {
+  if (cur != nullptr) {
     // check to see if it's mentioned in names/renames
-    bool found = false;
-    for (const VisibilitySymbols& is: r->visibilityClauses()) {
+    for (const VisibilitySymbols& is: cur->visibilityClauses()) {
       // if we should not continue transitively through private use/includes,
       // and this is private, skip it
       if (skipPrivateVisibilities && is.isPrivate()) {
+        continue;
+      }
+      // skip this clause if we are searching a different shadow scope level
+      if (is.shadowScopeLevel() != shadowScope) {
         continue;
       }
       UniqueString from = name;
@@ -431,31 +430,40 @@ static bool doLookupInImports(Context* context,
       }
     }
 
-    if (found && onlyInnermost) {
-      return true;
-    }
   }
+
+  return found;
+}
+
+static bool doLookupInAutoModules(Context* context,
+                                  const Scope* scope,
+                                  const ResolvedVisibilityScope* resolving,
+                                  UniqueString name,
+                                  bool onlyInnermost,
+                                  bool skipPrivateVisibilities,
+                                  NamedScopeSet& checkedScopes,
+                                  std::vector<BorrowedIdsWithName>& result) {
+  bool found = false;
 
   if (scope->autoUsesModules() && !skipPrivateVisibilities) {
     const Scope* autoModScope = scopeForAutoModule(context);
     if (autoModScope) {
       LookupConfig newConfig = LOOKUP_DECLS |
-                               LOOKUP_IMPORT_AND_USE;
+                               LOOKUP_IMPORT_AND_USE |
+                               LOOKUP_SKIP_PRIVATE_VIS;
 
       if (onlyInnermost) {
         newConfig |= LOOKUP_INNERMOST;
       }
 
       // find it in that scope
-      bool found = doLookupInScope(context, autoModScope, {}, resolving,
-                                   name, newConfig,
-                                   checkedScopes, result);
-      if (found && onlyInnermost)
-        return true;
+      found = doLookupInScope(context, autoModScope, {}, resolving,
+                              name, newConfig,
+                              checkedScopes, result);
     }
   }
 
-  return false;
+  return found;
 }
 
 static bool doLookupInToplevelModules(Context* context,
@@ -494,14 +502,6 @@ static bool doLookupInScope(Context* context,
   // through module boundaries if we aren't traversing the scope chain?
   CHPL_ASSERT(!goPastModules || checkParents);
 
-  // TODO: to include checking for symbol privacy,
-  // add a findPrivate argument to doLookupInScope and set it
-  // to false when traversing a use/import of a module not visible.
-  // Adjust the checkedScopes set to be a map to bool, where
-  // the bool indicates if findPrivate was true or not. If we
-  // have visited but only got public symbols, we have to visit again
-  // for private symbols. But we'd like to avoid splitting overloads into
-  // two 'result' vector entries in that case...
   size_t startSize = result.size();
 
   auto pair = checkedScopes.insert(std::make_pair(name, scope));
@@ -511,19 +511,57 @@ static bool doLookupInScope(Context* context,
     return false;
   }
 
-  if (checkDecls) {
-    bool got = scope->lookupInScope(name, result, skipPrivateVisibilities);
+  // Get the resolved visibility statements, if available
+  const ResolvedVisibilityScope* r = nullptr;
+  if (checkUseImport) {
+    if (resolving && resolving->scope() == scope) {
+      r = resolving;
+    } else {
+      r = resolveVisibilityStmts(context, scope);
+    }
+  }
+
+  // gather non-shadow scope information
+  // (declarations in this scope as well as public use / import)
+  {
+    bool got = false;
+    if (checkDecls) {
+      got |= scope->lookupInScope(name, result, skipPrivateVisibilities);
+    }
+    if (checkUseImport) {
+      got |= doLookupInImportsAndUses(context, scope, resolving, r, name,
+                                      onlyInnermost, skipPrivateVisibilities,
+                                      VisibilitySymbols::REGULAR_SCOPE,
+                                      checkedScopes, result);
+    }
     if (onlyInnermost && got) return true;
   }
 
-  // Look at use/import statements in the current scope
+  // now check shadow scope 1 (only relevant for 'private use')
   if (checkUseImport) {
     bool got = false;
-    got = doLookupInImports(context, scope, resolving,
-                            name, onlyInnermost, skipPrivateVisibilities,
-                            checkedScopes, result);
+    got |= doLookupInImportsAndUses(context, scope, resolving, r, name,
+                                    onlyInnermost, skipPrivateVisibilities,
+                                    VisibilitySymbols::SHADOW_SCOPE_ONE,
+                                    checkedScopes, result);
+
+    // treat the auto-used modules as if they were 'private use'd
+    got |= doLookupInAutoModules(context, scope, resolving, name,
+                                 onlyInnermost, skipPrivateVisibilities,
+                                 checkedScopes, result);
     if (onlyInnermost && got) return true;
   }
+
+  // now check shadow scope 2 (only relevant for 'private use')
+  if (checkUseImport) {
+    bool got = false;
+    got = doLookupInImportsAndUses(context, scope, resolving, r, name,
+                                   onlyInnermost, skipPrivateVisibilities,
+                                   VisibilitySymbols::SHADOW_SCOPE_TWO,
+                                   checkedScopes, result);
+    if (onlyInnermost && got) return true;
+  }
+
 
   if (checkParents) {
     LookupConfig newConfig = LOOKUP_DECLS;
@@ -630,6 +668,9 @@ static bool doLookupInScope(Context* context,
   return result.size() > startSize;
 }
 
+// This function supports scope lookup when resolving what modules
+// a 'use' / 'import' refer to.
+//
 // It can return multiple results because that is important for 'import'.
 // 'isFirstPart' is true for A in A.B.C but not for B or C.
 // On return:
@@ -1087,21 +1128,36 @@ doResolveUseStmt(Context* context, const Use* use,
 
       maybeEmitWarningsForId(context, expr->id(), foundScope->id());
 
-      // First, add VisibilitySymbols entry for the symbol itself.
-      // Per the spec, we only have visibility of the symbol itself if the
-      // use is renamed (with 'as') or non-public.
-      if (!newName.isEmpty()) {
-        if (newName == USTR("_")) {
-          // Do not introduce the name at all.
-          r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
-                                 isPrivate, emptyNames());
+      // 'private use' brings the module name into a shadow scope
+      // but 'public use' does not.
+      auto moduleSymShadowScopeLevel = VisibilitySymbols::REGULAR_SCOPE;
+      if (isPrivate) {
+        moduleSymShadowScopeLevel = VisibilitySymbols::SHADOW_SCOPE_TWO;
+      }
+
+      if (newName == USTR("_")) {
+        // e.g. 'use M as _'. Do not introduce the name at all.
+      } else if (newName.isEmpty()) {
+        // There is no renaming with 'as' involved.
+        if (isPrivate == false) {
+          // 'public use' does not enable qualified access
+          // (in other words, it does not bring in the module name)
         } else {
+          // 'private use' brings in the module name (in a shadow scope)
           r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
-                                 isPrivate, convertOneRename(oldName, newName));
+                                 isPrivate, moduleSymShadowScopeLevel,
+                                 convertOneName(oldName));
         }
-      } else if (isPrivate) {
+      } else {
+        // there is an 'as' involved, so the name will always be brought in
         r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
-                               isPrivate, convertOneName(oldName));
+                               isPrivate, moduleSymShadowScopeLevel,
+                               convertOneRename(oldName, newName));
+      }
+
+      auto moduleContentsShadowScopeLevel = VisibilitySymbols::REGULAR_SCOPE;
+      if (isPrivate) {
+        moduleContentsShadowScopeLevel = VisibilitySymbols::SHADOW_SCOPE_ONE;
       }
 
       // Then, add the entries for anything imported
@@ -1120,7 +1176,8 @@ doResolveUseStmt(Context* context, const Use* use,
                                          r, VIS_USE);
 
           // add the visibility clause for only/except
-          r->addVisibilityClause(foundScope, kind, isPrivate,
+          r->addVisibilityClause(foundScope, kind,
+                                 isPrivate, moduleContentsShadowScopeLevel,
                                  convertLimitations(context, clause));
           break;
         case VisibilityClause::ONLY:
@@ -1129,12 +1186,15 @@ doResolveUseStmt(Context* context, const Use* use,
           errorIfAnyLimitationNotInScope(context, clause, foundScope,
                                          r, VIS_USE);
           // add the visibility clause for only/except
-          r->addVisibilityClause(foundScope, kind, isPrivate,
+          r->addVisibilityClause(foundScope, kind,
+                                 isPrivate, moduleContentsShadowScopeLevel,
                                  convertLimitations(context, clause));
           break;
         case VisibilityClause::NONE:
           kind = VisibilitySymbols::ALL_CONTENTS;
-          r->addVisibilityClause(foundScope, kind, isPrivate, emptyNames());
+          r->addVisibilityClause(foundScope, kind,
+                                 isPrivate, moduleContentsShadowScopeLevel,
+                                 emptyNames());
           break;
         case VisibilityClause::BRACES:
           CHPL_ASSERT(false && "Should not be possible");
@@ -1189,6 +1249,9 @@ doResolveImportStmt(Context* context, const Import* imp,
     if (foundScope != nullptr) {
       VisibilitySymbols::Kind kind;
 
+      // 'import' never uses a shadow scope.
+      auto importShadowScopeLevel = VisibilitySymbols::REGULAR_SCOPE;
+
       maybeEmitWarningsForId(context, expr->id(), foundScope->id());
 
       if (!dotName.isEmpty()) {
@@ -1207,11 +1270,13 @@ doResolveImportStmt(Context* context, const Import* imp,
                                   /* isRename */ !newName.isEmpty());
             if (newName.isEmpty()) {
               // e.g. 'import M.f'
-              r->addVisibilityClause(foundScope, kind, isPrivate,
+              r->addVisibilityClause(foundScope, kind,
+                                     isPrivate, importShadowScopeLevel,
                                      convertOneName(dotName));
             } else {
               // e.g. 'import M.f as g'
-              r->addVisibilityClause(foundScope, kind, isPrivate,
+              r->addVisibilityClause(foundScope, kind,
+                                     isPrivate, importShadowScopeLevel,
                                      convertOneRename(dotName, newName));
             }
             break;
@@ -1232,14 +1297,18 @@ doResolveImportStmt(Context* context, const Import* imp,
             kind = VisibilitySymbols::SYMBOL_ONLY;
             if (newName.isEmpty()) {
               // e.g. 'import OtherModule'
-              r->addVisibilityClause(foundScope, kind, isPrivate,
+              r->addVisibilityClause(foundScope, kind,
+                                     isPrivate, importShadowScopeLevel,
                                      convertOneName(oldName));
             } if (newName == USTR("_")) {
               // e.g. 'import OtherModule as _'
-              r->addVisibilityClause(foundScope, kind, isPrivate, emptyNames());
+              /*r->addVisibilityClause(foundScope, kind,
+                                     isPrivate, importShadowScopeLevel,
+                                     emptyNames());*/
             } else {
               // e.g. 'import OtherModule as Foo'
-              r->addVisibilityClause(foundScope, kind, isPrivate,
+              r->addVisibilityClause(foundScope, kind,
+                                     isPrivate, importShadowScopeLevel,
                                      convertOneRename(oldName, newName));
             }
             break;
@@ -1251,7 +1320,8 @@ doResolveImportStmt(Context* context, const Import* imp,
                                            r, VIS_IMPORT);
 
             // add the visibility clause with the named symbols
-            r->addVisibilityClause(foundScope, kind, isPrivate,
+            r->addVisibilityClause(foundScope, kind,
+                                   isPrivate, importShadowScopeLevel,
                                    convertLimitations(context, clause));
             break;
         }
