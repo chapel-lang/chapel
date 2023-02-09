@@ -746,7 +746,7 @@ reduction applied to all of the elements in the aggregate up to that
 expression. Chapel provides a number of predefined reduction and scan
 operators, and also supports a mechanism for the user to define
 additional reductions and scans
-(Chapter `[User_Defined_Reductions_and_Scans] <#User_Defined_Reductions_and_Scans>`__).
+(:ref:`Chapter-User_Defined_Reductions_and_Scans`).
 
 .. _reduce:
 
