@@ -44,7 +44,7 @@ set(CHPL_BUILD_VERSION 0)
 
 # Flip this to 'true' when we're ready to roll out a release; then back
 # after branching
-set(CHPL_OFFICIAL_RELEASE false)
+set(CHPL_OFFICIAL_RELEASE true)
 
 ### END config.h version value setting - configured_prefix set below ###
 
@@ -77,7 +77,28 @@ endif()
 if (DEFINED ENV{CHPL_CMAKE_PRINTCHPLENV_RESULTS})
   SET(PRINTCHPLENV_RESULTS $ENV{CHPL_CMAKE_PRINTCHPLENV_RESULTS})
 else()
-  SET(PRINTCHPLENV_RESULTS ON)
+  SET(PRINTCHPLENV_RESULTS OFF)
+endif()
+
+
+# Set the log level to one of ERROR, WARNING, NOTICE, STATUS (default), VERBOSE,
+# DEBUG, or TRACE
+# anything above NOTICE will also silence PRINTCHPLENV output
+if (DEFINED CHPL_CMAKE_VERBOSE)
+  if (CHPL_CMAKE_VERBOSE)
+    set(CMAKE_MESSAGE_LOG_LEVEL STATUS)
+    set(CMAKE_VERBOSE_MAKEFILE ON)
+    message(STATUS "############## VERBOSE MAKEFILES ON ##############")
+  else()
+    message(STATUS "$$$$$ BE VEWY VEWY QWUIET $$$$$")
+    set(CMAKE_MESSAGE_LOG_LEVEL WARNING)
+    set(CMAKE_VERBOSE_MAKEFILE OFF)
+  endif()
+  unset(CHPL_CMAKE_VERBOSE CACHE)
+else()
+  set(CMAKE_MESSAGE_LOG_LEVEL STATUS)
+  set(CMAKE_VERBOSE_MAKEFILE OFF)
+  message(STATUS "#### DEFAULT NOISE LEVEL ####")
 endif()
 
 ### END Debug options ###
@@ -309,7 +330,7 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E env
                 OUTPUT_VARIABLE CHPLENV_OUTPUT
                 OUTPUT_STRIP_TRAILING_WHITESPACE
                 )
-if (${PRINTCHPLENV_RESULTS})
+if (PRINTCHPLENV_RESULTS)
   message(NOTICE "Updating build configuration with results from printchplenv:\n${CHPLENV_OUTPUT}")
 endif()
 
