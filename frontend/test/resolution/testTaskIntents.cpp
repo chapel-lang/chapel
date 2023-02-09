@@ -364,8 +364,6 @@ static void testReduce() {
 //
 // TODO:
 // - type resolution for reduce-intents
-// - type resolution for `in` task-intents
-// - const-checking
 // - implicit shadow variables (flat, nested)
 // - reduce intents for begin/cobegin, if those are implemented in future
 //
