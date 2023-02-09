@@ -440,6 +440,13 @@ import OS.{errorCode};
 use CTypes;
 public use OS;
 
+deprecated "enum iomode is deprecated - please use :enum:`ioMode` instead"
+enum iomode {
+  r = 1,
+  cw = 2,
+  rw = 3,
+  cwr = 4,
+}
 
 /*
 
@@ -482,8 +489,7 @@ constants have the same meaning as the following strings passed to ``fopen()`` i
 
 However, :proc:`open()` in Chapel does not necessarily invoke ``fopen()`` in C.
 */
-
-enum iomode {
+enum ioMode {
   r = 1,
   cw = 2,
   rw = 3,

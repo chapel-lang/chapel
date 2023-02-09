@@ -1,0 +1,1 @@
+iomode.chpl:3 warning: enum iomode is deprecated - please use :enum:`ioMode` instead
