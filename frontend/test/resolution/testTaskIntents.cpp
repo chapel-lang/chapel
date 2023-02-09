@@ -40,6 +40,7 @@
 static bool debug = false;
 static bool verbose = false;
 
+// all contexts stored for later cleanup
 static std::vector<Context*> globalContexts;
 static Context* getNewContext() {
   Context* ret = new Context();
@@ -238,6 +239,8 @@ static void kindHelper(Qualifier kind, const std::string& constructName) {
   program += "}\n";
 
   auto col = customHelper(program, context);
+  // int type to expect against
+  const auto intType = IntType::get(context, 0);
 
   // Test shadow variable type is as expected
   {
@@ -246,15 +249,16 @@ static void kindHelper(Qualifier kind, const std::string& constructName) {
     if (useKind == Qualifier::CONST_INTENT) {
       useKind = Qualifier::CONST_VAR;
     }
-    QualifiedType expected = QualifiedType(useKind, IntType::get(context, 0));
+    QualifiedType expected = QualifiedType(useKind, intType);
     QualifiedType shadowX = col.onlyIdent("x");
     assert(expected == shadowX);
   }
 
+
   // Test type of variable assigned value of shadow variable
   {
     QualifiedType yType = col.onlyDecl("y");
-    assert(yType.type() == IntType::get(context, 0));
+    assert(yType.type() == intType);
   }
 
   // Test that the shadow variable points to the original
@@ -344,11 +348,18 @@ var x = 0;
 }
 
 static void testReduce() {
-  reduceHelper("forall");
-  reduceHelper("coforall");
-  // reduce intents not defined for begin and cobegin
+  // all reduce-intent supporting constructs
+  static const std::string constructNames[] = {
+      "forall",
+      "coforall",
+      // reduce intents not defined for begin and cobegin
+      // "cobegin",
+      // "begin"
+  };
+  for (const auto& constructName : constructNames) {
+    reduceHelper(constructName);
+  }
 }
-
 
 //
 // TODO:
@@ -356,6 +367,7 @@ static void testReduce() {
 // - type resolution for `in` task-intents
 // - const-checking
 // - implicit shadow variables (flat, nested)
+// - reduce intents for begin/cobegin, if those are implemented in future
 //
 int main(int argc, char** argv) {
   for (int i = 1; i < argc; i++) {
@@ -366,6 +378,7 @@ int main(int argc, char** argv) {
     }
   }
 
+  // perform actual tests
   testKinds();
   testReduce();
 
