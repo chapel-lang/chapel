@@ -286,8 +286,6 @@ module DistributedMap {
       }
     }
 
-    // method called `get` if possible
-
     /* Get a copy of the element stored at position `k`.
 
       :arg k: The key to lookup in the map
