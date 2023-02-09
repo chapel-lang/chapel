@@ -58,7 +58,7 @@ jobs:
         env:
            MERGE_SHA: ${{github.event.pull_request.merge_commit_sha}}
         run: |   
-              merge_log=$(git show -s --format=%B $MERGE_SHA  | tail -n +5)
+              merge_log=$(git show -s --format=%B $MERGE_SHA )
               echo "$merge_log" 
               echo 'MERGE<<EOF' >> $GITHUB_ENV
               echo "$merge_log" >> $GITHUB_ENV
