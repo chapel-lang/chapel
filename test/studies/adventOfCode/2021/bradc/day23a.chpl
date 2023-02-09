@@ -470,7 +470,7 @@ record state {
           const id = newBoard.uniqueID();
           var alreadyDidThis = false;
           if searchedConfigs.contains(id) {
-            const prevCost = searchedConfigs.getValue(id);
+            const prevCost = searchedConfigs[id];
             if prevCost < newBoard.cost {
               alreadyDidThis = true;
 /*

@@ -51,7 +51,7 @@ proc processTemplate(templ: [?templInds], stepsLeft) {
         var substr = first + second;
         if debug then
           writeln("Trying to look up ", substr);
-        next[i*2+1] = prodMap.getValue(substr);
+        next[i*2+1] = prodMap[substr];
       }
     }
     processTemplate(next, stepsLeft-1);

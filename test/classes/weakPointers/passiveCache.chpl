@@ -28,7 +28,7 @@ class PassiveCache {
 
         if this.items.contains(key) {
             // writeln("have weak: ", key);
-            var weak_pointer = this.items.getValue(key);
+            var weak_pointer = this.items[key];
             var maybe_strong = weak_pointer : shared dataType?;
             if maybe_strong != nil {
                 // writeln("\t upgraded: ", key);

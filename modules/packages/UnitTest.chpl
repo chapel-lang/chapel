@@ -1145,12 +1145,12 @@ module UnitTest {
   */
   proc main() throws {
 
-    var testStatus: map(string, bool, parSafe=true),
-        testsFailed: map(string, bool, parSafe=true),
-        testsErrored: map(string, bool, parSafe=true),
-        testsLocalFails: map(string, bool, parSafe=true),
-        testsPassed: map(string, bool, parSafe=true),
-        testsSkipped: map(string, bool, parSafe=true);
+    var testStatus: map(string, bool),
+        testsFailed: map(string, bool),
+        testsErrored: map(string, bool),
+        testsLocalFails: map(string, bool),
+        testsPassed: map(string, bool),
+        testsSkipped: map(string, bool);
     // Assuming 1 global test suite for now
     // Per-module or per-class is possible too
     var testSuite = new TestSuite();
@@ -1206,7 +1206,7 @@ module UnitTest {
     }
 
     for test in testSuite {
-      if !testStatus.getValue(test:string) {
+      if !testStatus[test:string] {
         // Create a test object per test
         var checkCircle: list(string);
         var circleFound = false;
@@ -1250,11 +1250,11 @@ module UnitTest {
           return;
         }
         // if super test didn't Error or Failed or skipped
-        if !testsErrored.getValue(superTest: string) &&
-           !testsFailed.getValue(superTest: string) &&
-           !testsSkipped.getValue(superTest: string) {
+        if !testsErrored[superTest: string] &&
+           !testsFailed[superTest: string] &&
+           !testsSkipped[superTest: string] {
           // checking if super test ran or not.
-          if !testStatus.getValue(superTest: string) {
+          if !testStatus[superTest: string] {
             // Create a test object per test
             var superTestObject = new Test();
             // running the super test
@@ -1266,21 +1266,21 @@ module UnitTest {
               checkCircle.remove(superTest: string);
             }
             // if super test failed
-            if testsFailed.getValue(superTest: string) {
+            if testsFailed[superTest: string] {
               testsSkipped.replace(testName, true);
               var skipReason = testName + " skipped because " + superTest: string +" failed";
               testResult.addSkip(testName, skipReason);
               break;
             }
             // if super test failed
-            if testsSkipped.getValue(superTest: string) {
+            if testsSkipped[superTest: string] {
               testsSkipped.replace(testName, true);
               var skipReason = testName + " skipped because " + superTest: string +" skipped";
               testResult.addSkip(testName, skipReason);
               break;
             }
             // this superTest has not yet finished.
-            if testsLocalFails.getValue(superTest: string) {
+            if testsLocalFails[superTest: string] {
               allTestsRan = false;
             }
 
@@ -1288,7 +1288,7 @@ module UnitTest {
             if circleFound then break;
 
             // if superTest error then
-            if testsErrored.getValue(superTest: string) {
+            if testsErrored[superTest: string] {
               testsSkipped.replace(testName, true);
               var skipReason = testName + " skipped because " + superTest: string +" gave an Error";
               testResult.addSkip(testName, skipReason);
@@ -1297,14 +1297,14 @@ module UnitTest {
           }
         }
         // super test Errored
-        else if testsErrored.getValue(superTest: string) {
+        else if testsErrored[superTest: string] {
           testsSkipped.replace(testName, true);
           var skipReason = testName + " skipped because " + superTest: string +" gave an Error";
           testResult.addSkip(testName, skipReason);
           break;
         }
         // super test Skipped
-        else if testsSkipped.getValue(superTest: string) {
+        else if testsSkipped[superTest: string] {
           testsSkipped.replace(testName, true);
           var skipReason = testName + " skipped because " + superTest: string +" Skipped";
           testResult.addSkip(testName, skipReason);
@@ -1323,16 +1323,16 @@ module UnitTest {
         testResult.addSkip(testName, skipReason);
       }
       // Test is not having error or failures or dependency or skipped
-      else if !testsErrored.getValue(testName) && allTestsRan &&
-              !testsFailed.getValue(testName) &&
-              !testsSkipped.getValue(testName) {
+      else if !testsErrored[testName] && allTestsRan &&
+              !testsFailed[testName] &&
+              !testsSkipped[testName] {
         testObject.dictDomain.clear(); // clearing so that we don't get Locales already added
         runTestMethod(testStatus, testObject, testsFailed, testsErrored, testsSkipped,
                       testsLocalFails, test, checkCircle, circleFound);
       }
-      else if !testsErrored.getValue(testName) && !allTestsRan &&
-              !testsFailed.getValue(testName) &&
-              !testsSkipped.getValue(testName) {
+      else if !testsErrored[testName] && !allTestsRan &&
+              !testsFailed[testName] &&
+              !testsSkipped[testName] {
         testResult.dependencyNotMet(testName);
       }
     }

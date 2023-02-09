@@ -68,7 +68,7 @@ proc processTemplate(in counts, stepsLeft) {
       const count = counts[p].read();
       const firstchar = p(0);
       const secondchar = p(1);
-      var midchar = prodMap.getValue(p);
+      var midchar = prodMap[p];
       newCounts[firstchar + midchar].add(count);
       newCounts[midchar + secondchar].add(count);
     }
