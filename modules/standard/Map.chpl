@@ -396,7 +396,7 @@ module Map {
 
     pragma "no doc"
     proc const this(k: keyType)
-    where isClass(valType) && isNonNilableClass(valType) {
+    where isNonNilableClass(valType) {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
