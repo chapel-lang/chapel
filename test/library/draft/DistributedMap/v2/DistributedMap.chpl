@@ -614,7 +614,7 @@ module DistributedMap {
                `false` otherwise.
      :rtype: bool
     */
-    proc set(k: keyType, in v: valType): bool {
+    proc replace(k: keyType, in v: valType): bool {
       var loc: int = this.getLocaleForKey(k);
 
       var res: bool;

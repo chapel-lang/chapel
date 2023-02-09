@@ -377,7 +377,7 @@ record state {
             if prevCost < newBoard.cost {
               alreadyDidThis = true;
             } else {
-              searchedConfigs.set(id, newBoard.cost);
+              searchedConfigs.replace(id, newBoard.cost);
             }
           } else {
             searchedConfigs.add(id, newBoard.cost);

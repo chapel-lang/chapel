@@ -645,6 +645,10 @@ module Map {
       return true;
     }
 
+    deprecated "'Map.set' is deprecated. Please use 'Map.replace' instead."
+    proc set(k: keyType, in v: valType): bool {
+      return this.replace(k, v);
+    }
 
     /*
       Sets the value associated with a key. Method returns `false` if the key
@@ -660,7 +664,7 @@ module Map {
                `false` otherwise.
      :rtype: bool
     */
-    proc set(k: keyType, in v: valType): bool {
+    proc replace(k: keyType, in v: valType): bool {
       _enter(); defer _leave();
       var (found, slot) = table.findAvailableSlot(k);
       if !found {
