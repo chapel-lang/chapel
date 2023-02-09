@@ -2,4 +2,4 @@
 
 INSTALL_DIR=`h5cc -showconfig | sed -n -e 's/ *Installation point: \(.*\)/\1/p'`
 
-echo "LD_LIBRARY_PATH=$INSTALL_DIR/lib"
+echo "LD_LIBRARY_PATH=$INSTALL_DIR/lib:LD_LIBRARY_PATH"
