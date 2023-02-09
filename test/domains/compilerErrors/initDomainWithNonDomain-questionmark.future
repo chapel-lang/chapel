@@ -1,0 +1,5 @@
+feature request: Should be able to write 'domain(?)' for a generic domain type
+
+This seems like an obvious pattern to support, particularly if we go
+more towards requiring partially-instantiated types without defaults
+to be declared in this way.
