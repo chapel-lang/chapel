@@ -169,6 +169,17 @@ struct ParserContext {
     };
   }
 
+  YYLTYPE locationFromChplLocation(AstNode* ast) {
+    auto chapelLoc = builder->getLocation(ast);
+    YYLTYPE ret = {
+      .first_line = chapelLoc.firstLine(),
+      .first_column = chapelLoc.firstColumn(),
+      .last_line = chapelLoc.lastLine(),
+      .last_column = chapelLoc.lastColumn()
+    };
+    return ret;
+  }
+
   ErroneousExpression* report(YYLTYPE loc, owned<ErrorBase> error);
   ErroneousExpression* error(YYLTYPE loc, const char* fmt, ...);
   ErroneousExpression* syntax(YYLTYPE loc, const char* fmt, ...);
@@ -327,12 +338,49 @@ struct ParserContext {
   AstNode* buildLetExpr(YYLTYPE location, ParserExprList* decls,
                         AstNode* expr);
 
+  // In certain locations the expression '[a, b]' is interpreted as an
+  // array type and not an array literal, e.g., formal types and return
+  // types. Those are represented by a BracketLoop node, while an array
+  // literal is represented by the Array node.
+  AstNode* sanitizeArrayType(YYLTYPE location, AstNode* ast);
+
+  // These different overloads for building bracket loop expressions exist
+  // to maintain compatability between loops and array types. The
+  // loop variants have a more normalized form e.g., '[i in 1..100] i',
+  // while the array type variants may omit quite a few things in the case
+  // that the type is generic, e.g., just '[]'.
+  AstNode* buildBracketLoopExpr(YYLTYPE location);
+
+  AstNode* buildBracketLoopExpr(YYLTYPE location, YYLTYPE locRightBracket,
+                                AstNode* bodyExpr);
+
+  AstNode* buildBracketLoopExpr(YYLTYPE location,
+                                YYLTYPE locIndexExprs,
+                                ParserExprList* indexExprs,
+                                AstNode* iterandExpr,
+                                AstNode* bodyExpr);
+
+  AstNode* buildBracketLoopExpr(YYLTYPE location,
+                                YYLTYPE locIndexExprs,
+                                YYLTYPE locIf,
+                                ParserExprList* indexExprs,
+                                AstNode* iterandExpr,
+                                AstNode* bodyIfCond,
+                                AstNode* bodyIfExpr);
+
+  AstNode* buildBracketLoopExpr(YYLTYPE location,
+                                YYLTYPE locIterandExprs,
+                                ParserExprList* iterandExprs,
+                                AstNode* bodyExpr);
+
+  // TODO: remove
   AstNode* buildArrayTypeWithIndex(YYLTYPE location,
                                    YYLTYPE locIndexExprs,
-                                    ParserExprList* indexExprs,
-                                    AstNode* domainExpr,
-                                    AstNode* typeExpr);
+                                   ParserExprList* indexExprs,
+                                   AstNode* domainExpr,
+                                   AstNode* typeExpr);
 
+  // TODO: remove
   AstNode* buildArrayType(YYLTYPE location, YYLTYPE locDomainExprs,
                           ParserExprList* domainExprs,
                           AstNode* typeExpr);

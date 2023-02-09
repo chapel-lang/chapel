@@ -271,13 +271,9 @@ void Visitor::checkForOneElementArraysWithoutComma(const Array* node) {
 }
   
 void Visitor::checkDomainTypeQueryUsage(const TypeQuery* node) {
-  if (!parent(0) || !parent(1)) return;
+  if (!parent(0) || !parent(0)->isBracketLoop()) return;
 
-  // Only care about the form '[?d]', leave otherwise.
-  auto dom = parent(0)->toDomain();
-  auto bkt = parent(1)->toBracketLoop();
-  if (!dom || !bkt || (dom != bkt->iterand())) return;
-
+  auto bkt = parent(0)->toBracketLoop();
   const AstNode* lastInWalk = nullptr;
   bool doEmitError = true;
 
@@ -286,6 +282,9 @@ void Visitor::checkDomainTypeQueryUsage(const TypeQuery* node) {
     auto formal = foundFormal->toFormal();
     if (lastInWalk == formal->typeExpression()) doEmitError = false;
   }
+
+  // We shouldn't see '[?d in foo]'...
+  doEmitError |= bkt->iterand() != node;
 
   if (doEmitError) {
     error(node, "domain query expressions may currently only be "
