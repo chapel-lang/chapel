@@ -10,7 +10,7 @@ union U {
 
 proc helper(param name : string) {
   writeln("---------------");
-  var f = openmem();
+  var f = openMemFile();
   var x : U;
 
   __primitive("set_union_id", x, getFieldIndex(U, name) + 1);

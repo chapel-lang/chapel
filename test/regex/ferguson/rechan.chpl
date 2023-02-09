@@ -4,7 +4,7 @@ use IO;
 // Todo: what should the channel offset be after each search or match? #20864
 
 writeln("Words words words");
-var f = openmem();
+var f = openMemFile();
 {
   var w = f.writer();
   w.write("Words words words");

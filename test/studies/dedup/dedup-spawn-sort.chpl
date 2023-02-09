@@ -29,7 +29,7 @@ proc main(args:[] string)
   
   // Open up buffers to store the hashes 
   forall (f,w) in zip(distributedBuffers, distributedWriters) {
-    f = openmem();
+    f = openMemFile();
     w = f.writer();
   }
   // Compute the SHA1 sums using the external program

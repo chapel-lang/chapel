@@ -2,7 +2,7 @@ use IO;
 
 config const lineLen = 100;
 
-var f = openmem();
+var f = openMemFile();
 var w = f.writer();
 
 for i in 1..lineLen do w.write(i%10);

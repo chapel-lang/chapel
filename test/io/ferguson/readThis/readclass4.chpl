@@ -16,7 +16,7 @@ class mything {
 
   writeln("Writing ", a);
 
-  var f = openmem();
+  var f = openMemFile();
   var w = f.writer();
 
   w.write(a);
