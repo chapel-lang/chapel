@@ -222,12 +222,16 @@ static Collector customHelper(std::string program, Context* context, bool fail =
   return pc;
 }
 
-static void kindHelper(Qualifier kind) {
+static void kindHelper(Qualifier kind, const std::string& constructName) {
   Context* context = getNewContext();
 
   std::string program;
   program += "var x = 0;\n";
-  program += "forall i in 1..10 with (";
+  program += constructName;
+  if (constructName == "forall" || constructName == "coforall") {
+    program += " i in 1..10";
+  }
+  program += " with (";
   program += qualifierToString(kind);
   program += " x) {\n";
   program += "  var y = x;\n";
@@ -261,45 +265,75 @@ static void kindHelper(Qualifier kind) {
 }
 
 static void testKinds() {
-  // test all valid task intent kinds
-  kindHelper(Qualifier::REF);
-  kindHelper(Qualifier::IN);
-  kindHelper(Qualifier::CONST_INTENT);
-  kindHelper(Qualifier::CONST_IN);
-  kindHelper(Qualifier::CONST_REF);
+  // all potentially-task-spawning constructs
+  static const std::string constructNames[] = {
+    "forall",
+    "coforall",
+    "cobegin",
+    "begin"
+  };
+  // all valid task intent kinds
+  static const Qualifier qualifiers[] = {
+    Qualifier::REF,
+    Qualifier::IN,
+    Qualifier::CONST_INTENT,
+    Qualifier::CONST_IN,
+    Qualifier::CONST_REF,
+    // inout and out intents disallowed due to data races
+    //Qualifier::INOUT,
+    //Qualifier::OUT,
+    // meaning of default task intent not well-defined
+    //Qualifier::DEFAULT_INTENT
+  };
 
-  // inout and out intents disallowed due to data races
-  // kindHelper(Qualifier::INOUT);
-  // kindHelper(Qualifier::OUT);
-  // meaning of default task intent not well-defined
-  // kindHelper(Qualifier::DEFAULT_INTENT);
+  // for each construct, test all intent kinds
+  for (const auto& constructName : constructNames) {
+    for (const auto& qualifier : qualifiers) {
+      kindHelper(qualifier, constructName);
+    }
+  }
 }
 
-static void testReduce() {
+static void reduceHelper(const std::string& constructName) {
+  assert(constructName == "forall" || constructName == "coforall");
+
   Context* context = getNewContext();
   // Very simple test focusing on scope resolution
-  std::string program = R"""(
+  std::string program;
+  program += R"""(operator +=(ref lhs: int, rhs: int) {
+  __primitive("+=", lhs, rhs);
+}
 
-    operator +=(ref lhs: int, rhs: int) {
-      __primitive("+=", lhs, rhs);
-    }
-
-    var x = 0;
-    forall i in 1..10 with (+ reduce x) {
-      x += 1;
-    }
-    )""";
+var x = 0;
+)""";
+  program += constructName;
+  program += R"""( i in 1..10 with (+ reduce x) {
+  x += 1;
+})""";
 
   ErrorGuard guard(context);
+
+  if (debug) {
+    printf("\n################################################\n");
+    printf("Resolving reduce-intent program:\n");
+    printf("========================\n");
+    printf("%s\n", program.c_str());
+    printf("========================\n");
+  }
 
   const Module* m = parseModule(context, program.c_str());
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
   auto decl = m->stmt(1);
-  auto forall = m->stmt(2)->toForall();
-  auto reduce = forall->withClause()->expr(0);
-  auto plusEq = forall->body()->stmt(0)->toCall();
+  const IndexableLoop* construct = nullptr;
+  if (constructName == "forall") {
+    construct = m->stmt(2)->toForall();
+  } else if (constructName == "coforall") {
+    construct = m->stmt(2)->toCoforall();
+  }
+  auto reduce = construct->withClause()->expr(0);
+  auto plusEq = construct->body()->stmt(0)->toCall();
   auto innerX = plusEq->actual(0);
 
   // Assert reduce points to outer decl
@@ -309,12 +343,17 @@ static void testReduce() {
   assert(rr.byAst(innerX).toId() == reduce->id());
 }
 
+static void testReduce() {
+  reduceHelper("forall");
+  reduceHelper("coforall");
+  // reduce intents not defined for begin and cobegin
+}
+
 
 //
 // TODO:
 // - type resolution for reduce-intents
 // - type resolution for `in` task-intents
-// - test begins, cobegins, foralls
 // - const-checking
 // - implicit shadow variables (flat, nested)
 //
