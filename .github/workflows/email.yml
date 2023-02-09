@@ -24,7 +24,6 @@ jobs:
       - name: get commits payload
         env:
           COMMIT_URL: ${{github.event.pull_request._links.commits.href}}
-          LOG: ${{github.event.pull_request.body}}
         uses: nick-fields/retry@v2
         with:
           max_attempts: 4
@@ -47,27 +46,31 @@ jobs:
               echo "MESSAGE=$((jq  '.[0].commit.message' commits.json)| awk -F'\\\\n' '{print $1}' | sed 's/\"//g')" >> $GITHUB_ENV 
               echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
               echo "FILES_CHANGED=$(echo '${{github.event.pull_request._links.html.href}}/files' )" >> $GITHUB_ENV
-              echo $LOG
-              echo "MERGE_LOG= $(echo $LOG | sed 's/\\r\\n\\r\\n/<p>/g'| sed 's/\\r\\n/<br>/g' ) " >> $GITHUB_ENV
       - name: checkout
         uses: actions/checkout@v3
         # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
         with:
-          fetch-depth: 0          
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v34
-        with:
-          separator: "," 
-      # tj-actions' limitation prevents the user from using "\n" as output seperator.
-      # Solution: parse the list of changed files and replace each comma delimiter with a <br>.   
-      - name: Parse changed files
-        id: parsed-output
-        run: |      
-                echo "MODIFIED= $(echo ${{steps.changed-files.outputs.modified_files}} |  sed 's/\,/<br>/g' )" >> $GITHUB_ENV
-                echo "ADDED= $(echo ${{steps.changed-files.outputs.added_files}} |  sed 's/\,/<br>/g' )" >> $GITHUB_ENV
-                echo "DELETED= $(echo ${{steps.changed-files.outputs.deleted_files}} |  sed 's/\,/<br>/g' )" >> $GITHUB_ENV
+          fetch-depth: 0 
+      # this step will (1) get the merge log for the merge_commit_sha and save it to the git  actions EN for later use in the email body. 
+      # (2) Get the diff using the filter (Select only files that are Added (A), Copied (C), Deleted (D), Modified (M), Renamed (R), Transfered (T)) .  
+      - name: Get merge log
+        id: merge-log
+        env:
+           MERGE_SHA: ${{github.event.pull_request.merge_commit_sha}}
+        run: |   
+              merge_log=$(git show -s --format=%B $MERGE_SHA  | tail -n +5)
+              echo "$merge_log" 
+              echo 'MERGE<<EOF' >> $GITHUB_ENV
+              echo "$merge_log" >> $GITHUB_ENV
+              echo 'EOF' >> $GITHUB_ENV
 
+
+              diff=$(git --no-pager diff --name-status --diff-filter=ACDMRT ${{github.event.pull_request.base.sha}} ${{github.sha}})
+              echo "$diff"  
+              echo 'DIFF<<EOF' >> $GITHUB_ENV
+              echo "$diff" >> $GITHUB_ENV
+              echo 'EOF' >> $GITHUB_ENV                   
+      
       - name: Send mail  
         uses: dawidd6/action-send-mail@v3
         with:
@@ -86,31 +89,17 @@ jobs:
            to: chapel+commits@discoursemail.com
            # Required sender full name (address can be skipped):
            from:  ${{env.AUTHOR}}
-           html_body: |
-              <!DOCTYPE html>
-              <html>
-              <body>
-              <p>
-              Branch: ${{github.ref}} <br>
-              Revision: ${{ github.event.pull_request.merge_commit_sha }}  <br>
-              Author: ${{ env.AUTHOR}} <br>
-              Link: ${{github.event.pull_request._links.html.href}} <br>             
-              Log Message: <br><br>
-                           ${{env.MESSAGE}} <br> 
-                          ${{env.MERGE_LOG}} <br>
-              Compare: ${{env.COMPARE_URL}} <br> 
-              Diff: ${{github.event.pull_request.diff_url}} <br>
-              Modified Files: <br>
-                   ${{env.MODIFIED}} <br><br>
-              Added Files: <br>
-                   ${{env.ADDED}} <br><br>    
-              Removed Files: <br>     
-                   ${{env.DELETED}} <br>
-             
-              </p>
-              </body>
-              </html>
-           # Optional converting Markdown to HTML (set content_type to text/html too):
-           convert_markdown: true
+         body: |
+              
+              Branch: ${{github.ref}} 
+              Revision: ${{ github.event.pull_request.merge_commit_sha }} 
+              Author: ${{ env.AUTHOR}} 
+              Link: ${{github.event.pull_request._links.html.href}}              
+              Log Message: 
+                       ${{env.MERGE}} 
+              Compare: ${{env.COMPARE_URL}} 
+              Diff: 
+                       ${{env.DIFF}} 
+                       ${{github.event.pull_request.diff_url}}
            # Optional priority: 'high', 'normal' (default) or 'low'
            priority: low
