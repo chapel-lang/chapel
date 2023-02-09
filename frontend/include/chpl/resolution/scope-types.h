@@ -471,17 +471,37 @@ class VisibilitySymbols {
     CONTENTS_EXCEPT,
   };
 
-  /** Indicating shadow scopes */
+  /** Indicating which shadow scope level to use, if any */
   enum ShadowScope {
-    // public use / private import / public import all work at the same
-    // scope level as symbols declared within a module, and
-    // REGULAR_SCOPE indicates that.
+    /**
+      `REGULAR_SCOPE` indicates that no shadow scope is used for the symbols
+      brought in by this VisibilitySymbols. In other words, the symbols
+      brought in are at the same scope level as a variable declared next to
+      the `use` / `import`. `REGULAR_SCOPE` is the shadow scope level
+      used for:
+
+        * `public use`
+        * `import` aka `private import`
+        * `public import`
+     */
     REGULAR_SCOPE = 0,
 
     // 'private use' aka just 'use' introduces 2 shadow scopes
     // that appear to be between the module and any parent symbols
-    SHADOW_SCOPE_ONE = 1, // for module contents brought in by a 'private use'
-    SHADOW_SCOPE_TWO = 2, // for module name from a 'private use'
+
+    /**
+      `SHADOW_SCOPE_ONE` indicates a shadow scope just outside of
+      `REGULAR_SCOPE` but before `SHADOW_SCOPE_TWO`. This level is
+      used for the module contents brought in by a non-public `use`.
+     */
+    SHADOW_SCOPE_ONE = 1,
+
+    /**
+      `SHADOW_SCOPE_TWO` indicates a shadow scope just outside of
+      `SHADOW_SCOPE_ONE` but before any parent scopes. This level
+      is used for the module name brought in by a non-public `use`.
+     */
+    SHADOW_SCOPE_TWO = 2,
   };
 
  private:
