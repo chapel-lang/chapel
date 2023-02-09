@@ -180,24 +180,6 @@ struct Collector {
   }
 };
 
-static const char* kindToString(Qualifier kind) {
-  switch (kind) {
-    case Qualifier::REF: return "ref";
-    case Qualifier::CONST_INTENT: return "const";
-    case Qualifier::CONST_REF: return "const ref";
-    case Qualifier::IN: return "in";
-    case Qualifier::CONST_IN: return "const in";
-    case Qualifier::OUT: return "out";
-    case Qualifier::PARAM: return "param";
-    case Qualifier::TYPE: return "type";
-    case Qualifier::VAR: return "var";
-    case Qualifier::CONST_VAR: return "const";
-    case Qualifier::DEFAULT_INTENT: return "";
-    default: assert(false);
-  }
-  return "";
-}
-
 static void printErrors(const ErrorGuard& guard) {
   if (!verbose) {
     printf("Found %lu errors.\n\n", guard.errors().size());
@@ -246,15 +228,17 @@ static void kindHelper(Qualifier kind) {
   std::string program;
   program += "var x = 0;\n";
   program += "forall i in 1..10 with (";
-  program += kindToString(kind);
+  program += qualifierToString(kind);
   program += " x) {\n";
   program += "  var y = x;\n";
   program += "}\n";
 
   auto col = customHelper(program, context);
 
+  // Test shadow variable type is as expected
   {
     Qualifier useKind = kind;
+    // const task intent corresponds to const shadow variable
     if (useKind == Qualifier::CONST_INTENT) {
       useKind = Qualifier::CONST_VAR;
     }
@@ -263,24 +247,32 @@ static void kindHelper(Qualifier kind) {
     assert(expected == shadowX);
   }
 
+  // Test type of variable assigned value of shadow variable
   {
     QualifiedType yType = col.onlyDecl("y");
     assert(yType.type() == IntType::get(context, 0));
   }
 
+  // Test that the shadow variable points to the original
   {
-    // Test that the shadow variable points to the original
     auto& rr = col.onlyShadow("x");
     assert(rr.toId() == col.onlyDeclId("x"));
   }
 }
 
 static void testKinds() {
+  // test all valid task intent kinds
   kindHelper(Qualifier::REF);
-  kindHelper(Qualifier::CONST_INTENT);
-  kindHelper(Qualifier::CONST_REF);
   kindHelper(Qualifier::IN);
+  kindHelper(Qualifier::CONST_INTENT);
   kindHelper(Qualifier::CONST_IN);
+  kindHelper(Qualifier::CONST_REF);
+
+  // inout and out intents disallowed due to data races
+  // kindHelper(Qualifier::INOUT);
+  // kindHelper(Qualifier::OUT);
+  // meaning of default task intent not well-defined
+  // kindHelper(Qualifier::DEFAULT_INTENT);
 }
 
 static void testReduce() {
