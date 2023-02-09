@@ -1,4 +1,4 @@
 use IO;
 
-var f = openMemFile();
+var f = openmem();
 f.close();
