@@ -26,7 +26,7 @@
 #include "chpl/util/version-info.h"
 
 void get_version(char* buf, size_t bufsize) {
-  std::string ret = chpl::getVersion(developer);
+  std::string ret = chpl::getVersion();
   strcpy(buf, ret.c_str());
 }
 
@@ -46,9 +46,6 @@ int get_minor_version() {
 }
 int get_update_version() {
   return chpl::getUpdateVersion();
-}
-const char* get_build_version() {
-  return chpl::getBuildVersion(developer);
 }
 bool get_is_official_release() {
   return chpl::getIsOfficialRelease();
