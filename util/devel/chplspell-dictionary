@@ -2215,7 +2215,7 @@ oleg
 opendir
 openfd
 openfp
-openmem
+openMemFile
 openproc
 openreader
 opensocketdata
@@ -8313,7 +8313,6 @@ openfp
 opengroup
 openhigh
 openlow
-openmem
 openmpi
 openplugin
 openreader
