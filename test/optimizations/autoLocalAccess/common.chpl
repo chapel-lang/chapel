@@ -12,10 +12,10 @@ proc createDom(space) {
   }
 
   if distType == Block {
-    return newBlockDom(space);
+    return Block.createDomain(space);
   }
   else if distType == Cyclic {
-    return newCyclicDom(space);
+    return Cyclic.createDomain(space);
   }
   else if distType == BlockCyclic {
     if space.rank == 1 {

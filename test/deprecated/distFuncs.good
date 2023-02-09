@@ -1,0 +1,8 @@
+distFuncs.chpl:7: warning: 'newBlockDom' is deprecated - please use 'Block.createDomain' instead
+distFuncs.chpl:8: warning: 'newBlockArr' is deprecated - please use 'Block.createArray' instead
+distFuncs.chpl:9: warning: 'newBlockDom' is deprecated - please use 'Block.createDomain' instead
+distFuncs.chpl:10: warning: 'newBlockArr' is deprecated - please use 'Block.createArray' instead
+distFuncs.chpl:12: warning: 'newCyclicDom' is deprecated - please use 'Cyclic.createDomain' instead
+distFuncs.chpl:13: warning: 'newCyclicArr' is deprecated - please use 'Cyclic.createArray' instead
+distFuncs.chpl:14: warning: 'newCyclicDom' is deprecated - please use 'Cyclic.createDomain' instead
+distFuncs.chpl:15: warning: 'newCyclicArr' is deprecated - please use 'Cyclic.createArray' instead

@@ -54,7 +54,7 @@ verify(dm2, "check2");
 // randomStrings: generate random strings from "-32768" to "32767"
 
 record randomStrings {
-  const dom    = newBlockDom({0..#numStrings});
+  const dom    = Block.createDomain({0..#numStrings});
   const seed   = defaultSeed;
   const stream = createRandomStream(stringsType, seed, parSafe=false);
 

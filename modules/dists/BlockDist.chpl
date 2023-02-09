@@ -256,10 +256,10 @@ domain or array.
 
     use BlockDist;
 
-    var BlockDom1 = newBlockDom({1..5, 1..5});
-    var BlockArr1 = newBlockArr({1..5, 1..5}, real);
-    var BlockDom2 = newBlockDom(1..5, 1..5);
-    var BlockArr2 = newBlockArr(1..5, 1..5, real);
+    var BlockDom1 = Block.createDomain({1..5, 1..5});
+    var BlockArr1 = Block.createArray({1..5, 1..5}, real);
+    var BlockDom2 = Block.createDomain(1..5, 1..5);
+    var BlockArr2 = Block.createArray(1..5, 1..5, real);
 
 **Data-Parallel Iteration**
 
@@ -731,6 +731,24 @@ iter Block.activeTargetLocales(const space : domain = boundingBox) {
     if locSpace[(...chunk)].sizeAs(int) > 0 then
       yield i;
   }
+}
+
+proc type Block.createDomain(dom: domain) {
+  return dom dmapped Block(dom);
+}
+
+proc type Block.createDomain(rng: range...) {
+  return createDomain({(...rng)});
+}
+
+proc type Block.createArray(dom: domain, type eltType) {
+  var D = createDomain(dom);
+  var A: [D] eltType;
+  return A;
+}
+
+proc type Block.createArray(rng: range..., type eltType) {
+  return createArray({(...rng)}, eltType);
 }
 
 proc chpl__computeBlock(locid, targetLocBox:domain, boundingBox:domain,
@@ -1886,23 +1904,26 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
   return res;
 }
 
-
 ////// Factory functions ////////////////////////////////////////////////////
 
+deprecated "'newBlockDom' is deprecated - please use 'Block.createDomain' instead"
 proc newBlockDom(dom: domain) {
   return dom dmapped Block(dom);
 }
 
+deprecated "'newBlockArr' is deprecated - please use 'Block.createArray' instead"
 proc newBlockArr(dom: domain, type eltType) {
   var D = newBlockDom(dom);
   var A: [D] eltType;
   return A;
 }
 
+deprecated "'newBlockDom' is deprecated - please use 'Block.createDomain' instead"
 proc newBlockDom(rng: range...) {
   return newBlockDom({(...rng)});
 }
 
+deprecated "'newBlockArr' is deprecated - please use 'Block.createArray' instead"
 proc newBlockArr(rng: range..., type eltType) {
   return newBlockArr({(...rng)}, eltType);
 }

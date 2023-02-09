@@ -1,6 +1,6 @@
 use BlockDist;
 
-var A = newBlockArr({1..10}, int);
+var A = Block.createArray({1..10}, int);
 
 for (a,i) in zip(A, A.domain) do a=i;
 
