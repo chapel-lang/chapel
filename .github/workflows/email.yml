@@ -89,7 +89,7 @@ jobs:
            to: chapel+commits@discoursemail.com
            # Required sender full name (address can be skipped):
            from:  ${{env.AUTHOR}}
-         body: |
+           body: |
               
               Branch: ${{github.ref}} 
               Revision: ${{ github.event.pull_request.merge_commit_sha }} 
