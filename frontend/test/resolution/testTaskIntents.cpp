@@ -354,6 +354,7 @@ static void testReduce() {
 // TODO:
 // - implicit shadow variables (flat, nested)
 // - reduce intents for begin/cobegin, if those are implemented in future
+// - type resolve in-intents where type can change (e.g. array slices)
 //
 int main(int argc, char** argv) {
   for (int i = 1; i < argc; i++) {
