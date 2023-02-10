@@ -492,11 +492,11 @@ proc copyMode(out error: errorCode, src: string, dest: string) {
 
 /* Will recursively copy the tree which lives under `src` into `dst`,
    including all contents and permissions. Metadata such as file creation and
-   modification times, uid, and gid will not be preserved.  `dst` must not
-   previously exist, this function assumes it can create it and any missing
-   parent directories. If `copySymbolically` is `true`, symlinks will be
-   copied as symlinks, otherwise their contents and metadata will be copied
-   instead.
+   modification times, uid, and gid will be preserved if `metadata` is true.
+   `dst` must not previously exist, this function assumes it can create it and
+   any missing parent directories. If `copySymbolically` is `true`, symlinks
+   will be copied as symlinks, otherwise their contents and metadata will be
+   copied instead.
 
    :arg src: The root of the source tree to be copied.
    :type src: `string`
@@ -508,12 +508,15 @@ proc copyMode(out error: errorCode, src: string, dest: string) {
                           symlinks in the source directory.  It is set to
                           `false` by default
    :type copySymbolically: `bool`
+   :arg metadata: This argument is used to indicate whether to copy file metadata.
+                  It is set to `false` by default.
+   :type metadata: `bool`
 
    :throws FileExistsError: when the `dest` already exists.
    :throws NotADirectoryError: when `src` is not a directory.
    :throws SystemError: thrown to describe another error if it occurs.
 */
-proc copyTree(src: string, dest: string, copySymbolically: bool=false) throws {
+proc copyTree(src: string, dest: string, copySymbolically: bool=false, metadata: bool=false) throws {
   var expectedErrorCases = try exists(dest);
   if (expectedErrorCases) then
     // dest exists.  That's not ideal.
@@ -524,10 +527,10 @@ proc copyTree(src: string, dest: string, copySymbolically: bool=false) throws {
     try ioerror(ENOTDIR:errorCode, "in copyTree(" + src + ", " + dest + ")");
 
   var srcPath = try realPath(src);
-  try copyTreeHelper(srcPath, dest, copySymbolically);
+  try copyTreeHelper(srcPath, dest, copySymbolically, metadata);
 }
 
-private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=false) throws {
+private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=false, metadata: bool=false) throws {
   extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): errorCode;
 
   // Create dest
@@ -536,6 +539,15 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
   if err then try ioerror(err, "in copyTreeHelper", src);
 
   try mkdir(dest, mode=oldMode, parents=true);
+
+  if metadata {
+    try {
+      var uid = getUid(src),
+          gid = getGid(src);
+      chown(dest, uid, gid);
+    }
+  }
+
 
   for filename in listDir(path=src, dirs=false, files=true, listlinks=true) {
     // Take care of files in src
@@ -548,7 +560,7 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
     } else {
       // Either we didn't find a link, or copy symbolically is false, which
       // means we want the contents of the linked file, not a link itself.
-      try copy(fileSrcName, fileDestName, metadata=false);
+      try copy(fileSrcName, fileDestName, metadata=metadata);
     }
   }
 
