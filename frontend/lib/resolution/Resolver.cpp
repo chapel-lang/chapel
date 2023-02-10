@@ -1757,8 +1757,9 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
       ct = inCompositeType;
     } else {
       if (auto rt = methodReceiverType().type()) {
-        if (ct != rt->getCompositeType()) {
-          if (auto bct = ct->toBasicClassType()) {
+        if (auto comprt = rt->getCompositeType()) {
+          ct = comprt; // start with the receiver type
+          if (auto bct = comprt->toBasicClassType()) {
             // if it's a class, check for parent classes to decide
             // which type corresponds to the uAST ID parentId
             while (bct != nullptr) {
