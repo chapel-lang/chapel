@@ -2896,17 +2896,6 @@ gatherAndFilterCandidates(Context* context,
     // compute the potential functions that it could resolve to
     auto v = lookupCalledExpr(context, inScope, ci, visited);
 
-    /*
-    printf("Visible functions for\n");
-    ci.dump();
-    printf("\n");
-    for (auto c : v) {
-      c.dump();
-      printf("\n");
-    }
-    printf("\n\n");
-    */
-
     // filter without instantiating yet
     const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
 
@@ -3027,6 +3016,7 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
                                        const Scope* inScope,
                                        const PoiScope* inPoiScope,
                                        PoiInfo& poiInfo) {
+
   // search for candidates at each POI until we have found candidate(s)
   size_t firstPoiCandidate = 0;
   ForwardingInfoVec forwardingInfo;
@@ -3070,8 +3060,6 @@ CallResolutionResult resolveFnCall(Context* context,
     // * filter and instantiate
     // * disambiguate
     // * note any most specific candidates from POI in poiInfo.
-
-    // try
     mostSpecific = resolveFnCallFilterAndFindMostSpecific(context, call, ci,
                                                           inScope, inPoiScope,
                                                           poiInfo);
