@@ -4989,16 +4989,14 @@ proc fileReader.readUntil(ref s: string, separator: string, maxSize=-1, consumeS
           numSepBytes = sepLocal.numBytes;
 
     var nextChar: int(32),
-        numCodepoints = 0,
+        numCodepointsRead = 0,
         err: errorCode = 0,
         foundSeparator = false,
         sepBuff : [0..<numSepBytes] uint(8);
 
     this._mark(); // A
-    while numCodepoints < (maxNumCodepoints - numSepCodepoints) {
+    while numCodepointsRead < (maxNumCodepoints - numSepCodepoints) {
       this._mark(); // B
-
-      // writeln("--------- ", numCodepoints, " ----------");
 
       // speculatively read the next numSepCodepoints. Attempt to match with the separator
       var numMatched = 0;
@@ -5021,7 +5019,7 @@ proc fileReader.readUntil(ref s: string, separator: string, maxSize=-1, consumeS
       }
       this._revert(); // B
 
-      // stop reading if a match was found starting at B
+      // stop reading if a match was found (starting at B)
       if numMatched == numSepCodepoints {
         foundSeparator = true;
         break;
@@ -5035,7 +5033,7 @@ proc fileReader.readUntil(ref s: string, separator: string, maxSize=-1, consumeS
         this._revert();
         try this._ch_ioerror(err, "in channel.readUntil(string)");
       } else {
-        numCodepoints += 1;
+        numCodepointsRead += 1;
       }
     }
 
@@ -5044,24 +5042,25 @@ proc fileReader.readUntil(ref s: string, separator: string, maxSize=-1, consumeS
     this._revert(); // A
     const numBytesRead: int = endOffset - this._offset();
 
-    // writeln(numBytesRead, ", ", numCodepoints, " fs: ", foundSeparator);
-
     if !foundSeparator {
-      err = readStringBytesData(s, this._channel_internal, numBytesRead, numCodepoints);
+      err = readStringBytesData(s, this._channel_internal, numBytesRead, numCodepointsRead);
     } else {
       if consumeSeparator {
-        err = readStringBytesData(s, this._channel_internal, numBytesRead + numSepBytes, numCodepoints + numSepCodepoints);
-        if includeSeparator {
-          // nothing
-        } else {
+        err = readStringBytesData(
+          s, this._channel_internal,
+          numBytesRead + numSepBytes,
+          numCodepointsRead + numSepCodepoints
+        );
+        if !includeSeparator then
           s = s[0..<numBytesRead];
-        }
       } else {
-        err = readStringBytesData(s, this._channel_internal, numBytesRead, numCodepoints);
-        if includeSeparator {
-          s += separator;
-        } else {
-          // nothing
+        err = readStringBytesData(
+          s, this._channel_internal,
+          numBytesRead,
+          numCodepointsRead
+        );
+        if includeSeparator then
+          s += sepLocal;
         }
       }
     }
