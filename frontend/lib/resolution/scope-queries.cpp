@@ -537,6 +537,10 @@ static bool doLookupInScope(Context* context,
                             NamedScopeSet& checkedScopes,
                             std::vector<BorrowedIdsWithName>& result) {
 
+  if (name == "field") {
+    gdbShouldBreakHere();
+  }
+
   bool checkDecls = (config & LOOKUP_DECLS) != 0;
   bool checkUseImport = (config & LOOKUP_IMPORT_AND_USE) != 0;
   bool checkParents = (config & LOOKUP_PARENTS) != 0;
