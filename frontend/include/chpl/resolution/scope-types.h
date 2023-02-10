@@ -53,7 +53,8 @@ class IdAndVis {
 
   bool operator==(const IdAndVis& other) const {
     return id_ == other.id_ &&
-           vis_ == other.vis_;
+           vis_ == other.vis_ &&
+           isMethodOrField_ == other.isMethodOrField_;
   }
   bool operator!=(const IdAndVis& other) const {
     return !(*this == other);
@@ -63,6 +64,7 @@ class IdAndVis {
     size_t ret = 0;
     ret = hash_combine(ret, chpl::hash(id_));
     ret = hash_combine(ret, chpl::hash(vis_));
+    ret = hash_combine(ret, chpl::hash(isMethodOrField_));
     return ret;
   }
 
