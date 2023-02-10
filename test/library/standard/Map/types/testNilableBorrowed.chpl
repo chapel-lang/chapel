@@ -34,7 +34,7 @@ assert(zzz!.value == 3);
 ret = m.add(0, nil);
 assert(ret);
 assert(m.contains(0));
-var zzzz = m.getValue(0);
+var zzzz = m[0];
 assert(zzzz == nil);
 ret = m.remove(0);
 assert(ret);
