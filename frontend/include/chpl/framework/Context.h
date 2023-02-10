@@ -107,6 +107,37 @@ class Context {
     void swap(Configuration& other);
   };
 
+  class RunResultBase {
+   private:
+    std::vector<owned<ErrorBase>> errors_;
+
+   public:
+    ~RunResultBase();
+
+    RunResultBase();
+    // Should not be called due to copy elision, but it's not guaranteed..
+    RunResultBase(const RunResultBase& other);
+
+    /** The errors that occurred while running. */
+    std::vector<owned<ErrorBase>>& errors() { return errors_; };
+    const std::vector<owned<ErrorBase>>& errors() const { return errors_; };
+    /**
+      Checks if any syntax errors or errors occurred while running.
+      Warnigns do not cause this method to return true.
+    */
+    bool ranWithoutErrors() const;
+  };
+
+  template <typename T>
+  class RunResult : public RunResultBase {
+   private:
+    T result_;
+
+   public:
+    /** The result of the execution. */
+    T& result() { return result_; }
+  };
+
  private:
 
   // The implementation of the default error handler.
@@ -176,6 +207,17 @@ class Context {
   int numQueriesRunThisRevision_ = 0;
   // tracks the nesting of queries, displayed during query tracing
   int queryTraceDepth = 0;
+
+  // Whether or not to re-emit errors that were already emitted by a cached
+  // query. By default, they are not re-emitted, since cached queries
+  // aren't re-run.
+  bool emitCachedErrors = false;
+  // If this vector is non-empty, the top element is a collection into
+  // which to store emitted errors, instead of reporting them to the
+  // error handler. Errors reported to the collection stack are
+  // re-reported to the error handler if they are encountered again, even
+  // if they occurred in a cached query.
+  std::vector<std::vector<owned<ErrorBase>>*> errorCollectionStack;
 
   // list of query names to ignore when tracing
   std::vector<std::string>
@@ -403,6 +445,15 @@ class Context {
   */
   ErrorHandler* errorHandler() {
     return this->handler_.get();
+  }
+
+  template <typename F>
+  auto runAndTrackErrors(F f) -> RunResult<decltype(f(this))> {
+    RunResult<decltype(f(this))> result;
+    errorCollectionStack.push_back(&result.errors());
+    result.result() = f(this);
+    errorCollectionStack.pop_back();
+    return result;
   }
 
   /**

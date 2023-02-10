@@ -281,9 +281,10 @@ CallResolutionResult resolvePrimCall(Context* context,
 
           if (bestCandidate != nullptr) {
             // We did find a candidate; resolve the function body.
-            auto resolvedFn = resolveFunction(context, bestCandidate, inPoiScope);
-            // TODO: check for actual resolution errors when resolving function
-            callAndFnResolved = !resolvedFn->returnType().isUnknownKindOrType();
+            auto result = context->runAndTrackErrors([&](Context* context) {
+              return resolveFunction(context, bestCandidate, inPoiScope);
+            });
+            callAndFnResolved = result.ranWithoutErrors();
           }
 
           type = QualifiedType(QualifiedType::PARAM,

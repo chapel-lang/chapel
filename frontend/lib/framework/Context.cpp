@@ -130,6 +130,24 @@ Context::Context(Context& consumeContext, Configuration newConfig) {
   config_.swap(newConfig);
 }
 
+Context::RunResultBase::RunResultBase() = default;
+
+Context::RunResultBase::~RunResultBase() = default;
+
+Context::RunResultBase::RunResultBase(const Context::RunResultBase& other) {
+  for (auto& err : other.errors()) {
+      errors_.push_back(err->clone());
+  }
+}
+
+bool Context::RunResultBase::ranWithoutErrors() const {
+  for (auto& error : errors_) {
+    auto kind = error->kind();
+    if (kind == ErrorBase::ERROR || kind == ErrorBase::SYNTAX) return false;
+  }
+  return true;
+}
+
 void Context::reportError(Context* context, const ErrorBase* err) {
   handler_->report(context, err);
 }
