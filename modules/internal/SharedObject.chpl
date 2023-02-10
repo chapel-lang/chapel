@@ -235,6 +235,14 @@ module SharedObject {
       this.chpl_pn = count;
     }
 
+    /* Private initializer for casting from weak to shared.
+      assumes the shared reference count in 'pn' has already been incremented */
+    pragma "no doc"
+    proc init(_private: bool, pragma "nil from arg" p: unmanaged, pn) {
+      this.chpl_t = _to_borrowed(p.type);
+      this.chpl_p = p;
+      this.chpl_pn = pn;
+    }
 
     // Initialize generic 'shared' var-decl from owned:
     //   var s : shared = ownedThing;
@@ -922,10 +930,7 @@ module WeakPointer {
             }
           }
           // otherwise, the strong-count was successfully incremented
-          var result = new _shared(x.chpl_p!);
-          delete result.chpl_pn;
-          result.chpl_pn = x.chpl_pn;
-          return result;
+          return new _shared(true, x.chpl_p!, x.chpl_pn);
         }
     } else {
       // class value itself was nil
