@@ -134,6 +134,18 @@ void chpl_gpu_copy_host_to_device(void* dst, const void* src, size_t n) {
   CHPL_GPU_DEBUG("Copy successful\n");
 }
 
+void* chpl_gpu_comm_async(void *dst, void *src, size_t n) {
+  assert(chpl_gpu_is_device_ptr(dst) || chpl_gpu_is_device_ptr(src));
+
+  CHPL_GPU_DEBUG("Copying %zu bytes asynchronously between host and device\n", n);
+
+  return chpl_gpu_impl_comm_async(dst, src, n);
+}
+
+void chpl_gpu_comm_wait(void *stream) {
+  chpl_gpu_impl_comm_wait(stream);
+}
+
 size_t chpl_gpu_get_alloc_size(void* ptr) {
   return chpl_gpu_impl_get_alloc_size(ptr);
 }
