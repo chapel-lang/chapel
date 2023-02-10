@@ -321,14 +321,13 @@ var x = 0;
 })""";
 
   auto col = customHelper(program, context);
-  /* const auto intType = IntType::get(context, 0); */
 
   // Test shadow variable type is as expected
-  // TODO: currently fails
   {
-    /* QualifiedType expected = QualifiedType(Qualifier::VAR, intType); */
-    /* QualifiedType shadowX = col.onlyShadow("x"); */
-    /* assert(expected == shadowX); */
+    const auto intType = IntType::get(context, 0);
+    QualifiedType expected = QualifiedType(Qualifier::VAR, intType);
+    QualifiedType shadowX = col.onlyShadow("x").type();
+    assert(expected == shadowX);
   }
 
   // Test that the shadow variable points to the original
@@ -353,7 +352,6 @@ static void testReduce() {
 
 //
 // TODO:
-// - type resolution for reduce-intents
 // - implicit shadow variables (flat, nested)
 // - reduce intents for begin/cobegin, if those are implemented in future
 //
