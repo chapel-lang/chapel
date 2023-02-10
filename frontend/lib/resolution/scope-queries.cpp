@@ -536,11 +536,6 @@ static bool doLookupInScope(Context* context,
                             LookupConfig config,
                             NamedScopeSet& checkedScopes,
                             std::vector<BorrowedIdsWithName>& result) {
-
-  if (name == "field") {
-    gdbShouldBreakHere();
-  }
-
   bool checkDecls = (config & LOOKUP_DECLS) != 0;
   bool checkUseImport = (config & LOOKUP_IMPORT_AND_USE) != 0;
   bool checkParents = (config & LOOKUP_PARENTS) != 0;
@@ -621,9 +616,11 @@ static bool doLookupInScope(Context* context,
     if (onlyInnermost && got) return true;
   }
 
-  // consider the receiver scopes directly (for fields)
-  // (don't consider parent scopes of receiver scopes yet)
-  if (considerReceiverScopes) {
+  // Consider the receiver scopes directly (for fields).
+  // Only consider receiver scopes if we are at a method scope
+  // in order to get field vs. formal precedence correct.
+  // (other cases will be handled later in this function)
+  if (considerReceiverScopes && scope->isMethodScope()) {
     // create a config that doesn't search receiver scopes parent scopes
     // (such parent scopes are covered in later in this function)
     LookupConfig newConfig = config;
@@ -728,7 +725,7 @@ static bool doLookupInScope(Context* context,
   // that the scope can be both found as a regular parent and also
   // as a parent of a receiver scope.
   // That is important to work with the 'checkedScopes' set.
-  if (checkParents && considerReceiverScopes) {
+  if (considerReceiverScopes) {
     // create a config that doesn't search receiver scopes parent scopes
     // (such parent scopes are covered directly in the loop below)
     LookupConfig newConfig = (config & ~LOOKUP_PARENTS);
@@ -736,14 +733,16 @@ static bool doLookupInScope(Context* context,
     newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
 
     for (const auto& rcvScope : receiverScopes) {
-      for (const Scope* cur = rcvScope->parentScope();
+      for (const Scope* cur = rcvScope;
            cur != nullptr;
            cur = cur->parentScope()) {
         doLookupInScope(context, cur, {}, resolving,
                         name, newConfig, checkedScopes, result);
-        if (asttags::isModule(cur->tag()) && !goPastModules) {
+        // stop if we aren't looking at parents or if we reach a module
+        if (asttags::isModule(cur->tag()) && !goPastModules)
           break;
-        }
+        if (!checkParents)
+          break;
       }
     }
   }
