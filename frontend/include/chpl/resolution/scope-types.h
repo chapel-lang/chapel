@@ -68,6 +68,7 @@ class IdAndVis {
 
   const ID& id() const { return id_; }
   uast::Decl::Visibility vis() const { return vis_; }
+  bool isPrivate() const { return vis_ == uast::Decl::PRIVATE; }
   bool isMethodOrField() const { return isMethodOrField_; }
 };
 
@@ -147,13 +148,30 @@ class BorrowedIdsWithName {
  friend class OwnedIdsWithName;
 
  private:
+  /**
+    Whether or not this list of IDs should include the private IDs
+    from the scope.
+   */
+  bool arePrivateIdsIgnored_ = false;
+  /**
+    Whether or not this list of IDs should filter to only include
+    methods and fields.
+   */
+  bool onlyMethodsFields_ = false;
+  /** How many IDs are visible in this list. */
+  int numVisibleIds_;
+  // TODO: consider storing a variant of ID here
+  // with symbolPath, postOrderId, and tag
+  IdAndVis idv_;
+  const std::vector<IdAndVis>* moreIdvs_ = nullptr;
+
   static inline bool isIdVisible(const IdAndVis& idv,
                                  bool arePrivateIdsIgnored) {
     return !arePrivateIdsIgnored || idv.vis_ != uast::Decl::PRIVATE;
   }
 
   bool isIdVisible(const IdAndVis& idv) const {
-    return isIdVisible(idv, arePrivateIdsIgnored);
+    return isIdVisible(idv, arePrivateIdsIgnored_);
   }
 
   /** Returns an iterator referring to the first element stored. */
@@ -211,18 +229,8 @@ class BorrowedIdsWithName {
     }
     inline const ID& operator*() const { return currentIdv->id_; }
   };
+
  private:
-  /**
-    Whether or not this list of IDs should include the private IDs
-    from the scope.
-   */
-  bool arePrivateIdsIgnored;
-  /** How many IDs are visible in this list. */
-  int numVisibleIds_;
-  // TODO: consider storing a variant of ID here
-  // with symbolPath, postOrderId, and tag
-  IdAndVis idv_;
-  const std::vector<IdAndVis>* moreIdvs_ = nullptr;
 
   /** Construct a BorrowedIdsWithName referring to the same IDs
       as the passed OwnedIdsWithName.
@@ -230,7 +238,7 @@ class BorrowedIdsWithName {
       will continue to exist. */
   BorrowedIdsWithName(IdAndVis idv, const std::vector<IdAndVis>* moreIdvs,
                       bool arePrivateIdsIgnored)
-    : arePrivateIdsIgnored(arePrivateIdsIgnored), idv_(idv),
+    : arePrivateIdsIgnored_(arePrivateIdsIgnored), idv_(idv),
       moreIdvs_(moreIdvs) {
     if(moreIdvs_ == nullptr) {
       numVisibleIds_ = 1;
@@ -247,9 +255,9 @@ class BorrowedIdsWithName {
   /** Construct a BorrowedIdsWithName referring to one ID. Requires
       that the ID is visible. */
   BorrowedIdsWithName(IdAndVis idv, bool arePrivateIdsIgnored = true)
-    : arePrivateIdsIgnored(arePrivateIdsIgnored),
+    : arePrivateIdsIgnored_(arePrivateIdsIgnored),
       numVisibleIds_(1), idv_(std::move(idv)) {
-    assert(isIdVisible(idv_, arePrivateIdsIgnored));
+    assert(isIdVisible(idv_, arePrivateIdsIgnored_));
   }
  public:
 
@@ -296,7 +304,8 @@ class BorrowedIdsWithName {
   }
 
   bool operator==(const BorrowedIdsWithName& other) const {
-    return arePrivateIdsIgnored == other.arePrivateIdsIgnored &&
+    return arePrivateIdsIgnored_ == other.arePrivateIdsIgnored_ &&
+           onlyMethodsFields_ == other.onlyMethodsFields_ &&
            numVisibleIds_ == other.numVisibleIds_ &&
            idv_ == other.idv_ &&
            moreIdvs_ == other.moreIdvs_;
@@ -307,7 +316,8 @@ class BorrowedIdsWithName {
 
   size_t hash() const {
     size_t ret = 0;
-    ret = hash_combine(ret, chpl::hash(arePrivateIdsIgnored));
+    ret = hash_combine(ret, chpl::hash(arePrivateIdsIgnored_));
+    ret = hash_combine(ret, chpl::hash(onlyMethodsFields_));
     ret = hash_combine(ret, chpl::hash(numVisibleIds_));
     ret = hash_combine(ret, chpl::hash(moreIdvs_));
     if (moreIdvs_ == nullptr) {
