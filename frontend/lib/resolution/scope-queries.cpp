@@ -54,6 +54,19 @@ static void maybeEmitWarningsForId(Context* context, ID idMention,
   parsing::reportUnstableWarningForId(context, idMention, idTarget);
 }
 
+static bool isMethodOrField(const AstNode* d) {
+  if (d != nullptr) {
+    if (auto fn = d->toFunction()) {
+      return fn->isMethod();
+    }
+    if (auto v = d->toVariable()) {
+      return v->isField();
+    }
+  }
+
+  return false;
+}
+
 static void gather(DeclMap& declared, UniqueString name, const AstNode* d,
                    Decl::Visibility visibility) {
   auto search = declared.find(name);
@@ -61,11 +74,12 @@ static void gather(DeclMap& declared, UniqueString name, const AstNode* d,
     // add a new entry containing just the one ID
     declared.emplace_hint(search,
                           name,
-                          OwnedIdsWithName(d->id(), visibility));
+                          OwnedIdsWithName(d->id(), visibility,
+                                           isMethodOrField(d)));
   } else {
     // found an entry, so add to it
     OwnedIdsWithName& val = search->second;
-    val.appendIdAndVis(d->id(), visibility);
+    val.appendIdAndVis(d->id(), visibility, isMethodOrField(d));
   }
 }
 
@@ -419,9 +433,11 @@ static bool doLookupInImportsAndUses(Context* context,
         // Make sure the module / enum being renamed isn't private.
         auto scopeAst = parsing::idToAst(context, is.scope()->id());
         auto visibility = scopeAst->toDecl()->visibility();
+        bool isMethodOrField = false;
         auto foundIds =
           BorrowedIdsWithName::createWithSingleId(is.scope()->id(),
                                                   visibility,
+                                                  isMethodOrField,
                                                   skipPrivateVisibilities);
         if (foundIds) {
           result.push_back(std::move(foundIds.getValue()));
@@ -474,7 +490,7 @@ static bool doLookupInToplevelModules(Context* context,
   if (mod == nullptr)
     return false;
 
-  result.push_back(BorrowedIdsWithName::createWithSinglePublicId(mod->id()));
+  result.push_back(BorrowedIdsWithName::createWithToplevelModuleId(mod->id()));
   return true;
 }
 

@@ -42,11 +42,12 @@ class IdAndVis {
   friend class BorrowedIdsWithName;
 
   ID id_;
-  uast::Decl::Visibility vis_;
+  uast::Decl::Visibility vis_ = uast::Decl::PUBLIC;
+  bool isMethodOrField_ = false;
 
  public:
-  IdAndVis(ID id, uast::Decl::Visibility vis)
-    : id_(std::move(id)), vis_(vis)
+  IdAndVis(ID id, uast::Decl::Visibility vis, bool isMethodOrField)
+    : id_(std::move(id)), vis_(vis), isMethodOrField_(isMethodOrField)
   {
   }
 
@@ -67,6 +68,7 @@ class IdAndVis {
 
   const ID& id() const { return id_; }
   uast::Decl::Visibility vis() const { return vis_; }
+  bool isMethodOrField() const { return isMethodOrField_; }
 };
 
 /**
@@ -87,19 +89,19 @@ class OwnedIdsWithName {
 
  public:
   /** Construct an OwnedIdsWithName containing one ID. */
-  OwnedIdsWithName(ID id, uast::Decl::Visibility vis)
-    : idv_(IdAndVis(std::move(id), vis)), moreIdvs_(nullptr)
+  OwnedIdsWithName(ID id, uast::Decl::Visibility vis, bool isMethodOrField)
+    : idv_(IdAndVis(std::move(id), vis, isMethodOrField)), moreIdvs_(nullptr)
   { }
 
   /** Append an ID to an OwnedIdsWithName. */
-  void appendIdAndVis(ID id, uast::Decl::Visibility vis) {
+  void appendIdAndVis(ID id, uast::Decl::Visibility vis, bool isMethodOrField) {
     if (moreIdvs_.get() == nullptr) {
       // create the vector and add the single existing id to it
       moreIdvs_ = toOwned(new std::vector<IdAndVis>());
       moreIdvs_->push_back(idv_);
     }
     // add the id passed
-    moreIdvs_->push_back(IdAndVis(std::move(id), vis));
+    moreIdvs_->push_back(IdAndVis(std::move(id), vis, isMethodOrField));
   }
 
   bool operator==(const OwnedIdsWithName& other) const {
@@ -253,8 +255,9 @@ class BorrowedIdsWithName {
 
   static llvm::Optional<BorrowedIdsWithName>
   createWithSingleId(ID id, uast::Decl::Visibility vis,
-                     bool arePrivateIdsIgnored = true) {
-    auto idAndVis = IdAndVis(id, vis);
+                     bool isMethodOrField,
+                     bool arePrivateIdsIgnored) {
+    auto idAndVis = IdAndVis(id, vis, isMethodOrField);
     if (isIdVisible(idAndVis, arePrivateIdsIgnored)) {
       return BorrowedIdsWithName(std::move(idAndVis), arePrivateIdsIgnored);
     }
@@ -262,9 +265,13 @@ class BorrowedIdsWithName {
   }
 
   static BorrowedIdsWithName
-  createWithSinglePublicId(ID id, bool arePrivateIdsIgnored = true) {
+  createWithToplevelModuleId(ID id) {
+    auto vis = uast::Decl::Visibility::PUBLIC;
+    bool isMethodOrField = false;
+    bool arePrivateIdsIgnored = true;
     auto maybeIds = createWithSingleId(std::move(id),
-                                       uast::Decl::Visibility::PUBLIC,
+                                       vis,
+                                       isMethodOrField,
                                        arePrivateIdsIgnored);
     assert(maybeIds);
     return maybeIds.getValue();
