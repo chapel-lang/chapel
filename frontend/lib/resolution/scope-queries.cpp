@@ -219,15 +219,37 @@ bool createsScope(asttags::AstTag tag) {
          || asttags::isSync(tag);
 }
 
+static const bool&
+isElseBlockOfConditionalWithIfVarQuery(Context* context, ID id) {
+  QUERY_BEGIN(isElseBlockOfConditionalWithIfVarQuery, context, id);
+
+  bool result = false;
+
+  ID parentId = parsing::idToParentId(context, id);
+  if (!parentId.isEmpty()) {
+    if (asttags::isConditional(parsing::idToTag(context, parentId))) {
+      auto parentAst = parsing::idToAst(context, parentId);
+      auto cond = parentAst->toConditional();
+      CHPL_ASSERT(cond); // should have checked it was a conditional already
+      if (cond->condition()->isVariable() && cond->elseBlock() != nullptr) {
+        if (cond->elseBlock()->id() == id) {
+          result = true;
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
 static bool
 isElseBlockOfConditionalWithIfVar(Context* context,
                                   const uast::AstNode* ast) {
   if (!ast) return false;
-  if (auto parent = parsing::parentAst(context, ast))
-    if (auto cond = parent->toConditional())
-      if (cond->condition()->isVariable())
-        return ast == cond->elseBlock();
-  return false;
+
+  if (!ast->isBlock()) return false;
+
+  return isElseBlockOfConditionalWithIfVarQuery(context, ast->id());
 }
 
 static const Scope* const& scopeForIdQuery(Context* context, ID id);
@@ -496,7 +518,14 @@ static bool doLookupInToplevelModules(Context* context,
   return true;
 }
 
+static bool
+isScopeElseBlockOfConditionalWithIfVar(Context* context, const Scope* scope) {
+  if (!scope->id().isEmpty() && asttags::isBlock(scope->tag())) {
+    return isElseBlockOfConditionalWithIfVarQuery(context, scope->id());
+  }
 
+  return false;
+}
 
 // appends to result
 static bool doLookupInScope(Context* context,
@@ -633,12 +662,8 @@ static bool doLookupInScope(Context* context,
     // for the conditional, but it is not visible within the 'else'
     // branch. Without this hack, we'd be able to see the 'if-var' in
     // both branches. First, detect if the start scope is the else-block.
-    //
-    // TODO: Consider query-caching some part of this pattern matching.
-    if (!scope->id().isEmpty())
-      if (auto ast = parsing::idToAst(context, scope->id()))
-        if (isElseBlockOfConditionalWithIfVar(context, ast))
-          skipClosestConditional = true;
+    skipClosestConditional =
+      isScopeElseBlockOfConditionalWithIfVar(context, scope);
 
     if (!asttags::isModule(scope->tag()) || goPastModules) {
       for (cur = scope->parentScope();
@@ -650,18 +675,15 @@ static bool doLookupInScope(Context* context,
           break;
         }
 
-        auto ast = !cur->id().isEmpty() ? parsing::idToAst(context, cur->id())
-                                        : nullptr;
-
         // We could be in a nested block, so check for the else-block to
         // trigger the pattern matching as we walk up...
-        if (!skipClosestConditional && ast)
-          if (isElseBlockOfConditionalWithIfVar(context, ast))
+        if (!skipClosestConditional)
+          if (isScopeElseBlockOfConditionalWithIfVar(context, cur))
             skipClosestConditional = true;
 
         // Skip the first conditional's scope if we need to.
         if (skipClosestConditional) {
-          if (ast && ast->isConditional()) {
+          if (asttags::isConditional(cur->tag())) {
             skipClosestConditional = false;
             continue;
           }
