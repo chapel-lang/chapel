@@ -1351,7 +1351,7 @@ module ChapelDomain {
       if this.isRectangular() && this.stridable {
         for s in chpl__tuplify(this.stride) do
           if s < 0 {
-            warning("arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with --no-negative-stride-warning to suppress this warning; the dimension(s) are: ", this.dsiDims());
+            warning("arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: ", this.dsiDims());
             break;
           }
       }
