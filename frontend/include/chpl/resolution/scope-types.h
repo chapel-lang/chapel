@@ -37,22 +37,22 @@ namespace resolution {
 class BorrowedIdsWithName;
 
 /** Helper type to store an ID and visibility constraints. */
-struct IdAndVis {
-  //friend class OwnedIdsWithName;
-  //friend class BorrowedIdsWithName;
+class IdAndVis {
+  friend class OwnedIdsWithName;
+  friend class BorrowedIdsWithName;
 
-  ID first;
-  uast::Decl::Visibility second;
+  ID id_;
+  uast::Decl::Visibility vis_;
 
- //public:
+ public:
   IdAndVis(ID id, uast::Decl::Visibility vis)
-    : first(std::move(id)), second(vis)
+    : id_(std::move(id)), vis_(vis)
   {
   }
 
   bool operator==(const IdAndVis& other) const {
-    return first == other.first &&
-           second == other.second;
+    return id_ == other.id_ &&
+           vis_ == other.vis_;
   }
   bool operator!=(const IdAndVis& other) const {
     return !(*this == other);
@@ -60,10 +60,13 @@ struct IdAndVis {
 
   size_t hash() const {
     size_t ret = 0;
-    ret = hash_combine(ret, chpl::hash(first));
-    ret = hash_combine(ret, chpl::hash(second));
+    ret = hash_combine(ret, chpl::hash(id_));
+    ret = hash_combine(ret, chpl::hash(vis_));
     return ret;
   }
+
+  const ID& id() const { return id_; }
+  uast::Decl::Visibility vis() const { return vis_; }
 };
 
 /**
@@ -116,10 +119,10 @@ class OwnedIdsWithName {
     return !(*this == other);
   }
   void mark(Context* context) const {
-    idv_.first.mark(context);
+    idv_.id_.mark(context);
     if (auto ptr = moreIdvs_.get()) {
       for (auto const& elt : *ptr) {
-        context->markOwnedPointer(&elt.first);
+        context->markOwnedPointer(&elt.id_);
       }
     }
   }
@@ -144,7 +147,7 @@ class BorrowedIdsWithName {
  private:
   static inline bool isIdVisible(const IdAndVis& idv,
                                  bool arePrivateIdsIgnored) {
-    return !arePrivateIdsIgnored || idv.second != uast::Decl::PRIVATE;
+    return !arePrivateIdsIgnored || idv.vis_ != uast::Decl::PRIVATE;
   }
 
   bool isIdVisible(const IdAndVis& idv) const {
@@ -204,7 +207,7 @@ class BorrowedIdsWithName {
       fastForward();
       return *this;
     }
-    inline const ID& operator*() const { return currentIdv->first; }
+    inline const ID& operator*() const { return currentIdv->id_; }
   };
  private:
   /**
@@ -274,7 +277,7 @@ class BorrowedIdsWithName {
 
   /** Returns the first ID in this list. */
   const ID& firstId() const {
-    return idv_.first;
+    return idv_.id_;
   }
 
   BorrowedIdsWithNameIter begin() const {

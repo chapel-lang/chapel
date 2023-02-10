@@ -32,11 +32,11 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
   if (auto ptr = moreIdvs_.get()) {
     for (const auto& elt : *ptr) {
-      elt.first.stringify(ss, stringKind);
+      elt.id_.stringify(ss, stringKind);
     }
   } else {
-    if (!idv_.first.isEmpty()) {
-      idv_.first.stringify(ss, stringKind);
+    if (!idv_.id_.isEmpty()) {
+      idv_.id_.stringify(ss, stringKind);
     }
   }
 }
