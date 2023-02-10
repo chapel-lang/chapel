@@ -19,6 +19,7 @@
 
 #include "chpl/resolution/scope-types.h"
 
+#include "chpl/uast/Function.h"
 #include "chpl/uast/NamedDecl.h"
 
 #include "scope-help.h"
@@ -75,6 +76,9 @@ Scope::Scope(const uast::AstNode* ast, const Scope* parentScope,
   id_ = ast->id();
   if (auto decl = ast->toNamedDecl()) {
     name_ = decl->name();
+  }
+  if (auto fn = ast->toFunction()) {
+    methodScope_ = fn->isMethod();
   }
   gatherDeclsWithin(ast, declared_, containsUseImport_, containsFunctionDecls_);
 }

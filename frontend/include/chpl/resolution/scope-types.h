@@ -313,6 +313,7 @@ class Scope {
   bool containsUseImport_ = false;
   bool containsFunctionDecls_ = false;
   bool autoUsesModules_ = false;
+  bool methodScope_ = false;
   ID id_;
   UniqueString name_;
   DeclMap declared_;
@@ -362,9 +363,12 @@ class Scope {
 
   /** Returns 'true' if the Scope includes the automatic 'use' for
       the standard library. */
-  bool autoUsesModules() const {
-    return autoUsesModules_;
-  }
+  bool autoUsesModules() const { return autoUsesModules_; }
+
+  /** Returns 'true' if this Scope represents a method's scope.
+      Methods have special scoping behavior to use other fields/methods
+      without writing 'this.bla'. */
+  bool isMethodScope() const { return methodScope_; }
 
   /** Returns 'true' if this Scope directly contains any Functions */
   bool containsFunctionDecls() const { return containsFunctionDecls_; }
@@ -396,6 +400,7 @@ class Scope {
            containsUseImport_ == other.containsUseImport_ &&
            containsFunctionDecls_ == other.containsFunctionDecls_ &&
            autoUsesModules_ == other.autoUsesModules_ &&
+           methodScope_ == other.methodScope_ &&
            id_ == other.id_ &&
            declared_ == other.declared_ &&
            name_ == other.name_;
