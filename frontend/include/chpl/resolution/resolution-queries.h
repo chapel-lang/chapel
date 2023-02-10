@@ -326,9 +326,8 @@ filterCandidatesInstantiating(Context* context,
   scope of that call, find the most specific candidates as well
   as the point-of-instantiation scopes that were used when resolving them.
 
-  When a resolving a call within a method, the implicitReceiver should be
-  set to the 'this' type of the method. 'nullptr' is sufficient for
-  operator calls and method calls.
+  'resolveCallInMethod' should be used instead when resolving a non-method call
+  within a method.
  */
 CallResolutionResult resolveCall(Context* context,
                                  const uast::Call* call,
