@@ -40,6 +40,10 @@ module ChapelDomain {
   */
   config const defaultHashTableResizeThreshold = 0.5;
 
+  /* Compile with ``-snoNegativeStrideWarnings``
+     to suppress the warning about arrays and slices with negative strides. */
+  config param noNegativeStrideWarnings = false;
+
   pragma "no copy return"
   pragma "return not owned"
   proc _getDomain(value) {
@@ -1342,12 +1346,12 @@ module ChapelDomain {
     }
 
     proc chpl_checkNegativeStride() /*private*/ {
-      // add compile-time checks once ranges allow that
+      if noNegativeStrideWarnings then return;
+      // todo: add compile-time checks for neg. strides once ranges allow that
       if this.isRectangular() && this.stridable {
         for s in chpl__tuplify(this.stride) do
           if s < 0 {
-            warning("arrays with negatively strided dimensions are deprecated;"
-                    + " the dimension(s) are: ", this.dsiDims());
+            warning("arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with --no-negative-stride-warning to suppress this warning; the dimension(s) are: ", this.dsiDims());
             break;
           }
       }
