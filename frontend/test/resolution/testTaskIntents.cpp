@@ -68,15 +68,13 @@ struct Collector {
   using RV = ResolvedVisitor<Collector>;
 
   std::multimap<std::string, QualifiedType> declTypes;
-  std::multimap<std::string, QualifiedType> identTypes;
 
   std::multimap<std::string, ID> declIds;
+  std::multimap<std::string, ResolvedExpression> idents;
   std::multimap<std::string, ResolvedExpression> shadowVars;
+  std::multimap<std::string, ID> shadowVarIds;
 
   Collector() { }
-
-  Collector(const Collector& other) : declTypes(other.declTypes), identTypes(other.identTypes) {
-  }
 
   bool enter(const uast::NamedDecl* decl, RV& rv) {
     if (rv.hasAst(decl)) {
@@ -86,6 +84,7 @@ struct Collector {
 
       if (decl->isTaskVar() || decl->isReduceIntent()) {
         shadowVars.emplace(name, rr);
+        shadowVarIds.emplace(name, decl->id());
       } else {
         declIds.emplace(name, decl->id());
       }
@@ -97,7 +96,7 @@ struct Collector {
   bool enter(const uast::Identifier* ident, RV& rv) {
     if (rv.hasAst(ident)) {
       const ResolvedExpression& rr = rv.byAst(ident);
-      identTypes.emplace(ident->name().str(), rr.type());
+      idents.emplace(ident->name().str(), rr);
     }
 
     return true;
@@ -144,14 +143,19 @@ struct Collector {
     return declTypes.find(name)->second;
   }
 
-  QualifiedType onlyIdent(std::string name) {
-    assert(identTypes.count(name) == 1);
-    return identTypes.find(name)->second;
+  ResolvedExpression onlyIdent(std::string name) {
+    assert(idents.count(name) == 1);
+    return idents.find(name)->second;
   }
 
   const ResolvedExpression& onlyShadow(std::string name) {
     assert(shadowVars.count(name) == 1);
     return shadowVars.find(name)->second;
+  }
+
+  ID onlyShadowId(std::string name) {
+    assert(shadowVarIds.count(name) == 1);
+    return shadowVarIds.find(name)->second;
   }
 
   ID onlyDeclId(std::string name) {
@@ -170,7 +174,7 @@ struct Collector {
       stream << "\n";
     }
     stream << "--- Idents ---\n";
-    for (auto p : identTypes) {
+    for (auto p : idents) {
       stream << p.first << ": ";
       p.second.stringify(stream, kind);
       stream << "\n";
@@ -191,7 +195,7 @@ static void printErrors(const ErrorGuard& guard) {
   }
 }
 
-static Collector customHelper(std::string program, Context* context, bool fail = false) {
+static Collector customHelper(std::string program, Context* context, Module* moduleOut = nullptr, bool fail = false) {
   ErrorGuard guard(context);
 
   const Module* m = parseModule(context, program.c_str());
@@ -223,6 +227,7 @@ static Collector customHelper(std::string program, Context* context, bool fail =
   return pc;
 }
 
+// helper for running task intent tests
 static void kindHelper(Qualifier kind, const std::string& constructName) {
   Context* context = getNewContext();
 
@@ -239,7 +244,6 @@ static void kindHelper(Qualifier kind, const std::string& constructName) {
   program += "}\n";
 
   auto col = customHelper(program, context);
-  // int type to expect against
   const auto intType = IntType::get(context, 0);
 
   // Test shadow variable type is as expected
@@ -250,7 +254,7 @@ static void kindHelper(Qualifier kind, const std::string& constructName) {
       useKind = Qualifier::CONST_VAR;
     }
     QualifiedType expected = QualifiedType(useKind, intType);
-    QualifiedType shadowX = col.onlyIdent("x");
+    QualifiedType shadowX = col.onlyIdent("x").type();
     assert(expected == shadowX);
   }
 
@@ -298,6 +302,7 @@ static void testKinds() {
   }
 }
 
+// helper for running reduce intent tests
 static void reduceHelper(const std::string& constructName) {
   assert(constructName == "forall" || constructName == "coforall");
 
@@ -315,36 +320,21 @@ var x = 0;
   x += 1;
 })""";
 
-  ErrorGuard guard(context);
+  auto col = customHelper(program, context);
+  /* const auto intType = IntType::get(context, 0); */
 
-  if (debug) {
-    printf("\n################################################\n");
-    printf("Resolving reduce-intent program:\n");
-    printf("========================\n");
-    printf("%s\n", program.c_str());
-    printf("========================\n");
+  // Test shadow variable type is as expected
+  // TODO: currently fails
+  {
+    /* QualifiedType expected = QualifiedType(Qualifier::VAR, intType); */
+    /* QualifiedType shadowX = col.onlyShadow("x"); */
+    /* assert(expected == shadowX); */
   }
 
-  const Module* m = parseModule(context, program.c_str());
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto decl = m->stmt(1);
-  const IndexableLoop* construct = nullptr;
-  if (constructName == "forall") {
-    construct = m->stmt(2)->toForall();
-  } else if (constructName == "coforall") {
-    construct = m->stmt(2)->toCoforall();
-  }
-  auto reduce = construct->withClause()->expr(0);
-  auto plusEq = construct->body()->stmt(0)->toCall();
-  auto innerX = plusEq->actual(0);
-
-  // Assert reduce points to outer decl
-  assert(rr.byAst(reduce).toId() == decl->id());
-
-  // Assert inner ident points to reduce
-  assert(rr.byAst(innerX).toId() == reduce->id());
+  // Test that the shadow variable points to the original
+  assert(col.onlyShadow("x").toId() == col.onlyDeclId("x"));
+  // Test that inner ident points to reduce shadow
+  assert(col.onlyIdent("x").toId() == col.onlyShadowId("x"));
 }
 
 static void testReduce() {
