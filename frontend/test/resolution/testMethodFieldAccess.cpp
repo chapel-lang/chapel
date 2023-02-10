@@ -337,6 +337,29 @@ static void test8() {
          "M.secondary@3" /* the formal */ );
 }
 
+// test with a formal vs a class field
+static void test9() {
+  testIt("test9.chpl",
+         R""""(
+            module M {
+              record R {
+                var tz:int;
+                proc init() { }
+                proc foo(tzinfo: real) { }
+              }
+
+              proc R.now(tz:real = 1.4) {
+                var x:R;
+                x.foo(tz);
+              }
+            }
+         )"""",
+         "M.now",
+         "M.now@9",
+         "M.now@4" /* the formal */ );
+}
+
+
 
 int main() {
   test1r();
@@ -356,6 +379,7 @@ int main() {
   test7();
 
   test8();
+  test9();
 
   return 0;
 }
