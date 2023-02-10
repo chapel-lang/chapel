@@ -569,20 +569,11 @@ static bool doLookupInScope(Context* context,
     }
   }
 
-  bool considerReceiverScopes = false;
-  // Receiver scopes should be considered in two cases.
+  // Receiver scopes support two cases:
   // 1. For resolving names within a method (for the implicit 'this' feature)
   // 2. For resolving a dot expression (e.g. 'myObject.field')
-  //
-  // If receiver scopes are provided, this code assumes it is in case
-  // (1) if checkParents=true, and in case (2) otherwise.
-  if (!receiverScopes.empty()) {
-    if (checkParents) {
-      considerReceiverScopes = scope->isMethodScope(); // for implicit 'this'
-    } else {
-      considerReceiverScopes = true; // for e.g. 'myObject.field'
-    }
-  }
+  //    (note that 'field' could be a parenless secondary method)
+  bool considerReceiverScopes = !receiverScopes.empty();
 
   // gather non-shadow scope information
   // (declarations in this scope as well as public use / import)
