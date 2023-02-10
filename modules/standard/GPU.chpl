@@ -146,21 +146,19 @@ module GPU
     until completion of this asyhcronous transfer
   */
   pragma "no doc"
-  proc asyncGpuComm(dstArr, srcArr) : GpuAsyncCommHandle
+  proc asyncGpuComm(dstArr : ?t1, srcArr : ?t2) : GpuAsyncCommHandle
+    where isArrayType(t1) && isArrayType(t2)
   {
-    if(!isArrayType(dstArr.type) || !isArrayType(srcArr.type)) {
-      compilerError("Non-array argument passed to asyncGpuComm.");
-    }
-
     extern proc chpl_gpu_comm_async(dstArr : c_void_ptr, srcArr : c_void_ptr,
        n : c_size_t) : c_void_ptr;
 
     if(dstArr.size != srcArr.size) {
-      halt("SIZE MISMATCH: ", dstArr.size, " ", srcArr.size);
+      halt("Arrays passed to asyncGpuComm must have the same number of elements. ",
+        "Sizes passed: ", dstArr.size, " and ", srcArr.size);
     }
     return chpl_gpu_comm_async(c_ptrTo(dstArr), c_ptrTo(srcArr),
       dstArr.size * numBytes(dstArr.eltType));
- }
+  }
 
   /*
      Wait for communication to complete, the handle passed in should be from the return
