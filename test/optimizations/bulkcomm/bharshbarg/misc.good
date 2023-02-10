@@ -1,2 +1,2 @@
-misc.chpl:80: warning: arrays with negatively strided dimensions are deprecated; the dimension(s) are: (2..6 by -2)
-misc.chpl:80: warning: arrays with negatively strided dimensions are deprecated; the dimension(s) are: (2..6 by -2)
+misc.chpl:80: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (2..6 by -2)
+misc.chpl:80: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (2..6 by -2)

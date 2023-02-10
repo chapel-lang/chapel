@@ -16,7 +16,7 @@
 0 0 0 0
 0 0 0 0
 
-print-negstride-bug-1.chpl:1: warning: arrays with negatively strided dimensions are deprecated; the dimension(s) are: (1..4 by -1, 1..4)
-print-negstride-bug-1.chpl:4: warning: arrays with negatively strided dimensions are deprecated; the dimension(s) are: (1..4 by -1, 1..4 by -1)
-print-negstride-bug-1.chpl:7: warning: arrays with negatively strided dimensions are deprecated; the dimension(s) are: (1..4 by -2, 1..4)
-print-negstride-bug-1.chpl:11: warning: arrays with negatively strided dimensions are deprecated; the dimension(s) are: (1..4, 1..4 by -1)
+print-negstride-bug-1.chpl:1: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (1..4 by -1, 1..4)
+print-negstride-bug-1.chpl:4: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (1..4 by -1, 1..4 by -1)
+print-negstride-bug-1.chpl:7: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (1..4 by -2, 1..4)
+print-negstride-bug-1.chpl:11: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (1..4, 1..4 by -1)

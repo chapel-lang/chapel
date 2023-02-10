@@ -2,4 +2,4 @@ a h l c p e
 4 8 6 2
 5 9 7 3
 2 6 8 4
-shuffle.chpl:40: warning: arrays with negatively strided dimensions are deprecated; the dimension(s) are: (2..8 by -2)
+shuffle.chpl:40: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (2..8 by -2)

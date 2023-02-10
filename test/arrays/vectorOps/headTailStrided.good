@@ -1,3 +1,3 @@
 head/tail of A: (0.1, 0.3)
 head/tail of A2: (0.2, 0.4)
-headTailStrided.chpl:5: warning: arrays with negatively strided dimensions are deprecated; the dimension(s) are: (1..4 by -2)
+headTailStrided.chpl:5: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (1..4 by -2)
