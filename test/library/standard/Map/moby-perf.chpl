@@ -7,7 +7,7 @@ config const repeat = 10;
 config const timing = false;
 
 proc main() {
-  var reader = open(inputFile, iomode.r).reader();
+  var reader = open(inputFile, ioMode.r).reader();
 
   var m = new map(string, string, parSafe=false);
 

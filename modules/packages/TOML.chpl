@@ -49,7 +49,7 @@ use IO;
 
      use TOML;
 
-     const tomlFile = open("example.toml", iomode.r);
+     const tomlFile = open("example.toml", ioMode.r);
      const toml = parseToml(tomlFile);
 
 To read tables of a TOML file, use the same syntax as accessing associative arrays. For example,
@@ -68,7 +68,7 @@ Use the following code in chapel.
 
      use TOML;
 
-     const tomlFile = open("example.toml", iomode.r);
+     const tomlFile = open("example.toml", ioMode.r);
      const toml = parseToml(tomlFile);
      const projectName = ["root"]["name"] // returns a TOML object
      writeln(projectName.toString());     // to turn TOML object into string representation

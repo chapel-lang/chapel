@@ -54,7 +54,7 @@ writeln(piv);
 
 proc initA(A,filename:string){
 
-  var Adat = open(filename, iomode.r).reader();
+  var Adat = open(filename, ioMode.r).reader();
 
   for ij in A.domain {
     Adat.read(A(ij));

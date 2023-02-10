@@ -390,14 +390,14 @@ private proc copyFileImpl(src: string, dest: string) throws {
   }
 
   // Open src for reading, open dest for writing
-  var srcFile = try open(src, iomode.r);
+  var srcFile = try open(src, ioMode.r);
   defer {
     try {
       srcFile.close();
     } catch { /* ignore errors */ }
   }
 
-  var destFile = try open(dest, iomode.cw);
+  var destFile = try open(dest, ioMode.cw);
   defer {
     try {
       destFile.close();

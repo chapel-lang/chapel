@@ -216,7 +216,7 @@ private proc runTests(show: bool, run: bool, parallel: bool,
     const projectHome = getProjectHome(cwd);
 
     // parse lockfile
-    const toParse = open(projectHome + "/Mason.lock", iomode.r);
+    const toParse = open(projectHome + "/Mason.lock", ioMode.r);
     const lockFile = parseToml(toParse);
 
     // Get project source code and dependencies

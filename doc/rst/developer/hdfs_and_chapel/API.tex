@@ -257,11 +257,11 @@ by {\tt hdfsChapelConnect}
 
 \begin{lstlisting}
 fs.hdfsOpen(filename: string, 
-                flags: iomode): hdfsChapelFile;
+                flags: ioMode): hdfsChapelFile;
 \end{lstlisting}
 Opens a file with path {\tt pathname} and in mode {\tt flags} on each locale from the file system
 that was connected to via {\tt hdfsConnect}. The only possible iomodes are
-{\tt iomode.r} and {\tt iomode.cw} (due to HDFS constraints).
+{\tt ioMode.r} and {\tt ioMode.cw} (due to HDFS constraints).
 
 \begin{lstlisting}
 hdfsChapelFile.hdfsClose();
@@ -310,7 +310,7 @@ var gfl: hdfsChapelFile;
 var hdfs: fs;
 
 hdfs = hdfsChapelConnect("default", 0);
-gfl  = hdfs.hdfsOpen("/tmp/advo.txt", iomode.r);
+gfl  = hdfs.hdfsOpen("/tmp/advo.txt", ioMode.r);
 
 for loc in Locales {
   on loc {
@@ -380,7 +380,7 @@ An example of how to use this is as follows:
 \begin{lstlisting}
 use RecordParser;
 
-var fl = open("test.txt", iomode.r);
+var fl = open("test.txt", ioMode.r);
 var ch = fl.reader();
 
 record Test {

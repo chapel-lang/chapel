@@ -38,7 +38,7 @@ proc main(args:[] string)
   forall (id,path) in zip(pathsArray.domain, pathsArray) {
     var mdArray:[0..19] uint(8);
     var data:string;
-    var f = open(path, iomode.r);
+    var f = open(path, ioMode.r);
     f.reader(kind=iokind.native).readAll(data);
     SHA1(data.c_str():c_ptr(uint(8)), data.numBytes:uint, c_ptrTo(mdArray));
     var hash:Hash;

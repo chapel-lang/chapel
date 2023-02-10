@@ -667,7 +667,7 @@ proc AMRHierarchy.init (
   inputIC:    func(dimension*real,real))
 {
 
-  const parameter_file = open(file_name, iomode.r).reader();
+  const parameter_file = open(file_name, ioMode.r).reader();
 
   //==== Safety check the dimension ====
   var dim_input: int;
@@ -932,14 +932,14 @@ proc AMRHierarchy.clawOutput(frame_number: int)
   var n_grids: int = 0;
   for level in levels do n_grids += level!.grids.size;
 
-  const time_file = open(time_file_name, iomode.cw).writer();
+  const time_file = open(time_file_name, ioMode.cw).writer();
   writeTimeFile(time, 1, n_grids, 1, time_file);
   time_file.close();
 
 
   //---- Solution file ----
   
-  const solution_file = open(solution_file_name, iomode.cw).writer();
+  const solution_file = open(solution_file_name, ioMode.cw).writer();
   this.writeData(solution_file);
   solution_file.close();
 

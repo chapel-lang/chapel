@@ -3,7 +3,7 @@ use IO;
 use List;
 
 var messageObj = new repeatedField();
-var file = open("out", iomode.r);
+var file = open("out", ioMode.r);
 var readingChannel = file.reader();
 
 messageObj.deserialize(readingChannel);

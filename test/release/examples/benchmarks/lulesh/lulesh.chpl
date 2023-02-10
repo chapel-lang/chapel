@@ -317,7 +317,7 @@ proc main() {
 
   if printCoords {
     var writer = if coordsStdout then stdout
-                                 else open("coords.out", iomode.cw).writer();
+                                 else open("coords.out", ioMode.cw).writer();
     var fmtstr = if debug then "%1.9re %1.9er %1.9er\n" 
                           else "%1.4er %1.4er %1.4er\n";
     for i in Nodes do

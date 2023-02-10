@@ -54,7 +54,7 @@ if example == 0 || example == 1 {
 proc writeSquareArray(n, X, filename) {
 
   // Create and open an output file with the specified filename in write mode.
-  var outfile = open(filename, iomode.cw);
+  var outfile = open(filename, ioMode.cw);
   var writer = outfile.writer();
 
   // Write the problem size in each dimension to the file.
@@ -72,7 +72,7 @@ proc writeSquareArray(n, X, filename) {
 proc readArray(filename) {
 
    // Open an input file with the specified filename in read mode.
-  var infile = open(filename, iomode.r);
+  var infile = open(filename, ioMode.r);
   var reader = infile.reader();
 
   // Read the number of rows and columns in the array in from the file.
@@ -117,7 +117,7 @@ if example == 0 || example == 2 {
 
 // First, open up a test file. Chapel's I/O interface allows
 // us to open regular files, temporary files, memory, or file descriptors;
-  var f = open(testfile, iomode.cwr);
+  var f = open(testfile, ioMode.cwr);
 
 // Since the typical 'file position' design leads to race conditions
 // all over, the Chapel I/O design separates a file from a channel.
@@ -174,7 +174,7 @@ if example == 0 || example == 3 {
 
 // First, open up a file and write to it.
   {
-    var f = open(testfile, iomode.cwr);
+    var f = open(testfile, ioMode.cwr);
 
     // When we create the writer, supplying locking=false will do unlocked I/O.
     // That's fine as long as the channel is not shared between tasks.
@@ -193,7 +193,7 @@ if example == 0 || example == 3 {
 // 'random access' and 'keep data cached/assume data is cached',
 // we can optimize better (using ``mmap``, if you like details).
   {
-    var f = open(testfile, iomode.r,
+    var f = open(testfile, ioMode.r,
                 hints=ioHintSet.random | ioHintSet.prefetch);
 
     // This is a forall loop to do I/O in parallel!
@@ -227,7 +227,7 @@ Reading and printing UTF-8 lines
 if example == 0 || example == 4 {
   writeln("Running Example 4");
 
-  var f = open(testfile, iomode.cwr);
+  var f = open(testfile, ioMode.cwr);
   var w = f.writer();
 
   w.writeln("Hello");
@@ -280,7 +280,7 @@ if example == 0 || example == 5 {
 
   try! {
     // What happens if we try to open a non-existent file?
-    var f = open(testfile, iomode.r);
+    var f = open(testfile, ioMode.r);
 
     assert(false); // never reached
   } catch e: SystemError {
@@ -335,7 +335,7 @@ Binary I/O with bits at a time
 if example == 0 || example == 7 {
   writeln("Running Example 7");
 
-  var f = open(testfile, iomode.cwr);
+  var f = open(testfile, ioMode.cwr);
 
   {
     var w = f.writer(kind=ionative);
