@@ -48,48 +48,48 @@ class OwnedIdsWithName {
  private:
   // If there is just one ID with this name, it is stored here,
   // and moreIds == nullptr.
-  IdAndVis id_;
+  IdAndVis idv_;
   // If there is more than one, all are stored in here,
   // and id redundantly stores the first one.
   // This field is 'owned' in order to allow reuse of pointers to it.
-  owned<std::vector<IdAndVis>> moreIds_;
+  owned<std::vector<IdAndVis>> moreIdvs_;
 
  public:
   /** Construct an OwnedIdsWithName containing one ID. */
   OwnedIdsWithName(ID id, uast::Decl::Visibility vis)
-    : id_(std::make_pair(std::move(id), vis)), moreIds_(nullptr)
+    : idv_(std::make_pair(std::move(id), vis)), moreIdvs_(nullptr)
   { }
 
   /** Append an ID to an OwnedIdsWithName. */
   void appendIdAndVis(ID id, uast::Decl::Visibility vis) {
-    if (moreIds_.get() == nullptr) {
+    if (moreIdvs_.get() == nullptr) {
       // create the vector and add the single existing id to it
-      moreIds_ = toOwned(new std::vector<IdAndVis>());
-      moreIds_->push_back(id_);
+      moreIdvs_ = toOwned(new std::vector<IdAndVis>());
+      moreIdvs_->push_back(idv_);
     }
     // add the id passed
-    moreIds_->push_back(std::make_pair(std::move(id), vis));
+    moreIdvs_->push_back(std::make_pair(std::move(id), vis));
   }
 
   bool operator==(const OwnedIdsWithName& other) const {
-    if (id_ != other.id_)
+    if (idv_ != other.idv_)
       return false;
 
-    if ((moreIds_.get()==nullptr) != (other.moreIds_.get()==nullptr))
+    if ((moreIdvs_.get()==nullptr) != (other.moreIdvs_.get()==nullptr))
       return false;
 
-    if (moreIds_.get()==nullptr && other.moreIds_.get()==nullptr)
+    if (moreIdvs_.get()==nullptr && other.moreIdvs_.get()==nullptr)
       return true;
 
     // otherwise, check the vector elements
-    return *moreIds_.get() == *other.moreIds_.get();
+    return *moreIdvs_.get() == *other.moreIdvs_.get();
   }
   bool operator!=(const OwnedIdsWithName& other) const {
     return !(*this == other);
   }
   void mark(Context* context) const {
-    id_.first.mark(context);
-    if (auto ptr = moreIds_.get()) {
+    idv_.first.mark(context);
+    if (auto ptr = moreIdvs_.get()) {
       for (auto const& elt : *ptr) {
         context->markOwnedPointer(&elt.first);
       }
@@ -114,28 +114,29 @@ class BorrowedIdsWithName {
  friend class OwnedIdsWithName;
 
  private:
-  static inline bool isIdVisible(const IdAndVis& id, bool arePrivateIdsIgnored) {
-    return !arePrivateIdsIgnored || id.second != uast::Decl::PRIVATE;
+  static inline bool isIdVisible(const IdAndVis& idv,
+                                 bool arePrivateIdsIgnored) {
+    return !arePrivateIdsIgnored || idv.second != uast::Decl::PRIVATE;
   }
 
-  bool isIdVisible(const IdAndVis& id) const {
-    return isIdVisible(id, arePrivateIdsIgnored);
+  bool isIdVisible(const IdAndVis& idv) const {
+    return isIdVisible(idv, arePrivateIdsIgnored);
   }
 
   /** Returns an iterator referring to the first element stored. */
   const IdAndVis* beginIdAndVis() const {
-    if (moreIds_ == nullptr) {
-      return &id_;
+    if (moreIdvs_ == nullptr) {
+      return &idv_;
     }
-    return &(*moreIds_)[0];
+    return &(*moreIdvs_)[0];
   }
   /** Returns an iterator referring just past the last element stored. */
   const IdAndVis* endIdAndVis() const {
     const IdAndVis* last = nullptr;
-    if (moreIds_ == nullptr) {
-      last = &id_;
+    if (moreIdvs_ == nullptr) {
+      last = &idv_;
     } else {
-      last = &moreIds_->back();
+      last = &moreIdvs_->back();
     }
     // return the element just past the last element
     return last+1;
@@ -151,30 +152,31 @@ class BorrowedIdsWithName {
     /** The borrowed IDs over which we are iterating. */
     const BorrowedIdsWithName* ids;
     /** The ID this iterator is pointing too. */
-    const IdAndVis* currentId;
+    const IdAndVis* currentIdv;
 
-    BorrowedIdsWithNameIter(const BorrowedIdsWithName* ids, const IdAndVis* currentId)
-      : ids(ids), currentId(currentId) {
+    BorrowedIdsWithNameIter(const BorrowedIdsWithName* ids, const IdAndVis* currentIdv)
+      : ids(ids), currentIdv(currentIdv) {
       fastForward();
     }
 
     /** Skip over symbols deemed invisible by the BorrowedIdsWithName. **/
     void fastForward() {
-      while (currentId != ids->endIdAndVis() && !ids->isIdVisible(*currentId)) {
-        currentId++;
+      while (currentIdv != ids->endIdAndVis() &&
+             !ids->isIdVisible(*currentIdv)) {
+        currentIdv++;
       }
     }
 
    public:
     bool operator!=(const BorrowedIdsWithNameIter& other) const {
-      return ids != other.ids || currentId != other.currentId;
+      return ids != other.ids || currentIdv != other.currentIdv;
     }
     BorrowedIdsWithNameIter& operator++() {
-      currentId++;
+      currentIdv++;
       fastForward();
       return *this;
     }
-    inline const ID& operator*() const { return currentId->first; }
+    inline const ID& operator*() const { return currentIdv->first; }
   };
  private:
   /**
@@ -186,35 +188,35 @@ class BorrowedIdsWithName {
   int numVisibleIds_;
   // TODO: consider storing a variant of ID here
   // with symbolPath, postOrderId, and tag
-  IdAndVis id_;
-  const std::vector<IdAndVis>* moreIds_ = nullptr;
+  IdAndVis idv_;
+  const std::vector<IdAndVis>* moreIdvs_ = nullptr;
 
   /** Construct a BorrowedIdsWithName referring to the same IDs
       as the passed OwnedIdsWithName.
       This BorrowedIdsWithName assumes that the OwnedIdsWithName
       will continue to exist. */
-  BorrowedIdsWithName(IdAndVis id, const std::vector<IdAndVis>* moreIds,
+  BorrowedIdsWithName(IdAndVis idv, const std::vector<IdAndVis>* moreIdvs,
                       bool arePrivateIdsIgnored)
-    : arePrivateIdsIgnored(arePrivateIdsIgnored), id_(id),
-      moreIds_(moreIds) {
-    if(moreIds_ == nullptr) {
+    : arePrivateIdsIgnored(arePrivateIdsIgnored), idv_(idv),
+      moreIdvs_(moreIdvs) {
+    if(moreIdvs_ == nullptr) {
       numVisibleIds_ = 1;
       return;
     }
 
     // Count all the visible IDs.
     numVisibleIds_ = 0;
-    for (const auto& id : *moreIds_) {
-      if (isIdVisible(id)) numVisibleIds_ += 1;
+    for (const auto& idv : *moreIdvs_) {
+      if (isIdVisible(idv)) numVisibleIds_ += 1;
     }
   }
 
   /** Construct a BorrowedIdsWithName referring to one ID. Requires
       that the ID is visible. */
-  BorrowedIdsWithName(IdAndVis id, bool arePrivateIdsIgnored = true)
+  BorrowedIdsWithName(IdAndVis idv, bool arePrivateIdsIgnored = true)
     : arePrivateIdsIgnored(arePrivateIdsIgnored),
-      numVisibleIds_(1), id_(std::move(id)) {
-    assert(isIdVisible(id_, arePrivateIdsIgnored));
+      numVisibleIds_(1), idv_(std::move(idv)) {
+    assert(isIdVisible(idv_, arePrivateIdsIgnored));
   }
  public:
 
@@ -244,7 +246,7 @@ class BorrowedIdsWithName {
 
   /** Returns the first ID in this list. */
   const ID& firstId() const {
-    return id_.first;
+    return idv_.first;
   }
 
   BorrowedIdsWithNameIter begin() const {
@@ -258,8 +260,8 @@ class BorrowedIdsWithName {
   bool operator==(const BorrowedIdsWithName& other) const {
     return arePrivateIdsIgnored == other.arePrivateIdsIgnored &&
            numVisibleIds_ == other.numVisibleIds_ &&
-           id_ == other.id_ &&
-           moreIds_ == other.moreIds_;
+           idv_ == other.idv_ &&
+           moreIdvs_ == other.moreIdvs_;
   }
   bool operator!=(const BorrowedIdsWithName& other) const {
     return !(*this == other);
@@ -269,11 +271,11 @@ class BorrowedIdsWithName {
     size_t ret = 0;
     ret = hash_combine(ret, chpl::hash(arePrivateIdsIgnored));
     ret = hash_combine(ret, chpl::hash(numVisibleIds_));
-    ret = hash_combine(ret, chpl::hash(moreIds_));
-    if (moreIds_ == nullptr) {
-      ret = hash_combine(ret, chpl::hash(id_));
+    ret = hash_combine(ret, chpl::hash(moreIdvs_));
+    if (moreIdvs_ == nullptr) {
+      ret = hash_combine(ret, chpl::hash(idv_));
     } else {
-      for (const auto& x : *moreIds_) {
+      for (const auto& x : *moreIdvs_) {
         ret = hash_combine(ret, chpl::hash(x));
       }
     }

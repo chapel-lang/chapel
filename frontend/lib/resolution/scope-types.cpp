@@ -30,31 +30,32 @@ namespace resolution {
 
 void OwnedIdsWithName::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
-  if (auto ptr = moreIds_.get()) {
+  if (auto ptr = moreIdvs_.get()) {
     for (const auto& elt : *ptr) {
       elt.first.stringify(ss, stringKind);
     }
   } else {
-    if (!id_.first.isEmpty()) {
-      id_.first.stringify(ss, stringKind);
+    if (!idv_.first.isEmpty()) {
+      idv_.first.stringify(ss, stringKind);
     }
   }
 }
 
 llvm::Optional<BorrowedIdsWithName> OwnedIdsWithName::borrow(bool skipPrivateVisibilities) const {
-  if (BorrowedIdsWithName::isIdVisible(id_, skipPrivateVisibilities)) {
-    return BorrowedIdsWithName(id_, moreIds_.get(), skipPrivateVisibilities);
+  if (BorrowedIdsWithName::isIdVisible(idv_, skipPrivateVisibilities)) {
+    return BorrowedIdsWithName(idv_, moreIdvs_.get(), skipPrivateVisibilities);
   }
   // The first ID isn't visible; are others?
-  if (moreIds_.get() == nullptr) {
+  if (moreIdvs_.get() == nullptr) {
     return llvm::None;
   }
 
-  for (auto& id : *moreIds_) {
-    if (!BorrowedIdsWithName::isIdVisible(id, skipPrivateVisibilities)) continue;
+  for (auto& idv : *moreIdvs_) {
+    if (!BorrowedIdsWithName::isIdVisible(idv, skipPrivateVisibilities))
+      continue;
 
     // Found a visible ID!
-    return BorrowedIdsWithName(id, moreIds_.get(), skipPrivateVisibilities);
+    return BorrowedIdsWithName(idv, moreIdvs_.get(), skipPrivateVisibilities);
   }
 
   // No ID was visible, so we can't borrow.
