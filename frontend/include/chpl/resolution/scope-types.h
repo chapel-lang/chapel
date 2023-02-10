@@ -36,7 +36,35 @@ namespace resolution {
 
 class BorrowedIdsWithName;
 
-using IdAndVis = std::pair<ID, uast::Decl::Visibility>;
+/** Helper type to store an ID and visibility constraints. */
+struct IdAndVis {
+  //friend class OwnedIdsWithName;
+  //friend class BorrowedIdsWithName;
+
+  ID first;
+  uast::Decl::Visibility second;
+
+ //public:
+  IdAndVis(ID id, uast::Decl::Visibility vis)
+    : first(std::move(id)), second(vis)
+  {
+  }
+
+  bool operator==(const IdAndVis& other) const {
+    return first == other.first &&
+           second == other.second;
+  }
+  bool operator!=(const IdAndVis& other) const {
+    return !(*this == other);
+  }
+
+  size_t hash() const {
+    size_t ret = 0;
+    ret = hash_combine(ret, chpl::hash(first));
+    ret = hash_combine(ret, chpl::hash(second));
+    return ret;
+  }
+};
 
 /**
   Collects IDs with a particular name. These can be referred to
@@ -57,7 +85,7 @@ class OwnedIdsWithName {
  public:
   /** Construct an OwnedIdsWithName containing one ID. */
   OwnedIdsWithName(ID id, uast::Decl::Visibility vis)
-    : idv_(std::make_pair(std::move(id), vis)), moreIdvs_(nullptr)
+    : idv_(IdAndVis(std::move(id), vis)), moreIdvs_(nullptr)
   { }
 
   /** Append an ID to an OwnedIdsWithName. */
@@ -68,7 +96,7 @@ class OwnedIdsWithName {
       moreIdvs_->push_back(idv_);
     }
     // add the id passed
-    moreIdvs_->push_back(std::make_pair(std::move(id), vis));
+    moreIdvs_->push_back(IdAndVis(std::move(id), vis));
   }
 
   bool operator==(const OwnedIdsWithName& other) const {
@@ -223,7 +251,7 @@ class BorrowedIdsWithName {
   static llvm::Optional<BorrowedIdsWithName>
   createWithSingleId(ID id, uast::Decl::Visibility vis,
                      bool arePrivateIdsIgnored = true) {
-    auto idAndVis = std::make_pair(id, vis);
+    auto idAndVis = IdAndVis(id, vis);
     if (isIdVisible(idAndVis, arePrivateIdsIgnored)) {
       return BorrowedIdsWithName(std::move(idAndVis), arePrivateIdsIgnored);
     }
@@ -841,6 +869,13 @@ struct mark<resolution::VisibilityStmtKind> {
 namespace std {
 
 /// \cond DO_NOT_DOCUMENT
+template<> struct hash<chpl::resolution::IdAndVis>
+{
+  size_t operator()(const chpl::resolution::IdAndVis& key) const {
+    return key.hash();
+  }
+};
+
 template<> struct hash<chpl::resolution::BorrowedIdsWithName>
 {
   size_t operator()(const chpl::resolution::BorrowedIdsWithName& key) const {
