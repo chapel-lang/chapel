@@ -434,11 +434,13 @@ static bool doLookupInImportsAndUses(Context* context,
         auto scopeAst = parsing::idToAst(context, is.scope()->id());
         auto visibility = scopeAst->toDecl()->visibility();
         bool isMethodOrField = false;
+        bool onlyMethodsFields = false;
         auto foundIds =
           BorrowedIdsWithName::createWithSingleId(is.scope()->id(),
                                                   visibility,
                                                   isMethodOrField,
-                                                  skipPrivateVisibilities);
+                                                  skipPrivateVisibilities,
+                                                  onlyMethodsFields);
         if (foundIds) {
           result.push_back(std::move(foundIds.getValue()));
           found = true;
@@ -513,6 +515,7 @@ static bool doLookupInScope(Context* context,
   bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
   bool skipPrivateVisibilities = (config & LOOKUP_SKIP_PRIVATE_VIS) != 0;
   bool goPastModules = (config & LOOKUP_GO_PAST_MODULES) != 0;
+  bool onlyMethodsFields = (config & LOOKUP_ONLY_METHODS_FIELDS) != 0;
 
   // goPastModules should imply checkParents; otherwise, why would we proceed
   // through module boundaries if we aren't traversing the scope chain?
@@ -542,7 +545,8 @@ static bool doLookupInScope(Context* context,
   {
     bool got = false;
     if (checkDecls) {
-      got |= scope->lookupInScope(name, result, skipPrivateVisibilities);
+      got |= scope->lookupInScope(name, result,
+                                  skipPrivateVisibilities, onlyMethodsFields);
     }
     if (checkUseImport) {
       got |= doLookupInImportsAndUses(context, scope, resolving, r, name,

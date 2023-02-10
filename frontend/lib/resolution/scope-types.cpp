@@ -41,9 +41,14 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
   }
 }
 
-llvm::Optional<BorrowedIdsWithName> OwnedIdsWithName::borrow(bool skipPrivateVisibilities) const {
-  if (BorrowedIdsWithName::isIdVisible(idv_, skipPrivateVisibilities)) {
-    return BorrowedIdsWithName(idv_, moreIdvs_.get(), skipPrivateVisibilities);
+llvm::Optional<BorrowedIdsWithName>
+OwnedIdsWithName::borrow(bool skipPrivateVisibilities,
+                         bool onlyMethodsFields) const {
+  if (BorrowedIdsWithName::isIdVisible(idv_,
+                                       skipPrivateVisibilities,
+                                       onlyMethodsFields)) {
+    return BorrowedIdsWithName(idv_, moreIdvs_.get(),
+                               skipPrivateVisibilities, onlyMethodsFields);
   }
   // The first ID isn't visible; are others?
   if (moreIdvs_.get() == nullptr) {
@@ -51,15 +56,33 @@ llvm::Optional<BorrowedIdsWithName> OwnedIdsWithName::borrow(bool skipPrivateVis
   }
 
   for (auto& idv : *moreIdvs_) {
-    if (!BorrowedIdsWithName::isIdVisible(idv, skipPrivateVisibilities))
+    if (!BorrowedIdsWithName::isIdVisible(idv,
+                                          skipPrivateVisibilities,
+                                          onlyMethodsFields))
       continue;
 
     // Found a visible ID!
-    return BorrowedIdsWithName(idv, moreIdvs_.get(), skipPrivateVisibilities);
+    return BorrowedIdsWithName(idv, moreIdvs_.get(),
+                               skipPrivateVisibilities, onlyMethodsFields);
   }
 
   // No ID was visible, so we can't borrow.
   return llvm::None;
+}
+
+int BorrowedIdsWithName::countVisibleIds() {
+  if (moreIdvs_ == nullptr) {
+    return 1;
+  }
+
+  // Count all the visible IDs.
+  int count = 0;
+  for (const auto& idv : *moreIdvs_) {
+    if (isIdVisible(idv)) {
+      count += 1;
+    }
+  }
+  return count;
 }
 
 void BorrowedIdsWithName::stringify(std::ostream& ss,

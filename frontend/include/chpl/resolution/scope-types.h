@@ -132,7 +132,8 @@ class OwnedIdsWithName {
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
-  llvm::Optional<BorrowedIdsWithName> borrow(bool arePrivateIdsIgnored) const;
+  llvm::Optional<BorrowedIdsWithName> borrow(bool arePrivateIdsIgnored,
+                                             bool onlyMethodsFields) const;
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
@@ -159,19 +160,30 @@ class BorrowedIdsWithName {
    */
   bool onlyMethodsFields_ = false;
   /** How many IDs are visible in this list. */
-  int numVisibleIds_;
+  int numVisibleIds_ = 0;
   // TODO: consider storing a variant of ID here
   // with symbolPath, postOrderId, and tag
   IdAndVis idv_;
   const std::vector<IdAndVis>* moreIdvs_ = nullptr;
 
   static inline bool isIdVisible(const IdAndVis& idv,
-                                 bool arePrivateIdsIgnored) {
-    return !arePrivateIdsIgnored || idv.vis_ != uast::Decl::PRIVATE;
+                                 bool arePrivateIdsIgnored,
+                                 bool onlyMethodsFields) {
+    // check privacy
+    if (arePrivateIdsIgnored && idv.isPrivate()) {
+      return false; // ignore this id
+    }
+
+    // check method/field-ness
+    if (onlyMethodsFields && !idv.isMethodOrField()) {
+      return false; // ignore a non-method non-field
+    }
+
+    return true;
   }
 
   bool isIdVisible(const IdAndVis& idv) const {
-    return isIdVisible(idv, arePrivateIdsIgnored_);
+    return isIdVisible(idv, arePrivateIdsIgnored_, onlyMethodsFields_);
   }
 
   /** Returns an iterator referring to the first element stored. */
@@ -232,42 +244,45 @@ class BorrowedIdsWithName {
 
  private:
 
+  int countVisibleIds();
+
   /** Construct a BorrowedIdsWithName referring to the same IDs
       as the passed OwnedIdsWithName.
       This BorrowedIdsWithName assumes that the OwnedIdsWithName
       will continue to exist. */
   BorrowedIdsWithName(IdAndVis idv, const std::vector<IdAndVis>* moreIdvs,
-                      bool arePrivateIdsIgnored)
-    : arePrivateIdsIgnored_(arePrivateIdsIgnored), idv_(idv),
+                      bool arePrivateIdsIgnored, bool onlyMethodsFields)
+    : arePrivateIdsIgnored_(arePrivateIdsIgnored),
+      onlyMethodsFields_(onlyMethodsFields),
+      idv_(idv),
       moreIdvs_(moreIdvs) {
-    if(moreIdvs_ == nullptr) {
-      numVisibleIds_ = 1;
-      return;
-    }
-
-    // Count all the visible IDs.
-    numVisibleIds_ = 0;
-    for (const auto& idv : *moreIdvs_) {
-      if (isIdVisible(idv)) numVisibleIds_ += 1;
-    }
+    numVisibleIds_ = countVisibleIds();
   }
 
   /** Construct a BorrowedIdsWithName referring to one ID. Requires
-      that the ID is visible. */
-  BorrowedIdsWithName(IdAndVis idv, bool arePrivateIdsIgnored = true)
+      that the ID will not be filtered out according to the passed
+      settings arePrivateIdsIgnored and onlyMethodsFields.
+    */
+  BorrowedIdsWithName(IdAndVis idv,
+                      bool arePrivateIdsIgnored,
+                      bool onlyMethodsFields)
     : arePrivateIdsIgnored_(arePrivateIdsIgnored),
+      onlyMethodsFields_(onlyMethodsFields),
       numVisibleIds_(1), idv_(std::move(idv)) {
-    assert(isIdVisible(idv_, arePrivateIdsIgnored_));
+    assert(isIdVisible(idv_, arePrivateIdsIgnored, onlyMethodsFields));
   }
  public:
 
   static llvm::Optional<BorrowedIdsWithName>
   createWithSingleId(ID id, uast::Decl::Visibility vis,
                      bool isMethodOrField,
-                     bool arePrivateIdsIgnored) {
+                     bool arePrivateIdsIgnored,
+                     bool onlyMethodsFields) {
     auto idAndVis = IdAndVis(id, vis, isMethodOrField);
-    if (isIdVisible(idAndVis, arePrivateIdsIgnored)) {
-      return BorrowedIdsWithName(std::move(idAndVis), arePrivateIdsIgnored);
+    if (isIdVisible(idAndVis, arePrivateIdsIgnored, onlyMethodsFields)) {
+      return BorrowedIdsWithName(std::move(idAndVis),
+                                 arePrivateIdsIgnored,
+                                 onlyMethodsFields);
     }
     return llvm::None;
   }
@@ -277,10 +292,12 @@ class BorrowedIdsWithName {
     auto vis = uast::Decl::Visibility::PUBLIC;
     bool isMethodOrField = false;
     bool arePrivateIdsIgnored = true;
+    bool onlyMethodsFields = false;
     auto maybeIds = createWithSingleId(std::move(id),
                                        vis,
                                        isMethodOrField,
-                                       arePrivateIdsIgnored);
+                                       arePrivateIdsIgnored,
+                                       onlyMethodsFields);
     assert(maybeIds);
     return maybeIds.getValue();
   }
@@ -430,12 +447,14 @@ class Scope {
       Returns true if something was appended. */
   bool lookupInScope(UniqueString name,
                      std::vector<BorrowedIdsWithName>& result,
-                     bool arePrivateIdsIgnored) const {
+                     bool arePrivateIdsIgnored,
+                     bool onlyMethodsFields) const {
     auto search = declared_.find(name);
     if (search != declared_.end()) {
       // There might not be any IDs that are visible to us, so borrow returns
       // an optional list.
-      auto borrowedIds = search->second.borrow(arePrivateIdsIgnored);
+      auto borrowedIds = search->second.borrow(arePrivateIdsIgnored,
+                                               onlyMethodsFields);
       if (borrowedIds.hasValue()) {
         result.push_back(std::move(borrowedIds.getValue()));
         return true;
@@ -728,6 +747,7 @@ enum {
   LOOKUP_INNERMOST = 16,
   LOOKUP_SKIP_PRIVATE_VIS = 32,
   LOOKUP_GO_PAST_MODULES = 64,
+  LOOKUP_ONLY_METHODS_FIELDS = 128,
 };
 
 using LookupConfig = unsigned int;
