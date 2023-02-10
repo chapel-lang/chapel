@@ -513,7 +513,7 @@ module Map {
 
     /* Remove the element at position `k` from the map and return its value
      */
-    deprecated "'Map.getAndRemove' is deprecated. Please index into the map and then remove the value."
+    deprecated "'Map.getAndRemove' is deprecated. Consider 'Map.get' and 'Map.remove' instead?"
     proc getAndRemove(k: keyType) {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
