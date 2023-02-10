@@ -138,20 +138,6 @@ module DistributedMap {
         //  Reference Accessors
         // -------------------------------------------
 
-        proc getReference(k: keyType) ref {
-            const loc = this._localeFor(k);
-            var ret;
-            on loc {
-                this.locks[loc.id].lock();
-                const (found, (bucket_idx, chain_idx)) = this.tables[loc.id].getFullSlotFor(k);
-                if !found then boundsCheckHalt("map index " + k:string + " out of bounds");
-                ref valref = this.tables[loc.id].buckets[bucket_idx][chain_idx].val;
-                ret = valref;
-                this.locks[loc.id].unlock();
-            }
-            return ret;
-        }
-
         proc ref this(k: keyType) ref : valType
             where isDefaultInitializable(valType)
         {
@@ -223,7 +209,7 @@ module DistributedMap {
         //  Value Accessors
         // -------------------------------------------
 
-        proc getValue(k : keyType) : valType throws {
+        proc this(k : keyType) : valType throws {
             const loc = this._localeFor(k);
             var ret : valType;
             on loc {
@@ -237,7 +223,7 @@ module DistributedMap {
             return ret;
         }
 
-        proc getValue(k: keyType, sentinel: valType) : valType {
+        proc get(k: keyType, sentinel: valType) : valType {
             const loc = this._localeFor(k);
             var ret : valType;
             on loc {
@@ -246,20 +232,6 @@ module DistributedMap {
                 if !found
                     then ret = this.tables[loc.id].buckets[bucket_idx][chain_idx].val : this.valType;
                     else ret = sentinel;
-                this.locks[loc.id].unlock();
-            }
-            return ret;
-        }
-
-        proc getAndRemove(k: keyType) : valType {
-            const loc = this._localeFor(k);
-            var ret : valType;
-            on loc {
-                this.locks[loc.id].lock();
-                const (found, slot) = this.tables[loc.id].getFullSlotFor(k);
-                if !found
-                    then ret = this.tables[loc.id].remove(slot, k, ret);
-                    else throw new KeyNotFoundError(k: string);
                 this.locks[loc.id].unlock();
             }
             return ret;
@@ -298,7 +270,7 @@ module DistributedMap {
             return ret;
         }
 
-        proc set(k : keyType, in v: valType) : bool {
+        proc replace(k : keyType, in v: valType) : bool {
             const loc = this._localeFor(k);
             var ret = true;
             on loc {

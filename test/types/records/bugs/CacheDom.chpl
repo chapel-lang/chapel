@@ -7,7 +7,7 @@ proc cachedDom(size: int) const ref {
   if !tab.contains(size) {
     tab.add(size, {0..<size});
   }
-  return tab.getReference(size);
+  return tab[size];
 }
 
 proc main() {

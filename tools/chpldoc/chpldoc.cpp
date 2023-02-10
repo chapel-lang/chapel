@@ -170,7 +170,7 @@ static void printStuff(const char* argv0, void* mainAddr) {
   bool printedSomething = false;
 
   if (fPrintVersion) {
-    std::string version = chpl::getVersion(developer);
+    std::string version = chpl::getVersion();
     fprintf(stdout, "%s version %s\n", sArgState.program_name, version.c_str());
 
     fPrintCopyright  = true;

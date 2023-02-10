@@ -27,7 +27,7 @@ proc testMap(type t, param testIndexing = false) {
   if isNilableClass(t) {
     ret = m.add(0, nil:t);
     assert(ret);
-    var n = m.getValue(0);
+    var n = m[0];
     assert(n == nil);
     ret = m.remove(0);
     assert(ret);

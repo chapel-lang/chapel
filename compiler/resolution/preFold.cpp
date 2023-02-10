@@ -47,6 +47,8 @@
 
 #include "global-ast-vecs.h"
 
+#include "chpl/util/version-info.h"
+
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
 #endif
@@ -2085,7 +2087,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_VERSION_SHA: {
     retval = (get_is_official_release() ?
               new SymExpr(new_StringSymbol("")) :
-              new SymExpr(new_StringSymbol(get_build_version())));
+              new SymExpr(new_StringSymbol(chpl::getCommitHash())));
     call->replace(retval);
     break;
   }
