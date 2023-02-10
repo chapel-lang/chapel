@@ -4983,6 +4983,8 @@ proc fileReader.readUntil(ref s: string, separator: string, maxSize=-1, consumeS
   var didRead = false;
 
   on this._home {
+    try this.lock(); defer { this.unlock(); }
+
     const maxNumCodepoints = if maxSize < 0 then max(int) else maxSize,
           sepLocal = separator.localize(),
           numSepCodepoints = sepLocal.numCodepoints,
@@ -4991,8 +4993,7 @@ proc fileReader.readUntil(ref s: string, separator: string, maxSize=-1, consumeS
     var nextChar: int(32),
         numCodepointsRead = 0,
         err: errorCode = 0,
-        foundSeparator = false,
-        sepBuff : [0..<numSepBytes] uint(8);
+        foundSeparator = false;
 
     this._mark(); // A
     while numCodepointsRead < (maxNumCodepoints - numSepCodepoints) {
@@ -5010,8 +5011,6 @@ proc fileReader.readUntil(ref s: string, separator: string, maxSize=-1, consumeS
           this._revert(); // A
           try this._ch_ioerror(err, "in channel.readUntil(string)");
         }
-
-        // writeln(i, ", ", nextChar, " : ", sepLocal.codepoint(i), "\t", numMatched);
 
         if numMatched == i && nextChar == sepLocal.codepoint(i) {
           numMatched += 1;
@@ -5082,81 +5081,68 @@ proc fileReader.readUntil(type t: string, separator: regex(t), consumeSeparator=
 }
 
 proc fileReader.readUntil(ref s: string, separator: regex(string), consumeSeparator=true, includeSeparator=false): bool {
-  // var ret = false;
+  import BytesStringCommon.countNumCodepoints;
+  var didRead = false;
 
-  // on this._home {
-  //   const maxNumCodepoints = if maxSize < 0 then max(int) else maxSize,
-  //         numSepCodepoints = separator.numCodepoints,
-  //         numSepBytes = separator.numBytes;
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    this._mark();
 
-  //   var nextChar: int(32),
-  //       numCodepoints = 0,
-  //       err: errorCode = 0,
-  //       foundSeparator = false;
+    // look for a match with the provided regex
+    const maxNumCodepoints = if maxSize < 0 then max(int) else maxSize,
+          nm = 1;
 
-  //   this._mark();
-  //   const startOffset = this._offset();
-  //   while numCodepoints < maxNumCodepoints {
-  //     // read the next codepoint in the channel
-  //     err = qio_channel_read_char(false, this._channel_internal, nextChar);
+    var matches = _ddata_allocate(qio_regex_string_piece_t, nm),
+        err: errorCode = 0;
 
-  //     if err == EEOF {
-  //       break;
-  //     } else if err {
-  //       this._revert();
-  //       try this._ch_ioerror(err, "in channel.readUntil(string)");
-  //     } else {
-  //       numCodepoints += 1;
-  //     }
+    err = qio_regex_channel_match(separator._regex,
+                                  false, _channel_internal, maxNumCodepoints,
+                                  QIO_REGEX_ANCHOR_UNANCHORED,
+                                  /* can_discard */ true,
+                                  /* keep_unmatched */ false,
+                                  /* keep_whole_pattern */ true,
+                                  matches, nm);
 
-  //     // if the channel has read enough codepoints to check agianst the separator
-  //     // try matching the last 'numSepCodepoints' from the channel with the separator
-  //     if numCodepoints >= numSepCodepoints {
-  //       err = qio_channel_advance(false, this._channel_internal, -numSepBytes);
-  //       if err {
-  //         this._revert();
-  //         try this._ch_ioerror(err, "in channel.readUntil(string)");
-  //       }
+    // if there was an error other than a no-match error, throw
+    if err && err != EEOF && error != EFORMAT {
+      this._revert();
+      try this._ch_ioerror(err, "in channel.readUntil(regex(string))");
+    }
 
-  //       var i = 0;
+    // otherwise, get a match object from the match and store the channel's offset
+    const m: regexMatch = _to_regexMatch(matches[0]),
+          matchOffset = this._offset();
 
+    // extract a string from the match (if needed)
+    var separatorString = "";
+    if m.matched && (consumeSeparator != includeSeparator) then
+      this.extractMatch(m, separatorString);
 
-  //       // didn't find a match
-  //       // move the pointer back where it was
-  //       for i..<numSepCodepoints {
-  //         err = qio_channel_read(false, this._channel_internal, nextChar);
+    // move back to the starting offset and compute the total number of bytes read
+    this._revert();
+    const numBytesRead: int = matchOffset - this._offset();
 
-  //         // shouldn't get errors here since these characters were already read above (check anyway)
-  //         if err == EEOF {
-  //           break;
-  //         } else if err {
-  //           this._revert();
-  //           try this._ch_ioerror(err, "in channel.readUntil(string)");
-  //         }
-  //       }
-  //     }
-  //   }
-  //   const endOffset = this._offset();
-  //   this._commit(); // move back to starting offset
-  //   const numBytesRead: int = endOffset - startOffset;
+    if !m.matched {
+      err = readStringBytesData(s, this._channel_internal, numBytesRead, 0);
+      s.cachedNumCodepoints = countNumCodepoints(s);
+    } else {
+      if consumeSeparator {
+        err = readStringBytesData(s, this._channel_internal, numBytesRead, 0);
+        s.cachedNumCodepoints = countNumCodepoints(s);
+        if !includeSeparator then
+          s = s[0..<(s.size - separatorString.numCodepoints)];
+      } else {
+        err = readStringBytesData(s, this._channel_internal, numBytesRead - separatorString.numBytes, 0);
+        s.cachedNumCodepoints = countNumCodepoints(s);
+        if includeSeparator then
+          s += separatorString;
+      }
+    }
 
-  //   const numCodepointsToRead   = numCodepoints - if includeSeparator && foundSeparator then 0 else numSepCodepoints,
-  //         numBytesToRead,       = numBytesRead - if includeSeparator && foundSeparator then 0 else numSepBytes;
-
-  //   // will advance the channel 'numBytesToRead' bytes ahead
-  //   err = readStringBytesData(s, this._channel_internal, numBytesToRead, numCodepointsToRead);
-
-  //   if !consumeSeparator {
-  //     err = qio_channel_advance(false, this._channel_internal, -numSepBytes);
-  //     if err then try this._ch_ioerror(err, "in channel.readUntil(string)");
-  //   }
-
-  //   // return 'true' if we read anything
-  //   ret = numBytesRead > 0;
-  // }
-
-  // return ret;
-  return false;
+    didRead = numBytesRead > 0;
+    _ddata_free(matches, nm);
+  }
+  return didRead;
 }
 
 /*
