@@ -2650,6 +2650,7 @@ lookupCalledExpr(Context* context,
 
   // For method calls, also consider the receiver scope.
   if (ci.isMethodCall() || ci.isOpCall()) {
+    // TODO: should types of all arguments be considered for an op call?
     CHPL_ASSERT(ci.numActuals() >= 1);
     auto& qtReceiver = ci.actual(0).type();
     if (auto t = qtReceiver.type()) {
@@ -2885,6 +2886,7 @@ gatherAndFilterCandidates(Context* context,
     // compute the potential functions that it could resolve to
     auto v = lookupCalledExpr(context, inScope, ci, visited);
 
+    /*
     printf("Visible functions for\n");
     ci.dump();
     printf("\n");
@@ -2893,6 +2895,7 @@ gatherAndFilterCandidates(Context* context,
       printf("\n");
     }
     printf("\n\n");
+    */
 
     // filter without instantiating yet
     const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
@@ -3014,7 +3017,6 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
                                        const Scope* inScope,
                                        const PoiScope* inPoiScope,
                                        PoiInfo& poiInfo) {
-
   // search for candidates at each POI until we have found candidate(s)
   size_t firstPoiCandidate = 0;
   ForwardingInfoVec forwardingInfo;
