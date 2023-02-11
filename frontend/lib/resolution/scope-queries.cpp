@@ -624,7 +624,7 @@ static bool doLookupInScope(Context* context,
     // create a config that doesn't search receiver scopes parent scopes
     // (such parent scopes are covered in later in this function)
     LookupConfig newConfig = config;
-    newConfig &= ~(LOOKUP_PARENTS|LOOKUP_GO_PAST_MODULES);
+    newConfig &= ~(LOOKUP_PARENTS|LOOKUP_GO_PAST_MODULES|LOOKUP_TOPLEVEL);
     // and only consider methods/fields
     // (but that's all that we should find in a record/class decl anyway...)
     newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
@@ -639,10 +639,10 @@ static bool doLookupInScope(Context* context,
 
   // consider the parent scopes due to nesting
   if (checkParents) {
-    // create a config that doesn't search parent scopes
-    // (parent scopes are covered directly in the loop below)
+    // create a config that doesn't search parent scopes or toplevel scopes
+    // (such scopes are covered directly later in this function)
     LookupConfig newConfig = config;
-    newConfig &= ~(LOOKUP_PARENTS|LOOKUP_GO_PAST_MODULES);
+    newConfig &= ~(LOOKUP_PARENTS|LOOKUP_GO_PAST_MODULES|LOOKUP_TOPLEVEL);
 
     // Search parent scopes, if any, until a module is encountered
     const Scope* cur = nullptr;
@@ -957,7 +957,7 @@ errorIfAnyLimitationNotInScope(Context* context,
     if (auto ident = e->toIdentifier()) {
       errorIfNameNotInScope(context, scope, resolving, ident->name(),
                             ident, clause, useOrImport,
-                            /* isRename */ true);
+                            /* isRename */ false);
     } else if (auto as = e->toAs()) {
       if (auto ident = as->symbol()->toIdentifier()) {
         errorIfNameNotInScope(context, scope, resolving, ident->name(),
