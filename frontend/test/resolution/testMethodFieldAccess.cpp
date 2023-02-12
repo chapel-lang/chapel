@@ -65,7 +65,8 @@ static void testIt(const char* testName,
   assert(identAst->isIdentifier());
   auto fieldAst = parsing::idToAst(context, fieldId);
   assert(fieldAst);
-  assert(fieldAst->isVariable() || fieldAst->isFormal());
+  assert(fieldAst->isVariable() || fieldAst->isFormal() ||
+         fieldAst->isAggregateDecl());
 
   // check the scope resolver
   const ResolvedFunction* sr = scopeResolveFunction(context, methodId);
@@ -338,8 +339,29 @@ static void test8() {
 }
 
 // test with a formal vs a class field
-static void test9() {
-  testIt("test9.chpl",
+// this version uses a primary method
+static void test9p() {
+  testIt("test9p.chpl",
+         R""""(
+            module M {
+              record R {
+                var tz:int;
+                proc init() { }
+                proc foo(tzinfo: real) { }
+                proc now(tz:real = 1.4) {
+                  var x:R;
+                  x.foo(tz);
+                }
+              }
+            }
+         )"""",
+         "M.R.now",
+         "M.R.now@8",
+         "M.R.now@3" /* the formal */ );
+}
+// same but with a secondary method
+static void test9s() {
+  testIt("test9s.chpl",
          R""""(
             module M {
               record R {
@@ -360,6 +382,60 @@ static void test9() {
 }
 
 
+// make sure that we can find nested classes through method visibility rules
+// this is inspired by the test 'test_no_name_collision.chpl'.
+// this version uses a primary method
+static void test10p() {
+  testIt("test10p.chpl",
+         R""""(
+            module M {
+              class outerClass {
+                class aClass {
+                  var a: int;
+                }
+                proc foo() {
+                  aClass;
+                }
+              }
+
+              class aClass {
+                var b: int;
+              }
+            }
+         )"""",
+         "M.outerClass.foo",
+         "M.outerClass.foo@1",
+         "M.outerClass.aClass" /* the nested class */,
+         /* scope resolve only to avoid errors today */ true);
+  // TODO get the above case working with the full resolver
+}
+// similar to test10, but with a secondary method
+static void test10s() {
+  testIt("test10s.chpl",
+         R""""(
+            module M {
+              class outerClass {
+                class aClass {
+                  var a: int;
+                }
+              }
+
+              proc outerClass.foo() {
+                aClass;
+              }
+
+              class aClass {
+                var b: int;
+              }
+            }
+         )"""",
+         "M.foo",
+         "M.foo@2",
+         "M.outerClass.aClass" /* the nested class */,
+         /* scope resolve only to avoid errors today */ true);
+  // TODO get the above case working with the full resolver
+}
+
 
 int main() {
   test1r();
@@ -379,7 +455,12 @@ int main() {
   test7();
 
   test8();
-  test9();
+
+  test9p();
+  test9s();
+
+  test10p();
+  test10s();
 
   return 0;
 }
