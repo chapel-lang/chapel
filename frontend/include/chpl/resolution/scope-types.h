@@ -742,16 +742,51 @@ enum VisibilityStmtKind {
 };
 
 enum {
+  /**
+    Find symbols declared at this scope.
+   */
   LOOKUP_DECLS = 1,
+
+  /**
+    Consider symbols brought in by 'import' and 'use'.
+   */
   LOOKUP_IMPORT_AND_USE = 2,
+
+  /**
+    Search in parent scopes. Stops when a module scope is found
+    unless LOOKUP_GO_PAST_MODULES is included.
+   */
   LOOKUP_PARENTS = 4,
+
+  /**
+    Find toplevel modules with the matching name.
+   */
   LOOKUP_TOPLEVEL = 8,
+
+  /**
+    Find only the innermost match or matches.
+   */
   LOOKUP_INNERMOST = 16,
+
+  /**
+    Find only public symbols.
+   */
   LOOKUP_SKIP_PRIVATE_VIS = 32,
+
+  /**
+    Continue the scope search to parent modules instead of stopping
+    at the module scope. This setting supports error messages.
+   */
   LOOKUP_GO_PAST_MODULES = 64,
+
+  /**
+    Lookup only methods, fields, and class/record/union declarations
+    directly nested within a class/record/union
+   */
   LOOKUP_ONLY_METHODS_FIELDS = 128,
 };
 
+/** LookupConfig is a bit-set of the LOOKUP_ flags defined above */
 using LookupConfig = unsigned int;
 
 /**
