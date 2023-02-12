@@ -54,7 +54,13 @@ static void maybeEmitWarningsForId(Context* context, ID idMention,
   parsing::reportUnstableWarningForId(context, idMention, idTarget);
 }
 
-static bool isMethodOrField(const AstNode* d) {
+static bool isMethodOrField(const AstNode* d, bool atFieldLevel) {
+  // anything declared directly in a record/class/union counts
+  // for this purpose. (This covers nested classes / nested records).
+  if (atFieldLevel) {
+    return true;
+  }
+
   if (d != nullptr) {
     if (auto fn = d->toFunction()) {
       return fn->isMethod();
@@ -67,19 +73,25 @@ static bool isMethodOrField(const AstNode* d) {
   return false;
 }
 
-static void gather(DeclMap& declared, UniqueString name, const AstNode* d,
-                   Decl::Visibility visibility) {
+// atFieldLevel indicates that the declaration is directly within
+// a record/class/union (applies to fields, primary methods, and
+// any nested record/class/union).
+static void gather(DeclMap& declared,
+                   UniqueString name,
+                   const AstNode* d,
+                   Decl::Visibility visibility,
+                   bool atFieldLevel) {
   auto search = declared.find(name);
   if (search == declared.end()) {
     // add a new entry containing just the one ID
     declared.emplace_hint(search,
                           name,
                           OwnedIdsWithName(d->id(), visibility,
-                                           isMethodOrField(d)));
+                                           isMethodOrField(d, atFieldLevel)));
   } else {
     // found an entry, so add to it
     OwnedIdsWithName& val = search->second;
-    val.appendIdAndVis(d->id(), visibility, isMethodOrField(d));
+    val.appendIdAndVis(d->id(), visibility, isMethodOrField(d, atFieldLevel));
   }
 }
 
@@ -88,7 +100,8 @@ struct GatherQueryDecls {
   GatherQueryDecls(DeclMap& declared) : declared(declared) { }
 
   bool enter(const TypeQuery* ast) {
-    gather(declared, ast->name(), ast, ast->visibility());
+    gather(declared, ast->name(), ast, ast->visibility(),
+           /* atFieldLevel */ false);
     return true;
   }
   void exit(const TypeQuery* ast) { }
@@ -103,8 +116,13 @@ struct GatherDecls {
   DeclMap declared;
   bool containsUseImport = false;
   bool containsFunctionDecls = false;
+  bool atFieldLevel = false;
 
-  GatherDecls() { }
+  GatherDecls(const AstNode* parentAst) {
+    if (parentAst && parentAst->isAggregateDecl()) {
+      atFieldLevel = true;
+    }
+  }
 
   // Add NamedDecls to the map
   bool enter(const NamedDecl* d) {
@@ -118,7 +136,7 @@ struct GatherDecls {
     }
 
     if (skip == false) {
-      gather(declared, d->name(), d, d->visibility());
+      gather(declared, d->name(), d, d->visibility(), atFieldLevel);
     }
 
     if (d->isFunction()) {
@@ -172,7 +190,7 @@ struct GatherDecls {
 
   // consider 'include module' something that defines a name
   bool enter(const Include* d) {
-    gather(declared, d->name(), d, uast::Decl::PUBLIC);
+    gather(declared, d->name(), d, uast::Decl::PUBLIC, atFieldLevel);
     return false;
   }
   void exit(const Include* d) { }
@@ -193,7 +211,7 @@ void gatherDeclsWithin(const uast::AstNode* ast,
                        DeclMap& declared,
                        bool& containsUseImport,
                        bool& containsFunctionDecls) {
-  GatherDecls visitor;
+  auto visitor = GatherDecls(ast);
 
   // Visit child nodes to e.g. look inside a Function
   // rather than collecting it as a NamedDecl
