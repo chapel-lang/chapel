@@ -1,1 +1,1 @@
--M $CHPL_HOME/tools/mason/
+-M $CHPL_HOME/tools/mason/ -smapMethodsThrow=true
