@@ -4972,11 +4972,12 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
   return retval;
 }
 
-
-proc fileReader.readUntil(type t: string, separator: t, maxSize=-1, consumeSeparator=true, includeSeparator=false): t throws {
-  var ret: string;
-  try this.readUntil(ret, separator, maxSize, consumeSeparator, includeSeparator);
-  return ret;
+proc fileReader.readUntil(type t, separator: t, maxSize=-1, consumeSeparator=true, includeSeparator=false): t throws
+  where t == string || t == bytes
+{
+  var sb: t;
+  try this.readUntil(sb, separator, maxSize, consumeSeparator, includeSeparator);
+  return sb;
 }
 
 proc fileReader.readUntil(ref s: string, separator: string, maxSize=-1, consumeSeparator=true, includeSeparator=false): bool throws {
@@ -5060,7 +5061,6 @@ proc fileReader.readUntil(ref s: string, separator: string, maxSize=-1, consumeS
         );
         if includeSeparator then
           s += sepLocal;
-        }
       }
     }
 
@@ -5074,13 +5074,100 @@ proc fileReader.readUntil(ref s: string, separator: string, maxSize=-1, consumeS
   return didRead;
 }
 
-proc fileReader.readUntil(type t: string, separator: regex(t), consumeSeparator=true, includeSeparator=false): t {
-  var s: string;
-  try this.readUntil(s, separator, consumeSeparator, includeSeparator);
-  return s;
+proc fileReader.readUntil(ref b: bytes, separator: bytes, maxSize=-1, consumeSeparator=true, includeSeparator=false): bool throws {
+  var didRead = false;
+
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    const maxNumBytes = if maxSize < 0 then max(int) else maxSize,
+          sepLocal = separator.localize(),
+          numSepBytes = sepLocal.numBytes;
+
+    var nextByte: int,
+        numBytesRead = 0,
+        err: errorCode = 0,
+        foundSeparator = false;
+
+    this._mark(); // A
+    while numBytesRead < (maxNumBytes - numSepBytes) {
+      this._mark(); // B
+
+      // speculatively read the next numSepBytes. Attempt to match with the separator
+      var numMatched = 0;
+      for i in 0..<numSepBytes {
+        nextByte = qio_channel_read_byte(false, this._channel_internal);
+        err = -nextByte;
+
+        if err == EEOF {
+          break;
+        } else if nextByte < 0 {
+          this._revert(); // B
+          this._revert(); // A
+          try this._ch_ioerror(err, "in channel.readUntil(bytes)");
+        }
+
+        if numMatched == i && nextByte == sepLocal.byte(i) {
+          numMatched += 1;
+        }
+      }
+      this._revert(); // B
+
+      // stop reading if a match was found (starting at B)
+      if numMatched == numSepBytes {
+        foundSeparator = true;
+        break;
+      }
+
+      // otherwise, advance the channel's pointer by one byte
+      nextByte = qio_channel_read_byte(false, this._channel_internal);
+      err = -nextByte;
+      if err == EEOF {
+        break;
+      } else if nextByte < 0 {
+        this._revert();
+        try this._ch_ioerror(err, "in channel.readUntil(bytes)");
+      } else {
+        numBytesRead += 1;
+      }
+    }
+
+    // move the pointer back to A
+    this._revert(); // A
+
+    if !foundSeparator {
+      err = readStringBytesData(b, this._channel_internal, numBytesRead, 0);
+    } else {
+      if consumeSeparator {
+        err = readStringBytesData(b, this._channel_internal, numBytesRead + numSepBytes, 0);
+        if !includeSeparator then
+          b = b[0..<numBytesRead];
+      } else {
+        err = readStringBytesData(b, this._channel_internal, numBytesRead, 0);
+        if includeSeparator then
+          b += sepLocal;
+      }
+    }
+
+    if err {
+      try this._ch_ioerror(err, "in channel.readUntil(bytes)");
+    }
+
+    // return 'true' if anything was read
+    didRead = numBytesRead > 0;
+  }
+  return didRead;
 }
 
-proc fileReader.readUntil(ref s: string, separator: regex(string), consumeSeparator=true, includeSeparator=false): bool {
+proc fileReader.readUntil(type t, separator: regex(t), maxSize=-1, consumeSeparator=true, includeSeparator=false): t
+  where t == string || t == bytes
+{
+  var sb: t;
+  try this.readUntil(sb, separator, maxSize, consumeSeparator, includeSeparator);
+  return sb;
+}
+
+proc fileReader.readUntil(ref s: string, separator: regex(string), maxSize=-1, consumeSeparator=true, includeSeparator=false): bool {
   import BytesStringCommon.countNumCodepoints;
   var didRead = false;
 
@@ -5096,7 +5183,7 @@ proc fileReader.readUntil(ref s: string, separator: regex(string), consumeSepara
         err: errorCode = 0;
 
     err = qio_regex_channel_match(separator._regex,
-                                  false, _channel_internal, maxNumCodepoints,
+                                  false, this._channel_internal, maxNumCodepoints,
                                   QIO_REGEX_ANCHOR_UNANCHORED,
                                   /* can_discard */ true,
                                   /* keep_unmatched */ false,
@@ -5104,14 +5191,13 @@ proc fileReader.readUntil(ref s: string, separator: regex(string), consumeSepara
                                   matches, nm);
 
     // if there was an error other than a no-match error, throw
-    if err && err != EEOF && error != EFORMAT {
+    if err && err != EEOF && err != EFORMAT {
       this._revert();
       try this._ch_ioerror(err, "in channel.readUntil(regex(string))");
     }
 
-    // otherwise, get a match object from the match and store the channel's offset
-    const m: regexMatch = _to_regexMatch(matches[0]),
-          matchOffset = this._offset();
+    // otherwise, get a match object from the match
+    const m: regexMatch = _to_regexMatch(matches[0]);
 
     // extract a string from the match (if needed)
     var separatorString = "";
@@ -5119,6 +5205,7 @@ proc fileReader.readUntil(ref s: string, separator: regex(string), consumeSepara
       this.extractMatch(m, separatorString);
 
     // move back to the starting offset and compute the total number of bytes read
+    const matchOffset = this._offset();
     this._revert();
     const numBytesRead: int = matchOffset - this._offset();
 
@@ -5137,6 +5224,10 @@ proc fileReader.readUntil(ref s: string, separator: regex(string), consumeSepara
         if includeSeparator then
           s += separatorString;
       }
+    }
+
+    if err != 0 && err != EEOF {
+      try this._ch_ioerror(err, "in channel.readUntil(regex(string))");
     }
 
     didRead = numBytesRead > 0;
