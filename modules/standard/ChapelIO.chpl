@@ -605,15 +605,26 @@ module ChapelIO {
   }
 
   pragma "no doc"
+  proc locale.encodeTo(f) throws {
+    // FIXME this doesn't resolve without `this`
+    f.write(this._instance);
+  }
+
+  pragma "no doc"
   proc _ddata.writeThis(f) throws {
     compilerWarning("printing _ddata class");
     f.write("<_ddata class cannot be printed>");
   }
 
   pragma "no doc"
+  proc _ddata.encodeTo(f) throws { writeThis(f); }
+
+  pragma "no doc"
   proc chpl_taskID_t.writeThis(f) throws {
     f.write(this : uint(64));
   }
+  pragma "no doc"
+  proc chpl_taskID_t.encodeTo(f) throws { writeThis(f); }
 
   pragma "no doc"
   proc chpl_taskID_t.readThis(f) throws {
@@ -621,7 +632,16 @@ module ChapelIO {
   }
 
   pragma "no doc"
+  proc type chpl_taskID_t.decodeFrom(f) throws {
+    var ret : chpl_taskID_t;
+    ret.readThis(f);
+    return ret;
+  }
+
+  pragma "no doc"
   proc nothing.writeThis(f) {}
+  pragma "no doc"
+  proc nothing.encodeTo(f) {}
 
   pragma "no doc"
   proc _tuple.readThis(f) throws {
@@ -687,6 +707,31 @@ module ChapelIO {
     }
   }
 
+  proc type _tuple.decodeFrom(f) throws {
+    ref fmt = f.formatter;
+    pragma "no init"
+    var ret : this;
+    fmt.readTypeStart(f, this);
+    for param i in 0..<this.size {
+      pragma "no auto destroy"
+      var elt = fmt.readField(f, "", this(i));
+      __primitive("=", ret(i), elt);
+    }
+    fmt.readTypeEnd(f, this);
+    return ret;
+  }
+
+  proc const _tuple.encodeTo(w) throws {
+    ref fmt = w.formatter;
+    fmt.writeTypeStart(w, this.type);
+    for param i in 0..<size {
+      const ref elt = this(i);
+      // TODO: should probably have something like 'writeElement'
+      fmt.writeField(w, "", elt);
+    }
+    fmt.writeTypeEnd(w, this.type);
+  }
+
   // Moved here to avoid circular dependencies in ChapelRange
   // Write implementation for ranges
   pragma "no doc"
@@ -726,6 +771,11 @@ module ChapelIO {
   }
 
   pragma "no doc"
+  proc range.encodeTo(f) throws {
+    writeThis(f);
+  }
+
+  pragma "no doc"
   proc ref range.readThis(f) throws {
     if hasLowBound() then _low = f.read(_low.type);
 
@@ -735,7 +785,7 @@ module ChapelIO {
 
     if stride != 1 {
       f._readLiteral(" by ");
-      stride = f.read(stride.type);
+      _stride = f.read(stride.type);
     }
 
     try {
@@ -752,10 +802,55 @@ module ChapelIO {
     }
   }
 
+  proc range.init(type idxType = int,
+                  param boundedType : BoundedRangeType = BoundedRangeType.bounded,
+                  param stridable : bool = false,
+                  reader: fileReader(?)) {
+    this.init(idxType, boundedType, stridable);
+
+    // TODO:
+    // The alignment logic here is pretty tricky, so fall back on the
+    // actual operators for the time being...
+
+    // TODO: experiment with using throwing initializers in this case.
+    try! {
+      if hasLowBound() then _low = reader.read(_low.type);
+      reader._readLiteral("..");
+      if hasHighBound() then _high = reader.read(_high.type);
+
+      if stridable {
+        if reader.matchLiteral(" by ") {
+          //_stride = reader.read(stride.type);
+          this = this by reader.read(stride.type);
+        }
+      }
+    }
+
+    try! {
+      try {
+        if reader.matchLiteral(" align ") {
+          if stridable {
+            //_alignment = reader.read(intIdxType);
+            this = this align reader.read(intIdxType);
+          }
+        } else {
+          // TODO: throw error if not stridable
+        }
+      } catch err: BadFormatError {
+        // Range is naturally aligned.
+      }
+    }
+  }
+
   pragma "no doc"
   override proc LocaleModel.writeThis(f) throws {
     f._writeLiteral("LOCALE");
     f.write(chpl_id());
+  }
+
+  pragma "no doc"
+  override proc LocaleModel.encodeTo(f) throws {
+    writeThis(f);
   }
 
   /* Errors can be printed out. In that event, they will
@@ -765,6 +860,11 @@ module ChapelIO {
   pragma "no doc"
   override proc Error.writeThis(f) throws {
     f.write(chpl_describe_error(this));
+  }
+
+  pragma "no doc"
+  override proc Error.encodeTo(f) throws {
+    writeThis(f);
   }
 
   /* Equivalent to ``try! stdout.write``. See :proc:`IO.channel.write` */
