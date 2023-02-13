@@ -12,7 +12,7 @@ module M {
 
     proc store(name: string, x: int) {
       if tab.contains(name) {
-        tab[name]!.x = x;
+        try! tab[name]!.x = x;
       } else {
         tab.add(name, new shared Entry(x)?);
       }
@@ -25,7 +25,7 @@ module M {
       throw new Error("no entry for " + name);
     }
 
-    ref r = tab[name]; // workaround for an issue solved by 14793
+    ref r = try! tab[name]; // workaround for an issue solved by 14793
     return r!.borrow();
   }
 
@@ -35,7 +35,7 @@ module M {
       return nil;
     }
 
-    ref r = tab[name]; // workaround for an issue solved by 14793
+    ref r = try! tab[name]; // workaround for an issue solved by 14793
     return r.borrow();
   }
 
