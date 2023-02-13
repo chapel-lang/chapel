@@ -317,6 +317,8 @@ size_t fDynoBreakOnHash = 0;
 bool fDynoSerialize = false;
 char dynoBinAstDir[FILENAME_MAX + 1] = "";
 
+bool fUseIOFormatters = false;
+
 std::vector<std::string> gDynoPrependInternalModulePaths;
 std::vector<std::string> gDynoPrependStandardModulePaths;
 
@@ -1247,6 +1249,7 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "X", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
  {"dyno-serialize", ' ', NULL, "Serialize AST to binary files in a directory", "N", &fDynoSerialize, "CHPL_DYNO_COMPILER_LIBRARY", NULL},
  {"dyno-serialize-dir", ' ', "<path>", "Specify directory for binary .dyno.ast files", "P", dynoBinAstDir, "CHPL_DYNO_SERIALIZE_DIR", setDynoSerialize},
+ {"use-io-formatters", ' ', NULL, "Enable [disable] use of experimental IO formatters", "N", &fUseIOFormatters, "CHPL_USE_IO_FORMATTERS", NULL},
 
 
  DRIVER_ARG_PRINT_CHPL_HOME,
