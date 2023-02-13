@@ -261,9 +261,11 @@ module ChapelIO {
     // calls writeThisDefaultImpl.
     pragma "no doc"
     proc writeThisDefaultImpl(writer, x:?t) throws {
+      const st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+      const isJson = st == QIO_AGGREGATE_FORMAT_JSON;
+
       if !writer.binary() {
-        const st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-        const start = if st == QIO_AGGREGATE_FORMAT_JSON then "{"
+        const start = if isJson then "{"
                       else if st == QIO_AGGREGATE_FORMAT_CHPL
                       then "new " + t:string + "("
                       else if isClassType(t) then "{"
@@ -276,8 +278,7 @@ module ChapelIO {
       writeThisFieldsDefaultImpl(writer, x, first);
 
       if !writer.binary() {
-        const st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-        const end = if st == QIO_AGGREGATE_FORMAT_JSON then "}"
+        const end = if isJson then "}"
                     else if st == QIO_AGGREGATE_FORMAT_CHPL then ")"
                     else if isClassType(t) then "}"
                     else ")";
@@ -429,6 +430,7 @@ module ChapelIO {
           var isSkipUnknown = reader.styleElement(qioSkipUnknown) != 0;
 
           var hasReadFieldName = false;
+          const isJson = st == QIO_AGGREGATE_FORMAT_JSON;
 
           for param i in 1..numFields {
             if !isIoField(x, i) || hasReadFieldName || readField[i-1] then
@@ -447,7 +449,7 @@ module ChapelIO {
             hasReadFieldName = true;
             needsComma = true;
 
-            const equalSign = if st == QIO_AGGREGATE_FORMAT_JSON then ":"
+            const equalSign = if isJson then ":"
                               else "=";
 
             try reader._readLiteral(equalSign, true);
@@ -457,7 +459,6 @@ module ChapelIO {
             numRead += 1;
           }
 
-          const isJson = st == QIO_AGGREGATE_FORMAT_JSON;
 
           // Try skipping fields if we're JSON and allowed to do so.
           if !hasReadFieldName then
@@ -521,7 +522,8 @@ module ChapelIO {
           hasFoundAtLeastOneField = true;
 
           const st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-          const eq = if st == QIO_AGGREGATE_FORMAT_JSON then ":"
+          const isJson = st == QIO_AGGREGATE_FORMAT_JSON;
+          const eq = if isJson then ":"
                      else "=";
 
           try reader._readLiteral(eq, true);
@@ -572,11 +574,12 @@ module ChapelIO {
     pragma "no doc"
     proc readThisDefaultImpl(reader, ref x:?t) throws where !isClassType(t) {
       const st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+      const isJson = st ==  QIO_AGGREGATE_FORMAT_JSON;
 
       if !reader.binary() {
         const start = if st ==  QIO_AGGREGATE_FORMAT_CHPL
                       then "new " + t:string + "("
-                      else if st ==  QIO_AGGREGATE_FORMAT_JSON then "{"
+                      else if isJson then "{"
                       else "(";
 
         try reader._readLiteral(start);
@@ -588,7 +591,7 @@ module ChapelIO {
       try skipFieldsAtEnd(reader, needsComma);
 
       if !reader.binary() {
-        const end = if st == QIO_AGGREGATE_FORMAT_JSON then "}"
+        const end = if isJson then "}"
                     else ")";
 
         try reader._readLiteral(end);
@@ -634,6 +637,7 @@ module ChapelIO {
   pragma "no doc"
   proc _tuple._readWriteHelper(f) throws {
     const st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
+    const isJson = st == QIO_TUPLE_FORMAT_JSON;
     const binary = f.binary();
 
     // Returns a 4-tuple containing strings representing:
@@ -644,7 +648,7 @@ module ChapelIO {
     proc getLiterals() : 4*string {
       if st == QIO_TUPLE_FORMAT_SPACE {
         return ("", " ", "", "");
-      } else if st == QIO_TUPLE_FORMAT_JSON {
+      } else if isJson {
         return ("[", ", ", "", "]");
       } else {
         return ("(", ", ", ",", ")");
