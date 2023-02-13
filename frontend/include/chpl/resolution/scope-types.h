@@ -743,18 +743,21 @@ enum VisibilityStmtKind {
 
 enum {
   /**
-    Find symbols declared at this scope.
+    When looking at a scope, find symbols declared in that scope.
    */
   LOOKUP_DECLS = 1,
 
   /**
-    Consider symbols brought in by 'import' and 'use'.
+    When looking at a scope, consider symbols brought in to that scope by
+    'import' and 'use' statements.
    */
   LOOKUP_IMPORT_AND_USE = 2,
 
   /**
-    Search in parent scopes. Stops when a module scope is found
-    unless LOOKUP_GO_PAST_MODULES is included.
+    When looking at a scope, also search parent scopes (those that lexically
+    contain this scope). Stops when a module scope is found unless
+    LOOKUP_GO_PAST_MODULES is included. Additionally, looks for symbols in the
+    root module.
    */
   LOOKUP_PARENTS = 4,
 
