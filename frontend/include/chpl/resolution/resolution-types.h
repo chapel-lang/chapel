@@ -409,6 +409,11 @@ class CallInfo {
                          bool raiseErrors = true,
                          std::vector<const uast::AstNode*>* actualAsts=nullptr);
 
+  /** Construct a CallInfo by adding a method receiver argument to
+      the passed CallInfo. */
+  static CallInfo createWithReceiver(const CallInfo& ci,
+                                     types::QualifiedType receiverType);
+
   /** Prepare actuals for a call for later use in creating a CallInfo.
       This is a helper function for CallInfo::create that is sometimes
       useful to call separately.
@@ -992,6 +997,14 @@ class MostSpecificCandidates {
     CHPL_ASSERT(!emptyDueToAmbiguity || isEmpty());
 
     return emptyDueToAmbiguity;
+  }
+
+  /**
+    Returns 'true' if any candidate was found, including
+    if there was no best candidate due to ambiguity.
+   */
+  bool foundCandidates() const {
+    return isAmbiguous() || !isEmpty();
   }
 
   bool operator==(const MostSpecificCandidates& other) const {

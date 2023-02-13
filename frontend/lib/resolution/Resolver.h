@@ -231,9 +231,9 @@ struct Resolver {
   ReceiverScopesVec methodReceiverScopes(bool recompute = false);
 
   /* Compute the receiver type (when resolving a method)
-     and return nullptr if it is not applicable.
+     and return a type containing nullptr if it is not applicable.
    */
-  const types::CompositeType* methodReceiverType();
+  types::QualifiedType methodReceiverType();
 
   /* When resolving a generic record or a generic function,
      there might be generic types that we don't know yet.
