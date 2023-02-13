@@ -572,10 +572,9 @@
 %type <commentsAndStmt> when_stmt
 %type <exprList> when_stmt_ls
 
-%type <expr> array_type
-%type <expr> opt_type opt_ret_type ret_array_type ret_type colon_ret_type
+%type <expr> opt_type opt_ret_type ret_type colon_ret_type
 %type <expr> opt_fn_type_ret_type
-%type <expr> opt_colon_formal_type formal_array_type opt_formal_array_elt_type
+%type <expr> opt_colon_formal_type
 %type <expr> colon_formal_type
 %type <expr> formal_type
 %type <functionParts> lambda_decl_start
@@ -592,7 +591,7 @@
 %type <expr> parenthesized_expr expr
 %type <maybeNamedActual> actual_expr
 %type <expr> bool_literal str_bytes_literal literal_expr
-%type <expr> stmt_level_expr sub_type_level_expr type_level_expr scalar_type
+%type <expr> stmt_level_expr sub_type_level_expr scalar_type
 %type <expr> formal_or_ret_type_expr
 %type <exprList> lifetime_components_expr
 %type <expr> lifetime_expr lifetime_ident
@@ -2882,45 +2881,6 @@ formal_or_ret_type_expr:
   expr %prec TNOELSE    { $$ = context->sanitizeArrayType(@$, $1); }
 ;
 
-type_level_expr:
-  expr
-  {
-    CHPL_ASSERT(false);
-    $$ = nullptr;
-  }
-;
-
-ret_array_type:
-  TLSBR TRSBR type_level_expr
-  {
-    $$ = context->buildArrayType(@$, @1, /*domainExprs*/ nullptr, $3);
-  }
-| TLSBR TRSBR
-  {
-    $$ = context->buildArrayType(@$, @1, nullptr, nullptr);
-  }
-| TLSBR expr_ls TRSBR type_level_expr
-  {
-    $$ = context->buildArrayType(@$, @2, $2, $4);
-  }
-| TLSBR expr_ls TRSBR
-  {
-    $$ = context->buildArrayType(@$, @2, $2, /*typeExpr*/ nullptr);
-  }
-| TLSBR TRSBR ret_array_type
-  {
-    $$ = context->buildArrayType(@$, @1, /*domainExprs*/ nullptr, $3);
-  }
-| TLSBR expr_ls TRSBR ret_array_type
-  {
-    $$ = context->buildArrayType(@$, @2, $2, $4);
-  }
-| TLSBR error TRSBR
-  {
-    $$ = context->syntax(@$, "invalid expression for domain of array return type.");
-  }
-;
-
 ret_type:
   formal_or_ret_type_expr { $$ = $1; }
 | reserved_type_ident_use { $$ = context->buildIdent(@1, $1); }
@@ -2942,80 +2902,6 @@ opt_type:
 | TCOLON expr                    { $$ = $2; }
 | TCOLON reserved_type_ident_use { $$ = context->buildIdent(@2, $2); }
 | error                          { $$ = ErroneousExpression::build(BUILDER, LOC(@1)).release(); }
-;
-
-/* NOTE: Some things about the following rule concern me (blc), but I
-   don't have the time to fix them now, so am noting them for the
-   future when someone runs into them:
-
-   (1) there are 3 cases rather than the 4 I would expect based on symmetry
-       ('in' vs. not x 'type_level_expr' vs. 'array_type')
-
-   (2) it seems strange to me that the thing being iterated over is an
-       'expr_ls' in the first two cases, but an 'expr' in the third
-
-   (3) it also seems strange that the stuff preceding TIN would be an
-       'expr_ls' rather than something simpler, like a nested
-       parenthesization of identifiers; perhaps this is to support the
-       establishment of an explicit type declaration, though I thought we
-       didn't support that yet
-*/
-
-array_type:
-  TLSBR TRSBR
-  {
-    CHPL_ASSERT(false && "Not implemented yet!");
-  }
-| TLSBR TRSBR type_level_expr
-  {
-    CHPL_ASSERT(false && "Not implemented yet!");
-  }
-| TLSBR expr_ls TRSBR type_level_expr
-  {
-    $$ = context->buildArrayType(@$, @2, $2, $4);
-  }
-| TLSBR expr_ls TIN expr TRSBR type_level_expr
-  {
-    $$ = context->buildArrayTypeWithIndex(@$, @2, $2, $4, $6);
-  }
-| TLSBR error TRSBR
-  {
-    $$ = ErroneousExpression::build(BUILDER, LOC(@2)).release();
-  }
-;
-
-opt_formal_array_elt_type:
-                        { $$ = nullptr; }
-| expr                  { $$ = $1; }
-;
-
-formal_array_type:
-  TLSBR TRSBR opt_formal_array_elt_type
-  {
-    auto domainLoc = context->makeSpannedLocation(@1, @2);
-    $$ = context->buildArrayType(@$, domainLoc, /*domainExprs*/ nullptr, $3);
-  }
-| TLSBR expr_ls TRSBR opt_formal_array_elt_type
-  {
-    $$ = context->buildArrayType(@$, @2, $2, $4);
-  }
-
-// Johnk: Unclear to me what the type should be when [<range>][] <type> is encountered.
-//        At present buildArrayRuntimeType is undefined when gNil is passed and
-//        the second argument is a formal_array_type.
-| TLSBR TRSBR formal_array_type
-  {
-    auto domainLoc = context->makeSpannedLocation(@1, @2);
-    $$ = context->buildArrayType(@$, domainLoc, /*domainExprs*/ nullptr, $3);
-  }
-| TLSBR expr_ls TRSBR formal_array_type
-  {
-    $$ = context->buildArrayType(@$, @2, $2, $4);
-  }
-| TLSBR expr_ls TIN expr TRSBR opt_formal_array_elt_type
-  {
-    $$ = context->buildArrayTypeWithIndex(@$, @2, $2, $4, $6);
-  }
 ;
 
 formal_type:

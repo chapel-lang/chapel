@@ -1,1 +1,2 @@
-forallArrayTypeVar.chpl:1: syntax error: near ';'
+forallArrayTypeVar.chpl:1: error: invalid array type specifier
+forallArrayTypeVar.chpl:1: note: expected a type, not a value of type 'int(64)'

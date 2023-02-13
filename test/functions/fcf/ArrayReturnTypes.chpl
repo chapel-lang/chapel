@@ -23,8 +23,8 @@ type t8 = proc(_: int, _: int): [a, b] int;
 type t9 = proc(_: int, _:int): [a, b] ?;
 type t10 = proc(): [];
 type t11 = proc(): [] int;
-type t11 = proc(): [] ?;
-type t12 = proc(_: int): [];
-type t13 = proc(_: int): [] int;
-type t14 = proc(_: int): [] ?;
+type t12 = proc(): [] ?;
+type t13 = proc(_: int): [];
+type t14 = proc(_: int): [] int;
+type t15 = proc(_: int): [] ?;
 

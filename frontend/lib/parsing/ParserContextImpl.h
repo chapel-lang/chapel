@@ -1236,9 +1236,8 @@ AstNode* ParserContext::buildBracketLoopExpr(YYLTYPE location,
   owned<AstNode> iterand = nullptr;
   auto iterExprs = consumeList(iterandExprs);
   if (iterExprs.size() > 1) {
-    iterand = Domain::build(builder,
-                            convertLocation(locIterandExprs),
-                            false,
+    iterand = Domain::build(builder, convertLocation(locIterandExprs),
+                            /*usedCurlyBraces*/ false,
                             std::move(iterExprs));
   } else {
     iterand = std::move(iterExprs[0]);

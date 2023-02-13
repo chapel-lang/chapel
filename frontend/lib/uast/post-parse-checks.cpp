@@ -73,7 +73,9 @@ struct Visitor {
   const AstNode* searchParents(AstTag tag, const AstNode** last);
 
   // Search ancestors for the closest parent that is a decl.
-  const AstNode* searchParentsForDecl(const AstNode** last, int declDepth=0);
+  const AstNode* searchParentsForDecl(const AstNode* node,
+                                      const AstNode** last,
+                                      int declDepth=0);
 
   // Wrapper around 'node->dispatch'.
   void check(const AstNode* node);
@@ -122,6 +124,7 @@ struct Visitor {
   void checkLambdaReturnIntent(const Function* node);
   void checkProcTypeFormalsAreAnnotated(const FunctionSignature* node);
   void checkProcDefFormalsAreNamed(const Function* node);
+  void checkForUnadornedArrayType(const BracketLoop* node);
 
   /*
   TODO
@@ -147,7 +150,9 @@ struct Visitor {
 
   // Visitors.
   inline void visit(const AstNode* node) {} // Do nothing by default.
+
   void visit(const Array* node);
+  void visit(const BracketLoop* node);
   void visit(const FnCall* node);
   void visit(const Variable* node);
   void visit(const TypeQuery* node);
@@ -211,9 +216,10 @@ Visitor::searchParents(AstTag tag, const AstNode** last) {
 }
 
 const AstNode*
-Visitor::searchParentsForDecl(const AstNode** last, int declDepth) {
+Visitor::searchParentsForDecl(const AstNode* start, const AstNode** last,
+                              int declDepth) {
   const AstNode* ret = nullptr;
-  const AstNode* lastInWalk = nullptr;
+  const AstNode* lastInWalk = start;
   int countDeclDepth = 0;
 
   for (int i = parents_.size() - 1; i >= 0; i--) {
@@ -536,7 +542,7 @@ void Visitor::checkOperatorNameValidity(const Function* node) {
 
 void Visitor::checkEmptyProcedureBody(const Function* node) {
   if (!node->body() && node->linkage() != Decl::EXTERN) {
-    auto decl = searchParentsForDecl(nullptr);
+    auto decl = searchParentsForDecl(node, nullptr);
     if (!decl || !decl->isInterface()) {
       error(node, "no-op procedures are only legal for extern functions.");
     }
@@ -624,7 +630,7 @@ void Visitor::checkNoReceiverClauseOnPrimaryMethod(const Function* node) {
   if (const Formal* receiver = node->thisFormal()) {
     if (!node->isPrimaryMethod()) {
       const AstNode* last = nullptr;
-      auto parentDecl = searchParentsForDecl(&last);
+      auto parentDecl = searchParentsForDecl(node, &last);
       if (parentDecl->isAggregateDecl()) {
         // stringify the receiver type uAST for use in the error message
         std::string receiverTypeStr = "<unknown>";
@@ -688,6 +694,40 @@ void Visitor::checkProcDefFormalsAreNamed(const Function* node) {
   }
 }
 
+static bool isUnadornedArrayType(const BracketLoop* node) {
+  auto block = node->body();
+  if (block->numStmts() != 0) return false;
+  auto dom = node->iterand()->toDomain();
+  if (!dom || dom->numExprs() != 0) return false;
+  if (dom->usedCurlyBraces()) return false;
+  return true;
+}
+
+// TODO: Might need to do some more fine-grained pattern matching.
+void Visitor::checkForUnadornedArrayType(const BracketLoop* node) {
+  if (!parent(0)) return;
+
+  if (!isUnadornedArrayType(node)) return;
+
+  bool doEmitError = true;
+  const AstNode* last = nullptr;
+  auto decl = searchParentsForDecl(node, &last);
+
+  // Formal type expression is OK.
+  if (auto formal = decl->toFormal()) {
+    if (last == formal->typeExpression()) doEmitError = false;
+  }
+
+  // Function return type is OK.
+  if (auto fn = decl->toFunction()) {
+    if (last == fn->returnType()) doEmitError = false;
+  }
+
+  if (doEmitError) {
+    error(node, "generic array types are unsupported in this context");
+  }
+}
+
 void Visitor::checkPrivateDecl(const Decl* node) {
   if (node->visibility() != Decl::PRIVATE) return;
 
@@ -705,7 +745,7 @@ void Visitor::checkPrivateDecl(const Decl* node) {
   }
 
   // Fetch the enclosing declaration. If we are top level then return.
-  auto enclosingDecl = searchParentsForDecl(nullptr);
+  auto enclosingDecl = searchParentsForDecl(node, nullptr);
   if (!enclosingDecl) return;
 
   if (enclosingDecl->isFunction()) {
@@ -741,7 +781,7 @@ bool Visitor::isNamedThisAndNotReceiverOrFunction(const NamedDecl* node) {
   if (node->name() != USTR("this")) return false;
   if (node->isFunction()) return false;
   if (node->isFormal())
-    if (auto decl = searchParentsForDecl(nullptr))
+    if (auto decl = searchParentsForDecl(node, nullptr))
       if (auto fn = decl->toFunction())
         if (fn->thisFormal() == node)
           return false;
@@ -845,6 +885,10 @@ void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
 
 void Visitor::visit(const Array* node) {
   checkForOneElementArraysWithoutComma(node);
+}
+
+void Visitor::visit(const BracketLoop* node) {
+  checkForUnadornedArrayType(node);
 }
   
 void Visitor::visit(const FnCall* node) {
