@@ -5395,12 +5395,12 @@ proc _channel.readbits(ref v:integral, nbits:integral):bool throws {
 proc fileReader.readBits(ref x:integral, numBits:int):bool throws {
   if castChecking {
     // Error if reading more bits than fit into x
-    if numBits:x.type < numBits then
-      throw new owned IllegalArgumentError("x, numBits", "readbits numBits=" + numBits:string +
+    if Types.numBits(x.type) < numBits then
+      throw new owned IllegalArgumentError("x, numBits", "readBits numBits=" + numBits:string +
                                                  " > bits in x:" + x.type:string);
     // Error if reading negative number of bits
     if isIntType(numBits.type) && numBits < 0 then
-      throw new owned IllegalArgumentError("numBits", "readbits numBits=" + numBits:string + " < 0");
+      throw new owned IllegalArgumentError("numBits", "readBits numBits=" + numBits:string + " < 0");
   }
 
   var tmp:ioBits;
