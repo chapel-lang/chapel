@@ -285,6 +285,43 @@ module ChapelIO {
       }
     }
 
+    //
+    // Called by the compiler to implement the default behavior for
+    // the compiler-generated 'encodeTo' method.
+    //
+    // TODO: would any formats want to print type or param fields?
+    //
+    proc encodeToDefaultImpl(writer:fileWriter, const x:?t) throws {
+      writer.formatter.writeTypeStart(writer, t);
+
+      if isClassType(t) && _to_borrowed(t) != borrowed object {
+        encodeToDefaultImpl(writer, x.super);
+      }
+
+      param num_fields = __primitive("num fields", t);
+      for param i in 1..num_fields {
+        if isIoField(x, i) {
+          param name : string = __primitive("field num to name", x, i);
+          writer.formatter.writeField(writer, name,
+                                      __primitive("field by num", x, i));
+        }
+      }
+
+      writer.formatter.writeTypeEnd(writer, t);
+    }
+
+    //
+    // Used by the compiler to support the compiler-generated initializers that
+    // accept a 'fileReader'. The type 'fileReader' may not be readily
+    // available, but the ChapelIO module generally is available and so
+    // we place the check here. For example:
+    //
+    //   proc R.init(r) where chpl__isFileReader(r.type) { ... }
+    //
+    proc chpl__isFileReader(type T) param : bool {
+      return isSubtype(T, fileReader(?));
+    }
+
     private
     proc skipFieldsAtEnd(reader, inout needsComma:bool) throws {
       const qioFmt = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
