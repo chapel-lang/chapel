@@ -1045,6 +1045,12 @@ record regex {
                                   this._regex);
       }
   }
+
+  pragma "no doc"
+  proc init(type exprType, f: fileReader) {
+    this.init(exprType);
+    readThis(f);
+  }
 }
 
 pragma "no doc"

@@ -516,6 +516,11 @@ module EpochManager {
         compilerError("Reading a Vector is not supported");
       }
 
+      proc init(type eltType, r: fileReader) {
+        this.init(eltType);
+        compilerError("Reading a Vector is not supported");
+      }
+
       proc writeThis(f) throws {
         f.write("(Vector) {", this.toArray(), "}");
       }

@@ -716,6 +716,15 @@ module Map {
       _readWriteHelper(ch);
     }
 
+    //
+    // TODO: rewrite to use formatter interface
+    //
+    pragma "no doc"
+    proc init(type keyType, type valType, param parSafe=false, r: fileReader) {
+      this.init(keyType, valType, parSafe);
+      readThis(r);
+    }
+
     /*
       Writes the contents of this map to a channel. The format looks like:
 

@@ -126,6 +126,7 @@ module DistributedBag {
   public use Collection;
   use BlockDist;
   private use CTypes;
+  private use IO;
 
   /*
     Below are segment statuses, which is a way to make visible to outsiders the
@@ -257,6 +258,11 @@ module DistributedBag {
 
     pragma "no doc"
     proc readThis(f) throws {
+      compilerError("Reading a DistBag is not supported");
+    }
+
+    proc init(type eltType, r: fileReader) {
+      this.init(eltType);
       compilerError("Reading a DistBag is not supported");
     }
 

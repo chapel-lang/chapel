@@ -1047,6 +1047,11 @@ module ConcurrentMap {
       compilerWarning("Reading a ConcurrentMap is not supported");
     }
 
+    proc init(type keyType, type valType, r: fileReader) {
+      this.init(keyType, valType);
+      compilerWarning("Reading a ConcurrentMap is not supported");
+    }
+
     /*
       Writes the contents of this map to a channel. The format looks like:
 

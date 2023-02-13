@@ -536,6 +536,14 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       f._readLiteral('"');
   }
 
+  //
+  // TODO: need to get this to work with the Json formatter
+  //
+  pragma "no doc"
+  proc date.init(f: fileReader) {
+    this.init();
+    readThis(f);
+  }
 
   /* Operators on date values */
   pragma "no doc"
@@ -837,6 +845,15 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
     if isjson then
       f._readLiteral('"');
+  }
+
+  //
+  // TODO: need to get this to work with the Json formatter
+  //
+  pragma "no doc"
+  proc time.init(f: fileReader) {
+    this.init();
+    readThis(f);
   }
 
 
@@ -1437,6 +1454,15 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
     if isjson then
       f._readLiteral('"');
+  }
+
+  //
+  // TODO: need to get this to work with the Json formatter
+  //
+  pragma "no doc"
+  proc datetime.init(f: fileReader) {
+    this.init();
+    readThis(f);
   }
 
 
