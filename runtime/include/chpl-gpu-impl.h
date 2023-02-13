@@ -41,12 +41,16 @@ void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
 void* chpl_gpu_impl_mem_alloc(size_t size);
 void chpl_gpu_impl_mem_free(void* memAlloc);
 void* chpl_gpu_impl_memmove(void* dst, const void* src, size_t n);
+void chpl_gpu_impl_hostmem_register(void *memAlloc, size_t size);
 
 void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n);
 void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n);
 
 // this is all about copying within the same device that is on this subloc
 void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n);
+
+void* chpl_gpu_impl_comm_async(void *dst, void *src, size_t n);
+void chpl_gpu_impl_comm_wait(void *stream);
 
 // module code uses this to pick the right deallocator for a pointer
 bool chpl_gpu_impl_is_device_ptr(const void* ptr);

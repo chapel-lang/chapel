@@ -8041,10 +8041,16 @@ void resolveInitVar(CallExpr* call) {
   // 'var x = new _domain(...)' should not bother going through chpl__initCopy
   // logic so that the result of the 'new' is MOVE'd and not copy-initialized,
   // which is handled in the 'init=' branch.
-  bool isDomainWithoutNew = targetType->getValType()->symbol->hasFlag(FLAG_DOMAIN) &&
+  bool isDomain = targetType->getValType()->symbol->hasFlag(FLAG_DOMAIN);
+  bool isDomainWithoutNew = isDomain &&
                             src->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) == false;
   bool initCopySyncSingle = inferType && srcSyncSingle;
   bool initCopyIter = inferType && srcType->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD);
+
+  if (isDomain &&
+      srcType && !srcType->getValType()->symbol->hasFlag(FLAG_DOMAIN)) {
+    USR_FATAL(call, "Domains cannot be initialized using expressions of non-domain type");
+  }
 
   if (dst->hasFlag(FLAG_NO_COPY) ||
       isPrimitiveScalar(targetType) ||

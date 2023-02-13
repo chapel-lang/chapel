@@ -4,6 +4,8 @@ module m {
   use IO;
   use CTypes;
 
+  // If this test starts randomly segfaulting due to touching bad memory, it's
+  // okay to remove it
   extern proc openTestFile(): c_FILE;
 
   try! {

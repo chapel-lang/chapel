@@ -1,0 +1,2 @@
+# don't run with valgrind, we're intentionally messing with bad memory
+CHPL_TEST_VGRND_EXE == on

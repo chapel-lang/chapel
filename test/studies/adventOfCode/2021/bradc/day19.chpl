@@ -208,7 +208,7 @@ proc allDistsDiffer(c0: 3*int, c1: 3*int) {
 proc updateLandscape(coord, kind) {
   if !Landscape.contains(coord) then
     Landscape.add(coord, kind);
-  else if Landscape.getValue(coord) != kind then
+  else if Landscape[coord] != kind then
     writeln("Attempted to store ", kind, " at ", coord, " but it's already full");
 }
 

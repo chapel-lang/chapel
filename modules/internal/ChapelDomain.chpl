@@ -23,7 +23,7 @@
 module ChapelDomain {
 
   public use ChapelBase;
-  use ArrayViewRankChange;
+  use ArrayViewRankChange, ChapelTuple;
 
   /*
      Fractional value that specifies how full this domain can be
@@ -39,6 +39,10 @@ module ChapelDomain {
      data structures, such as `set` and `map`.
   */
   config const defaultHashTableResizeThreshold = 0.5;
+
+  /* Compile with ``-snoNegativeStrideWarnings``
+     to suppress the warning about arrays and slices with negative strides. */
+  config param noNegativeStrideWarnings = false;
 
   pragma "no copy return"
   pragma "return not owned"
@@ -1320,9 +1324,7 @@ module ChapelDomain {
       compilerError(".shape not supported on this domain");
     }
 
-    pragma "no doc"
-    pragma "no copy return"
-    proc buildArray(type eltType, param initElts:bool) {
+    proc chpl_checkEltType(type eltType) /*private*/ {
       if eltType == void {
         compilerError("array element type cannot be void");
       }
@@ -1341,17 +1343,25 @@ module ChapelDomain {
           compilerError("sparse arrays of non-default-initializable types are not currently supported");
         }
       }
+    }
 
-      if chpl_warnUnstable then
-        if this.isRectangular() && this.stridable then
-          if rank == 1 {
-            if this.stride < 0 then
-              warning("arrays with negatively strided dimensions are not particularly stable");
-          } else {
-            for s in this.stride do
-              if s < 0 then
-                warning("arrays with negatively strided dimensions are not particularly stable");
+    proc chpl_checkNegativeStride() /*private*/ {
+      if noNegativeStrideWarnings then return;
+      // todo: add compile-time checks for neg. strides once ranges allow that
+      if this.isRectangular() && this.stridable {
+        for s in chpl__tuplify(this.stride) do
+          if s < 0 {
+            warning("arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: ", this.dsiDims());
+            break;
           }
+      }
+    }
+
+    pragma "no doc"
+    pragma "no copy return"
+    proc buildArray(type eltType, param initElts:bool) {
+      chpl_checkEltType(eltType);
+      chpl_checkNegativeStride();
 
       var x = _value.dsiBuildArray(eltType, initElts);
       pragma "dont disable remote value forwarding"
@@ -1497,8 +1507,8 @@ module ChapelDomain {
 
       pragma "no doc"
       proc _isBaseArrClassElementNil(baseArr: BaseArr, idx) {
-        var idxTup = if isTuple(idx) then idx else (idx,);
-        return baseArr.chpl_unsafeAssignIsClassElementNil(this, idxTup);
+        return baseArr.chpl_unsafeAssignIsClassElementNil(this,
+                                             chpl__tuplify(idx));
       }
 
       /*
