@@ -1,0 +1,6 @@
+Correctly passes on 0 bits
+Correctly passes on 4 bits
+Correctly passes on 7 bits
+Correctly passes on 8 bits
+Correctly throws on 9 bits - IllegalArgumentError: illegal argument 'x, numBits': readBits numBits=9 > bits in x:uint(8)
+Correctly throws on -1 bits - IllegalArgumentError: illegal argument 'numBits': readBits numBits=-1 < 0
