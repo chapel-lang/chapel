@@ -47,6 +47,11 @@ module DistributedMap {
       m = new shared distributedMapImpl(keyType, valType, hasher);
     }
 
+    proc init(type keyType, type valType, r: fileReader) throws {
+      this.init(keyType, valType);
+      readThis(r);
+    }
+
     proc clear() {
       // Note: wouldn't be able to just be forwarded, due to #20336
       m!.mapClear();
@@ -420,6 +425,11 @@ module DistributedMap {
             yield tables[loc].table[slot].val;
         }
       }
+    }
+
+    proc init(type keyType, type valType, r: fileReader) {
+      this.init(keyType, valType);
+      readThis(r);
     }
 
     // TODO: if writeThis encodes the locale hash, this should react to it
