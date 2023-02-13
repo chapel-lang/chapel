@@ -282,6 +282,14 @@ template<typename ResultType, typename... ArgTs>
 const ResultType&
 Context::queryGetSaved(const QueryMapResult<ResultType, ArgTs...>* r) {
   this->saveDependencyInParent(r);
+
+  if (errorCollectionStack.size() != 0) {
+    // Errors are being collected. Since we're using a cached result, but
+    // want to check if errors occurred, copy the already-saved errors
+    // into the collector.
+    storeErrorsFor(r);
+  }
+
   return r->result;
 }
 
@@ -423,6 +431,17 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
     queryMap->oldResults.push_back(std::move(result));
   }
 
+  if (errorCollectionStack.empty()) {
+    r->emittedErrors = true;
+    r->errorCollectionRoot = false;
+  } else {
+    r->emittedErrors = false;
+    const QueryMapResultBase* collectingParent =
+      errorCollectionStack.back().second;
+    bool hasParentQuery = queryStack.size() >= 2;
+    r->errorCollectionRoot = (!hasParentQuery && collectingParent == nullptr) ||
+                             (hasParentQuery && collectingParent == queryStack[queryStack.size() - 2]);
+  }
   r->lastChecked = currentRevision;
   if (changed || initialResult) {
     r->lastChanged  = currentRevision;

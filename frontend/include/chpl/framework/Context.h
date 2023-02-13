@@ -208,16 +208,13 @@ class Context {
   // tracks the nesting of queries, displayed during query tracing
   int queryTraceDepth = 0;
 
-  // Whether or not to re-emit errors that were already emitted by a cached
-  // query. By default, they are not re-emitted, since cached queries
-  // aren't re-run.
-  bool emitCachedErrors = false;
+  using ErrorCollectionEntry = std::pair<std::vector<owned<ErrorBase>>*, const querydetail::QueryMapResultBase*>;
   // If this vector is non-empty, the top element is a collection into
   // which to store emitted errors, instead of reporting them to the
   // error handler. Errors reported to the collection stack are
   // re-reported to the error handler if they are encountered again, even
   // if they occurred in a cached query.
-  std::vector<std::vector<owned<ErrorBase>>*> errorCollectionStack;
+  std::vector<ErrorCollectionEntry> errorCollectionStack;
 
   // list of query names to ignore when tracing
   std::vector<std::string>
@@ -272,6 +269,9 @@ class Context {
 
   bool shouldMarkUnownedPointer(const void* ptr);
   bool shouldMarkOwnedPointer(const void* ptr);
+
+  void emitHiddenErrorsFor(const querydetail::QueryMapResultBase* result);
+  void storeErrorsFor(const querydetail::QueryMapResultBase* result);
 
   // saves the dependency in the parent query, which is assumed
   // to be at queryStack.back().
@@ -450,7 +450,9 @@ class Context {
   template <typename F>
   auto runAndTrackErrors(F f) -> RunResult<decltype(f(this))> {
     RunResult<decltype(f(this))> result;
-    errorCollectionStack.push_back(&result.errors());
+    auto collectionRoot = queryStack.empty() ? nullptr : queryStack.back();
+    errorCollectionStack.push_back(std::make_pair(&result.errors(),
+                                                  collectionRoot));
     result.result() = f(this);
     errorCollectionStack.pop_back();
     return result;

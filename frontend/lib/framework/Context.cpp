@@ -143,7 +143,9 @@ Context::RunResultBase::RunResultBase(const Context::RunResultBase& other) {
 bool Context::RunResultBase::ranWithoutErrors() const {
   for (auto& error : errors_) {
     auto kind = error->kind();
-    if (kind == ErrorBase::ERROR || kind == ErrorBase::SYNTAX) return false;
+    if (kind == ErrorBase::ERROR || kind == ErrorBase::SYNTAX) {
+      return false;
+    }
   }
   return true;
 }
@@ -744,9 +746,20 @@ void Context::collectGarbage() {
 void Context::report(owned<ErrorBase> error) {
   gdbShouldBreakHere();
 
-  if (queryStack.size() > 0) {
+  // If errorCollectionStack is not empty, errors are being collected, and
+  // thus not reported to the handler. Stash the error in the top of the
+  // stack, but do not call `reportError`. Still store it into query
+  // results (errors will be re-emitted if the cached query is invoked without
+  // error collection).
+
+  if (queryStack.size() > 0 && errorCollectionStack.size() > 0) {
+    errorCollectionStack.back().first->push_back(error->clone());
+    queryStack.back()->errors.push_back(std::move(error));
+  } else if (queryStack.size() > 0) {
     queryStack.back()->errors.push_back(std::move(error));
     reportError(this, queryStack.back()->errors.back().get());
+  } else if (errorCollectionStack.size() > 0) {
+    errorCollectionStack.back().first->push_back(std::move(error));
   } else {
     reportError(this, error.get());
   }
@@ -947,6 +960,42 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
   return useSaved;
 }
 
+void Context::emitHiddenErrorsFor(const querydetail::QueryMapResultBase* result) {
+  CHPL_ASSERT(!result->emittedErrors);
+  for (auto& error : result->errors) {
+    reportError(this, error.get());
+  }
+  result->emittedErrors = true;
+  for (auto dependency : result->dependencies) {
+    if (!dependency->emittedErrors && !dependency->errorCollectionRoot) {
+      emitHiddenErrorsFor(dependency);
+    }
+  }
+}
+
+static void findDependenciesForStoringErrors(const querydetail::QueryMapResultBase* result,
+                                           std::unordered_set<const querydetail::QueryMapResultBase*>& into) {
+  auto insertResult = into.insert(result);
+  if (!insertResult.second) return;
+  for (auto dependency : result->dependencies) {
+    if (!dependency->errorCollectionRoot) {
+      findDependenciesForStoringErrors(dependency, into);
+    }
+  }
+}
+
+void Context::storeErrorsFor(const querydetail::QueryMapResultBase* result) {
+  CHPL_ASSERT(!errorCollectionStack.empty());
+  auto& errorList = *errorCollectionStack.back().first;
+  std::unordered_set<const querydetail::QueryMapResultBase*> dependencies;
+  findDependenciesForStoringErrors(result, dependencies);
+  for (auto dependency : dependencies) {
+    for (auto& error : dependency->errors) {
+      errorList.push_back(error->clone());
+    }
+  }
+}
+
 void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
   // Record that the parent query depends upon this one.
   //
@@ -955,6 +1004,14 @@ void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
   if (queryStack.size() > 0) {
     CHPL_ASSERT(queryStack.back() != resultEntry); // should be parent query
     queryStack.back()->dependencies.push_back(resultEntry);
+  }
+
+  // The resultEntry might have been a query that silences errors. However,
+  // the new parent query might be a query that does not itself silence errors,
+  // and thus errors might now need to be emitted.
+
+  if (!resultEntry->emittedErrors && errorCollectionStack.empty()) {
+    emitHiddenErrorsFor(resultEntry);
   }
 }
 void Context::endQueryHandleDependency(const QueryMapResultBase* resultEntry) {
@@ -1036,10 +1093,14 @@ void queryArgsPrintSep() {
 
 QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
                    RevisionNumber lastChanged,
+                   bool emittedErrors,
+                   bool errorCollectionRoot,
                    QueryMapBase* parentQueryMap)
   : lastChecked(lastChecked),
     lastChanged(lastChanged),
     dependencies(),
+    emittedErrors(emittedErrors),
+    errorCollectionRoot(errorCollectionRoot),
     errors(),
     parentQueryMap(parentQueryMap) {
 }
