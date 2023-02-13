@@ -5159,7 +5159,7 @@ proc fileReader.readUntil(ref b: bytes, separator: bytes, maxSize=-1, consumeSep
   return didRead;
 }
 
-proc fileReader.readUntil(type t, separator: regex(t), maxSize=-1, consumeSeparator=true, includeSeparator=false): t
+proc fileReader.readUntil(separator: regex(?t), maxSize=-1, consumeSeparator=true, includeSeparator=false): t throws
   where t == string || t == bytes
 {
   var sb: t;
@@ -5167,8 +5167,10 @@ proc fileReader.readUntil(type t, separator: regex(t), maxSize=-1, consumeSepara
   return sb;
 }
 
-proc fileReader.readUntil(ref s: string, separator: regex(string), maxSize=-1, consumeSeparator=true, includeSeparator=false): bool {
+proc fileReader.readUntil(ref s: string, separator: regex(string), maxSize=-1, consumeSeparator=true, includeSeparator=false): bool throws {
   import BytesStringCommon.countNumCodepoints;
+  extern proc qio_regex_channel_match(const ref re:qio_regex_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regex_string_piece_t), nsubmatch:int(64)):errorCode;
+
   var didRead = false;
 
   on this._home {
@@ -5191,7 +5193,7 @@ proc fileReader.readUntil(ref s: string, separator: regex(string), maxSize=-1, c
                                   matches, nm);
 
     // if there was an error other than a no-match error, throw
-    if err && err != EEOF && err != EFORMAT {
+    if err != 0 && err != EEOF && err != EFORMAT {
       this._revert();
       try this._ch_ioerror(err, "in channel.readUntil(regex(string))");
     }
@@ -5228,6 +5230,73 @@ proc fileReader.readUntil(ref s: string, separator: regex(string), maxSize=-1, c
 
     if err != 0 && err != EEOF {
       try this._ch_ioerror(err, "in channel.readUntil(regex(string))");
+    }
+
+    didRead = numBytesRead > 0;
+    _ddata_free(matches, nm);
+  }
+  return didRead;
+}
+
+proc fileReader.readUntil(ref b: bytes, separator: regex(bytes), maxSize=-1, consumeSeparator=true, includeSeparator=false): bool throws {
+  extern proc qio_regex_channel_match(const ref re:qio_regex_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regex_string_piece_t), nsubmatch:int(64)):errorCode;
+
+  var didRead = false;
+
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    this._mark();
+
+    // look for a match with the provided regex
+    const maxNumBytes = if maxSize < 0 then max(int) else maxSize,
+          nm = 1;
+
+    var matches = _ddata_allocate(qio_regex_string_piece_t, nm),
+        err: errorCode = 0;
+
+    err = qio_regex_channel_match(separator._regex,
+                                  false, this._channel_internal, maxNumBytes,
+                                  QIO_REGEX_ANCHOR_UNANCHORED,
+                                  /* can_discard */ true,
+                                  /* keep_unmatched */ false,
+                                  /* keep_whole_pattern */ true,
+                                  matches, nm);
+
+    // if there was an error other than a no-match error, throw
+    if err != 0 && err != EEOF && err != EFORMAT {
+      this._revert();
+      try this._ch_ioerror(err, "in channel.readUntil(regex(bytes))");
+    }
+
+    // otherwise, get a match object from the match
+    const m: regexMatch = _to_regexMatch(matches[0]);
+
+    // extract a string from the match (if needed)
+    var separatorBytes = b"";
+    if m.matched && (consumeSeparator != includeSeparator) then
+      this.extractMatch(m, separatorBytes);
+
+    // move back to the starting offset and compute the total number of bytes read
+    const matchOffset = this._offset();
+    this._revert();
+    const numBytesRead: int = matchOffset - this._offset();
+
+    if !m.matched {
+      err = readStringBytesData(b, this._channel_internal, numBytesRead, 0);
+    } else {
+      if consumeSeparator {
+        err = readStringBytesData(b, this._channel_internal, numBytesRead, 0);
+        if !includeSeparator then
+          b = b[0..<(b.size - separatorBytes.numBytes)];
+      } else {
+        err = readStringBytesData(b, this._channel_internal, numBytesRead - separatorBytes.numBytes, 0);
+        if includeSeparator then
+          b += separatorBytes;
+      }
+    }
+
+    if err != 0 && err != EEOF {
+      try this._ch_ioerror(err, "in channel.readUntil(regex(bytes))");
     }
 
     didRead = numBytesRead > 0;
