@@ -413,6 +413,11 @@ module Atomics {
       x.write(read());
     }
 
+    pragma "no doc"
+    proc const encodeTo(x) throws {
+      writeThis(x);
+    }
+
   }
 
   // TODO: should this be an operator method AtomicBool.: ?
@@ -749,6 +754,11 @@ module Atomics {
 
     pragma "no doc"
     proc const writeThis(x) throws {
+      x.write(read());
+    }
+
+    pragma "no doc"
+    proc const encodeTo(x) throws {
       x.write(read());
     }
 

@@ -515,6 +515,11 @@ module SharedObject {
     _readWriteHelper(f);
   }
 
+  pragma "no doc"
+  proc _shared.encodeTo(f) throws {
+    _readWriteHelper(f);
+  }
+
   // Don't print out 'chpl_p' when printing an Shared, just print class pointer
   pragma "no doc"
   proc _shared._readWriteHelper(f) throws {
@@ -860,6 +865,10 @@ module WeakPointer {
       if const counts = this.chpl_pn
         then return counts.strongCount.read();
         else return 0;
+    }
+
+    proc encodeTo(ch) throws {
+      writeThis(ch);
     }
   }
 

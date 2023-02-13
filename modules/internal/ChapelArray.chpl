@@ -788,7 +788,18 @@ module ChapelArray {
       f.read(_value);
     }
 
+    pragma "no doc"
+    proc type decodeFrom(f) throws {
+      var ret : this;
+      ret.readThis(f);
+      return ret;
+    }
+
     proc writeThis(f) throws {
+      f.write(_value);
+    }
+    pragma "no doc"
+    proc encodeTo(f) throws {
       f.write(_value);
     }
 
@@ -1563,6 +1574,11 @@ module ChapelArray {
     }
 
     pragma "no doc"
+    proc encodeTo(f) throws {
+      writeThis(f);
+    }
+
+    pragma "no doc"
     proc readThis(f) throws {
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !f.binary();
@@ -1571,6 +1587,13 @@ module ChapelArray {
       }
 
       _value.dsiSerialRead(f);
+    }
+
+    pragma "no doc"
+    proc type decodeFrom(f) throws {
+      var ret : this;
+      ret.readThis(f);
+      return ret;
     }
 
     // sparse array interface

@@ -336,6 +336,11 @@ module OwnedObject {
     _readWriteHelper(f);
   }
 
+  pragma "no doc"
+  proc _owned.encodeTo(f) throws {
+    _readWriteHelper(f);
+  }
+
   // Don't print out 'chpl_p' when printing an _owned, just print class pointer
   pragma "no doc"
   proc _owned._readWriteHelper(f) throws {

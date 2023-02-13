@@ -132,6 +132,10 @@ module NetworkAtomics {
       x.write(read());
     }
 
+    proc const encodeTo(x) throws {
+      x.write(read());
+    }
+
   }
 
   operator :(rhs: bool, type t:RAtomicBool) {
@@ -329,6 +333,10 @@ module NetworkAtomics {
     }
 
     proc const writeThis(x) throws {
+      x.write(read());
+    }
+
+    proc const encodeTo(x) throws {
       x.write(read());
     }
 

@@ -2375,10 +2375,21 @@ module ChapelDomain {
     proc writeThis(f) throws {
       _value.dsiSerialWrite(f);
     }
+    pragma "no doc"
+    proc encodeTo(f) throws {
+      _value.dsiSerialWrite(f);
+    }
 
     pragma "no doc"
     proc ref readThis(f) throws {
       _value.dsiSerialRead(f);
+    }
+
+    pragma "no doc"
+    proc type decodeFrom(f) throws {
+      var ret : this;
+      ret.readThis(f);
+      return ret;
     }
 
     pragma "no doc"

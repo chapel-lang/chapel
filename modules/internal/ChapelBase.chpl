@@ -55,6 +55,9 @@ module ChapelBase {
   pragma "no object"
   class _object { }
 
+  proc object.encodeTo(f) throws {
+  }
+
 
   enum iterKind {leader, follower, standalone};
 
@@ -2404,6 +2407,10 @@ module ChapelBase {
       catch e: DecodeError { // let IoError propagate
         halt("Module name is not valid string!");
       }
+    }
+    pragma "no doc"
+    proc encodeTo(ch) throws {
+      writeThis(ch);
     }
   }
   var chpl_moduleDeinitFuns = nil: unmanaged chpl_ModuleDeinit?;

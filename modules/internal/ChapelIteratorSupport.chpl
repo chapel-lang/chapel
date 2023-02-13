@@ -364,6 +364,11 @@ module ChapelIteratorSupport {
     }
   }
 
+  pragma "no doc"
+  proc _iteratorRecord.encodeTo(f) throws {
+    writeThis(f);
+  }
+
   operator =(ref ic: _iteratorRecord, xs) {
     for (e, x) in zip(ic, xs) do
       e = x;

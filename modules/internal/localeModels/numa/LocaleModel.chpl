@@ -85,6 +85,9 @@ module LocaleModel {
         parent.writeThis(f);
       f.write('.'+ndName);
     }
+    override proc encodeTo(f) throws {
+      writeThis(f);
+    }
 
     override proc getChildCount(): int { return 0; }
     iter getChildIndices() : int {
@@ -274,6 +277,9 @@ module LocaleModel {
 
     override proc writeThis(f) throws {
       f.write(name);
+    }
+    override proc encodeTo(f) throws {
+      writeThis(f);
     }
 
     override proc getChildCount() return this.myLocaleSpace.size;

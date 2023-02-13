@@ -185,6 +185,9 @@ module LocaleModel {
     override proc writeThis(f) throws {
       f.write(name);
     }
+    override proc encodeTo(f) throws {
+      f.write(name);
+    }
 
     override proc getChildCount() return this.myLocaleSpace.size;
     override proc _getChildCount() return this.myLocaleSpace.size;
