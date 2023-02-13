@@ -257,6 +257,7 @@ _chpl ()
 --no-task-tracking \
 --no-tuple-copy-opt \
 --no-use-color-terminal \
+--no-use-io-formatters \
 --no-vectorize \
 --no-verify \
 --no-warn-const-loops \
@@ -344,6 +345,7 @@ _chpl ()
 --tuple-copy-limit \
 --tuple-copy-opt \
 --use-color-terminal \
+--use-io-formatters \
 --vectorize \
 --verify \
 --version \
