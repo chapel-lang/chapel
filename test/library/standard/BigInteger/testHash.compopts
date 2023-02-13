@@ -1,1 +1,1 @@
--sbigintInitThrows=true
+-sbigintInitThrows=true -smapMethodsThrow=true
