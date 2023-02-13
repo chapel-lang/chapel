@@ -552,7 +552,7 @@ Resolver::ReceiverScopesVec Resolver::methodReceiverScopes(bool recompute) {
   return savedReceiverScopes;
 }
 
-const QualifiedType Resolver::methodReceiverType() {
+QualifiedType Resolver::methodReceiverType() {
   if (typedSignature && typedSignature->untyped()->isMethod()) {
     return typedSignature->formalType(0);
   }

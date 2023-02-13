@@ -233,7 +233,7 @@ struct Resolver {
   /* Compute the receiver type (when resolving a method)
      and return a type containing nullptr if it is not applicable.
    */
-  const types::QualifiedType methodReceiverType();
+  types::QualifiedType methodReceiverType();
 
   /* When resolving a generic record or a generic function,
      there might be generic types that we don't know yet.
