@@ -1752,7 +1752,7 @@ module ChapelArray {
         return this.rank * this.idxType;
       }
     }
-    
+
     /*
 
       Search an array for ``val``, returning whether or not it is
@@ -1790,7 +1790,7 @@ module ChapelArray {
       // We didn't find it, so return false.
       return false;
     }
-    
+
     /*
 
       Search a rectangular array with integral indices for ``val``,
