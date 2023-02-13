@@ -1767,8 +1767,8 @@ static bool inheritsFromError(Type* t) {
 
 
 // common code to create a writeThis() function without filling in the body
-FnSymbol* buildWriteThisFnSymbol(AggregateType* ct, ArgSymbol** filearg) {
-  FnSymbol* fn = new FnSymbol("writeThis");
+FnSymbol* buildWriteThisFnSymbol(AggregateType* ct, ArgSymbol** filearg, const char* name) {
+  FnSymbol* fn = new FnSymbol(name);
 
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
@@ -1813,6 +1813,9 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
   bool hasWriteThis             = false;
   bool makeReadThisAndWriteThis = true;
 
+  bool hasEncodeTo              = false;
+  bool makeEncodeTo             = fUseIOFormatters;
+
   //
   // We have no QIO when compiling with --minimal-modules, so no need
   // to build default R/W functions.
@@ -1839,6 +1842,10 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     hasReadThis = true;
   }
 
+  if (functionExists("encodeTo", dtMethodToken, ct, dtAny)) {
+    hasEncodeTo = true;
+  }
+
   // We'll make a writeThis and a readThis if neither exist.
   // If only one exists, we leave just one (as some types
   // can be written but not read, for example).
@@ -1846,10 +1853,14 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     makeReadThisAndWriteThis = false;
   }
 
+  if (hasEncodeTo) {
+    makeEncodeTo = false;
+  }
+
   // Make writeThis when appropriate
   if (makeReadThisAndWriteThis == true && hasWriteThis == false) {
     ArgSymbol* fileArg = NULL;
-    FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg);
+    FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg, "writeThis");
 
     // Compiler generated versions of readThis/writeThis now throw.
     fn->throwsErrorInit();
@@ -1857,6 +1868,30 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
     fn->insertAtTail(new CallExpr("writeThisDefaultImpl",
                                   fileArg,
                                   fn->_this));
+
+    normalize(fn);
+  }
+
+  //
+  // Keep generating the 'encodeTo' method so that the override versions don't
+  // cause errors.
+  //
+  if (makeEncodeTo && !hasEncodeTo) {
+    ArgSymbol* fileArg = NULL;
+    FnSymbol* fn = buildWriteThisFnSymbol(ct, &fileArg, "encodeTo");
+
+    // Compiler generated versions of readThis/writeThis now throw.
+    fn->throwsErrorInit();
+
+    if (fUseIOFormatters) {
+      if (hasWriteThis) {
+        fn->insertAtTail(new CallExpr("writeThis", gMethodToken, fn->_this, fileArg));
+      } else {
+        fn->insertAtTail(new CallExpr("encodeToDefaultImpl",
+                                      fileArg,
+                                      fn->_this));
+      }
+    }
 
     normalize(fn);
   }

@@ -158,7 +158,7 @@ attachChildThis(const SharedFcfSuperInfo info, AggregateType* child,
 
 static FnSymbol*
 attachChildWriteThis(const SharedFcfSuperInfo info, AggregateType* child,
-                     FnSymbol* payload);
+                     FnSymbol* payload, const char* name);
 
 static FnSymbol*
 attachChildPayloadPtrGetter(const SharedFcfSuperInfo info,
@@ -307,7 +307,10 @@ Expr* fcfWrapperInstanceFromPrimCall(CallExpr *call) {
 
   auto child = insertChildWrapperAtPayload(info, payload);
   std::ignore = attachChildThis(info, child, payload);
-  std::ignore = attachChildWriteThis(info, child, payload);
+  std::ignore = attachChildWriteThis(info, child, payload, "writeThis");
+  if (fUseIOFormatters) {
+    std::ignore = attachChildWriteThis(info, child, payload, "encodeTo");
+  }
   std::ignore = attachChildPayloadPtrGetter(info, child, payload);
   auto wrapper = insertSharedParentFactory(info, child, payload);
 
@@ -888,9 +891,10 @@ attachChildThis(const SharedFcfSuperInfo info, AggregateType* child,
 static FnSymbol*
 attachChildWriteThis(const SharedFcfSuperInfo info,
                      AggregateType* child,
-                     FnSymbol* payload) {
+                     FnSymbol* payload,
+                     const char* name) {
   ArgSymbol* fileArg = NULL;
-  FnSymbol* ret = buildWriteThisFnSymbol(child, &fileArg);
+  FnSymbol* ret = buildWriteThisFnSymbol(child, &fileArg, name);
 
   // All compiler generated writeThis routines now throw.
   ret->throwsErrorInit();
