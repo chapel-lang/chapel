@@ -158,6 +158,7 @@ public:
   bool                        wantsDefaultInitializer()                  const;
 
   void                        buildDefaultInitializer();
+  void                        buildReaderInitializer();
 
   void                        buildCopyInitializer();
 
@@ -185,6 +186,7 @@ public:
   DecoratedClassType*         decoratedClasses[NUM_PACKED_DECORATED_TYPES];
 
   bool                        builtDefaultInit;
+  bool                        builtReaderInit;
 
   AggregateType*              instantiatedFrom;
 
@@ -260,14 +262,16 @@ private:
 
   void                        fieldToArg(FnSymbol*              fn,
                                          std::set<const char*>& names,
-                                         SymbolMap&             fieldArgMap);
+                                         SymbolMap&             fieldArgMap,
+                                         ArgSymbol*             fileReader);
 
   void                        fieldToArgType(DefExpr*   fieldDef,
                                              ArgSymbol* arg);
 
   bool                        addSuperArgs(FnSymbol*                    fn,
                                            const std::set<const char*>& names,
-                                           SymbolMap&                   fieldArgMap);
+                                           SymbolMap&                   fieldArgMap,
+                                           ArgSymbol* fileReader = nullptr);
 
   std::vector<AggregateType*> instantiations;
 

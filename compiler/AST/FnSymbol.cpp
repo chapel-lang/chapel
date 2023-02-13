@@ -1107,6 +1107,7 @@ bool FnSymbol::isPostInitializer() const {
 
 bool FnSymbol::isDefaultInit() const {
   return hasFlag(FLAG_COMPILER_GENERATED) &&
+         hasFlag(FLAG_DEFAULT_INIT) &&
          hasFlag(FLAG_COPY_INIT) == false &&
          isInitializer();
 }

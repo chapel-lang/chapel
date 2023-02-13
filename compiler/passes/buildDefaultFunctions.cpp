@@ -148,6 +148,7 @@ void buildDefaultFunctions() {
 
       if (ct->wantsDefaultInitializer()) {
         ct->buildDefaultInitializer();
+        ct->buildReaderInitializer();
       }
 
       if (!ct->hasUserDefinedInitEquals()) {

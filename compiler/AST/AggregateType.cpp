@@ -59,6 +59,7 @@ AggregateType::AggregateType(AggregateTag initTag) :
 
   hasUserDefinedInit  = false;
   builtDefaultInit    = false;
+  builtReaderInit     = false;
   initializerResolved = false;
   iteratorInfo        = NULL;
   doc                 = NULL;
@@ -2167,6 +2168,7 @@ void AggregateType::buildDefaultInitializer() {
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
     fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+    fn->addFlag(FLAG_DEFAULT_INIT);
 
     _this->addFlag(FLAG_ARG_THIS);
 
@@ -2179,7 +2181,7 @@ void AggregateType::buildDefaultInitializer() {
 
       if (addSuperArgs(fn, names, fieldArgMap) == true) {
         // Parent fields before child fields
-        fieldToArg(fn, names, fieldArgMap);
+        fieldToArg(fn, names, fieldArgMap, /*fileReader=*/nullptr);
 
         // Replaces field references with argument references
         // NOTE: doesn't handle inherited fields yet!
@@ -2224,9 +2226,124 @@ void AggregateType::buildDefaultInitializer() {
   }
 }
 
+static bool hasFullyGenericField(AggregateType* at) {
+  for_fields(field, at) {
+    DefExpr* defExpr = field->defPoint;
+    if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM) &&
+        !field->hasFlag(FLAG_SUPER_CLASS)) {
+      if (defExpr->exprType == nullptr && defExpr->init == nullptr) {
+        return true;
+      }
+    }
+  }
+
+  if (at->isClass()                    ==  true &&
+      at->symbol->hasFlag(FLAG_REF)    == false &&
+      at->dispatchParents.n            >      0 &&
+      at->symbol->hasFlag(FLAG_EXTERN) == false) {
+    if (AggregateType* parent = at->dispatchParents.v[0]) {
+      return hasFullyGenericField(parent);
+    }
+  }
+
+  return false;
+}
+
+void AggregateType::buildReaderInitializer() {
+  if (!fUseIOFormatters) return;
+  if (this->getModule()->modTag == MOD_INTERNAL) return;
+
+  if (hasFullyGenericField(this)) return;
+
+  if (builtReaderInit == false &&
+      symbol->hasFlag(FLAG_REF) == false) {
+    SET_LINENO(this);
+    FnSymbol*  fn    = new FnSymbol("init");
+    ArgSymbol* _mt   = new ArgSymbol(INTENT_BLANK, "_mt",  dtMethodToken);
+    ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", this);
+
+    ArgSymbol* reader = new ArgSymbol(INTENT_BLANK, "chpl__reader", dtAny);
+    fn->where = new BlockStmt(new CallExpr("chpl__isFileReader",
+                              new CallExpr(PRIM_TYPEOF, reader)));
+
+    fn->cname = fn->name;
+    fn->_this = _this;
+
+    // Lydia NOTE 06/16/17: I don't think I want to add the
+    //  DEFAULT_CONSTRUCTOR flag to this function, but if I do,
+    // then I will need to do something different in wrappers.cpp.
+    fn->addFlag(FLAG_COMPILER_GENERATED);
+    fn->addFlag(FLAG_LAST_RESORT);
+    fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+
+    _this->addFlag(FLAG_ARG_THIS);
+
+    fn->insertFormalAtTail(_mt);
+    fn->insertFormalAtTail(_this);
+    fn->insertFormalAtTail(reader);
+
+
+    if (this->isUnion() == false) {
+      std::set<const char*> names;
+      SymbolMap fieldArgMap;
+
+      if (addSuperArgs(fn, names, fieldArgMap, reader) == true) {
+        // Parent fields before child fields
+        fieldToArg(fn, names, fieldArgMap, reader);
+
+        {
+          CallExpr* getFormatter = new CallExpr(".", reader, new_CStringSymbol("formatter"));
+          CallExpr* readField = new CallExpr("readTypeStart", gMethodToken, getFormatter,
+                                             reader, new SymExpr(this->symbol));
+          fn->insertAtHead(readField);
+        }
+        {
+          CallExpr* getFormatter = new CallExpr(".", reader, new_CStringSymbol("formatter"));
+          CallExpr* readField = new CallExpr("readTypeEnd", gMethodToken, getFormatter,
+                                             reader, new SymExpr(this->symbol));
+          fn->insertAtTail(readField);
+        }
+
+        // Replaces field references with argument references
+        // NOTE: doesn't handle inherited fields yet!
+        update_symbols(fn, &fieldArgMap);
+
+        DefExpr* def = new DefExpr(fn);
+        symbol->defPoint->insertBefore(def);
+
+        fn->setMethod(true);
+        fn->addFlag(FLAG_METHOD_PRIMARY);
+
+        preNormalizeInitMethod(fn);
+
+        normalize(fn);
+
+
+        // BHARSH INIT TODO: Should this be part of normalize(fn)? If we did
+        // that we would emit two use-before-def errors for classes because of
+        // the generated _new function.
+        checkUseBeforeDefs(fn);
+
+        methods.add(fn);
+      } else {
+        USR_FATAL(this, "Unable to generate initializer for type '%s'", this->symbol->name);
+      }
+    } else {
+      // TODO: implement for unions?
+    }
+
+    reader->defPoint->remove();
+    fn->insertFormalAtTail(reader);
+
+    builtReaderInit = true;
+  }
+}
+
 void AggregateType::fieldToArg(FnSymbol*              fn,
                                std::set<const char*>& names,
-                               SymbolMap&             fieldArgMap) {
+                               SymbolMap&             fieldArgMap,
+                               ArgSymbol*             fileReader) {
+  bool isReaderInit = (fileReader != nullptr);
   for_fields(fieldDefExpr, this) {
     SET_LINENO(fieldDefExpr);
 
@@ -2236,9 +2353,15 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
         DefExpr*    defPoint = field->defPoint;
         const char* name     = field->name;
         ArgSymbol*  arg      = new ArgSymbol(INTENT_IN, name, dtUnknown);
+        bool isTypeOrParam = field->hasEitherFlag(FLAG_TYPE_VARIABLE,
+                                                  FLAG_PARAM);
 
-        names.insert(name);
-        fieldArgMap.put(field, arg);
+        // The 'reader' initializer will only have type or param formals
+        // that correspond to fields.
+        if (!isReaderInit || isTypeOrParam) {
+          names.insert(name);
+          fieldArgMap.put(field, arg);
+        }
 
         // Insert initialization for each field from the argument provided.
         SET_LINENO(field);
@@ -2328,13 +2451,37 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
           }
         }
 
-        fn->insertFormalAtTail(arg);
+        if (!isReaderInit || isTypeOrParam) {
+          fn->insertFormalAtTail(arg);
 
-        fn->insertAtTail(new CallExpr("=",
-                                      new CallExpr(".",
-                                                   fn->_this,
-                                                   new_CStringSymbol(name)),
-                                      arg));
+          fn->insertAtTail(new CallExpr("=",
+                                        new CallExpr(".",
+                                                     fn->_this,
+                                                     new_CStringSymbol(name)),
+                                        arg));
+        } else {
+          // isReaderInit == true, and we need to generate code to invoke
+          // the 'readField' interface from the formatter.
+          Expr* typeExpr = nullptr;
+          if (defPoint->exprType != NULL) {
+            typeExpr = defPoint->exprType->copy();
+          } else if (defPoint->init != NULL) {
+            typeExpr = new CallExpr(PRIM_TYPEOF, defPoint->init->copy());
+          }
+
+          if (typeExpr != nullptr) {
+            CallExpr* getFormatter = new CallExpr(".", fileReader, new_CStringSymbol("formatter"));
+            CallExpr* readField = new CallExpr("readField", gMethodToken, getFormatter,
+                                               fileReader,
+                                               new_StringSymbol(name),
+                                               typeExpr);
+            fn->insertAtTail(new CallExpr("=",
+                                          new CallExpr(".",
+                                                       fn->_this,
+                                                       new_CStringSymbol(name)),
+                                          readField));
+          }
+        }
       }
     }
   }
@@ -2361,7 +2508,8 @@ void AggregateType::fieldToArgType(DefExpr* fieldDef, ArgSymbol* arg) {
 
 bool AggregateType::addSuperArgs(FnSymbol*                    fn,
                                  const std::set<const char*>& names,
-                                 SymbolMap& fieldArgMap) {
+                                 SymbolMap& fieldArgMap,
+                                 ArgSymbol* fileReader) {
   bool retval = true;
 
   // Lydia NOTE 06/16/17: be sure to avoid applying this to tuples, too!
@@ -2384,6 +2532,7 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
         // First, ensure we have a default initializer for the parent
         if (parent->builtDefaultInit == false && parent->wantsDefaultInitializer()) {
           parent->buildDefaultInitializer();
+          parent->buildReaderInitializer();
         }
 
         // Otherwise, we are good to go!
@@ -2410,6 +2559,13 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
               DefExpr* superArg = formal->defPoint->copy();
 
               VarSymbol* field = toVarSymbol(parent->getField(superArg->sym->name));
+
+              if (fileReader != nullptr &&
+                  !field->hasFlag(FLAG_TYPE_VARIABLE) &&
+                  !field->hasFlag(FLAG_PARAM)) {
+                continue;
+              }
+
               fieldArgMap.put(field, superArg->sym);
               fieldArgMap.put(formal, superArg->sym);
 
@@ -2418,6 +2574,10 @@ bool AggregateType::addSuperArgs(FnSymbol*                    fn,
               superCall->insertAtTail(superArg->sym);
             }
           }
+        }
+
+        if (fileReader != nullptr) {
+          superCall->insertAtTail(new SymExpr(fileReader));
         }
 
       }
