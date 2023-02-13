@@ -439,6 +439,7 @@ import OS.POSIX.{EBADF};
 import OS.{errorCode};
 use CTypes;
 public use OS;
+use Reflection;
 
 /*
 
@@ -1504,6 +1505,8 @@ operator ioHintSet.!=(lhs: ioHintSet, rhs: ioHintSet) {
   return !(lhs == rhs);
 }
 
+
+
 /*
 The :record:`file` type is implementation-defined.  A value of the
 :record:`file` type refers to the state that is used by the implementation to
@@ -2221,6 +2224,18 @@ proc openMemFileHelper(style:iostyleInternal = defaultIOStyleInternal()):file th
   return ret;
 }
 
+private proc defaultFmtType(param writing : bool) type {
+  if !chpl_useIOFormatters then return nothing;
+  if writing then return DefaultWriter;
+  else return DefaultReader;
+}
+
+private proc defaultFmtVal(param writing : bool) {
+  if !chpl_useIOFormatters then return none;
+  if writing then return new DefaultWriter();
+  else return new DefaultReader();
+}
+
 pragma "ignore noinit"
 pragma "no doc"
 record _channel {
@@ -2240,10 +2255,17 @@ record _channel {
    */
   param locking:bool;
 
+  type fmtType = defaultFmtType(writing);
+
   pragma "no doc"
   var _home:locale = here;
   pragma "no doc"
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
+
+  pragma "no doc"
+  var _fmt : fmtType;
+  pragma "no doc"
+  var isAlias : bool = false;
 
   // The member variable _readWriteThisFromLocale is used to support
   // writeThis needing to know where the I/O started. It is a member
@@ -2254,6 +2276,11 @@ record _channel {
   // Therefore further locking by the same task is not necessary.
   pragma "no doc"
   var _readWriteThisFromLocale = nilLocale;
+}
+
+pragma "no doc"
+proc _channel.formatter const ref {
+  return _fmt;
 }
 
 /*
@@ -2324,6 +2351,177 @@ The :record:`fileWriter` type supports 3 fields:
 type fileWriter;
 fileWriter = _channel(writing=true, ?);
 
+pragma "no doc"
+record DefaultWriter {
+  var firstField = true;
+  var _wroteStart, _wroteEnd : bool;
+  var _inheritLevel = 0;
+
+  proc _encodeClassOrPtr(writer:fileWriter, x: ?t) : void throws {
+    if x == nil {
+      writer._writeLiteral("nil");
+    } else if isClassType(t) {
+      x!.encodeTo(writer.withFormatter(new DefaultWriter()));
+    } else {
+      x.encodeTo(writer.withFormatter(new DefaultWriter()));
+    }
+  }
+
+  // TODO: For now, forward to old implementation.
+  proc _encodeUnion(writer:fileWriter, x: ?t) : void throws {
+    x.writeThis(writer);
+  }
+
+  // Writes value 'x' in the Default IO format
+  proc encode(writer:fileWriter, const x: ?t) : void throws {
+    if isNumericType(t) || isBoolType(t) || isEnumType(t) ||
+       t == string || t == bytes {
+      writer._writeOne(writer.kind, x, writer.getLocaleOfIoRequest());
+    } else if t == ioLiteral {
+      writer._writeLiteral(x.val);
+    } else if t == ioNewline || t == ioChar {
+      writer._writeOne(writer.kind, x, writer.getLocaleOfIoRequest());
+    } else if isClassType(t) || isAnyCPtr(t) {
+      _encodeClassOrPtr(writer, x);
+    } else if isUnionType(t) {
+      _encodeUnion(writer, x);
+    } else {
+      x.encodeTo(writer.withFormatter(new DefaultWriter()));
+    }
+  }
+
+  //
+  // Writes a field name, followed by the literal string " = ", then writes
+  // the value of 'x'.
+  //
+  proc writeField(writer:fileWriter, name: string, const x: ?) : void throws {
+    if !firstField then
+      writer._writeLiteral(", ");
+
+    if !name.isEmpty() {
+      writer._writeLiteral(name);
+      writer._writeLiteral(" = ");
+    }
+
+    writer.write(x);
+    firstField = false;
+  }
+
+  proc writeTypeStart(w: fileWriter, type T) throws {
+
+    // TODO: Arrays, and array-like things (e.g. lists)
+    if _inheritLevel == 0 {
+      if isClassType(T) then
+        w._writeLiteral("{");
+      else if isRecordType(T) || isTupleType(T) then
+        w._writeLiteral("(");
+      else
+        throw new Error("unhandled type in writeTypeStart");
+    }
+
+    _inheritLevel += 1;
+  }
+
+  proc writeTypeEnd(w: fileWriter, type T) throws {
+
+    if _inheritLevel == 1 {
+      if isClassType(T) then
+        w._writeLiteral("}");
+      else if isRecordType(T) then
+        w._writeLiteral(")");
+      else if isTupleType(T) {
+        if T.size == 1 then w._writeLiteral(",)");
+        else w._writeLiteral(")");
+      } else
+        throw new Error("unhandled type in writeTypeEnd");
+    }
+
+    _inheritLevel -= 1;
+  }
+}
+
+
+record DefaultReader {
+  var firstField = true;
+  var _inheritLevel = 0;
+  var _readStart, _readEnd : bool;
+
+  proc decodeClass(reader:fileReader, type readType) : readType throws {
+    if isGenericType(readType) then compilerError("can't read generic class '" + readType:string + "'");
+
+    if isNilableClassType(readType) {
+      if reader.matchLiteral("nil") {
+        return nil:readType;
+      }
+    }
+
+    return new readType(reader.withFormatter(new DefaultReader()));
+  }
+
+  proc decode(reader:fileReader, type readType) : readType throws {
+    if isNumericType(readType) || isBoolType(readType) || isEnumType(readType) ||
+       readType == string || readType == bytes {
+      var x : readType;
+      reader._readOne(reader.kind, x, here);
+      return x;
+    } else if isClassType(readType) {
+      return decodeClass(reader, readType);
+    } else if canResolveTypeMethod(readType, "decodeFrom", reader) {
+      return readType.decodeFrom(reader.withFormatter(new DefaultReader()));
+    } else {
+      return new readType(reader.withFormatter(new DefaultReader()));
+    }
+  }
+
+  proc readField(r:fileReader, key: string, type T) throws {
+    return decodeField(r, key, T);
+  }
+
+  proc decodeField(r:fileReader, key: string, type T) throws {
+    if !key.isEmpty() {
+      r.readLiteral(key);
+      r.readLiteral("=");
+    }
+
+    var ret = r.read(T);
+    r.matchLiteral(",");
+    return ret;
+  }
+
+  proc readTypeStart(r: fileReader, type T) throws {
+    if _inheritLevel == 0 {
+      if isClassType(T) then
+        r.readLiteral("{");
+      else if isRecordType(T) then
+        r.readLiteral("(");
+      else if isTupleType(T) {
+        r.readLiteral("(");
+      } else
+        throw new Error("unhandled type in readTypeStart");
+    }
+    _inheritLevel += 1;
+  }
+
+  proc readTypeEnd(r: fileReader, type T) throws {
+    // This format doesn't do any special nesting for super classes
+    if _inheritLevel == 1 {
+      if isClassType(T) then
+        r.readLiteral("}");
+      else if isRecordType(T) then
+        r.readLiteral(")");
+      else if isTupleType(T) {
+        // Currently we always try to 'matchLiteral' against ',', so no
+        // need to special case 1-tuples
+        r.readLiteral(")");
+      } else
+        throw new Error("unhandled type in readTypeEnd");
+    }
+
+    _inheritLevel -= 1;
+  }
+}
+
+
 /*
 
 A channel supports either sequential reading or sequential writing to an
@@ -2385,13 +2583,22 @@ operator _channel.=(ref lhs:_channel, rhs:_channel) {
 
   lhs._home = rhs._home;
   lhs._channel_internal = rhs._channel_internal;
+  lhs.isAlias = rhs.isAlias; // is this right?
 }
 
+proc _channel.init(param writing:bool, param kind:iokind, param locking:bool, type fmtType) {
+  var default : fmtType;
+  this.init(writing, kind, locking, default);
+}
+
+
 pragma "no doc"
-proc _channel.init(param writing:bool, param kind:iokind, param locking:bool) {
+proc _channel.init(param writing:bool, param kind:iokind, param locking:bool, in formatter:?) {
   this.writing = writing;
   this.kind = kind;
   this.locking = locking;
+  this.fmtType = formatter.type;
+  this._fmt = formatter;
 }
 
 pragma "no doc"
@@ -2400,12 +2607,17 @@ proc _channel.init(x: _channel) {
   this.writing = x.writing;
   this.kind = x.kind;
   this.locking = x.locking;
+  this.fmtType = x.fmtType;
   this._home = x._home;
   this._channel_internal = x._channel_internal;
+  this._fmt = x._fmt;
+  this.isAlias = x.isAlias;
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
   this.complete();
-  on x._home {
-    qio_channel_retain(x._channel_internal);
+  if !isAlias {
+    on x._home {
+      qio_channel_retain(x._channel_internal);
+    }
   }
 }
 
@@ -2426,12 +2638,17 @@ proc _channel.init=(x: _channel) {
                  then this.type.locking
                  else x.locking;
 
+  this.fmtType = x.fmtType;
   this._home = x._home;
   this._channel_internal = x._channel_internal;
+  this._fmt = x._fmt;
+  this.isAlias = x.isAlias;
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
   this.complete();
-  on x._home {
-    qio_channel_retain(x._channel_internal);
+  if !isAlias {
+    on x._home {
+      qio_channel_retain(x._channel_internal);
+    }
   }
 }
 
@@ -2450,18 +2667,21 @@ operator :(rhs: _channel, type t: _channel) {
 pragma "no doc"
 proc _channel.init(param writing:bool, param kind:iokind, param locking:bool,
                   home: locale, _channel_internal:qio_channel_ptr_t,
-                  _readWriteThisFromLocale: locale) {
+                  _readWriteThisFromLocale: locale,
+                  in formatter:?) {
   this.writing = writing;
   this.kind = kind;
   this.locking = locking;
+  this.fmtType = formatter.type;
   this._home = home;
   this._channel_internal = _channel_internal;
+  this._fmt = formatter;
   this._readWriteThisFromLocale = _readWriteThisFromLocale;
 }
 
 pragma "no doc"
-proc _channel.init(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:errorCode, hints: ioHintSet, start:int(64), end:int(64), in local_style:iostyleInternal) {
-  this.init(writing, kind, locking);
+proc _channel.init(param writing:bool, param kind:iokind, param locking:bool, in formatter:?, f:file, out error:errorCode, hints: ioHintSet, start:int(64), end:int(64), in local_style:iostyleInternal) {
+  this.init(writing, kind, locking, formatter);
   on f._home {
     this._home = f._home;
     if kind != iokind.dynamic {
@@ -2477,9 +2697,27 @@ proc _channel.init(param writing:bool, param kind:iokind, param locking:bool, f:
 pragma "no doc"
 proc ref _channel.deinit() {
   on this._home {
-    qio_channel_release(_channel_internal);
-    this._channel_internal = QIO_CHANNEL_PTR_NULL;
+    if !isAlias {
+      qio_channel_release(_channel_internal);
+      this._channel_internal = QIO_CHANNEL_PTR_NULL;
+    }
   }
+}
+
+// Convenience for forms like 'w.withFormatter(DefaultWriter)`
+pragma "no doc"
+proc _channel.withFormatter(type fmtType) {
+  var fmt : fmtType;
+  return withFormatter(fmt);
+}
+
+pragma "no doc"
+proc _channel.withFormatter(f: ?) {
+  var ret = new _channel(this.writing, this.kind, this.locking, f);
+  ret._channel_internal = this._channel_internal;
+  ret._readWriteThisFromLocale = _readWriteThisFromLocale;
+  ret.isAlias = true;
+  return ret;
 }
 
 /*
@@ -2535,6 +2773,10 @@ record ioNewline {
     // Normally this is handled explicitly in read/write.
     f.write("\n");
   }
+
+  proc encodeTo(w) throws {
+    w.writeNewline();
+  }
 }
 
 pragma "no doc"
@@ -2586,6 +2828,10 @@ record ioBits {
   proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
     f.write(v);
+  }
+
+  proc encodeTo(f) throws {
+    f._writeOne(f.kind, this, here);
   }
 }
 
@@ -3281,9 +3527,11 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
   // It is the responsibility of the caller to release the returned channel
   // if the error code is nonzero.
   // The return error code should be checked to avoid double-deletion errors.
-  var ret:fileReader(kind, locking);
+  var ret : fileReader(kind, locking);
   var err:errorCode = 0;
   on this._home {
+    var start : region.idxType;
+    var end : region.idxType;
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
       // This is to ensure the user sees consistent behavior and can control it.
@@ -3297,16 +3545,16 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
       if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
           fromOpenUrlReader ||
           (!fromOpenReader && useNewFileReaderRegionBounds)) {
-        ret = new fileReader(kind, locking, this, err, hints, region.low,
-                             region.high + 1, style);
+        start = region.low;
+        end = region.high + 1;
       } else {
-        ret = new fileReader(kind, locking, this, err, hints, region.low,
-                             region.high, style);
+        start = region.low;
+        end = region.high;
       }
 
     } else if (region.hasLowBound()) {
-      ret = new fileReader(kind, locking, this, err, hints, region.low,
-                           max(int(64)), style);
+      start = region.low;
+      end = max(region.idxType);
 
     } else if (region.hasHighBound()) {
       // This is to ensure the user sees consistent behavior and can control it.
@@ -3320,17 +3568,20 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
       if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
           fromOpenUrlReader ||
           (!fromOpenReader && useNewFileReaderRegionBounds)) {
-        ret = new fileReader(kind, locking, this, err, hints, 0,
-                             region.high + 1, style);
+        start = 0;
+        end = region.high + 1;
       } else {
-        ret = new fileReader(kind, locking, this, err, hints, 0, region.high,
-                             style);
+        start = 0;
+        end = region.high;
       }
 
     } else {
-      ret = new fileReader(kind, locking, this, err, hints, 0, max(int(64)),
-                           style);
+      start = 0;
+      end = max(region.idxType);
     }
+
+    ret = new fileReader(kind, locking, defaultFmtVal(false), this, err, hints,
+                        start, end, style);
   }
   if err then try ioerror(err, "in file.reader", this._tryGetPath());
 
@@ -3381,40 +3632,43 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
   local_style.string_end = 0x0a; // '\n'
   param kind = iokind.dynamic;
 
-  var ret:itemReaderInternal(string, kind, locking);
+  var ret:itemReaderInternal(string, kind, locking, defaultFmtType(false));
   var err:errorCode = 0;
   on this._home {
+    var start : region.idxType;
+    var end : region.idxType;
     try this.checkAssumingLocal();
-    var ch: fileReader;
     if (region.hasLowBound() && region.hasHighBound()) {
       if (useNewLinesRegionBounds) {
-        ch = new fileReader(kind, locking, this, err, hints, region.low,
-                            region.high + 1, local_style);
+        start = region.low;
+        end = region.high + 1;
 
       } else {
-        ch = new fileReader(kind, locking, this, err, hints, region.low,
-                            region.high, local_style);
+        start = region.low;
+        end = region.high;
       }
 
     } else if (region.hasLowBound()) {
-      ch = new fileReader(kind, locking, this, err, hints, region.low,
-                          max(int(64)), local_style);
+      start = region.low;
+      end = max(region.idxType);
 
     } else if (region.hasHighBound()) {
       if (useNewLinesRegionBounds) {
-        ch = new fileReader(kind, locking, this, err, hints, 0, region.high + 1,
-                            local_style);
+        start = 0;
+        end = region.high + 1;
 
       } else {
-        ch = new fileReader(kind, locking, this, err, hints, 0, region.high,
-                            local_style);
+        start = 0;
+        end = region.high;
       }
 
     } else {
-      ch = new fileReader(kind, locking, this, err, hints, 0, max(int(64)),
-                          local_style);
+      start = 0;
+      end = max(region.idxType);
     }
-    ret = new itemReaderInternal(string, kind, locking, ch);
+    var ch = new fileReader(kind, locking, defaultFmtVal(false), this, err,
+                            hints, start, end, local_style);
+    ret = new itemReaderInternal(string, kind, locking, defaultFmtType(false), ch);
   }
   if err then try ioerror(err, "in file.lines", this._tryGetPath());
 
@@ -3514,38 +3768,43 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
   // channel.
   // If the return error code is nonzero, the ref count will be 0 not 1.
   // The error code should be checked to avoid double-deletion errors.
-  var ret:fileWriter(kind, locking);
+  var ret : fileWriter(kind, locking);
   var err:errorCode = 0;
   on this._home {
+    var start : region.idxType;
+    var end : region.idxType;
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
       // TODO: remove the fromOpenUrlWriter arg when the deprecated version is
       // removed
       if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
-        ret = new fileWriter(kind, locking, this, err, hints, region.low,
-                             region.high + 1, style);
+        start = region.low;
+        end = region.high + 1;
       } else {
-        ret = new fileWriter(kind, locking, this, err, hints, region.low,
-                             region.high, style);
+        start = region.low;
+        end = region.high;
       }
 
     } else if (region.hasLowBound()) {
-      ret = new fileWriter(kind, locking, this, err, hints, region.low,
-                           max(int(64)), style);
+      start = region.low;
+      end = max(region.idxType);
 
     } else if (region.hasHighBound()) {
       if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
-        ret = new fileWriter(kind, locking, this, err, hints, 0,
-                             region.high + 1, style);
+        start = 0;
+        end = region.high + 1;
       } else {
-        ret = new fileWriter(kind, locking, this, err, hints, 0, region.high,
-                             style);
+        start = 0;
+        end = region.high;
       }
 
     } else {
-      ret = new fileWriter(kind, locking, this, err, hints, 0, max(int(64)),
-                           style);
+      start = 0;
+      end = max(region.idxType);
     }
+
+    ret = new fileWriter(kind, locking, defaultFmtVal(true), this, err, hints,
+                         start, end, style);
   }
   if err then try ioerror(err, "in file.writer", this._tryGetPath());
 
@@ -3880,6 +4139,48 @@ proc _channel._constructIoErrorMsg(param kind: iokind, const x:?t): string {
   return result;
 }
 
+proc _channel._decodeOne(type readType, loc:locale) throws {
+  var reader = new fileReader(iokind.dynamic, locking=false,
+                              formatter=_fmt,
+                              home=here,
+                              _channel_internal=_channel_internal,
+                              _readWriteThisFromLocale=loc);
+  defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL; }
+
+  if isClassType(readType) {
+    // Save formatter authors from having to reason about 'owned' and
+    // 'shared' by converting the type to unmanaged.
+    var tmp = reader.formatter.decode(reader, _to_unmanaged(readType));
+
+    if isOwnedClassType(readType) {
+      return new _owned(tmp);
+    } else if isSharedClassType(readType) {
+      return new _shared(tmp);
+    } else {
+      return tmp;
+    }
+  } else {
+    return reader.formatter.decode(reader, readType);
+  }
+}
+
+proc _channel._decodeOne(ref x:?t, loc:locale) throws {
+  // _read_one_internal
+  var reader = new fileReader(iokind.dynamic, locking=false,
+                              formatter=_fmt,
+                              home=here,
+                              _channel_internal=_channel_internal,
+                              _readWriteThisFromLocale=loc);
+  defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL; }
+
+  if t == ioLiteral || t == ioNewline || t == ioBits || t == ioChar {
+    reader._readOne(reader.kind, x, reader.getLocaleOfIoRequest());
+    return;
+  }
+
+  x = _decodeOne(t, loc);
+}
+
 //
 // The channel must be locked and running on this._home.
 // The intent of x is ref (vs out) because it might contain a string literal.
@@ -3900,6 +4201,21 @@ private proc escapedNonUTF8ErrorMessage() : string {
   const ret = "Strings with escaped non-UTF8 bytes cannot be used with I/O. " +
         "Try using string.encode(encodePolicy.unescape) first.\n";
   return ret;
+}
+
+proc _channel._encodeOne(const x:?t, loc:locale) throws {
+  var writer = new fileWriter(iokind.dynamic, locking=false,
+                              formatter=formatter,
+                              home=here,
+                              _channel_internal=_channel_internal,
+                              _readWriteThisFromLocale=loc);
+
+  // Set the channel pointer to NULL to make the
+  // destruction of the local writer record safe
+  // (it shouldn't release anything since it's a local copy).
+  defer { writer._channel_internal = QIO_CHANNEL_PTR_NULL; }
+
+  try writer.formatter.encode(writer, x);
 }
 
 //
@@ -4016,6 +4332,7 @@ private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
   // existing channel so we can avoid locking (because we
   // already have the lock)
   var reader = new fileReader(iokind.dynamic, locking=false,
+                              formatter=defaultFmtVal(false),
                               home=here,
                               _channel_internal=_channel_internal,
                               _readWriteThisFromLocale=loc);
@@ -4067,6 +4384,7 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   // existing channel so we can avoid locking (because we
   // already have the lock)
   var writer = new fileWriter(iokind.dynamic, locking=false,
+                              formatter=defaultFmtVal(true),
                               home=here,
                               _channel_internal=_channel_internal,
                               _readWriteThisFromLocale=loc);
@@ -4111,7 +4429,12 @@ proc _channel.readIt(ref x) throws {
 
   on this._home {
     try! this.lock(); defer { this.unlock(); }
-    try _readOne(kind, x, origLocale);
+
+    if chpl_useIOFormatters {
+      _decodeOne(x, origLocale);
+    } else {
+      _readOne(kind, x, origLocale);
+    }
   }
 }
 
@@ -4536,7 +4859,7 @@ iter _channel.lines() {
   this._set_styleInternal(newline_style);
 
   // Iterate over lines
-  var itemReader = new itemReaderInternal(string, kind, locking, this);
+  var itemReader = new itemReaderInternal(string, kind, locking, fmtType, this);
   for line in itemReader {
     yield line;
   }
@@ -4616,7 +4939,11 @@ inline proc _channel._readInner(ref args ...?k):void throws {
   on this._home {
     try this.lock(); defer { this.unlock(); }
     for param i in 0..k-1 {
-      _readOne(kind, args[i], origLocale);
+      if chpl_useIOFormatters {
+        _decodeOne(args[i], origLocale);
+      } else {
+        _readOne(kind, args[i], origLocale);
+      }
     }
   }
 }
@@ -4666,7 +4993,11 @@ proc _channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
       this._set_styleInternal(style);
 
       for param i in 0..k-1 {
-        _readOne(kind, args[i], origLocale);
+        if chpl_useIOFormatters {
+          _decodeOne(args[i], origLocale);
+        } else {
+          _readOne(kind, args[i], origLocale);
+        }
       }
     }
   } catch err: EofError {
@@ -6258,9 +6589,26 @@ proc _channel.readlnHelper(ref args ...?k,
    :throws SystemError: Thrown if the type could not be read from the channel.
  */
 proc _channel.read(type t) throws {
-  var tmp:t;
-  this._readInner(tmp);
-  return tmp;
+  if writing then compilerError("read on write-only channel");
+  const origLocale = this.getLocaleOfIoRequest();
+
+  pragma "no init"
+  var ret : t;
+
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    if chpl_useIOFormatters {
+      __primitive("move", ret, _decodeOne(t, origLocale));
+    } else {
+      pragma "no auto destroy"
+      var tmp : t;
+      _readOne(kind, tmp, origLocale);
+      __primitive("=", ret, tmp);
+    }
+  }
+
+  return ret;
 }
 
 /*
@@ -6306,6 +6654,7 @@ proc _channel.readln(type t ...?numTypes) throws where numTypes > 1 {
    :throws UnexpectedEofError: Thrown if EOF was encountered while more data was expected.
  */
 proc _channel.read(type t ...?numTypes) throws where numTypes > 1 {
+  // TODO: better IO-specific error message if type is an array or tuple...
   var tupleVal: t;
   this._readInner((...tupleVal));
   return tupleVal;
@@ -6331,7 +6680,11 @@ inline proc _channel.write(const args ...?k) throws {
   on this._home {
     try this.lock(); defer { this.unlock(); }
     for param i in 0..k-1 {
-      try _writeOne(kind, args(i), origLocale);
+      if chpl_useIOFormatters {
+        this._encodeOne(args(i), origLocale);
+      } else {
+        try _writeOne(kind, args(i), origLocale);
+      }
     }
   }
 }
@@ -6357,7 +6710,11 @@ proc _channel.writeHelper(const args ...?k, style:iostyleInternal) throws {
     }
 
     for param i in 0..k-1 {
-      try _writeOne(iokind.dynamic, args(i), origLocale);
+      if chpl_useIOFormatters {
+        this._encodeOne(args(i), origLocale);
+      } else {
+        try _writeOne(iokind.dynamic, args(i), origLocale);
+      }
     }
   }
 }
@@ -6503,8 +6860,11 @@ record itemReaderInternal {
   param kind:iokind;
   /* the locking field for our channel */
   param locking:bool;
+  /* the decoder for this channel */
+  type fmtType;
   /* our channel */
-  var ch:fileReader(kind,locking);
+  var ch:fileReader(kind,locking,fmtType);
+
   /* read a single item, throwing on error */
   proc read(out arg:ItemType):bool throws {
     return ch.read(arg);
@@ -7835,6 +8195,9 @@ class _channel_regex_info {
     f.write(", releaseRegex = " + releaseRegex: string);
     f.write(", ... capturei = " + capturei: string);
     f.write(", ncaptures = " + ncaptures: string + "}");
+  }
+  override proc encodeTo(f) throws {
+    writeThis(f);
   }
 }
 
