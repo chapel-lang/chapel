@@ -843,7 +843,7 @@ public:
   bool enterTryStmt  (TryStmt*   node) override;
   void exitTryStmt   (TryStmt*   node) override;
   bool enterCallExpr (CallExpr*  node) override;
-  bool enterForLoop  (ForLoop*  node) override;
+  bool enterForLoop  (ForLoop*   node) override;
 
   // Does this function throw?
   bool throws() { return canThrow; }

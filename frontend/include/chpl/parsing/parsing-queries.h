@@ -473,6 +473,11 @@ void reportDeprecationWarningForId(Context* context, ID idMention,
 void reportUnstableWarningForId(Context* context, ID idMention,
                                 ID idTarget);
 
+/*
+  Given an ID, returns the module kind for the ID.
+*/
+uast::Module::Kind idToModuleKind(Context* context, ID id);
+
 } // end namespace parsing
 } // end namespace chpl
 #endif

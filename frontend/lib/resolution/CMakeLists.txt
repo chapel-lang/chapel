@@ -38,5 +38,5 @@ target_sources(ChplFrontend-obj
                scope-types.cpp
                signature-checks.cpp
                split-init.cpp
-
+               try-catch-analysis.cpp
               )

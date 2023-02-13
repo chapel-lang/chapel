@@ -38,6 +38,7 @@
 #include "prims.h"
 #include "return-type-inference.h"
 #include "signature-checks.h"
+#include "try-catch-analysis.h"
 
 #include <cstdio>
 #include <set>
@@ -154,6 +155,7 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
           }
         }
       }
+      checkThrows(context, result, mod);
     }
   }
 
@@ -1829,6 +1831,9 @@ resolveFunctionByInfoQuery(Context* context,
 
     // then, handle return intent overloads and maybe-const formals
     adjustReturnIntentOverloadsAndMaybeConstRefs(visitor);
+
+    // check that throws are handled or forwarded
+    checkThrows(context, resolutionById, fn);
 
     // TODO: can this be encapsulated in a method?
     resolvedPoiInfo.swap(visitor.poiInfo);
