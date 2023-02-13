@@ -761,7 +761,7 @@ module ArgumentParser {
     proc _setArguments(argStack: map(string, ArgumentHandler)) {
       _argStack = new map(string, borrowed ArgumentHandler);
       for k in argStack.these() {
-        _argStack.addOrSet(k,argStack[k] );
+        _argStack.addOrSet(k,try! argStack[k] );
       }
       generateSections();
     }
@@ -779,7 +779,7 @@ module ArgumentParser {
       var hasSubcommands = false;
       for kindOfArg in usageOrder {
         for name in sorted(_argStack.keys()) {
-          const handler = _argStack[name];
+          const handler = try! _argStack[name];
           if !handler._help.visible then continue;
           var elem = handler._getUsageCommand();
           if handler._kind == kindOfArg {
@@ -809,7 +809,7 @@ module ArgumentParser {
     // the arguments have been added to the argumentParser.
     proc generateSections() {
       for name in sorted(_argStack.keys()) {
-        const handler = _argStack[name];
+        const handler = try! _argStack[name];
         if !handler._help.visible then continue;
         var elem = new element(handler._getHelpCommand(),
                                handler._getHelpMessage());
@@ -1801,8 +1801,8 @@ module ArgumentParser {
     proc _assignDefaultsToMissingOpts() {
       // set any default values as needed
       for name in this._handlers.keys() {
-        const handler = this._handlers[name];
-        const arg = this._result[name];
+        const handler = try! this._handlers[name];
+        const arg = try! this._result[name];
         if !arg._present && handler._hasDefault() {
           arg._values.append(handler._getDefaultValue());
           arg._present = true;

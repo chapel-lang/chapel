@@ -11,7 +11,7 @@ use IO;
 
 proc main() {
   var b = b"\x80\x81";
-  var f = openmem();
+  var f = openMemFile();
   {
     var w = f.writer();
     w.write("hello");

@@ -4065,8 +4065,15 @@ void Converter::noteAllContainedFixups(BaseAST* ast, int depth) {
   // can copy the AST freely.
 
   if (depth > 0) {
-    if (isModuleSymbol(ast) || isFnSymbol(ast)) {
+    if (isModuleSymbol(ast)) {
       return;
+    }
+    if (auto fn = toFnSymbol(ast)) {
+      if (!fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
+        // ignore functions that are created from building expressions
+        // but aren't represented in the uAST
+        return;
+      }
     }
     if (TypeSymbol* ts = toTypeSymbol(ast)) {
       if (isAggregateType(ts->type)) {
@@ -4136,8 +4143,11 @@ void Converter::popFromSymStack(const uast::AstNode* ast, BaseAST* ret) {
     CHPL_ASSERT(false && "stack error");
   }
   if (trace) {
-    printf("Exiting %s %s\n",
-           astName(ast).c_str(), ast->id().str().c_str());
+    int id = 0;
+    if (ret != nullptr) id = ret->id;
+
+    printf("Exiting %s %s [%i]\n",
+           astName(ast).c_str(), ast->id().str().c_str(), id);
   }
   symStack.pop_back();
 }
@@ -4154,8 +4164,9 @@ void ConvertedSymbolsMap::noteConvertedSym(const uast::AstNode* ast,
                                            Symbol* sym,
                                            bool trace) {
   if (trace) {
-    printf("Converted sym %s %s and noting it in %s\n",
+    printf("Converted sym %s %s to %s[%i] and noting it in %s\n",
            astName(ast).c_str(), ast->id().str().c_str(),
+           sym->name, sym->id,
            computeMapName(inSymbolId).c_str());
   }
 
@@ -4167,9 +4178,10 @@ void ConvertedSymbolsMap::noteConvertedFn(
                                 FnSymbol* fn,
                                 bool trace) {
   if (trace) {
-    printf("Converted fn %s %s and noting it in %s\n",
+    printf("Converted fn %s %s to %s[%i] and noting it in %s\n",
            sig->untyped()->name().c_str(),
            sig->untyped()->id().str().c_str(),
+           fn->name, fn->id,
            computeMapName(inSymbolId).c_str());
   }
 
@@ -4180,7 +4192,8 @@ void ConvertedSymbolsMap::noteIdentFixupNeeded(SymExpr* se, ID id,
                                                ConvertedSymbolsMap* cur,
                                                bool trace) {
   if (trace) {
-    printf("Noting fixup needed for mention of %s within %s in map for %s\n",
+    printf("Noting fixup needed [%i] for mention of %s within %s in map for %s\n",
+           se->id,
            id.str().c_str(),
            computeMapName(cur->inSymbolId).c_str(),
            computeMapName(this->inSymbolId).c_str());
@@ -4194,7 +4207,8 @@ void ConvertedSymbolsMap::noteCallFixupNeeded(SymExpr* se,
                                 ConvertedSymbolsMap* cur,
                                 bool trace) {
   if (trace) {
-    printf("Noting fixup needed for mention of %s within %s in map for %s\n",
+    printf("Noting fixup needed [%i] for mention of %s within %s in map for %s\n",
+           se->id,
            sig->untyped()->id().str().c_str(),
            computeMapName(cur->inSymbolId).c_str(),
            computeMapName(this->inSymbolId).c_str());
@@ -4400,6 +4414,7 @@ void postConvertApplyFixups(chpl::Context* context) {
     }
   }
 
+  // Fix method receivers
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->_this == nullptr) continue; // not a method
 

@@ -1,1 +1,1 @@
-depOpenmem.chpl:4: warning: openmem with a style argument is unstable
+depOpenmem.chpl:4: warning: openMemFile with a style argument is unstable

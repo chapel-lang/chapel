@@ -198,7 +198,7 @@ Files
 -----
 
 There are several functions that open a file and return a :record:`file`
-including :proc:`open`, :proc:`openTempFile`, :proc:`openmem`, :proc:`openfd`,
+including :proc:`open`, :proc:`openTempFile`, :proc:`openMemFile`, :proc:`openfd`,
 and the :record:`file` initializer that takes a :type:`~CTypes.c_FILE` argument.
 
 Once a file is open, it is necessary to create associated channel(s) - see
@@ -1770,7 +1770,7 @@ proc file.path: string throws where !filePathAbsolute {
 
 Get the absolute path to an open file.
 
-Note that not all files have a path (e.g. files opened with :proc:`openmem`),
+Note that not all files have a path (e.g. files opened with :proc:`openMemFile`),
 and that this function may not work on all operating systems.
 
 The function :proc:`Path.realPath` is an alternative way
@@ -2152,9 +2152,19 @@ private proc opentmpHelper(hints=ioHintSet.empty,
   return ret;
 }
 
-@unstable "openmem with a style argument is unstable"
+deprecated "openmem is deprecated - please use :proc:`openMemFile` instead"
 proc openmem(style:iostyle):file throws {
-  return openmemHelper(style: iostyleInternal);
+  return openMemFile(style);
+}
+
+deprecated "openmem is deprecated - please use :proc:`openMemFile` instead"
+proc openmem():file throws {
+  return openMemFile();
+}
+
+@unstable "openMemFile with a style argument is unstable"
+proc openMemFile(style:iostyle):file throws {
+  return openMemFileHelper(style: iostyleInternal);
 }
 /*
 
@@ -2169,19 +2179,19 @@ The resulting file supports both reading and writing.
 
 :throws SystemError: Thrown if the memory buffered file could not be opened.
 */
-proc openmem():file throws {
-  return openmemHelper();
+proc openMemFile():file throws {
+  return openMemFileHelper();
 }
 
 private
-proc openmemHelper(style:iostyleInternal = defaultIOStyleInternal()):file throws {
+proc openMemFileHelper(style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
   ret._home = here;
 
   // On return ret._file_internal.ref_cnt == 1.
   var err = qio_file_open_mem(ret._file_internal, QBUFFER_PTR_NULL, local_style);
-  if err then try ioerror(err, "in openmem");
+  if err then try ioerror(err, "in openMemFile");
   return ret;
 }
 
@@ -4529,7 +4539,7 @@ proc stringify(const args ...?k):string {
     // otherwise, write it using the I/O system.
     try! {
       // Open a memory buffer to store the result
-      var f = openmem();
+      var f = openMemFile();
       defer try! f.close();
 
       var w = f.writer(locking=false);
@@ -8986,7 +8996,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
     where isStringType(t) || isBytesType(t) {
 
   // Open a memory buffer to store the result
-  var f = try openmem();
+  var f = try openMemFile();
   defer {
     try {
       f.close();

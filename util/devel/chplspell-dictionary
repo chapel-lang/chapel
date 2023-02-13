@@ -2216,6 +2216,7 @@ opendir
 openfd
 openfp
 openmem
+openMemFile
 openproc
 openreader
 opensocketdata
@@ -8316,6 +8317,7 @@ opengroup
 openhigh
 openlow
 openmem
+openMemFile
 openmpi
 openplugin
 openreader

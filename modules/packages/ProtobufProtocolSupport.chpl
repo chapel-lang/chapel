@@ -508,7 +508,7 @@ module ProtobufProtocolSupport {
     }
 
     proc messageConsume(ch:readingChannel, type messageType) throws {
-      var tmpMem = openmem();
+      var tmpMem = openMemFile();
       var memWriter = tmpMem.writer(kind=iokind.little, locking=false);
       var memReader = tmpMem.reader(kind=iokind.little, locking=false);
 
@@ -629,7 +629,7 @@ module ProtobufProtocolSupport {
       encoded as bytes and written to `tmpMem`.
       */
       var s: bytes;
-      var tmpMem = openmem();
+      var tmpMem = openMemFile();
       var memWriter = tmpMem.writer(kind=iokind.little, locking=false);
       var memReader = tmpMem.reader(kind=iokind.little, locking=false);
 
@@ -660,7 +660,7 @@ module ProtobufProtocolSupport {
 
       proc pack(messageObj) throws {
         var s: bytes;
-        var tmpMem = openmem();
+        var tmpMem = openMemFile();
         var memWriter = tmpMem.writer(kind=iokind.little, locking=false);
         var memReader = tmpMem.reader(kind=iokind.little, locking=false);
 
@@ -679,7 +679,7 @@ module ProtobufProtocolSupport {
           throw new owned IllegalArgumentError("input message type does not match destination message type");
         }
 
-        var tmpMem = openmem();
+        var tmpMem = openMemFile();
         var memWriter = tmpMem.writer(kind=iokind.little, locking=false);
         var memReader = tmpMem.reader(kind=iokind.little, locking=false);
 
@@ -1152,7 +1152,7 @@ module ProtobufProtocolSupport {
 
     proc messageRepeatedConsume(ch: readingChannel, type messageType) throws {
       var returnList: list(messageType);
-      var tmpMem = openmem();
+      var tmpMem = openMemFile();
       var memWriter = tmpMem.writer(kind=iokind.little, locking=false);
       var memReader = tmpMem.reader(kind=iokind.little, locking=false);
 

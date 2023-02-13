@@ -16,7 +16,7 @@ writef("%jt\n", myenum.blue);
 writeln();
 
 proc reade(s: string) : myenum {
-  var f = openmem();
+  var f = openMemFile();
   f.writer().write(s);
     
   var reader = f.reader();
@@ -27,7 +27,7 @@ proc reade(s: string) : myenum {
 }
 
 proc readj(s: string) : myenum {
-  var f = openmem();
+  var f = openMemFile();
   f.writer().write(s);
     
   var reader = f.reader();

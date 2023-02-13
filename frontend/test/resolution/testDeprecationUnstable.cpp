@@ -278,8 +278,8 @@ static void testDeprecationWarningsForTypes(void) {
       }
 
       {
-        import mod1;
-        import mod2;
+        import this.mod1;
+        import this.mod2;
       }
 
       var v13 = e1.e1k1;  // OK

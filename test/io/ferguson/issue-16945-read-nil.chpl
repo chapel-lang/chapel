@@ -4,7 +4,7 @@ class C {
   var x: int;
 }
 
-var f = openmem();
+var f = openMemFile();
 
 var x: owned C? = nil;
 f.writer().write(x);

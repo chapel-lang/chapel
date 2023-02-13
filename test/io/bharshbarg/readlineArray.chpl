@@ -4,7 +4,7 @@ config const n = 100;
 config const line = 60;
 config const debug = false;
 
-var f = openmem();
+var f = openMemFile();
 var r = f.reader();
 var w = f.writer();
 

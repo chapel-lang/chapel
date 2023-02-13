@@ -1,1 +1,1 @@
--M ../tracking-record -M ../tracking
+-M ../tracking-record -M ../tracking -smapMethodsThrow=true
