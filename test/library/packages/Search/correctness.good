@@ -1,0 +1,1 @@
+correctness.chpl:21: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (10..40 by -10)

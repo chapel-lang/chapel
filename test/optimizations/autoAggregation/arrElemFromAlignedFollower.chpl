@@ -35,7 +35,7 @@ writeln(b);
 writeln();
 
 // scatter-like pattern
-var randomIndices = [i in 0..10 by -1] i;
+var randomIndices = [i in 0..10] i;
 writeln("Loop 3 -- expecting destination aggregation");
 forall (idx, elem) in zip(dom, a) {
   b[randomIndices[idx]] = elem;  // expect two confirmations: fast follower, slow follower
