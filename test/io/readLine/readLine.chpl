@@ -1,7 +1,7 @@
 use IO;
 
 proc testReadLineRef(type dataType) {
-  var f = openmem();
+  var f = openMemFile();
   {
     var ch = f.writer();
     ch.writeln("a b":dataType);
@@ -34,7 +34,7 @@ proc testReadLineRef(type dataType) {
 
 
 proc testReadLineType(type dataType){
-  var f = openmem();
+  var f = openMemFile();
   {
     var ch = f.writer();
     ch.writeln("a b":dataType);
@@ -60,7 +60,7 @@ proc testReadLineType(type dataType){
 }
 
 proc testReadLineArray(){
-  var f = openmem();
+  var f = openMemFile();
   {
     var ch = f.writer();
     ch.writeln("a b");

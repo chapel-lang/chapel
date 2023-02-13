@@ -2,7 +2,7 @@
 
 use Regex, IO;
 
-var f = openmem();
+var f = openMemFile();
 { var w = f.writer(); w.write("xy"); }
 
 proc testXY(re:string) {

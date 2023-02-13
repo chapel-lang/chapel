@@ -1,6 +1,6 @@
 use IO;
 
-var f = openmem();
+var f = openMemFile();
 
 f.writer().write("1 2 3 error");
 

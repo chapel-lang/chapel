@@ -44,7 +44,7 @@ var a = new unmanaged A(1);
 var b = new unmanaged B(1);
 var c = new unmanaged C(1);
 
-var f = openmem();
+var f = openMemFile();
 var w = f.writer();
 
 writeln("Writes from Locale 1");

@@ -2,7 +2,7 @@
 use IO;
 
 proc main() {
-  var f = openmem();
+  var f = openMemFile();
   {
     var w = f.writer();
     for 1..2 {
