@@ -2281,6 +2281,7 @@ rdonly
 rdwr
 readahead
 readbits
+readBits
 readbytes
 readdata
 readded
@@ -8584,6 +8585,7 @@ readahead
 readaheads
 readargsfrom
 readbits
+readBits
 readcsv
 readdata
 readf
