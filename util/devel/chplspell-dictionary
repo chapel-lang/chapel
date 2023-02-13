@@ -2215,6 +2215,7 @@ oleg
 opendir
 openfd
 openfp
+openmem
 openMemFile
 openproc
 openreader
