@@ -102,6 +102,7 @@ struct Visitor {
 
   // Checks.
   void checkForOneElementArraysWithoutComma(const Array* node);
+  void checkForArraysOfRanges(const Array* node);
   void checkDomainTypeQueryUsage(const TypeQuery* node);
   void checkNoDuplicateNamedArguments(const FnCall* node);
   bool handleNestedDecoratorsInNew(const FnCall* node);
@@ -268,6 +269,17 @@ void Visitor::checkForOneElementArraysWithoutComma(const Array* node) {
          "deprecated; please rewrite as '%s'",
          node->isAssociative() ? "[myKey => myElem, ]" : "[myElem, ]");
   }
+}
+
+void Visitor::checkForArraysOfRanges(const Array* node) {
+  int size = node->numExprs();
+  for (int i=0; i<node->numExprs(); i++) {
+    const Range* rng = node->expr(i)->toRange();
+    if (rng == NULL)
+      return;
+  }
+  // If we get here, all array elements were ranges
+  warn(node, "please note that this is a %d-element array of ranges; if you wanted to iterate over the integers represented by those ranges rather than the list of ranges themselves, please consider using a %s instead", size, (size == 1 ? "range" : "domain or nested loop"));
 }
   
 void Visitor::checkDomainTypeQueryUsage(const TypeQuery* node) {
@@ -846,6 +858,7 @@ void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
 
 void Visitor::visit(const Array* node) {
   checkForOneElementArraysWithoutComma(node);
+  checkForArraysOfRanges(node);
 }
   
 void Visitor::visit(const FnCall* node) {
