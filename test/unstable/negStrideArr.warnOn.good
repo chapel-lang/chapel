@@ -1,0 +1,13 @@
+0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+negStrideArr.chpl:1: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (1..10 by -1)
+negStrideArr.chpl:2: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (1..10, 1..10 by -2)
