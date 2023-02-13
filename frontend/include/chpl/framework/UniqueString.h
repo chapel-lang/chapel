@@ -27,6 +27,7 @@
 
 #include "chpl/framework/UniqueString-detail.h"
 #include "chpl/framework/stringify-functions.h"
+#include "chpl/framework/serialize-functions.h"
 #include "chpl/util/hash.h"
 
 #include <cstring>
@@ -146,6 +147,15 @@ class UniqueString final {
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
+  void serialize(Serializer& ser) const {
+    ser.write((uint64_t)length());
+    if (length() > 0) {
+      ser.os().write(c_str(), length());
+    }
+  }
+
+  static UniqueString deserialize(Deserializer& des);
+
   bool isEmpty() const {
     return s.isEmpty();
   }
@@ -188,6 +198,46 @@ class UniqueString final {
     return this->startsWith(prefix.c_str());
   }
 
+  /**
+    Checks to see if the string ends with another string.
+    \rst
+    .. note::
+
+      will not handle prefix strings with embedded ``'\0'`` bytes
+    \endrst
+  */
+  bool endsWith(const char* suffix) const {
+    auto suffixLength = strlen(suffix);
+    if (suffixLength > this->length()) return false;
+    auto offset = this->length() - suffixLength;
+    bool ret = (0 == strncmp(this->c_str() + offset, suffix, suffixLength));
+    return ret;
+  }
+
+  /**
+    Checks to see if the string ends with another string.
+    \rst
+    .. note::
+
+      will not handle prefix strings with embedded ``'\0'`` bytes
+    \endrst
+   */
+  bool endsWith(const UniqueString suffix) const {
+    return this->endsWith(suffix.c_str());
+  }
+
+  /**
+    Checks to see if the string ends with another string.
+    \rst
+    .. note::
+
+      will not handle prefix strings with embedded ``'\0'`` bytes
+    \endrst
+   */
+  bool endsWith(const std::string& suffix) const {
+    return this->endsWith(suffix.c_str());
+  }
+
   inline bool operator==(const UniqueString other) const {
     return this->s.i.v == other.s.i.v;
   }
@@ -203,11 +253,28 @@ class UniqueString final {
     (void)s;                    // mark field as used for linter
     return 0 == this->compare(other);
   }
+
+  /**
+    Checks to see if the string contents match a C++ std::string.
+    \rst
+    .. note::
+
+      will only compare up to the first null byte.
+    \endrst
+   */
+  inline bool operator==(const std::string& other) const {
+    (void)s;                    // mark field as used for linter
+    return 0 == this->compare(other.c_str());
+  }
+
   inline bool operator!=(const UniqueString other) const {
     return !(*this == other);
   }
   inline bool operator!=(const char* other) const {
     return 0 != this->compare(other);
+  }
+  inline bool operator!=(const std::string& other) const {
+    return !(*this == other);
   }
 
   /**

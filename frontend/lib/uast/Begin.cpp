@@ -39,7 +39,7 @@ owned<Begin> Begin::build(Builder* builder,
                           BlockStyle blockStyle,
                           AstList stmts) {
   AstList lst;
-  int8_t withClauseChildNum = -1;
+  int8_t withClauseChildNum = NO_CHILD;
 
   if (withClause.get() != nullptr) {
     withClauseChildNum = lst.size();

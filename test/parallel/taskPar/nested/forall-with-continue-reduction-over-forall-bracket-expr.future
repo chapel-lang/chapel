@@ -1,0 +1,2 @@
+bug: runtime error in forall loop containing a continue and a reduction over a bracket-forall expression over a domain literal
+#21292

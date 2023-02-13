@@ -1,0 +1,8 @@
+# 32-bit platforms don't use native qthread 'sync' variables and are
+# painfully slow for this benchmark's full problem size, so skip them.
+# Arm also doesn't currently support native qthread 'sync' variables,
+# but should soon, so Elliot suggested not worrying about that for now
+# (and we're not seeing failures in our current testing configurations,
+# likely just due to not running these tests on arm).
+#
+CHPL_TARGET_PLATFORM <= 32

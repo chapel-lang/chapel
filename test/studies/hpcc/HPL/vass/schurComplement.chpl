@@ -91,11 +91,11 @@ var refsuccess = true;
 
 /////////// run it ///////////
 
-const startTime = getCurrentTime();
+const startTime = timeSinceEpoch().totalSeconds();
 
 schurComplement(blk);
 
-const execTime = getCurrentTime() - startTime;  // store the elapsed time
+const execTime = timeSinceEpoch().totalSeconds() - startTime;  // store the elapsed time
 write("DONE");
 if reproducible then writeln(); else writeln("  time = ", execTime);
 

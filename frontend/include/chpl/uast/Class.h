@@ -46,23 +46,28 @@ class Class final : public AggregateDecl {
  private:
   int parentClassChildNum_;
 
-  Class(AstList children, int attributesChildNum, Decl::Visibility vis,
+  Class(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
         UniqueString name,
         int elementsChildNum,
         int numElements,
         int parentClassChildNum)
     : AggregateDecl(asttags::Class, std::move(children),
-                    attributesChildNum,
+                    attributeGroupChildNum,
                     vis,
                     Decl::DEFAULT_LINKAGE,
-                    /*linkageNameChildNum*/ -1,
+                    /*linkageNameChildNum*/ NO_CHILD,
                     name,
                     elementsChildNum,
                     numElements),
       parentClassChildNum_(parentClassChildNum) {
-    CHPL_ASSERT(parentClassChildNum_ == -1 ||
+    CHPL_ASSERT(parentClassChildNum_ == NO_CHILD ||
            child(parentClassChildNum_)->isIdentifier());
   }
+
+  Class(Deserializer& des)
+    : AggregateDecl(asttags::Class, des) {
+      parentClassChildNum_ = des.read<int>();
+     }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Class* lhs = this;
@@ -81,7 +86,7 @@ class Class final : public AggregateDecl {
   ~Class() override = default;
 
   static owned<Class> build(Builder* builder, Location loc,
-                            owned<Attributes> attributes,
+                            owned<AttributeGroup> attributeGroup,
                             Decl::Visibility vis,
                             UniqueString name,
                             owned<AstNode> parentClass,
@@ -98,6 +103,14 @@ class Class final : public AggregateDecl {
     auto ret = child(parentClassChildNum_);
     return ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    AggregateDecl::serialize(ser);
+    ser.write(parentClassChildNum_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Class);
+
 };
 
 

@@ -1,7 +1,3 @@
--st=bool(8)
--st=bool(16)
--st=bool(32)
--st=bool(64)
 -st=bool
 -st=int(8)
 -st=int(16)

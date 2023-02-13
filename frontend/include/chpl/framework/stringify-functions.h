@@ -410,7 +410,8 @@ template<typename... ArgTs> struct stringify<std::tuple<ArgTs...>> {
     dump(DEBUG_DETAIL); \
   } \
   void T::dump(chpl::StringifyKind debug_level) const { \
-    stringify(std::cerr, debug_level); \
+    stringify(std::cout, debug_level); \
+    std::cout << std::endl; \
   }
 
 

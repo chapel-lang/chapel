@@ -1,4 +1,4 @@
--swaitAlg=WaitFor -sshiftAlg=SerForall -ssearchAlg=Find -suseNewArrayFind=true
+-swaitAlg=WaitFor -sshiftAlg=SerForall -ssearchAlg=MaxLoc
 -swaitAlg=Spin
 #-sshiftAlg=Forall
 -sshiftAlg=Foreach

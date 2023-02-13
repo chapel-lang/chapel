@@ -27,18 +27,24 @@
 using BaseHandler = chpl::Context::ErrorHandler;
 
 class AggregatingErrorHandler : BaseHandler {
-  std::vector<const chpl::ErrorBase*> errors_;
+  std::vector<chpl::owned<chpl::ErrorBase>> errors_;
  public:
   AggregatingErrorHandler() = default;
   ~AggregatingErrorHandler() = default;
 
-  const std::vector<const chpl::ErrorBase*>& errors() const {
+  const std::vector<chpl::owned<chpl::ErrorBase>>& errors() const {
     return errors_;
+  }
+
+  template <typename C>
+  void moveErrors(C& container) {
+    std::move(errors_.begin(), errors_.end(), std::back_inserter(container));
+    errors_.clear();
   }
 
   virtual void
   report(chpl::Context* context, const chpl::ErrorBase* err) override {
-    errors_.push_back(err);
+    errors_.push_back(err->clone());
   }
 
   inline void clear() { errors_.clear(); }
@@ -66,7 +72,7 @@ class ErrorGuard {
   inline chpl::Context* context() const { return ctx_; }
 
   /** A way to iterate over the errors contained in the guard. */
-  const std::vector<const chpl::ErrorBase*>& errors() const {
+  const std::vector<chpl::owned<chpl::ErrorBase>>& errors() const {
     assert(handler_);
     return handler_->errors();
   }
@@ -74,9 +80,14 @@ class ErrorGuard {
   /** Get the number of errors contained in the guard. */
   inline size_t numErrors() const { return this->errors().size(); }
 
-  const chpl::ErrorBase* error(size_t idx) const {
+  const chpl::owned<chpl::ErrorBase>& error(size_t idx) const {
     assert(idx < numErrors());
     return this->errors()[idx];
+  }
+
+  void clearErrors() {
+    assert(handler_);
+    handler_->clear();
   }
 
   /** Print the errors contained in this guard and then clear the guard
@@ -90,12 +101,17 @@ class ErrorGuard {
     return ret;
   }
 
+  template <typename C>
+  void moveErrors(C& container) {
+    handler_->moveErrors(container);
+  }
+
   /** Print the errors contained in this guard in a detailed manner. */
   void printErrors() const {
     chpl::ErrorWriter ew(this->context(), std::cout,
                          chpl::ErrorWriter::DETAILED,
                          false);
-    for (auto err: this->errors()) err->write(ew);
+    for (auto& err: this->errors()) err->write(ew);
   }
 
   /** The guard destructor will assert that no errors have occurred. */

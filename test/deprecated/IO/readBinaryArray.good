@@ -1,0 +1,11 @@
+readBinaryArray.chpl:9: warning: The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant
+readBinaryArray.chpl:14: warning: The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant
+readBinaryArray.chpl:19: warning: The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant
+readBinaryArray.chpl:25: warning: The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant
+false
+0 0 0 0 0 0 0 0
+true
+1 2 4 8
+true
+1 2 4 8 16 32 64 128
+caught: UnexpectedEofError: short read or write (Unable to read entire array of values in 'readBinary')

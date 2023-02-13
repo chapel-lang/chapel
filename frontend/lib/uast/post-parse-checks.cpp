@@ -17,6 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include "chpl/uast/post-parse-checks.h"
 
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/global-strings.h"
@@ -37,15 +38,13 @@ struct Visitor {
   std::set<UniqueString> exportedFnNames_;
   std::vector<const AstNode*> parents_;
   Context* context_ = nullptr;
-  Builder& builder_;
   bool isUserCode_ = false;
 
   // Helper to determine if a file path is for user code.
   static bool isUserFilePath(Context* context, UniqueString filepath);
 
-  Visitor(Context* context, Builder& builder, bool isUserCode)
+  Visitor(Context* context, bool isUserCode)
     : context_(context),
-      builder_(builder),
       isUserCode_(isUserCode) {
   }
 
@@ -102,6 +101,7 @@ struct Visitor {
   bool isNameReservedWord(const NamedDecl* node);
 
   // Checks.
+  void checkForOneElementArraysWithoutComma(const Array* node);
   void checkDomainTypeQueryUsage(const TypeQuery* node);
   void checkNoDuplicateNamedArguments(const FnCall* node);
   bool handleNestedDecoratorsInNew(const FnCall* node);
@@ -147,6 +147,7 @@ struct Visitor {
 
   // Visitors.
   inline void visit(const AstNode* node) {} // Do nothing by default.
+  void visit(const Array* node);
   void visit(const FnCall* node);
   void visit(const Variable* node);
   void visit(const TypeQuery* node);
@@ -162,8 +163,7 @@ struct Visitor {
 void Visitor::report(const AstNode* node, ErrorBase::Kind kind,
                      const char* fmt,
                      va_list vl) {
-  auto err = GeneralError::vbuild(context_, kind, node->id(), fmt, vl);
-  builder_.addError(std::move(err));
+  context_->report(GeneralError::vbuild(kind, node->id(), fmt, vl));
 }
 
 void Visitor::error(const AstNode* node, const char* fmt, ...) {
@@ -262,6 +262,14 @@ bool Visitor::isParentFalseBlock(int depth) const {
   return false;
 }
 
+void Visitor::checkForOneElementArraysWithoutComma(const Array* node) {
+  if (!node->hasTrailingComma() && node->numChildren() == 1) {
+    warn(node, "single-element array literals without a trailing comma are "
+         "deprecated; please rewrite as '%s'",
+         node->isAssociative() ? "[myKey => myElem, ]" : "[myElem, ]");
+  }
+}
+  
 void Visitor::checkDomainTypeQueryUsage(const TypeQuery* node) {
   if (!parent(0) || !parent(1)) return;
 
@@ -373,7 +381,7 @@ bool Visitor::handleNestedDecoratorsInNew(const FnCall* node) {
     CHPL_ASSERT(outerMgt != defMgt);
 
     // TODO: Also error about 'please use class? instead of %s?'...
-    CHPL_POSTPARSE_REPORT(builder_, MultipleManagementStrategies, outerPin, outerMgt,
+    CHPL_REPORT(context_, MultipleManagementStrategies, outerPin, outerMgt,
                           innerMgt);
 
     // Cycle _once_, to try and catch something like 'new owned owned'.
@@ -406,7 +414,7 @@ Visitor::handleNestedDecoratorsInTypeConstructors(const FnCall* node) {
     CHPL_ASSERT(outerMgt != defMgt);
 
     // TODO: Also error about 'please use class? instead of %s?'...
-    CHPL_POSTPARSE_REPORT(builder_, MultipleManagementStrategies, node, outerMgt,
+    CHPL_REPORT(context_, MultipleManagementStrategies, node, outerMgt,
                           innerMgt);
   }
 
@@ -693,7 +701,7 @@ void Visitor::checkPrivateDecl(const Decl* node) {
     }
   }
   if (privateOnType) {
-    CHPL_POSTPARSE_REPORT(builder_, CantApplyPrivate, node, "types");
+    CHPL_REPORT(context_, CantApplyPrivate, node, "types");
     return;
   }
 
@@ -705,13 +713,13 @@ void Visitor::checkPrivateDecl(const Decl* node) {
     warn(node, "private declarations within function bodies are meaningless.");
 
   } else if (enclosingDecl->isAggregateDecl() && !node->isTypeDecl()) {
-    CHPL_POSTPARSE_REPORT(builder_, CantApplyPrivate, node,
+    CHPL_REPORT(context_, CantApplyPrivate, node,
                           "the fields or methods of a class or record");
     // TODO: Might need to adjust the order of the stuff in this branch.
   } else if (auto mod = enclosingDecl->toModule()) {
     if (auto fn = node->toFunction()) {
       if (fn->isMethod()) {
-        CHPL_POSTPARSE_REPORT(builder_, CantApplyPrivate, node,
+        CHPL_REPORT(context_, CantApplyPrivate, node,
                               "the fields or methods of a class or record");
       }
 
@@ -836,6 +844,10 @@ void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
   }
 }
 
+void Visitor::visit(const Array* node) {
+  checkForOneElementArraysWithoutComma(node);
+}
+  
 void Visitor::visit(const FnCall* node) {
   checkNoDuplicateNamedArguments(node);
   checkForNestedClassDecorators(node);
@@ -878,7 +890,8 @@ void Visitor::visit(const Union* node) {
 // setter query may not have been run yet.
 bool Visitor::isUserFilePath(Context* context, UniqueString filepath) {
   UniqueString modules = chpl::parsing::bundledModulePath(context);
-  auto ret = filepath.startsWith(modules);
+  if (modules.isEmpty()) return true;
+  bool ret = !filepath.startsWith(modules);
   return ret;
 }
 
@@ -887,15 +900,15 @@ bool Visitor::isUserFilePath(Context* context, UniqueString filepath) {
 namespace chpl {
 namespace uast {
 
-void Builder::postParseChecks() {
-  if (topLevelExpressions_.size() == 0) return;
+void
+checkBuilderResult(Context* context, UniqueString path,
+                   const BuilderResult& result) {
+  bool isUserCode = Visitor::isUserFilePath(context, path);
+  auto v = Visitor(context, isUserCode);
 
-  bool isUserCode = Visitor::isUserFilePath(context_, filepath_);
-  auto v = Visitor(context_, *this, isUserCode);
-
-  for (auto& ast : topLevelExpressions_) {
+  for (auto ast : result.topLevelExpressions()) {
     if (ast->isComment()) continue;
-    v.check(ast.get());
+    v.check(ast);
   }
 }
 

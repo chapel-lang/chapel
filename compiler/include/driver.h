@@ -92,7 +92,7 @@ extern bool fReportOptimizeForallUnordered;
 extern bool report_inlining;
 
 // Chapel Envs
-bool useDefaultEnv(std::string key);
+bool useDefaultEnv(std::string key, bool isCrayPrgEnv);
 
 extern std::map<std::string, const char*> envMap;
 
@@ -259,6 +259,7 @@ extern int breakOnRemoveID;
 
 extern int fGPUBlockSize;
 extern char fGpuArch[16];
+extern bool fGpuPtxasEnforceOpt;
 extern const char* gGpuSdkPath;
 
 extern char stopAfterPass[128];
@@ -289,6 +290,8 @@ extern bool fDynoCompilerLibrary;
 extern bool fDynoScopeProduction;
 extern bool fDynoScopeBundled;
 extern bool fDynoDebugTrace;
+extern bool fDynoSerialize;
+extern char dynoBinAstDir[FILENAME_MAX + 1];
 
 extern size_t fDynoBreakOnHash;
 

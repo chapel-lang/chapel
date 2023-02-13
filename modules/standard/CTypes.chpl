@@ -533,6 +533,12 @@ module CTypes {
     return CHPL_RT_MD_ARRAY_ELEMENTS - chpl_memhook_md_num();
   }
 
+  pragma "last resort"
+  deprecated "c_sizeof with argument name 'x' is deprecated; please use c_sizeof(type t) instead"
+  inline proc c_sizeof(type x): c_size_t {
+    return c_sizeof(x);
+  }
+
   /*
     Return the size in bytes of a type, as with the C ``sizeof`` built-in.
 
@@ -546,10 +552,10 @@ module CTypes {
          * Behavior of ``c_sizeof`` with Chapel types may change
          * Behavior given a Chapel class type is not well-defined
    */
-  inline proc c_sizeof(type x): c_size_t {
+  inline proc c_sizeof(type t): c_size_t {
     pragma "fn synchronization free"
-    extern proc sizeof(type x): c_size_t;
-    return sizeof(x);
+    extern proc sizeof(type t): c_size_t;
+    return sizeof(t);
   }
 
   /*

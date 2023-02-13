@@ -154,7 +154,7 @@
     bool isBodyNonBlockExpression;
     std::vector<ParserComment>* comments;
     ErroneousExpression* errorExpr; // only used for parser error
-    Attributes* attributes;
+    AttributeGroup* attributeGroup;
     Decl::Visibility visibility;
     Decl::Linkage linkage;
     AstNode* linkageNameExpr;
@@ -176,7 +176,7 @@
   // A struct to thread along some pieces of a module before it is built.
   struct ModuleParts {
     std::vector<ParserComment>* comments;
-    Attributes* attributes;
+    AttributeGroup* attributeGroup;
     Decl::Visibility visibility;
     Module::Kind kind;
     PODUniqueString name;
@@ -188,7 +188,7 @@
     Decl::Visibility visibility;
     Decl::Linkage linkage;
     AstNode* linkageName;
-    Attributes* attributes;
+    AttributeGroup* attributeGroup;
     PODUniqueString name;
     asttags::AstTag tag;
   };
@@ -252,7 +252,7 @@
     Variable::Kind variableKind;
 
     // simple pointer values
-    Attributes* attribute;
+    AttributeGroup* attributeGroup;
     Block* block;
     Call* call;
     Function* function;
@@ -540,7 +540,7 @@
 %type <commentsAndStmt> class_level_stmt
 %type <commentsAndStmt> inner_class_level_stmt
 %type <commentsAndStmt> forwarding_decl_stmt
-%type <attribute> forwarding_decl_start
+%type <attributeGroup> forwarding_decl_start
 %type <commentsAndStmt> extern_export_decl_stmt
 %type <commentsAndStmt> extern_block_stmt
 %type <commentsAndStmt> return_stmt
@@ -891,7 +891,7 @@ module_decl_start:
 
       ModuleParts parts = {
         .comments=context->gatherComments(loc),
-        .attributes=context->buildAttributes(@$).release(),
+        .attributeGroup=context->buildAttributeGroup(@$).release(),
         .visibility=$1,
         .kind=$2,
         .name=$4
@@ -911,7 +911,7 @@ module_decl_stmt:
       ModuleParts parts = $1;
       ParserExprList* body = context->makeList();
       context->appendList(body, context->gatherComments(@3));
-      auto mod = Module::build(BUILDER, LOC(@1), toOwned(parts.attributes),
+      auto mod = Module::build(BUILDER, LOC(@1), toOwned(parts.attributeGroup),
                                parts.visibility,
                                parts.name,
                                parts.kind,
@@ -926,7 +926,7 @@ module_decl_stmt:
       ModuleParts parts = $1;
       ParserExprList* body = $3;
       context->appendList(body, context->gatherComments(@4));
-      auto mod = Module::build(BUILDER, LOC(@1), toOwned(parts.attributes),
+      auto mod = Module::build(BUILDER, LOC(@1), toOwned(parts.attributeGroup),
                                parts.visibility,
                                parts.name,
                                parts.kind,
@@ -939,7 +939,7 @@ module_decl_stmt:
       ModuleParts parts = $1;
       auto err = ErroneousExpression::build(BUILDER, LOC(@3));
       ParserExprList* body = context->makeList(std::move(err));
-      auto mod = Module::build(BUILDER, LOC(@1), toOwned(parts.attributes),
+      auto mod = Module::build(BUILDER, LOC(@1), toOwned(parts.attributeGroup),
                                parts.visibility,
                                parts.name,
                                parts.kind,
@@ -1438,8 +1438,8 @@ forwarding_decl_stmt:
 forwarding_decl_start:
   TFORWARDING
   {
-    $$ = context->buildAttributes(@$).release();
-    context->resetAttributePartsState();
+    $$ = context->buildAttributeGroup(@$).release();
+    context->resetAttributeGroupPartsState();
   }
 ;
 
@@ -1777,7 +1777,7 @@ ifvar:
   TVAR   ident_def TASSIGN expr
   {
     auto varDecl = Variable::build(BUILDER, LOC(@$),
-                                   /*attributes*/ nullptr,
+                                   /*attributeGroup*/ nullptr,
                                    Decl::DEFAULT_VISIBILITY,
                                    Decl::DEFAULT_LINKAGE,
                                    /*linkageName*/ nullptr,
@@ -1792,7 +1792,7 @@ ifvar:
 | TCONST ident_def TASSIGN expr
   {
     auto varDecl = Variable::build(BUILDER, LOC(@$),
-                                   /*attributes*/ nullptr,
+                                   /*attributeGroup*/ nullptr,
                                    Decl::DEFAULT_VISIBILITY,
                                    Decl::DEFAULT_LINKAGE,
                                    /*linkageName*/ nullptr,
@@ -1938,7 +1938,7 @@ catch_expr:
 catch_expr_inner:
   ident_def
   {
-    $$ = Variable::build(BUILDER, LOC(@$), /*attributes*/ nullptr,
+    $$ = Variable::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
                          Decl::DEFAULT_VISIBILITY,
                          Decl::DEFAULT_LINKAGE,
                          /*linkageName*/ nullptr,
@@ -1951,7 +1951,7 @@ catch_expr_inner:
   }
 | ident_def TCOLON expr
   {
-    $$ = Variable::build(BUILDER, LOC(@$), /*attributes*/ nullptr,
+    $$ = Variable::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
                          Decl::DEFAULT_VISIBILITY,
                          Decl::DEFAULT_LINKAGE,
                          /*linkageName*/ nullptr,
@@ -2102,7 +2102,7 @@ enum_decl_stmt:
       // get any comments after the last element but before the closing brace
       context->appendList(list, context->gatherComments(@3));
 
-      auto decl = Enum::build(BUILDER, LOC(@$), toOwned(parts.attributes),
+      auto decl = Enum::build(BUILDER, LOC(@$), toOwned(parts.attributeGroup),
                               parts.visibility,
                               parts.name,
                               context->consumeList(list));
@@ -2135,39 +2135,39 @@ enum_ls:
   deprecated_enum_item
   {
     $$ = context->makeList($1);
-    context->resetAttributePartsState();
+    context->resetAttributeGroupPartsState();
   }
 | enum_ls TCOMMA
   {
     $$ = $1;
     context->clearCommentsBefore(@2);
-    context->resetAttributePartsState();
+    context->resetAttributeGroupPartsState();
   }
 | enum_ls TCOMMA
   {
     context->clearCommentsBefore(@2);
-    context->resetAttributePartsState();
+    context->resetAttributeGroupPartsState();
   }
   deprecated_enum_item
   {
     context->appendList($1, $4);
-    context->resetAttributePartsState();
+    context->resetAttributeGroupPartsState();
   }
 |
   unstable_enum_item
   {
     $$ = context->makeList($1);
-    context->resetAttributePartsState();
+    context->resetAttributeGroupPartsState();
   }
 | enum_ls TCOMMA
   {
     context->clearCommentsBefore(@2);
-    context->resetAttributePartsState();
+    context->resetAttributeGroupPartsState();
   }
   unstable_enum_item
   {
     context->appendList($1, $4);
-    context->resetAttributePartsState();
+    context->resetAttributeGroupPartsState();
   }
 
 ;
@@ -2215,14 +2215,14 @@ enum_item:
   ident_def
     {
       auto decl = EnumElement::build(BUILDER, LOC(@$),
-                                     context->buildAttributes(@$),
+                                     context->buildAttributeGroup(@$),
                                      $1);
       $$ = STMT(@$, decl.release());
     }
 | ident_def TASSIGN expr
     {
       auto decl = EnumElement::build(BUILDER, LOC(@$),
-                                     context->buildAttributes(@$),
+                                     context->buildAttributeGroup(@$),
                                      $1,
                                      toOwned($3));
       $$ = STMT(@$, decl.release());
@@ -2237,9 +2237,9 @@ lambda_decl_start:
       context->noteDeclStartLoc(@1);
       auto loc = context->declStartLoc(@$);
       fp.comments = context->gatherComments(loc);
-      fp.attributes = context->buildAttributes(@$).release();
+      fp.attributeGroup = context->buildAttributeGroup(@$).release();
       fp.visibility = context->visibility;
-      context->resetAttributePartsState();
+      context->resetAttributeGroupPartsState();
       fp.kind = Function::PROC;
       $$ = fp;
     }
@@ -2333,7 +2333,7 @@ fn_type:
     fp.throws = ($6 == ThrowsTag_THROWS);
     fp.body = nullptr;
     fp.comments = nullptr;
-    fp.attributes = nullptr;
+    fp.attributeGroup = nullptr;
     fp.visibility = context->visibility;
     $$ = fp;
   }
@@ -2435,7 +2435,7 @@ fn_decl_stmt_inner:
     {
       FunctionParts fp = $1;
       fp.thisIntent = $2;
-      fp.receiver = Formal::build(BUILDER, LOC(@3), /*attributes*/ nullptr,
+      fp.receiver = Formal::build(BUILDER, LOC(@3), /*attributeGroup*/ nullptr,
                                   STR("this"), $2, toOwned($3),
                                   nullptr).release();
       fp.name = context->buildIdent(@5, $5);
@@ -2446,7 +2446,7 @@ fn_decl_stmt_inner:
     {
       FunctionParts fp = $1;
       fp.thisIntent = $2;
-      fp.receiver = Formal::build(BUILDER, LOC(@3), /*attributes*/ nullptr,
+      fp.receiver = Formal::build(BUILDER, LOC(@3), /*attributeGroup*/ nullptr,
                                   STR("this"), $2, toOwned($3),
                                   nullptr).release();
       fp.name = context->buildIdent(@5, $5);
@@ -2468,9 +2468,9 @@ fn_decl_stmt_start:
       context->noteDeclStartLoc(@2);
       auto loc = context->declStartLoc(@$);
       fp.comments = context->gatherComments(loc);
-      fp.attributes = context->buildAttributes(@$).release();
+      fp.attributeGroup = context->buildAttributeGroup(@$).release();
       fp.visibility = context->visibility;
-      context->resetAttributePartsState();
+      context->resetAttributeGroupPartsState();
       fp.kind = $2;
       $$ = fp;
     }
@@ -2753,7 +2753,7 @@ type_alias_decl_stmt_inner:
   {
     // TODO (dlongnecke-cray): Add a helper to build this and var_decl_stmt.
     auto node = Variable::build(BUILDER, LOC(@$),
-                                context->buildAttributes(@$),
+                                context->buildAttributeGroup(@$),
                                 context->visibility,
                                 context->linkage,
                                 context->consumeVarDeclLinkageName(),
@@ -2820,7 +2820,7 @@ var_decl_stmt_inner:
   ident_def opt_type opt_init_expr
     {
       auto varDecl = Variable::build(BUILDER, LOC(@$),
-                                     context->buildAttributes(@$),
+                                     context->buildAttributeGroup(@$),
                                      context->visibility,
                                      context->linkage,
                                      context->consumeVarDeclLinkageName(),
@@ -2837,7 +2837,7 @@ var_decl_stmt_inner:
     {
       auto intentOrKind = (TupleDecl::IntentOrKind) context->varDeclKind;
       auto tupleDecl = TupleDecl::build(BUILDER, LOC(@$),
-                                        context->buildAttributes(@$),
+                                        context->buildAttributeGroup(@$),
                                         context->visibility,
                                         context->linkage,
                                         intentOrKind,
@@ -3430,7 +3430,7 @@ intent_expr:
   {
     if (auto ident = $2->toIdentifier()) {
       auto name = ident->name();
-      auto node = TaskVar::build(BUILDER, LOC(@$), /*attributes*/ nullptr,
+      auto node = TaskVar::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
                                  name,
                                  /*intent*/ $1,
                                  toOwned($3),
@@ -3773,17 +3773,15 @@ literal_expr:
   }
 | TLSBR expr_ls TCOMMA TRSBR
   {
-    // TODO (dlongnecke): Record trailing comma?
-    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2), true).release();
   }
 | TLSBR assoc_expr_ls TRSBR
   {
-    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2), false, true).release();
   }
 | TLSBR assoc_expr_ls TCOMMA TRSBR
   {
-    // TODO (dlongnecke): Record trailing comma?
-    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2), true, true).release();
   }
 
 ;

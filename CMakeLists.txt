@@ -36,6 +36,7 @@ endif()
 ### BEGIN config.h value setting ###
 # Handle all (most?) the versioning information in one place
 # These values will be written to <build_dir>/frontend/include/chpl/config/config.h
+
 set(CHPL_MAJOR_VERSION 1)
 set(CHPL_MINOR_VERSION 30)
 set(CHPL_PATCH_VERSION 0)
@@ -361,7 +362,7 @@ message(STATUS "Using Python: ${CHPL_CMAKE_PYTHON}")
 # message(DEBUG "${CHPL_HOST_BUNDLED_LINK_ARGS} ${CHPL_HOST_SYSTEM_LINK_ARGS}")
 add_subdirectory(compiler)
 add_subdirectory(frontend)
-add_subdirectory(tools)
+add_subdirectory(tools/chpldoc)
 
 # Adjust the install rpath for chpl and chpldoc
 if (INSTALLATION_MODE STREQUAL "prefix")

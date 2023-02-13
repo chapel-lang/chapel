@@ -1,0 +1,5 @@
+perfkeys: Sort Rate  25165824 items Median:, Sort Rate PCIe  25165824 items Median:
+files: sort.dat
+graphkeys: Sort (sort time only), Sort (w/ memory transfer time)
+ylabel: Bandwidth (GB/s)
+graphtitle: SHOC Sort - Bandwidth

@@ -1,0 +1,29 @@
+resolveQueryType.chpl:10: warning: 'bool(w)' is deprecated, please use 'bool' instead
+resolveQueryType.chpl:11: warning: 'bool(w)' is deprecated, please use 'bool' instead
+resolveQueryType.chpl:12: warning: 'bool(w)' is deprecated, please use 'bool' instead
+resolveQueryType.chpl:13: warning: 'bool(w)' is deprecated, please use 'bool' instead
+resolveQueryType.chpl:1: In function 'foo':
+resolveQueryType.chpl:1: warning: 'bool(w)' is deprecated, please use 'bool' instead
+resolveQueryType.chpl:1: In function 'foo':
+resolveQueryType.chpl:1: warning: 'bool(w)' is deprecated, please use 'bool' instead
+resolveQueryType.chpl:1: In function 'foo':
+resolveQueryType.chpl:1: warning: 'bool(w)' is deprecated, please use 'bool' instead
+resolveQueryType.chpl:1: In function 'foo':
+resolveQueryType.chpl:1: warning: 'bool(w)' is deprecated, please use 'bool' instead
+resolveQueryType.chpl:5: In function 'bar':
+resolveQueryType.chpl:5: warning: 'bool(w)' is deprecated, please use 'bool' instead
+resolveQueryType.chpl:5: In function 'bar':
+resolveQueryType.chpl:5: warning: 'bool(w)' is deprecated, please use 'bool' instead
+resolveQueryType.chpl:5: In function 'bar':
+resolveQueryType.chpl:5: warning: 'bool(w)' is deprecated, please use 'bool' instead
+resolveQueryType.chpl:5: In function 'bar':
+resolveQueryType.chpl:5: warning: 'bool(w)' is deprecated, please use 'bool' instead
+In bool version of foo()
+In bool(8) version of foo()
+In bool(16) version of foo()
+In bool(32) version of foo()
+In bool(64) version of foo()
+In bool(8) version of bar()
+In bool(16) version of bar()
+In bool(32) version of bar()
+In bool(64) version of bar()

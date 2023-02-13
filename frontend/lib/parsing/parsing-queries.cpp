@@ -19,11 +19,13 @@
 
 #include "chpl/parsing/parsing-queries.h"
 
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/Parser.h"
 #include "chpl/types/RecordType.h"
+#include "chpl/uast/post-parse-checks.h"
 #include "chpl/uast/AggregateDecl.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Function.h"
@@ -36,6 +38,7 @@
 #include "../util/filesystem_help.h"
 
 #include <cstdio>
+#include <regex>
 #include <set>
 #include <string>
 #include <tuple>
@@ -57,7 +60,8 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
   std::string error;
   const ErrorBase* parseError = nullptr;
   if (!readfile(path.c_str(), text, error)) {
-    parseError = context->error(Location(), "error reading file: %s\n", error.c_str());
+    // TODO does this need to be stored in FileContents?
+    context->error(Location(), "error reading file: %s\n", error.c_str());
   }
   auto result = FileContents(std::move(text), parseError);
   return QUERY_END(result);
@@ -115,13 +119,23 @@ parseFileToBuilderResult(Context* context, UniqueString path,
     BuilderResult tmpResult = parser.parseString(pathc, textc);
     result.swap(tmpResult);
     BuilderResult::updateFilePaths(context, result);
-  } else {
-    // Error should have already been reported in the fileText query.
-    // Just record an error here as well so follow-ons are clear
-    BuilderResult::appendError(result, error);
   }
 
   return QUERY_END(result);
+}
+
+// TODO: can't make this a query because can't store the uast::BuilderResult&
+//       as a query result. Might be some template specialization magic we
+//       can do to support this use case, but for now, this will just end up
+//       reporting errors to the caller query.
+const uast::BuilderResult&
+parseFileToBuilderResultAndCheck(Context* context, UniqueString path,
+                                 UniqueString parentSymbolPath) {
+  auto& result = parseFileToBuilderResult(context, path, parentSymbolPath);
+  if (result.numTopLevelExpressions() == 0) return result;
+
+  checkBuilderResult(context, path, result);
+  return result;
 }
 
 // parses whatever file exists that contains the passed ID and returns it
@@ -184,13 +198,8 @@ const ModuleVec& parse(Context* context, UniqueString path,
   QUERY_BEGIN(parse, context, path, parentSymbolPath);
 
   // Get the result of parsing
-  const BuilderResult& p = parseFileToBuilderResult(context, path,
-                                                    parentSymbolPath);
-
-  // Report any errors encountered to the context.
-  for (auto& e : p.errors())
-    if (e != nullptr)
-      context->report(e);
+  const BuilderResult& p = parseFileToBuilderResultAndCheck(context, path,
+                                                            parentSymbolPath);
 
   // Compute a vector of Modules
   ModuleVec result;
@@ -905,6 +914,31 @@ ID fieldIdWithName(Context* context, ID typeDeclId, UniqueString fieldName) {
   return fieldIdWithNameQuery(context, typeDeclId, fieldName);
 }
 
+static const bool&
+aggregateUsesForwardingQuery(Context* context, ID typeDeclId) {
+  QUERY_BEGIN(aggregateUsesForwardingQuery, context, typeDeclId);
+
+  bool result = false;
+  auto ast = parsing::idToAst(context, typeDeclId);
+  if (ast && ast->isAggregateDecl()) {
+    auto ad = ast->toAggregateDecl();
+
+    for (auto child: ad->children()) {
+      // Check for a ForwardingDecl
+      if (child->isForwardingDecl()) {
+        result = true;
+        break;
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool aggregateUsesForwarding(Context* context, ID typeDeclId) {
+  return aggregateUsesForwardingQuery(context, typeDeclId);
+}
+
 void setConfigSettings(Context* context, ConfigSettingsList keys) {
   QUERY_STORE_INPUT_RESULT(configSettings, context, keys);
 }
@@ -919,6 +953,196 @@ ConfigSettingsList& configSettings(Context* context) {
   return QUERY_END(result);
 }
 
+const uast::AttributeGroup* idToAttributeGroup(Context* context, ID id) {
+  const uast::AttributeGroup* ret = nullptr;
+  if (id.isEmpty()) return ret;
+
+  auto ast = parsing::idToAst(context, id);
+  if (ast && ast->isDecl()) {
+    auto decl = ast->toDecl();
+    ret = decl->attributeGroup();
+  }
+
+  return ret;
+}
+
+// TODO: Might be worth figuring out how to generalize this pattern so that
+// more parts of the compiler can use it.
+static bool
+anyParentMatches(Context* context, ID id,
+                 const std::function<bool(Context*, const AstNode*)>& f) {
+  if (id.isEmpty()) return false;
+  auto ast = idToAst(context, id);
+  auto p = parentAst(context, ast);
+  if (!ast || !p) return false;
+  for (; p != nullptr; p = parentAst(context, p))
+    if (f(context, p))
+      return true;
+  return false;
+}
+
+static bool isAstDeprecated(Context* context, const AstNode* ast) {
+  auto attr = parsing::idToAttributeGroup(context, ast->id());
+  return attr && attr->isDeprecated();
+}
+
+static bool isAstUnstable(Context* context, const AstNode* ast) {
+  auto attr = parsing::idToAttributeGroup(context, ast->id());
+  return attr && attr->isUnstable();
+}
+
+static bool isAstFormal(Context* context, const AstNode* ast) {
+  return ast->isFormal();
+}
+
+// When printing the deprecation message to the console we typically want to
+// filter out inline markup used for Sphinx (which is useful for when
+// generating the docs). See:
+// https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
+static std::string
+removeSphinxMarkupFromWarningMessage(const std::string msg) {
+
+  // TODO: Support explicit title and reference targets like in reST direct
+  // hyperlinks (and having only target show up in sanitized message).
+  // TODO: Prefixing content with ! (and filtering it out)
+  // TODO: Prefixing content with ~ (and displaying only the last component)
+  static const auto re = R"(\B\:(mod|proc|iter|data|const|var|param)"
+                         R"(|type|class|record|attr)\:`([!$\w\$\.]+)`\B)";
+  auto ret = std::regex_replace(msg, std::regex(re), "$2");
+  return ret;
+}
+
+static std::string
+createDefaultDeprecationMessage(Context* context, const NamedDecl* target) {
+  std::string ret = target->name().c_str();
+  ret += " is deprecated";
+  return ret;
+}
+
+static std::string
+createDefaultUnstableMessage(Context* context, const NamedDecl* target) {
+  std::string ret = target->name().c_str();
+  ret += " is unstable";
+  return ret;
+}
+
+static bool
+deprecationWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
+  if (idMention.isEmpty() || idTarget.isEmpty()) return false;
+
+  auto attributes = parsing::idToAttributeGroup(context, idTarget);
+  if (!attributes) return false;
+
+  bool isDeprecated = attributes->hasPragma(PRAGMA_DEPRECATED) ||
+                      attributes->isDeprecated();
+  if (!isDeprecated) return false;
+
+  auto mention = parsing::idToAst(context, idMention);
+  auto target = parsing::idToAst(context, idTarget);
+  CHPL_ASSERT(mention && target);
+
+  auto targetNamedDecl = target->toNamedDecl();
+  if (!targetNamedDecl) return false;
+
+  auto storedMsg = attributes->deprecationMessage();
+  std::string msg = storedMsg.isEmpty()
+      ? createDefaultDeprecationMessage(context, targetNamedDecl)
+      : storedMsg.c_str();
+
+  msg = removeSphinxMarkupFromWarningMessage(msg);
+
+  CHPL_ASSERT(msg.size() > 0);
+  CHPL_REPORT(context, Deprecation, msg, mention, targetNamedDecl);
+  return true;
+}
+
+static bool const&
+deprecationWarningForIdQuery(Context* context, ID idMention, ID idTarget) {
+  QUERY_BEGIN(deprecationWarningForIdQuery, context, idMention, idTarget);
+  bool ret = deprecationWarningForIdImpl(context, idMention, idTarget);
+  return QUERY_END(ret);
+}
+
+static bool
+unstableWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
+  if (idMention.isEmpty() || idTarget.isEmpty()) return false;
+
+  auto attributes = parsing::idToAttributeGroup(context, idTarget);
+  if (!attributes) return false;
+
+  bool isUnstable = attributes->hasPragma(PRAGMA_UNSTABLE) ||
+                    attributes->isUnstable();
+  if (!isUnstable) return false;
+
+  auto mention = parsing::idToAst(context, idMention);
+  auto target = parsing::idToAst(context, idTarget);
+  CHPL_ASSERT(mention && target);
+
+  auto targetNamedDecl = target->toNamedDecl();
+  if (!targetNamedDecl) return false;
+
+  auto storedMsg = attributes->unstableMessage();
+  std::string msg = storedMsg.isEmpty()
+      ? createDefaultUnstableMessage(context, targetNamedDecl)
+      : storedMsg.c_str();
+
+  CHPL_ASSERT(msg.size() > 0);
+  CHPL_REPORT(context, Unstable, msg, mention, targetNamedDecl);
+  return true;
+}
+
+static bool const&
+unstableWarningForIdQuery(Context* context, ID idMention, ID idTarget) {
+  QUERY_BEGIN(unstableWarningForIdQuery, context, idMention, idTarget);
+  bool ret = unstableWarningForIdImpl(context, idMention, idTarget);
+  return QUERY_END(ret);
+}
+
+static bool
+isMentionOfWarnedTypeInReceiver(Context* context, ID idMention,
+                                ID idTarget) {
+  if (idMention.isEmpty() || idTarget.isEmpty()) return false;
+  if (!anyParentMatches(context, idMention, isAstFormal)) return false;
+  auto attr = parsing::idToAttributeGroup(context, idTarget);
+  if (!attr) return false;
+  if (!attr->isDeprecated() && !attr->isUnstable()) return false;
+  return true;
+}
+
+void
+reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget) {
+  auto attr = parsing::idToAttributeGroup(context, idTarget);
+
+  // Nothing to do, symbol is not deprecated.
+  if (!attr || !attr->isDeprecated()) return;
+
+  // Don't warn for 'this' formals with deprecated types.
+  if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
+
+  // Current policy is to skip if the mention is in a deprecated symbol.
+  if (anyParentMatches(context, idMention, isAstDeprecated)) return;
+
+  std::ignore = deprecationWarningForIdQuery(context, idMention, idTarget);
+}
+
+void
+reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
+  auto attr = parsing::idToAttributeGroup(context, idTarget);
+
+  // Nothing to do, symbol is not unstable.
+  if (!attr || !attr->isUnstable()) return;
+
+  // Nothing to do, we do not report unstable things this revision.
+  if (!isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE)) return;
+
+  // Don't warn for 'this' formals with unstable types.
+  if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
+
+  // Current policy is to skip if the mention is in an unstable symbol.
+  if (anyParentMatches(context, idMention, isAstUnstable)) return;
+
+  std::ignore = unstableWarningForIdQuery(context, idMention, idTarget);
+}
 
 } // end namespace parsing
 } // end namespace chpl

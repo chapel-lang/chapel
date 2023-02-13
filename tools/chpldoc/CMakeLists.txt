@@ -14,12 +14,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-add_executable(chpldoc "chpldoc.cpp")
+add_executable(chpldoc chpldoc.cpp arg.cpp arg-helpers.cpp)
 set_property(TARGET chpldoc PROPERTY CXX_STANDARD 14)
-target_sources(chpldoc PRIVATE arg.h arg.cpp arg-helpers.h arg-helpers.cpp)
-target_link_libraries(chpldoc libdyno)
-target_include_directories(chpldoc PUBLIC
+target_link_libraries(chpldoc ChplFrontend)
+target_include_directories(chpldoc PRIVATE
                            ${CHPL_MAIN_INCLUDE_DIR}
-                           ${CHPL_INCLUDE_DIR})
-
-add_dependencies(chpldoc libdyno)
+                           ${CHPL_INCLUDE_DIR}
+                           ${CMAKE_CURRENT_SOURCE_DIR})

@@ -88,21 +88,18 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     print "[gen_release] Confirm final Git source version used.\n";
     SystemOrDie("cd $rootdir && git --no-pager status && git --no-pager log -1");
 
-    # Leaving this here for now, but this has been replaced by CMake logic
-    # to write the BUILD_VERSION value into config.h
-    # if ($version eq "" or $version eq "developer") {
-    #   print "[gen_release] Create BUILD_VERSION file.\n";
-    #   SystemOrDie("cd $rootdir/compiler && make main/BUILD_VERSION");
-    # }
 
+
+    # write the git-sha while we have the .git directory
+    SystemOrDie("cd $rootdir && util/config/write-git-sha frontend/lib/util --build-version --chpl-home=$rootdir");
+    # use git archive to copy all the files under source control into the archive directory.
     print "[gen_release] Creating build workspace with git archive...\n";
     SystemOrDie("cd $rootdir && git archive --format=tar HEAD | (cd $archive_dir && tar -xf -)");
-
-    if ($version eq "" or $version eq "developer") {
-      print "[gen_release] Copying BUILD_VERSION file.\n";
-      SystemOrDie("util/config/write-git-sha frontend/lib/util --build-version --chpl-home=$archive_dir");
-      SystemOrDie("cp $rootdir/compiler/main/BUILD_VERSION $archive_dir/compiler/main/BUILD_VERSION");
-    }
+    # explicitly copy the BUILD_VERSION file and git-version.cpp files
+    print "[gen_release] Copying BUILD_VERSION file.\n";
+    SystemOrDie("cp $rootdir/compiler/main/BUILD_VERSION $archive_dir/compiler/main/BUILD_VERSION");
+    print "[gen_release] Copying git-version.cpp\n";
+    SystemOrDie("cp $rootdir/frontend/lib/util/git-version.cpp $archive_dir/frontend/lib/util/git-version.cpp");
 
     if (defined($ENV{"CHPL_HOME"})) {
         $resultdir = $ENV{"CHPL_HOME"};
@@ -139,8 +136,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
        "util/setchplenv.sh",
        "util/start_test",
        "util/chpltags",
-       "frontend/include/chpl/config/config.h.cmake",
-       "tools/CMakeLists.txt"
+       "frontend/include/chpl/config/config.h.cmake"
 );
 
 
@@ -211,8 +207,6 @@ if (not exists($ENV{"CHPL_GEN_RELEASE_SKIP_DOCS"})) {
   SystemOrDie("make man");
   SystemOrDie("make man-chpldoc");
 } else {
-  # Write git-version.cpp (and BUILD_VERSION) since docs were skipped
-  SystemOrDie("util/config/write-git-sha frontend/lib/util --build-version --chpl-home=$archive_dir");
   SystemOrDie("mkdir -p man/man1");
 }
 

@@ -123,9 +123,20 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
                                         DefaultsPolicy defaultsPolicy);
 
 /**
-  Return true if 'name' is the name of a field for type 't'
+  If 'name' is the name of a field for type 't', returns a non-null pointer;
+  Otherwise, returns 'nullptr'.
+
+  The returned pointer will point to the type containing the field.
+  For records and unions, that will just be 't'.
+  For classes, it won't necessarily be 't', since a field
+  might come from a superclass. If the field comes from a superclass,
+  this function will return the BasicClass type for the superclass
+  that contains the field directly.
+
 */
-bool isNameOfField(Context* context, UniqueString name, const types::Type* t);
+const types::CompositeType* isNameOfField(Context* context,
+                                          UniqueString name,
+                                          const types::Type* t);
 
 /**
   Computes the version of a type assuming that defaults for generics
@@ -270,6 +281,17 @@ const TypedFnSignature* inferOutFormals(Context* context,
                                         const TypedFnSignature* sig,
                                         const PoiScope* poiScope);
 
+/**
+  Try to compute the TypedFnSignature with REF_MAYBE_CONST formals computed
+  as 'ref' or 'const ref'. If the TypedFnSignature is currently being resolved,
+  instead of returning a new TypedFnSignature, this function returns
+  'nullptr'. In that case, the caller is responsible for attempting this
+  again later once the current set of recursive functions is resolved.
+ */
+const TypedFnSignature* inferRefMaybeConstFormals(Context* context,
+                                                  const TypedFnSignature* sig,
+                                                  const PoiScope* poiScope);
+
 /////// call resolution
 
 /**
@@ -322,6 +344,12 @@ CallResolutionResult resolveGeneratedCall(Context* context,
                                           const Scope* inScope,
                                           const PoiScope* inPoiScope);
 
+/**
+  Given a type 't', compute whether or not 't' is default initializable.
+  If 't' is a generic type, it is considered non-default-initializable.
+  Considers the fields and substitutions of composite types.
+*/
+bool isTypeDefaultInitializable(Context* context, const types::Type* t);
 
 } // end namespace resolution
 } // end namespace chpl

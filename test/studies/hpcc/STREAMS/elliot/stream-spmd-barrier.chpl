@@ -37,14 +37,14 @@ proc main() {
 
   var barrier = new Barrier(numTasks, barrierType);
   for trial in 1..numTrials {
-    const startTime = getCurrentTime();
+    const startTime = timeSinceEpoch().totalSeconds();
     coforall tid in 0..#numTasks {
       barrier.barrier();
       for i in chunk(1..m, numTasks, tid) {
         A[i] = B[i] + alpha * C[i];
       }
     }
-    execTime(trial) = getCurrentTime() - startTime;
+    execTime(trial) = timeSinceEpoch().totalSeconds() - startTime;
   }
 
   const validAnswer = verifyResults(A, B, C);

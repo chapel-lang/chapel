@@ -52,20 +52,23 @@ namespace uast {
  */
 class MultiDecl final : public Decl {
  private:
-  MultiDecl(AstList children, int attributesChildNum, Decl::Visibility vis,
+  MultiDecl(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
             Decl::Linkage linkage)
-    : Decl(asttags::MultiDecl, std::move(children), attributesChildNum,
+    : Decl(asttags::MultiDecl, std::move(children), attributeGroupChildNum,
            vis,
            linkage,
-           /*linkageNameChildNum*/ -1) {
+           /*linkageNameChildNum*/ NO_CHILD) {
 
     CHPL_ASSERT(isAcceptableMultiDecl());
   }
 
+  MultiDecl(Deserializer& des)
+    : Decl(asttags::MultiDecl, des) { }
+
   bool isAcceptableMultiDecl();
 
   int declOrCommentChildNum() const {
-    return attributes() ? 1 : 0;
+    return attributeGroup() ? 1 : 0;
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -82,7 +85,7 @@ class MultiDecl final : public Decl {
   ~MultiDecl() override = default;
 
   static owned<MultiDecl> build(Builder* builder, Location loc,
-                                owned<Attributes> attributes,
+                                owned<AttributeGroup> attributeGroup,
                                 Decl::Visibility vis,
                                 Decl::Linkage linkage,
                                 AstList varDecls);
@@ -102,7 +105,7 @@ class MultiDecl final : public Decl {
    Return the number of VariableDecls and Comments contained.
    */
   int numDeclOrComments() const {
-    return attributes() ? numChildren() - 1 : numChildren();
+    return attributeGroup() ? numChildren() - 1 : numChildren();
   }
 
   /**
@@ -125,6 +128,12 @@ class MultiDecl final : public Decl {
     auto end = begin + numDeclOrComments();
     return AstListNoCommentsIteratorPair<Decl>(begin, end);
   }
+
+  void serialize(Serializer& ser) const override {
+    Decl::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(MultiDecl);
 
 };
 

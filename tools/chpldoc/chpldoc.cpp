@@ -170,7 +170,7 @@ static void printStuff(const char* argv0, void* mainAddr) {
   bool printedSomething = false;
 
   if (fPrintVersion) {
-    std::string version = chpl::getVersion(developer);
+    std::string version = chpl::getVersion();
     fprintf(stdout, "%s version %s\n", sArgState.program_name, version.c_str());
 
     fPrintCopyright  = true;
@@ -235,7 +235,7 @@ or
    import $MODULE;)RAW";
 
 static bool isNoDoc(const Decl* e) {
-  if (auto attrs = e->attributes()) {
+  if (auto attrs = e->attributeGroup()) {
     return attrs->hasPragma(pragmatags::PRAGMA_NO_DOC);
   }
   return false;
@@ -607,20 +607,20 @@ static const char* kindToString(Function::Kind kind) {
   return "";
 }
 
-static const char* kindToString(IntentList kind) {
+static const char* kindToString(Qualifier kind) {
   switch (kind) {
-    case IntentList::CONST_INTENT: return "const";
-    case IntentList::VAR: return "var";
-    case IntentList::CONST_VAR: return "const";
-    case IntentList::CONST_REF: return "const ref";
-    case IntentList::REF: return "ref";
-    case IntentList::IN: return "in";
-    case IntentList::CONST_IN: return "const in";
-    case IntentList::OUT: return "out";
-    case IntentList::INOUT: return "inout";
-    case IntentList::PARAM: return "param";
-    case IntentList::TYPE: return "type";
-    case IntentList::DEFAULT_INTENT: assert(false);
+    case Qualifier::CONST_INTENT: return "const";
+    case Qualifier::VAR: return "var";
+    case Qualifier::CONST_VAR: return "const";
+    case Qualifier::CONST_REF: return "const ref";
+    case Qualifier::REF: return "ref";
+    case Qualifier::IN: return "in";
+    case Qualifier::CONST_IN: return "const in";
+    case Qualifier::OUT: return "out";
+    case Qualifier::INOUT: return "inout";
+    case Qualifier::PARAM: return "param";
+    case Qualifier::TYPE: return "type";
+    case Qualifier::DEFAULT_INTENT: assert(false);
     default: return "";
   }
   return "";
@@ -939,7 +939,7 @@ struct RstSignatureVisitor {
 
   bool enter(const Formal* f) {
     if (f->intent() != Formal::DEFAULT_INTENT) {
-      os_ << kindToString((IntentList) f->intent()) << " ";
+      os_ << kindToString((Qualifier) f->intent()) << " ";
     }
     os_ << f->name().c_str();
     if (const AstNode* te = f->typeExpression()) {
@@ -975,9 +975,9 @@ struct RstSignatureVisitor {
 
     // storage kind
     if (f->thisFormal() != nullptr
-        && f->thisFormal()->storageKind() != IntentList::DEFAULT_INTENT
-        && f->thisFormal()->storageKind() != IntentList::CONST_INTENT
-        && f->thisFormal()->storageKind() != IntentList::CONST_REF) {
+        && f->thisFormal()->storageKind() != Qualifier::DEFAULT_INTENT
+        && f->thisFormal()->storageKind() != Qualifier::CONST_INTENT
+        && f->thisFormal()->storageKind() != Qualifier::CONST_REF) {
       os_ << kindToString(f->thisFormal()->storageKind()) <<" ";
     }
 
@@ -1031,7 +1031,7 @@ struct RstSignatureVisitor {
     // Return Intent
     if (f->returnIntent() != Function::ReturnIntent::DEFAULT_RETURN_INTENT &&
         f->returnIntent() != Function::ReturnIntent::CONST) {
-      os_ << " " << kindToString((IntentList) f->returnIntent());
+      os_ << " " << kindToString((Qualifier) f->returnIntent());
     }
 
     // Return type
@@ -1143,7 +1143,7 @@ struct RstSignatureVisitor {
       os_ << "config ";
     }
     if (v->kind() != Variable::Kind::INDEX) {
-      os_ << kindToString((IntentList) v->kind()) << " ";
+      os_ << kindToString((Qualifier) v->kind()) << " ";
     }
     os_ << v->name().c_str();
     if (const AstNode* te = v->typeExpression()) {
@@ -1154,10 +1154,10 @@ struct RstSignatureVisitor {
     }
     if (const AstNode* ie = v->initExpression()) {
       os_ << " = ";
-      if (v->storageKind() == chpl::uast::IntentList::TYPE)
+      if (v->storageKind() == chpl::uast::Qualifier::TYPE)
         printingType_ = true;
       ie->traverse(*this);
-      if (v->storageKind() == chpl::uast::IntentList::TYPE)
+      if (v->storageKind() == chpl::uast::Qualifier::TYPE)
         printingType_ = false;
     }
     return false;
@@ -1293,8 +1293,8 @@ struct RstResultBuilder {
       // process the warning about comments
       auto br = parseFileContainingIdToBuilderResult(context_, node->id());
       auto loc = br->commentToLocation(lastComment);
-      auto err = GeneralError::get(context_, ErrorBase::WARNING, loc, errMsg);
-      context_->report(err);
+      auto err = GeneralError::get(ErrorBase::WARNING, loc, errMsg);
+      context_->report(std::move(err));
     }
     // TODO: The presence of these node exceptions means we're probably missing
     //  something from the old implementation
@@ -1330,7 +1330,7 @@ struct RstResultBuilder {
   }
 
   void showUnstableWarning(const Decl* node, bool indentComment=true) {
-    if (auto attrs = node->attributes()) {
+    if (auto attrs = node->attributeGroup()) {
       if (attrs->isUnstable()) {
         int commentShift = 0;
           if (indentComment) {
@@ -1346,7 +1346,7 @@ struct RstResultBuilder {
   }
 
   void showDeprecationMessage(const Decl* node, bool indentComment=true) {
-    if (auto attrs = node->attributes()) {
+    if (auto attrs = node->attributeGroup()) {
       if (attrs->isDeprecated() && !textOnly_) {
         auto comment = previousComment(context_, node->id());
         if (comment && !comment->str().empty() &&
@@ -1456,7 +1456,7 @@ struct RstResultBuilder {
     }
     assert(!moduleName.empty());
     const Comment* lastComment = nullptr;
-    if (auto attrs = m->attributes()) {
+    if (auto attrs = m->attributeGroup()) {
       if (attrs->hasPragma(pragmatags::PRAGMA_MODULE_INCLUDED_BY_DEFAULT)) {
         includedByDefault = true;
       }
@@ -1488,8 +1488,8 @@ struct RstResultBuilder {
             // process the warning about comments
             auto br = parseFileContainingIdToBuilderResult(context_, m->id());
             auto loc = br->commentToLocation(lastComment);
-            auto err = GeneralError::get(context_, GeneralError::WARNING, loc, errMsg);
-            context_->report(err);
+            auto err = GeneralError::get(GeneralError::WARNING, loc, errMsg);
+            context_->report(std::move(err));
           }
           if (!synopsis.empty()) {
             indentStream(os_, 1 * indentPerDepth);
@@ -1579,7 +1579,7 @@ struct RstResultBuilder {
       // write kind
       if (!textOnly_) os_ << ".. " << kind << ":: ";
       if (decl->toVariable()->kind() != Variable::Kind::INDEX) {
-        os_ << kindToString((IntentList) decl->toVariable()->kind()) << " ";
+        os_ << kindToString((Qualifier) decl->toVariable()->kind()) << " ";
       }
       // write name
       os_ << decl->toVariable()->name();
@@ -1626,7 +1626,7 @@ struct RstResultBuilder {
       }
       showComment(md, true);
 
-      if (auto attrs = md->attributes()) {
+      if (auto attrs = md->attributeGroup()) {
         if (attrs->isDeprecated() && !textOnly_) {
           indentStream(os_, 1 * indentPerDepth) << ".. warning::\n";
           indentStream(os_, 2 * indentPerDepth) << attrs->deprecationMessage();
@@ -1654,7 +1654,7 @@ struct RstResultBuilder {
       show("attribute", v);
       indentDepth_ --;
     }
-    else if (v->storageKind() == IntentList::TYPE)
+    else if (v->storageKind() == Qualifier::TYPE)
       show("type", v);
     else
       show("data", v);
@@ -2052,6 +2052,38 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
   }
 }
 
+class ChpldocErrorHandler : public Context::ErrorHandler {
+ private:
+  std::vector<owned<ErrorBase>> reportedErrors;
+
+ public:
+  void report(Context* context, const ErrorBase* error) override {
+    reportedErrors.push_back(error->clone());
+  }
+
+  size_t numErrors() const {
+    return reportedErrors.size();
+  }
+
+  void printAndExitIfError(Context* context) {
+    // TODO: handle errors better, don't rely on parse query to emit them
+    // per @mppf: if dyno-chpldoc wants to quit on an error, it should
+    // configure Context::reportError to have a custom function that does so.
+    bool fatal = false;
+    for (auto& e : reportedErrors) {
+    // just display the error messages right now, see TODO above
+      if (e->kind() == ErrorBase::Kind::ERROR ||
+          e->kind() == ErrorBase::Kind::SYNTAX) {
+            fatal = true;
+      }
+      Context::defaultReportError(context, e.get());
+    }
+    if (fatal) {
+      exit(1);
+    }
+    reportedErrors.clear();
+  }
+};
 
 int main(int argc, char** argv) {
   Args args = parseArgs(argc, argv, (void*)main);
@@ -2087,6 +2119,8 @@ int main(int argc, char** argv) {
 
   Context context(CHPL_HOME);
   Context *ctx = &context;
+  auto erroHandler = new ChpldocErrorHandler(); // wraped in owned on next line
+  ctx->installErrorHandler(owned<Context::ErrorHandler>(erroHandler));
   ctx->setDetailedErrorOutput(false);
   auto chplEnv = ctx->getChplEnv();
   assert(!chplEnv.getError() && "not handling chplenv errors yet");
@@ -2174,26 +2208,11 @@ int main(int argc, char** argv) {
     // TODO: Change which query we use to parse files as suggested by @mppf
     // parseFileContainingIdToBuilderResult(Context* context, ID id);
     // and then work with the module ID to find the preceding comment.
-    const BuilderResult& builderResult = parseFileToBuilderResult(ctx,
-                                                                  path,
-                                                                  emptyParent);
+    const BuilderResult& builderResult =
+      parseFileToBuilderResultAndCheck(ctx, path, emptyParent);
 
-    if (builderResult.numErrors() > 0) {
-      // TODO: handle errors better, don't rely on parse query to emit them
-      // per @mppf: if dyno-chpldoc wants to quit on an error, it should
-      // configure Context::reportError to have a custom function that does so.
-      bool fatal = false;
-      for (auto e : builderResult.errors()) {
-      // just display the error messages right now, see TODO above
-        if (e->kind() == ErrorBase::Kind::ERROR ||
-            e->kind() == ErrorBase::Kind::SYNTAX) {
-              fatal = true;
-        }
-        context.report(e);
-      }
-      if (fatal) {
-        return 1;
-      }
+    if (erroHandler->numErrors() > 0) {
+      erroHandler->printAndExitIfError(ctx);
     }
     // gather all the top level and used/imported/included module IDs
     for (const chpl::uast::AstNode* ast : builderResult.topLevelExpressions()) {
@@ -2235,6 +2254,9 @@ int main(int argc, char** argv) {
         r->outputModule(outdir, moduleName, indentPerDepth);
      }
    }
+
+  // chpldoc-specific warnings could've been issued, make sure they're printed.
+  erroHandler->printAndExitIfError(ctx);
 
   if (!textOnly_ && !args.noHTML) {
     generateSphinxOutput(docsSphinxDir, docsOutputDir,args.projectVersion,

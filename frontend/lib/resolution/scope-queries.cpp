@@ -28,6 +28,7 @@
 
 #include "scope-help.h"
 
+#include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallPtrSet.h"
 
 #include <cstdio>
@@ -44,6 +45,14 @@ namespace resolution {
 
 using namespace uast;
 using namespace types;
+
+// Mimicks helper in Resolver but without corresponding target constraints.
+static void maybeEmitWarningsForId(Context* context, ID idMention,
+                                   ID idTarget) {
+  if (idMention.isEmpty() || idTarget.isEmpty()) return;
+  parsing::reportDeprecationWarningForId(context, idMention, idTarget);
+  parsing::reportUnstableWarningForId(context, idMention, idTarget);
+}
 
 static void gather(DeclMap& declared, UniqueString name, const AstNode* d,
                    Decl::Visibility visibility) {
@@ -330,7 +339,7 @@ const Scope* scopeForId(Context* context, ID id) {
 
 static bool doLookupInScope(Context* context,
                             const Scope* scope,
-                            const Scope* receiverScope,
+                            llvm::ArrayRef<const Scope*> receiverScopes,
                             const ResolvedVisibilityScope* resolving,
                             UniqueString name,
                             LookupConfig config,
@@ -354,29 +363,28 @@ static const Scope* const& scopeForAutoModule(Context* context) {
   return QUERY_END(result);
 }
 
-static bool doLookupInImports(Context* context,
-                              const Scope* scope,
-                              const ResolvedVisibilityScope* resolving,
-                              UniqueString name,
-                              bool onlyInnermost,
-                              bool skipPrivateVisibilities,
-                              NamedScopeSet& checkedScopes,
-                              std::vector<BorrowedIdsWithName>& result) {
-  // Get the resolved visibility statements, if available
-  const ResolvedVisibilityScope* r = nullptr;
-  if (resolving && resolving->scope() == scope) {
-    r = resolving;
-  } else {
-    r = resolveVisibilityStmts(context, scope);
-  }
+static bool doLookupInImportsAndUses(Context* context,
+                                     const Scope* scope,
+                                     const ResolvedVisibilityScope* resolving,
+                                     const ResolvedVisibilityScope* cur,
+                                     UniqueString name,
+                                     bool onlyInnermost,
+                                     bool skipPrivateVisibilities,
+                                     VisibilitySymbols::ShadowScope shadowScope,
+                                     NamedScopeSet& checkedScopes,
+                                     std::vector<BorrowedIdsWithName>& result) {
+  bool found = false;
 
-  if (r != nullptr) {
+  if (cur != nullptr) {
     // check to see if it's mentioned in names/renames
-    bool found = false;
-    for (const VisibilitySymbols& is: r->visibilityClauses()) {
+    for (const VisibilitySymbols& is: cur->visibilityClauses()) {
       // if we should not continue transitively through private use/includes,
       // and this is private, skip it
       if (skipPrivateVisibilities && is.isPrivate()) {
+        continue;
+      }
+      // skip this clause if we are searching a different shadow scope level
+      if (is.shadowScopeLevel() != shadowScope) {
         continue;
       }
       UniqueString from = name;
@@ -403,7 +411,7 @@ static bool doLookupInImports(Context* context,
           nameToLookUp = name;
         }
 
-        found |= doLookupInScope(context, symScope, nullptr, resolving,
+        found |= doLookupInScope(context, symScope, {}, resolving,
                                  nameToLookUp, newConfig, checkedScopes, result);
       }
 
@@ -422,31 +430,40 @@ static bool doLookupInImports(Context* context,
       }
     }
 
-    if (found && onlyInnermost) {
-      return true;
-    }
   }
+
+  return found;
+}
+
+static bool doLookupInAutoModules(Context* context,
+                                  const Scope* scope,
+                                  const ResolvedVisibilityScope* resolving,
+                                  UniqueString name,
+                                  bool onlyInnermost,
+                                  bool skipPrivateVisibilities,
+                                  NamedScopeSet& checkedScopes,
+                                  std::vector<BorrowedIdsWithName>& result) {
+  bool found = false;
 
   if (scope->autoUsesModules() && !skipPrivateVisibilities) {
     const Scope* autoModScope = scopeForAutoModule(context);
     if (autoModScope) {
       LookupConfig newConfig = LOOKUP_DECLS |
-                               LOOKUP_IMPORT_AND_USE;
+                               LOOKUP_IMPORT_AND_USE |
+                               LOOKUP_SKIP_PRIVATE_VIS;
 
       if (onlyInnermost) {
         newConfig |= LOOKUP_INNERMOST;
       }
 
       // find it in that scope
-      bool found = doLookupInScope(context, autoModScope, nullptr, resolving,
-                                   name, newConfig,
-                                   checkedScopes, result);
-      if (found && onlyInnermost)
-        return true;
+      found = doLookupInScope(context, autoModScope, {}, resolving,
+                              name, newConfig,
+                              checkedScopes, result);
     }
   }
 
-  return false;
+  return found;
 }
 
 static bool doLookupInToplevelModules(Context* context,
@@ -466,7 +483,7 @@ static bool doLookupInToplevelModules(Context* context,
 // appends to result
 static bool doLookupInScope(Context* context,
                             const Scope* scope,
-                            const Scope* receiverScope,
+                            llvm::ArrayRef<const Scope*> receiverScopes,
                             const ResolvedVisibilityScope* resolving,
                             UniqueString name,
                             LookupConfig config,
@@ -479,15 +496,12 @@ static bool doLookupInScope(Context* context,
   bool checkToplevel = (config & LOOKUP_TOPLEVEL) != 0;
   bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
   bool skipPrivateVisibilities = (config & LOOKUP_SKIP_PRIVATE_VIS) != 0;
+  bool goPastModules = (config & LOOKUP_GO_PAST_MODULES) != 0;
 
-  // TODO: to include checking for symbol privacy,
-  // add a findPrivate argument to doLookupInScope and set it
-  // to false when traversing a use/import of a module not visible.
-  // Adjust the checkedScopes set to be a map to bool, where
-  // the bool indicates if findPrivate was true or not. If we
-  // have visited but only got public symbols, we have to visit again
-  // for private symbols. But we'd like to avoid splitting overloads into
-  // two 'result' vector entries in that case...
+  // goPastModules should imply checkParents; otherwise, why would we proceed
+  // through module boundaries if we aren't traversing the scope chain?
+  CHPL_ASSERT(!goPastModules || checkParents);
+
   size_t startSize = result.size();
 
   auto pair = checkedScopes.insert(std::make_pair(name, scope));
@@ -497,19 +511,57 @@ static bool doLookupInScope(Context* context,
     return false;
   }
 
-  if (checkDecls) {
-    bool got = scope->lookupInScope(name, result, skipPrivateVisibilities);
+  // Get the resolved visibility statements, if available
+  const ResolvedVisibilityScope* r = nullptr;
+  if (checkUseImport) {
+    if (resolving && resolving->scope() == scope) {
+      r = resolving;
+    } else {
+      r = resolveVisibilityStmts(context, scope);
+    }
+  }
+
+  // gather non-shadow scope information
+  // (declarations in this scope as well as public use / import)
+  {
+    bool got = false;
+    if (checkDecls) {
+      got |= scope->lookupInScope(name, result, skipPrivateVisibilities);
+    }
+    if (checkUseImport) {
+      got |= doLookupInImportsAndUses(context, scope, resolving, r, name,
+                                      onlyInnermost, skipPrivateVisibilities,
+                                      VisibilitySymbols::REGULAR_SCOPE,
+                                      checkedScopes, result);
+    }
     if (onlyInnermost && got) return true;
   }
 
-  // Look at use/import statements in the current scope
+  // now check shadow scope 1 (only relevant for 'private use')
   if (checkUseImport) {
     bool got = false;
-    got = doLookupInImports(context, scope, resolving,
-                            name, onlyInnermost, skipPrivateVisibilities,
-                            checkedScopes, result);
+    got |= doLookupInImportsAndUses(context, scope, resolving, r, name,
+                                    onlyInnermost, skipPrivateVisibilities,
+                                    VisibilitySymbols::SHADOW_SCOPE_ONE,
+                                    checkedScopes, result);
+
+    // treat the auto-used modules as if they were 'private use'd
+    got |= doLookupInAutoModules(context, scope, resolving, name,
+                                 onlyInnermost, skipPrivateVisibilities,
+                                 checkedScopes, result);
     if (onlyInnermost && got) return true;
   }
+
+  // now check shadow scope 2 (only relevant for 'private use')
+  if (checkUseImport) {
+    bool got = false;
+    got = doLookupInImportsAndUses(context, scope, resolving, r, name,
+                                   onlyInnermost, skipPrivateVisibilities,
+                                   VisibilitySymbols::SHADOW_SCOPE_TWO,
+                                   checkedScopes, result);
+    if (onlyInnermost && got) return true;
+  }
+
 
   if (checkParents) {
     LookupConfig newConfig = LOOKUP_DECLS;
@@ -540,32 +592,34 @@ static bool doLookupInScope(Context* context,
         if (isElseBlockOfConditionalWithIfVar(context, ast))
           skipClosestConditional = true;
 
-    for (cur = scope->parentScope(); cur != nullptr; cur = cur->parentScope()) {
-      if (asttags::isModule(cur->tag())) {
-        reachedModule = true;
-        break;
-      }
-
-      auto ast = !cur->id().isEmpty() ? parsing::idToAst(context, cur->id())
-                                      : nullptr;
-
-      // We could be in a nested block, so check for the else-block to
-      // trigger the pattern matching as we walk up...
-      if (!skipClosestConditional && ast)
-        if (isElseBlockOfConditionalWithIfVar(context, ast))
-          skipClosestConditional = true;
-
-      // Skip the first conditional's scope if we need to.
-      if (skipClosestConditional) {
-        if (ast && ast->isConditional()) {
-          skipClosestConditional = false;
-          continue;
+    if (!asttags::isModule(scope->tag()) || goPastModules) {
+      for (cur = scope->parentScope(); cur != nullptr; cur = cur->parentScope()) {
+        if (asttags::isModule(cur->tag()) && !goPastModules) {
+          reachedModule = true;
+          break;
         }
-      }
 
-      bool got = doLookupInScope(context, cur, receiverScope, resolving, name,
-                                 newConfig, checkedScopes, result);
-      if (onlyInnermost && got) return true;
+        auto ast = !cur->id().isEmpty() ? parsing::idToAst(context, cur->id())
+                                        : nullptr;
+
+        // We could be in a nested block, so check for the else-block to
+        // trigger the pattern matching as we walk up...
+        if (!skipClosestConditional && ast)
+          if (isElseBlockOfConditionalWithIfVar(context, ast))
+            skipClosestConditional = true;
+
+        // Skip the first conditional's scope if we need to.
+        if (skipClosestConditional) {
+          if (ast && ast->isConditional()) {
+            skipClosestConditional = false;
+            continue;
+          }
+        }
+
+        bool got = doLookupInScope(context, cur, receiverScopes, resolving, name,
+                                   newConfig, checkedScopes, result);
+        if (onlyInnermost && got) return true;
+      }
     }
 
     // Skip should have been performed if needed, at least once.
@@ -574,22 +628,21 @@ static bool doLookupInScope(Context* context,
     if (reachedModule) {
       // Assumption: If a module is encountered, and if there is a receiver
       // scope, then we were scope-resolving inside of a method call.  In this
-      // case we should perform a lookup in the receiver scope before looking
+      // case we should perform a lookup in the receiver scopes before looking
       // in the module scope. For example:
       // module M {
       //   type T = int;
       //   record R { type T; }
       //   proc R.foo() : T { } // should resolve 'T' to 'R.T', not 'M.T'
       // }
-      if (receiverScope != nullptr) {
-        bool got = doLookupInScope(context, receiverScope, nullptr,
-                                   resolving, name, newConfig, checkedScopes,
-                                   result);
+      for (const auto& currentScope : receiverScopes) {
+        bool got = doLookupInScope(context, currentScope, {}, resolving,
+                                   name, newConfig, checkedScopes, result);
         if (onlyInnermost && got) return true;
       }
 
       // ... then check the containing module scope
-      bool got = doLookupInScope(context, cur, receiverScope, resolving, name,
+      bool got = doLookupInScope(context, cur, {}, resolving, name,
                                  newConfig, checkedScopes, result);
       if (onlyInnermost && got) return true;
     }
@@ -601,7 +654,7 @@ static bool doLookupInScope(Context* context,
         rootScope = cur;
     }
     if (rootScope != nullptr) {
-      bool got = doLookupInScope(context, rootScope, nullptr, resolving, name,
+      bool got = doLookupInScope(context, rootScope, {}, resolving, name,
                                  newConfig, checkedScopes, result);
       if (onlyInnermost && got) return true;
     }
@@ -615,6 +668,9 @@ static bool doLookupInScope(Context* context,
   return result.size() > startSize;
 }
 
+// This function supports scope lookup when resolving what modules
+// a 'use' / 'import' refer to.
+//
 // It can return multiple results because that is important for 'import'.
 // 'isFirstPart' is true for A in A.B.C but not for B or C.
 // On return:
@@ -625,7 +681,8 @@ static bool lookupInScopeViz(Context* context,
                              UniqueString name,
                              VisibilityStmtKind useOrImport,
                              bool isFirstPart,
-                             std::vector<BorrowedIdsWithName>& result) {
+                             std::vector<BorrowedIdsWithName>& result,
+                             std::vector<BorrowedIdsWithName>& improperMatches) {
   NamedScopeSet checkedScopes;
 
   LookupConfig config = LOOKUP_INNERMOST;
@@ -656,35 +713,58 @@ static bool lookupInScopeViz(Context* context,
     config |= LOOKUP_DECLS;
   }
 
-  bool got = doLookupInScope(context, scope, nullptr, resolving,
+  bool got = doLookupInScope(context, scope, {}, resolving,
                              name, config,
                              checkedScopes, result);
+
+  if (!got && isFirstPart) {
+    // Relax the rules a little bit and look for more potential matches.
+    // They aren't valid, but they might be what the user intended to use
+    // or import, so collect them and include them in the error message.
+    NamedScopeSet checkedScopes;
+
+    LookupConfig config = 0;
+
+    // Search all scopes for improper matches.
+    config |= LOOKUP_PARENTS;
+
+    // Don't stop at module boundaries (find things that are technically not
+    // in scope at the point of use/import)
+    config |= LOOKUP_GO_PAST_MODULES;
+
+    // check for submodules of the current module, even if we're an import
+    config |= LOOKUP_DECLS;
+
+    doLookupInScope(context, scope, {}, resolving, name, config,
+                    checkedScopes, improperMatches);
+  }
 
   return got;
 }
 
-std::vector<BorrowedIdsWithName> lookupNameInScope(Context* context,
-                                                   const Scope* scope,
-                                                   const Scope* receiverScope,
-                                                   UniqueString name,
-                                                   LookupConfig config) {
+std::vector<BorrowedIdsWithName>
+lookupNameInScope(Context* context,
+                  const Scope* scope,
+                  llvm::ArrayRef<const Scope*> receiverScopes,
+                  UniqueString name,
+                  LookupConfig config) {
   NamedScopeSet checkedScopes;
 
-  return lookupNameInScopeWithSet(context, scope, receiverScope, name,
-                                  config, checkedScopes);
+  return lookupNameInScopeWithSet(context, scope, receiverScopes, name, config,
+                                  checkedScopes);
 }
 
 std::vector<BorrowedIdsWithName>
 lookupNameInScopeWithSet(Context* context,
                          const Scope* scope,
-                         const Scope* receiverScope,
+                         llvm::ArrayRef<const Scope*> receiverScopes,
                          UniqueString name,
                          LookupConfig config,
                          NamedScopeSet& visited) {
   std::vector<BorrowedIdsWithName> vec;
 
   if (scope) {
-    doLookupInScope(context, scope, receiverScope,
+    doLookupInScope(context, scope, receiverScopes,
                     /* resolving scope */ nullptr,
                     name, config, visited, vec);
   }
@@ -753,6 +833,7 @@ static void errorIfNameNotInScope(Context* context,
                                   const Scope* scope,
                                   const ResolvedVisibilityScope* resolving,
                                   UniqueString name,
+                                  const AstNode* exprForError,
                                   const VisibilityClause* clauseForError,
                                   VisibilityStmtKind useOrImport,
                                   bool isRename) {
@@ -761,13 +842,26 @@ static void errorIfNameNotInScope(Context* context,
   LookupConfig config = LOOKUP_INNERMOST |
                         LOOKUP_DECLS |
                         LOOKUP_IMPORT_AND_USE;
-  bool got = doLookupInScope(context, scope, nullptr, resolving,
+  bool got = doLookupInScope(context, scope, {}, resolving,
                              name, config,
                              checkedScopes, result);
 
   if (got == false || result.size() == 0) {
-    CHPL_REPORT(context, UseImportUnknownSym, clauseForError, scope, useOrImport,
-                isRename, name.c_str());
+    CHPL_REPORT(context, UseImportUnknownSym, name.c_str(),
+                exprForError,
+                clauseForError,
+                scope,
+                useOrImport,
+                isRename);
+    return;
+  }
+
+  // If there is a single ID, then go ahead and try to emit warnings. If
+  // not, it's an overloaded routine, or it will get an ambiguity error.
+  if (result.size() == 1 && result[0].numIds() == 1) {
+    ID idMention = exprForError->id();
+    ID idTarget = result[0].firstId();
+    maybeEmitWarningsForId(context, idMention, idTarget);
   }
 }
 
@@ -780,11 +874,13 @@ errorIfAnyLimitationNotInScope(Context* context,
   for (const AstNode* e : clause->limitations()) {
     if (auto ident = e->toIdentifier()) {
       errorIfNameNotInScope(context, scope, resolving, ident->name(),
-                            clause, useOrImport, /* isRename */ false);
+                            ident, clause, useOrImport,
+                            /* isRename */ true);
     } else if (auto as = e->toAs()) {
       if (auto ident = as->symbol()->toIdentifier()) {
         errorIfNameNotInScope(context, scope, resolving, ident->name(),
-                              clause, useOrImport, /* isRename */ true);
+                              ident, clause, useOrImport,
+                              /* isRename */ true);
       }
     }
   }
@@ -856,8 +952,9 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
                                  bool isFirstPart) {
   // lookup 'field' in that scope
   std::vector<BorrowedIdsWithName> vec;
+  std::vector<BorrowedIdsWithName> improperMatches;
   bool got = lookupInScopeViz(context, scope, resolving, nameInScope,
-                              useOrImport, isFirstPart, vec);
+                              useOrImport, isFirstPart, vec, improperMatches);
 
   // We might've discovered the same ID multiple times, via different
   // scopes (i.e., via multiple BorrowedIdsWithName). Delete duplicates by
@@ -870,6 +967,7 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
   // This will _not_ turn x,y,x into x,y, but that's fine, since distinct
   // IDs in this vector represent an error.
   allIds.erase(std::unique(allIds.begin(), allIds.end()), allIds.end());
+
 
   // Note that this logic isn't needed for regular identifiers, since
   // they aren't aliased in the same way, i.e.,
@@ -884,8 +982,22 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
   // scope).
 
   if (got == false || vec.size() == 0) {
+    // If we failed to find a proper import, we could've gotten back any number
+    // of IDs that could be what the user meant to import. Store them in a set
+    // and give them to the error.
+    std::vector<const AstNode*> improperMatchVec;
+    for (auto& bids : improperMatches) {
+      // For each improper match, also compute its tag, to make the error
+      // message be able to provide more concrete results.
+      for (auto id : bids) {
+        auto ast = parsing::idToAst(context, id);
+        improperMatchVec.push_back(ast);
+      }
+    }
+    std::reverse(improperMatchVec.begin(), improperMatchVec.end());
+
     CHPL_REPORT(context, UseImportUnknownMod, idForErrs, useOrImport,
-                nameInScope.c_str());
+                nameInScope.c_str(), std::move(improperMatchVec));
     return nullptr;
   }
 
@@ -894,9 +1006,12 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
 
   ID foundId = vec[0].firstId();
   AstTag tag = parsing::idToTag(context, foundId);
+
   if (isModule(tag) || isInclude(tag) ||
       (useOrImport == VIS_USE && isEnum(tag))) {
-    return scopeForModule(context, foundId);
+    auto ret = scopeForModule(context, foundId);
+    maybeEmitWarningsForId(context, idForErrs, ret->id());
+    return ret;
   }
 
   CHPL_REPORT(context, UseImportNotModule, idForErrs, useOrImport,
@@ -1010,21 +1125,39 @@ doResolveUseStmt(Context* context, const Use* use,
     const Scope* foundScope = findUseImportTarget(context, scope, r,
                                                   expr, VIS_USE, oldName);
     if (foundScope != nullptr) {
-      // First, add VisibilitySymbols entry for the symbol itself.
-      // Per the spec, we only have visibility of the symbol itself if the
-      // use is renamed (with 'as') or non-public.
-      if (!newName.isEmpty()) {
-        if (newName == USTR("_")) {
-          // Do not introduce the name at all.
-          r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
-                                 isPrivate, emptyNames());
+
+      maybeEmitWarningsForId(context, expr->id(), foundScope->id());
+
+      // 'private use' brings the module name into a shadow scope
+      // but 'public use' does not.
+      auto moduleSymShadowScopeLevel = VisibilitySymbols::REGULAR_SCOPE;
+      if (isPrivate) {
+        moduleSymShadowScopeLevel = VisibilitySymbols::SHADOW_SCOPE_TWO;
+      }
+
+      if (newName == USTR("_")) {
+        // e.g. 'use M as _'. Do not introduce the name at all.
+      } else if (newName.isEmpty()) {
+        // There is no renaming with 'as' involved.
+        if (isPrivate == false) {
+          // 'public use' does not enable qualified access
+          // (in other words, it does not bring in the module name)
         } else {
+          // 'private use' brings in the module name (in a shadow scope)
           r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
-                                 isPrivate, convertOneRename(oldName, newName));
+                                 isPrivate, moduleSymShadowScopeLevel,
+                                 convertOneName(oldName));
         }
-      } else if (isPrivate) {
+      } else {
+        // there is an 'as' involved, so the name will always be brought in
         r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
-                               isPrivate, convertOneName(oldName));
+                               isPrivate, moduleSymShadowScopeLevel,
+                               convertOneRename(oldName, newName));
+      }
+
+      auto moduleContentsShadowScopeLevel = VisibilitySymbols::REGULAR_SCOPE;
+      if (isPrivate) {
+        moduleContentsShadowScopeLevel = VisibilitySymbols::SHADOW_SCOPE_ONE;
       }
 
       // Then, add the entries for anything imported
@@ -1038,8 +1171,13 @@ doResolveUseStmt(Context* context, const Use* use,
               CHPL_REPORT(context, AsWithUseExcept, use, as);
             }
           }
+          // check that symbols named with 'except' actually exist
+          errorIfAnyLimitationNotInScope(context, clause, foundScope,
+                                         r, VIS_USE);
+
           // add the visibility clause for only/except
-          r->addVisibilityClause(foundScope, kind, isPrivate,
+          r->addVisibilityClause(foundScope, kind,
+                                 isPrivate, moduleContentsShadowScopeLevel,
                                  convertLimitations(context, clause));
           break;
         case VisibilityClause::ONLY:
@@ -1048,12 +1186,15 @@ doResolveUseStmt(Context* context, const Use* use,
           errorIfAnyLimitationNotInScope(context, clause, foundScope,
                                          r, VIS_USE);
           // add the visibility clause for only/except
-          r->addVisibilityClause(foundScope, kind, isPrivate,
+          r->addVisibilityClause(foundScope, kind,
+                                 isPrivate, moduleContentsShadowScopeLevel,
                                  convertLimitations(context, clause));
           break;
         case VisibilityClause::NONE:
           kind = VisibilitySymbols::ALL_CONTENTS;
-          r->addVisibilityClause(foundScope, kind, isPrivate, emptyNames());
+          r->addVisibilityClause(foundScope, kind,
+                                 isPrivate, moduleContentsShadowScopeLevel,
+                                 emptyNames());
           break;
         case VisibilityClause::BRACES:
           CHPL_ASSERT(false && "Should not be possible");
@@ -1108,6 +1249,11 @@ doResolveImportStmt(Context* context, const Import* imp,
     if (foundScope != nullptr) {
       VisibilitySymbols::Kind kind;
 
+      // 'import' never uses a shadow scope.
+      auto importShadowScopeLevel = VisibilitySymbols::REGULAR_SCOPE;
+
+      maybeEmitWarningsForId(context, expr->id(), foundScope->id());
+
       if (!dotName.isEmpty()) {
         // e.g. 'import M.f' - dotName is f and foundScope is for M
         // Note that 'f' could refer to multiple symbols in the case
@@ -1120,15 +1266,17 @@ doResolveImportStmt(Context* context, const Import* imp,
           case VisibilityClause::NONE:
             kind = VisibilitySymbols::ONLY_CONTENTS;
             errorIfNameNotInScope(context, foundScope, r,
-                                  dotName, clause, VIS_IMPORT,
+                                  dotName, expr, clause, VIS_IMPORT,
                                   /* isRename */ !newName.isEmpty());
             if (newName.isEmpty()) {
               // e.g. 'import M.f'
-              r->addVisibilityClause(foundScope, kind, isPrivate,
+              r->addVisibilityClause(foundScope, kind,
+                                     isPrivate, importShadowScopeLevel,
                                      convertOneName(dotName));
             } else {
               // e.g. 'import M.f as g'
-              r->addVisibilityClause(foundScope, kind, isPrivate,
+              r->addVisibilityClause(foundScope, kind,
+                                     isPrivate, importShadowScopeLevel,
                                      convertOneRename(dotName, newName));
             }
             break;
@@ -1149,14 +1297,18 @@ doResolveImportStmt(Context* context, const Import* imp,
             kind = VisibilitySymbols::SYMBOL_ONLY;
             if (newName.isEmpty()) {
               // e.g. 'import OtherModule'
-              r->addVisibilityClause(foundScope, kind, isPrivate,
+              r->addVisibilityClause(foundScope, kind,
+                                     isPrivate, importShadowScopeLevel,
                                      convertOneName(oldName));
             } if (newName == USTR("_")) {
               // e.g. 'import OtherModule as _'
-              r->addVisibilityClause(foundScope, kind, isPrivate, emptyNames());
+              /*r->addVisibilityClause(foundScope, kind,
+                                     isPrivate, importShadowScopeLevel,
+                                     emptyNames());*/
             } else {
               // e.g. 'import OtherModule as Foo'
-              r->addVisibilityClause(foundScope, kind, isPrivate,
+              r->addVisibilityClause(foundScope, kind,
+                                     isPrivate, importShadowScopeLevel,
                                      convertOneRename(oldName, newName));
             }
             break;
@@ -1168,7 +1320,8 @@ doResolveImportStmt(Context* context, const Import* imp,
                                            r, VIS_IMPORT);
 
             // add the visibility clause with the named symbols
-            r->addVisibilityClause(foundScope, kind, isPrivate,
+            r->addVisibilityClause(foundScope, kind,
+                                   isPrivate, importShadowScopeLevel,
                                    convertLimitations(context, clause));
             break;
         }
@@ -1231,10 +1384,12 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
     for (auto req : requireNodes) {
       for (const AstNode* child : req->children()) {
         if (const StringLiteral* str = child->toStringLiteral()) {
-          const auto& path = str->value().str();
-          const std::string suffix = ".chpl";
-          if (path.compare(path.size() - suffix.size(), suffix.size(), suffix) == 0) {
-            parsing::parseFileToBuilderResult(context, str->value(), UniqueString());
+          const auto path = str->value();
+          if (path.endsWith(".chpl")) {
+            parsing::parseFileToBuilderResult(context, path, UniqueString());
+          } else if (path.endsWith(".h")) {
+          } else {
+            // TODO: Unacceptable require...
           }
         }
       }
@@ -1248,7 +1403,7 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
   return QUERY_END(result);
 }
 
-static const ResolvedVisibilityScope*
+const ResolvedVisibilityScope*
 resolveVisibilityStmts(Context* context, const Scope* scope) {
   if (!scope->containsUseImport()) {
     // stop early if this scope has no use/import statements
@@ -1341,8 +1496,7 @@ const InnermostMatch& findInnermostDecl(Context* context,
                         LOOKUP_INNERMOST;
 
   std::vector<BorrowedIdsWithName> vec =
-    lookupNameInScope(context, scope, nullptr,
-                      name, config);
+      lookupNameInScope(context, scope, {}, name, config);
 
   if (vec.size() > 0) {
     const BorrowedIdsWithName& r = vec[0];
@@ -1373,6 +1527,11 @@ std::vector<ID> findUsedImportedModules(Context* context,
     ids.push_back(r.scope()->id());
   }
   return ids;
+}
+
+void resolveUsesAndImportsInScope(Context* context, const Scope* scope) {
+  std::ignore = resolveVisibilityStmts(context, scope);
+  return;
 }
 
 

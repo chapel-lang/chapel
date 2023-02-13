@@ -8,7 +8,7 @@ var f1 = open(original, iomode.r);
 var f2 = open(symlinkName, iomode.r);
 // Should match in both cases
 writeln(sameFile(original, symlinkName));
-writeln(sameFile(f1, f2));
+writeln(sameFile(f1.path, f2.path));
 
 f1.close();
 f2.close();

@@ -22,7 +22,7 @@
 
 #include "chpl/framework/Location.h"
 #include "chpl/uast/Formal.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/uast/VarLikeDecl.h"
 
 namespace chpl {
@@ -52,18 +52,18 @@ class Variable final : public VarLikeDecl {
  friend class Builder;
  public:
   enum Kind {
-    // Use IntentList here for consistent enum values.
-    VAR         = (int) IntentList::VAR,
-    CONST       = (int) IntentList::CONST_VAR,
-    CONST_REF   = (int) IntentList::CONST_REF,
-    REF         = (int) IntentList::REF,
-    PARAM       = (int) IntentList::PARAM,
-    TYPE        = (int) IntentList::TYPE,
-    INDEX       = (int) IntentList::INDEX
+    // Use Qualifier here for consistent enum values.
+    VAR         = (int) Qualifier::VAR,
+    CONST       = (int) Qualifier::CONST_VAR,
+    CONST_REF   = (int) Qualifier::CONST_REF,
+    REF         = (int) Qualifier::REF,
+    PARAM       = (int) Qualifier::PARAM,
+    TYPE        = (int) Qualifier::TYPE,
+    INDEX       = (int) Qualifier::INDEX
   };
 
  private:
-  Variable(AstList children, int attributesChildNum, Decl::Visibility vis,
+  Variable(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
            Decl::Linkage linkage,
            int linkageNameChildNum,
            UniqueString name,
@@ -73,16 +73,22 @@ class Variable final : public VarLikeDecl {
            int8_t typeExpressionChildNum,
            int8_t initExpressionChildNum)
       : VarLikeDecl(asttags::Variable, std::move(children),
-                    attributesChildNum,
+                    attributeGroupChildNum,
                     vis,
                     linkage,
                     linkageNameChildNum,
                     name,
-                    (IntentList)((int)kind),
+                    (Qualifier)((int)kind),
                     typeExpressionChildNum,
                     initExpressionChildNum),
         isConfig_(isConfig),
         isField_(isField) {
+  }
+
+  Variable(Deserializer& des)
+    : VarLikeDecl(asttags::Variable, des) {
+    isConfig_ = des.read<bool>();
+    isField_ = des.read<bool>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -111,7 +117,7 @@ class Variable final : public VarLikeDecl {
   ~Variable() override = default;
 
   static owned<Variable> build(Builder* builder, Location loc,
-                               owned<Attributes> attributes,
+                               owned<AttributeGroup> attributeGroup,
                                Decl::Visibility vis,
                                Decl::Linkage linkage,
                                owned<AstNode> linkageName,
@@ -137,10 +143,21 @@ class Variable final : public VarLikeDecl {
   */
   bool isField() const { return this->isField_; }
 
+  void serialize(Serializer& ser) const override {
+    VarLikeDecl::serialize(ser);
+    ser.write(isConfig_);
+    ser.write(isField_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Variable);
+
 };
 
 
 } // end namespace uast
+
+DECLARE_SERDE_ENUM(uast::Variable::Kind, uint8_t);
+
 } // end namespace chpl
 
 #endif

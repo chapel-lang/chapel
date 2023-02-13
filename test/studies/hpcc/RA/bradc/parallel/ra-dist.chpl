@@ -34,14 +34,14 @@ proc main() {
 
   const UpdateSpace: domain(1, indexType) dmapped UpdateDist = {0..N_U-1};
 
-  const startTime = getCurrentTime();
+  const startTime = timeSinceEpoch().totalSeconds();
 
   [i in TableSpace] T(i) = i;
 
   forall (i,r) in zip(UpdateSpace, RAStream()) do
     T(r & indexMask) ^= r;
 
-  const execTime = getCurrentTime() - startTime;
+  const execTime = timeSinceEpoch().totalSeconds() - startTime;
 
   const validAnswer = verifyResults(T, UpdateSpace);
   printResults(validAnswer, execTime);

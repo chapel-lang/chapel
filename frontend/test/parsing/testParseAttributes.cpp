@@ -24,8 +24,8 @@
 #include "chpl/uast/all-uast.h"
 
 static bool areAttributesEqual(const Decl* lhs, const Decl* rhs) {
-  auto lhsAttr = lhs->attributes();
-  auto rhsAttr = rhs->attributes();
+  auto lhsAttr = lhs->attributeGroup();
+  auto rhsAttr = rhs->attributeGroup();
 
   if (!lhsAttr && !rhsAttr) return true;
   if (!lhsAttr || !rhsAttr) return false;
@@ -52,12 +52,13 @@ static bool areAttributesEqual(const Decl* lhs, const Decl* rhs) {
     equalPragmas;
 }
 
-// Make sure MultiDecl attributes equal component attributes.
+// Make sure MultiDecl attributeGroup equal component attributeGroup.
 static void test0(Parser* parser) {
-  auto parseResult = parser->parseString("test0.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       "pragma \"no doc\"\n"
       "var a, b, c = 0;\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -65,7 +66,7 @@ static void test0(Parser* parser) {
   auto multiVar = mod->stmt(0)->toMultiDecl();
   assert(multiVar);
 
-  auto parentAttr = multiVar->attributes();
+  auto parentAttr = multiVar->attributeGroup();
   assert(parentAttr);
   assert(!parentAttr->isDeprecated());
   assert(parentAttr->deprecationMessage().isEmpty());
@@ -77,12 +78,13 @@ static void test0(Parser* parser) {
   }
 }
 
-// Make sure TupleDecl attributes equal component attributes.
+// Make sure TupleDecl attributeGroup equal component attributeGroup.
 static void test1(Parser* parser) {
-  auto parseResult = parser->parseString("test1.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
       "pragma \"no doc\"\n"
       "var (a, b, c) = foo;\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -90,7 +92,7 @@ static void test1(Parser* parser) {
   auto tupleVar = mod->stmt(0)->toTupleDecl();
   assert(tupleVar);
 
-  auto parentAttr = tupleVar->attributes();
+  auto parentAttr = tupleVar->attributeGroup();
   assert(parentAttr);
   assert(!parentAttr->isDeprecated());
   assert(parentAttr->deprecationMessage().isEmpty());
@@ -180,7 +182,7 @@ static void testAggregateAttributes(Parser* parser,
                                          numPragmas,
                                          doChildrenHavePragmas,
                                          numChildVars);
-  auto parseResult = parser->parseString("test-aggregate.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test-aggregate.chpl",
                                          code.c_str());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -190,7 +192,7 @@ static void testAggregateAttributes(Parser* parser,
   assert(agg);
 
   assert(agg->tag() == aggKind);
-  auto attr = agg->attributes();
+  auto attr = agg->attributeGroup();
 
   if (isDeprecated) {
     assert(attr);
@@ -217,11 +219,11 @@ static void testAggregateAttributes(Parser* parser,
     auto var = agg->declOrComment(i)->toVariable();
     assert(var);
 
-    // Important to make sure the attributes are not incorrectly carried
+    // Important to make sure the attributeGroup are not incorrectly carried
     // down to children here.
     assert(!areAttributesEqual(var, agg));
 
-    auto varAttr = var->attributes();
+    auto varAttr = var->attributeGroup();
 
     if (doChildrenHavePragmas) {
       assert(varAttr);
@@ -233,8 +235,9 @@ static void testAggregateAttributes(Parser* parser,
   }
 }
 
-// Make sure attributes for aggregates get attached properly.
+// Make sure attributeGroup for aggregates get attached properly.
 static void test2(Parser* parser) {
+  ErrorGuard guard(parser->context());
   testAggregateAttributes(parser, /*aggKind*/ asttags::Class,
                           /*isDeprecated*/ false,
                           /*hasDeprecationMsg*/ false,
@@ -281,11 +284,12 @@ static void test2(Parser* parser) {
 
 // Simple test for deprecation message on a variable.
 static void test3(Parser* parser) {
-  auto parseResult = parser->parseString("test3.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
       "pragma \"no doc\"\n"
       "deprecated \"Thingy is deprecated\"\n"
       "var x = 0;\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -293,7 +297,7 @@ static void test3(Parser* parser) {
   auto var = mod->stmt(0)->toVariable();
   assert(var);
 
-  auto varAttr = var->attributes();
+  auto varAttr = var->attributeGroup();
   assert(varAttr);
 
   assert(varAttr->hasPragma(PRAGMA_NO_DOC));
@@ -303,7 +307,8 @@ static void test3(Parser* parser) {
 
 // Module, enum, and a var decl.
 static void test4(Parser* parser) {
-  auto parseResult = parser->parseString("test4.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
       "pragma \"no doc\"\n"
       "deprecated \"Module is deprecated\"\n"
       "module Foo {\n"
@@ -313,11 +318,11 @@ static void test4(Parser* parser) {
       "  pragma \"ref\"\n"
       "  var y = 0;\n"
       "}\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
 
-  auto modAttr = mod->attributes();
+  auto modAttr = mod->attributeGroup();
   assert(modAttr);
   assert(modAttr->isDeprecated());
   assert(modAttr->deprecationMessage() == "Module is deprecated");
@@ -326,7 +331,8 @@ static void test4(Parser* parser) {
 
 // Procedures, formals, nested procedures.
 static void test5(Parser* parser) {
-  auto parseResult = parser->parseString("test5.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
       "pragma \"no doc\"\n"
       "deprecated \"P1 is deprecated\"\n"
       "proc p1() {}\n"
@@ -345,25 +351,25 @@ static void test5(Parser* parser) {
       "proc p5(x, pragma \"no init\" y) {}\n"
       "pragma \"no doc\"\n"
       "proc p6() { var x = 0; }\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 6);
 
   auto p1 = mod->stmt(0)->toFunction();
   assert(p1);
-  auto p1Attr = p1->attributes();
+  auto p1Attr = p1->attributeGroup();
   assert(p1Attr);
   assert(p1Attr->isDeprecated());
   assert(p1Attr->deprecationMessage() == "P1 is deprecated");
   assert(p1Attr->hasPragma(PRAGMA_NO_DOC));
 
   auto p2 = mod->stmt(1)->toFunction();
-  assert(!p2->attributes());
+  assert(!p2->attributeGroup());
 
   auto p3 = mod->stmt(2)->toFunction();
   assert(p3);
-  auto p3Attr = p3->attributes();
+  auto p3Attr = p3->attributeGroup();
   assert(p3Attr);
   assert(!p3Attr->isDeprecated());
   assert(p3Attr->deprecationMessage().isEmpty());
@@ -372,10 +378,10 @@ static void test5(Parser* parser) {
   assert(p3->numStmts() == 2);
   auto p3n1 = p3->stmt(0)->toFunction();
   assert(p3n1);
-  assert(!p3n1->attributes());
+  assert(!p3n1->attributeGroup());
   auto p3n2 = p3->stmt(1)->toFunction();
   assert(p3n2);
-  auto p3n2Attr = p3n2->attributes();
+  auto p3n2Attr = p3n2->attributeGroup();
   assert(p3n2Attr);
   assert(p3n2Attr->isDeprecated());
   assert(p3n2Attr->deprecationMessage() == "N2 is deprecated");
@@ -383,7 +389,7 @@ static void test5(Parser* parser) {
 
   auto p4 = mod->stmt(3)->toFunction();
   assert(p4);
-  auto p4Attr = p4->attributes();
+  auto p4Attr = p4->attributeGroup();
   assert(p4Attr);
   assert(p4Attr->isDeprecated());
   assert(p4Attr->deprecationMessage() == "P4 is deprecated");
@@ -391,29 +397,29 @@ static void test5(Parser* parser) {
   assert(p4->numFormals() == 2);
   auto p4f1 = p4->formal(0)->toFormal();
   assert(p4f1);
-  auto p4f1Attr = p4f1->attributes();
+  auto p4f1Attr = p4f1->attributeGroup();
   assert(p4f1Attr);
   assert(!p4f1Attr->isDeprecated());
   assert(p4f1Attr->deprecationMessage().isEmpty());
   assert(p4f1Attr->hasPragma(PRAGMA_NO_INIT));
   auto p4f2 = p4->formal(1)->toFormal();
   assert(p4f2);
-  assert(!p4f2->attributes());
+  assert(!p4f2->attributeGroup());
 
   auto p5 = mod->stmt(4)->toFunction();
   assert(p5);
-  auto p5Attr = p5->attributes();
+  auto p5Attr = p5->attributeGroup();
   assert(p5Attr);
   assert(p5Attr->isDeprecated());
   assert(p5Attr->deprecationMessage() == "P5 is deprecated");
   assert(p5->numFormals() == 2);
   auto p5f1 = p5->formal(0)->toFormal();
   assert(p5f1);
-  assert(!p5f1->attributes());
+  assert(!p5f1->attributeGroup());
 
   auto p5f2 = p5->formal(1)->toFormal();
   assert(p5f2);
-  auto p5f2Attr = p5f2->attributes();
+  auto p5f2Attr = p5f2->attributeGroup();
   assert(p5f2Attr);
   assert(!p5f2Attr->isDeprecated());
   assert(p5f2Attr->deprecationMessage().isEmpty());
@@ -421,19 +427,20 @@ static void test5(Parser* parser) {
 
   auto p6 = mod->stmt(5)->toFunction();
   assert(p6);
-  auto p6Attr = p6->attributes();
+  auto p6Attr = p6->attributeGroup();
   assert(p6Attr);
   assert(!p6Attr->isDeprecated());
   assert(p6Attr->hasPragma(PRAGMA_NO_DOC));
   assert(p6->numStmts() == 1);
   auto p6v1 = p6->stmt(0)->toVariable();
   assert(p6v1);
-  assert(!p6v1->attributes());
+  assert(!p6v1->attributeGroup());
 }
 
 // Enum elements can be deprecated.
 static void test6(Parser* parser) {
-  auto parseResult = parser->parseString("test7.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test7.chpl",
       "pragma \"no doc\"\n"
       "deprecated \"Enum is deprecated\"\n"
       "enum Foo {\n"
@@ -442,13 +449,13 @@ static void test6(Parser* parser) {
       "  b = 0,\n"
       "  c,\n"
       "}\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
   auto en = mod->stmt(0)->toEnum();
   assert(en);
-  auto enAttr = en->attributes();
+  auto enAttr = en->attributeGroup();
   assert(enAttr);
   assert(enAttr->isDeprecated());
   assert(enAttr->deprecationMessage() == "Enum is deprecated");
@@ -456,18 +463,18 @@ static void test6(Parser* parser) {
   assert(en->numDeclOrComments() == 3);
   auto ee1 = en->declOrComment(0)->toEnumElement();
   assert(ee1);
-  assert(!ee1->attributes());
+  assert(!ee1->attributeGroup());
   auto ee2 = en->declOrComment(1)->toEnumElement();
   assert(ee2);
   assert(ee2->initExpression());
-  assert(!ee2->initExpression()->isAttributes());
-  auto ee2Attr = ee2->attributes();
+  assert(!ee2->initExpression()->isAttributeGroup());
+  auto ee2Attr = ee2->attributeGroup();
   assert(ee2Attr);
   assert(ee2Attr->isDeprecated());
   assert(ee2Attr->deprecationMessage() == "Element b is deprecated");
   auto ee3 = en->declOrComment(2)->toEnumElement();
   assert(ee3);
-  assert(!ee3->attributes());
+  assert(!ee3->attributeGroup());
 }
 
 int main() {

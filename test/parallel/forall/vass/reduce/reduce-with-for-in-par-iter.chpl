@@ -95,5 +95,5 @@ proc main {
   test1;
   test2;
   writeln(+ reduce pariter1());
-//todo:  writeln(+ reduce pariter2());
+  writeln(+ reduce pariter2());
 }

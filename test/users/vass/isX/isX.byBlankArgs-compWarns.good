@@ -7,42 +7,6 @@ isPrimitiveValue
 isPrimitiveType
   isX.byBlankArgs-compWarns.chpl:188: called as test(arg: bool)
 
-bool(8)
-isBool
-isBoolValue
-isBoolType
-isPrimitive
-isPrimitiveValue
-isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:189: called as test(arg: bool(8))
-
-bool(16)
-isBool
-isBoolValue
-isBoolType
-isPrimitive
-isPrimitiveValue
-isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:190: called as test(arg: bool(16))
-
-bool(32)
-isBool
-isBoolValue
-isBoolType
-isPrimitive
-isPrimitiveValue
-isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:191: called as test(arg: bool(32))
-
-bool(64)
-isBool
-isBoolValue
-isBoolType
-isPrimitive
-isPrimitiveValue
-isPrimitiveType
-  isX.byBlankArgs-compWarns.chpl:192: called as test(arg: bool(64))
-
 int(8)
 isInt
 isIntValue

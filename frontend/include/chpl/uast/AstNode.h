@@ -56,7 +56,9 @@ class AstNode {
 
  private:
   AstTag tag_;
+  int attributeGroupChildNum_;
   ID id_;
+
 
  protected:
   AstList children_;
@@ -106,15 +108,31 @@ class AstNode {
                          int parentIdx);
 
  protected:
-  AstNode(AstTag tag)
-    : tag_(tag), id_(), children_() {
-  }
-  AstNode(AstTag tag, AstList children)
-    : tag_(tag), id_(), children_(std::move(children)) {
-  }
+
+
 
   // Magic constant to indicate no such child exists.
   static const int NO_CHILD = -1;
+
+  AstNode(AstTag tag)
+    : tag_(tag), attributeGroupChildNum_(NO_CHILD), id_(), children_() {
+  }
+  AstNode(AstTag tag, AstList children)
+    : tag_(tag), attributeGroupChildNum_(NO_CHILD), id_(),
+      children_(std::move(children)) {
+  }
+  AstNode(AstTag tag, AstList children, int attributeGroupChildNum)
+    : tag_(tag), attributeGroupChildNum_(attributeGroupChildNum), id_(),
+      children_(std::move(children)) {
+    CHPL_ASSERT(NO_CHILD <= attributeGroupChildNum_ &&
+                attributeGroupChildNum_ < (ssize_t)children_.size());
+
+    if (attributeGroupChildNum_ >= 0) {
+      CHPL_ASSERT(child(attributeGroupChildNum_)->isAttributeGroup());
+    }
+  }
+
+  AstNode(AstTag tag, Deserializer& des);
 
   // Quick way to return an already exhausted iterator.
   template <typename T>
@@ -189,6 +207,25 @@ class AstNode {
   }
 
   /**
+    Returns the index into children of the attributeGroup child node,
+    or AstNode::NO_CHILD if no attributeGroup exists on this node.
+   */
+  int attributeGroupChildNum() const {
+    return attributeGroupChildNum_;
+  }
+
+  /**
+    Return the attributeGroup associated with this AstNode, or nullptr
+    if none exists.
+   */
+  const AttributeGroup* attributeGroup() const {
+    if (attributeGroupChildNum_ < 0) return nullptr;
+    auto ret = child(attributeGroupChildNum_);
+    CHPL_ASSERT(ret->isAttributeGroup());
+    return (const AttributeGroup*)ret;
+  }
+
+  /**
     Returns 'true' if this symbol contains another AST node.
     This is an operation on the IDs.
    */
@@ -225,6 +262,10 @@ class AstNode {
 
   // compute the maximum width of all of the IDs
   int computeMaxIdStringWidth() const;
+
+  virtual void serialize(Serializer& os) const;
+
+  static owned<AstNode> deserialize(Deserializer& des);
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
@@ -475,6 +516,26 @@ class AstNode {
   }
 };
 } // end namespace uast
+
+template<> struct serialize<uast::AstList> {
+  void operator()(Serializer& ser, const uast::AstList& list) {
+    ser.write((uint64_t)list.size());
+    for (const auto& node : list) {
+      node->serialize(ser);
+    }
+  }
+};
+
+template<> struct deserialize<uast::AstList> {
+  uast::AstList operator()(Deserializer& des) {
+    uast::AstList ret;
+    auto len = des.read<uint64_t>();
+    for (uint64_t i = 0; i < len; i++) {
+      ret.push_back(uast::AstNode::deserialize(des));
+    }
+    return ret;
+  }
+};
 } // end namespace chpl
 
 /// \cond DO_NOT_DOCUMENT
@@ -512,6 +573,10 @@ AST_LESS(AstNode)
 #undef AST_LESS
 /// \endcond
 
+#define DECLARE_STATIC_DESERIALIZE(NAME) \
+static owned<NAME> deserialize(Deserializer& des) { \
+  return owned<NAME>(new NAME(des)); \
+}
 
 } // end namespace std
 

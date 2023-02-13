@@ -206,6 +206,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_INIT_VAR:
     case PRIM_INIT_VAR_SPLIT_DECL:
     case PRIM_INIT_VAR_SPLIT_INIT:
+    case PRIM_INIT_DONE:
     case PRIM_REDUCE:
     case PRIM_ASSIGN:
     case PRIM_ASSIGN_ELIDED_COPY:

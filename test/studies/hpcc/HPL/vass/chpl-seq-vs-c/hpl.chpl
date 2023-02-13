@@ -83,13 +83,13 @@ proc main() {
    show2e(Ab); writeln();
   }
 
-  const startTime = getCurrentTime();     // capture the start time
+  const startTime = timeSinceEpoch().totalSeconds();     // capture the start time
 
   LUFactorize(n, Ab, piv);                 // compute the LU factorization
 
   var x = backwardSub(n, Ab);  // perform the back substitution
 
-  const execTime = getCurrentTime() - startTime;  // store the elapsed time
+  const execTime = timeSinceEpoch().totalSeconds() - startTime;  // store the elapsed time
 
   if verb || showresult { writeln("result"); show1e(x); writeln(); }
 

@@ -33,13 +33,15 @@ static void test1() {
 
   auto path = UniqueString::get(context, "test1.chpl");
   std::string contents =
-    " record r {\n"
-    "   proc doPrimary() {}\n"
-    " }\n"
-    " proc r.doSecondary() {}\n"
-    " var obj: r;\n"
-    " obj.doPrimary();\n"
-    " obj.doSecondary();\n";
+    R""""(
+      record r {
+        proc doPrimary() {}
+      }
+      proc r.doSecondary() {}
+      var obj: r;
+      obj.doPrimary();
+      obj.doSecondary();
+    )"""";
 
   setFileText(context, path, contents);
 
@@ -202,7 +204,7 @@ static void test4() {
   Context* context = &ctx;
   ErrorGuard guard(context);
 
-  auto path = UniqueString::get(context, "test3.chpl");
+  auto path = UniqueString::get(context, "test4.chpl");
   std::string contents =
     R""""(
     module A {
@@ -219,7 +221,7 @@ static void test4() {
 
   // Get the modules.
   auto& br = parseFileToBuilderResult(context, path, UniqueString());
-  assert(!br.numErrors());
+  assert(!guard.realizeErrors());
   assert(br.numTopLevelExpressions() == 2);
   auto modA = br.topLevelExpression(0)->toModule();
   assert(modA);
@@ -257,11 +259,96 @@ static void test4() {
   (void) tert;
 }
 
+// Test a field being named the same as the record.
+static void test5() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto path = UniqueString::get(context, "test5.chpl");
+  std::string contents =
+    R""""(
+      record r {
+        var r = 1;
+        proc doPrimary() {}
+      }
+      var obj: r;
+      obj.doPrimary();
+    )"""";
+
+  setFileText(context, path, contents);
+
+  // Get the module.
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+
+  // Unpack all the uAST we need for the test.
+  assert(m->numStmts() == 3);
+  auto r = m->stmt(0)->toRecord();
+  assert(r);
+  assert(r->numDeclOrComments() == 2);
+  auto fnPrimary = r->declOrComment(1)->toFunction();
+  assert(fnPrimary);
+  auto callPrimary = m->stmt(2)->toFnCall();
+  assert(callPrimary);
+
+  // Resolve the module.
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  // Get the type of 'r'.
+  auto& qtR = typeForModuleLevelSymbol(context, r->id());
+
+  // Assert some things about the primary call.
+  auto& reCallPrimary = rr.byAst(callPrimary);
+  auto& qtCallPrimary = reCallPrimary.type();
+  assert(qtCallPrimary.type()->isVoidType());
+  auto tfsCallPrimary = reCallPrimary.mostSpecific().only();
+  assert(tfsCallPrimary);
+
+  // Check the primary call receiver.
+  assert(tfsCallPrimary->id() == fnPrimary->id());
+  assert(tfsCallPrimary->numFormals() == 1);
+  assert(tfsCallPrimary->formalName(0) == "this");
+  assert(tfsCallPrimary->formalType(0).type() == qtR.type());
+}
+
+static void test6() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program =
+    R""""(
+      class A {
+        var field: int;
+        proc init() { }
+      }
+      class B : A {
+        proc init() { }
+      }
+      class C : B {
+        proc init() { }
+      }
+
+      extern proc foo(): unmanaged C;
+      var obj = foo();
+      var x = obj.field;
+    )"""";
+
+  QualifiedType initType = resolveTypeOfXInit(context, program);
+  assert(initType.type()->isIntType());
+}
+
+
 int main() {
   test1();
   test2();
   test3();
   test4();
+  test5();
+  test6();
 
   return 0;
 }

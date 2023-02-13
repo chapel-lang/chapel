@@ -1,0 +1,1 @@
+deprecate-copyFile.chpl:4: warning: 'FileSystem.copyFile' is deprecated. Please use 'FileSystem.copy' instead

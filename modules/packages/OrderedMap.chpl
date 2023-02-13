@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-deprecated "The OrderedMap module and the orderedMap type are deprecated in favor of SortedMap and sortedMap."
+deprecated "The OrderedMap module and the orderedMap type are deprecated in favor of SortedMap and sortedMap"
 module OrderedMap {
   public use SortedMap;
 

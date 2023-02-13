@@ -34,7 +34,6 @@
 #include "misc.h"
 
 #include "chpl/parsing/parsing-queries.h"
-#include "llvm/ADT/SmallPtrSet.h"
 
 // Turn this on to dump AST/uAST when using --dyno.
 #define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
@@ -44,6 +43,8 @@
 #endif
 
 #include <cstdlib>
+
+chpl::ID dynoIdForLastContainingDecl = chpl::ID();
 
 BlockStmt*           yyblock                       = NULL;
 const char*          yyfilename                    = NULL;
@@ -101,18 +102,18 @@ static ModuleSymbol* parseFile(const char* fileName,
 static void maybePrintModuleFile(ModTag modTag, const char* path);
 
 class DynoErrorHandler : public chpl::Context::ErrorHandler {
-  std::vector<const chpl::ErrorBase*> errors_;
+  std::vector<chpl::owned<chpl::ErrorBase>> errors_;
  public:
   DynoErrorHandler() = default;
   ~DynoErrorHandler() = default;
 
-  const std::vector<const chpl::ErrorBase*>& errors() const {
+  const std::vector<chpl::owned<chpl::ErrorBase>>& errors() const {
     return errors_;
   }
 
   virtual void
   report(chpl::Context* context, const chpl::ErrorBase* err) override {
-    errors_.push_back(err);
+    errors_.push_back(err->clone());
   }
 
   inline void clear() { errors_.clear(); }
@@ -173,16 +174,12 @@ static Vec<VisibilityStmt*> sModReqdByInt;
 
 void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
   sIntModPath.add(astr(newpath));
-  if (fDynoCompilerLibrary) {
-    gDynoPrependInternalModulePaths.push_back(newpath);
-  }
+  gDynoPrependInternalModulePaths.push_back(newpath);
 }
 
 void addStandardModulePath(const ArgumentDescription* desc, const char* newpath) {
   sStdModPath.add(astr(newpath));
-  if (fDynoCompilerLibrary) {
-    gDynoPrependInternalModulePaths.push_back(newpath);
-  }
+  gDynoPrependInternalModulePaths.push_back(newpath);
 }
 
 void setupModulePaths() {
@@ -772,13 +769,10 @@ static const char* labelForContainingDeclFromId(chpl::ID id) {
       preface = "method";
     }
   } else if (auto mod = ast->toModule()) {
-    if (mod->kind() == chpl::uast::Module::IMPLICIT) return nullptr;
-
     name = astr(mod->name());
     preface = "module";
   }
 
-  // TODO: Why is this thing always 'astr'?
   const char* ret = (doUseName && name)
       ? astr(preface, " '", name, "'")
       : astr(preface);
@@ -786,16 +780,42 @@ static const char* labelForContainingDeclFromId(chpl::ID id) {
   return ret;
 }
 
+static bool shouldPrintHeaderForDecl(chpl::ID declId) {
+  if (declId.isEmpty() || declId == dynoIdForLastContainingDecl) {
+    return false;
+  }
+
+  // Always print new headers in developer mode.
+  if (developer) return true;
+
+  bool ret = true;
+  auto ast = chpl::parsing::idToAst(gContext, declId);
+  INT_ASSERT(ast);
+
+  // TODO: Could we just simplify this logic down to 'if it's an implicit
+  // module, don't print the module? Or just always print the header?
+  // Would save a bit of pain.
+  if (auto mod = ast->toModule()) {
+    UniqueString path;
+    UniqueString parentSymbolPath;
+    if (gContext->filePathForId(mod->id(), path, parentSymbolPath)) {
+      auto name = chpl::uast::Builder::filenameToModulename(path.c_str());
+      if (name == mod->name().c_str()) ret = false;
+    }
+  }
+
+  return ret;
+}
+
 // Print out 'in function/module/initializer' etc...
 static void maybePrintErrorHeader(chpl::ID id) {
-  static chpl::ID idForLastContainingDecl = chpl::ID();
 
   // No ID associated with this error, so no UAST information.
   if (id.isEmpty()) return;
 
   auto declId = findIdForContainingDecl(id);
 
-  if (!declId.isEmpty() && declId != idForLastContainingDecl) {
+  if (shouldPrintHeaderForDecl(declId)) {
     auto declLabelStr = labelForContainingDeclFromId(declId);
 
     // No label was created, so we have nothing to print.
@@ -808,7 +828,7 @@ static void maybePrintErrorHeader(chpl::ID id) {
     fprintf(stderr, "%s:%d: In %s:\n", path.c_str(), line, declLabelStr);
 
     // Set so that we don't print out the same header over and over.
-    idForLastContainingDecl = declId;
+    dynoIdForLastContainingDecl = declId;
   }
 }
 
@@ -889,13 +909,11 @@ static DynoErrorHandler* gDynoErrorHandler = nullptr;
 static bool dynoRealizeErrors(void) {
   INT_ASSERT(gDynoErrorHandler);
   bool hadErrors = false;
-  llvm::SmallPtrSet<const chpl::ErrorBase*, 10> issuedErrors;
-  for (auto err : gDynoErrorHandler->errors()) {
+  for (auto& err : gDynoErrorHandler->errors()) {
     hadErrors = true;
     // skip issuing errors that have already been issued
-    if (!issuedErrors.insert(err).second) continue;
     if (fDetailedErrors) {
-      chpl::Context::defaultReportError(gContext, err);
+      chpl::Context::defaultReportError(gContext, err.get());
       // Use production compiler's exit-on-error functionality for errors
       // reported via new Dyno mechanism
       setupDynoError(err->kind());
@@ -926,13 +944,35 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   // see if there were any parse errors.
   chpl::UniqueString emptySymbolPath;
   auto& builderResult =
-    chpl::parsing::parseFileToBuilderResult(gContext, path, emptySymbolPath);
+    chpl::parsing::parseFileToBuilderResultAndCheck(gContext, path,
+                                                    emptySymbolPath);
   gFilenameLookup.push_back(path.c_str());
 
-  // Manually report any parsing errors collected by the builder.
-  for (auto e : builderResult.errors()) gContext->report(e);
-
   if (dynoRealizeErrors()) USR_STOP();
+
+
+  if (fDynoSerialize) {
+
+    if (strcmp(dynoBinAstDir, "") != 0) {
+      auto sfname = builderResult.serialize(dynoBinAstDir);
+      if (fVerify) {
+        // 'res' = AstList for now - eventually will be a BuilderResult
+        auto result = chpl::uast::BuilderResult::deserialize(gContext, sfname);
+
+        if (builderResult.compare(result) == false) {
+          USR_FATAL("FAILED TO (DE)SERIALIZE %s\n", builderResult.filePath().c_str());
+        }
+      }
+    } else if (fVerify) {
+      // unspecified output directory, verify only
+      std::stringstream ss;
+      builderResult.serialize(ss);
+      auto res = chpl::uast::BuilderResult::deserialize(gContext, ss);
+      if (builderResult.compare(res) == false) {
+        USR_FATAL("FAILED TO (DE)SERIALIZE %s\n", builderResult.filePath().c_str());
+      }
+    }
+  }
 
   ModuleSymbol* lastModSym = nullptr;
   int numModSyms = 0;
@@ -1105,7 +1145,7 @@ static const char* searchThePath(const char*      modName,
   return retval;
 }
 
-void parse() {
+void parseAndConvertUast() {
 
   // TODO: Runtime configuration of debug level for dyno parser.
   if (debugParserLevel) {

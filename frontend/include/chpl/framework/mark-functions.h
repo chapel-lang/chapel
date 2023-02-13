@@ -90,6 +90,15 @@ template<typename T> struct mark<std::vector<T>> {
   }
 };
 
+template<typename T> struct mark<std::set<T>> {
+  void operator()(Context* context, const std::set<T>& keep) const {
+    for (auto const &elt : keep) {
+      chpl::mark<T> marker;
+      marker(context, elt);
+    }
+  }
+};
+
 template<typename K, typename V> struct mark<std::unordered_map<K,V>> {
   void operator()(Context* context, std::unordered_map<K,V>& keep) const {
     for (auto const &pair : keep) {

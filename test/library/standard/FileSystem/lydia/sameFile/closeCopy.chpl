@@ -8,7 +8,7 @@ var nameB = "twoOfTwo.txt";
 var fileA = open(nameA, iomode.r);
 var fileB = open(nameB, iomode.r);
 
-writeln(sameFile(fileA, fileB));
+writeln(sameFile(fileA.path, fileB.path));
 writeln(sameFile(nameA, nameB));
 
 fileA.close();

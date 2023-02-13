@@ -466,3 +466,6 @@ test/types/string/validation/stress.good
 /util/devel/test/vagrant/log
 /util/devel/test/vagrant/log2
 /util/devel/test/vagrant/*/*-cloudimg-console.log
+
+/util/packaging/docker/test/*.tar.gz
+/util/cron/*.tar.gz

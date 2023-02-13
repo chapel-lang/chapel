@@ -44,6 +44,9 @@ class Require final : public AstNode {
     : AstNode(asttags::Require, std::move(children)) {
   }
 
+  Require(Deserializer& des)
+    : AstNode(asttags::Require, des) { }
+
   bool contentsMatchInner(const AstNode* other) const override {
     return true;
   }
@@ -82,6 +85,12 @@ class Require final : public AstNode {
     const AstNode* ast = this->child(i);
     return ast;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Require);
 
 };
 

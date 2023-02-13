@@ -102,11 +102,18 @@ void checkControlFlow(Expr* expr, const char* context) {
         continue; // break or continue target is in scope
       if (toSymExpr(gs->label) && toSymExpr(gs->label)->symbol() == gNil && loopSet.set_in(gs))
         continue; // break or continue loop is in scope
-      if (!strcmp(context, "on statement")) {
-        USR_PRINT(gs, "the following error is a current limitation");
-      }
       if (gs->gotoTag == GOTO_BREAK) {
-        USR_FATAL_CONT(gs, "break is not allowed in %s", context);
+        // BLC: This check is being too strict for labeled 'break's
+        // and is preventing correct programs from working, so skip it
+        // unless it's unlabeled.  From what I can tell with a quick
+        // look, the problem is that the 'loopSet' isn't being
+        // maintained properly in nested cases, or is preventing
+        // labels from being added to the 'labelSet' incorrectly.  I
+        // feel mildly optimistic an illegal labeled break will be
+        // caught later in compilation.
+        if (toSymExpr(gs->label) && toSymExpr(gs->label)->symbol() == gNil) {
+          USR_FATAL_CONT(gs, "break is not allowed in %s", context);
+        }
       } else if (gs->gotoTag == GOTO_CONTINUE) {
         // see also resolveGotoLabels() -> handleForallGoto()
         if (!strcmp(context, "forall statement")) {
@@ -1940,41 +1947,19 @@ void applyPrivateToBlock(BlockStmt* block) {
   }
 }
 
-static
-DefExpr* buildForwardingExprFnDef(Expr* expr) {
-  // Put expr into a method and return the DefExpr for that method.
-  // This way, we can work with the rest of the compiler that
-  // assumes that 'this' is an ArgSymbol.
-  static int delegate_counter = 0;
-  const char* name = astr("chpl_forwarding_expr", istr(++delegate_counter));
-  if (UnresolvedSymExpr* usex = toUnresolvedSymExpr(expr))
-    name = astr(name, "_", usex->unresolved);
-  FnSymbol* fn = new FnSymbol(name);
-
-  fn->addFlag(FLAG_INLINE);
-  fn->addFlag(FLAG_MAYBE_REF);
-  fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-
-  fn->body->insertAtTail(new CallExpr(PRIM_RETURN, expr));
-
-  DefExpr* def = new DefExpr(fn);
-
-  return def;
-}
-
-
 // handle syntax like
 //    var instance:someType;
 //    forwarding instance;
-BlockStmt* buildForwardingStmt(Expr* expr) {
-  return buildChapelStmt(new ForwardingStmt(buildForwardingExprFnDef(expr)));
+ForwardingStmt* buildForwardingStmt(DefExpr* fnDef) {
+  return new ForwardingStmt(fnDef);
 }
 
 // handle syntax like
 //    var instance:someType;
 //    forwarding instance only foo;
-BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names, bool except) {
+ForwardingStmt* buildForwardingStmt(DefExpr* fnDef,
+                                    std::vector<PotentialRename*>* names,
+                                    bool except) {
   std::set<const char*> namesSet;
   std::map<const char*, const char*> renameMap;
 
@@ -2004,45 +1989,15 @@ BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names,
         }
         break;
     }
-
   }
 
-  DefExpr* fnDef = buildForwardingExprFnDef(expr);
   ForwardingStmt* ret = new ForwardingStmt(fnDef,
-                                       &namesSet,
-                                       except,
-                                       &renameMap);
-  return buildChapelStmt(ret);
+                                           &namesSet,
+                                           except,
+                                           &renameMap);
+  return ret;
 }
 
-
-// handle syntax like
-//    forwarding var instance:someType;
-// by translating it into
-//    var instance:someType;
-//    forwarding instance;
-BlockStmt* buildForwardingDeclStmt(BlockStmt* stmts) {
-  for_alist(stmt, stmts->body) {
-    if (DefExpr* defExpr = toDefExpr(stmt)) {
-      if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
-        // Append a ForwardingStmt
-        BlockStmt* toAppend = buildForwardingStmt(new UnresolvedSymExpr(var->name));
-
-        // Remove the END_OF_STATEMENT marker, not used for fields
-        Expr* last = stmts->body.last();
-        if (last && isEndOfStatementMarker(stmts->body.last()))
-          last->remove();
-
-        for_alist(tmp, toAppend->body) {
-          stmts->insertAtTail(tmp->remove());
-        }
-      } else {
-        INT_FATAL("case not handled in buildForwardingDeclStmt");
-      }
-    }
-  }
-  return stmts;
-}
 
 FnSymbol*
 buildFunctionFormal(FnSymbol* fn, DefExpr* def) {

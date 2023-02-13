@@ -357,6 +357,26 @@ static void test2() {
   // UniqueString s7 = USTR("algin");
 }
 
+static void test3() {
+  Context context;
+  Context* ctx = &context;
+
+  UniqueString s0 = UniqueString();
+  assert(s0.endsWith(UniqueString()));
+  assert(!s0.endsWith(UniqueString::get(ctx, "g")));
+
+  UniqueString s1 = UniqueString::get(ctx, "foobarbaz");
+  assert(s1.endsWith(UniqueString::get(ctx, "baz")));
+  assert(s1.endsWith(UniqueString::get(ctx, "foobarbaz")));
+  assert(s1.endsWith(UniqueString::get(ctx, "barbaz")));
+  assert(s1.endsWith(UniqueString::get(ctx, "z")));
+  assert(s1.endsWith(UniqueString()));
+
+  assert(!s1.endsWith(UniqueString::get(ctx, "foobarbazd")));
+  assert(!s1.endsWith(UniqueString::get(ctx, "ding")));
+  assert(!s1.endsWith(UniqueString::get(ctx, "foo")));
+}
+
 int main(int argc, char** argv) {
   const char* inputFile = "moby.txt";
   std::string timingArg = "--timing";
@@ -371,6 +391,7 @@ int main(int argc, char** argv) {
   test0();
   test1();
   test2();
+  test3();
 
   Context context;
   Context* ctx = &context;

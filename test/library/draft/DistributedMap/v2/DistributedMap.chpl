@@ -286,9 +286,6 @@ module DistributedMap {
       }
     }
 
-    // TODO: getBorrowed, or maybe merge getBorrowed and getValue into single
-    // method called `get` if possible
-
     /* Get a copy of the element stored at position `k`.
 
       :arg k: The key to lookup in the map
@@ -297,7 +294,7 @@ module DistributedMap {
 
       :returns: A copy of the value at position `k`
      */
-    proc getValue(k: keyType) const throws {
+    proc this(k: keyType) const throws {
       var loc: int = this.getLocaleForKey(k);
 
       var result: valType;
@@ -332,33 +329,6 @@ module DistributedMap {
           result = tables[loc].table[slot].val: valType;
         }
       }
-      return result;
-    }
-
-    /* Remove the element at position `k` from the map and return its value
-     */
-    proc getAndRemove(k: keyType): valType {
-      var loc: int = this.getLocaleForKey(k);
-
-      var result: valType;
-
-      on loc {
-        locks[loc].lock();
-
-        var (found, slot) = tables[loc].findFullSlot(k);
-
-        if !found then
-          boundsCheckHalt("map index " + k:string + " out of bounds");
-
-        try! {
-          var key: keyType;
-          tables[loc].clearSlot(slot, key, result);
-          tables[loc].maybeShrinkAfterRemove();
-        }
-
-        locks[loc].unlock();
-      }
-
       return result;
     }
 
@@ -614,7 +584,7 @@ module DistributedMap {
                `false` otherwise.
      :rtype: bool
     */
-    proc set(k: keyType, in v: valType): bool {
+    proc replace(k: keyType, in v: valType): bool {
       var loc: int = this.getLocaleForKey(k);
 
       var res: bool;

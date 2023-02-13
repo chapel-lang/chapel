@@ -23,7 +23,7 @@
 #include "chpl/framework/Location.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Formal.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/uast/NamedDecl.h"
 
 namespace chpl {
@@ -57,13 +57,13 @@ class Function final : public NamedDecl {
   };
 
   enum ReturnIntent {
-    // Use IntentList here for consistent enum values.
-    DEFAULT_RETURN_INTENT   = (int) IntentList::DEFAULT_INTENT,
-    CONST                   = (int) IntentList::CONST_VAR,
-    CONST_REF               = (int) IntentList::CONST_REF,
-    REF                     = (int) IntentList::REF,
-    PARAM                   = (int) IntentList::PARAM,
-    TYPE                    = (int) IntentList::TYPE
+    // Use Qualifier here for consistent enum values.
+    DEFAULT_RETURN_INTENT   = (int) Qualifier::DEFAULT_INTENT,
+    CONST                   = (int) Qualifier::CONST_VAR,
+    CONST_REF               = (int) Qualifier::CONST_REF,
+    REF                     = (int) Qualifier::REF,
+    PARAM                   = (int) Qualifier::PARAM,
+    TYPE                    = (int) Qualifier::TYPE
   };
 
  private:
@@ -91,7 +91,7 @@ class Function final : public NamedDecl {
   int bodyChildNum_;
 
   Function(AstList children,
-           int attributesChildNum,
+           int attributeGroupChildNum,
            Decl::Visibility vis,
            Decl::Linkage linkage,
            UniqueString name,
@@ -112,7 +112,7 @@ class Function final : public NamedDecl {
            int numLifetimeParts,
            int bodyChildNum)
     : NamedDecl(asttags::Function, std::move(children),
-                attributesChildNum,
+                attributeGroupChildNum,
                 vis,
                 linkage,
                 linkageNameChildNum,
@@ -133,17 +133,17 @@ class Function final : public NamedDecl {
       numLifetimeParts_(numLifetimeParts),
       bodyChildNum_(bodyChildNum) {
 
-    CHPL_ASSERT(-1 <= formalsChildNum_ &&
+    CHPL_ASSERT(NO_CHILD <= formalsChildNum_ &&
                  formalsChildNum_ < (ssize_t)children_.size());
-    CHPL_ASSERT(-1 <= thisFormalChildNum_ &&
+    CHPL_ASSERT(NO_CHILD <= thisFormalChildNum_ &&
                  thisFormalChildNum_ < (ssize_t)children_.size());
     CHPL_ASSERT(0 <= numFormals_ &&
                 numFormals_ <= (ssize_t)children_.size());
-    CHPL_ASSERT(-1 <= returnTypeChildNum_ &&
+    CHPL_ASSERT(NO_CHILD <= returnTypeChildNum_ &&
                  returnTypeChildNum_ < (ssize_t)children_.size());
-    CHPL_ASSERT(-1 <= whereChildNum_ &&
+    CHPL_ASSERT(NO_CHILD <= whereChildNum_ &&
                  whereChildNum_ < (ssize_t)children_.size());
-    CHPL_ASSERT(-1 <= lifetimeChildNum_ &&
+    CHPL_ASSERT(NO_CHILD <= lifetimeChildNum_ &&
                  lifetimeChildNum_ < (ssize_t)children_.size());
     CHPL_ASSERT(0 <= numLifetimeParts_ &&
                 numLifetimeParts_ <= (ssize_t)children_.size());
@@ -152,7 +152,7 @@ class Function final : public NamedDecl {
       CHPL_ASSERT(bodyChildNum_ < (ssize_t)children_.size());
       CHPL_ASSERT(children_[bodyChildNum_]->isBlock());
     } else {
-      CHPL_ASSERT(bodyChildNum_ == -1);
+      CHPL_ASSERT(bodyChildNum_ == NO_CHILD);
     }
 
     #ifndef NDEBUG
@@ -164,6 +164,27 @@ class Function final : public NamedDecl {
       }
     #endif
   }
+
+  Function(Deserializer& des)
+    : NamedDecl(asttags::Function, des) {
+    inline_        = des.read<bool>();
+    override_      = des.read<bool>();
+    kind_          = des.read<Kind>();
+    returnIntent_  = des.read<ReturnIntent>();
+    throws_        = des.read<bool>();
+    primaryMethod_ = des.read<bool>();
+    parenless_     = des.read<bool>();
+
+    formalsChildNum_    = (int)des.read<int32_t>();
+    thisFormalChildNum_ = (int)des.read<int32_t>();
+    numFormals_         = (int)des.read<int32_t>();
+    returnTypeChildNum_ = (int)des.read<int32_t>();
+    whereChildNum_      = (int)des.read<int32_t>();
+    lifetimeChildNum_   = (int)des.read<int32_t>();
+    numLifetimeParts_   = (int)des.read<int32_t>();
+    bodyChildNum_       = (int)des.read<int32_t>();
+  }
+
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Function* lhs = this;
@@ -197,7 +218,7 @@ class Function final : public NamedDecl {
   ~Function() override = default;
 
   static owned<Function> build(Builder* builder, Location loc,
-                               owned<Attributes> attributes,
+                               owned<AttributeGroup> attributeGroup,
                                Decl::Visibility vis,
                                Decl::Linkage linkage,
                                owned<AstNode> linkageName,
@@ -385,9 +406,34 @@ class Function final : public NamedDecl {
   static const char* returnIntentToString(ReturnIntent intent);
 
   static const char* kindToString(Kind kind);
+
+  void serialize(Serializer& ser) const override {
+    NamedDecl::serialize(ser);
+    ser.write(inline_);
+    ser.write(override_);
+    ser.write(kind_);
+    ser.write(returnIntent_);
+    ser.write(throws_);
+    ser.write(primaryMethod_);
+    ser.write(parenless_);
+
+    ser.write<int32_t>(formalsChildNum_);
+    ser.write<int32_t>(thisFormalChildNum_);
+    ser.write<int32_t>(numFormals_);
+    ser.write<int32_t>(returnTypeChildNum_);
+    ser.write<int32_t>(whereChildNum_);
+    ser.write<int32_t>(lifetimeChildNum_);
+    ser.write<int32_t>(numLifetimeParts_);
+    ser.write<int32_t>(bodyChildNum_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Function);
 };
 
 } // end namespace uast
+
+DECLARE_SERDE_ENUM(uast::Function::Kind, uint8_t);
+DECLARE_SERDE_ENUM(uast::Function::ReturnIntent, uint8_t);
 
 
 /// \cond DO_NOT_DOCUMENT

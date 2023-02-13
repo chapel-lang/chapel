@@ -20,6 +20,7 @@
 #include "test-resolution.h"
 
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
@@ -183,7 +184,8 @@ static void usage(int argc, char** argv) {
          "  --scope only performs scope resolution\n"
          "  --trace enables query tracing\n"
          "  --time <outputFile> outputs query timing information to outputFile\n"
-         "  --searchPath <path> adds to the module search path\n",
+         "  --searchPath <path> adds to the module search path\n"
+         "  --warn-unstable turns on unstable warnings\n",
          argv[0]);
 }
 
@@ -210,6 +212,7 @@ int main(int argc, char** argv) {
   std::vector<std::string> cmdLinePaths;
   std::vector<std::string> files;
   bool enableStdLib = false;
+  bool warnUnstable = false;
   const char* timing = nullptr;
   for (int i = 1; i < argc; i++) {
     if (0 == strcmp(argv[i], "--std")) {
@@ -234,6 +237,8 @@ int main(int argc, char** argv) {
       i++;
     } else if (0 == strcmp(argv[i], "--brief")) {
       brief = true;
+    } else if (0 == strcmp(argv[i], "--warn-unstable")) {
+      warnUnstable = true;
     } else {
       files.push_back(argv[i]);
     }
@@ -266,6 +271,10 @@ int main(int argc, char** argv) {
     typeForBuiltin(ctx, UniqueString::get(ctx, "int"));
     ctx->setDebugTraceFlag(trace);
     if (timing) ctx->beginQueryTimingTrace(timing);
+
+    CompilerFlags flags;
+    flags.set(CompilerFlags::WARN_UNSTABLE, warnUnstable);
+    setCompilerFlags(ctx, std::move(flags));
 
     setupSearchPaths(ctx, enableStdLib, cmdLinePaths, files);
 

@@ -24,6 +24,9 @@
 #include "chpl/uast/all-uast.h"
 #include "InitResolver.h"
 
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/SmallVector.h"
+
 namespace chpl {
 namespace resolution {
 
@@ -38,6 +41,9 @@ namespace resolution {
    QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(CONTEXT)))
 
 struct Resolver {
+  // types used below
+  using ReceiverScopesVec = llvm::SmallVector<const Scope*, 3>;
+
   // inputs to the resolution process
   Context* context = nullptr;
   const uast::AstNode* symbol = nullptr;
@@ -62,9 +68,8 @@ struct Resolver {
   std::set<ID> instantiatedFieldOrFormals;
   std::set<ID> splitInitTypeInferredVariables;
   const uast::Call* inLeafCall = nullptr;
-  bool receiverScopeComputed = false;
-  const Scope* savedReceiverScope = nullptr;
-  const types::CompositeType* savedReceiverType = nullptr;
+  bool receiverScopesComputed = false;
+  ReceiverScopesVec savedReceiverScopes;
   Resolver* parentResolver = nullptr;
   owned<InitResolver> initResolver = nullptr;
 
@@ -190,6 +195,12 @@ struct Resolver {
                        const PoiScope* poiScope,
                        ResolutionResultByPostorderID& byPostorder);
 
+  // set up Resolver to scope resolve a parent class type expression
+  static Resolver
+  createForParentClassScopeResolve(Context* context,
+                                   const uast::AggregateDecl* decl,
+                                   ResolutionResultByPostorderID& byPostorder);
+
   // set up Resolver to resolve a param for loop body
   static Resolver paramLoopResolver(Resolver& parent,
                                     const uast::For* loop,
@@ -204,11 +215,22 @@ struct Resolver {
    */
   types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
 
-  /* Compute the receiver scope (when resolving a method)
-     and return nullptr if it is not applicable.
+  /* Gather scopes for a given receiver decl and all its parents */
+  static ReceiverScopesVec
+  gatherReceiverAndParentScopesForDeclId(Context* context,
+                                         ID aggregateDeclId);
+  /* Gather scopes for a given receiver type and all its parents */
+  static ReceiverScopesVec
+  gatherReceiverAndParentScopesForType(Context* context,
+                                       const types::Type* thisType);
+
+
+  /* Compute the receiver scopes (when resolving a method)
+     and return an empty vector if it is not applicable.
    */
-  const Scope* methodReceiverScope(bool recompute = false);
-  /* Compute the receiver scope (when resolving a method)
+  ReceiverScopesVec methodReceiverScopes(bool recompute = false);
+
+  /* Compute the receiver type (when resolving a method)
      and return nullptr if it is not applicable.
    */
   const types::CompositeType* methodReceiverType();
@@ -384,20 +406,12 @@ struct Resolver {
   // prepare a CallInfo by inspecting the called expression and actuals
   CallInfo prepareCallInfoNormalCall(const uast::Call* call);
 
-  // resolve 'new R' for a given record type 'R'
-  void resolveNewForRecord(const uast::New* node,
-                           const types::RecordType* recordType);
-
-  // resolve 'new C' for a given class type 'C', including management
-  void resolveNewForClass(const uast::New* node,
-                          const types::ClassType* classType);
-
   std::vector<BorrowedIdsWithName>
   lookupIdentifier(const uast::Identifier* ident,
-                   const Scope* receiverScope);
+                   llvm::ArrayRef<const Scope*> receiverScopes);
 
   bool resolveIdentifier(const uast::Identifier* ident,
-                         const Scope* receiverScope);
+                         llvm::ArrayRef<const Scope*> receiverScopes);
 
   /* Resolver keeps a stack of scopes and a stack of decls.
      enterScope and exitScope update those stacks. */
@@ -460,6 +474,12 @@ struct Resolver {
 
   bool enter(const uast::Try* ret);
   void exit(const uast::Try* ret);
+
+  bool enter(const uast::Use* node);
+  void exit(const uast::Use* node);
+
+  bool enter(const uast::Import* node);
+  void exit(const uast::Import* node);
 
   // if none of the above is called, fall back on this one
   bool enter(const uast::AstNode* ast);

@@ -6,7 +6,15 @@ import os
 
 chplPath = os.path.join(os.environ['CHPL_HOME'], "bin", os.environ['CHPL_HOST_BIN_SUBDIR'])
 
-if which("protoc") is not None and which("protoc-gen-chpl", path=chplPath) is not None:
+have_protoc = which("protoc") is not None
+have_proto_gen_chpl = which("protoc-gen-chpl", path=chplPath) is not None
+try:
+    import google.protobuf
+    have_python_protobuf = True
+except ImportError:
+    have_python_protobuf = False
+
+if have_protoc and have_proto_gen_chpl and have_python_protobuf:
     print(False)
 else:
     print(True)

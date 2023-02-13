@@ -1,0 +1,18 @@
+─── error in fullImportPath.chpl:9 [UseImportUnknownMod] ───
+  Cannot find module 'ToLookFor' for 'import' statement.
+  In the following 'import' statement:
+      |
+    9 |                 import ToLookFor;
+      |                        ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  The following declarations are not covered by the 'import' statement but seem similar to what you meant.
+  
+  A module named 'ToLookFor' is defined here:
+      |
+    3 |     module ToLookFor {}
+      |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  However, a full path or an explicit relative import is required for modules that are not at the root level.
+  
+  For non-root-level modules, please specify the full path to the module or use a relative import e.g. 'import this.M' or 'import super.M'
+

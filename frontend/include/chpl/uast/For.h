@@ -53,13 +53,18 @@ class For final : public IndexableLoop {
     : IndexableLoop(asttags::For, std::move(children),
                     indexChildNum,
                     iterandChildNum,
-                    /*withClauseChildNum*/ -1,
+                    /*withClauseChildNum*/ NO_CHILD,
                     blockStyle,
                     loopBodyChildNum,
                     isExpressionLevel),
       isParam_(isParam) {
 
     CHPL_ASSERT(withClause() == nullptr);
+  }
+
+  For(Deserializer& des)
+    : IndexableLoop(asttags::For, des) {
+    isParam_ = des.read<bool>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -103,6 +108,13 @@ class For final : public IndexableLoop {
   bool isParam() const {
     return isParam_;
   }
+
+  void serialize(Serializer& ser) const override {
+    IndexableLoop::serialize(ser);
+    ser.write(isParam_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(For);
 
 };
 

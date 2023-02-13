@@ -126,19 +126,14 @@ if( DYNO_ENABLE_ASSERTIONS )
   endif()
 endif()
 
-# set include directories for -I
-#include_directories(include)
-
-# lib/CMakeLists.txt defines the target libdyno
+# lib/CMakeLists.txt defines the target ChplFrontend
 add_subdirectory(lib)
-# also make sure headers are included in the target
-add_subdirectory(include/chpl)
 # Support for documentation of AST header
 add_subdirectory(doc)
 # Utils like C++ linters for this codebase
 add_subdirectory(util)
 
-# Check if the directory is there, because in release tarballs, it shouldn't be
+# check for test directory and add tests if it exists (won't exist in release tarball)
 if (IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test")
   # Support for C++ compiler unit tests
   # Needs to happen in this file for ctest to work in this dir

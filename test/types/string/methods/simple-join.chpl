@@ -10,7 +10,7 @@ var arr0 : [1..0] dataType;
 var tup3 = (my,test,message);
 var tup1 = (my,);
 var arr3 = [my,test,message];
-var arr1 = [my];
+var arr1 = [my, ];
 
 writeln(sep.join(tup3));              // test 3 tuple
 writeln(sep.join(tup1));              // test 1 tuple

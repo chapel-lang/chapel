@@ -35,8 +35,9 @@ static BuilderResult parseAggregate(Parser* parser,
                                     const AggregateDecl*& agg,
                                     const char* testname,
                                     const char* prog) {
-  auto parseResult = parser->parseString(testname, prog);
-  assert(!parseResult.numErrors());
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, testname, prog);
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
 
@@ -56,12 +57,17 @@ static BuilderResult parseAggregate(Parser* parser,
 
 static void checkThisFormal(const Function* fn,
                             const char* receiverType,
-                            Formal::Intent expectIntent) {
+                            Formal::Intent expectIntent,
+                            bool isPrimary) {
   assert(fn->thisFormal() != nullptr);
   assert(fn->thisFormal() == fn->formal(0));
   auto formal = fn->thisFormal();
-  assert(formal->typeExpression()->isIdentifier());
-  assert(formal->typeExpression()->toIdentifier()->name() == receiverType);
+  if (isPrimary) {
+    assert(formal->typeExpression() == nullptr);
+  } else {
+    assert(formal->typeExpression()->isIdentifier());
+    assert(formal->typeExpression()->toIdentifier()->name() == receiverType);
+  }
   assert(formal->initExpression() == nullptr);
   assert(formal->name() == "this");
   assert(formal->intent() == expectIntent);
@@ -129,7 +135,7 @@ static void test3(Parser* parser) {
   assert(mtd->name() == "method");
   assert(mtd->thisFormal());
   assert(mtd->isPrimaryMethod());
-  checkThisFormal(mtd, "C", Formal::DEFAULT_INTENT);
+  checkThisFormal(mtd, "C", Formal::DEFAULT_INTENT, /* isPrimary */ true);
 }
 
 static void test4(Parser* parser) {
@@ -175,7 +181,7 @@ static void test6(Parser* parser) {
   assert(mtd->name() == "method");
   assert(mtd->thisFormal());
   assert(mtd->isPrimaryMethod());
-  checkThisFormal(mtd, "R", Formal::DEFAULT_INTENT);
+  checkThisFormal(mtd, "R", Formal::DEFAULT_INTENT, /* isPrimary */ true);
 }
 
 static void test7(Parser* parser) {
@@ -197,7 +203,7 @@ static void test7(Parser* parser) {
   assert(mtd->name() == "method");
   assert(mtd->thisFormal());
   assert(mtd->isPrimaryMethod());
-  checkThisFormal(mtd, "U", Formal::DEFAULT_INTENT);
+  checkThisFormal(mtd, "U", Formal::DEFAULT_INTENT, /* isPrimary */ true);
 }
 
 static void test8(Parser* parser) {
@@ -212,7 +218,6 @@ static void test8(Parser* parser) {
                             "  /*F*/\n"
                             "}\n"
                             "/*G*/\n");
-  assert(!res.numErrors());
   auto mod = res.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -244,7 +249,7 @@ static void test8(Parser* parser) {
   assert(mtd->name() == "foo");
   assert(mtd->thisFormal());
   assert(mtd->isPrimaryMethod());
-  checkThisFormal(mtd, "C", Formal::DEFAULT_INTENT);
+  checkThisFormal(mtd, "C", Formal::DEFAULT_INTENT, /* isPrimary */ true);
 }
 
 static void test9(Parser* parser) {
@@ -291,42 +296,42 @@ static void test9(Parser* parser) {
     assert(df->returnIntent() == Function::DEFAULT_RETURN_INTENT);
     assert(df->thisFormal());
     assert(df->isPrimaryMethod());
-    checkThisFormal(df, "R", Formal::DEFAULT_INTENT);
+    checkThisFormal(df, "R", Formal::DEFAULT_INTENT, /* isPrimary */ true);
     assert(df->numFormals() == 2);
 
     assert(cnst->name() == "cnst");
     assert(cnst->returnIntent() == Function::CONST);
     assert(cnst->thisFormal());
     assert(cnst->isPrimaryMethod());
-    checkThisFormal(cnst, "R", Formal::CONST);
+    checkThisFormal(cnst, "R", Formal::CONST, /* isPrimary */ true);
     assert(cnst->numFormals() == 2);
 
     assert(cnstrf->name() == "cnstrf");
     assert(cnstrf->returnIntent() == Function::CONST_REF);
     assert(cnstrf->thisFormal());
     assert(cnstrf->isPrimaryMethod());
-    checkThisFormal(cnstrf, "R", Formal::CONST_REF);
+    checkThisFormal(cnstrf, "R", Formal::CONST_REF, /* isPrimary */ true);
     assert(cnstrf->numFormals() == 2);
 
     assert(rf->name() == "rf");
     assert(rf->returnIntent() == Function::REF);
     assert(rf->thisFormal());
     assert(rf->isPrimaryMethod());
-    checkThisFormal(rf, "R", Formal::REF);
+    checkThisFormal(rf, "R", Formal::REF, /* isPrimary */ true);
     assert(rf->numFormals() == 2);
 
     assert(prm->name() == "prm");
     assert(prm->returnIntent() == Function::PARAM);
     assert(prm->thisFormal());
     assert(prm->isPrimaryMethod());
-    checkThisFormal(prm, "R", Formal::PARAM);
+    checkThisFormal(prm, "R", Formal::PARAM, /* isPrimary */ true);
     assert(prm->numFormals() == 2);
 
     assert(tp->name() == "tp");
     assert(tp->returnIntent() == Function::TYPE);
     assert(tp->thisFormal());
     assert(tp->isPrimaryMethod());
-    checkThisFormal(tp, "R", Formal::TYPE);
+    checkThisFormal(tp, "R", Formal::TYPE, /* isPrimary */ true);
     assert(tp->numFormals() == 2);
   }
 
@@ -352,48 +357,48 @@ static void test9(Parser* parser) {
     assert(df2->returnIntent() == Function::DEFAULT_RETURN_INTENT);
     assert(df2->thisFormal());
     assert(df2->isPrimaryMethod() == false);
-    checkThisFormal(df2, "R", Formal::DEFAULT_INTENT);
+    checkThisFormal(df2, "R", Formal::DEFAULT_INTENT, /* isPrimary */ false);
     assert(df2->numFormals() == 2);
 
     assert(cnst2->name() == "cnst2");
     assert(cnst2->returnIntent() == Function::CONST);
     assert(cnst2->thisFormal());
     assert(cnst2->isPrimaryMethod() == false);
-    checkThisFormal(cnst2, "R", Formal::CONST);
+    checkThisFormal(cnst2, "R", Formal::CONST, /* isPrimary */ false);
     assert(cnst2->numFormals() == 2);
 
     assert(cnstrf2->name() == "cnstrf2");
     assert(cnstrf2->returnIntent() == Function::CONST_REF);
     assert(cnstrf2->thisFormal());
     assert(cnstrf2->isPrimaryMethod() == false);
-    checkThisFormal(cnstrf2, "R", Formal::CONST_REF);
+    checkThisFormal(cnstrf2, "R", Formal::CONST_REF, /* isPrimary */ false);
     assert(cnstrf2->numFormals() == 2);
 
     assert(rf2->name() == "rf2");
     assert(rf2->returnIntent() == Function::REF);
     assert(rf2->thisFormal());
     assert(rf2->isPrimaryMethod() == false);
-    checkThisFormal(rf2, "R", Formal::REF);
+    checkThisFormal(rf2, "R", Formal::REF, /* isPrimary */ false);
     assert(rf2->numFormals() == 2);
 
     assert(prm2->name() == "prm2");
     assert(prm2->returnIntent() == Function::PARAM);
     assert(prm2->thisFormal());
     assert(prm2->isPrimaryMethod() == false);
-    checkThisFormal(prm2, "R", Formal::PARAM);
+    checkThisFormal(prm2, "R", Formal::PARAM, /* isPrimary */ false);
     assert(prm2->numFormals() == 2);
 
     assert(tp2->name() == "tp2");
     assert(tp2->returnIntent() == Function::TYPE);
     assert(tp2->thisFormal());
     assert(tp2->isPrimaryMethod() == false);
-    checkThisFormal(tp2, "R", Formal::TYPE);
+    checkThisFormal(tp2, "R", Formal::TYPE, /* isPrimary */ false);
     assert(tp2->numFormals() == 2);
   }
 }
 
 static void test10(Parser* parser) {
-  auto parseResult = parser->parseString("test10.chpl",
+  auto parseResult = parseStringAndReportErrors(parser, "test10.chpl",
                                          "/*1*/ class C1 {\n"
                                          "  /*1a*/ var a;\n"
                                          "  /*1aa*/ var aa;\n"
@@ -470,7 +475,8 @@ static void test10(Parser* parser) {
 }
 
 static void test11(Parser* parser) {
-  auto parseResult = parser->parseString("test11.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test11.chpl",
         "extern record foo {}\n"
         "extern \"struct bar\" record bar {}\n"
         "export record dog { var x = 0; }\n"
@@ -478,7 +484,7 @@ static void test11(Parser* parser) {
         "extern union baz {}\n"
         "extern \"union thing\" union thing {}\n");
 
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 6);
@@ -529,7 +535,8 @@ static void test11(Parser* parser) {
 // Test failure for exporting or externing a class.
 // Test failure for exporting a union.
 static void test12(Parser* parser) {
-  auto parseResult = parser->parseString("test12.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test12.chpl",
         "extern class foo {};\n"
         "extern \"foo\" class foo {};\n"
         "export class bar { var x = 0; }\n"
@@ -537,7 +544,7 @@ static void test12(Parser* parser) {
         "export union baz {}\n"
         "export \"baz\" union baz {}\n");
 
-  assert(parseResult.numErrors() == 6);
+  assert(guard.realizeErrors() == 6);
   auto mod = parseResult.singleModule();
   assert(mod);
 }

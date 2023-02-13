@@ -344,7 +344,7 @@ QualifiedType Param::fold(Context* context,
 
   // convert from Immediate
   std::pair<const Param*, const Type*> pair = immediateToParam(context, result);
-  return QualifiedType(IntentList::PARAM, pair.second, pair.first);
+  return QualifiedType(Qualifier::PARAM, pair.second, pair.first);
 }
 
 void Param::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
@@ -364,6 +364,27 @@ void Param::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
 #undef PARAM_NODE
   }
 
+}
+
+void Param::serialize(Serializer& ser) const {
+  ser.write(tag_);
+}
+
+const Param* Param::deserialize(Deserializer& des) {
+  ParamTag tag = des.read<ParamTag>();
+
+  switch (tag) {
+#define PARAM_NODE(NAME, VALTYPE) \
+    case paramtags::NAME: { \
+      return NAME::deserialize(des); \
+      break; \
+    }
+#include "chpl/types/param-classes-list.h"
+#undef PARAM_NODE
+  }
+
+  assert(false);
+  return nullptr;
 }
 
 uint64_t Param::binStr2uint64(const char* str, size_t len, std::string& err) {

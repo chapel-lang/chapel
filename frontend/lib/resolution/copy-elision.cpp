@@ -104,18 +104,18 @@ struct FindElidedCopies : VarScopeVisitor {
   void handleScope(const AstNode* ast, RV& rv) override;
 };
 
-static bool kindAllowsCopyElision(IntentList kind) {
-  return (kind == IntentList::VAR ||
-          kind == IntentList::CONST_VAR ||
-          kind == IntentList::IN ||
-          kind == IntentList::CONST_IN ||
-          kind == IntentList::OUT ||
-          kind == IntentList::INOUT);
+static bool kindAllowsCopyElision(Qualifier kind) {
+  return (kind == Qualifier::VAR ||
+          kind == Qualifier::CONST_VAR ||
+          kind == Qualifier::IN ||
+          kind == Qualifier::CONST_IN ||
+          kind == Qualifier::OUT ||
+          kind == Qualifier::INOUT);
 }
 
 // if this ends up representing any significant overhead,
 // we can cache the result in the ResolvedExpression,
-// or try to build up a map from type to type indicating convertability.
+// or try to build up a map from type to type indicating convertibility.
 bool FindElidedCopies::hasCrossTypeInitAssignWithIn(
                                            const QualifiedType& lhsType,
                                            const QualifiedType& rhsType,
@@ -139,7 +139,7 @@ bool FindElidedCopies::hasCrossTypeInitAssignWithIn(
     // check for 'in' intent on the 'other' formal
     if (fn->numFormals() >= 2) {
       auto intent = fn->formalType(1).kind();
-      if (isInIntent(intent)) {
+      if (isInQualifier(intent)) {
         return true;
       }
     }
@@ -289,8 +289,8 @@ void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   }
 
   if (ast->isFormal() || ast->isVarArgFormal()) {
-    if (ast->storageKind() == IntentList::OUT ||
-        ast->storageKind() == IntentList::INOUT) {
+    if (ast->storageKind() == Qualifier::OUT ||
+        ast->storageKind() == Qualifier::INOUT) {
       outOrInoutFormals.insert(ast->id());
     }
   }
@@ -408,7 +408,10 @@ void FindElidedCopies::handleConditional(const Conditional* cond, RV& rv) {
   VarFrame* thenFrame = currentThenFrame();
   VarFrame* elseFrame = currentElseFrame();
 
-  bool thenReturnsThrows = thenFrame->returnsOrThrows;
+  bool thenReturnsThrows = false;
+  if (thenFrame != nullptr) {
+    thenReturnsThrows = thenFrame->returnsOrThrows;
+  }
   bool elseReturnsThrows = false;
   if (elseFrame != nullptr) {
     elseReturnsThrows = elseFrame->returnsOrThrows;
@@ -424,12 +427,24 @@ void FindElidedCopies::handleConditional(const Conditional* cond, RV& rv) {
   } else if (elseFrame == nullptr && thenReturnsThrows) {
     // then returns, no else block, so then copy elisions
     // have already been saved and nothing else to do
-  } else if (elseFrame == nullptr && !thenReturnsThrows) {
+  } else if (elseFrame == nullptr && !thenReturnsThrows && thenFrame != nullptr) {
     // then does not return, no else block.
     // allow copy elision only for local variables
     // outer variables aren't eligible because they wouldn't
     // aways be copy elided.
     saveLocalVarElidedCopies(thenFrame);
+  } else if (thenFrame == nullptr && elseReturnsThrows) {
+    // else returns, then block not considered due to param false, so then
+    // copy elisions have already been saved and nothing else to do
+  } else if (thenFrame == nullptr && !elseReturnsThrows && elseFrame != nullptr) {
+    // else does not return, then block not considered due to param false.
+    // allow copy elision only for local variables
+    // outer variables aren't eligible because they wouldn't
+    // aways be copy elided.
+    saveLocalVarElidedCopies(elseFrame);
+  } else if (thenFrame == nullptr && elseFrame == nullptr) {
+    // no else block, then block ignored due to param false.
+    // Nothing to do.
   } else if (!thenReturnsThrows && !elseReturnsThrows) {
     // Both then and else blocks exist.
     // Neither if nor else block returns. Promote elision points from
@@ -484,8 +499,10 @@ void FindElidedCopies::handleConditional(const Conditional* cond, RV& rv) {
   }
 
   // propagate inited variables from the then/else scopes
-  frame->initedVars.insert(thenFrame->initedVars.begin(),
-                           thenFrame->initedVars.end());
+  if (thenFrame) {
+    frame->initedVars.insert(thenFrame->initedVars.begin(),
+                             thenFrame->initedVars.end());
+  }
   if (elseFrame) {
     frame->initedVars.insert(elseFrame->initedVars.begin(),
                              elseFrame->initedVars.end());
