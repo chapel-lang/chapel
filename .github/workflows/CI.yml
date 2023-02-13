@@ -96,7 +96,7 @@ jobs:
     - name: make check_llvm_none
       run: |
        CHPL_LLVM=none make check
-       CHPL_HOME=$PWD ./examples/hello.chpl
+       CHPL_HOME=$PWD ./util/test/run-in-test-venv.bash ./examples/hello.chpl
 
 
   check_annotations_rt_calls:
