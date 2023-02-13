@@ -1,2 +1,0 @@
-mismatch-read-write.chpl:18: In function 'main':
-mismatch-read-write.chpl:33: error: writeNewline on read-only channel
