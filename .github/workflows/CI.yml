@@ -84,6 +84,21 @@ jobs:
       run: |
         CHPL_HOME=$PWD make run-dyno-linters
 
+  make_check_llvm_none:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: make check_llvm_none
+      run: |
+       CHPL_LLVM=none make check
+       CHPL_HOME=$PWD ./examples/hello.chpl
+
+
   check_annotations_rt_calls:
     runs-on: ubuntu-latest
     container:
