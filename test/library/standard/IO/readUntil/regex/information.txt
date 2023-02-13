@@ -1,0 +1,3 @@
+some information that ends with at least two '|' symbols ||| and some more information that begins with '|' symbols
+and ends with any string of numbers longer than 4 digits 314159 and the remainder of this file ...
+is junk

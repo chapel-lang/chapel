@@ -5203,7 +5203,7 @@ proc fileReader.readUntil(ref s: string, separator: regex(string), maxSize=-1, c
 
     // extract a string from the match (if needed)
     var separatorString = "";
-    if m.matched && (consumeSeparator != includeSeparator) then
+    if m.matched && (!consumeSeparator || !includeSeparator) then
       this.extractMatch(m, separatorString);
 
     // move back to the starting offset and compute the total number of bytes read
@@ -5273,7 +5273,7 @@ proc fileReader.readUntil(ref b: bytes, separator: regex(bytes), maxSize=-1, con
 
     // extract a string from the match (if needed)
     var separatorBytes = b"";
-    if m.matched && (consumeSeparator != includeSeparator) then
+    if m.matched && (!consumeSeparator || !includeSeparator) then
       this.extractMatch(m, separatorBytes);
 
     // move back to the starting offset and compute the total number of bytes read
