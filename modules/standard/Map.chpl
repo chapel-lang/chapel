@@ -435,7 +435,7 @@ module Map {
       const result = table.table[slot].val;
       return result;
     }
-    
+
     pragma "no doc"
     deprecated "map methods that halt are deprecated, please set the config param :param:`mapMethodsThrow` to 'true' to opt in to using the new methods that throw"
     proc const this(k: keyType) const
@@ -498,7 +498,7 @@ module Map {
         }
       }
     }
-    
+
     pragma "no doc"
     deprecated "map methods that halt are deprecated, please set the config param :param:`mapMethodsThrow` to 'true' to opt in to using the new methods that throw"
     proc const this(k: keyType)
@@ -957,30 +957,16 @@ module Map {
     :rtype: `bool`
   */
   operator map.==(const ref a: map(?kt, ?vt, ?ps),
-                  const ref b: map(kt, vt, ps)): bool throws
-    where mapMethodsThrow{
-    for key in a.keys() {
-      if !b.contains(key) || a[key] != b[key] then
-        return false;
-    }
-    for key in b.keys() {
-      if !a.contains(key) || a[key] != b[key] then
-        return false;
-    }
-    return true;
-  }
-
-  deprecated "map methods that halt are deprecated, please set the config param :param:`mapMethodsThrow` to 'true' to opt in to using the new methods that throw"
-  operator map.==(const ref a: map(?kt, ?vt, ?ps),
-                  const ref b: map(kt, vt, ps)): bool
-    where !mapMethodsThrow{
-    for key in a.keys() {
-      if !b.contains(key) || a[key] != b[key] then
-        return false;
-    }
-    for key in b.keys() {
-      if !a.contains(key) || a[key] != b[key] then
-        return false;
+                  const ref b: map(kt, vt, ps)): bool {
+    try! {
+      for key in a.keys() {
+        if !b.contains(key) || a[key] != b[key] then
+          return false;
+      }
+      for key in b.keys() {
+        if !a.contains(key) || a[key] != b[key] then
+          return false;
+      }
     }
     return true;
   }
@@ -998,15 +984,7 @@ module Map {
     :rtype: `bool`
   */
   operator map.!=(const ref a: map(?kt, ?vt, ?ps),
-                  const ref b: map(kt, vt, ps)): bool throws
-    where mapMethodsThrow {
-    return !(a == b);
-  }
-
-  deprecated "map methods that halt are deprecated, please set the config param :param:`mapMethodsThrow` to 'true' to opt in to using the new methods that throw"
-  operator map.!=(const ref a: map(?kt, ?vt, ?ps),
-                  const ref b: map(kt, vt, ps)): bool
-    where !mapMethodsThrow {
+                  const ref b: map(kt, vt, ps)): bool {
     return !(a == b);
   }
 
