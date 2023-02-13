@@ -482,7 +482,7 @@ module Map {
     }
 
     pragma "no doc"
-    proc const this(k: keyType)
+    proc const this(k: keyType) throws
       where isNonNilableClass(valType) &&
             mapMethodsThrow {
       _enter(); defer _leave();
@@ -998,7 +998,7 @@ module Map {
     :rtype: `bool`
   */
   operator map.!=(const ref a: map(?kt, ?vt, ?ps),
-                  const ref b: map(kt, vt, ps)): bool
+                  const ref b: map(kt, vt, ps)): bool throws
     where mapMethodsThrow {
     return !(a == b);
   }
