@@ -1,5 +1,7 @@
 error message: prune candidate function list
 
+Better yet, issue a direct message saying "cannot compare types with values"
+
 was:
 
 bug: comparing types to values permitted
