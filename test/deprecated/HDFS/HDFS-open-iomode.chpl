@@ -17,7 +17,7 @@ proc main() {
   }
 
   {
-    var f = fs.open(path, ioMode.r);
+    var f = fs.open(path, iomode.r);
     var r = f.reader();
     var s:string;
     r.readLine(s);
