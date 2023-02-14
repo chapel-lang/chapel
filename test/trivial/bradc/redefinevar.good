@@ -1,2 +1,2 @@
-redefinevar.chpl:1: error: 'x' has multiple definitions, redefined at:
-  redefinevar.chpl:2
+redefinevar.chpl:1: error: 'x' has multiple definitions
+redefinevar.chpl:2: note: redefined here
