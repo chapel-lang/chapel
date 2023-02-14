@@ -3325,7 +3325,7 @@ struct Converter {
         domActuals = convertAST(lastTypeQuery);
       }
 
-      // Make sure we something to work with.
+      // Make sure we have something to work with.
       domActuals = !domActuals ? convertAST(iterand) : domActuals;
 
       if (!isEnsureDomainExprCall(domActuals) && numTypeQueries == 0 &&

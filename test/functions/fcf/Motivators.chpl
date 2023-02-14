@@ -29,7 +29,7 @@ module Motivators {
     type F3 = proc(const x: real, in y: complex): void;
     assert(F3:string == "proc(x: real, in y: complex)");
 
-    // TODO: Note that the type is parens due to precedence issues ATM.
+    // TODO: Note that the type is in parens due to precedence issues ATM.
     assert((proc(ref x: real): int):string == "proc(ref x: real): int");
   }
 

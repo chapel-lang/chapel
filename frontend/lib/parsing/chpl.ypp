@@ -2307,8 +2307,6 @@ fn_type_formal:
   { $$ = context->buildAnonFormal(@$, $1); }
 ;
 
-// TODO: We would like to replace the alternate with 'ret_type', but that
-// leads to some reduce/reduce conflicts.
 opt_fn_type_ret_type:
   %prec TNOELSE                   { $$ = nullptr; }
 | TCOLON formal_or_ret_type_expr  { $$ = $2; }
@@ -2320,7 +2318,6 @@ opt_fn_type_ret_type:
 // around 'fn_decl_receiver_expr', e.g., consider:
 // 'proc (borrowed class?).hash()'
 // -> Can we revert to TPROC TLP and then use precedence to fix this?
-// TODO: We need the return expression to be 'ret_type', not 'expr'.
 //
 fn_type:
   TPROCLP opt_fn_type_formal_ls TRP opt_ret_tag opt_fn_type_ret_type
@@ -2341,7 +2338,6 @@ fn_type:
   }
 ;
 
-// TODO: This needs to use the old style formal list instead.
 fn_expr:
   fn_type
   {
