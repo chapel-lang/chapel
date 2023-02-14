@@ -1,1 +1,4 @@
-no-param-import.chpl:4: error: import must name a module ('p' is not a module)
+no-param-import.chpl:1: In module 'Foo':
+no-param-import.chpl:4: error: cannot find module 'p' for 'import' statement
+no-param-import.chpl:2: note: a declaration of 'p' is here
+no-param-import.chpl:2: note: however, 'import' statements can only be used with modules (and this 'p' is not a module)

@@ -1,5 +1,5 @@
-deeperNesting2.chpl:12: error: Cannot import module 'B'
+deeperNesting2.chpl:1: In module 'A':
+deeperNesting2.chpl:12: error: cannot find module 'B' for 'import' statement
 deeperNesting2.chpl:2: note: a module named 'B' is defined here
-deeperNesting2.chpl:12: note: full path or explicit relative import required
-deeperNesting2.chpl:12: note: please specify the full path to the module
-deeperNesting2.chpl:12: note: or use a relative import e.g. 'import this.M' or 'import super.M'
+deeperNesting2.chpl:2: note: however, a full path or an explicit relative import is required for modules that are not at the root level
+deeperNesting2.chpl:12: note: For non-root-level modules, please specify the full path to the module or use a relative import e.g. 'import this.M' or 'import super.M'
