@@ -46,7 +46,7 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
-// Mimicks helper in Resolver but without corresponding target constraints.
+// Mimics helper in Resolver but without corresponding target constraints.
 static void maybeEmitWarningsForId(Context* context, ID idMention,
                                    ID idTarget) {
   if (idMention.isEmpty() || idTarget.isEmpty()) return;
