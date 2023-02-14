@@ -143,7 +143,7 @@ module GPU
     can be used for either communication to or from the GPU
 
     Returns a handle that can be passed to `waitGpuComm` to pause execution
-    until completion of this asyhcronous transfer
+    until completion of this asynchronous transfer
   */
   pragma "no doc"
   proc asyncGpuComm(dstArr : ?t1, srcArr : ?t2) : GpuAsyncCommHandle
