@@ -47,7 +47,7 @@ jobs:
               echo "$merge_log" >> $GITHUB_ENV
               echo 'EOF' >> $GITHUB_ENV
 
-              diff=$(git --no-pager diff --name-status HEAD $(git merge-base HEAD main) )
+              diff=$(git --no-pager diff --name-status --diff-filter=ACDMRT ${{github.event.pull_request.base.sha}} ${{github.sha}})
               echo "$diff" 
               echo 'DIFF<<EOF' >> $GITHUB_ENV
               echo "$diff" >> $GITHUB_ENV
