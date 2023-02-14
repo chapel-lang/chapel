@@ -35,7 +35,7 @@ jobs:
         with:
           fetch-depth: 0 
       # this step will (1) get the merge log for the merge_commit_sha and save it to the git  actions EN for later use in the email body. 
-      # (2) Get the diff using the filter (Select only files that are Added (A), Copied (C), Deleted (D), Modified (M), Renamed (R), Transfered (T)) .  
+      # (2) Get the files changed on the merge commit using the git log --name-status command.
       - name: Get merge log
         id: merge-log
         env:
@@ -47,11 +47,10 @@ jobs:
               echo "$merge_log" >> $GITHUB_ENV
               echo 'EOF' >> $GITHUB_ENV
 
-
-              diff=$(git --no-pager diff --name-status --diff-filter=ACDMRT ${{github.event.pull_request.base.sha}} ${{github.sha}})
-              echo "$diff"  
+              log=$(git log -m -1 --name-status --pretty="format:" $MERGE_SHA )
+              echo "$log" 
               echo 'DIFF<<EOF' >> $GITHUB_ENV
-              echo "$diff" >> $GITHUB_ENV
+              echo "$log" >> $GITHUB_ENV
               echo 'EOF' >> $GITHUB_ENV                   
       
       - name: Send mail  
