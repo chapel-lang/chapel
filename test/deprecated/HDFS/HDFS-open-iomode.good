@@ -1,6 +1,6 @@
 HDFS-open-iomode.chpl:6: In function 'main':
 HDFS-open-iomode.chpl:12: warning: enum iomode is deprecated - please use :enum:`ioMode` instead
 HDFS-open-iomode.chpl:20: warning: enum iomode is deprecated - please use :enum:`ioMode` instead
-HDFS-open-iomode.chpl:12: warning: open with an iomode argument is deprecated - please use :enum:`ioMode`
-HDFS-open-iomode.chpl:20: warning: open with an iomode argument is deprecated - please use :enum:`ioMode`
+HDFS-open-iomode.chpl:12: warning: open with an iomode argument is deprecated - please use :enum:`~IO.ioMode`
+HDFS-open-iomode.chpl:20: warning: open with an iomode argument is deprecated - please use :enum:`~IO.ioMode`
 Test file matches, OK
