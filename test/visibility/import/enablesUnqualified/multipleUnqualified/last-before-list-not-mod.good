@@ -1,1 +1,2 @@
-last-before-list-not-mod.chpl:7: error: Last symbol prior to `{` in import must be a module, symbol 'B' is not
+last-before-list-not-mod.chpl:6: In module 'User':
+last-before-list-not-mod.chpl:7: error: cannot 'import' symbol 'B', which is not a module

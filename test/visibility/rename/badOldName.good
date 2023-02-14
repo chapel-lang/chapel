@@ -1,1 +1,2 @@
-badOldName.chpl:8: error: Bad identifier in rename, no known 'br' in 'Foo'
+badOldName.chpl:7: In module 'M':
+badOldName.chpl:8: error: cannot rename symbol 'br' as it is not defined in 'Foo'

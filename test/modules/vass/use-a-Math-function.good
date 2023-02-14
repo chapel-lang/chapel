@@ -1,1 +1,1 @@
-use-a-Math-function.chpl:6: error: Cannot find module or enum 'fabs'
+use-a-Math-function.chpl:6: error: cannot find module or 'enum' 'fabs' for 'use' statement
