@@ -1,4 +1,2 @@
 arrayFuncs.chpl:6: warning: 'Array.count' is unstable
-arrayFuncs.chpl:7: warning: 'Array.find' is unstable
 Count of 1's in A = 4
-Finding 3 in A = (true, 3)
