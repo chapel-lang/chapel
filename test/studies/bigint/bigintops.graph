@@ -1,5 +1,11 @@
-perfkeys: Elapsed 1024 op time =, Elapsed 1024 assign time =, Elapsed 1024 on stmt time =
-files: bigintops.dat, bigintops.dat, bigintops.dat
-graphkeys: 1024 bit operator time, 1024 bit assign time, 1024 bit on stmt time
+perfkeys: Elapsed 256 assign time =, Elapsed 1024 assign time =, Elapsed 256 on stmt time =
+files: bigintops.dat, bigintops.dat, bigintops.dat, bigintops.dat, bigintops.dat
+graphkeys: 256 bit addition, 1024 bit addition, 256 bit assign, 1024 bit assign, 256 bit pow
 ylabel: Time (seconds)
 graphtitle: BigInteger performance
+
+perfkeys: Elapsed 256 op time =, Elapsed 1024 op time =, Elapsed 1024 on stmt time =
+files: bigintops.dat
+graphkeys: 256 bit addition, 1024 bit addition, 1024 bit pow
+ylabel: Time (seconds)
+graphtitle: BigInteger 1024 bit pow performance

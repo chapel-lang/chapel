@@ -1,9 +1,12 @@
-Elapsed 1 op time =
+Elapsed 64 op time =
 Elapsed 128 op time =
+Elapsed 256 op time =
 Elapsed 1024 op time =
-Elapsed 1 assign time =
+Elapsed 64 assign time =
 Elapsed 128 assign time =
+Elapsed 256 assign time =
 Elapsed 1024 assign time =
-Elapsed 1 on stmt time =
+Elapsed 64 on stmt time =
 Elapsed 128 on stmt time =
+Elapsed 256 on stmt time =
 Elapsed 1024 on stmt time =

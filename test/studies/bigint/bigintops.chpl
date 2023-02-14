@@ -5,17 +5,19 @@ config param perfTest = true;
 config const numOps = 10;
 
 proc main() {
-  var inputSizes: [0..2] bigint;
-  var bitSizes  : [0..2] bigint;
+  var inputSizes: [0..3] bigint;
 
   // 64 bit
-  inputSizes[0] = 1:bigint;
+  inputSizes[0] = 1:bigint << 63;
 
   // 128 bit
-  inputSizes[1] = inputSizes[0] << 127;
+  inputSizes[1] = 1:bigint << 127;
+
+  // 256 bit
+  inputSizes[2] = 1:bigint << 255;
 
   // 1024 bit
-  inputSizes[2] = inputSizes[0] << 1023;
+  inputSizes[3] = 1:bigint << 1023;
 
   for inputSize in inputSizes do
     runOpTest(inputSize);
