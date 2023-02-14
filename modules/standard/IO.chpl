@@ -198,8 +198,9 @@ Files
 -----
 
 There are several functions that open a file and return a :record:`file`
-including :proc:`open`, :proc:`openTempFile`, :proc:`openMemFile`, :proc:`openfd`,
-and the :record:`file` initializer that takes a :type:`~CTypes.c_FILE` argument.
+including :proc:`open`, :proc:`openTempFile`, :proc:`openMemFile`, the
+:record:`file` initializer that takes a ``c_int`` argument, and the
+:record:`file` initializer that takes a :type:`~CTypes.c_FILE` argument.
 
 Once a file is open, it is necessary to create associated channel(s) - see
 :proc:`file.reader` and :proc:`file.writer` - to write to and/or read from the
@@ -277,7 +278,8 @@ more details on the situation in which this kind of data race can occur.
   for files created in the following situations:
 
     * with the file initializer that takes a :type:`~CTypes.c_FILE` argument
-    * with :proc:`openfd` when provided a non-seekable system file descriptor
+    * with the file initializer that takes a ``c_int`` argument when provided a
+      non-seekable system file descriptor
 
 
 Performing I/O with Channels
@@ -1607,7 +1609,6 @@ Once the Chapel file is created, you will need to use a :proc:`file.reader` or
 :arg fp: a pointer to a C ``FILE``. See :type:`~CTypes.c_FILE`.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
-:returns: an open :record:`file` corresponding to the C file.
 
 :throws SystemError: Thrown if the C file could not be retrieved.
 */
@@ -1615,6 +1616,70 @@ proc file.init(fp: c_FILE, hints=ioHintSet.empty) throws {
   this.init();
 
   initHelper(this, fp, hints);
+}
+
+private proc initHelper2(ref f: file, fd: c_int, hints = ioHintSet.empty,
+                         style:iostyleInternal = defaultIOStyleInternal()) throws {
+
+  var local_style = style;
+  f._home = here;
+  extern proc chpl_cnullfile():c_FILE;
+  var err = qio_file_init(f._file_internal, chpl_cnullfile(), fd, hints._internal, local_style, 0);
+
+  // On return, either f._file_internal.ref_cnt == 1, or f._file_internal is
+  // NULL.
+  // err should be nonzero in the latter case.
+  if err {
+    var path_cs:c_string;
+    var path_err = qio_file_path_for_fd(fd, path_cs);
+    var path = if path_err then "unknown"
+                           else createStringWithNewBuffer(path_cs,
+                                                          policy=decodePolicy.replace);
+    try ioerror(err, "in init", path);
+  }
+}
+
+@unstable "initializing a file with a style argument is unstable"
+proc file.init(fd: c_int, hints=ioHintSet.empty, style:iostyle) throws {
+  this.init();
+
+  initHelper2(this, fd, hints, style);
+}
+
+/*
+
+Create a Chapel file that works with a system file descriptor.  Note that once
+the file is open, you will need to use a :proc:`file.reader` or
+:proc:`file.writer` to create a channel to actually perform I/O operations
+
+.. note::
+
+  This is an alternative way to create a :record:`file`.  The main way to do so
+  is via the :proc:`open` function.
+
+The system file descriptor will be closed when the Chapel file is closed.
+
+.. note::
+
+  This function can be used to create Chapel files that refer to system file
+  descriptors that do not support the ``seek`` functionality. For example, file
+  descriptors that represent pipes or open socket connections have this
+  property. In that case, the resulting file value should only be used with one
+  :record:`channel` at a time.
+  The I/O system will ignore the channel offsets when reading or writing
+  to files backed by non-seekable file descriptors.
+
+
+:arg fd: a system file descriptor.
+:arg hints: optional argument to specify any hints to the I/O system about
+            this file. See :record:`ioHintSet`.
+
+:throws SystemError: Thrown if the file descriptor could not be retrieved.
+*/
+proc file.init(fd: c_int, hints=ioHintSet.empty) throws {
+  this.init();
+
+  initHelper2(this, fd, hints);
 }
 
 pragma "no doc"
@@ -1978,7 +2043,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
   return ret;
 }
 
-@unstable "openfd with a style argument is unstable"
+deprecated "openfd is deprecated, please use the file initializer with a 'c_int' argument instead"
 proc openfd(fd: c_int, hints=ioHintSet.empty, style:iostyle):file throws {
   return openfdHelper(fd, hints, style: iostyleInternal);
 }
@@ -2009,6 +2074,7 @@ The system file descriptor will be closed when the Chapel file is closed.
 
 :throws SystemError: Thrown if the file descriptor could not be retrieved.
 */
+deprecated "openfd is deprecated, please use the file initializer with a 'c_int' argument instead"
 proc openfd(fd: c_int, hints = ioHintSet.empty):file throws {
   return openfdHelper(fd, hints);
 }
@@ -6474,7 +6540,7 @@ record itemReaderInternal {
 
 /* standard input, otherwise known as file descriptor 0 */
 const stdin:fileReader(iokind.dynamic, true);
-stdin = try! openfd(0).reader();
+stdin = try! (new file(0)).reader();
 
 pragma "no doc"
 extern proc chpl_cstdout():c_FILE;
