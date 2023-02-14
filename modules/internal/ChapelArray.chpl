@@ -884,8 +884,16 @@ module ChapelArray {
     /* The type of elements contained in the array */
     proc eltType type return _value.eltType;
 
-    /* The type of indices used in the array's domain */
+    /* The type used to represent the array's indices.  For a
+       multidimensional array, this is the per-dimension type used. */
     proc idxType type return _value.idxType;
+
+    /* The type used to represent the array's indices.  For a
+       1-dimensional or associatve array, this will be the same as
+       :proc:`idType` above.  For a multidimensional array, it will be
+       :proc:`rank`*`proc:`idxType`. */
+    proc fullIdxType type return this.domain.fullIdxType;
+
     proc intIdxType type return chpl__idxTypeToIntIdxType(_value.idxType);
 
     pragma "no copy return"
@@ -1745,13 +1753,6 @@ module ChapelArray {
       return (false, arbInd);
     }
 
-    proc chpl__fullIdxType type {
-      if this.isAssociative() || this.rank == 1 {
-        return this.idxType;
-      } else {
-        return this.rank * this.idxType;
-      }
-    }
 
     /*
 
@@ -1761,7 +1762,7 @@ module ChapelArray {
       unspecified.
 
     */
-    proc find(val: this.eltType, ref idx: chpl__fullIdxType): bool {
+    proc find(val: eltType, ref idx: fullIdxType): bool {
       // For the sparse case, start by seeing if the IRV is what we're
       // looking for.  If so, iterate over the parent domain to look
       // for the value or an index not represented in the array.  This
@@ -1804,12 +1805,12 @@ module ChapelArray {
       the result will not be well-defined.
 
     */
-    proc find(val: this.eltType): chpl__fullIdxType /* TODO: return type is hard to express */ {
+    proc find(val: eltType): fullIdxType {
       if !(this.isRectangular() || this.isSparse()) ||
          !isIntegralType(this.idxType) then
         compilerError("This array type does not currently support the 1-argument '.find()' method; try using the 2-argument version'");
 
-      var idx: chpl__fullIdxType;
+      var idx: fullIdxType;
       if find(val, idx) then
         return idx;
       else
