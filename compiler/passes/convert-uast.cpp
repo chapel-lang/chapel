@@ -2398,7 +2398,7 @@ struct Converter {
         // forwarding var bla;
         expr = new UnresolvedSymExpr(varName.c_str());
       } else {
-        // fowarding someExpression();
+        // forwarding someExpression();
         expr = convertExprOrNull(node->expr());
       }
     }
