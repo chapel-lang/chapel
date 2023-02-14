@@ -875,8 +875,10 @@ proc SparseBlockDom.dsiLocalSubdomain(loc: locale) {
     unimplementedFeatureHalt("the Sparse Block distribution",
                              "remote subdomain queries");
 
-  const (found, targetIdx) = maxloc reduce
-    zip(dist.targetLocales == here, dist.targetLocales.domain);
+  var targetIdx: dist.targetLocales.fullIdxType;
+  const found = dist.targetLocales.find(here, targetIdx);
+  if !found then
+    halt("couldn't find locale ", here.id, " in the targetLocales array");
   return locDoms[targetIdx]!.mySparseBlock;
 }
 
