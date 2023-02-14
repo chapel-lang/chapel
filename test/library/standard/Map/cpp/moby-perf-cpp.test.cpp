@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 int main(int argc, char** argv) {
-  const char* inputFile = "moby.txt";
+  const char* inputFile = "../moby.txt";
   int repeat = 10;
   std::string timingArg = "--timing";
   bool printTiming = false;
