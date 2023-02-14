@@ -277,24 +277,35 @@ void Visitor::checkForOneElementArraysWithoutComma(const Array* node) {
 }
   
 void Visitor::checkDomainTypeQueryUsage(const TypeQuery* node) {
-  if (!parent(0) || !parent(0)->isBracketLoop()) return;
+  if (!parent(0)) return;
+  if (!parent(0)->isBracketLoop() && !parent(0)->isDomain()) return;
 
-  auto bkt = parent(0)->toBracketLoop();
   const AstNode* lastInWalk = nullptr;
-  bool doEmitError = true;
+  bool errorPartialDomainQuery = false;
+  bool errorBadQueryLoc = true;
 
   // If we are descended from the formal's type expression, OK!
   if (auto foundFormal = searchParents(asttags::Formal, &lastInWalk)) {
     auto formal = foundFormal->toFormal();
-    if (lastInWalk == formal->typeExpression()) doEmitError = false;
+    if (lastInWalk == formal->typeExpression()) errorBadQueryLoc = false;
   }
 
-  // We shouldn't see '[?d in foo]'...
-  doEmitError |= bkt->iterand() != node;
+  // We shouldn't see '[?d in foo]'... TODO: Specialize this error.
+  if (auto bkt = parent(0)->toBracketLoop()) {
+    errorBadQueryLoc |= bkt->iterand() != node;
+  }
 
-  if (doEmitError) {
+  if (auto dom = parent(0)->toDomain()) {
+    errorPartialDomainQuery = dom->numExprs() > 1;
+  }
+
+  if (errorBadQueryLoc) {
     error(node, "domain query expressions may currently only be "
                 "used in formal argument types.");
+  }
+
+  if (errorPartialDomainQuery) {
+    error(node, "cannot query part of a domain");
   }
 }
 
@@ -721,6 +732,11 @@ void Visitor::checkForUnadornedArrayType(const BracketLoop* node) {
   // Function return type is OK.
   if (auto fn = decl->toFunction()) {
     if (last == fn->returnType()) doEmitError = false;
+  }
+
+  // Checking most immediate parent, since signature != declaration.
+  if (auto sig = parent(0)->toFunctionSignature()) {
+    if (node == sig->returnType()) doEmitError = false;
   }
 
   if (doEmitError) {

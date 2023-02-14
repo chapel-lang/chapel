@@ -3418,8 +3418,10 @@ struct Converter {
       const uast::BracketLoop* bkt = ie->toBracketLoop();
       if (bkt && isTypeVar) {
           auto convArrayType = convertArrayType(bkt);
-          // TODO: Why 'buildForallLoopExprFromArrayType'?
-          initExpr = convArrayType;
+
+          // Use this builder because it is performing checks for skyline
+          // arrays amongst other things (that are too arcane for me).
+          initExpr = buildForallLoopExprFromArrayType(convArrayType);
         } else {
           initExpr = convertAST(ie);
         }

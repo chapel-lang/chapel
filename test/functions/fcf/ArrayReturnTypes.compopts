@@ -1,1 +1,1 @@
---stop-after-pass parse
+--stop-after-pass parseAndConvertUast
