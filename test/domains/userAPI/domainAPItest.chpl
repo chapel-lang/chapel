@@ -6,6 +6,7 @@ proc testDomainAPI2D(lbl, D: domain, idx, OOBidx1, OOBidx2, intDom) {
   writeln(D);
   writeln("rank             = ", D.rank);
   writeln("idxType          = ", D.idxType:string);
+  writeln("fullIdxType      = ", D.fullIdxType:string);
   writeln("stridable        = ", D.stridable);
   writeln("size             = ", D.size);
   writeln("isEmpty()        = ", D.isEmpty());
