@@ -5441,7 +5441,7 @@ proc _channel.writebits(v:integral, nbits:integral) throws {
 }
 
 /*
-  Write ``size`` coidpoints from a :type:`~String.string` to a ``filewriter``
+  Write ``size`` codepoints from a :type:`~String.string` to a ``fileWriter``
 
   :arg s: the ``string`` to write
   :arg size: the number of codepoints to write from the ``string``
@@ -5882,7 +5882,7 @@ proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
 
 
 /*
-  Controlls the return type of the ``readBinary`` overloads that take an
+  Controls the return type of the ``readBinary`` overloads that take an
   array argument. Those are:
 
   ``fileReader.readBinary(ref data: [], param endian = ioendian.native)``
@@ -5969,7 +5969,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): b
    :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
               to read the numbers. Defaults to ``ioendian.native``.
    :returns: the number of values that were read into the array. This can be
-              less than ``data.size`` if EOF was reached, or an error occured,
+              less than ``data.size`` if EOF was reached, or an error occurred,
               before filling the array.
 
    :throws SystemError: Thrown if an error occurred while reading from the fileReader
@@ -6062,7 +6062,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
    :arg endian: :type:`ioendian` specifies the byte order in which
               to read the number.
    :returns: the number of values that were read into the array. This can be
-              less than ``data.size`` if EOF was reached, or an error occured,
+              less than ``data.size`` if EOF was reached, or an error occurred,
               before filling the array.
 
    :throws SystemError: Thrown if an error occurred while reading the from fileReader
