@@ -4056,7 +4056,7 @@ GenRet CallExpr::codegen() {
   } else if (fn && fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
     codegenInvokeTaskFun("chpl_taskAddCoStmt");
 
-  } else if (isIndirectFunctionCall()) {
+  } else if (isIndirectCall()) {
     ret = codegenCallIndirect(this);
 
   } else {

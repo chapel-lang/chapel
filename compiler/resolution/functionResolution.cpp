@@ -10363,22 +10363,20 @@ Expr* resolveExpr(Expr* expr) {
       retval = resolveExprPhase2(expr, fn, preFold(call));
     } else if (auto fn = toFnSymbol(se->symbol())) {
 
-      bool isBaseExpr = false;
+      bool isIndirect = false;
       if (auto call = toCallExpr(se->parentExpr)) {
-        isBaseExpr = (se == call->baseExpr);
+        isIndirect = (se != call->baseExpr) && !call->isPrimitive();
       }
 
-      // If the symbol is a function and it is not the base expression of
-      // a call, then it is being used as a value.
-      if (!isBaseExpr) {
+      if (isIndirect) {
         auto e = resolveFunctionCapture(fn, se, false, false);
         if (auto c = toCallExpr(e)) e = preFold(c);
         retval = resolveExprPhase2(expr, fn, e);
 
-      // Otherwise, it's a normal call.
       } else {
         retval = resolveExprPhase2(expr, fn, expr);
       }
+
     } else {
       retval = resolveExprPhase2(expr, fn, expr);
     }

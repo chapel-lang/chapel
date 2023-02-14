@@ -107,7 +107,7 @@ public:
   FnSymbol*       resolvedFunction()                                     const;
   void            setResolvedFunction(FnSymbol* fn);
   FnSymbol*       resolvedOrVirtualFunction()                            const;
-  bool            isIndirectFunctionCall()                               const;
+  bool            isIndirectCall()                                       const;
 
   FnSymbol*       theFnSymbol()                                          const;
 
@@ -196,9 +196,10 @@ inline bool CallExpr::isPrimitive(const char* primitiveName) const {
   return primitive && !strcmp(primitive->name, primitiveName);
 }
 
-inline bool CallExpr::isIndirectFunctionCall() const {
+inline bool CallExpr::isIndirectCall() const {
   if (!baseExpr) return false;
   if (resolvedFunction()) return false;
+  if (isPrimitive()) return false;
   if (isFunctionType(baseExpr->qualType().type())) return true;
   return false;
 }
