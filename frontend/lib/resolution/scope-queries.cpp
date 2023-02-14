@@ -1049,7 +1049,8 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
                                  UniqueString nameInScope,
                                  const ResolvedVisibilityScope* resolving,
                                  ID idForErrs, VisibilityStmtKind useOrImport,
-                                 bool isFirstPart) {
+                                 bool isFirstPart,
+                                 UniqueString previousPartName = UniqueString()) {
   // lookup 'field' in that scope
   std::vector<BorrowedIdsWithName> vec;
   std::vector<BorrowedIdsWithName> improperMatches;
@@ -1097,7 +1098,8 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
     std::reverse(improperMatchVec.begin(), improperMatchVec.end());
 
     CHPL_REPORT(context, UseImportUnknownMod, idForErrs, useOrImport,
-                nameInScope.c_str(), std::move(improperMatchVec));
+                nameInScope.c_str(), previousPartName.c_str(),
+                std::move(improperMatchVec));
     return nullptr;
   }
 
@@ -1152,8 +1154,6 @@ findUseImportTarget(Context* context,
                     VisibilityStmtKind useOrImport,
                     UniqueString& foundName) {
   if (auto ident = expr->toIdentifier()) {
-    foundName = ident->name();
-
     if (ident->name() == USTR("super")) {
       auto ret = handleSuperMaybeError(context,
                                        scope,
@@ -1163,14 +1163,15 @@ findUseImportTarget(Context* context,
     } else if (ident->name() == USTR("this")) {
       return scope->moduleScope();
     } else {
+      foundName = ident->name();
       return findScopeViz(context, scope, ident->name(), resolving,
                           expr->id(), useOrImport, /* isFirstPart */ true);
     }
   } else if (auto dot = expr->toDot()) {
-    UniqueString ignoreFoundName;
+    UniqueString previousPartName;
     const Scope* innerScope = findUseImportTarget(context, scope, resolving,
                                                   dot->receiver(), useOrImport,
-                                                  ignoreFoundName);
+                                                  previousPartName);
     // TODO: 'this.this'?
     if (dot->field() == USTR("super")) {
 
@@ -1182,7 +1183,8 @@ findUseImportTarget(Context* context,
                                        useOrImport);
       return ret;
     } else if (dot->field() == USTR("this")) {
-      return innerScope->moduleScope();
+      foundName = previousPartName;
+      return innerScope == nullptr ? nullptr : innerScope->moduleScope();
     }
 
     if (innerScope != nullptr) {
@@ -1190,7 +1192,8 @@ findUseImportTarget(Context* context,
       // find nameInScope in innerScope
       foundName = nameInScope;
       return findScopeViz(context, innerScope, nameInScope, resolving,
-                          expr->id(), useOrImport, /* isFirstPart */ false);
+                          expr->id(), useOrImport, /* isFirstPart */ false,
+                          previousPartName);
     }
   } else {
     CHPL_ASSERT(false && "case not handled");

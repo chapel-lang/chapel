@@ -565,12 +565,19 @@ void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
 
 void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
-  auto moduleName = std::get<std::string>(info);
+  auto moduleName = std::get<2>(info);
+  auto previousPartName = std::get<3>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
   auto& improperMatches = std::get<std::vector<const uast::AstNode*>>(info);
 
-  wr.heading(kind_, type_, id, "cannot find ", allowedItem(useOrImport),
-             " '", moduleName, "' for '", useOrImport, "' statement.");
+  if (previousPartName.empty()) {
+    wr.heading(kind_, type_, id, "cannot find ", allowedItem(useOrImport),
+               " '", moduleName, "' for '", useOrImport, "' statement.");
+  } else {
+    wr.heading(kind_, type_, id, "cannot find ", allowedItem(useOrImport),
+               " '", moduleName, "' in module '", previousPartName, "' for '",
+               useOrImport, "' statement.");
+  }
   wr.message("In the following '", useOrImport, "' statement:");
   wr.code<ID, ID>(id, { id });
   if (!improperMatches.empty()) {

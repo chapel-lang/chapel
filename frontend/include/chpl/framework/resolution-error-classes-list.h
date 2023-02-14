@@ -85,6 +85,7 @@ ERROR_CLASS(UseImportUnknownMod,
             const ID,
             const resolution::VisibilityStmtKind,
             std::string,
+            std::string,
             std::vector<const uast::AstNode*>)
 ERROR_CLASS(UseImportUnknownSym,
             std::string,
