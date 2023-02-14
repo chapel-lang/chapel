@@ -680,7 +680,7 @@ void ErrorDeprecation::write(ErrorWriterBase& wr) const {
   auto target = std::get<const uast::NamedDecl*>(info);
   CHPL_ASSERT(mention && target);
 
-  wr.heading(kind_, type_, mention, msg);
+  wr.headingVerbatim(kind_, type_, mention, msg);
   wr.code(mention, {mention});
 
   /* TODO: Need to know whether the symbol is user or not:
@@ -698,7 +698,7 @@ void ErrorUnstable::write(ErrorWriterBase& wr) const {
   auto target = std::get<const uast::NamedDecl*>(info);
   CHPL_ASSERT(mention && target);
 
-  wr.heading(kind_, type_, mention, msg);
+  wr.headingVerbatim(kind_, type_, mention, msg);
   wr.code(mention, {mention});
 
   /* TODO: Need to know whether the symbol is user or not:
