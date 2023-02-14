@@ -1878,7 +1878,7 @@ proc _modestring(mode:ioMode) {
 
 pragma "no doc"
 pragma "compiler generated"
-private proc convertIoMode(mode:iomode):ioMode {
+proc convertIoMode(mode:iomode):ioMode {
   import HaltWrappers;
   use iomode;
   select mode {

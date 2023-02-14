@@ -1,0 +1,1 @@
+HDFS-open-iomode.chpl:9: warning: open with an iomode argument is deprecated - please use :enum:`ioMode`
