@@ -1730,6 +1730,7 @@ module ChapelArray {
     // The return type used here is currently not pretty in the generated
     // documentation. Don't document it for now.
     pragma "no doc"
+    @deprecated(notes="head() is deprecated on arrays, use A[A.domain.low] instead")
     proc head(): this._value.eltType {
       return this[this.domain.low];
     }
@@ -1738,6 +1739,7 @@ module ChapelArray {
     // The return type used here is currently not pretty in the generated
     // documentation. Don't document it for now.
     pragma "no doc"
+    @deprecated(notes="tail() is deprecated on arrays, use A[A.domain.high] instead")
     proc tail(): this._value.eltType {
       return this[this.domain.high];
     }

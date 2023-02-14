@@ -77,8 +77,6 @@ local subdomains:
 {0..3, 2..8 by 2}
 
 is empty: false
-head: 1.8
-tail: 16.8
 find last: (3, 8)
 find last again: true: (3, 8)
 equals same: true
