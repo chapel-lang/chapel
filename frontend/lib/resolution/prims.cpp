@@ -251,21 +251,35 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_CONST_ASSIGNABLE:
     case PRIM_HAS_DEFAULT_VALUE:
     case PRIM_NEEDS_AUTO_DESTROY:
+
     case PRIM_CALL_RESOLVES:
-    case PRIM_METHOD_CALL_RESOLVES:
     case PRIM_CALL_AND_FN_RESOLVES:
-      if (ci.numActuals() >= 1) {
+    case PRIM_METHOD_CALL_AND_FN_RESOLVES:
+    case PRIM_METHOD_CALL_RESOLVES: {
+        bool forMethod = prim == PRIM_METHOD_CALL_RESOLVES ||
+                         prim == PRIM_METHOD_CALL_AND_FN_RESOLVES;
+        bool resolveFn = prim == PRIM_CALL_AND_FN_RESOLVES ||
+                         prim == PRIM_METHOD_CALL_AND_FN_RESOLVES;
+
+        if ((forMethod && ci.numActuals() < 2) ||
+            (!forMethod && ci.numActuals() < 1)) break;
+
+        int fnNameActual = forMethod ? 1 : 0;
+
         UniqueString fnName;
-        if (toParamStringActual(ci.actual(0).type(), fnName)) {
+        if (toParamStringActual(ci.actual(fnNameActual).type(), fnName)) {
           bool callAndFnResolved = false;
 
           std::vector<CallInfoActual> actuals;
-          for (int i = 1; i < ci.numActuals(); i++) {
+          if (forMethod) {
+            actuals.push_back(CallInfoActual(ci.actual(0).type(), USTR("this")));
+          }
+          for (int i = fnNameActual + 1; i < ci.numActuals(); i++) {
             actuals.push_back(ci.actual(i));
           }
           auto callInfo = CallInfo(fnName,
                                    /* calledType */ QualifiedType(),
-                                   /* isMethodCall */ false,
+                                   /* isMethodCall */ forMethod,
                                    /* hasQuestionArg */ false,
                                    /* isParenless */ false,
                                    std::move(actuals));
@@ -280,11 +294,15 @@ CallResolutionResult resolvePrimCall(Context* context,
           }
 
           if (bestCandidate != nullptr) {
-            // We did find a candidate; resolve the function body.
-            auto result = context->runAndTrackErrors([&](Context* context) {
-              return resolveFunction(context, bestCandidate, inPoiScope);
-            });
-            callAndFnResolved = result.ranWithoutErrors();
+            callAndFnResolved = true;
+
+            if (resolveFn) {
+              // We did find a candidate; resolve the function body.
+              auto result = context->runAndTrackErrors([&](Context* context) {
+                return resolveFunction(context, bestCandidate, inPoiScope);
+              });
+              callAndFnResolved = result.ranWithoutErrors();
+            }
           }
 
           type = QualifiedType(QualifiedType::PARAM,
@@ -294,7 +312,6 @@ CallResolutionResult resolvePrimCall(Context* context,
       }
       break;
 
-    case PRIM_METHOD_CALL_AND_FN_RESOLVES:
     case PRIM_RESOLVES:
       CHPL_ASSERT(false && "not implemented yet");
       break;

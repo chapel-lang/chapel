@@ -448,7 +448,7 @@ class Context {
   }
 
   template <typename F>
-  auto runAndTrackErrors(F f) -> RunResult<decltype(f(this))> {
+  auto runAndTrackErrors(F&& f) -> RunResult<decltype(f(this))> {
     RunResult<decltype(f(this))> result;
     auto collectionRoot = queryStack.empty() ? nullptr : queryStack.back();
     errorCollectionStack.push_back(std::make_pair(&result.errors(),
