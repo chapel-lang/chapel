@@ -1115,7 +1115,7 @@ module ChapelDomain {
     /* Return the full type used to represent the indices of this
        domain.  For a 1D or associative domain, this will be the same
        as :proc:`idxType` above.  For a multidimensional domain, it
-       will be :proc:`rank`*:proc:`idxType`. */
+       will be :proc:`rank` * :proc:`idxType`. */
     proc fullIdxType type {
       if this.isAssociative() || this.rank == 1 {
         return this.idxType;
