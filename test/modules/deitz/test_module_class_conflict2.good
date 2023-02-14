@@ -1,1 +1,2 @@
-test_module_class_conflict2.chpl:13: error: 'use' of non-module/enum symbol MC
+test_module_class_conflict2.chpl:11: In module 'M1':
+test_module_class_conflict2.chpl:13: error: cannot 'use' symbol 'MC', which is not a module or 'enum'
