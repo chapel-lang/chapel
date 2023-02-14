@@ -555,7 +555,7 @@ void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
   auto moduleName = std::get<std::string>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
 
-  wr.heading(kind_, type_, id, "cannot '", useOrImport, "' '", moduleName,
+  wr.heading(kind_, type_, id, "cannot '", useOrImport, "' symbol '", moduleName,
              "', which is not a ", allowedItem(useOrImport), ".");
   wr.message("In the following '", useOrImport, "' statement:");
   wr.code<ID, ID>(id, { id });
