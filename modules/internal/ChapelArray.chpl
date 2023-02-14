@@ -891,7 +891,7 @@ module ChapelArray {
     /* The type used to represent the array's indices.  For a
        1-dimensional or associatve array, this will be the same as
        :proc:`idxType` above.  For a multidimensional array, it will be
-       :proc:`rank` * `proc:`idxType`. */
+       :proc:`rank` * :proc:`idxType`. */
     proc fullIdxType type return this.domain.fullIdxType;
 
     proc intIdxType type return chpl__idxTypeToIntIdxType(_value.idxType);
