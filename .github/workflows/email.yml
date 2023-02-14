@@ -25,7 +25,7 @@ jobs:
            PR_LINK: ${{github.event.pull_request._links.html.href}}
         run: |      
               echo "LINK=$(echo $PR_LINK )" >> $GITHUB_ENV   
-              echo "AUTHOR=$(echo ${{github.actor}})" >> $GITHUB_ENV
+              echo "AUTHOR=$(echo ${{github.event.pull_request.head.user.login}})" >> $GITHUB_ENV
               echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
               echo "FILES_CHANGED=$(echo '$PR_LINK/files' )" >> $GITHUB_ENV     
   
@@ -47,10 +47,10 @@ jobs:
               echo "$merge_log" >> $GITHUB_ENV
               echo 'EOF' >> $GITHUB_ENV
 
-              log=$(git log -m -1 --name-status --pretty="format:" $MERGE_SHA )
-              echo "$log" 
+              diff=$(git --no-pager diff --name-status HEAD $(git merge-base HEAD main) )
+              echo "$diff" 
               echo 'DIFF<<EOF' >> $GITHUB_ENV
-              echo "$log" >> $GITHUB_ENV
+              echo "$diff" >> $GITHUB_ENV
               echo 'EOF' >> $GITHUB_ENV                   
       
       - name: Send mail  
