@@ -1,1 +1,2 @@
+issue-14537.chpl:10: In module 'fibs':
 issue-14537.chpl:12: error: modules (like 'bar' here) cannot be called like procedures
