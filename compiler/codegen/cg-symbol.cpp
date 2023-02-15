@@ -1817,7 +1817,7 @@ llvmAttachReturnInfo(llvm::LLVMContext& ctx,
                      const clang::CodeGen::ABIArgInfo& returnInfo,
                      llvm::Type*& returnTy,
                      llvm::Type*& chapelReturnTy,
-                     std::vector<llvm::Type *> argTys,
+                     std::vector<llvm::Type*>& argTys,
                      std::vector<const char*>& argNames,
                      const unsigned int stackSpace) {
   switch (returnInfo.getKind()) {
