@@ -338,6 +338,9 @@ Regular Expression Types and Methods
 module Regex {
   private use OS, CTypes;
 
+  pragma "no doc"
+  private config const initBufferSizeForSlowReplaceAndCount = 16;
+
 pragma "no doc"
 extern type qio_regex_t;
 
@@ -1161,10 +1164,7 @@ proc bytes.replace(pattern: regex(bytes), replacement:bytes, count=-1): bytes {
  */
 proc string.replaceAndCount(pattern: regex(string), replacement:string,
                             count=-1): (string, int) {
-  if count==-1 || count==1 then
-    return doReplaceAndCount(this, pattern, replacement, count);
-  else
-    return doReplaceAndCountSlow(this, pattern, replacement, count);
+  return doReplaceAndCount(this, pattern, replacement, count);
 }
 
 /* Search the receiving bytes for the pattern. Returns a new bytes where the
@@ -1181,9 +1181,15 @@ proc bytes.replaceAndCount(pattern: regex(bytes), replacement:bytes,
   return doReplaceAndCount(this, pattern, replacement, count);
 }
 
-pragma "no doc"
-private config const initBufferSizeForSlowReplaceAndCount = 16;
 
+private inline proc doReplaceAndCount(x: ?t, pattern: regex(t), replacement: t,
+                                      count=-1) where (t==string || t==bytes) {
+  if count<0 || count==1 then
+    return doReplaceAndCountFast(x, pattern, replacement, global=(count!=1));
+  else
+    return doReplaceAndCountSlow(x, pattern, replacement, count);
+
+}
 
 private proc doReplaceAndCountSlow(x: ?t, pattern: regex(t), replacement: t,
                                    count=-1) where (t==string || t==bytes) {
@@ -1261,8 +1267,8 @@ private proc doReplaceAndCountSlow(x: ?t, pattern: regex(t), replacement: t,
   return (ret, totalChunksToRemove);
 }
 
-private proc doReplaceAndCount(x: ?t, pattern: regex(t), replacement: t,
-                               count=-1) where (t==string || t==bytes) {
+private proc doReplaceAndCountFast(x: ?t, pattern: regex(t), replacement: t,
+                                   global:bool) where (t==string || t==bytes) {
   var regexCopy:regex(t);
   if pattern.home != here then regexCopy = pattern;
   const localRegex = if pattern.home != here then regexCopy._regex
@@ -1281,7 +1287,7 @@ private proc doReplaceAndCount(x: ?t, pattern: regex(t), replacement: t,
   var replaced_len:int(64);
   nreplaced = qio_regex_replace(localRegex, replacement.localize().c_str(),
                                 replacement.numBytes, x.localize().c_str(),
-                                x.numBytes, pos:int, endpos:int, count!=1,
+                                x.numBytes, pos:int, endpos:int, global,
                                 replaced, replaced_len);
   if t==string {
     try! {
