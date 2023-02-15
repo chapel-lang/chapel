@@ -53,7 +53,7 @@ static types::QualifiedType decayToValue(const types::QualifiedType& qt) {
 }
 
 static const char* allowedItem(resolution::VisibilityStmtKind kind) {
-  return kind == resolution::VIS_USE ? "module or 'enum'" : "module";
+  return kind == resolution::VIS_USE ? "module or enum" : "module";
 }
 
 static const char* allowedItems(resolution::VisibilityStmtKind kind) {
@@ -572,11 +572,10 @@ void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
 
   if (previousPartName.empty()) {
     wr.heading(kind_, type_, id, "cannot find ", allowedItem(useOrImport),
-               " '", moduleName, "' for '", useOrImport, "' statement.");
+               " named '", moduleName, "'.");
   } else {
     wr.heading(kind_, type_, id, "cannot find ", allowedItem(useOrImport),
-               " '", moduleName, "' in module '", previousPartName, "' for '",
-               useOrImport, "' statement.");
+               " named '", moduleName, "' in module '", previousPartName, "'.");
   }
   wr.message("In the following '", useOrImport, "' statement:");
   wr.code<ID, ID>(id, { id });
