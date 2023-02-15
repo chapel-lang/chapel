@@ -22,12 +22,12 @@ proc main() {
   for inputSize in inputSizes do
     runOpTest(inputSize);
   for inputSize in inputSizes do
-    runAssignTest(inputSize);
+    runAddAssignTest(inputSize);
   for inputSize in inputSizes do
-    runOnStmtTest(inputSize);
+    runPowTest(inputSize);
 }
 
-// Case 1: operator
+// Case 1: addition operator
 proc runOpTest(inputVal: bigint) {
   var a: bigint = inputVal;
   var b: bigint = inputVal;
@@ -41,14 +41,14 @@ proc runOpTest(inputVal: bigint) {
 
   if perfTest {
     t.stop();
-    writeln("Elapsed ", inputVal.sizeInBase(2), " op time = ", t.elapsed(TimeUnits.seconds));
+    writeln("Elapsed ", inputVal.sizeInBase(2), " addition time = ", t.elapsed(TimeUnits.seconds));
   } else {
     writeln("Result: ", c);
   }
 }
 
-// Case 2: assignment operator
-proc runAssignTest(inputVal: bigint) {
+// Case 2: += operator
+proc runAddAssignTest(inputVal: bigint) {
   var a: bigint = inputVal;
   var b: bigint;
   
@@ -60,14 +60,14 @@ proc runAssignTest(inputVal: bigint) {
 
   if perfTest {
     t.stop();
-    writeln("Elapsed ", inputVal.sizeInBase(2), " assign time = ", t.elapsed(TimeUnits.seconds));
+    writeln("Elapsed ", inputVal.sizeInBase(2), " add assign time = ", t.elapsed(TimeUnits.seconds));
   } else {
     writeln("Result: ", b);
   }
 }
 
 // Case 3: operate on self
-proc runOnStmtTest(inputVal: bigint) {
+proc runPowTest(inputVal: bigint) {
   var a: bigint = inputVal;
   var b: bigint = 0;
 
@@ -81,7 +81,7 @@ proc runOnStmtTest(inputVal: bigint) {
 
   if perfTest {
     t.stop();
-    writeln("Elapsed ", inputVal.sizeInBase(2), " on stmt time = ", t.elapsed(TimeUnits.seconds));
+    writeln("Elapsed ", inputVal.sizeInBase(2), " pow time = ", t.elapsed(TimeUnits.seconds));
   } else {
     writeln("Result: ", b);
   }
