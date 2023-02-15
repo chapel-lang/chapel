@@ -1,3 +1,3 @@
-error in redef.chpl:1: 'x' has multiple definitions
-  note in redef.chpl:3: redefined here
-  note in redef.chpl:4: redefined here
+redef.chpl:1: error: 'x' has multiple definitions
+redef.chpl:3: note: redefined here
+redef.chpl:4: note: redefined here
