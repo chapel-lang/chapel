@@ -2,7 +2,7 @@ use FileSystem;
 use IO;
 
 config const testfile="test.bin";
-var f = open(testfile, iomode.cwr);
+var f = open(testfile, ioMode.cwr);
 var r = f.reader(kind=ionative);
 var tmp:uint(64);
 
