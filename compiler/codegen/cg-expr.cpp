@@ -4953,18 +4953,18 @@ static GenRet codegenCallToPtxTgtIntrinsic(const char *fcnName) {
   return ret;
 }
 
-DEFINE_PRIM(GPU_THREADIDX_X) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.x"); }
-DEFINE_PRIM(GPU_THREADIDX_Y) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.y"); }
-DEFINE_PRIM(GPU_THREADIDX_Z) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.z"); }
-DEFINE_PRIM(GPU_BLOCKIDX_X)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.x"); }
-DEFINE_PRIM(GPU_BLOCKIDX_Y)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.y"); }
-DEFINE_PRIM(GPU_BLOCKIDX_Z)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.z"); }
-DEFINE_PRIM(GPU_BLOCKDIM_X)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.x"); }
-DEFINE_PRIM(GPU_BLOCKDIM_Y)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.y"); }
-DEFINE_PRIM(GPU_BLOCKDIM_Z)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.z"); }
-DEFINE_PRIM(GPU_GRIDDIM_X)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.x"); }
-DEFINE_PRIM(GPU_GRIDDIM_Y)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.y"); }
-DEFINE_PRIM(GPU_GRIDDIM_Z)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.z"); }
+DEFINE_PRIM(GPU_THREADIDX_X) { ret = codegenCallExpr("chpl_gpu_getThreadIdxX"); }
+DEFINE_PRIM(GPU_THREADIDX_Y) { ret = codegenCallExpr("chpl_gpu_getThreadIdxY"); }
+DEFINE_PRIM(GPU_THREADIDX_Z) { ret = codegenCallExpr("chpl_gpu_getThreadIdxZ"); }
+DEFINE_PRIM(GPU_BLOCKIDX_X)  { ret = codegenCallExpr("chpl_gpu_getBlockIdxX"); }
+DEFINE_PRIM(GPU_BLOCKIDX_Y)  { ret = codegenCallExpr("chpl_gpu_getBlockIdxY"); }
+DEFINE_PRIM(GPU_BLOCKIDX_Z)  { ret = codegenCallExpr("chpl_gpu_getBlockIdxZ"); }
+DEFINE_PRIM(GPU_BLOCKDIM_X)  { ret = codegenCallExpr("chpl_gpu_getBlockDimX"); }
+DEFINE_PRIM(GPU_BLOCKDIM_Y)  { ret = codegenCallExpr("chpl_gpu_getBlockDimY"); }
+DEFINE_PRIM(GPU_BLOCKDIM_Z)  { ret = codegenCallExpr("chpl_gpu_getBlockDimZ"); }
+DEFINE_PRIM(GPU_GRIDDIM_X)   { ret = codegenCallExpr("chpl_gpu_getGridDimX"); }
+DEFINE_PRIM(GPU_GRIDDIM_Y)   { ret = codegenCallExpr("chpl_gpu_getGridDimY"); }
+DEFINE_PRIM(GPU_GRIDDIM_Z)   { ret = codegenCallExpr("chpl_gpu_getGridDimZ"); }
 
 DEFINE_PRIM(GPU_ALLOC_SHARED) {
 #ifdef HAVE_LLVM

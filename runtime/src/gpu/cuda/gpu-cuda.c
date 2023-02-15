@@ -32,6 +32,7 @@
 #include "chplcgfns.h"
 #include "../common/cuda-utils.h"
 #include "../common/cuda-shared.h"
+#include "chpl-env-gen.h"
 
 #include <cuda.h>
 #include <cuda_runtime.h>
