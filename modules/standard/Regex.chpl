@@ -1188,7 +1188,6 @@ private config const initBufferSizeForSlowReplaceAndCount = 16;
 private proc doReplaceAndCountSlow(x: ?t, pattern: regex(t), replacement: t,
                                    count=-1) where (t==string || t==bytes) {
   use ByteBufferHelpers;
-  use String.NVStringFactory;
 
   var regexCopy:regex(t);
   if pattern.home != here then regexCopy = pattern;
@@ -1204,19 +1203,16 @@ private proc doReplaceAndCountSlow(x: ?t, pattern: regex(t), replacement: t,
   var totalBytesToRemove = 0;
   var totalChunksToRemove = 0;
   for i in 0..<count {
-    var got = qio_regex_match(localRegex, localX.c_str(), x.numBytes,
-                              startpos=curIdx, endpos=x.numBytes-1,
-                              QIO_REGEX_ANCHOR_UNANCHORED, matches[i], 1);
+    if i == matchesDom.size then matchesDom = {0..#matchesDom.size*2};
 
+    var got = qio_regex_match(localRegex, localX.c_str(), x.numBytes,
+                              startpos=curIdx, endpos=x.numBytes,
+                              QIO_REGEX_ANCHOR_UNANCHORED, matches[i], 1);
     if !got then break;
 
-    curIdx += matches[i].offset + matches[i].len;
+    curIdx = matches[i].offset + matches[i].len;
     totalBytesToRemove += matches[i].len;
     totalChunksToRemove += 1;
-
-    if i >= matchesDom.size {
-      matchesDom = {0..#matchesDom.size*2};
-    }
   }
   if totalChunksToRemove == 0 then return (x,0);
 
