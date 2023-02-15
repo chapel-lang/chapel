@@ -2437,8 +2437,7 @@ void Resolver::exit(const Range* range) {
   auto boundedRangeTypeType = EnumType::getBoundedRangeTypeType(context);
   auto boundedType = typeForEnumElement(boundedRangeTypeType,
                                         UniqueString::get(context, rangeTypeName),
-                                        range,
-                                        refersToId);
+                                        range);
 
   auto subMap = SubstitutionsMap();
   subMap.insert({resolvedFields.fieldDeclId(0), std::move(idxType)});
@@ -2661,32 +2660,60 @@ bool Resolver::enter(const Dot* dot) {
   return true;
 }
 
+ID Resolver::scopeResolveEnumElement(const Enum* enumAst,
+                                     UniqueString elementName,
+                                     const AstNode* nodeForErr,
+                                     bool& outAmbiguous) {
+  outAmbiguous = false;
+  LookupConfig config = LOOKUP_DECLS | LOOKUP_INNERMOST;
+  auto enumScope = scopeForId(context, enumAst->id());
+  auto vec = lookupNameInScope(context, enumScope,
+                               /* receiverScopes */ {},
+                               elementName, config);
+  if (vec.size() == 0) {
+    CHPL_REPORT(context, UnknownEnumElem, nodeForErr, elementName, enumAst);
+  } else if (vec.size() > 1 || vec[0].numIds() > 1) {
+    auto& ids = vec[0];
+    // multiple candidates. report an error, but the expression most likely has a type given by the enum.
+    std::vector<ID> redefinedIds(ids.numIds());
+    std::copy(ids.begin(), ids.end(), redefinedIds.begin());
+    CHPL_REPORT(context, MultipleEnumElems, nodeForErr, elementName, enumAst,
+                std::move(redefinedIds));
+    outAmbiguous = true;
+  } else {
+    return vec[0].firstId();
+  }
+
+  return ID();
+}
+
+QualifiedType
+Resolver::typeForScopeResolvedEnumElement(const EnumType* enumType,
+                                          const ID& refersToId,
+                                          bool ambiguous) {
+  if (!refersToId.isEmpty()) {
+    // Found a single enum element, the type can be a param.
+    auto newParam = EnumParam::get(context, refersToId);
+    return QualifiedType(QualifiedType::PARAM, enumType, newParam);
+  } else if (ambiguous) {
+    // multiple candidates. but the expression most likely has a type given by
+    // the enum.
+    return QualifiedType(QualifiedType::CONST_VAR, enumType);
+  } else {
+    return QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
+  }
+}
+
+
 QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
                                            UniqueString elementName,
-                                           const AstNode* nodeForErr,
-                                           ID& outElemId) {
-    LookupConfig config = LOOKUP_DECLS | LOOKUP_INNERMOST;
-    auto enumScope = scopeForId(context, enumType->id());
-    auto vec = lookupNameInScope(context, enumScope,
-                                 /* receiverScopes */ {},
-                                 elementName, config);
-    if (vec.size() == 0) {
-      return CHPL_TYPE_ERROR(context, UnknownEnumElem, nodeForErr,
-                             elementName, enumType);
-    } else if (vec.size() > 1 || vec[0].numIds() > 1) {
-      auto& ids = vec[0];
-      // multiple candidates. report a type error, but the
-      // expression most likely has a type given by the enum.
-      std::vector<ID> redefinedIds(ids.numIds());
-      std::copy(ids.begin(), ids.end(), redefinedIds.begin());
-      CHPL_REPORT(context, MultipleEnumElems, nodeForErr, elementName, enumType, std::move(redefinedIds));
-      return QualifiedType(QualifiedType::CONST_VAR, enumType);
-    } else {
-      auto id = vec[0].firstId();
-      auto newParam = EnumParam::get(context, id);
-      outElemId = id;
-      return QualifiedType(QualifiedType::PARAM, enumType, newParam);
-    }
+                                           const AstNode* nodeForErr) {
+  auto enumAst = parsing::idToAst(context, enumType->id())->toEnum();
+  CHPL_ASSERT(enumAst != nullptr);
+  bool ambiguous;
+  auto refersToId = scopeResolveEnumElement(enumAst, elementName,
+                                            nodeForErr, ambiguous);
+  return typeForScopeResolvedEnumElement(enumType, refersToId, ambiguous);
 }
 
 void Resolver::exit(const Dot* dot) {
@@ -2750,19 +2777,26 @@ void Resolver::exit(const Dot* dot) {
   }
 
   if (receiver.type().kind() == QualifiedType::TYPE &&
-      receiver.type().type() != nullptr &&
-      receiver.type().type()->isEnumType()) {
+      asttags::isEnum(parsing::idToTag(context, receiver.toId()))) {
     // resolve E.x where E is an enum.
-    const EnumType* enumType = receiver.type().type()->toEnumType();
-    CHPL_ASSERT(enumType != nullptr);
-    CHPL_ASSERT(receiver.toId().isEmpty() == false);
-
+    auto enumAst = parsing::idToAst(context, receiver.toId())->toEnum();
+    CHPL_ASSERT(enumAst != nullptr);
     ResolvedExpression& r = byPostorder.byAst(dot);
-    ID elemId = r.toId(); // store the original in case we don't get a new one
-    auto qt = typeForEnumElement(enumType, dot->field(), dot, elemId);
+
+    bool ambiguous;
+    auto elemId = scopeResolveEnumElement(enumAst, dot->field(), dot, ambiguous);
     validateAndSetToId(r, dot, elemId);
-    r.setType(qt);
-    maybeEmitWarningsForId(this, qt, dot, elemId);
+
+    if (!scopeResolveOnly &&
+        receiver.type().type() != nullptr &&
+        receiver.type().type()->isEnumType()) {
+      const EnumType* enumType = receiver.type().type()->toEnumType();
+      CHPL_ASSERT(enumType != nullptr);
+      auto qt = typeForScopeResolvedEnumElement(enumType, elemId, ambiguous);
+      r.setType(qt);
+      maybeEmitWarningsForId(this, qt, dot, elemId);
+    }
+
     return;
   }
 

@@ -316,13 +316,13 @@ void ErrorModuleAsVariable::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorMultipleEnumElems::write(ErrorWriterBase& wr) const {
-  auto enumType = std::get<const types::EnumType*>(info);
+  auto enumAst = std::get<const uast::Enum*>(info);
   auto elemName = std::get<UniqueString>(info);
   auto& possibleElems = std::get<std::vector<ID>>(info);
 
-  wr.heading(kind_, type_, enumType->id(), "enum '", enumType->name(),
+  wr.heading(kind_, type_, enumAst->id(), "enum '", enumAst->name(),
              "' has multiple elements named '", elemName, "'.");
-  wr.code(enumType->id());
+  wr.code(enumAst->id());
   bool printedOne = false;
   for (auto& id : possibleElems) {
     wr.note(id, printedOne ? "another" : "one", " instance occurs here:");
@@ -573,13 +573,13 @@ void ErrorTupleExpansionNonTuple::write(ErrorWriterBase& wr) const {
 void ErrorUnknownEnumElem::write(ErrorWriterBase& wr) const {
   auto node = std::get<const uast::AstNode*>(info);
   auto elemName = std::get<UniqueString>(info);
-  auto enumType = std::get<const types::EnumType*>(info);
+  auto enumAst = std::get<const uast::Enum*>(info);
 
-  wr.heading(kind_, type_, node, "enum '", enumType->name(),
+  wr.heading(kind_, type_, node, "enum '", enumAst->name(),
              "' has no element named '", elemName, "'.");
   wr.code(node, { node });
-  wr.note(enumType->id(), "'", enumType->name(), "' is declared here.");
-  wr.code(enumType->id());
+  wr.note(enumAst->id(), "'", enumAst->name(), "' is declared here.");
+  wr.code(enumAst->id());
 }
 
 void ErrorUnsupportedAsIdent::write(ErrorWriterBase& wr) const {
