@@ -8,6 +8,7 @@ config const repeatCount = 4;
 config const replacementCount = repeatCount;
 config const verify = true;
 config const printResult = true;
+config const printTime = false;
 config const numIter = 10;
 
 if useGlobal then assert(replacementCount == repeatCount);
@@ -40,4 +41,4 @@ if verify {
   }
 }
 
-writeln("Time per iteration (s): ", t.elapsed()/numIter);
+if printTime then writeln("Time per iteration (s): ", t.elapsed()/numIter);
