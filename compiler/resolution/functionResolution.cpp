@@ -3379,6 +3379,40 @@ static bool isTypeConstructionCall(CallExpr* call) {
   return ret;
 }
 
+// t is the type we resolved call to return
+static void warnForPartialInstantantiationNoQ(CallExpr* call, Type* t) {
+  // is the resulting type generic?
+  if (t != nullptr) {
+    CallExpr* checkCall = call;
+    if (call->numActuals() >= 1) {
+      // check for 'owned C' e.g.
+      if (SymExpr* se = toSymExpr(call->baseExpr)) {
+        if (se->symbol()->hasFlag(FLAG_MANAGED_POINTER)) {
+          checkCall = toCallExpr(call->get(1));
+        }
+      }
+    }
+    if (checkCall != nullptr && checkCall->numActuals() > 0) {
+      bool foundQuestionMarkArg = false;
+      for_actuals(actual, checkCall) {
+        if (SymExpr* se = toSymExpr(actual)) {
+          if (se->symbol() == gUninstantiated) {
+            foundQuestionMarkArg = true;
+          }
+        }
+      }
+
+      if (!foundQuestionMarkArg) {
+        Type* tt = canonicalClassType(t);
+        if (tt && tt->symbol->hasFlag(FLAG_GENERIC)) {
+          USR_WARN(checkCall, "partial instantiation should use ?");
+        }
+      }
+    }
+  }
+}
+
+
 static Type* resolveTypeSpecifier(CallInfo& info) {
   CallExpr* call = info.call;
   if (call->id == breakOnResolveID) gdbShouldBreakHere();
@@ -3439,36 +3473,7 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
         again->remove();
       }
     }
-
-    // is the resulting type generic?
-    if (ret != nullptr) {
-      CallExpr* checkCall = call;
-      if (call->numActuals() >= 1) {
-        // check for 'owned C' e.g.
-        if (SymExpr* se = toSymExpr(call->baseExpr)) {
-          if (se->symbol()->hasFlag(FLAG_MANAGED_POINTER)) {
-            checkCall = toCallExpr(call->get(1));
-          }
-        }
-      }
-      if (checkCall != nullptr && checkCall->numActuals() > 0) {
-        bool foundQuestionMarkArg = false;
-        for_actuals(actual, checkCall) {
-          if (SymExpr* se = toSymExpr(actual)) {
-            if (se->symbol() == gUninstantiated) {
-              foundQuestionMarkArg = true;
-            }
-          }
-        }
-
-        if (!foundQuestionMarkArg) {
-          Type* t = canonicalClassType(ret);
-          if (t && t->symbol->hasFlag(FLAG_GENERIC)) {
-            USR_WARN(checkCall, "partial instantiation should use ?");
-          }
-        }
-      }
-    }
+    warnForPartialInstantantiationNoQ(call, ret);
   }
 
   if (ret != NULL) {
