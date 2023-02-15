@@ -25,8 +25,7 @@ jobs:
            PR_LINK: ${{github.event.pull_request._links.html.href}}
         run: |      
               echo "LINK=$(echo $PR_LINK )" >> $GITHUB_ENV   
-              echo "AUTHOR=$(echo ${{github.event.pull_request.head.user.login}})" >> $GITHUB_ENV
-              echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
+              echo "AUTHOR=$(echo ${{github.event.pull_request.head.user.login}})" >> $GITHUB_ENV      
               echo "FILES_CHANGED=$(echo '$PR_LINK/files' )" >> $GITHUB_ENV     
   
       - name: checkout
@@ -35,7 +34,8 @@ jobs:
         with:
           fetch-depth: 0 
       # this step will (1) get the merge log for the merge_commit_sha and save it to the git  actions EN for later use in the email body. 
-      # (2) Get the files changed on the merge commit using the git log --name-status command.
+      # (2) Get the files changed on the merge commit using the git diff --name-status command.
+      # (3) Construct compare url using tip of main and the merge commit.
       - name: Get merge log
         id: merge-log
         env:
@@ -51,7 +51,11 @@ jobs:
               echo "$diff" 
               echo 'DIFF<<EOF' >> $GITHUB_ENV
               echo "$diff" >> $GITHUB_ENV
-              echo 'EOF' >> $GITHUB_ENV                   
+              echo 'EOF' >> $GITHUB_ENV  
+
+              head_sha=$(git show HEAD --format=%T | head -1)
+              echo "$head_sha"
+              echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.sha}}...'$head_sha )" >> $GITHUB_ENV                 
       
       - name: Send mail  
         uses: dawidd6/action-send-mail@v3
