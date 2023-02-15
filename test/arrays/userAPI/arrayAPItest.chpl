@@ -2,12 +2,14 @@ config param testError = 0, testDisplayRepresentation = false;
 
 proc readArray(X) {
   use IO;
+
   open("realValues.txt", iomode.r).reader().read(X);
 }
 
 proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
   // print header
-  writeln(lbl, "\n----------------");
+  writeln(lbl);
+  writeln("----------------");
   // Test generic aspects of arrays
   writeln("eltType is: ", X.eltType: string);
   writeln("idxType is: ", X.idxType: string);
