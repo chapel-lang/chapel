@@ -294,7 +294,7 @@ if there was an error. See:
  * :proc:`FormattedIO.channel.writef` (see also :ref:`about-io-formatted-io`)
  * :proc:`channel.read`
  * :proc:`channel.readln`
- * :proc:`channel.readbits`
+ * :proc:`channel.readBits`
  * :proc:`FormattedIO.channel.readf` (see also :ref:`about-io-formatted-io`)
 
 Sometimes it's important to flush the buffer in a channel - to do that, use the
@@ -5462,10 +5462,11 @@ proc fileReader.readBits(ref x:integral, numBits:int):bool throws {
     :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
     :throws SystemError: Thrown if the bits could not be read from the channel.
 */
-proc fileReader.readBits(type resultType, numBits:int): resultType throws {
+proc fileReader.readBits(type resultType, numBits:int):resultType throws {
   var tmp:resultType;
   var ret = try this.readBits(tmp, numBits);
   if !ret then throw new owned UnexpectedEofError("Encountered EOF while reading");
+  return tmp;
 }
 
 /*
