@@ -1,1 +1,2 @@
-error in useImportUnknownMod.chpl:6: cannot find module 'X' for 'import'
+useImportUnknownMod.chpl:5: In module 'N':
+useImportUnknownMod.chpl:6: error: cannot find module named 'X'

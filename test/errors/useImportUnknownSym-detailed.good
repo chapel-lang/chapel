@@ -1,5 +1,5 @@
 ─── error in useImportUnknownSym.chpl:6 [UseImportUnknownSym] ───
-  Cannot find symbol 'b' for import.
+  Cannot 'import' symbol 'b' as it is not defined in 'M'.
   In the following 'import' statement:
       |
     6 |   import M.b;

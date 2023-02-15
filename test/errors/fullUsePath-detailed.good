@@ -8,7 +8,7 @@
   Note that all of the file's contents -- including module 'M1' -- will be placed into the new 'fullUsePath' module.
 
 ─── error in fullUsePath.chpl:9 [UseImportUnknownMod] ───
-  Cannot find module or enum 'ToLookFor' for 'use' statement.
+  Cannot find module or enum named 'ToLookFor'.
   In the following 'use' statement:
       |
     9 |                 use ToLookFor;
