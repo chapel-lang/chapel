@@ -48,7 +48,7 @@ if test == 2 { // uints
   {
       var r = f.reader(kind=ionative);
       var tmp:uint;
-      var nbits:uint = 3;
+      var nbits:int = 3;
       // now tmp, nbits are int
       r.readBits(tmp, nbits);
       writeln("Read ", tmp);
