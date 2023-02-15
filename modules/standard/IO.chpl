@@ -5411,6 +5411,22 @@ proc fileReader.readBits(ref x:integral, numBits:int):bool throws {
 }
 
 /*
+    Read bits with binary I/O
+
+    :arg resultType: type of the value returned
+    :arg numBits: how many bits to read
+    :returns: bits read. This value will have its *numBits* least-significant bits set
+
+    :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+    :throws SystemError: Thrown if the bits could not be read from the channel.
+*/
+proc fileReader.readBits(type resultType, numBits:int): resultType throws {
+  var tmp:resultType;
+  var ret = try this.readBits(tmp, numBits);
+  if !ret then throw new owned UnexpectedEofError("Encountered EOF while reading");
+}
+
+/*
    Write bits with binary I/O
 
    :arg v: a value containing *nbits* bits to write the least-significant bits
