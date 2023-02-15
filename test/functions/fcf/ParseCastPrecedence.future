@@ -1,0 +1,5 @@
+[NO ISSUE YET]: Precedence when parsing function type return types
+
+Right now 'proc(): int:string == "proc(): int"' is being parsed like
+'proc(): (int:string == "proc(): int")', we may want to adjust the
+precedence of function types, or always require parens.
