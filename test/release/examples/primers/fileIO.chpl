@@ -352,13 +352,13 @@ if example == 0 || example == 7 {
     var r = f.reader(kind=ionative);
     var tmp:uint(64);
 
-    r.readbits(tmp, 3);
+    r.readBits(tmp, 3);
     assert(tmp == 0b011);
 
-    r.readbits(tmp, 4);
+    r.readBits(tmp, 4);
     assert(tmp == 0b0110);
 
-    r.readbits(tmp, 9);
+    r.readBits(tmp, 9);
     assert(tmp == 0b011110000);
 
     r.close();

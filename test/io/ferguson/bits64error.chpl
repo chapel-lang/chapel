@@ -22,7 +22,7 @@ writeln("Done writing");
   for i in 0..#n
   {
     var x:uint;
-    myfile.readbits(x, 63);
+    myfile.readBits(x, 63);
     sum += x;
   }
 

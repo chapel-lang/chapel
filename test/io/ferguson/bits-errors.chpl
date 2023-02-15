@@ -44,7 +44,7 @@ if test == 3 {
     var tmp:int;
     var nbits = -1;
     // now tmp, nbits are int
-    r.readbits(tmp, nbits);
+    r.readBits(tmp, nbits);
     assert(tmp == 0b011);
 }
 
@@ -55,7 +55,7 @@ if test == 4 {
     var tmp:uint(8);
     var nbits = 9;
     // now tmp, nbits are int
-    r.readbits(tmp, nbits);
+    r.readBits(tmp, nbits);
     assert(tmp == 0b011);
 }
 

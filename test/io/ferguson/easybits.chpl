@@ -18,7 +18,7 @@ var f = open(testfile, ioMode.cwr);
     var r = f.reader(kind=ionative);
     var tmp:uint(64);
 
-    r.readbits(tmp, 3);
+    r.readBits(tmp, 3);
     writeln("Read ", tmp);
     assert(tmp == 0b011);
 }
