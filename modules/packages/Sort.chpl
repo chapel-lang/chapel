@@ -3117,7 +3117,7 @@ module TwoArrayPartitioning {
 
     // Always use state 1 for small subproblems...
     ref state = state1;
-    coforall (loc,tid) in zip(A.targetLocales(),0:idxType..) with (ref state) do
+    coforall (loc,tid) in zip(A.targetLocales(),0..) with (ref state) do
     on loc {
       // Get the tasks to sort here
 

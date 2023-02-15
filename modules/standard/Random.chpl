@@ -307,7 +307,7 @@ module Random {
       } else if isDomainType(sizeType) {
         if size.size <= 0 then
           throw new owned IllegalArgumentError('choice() size domain can not be empty');
-        if !replace && size.size > X.sizeAs(idxType) then
+        if !replace && size.size > X.sizeAs(X.idxType) then
           throw new owned IllegalArgumentError('choice() size must be smaller than x.size when replace=false');
       } else {
         compilerError('choice() size must be integral or domain');
@@ -331,7 +331,7 @@ module Random {
 
     if isNothingType(sizeType) {
       // Return 1 sample
-      var randVal = stream.getNext(resultType=int, 0, X.sizeAs(idxType)-1);
+      var randVal = stream.getNext(resultType=int, 0, X.sizeAs(X.idxType)-1);
       var randIdx = X.dim(0).orderToIndex(randVal);
       return randIdx;
     } else {
@@ -350,16 +350,16 @@ module Random {
 
       if replace {
         for sample in samples {
-          var randVal = stream.getNext(resultType=int, 0, X.sizeAs(idxType)-1);
+          var randVal = stream.getNext(resultType=int, 0, X.sizeAs(X.idxType)-1);
           var randIdx = X.dim(0).orderToIndex(randVal);
           sample = randIdx;
         }
       } else {
-        if numElements < log2(X.sizeAs(idxType)) {
+        if numElements < log2(X.sizeAs(X.idxType)) {
           var indices: set(int);
           var i: int = 0;
           while i < numElements {
-            var randVal = stream.getNext(resultType=int, 0, X.sizeAs(idxType)-1);
+            var randVal = stream.getNext(resultType=int, 0, X.sizeAs(X.idxType)-1);
             if !indices.contains(randVal) {
               var randIdx = X.dim(0).orderToIndex(randVal);
               samples[i] = randIdx;
@@ -390,7 +390,7 @@ module Random {
     import Search;
     import Sort;
 
-    if prob.size != X.sizeAs(idxType) {
+    if prob.size != X.sizeAs(X.idxType) {
       throw new owned IllegalArgumentError('choice() x.size must be equal to prob.size');
     }
 
@@ -399,7 +399,7 @@ module Random {
 
     const low = X.low,
           stride = abs(X.stride);
-    ref P = prob.reindex(0..<X.sizeAs(idxType));
+    ref P = prob.reindex(0..<X.sizeAs(X.idxType));
 
     // Construct cumulative sum array
     var cumulativeArr = (+ scan P): real;

@@ -32,9 +32,6 @@ module Bytes {
   public use BytesCasts;
   public use BytesStringCommon only decodePolicy;  // expose decodePolicy
 
-  pragma "no doc"
-  type idxType = int;
-
   //
   // createBytes* functions
   //
@@ -560,8 +557,8 @@ module Bytes {
               :type:`bytes`.
    */
   inline proc bytes.find(pattern: bytes,
-                         indices: range(?) = this.indices) : idxType {
-    return doSearchNoEnc(this, pattern, indices, count=false): idxType;
+                         indices: range(?) = this.indices) : int {
+    return doSearchNoEnc(this, pattern, indices, count=false);
   }
 
   /*
@@ -578,9 +575,9 @@ module Bytes {
               :type:`bytes`.
    */
   inline proc bytes.rfind(pattern: bytes,
-                          indices: range(?) = this.indices) : idxType {
+                          indices: range(?) = this.indices) : int {
     return doSearchNoEnc(this, pattern, indices, count=false,
-                         fromLeft=false): idxType;
+                         fromLeft=false);
   }
 
   /*
