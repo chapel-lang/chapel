@@ -1,2 +1,2 @@
 test_nested_use4.chpl:12: In function 'main':
-test_nested_use4.chpl:13: error: cannot find module or 'enum' 'notoutermost' for 'use' statement
+test_nested_use4.chpl:13: error: cannot find module or enum named 'notoutermost'

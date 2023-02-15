@@ -1,1 +1,1 @@
-no-junk-import.chpl:1: error: cannot find module 'junk' for 'import' statement
+no-junk-import.chpl:1: error: cannot find module named 'junk'

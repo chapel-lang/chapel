@@ -1,2 +1,2 @@
 test_nested_use2.chpl:12: In function 'main':
-test_nested_use2.chpl:13: error: cannot find module or 'enum' 'notinnermost' in module 'middlemost' for 'use' statement
+test_nested_use2.chpl:13: error: cannot find module or enum named 'notinnermost' in module 'middlemost'

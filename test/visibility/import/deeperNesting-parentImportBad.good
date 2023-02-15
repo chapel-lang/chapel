@@ -1,5 +1,5 @@
 deeperNesting-parentImportBad.chpl:9: In module 'C':
-deeperNesting-parentImportBad.chpl:10: error: cannot find module 'B' for 'import' statement
+deeperNesting-parentImportBad.chpl:10: error: cannot find module named 'B'
 deeperNesting-parentImportBad.chpl:2: note: a module named 'B' is defined here
 deeperNesting-parentImportBad.chpl:2: note: however, a full path or an explicit relative import is required for modules that are not at the root level
 deeperNesting-parentImportBad.chpl:10: note: For non-root-level modules, please specify the full path to the module or use a relative import e.g. 'import this.M' or 'import super.M'
