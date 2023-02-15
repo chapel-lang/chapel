@@ -3405,7 +3405,26 @@ static void warnForPartialInstantantiationNoQ(CallExpr* call, Type* t) {
       if (!foundQuestionMarkArg) {
         Type* tt = canonicalClassType(t);
         if (tt && tt->symbol->hasFlag(FLAG_GENERIC)) {
-          USR_WARN(checkCall, "partial instantiation should use ?");
+          // print out which field
+          USR_WARN(checkCall, "type construction call is surprisingly generic");
+          USR_PRINT(checkCall, "it does not set all generic fields so the result is generic");
+          USR_PRINT(checkCall, "to fully instantiate, add type constructor arguments");
+          USR_PRINT(checkCall, "or, opt in to partial instantiation with trailing '?' argument");
+          // which field name is generic?
+          if (AggregateType* at = toAggregateType(tt)) {
+            Symbol* firstGenericField = nullptr;
+            for_fields(field, at) {
+              if (field->type == dtUnknown ||
+                  field->type->symbol->hasFlag(FLAG_GENERIC)) {
+                firstGenericField = field;
+                break;
+              }
+            }
+            if (firstGenericField) {
+              USR_PRINT(firstGenericField, "the generic field '%s' is not set in the type construction call",
+                        firstGenericField->name);
+            }
+          }
         }
       }
     }
