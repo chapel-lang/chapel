@@ -370,7 +370,19 @@ CallInfo CallInfo::create(Context* context,
   return ret;
 }
 
+CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
+                                      QualifiedType receiverType) {
+  std::vector<CallInfoActual> newActuals;
+  newActuals.push_back(CallInfoActual(receiverType, USTR("this")));
+  // append the other actuals
+  newActuals.insert(newActuals.end(), ci.actuals_.begin(), ci.actuals_.end());
 
+  return CallInfo(ci.name_, receiverType,
+                  /* isMethodCall */ true,
+                  ci.hasQuestionArg_,
+                  ci.isParenless_,
+                  std::move(newActuals));
+}
 
 void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
   CHPL_ASSERT(Builder::astTagIndicatesNewIdScope(ast->tag()));

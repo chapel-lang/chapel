@@ -9,7 +9,7 @@ w.close();
 chmod(filename.c_str(), 0o0400: mode_t); // set it to read only now that it has contents
 
 try {
-  var f = open(filename, iomode.cw);
+  var f = open(filename, ioMode.cw);
   writeln("Uh oh, didn't trigger an error");
 } catch e: PermissionError {
   writeln(e.message());

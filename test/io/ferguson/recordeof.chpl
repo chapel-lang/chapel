@@ -9,7 +9,7 @@ config const debug = true;
 
 // Open up a file to work with.
 // Note that fileName not exist or have no contents
-var f = open(fileName, iomode.cwr);
+var f = open(fileName, ioMode.cwr);
 
 proc MyRecord.readThis(f) throws {
   readWriteHelper(f);

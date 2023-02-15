@@ -48,7 +48,7 @@ writeln("Changing directory");
 here.chdir(dirname1);
 
 writeln("Creating file");
-var f = open(filename1, iomode.cw);
+var f = open(filename1, ioMode.cw);
 var writer = f.writer();
 writer.write("test file");
 writer.close();

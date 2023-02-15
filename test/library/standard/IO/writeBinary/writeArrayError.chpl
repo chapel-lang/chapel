@@ -2,7 +2,7 @@ use IO;
 
 const n = 5;
 
-var f = open("./test.bin", iomode.cw);
+var f = open("./test.bin", ioMode.cw);
 var w = f.writer(region=0..5);
 
 try {

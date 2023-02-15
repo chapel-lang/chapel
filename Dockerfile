@@ -52,8 +52,9 @@ ENV CHPL_HOME=/opt/chapel \
 WORKDIR $CHPL_HOME
 COPY . .
 
-# build Chapel
-RUN make \
+# build Chapel for both C and LLVM backends
+RUN CHPL_TARGET_COMPILER=llvm make \
+    && CHPL_TARGET_COMPILER=gnu make \
     && make chpldoc test-venv mason \
     && make cleanall
 

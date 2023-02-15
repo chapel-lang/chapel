@@ -18,7 +18,7 @@ config const path = "many-a.tmp";
 proc printHashOfN(n:int) {
   // Fill out the "a"s file
   {
-    var f = open(path, iomode.cwr);
+    var f = open(path, ioMode.cwr);
     var w = f.writer();
     for i in 1..n {
       w.write("a");

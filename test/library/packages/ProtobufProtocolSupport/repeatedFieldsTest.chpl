@@ -3,7 +3,7 @@ use ProtobufProtocolSupport.WireEncoding;
 use IO;
 use List;
 
-var f = openmem();
+var f = openMemFile();
 
 var lst1 = new list(uint(64));
 lst1.append(1);

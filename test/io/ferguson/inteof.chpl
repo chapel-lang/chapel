@@ -12,7 +12,7 @@ for i in 0..sizes.size-1
   {
     if verbose then writeln("n=", n, " reopen=", reopen, " read text");
     {
-      var infile = open(filename, iomode.cwr);
+      var infile = open(filename, ioMode.cwr);
       var writer = infile.writer();
 
       writer.writeln(n);
@@ -24,7 +24,7 @@ for i in 0..sizes.size-1
 
       if reopen {
         infile.close();
-        infile = open(filename, iomode.r);
+        infile = open(filename, ioMode.r);
       }
 
       var reader = infile.reader();
@@ -52,7 +52,7 @@ for i in 0..sizes.size-1
     }
     if verbose then writeln("n=", n, " reopen=", reopen, " readln text");
     {
-      var infile = open(filename, iomode.cwr);
+      var infile = open(filename, ioMode.cwr);
       var writer = infile.writer();
 
       writer.writeln(n);
@@ -64,7 +64,7 @@ for i in 0..sizes.size-1
 
       if reopen {
         infile.close();
-        infile = open(filename, iomode.r);
+        infile = open(filename, ioMode.r);
       }
 
       var reader = infile.reader();
@@ -92,7 +92,7 @@ for i in 0..sizes.size-1
     }
     if verbose then writeln("n=", n, " reopen=", reopen, " read binary");
     {
-      var infile = open(filename, iomode.cwr);
+      var infile = open(filename, ioMode.cwr);
       var writer = infile.writer(kind=iokind.native);
 
       writer.write(n);
@@ -104,7 +104,7 @@ for i in 0..sizes.size-1
 
       if reopen {
         infile.close();
-        infile = open(filename, iomode.r);
+        infile = open(filename, ioMode.r);
       }
 
       var reader = infile.reader(kind=iokind.native);

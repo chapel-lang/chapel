@@ -32,7 +32,7 @@ proc check_expected(data, expected:string, len) {
  */
 proc test_readLine(amount: int, input: string, expected: string, stripNewline=false) throws {
   /* Write input string to f, so we can readLine() it out */
-  var f = openmem();
+  var f = openMemFile();
   var w = f.writer();
 
   w.writeln(input);

@@ -552,16 +552,12 @@ Resolver::ReceiverScopesVec Resolver::methodReceiverScopes(bool recompute) {
   return savedReceiverScopes;
 }
 
-const CompositeType* Resolver::methodReceiverType() {
+QualifiedType Resolver::methodReceiverType() {
   if (typedSignature && typedSignature->untyped()->isMethod()) {
-    if (auto receiverType = typedSignature->formalType(0).type()) {
-      if (auto ret = receiverType->getCompositeType()) {
-        return ret;
-      }
-    }
+    return typedSignature->formalType(0);
   }
 
-  return nullptr;
+  return QualifiedType();
 }
 
 bool Resolver::shouldUseUnknownTypeForGeneric(const ID& id) {
@@ -1760,18 +1756,22 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     if (parentId == symbol->id() && inCompositeType) {
       ct = inCompositeType;
     } else {
-      ct = methodReceiverType();
-      if (auto bct = ct->toBasicClassType()) {
-        // if it's a class, check for parent classes to decide
-        // which type corresponds to the uAST ID parentId
-        while (bct != nullptr) {
-          if (bct->id() == parentId) {
-            // found the matching type
-            ct = bct;
-            break;
+      if (auto rt = methodReceiverType().type()) {
+        if (auto comprt = rt->getCompositeType()) {
+          ct = comprt; // start with the receiver type
+          if (auto bct = comprt->toBasicClassType()) {
+            // if it's a class, check for parent classes to decide
+            // which type corresponds to the uAST ID parentId
+            while (bct != nullptr) {
+              if (bct->id() == parentId) {
+                // found the matching type
+                ct = bct;
+                break;
+              }
+              // otherwise, try the parent class type
+              bct = bct->parentClassType();
+            }
           }
-          // otherwise, try the parent class type
-          bct = bct->parentClassType();
         }
       }
     }
@@ -2635,7 +2635,9 @@ void Resolver::exit(const Call* call) {
   }
 
   if (!skip) {
-    CallResolutionResult c = resolveCall(context, call, ci, scope, poiScope);
+    CallResolutionResult c
+      = resolveCallInMethod(context, call, ci,
+                            scope, poiScope, methodReceiverType());
 
     // save the most specific candidates in the resolution result for the id
     ResolvedExpression& r = byPostorder.byAst(call);
@@ -2946,7 +2948,8 @@ static QualifiedType resolveSerialIterType(Resolver& resolver,
                         /* isParenless */ false,
                         actuals);
     auto inScope = resolver.scopeStack.back();
-    auto c = resolveGeneratedCall(context, iterand, ci, inScope, resolver.poiScope);
+    auto c = resolveGeneratedCall(context, iterand, ci,
+                                  inScope, resolver.poiScope);
 
     if (c.mostSpecific().only() != nullptr) {
       idxType = c.exprType();

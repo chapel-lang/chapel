@@ -482,6 +482,7 @@ iflnk
 ifmt
 ifreg
 ifsock
+ifstream
 ifwht
 ignorecase
 ignorestatus
@@ -2212,6 +2213,7 @@ oldstate
 oldtype
 oldx
 oleg
+openMemFile
 opendir
 openfd
 openfp
@@ -2676,6 +2678,7 @@ FILEID: 613bf236-1d80-11e6-a3a6-10ddb1d4c3d5
 breakflags
 hdrs
 libdevice
+ptxas
 rocm
 rungdb
 runlldb
@@ -2713,6 +2716,7 @@ pnext
 rnext
 
 FILEID: 2d19bb3e-1d83-11e6-a3a6-10ddb1d4c3d5
+sfname
 sysctypes
 urse
 wkfn
@@ -5002,6 +5006,7 @@ ipra
 isysroot
 lessless
 libdevice
+lineinfo
 maino
 mcpu
 mfile
@@ -5543,6 +5548,7 @@ uresult
 FILEID: 77a59142-f563-11eb-bb15-35b7469d4b43
 allgthr
 appnum
+myrank
 
 FILEID: 7d741f12-f563-11eb-bb15-35b7469d4b43
 libinterop
@@ -5929,6 +5935,7 @@ ndrst
 
 FILEID: 4a72881e-9f73-11ec-866d-111c8d7a1817
 builderresult
+sfname
 
 FILEID: 4bb86216-9f73-11ec-866d-111c8d7a1817
 ndrst
@@ -6227,6 +6234,7 @@ vbuild
 
 FILEID: 22756090-12c1-11ed-a8be-cd81bce0efc4
 libdevice
+ptxas
 
 FILEID: 26485862-12c1-11ed-a8be-cd81bce0efc4
 bitcopies
@@ -6284,7 +6292,9 @@ ucontext
 udevice
 udeviceptr
 ufunction
+umodule
 uresult
+ustream
 
 FILEID: 9ede5918-3010-11ed-b71b-d7492178b4dc
 memorytype
@@ -6354,6 +6364,26 @@ frml
 
 FILEID: a89bd786-945c-11ed-b9f6-7def56659a0b
 semver
+
+FILEID: 1c3aed2e-ac5b-11ed-b67e-4d191cd16eac
+urse
+
+FILEID: 389486f6-ac5b-11ed-b67e-4d191cd16eac
+postparse
+yyerror
+
+FILEID: 5ccb9c1c-ac5b-11ed-b67e-4d191cd16eac
+idvs
+
+FILEID: 806baa5e-ac5b-11ed-b67e-4d191cd16eac
+idvs
+
+FILEID: 8d09636e-ac5b-11ed-b67e-4d191cd16eac
+comprt
+
+FILEID: a33853a2-ac5b-11ed-b67e-4d191cd16eac
+hpechpl
+sfname
 
 NATURAL:
 aarch
@@ -7478,6 +7508,7 @@ hopopts
 hornung
 horspool
 hoser
+hostmem
 hostname
 hostnames
 hotpar
@@ -8306,6 +8337,7 @@ onlinepubs
 oopsla
 opcode
 opcodes
+openMemFile
 opencl
 openfd
 openfile
@@ -8786,6 +8818,7 @@ sendmsg
 sendto
 september
 seqpacket
+serde
 serghei
 serializability
 serializable

@@ -1,2 +1,2 @@
---no-optimize    
---optimize    
+--no-optimize -smapMethodsThrow=true
+--optimize    -smapMethodsThrow=true

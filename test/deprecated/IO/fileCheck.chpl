@@ -1,6 +1,6 @@
 use IO;
 
-var f = open("foo.txt", iomode.cw);
+var f = open("foo.txt", ioMode.cw);
 try {
   f.check();
 } catch e: Error {

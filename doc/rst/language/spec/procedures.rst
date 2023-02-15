@@ -1068,11 +1068,12 @@ A procedure can return a value by executing a return statement that
 includes an expression. If it does, that expression’s value becomes the
 value of the invoking call expression.
 
-A return statement in a procedure of a non-\ ``void`` return type
-(:ref:`Return_Types`) must include an expression. A return
-statement in a procedure of a ``void`` return type or in an iterator
-must not include an expression. A return statement of a variable
-procedure must contain an lvalue expression.
+A return statement in a procedure of a ``void`` return type
+(:ref:`Return_Types`) or in an iterator must not include an
+expression.  A return statement in a procedure of a non-\ ``void``
+return type must include an expression.  For procedures with ``ref``
+or ``const ref`` return intent, the expression must have storage
+associated with it that will outlive the procedure itself.
 
 The statements following a return statement in the same block
 are ignored by the compiler because they cannot be executed.

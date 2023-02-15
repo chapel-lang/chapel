@@ -5,7 +5,7 @@ use IO;
 config const inputfile = "lehmer10.dat";
 
 proc main() {
-  var Adat = open(inputfile, iomode.r).reader();
+  var Adat = open(inputfile, ioMode.r).reader();
 
   const n = readSize(Adat);
   var blk = readBlk(Adat);

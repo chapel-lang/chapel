@@ -24,7 +24,7 @@ proc testRead(channel, pattern: ?t, ref capture, preCompiled:bool) throws {
 }
 
 {
-  var f = openmem();
+  var f = openMemFile();
 
   var w = f.writer();
   w.write("Pattern:Capture\n");
@@ -60,7 +60,7 @@ proc testRead(channel, pattern: ?t, ref capture, preCompiled:bool) throws {
 
 
 {
-  var f = openmem();
+  var f = openMemFile();
 
   var w = f.writer();
   w.write("Pattern:Capture\n");

@@ -3,7 +3,7 @@ use IO;
 proc test1() {
   // test a variety of reads when near the end of file and no newline exists 
   writeln("test1");
-  var f = openmem();
+  var f = openMemFile();
   f.writer().write("evenement");
 
   var s:bytes = b"foo";
@@ -86,7 +86,7 @@ test1();
 proc test2() {
   // test a variety of reads when near the end of file and newline exists 
   writeln("test2");
-  var f = openmem();
+  var f = openMemFile();
   f.writer().write("evenement\n");
 
   var s: bytes = b"foo";

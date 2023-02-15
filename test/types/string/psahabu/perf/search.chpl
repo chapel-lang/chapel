@@ -5,7 +5,7 @@ config const timing = true;
 config const n = 10000000;
 config const sourcePath = "moby.txt";
 
-var mobyFile = open(sourcePath, iomode.r);
+var mobyFile = open(sourcePath, ioMode.r);
 var mobyReader = mobyFile.reader();
 
 var Passage: [1..n] string;
