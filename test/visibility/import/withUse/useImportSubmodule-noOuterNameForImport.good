@@ -1,5 +1,5 @@
 useImportSubmodule-noOuterNameForImport.chpl:1: In module 'M':
-useImportSubmodule-noOuterNameForImport.chpl:3: error: cannot find module 'N' for 'import' statement
+useImportSubmodule-noOuterNameForImport.chpl:3: error: cannot find module named 'N'
 useImportSubmodule-noOuterNameForImport.chpl:5: note: a module named 'N' is defined here
 useImportSubmodule-noOuterNameForImport.chpl:5: note: however, a full path or an explicit relative import is required for modules that are not at the root level
 useImportSubmodule-noOuterNameForImport.chpl:3: note: For non-root-level modules, please specify the full path to the module or use a relative import e.g. 'import this.M' or 'import super.M'

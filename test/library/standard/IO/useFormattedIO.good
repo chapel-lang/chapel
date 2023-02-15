@@ -1,1 +1,1 @@
-useFormattedIO.chpl:1: error: cannot find module or 'enum' 'FormattedIO' for 'use' statement
+useFormattedIO.chpl:1: error: cannot find module or enum named 'FormattedIO'

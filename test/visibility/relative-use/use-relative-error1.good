@@ -1,2 +1,2 @@
 use-relative-error1.chpl:1: In module 'M':
-use-relative-error1.chpl:5: error: cannot 'use' symbol 'x', which is not a module or 'enum'
+use-relative-error1.chpl:5: error: cannot 'use' symbol 'x', which is not a module or enum

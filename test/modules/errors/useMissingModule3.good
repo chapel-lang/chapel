@@ -1,1 +1,1 @@
-useMissingModule3.chpl:1: error: cannot find module or 'enum' 'Peas' in module 'Goober' for 'use' statement
+useMissingModule3.chpl:1: error: cannot find module or enum named 'Peas' in module 'Goober'

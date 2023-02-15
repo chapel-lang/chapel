@@ -1,2 +1,2 @@
 test_module_use4.chpl:10: In module 'M3':
-test_module_use4.chpl:12: error: cannot 'use' symbol 'M1', which is not a module or 'enum'
+test_module_use4.chpl:12: error: cannot 'use' symbol 'M1', which is not a module or enum
