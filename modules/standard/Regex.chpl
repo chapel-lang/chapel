@@ -1258,11 +1258,11 @@ private proc doReplaceAndCountSlow(x: ?t, pattern: regex(t), replacement: t,
   var ret: t;
 
   if t == string then
-    ret = try! createStringWithNewBuffer(newBuff, length=numBytesInResult,
-                                         size=buffSize);
+    ret = try! createStringWithOwnedBuffer(newBuff, length=numBytesInResult,
+                                           size=buffSize);
   else
-    ret = createBytesWithNewBuffer(newBuff, length=numBytesInResult,
-                                   size=buffSize);
+    ret = createBytesWithOwnedBuffer(newBuff, length=numBytesInResult,
+                                     size=buffSize);
 
   return (ret, totalChunksToRemove);
 }

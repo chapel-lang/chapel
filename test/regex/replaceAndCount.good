@@ -28,6 +28,12 @@ count=1: (0a11, 1)
 count=2: (0a0, 2)
 count=3: (0a0, 2)
 
+1a111.replaceAndCount(1+, 0)
+Default: (0a0, 2)
+count=1: (0a111, 1)
+count=2: (0a0, 2)
+count=3: (0a0, 2)
+
 11a1111a11.replaceAndCount(1+, 0)
 Default: (0a0a0, 3)
 count=1: (0a1111a11, 1)

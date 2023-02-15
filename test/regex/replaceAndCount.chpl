@@ -23,6 +23,7 @@ test("foo", "o", "X", count=-123);
 
 test("11111", "1+", "0", count=2);
 test("11a11", "1+", "0", count=3);
+test("1a111", "1+", "0", count=3);
 test("11a11"*2, "1+", "0", count=2);
 
 test("banana", "ana", "X", count=2);
