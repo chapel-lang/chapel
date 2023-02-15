@@ -1880,12 +1880,11 @@ pragma "no doc"
 pragma "compiler generated"
 proc convertIoMode(mode:iomode):ioMode {
   import HaltWrappers;
-  use iomode;
   select mode {
-    when r do return ioMode.r;
-    when rw do return ioMode.rw;
-    when cw do return ioMode.cw;
-    when cwr do return ioMode.cwr;
+    when iomode.r do return ioMode.r;
+    when iomode.rw do return ioMode.rw;
+    when iomode.cw do return ioMode.cw;
+    when iomode.cwr do return ioMode.cwr;
     otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid iomode");
   }
 }
