@@ -1006,13 +1006,56 @@ convertOneRename(UniqueString oldName, UniqueString newName) {
   return ret;
 }
 
+static bool
+validateAndPushRename(Context* context,
+                      const VisibilityClause* visibilityClause,
+                      std::vector<std::pair<UniqueString,UniqueString>>& renames,
+                      std::pair<UniqueString, UniqueString> toPush) {
+  auto toPushNode = visibilityClause->limitation(renames.size());
+  // Use an indexed loop so we can use visibilityClause->limitation(i)
+  for (size_t i = 0; i < renames.size(); i++) {
+    auto& rename = renames[i];
+    auto renameNode = visibilityClause->limitation(i);
+
+    if (rename.second == toPush.second) {
+      // Renamed to the same thing, that's an error.
+      CHPL_REPORT(context, UseImportMultiplyDefined,
+                  rename.second, renameNode, toPushNode);
+      return false;
+    }
+
+    if (rename.first == toPush.first) {
+      // Renamed from the same thing. Possibly a mistake, but not fatal.
+      CHPL_REPORT(context, UseImportMultiplyMentioned,
+                  rename.first, renameNode, toPushNode);
+    } else if (rename.second == toPush.first) {
+      // Rename chain like `a as b, b as c`.
+      CHPL_REPORT(context, UseImportTransitiveRename,
+                  rename.first, toPush.first, toPush.second,
+                  renameNode, toPushNode);
+    } else if (rename.first == toPush.second) {
+      // Rename chain like `b as c, a as b`.
+      // Maybe do not warn here?
+    }
+  }
+
+  renames.push_back(std::move(toPush));
+  return true;
+}
+
 static std::vector<std::pair<UniqueString,UniqueString>>
 convertLimitations(Context* context, const VisibilityClause* clause) {
+  // Ignore errors from validateAndPushRename because callers to
+  // convertLimitations just continue through their errors. If we ever
+  // have a mechanism to detect failure in doResolveImportStmt etc., we'll need
+  // to escalate errors from here, too.
+
   std::vector<std::pair<UniqueString,UniqueString>> ret;
   for (const AstNode* e : clause->limitations()) {
     if (auto ident = e->toIdentifier()) {
       UniqueString name = ident->name();
-      ret.push_back(std::make_pair(name, name));
+      std::ignore = validateAndPushRename(context, clause, ret,
+                                          std::make_pair(name, name));
     } else if (auto dot = e->toDot()) {
       CHPL_REPORT(context, DotExprInUseImport, clause,
                   clause->limitationKind(), dot);
@@ -1033,7 +1076,8 @@ convertLimitations(Context* context, const VisibilityClause* clause) {
 
       rename = ident->name();
 
-      ret.push_back(std::make_pair(name, rename));
+      std::ignore = validateAndPushRename(context, clause, ret,
+                                          std::make_pair(name, rename));
     }
   }
   return ret;
