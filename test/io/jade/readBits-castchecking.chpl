@@ -2,7 +2,7 @@ use FileSystem;
 use IO;
 
 config const testfile="test.bin";
-var f = open(testfile, iomode.cwr);
+var f = open(testfile, ioMode.cwr);
 
 var w = f.writer(kind=ionative);
 var b = [0xaa66, 0x7852, 0x9287, 0x1455, 0x2299, 0x7218, 0x8278, 0x4082] :uint(16);
