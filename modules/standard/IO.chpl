@@ -5465,7 +5465,7 @@ proc fileReader.readBits(ref x:integral, numBits:int):bool throws {
 proc fileReader.readBits(type resultType, numBits:int):resultType throws {
   var tmp:resultType;
   var ret = try this.readBits(tmp, numBits);
-  if !ret then throw new owned UnexpectedEofError("Encountered EOF while reading");
+  if !ret then throw new UnexpectedEofError("Encountered EOF in readBits");
   return tmp;
 }
 
