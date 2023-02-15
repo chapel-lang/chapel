@@ -1161,7 +1161,10 @@ proc bytes.replace(pattern: regex(bytes), replacement:bytes, count=-1): bytes {
  */
 proc string.replaceAndCount(pattern: regex(string), replacement:string,
                             count=-1): (string, int) {
-  return doReplaceAndCount(this, pattern, replacement, count);
+  if count==-1 || count==1 then
+    return doReplaceAndCount(this, pattern, replacement, count);
+  else
+    return doReplaceAndCountSlow(this, pattern, replacement, count);
 }
 
 /* Search the receiving bytes for the pattern. Returns a new bytes where the
@@ -1178,6 +1181,89 @@ proc bytes.replaceAndCount(pattern: regex(bytes), replacement:bytes,
   return doReplaceAndCount(this, pattern, replacement, count);
 }
 
+pragma "no doc"
+private config const initBufferSizeForSlowReplaceAndCount = 16;
+
+
+private proc doReplaceAndCountSlow(x: ?t, pattern: regex(t), replacement: t,
+                                   count=-1) where (t==string || t==bytes) {
+  use ByteBufferHelpers;
+  use String.NVStringFactory;
+
+  var regexCopy:regex(t);
+  if pattern.home != here then regexCopy = pattern;
+  const localRegex = if pattern.home != here then regexCopy._regex
+                                             else pattern._regex;
+
+  const localX = x.localize();
+
+  var matchesDom = {0..#initBufferSizeForSlowReplaceAndCount};
+  var matches: [matchesDom] qio_regex_string_piece_t;
+
+  var curIdx = 0;
+  var totalBytesToRemove = 0;
+  var totalChunksToRemove = 0;
+  for i in 0..<count {
+    var got = qio_regex_match(localRegex, localX.c_str(), x.numBytes,
+                              startpos=curIdx, endpos=x.numBytes-1,
+                              QIO_REGEX_ANCHOR_UNANCHORED, matches[i], 1);
+
+    if !got then break;
+
+    curIdx += matches[i].offset + matches[i].len;
+    totalBytesToRemove += matches[i].len;
+    totalChunksToRemove += 1;
+
+    if i >= matchesDom.size {
+      matchesDom = {0..#matchesDom.size*2};
+    }
+  }
+  if totalChunksToRemove == 0 then return (x,0);
+
+  const numBytesInResult = x.numBytes-totalBytesToRemove+
+                           (totalChunksToRemove*replacement.numBytes);
+
+  var (newBuff, buffSize) = bufferAlloc(numBytesInResult+1);
+  newBuff[numBytesInResult] = 0;
+
+  const localRepl = replacement.localize();
+  var readIdx = 0;
+  var writeIdx = 0;
+  for i in 0..#totalChunksToRemove {
+    var readOffset = matches[i].offset;
+
+    // copy from the original string
+    const copyLen = readOffset-readIdx;
+    bufferMemcpyLocal(dst=newBuff, src=localX.buff, len=copyLen,
+                      dst_off=writeIdx, src_off=readIdx);
+    writeIdx += copyLen;
+
+    // copy the replacement
+    bufferMemcpyLocal(dst=newBuff, src=localRepl.buff, len=localRepl.numBytes,
+                      dst_off=writeIdx);
+    writeIdx += localRepl.numBytes;
+
+    readIdx = (readOffset+matches[i].len);
+  }
+
+  // handle the last part
+  if readIdx < localX.numBytes {
+    const copyLen = localX.numBytes-readIdx;
+    bufferMemcpyLocal(dst=newBuff, src=localX.buff, len=copyLen,
+                      dst_off=writeIdx, src_off=readIdx);
+  }
+
+  var ret: t;
+
+  if t == string then
+    ret = try! createStringWithNewBuffer(newBuff, length=numBytesInResult,
+                                         size=buffSize);
+  else
+    ret = createBytesWithNewBuffer(newBuff, length=numBytesInResult,
+                                   size=buffSize);
+
+  return (ret, totalChunksToRemove);
+}
 
 private proc doReplaceAndCount(x: ?t, pattern: regex(t), replacement: t,
                                count=-1) where (t==string || t==bytes) {
