@@ -100,7 +100,7 @@ proc cInitVar(lhsNlb: bool, lhsM: MM, rhsNlb: bool, rhsM: MM,
   writeln(path);
   if ! ivDir.isEmpty() {
     mkdir(ivDir, parents=true); path = ivDir + "/" + path; }
-  var chan = open(path + ".chpl", iomode.cw).writer();
+  var chan = open(path + ".chpl", ioMode.cw).writer();
   proc write(args...) { chan.writef((...args)); }
 
   var rhsDef = "", rhsUse = "rhs";
@@ -129,7 +129,7 @@ var lhs: %s MyClass%s = %s;
 """, rhsDef, lhsM.strm, lhsQ, rhsUse, lastStmt);
 
   // now, the .good file
-  var good = open(path + ".good", iomode.cw).writer();
+  var good = open(path + ".good", ioMode.cw).writer();
   if errNlb || errM then
     good.writeln(errS);
   // else leave it empty
@@ -166,7 +166,7 @@ proc cDefaultFieldInit(lhsNlb: bool, lhsM: MM, rhsNlb: bool, rhsM: MM,
   writeln(path);
   if ! dfiDir.isEmpty() {
     mkdir(dfiDir, parents=true); path = dfiDir + "/" + path; }
-  var chan = open(path + ".chpl", iomode.cw).writer();
+  var chan = open(path + ".chpl", ioMode.cw).writer();
   proc write(args...) { chan.writef((...args)); }
 
   var rhsDef = "", rhsUse = "rhs";
@@ -197,7 +197,7 @@ var myr = new MyRecord();
 """, rhsDef, lhsM.strm, lhsQ, rhsUse, lastStmt);
 
   // now, the .good file
-  var good = open(path + ".good", iomode.cw).writer();
+  var good = open(path + ".good", ioMode.cw).writer();
   if errNlb || errM then
     good.writeln(errS);
   // else leave it empty
@@ -234,7 +234,7 @@ proc cArgumentFieldInit(lhsNlb: bool, lhsM: MM, rhsNlb: bool, rhsM: MM,
   writeln(path);
   if ! afiDir.isEmpty() {
     mkdir(afiDir, parents=true); path = afiDir + "/" + path; }
-  var chan = open(path + ".chpl", iomode.cw).writer();
+  var chan = open(path + ".chpl", ioMode.cw).writer();
   proc write(args...) { chan.writef((...args)); }
 
   var rhsDef = "", rhsUse = "rhs";
@@ -268,7 +268,7 @@ var myr = new MyRecord(%s);
 """, rhsDef, lhsM.strm, lhsQ, rhsUse, lastStmt);
 
   // now, the .good file
-  var good = open(path + ".good", iomode.cw).writer();
+  var good = open(path + ".good", ioMode.cw).writer();
   if errNlb || errM then
     good.writeln(errS);
   // else leave it empty
@@ -305,7 +305,7 @@ proc cAssign(lhsNlb: bool, lhsM: MM, rhsNlb: bool, rhsM: MM,
   writeln(path);
   if ! asgnDir.isEmpty() {
     mkdir(asgnDir, parents=true); path = asgnDir + "/" + path; }
-  var chan = open(path + ".chpl", iomode.cw).writer();
+  var chan = open(path + ".chpl", ioMode.cw).writer();
   proc write(args...) { chan.writef((...args)); }
 
   var rhsDef = "", rhsUse = "rhs";
@@ -336,7 +336,7 @@ lhs = %s;
 lhsDef, rhsDef, rhsUse, compErr, delRhs, delLhs);
 
   // now, the .good file
-  var good = open(path + ".good", iomode.cw).writer();
+  var good = open(path + ".good", ioMode.cw).writer();
   if errNlb || errM then
     good.writeln(errS);
   // else leave it empty

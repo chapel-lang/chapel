@@ -18,7 +18,7 @@ config const fileName = "test.txt";
 config const debug = true;
 
 // Open up a file to work with.
-var f = open(fileName, iomode.cwr);
+var f = open(fileName, ioMode.cwr);
 
 
 // Let's create a few records and store them in an array.

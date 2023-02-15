@@ -13,7 +13,7 @@ proc s(str) {
 
 const filename1 = s("junkfile1");
 
-var f = open(filename1, iomode.cw);
+var f = open(filename1, ioMode.cw);
 var p = f.path;
 writeln("file.path works: ", p == CHPL_HOME + "/test/library/standard/IO/nonUTF8/" + filename1);
 f.close();

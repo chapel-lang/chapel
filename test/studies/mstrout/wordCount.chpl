@@ -70,7 +70,7 @@ filenames = filenamesList;
 // using multilocales and within each locale in parallel.
 forall (i, file) in zip(filenames.domain, filenames) {
   // Open up the input file.
-  var f = open(file, iomode.r);
+  var f = open(file, ioMode.r);
   if debug then writeln("\n\n====== filename = ", file);
 
   // Create a reader of the input file

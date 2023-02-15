@@ -52,7 +52,7 @@ Example 1
     var Name: string;
   }
 
-  var f = open("input1.txt", iomode.rw);
+  var f = open("input1.txt", ioMode.rw);
   var fr = f.reader();
 
   var M = new RecordReader(Bar, fr);

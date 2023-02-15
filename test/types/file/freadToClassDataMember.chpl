@@ -7,7 +7,7 @@ class myClass {
 
 var a: unmanaged myClass = new unmanaged myClass(x = 1, y = 2.3);
 var myInt: int = 9;
-var myFile = open("_test_freadToClassDataMember.txt", iomode.cwr);
+var myFile = open("_test_freadToClassDataMember.txt", ioMode.cwr);
 var w = myFile.writer();
 
 w.writeln(myInt);

@@ -87,7 +87,7 @@ iter HDFSiter(param tag: iterKind,
 
     // ----- Create a file per locale ----
     var hdfs = hdfsChapelConnect("default", 0);
-    var fl   = hdfs.hdfsOpen(path, iomode.r);
+    var fl   = hdfs.hdfsOpen(path, ioMode.r);
 
     // -------- Get locales for blocks ------
     var fll = fl.getLocal();

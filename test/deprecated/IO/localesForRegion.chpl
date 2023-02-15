@@ -1,6 +1,6 @@
 use IO;
 
-const f = open("test.txt", iomode.r);
+const f = open("test.txt", ioMode.r);
 
 const locales = f.localesForRegion(0, 10);
 

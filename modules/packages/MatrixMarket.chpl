@@ -95,7 +95,7 @@ module MatrixMarket {
 
       proc init(type eltype, const fname:string) {
          this.eltype = eltype;
-         fd = open(fname, iomode.cw);
+         fd = open(fname, ioMode.cw);
          fout = fd.writer(region=0..);
          headers_written=false;
       }
@@ -203,7 +203,7 @@ class MMReader {
    var finfo:MMInfo;
 
    proc init(const fname:string) {
-      fd = open(fname, iomode.r, hints=ioHintSet.sequential|ioHintSet.prefetch);
+      fd = open(fname, ioMode.r, hints=ioHintSet.sequential|ioHintSet.prefetch);
       fin = fd.reader(region=0.., hints=ioHintSet.sequential|ioHintSet.prefetch);
    }
 

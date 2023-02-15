@@ -5,7 +5,7 @@ class phone {
   var cell: int;
 }
 
-var myFile = open("_test_fwritelnClassFile.txt", iomode.cw).writer();
+var myFile = open("_test_fwritelnClassFile.txt", ioMode.cw).writer();
 
 var smh: borrowed phone = (new owned phone(name = "shannon", cell = 2065551212)).borrow();
 

@@ -1,7 +1,7 @@
 use recordParser;
 
-var f = open("input1.txt", iomode.rw);
-var ff = open("input2_beer.txt", iomode.rw);
+var f = open("input1.txt", ioMode.rw);
+var ff = open("input2_beer.txt", ioMode.rw);
 var fr = f.reader();
 var ffr = ff.reader();
 

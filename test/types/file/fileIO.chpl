@@ -23,7 +23,7 @@ if (numErrors > 0) {
 
 
 proc writeArray(n, X, filename) {
-  var outfile = open(filename, iomode.cw).writer();
+  var outfile = open(filename, ioMode.cw).writer();
   outfile.writeln(n, " ", n);
   outfile.writeln(X);
   outfile.close();
@@ -33,7 +33,7 @@ proc writeArray(n, X, filename) {
 proc readArray(filename) {
   var m, n: int;
 
-  var infile = open(filename, iomode.r).reader();
+  var infile = open(filename, ioMode.r).reader();
   infile.read(m, n);
 
   const XDom = {1..m, 1..n};

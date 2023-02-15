@@ -59,7 +59,7 @@ For example, the following program opens a file and writes an integer to it:
 
   // open the file "test-file.txt" for writing, creating it if
   // it does not exist yet.
-  var myFile = open("test-file.txt", iomode.cw);
+  var myFile = open("test-file.txt", ioMode.cw);
 
   // create a writing channel starting at file offset 0
   // (start and end offsets can be specified when creating the
@@ -80,7 +80,7 @@ Then, the following program can be used to read the integer:
 .. code-block:: chapel
 
   // open the file "test-file.txt" for reading only
-  var myFile = open("test-file.txt", iomode.r);
+  var myFile = open("test-file.txt", ioMode.r);
 
   // create a reading channel starting at file offset 0
   // (start and end offsets can be specified when creating the
@@ -440,49 +440,55 @@ import OS.{errorCode};
 use CTypes;
 public use OS;
 
-
 /*
 
-The :type:`iomode` type is an enum. When used as arguments when opening files, its
+The :type:`ioMode` type is an enum. When used as arguments when opening files, its
 constants have the same meaning as the following strings passed to ``fopen()`` in C:
 
 .. list-table::
    :widths: 8 8 64
    :header-rows: 1
 
-   * - :type:`iomode`
+   * - :type:`ioMode`
      - ``fopen()`` argument
      - Description
-   * - ``iomode.r``
+   * - ``ioMode.r``
      - ``"r"``
      - open an existing file for reading.
-   * - ``iomode.rw``
+   * - ``ioMode.rw``
      - ``"r+"``
      - open an existing file for reading and writing.
-   * - ``iomode.cw``
+   * - ``ioMode.cw``
      - ``"w"``
      - create a new file for writing. If the file already exists, its contents are truncated.
-   * - ``iomode.cwr``
+   * - ``ioMode.cwr``
      - ``"w+"``
-     - same as ``iomode.cw``, but reading from the file is also allowed.
+     - same as ``ioMode.cw``, but reading from the file is also allowed.
 
 .. TODO: Support append / create-exclusive modes:
-   * - ``iomode.a``
+   * - ``ioMode.a``
      - ``"a"``
      - open a file for appending, creating it if it does not exist.
-   * - ``iomode.ar``
+   * - ``ioMode.ar``
      - ``"a+"``
-     - same as ``iomode.a``, but reading from the file is also allowed.
-   * - ``iomode.cwx``
+     - same as ``ioMode.a``, but reading from the file is also allowed.
+   * - ``ioMode.cwx``
      - ``"wx"``
      - open a file for writing, throwing an error if it already exists. (The test for file's existence and the file's creation are atomic on POSIX.)
-   * - ``iomode.cwrx``
+   * - ``ioMode.cwrx``
      - ``"w+x"``
-     - same as ``iomode.cwx``, but reading from the file is also allowed.
+     - same as ``ioMode.cwx``, but reading from the file is also allowed.
 
 However, :proc:`open()` in Chapel does not necessarily invoke ``fopen()`` in C.
 */
+enum ioMode {
+  r = 1,
+  cw = 2,
+  rw = 3,
+  cwr = 4,
+}
 
+deprecated "enum iomode is deprecated - please use :enum:`ioMode` instead"
 enum iomode {
   r = 1,
   cw = 2,
@@ -1434,7 +1440,7 @@ private const IOHINTS_NOMMAP:      c_int = QIO_METHOD_PREADPWRITE;
     // open a file using the hints
     var f: file;
     try! {
-      f = open("path/to/my/file.txt", iomode.r, hints=hints);
+      f = open("path/to/my/file.txt", ioMode.r, hints=hints);
     }
 */
 record ioHintSet {
@@ -1859,19 +1865,39 @@ private param _cw = "w";
 private param _cwr = "w+";
 
 pragma "no doc"
-proc _modestring(mode:iomode) {
+proc _modestring(mode:ioMode) {
   import HaltWrappers;
   select mode {
-    when iomode.r do return _r;
-    when iomode.rw do return _rw;
-    when iomode.cw do return _cw;
-    when iomode.cwr do return _cwr;
+    when ioMode.r do return _r;
+    when ioMode.rw do return _rw;
+    when ioMode.cw do return _cw;
+    when ioMode.cwr do return _cwr;
+    otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid ioMode");
+  }
+}
+
+pragma "no doc"
+pragma "compiler generated"
+proc convertIoMode(mode:iomode):ioMode {
+  import HaltWrappers;
+  select mode {
+    when iomode.r do return ioMode.r;
+    when iomode.rw do return ioMode.rw;
+    when iomode.cw do return ioMode.cw;
+    when iomode.cwr do return ioMode.cwr;
     otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid iomode");
   }
 }
 
-@unstable "open with a style argument is unstable"
+pragma "last resort"
+deprecated "open with an iomode argument is deprecated - please use :enum:`ioMode`"
 proc open(path:string, mode:iomode, hints=ioHintSet.empty,
+          style:iostyle): file throws {
+  return open(path, convertIoMode(mode), hints, style);
+}
+
+@unstable "open with a style argument is unstable"
+proc open(path:string, mode:ioMode, hints=ioHintSet.empty,
           style:iostyle): file throws {
   return openHelper(path, mode, hints, style:iostyleInternal);
 }
@@ -1885,7 +1911,7 @@ to create a channel to actually perform I/O operations
 :arg path: which file to open (for example, "some/file.txt").
 :arg mode: specify whether to open the file for reading or writing and
              whether or not to create the file if it doesn't exist.
-             See :type:`iomode`.
+             See :type:`ioMode`.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
 :returns: an open file to the requested resource.
@@ -1897,11 +1923,17 @@ to create a channel to actually perform I/O operations
                             be a directory but was not
 :throws SystemError: Thrown if the file could not be opened.
 */
-proc open(path:string, mode:iomode, hints=ioHintSet.empty): file throws {
+proc open(path:string, mode:ioMode, hints=ioHintSet.empty): file throws {
   return openHelper(path, mode, hints);
 }
 
-private proc openHelper(path:string, mode:iomode, hints=ioHintSet.empty,
+pragma "last resort"
+deprecated "open with an iomode argument is deprecated - please use :enum:`ioMode`"
+proc open(path:string, mode:iomode, hints=ioHintSet.empty): file throws {
+  return open(path, convertIoMode(mode), hints);
+}
+
+private proc openHelper(path:string, mode:ioMode, hints=ioHintSet.empty,
                         style:iostyleInternal = defaultIOStyleInternal()): file throws {
 
   var local_style = style;
@@ -1922,7 +1954,7 @@ private proc openHelper(path:string, mode:iomode, hints=ioHintSet.empty,
 }
 
 pragma "no doc"
-proc openplugin(pluginFile: QioPluginFile, mode:iomode,
+proc openplugin(pluginFile: QioPluginFile, mode:ioMode,
                 seekable:bool, style:iostyleInternal) throws {
   import HaltWrappers;
 
@@ -1936,21 +1968,21 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
 
   var flags:c_int = 0;
   select mode {
-    when iomode.r {
+    when ioMode.r {
       flags |= QIO_FDFLAG_READABLE;
     }
-    when iomode.rw {
-      flags |= QIO_FDFLAG_READABLE;
-      flags |= QIO_FDFLAG_WRITEABLE;
-    }
-    when iomode.cw {
-      flags |= QIO_FDFLAG_WRITEABLE;
-    }
-    when iomode.cwr {
+    when ioMode.rw {
       flags |= QIO_FDFLAG_READABLE;
       flags |= QIO_FDFLAG_WRITEABLE;
     }
-    otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid iomode");
+    when ioMode.cw {
+      flags |= QIO_FDFLAG_WRITEABLE;
+    }
+    when ioMode.cwr {
+      flags |= QIO_FDFLAG_READABLE;
+      flags |= QIO_FDFLAG_WRITEABLE;
+    }
+    otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid ioMode");
   }
 
   if seekable then
@@ -2114,7 +2146,7 @@ The temporary file will be created in an OS-dependent temporary directory,
 for example "/tmp" is the typical location. The temporary file will be
 deleted upon closing.
 
-Temporary files are opened with :type:`iomode` ``iomode.cwr``; that is, a new
+Temporary files are opened with :type:`ioMode` ``ioMode.cwr``; that is, a new
 file is created that supports both writing and reading.  When possible, it may
 be opened using OS support for temporary files in order to make sure that a new
 file is created only for use by the current application.
@@ -3101,7 +3133,7 @@ private proc openreaderHelper(path:string,
                               style:iostyleInternal = defaultIOStyleInternal())
   : fileReader(kind, locking) throws {
 
-  var fl:file = try open(path, iomode.r);
+  var fl:file = try open(path, ioMode.r);
   return try fl.readerHelper(kind, locking, region, hints, style,
                              fromOpenReader=true);
 }
@@ -3120,7 +3152,7 @@ proc openwriter(path:string,
 /*
 
 Open a file at a particular path and return a writing channel for it.
-This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
+This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
 :proc:`file.writer` on the resulting file.
 
 :arg path: which file to open (for example, "some/file.txt").
@@ -3158,7 +3190,7 @@ private proc openwriterHelper(path:string,
                               style:iostyleInternal = defaultIOStyleInternal())
   : fileWriter(kind, locking) throws {
 
-  var fl:file = try open(path, iomode.cw);
+  var fl:file = try open(path, ioMode.cw);
   return try fl.writerHelper(kind, locking, start..end, hints, style);
 }
 

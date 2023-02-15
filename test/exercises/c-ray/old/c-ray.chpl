@@ -24,7 +24,7 @@
  */
 
 use Image;    // use helper module related to writing out images
-use IO;       // allows access to stderr, stdin, iomode
+use IO;       // allows access to stderr, stdin, ioMode
 use List;
 use ChplConfig;
 
@@ -431,7 +431,7 @@ proc loadScene() {
 
   // the input file channel
   const infile = if scene == "stdin" then stdin
-                                     else open(scene, iomode.r).reader();
+                                     else open(scene, ioMode.r).reader();
 
   // a map (associative array) from the supported input file argument
   // types to the number of columns of input they expect

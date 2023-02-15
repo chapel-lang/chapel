@@ -11,7 +11,7 @@ var TableSpace: domain(2) = {1..9, 1..9};
 var Table: [TableSpace] int;
 
 //...then read the values from the puzzle into it
-var infile = open(infilename, iomode.r);
+var infile = open(infilename, ioMode.r);
 var reader = infile.reader();
 
 for ij in TableSpace {

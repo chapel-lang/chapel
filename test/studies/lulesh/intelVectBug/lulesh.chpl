@@ -312,7 +312,7 @@ proc main() {
   writeln("Number of cycles: ", cycle);
 
   if printCoords {
-    var outfile = open("coords.out", iomode.cw);
+    var outfile = open("coords.out", ioMode.cw);
     var writer = outfile.writer();
     var fmtstr = if debug then "%1.9re %1.9er %1.9er\n" 
                           else "%1.4er %1.4er %1.4er\n";

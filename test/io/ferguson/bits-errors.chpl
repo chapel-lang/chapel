@@ -5,7 +5,7 @@ use IO;
 
 config const test=1;
 config const testfile="test.bin";
-var f = open(testfile, iomode.cwr);
+var f = open(testfile, ioMode.cwr);
 {
   var w = f.writer(kind=ionative);
 
