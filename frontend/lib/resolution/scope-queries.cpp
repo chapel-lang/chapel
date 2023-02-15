@@ -1345,12 +1345,6 @@ doResolveUseStmt(Context* context, const Use* use,
       switch (clause->limitationKind()) {
         case VisibilityClause::EXCEPT:
           kind = VisibilitySymbols::CONTENTS_EXCEPT;
-          // check that we do not have 'except A as B'
-          for (const AstNode* e : clause->limitations()) {
-            if (auto as = e->toAs()) {
-              CHPL_REPORT(context, AsWithUseExcept, use, as);
-            }
-          }
           // check that symbols named with 'except' actually exist
           errorIfAnyLimitationNotInScope(context, clause, foundScope,
                                          r, VIS_USE);
