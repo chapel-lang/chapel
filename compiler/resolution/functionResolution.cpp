@@ -3406,23 +3406,20 @@ static void warnForPartialInstantantiationNoQ(CallExpr* call, Type* t) {
         Type* tt = canonicalClassType(t);
         if (tt && tt->symbol->hasFlag(FLAG_GENERIC)) {
           // print out which field
-          USR_WARN(checkCall, "type construction call is surprisingly generic");
-          USR_PRINT(checkCall, "it does not set all generic fields so the result is generic");
-          USR_PRINT(checkCall, "to fully instantiate, add type constructor arguments");
-          USR_PRINT(checkCall, "or, opt in to partial instantiation with trailing '?' argument");
-          // which field name is generic?
+          USR_WARN(checkCall, "partial instantiation without '?' argument");
+          USR_PRINT(checkCall, "opt in to partial instantiation explicitly with a trailing '?' argument");
+          USR_PRINT(checkCall, "or, add arguments to instantiate the following fields in generic type '%s':", tt->symbol->name);
+         // to fully instantiate, add type constructor arguments for the following uninstantiated generic fields in '%s'", tt->symbol->name);
+          // which field names are generic?
           if (AggregateType* at = toAggregateType(tt)) {
-            Symbol* firstGenericField = nullptr;
             for_fields(field, at) {
               if (field->type == dtUnknown ||
                   field->type->symbol->hasFlag(FLAG_GENERIC)) {
-                firstGenericField = field;
-                break;
+                const char* k = "";
+                if (field->hasFlag(FLAG_TYPE_VARIABLE)) k = " type";
+                else if (field->hasFlag(FLAG_PARAM)) k = " param";
+                USR_PRINT(field, "  generic%s field '%s'", k, field->name);
               }
-            }
-            if (firstGenericField) {
-              USR_PRINT(firstGenericField, "the generic field '%s' is not set in the type construction call",
-                        firstGenericField->name);
             }
           }
         }

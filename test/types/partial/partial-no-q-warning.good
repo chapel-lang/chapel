@@ -1,10 +1,12 @@
-partial-no-q-warning.chpl:6: warning: type construction call is surprisingly generic
-partial-no-q-warning.chpl:6: note: it does not set all generic fields so the result is generic
-partial-no-q-warning.chpl:6: note: to fully instantiate, add type constructor arguments
-partial-no-q-warning.chpl:6: note: or, opt in to partial instantiation with trailing '?' argument
-partial-no-q-warning.chpl:3: note: the generic field 'tt' is not set in the type construction call
-partial-no-q-warning.chpl:14: warning: type construction call is surprisingly generic
-partial-no-q-warning.chpl:14: note: it does not set all generic fields so the result is generic
-partial-no-q-warning.chpl:14: note: to fully instantiate, add type constructor arguments
-partial-no-q-warning.chpl:14: note: or, opt in to partial instantiation with trailing '?' argument
-partial-no-q-warning.chpl:11: note: the generic field 'p2' is not set in the type construction call
+partial-no-q-warning.chpl:6: warning: partial instantiation without '?' argument
+partial-no-q-warning.chpl:6: note: opt in to partial instantiation explicitly with a trailing '?' argument
+partial-no-q-warning.chpl:6: note: or, add arguments to instantiate the following fields in generic type 'r(int(64))':
+partial-no-q-warning.chpl:3: note:   generic type field 'tt'
+partial-no-q-warning.chpl:14: warning: partial instantiation without '?' argument
+partial-no-q-warning.chpl:14: note: opt in to partial instantiation explicitly with a trailing '?' argument
+partial-no-q-warning.chpl:14: note: or, add arguments to instantiate the following fields in generic type 'C(1)':
+partial-no-q-warning.chpl:11: note:   generic param field 'p2'
+partial-no-q-warning.chpl:22: warning: partial instantiation without '?' argument
+partial-no-q-warning.chpl:22: note: opt in to partial instantiation explicitly with a trailing '?' argument
+partial-no-q-warning.chpl:22: note: or, add arguments to instantiate the following fields in generic type 'rr(real(64))':
+partial-no-q-warning.chpl:19: note:   generic field 'y'

@@ -13,3 +13,11 @@ class C {
 
 type tt = unmanaged C(1)?;
 var y: tt(2);
+
+record rr {
+  var x;
+  var y;
+}
+
+type ttt = rr(real);
+var z: ttt(int);
