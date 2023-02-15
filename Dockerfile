@@ -1,5 +1,9 @@
 FROM debian:11
 
+# Add the proxy to get around the proxy issues with m1 mac mini with apt-get commands
+ENV http_proxy  "http://web-proxy.houston.hpecorp.net:8080"
+ENV https_proxy "http://web-proxy.houston.hpecorp.net:8080"
+
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash \
     ca-certificates \

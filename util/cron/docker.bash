@@ -8,7 +8,7 @@ check_docker_install(){
     else
         echo "ERROR! Docker Desktop not installed:"
         echo "  * Install docker desktop from <https://docs.docker.com/docker-for-mac/install/>"
-        exit 1
+        
     fi
 
 }
