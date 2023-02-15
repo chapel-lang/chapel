@@ -294,7 +294,7 @@ if there was an error. See:
  * :proc:`FormattedIO.channel.writef` (see also :ref:`about-io-formatted-io`)
  * :proc:`channel.read`
  * :proc:`channel.readln`
- * :proc:`channel.readBits`
+ * :proc:`channel.readbits`
  * :proc:`FormattedIO.channel.readf` (see also :ref:`about-io-formatted-io`)
 
 Sometimes it's important to flush the buffer in a channel - to do that, use the
