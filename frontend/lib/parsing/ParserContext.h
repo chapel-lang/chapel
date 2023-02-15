@@ -349,17 +349,22 @@ struct ParserContext {
   // loop variants have a more normalized form e.g., '[i in 1..100] i',
   // while the array type variants may omit quite a few things in the case
   // that the type is generic, e.g., just '[]'.
+  //
+  // .chpl: '[]'
   AstNode* buildBracketLoopExpr(YYLTYPE location);
 
+  // .chpl: '[] int'
   AstNode* buildBracketLoopExpr(YYLTYPE location, YYLTYPE locRightBracket,
                                 AstNode* bodyExpr);
 
+  // .chpl: '[i in 1..100] i' (multiple indices is an error in this case)
   AstNode* buildBracketLoopExpr(YYLTYPE location,
                                 YYLTYPE locIndexExprs,
                                 ParserExprList* indexExprs,
                                 AstNode* iterandExpr,
                                 AstNode* bodyExpr);
 
+  // .chpl: '[i in 1..100] if i % 2 then i'
   AstNode* buildBracketLoopExpr(YYLTYPE location,
                                 YYLTYPE locIndexExprs,
                                 YYLTYPE locIf,
@@ -368,22 +373,11 @@ struct ParserContext {
                                 AstNode* bodyIfCond,
                                 AstNode* bodyIfExpr);
 
+  // .chpl: '[a, b, c] int' || '[0..100] doSomething()'
   AstNode* buildBracketLoopExpr(YYLTYPE location,
                                 YYLTYPE locIterandExprs,
                                 ParserExprList* iterandExprs,
                                 AstNode* bodyExpr);
-
-  // TODO: remove
-  AstNode* buildArrayTypeWithIndex(YYLTYPE location,
-                                   YYLTYPE locIndexExprs,
-                                   ParserExprList* indexExprs,
-                                   AstNode* domainExpr,
-                                   AstNode* typeExpr);
-
-  // TODO: remove
-  AstNode* buildArrayType(YYLTYPE location, YYLTYPE locDomainExprs,
-                          ParserExprList* domainExprs,
-                          AstNode* typeExpr);
 
   AstNode* buildTupleComponent(YYLTYPE location, PODUniqueString name);
   AstNode* buildTupleComponent(YYLTYPE location, ParserExprList* exprs);
