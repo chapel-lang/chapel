@@ -1090,16 +1090,13 @@ convertLimitations(Context* context, const VisibilityClause* clause) {
       UniqueString name = ident->name();
       validateAndPushRename(context, clause, ret,
                             std::make_pair(name, name));
-    } else if (auto dot = e->toDot()) {
-      CHPL_REPORT(context, DotExprInUseImport, clause,
-                  clause->limitationKind(), dot);
     } else if (auto as = e->toAs()) {
       UniqueString name;
       UniqueString rename;
       auto s = as->symbol();
       auto symId = s->toIdentifier();
       if (!symId) {
-        CHPL_REPORT(context, UnsupportedAsIdent, as, s);
+        // Should've already been reported as an error post-parse, but be defensive.
         continue;
       }
       name = symId->name();
@@ -1295,7 +1292,7 @@ doResolveUseStmt(Context* context, const Use* use,
     if (auto as = expr->toAs()) {
       auto newIdent = as->rename()->toIdentifier();
       if (!newIdent) {
-        CHPL_REPORT(context, UnsupportedAsIdent, as, as->rename());
+        // Should've already been reported as an error post-parse, but be defensive.
         continue;
       }
       // search for the original name
@@ -1406,7 +1403,7 @@ doResolveImportStmt(Context* context, const Import* imp,
     if (auto as = expr->toAs()) {
       auto newIdent = as->rename()->toIdentifier();
       if (!newIdent) {
-        CHPL_REPORT(context, UnsupportedAsIdent, as, as->rename());
+        // Should've already been reported as an error post-parse, but be defensive.
         continue;
       }
       // search for the original name

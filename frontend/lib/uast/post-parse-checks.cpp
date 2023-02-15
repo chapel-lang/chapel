@@ -125,6 +125,7 @@ struct Visitor {
   void checkProcTypeFormalsAreAnnotated(const FunctionSignature* node);
   void checkProcDefFormalsAreNamed(const Function* node);
   void checkForUnadornedArrayType(const BracketLoop* node);
+  void checkVisibilityClauseValid(const VisibilityClause* clause);
 
   /*
   TODO
@@ -159,6 +160,8 @@ struct Visitor {
   void visit(const Function* node);
   void visit(const FunctionSignature* node);
   void visit(const Union* node);
+  void visit(const Use* node);
+  void visit(const Import* node);
 };
 
 
@@ -873,6 +876,27 @@ void Visitor::checkLinkageName(const NamedDecl* node) {
   }
 }
 
+void Visitor::checkVisibilityClauseValid(const VisibilityClause* clause) {
+  if (auto as = clause->symbol()->toAs()) {
+    if (!as->rename()->isIdentifier()) {
+      CHPL_REPORT(context_, UnsupportedAsIdent, as, as->rename());
+    }
+  }
+  for (auto limitation : clause->limitations()) {
+    if (auto dot = limitation->toDot()) {
+      CHPL_REPORT(context_, DotExprInUseImport, clause,
+                  clause->limitationKind(), dot);
+    } else if (auto as = limitation->toAs()) {
+      if (!as->symbol()->isIdentifier()) {
+        CHPL_REPORT(context_, UnsupportedAsIdent, as, as->symbol());
+      }
+      if (!as->rename()->isIdentifier()) {
+        CHPL_REPORT(context_, UnsupportedAsIdent, as, as->rename());
+      }
+    }
+  }
+}
+
 // TODO: This relies on the "warn unstable" flag that we do not have.
 void Visitor::warnUnstableUnions(const Union* node) {
   if (!isFlagSet(CompilerFlags::WARN_UNSTABLE)) return;
@@ -942,6 +966,18 @@ void Visitor::visit(const FunctionSignature* node) {
 
 void Visitor::visit(const Union* node) {
   warnUnstableUnions(node);
+}
+
+void Visitor::visit(const Use* node) {
+  for (auto clause : node->visibilityClauses()) {
+    checkVisibilityClauseValid(clause);
+  }
+}
+
+void Visitor::visit(const Import* node) {
+  for (auto clause : node->visibilityClauses()) {
+    checkVisibilityClauseValid(clause);
+  }
 }
 
 // Duplicate the contents of 'idIsInBundledModule', while skipping the
