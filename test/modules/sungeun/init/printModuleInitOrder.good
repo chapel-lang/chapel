@@ -21,7 +21,7 @@ Initializing Modules:
           IO
            FormattedIO
             Regex
-          Types
+           Types
          Sort
           List
            ChapelLocks
