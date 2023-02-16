@@ -95,10 +95,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: make check_llvm_none
       run: |
-       CHPL_LLVM=none ./util/printchplenv --all make  -j`util/buildRelease/chpl-make-cpu_count` 
-       make check
-       CHPL_HOME=$PWD ./util/test/run-in-test-venv.bash ./examples/hello.chpl
-
+       CHPL_LLVM=none ./util/printchplenv --all make ./util/buildRelease/smokeTest chpl
 
   check_annotations_rt_calls:
     runs-on: ubuntu-latest
