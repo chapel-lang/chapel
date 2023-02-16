@@ -2380,6 +2380,8 @@ record DefaultWriter {
       writer._writeLiteral(x.val);
     } else if t == ioNewline || t == ioChar {
       writer._writeOne(writer.kind, x, writer.getLocaleOfIoRequest());
+    } else if t == _nilType {
+      writer._writeLiteral("nil");
     } else if isClassType(t) || isAnyCPtr(t) {
       _encodeClassOrPtr(writer, x);
     } else if isUnionType(t) {
@@ -2445,26 +2447,18 @@ record DefaultReader {
   var _inheritLevel = 0;
   var _readStart, _readEnd : bool;
 
-  proc decodeClass(reader:fileReader, type readType) : readType throws {
-    if isGenericType(readType) then compilerError("can't read generic class '" + readType:string + "'");
-
+  proc decode(reader:fileReader, type readType) : readType throws {
     if isNilableClassType(readType) {
       if reader.matchLiteral("nil") {
         return nil:readType;
       }
     }
 
-    return new readType(reader.withFormatter(new DefaultReader()));
-  }
-
-  proc decode(reader:fileReader, type readType) : readType throws {
     if isNumericType(readType) || isBoolType(readType) || isEnumType(readType) ||
        readType == string || readType == bytes {
       var x : readType;
       reader._readOne(reader.kind, x, here);
       return x;
-    } else if isClassType(readType) {
-      return decodeClass(reader, readType);
     } else if canResolveTypeMethod(readType, "decodeFrom", reader) {
       return readType.decodeFrom(reader.withFormatter(new DefaultReader()));
     } else {
@@ -4135,6 +4129,9 @@ proc _channel._decodeOne(type readType, loc:locale) throws {
                               _channel_internal=_channel_internal,
                               _readWriteThisFromLocale=loc);
   defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL; }
+
+  if isGenericType(readType) then
+    compilerError("reading generic types is not supported: '" + readType:string + "'");
 
   if isClassType(readType) {
     // Save formatter authors from having to reason about 'owned' and

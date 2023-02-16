@@ -129,6 +129,10 @@ module Json {
     }
 
     proc decode(reader:fileReader, type readType) : readType throws {
+      if isNilableClassType(readType) && reader.matchLiteral("null") {
+        return nil:readType;
+      }
+
       // TODO:
       // - escaped strings
       // - arrays/lists
@@ -145,12 +149,6 @@ module Json {
         var ret = reader.withFormatter(DefaultReader).read(readType);
         reader.readLiteral('"');
         return ret;
-      } else if isClassType(readType) {
-        if isNilableClassType(readType) && reader.matchLiteral("null") {
-          return nil:readType;
-        } else {
-          return new readType(reader.withFormatter(new JsonReader()));
-        }
       } else if canResolveTypeMethod(readType, "decodeFrom", reader) {
         return readType.decodeFrom(reader.withFormatter(new JsonReader()));
       } else {
