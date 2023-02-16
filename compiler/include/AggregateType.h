@@ -269,10 +269,10 @@ private:
   void                        fieldToArgType(DefExpr*   fieldDef,
                                              ArgSymbol* arg);
 
-  bool                        addSuperArgs(FnSymbol*                    fn,
-                                           const std::set<const char*>& names,
-                                           SymbolMap&                   fieldArgMap,
-                                           ArgSymbol* fileReader = nullptr);
+  bool                        handleSuperFields(FnSymbol*                    fn,
+                                                const std::set<const char*>& names,
+                                                SymbolMap&                   fieldArgMap,
+                                                ArgSymbol* fileReader = nullptr);
 
   std::vector<AggregateType*> instantiations;
 

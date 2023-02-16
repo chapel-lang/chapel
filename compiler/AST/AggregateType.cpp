@@ -2176,7 +2176,7 @@ void AggregateType::buildDefaultInitializer() {
       std::set<const char*> names;
       SymbolMap fieldArgMap;
 
-      if (addSuperArgs(fn, names, fieldArgMap) == true) {
+      if (handleSuperFields(fn, names, fieldArgMap) == true) {
         // Parent fields before child fields
         fieldToArg(fn, names, fieldArgMap,
                    /*fileReader=*/nullptr,
@@ -2310,7 +2310,7 @@ void AggregateType::buildReaderInitializer() {
       // for compatibility with the new-expression-type-alias feature, in
       // which instantiated fields are passed to this initializer with
       // named-expressions.
-      if (addSuperArgs(fn, names, fieldArgMap, reader) == true) {
+      if (handleSuperFields(fn, names, fieldArgMap, reader) == true) {
 
         VarSymbol* formatter = newTemp("_fmt", QualifiedType(QUAL_REF, dtUnknown));
         formatter->addFlag(FLAG_REF_VAR);
@@ -2530,10 +2530,10 @@ void AggregateType::fieldToArgType(DefExpr* fieldDef, ArgSymbol* arg) {
   }
 }
 
-bool AggregateType::addSuperArgs(FnSymbol*                    fn,
-                                 const std::set<const char*>& names,
-                                 SymbolMap& fieldArgMap,
-                                 ArgSymbol* fileReader) {
+bool AggregateType::handleSuperFields(FnSymbol*                    fn,
+                                      const std::set<const char*>& names,
+                                      SymbolMap& fieldArgMap,
+                                      ArgSymbol* fileReader) {
   bool retval = true;
 
   // Lydia NOTE 06/16/17: be sure to avoid applying this to tuples, too!
