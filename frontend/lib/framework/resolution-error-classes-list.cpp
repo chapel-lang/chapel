@@ -822,7 +822,7 @@ void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
              formal->name(), "'");
   wr.message("The formal argument:");
   wr.code(formal, { formal });
-  wr.message("is shadowed by a module-level symbol provided by the following '",
+  wr.message("is shadowed by a symbol provided by the following '",
              useOrImport, "' statement:");
   wr.code(visibilityClause, { visibilityClause });
   return;
