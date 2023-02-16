@@ -2227,12 +2227,20 @@ void AggregateType::buildDefaultInitializer() {
 }
 
 static bool hasFullyGenericField(AggregateType* at) {
+  std::set<AggregateType*> visited;
+
   for_fields(field, at) {
     DefExpr* defExpr = field->defPoint;
     if (!field->hasFlag(FLAG_TYPE_VARIABLE) && !field->hasFlag(FLAG_PARAM) &&
         !field->hasFlag(FLAG_SUPER_CLASS)) {
       if (defExpr->exprType == nullptr && defExpr->init == nullptr) {
         return true;
+      } else if (defExpr->exprType != nullptr) {
+        // TODO: This should have already been computed during the
+        // processGenericFields() call - can we re-use that information?
+        if (isFieldTypeExprGeneric(defExpr->exprType, visited)) {
+          return true;
+        }
       }
     }
   }
