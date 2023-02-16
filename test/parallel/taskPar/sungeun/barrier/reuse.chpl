@@ -41,14 +41,8 @@ proc remoteTest(b: Barrier, numRemoteTasks) {
 }
 
 
-var b = new Barrier(numTasks, BarrierType.Atomic);
+var b = new Barrier(numTasks);
 localTest(b, numTasks);
 
 b.reset(numRemoteTasks);
 remoteTest(b, numRemoteTasks);
-
-var sb = new Barrier(numTasks, BarrierType.Sync);
-localTest(sb, numTasks);
-
-sb.reset(numRemoteTasks);
-remoteTest(sb, numRemoteTasks);
