@@ -85,6 +85,26 @@ int BorrowedIdsWithName::countVisibleIds() {
   return count;
 }
 
+bool BorrowedIdsWithName::containsOnlyMethodsOrFields() const {
+  if (moreIdvs_ == nullptr) {
+    if (isIdVisible(idv_)) {
+      return idv_.isMethodOrField();
+    }
+  }
+
+  bool onlyMethodsFields = true;
+  for (const auto& idv : *moreIdvs_) {
+    if (isIdVisible(idv)) {
+      if (!idv.isMethodOrField()) {
+        onlyMethodsFields = false;
+        break;
+      }
+    }
+  }
+
+  return onlyMethodsFields;
+}
+
 void BorrowedIdsWithName::stringify(std::ostream& ss,
                                     chpl::StringifyKind stringKind) const {
   for (const auto& elt : *this) {

@@ -421,11 +421,26 @@ static const Scope* const& scopeForAutoModule(Context* context) {
 static void warnHiddenFormal(Context* context,
                              const Scope* scope,
                              const VisibilitySymbols& is,
-                             UniqueString name) {
+                             UniqueString name,
+                             size_t matchesStart,
+                             std::vector<BorrowedIdsWithName>& matches) {
   // warn if a function formal name conflicts with something
   // brought in by use/import.
 
-  // First, find a parent Function scope
+  // Check that there is a match that isn't a method/field
+  // to skip the warning for collisions with secondary methods.
+  bool onlyMethodsFields = true;
+  for (auto b : matches) {
+    if (!b.containsOnlyMethodsOrFields()) {
+      onlyMethodsFields = false;
+      break;
+    }
+  }
+  if (onlyMethodsFields) {
+    return;
+  }
+
+  // Find a parent Function scope
   const Scope* functionScope = nullptr;
   for (const Scope* s = scope->parentScope();
        s != nullptr;
@@ -497,6 +512,8 @@ static bool doLookupInImportsAndUses(Context* context,
   bool found = false;
 
   if (cur != nullptr) {
+    size_t resultStart = result.size();
+
     // check to see if it's mentioned in names/renames
     for (const VisibilitySymbols& is: cur->visibilityClauses()) {
       // if we should not continue transitively through private use/includes,
@@ -556,7 +573,7 @@ static bool doLookupInImportsAndUses(Context* context,
 
       if (found) {
         // warn for use/import shadowing a function formal
-        warnHiddenFormal(context, scope, is, name);
+        warnHiddenFormal(context, scope, is, name, resultStart, result);
       }
     }
   }

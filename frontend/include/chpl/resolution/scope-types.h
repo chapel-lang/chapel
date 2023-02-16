@@ -314,6 +314,10 @@ class BorrowedIdsWithName {
     return idv_.id_;
   }
 
+  /** Returns 'true' if the list contains only IDs that represent
+      methods or fields. */
+  bool containsOnlyMethodsOrFields() const;
+
   BorrowedIdsWithNameIter begin() const {
     return BorrowedIdsWithNameIter(this, beginIdAndVis());
   }
