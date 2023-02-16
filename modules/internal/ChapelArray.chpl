@@ -1744,7 +1744,7 @@ module ChapelArray {
        instance of ``val`` in the array, or if ``val`` is not found, a
        tuple containing ``false`` and an unspecified value is returned.
      */
-     deprecated "The tuple-returning version of `.find() on arrays` is deprecated; to opt into the new index-returning version, recompile with `-suseNewArrayFind`"
+     deprecated "The tuple-returning version of '.find()' on arrays is deprecated; to opt into the new index-returning version, recompile with '-suseNewArrayFind'.  Also, note that there is a new two-argument '.find()' that may be preferable in some situations, and it requires no compiler flag to use."
      proc find(val: this.eltType): (bool, index(this.domain)) where !useNewArrayFind {
       for i in this.domain {
         if this[i] == val then return (true, i);
