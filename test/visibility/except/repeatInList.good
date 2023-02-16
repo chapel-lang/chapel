@@ -1,2 +1,3 @@
-repeatInList.chpl:16: warning: identifier 'a' is repeated
+repeatInList.chpl:15: In module 'M':
+repeatInList.chpl:16: warning: 'a' is repeated
 false

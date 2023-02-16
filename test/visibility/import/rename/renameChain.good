@@ -1,3 +1,4 @@
-renameChain.chpl:5: warning: identifier 'bar' is repeated
-note: Did you mean to rename 'foo' to 'baz'?
-renameChain.chpl:5: error: Bad identifier in rename, no known 'bar' in 'M'
+renameChain.chpl:4: In module 'User':
+renameChain.chpl:5: error: cannot rename symbol 'bar' as it is not defined in 'M'
+renameChain.chpl:5: warning: 'bar' is repeated
+renameChain.chpl:5: note: did you mean to rename 'foo' to 'baz'?

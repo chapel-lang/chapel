@@ -1,1 +1,2 @@
-renameToAlreadyImported.chpl:6: error: symbol 'x' multiply defined
+renameToAlreadyImported.chpl:5: In module 'User':
+renameToAlreadyImported.chpl:6: error: 'x' is multiply defined

@@ -1,3 +1,4 @@
-renameTwice.chpl:5: warning: identifier 'foo' is repeated
+renameTwice.chpl:4: In module 'User':
+renameTwice.chpl:5: warning: 'foo' is repeated
 false
 false

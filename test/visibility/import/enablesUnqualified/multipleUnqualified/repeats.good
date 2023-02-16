@@ -1,2 +1,3 @@
-repeats.chpl:6: warning: identifier 'bar' is repeated
+repeats.chpl:5: In module 'User':
+repeats.chpl:6: warning: 'bar' is repeated
 0
