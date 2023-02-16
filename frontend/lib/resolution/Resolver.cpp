@@ -2001,6 +2001,27 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
       searchId = parsing::idToParentId(context, searchId);
     }
   }
+
+  // Warn if the name matches a formal name but it's referring to something
+  // outside of the function
+  if (auto ident = node->toIdentifier()) {
+    if (typedSignature && !typedSignature->id().contains(id)) {
+      int badFormal = -1;
+      auto usig = typedSignature->untyped();
+      int nFormals = usig->numFormals();
+      for (int i = 0; i < nFormals; i++) {
+        if (ident->name() == usig->formalName(i)) {
+          badFormal = i;
+          break;
+        }
+      }
+      if (badFormal != -1) {
+        context->error(ident,
+                       "module level symbol is hiding function argument '%s'",
+                       ident->name().c_str());
+      }
+    }
+  }
 }
 
 static bool isCalledExpression(Resolver* rv, const AstNode* ast) {
