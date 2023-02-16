@@ -555,7 +555,7 @@ void ErrorUseImportMultiplyDefined::write(ErrorWriterBase& wr) const {
   auto firstOccurrence = std::get<1>(info);
   auto secondOccurrence = std::get<2>(info);
 
-  wr.heading(kind_, type_, secondOccurrence, "identfier '",
+  wr.heading(kind_, type_, secondOccurrence, "'",
              symbolName, "' is multiply defined.");
   wr.note(firstOccurrence, "'", symbolName, "' was first defined here:");
   wr.code(firstOccurrence, { firstOccurrence });
@@ -568,7 +568,7 @@ void ErrorUseImportMultiplyMentioned::write(ErrorWriterBase& wr) const {
   auto firstOccurrence = std::get<1>(info);
   auto secondOccurrence = std::get<2>(info);
 
-  wr.heading(kind_, type_, secondOccurrence, "identfier '",
+  wr.heading(kind_, type_, secondOccurrence, "'",
              symbolName, "' is repeated.");
   wr.note(firstOccurrence, "'", symbolName, "' was first mentioned here:");
   wr.code(firstOccurrence, { firstOccurrence });
@@ -597,7 +597,7 @@ void ErrorUseImportTransitiveRename::write(ErrorWriterBase& wr) const {
   auto firstRename = std::get<3>(info);
   auto secondRename = std::get<4>(info);
 
-  wr.heading(kind_, type_, secondRename, "identfier '",
+  wr.heading(kind_, type_, secondRename, "'",
              middle, "' is repeated.");
   wr.message("First, '", from, "' is renamed to '", middle, "'.");
   wr.code(firstRename, {firstRename});
