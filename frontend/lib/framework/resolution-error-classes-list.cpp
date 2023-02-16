@@ -53,7 +53,7 @@ static types::QualifiedType decayToValue(const types::QualifiedType& qt) {
 }
 
 static const char* allowedItem(resolution::VisibilityStmtKind kind) {
-  return kind == resolution::VIS_USE ? "module or 'enum'" : "module";
+  return kind == resolution::VIS_USE ? "module or enum" : "module";
 }
 
 static const char* allowedItems(resolution::VisibilityStmtKind kind) {
@@ -555,7 +555,7 @@ void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
   auto moduleName = std::get<std::string>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
 
-  wr.heading(kind_, type_, id, "cannot '", useOrImport, "' '", moduleName,
+  wr.heading(kind_, type_, id, "cannot '", useOrImport, "' symbol '", moduleName,
              "', which is not a ", allowedItem(useOrImport), ".");
   wr.message("In the following '", useOrImport, "' statement:");
   wr.code<ID, ID>(id, { id });
@@ -565,12 +565,18 @@ void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
 
 void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
-  auto moduleName = std::get<std::string>(info);
+  auto moduleName = std::get<2>(info);
+  auto previousPartName = std::get<3>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
   auto& improperMatches = std::get<std::vector<const uast::AstNode*>>(info);
 
-  wr.heading(kind_, type_, id, "cannot find ", allowedItem(useOrImport),
-             " '", moduleName, "' for '", useOrImport, "' statement.");
+  if (previousPartName.empty()) {
+    wr.heading(kind_, type_, id, "cannot find ", allowedItem(useOrImport),
+               " named '", moduleName, "'.");
+  } else {
+    wr.heading(kind_, type_, id, "cannot find ", allowedItem(useOrImport),
+               " named '", moduleName, "' in module '", previousPartName, "'.");
+  }
   wr.message("In the following '", useOrImport, "' statement:");
   wr.code<ID, ID>(id, { id });
   if (!improperMatches.empty()) {
@@ -680,7 +686,7 @@ void ErrorDeprecation::write(ErrorWriterBase& wr) const {
   auto target = std::get<const uast::NamedDecl*>(info);
   CHPL_ASSERT(mention && target);
 
-  wr.heading(kind_, type_, mention, msg);
+  wr.headingVerbatim(kind_, type_, mention, msg);
   wr.code(mention, {mention});
 
   /* TODO: Need to know whether the symbol is user or not:
@@ -698,7 +704,7 @@ void ErrorUnstable::write(ErrorWriterBase& wr) const {
   auto target = std::get<const uast::NamedDecl*>(info);
   CHPL_ASSERT(mention && target);
 
-  wr.heading(kind_, type_, mention, msg);
+  wr.headingVerbatim(kind_, type_, mention, msg);
   wr.code(mention, {mention});
 
   /* TODO: Need to know whether the symbol is user or not:

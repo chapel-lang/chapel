@@ -275,6 +275,15 @@ class ErrorWriterBase {
   }
 
   /**
+    Same as ErrorWriter::heading, but doesn't tweak the resulting error message
+    to remove punctuation.
+   */
+  template <typename LocationType, typename ... Ts>
+  void headingVerbatim(ErrorBase::Kind kind, ErrorType type, LocationType loc, Ts ... ts) {
+    writeHeading(kind, type, loc, toString(std::forward<Ts>(ts)...));
+  }
+
+  /**
     Write a note about the error. Unlike messages, notes are printed
     even in brief mode. Thus, notes can be used to provide information
     that is useful "in all cases" (e.g., the location of a duplicate
@@ -302,6 +311,15 @@ class ErrorWriterBase {
     auto str = toString(std::forward<Ts>(ts)...);
     tweakErrorString(str);
     writeNote(loc, str);
+  }
+
+  /**
+    Same as ErrorWriter::note, but doesn't tweak the resulting error message
+    to remove punctuation.
+   */
+  template <typename LocationType, typename ... Ts>
+  void noteVerbatim(ErrorBase::Kind kind, ErrorType type, LocationType loc, Ts ... ts) {
+    writeNote(kind, type, loc, toString(std::forward<Ts>(ts)...));
   }
 
   /**

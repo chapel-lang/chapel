@@ -1,5 +1,5 @@
 ─── error in fullImportPath.chpl:9 [UseImportUnknownMod] ───
-  Cannot find module 'ToLookFor' for 'import' statement.
+  Cannot find module named 'ToLookFor'.
   In the following 'import' statement:
       |
     9 |                 import ToLookFor;

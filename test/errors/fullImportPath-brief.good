@@ -1,4 +1,5 @@
-error in fullImportPath.chpl:9: cannot find module 'ToLookFor' for 'import' statement
-  note in fullImportPath.chpl:3: a module named 'ToLookFor' is defined here
-  note in fullImportPath.chpl:3: however, a full path or an explicit relative import is required for modules that are not at the root level
-  note in fullImportPath.chpl:9: For non-root-level modules, please specify the full path to the module or use a relative import e.g. 'import this.M' or 'import super.M'
+fullImportPath.chpl:8: In module 'M4':
+fullImportPath.chpl:9: error: cannot find module named 'ToLookFor'
+fullImportPath.chpl:3: note: a module named 'ToLookFor' is defined here
+fullImportPath.chpl:3: note: however, a full path or an explicit relative import is required for modules that are not at the root level
+fullImportPath.chpl:9: note: For non-root-level modules, please specify the full path to the module or use a relative import e.g. 'import this.M' or 'import super.M'
