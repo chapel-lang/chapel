@@ -176,6 +176,15 @@ bool Scope::contains(UniqueString name) const {
   return (search != declared_.end());
 }
 
+std::set<UniqueString> Scope::gatherNames() const {
+  std::set<UniqueString> orderedNames;
+  for (const auto& pair : declared_) {
+    orderedNames.insert(pair.first);
+  }
+
+  return orderedNames;
+}
+
 void Scope::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
   ss << "Scope ";
   ss << tagToString(tag());

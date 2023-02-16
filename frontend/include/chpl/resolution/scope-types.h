@@ -459,6 +459,9 @@ class Scope {
   /** Check to see if the scope contains IDs with the provided name. */
   bool contains(UniqueString name) const;
 
+  /** Gathers all of the names of symbols declared directly within this scope */
+  std::set<UniqueString> gatherNames() const;
+
   bool operator==(const Scope& other) const {
     return parentScope_ == other.parentScope_ &&
            tag_ == other.tag_ &&
