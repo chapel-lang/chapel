@@ -68,6 +68,7 @@ module Barriers {
      * `BarrierType.Atomic` uses Chapel atomic variables to control the barrier.
      * `BarrierType.Sync` uses Chapel sync variables to control the barrier.
   */
+  deprecated "BarrierType is deprecated, please use the default barrier implementation"
   enum BarrierType {Atomic, Sync}
 
   /* A barrier that will cause `numTasks` to wait before proceeding. */
@@ -84,8 +85,25 @@ module Barriers {
        :arg reusable: Incur some extra overhead to allow reuse of this barrier?
 
     */
+    proc init(numTasks: int, reusable: bool = true) {
+      if reusable {
+        bar = new unmanaged aBarrier(numTasks, reusable=true);
+      } else {
+        bar = new unmanaged aBarrier(numTasks, reusable=false);
+      }
+      isowned = true;
+    }
+
+    /* Construct a new barrier object.
+
+       :arg numTasks: The number of tasks that will use this barrier
+       :arg barrierType: The barrier implementation to use
+       :arg reusable: Incur some extra overhead to allow reuse of this barrier?
+
+    */
+    deprecated "choosing a barrier type is deprecated, please remove the 'barrierType' argument"
     proc init(numTasks: int,
-              barrierType: BarrierType = BarrierType.Atomic,
+              barrierType: BarrierType,
               reusable: bool = true) {
       select barrierType {
         when BarrierType.Atomic {
