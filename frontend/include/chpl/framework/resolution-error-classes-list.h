@@ -128,3 +128,7 @@ WARNING_CLASS(Unstable,
     std::string,
     const uast::AstNode*,
     const uast::NamedDecl*)
+WARNING_CLASS(HiddenFormal,
+    const uast::Formal*,
+    const uast::VisibilityClause*,
+    const resolution::VisibilityStmtKind)

@@ -85,6 +85,24 @@ int BorrowedIdsWithName::countVisibleIds() {
   return count;
 }
 
+bool BorrowedIdsWithName::containsOnlyMethodsOrFields() const {
+  if (moreIdvs_ == nullptr) {
+    if (isIdVisible(idv_)) {
+      return idv_.isMethodOrField();
+    }
+  }
+
+  for (const auto& idv : *moreIdvs_) {
+    if (isIdVisible(idv)) {
+      if (!idv.isMethodOrField()) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 void BorrowedIdsWithName::stringify(std::ostream& ss,
                                     chpl::StringifyKind stringKind) const {
   for (const auto& elt : *this) {
@@ -131,6 +149,38 @@ const Scope* Scope::parentModuleScope() const {
   auto modScope = this->moduleScope();
   if (auto ps = modScope->parentScope()) return ps->moduleScope();
   return nullptr;
+}
+
+bool Scope::lookupInScope(UniqueString name,
+                          std::vector<BorrowedIdsWithName>& result,
+                          bool arePrivateIdsIgnored,
+                          bool onlyMethodsFields) const {
+  auto search = declared_.find(name);
+  if (search != declared_.end()) {
+    // There might not be any IDs that are visible to us, so borrow returns
+    // an optional list.
+    auto borrowedIds = search->second.borrow(arePrivateIdsIgnored,
+                                             onlyMethodsFields);
+    if (borrowedIds.hasValue()) {
+      result.push_back(std::move(borrowedIds.getValue()));
+      return true;
+    }
+  }
+  return false;
+}
+
+bool Scope::contains(UniqueString name) const {
+  auto search = declared_.find(name);
+  return (search != declared_.end());
+}
+
+std::set<UniqueString> Scope::gatherNames() const {
+  std::set<UniqueString> orderedNames;
+  for (const auto& pair : declared_) {
+    orderedNames.insert(pair.first);
+  }
+
+  return orderedNames;
 }
 
 void Scope::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
