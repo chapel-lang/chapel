@@ -132,3 +132,7 @@ WARNING_CLASS(HiddenFormal,
     const uast::Formal*,
     const uast::VisibilityClause*,
     const resolution::VisibilityStmtKind)
+ERROR_CLASS(AmbiguousIdentifier,
+    UniqueString,
+    ID,
+    std::vector<ID>)

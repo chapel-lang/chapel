@@ -828,6 +828,26 @@ void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
   return;
 }
 
+void ErrorAmbiguousIdentifier::write(ErrorWriterBase& wr) const {
+  auto name = std::get<UniqueString>(info);
+  auto mentionId = std::get<ID>(info);
+  auto potentialTargetIds = std::get<std::vector<ID>>(info);
+
+  wr.heading(kind_, type_, mentionId,
+             "'", name, "' is ambiguous");
+
+  wr.code<ID, ID>(mentionId, { mentionId });
+
+  bool printedOne = false;
+  for (auto& id : potentialTargetIds) {
+    wr.note(id, printedOne ? "or ":"", "it could refer to this '", name, "'");
+    printedOne = true;
+    wr.code<ID, ID>(id, { id });
+  }
+  return;
+}
+
+
 /* end resolution errors */
 
 } // end namespace 'chpl'
