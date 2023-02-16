@@ -1140,13 +1140,14 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
   // first combining all IDs into one vector, and then cleaning up
   // that vector.
   std::vector<ID> allIds;
-  for (auto bids : vec) {
-    std::copy(bids.begin(), bids.end(), std::back_inserter(allIds));
+  if (got) {
+    for (auto bids : vec) {
+      std::copy(bids.begin(), bids.end(), std::back_inserter(allIds));
+    }
+    // This will _not_ turn x,y,x into x,y, but that's fine, since distinct
+    // IDs in this vector represent an error.
+    allIds.erase(std::unique(allIds.begin(), allIds.end()), allIds.end());
   }
-  // This will _not_ turn x,y,x into x,y, but that's fine, since distinct
-  // IDs in this vector represent an error.
-  allIds.erase(std::unique(allIds.begin(), allIds.end()), allIds.end());
-
 
   // Note that this logic isn't needed for regular identifiers, since
   // they aren't aliased in the same way, i.e.,
@@ -1160,7 +1161,7 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
   // should still resolve to the original A (but now, B is found in a different
   // scope).
 
-  if (got == false || vec.size() == 0) {
+  if (allIds.size() == 0) {
     // If we failed to find a proper import, we could've gotten back any number
     // of IDs that could be what the user meant to import. Store them in a set
     // and give them to the error.
@@ -1178,6 +1179,10 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
     CHPL_REPORT(context, UseImportUnknownMod, idForErrs, useOrImport,
                 nameInScope.c_str(), previousPartName.c_str(),
                 std::move(improperMatchVec));
+    return nullptr;
+  } else if (allIds.size() > 1) {
+
+    CHPL_REPORT(context, AmbiguousIdentifier, nameInScope, idForErrs, allIds);
     return nullptr;
   }
 
