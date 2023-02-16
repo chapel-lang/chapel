@@ -660,7 +660,7 @@ proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn 
   }
   // successfully return file
   if err_out == 0 {
-    return openfd(fdOut):tcpConn;
+    return new file(fdOut):tcpConn;
   }
   var localSync$: sync c_short;
   // create event pending state
@@ -708,7 +708,7 @@ proc tcpListener.accept(in timeout: struct_timeval = indefiniteTimeout):tcpConn 
       }
     }
   }
-  return openfd(fdOut):tcpConn;
+  return new file(fdOut):tcpConn;
 }
 
 proc tcpListener.accept(timeout: real): tcpConn throws {
@@ -855,7 +855,7 @@ proc connect(const ref address: ipAddr, in timeout = indefiniteTimeout): tcpConn
   }
   if err_out == 0 {
     setBlocking(socketFd, true);
-    return openfd(socketFd):tcpConn;
+    return new file(socketFd):tcpConn;
   }
   var localSync$: sync int = 0;
   localSync$.readFE();
@@ -878,7 +878,7 @@ proc connect(const ref address: ipAddr, in timeout = indefiniteTimeout): tcpConn
     throw createSystemError(err_out,"connect() failed");
   }
   setBlocking(socketFd, true);
-  return openfd(socketFd):tcpConn;
+  return new file(socketFd):tcpConn;
 }
 
 proc connect(const ref address: ipAddr, in timeout:real): tcpConn throws {

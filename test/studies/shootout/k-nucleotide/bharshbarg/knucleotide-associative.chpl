@@ -91,7 +91,7 @@ inline proc startsWithThree(data : []) {
 
 proc main(args: [] string) {
   // Open stdin and a binary reader channel
-  const inFile = openfd(0);
+  const inFile = new file(0);
   const fileLen = inFile.size;
   var myin = inFile.reader(kind=ionative,locking=false);
 

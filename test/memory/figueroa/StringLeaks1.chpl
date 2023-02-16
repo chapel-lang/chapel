@@ -3,7 +3,7 @@ use Memory.Diagnostics, IO;
 config const n = 1;
 
 proc foo () {
-  var stdout = openfd(1).writer();
+  var stdout = (new file(1)).writer();
   var s1 = "a string",
       s2 = s1,
       s3 = "another string",
