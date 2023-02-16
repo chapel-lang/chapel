@@ -118,7 +118,8 @@ jobs:
     - name: check annotations
       run: |
         CHPL_LLVM=none make test-venv 
-        CHPL_LLVM=none CHPL_HOME=$PWD make check ./util/test/run-in-test-venv.bash ./util/test/check_annotations.py
+        CHPL_HOME=$PWD make check
+        CHPL_LLVM=none  ./util/test/run-in-test-venv.bash ./util/test/check_annotations.py
     - name: smokeTest lint
       run: |
         ./util/buildRelease/smokeTest lint
