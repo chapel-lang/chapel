@@ -789,9 +789,9 @@ struct Converter {
 
     UniqueString filePath;
 
-   if (builderResult != nullptr) {
-     filePath = builderResult->filePath();
-   }
+    if (builderResult != nullptr) {
+      filePath = builderResult->filePath();
+    }
 
     // convert the included module
 
@@ -816,6 +816,9 @@ struct Converter {
 
     // allow production compiler to take action now that it is parsed
     noteParsedIncludedModule(mod, astr(filePath));
+
+    // note that the converted 'module include' is the same as 'mod'
+    noteConvertedSym(node, mod);
 
     return buildChapelStmt(new DefExpr(mod));
   }
