@@ -450,20 +450,10 @@ class Scope {
   bool lookupInScope(UniqueString name,
                      std::vector<BorrowedIdsWithName>& result,
                      bool arePrivateIdsIgnored,
-                     bool onlyMethodsFields) const {
-    auto search = declared_.find(name);
-    if (search != declared_.end()) {
-      // There might not be any IDs that are visible to us, so borrow returns
-      // an optional list.
-      auto borrowedIds = search->second.borrow(arePrivateIdsIgnored,
-                                               onlyMethodsFields);
-      if (borrowedIds.hasValue()) {
-        result.push_back(std::move(borrowedIds.getValue()));
-        return true;
-      }
-    }
-    return false;
-  }
+                     bool onlyMethodsFields) const;
+
+  /** Check to see if the scope contains IDs with the provided name. */
+  bool contains(UniqueString name) const;
 
   bool operator==(const Scope& other) const {
     return parentScope_ == other.parentScope_ &&

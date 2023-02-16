@@ -133,6 +133,29 @@ const Scope* Scope::parentModuleScope() const {
   return nullptr;
 }
 
+bool Scope::lookupInScope(UniqueString name,
+                          std::vector<BorrowedIdsWithName>& result,
+                          bool arePrivateIdsIgnored,
+                          bool onlyMethodsFields) const {
+  auto search = declared_.find(name);
+  if (search != declared_.end()) {
+    // There might not be any IDs that are visible to us, so borrow returns
+    // an optional list.
+    auto borrowedIds = search->second.borrow(arePrivateIdsIgnored,
+                                             onlyMethodsFields);
+    if (borrowedIds.hasValue()) {
+      result.push_back(std::move(borrowedIds.getValue()));
+      return true;
+    }
+  }
+  return false;
+}
+
+bool Scope::contains(UniqueString name) const {
+  auto search = declared_.find(name);
+  return (search != declared_.end());
+}
+
 void Scope::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
   ss << "Scope ";
   ss << tagToString(tag());
