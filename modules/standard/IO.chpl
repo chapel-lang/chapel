@@ -5418,33 +5418,55 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
 
 }
 
+deprecated "channel.readbits is deprecated - please use :proc:`fileReader.readBits` instead"
+proc _channel.readbits(ref v:integral, nbits:integral):bool throws {
+    return this.readBits(v, nbits:int);
+}
+
 /*
    Read bits with binary I/O
 
-   :arg v: where to store the read bits. This value will have its *nbits*
+   :arg x: where to store the read bits. This value will have its *numBits*
            least-significant bits set.
-   :arg nbits: how many bits to read
+   :arg numBits: how many bits to read
    :returns: `true` if the bits were read without error, `false` upon EOF
 
    :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
    :throws SystemError: Thrown if the bits could not be read from the channel.
  */
-proc _channel.readbits(ref v:integral, nbits:integral):bool throws {
+proc fileReader.readBits(ref x:integral, numBits:int):bool throws {
   if castChecking {
-    // Error if reading more bits than fit into v
-    if numBits(v.type) < nbits then
-      throw new owned IllegalArgumentError("v, nbits", "readbits nbits=" + nbits:string +
-                                                 " > bits in v:" + v.type:string);
+    // Error if reading more bits than fit into x
+    if Types.numBits(x.type) < numBits then
+      throw new owned IllegalArgumentError("x, numBits", "readBits numBits=" + numBits:string +
+                                                 " > bits in x:" + x.type:string);
     // Error if reading negative number of bits
-    if isIntType(nbits.type) && nbits < 0 then
-      throw new owned IllegalArgumentError("nbits", "readbits nbits=" + nbits:string + " < 0");
+    if isIntType(numBits.type) && numBits < 0 then
+      throw new owned IllegalArgumentError("numBits", "readBits numBits=" + numBits:string + " < 0");
   }
 
   var tmp:ioBits;
-  tmp.nbits = nbits:int(8);
+  tmp.nbits = numBits:int(8);
   var ret = try this.read(tmp);
-  v = tmp.v:v.type;
+  x = tmp.v:x.type;
   return ret;
+}
+
+/*
+    Read bits with binary I/O
+
+    :arg resultType: type of the value returned
+    :arg numBits: how many bits to read
+    :returns: bits read. This value will have its *numBits* least-significant bits set
+
+    :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+    :throws SystemError: Thrown if the bits could not be read from the channel.
+*/
+proc fileReader.readBits(type resultType, numBits:int):resultType throws {
+  var tmp:resultType;
+  var ret = try this.readBits(tmp, numBits);
+  if !ret then throw new UnexpectedEofError("Encountered EOF in readBits");
+  return tmp;
 }
 
 /*

@@ -26,7 +26,7 @@ if test == 1 { // ints
       var tmp:int;
       var nbits = 3;
       // now tmp, nbits are int
-      r.readbits(tmp, nbits);
+      r.readBits(tmp, nbits);
       writeln("Read ", tmp);
       assert(tmp == 0b011);
   }
@@ -48,9 +48,9 @@ if test == 2 { // uints
   {
       var r = f.reader(kind=ionative);
       var tmp:uint;
-      var nbits:uint = 3;
+      var nbits:int = 3;
       // now tmp, nbits are int
-      r.readbits(tmp, nbits);
+      r.readBits(tmp, nbits);
       writeln("Read ", tmp);
       assert(tmp == 0b011);
   }
@@ -74,7 +74,7 @@ if test == 3 { // int(8)s
       var tmp:int(8);
       var nbits:int(8) = 3;
       // now tmp, nbits are int
-      r.readbits(tmp, nbits);
+      r.readBits(tmp, nbits);
       writeln("Read ", tmp);
       assert(tmp == 0b011);
   }
@@ -98,7 +98,7 @@ if test == 4 { // uint(8)s
       var tmp:uint(8);
       var nbits:uint(8) = 3;
       // now tmp, nbits are int
-      r.readbits(tmp, nbits);
+      r.readBits(tmp, nbits);
       writeln("Read ", tmp);
       assert(tmp == 0b011);
   }
