@@ -2162,9 +2162,6 @@ void AggregateType::buildDefaultInitializer() {
     fn->cname = fn->name;
     fn->_this = _this;
 
-    // Lydia NOTE 06/16/17: I don't think I want to add the
-    //  DEFAULT_CONSTRUCTOR flag to this function, but if I do,
-    // then I will need to do something different in wrappers.cpp.
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
     fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
@@ -2181,7 +2178,9 @@ void AggregateType::buildDefaultInitializer() {
 
       if (addSuperArgs(fn, names, fieldArgMap) == true) {
         // Parent fields before child fields
-        fieldToArg(fn, names, fieldArgMap, /*fileReader=*/nullptr);
+        fieldToArg(fn, names, fieldArgMap,
+                   /*fileReader=*/nullptr,
+                   /*formatter=*/nullptr);
 
         // Replaces field references with argument references
         // NOTE: doesn't handle inherited fields yet!
@@ -2259,9 +2258,21 @@ static bool hasFullyGenericField(AggregateType* at) {
 
 void AggregateType::buildReaderInitializer() {
   if (!fUseIOFormatters) return;
+
+  // Neither 'fileReader' nor 'chpl__isFileReader' are available in our
+  // internal modules. Initializers in such cases will need to take a
+  // fully-generic argument in some way, or implement a tertiary initializer
+  // in ChapelIO.
   if (this->getModule()->modTag == MOD_INTERNAL) return;
 
+  // Fields like 'var x;' or 'var x : integral;' can't be initialized with
+  // the new-expression-type-alias feature, which the formatters are expected
+  // to rely upon. With this in mind, do not attempt to generate an
+  // initializer.
   if (hasFullyGenericField(this)) return;
+
+  // TODO: implement for unions if we decide they are stable for 2.0
+  if (this->isUnion()) return;
 
   if (builtReaderInit == false &&
       symbol->hasFlag(FLAG_REF) == false) {
@@ -2271,15 +2282,15 @@ void AggregateType::buildReaderInitializer() {
     ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", this);
 
     ArgSymbol* reader = new ArgSymbol(INTENT_BLANK, "chpl__reader", dtAny);
+
+    // TODO: Can we avoid the where-clause with an import in ChapelIO?
+    //   import IO.fileReader as chpl__fileReader
     fn->where = new BlockStmt(new CallExpr("chpl__isFileReader",
                               new CallExpr(PRIM_TYPEOF, reader)));
 
     fn->cname = fn->name;
     fn->_this = _this;
 
-    // Lydia NOTE 06/16/17: I don't think I want to add the
-    //  DEFAULT_CONSTRUCTOR flag to this function, but if I do,
-    // then I will need to do something different in wrappers.cpp.
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
     fn->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
@@ -2295,22 +2306,27 @@ void AggregateType::buildReaderInitializer() {
       std::set<const char*> names;
       SymbolMap fieldArgMap;
 
+      // Note: a reader-initializer will still have type and param fields
+      // for compatibility with the new-expression-type-alias feature, in
+      // which instantiated fields are passed to this initializer with
+      // named-expressions.
       if (addSuperArgs(fn, names, fieldArgMap, reader) == true) {
-        // Parent fields before child fields
-        fieldToArg(fn, names, fieldArgMap, reader);
 
-        {
-          CallExpr* getFormatter = new CallExpr(".", reader, new_CStringSymbol("formatter"));
-          CallExpr* readField = new CallExpr("readTypeStart", gMethodToken, getFormatter,
-                                             reader, new SymExpr(this->symbol));
-          fn->insertAtHead(readField);
-        }
-        {
-          CallExpr* getFormatter = new CallExpr(".", reader, new_CStringSymbol("formatter"));
-          CallExpr* readField = new CallExpr("readTypeEnd", gMethodToken, getFormatter,
-                                             reader, new SymExpr(this->symbol));
-          fn->insertAtTail(readField);
-        }
+        VarSymbol* formatter = newTemp("_fmt", QualifiedType(QUAL_REF, dtUnknown));
+        formatter->addFlag(FLAG_REF_VAR);
+        CallExpr* getFormatter = new CallExpr(".", reader, new_CStringSymbol("formatter"));
+
+        CallExpr* readStart = new CallExpr("readTypeStart", gMethodToken, formatter,
+                                           reader, new SymExpr(this->symbol));
+        fn->insertAtHead(readStart);
+        fn->insertAtHead(new DefExpr(formatter, getFormatter));
+
+        // Parent fields before child fields
+        fieldToArg(fn, names, fieldArgMap, reader, formatter);
+
+        CallExpr* readEnd = new CallExpr("readTypeEnd", gMethodToken, formatter,
+                                         reader, new SymExpr(this->symbol));
+        fn->insertAtTail(readEnd);
 
         // Replaces field references with argument references
         // NOTE: doesn't handle inherited fields yet!
@@ -2336,8 +2352,6 @@ void AggregateType::buildReaderInitializer() {
       } else {
         USR_FATAL(this, "Unable to generate initializer for type '%s'", this->symbol->name);
       }
-    } else {
-      // TODO: implement for unions?
     }
 
     reader->defPoint->remove();
@@ -2350,7 +2364,8 @@ void AggregateType::buildReaderInitializer() {
 void AggregateType::fieldToArg(FnSymbol*              fn,
                                std::set<const char*>& names,
                                SymbolMap&             fieldArgMap,
-                               ArgSymbol*             fileReader) {
+                               ArgSymbol*             fileReader,
+                               VarSymbol*             formatter) {
   bool isReaderInit = (fileReader != nullptr);
   for_fields(fieldDefExpr, this) {
     SET_LINENO(fieldDefExpr);
@@ -2386,6 +2401,8 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
         if (field->hasFlag(FLAG_UNSAFE))
           arg->addFlag(FLAG_UNSAFE);
 
+        // TODO: We should really do this somewhere else, and let this
+        // method focus on the initializer and not modify the type's fields.
         if (LoopExpr* fe = toLoopExpr(defPoint->init)) {
           if (field->isType() == false) {
             if (defPoint->exprType == NULL) {
@@ -2478,8 +2495,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
           }
 
           if (typeExpr != nullptr) {
-            CallExpr* getFormatter = new CallExpr(".", fileReader, new_CStringSymbol("formatter"));
-            CallExpr* readField = new CallExpr("readField", gMethodToken, getFormatter,
+            CallExpr* readField = new CallExpr("readField", gMethodToken, formatter,
                                                fileReader,
                                                new_StringSymbol(name),
                                                typeExpr);

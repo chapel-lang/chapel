@@ -263,7 +263,8 @@ private:
   void                        fieldToArg(FnSymbol*              fn,
                                          std::set<const char*>& names,
                                          SymbolMap&             fieldArgMap,
-                                         ArgSymbol*             fileReader);
+                                         ArgSymbol*             fileReader,
+                                         VarSymbol*             formatter);
 
   void                        fieldToArgType(DefExpr*   fieldDef,
                                              ArgSymbol* arg);
