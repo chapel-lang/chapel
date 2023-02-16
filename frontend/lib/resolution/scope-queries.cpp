@@ -489,6 +489,30 @@ static bool doLookupInImportsAndUses(Context* context,
       }
     }
 
+    if (found) {
+      // warn if a function formal name conflicts with something
+      // brought in by use/import.
+
+      // First, find a parent Function scope
+      const Scope* functionScope = nullptr;
+      for (const Scope* s = scope->parentScope();
+           s != nullptr;
+           s = s->parentScope()) {
+        if (asttags::isFunction(s->tag())) {
+          functionScope = s;
+          break;
+        }
+      }
+
+      if (functionScope && functionScope->contains(name)) {
+        // the formals are declared within the function scope,
+        // so this means that a formal name matched
+
+        context->error(functionScope->id(),
+                       "module level symbol is hiding function argument '%s'",
+                       name.c_str());
+      }
+    }
   }
 
   return found;
