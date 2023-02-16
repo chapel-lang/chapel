@@ -1,3 +1,2 @@
-superFromTopLevelModule1.chpl:1: In module 'superFromTopLevelModule1':
 superFromTopLevelModule1.chpl:2: error: invalid use of 'super' in 'import'; 'superFromTopLevelModule1' is a top-level module
 superFromTopLevelModule1.chpl:1: note: module 'superFromTopLevelModule1' was declared at the top level here

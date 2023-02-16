@@ -51,7 +51,7 @@ ERROR_CLASS(ModuleAsVariable,
             const uast::AstNode*,
             const uast::AstNode*,
             const uast::Module*)
-ERROR_CLASS(MultipleEnumElems, const uast::AstNode*, chpl::UniqueString, const types::EnumType*, std::vector<ID>)
+ERROR_CLASS(MultipleEnumElems, const uast::AstNode*, chpl::UniqueString, const uast::Enum*, std::vector<ID>)
 ERROR_CLASS(MultipleQuestionArgs, const uast::FnCall*, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(NestedClassFieldRef,
     const uast::AggregateDecl*,
@@ -84,7 +84,7 @@ ERROR_CLASS(TupleDeclNotTuple, const uast::TupleDecl*, const types::Type*)
 ERROR_CLASS(TupleDeclUnknownType, const uast::TupleDecl*)
 ERROR_CLASS(TupleExpansionNamedArgs, const uast::OpCall*, const uast::FnCall*)
 ERROR_CLASS(TupleExpansionNonTuple, const uast::FnCall*, const uast::OpCall*, types::QualifiedType)
-ERROR_CLASS(UnknownEnumElem, const uast::AstNode*, chpl::UniqueString, const types::EnumType*)
+ERROR_CLASS(UnknownEnumElem, const uast::AstNode*, chpl::UniqueString, const uast::Enum*)
 ERROR_CLASS(UnsupportedAsIdent, const uast::As*, const uast::AstNode*)
 ERROR_CLASS(UseImportMultiplyDefined,
             chpl::UniqueString,

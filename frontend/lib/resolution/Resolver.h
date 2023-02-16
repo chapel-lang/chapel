@@ -379,10 +379,22 @@ struct Resolver {
                                            const types::QualifiedType& left,
                                            const types::QualifiedType& right);
 
+  // find the element, if any, that a name refers to.
+  // Sets outAmbiguous to true if multiple elements of the same name are found,
+  // and to false otherwise.
+  ID scopeResolveEnumElement(const uast::Enum* enumAst,
+                             UniqueString elementName,
+                             const uast::AstNode* nodeForErr,
+                             bool& outAmbiguous);
+  // Given the results of looking up an enum element, construct a QualifiedType.
+  types::QualifiedType
+  typeForScopeResolvedEnumElement(const types::EnumType* enumType,
+                                            const ID& refersToId,
+                                            bool ambiguous);
+  // Given a particular enum type, determine the type of a particular element.
   types::QualifiedType typeForEnumElement(const types::EnumType* type,
                                           UniqueString elemName,
-                                          const uast::AstNode* astForErr,
-                                          ID& outElemId);
+                                          const uast::AstNode* astForErr);
 
   // helper to resolve a special call
   // returns 'true' if the call was a special call handled here, false

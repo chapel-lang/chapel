@@ -1090,16 +1090,14 @@ convertLimitations(Context* context, const VisibilityClause* clause) {
       UniqueString name = ident->name();
       validateAndPushRename(context, clause, ret,
                             std::make_pair(name, name));
-    } else if (auto dot = e->toDot()) {
-      CHPL_REPORT(context, DotExprInUseImport, clause,
-                  clause->limitationKind(), dot);
     } else if (auto as = e->toAs()) {
       UniqueString name;
       UniqueString rename;
       auto s = as->symbol();
       auto symId = s->toIdentifier();
       if (!symId) {
-        CHPL_REPORT(context, UnsupportedAsIdent, as, s);
+        // Should've already been reported as an error post-parse, but check
+        // anyway to be safe and avoid errors.
         continue;
       }
       name = symId->name();
@@ -1295,7 +1293,8 @@ doResolveUseStmt(Context* context, const Use* use,
     if (auto as = expr->toAs()) {
       auto newIdent = as->rename()->toIdentifier();
       if (!newIdent) {
-        CHPL_REPORT(context, UnsupportedAsIdent, as, as->rename());
+        // Should've already been reported as an error post-parse, but check
+        // anyway to be safe and avoid errors.
         continue;
       }
       // search for the original name
@@ -1348,12 +1347,6 @@ doResolveUseStmt(Context* context, const Use* use,
       switch (clause->limitationKind()) {
         case VisibilityClause::EXCEPT:
           kind = VisibilitySymbols::CONTENTS_EXCEPT;
-          // check that we do not have 'except A as B'
-          for (const AstNode* e : clause->limitations()) {
-            if (auto as = e->toAs()) {
-              CHPL_REPORT(context, AsWithUseExcept, use, as);
-            }
-          }
           // check that symbols named with 'except' actually exist
           errorIfAnyLimitationNotInScope(context, clause, foundScope,
                                          r, VIS_USE);
@@ -1406,7 +1399,8 @@ doResolveImportStmt(Context* context, const Import* imp,
     if (auto as = expr->toAs()) {
       auto newIdent = as->rename()->toIdentifier();
       if (!newIdent) {
-        CHPL_REPORT(context, UnsupportedAsIdent, as, as->rename());
+        // Should've already been reported as an error post-parse, but check
+        // anyway to be safe and avoid errors.
         continue;
       }
       // search for the original name
