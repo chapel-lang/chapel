@@ -1601,9 +1601,9 @@ Once the Chapel file is created, you will need to use a :proc:`file.reader` or
 
 .. note::
 
-  The resulting file value should only be used with one :record:`channel` at a
-  time. The I/O system will ignore the channel offsets when reading or writing
-  to a file opened using this initializer.
+  The resulting file value should only be used with one :record:`fileReader` or
+  :record:`fileWriter` at a time. The I/O system will ignore the offsets when
+  reading or writing to a file opened using this initializer.
 
 
 :arg fp: a pointer to a C ``FILE``. See :type:`~CTypes.c_FILE`.
@@ -1665,7 +1665,7 @@ The system file descriptor will be closed when the Chapel file is closed.
   descriptors that do not support the ``seek`` functionality. For example, file
   descriptors that represent pipes or open socket connections have this
   property. In that case, the resulting file value should only be used with one
-  :record:`channel` at a time.
+  :record:`fileReader` or :record:`fileWriter` at a time.
   The I/O system will ignore the channel offsets when reading or writing
   to files backed by non-seekable file descriptors.
 
@@ -2062,7 +2062,7 @@ The system file descriptor will be closed when the Chapel file is closed.
   descriptors that do not support the ``seek`` functionality. For example, file
   descriptors that represent pipes or open socket connections have this
   property. In that case, the resulting file value should only be used with one
-  :record:`channel` at a time.
+  :record:`fileReader` or :record:`fileWriter` at a time.
   The I/O system will ignore the channel offsets when reading or writing
   to files backed by non-seekable file descriptors.
 
