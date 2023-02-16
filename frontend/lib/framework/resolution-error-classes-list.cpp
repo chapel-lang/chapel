@@ -557,7 +557,7 @@ void ErrorUseImportMultiplyDefined::write(ErrorWriterBase& wr) const {
 
   wr.heading(kind_, type_, secondOccurrence, "'",
              symbolName, "' is multiply defined.");
-  wr.note(firstOccurrence, "'", symbolName, "' was first defined here:");
+  wr.message("'", symbolName, "' was first defined here:");
   wr.code(firstOccurrence, { firstOccurrence });
   wr.message("Redefined here:");
   wr.code(secondOccurrence, { secondOccurrence });
@@ -570,7 +570,7 @@ void ErrorUseImportMultiplyMentioned::write(ErrorWriterBase& wr) const {
 
   wr.heading(kind_, type_, secondOccurrence, "'",
              symbolName, "' is repeated.");
-  wr.note(firstOccurrence, "'", symbolName, "' was first mentioned here:");
+  wr.message("'", symbolName, "' was first mentioned here:");
   wr.code(firstOccurrence, { firstOccurrence });
   wr.message("Mentioned again here:");
   wr.code(secondOccurrence, { secondOccurrence });
