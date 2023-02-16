@@ -637,6 +637,8 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
     std::vector<DefExpr*> defExprsInBody;
     collectDefExprs(node, defExprsInBody);
 
+    std::set<GotoStmt*> breaksInNode;
+
     CallExpr* call = toCallExpr(node);
     if(call && call->isPrimitive(PRIM_ASSERT_ON_GPU)) {
       // The outlined kernel can only be executed on the GPU so there's no need
@@ -726,9 +728,11 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
             if (symExpr == cond->condExpr) {
               addKernelArgument(sym);
             }
-          } else if (isGotoStmt(symExpr->parentExpr)) {
-            copyNode = false;
-            outlinedFunction->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+          } else if (GotoStmt* gotoStmt = toGotoStmt(symExpr->parentExpr)) {
+            // this node has a goto in it
+            if (!isDefinedInTheLoop(sym, loop)) {
+              breaksInNode.insert(gotoStmt);
+            }
           } else {
             INT_FATAL("Unexpected symbol expression");
           }
@@ -737,7 +741,14 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
     }
 
     if (copyNode) {
-      outlinedFunction->insertBeforeEpilogue(node->copy());
+      Expr* nodeOriginal = node->copy();
+      node->replace(nodeOriginal);
+
+      for (auto gotoStmt = breaksInNode.begin() ;
+           gotoStmt != breaksInNode.end() ; gotoStmt++) {
+        (*gotoStmt)->replace(new CallExpr(PRIM_RETURN, gVoid));
+      }
+      outlinedFunction->insertBeforeEpilogue(node);
     }
   }
 
