@@ -1096,7 +1096,8 @@ convertLimitations(Context* context, const VisibilityClause* clause) {
       auto s = as->symbol();
       auto symId = s->toIdentifier();
       if (!symId) {
-        // Should've already been reported as an error post-parse, but be defensive.
+        // Should've already been reported as an error post-parse, but check
+        // anyway to be safe and avoid errors.
         continue;
       }
       name = symId->name();
@@ -1292,7 +1293,8 @@ doResolveUseStmt(Context* context, const Use* use,
     if (auto as = expr->toAs()) {
       auto newIdent = as->rename()->toIdentifier();
       if (!newIdent) {
-        // Should've already been reported as an error post-parse, but be defensive.
+        // Should've already been reported as an error post-parse, but check
+        // anyway to be safe and avoid errors.
         continue;
       }
       // search for the original name
@@ -1397,7 +1399,8 @@ doResolveImportStmt(Context* context, const Import* imp,
     if (auto as = expr->toAs()) {
       auto newIdent = as->rename()->toIdentifier();
       if (!newIdent) {
-        // Should've already been reported as an error post-parse, but be defensive.
+        // Should've already been reported as an error post-parse, but check
+        // anyway to be safe and avoid errors.
         continue;
       }
       // search for the original name
