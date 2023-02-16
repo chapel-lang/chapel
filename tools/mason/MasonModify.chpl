@@ -257,7 +257,7 @@ private proc masonExternalRemove(toml: shared Toml, toRm: string) throws {
 
 /* Generate the modified Mason.toml */
 proc generateToml(toml: borrowed Toml, tomlPath: string) {
-  const tomlFile = open(tomlPath, iomode.cw);
+  const tomlFile = open(tomlPath, ioMode.cw);
   const tomlWriter = tomlFile.writer();
   tomlWriter.writeln(toml);
   tomlWriter.close();

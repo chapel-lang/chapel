@@ -395,6 +395,8 @@ static bool typeNeedsInitDeinitCall(const Type* t) {
 
 
 void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
+  // Type variables do not need default init.
+  if (ast->storageKind() == Qualifier::TYPE) return;
 
   ResolvedExpression& varRes = rv.byAst(ast);
   QualifiedType varType = varRes.type();

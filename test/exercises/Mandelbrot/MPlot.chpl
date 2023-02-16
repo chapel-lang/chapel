@@ -52,7 +52,7 @@ proc plot(NumSteps:[]) where NumSteps.rank == 2 {
   // to it.
   //
   const outfilename = filename + "." + format;
-  const outfile = open(outfilename, iomode.cw).writer();
+  const outfile = open(outfilename, ioMode.cw).writer();
 
   //
   // Plot the image to the file (could also pass stdout in as the file...)

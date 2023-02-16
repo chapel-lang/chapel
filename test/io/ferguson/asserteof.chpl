@@ -2,7 +2,7 @@ use IO;
 
 config const filename = "asserteof.test.nums";
 
-var infile = open(filename, iomode.cwr);
+var infile = open(filename, ioMode.cwr);
 
 {
   var writer = infile.writer();

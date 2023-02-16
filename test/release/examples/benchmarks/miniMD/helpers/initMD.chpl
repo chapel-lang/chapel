@@ -143,7 +143,7 @@ if generating {
   for i in 0..2 do
     numBins(i) = (5.0/6.0 * problemSize(i)) : int;
 } else {
-  dataFile = open(data_file, iomode.r);
+  dataFile = open(data_file, ioMode.r);
   dataReader = dataFile.reader();
 
   dataReader.readln(); // skip first line
@@ -302,7 +302,7 @@ proc setupComms() {
 proc inputFile() {
   var fchan: file;
   try {
-    fchan = open(input_file, iomode.r);
+    fchan = open(input_file, ioMode.r);
   } catch {
     input_file = "none";
     return;

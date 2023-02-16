@@ -25,7 +25,7 @@ jobs:
            PR_LINK: ${{github.event.pull_request._links.html.href}}
         run: |      
               echo "LINK=$(echo $PR_LINK )" >> $GITHUB_ENV   
-              echo "AUTHOR=$(echo ${{github.actor}})" >> $GITHUB_ENV
+              echo "AUTHOR=$(echo ${{github.event.pull_request.head.user.login}})" >> $GITHUB_ENV
               echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
               echo "FILES_CHANGED=$(echo '$PR_LINK/files' )" >> $GITHUB_ENV     
   
@@ -35,7 +35,7 @@ jobs:
         with:
           fetch-depth: 0 
       # this step will (1) get the merge log for the merge_commit_sha and save it to the git  actions EN for later use in the email body. 
-      # (2) Get the diff using the filter (Select only files that are Added (A), Copied (C), Deleted (D), Modified (M), Renamed (R), Transfered (T)) .  
+      # (2) Get the files changed on the merge commit using the git log --name-status command.
       - name: Get merge log
         id: merge-log
         env:
@@ -47,9 +47,8 @@ jobs:
               echo "$merge_log" >> $GITHUB_ENV
               echo 'EOF' >> $GITHUB_ENV
 
-
               diff=$(git --no-pager diff --name-status --diff-filter=ACDMRT ${{github.event.pull_request.base.sha}} ${{github.sha}})
-              echo "$diff"  
+              echo "$diff" 
               echo 'DIFF<<EOF' >> $GITHUB_ENV
               echo "$diff" >> $GITHUB_ENV
               echo 'EOF' >> $GITHUB_ENV                   

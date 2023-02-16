@@ -4,8 +4,8 @@ use IO;
 var original = "foo.txt";
 var symlinkName = "foo2";
 symlink(original, symlinkName); // Creates foo2 as a symlink of foo.txt
-var f1 = open(original, iomode.r);
-var f2 = open(symlinkName, iomode.r);
+var f1 = open(original, ioMode.r);
+var f2 = open(symlinkName, ioMode.r);
 // Should match in both cases
 writeln(sameFile(original, symlinkName));
 writeln(sameFile(f1.path, f2.path));

@@ -57,7 +57,7 @@ config const approach2FileName = "readcsv-out2.csv";
 config const debug = true;
 
 // Open up a file to work with.
-var f = open(inFileName, iomode.r);
+var f = open(inFileName, ioMode.r);
 
 // Now read the in the csv data. 
 // Approach 1: formatted input into a list of maps
@@ -112,7 +112,7 @@ var f = open(inFileName, iomode.r);
   // temporary csv file from the stored data.  It should be the same as the 
   // input csv file.
   if debug {
-    var outfile = open(approach1FileName, iomode.cw);
+    var outfile = open(approach1FileName, ioMode.cw);
     var writer = outfile.writer();
 
     // First write to the output file the column names separated by commas.
@@ -205,7 +205,7 @@ var f = open(inFileName, iomode.r);
   // temporary csv file from the stored data.  It should be the same as the 
   // input csv file.
   if debug {
-    var outfile = open(approach2FileName, iomode.cw);
+    var outfile = open(approach2FileName, ioMode.cw);
     var writer = outfile.writer();
 
     // First write to the output file the column names separated by commas.

@@ -1,1 +1,2 @@
-error in useImportUnknownSym.chpl:6: cannot find symbol 'b' for import
+useImportUnknownSym.chpl:5: In module 'N':
+useImportUnknownSym.chpl:6: error: cannot 'import' symbol 'b' as it is not defined in 'M'

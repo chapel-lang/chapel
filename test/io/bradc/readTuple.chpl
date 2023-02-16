@@ -1,6 +1,6 @@
 use IO;
 
-var infile = open("readTuple.dat", iomode.r);
+var infile = open("readTuple.dat", ioMode.r);
 var reader = infile.reader();
 
 var (a, b, c) = reader.read((int, int, int));

@@ -1,6 +1,6 @@
 use IO;
 
 var myInt: int;
-var f = open("anyFile.txt", iomode.q).writer();
+var f = open("anyFile.txt", ioMode.q).writer();
 
 f.write(myInt);

@@ -1,7 +1,7 @@
 use typesTest;
 use IO;
 
-var file = open("out", iomode.cw);
+var file = open("out", ioMode.cw);
 var writingChannel = file.writer();
 
 var messageObj = new typesTest.Types();

@@ -463,6 +463,9 @@ struct Resolver {
   bool enter(const uast::ReduceIntent* reduce);
   void exit(const uast::ReduceIntent* reduce);
 
+  bool enter(const uast::Reduce* reduce);
+  void exit(const uast::Reduce* reduce);
+
   bool enter(const uast::TaskVar* taskVar);
   void exit(const uast::TaskVar* taskVar);
 

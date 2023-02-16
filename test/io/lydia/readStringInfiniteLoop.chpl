@@ -1,7 +1,7 @@
 use IO;
 
 var filename = "shortfile.txt";
-var f = open(filename, iomode.r);
+var f = open(filename, ioMode.r);
 var chnl = f.reader(kind=ionative);
 // If I remove kind=ionative, the program completes correctly
 

@@ -114,7 +114,7 @@ proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
 
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd, tomlName);
-    const toParse = open(projectHome + "/" + lockName, iomode.r);
+    const toParse = open(projectHome + "/" + lockName, ioMode.r);
     var lockFile = parseToml(toParse);
     const projectName = lockFile["root"]!["name"]!.s;
 

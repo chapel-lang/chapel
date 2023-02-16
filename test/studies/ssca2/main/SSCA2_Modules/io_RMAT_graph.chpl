@@ -497,7 +497,7 @@ proc createGraphChannel(prefix:string, suffix:string, param forWriting:bool) {
 
 proc createGraphFile(prefix:string, suffix:string, param forWriting:bool) {
   return open(prefix+suffix,
-              if forWriting then iomode.cw else iomode.r,
+              if forWriting then ioMode.cw else ioMode.r,
               ioHintSet.sequential);
 }
 

@@ -19,7 +19,7 @@ var a: borrowed Child = (new owned Child(x = 1, y = 2, z = 3)).borrow();
 
 writeln("a is ", a);
 
-var f = open("test.txt", iomode.cwr);
+var f = open("test.txt", ioMode.cwr);
 var writer = f.writer();
 var s = "{z=6,y=5,x=4}";
 writer.writeln(s);

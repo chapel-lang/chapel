@@ -119,7 +119,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
 
 /* Writes out the lock file */
 proc genLock(lock: borrowed Toml, lf: string) {
-  const lockFile = open(lf, iomode.cw);
+  const lockFile = open(lf, ioMode.cw);
   const tomlWriter = lockFile.writer();
   tomlWriter.writeln(lock);
   tomlWriter.close();
@@ -422,7 +422,7 @@ private proc retrieveDep(name: string, version: string) {
   for cached in MASON_CACHED_REGISTRY {
     const tomlPath = cached + "/Bricks/"+name+"/"+version+".toml";
     if isFile(tomlPath) {
-      var tomlFile = open(tomlPath, iomode.r);
+      var tomlFile = open(tomlPath, ioMode.r);
       var depToml = parseToml(tomlFile);
       return depToml;
     }
@@ -448,7 +448,7 @@ private proc retrieveGitDep(name: string, branch: string) {
   var baseDir = MASON_HOME +'/git/';
   const tomlPath = baseDir + "/"+name+"-"+branch+"/Mason.toml";
   if isFile(tomlPath) {
-    var tomlFile = open(tomlPath, iomode.r);
+    var tomlFile = open(tomlPath, ioMode.r);
     var depToml = parseToml(tomlFile);
     return depToml;
   }

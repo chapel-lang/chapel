@@ -528,6 +528,33 @@ static void test16(void) {
   guard.clearErrors();
 }
 
+// multiple query expressions cannot appear in an array type's domain
+static void test17(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+  std::string text =
+    R""""(
+      proc foo(x: [?d1, ?d2] int) {}
+      foo([[0, 1], [2, 3]]);
+    )"""";
+
+  auto path = UniqueString::get(ctx, "test17.chpl");
+  setFileText(ctx, path, text);
+
+  parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
+
+  assert(guard.numErrors() == 2);
+  displayErrors(ctx, guard);
+  assertErrorMatches(ctx, guard, 0, "test17.chpl", 2,
+                     "cannot query part of a domain");
+  assertErrorMatches(ctx, guard, 1, "test17.chpl", 2,
+                     "cannot query part of a domain");
+  guard.clearErrors();
+}
+
+
+
 int main() {
   test0();
   test1();
@@ -546,6 +573,7 @@ int main() {
   test14();
   test15();
   test16();
+  test17();
 
   return 0;
 }

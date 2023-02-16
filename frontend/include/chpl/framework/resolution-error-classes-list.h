@@ -58,7 +58,7 @@ ERROR_CLASS(NestedClassFieldRef,
     const uast::AggregateDecl*,
     const uast::AstNode*,
     ID)
-ERROR_CLASS(NonIterable, const uast::IndexableLoop*, const uast::AstNode*, types::QualifiedType)
+ERROR_CLASS(NonIterable, const uast::AstNode*, const uast::AstNode*, types::QualifiedType)
 ERROR_CLASS(PrivateToPublicInclude, const uast::Include*, const uast::Module*)
 ERROR_CLASS(ProcDefExplicitAnonFormal,
     const uast::Function*,
@@ -68,6 +68,13 @@ ERROR_CLASS(ProcTypeUnannotatedFormal,
     const uast::AnonFormal*)
 ERROR_CLASS(PrototypeInclude, const uast::Include*, const uast::Module*)
 ERROR_CLASS(Redefinition, const uast::NamedDecl*, std::vector<ID>)
+ERROR_CLASS(ReductionInvalidName,
+    const uast::AstNode*,
+    UniqueString,
+    types::QualifiedType)
+ERROR_CLASS(ReductionNotReduceScanOp,
+    const uast::AstNode*,
+    types::QualifiedType)
 ERROR_CLASS(SuperFromTopLevelModule,
     const uast::AstNode*,
     const uast::Module*,
@@ -79,11 +86,26 @@ ERROR_CLASS(TupleExpansionNamedArgs, const uast::OpCall*, const uast::FnCall*)
 ERROR_CLASS(TupleExpansionNonTuple, const uast::FnCall*, const uast::OpCall*, types::QualifiedType)
 ERROR_CLASS(UnknownEnumElem, const uast::AstNode*, chpl::UniqueString, const types::EnumType*)
 ERROR_CLASS(UnsupportedAsIdent, const uast::As*, const uast::AstNode*)
+ERROR_CLASS(UseImportMultiplyDefined,
+            chpl::UniqueString,
+            const uast::AstNode*,
+            const uast::AstNode*)
+WARNING_CLASS(UseImportMultiplyMentioned,
+              chpl::UniqueString,
+              const uast::AstNode*,
+              const uast::AstNode*)
 ERROR_CLASS(UseImportNotModule, const ID, const resolution::VisibilityStmtKind,
             std::string)
+WARNING_CLASS(UseImportTransitiveRename,
+              chpl::UniqueString,
+              chpl::UniqueString,
+              chpl::UniqueString,
+              const uast::AstNode*,
+              const uast::AstNode*)
 ERROR_CLASS(UseImportUnknownMod,
             const ID,
             const resolution::VisibilityStmtKind,
+            std::string,
             std::string,
             std::vector<const uast::AstNode*>)
 ERROR_CLASS(UseImportUnknownSym,
@@ -106,3 +128,7 @@ WARNING_CLASS(Unstable,
     std::string,
     const uast::AstNode*,
     const uast::NamedDecl*)
+WARNING_CLASS(HiddenFormal,
+    const uast::Formal*,
+    const uast::VisibilityClause*,
+    const resolution::VisibilityStmtKind)

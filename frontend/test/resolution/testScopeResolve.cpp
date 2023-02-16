@@ -855,6 +855,116 @@ static void test22() {
   assert(reY.toId().str() == "M@1");
 }
 
+// Testing errors issued: two conflicting things renamed to the same thing.
+static void test23() {
+  printf("test23\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module M {
+        var a = "a";
+        var b = "b";
+      }
+
+      module O {
+        import M.{a as c, b as c};
+        var x = M.c;
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+
+  const ResolvedExpression& reMc = scopeResolveIt(context, x->initExpression());
+  assert(reMc.toId().isEmpty());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::UseImportMultiplyDefined);
+  guard.clearErrors();
+}
+
+// Testing warning issued: one variable imported as two different things.
+static void test24() {
+  printf("test24\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module M {
+        var a = "a";
+      }
+
+      module O {
+        import M.{a as b, a as c};
+        var x = b;
+        var y = c;
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+  const Variable* y = findVariable(vec, "y");
+  assert(x);
+  const Variable* a = findVariable(vec, "a");
+  assert(a);
+
+  const ResolvedExpression& reB = scopeResolveIt(context, x->initExpression());
+  assert(reB.toId() == a->id());
+
+  const ResolvedExpression& reC = scopeResolveIt(context, y->initExpression());
+  assert(reC.toId() == a->id());
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::UseImportMultiplyMentioned);
+  guard.clearErrors();
+}
+
+// Testing errors and warnings issued: a variable transitively renamed;
+// did the user mean `a as c` instead of `a as b, b as c`?
+static void test25() {
+  printf("test24\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module M {
+        var a = "a";
+      }
+
+      module O {
+        import M.{a as b, b as c};
+        var x = c;
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+
+  const ResolvedExpression& reC = scopeResolveIt(context, x->initExpression());
+  assert(reC.toId().isEmpty());
+
+  assert(guard.numErrors() == 2);
+  assert(guard.error(0)->type() == ErrorType::UseImportUnknownSym);
+  assert(guard.error(1)->type() == ErrorType::UseImportTransitiveRename);
+  guard.clearErrors();
+}
+
 int main() {
   test1();
   test2();
@@ -878,6 +988,9 @@ int main() {
   test20();
   test21();
   test22();
+  test23();
+  test24();
+  test25();
 
   return 0;
 }

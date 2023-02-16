@@ -1,7 +1,7 @@
 use IO;
 
 var filename = "seek.txt";
-var f = open(filename, iomode.r);
+var f = open(filename, ioMode.r);
 var readRes: string;
 
 var readChEnd = f.reader(region=..5);

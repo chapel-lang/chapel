@@ -14,7 +14,7 @@ proc test(goodLock: string, tf: string) {
 
   // file.good -> file.lock
   const lf = goodLock.replace('good', 'lock');
-  var temp = open(lf, iomode.cw);
+  var temp = open(lf, ioMode.cw);
   {
     var w = temp.writer();
     for line in openreader(goodLock).lines() do
@@ -23,7 +23,7 @@ proc test(goodLock: string, tf: string) {
   }
 
   var configs = updateLock(true, tf=tf, lf=temp.path);
-  var lock = open(temp.path, iomode.r);
+  var lock = open(temp.path, ioMode.r);
   var lockFile = parseToml(lock);
   writeln(lockFile);
   remove(lf);

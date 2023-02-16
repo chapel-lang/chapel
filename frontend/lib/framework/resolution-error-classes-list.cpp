@@ -53,7 +53,7 @@ static types::QualifiedType decayToValue(const types::QualifiedType& qt) {
 }
 
 static const char* allowedItem(resolution::VisibilityStmtKind kind) {
-  return kind == resolution::VIS_USE ? "module or 'enum'" : "module";
+  return kind == resolution::VIS_USE ? "module or enum" : "module";
 }
 
 static const char* allowedItems(resolution::VisibilityStmtKind kind) {
@@ -375,8 +375,8 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorNonIterable::write(ErrorWriterBase &wr) const {
-  auto loop = std::get<const uast::IndexableLoop*>(info);
-  auto iterand = std::get<const uast::AstNode*>(info);
+  auto loop = std::get<0>(info);
+  auto iterand = std::get<1>(info);
   auto& iterandType = std::get<types::QualifiedType>(info);
   wr.heading(kind_, type_, loop, "cannot iterate over ", decayToValue(iterandType), ".");
   wr.message("In the following loop:");
@@ -435,6 +435,57 @@ void ErrorRedefinition::write(ErrorWriterBase& wr) const {
       wr.note(id, "redefined here:");
       wr.code<ID, ID>(id);
     }
+  }
+}
+
+static const uast::AstNode* getReduceOrScanOp(const uast::AstNode* reduceOrScan) {
+  if (auto reduce = reduceOrScan->toReduce()) {
+    return reduce->op();
+  } else if (auto scan = reduceOrScan->toScan()) {
+    return scan->op();
+  }
+  return nullptr;
+}
+
+void ErrorReductionInvalidName::write(ErrorWriterBase& wr) const {
+  auto reduceOrScan = std::get<const uast::AstNode*>(info);
+  auto name = std::get<UniqueString>(info);
+  auto& iterType = std::get<types::QualifiedType>(info);
+
+  auto op = getReduceOrScanOp(reduceOrScan);
+  wr.heading(kind_, type_, op,
+            "identifier '", name, "' does not represent "
+            "a valid reduction operation.");
+  wr.message("In the following 'reduce' expression:");
+  wr.code(reduceOrScan, { op });
+  wr.message("Identifiers on the left of the 'reduce' expression are applied "
+             "to the type of the iterator's elements ('", iterType.type(), "' "
+             "in this case)");
+  wr.message("Is '", name, "(", iterType.type(), ")' a valid reduction operation?");
+}
+
+void ErrorReductionNotReduceScanOp::write(ErrorWriterBase& wr) const {
+  auto reduceOrScan = std::get<const uast::AstNode*>(info);
+  auto actualType = std::get<types::QualifiedType>(info);
+  const types::BasicClassType* actualClassType = nullptr;
+
+  auto op = getReduceOrScanOp(reduceOrScan);
+  wr.heading(kind_, type_, op, "invalid operation in 'reduce' expression.");
+  wr.code(reduceOrScan, { op });
+
+  // Don't print the details of managed / unmanaged / etc.
+  if (auto classType = actualType.type()->toClassType()) {
+    actualClassType = classType->basicClassType();
+    while (auto instFrom = actualClassType->instantiatedFrom()) {
+      actualClassType = instFrom;
+    }
+    actualType = types::QualifiedType(actualType.kind(), actualClassType);
+  }
+  wr.message("The operation must be a type extending 'ReduceScanOp', but "
+             "it is ", actualType);
+  if (actualClassType) {
+    wr.message("Did you mean for class '", actualClassType,
+        "' to extend 'ReduceScanOp'?");
   }
 }
 
@@ -550,12 +601,38 @@ void ErrorUnsupportedAsIdent::write(ErrorWriterBase& wr) const {
   wr.code(expectedIdentifier, { expectedIdentifier });
 }
 
+void ErrorUseImportMultiplyDefined::write(ErrorWriterBase& wr) const {
+  auto symbolName = std::get<UniqueString>(info);
+  auto firstOccurrence = std::get<1>(info);
+  auto secondOccurrence = std::get<2>(info);
+
+  wr.heading(kind_, type_, secondOccurrence, "'",
+             symbolName, "' is multiply defined.");
+  wr.message("'", symbolName, "' was first defined here:");
+  wr.code(firstOccurrence, { firstOccurrence });
+  wr.message("Redefined here:");
+  wr.code(secondOccurrence, { secondOccurrence });
+}
+
+void ErrorUseImportMultiplyMentioned::write(ErrorWriterBase& wr) const {
+  auto symbolName = std::get<UniqueString>(info);
+  auto firstOccurrence = std::get<1>(info);
+  auto secondOccurrence = std::get<2>(info);
+
+  wr.heading(kind_, type_, secondOccurrence, "'",
+             symbolName, "' is repeated.");
+  wr.message("'", symbolName, "' was first mentioned here:");
+  wr.code(firstOccurrence, { firstOccurrence });
+  wr.message("Mentioned again here:");
+  wr.code(secondOccurrence, { secondOccurrence });
+}
+
 void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
   auto moduleName = std::get<std::string>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
 
-  wr.heading(kind_, type_, id, "cannot '", useOrImport, "' '", moduleName,
+  wr.heading(kind_, type_, id, "cannot '", useOrImport, "' symbol '", moduleName,
              "', which is not a ", allowedItem(useOrImport), ".");
   wr.message("In the following '", useOrImport, "' statement:");
   wr.code<ID, ID>(id, { id });
@@ -563,14 +640,38 @@ void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
              useOrImport, "' statements.");
 }
 
+void ErrorUseImportTransitiveRename::write(ErrorWriterBase& wr) const {
+  auto from = std::get<0>(info);
+  auto middle = std::get<1>(info);
+  auto to = std::get<2>(info);
+
+  auto firstRename = std::get<3>(info);
+  auto secondRename = std::get<4>(info);
+
+  wr.heading(kind_, type_, secondRename, "'",
+             middle, "' is repeated.");
+  wr.message("First, '", from, "' is renamed to '", middle, "'.");
+  wr.code(firstRename, {firstRename});
+  wr.message("Then, '", middle, "' is renamed to '", to, "'.");
+  wr.code(secondRename, {secondRename});
+  wr.note(firstRename, "did you mean to rename '", from, "' to '", to, "'?");
+  wr.message("You can do so by a single rename, '", from, " as ", to, "'.");
+}
+
 void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
-  auto moduleName = std::get<std::string>(info);
+  auto moduleName = std::get<2>(info);
+  auto previousPartName = std::get<3>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
   auto& improperMatches = std::get<std::vector<const uast::AstNode*>>(info);
 
-  wr.heading(kind_, type_, id, "cannot find ", allowedItem(useOrImport),
-             " '", moduleName, "' for '", useOrImport, "' statement.");
+  if (previousPartName.empty()) {
+    wr.heading(kind_, type_, id, "cannot find ", allowedItem(useOrImport),
+               " named '", moduleName, "'.");
+  } else {
+    wr.heading(kind_, type_, id, "cannot find ", allowedItem(useOrImport),
+               " named '", moduleName, "' in module '", previousPartName, "'.");
+  }
   wr.message("In the following '", useOrImport, "' statement:");
   wr.code<ID, ID>(id, { id });
   if (!improperMatches.empty()) {
@@ -680,7 +781,7 @@ void ErrorDeprecation::write(ErrorWriterBase& wr) const {
   auto target = std::get<const uast::NamedDecl*>(info);
   CHPL_ASSERT(mention && target);
 
-  wr.heading(kind_, type_, mention, msg);
+  wr.headingVerbatim(kind_, type_, mention, msg);
   wr.code(mention, {mention});
 
   /* TODO: Need to know whether the symbol is user or not:
@@ -698,7 +799,7 @@ void ErrorUnstable::write(ErrorWriterBase& wr) const {
   auto target = std::get<const uast::NamedDecl*>(info);
   CHPL_ASSERT(mention && target);
 
-  wr.heading(kind_, type_, mention, msg);
+  wr.headingVerbatim(kind_, type_, mention, msg);
   wr.code(mention, {mention});
 
   /* TODO: Need to know whether the symbol is user or not:
@@ -707,6 +808,23 @@ void ErrorUnstable::write(ErrorWriterBase& wr) const {
   */
 
   std::ignore = target;
+  return;
+}
+
+void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
+  auto formal = std::get<const uast::Formal*>(info);
+  auto visibilityClause = std::get<const uast::VisibilityClause*>(info);
+  auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
+  CHPL_ASSERT(formal && visibilityClause);
+
+  wr.heading(kind_, type_, visibilityClause,
+             "module-level symbol is hiding function argument '",
+             formal->name(), "'");
+  wr.message("The formal argument:");
+  wr.code(formal, { formal });
+  wr.message("is shadowed by a symbol provided by the following '",
+             useOrImport, "' statement:");
+  wr.code(visibilityClause, { visibilityClause });
   return;
 }
 

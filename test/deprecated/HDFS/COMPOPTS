@@ -1,0 +1,1 @@
+-I${HADOOP_HOME}/include -L${HADOOP_HOME}/lib/native -lhdfs --ccflags -Wno-strict-prototypes

@@ -452,7 +452,7 @@ iter Level.ordered_grids {
 
 proc readLevel(file_name: string){
 
-  var input_file = open(file_name, iomode.r).reader();
+  var input_file = open(file_name, ioMode.r).reader();
 
   var dim_in: int;
   input_file.readln(dim_in);
