@@ -26,5 +26,8 @@ export CHPL_NIGHTLY_TEST_DIRS="library/packages/Curl library/packages/HDFS"
 
 $CWD/nightly -cron ${nightly_args}
 
+# clean up test files
+$HADOOP_HOME/bin/hdfs dfs -rm -r -f /tmp
+
 #stop hdfs
 $HADOOP_HOME/sbin/stop-dfs.sh
