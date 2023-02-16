@@ -1,1 +1,1 @@
-depOpenfd.chpl:4: warning: openfd with a style argument is unstable
+depOpenfd.chpl:4: warning: initializing a file with a style argument is unstable

@@ -100,7 +100,7 @@ record buf {
 config const readSize = 16 * 1024;
 
 proc main(args: [] string) {
-  const stdin = openfd(0);
+  const stdin = new file(0);
   var input = new buf(stdin, readSize);
   var data: list(uint(8));
   
@@ -136,8 +136,8 @@ proc main(args: [] string) {
     }
   }
 
-  const stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                     hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
+  const stdoutBin = (new file(1)).writer(iokind.native, locking=false,
+                                         hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
   //
   // This conversion wastes memory, but correct output requires array stdout
   // specifically at the moment.

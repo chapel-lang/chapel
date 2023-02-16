@@ -98,7 +98,7 @@ record buf {
 config const readSize = 16 * 1024;
 
 proc main(args: [] string) {
-  const stdin = openfd(0);
+  const stdin = new file(0);
   var input = new buf(stdin, readSize);
   var data: list(uint(8));
   
@@ -128,8 +128,8 @@ proc main(args: [] string) {
     process(data, sectionStart, data.size-2);
   }
 
-  const stdoutBin = openfd(1).writer(iokind.native, locking=false, 
-                                     hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
+  const stdoutBin = (new file(1)).writer(iokind.native, locking=false,
+                                         hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
   //
   // Necessary for now because list `readWriteThis` includes formatting chars,
   // while arrays do not.

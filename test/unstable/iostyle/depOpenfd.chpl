@@ -1,5 +1,5 @@
 use IO;
 
 var style = defaultIOStyleInternal();
-var f = openfd(1, style=style);
+var f = new file(1, style=style);
 f.close();
