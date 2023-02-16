@@ -1,3 +1,4 @@
+fasta3.chpl:83: warning: openfd is deprecated, please use the file initializer with a 'c_int' argument instead
 >ONE Homo sapiens alu
 GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCACTTTGGGAGGCCGAGGCGGGCGGA
 TCACCTGAGGTCAGGAGTTCGAGACCAGCCTGGCCAACATGGTGAAACCCCGTCTCTACT
