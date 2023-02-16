@@ -58,7 +58,7 @@ ERROR_CLASS(NestedClassFieldRef,
     const uast::AggregateDecl*,
     const uast::AstNode*,
     ID)
-ERROR_CLASS(NonIterable, const uast::IndexableLoop*, const uast::AstNode*, types::QualifiedType)
+ERROR_CLASS(NonIterable, const uast::AstNode*, const uast::AstNode*, types::QualifiedType)
 ERROR_CLASS(PrivateToPublicInclude, const uast::Include*, const uast::Module*)
 ERROR_CLASS(ProcDefExplicitAnonFormal,
     const uast::Function*,
@@ -68,6 +68,13 @@ ERROR_CLASS(ProcTypeUnannotatedFormal,
     const uast::AnonFormal*)
 ERROR_CLASS(PrototypeInclude, const uast::Include*, const uast::Module*)
 ERROR_CLASS(Redefinition, const uast::NamedDecl*, std::vector<ID>)
+ERROR_CLASS(ReductionInvalidName,
+    const uast::AstNode*,
+    UniqueString,
+    types::QualifiedType)
+ERROR_CLASS(ReductionNotReduceScanOp,
+    const uast::AstNode*,
+    types::QualifiedType)
 ERROR_CLASS(SuperFromTopLevelModule,
     const uast::AstNode*,
     const uast::Module*,

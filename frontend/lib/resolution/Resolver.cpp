@@ -2912,9 +2912,9 @@ void Resolver::exit(const New* node) {
 }
 
 static QualifiedType resolveSerialIterType(Resolver& resolver,
-                                           const IndexableLoop* loop) {
+                                           const AstNode* astForErr,
+                                           const AstNode* iterand) {
   Context* context = resolver.context;
-  const AstNode* iterand = loop->iterand();
   iterand->traverse(resolver);
   ResolvedExpression& iterandRE = resolver.byPostorder.byAst(iterand);
 
@@ -2953,11 +2953,11 @@ static QualifiedType resolveSerialIterType(Resolver& resolver,
 
     if (c.mostSpecific().only() != nullptr) {
       idxType = c.exprType();
-      resolver.handleResolvedAssociatedCall(iterandRE, loop, ci, c,
+      resolver.handleResolvedAssociatedCall(iterandRE, astForErr, ci, c,
                                             AssociatedAction::ITERATE,
                                             iterand->id());
     } else {
-      idxType = CHPL_TYPE_ERROR(context, NonIterable, loop, iterand, iterandRE.type());
+      idxType = CHPL_TYPE_ERROR(context, NonIterable, astForErr, iterand, iterandRE.type());
     }
   } else {
     idxType = QualifiedType(QualifiedType::UNKNOWN,
@@ -3020,7 +3020,7 @@ bool Resolver::enter(const IndexableLoop* loop) {
 
     return false;
   } else {
-    QualifiedType idxType = resolveSerialIterType(*this, loop);
+    QualifiedType idxType = resolveSerialIterType(*this, loop, loop->iterand());
 
     enterScope(loop);
 
@@ -3101,6 +3101,142 @@ bool Resolver::enter(const ReduceIntent* reduce) {
 }
 
 void Resolver::exit(const ReduceIntent* reduce) {
+}
+
+static UniqueString identifierReduceScanOpName(Context* context,
+                                               UniqueString name) {
+  if (name == USTR("+")) return UniqueString::get(context, "SumReduceScanOp");
+  if (name == USTR("*")) return UniqueString::get(context, "ProductReduceScanOp");
+  if (name == USTR("&&")) return UniqueString::get(context, "LogicalAndReduceScanOp");
+  if (name == USTR("||")) return UniqueString::get(context, "LogicalOrReduceScanOp");
+  if (name == USTR("&")) return UniqueString::get(context, "BitwiseAndReduceScanOp");
+  if (name == USTR("|")) return UniqueString::get(context, "BitwiseOrReduceScanOp");
+  if (name == USTR("^")) return UniqueString::get(context, "BitwiseXorReduceScanOp");
+
+  if (name == USTR("max")) return UniqueString::get(context, "MaxReduceScanOp");
+  if (name == USTR("min")) return UniqueString::get(context, "MinReduceScanOp");
+
+  return UniqueString();
+}
+
+static const ClassType *
+constructReduceScanOpClass(Resolver& resolver,
+                           const uast::AstNode* reduceOrScan,
+                           UniqueString opName,
+                           const QualifiedType& iterType) {
+  auto context = resolver.context;
+  auto actualType = QualifiedType(Qualifier::TYPE, iterType.type());
+
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back(CallInfoActual(actualType, UniqueString()));
+  auto ci = CallInfo (/* name */ opName,
+                      /* calledType */ QualifiedType(),
+                      /* isMethodCall */ false,
+                      /* hasQuestionArg */ false,
+                      /* isParenless */ false,
+                      actuals);
+  const Scope* scope = scopeForId(context, reduceOrScan->id());
+  auto c = resolveGeneratedCall(context, reduceOrScan, ci, scope, resolver.poiScope);
+  auto opType = c.exprType();
+
+  // Couldn't resolve the call; is opName a valid reduction?
+  if (opType.isUnknown()) {
+    CHPL_REPORT(context, ReductionInvalidName, reduceOrScan, opName, iterType);
+    return nullptr;
+  } else {
+    resolver.handleResolvedAssociatedCall(resolver.byPostorder.byAst(reduceOrScan),
+                                          reduceOrScan, ci, c,
+                                          AssociatedAction::REDUCE_SCAN,
+                                          reduceOrScan->id());
+  }
+
+  // We found some type; is it a subclass of ReduceScanOp?
+  auto baseClass = BasicClassType::getReduceScanOpType(context);
+  auto actualClass = opType.type()->toClassType();
+  bool converts, instantiates;
+  if (opType.kind() != QualifiedType::TYPE ||
+      !actualClass ||
+      !actualClass->basicClassType()->isSubtypeOf(baseClass, converts, instantiates)) {
+    CHPL_REPORT(context, ReductionNotReduceScanOp, reduceOrScan, opType);
+  }
+
+  return actualClass;
+}
+
+static const ClassType* determineReduceScanOp(Resolver& resolver,
+                                              const uast::AstNode* reduceOrScan,
+                                              const uast::AstNode* op,
+                                              const QualifiedType& iterType) {
+  if (auto ident = op->toIdentifier()) {
+    auto toLookUp = ident->name();
+    auto opName = identifierReduceScanOpName(resolver.context, ident->name());
+    if (!opName.isEmpty()) {
+      // The identifier does not itself name a ReduceScanOp class, but is
+      // associated with such a class. Use the associated class' name instead
+      // of the identifier itself.
+      toLookUp = opName;
+    }
+    auto scanOp = constructReduceScanOpClass(resolver, reduceOrScan, toLookUp, iterType);
+    if (scanOp != nullptr) {
+      // Since we found a ReduceScanOp, set the refersToId of the identifier.
+      resolver.validateAndSetToId(resolver.byPostorder.byAst(ident),
+                                  ident, scanOp->basicClassType()->id());
+    }
+    // No further processing is needed; we found the operation.
+    return scanOp;
+  }
+
+  // In the future, node could be a value or something else, and this function
+  // would return the corresponding ClassType.
+
+  return nullptr;
+}
+
+static QualifiedType getReduceScanOpResultType(Resolver& resolver,
+                                               const uast::AstNode* reduceOrScan,
+                                               const ClassType* opClass) {
+  auto context = resolver.context;
+
+  auto borrowedDecorator =
+    ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+  auto borrowedClass = opClass->withDecorator(context,
+                                              std::move(borrowedDecorator));
+  auto thisActual = QualifiedType(Qualifier::CONST_IN, borrowedClass);
+
+  std::vector<CallInfoActual> typeActuals;
+  typeActuals.push_back(CallInfoActual(thisActual, USTR("this")));
+  auto ci = CallInfo (/* name */ USTR("generate"),
+                      /* calledType */ thisActual,
+                      /* isMethodCall */ true,
+                      /* hasQuestionArg */ false,
+                      /* isParenless */ false,
+                      typeActuals);
+  const Scope* scope = scopeForId(context, reduceOrScan->id());
+  auto c = resolveGeneratedCall(context, reduceOrScan, ci, scope, resolver.poiScope);
+  return c.exprType();
+}
+
+static QualifiedType resolveReduceScanOp(Resolver& resolver,
+                                         const AstNode* reduceOrScan,
+                                         const AstNode* op,
+                                         const AstNode* iterand) {
+  auto iterType = resolveSerialIterType(resolver, reduceOrScan, iterand);
+  if (iterType.isUnknown()) return QualifiedType();
+  auto opClass = determineReduceScanOp(resolver, reduceOrScan, op, iterType);
+  if (opClass == nullptr) return QualifiedType();
+
+  return getReduceScanOpResultType(resolver, reduceOrScan, opClass);
+}
+
+bool Resolver::enter(const uast::Reduce* reduce) {
+  auto elementType = resolveReduceScanOp(*this, reduce,
+                                         reduce->op(), reduce->iterand());
+  byPostorder.byAst(reduce).setType(std::move(elementType));
+  return false;
+}
+
+void Resolver::exit(const uast::Reduce* reduce) {
+
 }
 
 bool Resolver::enter(const TaskVar* taskVar) {

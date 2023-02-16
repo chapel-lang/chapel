@@ -1118,6 +1118,7 @@ class AssociatedAction {
     DEINIT,
     ITERATE,      // aka "these"
     NEW_INIT,
+    REDUCE_SCAN,  // resolution of "generate" for a reduce/scan operation.
   };
 
  private:

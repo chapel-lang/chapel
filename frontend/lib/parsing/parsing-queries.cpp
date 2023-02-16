@@ -630,6 +630,8 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
     result = ast->tag();
   } else if (types::RecordType::isMissingBundledRecordType(context, id)) {
     result = asttags::Record;
+  } else if (types::BasicClassType::isMissingBundledClassType(context, id)) {
+    result = asttags::Class;
   }
 
   return QUERY_END(result);

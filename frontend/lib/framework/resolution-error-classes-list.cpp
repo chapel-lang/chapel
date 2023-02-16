@@ -375,8 +375,8 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorNonIterable::write(ErrorWriterBase &wr) const {
-  auto loop = std::get<const uast::IndexableLoop*>(info);
-  auto iterand = std::get<const uast::AstNode*>(info);
+  auto loop = std::get<0>(info);
+  auto iterand = std::get<1>(info);
   auto& iterandType = std::get<types::QualifiedType>(info);
   wr.heading(kind_, type_, loop, "cannot iterate over ", decayToValue(iterandType), ".");
   wr.message("In the following loop:");
@@ -435,6 +435,57 @@ void ErrorRedefinition::write(ErrorWriterBase& wr) const {
       wr.note(id, "redefined here:");
       wr.code<ID, ID>(id);
     }
+  }
+}
+
+static const uast::AstNode* getReduceOrScanOp(const uast::AstNode* reduceOrScan) {
+  if (auto reduce = reduceOrScan->toReduce()) {
+    return reduce->op();
+  } else if (auto scan = reduceOrScan->toScan()) {
+    return scan->op();
+  }
+  return nullptr;
+}
+
+void ErrorReductionInvalidName::write(ErrorWriterBase& wr) const {
+  auto reduceOrScan = std::get<const uast::AstNode*>(info);
+  auto name = std::get<UniqueString>(info);
+  auto& iterType = std::get<types::QualifiedType>(info);
+
+  auto op = getReduceOrScanOp(reduceOrScan);
+  wr.heading(kind_, type_, op,
+            "identifier '", name, "' does not represent "
+            "a valid reduction operation.");
+  wr.message("In the following 'reduce' expression:");
+  wr.code(reduceOrScan, { op });
+  wr.message("Identifiers on the left of the 'reduce' expression are applied "
+             "to the type of the iterator's elements ('", iterType.type(), "' "
+             "in this case)");
+  wr.message("Is '", name, "(", iterType.type(), ")' a valid reduction operation?");
+}
+
+void ErrorReductionNotReduceScanOp::write(ErrorWriterBase& wr) const {
+  auto reduceOrScan = std::get<const uast::AstNode*>(info);
+  auto actualType = std::get<types::QualifiedType>(info);
+  const types::BasicClassType* actualClassType = nullptr;
+
+  auto op = getReduceOrScanOp(reduceOrScan);
+  wr.heading(kind_, type_, op, "invalid operation in 'reduce' expression.");
+  wr.code(reduceOrScan, { op });
+
+  // Don't print the details of managed / unmanaged / etc.
+  if (auto classType = actualType.type()->toClassType()) {
+    actualClassType = classType->basicClassType();
+    while (auto instFrom = actualClassType->instantiatedFrom()) {
+      actualClassType = instFrom;
+    }
+    actualType = types::QualifiedType(actualType.kind(), actualClassType);
+  }
+  wr.message("The operation must be a type extending 'ReduceScanOp', but "
+             "it is ", actualType);
+  if (actualClassType) {
+    wr.message("Did you mean for class '", actualClassType,
+        "' to extend 'ReduceScanOp'?");
   }
 }
 
