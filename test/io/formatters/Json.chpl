@@ -105,7 +105,7 @@ module Json {
       reader.mark();
       const name = reader.read(string);
       reader.readLiteral(":");
-      m[name] = reader.offset();
+      m.add(name, reader.offset());
       reader.revert();
 
       qio_channel_skip_json_field(false, reader._channel_internal);

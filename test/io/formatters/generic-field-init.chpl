@@ -14,7 +14,7 @@ config param useInit : bool = false;
 
 // Test call to a reader-initializer, make sure it doesn't exist.
 proc main() {
-  var f = openmem();
+  var f = openMemFile();
   {
     f.writer().write(new T(5));
   }

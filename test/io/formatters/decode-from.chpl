@@ -27,7 +27,7 @@ record G {
 }
 
 proc test(val, type T) {
-  var f = openmem();
+  var f = openMemFile();
   {
     f.writer().write(val);
   }

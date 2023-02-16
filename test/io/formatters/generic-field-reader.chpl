@@ -12,7 +12,7 @@ record I {
 config type T = G;
 
 proc main() {
-  var f = openmem();
+  var f = openMemFile();
   {
     f.writer().write(new T(5));
   }

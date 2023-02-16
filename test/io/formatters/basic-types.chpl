@@ -16,7 +16,7 @@ proc test(val, type T = val.type) {
   writeln(header);
 
   try {
-    var f = openmem();
+    var f = openMemFile();
     {
       writeln("--- writing: ---");
       stdout.withFormatter(FormatWriter).writeln(val);

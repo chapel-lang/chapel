@@ -109,7 +109,7 @@ class Child : Parent {
 }
 
 proc test(type FormatWriter, type FormatReader) {
-  var f = openmem();
+  var f = openMemFile();
   const rval = new R(5, 42.0);
   const gval = new G(real, int, 5.0, 42);
   const pval = new Parent(5);

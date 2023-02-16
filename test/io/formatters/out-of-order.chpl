@@ -34,7 +34,7 @@ record Extra {
 }
 
 proc main() {
-  var f = openmem();
+  var f = openMemFile();
   {
     var data = new InOrder("hello", 5, 42.0);
     f.writer().withFormatter(FormatWriter).write(data);
