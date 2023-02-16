@@ -571,12 +571,15 @@ class VisibilitySymbols {
   };
 
  private:
-  const Scope* scope_; // Scope of the Module etc
+  const Scope* scope_; // Scope of the Module used/imported
                        // This could technically be an ID but basically
                        // anything we do with it needs a Scope* anyway.
   Kind kind_ = SYMBOL_ONLY;
   bool isPrivate_ = true;
   int8_t shadowScopeLevel_ = REGULAR_SCOPE;
+
+  ID visibilityClauseId_; // ID of the uAST that generated this
+                          // (this is only needed to support error messages)
 
   // the names/renames:
   //  pair.first is the name as declared
@@ -587,9 +590,11 @@ class VisibilitySymbols {
   VisibilitySymbols() { }
   VisibilitySymbols(const Scope* scope, Kind kind,
                     bool isPrivate, ShadowScope shadowScopeLevel,
+                    ID visibilityClauseId,
                     std::vector<std::pair<UniqueString,UniqueString>> names)
     : scope_(scope), kind_(kind),
       isPrivate_(isPrivate), shadowScopeLevel_(shadowScopeLevel),
+      visibilityClauseId_(visibilityClauseId),
       names_(std::move(names))
   {
     CHPL_ASSERT(shadowScopeLevel == REGULAR_SCOPE ||
@@ -609,6 +614,13 @@ class VisibilitySymbols {
   /** Returns the shadow scope level of the symbols here */
   ShadowScope shadowScopeLevel() const {
     return (ShadowScope) shadowScopeLevel_;
+  }
+
+  /**
+    Returns the ID of the use/import clause that this VisibilitySymbols was
+    created to represent. */
+  const ID& visibilityClauseId() const {
+    return visibilityClauseId_;
   }
 
   /** Lookup the declared name for a given name
@@ -692,10 +704,12 @@ class ResolvedVisibilityScope {
   void addVisibilityClause(const Scope* scope, VisibilitySymbols::Kind kind,
                            bool isPrivate,
                            VisibilitySymbols::ShadowScope shadowScopeLevel,
+                           ID visibilityClauseId,
                            std::vector<std::pair<UniqueString,UniqueString>> n)
   {
     auto elt = VisibilitySymbols(scope, kind,
                                  isPrivate, shadowScopeLevel,
+                                 std::move(visibilityClauseId),
                                  std::move(n));
     visibilityClauses_.push_back(std::move(elt));
   }

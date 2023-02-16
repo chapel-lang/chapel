@@ -418,6 +418,72 @@ static const Scope* const& scopeForAutoModule(Context* context) {
   return QUERY_END(result);
 }
 
+static void warnHiddenFormal(Context* context,
+                             const Scope* scope,
+                             const VisibilitySymbols& is,
+                             UniqueString name) {
+  // warn if a function formal name conflicts with something
+  // brought in by use/import.
+
+  // First, find a parent Function scope
+  const Scope* functionScope = nullptr;
+  for (const Scope* s = scope->parentScope();
+       s != nullptr;
+       s = s->parentScope()) {
+    if (asttags::isFunction(s->tag())) {
+      functionScope = s;
+      break;
+    }
+  }
+
+  if (functionScope && functionScope->contains(name)) {
+    // the formals are declared within the function scope,
+    // so if we get here, a formal name should have matched
+
+    // find the Formal*
+    const Formal* formal = nullptr;
+    std::vector<BorrowedIdsWithName> ids;
+    functionScope->lookupInScope(name, ids,
+                                 /* ignore private */ false,
+                                 /* only methods/fields */ false);
+    for (auto b : ids) {
+      for (auto id : b) {
+        auto formalAst = parsing::idToAst(context, id);
+        if (formalAst != nullptr) {
+          formal = formalAst->toFormal();
+          break;
+        }
+      }
+    }
+
+    // find the VisibilityClause
+    const VisibilityClause* clause = nullptr;
+    auto clauseAst = parsing::idToAst(context, is.visibilityClauseId());
+    if (clauseAst != nullptr) {
+      clause = clauseAst->toVisibilityClause();
+    }
+
+    // find if the parent is a use or import
+    VisibilityStmtKind kind = VIS_USE;
+    for (ID cur = parsing::idToParentId(context, clause->id());
+         !cur.isEmpty();
+         cur = parsing::idToParentId(context, cur)) {
+      auto tag = parsing::idToTag(context, cur);
+      if (asttags::isUse(tag)) {
+        kind = VIS_USE;
+        break;
+      } else if (asttags::isImport(tag)) {
+        kind = VIS_IMPORT;
+        break;
+      }
+    }
+
+    if (formal && clause) {
+      CHPL_REPORT(context, HiddenFormal, formal, clause, kind);
+    }
+  }
+}
+
 static bool doLookupInImportsAndUses(Context* context,
                                      const Scope* scope,
                                      const ResolvedVisibilityScope* resolving,
@@ -487,30 +553,10 @@ static bool doLookupInImportsAndUses(Context* context,
           found = true;
         }
       }
-    }
 
-    if (found) {
-      // warn if a function formal name conflicts with something
-      // brought in by use/import.
-
-      // First, find a parent Function scope
-      const Scope* functionScope = nullptr;
-      for (const Scope* s = scope->parentScope();
-           s != nullptr;
-           s = s->parentScope()) {
-        if (asttags::isFunction(s->tag())) {
-          functionScope = s;
-          break;
-        }
-      }
-
-      if (functionScope && functionScope->contains(name)) {
-        // the formals are declared within the function scope,
-        // so this means that a formal name matched
-
-        context->error(functionScope->id(),
-                       "module level symbol is hiding function argument '%s'",
-                       name.c_str());
+      if (found) {
+        // warn for use/import shadowing a function formal
+        warnHiddenFormal(context, scope, is, name);
       }
     }
   }
@@ -1343,12 +1389,14 @@ doResolveUseStmt(Context* context, const Use* use,
           // 'private use' brings in the module name (in a shadow scope)
           r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
                                  isPrivate, moduleSymShadowScopeLevel,
+                                 clause->id(),
                                  convertOneName(oldName));
         }
       } else {
         // there is an 'as' involved, so the name will always be brought in
         r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
                                isPrivate, moduleSymShadowScopeLevel,
+                               clause->id(),
                                convertOneRename(oldName, newName));
       }
 
@@ -1375,6 +1423,7 @@ doResolveUseStmt(Context* context, const Use* use,
           // add the visibility clause for only/except
           r->addVisibilityClause(foundScope, kind,
                                  isPrivate, moduleContentsShadowScopeLevel,
+                                 clause->id(),
                                  convertLimitations(context, clause));
           break;
         case VisibilityClause::ONLY:
@@ -1385,12 +1434,14 @@ doResolveUseStmt(Context* context, const Use* use,
           // add the visibility clause for only/except
           r->addVisibilityClause(foundScope, kind,
                                  isPrivate, moduleContentsShadowScopeLevel,
+                                 clause->id(),
                                  convertLimitations(context, clause));
           break;
         case VisibilityClause::NONE:
           kind = VisibilitySymbols::ALL_CONTENTS;
           r->addVisibilityClause(foundScope, kind,
                                  isPrivate, moduleContentsShadowScopeLevel,
+                                 clause->id(),
                                  emptyNames());
           break;
         case VisibilityClause::BRACES:
@@ -1469,11 +1520,13 @@ doResolveImportStmt(Context* context, const Import* imp,
               // e.g. 'import M.f'
               r->addVisibilityClause(foundScope, kind,
                                      isPrivate, importShadowScopeLevel,
+                                     clause->id(),
                                      convertOneName(dotName));
             } else {
               // e.g. 'import M.f as g'
               r->addVisibilityClause(foundScope, kind,
                                      isPrivate, importShadowScopeLevel,
+                                     clause->id(),
                                      convertOneRename(dotName, newName));
             }
             break;
@@ -1496,16 +1549,15 @@ doResolveImportStmt(Context* context, const Import* imp,
               // e.g. 'import OtherModule'
               r->addVisibilityClause(foundScope, kind,
                                      isPrivate, importShadowScopeLevel,
+                                     clause->id(),
                                      convertOneName(oldName));
             } if (newName == USTR("_")) {
               // e.g. 'import OtherModule as _'
-              /*r->addVisibilityClause(foundScope, kind,
-                                     isPrivate, importShadowScopeLevel,
-                                     emptyNames());*/
             } else {
               // e.g. 'import OtherModule as Foo'
               r->addVisibilityClause(foundScope, kind,
                                      isPrivate, importShadowScopeLevel,
+                                     clause->id(),
                                      convertOneRename(oldName, newName));
             }
             break;
@@ -1519,6 +1571,7 @@ doResolveImportStmt(Context* context, const Import* imp,
             // add the visibility clause with the named symbols
             r->addVisibilityClause(foundScope, kind,
                                    isPrivate, importShadowScopeLevel,
+                                   clause->id(),
                                    convertLimitations(context, clause));
             break;
         }
