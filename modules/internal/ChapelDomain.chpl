@@ -2385,6 +2385,8 @@ module ChapelDomain {
       _value.dsiSerialRead(f);
     }
 
+    // TODO: Can we convert this to an initializer despite the potential issues
+    // with runtime types?
     pragma "no doc"
     proc type decodeFrom(f) throws {
       var ret : this;

@@ -605,12 +605,6 @@ module ChapelIO {
   }
 
   pragma "no doc"
-  proc locale.encodeTo(f) throws {
-    // FIXME this doesn't resolve without `this`
-    f.write(this._instance);
-  }
-
-  pragma "no doc"
   proc _ddata.writeThis(f) throws {
     compilerWarning("printing _ddata class");
     f.write("<_ddata class cannot be printed>");
@@ -771,11 +765,6 @@ module ChapelIO {
   }
 
   pragma "no doc"
-  proc range.encodeTo(f) throws {
-    writeThis(f);
-  }
-
-  pragma "no doc"
   proc ref range.readThis(f) throws {
     if hasLowBound() then _low = f.read(_low.type);
 
@@ -848,11 +837,6 @@ module ChapelIO {
     f.write(chpl_id());
   }
 
-  pragma "no doc"
-  override proc LocaleModel.encodeTo(f) throws {
-    writeThis(f);
-  }
-
   /* Errors can be printed out. In that event, they will
      show information about the error including the result
      of calling :proc:`Error.message`.
@@ -860,11 +844,6 @@ module ChapelIO {
   pragma "no doc"
   override proc Error.writeThis(f) throws {
     f.write(chpl_describe_error(this));
-  }
-
-  pragma "no doc"
-  override proc Error.encodeTo(f) throws {
-    writeThis(f);
   }
 
   /* Equivalent to ``try! stdout.write``. See :proc:`IO.channel.write` */

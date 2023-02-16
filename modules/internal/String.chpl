@@ -90,10 +90,6 @@ module String {
       f.write(_bindex);
     }
 
-    proc encodeTo(f) throws {
-      writeThis(f);
-    }
-
     operator :(val: byteIndex, type t:string) {
       return val._bindex: string;
     }
@@ -115,10 +111,6 @@ module String {
 
     proc writeThis(f) throws {
       f.write(_cpindex);
-    }
-
-    proc encodeTo(f) throws {
-      writeThis(f);
     }
 
     operator :(val: codepointIndex, type t:string) {
@@ -829,7 +821,7 @@ module String {
 
     // These should never be called (but are default functions for records)
     proc encodeTo(f) throws {
-      compilerError("not implemented: writeThis");
+      compilerError("not implemented: encodeTo");
     }
 
     proc readThis(f) throws {

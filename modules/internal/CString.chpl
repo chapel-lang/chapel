@@ -225,10 +225,6 @@ module CString {
     compilerError("Cannot write a c_string, cast to a string first.");
   }
 
-  proc c_string.encodeTo(x) throws {
-    compilerError("Cannot write a c_string, cast to a string first.");
-  }
-
   proc c_string.readThis(x) throws {
     compilerError("Cannot read a c_string, use string.");
   }

@@ -56,6 +56,9 @@ module ChapelBase {
   class _object { }
 
   proc object.encodeTo(f) throws {
+    ref fmt = f.formatter;
+    fmt.writeTypeStart(f, object);
+    fmt.writeTypeEnd(f, object);
   }
 
 
@@ -2402,15 +2405,11 @@ module ChapelBase {
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
     proc writeThis(ch) throws {
       try {
-      ch._writef("chpl_ModuleDeinit(%s)",createStringWithNewBuffer(moduleName));
+      ch.writef("chpl_ModuleDeinit(%s)",createStringWithNewBuffer(moduleName));
       }
       catch e: DecodeError { // let IoError propagate
         halt("Module name is not valid string!");
       }
-    }
-    pragma "no doc"
-    proc encodeTo(ch) throws {
-      writeThis(ch);
     }
   }
   var chpl_moduleDeinitFuns = nil: unmanaged chpl_ModuleDeinit?;
