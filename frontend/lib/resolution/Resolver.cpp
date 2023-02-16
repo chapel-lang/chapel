@@ -2671,7 +2671,9 @@ ID Resolver::scopeResolveEnumElement(const Enum* enumAst,
                                /* receiverScopes */ {},
                                elementName, config);
   if (vec.size() == 0) {
-    CHPL_REPORT(context, UnknownEnumElem, nodeForErr, elementName, enumAst);
+    // Do not report the error here, because it might not be an error.
+    // In particular, we could be in a parenless method call. Callers
+    // will decide whether or not to emit the error.
   } else if (vec.size() > 1 || vec[0].numIds() > 1) {
     auto& ids = vec[0];
     // multiple candidates. report an error, but the expression most likely has a type given by the enum.
@@ -2713,7 +2715,15 @@ QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
   bool ambiguous;
   auto refersToId = scopeResolveEnumElement(enumAst, elementName,
                                             nodeForErr, ambiguous);
-  return typeForScopeResolvedEnumElement(enumType, refersToId, ambiguous);
+  auto qt = typeForScopeResolvedEnumElement(enumType, refersToId, ambiguous);
+  if (refersToId.isEmpty() && !ambiguous) {
+    // scopeResolveEnumElement doesn't report a "not found" error because
+    // not being able to find an enum element isn't always an error. Here,
+    // though, we are specifically interested in an eleemnt, so report
+    // the error.
+    CHPL_REPORT(context, UnknownEnumElem, nodeForErr, elementName, enumAst);
+  }
+  return qt;
 }
 
 void Resolver::exit(const Dot* dot) {
@@ -2797,7 +2807,12 @@ void Resolver::exit(const Dot* dot) {
       maybeEmitWarningsForId(this, qt, dot, elemId);
     }
 
-    return;
+    if (!elemId.isEmpty() || ambiguous) {
+      // Found something in the enum, no need to check for parenless methods.
+      return;
+    } else {
+      // Continue on to parenless methods, maybe it was a parenless call.
+    }
   }
 
   // Handle null, unknown, or erroneous receiver type
