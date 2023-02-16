@@ -149,7 +149,11 @@ public:
 };
 
 Expr* findLocationIgnoringInternalInlining(Expr* cur);
-bool printsUserLocation(const BaseAST* astIn);
+
+// Returns true if an error/warning at this location
+// (e.g. with USR_FATAL(ast, ...)) would print out
+// a user line number.
+bool printsUserLocation(const BaseAST* ast);
 
 astlocT getUserInstantiationPoint(const BaseAST* ast);
 
