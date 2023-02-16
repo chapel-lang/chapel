@@ -912,8 +912,8 @@ static bool dynoRealizeErrors(void) {
   for (auto& err : gDynoErrorHandler->errors()) {
     const chpl::ErrorBase* e = err.get();
 
-    if (e->kind() != chpl::ErrorBase::SYNTAX &&
-        e->kind() != chpl::ErrorBase::ERROR) {
+    if (e->kind() == chpl::ErrorBase::SYNTAX ||
+        e->kind() == chpl::ErrorBase::ERROR) {
       // make a note if we found any errors
       hadErrors = true;
     }
