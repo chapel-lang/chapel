@@ -521,7 +521,6 @@ all:
   01/18/23:
     - text: Improvements for iterating over unbounded enum/bool ranges (#21332)
       config: chapcs
-  01/18/23:
     - text: Avoid loading CUDA module at each kernel launch (#21346)
       config: gpu
   01/19/23:
@@ -593,6 +592,8 @@ allocation:
     - weakPointer prototype implementation (#20918)
 
 arguments:
+  03/10/17:
+    - Three way refpair (#5561)
   09/20/17:
     - Adjust string pass/return test (#7360)
 
@@ -634,10 +635,6 @@ arr-forall:
 array_iter:
   06/19/17:
     - Reduce amount of locking in associative array dsiAccess (#6244)
-
-arguments:
-  03/10/17:
-    - Three way refpair (#5561)
 
 assign.1024:
   01/22/15:
