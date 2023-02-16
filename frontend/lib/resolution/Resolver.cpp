@@ -3121,7 +3121,7 @@ static UniqueString identifierReduceScanOpName(Context* context,
 
 static const ClassType *
 constructReduceScanOpClass(Resolver& resolver,
-                           const uast::AstNode* reduce,
+                           const uast::AstNode* reduceOrScan,
                            UniqueString opName,
                            const QualifiedType& iterType) {
   auto context = resolver.context;
@@ -3135,14 +3135,19 @@ constructReduceScanOpClass(Resolver& resolver,
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,
                       actuals);
-  const Scope* scope = scopeForId(context, reduce->id());
-  auto c = resolveGeneratedCall(context, reduce, ci, scope, resolver.poiScope);
+  const Scope* scope = scopeForId(context, reduceOrScan->id());
+  auto c = resolveGeneratedCall(context, reduceOrScan, ci, scope, resolver.poiScope);
   auto opType = c.exprType();
 
   // Couldn't resolve the call; is opName a valid reduction?
   if (opType.isUnknown()) {
-    CHPL_REPORT(context, ReductionInvalidName, reduce, opName, iterType);
+    CHPL_REPORT(context, ReductionInvalidName, reduceOrScan, opName, iterType);
     return nullptr;
+  } else {
+    resolver.handleResolvedAssociatedCall(resolver.byPostorder.byAst(reduceOrScan),
+                                          reduceOrScan, ci, c,
+                                          AssociatedAction::REDUCE_SCAN,
+                                          reduceOrScan->id());
   }
 
   // We found some type; is it a subclass of ReduceScanOp?
@@ -3152,14 +3157,14 @@ constructReduceScanOpClass(Resolver& resolver,
   if (opType.kind() != QualifiedType::TYPE ||
       !actualClass ||
       !actualClass->basicClassType()->isSubtypeOf(baseClass, converts, instantiates)) {
-    CHPL_REPORT(context, ReductionNotReduceScanOp, reduce, opType);
+    CHPL_REPORT(context, ReductionNotReduceScanOp, reduceOrScan, opType);
   }
 
   return actualClass;
 }
 
 static const ClassType* determineReduceScanOp(Resolver& resolver,
-                                              const uast::AstNode* reduce,
+                                              const uast::AstNode* reduceOrScan,
                                               const uast::AstNode* op,
                                               const QualifiedType& iterType) {
   if (auto ident = op->toIdentifier()) {
@@ -3171,7 +3176,7 @@ static const ClassType* determineReduceScanOp(Resolver& resolver,
       // of the identifier itself.
       toLookUp = opName;
     }
-    auto scanOp = constructReduceScanOpClass(resolver, reduce, toLookUp, iterType);
+    auto scanOp = constructReduceScanOpClass(resolver, reduceOrScan, toLookUp, iterType);
     if (scanOp != nullptr) {
       // Since we found a ReduceScanOp, set the refersToId of the identifier.
       resolver.validateAndSetToId(resolver.byPostorder.byAst(ident),
@@ -3188,7 +3193,7 @@ static const ClassType* determineReduceScanOp(Resolver& resolver,
 }
 
 static QualifiedType getReduceScanOpResultType(Resolver& resolver,
-                                               const uast::AstNode* reduce,
+                                               const uast::AstNode* reduceOrScan,
                                                const ClassType* opClass) {
   auto context = resolver.context;
 
@@ -3206,8 +3211,8 @@ static QualifiedType getReduceScanOpResultType(Resolver& resolver,
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,
                       typeActuals);
-  const Scope* scope = scopeForId(context, reduce->id());
-  auto c = resolveGeneratedCall(context, reduce, ci, scope, resolver.poiScope);
+  const Scope* scope = scopeForId(context, reduceOrScan->id());
+  auto c = resolveGeneratedCall(context, reduceOrScan, ci, scope, resolver.poiScope);
   return c.exprType();
 }
 
