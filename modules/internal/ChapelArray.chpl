@@ -255,6 +255,11 @@ module ChapelArray {
   pragma "no doc"
   config param capturedIteratorLowBound = defaultLowBound;
 
+  /* The traditional one-argument form of :proc:`.find()` on arrays
+     has been deprecated in favor of a new interface.  Compiling with
+     this set to `true` will opt into that new interface.  Note that
+     there is also a new two-argument form that is available
+     regardless of this setting. */
   config param useNewArrayFind = false;
 
 
@@ -1758,8 +1763,9 @@ module ChapelArray {
 
       Search an array for ``val``, returning whether or not it is
       found.  If the value is found, the index storing it is returned
-      in ``idx``.  If it is not found, the final value of ``idx`` is
-      unspecified.
+      in ``idx``.  If multiple copies of it are found, the
+      lexicographically earliest index will be returned.  If it is not
+      found, the resulting value of ``idx`` is unspecified.
 
     */
     proc find(val: eltType, ref idx: fullIdxType): bool {
