@@ -2264,8 +2264,6 @@ record _channel {
 
   pragma "no doc"
   var _fmt : fmtType;
-  pragma "no doc"
-  var isAlias : bool = false;
 
   // The member variable _readWriteThisFromLocale is used to support
   // writeThis needing to know where the I/O started. It is a member
@@ -2367,7 +2365,8 @@ record DefaultWriter {
     }
   }
 
-  // TODO: For now, forward to old implementation.
+  // TODO: Add formatter support for unions. For now, forward to old
+  // implementation.
   proc _encodeUnion(writer:fileWriter, x: ?t) : void throws {
     x.writeThis(writer);
   }
@@ -2474,10 +2473,6 @@ record DefaultReader {
   }
 
   proc readField(r:fileReader, key: string, type T) throws {
-    return decodeField(r, key, T);
-  }
-
-  proc decodeField(r:fileReader, key: string, type T) throws {
     if !key.isEmpty() {
       r.readLiteral(key);
       r.readLiteral("=");
@@ -2583,7 +2578,6 @@ operator _channel.=(ref lhs:_channel, rhs:_channel) {
 
   lhs._home = rhs._home;
   lhs._channel_internal = rhs._channel_internal;
-  lhs.isAlias = rhs.isAlias; // is this right?
 }
 
 proc _channel.init(param writing:bool, param kind:iokind, param locking:bool, type fmtType) {
@@ -2611,13 +2605,10 @@ proc _channel.init(x: _channel) {
   this._home = x._home;
   this._channel_internal = x._channel_internal;
   this._fmt = x._fmt;
-  this.isAlias = x.isAlias;
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
   this.complete();
-  if !isAlias {
-    on x._home {
-      qio_channel_retain(x._channel_internal);
-    }
+  on x._home {
+    qio_channel_retain(x._channel_internal);
   }
 }
 
@@ -2642,13 +2633,10 @@ proc _channel.init=(x: _channel) {
   this._home = x._home;
   this._channel_internal = x._channel_internal;
   this._fmt = x._fmt;
-  this.isAlias = x.isAlias;
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
   this.complete();
-  if !isAlias {
-    on x._home {
-      qio_channel_retain(x._channel_internal);
-    }
+  on x._home {
+    qio_channel_retain(x._channel_internal);
   }
 }
 
@@ -2697,10 +2685,8 @@ proc _channel.init(param writing:bool, param kind:iokind, param locking:bool, in
 pragma "no doc"
 proc ref _channel.deinit() {
   on this._home {
-    if !isAlias {
-      qio_channel_release(_channel_internal);
-      this._channel_internal = QIO_CHANNEL_PTR_NULL;
-    }
+    qio_channel_release(_channel_internal);
+    this._channel_internal = QIO_CHANNEL_PTR_NULL;
   }
 }
 
@@ -2715,8 +2701,11 @@ pragma "no doc"
 proc _channel.withFormatter(f: ?) {
   var ret = new _channel(this.writing, this.kind, this.locking, f);
   ret._channel_internal = this._channel_internal;
+  ret._home = _home;
   ret._readWriteThisFromLocale = _readWriteThisFromLocale;
-  ret.isAlias = true;
+  on ret._home {
+    qio_channel_retain(ret._channel_internal);
+  }
   return ret;
 }
 
@@ -4152,6 +4141,9 @@ proc _channel._decodeOne(type readType, loc:locale) throws {
     // 'shared' by converting the type to unmanaged.
     var tmp = reader.formatter.decode(reader, _to_unmanaged(readType));
 
+    // TODO: We may also want to support user-defined management types at
+    // some point.
+    // TODO: Implement support for reading a 'borrowed' class
     if isOwnedClassType(readType) {
       return new _owned(tmp);
     } else if isSharedClassType(readType) {
@@ -4215,6 +4207,8 @@ proc _channel._encodeOne(const x:?t, loc:locale) throws {
   // (it shouldn't release anything since it's a local copy).
   defer { writer._channel_internal = QIO_CHANNEL_PTR_NULL; }
 
+  // TODO: Should this pass an unmanaged or borrowed version, to reduce
+  // the number of instantiations for a type?
   try writer.formatter.encode(writer, x);
 }
 

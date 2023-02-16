@@ -35,7 +35,7 @@ module Json {
       } else if t == ioLiteral {
         writer._writeLiteral(x.val);
       } else if t == ioNewline {
-        // Need to account for 'skipWhitespaceOnly' somehow...
+        // TODO: Need to account for 'skipWhitespaceOnly' somehow...
         writer._writeOne(writer.kind, x, writer.getLocaleOfIoRequest());
       } else if isClassType(t) {
         if x == nil {
@@ -187,10 +187,6 @@ module Json {
       return ret;
     }
 
-    proc decodeField(r: _readerT, key: string, type T) throws {
-      return readField(r, key, T);
-    }
-
     proc readTypeStart(r: fileReader, type T) throws {
       if _inheritLevel == 0 {
         if isClassType(T) || isRecordType(T) {
@@ -201,6 +197,9 @@ module Json {
           // new temporary JsonReader for the given type. But if we do the
           // JSON parsing at that point, it ignores the user-defined
           // initializer. So, we do it here in 'readTypeStart'.
+          //
+          // TODO: Should we only compute the mapping if the fields are being
+          // read out of order?
           //
           var (m, last) = helper(r);
           for (k, v) in m.items() {
