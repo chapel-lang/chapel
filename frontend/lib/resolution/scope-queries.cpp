@@ -418,87 +418,6 @@ static const Scope* const& scopeForAutoModule(Context* context) {
   return QUERY_END(result);
 }
 
-static void warnHiddenFormal(Context* context,
-                             const Scope* scope,
-                             const VisibilitySymbols& is,
-                             UniqueString name,
-                             size_t matchesStart,
-                             std::vector<BorrowedIdsWithName>& matches) {
-  // warn if a function formal name conflicts with something
-  // brought in by use/import.
-
-  // Check that there is a match that isn't a method/field
-  // to skip the warning for collisions with secondary methods.
-  bool onlyMethodsFields = true;
-  for (auto b : matches) {
-    if (!b.containsOnlyMethodsOrFields()) {
-      onlyMethodsFields = false;
-      break;
-    }
-  }
-  if (onlyMethodsFields) {
-    return;
-  }
-
-  // Find a parent Function scope
-  const Scope* functionScope = nullptr;
-  for (const Scope* s = scope->parentScope();
-       s != nullptr;
-       s = s->parentScope()) {
-    if (asttags::isFunction(s->tag())) {
-      functionScope = s;
-      break;
-    }
-  }
-
-  if (functionScope && functionScope->contains(name)) {
-    // the formals are declared within the function scope,
-    // so if we get here, a formal name should have matched
-
-    // find the Formal*
-    const Formal* formal = nullptr;
-    std::vector<BorrowedIdsWithName> ids;
-    functionScope->lookupInScope(name, ids,
-                                 /* ignore private */ false,
-                                 /* only methods/fields */ false);
-    for (auto b : ids) {
-      for (auto id : b) {
-        auto formalAst = parsing::idToAst(context, id);
-        if (formalAst != nullptr) {
-          formal = formalAst->toFormal();
-          break;
-        }
-      }
-    }
-
-    // find the VisibilityClause
-    const VisibilityClause* clause = nullptr;
-    auto clauseAst = parsing::idToAst(context, is.visibilityClauseId());
-    if (clauseAst != nullptr) {
-      clause = clauseAst->toVisibilityClause();
-    }
-
-    // find if the parent is a use or import
-    VisibilityStmtKind kind = VIS_USE;
-    for (ID cur = parsing::idToParentId(context, clause->id());
-         !cur.isEmpty();
-         cur = parsing::idToParentId(context, cur)) {
-      auto tag = parsing::idToTag(context, cur);
-      if (asttags::isUse(tag)) {
-        kind = VIS_USE;
-        break;
-      } else if (asttags::isImport(tag)) {
-        kind = VIS_IMPORT;
-        break;
-      }
-    }
-
-    if (formal && clause) {
-      CHPL_REPORT(context, HiddenFormal, formal, clause, kind);
-    }
-  }
-}
-
 static bool doLookupInImportsAndUses(Context* context,
                                      const Scope* scope,
                                      const ResolvedVisibilityScope* resolving,
@@ -508,12 +427,11 @@ static bool doLookupInImportsAndUses(Context* context,
                                      bool skipPrivateVisibilities,
                                      VisibilitySymbols::ShadowScope shadowScope,
                                      NamedScopeSet& checkedScopes,
-                                     std::vector<BorrowedIdsWithName>& result) {
+                                     std::vector<BorrowedIdsWithName>& result,
+                                     const VisibilitySymbols** foundVsOut) {
   bool found = false;
 
   if (cur != nullptr) {
-    size_t resultStart = result.size();
-
     // check to see if it's mentioned in names/renames
     for (const VisibilitySymbols& is: cur->visibilityClauses()) {
       // if we should not continue transitively through private use/includes,
@@ -571,9 +489,9 @@ static bool doLookupInImportsAndUses(Context* context,
         }
       }
 
-      if (found) {
-        // warn for use/import shadowing a function formal
-        warnHiddenFormal(context, scope, is, name, resultStart, result);
+      // set *foundVsOut on the first match we find
+      if (found && foundVsOut != nullptr && *foundVsOut == nullptr) {
+        *foundVsOut = &is;
       }
     }
   }
@@ -692,7 +610,8 @@ static bool doLookupInScope(Context* context,
       got |= doLookupInImportsAndUses(context, scope, resolving, r, name,
                                       onlyInnermost, skipPrivateVisibilities,
                                       VisibilitySymbols::REGULAR_SCOPE,
-                                      checkedScopes, result);
+                                      checkedScopes, result,
+                                      /*foundVsOut*/ nullptr);
     }
     if (onlyInnermost && got) return true;
   }
@@ -703,7 +622,8 @@ static bool doLookupInScope(Context* context,
     got |= doLookupInImportsAndUses(context, scope, resolving, r, name,
                                     onlyInnermost, skipPrivateVisibilities,
                                     VisibilitySymbols::SHADOW_SCOPE_ONE,
-                                    checkedScopes, result);
+                                    checkedScopes, result,
+                                    /*foundVsOut*/ nullptr);
 
     // treat the auto-used modules as if they were 'private use'd
     got |= doLookupInAutoModules(context, scope, resolving, name,
@@ -718,7 +638,8 @@ static bool doLookupInScope(Context* context,
     got = doLookupInImportsAndUses(context, scope, resolving, r, name,
                                    onlyInnermost, skipPrivateVisibilities,
                                    VisibilitySymbols::SHADOW_SCOPE_TWO,
-                                   checkedScopes, result);
+                                   checkedScopes, result,
+                                   /*foundVsOut*/ nullptr);
     if (onlyInnermost && got) return true;
   }
 
@@ -1670,6 +1591,123 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
   return QUERY_END(result);
 }
 
+static void doWarnHiddenFormal(Context* context,
+                               const ResolvedVisibilityScope* rs,
+                               const VisibilitySymbols* is,
+                               const Scope* functionScope,
+                               UniqueString formalName,
+                               std::vector<BorrowedIdsWithName>& matches) {
+  // Check that there is a match that isn't a method/field
+  // to skip the warning for collisions with secondary methods.
+  bool onlyMethodsFields = true;
+  for (auto b : matches) {
+    if (!b.containsOnlyMethodsOrFields()) {
+      onlyMethodsFields = false;
+      break;
+    }
+  }
+  if (onlyMethodsFields) {
+    return;
+  }
+
+  // find the Formal*
+  const Formal* formal = nullptr;
+  std::vector<BorrowedIdsWithName> ids;
+  functionScope->lookupInScope(formalName, ids,
+                               /* ignore private */ false,
+                               /* only methods/fields */ false);
+  for (auto b : ids) {
+    for (auto id : b) {
+      auto formalAst = parsing::idToAst(context, id);
+      if (formalAst != nullptr) {
+        formal = formalAst->toFormal();
+        break;
+      }
+    }
+  }
+
+  // find the VisibilityClause
+  const VisibilityClause* clause = nullptr;
+  if (is != nullptr) {
+    auto clauseAst = parsing::idToAst(context, is->visibilityClauseId());
+    if (clauseAst != nullptr) {
+      clause = clauseAst->toVisibilityClause();
+    }
+  }
+
+  // find if the parent is a use or import
+  VisibilityStmtKind kind = VIS_USE;
+  for (ID cur = parsing::idToParentId(context, clause->id());
+       !cur.isEmpty();
+       cur = parsing::idToParentId(context, cur)) {
+    auto tag = parsing::idToTag(context, cur);
+    if (asttags::isUse(tag)) {
+      kind = VIS_USE;
+      break;
+    } else if (asttags::isImport(tag)) {
+      kind = VIS_IMPORT;
+      break;
+    }
+  }
+
+  if (formal && clause) {
+    CHPL_REPORT(context, HiddenFormal, formal, clause, kind);
+  }
+}
+
+static const bool& warnHiddenFormalsQuery(Context* context,
+                                          const ResolvedVisibilityScope* rs,
+                                          const Scope* functionScope) {
+  QUERY_BEGIN(warnHiddenFormalsQuery, context, rs, functionScope);
+
+  bool result = false;
+
+  // warn if a function formal name conflicts with something
+  // brought in by use/import.
+
+  std::set<UniqueString> formalNames = functionScope->gatherNames();
+
+  NamedScopeSet checkedScopes;
+  std::vector<BorrowedIdsWithName> matches;
+  const VisibilitySymbols* foundVs = nullptr;
+
+  for (auto name : formalNames) {
+    bool onlyInnermost = true;
+    bool skipPrivateVisibilities = false;
+    bool got = false;
+
+    // TODO: an alternative to calling into details of the
+    // scope resolver here would be to provide a way for doLookupInScope
+    // to return the visibility clauses used in finding a symbol.
+    got = doLookupInImportsAndUses(context, rs->scope(), rs, rs, name,
+                                   onlyInnermost, skipPrivateVisibilities,
+                                   VisibilitySymbols::REGULAR_SCOPE,
+                                   checkedScopes, matches,
+                                   &foundVs);
+    if (!got) {
+      got = doLookupInImportsAndUses(context, rs->scope(), rs, rs, name,
+                                     onlyInnermost, skipPrivateVisibilities,
+                                     VisibilitySymbols::SHADOW_SCOPE_ONE,
+                                     checkedScopes, matches,
+                                     &foundVs);
+    }
+    if (!got) {
+      got = doLookupInImportsAndUses(context, rs->scope(), rs, rs, name,
+                                     onlyInnermost, skipPrivateVisibilities,
+                                     VisibilitySymbols::SHADOW_SCOPE_TWO,
+                                     checkedScopes, matches,
+                                     &foundVs);
+    }
+
+    if (got) {
+      doWarnHiddenFormal(context, rs, foundVs, functionScope, name, matches);
+      result = true;
+    }
+  }
+
+  return QUERY_END(result);
+}
+
 const ResolvedVisibilityScope*
 resolveVisibilityStmts(Context* context, const Scope* scope) {
   if (!scope->containsUseImport()) {
@@ -1684,9 +1722,26 @@ resolveVisibilityStmts(Context* context, const Scope* scope) {
     return nullptr;
   }
 
-  const owned<ResolvedVisibilityScope>& r =
+  const owned<ResolvedVisibilityScope>& o =
     resolveVisibilityStmtsQuery(context, scope);
-  return r.get();
+  const ResolvedVisibilityScope* r = o.get();
+
+  // If it's inside a function scope (which is rare for use/import),
+  // warn for hidden formals
+  const Scope* functionScope = nullptr;
+  for (const Scope* s = scope->parentScope();
+       s != nullptr;
+       s = s->parentScope()) {
+    if (asttags::isFunction(s->tag())) {
+      functionScope = s;
+      break;
+    }
+  }
+  if (functionScope != nullptr) {
+    warnHiddenFormalsQuery(context, r, functionScope);
+  }
+
+  return r;
 }
 
 
