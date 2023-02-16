@@ -1952,20 +1952,23 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
   if (id.isEmpty()) return;
 
   // Validate the newly set to ID.
+  auto idTag = parsing::idToTag(context, id);
 
   // It shouldn't refer to a module unless the node is an identifier in one of
   // the places where module references are allowed (e.g. imports).
-  auto toAst = parsing::idToAst(context, id);
-  if (toAst != nullptr) {
-    if (auto mod = toAst->toModule()) {
-      auto parentId = parsing::idToParentId(context, node->id());
-      if (!parentId.isEmpty()) {
+  if (asttags::isModule(idTag)) {
+    auto parentId = parsing::idToParentId(context, node->id());
+    if (!parentId.isEmpty()) {
+      auto parentTag = parsing::idToTag(context, parentId);
+      if (asttags::isUse(parentTag) || asttags::isImport(parentTag) ||
+          asttags::isAs(parentTag) || asttags::isVisibilityClause(parentTag) ||
+          asttags::isDot(parentTag)) {
+        // OK
+      } else {
+        auto toAst = parsing::idToAst(context, id);
+        auto mod = toAst->toModule();
         auto parentAst = parsing::idToAst(context, parentId);
-        if (!parentAst->isUse() && !parentAst->isImport() &&
-            !parentAst->isAs() && !parentAst->isVisibilityClause() &&
-            !parentAst->isDot()) {
-          CHPL_REPORT(context, ModuleAsVariable, node, parentAst, mod);
-        }
+        CHPL_REPORT(context, ModuleAsVariable, node, parentAst, mod);
       }
     }
   }
@@ -1973,19 +1976,21 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
   // If we're in a nested class, it shouldn't refer to an outer class' field.
   auto scope = scopeForId(context, id);
   auto parentId = scope->id();
-  auto parentAst = parsing::idToAst(context, parentId);
-  if (parentAst && parentAst->isAggregateDecl() &&
-      parentId.contains(node->id())) {
+  auto parentTag = parsing::idToTag(context, parentId);
+  if (asttags::isAggregateDecl(parentTag) && parentId.contains(node->id())) {
     // Referring to a field of a class that's surrounding the current node.
     // Loop upwards looking for a composite type.
     auto searchId = parsing::idToParentId(context, node->id());
     while (!searchId.isEmpty()) {
-      auto searchAst = parsing::idToAst(context, searchId);
-      if (searchAst == parentAst) {
+      auto searchTag = parsing::idToTag(context, searchId);
+      if (searchId == parentId) {
         // We found the aggregate type in which the to-ID is declared,
         // so there's no nested class issues.
         break;
-      } else if (auto searchAD = searchAst->toAggregateDecl()) {
+      } else if (asttags::isAggregateDecl(searchTag)) {
+        auto parentAst = parsing::idToAst(context, parentId);
+        auto searchAst = parsing::idToAst(context, searchId);
+        auto searchAD = searchAst->toAggregateDecl();
         // It's an error!
         CHPL_REPORT(context, NestedClassFieldRef, parentAst->toAggregateDecl(),
                     searchAD, node, id);
