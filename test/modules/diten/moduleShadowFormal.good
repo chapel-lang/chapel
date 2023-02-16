@@ -1,2 +1,3 @@
-moduleShadowFormal.chpl:9: warning: Module level symbol is hiding function argument 'a'
+moduleShadowFormal.chpl:9: In function 'foo':
+moduleShadowFormal.chpl:10: warning: module-level symbol is hiding function argument 'a'
 0
