@@ -641,9 +641,10 @@ class VisibilitySymbols {
   bool operator==(const VisibilitySymbols &other) const {
     return scope_ == other.scope_ &&
            kind_ == other.kind_ &&
-           names_ == other.names_ &&
            isPrivate_ == other.isPrivate_ &&
-           shadowScopeLevel_ == other.shadowScopeLevel_;
+           shadowScopeLevel_ == other.shadowScopeLevel_ &&
+           visibilityClauseId_ == other.visibilityClauseId_ &&
+           names_ == other.names_;
   }
   bool operator!=(const VisibilitySymbols& other) const {
     return !(*this == other);
@@ -652,9 +653,10 @@ class VisibilitySymbols {
   void swap(VisibilitySymbols& other) {
     std::swap(scope_, other.scope_);
     std::swap(kind_, other.kind_);
-    names_.swap(other.names_);
     std::swap(isPrivate_, other.isPrivate_);
     std::swap(shadowScopeLevel_, other.shadowScopeLevel_);
+    names_.swap(other.names_);
+    visibilityClauseId_.swap(other.visibilityClauseId_);
   }
 
   static bool update(VisibilitySymbols& keep,
@@ -664,6 +666,7 @@ class VisibilitySymbols {
 
   void mark(Context* context) const {
     context->markPointer(scope_);
+    visibilityClauseId_.mark(context);
     for (auto p : names_) {
       p.first.mark(context);
       p.second.mark(context);
