@@ -726,6 +726,9 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
             if (symExpr == cond->condExpr) {
               addKernelArgument(sym);
             }
+          } else if (isGotoStmt(symExpr->parentExpr)) {
+            copyNode = false;
+            outlinedFunction->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
           } else {
             INT_FATAL("Unexpected symbol expression");
           }
