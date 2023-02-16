@@ -92,17 +92,15 @@ bool BorrowedIdsWithName::containsOnlyMethodsOrFields() const {
     }
   }
 
-  bool onlyMethodsFields = true;
   for (const auto& idv : *moreIdvs_) {
     if (isIdVisible(idv)) {
       if (!idv.isMethodOrField()) {
-        onlyMethodsFields = false;
-        break;
+        return false;
       }
     }
   }
 
-  return onlyMethodsFields;
+  return true;
 }
 
 void BorrowedIdsWithName::stringify(std::ostream& ss,
