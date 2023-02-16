@@ -79,7 +79,7 @@ module ChapelArray {
   pragma "no doc"
   config param logAllArrEltAccess = false;
 
-  proc _isPrivatized(value) param
+  proc _isPrivatized(value) param do
     return !_local && ((_privatization && value!.dsiSupportsPrivatization()) ||
                        value!.dsiRequiresPrivatization());
     // Note - _local=true means --local / single locale
@@ -605,10 +605,10 @@ module ChapelArray {
     return rank*idxType;
   }
 
-  proc chpl__buildIndexType(param rank: int) type
+  proc chpl__buildIndexType(param rank: int) type do
     return chpl__buildIndexType(rank, int);
 
-  proc chpl__buildIndexType(d: domain) type
+  proc chpl__buildIndexType(d: domain) type do
     return chpl__buildIndexType(d.rank, d._value.idxType);
 
   // Helper function used to ensure a returned array matches the declared
@@ -782,7 +782,7 @@ module ChapelArray {
       return x;
     }
 
-    proc idxToLocale(ind) return _value.dsiIndexToLocale(ind);
+    proc idxToLocale(ind) do return _value.dsiIndexToLocale(ind);
 
     proc readThis(f) throws {
       f.read(_value);
@@ -879,18 +879,18 @@ module ChapelArray {
     }
 
     /* The type of elements contained in the array */
-    proc eltType type return _value.eltType;
+    proc eltType type do return _value.eltType;
 
     /* The type of indices used in the array's domain */
-    proc idxType type return _value.idxType;
-    proc intIdxType type return chpl__idxTypeToIntIdxType(_value.idxType);
+    proc idxType type do return _value.idxType;
+    proc intIdxType type do return chpl__idxTypeToIntIdxType(_value.idxType);
 
     pragma "no copy return"
     pragma "return not owned"
-    proc _dom return _getDomain(_value.dom);
+    proc _dom do return _getDomain(_value.dom);
 
     /* The number of dimensions in the array */
-    proc rank param return this.domain.rank;
+    proc rank param do return this.domain.rank;
 
     /*
       Return a dense rectangular array's indices as a default domain.
@@ -1069,18 +1069,18 @@ module ChapelArray {
     pragma "reference to const when const this"
     pragma "removable array access"
     pragma "alias scope from this"
-    inline proc ref this(i: _value.dom.idxType ...rank) ref
+    inline proc ref this(i: _value.dom.idxType ...rank) ref do
       return this(i);
 
     pragma "no doc" // value version, for POD types
     pragma "alias scope from this"
     inline proc const this(i: _value.dom.idxType ...rank)
-    where shouldReturnRvalueByValue(_value.eltType)
+    where shouldReturnRvalueByValue(_value.eltType) do
       return this(i);
 
     pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
-    inline proc const this(i: _value.dom.idxType ...rank) const ref
+    inline proc const this(i: _value.dom.idxType ...rank) const ref do
       return this(i);
 
 
@@ -1150,18 +1150,18 @@ module ChapelArray {
     pragma "no doc" // ref version
     pragma "reference to const when const this"
     pragma "alias scope from this"
-    inline proc ref localAccess(i: _value.dom.idxType ...rank) ref
+    inline proc ref localAccess(i: _value.dom.idxType ...rank) ref do
       return localAccess(i);
 
     pragma "no doc" // value version, for POD types
     pragma "alias scope from this"
     inline proc const localAccess(i: _value.dom.idxType ...rank)
-    where shouldReturnRvalueByValue(_value.eltType)
+    where shouldReturnRvalueByValue(_value.eltType) do
       return localAccess(i);
 
     pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
-    inline proc const localAccess(i: _value.dom.idxType ...rank) const ref
+    inline proc const localAccess(i: _value.dom.idxType ...rank) const ref do
       return localAccess(i);
 
 
@@ -1284,7 +1284,7 @@ module ChapelArray {
        Return a tuple of ranges describing the bounds of a rectangular domain.
        For a sparse domain, return the bounds of the parent domain.
      */
-    proc dims() return this.domain.dims();
+    proc dims() do return this.domain.dims();
 
     /*
        Return a range representing the boundary of this
@@ -1389,10 +1389,10 @@ module ChapelArray {
     }
 
     /* Return the number of elements in the array */
-    proc size: int return _dom.size;
+    proc size: int do return _dom.size;
 
     /* Return the number of elements in the array as the specified type. */
-    proc sizeAs(type t: integral): t return _dom.sizeAs(t);
+    proc sizeAs(type t: integral): t do return _dom.sizeAs(t);
 
     //
     // This routine determines whether an actual array argument
@@ -1469,7 +1469,7 @@ module ChapelArray {
     */
     pragma "fn returns aliasing array"
     inline proc reindex(newDomain: domain)
-      where this.domain.isRectangular() && newDomain.isRectangular()
+      where this.domain.isRectangular() && newDomain.isRectangular() do
     return reindex((...newDomain.dims()));
 
     // The reason `newDims` arg is untyped is that it needs to allow
@@ -1784,19 +1784,19 @@ module ChapelArray {
 
     /* Return true if the argument ``a`` is an array with a rectangular
        domain.  Otherwise return false. */
-    proc isRectangular() param return this.domain.isRectangular();
+    proc isRectangular() param do return this.domain.isRectangular();
 
     /* Return true if ``a`` is an array with an irregular domain; e.g. not
        rectangular. Otherwise return false. */
-    proc isIrregular() param return this.domain.isIrregular();
+    proc isIrregular() param do return this.domain.isIrregular();
 
     /* Return true if ``a`` is an array with an associative domain. Otherwise
        return false. */
-    proc isAssociative() param return this.domain.isAssociative();
+    proc isAssociative() param do return this.domain.isAssociative();
 
     /* Return true if ``a`` is an array with a sparse domain. Otherwise
        return false. */
-    proc isSparse() param return this.domain.isSparse();
+    proc isSparse() param do return this.domain.isSparse();
   }  // record _array
 
   // _instance is a subclass of BaseArr.  LYDIA NOTE: moved this from
@@ -1957,9 +1957,9 @@ module ChapelArray {
   //
 
   pragma "no doc"
-  proc isCollapsedDimension(r: range(?e,?b,?s,?a)) param return false;
+  proc isCollapsedDimension(r: range(?e,?b,?s,?a)) param do return false;
   pragma "no doc"
-  proc isCollapsedDimension(r) param return true;
+  proc isCollapsedDimension(r) param do return true;
 
   // computes || reduction over stridable of ranges
   proc chpl__anyStridable(ranges) param {
@@ -1993,10 +1993,10 @@ module ChapelArray {
   // integers and ranges; that is, it is a valid argument list for rank
   // change
   proc _validRankChangeArgs(args, type idxType) param {
-    proc _validRankChangeArg(type idxType, r: range(?)) param return true;
-    proc _validRankChangeArg(type idxType, i: idxType) param return true;
+    proc _validRankChangeArg(type idxType, r: range(?)) param do return true;
+    proc _validRankChangeArg(type idxType, i: idxType) param do return true;
     pragma "last resort"
-    proc _validRankChangeArg(type idxType, x) param return false;
+    proc _validRankChangeArg(type idxType, x) param do return false;
 
     /*
     proc help(param dim: int) param {
@@ -2114,18 +2114,18 @@ module ChapelArray {
   }
 
   // TODO: should this be returning true for atomic types?
-  proc chpl__supportedDataTypeForBulkTransfer(x: string) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: bytes) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: sync) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: single) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return true;
-  proc chpl__supportedDataTypeForBulkTransfer(x: locale) param return true;
-  proc chpl__supportedDataTypeForBulkTransfer(x: chpl_anycomplex) param return true;
+  proc chpl__supportedDataTypeForBulkTransfer(x: string) param do return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: bytes) param do return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: sync) param do return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: single) param do return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: domain) param do return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: []) param do return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param do return true;
+  proc chpl__supportedDataTypeForBulkTransfer(x: locale) param do return true;
+  proc chpl__supportedDataTypeForBulkTransfer(x: chpl_anycomplex) param do return true;
   // TODO -- why is the below line here?
-  proc chpl__supportedDataTypeForBulkTransfer(x: borrowed object) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
+  proc chpl__supportedDataTypeForBulkTransfer(x: borrowed object) param do return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x) param do return true;
 
   pragma "no doc"
   proc checkArrayShapesUponAssignment(a: [], b: [], forSwap = false) {

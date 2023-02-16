@@ -529,10 +529,10 @@ proc _to_regexMatch(ref p:qio_regex_string_piece_t):regexMatch {
 }
 
 pragma "no doc"
-inline operator regexMatch.!(m: regexMatch) return !m.matched;
+inline operator regexMatch.!(m: regexMatch) do return !m.matched;
 
 pragma "no doc"
-inline proc regexMatch.chpl_cond_test_method() return this.matched;
+inline proc regexMatch.chpl_cond_test_method() do return this.matched;
 
 /*  This function extracts the part of a string matching a regular
     expression or capture group. This method is intended to be

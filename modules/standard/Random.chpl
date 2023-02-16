@@ -99,7 +99,7 @@ module Random {
   //
 
   private
-  proc isSupportedNumericType(type t) param
+  proc isSupportedNumericType(type t) param do
     return isNumericType(t) || isBoolType(t);
 
   /*
@@ -2534,10 +2534,10 @@ module Random {
        This function arranges for that to be the case given any input.
      */
     inline
-    proc pcg_getvalid_inc(initseq:uint(64)):uint(64) return (initseq<<1) | 1;
+    proc pcg_getvalid_inc(initseq:uint(64)):uint(64) do return (initseq<<1) | 1;
     pragma "no doc" // documented in the not param version
     inline
-    proc pcg_getvalid_inc(param initseq:uint(64)) param return (initseq<<1) | 1;
+    proc pcg_getvalid_inc(param initseq:uint(64)) param do return (initseq<<1) | 1;
 
 
     // pcg_advance_lcg_8/16/32/64

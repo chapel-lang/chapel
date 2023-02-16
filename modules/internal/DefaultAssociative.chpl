@@ -74,8 +74,8 @@ module DefaultAssociative {
       if parSafe then tableLock.unlock();
     }
 
-    override proc linksDistribution() param return false;
-    override proc dsiLinksDistribution() return false;
+    override proc linksDistribution() param do return false;
+    override proc dsiLinksDistribution() do return false;
 
     proc init(type idxType,
               param parSafe: bool,
@@ -414,7 +414,7 @@ module DefaultAssociative {
       return chpl_getSingletonLocaleArray(this.locale);
     }
 
-    proc dsiHasSingleLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param do return true;
 
     proc dsiLocalSubdomain(loc: locale) {
       if this.locale == loc {
@@ -514,7 +514,7 @@ module DefaultAssociative {
 
     proc rank param { return 1; }
 
-    override proc dsiGetBaseDom() return dom;
+    override proc dsiGetBaseDom() do return dom;
 
 
     // ref version
@@ -572,14 +572,14 @@ module DefaultAssociative {
       return dsiAccess(idx(0));
     }
 
-    inline proc dsiLocalAccess(i) ref
+    inline proc dsiLocalAccess(i) ref do
       return dsiAccess(i);
 
     inline proc dsiLocalAccess(i)
-    where shouldReturnRvalueByValue(eltType)
+    where shouldReturnRvalueByValue(eltType) do
       return dsiAccess(i);
 
-    inline proc dsiLocalAccess(i) const ref
+    inline proc dsiLocalAccess(i) const ref do
       return dsiAccess(i);
 
 
@@ -796,7 +796,7 @@ module DefaultAssociative {
       return chpl_getSingletonLocaleArray(this.locale);
     }
 
-    proc dsiHasSingleLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param do return true;
 
     proc dsiLocalSubdomain(loc: locale) {
       if this.locale == loc {

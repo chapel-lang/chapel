@@ -1908,7 +1908,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
    :rtype:   `real(64)`
  */
 deprecated "'getCurrentTime()' is deprecated please use 'timeSinceEpoch()' instead"
-proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64)
+proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64) do
   return _convert_microseconds(unit, chpl_now_time());
 
 /*

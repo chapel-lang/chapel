@@ -440,28 +440,28 @@ module ChapelIteratorSupport {
   pragma "fn returns iterator"
   pragma "no implicit copy"
   inline proc _toLeader(ir: _iteratorRecord)
-    where __primitive("has leader", ir)
+    where __primitive("has leader", ir) do
     return chpl__autoCopy(__primitive("to leader", ir), definedConst=false);
 
   pragma "suppress lvalue error"
   pragma "fn returns iterator"
   inline proc _toLeader(x)
-    where !isSubtype(x.type, _iteratorRecord) && __primitive("has leader", x.these())
+    where !isSubtype(x.type, _iteratorRecord) && __primitive("has leader", x.these()) do
     return _toLeader(x.these());
 
   pragma "fn returns iterator"
   inline proc _toLeaderZip(x)
-    where !isTuple(x) && Reflection.canResolve("_toLeader", x)
+    where !isTuple(x) && Reflection.canResolve("_toLeader", x) do
     return _toLeader(x);
 
   pragma "fn returns iterator"
   inline proc _toLeaderZip(x: _tuple)
-    where Reflection.canResolve("_toLeader", x(0))
+    where Reflection.canResolve("_toLeader", x(0)) do
     return _toLeader(x(0));
 
   pragma "no implicit copy"
   pragma "fn returns iterator"
-  inline proc _toStandalone(iterator: _iteratorClass)
+  inline proc _toStandalone(iterator: _iteratorClass) do
     return chpl__autoCopy(__primitive("to standalone", iterator),
                           definedConst=false);
 
@@ -498,23 +498,23 @@ module ChapelIteratorSupport {
   pragma "suppress lvalue error"
   pragma "expand tuples with values"
   pragma "fn returns iterator"
-  inline proc _toLeader(x, args...)
+  inline proc _toLeader(x, args...) do
     return _toLeader(x.these(), (...args));
 
   pragma "expand tuples with values"
   pragma "fn returns iterator"
-  inline proc _toLeaderZip(x, args...)
+  inline proc _toLeaderZip(x, args...) do
     return _toLeader(x, (...args));
 
   pragma "expand tuples with values"
   pragma "fn returns iterator"
-  inline proc _toLeaderZip(x: _tuple, args...)
+  inline proc _toLeaderZip(x: _tuple, args...) do
     return _toLeader(x(0), (...args));
 
   pragma "no implicit copy"
   pragma "expand tuples with values"
   pragma "fn returns iterator"
-  inline proc _toStandalone(iterator: _iteratorClass, args...)
+  inline proc _toStandalone(iterator: _iteratorClass, args...) do
     return chpl__autoCopy(__primitive("to standalone", iterator,
                                              (...args)), definedConst=false);
 
@@ -631,7 +631,7 @@ module ChapelIteratorSupport {
 
   pragma "no implicit copy"
   pragma "fn returns iterator"
-  inline proc _toFollower(iterator: _iteratorClass, leaderIndex)
+  inline proc _toFollower(iterator: _iteratorClass, leaderIndex) do
     return chpl__autoCopy(__primitive("to follower", iterator,
                                              leaderIndex), definedConst=false);
 

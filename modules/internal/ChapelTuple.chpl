@@ -62,7 +62,7 @@ module ChapelTuple {
   pragma "build tuple"
   pragma "suppress lvalue error"
   // suppressing lvalue errors -- workaround forall exprs yielding owned
-  inline proc _build_tuple_always_allow_ref(x...)
+  inline proc _build_tuple_always_allow_ref(x...) do
     return x;
 
   inline proc chpl__unref(type t) type {
@@ -311,7 +311,7 @@ module ChapelTuple {
   // tuple except the first
   //
   inline proc chpl__tupleRest(t: _tuple) {
-    inline proc chpl__tupleRestHelper(first, rest...)
+    inline proc chpl__tupleRestHelper(first, rest...) do
       return rest;
     return chpl__tupleRestHelper((...t));
   }
