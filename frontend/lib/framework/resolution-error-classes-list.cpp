@@ -89,9 +89,9 @@ void ErrorAsWithUseExcept::write(ErrorWriterBase& wr) const {
   auto use = std::get<const uast::Use*>(info);
   auto as = std::get<const uast::As*>(info);
   wr.heading(kind_, type_, locationOnly(use),
-             "invalid use of 'as' in this 'use' statement.");
+             "cannot rename in 'except' list.");
+  wr.message("The renaming occurs because of the use of 'as' here:");
   wr.code(use, { as });
-  wr.message("The 'except' keyword and renaming cannot be used together.");
 }
 
 void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
