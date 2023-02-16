@@ -95,8 +95,7 @@ jobs:
     - uses: actions/checkout@v3
     - name: make check_llvm_none
       run: |
-       CHPL_LLVM=none make    
-       CHPL_LLVM=none CHPL_HOME=$PWD  make check
+       CHPL_LLVM=none ./util/buildRelease/smokeTest chpl
   check_annotations_rt_calls:
     runs-on: ubuntu-latest
     container:
@@ -116,7 +115,7 @@ jobs:
         ./util/devel/lookForBadRTCalls
     - name: check annotations
       run: |
-        CHPL_LLVM=none make test-venv 
+        CHPL_LLVM=none make test-venv
         CHPL_LLVM=none CHPL_HOME=$PWD ./util/test/run-in-test-venv.bash ./util/test/check_annotations.py
     - name: smokeTest lint
       run: |
