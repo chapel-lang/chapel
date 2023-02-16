@@ -3105,16 +3105,16 @@ void Resolver::exit(const ReduceIntent* reduce) {
 
 static UniqueString identifierReduceScanOpName(Context* context,
                                                UniqueString name) {
-  if (name == "+") return UniqueString::get(context, "SumReduceScanOp");
-  if (name == "*") return UniqueString::get(context, "ProductReduceScanOp");
-  if (name == "&&") return UniqueString::get(context, "LogicalAndReduceScanOp");
-  if (name == "||") return UniqueString::get(context, "LogicalOrReduceScanOp");
-  if (name == "&") return UniqueString::get(context, "BitwiseAndReduceScanOp");
-  if (name == "|") return UniqueString::get(context, "BitwiseOrReduceScanOp");
-  if (name == "^") return UniqueString::get(context, "BitwiseXorReduceScanOp");
+  if (name == USTR("+")) return UniqueString::get(context, "SumReduceScanOp");
+  if (name == USTR("*")) return UniqueString::get(context, "ProductReduceScanOp");
+  if (name == USTR("&&")) return UniqueString::get(context, "LogicalAndReduceScanOp");
+  if (name == USTR("||")) return UniqueString::get(context, "LogicalOrReduceScanOp");
+  if (name == USTR("&")) return UniqueString::get(context, "BitwiseAndReduceScanOp");
+  if (name == USTR("|")) return UniqueString::get(context, "BitwiseOrReduceScanOp");
+  if (name == USTR("^")) return UniqueString::get(context, "BitwiseXorReduceScanOp");
 
-  if (name == "max") return UniqueString::get(context, "MaxReduceScanOp");
-  if (name == "min") return UniqueString::get(context, "MinReduceScanOp");
+  if (name == USTR("max")) return UniqueString::get(context, "MaxReduceScanOp");
+  if (name == USTR("min")) return UniqueString::get(context, "MinReduceScanOp");
 
   return UniqueString();
 }
