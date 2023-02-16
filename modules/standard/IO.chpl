@@ -278,8 +278,8 @@ more details on the situation in which this kind of data race can occur.
   for files created in the following situations:
 
     * with the file initializer that takes a :type:`~CTypes.c_FILE` argument
-    * with the file initializer that takes a ``c_int`` argument when provided a
-      non-seekable system file descriptor
+    * with the file initializer that takes a ``c_int`` argument, where the
+      ``c_int`` represents a non-seekable system file descriptor
 
 
 Performing I/O with Channels
@@ -1635,7 +1635,7 @@ private proc initHelper2(ref f: file, fd: c_int, hints = ioHintSet.empty,
     var path = if path_err then "unknown"
                            else createStringWithNewBuffer(path_cs,
                                                           policy=decodePolicy.replace);
-    try ioerror(err, "in init", path);
+    try ioerror(err, "in file.init", path);
   }
 }
 
