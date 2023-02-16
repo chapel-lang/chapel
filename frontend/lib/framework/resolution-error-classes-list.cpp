@@ -601,6 +601,32 @@ void ErrorUnsupportedAsIdent::write(ErrorWriterBase& wr) const {
   wr.code(expectedIdentifier, { expectedIdentifier });
 }
 
+void ErrorUseImportMultiplyDefined::write(ErrorWriterBase& wr) const {
+  auto symbolName = std::get<UniqueString>(info);
+  auto firstOccurrence = std::get<1>(info);
+  auto secondOccurrence = std::get<2>(info);
+
+  wr.heading(kind_, type_, secondOccurrence, "'",
+             symbolName, "' is multiply defined.");
+  wr.message("'", symbolName, "' was first defined here:");
+  wr.code(firstOccurrence, { firstOccurrence });
+  wr.message("Redefined here:");
+  wr.code(secondOccurrence, { secondOccurrence });
+}
+
+void ErrorUseImportMultiplyMentioned::write(ErrorWriterBase& wr) const {
+  auto symbolName = std::get<UniqueString>(info);
+  auto firstOccurrence = std::get<1>(info);
+  auto secondOccurrence = std::get<2>(info);
+
+  wr.heading(kind_, type_, secondOccurrence, "'",
+             symbolName, "' is repeated.");
+  wr.message("'", symbolName, "' was first mentioned here:");
+  wr.code(firstOccurrence, { firstOccurrence });
+  wr.message("Mentioned again here:");
+  wr.code(secondOccurrence, { secondOccurrence });
+}
+
 void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
   auto moduleName = std::get<std::string>(info);
@@ -612,6 +638,24 @@ void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
   wr.code<ID, ID>(id, { id });
   wr.message("Only ", allowedItems(useOrImport), " can be used with '",
              useOrImport, "' statements.");
+}
+
+void ErrorUseImportTransitiveRename::write(ErrorWriterBase& wr) const {
+  auto from = std::get<0>(info);
+  auto middle = std::get<1>(info);
+  auto to = std::get<2>(info);
+
+  auto firstRename = std::get<3>(info);
+  auto secondRename = std::get<4>(info);
+
+  wr.heading(kind_, type_, secondRename, "'",
+             middle, "' is repeated.");
+  wr.message("First, '", from, "' is renamed to '", middle, "'.");
+  wr.code(firstRename, {firstRename});
+  wr.message("Then, '", middle, "' is renamed to '", to, "'.");
+  wr.code(secondRename, {secondRename});
+  wr.note(firstRename, "did you mean to rename '", from, "' to '", to, "'?");
+  wr.message("You can do so by a single rename, '", from, " as ", to, "'.");
 }
 
 void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {

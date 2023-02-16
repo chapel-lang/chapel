@@ -86,8 +86,22 @@ ERROR_CLASS(TupleExpansionNamedArgs, const uast::OpCall*, const uast::FnCall*)
 ERROR_CLASS(TupleExpansionNonTuple, const uast::FnCall*, const uast::OpCall*, types::QualifiedType)
 ERROR_CLASS(UnknownEnumElem, const uast::AstNode*, chpl::UniqueString, const types::EnumType*)
 ERROR_CLASS(UnsupportedAsIdent, const uast::As*, const uast::AstNode*)
+ERROR_CLASS(UseImportMultiplyDefined,
+            chpl::UniqueString,
+            const uast::AstNode*,
+            const uast::AstNode*)
+WARNING_CLASS(UseImportMultiplyMentioned,
+              chpl::UniqueString,
+              const uast::AstNode*,
+              const uast::AstNode*)
 ERROR_CLASS(UseImportNotModule, const ID, const resolution::VisibilityStmtKind,
             std::string)
+WARNING_CLASS(UseImportTransitiveRename,
+              chpl::UniqueString,
+              chpl::UniqueString,
+              chpl::UniqueString,
+              const uast::AstNode*,
+              const uast::AstNode*)
 ERROR_CLASS(UseImportUnknownMod,
             const ID,
             const resolution::VisibilityStmtKind,
