@@ -3121,7 +3121,7 @@ static UniqueString identifierReduceScanOpName(Context* context,
 
 static const ClassType *
 constructReduceScanOpClass(Resolver& resolver,
-                           const uast::Reduce* reduce,
+                           const uast::AstNode* reduce,
                            UniqueString opName,
                            const QualifiedType& iterType) {
   auto context = resolver.context;
@@ -3159,9 +3159,10 @@ constructReduceScanOpClass(Resolver& resolver,
 }
 
 static const ClassType* determineReduceScanOp(Resolver& resolver,
-                                              const uast::Reduce* reduce,
+                                              const uast::AstNode* reduce,
+                                              const uast::AstNode* op,
                                               const QualifiedType& iterType) {
-  if (auto ident = reduce->op()->toIdentifier()) {
+  if (auto ident = op->toIdentifier()) {
     auto toLookUp = ident->name();
     auto opName = identifierReduceScanOpName(resolver.context, ident->name());
     if (!opName.isEmpty()) {
@@ -3187,7 +3188,7 @@ static const ClassType* determineReduceScanOp(Resolver& resolver,
 }
 
 static QualifiedType getReduceScanOpResultType(Resolver& resolver,
-                                               const uast::Reduce* reduce,
+                                               const uast::AstNode* reduce,
                                                const ClassType* opClass) {
   auto context = resolver.context;
 
@@ -3210,16 +3211,22 @@ static QualifiedType getReduceScanOpResultType(Resolver& resolver,
   return c.exprType();
 }
 
+static QualifiedType resolveReduceScanOp(Resolver& resolver,
+                                         const AstNode* reduceOrScan,
+                                         const AstNode* op,
+                                         const AstNode* iterand) {
+  auto iterType = resolveSerialIterType(resolver, reduceOrScan, iterand);
+  if (iterType.isUnknown()) return QualifiedType();
+  auto opClass = determineReduceScanOp(resolver, reduceOrScan, op, iterType);
+  if (opClass == nullptr) return QualifiedType();
+
+  return getReduceScanOpResultType(resolver, reduceOrScan, opClass);
+}
+
 bool Resolver::enter(const uast::Reduce* reduce) {
-  auto iterType = resolveSerialIterType(*this, reduce, reduce->iterand());
-  if (iterType.isUnknown()) return false;
-  auto opClass = determineReduceScanOp(*this, reduce, iterType);
-  if (opClass == nullptr) return false;
-
-  auto resultType = getReduceScanOpResultType(*this, reduce, opClass);
-  auto& reduceRV = byPostorder.byAst(reduce);
-  reduceRV.setType(resultType);
-
+  auto elementType = resolveReduceScanOp(*this, reduce,
+                                         reduce->op(), reduce->iterand());
+  byPostorder.byAst(reduce).setType(std::move(elementType));
   return false;
 }
 

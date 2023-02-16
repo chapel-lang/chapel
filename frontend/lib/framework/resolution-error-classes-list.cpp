@@ -438,15 +438,26 @@ void ErrorRedefinition::write(ErrorWriterBase& wr) const {
   }
 }
 
+static const uast::AstNode* getReduceOrScanOp(const uast::AstNode* reduceOrScan) {
+  if (auto reduce = reduceOrScan->toReduce()) {
+    return reduce->op();
+  } else if (auto scan = reduceOrScan->toScan()) {
+    return scan->op();
+  }
+  return nullptr;
+}
+
 void ErrorReductionInvalidName::write(ErrorWriterBase& wr) const {
-  auto reduce = std::get<const uast::Reduce*>(info);
+  auto reduceOrScan = std::get<const uast::AstNode*>(info);
   auto name = std::get<UniqueString>(info);
   auto& iterType = std::get<types::QualifiedType>(info);
-  wr.heading(kind_, type_, reduce->op(),
+
+  auto op = getReduceOrScanOp(reduceOrScan);
+  wr.heading(kind_, type_, op,
             "identifier '", name, "' does not represent "
             "a valid reduction operation.");
   wr.message("In the following 'reduce' expression:");
-  wr.code(reduce, { reduce->op() });
+  wr.code(reduceOrScan, { op });
   wr.message("Identifiers on the left of the 'reduce' expression are applied "
              "to the type of the iterator's elements ('", iterType.type(), "' "
              "in this case)");
@@ -454,12 +465,13 @@ void ErrorReductionInvalidName::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorReductionNotReduceScanOp::write(ErrorWriterBase& wr) const {
-  auto reduce = std::get<const uast::Reduce*>(info);
+  auto reduceOrScan = std::get<const uast::AstNode*>(info);
   auto actualType = std::get<types::QualifiedType>(info);
   const types::BasicClassType* actualClassType = nullptr;
 
-  wr.heading(kind_, type_, reduce->op(), "invalid operation in 'reduce' expression.");
-  wr.code(reduce, { reduce->op() });
+  auto op = getReduceOrScanOp(reduceOrScan);
+  wr.heading(kind_, type_, op, "invalid operation in 'reduce' expression.");
+  wr.code(reduceOrScan, { op });
 
   // Don't print the details of managed / unmanaged / etc.
   if (auto classType = actualType.type()->toClassType()) {

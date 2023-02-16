@@ -69,11 +69,11 @@ ERROR_CLASS(ProcTypeUnannotatedFormal,
 ERROR_CLASS(PrototypeInclude, const uast::Include*, const uast::Module*)
 ERROR_CLASS(Redefinition, const uast::NamedDecl*, std::vector<ID>)
 ERROR_CLASS(ReductionInvalidName,
-    const uast::Reduce*,
+    const uast::AstNode*,
     UniqueString,
     types::QualifiedType)
 ERROR_CLASS(ReductionNotReduceScanOp,
-    const uast::Reduce*,
+    const uast::AstNode*,
     types::QualifiedType)
 ERROR_CLASS(SuperFromTopLevelModule,
     const uast::AstNode*,
