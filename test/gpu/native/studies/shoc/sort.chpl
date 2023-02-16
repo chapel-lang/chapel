@@ -12,6 +12,7 @@ use ResultDB;
 use GPUDiagnostics;
 
 config const noisy = false;
+config const gpuDiags = false;
 config const output = true;
 config const perftest = false;
 config const sz = 4;
@@ -50,7 +51,7 @@ proc runSort(){
         numScanElts = numBlocks;
     } while numScanElts > 1;
 
-    var scanBlockSums : [0..#level+1] list(uint(32)); // Array of Lists
+    var scanBlockSums : [0..#level+1] c_ptr(uint(32));
     numLevelsAllocated = level + 1;
     numScanElts = maxNumScanElements;
     level = 0;
@@ -59,14 +60,14 @@ proc runSort(){
                     numScanElts : real / (4 * SCAN_BLOCK_SIZE)) : int) : uint(32);
         if(numBlocks > 1) {
             // Malloc device mem for block sums
-            scanBlockSums[level] = new list(0:uint(32)..<numBlocks:uint(32)); // Size of list should be numBlocks
+            scanBlockSums[level] = c_malloc(uint(32), numBlocks);
             level+=1;
         }
         numScanElts = numBlocks;
     } while (numScanElts > 1);
     // Print the above vars to see if they match the expected values
 
-    scanBlockSums[level] = new list(uint(32)); // Size of this last list is just 1
+    scanBlockSums[level] = c_malloc(uint(32), 1);
 
     // Allcoate device mem for sorting kernels
     var dKeys, dVals, dTempKeys, dTempVals : [0..<size] uint(32);
@@ -164,10 +165,12 @@ proc runSort(){
     }
 }
 
-startGPUDiagnostics();
+if gpuDiags then startGPUDiagnostics();
 runSort();
-stopGPUDiagnostics();
-writeln(getGPUDiagnostics());
+if gpuDiags {
+  stopGPUDiagnostics();
+  writeln(getGPUDiagnostics());
+}
 
 
 proc radixSortStep(nbits: uint(32), startbit: uint(32),
@@ -175,7 +178,7 @@ proc radixSortStep(nbits: uint(32), startbit: uint(32),
                     ref tempKeys : [] uint(32), ref tempValues : [] uint(32),
                     ref counters : [] uint(32), ref countersSum : [] uint(32),
                     ref blockOffsets : [] uint(32),
-                    ref scanBlockSums : [] list(uint(32)), // scanBlockSums is an array of lists
+                    ref scanBlockSums : [] c_ptr(uint(32)),
                     numElements: uint(32)){
 
     // Threads have either 4 or 2 elements each
@@ -196,15 +199,17 @@ proc radixSortStep(nbits: uint(32), startbit: uint(32),
     // Use offsets again
     findRadixOffsets(findGlobalWorkSize, tempKeys, counters, blockOffsets, startbit, numElements, findBlocks);
 
-    scanArrayRecursive(countersSum, counters, 16*reorderBlocks, 0, scanBlockSums);
+    scanArrayRecursive(c_ptrTo(countersSum[countersSum.domain.first]),
+                       c_ptrTo(counters[counters.domain.first]),
+                       16*reorderBlocks, 0, scanBlockSums);
 
     // reorderData Kernel here
     reorderData(reorderGlobalWorkSize, startbit, keys, values, tempKeys, tempValues,
          blockOffsets, countersSum, counters, reorderBlocks);
 }
 
-proc scanArrayRecursive(ref outArray : [] uint(32), ref inArray : [] uint(32),
-                        numElements, level, ref blockSums : [] list(uint(32))){
+proc scanArrayRecursive(outArray : c_ptr(uint(32)), inArray : c_ptr(uint(32)),
+                        numElements, level, ref blockSums){
     // Kernels hadle 8 elements per thread
     const numBlocks : uint(32) = max(1,ceil(numElements:real
         / (4.0:real * SCAN_BLOCK_SIZE)) : uint(32)) : uint(32);
@@ -220,24 +225,19 @@ proc scanArrayRecursive(ref outArray : [] uint(32), ref inArray : [] uint(32),
     //execute scan
     if(numBlocks>1){
         // Scan Kernel here
-        var t = blockSums[level].toArray();
+        var t = blockSums[level];
         scanKernel(numBlocks, outArray, inArray, t, numElements, fullBlock, true);
-        blockSums[level] = new list(t);
     } else {
         // Different Scan Kernel here
-        var t = blockSums[level].toArray();
+        var t = blockSums[level];
         scanKernel(numBlocks, outArray, inArray, t, numElements, fullBlock, false);
-        blockSums[level] = new list(t);
     }
 
     if(numBlocks > 1){
-        var t = blockSums[level].toArray();
+        var t = blockSums[level];
         scanArrayRecursive(t, t, numBlocks, level+1, blockSums);
-        blockSums[level] = new list(t);
         // VectorAddUniform4 Kernel Here
-        t = blockSums[level].toArray();
         vectorAddUniform4(outArray, t, numElements);
-        blockSums[level] = new list(t);
     }
 }
 
@@ -317,7 +317,7 @@ proc radixSortBlocks(radixGlobalWorkSize, const nbits : uint(32), const startbit
                 ref keysOut : [] uint(32), ref valuesOut : [] uint(32),
                 ref keysIn : [] uint(32), ref valuesIn : [] uint(32)){
 
-    forall i in 0..<radixGlobalWorkSize:uint(32) {
+    foreach i in 0..<radixGlobalWorkSize:uint(32) {
 
         __primitive("gpu set blockSize", SORT_BLOCK_SIZE);
 
@@ -336,10 +336,11 @@ proc radixSortBlocks(radixGlobalWorkSize, const nbits : uint(32), const startbit
 
         // Load keys and vals from Global memory
         var key, value : 4*uint(32);
-        for j in 0..3:uint(32) {
-            key[j] = keysIn[4 * i + j];
-            value[j] = valuesIn[4 * i + j];
-        }
+        const base = 4*i;
+        for param j in 0..3:uint(32) do
+            key[j] = keysIn[base + j];
+        for param j in 0..3:uint(32) do
+            value[j] = valuesIn[base + j];
 
         // For each of the 4 bits
         for shift in startbit:uint(32)..#nbits:uint(32) {
@@ -412,17 +413,17 @@ proc radixSortBlocks(radixGlobalWorkSize, const nbits : uint(32), const startbit
             __primitive("gpu syncThreads");
 
         }
-        for j in 0..3:uint(32) {
-            keysOut[4 * i + j] = key[j];
-            valuesOut[4 * i + j] = value[j];
-        }
+        for param j in 0..3:uint(32) do
+            keysOut[base + j] = key[j];
+        for param j in 0..3:uint(32) do
+            valuesOut[base + j] = value[j];
     }
 }
 
 proc findRadixOffsets(findGlobalWorkSize, ref keys : [] uint(32), ref counters : [] uint(32),
         ref blockOffsets : [] uint(32), startbit :uint(32), numElements :uint(32), totalBlocks :uint(32) ){
 
-    forall i in 0..<findGlobalWorkSize:uint(32){
+    foreach i in 0..<findGlobalWorkSize:uint(32){
 
         __primitive("gpu set blockSize", SCAN_BLOCK_SIZE);
 
@@ -491,7 +492,7 @@ proc reorderData (reorderGlobalWorkSize, startbit: uint(32),
         ref blockOffsets : [] uint(32), ref offsets : [] uint(32),
         ref sizes : [] uint(32), totalBlocks : uint(32)) {
 
-    forall i in 0..<reorderGlobalWorkSize: uint(32){
+    foreach i in 0..<reorderGlobalWorkSize: uint(32){
         __primitive("gpu set blockSize", SCAN_BLOCK_SIZE);
 
         const GROUP_SIZE = SCAN_BLOCK_SIZE : uint(32);
@@ -577,12 +578,12 @@ proc scanLocalMem(const val : uint(32), ref s_data: c_ptr(uint(32)), in idx : ui
     return s_data[idx-1];
 }
 
-proc scanKernel(numBlocks : uint(32), ref g_odata: [] uint(32), ref g_idata: [] uint(32),
-        ref g_blockSums : [] uint(32), const n,
-        const fullBlock: bool, const storeSum : bool){
+proc scanKernel(numBlocks : uint(32), g_odata: c_ptr(uint(32)),
+                g_idata: c_ptr(uint(32)), g_blockSums : c_ptr(uint(32)),
+                const n, const fullBlock: bool, const storeSum : bool){
 
     var globalSize : uint(32) = numBlocks * SCAN_BLOCK_SIZE;
-    forall gid in 0..<globalSize : uint(32) {
+    foreach gid in 0..<globalSize : uint(32) {
 
         __primitive("gpu set blockSize", SCAN_BLOCK_SIZE);
 
@@ -649,15 +650,15 @@ proc scanKernel(numBlocks : uint(32), ref g_odata: [] uint(32), ref g_idata: [] 
     }
 }
 
-proc vectorAddUniform4(ref d_vector: [] uint(32), const ref d_uniforms : [] uint(32),
-        const n){
+proc vectorAddUniform4(d_vector: c_ptr(uint(32)),
+                       d_uniforms : c_ptr(uint(32)), const n){
 
     // Math to get loop bounds:
     // CUDA Kernel Parameter: grid * thread
     // = numBlocks * SCAN_BLOCK_SIZE
     // = numElements / (4 * SCAN_BLOCK_SIZE) * SCAN_BLOCK_SIZE
     // = numElements / (4) = n/4
-    forall i in 0..<n/4 : uint(32) {
+    foreach i in 0..<n/4 : uint(32) {
 
         __primitive("gpu set blockSize", SCAN_BLOCK_SIZE);
 
@@ -679,6 +680,6 @@ proc vectorAddUniform4(ref d_vector: [] uint(32), const ref d_uniforms : [] uint
             d_vector[address] += uni[0];
             address += SCAN_BLOCK_SIZE : uint(32);
         }
-     }
+    }
 }
-}
+} // end on here.gpus[0]
