@@ -1023,10 +1023,18 @@ validateAndPushRename(Context* context,
     auto renameNode = visibilityClause->limitation(i);
 
     if (rename.second == toPush.second) {
-      // Renamed to the same thing, that's an error.
-      CHPL_REPORT(context, UseImportMultiplyDefined,
-                  rename.second, renameNode, toPushNode);
-      return;
+      // The target name is the same, but we could still be okay. For instance,
+      // import M.{x,x} as fine. For this to be an error, one of the "renames"
+      // must actually rename a symbol, like {x, y as x} or {y as x, x}.
+      if (rename.first != rename.second ||
+          toPush.first != toPush.second) {
+        // Renamed different things to the same thing, that's an error.
+        CHPL_REPORT(context, UseImportMultiplyDefined,
+                    rename.second, renameNode, toPushNode);
+        return;
+      } else {
+        // Fall through to the next if-statement.
+      }
     }
 
     if (rename.first == toPush.first) {
