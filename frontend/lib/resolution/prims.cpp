@@ -264,7 +264,7 @@ CallResolutionResult resolvePrimCall(Context* context,
         if ((forMethod && ci.numActuals() < 2) ||
             (!forMethod && ci.numActuals() < 1)) break;
 
-        int fnNameActual = forMethod ? 1 : 0;
+        size_t fnNameActual = forMethod ? 1 : 0;
 
         UniqueString fnName;
         if (toParamStringActual(ci.actual(fnNameActual).type(), fnName)) {
@@ -274,7 +274,7 @@ CallResolutionResult resolvePrimCall(Context* context,
           if (forMethod) {
             actuals.push_back(CallInfoActual(ci.actual(0).type(), USTR("this")));
           }
-          for (int i = fnNameActual + 1; i < ci.numActuals(); i++) {
+          for (size_t i = fnNameActual + 1; i < ci.numActuals(); i++) {
             actuals.push_back(ci.actual(i));
           }
           auto callInfo = CallInfo(fnName,
