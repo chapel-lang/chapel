@@ -1,2 +1,1 @@
-forallArrayTypeVar.chpl:1: error: invalid array type specifier
-forallArrayTypeVar.chpl:1: note: expected a type, not a value of type 'int(64)'
+forallArrayTypeVar.chpl:1: error: illegal assignment of value to type

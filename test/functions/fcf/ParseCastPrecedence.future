@@ -1,4 +1,4 @@
-[NO ISSUE YET]: Precedence when parsing function type return types
+[NO ISSUE]: Precedence when parsing function type return types
 
 Right now 'proc(): int:string == "proc(): int"' is being parsed like
 'proc(): (int:string == "proc(): int")', we may want to adjust the
