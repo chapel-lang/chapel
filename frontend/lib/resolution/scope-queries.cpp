@@ -1006,7 +1006,12 @@ convertOneRename(UniqueString oldName, UniqueString newName) {
   return ret;
 }
 
-static bool
+// Currently, validateAndPushRename does not signal when an error occurs. This
+// is because callers to convertLimitations, which calls validateAndPushRename,
+// just continue through their errors. If we ever have a mechanism to detect
+// failure in doResolveImportStmt etc., we'll need to escalate errors from
+// here, too.
+static void
 validateAndPushRename(Context* context,
                       const VisibilityClause* visibilityClause,
                       std::vector<std::pair<UniqueString,UniqueString>>& renames,
@@ -1021,7 +1026,7 @@ validateAndPushRename(Context* context,
       // Renamed to the same thing, that's an error.
       CHPL_REPORT(context, UseImportMultiplyDefined,
                   rename.second, renameNode, toPushNode);
-      return false;
+      return;
     }
 
     if (rename.first == toPush.first) {
@@ -1035,27 +1040,39 @@ validateAndPushRename(Context* context,
                   renameNode, toPushNode);
     } else if (rename.first == toPush.second) {
       // Rename chain like `b as c, a as b`.
-      // Maybe do not warn here?
+      // In this case, do not warn for the following reasons:
+      //
+      // 1. Listing the renames out of order seems more deliberate and less
+      //    accidental. If the user wanted a transitive rename, why
+      //    write it backwards?
+      // 2. The 'chain rename' warning is issued even if no errors occurred;
+      //    that is, it is issued even in legitimate use cases where things'
+      //    names are shuffled around. Not emitting the warning if the rename
+      //    chain is in reverse order helps silence the warning for
+      //    legitimate use cases.
+      // 3. An error would trigger if the rename is in reverse order and
+      //    _not_ valid (i.e., if the user did want to do a transitive
+      //    rename, and wrote it backwards for some reason), even if this
+      //    warning is not emitted. Since Chapel generally does not allow
+      //    use-before-definition for variables, a user making this mistake
+      //    might be inclined to try re-ordering the rename chain into proper
+      //    order, at which point the error would persist and the warning would
+      //    be issued.
     }
   }
 
   renames.push_back(std::move(toPush));
-  return true;
+  return;
 }
 
 static std::vector<std::pair<UniqueString,UniqueString>>
 convertLimitations(Context* context, const VisibilityClause* clause) {
-  // Ignore errors from validateAndPushRename because callers to
-  // convertLimitations just continue through their errors. If we ever
-  // have a mechanism to detect failure in doResolveImportStmt etc., we'll need
-  // to escalate errors from here, too.
-
   std::vector<std::pair<UniqueString,UniqueString>> ret;
   for (const AstNode* e : clause->limitations()) {
     if (auto ident = e->toIdentifier()) {
       UniqueString name = ident->name();
-      std::ignore = validateAndPushRename(context, clause, ret,
-                                          std::make_pair(name, name));
+      validateAndPushRename(context, clause, ret,
+                            std::make_pair(name, name));
     } else if (auto dot = e->toDot()) {
       CHPL_REPORT(context, DotExprInUseImport, clause,
                   clause->limitationKind(), dot);
@@ -1076,8 +1093,8 @@ convertLimitations(Context* context, const VisibilityClause* clause) {
 
       rename = ident->name();
 
-      std::ignore = validateAndPushRename(context, clause, ret,
-                                          std::make_pair(name, rename));
+      validateAndPushRename(context, clause, ret,
+                            std::make_pair(name, rename));
     }
   }
   return ret;
