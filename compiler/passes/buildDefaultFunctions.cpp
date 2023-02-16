@@ -1885,6 +1885,8 @@ static void buildDefaultReadWriteFunctions(AggregateType* ct) {
 
     if (fUseIOFormatters) {
       if (hasWriteThis) {
+        // TODO: we probably want to have a warning here to help users migrate
+        // their code to use formatters.
         fn->insertAtTail(new CallExpr("writeThis", gMethodToken, fn->_this, fileArg));
       } else {
         fn->insertAtTail(new CallExpr("encodeToDefaultImpl",
