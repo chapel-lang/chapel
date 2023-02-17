@@ -1129,7 +1129,7 @@ proc bytes.find(pattern: regex(bytes)):byteIndex
 }
 
 /* Search the receiving string for the pattern. Returns a new string where the
-   match(es) to the pattern is replaced with a replacement. 
+   match(es) to the pattern is replaced with a replacement.
 
    :arg pattern: the compiled regular expression to search for
    :arg replacement: string to replace with
@@ -1143,7 +1143,7 @@ proc string.replace(pattern: regex(string), replacement:string,
 }
 
 /* Search the receiving bytes for the pattern. Returns a new bytes where the
-   match(es) to the pattern is replaced with a replacement. 
+   match(es) to the pattern is replaced with a replacement.
 
    :arg pattern: the compiled regular expression to search for
    :arg replacement: bytes to replace with
@@ -1157,7 +1157,7 @@ proc bytes.replace(pattern: regex(bytes), replacement:bytes, count=-1): bytes {
 
 /* Search the receiving string for the pattern. Returns a new string where the
    match(es) to the pattern is replaced with a replacement and number of
-   replacements. 
+   replacements.
 
    :arg pattern: the compiled regular expression to search for
    :arg replacement: string to replace with
@@ -1171,7 +1171,7 @@ proc string.replaceAndCount(pattern: regex(string), replacement:string,
 
 /* Search the receiving bytes for the pattern. Returns a new bytes where the
    match(es) to the pattern is replaced with a replacement and number of
-   replacements. 
+   replacements.
 
    :arg pattern: the compiled regular expression to search for
    :arg replacement: bytes to replace with
