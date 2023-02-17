@@ -907,6 +907,19 @@ void ErrorAmbiguousIdentifier::write(ErrorWriterBase& wr) const {
     printedOne = true;
     wr.code<ID, ID>(id, { id });
   }
+
+  // TODO: call describeSymbolSource
+  return;
+}
+
+void ErrorUnknownIdentifier::write(ErrorWriterBase& wr) const {
+  auto ident = std::get<const uast::Identifier*>(info);
+
+  wr.heading(kind_, type_, ident,
+             "'", ident->name(), "' cannot be found");
+
+  wr.code(ident, { ident });
+
   return;
 }
 

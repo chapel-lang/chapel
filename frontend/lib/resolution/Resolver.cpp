@@ -2062,21 +2062,28 @@ static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
   }
 }
 
-bool Resolver::resolveIdentifier(const Identifier* ident,
+void Resolver::resolveIdentifier(const Identifier* ident,
                                  llvm::ArrayRef<const Scope*> receiverScopes) {
   ResolvedExpression& result = byPostorder.byAst(ident);
+
+  if (ident->name() == USTR("nil")) {
+    result.setType(QualifiedType(QualifiedType::CONST_VAR,
+                                 NilType::get(context)));
+    return;
+  }
 
   // for 'proc f(arg:?)' need to set 'arg' to have type AnyType
   CHPL_ASSERT(declStack.size() > 0);
   const Decl* inDecl = declStack.back();
   if (inDecl->isVarLikeDecl() && ident->name() == USTR("?")) {
     result.setType(QualifiedType(QualifiedType::TYPE, AnyType::get(context)));
-    return false;
+    return;
   }
 
   auto vec = lookupIdentifier(ident, receiverScopes);
 
   if (vec.size() == 0) {
+    CHPL_REPORT(context, UnknownIdentifier, ident);
     result.setType(QualifiedType());
   } else if (vec.size() > 1 || vec[0].numIds() > 1) {
     // can't establish the type. If this is in a function
@@ -2091,7 +2098,7 @@ bool Resolver::resolveIdentifier(const Identifier* ident,
       type = typeForBuiltin(context, ident->name());
       result.setToId(id);
       result.setType(type);
-      return false;
+      return;
     }
 
     // use the type established at declaration/initialization,
@@ -2131,10 +2138,10 @@ bool Resolver::resolveIdentifier(const Identifier* ident,
         ResolvedExpression& r = byPostorder.byAst(ident);
         handleResolvedCall(r, ident, ci, c);
       }
-      return false;
+      return;
     } else if (scopeResolveOnly &&
                type.kind() == QualifiedType::FUNCTION) {
-      return false;
+      return;
     }
 
     validateAndSetToId(result, ident, id);
@@ -2142,7 +2149,6 @@ bool Resolver::resolveIdentifier(const Identifier* ident,
     // if there are multiple ids we should have gotten
     // a multiple definition error at the declarations.
   }
-  return false;
 }
 
 bool Resolver::enter(const Identifier* ident) {
@@ -2150,8 +2156,8 @@ bool Resolver::enter(const Identifier* ident) {
     std::ignore = initResolver->handleUseOfField(ident);
     return false;
   } else {
-    auto ret = resolveIdentifier(ident, methodReceiverScopes());
-    return ret;
+    resolveIdentifier(ident, methodReceiverScopes());
+    return false;
   }
 }
 
@@ -3170,9 +3176,8 @@ bool Resolver::enter(const ReduceIntent* reduce) {
     context->error(reduce, "Unable to find declaration of \"%s\" for reduction", reduce->name().c_str());
   }
 
-  // TODO: Resolve reduce-op with shadowed type
+  // TODO: Resolve reduce->op() with shadowed type
   // E.g. "+ reduce x" --> "SumReduceOp(x.type)"
-  reduce->op()->traverse(*this);
 
   return false;
 }

@@ -422,7 +422,7 @@ struct Resolver {
   lookupIdentifier(const uast::Identifier* ident,
                    llvm::ArrayRef<const Scope*> receiverScopes);
 
-  bool resolveIdentifier(const uast::Identifier* ident,
+  void resolveIdentifier(const uast::Identifier* ident,
                          llvm::ArrayRef<const Scope*> receiverScopes);
 
   /* Resolver keeps a stack of scopes and a stack of decls.

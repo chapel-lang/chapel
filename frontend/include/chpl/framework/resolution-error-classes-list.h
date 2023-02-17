@@ -136,3 +136,5 @@ ERROR_CLASS(AmbiguousIdentifier,
     UniqueString,
     ID,
     std::vector<ID>)
+ERROR_CLASS(UnknownIdentifier,
+    const uast::Identifier*)
