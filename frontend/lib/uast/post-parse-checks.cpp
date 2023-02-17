@@ -264,7 +264,7 @@ bool Visitor::isParentFalseBlock(int depth) const {
 
 void Visitor::checkForArraysOfRanges(const Array* node) {
   if (node->numExprs() == 1 && !node->hasTrailingComma()) {
-    if (const Range* rng = node->expr(0)->toRange()) {
+    if (node->expr(0)->toRange()) {
       warn(node, "please note that this is a 1-element array of ranges; if "
            "that was your intention, add a trailing comma or recompile with "
            "'--no-warn-array-of-range' to avoid this warning; if it wasn't, "
