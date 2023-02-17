@@ -1513,7 +1513,7 @@ module ChapelBase {
       // leads to a different error:
       // "use of 'rootLocale' before encountering its definition, type unknown"
       if t:string == "regex(string)" || t:string == "regex(bytes)" then
-        return compile(str);
+        return new regex(str);
       else
         return str:t;
     }

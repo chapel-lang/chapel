@@ -1161,16 +1161,16 @@ inline operator :(x: regex(bytes), type t: bytes) {
 
 // Cast string to regex
 pragma "no doc"
-deprecated "Casting strings to regex is deprecated. Use compile(string) from the Regex module instead."
+deprecated "Casting strings to regex is deprecated. Use new regex(string) from the Regex module instead."
 inline operator :(x: string, type t: regex(string)) throws {
-  return compile(x);
+  return new regex(x);
 }
 
 // Cast bytes to regex
 pragma "no doc"
-deprecated "Casting bytes to regex is deprecated. Use compile(bytes) from the Regex module instead."
+deprecated "Casting bytes to regex is deprecated. Use new regex(bytes) from the Regex module instead."
 inline operator :(x: bytes, type t: regex(bytes)) throws {
-  return compile(x);
+  return new regex(x);
 }
 
 /* Search the receiving string for the result of a compiled regular
