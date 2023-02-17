@@ -1,0 +1,2 @@
+regexCompile.chpl:3: warning: 'Regex.compile' is deprecated. Please use 'new regex' instead.
+(matched = true, byteOffset = 0, numBytes = 2)
