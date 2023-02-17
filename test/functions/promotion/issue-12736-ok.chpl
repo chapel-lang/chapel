@@ -12,8 +12,8 @@ writeln(DS.numCodepoints);
 
 record ThisInt {
   const ti: int;
-  proc this()    return ti + 1;
-  proc this(arg) return ti + arg*10 + 2;
+  proc this() do    return ti + 1;
+  proc this(arg) do return ti + arg*10 + 2;
 }
 
 record ThisWrite {
@@ -24,8 +24,8 @@ record ThisWrite {
 
 record Start {
   const sta: int;
-  proc getTI return new ThisInt(sta);
-  proc getTW return new ThisWrite(sta);
+  proc getTI do return new ThisInt(sta);
+  proc getTW do return new ThisWrite(sta);
 }
 
 const DOM = {6..8};
@@ -44,9 +44,9 @@ ARR.getTW();
 ARR.getTW(9);
 
 writeln("triply nested");
-record R0 { proc this() return 5; }
-record R1 { proc this() return new R0(); }
-record R2 { proc foo return new R1(); }
+record R0 { proc this() do return 5; }
+record R1 { proc this() do return new R0(); }
+record R2 { proc foo do return new R1(); }
 var Array1: [3..5] R2;
 var Array2 = Array1.foo()(); // (R2.foo).this().this()
 writeln(Array2.domain);

@@ -33,8 +33,8 @@ const samples = (
 // Otherwise it is OK to vary stridability among samples' members.
 
 /*param*/ const nt = samples.size / 2;
-proc w(/*param*/ i) return samples(2 * i);
-proc r(/*param*/ i) return samples(2 * i + 1);
+proc w(/*param*/ i) do return samples(2 * i);
+proc r(/*param*/ i) do return samples(2 * i + 1);
 
 for /*param*/ i1 in 0..#nt {
 

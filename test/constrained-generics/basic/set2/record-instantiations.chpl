@@ -22,7 +22,7 @@ interface IFC {
 }
 
 int implements IFC;
-proc int.AT type return string;
+proc int.AT type do return string;
 
 interface I2 { }
 implements I2(PP(string));

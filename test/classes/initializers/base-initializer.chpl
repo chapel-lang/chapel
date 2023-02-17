@@ -9,7 +9,7 @@ class Circle {
   }
 }
 
-proc Circle.area() return 3.14159*r**2;
+proc Circle.area() do return 3.14159*r**2;
 
 
 
@@ -23,7 +23,7 @@ class Oval: Circle{
   }
 }
 
-override proc Oval.area() return 3.14159*r*r2;
+override proc Oval.area() do return 3.14159*r*r2;
 
 
 

@@ -415,7 +415,7 @@ evaluated, but the omitted values will not be assigned to anything.
 
    .. code-block:: chapel
 
-      proc f()
+      proc f() do
         return (1, 2);
 
       var x: int;
@@ -508,7 +508,7 @@ defined for the omitted components.
 
    .. code-block:: chapel
 
-      proc f()
+      proc f() do
         return (1, 2);
 
       var (x,_) = f();
@@ -732,7 +732,7 @@ where a comma-separated list of components is valid.
         return t(0);
       }
       proc rest(t) where isTuple(t) {
-        proc helper(first, rest...)
+        proc helper(first, rest...) do
           return rest;
         return helper((...t));
       }

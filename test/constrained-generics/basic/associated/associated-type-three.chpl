@@ -45,8 +45,8 @@ proc cgFun(cgArg: ?Q, arg1: Q.AT1, arg2: Q.AT2, arg3: cgArg.AT3)
 
 record RR {
   type AT1;
-  proc AT2 type return AT1;
-  proc AT3 type return bool;
+  proc AT2 type do return AT1;
+  proc AT3 type do return bool;
   var xx: AT1;
 
   proc reqMeth1(formal1: AT1) {

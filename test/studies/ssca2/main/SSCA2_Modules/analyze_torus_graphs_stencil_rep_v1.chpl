@@ -73,7 +73,7 @@ module analyze_torus_graphs {
         yield (neighbors(n), weights(n));
     }
 
-    proc n_Neighbors (v : index (vertices) ) return 2*dimensions;
+    proc n_Neighbors (v : index (vertices) ) do return 2*dimensions;
   }
 
 

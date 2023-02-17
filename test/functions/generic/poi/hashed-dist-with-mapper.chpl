@@ -43,7 +43,7 @@ module MyChapelArray {
 module MyHashedDist {
   class HashedDomain {
     var mapper;
-    proc _value return this;
+    proc _value do return this;
     proc dsiAdd(elm) {
       indexToLocaleIndex(elm);
     }

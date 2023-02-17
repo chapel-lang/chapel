@@ -45,7 +45,7 @@ class BarrierWF {
   }
 
   // what would be the other "active"
-  proc nextActive(act) return 1-act;
+  proc nextActive(act) do return 1-act;
 
   // To be invoked by each task to barrier.
   // After everyone reaches the barrier, it can be used again.
