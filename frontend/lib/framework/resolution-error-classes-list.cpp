@@ -822,11 +822,16 @@ static void describeSymbolSource(ErrorWriterBase& wr,
                                  int start) {
   CHPL_ASSERT(0 <= start);
 
+  bool encounteredAutoModule = false;
   UniqueString from = name;
   int n = trace.visibleThrough.size();
   for (int i = start; i < n; i++) {
     const auto& elt = trace.visibleThrough[i];
-    if (elt.fromUseImport) {
+    if (elt.automaticModule) {
+      wr.message("provided by the automatically-included modules");
+      encounteredAutoModule = true;
+      break;
+    } else if (elt.fromUseImport) {
       wr.message("which provided '", from, "' through the following '",
                  elt.visibilityStmtKind, "' statement:");
       wr.code<ID,ID>(elt.visibilityClauseId, { elt.visibilityClauseId });
@@ -834,9 +839,18 @@ static void describeSymbolSource(ErrorWriterBase& wr,
     }
   }
 
-  wr.message("which provided '", from, "' with the following definition");
-  ID firstId = match.firstId();
-  wr.code<ID,ID>(firstId, { firstId });
+  if (!encounteredAutoModule) {
+    if (match.numIds() == 1) {
+      wr.message("which provided '", from, "' with the following definition:");
+      ID firstId = match.firstId();
+      wr.code<ID,ID>(firstId, { firstId });
+    } else {
+      wr.message("which provided '", from, "' with the following definitions:");
+      for (auto id : match) {
+        wr.code<ID,ID>(id, { id });
+      }
+    }
+  }
 }
 
 void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
