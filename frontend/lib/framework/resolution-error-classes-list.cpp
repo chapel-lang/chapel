@@ -813,18 +813,18 @@ void ErrorUnstable::write(ErrorWriterBase& wr) const {
 
 void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
   auto formal = std::get<const uast::Formal*>(info);
-  auto visibilityClause = std::get<const uast::VisibilityClause*>(info);
+  auto visibilityClauseId = std::get<ID>(info);
   auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
-  CHPL_ASSERT(formal && visibilityClause);
+  CHPL_ASSERT(formal && !visibilityClauseId.isEmpty());
 
-  wr.heading(kind_, type_, visibilityClause,
+  wr.heading(kind_, type_, visibilityClauseId,
              "module-level symbol is hiding function argument '",
              formal->name(), "'");
   wr.message("The formal argument:");
   wr.code(formal, { formal });
   wr.message("is shadowed by a symbol provided by the following '",
              useOrImport, "' statement:");
-  wr.code(visibilityClause, { visibilityClause });
+  wr.code<ID, ID>(visibilityClauseId, { visibilityClauseId });
   return;
 }
 
