@@ -1,3 +1,2 @@
-               # arrayOps2D.good
--stestError=12 # arrayOps2D-IRV.good
-
+-suseNewArrayFind                 # arrayOps2D.good
+-stestError=12 -suseNewArrayFind  # arrayOps2D-IRV.good

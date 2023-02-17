@@ -255,6 +255,14 @@ module ChapelArray {
   pragma "no doc"
   config param capturedIteratorLowBound = defaultLowBound;
 
+  /* The traditional one-argument form of :proc:`.find()` on arrays
+     has been deprecated in favor of a new interface.  Compiling with
+     this set to `true` will opt into that new interface.  Note that
+     there is also a new two-argument form that is available
+     regardless of this setting. */
+  config param useNewArrayFind = false;
+
+
   pragma "ignore transfer errors"
   proc chpl__buildArrayExpr( pragma "no auto destroy" in elems ...?k ) {
 
@@ -881,8 +889,16 @@ module ChapelArray {
     /* The type of elements contained in the array */
     proc eltType type return _value.eltType;
 
-    /* The type of indices used in the array's domain */
+    /* The type used to represent the array's indices.  For a
+       multidimensional array, this is the per-dimension type used. */
     proc idxType type return _value.idxType;
+
+    /* The type used to represent the array's indices.  For a
+       1-dimensional or associatve array, this will be the same as
+       :proc:`idxType` above.  For a multidimensional array, it will be
+       :proc:`rank` * :proc:`idxType`. */
+    proc fullIdxType type return this.domain.fullIdxType;
+
     proc intIdxType type return chpl__idxTypeToIntIdxType(_value.idxType);
 
     pragma "no copy return"
@@ -1733,13 +1749,79 @@ module ChapelArray {
        instance of ``val`` in the array, or if ``val`` is not found, a
        tuple containing ``false`` and an unspecified value is returned.
      */
-     @unstable "'Array.find' is unstable"
-     proc find(val: this.eltType): (bool, index(this.domain)) {
+     deprecated "The tuple-returning version of '.find()' on arrays is deprecated; to opt into the new index-returning version, recompile with '-suseNewArrayFind'.  Also, note that there is a new two-argument '.find()' that may be preferable in some situations, and it requires no compiler flag to use."
+     proc find(val: this.eltType): (bool, index(this.domain)) where !useNewArrayFind {
       for i in this.domain {
         if this[i] == val then return (true, i);
       }
       var arbInd: index(this.domain);
       return (false, arbInd);
+    }
+
+
+    /*
+
+      Search an array for ``val``, returning whether or not it is
+      found.  If the value is found, the index storing it is returned
+      in ``idx``.  If multiple copies of it are found, the
+      lexicographically earliest index will be returned.  If it is not
+      found, the resulting value of ``idx`` is unspecified.
+
+    */
+    proc find(val: eltType, ref idx: fullIdxType): bool {
+      // For the sparse case, start by seeing if the IRV is what we're
+      // looking for.  If so, iterate over the parent domain to look
+      // for the value or an index not represented in the array.  This
+      // assumes that we're likely to find a case of the IRV fast.
+      // Otherwise, fall through to the normal case to just search the
+      // explicitly represented values.
+      if this.isSparse() && val == this.IRV {
+        for i in this.domain._value.parentDom {
+          // If we find an index representing the IRV, return it; if
+          // it has an explicit value, it may still be the IRV, so
+          // check it.
+          if !this.domain.contains(i) || this[i] == val {
+            idx = i;
+            return true;
+          }
+        }
+      } else {
+        for i in this.domain {
+          if this[i] == val {
+            idx = i;
+            return true;
+          }
+        }
+      }
+
+      // We didn't find it, so return false.
+      return false;
+    }
+
+    /*
+
+      Search a rectangular array with integral indices for ``val``,
+      returning the index where it is found.  If the array contains
+      multiple copies of ``val``, the lexicographically earliest index
+      will be returned.  If ``val`` is not found,
+      ``domain.lowBound-1`` will be returned instead.
+
+      Note that for arrays with ``idxType=int(?w)`` (signed ``int``
+      indices), if the low bound in a dimension is ``min(int(w))``,
+      the result will not be well-defined.
+
+    */
+    proc find(val: eltType): fullIdxType {
+      if !(this.isRectangular() || this.isSparse()) ||
+         !isIntegralType(this.idxType) then
+        compilerError("This array type does not currently support the 1-argument '.find()' method; try using the 2-argument version'");
+
+      var idx: fullIdxType;
+      if find(val, idx) then
+        return idx;
+      else
+        // The following relies on tuple promotion for multidimensional arrays.
+        return this.domain.lowBound - 1;
     }
 
     /* Return the number of times ``val`` occurs in the array. */
