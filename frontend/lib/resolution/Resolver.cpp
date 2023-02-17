@@ -2004,8 +2004,15 @@ Resolver::lookupIdentifier(const Identifier* ident,
       if (pair.second) {
         // insertion took place so emit the error
         bool printFirstMention = identHasMoreMentions(ident);
+
+        std::vector<ResultVisibilityTrace> traceResult;
+        vec = lookupNameInScopeTracing(context, scope, receiverScopes,
+                                       ident->name(), config,
+                                       traceResult);
+
         // emit an ambiguity error if this is not resolving a called ident
-        CHPL_REPORT(context, AmbiguousIdentifier, ident, printFirstMention);
+        CHPL_REPORT(context, AmbiguousIdentifier,
+                    ident, printFirstMention, vec, traceResult);
       }
     }
   }

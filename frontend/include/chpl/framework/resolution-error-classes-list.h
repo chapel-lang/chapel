@@ -141,4 +141,6 @@ ERROR_CLASS(UnknownIdentifier,
     bool)
 ERROR_CLASS(AmbiguousIdentifier,
     const uast::Identifier*,
-    bool)
+    bool,
+    std::vector<resolution::BorrowedIdsWithName>,
+    std::vector<resolution::ResultVisibilityTrace>)

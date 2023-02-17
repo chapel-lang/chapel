@@ -813,39 +813,65 @@ void ErrorUnstable::write(ErrorWriterBase& wr) const {
 
 // describe where a symbol came from
 // (in a way, it prints out a ResultVisibilityTrace)
-// start indicates where in the trace to start, since sometimes
+// 'start' indicates where in the trace to start, since sometimes
 // the first element might have already been printed.
+// 'oneOnly' indicates that only the 1st match should be described
+//
+// if 'intro' will be emitted before the first message for a trace
+// (only relevant if start==0).
 static void describeSymbolSource(ErrorWriterBase& wr,
                                  UniqueString name,
                                  const resolution::BorrowedIdsWithName& match,
                                  const resolution::ResultVisibilityTrace& trace,
-                                 int start) {
+                                 int start,
+                                 bool oneOnly,
+                                 const char* intro) {
   CHPL_ASSERT(0 <= start);
 
   bool encounteredAutoModule = false;
   UniqueString from = name;
   int n = trace.visibleThrough.size();
+  bool first = true;
   for (int i = start; i < n; i++) {
     const auto& elt = trace.visibleThrough[i];
     if (elt.automaticModule) {
-      wr.message("provided by the automatically-included modules");
+      if (start==0 && first) {
+        wr.message(intro, "'", from, "' was provided by the automatically-included modules");
+      } else {
+        wr.message("provided by the automatically-included modules");
+      }
       encounteredAutoModule = true;
+      first = false;
       break;
     } else if (elt.fromUseImport) {
-      wr.message("which provided '", from, "' through the following '",
-                 elt.visibilityStmtKind, "' statement:");
+      if (start==0 && first) {
+        wr.message(intro, "'", from, "' was provided through the following '",
+                   elt.visibilityStmtKind, "' statement:");
+      } else {
+        wr.message("which provided '", from, "' through the following '",
+                   elt.visibilityStmtKind, "' statement:");
+      }
       wr.code<ID,ID>(elt.visibilityClauseId, { elt.visibilityClauseId });
       from = elt.renameFrom;
+      first = false;
     }
   }
 
   if (!encounteredAutoModule) {
-    if (match.numIds() == 1) {
-      wr.message("which provided '", from, "' with the following definition:");
+    if (match.numIds() == 1 || oneOnly) {
+      if (first) {
+        wr.message(intro, "'", from, "' was provided through the following definition:");
+      } else {
+        wr.message("which provided '", from, "' with the following definition:");
+      }
       ID firstId = match.firstId();
       wr.code<ID,ID>(firstId, { firstId });
     } else {
-      wr.message("which provided '", from, "' with the following definitions:");
+      if (first) {
+        wr.message(intro, "'", from, "' was provided through the following definitions:");
+      } else {
+        wr.message("which provided '", from, "' with the following definitions:");
+      }
       for (auto id : match) {
         wr.code<ID,ID>(id, { id });
       }
@@ -886,7 +912,7 @@ void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
   wr.code<ID, ID>(firstVisibilityClauseId, { firstVisibilityClauseId });
 
   // print where it came from
-  describeSymbolSource(wr, formal->name(), match, trace, describeStart);
+  describeSymbolSource(wr, formal->name(), match, trace, describeStart, false, "");
 
   return;
 }
@@ -928,12 +954,23 @@ void ErrorUnknownIdentifier::write(ErrorWriterBase& wr) const {
 void ErrorAmbiguousIdentifier::write(ErrorWriterBase& wr) const {
   auto ident = std::get<const uast::Identifier*>(info);
   auto moreMentions = std::get<bool>(info);
+  auto matches = std::get<std::vector<resolution::BorrowedIdsWithName>>(info);
+  auto trace = std::get<std::vector<resolution::ResultVisibilityTrace>>(info);
 
   wr.heading(kind_, type_, ident,
              "'", ident->name(), "' is ambiguous",
              moreMentions?" (first mention this function)":"");
 
   wr.code(ident, { ident });
+
+  CHPL_ASSERT(matches.size() > 0);
+  if (matches[0].numIds() > 1) {
+    describeSymbolSource(wr, ident->name(), matches[0], trace[0], 0, false, "");
+  } else {
+    CHPL_ASSERT(matches.size() > 1);
+    describeSymbolSource(wr, ident->name(), matches[0], trace[0], 0, true, "First, ");
+    describeSymbolSource(wr, ident->name(), matches[1], trace[1], 0, true, "Additionally, ");
+  }
 
   return;
 }
