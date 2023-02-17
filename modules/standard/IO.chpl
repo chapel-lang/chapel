@@ -199,7 +199,7 @@ Files
 
 There are several functions that open a file and return a :record:`file`
 including :proc:`open`, :proc:`openTempFile`, :proc:`openMemFile`, the
-:record:`file` initializer that takes a ``c_int`` argument, and the
+:record:`file` initializer that takes an ``int`` argument, and the
 :record:`file` initializer that takes a :type:`~CTypes.c_FILE` argument.
 
 Once a file is open, it is necessary to create associated channel(s) - see
@@ -278,8 +278,8 @@ more details on the situation in which this kind of data race can occur.
   for files created in the following situations:
 
     * with the file initializer that takes a :type:`~CTypes.c_FILE` argument
-    * with the file initializer that takes a ``c_int`` argument, where the
-      ``c_int`` represents a non-seekable system file descriptor
+    * with the file initializer that takes an ``int`` argument, where the
+      ``int`` represents a non-seekable system file descriptor
 
 
 Performing I/O with Channels
@@ -1646,10 +1646,11 @@ private proc initHelper2(ref f: file, fd: c_int, hints = ioHintSet.empty,
 }
 
 @unstable "initializing a file with a style argument is unstable"
-proc file.init(fd: c_int, hints=ioHintSet.empty, style:iostyle) throws {
+proc file.init(fileDescriptor: int, hints=ioHintSet.empty,
+               style:iostyle) throws {
   this.init();
 
-  initHelper2(this, fd, hints, style);
+  initHelper2(this, fileDescriptor.safeCast(c_int), hints, style);
 }
 
 /*
@@ -1676,16 +1677,16 @@ The system file descriptor will be closed when the Chapel file is closed.
   to files backed by non-seekable file descriptors.
 
 
-:arg fd: a system file descriptor.
+:arg fileDescriptor: a system file descriptor.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
 
 :throws SystemError: Thrown if the file descriptor could not be retrieved.
 */
-proc file.init(fd: c_int, hints=ioHintSet.empty) throws {
+proc file.init(fileDescriptor: int, hints=ioHintSet.empty) throws {
   this.init();
 
-  initHelper2(this, fd, hints);
+  initHelper2(this, fileDescriptor.safeCast(c_int), hints);
 }
 
 pragma "no doc"
