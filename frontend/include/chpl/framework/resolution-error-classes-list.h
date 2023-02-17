@@ -132,9 +132,13 @@ WARNING_CLASS(HiddenFormal,
     const uast::Formal*,
     resolution::BorrowedIdsWithName,
     resolution::ResultVisibilityTrace)
-ERROR_CLASS(AmbiguousIdentifier,
+ERROR_CLASS(AmbiguousVisibilityIdentifier,
     UniqueString,
     ID,
     std::vector<ID>)
 ERROR_CLASS(UnknownIdentifier,
-    const uast::Identifier*)
+    const uast::Identifier*,
+    bool)
+ERROR_CLASS(AmbiguousIdentifier,
+    const uast::Identifier*,
+    bool)

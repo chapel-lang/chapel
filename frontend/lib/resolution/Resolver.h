@@ -67,6 +67,7 @@ struct Resolver {
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
   std::set<ID> splitInitTypeInferredVariables;
+  std::set<UniqueString> namesWithErrorsEmitted;
   const uast::Call* inLeafCall = nullptr;
   bool receiverScopesComputed = false;
   ReceiverScopesVec savedReceiverScopes;
@@ -417,6 +418,8 @@ struct Resolver {
 
   // prepare a CallInfo by inspecting the called expression and actuals
   CallInfo prepareCallInfoNormalCall(const uast::Call* call);
+
+  bool identHasMoreMentions(const uast::Identifier* ident);
 
   std::vector<BorrowedIdsWithName>
   lookupIdentifier(const uast::Identifier* ident,

@@ -891,7 +891,7 @@ void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
   return;
 }
 
-void ErrorAmbiguousIdentifier::write(ErrorWriterBase& wr) const {
+void ErrorAmbiguousVisibilityIdentifier::write(ErrorWriterBase& wr) const {
   auto name = std::get<UniqueString>(info);
   auto mentionId = std::get<ID>(info);
   auto potentialTargetIds = std::get<std::vector<ID>>(info);
@@ -914,9 +914,24 @@ void ErrorAmbiguousIdentifier::write(ErrorWriterBase& wr) const {
 
 void ErrorUnknownIdentifier::write(ErrorWriterBase& wr) const {
   auto ident = std::get<const uast::Identifier*>(info);
+  auto moreMentions = std::get<bool>(info);
 
   wr.heading(kind_, type_, ident,
-             "'", ident->name(), "' cannot be found");
+             "'", ident->name(), "' cannot be found",
+             moreMentions?" (first mention this function)":"");
+
+  wr.code(ident, { ident });
+
+  return;
+}
+
+void ErrorAmbiguousIdentifier::write(ErrorWriterBase& wr) const {
+  auto ident = std::get<const uast::Identifier*>(info);
+  auto moreMentions = std::get<bool>(info);
+
+  wr.heading(kind_, type_, ident,
+             "'", ident->name(), "' is ambiguous",
+             moreMentions?" (first mention this function)":"");
 
   wr.code(ident, { ident });
 

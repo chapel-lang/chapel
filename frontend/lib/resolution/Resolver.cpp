@@ -1944,6 +1944,35 @@ bool Resolver::enter(const Literal* literal) {
 void Resolver::exit(const Literal* literal) {
 }
 
+// This class can count Identifiers with a particular name
+struct CountIdentifiersWithName {
+  UniqueString name;
+  int count = 0;
+
+  bool enter(const Identifier* d) {
+    if (d->name() == name) count++;
+    return false;
+  }
+  void exit(const Identifier* d) { }
+
+  // traverse everything
+  bool enter(const AstNode* ast) { return true; }
+  void exit(const AstNode* ast) { }
+};
+
+bool Resolver::identHasMoreMentions(const Identifier* ident) {
+  if (symbol) {
+    CountIdentifiersWithName visitor;
+    visitor.name = ident->name();
+    symbol->traverse(visitor);
+    if (visitor.count > 1) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 std::vector<BorrowedIdsWithName>
 Resolver::lookupIdentifier(const Identifier* ident,
                            llvm::ArrayRef<const Scope*> receiverScopes) {
@@ -1961,6 +1990,25 @@ Resolver::lookupIdentifier(const Identifier* ident,
 
   auto vec =
       lookupNameInScope(context, scope, receiverScopes, ident->name(), config);
+
+  if (vec.size() == 0) {
+    auto pair = namesWithErrorsEmitted.insert(ident->name());
+    if (pair.second) {
+      // insertion took place so emit the error
+      bool printFirstMention = identHasMoreMentions(ident);
+      CHPL_REPORT(context, UnknownIdentifier, ident, printFirstMention);
+    }
+  } else if (vec.size() > 1 || vec[0].numIds() > 1) {
+    if (!resolvingCalledIdent) {
+      auto pair = namesWithErrorsEmitted.insert(ident->name());
+      if (pair.second) {
+        // insertion took place so emit the error
+        bool printFirstMention = identHasMoreMentions(ident);
+        // emit an ambiguity error if this is not resolving a called ident
+        CHPL_REPORT(context, AmbiguousIdentifier, ident, printFirstMention);
+      }
+    }
+  }
 
   return vec;
 }
@@ -2080,14 +2128,15 @@ void Resolver::resolveIdentifier(const Identifier* ident,
     return;
   }
 
+  // lookupIdentifier reports any errors that are needed
   auto vec = lookupIdentifier(ident, receiverScopes);
 
   if (vec.size() == 0) {
-    CHPL_REPORT(context, UnknownIdentifier, ident);
     result.setType(QualifiedType());
   } else if (vec.size() > 1 || vec[0].numIds() > 1) {
     // can't establish the type. If this is in a function
     // call, we'll establish it later anyway.
+    result.setType(QualifiedType());
   } else {
     // vec.size() == 1 and vec[0].numIds() <= 1
     const ID& id = vec[0].firstId();

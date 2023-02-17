@@ -1105,11 +1105,41 @@ lookupNameInScope(Context* context,
                   llvm::ArrayRef<const Scope*> receiverScopes,
                   UniqueString name,
                   LookupConfig config) {
-  NamedScopeSet checkedScopes;
+  NamedScopeSet visited;
+  std::vector<BorrowedIdsWithName> vec;
 
-  return lookupNameInScopeWithSet(context, scope, receiverScopes, name, config,
-                                  checkedScopes);
+  if (scope) {
+    doLookupInScope(context, scope, receiverScopes,
+                    /* resolving scope */ nullptr,
+                    name, config, visited, vec,
+                    /* traceCurPath */ nullptr,
+                    /* traceResult */ nullptr);
+  }
+
+  return vec;
 }
+
+std::vector<BorrowedIdsWithName>
+lookupNameInScopeTracing(Context* context,
+                         const Scope* scope,
+                         llvm::ArrayRef<const Scope*> receiverScopes,
+                         UniqueString name,
+                         LookupConfig config,
+                         std::vector<ResultVisibilityTrace>& traceResult) {
+  NamedScopeSet visited;
+  std::vector<VisibilityTraceElt> traceCurPath;
+  std::vector<BorrowedIdsWithName> vec;
+  if (scope) {
+    doLookupInScope(context, scope, receiverScopes,
+                    /* resolving scope */ nullptr,
+                    name, config, visited, vec,
+                    &traceCurPath,
+                    &traceResult);
+  }
+
+  return vec;
+}
+
 
 std::vector<BorrowedIdsWithName>
 lookupNameInScopeWithSet(Context* context,
@@ -1432,7 +1462,8 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
     return nullptr;
   } else if (allIds.size() > 1) {
 
-    CHPL_REPORT(context, AmbiguousIdentifier, nameInScope, idForErrs, allIds);
+    CHPL_REPORT(context, AmbiguousVisibilityIdentifier,
+                nameInScope, idForErrs, allIds);
     return nullptr;
   }
 
