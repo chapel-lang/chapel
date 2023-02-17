@@ -132,7 +132,7 @@ module LockFreeQueue {
     var _tail : AtomicObject(unmanaged Node(objType), hasGlobalSupport=true, hasABASupport=false);
     var _manager = new owned LocalEpochManager();
 
-    proc objTypeOpt type return toNilableIfClassType(objType);
+    proc objTypeOpt type do return toNilableIfClassType(objType);
 
     proc init(type objType) {
       this.objType = objType;
