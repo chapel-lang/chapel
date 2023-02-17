@@ -338,8 +338,10 @@ Regular Expression Types and Methods
 module Regex {
   private use OS, CTypes;
 
+  // Ideally, should be a config const, but it pollutes --help output
+  // unnecessarily even though it is private
   pragma "no doc"
-  private config const initBufferSizeForSlowReplaceAndCount = 16;
+  private const initBufferSizeForSlowReplaceAndCount = 16;
 
 pragma "no doc"
 extern type qio_regex_t;
