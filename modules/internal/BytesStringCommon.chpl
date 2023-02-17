@@ -522,7 +522,7 @@ module BytesStringCommon {
 
   proc getIndexType(type t) type {
     import Bytes, String;
-    if t==bytes then return Bytes.idxType;
+    if t==bytes then return int;
     else if t==string then return String.byteIndex;
     else compilerError("This function should only be used by bytes or string");
   }
@@ -629,7 +629,7 @@ module BytesStringCommon {
     var chunk : t;
 
     var inChunk : bool = false;
-    var chunkStart : idxType;
+    var chunkStart : int;
 
     // emit whole string, unless all whitespace
     // TODO Engin: Why is noSplit check inside the loop?
@@ -1244,8 +1244,8 @@ module BytesStringCommon {
     const localX: t = x.localize();
     const localChars: t = chars.localize();
 
-    var start: idxType = 0;
-    var end: idxType = localX.buffLen-1;
+    var start: int = 0;
+    var end: int = localX.buffLen-1;
 
     if leading {
       label outer for (i, xChar) in zip(x.indices, localX.bytes()) {

@@ -61,10 +61,10 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
 var pairCmpl: [0..<join(maxChars, maxChars)] uint(16);
 
 // channels for doing efficient console I/O
-var stdinBin  = openfd(0).reader(iokind.native, locking=false,
-                           hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
-    stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                           hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
+var stdinBin  = (new file(0)).reader(iokind.native, locking=false,
+                                     hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
+  stdoutBin = (new file(1)).writer(iokind.native, locking=false,
+                                   hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
 
 proc main(args: [] string) {
   // set up the 'pairCmpl' map

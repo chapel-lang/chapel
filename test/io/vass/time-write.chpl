@@ -47,7 +47,7 @@ write use file descriptor 1 if we no longer wanted
 it to work this way. It would go faster but possibly
 result in unexpected intermixings of stdout.
 
-+ The performance lag of Chapel with openfd(1)
++ The performance lag of Chapel with new file(1)
 is worth investigating regardless of the above.
 
 + I also think that it's important to compare
@@ -105,7 +105,7 @@ proc gcs_trial() {
 //////////////////////////////////////////////////////////////////
 
 // write() a newline to stdout (non-blocking), 'n' times
-const outfd = openfd(1);
+const outfd = new file(1);
 const stdoutNB = outfd.writer(locking=false);
 proc nb_trial() {
   for 1..n do

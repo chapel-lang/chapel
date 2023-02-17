@@ -244,6 +244,9 @@
   "2d19bb3e-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/parser/parser.cpp"
   ],
+  "1c3aed2e-ac5b-11ed-b67e-4d191cd16eac": [
+    "compiler/passes/InitErrorHandling.cpp"
+  ],
   "6379ee24-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/addInitGuards.cpp"
   ],
@@ -590,6 +593,9 @@
   "a1dfe432-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/global-strings.h"
   ],
+  "389486f6-ac5b-11ed-b67e-4d191cd16eac": [
+    "frontend/include/chpl/framework/parser-error-classes-list.h"
+  ],
   "712148ae-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/stringify-functions.h"
   ],
@@ -598,6 +604,9 @@
   ],
   "b6b773fa-e3ab-11ec-a8be-cd81bce0efc4": [
     "frontend/include/chpl/parsing/parser-stats.h"
+  ],
+  "5ccb9c1c-ac5b-11ed-b67e-4d191cd16eac": [
+    "frontend/include/chpl/resolution/scope-types.h"
   ],
   "7fabd8d0-9f70-11ec-866d-111c8d7a1817": [
     "frontend/include/chpl/types/AnyType.h"
@@ -968,6 +977,9 @@
   "45947086-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/parsing/parsing-queries.cpp"
   ],
+  "8d09636e-ac5b-11ed-b67e-4d191cd16eac": [
+    "frontend/lib/resolution/Resolver.cpp"
+  ],
   "0cc92926-9f75-11ec-866d-111c8d7a1817": [
     "frontend/lib/resolution/Resolver.h"
   ],
@@ -989,6 +1001,9 @@
   "8eccc1ce-5a61-11ed-baec-ef9f14c5b529": [
     "frontend/lib/resolution/scope-queries.cpp"
   ],
+  "806baa5e-ac5b-11ed-b67e-4d191cd16eac": [
+    "frontend/lib/resolution/scope-types.cpp"
+  ],
   "c662e13e-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/types/ClassType.cpp"
   ],
@@ -1000,6 +1015,9 @@
   ],
   "202a65c2-e3ac-11ec-a8be-cd81bce0efc4": [
     "frontend/lib/uast/Builder.cpp"
+  ],
+  "a33853a2-ac5b-11ed-b67e-4d191cd16eac": [
+    "frontend/lib/uast/BuilderResult.cpp"
   ],
   "82e3c60c-9f75-11ec-866d-111c8d7a1817": [
     "frontend/lib/uast/Pragma.cpp"

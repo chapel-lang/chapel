@@ -9,6 +9,8 @@ proc endToEndTest(package: string) {
 
   if debug then writeln("Running for package " + package);
 
+  var silenceWarnings = if package == "maps" then " -smapMethodsThrow=true" else "";
+
   var packageDir = baseDir + package;
   var protoFile = packageDir + "/protoFile/" + package + ".proto";
   var shell2 = spawnshell("protoc --chpl_out="+packageDir+" "+ protoFile);
@@ -17,11 +19,11 @@ proc endToEndTest(package: string) {
   shell2.wait();
 
   if debug then writeln("Writing and reading from Chapel");
-  shell2 = spawnshell("chpl -o "+packageDir+"/write "+packageDir+"/write.chpl");
+  shell2 = spawnshell("chpl -o "+packageDir+"/write "+packageDir+"/write.chpl" + silenceWarnings);
   shell2.wait();
   shell2 = spawnshell(packageDir+"/./write -nl 1");
   shell2.wait();
-  shell2 = spawnshell("chpl -o "+packageDir+"/read "+packageDir+"/read.chpl");
+  shell2 = spawnshell("chpl -o "+packageDir+"/read "+packageDir+"/read.chpl" + silenceWarnings);
   shell2.wait();
   shell2 = spawnshell(packageDir+"/./read -nl 1", stdout=pipeStyle.pipe);
   while shell2.stdout.readLine(line1) {
@@ -30,7 +32,7 @@ proc endToEndTest(package: string) {
   shell2.wait(); 
 
   if debug then writeln("Writing from Chapel and reading from Python");
-  shell2 = spawnshell("chpl -o "+packageDir+"/write "+packageDir+"/write.chpl");
+  shell2 = spawnshell("chpl -o "+packageDir+"/write "+packageDir+"/write.chpl" + silenceWarnings);
   shell2.wait();
   shell2 = spawnshell(packageDir+"/./write -nl 1");
   shell2.wait();
@@ -43,7 +45,7 @@ proc endToEndTest(package: string) {
   if debug then writeln("Writing from Python and reading from Chapel");
   shell2 = spawnshell("python3 "+packageDir+"/write.py");
   shell2.wait();
-  shell2 = spawnshell("chpl -o "+packageDir+"/read "+packageDir+"/read.chpl");
+  shell2 = spawnshell("chpl -o "+packageDir+"/read "+packageDir+"/read.chpl" + silenceWarnings);
   shell2.wait();
   shell2 = spawnshell(packageDir+"/./read -nl 1", stdout=pipeStyle.pipe);
   while shell2.stdout.readLine(line1) {

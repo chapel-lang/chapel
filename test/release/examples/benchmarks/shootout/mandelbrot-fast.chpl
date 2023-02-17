@@ -60,7 +60,7 @@ proc main() {
   }
 
   // Get a lock-free writer channel on 'stdout'
-  var w = openfd(1).writer(iokind.native, locking=false);
+  var w = (new file(1)).writer(iokind.native, locking=false);
 
   // Write the file header and the image array.
   w.writef("P4\n");

@@ -68,13 +68,5 @@ b.reset(numRemoteTasks);
 writeln("atomic remote test split phase");
 remoteTestSplitPhase(b, numRemoteTasks);
 
-var sb = new Barrier(numRemoteTasks, BarrierType.Sync);
-writeln("sync remote test basic");
-remoteTestBasic(sb, numRemoteTasks);
-
-sb.reset(numRemoteTasks);
-writeln("sync remote test split phase");
-remoteTestSplitPhase(sb, numRemoteTasks);
-
 writeln("allLocalesBarrier test basic");
 remoteTestBasic(allLocalesBarrier, numRemoteTasks);

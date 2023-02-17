@@ -329,7 +329,10 @@ bool ImportStmt::checkValid(Expr* expr) const {
 *                                                                             *
 ************************************** | *************************************/
 void ImportStmt::validateList() {
-  noRepeats();
+  // Dyno already issues these warnings and errors.
+  if (!fDynoCompilerLibrary) {
+    noRepeats();
+  }
 
   validateUnqualified();
   validateRenamed();

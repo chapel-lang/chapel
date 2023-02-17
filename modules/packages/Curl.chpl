@@ -1135,7 +1135,7 @@ module Curl {
     }
 
     proc openCurlFile(url:string,
-                     mode:iomode = iomode.r,
+                     mode:ioMode = ioMode.r,
                      style:iostyleInternal = defaultIOStyleInternal()) throws {
 
       var err_out: errorCode = 0;
@@ -1159,7 +1159,7 @@ module Curl {
       // Read the header in order to get the length of the thing we are reading
       // If we are writing, we can't really get this information (even if we try
       // to do a 0 length read).
-      if (mode == iomode.cw || mode == iomode.cwr) {
+      if (mode == ioMode.cw || mode == ioMode.cwr) {
         fl.length = -1;
         fl.seekable = false;
       } else {

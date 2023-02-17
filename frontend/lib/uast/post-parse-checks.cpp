@@ -73,7 +73,9 @@ struct Visitor {
   const AstNode* searchParents(AstTag tag, const AstNode** last);
 
   // Search ancestors for the closest parent that is a decl.
-  const AstNode* searchParentsForDecl(const AstNode** last, int declDepth=0);
+  const AstNode* searchParentsForDecl(const AstNode* node,
+                                      const AstNode** last,
+                                      int declDepth=0);
 
   // Wrapper around 'node->dispatch'.
   void check(const AstNode* node);
@@ -122,6 +124,9 @@ struct Visitor {
   void checkLambdaReturnIntent(const Function* node);
   void checkProcTypeFormalsAreAnnotated(const FunctionSignature* node);
   void checkProcDefFormalsAreNamed(const Function* node);
+  void checkForUnadornedArrayType(const BracketLoop* node);
+  void checkVisibilityClauseValid(const AstNode* parentNode,
+                                  const VisibilityClause* clause);
 
   /*
   TODO
@@ -147,13 +152,17 @@ struct Visitor {
 
   // Visitors.
   inline void visit(const AstNode* node) {} // Do nothing by default.
+
   void visit(const Array* node);
+  void visit(const BracketLoop* node);
   void visit(const FnCall* node);
   void visit(const Variable* node);
   void visit(const TypeQuery* node);
   void visit(const Function* node);
   void visit(const FunctionSignature* node);
   void visit(const Union* node);
+  void visit(const Use* node);
+  void visit(const Import* node);
 };
 
 
@@ -211,9 +220,10 @@ Visitor::searchParents(AstTag tag, const AstNode** last) {
 }
 
 const AstNode*
-Visitor::searchParentsForDecl(const AstNode** last, int declDepth) {
+Visitor::searchParentsForDecl(const AstNode* start, const AstNode** last,
+                              int declDepth) {
   const AstNode* ret = nullptr;
-  const AstNode* lastInWalk = nullptr;
+  const AstNode* lastInWalk = start;
   int countDeclDepth = 0;
 
   for (int i = parents_.size() - 1; i >= 0; i--) {
@@ -271,25 +281,35 @@ void Visitor::checkForOneElementArraysWithoutComma(const Array* node) {
 }
   
 void Visitor::checkDomainTypeQueryUsage(const TypeQuery* node) {
-  if (!parent(0) || !parent(1)) return;
-
-  // Only care about the form '[?d]', leave otherwise.
-  auto dom = parent(0)->toDomain();
-  auto bkt = parent(1)->toBracketLoop();
-  if (!dom || !bkt || (dom != bkt->iterand())) return;
+  if (!parent(0)) return;
+  if (!parent(0)->isBracketLoop() && !parent(0)->isDomain()) return;
 
   const AstNode* lastInWalk = nullptr;
-  bool doEmitError = true;
+  bool errorPartialDomainQuery = false;
+  bool errorBadQueryLoc = true;
 
   // If we are descended from the formal's type expression, OK!
   if (auto foundFormal = searchParents(asttags::Formal, &lastInWalk)) {
     auto formal = foundFormal->toFormal();
-    if (lastInWalk == formal->typeExpression()) doEmitError = false;
+    if (lastInWalk == formal->typeExpression()) errorBadQueryLoc = false;
   }
 
-  if (doEmitError) {
+  // We shouldn't see '[?d in foo]'... TODO: Specialize this error.
+  if (auto bkt = parent(0)->toBracketLoop()) {
+    errorBadQueryLoc |= bkt->iterand() != node;
+  }
+
+  if (auto dom = parent(0)->toDomain()) {
+    errorPartialDomainQuery = dom->numExprs() > 1;
+  }
+
+  if (errorBadQueryLoc) {
     error(node, "domain query expressions may currently only be "
                 "used in formal argument types.");
+  }
+
+  if (errorPartialDomainQuery) {
+    error(node, "cannot query part of a domain");
   }
 }
 
@@ -537,7 +557,7 @@ void Visitor::checkOperatorNameValidity(const Function* node) {
 
 void Visitor::checkEmptyProcedureBody(const Function* node) {
   if (!node->body() && node->linkage() != Decl::EXTERN) {
-    auto decl = searchParentsForDecl(nullptr);
+    auto decl = searchParentsForDecl(node, nullptr);
     if (!decl || !decl->isInterface()) {
       error(node, "no-op procedures are only legal for extern functions.");
     }
@@ -625,7 +645,7 @@ void Visitor::checkNoReceiverClauseOnPrimaryMethod(const Function* node) {
   if (const Formal* receiver = node->thisFormal()) {
     if (!node->isPrimaryMethod()) {
       const AstNode* last = nullptr;
-      auto parentDecl = searchParentsForDecl(&last);
+      auto parentDecl = searchParentsForDecl(node, &last);
       if (parentDecl->isAggregateDecl()) {
         // stringify the receiver type uAST for use in the error message
         std::string receiverTypeStr = "<unknown>";
@@ -689,6 +709,45 @@ void Visitor::checkProcDefFormalsAreNamed(const Function* node) {
   }
 }
 
+static bool isUnadornedArrayType(const BracketLoop* node) {
+  auto block = node->body();
+  if (block->numStmts() != 0) return false;
+  auto dom = node->iterand()->toDomain();
+  if (!dom || dom->numExprs() != 0) return false;
+  if (dom->usedCurlyBraces()) return false;
+  return true;
+}
+
+// TODO: Might need to do some more fine-grained pattern matching.
+void Visitor::checkForUnadornedArrayType(const BracketLoop* node) {
+  if (!parent(0)) return;
+
+  if (!isUnadornedArrayType(node)) return;
+
+  bool doEmitError = true;
+  const AstNode* last = nullptr;
+  auto decl = searchParentsForDecl(node, &last);
+
+  // Formal type expression is OK.
+  if (auto formal = decl->toFormal()) {
+    if (last == formal->typeExpression()) doEmitError = false;
+  }
+
+  // Function return type is OK.
+  if (auto fn = decl->toFunction()) {
+    if (last == fn->returnType()) doEmitError = false;
+  }
+
+  // Checking most immediate parent, since signature != declaration.
+  if (auto sig = parent(0)->toFunctionSignature()) {
+    if (node == sig->returnType()) doEmitError = false;
+  }
+
+  if (doEmitError) {
+    error(node, "generic array types are unsupported in this context");
+  }
+}
+
 void Visitor::checkPrivateDecl(const Decl* node) {
   if (node->visibility() != Decl::PRIVATE) return;
 
@@ -706,7 +765,7 @@ void Visitor::checkPrivateDecl(const Decl* node) {
   }
 
   // Fetch the enclosing declaration. If we are top level then return.
-  auto enclosingDecl = searchParentsForDecl(nullptr);
+  auto enclosingDecl = searchParentsForDecl(node, nullptr);
   if (!enclosingDecl) return;
 
   if (enclosingDecl->isFunction()) {
@@ -742,7 +801,7 @@ bool Visitor::isNamedThisAndNotReceiverOrFunction(const NamedDecl* node) {
   if (node->name() != USTR("this")) return false;
   if (node->isFunction()) return false;
   if (node->isFormal())
-    if (auto decl = searchParentsForDecl(nullptr))
+    if (auto decl = searchParentsForDecl(node, nullptr))
       if (auto fn = decl->toFunction())
         if (fn->thisFormal() == node)
           return false;
@@ -818,6 +877,41 @@ void Visitor::checkLinkageName(const NamedDecl* node) {
   }
 }
 
+void Visitor::checkVisibilityClauseValid(const AstNode* parentNode,
+                                         const VisibilityClause* clause) {
+  if (clause->limitationKind() == VisibilityClause::EXCEPT) {
+    // check that we do not have 'except A as B'
+    for (const AstNode* e : clause->limitations()) {
+      if (auto as = e->toAs()) {
+        // `except a as b` is invalid (renaming something you're excluding)
+
+        // `except` should only appear inside `use`s, but be defensive.
+        if (auto use = parentNode->toUse()) {
+          CHPL_REPORT(context_, AsWithUseExcept, use, as);
+        }
+      }
+    }
+  }
+  if (auto as = clause->symbol()->toAs()) {
+    if (!as->rename()->isIdentifier()) {
+      CHPL_REPORT(context_, UnsupportedAsIdent, as, as->rename());
+    }
+  }
+  for (auto limitation : clause->limitations()) {
+    if (auto dot = limitation->toDot()) {
+      CHPL_REPORT(context_, DotExprInUseImport, clause,
+                  clause->limitationKind(), dot);
+    } else if (auto as = limitation->toAs()) {
+      if (!as->symbol()->isIdentifier()) {
+        CHPL_REPORT(context_, UnsupportedAsIdent, as, as->symbol());
+      }
+      if (!as->rename()->isIdentifier()) {
+        CHPL_REPORT(context_, UnsupportedAsIdent, as, as->rename());
+      }
+    }
+  }
+}
+
 // TODO: This relies on the "warn unstable" flag that we do not have.
 void Visitor::warnUnstableUnions(const Union* node) {
   if (!isFlagSet(CompilerFlags::WARN_UNSTABLE)) return;
@@ -846,6 +940,10 @@ void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
 
 void Visitor::visit(const Array* node) {
   checkForOneElementArraysWithoutComma(node);
+}
+
+void Visitor::visit(const BracketLoop* node) {
+  checkForUnadornedArrayType(node);
 }
   
 void Visitor::visit(const FnCall* node) {
@@ -883,6 +981,18 @@ void Visitor::visit(const FunctionSignature* node) {
 
 void Visitor::visit(const Union* node) {
   warnUnstableUnions(node);
+}
+
+void Visitor::visit(const Use* node) {
+  for (auto clause : node->visibilityClauses()) {
+    checkVisibilityClauseValid(node, clause);
+  }
+}
+
+void Visitor::visit(const Import* node) {
+  for (auto clause : node->visibilityClauses()) {
+    checkVisibilityClauseValid(node, clause);
+  }
 }
 
 // Duplicate the contents of 'idIsInBundledModule', while skipping the

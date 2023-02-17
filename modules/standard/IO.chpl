@@ -59,7 +59,7 @@ For example, the following program opens a file and writes an integer to it:
 
   // open the file "test-file.txt" for writing, creating it if
   // it does not exist yet.
-  var myFile = open("test-file.txt", iomode.cw);
+  var myFile = open("test-file.txt", ioMode.cw);
 
   // create a writing channel starting at file offset 0
   // (start and end offsets can be specified when creating the
@@ -80,7 +80,7 @@ Then, the following program can be used to read the integer:
 .. code-block:: chapel
 
   // open the file "test-file.txt" for reading only
-  var myFile = open("test-file.txt", iomode.r);
+  var myFile = open("test-file.txt", ioMode.r);
 
   // create a reading channel starting at file offset 0
   // (start and end offsets can be specified when creating the
@@ -198,8 +198,9 @@ Files
 -----
 
 There are several functions that open a file and return a :record:`file`
-including :proc:`open`, :proc:`openTempFile`, :proc:`openmem`, :proc:`openfd`,
-and the :record:`file` initializer that takes a :type:`~CTypes.c_FILE` argument.
+including :proc:`open`, :proc:`openTempFile`, :proc:`openMemFile`, the
+:record:`file` initializer that takes a ``c_int`` argument, and the
+:record:`file` initializer that takes a :type:`~CTypes.c_FILE` argument.
 
 Once a file is open, it is necessary to create associated channel(s) - see
 :proc:`file.reader` and :proc:`file.writer` - to write to and/or read from the
@@ -277,7 +278,8 @@ more details on the situation in which this kind of data race can occur.
   for files created in the following situations:
 
     * with the file initializer that takes a :type:`~CTypes.c_FILE` argument
-    * with :proc:`openfd` when provided a non-seekable system file descriptor
+    * with the file initializer that takes a ``c_int`` argument, where the
+      ``c_int`` represents a non-seekable system file descriptor
 
 
 Performing I/O with Channels
@@ -440,49 +442,55 @@ import OS.{errorCode};
 use CTypes;
 public use OS;
 
-
 /*
 
-The :type:`iomode` type is an enum. When used as arguments when opening files, its
+The :type:`ioMode` type is an enum. When used as arguments when opening files, its
 constants have the same meaning as the following strings passed to ``fopen()`` in C:
 
 .. list-table::
    :widths: 8 8 64
    :header-rows: 1
 
-   * - :type:`iomode`
+   * - :type:`ioMode`
      - ``fopen()`` argument
      - Description
-   * - ``iomode.r``
+   * - ``ioMode.r``
      - ``"r"``
      - open an existing file for reading.
-   * - ``iomode.rw``
+   * - ``ioMode.rw``
      - ``"r+"``
      - open an existing file for reading and writing.
-   * - ``iomode.cw``
+   * - ``ioMode.cw``
      - ``"w"``
      - create a new file for writing. If the file already exists, its contents are truncated.
-   * - ``iomode.cwr``
+   * - ``ioMode.cwr``
      - ``"w+"``
-     - same as ``iomode.cw``, but reading from the file is also allowed.
+     - same as ``ioMode.cw``, but reading from the file is also allowed.
 
 .. TODO: Support append / create-exclusive modes:
-   * - ``iomode.a``
+   * - ``ioMode.a``
      - ``"a"``
      - open a file for appending, creating it if it does not exist.
-   * - ``iomode.ar``
+   * - ``ioMode.ar``
      - ``"a+"``
-     - same as ``iomode.a``, but reading from the file is also allowed.
-   * - ``iomode.cwx``
+     - same as ``ioMode.a``, but reading from the file is also allowed.
+   * - ``ioMode.cwx``
      - ``"wx"``
      - open a file for writing, throwing an error if it already exists. (The test for file's existence and the file's creation are atomic on POSIX.)
-   * - ``iomode.cwrx``
+   * - ``ioMode.cwrx``
      - ``"w+x"``
-     - same as ``iomode.cwx``, but reading from the file is also allowed.
+     - same as ``ioMode.cwx``, but reading from the file is also allowed.
 
 However, :proc:`open()` in Chapel does not necessarily invoke ``fopen()`` in C.
 */
+enum ioMode {
+  r = 1,
+  cw = 2,
+  rw = 3,
+  cwr = 4,
+}
 
+deprecated "enum iomode is deprecated - please use :enum:`ioMode` instead"
 enum iomode {
   r = 1,
   cw = 2,
@@ -1434,7 +1442,7 @@ private const IOHINTS_NOMMAP:      c_int = QIO_METHOD_PREADPWRITE;
     // open a file using the hints
     var f: file;
     try! {
-      f = open("path/to/my/file.txt", iomode.r, hints=hints);
+      f = open("path/to/my/file.txt", ioMode.r, hints=hints);
     }
 */
 record ioHintSet {
@@ -1599,15 +1607,14 @@ Once the Chapel file is created, you will need to use a :proc:`file.reader` or
 
 .. note::
 
-  The resulting file value should only be used with one :record:`channel` at a
-  time. The I/O system will ignore the channel offsets when reading or writing
-  to a file opened using this initializer.
+  The resulting file value should only be used with one :record:`fileReader` or
+  :record:`fileWriter` at a time. The I/O system will ignore the offsets when
+  reading or writing to a file opened using this initializer.
 
 
 :arg fp: a pointer to a C ``FILE``. See :type:`~CTypes.c_FILE`.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
-:returns: an open :record:`file` corresponding to the C file.
 
 :throws SystemError: Thrown if the C file could not be retrieved.
 */
@@ -1615,6 +1622,70 @@ proc file.init(fp: c_FILE, hints=ioHintSet.empty) throws {
   this.init();
 
   initHelper(this, fp, hints);
+}
+
+private proc initHelper2(ref f: file, fd: c_int, hints = ioHintSet.empty,
+                         style:iostyleInternal = defaultIOStyleInternal()) throws {
+
+  var local_style = style;
+  f._home = here;
+  extern proc chpl_cnullfile():c_FILE;
+  var err = qio_file_init(f._file_internal, chpl_cnullfile(), fd, hints._internal, local_style, 0);
+
+  // On return, either f._file_internal.ref_cnt == 1, or f._file_internal is
+  // NULL.
+  // err should be nonzero in the latter case.
+  if err {
+    var path_cs:c_string;
+    var path_err = qio_file_path_for_fd(fd, path_cs);
+    var path = if path_err then "unknown"
+                           else createStringWithNewBuffer(path_cs,
+                                                          policy=decodePolicy.replace);
+    try ioerror(err, "in file.init", path);
+  }
+}
+
+@unstable "initializing a file with a style argument is unstable"
+proc file.init(fd: c_int, hints=ioHintSet.empty, style:iostyle) throws {
+  this.init();
+
+  initHelper2(this, fd, hints, style);
+}
+
+/*
+
+Create a Chapel file that works with a system file descriptor.  Note that once
+the file is open, you will need to use a :proc:`file.reader` or
+:proc:`file.writer` to create a channel to actually perform I/O operations
+
+.. note::
+
+  This is an alternative way to create a :record:`file`.  The main way to do so
+  is via the :proc:`open` function.
+
+The system file descriptor will be closed when the Chapel file is closed.
+
+.. note::
+
+  This function can be used to create Chapel files that refer to system file
+  descriptors that do not support the ``seek`` functionality. For example, file
+  descriptors that represent pipes or open socket connections have this
+  property. In that case, the resulting file value should only be used with one
+  :record:`fileReader` or :record:`fileWriter` at a time.
+  The I/O system will ignore the channel offsets when reading or writing
+  to files backed by non-seekable file descriptors.
+
+
+:arg fd: a system file descriptor.
+:arg hints: optional argument to specify any hints to the I/O system about
+            this file. See :record:`ioHintSet`.
+
+:throws SystemError: Thrown if the file descriptor could not be retrieved.
+*/
+proc file.init(fd: c_int, hints=ioHintSet.empty) throws {
+  this.init();
+
+  initHelper2(this, fd, hints);
 }
 
 pragma "no doc"
@@ -1764,7 +1835,7 @@ proc file.path: string throws where !filePathAbsolute {
 
 Get the absolute path to an open file.
 
-Note that not all files have a path (e.g. files opened with :proc:`openmem`),
+Note that not all files have a path (e.g. files opened with :proc:`openMemFile`),
 and that this function may not work on all operating systems.
 
 The function :proc:`Path.realPath` is an alternative way
@@ -1859,19 +1930,39 @@ private param _cw = "w";
 private param _cwr = "w+";
 
 pragma "no doc"
-proc _modestring(mode:iomode) {
+proc _modestring(mode:ioMode) {
   import HaltWrappers;
   select mode {
-    when iomode.r do return _r;
-    when iomode.rw do return _rw;
-    when iomode.cw do return _cw;
-    when iomode.cwr do return _cwr;
+    when ioMode.r do return _r;
+    when ioMode.rw do return _rw;
+    when ioMode.cw do return _cw;
+    when ioMode.cwr do return _cwr;
+    otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid ioMode");
+  }
+}
+
+pragma "no doc"
+pragma "compiler generated"
+proc convertIoMode(mode:iomode):ioMode {
+  import HaltWrappers;
+  select mode {
+    when iomode.r do return ioMode.r;
+    when iomode.rw do return ioMode.rw;
+    when iomode.cw do return ioMode.cw;
+    when iomode.cwr do return ioMode.cwr;
     otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid iomode");
   }
 }
 
-@unstable "open with a style argument is unstable"
+pragma "last resort"
+deprecated "open with an iomode argument is deprecated - please use :enum:`ioMode`"
 proc open(path:string, mode:iomode, hints=ioHintSet.empty,
+          style:iostyle): file throws {
+  return open(path, convertIoMode(mode), hints, style);
+}
+
+@unstable "open with a style argument is unstable"
+proc open(path:string, mode:ioMode, hints=ioHintSet.empty,
           style:iostyle): file throws {
   return openHelper(path, mode, hints, style:iostyleInternal);
 }
@@ -1885,7 +1976,7 @@ to create a channel to actually perform I/O operations
 :arg path: which file to open (for example, "some/file.txt").
 :arg mode: specify whether to open the file for reading or writing and
              whether or not to create the file if it doesn't exist.
-             See :type:`iomode`.
+             See :type:`ioMode`.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
 :returns: an open file to the requested resource.
@@ -1897,11 +1988,17 @@ to create a channel to actually perform I/O operations
                             be a directory but was not
 :throws SystemError: Thrown if the file could not be opened.
 */
-proc open(path:string, mode:iomode, hints=ioHintSet.empty): file throws {
+proc open(path:string, mode:ioMode, hints=ioHintSet.empty): file throws {
   return openHelper(path, mode, hints);
 }
 
-private proc openHelper(path:string, mode:iomode, hints=ioHintSet.empty,
+pragma "last resort"
+deprecated "open with an iomode argument is deprecated - please use :enum:`ioMode`"
+proc open(path:string, mode:iomode, hints=ioHintSet.empty): file throws {
+  return open(path, convertIoMode(mode), hints);
+}
+
+private proc openHelper(path:string, mode:ioMode, hints=ioHintSet.empty,
                         style:iostyleInternal = defaultIOStyleInternal()): file throws {
 
   var local_style = style;
@@ -1922,7 +2019,7 @@ private proc openHelper(path:string, mode:iomode, hints=ioHintSet.empty,
 }
 
 pragma "no doc"
-proc openplugin(pluginFile: QioPluginFile, mode:iomode,
+proc openplugin(pluginFile: QioPluginFile, mode:ioMode,
                 seekable:bool, style:iostyleInternal) throws {
   import HaltWrappers;
 
@@ -1936,21 +2033,21 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
 
   var flags:c_int = 0;
   select mode {
-    when iomode.r {
+    when ioMode.r {
       flags |= QIO_FDFLAG_READABLE;
     }
-    when iomode.rw {
-      flags |= QIO_FDFLAG_READABLE;
-      flags |= QIO_FDFLAG_WRITEABLE;
-    }
-    when iomode.cw {
-      flags |= QIO_FDFLAG_WRITEABLE;
-    }
-    when iomode.cwr {
+    when ioMode.rw {
       flags |= QIO_FDFLAG_READABLE;
       flags |= QIO_FDFLAG_WRITEABLE;
     }
-    otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid iomode");
+    when ioMode.cw {
+      flags |= QIO_FDFLAG_WRITEABLE;
+    }
+    when ioMode.cwr {
+      flags |= QIO_FDFLAG_READABLE;
+      flags |= QIO_FDFLAG_WRITEABLE;
+    }
+    otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid ioMode");
   }
 
   if seekable then
@@ -1978,7 +2075,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
   return ret;
 }
 
-@unstable "openfd with a style argument is unstable"
+deprecated "openfd is deprecated, please use the file initializer with a 'c_int' argument instead"
 proc openfd(fd: c_int, hints=ioHintSet.empty, style:iostyle):file throws {
   return openfdHelper(fd, hints, style: iostyleInternal);
 }
@@ -1997,7 +2094,7 @@ The system file descriptor will be closed when the Chapel file is closed.
   descriptors that do not support the ``seek`` functionality. For example, file
   descriptors that represent pipes or open socket connections have this
   property. In that case, the resulting file value should only be used with one
-  :record:`channel` at a time.
+  :record:`fileReader` or :record:`fileWriter` at a time.
   The I/O system will ignore the channel offsets when reading or writing
   to files backed by non-seekable file descriptors.
 
@@ -2009,6 +2106,7 @@ The system file descriptor will be closed when the Chapel file is closed.
 
 :throws SystemError: Thrown if the file descriptor could not be retrieved.
 */
+deprecated "openfd is deprecated, please use the file initializer with a 'c_int' argument instead"
 proc openfd(fd: c_int, hints = ioHintSet.empty):file throws {
   return openfdHelper(fd, hints);
 }
@@ -2114,7 +2212,7 @@ The temporary file will be created in an OS-dependent temporary directory,
 for example "/tmp" is the typical location. The temporary file will be
 deleted upon closing.
 
-Temporary files are opened with :type:`iomode` ``iomode.cwr``; that is, a new
+Temporary files are opened with :type:`ioMode` ``ioMode.cwr``; that is, a new
 file is created that supports both writing and reading.  When possible, it may
 be opened using OS support for temporary files in order to make sure that a new
 file is created only for use by the current application.
@@ -2146,9 +2244,19 @@ private proc opentmpHelper(hints=ioHintSet.empty,
   return ret;
 }
 
-@unstable "openmem with a style argument is unstable"
+deprecated "openmem is deprecated - please use :proc:`openMemFile` instead"
 proc openmem(style:iostyle):file throws {
-  return openmemHelper(style: iostyleInternal);
+  return openMemFile(style);
+}
+
+deprecated "openmem is deprecated - please use :proc:`openMemFile` instead"
+proc openmem():file throws {
+  return openMemFile();
+}
+
+@unstable "openMemFile with a style argument is unstable"
+proc openMemFile(style:iostyle):file throws {
+  return openMemFileHelper(style: iostyleInternal);
 }
 /*
 
@@ -2163,19 +2271,19 @@ The resulting file supports both reading and writing.
 
 :throws SystemError: Thrown if the memory buffered file could not be opened.
 */
-proc openmem():file throws {
-  return openmemHelper();
+proc openMemFile():file throws {
+  return openMemFileHelper();
 }
 
 private
-proc openmemHelper(style:iostyleInternal = defaultIOStyleInternal()):file throws {
+proc openMemFileHelper(style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
   ret._home = here;
 
   // On return ret._file_internal.ref_cnt == 1.
   var err = qio_file_open_mem(ret._file_internal, QBUFFER_PTR_NULL, local_style);
-  if err then try ioerror(err, "in openmem");
+  if err then try ioerror(err, "in openMemFile");
   return ret;
 }
 
@@ -3091,7 +3199,7 @@ private proc openreaderHelper(path:string,
                               style:iostyleInternal = defaultIOStyleInternal())
   : fileReader(kind, locking) throws {
 
-  var fl:file = try open(path, iomode.r);
+  var fl:file = try open(path, ioMode.r);
   return try fl.readerHelper(kind, locking, region, hints, style,
                              fromOpenReader=true);
 }
@@ -3110,7 +3218,7 @@ proc openwriter(path:string,
 /*
 
 Open a file at a particular path and return a writing channel for it.
-This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
+This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
 :proc:`file.writer` on the resulting file.
 
 :arg path: which file to open (for example, "some/file.txt").
@@ -3148,7 +3256,7 @@ private proc openwriterHelper(path:string,
                               style:iostyleInternal = defaultIOStyleInternal())
   : fileWriter(kind, locking) throws {
 
-  var fl:file = try open(path, iomode.cw);
+  var fl:file = try open(path, ioMode.cw);
   return try fl.writerHelper(kind, locking, start..end, hints, style);
 }
 
@@ -4523,7 +4631,7 @@ proc stringify(const args ...?k):string {
     // otherwise, write it using the I/O system.
     try! {
       // Open a memory buffer to store the result
-      var f = openmem();
+      var f = openMemFile();
       defer try! f.close();
 
       var w = f.writer(locking=false);
@@ -5376,33 +5484,55 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
 
 }
 
+deprecated "channel.readbits is deprecated - please use :proc:`fileReader.readBits` instead"
+proc _channel.readbits(ref v:integral, nbits:integral):bool throws {
+    return this.readBits(v, nbits:int);
+}
+
 /*
    Read bits with binary I/O
 
-   :arg v: where to store the read bits. This value will have its *nbits*
+   :arg x: where to store the read bits. This value will have its *numBits*
            least-significant bits set.
-   :arg nbits: how many bits to read
+   :arg numBits: how many bits to read
    :returns: `true` if the bits were read without error, `false` upon EOF
 
    :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
    :throws SystemError: Thrown if the bits could not be read from the channel.
  */
-proc _channel.readbits(ref v:integral, nbits:integral):bool throws {
+proc fileReader.readBits(ref x:integral, numBits:int):bool throws {
   if castChecking {
-    // Error if reading more bits than fit into v
-    if numBits(v.type) < nbits then
-      throw new owned IllegalArgumentError("v, nbits", "readbits nbits=" + nbits:string +
-                                                 " > bits in v:" + v.type:string);
+    // Error if reading more bits than fit into x
+    if Types.numBits(x.type) < numBits then
+      throw new owned IllegalArgumentError("x, numBits", "readBits numBits=" + numBits:string +
+                                                 " > bits in x:" + x.type:string);
     // Error if reading negative number of bits
-    if isIntType(nbits.type) && nbits < 0 then
-      throw new owned IllegalArgumentError("nbits", "readbits nbits=" + nbits:string + " < 0");
+    if isIntType(numBits.type) && numBits < 0 then
+      throw new owned IllegalArgumentError("numBits", "readBits numBits=" + numBits:string + " < 0");
   }
 
   var tmp:ioBits;
-  tmp.nbits = nbits:int(8);
+  tmp.nbits = numBits:int(8);
   var ret = try this.read(tmp);
-  v = tmp.v:v.type;
+  x = tmp.v:x.type;
   return ret;
+}
+
+/*
+    Read bits with binary I/O
+
+    :arg resultType: type of the value returned
+    :arg numBits: how many bits to read
+    :returns: bits read. This value will have its *numBits* least-significant bits set
+
+    :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+    :throws SystemError: Thrown if the bits could not be read from the channel.
+*/
+proc fileReader.readBits(type resultType, numBits:int):resultType throws {
+  var tmp:resultType;
+  var ret = try this.readBits(tmp, numBits);
+  if !ret then throw new UnexpectedEofError("Encountered EOF in readBits");
+  return tmp;
 }
 
 /*
@@ -6464,7 +6594,7 @@ record itemReaderInternal {
 
 /* standard input, otherwise known as file descriptor 0 */
 const stdin:fileReader(iokind.dynamic, true);
-stdin = try! openfd(0).reader();
+stdin = try! (new file(0)).reader();
 
 pragma "no doc"
 extern proc chpl_cstdout():c_FILE;
@@ -8980,7 +9110,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
     where isStringType(t) || isBytesType(t) {
 
   // Open a memory buffer to store the result
-  var f = try openmem();
+  var f = try openMemFile();
   defer {
     try {
       f.close();

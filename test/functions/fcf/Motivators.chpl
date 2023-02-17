@@ -29,8 +29,8 @@ module Motivators {
     type F3 = proc(const x: real, in y: complex): void;
     assert(F3:string == "proc(x: real, in y: complex)");
 
-    // Check to make sure printing temporaries also works as expected.
-    assert(proc(ref x: real): int:string == "proc(ref x: real): int");
+    // TODO: Note that the type is in parens due to precedence issues ATM.
+    assert((proc(ref x: real): int):string == "proc(ref x: real): int");
   }
 
   proc testFunctionTypeEqualityConsideringFormalNames() {

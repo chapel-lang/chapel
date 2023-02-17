@@ -789,9 +789,9 @@ struct Converter {
 
     UniqueString filePath;
 
-   if (builderResult != nullptr) {
-     filePath = builderResult->filePath();
-   }
+    if (builderResult != nullptr) {
+      filePath = builderResult->filePath();
+    }
 
     // convert the included module
 
@@ -816,6 +816,9 @@ struct Converter {
 
     // allow production compiler to take action now that it is parsed
     noteParsedIncludedModule(mod, astr(filePath));
+
+    // note that the converted 'module include' is the same as 'mod'
+    noteConvertedSym(node, mod);
 
     return buildChapelStmt(new DefExpr(mod));
   }
@@ -3274,49 +3277,63 @@ struct Converter {
     }
   }
 
+  static bool isEnsureDomainExprCall(Expr* expr) {
+    if (auto call = toCallExpr(expr)) {
+      return call->isNamed("chpl__ensureDomainExpr");
+    }
+    return false;
+  }
+
   CallExpr* convertArrayType(const uast::BracketLoop* node,
                              bool isFormalType=false) {
     astlocMarker markAstLoc(node->id());
 
     INT_ASSERT(node->isExpressionLevel());
 
+    const uast::TypeQuery* lastTypeQuery = nullptr;
+    int numTypeQueries = 0;
     Expr* domActuals = nullptr;
+    bool isEmptyDomain = false;
 
     if (auto iterand = node->iterand()) {
-      auto astForIterand = iterand;
 
+      // Most domains can be converted, but some require special attention.
       if (auto dom = iterand->toDomain()) {
 
-        // If there are no domain expressions, use 'nil'.
+        // If there are no domain expressions, use 'nil'. TODO: 'dtAny'?
         if (!dom->numExprs()) {
           domActuals = new SymExpr(gNil);
+          isEmptyDomain = true;
 
-        // Convert multiple domain expressions into a PRIM_ACTUALS_LIST.
-        } else if (dom->numExprs() > 1) {
-          CallExpr* actualsList = new CallExpr(PRIM_ACTUALS_LIST);
-          domActuals = actualsList;
-
-          for (auto expr : dom->exprs()) {
-            actualsList->insertAtTail(convertAST(expr));
-          }
-
-          domActuals = new CallExpr("chpl__ensureDomainExpr", actualsList);
-
-        // Use a single argument directly.
+        // Otherwise, check for and sanitize type queries.
         } else {
-          astForIterand = dom->expr(0);
+          for (int i = 0; i < dom->numExprs(); i++) {
+            if (auto tq = dom->expr(i)->toTypeQuery()) {
+              numTypeQueries += 1;
+              lastTypeQuery = tq;
+            }
+          }
         }
+      } else if (auto tq = iterand->toTypeQuery()) {
+        numTypeQueries = 1;
+        lastTypeQuery = tq;
       }
 
-      if (domActuals == nullptr) {
-        auto expr = astForIterand;
-        domActuals = convertAST(expr);
+      CHPL_ASSERT(numTypeQueries <= 1);
 
-        // But wrap it if it is not a type query for a formal type.
-        bool isFormalTypeQuery = isFormalType && expr->isTypeQuery();
-        if (!isFormalTypeQuery) {
-          domActuals = new CallExpr("chpl__ensureDomainExpr", domActuals);
-        }
+      // If there is a type query, extract it from the domain.
+      if (lastTypeQuery) {
+        CHPL_ASSERT(isFormalType);
+        CHPL_ASSERT(!domActuals);
+        domActuals = convertAST(lastTypeQuery);
+      }
+
+      // Make sure we have something to work with.
+      domActuals = !domActuals ? convertAST(iterand) : domActuals;
+
+      if (!isEnsureDomainExprCall(domActuals) && numTypeQueries == 0 &&
+          !isEmptyDomain) {
+        domActuals = new CallExpr("chpl__ensureDomainExpr", domActuals);
       }
     }
 
@@ -3404,6 +3421,9 @@ struct Converter {
       const uast::BracketLoop* bkt = ie->toBracketLoop();
       if (bkt && isTypeVar) {
           auto convArrayType = convertArrayType(bkt);
+
+          // Use this builder because it is performing checks for skyline
+          // arrays amongst other things (that are too arcane for me).
           initExpr = buildForallLoopExprFromArrayType(convArrayType);
         } else {
           initExpr = convertAST(ie);
@@ -4065,8 +4085,15 @@ void Converter::noteAllContainedFixups(BaseAST* ast, int depth) {
   // can copy the AST freely.
 
   if (depth > 0) {
-    if (isModuleSymbol(ast) || isFnSymbol(ast)) {
+    if (isModuleSymbol(ast)) {
       return;
+    }
+    if (auto fn = toFnSymbol(ast)) {
+      if (!fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)) {
+        // ignore functions that are created from building expressions
+        // but aren't represented in the uAST
+        return;
+      }
     }
     if (TypeSymbol* ts = toTypeSymbol(ast)) {
       if (isAggregateType(ts->type)) {
@@ -4136,8 +4163,11 @@ void Converter::popFromSymStack(const uast::AstNode* ast, BaseAST* ret) {
     CHPL_ASSERT(false && "stack error");
   }
   if (trace) {
-    printf("Exiting %s %s\n",
-           astName(ast).c_str(), ast->id().str().c_str());
+    int id = 0;
+    if (ret != nullptr) id = ret->id;
+
+    printf("Exiting %s %s [%i]\n",
+           astName(ast).c_str(), ast->id().str().c_str(), id);
   }
   symStack.pop_back();
 }
@@ -4154,8 +4184,9 @@ void ConvertedSymbolsMap::noteConvertedSym(const uast::AstNode* ast,
                                            Symbol* sym,
                                            bool trace) {
   if (trace) {
-    printf("Converted sym %s %s and noting it in %s\n",
+    printf("Converted sym %s %s to %s[%i] and noting it in %s\n",
            astName(ast).c_str(), ast->id().str().c_str(),
+           sym->name, sym->id,
            computeMapName(inSymbolId).c_str());
   }
 
@@ -4167,9 +4198,10 @@ void ConvertedSymbolsMap::noteConvertedFn(
                                 FnSymbol* fn,
                                 bool trace) {
   if (trace) {
-    printf("Converted fn %s %s and noting it in %s\n",
+    printf("Converted fn %s %s to %s[%i] and noting it in %s\n",
            sig->untyped()->name().c_str(),
            sig->untyped()->id().str().c_str(),
+           fn->name, fn->id,
            computeMapName(inSymbolId).c_str());
   }
 
@@ -4180,7 +4212,8 @@ void ConvertedSymbolsMap::noteIdentFixupNeeded(SymExpr* se, ID id,
                                                ConvertedSymbolsMap* cur,
                                                bool trace) {
   if (trace) {
-    printf("Noting fixup needed for mention of %s within %s in map for %s\n",
+    printf("Noting fixup needed [%i] for mention of %s within %s in map for %s\n",
+           se->id,
            id.str().c_str(),
            computeMapName(cur->inSymbolId).c_str(),
            computeMapName(this->inSymbolId).c_str());
@@ -4194,7 +4227,8 @@ void ConvertedSymbolsMap::noteCallFixupNeeded(SymExpr* se,
                                 ConvertedSymbolsMap* cur,
                                 bool trace) {
   if (trace) {
-    printf("Noting fixup needed for mention of %s within %s in map for %s\n",
+    printf("Noting fixup needed [%i] for mention of %s within %s in map for %s\n",
+           se->id,
            sig->untyped()->id().str().c_str(),
            computeMapName(cur->inSymbolId).c_str(),
            computeMapName(this->inSymbolId).c_str());
@@ -4400,6 +4434,7 @@ void postConvertApplyFixups(chpl::Context* context) {
     }
   }
 
+  // Fix method receivers
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->_this == nullptr) continue; // not a method
 

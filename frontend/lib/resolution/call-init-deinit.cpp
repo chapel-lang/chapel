@@ -395,6 +395,8 @@ static bool typeNeedsInitDeinitCall(const Type* t) {
 
 
 void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
+  // Type variables do not need default init.
+  if (ast->storageKind() == Qualifier::TYPE) return;
 
   ResolvedExpression& varRes = rv.byAst(ast);
   QualifiedType varType = varRes.type();
@@ -477,8 +479,7 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
                         /* isParenless */ false,
                         std::move(actuals));
     const Scope* scope = scopeForId(context, ast->id());
-    auto c = resolveGeneratedCall(context, ast, ci, scope,
-                                  resolver.poiScope);
+    auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
     ResolvedExpression& opR = rv.byAst(ast);
     resolver.handleResolvedAssociatedCall(opR, ast, ci, c,
                                           AssociatedAction::DEFAULT_INIT,
@@ -500,8 +501,7 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  auto c = resolveGeneratedCall(context, ast, ci, scope,
-                                resolver.poiScope);
+  auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
   ResolvedExpression& opR = rv.byAst(ast);
 
   auto op = ast->toOpCall();
@@ -537,8 +537,7 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  auto c = resolveGeneratedCall(context, ast, ci, scope,
-                                resolver.poiScope);
+  auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
 
   std::vector<const AstNode*> actualAsts;
   actualAsts.push_back(ast);
@@ -711,8 +710,7 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
                       /* isParenless */ false,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
-  auto c = resolveGeneratedCall(context, ast, ci, scope,
-                                resolver.poiScope);
+  auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
 
   // Should we associate it with the current statement or the current block?
   const AstNode* assocAst = currentStatement();

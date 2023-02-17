@@ -15,6 +15,6 @@ var iii:int;
 xxx += 5;
 xxx <=> iii;
 iii <=> xxx;
-var f = openmem();
+var f = openMemFile();
 var r = f.reader();
 r.readIt(xxx);

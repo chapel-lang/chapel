@@ -62,7 +62,7 @@ proc masonModules(args: [] string) throws {
   const lockName = configNames[1];
 
   const cwd = here.cwd();
-  const toParse = open(cwd + "/" + lockName, iomode.r);
+  const toParse = open(cwd + "/" + lockName, ioMode.r);
   var lockFile = parseToml(toParse);
 
   // generate list of dependencies and get src code

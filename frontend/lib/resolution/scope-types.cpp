@@ -19,6 +19,7 @@
 
 #include "chpl/resolution/scope-types.h"
 
+#include "chpl/uast/Function.h"
 #include "chpl/uast/NamedDecl.h"
 
 #include "scope-help.h"
@@ -29,35 +30,77 @@ namespace resolution {
 
 void OwnedIdsWithName::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
-  if (auto ptr = moreIds_.get()) {
+  if (auto ptr = moreIdvs_.get()) {
     for (const auto& elt : *ptr) {
-      elt.first.stringify(ss, stringKind);
+      elt.id_.stringify(ss, stringKind);
     }
   } else {
-    if (!id_.first.isEmpty()) {
-      id_.first.stringify(ss, stringKind);
+    if (!idv_.id_.isEmpty()) {
+      idv_.id_.stringify(ss, stringKind);
     }
   }
 }
 
-llvm::Optional<BorrowedIdsWithName> OwnedIdsWithName::borrow(bool skipPrivateVisibilities) const {
-  if (BorrowedIdsWithName::isIdVisible(id_, skipPrivateVisibilities)) {
-    return BorrowedIdsWithName(id_, moreIds_.get(), skipPrivateVisibilities);
+llvm::Optional<BorrowedIdsWithName>
+OwnedIdsWithName::borrow(bool skipPrivateVisibilities,
+                         bool onlyMethodsFields) const {
+  if (BorrowedIdsWithName::isIdVisible(idv_,
+                                       skipPrivateVisibilities,
+                                       onlyMethodsFields)) {
+    return BorrowedIdsWithName(idv_, moreIdvs_.get(),
+                               skipPrivateVisibilities, onlyMethodsFields);
   }
   // The first ID isn't visible; are others?
-  if (moreIds_.get() == nullptr) {
+  if (moreIdvs_.get() == nullptr) {
     return llvm::None;
   }
 
-  for (auto& id : *moreIds_) {
-    if (!BorrowedIdsWithName::isIdVisible(id, skipPrivateVisibilities)) continue;
+  for (auto& idv : *moreIdvs_) {
+    if (!BorrowedIdsWithName::isIdVisible(idv,
+                                          skipPrivateVisibilities,
+                                          onlyMethodsFields))
+      continue;
 
     // Found a visible ID!
-    return BorrowedIdsWithName(id, moreIds_.get(), skipPrivateVisibilities);
+    return BorrowedIdsWithName(idv, moreIdvs_.get(),
+                               skipPrivateVisibilities, onlyMethodsFields);
   }
 
   // No ID was visible, so we can't borrow.
   return llvm::None;
+}
+
+int BorrowedIdsWithName::countVisibleIds() {
+  if (moreIdvs_ == nullptr) {
+    return 1;
+  }
+
+  // Count all the visible IDs.
+  int count = 0;
+  for (const auto& idv : *moreIdvs_) {
+    if (isIdVisible(idv)) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+bool BorrowedIdsWithName::containsOnlyMethodsOrFields() const {
+  if (moreIdvs_ == nullptr) {
+    if (isIdVisible(idv_)) {
+      return idv_.isMethodOrField();
+    }
+  }
+
+  for (const auto& idv : *moreIdvs_) {
+    if (isIdVisible(idv)) {
+      if (!idv.isMethodOrField()) {
+        return false;
+      }
+    }
+  }
+
+  return true;
 }
 
 void BorrowedIdsWithName::stringify(std::ostream& ss,
@@ -76,6 +119,9 @@ Scope::Scope(const uast::AstNode* ast, const Scope* parentScope,
   if (auto decl = ast->toNamedDecl()) {
     name_ = decl->name();
   }
+  if (auto fn = ast->toFunction()) {
+    methodScope_ = fn->isMethod();
+  }
   gatherDeclsWithin(ast, declared_, containsUseImport_, containsFunctionDecls_);
 }
 
@@ -83,7 +129,10 @@ void Scope::addBuiltin(UniqueString name) {
   // Just refer to empty ID since builtin type declarations don't
   // actually exist in the AST.
   // The resolver knows that the empty ID means a builtin thing.
-  declared_.emplace(name, OwnedIdsWithName(ID(), uast::Decl::PUBLIC));
+  declared_.emplace(name,
+                    OwnedIdsWithName(ID(),
+                                     uast::Decl::PUBLIC,
+                                     /*isMethodOrField*/ false));
 }
 
 const Scope* Scope::moduleScope() const {
@@ -100,6 +149,38 @@ const Scope* Scope::parentModuleScope() const {
   auto modScope = this->moduleScope();
   if (auto ps = modScope->parentScope()) return ps->moduleScope();
   return nullptr;
+}
+
+bool Scope::lookupInScope(UniqueString name,
+                          std::vector<BorrowedIdsWithName>& result,
+                          bool arePrivateIdsIgnored,
+                          bool onlyMethodsFields) const {
+  auto search = declared_.find(name);
+  if (search != declared_.end()) {
+    // There might not be any IDs that are visible to us, so borrow returns
+    // an optional list.
+    auto borrowedIds = search->second.borrow(arePrivateIdsIgnored,
+                                             onlyMethodsFields);
+    if (borrowedIds.hasValue()) {
+      result.push_back(std::move(borrowedIds.getValue()));
+      return true;
+    }
+  }
+  return false;
+}
+
+bool Scope::contains(UniqueString name) const {
+  auto search = declared_.find(name);
+  return (search != declared_.end());
+}
+
+std::set<UniqueString> Scope::gatherNames() const {
+  std::set<UniqueString> orderedNames;
+  for (const auto& pair : declared_) {
+    orderedNames.insert(pair.first);
+  }
+
+  return orderedNames;
 }
 
 void Scope::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {

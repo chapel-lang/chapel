@@ -76,6 +76,16 @@ class BasicClassType final : public CompositeType {
 
   static const BasicClassType* getObjectType(Context* context);
 
+  static const BasicClassType* getReduceScanOpType(Context* context);
+
+  /** When compiling without a standard library (for testing purposes),
+      the compiler code needs to work around the fact that there
+      is no definition available for the class types needed
+      by the language but provided in the library (such as 'ReduceScanOp').
+      This function allows code to easily detect that case.
+   */
+  static bool isMissingBundledClassType(Context* context, ID id);
+
   /** Return the parent class type, or nullptr if this is the 'object' type. */
   const BasicClassType* parentClassType() const {
     return parentType_;

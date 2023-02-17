@@ -39,7 +39,7 @@ const IUB = [("a", 0.27), ("c", 0.12), ("g", 0.12), ("t", 0.27),
                      ("t", 0.3015094502008)],
 
       // Redefine stdout to use lock-free binary I/O
-      stdout = openfd(1).writer(kind=iokind.native, locking=false);
+  stdout = (new file(1)).writer(kind=iokind.native, locking=false);
 
 
 proc main() {

@@ -231,9 +231,9 @@ struct Resolver {
   ReceiverScopesVec methodReceiverScopes(bool recompute = false);
 
   /* Compute the receiver type (when resolving a method)
-     and return nullptr if it is not applicable.
+     and return a type containing nullptr if it is not applicable.
    */
-  const types::CompositeType* methodReceiverType();
+  types::QualifiedType methodReceiverType();
 
   /* When resolving a generic record or a generic function,
      there might be generic types that we don't know yet.
@@ -379,10 +379,22 @@ struct Resolver {
                                            const types::QualifiedType& left,
                                            const types::QualifiedType& right);
 
+  // find the element, if any, that a name refers to.
+  // Sets outAmbiguous to true if multiple elements of the same name are found,
+  // and to false otherwise.
+  ID scopeResolveEnumElement(const uast::Enum* enumAst,
+                             UniqueString elementName,
+                             const uast::AstNode* nodeForErr,
+                             bool& outAmbiguous);
+  // Given the results of looking up an enum element, construct a QualifiedType.
+  types::QualifiedType
+  typeForScopeResolvedEnumElement(const types::EnumType* enumType,
+                                            const ID& refersToId,
+                                            bool ambiguous);
+  // Given a particular enum type, determine the type of a particular element.
   types::QualifiedType typeForEnumElement(const types::EnumType* type,
                                           UniqueString elemName,
-                                          const uast::AstNode* astForErr,
-                                          ID& outElemId);
+                                          const uast::AstNode* astForErr);
 
   // helper to resolve a special call
   // returns 'true' if the call was a special call handled here, false
@@ -462,6 +474,9 @@ struct Resolver {
 
   bool enter(const uast::ReduceIntent* reduce);
   void exit(const uast::ReduceIntent* reduce);
+
+  bool enter(const uast::Reduce* reduce);
+  void exit(const uast::Reduce* reduce);
 
   bool enter(const uast::TaskVar* taskVar);
   void exit(const uast::TaskVar* taskVar);

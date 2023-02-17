@@ -4,7 +4,7 @@ var f: file;
 
 try {
   try {
-    f = open("foo", iomode.cw);
+    f = open("foo", ioMode.cw);
     if (!f.isOpen()) {
       writeln("There was a problem with the file");
     }

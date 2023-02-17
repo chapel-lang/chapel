@@ -1,0 +1,2 @@
+syncBarrier.chpl:3: warning: BarrierType is deprecated, please use the default barrier implementation
+syncBarrier.chpl:3: warning: choosing a barrier type is deprecated, please remove the 'barrierType' argument

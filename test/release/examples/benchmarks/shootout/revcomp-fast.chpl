@@ -9,7 +9,7 @@ use IO;
 const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 
 proc main(args: [] string) {
-  const stdin = openfd(0),
+  const stdin = new file(0),
         input = stdin.reader(iokind.native, locking=false,
                              hints=ioHintSet.mmap),
         len = stdin.size;
@@ -53,8 +53,8 @@ proc main(args: [] string) {
   }
 
   // write the data out to stdout once all tasks have completed
-  const stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                     hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
+  const stdoutBin = (new file(1)).writer(iokind.native, locking=false,
+                                         hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
   stdoutBin.write(data);
 }
 

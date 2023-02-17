@@ -23,7 +23,7 @@ module HDF5Preprocessors {
         //const scriptName = f.realPath();
 
         const scriptName = "./hdf5TempScript.bash";
-        var f = open(scriptName, iomode.cw);
+        var f = open(scriptName, ioMode.cw);
 
         // write the script to a file
         {
