@@ -458,40 +458,8 @@ class BadRegexError : Error {
 proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
              /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
              /*U*/ nonGreedy=false): regex(t) throws where t==string || t==bytes {
-  use ChplConfig;
-
-  if CHPL_RE2 == "none" {
-    compilerError("Cannot use Regex with CHPL_RE2=none");
-  }
-
-  var opts:qio_regex_options_t;
-  qio_regex_init_default_options(opts);
-
-  // always use UTF8 for strings.
-  // For bytes, this is set to false which means use Latin1
-  opts.utf8 = t==string;
-  opts.posix = posix;
-  opts.literal = literal;
-  opts.nocapture = noCapture;
-  opts.ignorecase = ignoreCase;
-  opts.multiline = multiLine;
-  opts.dotnl = dotAll;
-  opts.nongreedy = nonGreedy;
-
-  var ret: regex(t);
-  qio_regex_create_compile(pattern.localize().c_str(), pattern.numBytes, opts, ret._regex);
-  if !qio_regex_ok(ret._regex) {
-    const patternStr = if t==string then pattern
-                                    else pattern.decode(decodePolicy.replace);
-    var err_str = qio_regex_error(ret._regex);
-    var err_msg: string;
-    try! {
-      err_msg = createStringWithOwnedBuffer(err_str) +
-                  " when compiling regex '" + patternStr + "'";
-    }
-    throw new owned BadRegexError(err_msg);
-  }
-  return ret;
+  return new regex(pattern, posix, literal, noCapture, ignoreCase, multiLine,
+                   dotAll, nonGreedy);
 }
 
 /*  The regexMatch record records a regular expression search match
@@ -602,6 +570,52 @@ record regex {
 
   proc init(type exprType) {
     this.exprType = exprType;
+  }
+
+  proc init(pattern: ?t, posix=false, literal=false, noCapture=false,
+            /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
+            /*U*/ nonGreedy=false) throws where t==string || t==bytes {
+    use ChplConfig;
+
+    this.exprType = t;
+    this.complete();
+
+    if CHPL_RE2 == "none" {
+      compilerError("Cannot use Regex with CHPL_RE2=none");
+    }
+
+    var opts:qio_regex_options_t;
+    qio_regex_init_default_options(opts);
+
+    // always use UTF8 for strings.
+    // For bytes, this is set to false which means use Latin1
+    opts.utf8 = t==string;
+    opts.posix = posix;
+    opts.literal = literal;
+    opts.nocapture = noCapture;
+    opts.ignorecase = ignoreCase;
+    opts.multiline = multiLine;
+    opts.dotnl = dotAll;
+    opts.nongreedy = nonGreedy;
+
+    /*var ret: regex(t);*/
+    qio_regex_create_compile(pattern.localize().c_str(), pattern.numBytes, opts,
+                             this._regex);
+    if !qio_regex_ok(this._regex) {
+      const patternStr = if t==string then pattern
+                                      else pattern.decode(decodePolicy.replace);
+      var err_str = qio_regex_error(this._regex);
+      var err_msg: string;
+      try! {
+        err_msg = createStringWithOwnedBuffer(err_str) +
+                    " when compiling regex '" + patternStr + "'";
+      }
+      flameThrower(err_msg);
+    }
+
+    inline proc flameThrower(msg) throws {
+      throw new owned BadRegexError(msg);
+    }
   }
 
   proc init=(x: regex(?)) {
