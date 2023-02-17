@@ -101,7 +101,6 @@ struct Visitor {
   bool isNameReservedWord(const NamedDecl* node);
 
   // Checks.
-  void checkForOneElementArraysWithoutComma(const Array* node);
   void checkForArraysOfRanges(const Array* node);
   void checkDomainTypeQueryUsage(const TypeQuery* node);
   void checkNoDuplicateNamedArguments(const FnCall* node);
@@ -263,24 +262,17 @@ bool Visitor::isParentFalseBlock(int depth) const {
   return false;
 }
 
-void Visitor::checkForOneElementArraysWithoutComma(const Array* node) {
-  if (!node->hasTrailingComma() && node->numChildren() == 1) {
-    warn(node, "single-element array literals without a trailing comma are "
-         "deprecated; please rewrite as '%s'",
-         node->isAssociative() ? "[myKey => myElem, ]" : "[myElem, ]");
+void Visitor::checkForArraysOfRanges(const Array* node) {
+  if (node->numExprs() == 1 && !node->hasTrailingComma()) {
+    if (const Range* rng = node->expr(0)->toRange()) {
+      warn(node, "please note that this is a 1-element array of ranges; if "
+           "that was your intention, add a trailing comma or recompile with "
+           "'--no-warn-array-of-range' to avoid this warning; if it wasn't, "
+           "you may want to use a range instead");
+    }
   }
 }
 
-void Visitor::checkForArraysOfRanges(const Array* node) {
-  int size = node->numExprs();
-  for (int i=0; i<node->numExprs(); i++) {
-    const Range* rng = node->expr(i)->toRange();
-    if (rng == NULL)
-      return;
-  }
-  // If we get here, all array elements were ranges
-  warn(node, "please note that this is a %d-element array of ranges; if you wanted to iterate over the integers represented by those ranges rather than the list of ranges themselves, please consider using a %s instead", size, (size == 1 ? "range" : "domain or nested loop"));
-}
   
 void Visitor::checkDomainTypeQueryUsage(const TypeQuery* node) {
   if (!parent(0) || !parent(1)) return;
@@ -857,7 +849,6 @@ void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
 }
 
 void Visitor::visit(const Array* node) {
-  checkForOneElementArraysWithoutComma(node);
   checkForArraysOfRanges(node);
 }
   
