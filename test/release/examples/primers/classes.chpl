@@ -126,7 +126,7 @@ var b1 = own.borrow();
 //
 //  * use the ``borrow`` after whatever it is borrowed from goes out of scope
 //
-//  * use the ``borrow`` after the instance is deleted (for example if own is assigned to)
+//  * use the ``borrow`` after the instance is deleted (for example if ``own`` is assigned to)
 //
 
 // A class type without a decorator, such as ``C``, has generic management.
