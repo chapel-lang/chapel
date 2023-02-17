@@ -392,29 +392,7 @@ const Scope* scopeForId(Context* context, ID id) {
   return scopeForIdQuery(context, id);
 }
 
-struct VisibilityTraceElt {
-  // these indicate a use/import
-  VisibilitySymbols::ShadowScope shadowScope = VisibilitySymbols::REGULAR_SCOPE;
-  const ResolvedVisibilityScope* resolvedVisibilityScope = nullptr;
-  ID visibilityClauseId;
-  VisibilityStmtKind visibilityStmtKind = VIS_USE;
-  // this indicates a method receiver scope
-  const Scope* methodReceiverScope = nullptr;
-  // this indicates a parent scope
-  const Scope* parentScope = nullptr;
-  // these cover other cases
-  bool automaticModule = false;
-  bool toplevelModule = false;
-  bool rootScope = false;
-};
-
-struct ResultVisibilityTrace {
-  // the scope where it is eventually found
-  const Scope* scope = nullptr;
-  // how did we get to 'scope' ? this is a vector because there might
-  // have been multiple public use / public imports traversed.
-  std::vector<VisibilityTraceElt> visibleThrough;
-};
+using VisibilityTraceElt = ResultVisibilityTrace::VisibilityTraceElt;
 
 static bool doLookupInScope(Context* context,
                             const Scope* scope,
