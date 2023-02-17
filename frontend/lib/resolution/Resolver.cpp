@@ -2801,7 +2801,7 @@ QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
   if (refersToId.isEmpty() && !ambiguous) {
     // scopeResolveEnumElement doesn't report a "not found" error because
     // not being able to find an enum element isn't always an error. Here,
-    // though, we are specifically interested in an eleemnt, so report
+    // though, we are specifically interested in an element, so report
     // the error.
     CHPL_REPORT(context, UnknownEnumElem, nodeForErr, elementName, enumAst);
   }
@@ -2835,16 +2835,24 @@ void Resolver::exit(const Dot* dot) {
 
   if (receiver.type().kind() == QualifiedType::MODULE &&
       !receiver.toId().isEmpty()) {
+    ID moduleId = receiver.toId();
+
     // resolve e.g. M.x where M is a module
     LookupConfig config = LOOKUP_DECLS |
                           LOOKUP_IMPORT_AND_USE;
 
-    auto modScope = scopeForModule(context, receiver.toId());
+    auto modScope = scopeForModule(context, moduleId);
     auto vec = lookupNameInScope(context, modScope,
                                  /* receiverScopes */ {},
                                  dot->field(), config);
     ResolvedExpression& r = byPostorder.byAst(dot);
     if (vec.size() == 0) {
+      // emit a "can't find that thing" error
+      // figure out what name was used for the module in the Dot expression
+      auto modName = moduleId.symbolName(context);
+      // TODO: figure out the location where the module renaming occured,
+      // if a module renaming has occured, and pass that to the error
+      CHPL_REPORT(context, NotInModule, dot, moduleId, modName);
       r.setType(QualifiedType());
     } else if (vec.size() > 1 || vec[0].numIds() > 1) {
       // can't establish the type. If this is in a function

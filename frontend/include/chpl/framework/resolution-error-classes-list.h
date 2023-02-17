@@ -144,3 +144,7 @@ ERROR_CLASS(AmbiguousIdentifier,
     bool,
     std::vector<resolution::BorrowedIdsWithName>,
     std::vector<resolution::ResultVisibilityTrace>)
+ERROR_CLASS(NotInModule,
+    const uast::Dot*,
+    ID,
+    UniqueString)
