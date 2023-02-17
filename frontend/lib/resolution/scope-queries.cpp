@@ -499,6 +499,8 @@ doLookupInImportsAndUses(Context* context,
           elt.visibilityClauseId = is.visibilityClauseId();
           elt.visibilityStmtKind =
             getKindForVisibilityClauseId(context, elt.visibilityClauseId);
+          elt.renameFrom = nameToLookUp;
+          elt.fromUseImport = true;
           traceCurPath->push_back(std::move(elt));
         }
 
@@ -534,6 +536,8 @@ doLookupInImportsAndUses(Context* context,
             elt.visibilityClauseId = is.visibilityClauseId();
             elt.visibilityStmtKind =
               getKindForVisibilityClauseId(context, elt.visibilityClauseId);
+            elt.renameFrom = from;
+            elt.fromUseImport = true;
             t.visibleThrough.push_back(std::move(elt));
             traceResult->push_back(std::move(t));
           }
@@ -1842,8 +1846,8 @@ static void
 doWarnHiddenFormal(Context* context,
                    const Scope* functionScope,
                    UniqueString formalName,
-                   std::vector<BorrowedIdsWithName>& matches,
-                   std::vector<ResultVisibilityTrace>& traceResult) {
+                   const BorrowedIdsWithName& match,
+                   const ResultVisibilityTrace& traceResult) {
   // find the Formal*
   const Formal* formal = nullptr;
   std::vector<BorrowedIdsWithName> ids;
@@ -1860,26 +1864,8 @@ doWarnHiddenFormal(Context* context,
     }
   }
 
-  // find the first VisibilityClause
-  // find if the parent is a use or import
-  // TODO: instead, pass traceResult to the error
-  ID visibilityClauseId;
-  VisibilityStmtKind kind = VIS_USE;
-  for (const auto& r : traceResult) {
-    for (const auto& elt : r.visibleThrough) {
-      if (!elt.visibilityClauseId.isEmpty()) {
-        visibilityClauseId = elt.visibilityClauseId;
-        kind = elt.visibilityStmtKind;
-        break;
-      }
-    }
-    if (!visibilityClauseId.isEmpty()) {
-      break;
-    }
-  }
-
-  if (formal && !visibilityClauseId.isEmpty()) {
-    CHPL_REPORT(context, HiddenFormal, formal, visibilityClauseId, kind);
+  if (formal) {
+    CHPL_REPORT(context, HiddenFormal, formal, match, traceResult);
   }
 }
 
@@ -1910,12 +1896,16 @@ static const bool& warnHiddenFormalsQuery(Context* context,
     // Check that there is a match that isn't a method/field
     // to skip the warning for collisions with secondary methods.
     bool onlyMethodsFields = true;
+    size_t errIdx = 0;
     if (got) {
+      size_t i = 0;
       for (auto b : matches) {
         if (!b.containsOnlyMethodsOrFields()) {
+          errIdx = i;
           onlyMethodsFields = false;
           break;
         }
+        i++;
       }
     }
 
@@ -1929,7 +1919,9 @@ static const bool& warnHiddenFormalsQuery(Context* context,
                       config, checkedScopes, matches,
                       &traceCurPath, &traceResult);
 
-      doWarnHiddenFormal(context, functionScope, name, matches, traceResult);
+      CHPL_ASSERT(errIdx < traceResult.size());
+      doWarnHiddenFormal(context, functionScope, name,
+                         matches[errIdx], traceResult[errIdx]);
       result = true;
     }
   }

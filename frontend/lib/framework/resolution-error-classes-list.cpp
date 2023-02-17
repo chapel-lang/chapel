@@ -811,20 +811,69 @@ void ErrorUnstable::write(ErrorWriterBase& wr) const {
   return;
 }
 
+// describe where a symbol came from
+// (in a way, it prints out a ResultVisibilityTrace)
+// start indicates where in the trace to start, since sometimes
+// the first element might have already been printed.
+static void describeSymbolSource(ErrorWriterBase& wr,
+                                 UniqueString name,
+                                 const resolution::BorrowedIdsWithName& match,
+                                 const resolution::ResultVisibilityTrace& trace,
+                                 int start) {
+  CHPL_ASSERT(0 <= start);
+
+  UniqueString from = name;
+  int n = trace.visibleThrough.size();
+  for (int i = start; i < n; i++) {
+    const auto& elt = trace.visibleThrough[i];
+    if (elt.fromUseImport) {
+      wr.message("which provided '", from, "' through the following '",
+                 elt.visibilityStmtKind, "' statement:");
+      wr.code<ID,ID>(elt.visibilityClauseId, { elt.visibilityClauseId });
+      from = elt.renameFrom;
+    }
+  }
+
+  wr.message("which provided '", from, "' with the following definition");
+  ID firstId = match.firstId();
+  wr.code<ID,ID>(firstId, { firstId });
+}
+
 void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
   auto formal = std::get<const uast::Formal*>(info);
-  auto visibilityClauseId = std::get<ID>(info);
-  auto useOrImport = std::get<const resolution::VisibilityStmtKind>(info);
-  CHPL_ASSERT(formal && !visibilityClauseId.isEmpty());
+  const auto& match = std::get<resolution::BorrowedIdsWithName>(info);
+  const auto& trace = std::get<resolution::ResultVisibilityTrace>(info);
+  CHPL_ASSERT(formal && !trace.visibleThrough.empty());
 
-  wr.heading(kind_, type_, visibilityClauseId,
+  // find the first visibility clause ID
+  ID firstVisibilityClauseId;
+  resolution::VisibilityStmtKind firstUseOrImport;
+
+  int describeStart = 0;
+
+  int i = 0;
+  for (const auto& elt : trace.visibleThrough) {
+    if (elt.fromUseImport) {
+      firstVisibilityClauseId = elt.visibilityClauseId;
+      firstUseOrImport = elt.visibilityStmtKind;
+      describeStart = i+1; // skip this one in describeSymbolSource
+      break;
+    }
+    i++;
+  }
+
+  wr.heading(kind_, type_, firstVisibilityClauseId,
              "module-level symbol is hiding function argument '",
              formal->name(), "'");
   wr.message("The formal argument:");
   wr.code(formal, { formal });
   wr.message("is shadowed by a symbol provided by the following '",
-             useOrImport, "' statement:");
-  wr.code<ID, ID>(visibilityClauseId, { visibilityClauseId });
+             firstUseOrImport, "' statement:");
+  wr.code<ID, ID>(firstVisibilityClauseId, { firstVisibilityClauseId });
+
+  // print where it came from
+  describeSymbolSource(wr, formal->name(), match, trace, describeStart);
+
   return;
 }
 

@@ -130,8 +130,8 @@ WARNING_CLASS(Unstable,
     const uast::NamedDecl*)
 WARNING_CLASS(HiddenFormal,
     const uast::Formal*,
-    ID,
-    const resolution::VisibilityStmtKind)
+    resolution::BorrowedIdsWithName,
+    resolution::ResultVisibilityTrace)
 ERROR_CLASS(AmbiguousIdentifier,
     UniqueString,
     ID,

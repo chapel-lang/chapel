@@ -68,6 +68,10 @@ class IdAndVis {
     return ret;
   }
 
+  void mark(Context* context) const {
+    id_.mark(context);
+  }
+
   const ID& id() const { return id_; }
   uast::Decl::Visibility vis() const { return vis_; }
   bool isPrivate() const { return vis_ == uast::Decl::PRIVATE; }
@@ -351,6 +355,13 @@ class BorrowedIdsWithName {
       }
     }
     return ret;
+  }
+
+  void mark(Context* context) const {
+    idv_.mark(context);
+    for (auto const& elt : *moreIdvs_) {
+      context->markPointer(&elt.id_);
+    }
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
@@ -936,6 +947,8 @@ struct ResultVisibilityTrace {
     const ResolvedVisibilityScope* resolvedVisibilityScope = nullptr;
     ID visibilityClauseId;
     VisibilityStmtKind visibilityStmtKind = VIS_USE;
+    UniqueString renameFrom;
+    bool fromUseImport = false;
 
     // this indicates a method receiver scope
     const Scope* methodReceiverScope = nullptr;
@@ -947,15 +960,48 @@ struct ResultVisibilityTrace {
     bool automaticModule = false;
     bool toplevelModule = false;
     bool rootScope = false;
+
+    bool operator==(const VisibilityTraceElt& other) const {
+      return shadowScope == other.shadowScope &&
+             resolvedVisibilityScope == other.resolvedVisibilityScope &&
+             visibilityClauseId == other.visibilityClauseId &&
+             visibilityStmtKind == other.visibilityStmtKind &&
+             renameFrom == other.renameFrom &&
+             fromUseImport == other.fromUseImport &&
+             methodReceiverScope == other.methodReceiverScope &&
+             parentScope == other.parentScope &&
+             automaticModule == other.automaticModule &&
+             toplevelModule == other.toplevelModule &&
+             rootScope == other.rootScope;
+    }
+    bool operator!=(const VisibilityTraceElt& other) const {
+      return !(*this == other);
+    }
+    void mark(Context* context) const {
+      renameFrom.mark(context);
+      visibilityClauseId.mark(context);
+    }
   };
 
-
   // the scope where it is eventually found
-
   const Scope* scope = nullptr;
+
   // how did we get to 'scope' ? this is a vector because there might
   // have been multiple public use / public imports traversed.
   std::vector<VisibilityTraceElt> visibleThrough;
+
+  bool operator==(const ResultVisibilityTrace& other) const {
+    return scope == other.scope &&
+           visibleThrough == other.visibleThrough;
+  }
+  bool operator!=(const ResultVisibilityTrace& other) const {
+    return !(*this == other);
+  }
+  void mark(Context* context) const {
+    for (const auto& elt : visibleThrough) {
+      elt.mark(context);
+    }
+  }
 };
 
 
