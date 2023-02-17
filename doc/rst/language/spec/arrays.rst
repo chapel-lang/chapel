@@ -409,7 +409,7 @@ the array.
 
    .. code-block:: chapel
 
-      proc f(A: [], is...)
+      proc f(A: [], is...) do
         return A(is);
 
    
