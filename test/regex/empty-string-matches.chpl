@@ -5,8 +5,8 @@ use Regex;
 
 var str = "";
 
-writeln(new regex("").matches(str));
-writeln(new regex("^").matches(str));
-writeln(new regex("$").matches(str));
-writeln(new regex("^$").matches(str));
-writeln(new regex(".*").matches(str));
+writeln((new regex("")).matches(str));
+writeln((new regex("^")).matches(str));
+writeln((new regex("$")).matches(str));
+writeln((new regex("^$")).matches(str));
+writeln((new regex(".*")).matches(str));

@@ -1,4 +1,4 @@
-import Regex;
+use Regex;
 
 var text = "foo 123 bar 345";
 

@@ -142,7 +142,7 @@ module ChapelUtil {
       return str;
     } else {
       use Regex;
-      if t==regex then
+      if t==regex(string) || t==regex(bytes) then
         return new regex(str);
       else
         return str:t;
