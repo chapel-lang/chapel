@@ -542,7 +542,7 @@ proc getProjectType(): string throws {
    not found, throw an error. TODO: Currently does not check
    on the version. */
 proc getDepToml(depName: string, depVersion: string) throws {
-  const pattern = compile(depName, ignoreCase=true);
+  const pattern = new regex(depName, ignoreCase=true);
 
   var packages: list(string);
   var versions: list(string);
