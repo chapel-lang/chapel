@@ -122,7 +122,9 @@ void checkControlFlow(Expr* expr, const char* context) {
           else
             USR_FATAL_CONT(gs, "continue to a named loop outside of a forall is not allowed from inside the forall");
         } else {
-          USR_FATAL_CONT(gs, "continue is not allowed in %s", context);
+          if (toSymExpr(gs->label) && toSymExpr(gs->label)->symbol() == gNil) {
+            USR_FATAL_CONT(gs, "continue is not allowed in %s", context);
+          }
         }
       } else {
         USR_FATAL_CONT(gs, "illegal 'goto' usage; goto is deprecated anyway");
