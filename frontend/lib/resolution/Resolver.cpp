@@ -2850,9 +2850,34 @@ void Resolver::exit(const Dot* dot) {
       // emit a "can't find that thing" error
       // figure out what name was used for the module in the Dot expression
       auto modName = moduleId.symbolName(context);
-      // TODO: figure out the location where the module renaming occured,
-      // if a module renaming has occured, and pass that to the error
-      CHPL_REPORT(context, NotInModule, dot, moduleId, modName);
+      auto dotModName = modName;
+      ID renameClauseId;
+      if (auto dotLeftPart = dot->receiver()) {
+        if (auto leftIdent = dotLeftPart->toIdentifier()) {
+          dotModName = leftIdent->name();
+        }
+      }
+      if (modName != dotModName) {
+        // get a trace for where the module was renamed so that
+        // the error can show line numbers
+        CHPL_ASSERT(scopeStack.size() > 0);
+        const Scope* scope = scopeStack.back();
+        std::vector<ResultVisibilityTrace> trace;
+        lookupNameInScopeTracing(context, scope, { }, dotModName,
+                                 LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE |
+                                 LOOKUP_PARENTS | LOOKUP_INNERMOST,
+                                 trace);
+        // find the last rename in the trace
+        for (const auto& t : trace) {
+          for (const auto& elt : t.visibleThrough) {
+            if (elt.fromUseImport && elt.renameFrom != dotModName) {
+              renameClauseId = elt.visibilityClauseId;
+            }
+          }
+        }
+      }
+
+      CHPL_REPORT(context, NotInModule, dot, moduleId, modName, renameClauseId);
       r.setType(QualifiedType());
     } else if (vec.size() > 1 || vec[0].numIds() > 1) {
       // can't establish the type. If this is in a function

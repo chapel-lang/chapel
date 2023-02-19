@@ -979,6 +979,7 @@ void ErrorNotInModule::write(ErrorWriterBase& wr) const {
   const uast::Dot* dot = std::get<0>(info);
   //ID moduleId = std::get<1>(info);
   UniqueString moduleName = std::get<2>(info);
+  ID renameClauseId = std::get<3>(info);
 
   wr.heading(kind_, type_, dot,
              "cannot find '", dot->field(), "' in module '", moduleName, "'");
@@ -993,8 +994,15 @@ void ErrorNotInModule::write(ErrorWriterBase& wr) const {
   }
 
   if (dotModName != moduleName) {
-    wr.note(dot, "module '", moduleName, "' was renamed to"
-            " '", dotModName, "' in this scope");
+    if (renameClauseId.isEmpty()) {
+      wr.note(dot, "module '", moduleName, "' was renamed to"
+              " '", dotModName, "' in this scope");
+    } else {
+      wr.note(renameClauseId,
+              "module '", moduleName, "' was renamed to"
+              " '", dotModName, "' here");
+      wr.code<ID,ID>(renameClauseId, { renameClauseId });
+    }
   }
 
   //wr.note(moduleId, "module '", moduleName, "' declared here");

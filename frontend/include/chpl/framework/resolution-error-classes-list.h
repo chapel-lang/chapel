@@ -147,4 +147,5 @@ ERROR_CLASS(AmbiguousIdentifier,
 ERROR_CLASS(NotInModule,
     const uast::Dot*,
     ID,
-    UniqueString)
+    UniqueString,
+    ID)
