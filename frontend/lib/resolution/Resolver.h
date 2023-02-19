@@ -307,6 +307,9 @@ struct Resolver {
                                          const CallInfo& ci,
                                          const CallResolutionResult& c);
 
+  // issue error for M.x where x is not found in a module M
+  void issueErrorForFailedModuleDot(const uast::Dot* dot, ID moduleId);
+
   // handle the result of one of the functions to resolve a call. Handles:
   //  * r.setMostSpecific
   //  * r.setPoiScope

@@ -1233,6 +1233,40 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
   }
 }
 
+void Resolver::issueErrorForFailedModuleDot(const Dot* dot, ID moduleId) {
+  // figure out what name was used for the module in the Dot expression
+  auto modName = moduleId.symbolName(context);
+  auto dotModName = modName;
+  ID renameClauseId;
+  if (auto dotLeftPart = dot->receiver()) {
+    if (auto leftIdent = dotLeftPart->toIdentifier()) {
+      dotModName = leftIdent->name();
+    }
+  }
+  if (modName != dotModName) {
+    // get a trace for where the module was renamed so that
+    // the error can show line numbers
+    CHPL_ASSERT(scopeStack.size() > 0);
+    const Scope* scope = scopeStack.back();
+    std::vector<ResultVisibilityTrace> trace;
+    lookupNameInScopeTracing(context, scope, { }, dotModName,
+                             LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE |
+                             LOOKUP_PARENTS | LOOKUP_INNERMOST,
+                             trace);
+    // find the last rename in the trace
+    for (const auto& t : trace) {
+      for (const auto& elt : t.visibleThrough) {
+        if (elt.fromUseImport && elt.renameFrom != dotModName) {
+          renameClauseId = elt.visibilityClauseId;
+        }
+      }
+    }
+  }
+
+  CHPL_REPORT(context, NotInModule, dot, moduleId, modName, renameClauseId);
+
+}
+
 void Resolver::handleResolvedCall(ResolvedExpression& r,
                                   const uast::AstNode* astForErr,
                                   const CallInfo& ci,
@@ -2848,36 +2882,7 @@ void Resolver::exit(const Dot* dot) {
     ResolvedExpression& r = byPostorder.byAst(dot);
     if (vec.size() == 0) {
       // emit a "can't find that thing" error
-      // figure out what name was used for the module in the Dot expression
-      auto modName = moduleId.symbolName(context);
-      auto dotModName = modName;
-      ID renameClauseId;
-      if (auto dotLeftPart = dot->receiver()) {
-        if (auto leftIdent = dotLeftPart->toIdentifier()) {
-          dotModName = leftIdent->name();
-        }
-      }
-      if (modName != dotModName) {
-        // get a trace for where the module was renamed so that
-        // the error can show line numbers
-        CHPL_ASSERT(scopeStack.size() > 0);
-        const Scope* scope = scopeStack.back();
-        std::vector<ResultVisibilityTrace> trace;
-        lookupNameInScopeTracing(context, scope, { }, dotModName,
-                                 LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE |
-                                 LOOKUP_PARENTS | LOOKUP_INNERMOST,
-                                 trace);
-        // find the last rename in the trace
-        for (const auto& t : trace) {
-          for (const auto& elt : t.visibleThrough) {
-            if (elt.fromUseImport && elt.renameFrom != dotModName) {
-              renameClauseId = elt.visibilityClauseId;
-            }
-          }
-        }
-      }
-
-      CHPL_REPORT(context, NotInModule, dot, moduleId, modName, renameClauseId);
+      issueErrorForFailedModuleDot(dot, moduleId);
       r.setType(QualifiedType());
     } else if (vec.size() > 1 || vec[0].numIds() > 1) {
       // can't establish the type. If this is in a function
