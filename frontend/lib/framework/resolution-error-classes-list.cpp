@@ -887,7 +887,7 @@ void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
 
   // find the first visibility clause ID
   ID firstVisibilityClauseId;
-  resolution::VisibilityStmtKind firstUseOrImport;
+  resolution::VisibilityStmtKind firstUseOrImport = resolution::VIS_USE;
 
   int describeStart = 0;
 
@@ -905,6 +905,7 @@ void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, firstVisibilityClauseId,
              "module-level symbol is hiding function argument '",
              formal->name(), "'");
+
   wr.message("The formal argument:");
   wr.code(formal, { formal });
   wr.message("is shadowed by a symbol provided by the following '",
