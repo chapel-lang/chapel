@@ -2025,6 +2025,8 @@ Resolver::lookupIdentifier(const Identifier* ident,
   auto vec =
       lookupNameInScope(context, scope, receiverScopes, ident->name(), config);
 
+  // TODO: re-enable these error messages once we are ready
+  /*
   if (vec.size() == 0) {
     auto pair = namesWithErrorsEmitted.insert(ident->name());
     if (pair.second) {
@@ -2049,7 +2051,7 @@ Resolver::lookupIdentifier(const Identifier* ident,
                     ident, printFirstMention, vec, traceResult);
       }
     }
-  }
+  }*/
 
   return vec;
 }
