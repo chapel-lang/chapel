@@ -133,6 +133,8 @@ InitResolver::Phase InitResolver::getMaxPhase(Phase A, Phase B) {
 // that such information can be separate from the current state of what is or
 // is not initialized.
 void InitResolver::merge(owned<InitResolver>& A, owned<InitResolver>& B) {
+  assert(A != nullptr);
+
   if (B == nullptr) {
     // TODO: Create information to indicate we need to generate code to match
     // the 'then' branch in the case of an absent 'else' branch.
@@ -533,31 +535,31 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
   checkInsideBadTag(ctx_, initResolver_, node);
 
   if (!isOutOfOrder) {
-  // Implicitly initialize any fields between the current index and this.
-  int old = currentFieldIndex_;
-  currentFieldIndex_ = state->ordinalPos + 1;
-  for (int i = old; i < state->ordinalPos; i++) {
-      auto id = fieldIdsByOrdinal_[i];
+    // Implicitly initialize any fields between the current index and this.
+    int old = currentFieldIndex_;
+    currentFieldIndex_ = state->ordinalPos + 1;
+    for (int i = old; i < state->ordinalPos; i++) {
+        auto id = fieldIdsByOrdinal_[i];
 
-      // TODO: Anything to do if this doesn't hold?
-      std::ignore = implicitlyResolveFieldType(id);
-  }
-
-  // TODO: Anything to do if the opposite is true?
-  if (!isAlreadyInitialized) {
-    auto& reRhs = initResolver_.byPostorder.byAst(rhs);
-    state->qt = reRhs.type();
-    state->initPointId = node->id();
-    state->isInitialized = true;
-
-    // How often do we need to recompute this? More often?
-    if (state->qt.isType() || state->qt.isParam()) {
-      updateResolverVisibleReceiverType();
+        // TODO: Anything to do if this doesn't hold?
+        std::ignore = implicitlyResolveFieldType(id);
     }
 
-  } else {
-    CHPL_ASSERT(0 == "Not handled yet!");
-  }
+    // TODO: Anything to do if the opposite is true?
+    if (!isAlreadyInitialized) {
+      auto& reRhs = initResolver_.byPostorder.byAst(rhs);
+      state->qt = reRhs.type();
+      state->initPointId = node->id();
+      state->isInitialized = true;
+
+      // How often do we need to recompute this? More often?
+      if (state->qt.isType() || state->qt.isParam()) {
+        updateResolverVisibleReceiverType();
+      }
+
+    } else {
+      CHPL_ASSERT(0 == "Not handled yet!");
+    }
   } else if (!isAlreadyInitialized) {
     auto name = state->name;
     ctx_->error(node, "Field \"%s\" initialized out of order",
