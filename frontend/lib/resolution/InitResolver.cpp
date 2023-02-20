@@ -72,6 +72,12 @@ InitResolver::create(Context* ctx, Resolver& visitor, const Function* fn) {
   return ret;
 }
 
+owned<InitResolver> InitResolver::fork() {
+  auto ret = toOwned(new InitResolver(ctx_, initResolver_, fn_, currentRecvType_));
+  ret->copyState(*this);
+  return ret;
+}
+
 // TODO: More general function to fetch the parent type/fields later.
 bool InitResolver::isCallToSuperInitRequired(void) {
   if (auto cls = initialRecvType_->toClassType())
@@ -98,6 +104,98 @@ void InitResolver::doSetupInitialState(void) {
     state = { i, ID(), rf.fieldType(i), rf.fieldName(i), false };
     fieldToInitState_.insert({id, std::move(state)});
     fieldIdsByOrdinal_.push_back(id);
+  }
+}
+
+void InitResolver::copyState(InitResolver& other) {
+  phase_ = other.phase_;
+  fieldToInitState_ = other.fieldToInitState_;
+  fieldIdsByOrdinal_ = other.fieldIdsByOrdinal_;
+  currentFieldIndex_ = other.currentFieldIndex_;
+  thisCompleteIds_ = other.thisCompleteIds_;
+  isDescendingIntoAssignment_ = other.isDescendingIntoAssignment_;
+  currentRecvType_ = other.currentRecvType_;
+}
+
+InitResolver::Phase InitResolver::getMaxPhase(Phase A, Phase B) {
+  if (A == PHASE_COMPLETE || B == PHASE_COMPLETE) {
+    return PHASE_COMPLETE;
+  }
+  if (A == PHASE_NEED_COMPLETE || B == PHASE_NEED_COMPLETE) {
+    return PHASE_NEED_COMPLETE;
+  }
+  return PHASE_NEED_SUPER_INIT;
+}
+
+// TODO: store multiple init points for each field
+// BHARSH TODO: I think we need something more like a list of
+// field-initialization information, to account for multiple branches, and so
+// that such information can be separate from the current state of what is or
+// is not initialized.
+void InitResolver::merge(owned<InitResolver>& A, owned<InitResolver>& B) {
+  if (B == nullptr) {
+    // TODO: Create information to indicate we need to generate code to match
+    // the 'then' branch in the case of an absent 'else' branch.
+    copyState(*A);
+  } else {
+    phase_ = getMaxPhase(A->phase_, B->phase_);
+    assert(currentFieldIndex_ <= A->currentFieldIndex_);
+    assert(currentFieldIndex_ <= B->currentFieldIndex_);
+
+    // Collect any *new* occurrences of 'this.complete'
+    for (auto i = thisCompleteIds_.size(); i < A->thisCompleteIds_.size(); i++) {
+      thisCompleteIds_.push_back(A->thisCompleteIds_[i]);
+    }
+    for (auto i = thisCompleteIds_.size(); i < B->thisCompleteIds_.size(); i++) {
+      thisCompleteIds_.push_back(B->thisCompleteIds_[i]);
+    }
+
+    auto curMax = std::max(A->currentFieldIndex_, B->currentFieldIndex_);
+
+    // If one branch has proceeded further than the other, we need to
+    // implicitly resolve fields in the branch that is behind.
+    InitResolver& behind = A->currentFieldIndex_ < B->currentFieldIndex_ ? *A : *B;
+    for (auto i = behind.currentFieldIndex_; i < curMax; i++) {
+      auto& id = behind.fieldIdsByOrdinal_[i];
+      std::ignore = behind.implicitlyResolveFieldType(id);
+    }
+
+    // Update field states
+    for (auto i = currentFieldIndex_; i < curMax; i++) {
+      auto& id = fieldIdsByOrdinal_[i];
+      auto state = fieldStateFromId(id);
+      auto stateA = A->fieldStateFromId(id);
+      auto stateB = B->fieldStateFromId(id);
+
+      assert(stateA->isInitialized && stateB->isInitialized);
+      state->isInitialized = true;
+
+      assert(stateA->qt.type() == stateB->qt.type());
+      state->qt = stateA->qt;
+
+      // TODO: need to keep track of these in a different way so we can
+      // preserve both init points if needed.
+      if (!stateA->initPointId.isEmpty()) {
+        state->initPointId = stateA->initPointId;
+      } else if (!stateB->initPointId.isEmpty()) {
+        state->initPointId = stateB->initPointId;
+      }
+    }
+
+    currentFieldIndex_ = curMax;
+
+    // Error if the computed types are different, otherwise update the receiver
+    // type going forward.
+    //
+    // TODO: improve error message text
+    // - point out different types, and where they are initialized
+    if (A->currentRecvType_ != B->currentRecvType_) {
+      ctx_->error(fn_, "Initializer must compute the same type in each branch");
+    }
+
+    // TODO: How should we allow the compiler to make progress if two branches
+    // have computed different types?
+    updateResolverVisibleReceiverType();
   }
 }
 
@@ -377,11 +475,11 @@ bool InitResolver::handleCallToThisComplete(const FnCall* node) {
   if (!isCompleteCall) return false;
 
   // TODO: Better/more appropriate user facing error message for this?
-  if (!idForCompleteCall_.isEmpty()) {
+  if (thisCompleteIds_.size() > 0) {
     CHPL_ASSERT(phase_ == PHASE_COMPLETE);
     ctx_->error(node, "use of this.complete() call in phase 2");
   } else {
-    idForCompleteCall_ = node->id();
+    thisCompleteIds_.push_back(node->id());
     phase_ = PHASE_COMPLETE;
   }
 
