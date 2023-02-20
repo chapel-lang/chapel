@@ -33,3 +33,6 @@ as follows:
     qthreads should call to get the hwloc topology, and several files to
     support this behavior including the Makefile to pass this argument to
     configure, and binders.c and hwloc.c to call the function.
+
+* Added -lpciaccess to the list of libraries to try when linking against
+  hwloc.
