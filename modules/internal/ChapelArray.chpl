@@ -796,7 +796,19 @@ module ChapelArray {
       f.read(_value);
     }
 
+    // TODO: Can't this be an initializer?
+    pragma "no doc"
+    proc type decodeFrom(f) throws {
+      var ret : this;
+      ret.readThis(f);
+      return ret;
+    }
+
     proc writeThis(f) throws {
+      f.write(_value);
+    }
+    pragma "no doc"
+    proc encodeTo(f) throws {
       f.write(_value);
     }
 
@@ -1578,6 +1590,15 @@ module ChapelArray {
       _value.dsiSerialWrite(f);
     }
 
+    // Note: This 'encodeTo' is required at the moment because the compiler
+    // generated 'encodeTo', like 'writeThis' is considered to be a last
+    // resort. Without this method we would incur promotion when trying
+    // to print arrays.
+    pragma "no doc"
+    proc encodeTo(f) throws {
+      writeThis(f);
+    }
+
     pragma "no doc"
     proc readThis(f) throws {
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
@@ -1587,6 +1608,15 @@ module ChapelArray {
       }
 
       _value.dsiSerialRead(f);
+    }
+
+    // TODO: Can we convert this to an initializer despite the potential issues
+    // with runtime types?
+    pragma "no doc"
+    proc type decodeFrom(f) throws {
+      var ret : this;
+      ret.readThis(f);
+      return ret;
     }
 
     // sparse array interface

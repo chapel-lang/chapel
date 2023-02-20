@@ -178,6 +178,7 @@ PRAGMA(DEFAULT_INTENT_IS_REF_MAYBE_CONST, ypr,
        "ref otherwise")
 
 PRAGMA(COPY_INIT, npr, "copy initializer", ncm)
+PRAGMA(DEFAULT_INIT, npr, "default initializer", ncm)
 PRAGMA(DESTRUCTOR, npr,
        "destructor",
        "applied to functions that are destructors")

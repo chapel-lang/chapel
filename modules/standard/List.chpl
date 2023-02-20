@@ -1797,6 +1797,15 @@ module List {
       _leave();
     }
 
+    //
+    // TODO: rewrite to use formatter interface
+    //
+    pragma "no doc"
+    proc init(type eltType, param parSafe : bool, r: fileReader) {
+      this.init(eltType, parSafe);
+      try! readThis(r);
+    }
+
     /*
       Returns `true` if this list contains zero elements.
 

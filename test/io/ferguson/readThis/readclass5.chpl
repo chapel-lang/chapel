@@ -3,6 +3,16 @@ use IO;
 class mything {
   var x:int;
   var y:int;
+  proc init(x: int = 0, y: int = 0) {
+    this.x = x;
+    this.y = y;
+  }
+  proc init(r: fileReader) {
+    this.x = r.read(int);
+    r.readLiteral(" ");
+    this.y = r.read(int);
+    r.readNewline();
+  }
 
   proc readThis(r) throws {
     readWriteHelper(r);

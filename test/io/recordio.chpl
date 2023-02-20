@@ -116,6 +116,16 @@ proc MyRecord.readWriteHelper(f) throws {
 
   rwLiteral("\n");
 }
+proc MyRecord.init(i: int = 0, r: real = 0.0, s: string = "") {
+  this.i = i;
+  this.r = r;
+  this.s = s;
+}
+
+proc MyRecord.init(r: fileReader) throws {
+  this.init();
+  readThis(r);
+}
 
 {
   // create a reader but specify that we'd like to use single-quoted strings.

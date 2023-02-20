@@ -295,6 +295,8 @@ extern char dynoBinAstDir[FILENAME_MAX + 1];
 
 extern size_t fDynoBreakOnHash;
 
+extern bool fUseIOFormatters;
+
 namespace chpl {
   class Context;
 }

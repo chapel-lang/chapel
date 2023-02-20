@@ -1018,6 +1018,10 @@ void initCompilerGlobals() {
   gNodeID->addFlag(FLAG_EXTERN);
   rootModule->block->insertAtTail(new DefExpr(gNodeID));
 
+  gUseIOFormatters = new VarSymbol("chpl_useIOFormatters", dtBool);
+  gUseIOFormatters->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gUseIOFormatters, fUseIOFormatters);
+
   initForTaskIntents();
 }
 

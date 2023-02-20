@@ -819,6 +819,11 @@ module String {
       compilerError("not implemented: writeThis");
     }
 
+    // These should never be called (but are default functions for records)
+    proc encodeTo(f) throws {
+      compilerError("not implemented: encodeTo");
+    }
+
     proc readThis(f) throws {
       compilerError("not implemented: readThis");
     }

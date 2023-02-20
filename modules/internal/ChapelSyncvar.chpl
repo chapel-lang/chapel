@@ -203,6 +203,12 @@ module ChapelSyncvar {
       compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
     }
 
+    proc type decodeFrom(r) throws {
+      var ret : this;
+      compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
+      return ret;
+    }
+
     // Do not allow implicit writes of sync vars.
     proc writeThis(x) throws {
       compilerError("sync variables cannot currently be written - apply readFE/readFF() to those variables first");
@@ -1234,5 +1240,14 @@ private module AlignedTSupport {
   }
   proc aligned_t.readThis(f) throws {
     this = f.read(uint(64)) : aligned_t;
+  }
+
+  proc aligned_t.encodeTo(f) throws {
+    writeThis(f);
+  }
+  proc type aligned_t.readThis(f) throws {
+    var ret : aligned_t;
+    ret.readThis(f);
+    return ret;
   }
 }
