@@ -150,6 +150,8 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
     if (isInitiallyConcrete) continue;
 
     // TODO: Will need to relax this as we go.
+    // TODO: 'isGenericOrUnknown' isn't the right test here - e.g. if we have
+    // a type field set to 'string'
     if (state->qt.isType() || state->qt.isParam())
       if (!state->qt.isGenericOrUnknown())
         subs.insert({id, state->qt});
@@ -414,6 +416,7 @@ static void checkInsideBadTag(Context* context,
 }
 
 bool InitResolver::handleAssignmentToField(const OpCall* node) {
+  if (phase_ == PHASE_COMPLETE) return false;
   if (node->op() != USTR("=")) return false;
   CHPL_ASSERT(node->numActuals() == 2);
   auto lhs = node->actual(0);
@@ -431,10 +434,11 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
 
   checkInsideBadTag(ctx_, initResolver_, node);
 
+  if (!isOutOfOrder) {
   // Implicitly initialize any fields between the current index and this.
   int old = currentFieldIndex_;
   currentFieldIndex_ = state->ordinalPos + 1;
-  for (int i = old + 1; i < state->ordinalPos; i++) {
+  for (int i = old; i < state->ordinalPos; i++) {
       auto id = fieldIdsByOrdinal_[i];
 
       // TODO: Anything to do if this doesn't hold?
@@ -453,15 +457,10 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
       updateResolverVisibleReceiverType();
     }
 
-    if ((size_t)currentFieldIndex_ == fieldIdsByOrdinal_.size()) {
-      phase_ = PHASE_COMPLETE;
-    }
-
   } else {
     CHPL_ASSERT(0 == "Not handled yet!");
   }
-
-  if (isOutOfOrder) {
+  } else if (!isAlreadyInitialized) {
     auto name = state->name;
     ctx_->error(node, "Field \"%s\" initialized out of order",
                       name.c_str());
@@ -578,7 +577,12 @@ bool InitResolver::handleResolvingFieldAccess(const Dot* node) {
 }
 
 void InitResolver::checkEarlyReturn(const Return* ret) {
-  if (phase_ != PHASE_COMPLETE) {
+  // Something like:
+  //   this.z = 5;
+  //   return;
+  // where 'z' is the last field shouldn't be an error.
+  if (phase_ != PHASE_COMPLETE &&
+      (size_t)currentFieldIndex_ < fieldIdsByOrdinal_.size()) {
     ctx_->error(ret, "cannot return from initializer before initialization is complete");
   }
 }
