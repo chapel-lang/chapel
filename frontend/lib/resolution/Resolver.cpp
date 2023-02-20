@@ -3136,13 +3136,16 @@ static bool computeTaskIntentInfo(Resolver& resolver, const NamedDecl* intent,
 }
 
 bool Resolver::enter(const ReduceIntent* reduce) {
-
   ID id;
   QualifiedType type;
   ResolvedExpression& result = byPostorder.byAst(reduce);
 
   if (computeTaskIntentInfo(*this, reduce, id, type)) {
     validateAndSetToId(result, reduce, id);
+    // set reduce intent shadow variable to a VAR with type of shadowed variable
+    QualifiedType reduceIntentType =
+        QualifiedType(QualifiedType::Kind::VAR, type.type());
+    result.setType(reduceIntentType);
   } else if (!scopeResolveOnly) {
     context->error(reduce, "Unable to find declaration of \"%s\" for reduction", reduce->name().c_str());
   }
@@ -3290,13 +3293,16 @@ bool Resolver::enter(const uast::Reduce* reduce) {
 }
 
 void Resolver::exit(const uast::Reduce* reduce) {
+}
 
+// helper to determine if a TaskVar is a task intent
+static bool isTaskIntent(const TaskVar* taskVar) {
+  return taskVar->typeExpression() == nullptr &&
+         taskVar->initExpression() == nullptr;
 }
 
 bool Resolver::enter(const TaskVar* taskVar) {
-  const bool isTaskIntent = taskVar->typeExpression() == nullptr &&
-                            taskVar->initExpression() == nullptr;
-  if (isTaskIntent) {
+  if (isTaskIntent(taskVar)) {
     ID id;
     QualifiedType type;
     ResolvedExpression& result = byPostorder.byAst(taskVar);
@@ -3316,10 +3322,9 @@ bool Resolver::enter(const TaskVar* taskVar) {
     return true;
   }
 }
+
 void Resolver::exit(const TaskVar* taskVar) {
-  const bool isTaskIntent = taskVar->typeExpression() == nullptr &&
-                            taskVar->initExpression() == nullptr;
-  if (isTaskIntent == false) {
+  if (!isTaskIntent(taskVar)) {
     exitScope(taskVar);
   }
 }
