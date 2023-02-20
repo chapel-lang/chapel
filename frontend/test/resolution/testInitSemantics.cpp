@@ -440,7 +440,7 @@ static void testInitCondBadOrder(void) {
       var z : int;
     }
     proc r.init(cond: bool) {
-      this.y = 5;
+      this.z = 5;
       if cond {
         this.x = 10;
       } else {
@@ -461,11 +461,18 @@ static void testInitCondBadOrder(void) {
   // Resolve the module.
   std::ignore = resolveModule(ctx, mod->id());
 
-  assert(guard.errors().size() == 1);
+  assert(guard.errors().size() == 2);
 
-  auto& msg = guard.errors()[0];
-  assert(msg->message() == "Field \"x\" initialized out of order");
-  assert(msg->location(ctx).firstLine() == 14);
+  {
+    auto& msg = guard.errors()[0];
+    assert(msg->message() == "Field \"x\" initialized out of order");
+    assert(msg->location(ctx).firstLine() == 14);
+  }
+  {
+    auto& msg = guard.errors()[1];
+    assert(msg->message() == "Field \"y\" initialized out of order");
+    assert(msg->location(ctx).firstLine() == 16);
+  }
   assert(guard.realizeErrors());
 }
 
