@@ -4,8 +4,8 @@ module Json {
   private use CTypes;
   private use Map;
 
-  type _writeType = fileWriter(fmtType=JsonWriter);
-  type _readerT = fileReader(fmtType=JsonReader);
+  type _writeType = fileWriter(fmtType=JsonWriter, ?);
+  type _readerT = fileReader(fmtType=JsonReader, ?);
   record JsonWriter {
     var firstField = true;
     var _inheritLevel = 0;
