@@ -997,6 +997,8 @@ struct ResultVisibilityTrace {
       context->markPointer(resolvedVisibilityScope);
       renameFrom.mark(context);
       visibilityClauseId.mark(context);
+      context->markPointer(methodReceiverScope);
+      context->markPointer(parentScope);
     }
   };
 
