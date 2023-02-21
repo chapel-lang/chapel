@@ -1426,6 +1426,8 @@ private const IOHINTS_PREFETCH:    c_int = QIO_HINT_CACHED;
 private const IOHINTS_MMAP:        c_int = QIO_METHOD_MMAP;
 private const IOHINTS_NOMMAP:      c_int = QIO_METHOD_PREADPWRITE;
 
+config param newMmmap = true;
+
 /* A value of the :record:`ioHintSet` type defines a set of hints about
   the I/O that the file or channel will perform.  These hints may be used
   by the implementation to select optimized versions of the I/O operations.
@@ -1438,7 +1440,7 @@ private const IOHINTS_NOMMAP:      c_int = QIO_METHOD_PREADPWRITE;
     use IO;
 
     // define a set of hints using a union operation
-    var hints = ioHintSet::sequential | ioHintSet::prefetch;
+    var hints = ioHintSet.sequential | ioHintSet.prefetch;
 
     // open a file using the hints
     var f: file;
@@ -1470,17 +1472,45 @@ record ioHintSet {
   */
   proc type prefetch { return new ioHintSet(IOHINTS_PREFETCH); }
 
-  /* Suggests that 'mmap' should be used to access the file contents
+  /*
+    Suggests whether or not 'mmap' should be used to access the file contents.
+
+     * when the argument is ``true``, suggests that mmap should be used
+     * when the argument is ``false``, suggests that mmap should not be used
+
   */
-  proc type mmap { return new ioHintSet(IOHINTS_MMAP); }
+  // pragma "last resort"
+  proc type mmap(useMmap = true) where newMmmap==true {
+    return if useMmap
+      then new ioHintSet(IOHINTS_MMAP)
+      else new ioHintSet(IOHINTS_NOMMAP);
+  }
+
+  /* Suggests that 'mmap' should be used to access the file contents.
+  */
+  // pragma "last resort"
+  deprecated "`ioHintSet.mmap` is deprecated; please use `ioHintSet.mmap(true)` instead"
+  proc type mmap where newMmmap==false {
+    return new ioHintSet(IOHINTS_MMAP);
+  }
 
   /* Suggests that 'mmap' should not be used to access the file contents.
   Instead, pread/pwrite are used.
   */
+  deprecated "`ioHintSet.noMmap` is deprecated; please use `ioHintset.mmap(false)` instead"
   proc type noMmap { return new ioHintSet(IOHINTS_NOMMAP); }
 
   pragma "no doc"
   proc type fromFlag(flag: c_int) { return new ioHintSet(flag); }
+
+  // pragma "no doc"
+  // pragma "last resort"
+  // proc this(useMmap: bool = true) {
+  //   compilerWarning("hello!");
+  //   // return if useMmap
+  //   //   then new ioHintSet(IOHINTS_MMAP)
+  //   //   else new ioHintSet(IOHINTS_NOMMAP);
+  // }
 }
 
 /* Compute the union of two ioHintSets
