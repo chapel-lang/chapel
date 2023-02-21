@@ -8676,7 +8676,7 @@ static Type* moveDetermineRhsTypeErrorIfInvalid(CallExpr* call) {
                 (
                     std::strcmp("write", rhsName) == 0 ||
                     std::strcmp("writeln", rhsName) == 0 ||
-                    std::strcmp("writebits", rhsName) == 0 ||
+                    std::strcmp("writeBits", rhsName) == 0 ||
                     std::strcmp("writeBytes", rhsName) == 0 ||
                     std::strcmp("writef", rhsName) == 0
                 )

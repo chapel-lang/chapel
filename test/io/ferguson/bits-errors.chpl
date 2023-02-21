@@ -10,7 +10,7 @@ var f = open(testfile, ioMode.cwr);
   var w = f.writer(kind=ionative);
 
     // Write 011
-    w.writebits(0b011, 3);
+    w.writeBits(0b011, 3);
     w.close();
 }
 
@@ -21,7 +21,7 @@ if test == 1 {
     // Write 011
     var x = 0b011;
     var nbits = -1;
-    w.writebits(x, nbits);
+    w.writeBits(x, nbits);
     w.close();
 }
 
@@ -32,7 +32,7 @@ if test == 2 {
     // Write 011
     var x:uint(8) = 0b011;
     var nbits = 9;
-    w.writebits(x, nbits);
+    w.writeBits(x, nbits);
     w.close();
 }
 
