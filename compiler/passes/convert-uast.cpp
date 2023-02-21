@@ -1521,7 +1521,7 @@ struct Converter {
   }
 
   // TODO: Create a common converter for all IndexableLoop if possible?
-  BlockStmt* visit(const uast::Coforall* node) {
+  Expr* visit(const uast::Coforall* node) {
     INT_ASSERT(!node->isExpressionLevel());
 
     // These are the arguments that 'buildCoforallLoopStmt' requires.
@@ -1531,8 +1531,7 @@ struct Converter {
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     bool zippered = node->iterand()->isZip();
 
-    return buildCoforallLoopStmt(indices, iterator, byref_vars, body,
-                                 zippered);
+    return buildThunk(buildCoforallLoopStmt, indices, iterator, byref_vars, body, zippered);
   }
 
   Expr* visit(const uast::For* node) {
