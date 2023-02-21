@@ -5945,7 +5945,7 @@ proc fileWriter.writeBits(x: integral, numBits: int) : void throws {
     // Error if writing more bits than fit into x
     if Types.numBits(x.type) < numBits then
       throw new owned IllegalArgumentError("x, numBits", 
-              "writeBits numBits=" + nbits:string +
+              "writeBits numBits=" + numBits:string +
                " > bits in x:" + x.type:string);
     // Error if writing negative number of bits
     if isIntType(numBits.type) && numBits < 0 then
