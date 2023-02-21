@@ -38,7 +38,7 @@ if test == 2 { // uints
 
       // Write 011
       var x:uint = 0b011;
-      var nbits:uint = 3;
+      var nbits:int = 3;
       // now x, nbits are int
       w.writeBits(x, nbits);
       w.close();
