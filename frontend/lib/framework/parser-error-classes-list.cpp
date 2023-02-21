@@ -270,6 +270,16 @@ void ErrorMultipleManagementStrategies::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorIllegalUseImport::write(ErrorWriterBase& wr) const {
+  auto clause = std::get<0>(info);
+  auto parent = std::get<1>(info);
+  const char* useOrImport = parent->isImport() ? "import" : "use";
+  wr.heading(kind_, type_, clause,
+             "Illegal expression in '", useOrImport, "' statement");
+  wr.code(clause);
+  wr.note(clause, "only identifiers and 'dot' expressions are supported");
+}
+
 void ErrorPostParseErr::write(ErrorWriterBase& wr) const {
   auto node = std::get<const uast::AstNode*>(info);
   auto errorMessage = std::get<std::string>(info);
