@@ -1251,7 +1251,8 @@ void Resolver::issueErrorForFailedModuleDot(const Dot* dot, ID moduleId) {
     std::vector<ResultVisibilityTrace> trace;
     lookupNameInScopeTracing(context, scope, { }, dotModName,
                              LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE |
-                             LOOKUP_PARENTS | LOOKUP_INNERMOST,
+                             LOOKUP_PARENTS | LOOKUP_INNERMOST |
+                             LOOKUP_EXTERN_BLOCKS,
                              trace);
     // find the last rename in the trace
     for (const auto& t : trace) {
@@ -2018,24 +2019,31 @@ Resolver::lookupIdentifier(const Identifier* ident,
 
   LookupConfig config = LOOKUP_DECLS |
                         LOOKUP_IMPORT_AND_USE |
-                        LOOKUP_PARENTS;
+                        LOOKUP_PARENTS |
+                        LOOKUP_EXTERN_BLOCKS;
 
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
   auto vec =
       lookupNameInScope(context, scope, receiverScopes, ident->name(), config);
 
-  // TODO: re-enable these error messages once we are ready
-  /*
-  if (vec.size() == 0) {
-    auto pair = namesWithErrorsEmitted.insert(ident->name());
-    if (pair.second) {
-      // insertion took place so emit the error
-      bool printFirstMention = identHasMoreMentions(ident);
-      CHPL_REPORT(context, UnknownIdentifier, ident, printFirstMention);
-    }
-  } else if (vec.size() > 1 || vec[0].numIds() > 1) {
-    if (!resolvingCalledIdent) {
+  bool notFound = vec.empty();
+  bool ambiguous = !notFound && (vec.size() > 1 || vec[0].numIds() > 1);
+
+  // TODO: these errors should be enabled for scope resolution
+  // but for now, they are off, as a temporary measure to enable
+  // the production compiler handle these cases. To enable this,
+  // we will have to adjust the dyno scope resolver to handle 'domain',
+  // and probably a few other features.
+  if (!scopeResolveOnly) {
+    if (notFound) {
+      auto pair = namesWithErrorsEmitted.insert(ident->name());
+      if (pair.second) {
+        // insertion took place so emit the error
+        bool printFirstMention = identHasMoreMentions(ident);
+        CHPL_REPORT(context, UnknownIdentifier, ident, printFirstMention);
+      }
+    } else if (ambiguous && !resolvingCalledIdent) {
       auto pair = namesWithErrorsEmitted.insert(ident->name());
       if (pair.second) {
         // insertion took place so emit the error
@@ -2051,7 +2059,18 @@ Resolver::lookupIdentifier(const Identifier* ident,
                     ident, printFirstMention, vec, traceResult);
       }
     }
-  }*/
+  }
+
+  // If there is one result and it's an extern block, forget about it for now.
+  // TODO: type resolution for symbols in extern blocks
+  if (notFound == false && ambiguous == false) {
+    // there is just one result. Is it an extern block?
+    const ID& id = vec[0].firstId();
+    auto tag = parsing::idToTag(context, id);
+    if (isExternBlock(tag)) {
+      vec.clear();
+    }
+  }
 
   return vec;
 }
@@ -2875,7 +2894,8 @@ void Resolver::exit(const Dot* dot) {
 
     // resolve e.g. M.x where M is a module
     LookupConfig config = LOOKUP_DECLS |
-                          LOOKUP_IMPORT_AND_USE;
+                          LOOKUP_IMPORT_AND_USE |
+                          LOOKUP_EXTERN_BLOCKS;
 
     auto modScope = scopeForModule(context, moduleId);
     auto vec = lookupNameInScope(context, modScope,
@@ -2892,18 +2912,24 @@ void Resolver::exit(const Dot* dot) {
     } else {
       // vec.size() == 1 and vec[0].numIds() <= 1
       const ID& id = vec[0].firstId();
-      QualifiedType type;
-      if (id.isEmpty()) {
-        // empty IDs from the scope resolution process are builtins
-        CHPL_ASSERT(false && "Not handled yet!");
-      } else {
-        // use the type established at declaration/initialization,
-        // but for things with generic type, use unknown.
-        type = typeForId(id, /*localGenericToUnknown*/ true);
+
+      // TODO: handle extern blocks correctly.
+      // This conditional is a workaround to leave extern block resolution
+      // to the production scope resolver.
+      if (!isExternBlock(parsing::idToTag(context, id))) {
+        QualifiedType type;
+        if (id.isEmpty()) {
+          // empty IDs from the scope resolution process are builtins
+          CHPL_ASSERT(false && "Not handled yet!");
+        } else {
+          // use the type established at declaration/initialization,
+          // but for things with generic type, use unknown.
+          type = typeForId(id, /*localGenericToUnknown*/ true);
+        }
+        maybeEmitWarningsForId(this, type, dot, id);
+        validateAndSetToId(r, dot, id);
+        r.setType(type);
       }
-      maybeEmitWarningsForId(this, type, dot, id);
-      validateAndSetToId(r, dot, id);
-      r.setType(type);
     }
     return;
   }

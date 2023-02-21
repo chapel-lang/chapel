@@ -116,6 +116,7 @@ struct GatherDecls {
   DeclMap declared;
   bool containsUseImport = false;
   bool containsFunctionDecls = false;
+  bool containsExternBlock = false;
   bool atFieldLevel = false;
 
   GatherDecls(const AstNode* parentAst) {
@@ -200,6 +201,12 @@ struct GatherDecls {
   }
   void exit(const WithClause* with) { }
 
+  bool enter(const ExternBlock* externBlock) {
+    containsExternBlock = true;
+    return false;
+  }
+  void exit(const ExternBlock* externBlock) { }
+
   // ignore other AST nodes
   bool enter(const AstNode* ast) {
     return false;
@@ -210,7 +217,8 @@ struct GatherDecls {
 void gatherDeclsWithin(const uast::AstNode* ast,
                        DeclMap& declared,
                        bool& containsUseImport,
-                       bool& containsFunctionDecls) {
+                       bool& containsFunctionDecls,
+                       bool& containsExternBlock) {
   auto visitor = GatherDecls(ast);
 
   // Visit child nodes to e.g. look inside a Function
@@ -223,6 +231,7 @@ void gatherDeclsWithin(const uast::AstNode* ast,
   declared.swap(visitor.declared);
   containsUseImport = visitor.containsUseImport;
   containsFunctionDecls = visitor.containsFunctionDecls;
+  containsExternBlock = visitor.containsExternBlock;
 }
 
 bool createsScope(asttags::AstTag tag) {
@@ -361,10 +370,16 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
           DeclMap declared;
           bool containsUseImport = false;
           bool containsFns = false;
-          gatherDeclsWithin(ast, declared, containsUseImport, containsFns);
+          bool containsExternBlock = false;
+          gatherDeclsWithin(ast, declared,
+                            containsUseImport,
+                            containsFns,
+                            containsExternBlock);
 
           // create a new scope if we found any decls/uses immediately in it
-          newScope = !(declared.empty() && containsUseImport == false);
+          newScope = !(declared.empty() &&
+                       containsUseImport == false &&
+                       containsExternBlock == false);
         }
       }
 
@@ -402,6 +417,7 @@ static bool doLookupInScope(Context* context,
                             LookupConfig config,
                             NamedScopeSet& checkedScopes,
                             std::vector<BorrowedIdsWithName>& result,
+                            bool& foundExternBlock,
                             std::vector<VisibilityTraceElt>* traceCurPath,
                             std::vector<ResultVisibilityTrace>* traceResult);
 
@@ -451,6 +467,7 @@ doLookupInImportsAndUses(Context* context,
                          VisibilitySymbols::ShadowScope shadowScope,
                          NamedScopeSet& checkedScopes,
                          std::vector<BorrowedIdsWithName>& result,
+                         bool& foundExternBlock,
                          std::vector<VisibilityTraceElt>* traceCurPath,
                          std::vector<ResultVisibilityTrace>* traceResult) {
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
@@ -506,7 +523,7 @@ doLookupInImportsAndUses(Context* context,
 
         found |= doLookupInScope(context, symScope, {}, resolving,
                                  nameToLookUp, newConfig, checkedScopes, result,
-                                 traceCurPath, traceResult);
+                                 foundExternBlock, traceCurPath, traceResult);
 
         if (trace) {
           traceCurPath->pop_back();
@@ -561,6 +578,7 @@ doLookupInAutoModules(Context* context,
                       bool skipPrivateVisibilities,
                       NamedScopeSet& checkedScopes,
                       std::vector<BorrowedIdsWithName>& result,
+                      bool& foundExternBlock,
                       std::vector<VisibilityTraceElt>* traceCurPath,
                       std::vector<ResultVisibilityTrace>* traceResult) {
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
@@ -587,6 +605,7 @@ doLookupInAutoModules(Context* context,
       found = doLookupInScope(context, autoModScope, {}, resolving,
                               name, newConfig,
                               checkedScopes, result,
+                              foundExternBlock,
                               traceCurPath, traceResult);
 
       if (trace) {
@@ -635,6 +654,7 @@ doLookupInReceiverScopes(Context* context,
                          LookupConfig config,
                          NamedScopeSet& checkedScopes,
                          std::vector<BorrowedIdsWithName>& result,
+                         bool& foundExternBlock,
                          std::vector<VisibilityTraceElt>* traceCurPath,
                          std::vector<ResultVisibilityTrace>* traceResult) {
   if (receiverScopes.empty()) {
@@ -661,7 +681,7 @@ doLookupInReceiverScopes(Context* context,
 
     got |= doLookupInScope(context, currentScope, {}, resolving,
                            name, newConfig, checkedScopes, result,
-                           traceCurPath, traceResult);
+                           foundExternBlock, traceCurPath, traceResult);
 
     if (trace) {
       traceCurPath->pop_back();
@@ -678,6 +698,7 @@ doLookupInReceiverParentScopes(Context* context,
                                LookupConfig config,
                                NamedScopeSet& checkedScopes,
                                std::vector<BorrowedIdsWithName>& result,
+                               bool& foundExternBlock,
                                std::vector<VisibilityTraceElt>* traceCurPath,
                                std::vector<ResultVisibilityTrace>* traceResult)
 {
@@ -713,7 +734,7 @@ doLookupInReceiverParentScopes(Context* context,
 
       got |= doLookupInScope(context, cur, {}, resolving,
                              name, newConfig, checkedScopes, result,
-                             traceCurPath, traceResult);
+                             foundExternBlock, traceCurPath, traceResult);
 
       if (trace) {
         traceCurPath->pop_back();
@@ -731,6 +752,49 @@ doLookupInReceiverParentScopes(Context* context,
   }
 
   return got;
+}
+
+static bool
+doLookupInExternBlock(Context* context,
+                      const Scope* scope,
+                      UniqueString name,
+                      std::vector<BorrowedIdsWithName>& result,
+                      std::vector<VisibilityTraceElt>* traceCurPath,
+                      std::vector<ResultVisibilityTrace>* traceResult) {
+  // Return the ID of the extern block(s) that matched.
+
+  // TODO: need to check if the name is present in the C code for
+  // extern blocks contained in this scope. Consider using clang
+  // precompiled headers and FindExternalVisibleDeclsByName.
+
+  // TODO: implement this in a more incremental-friendly manner
+  auto ast = parsing::idToAst(context, scope->id());
+  for (auto child : ast->children()) {
+    if (child->isExternBlock()) {
+      bool isMethodOrField = false;
+      bool arePrivateIdsIgnored = false;
+      bool onlyMethodsFields = false;
+      auto foundIds =
+        BorrowedIdsWithName::createWithSingleId(child->id(),
+                                                Decl::PUBLIC,
+                                                isMethodOrField,
+                                                arePrivateIdsIgnored,
+                                                onlyMethodsFields);
+      if (foundIds) {
+        if (traceCurPath && traceResult) {
+          ResultVisibilityTrace t;
+          t.visibleThrough = *traceCurPath;
+          VisibilityTraceElt elt;
+          elt.externBlock = true;
+          t.visibleThrough.push_back(std::move(elt));
+          traceResult->push_back(std::move(t));
+        }
+        result.push_back(std::move(foundIds.getValue()));
+      }
+    }
+  }
+
+  return true;
 }
 
 static bool
@@ -763,6 +827,7 @@ static bool doLookupInScope(Context* context,
                             LookupConfig config,
                             NamedScopeSet& checkedScopes,
                             std::vector<BorrowedIdsWithName>& result,
+                            bool& foundExternBlock,
                             std::vector<VisibilityTraceElt>* traceCurPath,
                             std::vector<ResultVisibilityTrace>* traceResult) {
   bool checkDecls = (config & LOOKUP_DECLS) != 0;
@@ -773,6 +838,7 @@ static bool doLookupInScope(Context* context,
   bool skipPrivateVisibilities = (config & LOOKUP_SKIP_PRIVATE_VIS) != 0;
   bool goPastModules = (config & LOOKUP_GO_PAST_MODULES) != 0;
   bool onlyMethodsFields = (config & LOOKUP_ONLY_METHODS_FIELDS) != 0;
+  bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
 
   // goPastModules should imply checkParents; otherwise, why would we proceed
@@ -790,6 +856,11 @@ static bool doLookupInScope(Context* context,
     // scope has already been visited by this function,
     // so don't try it again.
     return false;
+  }
+
+  // if the scope has an extern block, note that fact.
+  if (scope->containsExternBlock()) {
+    foundExternBlock = true;
   }
 
   // Get the resolved visibility statements, if available
@@ -823,6 +894,7 @@ static bool doLookupInScope(Context* context,
                                       onlyInnermost, skipPrivateVisibilities,
                                       VisibilitySymbols::REGULAR_SCOPE,
                                       checkedScopes, result,
+                                      foundExternBlock,
                                       traceCurPath, traceResult);
     }
     if (onlyInnermost && got) return true;
@@ -835,12 +907,14 @@ static bool doLookupInScope(Context* context,
                                     onlyInnermost, skipPrivateVisibilities,
                                     VisibilitySymbols::SHADOW_SCOPE_ONE,
                                     checkedScopes, result,
+                                    foundExternBlock,
                                     traceCurPath, traceResult);
 
     // treat the auto-used modules as if they were 'private use'd
     got |= doLookupInAutoModules(context, scope, resolving, name,
                                  onlyInnermost, skipPrivateVisibilities,
                                  checkedScopes, result,
+                                 foundExternBlock,
                                  traceCurPath, traceResult);
     if (onlyInnermost && got) return true;
   }
@@ -852,6 +926,7 @@ static bool doLookupInScope(Context* context,
                                    onlyInnermost, skipPrivateVisibilities,
                                    VisibilitySymbols::SHADOW_SCOPE_TWO,
                                    checkedScopes, result,
+                                   foundExternBlock,
                                    traceCurPath, traceResult);
     if (onlyInnermost && got) return true;
   }
@@ -864,6 +939,7 @@ static bool doLookupInScope(Context* context,
     bool got = doLookupInReceiverScopes(context, scope, receiverScopes,
                                         resolving, name, config,
                                         checkedScopes, result,
+                                        foundExternBlock,
                                         traceCurPath, traceResult);
     if (onlyInnermost && got) return true;
   }
@@ -923,7 +999,7 @@ static bool doLookupInScope(Context* context,
         bool got = doLookupInScope(context, cur, {}, resolving,
                                    name,
                                    newConfig, checkedScopes, result,
-                                   traceCurPath, traceResult);
+                                   foundExternBlock, traceCurPath, traceResult);
 
         if (trace) {
           traceCurPath->pop_back();
@@ -937,6 +1013,7 @@ static bool doLookupInScope(Context* context,
           bool got = doLookupInReceiverScopes(context, scope, receiverScopes,
                                               resolving, name, newConfig,
                                               checkedScopes, result,
+                                              foundExternBlock,
                                               traceCurPath, traceResult);
           if (onlyInnermost && got) return true;
         }
@@ -957,7 +1034,7 @@ static bool doLookupInScope(Context* context,
 
       bool got = doLookupInScope(context, cur, {}, resolving, name,
                                  newConfig, checkedScopes, result,
-                                 traceCurPath, traceResult);
+                                 foundExternBlock, traceCurPath, traceResult);
 
       if (trace) {
         traceCurPath->pop_back();
@@ -981,7 +1058,7 @@ static bool doLookupInScope(Context* context,
 
       bool got = doLookupInScope(context, rootScope, {}, resolving, name,
                                  newConfig, checkedScopes, result,
-                                 traceCurPath, traceResult);
+                                 foundExternBlock, traceCurPath, traceResult);
 
       if (trace) {
         traceCurPath->pop_back();
@@ -1010,7 +1087,15 @@ static bool doLookupInScope(Context* context,
   if (checkParents) {
     doLookupInReceiverParentScopes(context, scope, receiverScopes, resolving,
                                    name, config, checkedScopes, result,
-                                   traceCurPath, traceResult);
+                                   foundExternBlock, traceCurPath, traceResult);
+  }
+
+  // if LOOKUP_EXTERN_BLOCKS is set, and this scope has an extern block,
+  // and the name matches something in the extern block,
+  // return the extern block ID
+  if (checkExternBlocks && scope->containsExternBlock()) {
+    doLookupInExternBlock(context, scope, name, result,
+                          traceCurPath, traceResult);
   }
 
   if (trace) {
@@ -1066,9 +1151,12 @@ static bool lookupInScopeViz(Context* context,
     config |= LOOKUP_DECLS;
   }
 
+  bool foundExternBlock = false; // ignored
+
   bool got = doLookupInScope(context, scope, {}, resolving,
                              name, config,
                              checkedScopes, result,
+                             foundExternBlock,
                              /* traceCurPath */ nullptr,
                              /* traceResult */ nullptr);
 
@@ -1092,11 +1180,58 @@ static bool lookupInScopeViz(Context* context,
 
     doLookupInScope(context, scope, {}, resolving, name, config,
                     checkedScopes, improperMatches,
+                    foundExternBlock,
                     /* traceCurPath */ nullptr,
                     /* traceResult */ nullptr);
   }
 
   return got;
+}
+
+static bool helpLookupInScope(Context* context,
+                              const Scope* scope,
+                              llvm::ArrayRef<const Scope*> receiverScopes,
+                              const ResolvedVisibilityScope* resolving,
+                              UniqueString name,
+                              LookupConfig config,
+                              NamedScopeSet& checkedScopes,
+                              std::vector<BorrowedIdsWithName>& result,
+                              std::vector<VisibilityTraceElt>* traceCurPath,
+                              std::vector<ResultVisibilityTrace>* traceResult)
+{
+  bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
+  bool foundExternBlock = false;
+  size_t startSize = result.size();
+  NamedScopeSet savedCheckedScopes;
+
+  if (checkExternBlocks) {
+    // clear the extern blocks lookup (since it is a 2nd pass)
+    config &= ~LOOKUP_EXTERN_BLOCKS;
+    // make a note of the checked scopes so we can reset it
+    savedCheckedScopes = checkedScopes;
+  }
+
+  doLookupInScope(context, scope, receiverScopes, resolving,
+                  name, config,
+                  checkedScopes, result,
+                  foundExternBlock,
+                  traceCurPath, traceResult);
+
+  // If we found any extern blocks, and there were no other symbols,
+  // and extern block lookup was requested, use extern block lookup.
+  if (checkExternBlocks && startSize == result.size() && foundExternBlock) {
+    config |= LOOKUP_EXTERN_BLOCKS;
+    checkedScopes = savedCheckedScopes;
+    doLookupInScope(context, scope, receiverScopes, resolving,
+                    name, config,
+                    checkedScopes, result,
+                    foundExternBlock,
+                    traceCurPath, traceResult);
+  }
+
+  // TODO: check for "last resort" symbols here, as well
+
+  return result.size() > startSize;
 }
 
 std::vector<BorrowedIdsWithName>
@@ -1109,11 +1244,11 @@ lookupNameInScope(Context* context,
   std::vector<BorrowedIdsWithName> vec;
 
   if (scope) {
-    doLookupInScope(context, scope, receiverScopes,
-                    /* resolving scope */ nullptr,
-                    name, config, visited, vec,
-                    /* traceCurPath */ nullptr,
-                    /* traceResult */ nullptr);
+    helpLookupInScope(context, scope, receiverScopes,
+                      /* resolving scope */ nullptr,
+                      name, config, visited, vec,
+                      /* traceCurPath */ nullptr,
+                      /* traceResult */ nullptr);
   }
 
   return vec;
@@ -1130,11 +1265,11 @@ lookupNameInScopeTracing(Context* context,
   std::vector<VisibilityTraceElt> traceCurPath;
   std::vector<BorrowedIdsWithName> vec;
   if (scope) {
-    doLookupInScope(context, scope, receiverScopes,
-                    /* resolving scope */ nullptr,
-                    name, config, visited, vec,
-                    &traceCurPath,
-                    &traceResult);
+    helpLookupInScope(context, scope, receiverScopes,
+                      /* resolving scope */ nullptr,
+                      name, config, visited, vec,
+                      &traceCurPath,
+                      &traceResult);
   }
 
   return vec;
@@ -1151,11 +1286,11 @@ lookupNameInScopeWithSet(Context* context,
   std::vector<BorrowedIdsWithName> vec;
 
   if (scope) {
-    doLookupInScope(context, scope, receiverScopes,
-                    /* resolving scope */ nullptr,
-                    name, config, visited, vec,
-                    /* traceCurPath */ nullptr,
-                    /* traceResult */ nullptr);
+    helpLookupInScope(context, scope, receiverScopes,
+                      /* resolving scope */ nullptr,
+                      name, config, visited, vec,
+                      /* traceCurPath */ nullptr,
+                      /* traceResult */ nullptr);
   }
 
   return vec;
@@ -1228,12 +1363,14 @@ static void errorIfNameNotInScope(Context* context,
                                   bool isRename) {
   NamedScopeSet checkedScopes;
   std::vector<BorrowedIdsWithName> result;
+  bool foundExternBlock = false;
   LookupConfig config = LOOKUP_INNERMOST |
                         LOOKUP_DECLS |
                         LOOKUP_IMPORT_AND_USE;
   bool got = doLookupInScope(context, scope, {}, resolving,
                              name, config,
                              checkedScopes, result,
+                             foundExternBlock,
                              /* traceCurPath */ nullptr,
                              /* traceResult */ nullptr);
 
@@ -1917,10 +2054,12 @@ static const bool& warnHiddenFormalsQuery(Context* context,
 
   for (auto name : formalNames) {
     LookupConfig config = LOOKUP_IMPORT_AND_USE;
+    bool foundExternBlock = false; // ignored
     bool got = false;
 
     got = doLookupInScope(context, rs->scope(), {}, rs, name,
                           config, checkedScopes, matches,
+                          foundExternBlock,
                           /* traceCurPath */ nullptr,
                           /* traceResult */ nullptr);
 
@@ -1948,6 +2087,7 @@ static const bool& warnHiddenFormalsQuery(Context* context,
       std::vector<ResultVisibilityTrace> traceResult;
       doLookupInScope(context, rs->scope(), {}, rs, name,
                       config, checkedScopes, matches,
+                      foundExternBlock,
                       &traceCurPath, &traceResult);
 
       CHPL_ASSERT(errIdx < traceResult.size());

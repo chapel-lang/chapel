@@ -394,8 +394,10 @@ class Scope {
  private:
   const Scope* parentScope_ = nullptr;
   uast::asttags::AstTag tag_ = uast::asttags::AST_TAG_UNKNOWN;
+  // TODO: better pack these to save space
   bool containsUseImport_ = false;
   bool containsFunctionDecls_ = false;
+  bool containsExternBlock_ = false;
   bool autoUsesModules_ = false;
   bool methodScope_ = false;
   ID id_;
@@ -445,6 +447,12 @@ class Scope {
     return containsUseImport_ || autoUsesModules_;
   }
 
+  /** Returns 'true' if this Scope directly contains an 'extern' block
+      (with C code to supporting interoperability) */
+  bool containsExternBlock() const {
+    return containsExternBlock_;
+  }
+
   /** Returns 'true' if the Scope includes the automatic 'use' for
       the standard library. */
   bool autoUsesModules() const { return autoUsesModules_; }
@@ -478,6 +486,7 @@ class Scope {
            tag_ == other.tag_ &&
            containsUseImport_ == other.containsUseImport_ &&
            containsFunctionDecls_ == other.containsFunctionDecls_ &&
+           containsExternBlock_ == other.containsExternBlock_ &&
            autoUsesModules_ == other.autoUsesModules_ &&
            methodScope_ == other.methodScope_ &&
            id_ == other.id_ &&
@@ -812,6 +821,11 @@ enum {
     directly nested within a class/record/union
    */
   LOOKUP_ONLY_METHODS_FIELDS = 128,
+
+  /**
+    Lookup in extern blocks
+   */
+  LOOKUP_EXTERN_BLOCKS = 256,
 };
 
 /** LookupConfig is a bit-set of the LOOKUP_ flags defined above */
@@ -959,6 +973,7 @@ struct ResultVisibilityTrace {
     // these cover other cases
     bool automaticModule = false;
     bool toplevelModule = false;
+    bool externBlock = false;
     bool rootScope = false;
 
     bool operator==(const VisibilityTraceElt& other) const {
@@ -972,6 +987,7 @@ struct ResultVisibilityTrace {
              parentScope == other.parentScope &&
              automaticModule == other.automaticModule &&
              toplevelModule == other.toplevelModule &&
+             externBlock == other.externBlock &&
              rootScope == other.rootScope;
     }
     bool operator!=(const VisibilityTraceElt& other) const {
