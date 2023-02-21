@@ -1,0 +1,1 @@
+channel-writebits.chpl:10: warning: channel.writebits is deprecated - please use fileWriter.writeBits instead
