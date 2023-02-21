@@ -619,11 +619,11 @@ struct Converter {
     return DeferStmt::build(stmts);
   }
 
-  BlockStmt* visit(const uast::Local* node) {
+  Expr* visit(const uast::Local* node) {
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     auto condition = convertExprOrNull(node->condition());
     if (condition) {
-      return buildLocalStmt(condition, body);
+      return buildThunk(static_cast<BlockStmt* (*)(Expr*, Expr*)>(buildLocalStmt), condition, body);
     } else {
       return buildLocalStmt(body);
     }
