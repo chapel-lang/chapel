@@ -5938,7 +5938,7 @@ proc _channel.writebits(v:integral, nbits:integral) throws {
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified range.
   :throws IllegalArgumentError: Thrown if writing more bits than fit into `x`.
-  :throws SystemError: Thrown if the bits could not be written to the channel.
+  :throws SystemError: Thrown if the bits could not be written to the ```fileWriter``.
 */
 proc fileWriter.writeBits(x: integral, numBits: int) : void throws {
   if castChecking {
