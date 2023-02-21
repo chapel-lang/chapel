@@ -1566,11 +1566,16 @@ operator file.=(ref ret:file, x:file) {
 }
 
 private proc initHelper(ref f: file, fp: c_FILE, hints=ioHintSet.empty,
-                        style:iostyleInternal = defaultIOStyleInternal()) throws {
+                        style:iostyleInternal = defaultIOStyleInternal(),
+                        own=false) throws {
   var local_style = style;
   f._home = here;
-  var err = qio_file_init(f._file_internal, fp, -1, hints._internal,
-                          local_style, 1);
+  var internalHints = hints._internal;
+  if (own) {
+    internalHints |= QIO_HINT_OWNED;
+  }
+  var err = qio_file_init(f._file_internal, fp, -1, internalHints, local_style,
+                          1);
 
   // On exit either f._file_internal.ref_cnt == 1, or f._file_internal is NULL.
   // error should be nonzero in the latter case.
@@ -1586,10 +1591,11 @@ private proc initHelper(ref f: file, fp: c_FILE, hints=ioHintSet.empty,
 }
 
 @unstable "initializing a file with a style argument is unstable"
-proc file.init(fp: c_FILE, hints=ioHintSet.empty, style:iostyle) throws {
+  proc file.init(fp: c_FILE, hints=ioHintSet.empty, style:iostyle,
+                 own=false) throws {
   this.init();
 
-  initHelper(this, fp, hints, style: iostyleInternal);
+  initHelper(this, fp, hints, style: iostyleInternal, own);
 }
 
 /*
@@ -1615,13 +1621,15 @@ Once the Chapel file is created, you will need to use a :proc:`file.reader` or
 :arg fp: a pointer to a C ``FILE``. See :type:`~CTypes.c_FILE`.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
+:arg own: set to indicate if the :type:`~CTypes.c_FILE` provided should be
+          cleaned up when the ``file`` is closed.  Defaults to ``false``
 
 :throws SystemError: Thrown if the C file could not be retrieved.
 */
-proc file.init(fp: c_FILE, hints=ioHintSet.empty) throws {
+proc file.init(fp: c_FILE, hints=ioHintSet.empty, own=false) throws {
   this.init();
 
-  initHelper(this, fp, hints);
+  initHelper(this, fp, hints, own=own);
 }
 
 private proc initHelper2(ref f: file, fd: c_int, hints = ioHintSet.empty,
