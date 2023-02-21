@@ -18,14 +18,14 @@ interface IFC {
               formal2: AT
               ): RR(Self);
   type AT;
-  implements I2(PP(AT));
+  implements I2(PP(AT, ?));
 }
 
 int implements IFC;
 proc int.AT type return string;
 
 interface I2 { }
-implements I2(PP(string));
+implements I2(PP(string, ?));
 
 proc reqFn(formal1: RR(int),
            formal2: PP(RR(int)),

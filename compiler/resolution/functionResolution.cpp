@@ -3379,6 +3379,56 @@ static bool isTypeConstructionCall(CallExpr* call) {
   return ret;
 }
 
+// t is the type we resolved call to return
+static void warnForPartialInstantantiationNoQ(CallExpr* call, Type* t) {
+  // is the resulting type generic?
+  if (t != nullptr) {
+    CallExpr* checkCall = call;
+    if (call->numActuals() >= 1) {
+      // check for 'owned C' e.g.
+      if (SymExpr* se = toSymExpr(call->baseExpr)) {
+        if (se->symbol()->hasFlag(FLAG_MANAGED_POINTER)) {
+          checkCall = toCallExpr(call->get(1));
+        }
+      }
+    }
+    if (checkCall != nullptr && checkCall->numActuals() > 0) {
+      bool foundQuestionMarkArg = false;
+      for_actuals(actual, checkCall) {
+        if (SymExpr* se = toSymExpr(actual)) {
+          if (se->symbol() == gUninstantiated) {
+            foundQuestionMarkArg = true;
+          }
+        }
+      }
+
+      if (!foundQuestionMarkArg) {
+        Type* tt = canonicalClassType(t);
+        if (tt && tt->symbol->hasFlag(FLAG_GENERIC)) {
+          // print out which field
+          USR_WARN(checkCall, "partial instantiation without '?' argument");
+          USR_PRINT(checkCall, "opt in to partial instantiation explicitly with a trailing '?' argument");
+          USR_PRINT(checkCall, "or, add arguments to instantiate the following fields in generic type '%s':", tt->symbol->name);
+         // to fully instantiate, add type constructor arguments for the following uninstantiated generic fields in '%s'", tt->symbol->name);
+          // which field names are generic?
+          if (AggregateType* at = toAggregateType(tt)) {
+            for_fields(field, at) {
+              if (field->type == dtUnknown ||
+                  field->type->symbol->hasFlag(FLAG_GENERIC)) {
+                const char* k = "";
+                if (field->hasFlag(FLAG_TYPE_VARIABLE)) k = " type";
+                else if (field->hasFlag(FLAG_PARAM)) k = " param";
+                USR_PRINT(field, "  generic%s field '%s'", k, field->name);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
 static Type* resolveTypeSpecifier(CallInfo& info) {
   CallExpr* call = info.call;
   if (call->id == breakOnResolveID) gdbShouldBreakHere();
@@ -3439,6 +3489,7 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
         again->remove();
       }
     }
+    warnForPartialInstantantiationNoQ(call, ret);
   }
 
   if (ret != NULL) {

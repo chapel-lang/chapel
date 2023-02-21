@@ -32,7 +32,7 @@ module DistributedMap {
     type keyType;
     type valType;
     pragma "no doc"
-    var m: shared distributedMapImpl(keyType, valType)?;
+    var m: shared distributedMapImpl(keyType, valType, ?)?;
     forwarding m!;
 
     proc init(type keyType, type valType) {
