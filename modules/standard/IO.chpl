@@ -5949,7 +5949,7 @@ proc fileWriter.writeBits(x: integral, numBits: int) : void throws {
                " > bits in x:" + x.type:string);
     // Error if writing negative number of bits
     if isIntType(numBits.type) && numBits < 0 then
-      throw new owned IllegalArgumentError("nbits", 
+      throw new owned IllegalArgumentError("numBits", 
               "writeBits numBits=" + numBits:string + " < 0");
   }
 
