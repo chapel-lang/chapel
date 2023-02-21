@@ -412,6 +412,7 @@ module EpochManager {
 
   pragma "no doc"
   module VectorModule {
+    private use IO;
     /**
      * Obtained from https://github.com/pnnl/chgl/blob/master/src/Vectors.chpl
      */
