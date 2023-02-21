@@ -38,6 +38,7 @@
 #include "ImportStmt.h"
 #include "LoopExpr.h"
 #include "ParamForLoop.h"
+#include "Thunk.h"
 #include "TryStmt.h"
 #include "WhileDoStmt.h"
 #include "build.h"
@@ -4447,6 +4448,11 @@ void postConvertApplyFixups(chpl::Context* context) {
         }
       }
     }
+  }
+
+  forv_Vec(Thunk, thunk, gThunks) {
+    SET_LINENO(thunk);
+    thunk->replace(thunk->force());
   }
 
   // Ensure no SymExpr referring to TemporaryConversionSymbol is still in tree

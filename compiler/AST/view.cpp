@@ -42,6 +42,7 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "Thunk.h"
 #include "TryStmt.h"
 #include "virtualDispatch.h"
 #include "WhileStmt.h"

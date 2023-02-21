@@ -21,6 +21,13 @@
 #include "AstLogger.h"
 #include "stlUtil.h"
 
+bool AstLogger::enterThunk(Thunk* node) {
+  return true;
+}
+
+void AstLogger::exitThunk(Thunk* node) {
+}
+
 bool AstLogger::enterAggrType(AggregateType* node) {
   return true;
 }

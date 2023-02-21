@@ -32,6 +32,8 @@ public:
    AstLogger()          = default;
   ~AstLogger() override = default;
 
+  bool   enterThunk          (Thunk*            node) override;
+  void   exitThunk           (Thunk*            node) override;
   //
   // The sub-classes of Type
   //

@@ -59,6 +59,7 @@ class CondStmt;
 class GotoStmt;
 class DeferStmt;
 class ForallStmt;
+class Thunk;
 class TryStmt;
 class ForwardingStmt;
 class CatchStmt;
@@ -90,6 +91,9 @@ public:
   //
   // Switched to a more robust naming convention that avoids this issue.
   //
+
+  virtual bool   enterThunk          (Thunk*             node) = 0;
+  virtual void   exitThunk           (Thunk*             node) = 0;
 
   //
   // The sub-classes of Type

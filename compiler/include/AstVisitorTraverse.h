@@ -40,6 +40,9 @@ public:
   AstVisitorTraverse()          = default;
  ~AstVisitorTraverse() override = default;
 
+  bool   enterThunk          (Thunk*             node) override;
+  void   exitThunk           (Thunk*             node) override;
+
   //
   // The sub-classes of Type
   //
