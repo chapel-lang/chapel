@@ -87,6 +87,27 @@ nextStates = {
     State.GASNET_SEGMENT:   State.PREFIX
 }
 
+# Some of the CHPL_*_DEBUG variables add a "-debug" suffix to the component
+# name depending on whether or not they are set. "+" denotes that the debug
+# variable was set, and  "-" that was not. Returns the value of the original
+# variable with the "-debug" suffix removed.
+
+def ProcessDebug(fields, config):
+    global used
+    print(fields)
+    var = prefixes[fields[0]]
+    print(var)
+    value = '-'.join(fields[1:])
+    if var in ("CHPL_COMM", "CHPL_HWLOC", "CHPL_TASKS"):
+        debug = var + "_DEBUG"
+        if fields[-1] == 'debug':
+            config[debug] = "+"
+            value = '-'.join(fields[1:-1]) # drop the suffix
+        else:
+            config[debug] = "-"
+        used.add(debug)
+    return value
+
 # Parse the given path and return a configuration based on the components of the path.
 # The configuration is a dictionary where the key is the environment variable name and the
 # value is its value. As a side effect the variables are added to the "used" set.
@@ -108,20 +129,8 @@ def Parse(path):
         if state == State.PREFIX and '-' in component:
             fields = component.split('-')
             var = prefixes[fields[0]]
-            value = '-'.join(fields[1:])
+            value = ProcessDebug(fields, config)
             if var == 'CHPL_COMM':
-
-                # The value of CHPL_COMM_DEBUG is determined by a suffix of
-                # the component name. It's a bit odd in that the build is
-                # based on whether or not it is set, not its value. "+"
-                # denotes that is it set, "-" that it is not set.
-
-                if fields[-1] == 'debug':
-                    config['CHPL_COMM_DEBUG'] = "+"
-                    value = '-'.join(fields[1:-1]) # drop the suffix
-                else:
-                    config['CHPL_COMM_DEBUG'] = "-"
-                used.add('CHPL_COMM_DEBUG')
                 if value == 'ofi':
                     nextState = State.LIBFABRIC
                 elif value == 'gasnet':
@@ -153,7 +162,7 @@ def GetConfig(all=False):
     excludes = ['CHPL_HOME']
     filters = ['no-tidy'] if all else ['tidy']
     filters.append('only-path')
-    lines = printchplenv.printchplenv(['runtime'], print_filters=filters, 
+    lines = printchplenv.printchplenv(['runtime'], print_filters=filters,
                                       print_format='simple').split('\n')
     for line in lines:
         if len(line) == 0:
@@ -162,13 +171,19 @@ def GetConfig(all=False):
         if var in excludes:
             continue
         config[var] = value
+        # CHPL_*_DEBUG variables aren't returned by printchplenv
         if var == 'CHPL_COMM' and value != "none":
-            # CHPL_COMM_DEBUG isn't returned by printchplenv
             value = '+' if os.getenv('CHPL_COMM_DEBUG') else '-'
             config['CHPL_COMM_DEBUG'] = value
+        elif var == 'CHPL_HWLOC' and value == "bundled":
+            value = '+' if os.getenv('CHPL_HWLOC_DEBUG') else '-'
+            config['CHPL_HWLOC_DEBUG'] = value
+        elif var == 'CHPL_TASKS':
+            value = '+' if os.getenv('CHPL_TASKS_DEBUG') else '-'
+            config['CHPL_TASKS_DEBUG'] = value
     return config
 
-# Returns a list of variables that differ between two configurations 
+# Returns a list of variables that differ between two configurations
 
 def FindDiffVars(usedvars, a, b):
     result = []
@@ -235,7 +250,7 @@ def main(argv):
     description = "Displays the available Chapel runtime builds. Values that differ from" \
     " the current configuration have a '*' suffix. '+' denotes a variable that is set but" \
     " whose value doesn't matter, '-' denotes a variable that is not set. 'NA' denotes a" \
-    " variable that is not applicable to the build." 
+    " variable that is not applicable to the build."
 
     # Note: add_mutually_exclusive_group doesn't currently support a title which would make
     # the help output easier to read. Also help doesn't appear in the same order as below.

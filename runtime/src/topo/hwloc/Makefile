@@ -19,7 +19,7 @@
 RUNTIME_ROOT = ../../..
 RUNTIME_SUBDIR = src/topo/hwloc
 
-ifdef CHPL_TOPO_DEBUG
+ifdef CHPL_HWLOC_DEBUG
 RUNTIME_DEFS += -DDEBUG
 endif
 
