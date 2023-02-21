@@ -4930,29 +4930,6 @@ DEFINE_PRIM(GPU_KERNEL_LAUNCH) {
   ret = codegenGPUKernelLaunch(call, /* is3d= */ true);
 }
 
-
-static GenRet codegenCallToPtxTgtIntrinsic(const char *fcnName) {
-  GenRet ret;
-
-#ifdef HAVE_LLVM
-  llvm::Type *llvmReturnType = llvm::Type::getInt32Ty(gGenInfo->llvmContext);
-  Type *chplReturnType = dtInt[INT_SIZE_32];
-
-  llvm::Function* fun = gGenInfo->module->getFunction(fcnName);
-  if(!fun) {
-    llvm::FunctionType *fun_type = llvm::FunctionType::get(llvmReturnType, false);
-    fun = llvm::Function::Create(fun_type, llvm::GlobalValue::ExternalLinkage, fcnName, gGenInfo->module);
-    INT_ASSERT(fun);
-  }
-
-  ret.val = gGenInfo->irBuilder->CreateCall(fun);
-  ret.isLVPtr = GEN_VAL;
-  ret.chplType = chplReturnType;
-#endif
-
-  return ret;
-}
-
 DEFINE_PRIM(GPU_THREADIDX_X) { ret = codegenCallExpr("chpl_gpu_getThreadIdxX"); }
 DEFINE_PRIM(GPU_THREADIDX_Y) { ret = codegenCallExpr("chpl_gpu_getThreadIdxY"); }
 DEFINE_PRIM(GPU_THREADIDX_Z) { ret = codegenCallExpr("chpl_gpu_getThreadIdxZ"); }
