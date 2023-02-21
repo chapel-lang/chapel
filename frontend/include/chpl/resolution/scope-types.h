@@ -994,6 +994,7 @@ struct ResultVisibilityTrace {
       return !(*this == other);
     }
     void mark(Context* context) const {
+      context->markPointer(resolvedVisibilityScope);
       renameFrom.mark(context);
       visibilityClauseId.mark(context);
     }
