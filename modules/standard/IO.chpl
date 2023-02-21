@@ -5923,30 +5923,40 @@ proc fileReader.readBits(type resultType, numBits:int):resultType throws {
   return tmp;
 }
 
-/*
-   Write bits with binary I/O
 
-   :arg v: a value containing *nbits* bits to write the least-significant bits
-   :arg nbits: how many bits to write
-
-   :throws UnexpectedEofError: Thrown if the write operation exceeds the
-                               ``fileWriter``'s specified range.
-   :throws IllegalArgumentError: Thrown if writing more bits than fit into `v`.
-   :throws SystemError: Thrown if the bits could not be written to the channel.
- */
+deprecated "channel.writebits is deprecated - please use :proc:`fileWriter.writeBits` instead"
 proc _channel.writebits(v:integral, nbits:integral) throws {
+  this.writeBits(v, nbits:int);
+}
+
+/*
+  Write bits with binary I/O
+
+  :arg x: a value containing *numBits* bits to write the least-significant bits
+  :arg numBits: how many bits to write
+
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                              ``fileWriter``'s specified range.
+  :throws IllegalArgumentError: Thrown if writing more bits than fit into `x`.
+  :throws SystemError: Thrown if the bits could not be written to the ```fileWriter``.
+*/
+proc fileWriter.writeBits(x: integral, numBits: int) : void throws {
   if castChecking {
-    // Error if writing more bits than fit into v
-    if numBits(v.type) < nbits then
-      throw new owned IllegalArgumentError("v, nbits", "writebits nbits=" + nbits:string +
-                                                 " > bits in v:" + v.type:string);
+    // Error if writing more bits than fit into x
+    if Types.numBits(x.type) < numBits then
+      throw new owned IllegalArgumentError("x, numBits",
+              "writeBits numBits=" + numBits:string +
+               " > bits in x:" + x.type:string);
     // Error if writing negative number of bits
-    if isIntType(nbits.type) && nbits < 0 then
-      throw new owned IllegalArgumentError("nbits", "writebits nbits=" + nbits:string + " < 0");
+    if isIntType(numBits.type) && numBits < 0 then
+      throw new owned IllegalArgumentError("numBits",
+              "writeBits numBits=" + numBits:string + " < 0");
   }
 
-  try this.write(new ioBits(v:uint(64), nbits:int(8)));
+  try this.write(new ioBits(x:uint(64), numBits:int(8)));
 }
+
+
 
 /*
   Write ``size`` coidpoints from a :type:`~String.string` to a ``filewriter``

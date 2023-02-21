@@ -9,7 +9,7 @@ var f = open(testfile, ioMode.cwr);
     var w = f.writer(kind=ionative);
 
     // Write 011
-    w.writebits(0b011, 3);
+    w.writeBits(0b011, 3);
     w.close();
 }
 
