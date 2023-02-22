@@ -73,7 +73,7 @@ class SpecThunk : public TemporaryConversionThunk {
   template <typename T, typename std::enable_if<std::is_base_of<Expr, typename std::remove_pointer<T>::type>::value>::type* = nullptr>
   void process(T expr) {
     auto child = static_cast<Expr*>(expr);
-    if (child) children.insertAtTail(child);
+    if (child) children.insertAtTailWithoutFlattening(child);
   }
 
   template <typename T, typename std::enable_if<!std::is_base_of<Expr, typename std::remove_pointer<T>::type>::value>::type* = nullptr>
