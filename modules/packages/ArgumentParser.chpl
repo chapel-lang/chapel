@@ -990,7 +990,7 @@ module ArgumentParser {
       try! {
         // configure to allow consuming of -- if passed from runtime
         // storing into variable to avoid memory leak due to compiler bug #18391
-        var tmp = addOption(name="dummyDashHandler", opts=["--", ],
+        var tmp = addOption(name="dummyDashHandler", opts=["--"],
                             numArgs=0,
                             visible=false,
                             help="indicates all following arguments are not to be parsed");
@@ -1580,7 +1580,7 @@ module ArgumentParser {
     */
     proc addPassThrough(delimiter="--") : shared Argument throws {
       // remove the dummyHandler first
-      if delimiter == "--" then _removeHandler("dummyDashHandler", ["--", ]);
+      if delimiter == "--" then _removeHandler("dummyDashHandler", ["--"]);
       var argHelp = new argumentHelp(visible=false,
                                      help="pass all following arguments without parsing",
                                      valueName=delimiter);

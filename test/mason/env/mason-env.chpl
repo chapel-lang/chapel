@@ -24,7 +24,7 @@ proc main() {
 
   setEnv("MASON_HOME", here.cwd());
 
-  const args = ["env", ];
+  const args = ["env"];
   const debugArgs = ["env", "--debug"];
   const helpArgs = ["env", "--help"];
 
