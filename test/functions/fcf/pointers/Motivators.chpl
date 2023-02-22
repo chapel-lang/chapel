@@ -1,4 +1,4 @@
-module FunctionTypes {
+module Motivators {
 
   // Tests were written progressively with these things in mind.
   compilerAssert(fcfsUsePointerImplementation);

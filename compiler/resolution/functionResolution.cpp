@@ -10363,12 +10363,12 @@ Expr* resolveExpr(Expr* expr) {
       retval = resolveExprPhase2(expr, fn, preFold(call));
     } else if (auto fn = toFnSymbol(se->symbol())) {
 
-      bool isIndirect = false;
+      bool isMentionNotBaseExpr = false;
       if (auto call = toCallExpr(se->parentExpr)) {
-        isIndirect = (se != call->baseExpr) && !call->isPrimitive();
+        isMentionNotBaseExpr = (se != call->baseExpr);
       }
 
-      if (isIndirect) {
+      if (isMentionNotBaseExpr) {
         auto e = resolveFunctionCapture(fn, se, false, false);
         if (auto c = toCallExpr(e)) e = preFold(c);
         retval = resolveExprPhase2(expr, fn, e);

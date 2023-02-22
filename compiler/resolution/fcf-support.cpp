@@ -810,8 +810,6 @@ static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use) {
 
   // Return an inserted call to the wrapper that creates the instance.
   auto ret = new CallExpr(factory);
-  use->replace(ret);
-  normalize(ret);
   return ret;
 }
 
@@ -1013,7 +1011,10 @@ bool usePointerImplementation(void) {
 
 Expr* createFunctionClassInstance(FnSymbol* fn, Expr* use) {
   if (usePointerImplementation()) INT_FATAL(use, "Should not be called!");
-  return createLegacyClassInstance(fn, use);
+  auto ret = createLegacyClassInstance(fn, use);
+  use->replace(ret);
+  normalize(ret);
+  return ret;
 }
 
 Type* functionClassSuperTypeFromFunctionType(FunctionType* ft) {

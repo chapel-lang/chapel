@@ -5,7 +5,7 @@
 
   These tests assume a non-pointer-based model.
 */
-module FunctionTypes {
+module Motivators {
   var globalCounter = 0;
 
   proc testSimpleProcTypeEquivalence() {

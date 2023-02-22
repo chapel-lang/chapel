@@ -107,6 +107,10 @@ public:
   FnSymbol*       resolvedFunction()                                     const;
   void            setResolvedFunction(FnSymbol* fn);
   FnSymbol*       resolvedOrVirtualFunction()                            const;
+
+  // An indirect call is _only_ one in which the base expression of the call
+  // is a value with a function type. That is, the type of the function is
+  // known, but not exactly which function the call refers to.
   bool            isIndirectCall()                                       const;
 
   FnSymbol*       theFnSymbol()                                          const;
