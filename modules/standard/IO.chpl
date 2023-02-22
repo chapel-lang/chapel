@@ -2940,8 +2940,7 @@ deprecated "ioBits type is deprecated - please use :proc:`fileReader.readBits` a
 type ioBits = _internalIoBits;
 
 pragma "no doc"
-pragma "compiler generated"
-inline operator :(x: ioBits, type t:string) {
+inline operator :(x: _internalIoBits, type t:string) {
   const ret = "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
   return ret;
 }
