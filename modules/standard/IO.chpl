@@ -2655,6 +2655,19 @@ proc _channel.advancePastByte(byte:uint(8)) throws {
   if err then try this._ch_ioerror(err, "in advanceToByte");
 }
 
+proc _channel.advancePastByte(param s : string) throws where s.numBytes == 1 {
+  var err:errorCode = 0;
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    err = qio_channel_advance_past_byte(false, _channel_internal, s.toByte():c_int);
+  }
+  if err then try this._ch_ioerror(err, "in advanceToByte");
+}
+
+proc _channel.advancePastByte(param s : string) throws where s.numBytes != 1 {
+  throw new IllegalArgumentError("yep!");
+}
+
 /*
    *Mark* a channel - that is, save the current offset of the channel
    on its *mark stack*. This function can only be called on a channel
