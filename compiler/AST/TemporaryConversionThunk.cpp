@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#include "Thunk.h"
+#include "TemporaryConversionThunk.h"
 
 #include "AstVisitor.h"
 #include "global-ast-vecs.h"

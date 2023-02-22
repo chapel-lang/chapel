@@ -38,7 +38,7 @@
 #include "ImportStmt.h"
 #include "LoopExpr.h"
 #include "ParamForLoop.h"
-#include "Thunk.h"
+#include "TemporaryConversionThunk.h"
 #include "TryStmt.h"
 #include "WhileDoStmt.h"
 #include "build.h"
