@@ -40,11 +40,11 @@
   This Thunk is a base class, extended by various templated versions to make
   the API more argonomic.
  */
-class Thunk : public Expr {
+class TemporaryConversionThunk : public Expr {
  public:
   AList children;
 
-  Thunk();
+  TemporaryConversionThunk();
 
   virtual Expr* force() = 0;
 
@@ -52,14 +52,14 @@ class Thunk : public Expr {
 
   void  verify()                                          override;
   void  accept(AstVisitor* visitor)                       override;
-  DECLARE_COPY(Thunk);
-  Thunk* copyInner(SymbolMap* map)                        override;
+  DECLARE_COPY(TemporaryConversionThunk);
+  TemporaryConversionThunk* copyInner(SymbolMap* map)                        override;
   Expr* getFirstExpr()                                    override;
   GenRet codegen()                                        override;
 };
 
 template <typename F, typename...Args>
-class SpecThunk : public Thunk {
+class SpecThunk : public TemporaryConversionThunk {
  protected:
   F builder;
   std::tuple<Args...> argTuple;
@@ -106,12 +106,12 @@ class SpecThunk : public Thunk {
 };
 
 template <typename F, typename...Args>
-Thunk* buildThunk(F f, Args...args) {
+TemporaryConversionThunk* buildThunk(F f, Args...args) {
   return new SpecThunk<F, Args...>(std::forward<F>(f), std::forward<Args>(args)...);
 }
 
 template <typename C, typename...Args>
-Thunk* buildClassThunk(Args...args) {
+TemporaryConversionThunk* buildClassThunk(Args...args) {
   return buildThunk([](Args...args) {
     return new C(std::forward<Args>(args)...);
   }, std::forward<Args>(args)...);

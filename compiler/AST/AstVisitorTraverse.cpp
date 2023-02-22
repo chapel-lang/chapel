@@ -22,12 +22,12 @@
 
 #include "ImportStmt.h"
 
-bool AstVisitorTraverse::enterThunk(Thunk* node)
+bool AstVisitorTraverse::enterThunk(TemporaryConversionThunk* node)
 {
   return true;
 }
 
-void AstVisitorTraverse::exitThunk(Thunk* node)
+void AstVisitorTraverse::exitThunk(TemporaryConversionThunk* node)
 {
 
 }

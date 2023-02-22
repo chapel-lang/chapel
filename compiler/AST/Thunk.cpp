@@ -23,15 +23,15 @@
 #include "AstVisitor.h"
 #include "global-ast-vecs.h"
 
-Thunk::Thunk() : Expr(E_Thunk) {
+TemporaryConversionThunk::TemporaryConversionThunk() : Expr(E_TemporaryConversionThunk) {
   children.parent = this;
-  gThunks.push_back(this);
+  gTemporaryConversionThunks.push_back(this);
 }
 
-void Thunk::verify() {
+void TemporaryConversionThunk::verify() {
 }
 
-void Thunk::accept(AstVisitor* visitor) {
+void TemporaryConversionThunk::accept(AstVisitor* visitor) {
   if (visitor->enterThunk(this)) {
     for_alist(child, children) {
       child->accept(visitor);
@@ -40,15 +40,15 @@ void Thunk::accept(AstVisitor* visitor) {
   }
 }
 
-Thunk* Thunk::copyInner(SymbolMap* map) {
+TemporaryConversionThunk* TemporaryConversionThunk::copyInner(SymbolMap* map) {
   INT_FATAL("thunks should not be copied");
   return nullptr;
 }
 
-Expr* Thunk::getFirstExpr() {
+Expr* TemporaryConversionThunk::getFirstExpr() {
   return children.first();
 }
-GenRet Thunk::codegen() {
+GenRet TemporaryConversionThunk::codegen() {
   INT_FATAL("should not be reached");
   return GenRet();
 }

@@ -48,7 +48,7 @@
 //              invocations by ;
 //
 #define foreach_ast_sep(macro, sep)                \
-  macro(Thunk)  sep                                \
+  macro(TemporaryConversionThunk)  sep             \
                                                    \
   macro(PrimitiveType) sep                         \
   macro(ConstrainedType) sep                       \
@@ -148,7 +148,7 @@ typedef std::vector<NameAndSymbol> SymbolNameVec;
 // enumerated type of all AST node types
 //
 enum AstTag {
-  E_Thunk,
+  E_TemporaryConversionThunk,
 
   E_SymExpr,
   E_UnresolvedSymExpr,
@@ -192,7 +192,7 @@ enum AstTag {
 };
 
 static inline bool isExpr(AstTag tag)
-{ return tag >= E_Thunk          && tag <= E_ExternBlockStmt; }
+{ return tag >= E_TemporaryConversionThunk && tag <= E_ExternBlockStmt; }
 
 static inline bool isSymbol(AstTag tag)
 { return tag >= E_ModuleSymbol   && tag <= E_TemporaryConversionSymbol; }
@@ -324,7 +324,7 @@ static inline bool isCallExpr(const BaseAST* a)
     return a && a->astTag == E_##Type;            \
   }
 
-def_is_ast(Thunk)
+def_is_ast(TemporaryConversionThunk)
 def_is_ast(SymExpr)
 def_is_ast(UnresolvedSymExpr)
 def_is_ast(DefExpr)
@@ -379,7 +379,7 @@ bool isCForLoop(const BaseAST* a);
   static inline const Type * toConst##Type(const BaseAST* a) \
     { return is##Type(a) ? (const Type*)a : NULL; }
 
-def_to_ast(Thunk)
+def_to_ast(TemporaryConversionThunk)
 def_to_ast(SymExpr)
 def_to_ast(UnresolvedSymExpr)
 def_to_ast(DefExpr)
@@ -441,7 +441,7 @@ def_to_ast(ParamForLoop);
     }; \
   }
 
-def_less_ast(Thunk)
+def_less_ast(TemporaryConversionThunk)
 def_less_ast(SymExpr)
 def_less_ast(UnresolvedSymExpr)
 def_less_ast(DefExpr)
@@ -546,8 +546,8 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
 
 #define AST_CHILDREN_CALL(_a, call, ...)                                \
   switch (_a->astTag) {                                                 \
-  case E_Thunk:                                                         \
-    AST_CALL_LIST(_a, Thunk, children, call, __VA_ARGS__);              \
+  case E_TemporaryConversionThunk:                                      \
+    AST_CALL_LIST(_a, TemporaryConversionThunk, children, call, __VA_ARGS__); \
     break;                                                              \
   case E_CallExpr:                                                      \
     AST_CALL_CHILD(_a, CallExpr, baseExpr, call, __VA_ARGS__);          \

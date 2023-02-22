@@ -21,11 +21,11 @@
 #include "AstLogger.h"
 #include "stlUtil.h"
 
-bool AstLogger::enterThunk(Thunk* node) {
+bool AstLogger::enterThunk(TemporaryConversionThunk* node) {
   return true;
 }
 
-void AstLogger::exitThunk(Thunk* node) {
+void AstLogger::exitThunk(TemporaryConversionThunk* node) {
 }
 
 bool AstLogger::enterAggrType(AggregateType* node) {

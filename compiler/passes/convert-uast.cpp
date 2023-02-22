@@ -4449,7 +4449,7 @@ void postConvertApplyFixups(chpl::Context* context) {
     }
   }
 
-  forv_Vec(Thunk, thunk, gThunks) {
+  forv_Vec(TemporaryConversionThunk, thunk, gTemporaryConversionThunks) {
     SET_LINENO(thunk);
     thunk->replace(thunk->force());
   }

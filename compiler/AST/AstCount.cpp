@@ -64,11 +64,11 @@ bool AstCount::enterDecoratedClassType(DecoratedClassType* node) {
 void AstCount::exitDecoratedClassType(DecoratedClassType* node) {
 }
 
-bool AstCount::enterThunk(Thunk* node) {
+bool AstCount::enterThunk(TemporaryConversionThunk* node) {
   return true;
 }
 
-void AstCount::exitThunk(Thunk* node) {
+void AstCount::exitThunk(TemporaryConversionThunk* node) {
 }
 
 

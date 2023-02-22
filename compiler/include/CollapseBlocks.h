@@ -28,8 +28,8 @@ public:
    CollapseBlocks()          = default;
   ~CollapseBlocks() override = default;
 
-  bool   enterThunk          (Thunk*             node) override;
-  void   exitThunk           (Thunk*             node) override;
+  bool   enterThunk          (TemporaryConversionThunk* node) override;
+  void   exitThunk           (TemporaryConversionThunk* node) override;
 
   //
   // The sub-classes of Type

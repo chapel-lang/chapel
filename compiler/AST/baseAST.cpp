@@ -113,9 +113,11 @@ void printStatistics(const char* pass) {
     kImportStmt + kExternBlockStmt + kForallStmt + kTryStmt + kForwardingStmt +
     kCatchStmt + kImplementsStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr +
-    nContextCallExpr + nLoopExpr + nNamedExpr + nIfcConstraint + nIfExpr + nThunk;
+    nContextCallExpr + nLoopExpr + nNamedExpr + nIfcConstraint + nIfExpr +
+    nTemporaryConversionThunk;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +
-    kContextCallExpr + kLoopExpr + kNamedExpr + kIfcConstraint + kIfExpr + kThunk;
+    kContextCallExpr + kLoopExpr + kNamedExpr + kIfcConstraint + kIfExpr +
+    kTemporaryConversionThunk;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nShadowVarSymbol+nTypeSymbol+nFnSymbol+nInterfaceSymbol+nEnumSymbol+nLabelSymbol+nTemporaryConversionSymbol;
   int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kShadowVarSymbol+kTypeSymbol+kFnSymbol+kInterfaceSymbol+kEnumSymbol+kLabelSymbol+kTemporaryConversionSymbol;
   int nType = nPrimitiveType+nConstrainedType+nEnumType+nAggregateType+nDecoratedClassType;
@@ -141,13 +143,13 @@ void printStatistics(const char* pass) {
 
   if (strstr(fPrintStatistics, "n"))
     fprintf(stderr, "    Expr %9d  Unre %9d  Sym  %9d  Def   %9d  Call  %9d  Forall %9d  Named %9d  If %9d  Thunk %9d\n",
-            nExpr, nUnresolvedSymExpr, nSymExpr, nDefExpr, nCallExpr, nLoopExpr, nNamedExpr, nIfExpr, nThunk);
+            nExpr, nUnresolvedSymExpr, nSymExpr, nDefExpr, nCallExpr, nLoopExpr, nNamedExpr, nIfExpr, nTemporaryConversionThunk);
   if (strstr(fPrintStatistics, "k") && strstr(fPrintStatistics, "n"))
     fprintf(stderr, "    Expr %9dK Unre %9dK Sym  %9dK Def   %9dK Call  %9dK Forall %9dk Named %9dK If %9d  Thunk %9dK\n",
-            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kLoopExpr, kNamedExpr, kIfExpr, kThunk);
+            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kLoopExpr, kNamedExpr, kIfExpr, kTemporaryConversionThunk);
   if (strstr(fPrintStatistics, "k") && !strstr(fPrintStatistics, "n"))
     fprintf(stderr, "    Expr %6dK Unre %6dK Sym  %6dK Def   %6dK Call  %6dK Forall %6dk Named %6dK If %6d  Thunk %9dK\n",
-            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kLoopExpr, kNamedExpr, kIfExpr, kThunk);
+            kExpr, kUnresolvedSymExpr, kSymExpr, kDefExpr, kCallExpr, kLoopExpr, kNamedExpr, kIfExpr, kTemporaryConversionThunk);
 
   if (strstr(fPrintStatistics, "n"))
     fprintf(stderr, "    Sym  %9d  Mod  %9d  Var   %9d  Arg   %9d  Shd   %9d  Type %9d  Fn %9d  Enum %9d  Label %9d\n",
@@ -483,7 +485,7 @@ Type* BaseAST::getWideRefType() {
 
 const char* BaseAST::astTagAsString() const {
   switch (astTag) {
-    case E_Thunk:              return "Thunk";
+    case E_TemporaryConversionThunk: return "TemporaryConversionThunk";
     case E_PrimitiveType:      return "PrimitiveType";
     case E_ConstrainedType:    return "ConstrainedType";
     case E_EnumType:           return "EnumType";

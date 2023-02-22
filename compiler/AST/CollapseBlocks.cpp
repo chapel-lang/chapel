@@ -190,12 +190,12 @@ bool CollapseBlocks::enterCondStmt(CondStmt* node)
 *                                                                           *
 ************************************* | ************************************/
 
-bool CollapseBlocks::enterThunk(Thunk* node)
+bool CollapseBlocks::enterThunk(TemporaryConversionThunk* node)
 {
   return false;
 }
 
-void CollapseBlocks::exitThunk(Thunk* node)
+void CollapseBlocks::exitThunk(TemporaryConversionThunk* node)
 {
 
 }
