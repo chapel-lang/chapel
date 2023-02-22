@@ -1861,6 +1861,11 @@ void _qio_channel_destroy(qio_channel_t* ch)
   qio_file_release(ch->file);
   ch->file = NULL;
 
+  // If mark_stack has been (re)allocated, free it.
+  if (ch->mark_stack != ch->mark_space) {
+    qio_free(ch->mark_stack);
+  }
+
   DO_DESTROY_REFCNT(ch);
 
   qio_free(ch);
