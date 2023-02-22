@@ -5018,7 +5018,7 @@ proc readUpTo(ref s: string, separator: string, maxSize=-1): bool throws {
 }
 
 proc readUpTo(ref b: bytes, separator: bytes, maxSize=-1): bool throws {
-
+  
 }
 
 proc readPast(separator: ?t, maxSize=-1, stripSeparator=false): t throws where t==string || t==bytes {
