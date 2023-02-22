@@ -385,6 +385,8 @@ static void cpuInfoInit(void) {
     if (numCPUsPhysAcc == numCPUsPhysAll) {
       if (numLocalesOnNode <= numSockets) {
         if (rank != -1) {
+          // Use the socket whose logical index corresponds to our local rank.
+          // See getSocketNumber below if you change this.
           socket = hwloc_get_obj_inside_cpuset_by_type(topology,
                                     root->cpuset, HWLOC_OBJ_PACKAGE, rank);
           CHK_ERR(socket != NULL);
@@ -467,6 +469,20 @@ static void cpuInfoInit(void) {
   }
 }
 
+
+// If we are running in a socket then cpuInfoInit will assign each locale to
+// the socket whose logical index is equal to the locale's local rank. This
+// function returns the socket number for the given locale. Right now it's
+// the identity mapping, but should be changed if the way cpuInfoInit does
+// the mapping is changed.
+static
+int getSocketNumber(int localRank) {
+  int result = -1;
+  if (socket != NULL) {
+    result = localRank;
+  }
+  return result;
+}
 
 void chpl_topo_post_args_init(void) {
   if ((verbosity >= 2) && (socket != NULL)) {
@@ -1030,19 +1046,20 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
   // n is our rank among the locales that don't have NICs, modulo
   // the number of unassigned NICs. Otherwise use the nth assigned NIC.
 
-  int numLocales = chpl_get_num_locales_on_node();
-  CHK_ERR(assignedNics = sys_calloc(numLocales, sizeof(*assignedNics)));
+  int numLocalesOnNode = chpl_get_num_locales_on_node();
+  CHK_ERR(assignedNics = sys_calloc(numLocalesOnNode, sizeof(*assignedNics)));
 
-  for (int i = 0; i < numLocales; i++) {
+  for (int i = 0; i < numLocalesOnNode; i++) {
     assignedNics[i] = -1;
   }
 
-  // Look for extra (unassigned) NICs
+  // Look for extra (unassigned) NICs. Any NIC whose socket number matches
+  // a locale's socket number will be assigned above. The rest are extra.
 
   int numAssignedNics = 0;
-  for (int lid = 0; lid < numLocales; lid++) {
+  for (int lid = 0; lid < numLocalesOnNode; lid++) {
     for (int nid = 0; nid < numNics; nid++) {
-      if (nics[nid].socket == lid) {
+      if (nics[nid].socket == getSocketNumber(lid)) {
         assignedNics[lid] = nid;
         nics[nid].assigned = true;
         numAssignedNics++;
@@ -1054,33 +1071,35 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
   // Determine our rank within the locales that do not have a NIC assigned.
 
   int unmatchedLocales = 0;
-  int rank;
-  for (int lid = 0; lid < numLocales; lid++) {
-    if (lid == chpl_nodeID) {
-      rank = unmatchedLocales;
+  int unassignedRank = -1;
+  int rank = chpl_get_local_rank();
+  for (int lid = 0; lid < numLocalesOnNode; lid++) {
+    if (lid == rank) {
+      unassignedRank = unmatchedLocales;
       break;
     }
     if (assignedNics[lid] == -1) {
       unmatchedLocales++;
     }
   }
+  CHK_ERR(unassignedRank != -1);
 
   if (numAssignedNics == numNics) {
 
     // All NICs are assigned, we'll have to share one.
 
-    nic = nics[rank % numNics].obj;
+    nic = nics[unassignedRank % numNics].obj;
   } else {
 
     // Use an unassigned NIC, perhaps sharing one if necessary.
     // Note that this can lead to unbalanced loads, but should be uncommon.
 
-    rank %= (numNics - numAssignedNics);
+    unassignedRank %= (numNics - numAssignedNics);
 
     int count = 0;
     for (int nid = 0; nid < numNics; nid++) {
       if (nics[nid].assigned == false) {
-        if (rank == count) {
+        if (unassignedRank == count) {
           nic = nics[nid].obj;
           goto done;
         }

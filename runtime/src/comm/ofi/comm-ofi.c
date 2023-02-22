@@ -1422,6 +1422,7 @@ struct fi_info* findProvInList(struct fi_info* info,
 
   chpl_topo_pci_addr_t pciAddr;
   chpl_topo_pci_addr_t *addr = NULL;
+  struct fi_info *best = NULL;
 
   for (; info != NULL; info = info->next) {
     // break out of the loop when we find one that meets all of our criteria
@@ -1457,6 +1458,9 @@ struct fi_info* findProvInList(struct fi_info* info,
         inAddr.device = pci->device_id;
         inAddr.function = pci->function_id;
         addr = chpl_topo_selectNicByType(&inAddr, &pciAddr);
+        // Remember this NIC in case the NIC suggested by the topology layer
+        // isn't in the list of infos, in which case we'll use this one.
+        best = info;
       }
     }
     if (addr != NULL) {
@@ -1475,19 +1479,20 @@ struct fi_info* findProvInList(struct fi_info* info,
       }
     }
     // got one
+    best = info;
     break;
   }
-  if (info && (isInProvider("sockets", info))) {
+  if (best && (isInProvider("sockets", best))) {
     chpl_warning("sockets provider is deprecated", 0, 0);
   }
 
   // some providers incorrectly report that they supports FI_ORDER_ATOMIC_RAW
   // and FI_ORDER_ATOMIC_WAR
-  if (info && (isInProvider("cxi", info))) {
-    info->tx_attr->msg_order &= ~(FI_ORDER_ATOMIC_RAW | FI_ORDER_ATOMIC_WAR);
-    info->rx_attr->msg_order &= ~(FI_ORDER_ATOMIC_RAW | FI_ORDER_ATOMIC_WAR);
+  if (best && (isInProvider("cxi", best))) {
+    best->tx_attr->msg_order &= ~(FI_ORDER_ATOMIC_RAW | FI_ORDER_ATOMIC_WAR);
+    best->rx_attr->msg_order &= ~(FI_ORDER_ATOMIC_RAW | FI_ORDER_ATOMIC_WAR);
   }
-  return (info == NULL) ? NULL : fi_dupinfo(info);
+  return (best == NULL) ? NULL : fi_dupinfo(best);
 }
 
 
