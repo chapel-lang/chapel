@@ -9,7 +9,6 @@ for var in ${required_vars[@]}; do
         echo "${var} must be set."
         exit 1
     fi
-    echo "${var} is set to: ${!var}"
 done
 
 echo "RepositoryName: $docker_repository"
