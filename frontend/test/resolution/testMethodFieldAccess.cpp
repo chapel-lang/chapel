@@ -436,6 +436,118 @@ static void test10s() {
   // TODO get the above case working with the full resolver
 }
 
+// test with parent scopes that should find a local not a field
+static void test11p() {
+  testIt("test11p.chpl",
+         R""""(
+            module M {
+              record rec {
+                var x: int;
+                proc foo() {
+                  var x: real;
+                  {
+                    var foo: string;
+                    {
+                      var bar: string;
+                      {
+                        x;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+         )"""",
+         "M.rec.foo",
+         "M.rec.foo@7",
+         "M.rec.foo@2" /* the local variable */,
+         /* scope resolve only to avoid errors today */ true);
+  // TODO get the above case working with the full resolver
+}
+static void test11s() {
+  testIt("test11s.chpl",
+         R""""(
+            module M {
+              record rec {
+                var x: int;
+              }
+              proc rec.foo() {
+                var x: real;
+                {
+                  var foo: string;
+                  {
+                    var bar: string;
+                    {
+                      x;
+                    }
+                  }
+                }
+              }
+            }
+         )"""",
+         "M.foo",
+         "M.foo@8",
+         "M.foo@3" /* the local variable */,
+         /* scope resolve only to avoid errors today */ true);
+  // TODO get the above case working with the full resolver
+}
+
+// same as above but with a formal rather than a local variable
+static void test12p() {
+  testIt("test12p.chpl",
+         R""""(
+            module M {
+              record rec {
+                var x: int;
+                proc foo(x: int) {
+                  var y: real;
+                  {
+                    var foo: string;
+                    {
+                      var bar: string;
+                      {
+                        x;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+         )"""",
+         "M.rec.foo",
+         "M.rec.foo@9",
+         "M.rec.foo@2" /* the formal */,
+         /* scope resolve only to avoid errors today */ true);
+  // TODO get the above case working with the full resolver
+}
+static void test12s() {
+  testIt("test12s.chpl",
+         R""""(
+            module M {
+              record rec {
+                var x: int;
+              }
+              proc rec.foo(x: int) {
+                var y: real;
+                {
+                  var foo: string;
+                  {
+                    var bar: string;
+                    {
+                      x;
+                    }
+                  }
+                }
+              }
+            }
+         )"""",
+         "M.foo",
+         "M.foo@10",
+         "M.foo@3" /* the formal */,
+         /* scope resolve only to avoid errors today */ true);
+  // TODO get the above case working with the full resolver
+}
+
 
 int main() {
   test1r();
@@ -461,6 +573,12 @@ int main() {
 
   test10p();
   test10s();
+
+  test11p();
+  test11s();
+
+  test12p();
+  test12s();
 
   return 0;
 }

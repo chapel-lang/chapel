@@ -708,7 +708,8 @@ static bool doLookupInScope(Context* context,
           }
         }
 
-        bool got = doLookupInScope(context, cur, receiverScopes, resolving, name,
+        // never consider receiver scopes here; they are considered below
+        bool got = doLookupInScope(context, cur, {}, resolving, name,
                                    newConfig, checkedScopes, result);
         if (onlyInnermost && got) return true;
       }
