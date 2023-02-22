@@ -9,7 +9,7 @@ module m {
   extern proc openTestFile(): c_FILE;
 
   try! {
-    var f = new file(openTestFile(), hints = ioHintSet.fromFlag(QIO_HINT_OWNED));
+    var f = new file(openTestFile(), own=true);
     var r = f.reader();
     write(r.readLine());
   } catch e: SystemError {
