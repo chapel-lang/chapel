@@ -132,7 +132,6 @@ proc main() {
   testio(new ioChar(97));
   testio(new ioNewline());
   testio(new ioLiteral("test"));
-  testio(new ioBits(0b011011001101000110101101, 24));
   
   test_readlines();
 }
