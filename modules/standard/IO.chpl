@@ -2925,7 +2925,7 @@ inline operator :(x: ioLiteral, type t:string) {
 }
 
 pragma "no doc"
-record _ioBits {
+record _internalIoBits {
   /* The bottom ``numBits`` of x will be read or written */
   var x:uint(64);
   /* How many of the low-order bits of ``x`` should we read or write? */
@@ -2937,7 +2937,7 @@ record _ioBits {
 }
 
 deprecated "ioBits type is deprecated - please use :proc:`fileReader.readBits` and :proc:`fileWriter.writeBits` instead"
-type ioBits = _ioBits;
+type ioBits = _internalIoBits;
 
 pragma "no doc"
 pragma "compiler generated"
@@ -3926,7 +3926,7 @@ proc _isIoPrimitiveType(type t) param return
 
 pragma "no doc"
  proc _isIoPrimitiveTypeOrNewline(type t) param return
-  _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar || t == _ioBits;
+  _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar || t == _internalIoBits;
 
 // Read routines for all primitive types.
 private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
@@ -4286,7 +4286,7 @@ proc _channel._decodeOne(ref x:?t, loc:locale) throws {
                               _readWriteThisFromLocale=loc);
   defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL; }
 
-  if t == ioLiteral || t == ioNewline || t == _ioBits || t == ioChar {
+  if t == ioLiteral || t == ioNewline || t == _internalIoBits || t == ioChar {
     reader._readOne(reader.kind, x, reader.getLocaleOfIoRequest());
     return;
   }
@@ -4364,7 +4364,7 @@ private proc _read_io_type_internal(_channel_internal:qio_channel_ptr_t,
     return qio_channel_scan_literal(false, _channel_internal,
                                     x.val.localize().c_str(),
                                     x.val.numBytes: c_ssize_t, x.ignoreWhiteSpace);
-  } else if t == _ioBits {
+  } else if t == _internalIoBits {
     return qio_channel_read_bits(false, _channel_internal, x.x, x.numBits);
   } else if kind == iokind.dynamic {
     var binary:uint(8) = qio_channel_binary(_channel_internal);
@@ -4418,7 +4418,7 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
     return qio_channel_write_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
     return qio_channel_print_literal(false, _channel_internal, x.val.localize().c_str(), x.val.numBytes:c_ssize_t);
-  } else if t == _ioBits {
+  } else if t == _internalIoBits {
     return qio_channel_write_bits(false, _channel_internal, x.x, x.numBits);
   } else if kind == iokind.dynamic {
     var binary:uint(8) = qio_channel_binary(_channel_internal);
@@ -5892,7 +5892,7 @@ proc fileReader.readBits(ref x:integral, numBits:int):bool throws {
       throw new owned IllegalArgumentError("numBits", "readBits numBits=" + numBits:string + " < 0");
   }
 
-  var tmp:_ioBits;
+  var tmp:_internalIoBits;
   tmp.numBits = numBits:int(8);
   var ret = try this.read(tmp);
   x = tmp.x:x.type;
@@ -5946,7 +5946,7 @@ proc fileWriter.writeBits(x: integral, numBits: int) : void throws {
               "writeBits numBits=" + numBits:string + " < 0");
   }
 
-  try this.write(new _ioBits(x:uint(64), numBits:int(8)));
+  try this.write(new _internalIoBits(x:uint(64), numBits:int(8)));
 }
 
 
