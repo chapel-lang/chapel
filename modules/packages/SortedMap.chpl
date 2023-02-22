@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,7 +34,7 @@ module SortedMap {
   private use IO;
   public use Sort only defaultComparator;
 
-  // Lock code lifted from modules/standard/Lists.chpl.
+  // Lock code lifted from modules/standard/List.chpl.
   pragma "no doc"
   type _lockType = ChapelLocks.chpl_LocalSpinlock;
 
@@ -56,7 +56,7 @@ module SortedMap {
     if isGenericType(keyType) {
       compilerWarning("creating a sortedMap with key type " +
                       keyType:string);
-      if isClassType(keyType) && !isGenericType(borrowed keyType) {
+      if isClassType(keyType) && !isGenericType(keyType:borrowed) {
         compilerWarning("which now means class type with generic management");
       }
       compilerError("sortedMap key type cannot currently be generic");
@@ -68,7 +68,7 @@ module SortedMap {
     if isGenericType(valType) {
       compilerWarning("creating a sortedMap with value type " +
                       valType:string);
-      if isClassType(valType) && !isGenericType(borrowed valType) {
+      if isClassType(valType) && !isGenericType(valType:borrowed) {
         compilerWarning("which now means class type with generic management");
       }
       compilerError("sortedMap value type cannot currently be generic");
@@ -409,15 +409,16 @@ module SortedMap {
     }
 
     /*
-      Writes the contents of this sortedMap to a channel. The format looks like:
+      Writes the contents of this sortedMap to a fileWriter.
+      The format looks like:
 
         .. code-block:: chapel
 
            {k1: v1, k2: v2, .... , kn: vn}
 
-      :arg ch: A channel to write to.
+      :arg ch: A fileWriter to write to.
     */
-    proc writeThis(ch: channel) throws {
+    proc writeThis(ch: fileWriter) throws {
       _enter(); defer _leave();
       var first = true;
       ch.write("{");

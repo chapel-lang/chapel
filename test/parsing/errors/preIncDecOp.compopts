@@ -1,0 +1,2 @@
+--detailed-errors # preIncDecOp-detailed.good
+--no-detailed-errors # preIncDecOp-brief.good

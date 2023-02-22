@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,7 +28,7 @@ use MasonHelp;
 use MasonSystem;
 use MasonUtils;
 use TOML;
-
+import Path;
 
 /*
 Update: Performs the upfront dependency resolution and generates the lock file.
@@ -72,8 +72,8 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
   try! {
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd, tf);
-    const tomlPath = projectHome + "/" + tf;
-    const lockPath = projectHome + "/" + lf;
+    const tomlPath = projectHome + "/" + Path.relPath(tf);
+    const lockPath = projectHome + "/" + Path.relPath(lf);
     const openFile = openreader(tomlPath);
     const TomlFile = parseToml(openFile);
     var updated = false;
@@ -119,7 +119,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
 
 /* Writes out the lock file */
 proc genLock(lock: borrowed Toml, lf: string) {
-  const lockFile = open(lf, iomode.cw);
+  const lockFile = open(lf, ioMode.cw);
   const tomlWriter = lockFile.writer();
   tomlWriter.writeln(lock);
   tomlWriter.close();
@@ -422,7 +422,7 @@ private proc retrieveDep(name: string, version: string) {
   for cached in MASON_CACHED_REGISTRY {
     const tomlPath = cached + "/Bricks/"+name+"/"+version+".toml";
     if isFile(tomlPath) {
-      var tomlFile = open(tomlPath, iomode.r);
+      var tomlFile = open(tomlPath, ioMode.r);
       var depToml = parseToml(tomlFile);
       return depToml;
     }
@@ -448,7 +448,7 @@ private proc retrieveGitDep(name: string, branch: string) {
   var baseDir = MASON_HOME +'/git/';
   const tomlPath = baseDir + "/"+name+"-"+branch+"/Mason.toml";
   if isFile(tomlPath) {
-    var tomlFile = open(tomlPath, iomode.r);
+    var tomlFile = open(tomlPath, ioMode.r);
     var depToml = parseToml(tomlFile);
     return depToml;
   }
@@ -572,4 +572,3 @@ private proc pullGitDeps(gitDeps, show=false) {
   }
   return gitDepsWithRevision;
 }
-

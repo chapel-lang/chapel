@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -281,7 +281,7 @@ module Set {
     // the value across locales.
     pragma "no doc"
     proc _addElem(pragma "no auto destroy" in elem: eltType): bool {
-      use Memory.Initialization;
+      use MemMove;
 
       var result = false;
 
@@ -290,7 +290,7 @@ module Set {
         // TODO: The following variation gets lifetime errors in
         // '.../Set/types/testNilableTuple.chpl':
         //
-        // var moved = moveToValue(elem);
+        // var moved = moveFrom(elem);
         // var (isFullSlot, idx) = _htb.findAvailableSlot(moved);
         //
         var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
@@ -298,7 +298,7 @@ module Set {
         if !isFullSlot {
 
           // This line moves the bits over, 'elem' is dead past this point.
-          var moved = moveToValue(elem);
+          var moved = moveFrom(elem);
           _htb.fillSlot(idx, moved, none);
           result = true;
         } else {
@@ -504,7 +504,7 @@ module Set {
 
       :arg ch: A channel to write to.
     */
-    proc const writeThis(ch: channel) throws {
+    proc const writeThis(ch: fileWriter) throws {
       on this {
         _enter(); defer _leave();
 

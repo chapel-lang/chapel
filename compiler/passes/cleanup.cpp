@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -361,18 +361,21 @@ static void insertVoidReturnSymbols(CallExpr* call) {
 // statements to return the value '_void'.
 //
 static void fixupVoidReturnFn(FnSymbol* fn) {
-  std::vector<CallExpr*> callExprs;
-  collectCallExprs(fn, callExprs);
-  bool foundReturn = false;
+
   // Pass expandExternArrayCalls builds a wrapper for the extern function
   // and returns the value the extern function returned.  It marks the
   // extern function with FLAG_EXTERN_FN_WITH_ARRAY_ARG, which tells us
   // that we need to be able to handle the wrapper returning the result
   // of a call to it.  If the extern function had a 'void' return, treat
   // it as a void value.
-  if (fn->hasFlag(FLAG_EXTERN_FN_WITH_ARRAY_ARG)) {
-    return;
-  }
+  if (fn->hasFlag(FLAG_EXTERN_FN_WITH_ARRAY_ARG)) return;
+
+  // Do not do this lowering on functions without a body.
+  if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
+
+  std::vector<CallExpr*> callExprs;
+  collectCallExprs(fn, callExprs);
+  bool foundReturn = false;
 
   for_vector(CallExpr, call, callExprs) {
     if (call->isPrimitive(PRIM_RETURN)) {

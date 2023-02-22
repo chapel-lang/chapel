@@ -17,7 +17,7 @@ proc main {
     copyTree(inputDir, pathPrefix + inputDir);
   }
 
-  var t = new Timer();
+  var t = new stopwatch();
 
   for param i in 0..<inputTypes.size {
     type inType = inputTypes(i);

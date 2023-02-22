@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -880,7 +880,7 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
     // not checking here whether the new low and high fit into idxType
     var low = (stride * followThis(i).lowBound:strType):idxType;
     var high = (stride * followThis(i).highBound:strType):idxType;
-    t(i) = ((low..high by stride:strType) + whole.dim(i).alignedLow by followThis(i).stride:strType).safeCast(t(i).type);
+    t(i) = ((low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType).safeCast(t(i).type);
   }
   for i in {(...t)} {
     yield i;
@@ -931,8 +931,8 @@ proc BlockDom.parSafe param {
 }
 override proc BlockDom.dsiLow           return whole.lowBound;
 override proc BlockDom.dsiHigh          return whole.highBound;
-override proc BlockDom.dsiAlignedLow    return whole.alignedLow;
-override proc BlockDom.dsiAlignedHigh   return whole.alignedHigh;
+override proc BlockDom.dsiAlignedLow    return whole.low;
+override proc BlockDom.dsiAlignedHigh   return whole.high;
 override proc BlockDom.dsiFirst         return whole.first;
 override proc BlockDom.dsiLast          return whole.last;
 override proc BlockDom.dsiStride        return whole.stride;
@@ -1205,7 +1205,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).lowBound * abs(stride):idxType;
     var high = followThis(i).highBound * abs(stride):idxType;
-    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).alignedLow by followThis(i).stride).safeCast(myFollowThis(i).type);
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride).safeCast(myFollowThis(i).type);
     lowIdx(i) = myFollowThis(i).lowBound;
   }
 
@@ -1257,7 +1257,7 @@ pragma "no copy return"
 proc BlockArr.dsiLocalSlice(ranges) {
   var low: rank*idxType;
   for param i in 0..rank-1 {
-    low(i) = ranges(i).alignedLow;
+    low(i) = ranges(i).low;
   }
 
   return locArr(dom.dist.targetLocsIdx(low)).myElems((...ranges));
@@ -1625,6 +1625,7 @@ proc BlockArr.doiOptimizedSwap(other: this.type)
 // type, stridability, or rank mismatch in the other argument). When
 // debugOptimizedSwap is off, this overload will be ignored due to its where
 // clause.
+pragma "last resort"
 proc BlockArr.doiOptimizedSwap(other) where debugOptimizedSwap {
   writeln("BlockArr doing unoptimized swap. Type mismatch");
   return false;
@@ -1847,7 +1848,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
         }
 
         // Mark that scan values are ready
-        coforall (ready, elem) in zip(valIter(outputReady), valIter(elemPerLoc)) do on ready {
+        coforall (_, ready, elem) in zip(targetLocs.domain, valIter(outputReady), valIter(elemPerLoc)) do on ready {
           ready!.writeEF(elem);
         }
 

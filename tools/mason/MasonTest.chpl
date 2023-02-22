@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -52,7 +52,7 @@ proc masonTest(args: [] string, checkProj=true) throws {
   var parser = new argumentParser(helpHandler=new MasonTestHelpHandler());
 
   var runFlag = parser.addFlag(name="run",
-                               opts=["--no-run"],
+                               opts=["--no-run", ],
                                defaultValue=false);
 
   var showFlag = parser.addFlag(name="show", defaultValue=false);
@@ -136,7 +136,7 @@ proc masonTest(args: [] string, checkProj=true) throws {
         subTestPath = cwd;
       }
 
-      var tests = findfiles(startdir=subTestPath, recursive=true, hidden=false);
+      var tests = findFiles(startdir=subTestPath, recursive=true, hidden=false);
       for test in tests{
         if test.endsWith(".chpl"){
           if(inProjectDir){
@@ -178,7 +178,7 @@ proc masonTest(args: [] string, checkProj=true) throws {
 
     updateLock(skipUpdate);
     compopts.append("".join("--comm=",comm));
-    runTests(show, run, parallel, compopts);
+    runTests(show, run, parallel, skipUpdate, compopts);
   }
   catch e: MasonError {
     try! {
@@ -186,7 +186,7 @@ proc masonTest(args: [] string, checkProj=true) throws {
         var testNames: list(string);
 
         if isDir('.'){
-          var tests = findfiles(startdir='.', recursive=subdir);
+          var tests = findFiles(startdir='.', recursive=subdir);
           for test in tests {
             if test.endsWith(".chpl") {
               testNames.append(test);
@@ -207,7 +207,8 @@ proc masonTest(args: [] string, checkProj=true) throws {
   }
 }
 
-private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts: list(string)) throws {
+private proc runTests(show: bool, run: bool, parallel: bool,
+                      skipUpdate: bool, ref cmdLineCompopts: list(string)) throws {
 
   try! {
 
@@ -215,13 +216,13 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     const projectHome = getProjectHome(cwd);
 
     // parse lockfile
-    const toParse = open(projectHome + "/Mason.lock", iomode.r);
+    const toParse = open(projectHome + "/Mason.lock", ioMode.r);
     const lockFile = parseToml(toParse);
 
     // Get project source code and dependencies
     const (sourceList, gitList) = genSourceList(lockFile);
 
-    getSrcCode(sourceList, show);
+    getSrcCode(sourceList, skipUpdate, show);
     getGitCode(gitList, show);
 
     const project = lockFile["root"]!["name"]!.s;
@@ -247,7 +248,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     else {
       try! {
         for dir in dirs {
-          for file in findfiles(startdir = dir, recursive = subdir) {
+          for file in findFiles(startdir = dir, recursive = subdir) {
             if file.endsWith(".chpl") {
               files.append(file);
             }
@@ -262,7 +263,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
     if numTests > 0 {
 
       var result =  new TestResult();
-      var timeElapsed = new Timer();
+      var timeElapsed = new stopwatch();
       timeElapsed.start();
       for test in testNames {
         var testPath: string;
@@ -390,7 +391,7 @@ private proc getTests(lock: borrowed Toml, projectHome: string) {
     }
   }
   else if isDir(testPath) {
-    var tests = findfiles(startdir=testPath, recursive=true, hidden=false);
+    var tests = findFiles(startdir=testPath, recursive=true, hidden=false);
     for test in tests {
       if test.endsWith(".chpl") {
         testNames.append(getTestPath(test));
@@ -421,7 +422,7 @@ proc getTestPath(fullPath: string, testPath = "") : string {
 proc getRuntimeComm() throws {
   var line: string;
   var python: string;
-  var findPython = spawn([CHPL_HOME:string+"/util/config/find-python.sh"],
+  var findPython = spawn([CHPL_HOME:string+"/util/config/find-python.sh", ],
                          stdout = pipeStyle.pipe);
   while findPython.stdout.readLine(line) {
     python = line.strip();
@@ -462,7 +463,7 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
       }
 
       var result =  new TestResult();
-      var timeElapsed = new Timer();
+      var timeElapsed = new stopwatch();
       timeElapsed.start();
       for tests in files {
         try {
@@ -553,7 +554,7 @@ proc testFile(file, ref result, show: bool) throws {
 pragma "no doc"
 /*Docs: Todo*/
 proc testDirectory(dir, ref result, show: bool) throws {
-  for file in findfiles(startdir = dir, recursive = subdir) {
+  for file in findFiles(startdir = dir, recursive = subdir) {
     if file.endsWith(".chpl") {
       testFile(file, result, show);
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,6 +23,7 @@
 pragma "export init"
 module ChapelStandard {
   public use ChapelLocale;
+  public use ChapelTaskData;
   public use ChapelTaskTable;
   public use MemTracking;
   public use ChapelUtil;

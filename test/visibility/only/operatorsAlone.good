@@ -1,10 +1,4 @@
-operatorsAlone.chpl:223: warning: This file-scope code is outside of any explicit module declarations (e.g., module DefinesOp), so an implicit module named 'operatorsAlone' is being introduced to contain the file's contents.
-operatorsAlone.chpl:87: warning: the <~> operator is deprecated
-operatorsAlone.chpl:223: In function 'main':
-operatorsAlone.chpl:356: warning: the <~> operator is deprecated
-operatorsAlone.chpl:357: warning: the <~> operator is deprecated
-operatorsAlone.chpl:360: warning: the <~> operator is deprecated
-operatorsAlone.chpl:361: warning: the <~> operator is deprecated
+operatorsAlone.chpl:213: warning: an implicit module named 'operatorsAlone' is being introduced to contain file-scope code
 In DefinesOp.+
 {x = 10}
 In DefinesOp.align
@@ -37,8 +31,6 @@ In DefinesOp.>=
 true
 In DefinesOp.!=
 true
-In DefinesOp.<~>
-3
 In DefinesOp.<
 true
 In DefinesOp.<=

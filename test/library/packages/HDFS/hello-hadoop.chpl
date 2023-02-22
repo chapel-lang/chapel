@@ -9,7 +9,7 @@ proc main() {
 
   var msg = "This is a test\n";
   {
-    var f = fs.open(path, iomode.cw);
+    var f = fs.open(path, ioMode.cw);
     var w = f.writer();
     w.write(msg);
     w.close();
@@ -17,7 +17,7 @@ proc main() {
   }
 
   {
-    var f = fs.open(path, iomode.r);
+    var f = fs.open(path, ioMode.r);
     var r = f.reader();
     var s:string;
     r.readLine(s);

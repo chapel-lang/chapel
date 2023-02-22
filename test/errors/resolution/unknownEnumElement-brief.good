@@ -1,0 +1,2 @@
+unknownEnumElement.chpl:5: error: enum 'creativeColors' has no element named 'green'
+unknownEnumElement.chpl:1: note: 'creativeColors' is declared here

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -173,8 +173,9 @@ void chpl_setMemFlags(void) {
     if (chpl_numNodes == 1) {
       memLogFile = fopen(memLog, "w");
     } else {
-      char* filename = (char*)sys_malloc((strlen(memLog)+10)*sizeof(char));
-      sprintf(filename, "%s.%" PRI_c_nodeid_t, memLog, chpl_nodeID);
+      size_t size = (strlen(memLog)+10)*sizeof(char);
+      char* filename = (char*)sys_malloc(size);
+      snprintf(filename, size, "%s.%" PRI_c_nodeid_t, memLog, chpl_nodeID);
       memLogFile = fopen(filename, "w");
       sys_free(filename);
     }
@@ -602,15 +603,17 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
   }
   qsort(table, n, sizeof(memTableEntry*), descCmp);
 
-  loc = (char*)sys_malloc((filenameWidth+numberWidth+1)*sizeof(char));
+  size_t locSize = (filenameWidth+numberWidth+1)*sizeof(char);
+  loc = (char*)sys_malloc(locSize);
 
   for (i = 0; i < n; i++) {
     memEntry = table[i];
     if (memEntry->filename) {
       memEntryFilename = chpl_lookupFilename(memEntry->filename);
-      sprintf(loc, "%s:%" PRId32, memEntryFilename, memEntry->lineno);
+      snprintf(loc, locSize, "%s:%" PRId32, memEntryFilename,
+               memEntry->lineno);
     } else {
-      sprintf(loc, "--");
+      snprintf(loc, locSize, "--");
     }
     fprintf(memLogFile, "%-*s%-*zu%-*zu%-*zu%-*s%#-*.*" PRIxPTR "\n",
            filenameWidth+numberWidth, loc,
@@ -630,7 +633,7 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
 }
 
 
-void chpl_reportMemInfo() {
+void chpl_reportMemInfo(void) {
   if (memStats) {
     fprintf(memLogFile, "\n");
     chpl_printMemAllocStats(0, 0);
@@ -771,20 +774,20 @@ void chpl_track_realloc_post(void* moreMemAlloc,
   }
 }
 
-void chpl_startVerboseMem() {
+void chpl_startVerboseMem(void) {
   chpl_verbose_mem = 1;
   chpl_comm_bcast_rt_private(chpl_verbose_mem);
 }
 
-void chpl_stopVerboseMem() {
+void chpl_stopVerboseMem(void) {
   chpl_verbose_mem = 0;
   chpl_comm_bcast_rt_private(chpl_verbose_mem);
 }
 
-void chpl_startVerboseMemHere() {
+void chpl_startVerboseMemHere(void) {
   chpl_verbose_mem = 1;
 }
 
-void chpl_stopVerboseMemHere() {
+void chpl_stopVerboseMemHere(void) {
   chpl_verbose_mem = 0;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -471,11 +471,9 @@ void deadBlockElimination()
 {
   deadBlockCount = 0;
 
-  forv_Vec(FnSymbol, fn, gFnSymbols)
-  {
-    if (!isAlive(fn))
-      continue;
-    deadBlockElimination(fn);
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (!isAlive(fn)) continue;
+    if (!fn->hasFlag(FLAG_NO_FN_BODY)) deadBlockElimination(fn);
   }
 
   if (fReportDeadBlocks)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -160,8 +160,10 @@ void VisibilityStmt::validateRenamed() {
                        it->second);
       }
 
-      if (sym->hasFlag(FLAG_DEPRECATED)) {
-        sym->generateDeprecationWarning(this);
+      if (!fDynoCompilerLibrary) {
+        if (sym->hasFlag(FLAG_DEPRECATED)) {
+          sym->generateDeprecationWarning(this);
+        }
       }
 
     } else {
@@ -310,6 +312,7 @@ BlockStmt::copyInner(SymbolMap* map) {
   _this->useList   = COPY_INT(useList);
   _this->modRefs   = COPY_INT(modRefs);
   _this->byrefVars = COPY_INT(byrefVars);
+  _this->userLabel = this->userLabel;
 
   for_alist(expr, body) {
     Expr* copy = COPY_INT(expr);

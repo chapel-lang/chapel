@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -107,7 +107,7 @@ module List {
     if isGenericType(eltType) {
       compilerWarning("creating a list with element type " +
                       eltType:string);
-      if isClassType(eltType) && !isGenericType(borrowed eltType) {
+      if isClassType(eltType) && !isGenericType(eltType:borrowed) {
         compilerWarning("which now means class type with generic management");
       }
       compilerError("list element type cannot currently be generic");
@@ -1322,33 +1322,6 @@ module List {
 
       .. warning::
 
-        indexOf on lists is deprecated, use :proc:`find` instead.
-
-      :arg x: An element to search for.
-      :type x: `eltType`
-
-      :arg start: The start index to start searching from.
-      :type start: `int`
-
-      :arg end: The end index to stop searching at. A value less than
-                `0` will search the entire list.
-      :type end: `int`
-
-      :return: The index of the element to search for, or `-1` on error.
-      :rtype: `int`
-    */
-    deprecated "indexOf on lists is deprecated, use :proc:`find` instead; please let us know if this is problematic for you."
-    proc const indexOf(x: eltType, start: int=0, end: int=-1): int {
-      return find(x, start, end);
-    }
-
-    /*
-      Return a zero-based index into this list of the first item whose value
-      is equal to `x`. If no such element can be found or if the list is empty,
-      this method returns the value `-1`.
-
-      .. warning::
-
         Calling this method with values of `start` or `end` that are out of bounds
         will cause the currently running program to halt. If the `--fast` flag is
         used, no safety checks will be performed.
@@ -1663,7 +1636,10 @@ module List {
       const osz = _size;
       const minChunkSize = 64;
       const hasOneChunk = osz <= minChunkSize;
-      const numTasks = if hasOneChunk then 1 else here.maxTaskPar;
+      const numTasks = if hasOneChunk then 1
+        else if dataParTasksPerLocale > 0
+          then dataParTasksPerLocale
+            else here.maxTaskPar;
       const chunkSize = floor(osz / numTasks):int;
       const trailing = osz - chunkSize * numTasks;
 
@@ -1696,7 +1672,10 @@ module List {
       const osz = _size;
       const minChunkSize = 32;
       const hasOneChunk = osz <= minChunkSize;
-      const numTasks = if hasOneChunk then 1 else dataParTasksPerLocale;
+      const numTasks = if hasOneChunk then 1
+        else if dataParTasksPerLocale > 0
+          then dataParTasksPerLocale
+            else here.maxTaskPar;
       const chunkSize = floor(osz / numTasks):int;
       const trailing = osz - chunkSize * numTasks;
 
@@ -1723,7 +1702,7 @@ module List {
 
       :arg ch: A channel to write to.
     */
-    proc writeThis(ch: channel) throws {
+    proc writeThis(ch: fileWriter) throws {
       var isBinary = ch.binary();
 
       _enter();
@@ -1757,7 +1736,7 @@ module List {
 
      :arg ch: A channel to read from.
      */
-    proc readThis(ch: channel) throws {
+    proc readThis(ch: fileReader) throws {
       //
       // Special handling for reading in order to handle reading an arbitrary
       // size.
@@ -1816,6 +1795,15 @@ module List {
       }
 
       _leave();
+    }
+
+    //
+    // TODO: rewrite to use formatter interface
+    //
+    pragma "no doc"
+    proc init(type eltType, param parSafe : bool, r: fileReader) {
+      this.init(eltType, parSafe);
+      try! readThis(r);
     }
 
     /*
@@ -1971,4 +1959,3 @@ module List {
 
 
 } // End module "Lists".
-

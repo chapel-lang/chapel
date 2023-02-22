@@ -7,9 +7,9 @@
 
 use IO;
 
-const stdinBin  = openfd(0).reader(iokind.native, locking=false,
-                                   hints = ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
-      stdoutBin = openfd(1).writer(iokind.native, locking=false,
+const stdinBin  = (new file(0)).reader(iokind.native, locking=false,
+                                       hints = ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
+  stdoutBin = (new file(1)).writer(iokind.native, locking=false,
                                    hints = ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
 
 config var readSize = 16384, // how much to read at a time

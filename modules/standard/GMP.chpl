@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1012,15 +1012,14 @@ module GMP {
   // 7.7 Input and Output Functions
   //
 
-  extern proc mpf_out_str(stream: _file,
+  extern proc mpf_out_str(stream: c_FILE,
                           base: c_int,
                           n_digits: c_size_t,
                           const ref op: mpf_t);
 
   extern proc mpf_inp_str(ref rop: mpf_t,
-                          stream: _file,
+                          stream: c_FILE,
                           base: c_int);
-
 
   //
   // 7.8 Miscellaneous Functions
@@ -1108,8 +1107,10 @@ module GMP {
   //
   extern proc gmp_printf(fmt: c_string, arg...);
 
-  extern proc gmp_fprintf(fp: _file, fmt: c_string, arg...);
+  extern proc gmp_fprintf(fp: c_FILE, fmt: c_string, arg...);
 
+  pragma "last resort"
+  deprecated "the '_file' type is deprecated; use the variant of 'gmp_fprintf' that takes a 'c_FILE'"
   extern proc gmp_fprintf(fp: _file, fmt: c_string, arg...);
 
   extern proc gmp_asprintf(ref ret: c_string, fmt: c_string, arg...);
@@ -1174,7 +1175,7 @@ module GMP {
 
   /* Return the number of limbs allocated in an __mpz_struct */
   private extern proc chpl_gmp_mpz_struct_nalloc(from: __mpz_struct) : mp_size_t;
-  /* Return the the number of limbs used with the sign of the mpz number
+  /* Return the number of limbs used with the sign of the mpz number
      for an __mpz_struct */
   private extern proc chpl_gmp_mpz_struct_sign_size(from: __mpz_struct) : mp_size_t;
   /* Set the sign and number of fields used in an mpz

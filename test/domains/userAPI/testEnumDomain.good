@@ -3,6 +3,7 @@
 {orange..green, yellow..blue}
 rank             = 2
 idxType          = color
+fullIdxType      = 2*color
 stridable        = false
 size             = 9
 isEmpty()        = false
@@ -12,8 +13,8 @@ stride           = (1, 1)
 alignment        = (orange, yellow)
 first            = (orange, yellow)
 last             = (green, blue)
-alignedLow       = (orange, yellow)
-alignedHigh      = (green, blue)
+low              = (orange, yellow)
+high             = (green, blue)
 dims()           = (orange..green, yellow..blue)
 dim(0)           = orange..green
 dim(1)           = yellow..blue
@@ -65,6 +66,7 @@ strided 2D enum domain
 {orange..green by 2, yellow..blue by 2}
 rank             = 2
 idxType          = color
+fullIdxType      = 2*color
 stridable        = true
 size             = 4
 isEmpty()        = false
@@ -74,8 +76,8 @@ stride           = (2, 2)
 alignment        = (orange, yellow)
 first            = (orange, yellow)
 last             = (green, blue)
-alignedLow       = (orange, yellow)
-alignedHigh      = (green, blue)
+low              = (orange, yellow)
+high             = (green, blue)
 dims()           = (orange..green by 2, yellow..blue by 2)
 dim(0)           = orange..green by 2
 dim(1)           = yellow..blue by 2

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -221,7 +221,7 @@ module ChapelDistribution {
     proc dsiIndexOrder(i)         { dnsError("indexOrder"); }
 
     pragma "no doc" pragma "last resort"
-    proc dsiMakeIndexBuffer(size) { dnsError("makeIndexBuffer"); }
+    proc dsiCreateIndexBuffer(size) { dnsError("createIndexBuffer"); }
 
     // end of default overloads to provide clear compile-time error messages
 
@@ -703,10 +703,10 @@ module ChapelDistribution {
       const _tmp: rank*idxType;
       return _tmp;
     }
-    override proc dsiAlignedLow { return parentDom.alignedLow; }
-    override proc dsiAlignedHigh { return parentDom.alignedHigh; }
+    override proc dsiAlignedLow { return parentDom.low; }
+    override proc dsiAlignedHigh { return parentDom.high; }
 
-    override proc dsiMakeIndexBuffer(size) {
+    override proc dsiCreateIndexBuffer(size) {
       return new SparseIndexBuffer(rank=this.rank, obj=this, size=size);
     }
 

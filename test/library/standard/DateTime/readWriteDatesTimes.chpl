@@ -2,7 +2,7 @@ use Time, IO;
 
 proc testReadWrite(dt) {
   var dt2: dt.type;
-  var mem = openmem();
+  var mem = openMemFile();
   var writer = mem.writer();
   writer.writef("%jt", dt);
   var reader = mem.reader();

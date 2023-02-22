@@ -7,7 +7,7 @@ proc main(){
 	const N : int = 10;
 	var a : [0..#N] int;w(t0(a)[1]);}// Close main
 proc t0(ref a){
-	var t=new Timer();
+	var t=new stopwatch();
 	t.start();
 	ref r0=a[0];
 	ref r1=a[1];

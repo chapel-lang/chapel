@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,9 +31,6 @@ module Bytes {
 
   public use BytesCasts;
   public use BytesStringCommon only decodePolicy;  // expose decodePolicy
-
-  pragma "no doc"
-  type idxType = int;
 
   //
   // createBytes* functions
@@ -268,6 +265,9 @@ module Bytes {
 
     proc writeThis(f) throws {
       compilerError("not implemented: writeThis");
+    }
+    proc encodeTo(f) throws {
+      compilerError("not implemented: encodeTo");
     }
     proc readThis(f) throws {
       compilerError("not implemented: readThis");
@@ -546,13 +546,6 @@ module Bytes {
     return startsEndsWith(this, patterns, fromLeft=false);
   }
 
-  pragma "last resort"
-  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
-  inline proc bytes.find(needle: bytes,
-                         region: range(?) = this.indices) : idxType {
-    return this.find(needle, region);
-  }
-
   /*
     Finds the argument in the :type:`bytes`
 
@@ -567,15 +560,8 @@ module Bytes {
               :type:`bytes`.
    */
   inline proc bytes.find(pattern: bytes,
-                         indices: range(?) = this.indices) : idxType {
-    return doSearchNoEnc(this, pattern, indices, count=false): idxType;
-  }
-
-  pragma "last resort"
-  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
-  inline proc bytes.rfind(needle: bytes,
-                          region: range(?) = this.indices) : idxType {
-    return this.rfind(needle, region);
+                         indices: range(?) = this.indices) : int {
+    return doSearchNoEnc(this, pattern, indices, count=false);
   }
 
   /*
@@ -592,16 +578,9 @@ module Bytes {
               :type:`bytes`.
    */
   inline proc bytes.rfind(pattern: bytes,
-                          indices: range(?) = this.indices) : idxType {
+                          indices: range(?) = this.indices) : int {
     return doSearchNoEnc(this, pattern, indices, count=false,
-                         fromLeft=false): idxType;
-  }
-
-  pragma "last resort"
-  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
-  inline proc bytes.count(needle: bytes,
-                          region: range(?) = this.indices) : int {
-    return this.count(needle, region);
+                         fromLeft=false);
   }
 
   /*
@@ -618,14 +597,6 @@ module Bytes {
   inline proc bytes.count(pattern: bytes,
                           indices: range(?) = this.indices) : int {
     return doSearchNoEnc(this, pattern, indices, count=true);
-  }
-
-  pragma "last resort"
-  deprecated "the 'needle' argument is deprecated, use 'pattern' instead"
-  inline proc bytes.replace(needle: bytes,
-                            replacement: bytes,
-                            count: int = -1) : bytes {
-    return this.replace(needle, replacement, count);
   }
 
 
@@ -1023,7 +994,7 @@ module Bytes {
   proc bytes.toLower() : bytes {
     var result: bytes = this;
     if result.isEmpty() then return result;
-    for (i,b) in zip(0.., result.bytes()) {
+    for (b,i) in zip(result.bytes(), 0..) {
       result.buff[i] = byte_toLower(b); //check is done by byte_toLower
     }
     return result;
@@ -1040,7 +1011,7 @@ module Bytes {
   proc bytes.toUpper() : bytes {
     var result: bytes = this;
     if result.isEmpty() then return result;
-    for (i,b) in zip(0.., result.bytes()) {
+    for (b,i) in zip(result.bytes(), 0..) {
       result.buff[i] = byte_toUpper(b); //check is done by byte_toUpper
     }
     return result;
@@ -1061,7 +1032,7 @@ module Bytes {
 
     param UN = 0, LETTER = 1;
     var last = UN;
-    for (i,b) in zip(0.., result.bytes()) {
+    for (b,i) in zip(result.bytes(), 0..) {
       if byte_isAlpha(b) {
         if last == UN {
           last = LETTER;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -437,11 +437,11 @@ module BytesStringCommon {
 
       // find the byte range of the given codepoint range
       var cpCount = 0;
-      const cpIdxLow = if intR.hasLowBound() && intR.alignedLow:int >= 0
-                          then intR.alignedLow:int
+      const cpIdxLow = if intR.hasLowBound() && intR.low:int >= 0
+                          then intR.low:int
                           else 0;
       const cpIdxHigh = if intR.hasHighBound()
-                           then intR.alignedHigh:int
+                           then intR.high:int
                            else x.buffLen-1;
 
       var byteLow = x.buffLen;  // empty range if bounds outside string
@@ -522,7 +522,7 @@ module BytesStringCommon {
 
   proc getIndexType(type t) type {
     import Bytes, String;
-    if t==bytes then return Bytes.idxType;
+    if t==bytes then return int;
     else if t==string then return String.byteIndex;
     else compilerError("This function should only be used by bytes or string");
   }
@@ -629,7 +629,7 @@ module BytesStringCommon {
     var chunk : t;
 
     var inChunk : bool = false;
-    var chunkStart : idxType;
+    var chunkStart : int;
 
     // emit whole string, unless all whitespace
     // TODO Engin: Why is noSplit check inside the loop?
@@ -1244,8 +1244,8 @@ module BytesStringCommon {
     const localX: t = x.localize();
     const localChars: t = chars.localize();
 
-    var start: idxType = 0;
-    var end: idxType = localX.buffLen-1;
+    var start: int = 0;
+    var end: int = localX.buffLen-1;
 
     if leading {
       label outer for (i, xChar) in zip(x.indices, localX.bytes()) {
@@ -1426,6 +1426,9 @@ module BytesStringCommon {
         }
       }
     }
+
+    // ensure that there is a null byte at the end of the buffer
+    if x.buffLen > 0 then x.buff[x.buffLen] = 0;
   }
 
   private proc _isSingleWord(const ref x: ?t) {

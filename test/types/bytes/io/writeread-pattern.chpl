@@ -29,7 +29,7 @@ proc test(byteRange) {
     halt("Error creating bytes object with correct length");
   }
 
-  var bytesChannel = opentmp();
+  var bytesChannel = openTempFile();
 
   {
     // write them to a channel

@@ -1911,7 +1911,7 @@ proc randomtest(n:int) {
 
   writeln("Sorting ", n, " elements");
 
-  var timer:Timer;
+  var timer:stopwatch;
   timer.start();
   mysort(0, n-1, A, defaultComparator, 0, max(int));
   timer.stop();

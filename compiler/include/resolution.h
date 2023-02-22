@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -178,6 +178,7 @@ void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);
 void resolveInterfaceSymbol(InterfaceSymbol* isym);
 void resolveImplementsStmt(ImplementsStmt* istm);
 void resolveConstrainedGenericFun(FnSymbol* fn);
+bool isConstrainedGenericSymbol(Symbol* sym);
 void resolveConstrainedGenericSymbol(Symbol* sym, bool mustBeCG);
 Expr* resolveCallToAssociatedType(CallExpr* call, ConstrainedType* recv);
 struct ConstraintSat { ImplementsStmt* istm; IfcConstraint* icon; int indx;
@@ -225,7 +226,6 @@ void explainAndCheckInstantiation(FnSymbol* newFn, FnSymbol* fn);
 class DisambiguationContext {
 public:
                  DisambiguationContext(CallInfo& info, BlockStmt* searchScope);
-
   Vec<Symbol*>*  actuals;
   Expr*          scope;
   bool           explain;

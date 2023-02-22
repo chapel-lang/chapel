@@ -1,1 +1,17 @@
-CHPL_TARGET_PLATFORM != linux64
+#!/usr/bin/env python3
+
+import os
+import subprocess
+
+platform = os.getenv('CHPL_TARGET_PLATFORM')
+
+Ok = False
+
+if platform != 'linux64':
+    Ok = False  # not linux
+else:
+    sub = subprocess.run(['pkg-config', '--exists', 'libcrypto >= 1.1'])
+    if sub.returncode == 0:
+        Ok = True
+
+print(not Ok)

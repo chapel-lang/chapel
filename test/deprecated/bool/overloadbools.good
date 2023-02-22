@@ -1,0 +1,9 @@
+overloadbools.chpl:14: warning: 'bool(w)' is deprecated, please use 'bool' instead
+overloadbools.chpl:15: warning: 'bool(w)' is deprecated, please use 'bool' instead
+overloadbools.chpl:1: In function 'foo':
+overloadbools.chpl:1: warning: 'bool(w)' is deprecated, please use 'bool' instead
+overloadbools.chpl:5: In function 'foo':
+overloadbools.chpl:5: warning: 'bool(w)' is deprecated, please use 'bool' instead
+In system-width bool
+In 32-bit bool
+In 64-bit bool

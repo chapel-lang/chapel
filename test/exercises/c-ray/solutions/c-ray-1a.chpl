@@ -26,7 +26,7 @@
 
 use Image;    // use helper module related to writing out images
 use List;
-use IO;       // allow use of stderr, stdin, iomode
+use IO;       // allow use of stderr, stdin, ioMode
 
 //
 // =================================================
@@ -145,10 +145,10 @@ proc main() {
   var scene = loadScene();
 
   //
-  // Timers to measure the rendering time
+  // stopwatches to measure the rendering time
   //
   use Time;
-  var t: Timer;
+  var t: stopwatch;
   t.start();
 
   // ***************************************
@@ -512,7 +512,7 @@ proc loadScene() {
 
   // the input file channel
   const infile = if scene == "stdin" then stdin
-                                     else open(scene, iomode.r).reader();
+                                     else open(scene, ioMode.r).reader();
 
   // a map (associative array) from the supported input file argument
   // types to the number of columns of input they expect

@@ -3,7 +3,7 @@ use IO;
 config const filename = "stringCorrupterText.txt";
 
 proc main {
-  var infile = open(filename, iomode.r);
+  var infile = open(filename, ioMode.r);
   var reader = infile.reader();
   var word: string;
 

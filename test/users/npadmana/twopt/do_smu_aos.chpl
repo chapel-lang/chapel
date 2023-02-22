@@ -29,7 +29,7 @@ config const nmubins=5;
 config const nsbins=5;
 
 // Global variables
-var gtime1 : Timer;
+var gtime1 : stopwatch;
 
 proc main() {
   doPairs();
@@ -54,21 +54,21 @@ proc generateRandom(pp : []WeightedParticle3D) {
 
 
 proc countLines(fn : string) : int {
-  var ff = open(fn, iomode.r);
+  var fr = openreader(fn);
   var ipart = 0;
-  for iff in ff.lines() do ipart +=1;
-  ff.close();
+  for iff in fr.lines() do ipart +=1;
+  fr.close();
   return ipart;
 }
 
 proc readFile(fn : string, pp : []WeightedParticle3D)  {
   const maxcols=25;
 
-  var ff = open(fn, iomode.r);
+  var fr = openreader(fn);
   var cols : [1.. #maxcols] real;
   var icol=1;
   var ipart = 0;
-  for iff in ff.lines() {
+  for iff in fr.lines() {
    icol = 1; 
    for col1 in iff.split(spaces) {
      if (col1.size==0) then continue;
@@ -242,7 +242,7 @@ proc TreeAccumulate(hh : UniformBins, p1, p2 : []WeightedParticle3D, node1, node
 
 // The main code 
 proc doPairs() {
-  var tt : Timer;
+  var tt : stopwatch;
 
   // Read in the file
   var nlines1, nlines2 : int;
@@ -321,4 +321,3 @@ proc doPairs() {
     writeHist(stdout,hh,"%20.5er ");
   }
 }
-

@@ -617,9 +617,8 @@ corresponds to subtracting the value from zero. For real and imaginary
 types, this corresponds to inverting the sign. For complex types, this
 corresponds to inverting the signs of both the real and imaginary parts.
 
-It is an error to try to negate a value of type ``uint(64)``. Note that
-negating a value of type ``uint(32)`` first converts the type to
-``int(64)`` using an implicit conversion.
+Negating a value of type ``uint`` or ``uint(w)`` for any width will
+result in a compilation error.
 
 .. _Addition_Operators:
 
@@ -1586,7 +1585,7 @@ When a for expression is used to initialize a variable, such as
 the variable will be inferred to have an array type. The array’s domain
 is defined by the ``iterable-expression`` following the same rules as
 for promotion, both in the regular case :ref:`Promotion` and in
-the zipper case :ref:`Zipper_Promotion`.
+the zippered case :ref:`Zippered_Promotion`.
 
 .. _Filtering_Predicates_For:
 

@@ -87,7 +87,7 @@ proc main() {
   var execTime: [1..numTrials] real;                 // an array of timings
 
   for trial in 1..numTrials {                        // loop over the trials
-    const startTime = getCurrentTime();              // capture the start time
+    const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 
     //
     // The main loop: Iterate over the vectors A, B, and C in a
@@ -100,7 +100,7 @@ proc main() {
     	    A(i) = B(i) + alpha * C(i);
 //	A = B + alpha * C;
 
-    execTime(trial) = getCurrentTime() - startTime;  // store the elapsed time
+    execTime(trial) = timeSinceEpoch().totalSeconds() - startTime;  // store the elapsed time
   }
 
   _A = A;

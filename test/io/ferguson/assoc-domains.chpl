@@ -3,7 +3,7 @@ use IO;
 
 proc testText(ref seeds: domain(int)) {
   writeln("in testText ", seeds.sorted());
-  var lf = open('test.log' : string, iomode.cwr);
+  var lf = open('test.log' : string, ioMode.cwr);
   var delta: [seeds] real;
   var po: domain(int);
   var pk: [po] real;
@@ -20,7 +20,7 @@ proc testText(ref seeds: domain(int)) {
 }
 proc testBinary(ref seeds: domain(int)) {
   writeln("in testBinary ", seeds.sorted());
-  var lf = open('test.log' : string, iomode.cwr);
+  var lf = open('test.log' : string, ioMode.cwr);
   var delta: [seeds] real;
   var po: domain(int);
   var pk: [po] real;

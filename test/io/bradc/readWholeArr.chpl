@@ -1,6 +1,6 @@
 use IO;
 
-var infile = open("readWholeArr.dat", iomode.r);
+var infile = open("readWholeArr.dat", ioMode.r);
 var reader = infile.reader();
 
 var A: [1..3] real;

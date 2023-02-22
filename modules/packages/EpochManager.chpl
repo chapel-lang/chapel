@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -513,6 +513,11 @@ module EpochManager {
 
       pragma "no doc"
       proc readThis(f) throws {
+        compilerError("Reading a Vector is not supported");
+      }
+
+      proc init(type eltType, r: fileReader) {
+        this.init(eltType);
         compilerError("Reading a Vector is not supported");
       }
 

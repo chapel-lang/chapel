@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1258,7 +1258,7 @@ qioerr qio_file_path_for_fd(fd_t fd, const char** string_out)
   char pathbuf[500];
   qioerr err;
   const char* result;
-  sprintf(pathbuf, "/proc/self/fd/%i", fd);
+  snprintf(pathbuf, sizeof(pathbuf), "/proc/self/fd/%i", fd);
   err = qio_int_to_err(sys_readlink(pathbuf, &result));
   *string_out = result;
   return err;

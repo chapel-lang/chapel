@@ -19,7 +19,7 @@ const tableSize = M * numTasks;
 // help indexing speed until we optimize them.
 config param useBlockArr = false;
 
-var t: Timer;
+var t: stopwatch;
 proc startTimer() {
   t.start();
 }

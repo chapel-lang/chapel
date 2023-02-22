@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -80,7 +80,7 @@ module Heap {
     if isGenericType(eltType) {
       compilerWarning("creating a heap with element type " +
                       eltType:string);
-      if isClassType(eltType) && !isGenericType(borrowed eltType) {
+      if isClassType(eltType) && !isGenericType(eltType:borrowed) {
         compilerWarning("which now means class type with generic management");
       }
       compilerError("heap element type cannot currently be generic");
@@ -378,7 +378,7 @@ module Heap {
 
       :arg ch: A channel to write to.
     */
-    proc writeThis(ch: channel) throws {
+    proc writeThis(ch: fileWriter) throws {
       _enter();
       ch.write(this._data);
       _leave();

@@ -87,6 +87,7 @@ libgasnet_sources =                                         \
         $(top_srcdir)/extended-ref/coll/gasnet_team.c	    \
         $(top_srcdir)/extended-ref/coll/gasnet_hashtable.c  \
         $(top_srcdir)/extended-ref/coll/gasnet_reduce.c     \
+        $(top_srcdir)/extended-ref/coll/gasnet_bootstrap.c  \
         $(top_srcdir)/other/kinds/gasnet_refkinds.c         \
         $(top_srcdir)/gasnet_event.c                        \
         $(top_srcdir)/gasnet_legacy.c                       \

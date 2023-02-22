@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -66,10 +66,11 @@ static bool        handle_erroneous_fns = true;
 astlocT            last_error_loc(0, NULL);
 
 static bool forceWidePtrs();
+static const char* cleanCompilerFilename(const char* name);
 
 void setupError(const char* subdir, const char* filename, int lineno, int tag) {
   err_subdir        = subdir;
-  err_filename      = filename;
+  err_filename      = cleanCompilerFilename(filename);
   err_lineno        = lineno;
   err_fatal         = tag == 1 || tag == 2 || tag == 3;
   err_user          = tag != 1;
@@ -78,6 +79,37 @@ void setupError(const char* subdir, const char* filename, int lineno, int tag) {
 
   exit_immediately  = tag == 1 || tag == 2;
   exit_eventually  |= tag == 3;
+}
+
+void setupDynoError(chpl::ErrorBase::Kind errKind) {
+  // This function mostly exists as a convenience to set exit_immediately and
+  // exit_eventually, so both production and dyno errors can share the same
+  // exit-on-error logic.
+
+  // No need to set path information because we are not handling internal errors
+  // with this.
+
+  err_fatal = errKind == chpl::ErrorBase::Kind::ERROR ||
+              errKind == chpl::ErrorBase::Kind::SYNTAX;
+  err_user = true;
+  err_print = false;
+  err_ignore = ignore_warnings && errKind == chpl::ErrorBase::Kind::WARNING;
+
+  exit_immediately = false;
+  exit_eventually |= err_fatal;
+}
+
+GpuCodegenType getGpuCodegenType() {
+  static const GpuCodegenType cached = []() {
+    INT_ASSERT(usingGpuLocaleModel());
+    if (0 == strcmp(CHPL_GPU_CODEGEN, "cuda")) {
+      return GpuCodegenType::GPU_CG_NVIDIA_CUDA;
+    } else {
+      INT_ASSERT(!strcmp(CHPL_GPU_CODEGEN, "rocm"));
+      return GpuCodegenType::GPU_CG_AMD_HIP;
+    }
+  }();
+  return cached;
 }
 
 // Return true if the current locale model needs GPU code generation
@@ -138,6 +170,13 @@ const char* cleanFilename(const BaseAST* ast) {
   }
 
   return retval;
+}
+
+static const char* cleanCompilerFilename(const char* name) {
+  // it depends on the details of the build whether __FILE__ is
+  // an absolute path, but for the purposes of this error reporting,
+  // we only need the file name.
+  return stripdirectories(name);
 }
 
 
@@ -228,7 +267,7 @@ static void print_user_internal_error() {
 
   error[idx++] = '-';
   // next 4 characters are the line number
-  sprintf(&error[idx], "%04d", err_lineno);
+  snprintf(&error[idx], 5 * sizeof(char), "%04d", err_lineno);
 
   // now make the error string upper case
   for (int i = 0; i < (int)sizeof(error) && error[i]; i++) {
@@ -239,7 +278,7 @@ static void print_user_internal_error() {
 
   print_error("%s ", error);
 
-  get_version(version);
+  get_version(version, sizeof(version));
 
   print_error("chpl version %s", version);
 }
@@ -528,7 +567,55 @@ static bool interestingModuleInit(FnSymbol* fn) {
   return strcmp(modulename, basename) != 0;
 }
 
-static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
+// If the new frontend emitted errors but did not terminate compilation,
+// (e.g., all it did was print deprecation warnings), then it printed
+// an error header based on 'chpl::ID'. The role of this function is
+// to see if the function we want to use for a header has the same
+// 'chpl::ID' as the last symbol used to print the dyno error header.
+// If so, then we return nullptr to avoid having the production compiler
+// print out a duplicate header.
+static FnSymbol* determineIfHeaderIsRedundantWithDyno(FnSymbol* fn) {
+  static FnSymbol* fnForSkip = nullptr;
+  static bool once = false;
+
+  // There is no input function.
+  if (!fn) return nullptr;
+
+  // We've already bridged from ID to FnSymbol, or there is no ID.
+  if (once || dynoIdForLastContainingDecl.isEmpty()) return fn;
+
+  // If we are skipping...
+  if (fnForSkip) {
+
+    // We hit a different function, so stop skipping forever.
+    if (fnForSkip != fn) {
+      once = true;
+      return fn;
+
+    // Otherwise, keep skipping.
+    } else {
+      return nullptr;
+    }
+  }
+
+  // If the very first input function is different, never skip.
+  if (fn->astloc.id() != dynoIdForLastContainingDecl) {
+    once = true;
+    return fn;
+  }
+
+  // Otherwise, start skipping...
+  fnForSkip = fn;
+
+  return nullptr;
+}
+
+// return values:
+//   -1 = no filename:line# was printed;
+//    0 = they were printed and were not the result of a guess
+//    1 = they were printed but were the result of a guess
+//
+static int printErrorHeader(BaseAST* ast, astlocT astloc) {
 
   if (Expr* expr = toExpr(ast)) {
     Expr* use = findLocationIgnoringInternalInlining(expr);
@@ -547,9 +634,12 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
         if (fn->defPoint == NULL || !fn->inTree())
           fn = NULL;
 
+      fn = determineIfHeaderIsRedundantWithDyno(fn);
+
       if (fn && fn->id != err_fn_id) {
         printCallstackForLastError();
         err_fn_header_printed = false;
+
         err_fn = fn;
 
         while ((fn = toFnSymbol(err_fn->defPoint->parentSymbol))) {
@@ -609,9 +699,10 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
     }
   }
 
-  bool guess = filename && !have_ast_line;
+  int guess = -1;  // -1=no filename:line# printed; 0=not guessed; 1=guessed
 
   if (filename) {
+    guess = !have_ast_line;
     if (err_fatal && err_user) {
       // save the error location for printsSameLocationAsLastError
       last_error_loc = astlocT(linenum, filename);
@@ -647,7 +738,7 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
 }
 
 
-static void printErrorFooter(bool guess) {
+static void printErrorFooter(int guess) {
   //
   // For developers, indicate the compiler source location where an
   // internal error was generated.
@@ -660,7 +751,7 @@ static void printErrorFooter(bool guess) {
   // AST was not passed to the INT_FATAL() macro and we relied on the
   // global SET_LINENO() information instead), indicate that.
   //
-  if (guess) {
+  if (guess == 1) {
     print_error("\nNote: This source location is a guess.");
   }
 
@@ -671,9 +762,9 @@ static void printErrorFooter(bool guess) {
     print_error("\n\n"
       "Internal errors indicate a bug in the Chapel compiler (\"It's us, not you\"),\n"
       "and we're sorry for the hassle.  We would appreciate your reporting this bug --\n"
-      "please see %s for instructions.  In the meantime,\n"
-      "the filename + line number above may be useful in working around the issue.\n\n",
-      help_url);
+      "please see %s for instructions.%s\n\n", help_url,
+      (guess == -1) ? "" : "  In the meantime,\n"
+      "the filename + line number above may be useful in working around the issue.");
 
     //
     // and exit if it's fatal (isn't it always?)
@@ -854,9 +945,7 @@ static void vhandleError(const BaseAST* ast,
     // now the rest of this function will report the additional error
   }
 
-  bool guess = false;
-
-  guess = printErrorHeader(const_cast<BaseAST*>(ast), astloc);
+  int guess = printErrorHeader(const_cast<BaseAST*>(ast), astloc);
 
   //
   // Only print out the arguments if this is a user error or we're

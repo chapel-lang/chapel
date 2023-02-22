@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -120,19 +120,26 @@ module String {
 
   // Helper routines in support of being able to use ranges of indices
   pragma "no doc"
-  proc chpl_build_bounded_range(low: ?t, high: t)
-    where t == byteIndex || t == codepointIndex
-    return new range(t, low=low, high=high);
+  proc chpl_build_bounded_range(low: byteIndex, high: byteIndex)
+    return new range(byteIndex, low=low, high=high);
+  pragma "no doc"
+  proc chpl_build_bounded_range(low: codepointIndex, high: codepointIndex)
+    return new range(codepointIndex, low=low, high=high);
 
   pragma "no doc"
-  proc chpl_build_low_bounded_range(low: ?t)
-    where t == byteIndex || t == codepointIndex
-  return new range(low=low);
+  proc chpl_build_low_bounded_range(low: byteIndex)
+    return new range(low=low);
+  pragma "no doc"
+  proc chpl_build_low_bounded_range(low: codepointIndex)
+    return new range(low=low);
 
   pragma "no doc"
-  proc chpl_build_high_bounded_range(high: ?t)
-    where t == byteIndex || t == codepointIndex
-  return new range(high=high);
+  proc chpl_build_high_bounded_range(high: byteIndex)
+    return new range(high=high);
+  pragma "no doc"
+  proc chpl_build_high_bounded_range(high: codepointIndex)
+    return new range(high=high);
+
 
   pragma "no doc"
   proc chpl__rangeStrideType(type idxType: byteIndex) type
@@ -151,8 +158,10 @@ module String {
     return uint;
 
   pragma "no doc"
-  inline proc chpl__idxToInt(i: ?t)
-    where t == byteIndex || t == codepointIndex
+  inline proc chpl__idxToInt(i: byteIndex)
+    return i:int;
+  pragma "no doc"
+  inline proc chpl__idxToInt(i: codepointIndex)
     return i:int;
 
   pragma "no doc"
@@ -810,6 +819,11 @@ module String {
       compilerError("not implemented: writeThis");
     }
 
+    // These should never be called (but are default functions for records)
+    proc encodeTo(f) throws {
+      compilerError("not implemented: encodeTo");
+    }
+
     proc readThis(f) throws {
       compilerError("not implemented: readThis");
     }
@@ -1177,7 +1191,7 @@ module String {
     .. code-block:: chapel
 
       var str = "abcd";
-      for c in str {
+      for c in str.items() {
         writeln(c);
       }
 
@@ -1482,13 +1496,6 @@ module String {
     return startsEndsWith(this, patterns, fromLeft=false);
   }
 
-  pragma "last resort"
-  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
-  inline proc string.find(needle: string,
-                          region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
-    return this.find(needle, region);
-  }
-
   /*
     :arg pattern: the string to search for
     :arg indices: an optional range defining the substring to search within,
@@ -1505,13 +1512,6 @@ module String {
       return doSearchNoEnc(this, pattern, indices, count=false): byteIndex;
     else
       return doSearchUTF8(pattern, indices, count=false): byteIndex;
-  }
-
-  pragma "last resort"
-  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
-  inline proc string.rfind(needle: string,
-                           region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
-    return this.rfind(needle, region);
   }
 
   /*
@@ -1533,13 +1533,6 @@ module String {
                           count=false, fromLeft=false): byteIndex;
   }
 
-  pragma "last resort"
-  deprecated "the 'needle' and 'region' arguments are deprecated, use 'pattern' and 'indices' instead"
-  inline proc string.count(needle: string,
-                           region: range(?) = this.indices) : int {
-    return this.count(needle, region);
-  }
-
   /*
     :arg pattern: the string to search for
     :arg indices: an optional range defining the substring to search within,
@@ -1556,12 +1549,6 @@ module String {
       return doSearchUTF8(pattern, indices, count=true);
   }
 
-  pragma "last resort"
-  deprecated "the 'needle' argument is deprecated, use 'pattern' instead"
-  inline proc string.replace(needle: string, replacement: string,
-                             count: int = -1) : string {
-    return this.replace(needle, replacement, count);
-  }
   /*
     :arg pattern: the string to search for
     :arg replacement: the string to replace `pattern` with

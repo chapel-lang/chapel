@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -761,7 +761,7 @@ module ArgumentParser {
     proc _setArguments(argStack: map(string, ArgumentHandler)) {
       _argStack = new map(string, borrowed ArgumentHandler);
       for k in argStack.these() {
-        _argStack.addOrSet(k,argStack.getBorrowed(k) );
+        _argStack.addOrSet(k,try! argStack[k] );
       }
       generateSections();
     }
@@ -779,7 +779,7 @@ module ArgumentParser {
       var hasSubcommands = false;
       for kindOfArg in usageOrder {
         for name in sorted(_argStack.keys()) {
-          const handler = _argStack.getBorrowed(name);
+          const handler = try! _argStack[name];
           if !handler._help.visible then continue;
           var elem = handler._getUsageCommand();
           if handler._kind == kindOfArg {
@@ -809,7 +809,7 @@ module ArgumentParser {
     // the arguments have been added to the argumentParser.
     proc generateSections() {
       for name in sorted(_argStack.keys()) {
-        const handler = _argStack.getBorrowed(name);
+        const handler = try! _argStack[name];
         if !handler._help.visible then continue;
         var elem = new element(handler._getHelpCommand(),
                                handler._getHelpMessage());
@@ -990,7 +990,7 @@ module ArgumentParser {
       try! {
         // configure to allow consuming of -- if passed from runtime
         // storing into variable to avoid memory leak due to compiler bug #18391
-        var tmp = addOption(name="dummyDashHandler", opts=["--"],
+        var tmp = addOption(name="dummyDashHandler", opts=["--", ],
                             numArgs=0,
                             visible=false,
                             help="indicates all following arguments are not to be parsed");
@@ -1580,7 +1580,7 @@ module ArgumentParser {
     */
     proc addPassThrough(delimiter="--") : shared Argument throws {
       // remove the dummyHandler first
-      if delimiter == "--" then _removeHandler("dummyDashHandler", ["--"]);
+      if delimiter == "--" then _removeHandler("dummyDashHandler", ["--", ]);
       var argHelp = new argumentHelp(visible=false,
                                      help="pass all following arguments without parsing",
                                      valueName=delimiter);
@@ -1595,7 +1595,7 @@ module ArgumentParser {
       var endPos = argsD.low;
       var idx = argsD.low;
       for handler in _positionals {
-        var arg = _result.getReference(handler._name);
+        var arg = _result[handler._name];
         endPos = handler._match(arguments, idx, arg, endIdx);
         idx = endPos;
         if idx == endIdx then break;
@@ -1685,8 +1685,8 @@ module ArgumentParser {
       for i in argsList.indices {
         const argElt = argsList[i];
         if _options.contains(argElt) {
-          var optName = _options.getValue(argElt);
-          var argRslt = _result.getValue(optName);
+          var optName = _options[argElt];
+          var argRslt = _result[optName];
           // create an entry for this index and the argument name
           optionIndices.add(i, optName);
           argRslt._present = true;
@@ -1726,9 +1726,9 @@ module ArgumentParser {
         var idx = arrayOptionIndices[i][0];
         var name = arrayOptionIndices[i][1];
         // get a ref to the argument
-        var arg = _result.getReference(name);
+        var arg = _result[name];
         // get the argument handler to match
-        const handler = _handlers.getBorrowed(name);
+        const handler = _handlers[name];
         // try to match values in argstring, get the last value position
         var stopPos = argsList.size - 1;
         if arrayOptionIndices.size > i + 1 {
@@ -1801,8 +1801,8 @@ module ArgumentParser {
     proc _assignDefaultsToMissingOpts() {
       // set any default values as needed
       for name in this._handlers.keys() {
-        const handler = this._handlers.getBorrowed(name);
-        const arg = this._result.getReference(name);
+        const handler = try! this._handlers[name];
+        const arg = try! this._result[name];
         if !arg._present && handler._hasDefault() {
           arg._values.append(handler._getDefaultValue());
           arg._present = true;
@@ -1814,8 +1814,8 @@ module ArgumentParser {
     proc _checkSatisfiedOptions() throws {
       // make sure we satisfied options that require a value
       for name in this._handlers.keys() {
-        const handler = this._handlers.getBorrowed(name);
-        const arg = this._result.getReference(name);
+        const handler = this._handlers[name];
+        const arg = this._result[name];
         var rtnMsg = handler._validate(arg._present, arg._values.size);
         if rtnMsg != "" {
           throw new ArgumentError(handler._name + " " + rtnMsg);

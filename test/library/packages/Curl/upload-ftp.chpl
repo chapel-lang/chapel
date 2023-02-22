@@ -1,4 +1,5 @@
 use RunServer;
+use FileSystem;
 use URL;
 private use IO;
 
@@ -18,7 +19,7 @@ proc runtest() {
 
   writeln("uploading some files to FTP");
 
-  for f in findfiles() {
+  for f in findFiles() {
     if f.endsWith(".txt") || f.endsWith(".htm") || f.endsWith(".html") {
 
       if verbose then
@@ -26,7 +27,7 @@ proc runtest() {
 
       // Open a URL reader and writer
       var outUrlFile = outUrl + f;
-      var input = open(f, iomode.r).reader();
+      var input = open(f, ioMode.r).reader();
       var output = openUrlWriter(outUrlFile);
 
       var str:string;
@@ -43,7 +44,7 @@ proc runtest() {
         writeln("Copied ", nlines, " lines");
 
       // Now, try downloading the file and check against the local file.
-      var filereader = open(f, iomode.r).reader();
+      var filereader = open(f, ioMode.r).reader();
       var urlreader = openUrlReader(outUrlFile);
       // Now check that the files match
       nlines = 0;

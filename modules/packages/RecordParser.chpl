@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -52,7 +52,7 @@ Example 1
     var Name: string;
   }
 
-  var f = open("input1.txt", iomode.rw);
+  var f = open("input1.txt", ioMode.rw);
   var fr = f.reader();
 
   var M = new RecordReader(Bar, fr);

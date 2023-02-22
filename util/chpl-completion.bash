@@ -53,6 +53,7 @@ _chpl ()
 --debug-short-loc \
 --default-dist \
 --denormalize \
+--detailed-errors \
 --devel \
 --div-by-zero-checks \
 --dynamic \
@@ -60,6 +61,10 @@ _chpl ()
 --dyno \
 --dyno-break-on-hash \
 --dyno-debug-trace \
+--dyno-scope-bundled \
+--dyno-scope-production \
+--dyno-serialize \
+--dyno-serialize-dir \
 --early-deinit \
 --explain-call \
 --explain-call-id \
@@ -75,6 +80,7 @@ _chpl ()
 --gmp \
 --gpu-arch \
 --gpu-block-size \
+--gpu-ptxas-enforce-optimization \
 --hdr-search-path \
 --help \
 --help-env \
@@ -166,11 +172,15 @@ _chpl ()
 --no-debug \
 --no-debug-short-loc \
 --no-denormalize \
+--no-detailed-errors \
 --no-devel \
 --no-div-by-zero-checks \
 --no-dynamic-auto-local-access \
 --no-dyno \
 --no-dyno-debug-trace \
+--no-dyno-scope-bundled \
+--no-dyno-scope-production \
+--no-dyno-serialize \
 --no-early-deinit \
 --no-explain-verbose \
 --no-fast-followers \
@@ -247,6 +257,7 @@ _chpl ()
 --no-task-tracking \
 --no-tuple-copy-opt \
 --no-use-color-terminal \
+--no-use-io-formatters \
 --no-vectorize \
 --no-verify \
 --no-warn-const-loops \
@@ -334,6 +345,7 @@ _chpl ()
 --tuple-copy-limit \
 --tuple-copy-opt \
 --use-color-terminal \
+--use-io-formatters \
 --vectorize \
 --verify \
 --version \

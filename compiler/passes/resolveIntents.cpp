@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -39,7 +39,6 @@ IntentTag constIntentForType(Type* t) {
       isDecoratedClassType(t) ||
       t == dtOpaque ||
       t == dtTaskID ||
-      t == dtFile ||
       t == dtNil ||
       t == dtStringC ||
       t == dtCVoidPtr ||
@@ -153,7 +152,6 @@ IntentTag blankIntentForType(Type* t) {
              isUnion(t)                              ||
              isConstrainedType(t)                    ||
              t == dtTaskID                           ||
-             t == dtFile                             ||
              t == dtNil                              ||
              t == dtVoid                             ||
              t == dtOpaque                           ||

@@ -4,9 +4,9 @@
 // limit the number of threads.
 //
 
-use Random, Time; // for random number generation and the Timer class
+use Random, Time; // for random number generation and the stopwatch record
 
-var timer: Timer; // to time the sort
+var timer: stopwatch; // to time the sort
 
 config var n: int = 2**15;      // the size of the array to be sorted
 config var thresh: int = 1;     // the recursive depth to serialize

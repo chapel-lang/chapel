@@ -1,0 +1,4 @@
+split-init-out-return-intent-overloads3.chpl:28: In function 'test3':
+split-init-out-return-intent-overloads3.chpl:30: error: 'x' is not initialized and has no type
+split-init-out-return-intent-overloads3.chpl:30: note: cannot find initialization point to split-init this variable
+split-init-out-return-intent-overloads3.chpl:31: note: 'x' is used here before it is initialized

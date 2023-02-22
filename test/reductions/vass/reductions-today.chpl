@@ -2,7 +2,7 @@
 This test combines two aspects of reductions:
 
 * plus-reduction of booleans - this implicitly coerces booleans to integers
-  this is a simplification of test/trivial/deitz/monte.chpl
+  this is a simplification of test/trivial/deitz/other/monte.chpl
 
 * test2 and test3 are testing simply reductions over ints,
   with promotion or not

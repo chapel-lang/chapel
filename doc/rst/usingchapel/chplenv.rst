@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.28.0
+        export CHPL_HOME=~/chapel-1.29.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -489,7 +489,8 @@ CHPL_HOST_MEM
         jemalloc  use Jason Evan's memory allocator
         ========= =======================================================
 
-   If unset, ``CHPL_HOST_MEM`` defaults to ``cstdlib``.
+   If unset, ``CHPL_HOST_MEM`` defaults to ``jemalloc`` everywhere except
+   for Cygwin and MacOS. On those systems, it defaults to ``cstdlib``.
 
 .. _readme-chplenv.CHPL_HOST_JEMALLOC:
 

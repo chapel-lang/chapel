@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,10 +31,27 @@
     For the most up-to-date information about GPU support see the
     :ref:`technical note <readme-gpu>` about it.
 */
+@unstable "The GPU module is unstable and its interface is subject to change in the future."
 module GPU
 {
+  use CTypes;
+
   pragma "no doc"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_gpu_write(const str : c_string) : void;
+
+  pragma "no doc"
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_clock() : uint;
+
+  pragma "no doc"
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printTimeDelta(
+    msg : c_string, start : uint, stop : uint) : void;
+
+  pragma "no doc"
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_device_clock_rate(devNum : int(32)) : uint;
 
   /*
      This function is intended to be called from within a GPU kernel and is
@@ -89,5 +106,68 @@ module GPU
   pragma "always propagate line file info"
   inline proc assertOnGpu() {
     __primitive("chpl_assert_on_gpu");
+  }
+
+  /*
+    Returns value of a per-multiprocessor counter that increments every clock cycle.
+    This function is meant to be called to time sections of code within a GPU
+    enabled loop.
+  */
+  proc gpuClock() : uint {
+    return chpl_gpu_clock();
+  }
+
+  /*
+    Prints 'msg' followed by the difference between 'stop' and 'start'. Meant to
+    print the time elapsed between subsequent calls to 'gpuClock()'.
+    To convert to seconds divide by 'gpuClocksPerSec()'
+  */
+  pragma "no doc"
+  proc gpuPrintTimeDelta(msg : c_string, start : uint, stop : uint) : void {
+    chpl_gpu_printTimeDelta(msg, start, stop);
+  }
+
+  /*
+    Returns the number of clock cycles per second of a GPU multiprocessor.
+    Note: currently we don't support calling this function from within a kernel.
+   */
+  proc gpuClocksPerSec(devNum : int) {
+    return chpl_gpu_device_clock_rate(devNum : int(32));
+  }
+
+  pragma "no doc"
+  type GpuAsyncCommHandle = c_void_ptr;
+
+  /*
+    Copy srcArr to dstArr, at least one array must be on a GPU; this function
+    can be used for either communication to or from the GPU
+
+    Returns a handle that can be passed to `waitGpuComm` to pause execution
+    until completion of this asyhcronous transfer
+  */
+  pragma "no doc"
+  proc asyncGpuComm(dstArr : ?t1, srcArr : ?t2) : GpuAsyncCommHandle
+    where isArrayType(t1) && isArrayType(t2)
+  {
+    extern proc chpl_gpu_comm_async(dstArr : c_void_ptr, srcArr : c_void_ptr,
+       n : c_size_t) : c_void_ptr;
+
+    if(dstArr.size != srcArr.size) {
+      halt("Arrays passed to asyncGpuComm must have the same number of elements. ",
+        "Sizes passed: ", dstArr.size, " and ", srcArr.size);
+    }
+    return chpl_gpu_comm_async(c_ptrTo(dstArr), c_ptrTo(srcArr),
+      dstArr.size * numBytes(dstArr.eltType));
+  }
+
+  /*
+     Wait for communication to complete, the handle passed in should be from the return
+     value of a previous call to `asyncGpuComm`.
+  */
+  pragma "no doc"
+  proc gpuCommWait(gpuHandle : GpuAsyncCommHandle) {
+    extern proc chpl_gpu_comm_wait(stream : c_void_ptr);
+
+    chpl_gpu_comm_wait(gpuHandle);
   }
 }

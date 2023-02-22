@@ -170,15 +170,15 @@ writeln();
 
 // TEST SPLIT/JOIN etc
 writeln("Test split no split");
-for (num,byte) in zip(1.., b.split(maxsplit = 0)) do
+for (byte,num) in zip(b.split(maxsplit = 0), 1..) do
   writeln("Split ", num, ": ", byte);
 
 writeln("Test split no args");
-for (num,byte) in zip(1.., b.split()) do
+for (byte,num) in zip(b.split(), 1..) do
   writeln("Split ", num, ": ", byte);
 
 writeln("Test split with args");
-for (num,byte) in zip(1.., b.split(b"is")) do
+for (byte,num) in zip(b.split(b"is"), 1..) do
   writeln("Split ", num, ": ", byte);
 
 writeln("Test join -- bytes varargs");

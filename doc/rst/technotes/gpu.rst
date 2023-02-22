@@ -19,7 +19,7 @@ For more information about what loops are eligible for GPU execution see the
 `Overview`_ section.  For more information about what is supported see the
 requirements and `Requirements and Limitations`_ section.  To see an example
 program written in Chapel that will execute on a GPU see the code listing in
-the `Example`_ section.  For more information about specific features related
+the `Examples`_ section.  For more information about specific features related
 to GPU support see the subsections under `GPU Support Features`_.  Additional
 information about GPU Support can be found in the "Ongoing Efforts" slide decks
 of our `release notes <https://chapel-lang.org/releaseNotes.html>`_; however,
@@ -52,8 +52,8 @@ tasks executing on a GPU sublocale.  Loops are eligible when:
 Any code in an ``on`` statement for a GPU sublocale that is not within an
 eligible loop will be executed on the CPU.
 
-Example
--------
+Examples
+--------
 
 The following example illustrates running a computation on a GPU as well as a
 CPU. When ``jacobi`` is called with a GPU locale it will allocate the arrays
@@ -85,6 +85,34 @@ kernels for the ``forall`` loops in the function.
     }
   }
 
+For additional examples we suggest looking at some of our internal tests. Note
+that these are not packaged in the Chapel release but are accessible from our
+`public Github repository <https://github.com/chapel-lang/chapel>`_.
+
+Tests of particular interest include:
+
+Benchmark examples:
+~~~~~~~~~~~~~~~~~~~
+* `Jacobi <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/jacobi/jacobi.chpl>`_ -- Jacobi example (shown above)
+* `Stream <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/streamPrototype/stream.chpl>`_ -- GPU enabled version of Stream benchmark
+* `SHOC Triad (Direct) <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/studies/shoc/triad.chpl>`_ -- a transliterated version of the SHOC Triad benchmark 
+* `SHOC Triad (Chapeltastic) <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/studies/shoc/triadchpl.chpl>`_ -- a version of the SHOC benchmark simplified to use Chapel language features (such as promotion)
+* `SHOC Sort <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/studies/shoc/sort.chpl>`_ -- SHOC radix sort benchmark
+
+Test examples:
+~~~~~~~~~~~~~~~
+* `assertOnFailToGpuize <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/assertOnFailToGpuize.chpl>`_ -- various examples of loops that are not eligible for GPU execution
+* `math <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/math.chpl>`_ -- calls to various math functions within kernels that call out to the CUDA Math library
+* `measureGpuCycles <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/measureGpuCycles.chpl>`_ -- measuring time within a GPU kernel
+* `promotion2 <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/promotion2.chpl>`_ -- GPU kernels from promoted expressions
+
+Examples with multiple GPUs:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* `multiGPU <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/multiGPU/multiGPU.chpl>`_ -- simple example using all GPUs within a locale
+* `workSharing <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/multiGPU/worksharing.chpl>`_ -- stream-like example showing computation shared between GPUs and CPU
+* `onAllGpusOnAllLocales <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/multiLocale/onAllGpusOnAllLocales.chpl>`_ -- simple example using all GPUs and locales
+* `copyToLocaleThenToGpu <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/multiLocale/copyToLocaleThenToGpu.chpl>`_ -- stream-like example (with data initialized on Locale 0 then transferred to other locales and GPUs)
+
 Setup and Compilation
 ---------------------
 
@@ -102,7 +130,7 @@ code will target compute capability 6.0 (specifically by passing
 ``--cuda-gpu-arch=sm_60`` when invoking clang). If you would like to target a
 different compute capability (necessary for example, when targeting Tesla K20
 GPUs) you can pass ``--gpu-arch`` to ``chpl`` and specify a different value
-there.  This may also be set using the ``CHPL_CUDA_ARCH`` environment variable.
+there.  This may also be set using the ``CHPL_GPU_ARCH`` environment variable.
 
 If you would like to view debugging information you can pass ``--verbose`` to
 your generated executable. This output will show the invocation of CUDA kernel
@@ -117,8 +145,8 @@ Because of the early nature of the GPU support project there are a number of
 limitations. We provide a (non exhaustive) list of these limitations in this
 section; many of them will be addressed in upcoming editions.
 
-* We currently only target NVIDIA GPUs (although we intend to support AMD
-  GPUs in a future release).
+* We currently only target NVIDIA GPUs (although we are working on adding
+  support for AMD GPUs; see the section under `Prototypical AMD GPU Support`_).
 
 * ``LLVM`` must be used as Chapel's backend compiler (i.e.
   ``CHPL_LLVM`` must be set to ``system`` or ``bundled``). For more information
@@ -208,9 +236,11 @@ An idiomatic way to use all GPUs available across locales is with nested
     }
   }
 
-For more examples see the tests under ``test/gpu/native/multiLocale`` on the
-``release/1.28`` branch of Chapel under ``test/gpu/native/page-locked-mem/``
-available from our `public Github repository <https://github.com/chapel-lang/chapel>`_.
+
+For more examples see the tests under |multi_locale_dir|_ available from our `public Github repository <https://github.com/chapel-lang/chapel>`_.
+
+.. |multi_locale_dir| replace:: ``test/gpu/native/multiLocale``
+.. _multi_locale_dir: https://github.com/chapel-lang/chapel/tree/main/test/gpu/native/multiLocale
 
 Memory Strategies
 ~~~~~~~~~~~~~~~~~
@@ -231,10 +261,12 @@ relatively new addition it hasn't been as thoroughly tested as our
 unified-memory based approach.
 
 To use this new strategy set the environment variable ``CHPL_GPU_MEM_STRATEGY``
-to ``array_on_device``.  For more examples that work with this strategy the
-tests on the ``release/1.28`` branch of Chapel under
-``test/gpu/native/page-locked-mem/`` available from our `public Github
+to ``array_on_device``.  For more examples that work with this strategy see
+the tests under |page_lock_mem_dir|_  available from our `public Github
 repository <https://github.com/chapel-lang/chapel>`_.
+
+.. |page_lock_mem_dir| replace:: ``test/gpu/native/page-locked-mem/``
+.. _page_lock_mem_dir: https://github.com/chapel-lang/chapel/tree/main/test/gpu/native/page-locked-mem
 
 Note that host data can be accessed from within a GPU eligible loop running on
 the device via a direct-memory transfer.
@@ -243,3 +275,27 @@ One limitation with memory access in this mode is that we do not support direct
 reads or writes from the host into individual elements of array data allocated
 on the GPU (e.g.  ``use(A[i])`` or ``A[i] = ...``). Array data accessed "as a
 whole" (e.g. ``writeln(A)``) will work, however.
+
+Prototypical AMD GPU Support
+----------------------------
+
+We are working on adding AMD GPU support. A very early stage prototype
+is currently available in the compiler. It works in a similar manner to
+the NVidia GPU implementation: the Chapel compiler generates AMD HSA binary files and bundles
+them into the resulting executable. Currently, there is no runtime implementation
+that executes the generated kernels; however, ``extern C``
+code can be used to invoke the HIP API and manually launch a kernel. Furthermore,
+only procedures marked with ``pragma "codegen for GPU"`` are converted into
+kernels. See |extern_kernel_launch|_ for an example this in action.
+
+.. |extern_kernel_launch| replace:: ``test/gpu/native/amd/extern_kernel_launch.chpl``
+.. _extern_kernel_launch: https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/amd/extern_kernel_launch.chpl
+
+To try the AMD GPU support prototype, the process is generally the same as that
+found in `Setup and Compilation`_. Instead of configuring the path to the CUDA
+SDK, you will need to set the ``CHPL_ROCM_PATH`` to the location of the ROCm SDK
+on your system. Furthermore, you will need to adjust the ``CHPL_GPU_CODEGEN``
+environment variable to ``rocm``. The ``CHPL_GPU_ARCH`` environment variable
+(or the ``--gpu-arch`` compiler flag) can be used to select the GPU architecture;
+the table in `LLVM's AMD documentation <https://llvm.org/docs/AMDGPUUsage.html#processors>`_
+is useful to map GPUs to their architecture.

@@ -1,6 +1,6 @@
 pkgbase = chapel-git
 	pkgdesc = Programming language designed for productive parallel computing at scale
-	pkgver = 1.28.0.280.g08f1d4886b
+	pkgver = 1.29.0.138.g0cce54a2f2
 	pkgrel = 1
 	url = https://chapel-lang.org/
 	arch = x86_64

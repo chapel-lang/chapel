@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,6 +28,7 @@
 
 #include "astlocs.h"
 #include "chpl/util/break.h"
+#include "chpl/framework/ErrorBase.h"
 
 #ifdef HAVE_LLVM
 #define exit(x) clean_exit(x)
@@ -86,10 +87,16 @@
 
 class BaseAST;
 
+enum class GpuCodegenType {
+  GPU_CG_NVIDIA_CUDA,
+  GPU_CG_AMD_HIP,
+};
+
 bool        forceWidePtrsForLocal();
 bool        requireWideReferences();
 bool        requireOutlinedOn();
 bool        usingGpuLocaleModel();
+GpuCodegenType getGpuCodegenType();
 
 const char* cleanFilename(const BaseAST* ast);
 const char* cleanFilename(const char*    name);
@@ -104,6 +111,7 @@ const char* cleanFilename(const char*    name);
 //  5 = USR_PRINT
 //
 void        setupError(const char* subdir, const char* filename, int lineno, int tag);
+void        setupDynoError(chpl::ErrorBase::Kind errKind);
 
 void        handleError(const char* fmt, ...) __attribute__ ((format (printf, 1, 2)));
 void        handleError(const BaseAST* ast, const char* fmt, ...)__attribute__ ((format (printf, 2, 3)));

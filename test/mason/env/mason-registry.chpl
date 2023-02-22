@@ -26,7 +26,7 @@ proc makeToml(name: string, ver: string) {
     mkdir(name);
   }
 
-  var fi = open(name + "/" + ver + ".toml", iomode.cw);
+  var fi = open(name + "/" + ver + ".toml", ioMode.cw);
   var w  = fi.writer();
   const info = "\n" +
 "[brick]\n" +
@@ -83,10 +83,10 @@ proc main() {
 
   buildFakeRegistry(altRegistry);
 
-  masonEnv(["env"]);
+  masonEnv(["env", ]);
 
   var args1: list(string);
-  for x in ["search"] do args1.append(x);
+  for x in ["search", ] do args1.append(x);
   masonSearch(args1);
 
   assert(isDir(altRegistry));

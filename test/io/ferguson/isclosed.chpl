@@ -2,7 +2,7 @@ use IO;
 
 config const fileName = "test.txt";
 
-var f = open(fileName, iomode.cwr);
+var f = open(fileName, ioMode.cwr);
 
 var w = f.writer();
 
@@ -12,7 +12,7 @@ assert(w.isClosed());
 
 // Try a channel that was not initialized.
 {
-  var ch:channel(writing=false, kind=iokind.dynamic, locking=true);
+  var ch:fileReader(kind=iokind.dynamic, locking=true);
   assert(ch.isClosed());
 }
 

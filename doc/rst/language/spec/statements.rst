@@ -19,7 +19,6 @@ Chapel provides the following statements:
      expression-statement
      assignment-statement
      swap-statement
-     io-statement
      conditional-statement
      select-statement
      while-do-statement
@@ -257,53 +256,6 @@ as necessary.
       b = a;
       a = t;
 
-.. _The_IO_Statement:
-
-The I/O Statement
------------------
-
-The I/O operator indicates writing to the left-hand-side the value in
-the right-hand-side; or reading from the left-hand-side and storing the
-result in the variable on the right-hand-side. This operator can be
-chained with other I/O operator calls.
-
-.. warning::
-
-   The I/O operator is deprecated.
-
-The I/O operator can be overloaded for different types using operator
-overloading (:ref:`Function_Overloading`). 
-
-.. code-block:: syntax
-
-   io-statement:
-     io-expression io-operator expression
-
-   io-expression:
-     expression
-     io-expression io-operator expression
-
-   io-operator:
-     <~>
-
-See the module documentation on I/O for details on how to use the I/O
-statement.
-
-   *Example*.
-
-   In the example below, 
-
-   .. code-block:: chapel
-
-      var w = opentmp().writer(); // a channel
-      var a: real;
-      var b: int;
-
-      w <~> a <~> b;
-
-   the I/O operator is left-associative and indicates writing ``a`` and
-   then ``b`` to ``w`` in this case.
-
 .. _The_Conditional_Statement:
 
 The Conditional Statement
@@ -492,7 +444,7 @@ The do-while loop is executed as follows:
    statement following the loop.
 
 #. If the expression evaluates to ``true``, control continues to step 1
-   and the the statement is executed again.
+   and the statement is executed again.
 
 In this second form of the loop, note that the statement is executed
 unconditionally the first time.
@@ -602,31 +554,36 @@ loop is given by:
      expression
      'zip' ( expression-list )
 
-The ``index-var-declaration`` declares new variables for the scope of
-the loop. It may specify a new identifier or may specify multiple
+The ``index-var-declaration`` declares new variable(s) for the scope of
+the loop. It may either specify a single new identifier or multiple
 identifiers grouped using a tuple notation in order to destructure the
 values returned by the iterator expression, as described
 in :ref:`Indices_in_a_Tuple`.
 
 The ``index-var-declaration`` is optional and may be omitted if the
-indices do not need to be referenced in the loop.
+indices do not need to be referenced in the loop (in which case the
+``in`` keyword is omitted as well).
 
 If the iteratable-expression begins with the keyword ``zip`` followed by
 a parenthesized expression-list, the listed expressions must support
-zipper iteration.
+zippered iteration.
 
-.. _Zipper_Iteration:
+.. _Zippered_Iteration:
 
-Zipper Iteration
-~~~~~~~~~~~~~~~~
+Zippered Iteration
+~~~~~~~~~~~~~~~~~~
 
-When multiple iterators are iterated over in a zipper context, on each
-iteration, each expression is iterated over, the values are returned by
-the iterators in a tuple and assigned to the index, and then statement
-is executed.
-
-The shape of each iterator, the rank and the extents in each dimension,
-must be identical.
+When multiple iterand expressions are traversed in a loop using the
+``zip`` keyword, the corresponding expressions yielded by each iterand
+are combined into a tuple, represented by the loop's index
+variable(s).  This is known as `zippered` iteration.  The first
+iterand in the ``zip()`` expression is said to `lead` the loop's
+iterations, determining the size and shape of the iteration space.
+Subsequent expressions `follow` the lead iterand.  These follower
+iterands are expected to conform to the number and shape of values
+yielded by the leader.  For example, if the first iterand is a 2D
+array with `m` rows and `n` columns, subsequent iterands will need to
+support iteration over a 2D `m` x `n` space as well.
 
    *Example (zipper.chpl)*.
 

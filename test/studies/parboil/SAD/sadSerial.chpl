@@ -19,7 +19,7 @@ record image {
 
 proc main(args:[] string) {
   use Time;
-  var IOTimer, ComputeTimer, WallTimer: Timer;
+  var IOTimer, ComputeTimer, WallTimer: stopwatch;
   WallTimer.start();
   if args.size == 3 {
     filename1 = args[1];
@@ -63,7 +63,7 @@ proc main(args:[] string) {
 
 
 proc loadImage(filename: string) {
-  var f = open(filename, iomode.r);
+  var f = open(filename, ioMode.r);
   var r = f.reader(kind=ionative);
   var width, height: uint(16);
 
@@ -153,7 +153,7 @@ proc write_subblocks(w, subblockArray: [] uint(16),
 }
 
 proc writeSads(filename: string, width: int, height: int, sads: [] uint(16)) {
-  var f = open(filename, iomode.cw);
+  var f = open(filename, ioMode.cw);
   var w = f.writer(kind=ionative);
   const mbs = width*height;
   const rowInds = [0, 1, height/2 - 1, height/2, height - 2, height - 1];

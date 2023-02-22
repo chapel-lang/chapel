@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,15 +20,7 @@
 
 /* Types for low-level system error integration.
 
-   This module defines the error types :type:`syserr` and :type:`qio_err_t`.
-
-   When should one use :type:`syserr` and when should one use :type:`qio_err_t`?
-   :type:`qio_err_t` is a system error code (a `c_int` by a nicer name to
-   indicate its purpose). :type:`syserr` is an enhanced error that might also
-   include an error message. All user-facing Chapel library code, or user
-   Chapel code, should generally use :type:`syserr`. When wrapping functions
-   or declaring them in C, use :type:`qio_err_t` to indicate that a function is
-   returning an error code.
+   This module defines some system error types.
 
    A note about the error code documentation in this file. Error descriptions
    for system errors are included here for convenience only. Other
@@ -36,34 +28,11 @@
    authority on system error codes.
  */
 
+deprecated "The SysBasic module has been deprecated; most symbols have been moved to IO or OS as appropriate"
 module SysBasic {
 
 /* BASIC TYPES */
 use CTypes;
-
-import OS.errorCode;
-
-/* A type storing an error code or an error message.
-   A syserr can be compared using == or != to an qio_err_t (ie integer error code)
-   or to another syserr. A syserr can be cast to or from an qio_err_t. It can be
-   assigned the value of an qio_err_t or another syserr. In addition, syserr can be
-   checked directly in an if statement like so:
-
-   .. code-block:: chapel
-
-     var err: syserr;
-     if err then do writeln("err contains an error, ie err != ENOERR");
-     if !err then do writeln("err does not contain an error; err == ENOERR");
-
-   When a :type:`syserr` formal has default intent, the actual is copied to the
-   formal upon a function call and the formal cannot be assigned within the
-   function.
-
-   The default value of the :type:`syserr` type is undefined.
-
- */
-deprecated "'SysBasic.syserr' has been deprecated; please use 'OS.errorCode' instead."
-extern type syserr; // = c_int, opaque so we can manually override ==,!=,etc
 
 /* An integral error code. This is really just a `c_int`, but code is
    clearer if you use qio_err_t to indicate arguments, variables, and return types
@@ -86,6 +55,8 @@ private extern proc chpl_macro_int_EEOF():c_int;
 
 /* An error code indicating the end of file has been reached (Chapel specific)
  */
+pragma "last resort"
+deprecated "'SysBasic.EEOF' has been deprecated"
 inline proc EEOF return chpl_macro_int_EEOF():c_int;
 
 private extern proc chpl_macro_int_ESHORT():c_int;
@@ -94,6 +65,8 @@ private extern proc chpl_macro_int_ESHORT():c_int;
    input was reached before the requested amount of data could be read.
    (Chapel specific)
   */
+pragma "last resort"
+deprecated "'SysBasic.ESHORT' has been deprecated"
 inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
 
 private extern proc chpl_macro_int_EFORMAT():c_int;
@@ -102,6 +75,8 @@ private extern proc chpl_macro_int_EFORMAT():c_int;
    string literal, this would be returned if we never encountered the
    opening quote. (Chapel specific)
   */
+pragma "last resort"
+deprecated "'SysBasic.EFORMAT' has been deprecated"
 inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
 
 // system error numbers

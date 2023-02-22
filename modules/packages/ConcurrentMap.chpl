@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1044,6 +1044,11 @@ module ConcurrentMap {
 
     pragma "no doc"
     proc readThis(f) throws {
+      compilerWarning("Reading a ConcurrentMap is not supported");
+    }
+
+    proc init(type keyType, type valType, r: fileReader) {
+      this.init(keyType, valType);
       compilerWarning("Reading a ConcurrentMap is not supported");
     }
 

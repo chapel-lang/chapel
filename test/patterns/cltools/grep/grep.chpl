@@ -10,7 +10,7 @@ use Time;
 
 // To keep track of line numbers and speed parallel speedup
 var lineNum: int = 1;
-var clock: Timer;
+var clock: stopwatch;
 
 // Main
 proc main(args: [] string) {
@@ -36,7 +36,7 @@ proc fileGrep(toFind: string, fname: string) throws {
 
   var toRead: file;
   try! {
-    toRead = open(fname, iomode.r);
+    toRead = open(fname, ioMode.r);
   }
   var r = toRead.reader();
   defer {
@@ -68,7 +68,7 @@ proc parallelGrep(tofind: string) throws {
 
   // Seaches current working directory ignoring anthing but UTF-8
   // encoded characters
-  var files = FileSystem.findfiles(Path.curDir);
+  var files = FileSystem.findFiles(Path.curDir);
   forall file in files {
     fileGrep(tofind, file);
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -344,8 +344,8 @@ proc densify(sArg: range(?,boundedType=?B,stridable=?S), w: range(?IT,?,stridabl
   ensure(s.isEmpty() ||
          // If idxType is unsigned, caller must ensure that s.lowBound is big enough
          // so it can be subtracted from.
-         w.lowBound <= if isIntType(IT) then s.alignedLow else s.lowBound);
-  ensure(s.isEmpty() || !w.hasHighBound() || s.alignedHigh <= w.highBound);
+         w.lowBound <= if isIntType(IT) then s.low else s.lowBound);
+  ensure(s.isEmpty() || !w.hasHighBound() || s.high <= w.highBound);
 
   // gotta have a special case, e.g.: s=1..0 w=5..6 IT=uint
   if isUintType(IT) && s.isEmpty() then

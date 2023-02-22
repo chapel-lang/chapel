@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,7 +51,7 @@ the usual functionality in the :mod:`IO` module:
 
 .. code-block:: chapel
 
-  var f = fs.open("/tmp/testfile.txt", iomode.cw);
+  var f = fs.open("/tmp/testfile.txt", ioMode.cw);
   var writer = f.writer();
   writer.writeln("This is a test");
   writer.close();
@@ -59,8 +59,8 @@ the usual functionality in the :mod:`IO` module:
 
 .. note::
 
-  Please note that ``iomode.cwr`` and ``iomode.rw`` are not supported with HDFS
-  files due to limitations in HDFS itself. ``iomode.r`` and ``iomode.cw`` are
+  Please note that ``ioMode.cwr`` and ``ioMode.rw`` are not supported with HDFS
+  files due to limitations in HDFS itself. ``ioMode.r`` and ``ioMode.cw`` are
   the only modes supported with HDFS.
 
 Dependencies
@@ -127,9 +127,13 @@ module HDFS {
 
   use IO, OS.POSIX, OS;
   public use CTypes;
-  import SysBasic.{ENOERR,EEOF};
 
   require "hdfs.h";
+
+  /*
+   Local copy of IO.EEOF as it is being phased out and is private in IO
+   */
+  private extern proc chpl_macro_int_EEOF():c_int;
 
   pragma "no doc"
   extern "struct hdfs_internal" record hdfs_internal { }
@@ -266,8 +270,21 @@ module HDFS {
       return oldValue - 1;
     }
 
-    @unstable "open with a style argument is unstable"
+    pragma "last resort"
+    deprecated "open with an iomode argument is deprecated - please use :enum:`~IO.ioMode`"
     proc open(path:string, mode:iomode,
+              style:iostyle,
+              in flags:c_int = 0, // default to based on mode
+              bufferSize:c_int = 0,    // 0 -> use hdfs default value
+              replication:c_short = 0, // 0 -> use hdfs default value
+              blockSize:tSize = 0      // 0 -> use hdfs default value
+             ) throws {
+      return open(path, IO.convertIoMode(mode), style, flags, bufferSize,
+                replication, blockSize);
+    }
+
+    @unstable "open with a style argument is unstable"
+    proc open(path:string, mode:ioMode,
               style:iostyle,
               in flags:c_int = 0, // default to based on mode
               bufferSize:c_int = 0,    // 0 -> use hdfs default value
@@ -284,13 +301,13 @@ module HDFS {
       to create a channel to actually perform I/O operations.
 
       :arg path: which file to open (for example, "some/file.txt").
-      :arg iomode: specify whether to open the file for reading or writing and whether or not to create the file if it doesn't exist.  See :type:`IO.iomode`.
+      :arg ioMode: specify whether to open the file for reading or writing and whether or not to create the file if it doesn't exist.  See :type:`IO.ioMode`.
       :arg flags: flags to pass to the HDFS open call. Uses flags appropriate for ``mode`` if not provided.
       :arg bufferSize: buffer size to pass to the HDFS open call.  Uses the HDFS default value if not provided.
       :arg replication: replication factor to pass to the HDFS open call.  Uses the HDFS default value if not provided.
       :arg blockSize: blockSize to pass to the HDFS open call.  Uses the HDFS default value if not provided.
      */
-    proc open(path:string, mode:iomode,
+    proc open(path:string, mode:ioMode,
               in flags:c_int = 0, // default to based on mode
               bufferSize:c_int = 0,    // 0 -> use hdfs default value
               replication:c_short = 0, // 0 -> use hdfs default value
@@ -300,8 +317,21 @@ module HDFS {
                         replication=replication, blockSize=blockSize);
     }
 
+    pragma "last resort"
+    deprecated "open with an iomode argument is deprecated - please use :enum:`~IO.ioMode`"
+    proc open(path:string, mode:iomode,
+              in flags:c_int = 0, // default to based on mode
+              bufferSize:c_int = 0,    // 0 -> use hdfs default value
+              replication:c_short = 0, // 0 -> use hdfs default value
+              blockSize:tSize = 0      // 0 -> use hdfs default value
+             ) throws {
+      return open(path, IO.convertIoMode(mode), flags=flags,
+        bufferSize=bufferSize, replication=replication, blockSize=blockSize);
+    }
+
+
     pragma "no doc"
-    proc openHelper(path:string, mode:iomode,
+    proc openHelper(path:string, mode:ioMode,
                     style:iostyleInternal = defaultIOStyleInternal(),
                     in flags:c_int = 0, // default to based on mode
                     bufferSize:c_int = 0,    // 0 -> use hdfs default value
@@ -310,18 +340,18 @@ module HDFS {
                     ) throws {
 
       if flags == 0 {
-        // set flags based upon iomode
+        // set flags based upon ioMode
         select mode {
-          when iomode.r {
+          when ioMode.r {
             flags |= O_RDONLY;
           }
-          when iomode.cw {
+          when ioMode.cw {
             flags |= O_CREAT | O_TRUNC | O_WRONLY;
           }
-          when iomode.rw {
+          when ioMode.rw {
             flags |= O_RDWR;
           }
-          when iomode.cwr {
+          when ioMode.cwr {
             flags |= O_CREAT | O_TRUNC | O_RDWR;
           }
         }
@@ -385,7 +415,7 @@ module HDFS {
 
       var hdfsch = new unmanaged HDFSChannel(this:unmanaged, qioChannelPtr);
       pluginChannel = hdfsch;
-      return ENOERR;
+      return 0;
     }
 
     override proc filelength(out length:int(64)):errorCode {
@@ -399,7 +429,7 @@ module HDFS {
       hdfsFreeFileInfo(fInfoPtr, 1);
       if verbose then
         writeln("HDFSFile.filelength length=", length);
-      return ENOERR;
+      return 0;
     }
     override proc getpath(out path:c_string, out len:int(64)):errorCode {
       if verbose then
@@ -408,7 +438,7 @@ module HDFS {
       len = this.path.size;
       if verbose then
         writeln("HDFSFile.getpath returning ", (path:string, len));
-      return ENOERR;
+      return 0;
     }
 
     override proc fsync():errorCode {
@@ -417,7 +447,7 @@ module HDFS {
       var rc = hdfsFlush(fs.hfs, hfile);
       if rc < 0 then
         return qio_mkerror_errno();
-      return ENOERR;
+      return 0;
     }
     override proc getChunk(out length:int(64)):errorCode {
       if verbose then
@@ -427,7 +457,7 @@ module HDFS {
         return EINVAL;
       length = fInfoPtr.deref().mBlockSize;
       hdfsFreeFileInfo(fInfoPtr, 1);
-      return ENOERR;
+      return 0;
     }
     override proc getLocalesForRegion(start:int(64), end:int(64), out
         localeNames:c_ptr(c_string), ref nLocales:int(64)):errorCode {
@@ -440,7 +470,7 @@ module HDFS {
       if verbose then
         writeln("hdfsCloseFile");
 
-      var err:errorCode = ENOERR;
+      var err:errorCode = 0;
       var rc = hdfsCloseFile(fs.hfs, hfile);
       if rc != 0 then
         err = qio_mkerror_errno();
@@ -449,7 +479,7 @@ module HDFS {
       if count == 0 {
         delete fs;
       }
-      return ENOERR;
+      return 0;
     }
   }
 
@@ -471,9 +501,9 @@ module HDFS {
         writeln("HDFSChannel.readAtLeast");
 
       if amt == 0 then
-        return ENOERR;
+        return 0;
 
-      var err:errorCode = ENOERR;
+      var err:errorCode = 0;
 
       var remaining = amt;
       while remaining > 0 {
@@ -496,7 +526,7 @@ module HDFS {
         var rc = hdfsPread(file.fs.hfs, file.hfile, offset, ptr, len:int(32));
         if rc == 0 {
           // end of file
-          return EEOF;
+          return chpl_macro_int_EEOF():errorCode;
         } else if rc < 0 {
           // error
           return qio_mkerror_errno();
@@ -507,13 +537,13 @@ module HDFS {
         remaining -= rc:int(64);
       }
 
-      return ENOERR;
+      return 0;
     }
     override proc write(amt:int(64)):errorCode {
       if verbose then
         writeln("HDFSChannel.write");
 
-      var err:errorCode = ENOERR;
+      var err:errorCode = 0;
       var remaining = amt;
       while remaining > 0 {
         var ptr:c_void_ptr = c_nil;
@@ -539,10 +569,10 @@ module HDFS {
         qio_channel_advance_write_behind_unlocked(qio_ch, rc);
         remaining -= rc:int(64);
       }
-      return ENOERR;
+      return 0;
     }
     override proc close():errorCode {
-      return ENOERR;
+      return 0;
     }
   }
 

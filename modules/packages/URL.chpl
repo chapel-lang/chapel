@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -49,7 +49,7 @@ module URL {
                      param kind=iokind.dynamic, param locking=true,
                      start:int(64) = 0, end:int(64) = max(int(64)),
                      style:iostyle)
-                    : channel(false, kind, locking) throws {
+                    : fileReader(kind, locking) throws {
     return openUrlReaderHelper(url, kind, locking, start, end,
                                style: iostyleInternal);
   }
@@ -79,7 +79,7 @@ module URL {
   proc openUrlReader(url:string,
                      param kind=iokind.dynamic, param locking=true,
                      start:int(64) = 0, end:int(64) = max(int(64)))
-                    : channel(false, kind, locking) throws {
+                    : fileReader(kind, locking) throws {
     return openUrlReaderHelper(url, kind, locking, start, end);
   }
 
@@ -88,12 +88,15 @@ module URL {
                            param kind=iokind.dynamic, param locking=true,
                            start:int(64) = 0, end:int(64) = max(int(64)),
                            style:iostyleInternal = defaultIOStyleInternal())
-    : channel(false, kind, locking) throws {
+    : fileReader(kind, locking) throws {
+
     use Curl;
     use CurlQioIntegration;
-    var f = openCurlFile(url, iomode.r, style);
-    return f.reader(kind=kind, locking=locking,
-                    region=start..end);
+    var f = openCurlFile(url, ioMode.r, style);
+    // TODO: change this back to f.reader when the fromOpenUrlReader arg is
+    // removed
+    return f.readerHelper(kind=kind, locking=locking,
+                          region=start..#end, fromOpenUrlReader=true);
   }
 
   @unstable "openUrlWriter with a style argument is unstable"
@@ -101,7 +104,7 @@ module URL {
                  param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  style:iostyle)
-                : channel(true, kind, locking) throws {
+                : fileWriter(kind, locking) throws {
     return openUrlWriterHelper(url, kind, locking, start, end,
                                style: iostyleInternal);
   }
@@ -131,7 +134,7 @@ module URL {
   proc openUrlWriter(url:string,
                  param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)))
-                : channel(true, kind, locking) throws {
+                : fileWriter(kind, locking) throws {
     return openUrlWriterHelper(url, kind, locking, start, end);
   }
 
@@ -141,12 +144,15 @@ module URL {
                                    start:int(64) = 0,
                                    end:int(64) = max(int(64)),
                                    style:iostyleInternal = defaultIOStyleInternal())
-    : channel(true, kind, locking) throws {
+    : fileWriter(kind, locking) throws {
+
     use Curl;
     use CurlQioIntegration;
-    var f = openCurlFile(url, iomode.cw, style);
-    return f.writer(kind=kind, locking=locking,
-                    region=start..end);
+    var f = openCurlFile(url, ioMode.cw, style);
+    // TODO: change this back to f.writer when the fromOpenUrlWriter arg is
+    // removed
+    return f.writerHelper(kind=kind, locking=locking,
+                          region=start..#end, fromOpenUrlWriter=true);
   }
 
 }

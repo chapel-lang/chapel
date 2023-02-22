@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -484,7 +484,7 @@ class SparseBlockArr: BaseSparseArr {
     // Ensure it is legal to invoke the standalone iterator
     // on locA.myElems below.
     __primitive("method call resolves",
-                locArr[locArrDom.alignedLow]!.myElems._value, "these", tag) {
+                locArr[locArrDom.low]!.myElems._value, "these", tag) {
     coforall locA in locArr do on locA {
       // forward to sparse standalone iterator
       forall i in locA!.myElems {
@@ -875,8 +875,10 @@ proc SparseBlockDom.dsiLocalSubdomain(loc: locale) {
     unimplementedFeatureHalt("the Sparse Block distribution",
                              "remote subdomain queries");
 
-  const (found, targetIdx) = maxloc reduce
-    zip(dist.targetLocales == here, dist.targetLocales.domain);
+  var targetIdx: dist.targetLocales.fullIdxType;
+  const found = dist.targetLocales.find(here, targetIdx);
+  if !found then
+    halt("couldn't find locale ", here.id, " in the targetLocales array");
   return locDoms[targetIdx]!.mySparseBlock;
 }
 

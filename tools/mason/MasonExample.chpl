@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -75,15 +75,15 @@ proc masonExample(args: [] string, checkProj=true) throws {
   }
   var examples = new list(exampleOpts.values());
   updateLock(skipUpdate);
-  runExamples(show, run, build, release, force, examples);
+  runExamples(show, run, build, release, skipUpdate, force, examples);
 }
 
 
-private proc getBuildInfo(projectHome: string) {
+private proc getBuildInfo(projectHome: string, skipUpdate: bool) {
 
   // parse lock and toml(examples dont make it to lock file)
-  const lock = open(projectHome + "/Mason.lock", iomode.r);
-  const toml = open(projectHome + "/Mason.toml", iomode.r);
+  const lock = open(projectHome + "/Mason.lock", ioMode.r);
+  const toml = open(projectHome + "/Mason.toml", ioMode.r);
   const lockFile = parseToml(lock);
   const tomlFile = parseToml(toml);
 
@@ -95,7 +95,7 @@ private proc getBuildInfo(projectHome: string) {
   // support parallel iteration, which the `getSrcCode` method _must_
   // have for good performance.
   //
-  getSrcCode(sourceList, false);
+  getSrcCode(sourceList, skipUpdate, false);
   getGitCode(gitList, false);
   const project = lockFile["root"]!["name"]!.s;
   const projectPath = "".join(projectHome, "/src/", project, ".chpl");
@@ -185,7 +185,7 @@ private proc determineExamples(exampleNames: list(string),
 
 
 private proc runExamples(show: bool, run: bool, build: bool, release: bool,
-                         force: bool, examplesRequested: list(string)) throws {
+                         skipUpdate: bool, force: bool, examplesRequested: list(string)) throws {
 
   try! {
 
@@ -194,7 +194,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
     // Get buildInfo: dependencies, path to src code, compopts,
     // names of examples, example compopts
-    var buildInfo = getBuildInfo(projectHome);
+    var buildInfo = getBuildInfo(projectHome, skipUpdate);
     const sourceList = buildInfo[0];
     const gitList = buildInfo[1];
     const projectPath = buildInfo[2];
@@ -308,7 +308,7 @@ private proc getExamples(toml: Toml, projectHome: string) {
     return exampleNames;
   }
   else if isDir(examplePath) {
-    var examples = findfiles(startdir=examplePath, recursive=true, hidden=false);
+    var examples = findFiles(startdir=examplePath, recursive=true, hidden=false);
     for example in examples {
       if example.endsWith(".chpl") {
         exampleNames.append(getExamplePath(example));
@@ -341,7 +341,7 @@ proc printAvailableExamples() {
   try! {
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd);
-    const toParse = open(projectHome + "/Mason.toml", iomode.r);
+    const toParse = open(projectHome + "/Mason.toml", ioMode.r);
     const toml = parseToml(toParse);
     const examples = getExamples(toml, projectHome);
     writeln("--- available examples ---");

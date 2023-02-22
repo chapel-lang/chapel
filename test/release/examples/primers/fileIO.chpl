@@ -54,7 +54,7 @@ if example == 0 || example == 1 {
 proc writeSquareArray(n, X, filename) {
 
   // Create and open an output file with the specified filename in write mode.
-  var outfile = open(filename, iomode.cw);
+  var outfile = open(filename, ioMode.cw);
   var writer = outfile.writer();
 
   // Write the problem size in each dimension to the file.
@@ -72,7 +72,7 @@ proc writeSquareArray(n, X, filename) {
 proc readArray(filename) {
 
    // Open an input file with the specified filename in read mode.
-  var infile = open(filename, iomode.r);
+  var infile = open(filename, ioMode.r);
   var reader = infile.reader();
 
   // Read the number of rows and columns in the array in from the file.
@@ -117,7 +117,7 @@ if example == 0 || example == 2 {
 
 // First, open up a test file. Chapel's I/O interface allows
 // us to open regular files, temporary files, memory, or file descriptors;
-  var f = open(testfile, iomode.cwr);
+  var f = open(testfile, ioMode.cwr);
 
 // Since the typical 'file position' design leads to race conditions
 // all over, the Chapel I/O design separates a file from a channel.
@@ -145,8 +145,7 @@ if example == 0 || example == 2 {
 // Note: This could be a forall loop to do I/O in parallel!
   for i in 0..#num by -1 {
     var start = 8*i;
-    var end = 8*i+8;
-    var r = f.reader(kind=ionative, region=start..end);
+    var r = f.reader(kind=ionative, region=start..#8);
     var tmp:uint(64);
     r.read(tmp);
     assert(tmp == i:uint(64));
@@ -175,7 +174,7 @@ if example == 0 || example == 3 {
 
 // First, open up a file and write to it.
   {
-    var f = open(testfile, iomode.cwr);
+    var f = open(testfile, ioMode.cwr);
 
     // When we create the writer, supplying locking=false will do unlocked I/O.
     // That's fine as long as the channel is not shared between tasks.
@@ -194,17 +193,16 @@ if example == 0 || example == 3 {
 // 'random access' and 'keep data cached/assume data is cached',
 // we can optimize better (using ``mmap``, if you like details).
   {
-    var f = open(testfile, iomode.r,
+    var f = open(testfile, ioMode.r,
                 hints=ioHintSet.random | ioHintSet.prefetch);
 
     // This is a forall loop to do I/O in parallel!
     forall i in 0..#num by -1 {
       var start = 8*i;
-      var end = 8*i+8;
       // When we create the reader, supplying locking=false will do unlocked I/O.
       // That's fine as long as the channel is not shared between tasks;
       // here it's just used as a local variable, so we are O.K.
-      var r = f.reader(kind=ionative, locking=false, region=start..end);
+      var r = f.reader(kind=ionative, locking=false, region=start..#8);
       var tmp:uint(64);
       r.read(tmp);
       assert(tmp == i:uint(64));
@@ -229,7 +227,7 @@ Reading and printing UTF-8 lines
 if example == 0 || example == 4 {
   writeln("Running Example 4");
 
-  var f = open(testfile, iomode.cwr);
+  var f = open(testfile, ioMode.cwr);
   var w = f.writer();
 
   w.writeln("Hello");
@@ -237,12 +235,7 @@ if example == 0 || example == 4 {
   w.writeln(" is ");
   w.writeln(" a test ");
 
-// We only write the UTF-8 characters if unicode is supported,
-// and that depends on the current unix locale environment
-// (e.g. setting the environment variable ``LC_ALL=C`` will disable unicode support).
-// Note that since UTF-8 strings are C strings, this should work even in a C locale.
-// We don't do it all the time for testing sanity reasons.
-  if unicodeSupported() then w.writeln(" of UTF-8 Euro Sign: €");
+  w.writeln(" of UTF-8 Euro Sign: €");
 
   // flush buffers, close the channel.
   w.close();
@@ -253,12 +246,6 @@ if example == 0 || example == 4 {
     write("Read line: ", line);
   }
   r.close();
-
-  // Or, if we just want all the lines in the file, we can use file.lines,
-  // and we don't even have to make a reader:
-  for line in f.lines() {
-    write("Read line: ", line);
-  }
 
   f.close();
   remove(testfile);
@@ -293,7 +280,7 @@ if example == 0 || example == 5 {
 
   try! {
     // What happens if we try to open a non-existent file?
-    var f = open(testfile, iomode.r);
+    var f = open(testfile, ioMode.r);
 
     assert(false); // never reached
   } catch e: SystemError {
@@ -348,7 +335,7 @@ Binary I/O with bits at a time
 if example == 0 || example == 7 {
   writeln("Running Example 7");
 
-  var f = open(testfile, iomode.cwr);
+  var f = open(testfile, ioMode.cwr);
 
   {
     var w = f.writer(kind=ionative);
@@ -365,13 +352,13 @@ if example == 0 || example == 7 {
     var r = f.reader(kind=ionative);
     var tmp:uint(64);
 
-    r.readbits(tmp, 3);
+    r.readBits(tmp, 3);
     assert(tmp == 0b011);
 
-    r.readbits(tmp, 4);
+    r.readBits(tmp, 4);
     assert(tmp == 0b0110);
 
-    r.readbits(tmp, 9);
+    r.readBits(tmp, 9);
     assert(tmp == 0b011110000);
 
     r.close();

@@ -195,7 +195,8 @@ FileSearchPtr FilePiece::prefix_accel(Prog* prog, ReadingFileSearchPtr s, ssize_
   int c = prog->first_byte();
 
   FileSearchPtr begin = s;
-  for( ssize_t i = 0; i < len; s++,i++ ) {
+  FileSearchPtr end = begin + len;
+  for( ; s < end; s++) {
     if( ( (*s) & 0xff ) == c ) return s;
     if( this->can_discard(s - begin) ) {
       this->discard(false, s, s, s);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -46,7 +46,8 @@ Using Curl Support in Chapel
 ----------------------------
 
 Simple uses of Curl work through the generic :mod:`URL` module. This module
-allows a URL to be opened as a :record:`IO.channel`.
+allows a URL to be opened as a :record:`IO.fileReader` or
+`:record:`IO.fileWriter`.
 
 .. code-block:: chapel
 
@@ -104,7 +105,7 @@ Here is a full program enabling verbose output from Curl while downloading:
   Curl.setopt(reader, CURLOPT_VERBOSE, true);
 
   // now read into the bytes
-  reader.readbytes(str);
+  reader.readAll(str);
   writeln(str);
   reader.close();
 
@@ -158,20 +159,25 @@ Curl Support Types and Functions
 module Curl {
   public use IO, CTypes;
   use OS.POSIX;
-  import SysBasic.{ENOERR};
   import OS.{errorCode};
 
   require "curl/curl.h";
   require "-lcurl";
 
 
+  /*
+   Local copy of IO.EEOF as it is being phased out and is private in IO
+   */
+  private extern proc chpl_macro_int_EEOF():c_int;
+
   /* Returns the ``CURL`` handle connected to a channel opened with
      :proc:`URL.openUrlReader` or :proc:`URL.openUrlWriter`.
    */
-  proc getCurlHandle(ch:channel):c_ptr(CURL) throws {
+  proc getCurlHandle(ch):c_ptr(CURL) throws
+  where isSubtype(ch.type, fileReader) || isSubtype(ch.type, fileWriter) {
     use CurlQioIntegration;
 
-    if ch.home != here {
+    if ch._home != here {
       throw createSystemError(EINVAL, "getCurlHandle only functions with local channels");
     }
 
@@ -193,16 +199,17 @@ module Curl {
      :arg arg: the value to set the curl option specified by opt.
      :type arg: `int`, `string`, `bool`, or `slist`
   */
-  proc setopt(ch:channel, opt:c_int, arg):bool throws {
+  proc setopt(ch, opt:c_int, arg):bool throws
+  where isSubtype(ch.type, fileReader) || isSubtype(ch.type, fileWriter) {
     use CurlQioIntegration;
 
     var err:CURLcode = CURLE_OK;
 
-    if (arg.type == slist) && (arg.home != ch.home) {
+    if (arg.type == slist) && (arg._home != ch._home) {
       throw createSystemError(EINVAL, "in channel.setopt(): slist, and curl handle do not reside on the same locale");
     }
 
-    on ch.home {
+    on ch._home {
       var plugin = ch.channelPlugin():CurlChannel?;
       if plugin == nil then
         throw createSystemError(EINVAL, "in channel.setopt(): not a curl channel");
@@ -283,10 +290,12 @@ module Curl {
        setopt(curlfile, (CURLOPT_USERNAME, username),
                         (CURLOPT_PASSWORD, password));
 
+     :arg ch: a :record:`IO.fileReader` or :record:`IO.fileWriter`
      :arg args: any number of tuples of the form (curl_option, value).
                 This function will call ``setopt`` on each pair in turn.
    */
-  proc setopt(ch:channel, args ...?k) throws {
+  proc setopt(ch, args ...?k) throws
+  where isSubtype(ch.type, fileReader) || isSubtype(ch.type, fileWriter) {
     for param i in 0..k-1 {
       setopt(ch, args(i)(0), args(i)(1));
     }
@@ -321,7 +330,7 @@ module Curl {
      :arg str: a string argument to append
     */
   proc slist.append(str:string) throws {
-    var err: errorCode = ENOERR;
+    var err: errorCode = 0;
     on this.home {
       this.list = curl_slist_append(this.list, str.localize().c_str());
       if this.list == nil then
@@ -507,7 +516,6 @@ module Curl {
     use Curl;
     use CTypes;
     use OS.POSIX;
-    import SysBasic.{ENOERR,EEOF};
     import OS.{errorCode};
 
     pragma "no doc"
@@ -537,12 +545,12 @@ module Curl {
         }
 
         length = this.length;
-        return ENOERR;
+        return 0;
       }
       override proc getpath(out path:c_string, out len:int(64)):errorCode {
         path = qio_strdup(this.url_c);
         len = url_c.size;
-        return ENOERR;
+        return 0;
       }
 
       override proc fsync():errorCode {
@@ -559,7 +567,7 @@ module Curl {
       override proc close():errorCode {
         c_free(url_c:c_void_ptr);
         url_c = nil;
-        return ENOERR;
+        return 0;
       }
     }
 
@@ -570,7 +578,7 @@ module Curl {
       var curlm: c_ptr(CURLM);  // Curl multi handle
       var running_handles: c_int;
       var have_channel_lock:bool;
-      var saved_error:errorCode = ENOERR;
+      var saved_error:errorCode = 0;
 
       override proc readAtLeast(amt:int(64)):errorCode {
         return read_atleast(this, amt);
@@ -583,7 +591,7 @@ module Curl {
         curl_multi_remove_handle(curlm, curl);
         curl_easy_cleanup(curl);
         curl_multi_cleanup(curlm);
-        return ENOERR;
+        return 0;
       }
     }
 
@@ -850,13 +858,13 @@ module Curl {
 
       //writeln("finished start_channel");
 
-      return ENOERR;
+      return 0;
     }
 
     private proc curl_write_received(contents: c_void_ptr, size:c_size_t, nmemb:c_size_t, userp: c_void_ptr):c_size_t {
       var realsize:c_size_t = size * nmemb;
       var cc = userp:unmanaged CurlChannel?;
-      var err:errorCode = ENOERR;
+      var err:errorCode = 0;
 
       // lock the channel if it's not already locked
       assert(cc!.have_channel_lock);
@@ -871,7 +879,7 @@ module Curl {
 
       // unlock the channel if we locked it
 
-      if err != ENOERR {
+      if err != 0 {
         cc!.saved_error = err;
         return 0;
       }
@@ -892,7 +900,7 @@ module Curl {
       var curl = cc.curl;
       var curlm = cc.curlm;
       var mcode: CURLMcode;
-      var serr:errorCode = ENOERR;
+      var serr:errorCode = 0;
       var fdread: fd_set;
       var fdwrite: fd_set;
       var fdexcept: fd_set;
@@ -970,16 +978,16 @@ module Curl {
           break;
 
         // stop if there was an error saving the data to the buffer
-        if cc.saved_error != ENOERR then
+        if cc.saved_error != 0 then
           return cc.saved_error;
       }
 
       // Return EEOF if the connection is no longer running
       space = qio_channel_nbytes_available_unlocked(ch);
       if cc.running_handles == 0 && space < amt then
-        return EEOF;
+        return chpl_macro_int_EEOF():errorCode;
 
-      return ENOERR;
+      return 0;
     }
 
     // Send some data somewhere with curl
@@ -988,7 +996,7 @@ module Curl {
     private proc curl_read_buffered(contents: c_void_ptr, size:c_size_t, nmemb:c_size_t, userp: c_void_ptr):c_size_t {
       var realsize:c_size_t = size * nmemb;
       var cc = userp:unmanaged CurlChannel?;
-      var err:errorCode = ENOERR;
+      var err:errorCode = 0;
 
       // lock the channel if it's not already locked
       assert(cc!.have_channel_lock);
@@ -1005,7 +1013,7 @@ module Curl {
       // unlock the channel if we locked it
 
       // If there was an error from the channel, abort the connection
-      if err != ENOERR {
+      if err != 0 {
         cc!.saved_error = err;
         return CURL_READFUNC_ABORT;
       }
@@ -1034,7 +1042,7 @@ module Curl {
       var curlm = cc.curlm;
       var ccode: CURLcode;
       var mcode: CURLMcode;
-      var serr:errorCode = ENOERR;
+      var serr:errorCode = 0;
       var fdread: fd_set;
       var fdwrite: fd_set;
       var fdexcept: fd_set;
@@ -1112,25 +1120,25 @@ module Curl {
           break;
 
         // stop if there was an error saving the data to the buffer
-        if cc.saved_error != ENOERR then
+        if cc.saved_error != 0 then
           return cc.saved_error;
       }
 
       // Return EEOF if the connection is no longer running
       space = qio_channel_nbytes_write_behind_unlocked(ch);
       if cc.running_handles == 0 && space > target_space {
-        writeln("RETURNING EOF");
-        return EEOF;
+        writeln("RETURNING EEOF");
+        return chpl_macro_int_EEOF():errorCode;
       }
 
-      return ENOERR;
+      return 0;
     }
 
     proc openCurlFile(url:string,
-                     mode:iomode = iomode.r,
+                     mode:ioMode = ioMode.r,
                      style:iostyleInternal = defaultIOStyleInternal()) throws {
 
-      var err_out: errorCode = ENOERR;
+      var err_out: errorCode = 0;
       var rc = 0;
       var filelength: int(64);
 
@@ -1151,7 +1159,7 @@ module Curl {
       // Read the header in order to get the length of the thing we are reading
       // If we are writing, we can't really get this information (even if we try
       // to do a 0 length read).
-      if (mode == iomode.cw || mode == iomode.cwr) {
+      if (mode == ioMode.cw || mode == ioMode.cwr) {
         fl.length = -1;
         fl.seekable = false;
       } else {

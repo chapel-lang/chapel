@@ -30,7 +30,7 @@ proc main(args:[] string)
     if isFile(arg) then
       paths.append(arg);
     else if isDir(arg) then
-      for path in findfiles(arg, recursive=true) do
+      for path in findFiles(arg, recursive=true) do
         paths.append(path);
   }
 
@@ -44,8 +44,8 @@ proc main(args:[] string)
   forall (id,path) in zip(pathsArray.domain, pathsArray) {
     var mdArray:[0..19] uint(8);
     var data:string;
-    var f = open(path, iomode.r);
-    f.reader(kind=iokind.native).readstring(data);
+    var f = open(path, ioMode.r);
+    f.reader(kind=iokind.native).readAll(data);
     // The extern block above included everything in openssl/sha.h,
     // including the SHA1 function. But, in order to call it, we
     // need to create C types from some Chapel data.

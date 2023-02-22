@@ -81,7 +81,7 @@ proc main() {
 //
 // Redefine stdout to use lock-free binary I/O and capture a newline
 //
-const stdout = openfd(1).writer(kind=iokind.native, locking=false);
+const stdout = (new file(1)).writer(kind=iokind.native, locking=false);
 param newline = "\n".toByte();
 
 //

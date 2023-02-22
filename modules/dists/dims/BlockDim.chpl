@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -304,8 +304,8 @@ iter Block1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
 
   } else {
     // (b) per-locale computation is amortized over enough undensRange indices
-    const lowLocId = pdist.dsiIndexToLocale1d(undensRange.alignedLow);
-    const highLocId = pdist.dsiIndexToLocale1d(undensRange.alignedHigh);
+    const lowLocId = pdist.dsiIndexToLocale1d(undensRange.low);
+    const highLocId = pdist.dsiIndexToLocale1d(undensRange.high);
 
     // check for a supposedly more common case of following our own leader
     if lowLocId == highLocId {

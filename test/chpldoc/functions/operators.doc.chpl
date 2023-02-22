@@ -81,16 +81,6 @@ operator !=(lhs: Foo, rhs: Foo) {
   return(lhs.x != rhs.x);
 }
 
-use IO;
-
-operator <~>(const ref ch: channel, const x: Foo) const ref throws
-  where ch.writing {
-
-  writeln("In DefinesOp.<~>");
-  ch.write(x.x);
-  return ch;
-}
-
 operator <(lhs: Foo, rhs: Foo) {
   writeln("In DefinesOp.<");
   return(lhs.x < rhs.x);

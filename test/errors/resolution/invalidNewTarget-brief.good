@@ -1,0 +1,2 @@
+error in invalidNewTarget.chpl:3: cannot use memory management strategy 'owned' with non-class type 'E'
+error in invalidNewTarget.chpl:3: invalid use of 'new' on enum type 'E'

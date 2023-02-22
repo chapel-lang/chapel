@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,7 +26,6 @@
 #include "CatchStmt.h"
 #include "config.h"
 #include "DeferStmt.h"
-#include "docsDriver.h"
 #include "driver.h"
 #include "files.h"
 #include "ForallStmt.h"
@@ -103,11 +102,18 @@ void checkControlFlow(Expr* expr, const char* context) {
         continue; // break or continue target is in scope
       if (toSymExpr(gs->label) && toSymExpr(gs->label)->symbol() == gNil && loopSet.set_in(gs))
         continue; // break or continue loop is in scope
-      if (!strcmp(context, "on statement")) {
-        USR_PRINT(gs, "the following error is a current limitation");
-      }
       if (gs->gotoTag == GOTO_BREAK) {
-        USR_FATAL_CONT(gs, "break is not allowed in %s", context);
+        // BLC: This check is being too strict for labeled 'break's
+        // and is preventing correct programs from working, so skip it
+        // unless it's unlabeled.  From what I can tell with a quick
+        // look, the problem is that the 'loopSet' isn't being
+        // maintained properly in nested cases, or is preventing
+        // labels from being added to the 'labelSet' incorrectly.  I
+        // feel mildly optimistic an illegal labeled break will be
+        // caught later in compilation.
+        if (toSymExpr(gs->label) && toSymExpr(gs->label)->symbol() == gNil) {
+          USR_FATAL_CONT(gs, "break is not allowed in %s", context);
+        }
       } else if (gs->gotoTag == GOTO_CONTINUE) {
         // see also resolveGotoLabels() -> handleForallGoto()
         if (!strcmp(context, "forall statement")) {
@@ -116,7 +122,9 @@ void checkControlFlow(Expr* expr, const char* context) {
           else
             USR_FATAL_CONT(gs, "continue to a named loop outside of a forall is not allowed from inside the forall");
         } else {
-          USR_FATAL_CONT(gs, "continue is not allowed in %s", context);
+          if (toSymExpr(gs->label) && toSymExpr(gs->label)->symbol() == gNil) {
+            USR_FATAL_CONT(gs, "continue is not allowed in %s", context);
+          }
         }
       } else {
         USR_FATAL_CONT(gs, "illegal 'goto' usage; goto is deprecated anyway");
@@ -806,20 +814,17 @@ buildExternBlockStmt(const char* c_code) {
   BlockStmt* ret = buildChapelStmt(useBlock);
 
   // Check that the compiler supports extern blocks
-  // but skip these checks for chpldoc.
-  if (fDocs == false) {
 #ifdef HAVE_LLVM
-    // Chapel was built with LLVM
-    // Just bring up an error if extern blocks are disabled
-    if (fAllowExternC == false)
-      USR_FATAL(ret, "extern block syntax is turned off. Use "
-                     "--extern-c flag to turn on.");
+  // Chapel was built with LLVM
+  // Just bring up an error if extern blocks are disabled
+  if (fAllowExternC == false)
+    USR_FATAL(ret, "extern block syntax is turned off. Use "
+                   "--extern-c flag to turn on.");
 #else
-    // If Chapel wasn't built with LLVM, we can't handle extern blocks
-    USR_FATAL(ret, "Chapel must be built with llvm in order to "
-                    "use the extern block syntax");
+  // If Chapel wasn't built with LLVM, we can't handle extern blocks
+  USR_FATAL(ret, "Chapel must be built with llvm in order to "
+                  "use the extern block syntax");
 #endif
-  }
 
   return ret;
 }
@@ -829,8 +834,7 @@ ModuleSymbol* buildModule(const char* name,
                           BlockStmt*  block,
                           const char* filename,
                           bool        priv,
-                          bool        prototype,
-                          const char* docs) {
+                          bool        prototype) {
   ModuleSymbol* mod = new ModuleSymbol(name, modTag, block);
 
   if (priv == true) {
@@ -842,47 +846,8 @@ ModuleSymbol* buildModule(const char* name,
   }
 
   mod->filename = astr(filename);
-  mod->doc      = docs;
 
   return mod;
-}
-
-BlockStmt* buildIncludeModule(const char* name,
-                              bool priv,
-                              bool prototype,
-                              const char* docs) {
-  astlocT loc(chplLineno, yyfilename);
-  ModuleSymbol* mod = parseIncludedSubmodule(name);
-  INT_ASSERT(mod != NULL);
-
-  // check visibility specifiers
-  //
-  //  include public/default   +  declaration public/default -> OK, public
-  //  include public/default   +  declaration private        -> error
-  //  include private          +  declaration public/default -> OK, private
-  //  include private          +  declaration private        -> OK, private
-  //
-  if (priv && !mod->hasFlag(FLAG_PRIVATE)) {
-    // make the module private (override public)
-    mod->addFlag(FLAG_PRIVATE);
-  } else if (mod->hasFlag(FLAG_PRIVATE) && !priv) {
-    USR_FATAL_CONT(loc,
-          "cannot make a private module public through an include statement");
-    USR_PRINT(mod, "module declared private here");
-  }
-
-  if (prototype) {
-    USR_FATAL_CONT(loc, "cannot apply prototype to module in include statement");
-    USR_PRINT(mod, "put prototype keyword at module declaration here");
-  }
-
-  // docs comment is ignored (the one in the module declaration is used)
-
-  if (fWarnUnstable && mod->modTag == MOD_USER) {
-    USR_WARN(loc, "module include statements are not yet stable and may change");
-  }
-
-  return buildChapelStmt(new DefExpr(mod));
 }
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs) {
@@ -1593,7 +1558,7 @@ static const char* cnameExprToString(Expr* cnameExpr) {
   return NULL;
 }
 
-BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
+BlockStmt* buildVarDecls(BlockStmt* stmts,
                          std::set<Flag>* flags, Expr* cnameExpr) {
   bool firstvar = true;
   const char* cname = NULL;
@@ -1633,7 +1598,6 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
           }
         }
 
-        var->doc = docs;
         firstvar = false;
         continue;
       }
@@ -1656,10 +1620,8 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
   }
 
   // Add a PRIM_END_OF_STATEMENT.
-  if (fDocs == false) {
-    CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
-    stmts->insertAtTail(end);
-  }
+  CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
+  stmts->insertAtTail(end);
 
   // this was allocated in buildVarDeclFlags()
   if (flags)
@@ -1696,8 +1658,7 @@ DefExpr* buildClassDefExpr(const char*  name,
                            AggregateTag tag,
                            Expr*        inherit,
                            BlockStmt*   decls,
-                           Flag         externFlag,
-                           const char*  docs) {
+                           Flag         externFlag) {
   bool isExtern = externFlag == FLAG_EXTERN;
   AggregateType* ct = NULL;
   TypeSymbol* ts = NULL;
@@ -1761,8 +1722,6 @@ DefExpr* buildClassDefExpr(const char*  name,
   if (inherit != NULL) {
     ct->inherits.insertAtTail(inherit);
   }
-
-  ct->doc = docs;
 
   return def;
 }
@@ -1896,17 +1855,13 @@ void setupExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr,
     fn->addFlag(FLAG_LOCAL_ARGS);
     fn->addFlag(FLAG_EXPORT);
   }
-  if (fn->isIterator())
-  {
-    USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
-  }
 
   // Handle non-trivial param names that need to be resolved,
   // but don't do this under chpldoc
   if (cname[0] != '\0') {
     // The user explicitly named this function (controls mangling).
     fn->cname = cname;
-  } else if (paramCNameExpr && cname[0] == '\0' && fDocs == false) {
+  } else if (paramCNameExpr && cname[0] == '\0') {
     // cname should be set based upon param
     DefExpr* argDef = buildArgDefExpr(INTENT_BLANK,
                                       astr_chpl_cname,
@@ -1934,9 +1889,7 @@ setupFunctionDecl(FnSymbol*   fn,
                   bool        optThrowsError,
                   Expr*       optWhere,
                   Expr*       optLifetimeConstraints,
-                  BlockStmt*  optFnBody,
-                  const char* docs)
-{
+                  BlockStmt*  optFnBody) {
   fn->retTag = optRetTag;
 
   if (optRetType)
@@ -1973,8 +1926,6 @@ setupFunctionDecl(FnSymbol*   fn,
   } else {
     fn->addFlag(FLAG_NO_FN_BODY);
   }
-
-  fn->doc = docs;
 }
 
 BlockStmt*
@@ -1984,11 +1935,9 @@ buildFunctionDecl(FnSymbol*   fn,
                   bool        optThrowsError,
                   Expr*       optWhere,
                   Expr*       optLifetimeConstraints,
-                  BlockStmt*  optFnBody,
-                  const char* docs)
-{
+                  BlockStmt*  optFnBody) {
   setupFunctionDecl(fn, optRetTag, optRetType, optThrowsError,
-                    optWhere, optLifetimeConstraints, optFnBody, docs);
+                    optWhere, optLifetimeConstraints, optFnBody);
   return buildChapelStmt(new DefExpr(fn));
 }
 
@@ -2000,41 +1949,19 @@ void applyPrivateToBlock(BlockStmt* block) {
   }
 }
 
-static
-DefExpr* buildForwardingExprFnDef(Expr* expr) {
-  // Put expr into a method and return the DefExpr for that method.
-  // This way, we can work with the rest of the compiler that
-  // assumes that 'this' is an ArgSymbol.
-  static int delegate_counter = 0;
-  const char* name = astr("chpl_forwarding_expr", istr(++delegate_counter));
-  if (UnresolvedSymExpr* usex = toUnresolvedSymExpr(expr))
-    name = astr(name, "_", usex->unresolved);
-  FnSymbol* fn = new FnSymbol(name);
-
-  fn->addFlag(FLAG_INLINE);
-  fn->addFlag(FLAG_MAYBE_REF);
-  fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-
-  fn->body->insertAtTail(new CallExpr(PRIM_RETURN, expr));
-
-  DefExpr* def = new DefExpr(fn);
-
-  return def;
-}
-
-
 // handle syntax like
 //    var instance:someType;
 //    forwarding instance;
-BlockStmt* buildForwardingStmt(Expr* expr) {
-  return buildChapelStmt(new ForwardingStmt(buildForwardingExprFnDef(expr)));
+ForwardingStmt* buildForwardingStmt(DefExpr* fnDef) {
+  return new ForwardingStmt(fnDef);
 }
 
 // handle syntax like
 //    var instance:someType;
 //    forwarding instance only foo;
-BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names, bool except) {
+ForwardingStmt* buildForwardingStmt(DefExpr* fnDef,
+                                    std::vector<PotentialRename*>* names,
+                                    bool except) {
   std::set<const char*> namesSet;
   std::map<const char*, const char*> renameMap;
 
@@ -2064,45 +1991,15 @@ BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names,
         }
         break;
     }
-
   }
 
-  DefExpr* fnDef = buildForwardingExprFnDef(expr);
   ForwardingStmt* ret = new ForwardingStmt(fnDef,
-                                       &namesSet,
-                                       except,
-                                       &renameMap);
-  return buildChapelStmt(ret);
+                                           &namesSet,
+                                           except,
+                                           &renameMap);
+  return ret;
 }
 
-
-// handle syntax like
-//    forwarding var instance:someType;
-// by translating it into
-//    var instance:someType;
-//    forwarding instance;
-BlockStmt* buildForwardingDeclStmt(BlockStmt* stmts) {
-  for_alist(stmt, stmts->body) {
-    if (DefExpr* defExpr = toDefExpr(stmt)) {
-      if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
-        // Append a ForwardingStmt
-        BlockStmt* toAppend = buildForwardingStmt(new UnresolvedSymExpr(var->name));
-
-        // Remove the END_OF_STATEMENT marker, not used for fields
-        Expr* last = stmts->body.last();
-        if (last && isEndOfStatementMarker(stmts->body.last()))
-          last->remove();
-
-        for_alist(tmp, toAppend->body) {
-          stmts->insertAtTail(tmp->remove());
-        }
-      } else {
-        INT_FATAL("case not handled in buildForwardingDeclStmt");
-      }
-    }
-  }
-  return stmts;
-}
 
 FnSymbol*
 buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
@@ -2270,7 +2167,7 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
 BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block) {
   auto ret = new BlockStmt();
 
-  if (fWarnUnstable) {
+  if (fWarnUnstable && currentModuleType == MOD_USER) {
     USR_WARN(managers, "manage statements are not stable and may change");
   }
 
@@ -2621,8 +2518,6 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk, const char* cname) {
 
         TypeSymbol* ts = new TypeSymbol(vs->name, pt);
         if (VarSymbol* theVs = toVarSymbol(vs)) {
-          ts->doc = theVs->doc;
-
           // TODO: Loop/copy all flags here instead of two?
           if (theVs->hasFlag(FLAG_PRIVATE)) ts->addFlag(FLAG_PRIVATE);
           if (theVs->hasFlag(FLAG_C_MEMORY_ORDER_TYPE)) ts->addFlag(FLAG_C_MEMORY_ORDER_TYPE);

@@ -185,14 +185,14 @@ void gasnete_coll_print_tree(gasnete_coll_local_tree_geom_t *geom, int gasnete_c
   int i;
   
   for(i=0; i<geom->child_count; i++) {
-    fprintf(stdout, "%d> child %d: %d, subtree for that child: %d (offset: %d)\n", gasnete_coll_tree_mynode, i, (int)geom->child_list[i], (int)geom->subtree_sizes[i], (int)geom->child_offset[i]);
+    gasneti_console_message("COLL INFO","%d> child %d: %d, subtree for that child: %d (offset: %d)", gasnete_coll_tree_mynode, i, (int)geom->child_list[i], (int)geom->subtree_sizes[i], (int)geom->child_offset[i]);
   }
   if(gasnete_coll_tree_mynode != geom->root) {
-    fprintf(stdout, "%d> parent: %d\n", (int)gasnete_coll_tree_mynode, (int)geom->parent);
+    gasneti_console_message("COLL INFO","%d> parent: %d", (int)gasnete_coll_tree_mynode, (int)geom->parent);
   }
-  fprintf(stdout, "%d> mysubtree size: %d\n", (int)gasnete_coll_tree_mynode, (int)geom->mysubtree_size);
+  gasneti_console_message("COLL INFO","%d> mysubtree size: %d", (int)gasnete_coll_tree_mynode, (int)geom->mysubtree_size);
 #if 1
-  fprintf(stdout, "%d> My sibling info: (id: %d, offset %d)\n", (int)gasnete_coll_tree_mynode, (int)geom->sibling_id, (int)geom->sibling_offset);
+  gasneti_console_message("COLL INFO","%d> My sibling info: (id: %d, offset %d)", (int)gasnete_coll_tree_mynode, (int)geom->sibling_id, (int)geom->sibling_offset);
 #endif
 }
 
@@ -569,9 +569,9 @@ static tree_node_t find_node(tree_node_t tree, gex_Rank_t id) {
 
 static void print_tree_node(tree_node_t main_node, int id) {
   int i;
-  printf("%d> %d num_children: %d\n", id, (int)GET_NODE_ID(main_node), GET_NUM_CHILDREN(main_node));
+  gasneti_console_message("TREE DUMP","%d> %d num_children: %d", id, (int)GET_NODE_ID(main_node), GET_NUM_CHILDREN(main_node));
   for(i=0; i<GET_NUM_CHILDREN(main_node); i++) {
-    printf("%d> %d child: %d %d\n", id, (int)GET_NODE_ID(main_node), i, (int)GET_NODE_ID(GET_CHILD_IDX(main_node,i)));
+   gasneti_console_message("TREE DUMP","%d> %d child: %d %d", id, (int)GET_NODE_ID(main_node), i, (int)GET_NODE_ID(GET_CHILD_IDX(main_node,i)));
   }
   for(i=0; i<GET_NUM_CHILDREN(main_node); i++) {
     print_tree_node(GET_CHILD_IDX(main_node, i), id);
@@ -771,8 +771,8 @@ void gasnete_coll_tree_type_to_str(char *outbuf, gasnete_coll_tree_type_t in) {
 void gasnete_coll_tree_geom_release(gasnete_coll_tree_geom_t *geom) {
 	gasneti_weakatomic_decrement(&(geom->ref_count), 0);
   /*
-  fprintf(stderr, "[%u] gasnete_coll_tree_geom_release: geom->ref_count %u\n",
-          gasneti_mynode, gasneti_weakatomic_read(&(geom->ref_count), 0));
+  gasneti_console_message("COLL INFO","gasnete_coll_tree_geom_release: geom->ref_count %u\n",
+           gasneti_weakatomic_read(&(geom->ref_count), 0));
   */
 }
 
@@ -783,16 +783,16 @@ void gasnete_coll_tree_geom_print(gasnete_coll_tree_geom_t *geom)
 
   ref_count = gasneti_weakatomic_read(&(geom->ref_count), 0);
   
-  fprintf(stderr, "[%u] tree_geom %p, ref_count %u.\n", 
-          gasneti_mynode, geom, ref_count);
+  gasneti_console_message("COLL INFO","tree_geom %p, ref_count %u.\n", 
+          geom, ref_count);
 
   for (i=0; i<gasneti_nodes; i++) {
     if (geom->local_views[i] != NULL) {
       local_ref_count = 
         gasneti_weakatomic_read(&(geom->local_views[i]->ref_count), 0);
 
-      fprintf(stderr, "[%u] localview[%u] ref_count %u\n", 
-              gasneti_mynode, i, local_ref_count);
+      gasneti_console_message("COLL INFO","localview[%u] ref_count %u\n", 
+               i, local_ref_count);
     }
   }
 }                 
@@ -878,7 +878,7 @@ gasnete_coll_local_tree_geom_t *gasnete_coll_local_tree_geom_fetch(gasnete_coll_
   if(curr_geom == NULL) {
     int i;
 #if 0
-    if(gasneti_mynode ==0) fprintf(stderr, "%d> new tree: %d type %d fanout\n",gasneti_mynode, type.tree_class, type.prams[0]);
+    gasneti_console0_message("COLL INFO","new tree: %d type %d fanout\n", type.tree_class, type.prams[0]);
 #endif
     /* allocate new geometry */
     curr_geom = (gasnete_coll_tree_geom_t *) gasneti_malloc(sizeof(gasnete_coll_tree_geom_t));
@@ -941,8 +941,8 @@ gasnete_coll_local_tree_geom_t *gasnete_coll_local_tree_geom_fetch(gasnete_coll_
   gasneti_weakatomic_increment(&(ret->ref_count), 0);
 
   /*
-  fprintf(stderr, "[%u] gasnete_coll_local_tree_geom_fetch: curr_geom->ref_count %u, ret->ref_count %u \n",
-          gasneti_mynode, gasneti_weakatomic_read(&(curr_geom->ref_count), 0),
+  gasneti_console_message("COLL INFO","gasnete_coll_local_tree_geom_fetch: curr_geom->ref_count %u, ret->ref_count %u \n",
+          gasneti_weakatomic_read(&(curr_geom->ref_count), 0),
           gasneti_weakatomic_read(&(ret->ref_count), 0));
   */
 #endif

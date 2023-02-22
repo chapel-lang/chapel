@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -380,7 +380,7 @@ integral_to_c_string(int64_t x, uint32_t size, chpl_bool isSigned, chpl_bool* er
    case   SIGNED + 4: format = "%" PRId32; break;
    case   SIGNED + 8: format = "%" PRId64; break;
   }
-  sprintf(buffer, format, x);
+  snprintf(buffer, sizeof(buffer), format, x);
   return string_copy(buffer, 0, 0);
 }
 
@@ -417,7 +417,7 @@ real_to_c_string(_real64 x, chpl_bool isImag)
     char buffer[256];
     char* last;
 
-    sprintf(buffer, "%lg", x);
+    snprintf(buffer, sizeof(buffer), "%lg", x);
     last = ensureDecimal(buffer);
     if (isImag)
       strcat(last, "i");

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -103,8 +103,8 @@ module ChapelSyncvar {
     }
   }
 
-  // This could be replaced with Memory.Initialization but I didn't
-  // want to compile it by default at this time.
+  // TODO: Should we replace this with functionality from 'MemMove'? Would
+  // that cause problems with the module initialization order?
   pragma "no doc"
   pragma "unsafe"
   private inline proc _moveSet(ref dst: ?t, ref src: t) lifetime src == dst {
@@ -173,8 +173,8 @@ module ChapelSyncvar {
       this.isOwned = false;
     }
 
+    deprecated "Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side"
     proc init=(const ref other: _syncvar(?)) {
-      compilerWarning("Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side");
       // Allow initialization from compatible sync variables, e.g.:
       //   var x : sync int = 5;
       //   var y : sync real = x;
@@ -201,6 +201,12 @@ module ChapelSyncvar {
     // Do not allow implicit reads of sync vars.
     proc readThis(x) throws {
       compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
+    }
+
+    proc type decodeFrom(r) throws {
+      var ret : this;
+      compilerError("sync variables cannot currently be read - use writeEF/writeFF instead");
+      return ret;
     }
 
     // Do not allow implicit writes of sync vars.
@@ -390,8 +396,8 @@ module ChapelSyncvar {
   }
 
   pragma "init copy fn"
+  deprecated "Initializing a type-inferred variable from a 'sync' is deprecated; apply a '.read??()' method to the right-hand side"
   proc chpl__initCopy(ref sv : _syncvar(?t), definedConst: bool) {
-    compilerWarning("Initializing a type-inferred variable from a 'sync' is deprecated; apply a '.read??()' method to the right-hand side");
     return sv.readFE();
   }
 
@@ -1234,5 +1240,14 @@ private module AlignedTSupport {
   }
   proc aligned_t.readThis(f) throws {
     this = f.read(uint(64)) : aligned_t;
+  }
+
+  proc aligned_t.encodeTo(f) throws {
+    writeThis(f);
+  }
+  proc type aligned_t.readThis(f) throws {
+    var ret : aligned_t;
+    ret.readThis(f);
+    return ret;
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,12 +25,13 @@
 #include "build.h"
 #include "DecoratedClassType.h"
 #include "expr.h"
+#include "passes.h"
 #include "preFold.h"
 #include "resolution.h"
 #include "stringutil.h"
 #include "symbol.h"
 
-#include "../dyno/lib/immediates/prim_data.h"
+#include "../../frontend/lib/immediates/prim_data.h"
 
 static Expr* postFoldNormal(CallExpr* call);
 
@@ -143,9 +144,51 @@ Expr* postFold(Expr* expr) {
 *                                                                             *
 ************************************** | *************************************/
 
+// TODO: Is this "lie" by mismatching the types in the AST ok, or do I
+// need to create a sort of wrapper function to make the call instead?
+static Expr* postFoldCallToExternFnWithProcFormals(CallExpr* call) {
+  auto fn = call->resolvedFunction();
+  if (!fn || !fn->hasFlag(FLAG_EXTERN)) return nullptr;
+
+  bool didAdjustActual = false;
+  for_actuals(actual, call) {
+    if (auto se = toSymExpr(actual)) {
+      auto sym = se->symbol();
+
+      // Only transform actuals that are non-param values.
+      if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||
+          sym->hasFlag(FLAG_PARAM)) continue;
+
+      if (sym->typeInfo()->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
+        auto tmp = newTemp("underlying_ptr", dtCFnPtr);
+        auto accessPtr = new CallExpr("chpl_fcfPtr", gMethodToken,
+                                      new SymExpr(sym));
+        auto move = new CallExpr(PRIM_MOVE, tmp, accessPtr);
+        call->insertBefore(new DefExpr(tmp));
+        call->insertBefore(move);
+
+        resolveCallAndCallee(accessPtr);
+        resolveExpr(move);
+
+        se->setSymbol(tmp);
+
+        didAdjustActual = true;
+      }
+    }
+  }
+
+  if (!didAdjustActual) return nullptr;
+
+  return call;
+}
+
 static Expr* postFoldNormal(CallExpr* call) {
   FnSymbol* fn     = call->resolvedFunction();
   Expr*     retval = call;
+
+  if (Expr* retval = postFoldCallToExternFnWithProcFormals(call)) {
+    return retval;
+  }
 
   if (fn->retTag == RET_PARAM || fn->hasFlag(FLAG_MAYBE_PARAM)) {
     VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
@@ -186,7 +229,8 @@ static Expr* postFoldNormal(CallExpr* call) {
       // Put the call back in the AST for better errors unless we're trying
       // to ignore multiple error messages (in which case we hope for a
       // successful compilation).
-      if (fatalErrorsEncountered() && !inGenerousResolutionForErrors() && !fIgnoreNilabilityErrors) {
+      if (fatalErrorsEncountered() && !inGenerousResolutionForErrors() &&
+          !fIgnoreNilabilityErrors) {
         retval->getStmtExpr()->insertBefore(call);
       }
     }

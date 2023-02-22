@@ -4,9 +4,8 @@ env:
   REGISTRY: ghcr.io
   # NOTE: IMAGE_NAME must be lowercase
   IMAGE_NAME: chapel-github-ci
-
   # NOTE: if this filename changes, also update in the on.paths section below
-  DOCKERFILE: util/dockerfiles/github-ci/Dockerfile
+  DOCKERFILE: util/packaging/docker/github-ci/Dockerfile
 
 on:
   push:
@@ -15,8 +14,14 @@ on:
     paths:
       # unfortunately we can't use ${{env.DOCKERFILE}} here
       # see https://docs.github.com/en/actions/learn-github-actions/contexts#context-availability
-      - util/dockerfiles/github-ci/Dockerfile
-
+      - util/packaging/docker/github-ci/Dockerfile
+      # also trigger on changes to this workflow file itself
+      - .github/workflows/build-CI-container.yml
+  pull_request:
+    paths:
+      # same as for pushes above
+      - util/packaging/docker/github-ci/Dockerfile
+      - .github/workflows/build-CI-container.yml
   # Adds a "manual run" option in the GH UI
   workflow_dispatch:
 
@@ -29,17 +34,23 @@ jobs:
       packages: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v1.14.1
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and Push Docker Image
+      - name: Build Docker Image
+        uses: docker/build-push-action@v2.9.0
+        with:
+          file: ${{ env.DOCKERFILE }}
+          # example: ghcr.io/chapel-lang/chapel-github-ci:latest
+          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+      - name: Push Docker Image if on main
+        if: github.repository_owner == 'chapel-lang' && ((github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push'))
         uses: docker/build-push-action@v2.9.0
         with:
           file: ${{ env.DOCKERFILE }}
           push: true
-          # example: ghcr.io/chapel-lang/chapel-github-ci:latest
           tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest

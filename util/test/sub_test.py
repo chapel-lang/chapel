@@ -289,7 +289,7 @@ def WaitForFiles(files, timeout=int(os.getenv('CHPL_TEST_WAIT_FOR_FILES_TIMEOUT'
 # executable, the current chplenv is copied into the env before executing.
 # Expands shell and chplenv variables and strip out comments/whitespace.
 # Returns a list of string, one per line in the file.
-def ReadFileWithComments(f, ignoreLeadingSpace=True):
+def ReadFileWithComments(f, ignoreLeadingSpace=True, args=None):
     mylines = ""
     # if the file is executable, run it and grab the output. If we get an
     # OSError while trying to run, report it and try to keep going
@@ -301,7 +301,10 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True):
             file_env.update(chpl_env)
 
             # execute the file and grab its output
-            cmd = py3_compat.Popen([os.path.abspath(f)], stdout=subprocess.PIPE, env=file_env)
+            tmp_args = [os.path.abspath(f)]
+            if args != None:
+                tmp_args += args
+            cmd = py3_compat.Popen(tmp_args, stdout=subprocess.PIPE, env=file_env)
             mylines = cmd.communicate()[0].splitlines()
 
         except OSError as e:
@@ -1122,14 +1125,6 @@ else:
     globalNumTrials=int(os.getenv('CHPL_TEST_NUM_TRIALS', '1'))
 
 #
-# Global EXECENV
-#
-if os.access('./EXECENV',os.R_OK):
-    globalExecenv=ReadFileWithComments('./EXECENV')
-else:
-    globalExecenv=list()
-
-#
 # Global COMPENV
 #
 if os.access('./COMPENV',os.R_OK):
@@ -1509,22 +1504,10 @@ for testname in testsrc:
             usecompoptslist += [usearg]
     compoptslist = usecompoptslist
 
-    # The test environment is that of this process, augmented as specified
-    if os.access(test_filename+execenvsuffix, os.R_OK):
-        execenv = ReadFileWithComments(test_filename+execenvsuffix)
-    else:
-        execenv = list()
-
     if os.access(test_filename+compenvsuffix, os.R_OK):
         compenv = ReadFileWithComments(test_filename+compenvsuffix)
     else:
         compenv = list()
-
-    testenv = {}
-    for var, val in [env.split('=', 1) for env in globalExecenv]:
-        testenv[var.strip()] = val.strip()
-    for var, val in [env.split('=', 1) for env in execenv]:
-        testenv[var.strip()] = val.strip()
 
     testcompenv = {}
     for var, val in [env.split('=', 1) for env in globalCompenv]:
@@ -1552,9 +1535,12 @@ for testname in testsrc:
     clist = list()
     curFileTestStart = time.time()
 
+    redirectin_original_value = redirectin
+
     # For all compopts + execopts combos..
     compoptsnum = 0
     for compopts in compoptslist:
+        redirectin = redirectin_original_value
         sys.stdout.flush()
         del clist
         # use the remaining portion as a .good file for executing tests
@@ -1971,7 +1957,6 @@ for testname in testsrc:
             if len(clist[0].split('#')) > 1:
                 explicitcompgoodfile = clist[0].split('#')[1].strip()
         redirectin_set_in_loop = False
-        redirectin_original_value = redirectin
         for texecopts in execoptslist:
             sys.stdout.flush()
 
@@ -2026,6 +2011,35 @@ for testname in testsrc:
                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 sys.stdout.write(p.communicate()[0])
                 sys.stdout.flush()
+
+            #
+            # Global EXECENV
+            #
+            if os.access('./EXECENV',os.R_OK):
+                args = [execname, execlog, compiler] + envCompopts + \
+                        shlex.split(compopts) + globalExecopts + \
+                        shlex.split(execopts)
+                globalExecenv=ReadFileWithComments('./EXECENV',
+                                                   args=args)
+            else:
+                globalExecenv=list()
+
+            testenv = {}
+            for var, val in [env.split('=', 1) for env in globalExecenv]:
+                testenv[var.strip()] = val.strip()
+
+            # The test environment is that of this process, 
+            # augmented as specified
+            if os.access(test_filename+execenvsuffix, os.R_OK):
+                args = [execname, execlog, compiler] + envCompopts + \
+                        shlex.split(compopts) + globalExecopts + \
+                        shlex.split(execopts)
+                execenv = ReadFileWithComments(test_filename+execenvsuffix,
+                                                args=args)
+            else:
+                execenv = list()
+            for var, val in [env.split('=', 1) for env in execenv]:
+                testenv[var.strip()] = val.strip()
 
             pre_exec_output = ''
             if os.path.exists(execlog):

@@ -1,0 +1,2 @@
+invalidNewForm.chpl:3: warning: '++' is not a pre-increment
+invalidNewForm.chpl:3: syntax error: Invalid form for 'new' expression

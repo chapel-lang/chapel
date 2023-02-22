@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -88,6 +88,12 @@ bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e, Expr* exprToMove) {
 }
 
 bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
+
+  // Must always assume that a function marked extern is side-effecting.
+  if (fnSym->hasFlag(FLAG_EXTERN)) {
+    safeFnCache[fnSym] = false;
+    return false;
+  }
 
   const bool cachedSafeFn = safeFnCache.count(fnSym);
   if(cachedSafeFn) {

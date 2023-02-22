@@ -194,8 +194,6 @@ int main(int argc, char **argv)
       for (int i = 0; i < 4; ++i) BARRIER(); // currently exactly one per case
     } else {
       MSG("hipGetDeviceCount reports %d devices", count);
-      hipCtx_t ctx;
-      check_hipcall( hipDevicePrimaryCtxRetain(&ctx, 0) );
 
       uint8_t *client_gpu1 = NULL;
       uint8_t *client_gpu2 = NULL;
@@ -220,14 +218,11 @@ int main(int argc, char **argv)
       assert_always(kind != GEX_MK_INVALID);
 
       // If multiple devices are available, call hipSetDevice() to switch
-      hipCtx_t curr_ctx;
       int curr_dev, tmp_dev;
       if (count > 1) {
-        check_hipcall( hipDevicePrimaryCtxRetain(&curr_ctx, 1) );
         check_hipcall( hipSetDevice(1) );
         curr_dev = 1;
       } else {
-        curr_ctx = ctx;
         curr_dev = 0;
       }
 
@@ -250,7 +245,7 @@ int main(int argc, char **argv)
 
       // Create first GPU endpoint and bind its segment
       GASNET_Safe( gex_EP_Create(&gpu1_ep, myclient, GEX_EP_CAPABILITY_RMA, 0));
-      gex_EP_BindSegment(gpu1_ep, d_segment1, 0);
+      GASNET_Safe( gex_EP_BindSegment(gpu1_ep, d_segment1, 0) );
       GASNET_Safe( gex_EP_PublishBoundSegment(myteam, &gpu1_ep, 1, 0) );
 
       // Repeat to create a second local GPU segment
@@ -266,7 +261,7 @@ int main(int argc, char **argv)
         assert_always(attr.device == 0);
       }
       GASNET_Safe( gex_EP_Create(&gpu2_ep, myclient, GEX_EP_CAPABILITY_RMA, 0));
-      gex_EP_BindSegment(gpu2_ep, d_segment2, 0);
+      GASNET_Safe( gex_EP_BindSegment(gpu2_ep, d_segment2, 0) );
       GASNET_Safe( gex_EP_PublishBoundSegment(myteam, &gpu2_ep, 1, 0) );
 
       // TM pairs for several possible pairings
@@ -333,11 +328,6 @@ int main(int argc, char **argv)
       CHECK_DEVICE("Case 4b", loc_gpu2+len, array2, len);
 
       if (!test_errs) MSG("GEX_MK_CLASS_HIP: success");
-
-      check_hipcall( hipDevicePrimaryCtxRelease(0) );
-      if (count > 1) {
-        check_hipcall( hipDevicePrimaryCtxRelease(1) );
-      }
     }
 
     // TODO: once supported: Destroy Segments, Kinds and Endpoints; free GPU memory

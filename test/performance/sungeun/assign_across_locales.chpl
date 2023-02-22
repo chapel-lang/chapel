@@ -23,14 +23,14 @@ proc dit (A, param ttype: testTypes) {
       if loc.id != 0 then
         l[loc.id].readFE();
       if doCommDiag then startCommDiagnostics();
-      var st = getCurrentTime();
+      var st = timeSinceEpoch().totalSeconds();
       select ttype {
         when testTypes.init do A = loc.id+1;
         when testTypes.lhs do A = B;
         when testTypes.rhs do B = A;
         when testTypes.both do compilerError("Both is stupid.\n");
         }
-      var dt = getCurrentTime()-st;
+      var dt = timeSinceEpoch().totalSeconds()-st;
       if doCommDiag then stopCommDiagnostics();
       if printOutput {
         writeln("Remote ", ttype:string, " (Locale ", loc.id, "):");
@@ -43,7 +43,7 @@ proc dit (A, param ttype: testTypes) {
         var Diagnostics = getCommDiagnostics();
         writeln("Remote ", ttype:string, " (Locale ", loc.id,
                 "): (gets, puts, forks, fast forks, non-blocking forks)");
-        for (lid, diagnostics) in zip(1..,Diagnostics) do
+        for (diagnostics, lid) in zip(Diagnostics,1..) do
           writeln(lid, ": ", diagnostics);
       }
       if printTiming {

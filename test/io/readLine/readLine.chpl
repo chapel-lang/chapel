@@ -1,7 +1,7 @@
 use IO;
 
 proc testReadLineRef(type dataType) {
-  var f = openmem();
+  var f = openMemFile();
   {
     var ch = f.writer();
     ch.writeln("a b":dataType);
@@ -34,7 +34,7 @@ proc testReadLineRef(type dataType) {
 
 
 proc testReadLineType(type dataType){
-  var f = openmem();
+  var f = openMemFile();
   {
     var ch = f.writer();
     ch.writeln("a b":dataType);
@@ -60,7 +60,7 @@ proc testReadLineType(type dataType){
 }
 
 proc testReadLineArray(){
-  var f = openmem();
+  var f = openMemFile();
   {
     var ch = f.writer();
     ch.writeln("a b");
@@ -90,7 +90,7 @@ proc testReadLineArray(){
 }
 
 /*
-Borrowed the check_expected() function from test/io/casella/readline.chpl */
+Borrowed the check_expected() function from test/io/cassella/readline.chpl */
 proc check_expected(data, expected:string, len) {
   for i in 0..#min(len, expected.numBytes) {
     var n = data[i];

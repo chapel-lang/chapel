@@ -1,5 +1,5 @@
 // from #18218
-// also, the following test keeps a snapshot of findfiles() et al.
+// also, the following test keeps a snapshot of findFiles() et al.
 // that exhibited an undesired behavior:
 //   test/functions/iterators/recursive/recursive-iter-findfilesfailure.chpl
 
@@ -14,8 +14,8 @@ module CheckHttp {
   }
 
   proc main() throws {
-    for f in findfiles(".") do throwingFunction(f);
+    for f in findFiles(".") do throwingFunction(f);
     writeln("---");
-    forall f in findfiles(".") do throwingFunction(f);
+    forall f in findFiles(".") do throwingFunction(f);
   }
 }

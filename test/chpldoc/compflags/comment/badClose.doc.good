@@ -1,4 +1,4 @@
-badClose.doc.chpl:1: warning: chpldoc comment not closed, ignoring comment: This comment is not closed properly
+warning in badClose.doc.chpl:1: chpldoc comment not closed, ignoring comment: This comment is not closed properly
 
 .. default-domain:: chpl
 

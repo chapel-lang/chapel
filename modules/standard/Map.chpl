@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,6 +34,14 @@ module Map {
   private use HaltWrappers;
   private use IO;
 
+  /* A compile-time parameter to control the behavior of map methods
+     When ``false``, the deprecated behavior is used (i.e., errors will trigger
+     a halt at execution.)
+     When ``true``, the new behavior is used (i.e., errors will cause a
+     :type:`KeyNotFoundError` to be thrown)
+  */
+  config param mapMethodsThrow = false;
+
   // Lock code lifted from modules/standard/List.chpl.
   // Maybe they should be combined into a Locks module.
   pragma "no doc"
@@ -55,7 +63,7 @@ module Map {
   private proc _checkKeyAndValType(type K, type V) {
     if isGenericType(K) {
       compilerWarning('creating a map with key type ', K:string, 2);
-      if isClassType(K) && !isGenericType(borrowed K) {
+      if isClassType(K) && !isGenericType(K:borrowed) {
         compilerWarning('which now means class type with generic ',
                         'management', 2);
       }
@@ -63,7 +71,7 @@ module Map {
     }
     if isGenericType(V) {
       compilerWarning('creating a map with value type ', V:string, 2);
-      if isClassType(V) && !isGenericType(borrowed V) {
+      if isClassType(V) && !isGenericType(V:borrowed) {
         compilerWarning('which now means class type with generic ',
                         'management', 2);
       }
@@ -295,6 +303,30 @@ module Map {
       }
     }
 
+    deprecated "map methods that halt are deprecated, please set the config param :param:`mapMethodsThrow` to 'true' to opt in to using the new methods that throw"
+    proc update(const ref k: keyType, updater) throws
+    where !mapMethodsThrow {
+      _enter(); defer _leave();
+
+      var (isFull, slot) = table.findFullSlot(k);
+
+      // TODO: Allow `--fast` to bypass this check?
+      if !isFull then
+        boundsCheckHalt("map index " + k:string + " out of bounds");
+
+      // TODO: Use table key or argument key?
+      const ref key = table.table[slot].key;
+      ref val = table.table[slot].val;
+
+      import Reflection;
+      if !Reflection.canResolveMethod(updater, "this", key, val) then
+        compilerError('`map.update()` failed to resolve method ' +
+                      updater.type:string + '.this() for arguments (' +
+                      key.type:string + ', ' + val.type:string + ')');
+
+      return updater(key, val);
+    }
+
     /*
       Update a value in this map in a parallel safe manner via an updater
       object.
@@ -317,14 +349,15 @@ module Map {
 
       :return: What the updater returns
     */
-    proc update(const ref k: keyType, updater) throws {
+    proc update(const ref k: keyType, updater) throws
+    where mapMethodsThrow {
       _enter(); defer _leave();
 
       var (isFull, slot) = table.findFullSlot(k);
 
       // TODO: Allow `--fast` to bypass this check?
       if !isFull then
-        boundsCheckHalt("map index " + k:string + " out of bounds");
+        throw new KeyNotFoundError(k:string);
 
       // TODO: Use table key or argument key?
       const ref key = table.table[slot].key;
@@ -353,9 +386,29 @@ module Map {
       :arg k: The key to access
       :type k: keyType
 
+      :throws: `KeyNotFoundError` if `k` not in map
+
       :returns: Reference to the value mapped to the given key.
     */
-    proc ref this(k: keyType) ref where isDefaultInitializable(valType) {
+    proc ref this(k: keyType) ref throws
+    where isDefaultInitializable(valType) &&
+          mapMethodsThrow {
+      _warnForParSafeIndexing();
+
+      _enter(); defer _leave();
+
+      var (_, slot) = table.findAvailableSlot(k);
+      if !table.isSlotFull(slot) {
+        var val: valType;
+        table.fillSlot(slot, k, val);
+      }
+      return table.table[slot].val;
+    }
+
+    deprecated "map methods that halt are deprecated, please set the config param :param:`mapMethodsThrow` to 'true' to opt in to using the new methods that throw"
+    proc ref this(k: keyType) ref
+      where isDefaultInitializable(valType) &&
+            !mapMethodsThrow {
       _warnForParSafeIndexing();
 
       _enter(); defer _leave();
@@ -369,8 +422,26 @@ module Map {
     }
 
     pragma "no doc"
+    proc const this(k: keyType) const throws
+      where shouldReturnRvalueByValue(valType) &&
+            !isNonNilableClass(valType) &&
+            mapMethodsThrow {
+      _warnForParSafeIndexing();
+
+      _enter(); defer _leave();
+      var (found, slot) = table.findFullSlot(k);
+      if !found then
+        throw new KeyNotFoundError(k:string);
+      const result = table.table[slot].val;
+      return result;
+    }
+
+    pragma "no doc"
+    deprecated "map methods that halt are deprecated, please set the config param :param:`mapMethodsThrow` to 'true' to opt in to using the new methods that throw"
     proc const this(k: keyType) const
-    where shouldReturnRvalueByValue(valType) && !isNonNilableClass(valType) {
+      where shouldReturnRvalueByValue(valType) &&
+            !isNonNilableClass(valType) &&
+            !mapMethodsThrow {
       _warnForParSafeIndexing();
 
       _enter(); defer _leave();
@@ -382,8 +453,24 @@ module Map {
     }
 
     pragma "no doc"
+    proc const this(k: keyType) const ref throws
+      where !isNonNilableClass(valType) &&
+            mapMethodsThrow {
+      _warnForParSafeIndexing();
+
+      _enter(); defer _leave();
+      var (found, slot) = table.findFullSlot(k);
+      if !found then
+        throw new KeyNotFoundError(k:string);
+      const ref result = table.table[slot].val;
+      return result;
+    }
+
+    pragma "no doc"
+    deprecated "map methods that halt are deprecated, please set the config param :param:`mapMethodsThrow` to 'true' to opt in to using the new methods that throw"
     proc const this(k: keyType) const ref
-    where !isNonNilableClass(valType) {
+      where !isNonNilableClass(valType) &&
+            !mapMethodsThrow {
       _warnForParSafeIndexing();
 
       _enter(); defer _leave();
@@ -395,15 +482,45 @@ module Map {
     }
 
     pragma "no doc"
+    proc const this(k: keyType) throws
+      where isNonNilableClass(valType) &&
+            mapMethodsThrow {
+      _enter(); defer _leave();
+      var (found, slot) = table.findFullSlot(k);
+      if !found then
+        throw new KeyNotFoundError(k:string);
+      try! {
+        var result = table.table[slot].val.borrow();
+        if isNonNilableClass(valType) {
+          return result!;
+        } else {
+          return result;
+        }
+      }
+    }
+
+    pragma "no doc"
+    deprecated "map methods that halt are deprecated, please set the config param :param:`mapMethodsThrow` to 'true' to opt in to using the new methods that throw"
     proc const this(k: keyType)
-    where isNonNilableClass(valType) {
-      _warnForParSafeIndexing();
-      compilerError("Cannot access nilable class directly. Use an",
-                    " appropriate accessor method instead.");
+      where isNonNilableClass(valType) &&
+            !mapMethodsThrow {
+      _enter(); defer _leave();
+      var (found, slot) = table.findFullSlot(k);
+      if !found then
+        boundsCheckHalt("map index " + k:string + " out of bounds");
+      try! {
+        var result = table.table[slot].val.borrow();
+        if isNonNilableClass(valType) {
+          return result!;
+        } else {
+          return result;
+        }
+      }
     }
 
     /* Get a borrowed reference to the element at position `k`.
      */
+    deprecated "'Map.getBorrowed' is deprecated. Please rely on '[]' accessors instead."
     proc getBorrowed(k: keyType) where isClass(valType) {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
@@ -422,6 +539,7 @@ module Map {
     /* Get a reference to the element at position `k`. This method is not
        available for maps initialized with `parSafe=true`.
      */
+    deprecated "'Map.getReference' is deprecated. Please rely on '[]' accessors instead."
     proc getReference(k: keyType) ref {
       if parSafe then
         compilerError('cannot call `getReference()` on maps initialized ',
@@ -443,6 +561,7 @@ module Map {
 
       :returns: A copy of the value at position `k`
      */
+    deprecated "'Map.getValue' is deprecated. Please rely on '[]' accessors instead."
     proc getValue(k: keyType) const throws {
       if !isCopyableType(valType) then
         compilerError('cannot call `getValue()` for non-copyable ' +
@@ -468,6 +587,22 @@ module Map {
       :returns: A copy of the value at position `k` or a sentinel value
                 if the map does not have an entry at position `k`
     */
+    proc get(k: keyType, const sentinel: valType) const {
+      if !isCopyableType(valType) then
+        compilerError('cannot call `getValue()` for non-copyable ' +
+                      'map value type: ' + valType:string);
+
+      _enter(); defer _leave();
+      var (found, slot) = table.findFullSlot(k);
+      if !found then
+        return sentinel;
+      try! {
+        const result = table.table[slot].val: valType;
+        return result;
+      }
+    }
+
+    deprecated "'Map.getValue' is deprecated. Please use 'Map.get' instead."
     proc getValue(k: keyType, const sentinel: valType) const {
       if !isCopyableType(valType) then
         compilerError('cannot call `getValue()` for non-copyable ' +
@@ -485,6 +620,7 @@ module Map {
 
     /* Remove the element at position `k` from the map and return its value
      */
+    deprecated "'Map.getAndRemove' is deprecated. Consider 'Map.get' and 'Map.remove' instead?"
     proc getAndRemove(k: keyType) {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
@@ -576,8 +712,17 @@ module Map {
 
       :arg ch: A channel to read from.
     */
-    proc readThis(ch: channel) throws {
+    proc readThis(ch: fileReader) throws {
       _readWriteHelper(ch);
+    }
+
+    //
+    // TODO: rewrite to use formatter interface
+    //
+    pragma "no doc"
+    proc init(type keyType, type valType, param parSafe=false, r: fileReader) {
+      this.init(keyType, valType, parSafe);
+      readThis(r);
     }
 
     /*
@@ -589,12 +734,12 @@ module Map {
 
       :arg ch: A channel to write to.
     */
-    proc writeThis(ch: channel) throws {
+    proc writeThis(ch: fileWriter) throws {
       _readWriteHelper(ch);
     }
 
     pragma "no doc"
-    proc _readWriteHelper(ch: channel) throws {
+    proc _readWriteHelper(ch) throws {
       _enter(); defer _leave();
       var first = true;
       proc rwLiteral(lit:string) throws {
@@ -645,6 +790,10 @@ module Map {
       return true;
     }
 
+    deprecated "'Map.set' is deprecated. Please use 'Map.replace' instead."
+    proc set(k: keyType, in v: valType): bool {
+      return this.replace(k, v);
+    }
 
     /*
       Sets the value associated with a key. Method returns `false` if the key
@@ -660,7 +809,7 @@ module Map {
                `false` otherwise.
      :rtype: bool
     */
-    proc set(k: keyType, in v: valType): bool {
+    proc replace(k: keyType, in v: valType): bool {
       _enter(); defer _leave();
       var (found, slot) = table.findAvailableSlot(k);
       if !found {
@@ -783,7 +932,7 @@ module Map {
     lhs.clear();
     try! {
       for key in rhs.keys() {
-        lhs.add(key, rhs.getValue(key));
+        lhs.add(key, rhs[key]);
       }
     }
   }
@@ -818,13 +967,15 @@ module Map {
   */
   operator map.==(const ref a: map(?kt, ?vt, ?ps),
                   const ref b: map(kt, vt, ps)): bool {
-    for key in a.keys() {
-      if !b.contains(key) || a[key] != b[key] then
-        return false;
-    }
-    for key in b.keys() {
-      if !a.contains(key) || a[key] != b[key] then
-        return false;
+    try! {
+      for key in a.keys() {
+        if !b.contains(key) || a[key] != b[key] then
+          return false;
+      }
+      for key in b.keys() {
+        if !a.contains(key) || a[key] != b[key] then
+          return false;
+      }
     }
     return true;
   }
@@ -844,132 +995,6 @@ module Map {
   operator map.!=(const ref a: map(?kt, ?vt, ?ps),
                   const ref b: map(kt, vt, ps)): bool {
     return !(a == b);
-  }
-
-  /* Returns a new map containing the keys and values in either a or b. */
-  deprecated "The `+` operator has been deprecated for map"
-  operator map.+(a: map(?keyType, ?valueType, ?),
-                 b: map(keyType, valueType, ?)) {
-    return a | b;
-  }
-
-  /*
-    Sets the left-hand side map to contain the keys and values in either
-    a or b.
-   */
-  deprecated "The `+=` operator has been deprecated for map"
-  operator map.+=(ref a: map(?keyType, ?valueType, ?),
-                  b: map(keyType, valueType, ?)) {
-    a |= b;
-  }
-
-  /* Returns a new map containing the keys and values in either a or b. */
-  deprecated "The `|` operator has been deprecated for map"
-  operator map.|(a: map(?keyType, ?valueType, ?),
-                 b: map(keyType, valueType, ?)) {
-    var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
-
-    try! { for k in a do newMap.add(k, a.getValue(k)); }
-    try! { for k in b do newMap.add(k, b.getValue(k)); }
-    return newMap;
-  }
-
-  /* Sets the left-hand side map to contain the keys and values in either
-     a or b.
-   */
-  deprecated "The `|=` operator has been deprecated for map"
-  operator map.|=(ref a: map(?keyType, ?valueType, ?),
-                  b: map(keyType, valueType, ?)) {
-    // add keys/values from b to a if they weren't already in a
-    try! { for k in b do a.add(k, b.getValue(k)); }
-  }
-
-  /* Returns a new map containing the keys that are in both a and b. */
-  deprecated "The `&` operator has been deprecated for map"
-  operator map.&(a: map(?keyType, ?valueType, ?),
-                 b: map(keyType, valueType, ?)) {
-    var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
-
-    try! {
-      for k in a.keys() do
-        if b.contains(k) then
-          newMap.add(k, a.getValue(k));
-    }
-
-    return newMap;
-  }
-
-  /* Sets the left-hand side map to contain the keys that are in both a and b.
-   */
-  deprecated "The `&=` operator has been deprecated for map"
-  operator map.&=(ref a: map(?keyType, ?valueType, ?),
-                  b: map(keyType, valueType, ?)) {
-    a = a & b;
-  }
-
-  /* Returns a new map containing the keys that are only in a, but not b. */
-  deprecated "The `-` operator has been deprecated for map"
-  operator map.-(a: map(?keyType, ?valueType, ?),
-                 b: map(keyType, valueType, ?)) {
-    var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
-
-    try! {
-      for ak in a.keys() {
-        if !b.contains(ak) then
-          newMap.add(ak, a.getValue(ak));
-      }
-    }
-
-    return newMap;
-  }
-
-  /* Sets the left-hand side map to contain the keys that are in the
-     left-hand map, but not the right-hand map. */
-  deprecated "The `-=` operator has been deprecated for map"
-  operator map.-=(ref a: map(?keyType, ?valueType, ?),
-                  b: map(keyType, valueType, ?)) {
-    a._enter(); defer a._leave();
-
-    for k in b.keys() {
-      var (found, slot) = a.table.findFullSlot(k);
-      if found {
-        var outKey: keyType, outVal: valueType;
-        a.table.clearSlot(slot, outKey, outVal);
-      }
-    }
-
-    a.table.maybeShrinkAfterRemove();
-  }
-
-  /* Returns a new map containing the keys that are in either a or b, but
-     not both. */
-  deprecated "The `^` operator has been deprecated for map"
-  operator map.^(a: map(?keyType, ?valueType, ?),
-                 b: map(keyType, valueType, ?)) {
-    var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
-
-    try! {
-      for k in a.keys() do
-        if !b.contains(k) then newMap.add(k, a.getValue(k));
-    }
-    try! {
-      for k in b do
-        if !a.contains(k) then newMap.add(k, b.getValue(k));
-    }
-    return newMap;
-  }
-
-  /* Sets the left-hand side map to contain the keys that are in either the
-     left-hand map or the right-hand map, but not both. */
-  deprecated "The `^=` operator has been deprecated for map"
-  operator map.^=(ref a: map(?keyType, ?valueType, ?),
-                  b: map(keyType, valueType, ?)) {
-    try! {
-      for k in b.keys() {
-        if a.contains(k) then a.remove(k);
-        else a.add(k, b.getValue(k));
-      }
-    }
   }
 
   /*

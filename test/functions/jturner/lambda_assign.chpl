@@ -1,4 +1,4 @@
-var f = lambda(x:int) { return x + 1; };
+var f: func(int, int) = lambda(x:int) { return x + 1; };
 var g = lambda(y:int) { return y + 2; };
 
 writeln(f(10));

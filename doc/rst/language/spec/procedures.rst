@@ -12,7 +12,7 @@ this programming-languages sense, rather than in the mathematical sense.
 A function has zero or more *formal arguments*, or simply *formals*.
 Upon a function call each formal is associated with the corresponding
 *actual argument*, or simply *actual*. Actual arguments are provided as
-part of the call expression, or at the the *call site*. Direct and
+part of the call expression, or at the *call site*. Direct and
 indirect recursion is supported.
 
 A function can be a *procedure*, which completes and returns to the call
@@ -123,7 +123,7 @@ Procedures are defined with the following syntax:
    operator-name: one of
      'align' 'by'
      + - * / % ** : ! == != <= >= < > << >> & | ^ ~
-     = += -= *= /= %= **= &= |= ^= <<= >>= <=> <~> #
+     = += -= *= /= %= **= &= |= ^= <<= >>= <=> #
 
    argument-list:
      ( formals[OPT] )
@@ -576,6 +576,42 @@ Abstract Intents
 The abstract intents are ``const`` and the *default intent* (when no
 intent is specified).
 
+.. _The_Const_Intent:
+
+The Const Intent
+^^^^^^^^^^^^^^^^
+
+The ``const`` intent specifies that the function will not and cannot
+modify the formal argument within its dynamic scope. Whether ``const``
+is interpreted as ``const in`` or ``const ref`` intent depends on the
+argument type.  Generally, small values, such as scalar types, will be
+passed by ``const in``; while larger values, such as domains and
+arrays, will be passed by ``const ref`` intent. The
+:ref:`Abstract_Intents_Table` below lists the meaning of the ``const``
+intent for each type.
+
+.. _The_Default_Intent:
+
+The Default Intent
+^^^^^^^^^^^^^^^^^^
+
+When no intent is specified for a formal argument, the *default
+intent* is applied.  It is designed to take the most natural/least
+surprising action for the argument, based on its type.  In practice,
+this is ``const`` for most types (as defined by
+:ref:`The_Const_Intent`) to avoid surprises for programmers coming
+from languages where everything is passed by ``in`` or ``ref`` intent
+by default.  Exceptions are made for types where modification is
+considered part of their nature, such as types used for synchronization
+(like ``atomic``) and arrays.
+
+Default argument passing for tuples generally matches the default
+argument passing strategy that would be applied if each tuple element
+was passed as a separate argument. See :ref:`Tuple_Argument_Intents`.
+
+The :ref:`Abstract_Intents_Table` that follows defines the default
+intent for each type.
+
 .. _Abstract_Intents_Table:
 
 Abstract Intents Table
@@ -584,61 +620,48 @@ Abstract Intents Table
 The following table summarizes what these abstract intents mean for each
 type:
 
-=================== ================ ======================= ====================================================
-\                   meaning of       meaning of             
-type                ``const`` intent default intent          notes
-``bool``            ``const in``     ``const in``           
-``int``             ``const in``     ``const in``           
-``uint``            ``const in``     ``const in``           
-``real``            ``const in``     ``const in``           
-``imag``            ``const in``     ``const in``           
-``complex``         ``const in``     ``const in``           
-``range``           ``const in``     ``const in``           
-``owned class``     ``const ref``    ``const ref``          
-``shared class``    ``const ref``    ``const ref``          
-``borrowed class``  ``const in``     ``const in``           
-``unmanaged class`` ``const in``     ``const in``           
-``atomic``          ``const ref``    ``ref``                
-``single``          ``const ref``    ``ref``                
-``sync``            ``const ref``    ``ref``                
-``string``          ``const ref``    ``const ref``          
-``bytes``           ``const ref``    ``const ref``          
-``record``          ``const ref``    ``const ref``           see :ref:`Default_Intent_for_Arrays_and_Record_this`
-``union``           ``const ref``    ``const ref``          
-``dmap``            ``const ref``    ``const ref``          
-``domain``          ``const ref``    ``const ref``          
-array               ``const ref``    ``ref`` / ``const ref`` see :ref:`Default_Intent_for_Arrays_and_Record_this`
-tuple               per element      per element             see :ref:`Tuple_Argument_Intents`
-=================== ================ ======================= ====================================================
+.. table::
+    :widths: 28 18 22 32
 
-.. _The_Const_Intent:
-
-The Const Intent
-^^^^^^^^^^^^^^^^
-
-The ``const`` intent specifies the intention that the function will not
-and cannot modify the formal argument within its dynamic scope. Whether
-the actual argument will be passed by ``const in`` or ``const ref``
-intent depends on its type. In general, small values, such as scalar
-types, will be passed by ``const in``; while larger values, such as
-domains and arrays, will be passed by ``const ref`` intent. The
-:ref:`Abstract_Intents_Table` earlier in this sub-section lists the
-meaning of the const intent for each type.
-
-.. _The_Default_Intent:
-
-The Default Intent
-^^^^^^^^^^^^^^^^^^
-
-When no intent is specified for a formal argument, the *default intent*
-is applied. It is designed to take the most natural/least surprising
-action for the argument, based on its type.
-The :ref:`Abstract_Intents_Table` earlier in this sub-section lists the
-meaning of the default intent for each type.
-
-Default argument passing for tuples generally matches the default
-argument passing strategy that would be applied if each tuple element
-was passed as a separate argument. See :ref:`Tuple_Argument_Intents`.
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    |                         | ``const`` intent     |                         |                                                      |
+    | Type                    | meaning              | Default intent meaning  | Notes                                                |
+    +=========================+======================+=========================+======================================================+
+    | scalar types            |  ``const in``        | ``const in``            |                                                      |
+    |                         |                      |                         |                                                      |
+    | (``bool``,              |                      |                         |                                                      |
+    | ``int``, ``uint``,      |                      |                         |                                                      |
+    | ``real``, ``imag``,     |                      |                         |                                                      |
+    | ``complex``)            |                      |                         |                                                      |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | string-like types       | ``const ref``        | ``const ref``           |                                                      |
+    |                         |                      |                         |                                                      |
+    | (``string``, ``bytes``) |                      |                         |                                                      |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | ranges                  | ``const in``         | ``const in``            |                                                      |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | domains / domain maps   | ``const ref``        | ``const ref``           |                                                      |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | arrays                  | ``const ref``        | ``ref`` / ``const ref`` | see :ref:`Default_Intent_for_Arrays_and_Record_this` |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | records                 | ``const ref``        | ``const ref``           | see :ref:`Default_Intent_for_Arrays_and_Record_this` |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | auto-managed classes    | ``const ref``        | ``const ref``           | see :ref:`Default_Intent_for_owned_and_shared`       |
+    | (``owned``, ``shared``) |                      |                         |                                                      |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | non-managed classes     | ``const in``         | ``const in``            |                                                      |
+    |                         |                      |                         |                                                      |
+    | (``borrowed``,          |                      |                         |                                                      |
+    | ``unmanaged``)          |                      |                         |                                                      |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | tuples                  | per-element          | per-element             | see :ref:`Tuple_Argument_Intents`                    |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | unions                  | ``const ref``        | ``const ref``           |                                                      |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
+    | synchronization types   | ``const ref``        | ``ref``                 |                                                      |
+    | (``atomic``,            |                      |                         |                                                      |
+    | ``sync``, ``single``)   |                      |                         |                                                      |
+    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
 
 .. _Default_Intent_for_Arrays_and_Record_this:
 
@@ -1045,11 +1068,12 @@ A procedure can return a value by executing a return statement that
 includes an expression. If it does, that expression’s value becomes the
 value of the invoking call expression.
 
-A return statement in a procedure of a non-\ ``void`` return type
-(:ref:`Return_Types`) must include an expression. A return
-statement in a procedure of a ``void`` return type or in an iterator
-must not include an expression. A return statement of a variable
-procedure must contain an lvalue expression.
+A return statement in a procedure of a ``void`` return type
+(:ref:`Return_Types`) or in an iterator must not include an
+expression.  A return statement in a procedure of a non-\ ``void``
+return type must include an expression.  For procedures with ``ref``
+or ``const ref`` return intent, the expression must have storage
+associated with it that will outlive the procedure itself.
 
 The statements following a return statement in the same block
 are ignored by the compiler because they cannot be executed.
@@ -1203,7 +1227,7 @@ binary   ``+`` ``-`` ``*`` ``/`` ``%`` ``**`` ``:``
 binary   ``==`` ``<=`` ``>=`` ``<`` ``>``
 binary   ``<<`` ``>>`` ``&`` ``|`` ``^`` ``#`` ``align`` ``by``
 binary   ``=`` ``+=`` ``-=`` ``*=`` ``/=`` ``%=`` ``**=``
-binary   ``&=`` ``|=`` ``^=`` ``<<=`` ``>>=`` ``<=>`` ``<~>``
+binary   ``&=`` ``|=`` ``^=`` ``<<=`` ``>>=`` ``<=>``
 ======== ===============================
 
 The arity and precedence of the operator must be maintained when it is
@@ -1462,8 +1486,9 @@ mapping:
 1. If one of the formals requires promotion and the other does not, the
    formal not requiring promotion is better
 
-2. If one of the formals is less generic than the other formal, the
-   less-generic formal is better
+2. If both of the formals have the same type after instantiation and one
+   of the formals is less generic than the other formal, the less-generic
+   formal is better
 
 3. If one of the formals is ``param`` and the other is not, the ``param``
    formal is better

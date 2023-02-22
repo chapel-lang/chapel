@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,7 +19,7 @@
  */
 
 /* Version as of Chapel 1.25 - to be updated each release */
-const spackVersion = new VersionInfo('0.15.4');
+const spackVersion = new VersionInfo('0.19.0');
 const major = spackVersion.major:string;
 const minor = spackVersion.minor:string;
 const spackBranch = 'releases/v' + '.'.join(major, minor);
@@ -244,7 +244,7 @@ private proc generateYAML() {
   }
   const reposOverride = 'repos:\n'+
                         '  - ' + MASON_HOME + '/spack-registry/var/spack/repos/builtin \n';
-  var yamlFile = open(yamlFilePath,iomode.cw);
+  var yamlFile = open(yamlFilePath,ioMode.cw);
   var yamlWriter = yamlFile.writer();
   yamlWriter.write(reposOverride);
   yamlWriter.close();
@@ -261,10 +261,10 @@ proc getSpackVersion : VersionInfo {
   const command = "spack --version";
   const tmpVersion = getSpackResult(command,true).strip();
   // on systems with their own spack, spack --version can provide
-  // a version string like x.x.x-xxxx-hash
+  // a version string like x.x.x.xxxx (hash)
   // partitioning the string allows us to separate the major.minor.bug
   // from the remaining values
-  const version = tmpVersion.partition("-");
+  const version = tmpVersion.partition(" ");
   return new VersionInfo(version[0]);
 }
 
@@ -329,7 +329,7 @@ private proc spkgInfo(args: [?d] string) {
   var parser = new argumentParser(helpHandler=new MasonExternalInfoHelpHandler());
 
   var archFlag = parser.addFlag(name="architecture",
-                                opts=["--arch"],
+                                opts=["--arch", ],
                                 defaultValue=false);
   // TODO: Argument parser may need support for mutually exclusive, or
   // required if other value, or not required if other value setups

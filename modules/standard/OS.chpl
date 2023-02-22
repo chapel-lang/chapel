@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -45,7 +45,6 @@ module OS {
   */
   module POSIX {
     public use CTypes;
-    import SysBasic.fd_t;
 
     //
     // sys/types.h
@@ -956,6 +955,23 @@ module OS {
 
   } // end POSIX
 
+/* A type storing an error code or an error message.
+   An :type:`errorCode` can be compared using == or != to a
+   :type:`CTypes.c_int` or to another :type:`errorCode`. An :type:`errorCode`
+   can be cast to or from a :type:`CTypes.c_int`. It can be assigned the
+   value of a :type:`CTypes.c_int` or another :type:`errorCode`. In addition,
+   :type:`errorCode` can be checked directly in an if statement like so:
+
+   .. code-block:: chapel
+
+     var err: errorCode;
+     if err then writeln("err contains an error, ie err != 0");
+     else writeln("err does not contain an error; err == 0");
+
+   The default intent for a formal of type :type:`errorCode` is `const in`.
+
+   The default value of the :type:`errorCode` type is undefined.
+*/
   extern "syserr" type errorCode; // opaque so we can manually override ==,!=,etc
 
   // error numbers
@@ -1018,7 +1034,19 @@ module OS {
 
   private use CTypes;
   private use POSIX;
-  import SysBasic.{EFORMAT,ESHORT,EEOF,ESHUTDOWN,ENOERR};
+
+  /*
+   Private local copies of IO.{EEOF,ESHORT,EFORMAT}, since if we import IO
+   here it modifies module initialization order and causes issues in
+   ChapelLocale.chpl_localeID_to_locale.
+   */
+  private extern proc chpl_macro_int_EEOF():c_int;
+  private extern proc chpl_macro_int_ESHORT():c_int;
+  private extern proc chpl_macro_int_EFORMAT():c_int;
+  private inline proc EEOF return chpl_macro_int_EEOF():c_int;
+  private inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
+  private inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
+
   /*
      :class:`SystemError` is a base class for :class:`Errors.Error` s
      generated from ``errorCode``. It provides factory methods to create
@@ -1039,7 +1067,7 @@ module OS {
        from the internal ``err`` and the ``details`` string.
     */
     override proc message() {
-      var strerror_err: c_int = ENOERR;
+      var strerror_err: c_int = 0;
       var errstr              = sys_strerror_syserr_str(err, strerror_err);
       var err_msg: string;
       try! {
@@ -1051,34 +1079,42 @@ module OS {
 
       return err_msg;
     }
+  }
 
-    /*
-      Return the matching :class:`SystemError` subtype for a given
-      ``errorCode``, with an optional string containing extra details.
-
-      :arg err: the errorCode to generate from
-      :arg details: extra information to include with the error
-    */
-    pragma "insert line file info"
-    pragma "always propagate line file info"
-    deprecated "'SystemError.fromSyserr' is deprecated. Please use 'createSystemError' instead."
-    proc type fromSyserr(err: errorCode, details: string = "") {
-      return createSystemError(err, details);
+  /*
+    Gets the corresponding Chapel-specific IO error class for the given
+    ``errorCode``, or simply the matching :class:`SystemError` subtype if this
+    is not a Chapel-specific IO error.
+  */
+  pragma "no doc"
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc createSystemOrChplError(err: errorCode, details: string = ""): Error {
+    // extract qioerr pointer error message, if present
+    var strerror_err: c_int = 0;
+    var errstr = sys_strerror_syserr_str(err, strerror_err);
+    var err_msg: string;
+    try! {
+      err_msg = createStringWithOwnedBuffer(errstr);
     }
 
-    /*
-      Return the matching :class:`SystemError` subtype for a given error number,
-      with an optional string containing extra details.
-
-      :arg err: the number to generate from
-      :arg details: extra information to include with the error
-    */
-    pragma "insert line file info"
-    pragma "always propagate line file info"
-    deprecated "'SystemError.fromSyserr' is deprecated. Please use 'createSystemError' instead."
-    proc type fromSyserr(err: int, details: string = "") {
-      return createSystemError(err:errorCode, details);
+    // return appropriate error
+    select err {
+      when EEOF do return new owned EofError(details, err_msg);
+      when ESHORT do return new owned UnexpectedEofError(details, err_msg);
+      when EFORMAT do return new owned BadFormatError(details, err_msg);
+      otherwise do return createSystemError(err, details);
     }
+  }
+
+  /*
+    Version of createSystemOrChplError accepting an integer error code.
+  */
+  pragma "no doc"
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc createSystemOrChplError(err: int, details: string = ""): Error {
+    return createSystemOrChplError(err:errorCode, details);
   }
 
   /*
@@ -1090,12 +1126,12 @@ module OS {
   */
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc createSystemError(err: errorCode, details: string = "") {
+  proc createSystemError(err: errorCode, details: string = ""): SystemError {
     if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
       return new owned BlockingIoError(details, err);
     } else if err == ECHILD {
       return new owned ChildProcessError(details, err);
-    } else if err == EPIPE || err == ESHUTDOWN {
+    } else if err == EPIPE {
       return new owned BrokenPipeError(details, err);
     } else if err == ECONNABORTED {
       return new owned ConnectionAbortedError(details, err);
@@ -1119,12 +1155,6 @@ module OS {
       return new owned ProcessLookupError(details, err);
     } else if err == ETIMEDOUT {
       return new owned TimeoutError(details, err);
-    } else if err == EEOF {
-      return new owned EofError(details, err);
-    } else if err == ESHORT {
-      return new owned UnexpectedEofError(details, err);
-    } else if err == EFORMAT {
-      return new owned BadFormatError(details, err);
     } else if err == EIO {
       return new owned IoError(err, details);
     }
@@ -1157,10 +1187,6 @@ module OS {
     }
   }
 
-  pragma "no doc"
-  deprecated "'BlockingIOError' is deprecated, please use 'BlockingIoError' instead"
-  class BlockingIOError: SystemError {}
-
   /*
      :class:`ChildProcessError` is the subclass of :class:`SystemError`
      corresponding to :const:`~POSIX.ECHILD`.
@@ -1183,7 +1209,7 @@ module OS {
 
   /*
      :class:`BrokenPipeError` is the subclass of :class:`ConnectionError`
-     corresponding to :const:`~POSIX.EPIPE` and :const:`SysBasic.ESHUTDOWN`.
+     corresponding to :const:`~POSIX.EPIPE`
   */
   class BrokenPipeError : ConnectionError {
     proc init(details: string = "", err: errorCode = EPIPE:errorCode) {
@@ -1302,61 +1328,155 @@ module OS {
   }
 
   /*
-     :class:`IoError` is the subclass of :class:`SystemError` that serves as the
-     base class for all errors regarding inputs and their formatting.
-     They are typically not directly generated by the OS, but they are
-     used and emitted by the IO module.
+     :class:`IoError` is the subclass of :class:`SystemError` corresponding to
+     EIO.
   */
   class IoError : SystemError {
-    proc init(err: errorCode, details: string = "") {
+    proc init(err: errorCode = EIO, details: string = "") {
       super.init(err, details);
     }
   }
 
-  pragma "no doc"
-  deprecated "'IOError' is deprecated, please use 'IoError' instead"
-  class IOError: SystemError {}
-
   /*
-     :class:`EofError` is the subclass of :class:`IoError` corresponding to
-     :const:`SysBasic.EEOF`.
+     :class:`EofError` is the the Chapel-specific error corresponding to
+     encountering end-of-file.
   */
-  class EofError : IoError {
-    proc init(details: string = "", err: errorCode = EEOF:errorCode) {
-      super.init(err, details);
+  class EofError : Error {
+    var details: string;
+
+    proc init(details: string = "", err_msg: string = "") {
+      this.details = details;
+      this._msg = err_msg;
+    }
+
+    override proc message() {
+      var generatedMsg: string;
+
+      if !_msg.isEmpty() {
+        generatedMsg += _msg;
+      } else {
+        // use default error message based on error code
+        var err:errorCode = EEOF;
+        var strerror_err_ignore: c_int = 0;
+        var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
+        var errorcode_msg: string;
+        try! {
+          errorcode_msg = createStringWithOwnedBuffer(errstr);
+        }
+        generatedMsg += errorcode_msg;
+      }
+
+      // add details if present
+      if !details.isEmpty() then
+        generatedMsg += " (" + details + ")";
+
+      return generatedMsg;
     }
   }
 
-  pragma "no doc"
-  deprecated "'EOFError is deprecated, please use 'EofError instedad"
-  class EOFError : IoError {}
-
   /*
-     :class:`UnexpectedEofError` is the subclass of :class:`IoError`
-     corresponding to :const:`SysBasic.ESHORT`.
+     :class:`UnexpectedEofError` is the Chapel-specific error
+     corresponding to encountering end-of-file before the requested amount of
+     input could be read.
+
+     This error can also occur on some writing operations when a
+     :record:~IO.fileWriter's range has been specified, and the write exceeds
+     the valid range.
   */
-  class UnexpectedEofError : IoError {
-    proc init(details: string = "", err: errorCode = ESHORT:errorCode) {
-      super.init(err, details);
+  class UnexpectedEofError : Error {
+    var details: string;
+
+    proc init(details: string = "", err_msg: string = "") {
+      this.details = details;
+      this._msg = err_msg;
+    }
+
+    override proc message() {
+      var generatedMsg: string;
+
+      if !_msg.isEmpty() {
+        generatedMsg += _msg;
+      } else {
+        // use default error message based on error code
+        var err:errorCode = ESHORT;
+        var strerror_err_ignore: c_int = 0;
+        var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
+        var errorcode_msg: string;
+        try! {
+          errorcode_msg = createStringWithOwnedBuffer(errstr);
+        }
+        generatedMsg += errorcode_msg;
+      }
+
+      // add details if present
+      if !details.isEmpty() then
+        generatedMsg += " (" + details + ")";
+
+      return generatedMsg;
     }
   }
 
-  pragma "no doc"
-  deprecated "'UnexpectedEOFError' is deprecated, please use 'UnexpectedEofError' instead"
-  class UnexpectedEOFError : IoError {}
+  /*
+     :class:`BadFormatError` is the Chapel-specific error corresponding
+     to incorrectly-formatted input.
+  */
+  class BadFormatError : Error {
+    var details: string;
+
+    proc init(details: string = "", err_msg: string = "") {
+      this.details = details;
+      this._msg = err_msg;
+    }
+
+    override proc message() {
+      var generatedMsg: string;
+
+      if !_msg.isEmpty() {
+        generatedMsg += _msg;
+      } else {
+        // use default error message based on error code
+        var err:errorCode = EFORMAT;
+        var strerror_err_ignore: c_int = 0;
+        var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
+        var errorcode_msg: string;
+        try! {
+          errorcode_msg = createStringWithOwnedBuffer(errstr);
+        }
+        generatedMsg += errorcode_msg;
+      }
+
+      // add details if present
+      if !details.isEmpty() then
+        generatedMsg += " (" + details + ")";
+
+      return generatedMsg;
+    }
+  }
 
   /*
-     :class:`BadFormatError` is the subclass of :class:`IoError` corresponding
-     to :const:`SysBasic.EFORMAT`.
+    :class:`InsufficientCapacityError` is a subclass of :class:`IoError`
+    indicating that an IO operation required more storage than was provided
   */
-  class BadFormatError : IoError {
-    proc init(details: string = "", err: errorCode = EFORMAT:errorCode) {
-      super.init(err, details);
+  class InsufficientCapacityError : IoError {
+    proc init(details: string = "") {
+      super.init(ERANGE: errorCode, details);
+    }
+
+    override proc message() {
+      return
+        if details.isEmpty() then
+          "Result too large"
+        else
+          details;
     }
   }
 
   // here's what we need from Sys
-  private extern proc sys_strerror_syserr_str(error:errorCode, out err_in_strerror:c_int):c_string;
+  private extern proc
+  sys_strerror_syserr_str(error
+                          : errorCode, out err_in_strerror
+                          : c_int)
+      : c_string;
 
   /* This function takes in a string and returns it in double-quotes,
      with internal double-quotes escaped with backslash.
@@ -1382,8 +1502,8 @@ module OS {
     }
 }
 
-  /* Create and throw a :class:`SystemError` if an error occurred, formatting a
-     useful message based on the provided arguments. Do nothing if the error
+  /* Create and throw an :class:`Errors.Error` if an error occurred, formatting
+     a useful message based on the provided arguments. Do nothing if the error
      argument does not indicate an error occurred.
 
      :arg error: the error code
@@ -1391,7 +1511,7 @@ module OS {
      :arg path: optionally, a path to include in the thrown error
      :arg offset: optionally, an offset to include in the thrown error
 
-     :throws SystemError: A subtype is thrown when the error argument
+     :throws Error: A subtype is thrown when the error argument
                           indicates an error occurred
  */
   pragma "insert line file info"
@@ -1402,7 +1522,7 @@ module OS {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
       var   details    = msg + " with path " + quotedpath +
                          " offset " + offset:string;
-      throw createSystemError(error, details);
+      throw createSystemOrChplError(error, details);
     }
   }
 
@@ -1414,7 +1534,7 @@ module OS {
     if error {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
       var   details    = msg + " with path " + quotedpath;
-      throw createSystemError(error, details);
+      throw createSystemOrChplError(error, details);
     }
   }
 
@@ -1423,7 +1543,7 @@ module OS {
   pragma "always propagate line file info"
   proc ioerror(error:errorCode, msg:string) throws
   {
-    if error then throw createSystemError(error, msg);
+    if error then throw createSystemOrChplError(error, msg);
   }
 
   /* Create and throw an :class:`IoError` and include a formatted message
@@ -1443,7 +1563,7 @@ module OS {
     const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
     const details    = errstr + " " + msg + " with path " + quotedpath +
                        " offset " + offset:string;
-    throw createSystemError(EIO:errorCode, details);
+    throw createSystemOrChplError(EIO:errorCode, details);
   }
 
   /* Convert a errorCode code to a human-readable string describing the error.
@@ -1453,7 +1573,7 @@ module OS {
    */
   proc errorToString(error:errorCode):string
   {
-    var strerror_err:c_int = ENOERR;
+    var strerror_err:c_int = 0;
     const errstr = sys_strerror_syserr_str(error, strerror_err);
     try! {
       return createStringWithOwnedBuffer(errstr);

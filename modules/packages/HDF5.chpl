@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1038,7 +1038,7 @@ module HDF5 {
 
     extern proc H5Epop(err_stack : hid_t, count : c_size_t) : herr_t;
 
-    extern proc H5Eprint2(err_stack : hid_t, ref stream : _file) : herr_t;
+    extern proc H5Eprint2(err_stack : hid_t, ref stream : c_FILE) : herr_t;
 
     extern proc H5Ewalk2(err_stack : hid_t, direction : H5E_direction_t, func : H5E_walk2_t, client_data : c_void_ptr) : herr_t;
 
@@ -1060,7 +1060,7 @@ module HDF5 {
 
     extern proc H5Epush1(file : c_string, func : c_string, line : c_uint, maj : H5E_major_t, min : H5E_minor_t, str : c_string) : herr_t;
 
-    extern proc H5Eprint1(ref stream : _file) : herr_t;
+    extern proc H5Eprint1(ref stream : c_FILE) : herr_t;
 
     extern proc H5Eset_auto1(func : H5E_auto1_t, client_data : c_void_ptr) : herr_t;
 
@@ -3533,7 +3533,7 @@ module HDF5 {
     use FileSystem, List;
 
     var filenames: list(string);
-    for f in findfiles(dirName) {
+    for f in findFiles(dirName) {
       if f.startsWith(dirName + '/' + filenameStart:string) &&
          f.endsWith(".h5") {
         filenames.append(f);
@@ -3767,17 +3767,17 @@ module HDF5 {
           const readCount = min(dims[0]:int-inOffset, chunkShape.size);
           var A: [0..#readCount] eltType;
 
-          var inOffsetArr = [inOffset: C_HDF5.hsize_t],
-              inCountArr  = [readCount: C_HDF5.hsize_t];
+          var inOffsetArr = [inOffset: C_HDF5.hsize_t, ],
+              inCountArr  = [readCount: C_HDF5.hsize_t, ];
 
           C_HDF5.H5Sselect_hyperslab(dataspace,
                                      C_HDF5.H5S_SELECT_SET,
                                      c_ptrTo(inOffsetArr), nil,
                                      c_ptrTo(inCountArr), nil);
 
-          var outDims   = [readCount: C_HDF5.hsize_t],
-              outOffset = [0: C_HDF5.hsize_t],
-              outCount  = [readCount: C_HDF5.hsize_t];
+          var outDims   = [readCount: C_HDF5.hsize_t, ],
+              outOffset = [0: C_HDF5.hsize_t, ],
+              outCount  = [readCount: C_HDF5.hsize_t, ];
 
           var memspace = C_HDF5.H5Screate_simple(1, c_ptrTo(outDims), nil);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -58,8 +58,6 @@ public:
   void                verify() override;
 
   void                accept(AstVisitor* visitor) override;
-
-  void                printDocs(std::ostream* file, unsigned int tabs);
 
   bool                        isClass()                                  const;
   bool                        isRecord()                                 const;
@@ -160,6 +158,7 @@ public:
   bool                        wantsDefaultInitializer()                  const;
 
   void                        buildDefaultInitializer();
+  void                        buildReaderInitializer();
 
   void                        buildCopyInitializer();
 
@@ -187,6 +186,7 @@ public:
   DecoratedClassType*         decoratedClasses[NUM_PACKED_DECORATED_TYPES];
 
   bool                        builtDefaultInit;
+  bool                        builtReaderInit;
 
   AggregateType*              instantiatedFrom;
 
@@ -262,14 +262,17 @@ private:
 
   void                        fieldToArg(FnSymbol*              fn,
                                          std::set<const char*>& names,
-                                         SymbolMap&             fieldArgMap);
+                                         SymbolMap&             fieldArgMap,
+                                         ArgSymbol*             fileReader,
+                                         VarSymbol*             formatter);
 
   void                        fieldToArgType(DefExpr*   fieldDef,
                                              ArgSymbol* arg);
 
-  bool                        addSuperArgs(FnSymbol*                    fn,
-                                           const std::set<const char*>& names,
-                                           SymbolMap&                   fieldArgMap);
+  bool                        handleSuperFields(FnSymbol*                    fn,
+                                                const std::set<const char*>& names,
+                                                SymbolMap&                   fieldArgMap,
+                                                ArgSymbol* fileReader = nullptr);
 
   std::vector<AggregateType*> instantiations;
 

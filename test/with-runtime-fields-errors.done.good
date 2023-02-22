@@ -1,3 +1,0 @@
-with-runtime-fields-errors.chpl:2: In module 'w':
-with-runtime-fields-errors.chpl:27: warning: creating a 'new borrowed' type is deprecated
-done

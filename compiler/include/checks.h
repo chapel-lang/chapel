@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,8 +23,8 @@
 #define CHECKS_H
 
 // These are the entry points for per-pass checks.
-void check_parse();
-void check_checkParsed();
+void check_parseAndConvertUast();
+void check_checkUast();
 void check_readExternC();
 void check_expandExternArrayCalls();
 void check_cleanup();

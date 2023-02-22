@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -101,52 +101,35 @@ module ChapelArray {
   // with a privatized value that can be retrieved by the pid
   // without communication.
   proc _newPrivatizedClass(value) : int {
-
-    const n = numPrivateObjects.fetchAdd(1);
-
+    const pid = numPrivateObjects.fetchAdd(1);
     const hereID = here.id;
     const privatizeData = value.dsiGetPrivatizeData();
-    on Locales[0] do
-      _newPrivatizedClassHelp(value, value, n, hereID);
+    const definedConst = if isSubtype(value.type, BaseDom) then value.definedConst
+                                                           else none;
 
-    proc _newPrivatizedClassHelp(parentValue, originalValue, n, hereID) {
-      var newValue = originalValue;
+    coforall loc in Locales do on loc {
       if hereID != here.id {
-        newValue = parentValue.dsiPrivatize(privatizeData);
-        if isSubtype(parentValue.type, BaseDom) {
-          newValue.definedConst = parentValue.definedConst;
+        var newValue = value.dsiPrivatize(privatizeData);
+        if isSubtype(value.type, BaseDom) {
+          newValue.definedConst = definedConst;
         }
-        __primitive("chpl_newPrivatizedClass", newValue, n);
-        newValue.pid = n;
+        __primitive("chpl_newPrivatizedClass", newValue, pid);
+        newValue.pid = pid;
       } else {
-        __primitive("chpl_newPrivatizedClass", newValue, n);
-        newValue.pid = n;
-      }
-      cobegin {
-        if chpl_localeTree.left._instance != nil then
-          on chpl_localeTree.left do
-            _newPrivatizedClassHelp(newValue, originalValue, n, hereID);
-        if chpl_localeTree.right._instance != nil then
-          on chpl_localeTree.right do
-            _newPrivatizedClassHelp(newValue, originalValue, n, hereID);
+        __primitive("chpl_newPrivatizedClass", value, pid);
+        value.pid = pid;
       }
     }
-
-    return n;
+    return pid;
   }
 
   // original is the value this method shouldn't free, because it's the
   // canonical version. The rest are copies on other locales.
-  proc _freePrivatizedClass(pid:int, original:object):void
-  {
+  proc _freePrivatizedClass(pid:int, original:object) : void  {
     // Do nothing for null pids.
     if pid == nullPid then return;
 
-    on Locales[0] {
-      _freePrivatizedClassHelp(pid, original);
-    }
-
-    proc _freePrivatizedClassHelp(pid, original) {
+    coforall loc in Locales do on loc {
       var prv = chpl_getPrivatizedCopy(unmanaged object, pid);
       if prv != original then
         delete prv;
@@ -154,37 +137,19 @@ module ChapelArray {
       extern proc chpl_clearPrivatizedClass(pid:int);
       chpl_clearPrivatizedClass(pid);
 
-      cobegin {
-        if chpl_localeTree.left._instance != nil then
-          on chpl_localeTree.left do
-            _freePrivatizedClassHelp(pid, original);
-        if chpl_localeTree.right._instance != nil then
-          on chpl_localeTree.right do
-            _freePrivatizedClassHelp(pid, original);
-      }
     }
   }
 
-  proc _reprivatize(value) {
+  proc _reprivatize(value) : void {
     const pid = value.pid;
     const hereID = here.id;
     const reprivatizeData = value.dsiGetReprivatizeData();
-    on Locales[0] do
-      _reprivatizeHelp(value, value, pid, hereID);
 
-    proc _reprivatizeHelp(parentValue, originalValue, pid, hereID) {
-      var newValue = originalValue;
+    coforall loc in Locales do on loc {
+      var newValue = value;
       if hereID != here.id {
         newValue = chpl_getPrivatizedCopy(newValue.type, pid);
-        newValue.dsiReprivatize(parentValue, reprivatizeData);
-      }
-      cobegin {
-        if chpl_localeTree.left._instance != nil then
-          on chpl_localeTree.left do
-            _reprivatizeHelp(newValue, originalValue, pid, hereID);
-        if chpl_localeTree.right._instance != nil then
-          on chpl_localeTree.right do
-            _reprivatizeHelp(newValue, originalValue, pid, hereID);
+        newValue.dsiReprivatize(value, reprivatizeData);
       }
     }
   }
@@ -271,10 +236,6 @@ module ChapelArray {
   }
 
 
-  proc _getLiteralType(type t) type {
-    if t != c_string then return t;
-    else return string;
-  }
   /*
    * Support for array literal expressions.
    *
@@ -294,6 +255,14 @@ module ChapelArray {
   pragma "no doc"
   config param capturedIteratorLowBound = defaultLowBound;
 
+  /* The traditional one-argument form of :proc:`.find()` on arrays
+     has been deprecated in favor of a new interface.  Compiling with
+     this set to `true` will opt into that new interface.  Note that
+     there is also a new two-argument form that is available
+     regardless of this setting. */
+  config param useNewArrayFind = false;
+
+
   pragma "ignore transfer errors"
   proc chpl__buildArrayExpr( pragma "no auto destroy" in elems ...?k ) {
 
@@ -303,23 +272,36 @@ module ChapelArray {
                       " If so, use {...} instead of [...].");
     }
 
+    param homog = isHomogeneousTuple(elems);
+
     // elements of string literals are assumed to be of type string
-    type eltType = _getLiteralType(elems(0).type);
+    type eltType = if homog then elems(0).type
+                            else chpl_computeUnifiedType(elems);
+
     var dom = {arrayLiteralLowBound..#k};
     var arr = dom.buildArray(eltType, initElts=false);
 
-    for param i in 0..k-1 {
-      type currType = _getLiteralType(elems(i).type);
-
-      if currType != eltType {
-        compilerError( "Array literal element " + i:string +
-                       " expected to be of type " + eltType:string +
-                       " but is of type " + currType:string );
+    if homog {
+      for i in 0..<k {
+        ref dst = arr(i+arrayLiteralLowBound);
+        ref src = elems(i);
+        __primitive("=", dst, src);
       }
+    } else {
+      for param i in 0..k-1 {
+        ref dst = arr(i+arrayLiteralLowBound);
+        ref src = elems(i);
+        type currType = src.type;
 
-      ref src = elems(i);
-      ref dst = arr(i+arrayLiteralLowBound);
-      __primitive("=", dst, src);
+        if (currType == eltType ||
+            Reflection.canResolve("=", dst, src)) {
+          __primitive("=", dst, src);
+        } else {
+          compilerError( "Array literal element " + i:string +
+                         " expected to be of type " + eltType:string +
+                         " but is of type " + currType:string );
+        }
+      }
     }
 
     arr.dsiElementInitializationComplete();
@@ -327,9 +309,37 @@ module ChapelArray {
     return arr;
   }
 
+  // For a given tuple, compute whether it has a potential unified
+  // type by leaning on return type unification via the following
+  // helper routine.  Ultimately, it should be the compiler doing this
+  // rather than this module code, but this is a nice short-term
+  // workaround until 'dyno' is ready for it.
+  proc chpl_computeUnifiedType(x: _tuple) type {
+    if isHomogeneousTuple(x) {
+      return x(0).type;
+    } else {
+      return chpl_computeUnifiedTypeHelp(x).type;
+    }
+  }
+
+  // For a given tuple, set up a return per element in order to
+  // leverage return type unification to determine whether there is a
+  // common type that can be used.  Note that the purpose of the
+  // seemingly unused 'j' argument is to avoid having the compiler
+  // fold it down to a single return statement if we relied on a param
+  // check against 0.
+  pragma "compute unified type helper"
+  proc chpl_computeUnifiedTypeHelp(x: _tuple, j: int=0) {
+    for param i in 0..<x.size {
+      if i == j then
+        return x(i);
+    }
+    halt("Should never get here");
+  }
+
   proc chpl__buildAssociativeArrayExpr( elems ...?k ) {
-    type keyType = _getLiteralType(elems(0).type);
-    type valType = _getLiteralType(elems(1).type);
+    type keyType = elems(0).type;
+    type valType = elems(1).type;
     var D : domain(keyType);
 
     //Size the domain appropriately for the number of keys
@@ -343,8 +353,8 @@ module ChapelArray {
     for param i in 0..k-1 by 2 {
       var elemKey = elems(i);
       var elemVal = elems(i+1);
-      type elemKeyType = _getLiteralType(elemKey.type);
-      type elemValType = _getLiteralType(elemVal.type);
+      type elemKeyType = elemKey.type;
+      type elemValType = elemVal.type;
 
       if elemKeyType != keyType {
         compilerError("Associative array key element " + (i/2):string +
@@ -372,7 +382,7 @@ module ChapelArray {
   // increment/decrement the reference count based on the
   // number of indices in the outer domain instead; this could
   // cause the domain to be deallocated prematurely in the
-  // case the the outer domain was empty.  For example:
+  // case the outer domain was empty.  For example:
   //
   //   var D = {1..0};   // start empty; we'll resize later
   //   var A: [D] [1..2] real;
@@ -431,9 +441,12 @@ module ChapelArray {
                          definedConst: bool) {
     if definedConst {
       if dom.isRectangular() {
-        const distDom: domain(dom.rank,
+        const distDom = new _domain(d.newRectangularDom(
+                              dom.rank,
                               dom._value.idxType,
-                              dom._value.stridable) dmapped d = dom;
+                              dom._value.stridable,
+                              dom.dims(),
+                              definedConst));
         return distDom;
       } else {
         const distDom: domain(dom._value.idxType) dmapped d = dom;
@@ -442,7 +455,13 @@ module ChapelArray {
     }
     else {
       if dom.isRectangular() {
-        var distDom: domain(dom.rank, dom._value.idxType, dom._value.stridable) dmapped d = dom;
+        var distDom = new _domain(d.newRectangularDom(
+                              dom.rank,
+                              dom._value.idxType,
+                              dom._value.stridable,
+                              dom.dims(),
+                              definedConst));
+
         return distDom;
       } else {
         var distDom: domain(dom._value.idxType) dmapped d = dom;
@@ -599,18 +618,6 @@ module ChapelArray {
 
   proc chpl__buildIndexType(d: domain) type
     return chpl__buildIndexType(d.rank, d._value.idxType);
-
-  deprecated "isRectangularArr is deprecated - please use isRectangular method on array"
-  proc isRectangularArr(a: []) param return a.isRectangular();
-
-  deprecated "isIrregularArr is deprecated - please use isIrregular method on array"
-  proc isIrregularArr(a: []) param return a.isIrregular();
-
-  deprecated "isAssociativeArr is deprecated - please use isAssociative method on array"
-  proc isAssociativeArr(a: []) param return a.isAssociative();
-
-  deprecated "isSparseArr is deprecated - please use isSparse method on array"
-  proc isSparseArr(a: []) param return a.isSparse();
 
   // Helper function used to ensure a returned array matches the declared
   // return type when the declared return type specifies a particular element
@@ -789,7 +796,19 @@ module ChapelArray {
       f.read(_value);
     }
 
+    // TODO: Can't this be an initializer?
+    pragma "no doc"
+    proc type decodeFrom(f) throws {
+      var ret : this;
+      ret.readThis(f);
+      return ret;
+    }
+
     proc writeThis(f) throws {
+      f.write(_value);
+    }
+    pragma "no doc"
+    proc encodeTo(f) throws {
       f.write(_value);
     }
 
@@ -882,8 +901,16 @@ module ChapelArray {
     /* The type of elements contained in the array */
     proc eltType type return _value.eltType;
 
-    /* The type of indices used in the array's domain */
+    /* The type used to represent the array's indices.  For a
+       multidimensional array, this is the per-dimension type used. */
     proc idxType type return _value.idxType;
+
+    /* The type used to represent the array's indices.  For a
+       1-dimensional or associatve array, this will be the same as
+       :proc:`idxType` above.  For a multidimensional array, it will be
+       :proc:`rank` * :proc:`idxType`. */
+    proc fullIdxType type return this.domain.fullIdxType;
+
     proc intIdxType type return chpl__idxTypeToIntIdxType(_value.idxType);
 
     pragma "no copy return"
@@ -1563,6 +1590,15 @@ module ChapelArray {
       _value.dsiSerialWrite(f);
     }
 
+    // Note: This 'encodeTo' is required at the moment because the compiler
+    // generated 'encodeTo', like 'writeThis' is considered to be a last
+    // resort. Without this method we would incur promotion when trying
+    // to print arrays.
+    pragma "no doc"
+    proc encodeTo(f) throws {
+      writeThis(f);
+    }
+
     pragma "no doc"
     proc readThis(f) throws {
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
@@ -1572,6 +1608,15 @@ module ChapelArray {
       }
 
       _value.dsiSerialRead(f);
+    }
+
+    // TODO: Can we convert this to an initializer despite the potential issues
+    // with runtime types?
+    pragma "no doc"
+    proc type decodeFrom(f) throws {
+      var ret : this;
+      ret.readThis(f);
+      return ret;
     }
 
     // sparse array interface
@@ -1586,7 +1631,7 @@ module ChapelArray {
     }
 
     /* Yield the array elements in sorted order. */
-    @unstable "'Array.sorted' is unstable"
+    deprecated "'Array.sorted' is deprecated - use Sort.sort instead"
     iter sorted(comparator:?t = chpl_defaultComparator()) {
       if Reflection.canResolveMethod(_value, "dsiSorted", comparator) {
         for i in _value.dsiSorted(comparator) {
@@ -1680,7 +1725,7 @@ module ChapelArray {
     // documentation. Don't document it for now.
     pragma "no doc"
     proc head(): this._value.eltType {
-      return this[this.domain.alignedLow];
+      return this[this.domain.low];
     }
 
     /* Return the last value in the array */
@@ -1688,7 +1733,7 @@ module ChapelArray {
     // documentation. Don't document it for now.
     pragma "no doc"
     proc tail(): this._value.eltType {
-      return this[this.domain.alignedHigh];
+      return this[this.domain.high];
     }
 
     /* Return the last element in the array. The array must be a
@@ -1718,13 +1763,13 @@ module ChapelArray {
     }
 
     /* Reverse the order of the values in the array. */
-    @unstable "'Array.reverse' is unstable"
+    deprecated "'Array.reverse' is deprecated"
     proc reverse() {
       if (!chpl__isDense1DArray()) then
         compilerError("reverse() is only supported on dense 1D arrays");
-      const lo = this.domain.alignedLow,
+      const lo = this.domain.low,
             mid = this.domain.sizeAs(this.idxType) / 2,
-            hi = this.domain.alignedHigh;
+            hi = this.domain.high;
       for i in 0..#mid {
         this[lo + i] <=> this[hi - i];
       }
@@ -1734,13 +1779,79 @@ module ChapelArray {
        instance of ``val`` in the array, or if ``val`` is not found, a
        tuple containing ``false`` and an unspecified value is returned.
      */
-     @unstable "'Array.find' is unstable"
-     proc find(val: this.eltType): (bool, index(this.domain)) {
+     deprecated "The tuple-returning version of '.find()' on arrays is deprecated; to opt into the new index-returning version, recompile with '-suseNewArrayFind'.  Also, note that there is a new two-argument '.find()' that may be preferable in some situations, and it requires no compiler flag to use."
+     proc find(val: this.eltType): (bool, index(this.domain)) where !useNewArrayFind {
       for i in this.domain {
         if this[i] == val then return (true, i);
       }
       var arbInd: index(this.domain);
       return (false, arbInd);
+    }
+
+
+    /*
+
+      Search an array for ``val``, returning whether or not it is
+      found.  If the value is found, the index storing it is returned
+      in ``idx``.  If multiple copies of it are found, the
+      lexicographically earliest index will be returned.  If it is not
+      found, the resulting value of ``idx`` is unspecified.
+
+    */
+    proc find(val: eltType, ref idx: fullIdxType): bool {
+      // For the sparse case, start by seeing if the IRV is what we're
+      // looking for.  If so, iterate over the parent domain to look
+      // for the value or an index not represented in the array.  This
+      // assumes that we're likely to find a case of the IRV fast.
+      // Otherwise, fall through to the normal case to just search the
+      // explicitly represented values.
+      if this.isSparse() && val == this.IRV {
+        for i in this.domain._value.parentDom {
+          // If we find an index representing the IRV, return it; if
+          // it has an explicit value, it may still be the IRV, so
+          // check it.
+          if !this.domain.contains(i) || this[i] == val {
+            idx = i;
+            return true;
+          }
+        }
+      } else {
+        for i in this.domain {
+          if this[i] == val {
+            idx = i;
+            return true;
+          }
+        }
+      }
+
+      // We didn't find it, so return false.
+      return false;
+    }
+
+    /*
+
+      Search a rectangular array with integral indices for ``val``,
+      returning the index where it is found.  If the array contains
+      multiple copies of ``val``, the lexicographically earliest index
+      will be returned.  If ``val`` is not found,
+      ``domain.lowBound-1`` will be returned instead.
+
+      Note that for arrays with ``idxType=int(?w)`` (signed ``int``
+      indices), if the low bound in a dimension is ``min(int(w))``,
+      the result will not be well-defined.
+
+    */
+    proc find(val: eltType): fullIdxType {
+      if !(this.isRectangular() || this.isSparse()) ||
+         !isIntegralType(this.idxType) then
+        compilerError("This array type does not currently support the 1-argument '.find()' method; try using the 2-argument version'");
+
+      var idx: fullIdxType;
+      if find(val, idx) then
+        return idx;
+      else
+        // The following relies on tuple promotion for multidimensional arrays.
+        return this.domain.lowBound - 1;
     }
 
     /* Return the number of times ``val`` occurs in the array. */
@@ -1996,6 +2107,7 @@ module ChapelArray {
   proc _validRankChangeArgs(args, type idxType) param {
     proc _validRankChangeArg(type idxType, r: range(?)) param return true;
     proc _validRankChangeArg(type idxType, i: idxType) param return true;
+    pragma "last resort"
     proc _validRankChangeArg(type idxType, x) param return false;
 
     /*
@@ -2337,7 +2449,7 @@ module ChapelArray {
 
      // TODO can we omit the following check and bulk transfer narrow
      // pointers, too
-    if __primitive("is wide pointer", a[aDom.alignedLow]) {
+    if __primitive("is wide pointer", a[aDom.low]) {
       return chpl__bulkTransferArray(a, aDom, b, bDom);
     }
     return false;
@@ -2541,7 +2653,16 @@ module ChapelArray {
   }
 
   pragma "no doc"
-  inline operator =(ref a: [], b) /* b is not an array nor a domain nor a tuple */ {
+  inline operator =(ref a: [], b: _iteratorRecord) {
+    // e.g. b might be a list
+    chpl__transferArray(a, b);
+  }
+
+  pragma "last resort"
+  pragma "no doc"
+  inline operator =(ref a: [], b: ?t)
+  where !(isTupleType(t) || isCoercible(t, _desync(a.eltType))) {
+    // e.g. b might be a list
     chpl__transferArray(a, b);
   }
 
@@ -3153,6 +3274,7 @@ module ChapelArray {
 
   pragma "find user line"
   pragma "coerce fn"
+  pragma "last resort"
   proc chpl__coerceCopy(type dstType:_array, rhs, definedConst: bool) {
     // assumes rhs is iterable (e.g. list)
 
@@ -3171,6 +3293,7 @@ module ChapelArray {
   }
   pragma "find user line"
   pragma "coerce fn"
+  pragma "last resort"
   proc chpl__coerceMove(type dstType:_array, in rhs, definedConst: bool) {
     // assumes rhs is iterable (e.g. list)
 
@@ -3472,7 +3595,7 @@ module ChapelArray {
       halt("An array can only be passed to an external routine from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
 
     use CTypes;
-    const ptr = c_pointer_return(arr[arr.domain.alignedLow]);
+    const ptr = c_pointer_return(arr[arr.domain.low]);
     if castToVoidStar then
       return ptr: c_void_ptr;
     else

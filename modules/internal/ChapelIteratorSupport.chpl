@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -362,6 +362,11 @@ module ChapelIteratorSupport {
         first = false;
       f.write(e);
     }
+  }
+
+  pragma "no doc"
+  proc _iteratorRecord.encodeTo(f) throws {
+    writeThis(f);
   }
 
   operator =(ref ic: _iteratorRecord, xs) {

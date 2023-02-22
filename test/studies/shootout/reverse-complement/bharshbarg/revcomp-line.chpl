@@ -10,9 +10,9 @@ private use IO, CTypes;
    This is very ugly because we don't have good IO support for
    reading/writing buffers. The 'data' buffer is included in the
    'buf' record so that we know exactly how many bytes to read
-   with 'readBytes'. This is so that we don't accidentally read
+   with 'readBinary'. This is so that we don't accidentally read
    past the end of the file and get an error. This would be bad
-   because 'readBytes' doesn't tell us how many bytes it actually
+   because 'readBinary' doesn't tell us how many bytes it actually
    read...
 */
 
@@ -26,7 +26,7 @@ record buf {
   const bufSize : int;
   var buf : [0..#bufSize] uint(8);
   var cur, cap, numLeft : int;
-  var chan : channel(writing=false, kind=iokind.native, locking=false);
+  var chan : fileReader(kind=iokind.native, locking=false);
 
   proc init(fi:file, bs:int) {
     this.bufSize = bs;
@@ -42,7 +42,7 @@ record buf {
     if cur >= cap {
       if numLeft > 0 {
         cap = min(bufSize, numLeft);
-        chan.readBytes(c_ptrTo(buf), cap:c_ssize_t);
+        chan.readBinary(c_ptrTo(buf), cap:c_ssize_t);
         numLeft -= cap;
 
         // ensure we return an empty slice if we run out of bytes
@@ -98,7 +98,7 @@ record buf {
 config const readSize = 16 * 1024;
 
 proc main(args: [] string) {
-  const stdin = openfd(0);
+  const stdin = new file(0);
   var input = new buf(stdin, readSize);
   var data: list(uint(8));
   
@@ -128,8 +128,8 @@ proc main(args: [] string) {
     process(data, sectionStart, data.size-2);
   }
 
-  const stdoutBin = openfd(1).writer(iokind.native, locking=false, 
-                                     hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
+  const stdoutBin = (new file(1)).writer(iokind.native, locking=false,
+                                         hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
   //
   // Necessary for now because list `readWriteThis` includes formatting chars,
   // while arrays do not.

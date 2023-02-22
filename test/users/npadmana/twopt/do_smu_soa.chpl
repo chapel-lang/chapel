@@ -35,7 +35,7 @@ config const nmubins=5;
 config const nsbins=5;
 
 // Global variables
-var gtime1 : Timer;
+var gtime1 : stopwatch;
 
 proc main() {
   doPairs();
@@ -114,10 +114,10 @@ class Particle3D {
 
 
 proc countLines(fn : string) : int {
-  var ff = open(fn, iomode.r);
+  var fr = openreader(fn);
   var ipart = 0;
-  for iff in ff.lines() do ipart +=1;
-  ff.close();
+  for iff in fr.lines() do ipart +=1;
+  fr.close();
   return ipart;
 }
 
@@ -292,7 +292,7 @@ proc smuAccumulate(hh : UniformBins, p1,p2 : Particle3D, d1,d2 : domain(1), scal
 }
 
 proc doPairs() {
-  var tt : Timer;
+  var tt : stopwatch;
 
   // Read in the file
   tt.clear(); tt.start();
@@ -353,4 +353,3 @@ proc initialPP(fn) {
     writeHist(stdout,hh,"%20.5er ");
   }
 }
-

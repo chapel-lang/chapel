@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,20 +35,28 @@ class Expr;
 // (assumed to get copied upon assignment and parameter passing)
 class astlocT {
 private:
+  // Primarily, astlocT stores the location in the id_ field,
+  // which is computed for each AST element by the dyno parser.
+  chpl::ID            id_;        // id from dyno
+
+  // Secondarily, an astlocT can store a filename / line number
+  // directly for use in extern C blocks.
+  // Also, the filename and line number fields are used to
+  // cache the result of running the query to compute that
+  // information from the ID.
   mutable const char* filename_;  // filename of location
   mutable int         lineno_;    // line number of location
-  chpl::ID            id_;        // id from compiler/dyno
 
 public:
   astlocT(int linenoArg, const char* filenameArg)
-    : filename_(filenameArg), lineno_(linenoArg), id_()
+    : id_(), filename_(filenameArg), lineno_(linenoArg)
   {
     if (filenameArg != nullptr && strlen(filenameArg) > 0)
       assert(astr(filename_) == filename_);
   }
 
   astlocT(chpl::ID id)
-    : filename_(nullptr), lineno_(0), id_(std::move(id))
+    : id_(std::move(id)), filename_(nullptr), lineno_(0)
   { }
 
   int compare(const astlocT& other) const;

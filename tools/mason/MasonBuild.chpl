@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -92,7 +92,7 @@ proc masonBuild(args: [] string, checkProj=true) throws {
     const configNames = updateLock(skipUpdate);
     const tomlName = configNames[0];
     const lockName = configNames[1];
-    buildProgram(release, show, force, compopts, tomlName, lockName);
+    buildProgram(release, show, force, skipUpdate, compopts, tomlName, lockName);
   }
 }
 
@@ -106,14 +106,15 @@ private proc checkChplVersion(lockFile : borrowed Toml) throws {
 }
 
 
-proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: list(string),
-                  tomlName="Mason.toml", lockName="Mason.lock") throws {
+proc buildProgram(release: bool, show: bool, force: bool, skipUpdate: bool,
+                  ref cmdLineCompopts: list(string), tomlName="Mason.toml",
+                  lockName="Mason.lock") throws {
 
   try! {
 
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd, tomlName);
-    const toParse = open(projectHome + "/" + lockName, iomode.r);
+    const toParse = open(projectHome + "/" + lockName, ioMode.r);
     var lockFile = parseToml(toParse);
     const projectName = lockFile["root"]!["name"]!.s;
 
@@ -147,7 +148,7 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
         // support parallel iteration, which the `getSrcCode` method _must_
         // have for good performance.
         //
-        getSrcCode(sourceList, show);
+        getSrcCode(sourceList, skipUpdate, show);
 
         getGitCode(gitList, show);
 
@@ -272,7 +273,7 @@ proc genSourceList(lockFile: borrowed Toml) {
 
 /* Clones the git repository of each dependency into
    the src code dependency pool */
-proc getSrcCode(sourceListArg: list(3*string), show) {
+proc getSrcCode(sourceListArg: list(3*string), skipUpdate, show) throws {
 
   //
   // TODO: Temporarily use `toArray` here because `list` does not yet
@@ -288,6 +289,8 @@ proc getSrcCode(sourceListArg: list(3*string), show) {
       const nameVers = name + "-" + version;
       const destination = baseDir + nameVers;
       if !depExists(nameVers) {
+        if skipUpdate then
+          throw new owned MasonError("Dependency cannot be installed when MASON_OFFLINE is set.");
         writeln("Downloading dependency: " + nameVers);
         var getDependency = "git clone -qn "+ srcURL + ' ' + destination +'/';
         var checkout = "git checkout -q v" + version;

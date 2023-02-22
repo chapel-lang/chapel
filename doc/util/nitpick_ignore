@@ -35,8 +35,10 @@ cpp:identifier detail::PODUniqueString
 cpp:identifier AstList::const_iterator::difference_type
 cpp:identifier uint64_t
 cpp:identifier int64_t
+cpp:identifier int8_t
 cpp:identifier va_list
 # TODO: Expand macros before generating docs to remove these.
+cpp:identifier ErrorParseErr
 cpp:identifier ParamTag
 cpp:identifier PragmaTag
 cpp:identifier TypeTag
@@ -54,3 +56,5 @@ cpp:identifier uast::asttags::NUM_AST_TAGS
 cpp:identifier uast::Function::DEFAULT_RETURN_INTENT
 # Common symbols used as template typenames.
 cpp:identifier T
+cpp:identifier Deserializer
+cpp:identifier Serializer

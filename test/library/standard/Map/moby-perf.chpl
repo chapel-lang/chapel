@@ -7,11 +7,11 @@ config const repeat = 10;
 config const timing = false;
 
 proc main() {
-  var reader = open(inputFile, iomode.r).reader();
+  var reader = open(inputFile, ioMode.r).reader();
 
   var m = new map(string, string, parSafe=false);
 
-  var t: Timer;
+  var t: stopwatch;
   t.start();
   for line in reader.lines() {
     for i in 1..repeat {

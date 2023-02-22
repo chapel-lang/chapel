@@ -4,7 +4,7 @@
 use IO;
 
 proc test() {
-  var file = open("test.txt", iomode.cw);
+  var file = open("test.txt", ioMode.cw);
   var chan = file.writer();
   chan.write("hello");
   file.close();

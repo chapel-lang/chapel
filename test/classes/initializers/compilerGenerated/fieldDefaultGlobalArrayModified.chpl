@@ -1,5 +1,5 @@
 // Modified copy of
-// test/multilocale/diten/nolocalArgDefaultGlobalArray/fieldDefaultGlobalArray
+// test/multilocale/diten/nolocalArgDefaultGlobal/fieldDefaultGlobalArray.chpl
 var A: [1..5] int;
 A(2) = 1;
 

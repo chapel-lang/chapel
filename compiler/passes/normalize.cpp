@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1672,6 +1672,8 @@ static void insertRetMove(FnSymbol* fn, VarSymbol* retval, CallExpr* ret,
                           bool genericArrayRet);
 
 static void normalizeReturns(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
+
   SET_LINENO(fn);
 
   fixupExportedArrayReturns(fn);
@@ -1754,9 +1756,8 @@ static void normalizeReturns(FnSymbol* fn) {
   //  return/yield type)
   if (isIterator == false && numVoidReturns != 0) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
-
   } else {
-    // Handle declared return type.
+
     retval = newTemp("ret", fn->retType);
 
     retval->addFlag(FLAG_RVV);
@@ -2104,6 +2105,8 @@ static void fixPrimNew(CallExpr* primNewToFix) {
 
   CallExpr* callInNew    = toCallExpr(primNewToFix->get(1));
   CallExpr* newNew       = new CallExpr(PRIM_NEW);
+  newNew->tryTag = primNewToFix->tryTag; // preserve the tryTag
+
   Expr*     exprModToken = NULL;
   Expr*     exprMod      = NULL;
 

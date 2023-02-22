@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -80,7 +80,7 @@ proc masonSearch(ref args: list(string)) {
   for registry in MASON_CACHED_REGISTRY {
     const searchDir = registry + "/Bricks/";
 
-    for dir in listdir(searchDir, files=false, dirs=true) {
+    for dir in listDir(searchDir, files=false, dirs=true) {
       const name = dir.replace("/", "");
       if pattern.search(name) {
         if isHidden(name) {
@@ -186,7 +186,7 @@ proc rankResults(results: list(string), query: string): [] string {
 
 /* Creates an empty cache file if its not found in registry */
 proc touch(pathToReg: string) {
-  const fileWriter = open(pathToReg, iomode.cw).writer();
+  const fileWriter = open(pathToReg, ioMode.cw).writer();
   fileWriter.write("");
   fileWriter.close();
 }
@@ -198,7 +198,7 @@ proc getPackageScores(res: [] string) {
   var cacheExists = false;
   if isFile(pathToReg) then cacheExists = true;
   if !cacheExists then touch(pathToReg);
-  const parse = open(pathToReg, iomode.r);
+  const parse = open(pathToReg, ioMode.r);
   const cacheFile = parseToml(parse);
   var packageScores: map(string, int);
   var packageName: string;

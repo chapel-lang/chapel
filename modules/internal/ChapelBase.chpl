@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,6 +31,10 @@ module ChapelBase {
   use CTypes;
   use ChplConfig;
 
+  pragma "no doc"
+  deprecated "the '_file' type is deprecated; please use 'CTypes.c_FILE' instead"
+  type _file = c_FILE;
+
   config param enablePostfixBangChecks = false;
 
   // These two are called by compiler-generated code.
@@ -50,6 +54,12 @@ module ChapelBase {
   pragma "global type symbol"
   pragma "no object"
   class _object { }
+
+  proc object.encodeTo(f) throws {
+    ref fmt = f.formatter;
+    fmt.writeTypeStart(f, object);
+    fmt.writeTypeEnd(f, object);
+  }
 
 
   enum iterKind {leader, follower, standalone};
@@ -235,7 +245,8 @@ module ChapelBase {
   inline operator +(a: complex(?w)) return a;
 
   inline operator -(a: int(?w)) return __primitive("u-", a);
-  inline operator -(a: uint(64)) { compilerError("illegal use of '-' on operand of type ", a.type:string); }
+  inline operator -(a: uint(?w)) { compilerError("illegal use of '-' on operand of type ", a.type:string); }
+
   inline operator -(a: real(?w)) return __primitive("u-", a);
   inline operator -(a: imag(?w)) return __primitive("u-", a);
   inline operator -(a: complex(?w)) return __primitive("u-", a);
@@ -248,10 +259,7 @@ module ChapelBase {
 
   inline operator -(param a: int(?w)) param return __primitive("u-", a);
   inline operator -(param a: uint(?w)) param {
-    if (a:int(w) < 0) then
-      compilerError("illegal use of '-' on operand of type ", a.type:string);
-    else
-      return -(a:int(w));
+    compilerError("illegal use of '-' on operand of type ", a.type:string);
   }
 
   inline operator -(param a: real(?w)) param return __primitive("u-", a);
@@ -733,34 +741,46 @@ module ChapelBase {
   //   incorrectness; it is used to give better error messages for
   //   promotion of && and ||
   //
+  // These are written with two generic functions
+  // to avoid problems with preference between implicitly
+  // converting and using a generic fall-back.
 
-  inline proc _cond_test(x: borrowed object?) return x != nil;
-  inline proc _cond_test(x: bool) return x;
-  inline proc _cond_test(x: int(?w)) return x != 0;
-  inline proc _cond_test(x: uint(?w)) return x != 0;
-  inline proc _cond_test(x: sync(?t)) {
-    compilerWarning("direct reads of sync variables are deprecated; please apply a 'read??' method");
-    return _cond_test(x.readFE());
+  inline proc _cond_test(param x: ?t) param : bool {
+    if isCoercible(t, bool) {
+      return x;
+    } else if (isCoercible(t, int) || isCoercible(t, uint)) {
+      return x != 0:x.type;
+    } else {
+      compilerError("invalid type ", t:string, " used in if or while condition");
+    }
   }
-  inline proc _cond_test(x: single(?t)) {
-    compilerWarning("direct reads of single variables are deprecated; please use 'readFF'");
-    return _cond_test(x.readFF());
-  }
 
-  inline proc _cond_test(param x: bool) param return x;
-  inline proc _cond_test(param x: integral) param return x != 0:x.type;
-  inline proc _cond_test(x: c_ptr) return x != c_nil;
-
-  inline proc _cond_test(x) {
-    if !( isSubtype(x.type, _iteratorRecord) ) {
+  inline proc _cond_test(x: ?t): bool {
+    if isSubtype(t, sync(?)) {
+      compilerWarning("direct reads of sync variables are deprecated; please apply a 'read??' method");
+      return _cond_test(x.readFE());
+    } else if isSubtype(t, single(?)) {
+      compilerWarning("direct reads of single variables are deprecated; please use 'readFF'");
+      return _cond_test(x.readFF());
+    } else if isCoercible(t, borrowed object?) {
+      return x != nil;
+    } else if isCoercible(t, bool) {
+      return x;
+    } else if isCoercible(t, int) || isCoercible(t, uint) {
+      return x != 0;
+    } else if isSubtype(t, c_ptr) || isSubtype(t, c_void_ptr) {
+      return x != nil;
+    } else {
       use Reflection;
       if canResolveMethod(x, "chpl_cond_test_method") {
         return x.chpl_cond_test_method();
       } else {
-        compilerError("type '", x.type:string, "' used in if or while condition");
+        if isSubtype(t, _iteratorRecord) {
+          compilerError("iterator or promoted expression iterator used in if or while condition");
+        } else {
+          compilerError("type '", x.type:string, "' used in if or while condition");
+        }
       }
-    } else {
-      compilerError("iterator or promoted expression ", x.type:string, " used in if or while condition");
     }
   }
 
@@ -768,6 +788,7 @@ module ChapelBase {
   proc _cond_invalid(x: bool) param return false;
   proc _cond_invalid(x: int) param return false;
   proc _cond_invalid(x: uint) param return false;
+  pragma "last resort"
   proc _cond_invalid(x) param return true;
 
   //
@@ -847,6 +868,7 @@ module ChapelBase {
   }
 
   proc chpl_shouldDoGpuInit(): bool {
+    pragma "codegen for CPU and GPU"
     extern proc chpl_task_getRequestedSubloc(): int(32);
     return
       CHPL_LOCALE_MODEL=="gpu" &&
@@ -948,7 +970,7 @@ module ChapelBase {
 
   // dynamic data block class
   // (note that c_ptr(type) is similar, but local only,
-  //  and defined in SysBasic.chpl)
+  //  and defined in CTypes.chpl)
   pragma "data class"
   pragma "no object"
   pragma "no default functions"
@@ -1219,6 +1241,26 @@ module ChapelBase {
     return ChplConfig.CHPL_NETWORK_ATOMICS != "none";
   }
 
+  config param commDiagsTrackEndCounts = false;
+
+  pragma "no default functions"
+  record endCountDiagsManager {
+    var taskInfo: c_ptr(chpl_task_infoChapel_t);
+    var prevDiagsDisabledVal: bool;
+    inline proc enterThis() : void {
+      if !commDiagsTrackEndCounts {
+        taskInfo = chpl_task_getInfoChapel();
+        prevDiagsDisabledVal = chpl_task_data_setCommDiagsTemporarilyDisabled(taskInfo, true);
+      }
+    }
+
+    inline proc leaveThis(in unused: owned Error?) {
+      if !commDiagsTrackEndCounts {
+        chpl_task_data_setCommDiagsTemporarilyDisabled(taskInfo, prevDiagsDisabledVal);
+      }
+    }
+  }
+
   // Parent class for _EndCount instances so that it's easy
   // to add non-generic fields here.
   // And to get 'errors' field from any generic instantiation.
@@ -1237,6 +1279,21 @@ module ChapelBase {
     proc init(type iType, type taskType) {
       this.iType = iType;
       this.taskType = taskType;
+    }
+
+    inline proc add(value: int, param order: memoryOrder) {
+      manage new endCountDiagsManager() do
+        this.i.add(value, order);
+    }
+
+    inline proc sub(value: int, param order: memoryOrder) {
+      manage new endCountDiagsManager() do
+        this.i.sub(value, order);
+    }
+
+    inline proc waitFor(value: int, param order: memoryOrder) {
+      manage new endCountDiagsManager() do
+        this.i.waitFor(value, order);
     }
   }
 
@@ -1281,7 +1338,7 @@ module ChapelBase {
   pragma "task spawn impl fn"
   proc _upEndCount(e: _EndCount, param countRunningTasks=true) {
     if isAtomic(e.taskCnt) {
-      e.i.add(1, memoryOrder.release);
+      e.add(1, memoryOrder.release);
       e.taskCnt.add(1, memoryOrder.release);
     } else {
       // note that this on statement does not have the usual
@@ -1289,7 +1346,7 @@ module ChapelBase {
       // above. So we do an acquire fence before it.
       chpl_rmem_consist_fence(memoryOrder.release);
       on e {
-        e.i.add(1, memoryOrder.release);
+        e.add(1, memoryOrder.release);
         e.taskCnt += 1;
       }
     }
@@ -1305,7 +1362,7 @@ module ChapelBase {
   pragma "no remote memory fence"
   pragma "task spawn impl fn"
   proc _upEndCount(e: _EndCount, param countRunningTasks=true, numTasks) {
-    e.i.add(numTasks:int, memoryOrder.release);
+    e.add(numTasks:int, memoryOrder.release);
 
     if countRunningTasks {
       if numTasks > 1 {
@@ -1341,7 +1398,7 @@ module ChapelBase {
     chpl_save_task_error(e, err);
     chpl_comm_task_end();
     // inform anybody waiting that we're done
-    e.i.sub(1, memoryOrder.release);
+    e.sub(1, memoryOrder.release);
   }
 
   // This function is called once by the initiating task.  As above, no
@@ -1357,7 +1414,7 @@ module ChapelBase {
     here.runningTaskCntSub(1);
 
     // Wait for all tasks to finish
-    e.i.waitFor(0, memoryOrder.acquire);
+    e.waitFor(0, memoryOrder.acquire);
 
     if countRunningTasks {
       const taskDec = if isAtomic(e.taskCnt) then e.taskCnt.read() else e.taskCnt;
@@ -1379,7 +1436,7 @@ module ChapelBase {
   pragma "unchecked throws"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true, numTasks) throws {
     // Wait for all tasks to finish
-    e.i.waitFor(0, memoryOrder.acquire);
+    e.waitFor(0, memoryOrder.acquire);
 
     if countRunningTasks {
       if numTasks > 1 {
@@ -1439,7 +1496,15 @@ module ChapelBase {
       // string to a type. Otherwise, we can't resolve chpl_debug_writeln in
       // `range.these`
       { var dummyRange = 1..0; for i in dummyRange {} }
-      return str:t;
+      // TODO: String comparison here is a workaround and would be better if
+      // we could use t == regex(string) - but this fails with an error that
+      // regex(type string) is not defined in this scope - adding use Regex;
+      // leads to a different error:
+      // "use of 'rootLocale' before encountering its definition, type unknown"
+      if t:string == "regex(string)" || t:string == "regex(bytes)" then
+        return compile(str);
+      else
+        return str:t;
     }
   }
   // param s is used for error reporting
@@ -1744,9 +1809,8 @@ module ChapelBase {
   }
 
   pragma "compiler generated"
-  pragma "last resort"
   pragma "auto destroy fn"
-  inline proc chpl__autoDestroy(x: object) { }
+  inline proc chpl__autoDestroy(x: borrowed object) { }
 
   pragma "compiler generated"
   pragma "last resort"
@@ -1756,7 +1820,7 @@ module ChapelBase {
   pragma "compiler generated"
   pragma "last resort"
   pragma "auto destroy fn"
-  inline proc chpl__autoDestroy(x: ?t) {
+  inline proc chpl__autoDestroy(x) {
     __primitive("call destructor", x);
   }
   pragma "auto destroy fn"
@@ -1869,7 +1933,18 @@ module ChapelBase {
   inline operator +=(ref lhs:imag(?w), rhs:imag(w)) {
     __primitive("+=", lhs, rhs);
   }
-  inline operator +=(ref lhs, rhs) {
+  // this one is just here so we can use !isNumericType(t) below
+  inline operator +=(ref lhs:complex(?w), rhs:complex(w)) {
+    lhs = lhs + rhs;
+  }
+  // This function shouldn't be 'last resort'
+  // because if it is, that would interfere with things like
+  //  A += A or A += [i in A.domain] A[i]
+  // due to the existing array += eltType overloads & those being promoted.
+  // So, use a where clause so that the overloads above are used if
+  // they are available.
+  inline operator +=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs + rhs;
   }
 
@@ -1885,7 +1960,12 @@ module ChapelBase {
   inline operator -=(ref lhs:imag(?w), rhs:imag(w)) {
     __primitive("-=", lhs, rhs);
   }
-  inline operator -=(ref lhs, rhs) {
+  // this one is just here so we can use !isNumericType(t) below
+  inline operator -=(ref lhs:complex(?w), rhs:complex(w)) {
+    lhs = lhs - rhs;
+  }
+  inline operator -=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs - rhs;
   }
 
@@ -1898,7 +1978,11 @@ module ChapelBase {
   inline operator *=(ref lhs:real(?w), rhs:real(w)) {
     __primitive("*=", lhs, rhs);
   }
-  inline operator *=(ref lhs, rhs) {
+  private proc isIntegralOrRealType(type t) param {
+    return isIntegralType(t) || isRealType(t);
+  }
+  inline operator *=(ref lhs, rhs)
+  where !(isIntegralOrRealType(lhs.type) && isIntegralOrRealType(rhs.type)) {
     lhs = lhs * rhs;
   }
 
@@ -1917,7 +2001,8 @@ module ChapelBase {
   inline operator /=(ref lhs:real(?w), rhs:real(w)) {
     __primitive("/=", lhs, rhs);
   }
-  inline operator /=(ref lhs, rhs) {
+  inline operator /=(ref lhs, rhs)
+  where !(isIntegralOrRealType(lhs.type) && isIntegralOrRealType(rhs.type)) {
     lhs = lhs / rhs;
   }
 
@@ -1933,10 +2018,12 @@ module ChapelBase {
         halt("Attempt to compute a modulus by zero");
     __primitive("%=", lhs, rhs);
   }
+  deprecated "'%=' is deprecated for 'real' values for the time being because it does not work"
   inline operator %=(ref lhs:real(?w), rhs:real(w)) {
     __primitive("%=", lhs, rhs);
   }
-  inline operator %=(ref lhs, rhs) {
+  inline operator %=(ref lhs, rhs)
+  where !(isIntegralOrRealType(lhs.type) && isIntegralOrRealType(rhs.type)) {
     lhs = lhs % rhs;
   }
 
@@ -1953,7 +2040,8 @@ module ChapelBase {
   inline operator &=(ref lhs:uint(?w), rhs:uint(w)) {
     __primitive("&=", lhs, rhs);
   }
-  inline operator &=(ref lhs, rhs) {
+  inline operator &=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs & rhs;
   }
 
@@ -1964,7 +2052,8 @@ module ChapelBase {
   inline operator |=(ref lhs:uint(?w), rhs:uint(w)) {
     __primitive("|=", lhs, rhs);
   }
-  inline operator |=(ref lhs, rhs) {
+  inline operator |=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs | rhs;
   }
 
@@ -1974,7 +2063,8 @@ module ChapelBase {
   inline operator ^=(ref lhs:uint(?w), rhs:uint(w)) {
     __primitive("^=", lhs, rhs);
   }
-  inline operator ^=(ref lhs, rhs) {
+  inline operator ^=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs ^ rhs;
   }
 
@@ -1984,7 +2074,8 @@ module ChapelBase {
   inline operator >>=(ref lhs:uint(?w), rhs:integral) {
     __primitive(">>=", lhs, rhs);
   }
-  inline operator >>=(ref lhs, rhs) {
+  inline operator >>=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs >> rhs;
   }
 
@@ -1994,11 +2085,14 @@ module ChapelBase {
   inline operator <<=(ref lhs:uint(?w), rhs:integral) {
     __primitive("<<=", lhs, rhs);
   }
-  inline operator <<=(ref lhs, rhs) {
+  inline operator <<=(ref lhs, rhs)
+  where !(isNumericType(lhs.type) && isNumericType(rhs.type)) {
     lhs = lhs << rhs;
   }
 
+  // TODO: can we remove last resort on this?
   /* swap operator */
+  pragma "last resort"
   pragma "ignore transfer errors"
   inline operator <=>(ref lhs, ref rhs) {
     // It's tempting to make `tmp` a `const`, but it causes problems

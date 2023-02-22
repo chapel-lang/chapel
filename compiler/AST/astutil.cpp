@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,6 +25,7 @@
 #include "CForLoop.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
+#include "firstClassFunctions.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "IfExpr.h"
@@ -515,12 +516,12 @@ bool isRelationalOperator(CallExpr* call) {
 // TODO this should be fixed to include PRIM_SET_MEMBER
 // See notes in iterator.cpp and/or loopInvariantCodeMotion.cpp
 // TODO this should also be fixed to include the PRIM_SET_SVEC_MEMBER
+// which gets inserted from the returnStartTuplesByRefArgs pass
 //  an attempt to do so is in the commented-out sections below
 //  but would require also fixing a bug in copy-propagation
 //  with e.g. functions/deitz/nested/test_nested_var_iterator2.chpl
-// TODO this should handle PRIM_VIRTUAL_METHOD_CALL and PRIM_FTABLE_CALL
+// TODO handle PRIM_FTABLE_CALL
 //
-// which gets inserted from the returnStartTuplesByRefArgs pass
 // return & 1 is true if se is a def
 // return & 2 is true if se is a use
 //
@@ -567,6 +568,17 @@ int isDefAndOrUse(SymExpr* se) {
       // se   =   se <op> ?
       // ^-def    ^-use
       return DEF_USE;
+    } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
+      // actual_to_formal() breaks if passed the cid argument
+      if (se == call->get(2))
+        return USE;
+      // same as for resolvedFunction()
+      ArgSymbol* arg = actual_to_formal(se);
+      if (arg->intent == INTENT_REF ||
+          arg->intent == INTENT_INOUT)
+        return DEF_USE;
+      else if (arg->intent == INTENT_OUT)
+        return DEF;
     } else if (FnSymbol* fn = call->resolvedFunction()) {
       ArgSymbol* arg = actual_to_formal(se);
 
@@ -806,6 +818,48 @@ static bool isNumericTypeSymExpr(Expr* expr) {
   return false;
 }
 
+bool isExternType(Type* t) {
+  // narrow references are OK but not wide references
+  if (t->isWideRef())
+    return false;
+
+  ClassTypeDecoratorEnum d = ClassTypeDecorator::UNMANAGED_NONNIL;
+  // unmanaged or borrowed classes are OK
+  if (isClassLikeOrManaged(t) || isClassLikeOrPtr(t))
+    d = removeNilableFromDecorator(classTypeDecorator(t));
+
+  TypeSymbol* ts = t->symbol;
+
+  EnumType* et = toEnumType(t);
+
+  return t->isRef() ||
+         d == ClassTypeDecorator::BORROWED ||
+         d == ClassTypeDecorator::UNMANAGED ||
+         (et && et->isConcrete()) ||
+         (ts->hasFlag(FLAG_TUPLE) && ts->hasFlag(FLAG_STAR_TUPLE)) ||
+         ts->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL) ||
+         ts->hasFlag(FLAG_DATA_CLASS) ||
+         ts->hasFlag(FLAG_C_PTR_CLASS) ||
+         ts->hasFlag(FLAG_C_ARRAY) ||
+         ts->hasFlag(FLAG_EXTERN) ||
+         ts->hasFlag(FLAG_EXPORT) || // these don't exist yet
+         fcfIsValidExternType(t);
+}
+
+bool isExportableType(Type* t) {
+
+  // TODO: Exporting will need a different representation of FCF types.
+  if (t->symbol->hasFlag(FLAG_FUNCTION_CLASS)) return false;
+  if (t == dtString || t == dtBytes) {
+    // string/bytes are OK in export functions
+    // because they are converted to wrapper
+    // functions
+    return true;
+  }
+
+  return isExternType(t);
+}
+
 bool isTypeExpr(Expr* expr) {
   bool retval = false;
 
@@ -847,6 +901,9 @@ bool isTypeExpr(Expr* expr) {
       bool isType = false;
       getPrimGetRuntimeTypeFieldReturnType(call, isType);
       retval = isType;
+
+    } else if (call->isPrimitive(PRIM_COERCE)) {
+      retval = isTypeExpr(call->get(1));
 
     } else if (call->numActuals() == 1 &&
                call->baseExpr &&
@@ -920,6 +977,9 @@ static void
 pruneVisitFn(FnSymbol* fn, Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types) {
   if (fns.set_in(fn)) return;
   fns.set_add(fn);
+
+  if (fn->retType) types.set_add(fn->retType->symbol);
+
   llvm::SmallVector<SymExpr*, 16> symExprs;
   collectSymExprs(fn, symExprs);
   for(SymExpr* se : symExprs) {

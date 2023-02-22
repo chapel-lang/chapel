@@ -21,7 +21,7 @@ full-featured version of Chapel, refer to
    packages you should have available to build and run Chapel.
 
 
-1) If you don't already have the Chapel 1.28 source release, see
+1) If you don't already have the Chapel 1.29 source release, see
    https://chapel-lang.org/download.html.
 
 
@@ -31,14 +31,14 @@ full-featured version of Chapel, refer to
 
       .. code-block:: bash
 
-         tar xzf chapel-1.28.0.tar.gz
+         tar xzf chapel-1.29.0.tar.gz
 
    b. Make sure that you are in the directory that was created when
       unpacking the source release, for example:
 
       .. code-block:: bash
 
-         cd chapel-1.28.0
+         cd chapel-1.29.0
 
    c. Set up your environment for Chapel's Quickstart mode.
       If you are using a shell other than ``bash`` or ``zsh``,
@@ -89,7 +89,7 @@ rebuild Chapel from source in a different configuration:
 * Open up a new shell to avoid inheriting the previous environment
   settings.
 
-* The Quickstart configuration attempts to detect if you have a compatable
+* The Quickstart configuration attempts to detect if you have a compatible
   system installation of LLVM and clang. If you do not, it will set
   ``CHPL_LLVM=none`` for simplicity and to save time.  This causes
   the Chapel compiler to use its C back-end, which is not the preferred

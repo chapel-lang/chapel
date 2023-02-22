@@ -2,6 +2,7 @@ array sent from C
 ----------------
 eltType is: real(64)
 idxType is: int(64)
+fullIdxType is: int(64)
 rank is: 1
 
 size is: 5
@@ -42,6 +43,8 @@ local subdomains:
 is empty: false
 head: 1.6
 tail: 5.6
+find last: 4
+find last again: true: 4
 equals same: true
 equals diff: false
 

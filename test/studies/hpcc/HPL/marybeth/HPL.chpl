@@ -9,7 +9,7 @@ config var writeAccuracyInfo = false;
 
 proc main() {
   var TEST = new HPLparams(inFileName=inputfile);
-  var outfile = open(TEST.outFileName, iomode.cw).writer();
+  var outfile = open(TEST.outFileName, ioMode.cw).writer();
 
 //for p in TEST.P {
 //  for q in TEST.Q {
@@ -29,7 +29,7 @@ proc main() {
        var resid: 3*real;
        var norms: 5*real;
 
-       var testTimer = new Timer();
+       var testTimer = new stopwatch();
        var timeData: 2*real; 
 
 //     A is initialized to be a (n x n+1) matrix, since

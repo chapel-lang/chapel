@@ -28,11 +28,13 @@ var A: [1..n] real;
 writeln("Initially, A is: ", A);
 
 //
-// Arrays can also be declared using the the array literal syntax.
+// Arrays can also be declared using the array literal syntax.
 // Array literals are specified by enclosing a comma separated list of
 // expressions in square brackets.  The domain of the array will be
-// 0-based, and the type of the array's element is the type of the
-// first element listed.
+// 0-based, and the type of the array's elements will be that of the
+// expressions if they all have the same type.  If they do not, the
+// array's element type will be a type that can hold all of the values
+// if the compiler can determine that one exists.
 //
 var A2 = [-1.1, -2.2, -3.3, -4.4, -5.5];
 

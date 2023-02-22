@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -136,8 +136,29 @@ module Crypto {
         halt("Enter a string with length greater than 0 in order to create a buffer");
       }
       this.buffDomain = {0..<this._len};
-      for i in this.buffDomain do {
-        this.buff[i] = s.byte(i);
+      for (elt, b) in zip(this.buff, s.bytes()) {
+        elt = b;
+      }
+    }
+    /* The `CryptoBuffer` class initializer that initializes the buffer
+       when a `bytes` is supplied to it.
+
+       :arg s: `bytes` input for buffer conversion.
+       :type s: `bytes`
+
+       :return: An object of class `CryptoBuffer`.
+       :rtype: `CryptoBuffer`
+
+    */
+    proc init(s: bytes) {
+      this.complete();
+      this._len = s.numBytes;
+      if (this._len == 0) {
+        halt("Enter a string with length greater than 0 in order to create a buffer");
+      }
+      this.buffDomain = {0..<this._len};
+      for (elt, b) in zip(this.buff, s.bytes()) {
+        elt = b;
       }
     }
 
@@ -774,7 +795,13 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
      - ``ofb`` or `Output Feedback`
 
+     .. note:
+
+       This cipher is removed in OpenSSL 3 and therefore deprecated here as
+       well. The deprecated Blowfish support here does not function with OpenSSL
+       3.
   */
+  deprecated "Blowfish is deprecated, please use another algorithm"
   class Blowfish {
     pragma "no doc"
     var cipher: CONST_EVP_CIPHER_PTR;

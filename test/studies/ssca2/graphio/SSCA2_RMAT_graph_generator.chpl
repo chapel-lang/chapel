@@ -341,7 +341,7 @@ proc graphNumVertices(G) return G.vertices.size;
 
 proc createGraphChannel(prefix:string, suffix:string, param forWriting:bool) {
   const f = open(prefix+suffix,
-                 if forWriting then iomode.cw else iomode.r,
+                 if forWriting then ioMode.cw else ioMode.r,
                  ioHintSet.sequential);
   const chan = if forWriting
     then f.writer(iokind.big, false)
@@ -350,13 +350,16 @@ proc createGraphChannel(prefix:string, suffix:string, param forWriting:bool) {
 }
 
 proc ensureEOFofDataFile(chan, snapshot_prefix, file_suffix): void {
-  import SysBasic.EEOF;
   var temp:IONumType;
+  var dataRemains:bool = false;
   try! {
-    chan.read(temp);
+    dataRemains = chan.read(temp);
   } catch e: SystemError {
     // temp==0 is a workaround for unending large files
-    if e.err != EEOF && temp != 0 then
+    if temp != 0 then
+      dataRemains = true;
+  }
+  if (dataRemains) {
       myerror("did not reach EOF in '", snapshot_prefix, file_suffix,
               "'  the next value is ", temp);
   }

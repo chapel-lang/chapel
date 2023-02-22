@@ -90,13 +90,13 @@ proc main() {
   initAB(Ab);
 
   startVdebug("HPLvis");
-  const startTime = getCurrentTime();     // capture the start time
+  const startTime = timeSinceEpoch().totalSeconds();     // capture the start time
 
   LUFactorize(n, Ab, piv);                 // compute the LU factorization
 
   var x = backwardSub(n, Ab);  // perform the back substitution
 
-  const execTime = getCurrentTime() - startTime;  // store the elapsed time
+  const execTime = timeSinceEpoch().totalSeconds() - startTime;  // store the elapsed time
   stopVdebug();
   //
   // Validate the answer and print the results

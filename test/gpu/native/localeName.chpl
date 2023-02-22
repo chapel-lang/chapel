@@ -2,12 +2,12 @@ use Subprocess;
 use IO;
 
 // get the hostname of the host running this test
-var sub = spawn(["hostname"], stdout=pipeStyle.pipe); sub.wait();
+var sub = spawn(["hostname", ], stdout=pipeStyle.pipe); sub.wait();
 var hostname: string;
 sub.stdout.readln(hostname);
 
 // store hostname in file for prediff
-var outfile = open("localeName.hostname", iomode.cw);
+var outfile = open("localeName.hostname", ioMode.cw);
 var writer = outfile.writer();
 writer.writeln(hostname);
 writer.close();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -73,7 +73,7 @@ explainInstantiation(FnSymbol* fn) {
   SymbolMapVector elts = sortedSymbolMapElts(fn->substitutions);
 
   char msg[1024] = "";
-  int len = sprintf(msg, "instantiated %s(", fn->name);
+  int len = snprintf(msg, sizeof(msg), "instantiated %s(", fn->name);
   bool first = true;
   for_formals(formal, fn) {
     for (auto elem: elts) {
@@ -83,28 +83,28 @@ explainInstantiation(FnSymbol* fn) {
         if (first)
           first = false;
         else
-          len += sprintf(msg+len, ", ");
+          len += snprintf(msg+len, sizeof(msg)-len, ", ");
         INT_ASSERT(arg);
         if (strcmp(fn->name, tupleInitName))
-          len += sprintf(msg+len, "%s = ", arg->name);
+          len += snprintf(msg+len, sizeof(msg)-len, "%s = ", arg->name);
         if (VarSymbol* vs = toVarSymbol(elem.value)) {
           if (vs->immediate && vs->immediate->const_kind == NUM_KIND_INT)
-            len += sprintf(msg+len, "%" PRId64, vs->immediate->int_value());
+            len += snprintf(msg+len, sizeof(msg)-len, "%" PRId64, vs->immediate->int_value());
           else if (vs->immediate && vs->immediate->const_kind == CONST_KIND_STRING)
-            len += sprintf(msg+len, "\"%s\"", vs->immediate->v_string.c_str());
+            len += snprintf(msg+len, sizeof(msg)-len, "\"%s\"", vs->immediate->v_string.c_str());
           else
-            len += sprintf(msg+len, "%s", vs->name);
+            len += snprintf(msg+len, sizeof(msg)-len, "%s", vs->name);
         }
         else if (Symbol* s = toSymbol(elem.value))
       // For a generic symbol, just print the name.
       // Additional clauses for specific symbol types should precede this one.
-          len += sprintf(msg+len, "%s", s->name);
+          len += snprintf(msg+len, sizeof(msg)-len, "%s", s->name);
         else
           INT_FATAL("unexpected case using --explain-instantiation");
       }
     }
   }
-  sprintf(msg+len, ")");
+  snprintf(msg+len, sizeof(msg)-len, ")");
   if (callStack.n) {
     USR_PRINT(callStack.v[callStack.n-1], "%s", msg);
   } else {

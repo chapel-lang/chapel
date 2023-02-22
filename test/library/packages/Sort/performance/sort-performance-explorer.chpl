@@ -160,7 +160,7 @@ proc testsize(size:int) {
 
   for m in methods {
     const ref cmp = if reverse then reverseComparator else defaultComparator;
-    var t: Timer;
+    var t: stopwatch;
     for i in 1..ntrials {
       input = makeInput(array, inputStrings);
       t.start();

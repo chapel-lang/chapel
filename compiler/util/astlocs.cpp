@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -123,7 +123,7 @@ astlocMarker::astlocMarker(int lineno, const char* filename)
   currentAstLoc = astlocT(lineno, astr(filename));
 }
 
-// constructor, for compiler/dyno Locations
+// constructor, for dyno Locations
 astlocMarker::astlocMarker(chpl::Location location)
   : previousAstLoc(currentAstLoc)
 {

@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Advanced Micro Devices, Inc.
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1177,7 +1177,8 @@ static void licmFn(FnSymbol* fn) {
 
   std::vector<BasicBlock*> basicBlocks = *fn->basicBlocks;
 
-  BasicBlock* entryBlock = basicBlocks[0];
+  BasicBlock* entryBlock = basicBlocks.size() ? basicBlocks[0] : nullptr;
+  if (!entryBlock) return;
 
   unsigned nBlocks = basicBlocks.size();
 

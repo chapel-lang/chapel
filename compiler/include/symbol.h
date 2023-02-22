@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -188,7 +188,6 @@ public:
 
   bool               isKnownToBeGeneric();
   virtual bool       isVisible(BaseAST* scope)                 const;
-  bool               noDocGen()                                const;
 
   // Future: consider merging qual, type into a single
   // field of type QualifiedType
@@ -339,8 +338,6 @@ public:
   bool   isParameter()                                 const override;
   bool   isType()                                               const;
 
-  const char* doc;
-
   GenRet codegenVarSymbol(bool lhsInSetReference=false);
   GenRet codegen()                                           override;
   void   codegenDefC(bool global = false, bool isHeader = false);
@@ -348,12 +345,9 @@ public:
   // global vars are different ...
   void   codegenGlobalDef(bool isHeader);
 
-  void printDocs(std::ostream *file, unsigned int tabs);
-
   void makeField();
 
 private:
-  std::string docsDirective();
   bool isField;
 
 protected:
@@ -517,7 +511,7 @@ class TypeSymbol final : public Symbol {
   // for this type has already been codegen'd
   // and cache it if it has.
 #ifdef HAVE_LLVM
-  llvm::Type* llvmType;
+  llvm::Type* llvmImplType;
   llvm::MDNode* llvmTbaaTypeDescriptor;       // scalar type descriptor
   llvm::MDNode* llvmTbaaAccessTag;            // scalar access tag
   llvm::MDNode* llvmConstTbaaAccessTag;       // scalar const access tag
@@ -527,10 +521,12 @@ class TypeSymbol final : public Symbol {
   llvm::MDNode* llvmTbaaStructCopyNode;       // tbaa.struct for memcpy
   llvm::MDNode* llvmConstTbaaStructCopyNode;  // const tbaa.struct
   llvm::MDNode* llvmDIType;
+  llvm::Type* getLLVMStructureType();         // get structure type for class
+  llvm::Type* getLLVMType();                  // get pointer to structure type for class
 #else
   // Keep same layout so toggling HAVE_LLVM
   // will not lead to build errors without make clean
-  void* llvmType;
+  void* llvmImplType;
   void* llvmTbaaTypeDescriptor;
   void* llvmTbaaAccessTag;
   void* llvmConstTbaaAccessTag;
@@ -603,7 +599,6 @@ public:
   void  accept(AstVisitor* visitor)                      override;
 
   void  replaceChild(BaseAST* oldAst, BaseAST* newAst)   override;
-  void  printDocs(std::ostream* file, unsigned int tabs);
 
   int   numFormals()   const { return ifcFormals.length; }
   int   numAssocCons() const { return associatedConstraints.size(); }
@@ -947,6 +942,7 @@ extern VarSymbol *gModuleInitIndentLevel;
 extern VarSymbol *gInfinity;
 extern VarSymbol *gNan;
 extern VarSymbol *gUninstantiated;
+extern VarSymbol *gUseIOFormatters;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
@@ -960,6 +956,7 @@ typedef enum {
        NONE,
        BASIC,
        FULL,
+       ASM,
        EVERY, // after every optimization if possible
        // These options allow instrumenting the pass pipeline
        // and match ExtensionPointTy in PassManagerBuilder
@@ -989,6 +986,7 @@ void addCNameToPrintLlvmIr(const char* name);
 bool shouldLlvmPrintIrName(const char* name);
 bool shouldLlvmPrintIrCName(const char* name);
 bool shouldLlvmPrintIrFn(FnSymbol* fn);
+std::vector<std::string> gatherPrintLlvmIrCNames();
 
 #ifdef HAVE_LLVM
 void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage);

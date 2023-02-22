@@ -59,7 +59,7 @@ class ForceEAM : Force  {
 
   proc coeff(fname : string) {
     funcfl.eamFile = fname;
-    var fchan = open(fname, iomode.r);
+    var fchan = open(fname, ioMode.r);
     var rd = fchan.reader();
 
     rd.readln(); // skip header info
@@ -319,7 +319,7 @@ class ForceLJ : Force {
   override proc compute(store : bool) : void {
     eng_vdwl = 0;
     virial = 0;
-    var fTimer : Timer;
+    var fTimer : stopwatch;
 
     // wipe old forces of real AND ghost atoms
     fTimer.start();

@@ -16,7 +16,7 @@
      array[i] = abs(array[i]);
    }
 
-   var t: Timer;
+   var t: stopwatch;
    t.start();
 
    RadixMSB.radixSortMSB(array);

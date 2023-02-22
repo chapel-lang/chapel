@@ -1,0 +1,1 @@
+find-irreg-onearg.chpl:14: error: This array type does not currently support the 1-argument '.find()' method; try using the 2-argument version'

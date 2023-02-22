@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -49,7 +49,7 @@ use IO;
 
      use TOML;
 
-     const tomlFile = open("example.toml", iomode.r);
+     const tomlFile = open("example.toml", ioMode.r);
      const toml = parseToml(tomlFile);
 
 To read tables of a TOML file, use the same syntax as accessing associative arrays. For example,
@@ -68,7 +68,7 @@ Use the following code in chapel.
 
      use TOML;
 
-     const tomlFile = open("example.toml", iomode.r);
+     const tomlFile = open("example.toml", ioMode.r);
      const toml = parseToml(tomlFile);
      const projectName = ["root"]["name"] // returns a TOML object
      writeln(projectName.toString());     // to turn TOML object into string representation
@@ -88,16 +88,16 @@ Use the following code in chapel.
 proc parseToml(input: file) : shared Toml {
   var tomlStr: string;
   var tomlFile = input.reader();
-  tomlFile.readstring(tomlStr);
+  tomlFile.readAll(tomlStr);
   tomlFile.close();
   return parseToml(tomlStr);
 }
 
 /* Receives a channel to a TOML file as a parameter and outputs a Toml object.
 */
-proc parseToml(input: channel) : shared Toml {
+proc parseToml(input: fileReader) : shared Toml {
   var tomlStr: string;
-  input.readstring(tomlStr);
+  input.readAll(tomlStr);
   return parseToml(tomlStr);
 }
 
@@ -134,7 +134,7 @@ module TomlParser {
   private use Regex;
   use Time;
   use Map, List;
-  import IO.channel;
+  import IO.fileWriter;
   private use TOML.TomlReader;
   import TOML.TomlError;
   use Sort;
@@ -910,7 +910,7 @@ used to recursively hold tables and respective values
     }
 
     pragma "no doc"
-    proc printTables(ref flat: map(string, shared Toml?, false), f:channel) {
+    proc printTables(ref flat: map(string, shared Toml?, false), f:fileWriter) {
       if flat.contains('root') {
         f.writeln('[root]');
         printValues(f, flat['root']!);
@@ -924,7 +924,7 @@ used to recursively hold tables and respective values
 
     pragma "no doc"
     /* Send values from table to toString for writing  */
-    proc printValues(f: channel, v: borrowed Toml) throws {
+    proc printValues(f: fileWriter, v: borrowed Toml) throws {
       var keys = v.A.keysToArray();
       sort(keys);
       for key in keys {
@@ -981,7 +981,7 @@ used to recursively hold tables and respective values
 
     pragma "no doc"
     /* Send values from table to toString for writing  */
-    proc printValuesJSON(f: channel, v: borrowed Toml, in indent=0) throws {
+    proc printValuesJSON(f: fileWriter, v: borrowed Toml, in indent=0) throws {
       var keys = v.A.keysToArray();
       sort(keys);
       for (key, i) in zip(keys, 1..v.A.size) {
@@ -1130,6 +1130,7 @@ module TomlReader {
  import TOML.TomlError;
 
  private use Regex;
+ private use IO;
 
  config const debugTomlReader = false;
 
@@ -1354,6 +1355,11 @@ module TomlReader {
 
     pragma "no doc"
     proc readThis(f) throws {
+      compilerError("Reading a Tokens type is not supported");
+    }
+
+    proc init(r: fileReader) {
+      this.complete();
       compilerError("Reading a Tokens type is not supported");
     }
 

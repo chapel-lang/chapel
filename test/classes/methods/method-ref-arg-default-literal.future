@@ -1,0 +1,5 @@
+bug: class method ref args can take a literal as default value
+#21213
+
+When the same construction is used in a record method, an error
+results.  The .good file here is based on that error.

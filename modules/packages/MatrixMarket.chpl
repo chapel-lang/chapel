@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -88,14 +88,14 @@ module MatrixMarket {
       var HEADER_LINE : string = "%%MatrixMarket matrix coordinate real general\n"; // currently the only supported MM format in this module
 
       var fd:file;
-      var fout:channel(true, iokind.dynamic, true);
+      var fout:fileWriter(kind=iokind.dynamic, locking=true);
 
       var headers_written:bool;
       var last_rowno:int;
 
       proc init(type eltype, const fname:string) {
          this.eltype = eltype;
-         fd = open(fname, iomode.cw);
+         fd = open(fname, ioMode.cw);
          fout = fd.writer(region=0..);
          headers_written=false;
       }
@@ -131,6 +131,7 @@ module MatrixMarket {
 
          var tfout = fd.writer(region=HEADER_LINE.numBytes..);
          tfout.writef("%i %i %i", nrows, ncols, nnz);
+
          tfout.close();
       }
 
@@ -198,11 +199,11 @@ proc mmwrite(const fname:string, mat:[?Dmat] ?T) where mat.domain.rank == 2 {
 
 class MMReader {
    var fd:file;
-   var fin:channel(false, iokind.dynamic, true);
+   var fin:fileReader(kind=iokind.dynamic, locking=true);
    var finfo:MMInfo;
 
    proc init(const fname:string) {
-      fd = open(fname, iomode.r, hints=ioHintSet.sequential|ioHintSet.prefetch);
+      fd = open(fname, ioMode.r, hints=ioHintSet.sequential|ioHintSet.prefetch);
       fin = fd.reader(region=0.., hints=ioHintSet.sequential|ioHintSet.prefetch);
    }
 

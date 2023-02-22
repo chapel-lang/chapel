@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -37,6 +37,7 @@ extern "C" {
 // initialize the topology support
 //
 void chpl_topo_init(void);
+void chpl_topo_post_args_init(void);
 void chpl_topo_exit(void);
 
 //
@@ -49,6 +50,34 @@ void* chpl_topo_getHwlocTopology(void);
 //
 int chpl_topo_getNumCPUsPhysical(chpl_bool /*accessible_only*/);
 int chpl_topo_getNumCPUsLogical(chpl_bool /*accessible_only*/);
+
+//
+// Fills the "cpus" array with up to "count" physical OS indices of the
+// accessible cores or PUs. If "physical" is true, then "cpus" contains
+// core indices, otherwise it contains PU indices. Returns the number
+// of indices in the "cpus" array.
+//
+int chpl_topo_getCPUs(chpl_bool physical, int *cpus, int count);
+
+//
+// Reserves a physical CPU (core) and returns its hwloc OS index. The
+// core and its PUs will not be returned by chpl_topo_getCPUs,
+// chpl_topo_getNumCPUsPhysical, and chpl_topo_getNumCPUsLogical. Must
+// be called before those functions. Will not reserve a core if CPU
+// binding is not supported on this platform or if there is only one
+// unreserved core.
+//
+// Returns -1 if the reservation failed.
+//
+int chpl_topo_reserveCPUPhysical(void);
+
+// Binds the current thread to the PU specified by the hwloc OS index.
+// The index must have previously been returned by
+// chpl_topo_reserveCPUPhysical.
+//
+// Returns 0 on success, 1 otherwise
+//
+int chpl_topo_bindCPU(int id);
 
 //
 // how many NUMA domains are there?
@@ -116,6 +145,11 @@ void chpl_topo_touchMemFromSubloc(void*, size_t, chpl_bool, c_sublocid_t);
 //   address
 //
 c_sublocid_t chpl_topo_getMemLocality(void*);
+
+//
+// Returns True if the node is oversubscribed (locales are sharing
+// cores).
+chpl_bool chpl_topo_isOversubscribed(void);
 
 
 #ifdef __cplusplus

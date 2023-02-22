@@ -67,7 +67,7 @@ record R {
 */
 
 // The ``this`` method gives the record the ability to be accessed like an
-// array.  Here we use the the argument as an index to choose a tuple element.
+// array.  Here we use the argument as an index to choose a tuple element.
 proc R.this(n: int) ref {
   if !vals.indices.contains(n) then
     halt("index out of bounds accessing R");
@@ -153,14 +153,14 @@ use IO; // required for file operations
 
 config const filename = "tempfile.txt";
 
-proc R.writeThis(ch: channel) throws {
+proc R.writeThis(ch: fileWriter) throws {
   ch.write("*", vals, "*");
 }
 
 {
   // Open the file in a new block so that deinitializers
   // will close it at the end of the block
-  var f = open(filename, iomode.cw);
+  var f = open(filename, ioMode.cw);
   var ch = f.writer();
   ch.writeln(r);
 }
@@ -168,7 +168,7 @@ proc R.writeThis(ch: channel) throws {
 // The ``readThis`` method defines how to read an instance of R from a
 // channel. We'll read the ``vals`` tuple between asterisks like how it
 // was written above.
-proc R.readThis(ch: channel) throws {
+proc R.readThis(ch: fileReader) throws {
   var star = new ioLiteral("*");
   ch.read(star);
   ch.read(vals);
@@ -176,14 +176,13 @@ proc R.readThis(ch: channel) throws {
 }
 
 {
-  var f = open(filename, iomode.r);
+  var f = open(filename, ioMode.r);
   var ch = f.reader();
   var r2 = new R();
   ch.readln(r2);
   assert(r == r2);
 }
 
-// Using ``readThis`` and ``writeThis`` together:
 {
   var chW = openwriter(filename);
   chW.writeln(r);
@@ -194,7 +193,6 @@ proc R.readThis(ch: channel) throws {
   var chR = openreader(filename);
   chR.readln(r2);
   assert(r == r2);
-  
 }
 
 // Clean up the temporary file we created earlier.

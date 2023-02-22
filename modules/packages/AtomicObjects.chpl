@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -116,6 +116,7 @@
 */
 prototype module AtomicObjects {
   use ChplConfig;
+  private use IO;
 
   if CHPL_TARGET_ARCH != "x86_64" {
     compilerWarning("The AtomicObjects package module cannot support CHPL_TARGET_ARCH=", CHPL_TARGET_ARCH, ", only x86_64 is supported.");
@@ -391,6 +392,11 @@ prototype module AtomicObjects {
       compilerWarning("Reading an ABA is not supported");
     }
 
+    proc init(type __ABA_objType, r: fileReader) {
+      this.init(__ABA_objType);
+      compilerWarning("Reading an ABA is not supported");
+    }
+
     /* Writes an ABA */
     proc writeThis(f) throws {
       f.write("(ABA){cnt=", this.__ABA_cnt, ", obj=", this.getObject(), "}");
@@ -626,6 +632,14 @@ prototype module AtomicObjects {
 
     pragma "no doc"
     proc readThis(f) throws {
+      compilerWarning("Reading an AtomicObject is not supported");
+    }
+
+    proc init(type objType,
+              param hasABASupport: bool,
+              param hasGlobalSupport: bool,
+              r: fileReader) {
+      init(objType, hasABASupport, hasGlobalSupport);
       compilerWarning("Reading an AtomicObject is not supported");
     }
 

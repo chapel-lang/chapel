@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -607,9 +607,25 @@ proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
 }
 
 pragma "no doc"
-proc Matrix(const Arrays: ?t  ...?n) where isArrayType(t) && t.rank == 1 {
-  type eltType = Arrays(1).eltType;
-  return Matrix((...Arrays), eltType=eltType);
+proc chpl_varargsOKForMatrix(Arrays) param {
+  if isHomogeneousTuple(Arrays) {
+    return isArray(Arrays(0)) && Arrays(0).rank == 1;
+  } else {
+    for param i in 0..<Arrays.size {
+      if !isArrayType(Arrays(i).type) || Arrays(i).rank != 1 {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+pragma "no doc"
+proc Matrix(const Arrays ...?n) {
+  if !isArray(Arrays(0)) {
+    compilerError("Matrix() requires a series of 1D arrays as its arguments");
+  }
+  return Matrix((...Arrays), eltType=Arrays(0).eltType);
 }
 
 
@@ -635,7 +651,10 @@ proc Matrix(const Arrays: ?t  ...?n) where isArrayType(t) && t.rank == 1 {
          */
 
 */
-proc Matrix(const Arrays: ?t ...?n, type eltType) where isArrayType(t) && t.rank == 1 {
+proc Matrix(const Arrays ...?n, type eltType) {
+  if !chpl_varargsOKForMatrix(Arrays) {
+    compilerError("Matrix() requires a series of 1D arrays as its arguments");
+  }
 
   if Arrays(0).domain.rank != 1 then compilerError("Matrix() expected 1D arrays");
 
@@ -644,9 +663,16 @@ proc Matrix(const Arrays: ?t ...?n, type eltType) where isArrayType(t) && t.rank
 
   var M: [{dim1, dim2}] eltType;
 
-  forall i in dim1 do {
-    if Arrays(i).size != Arrays(0).size then halt("Matrix() expected arrays of equal length");
-    M[i, ..] = Arrays(i): eltType;
+  if (isHomogeneousTuple(Arrays)) {
+    forall i in dim1 do {
+      if Arrays(i).size != Arrays(0).size then halt("Matrix() expected arrays of equal length");
+      M[i, ..] = Arrays(i): eltType;
+    }
+  } else {
+    for param i in 0..<n do {
+      if Arrays(i).size != Arrays(0).size then halt("Matrix() expected arrays of equal length");
+      M[i, ..] = Arrays(i): eltType;
+    }
   }
 
   return M;
@@ -1787,7 +1813,7 @@ proc solve(A: [?Adom] ?eltType, b: [?bdom] eltType) {
 
    Returns a tuple of ``(x, residues, rank, s)``, where:
 
-    - ``x`` is the the least-squares solution with shape of ``b``
+    - ``x`` is the least-squares solution with shape of ``b``
 
     - ``residues`` is:
 
@@ -3119,7 +3145,7 @@ module Sparse {
     const parentDT = transpose(D.parentDom);
     var Dom: sparse subdomain(parentDT) dmapped CS(sortedIndices=false);
 
-    var idxBuffer = Dom.makeIndexBuffer(size=D.size);
+    var idxBuffer = Dom.createIndexBuffer(size=D.size);
     for (i,j) in D do idxBuffer.add((j,i));
     idxBuffer.commit();
     return Dom;

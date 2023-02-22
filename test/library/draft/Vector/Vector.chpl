@@ -1158,16 +1158,16 @@ module Vector {
     }
 
     pragma "no doc"
-    proc readThis(ch: channel) throws {
+    proc readThis(ch: fileReader) throws {
       compilerError("Reading a Vector is not supported");
     }
 
     /*
-      Write the contents of this vector to a channel.
+      Write the contents of this vector to a fileWriter.
 
-      :arg ch: A channel to write to.
+      :arg ch: A fileWriter to write to.
     */
-    proc writeThis(ch: channel) throws {
+    proc writeThis(ch: fileWriter) throws {
       _enter();
       
       ch.write("[");

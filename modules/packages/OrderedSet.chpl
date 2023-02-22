@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-deprecated "The OrderedSet module and the orderedSet type are deprecated in favor of SortedSet and sortedMap."
+deprecated "The OrderedSet module and the orderedSet type are deprecated in favor of SortedSet and sortedMap"
 module OrderedSet {
   public use SortedSet;
 

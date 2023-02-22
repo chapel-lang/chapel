@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -228,8 +228,6 @@ void ResolveScope::addBuiltIns() {
   extend(dtCVoidPtr->symbol);
   extend(dtCFnPtr->symbol);
 
-  extend(dtFile->symbol);
-
   extend(dtOpaque->symbol);
   extend(gOpaque);
 
@@ -284,6 +282,7 @@ void ResolveScope::addBuiltIns() {
   extend(gLocal);
   extend(gWarnUnstable);
   extend(gNodeID);
+  extend(gUseIOFormatters);
 
   extend(gInfinity);
   extend(gNan);
@@ -310,7 +309,7 @@ std::string ResolveScope::name() const {
   } else if (BlockStmt*    block   = toBlockStmt(mAstRef))    {
     char buff[1024];
 
-    sprintf(buff, "BlockStmt %9d", block->id);
+    snprintf(buff, sizeof(buff), "BlockStmt %9d", block->id);
 
     retval = buff;
 
@@ -380,6 +379,13 @@ ModuleSymbol* ResolveScope::enclosingModule() const {
 bool ResolveScope::extend(Symbol* newSym, bool isTopLevel) {
   const char* name   = newSym->name;
   bool        retval = false;
+
+  // This symbol has no name. It may be attached to something else that
+  // has a name, but we'll end up visiting that entity later.
+  if (newSym->hasFlag(FLAG_ANONYMOUS_FORMAL) ||
+      newSym->hasFlag(FLAG_ANONYMOUS_FN)) {
+    return true;
+  }
 
   // If this is a top-level module, we look up the symbol's name as
   // though we were resolving a 'use' in order to take module symbols
@@ -482,6 +488,8 @@ void ResolveScope::extendMethodTracking(FnSymbol* newFn) {
             if (UnresolvedSymExpr* typeName =
                 toUnresolvedSymExpr(cType->baseExpr)) {
               mMethodsOnTypeName.insert(typeName->unresolved);
+            } else if (SymExpr* typeName = toSymExpr(cType->baseExpr)) {
+              mMethodsOnTypeName.insert(typeName->symbol()->name);
             }
           }
         } else {
@@ -823,12 +831,14 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
 
     outerMod = toModuleSymbol(retval);
 
-    if (outerMod->hasFlag(FLAG_DEPRECATED)) {
-      outerMod->generateDeprecationWarning(call);
-    }
+    if (!fDynoCompilerLibrary) {
+      if (outerMod->hasFlag(FLAG_DEPRECATED)) {
+        outerMod->generateDeprecationWarning(call);
+      }
 
-    if (outerMod->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
-      outerMod->generateUnstableWarning(call);
+      if (outerMod->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
+        outerMod->generateUnstableWarning(call);
+      }
     }
 
     const char* rhsName = getNameFrom(call->get(2));

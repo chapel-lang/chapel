@@ -281,7 +281,7 @@ module MyRandom {
   proc _choiceUniform(stream, X: domain, size: ?sizeType, replace: bool) throws
   {
 
-    const low = X.alignedLow,
+    const low = X.low,
           stride = abs(X.stride);
 
     if isNothingType(sizeType) {
@@ -352,7 +352,7 @@ module MyRandom {
     if prob.size == 0 then
       throw new owned IllegalArgumentError('choice() prob array cannot be empty');
 
-    const low = X.alignedLow,
+    const low = X.low,
           stride = abs(X.stride);
     ref P = prob.reindex(0..<X.size);
 
@@ -713,23 +713,23 @@ module MyRandom {
     record SeedGenerator {
       /*
         Generate a seed based on the current time in microseconds as
-        reported by :proc:`Time.getCurrentTime`. This seed is not
+        reported by :proc:`Time.timeSinceEpoch`. This seed is not
         suitable for the NPB RNG since that requires an odd seed.
       */
       proc type currentTime: int(64) {
         use Time;
-        const seed = getCurrentTime(unit=TimeUnits.microseconds):int(64);
+        const seed = (timeSinceEpoch().totalSeconds()*1_000_000):int(64);
         return seed;
 
       }
       /*
         Generate an odd seed based on the current time in microseconds as
-        reported by :proc:`Time.getCurrentTime`. This seed is suitable
+        reported by :proc:`Time.timeSinceEpoch`. This seed is suitable
         for the NPB RNG.
       */
       proc type oddCurrentTime: int(64) {
         use Time;
-        const seed = getCurrentTime(unit=TimeUnits.microseconds):int(64);
+        const seed = (timeSinceEpoch().totalSeconds()*1_000_000):int(64);
         const oddseed = if seed % 2 == 0 then seed + 1 else seed;
         return oddseed;
       }
@@ -1168,7 +1168,7 @@ module MyRandom {
         if D.rank != 1 then
           compilerError("Shuffle requires 1-D array");
 
-        const low = D.alignedLow,
+        const low = D.low,
               stride = abs(D.stride);
 
         _lock();

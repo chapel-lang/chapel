@@ -12,11 +12,11 @@ proc readArrayCheckpoint(filename: string, A:[] ?t, nTasks: int = dataParTasksPe
   var cumulativeOffsets = + scan offsetArr;
 
   coforall idx in offsetDom do on targetLocs[idx] {
-    var f = open(filename, iomode.r);
+    var f = open(filename, ioMode.r);
     const eltSize = numBytes(A.eltType);
     const start = eltSize * if idx == offsetDom.low then 0 else cumulativeOffsets[idx-1];
     const end = eltSize * cumulativeOffsets[idx];
-    var ch = f.reader(kind = ionative, region = start..end);
+    var ch = f.reader(kind = ionative, region = start..#end);
 
     for sub in A.localSubdomains(targetLocs(idx)) {
      
@@ -26,7 +26,7 @@ proc readArrayCheckpoint(filename: string, A:[] ?t, nTasks: int = dataParTasksPe
 }
 
 proc checkpointArray(filename: string, A:[] ?t, nTasks: int = dataParTasksPerLocale) {
-  var f = open(filename, iomode.cw); // create/clear the file
+  var f = open(filename, ioMode.cw); // create/clear the file
   var targetLocs = reshape(A.targetLocales(), {1..A.targetLocales().size});
   var offsetDom = targetLocs.domain;
   var offsetArr: [offsetDom] int;
@@ -38,12 +38,12 @@ proc checkpointArray(filename: string, A:[] ?t, nTasks: int = dataParTasksPerLoc
   var cumulativeOffsets = + scan offsetArr;
 
   coforall idx in offsetDom do on targetLocs[idx] {
-    var f = open(filename, iomode.rw); // need to open the file on each locale
+    var f = open(filename, ioMode.rw); // need to open the file on each locale
     const eltSize = numBytes(A.eltType);
     const start = eltSize * if idx == offsetDom.low then 0 else cumulativeOffsets[idx-1];
     const end = eltSize * cumulativeOffsets[idx];
     var ch = f.writer(kind = ionative,
-                      region = start..end);
+                      region = start..#end);
     for sub in A.localSubdomains(targetLocs(idx)) {
       ch.write(A[sub]);
     }

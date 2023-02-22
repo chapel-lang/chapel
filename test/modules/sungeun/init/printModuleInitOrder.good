@@ -18,11 +18,10 @@ Initializing Modules:
         ChapelArray
          ChapelPrivatization
          ChapelDomain
-          Initialization
-           Memory
           IO
            FormattedIO
             Regex
+           Types
          Sort
           List
            ChapelLocks
@@ -41,13 +40,12 @@ Initializing Modules:
      LocaleModelHelpMem
     LocalesArray
     ChapelIO
-    LocaleTree
     ChapelTaskTable
      Errors
     MemTracking
     ChapelUtil
     ExportWrappers
-    Types
+    ChapelGpuSupport
     AlignedTSupport
     CopyAggregation
      AggregationPrimitives

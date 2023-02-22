@@ -47,7 +47,7 @@ proc dobench(mydist, mydom) {
   var bt:[mydom]int;
   var still_correct = true;
 
-  var timer:Timer;
+  var timer:stopwatch;
 
   if messages {
     resetCommDiagnostics();
@@ -55,7 +55,7 @@ proc dobench(mydist, mydom) {
   }
 
   if timeit {
-    timer = new Timer();
+    timer = new stopwatch();
     timer.start();
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1365,6 +1365,11 @@ static void errorIfValueCoercionToRef(CallExpr* call, Symbol* actual,
     return;
   }
 
+  // Ignore this class of error for first class functions.
+  if (formal->getValType()->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
+    return;
+  }
+
   // Not an error for inout our out intent
   // (the compiler should be managing the conversion on the way in
   //  to the function with implicit conversion and on the way out
@@ -1375,20 +1380,6 @@ static void errorIfValueCoercionToRef(CallExpr* call, Symbol* actual,
 
   // Error for coerce->value passed to ref / out / etc
   if (argumentCanModifyActual(intent) || isRefFormal) {
-    USR_FATAL_CONT(call, "in call to '%s', cannot pass result of coercion "
-                         "by reference",
-                         calledFn->name);
-
-    USR_PRINT(call, "implicit coercion from '%s' to '%s'",
-                    atype->symbol->name,
-                    ftype->symbol->name);
-
-    USR_PRINT(formal, "when passing to %s formal '%s'",
-                      intentDescrString(intent),
-                      formal->name);
-
-
-  } else if (isRefFormal) {
     USR_FATAL_CONT(call, "in call to '%s', cannot pass result of coercion "
                          "by reference",
                          calledFn->name);
@@ -1865,8 +1856,6 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
 static void handleOutIntents(FnSymbol* fn, CallExpr* call,
                              SymbolMap& inTmpToActualMap) {
 
-  int j = 0;
-
   // Function with no actuals can't use out intent
   // Returning early in that event simplifies the following code.
   if (call->numActuals() == 0)
@@ -1961,7 +1950,6 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
     }
 
     currActual = nextActual;
-    j++;
   }
 }
 

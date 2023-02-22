@@ -12,7 +12,7 @@ proc main(args:[] string)
     if isFile(arg) then
       paths.append(arg);
     else if isDir(arg) then
-      for path in findfiles(arg, recursive=true) do
+      for path in findFiles(arg, recursive=true) do
         paths.append(path);
   }
 
@@ -25,11 +25,11 @@ proc main(args:[] string)
   var BlockNumLocales = {0..#numLocales} dmapped Block({0..#numLocales});
   var distributedBuffers: [BlockNumLocales] file;
   var distributedWriters: [BlockNumLocales]
-    channel(writing=true, kind=iokind.native, locking=true);
+    fileWriter(kind=iokind.native, locking=true);
   
   // Open up buffers to store the hashes 
   forall (f,w) in zip(distributedBuffers, distributedWriters) {
-    f = openmem();
+    f = openMemFile();
     w = f.writer();
   }
   // Compute the SHA1 sums using the external program
@@ -45,7 +45,7 @@ proc main(args:[] string)
   for w in distributedWriters do
     w.close();
  
-  var sorter = spawn(["sort"], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);
+  var sorter = spawn(["sort", ], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);
   cobegin {
     {
       // Output all of the to the sort process
@@ -53,7 +53,7 @@ proc main(args:[] string)
         on f do {
           var data:string;
           var reader = f.reader();
-          reader.readstring(data);
+          reader.readAll(data);
           sorter.stdin.writeln(data);
         }
       }
@@ -84,6 +84,3 @@ proc main(args:[] string)
 
   sorter.wait();
 }
-
-
-

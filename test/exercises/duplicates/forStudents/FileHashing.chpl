@@ -88,10 +88,10 @@ module FileHashing {
     use IO;
     use SHA256Implementation;
 
-    var f = open(path, iomode.r);
+    var f = open(path, ioMode.r);
     var len = f.size;
     var r = f.reader(kind=iokind.big, locking=false,
-                     region=0..len);
+                     region=0..#len);
 
 
     var msg:16*uint(32); // aka 64 bytes

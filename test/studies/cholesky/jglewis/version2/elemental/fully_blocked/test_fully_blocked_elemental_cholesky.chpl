@@ -79,7 +79,7 @@ module test_fully_blocked_elemental_cholesky {
     writeln ("elemental cholesky factorization symmetric index range code\n "
 	     +	"on symmetric index range");
 
-    var clock : Timer;
+    var clock : stopwatch;
           
     clock.clear ();
     clock.start ();

@@ -402,10 +402,10 @@ module cholesky_scalar_algorithms {
     proc run_one_cholesky_algorithm ( header : string, cholesky_fun ) {
 
       // --------------------------------------------
-      // Timer version assumes one process per locale
+      // stopwatch version assumes one process per locale
       // --------------------------------------------
       
-      var clock : Timer;
+      var clock : stopwatch;
       
       writeln ();
       writeln (header, "");

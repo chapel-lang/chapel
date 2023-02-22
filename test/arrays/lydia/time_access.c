@@ -47,7 +47,7 @@ static int touch(int **A, int n) {
 static const int size = 1000;
 static const int ntrials = 100;
 
-void c_trial() {
+void c_trial(void) {
   int** A;
   int i;
   double starttime, endtime;

@@ -11,7 +11,7 @@ const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 config const readSize = 16 * 1024;
 
 proc main(args: [] string) {
-  const stdin = openfd(0);
+  const stdin = new file(0);
   var input = stdin.reader(iokind.native, locking=false,
                            hints=ioHintSet.mmap);
   var len = stdin.size;
@@ -45,7 +45,7 @@ proc main(args: [] string) {
       input.revert();
 
       // Read until nextDescOffset into the data array.
-      input.readBytes(c_ptrTo(data[descOffset]),
+      input.readBinary(c_ptrTo(data[descOffset]),
           (nextDescOffset-descOffset):c_ssize_t);
       
 
@@ -60,8 +60,8 @@ proc main(args: [] string) {
     }
   }
 
-  const stdoutBin = openfd(1).writer(iokind.native, locking=false, 
-                                     hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
+  const stdoutBin = (new file(1)).writer(iokind.native, locking=false,
+                                         hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
   stdoutBin.write(data);
 }
 

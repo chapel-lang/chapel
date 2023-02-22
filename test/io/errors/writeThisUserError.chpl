@@ -8,7 +8,7 @@ use IO;
 record foo {
   var x: int = 0;
 
-  proc writeThis(ch: channel) throws {
+  proc writeThis(ch: fileWriter) throws {
     throw new
       IllegalArgumentError('User error thrown from writeThis!');
     ch.write(x);

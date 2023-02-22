@@ -11,6 +11,7 @@ fi
 
 # Perf configuration
 export CHPL_TEST_ARKOUDA_PERF=${CHPL_TEST_ARKOUDA_PERF:-true}
+export CHPL_TEST_GEN_ARKOUDA_GRAPHS=${CHPL_TEST_GEN_ARKOUDA_GRAPHS:-true}
 if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ]; then
   source $CWD/common-perf.bash
   ARKOUDA_PERF_DIR=${ARKOUDA_PERF_DIR:-$COMMON_DIR/NightlyPerformance/arkouda}
@@ -31,10 +32,14 @@ if [ -d "$ARKOUDA_DEP_DIR" ]; then
       export ARKOUDA_ARROW_PATH=${ARKOUDA_ARROW_PATH:-$ARKOUDA_DEP_DIR/arrow-install-asan}
       export ARKOUDA_ZMQ_PATH=${ARKOUDA_ZMQ_PATH:-$ARKOUDA_DEP_DIR/zeromq-install-asan}
       export ARKOUDA_HDF5_PATH=${ARKOUDA_HDF5_PATH:-$ARKOUDA_DEP_DIR/hdf5-install-asan}
+      export ARKOUDA_ICONV_PATH=${ARKOUDA_ICONV_PATH:-$ARKOUDA_DEP_DIR/iconv-install-asan}
+      export ARKOUDA_IDN2_PATH=${ARKOUDA_IDN2_PATH:-$ARKOUDA_DEP_DIR/idn2-install-asan}
   else
       export ARKOUDA_ARROW_PATH=${ARKOUDA_ARROW_PATH:-$ARKOUDA_DEP_DIR/arrow-install}
       export ARKOUDA_ZMQ_PATH=${ARKOUDA_ZMQ_PATH:-$ARKOUDA_DEP_DIR/zeromq-install}
       export ARKOUDA_HDF5_PATH=${ARKOUDA_HDF5_PATH:-$ARKOUDA_DEP_DIR/hdf5-install}
+      export ARKOUDA_ICONV_PATH=${ARKOUDA_ICONV_PATH:-$ARKOUDA_DEP_DIR/iconv-install}
+      export ARKOUDA_IDN2_PATH=${ARKOUDA_IDN2_PATH:-$ARKOUDA_DEP_DIR/idn2-install}
   fi
   export PATH="$ARKOUDA_HDF5_PATH/bin:$PATH"
 fi
@@ -53,7 +58,7 @@ function test_release() {
   export CHPL_TEST_PERF_DESCRIPTION=release
   export CHPL_TEST_PERF_CONFIGS="release:v,nightly"
   currentSha=`git rev-parse HEAD`
-  git checkout 1.27.0
+  git checkout 1.29.0
   git checkout $currentSha -- $CHPL_HOME/test/
   git checkout $currentSha -- $CHPL_HOME/util/cron/
   git checkout $currentSha -- $CHPL_HOME/util/test/perf/

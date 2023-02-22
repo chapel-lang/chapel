@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,6 +34,7 @@ class CallExpr;
 class DefExpr;
 class Expr;
 class FnSymbol;
+class ForwardingStmt;
 class ImportStmt;
 class ModuleSymbol;
 class Type;
@@ -108,12 +109,7 @@ ModuleSymbol* buildModule(const char* name,
                           BlockStmt*  block,
                           const char* filename,
                           bool        priv,
-                          bool        prototype,
-                          const char* docs);
-BlockStmt* buildIncludeModule(const char* name,
-                              bool priv,
-                              bool prototype,
-                              const char* docs);
+                          bool        prototype);
 
 CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 
@@ -161,7 +157,7 @@ CallExpr* buildScanExpr(Expr* op, Expr* data, bool zippered = false);
 
 std::set<Flag>* buildVarDeclFlags(Flag flag1 = FLAG_UNKNOWN,
                                   Flag flag2 = FLAG_UNKNOWN);
-BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs = NULL,
+BlockStmt* buildVarDecls(BlockStmt* stmts,
                          std::set<Flag>* flags = NULL, Expr* cnameExpr = NULL);
 
 DefExpr*  buildClassDefExpr(const char*   name,
@@ -169,8 +165,7 @@ DefExpr*  buildClassDefExpr(const char*   name,
                             AggregateTag  tag,
                             Expr*         inherit,
                             BlockStmt*    decls,
-                            Flag          isExtern,
-                            const char*   docs);
+                            Flag          isExtern);
 
 void setupTypeIntentArg(ArgSymbol* arg);
 
@@ -190,8 +185,7 @@ void setupFunctionDecl(FnSymbol*   fn,
                        bool        optThrowsError,
                        Expr*       optWhere,
                        Expr*       optLifetimeConstraints,
-                       BlockStmt*  optFnBody,
-                       const char* docs);
+                       BlockStmt*  optFnBody);
 
 BlockStmt* buildFunctionDecl(FnSymbol*   fn,
                              RetTag      optRetTag,
@@ -199,12 +193,12 @@ BlockStmt* buildFunctionDecl(FnSymbol*   fn,
                              bool        optThrowsError,
                              Expr*       optWhere,
                              Expr*       optLifetimeConstraints,
-                             BlockStmt*  optFnBody,
-                             const char* docs);
+                             BlockStmt*  optFnBody);
 void applyPrivateToBlock(BlockStmt* block);
-BlockStmt* buildForwardingStmt(Expr* expr);
-BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names, bool except);
-BlockStmt* buildForwardingDeclStmt(BlockStmt*);
+ForwardingStmt* buildForwardingStmt(DefExpr* fnDef);
+ForwardingStmt* buildForwardingStmt(DefExpr* fnDef,
+                                    std::vector<PotentialRename*>* names,
+                                    bool except);
 BlockStmt* buildLocalStmt(Expr* condExpr, Expr* stmt);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,

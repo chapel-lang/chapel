@@ -54,7 +54,7 @@ use IO;
   /* Elements */
   {
     const v1 = Vector(1);
-    assertEqual(v1, [0.0], 'Vector(1)');
+    assertEqual(v1, [0.0, ], 'Vector(1)');
     const v12 = Vector(1, 2);
     assertEqual(v12, [1, 2], 'Vector(1, 2)');
     const v123 = Vector(1, 2, 3);
@@ -458,16 +458,16 @@ use IO;
                   eltType=real);
   var v11 = Vector(1,6,1);
   var v12 = Vector(3,8);
-  var v13 = Vector([9]);
+  var v13 = Vector([9, ]);
 
   assertEqual(v,    diag(M),        "diag(M)");
   assertEqual(vMat, diag(v),        "diag(v)");
   assertEqual(v11,  diag(M1),       "diag(M1)");
   assertEqual(v12,  diag(M1,2),     "diag(M1,2)");
   assertEqual(v13,  diag(M1,-2),    "diag(M1,-2)");
-  assertEqual([1],  diag(M2,-2),    "diag(M2,-2)");
+  assertEqual([1, ],  diag(M2,-2),    "diag(M2,-2)");
   assertEqual([4,5,6], diag(M2, 3),  "diag(M2,3)");
-  assertEqual([3],  diag(M3,2),     "diag(M3, 2)");
+  assertEqual([3, ],  diag(M3,2),     "diag(M3, 2)");
   assertEqual([4,8,3], diag(M3,-1), "diag(M3,-1)");
   assertEqual([1, 5], diag(M3,-3),  "diag(M3,-3)");
 
@@ -488,9 +488,9 @@ use IO;
   assertEqual(rv11, diag(rM1),      "diag(M1)");
   assertEqual(rv12, diag(rM1,2),    "diag(M1,2)");
   assertEqual(rv13, diag(rM1,-2),   "diag(M1,-2)");
-  assertEqual([1],  diag(rM2,-2),    "diag(M2,-2)");
+  assertEqual([1, ],  diag(rM2,-2),    "diag(M2,-2)");
   assertEqual([4,5,6], diag(rM2, 3),  "diag(M2,3)");
-  assertEqual([3],  diag(rM3,2),     "diag(M3, 2)");
+  assertEqual([3, ],  diag(rM3,2),     "diag(M3, 2)");
   assertEqual([4,8,3], diag(rM3,-1), "diag(M3,-1)");
   assertEqual([1, 5], diag(rM3,-3),  "diag(M3,-3)");
 

@@ -15,11 +15,11 @@ proc main() {
   if exists("Mason.lock") {
     writeln("----- lock file -----");
 
-    const fi = open("Mason.lock", iomode.r);
-    for line in fi.lines() {
+    const fr = openreader("Mason.lock");
+    for line in fr.lines() {
       write(line);
     }
-    fi.close();
+    fr.close();
 
     remove("Mason.lock");
   }

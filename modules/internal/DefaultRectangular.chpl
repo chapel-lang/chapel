@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -611,22 +611,22 @@ module DefaultRectangular {
 
     override proc dsiAlignedLow {
       if rank == 1 {
-        return ranges(0).alignedLow;
+        return ranges(0).low;
       } else {
         var result: rank*idxType;
         for param i in 0..rank-1 do
-          result(i) = ranges(i).alignedLow;
+          result(i) = ranges(i).low;
         return result;
       }
     }
 
     override proc dsiAlignedHigh {
       if rank == 1 {
-        return ranges(0).alignedHigh;
+        return ranges(0).high;
       } else {
         var result: rank*idxType;
         for param i in 0..rank-1 do
-          result(i) = ranges(i).alignedHigh;
+          result(i) = ranges(i).high;
         return result;
       }
     }
@@ -690,9 +690,10 @@ module DefaultRectangular {
                                        rank=rank,
                                        idxType=idxType,
                                        stridable=stridable,
-                                       /* this means consider elements
-                                          already initialized */
-                                       initElts=true,
+                                       // consider the elements already inited
+                                       initElts=false,
+                                       // but the array should deinit them
+                                       deinitElts=true,
                                        dom=_to_unmanaged(this),
                                        data=data);
     }
@@ -1034,6 +1035,7 @@ module DefaultRectangular {
               dom:unmanaged DefaultRectangularDom(rank=rank, idxType=idxType,
                                                   stridable=stridable),
               param initElts = true,
+              param deinitElts = initElts,
               data:_ddata(eltType) = nil,
               externArr = false,
               _borrowed = false,
@@ -1046,7 +1048,7 @@ module DefaultRectangular {
       this.externArr = externArr;
       this._borrowed = _borrowed;
       this.callPostAlloc = false;
-      this.deinitElts = initElts;
+      this.deinitElts = deinitElts;
 
       this.complete();
       this.setupFieldsAndAllocate(initElts);
@@ -1095,7 +1097,7 @@ module DefaultRectangular {
     // TODO: Without this where clause any code using `unsafeAssign` to
     // resize a 2D+ array will explode, because the 'locales' array tries
     // to reuse an existing instantiation. Comment this out and run
-    // 'test/domains/unsafeAssign/TestUnsafeAssign2D.chpl' to see.
+    // 'test/domains/unsafeAssign/DefaultRectangular2D.chpl' to see.
     //
     override proc chpl_unsafeAssignIsClassElementNil(manager, idx)
     where idx.type == (rank*idxType) {
@@ -1232,7 +1234,7 @@ module DefaultRectangular {
 
     proc setupFieldsAndAllocate(param initElts) {
       for param dim in 0..rank-1 {
-        off(dim) = dom.dsiDim(dim).alignedLow;
+        off(dim) = dom.dsiDim(dim).low;
         str(dim) = dom.dsiDim(dim).stride;
       }
       if storageOrder == ArrayStorageOrder.RMO {
@@ -1770,7 +1772,7 @@ module DefaultRectangular {
           idx(dim) = j;
 
           recursiveArrayReaderWriter(idx, dim=dim+1,
-                               last=(last || dim == 0) && (j == dom.dsiDim(dim).alignedHigh));
+                               last=(last || dim == 0) && (j == dom.dsiDim(dim).high));
 
           if isjson || ischpl {
             if j != lastIdx {
@@ -1816,9 +1818,9 @@ module DefaultRectangular {
       const size = len:c_ssize_t*elemSize:c_ssize_t;
       try {
         if f.writing {
-          f.writeBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f._writeBytes(_ddata_shift(arr.eltType, src, idx), size);
         } else {
-          f.readBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f._readBytes(_ddata_shift(arr.eltType, src, idx), size);
         }
       } catch err {
         // Setting errors in channels has no effect, so just rethrow.
@@ -2292,6 +2294,7 @@ module DefaultRectangular {
   // due to a type, stridability, or rank mismatch in the other argument). When
   // debugOptimizedSwap is off, this overload will be ignored due to its where
   // clause.
+  pragma "last resort"
   proc DefaultRectangularArr.doiOptimizedSwap(other) where debugOptimizedSwap {
     writeln("DefaultRectangularArr doing unoptimized swap. Type mismatch");
     return false;

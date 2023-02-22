@@ -65,6 +65,8 @@ cmake-build-*/
 /doc/tutorial/workbooks/*.blg
 /doc/sphinx/build
 
+# Frontend ignores
+/frontend/lib/util/git-version.cpp
 
 # Make ignores.
 /make/Chapel.xcodeproj/*.pbxuser
@@ -158,8 +160,8 @@ cmake-build-*/
 /test/compflags/sungeun/configs/type_variables/configTypeFunNoType.good
 /test/compflags/sungeun/configs/type_variables/configTypeFun.good
 
-/test/compflags/thomasvandoren/chpldoc/*.doc.good
-/test/compflags/thomasvandoren/chpldoc/docs/
+/test/chpldoc/compflags/combinations/*.doc.good
+!/test/chpldoc/compflags/combinations/license.doc.good
 
 /test/compflags/waynew/*.bc
 /test/compflags/waynew/*.c
@@ -464,3 +466,6 @@ test/types/string/validation/stress.good
 /util/devel/test/vagrant/log
 /util/devel/test/vagrant/log2
 /util/devel/test/vagrant/*/*-cloudimg-console.log
+
+/util/packaging/docker/test/*.tar.gz
+/util/cron/*.tar.gz

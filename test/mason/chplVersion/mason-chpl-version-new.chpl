@@ -12,9 +12,9 @@ proc main() {
   masonNew(args);
 
   assert(isDir("newTest") == true);
-  const fi = open("newTest/Mason.toml", iomode.r);
-  for line in fi.lines() do write(line);
-  fi.close();
+  const fr = openreader("newTest/Mason.toml");
+  for line in fr.lines() do write(line);
+  fr.close();
 
   rmTree("newTest");
   assert(isDir("newTest") == false);

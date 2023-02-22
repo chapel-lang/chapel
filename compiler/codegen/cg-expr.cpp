@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -274,7 +274,7 @@ llvm::AllocaInst* createVarLLVM(llvm::Type* type, const char* name)
 llvm::AllocaInst* createVarLLVM(llvm::Type* type)
 {
   char name[32];
-  sprintf(name, "chpl_macro_tmp_%d", codegen_tmp++);
+  snprintf(name, sizeof(name), "chpl_macro_tmp_%d", codegen_tmp++);
   return createVarLLVM(type, name);
 }
 
@@ -1395,7 +1395,7 @@ GenRet createTempVar(const char* ctype)
   GenInfo* info = gGenInfo;
   GenRet ret;
   char name[32];
-  sprintf(name, "chpl_macro_tmp_%d", codegen_tmp++);
+  snprintf(name, sizeof(name), "chpl_macro_tmp_%d", codegen_tmp++);
 
   ret.isLVPtr = GEN_PTR;
   if( info->cfile ) {
@@ -2147,7 +2147,7 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
         ifTrueVal.val, ifFalseVal.val, ifTrueSigned, ifFalseSigned);
 
     char name[32];
-    sprintf(name, "chpl_macro_tmp_tv_%d", codegen_tmp++);
+    snprintf(name, sizeof(name), "chpl_macro_tmp_tv_%d", codegen_tmp++);
 
     llvm::Value* tmp = createVarLLVM(values.a->getType(), name);
 
@@ -2166,11 +2166,8 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
 
     func->getBasicBlockList().push_back(blockEnd);
     info->irBuilder->SetInsertPoint(blockEnd);
-#if HAVE_LLVM_VER >= 130
-    ret.val = info->irBuilder->CreateLoad(tmp->getType()->getPointerElementType(), tmp);
-#else
-    ret.val = info->irBuilder->CreateLoad(tmp);
-#endif
+    ret.val = info->irBuilder->CreateLoad(ifTrue.chplType->symbol->getLLVMStructureType(), tmp);
+
     ret.isUnsigned = !values.isSigned;
 #endif
   }
@@ -3227,13 +3224,17 @@ void codegenCopy(GenRet dest, GenRet src, Type* chplType=NULL)
       // Consider using memcpy instead of stack allocating a possibly
       // large structure.
 
-      llvm::Type* ptrTy = src.val->getType();
-      llvm::Type* eltTy = ptrTy->getPointerElementType();
+      llvm::Type* eltTy = nullptr;
+
+      if (chplType) {
+        eltTy = chplType->codegen().type;
+      }
 
       if( chplType && chplType->symbol->hasFlag(FLAG_STAR_TUPLE) ) {
         // Always use memcpy for star tuples.
         useMemcpy = true;
-      } else if( isTypeSizeSmallerThan(info->module->getDataLayout(), eltTy,
+      } else if( eltTy && isTypeSizeSmallerThan(info->module->getDataLayout(),
+                                       eltTy,
                                        256 /* max bytes to load/store */)) {
         // OK
       } else {
@@ -4872,15 +4873,6 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   args.push_back(new_IntSymbol(call->astloc.lineno()));
   args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
 
-  // We will emit the gpu code into a global variable named chpl_gpuBinary. Pass
-  // this variable to the launch call.
-  #ifdef HAVE_LLVM  // Needed to suppress warning; should always be true in code path for GPU codegen
-    GenInfo* info = gGenInfo;
-    args.push_back(info->lvt->getValue("chpl_gpuBinary"));
-  #else
-    INT_FATAL("Unexpected code path: gpu code generation without LLVM as target");
-  #endif
-
   // "Copy" arguments from primitive call to runtime library function call.
   int curArg = 1;
   for_actuals(actual, call) {
@@ -5003,12 +4995,25 @@ DEFINE_PRIM(GPU_SYNC_THREADS) {
     return;
   }
 #ifdef HAVE_LLVM
+  /* One approach to generating the barrier to call the
+   llvm intrinsic function for it, however
+   this approach ended up causing issues for us likely due this bug
+   reported here:
+
+    https://github.com/llvm/llvm-project/issues/58626
+
+   So instead we call a function in our runtime that includes inline
+   assembly to make the barrier call. If the llvm issue is resolved
+   we may want to change this back:
+
   Type *chplReturnType = dtVoid;
   llvm::Function *fun = llvm::Intrinsic::getDeclaration(gGenInfo->module,
     llvm::Intrinsic::nvvm_barrier0);
   ret.val = gGenInfo->irBuilder->CreateCall(fun);
   ret.isLVPtr = GEN_VAL;
-  ret.chplType = chplReturnType;
+  ret.chplType = chplReturnType;*/
+
+  ret = codegenCallExpr("chpl_gpu_force_sync");
 #endif
 }
 

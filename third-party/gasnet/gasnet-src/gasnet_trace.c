@@ -972,8 +972,8 @@ extern void gasneti_trace_init(int *pargc, char ***pargv) {
 
   #if GASNET_NDEBUG
   { const char *NDEBUG_warning = "tracing/statistical collection may adversely affect application performance.";
-    gasneti_tracestats_printf("WARNING: %s", NDEBUG_warning);
-    if (!gasneti_mynode) gasneti_console_message("WARNING", NDEBUG_warning);
+    gasneti_stats_printf("WARNING: %s", NDEBUG_warning);
+    gasneti_console0_message("WARNING", "%s", NDEBUG_warning);
   }
   #endif
 
@@ -991,9 +991,9 @@ extern void gasneti_trace_init(int *pargc, char ***pargv) {
   #if GASNET_NDEBUG
   { const char *NDEBUG_warning = "debugging malloc may adversely affect application performance.";
    #if GASNETI_STATS_OR_TRACE
-    gasneti_tracestats_printf("WARNING: %s", NDEBUG_warning);
+    gasneti_stats_printf("WARNING: %s", NDEBUG_warning);
    #endif
-   if (!gasneti_mynode) gasneti_console_message("WARNING", NDEBUG_warning);
+   gasneti_console0_message("WARNING", "%s", NDEBUG_warning);
   }
   #endif
   gasneti_mallocreport_filename = gasneti_getenv_withdefault("GASNET_MALLOCFILE","");

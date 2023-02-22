@@ -63,6 +63,7 @@ Language Support
 
    Reflection <standard/Reflection>
    Types <standard/Types>
+   MemMove <standard/MemMove>
 
 
 Math/Numerical
@@ -88,8 +89,8 @@ Parallelism/Distributed Computing
    Barriers <standard/Barriers>
    Communication <standard/Communication>
    DynamicIters <standard/DynamicIters>
-   VectorizingIterator <standard/VectorizingIterator>
    GPU <standard/GPU>
+   VectorizingIterator <standard/VectorizingIterator>
 
 System/Interoperability
 -----------------------
@@ -103,7 +104,6 @@ System/Interoperability
    Subprocess <standard/Subprocess>
    Sys <standard/Sys>
    SysBasic <standard/SysBasic>
-   SysError <standard/SysError>
 
 Utilities
 ---------
@@ -112,7 +112,6 @@ Utilities
    :maxdepth: 1
 
    ChplConfig <standard/ChplConfig>
-   DateTime <standard/DateTime>
    Help <standard/Help>
    Regex <standard/Regex>
    Time <standard/Time>

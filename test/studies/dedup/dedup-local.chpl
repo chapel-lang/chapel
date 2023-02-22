@@ -16,7 +16,7 @@ proc main(args:[] string)
     if isFile(arg) then
       paths.append(arg);
     else if isDir(arg) then
-      for path in findfiles(arg, recursive=true) do
+      for path in findFiles(arg, recursive=true) do
         paths.append(path);
   }
 
@@ -75,7 +75,7 @@ proc stringToHash(s:string): Hash {
   //  * loop over characters in a string
   //  * equivalent of sscanf
   //  * readf for integers with a maximum field width
-  var f = openmem();
+  var f = openMemFile();
   var w = f.writer();
   w.write(s[1..16], " ");
   w.write(s[17..32], " ");

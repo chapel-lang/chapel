@@ -29,13 +29,13 @@ var   membcounts:[atomsExt] int;
 const infile:string = 'ljcut.in';
 
 loadParticles(infile, positions, velocities);
-var timer:Timer;
+var timer:stopwatch;
 writeln("-- LAMMPS - (Serial,Chapel) --");
 timer.start();
 
 for i in 1..numSteps
 {
-//    var it:Timer;
+//    var it:stopwatch;
 //    it.start();
 //    writeln("--------------------------");
 //    writeln("iteration=",i);
@@ -146,8 +146,8 @@ proc updateNeighbors()
 proc loadParticles(filename:string, p:[?D], v:[D])
 {
     use IO;
-    var rawFile=open(filename, iomode.r, ioHintSet.sequential);
-    var fileIn=rawFile.reader(iokind.dynamic,true,0..max(int(64)), ioHintSet.sequential);
+    var rawFile=open(filename, ioMode.r, ioHintSet.sequential);
+    var fileIn=rawFile.reader(iokind.dynamic,true,0.., ioHintSet.sequential);
 
     for i in D
     {

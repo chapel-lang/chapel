@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -409,7 +409,7 @@ pragma "unsafe" // due to 'tmp' default-initialized to nil for class types
 private
 proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
   if !Dom.stridable {
-    var tmp:Data[Dom.alignedLow].type;
+    var tmp:Data[Dom.low].type;
     if canResolveMethod(comparator, "keyPart", tmp, 0) {
       return true;
     } else if canResolveMethod(comparator, "key", tmp) {
@@ -467,7 +467,7 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
   // TODO: This should have a flag `stable` to request a stable sort
   chpl_check_comparator(comparator, eltType);
 
-  if Dom.alignedLow >= Dom.alignedHigh then
+  if Dom.low >= Dom.high then
     return;
 
   if radixSortOk(Data, comparator) {
@@ -502,7 +502,7 @@ proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
   const stride = if Dom.stridable then abs(Dom.stride) else 1:Dom.idxType;
   var sorted = true;
   forall (element, i) in zip(Data, Dom) with (&& reduce sorted) {
-    if i > Dom.alignedLow {
+    if i > Dom.low {
       sorted &&= (chpl_compare(Data[i-stride], element, comparator) <= 0);
     }
   }
@@ -596,8 +596,8 @@ module BubbleSort {
       compilerError("bubbleSort() requires 1-D array");
     }
 
-    const low = Dom.alignedLow,
-          high = Dom.alignedHigh,
+    const low = Dom.low,
+          high = Dom.high,
           stride = abs(Dom.stride);
 
     var swapped = true;
@@ -634,8 +634,8 @@ module HeapSort {
       compilerError("heapSort() requires 1-D array");
     }
 
-    const low = Dom.alignedLow,
-          high = Dom.alignedHigh,
+    const low = Dom.low,
+          high = Dom.high,
           size = Dom.size,
           stride = abs(Dom.stride);
 
@@ -693,7 +693,7 @@ module InsertionSort {
       data is sorted.
 
    */
-  proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.alignedLow, hi:int=Dom.alignedHigh) {
+  proc insertionSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -722,7 +722,7 @@ module InsertionSort {
     }
   }
 
-  proc insertionSortMoveElts(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.alignedLow, hi:int=Dom.alignedHigh) {
+  proc insertionSortMoveElts(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.low, hi:int=Dom.high) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
@@ -774,8 +774,8 @@ module BinaryInsertionSort {
       compilerError("binaryInsertionSort() requires 1-D array");
     }
 
-    const low = Dom.alignedLow,
-          high = Dom.alignedHigh,
+    const low = Dom.low,
+          high = Dom.high,
           stride = abs(Dom.stride);
 
     for i in low..high by stride {
@@ -800,7 +800,7 @@ module BinaryInsertionSort {
     If `val` is not in `Data`, the index that it should be inserted at is returned.
     Does not check for a valid comparator.
   */
-  private proc _binarySearchForLastOccurrence(Data: [?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.alignedLow, in hi=Dom.alignedHigh) {
+  private proc _binarySearchForLastOccurrence(Data: [?Dom], val, comparator:?rec=defaultComparator, in lo=Dom.low, in hi=Dom.high) {
     const stride = if Dom.stridable then abs(Dom.stride) else 1;
 
     var loc = -1;                                        // index of the last occurrence of val in Data
@@ -849,7 +849,7 @@ module TimSort {
       compilerError("timSort() requires 1-D array");
     }
 
-    _TimSort(Data, Dom.alignedLow, Dom.alignedHigh, blockSize, comparator);
+    _TimSort(Data, Dom.low, Dom.high, blockSize, comparator);
   }
 
   private proc _TimSort(Data: [?Dom], lo:int, hi:int, blockSize=16, comparator:?rec=defaultComparator) {
@@ -960,7 +960,7 @@ module MergeSort {
 
     var Scratch: Data.type;
 
-    _MergeSort(Data, Scratch, Dom.alignedLow, Dom.alignedHigh, minlen, comparator, 0);
+    _MergeSort(Data, Scratch, Dom.low, Dom.high, minlen, comparator, 0);
   }
 
   /*
@@ -1237,7 +1237,7 @@ module QuickSort {
     }
 
     if Dom.stridable && Dom.stride != 1 {
-      ref reindexed = Data.reindex(Dom.alignedLow..#Dom.size);
+      ref reindexed = Data.reindex(Dom.low..#Dom.size);
       assert(reindexed.domain.stride == 1);
       quickSortImpl(reindexed, minlen, comparator);
       return;
@@ -1252,7 +1252,7 @@ module QuickSort {
   proc quickSortImpl(Data: [?Dom] ?eltType,
                      minlen=16,
                      comparator:?rec=defaultComparator,
-                     start:int = Dom.alignedLow, end:int = Dom.alignedHigh) {
+                     start:int = Dom.low, end:int = Dom.high) {
     import Sort.InsertionSort;
 
     // grab obvious indices
@@ -1336,8 +1336,8 @@ module SelectionSort {
       compilerError("selectionSort() requires 1-D array");
     }
 
-    const low = Dom.alignedLow,
-          high = Dom.alignedHigh,
+    const low = Dom.low,
+          high = Dom.high,
           stride = abs(Dom.stride);
 
     for i in low..high-stride by stride {
@@ -1356,7 +1356,7 @@ pragma "no doc"
 module ShellSort {
   private use Sort;
   proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
-                 start=Dom.alignedLow, end=Dom.alignedHigh)
+                 start=Dom.low, end=Dom.high)
   {
     chpl_check_comparator(comparator, eltType);
 
@@ -1750,7 +1750,7 @@ module RadixSortHelp {
   proc msbRadixSortParamLastStartBit(Data:[], comparator) param {
     // Compute end_bit if it's known
     // Default comparator on integers has fixed width
-    const ref element = Data[Data.domain.alignedLow];
+    const ref element = Data[Data.domain.low];
     if comparator.type == DefaultComparator && fixedWidth(element.type) > 0 {
       return fixedWidth(element.type) - RADIX_BITS;
     } else if canResolveMethod(comparator, "key", element) {
@@ -2871,8 +2871,8 @@ module TwoArrayPartitioning {
           if debugDist then
             writeln(tid, " bucketizing local portion ", localDomain);
 
-          bucketize(localDomain.alignedLow,
-                    localDomain.alignedHigh,
+          bucketize(localDomain.low,
+                    localDomain.high,
                     localDst, localSrc,
                     state.perLocale[tid].compat, criterion, task.startbit);
 
@@ -2974,7 +2974,7 @@ module TwoArrayPartitioning {
           // This could be written as a scan expression...
           ref localOffsets = state.perLocale[tid].compat.counts;
           {
-            var offset = localSubdomain.alignedLow;
+            var offset = localSubdomain.low;
             for bin in 0..#nBuckets {
               localOffsets[bin] = offset;
               offset += globalCounts[bin*nLocalesTotal + tid];
@@ -3117,7 +3117,7 @@ module TwoArrayPartitioning {
 
     // Always use state 1 for small subproblems...
     ref state = state1;
-    coforall (loc,tid) in zip(A.targetLocales(),0:idxType..) with (ref state) do
+    coforall (loc,tid) in zip(A.targetLocales(),0..) with (ref state) do
     on loc {
       // Get the tasks to sort here
 
@@ -3179,7 +3179,7 @@ module TwoArrayRadixSort {
         endbit=endbit);
 
 
-      partitioningSortWithScratchSpace(Data.domain.alignedLow, Data.domain.alignedHigh,
+      partitioningSortWithScratchSpace(Data.domain.low, Data.domain.high,
                                        Data, Scratch,
                                        state, comparator, 0);
     } else {
@@ -3197,7 +3197,7 @@ module TwoArrayRadixSort {
         endbit=endbit);
 
       distributedPartitioningSortWithScratchSpace(
-                                       Data.domain.alignedLow, Data.domain.alignedHigh,
+                                       Data.domain.low, Data.domain.high,
                                        Data, Scratch,
                                        state1, state2,
                                        comparator, 0);
@@ -3234,7 +3234,7 @@ module TwoArraySampleSort {
         baseCaseSize=baseCaseSize,
         endbit=endbit);
 
-      partitioningSortWithScratchSpace(Data.domain.alignedLow, Data.domain.alignedHigh,
+      partitioningSortWithScratchSpace(Data.domain.low, Data.domain.high,
                                        Data, Scratch,
                                        state, comparator, 0);
     } else {
@@ -3246,7 +3246,7 @@ module TwoArraySampleSort {
         endbit=endbit);
 
       distributedPartitioningSortWithScratchSpace(
-                                       Data.domain.alignedLow, Data.domain.alignedHigh,
+                                       Data.domain.low, Data.domain.high,
                                        Data, Scratch,
                                        state, comparator, 0);
     }
@@ -3282,7 +3282,7 @@ module MSBRadixSort {
     if endbit < 0 then
       endbit = max(int);
 
-    msbRadixSort(Data, start_n=Data.domain.alignedLow, end_n=Data.domain.alignedHigh,
+    msbRadixSort(Data, start_n=Data.domain.low, end_n=Data.domain.high,
                  comparator,
                  startbit=0, endbit=endbit,
                  settings=new MSBRadixSortSettings());

@@ -71,7 +71,7 @@ proc main(args:[] string) {
   for arg in files {
     if isDir(arg) {
       // Go through files in directories.
-      for f in findfiles(arg, true) {
+      for f in findFiles(arg, true) {
         todo.append(f);
       }
     } else {
@@ -94,7 +94,7 @@ proc main(args:[] string) {
 
 
 proc run(ref todo:LinkedList(string), ref Pairs) {
-  var t:Timer;
+  var t:stopwatch;
   t.start();
 
   const FilesSpace = {1..todo.size};
@@ -107,7 +107,7 @@ proc run(ref todo:LinkedList(string), ref Pairs) {
 
   todo.destroy();
 
-  var parseAndMakeSetTime:Timer;
+  var parseAndMakeSetTime:stopwatch;
   parseAndMakeSetTime.start();
 
 
@@ -177,7 +177,7 @@ record Empty {
 }
 
 
-proc process_json(logfile:channel, fname:string, ref Pairs) {
+proc process_json(logfile:fileReader, fname:string, ref Pairs) {
   var tweet:Tweet;
   var empty:Empty;
   var got:bool;
@@ -196,7 +196,7 @@ proc process_json(logfile:channel, fname:string, ref Pairs) {
       } catch e: BadFormatError {
         if verbose then
             stdout.writeln("error reading tweets ", fname, " offset ",
-              logfile.offset(), " : ", errorToString(e.err));
+              logfile.offset(), " : ", e._msg);
 
         // read over something else
         got = logfile.readf("%~jt", empty);
@@ -278,7 +278,7 @@ proc create_and_analyze_graph(ref Pairs)
             total_lines_processed.read(), " lines");
   }
 
-  var createGraphTime:Timer;
+  var createGraphTime:stopwatch;
   createGraphTime.start();
 
   var nmutual = 0;
@@ -384,7 +384,7 @@ proc create_and_analyze_graph(ref Pairs)
   if progress then
     writeln("label propagation");
 
-  var graphAlgorithmTime:Timer;
+  var graphAlgorithmTime:stopwatch;
   graphAlgorithmTime.start();
 
   // start with a different label for each node

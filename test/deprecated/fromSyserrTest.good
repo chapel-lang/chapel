@@ -1,1 +1,0 @@
-fromSyserrTest.chpl:3: warning: 'SystemError.fromSyserr' is deprecated. Please use 'createSystemError' instead.

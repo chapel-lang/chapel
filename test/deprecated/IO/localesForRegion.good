@@ -1,0 +1,10 @@
+localesForRegion.chpl:5: warning: file.localesForRegion is deprecated
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method 'localesForRegion':
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: error: unresolved call '==(string, c_string)'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: this candidate did not match: ==(a: _nilType, b: _nilType)
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: because actual argument #1 with type 'string'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: is passed to formal 'a: nil'
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: other candidates are:
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   ==(a: bool, b: bool)
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   ==(a: borrowed object?, b: borrowed object?)
+note: and 112 other candidates, use --print-all-candidates to see them

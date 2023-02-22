@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -257,7 +257,7 @@ private proc masonExternalRemove(toml: shared Toml, toRm: string) throws {
 
 /* Generate the modified Mason.toml */
 proc generateToml(toml: borrowed Toml, tomlPath: string) {
-  const tomlFile = open(tomlPath, iomode.cw);
+  const tomlFile = open(tomlPath, ioMode.cw);
   const tomlWriter = tomlFile.writer();
   tomlWriter.writeln(toml);
   tomlWriter.close();

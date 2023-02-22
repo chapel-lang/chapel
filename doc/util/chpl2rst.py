@@ -34,10 +34,9 @@ This is
 
 this comment will be text"""
 
-from __future__ import print_function
-
 import os
 import sys
+from literate_chapel import to_pieces, title_comment
 
 import argparse
 
@@ -93,16 +92,11 @@ def gen_link(link, chapelfile):
     return rstlink
 
 
-def titlecomment(line):
-    """Condition for a line to be a title comment"""
-    return line.startswith('//') and len(line.lstrip('//').strip()) > 0
-
-
 def gen_title(chapelfile):
     """Generate file title, based on if title comment exists"""
     with open(chapelfile, 'r', encoding='utf-8') as handle:
         line1 = handle.readline()
-        if titlecomment(line1):
+        if title_comment(line1):
             title = line1.lstrip('//').strip()
         else:
             filename = os.path.split(chapelfile)[1]
@@ -139,111 +133,22 @@ def gen_preamble(chapelfile, link=None):
 
     return '\n'.join(output)
 
-
-def gen_rst(handle):
-    """Convert contents of file handle to restructured text, using the rules
-    described in the module doc string (__doc__)"""
-
+def gen_rst(pieces, chapelfile):
     output = []
-    commentdepth = 0
-    state = ''
-    indentation = -1
-    islearnChapelInYMinutes = (os.path.basename(handle.name)=='learnChapelInYMinutes.chpl')
-    foundCommentExample = False
 
     # Each line is rst or code-block
-    for (i, line) in enumerate([l.strip('\n') for l in handle.readlines()]):
-
-        # Skip title comment if present
-        if i == 0:
-            if titlecomment(line):
-                continue
-
-        # Skip empty lines
-        if len(line.strip()) == 0:
+    for (kind, content) in pieces:
+        if kind == 'title': continue
+        elif kind == 'prose':
+            output.extend(content)
+        elif kind == 'code':
+            output.append('.. code-block:: chapel')
             output.append('')
+            output.extend('    ' + line for line in content)
+        elif kind == 'output':
+            # Don't support output
             continue
-
-        # Comment canaries - note: we don't support escaped comments: \/*
-        commentstarts = line.count('/*')
-        commentends = line.count('*/')
-        commentdepth += commentstarts - commentends
-
-        # State tracking
-        laststate = state
-        state = ''
-
-        # Identification of line
-        if commentdepth > 0 or commentends > 0:
-            state = 'blockcomment'
-        elif line.startswith('//'):
-            state = 'linecomment'
-        elif 'code' in laststate:
-            state = 'code'
-        else:
-            state = 'codeblock'
-
-        if 'comment' in state:
-
-            if 'comment' not in laststate:
-                output.append('')
-
-            rstline = line
-            if state == 'linecomment':
-                # Strip white space for line comments
-                rstline = rstline.replace('//', '  ', 1)
-                rstline = rstline.strip()
-            else:
-                # Preserve white space for block comments, for indent purposes
-                if commentstarts:
-                    rstline = rstline.replace('/*', '  ')
-                if commentends > 0:
-                    rstline = rstline.replace('*/', '  ')
-                # No need for trailing white space... ever
-                rstline = rstline.rstrip(' ')
-
-            # Handle indentation
-            if indentation == -1:
-                # Detect level of indentation (number of leading whitespaces)
-                baseline = len(rstline) - len(rstline.lstrip(' '))
-                if baseline > 0:
-                    # Set indentation for the proceeding block
-                    indentation = baseline
-                    # Set indentation for baseline to 0
-                    rstline = rstline.lstrip(' ')
-            else:
-                # Remove the amount of indent that was removed from baseline
-                if rstline.startswith(' '*indentation):
-                    rstline = rstline[indentation:]
-                else:
-                    rstline = rstline.lstrip(' ')
-            # Special case for multi line comment in learnChapelInYMinutes
-            if islearnChapelInYMinutes and 'multi-line comment' in rstline:
-                output.append(' '*indentation + '/*')
-                output.append(rstline)
-                output.append(' '*indentation + '*/')
-                if foundCommentExample:
-                    print("Error: Found more than one line containing \"multi-line comment\" in \
-                        learnChapelInYMinutes.chpl")
-                    sys.exit(1)
-                foundCommentExample = True
-            else:
-               output.append(rstline)
-        else:
-            # Reset indentation as we enter codeblock state
-            indentation = -1
-
-            # Write code block
-            if state == 'codeblock':
-                output.append('')
-                output.append('.. code-block:: chapel')
-                output.append('')
-            codeline = ''.join(['    ', line])
-            output.append(codeline)
-
-    if islearnChapelInYMinutes and not foundCommentExample:
-        print('Error: Failed to find special case of comment example in learnChapelInYMinutes.chpl')
-        sys.exit(1)
+        output.append('')
     return '\n'.join(output)
 
 
@@ -258,13 +163,12 @@ def gen_codeblock(handle):
 
     for (i, line) in enumerate([l.strip('\n') for l in handle.readlines()]):
         if i == 0:
-            if titlecomment(line):
+            if title_comment(line):
                 continue
 
         output.append('  ' + line)
 
     return '\n'.join(output)
-
 
 def getfname(chapelfile, output, prefix):
     """Compute filename for output"""
@@ -304,14 +208,15 @@ def main_args(**kwargs):
     verbose = kwargs['verbose']
 
     for chapelfile in chapelfiles:
-
+        islearnChapelInYMinutes = (os.path.basename(chapelfile)=='learnChapelInYMinutes.chpl')
         preamble = gen_preamble(chapelfile, link=link)
 
         with open(chapelfile, 'r', encoding='utf-8') as handle:
             if codeblock:
                 rstoutput = gen_codeblock(handle)
             else:
-                rstoutput = gen_rst(handle)
+                pieces = to_pieces(handle, islearnChapelInYMinutes)
+                rstoutput = gen_rst(pieces, chapelfile)
 
         rstoutput = '\n'.join([preamble, rstoutput])
 

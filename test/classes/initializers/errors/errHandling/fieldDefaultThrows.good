@@ -1,0 +1,4 @@
+{x = 2}
+uncaught Error: whee!
+  fieldDefaultThrows.chpl:2: thrown here
+  fieldDefaultThrows.chpl:7: uncaught here

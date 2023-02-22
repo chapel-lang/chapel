@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -212,6 +212,9 @@ void insert_help(BaseAST* ast, Expr* parentExpr, Symbol* parentSymbol);
 
 ArgSymbol* actual_to_formal( Expr *a);
 Expr* formal_to_actual(CallExpr* call, Symbol* formal);
+
+bool isExternType(Type* t);
+bool isExportableType(Type* t);
 
 bool isTypeExpr(Expr* expr);
 bool givesType(Symbol* sym);

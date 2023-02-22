@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1825,9 +1825,7 @@ int32_t chpl_comm_getMaxThreads(void)
   return 0;
 }
 
-
-void chpl_comm_init(int *argc_p, char ***argv_p)
-{
+void chpl_comm_pre_topo_init(void) {
   if (fork_op_num_ops > (1 << FORK_OP_BITS))
     CHPL_INTERNAL_ERROR("too many fork OPs for internal encoding");
 
@@ -1868,6 +1866,11 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
     CHPL_INTERNAL_ERROR("PMI_Get_numpes_in_app_on_smp() failed");
   }
   chpl_set_num_locales_on_node((int32_t) count);
+}
+
+
+void chpl_comm_init(int *argc_p, char ***argv_p)
+{
 
   {
     GNI_CHECK(GNI_GetDeviceType(&nic_type));
@@ -1901,8 +1904,12 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
   // We can reach 16k memory regions on Aries.
   max_mem_regions = chpl_env_rt_get_int("COMM_UGNI_MAX_MEM_REGIONS", 16384);
 
+  // Do extent MR checks to help catch subtle implementation bugs, but only
+  // when the cache is off. Our extent MR tracking is based on our allocation
+  // size, but the cache can read past an allocation to the end of a page
+  // (safe because the kernel MR extends that far, but our tracking doesn't.)
   do_mr_extent_checks = chpl_env_rt_get_bool("COMM_UGNI_DO_MR_EXTENT_CHECKS",
-                                             true);
+                                             !chpl_cache_enabled());
   cache_max_readahead_size = chpl_getSysPageSize();
 
   //
@@ -1925,6 +1932,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p)
                                     sizeof(mr_mregs_supplement[0]));
 }
 
+
+void chpl_comm_pre_mem_init(void) { }
 
 void chpl_comm_post_mem_init(void)
 {
@@ -2105,7 +2114,7 @@ void chpl_comm_post_task_init(void)
   //
   // Start the polling task.
   //
-  if (chpl_task_createCommTask(polling_task, NULL) != 0)
+  if (chpl_task_createCommTask(polling_task, NULL, -1) != 0)
     CHPL_INTERNAL_ERROR("unable to start comm task for uGNI comm layer");
 
   //

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -141,9 +141,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 #else
   mypid = 0;
 #endif
-  sprintf(sysFilename, "%s%d", baseSysFilename, (int)mypid);
-  sprintf(expectFilename, "%s%d", baseExpectFilename, (int)mypid);
-  sprintf(pbsFilename, "%s%d", basePBSFilename, (int)mypid);
+  snprintf(sysFilename, sizeof(sysFilename), "%s%d", baseSysFilename,
+           (int)mypid);
+  snprintf(expectFilename, sizeof(expectFilename), "%s%d", baseExpectFilename,
+           (int)mypid);
+  snprintf(pbsFilename, sizeof(pbsFilename), "%s%d", basePBSFilename,
+           (int)mypid);
 
   pbsFile = fopen(pbsFilename, "w");
   fprintf(pbsFile, "#!/bin/sh\n\n");

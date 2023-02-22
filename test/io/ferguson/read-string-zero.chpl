@@ -3,7 +3,7 @@ use IO;
 
 var str = "hello\x00goodbye\n";
 
-var f = opentmp();
+var f = openTempFile();
 
 {
   var w = f.writer(kind=iokind.native);
@@ -16,7 +16,7 @@ var f = opentmp();
   var r = f.reader(kind=iokind.native);
 
   var s:string;
-  var got = r.readstring(s, str.numBytes);
+  var got = r.readString(s, str.numBytes);
 
   assert(got);
   writeln("readstring read a string with length ", s.numBytes);

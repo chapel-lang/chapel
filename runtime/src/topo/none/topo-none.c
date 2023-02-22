@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,6 +33,7 @@
 
 void chpl_topo_init(void) { }
 
+void chpl_topo_post_args_init(void) { }
 
 void chpl_topo_exit(void) { }
 
@@ -49,6 +50,21 @@ int chpl_topo_getNumCPUsPhysical(chpl_bool accessible_only) {
 
 int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
   return chpl_sys_getNumCPUsLogical(accessible_only);
+}
+
+
+int chpl_topo_getCPUs(chpl_bool physical, int *cpus, int count) {
+  return 0;
+}
+
+
+int chpl_topo_reserveCPUPhysical(void) {
+  return -1;
+}
+
+
+int chpl_topo_bindCPU(int id) {
+  return 1;
 }
 
 
@@ -81,4 +97,8 @@ void chpl_topo_touchMemFromSubloc(void* p, size_t size, chpl_bool onlyInside,
 
 c_sublocid_t chpl_topo_getMemLocality(void* p) {
   return c_sublocid_any;
+}
+
+chpl_bool chpl_topo_isOversubscribed(void) {
+  return false;
 }

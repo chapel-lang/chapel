@@ -49,9 +49,9 @@ proc main() {
 
   InitRandomSteps();
 
-  RealTime = Timer();
+  RealTime = stopwatch();
   RandomAccessUpdate();
-  RealTime = Timer() - RealTime;
+  RealTime = stopwatch() - RealTime;
 
 
   GUPs = (if (RealTime > 0.0) then (1.0 / RealTime) else -1.0);
@@ -130,7 +130,7 @@ proc VerifyResults() {
   }
 }
 
-proc Timer():real {
+proc stopwatch():real {
   return 1.0;
 }
 

@@ -1,0 +1,27 @@
+#!/usr/bin/env python3
+
+import os
+import argparse
+
+parser = argparse.ArgumentParser(description='Write the reservedSymbolNames.h file')
+parser.add_argument('location', help='The location to read the reservedSymbolNames and write the reservedSymbolNames.h file')
+
+args = parser.parse_args()
+
+if not os.path.exists(args.location):
+  raise Exception('Location {} does not exist'.format(args.location))
+
+file_contents = []
+
+with open(os.path.join(args.location, 'reservedSymbolNames'), 'r') as l:
+  file_contents = l.readlines()
+
+with open(os.path.join(args.location, 'reservedSymbolNames.h'), 'w') as f:
+    for line in file_contents:
+      if line.strip().startswith('//'):
+        f.write(line)
+        continue
+      line = line.strip("\n")
+      parts = line.partition('//')
+      line = '  cnames.insert(astr("{}")); {}{}\n'.format(parts[0].strip(),parts[1], parts[2])
+      f.write(line)

@@ -1,2 +1,0 @@
-unlink.chpl:4: In function 'main':
-unlink.chpl:13: warning: unlink is deprecated. Please use FileSystem.remove instead

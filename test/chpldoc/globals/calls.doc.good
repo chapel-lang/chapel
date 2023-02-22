@@ -1,4 +1,4 @@
-calls.doc.chpl:19: warning: This file-scope code is outside of any explicit module declarations (e.g., module Hello), so an implicit module named 'calls.doc' is being introduced to contain the file's contents.
+warning in calls.doc.chpl:19: an implicit module named 'calls.doc' is being introduced to contain file-scope code
 .. default-domain:: chpl
 
 .. module:: calls.doc

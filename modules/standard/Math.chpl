@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,6 +51,7 @@ module Math {
      It is an error if `x` is less than or equal to -1.
   */
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc log1p(x: real(64)): real(64);
 
   /* Returns the natural logarithm of `x` + 1.

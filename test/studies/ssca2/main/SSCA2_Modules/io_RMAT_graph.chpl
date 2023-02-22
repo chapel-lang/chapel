@@ -38,8 +38,8 @@ proc Writeout_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
   writeln("writing RMAT graph with ", graphNumVertices(G), " vertices, ",
         graphTotalEdges(G), " edges to '", snapshot_prefix, "'*");
 
-  var stopwatch : Timer;
-  if PRINT_TIMING_STATISTICS then stopwatch.start ();
+  var sw : stopwatch;
+  if PRINT_TIMING_STATISTICS then sw.start ();
 
   param wri = true;
 
@@ -97,10 +97,10 @@ proc Writeout_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
   sta.close();
 
   if PRINT_TIMING_STATISTICS then {
-    stopwatch.stop ();
-    writeln ( "Elapsed time for writing RMAT graph: ", stopwatch.elapsed (),
+    sw.stop ();
+    writeln ( "Elapsed time for writing RMAT graph: ", sw.elapsed (),
               " seconds");
-    stopwatch.clear ();
+    sw.clear ();
   }
 
   write("DONE writing RMAT graph");
@@ -132,8 +132,8 @@ proc Readin_RMAT_graph(G, snapshot_prefix:string, dstyle = "-"): void {
               then " in parallel, 1 task per locale" else " in parallel",
           " from '", snapshot_prefix, "'*");
 
-  var stopwatch : Timer;
-  if PRINT_TIMING_STATISTICS then stopwatch.start ();
+  var sw : stopwatch;
+  if PRINT_TIMING_STATISTICS then sw.start ();
 
   param rea = false;
 
@@ -243,10 +243,10 @@ repfiles[repfileST2] = createGraphFile(snapshot_prefix, START_FILENAME, rea);
   } // if IOserial
 
   if PRINT_TIMING_STATISTICS then {
-    stopwatch.stop ();
-    writeln ( "Elapsed time for reading RMAT graph: ", stopwatch.elapsed (),
+    sw.stop ();
+    writeln ( "Elapsed time for reading RMAT graph: ", sw.elapsed (),
               " seconds");
-    stopwatch.clear ();
+    sw.clear ();
   }
 
   write("DONE reading RMAT graph");
@@ -327,13 +327,13 @@ iter graphReaderReal(GRow, uxIDs, type VType, vCount, eCount, repfiles,
   //
   const sta_v1 = repfiles[repfileST2].reader(kind = IOendianness,
                                              locking = false,
-                                             region = staOffsetForVID(v1)..staOffsetForVID(v1+1));
+                                             region = staOffsetForVID(v1)..#staOffsetForVID(v1+1));
   const sta1 = readNum(sta_v1) + 1;
   sta_v1.close();
 
   // We read edgeStart(v2) from its own channel.
   const sta_v2 = repfiles[repfileSTA].reader(IOendianness, false,
-                            staOffsetForVID(v2+1)..staOffsetForVID(v2+1+1));
+                            staOffsetForVID(v2+1)..#staOffsetForVID(v2+1+1));
   const sta2 = readNum(sta_v2);
   sta_v2.close();
 
@@ -345,16 +345,16 @@ iter graphReaderReal(GRow, uxIDs, type VType, vCount, eCount, repfiles,
 
   // We access only our parts these files.
   const sv = repfiles[repfileSV].reader(IOendianness, false,
-                        svOffsetForEID(sta1)..svOffsetForEID(sta2+1));
+                        svOffsetForEID(sta1)..#svOffsetForEID(sta2+1));
   const ev = repfiles[repfileEV].reader(IOendianness, false,
-                        svOffsetForEID(sta1)..svOffsetForEID(sta2+1));
+                        svOffsetForEID(sta1)..#svOffsetForEID(sta2+1));
   const ww = repfiles[repfileWW].reader(IOendianness, false,
-                        svOffsetForEID(sta1)..svOffsetForEID(sta2+1));
+                        svOffsetForEID(sta1)..#svOffsetForEID(sta2+1));
 
   // 'sta' covers edgeStart(v1+1..v2).
   // Do not include v1, as another process will be reading it from its 'STA'.
   const sta = repfiles[repfileSTA].reader(IOendianness, false,
-                         staOffsetForVID(v1+1)..staOffsetForVID(v2+1+1));
+                         staOffsetForVID(v1+1)..#staOffsetForVID(v2+1+1));
 
   var startIxCnt = sta1 - 1;
 
@@ -497,18 +497,21 @@ proc createGraphChannel(prefix:string, suffix:string, param forWriting:bool) {
 
 proc createGraphFile(prefix:string, suffix:string, param forWriting:bool) {
   return open(prefix+suffix,
-              if forWriting then iomode.cw else iomode.r,
+              if forWriting then ioMode.cw else ioMode.r,
               ioHintSet.sequential);
 }
 
 proc ensureEOFofDataFile(chan, snapshot_prefix, file_suffix): void {
-  import SysBasic.EEOF;
   var temp:IONumType;
+  var dataRemains:bool = false;
   try! {
-    chan.read(temp);
+    dataRemains = chan.read(temp);
   } catch e: SystemError {
     // temp==0 is a workaround for unending large files
-    if e.err != EEOF && temp != 0 then
+    if temp != 0 then
+      dataRemains = true;
+  }
+  if (dataRemains) {
       myerror("did not reach EOF in '", snapshot_prefix, file_suffix,
               "'  the next value is ", temp);
   }

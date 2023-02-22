@@ -1,0 +1,2 @@
+useImportNotModule.chpl:7: In module 'N':
+useImportNotModule.chpl:8: error: cannot 'use' symbol 'someProc', which is not a module or enum

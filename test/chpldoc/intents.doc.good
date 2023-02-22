@@ -1,4 +1,4 @@
-intents.doc.chpl:78: warning: This file-scope code is outside of any explicit module declarations (e.g., module Inner), so an implicit module named 'intents.doc' is being introduced to contain the file's contents.
+warning in intents.doc.chpl:78: an implicit module named 'intents.doc' is being introduced to contain file-scope code
 .. default-domain:: chpl
 
 .. module:: intents.doc

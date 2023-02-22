@@ -39,7 +39,7 @@ proc main() {
   populate(A, ADom, sparsity, seed);
   populate(B, BDom, sparsity, seed+1);
 
-  var t: Timer;
+  var t: stopwatch;
 
   // CSR . CSC - optimized
   t.start();
@@ -59,8 +59,8 @@ proc populate(ref A, ref ADom, sparsity: real, seed: int) where A.isSparse() {
   var randomIndices = createRandomStream(eltType=int, seed=seed);
   for idx in indices {
     // Ensure no duplicates
-    var newIdx = idx;
-    while (maxloc reduce zip(indices == newIdx, indices.domain))(0) {
+    var newIdx = idx, loc: nnz.type;
+    while indices.find(newIdx, loc) {
       newIdx = (randomIndices.getNext(ADom.dim(0).low, ADom.dim(0).high), randomIndices.getNext(ADom.dim(1).low, ADom.dim(1).high));
     }
     idx = newIdx;
@@ -81,8 +81,8 @@ proc populate(ref A: [?ADom], sparsity: real, seed: int) where !A.isSparse() {
   var randomIndices = createRandomStream(eltType=int, seed=seed);
   for idx in indices {
     // Ensure no duplicates
-    var newIdx = idx;
-    while (maxloc reduce zip(indices == newIdx, indices.domain))(0) {
+    var newIdx = idx, loc: nnz.type;
+    while indices.find(newIdx, loc) {
       newIdx = (randomIndices.getNext(ADom.dim(0).low, ADom.dim(0).high), randomIndices.getNext(ADom.dim(1).low, ADom.dim(1).high));
     }
     idx = newIdx;

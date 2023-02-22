@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -83,8 +83,8 @@ c2chapel["unsigned short"]     = "c_ushort"
 c2chapel["intptr_t"]           = "c_intptr"
 c2chapel["uintptr_t"]          = "c_uintptr"
 c2chapel["ptrdiff_t"]          = "c_ptrdiff"
-c2chapel["ssize_t"]            = "ssize_t"
-c2chapel["size_t"]             = "size_t"
+c2chapel["ssize_t"]            = "c_ssize_t"
+c2chapel["size_t"]             = "c_size_t"
 c2chapel["long double"]        = "c_longlong"
 c2chapel["signed short"]       = "c_short"
 c2chapel["signed int"]         = "c_int"

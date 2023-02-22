@@ -12,10 +12,8 @@ amenable to being documented using **chpldoc**:
 .. toctree::
    :maxdepth: 1
 
-   OwnedObject
-   SharedObject
    ChapelSyncvar
-
+   WeakPointer
 
 Index
 -----

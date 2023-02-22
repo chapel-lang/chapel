@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -358,6 +358,10 @@ module ChapelLocale {
     }
 
     override proc writeThis(f) throws {
+      HaltWrappers.pureVirtualMethodHalt();
+    }
+
+    override proc encodeTo(f) throws {
       HaltWrappers.pureVirtualMethodHalt();
     }
 
@@ -766,6 +770,7 @@ module ChapelLocale {
 
   pragma "fn synchronization free"
   pragma "no doc"
+  pragma "codegen for CPU and GPU"
   extern proc chpl_task_getRequestedSubloc(): chpl_sublocID_t;
 
   pragma "no doc"

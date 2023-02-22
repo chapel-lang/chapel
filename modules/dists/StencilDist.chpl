@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -806,7 +806,7 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
     // not checking here whether the new low and high fit into idxType
     var low = (stride * followThis(i).lowBound:strType):idxType;
     var high = (stride * followThis(i).highBound:strType):idxType;
-    t(i) = ((low..high by stride:strType) + whole.dim(i).alignedLow by followThis(i).stride:strType).safeCast(t(i).type);
+    t(i) = ((low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType).safeCast(t(i).type);
   }
   for i in {(...t)} {
     yield i;
@@ -852,8 +852,8 @@ proc StencilDom.dsiBuildArray(type eltType, param initElts:bool) {
 // common redirects
 override proc StencilDom.dsiLow           return whole.lowBound;
 override proc StencilDom.dsiHigh          return whole.highBound;
-override proc StencilDom.dsiAlignedLow    return whole.alignedLow;
-override proc StencilDom.dsiAlignedHigh   return whole.alignedHigh;
+override proc StencilDom.dsiAlignedLow    return whole.low;
+override proc StencilDom.dsiAlignedHigh   return whole.high;
 override proc StencilDom.dsiFirst         return whole.first;
 override proc StencilDom.dsiLast          return whole.last;
 override proc StencilDom.dsiStride        return whole.stride;
@@ -1316,7 +1316,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).lowBound * abs(stride):idxType;
     var high = followThis(i).highBound * abs(stride):idxType;
-    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).alignedLow by followThis(i).stride).safeCast(myFollowThis(i).type);
+    myFollowThis(i) = ((low..high by stride) + dom.whole.dim(i).low by followThis(i).stride).safeCast(myFollowThis(i).type);
     lowIdx(i) = myFollowThis(i).lowBound;
   }
 
@@ -2087,4 +2087,3 @@ where !disableStencilDistBulkTransfer {
 }
 
 override proc StencilArr.doiCanBulkTransferRankChange() param return true;
-

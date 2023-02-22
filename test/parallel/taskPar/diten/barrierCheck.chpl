@@ -24,8 +24,6 @@ proc check(b: Barrier) {
   }
 }
 
-var b = new Barrier(nTasks, BarrierType.Atomic);
-var sb = new Barrier(nTasks, BarrierType.Sync);
+var b = new Barrier(nTasks);
 
 check(b);
-check(sb);

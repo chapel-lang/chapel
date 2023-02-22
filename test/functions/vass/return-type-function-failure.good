@@ -1,5 +1,5 @@
 return-type-function-failure.chpl:4: In function 'valfun':
-return-type-function-failure.chpl:5: error: could not find a copy initializer ('init=') for type 'shared chpl__fcf_type_void_int64_t' from type 'int(64)'
+return-type-function-failure.chpl:5: error: could not find a copy initializer ('init=') for type 'proc(): int' from type 'int(64)'
 $CHPL_HOME/modules/internal/SharedObject.chpl:nnnn: note: this candidate did not match: _shared.init=(pragma"nil from arg"in take: owned)
 return-type-function-failure.chpl:5: note: because actual argument #1 with type 'int(64)'
 $CHPL_HOME/modules/internal/SharedObject.chpl:nnnn: note: is passed to formal 'in take: owned'

@@ -10,30 +10,31 @@ def get(flag='host'):
     arch_val = chpl_arch.get(flag)
     platform_val = chpl_platform.get(flag)
     cygwin = platform_val.startswith('cygwin')
-    mac_arm = platform_val == 'darwin' and arch_val == 'arm64'
+    mac = platform_val == 'darwin'
+    mac_arm = mac and arch_val == 'arm64'
     chpl_host_mem = overrides.get('CHPL_HOST_MEM')
     chpl_target_mem = overrides.get('CHPL_TARGET_MEM')
     chpl_mem = overrides.get('CHPL_MEM')
 
     if flag == 'target':
-        if cygwin or mac_arm:
-            mem_val = 'cstdlib'
-        elif chpl_target_mem:
+        if chpl_target_mem:
             mem_val = chpl_target_mem
             if chpl_mem and chpl_target_mem != chpl_mem:
                 warning("CHPL_MEM and CHPL_TARGET_MEM are both set, "
                         "taking value from CHPL_TARGET_MEM")
         elif chpl_mem:
             mem_val = chpl_mem
+        elif cygwin or mac_arm:
+            mem_val = 'cstdlib'
         else:
             mem_val = 'jemalloc'
     elif flag == 'host':
-        if cygwin:
-            mem_val = 'cstdlib'
-        elif chpl_host_mem:
+        if chpl_host_mem:
             mem_val = chpl_host_mem
-        else:
+        elif cygwin or mac:
             mem_val = 'cstdlib'
+        else:
+            mem_val = 'jemalloc'
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
     return mem_val

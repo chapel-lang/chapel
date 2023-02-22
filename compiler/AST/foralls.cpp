@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -80,7 +80,7 @@ static ShadowVarSymbol* buildShadowVariable(ShadowVarPrefix prefix,
       // This keyword is for a TPV.
       // Whereas the user provided neither a type nor an init.
       USR_FATAL_CONT(ovar, "a task private variable '%s'"
-                     "requires a type and/or initializing expression", name);
+                     " requires a type and/or initializing expression", name);
       break;
   }
 

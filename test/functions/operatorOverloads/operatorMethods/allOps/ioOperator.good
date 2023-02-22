@@ -1,5 +1,0 @@
-ioOperator.chpl:7: warning: the <~> operator is deprecated
-ioOperator.chpl:13: In function 'main':
-ioOperator.chpl:15: warning: the <~> operator is deprecated
-ioOperator.chpl:15: warning: the <~> operator is deprecated
-3

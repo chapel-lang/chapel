@@ -10,11 +10,11 @@ define([cv_prefix],[gasnet_cv_])
 
 dnl Public release version packaging identifier:
 define([GASNET_RELEASE_VERSION_MAJOR_D],[2022])
-define([GASNET_RELEASE_VERSION_MINOR_D],[3])
+define([GASNET_RELEASE_VERSION_MINOR_D],[9])
 define([GASNET_RELEASE_VERSION_PATCH_D],[0])
 dnl GASNet-EX spec version:
 define([GASNETEX_SPEC_VERSION_MAJOR_D],[0])
-define([GASNETEX_SPEC_VERSION_MINOR_D],[15])
+define([GASNETEX_SPEC_VERSION_MINOR_D],[16])
 dnl GASNet-1 spec version:
 define([GASNET_SPEC_VERSION_MAJOR_D],[1])
 define([GASNET_SPEC_VERSION_MINOR_D],[8])
@@ -227,8 +227,19 @@ AC_SUBST(GASNETI_PTR_BITS)
 # Allow user forced ARCH and/or ISA settings w/o the corresponding probes
 # XXX: Incomplete...
 
-GASNET_IF_ENABLED_NOHELP(arch-ibmpe, [force_arch_ibmpe=yes])
-GASNET_IF_ENABLED_NOHELP(arch-wsl,   [force_arch_wsl=yes])
+GASNET_IF_ENABLED_NOHELP(force-arch, [
+  case "$enable_force_arch" in
+    generic|ibmpe|wsl|crayex)
+      : # OK
+      ;;
+    yes|'')
+      AC_MSG_ERROR([Missing required argument to --enable-force-arch])
+      ;;
+    *)
+      AC_MSG_ERROR([Unknown --enable-force-arch argument '$enable_force_arch'])
+      ;;
+  esac
+])
 
 ##
 # Look for a Cray-provided header allowing for the possibility we are not using Cray's wrapper compiler
@@ -348,6 +359,13 @@ AC_DEFUN([GASNET_GET_GNUWARNINGFLAGS],[
                               [[$1]FLAGS="$[$1]FLAGS $3-Wno-array-bounds"])
           GASNET_TRY_WNO_FLAG([$1],[$3-Wno-stringop-overflow],
                               [[$1]FLAGS="$[$1]FLAGS $3-Wno-stringop-overflow"])
+
+          # These warnings were immediately problematic when introduced in 12.1 (bugs 4450,4451)
+          # earlier versions silently ignore the unrecognized option
+          GASNET_TRY_WNO_FLAG([$1],[$3-Wno-dangling-pointer],
+                              [[$1]FLAGS="$[$1]FLAGS $3-Wno-dangling-pointer"])
+          GASNET_TRY_WNO_FLAG([$1],[$3-Wno-use-after-free],
+                              [[$1]FLAGS="$[$1]FLAGS $3-Wno-use-after-free"])
         fi
     ;;
   esac
@@ -1450,23 +1468,37 @@ case "$target_os" in
         GASNET_THREAD_LIBS="-lpthread" 
         ;;
   linux*) 
-	# Check for IBM PE by presence of POE
-	if test x$force_arch_ibmpe = xyes || 
+        if test "x$enable_force_arch" = xgeneric; then
+          : # no action
+	elif test "x$enable_force_arch" = xibmpe || 
+	   # Check for IBM PE by presence of POE
            ( env PAGER=cat poe -h | grep 'Parallel Operating Environment' ) >/dev/null 2>&1; then
 	    GASNETI_ARCH_IBMPE=1
 	    GASNET_PLATFORM=ibmpe
 	    AC_DEFINE(GASNETI_ARCH_IBMPE)
-	fi
-	# Check for Microsoft Windows Subsystem for Linux (WSL)
-	if test x$force_arch_wsl = xyes || 
+	elif test "x$enable_force_arch" = xwsl || 
+	   # Check for Microsoft Windows Subsystem for Linux (WSL)
            ( test -f /proc/sys/kernel/osrelease &&
 	     grep 'Microsoft' /proc/sys/kernel/osrelease ) >/dev/null 2>&1; then
 	    GASNETI_ARCH_WSL=1
 	    GASNET_PLATFORM=wsl
 	    AC_DEFINE(GASNETI_ARCH_WSL)
-	fi
+        elif test "x$enable_force_arch" = xcrayex ||
+           # Check for HPE Cray EX (aka Shasta) using kernel version or CRAYPE_NETWORK_TARGET
+           ( uname -r | grep cray_shasta ) >/dev/null 2>&1 ||
+           test "x$CRAYPE_NETWORK_TARGET" = xofi -o "x$CRAYPE_NETWORK_TARGET" = xucx ; then
+            GASNETI_ARCH_CRAYEX=1
+            GASNET_PLATFORM=crayex
+            AC_DEFINE(GASNETI_ARCH_CRAYEX)
+            # some defaults:
+            if test "${enable_ofi-unset}" = unset; then enable_ofi=yes; fi
+            if test "${enable_ibv-unset}" = unset; then enable_ibv=no; fi
+            if test "${enable_udp-unset}" = unset; then enable_udp=no; fi
+            if test "${with_ofi_spawner-unset}" = unset; then with_ofi_spawner=pmi; fi
+            if test "${with_ucx_spawner-unset}" = unset; then with_ucx_spawner=pmi; fi
+        fi
 	AC_MSG_CHECKING(for Linux flavor)
-	AC_MSG_RESULT($GASNET_PLATFORM)
+	AC_MSG_RESULT($GASNET_PLATFORM${enable_force_arch:+ (forced)})
 	GASNET_THREAD_DEFINES="-D_REENTRANT"
         GASNET_THREAD_LIBS="-lpthread"
 	;;
@@ -1646,7 +1678,7 @@ AC_DEFUN([GASNET_PACKAGE_LDFLAGS],[
   pushdef([the_guess],$1[]_ldflags_guess)
   pushdef([extra_flags],ifelse(len([$3]),[0],[],[ $3]))  dnl prepends space only if non-empty
   pushdef([rpath_opt],translit($1,'A-Z_','a-z-')-rpath)
-  pushdef([rpath_var],enable_[]translit($1,'A-Z-','a-z_')_rpath)
+  pushdef([rpath_var],enabled_[]translit($1,'A-Z-','a-z_')_rpath)
   dnl TODO - strengthen this if we can determine linker's default search path:
   case "$the_home" in
     /usr|/) the_guess='$3';;
@@ -1966,10 +1998,14 @@ if test "$enabled_pshm" != no; then
    [enabled_pshm_posix=yes], [enabled_pshm_posix=no],
    [ # Default is YES except:
      # + on Solaris due to incompatibility w/ ibv and the "robustness" of SysV
+     # + on HPE Cray EX where we prefer hugetlbfs if available
      enabled_pshm_posix=yes
      case "$target_os" in
        solaris*) enabled_pshm_posix=no ;;
      esac
+     if test "$GASNET_PLATFORM$have_hugetlbfs" = crayexyes; then
+       enabled_pshm_posix=no
+     fi
    ])
  if test "$enabled_pshm_posix$with_pshm" = yesno; then
   # shm_open() might be in libc (e.g. AIX, Darwin) or librt (e.g. Linux, Solaris)
@@ -2081,14 +2117,23 @@ if test "$enabled_pshm" != no; then
 
  # Next check is for mmap()ed file support on hugetlbfs
  enabled_pshm_hugetlbfs=no
- GASNET_IF_ENABLED(pshm-hugetlbfs,
-   [Enable use of hugetlbfs for inter-process shared memory support (default disabled)],
-   [enabled_pshm_hugetlbfs=yes])
+ pshm_hugetlbfs_why='User requested'
+ GASNET_IF_ENABLED_WITH_AUTO(pshm-hugetlbfs,
+   [Enable use of hugetlbfs for inter-process shared memory support (default is system dependent)],
+   [enabled_pshm_hugetlbfs=yes], [enabled_pshm_hugetlbfs=no],
+   [ # Default is NO except:
+     # + on HPE Cray EX if available
+     if test "$GASNET_PLATFORM$have_hugetlbfs" = crayexyes; then
+       enabled_pshm_hugetlbfs=yes
+       pshm_hugetlbfs_why='System defaults to'
+     fi
+   ]
+ )
  if test "$enabled_pshm_hugetlbfs$with_pshm" = yesno; then
   if test $enabled_hugetlbfs = no; then
-   GASNET_MSG_ERROR([User requested --enable-pshm-hugetlbfs but hugetlbfs support was disabled.])
+   GASNET_MSG_ERROR([User requested --enable-pshm-hugetlbfs, but hugetlbfs support was disabled.])
   elif test $have_hugetlbfs = no; then
-   GASNET_MSG_ERROR([User requested --enable-pshm-hugetlbfs but hugetlbfs support was not found.])
+   GASNET_MSG_ERROR([$pshm_hugetlbfs_why --enable-pshm-hugetlbfs but hugetlbfs support was not found.])
   fi
   AC_DEFINE(GASNETI_PSHM_FILE)
   AC_DEFINE(GASNETI_USE_HUGETLBFS)
@@ -2125,6 +2170,14 @@ if test "$with_pshm" != no; then
   AC_DEFINE_UNQUOTED(GASNETI_CONFIG_PSHM_MAX_NODES, $gasnet_pshm_max_nodes)
 elif test "$enabled_pshm" = yes; then
   GASNET_MSG_ERROR([User requested --enable-pshm but no supported implementation was found])
+elif test "$have_hugetlbfs" = yes && \
+     ( test "$enable_aries" = yes || test "$GASNET_PLATFORM" = crayex ); then
+  # If PSHM is disabled or not found, but hugetlbfs is present on a supported
+  # system, then ensure use of hugetlfs for segment allocation.
+  # To do so, we (ab)use GASNET_PSHM_LIBS which would otherwise be empty.
+  # Currently the supported systems are the Cray XC and HPE Cray EX
+  AC_DEFINE(GASNETI_USE_HUGETLBFS)
+  GASNET_PSHM_LIBS="$HUGETLBFS_LIBS"
 fi
 GASNET_SPLIT_LINKER_OPTS(GASNET_PSHM_LDFLAGS,GASNET_PSHM_LIBS)
 AC_SUBST(GASNET_PSHM_ENABLED)
@@ -3979,7 +4032,10 @@ case "$target" in
   ;;
 esac
 # Now only on Aries (not Gemini)
-if test "$enabled_aries" = yes; then
+if test "$enabled_aries$GASNET_PLATFORM" = yescrayex; then
+  GASNET_MSG_WARN([HPE Cray EX platform detected.  Please --enable-ofi rather than using aries-conduit])
+  enabled_aries=no
+elif test "$enabled_aries" = yes; then
   AC_MSG_CHECKING(for GNI network type)
   if test "${CRAYPE_NETWORK_TARGET+set}" = set ; then
     gni_network=${CRAYPE_NETWORK_TARGET}
@@ -4016,11 +4072,7 @@ if test "$enabled_aries" = yes; then
     # PSHM must be XPMEM, HUGETLBFS or none.
     AC_MSG_CHECKING(for appropriate pshm support required by Aries)
     case "$with_pshm" in
-      no) # If none, then we still want hugetlbfs if available.
-        if test $have_hugetlbfs = yes; then
-          GNI_LIBS="$GNI_LIBS $HUGETLBFS_LIBS"
-          GNI_CFLAGS="$GNI_CFLAGS -DGASNETI_USE_HUGETLBFS"
-        fi
+      no) # If none, then we do still get hugetlbfs, fwiw
         AC_MSG_RESULT(none)
         ;;
       xpmem|hugetlbfs)
@@ -4103,7 +4155,10 @@ AM_CONDITIONAL(USE_ARIES_CONDUIT, test "$enabled_aries$have_aries" = yesyes)
 #--------------------------------------------------------------------------------------------------------
 # Libfabric Conduit
 
-CONDUIT_BEGIN(ofi,exp,[Portable OpenFabrics Interfaces conduit (ofi)])
+# default to not probing ofi-conduit, regardless of enabled_auto_detect
+if test "${enable_ofi-unset}" = unset; then enable_ofi=no; fi
+
+CONDUIT_BEGIN(ofi,yes,[OpenFabrics Interfaces conduit (ofi)])
 if test "$enabled_ofi" = yes; then
   have_ofi=yes
 
@@ -4148,8 +4203,8 @@ if test "$enabled_ofi" = yes; then
     CONDUIT_SPAWNER
 
     ofi_provider=""
-    ofi_define_mr_scalable="no"
-    ofi_known_provider="yes"
+    ofi_define_mr_scalable="no" # tri-state: "no" omits "#define", forcing runtime selection
+    ofi_single_provider="yes"
     detected_ofi_provider=""
     ofi_use_thread_domain=0
     ofi_use_multi_cq=0
@@ -4175,6 +4230,18 @@ if test "$enabled_ofi" = yes; then
             ofi_provider="$detected_ofi_provider"
         fi
         GASNET_POPVAR(PATH)
+    else
+        unset aliased_ofi_provider
+        case "$ofi_provider" in
+            verbs) aliased_ofi_provider='verbs;ofi_rxm' ;;
+              tcp) aliased_ofi_provider='tcp;ofi_rxm' ;;
+              udp) aliased_ofi_provider='udp;ofi_rxd' ;;
+              *:*) aliased_ofi_provider=`echo "$ofi_provider" | sed -e 's/:/;/'` ;;
+        esac
+        if test "${aliased_ofi_provider+set}" = set ; then
+            GASNET_MSG_WARN([Option --with-ofi-provider='$ofi_provider' converted to --with-ofi-provider='$aliased_ofi_provider'])
+            ofi_provider="$aliased_ofi_provider"
+        fi
     fi
     case "$ofi_provider" in
         psm2)
@@ -4202,23 +4269,35 @@ if test "$enabled_ofi" = yes; then
         sockets)
             ofi_define_mr_scalable=1
         ;;
-        default|"")
-            ofi_known_provider="no"
+        default|generic|"")  # NOTE: "default" is deprecated and can be removed when Spack packaging drops 2022.3.0
+            if test -n "$ofi_provider"; then
+                why="as requested via --with-ofi-provider=$ofi_provider"
+            else
+                why='because no OFI provider was specified via the --with-ofi-provider option and no known provider could be auto-detected'
+            fi
+            GASNET_MSG_WARN([Using runtime provider feature detection in ofi-conduit $why.])
             ofi_use_multi_cq=1
             ofi_retry_recvmsg=1
+            ofi_single_provider='no'
         ;;
         *)
-        GASNET_MSG_WARN([
-WARNING: Invalid or unsupported OFI provider specified via the --with-ofi-provider flag. 
-Defaulting to runtime provider feature detection for ofi-conduit.])
-            ofi_known_provider="no"
+            GASNET_IF_ENABLED_NOHELP(allow-unknown-ofi-provider, [
+                GASNET_MSG_WARN([dnl
+Unknown OFI provider '$ofi_provider' requested together with '--enable-allow-unknown-ofi-provider'.
+Runtime provider feature detection and conservative defaults will be used except where overridden via --(en|dis)able-ofi-[[feature]] options.])
+                ofi_use_multi_cq=1
+                ofi_retry_recvmsg=1
+            ], GASNET_MSG_ERROR([Unknown OFI provider '$ofi_provider' requested]))
         ;;
     esac
-    if test "$ofi_known_provider" = "yes"; then
+    if test "$ofi_single_provider" = "yes"; then
         AC_DEFINE_UNQUOTED(GASNETC_OFI_PROVIDER_LIST, ["$ofi_provider"])
+        ofi_provider_ident=`echo "$ofi_provider" | cut '-d;' -f1`
     else
         AC_DEFINE_UNQUOTED(GASNETC_OFI_PROVIDER_LIST, ["$known_providers"])
+        ofi_provider_ident="generic"
     fi
+    AC_DEFINE_UNQUOTED(GASNETC_OFI_PROVIDER_IDENT, [$ofi_provider_ident])
 
     GASNET_IF_ENABLED_WITH_AUTO(ofi-thread-domain, [Indicates if the conduit should use the FI_THREAD_DOMAIN threading model(advanced users only)],
                  [ofi_use_thread_domain="1"], [ofi_use_thread_domain="0"], [])
@@ -4233,14 +4312,14 @@ Defaulting to runtime provider feature detection for ofi-conduit.])
                  [ofi_define_mr_scalable="1"], [ofi_define_mr_scalable="0"], [])
     # Inform the user that settings were autodetected
     if test -n "$detected_ofi_provider" && test "$ofi_define_mr_scalable" != "no"; then
-            GASNET_MSG_WARN([
+        GASNET_MSG_WARN([
 The $detected_ofi_provider OFI provider was detected on your system and the ofi-conduit has been
 configured for that provider. If that is not your desired provider, override this by using the
 --with-ofi-provider=<provider name> configure flag. See the ofi-conduit README for details.])
     fi
 
     if test "$ofi_define_mr_scalable" != "no"; then
-        AC_DEFINE_UNQUOTED(GASNETC_OFI_HAS_MR_SCALABLE, [$ofi_define_mr_scalable])
+        AC_DEFINE_UNQUOTED(GASNETC_OFI_HAS_MR_SCALABLE, [((int)$ofi_define_mr_scalable)])
     fi
 
     AC_DEFINE_UNQUOTED(GASNETC_OFI_USE_THREAD_DOMAIN, [$ofi_use_thread_domain])
@@ -4270,7 +4349,7 @@ configured for that provider. If that is not your desired provider, override thi
                 ],
                 [AC_MSG_ERROR([--with-ofi-max-medium must be no smaller than 512])],
                  [ofi_max_medium=8192])
-    AC_DEFINE_UNQUOTED(GASNETC_OFI_MAX_MEDIUM, [$ofi_max_medium])
+    AC_DEFINE_UNQUOTED(GASNETC_OFI_MAX_MEDIUM_DFLT, [$ofi_max_medium])
 
     GASNET_IF_ENABLED_NOHELP(ofi-legacy-extended,
                       [AC_DEFINE(GASNETC_OFI_REFERENCE_EXTENDED)
@@ -4285,6 +4364,59 @@ configured for that provider. If that is not your desired provider, override thi
 
  WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
 -----------------------------------------------------------------------])])
+
+    if test "$GASNET_PLATFORM" = crayex; then
+      gex_fi_hmem_minor_floor=11
+    else
+      gex_fi_hmem_minor_floor=12
+    fi
+    GASNET_PUSHVAR(CFLAGS,"$CFLAGS $OFI_CFLAGS -DGEX_FI_MINOR_VERSION=$gex_fi_hmem_minor_floor")
+    GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $OFI_LDFLAGS")
+    GASNET_PUSHVAR(LIBS,"$LIBS $OFI_LIBS")
+      # Probe for fi_mr_regattr()
+      GASNET_TRY_CACHE_LINK(for fi_mr_regattr(), fi_mr_regattr,
+        [ #include <rdma/fi_domain.h> ],[ int rc = fi_mr_regattr(NULL, NULL, 0, NULL); ],
+        [ AC_DEFINE(GASNETC_HAVE_FI_MR_REG_ATTR) ] )
+
+      # Probe for libfabric kinds support
+      # FI_HMEM_{CUDA,ROCR} identifiers are an enum, so we create HAVE_* feature macros
+      # TODO: allow-list or ban-list providers here?
+      have_fi_hmem_cuda=no
+      have_fi_hmem_rocr=no
+      GASNET_TRY_CACHE_LINK(for FI_HMEM support (libfabric 1.$gex_fi_hmem_minor_floor or newer),
+        have_fi_hmem,
+        [
+          #include <rdma/fabric.h>
+          #include <rdma/fi_domain.h>
+          #if FI_VERSION(FI_MAJOR_VERSION, FI_MINOR_VERSION) < FI_VERSION(1, GEX_FI_MINOR_VERSION)
+            #error "failed check for minimum libfabric version for memory kinds support"
+          #endif
+        ], [{
+              unsigned long caps = (unsigned long)FI_HMEM;
+              struct fi_mr_attr x;
+              x.iface = FI_HMEM_SYSTEM;
+              (void)(&x.device);
+            }],
+        [ GASNET_TRY_CACHE_LINK(for FI_HMEM_CUDA, have_fi_hmem_cuda, [
+              #include <rdma/fi_domain.h>
+            ], [{
+                  struct fi_mr_attr x;
+                  x.iface = FI_HMEM_CUDA;
+                }],
+            [ have_fi_hmem_cuda=yes
+              AC_DEFINE(GASNETC_HAVE_FI_HMEM_CUDA) ])
+          GASNET_TRY_CACHE_LINK(for FI_HMEM_ROCR, have_fi_hmem_rocr, [
+                #include <rdma/fi_domain.h>
+            ], [{
+                  struct fi_mr_attr x;
+                  x.iface = FI_HMEM_ROCR;
+                }],
+            [ have_fi_hmem_rocr=yes
+              AC_DEFINE(GASNETC_HAVE_FI_HMEM_ROCR) ])
+          ])
+    GASNET_POPVAR(CFLAGS)
+    GASNET_POPVAR(LDFLAGS)
+    GASNET_POPVAR(LIBS)
   fi
 fi
 AC_SUBST(OFI_CFLAGS)
@@ -4292,6 +4424,8 @@ AC_SUBST(OFI_LDFLAGS)
 AC_SUBST(OFI_LIBS)
 CONDUIT_END([test "$enabled_ofi$have_ofi" = yesyes])
 AM_CONDITIONAL(USE_OFI_CONDUIT, test "$enabled_ofi$have_ofi" = yesyes)
+AM_CONDITIONAL(HAVE_FI_HMEM_CUDA, test "$have_fi_hmem_cuda" = yes)
+AM_CONDITIONAL(HAVE_FI_HMEM_ROCR, test "$have_fi_hmem_rocr" = yes)
 #---------------------------------------------------------------------------------------------------------------
 # CONDUIT CONFIGURATIONS FINISH
 #---------------------------------------------------------------------------------------------------------------
@@ -4325,7 +4459,7 @@ EOF
 # Order portable conduits from LOW to HIGH precedence, clients use order to select defaults
 
 CONDUIT_OUTPUT(smp)
-CONDUIT_OUTPUT(ofi)      dnl Not currently supported in EX
+CONDUIT_OUTPUT(ofi)      dnl Portable in most cases, but native in others
 CONDUIT_OUTPUT(udp)
 CONDUIT_OUTPUT(mpi)      dnl Should be lower than udp for Ethernet, higher otherwise. How to reliably differentiate?
 
@@ -4489,11 +4623,13 @@ GASNET_IF_ENABLED_WITH_AUTO(pmi, [Enable/disable PMI support for job spawning],
 
 # If user specifies a PMI version, then we will not probe for others
 unset using_pmi_version
+pmi_why='Default'
 GASNET_WITH(pmi-version, [PMI version (x, 1, 2 or cray)] , [
     case "$withval" in
       1|2|x|cray) using_pmi_version="$withval";;
       *) GASNET_MSG_ERROR([Argument to --with-pmi-version must be 'x', '1', '2', or 'cray']);;
     esac
+    pmi_why='Requested'
 ], [
     GASNET_MSG_WARN([Ignoring --without-pmi-version])
 ])
@@ -4501,6 +4637,8 @@ if test "$enabled_aries$have_aries" = yesyes; then
   if test -n "$using_pmi_version" && test "$using_pmi_version" != 'cray'; then
     GASNET_MSG_WARN([Ignoring --with-pmi-version=$using_pmi_version in favor of Cray PMI required by aries-conduit])
   fi
+  using_pmi_version=cray
+elif test "$GASNET_PLATFORM" = crayex && test -z "$using_pmi_version"; then
   using_pmi_version=cray
 fi
 
@@ -4709,7 +4847,19 @@ if test "$have_pmi" = yes; then
   else
     GASNET_ENV_DEFAULT(MPIRUN_CMD, mpirun -np %N %C)
   fi
-  GASNET_ENV_DEFAULT(PMIRUN_CMD, $MPIRUN_CMD, [[Command template for running PMI programs, see other/pmi-spawner/README]])
+  pmirun_cmd_default="$MPIRUN_CMD" # default of defaults
+  if test $GASNET_PLATFORM = crayex; then
+    AC_PATH_PROGS(SRUN_PATH, $SRUN srun)
+    AC_PATH_PROGS(APRUN_PATH, $APRUN aprun)
+    if test -n "$SRUN_PATH" && test -n "$APRUN_PATH"; then
+      : # Because both 'srun' and 'aprun' were found, will not use either as default PMIRUN_CMD
+    elif test -n "$SRUN_PATH"; then
+      pmirun_cmd_default="$SRUN_PATH -n %N -- %C"
+    elif test -n "$APRUN_PATH"; then
+      pmirun_cmd_default="$APRUN_PATH -n %N %C"
+    fi
+  fi
+  GASNET_ENV_DEFAULT(PMIRUN_CMD, $pmirun_cmd_default, [[Command template for running PMI programs, see other/pmi-spawner/README]])
   GASNET_GETFULLPATH(PMIRUN_CMD)
 elif test -z "$force_pmi"; then
   AC_MSG_RESULT(no)
@@ -4718,10 +4868,15 @@ elif test -z "$force_pmi"; then
   PMI_SPAWNER_CFLAGS=""
 elif test "$enabled_aries$have_aries" = yesyes; then
   AC_MSG_RESULT(no)
-  GASNET_MSG_ERROR([Cray PMI could not be found, but is required by aries-conduit])
+  GASNET_MSG_ERROR([Cray PMI could not be found, but is required by aries-conduit.  Try loading the pmi environment module.])
 elif test -n "${using_pmi_version+set}"; then
   AC_MSG_RESULT(no)
-  GASNET_MSG_ERROR([Requested PMI version $using_pmi_version could not be found])
+  if test "$using_pmi_version" = cray; then
+    extra='.  Try loading the "cray-pmi" or "pmi" environment module, or specifying a different --with-pmi-version=?.'
+  else
+    extra=''
+  fi
+  GASNET_MSG_ERROR([$pmi_why PMI version "$using_pmi_version" could not be found$extra])
 else
   AC_MSG_RESULT(no)
   GASNET_MSG_ERROR([Requested PMI support could not be found])
@@ -5112,9 +5267,14 @@ if test "$enable_mk_hip" != "no"; then
             # but always depends on functions from CUDA runtime (library name can vary).
             # libcudart is generally NOT in CUDA_LIBS, since the CUDA MK does not require it
             GASNET_ENV_DEFAULT(HIP_LIBS, -lamdhip64 -lcudart)
-            # extra_flags below ensures default HIP_LDFLAGS includes the CUDA libdir (for libcudart)
+            # extra_cudart_flags ensures default HIP_LDFLAGS includes the CUDA libdir (for libcudart)
             # which notably may or may not be in CUDA_LDFLAGS (since CUDA only requires libcuda)
-            GASNET_PACKAGE_LDFLAGS(HIP, amdhip64, -L$CUDA_HOME/lib64)
+            extra_cudart_flags="-L$CUDA_HOME/lib64"
+            if test -n "$cc_rpath_option" && test "x$enable_cuda_rpath" != "xno" && \
+               test "${enable_cuda_rpath}x${enabled_rpath}" != "xno" ; then
+              extra_cudart_flags="$extra_cudart_flags $cc_rpath_option$CUDA_HOME/lib64"
+            fi
+            GASNET_PACKAGE_LDFLAGS(HIP, amdhip64, $extra_cudart_flags)
 
             # Suppress warnings when compiling gasnet_hip.c and testhip.c
             # due to "issues" in hip_runtime.h when parsed by a C compiler in

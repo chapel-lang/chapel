@@ -15,7 +15,7 @@ module M {
   }
 
   proc main() {
-    import this.SubModuleSubSubModule;
+    import this.SubModule.SubSubModule;
     SubSubModule.foo();
   }
 }

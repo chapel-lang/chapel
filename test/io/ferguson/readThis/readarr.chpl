@@ -1,6 +1,6 @@
 use IO;
 
-var f = opentmp();
+var f = openTempFile();
 
 var w = f.writer();
 

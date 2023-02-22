@@ -1,0 +1,2 @@
+--detailed-errors # nonIterable-detailed.good
+--no-detailed-errors # nonIterable-brief.good

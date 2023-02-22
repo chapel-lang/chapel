@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -964,6 +964,14 @@ static inline
 void qio_channel_set_style(qio_channel_t* ch, qio_style_t* style)
 {
   ch->style = *style;
+}
+static inline
+int64_t qio_channel_get_size(qio_channel_t* ch) {
+  if (ch->end_pos == INT64_MAX) {
+    return -1;
+  } else {
+    return ch->end_pos - ch->start_pos;
+  }
 }
 static inline
 uint8_t qio_channel_binary(qio_channel_t* ch)

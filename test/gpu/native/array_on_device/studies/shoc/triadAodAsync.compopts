@@ -1,0 +1,1 @@
+--fast --gpu-block-size=128 result.chpl

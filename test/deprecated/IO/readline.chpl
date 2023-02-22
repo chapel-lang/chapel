@@ -4,7 +4,7 @@ config type dataType = string;
 proc test_readlines()
 {
 
-  var f = opentmp();
+  var f = openTempFile();
   {
     var ch = f.writer();
     ch.writeln("a b");
@@ -12,9 +12,10 @@ proc test_readlines()
     ch.flush();
   }
 
+  var ch = f.reader();
+
   // try reading it in a few ways.
   {
-    var ch = f.reader();
     var line:dataType;
     var got:bool;
     got = ch.readline(line);
@@ -27,7 +28,7 @@ proc test_readlines()
 
 
   {
-    for (line,i) in zip(f.lines(),1..) {
+    for (line,i) in zip(ch.lines(),1..) {
       if i == 1 {
         assert(line == "a b\n");
       } else if i == 2 {
@@ -66,7 +67,7 @@ proc check_expected(data, expected:string, len) {
  */
 proc test_readlineArray(amount: int, input: string, expected: string) {
   /* Write input string to f, so we can readline() it out */
-  var f = openmem();
+  var f = openMemFile();
   var w = f.writer();
 
   w.writeln(input);

@@ -36,9 +36,10 @@ for using Chapel:
 
   * CMake is available and ``cmake`` runs version 3.13.4 or later.
 
-  * The LLVM backend is now the default and it is easiest to use it with
-    a system-wide installation of LLVM. LLVM and clang versions 11, 12,
-    13 and 14 are currently supported. If a system-wide installation of
+  * The LLVM backend is now the default and it is easiest to use it with a
+    system-wide installation of LLVM and clang. On Mac OS X, only LLVM 14 is
+    supported. On other platforms, LLVM and clang versions 11, 12, 13 and 14
+    are currently supported. If a system-wide installation of
     LLVM and clang with one of those versions is not available, you can
     use the bundled LLVM or disable LLVM support (see
     :ref:`readme-chplenv.CHPL_LLVM`).
@@ -50,13 +51,16 @@ In addition, several optional components have additional requirements:
     or the equivalent package; ``python3`` and ``pip3`` commands; and the
     ``venv`` Python package.
 
-  * ``doxygen`` is required to build the complete documentation
+  * ``doxygen`` 1.8.17 or newer is required to build the complete documentation
 
   * ``m4`` is required for building the bundled GMP
 
   * ``git`` is required for :ref:`readme-mason`, chapel's package manager
 
   * ``pkg-config`` is required for the ``mason system`` subcommands
+
+  * ``cmake`` 3.16 or newer is required to install ``chpl`` when choosing an
+    installation with ``./configure --chpl-home=/path/to/install``
 
 
 .. _readme-prereqs-installation:
@@ -120,6 +124,13 @@ We have used the following commands to install the above prerequisites:
       sudo dnf install llvm-devel clang clang-devel
 
 
+  * CentOS Stream 9::
+
+      sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
+      sudo dnf install which diffutils
+      sudo dnf install llvm-devel-14.0.6 clang-14.0.6 clang-devel-14.0.6
+
+
   * Debian 10 "Buster"::
 
       sudo apt-get update
@@ -134,7 +145,7 @@ We have used the following commands to install the above prerequisites:
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
-  * Fedora 31, 32, 33, 34, 35, 36::
+  * Fedora 34, 35, 36::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
@@ -171,8 +182,15 @@ We have used the following commands to install the above prerequisites:
       sudo apt-get install llvm-12-dev llvm-12 llvm-12-tools clang-12 libclang-12-dev libclang-cpp12-dev libedit-dev
 
 
-  * Ubuntu 21.10 "Impish Indri", 22.04 "Jammy Jellyfish", 22.10 "Kinetic Kudu"::
+  * Ubuntu 22.04 "Jammy Jellyfish"::
 
       sudo apt-get update
       sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
+
+
+  * Ubuntu 22.10 "Kinetic Kudu"::
+
+      sudo apt-get update
+      sudo apt-get install gcc g++ m4 perl python3 python3-dev bash make mawk git pkg-config cmake
+      sudo apt-get install llvm-14-dev llvm-14 llvm-14-tools clang-14 libclang-14-dev libclang-cpp14-dev libedit-dev

@@ -27,7 +27,7 @@ static void assign(int *A, int n) {
 static const int size = 100000000;
 static const int ntrials = 100;
 
-void c_trial() {
+void c_trial(void) {
   int* A;
   int i;
   double starttime, endtime;

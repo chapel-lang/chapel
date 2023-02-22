@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,7 +28,6 @@
 #include "AstToText.h"
 #include "AstVisitor.h"
 #include "astutil.h"
-#include "docsDriver.h"
 #include "driver.h"
 #include "ForallStmt.h"
 #include "passes.h"
@@ -36,11 +35,13 @@
 #include "resolution.h"
 #include "stringutil.h"
 #include "wellknown.h"
+#include "chpl/uast/OpCall.h"
 
 #include "global-ast-vecs.h"
 
 #include <algorithm>
 #include <regex>
+#include <cstring>
 
 //
 // The function that represents the compiler-generated entry point
@@ -83,6 +84,7 @@ VarSymbol *gModuleInitIndentLevel = NULL;
 VarSymbol *gInfinity = NULL;
 VarSymbol *gNan = NULL;
 VarSymbol *gUninstantiated = NULL;
+VarSymbol *gUseIOFormatters = NULL;
 
 void verifyInTree(BaseAST* ast, const char* msg) {
   if (ast != NULL && ast->inTree() == false) {
@@ -133,10 +135,10 @@ void Symbol::verify() {
   }
   verifyInTree(type, "Symbol::type");
 
-  if (name != astr(name))
+  if (name && name != astr(name))
     INT_FATAL("name is not an astr");
 
-  if (cname != astr(cname))
+  if (cname && cname != astr(cname))
     INT_FATAL("cname is not an astr");
 
   if (symExprsHead) {
@@ -248,14 +250,6 @@ bool Symbol::isKnownToBeGeneric() {
   else
     return hasFlag(FLAG_GENERIC);
 }
-
-// Don't generate documentation for this symbol, either because it is private,
-// or because the symbol should not be documented independent of privacy
-bool Symbol::noDocGen() const {
-  return hasFlag(FLAG_NO_DOC) || hasFlag(FLAG_PRIVATE) ||
-    hasFlag(FLAG_COMPILER_GENERATED);
-}
-
 
 void Symbol::addSymExpr(SymExpr* se) {
 
@@ -583,7 +577,6 @@ VarSymbol::VarSymbol(const char *init_name,
                      Type    *init_type) :
   LcnSymbol(E_VarSymbol, init_name, init_type),
   immediate(NULL),
-  doc(NULL),
   isField(false),
   llvmDIGlobalVariable(NULL),
   llvmDIVariable(NULL)
@@ -603,7 +596,6 @@ VarSymbol::VarSymbol(const char *init_name,
 VarSymbol::VarSymbol(const char* init_name, QualifiedType qType) :
   LcnSymbol(E_VarSymbol, init_name, qType.type()),
   immediate(NULL),
-  doc(NULL),
   isField(false),
   llvmDIGlobalVariable(NULL),
   llvmDIVariable(NULL)
@@ -616,7 +608,6 @@ VarSymbol::VarSymbol(const char* init_name, QualifiedType qType) :
 VarSymbol::VarSymbol(AstTag astTag, const char* initName, Type* initType) :
   LcnSymbol(astTag, initName, initType),
   immediate(NULL),
-  doc(NULL),
   isField(false),
   llvmDIGlobalVariable(NULL),
   llvmDIVariable(NULL)
@@ -678,76 +669,6 @@ bool VarSymbol::isParameter() const {
 bool VarSymbol::isType() const {
   return hasFlag(FLAG_TYPE_VARIABLE);
 }
-
-
-std::string VarSymbol::docsDirective() {
-  std::string result;
-  if (fDocsTextOnly) {
-    result = "";
-  } else {
-    // Global type aliases become type directives. Types that are also fields
-    // could be generics, so let them be treated as regular fields (i.e. use
-    // the attribute directive).
-    if (this->isType() && !this->isField) {
-      result = ".. type:: ";
-    } else if (this->isField) {
-      result = ".. attribute:: ";
-    } else {
-      result = ".. data:: ";
-    }
-  }
-  return this->hasFlag(FLAG_CONFIG) ? result + "config " : result;
-}
-
-
-void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
-  if (this->noDocGen() || this->hasFlag(FLAG_SUPER_CLASS)) {
-      return;
-  }
-
-  this->printTabs(file, tabs);
-  *file << this->docsDirective();
-
-  if (this->isType()) {
-    *file << "type ";
-  } else if (this->isConstant()) {
-    *file << "const ";
-  } else if (this->isParameter()) {
-    *file << "param ";
-  } else {
-    *file << "var ";
-  }
-
-  AstToText info;
-  info.appendVarDef(this);
-  *file << info.text();
-
-  *file << std::endl;
-
-  // For .rst mode, put a line break after the .. data:: directive and
-  // its description text.
-  if (!fDocsTextOnly) {
-    *file << std::endl;
-  }
-
-  if (this->doc != NULL) {
-    this->printDocsDescription(this->doc, file, tabs + 1);
-    if (!fDocsTextOnly) {
-      *file << std::endl;
-    }
-  }
-
-  if (this->hasFlag(FLAG_DEPRECATED)) {
-    this->printDocsDeprecation(this->doc, file, tabs + 1,
-                               this->getDeprecationMsg(), !fDocsTextOnly);
-  }
-
-  if (this->hasFlag(FLAG_UNSTABLE)) {
-    this->printDocsUnstable(this->doc, file, tabs + 1,
-                               this->getUnstableMsg(), !fDocsTextOnly);
-  }
-}
-
 
 /*
  * For docs, when VarSymbol is used for class fields, identify them as such by
@@ -1279,13 +1200,12 @@ bool isOuterVarOfShadowVar(Expr* expr) {
 
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
-    llvmType(NULL),
+    llvmImplType(NULL),
     llvmTbaaTypeDescriptor(NULL),
     llvmTbaaAccessTag(NULL), llvmConstTbaaAccessTag(NULL),
     llvmTbaaAggTypeDescriptor(NULL),
     llvmTbaaStructCopyNode(NULL), llvmConstTbaaStructCopyNode(NULL),
     llvmDIType(NULL),
-    doc(NULL),
     instantiationPoint(NULL),
     userInstantiationPointLoc(0, NULL)
 {
@@ -2180,28 +2100,7 @@ void initAstrConsts() {
 }
 
 bool isAstrOpName(const char* name) {
-  if (name == astrSassign || name == astrSeq || name == astrSne ||
-      name == astrSgt || name == astrSgte || name == astrSlt ||
-      name == astrSlte || name == astrSswap || strcmp(name, "&") == 0 ||
-      strcmp(name, "|") == 0 || strcmp(name, "^") == 0 ||
-      strcmp(name, "~") == 0 || strcmp(name, "+") == 0 ||
-      strcmp(name, "-") == 0 || strcmp(name, "*") == 0 ||
-      strcmp(name, "/") == 0 || strcmp(name, "<<") == 0 ||
-      strcmp(name, ">>") == 0 || strcmp(name, "%") == 0 ||
-      strcmp(name, "**") == 0 || strcmp(name, "!") == 0 ||
-      strcmp(name, "<~>") == 0 || strcmp(name, "+=") == 0 ||
-      strcmp(name, "-=") == 0 || strcmp(name, "*=") == 0 ||
-      strcmp(name, "/=") == 0 || strcmp(name, "%=") == 0 ||
-      strcmp(name, "**=") == 0 || strcmp(name, "&=") == 0 ||
-      strcmp(name, "|=") == 0 || strcmp(name, "^=") == 0 ||
-      strcmp(name, ">>=") == 0 || strcmp(name, "<<=") == 0 ||
-      strcmp(name, "#") == 0 || strcmp(name, "chpl_by") == 0 ||
-      strcmp(name, "by") == 0 || strcmp(name, "align") == 0 ||
-      strcmp(name, "chpl_align") == 0 || name == astrScolon) {
-    return true;
-  } else {
-    return false;
-  }
+  return chpl::uast::isOpName(UniqueString::get(gContext, name, strlen(name)));
 }
 
 /************************************* | **************************************

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -293,8 +293,9 @@ static Expr* convertToChplType(ModuleSymbol* module,
       INT_ASSERT(type && "Could not get enum integer type pointer");
     }
 
-    if (type->isVoidType())
-      return NULL;
+    if (type->isVoidType()) {
+      return new SymExpr(dtVoid->symbol);
+    }
 
     // handle numeric types
 
@@ -520,8 +521,8 @@ void convertDeclToChpl(ModuleSymbol* module,
                                            false,  // throws
                                            NULL, // where
                                            NULL, // lifetime constraints
-                                           NULL, // body
-                                           NULL); // docs
+                                           NULL // body
+                                         );
 
     //convert args
     for (clang::FunctionDecl::param_iterator it=fd->param_begin(); it < fd->param_end(); ++it) {

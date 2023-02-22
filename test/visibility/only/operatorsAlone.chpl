@@ -82,16 +82,6 @@ module DefinesOp {
     return(lhs.x != rhs.x);
   }
 
-  use IO;
-
-  operator <~>(const ref ch: channel, const x: Foo) const ref throws
-    where ch.writing {
-
-    writeln("In DefinesOp.<~>");
-    try ch.write(x.x);
-    return ch;
-  }
-
   operator <(lhs: Foo, rhs: Foo) {
     writeln("In DefinesOp.<");
     return(lhs.x < rhs.x);
@@ -349,16 +339,6 @@ proc main() {
     var a = new Foo(6);
     var b = new Foo(3);
     writeln(a != b);
-  }
-
-  {
-    use IO only ioNewline, stdout;
-    use IO only <~>;
-    use DefinesOp only <~>;
-
-    var foo = new Foo(3);
-    stdout <~> foo;
-    stdout <~> new ioNewline();
   }
 
   {

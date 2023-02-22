@@ -1,7 +1,7 @@
 use IO;
 
 proc main() {
-  var f = opentmp();
+  var f = openTempFile();
   var a = f.reader();
-  var b:channel(writing=true) = a;
+  var b:fileWriter = a;
 }

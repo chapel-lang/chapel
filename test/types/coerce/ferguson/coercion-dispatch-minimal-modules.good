@@ -22,4 +22,4 @@ baz1 expect uint, found uint
 boo1 expect int(8), found int(8)
 bok1 expect uint, found uint
 bok2 expect int(32), found int(32)
-boz1 expect uint(32), found uint(32)
+boz1 expect uint(32), found uint(8)

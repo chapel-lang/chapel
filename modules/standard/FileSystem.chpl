@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -50,23 +50,20 @@
    :proc:`remove`
    :proc:`rmTree`
    :proc:`symlink`
-   :proc:`chmod`
    :proc:`chown`
-   :proc:`copyMode`
    :proc:`rename`
 
    .. _file-status:
 
    File/Directory Properties
    -------------------------
-   :proc:`getGID`
-   :proc:`getMode`
+   :proc:`getGid`
    :proc:`getFileSize`
-   :proc:`getUID`
+   :proc:`getUid`
    :proc:`exists`
    :proc:`isDir`
    :proc:`isFile`
-   :proc:`isLink`
+   :proc:`isSymlink`
    :proc:`isMount`
    :proc:`sameFile`
 
@@ -83,9 +80,9 @@
    File System Traversal Iterators
    -------------------------------
    :iter:`glob`
-   :iter:`listdir`
-   :iter:`walkdirs`
-   :iter:`findfiles`
+   :iter:`listDir`
+   :iter:`walkDirs`
+   :iter:`findFiles`
 
    Constant and Function Definitions
    ---------------------------------
@@ -93,7 +90,6 @@
 module FileSystem {
 
   public use OS;
-  import SysBasic.{ENOERR};
   use Path;
   use HaltWrappers;
   use CTypes;
@@ -108,8 +104,7 @@ module FileSystem {
    idea of these constants as visible at `GNU Permissions
    <http://www.gnu.org/software/libc/manual/html_node/Permission-Bits.html>`_.
    They are intended for use when dealing with the permissions of files or
-   directories, such as with :proc:`chmod`, :proc:`getMode`, :proc:`mkdir`,
-   or :proc:`~locale.umask`
+   directories, such as with :proc:`mkdir`, or :proc:`~locale.umask`
 
    S_IRUSR refers to the user's read permission
 */
@@ -187,7 +182,7 @@ private inline proc unescape(str: string) {
 proc locale.chdir(name: string) throws {
   extern proc chpl_fs_chdir(name: c_string):errorCode;
 
-  var err: errorCode = ENOERR;
+  var err: errorCode = 0;
   on this {
     err = chpl_fs_chdir(unescape(name).c_str());
   }
@@ -212,6 +207,7 @@ proc locale.chdir(name: string) throws {
    :throws PermissionError: Thrown when the current user does not have
                             permission to change the permissions
 */
+deprecated "'FileSystem.chmod()' is deprecated. Please use 'OS.POSIX.chmod()' instead"
 proc chmod(name: string, mode: int) throws {
   extern proc chpl_fs_chmod(name: c_string, mode: int): errorCode;
 
@@ -264,12 +260,54 @@ proc chown(name: string, uid: int, gid: int) throws {
    :arg metadata: This argument indicates whether to copy metadata associated
                   with the source file.  It is set to `false` by default.
    :type metadata: `bool`
+   :arg permissions: This argument indicates whether to copy file permissions
+                     from the source file. It is set to `true` by default.
+   :type permissions: `bool`
 
    :throws IsADirectoryError: when `dest` is directory.
    :throws SystemError: thrown to describe another error if it occurs.
 */
-proc copy(src: string, dest: string, metadata: bool = false) throws {
+proc copy(src: string, dest: string, metadata: bool = false, permissions: bool = true) throws {
   var destFile = dest;
+
+  proc copyMode(src: string, dest: string) throws {
+    proc getMode(name: string): int throws {
+      extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): errorCode;
+
+      var ret:c_int;
+      var err = chpl_fs_viewmode(ret, unescape(name).c_str());
+      if err then try ioerror(err, "in getMode", name);
+      return ret;
+    }
+
+    proc chmod(name: string, mode: int) throws {
+      extern proc chpl_fs_chmod(name: c_string, mode: int): errorCode;
+
+      var err = chpl_fs_chmod(unescape(name).c_str(), mode);
+      if err then try ioerror(err, "in chmod", name);
+    }
+
+    try {
+      // Gets the mode from the source file.
+      var srcMode = getMode(src);
+      // Sets the mode of the destination to the source's mode.
+      chmod(dest, srcMode);
+    } catch e: SystemError {
+      // Hide implementation details.
+      try ioerror(e.err, "in copyMode " + src, dest);
+    }
+
+/*
+    use OS.POSIX;
+    var statStruct: struct_stat;
+    const statRet = stat(src.c_str(), c_ptrTo(statStruct));
+
+    if statRet != 0 then try ioerror(statRet:errorCode, "in copy's stat");;
+    const chmodRet = chmod(dest.c_str(), statStruct.st_mode);
+    if chmodRet != 0 then try ioerror(chmodRet:errorCode, "in copy's chmod");;
+*/
+  }
+
   try {
     if (isDir(destFile)) {
       // destFile = joinPath(destFile, basename(src));
@@ -284,8 +322,11 @@ proc copy(src: string, dest: string, metadata: bool = false) throws {
     // Destination didn't exist before, and we're overwriting it anyways.
   }
 
-  try copyFile(src, destFile);
-  try copyMode(src, destFile);
+  try copyFileImpl(src, destFile);
+
+  if permissions {
+    try copyMode(src, destFile);
+  }
 
   if (metadata) {
     extern proc chpl_fs_copy_metadata(source: c_string, dest: c_string): errorCode;
@@ -297,8 +338,8 @@ proc copy(src: string, dest: string, metadata: bool = false) throws {
     if err then try ioerror(err, "in copy(" + src + ", " + dest + ")");
 
     // Get uid and gid from src
-    var uid = try getUID(src);
-    var gid = try getGID(src);
+    var uid = try getUid(src);
+    var gid = try getGid(src);
 
     // Change uid and gid to that of the src
     try chown(destFile, uid, gid);
@@ -321,7 +362,7 @@ proc copy(src: string, dest: string, metadata: bool = false) throws {
                         when `dest` is not writable,
                         or to describe another error if it occurs.
 */
-proc copyFile(src: string, dest: string) throws {
+private proc copyFileImpl(src: string, dest: string) throws {
   // This implementation is based off of the python implementation for copyfile,
   // with some slight differences.  That implementation was found at:
   // https://bitbucket.org/mirror/cpython/src/c8ce5bca0fcda4307f7ac5d69103ce128a562705/Lib/shutil.py?at=default
@@ -349,14 +390,14 @@ proc copyFile(src: string, dest: string) throws {
   }
 
   // Open src for reading, open dest for writing
-  var srcFile = try open(src, iomode.r);
+  var srcFile = try open(src, ioMode.r);
   defer {
     try {
       srcFile.close();
     } catch { /* ignore errors */ }
   }
 
-  var destFile = try open(dest, iomode.cw);
+  var destFile = try open(dest, ioMode.cw);
   defer {
     try {
       destFile.close();
@@ -382,7 +423,7 @@ proc copyFile(src: string, dest: string) throws {
   var numRead: int = 0;
   // If increasing the read size, make sure there's a test in
   // test/library/standard/FileSystem that copies a file larger than one buffer.
-  while (try srcChnl.readbytes(buf, len=4096)) {
+  while (try srcChnl.readBytes(buf, maxSize=4096)) {
     try destChnl.write(buf);
     // From mppf:
     // If you want it to be faster, we can make it only buffer once (sharing
@@ -405,6 +446,11 @@ proc copyFile(src: string, dest: string) throws {
   try srcFile.close();
 }
 
+deprecated "'FileSystem.copyFile' is deprecated. Please use 'FileSystem.copy' instead"
+proc copyFile(src: string, dest: string) throws {
+  copyFileImpl(src, dest);
+}
+
 /* Copies the permissions of the file indicated by `src` to the file indicated
    by `dest`, leaving contents, owner and group unaffected.
 
@@ -418,6 +464,7 @@ proc copyFile(src: string, dest: string) throws {
    :throws PermissionError: Thrown when the current user does not have
                             permission to change the permissions
 */
+deprecated "'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead."
 proc copyMode(src: string, dest: string) throws {
   try {
     // Gets the mode from the source file.
@@ -431,8 +478,9 @@ proc copyMode(src: string, dest: string) throws {
 }
 
 pragma "no doc"
+deprecated "'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead."
 proc copyMode(out error: errorCode, src: string, dest: string) {
-  var err: errorCode = ENOERR;
+  var err: errorCode = 0;
   try {
     copyMode(src, dest);
   } catch e: SystemError {
@@ -444,11 +492,11 @@ proc copyMode(out error: errorCode, src: string, dest: string) {
 
 /* Will recursively copy the tree which lives under `src` into `dst`,
    including all contents and permissions. Metadata such as file creation and
-   modification times, uid, and gid will not be preserved.  `dst` must not
-   previously exist, this function assumes it can create it and any missing
-   parent directories. If `copySymbolically` is `true`, symlinks will be
-   copied as symlinks, otherwise their contents and metadata will be copied
-   instead.
+   modification times, uid, and gid will be preserved if `metadata` is true.
+   `dst` must not previously exist, this function assumes it can create it and
+   any missing parent directories. If `copySymbolically` is `true`, symlinks
+   will be copied as symlinks, otherwise their contents and metadata will be
+   copied instead.
 
    :arg src: The root of the source tree to be copied.
    :type src: `string`
@@ -460,12 +508,15 @@ proc copyMode(out error: errorCode, src: string, dest: string) {
                           symlinks in the source directory.  It is set to
                           `false` by default
    :type copySymbolically: `bool`
+   :arg metadata: This argument is used to indicate whether to copy file metadata.
+                  It is set to `false` by default.
+   :type metadata: `bool`
 
    :throws FileExistsError: when the `dest` already exists.
    :throws NotADirectoryError: when `src` is not a directory.
    :throws SystemError: thrown to describe another error if it occurs.
 */
-proc copyTree(src: string, dest: string, copySymbolically: bool=false) throws {
+proc copyTree(src: string, dest: string, copySymbolically: bool=false, metadata: bool=false) throws {
   var expectedErrorCases = try exists(dest);
   if (expectedErrorCases) then
     // dest exists.  That's not ideal.
@@ -476,33 +527,47 @@ proc copyTree(src: string, dest: string, copySymbolically: bool=false) throws {
     try ioerror(ENOTDIR:errorCode, "in copyTree(" + src + ", " + dest + ")");
 
   var srcPath = try realPath(src);
-  try copyTreeHelper(srcPath, dest, copySymbolically);
+  try copyTreeHelper(srcPath, dest, copySymbolically, metadata);
 }
 
-private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=false) throws {
+private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=false, metadata: bool=false) throws {
+  extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): errorCode;
+
   // Create dest
-  var oldMode = try getMode(src);
+  var oldMode:c_int;
+  var err = chpl_fs_viewmode(oldMode, unescape(src).c_str());
+  if err then try ioerror(err, "in copyTreeHelper", src);
+
   try mkdir(dest, mode=oldMode, parents=true);
 
-  for filename in listdir(path=src, dirs=false, files=true, listlinks=true) {
+  if metadata {
+    try {
+      var uid = getUid(src),
+          gid = getGid(src);
+      chown(dest, uid, gid);
+    }
+  }
+
+
+  for filename in listDir(path=src, dirs=false, files=true, listlinks=true) {
     // Take care of files in src
     var fileDestName = dest + "/" + filename;
     var fileSrcName = src + "/" + filename;
-    if (try isLink(fileSrcName) && copySymbolically) {
+    if (try isSymlink(fileSrcName) && copySymbolically) {
       // Copy symbolically means symlinks should be copied as symlinks
       var realp = try realPath(fileSrcName);
       try symlink(realp, fileDestName);
     } else {
       // Either we didn't find a link, or copy symbolically is false, which
       // means we want the contents of the linked file, not a link itself.
-      try copy(fileSrcName, fileDestName, metadata=false);
+      try copy(fileSrcName, fileDestName, metadata=metadata);
     }
   }
 
-  for dirname in listdir(path=src, dirs=true, files=false, listlinks=true) {
+  for dirname in listDir(path=src, dirs=true, files=false, listlinks=true) {
     var dirDestName = dest+"/"+dirname;
     var dirSrcName = src+"/"+dirname;
-    if (try isLink(dirSrcName) && copySymbolically) {
+    if (try isSymlink(dirSrcName) && copySymbolically) {
       // Copy symbolically means symlinks should be copied as symlinks
       var realp = try realPath(dirSrcName);
       try symlink(realp, dirDestName);
@@ -531,7 +596,7 @@ proc locale.cwd(): string throws {
   extern proc chpl_fs_cwd(ref working_dir:c_string):errorCode;
 
   var ret:string;
-  var err: errorCode = ENOERR;
+  var err: errorCode = 0;
   on this {
     var tmp:c_string;
     // c_strings can't cross on statements.
@@ -542,7 +607,7 @@ proc locale.cwd(): string throws {
     // tmp was qio_malloc'd by chpl_fs_cwd
     chpl_free_c_string(tmp);
   }
-  if err != ENOERR then try ioerror(err, "in cwd");
+  if err != 0 then try ioerror(err, "in cwd");
   return ret;
 }
 
@@ -592,32 +657,71 @@ proc exists(name: string): bool throws {
 
    :yield:  The paths to any files found, relative to `startdir`, as strings
 */
+iter findFiles(startdir: string = ".", recursive: bool = false,
+               hidden: bool = false): string {
+  if (recursive) then
+    foreach subdir in walkDirs(startdir, hidden=hidden) do
+      foreach file in listDir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+        yield subdir+"/"+file;
+  else
+    foreach file in listDir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+      yield startdir+"/"+file;
+}
 
+// When this deprecated iterator is removed remember to remove the standalone
+// parallel version below as well.
+deprecated "'findfiles' is deprecated, please use 'findFiles' instead"
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false): string {
   if (recursive) then
-    foreach subdir in walkdirs(startdir, hidden=hidden) do
-      foreach file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+    foreach subdir in walkDirs(startdir, hidden=hidden) do
+      foreach file in listDir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
         yield subdir+"/"+file;
   else
-    foreach file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+    foreach file in listDir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
       yield startdir+"/"+file;
 }
 
 pragma "no doc"
+iter findFiles(startdir: string = ".", recursive: bool = false,
+               hidden: bool = false, param tag: iterKind): string
+       where tag == iterKind.standalone {
+  if (recursive) then
+    // Why "with (ref hidden)"?  A: the compiler currently allows only
+    // [const] ref intents in forall loops over recursive parallel iterators
+    // such as walkDirs().
+    forall subdir in walkDirs(startdir, hidden=hidden) with (ref hidden) do
+      foreach file in listDir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+        yield subdir+"/"+file;
+  else
+    foreach file in listDir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+      yield startdir+"/"+file;
+}
+
+// Adding the deprecation warning here causes 3 deprecation warnings in
+// addition to the one that comes from the serial iterator for a forall loop
+// that calls this. (serial, leader, follower, standalone). Rely on just
+// the serial deprecation warning to reduce it to a single message.
+pragma "no doc"
+//deprecated "'findfiles' is deprecated, please use 'findFiles' instead"
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
   if (recursive) then
     // Why "with (ref hidden)"?  A: the compiler currently allows only
     // [const] ref intents in forall loops over recursive parallel iterators
-    // such as walkdirs().
-    forall subdir in walkdirs(startdir, hidden=hidden) with (ref hidden) do
-      foreach file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+    // such as walkDirs().
+    forall subdir in walkDirs(startdir, hidden=hidden) with (ref hidden) do
+      foreach file in listDir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
         yield subdir+"/"+file;
   else
-    foreach file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+    foreach file in listDir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
       yield startdir+"/"+file;
+}
+
+deprecated "getGID is deprecated, please use getGid instead"
+proc getGID(name: string): int throws {
+  return getGid(name);
 }
 
 /* Obtains and returns the group id associated with the file or directory
@@ -631,12 +735,12 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
 
    :throws SystemError: Thrown to describe an error if one occurs.
 */
-proc getGID(name: string): int throws {
+proc getGid(name: string): int throws {
   extern proc chpl_fs_get_gid(ref result: c_int, filename: c_string): errorCode;
 
   var result: c_int;
   var err = chpl_fs_get_gid(result, unescape(name).c_str());
-  if err then try ioerror(err, "in getGID");
+  if err then try ioerror(err, "in getGid");
   return result;
 }
 
@@ -653,6 +757,7 @@ proc getGID(name: string): int throws {
 
    :throws SystemError: Thrown to describe an error if one occurs.
 */
+deprecated "'FileSystem.getMode()' is deprecated, please use 'OS.POSIX.stat()' instead"
 proc getMode(name: string): int throws {
   extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): errorCode;
 
@@ -681,6 +786,11 @@ proc getFileSize(name: string): int throws {
   return result;
 }
 
+deprecated "getUID is deprecated, please use getUid instead"
+proc getUID(name: string): int throws {
+  return getUid(name);
+}
+
 /* Obtains and returns the user id associated with the file or directory
    specified by `name`.
 
@@ -692,12 +802,12 @@ proc getFileSize(name: string): int throws {
 
    :throws SystemError: Thrown to describe an error if one occurs.
 */
-proc getUID(name: string): int throws {
+proc getUid(name: string): int throws {
   extern proc chpl_fs_get_uid(ref result: c_int, filename: c_string): errorCode;
 
   var result: c_int;
   var err = chpl_fs_get_uid(result, unescape(name).c_str());
-  if err then try ioerror(err, "in getUID");
+  if err then try ioerror(err, "in getUid");
   return result;
 }
 
@@ -903,7 +1013,7 @@ proc isFile(name:string):bool throws {
                         including the case where the path does not refer
                         to a valid file or directory.
 */
-proc isLink(name: string): bool throws {
+proc isSymlink(name: string): bool throws {
   extern proc chpl_fs_is_link(ref result:c_int, name: c_string): errorCode;
 
   if (name.isEmpty()) {
@@ -915,8 +1025,13 @@ proc isLink(name: string): bool throws {
 
   var ret:c_int;
   var err = chpl_fs_is_link(ret, unescape(name).c_str());
-  if err then try ioerror(err, "in isLink", name);
+  if err then try ioerror(err, "in isSymlink", name);
   return ret != 0;
+}
+
+deprecated "'isLink' is deprecated. Please use 'isSymlink' instead"
+proc isLink(name: string): bool throws {
+  return isSymlink(name);
 }
 
 /* Determine if the provided path `name` corresponds to a mount point and
@@ -949,6 +1064,14 @@ proc isMount(name: string): bool throws {
   return ret != 0;
 }
 
+deprecated "listdir is deprecated, please use listDir instead"
+iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
+             files: bool = true, listlinks: bool = true): string {
+  for filename in listDir(path, hidden, dirs, files, listlinks) {
+    yield filename;
+  }
+}
+
 /* Lists the contents of a directory.  May be invoked in serial
    contexts only.
 
@@ -973,7 +1096,7 @@ proc isMount(name: string): bool throws {
 
    :yield: The names of the specified directory's contents, as strings
 */
-iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
+iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
               files: bool = true, listlinks: bool = true): string {
   extern type DIRptr;
   extern type direntptr;
@@ -1002,17 +1125,17 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
 
           // TODO: revisit error handling for this method
           try {
-            if (listlinks || !isLink(fullpath)) {
+            if (listlinks || !isSymlink(fullpath)) {
               if (dirs && isDir(fullpath)) then
                 yield filename;
               else if (files && isFile(fullpath)) then
                 yield filename;
             }
           } catch e: SystemError {
-            writeln("error in listdir(): ", errorToString(e.err));
+            writeln("error in listDir(): ", errorToString(e.err));
             break;
           } catch {
-            writeln("unknown error in listdir()");
+            writeln("unknown error in listDir()");
             break;
           }
         }
@@ -1022,7 +1145,7 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
     closedir(dir);
   } else {
     extern proc perror(s: c_string);
-    perror(("error in listdir(): " + path).c_str());
+    perror(("error in listDir(): " + path).c_str());
   }
 }
 
@@ -1188,15 +1311,15 @@ proc rmTree(root: string) throws {
 
 private proc rmTreeHelper(root: string) throws {
   // Go through all the files in this current directory and remove them
-  for filename in listdir(path=root, dirs=false, files=true, listlinks=true, hidden=true) {
+  for filename in listDir(path=root, dirs=false, files=true, listlinks=true, hidden=true) {
     var name = root + "/" + filename;
     try remove(name);
   }
   // Then traverse all the directories within this current directory and have
   // them handle cleaning up their contents and themselves
-  for dirname in listdir(path=root, dirs=true, files=false, listlinks=true, hidden=true) {
+  for dirname in listDir(path=root, dirs=true, files=false, listlinks=true, hidden=true) {
     var fullpath = root + "/" + dirname;
-    var dirIsLink = try isLink(fullpath);
+    var dirIsLink = try isSymlink(fullpath);
     if (dirIsLink) {
       try remove(fullpath);
     } else {
@@ -1251,14 +1374,16 @@ proc sameFile(file1: string, file2: string): bool throws {
 
    :throws SystemError: Thrown to describe an error if one occurs.
 */
+deprecated "'sameFile(file, file)' is deprecated. Please use 'sameFile(string, string)' instead"
 proc sameFile(file1: file, file2: file): bool throws {
   extern proc chpl_fs_samefile(ref ret: c_int, file1: qio_file_ptr_t,
                                file2: qio_file_ptr_t): errorCode;
 
-  // If one of the files references a null file, propagate to avoid a segfault.
-  try {
-    file1.check();
-    file2.check();
+  // If one of the files references a null or closed file, throw to avoid a
+  // segfault.
+  if (!file1.isOpen() || !file2.isOpen()) {
+    throw createSystemError(EBADF,
+                            "Operation attempted on a file that is not open");
   }
 
   var ret:c_int;
@@ -1316,6 +1441,15 @@ proc locale.umask(mask: int): int {
 }
 
 
+deprecated "walkdirs is deprecated; please use walkDirs instead"
+iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
+              hidden: bool = false, followlinks: bool = false,
+              sort: bool = false): string {
+  for dir in walkDirs(path, topdown, depth, hidden, followlinks, sort) {
+    yield dir;
+  }
+}
+
 /* Recursively walk a directory structure, yielding directory names.
    May be invoked in serial or non-zippered parallel contexts.
 
@@ -1345,7 +1479,7 @@ proc locale.umask(mask: int): int {
 
    :yield: The directory names encountered, relative to `path`, as strings
 */
-iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
+iter walkDirs(path: string = ".", topdown: bool = true, depth: int = max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false): string {
 
@@ -1353,7 +1487,7 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
     yield path;
 
   if (depth) {
-    var subdirs = listdir(path, hidden=hidden, files=false, listlinks=followlinks);
+    var subdirs = listDir(path, hidden=hidden, files=false, listlinks=followlinks);
     if (sort) {
       use Sort /* only sort */;
       sort(subdirs);
@@ -1361,7 +1495,7 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
 
     for subdir in subdirs {
       const fullpath = path + "/" + subdir;
-      for subdir in walkdirs(fullpath, topdown, depth-1, hidden,
+      for subdir in walkDirs(fullpath, topdown, depth-1, hidden,
                              followlinks, sort) do
         yield subdir;
     }
@@ -1371,12 +1505,21 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
     yield path;
 }
 
+pragma "no doc"
+iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
+              hidden: bool = false, followlinks: bool = false,
+              sort: bool = false, param tag: iterKind): string
+       where tag == iterKind.standalone {
+  forall dir in walkDirs(path, topdown, depth, hidden, followlinks, sort) {
+    yield dir;
+  }
+}
 
 //
 // Here's a parallel version
 //
 pragma "no doc"
-iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
+iter walkDirs(path: string = ".", topdown: bool = true, depth: int =max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
@@ -1388,14 +1531,14 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
     yield path;
 
   if (depth) {
-    var subdirs = listdir(path, hidden=hidden, files=false, listlinks=followlinks);
+    var subdirs = listDir(path, hidden=hidden, files=false, listlinks=followlinks);
     forall subdir in subdirs {
       const fullpath = path + "/" + subdir;
       //
       // Call standalone walkdirs() iterator recursively; set sort=false since it is
       // not useful and we've already printed the warning
       //
-      for subdir in walkdirs(fullpath, topdown, depth-1, hidden, followlinks, sort=false, iterKind.standalone) do
+      for subdir in walkDirs(fullpath, topdown, depth-1, hidden, followlinks, sort=false, iterKind.standalone) do
         yield subdir;
     }
   }

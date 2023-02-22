@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,10 +28,12 @@ module ChapelTaskData {
   // up to 16 bytes of wide pointer for _remoteEndCountType
   // 1 byte for serial_state
   // 1 byte for nextCoStmtSerial
+  // 1 byte for commDiagsTemporarilyDisabled
   private const chpl_offset_endCount = 0:c_size_t;
   private const chpl_offset_serial = sizeof_endcount_ptr();
   private const chpl_offset_nextCoStmtSerial = chpl_offset_serial+1;
-  private const chpl_offset_end = chpl_offset_nextCoStmtSerial+1;
+  private const chpl_offset_commDiagsTemporarilyDisabled = chpl_offset_nextCoStmtSerial+1;
+  private const chpl_offset_end = chpl_offset_commDiagsTemporarilyDisabled+1;
 
   // What is the size of a wide _EndCount pointer?
   private
@@ -89,7 +91,6 @@ module ChapelTaskData {
     c_memcpy(c_ptrTo(prv[i]), c_ptrTo(v), c_sizeof(uint(8)));
   }
   proc chpl_task_data_getSerial(tls:c_ptr(chpl_task_infoChapel_t)) : bool {
-    var ret:bool = false;
     var prv = tls:c_ptr(c_uchar);
     var i = chpl_offset_serial;
     var v:uint(8) = 0;
@@ -113,9 +114,29 @@ module ChapelTaskData {
   }
 
   proc chpl_task_data_getNextCoStmtSerial(tls:c_ptr(chpl_task_infoChapel_t)) : bool {
-    var ret:bool = false;
     var prv = tls:c_ptr(c_uchar);
     var i = chpl_offset_nextCoStmtSerial;
+    var v:uint(8) = 0;
+    c_memcpy(c_ptrTo(v), c_ptrTo(prv[i]), c_sizeof(uint(8)));
+    if boundsChecking then
+      assert(v == 0 || v == 1);
+    return v == 1;
+  }
+
+  proc chpl_task_data_setCommDiagsTemporarilyDisabled(tls:c_ptr(chpl_task_infoChapel_t), disabled: bool) : bool {
+    var ret = chpl_task_data_getCommDiagsTemporarilyDisabled(tls);
+    var prv = tls:c_ptr(c_uchar);
+    var i = chpl_offset_commDiagsTemporarilyDisabled;
+    var v:uint(8) = 0;
+    if disabled then
+      v = 1;
+    c_memcpy(c_ptrTo(prv[i]), c_ptrTo(v), c_sizeof(uint(8)));
+    return ret;
+  }
+
+  proc chpl_task_data_getCommDiagsTemporarilyDisabled(tls:c_ptr(chpl_task_infoChapel_t)) : bool {
+    var prv = tls:c_ptr(c_uchar);
+    var i = chpl_offset_commDiagsTemporarilyDisabled;
     var v:uint(8) = 0;
     c_memcpy(c_ptrTo(v), c_ptrTo(prv[i]), c_sizeof(uint(8)));
     if boundsChecking then
@@ -140,6 +161,14 @@ module ChapelTaskData {
   }
   export proc chpl_task_getSerial() : bool {
     return chpl_task_data_getSerial(chpl_task_getInfoChapel());
+  }
+
+  export proc chpl_task_setCommDiagsTemporarilyDisabled(disabled: bool) : bool {
+    return chpl_task_data_setCommDiagsTemporarilyDisabled(chpl_task_getInfoChapel(), disabled);
+  }
+
+  export proc chpl_task_getCommDiagsTemporarilyDisabled() : bool {
+    return chpl_task_data_getCommDiagsTemporarilyDisabled(chpl_task_getInfoChapel());
   }
 
 

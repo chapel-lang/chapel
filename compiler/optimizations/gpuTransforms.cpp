@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,6 +35,7 @@
 #include "astutil.h"
 #include "optimizations.h"
 #include "timer.h"
+#include "misc.h"
 
 #include "global-ast-vecs.h"
 
@@ -335,6 +336,17 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
         return false;
       }
 
+      if(fn->hasFlag(FLAG_EXTERN) &&
+        !fn->hasFlag(FLAG_GPU_CODEGEN) &&
+        !fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN))
+      {
+        std::string msg = "function calls out to extern function (";
+        msg += fn->name;
+        msg += "), which is not marked as GPU eligible";
+        reportNotGpuizable(fn, msg.c_str());
+        return false;
+      }
+
       if (hasOuterVarAccesses(fn)) {
         reportNotGpuizable(call, "call has outer var access");
         return false;
@@ -443,6 +455,7 @@ class GpuKernel {
   std::vector<Symbol*> kernelIndices_;
   std::vector<Symbol*> kernelActuals_;
   SymbolMap copyMap_;
+  bool lateGpuizationFailure_;
 
   public:
   SymExpr* blockSize_;
@@ -450,6 +463,7 @@ class GpuKernel {
   GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
   FnSymbol* fn() const { return fn_; }
   const std::vector<Symbol*>& kernelActuals() { return kernelActuals_; }
+  bool lateGpuizationFailure() const { return lateGpuizationFailure_; }
 
   private:
   void buildStubOutlinedFunction(DefExpr* insertionPoint);
@@ -466,12 +480,15 @@ class GpuKernel {
 
 GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   : gpuLoop(gpuLoop)
+  , lateGpuizationFailure_(false)
   , blockSize_(nullptr)
 {
   buildStubOutlinedFunction(insertionPoint);
   populateBody(gpuLoop.loop(), fn_);
   normalizeOutlinedFunction();
-  finalize();
+  if(!lateGpuizationFailure_) {
+    finalize();
+  }
 }
 
 void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
@@ -596,6 +613,9 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
     std::vector<SymExpr*> symExprsInBody;
     collectSymExprs(node, symExprsInBody);
 
+    std::vector<DefExpr*> defExprsInBody;
+    collectDefExprs(node, defExprsInBody);
+
     CallExpr* call = toCallExpr(node);
     if(call && call->isPrimitive(PRIM_GPU_SET_BLOCKSIZE)) {
         blockSize_ = toSymExpr(call->get(1));
@@ -618,6 +638,15 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
       outlinedFunction->insertAtTail(newDef);
     }
     else {
+      // We also need to copy any defs that appear in blocks.
+      // This pattern appears in Arkouda, so we do the following
+      // as a workaround:
+      for_vector(DefExpr, def, defExprsInBody) {
+        DefExpr* newDef = def->copy();
+        this->copyMap_.put(def->sym, newDef->sym);
+        outlinedFunction->insertAtTail(newDef);
+      }
+
       for_vector(SymExpr, symExpr, symExprsInBody) {
         Symbol* sym = symExpr->symbol();
 
@@ -697,6 +726,17 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
 
 void GpuKernel::normalizeOutlinedFunction() {
   normalize(fn_);
+
+  // When compiling Arkouda normalization introduces untyped IR.
+  // To avoid that becoming a problem we check for the presence of
+  // this IR and fail gpuization in that case.
+  std::vector<DefExpr*> defExprsInBody;
+  collectDefExprs(fn_, defExprsInBody);
+  for_vector (DefExpr, def, defExprsInBody) {
+    if(def->sym->type == dtUnknown) {
+      this->lateGpuizationFailure_ = true;
+    }
+  }
 
   // normalization above adds PRIM_END_OF_STATEMENTs. It is probably too
   // wide of a brush. We can:
@@ -830,7 +870,11 @@ static void outlineEligibleLoop(FnSymbol *fn, const GpuizableLoop &gpuLoop) {
 
   // Construction of the GpuKernel will create the outlined function
   GpuKernel kernel(gpuLoop, fn->defPoint);
-  generateGpuAndNonGpuPaths(gpuLoop, kernel);
+  if(!kernel.lateGpuizationFailure()) {
+    generateGpuAndNonGpuPaths(gpuLoop, kernel);
+  } else {
+    kernel.fn()->defPoint->remove();
+  }
 }
 
 static void outlineGPUKernels() {
@@ -867,6 +911,13 @@ static void logGpuizableLoops() {
 }
 
 void gpuTransforms() {
+  if (usingGpuLocaleModel() && getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP) {
+    // TODO: the AMD GPU prototype is not currently in a state
+    // where gpuTransforms can be applied. Do not apply them
+    // for the time being.
+    return;
+  }
+
   if (debugPrintGPUChecks) {
     logGpuizableLoops();
   }

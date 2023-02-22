@@ -1,0 +1,2 @@
+--detailed-errors # fullImportPath-detailed.good
+--no-detailed-errors # fullImportPath-brief.good

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -55,6 +55,9 @@ module CTypes {
 
   /* The Chapel type corresponding to the C 'double' type */
   extern type c_double = real(64);
+
+  /* The Chapel type corresponding to the C 'FILE*' type defined in <stdio.h> */
+  extern "_cfile" type c_FILE;
 
   // Former CPtr contents start here
 
@@ -465,6 +468,7 @@ module CTypes {
 
   pragma "no doc"
   pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
   extern proc c_pointer_return(ref x:?t):c_ptr(t);
   pragma "no doc"
   pragma "fn synchronization free"
@@ -492,7 +496,7 @@ module CTypes {
     if (arr._value.locale != here) then
       halt("c_ptrTo() can only be applied to an array from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
 
-    return c_pointer_return(arr[arr.domain.alignedLow]);
+    return c_pointer_return(arr[arr.domain.low]);
   }
 
   /* Returns a :type:`c_ptr` to any Chapel object.
@@ -529,6 +533,12 @@ module CTypes {
     return CHPL_RT_MD_ARRAY_ELEMENTS - chpl_memhook_md_num();
   }
 
+  pragma "last resort"
+  deprecated "c_sizeof with argument name 'x' is deprecated; please use c_sizeof(type t) instead"
+  inline proc c_sizeof(type x): c_size_t {
+    return c_sizeof(x);
+  }
+
   /*
     Return the size in bytes of a type, as with the C ``sizeof`` built-in.
 
@@ -542,10 +552,10 @@ module CTypes {
          * Behavior of ``c_sizeof`` with Chapel types may change
          * Behavior given a Chapel class type is not well-defined
    */
-  inline proc c_sizeof(type x): c_size_t {
+  inline proc c_sizeof(type t): c_size_t {
     pragma "fn synchronization free"
-    extern proc sizeof(type x): c_size_t;
-    return sizeof(x);
+    extern proc sizeof(type t): c_size_t;
+    return sizeof(t);
   }
 
   /*

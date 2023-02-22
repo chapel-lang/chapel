@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -847,8 +847,8 @@ override proc DimensionalDist2D.dsiNewRectangularDom(param rank: int,
 // common redirects
 override proc DimensionalDom.dsiLow           return whole.lowBound;
 override proc DimensionalDom.dsiHigh          return whole.highBound;
-override proc DimensionalDom.dsiAlignedLow    return whole.alignedLow;
-override proc DimensionalDom.dsiAlignedHigh   return whole.alignedHigh;
+override proc DimensionalDom.dsiAlignedLow    return whole.low;
+override proc DimensionalDom.dsiAlignedHigh   return whole.high;
 override proc DimensionalDom.dsiFirst         return whole.first;
 override proc DimensionalDom.dsiLast          return whole.last;
 override proc DimensionalDom.dsiStride        return whole.stride;

@@ -137,19 +137,19 @@ Organization of Chapel Documentation Sources
 --------------------------------------------
 
 The file chapel/doc/rst/index.rst is the root file that sets up the
-structure of the documentation and results in the current sidebar
-displayed on https://chapel-lang.org/docs/.
+structure of the documentation and results in the sidebar displayed on
+https://chapel-lang.org/docs/.
 
 
-There is a strong correlation between the side bar of
-https://chapel-lang.org/docs/ and the doc/rst/ subdirectories,
-except for lots of the stuff under Writing Chapel Programs.
+There is a strong correlation between the sidebar and the doc/rst/
+subdirectories, except for lots of the stuff under Writing Chapel
+Programs.
 
-Below, the various kinds of documentation are organized by how they are
-converted into .html files.  The first column indicates the document name
-in the sidebar of https://chapel-lang.org/docs/, the second column shows
-the source files in the repository, and the last column indicates the sub
-heading the file is under.
+Below, the various kinds of documentation are organized by how they
+are converted into .html files.  The first column indicates the
+sidebar subheading the document is published under, the second column
+indicates the document name there, and the last column shows the
+source files in the repository.
 
 .. list-table:: **Using Sphinx to convert .rst files to .html files**
    :widths: 100 100 100
@@ -181,7 +181,7 @@ heading the file is under.
      - doc/rst/language/reference.rst
    * - WRITING CHAPEL PROGRAMS
      - Mason Packages
-     - doc/rst/mason-packages.rst
+     - doc/rst/mason-packages
    * - WRITING CHAPEL PROGRAMS
      - Chapel Users Guide (WIP)
      - doc/rst/users-guide

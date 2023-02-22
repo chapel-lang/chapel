@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -133,7 +133,6 @@ module Subprocess {
   use OS;
   use CTypes;
   use OS.POSIX;
-  import SysBasic.{ENOERR};
 
   private extern proc qio_openproc(argv:c_ptr(c_string),
                                    env:c_ptr(c_string),
@@ -224,19 +223,19 @@ module Subprocess {
     pragma "no doc"
     var stdin_buffering:bool;
     pragma "no doc"
-    var stdin_channel:channel(writing=true, kind=kind, locking=locking);
+    var stdin_channel:fileWriter(kind=kind, locking=locking);
     pragma "no doc"
     var stdout_pipe:bool;
     pragma "no doc"
     var stdout_file:file;
     pragma "no doc"
-    var stdout_channel:channel(writing=false, kind=kind, locking=locking);
+    var stdout_channel:fileReader(kind=kind, locking=locking);
     pragma "no doc"
     var stderr_pipe:bool;
     pragma "no doc"
     var stderr_file:file;
     pragma "no doc"
-    var stderr_channel:channel(writing=false, kind=kind, locking=locking);
+    var stderr_channel:fileReader(kind=kind, locking=locking);
 
     // Ideally we don't have the _file versions, but they
     // are there now because of issues with when the reference counts
@@ -569,7 +568,7 @@ module Subprocess {
       ret.spawn_error = err;
       return ret;
     }
-    ret.spawn_error = ENOERR;
+    ret.spawn_error = 0;
 
     // open the QIO files if a pipe was used.
 
@@ -582,7 +581,7 @@ module Subprocess {
       // goes out of scope, but the channel will still keep
       // the file alive by referring to it.
       try {
-        var stdin_file = openfd(stdin_fd, hints=ioHintSet.fromFlag(QIO_HINT_OWNED));
+        var stdin_file = new file(stdin_fd, hints=ioHintSet.fromFlag(QIO_HINT_OWNED));
         ret.stdin_channel = stdin_file.writer();
       } catch e: SystemError {
         ret.spawn_error = e.err;
@@ -607,7 +606,7 @@ module Subprocess {
     if stdout_pipe {
       ret.stdout_pipe = true;
       try {
-        var stdout_file = openfd(stdout_fd, hints=ioHintSet.fromFlag(QIO_HINT_OWNED));
+        var stdout_file = new file(stdout_fd, hints=ioHintSet.fromFlag(QIO_HINT_OWNED));
         ret.stdout_channel = stdout_file.reader();
       } catch e: SystemError {
         ret.spawn_error = e.err;
@@ -621,7 +620,7 @@ module Subprocess {
     if stderr_pipe {
       ret.stderr_pipe = true;
       try {
-        ret.stderr_file = openfd(stderr_fd, hints=ioHintSet.fromFlag(QIO_HINT_OWNED));
+        ret.stderr_file = new file(stderr_fd, hints=ioHintSet.fromFlag(QIO_HINT_OWNED));
         ret.stderr_channel = ret.stderr_file.reader();
       } catch e: SystemError {
         ret.spawn_error = e.err;
@@ -726,7 +725,7 @@ module Subprocess {
   proc subprocess.poll() throws {
     try _throw_on_launch_error();
 
-    var err:errorCode = ENOERR;
+    var err:errorCode = 0;
     on home {
       // check if child process has terminated.
       var done:c_int = 0;
@@ -794,10 +793,10 @@ module Subprocess {
       return;
     }
 
-    var stdin_err:errorCode  = ENOERR;
-    var wait_err:errorCode   = ENOERR;
-    var stdout_err:errorCode = ENOERR;
-    var stderr_err:errorCode = ENOERR;
+    var stdin_err:errorCode  = 0;
+    var wait_err:errorCode   = 0;
+    var stdout_err:errorCode = 0;
+    var stderr_err:errorCode = 0;
 
     on home {
       // Close stdin.
@@ -909,7 +908,7 @@ module Subprocess {
       return;
     }
 
-    var err:errorCode = ENOERR;
+    var err:errorCode = 0;
     on home {
       if this.stdin_pipe {
         // send data to stdin
@@ -943,7 +942,7 @@ module Subprocess {
    */
   proc subprocess.close() throws {
     // TODO: see subprocess.wait() for more on this error handling approach
-    var err: errorCode = ENOERR;
+    var err: errorCode = 0;
 
     // Close stdin.
     if this.stdin_pipe {
@@ -1120,7 +1119,7 @@ module Subprocess {
   proc subprocess.sendPosixSignal(signal:int) throws {
     try _throw_on_launch_error();
 
-    var err: errorCode = ENOERR;
+    var err: errorCode = 0;
     on home {
       err = qio_send_signal(pid, signal:c_int);
     }

@@ -1,0 +1,2 @@
+noelemtype.chpl:5: warning: single-element array literals without a trailing comma are deprecated; please rewrite as '[myElem, ]'
+noelemtype.chpl:5: error: cannot initialize [domain(1,int(64),false)] domain(1,int(64),false) from real(64)

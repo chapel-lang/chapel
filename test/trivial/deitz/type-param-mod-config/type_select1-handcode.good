@@ -1,4 +1,4 @@
 mywrite int for       12
 myrite real for          12.0
-mywrite int for       true
+mywrite not supported for true
 mywrite not supported for hello world

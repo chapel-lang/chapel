@@ -13,9 +13,9 @@ const table = createTable();    // create the table of code complements
 proc main(args: [] string) {
   use IO;
   const stdinBin = openfd(0).reader(iokind.native, locking=false,
-                                hints = QIO_CH_ALWAYS_UNBUFFERED),
+                           hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
         stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                                  hints = QIO_CH_ALWAYS_UNBUFFERED);
+                           hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
 
   // read in the data using an incrementally growing buffer
   var bufLen = 8 * 1024,

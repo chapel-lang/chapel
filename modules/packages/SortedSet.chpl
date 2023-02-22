@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -134,11 +134,11 @@ module SortedSet {
     }
 
     /*
-      Write the contents of this sortedSet to a channel.
+      Write the contents of this sortedSet to a fileWriter.
 
-      :arg ch: A channel to write to.
+      :arg ch: A fileWriter to write to.
     */
-    inline proc const writeThis(ch: channel) throws {
+    inline proc const writeThis(ch: fileWriter) throws {
       instance.writeThis(ch);
     }
 

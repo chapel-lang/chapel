@@ -1,0 +1,5 @@
+iochannel.chpl:3: In function 'foo':
+iochannel.chpl:3: warning: channel type is deprecated - use fileReader or fileWriter instead
+iochannel.chpl:5: In function 'main':
+iochannel.chpl:8: warning: channel type is deprecated - use fileReader or fileWriter instead
+iochannel.chpl:9: warning: channel type is deprecated - use fileReader or fileWriter instead

@@ -1,0 +1,47 @@
+initWeakPtr.chpl:17: warning: The 'weakPointer' type is experimental and is likely to change in the future
+initWeakPtr.chpl:27: warning: The 'weakPointer' type is experimental and is likely to change in the future
+initWeakPtr.chpl:43: warning: the 'weakPointer' interface is experimental - this method is likely to change in the future
+1
+	shared: '{x = 1}' 	type: 'shared basicClass' 		sc: 1
+	weak: '{x = 1}' 	type: 'weakPointer(shared basicClass)' 	sc: 1	 wc: 1
+2
+	shared: '{x = 2}' 	type: 'shared basicClass' 		sc: 2
+	shared: '{x = 2}' 	type: 'shared basicClass' 		sc: 2
+	weak: '{x = 2}' 	type: 'weakPointer(shared basicClass)' 	sc: 2	 wc: 2
+	weak: '{x = 2}' 	type: 'weakPointer(shared basicClass)' 	sc: 2	 wc: 2
+3
+	shared: '{x = 3}' 	type: 'shared basicClass' 		sc: 3
+	shared: '{x = 3}' 	type: 'shared basicClass' 		sc: 3
+	shared: '{x = 3}' 	type: 'shared basicClass' 		sc: 3
+	weak: '{x = 3}' 	type: 'weakPointer(shared basicClass)' 	sc: 3	 wc: 3
+	weak: '{x = 3}' 	type: 'weakPointer(shared basicClass)' 	sc: 3	 wc: 3
+	weak: '{x = 3}' 	type: 'weakPointer(shared basicClass)' 	sc: 3	 wc: 3
+4
+	shared: '{x = 4}' 	type: 'shared basicClass' 		sc: 4
+	shared: '{x = 4}' 	type: 'shared basicClass' 		sc: 4
+	shared: '{x = 4}' 	type: 'shared basicClass' 		sc: 4
+	shared: '{x = 4}' 	type: 'shared basicClass' 		sc: 4
+	weak: '{x = 4}' 	type: 'weakPointer(shared basicClass)' 	sc: 4	 wc: 4
+	weak: '{x = 4}' 	type: 'weakPointer(shared basicClass)' 	sc: 4	 wc: 4
+	weak: '{x = 4}' 	type: 'weakPointer(shared basicClass)' 	sc: 4	 wc: 4
+	weak: '{x = 4}' 	type: 'weakPointer(shared basicClass)' 	sc: 4	 wc: 4
+3
+	shared: '{x = 3}' 	type: 'shared basicClass' 		sc: 3
+	shared: '{x = 3}' 	type: 'shared basicClass' 		sc: 3
+	shared: '{x = 3}' 	type: 'shared basicClass' 		sc: 3
+	weak: '{x = 3}' 	type: 'weakPointer(shared basicClass)' 	sc: 3	 wc: 4
+	weak: '{x = 3}' 	type: 'weakPointer(shared basicClass)' 	sc: 3	 wc: 4
+	weak: '{x = 3}' 	type: 'weakPointer(shared basicClass)' 	sc: 3	 wc: 4
+	weak: '{x = 3}' 	type: 'weakPointer(shared basicClass)' 	sc: 3	 wc: 4
+2
+	shared: '{x = 2}' 	type: 'shared basicClass' 		sc: 2
+	shared: '{x = 2}' 	type: 'shared basicClass' 		sc: 2
+	weak: '{x = 2}' 	type: 'weakPointer(shared basicClass)' 	sc: 2	 wc: 3
+	weak: '{x = 2}' 	type: 'weakPointer(shared basicClass)' 	sc: 2	 wc: 3
+	weak: '{x = 2}' 	type: 'weakPointer(shared basicClass)' 	sc: 2	 wc: 3
+1
+	shared: '{x = 1}' 	type: 'shared basicClass' 		sc: 1
+	weak: '{x = 1}' 	type: 'weakPointer(shared basicClass)' 	sc: 1	 wc: 2
+0
+	weak: 'invalid-ptr' 	type: 'weakPointer(shared basicClass)' 	sc: 0	 wc: 1
+upgrade attempt: nil

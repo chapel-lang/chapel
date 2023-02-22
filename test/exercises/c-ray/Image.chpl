@@ -1,4 +1,4 @@
-// Allow access to stderr, stdout, iomode
+// Allow access to stderr, stdout, ioMode
 private use IO;
 
 //
@@ -72,7 +72,7 @@ inline proc colorOffset(param color) param {
 proc writeImage(image, format, pixels: [] pixelType) {
   // the output file channel
   const outfile = if image == "stdout" then stdout
-                                       else open(image, iomode.cw).writer();
+                                       else open(image, ioMode.cw).writer();
   if image != "stdout" then
     writeln("Writing image to ", image);
   select format {

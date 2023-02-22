@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -154,9 +154,7 @@ proc isTupleType(type t) param
 
 /* Return true if argument ``t`` is a range type, false otherwise */
 proc isRangeType(type t) param {
-  proc isRangeHelp(type t: range(?)) param  return true;
-  proc isRangeHelp(type t)           param  return false;
-  return isRangeHelp(t);
+  return isSubtype(t, range(?));
 }
 
 /* Return true if ``t`` is a domain type. Otherwise return false. */
@@ -165,33 +163,24 @@ proc isDomainType(type t) param {
 }
 
 /* Return true if ``t`` is an array type. Otherwise return false. */
+pragma "fn exempt instantiation limit"
 proc isArrayType(type t) param {
   return isSubtype(t, _array);
 }
 
 /* Return true if ``t`` is a domain map type. Otherwise return false. */
 proc isDmapType(type t) param {
-  proc isDmapHelp(type t: _distribution) param  return true;
-  proc isDmapHelp(type t)                param  return false;
-  return isDmapHelp(t);
+  return isSubtype(t, _distribution);
 }
 
-pragma "no doc"
-proc isSyncType(type t:_syncvar) param {
-  return true;
-}
 /* Returns true if ``t`` is a sync type, false otherwise. */
 proc isSyncType(type t) param {
-  return false;
+  return isSubtype(t, _syncvar);
 }
 
-pragma "no doc"
-proc isSingleType(type t:_singlevar) param {
-  return true;
-}
 /* Returns true if ``t`` is a single type, false otherwise. */
 proc isSingleType(type t) param {
-  return false;
+  return isSubtype(t, _singlevar);
 }
 
 /* Returns true if ``t`` is an atomic type, false otherwise. */
@@ -217,21 +206,15 @@ proc isExternUnionType(type t) param return __primitive("is extern union type", 
 proc isRefIterType(type t) param return __primitive("is ref iter type", t);
 
 pragma "no doc"
-proc isOwnedClassType(type t:_owned)         param return true;
+proc isOwnedClassType(type t)     param return isSubtype(t, _owned);
 pragma "no doc"
-proc isOwnedClassType(type t)                param return false;
+proc isSharedClassType(type t)    param return isSubtype(t, _shared);
 pragma "no doc"
-proc isSharedClassType(type t:_shared)       param return true;
+proc isUnmanagedClassType(type t) param return isSubtype(t, unmanaged);
 pragma "no doc"
-proc isSharedClassType(type t)               param return false;
-pragma "no doc"
-proc isUnmanagedClassType(type t:unmanaged)  param return true;
-pragma "no doc"
-proc isUnmanagedClassType(type t)            param return false;
-pragma "no doc"
-proc isBorrowedClassType(type t:borrowed)    param return true;
-pragma "no doc"
-proc isBorrowedClassType(type t)             param return false;
+proc isBorrowedClassType(type t)  param {
+  return __primitive("is borrowed class type", t);
+}
 
 /*
 POD stands for Plain Old Data and roughly corresponds to the meaning of Plain
@@ -361,7 +344,7 @@ proc isBytesValue(e)     param  return isBytesType(e.type);
 proc isEnumValue(e)      param  return isEnumType(e.type);
 
 /* Returns ``true`` if the argument is a class value */
-proc isClassValue(e)              param return isClassType(e.type);
+proc isClassValue(e)     param return isClassType(e.type);
 
 /* Returns ``true`` if the argument is a record value */
 proc isRecordValue(e)    param  return isRecordType(e.type);
@@ -369,42 +352,27 @@ proc isRecordValue(e)    param  return isRecordType(e.type);
 /* Returns ``true`` if the argument is a union value */
 proc isUnionValue(e)     param  return isUnionType(e.type);
 
-pragma "no doc"
-proc isTupleValue(x: _tuple) param return true;
 /* Returns ``true`` if the argument is a tuple value */
-proc isTupleValue(x) param return false;
+proc isTupleValue(x)     param return isTupleType(x.type);
 
-pragma "no doc"
-proc isRangeValue(r: range(?)) param  return true;
 /* Return true if argument ``r`` is a range, false otherwise */
-proc isRangeValue(r)           param  return false;
+proc isRangeValue(r)     param return isRangeType(r.type);
 
-pragma "no doc"
-proc isDomainValue(e: domain) param  return true;
 /* Return true if ``e`` is a domain. Otherwise return false. */
-proc isDomainValue(e)         param  return false;
+proc isDomainValue(e)    param  return isDomainType(e.type);
 
-pragma "no doc"
-pragma "fn exempt instantiation limit"
-proc isArrayValue(e: []) param  return true;
 /* Return true if ``e`` is an array. Otherwise return false. */
 pragma "fn exempt instantiation limit"
-proc isArrayValue(e)     param  return false;
+proc isArrayValue(e)     param  return isArrayType(e.type);
 
-pragma "no doc"
-proc isDmapValue(e: _distribution) param  return true;
 /* Return true if ``e`` is a domain map. Otherwise return false. */
-proc isDmapValue(e)                param  return false;
+proc isDmapValue(e)      param  return isDmapType(e.type);
 
-pragma "no doc"
-proc isSyncValue(x : sync) param  return true;
 /* Returns ``true`` if the argument is a sync value */
-proc isSyncValue(x)       param  return false;
+proc isSyncValue(x)      param  return isSyncType(x.type);
 
-pragma "no doc"
-proc isSingleValue(x : single) param  return true;
 /* Returns ``true`` if the argument is a single value */
-proc isSingleValue(x)         param  return false;
+proc isSingleValue(x)    param  return isSingleType(x.type);
 
 /* Returns ``true`` if the argument is an atomic value */
 proc isAtomicValue(e)    param  return isAtomicType(e.type);
@@ -605,7 +573,7 @@ proc isAtomic(e)    param  return isAtomicValue(e);
 
 /* Returns ``true`` if the argument is a homogeneous tuple.
    The argument must be a tuple or any type. */
-proc isHomogeneousTuple(e: _tuple)  param  return isHomogeneousTupleValue(e);
+proc isHomogeneousTuple(e)  param  return isHomogeneousTupleValue(e);
 /* Returns ``true`` if the argument is a generic type, and ``false`` otherwise. */
 proc isGeneric(e)   param  return false;
 /* Returns ``true`` if the argument is an ``owned`` class type. */
@@ -699,13 +667,10 @@ proc isDefaultInitializable(e) param return isDefaultInitializableValue(e);
 
 // for internal use until we have a better name
 pragma "no doc"
-proc chpl_isSyncSingleAtomic(e)         param  return false;
-pragma "no doc"
-proc chpl_isSyncSingleAtomic(e: sync)   param  return true;
-pragma "no doc"
-proc chpl_isSyncSingleAtomic(e: single) param  return true;
-pragma "no doc"
-proc chpl_isSyncSingleAtomic(e)  param where isAtomicType(e.type)  return true;
+proc chpl_isSyncSingleAtomic(e: ?t) param return
+  isSyncType(t) ||
+  isSingleType(t) ||
+  isAtomicType(t);
 
 // isSubtype(), isProperSubtype() are now directly handled by compiler
 
@@ -1062,9 +1027,6 @@ proc isCoercible(type from, type to) param {
      * ``sub`` is a class type inheriting from ``super``
      * ``sub`` is non-nilable class type and ``super`` is the nilable version of the
        same class type
-
-   Note that ``isSubtype(a,b)`` can also be written as
-   ``a <= b`` or ``b >= a``.
    */
 pragma "docs only"
 proc isSubtype(type sub, type super) param {
@@ -1073,9 +1035,6 @@ proc isSubtype(type sub, type super) param {
 
 /* Similar to :proc:`isSubtype` but returns ``false`` if
    ``sub`` and ``super`` refer to the same type.
-
-   Note that ``isProperSubtype(a,b)`` can also be written
-   as ``a < b`` or ``b > a``.
    */
 pragma "docs only"
 proc isProperSubtype(type sub, type super) param {
@@ -1084,25 +1043,25 @@ proc isProperSubtype(type sub, type super) param {
 
 /* :returns: isProperSubtype(a,b) */
 pragma "docs only"
-deprecated "< operator is deprecated to compare types, use isPropersubtype instead"
+deprecated "< operator is deprecated when comparing types; use isProperSubtype() instead"
 operator <(type a, type b) param {
   return isProperSubtype(a,b);
 }
 /* :returns: isSubtype(a,b) */
 pragma "docs only"
-deprecated "<= operator is deprecated to compare types, use isSubtype instead"
+deprecated "<= operator is deprecated when comparing types; use isSubtype() instead"
 operator <=(type a, type b) param {
   return isSubtype(a,b);
 }
 /* :returns: isProperSubtype(b,a) */
 pragma "docs only"
-deprecated "> operator is deprecated to compare types, use isProperSubtype instead"
+deprecated "> operator is deprecated when comparing types; use isProperSubtype() instead"
 operator >(type a, type b) param {
   return isProperSubtype(b,a);
 }
 /* :returns: isSubtype(b,a) */
 pragma "docs only"
-deprecated "< operator is deprecated to compare types, use isSubtype instead"
+deprecated ">= operator is deprecated when comparing types; use isSubtype() instead"
 operator >=(type a, type b) param {
   return isSubtype(b,a);
 }

@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -18,6 +18,14 @@
 
 RUNTIME_ROOT = ../../..
 RUNTIME_SUBDIR = src/topo/hwloc
+
+ifdef CHPL_TOPO_DEBUG
+RUNTIME_DEFS += -DDEBUG
+endif
+
+ifdef DEBUG_NODEID
+RUNTIME_DEFS += -DDEBUG_NODEID
+endif
 
 ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..

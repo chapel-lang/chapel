@@ -1,2 +1,0 @@
-datetimeTimeSinceEpoch.chpl:1: warning: 'DateTime' is deprecated. Please use 'Time' instead
-datetimeTimeSinceEpoch.chpl:3: warning: 'datetime.timeSinceEpoch()' is deprecated. Please use 'timeSinceEpoch().totalSeconds()' instead.

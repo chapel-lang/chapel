@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,7 +23,7 @@
 module ChapelDomain {
 
   public use ChapelBase;
-  use ArrayViewRankChange;
+  use ArrayViewRankChange, ChapelTuple;
 
   /*
      Fractional value that specifies how full this domain can be
@@ -39,6 +39,10 @@ module ChapelDomain {
      data structures, such as `set` and `map`.
   */
   config const defaultHashTableResizeThreshold = 0.5;
+
+  /* Compile with ``-snoNegativeStrideWarnings``
+     to suppress the warning about arrays and slices with negative strides. */
+  config param noNegativeStrideWarnings = false;
 
   pragma "no copy return"
   pragma "return not owned"
@@ -201,13 +205,12 @@ module ChapelDomain {
   proc chpl__buildDomainExpr(keys..., definedConst) {
     param count = keys.size;
     // keyType of string literals is assumed to be type string
-    type keyType = _getLiteralType(keys(0).type);
+    type keyType = keys(0).type;
     for param i in 1..count-1 do
-      if keyType != _getLiteralType(keys(i).type) {
+      if keyType != keys(i).type {
         compilerError("Associative domain element " + i:string +
                       " expected to be of type " + keyType:string +
-                      " but is of type " +
-                      _getLiteralType(keys(i).type):string);
+                      " but is of type " + keys(i).type:string);
       }
 
     //Initialize the domain with a size appropriate for the number of keys.
@@ -285,20 +288,9 @@ module ChapelDomain {
     return _getDomain(dom._value);
   }
 
-  deprecated "isRectangularDom is deprecated - please use isRectangular method on domain"
-  proc isRectangularDom(d: domain) param return d.isRectangular();
-
-  deprecated "isIrregularDom is deprecated - please use isIrregular method on domain"
-  proc isIrregularDom(d: domain) param return d.isIrregular();
-
-  deprecated "isAssociativeDom is deprecated - please use isAssociative method on domain"
-  proc isAssociativeDom(d: domain) param return d.isAssociative();
-
   proc chpl_isAssociativeDomClass(dc: BaseAssociativeDom) param return true;
+  pragma "last resort"
   proc chpl_isAssociativeDomClass(dc) param return false;
-
-  deprecated "isSparseDom is deprecated - please use isSparse method on domain"
-  proc isSparseDom(d: domain) param return d.isSparse();
 
   private proc errorIfNotRectangular(dom: domain, param op, param arrays="") {
     if dom.isAssociative() || dom.isSparse() then
@@ -567,11 +559,6 @@ module ChapelDomain {
   }
 
   pragma "no doc"
-  deprecated "'|' on rectangular domains is deprecated"
-  operator |(a :domain, b: domain) where a.isRectangular() && b.isRectangular()
-    return forall (aa, bb) in zip(a, b) do aa|bb;
-
-  pragma "no doc"
   operator |=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     for e in b do
@@ -606,11 +593,6 @@ module ChapelDomain {
   }
 
   pragma "no doc"
-  deprecated "'&' on rectangular domains is deprecated"
-  operator &(a :domain, b: domain) where a.isRectangular() && b.isRectangular()
-    return forall (aa, bb) in zip(a, b) do aa&bb;
-
-  pragma "no doc"
   operator &=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     var removeSet: domain(a.idxType);
@@ -640,11 +622,6 @@ module ChapelDomain {
 
     return newDom;
   }
-
-  pragma "no doc"
-  deprecated "'^' on rectangular domains is deprecated"
-  operator ^(a :domain, b: domain) where a.isRectangular() && b.isRectangular()
-    return forall (aa, bb) in zip(a, b) do aa^bb;
 
   /*
      We remove elements in the RHS domain from those in the LHS domain only if
@@ -1128,9 +1105,23 @@ module ChapelDomain {
         return 1;
     }
 
-    /* Return the type of the indices of this domain */
+    /* Return the type used to represent the indices of this domain.
+       For a multidimensional domain, this will represent the
+       per-dimension index type. */
     proc idxType type {
       return _value.idxType;
+    }
+
+    /* Return the full type used to represent the indices of this
+       domain.  For a 1D or associative domain, this will be the same
+       as :proc:`idxType` above.  For a multidimensional domain, it
+       will be :proc:`rank` * :proc:`idxType`. */
+    proc fullIdxType type {
+      if this.isAssociative() || this.rank == 1 {
+        return this.idxType;
+      } else {
+        return this.rank * this.idxType;
+      }
     }
 
     /* The ``idxType`` as represented by an integer type.  When
@@ -1237,7 +1228,7 @@ module ChapelDomain {
       for param i in 0..rank-1 {
         if (isRange(args(i))) {
           collapsedDim(i) = false;
-          idx(i) = dim(i).alignedLow;
+          idx(i) = dim(i).low;
           upranges(updim) = this._value.dsiDim(i)[args(i)]; // intersect ranges
           updim += 1;
         } else {
@@ -1347,16 +1338,14 @@ module ChapelDomain {
       compilerError(".shape not supported on this domain");
     }
 
-    pragma "no doc"
-    pragma "no copy return"
-    proc buildArray(type eltType, param initElts:bool) {
+    proc chpl_checkEltType(type eltType) /*private*/ {
       if eltType == void {
         compilerError("array element type cannot be void");
       }
       if isGenericType(eltType) {
         compilerWarning("creating an array with element type " +
                         eltType:string);
-        if isClassType(eltType) && !isGenericType(borrowed eltType) {
+        if isClassType(eltType) && !isGenericType(eltType:borrowed) {
           compilerWarning("which now means class type with generic management");
         }
         compilerError("array element type cannot currently be generic");
@@ -1368,17 +1357,25 @@ module ChapelDomain {
           compilerError("sparse arrays of non-default-initializable types are not currently supported");
         }
       }
+    }
 
-      if chpl_warnUnstable then
-        if this.isRectangular() && this.stridable then
-          if rank == 1 {
-            if this.stride < 0 then
-              warning("arrays with negatively strided dimensions are not particularly stable");
-          } else {
-            for s in this.stride do
-              if s < 0 then
-                warning("arrays with negatively strided dimensions are not particularly stable");
+    proc chpl_checkNegativeStride() /*private*/ {
+      if noNegativeStrideWarnings then return;
+      // todo: add compile-time checks for neg. strides once ranges allow that
+      if this.isRectangular() && this.stridable {
+        for s in chpl__tuplify(this.stride) do
+          if s < 0 {
+            warning("arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: ", this.dsiDims());
+            break;
           }
+      }
+    }
+
+    pragma "no doc"
+    pragma "no copy return"
+    proc buildArray(type eltType, param initElts:bool) {
+      chpl_checkEltType(eltType);
+      chpl_checkNegativeStride();
 
       var x = _value.dsiBuildArray(eltType, initElts);
       pragma "dont disable remote value forwarding"
@@ -1524,8 +1521,8 @@ module ChapelDomain {
 
       pragma "no doc"
       proc _isBaseArrClassElementNil(baseArr: BaseArr, idx) {
-        var idxTup = if isTuple(idx) then idx else (idx,);
-        return baseArr.chpl_unsafeAssignIsClassElementNil(this, idxTup);
+        return baseArr.chpl_unsafeAssignIsClassElementNil(this,
+                                             chpl__tuplify(idx));
       }
 
       /*
@@ -1614,7 +1611,7 @@ module ChapelDomain {
 
       pragma "no doc"
       proc _moveInitializeElement(arr, idx, in value) {
-        import Memory.Initialization.moveInitialize;
+        import MemMove.moveInitialize;
         ref elem = arr[idx];
         moveInitialize(elem, value);
       }
@@ -1836,12 +1833,6 @@ module ChapelDomain {
       return _value.dsiAdd(idx);
     }
 
-    pragma "last resort" pragma "no doc"
-    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
-    proc ref add(in i) {
-      return add(i);
-    }
-
     pragma "no doc"
     @unstable "bulkAdd() is subject to change in the future."
     proc ref bulkAdd(inds: [] _value.idxType, dataSorted=false,
@@ -1851,6 +1842,9 @@ module ChapelDomain {
 
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
     }
+
+    deprecated "makeIndexBuffer has been renamed to createIndexBuffer"
+    inline proc makeIndexBuffer(size: int) { return createIndexBuffer(size); }
 
     /*
      Creates an index buffer which can be used for faster index addition.
@@ -1868,7 +1862,7 @@ module ChapelDomain {
        .. code-block:: chapel
 
           var spsDom: sparse subdomain(parentDom);
-          var idxBuf = spsDom.makeIndexBuffer(size=N);
+          var idxBuf = spsDom.createIndexBuffer(size=N);
           for i in someIndexIterator() do
             idxBuf.add(i);
           idxBuf.commit();
@@ -1880,9 +1874,9 @@ module ChapelDomain {
      :arg size: Size of the buffer in number of indices.
      :type size: int
     */
-    @unstable "makeIndexBuffer() is subject to change in the future."
-    inline proc makeIndexBuffer(size: int) {
-      return _value.dsiMakeIndexBuffer(size);
+    @unstable "createIndexBuffer() is subject to change in the future."
+    inline proc createIndexBuffer(size: int) {
+      return _value.dsiCreateIndexBuffer(size);
     }
 
     /*
@@ -1947,12 +1941,6 @@ module ChapelDomain {
       return _value.dsiRemove(idx);
     }
 
-    pragma "last resort" pragma "no doc"
-    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
-    proc ref remove(i) {
-      return remove(i);
-    }
-
     /* Request space for a particular number of values in an
        domain.
 
@@ -1967,12 +1955,6 @@ module ChapelDomain {
         compilerError("domain.requestCapacity only applies to associative domains");
 
       _value.dsiRequestCapacity(capacity);
-    }
-
-    pragma "last resort" pragma "no doc"
-    deprecated "the formal 'i' is deprecated, please use 'capacity' instead"
-    proc ref requestCapacity(i) {
-      requestCapacity(i);
     }
 
     /*
@@ -2038,9 +2020,12 @@ module ChapelDomain {
     proc first return _value.dsiFirst;
     /* Return the last index in this domain */
     proc last return _value.dsiLast;
+
     /* Return the low index in this domain factoring in alignment */
+    deprecated "'.alignedLow' is deprecated; please use '.low' instead"
     proc alignedLow return _value.dsiAlignedLow;
     /* Return the high index in this domain factoring in alignment */
+    deprecated "'.alignedHigh' is deprecated; please use '.high' instead"
     proc alignedHigh return _value.dsiAlignedHigh;
 
     /* This error overload is here because without it, the domain's
@@ -2065,32 +2050,6 @@ module ChapelDomain {
      */
     inline proc contains(idx: _value.idxType ...rank) {
       return contains(idx);
-    }
-
-    pragma "last resort" pragma "no doc"
-    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
-    inline proc contains(i: _value.idxType) {
-      return contains(idx=i);
-    }
-
-    pragma "last resort" pragma "no doc"
-    deprecated "the formal 'i' is deprecated, please use 'idx' instead"
-    inline proc contains(i: rank*_value.idxType) {
-      return contains(idx=i);
-    }
-
-    /* Return true if this domain is a subset of ``super``. Otherwise
-       returns false. */
-    deprecated "'domain1.isSubset(domain2)' is deprecated, instead please use 'domain2.contains(domain1)'"
-    proc isSubset(super : domain) {
-      return super.contains(this);
-    }
-
-    /* Return true if this domain is a superset of ``sub``. Otherwise
-       returns false. */
-    deprecated "'domain1.isSuper(domain2)' is deprecated, instead please use 'domain1.contains(domain2)'"
-    proc isSuper(sub : domain) {
-      return this.contains(sub);
     }
 
     /* Returns true if this domain contains all the indices in the domain
@@ -2157,8 +2116,8 @@ module ChapelDomain {
       for param i in 0..<rank {
           var currDim = this.dim(i);
           div /= currDim.sizeAs(int);
-          const lo = currDim.alignedLow;
-          const hi = currDim.alignedHigh;
+          const lo = currDim.low;
+          const hi = currDim.high;
           const stride = currDim.stride;
           const zeroInd = rankOrder/div;
           var currInd = zeroInd*stride;
@@ -2204,7 +2163,7 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc expand(off: rank*intIdxType) where !this.isRectangular() {
+    proc expand(off: rank*integral) where !this.isRectangular() {
       if this.isAssociative() then
         compilerError("expand not supported on associative domains");
       else if this.isSparse() then
@@ -2214,13 +2173,18 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc expand(off: intIdxType ...rank) return expand(off);
+    proc expand(off: integral ...rank) return expand(off);
 
     /* Return a new domain that is the current domain expanded by
        ``off(d)`` in dimension ``d`` if ``off(d)`` is positive or
        contracted by ``off(d)`` in dimension ``d`` if ``off(d)``
-       is negative. */
-    proc expand(off: rank*intIdxType) {
+       is negative.
+
+       See :proc:`ChapelRange.range.expand` for further information about what
+       it means to expand a range.
+
+     */
+    proc expand(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do {
         ranges(i) = ranges(i).expand(off(i));
@@ -2234,8 +2198,12 @@ module ChapelDomain {
 
     /* Return a new domain that is the current domain expanded by
        ``off`` in all dimensions if ``off`` is positive or contracted
-       by ``off`` in all dimensions if ``off`` is negative. */
-    proc expand(off: intIdxType) where rank > 1 {
+       by ``off`` in all dimensions if ``off`` is negative.
+
+       See :proc:`ChapelRange.range.expand` for further information about what
+       it means to expand a range.
+     */
+    proc expand(off: integral) where rank > 1 {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = dim(i).expand(off);
@@ -2243,7 +2211,7 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc exterior(off: rank*intIdxType) where !this.isRectangular() {
+    proc exterior(off: rank*integral) where !this.isRectangular() {
       if this.isAssociative() then
         compilerError("exterior not supported on associative domains");
       else if this.isSparse() then
@@ -2253,14 +2221,19 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc exterior(off: intIdxType ...rank) return exterior(off);
+    proc exterior(off: integral ...rank) return exterior(off);
 
     /* Return a new domain that is the exterior portion of the
        current domain with ``off(d)`` indices for each dimension ``d``.
        If ``off(d)`` is negative, compute the exterior from the low
        bound of the dimension; if positive, compute the exterior
-       from the high bound. */
-    proc exterior(off: rank*intIdxType) {
+       from the high bound.
+
+       See :proc:`ChapelRange.range.exterior` for further information about what
+       it means to compute the exterior of a range.
+
+     */
+    proc exterior(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = dim(i).exterior(off(i));
@@ -2271,16 +2244,21 @@ module ChapelDomain {
        current domain with ``off`` indices for each dimension.
        If ``off`` is negative, compute the exterior from the low
        bound of the dimension; if positive, compute the exterior
-       from the high bound. */
-    proc exterior(off:intIdxType) where rank != 1 {
-      var offTup: rank*intIdxType;
+       from the high bound.
+
+       See :proc:`ChapelRange.range.exterior` for further information about what
+       it means to compute the exterior of a range.
+
+     */
+    proc exterior(off:integral) where rank != 1 {
+      var offTup: rank*off.type;
       for i in 0..rank-1 do
         offTup(i) = off;
       return exterior(offTup);
     }
 
     pragma "no doc"
-    proc interior(off: rank*intIdxType) where !this.isRectangular() {
+    proc interior(off: rank*integral) where !this.isRectangular() {
       if this.isAssociative() then
         compilerError("interior not supported on associative domains");
       else if this.isSparse() then
@@ -2290,14 +2268,19 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc interior(off: intIdxType ...rank) return interior(off);
+    proc interior(off: integral ...rank) return interior(off);
 
     /* Return a new domain that is the interior portion of the
        current domain with ``off(d)`` indices for each dimension
        ``d``. If ``off(d)`` is negative, compute the interior from
        the low bound of the dimension; if positive, compute the
-       interior from the high bound. */
-    proc interior(off: rank*intIdxType) {
+       interior from the high bound.
+
+       See :proc:`ChapelRange.range.interior` for further information about what
+       it means to compute the exterior of a range.
+
+     */
+    proc interior(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do {
         if ((off(i) > 0) && (dim(i)._high+1-off(i) < dim(i)._low) ||
@@ -2313,9 +2296,14 @@ module ChapelDomain {
        current domain with ``off`` indices for each dimension.
        If ``off`` is negative, compute the interior from the low
        bound of the dimension; if positive, compute the interior
-       from the high bound. */
-    proc interior(off: intIdxType) where rank != 1 {
-      var offTup: rank*intIdxType;
+       from the high bound.
+
+       See :proc:`ChapelRange.range.interior` for further information about what
+       it means to compute the exterior of a range.
+
+     */
+    proc interior(off: integral) where rank != 1 {
+      var offTup: rank*off.type;
       for i in 0..rank-1 do
         offTup(i) = off;
       return interior(offTup);
@@ -2325,7 +2313,7 @@ module ChapelDomain {
     // NOTE: We eventually want to support translate on other domain types
     //
     pragma "no doc"
-    proc translate(off) where !this.isRectangular() {
+    proc translate(off: rank*integral) where !this.isRectangular() {
       if this.isAssociative() then
         compilerError("translate not supported on associative domains");
       else if this.isSparse() then
@@ -2339,32 +2327,40 @@ module ChapelDomain {
     // index type.  This is handled in the range.translate().
     //
     pragma "no doc"
-    proc translate(off...rank) return translate(off);
+    proc translate(off: integral ...rank) return translate(off);
 
     /* Return a new domain that is the current domain translated by
-       ``off(d)`` in each dimension ``d``. */
-    proc translate(off) where isTuple(off) {
-      if off.size != rank then
-        compilerError("the domain and offset arguments of translate() must be of the same rank");
+       ``off(d)`` in each dimension ``d``.
+
+       See :proc:`ChapelRange.range.translate` for further information about
+       what it means to translate a range.
+
+     */
+    proc translate(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = _value.dsiDim(i).translate(off(i));
       return new _domain(dist, rank, _value.idxType, stridable, ranges);
-     }
+    }
 
     /* Return a new domain that is the current domain translated by
-       ``off`` in each dimension. */
-     proc translate(off) where rank != 1 && !isTuple(off) {
-       var offTup: rank*off.type;
-       for i in 0..rank-1 do
-         offTup(i) = off;
-       return translate(offTup);
-     }
+       ``off`` in each dimension.
 
-     /* Return true if the domain has no indices */
-     proc isEmpty(): bool {
-       return this.sizeAs(uint) == 0;
-     }
+       See :proc:`ChapelRange.range.translate()` for further information about
+       what it means to translate a range.
+
+     */
+    proc translate(off: integral) where rank != 1 {
+      var offTup: rank*off.type;
+      for i in 0..rank-1 do
+        offTup(i) = off;
+      return translate(offTup);
+    }
+
+    /* Return true if the domain has no indices */
+    proc isEmpty(): bool {
+      return this.sizeAs(uint) == 0;
+    }
 
     //
     // intended for internal use only:
@@ -2393,10 +2389,23 @@ module ChapelDomain {
     proc writeThis(f) throws {
       _value.dsiSerialWrite(f);
     }
+    pragma "no doc"
+    proc encodeTo(f) throws {
+      _value.dsiSerialWrite(f);
+    }
 
     pragma "no doc"
     proc ref readThis(f) throws {
       _value.dsiSerialRead(f);
+    }
+
+    // TODO: Can we convert this to an initializer despite the potential issues
+    // with runtime types?
+    pragma "no doc"
+    proc type decodeFrom(f) throws {
+      var ret : this;
+      ret.readThis(f);
+      return ret;
     }
 
     pragma "no doc"

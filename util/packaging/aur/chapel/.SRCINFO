@@ -1,6 +1,6 @@
 pkgbase = chapel
 	pkgdesc = Programming language designed for productive parallel computing at scale
-	pkgver = 1.27.0
+	pkgver = 1.28.0
 	pkgrel = 1
 	url = https://chapel-lang.org/
 	arch = x86_64
@@ -12,7 +12,7 @@ pkgbase = chapel
 	depends = perl
 	depends = llvm
 	depends = clang
-	source = https://github.com/chapel-lang/chapel/releases/download/1.27.0/chapel-1.27.0.tar.gz
-	sha256sums = 558b1376fb7757a5e1f254c717953f598a3e89850c8edd1936b8d09c464f3e8b
+	source = https://github.com/chapel-lang/chapel/releases/download/1.28.0/chapel-1.28.0.tar.gz
+	sha256sums = 64eacfb5915e1b3c487e865f819faf9bb8771c9f83aac6512698ded1baab250e
 
 pkgname = chapel

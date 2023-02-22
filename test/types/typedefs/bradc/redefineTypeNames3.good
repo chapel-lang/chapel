@@ -1,3 +1,4 @@
+redefineTypeNames3.chpl:1: In function 'main':
 redefineTypeNames3.chpl:3: error: attempt to redefine reserved type 'int'
 redefineTypeNames3.chpl:4: error: attempt to redefine reserved type 'real'
 redefineTypeNames3.chpl:5: error: attempt to redefine reserved type 'imag'

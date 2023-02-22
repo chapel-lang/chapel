@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -93,7 +93,7 @@ static void recordExecutionCommand(int argc, char *argv[]) {
   chpl_executionCommand =
     (char*)chpl_mem_allocMany(length+1, sizeof(char),
                               CHPL_RT_MD_EXECUTION_COMMAND, 0, 0);
-  sprintf(chpl_executionCommand, "%s", argv[0]);
+  snprintf(chpl_executionCommand, (length+1) * sizeof(char), "%s", argv[0]);
   for (i = 1; i < argc; i++) {
     strcat(chpl_executionCommand, " ");
     strcat(chpl_executionCommand, argv[i]);
@@ -226,8 +226,10 @@ void chpl_rt_init(int argc, char* argv[]) {
   parseArgs(false, parse_dash_E, &argc, argv);
 
   chpl_error_init();  // This does local-only initialization
+  chpl_comm_pre_topo_init();
   chpl_topo_init();
   chpl_comm_init(&argc, &argv);
+  chpl_comm_pre_mem_init();
   chpl_mem_init();
   chpl_comm_post_mem_init();
 
@@ -240,6 +242,8 @@ void chpl_rt_init(int argc, char* argv[]) {
   chpl_gen_main_arg.return_value = 0;
   parseArgs(false, parse_normally, &argc, argv);
   recordExecutionCommand(argc, argv);
+
+  chpl_topo_post_args_init();
 
   //
   // If the user specified a number of locales, have the comm layer
@@ -330,7 +334,7 @@ void chpl_std_module_init(void) {
     // We want to treat how we allocate arrays on GPUs differently
     // for standard modules so we start the runtime assuming we're doing
     // all initialization for the standard modules until this callback
-    // functiong gets called.  (see comments on the `impl` version of this
+    // function gets called.  (see comments on the `impl` version of this
     // function for more details on why).
     #ifdef HAS_GPU_LOCALE
     chpl_gpu_on_std_modules_finished_initializing();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -771,7 +771,7 @@ static void start_polling(void) {
   pollingRunning = 0;
   pollingQuit = 0;
 
-  if (chpl_task_createCommTask(polling, NULL)) {
+  if (chpl_task_createCommTask(polling, NULL, -1)) {
     chpl_internal_error("unable to start polling task for gasnet");
   }
 
@@ -834,6 +834,11 @@ static void set_num_comm_domains() {
   chpl_env_set("GASNET_EXITTIMEOUT_FACTOR", "0.5", 0);
   chpl_env_set("GASNET_EXITTIMEOUT_MIN", "10.0", 0);
 #endif
+}
+
+void chpl_comm_pre_topo_init(void) {
+  // not supported on this platform
+  chpl_set_num_locales_on_node(1);
 }
 
 void chpl_comm_init(int *argc_p, char ***argv_p) {
@@ -930,10 +935,9 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 #endif
 
   gasnet_set_waitmode(GASNET_WAIT_BLOCK);
-
-  // not supported on this platform
-  chpl_set_num_locales_on_node(1);
 }
+
+void chpl_comm_pre_mem_init(void) { }
 
 void chpl_comm_post_mem_init(void) {
   chpl_comm_init_prv_bcast_tab();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -704,6 +704,9 @@ initPrimitive() {
   // if the optional type is provided, it should match PRIM_INIT_VAR_SPLIT_DECL.
   prim_def(PRIM_INIT_VAR_SPLIT_INIT, "init var split init",   returnInfoVoid);
 
+  // indicates the body of the initializer is now in Phase 2
+  prim_def(PRIM_INIT_DONE, "init done", returnInfoVoid);
+
   prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoStringC);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
   prim_def(PRIM_THROW, "throw", returnInfoFirst, true, true);
@@ -1114,6 +1117,7 @@ initPrimitive() {
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
   prim_def(PRIM_IS_REF_ITER_TYPE, "is ref iter type", returnInfoBool);
   prim_def(PRIM_IS_EXTERN_TYPE, "is extern type", returnInfoBool);
+  prim_def(PRIM_IS_BORROWED_CLASS_TYPE, "is borrowed class type", returnInfoBool);
   prim_def(PRIM_IS_ABS_ENUM_TYPE, "is abstract enum type", returnInfoBool);
 
   prim_def(PRIM_IS_POD, "is pod type", returnInfoBool);

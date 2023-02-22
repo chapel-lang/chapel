@@ -27,7 +27,7 @@ proc main() {
 
   [(i, j) in D] A[i,j] = i - j;
 
-  var t: Timer;
+  var t: stopwatch;
 
   if !correctness {
     writeln('==========================');

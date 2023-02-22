@@ -15,8 +15,7 @@
 #define GASNETC_HSL_SPINLOCK 1
 
 /* ------------------------------------------------------------------------------------ */
-#define _hidx_gasnetc_hbarr_reqh              (GASNETC_HANDLER_BASE+0)
-#define _hidx_gasnetc_exit_reqh               (GASNETC_HANDLER_BASE+1)
+#define _hidx_gasnetc_exit_reqh               (GASNETC_HANDLER_BASE+0)
 /* add new core API handlers here and to the bottom of gasnet_core.c */
 
 /* ------------------------------------------------------------------------------------ */
@@ -31,38 +30,46 @@ extern gex_AM_Entry_t *gasnetc_handler;
 /* #define gasnete_op_atomic_(_id) gasnetc_atomic_##_id */
 
 // Define if conduit performs local-completion detection:
-// TODO-EX:  #define GASNETE_HAVE_LC
+#define GASNETE_HAVE_LC 1
 
-/* Additions to default eop and iop types */
+// Additions to default eop and iop types
+
+extern void gasnetc_ofi_handle_rdma(void *, unsigned int);
+
 #define GASNETE_CONDUIT_EOP_FIELDS \
-                gasnetc_ofi_op_ctxt_t ofi;
+                gasnetc_ofi_nb_op_ctxt_t ofi;
+
+#define GASNETE_EOP_ALLOC_EXTRA(_eop) do { \
+    (_eop)->ofi.callback = gasnetc_ofi_handle_rdma; \
+  } while (0)
+
 #define GASNETE_CONDUIT_IOP_FIELDS      \
-                gasnetc_ofi_op_ctxt_t get_ofi;  \
-                gasnetc_ofi_op_ctxt_t put_ofi;
+                gasnetc_ofi_nb_op_ctxt_t get_ofi;  \
+                gasnetc_ofi_nb_op_ctxt_t put_ofi;
+
+#define GASNETE_IOP_ALLOC_EXTRA(_iop) do { \
+    (_iop)->get_ofi.callback = gasnetc_ofi_handle_rdma; \
+    (_iop)->get_ofi.type = OFI_TYPE_IGET; \
+    (_iop)->put_ofi.callback = gasnetc_ofi_handle_rdma; \
+    (_iop)->put_ofi.type = OFI_TYPE_IPUT; \
+  } while (0)
 
 /* ------------------------------------------------------------------------------------ */
 // For EOP/IOP fields, above
 
-#include <rdma/fabric.h>
+typedef void (*gasnetc_rdma_callback_fn) (void *context, unsigned int aux);
 
-typedef void (*rdma_callback_fn) (void *buf);
-
-typedef enum GASNETC_OFI_OP_TYPE {
-  OFI_TYPE_AM = 0,
-  OFI_TYPE_AM_DATA,
+typedef enum {
   OFI_TYPE_EGET,
   OFI_TYPE_EPUT,
   OFI_TYPE_IGET,
   OFI_TYPE_IPUT
-} gasnetc_ofi_op_type;
+} gasnetc_ofi_nb_op_type;
 
-typedef struct gasnetc_ofi_op_ctxt {
-  // Conduit code assumes ctxt is the first field
-  struct fi_context     ctxt;
-  rdma_callback_fn      callback;
-  gasnetc_ofi_op_type   type;
-  int                   data_sent;
-} gasnetc_ofi_op_ctxt_t;
+typedef struct gasnetc_ofi_nb_op_ctxt {
+  gasnetc_rdma_callback_fn callback;
+  gasnetc_ofi_nb_op_type   type;
+} gasnetc_ofi_nb_op_ctxt_t;
 
 /* ------------------------------------------------------------------------------------ */
 
@@ -160,8 +167,8 @@ extern struct gasnetc_ofi_locks_ gasnetc_ofi_locks;
 
 extern gasneti_spawnerfn_t const *gasneti_spawner;
 
-#define gasneti_bootstrapBarrier        (*(gasneti_spawner->Barrier))
-#define gasneti_bootstrapExchange       (*(gasneti_spawner->Exchange))
+extern void gasneti_bootstrapBarrier(void);
+extern void gasneti_bootstrapExchange(void *src, size_t len, void *dest);
 #define gasneti_bootstrapBroadcast      (*(gasneti_spawner->Broadcast))
 #define gasneti_bootstrapSNodeBroadcast (*(gasneti_spawner->SNodeBroadcast))
 #define gasneti_bootstrapAlltoall       (*(gasneti_spawner->Alltoall))

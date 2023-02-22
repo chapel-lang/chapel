@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -61,20 +61,18 @@ always-build-chplspell-venv: FORCE
 test: spectests FORCE
 	cd examples && start_test
 
-dyno-docs: FORCE
-	@cd compiler/dyno && $(MAKE) -f Makefile.help dyno-docs
+frontend-docs: FORCE
+	@cd compiler && $(MAKE) frontend-docs
 
-clobber-dyno: FORCE
-	@cd compiler/dyno && $(MAKE) -f Makefile.help clobber-dyno
+test-frontend: FORCE
+	@cd compiler && $(MAKE) test-frontend
 
-test-dyno: dyno FORCE
-	@cd compiler/dyno && $(MAKE) -f Makefile.help test-dyno
+test-dyno: FORCE test-frontend
 
-dyno-parser: FORCE
-	@cd compiler/dyno && $(MAKE) -f Makefile.help dyno-parser
+run-frontend-linters: FORCE
+	@cd compiler && $(MAKE) run-frontend-linters
 
-run-dyno-linters: FORCE
-	@cd compiler/dyno && $(MAKE) -f Makefile.help run-dyno-linters
+run-dyno-linters: run-frontend-linters FORCE
 
 SPECTEST_DIR = ./test/release/examples/spec
 spectests: FORCE

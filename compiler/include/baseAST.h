@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -267,17 +267,6 @@ public:
   AstTag            astTag;     // BaseAST subclass
   int               id;         // Unique ID
   astlocT           astloc;     // Location of this node in the source code
-
-  void              printTabs(std::ostream *file, unsigned int tabs);
-  void              printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs);
-  void              printDocsDeprecation(const char *doc, std::ostream *file,
-                                         unsigned int tabs,
-                                         const char* deprecationMsg,
-                                         bool extraLine);
-  void              printDocsUnstable(const char *doc, std::ostream *file,
-                                         unsigned int tabs,
-                                         const char* unstableMsg,
-                                         bool extraLine);
 
   static  const     std::string tabText;
 

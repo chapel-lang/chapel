@@ -13,7 +13,7 @@ config const n = 10;
 
 config const cpuToGpuRatio = 2.0;
 
-var t = new Timer();
+var t = new stopwatch();
 
 var A, B, C: [0..#n] int;
 

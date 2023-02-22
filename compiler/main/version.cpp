@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,54 +23,30 @@
 #include "files.h"
 #include "version.h"
 
-// this include sets BUILD_VERSION
-#include "version_num.h"
+#include "chpl/util/version-info.h"
 
-// this include sets CONFIGURED_PREFIX
-#include "configured_prefix.h"
-
-void
-get_version(char *v) {
-  v += sprintf(v, "%d.%d.%d", MAJOR_VERSION, MINOR_VERSION, UPDATE_VERSION);
-  if (!officialRelease) {
-    sprintf(v, " pre-release (%s)", BUILD_VERSION);
-  } else {
-    // It's is an official release.
-    // Try to decide whether or not to include the BUILD_VERSION
-    // based on its string length. A short git sha is 10 characters.
-    if (strlen(BUILD_VERSION) > 2 && !developer) {
-      // assume it is a sha, so don't include it
-    } else if (strcmp(BUILD_VERSION, "0") == 0) {
-      // no need to append a .0
-    } else {
-      // include the BUILD_VERSION contents to add e.g. a .1
-      sprintf(v, ".%s", BUILD_VERSION);
-    }
-  }
+void get_version(char* buf, size_t bufsize) {
+  std::string ret = chpl::getVersion();
+  strcpy(buf, ret.c_str());
 }
 
-void
-get_major_minor_version(char *v) {
-  sprintf(v, "%d.%d", MAJOR_VERSION, MINOR_VERSION);
+void get_major_minor_version(char* buf, size_t bufsize) {
+  snprintf(buf, bufsize, "%d.%d", get_major_version(), get_minor_version());
 }
 
-const char*
-get_configured_prefix() {
-  return CONFIGURED_PREFIX;
+const char* get_configured_prefix() {
+  return chpl::getConfiguredPrefix();
 }
 
 int get_major_version() {
-  return MAJOR_VERSION;
+  return chpl::getMajorVersion();
 }
 int get_minor_version() {
-  return MINOR_VERSION;
+  return chpl::getMinorVersion();
 }
 int get_update_version() {
-  return UPDATE_VERSION;
-}
-const char* get_build_version() {
-  return BUILD_VERSION;
+  return chpl::getUpdateVersion();
 }
 bool get_is_official_release() {
-  return officialRelease;
+  return chpl::getIsOfficialRelease();
 }

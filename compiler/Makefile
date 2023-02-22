@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -24,51 +24,19 @@ ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/..
 endif
 
-
+CMAKE ?= cmake
 COMPILER_ROOT=.
 COMPILER_SUBDIR = .
 
-#
-# subdirectories and false subdirectory-oriented targets to force recursion
-#
-SUBDIRS = \
-	adt \
-	AST \
-	backend \
-	codegen \
-	llvm \
-	main \
-	dyno/lib/immediates \
-	dyno/lib/parsing \
-	dyno/lib/framework \
-	dyno/lib/resolution \
-	dyno/lib/types \
-	dyno/lib/uast \
-	dyno/lib/util \
-	optimizations \
-	parser \
-	passes \
-	resolution \
-	util \
-
-
-CHPLDOC_SUBDIRS = \
-	dyno/lib/immediates \
-	dyno/lib/parsing \
-	dyno/lib/framework \
-	dyno/lib/resolution \
-	dyno/lib/types \
-	dyno/lib/uast \
-	dyno/lib/util \
-	dyno/tools/chpldoc \
-
+# disable -MMD etc because cmake already specifies it
+NO_DEPEND = 1
 
 #
 # include standard header for compiler
 #
 include $(COMPILER_ROOT)/make/Makefile.compiler.head
 
-ALL_HEADERS= */*.h dyno/include/chpl/*/*.h
+ALL_HEADERS= */*.h ../frontend/include/chpl/*/*.h
 
 # Generate tags command, dependent on if Make variable, TAGS == 1
 ifeq ($(TAGS), 1)
@@ -77,76 +45,29 @@ EBROWSE_COMMAND=-@(which ebrowse > /dev/null 2>&1 && echo "Updating BROWSE..." &
 endif
 
 #
-# the location of the BUILD_VERSION file
-#
-BUILD_VERSION_FILE = $(COMPILER_ROOT)/main/BUILD_VERSION
-# configured prefix file
-CONFIGURED_PREFIX_FILE = $(COMPILER_BUILD)/CONFIGURED_PREFIX
-
-#
 # include source subdirectories here
-#
+# include these subdirs so ETAGS builds tags for .cpp files too
+include ../frontend/lib/immediates/Makefile.include
+include ../frontend/lib/parsing/Makefile.include
+include ../frontend/lib/framework/Makefile.include
+include ../frontend/lib/resolution/Makefile.include
+include ../frontend/lib/types/Makefile.include
+include ../frontend/lib/uast/Makefile.include
+include ../frontend/lib/util/Makefile.include
+
 include adt/Makefile.include
 include AST/Makefile.include
 include backend/Makefile.include
 include codegen/Makefile.include
 include llvm/Makefile.include
 include main/Makefile.include
-include dyno/lib/immediates/Makefile.include
-include dyno/lib/parsing/Makefile.include
-include dyno/lib/framework/Makefile.include
-include dyno/lib/resolution/Makefile.include
-include dyno/lib/types/Makefile.include
-include dyno/lib/uast/Makefile.include
-include dyno/lib/util/Makefile.include
 include optimizations/Makefile.include
 include parser/Makefile.include
 include passes/Makefile.include
 include resolution/Makefile.include
 include util/Makefile.include
 
-# sources here are only used to build chpldoc
-include dyno/tools/chpldoc/Makefile.include
 
-SRCS =
-
-CHPL_OBJS = \
-	$(ADT_OBJS) \
-	$(AST_OBJS) \
-	$(BACKEND_OBJS) \
-	$(CODEGEN_OBJS) \
-	$(IFA_OBJS) \
-	$(LLVM_OBJS) \
-	$(MAIN_OBJS) \
-	$(OPTIMIZATIONS_OBJS) \
-	$(PARSER_OBJS) \
-	$(PASSES_OBJS) \
-	$(RESOLUTION_OBJS) \
-	$(SYMTAB_OBJS) \
-	$(UTIL_OBJS) \
-	$(DYNO_FRAMEWORK_OBJS) \
-	$(DYNO_IMMEDIATES_OBJS) \
-	$(DYNO_PARSING_OBJS) \
-	$(DYNO_RESOLUTION_OBJS) \
-	$(DYNO_TYPES_OBJS) \
-	$(DYNO_UAST_OBJS) \
-	$(DYNO_UTIL_OBJS) \
-
-
-CHPLDOC_OBJS = \
-	$(DYNO_FRAMEWORK_OBJS) \
-	$(DYNO_IMMEDIATES_OBJS) \
-	$(DYNO_PARSING_OBJS) \
-	$(DYNO_RESOLUTION_OBJS) \
-	$(DYNO_TYPES_OBJS) \
-	$(DYNO_UAST_OBJS) \
-	$(DYNO_UTIL_OBJS) \
-        $(DYNO_CHPLDOC_OBJS) \
-
-
-EXECS = $(CHPL) $(CHPLDOC)
-
-PRETARGETS = $(BUILD_VERSION_FILE) $(CONFIGURED_PREFIX_FILE)
 TARGETS = $(CHPL)
 
 LIBS = -lm
@@ -155,7 +76,20 @@ LIBS = -lm
 # main rules
 #
 
-include $(COMPILER_ROOT)/make/Makefile.compiler.rules
+all: $(PRETARGETS) $(MAKEALLSUBDIRS) echocompilerdir $(TARGETS)
+
+clean: FORCE $(CLEANSUBDIRS) echocompilerdir
+	@cd $(COMPILER_BUILD) && $(CMAKE) --build . --target clean
+	rm -f $(CLEAN_TARGS)
+
+cleanall: $(CLEANALLSUBDIRS) echocompilerdir
+	rm -rf $(CLEANALL_TARGS)
+
+cleandeps: $(CLEANSUBDIRDEPS) echocompilerdir
+	rm -f $(DEPENDS)
+
+clobber: $(CLOBBERSUBDIRS) echocompilerdir
+	rm -rf ./$(CLOBBER_TARGS)
 
 
 #
@@ -165,13 +99,6 @@ include $(COMPILER_ROOT)/make/Makefile.compiler.rules
 CHPL_CONFIG_CHECK_PREFIX = $(CHPL_BIN_DIR)/.built-for
 CHPL_CONFIG_CHECK_DIR = $(CHPL_CONFIG_CHECK_PREFIX)/$(CHPL_MAKE_COMPILER_SUBDIR)
 CHPL_CONFIG_CHECK = $(CHPL_CONFIG_CHECK_DIR)/built-for
-
-UPDATE_BUILD_VERSION = $(CHPL_MAKE_HOME)/util/devel/updateBuildVersion
-
-$(BUILD_VERSION_FILE): FORCE
-	@({ test -e $(CHPL_MAKE_HOME)/.git ; } && \
-	test -x $(UPDATE_BUILD_VERSION) && $(UPDATE_BUILD_VERSION) $@ $(CHPL_MAKE_HOME)) || \
-	test -r $(BUILD_VERSION_FILE) || (echo '"0"' > $@);
 
 $(CHPL_MAKE_HOME)/configured-prefix:
 	echo > $(CHPL_MAKE_HOME)/configured-prefix
@@ -185,23 +112,64 @@ $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 	mkdir -p $(CHPL_CONFIG_CHECK_DIR)
 	echo $(CHPL_MAKE_COMPILER_SUBDIR) > $(CHPL_CONFIG_CHECK)
 
-$(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
-	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(CHPL_MAKE_HOST_BUNDLED_LINK_ARGS) $(LIBS) $(LLVM_EXTRA_LIBS) $(CHPL_MAKE_HOST_SYSTEM_LINK_ARGS)
+
+COMPILER_LIB_DIR = $(CHPL_MAKE_HOME)/lib/compiler/$(CHPL_MAKE_HOST_BIN_SUBDIR)
+CMAKE_FLAGS = -DCMAKE_C_COMPILER=$(CHPL_MAKE_HOST_CC) -DCMAKE_CXX_COMPILER=$(CHPL_MAKE_HOST_CXX) -DCMAKE_RUNTIME_OUTPUT_DIRECTORY=$(CHPL_BIN_DIR) -DCMAKE_LIBRARY_OUTPUT_DIRECTORY=$(COMPILER_LIB_DIR) -DCHPL_CXX_FLAGS="$(COMP_CXXFLAGS)" -DCHPL_LD_FLAGS="$(LDFLAGS)"
+ifeq ($(shell test -e $(CHPL_MAKE_HOME)/configured-prefix; echo "$$?"), 0)
+	CMAKE_FLAGS += -DINSTALLATION_MODE=prefix -DCMAKE_INSTALL_PREFIX=$(shell cat $(CHPL_MAKE_HOME)/configured-prefix)
+else ifeq ($(shell test -e $(CHPL_MAKE_HOME)/configured-chpl-home; echo "$$?"), 0)
+	CMAKE_FLAGS += -DINSTALLATION_MODE=home -DCMAKE_INSTALL_PREFIX=$(shell cat $(CHPL_MAKE_HOME)/configured-chpl-home)
+endif
+
+# used in test-frontend to make sure cmake is configured with assertions on
+CMAKE_FLAGS_NO_NDEBUG=$(subst -DNDEBUG,,$(CMAKE_FLAGS))
+
+# these frontend targets are here to make use of CMAKE_FLAGS etc
+# and ideally we would have a different way to share CMAKE_FLAGS between
+# files.
+frontend: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
+	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) ChplFrontend
+
+test-frontend: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
+	@echo "Making and running the frontend tests..."
+	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS_NO_NDEBUG) && $(MAKE) tests
+	JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n 's/.*\(-j\|--jobs=\) *\([0-9][0-9]*\).*/-j\2/p'` ; \
+	  cd $(COMPILER_BUILD)/frontend/test && ctest $$JOBSFLAG . ;
+	@echo "Making symbolic link to frontend tests in build/frontend-test"
+	@cd ../build && rm -f frontend-test && ln -s $(COMPILER_BUILD)/frontend/test frontend-test
+
+COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --quiet --copy
+
+frontend-docs: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
+	@echo "Making the compiler library docs..."
+	cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) api-docs
+	@# copy the generated doxygen output to the build directory
+	@if [ -d $(COMPILER_BUILD)/frontend/doc/doxygen ]; then \
+	  $(COPY_IF_DIFFERENT) $(COMPILER_BUILD)/frontend/doc/doxygen $(CHPL_MAKE_HOME)/build/doc/doxygen ; \
+	fi
+
+frontend-linters: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
+	@echo "Making the frontend linters"
+	cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && cd frontend/util && $(MAKE)
+
+run-frontend-linters: frontend-linters
+	@echo "Running the frontend linters"
+	@env PATH=$(COMPILER_BUILD)/frontend/util/linters:$(PATH) $(CHPL_MAKE_HOME)/frontend/util/lint --compile-commands $(COMPILER_BUILD) --jobs=-1
+
+parser: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
+	cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) parser
+
+$(CHPL): FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD) | $(CHPL_BIN_DIR)
+	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) chpl
 	$(TAGS_COMMAND)
 	$(EBROWSE_COMMAND)
 
 MAKEALLCHPLDOCSUBDIRS = $(CHPLDOC_SUBDIRS:%=%.makedir)
 
-$(CHPLDOC): $(MAKEALLCHPLDOCSUBDIRS) $(CHPLDOC_OBJS) | $(CHPL_BIN_DIR)
-	$(CXX) $(LDFLAGS) -o $@ $(CHPLDOC_OBJS) $(CHPL_MAKE_HOST_BUNDLED_LINK_ARGS) $(LIBS) $(LLVM_EXTRA_LIBS) $(CHPL_MAKE_HOST_SYSTEM_LINK_ARGS)
+$(CHPLDOC): FORCE $(MAKEALLCHPLDOCSUBDIRS) $(CHPLDOC_OBJS) | $(CHPL_BIN_DIR) $(CHPL)
+	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) chpldoc
 
-$(CHPLDOC)-legacy: | $(CHPL_BIN_DIR)
-	rm -f $(CHPLDOC)-legacy
-	ln -s $(notdir $(CHPL)) $(CHPLDOC)-legacy
-
-chpldoc: $(CHPLDOC) $(CHPLDOC)-legacy
-
-dyno-chpldoc: chpldoc
+chpldoc: FORCE $(CHPLDOC)
 
 $(COMPILER_BUILD):
 	mkdir -p $@
@@ -209,6 +177,8 @@ $(COMPILER_BUILD):
 $(CHPL_BIN_DIR):
 	mkdir -p $@
 
+install-chpl-chpldoc: $(CHPL) $(CHPLDOC)
+	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) install
 
 #
 # include standard footer for compiler

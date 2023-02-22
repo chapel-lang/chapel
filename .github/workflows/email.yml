@@ -1,0 +1,87 @@
+name: email
+on:
+    # this workflow is intended to run on merges from a forked repo to main(base-repo). Use pull_request_target
+    # this will provide read access to the secrets in main
+    pull_request_target:
+      types:
+        - closed
+      
+jobs: 
+  send_email:
+   # run this workflow step only when the PR is merged 
+    if:  github.event.pull_request.merged == true 
+    runs-on: ubuntu-latest 
+    steps:
+      - name: print git events
+        run:  cat "$GITHUB_EVENT_PATH"                     
+      - name: print GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT" 
+     # This workflow step will parse github env. The parsed env will be used in the email body.
+      - name: get commits payload
+        id: build-payload
+        env:
+           PR_LINK: ${{github.event.pull_request._links.html.href}}
+        run: |      
+              echo "LINK=$(echo $PR_LINK )" >> $GITHUB_ENV   
+              echo "AUTHOR=$(echo ${{github.event.pull_request.head.user.login}})" >> $GITHUB_ENV
+              echo "COMPARE_URL= $( echo '${{github.event.repository.html_url}}/compare/${{github.event.pull_request.base.sha}}...${{ github.event.pull_request.merge_commit_sha}}' )" >> $GITHUB_ENV      
+              echo "FILES_CHANGED=$(echo '$PR_LINK/files' )" >> $GITHUB_ENV     
+  
+      - name: checkout
+        uses: actions/checkout@v3
+        # To get git diff on the files that were changed in the PR checkout with fetch-depth 2.
+        with:
+          fetch-depth: 0 
+      # this step will (1) get the merge log for the merge_commit_sha and save it to the git  actions EN for later use in the email body. 
+      # (2) Get the files changed on the merge commit using the git log --name-status command.
+      - name: Get merge log
+        id: merge-log
+        env:
+           MERGE_SHA: ${{github.event.pull_request.merge_commit_sha}}
+        run: |   
+              merge_log=$(git show -s --format=%B $MERGE_SHA )
+              echo "$merge_log" 
+              echo 'MERGE<<EOF' >> $GITHUB_ENV
+              echo "$merge_log" >> $GITHUB_ENV
+              echo 'EOF' >> $GITHUB_ENV
+
+              diff=$(git --no-pager diff --name-status --diff-filter=ACDMRT ${{github.event.pull_request.base.sha}} ${{github.sha}})
+              echo "$diff" 
+              echo 'DIFF<<EOF' >> $GITHUB_ENV
+              echo "$diff" >> $GITHUB_ENV
+              echo 'EOF' >> $GITHUB_ENV                   
+      
+      - name: Send mail  
+        uses: dawidd6/action-send-mail@v3
+        with:
+           # Required mail server address if not connection_url:
+           server_address: ${{ secrets.SMTP_PROVIDER}}
+           server_port: 465
+           # Optional whether this connection use TLS (default is true if server_port is 465)
+           secure: true
+           # Optional (recommended): mail server username:
+           username:  ${{ secrets.MAIL_USERNAME}} 
+           # Optional (recommended) mail server password:
+           password: ${{secrets.MAIL_PASSWORD}}
+           # Required mail subject:
+           subject: "[Chapel Merge] ${{github.event.pull_request.title}}"
+           # Required recipients' addresses:
+           to: chapel+commits@discoursemail.com
+           # Required sender full name (address can be skipped):
+           from:  ${{env.AUTHOR}}
+           body: |
+              
+              Branch: ${{github.ref}} 
+              Revision: ${{ github.event.pull_request.merge_commit_sha }} 
+              Author: ${{ env.AUTHOR}} 
+              Link: ${{github.event.pull_request._links.html.href}}              
+              Log Message: 
+                       ${{env.MERGE}} 
+              Compare: ${{env.COMPARE_URL}} 
+              Diff: 
+                       ${{env.DIFF}} 
+                       ${{github.event.pull_request.diff_url}}
+           # Optional priority: 'high', 'normal' (default) or 'low'
+           priority: low

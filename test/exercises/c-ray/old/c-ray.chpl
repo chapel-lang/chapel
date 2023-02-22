@@ -24,7 +24,7 @@
  */
 
 use Image;    // use helper module related to writing out images
-use IO;       // allows access to stderr, stdin, iomode
+use IO;       // allows access to stderr, stdin, ioMode
 use List;
 use ChplConfig;
 
@@ -143,7 +143,7 @@ proc main() {
   initRands();
 
   use Time;      // Bring in timers to measure the rendering time
-  var t: Timer;
+  var t: stopwatch;
   t.start();
 
   // render a frame of xsz x ysz pixels into the provided framebuffer
@@ -431,7 +431,7 @@ proc loadScene() {
 
   // the input file channel
   const infile = if scene == "stdin" then stdin
-                                     else open(scene, iomode.r).reader();
+                                     else open(scene, ioMode.r).reader();
 
   // a map (associative array) from the supported input file argument
   // types to the number of columns of input they expect

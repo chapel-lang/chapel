@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -293,19 +293,21 @@ qio_bool qio_regex_match(qio_regex_t* regex, const char* text, int64_t text_len,
   ret = re->Match(textp, startpos, endpos, ranchor, spPtr, nsubmatch);
   // Now set submatch based on StringPieces
   for( int64_t i = 0; i < nsubmatch; i++ ) {
-    if( !ret || spPtr[i].data() == NULL ) {
+    if( !ret ) {
       submatch[i].offset = -1;
       submatch[i].len = 0;
     } else {
       intptr_t diff = 0;
+      int64_t  length = 0;
       if( spPtr[i].empty() ) {
         diff = startpos;
       } else {
         diff = qio_ptr_diff((void*) spPtr[i].data(), (void*) textp.data());
         assert( diff >= startpos && diff <= endpos );
+        length = spPtr[i].length();
       }
       submatch[i].offset = diff;
-      submatch[i].len = spPtr[i].length();
+      submatch[i].len = length;
     }
   }
 
@@ -352,6 +354,9 @@ int qio_regex_channel_read_byte(qio_channel_s* ch)
   return ret;
 }
 
+// cur: what the search process believes to be the current offset
+// min: what the search process believes to be the minimum offset
+//      that we cannot discard
 void qio_regex_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min)
 {
   int64_t buf;
@@ -367,7 +372,7 @@ void qio_regex_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min)
   if( min < buf ) min = buf;
 
   // advance to target.
-  //printf("DISCARD CALLED: advance to %i\n", (int) target);
+  //printf("DISCARD CALLED: advance to %i\n", (int) min);
   qio_channel_advance_unlocked(ch, min - buf);
   //printf("DISCARD CALLED: mark\n");
   qio_channel_mark(false, ch);

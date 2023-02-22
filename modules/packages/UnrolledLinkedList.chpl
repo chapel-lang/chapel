@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1172,7 +1172,7 @@ module UnrolledLinkedList {
 
       :arg ch: A channel to write to.
     */
-    proc writeThis(ch: channel) throws {
+    proc writeThis(ch: fileWriter) throws {
       _enter();
 
       ch.write("[");
@@ -1300,4 +1300,3 @@ module UnrolledLinkedList {
   }
 
 } // End module "UnrolledLinkedList".
-

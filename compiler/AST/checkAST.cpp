@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -130,6 +130,7 @@ void checkPrimitives()
      case PRIM_IS_EXTERN_UNION_TYPE:
      case PRIM_IS_ATOMIC_TYPE:
      case PRIM_IS_EXTERN_TYPE:
+     case PRIM_IS_BORROWED_CLASS_TYPE:
      case PRIM_IS_TUPLE_TYPE:
      case PRIM_IS_STAR_TUPLE_TYPE:
      case PRIM_IS_SUBTYPE:

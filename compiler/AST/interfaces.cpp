@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -181,12 +181,6 @@ void InterfaceSymbol::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   else
     INT_FATAL(this, "Unexpected case in InterfaceSymbol::replaceChild");
 }
-
-void InterfaceSymbol::printDocs(std::ostream* file, unsigned int tabs) {
-  if (this->noDocGen()) return;
-  INT_FATAL(this, "printDocs is to be implemented");
-}
-
 
 /////////////////////////////////////////////////////////////////////////////
 // IfcConstraint
