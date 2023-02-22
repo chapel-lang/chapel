@@ -50,6 +50,26 @@ Start analyzing forall (differentButAlignedDoms.chpl:43)
 End analyzing forall (differentButAlignedDoms.chpl:43)
 
 
+Start analyzing forall (differentButAlignedDoms.chpl:55)
+| Couldn't determine loop domain: will attempt dynamic optimizations only (differentButAlignedDoms.chpl:55)
+|
+|  Start analyzing call (differentButAlignedDoms.chpl:56)
+|  This call is a dynamic optimization candidate (differentButAlignedDoms.chpl:56)
+|
+End analyzing forall (differentButAlignedDoms.chpl:55)
+
+
+Start analyzing forall (differentButAlignedDoms.chpl:61)
+| Found loop domain (differentButAlignedDoms.chpl:59)
+| Will attempt static and dynamic optimizations (differentButAlignedDoms.chpl:61)
+|
+|  Start analyzing call (differentButAlignedDoms.chpl:62)
+|   Found the domain of the access base (differentButAlignedDoms.chpl:3)
+|  This call is a dynamic optimization candidate (differentButAlignedDoms.chpl:62)
+|
+End analyzing forall (differentButAlignedDoms.chpl:61)
+
+
 Start analyzing forall (differentButAlignedDoms.chpl:32)
 | Couldn't determine loop domain: will attempt dynamic optimizations only (differentButAlignedDoms.chpl:32)
 |
@@ -79,26 +99,6 @@ Start analyzing forall (differentButAlignedDoms.chpl:43)
 |  This call is a dynamic optimization candidate (differentButAlignedDoms.chpl:44)
 |
 End analyzing forall (differentButAlignedDoms.chpl:43)
-
-
-Start analyzing forall (differentButAlignedDoms.chpl:55)
-| Couldn't determine loop domain: will attempt dynamic optimizations only (differentButAlignedDoms.chpl:55)
-|
-|  Start analyzing call (differentButAlignedDoms.chpl:56)
-|  This call is a dynamic optimization candidate (differentButAlignedDoms.chpl:56)
-|
-End analyzing forall (differentButAlignedDoms.chpl:55)
-
-
-Start analyzing forall (differentButAlignedDoms.chpl:61)
-| Found loop domain (differentButAlignedDoms.chpl:59)
-| Will attempt static and dynamic optimizations (differentButAlignedDoms.chpl:61)
-|
-|  Start analyzing call (differentButAlignedDoms.chpl:62)
-|   Found the domain of the access base (differentButAlignedDoms.chpl:3)
-|  This call is a dynamic optimization candidate (differentButAlignedDoms.chpl:62)
-|
-End analyzing forall (differentButAlignedDoms.chpl:61)
 
 Static check successful. Using localAccess with dynamic check (differentButAlignedDoms.chpl:10)
 Static check successful. Using localAccess with dynamic check (differentButAlignedDoms.chpl:20)
