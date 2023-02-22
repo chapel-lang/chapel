@@ -120,6 +120,35 @@ module Map {
 
       :arg keyType: The type of the keys of this map.
       :arg valType: The type of the values of this map.
+      :arg resizeThreshold: Fractional value that specifies how full this map
+                            can be before requesting additional memory.
+      :arg initialCapacity: Integer value that specifies starting map size. The
+                            map can hold at least this many values before
+                            attempting to resize.
+    */
+    proc init(type keyType, type valType,
+              resizeThreshold=defaultHashTableResizeThreshold,
+              initialCapacity=16) {
+      _checkKeyAndValType(keyType, valType);
+      this.keyType = keyType;
+      this.valType = valType;
+      this.parSafe = false;
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
+      table = new chpl__hashtable(keyType, valType, this.resizeThreshold,
+                                  initialCapacity);
+    }
+
+    /*
+      Initializes an empty map containing keys and values of given types.
+
+      :arg keyType: The type of the keys of this map.
+      :arg valType: The type of the values of this map.
       :arg parSafe: If `true`, this map will use parallel safe operations.
       :arg resizeThreshold: Fractional value that specifies how full this map
                             can be before requesting additional memory.
@@ -127,7 +156,8 @@ module Map {
                             map can hold at least this many values before
                             attempting to resize.
     */
-    proc init(type keyType, type valType, param parSafe=false,
+    @unstable "'Map.parSafe' is unstable"
+    proc init(type keyType, type valType, param parSafe,
               resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16) {
       _checkKeyAndValType(keyType, valType);
@@ -145,7 +175,27 @@ module Map {
                                   initialCapacity);
     }
 
-    proc init(type keyType, type valType, param parSafe=false,
+    proc init(type keyType, type valType,
+              resizeThreshold=defaultHashTableResizeThreshold,
+              initialCapacity=16)
+      where isNonNilableClass(valType) {
+      _checkKeyAndValType(keyType, valType);
+      this.keyType = keyType;
+      this.valType = valType;
+      this.parSafe = false;
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
+      table = new chpl__hashtable(keyType, valType, this.resizeThreshold,
+                                  initialCapacity);
+    }
+
+    @unstable "'Map.parSafe' is unstable"
+    proc init(type keyType, type valType, param parSafe,
               resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16)
     where isNonNilableClass(valType) {
@@ -618,7 +668,14 @@ module Map {
     // TODO: rewrite to use formatter interface
     //
     pragma "no doc"
-    proc init(type keyType, type valType, param parSafe=false, r: fileReader) {
+    proc init(type keyType, type valType, r: fileReader) {
+      this.init(keyType, valType, parSafe);
+      readThis(r);
+    }
+
+    pragma "no doc"
+    @unstable "'Map.parSafe' is unstable"
+    proc init(type keyType, type valType, param parSafe, r: fileReader) {
       this.init(keyType, valType, parSafe);
       readThis(r);
     }
