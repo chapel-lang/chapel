@@ -23,13 +23,7 @@ log_info "Setting CHPL_HOME to: ${CHPL_HOME}"
 
 start_docker
 
-if [ $? -ne 0 ] 
-then
-      echo " Docker login failed "
-      exit 1
-else
-      echo "docker login succeeded "
-fi        
+       
 # build_publish will build multi platform chapel docker images, tags them, and pushes the images to the docker repository .
 
 build_publish(){
@@ -54,15 +48,37 @@ fi
 # Get the repository name and chapel version, Build chapel docker images and push to docker hub repository . 
 #build and publish chapel docker image
 docker login -u $username -p $password
+if [ $? -ne 0 ] 
+then
+      echo " Docker login failed "
+      exit 1
+else
+      echo "docker login succeeded "
+fi 
+
 cd $CHPL_HOME
 build_publish $docker_repository  chapel $image_version
 
 docker login -u $username -p $password
+if [ $? -ne 0 ] 
+then
+      echo " Docker login failed "
+      exit 1
+else
+      echo "docker login succeeded "
+fi 
 #build and publish chapel-gasnet docker image
 cd $CHPL_HOME/util/packaging/docker/gasnet
 build_publish $docker_repository  chapel-gasnet $image_version
 
 docker login -u $username -p $password
+if [ $? -ne 0 ] 
+then
+      echo " Docker login failed "
+      exit 1
+else
+      echo "docker login succeeded "
+fi 
 #build and publish chapel-gasnet-smp docker image
 cd $CHPL_HOME/util/packaging/docker/gasnet-smp
 build_publish $docker_repository  chapel-gasnet-smp $image_version
