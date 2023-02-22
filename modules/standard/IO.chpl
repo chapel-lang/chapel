@@ -1633,12 +1633,18 @@ proc file.init(fp: c_FILE, hints=ioHintSet.empty, own=false) throws {
 }
 
 private proc initHelper2(ref f: file, fd: c_int, hints = ioHintSet.empty,
-                         style:iostyleInternal = defaultIOStyleInternal()) throws {
+                         style:iostyleInternal = defaultIOStyleInternal(),
+                         own=false) throws {
 
   var local_style = style;
   f._home = here;
   extern proc chpl_cnullfile():c_FILE;
-  var err = qio_file_init(f._file_internal, chpl_cnullfile(), fd, hints._internal, local_style, 0);
+  var internalHints = hints._internal;
+  if (own) {
+    internalHints |= QIO_HINT_OWNED;
+  }
+  var err = qio_file_init(f._file_internal, chpl_cnullfile(), fd, internalHints,
+                          local_style, 0);
 
   // On return, either f._file_internal.ref_cnt == 1, or f._file_internal is
   // NULL.
@@ -1655,10 +1661,10 @@ private proc initHelper2(ref f: file, fd: c_int, hints = ioHintSet.empty,
 
 @unstable "initializing a file with a style argument is unstable"
 proc file.init(fileDescriptor: int, hints=ioHintSet.empty,
-               style:iostyle) throws {
+               style:iostyle, own=false) throws {
   this.init();
 
-  initHelper2(this, fileDescriptor.safeCast(c_int), hints, style);
+  initHelper2(this, fileDescriptor.safeCast(c_int), hints, style, own);
 }
 
 /*
@@ -1688,13 +1694,15 @@ The system file descriptor will be closed when the Chapel file is closed.
 :arg fileDescriptor: a system file descriptor.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
+:arg own: set to indicate if the `fileDescriptor` provided should be cleaned up
+          when the ``file`` is closed.  Defaults to ``false``
 
 :throws SystemError: Thrown if the file descriptor could not be retrieved.
 */
-proc file.init(fileDescriptor: int, hints=ioHintSet.empty) throws {
+proc file.init(fileDescriptor: int, hints=ioHintSet.empty, own=false) throws {
   this.init();
 
-  initHelper2(this, fileDescriptor.safeCast(c_int), hints);
+  initHelper2(this, fileDescriptor.safeCast(c_int), hints, own=own);
 }
 
 pragma "no doc"
