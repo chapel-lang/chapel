@@ -623,7 +623,7 @@ struct Converter {
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     auto condition = convertExprOrNull(node->condition());
     if (condition) {
-      return buildThunk(static_cast<BlockStmt* (*)(Expr*, Expr*)>(buildLocalStmt), condition, body);
+      return buildThunk(buildConditionalLocalStmt, condition, body);
     } else {
       return buildLocalStmt(body);
     }

@@ -1936,7 +1936,7 @@ buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
 
 // builds a local statement with a conditional, where the `then` block
 // is local and `else` block is not
-BlockStmt* buildLocalStmt(Expr* condExpr, Expr *stmt) {
+BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr *stmt) {
   return buildIfStmt(new CallExpr("_cond_test", condExpr),
       buildLocalStmt(stmt->copy()), stmt);
 }

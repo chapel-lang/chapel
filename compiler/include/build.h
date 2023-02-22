@@ -198,7 +198,7 @@ ForwardingStmt* buildForwardingStmt(DefExpr* fnDef);
 ForwardingStmt* buildForwardingStmt(DefExpr* fnDef,
                                     std::vector<PotentialRename*>* names,
                                     bool except);
-BlockStmt* buildLocalStmt(Expr* condExpr, Expr* stmt);
+BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr* stmt);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
                              const char* resourceName);
