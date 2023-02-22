@@ -2924,30 +2924,23 @@ inline operator :(x: ioLiteral, type t:string) {
   return x.val;
 }
 
-/*
+pragma "no doc"
+record _ioBits {
+  /* The bottom ``numBits`` of x will be read or written */
+  var x:uint(64);
+  /* How many of the low-order bits of ``x`` should we read or write? */
+  var numBits:int(8);
 
-Represents a value with a particular bit length that we want to read or write.
-The I/O will always be done in binary mode.
-
-*/
-record ioBits {
-  /* The bottom ``nbits`` of v will be read or written */
-  var v:uint(64);
-  /* How many of the low-order bits of ``v`` should we read or write? */
-  var nbits:int(8);
-  pragma "no doc"
-  proc writeThis(f) throws {
-    // Normally this is handled explicitly in read/write.
-    f.write(v);
-  }
-
-  pragma "no doc"
-  proc encodeTo(f) throws {
-    f._writeOne(f.kind, this, here);
-  }
+  // keep the old names for compatibilty with old ioBits
+  proc v: x.type {return x;}
+  proc nbits:numBits.type {return numBits;}
 }
 
+deprecated "ioBits type is deprecated - please use :proc:`fileReader.readBits` and :proc:`fileWriter.writeBits` instead"
+type ioBits = _ioBits;
+
 pragma "no doc"
+pragma "compiler generated"
 inline operator :(x: ioBits, type t:string) {
   const ret = "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
   return ret;
@@ -3933,7 +3926,7 @@ proc _isIoPrimitiveType(type t) param return
 
 pragma "no doc"
  proc _isIoPrimitiveTypeOrNewline(type t) param return
-  _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar || t == ioBits;
+  _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar || t == _ioBits;
 
 // Read routines for all primitive types.
 private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
@@ -4293,7 +4286,7 @@ proc _channel._decodeOne(ref x:?t, loc:locale) throws {
                               _readWriteThisFromLocale=loc);
   defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL; }
 
-  if t == ioLiteral || t == ioNewline || t == ioBits || t == ioChar {
+  if t == ioLiteral || t == ioNewline || t == _ioBits || t == ioChar {
     reader._readOne(reader.kind, x, reader.getLocaleOfIoRequest());
     return;
   }
@@ -4371,8 +4364,8 @@ private proc _read_io_type_internal(_channel_internal:qio_channel_ptr_t,
     return qio_channel_scan_literal(false, _channel_internal,
                                     x.val.localize().c_str(),
                                     x.val.numBytes: c_ssize_t, x.ignoreWhiteSpace);
-  } else if t == ioBits {
-    return qio_channel_read_bits(false, _channel_internal, x.v, x.nbits);
+  } else if t == _ioBits {
+    return qio_channel_read_bits(false, _channel_internal, x.x, x.numBits);
   } else if kind == iokind.dynamic {
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
@@ -4425,8 +4418,8 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
     return qio_channel_write_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
     return qio_channel_print_literal(false, _channel_internal, x.val.localize().c_str(), x.val.numBytes:c_ssize_t);
-  } else if t == ioBits {
-    return qio_channel_write_bits(false, _channel_internal, x.v, x.nbits);
+  } else if t == _ioBits {
+    return qio_channel_write_bits(false, _channel_internal, x.x, x.numBits);
   } else if kind == iokind.dynamic {
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
@@ -5899,10 +5892,10 @@ proc fileReader.readBits(ref x:integral, numBits:int):bool throws {
       throw new owned IllegalArgumentError("numBits", "readBits numBits=" + numBits:string + " < 0");
   }
 
-  var tmp:ioBits;
-  tmp.nbits = numBits:int(8);
+  var tmp:_ioBits;
+  tmp.numBits = numBits:int(8);
   var ret = try this.read(tmp);
-  x = tmp.v:x.type;
+  x = tmp.x:x.type;
   return ret;
 }
 
@@ -5953,7 +5946,7 @@ proc fileWriter.writeBits(x: integral, numBits: int) : void throws {
               "writeBits numBits=" + numBits:string + " < 0");
   }
 
-  try this.write(new ioBits(x:uint(64), numBits:int(8)));
+  try this.write(new _ioBits(x:uint(64), numBits:int(8)));
 }
 
 
