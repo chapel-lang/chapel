@@ -148,8 +148,6 @@ typedef std::vector<NameAndSymbol> SymbolNameVec;
 // enumerated type of all AST node types
 //
 enum AstTag {
-  E_TemporaryConversionThunk,
-
   E_SymExpr,
   E_UnresolvedSymExpr,
   E_DefExpr,
@@ -172,7 +170,9 @@ enum AstTag {
   E_ForallStmt,
   E_ImplementsStmt,
   E_ExternBlockStmt,
+  E_TemporaryConversionThunk,
 
+  E_TemporaryConversionSymbol,
   E_ModuleSymbol,
   E_VarSymbol,
   E_ArgSymbol,
@@ -182,7 +182,6 @@ enum AstTag {
   E_InterfaceSymbol,
   E_EnumSymbol,
   E_LabelSymbol,
-  E_TemporaryConversionSymbol,
 
   E_PrimitiveType,
   E_ConstrainedType,
@@ -192,10 +191,10 @@ enum AstTag {
 };
 
 static inline bool isExpr(AstTag tag)
-{ return tag >= E_TemporaryConversionThunk && tag <= E_ExternBlockStmt; }
+{ return tag >= E_SymExpr && tag <= E_TemporaryConversionThunk; }
 
 static inline bool isSymbol(AstTag tag)
-{ return tag >= E_ModuleSymbol   && tag <= E_TemporaryConversionSymbol; }
+{ return tag >= E_TemporaryConversionSymbol && tag <= E_LabelSymbol; }
 
 static inline bool isType(AstTag tag)
 { return tag >= E_PrimitiveType  && tag <= E_DecoratedClassType; }
