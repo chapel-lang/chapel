@@ -117,8 +117,8 @@ module Errors {
   class IllegalArgumentError : Error {
     proc init() {}
 
-    proc init(info: string) {
-      super.init(info);
+    proc init(msg: string) {
+      super.init(msg);
     }
 
     proc init(formal: string, info: string) {
