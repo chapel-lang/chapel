@@ -1017,6 +1017,7 @@ struct ResultVisibilityTrace {
     return !(*this == other);
   }
   void mark(Context* context) const {
+    context->markPointer(scope);
     for (const auto& elt : visibleThrough) {
       elt.mark(context);
     }
