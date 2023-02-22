@@ -34,11 +34,17 @@
   To work around this, the thunk represents a not-yet-built AST node that
   nevertheless already has all the arguments required for it to build. Its
   children are accessible using normal iteration, but only the `force` method
-  will actually cause the "proper" builder to be invoked. This way, the
+  will actually cause the proper builder to be invoked. This way, the
   mangling builders can be deferred until after fixups are complete.
 
   This Thunk is a base class, extended by various templated versions to make
-  the API more argonomic.
+  the API more ergonomic.
+
+  TODO: In the long term, we'd rather not have this wrapper class, and modify
+  the various builders to avoid copying, or at least delay it. Why would we
+  have a whole AST node just to work around the copying? For the time being,
+  though, this is an easy-to-apply fix (just wrap your code in a buildThunk!)
+  that will help make progress.
  */
 class TemporaryConversionThunk : public Expr {
  public:
