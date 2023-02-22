@@ -749,6 +749,62 @@ static void test6() {
   assert(rACallGeneric == rBCallGeneric);
 }
 
+// check that parenless calls do not use POI
+static void test7() {
+  printf("test7\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+    module Library {
+      proc callFoo(type t) {
+        foo;
+      }
+    }
+
+    module Application {
+      use Library;
+
+      proc foo { return 1; }
+
+      proc main() {
+        callFoo(int);
+      }
+    }
+   )"""";
+
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 2);
+  auto Lib = vec[0]->toModule();
+  auto App = vec[1]->toModule();
+  assert(Lib);
+  assert(Lib->numStmts() == 1);
+  assert(App);
+  assert(App->numStmts() == 3);
+
+  auto main = App->stmt(2)->toFunction();
+  assert(main);
+  auto callCallFoo = main->stmt(0)->toCall();
+  assert(callCallFoo);
+  auto callFoo = Lib->stmt(0)->toFunction();
+  assert(callFoo);
+  auto foo = callFoo->stmt(0)->toIdentifier();
+  assert(foo);
+
+  auto rMain = resolveConcreteFunction(context, main->id());
+  assert(rMain);
+
+  auto rCallFoo = resolveOnlyCandidate(context, rMain->byAst(callCallFoo));
+  assert(rCallFoo);
+
+  auto rFoo = rCallFoo->byAst(foo);
+  assert(rFoo.associatedActions().size() == 0);
+  assert(rFoo.mostSpecific().isEmpty());
+}
+
 
 int main() {
   test1();
@@ -760,6 +816,7 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
 
   return 0;
 }
