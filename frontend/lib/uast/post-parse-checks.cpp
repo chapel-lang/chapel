@@ -263,13 +263,14 @@ bool Visitor::isParentFalseBlock(int depth) const {
 }
 
 void Visitor::checkForArraysOfRanges(const Array* node) {
-  if (node->numExprs() == 1 && !node->hasTrailingComma()) {
-    if (node->expr(0)->toRange()) {
-      warn(node, "please note that this is a 1-element array of ranges; if "
-           "that was your intention, add a trailing comma or recompile with "
-           "'--no-warn-array-of-range' to avoid this warning; if it wasn't, "
-           "you may want to use a range instead");
-    }
+  if (isFlagSet(CompilerFlags::WARN_ARRAY_OF_RANGE) &&
+      node->numExprs() == 1 &&
+      !node->hasTrailingComma() &&
+      node->expr(0)->toRange()) {
+    warn(node, "please note that this is a 1-element array of ranges; if "
+         "that was your intention, add a trailing comma or recompile with "
+         "'--no-warn-array-of-range' to avoid this warning; if it wasn't, "
+         "you may want to use a range instead");
   }
 }
 
