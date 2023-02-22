@@ -4450,8 +4450,10 @@ void postConvertApplyFixups(chpl::Context* context) {
   }
 
   forv_Vec(TemporaryConversionThunk, thunk, gTemporaryConversionThunks) {
-    SET_LINENO(thunk);
-    thunk->replace(thunk->force());
+    if (thunk->inTree()) {
+      SET_LINENO(thunk);
+      thunk->replace(thunk->force());
+    }
   }
 
   // Ensure no SymExpr referring to TemporaryConversionSymbol is still in tree
@@ -4460,6 +4462,9 @@ void postConvertApplyFixups(chpl::Context* context) {
       if (isTemporaryConversionSymbol(se->symbol())) {
         INT_ASSERT(!se->inTree());
       }
+    }
+    forv_Vec(TemporaryConversionThunk, thunk, gTemporaryConversionThunks) {
+      INT_ASSERT(!thunk->inTree());
     }
   }
 
