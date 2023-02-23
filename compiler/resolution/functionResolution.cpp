@@ -4045,6 +4045,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
   CallExpr*            refCall      = NULL;
   CallExpr*            valueCall    = NULL;
   CallExpr*            constRefCall = NULL;
+  CallExpr*            ccAnchor     = NULL; // the last of the above CallExprs
   ResolutionCandidate* best         = NULL;
   FnSymbol*            retval       = NULL;
 
@@ -4052,6 +4053,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
     refCall = call;
 
     instantiateBody(bestRef->fn);
+    ccAnchor = refCall;
   }
 
   if (bestValue    != NULL) {
@@ -4065,6 +4067,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
     }
 
     instantiateBody(bestValue->fn);
+    ccAnchor = valueCall;
   }
 
   if (bestConstRef != NULL) {
@@ -4073,6 +4076,12 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
     call->insertAfter(constRefCall);
 
     instantiateBody(bestConstRef->fn);
+
+    if (valueCall == nullptr || valueCall == call) {
+      ccAnchor = constRefCall;
+    } else {
+      ccAnchor = valueCall;
+    }
   }
 
   if        (bestRef      != NULL) {
@@ -4154,7 +4163,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
     // Replace the call with a new ContextCallExpr containing 2 or 3 calls
     ContextCallExpr* contextCall = new ContextCallExpr();
 
-    call->insertAfter(contextCall);
+    ccAnchor->insertAfter(contextCall);
 
     if (refCall      != NULL) refCall->remove();
     if (valueCall    != NULL) valueCall->remove();
