@@ -32,10 +32,15 @@ dnl  see https://www.gnu.org/licenses/.
 
 include(`../config.m4')
 
-C	     cycles/limb
-C Cortex-A53	9.3-9.8
-C Cortex-A57	 7.0
-C X-Gene	 5.0
+C	       addmul_1        submul_1
+C	     cycles/limb     cycles/limb
+C Cortex-A53	9.3-9.8		9.3-9.8
+C Cortex-A55    9.0-9.5		9.3-9.8
+C Cortex-A57	 7		 7
+C Cortex-A72
+C Cortex-A73	 6		 6
+C X-Gene	 5		 5
+C Apple M1	 1.75		 1.75
 
 C NOTES
 C  * It is possible to keep the carry chain alive between the addition blocks
