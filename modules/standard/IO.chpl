@@ -2646,6 +2646,7 @@ proc _channel.advance(amount:int(64)) throws {
    :throws UnexpectedEofError: if the requested `byte` could not be found.
    :throws SystemError: if another error occurred.
  */
+deprecated "`advancePastByte` is deprecated; please use `advancePast` instead"
 proc _channel.advancePastByte(byte:uint(8)) throws {
   var err:errorCode = 0;
   on this._home {
@@ -2669,9 +2670,8 @@ proc fileReader.advancePast(separator: string) throws {
       if err then try this._ch_ioerror(err, "in advancePast(string)");
     } else {
       // slow advance to multi-byte separator
-      const (readError, found, relByteOffset, _) = _findSeparator(separator, -1, this._channel_internal);
+      const (readError, _, relByteOffset, _) = _findSeparator(separator, -1, this._channel_internal);
       if readError then try this._ch_ioerror(readError, "in advancePast(string)");
-      if !found then throw new UnexpectedEofError("separator not found in advancePast(string)");
 
       // advance past the separator
       err = qio_channel_advance(false, this._channel_internal, relByteOffset + separator.numBytes);
@@ -2694,13 +2694,12 @@ proc fileReader.advancePast(separator: bytes) throws {
       if err then try this._ch_ioerror(err, "in advancePast(bytes)");
     } else {
       // slow advance to multi-byte separator or EOF
-      const (readError, found, relByteOffset) = _findSeparator(separator, -1, this._channel_internal);
-      if readError then try this._ch_ioerror(readError, "in advancePast(string)");
-      if !found then throw new UnexpectedEofError("separator not found in advancePast(bytes)");
+      const (readError, _, relByteOffset) = _findSeparator(separator, -1, this._channel_internal);
+      if readError then try this._ch_ioerror(readError, "in advancePast(bytes)");
 
       // advance past the separator
       err = qio_channel_advance(false, this._channel_internal, relByteOffset + separator.numBytes);
-      if err then try this._ch_ioerror(err, "in advancePast(string)");
+      if err then try this._ch_ioerror(err, "in advancePast(bytes)");
     }
   }
 }
@@ -5080,13 +5079,15 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
   return retval;
 }
 
-/*
+/* wrowng spealling
 
 */
-proc fileReader.readPast(separator: ?t, maxSize=-1, stripSeparator=false): t throws where t==string || t==bytes {
+proc fileReader.readPast(separator: ?t, maxSize=-1, stripSeparator=false): t throws
+  where t==string || t==bytes
+{
   var ret: t;
   if !this.readPast(ret, separator, maxSize, stripSeparator)
-    then throw new UnexpectedEofError("Encountered immidiate EOF in readPast(t)");
+    then throw new UnexpectedEofError("Encountered EOF in readPast(" + t:string + ")");
   return ret;
 }
 
@@ -5111,9 +5112,9 @@ proc fileReader.readPast(ref s: string, separator: string, maxSize=-1, stripSepa
     const err = readStringBytesData(s, this._channel_internal, bytesToRead, cpToRead);
     if err then try this._ch_ioerror(err, "in channel.readPast(string)");
 
-    if stripSeparator then s = s[0..<separator.numCodepoints];
+    if found && stripSeparator then s = s[0..<s.numCodepoints-separator.numCodepoints];
   }
-  return didRead;
+  return !s.isEmpty();
 }
 
 /*
@@ -5135,19 +5136,22 @@ proc fileReader.readPast(ref b: bytes, separator: bytes, maxSize=-1, stripSepara
     // read the given number of bytes into 'b'
     const err = readStringBytesData(b, this._channel_internal, bytesToRead, 0);
     if err then try this._ch_ioerror(err, "in channel.readPast(bytes)");
+    if b == separator then didRead = false;
 
-    if stripSeparator then b = b[0..<separator.numBytes];
+    if found && stripSeparator then b = b[0..<b.numBytes-separator.numBytes];
   }
-  return didRead;
+  return !b.isEmpty();
 }
 
 /*
 
 */
-proc fileReader.readUpTo(separator: ?t, maxSize=-1): t throws where t==string || t==bytes {
+proc fileReader.readUpTo(separator: ?t, maxSize=-1): t throws
+  where t==string || t==bytes
+{
   var ret: t;
   if !this.readUpTo(ret, separator, maxSize)
-    then throw new UnexpectedEofError("Encountered immidiate EOF in readPast(t)");
+    then throw new UnexpectedEofError("Encountered EOF in readUpTo(" + t:string + ")");
   return ret;
 }
 
@@ -5253,6 +5257,8 @@ private proc _findSeparator(separator: string, maxSize=-1, _channel_internal): (
   const endOffset = qio_channel_offset_unlocked(_channel_internal);
   qio_channel_revert_unlocked(_channel_internal); // A
   const numBytesRead: int = endOffset - qio_channel_offset_unlocked(_channel_internal);
+
+  // writeln((foundSeparator, numBytesRead, numCodepointsRead));
 
   return (0:errorCode, foundSeparator, numBytesRead, numCodepointsRead);
 }
