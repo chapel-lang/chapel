@@ -797,7 +797,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
                 fn->defPoint->getStmtExpr()->insertAfter(capture);
                 Expr* val = resolveExpr(capture);
                 testCaptureVector.push_back(val);
-                capture->remove();
+                val->remove();
                 testNameIndex[name] = ++totalTest;
               }
             }

@@ -64,7 +64,11 @@ Expr* createFunctionClassInstance(FnSymbol* fn, Expr* use);
 /*** Convert a function type to the corresponding function class type. */
 Type* functionClassSuperTypeFromFunctionType(FunctionType* ft);
 
-/*** Used to implement the legacy 'func()' type constructor function. */
+/***
+  Used to implement the legacy 'func()' type constructor function. The type
+  constructed by this function always returns by value, and each formal
+  has the blank intent.
+*/
 Type* functionClassSuperTypeForFuncConstructor(CallExpr* call);
 
 /***

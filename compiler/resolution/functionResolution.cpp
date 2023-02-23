@@ -10097,6 +10097,10 @@ resolveNameToSingleFunctionOrError(const char* name, Expr* use) {
     if (remaining > 0) {
       USR_PRINT(use, "and '%d' other candidates", remaining);
     }
+
+    // Have to stop or else confusing output follows.
+    USR_STOP();
+
   } else {
     ret = v[0];
     INT_ASSERT(ret);
@@ -10146,7 +10150,6 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
   auto ft = fn->computeAndSetType();
   INT_ASSERT(ft);
 
-  // TODO: We could relax this based on calling context, but only in dyno.
   if (ft->isGeneric() || ft->returnType() == dtUnknown) {
     auto kindStr = FunctionType::kindToString(ft->kind());
     if (fn->hasFlag(FLAG_LEGACY_LAMBDA)) kindStr = "lambda";
@@ -10162,6 +10165,13 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
     }
 
     // Return a "sink" to handle any "illegal access" errors later.
+    return swapInErrorSinkForCapture(ft->kind(), use);
+  }
+
+  // Surprisingly this seems to work somewhat well if removed, see:
+  // 'functions/vass/passing-iterator-as-argument'
+  if (ft->kind() == FunctionType::ITER) {
+    USR_FATAL_CONT(use, "passing iterators by name is not yet supported");
     return swapInErrorSinkForCapture(ft->kind(), use);
   }
 

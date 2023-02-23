@@ -54,7 +54,7 @@ namespace {
 
   struct FcfFormalInfo {
     Type* type;
-    IntentTag concreteIntent;
+    IntentTag intent;
     const char* name;
   };
 
@@ -196,7 +196,7 @@ static FcfFormalInfo extractFormalInfo(ArgSymbol* formal) {
   FcfFormalInfo ret;
 
   ret.type = formal->type;
-  ret.concreteIntent = formal->intent;
+  ret.intent = formal->intent;
   ret.name = isAnonymous ? nullptr : formal->cname;
 
   return ret;
@@ -210,7 +210,7 @@ static FcfFormalInfo extractFormalInfoWithLegacyRules(ArgSymbol* formal) {
   FcfFormalInfo ret;
 
   ret.type = formal->type;
-  ret.concreteIntent = concreteIntent(INTENT_BLANK, ret.type);
+  ret.intent = intent(INTENT_BLANK, ret.type);
   ret.name = nullptr;
 
   // Previously we did not warn and would just let the implementation
@@ -262,8 +262,8 @@ buildUserFacingTypeString(const std::vector<FcfFormalInfo>& formals,
 
   for (size_t i = 0; i < formals.size(); i++) {
     auto& info = formals[i];
-    bool skip = isIntentSameAsDefault(info.concreteIntent, info.type);
-    if (!skip) oss << intentToString(info.concreteIntent);
+    bool skip = isIntentSameAsDefault(info.intent, info.type);
+    if (!skip) oss << intentToString(info.intent);
     if (!skip && info.name) oss << " ";
     if (info.name) oss << info.name;
     if ((!skip || info.name) && info.type != dtAny) oss << ": ";
@@ -309,7 +309,7 @@ buildWrapperSuperTypeAtProgram(const std::vector<FcfFormalInfo>& formals,
     std::vector<FcfFormalInfo> unnamedFormals;
 
     for (auto& f : formals) {
-      FcfFormalInfo copy = { f.type, f.concreteIntent, nullptr };
+      FcfFormalInfo copy = { f.type, f.intent, nullptr };
       unnamedFormals.push_back(std::move(copy));
     }
 
@@ -380,8 +380,8 @@ buildSuperName(const std::vector<FcfFormalInfo>& formals,
   oss << superTypePrefix;
 
   for (auto& info : formals) {
-    bool skip = isIntentSameAsDefault(info.concreteIntent, info.type);
-    if (!skip) oss << intentTagMnemonicMangled(info.concreteIntent);
+    bool skip = isIntentSameAsDefault(info.intent, info.type);
+    if (!skip) oss << intentTagMnemonicMangled(info.intent);
     oss << typeToStringSpecializing(info.type) << "_";
     if (info.name) oss << info.name;
     oss << "_";
@@ -548,7 +548,7 @@ attachSuperThis(AggregateType* super,
     std::string name;
     name += "f";
     name += std::to_string(i);
-    auto f = new ArgSymbol(info.concreteIntent,
+    auto f = new ArgSymbol(info.intent,
                            astr(name.c_str()),
                            info.type);
     ret->insertFormalAtTail(f);
@@ -1028,7 +1028,7 @@ Type* functionClassSuperTypeFromFunctionType(FunctionType* ft) {
     auto formal = ft->formal(i);
     FcfFormalInfo info;
     info.type = formal->type;
-    info.concreteIntent = formal->intent;
+    info.intent = formal->intent;
     info.name = formal->name;
     formals.push_back(std::move(info));
   }
@@ -1060,7 +1060,7 @@ Type* functionClassSuperTypeForFuncConstructor(CallExpr* call) {
     INT_ASSERT(se);
     FcfFormalInfo info;
     info.type = se->symbol()->type;
-    info.concreteIntent = concreteIntent(INTENT_BLANK, info.type);
+    info.intent = INTENT_BLANK;
     info.name = nullptr;
     formals.push_back(std::move(info));
   }
@@ -1072,12 +1072,9 @@ Type* functionClassSuperTypeForFuncConstructor(CallExpr* call) {
 }
 
 static bool isAnyErrorSinkType(Type* t) {
-  if (t == errorSink(FunctionType::PROC)->type     ||
-      t == errorSink(FunctionType::ITER)->type     ||
-      t == errorSink(FunctionType::OPERATOR)->type) {
-    return true;
-  }
-  return false;
+  return (t == errorSink(FunctionType::PROC)->type  ||
+          t == errorSink(FunctionType::ITER)->type  ||
+          t == errorSink(FunctionType::OPERATOR)->type);
 }
 
 const char* functionClassTypeToString(Type* t) {
@@ -1085,7 +1082,12 @@ const char* functionClassTypeToString(Type* t) {
 
   auto at = toAggregateType(t);
 
-  if (isAnyErrorSinkType(at)) return "<error>";
+  if (isAnyErrorSinkType(at)) {
+    if (t == errorSink(FunctionType::PROC)->type) return "proc";
+    if (t == errorSink(FunctionType::ITER)->type) return "iter";
+    if (t == errorSink(FunctionType::OPERATOR)->type) return "operator";
+    INT_FATAL("Not possible!");
+  }
 
   if (typeToInfo.find(at) == typeToInfo.end()) {
     INT_ASSERT(at->dispatchParents.n > 0);
