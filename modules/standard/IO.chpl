@@ -5999,10 +5999,10 @@ proc fileReader.readCodepoint(): int throws {
   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if the codepoint could not be read from the ``fileReader``.
 */
-proc fileReader.readCodepoint(ref c: int):bool throws {
+proc fileReader.readCodepoint(ref codepoint: int):bool throws {
   var tmp:_internalIoChar;
   var ret = try this.read(tmp);
-  c = tmp.ch:c.type;
+  codepoint = tmp.ch:codepoint.type;
   return ret;
 }
 
@@ -6042,20 +6042,20 @@ proc fileReader.readByte(): uint(8) throws {
 /*
   Reads a single byte from a ``fileReader``
 
-  :arg b: where to store the read byte
+  :arg byte: where to store the read byte
   :returns: `true` if the byte was read without error, `false` upon EOF
 
   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if the byte could not be read from the ``fileReader``.
 */
-proc fileReader.readByte(ref b: uint(8)): bool throws {
+proc fileReader.readByte(ref byte: uint(8)): bool throws {
   var err:errorCode = 0;
   var x: uint(8);
   on this._home {
     try this.lock(); defer { this.unlock(); }
     err = qio_channel_read_uint8(false, this._channel_internal, x);
   }
-  b = x;
+  byte = x;
 
   if !err {
     return true;
