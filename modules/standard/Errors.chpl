@@ -297,6 +297,7 @@ module Errors {
     }
 
     /* Returns the first non-nil error contained in this TaskErrors group */
+    @unstable "`TaskErrors.first` is unstable; expect this method to change in the future."
     proc first() ref : owned Error? {
       var first = 0;
       for i in 0..#nErrors {
