@@ -5986,7 +5986,7 @@ proc fileWriter.writeCodepoint(codepoint: int) throws {
 proc fileReader.readCodepoint(): int throws {
   var tmp:int;
   var ret = try this.readCodepoint(tmp);
-  if !ret then new UnexpectedEofError("Encountered EOF in readCodepoint");
+  if !ret then throw new UnexpectedEofError("Encountered EOF in readCodepoint");
   return tmp;
 }
 
@@ -6000,7 +6000,7 @@ proc fileReader.readCodepoint(): int throws {
   :throws SystemError: Thrown if the codepoint could not be read from the ``fileReader``.
 */
 proc fileReader.readCodepoint(ref c: int):bool throws {
-  var tmp:_internalIoBits;
+  var tmp:_internalIoChar;
   var ret = try this.read(tmp);
   c = tmp.ch:c.type;
   return ret;
@@ -6035,7 +6035,7 @@ proc fileWriter.writeByte(byte: uint(8)) throws {
 proc fileReader.readByte(): uint(8) throws {
   var tmp:uint(8);
   var ret = try this.readByte(tmp);
-  if !ret then new UnexpectedEofError("Encountered EOF in readByte");
+  if !ret then throw new UnexpectedEofError("Encountered EOF in readByte");
   return tmp;
 }
 
@@ -6056,7 +6056,16 @@ proc fileReader.readByte(ref b: uint(8)): bool throws {
     err = qio_channel_read_uint8(false, this._channel_internal, x);
   }
   b = x;
-  return err != EEOF;
+
+  if !err {
+    return true;
+  } 
+  else if err == EEOF {
+    return false;
+  } else {
+    try this._ch_ioerror(err, "in fileReader.readByte");
+  }
+  return false;
 }
 
 
