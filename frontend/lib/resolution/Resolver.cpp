@@ -1891,8 +1891,28 @@ bool Resolver::enter(const uast::Conditional* cond) {
   // to `cond->condition()`.
   auto thenBlock = cond->thenBlock();
   auto elseBlock = cond->elseBlock();
+
+  owned<InitResolver> thenInit;
+  owned<InitResolver> elseInit;
+
+  if (initResolver) {
+    thenInit = initResolver->fork();
+  }
+  initResolver.swap(thenInit);
   thenBlock->traverse(*this);
-  if (elseBlock) elseBlock->traverse(*this);
+  initResolver.swap(thenInit);
+
+  if (elseBlock) {
+    if (initResolver) elseInit = initResolver->fork();
+
+    initResolver.swap(elseInit);
+    elseBlock->traverse(*this);
+    initResolver.swap(elseInit);
+  }
+
+  if (initResolver) {
+    initResolver->merge(thenInit, elseInit);
+  }
 
   if (cond->isExpressionLevel() && !scopeResolveOnly) {
     std::vector<QualifiedType> returnTypes;
