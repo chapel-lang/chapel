@@ -5985,12 +5985,32 @@ proc fileWriter.writeCodepoint(codepoint: int) throws {
 */
 proc fileReader.readCodepoint(): int throws {
   var tmp:_internalIoChar;
-  try this.read(tmp);
+  var ret = try this.read(tmp);
+  if !ret then throw new UnexpectedEofError("Encountered EOF in readCodepoint");
   return tmp.ch:int;
 }
+
+/*
+  Writes a single byte to a ``fileWriter``
+
+  :arg byte: byte to write
+
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                              ``fileWriter``'s specified range.
+  :throws SystemError: Thrown if the byte could not be written to the ```fileWriter``.
+*/
 proc fileWriter.writeByte(byte: uint(8)) throws {
   assert(false);
 }
+
+/*
+  Reads a single byte from a ``fileReader``
+
+  :returns: byte read
+
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if the byte could not be read from the ``fileReader``.
+*/
 proc fileReader.readByte(): uint(8) throws {
   assert(false);
 }

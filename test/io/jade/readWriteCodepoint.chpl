@@ -23,8 +23,17 @@ proc testio(param typ:iokind, style:iostyleInternal, x:int)
 
     // Try reading another item -- should get EOF
     if noisy then writeln("Reading another - should get EOF");
-    var got = ch.readCodepoint();
-    assert( got == -1 );
+    try {
+      y = ch.readCodepoint();
+      assert(false);
+    } catch e:UnexpectedEofError {
+      assert(true);
+    }
+    catch {
+      // unknown unexpected error
+      assert(false);
+    }
+    
 
     ch.close();
   }
