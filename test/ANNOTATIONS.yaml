@@ -1088,6 +1088,8 @@ LCALS-raw-short: &lcals-base
     - Task intents to operate on fields of 'this' (#13840)
   09/10/19:
     - Restrict applicability of field intents (#14057)
+  02/14/23:
+    - LCALS perf back to normal (Cray/chapel-private#4228)
 LCALS-raw-medium:
   <<: *lcals-base
 LCALS-raw-long:
