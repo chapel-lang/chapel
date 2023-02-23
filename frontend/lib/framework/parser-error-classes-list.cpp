@@ -121,25 +121,28 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
   }
 
   std::string blockingName = "";
+  std::string blockingNameArticle = "a";
   if (!blockingAst) {
     // Nothing
   } else if (blockingAst->isForall()) {
-    blockingName = "a 'forall' statement";
+    blockingName = "'forall' statement";
   } else if (blockingAst->isCoforall()) {
-    blockingName = "a 'coforall' statement";
+    blockingName = "'coforall' statement";
   } else if (blockingAst->isOn()) {
-    blockingName = "an 'on' statement";
+    blockingName = "'on' statement";
+    blockingNameArticle = "an";
   } else if (blockingAst->isBegin()) {
-    blockingName = "a 'begin' statement";
+    blockingName = "'begin' statement";
   } else if (blockingAst->isSync()) {
-    blockingName = "a 'sync' statement";
+    blockingName = "'sync' statement";
   } else if (blockingAst->isCobegin()) {
-    blockingName = "a 'cobegin' statement";
+    blockingName = "'cobegin' statement";
   } else if (auto fn = blockingAst->toFunction()) {
     if (fn->kind() == uast::Function::Kind::ITER) {
-      blockingName = "an iterator";
+      blockingName = "iterator";
+      blockingNameArticle = "an";
     } else {
-      blockingName = "a procedure";
+      blockingName = "procedure";
     }
   } else {
     CHPL_ASSERT(false && "not a blocking element handled by this error");
@@ -155,7 +158,8 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
     if (blockingAst) {
       // Didn't go all the way to the top, but stopped at a particular loop or fn.
       wr.note(blockingAst, "stopped searching here because '", astType, "' "
-              "statements are not allowed to jump outside ", blockingName, ":");
+              "statements are not allowed to jump outside ",
+              blockingNameArticle, " ", blockingName, ":");
       wr.code(blockingAst, { blockingAst });
     }
   } else if (!blockingAst || blockingAst->isFunction()) {
@@ -174,16 +178,19 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
     if (blockingAst) {
       CHPL_ASSERT(invalidAst->isBreak() || invalidAst->isContinue());
       wr.note(blockingAst, "stopped searching here because '", astType, "' "
-              "statements are not allowed to jump outside ", blockingName, ":");
+              "statements are not allowed to jump outside ",
+              blockingNameArticle, " ", blockingName, ":");
       wr.code(blockingAst, { blockingAst });
     }
   } else {
     // any piece of control flow banned within a particular language feature
     wr.heading(kind_, type_, invalidAst, "'", astType, "' is not allowed in ",
-               blockingName, ".");
+               blockingNameArticle, " ", blockingName, ".");
     wr.code(invalidAst, { invalidAst });
-    // wr.message("The mentioned '", blockingName, "' statement is here:");
-    // wr.code(blockingAst, { blockingAst });
+
+    // TODO: Re-enable when code printing doesn't dump whole code blocks
+    // wr.message("The ", blockingName, " is here:");
+    // wr.code(blockingAst);
   }
 }
 
