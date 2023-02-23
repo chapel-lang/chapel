@@ -259,7 +259,7 @@ int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
 
 //
 // Initializes information about CPUs (cores and PUs) and and NICs from the
-// toplogy.
+// topology.
 //
 
 static void cpuInfoInit(void) {
@@ -416,7 +416,7 @@ static void cpuInfoInit(void) {
   oversubscribed = chpl_env_rt_get_bool("OVERSUBSCRIBED", oversubscribed);
 
   if ((verbosity >= 2) && (chpl_nodeID == 0)) {
-    printf("overscribed = %s\n", oversubscribed ? "True" : "False");
+    printf("oversubscribed = %s\n", oversubscribed ? "True" : "False");
   }
 
   // Find the NUMA nodes.
