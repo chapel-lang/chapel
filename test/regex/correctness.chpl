@@ -101,7 +101,7 @@ on locales1 {
 
 r4 = compile("a+":t);
 on locales1 {
-  var (s, n) = r4.subn("hello":t, "aaaa world aa":t);
+  var (s, n) = ("aaaa world aa":t).replaceAndCount(r4, "hello":t);
   assert(n == 2);
   assert(s == "hello world hello":t);
 }
@@ -259,7 +259,7 @@ proc inafunction() {
 
   r4 = compile("a+":t);
   on locales1 {
-    var (s, n) = r4.subn("hello":t, "aaaa world aa":t);
+    var (s, n) = ("aaaa world aa":t).replaceAndCount(r4, "hello":t);
     assert(n == 2);
     assert(s == "hello world hello":t);
   }

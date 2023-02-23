@@ -29,4 +29,4 @@ for x in r.split(s) do
   writef("%t\n", x);
 
 writeln();
-writeln(r.subn("A", "one"));
+writeln("one".replaceAndCount(r, "A"));

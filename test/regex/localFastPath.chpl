@@ -84,7 +84,7 @@ proc subL() {
   var s = "abaabaaab":t;
   var r = compile("a+":t);
   writeln("subL");
-  writeln(r.sub("A":t, s));
+  writeln(s.replace(r, "A":t));
   writeln();
 }
 
@@ -94,7 +94,7 @@ proc subR(param rvf=true) {
   on locales1 {
     if !rvf then preventRvf(r);
     writef("subR(rvf=%t)\n", rvf);
-    writeln(r.sub("A":t, s));
+    writeln(s.replace(r, "A":t));
     writeln();
   }
 }
