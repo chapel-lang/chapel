@@ -1836,7 +1836,7 @@ proc simpletestcore(input:[], seed:int) {
   var localCopy = input;
   shuffle(localCopy, seed);
 
-  const blockDom = input.domain; //newBlockDom(input.domain);
+  const blockDom = input.domain; //Block.createDomain(input.domain);
   var A: [blockDom] uint = localCopy;
 
   assert(isSorted(input));
@@ -1897,7 +1897,7 @@ simpletest([0xda524a179483bc7:uint,
             0xde0546a7b5c06e9:uint]);
 
 proc randomtest(n:int) {
-  const blockDom = {0..#n}; //newBlockDom({0..#n});
+  const blockDom = {0..#n}; //Block.createDomain({0..#n});
   var A: [blockDom] uint;
 
   if skew {

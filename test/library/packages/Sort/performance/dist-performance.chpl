@@ -68,7 +68,7 @@ inline proc endDiag(name, x) {
 }
 
 proc main() {
-  var A = newBlockArr({1..nElems}, elemType);
+  var A = Block.createArray({1..nElems}, elemType);
   fillRandom(A, seed=314159265);
 
   startDiag();
