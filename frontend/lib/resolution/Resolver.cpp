@@ -1995,6 +1995,13 @@ struct CountIdentifiersWithName {
   void exit(const AstNode* ast) { }
 };
 
+// TODO: this is not quite accurate, since there might be another
+// Identifier that does resolve but has the same name (e.g. with shadowing).
+// One alternative would be to keep a map of Identifiers that did not
+// resolve and then emit errors about them when concluding the resolution
+// of a function (but.. would it be a problem if errors related to
+// an identifier having an unknown type appear before we say the identifier
+// was not found)?
 bool Resolver::identHasMoreMentions(const Identifier* ident) {
   if (symbol) {
     CountIdentifiersWithName visitor;
@@ -2040,8 +2047,8 @@ Resolver::lookupIdentifier(const Identifier* ident,
       auto pair = namesWithErrorsEmitted.insert(ident->name());
       if (pair.second) {
         // insertion took place so emit the error
-        bool printFirstMention = identHasMoreMentions(ident);
-        CHPL_REPORT(context, UnknownIdentifier, ident, printFirstMention);
+        bool mentionedMoreThanOnce = identHasMoreMentions(ident);
+        CHPL_REPORT(context, UnknownIdentifier, ident, mentionedMoreThanOnce);
       }
     } else if (ambiguous && !resolvingCalledIdent) {
       auto pair = namesWithErrorsEmitted.insert(ident->name());

@@ -832,7 +832,7 @@ static void describeSymbolSource(ErrorWriterBase& wr,
   bool encounteredAutoModule = false;
   UniqueString from = name;
   int n = trace.visibleThrough.size();
-  bool first = true;
+  bool first = true; // do we still need to output the intro text?
   for (int i = start; i < n; i++) {
     const auto& elt = trace.visibleThrough[i];
     if (elt.automaticModule) {
@@ -958,11 +958,11 @@ void ErrorAmbiguousVisibilityIdentifier::write(ErrorWriterBase& wr) const {
 
 void ErrorUnknownIdentifier::write(ErrorWriterBase& wr) const {
   auto ident = std::get<const uast::Identifier*>(info);
-  auto moreMentions = std::get<bool>(info);
+  auto mentionedMoreThanOnce = std::get<bool>(info);
 
   wr.heading(kind_, type_, ident,
              "'", ident->name(), "' cannot be found",
-             moreMentions?" (first mention this function)":"");
+             mentionedMoreThanOnce?" (first mention this function)":"");
 
   wr.code(ident, { ident });
 

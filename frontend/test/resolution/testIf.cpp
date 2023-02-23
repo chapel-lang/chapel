@@ -148,8 +148,7 @@ static void testIfVarErrorUseInElseBranch1() {
   assert(reElseUse.toId().isEmpty());
   assert(reElseUse.type().isUnknown());
 
-  assert(guard.numErrors() > 0);
-  guard.realizeErrors();
+  assert(guard.realizeErrors() > 0);
 }
 
 // In this variation the use is in a 'else-if'.
