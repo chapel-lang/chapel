@@ -14,7 +14,8 @@ Running in gdb
 --------------
 
 The compiler-generated executable has a ``--gdb`` flag that can be used
-to launch the program within a ``gdb`` session.  For best results, make
+to launch the program within a ``gdb`` session.  A similar flag, ``--lldb``,
+exists to launch the program within a ``lldb`` session. For best results, make
 sure that your program has been compiled using the chpl compiler's
 ``-g`` flag.
 
