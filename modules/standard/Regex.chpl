@@ -1275,7 +1275,6 @@ private proc doReplaceAndCountFast(x: ?t, pattern: regex(t), replacement: t,
   if pattern.home != here then regexCopy = pattern;
   const localRegex = if pattern.home != here then regexCopy._regex
                                              else pattern._regex;
-  // TODO -- move subn after sub for documentation clarity
   var pos:byteIndex;
   var endpos:byteIndex;
 
