@@ -1222,6 +1222,10 @@ memleaks:
     - Fix problem with new applied to a borrowed nilable type argument (#16380)
   09/17/20:
     - Fix some issues with constant domain optimization (#16397)
+  02/21/23:
+    - IO Encoders/Decoders prototype (#21586)
+  02/23/23:
+    - QIO fix Free the mark stack if it has been allocated (#21662)
 # End memleaks
 
 memleaksfull:
