@@ -6059,7 +6059,7 @@ proc fileReader.readByte(ref b: uint(8)): bool throws {
 
   if !err {
     return true;
-  } 
+  }
   else if err == EEOF {
     return false;
   } else {
