@@ -545,6 +545,12 @@ function computeGitHubLinks(text) {
     return "<a target='_blank' href='" + url + "'>" + m + "</a>";
   });
 
+  var private_re = /\(Cray\/chapel-private#([0-9]+)\)/gi;
+  text = text.replace(private_re, function(m, num) {
+    var url = "https://github.com/Cray/chapel-private/issues/" + num;
+    return "<a target='_blank' href='" + url + "'>" + m + "</a>";
+  });
+
   var ak_re = /\(Bears-R-Us\/arkouda#([0-9]+)\)/gi;
   text = text.replace(ak_re, function(m, num) {
     var url = "https://github.com/Bears-R-Us/arkouda/pull/" + num;
