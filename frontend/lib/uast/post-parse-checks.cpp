@@ -31,9 +31,10 @@ namespace {
 using namespace chpl;
 using namespace uast;
 
-/***
-  TODO: Run the visitor while assigning IDs to avoid a second pass.
-*/
+// This visitor runs in a 2nd pass after assigning IDs
+// (merging it with the traversal to assign IDs is interesting to consider
+//  for potential performance improvement, but it leads to too many challenges
+//  in error handling).
 struct Visitor {
   std::set<UniqueString> exportedFnNames_;
   std::vector<const AstNode*> parents_;
@@ -879,6 +880,21 @@ void Visitor::checkLinkageName(const NamedDecl* node) {
 
 void Visitor::checkVisibilityClauseValid(const AstNode* parentNode,
                                          const VisibilityClause* clause) {
+  // Check that the used/imported thing is valid
+  {
+    const AstNode* cur = clause->symbol();
+    while (cur != nullptr && !cur->isIdentifier()) {
+      if (cur == clause->symbol() && cur->isAs()) {
+        cur = cur->toAs()->symbol();
+      } else if (auto dot = cur->toDot()) {
+        cur = dot->receiver();
+      } else {
+        CHPL_REPORT(context_, IllegalUseImport, cur, parentNode);
+        break;
+      }
+    }
+  }
+
   if (clause->limitationKind() == VisibilityClause::EXCEPT) {
     // check that we do not have 'except A as B'
     for (const AstNode* e : clause->limitations()) {

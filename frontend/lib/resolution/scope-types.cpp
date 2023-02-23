@@ -122,7 +122,10 @@ Scope::Scope(const uast::AstNode* ast, const Scope* parentScope,
   if (auto fn = ast->toFunction()) {
     methodScope_ = fn->isMethod();
   }
-  gatherDeclsWithin(ast, declared_, containsUseImport_, containsFunctionDecls_);
+  gatherDeclsWithin(ast, declared_,
+                    containsUseImport_,
+                    containsFunctionDecls_,
+                    containsExternBlock_);
 }
 
 void Scope::addBuiltin(UniqueString name) {

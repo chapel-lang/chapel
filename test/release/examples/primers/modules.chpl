@@ -802,8 +802,10 @@ module UsesTheUser {
 }
 
 /* By contrast, a ``public use`` will permit symbols used by one module to
-   be seen by those that use it.  For example, consider the following
-   variation of the previous example:
+   be seen by those that use it.  However, it does not provide the name
+   of the module ``public use``'d (but note that it is possible to opt in to
+   that with ``public import`` or with renaming the module with ``as``).
+   For example, consider the following variation of the previous example:
 */
 module UserModule2 {
   public use ModuleThatIsUsed;
@@ -838,7 +840,7 @@ module UsesTheUser2 {
 module UsesTheUser3 {
   proc func3() {
     use UserModule2;
-    UserModule2.ModuleThatIsUsed.publiclyAvailableProc();
+    UserModule2.publiclyAvailableProc();
     // The above is available due to the ``public use`` of ``ModuleThatIsUsed``
     // in ``UserModule2``.
   }

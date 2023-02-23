@@ -68,6 +68,10 @@ class IdAndVis {
     return ret;
   }
 
+  void mark(Context* context) const {
+    id_.mark(context);
+  }
+
   const ID& id() const { return id_; }
   uast::Decl::Visibility vis() const { return vis_; }
   bool isPrivate() const { return vis_ == uast::Decl::PRIVATE; }
@@ -353,6 +357,13 @@ class BorrowedIdsWithName {
     return ret;
   }
 
+  void mark(Context* context) const {
+    idv_.mark(context);
+    for (auto const& elt : *moreIdvs_) {
+      context->markPointer(&elt.id_);
+    }
+  }
+
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   /// \cond DO_NOT_DOCUMENT
@@ -383,8 +394,10 @@ class Scope {
  private:
   const Scope* parentScope_ = nullptr;
   uast::asttags::AstTag tag_ = uast::asttags::AST_TAG_UNKNOWN;
+  // TODO: better pack these to save space
   bool containsUseImport_ = false;
   bool containsFunctionDecls_ = false;
+  bool containsExternBlock_ = false;
   bool autoUsesModules_ = false;
   bool methodScope_ = false;
   ID id_;
@@ -434,6 +447,12 @@ class Scope {
     return containsUseImport_ || autoUsesModules_;
   }
 
+  /** Returns 'true' if this Scope directly contains an 'extern' block
+      (with C code to supporting interoperability) */
+  bool containsExternBlock() const {
+    return containsExternBlock_;
+  }
+
   /** Returns 'true' if the Scope includes the automatic 'use' for
       the standard library. */
   bool autoUsesModules() const { return autoUsesModules_; }
@@ -467,6 +486,7 @@ class Scope {
            tag_ == other.tag_ &&
            containsUseImport_ == other.containsUseImport_ &&
            containsFunctionDecls_ == other.containsFunctionDecls_ &&
+           containsExternBlock_ == other.containsExternBlock_ &&
            autoUsesModules_ == other.autoUsesModules_ &&
            methodScope_ == other.methodScope_ &&
            id_ == other.id_ &&
@@ -801,6 +821,11 @@ enum {
     directly nested within a class/record/union
    */
   LOOKUP_ONLY_METHODS_FIELDS = 128,
+
+  /**
+    Lookup in extern blocks
+   */
+  LOOKUP_EXTERN_BLOCKS = 256,
 };
 
 /** LookupConfig is a bit-set of the LOOKUP_ flags defined above */
@@ -923,6 +948,80 @@ class InnermostMatch {
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
+};
+
+
+/** ResultVisibilityTrace stores a tracing of the name lookup process
+    which can be useful for error messages. */
+struct ResultVisibilityTrace {
+  struct VisibilityTraceElt {
+    // these contain details for a use/import
+    VisibilitySymbols::ShadowScope shadowScope =
+       VisibilitySymbols::REGULAR_SCOPE;
+    const ResolvedVisibilityScope* resolvedVisibilityScope = nullptr;
+    ID visibilityClauseId;
+    VisibilityStmtKind visibilityStmtKind = VIS_USE;
+    UniqueString renameFrom;
+    bool fromUseImport = false;
+
+    // this indicates a method receiver scope
+    const Scope* methodReceiverScope = nullptr;
+
+    // this indicates a parent scope
+    const Scope* parentScope = nullptr;
+
+    // these cover other cases
+    bool automaticModule = false;
+    bool toplevelModule = false;
+    bool externBlock = false;
+    bool rootScope = false;
+
+    bool operator==(const VisibilityTraceElt& other) const {
+      return shadowScope == other.shadowScope &&
+             resolvedVisibilityScope == other.resolvedVisibilityScope &&
+             visibilityClauseId == other.visibilityClauseId &&
+             visibilityStmtKind == other.visibilityStmtKind &&
+             renameFrom == other.renameFrom &&
+             fromUseImport == other.fromUseImport &&
+             methodReceiverScope == other.methodReceiverScope &&
+             parentScope == other.parentScope &&
+             automaticModule == other.automaticModule &&
+             toplevelModule == other.toplevelModule &&
+             externBlock == other.externBlock &&
+             rootScope == other.rootScope;
+    }
+    bool operator!=(const VisibilityTraceElt& other) const {
+      return !(*this == other);
+    }
+    void mark(Context* context) const {
+      context->markPointer(resolvedVisibilityScope);
+      renameFrom.mark(context);
+      visibilityClauseId.mark(context);
+      context->markPointer(methodReceiverScope);
+      context->markPointer(parentScope);
+    }
+  };
+
+  // the scope where it is eventually found
+  const Scope* scope = nullptr;
+
+  // how did we get to 'scope' ? this is a vector because there might
+  // have been multiple public use / public imports traversed.
+  std::vector<VisibilityTraceElt> visibleThrough;
+
+  bool operator==(const ResultVisibilityTrace& other) const {
+    return scope == other.scope &&
+           visibleThrough == other.visibleThrough;
+  }
+  bool operator!=(const ResultVisibilityTrace& other) const {
+    return !(*this == other);
+  }
+  void mark(Context* context) const {
+    context->markPointer(scope);
+    for (const auto& elt : visibleThrough) {
+      elt.mark(context);
+    }
+  }
 };
 
 
