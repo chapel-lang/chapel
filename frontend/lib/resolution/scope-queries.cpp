@@ -542,6 +542,75 @@ static bool doLookupInToplevelModules(Context* context,
   return true;
 }
 
+// Receiver scopes support two cases:
+// 1. For resolving names within a method (for the implicit 'this' feature)
+// 2. For resolving a dot expression (e.g. 'myObject.field')
+//    (note that 'field' could be a parenless secondary method)
+static bool
+doLookupInReceiverScopes(Context* context,
+                         const Scope* scope,
+                         llvm::ArrayRef<const Scope*> receiverScopes,
+                         const ResolvedVisibilityScope* resolving,
+                         UniqueString name,
+                         LookupConfig config,
+                         NamedScopeSet& checkedScopes,
+                         std::vector<BorrowedIdsWithName>& result) {
+  if (receiverScopes.empty()) {
+    return false;
+  }
+
+  // create a config that doesn't search receiver scopes parent scopes
+  // (such parent scopes are handled separately in doLookupInScope)
+  LookupConfig newConfig = config;
+  newConfig &= ~(LOOKUP_PARENTS|LOOKUP_GO_PAST_MODULES|LOOKUP_TOPLEVEL);
+  // and only consider methods/fields
+  // (but that's all that we should find in a record/class decl anyway...)
+  newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
+
+  bool got = false;
+  for (const auto& currentScope : receiverScopes) {
+    got |= doLookupInScope(context, currentScope, {}, resolving,
+                           name, newConfig, checkedScopes, result);
+  }
+  return got;
+}
+static bool
+doLookupInReceiverParentScopes(Context* context,
+                               const Scope* scope,
+                               llvm::ArrayRef<const Scope*> receiverScopes,
+                               const ResolvedVisibilityScope* resolving,
+                               UniqueString name,
+                               LookupConfig config,
+                               NamedScopeSet& checkedScopes,
+                               std::vector<BorrowedIdsWithName>& result) {
+  bool checkParents = (config & LOOKUP_PARENTS) != 0;
+  bool goPastModules = (config & LOOKUP_GO_PAST_MODULES) != 0;
+
+  // create a config that doesn't search receiver scopes parent scopes
+  // (such parent scopes are covered directly in the loop below)
+  LookupConfig newConfig = (config & ~LOOKUP_PARENTS);
+  // and only consider methods/fields
+  newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
+
+  bool got = false;
+
+  for (const auto& rcvScope : receiverScopes) {
+    for (const Scope* cur = rcvScope;
+         cur != nullptr;
+         cur = cur->parentScope()) {
+      got |= doLookupInScope(context, cur, {}, resolving,
+                             name, newConfig, checkedScopes, result);
+      // stop if we aren't looking at parents or if we reach a module
+      if (isModule(cur->tag()) && !goPastModules)
+        break;
+      if (!checkParents)
+        break;
+    }
+  }
+
+  return got;
+}
+
 static bool
 isScopeElseBlockOfConditionalWithIfVar(Context* context, const Scope* scope) {
   if (!scope->id().isEmpty() && asttags::isBlock(scope->tag())) {
@@ -592,12 +661,6 @@ static bool doLookupInScope(Context* context,
     }
   }
 
-  // Receiver scopes support two cases:
-  // 1. For resolving names within a method (for the implicit 'this' feature)
-  // 2. For resolving a dot expression (e.g. 'myObject.field')
-  //    (note that 'field' could be a parenless secondary method)
-  bool considerReceiverScopes = !receiverScopes.empty();
-
   // gather non-shadow scope information
   // (declarations in this scope as well as public use / import)
   {
@@ -643,24 +706,14 @@ static bool doLookupInScope(Context* context,
     if (onlyInnermost && got) return true;
   }
 
-  // Consider the receiver scopes directly (for fields).
-  // Only consider receiver scopes if we are at a method scope
-  // in order to get field vs. formal precedence correct.
-  // (other cases will be handled later in this function)
-  if (considerReceiverScopes && scope->isMethodScope()) {
-    // create a config that doesn't search receiver scopes parent scopes
-    // (such parent scopes are covered in later in this function)
-    LookupConfig newConfig = config;
-    newConfig &= ~(LOOKUP_PARENTS|LOOKUP_GO_PAST_MODULES|LOOKUP_TOPLEVEL);
-    // and only consider methods/fields
-    // (but that's all that we should find in a record/class decl anyway...)
-    newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
-
-    bool got = false;
-    for (const auto& currentScope : receiverScopes) {
-      got |= doLookupInScope(context, currentScope, {}, resolving,
-                             name, newConfig, checkedScopes, result);
-    }
+  // If we are at a method scope, consider receiver scopes now
+  // (so we imagine them to be just outside of the method scope).
+  // If we are not at a method scope (but within a method), it
+  // will be handled later.
+  if (scope->isMethodScope()) {
+    bool got = doLookupInReceiverScopes(context, scope, receiverScopes,
+                                        resolving, name, config,
+                                        checkedScopes, result);
     if (onlyInnermost && got) return true;
   }
 
@@ -708,9 +761,19 @@ static bool doLookupInScope(Context* context,
           }
         }
 
-        bool got = doLookupInScope(context, cur, receiverScopes, resolving, name,
+        // search without considering receiver scopes
+        bool got = doLookupInScope(context, cur, {}, resolving, name,
                                    newConfig, checkedScopes, result);
         if (onlyInnermost && got) return true;
+
+        // and then search only considering receiver scopes
+        // as if the receiver scope were just outside of this scope.
+        if (cur->isMethodScope()) {
+          bool got = doLookupInReceiverScopes(context, scope, receiverScopes,
+                                              resolving, name, newConfig,
+                                              checkedScopes, result);
+          if (onlyInnermost && got) return true;
+        }
       }
     }
 
@@ -752,26 +815,9 @@ static bool doLookupInScope(Context* context,
   // that the scope can be both found as a regular parent and also
   // as a parent of a receiver scope.
   // That is important to work with the 'checkedScopes' set.
-  if (considerReceiverScopes) {
-    // create a config that doesn't search receiver scopes parent scopes
-    // (such parent scopes are covered directly in the loop below)
-    LookupConfig newConfig = (config & ~LOOKUP_PARENTS);
-    // and only consider methods/fields
-    newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
-
-    for (const auto& rcvScope : receiverScopes) {
-      for (const Scope* cur = rcvScope;
-           cur != nullptr;
-           cur = cur->parentScope()) {
-        doLookupInScope(context, cur, {}, resolving,
-                        name, newConfig, checkedScopes, result);
-        // stop if we aren't looking at parents or if we reach a module
-        if (asttags::isModule(cur->tag()) && !goPastModules)
-          break;
-        if (!checkParents)
-          break;
-      }
-    }
+  if (checkParents) {
+    doLookupInReceiverParentScopes(context, scope, receiverScopes, resolving,
+                                   name, config, checkedScopes, result);
   }
 
   return result.size() > startSize;
