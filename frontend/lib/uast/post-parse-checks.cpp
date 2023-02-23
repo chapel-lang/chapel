@@ -163,7 +163,110 @@ struct Visitor {
   void visit(const Union* node);
   void visit(const Use* node);
   void visit(const Import* node);
+  void visit(const Return* node);
+  void visit(const Yield* node);
+  void visit(const Break* node);
+  void visit(const Continue* node);
 };
+
+/**
+  How a particular node modifies whether or not some control flow can be used.
+  For example:
+  * Functions allow returns: even if a return wasn't valid outside of the node,
+    a function node makes it allowed.
+  * Basic loops like do-while allow breaks: even if you couldn't break before,
+    within a loop, you can.
+  * Functions disallow breaks: if a break statement is encountered directly
+    within a function, and isn't otherwise located inside something that does
+    allow it, it's not valid.
+  * If-expressions neither allow nor disallow returns; whether or not a break
+    or return is valid does not change by moving it inside / outside of an
+    if-statement (so the control flow modifier would be NONE).
+  */
+enum class ControlFlowModifier {
+  NONE,
+  ALLOWS,
+  BLOCKS,
+};
+
+// The six node types that most mess with control flow are:
+//   * "forall statement"
+//   * "coforall statement"
+//   * "on statement"
+//   * "begin statement"
+//   * "sync statement"
+//   * "cobegin statement"
+
+static ControlFlowModifier nodeAllowsReturn(const AstNode* node,
+                                            const Return* ctrl) {
+  if (node->isFunction()) return ControlFlowModifier::ALLOWS;
+  if (node->isForall() || node->isCoforall() || node->isOn() ||
+      node->isBegin() || node->isSync() || node->isCobegin()) {
+    return ControlFlowModifier::BLOCKS;
+  }
+  return ControlFlowModifier::NONE;
+}
+
+static ControlFlowModifier nodeAllowsYield(const AstNode* node,
+                                           const Yield* ctrl) {
+  if (node->isFunction()) return ControlFlowModifier::ALLOWS;
+  if (node->isBegin()) {
+    return ControlFlowModifier::BLOCKS;
+  }
+  return ControlFlowModifier::NONE;
+}
+
+static ControlFlowModifier nodeAllowsBreak(const AstNode* node,
+                                           const Break* ctrl) {
+  if (node->isFunction() || // functions block break
+      node->isForall() || node->isCoforall() || node->isOn() ||
+      node->isBegin() || node->isSync() || node->isCobegin()) {
+    return ControlFlowModifier::BLOCKS;
+  }
+  if (auto target = ctrl->target()) {
+    // A node with a target is looking for a particular loop to break out of.
+    // Is this it?
+    if (auto label = node->toLabel()) {
+      if (target->name() == label->name()) {
+        // Found the labeled node, so this control flow is allowed!
+        return ControlFlowModifier::ALLOWS;
+      }
+    }
+  } else {
+    // A node with no target is looking for any loop that can be broken out of.
+    if (node->isLoop()) {
+      return ControlFlowModifier::ALLOWS;
+    }
+  }
+  return ControlFlowModifier::NONE;
+}
+
+static ControlFlowModifier nodeAllowsContinue(const AstNode* node,
+                                              const Continue* ctrl) {
+  if (node->isFunction() || // functions block continue
+      (node->isForall() && ctrl->target() != nullptr) || // Label-less continue allowed.
+      node->isCoforall() || node->isOn() || node->isBegin() ||
+      node->isSync() ||node->isCobegin()) {
+    return ControlFlowModifier::BLOCKS;
+  }
+  if (auto target = ctrl->target()) {
+    // A node with a target is looking for a particular loop to break out of.
+    // Is this it?
+    if (auto label = node->toLabel()) {
+      if (target->name() == label->name()) {
+        // Found the labeled node, so this control flow is allowed!
+        return ControlFlowModifier::ALLOWS;
+      }
+    }
+  } else {
+    // A node with no target is looking for any loop that can be broken out of.
+    // Note: the forall case is also handled by this conditional.
+    if (node->isLoop()) {
+      return ControlFlowModifier::ALLOWS;
+    }
+  }
+  return ControlFlowModifier::NONE;
+}
 
 
 // Note that even though we pass in the IDs for error messages here, the
@@ -992,6 +1095,53 @@ void Visitor::visit(const Use* node) {
 void Visitor::visit(const Import* node) {
   for (auto clause : node->visibilityClauses()) {
     checkVisibilityClauseValid(node, clause);
+  }
+}
+
+template <typename F, typename NodeType>
+static bool walkAndCheckParentStack(const std::vector<const AstNode*>& stack,
+                                    F toCall,
+                                    const NodeType* checkFor,
+                                    const AstNode*& outBlockingNode) {
+  outBlockingNode = nullptr;
+  for (auto parentIt = stack.rbegin(); parentIt != stack.rend(); parentIt++) {
+    auto modifier = toCall(*parentIt, checkFor);
+    if (modifier == ControlFlowModifier::ALLOWS) {
+      return true;
+    } else if (modifier == ControlFlowModifier::BLOCKS) {
+      outBlockingNode = *parentIt;
+      return false;
+    } else {
+      // Neither blocks nor allows; continue search.
+    }
+  }
+  // Didn't find a node that allows the control flow, so it's bad.
+  return false;
+}
+
+void Visitor::visit(const Return* node) {
+  const AstNode* blockingNode;
+  if (!walkAndCheckParentStack(parents_, nodeAllowsReturn, node, blockingNode)) {
+    CHPL_REPORT(context_, DisallowedControlFlow, node, blockingNode);
+  }
+}
+
+void Visitor::visit(const Yield* node) {
+  const AstNode* blockingNode;
+  if (!walkAndCheckParentStack(parents_, nodeAllowsYield, node, blockingNode)) {
+    CHPL_REPORT(context_, DisallowedControlFlow, node, blockingNode);
+  }
+}
+void Visitor::visit(const Break* node) {
+  const AstNode* blockingNode;
+  if (!walkAndCheckParentStack(parents_, nodeAllowsBreak, node, blockingNode)) {
+    CHPL_REPORT(context_, DisallowedControlFlow, node, blockingNode);
+  }
+}
+void Visitor::visit(const Continue* node) {
+  const AstNode* blockingNode;
+  if (!walkAndCheckParentStack(parents_, nodeAllowsContinue, node, blockingNode)) {
+    CHPL_REPORT(context_, DisallowedControlFlow, node, blockingNode);
   }
 }
 
