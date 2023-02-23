@@ -5984,10 +5984,26 @@ proc fileWriter.writeCodepoint(codepoint: int) throws {
   :throws SystemError: Thrown if the codepoint could not be read from the ``fileReader``.
 */
 proc fileReader.readCodepoint(): int throws {
-  var tmp:_internalIoChar;
+  var tmp:int;
+  var ret = try this.readCodepoint(tmp);
+  if !ret then new UnexpectedEofError("Encountered EOF in readCodepoint");
+  return tmp;
+}
+
+/*
+  Reads a single Unicode codepoint from a ``fileReader``
+
+  :arg c: where to store the read codepoint
+  :returns: `true` if the codepoint was read without error, `false` upon EOF
+
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if the codepoint could not be read from the ``fileReader``.
+*/
+proc fileReader.readCodepoint(ref c: int):bool throws {
+  var tmp:_internalIoBits;
   var ret = try this.read(tmp);
-  if !ret then throw new UnexpectedEofError("Encountered EOF in readCodepoint");
-  return tmp.ch:int;
+  c = tmp.ch:c.type;
+  return ret;
 }
 
 /*
@@ -6013,18 +6029,34 @@ proc fileWriter.writeByte(byte: uint(8)) throws {
 
   :returns: byte read
 
-  :throws EofError: Thrown if  EOF encountered while reading.
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if the byte could not be read from the ``fileReader``.
 */
 proc fileReader.readByte(): uint(8) throws {
+  var tmp:uint(8);
+  var ret = try this.readByte(tmp);
+  if !ret then new UnexpectedEofError("Encountered EOF in readByte");
+  return tmp;
+}
+
+/*
+  Reads a single byte from a ``fileReader``
+
+  :arg b: where to store the read byte
+  :returns: `true` if the byte was read without error, `false` upon EOF
+
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if the byte could not be read from the ``fileReader``.
+*/
+proc fileReader.readByte(ref b: uint(8)): bool throws {
   var err:errorCode = 0;
   var x: uint(8);
   on this._home {
     try this.lock(); defer { this.unlock(); }
     err = qio_channel_read_uint8(false, this._channel_internal, x);
   }
-  if err then try this._ch_ioerror(err, "in fileReader.readByte()");
-  return x;
+  b = x;
+  return err != EEOF;
 }
 
 
