@@ -548,6 +548,57 @@ static void test12s() {
   // TODO get the above case working with the full resolver
 }
 
+// field access vs parent module field
+static void test13p() {
+  testIt("test13p.chpl",
+         R""""(
+              module M {
+                record mat {
+                  var m, n: int;
+                  proc foo() {
+                    var b = 1;
+                    {
+                      var c = 2;
+                      n;
+                    }
+                  }
+                }
+
+                var n: real;
+              }
+         )"""",
+         "M.mat.foo",
+         "M.mat.foo@5",
+         "M.mat@2" /* the field */,
+         /* scope resolve only to avoid errors today */ true);
+  // TODO get the above case working with the full resolver
+}
+static void test13s() {
+  testIt("test13s.chpl",
+         R""""(
+            module M {
+              record mat {
+                var m, n: int;
+              }
+
+              proc mat.foo() {
+                var b = 1;
+                {
+                  var c = 2;
+                  n;
+                }
+              }
+
+              var n: real;
+            }
+         )"""",
+         "M.foo",
+         "M.foo@6",
+         "M.mat@2" /* the field */,
+         /* scope resolve only to avoid errors today */ true);
+  // TODO get the above case working with the full resolver
+}
+
 
 int main() {
   test1r();
@@ -579,6 +630,9 @@ int main() {
 
   test12p();
   test12s();
+
+  test13p();
+  test13s();
 
   return 0;
 }
