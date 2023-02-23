@@ -7,12 +7,12 @@ use Barriers;
 
 class PassiveCache {
     type dataType; // assuming this type has a an initializer that takes an int
-    var items: map(int, weakPointer(shared dataType));
+    var items: map(int, weak(shared dataType));
     var lock$: ChapelLocks.chpl_LocalSpinlock;
 
     proc init(type dt) {
         this.dataType = dt;
-        this.items = new map(int, weakPointer(shared dt), parSafe=true);
+        this.items = new map(int, weak(shared dt), parSafe=true);
     }
 
     inline proc lock() {
@@ -45,7 +45,7 @@ class PassiveCache {
 
     proc buildAndSave(key: int) : shared dataType {
         const item = new shared dataType(key);
-        const weak_ptr = new weakPointer(item);
+        const weak_ptr = new weak(item);
         this.items.addOrSet(key, weak_ptr);
         return item;
     }

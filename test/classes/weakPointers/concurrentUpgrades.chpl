@@ -9,7 +9,7 @@ class basicClass {
 config const n = 20;
 
 proc concurrentlyUpgrade(s) {
-    const wp = new weakPointer(s);
+    const wp = new weak(s);
     var correct: atomic bool = true;
 
     var b = new Barrier(n);
