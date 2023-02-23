@@ -1098,14 +1098,26 @@ void Visitor::visit(const Import* node) {
   }
 }
 
+/**
+  This function takes a current stack of parents, and walks upwards (from the
+  innermost nodes to the outermost) looking for an AST node that either allows
+  or prevents the use of a particular control flow element (e.g., return).
+  If a node allows the control flow (e.g., we found a function, and we're
+  validating a return), this function returns true. If a node blocks the control
+  flow (e.g., we found a coforall, and we're validating a break), the function
+  returns false and outBlockingNode is set to the node. If the parent stack
+  is exhausted, and no node that allows the control flow has been found
+  (e.g., a return outside a function), then this function returns false,
+  setting outBlockingNode to nullptr.
+ */
 template <typename F, typename NodeType>
-static bool walkAndCheckParentStack(const std::vector<const AstNode*>& stack,
-                                    F toCall,
-                                    const NodeType* checkFor,
-                                    const AstNode*& outBlockingNode) {
+static bool checkParentsForControlFlow(const std::vector<const AstNode*>& stack,
+                                       F modifierPredicate,
+                                       const NodeType* checkFor,
+                                       const AstNode*& outBlockingNode) {
   outBlockingNode = nullptr;
   for (auto parentIt = stack.rbegin(); parentIt != stack.rend(); parentIt++) {
-    auto modifier = toCall(*parentIt, checkFor);
+    auto modifier = modifierPredicate(*parentIt, checkFor);
     if (modifier == ControlFlowModifier::ALLOWS) {
       return true;
     } else if (modifier == ControlFlowModifier::BLOCKS) {
@@ -1121,26 +1133,26 @@ static bool walkAndCheckParentStack(const std::vector<const AstNode*>& stack,
 
 void Visitor::visit(const Return* node) {
   const AstNode* blockingNode;
-  if (!walkAndCheckParentStack(parents_, nodeAllowsReturn, node, blockingNode)) {
+  if (!checkParentsForControlFlow(parents_, nodeAllowsReturn, node, blockingNode)) {
     CHPL_REPORT(context_, DisallowedControlFlow, node, blockingNode);
   }
 }
 
 void Visitor::visit(const Yield* node) {
   const AstNode* blockingNode;
-  if (!walkAndCheckParentStack(parents_, nodeAllowsYield, node, blockingNode)) {
+  if (!checkParentsForControlFlow(parents_, nodeAllowsYield, node, blockingNode)) {
     CHPL_REPORT(context_, DisallowedControlFlow, node, blockingNode);
   }
 }
 void Visitor::visit(const Break* node) {
   const AstNode* blockingNode;
-  if (!walkAndCheckParentStack(parents_, nodeAllowsBreak, node, blockingNode)) {
+  if (!checkParentsForControlFlow(parents_, nodeAllowsBreak, node, blockingNode)) {
     CHPL_REPORT(context_, DisallowedControlFlow, node, blockingNode);
   }
 }
 void Visitor::visit(const Continue* node) {
   const AstNode* blockingNode;
-  if (!walkAndCheckParentStack(parents_, nodeAllowsContinue, node, blockingNode)) {
+  if (!checkParentsForControlFlow(parents_, nodeAllowsContinue, node, blockingNode)) {
     CHPL_REPORT(context_, DisallowedControlFlow, node, blockingNode);
   }
 }
