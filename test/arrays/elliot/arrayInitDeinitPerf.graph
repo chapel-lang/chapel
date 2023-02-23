@@ -1,0 +1,5 @@
+perfkeys: AoA   init:, AoA deinit:, AoR   init:, AoR deinit:
+graphkeys: AoA init, AoA deinit, AoR init, AoR deinit
+repeat-files: arrayInitDeinitPerf.dat
+ylabel: Time (seconds)
+graphtitle: Array init/deinit performance, 40000000 element array
