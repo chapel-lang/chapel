@@ -17,27 +17,21 @@ proc testio(param typ:iokind, style:iostyleInternal, x:uint(8))
     var y = x;
     var z = x;
     if noisy then writeln("Reading element");
-    y = ch.readByte();
+    var got = ch.readByte(y);
     if noisy then writeln("Read ", y:string);
+    assert( got );
     assert( y == x );
 
     // Try reading another item -- should get EOF
     if noisy then writeln("Reading another - should get EOF");
-    try {
-      y = ch.readByte();
-      assert(false);
-    } catch e:EofError {
-      assert(true);
-    }
-    catch {
-      // unknown unexpected error
-      assert(false);
-    }
-    
+    got = ch.readByte(z);
+    assert( !got );
+
     ch.close();
   }
   f.close();
 }
+
 
 proc testio(x:uint(8))
 {
