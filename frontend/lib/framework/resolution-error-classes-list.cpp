@@ -845,7 +845,7 @@ static void describeSymbolSource(ErrorWriterBase& wr,
       } else {
         msg += "it";
       }
-      wr.note(ast, msg, " was provided by the automatically-included modules");
+      wr.note(ast, msg, " was provided by the automatically-included modules.");
       encounteredAutoModule = true;
       first = false;
       break;

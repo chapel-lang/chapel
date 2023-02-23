@@ -812,13 +812,13 @@ isScopeElseBlockOfConditionalWithIfVar(Context* context, const Scope* scope) {
 // for error messages. The expectation is that the common case is that
 // they are both nullptr.
 //
-// if traceCurPath is not nullptr, it will be updated to reflect the
-// current path by which we got here (through recursive calls to
-// doLookupInScope).
+// if both tracing arguments are not nullptr, traceCurPath will be updated
+// to reflect the current path by which we got here (through recursive calls
+// to doLookupInScope).
 //
-// if traceResult is not nullptr, it will be updated to have one entry
-// for each of the elements in result, saving the traceCurPath that
-// provided that element in result.
+// if both tracing arguments are not nullptr, traceResult will be updated to
+// have one entry for each of the elements in result, saving the traceCurPath
+// that provided that element in result.
 static bool doLookupInScope(Context* context,
                             const Scope* scope,
                             llvm::ArrayRef<const Scope*> receiverScopes,
@@ -1201,7 +1201,6 @@ static bool helpLookupInScope(Context* context,
 {
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
   bool foundExternBlock = false;
-  size_t startSize = result.size();
   NamedScopeSet savedCheckedScopes;
 
   if (checkExternBlocks) {
@@ -1211,27 +1210,27 @@ static bool helpLookupInScope(Context* context,
     savedCheckedScopes = checkedScopes;
   }
 
-  doLookupInScope(context, scope, receiverScopes, resolving,
-                  name, config,
-                  checkedScopes, result,
-                  foundExternBlock,
-                  traceCurPath, traceResult);
+  bool got = doLookupInScope(context, scope, receiverScopes, resolving,
+                             name, config,
+                             checkedScopes, result,
+                             foundExternBlock,
+                             traceCurPath, traceResult);
 
   // If we found any extern blocks, and there were no other symbols,
   // and extern block lookup was requested, use extern block lookup.
-  if (checkExternBlocks && startSize == result.size() && foundExternBlock) {
+  if (checkExternBlocks && !got && foundExternBlock) {
     config |= LOOKUP_EXTERN_BLOCKS;
     checkedScopes = savedCheckedScopes;
-    doLookupInScope(context, scope, receiverScopes, resolving,
-                    name, config,
-                    checkedScopes, result,
-                    foundExternBlock,
-                    traceCurPath, traceResult);
+    got = doLookupInScope(context, scope, receiverScopes, resolving,
+                          name, config,
+                          checkedScopes, result,
+                          foundExternBlock,
+                          traceCurPath, traceResult);
   }
 
   // TODO: check for "last resort" symbols here, as well
 
-  return result.size() > startSize;
+  return got;
 }
 
 std::vector<BorrowedIdsWithName>
