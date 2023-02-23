@@ -783,8 +783,8 @@ static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use) {
   INT_ASSERT(ft);
 
   INT_ASSERT(!ft->isGeneric() && ft->returnType() != dtUnknown);
-  bool isBodyResolved = checkAndResolveSignatureAndBody(fn, use);
-  INT_ASSERT(isBodyResolved);
+
+  checkAndResolveSignatureAndBody(fn, use);
 
   // Reuse cached FCF wrapper if it already exists.
   if (payloadToSharedParentFactory.find(fn) !=
@@ -1104,6 +1104,8 @@ const char* functionClassTypeToString(Type* t) {
 bool checkAndResolveSignature(FnSymbol* fn, Expr* use) {
   std::ignore = fn->tagIfGeneric();
 
+  if (fn->isResolved()) return false;
+
   resolveSignature(fn);
 
   // This just checks that the current tagging is valid.
@@ -1124,28 +1126,26 @@ bool checkAndResolveSignature(FnSymbol* fn, Expr* use) {
     }
   }
 
-  return false;
+  return true;
 }
 
-bool checkAndResolveSignatureAndBody(FnSymbol* fn, Expr* use) {
-  if (payloadToResolved.find(fn) != payloadToResolved.end()) {
-    return payloadToResolved[fn];
-  }
+void checkAndResolveSignatureAndBody(FnSymbol* fn, Expr* use) {
+  if (payloadToResolved.find(fn) != payloadToResolved.end()) return;
 
   // TODO: What is the best way to detect if resolution failed?
-  bool ret = checkAndResolveSignature(fn, use) || fn->isResolved();
+  bool done = fn->isResolved() || checkAndResolveSignature(fn, use);
 
-  if (!ret) {
+  if (!done) {
     INT_ASSERT(!fn->isResolved());
     if (!fn->isGeneric() && !fn->hasFlag(FLAG_NO_FN_BODY)) {
       resolveFunction(fn);
-      ret = fn->isResolved();
+      done = fn->isResolved();
     }
   }
 
-  payloadToResolved.insert(std::make_pair(fn, ret));
+  payloadToResolved.insert(std::make_pair(fn, done));
 
-  return ret;
+  return;
 }
 
 std::vector<FnSymbol*> lookupFunctions(const char* name, Expr* use) {

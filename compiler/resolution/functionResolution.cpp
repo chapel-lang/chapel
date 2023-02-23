@@ -10141,8 +10141,7 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
     USR_WARN(use, "use of routines as values is unstable");
   }
 
-  bool isBodyResolved = fcfs::checkAndResolveSignatureAndBody(fn, use);
-  INT_ASSERT(isBodyResolved == fn->isResolved());
+  fcfs::checkAndResolveSignatureAndBody(fn, use);
 
   auto ft = fn->computeAndSetType();
   INT_ASSERT(ft);
@@ -10167,7 +10166,7 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
   }
 
   // There was some other problem resolving the body.
-  if (!isBodyResolved) {
+  if (!fn->isResolved() && !fn->hasFlag(FLAG_EXTERN)) {
     return swapInErrorSinkForCapture(ft->kind(), use);
   }
 
@@ -10321,6 +10320,8 @@ static bool        isStringLiteral(Symbol* sym);
 
 static void        resolveExprMaybeIssueError(CallExpr* call);
 
+static bool        isMentionOfFnTriggeringCapture(SymExpr* se);
+
 Expr* resolveExpr(Expr* expr) {
   FnSymbol* fn     = toFnSymbol(expr->parentSymbol);
   Expr*     retval = NULL;
@@ -10361,21 +10362,13 @@ Expr* resolveExpr(Expr* expr) {
     if (ForallStmt* pfs = isForallIterExpr(se)) {
       CallExpr* call = resolveForallHeader(pfs, se);
       retval = resolveExprPhase2(expr, fn, preFold(call));
-    } else if (auto fn = toFnSymbol(se->symbol())) {
+    } else if (isMentionOfFnTriggeringCapture(se)) {
+      auto fn = toFnSymbol(se->symbol());
+      INT_ASSERT(fn);
 
-      bool isMentionNotBaseExpr = false;
-      if (auto call = toCallExpr(se->parentExpr)) {
-        isMentionNotBaseExpr = (se != call->baseExpr);
-      }
-
-      if (isMentionNotBaseExpr) {
-        auto e = resolveFunctionCapture(fn, se, false, false);
-        if (auto c = toCallExpr(e)) e = preFold(c);
-        retval = resolveExprPhase2(expr, fn, e);
-
-      } else {
-        retval = resolveExprPhase2(expr, fn, expr);
-      }
+      auto e = resolveFunctionCapture(fn, se, false, false);
+      if (auto c = toCallExpr(e)) e = preFold(c);
+      retval = resolveExprPhase2(expr, fn, e);
 
     } else {
       retval = resolveExprPhase2(expr, fn, expr);
@@ -10412,6 +10405,21 @@ Expr* resolveExpr(Expr* expr) {
   }
 
   return retval;
+}
+
+static bool isMentionOfFnTriggeringCapture(SymExpr* se) {
+  INT_ASSERT(se != nullptr);
+
+  auto fn = toFnSymbol(se->symbol());
+  if (!fn) return false;
+
+  if (auto call = toCallExpr(se->parentExpr)) {
+    if (call->isPrimitive(PRIM_RESOLUTION_POINT)) return false;
+    if (call->isPrimitive(PRIM_END_OF_STATEMENT)) return false;
+    if (call->baseExpr == se) return false;
+  }
+
+  return true;
 }
 
 static bool isParamResolved(FnSymbol* fn, Expr* expr) {

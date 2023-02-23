@@ -75,16 +75,18 @@ const char* functionClassTypeToString(Type* t);
 
 /***
   May resolve the body of 'fn' if its return type is inferred. Will not
-  resolve the body of 'fn' if the function is generic.
-  Returns 'true' if the body of 'fn' had to be resolved.
+  resolve the body of 'fn' if the function is generic. Will not attempt
+  resolution if the function is marked 'isResolved()'. Returns 'true'
+  if the body had to be resolved as a side effect of this call.
 */
 bool checkAndResolveSignature(FnSymbol* fn, Expr* use);
 
 /***
-  Will not resolve the function body if the input function is generic.
-  Returns 'true' if the body of 'fn' was resolved.
+  Will not try to resolve the function body if the function is generic.
+  Will always try to resolve the body otherwise. Will not attempt
+  resolution if the function is marked 'isResolved()'.
 */
-bool checkAndResolveSignatureAndBody(FnSymbol* fn, Expr* use);
+void checkAndResolveSignatureAndBody(FnSymbol* fn, Expr* use);
 
 /***
   Wrapper around the scope-resolve lookup function that returns a
