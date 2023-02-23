@@ -5995,12 +5995,17 @@ proc fileReader.readCodepoint(): int throws {
 
   :arg byte: byte to write
 
-  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+  :throws EofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified range.
   :throws SystemError: Thrown if the byte could not be written to the ```fileWriter``.
 */
 proc fileWriter.writeByte(byte: uint(8)) throws {
-  assert(false);
+  var err:errorCode = 0;
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    err = qio_channel_write_uint8(false, this._channel_internal, byte);
+  }
+  if err then try this._ch_ioerror(err, "in fileWriter.writeByte()");
 }
 
 /*
@@ -6008,11 +6013,18 @@ proc fileWriter.writeByte(byte: uint(8)) throws {
 
   :returns: byte read
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws EofError: Thrown if  EOF encountered while reading.
   :throws SystemError: Thrown if the byte could not be read from the ``fileReader``.
 */
 proc fileReader.readByte(): uint(8) throws {
-  assert(false);
+  var err:errorCode = 0;
+  var x: uint(8);
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    err = qio_channel_read_uint8(false, this._channel_internal, x);
+  }
+  if err then try this._ch_ioerror(err, "in fileReader.readByte()");
+  return x;
 }
 
 
