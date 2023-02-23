@@ -2715,20 +2715,22 @@ proc fileReader.advanceUpTo(separator: string) throws {
     if separator.numBytes == 1 {
       // fast advance to the single-byte separator
       err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int);
-      if err then try this._ch_ioerror(err, "in advanceUpTo(bytes)");
+      if err then try this._ch_ioerror(err, "in advanceUpTo(string)");
 
       // revert by a single byte
-      err = qio_channel_advance(false, this._channel_internal, -1);
-      if err then try this._ch_ioerror(err, "in advanceUpTo(bytes)");
+      const offset = qio_channel_offset_unlocked(this._channel_internal),
+            endOffset = qio_channel_end_offset_unlocked(this._channel_internal);
+      err = qio_channel_seek(this._channel_internal, offset-1, endOffset);
+      if err then try this._ch_ioerror(err, "in advanceUpTo(string)");
     } else {
       // slow advance to multi-byte separator or EOF
       const (readError, found, relByteOffset, _) = _findSeparator(separator, -1, this._channel_internal);
-      if readError then try this._ch_ioerror(readError, "separator not found in advanceUpTo(string)");
-      if !found then throw new UnexpectedEofError("separator not found!");
+      if readError then try this._ch_ioerror(readError, "in advanceUpTo(string)");
+      // if !found then try this._ch_ioerror(EEOF:errorCode, "in advanceUpTo(string)");
 
       // advance to separator
       err = qio_channel_advance(false, this._channel_internal, relByteOffset);
-      if err then try this._ch_ioerror(err, "in advancePast(bytes)");
+      if err then try this._ch_ioerror(err, "in advanceUpTo(string)");
     }
   }
 }
@@ -2747,17 +2749,19 @@ proc fileReader.advanceUpTo(separator: bytes) throws {
       if err then try this._ch_ioerror(err, "in advanceUpTo(bytes)");
 
       // revert by a single byte
-      err = qio_channel_advance(false, this._channel_internal, -1);
-      if err then try _channel._ch_ioerror(err, "in advanceUpTo(bytes)");
+      const offset = qio_channel_offset_unlocked(this._channel_internal),
+            endOffset = qio_channel_end_offset_unlocked(this._channel_internal);
+      err = qio_channel_seek(this._channel_internal, offset-1, endOffset);
+      if err then try this._ch_ioerror(err, "in advanceUpTo(bytes)");
     } else {
       // slow advance to multi-byte separator or EOF
       const (readError, found, relByteOffset) = _findSeparator(separator, -1, this._channel_internal);
-      if readError then try this._ch_ioerror(readError, "in advancePast(bytes)");
-      if !found then throw new UnexpectedEofError("separator not found in advanceUpTo(bytes)");
+      if readError then try this._ch_ioerror(readError, "in advanceUpTo(bytes)");
+      // if !found then try this._ch_ioerror(EEOF:errorCode, "in advanceUpTo(bytes)");
 
       // advance to separator
       err = qio_channel_advance(false, this._channel_internal, relByteOffset);
-      if err then try this._ch_ioerror(err, "in advancePast(bytes)");
+      if err then try this._ch_ioerror(err, "in advanceUpTo(bytes)");
     }
   }
 }
