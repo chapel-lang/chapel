@@ -9,6 +9,11 @@ var f = openTempFile();
 
 {
   var r = f.reader();
-  var b = r.readByte(); // should not throw
-  b = r.readByte(); // should throw
+  r.readByte(); // should not throw
+  try {
+    r.readByte(); // should throw
+    assert(false);
+  } catch e:UnexpectedEofError {
+    assert(true);
+  } catch { assert(false); }
 }
