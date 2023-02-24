@@ -38,6 +38,7 @@
 #include "ImportStmt.h"
 #include "LoopExpr.h"
 #include "ParamForLoop.h"
+#include "TemporaryConversionThunk.h"
 #include "TryStmt.h"
 #include "WhileDoStmt.h"
 #include "build.h"
@@ -618,11 +619,11 @@ struct Converter {
     return DeferStmt::build(stmts);
   }
 
-  BlockStmt* visit(const uast::Local* node) {
+  Expr* visit(const uast::Local* node) {
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     auto condition = convertExprOrNull(node->condition());
     if (condition) {
-      return buildLocalStmt(condition, body);
+      return buildThunk(buildConditionalLocalStmt, condition, body);
     } else {
       return buildLocalStmt(body);
     }
@@ -1520,7 +1521,7 @@ struct Converter {
   }
 
   // TODO: Create a common converter for all IndexableLoop if possible?
-  BlockStmt* visit(const uast::Coforall* node) {
+  Expr* visit(const uast::Coforall* node) {
     INT_ASSERT(!node->isExpressionLevel());
 
     // These are the arguments that 'buildCoforallLoopStmt' requires.
@@ -1530,8 +1531,7 @@ struct Converter {
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     bool zippered = node->iterand()->isZip();
 
-    return buildCoforallLoopStmt(indices, iterator, byref_vars, body,
-                                 zippered);
+    return buildThunk(buildCoforallLoopStmt, indices, iterator, byref_vars, body, zippered);
   }
 
   Expr* visit(const uast::For* node) {
@@ -4449,12 +4449,22 @@ void postConvertApplyFixups(chpl::Context* context) {
     }
   }
 
+  forv_Vec(TemporaryConversionThunk, thunk, gTemporaryConversionThunks) {
+    if (thunk->inTree()) {
+      SET_LINENO(thunk);
+      thunk->replace(thunk->force());
+    }
+  }
+
   // Ensure no SymExpr referring to TemporaryConversionSymbol is still in tree
   if (fVerify) {
     forv_Vec(SymExpr, se, gSymExprs) {
       if (isTemporaryConversionSymbol(se->symbol())) {
         INT_ASSERT(!se->inTree());
       }
+    }
+    forv_Vec(TemporaryConversionThunk, thunk, gTemporaryConversionThunks) {
+      INT_ASSERT(!thunk->inTree());
     }
   }
 

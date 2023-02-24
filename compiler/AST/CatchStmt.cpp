@@ -46,13 +46,13 @@ CatchStmt* CatchStmt::build(BlockStmt* body) {
   return new CatchStmt(NULL, NULL, body);
 }
 
-CatchStmt::CatchStmt(const char* name, Expr* type, BlockStmt* body)
+CatchStmt::CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr)
   : Stmt(E_CatchStmt) {
 
   _name = name ? astr(name) : NULL;
   _type = type;
   _body = body;
-  _createdErr = false;
+  _createdErr = createdErr;
 
   gCatchStmts.add(this);
 }
@@ -129,7 +129,7 @@ void CatchStmt::accept(AstVisitor* visitor) {
 }
 
 CatchStmt* CatchStmt::copyInner(SymbolMap* map) {
-  return new CatchStmt(_name, COPY_INT(_type), COPY_INT(_body));
+  return new CatchStmt(_name, COPY_INT(_type), COPY_INT(_body), _createdErr);
 }
 
 void CatchStmt::replaceChild(Expr* old_ast, Expr* new_ast) {

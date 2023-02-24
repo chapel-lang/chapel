@@ -25,11 +25,25 @@
 #include "stmt.h"
 #include "stringutil.h"
 
+#define VALIDATE_AST_INSERTABLE_HEAD(NEW_AST, LOC_STR) \
+  do { \
+    if (NEW_AST->parentSymbol || NEW_AST->parentExpr) \
+      INT_FATAL(NEW_AST, "Argument is already in AST in " LOC_STR); \
+    if (NEW_AST->list) \
+      INT_FATAL(NEW_AST, "Argument is in a list in " LOC_STR); \
+  } while(false)
+
+#define VALIDATE_AST_INSERTABLE_TAIL(NEW_AST, LOC_STR) \
+  do { \
+    if (NEW_AST->parentSymbol || NEW_AST->parentExpr) \
+      INT_FATAL(NEW_AST, "Argument is already in AST in " LOC_STR); \
+    if (NEW_AST->next || NEW_AST->prev) \
+      INT_FATAL(NEW_AST, "Argument is in a list in " LOC_STR); \
+  } while(false)
+
+
 void AList::insertAtHead(Expr* new_ast) {
-  if (new_ast->parentSymbol || new_ast->parentExpr)
-    INT_FATAL(new_ast, "Argument is already in AST in AList::insertAtHead");
-  if (new_ast->list)
-    INT_FATAL(new_ast, "Argument is in a list in AList::insertAtHead");
+  VALIDATE_AST_INSERTABLE_HEAD(new_ast, "AList::insertAtHead");
 
   // This should probably be moved into the caller, for cases that require it.
   if (CallExpr* call = toCallExpr(new_ast)) {
@@ -42,6 +56,38 @@ void AList::insertAtHead(Expr* new_ast) {
     }
   }
 
+  performInsertAtHead(new_ast);
+}
+
+void AList::insertAtHeadWithoutFlattening(Expr* new_ast) {
+  VALIDATE_AST_INSERTABLE_HEAD(new_ast, "AList::insertAtHeadWithoutFlattening");
+  performInsertAtHead(new_ast);
+}
+
+
+void AList::insertAtTail(Expr* new_ast) {
+  VALIDATE_AST_INSERTABLE_TAIL(new_ast, "AList::insertAtTail");
+
+  // See above, regarding PRIM_ACTUALS_LIST.
+  if (CallExpr* call = toCallExpr(new_ast)) {
+    if (call && call->isPrimitive(PRIM_ACTUALS_LIST)) {
+      for_actuals(expr, call) {
+        expr->remove();
+        insertAtTail(expr);
+      }
+      return;
+    }
+  }
+
+  performInsertAtTail(new_ast);
+}
+
+void AList::insertAtTailWithoutFlattening(Expr* new_ast) {
+  VALIDATE_AST_INSERTABLE_TAIL(new_ast, "AList::insertAtTailWithoutFlattening");
+  performInsertAtTail(new_ast);
+}
+
+void AList::performInsertAtHead(Expr* new_ast) {
   if (!head) {
     head = new_ast;
     tail = new_ast;
@@ -56,24 +102,7 @@ void AList::insertAtHead(Expr* new_ast) {
   length++;
 }
 
-
-void AList::insertAtTail(Expr* new_ast) {
-  if (new_ast->parentSymbol || new_ast->parentExpr)
-    INT_FATAL(new_ast, "Argument is already in AST in AList::insertAtTail");
-  if (new_ast->prev || new_ast->next)
-    INT_FATAL(new_ast, "Argument is in a list in AList::insertAtTail");
-
-  // See above, regarding PRIM_ACTUALS_LIST.
-  if (CallExpr* call = toCallExpr(new_ast)) {
-    if (call && call->isPrimitive(PRIM_ACTUALS_LIST)) {
-      for_actuals(expr, call) {
-        expr->remove();
-        insertAtTail(expr);
-      }
-      return;
-    }
-  }
-
+void AList::performInsertAtTail(Expr* new_ast) {
   if (!tail) {
     head = new_ast;
     tail = new_ast;

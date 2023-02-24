@@ -39,6 +39,7 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
+#include "TemporaryConversionThunk.h"
 #include "TryStmt.h"
 #include "type.h"
 #include "virtualDispatch.h"

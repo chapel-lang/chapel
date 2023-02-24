@@ -22,6 +22,16 @@
 
 #include "ImportStmt.h"
 
+bool AstVisitorTraverse::enterThunk(TemporaryConversionThunk* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitThunk(TemporaryConversionThunk* node)
+{
+
+}
+
 bool AstVisitorTraverse::enterAggrType(AggregateType* node)
 {
   return true;
