@@ -68,7 +68,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
   // Filter out substitutions that aren't fields within 'ad'.
   // In particular, there might be substitutions to do with a parent class.
   SubstitutionsMap filteredSubs;
-  for (auto pair : substitutions) {
+  for (const auto& pair : substitutions) {
     if (ad->id().contains(pair.first)) {
       filteredSubs.insert(pair);
     }

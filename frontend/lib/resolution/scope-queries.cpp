@@ -1557,7 +1557,7 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
   // that vector.
   std::vector<ID> allIds;
   if (got) {
-    for (auto bids : vec) {
+    for (const auto& bids : vec) {
       std::copy(bids.begin(), bids.end(), std::back_inserter(allIds));
     }
     // This will _not_ turn x,y,x into x,y, but that's fine, since distinct
@@ -1585,7 +1585,7 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
     for (auto& bids : improperMatches) {
       // For each improper match, also compute its tag, to make the error
       // message be able to provide more concrete results.
-      for (auto id : bids) {
+      for (const auto& id : bids) {
         auto ast = parsing::idToAst(context, id);
         improperMatchVec.push_back(ast);
       }
@@ -2021,8 +2021,8 @@ doWarnHiddenFormal(Context* context,
   functionScope->lookupInScope(formalName, ids,
                                /* ignore private */ false,
                                /* only methods/fields */ false);
-  for (auto b : ids) {
-    for (auto id : b) {
+  for (const auto& b : ids) {
+    for (const auto& id : b) {
       auto formalAst = parsing::idToAst(context, id);
       if (formalAst != nullptr) {
         formal = formalAst->toFormal();
@@ -2068,7 +2068,7 @@ static const bool& warnHiddenFormalsQuery(Context* context,
     size_t errIdx = 0;
     if (got) {
       size_t i = 0;
-      for (auto b : matches) {
+      for (const auto& b : matches) {
         if (!b.containsOnlyMethodsOrFields()) {
           errIdx = i;
           onlyMethodsFields = false;

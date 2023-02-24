@@ -1411,7 +1411,7 @@ static void populateEnvMap() {
     }
   }
 
-  for (auto kvPair : chplEnvResult.get()){
+  for (const auto& kvPair : chplEnvResult.get()){
     if (envMap.find(kvPair.first) == envMap.end()) {
       envMap[kvPair.first] = strdup(kvPair.second.c_str());
     } else if (useDefaultEnv(kvPair.first, isCrayPrgEnv)) {

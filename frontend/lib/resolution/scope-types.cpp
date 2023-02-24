@@ -261,7 +261,7 @@ void ResolvedVisibilityScope::stringify(std::ostream& ss,
   }
 
   int i = 0;
-  for (auto clause : visibilityClauses_) {
+  for (const auto& clause : visibilityClauses_) {
     ss << "  clause " << i << "(";
     clause.stringify(ss, stringKind);
     ss << ")";

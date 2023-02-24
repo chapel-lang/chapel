@@ -862,7 +862,7 @@ static void describeSymbolSource(ErrorWriterBase& wr,
       wr.code<ID,ID>(firstId, { firstId });
     } else {
       bool firstHere = true;
-      for (auto id : match) {
+      for (const auto& id : match) {
         if (first) {
           wr.note(id, intro, "found '", from, "' defined here:");
         } if (firstHere) {

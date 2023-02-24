@@ -136,7 +136,7 @@ ErrorMessage ErrorBase::toErrorMessage(Context* context) const {
   auto message = ew.id().isEmpty() ?
     ErrorMessage(kind, ew.location(), ew.message()) :
     ErrorMessage(kind, ew.id(), ew.message());
-  for (auto note : ew.notes()) {
+  for (const auto& note : ew.notes()) {
     auto detailKind = ErrorMessage::NOTE;
     auto detailmessage = std::get<std::string>(note);
     message.addDetail(
@@ -150,7 +150,7 @@ ErrorMessage ErrorBase::toErrorMessage(Context* context) const {
 void BasicError::write(ErrorWriterBase& wr) const {
   // if the ID is set, determine the location from that
   wr.heading(kind_, type_, idOrLoc_, message_);
-  for (auto note : notes_) {
+  for (const auto& note : notes_) {
     auto& idOrLoc = std::get<IdOrLocation>(note);
     auto& message = std::get<std::string>(note);
     wr.note(idOrLoc, message);

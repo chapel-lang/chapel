@@ -193,7 +193,7 @@ bool FindElidedCopies::lastMentionIsCopy(VarFrame* frame, ID varId) {
 }
 void FindElidedCopies::gatherLastMentionIsCopyVars(VarFrame* frame,
                                                    std::set<ID>& vars) {
-  for (auto pair : frame->copyElisionState) {
+  for (const auto& pair : frame->copyElisionState) {
     if (pair.second.lastIsCopy) {
       vars.insert(pair.first);
     }
@@ -229,7 +229,7 @@ void FindElidedCopies::addMention(VarFrame* frame, ID varId) {
 }
 
 void FindElidedCopies::saveElidedCopies(VarFrame* frame) {
-  for (auto pair : frame->copyElisionState) {
+  for (const auto& pair : frame->copyElisionState) {
     const CopyElisionState& state = pair.second;
     if (state.lastIsCopy) {
       allElidedCopyFromIds.insert(state.points.begin(), state.points.end());
@@ -238,7 +238,7 @@ void FindElidedCopies::saveElidedCopies(VarFrame* frame) {
 }
 
 void FindElidedCopies::saveLocalVarElidedCopies(VarFrame* frame) {
-  for (auto id : frame->eligibleVars) {
+  for (const auto& id : frame->eligibleVars) {
     CHPL_ASSERT(frame->declaredVars.count(id) > 0);
     if (lastMentionIsCopy(frame, id)) {
       const CopyElisionState& state = frame->copyElisionState[id];
@@ -263,7 +263,7 @@ bool FindElidedCopies::isEligibleVarInAnyFrame(ID varId) {
 void FindElidedCopies::noteMentionsForOutFormals(VarFrame* frame) {
   // consider all 'out' or 'inout' variables to be mentioned by a 'return'
   // (since they will be communicated back to the call site)
-  for (auto id : outOrInoutFormals) {
+  for (const auto& id : outOrInoutFormals) {
     addMention(frame, id);
   }
 }
@@ -458,7 +458,7 @@ void FindElidedCopies::handleConditional(const Conditional* cond, RV& rv) {
     saveLocalVarElidedCopies(elseFrame);
 
     // promote only vars that can be copy elided in both branches
-    for (auto thenPair : thenFrame->copyElisionState) {
+    for (const auto& thenPair : thenFrame->copyElisionState) {
       const CopyElisionState& thenState = thenPair.second;
       if (thenState.lastIsCopy) {
         ID id = thenPair.first;
@@ -484,7 +484,7 @@ void FindElidedCopies::handleConditional(const Conditional* cond, RV& rv) {
     saveLocalVarElidedCopies(branch);
 
     // promote other vars in the branch not returning
-    for (auto pair : branch->copyElisionState) {
+    for (const auto& pair : branch->copyElisionState) {
       const CopyElisionState& branchState = pair.second;
       if (branchState.lastIsCopy) {
         ID id = pair.first;
@@ -542,13 +542,13 @@ void FindElidedCopies::handleTry(const Try* t, RV& rv) {
     if (!catchFrame->returnsOrThrows) {
       allThrowOrReturn = false;
     }
-    for (auto pair : catchFrame->copyElisionState) {
+    for (const auto& pair : catchFrame->copyElisionState) {
       catchMentions.insert(pair.first);
     }
   }
 
   if (allThrowOrReturn) {
-    for (auto pair : tryFrame->copyElisionState) {
+    for (const auto& pair : tryFrame->copyElisionState) {
       const CopyElisionState& tryState = pair.second;
       if (tryState.lastIsCopy) {
         ID id = pair.first;
@@ -592,7 +592,7 @@ void FindElidedCopies::handleScope(const AstNode* ast, RV& rv) {
   if (parent != nullptr) {
     // propagate any non-local variables
     if (allowsCopyElision(ast) && parent != nullptr) {
-      for (auto pair : frame->copyElisionState) {
+      for (const auto& pair : frame->copyElisionState) {
         ID id = pair.first;
         const CopyElisionState& state = pair.second;
         if (state.lastIsCopy && frame->eligibleVars.count(id) == 0) {

@@ -43,7 +43,7 @@ CompositeType::areSubsInstantiationOf(Context* context,
   // check, for each substitution in mySubs, that it matches
   // or is an instantiation of pSubs.
 
-  for (auto mySubPair : mySubs) {
+  for (const auto& mySubPair : mySubs) {
     ID mySubId = mySubPair.first;
     QualifiedType mySubType = mySubPair.second;
 
@@ -91,7 +91,7 @@ void CompositeType::stringify(std::ostream& ss,
       emittedField = true;
     }
 
-    for (auto sub : sorted) {
+    for (const auto& sub : sorted) {
       if (emittedField) ss << ", ";
       sub.first.stringify(ss, stringKind);
       ss << ":";
