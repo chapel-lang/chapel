@@ -96,6 +96,120 @@ void ErrorCommentEOF::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
+  auto invalidAst = std::get<0>(info);
+  auto blockingAst = std::get<1>(info);
+  auto allowingAst = std::get<2>(info);
+
+  std::string astType = "";
+  std::string labelName = "";
+  if (invalidAst->isReturn()) {
+    astType = "return";
+  } else if (invalidAst->isYield()) {
+    astType = "yield";
+  } else if (auto brk = invalidAst->toBreak()) {
+    astType = "break";
+    if (auto target = brk->target()) {
+      labelName = target->name().str();
+    }
+  } else if (auto cont = invalidAst->toContinue()) {
+    astType = "continue";
+    if (auto target = cont->target()) {
+      labelName = target->name().str();
+    }
+  } else {
+    CHPL_ASSERT(false && "not a control flow element handled by this error");
+  }
+
+  std::string blockingName = "";
+  std::string blockingNameArticle = "a";
+  if (!blockingAst) {
+    // Nothing
+  } else if (blockingAst->isForall()) {
+    blockingName = "'forall' statement";
+  } else if (blockingAst->isCoforall()) {
+    blockingName = "'coforall' statement";
+  } else if (blockingAst->isOn()) {
+    blockingName = "'on' statement";
+    blockingNameArticle = "an";
+  } else if (blockingAst->isBegin()) {
+    blockingName = "'begin' statement";
+  } else if (blockingAst->isSync()) {
+    blockingName = "'sync' statement";
+  } else if (blockingAst->isCobegin()) {
+    blockingName = "'cobegin' statement";
+  } else if (auto fn = blockingAst->toFunction()) {
+    if (fn->kind() == uast::Function::Kind::ITER) {
+      blockingName = "iterator";
+      blockingNameArticle = "an";
+    } else {
+      blockingName = "procedure";
+    }
+  } else {
+    CHPL_ASSERT(false && "not a blocking element handled by this error");
+  }
+
+
+  if (!labelName.empty()) {
+    // labeled break or continue did not find the target thing.
+
+    if (!allowingAst) {
+      // Simply no such label.
+      wr.heading(kind_, type_, invalidAst, "could not find label '", labelName,
+          "' for '", astType, "' statement.");
+      wr.code(invalidAst, { invalidAst });
+    } else {
+      // It we found a node to jump to, why are we issuing this error unless
+      // something blocked it?
+      CHPL_ASSERT(blockingAst != nullptr);
+
+      // There is such a label, but a coforall etc. gets in the way.
+      wr.heading(kind_, type_, invalidAst, "'", astType, "' to label '",
+                 labelName, "' outside of ", blockingNameArticle, " ",
+                 blockingName, " is not allowed.");
+      wr.code(invalidAst, { invalidAst });
+      wr.note(locationOnly(blockingAst), "cannot '", astType, "' "
+              "out of ", blockingNameArticle, " ", blockingName, ".");
+      // TODO: Re-enable when code printing doesn't dump whole code blocks
+      // wr.code(blockingAst, { blockingAst });
+    }
+
+  } else if (!blockingAst || blockingAst->isFunction()) {
+    // break or continue without a label, or a return or yield, outside any
+    // loop or function.
+    std::string missingThing = "";
+    if (invalidAst->isReturn()) {
+      missingThing = "a procedure or an iterator";
+    } else if (invalidAst->isYield()) {
+      missingThing = "an iterator";
+    } else {
+      missingThing = "a loop";
+    }
+    wr.heading(kind_, type_, invalidAst, "'", astType,
+               "' is not allowed outside of ", missingThing, ".");
+    wr.code(invalidAst, { invalidAst });
+
+    // If something blocked the jump, only print what it was if the jump
+    // would've worked otherwise (allowingAst != null)
+    if (blockingAst && allowingAst) {
+      CHPL_ASSERT(invalidAst->isBreak() || invalidAst->isContinue());
+      wr.note(locationOnly(blockingAst), "cannot '", astType, "' "
+              "out of ", blockingNameArticle, " ", blockingName, ".");
+      // TODO: Re-enable when code printing doesn't dump whole code blocks
+      // wr.code(blockingAst, { blockingAst });
+    }
+  } else {
+    // any piece of control flow banned within a particular language feature
+    wr.heading(kind_, type_, invalidAst, "'", astType, "' is not allowed in ",
+               blockingNameArticle, " ", blockingName, ".");
+    wr.code(invalidAst, { invalidAst });
+
+    // TODO: Re-enable when code printing doesn't dump whole code blocks
+    // wr.message("The ", blockingName, " is here:");
+    // wr.code(blockingAst);
+  }
+}
+
 void ErrorExceptOnlyInvalidExpr::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto limitationKind = std::get<uast::VisibilityClause::LimitationKind>(info);

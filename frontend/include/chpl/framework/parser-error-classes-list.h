@@ -43,6 +43,10 @@ PARSER_SYNTAX_CLASS(UseImportNeedsModule, bool)
 
 /* begin post-parse-checks errors */
 POSTPARSE_ERROR_CLASS(CantApplyPrivate, std::string)
+ERROR_CLASS(DisallowedControlFlow,
+            const uast::AstNode*,
+            const uast::AstNode*,
+            const uast::AstNode*)
 POSTPARSE_ERROR_CLASS(MultipleManagementStrategies, const uast::New::Management,
                       const uast::New::Management)
 ERROR_CLASS(IllegalUseImport, const uast::AstNode*, const uast::AstNode*)
