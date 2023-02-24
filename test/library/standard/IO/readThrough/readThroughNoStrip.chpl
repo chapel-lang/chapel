@@ -12,11 +12,11 @@ writeln(
   geneListViaSplit(openreader("./genes.txt"), b"ATG")
 );
 
-// collect a list of genes via readPast
+// collect a list of genes via readThrough
 proc geneList(r, stopCodon: ?t) {
   var s : t,
       l = new list(t);
-  while r.readPast(s, stopCodon) {
+  while r.readThrough(s, stopCodon) {
     const gene = s.strip();
     if !gene.isEmpty() {
       assert(gene.endsWith(stopCodon));

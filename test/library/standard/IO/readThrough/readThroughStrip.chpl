@@ -23,7 +23,7 @@ writeln(readIntoList(false, openreader("./listInputWeird.txt"), b",,||,,"));
 proc readIntoList(param reuseBuffer, r, separator: ?t) where reuseBuffer == true {
   var s : t,
       l = new list(int);
-  while r.readPast(s, separator, stripSeparator=true) {
+  while r.readThrough(s, separator, stripSeparator=true) {
     if !s.strip().isEmpty() then l.append(s:int);
   }
   return l;
@@ -34,7 +34,7 @@ proc readIntoList(param reuseBuffer, r, separator) where reuseBuffer == false {
 
   while true {
     try {
-      const s = r.readPast(separator, stripSeparator=true);
+      const s = r.readThrough(separator, stripSeparator=true);
       if !s.strip().isEmpty() then l.append(s:int);
     } catch {
       break;

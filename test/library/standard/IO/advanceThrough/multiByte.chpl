@@ -1,18 +1,18 @@
 use IO;
 
-testAdvancePast(openreader("singleByteInput.txt"), ">");
-testAdvancePast(openreader("singleByteInput.txt"), b">");
+testAdvancePast(openreader("multiByteInput.txt"), ">>>>abc>>>>");
+testAdvancePast(openreader("multiByteInput.txt"), b">>>>abc>>>>");
 
 proc testAdvancePast(r, sep) {
   // advance past the delimiter
-  r.advancePast(sep);
+  r.advanceThrough(sep);
 
   // write the remainder of the file
   write(r.readAll());
 
   // try to advance from EOF
   try {
-    r.advancePast(sep);
+    r.advanceThrough(sep);
   } catch e {
     writeln(e);
   }

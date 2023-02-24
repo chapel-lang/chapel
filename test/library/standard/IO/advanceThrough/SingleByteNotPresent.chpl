@@ -1,12 +1,12 @@
 use IO;
 
-testAdvancePast(openreader("multiByteInput.txt"), "<<<<123>>>>");
-testAdvancePast(openreader("multiByteInput.txt"), b"<<<<123>>>>");
+testAdvancePast(openreader("singleByteInput.txt"), "-");
+testAdvancePast(openreader("singleByteInput.txt"), b"-");
 
 proc testAdvancePast(r, sep) {
   // try to read a delimiter not in the channel
   try {
-    r.advancePast(sep);
+    r.advanceThrough(sep);
   } catch e {
     writeln(e);
   }
