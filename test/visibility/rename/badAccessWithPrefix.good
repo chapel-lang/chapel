@@ -1,2 +1,2 @@
 badAccessWithPrefix.chpl:8: In function 'main':
-badAccessWithPrefix.chpl:9: error: Symbol 'baz' undeclared in module 'Foo'
+badAccessWithPrefix.chpl:9: error: cannot find 'baz' in module 'Foo'
