@@ -26,6 +26,10 @@ record innerArray {
   type t;
   var D = {0..-1};
   forwarding var A: [D] t;
+
+  proc resize(size: int) {
+    this.D = {0..#size};
+  }
 }
 
 on here.gpus[0] {
@@ -66,14 +70,14 @@ proc runSort(){
                     numScanElts : real / (4 * SCAN_BLOCK_SIZE)) : int) : uint(32);
         if(numBlocks > 1) {
             // Malloc device mem for block sums
-            scanBlockSums[level].D = {0..#numBlocks};
+            scanBlockSums[level].resize(numBlocks);
             level+=1;
         }
         numScanElts = numBlocks;
     } while (numScanElts > 1);
     // Print the above vars to see if they match the expected values
 
-    scanBlockSums[level].D = {0..0};
+    scanBlockSums[level].resize(1);
 
     // Allcoate device mem for sorting kernels
     var dKeys, dVals, dTempKeys, dTempVals : [0..<size] uint(32);
