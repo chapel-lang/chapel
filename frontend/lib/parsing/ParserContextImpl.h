@@ -42,6 +42,22 @@ static bool locationLessEq(YYLTYPE lhs, YYLTYPE rhs) {
           lhs.first_column <= rhs.first_column);
 }
 
+
+static bool checkNoDuplicateNamedActuals(const MaybeNamedActualList& actuals,
+                                         std::set<UniqueString>& duplicates) {
+  std::set<UniqueString> seen;
+  for (auto& actual : actuals) {
+    if (actual.name.isEmpty()) {
+      continue;
+    }
+    if (seen.count(actual.name) > 0) {
+      duplicates.insert(actual.name);
+    }
+    seen.insert(actual.name);
+  }
+  return duplicates.size() == 0;
+}
+
 std::vector<ParserComment>* ParserContext::gatherComments(YYLTYPE location) {
 
   // If there were no comments, there is nothing to do.
@@ -228,17 +244,19 @@ void ParserContext::noteAttribute(YYLTYPE loc, AstNode* firstIdent,
   // existed before the changes to allow general attributes
   auto ident = firstIdent->toIdentifier();
   if (ident->name()==UniqueString::get(context(), "unstable")) {
-    AstNode* msg = nullptr;
-    if (actuals != nullptr && actuals->size() > 0) {
-      msg = actuals->back().expr;
-    }
-    noteUnstable(loc, msg);
+    noteUnstable(loc, actuals);
   } else if (ident->name()==UniqueString::get(context(),"deprecated")) {
-    AstNode* msg = nullptr;
-    if (actuals != nullptr && actuals->size() > 0) {
-      msg = actuals->back().expr;
+    noteDeprecation(loc, actuals);
+  }
+
+  // check the actual names are not duplicates
+  if (actuals != nullptr) {
+    std::set<UniqueString> duplicates;
+    if (!checkNoDuplicateNamedActuals(*actuals, duplicates)) {
+      for (auto& duplicate : duplicates) {
+        error(loc, "duplicate argument name \"%s\"", duplicate.c_str());
+      }
     }
-    noteDeprecation(loc, msg);
   }
 
   // make sure we don't put duplicate attributes (based on names) on one symbol
@@ -252,10 +270,31 @@ void ParserContext::noteAttribute(YYLTYPE loc, AstNode* firstIdent,
 }
 
 
-void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
+
+void ParserContext::noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals) {
   hasAttributeGroupParts = true;
 
   attributeGroupParts.isDeprecated = true;
+  AstNode* messageStr = nullptr;
+  if (actuals != nullptr && actuals->size() > 0) {
+    for (auto& actual : *actuals) {
+      if (!(actual.name == UniqueString::get(context(), "since").podUniqueString() ||
+            actual.name == UniqueString::get(context(), "notes").podUniqueString() ||
+            actual.name == UniqueString::get(context(), "suggestion").podUniqueString()||
+            actual.name.isEmpty())) {
+        error(loc, "deprecated attribute only accepts 'since', 'notes', and 'suggestion' arguments");
+      }
+      if (!actual.expr->isStringLiteral()) {
+        error(loc, "deprecated attribute arguments must be string literals for now");
+      }
+      // use the notes field, or assume if there's only one argument it's the message
+      if (actual.name == UniqueString::get(context(), "notes").podUniqueString() ||
+          actuals->size() == 1) {
+        messageStr = actual.expr;
+      }
+    }
+  }
+
 
   if (messageStr) {
     if (auto strLit = messageStr->toStringLiteral()) {
@@ -264,11 +303,30 @@ void ParserContext::noteDeprecation(YYLTYPE loc, AstNode* messageStr) {
   }
 }
 
-void ParserContext::noteUnstable(YYLTYPE loc, AstNode* messageStr) {
+void ParserContext::noteUnstable(YYLTYPE loc, MaybeNamedActualList* actuals) {
   hasAttributeGroupParts = true;
 
   attributeGroupParts.isUnstable = true;
 
+  AstNode* messageStr = nullptr;
+  if (actuals != nullptr && actuals->size() > 0) {
+    for (auto& actual : *actuals) {
+      if (!(actual.name == UniqueString::get(context(), "category").podUniqueString() ||
+            actual.name == UniqueString::get(context(), "issue").podUniqueString() ||
+            actual.name == UniqueString::get(context(), "reason").podUniqueString()||
+            actual.name.isEmpty())) {
+        error(loc, "unstable attribute only accepts 'category', 'issue', and 'reason' arguments");
+      }
+      if (!actual.expr->isStringLiteral()) {
+        error(loc, "unstable attribute arguments must be string literals for now");
+      }
+     // use the reason field or assume if there's only one argument it's the message
+      if (actual.name == UniqueString::get(context(), "reason").podUniqueString() ||
+          actuals->size() == 1) {
+        messageStr = actual.expr;
+      }
+    }
+  }
   if (messageStr) {
     if (auto strLit = messageStr->toStringLiteral()) {
       attributeGroupParts.unstableMessage = strLit->value();

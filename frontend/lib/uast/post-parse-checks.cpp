@@ -1113,8 +1113,7 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
     // about those things
     warn(node, "unrecognized attribute '%s'", node->name().c_str());
   }
-  // TODO: check that attribute arguments are of types we support (e.g. string, int, bool, range)
-  // TODO: additional checks per attribute to make sure the named arguments have proper names and expected types
+  // TODO: check for any other attribute toolspaces given from the command-line
 }
 
 void Visitor::visit(const Attribute* node) {

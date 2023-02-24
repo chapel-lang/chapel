@@ -139,8 +139,8 @@ struct ParserContext {
   // If attributes do not exist yet, returns nullptr.
   owned<AttributeGroup> buildAttributeGroup(YYLTYPE locationOfDecl);
   PODUniqueString notePragma(YYLTYPE loc, AstNode* pragmaStr);
-  void noteDeprecation(YYLTYPE loc, AstNode* messageStr);
-  void noteUnstable(YYLTYPE loc, AstNode* messageStr);
+  void noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals);
+  void noteUnstable(YYLTYPE loc, MaybeNamedActualList* actuals);
   void resetAttributeGroupPartsState();
 
   CommentsAndStmt buildPragmaStmt(YYLTYPE loc, CommentsAndStmt stmt);
