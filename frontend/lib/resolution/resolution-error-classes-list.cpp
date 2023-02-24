@@ -998,7 +998,7 @@ void ErrorNotInModule::write(ErrorWriterBase& wr) const {
       wr.note(dot, "module '", moduleName, "' was renamed to"
               " '", dotModName, "' in this scope");
     } else {
-      wr.note(renameClauseId,
+      wr.note(locationOnly(renameClauseId),
               "module '", moduleName, "' was renamed to"
               " '", dotModName, "' here");
       wr.code<ID,ID>(renameClauseId, { renameClauseId });
