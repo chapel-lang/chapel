@@ -12,8 +12,10 @@ var f = openTempFile();
   r.readByte(); // should not throw
   try {
     r.readByte(); // should throw
-    assert(false);
+    writeln("Incorrectly did not throw");
   } catch e:UnexpectedEofError {
-    assert(true);
-  } catch { assert(false); }
+    writeln("Correctly threw UnexpectedEofError");
+  } catch { 
+    writeln("Incorrectly threw some other error");
+  }
 }

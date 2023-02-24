@@ -13,8 +13,10 @@ var f = open("test.txt", ioMode.cwr);
   r.readCodepoint(); // should not throw
   try {
     r.readCodepoint(); // should throw
-    assert(false);
+    writeln("Incorrectly did not throw");
   } catch e:UnexpectedEofError {
-    assert(true);
-  } catch { assert(false); }
+    writeln("Correctly threw UnexpectedEofError");
+  } catch { 
+    writeln("Incorrectly threw some other error");
+  }
 }
