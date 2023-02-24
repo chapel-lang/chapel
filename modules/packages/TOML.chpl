@@ -214,7 +214,7 @@ module TomlParser {
 
     proc parseTable() {
       var toke = getToken(source);
-      var tablename = brackets.sub('', toke);
+      var tablename = toke.replace(brackets, '');
       var tblD: domain(string);
       var tbl: [tblD] shared Toml?;
       if !rootTable.pathExists(tablename) {

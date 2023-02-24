@@ -64,6 +64,13 @@ bool AstCount::enterDecoratedClassType(DecoratedClassType* node) {
 void AstCount::exitDecoratedClassType(DecoratedClassType* node) {
 }
 
+bool AstCount::enterThunk(TemporaryConversionThunk* node) {
+  return true;
+}
+
+void AstCount::exitThunk(TemporaryConversionThunk* node) {
+}
+
 
 bool AstCount::enterAggrType(AggregateType* node) {
   numAggregateType++;

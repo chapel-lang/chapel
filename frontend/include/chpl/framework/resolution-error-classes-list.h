@@ -130,9 +130,22 @@ WARNING_CLASS(Unstable,
     const uast::NamedDecl*)
 WARNING_CLASS(HiddenFormal,
     const uast::Formal*,
-    const uast::VisibilityClause*,
-    const resolution::VisibilityStmtKind)
-ERROR_CLASS(AmbiguousIdentifier,
+    resolution::BorrowedIdsWithName,
+    resolution::ResultVisibilityTrace)
+ERROR_CLASS(AmbiguousVisibilityIdentifier,
     UniqueString,
     ID,
     std::vector<ID>)
+ERROR_CLASS(UnknownIdentifier,
+    const uast::Identifier*,
+    bool)
+ERROR_CLASS(AmbiguousIdentifier,
+    const uast::Identifier*,
+    bool,
+    std::vector<resolution::BorrowedIdsWithName>,
+    std::vector<resolution::ResultVisibilityTrace>)
+ERROR_CLASS(NotInModule,
+    const uast::Dot*,
+    ID,
+    UniqueString,
+    ID)

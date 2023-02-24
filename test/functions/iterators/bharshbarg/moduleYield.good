@@ -1,1 +1,1 @@
-moduleYield.chpl:1: error: yield statement is outside an iterator
+moduleYield.chpl:1: error: 'yield' is not allowed outside of an iterator

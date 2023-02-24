@@ -63,7 +63,7 @@ for f in findFiles(inputDir) {
     filenamesList.append(f);
 }
 // Create an array blocked into pieces per locale.
-var filenames = newBlockArr(0..#filenamesList.size, string);
+var filenames = Block.createArray(0..#filenamesList.size, string);
 filenames = filenamesList;
 
 // Execute using distributed parallelism across locales if executing

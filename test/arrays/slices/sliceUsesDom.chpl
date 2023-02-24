@@ -3,7 +3,7 @@ use BlockDist;
 var D = {1..9, 1..9};
 var SubD = {2..4, 2..4};
 
-var DB = newBlockDom(D);
+var DB = Block.createDomain(D);
 var SubDB = DB[SubD];
 
 testit(D);

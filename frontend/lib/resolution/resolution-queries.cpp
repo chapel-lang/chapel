@@ -727,7 +727,7 @@ forwardingCycleCheckQuery(Context* context, const CompositeType* ct) {
   return QUERY_END(result);
 }
 
-// returns 'true' if a fowarding cycle was detected & error emitted
+// returns 'true' if a forwarding cycle was detected & error emitted
 static bool
 emitErrorForForwardingCycles(Context* context, const CompositeType* ct) {
   bool cycleFound = false;
@@ -2865,12 +2865,12 @@ gatherAndFilterCandidatesForwarding(Context* context,
 // call can be nullptr. in that event, ci.name() will be used
 // to find the call with that name.
 //
-// forwardingTo is a vector that will be empty unless forwardiing
+// forwardingTo is a vector that will be empty unless forwarding
 // is used for some candidates.
 //
 // If forwarding is used, it will have an element for each of the returned
 // candidates and will indicate the actual type that is passed
-// to the 'this' reciever formal.
+// to the 'this' receiver formal.
 static CandidatesVec
 gatherAndFilterCandidates(Context* context,
                           const Call* call,

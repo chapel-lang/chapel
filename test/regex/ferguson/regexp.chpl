@@ -243,23 +243,23 @@ writeln("Split 6");
   }
 }
 
-writeln("sub 1");
+writeln("Replace 1");
 {
   var re = compile("(w)(\\w+)":t);
   var str = "Words, words, word.":t;
-  writeln(re.sub("\\1-\\2":t, str, true));
+  writeln(str.replace(re, "\\1-\\2":t, count=-1));
 }
 
-writeln("sub 2");
+writeln("Replace 2");
 {
   var re = compile("(w)(\\w+)":t);
   var str = "Words, words, word.":t;
-  writeln(re.subn("\\1-\\2":t, str, true));
+  writeln(str.replaceAndCount(re, "\\1-\\2":t, count=-1));
 }
 
-writeln("sub 3");
+writeln("Replace 3");
 {
   var re = compile("(w)(\\w+)":t);
   var str = "Words, words, word.":t;
-  writeln(re.sub("\\1-\\2":t, str, false));
+  writeln(str.replace(re, "\\1-\\2":t, count=1));
 }

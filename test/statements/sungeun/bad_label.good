@@ -1,3 +1,9 @@
 bad_label.chpl:7: syntax error: labels should not be terminated with semicolons
 bad_label.chpl:13: syntax error: labels should not be terminated with semicolons
 bad_label.chpl:20: syntax error: labels should not be terminated with semicolons
+bad_label.chpl:11: error: could not find label 'l1' for 'break' statement
+bad_label.chpl:17: error: could not find label 'l2' for 'break' statement
+bad_label.chpl:18: error: could not find label 'l1' for 'break' statement
+bad_label.chpl:24: error: could not find label 'l3' for 'break' statement
+bad_label.chpl:25: error: could not find label 'l2' for 'break' statement
+bad_label.chpl:26: error: could not find label 'l1' for 'break' statement

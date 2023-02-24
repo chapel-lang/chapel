@@ -190,6 +190,16 @@ bool CollapseBlocks::enterCondStmt(CondStmt* node)
 *                                                                           *
 ************************************* | ************************************/
 
+bool CollapseBlocks::enterThunk(TemporaryConversionThunk* node)
+{
+  return false;
+}
+
+void CollapseBlocks::exitThunk(TemporaryConversionThunk* node)
+{
+
+}
+
 bool CollapseBlocks::enterAggrType(AggregateType* node)
 {
   return false;

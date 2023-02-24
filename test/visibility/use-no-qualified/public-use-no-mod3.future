@@ -1,0 +1,2 @@
+bug: public use should not bring in module name for function call
+#21640

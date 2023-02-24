@@ -116,7 +116,6 @@ CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);
 CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr);
 BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body);
-void       checkControlFlow(Expr* expr, const char* context);
 void       checkIndices(BaseAST* indices);
 void       destructureIndices(BlockStmt* block,
                               BaseAST*   indices,
@@ -199,7 +198,7 @@ ForwardingStmt* buildForwardingStmt(DefExpr* fnDef);
 ForwardingStmt* buildForwardingStmt(DefExpr* fnDef,
                                     std::vector<PotentialRename*>* names,
                                     bool except);
-BlockStmt* buildLocalStmt(Expr* condExpr, Expr* stmt);
+BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr* stmt);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
                              const char* resourceName);

@@ -71,6 +71,18 @@ namespace resolution {
                     LookupConfig config);
 
   /**
+    Same as lookupNameInScope but traces how each symbol was found,
+    for error messages.
+   */
+  std::vector<BorrowedIdsWithName>
+  lookupNameInScopeTracing(Context* context,
+                           const Scope* scope,
+                           llvm::ArrayRef<const Scope*> receiverScopes,
+                           UniqueString name,
+                           LookupConfig config,
+                           std::vector<ResultVisibilityTrace>& traceResult);
+
+  /**
     Same as lookupNameInScope but includes a set tracking visited scopes.
    */
   std::vector<BorrowedIdsWithName>

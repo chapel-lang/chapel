@@ -1233,6 +1233,41 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
   }
 }
 
+void Resolver::issueErrorForFailedModuleDot(const Dot* dot, ID moduleId) {
+  // figure out what name was used for the module in the Dot expression
+  auto modName = moduleId.symbolName(context);
+  auto dotModName = modName;
+  ID renameClauseId;
+  if (auto dotLeftPart = dot->receiver()) {
+    if (auto leftIdent = dotLeftPart->toIdentifier()) {
+      dotModName = leftIdent->name();
+    }
+  }
+  if (modName != dotModName) {
+    // get a trace for where the module was renamed so that
+    // the error can show line numbers
+    CHPL_ASSERT(scopeStack.size() > 0);
+    const Scope* scope = scopeStack.back();
+    std::vector<ResultVisibilityTrace> trace;
+    lookupNameInScopeTracing(context, scope, { }, dotModName,
+                             LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE |
+                             LOOKUP_PARENTS | LOOKUP_INNERMOST |
+                             LOOKUP_EXTERN_BLOCKS,
+                             trace);
+    // find the last rename in the trace
+    for (const auto& t : trace) {
+      for (const auto& elt : t.visibleThrough) {
+        if (elt.fromUseImport && elt.renameFrom != dotModName) {
+          renameClauseId = elt.visibilityClauseId;
+        }
+      }
+    }
+  }
+
+  CHPL_REPORT(context, NotInModule, dot, moduleId, modName, renameClauseId);
+
+}
+
 void Resolver::handleResolvedCall(ResolvedExpression& r,
                                   const uast::AstNode* astForErr,
                                   const CallInfo& ci,
@@ -1891,8 +1926,28 @@ bool Resolver::enter(const uast::Conditional* cond) {
   // to `cond->condition()`.
   auto thenBlock = cond->thenBlock();
   auto elseBlock = cond->elseBlock();
+
+  owned<InitResolver> thenInit;
+  owned<InitResolver> elseInit;
+
+  if (initResolver) {
+    thenInit = initResolver->fork();
+  }
+  initResolver.swap(thenInit);
   thenBlock->traverse(*this);
-  if (elseBlock) elseBlock->traverse(*this);
+  initResolver.swap(thenInit);
+
+  if (elseBlock) {
+    if (initResolver) elseInit = initResolver->fork();
+
+    initResolver.swap(elseInit);
+    elseBlock->traverse(*this);
+    initResolver.swap(elseInit);
+  }
+
+  if (initResolver) {
+    initResolver->merge(thenInit, elseInit);
+  }
 
   if (cond->isExpressionLevel() && !scopeResolveOnly) {
     std::vector<QualifiedType> returnTypes;
@@ -1924,6 +1979,42 @@ bool Resolver::enter(const Literal* literal) {
 void Resolver::exit(const Literal* literal) {
 }
 
+// This class can count Identifiers with a particular name
+struct CountIdentifiersWithName {
+  UniqueString name;
+  int count = 0;
+
+  bool enter(const Identifier* d) {
+    if (d->name() == name) count++;
+    return false;
+  }
+  void exit(const Identifier* d) { }
+
+  // traverse everything
+  bool enter(const AstNode* ast) { return true; }
+  void exit(const AstNode* ast) { }
+};
+
+// TODO: this is not quite accurate, since there might be another
+// Identifier that does resolve but has the same name (e.g. with shadowing).
+// One alternative would be to keep a map of Identifiers that did not
+// resolve and then emit errors about them when concluding the resolution
+// of a function (but.. would it be a problem if errors related to
+// an identifier having an unknown type appear before we say the identifier
+// was not found)?
+bool Resolver::identHasMoreMentions(const Identifier* ident) {
+  if (symbol) {
+    CountIdentifiersWithName visitor;
+    visitor.name = ident->name();
+    symbol->traverse(visitor);
+    if (visitor.count > 1) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 std::vector<BorrowedIdsWithName>
 Resolver::lookupIdentifier(const Identifier* ident,
                            llvm::ArrayRef<const Scope*> receiverScopes) {
@@ -1935,12 +2026,58 @@ Resolver::lookupIdentifier(const Identifier* ident,
 
   LookupConfig config = LOOKUP_DECLS |
                         LOOKUP_IMPORT_AND_USE |
-                        LOOKUP_PARENTS;
+                        LOOKUP_PARENTS |
+                        LOOKUP_EXTERN_BLOCKS;
 
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
   auto vec =
       lookupNameInScope(context, scope, receiverScopes, ident->name(), config);
+
+  bool notFound = vec.empty();
+  bool ambiguous = !notFound && (vec.size() > 1 || vec[0].numIds() > 1);
+
+  // TODO: these errors should be enabled for scope resolution
+  // but for now, they are off, as a temporary measure to enable
+  // the production compiler handle these cases. To enable this,
+  // we will have to adjust the dyno scope resolver to handle 'domain',
+  // and probably a few other features.
+  if (!scopeResolveOnly) {
+    if (notFound) {
+      auto pair = namesWithErrorsEmitted.insert(ident->name());
+      if (pair.second) {
+        // insertion took place so emit the error
+        bool mentionedMoreThanOnce = identHasMoreMentions(ident);
+        CHPL_REPORT(context, UnknownIdentifier, ident, mentionedMoreThanOnce);
+      }
+    } else if (ambiguous && !resolvingCalledIdent) {
+      auto pair = namesWithErrorsEmitted.insert(ident->name());
+      if (pair.second) {
+        // insertion took place so emit the error
+        bool printFirstMention = identHasMoreMentions(ident);
+
+        std::vector<ResultVisibilityTrace> traceResult;
+        vec = lookupNameInScopeTracing(context, scope, receiverScopes,
+                                       ident->name(), config,
+                                       traceResult);
+
+        // emit an ambiguity error if this is not resolving a called ident
+        CHPL_REPORT(context, AmbiguousIdentifier,
+                    ident, printFirstMention, vec, traceResult);
+      }
+    }
+  }
+
+  // If there is one result and it's an extern block, forget about it for now.
+  // TODO: type resolution for symbols in extern blocks
+  if (notFound == false && ambiguous == false) {
+    // there is just one result. Is it an extern block?
+    const ID& id = vec[0].firstId();
+    auto tag = parsing::idToTag(context, id);
+    if (isExternBlock(tag)) {
+      vec.clear();
+    }
+  }
 
   return vec;
 }
@@ -2042,18 +2179,25 @@ static void maybeEmitWarningsForId(Resolver* rv, QualifiedType qt,
   }
 }
 
-bool Resolver::resolveIdentifier(const Identifier* ident,
+void Resolver::resolveIdentifier(const Identifier* ident,
                                  llvm::ArrayRef<const Scope*> receiverScopes) {
   ResolvedExpression& result = byPostorder.byAst(ident);
+
+  if (ident->name() == USTR("nil")) {
+    result.setType(QualifiedType(QualifiedType::CONST_VAR,
+                                 NilType::get(context)));
+    return;
+  }
 
   // for 'proc f(arg:?)' need to set 'arg' to have type AnyType
   CHPL_ASSERT(declStack.size() > 0);
   const Decl* inDecl = declStack.back();
   if (inDecl->isVarLikeDecl() && ident->name() == USTR("?")) {
     result.setType(QualifiedType(QualifiedType::TYPE, AnyType::get(context)));
-    return false;
+    return;
   }
 
+  // lookupIdentifier reports any errors that are needed
   auto vec = lookupIdentifier(ident, receiverScopes);
 
   if (vec.size() == 0) {
@@ -2061,6 +2205,7 @@ bool Resolver::resolveIdentifier(const Identifier* ident,
   } else if (vec.size() > 1 || vec[0].numIds() > 1) {
     // can't establish the type. If this is in a function
     // call, we'll establish it later anyway.
+    result.setType(QualifiedType());
   } else {
     // vec.size() == 1 and vec[0].numIds() <= 1
     const ID& id = vec[0].firstId();
@@ -2071,7 +2216,7 @@ bool Resolver::resolveIdentifier(const Identifier* ident,
       type = typeForBuiltin(context, ident->name());
       result.setToId(id);
       result.setType(type);
-      return false;
+      return;
     }
 
     // use the type established at declaration/initialization,
@@ -2111,10 +2256,10 @@ bool Resolver::resolveIdentifier(const Identifier* ident,
         ResolvedExpression& r = byPostorder.byAst(ident);
         handleResolvedCall(r, ident, ci, c);
       }
-      return false;
+      return;
     } else if (scopeResolveOnly &&
                type.kind() == QualifiedType::FUNCTION) {
-      return false;
+      return;
     }
 
     validateAndSetToId(result, ident, id);
@@ -2122,7 +2267,6 @@ bool Resolver::resolveIdentifier(const Identifier* ident,
     // if there are multiple ids we should have gotten
     // a multiple definition error at the declarations.
   }
-  return false;
 }
 
 bool Resolver::enter(const Identifier* ident) {
@@ -2130,8 +2274,8 @@ bool Resolver::enter(const Identifier* ident) {
     std::ignore = initResolver->handleUseOfField(ident);
     return false;
   } else {
-    auto ret = resolveIdentifier(ident, methodReceiverScopes());
-    return ret;
+    resolveIdentifier(ident, methodReceiverScopes());
+    return false;
   }
 }
 
@@ -2719,7 +2863,7 @@ QualifiedType Resolver::typeForEnumElement(const EnumType* enumType,
   if (refersToId.isEmpty() && !ambiguous) {
     // scopeResolveEnumElement doesn't report a "not found" error because
     // not being able to find an enum element isn't always an error. Here,
-    // though, we are specifically interested in an eleemnt, so report
+    // though, we are specifically interested in an element, so report
     // the error.
     CHPL_REPORT(context, UnknownEnumElem, nodeForErr, elementName, enumAst);
   }
@@ -2753,16 +2897,21 @@ void Resolver::exit(const Dot* dot) {
 
   if (receiver.type().kind() == QualifiedType::MODULE &&
       !receiver.toId().isEmpty()) {
+    ID moduleId = receiver.toId();
+
     // resolve e.g. M.x where M is a module
     LookupConfig config = LOOKUP_DECLS |
-                          LOOKUP_IMPORT_AND_USE;
+                          LOOKUP_IMPORT_AND_USE |
+                          LOOKUP_EXTERN_BLOCKS;
 
-    auto modScope = scopeForModule(context, receiver.toId());
+    auto modScope = scopeForModule(context, moduleId);
     auto vec = lookupNameInScope(context, modScope,
                                  /* receiverScopes */ {},
                                  dot->field(), config);
     ResolvedExpression& r = byPostorder.byAst(dot);
     if (vec.size() == 0) {
+      // emit a "can't find that thing" error
+      issueErrorForFailedModuleDot(dot, moduleId);
       r.setType(QualifiedType());
     } else if (vec.size() > 1 || vec[0].numIds() > 1) {
       // can't establish the type. If this is in a function
@@ -2770,18 +2919,24 @@ void Resolver::exit(const Dot* dot) {
     } else {
       // vec.size() == 1 and vec[0].numIds() <= 1
       const ID& id = vec[0].firstId();
-      QualifiedType type;
-      if (id.isEmpty()) {
-        // empty IDs from the scope resolution process are builtins
-        CHPL_ASSERT(false && "Not handled yet!");
-      } else {
-        // use the type established at declaration/initialization,
-        // but for things with generic type, use unknown.
-        type = typeForId(id, /*localGenericToUnknown*/ true);
+
+      // TODO: handle extern blocks correctly.
+      // This conditional is a workaround to leave extern block resolution
+      // to the production scope resolver.
+      if (!isExternBlock(parsing::idToTag(context, id))) {
+        QualifiedType type;
+        if (id.isEmpty()) {
+          // empty IDs from the scope resolution process are builtins
+          CHPL_ASSERT(false && "Not handled yet!");
+        } else {
+          // use the type established at declaration/initialization,
+          // but for things with generic type, use unknown.
+          type = typeForId(id, /*localGenericToUnknown*/ true);
+        }
+        maybeEmitWarningsForId(this, type, dot, id);
+        validateAndSetToId(r, dot, id);
+        r.setType(type);
       }
-      maybeEmitWarningsForId(this, type, dot, id);
-      validateAndSetToId(r, dot, id);
-      r.setType(type);
     }
     return;
   }
@@ -3150,9 +3305,8 @@ bool Resolver::enter(const ReduceIntent* reduce) {
     context->error(reduce, "Unable to find declaration of \"%s\" for reduction", reduce->name().c_str());
   }
 
-  // TODO: Resolve reduce-op with shadowed type
+  // TODO: Resolve reduce->op() with shadowed type
   // E.g. "+ reduce x" --> "SumReduceOp(x.type)"
-  reduce->op()->traverse(*this);
 
   return false;
 }

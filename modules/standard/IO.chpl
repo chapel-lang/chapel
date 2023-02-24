@@ -199,7 +199,7 @@ Files
 
 There are several functions that open a file and return a :record:`file`
 including :proc:`open`, :proc:`openTempFile`, :proc:`openMemFile`, the
-:record:`file` initializer that takes a ``c_int`` argument, and the
+:record:`file` initializer that takes an ``int`` argument, and the
 :record:`file` initializer that takes a :type:`~CTypes.c_FILE` argument.
 
 Once a file is open, it is necessary to create associated channel(s) - see
@@ -278,8 +278,8 @@ more details on the situation in which this kind of data race can occur.
   for files created in the following situations:
 
     * with the file initializer that takes a :type:`~CTypes.c_FILE` argument
-    * with the file initializer that takes a ``c_int`` argument, where the
-      ``c_int`` represents a non-seekable system file descriptor
+    * with the file initializer that takes an ``int`` argument, where the
+      ``int`` represents a non-seekable system file descriptor
 
 
 Performing I/O with Channels
@@ -1569,11 +1569,16 @@ operator file.=(ref ret:file, x:file) {
 }
 
 private proc initHelper(ref f: file, fp: c_FILE, hints=ioHintSet.empty,
-                        style:iostyleInternal = defaultIOStyleInternal()) throws {
+                        style:iostyleInternal = defaultIOStyleInternal(),
+                        own=false) throws {
   var local_style = style;
   f._home = here;
-  var err = qio_file_init(f._file_internal, fp, -1, hints._internal,
-                          local_style, 1);
+  var internalHints = hints._internal;
+  if (own) {
+    internalHints |= QIO_HINT_OWNED;
+  }
+  var err = qio_file_init(f._file_internal, fp, -1, internalHints, local_style,
+                          1);
 
   // On exit either f._file_internal.ref_cnt == 1, or f._file_internal is NULL.
   // error should be nonzero in the latter case.
@@ -1589,10 +1594,11 @@ private proc initHelper(ref f: file, fp: c_FILE, hints=ioHintSet.empty,
 }
 
 @unstable "initializing a file with a style argument is unstable"
-proc file.init(fp: c_FILE, hints=ioHintSet.empty, style:iostyle) throws {
+  proc file.init(fp: c_FILE, hints=ioHintSet.empty, style:iostyle,
+                 own=false) throws {
   this.init();
 
-  initHelper(this, fp, hints, style: iostyleInternal);
+  initHelper(this, fp, hints, style: iostyleInternal, own);
 }
 
 /*
@@ -1618,22 +1624,30 @@ Once the Chapel file is created, you will need to use a :proc:`file.reader` or
 :arg fp: a pointer to a C ``FILE``. See :type:`~CTypes.c_FILE`.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
+:arg own: set to indicate if the :type:`~CTypes.c_FILE` provided should be
+          cleaned up when the ``file`` is closed.  Defaults to ``false``
 
 :throws SystemError: Thrown if the C file could not be retrieved.
 */
-proc file.init(fp: c_FILE, hints=ioHintSet.empty) throws {
+proc file.init(fp: c_FILE, hints=ioHintSet.empty, own=false) throws {
   this.init();
 
-  initHelper(this, fp, hints);
+  initHelper(this, fp, hints, own=own);
 }
 
 private proc initHelper2(ref f: file, fd: c_int, hints = ioHintSet.empty,
-                         style:iostyleInternal = defaultIOStyleInternal()) throws {
+                         style:iostyleInternal = defaultIOStyleInternal(),
+                         own=false) throws {
 
   var local_style = style;
   f._home = here;
   extern proc chpl_cnullfile():c_FILE;
-  var err = qio_file_init(f._file_internal, chpl_cnullfile(), fd, hints._internal, local_style, 0);
+  var internalHints = hints._internal;
+  if (own) {
+    internalHints |= QIO_HINT_OWNED;
+  }
+  var err = qio_file_init(f._file_internal, chpl_cnullfile(), fd, internalHints,
+                          local_style, 0);
 
   // On return, either f._file_internal.ref_cnt == 1, or f._file_internal is
   // NULL.
@@ -1649,10 +1663,11 @@ private proc initHelper2(ref f: file, fd: c_int, hints = ioHintSet.empty,
 }
 
 @unstable "initializing a file with a style argument is unstable"
-proc file.init(fd: c_int, hints=ioHintSet.empty, style:iostyle) throws {
+proc file.init(fileDescriptor: int, hints=ioHintSet.empty,
+               style:iostyle, own=false) throws {
   this.init();
 
-  initHelper2(this, fd, hints, style);
+  initHelper2(this, fileDescriptor.safeCast(c_int), hints, style, own);
 }
 
 /*
@@ -1679,16 +1694,18 @@ The system file descriptor will be closed when the Chapel file is closed.
   to files backed by non-seekable file descriptors.
 
 
-:arg fd: a system file descriptor.
+:arg fileDescriptor: a system file descriptor.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
+:arg own: set to indicate if the `fileDescriptor` provided should be cleaned up
+          when the ``file`` is closed.  Defaults to ``false``
 
 :throws SystemError: Thrown if the file descriptor could not be retrieved.
 */
-proc file.init(fd: c_int, hints=ioHintSet.empty) throws {
+proc file.init(fileDescriptor: int, hints=ioHintSet.empty, own=false) throws {
   this.init();
 
-  initHelper2(this, fd, hints);
+  initHelper2(this, fileDescriptor.safeCast(c_int), hints, own=own);
 }
 
 pragma "no doc"
@@ -2924,31 +2941,23 @@ inline operator :(x: ioLiteral, type t:string) {
   return x.val;
 }
 
-/*
+pragma "no doc"
+record _internalIoBits {
+  /* The bottom ``numBits`` of x will be read or written */
+  var x:uint(64);
+  /* How many of the low-order bits of ``x`` should we read or write? */
+  var numBits:int(8);
 
-Represents a value with a particular bit length that we want to read or write.
-The I/O will always be done in binary mode.
-
-*/
-record ioBits {
-  /* The bottom ``nbits`` of v will be read or written */
-  var v:uint(64);
-  /* How many of the low-order bits of ``v`` should we read or write? */
-  var nbits:int(8);
-  pragma "no doc"
-  proc writeThis(f) throws {
-    // Normally this is handled explicitly in read/write.
-    f.write(v);
-  }
-
-  pragma "no doc"
-  proc encodeTo(f) throws {
-    f._writeOne(f.kind, this, here);
-  }
+  // keep the old names for compatibilty with old ioBits
+  proc v: x.type {return x;}
+  proc nbits:numBits.type {return numBits;}
 }
 
+deprecated "ioBits type is deprecated - please use :proc:`fileReader.readBits` and :proc:`fileWriter.writeBits` instead"
+type ioBits = _internalIoBits;
+
 pragma "no doc"
-inline operator :(x: ioBits, type t:string) {
+inline operator :(x: _internalIoBits, type t:string) {
   const ret = "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
   return ret;
 }
@@ -3933,7 +3942,7 @@ proc _isIoPrimitiveType(type t) param return
 
 pragma "no doc"
  proc _isIoPrimitiveTypeOrNewline(type t) param return
-  _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar || t == ioBits;
+  _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar || t == _internalIoBits;
 
 // Read routines for all primitive types.
 private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
@@ -4293,7 +4302,7 @@ proc _channel._decodeOne(ref x:?t, loc:locale) throws {
                               _readWriteThisFromLocale=loc);
   defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL; }
 
-  if t == ioLiteral || t == ioNewline || t == ioBits || t == ioChar {
+  if t == ioLiteral || t == ioNewline || t == _internalIoBits || t == ioChar {
     reader._readOne(reader.kind, x, reader.getLocaleOfIoRequest());
     return;
   }
@@ -4371,8 +4380,8 @@ private proc _read_io_type_internal(_channel_internal:qio_channel_ptr_t,
     return qio_channel_scan_literal(false, _channel_internal,
                                     x.val.localize().c_str(),
                                     x.val.numBytes: c_ssize_t, x.ignoreWhiteSpace);
-  } else if t == ioBits {
-    return qio_channel_read_bits(false, _channel_internal, x.v, x.nbits);
+  } else if t == _internalIoBits {
+    return qio_channel_read_bits(false, _channel_internal, x.x, x.numBits);
   } else if kind == iokind.dynamic {
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
@@ -4425,8 +4434,8 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
     return qio_channel_write_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
     return qio_channel_print_literal(false, _channel_internal, x.val.localize().c_str(), x.val.numBytes:c_ssize_t);
-  } else if t == ioBits {
-    return qio_channel_write_bits(false, _channel_internal, x.v, x.nbits);
+  } else if t == _internalIoBits {
+    return qio_channel_write_bits(false, _channel_internal, x.x, x.numBits);
   } else if kind == iokind.dynamic {
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
@@ -5899,10 +5908,10 @@ proc fileReader.readBits(ref x:integral, numBits:int):bool throws {
       throw new owned IllegalArgumentError("numBits", "readBits numBits=" + numBits:string + " < 0");
   }
 
-  var tmp:ioBits;
-  tmp.nbits = numBits:int(8);
+  var tmp:_internalIoBits;
+  tmp.numBits = numBits:int(8);
   var ret = try this.read(tmp);
-  x = tmp.v:x.type;
+  x = tmp.x:x.type;
   return ret;
 }
 
@@ -5953,13 +5962,13 @@ proc fileWriter.writeBits(x: integral, numBits: int) : void throws {
               "writeBits numBits=" + numBits:string + " < 0");
   }
 
-  try this.write(new ioBits(x:uint(64), numBits:int(8)));
+  try this.write(new _internalIoBits(x:uint(64), numBits:int(8)));
 }
 
 
 
 /*
-  Write ``size`` coidpoints from a :type:`~String.string` to a ``filewriter``
+  Write ``size`` codepoints from a :type:`~String.string` to a ``fileWriter``
 
   :arg s: the ``string`` to write
   :arg size: the number of codepoints to write from the ``string``
@@ -6400,7 +6409,7 @@ proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
 
 
 /*
-  Controlls the return type of the ``readBinary`` overloads that take an
+  Controls the return type of the ``readBinary`` overloads that take an
   array argument. Those are:
 
   ``fileReader.readBinary(ref data: [], param endian = ioendian.native)``
@@ -6487,7 +6496,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): b
    :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
               to read the numbers. Defaults to ``ioendian.native``.
    :returns: the number of values that were read into the array. This can be
-              less than ``data.size`` if EOF was reached, or an error occured,
+              less than ``data.size`` if EOF was reached, or an error occurred,
               before filling the array.
 
    :throws SystemError: Thrown if an error occurred while reading from the fileReader
@@ -6580,7 +6589,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
    :arg endian: :type:`ioendian` specifies the byte order in which
               to read the number.
    :returns: the number of values that were read into the array. This can be
-              less than ``data.size`` if EOF was reached, or an error occured,
+              less than ``data.size`` if EOF was reached, or an error occurred,
               before filling the array.
 
    :throws SystemError: Thrown if an error occurred while reading the from fileReader

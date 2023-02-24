@@ -12,7 +12,7 @@ class PassiveCache {
 
     proc init(type dt) {
         this.dataType = dt;
-        this.items = new map(int, weak(shared dt), parSafe=true);
+        this.items = new map(int, weak(shared dt));
     }
 
     inline proc lock() {
