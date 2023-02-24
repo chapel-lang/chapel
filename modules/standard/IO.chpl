@@ -2847,6 +2847,8 @@ proc _channel.withFormatter(f: ?) {
   return ret;
 }
 
+// represents a Unicode codepoint
+// used to pass codepoints to read and write to avoid duplicating code
 pragma "no doc"
 record _internalIoChar {
   /* The codepoint value */
@@ -2859,6 +2861,13 @@ record _internalIoChar {
   }
 }
 
+/*
+
+Represents a Unicode codepoint. I/O routines (such as :proc:`channel.read`
+and :proc:`channel.write`) can use arguments of this type in order to read or
+write a single Unicode codepoint.
+
+ */
 deprecated "ioChar type is deprecated - please use :proc:`fileReader.readCodepoint` and :proc:`fileWriter.writeCodepoint` instead"
 type ioChar = _internalIoChar;
 
@@ -6011,7 +6020,7 @@ proc fileReader.readCodepoint(ref codepoint: int):bool throws {
 
   :arg byte: byte to write
 
-  :throws EofError: Thrown if the write operation exceeds the
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
                               ``fileWriter``'s specified range.
   :throws SystemError: Thrown if the byte could not be written to the ```fileWriter``.
 */
@@ -6021,7 +6030,13 @@ proc fileWriter.writeByte(byte: uint(8)) throws {
     try this.lock(); defer { this.unlock(); }
     err = qio_channel_write_uint8(false, this._channel_internal, byte);
   }
-  if err then try this._ch_ioerror(err, "in fileWriter.writeByte()");
+
+  if err == EEOF {
+    throw new UnexpectedEofError("Encountered EOF in writeByte");
+  }
+  else if err {
+    try this._ch_ioerror(err, "in fileWriter.writeByte");
+  }
 }
 
 /*
