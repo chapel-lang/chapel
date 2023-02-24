@@ -5981,7 +5981,7 @@ proc fileWriter.writeBits(x: integral, numBits: int) : void throws {
   :throws SystemError: Thrown if the codepoint could not be written to the ```fileWriter``.
 */
 proc fileWriter.writeCodepoint(codepoint: int) throws {
-  try this.write(new _internalIoChar(codepoint:int(32)));
+  try this.write(new _internalIoChar(codepoint.safeCast(int(32))));
 }
 
 /*
@@ -6011,7 +6011,7 @@ proc fileReader.readCodepoint(): int throws {
 proc fileReader.readCodepoint(ref codepoint: int):bool throws {
   var tmp:_internalIoChar;
   var ret = try this.read(tmp);
-  codepoint = tmp.ch:codepoint.type;
+  codepoint = tmp.ch.safeCast(codepoint.type);
   return ret;
 }
 
