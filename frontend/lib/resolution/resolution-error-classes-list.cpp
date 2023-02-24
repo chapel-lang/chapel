@@ -877,6 +877,24 @@ void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
              useOrImport, "' statements.");
 }
 
+void ErrorUseImportTransitiveRename::write(ErrorWriterBase& wr) const {
+  auto from = std::get<0>(info);
+  auto middle = std::get<1>(info);
+  auto to = std::get<2>(info);
+
+  auto firstRename = std::get<3>(info);
+  auto secondRename = std::get<4>(info);
+
+  wr.heading(kind_, type_, secondRename, "'",
+             middle, "' is repeated.");
+  wr.message("First, '", from, "' is renamed to '", middle, "'.");
+  wr.code(firstRename, {firstRename});
+  wr.message("Then, '", middle, "' is renamed to '", to, "'.");
+  wr.code(secondRename, {secondRename});
+  wr.note(firstRename, "did you mean to rename '", from, "' to '", to, "'?");
+  wr.message("You can do so by a single rename, '", from, " as ", to, "'.");
+}
+
 void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
   auto id = std::get<const ID>(info);
   auto moduleName = std::get<2>(info);
@@ -970,24 +988,6 @@ void ErrorUseImportUnknownSym::write(ErrorWriterBase& wr) const {
   wr.message("Searching in the scope of ", whatIsSearched, " '",
              searchedScope->name(), "':");
   wr.code(searchedScope->id());
-}
-
-void ErrorUseImportTransitiveRename::write(ErrorWriterBase& wr) const {
-  auto from = std::get<0>(info);
-  auto middle = std::get<1>(info);
-  auto to = std::get<2>(info);
-
-  auto firstRename = std::get<3>(info);
-  auto secondRename = std::get<4>(info);
-
-  wr.heading(kind_, type_, secondRename, "'",
-             middle, "' is repeated.");
-  wr.message("First, '", from, "' is renamed to '", middle, "'.");
-  wr.code(firstRename, {firstRename});
-  wr.message("Then, '", middle, "' is renamed to '", to, "'.");
-  wr.code(secondRename, {secondRename});
-  wr.note(firstRename, "did you mean to rename '", from, "' to '", to, "'?");
-  wr.message("You can do so by a single rename, '", from, " as ", to, "'.");
 }
 
 void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
