@@ -1162,6 +1162,9 @@ static bool      needToAddCoercion(Type*      actualType,
                                    ArgSymbol* formal,
                                    FnSymbol*  fn);
 
+static bool      needConversionForTupleArg(Symbol*    actualSym,
+                                           ArgSymbol* formal,
+                                           FnSymbol*  fn);
 
 static void      addArgCoercion(FnSymbol*  fn,
                                 CallExpr*  call,
@@ -1257,8 +1260,12 @@ static bool needToAddCoercion(Type*      actualType,
                               FnSymbol*  fn) {
   Type* formalType = formal->type;
 
-  if (actualType == formalType)
-    return false;
+  if (actualType == formalType) {
+    if (actualType->symbol->hasFlag(FLAG_TUPLE))
+      return needConversionForTupleArg(actualSym, formal, fn);
+    else
+      return false;
+  }
 
   // If we have an actual of ref(formalType) and
   // a REF or CONST REF argument intent, no coercion is necessary.
@@ -1312,6 +1319,58 @@ static bool needToAddCoercion(Type*      actualType,
   if (canCoerce(actualType, actualSym, formalType, formal, fn))
     return true;
 
+  return false;
+}
+
+static bool isBlankOrConstArg(Symbol* sym) {
+  if (ArgSymbol* arg = toArgSymbol(sym))
+    return arg->intent == INTENT_BLANK || arg->intent == INTENT_CONST;
+  else
+    return false;
+}
+
+static bool isSingleResultOfTupleInit(Symbol* sym) {
+  if (sym->getSingleUse() != nullptr) // otherwise there may be complications
+   if (SymExpr* defSE = sym->getSingleDef())
+    if (CallExpr* move = toCallExpr(defSE->parentExpr))
+     if (move->isPrimitive(PRIM_MOVE))
+      if (CallExpr* defCall = toCallExpr(move->get(2)))
+       if (FnSymbol* defFn = defCall->resolvedFunction())
+        if (defFn->hasFlag(FLAG_INIT_TUPLE))
+         return true;
+
+  return false;
+}
+
+// When the actual and the formal types are the same tuple type
+// and the formal has the default or const intent,
+// need to treat int/bool/etc. components as if passed by in-intent:
+//   test/types/tuple/tupleDefaultIntent.chpl
+// Assumes actual->type == formal->type .
+// Skips a few cases where copying is unnessary or detrimental.
+static bool needConversionForTupleArg(Symbol*    actualSym,
+                                      ArgSymbol* formal,
+                                      FnSymbol*  fn) {
+  if (formal->intent == INTENT_BLANK ||
+      formal->intent == INTENT_CONST  )
+    return !(
+      // do NOT convert in these cases:
+      // nothing to do for types
+      formal->hasFlag(FLAG_TYPE_VARIABLE) ||
+      // default-intent arguments can be passed through: copying is not needed
+      // because the tuple's non-ref components are already copies
+      isBlankOrConstArg(actualSym)        ||
+      // no need to copy a temp
+      actualSym->hasFlag(FLAG_TEMP)       ||
+      // avoid potenital infinite recursion
+      fn->hasFlag(FLAG_TUPLE_CAST_FN)     ||
+      fn->hasFlag(FLAG_INIT_COPY_FN)      ||
+      fn->hasFlag(FLAG_AUTO_COPY_FN)      ||
+      // no need to copy a tuple if we just created it
+      isSingleResultOfTupleInit(actualSym)
+    );
+
+  // not applicable to other intents
   return false;
 }
 

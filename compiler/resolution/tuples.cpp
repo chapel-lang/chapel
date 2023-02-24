@@ -721,6 +721,20 @@ void addTupleCoercion(AggregateType* fromT, AggregateType* toT,
   }
 }
 
+// We add a cast to an identical tuple type when creating a referential tuple
+// to pass to a function by default intent, in those cases when this tuple
+// has no reference components, ex. 2*int. If so, avoid field-wide operations
+// and copy it using a single 'move' when the tuple is a POD.
+static void instantiateTrivialTupleCast(FnSymbol* fn, ArgSymbol* arg) {
+  VarSymbol* retv = new VarSymbol("retcopy", arg->type);
+  BlockStmt* fnbody = fn->body;
+  fnbody->insertAtTail(new DefExpr(retv));
+  fnbody->insertAtTail(new CallExpr(PRIM_MOVE, retv, arg));
+  fnbody->insertAtTail(new CallExpr(PRIM_RETURN, retv));
+  fn->addFlag(FLAG_INLINE);
+  fn->removeFlag(FLAG_UNSAFE);
+  return;
+}
 
 static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
   // Adjust any formals for blank-intent tuple behavior now
@@ -729,6 +743,11 @@ static void instantiate_tuple_cast(FnSymbol* fn, CallExpr* context) {
   AggregateType* toT   = toAggregateType(fn->getFormal(2)->type);
   ArgSymbol*     arg   = fn->getFormal(1);
   AggregateType* fromT = toAggregateType(arg->type);
+
+  if (toT == fromT && ! propagateNotPOD(toT)) {
+    instantiateTrivialTupleCast(fn, arg);
+    return;
+  }
 
   BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
 
