@@ -10141,7 +10141,8 @@ static Expr* resolveFunctionCapture(FnSymbol* fn, Expr* use,
     gdbShouldBreakHere();
   }
 
-  if (fWarnUnstable) {
+  // Discarding the type (e.g., for 'c_ptrTo') is well specified.
+  if (fWarnUnstable && !discardType) {
     USR_WARN(use, "use of routines as values is unstable");
   }
 
