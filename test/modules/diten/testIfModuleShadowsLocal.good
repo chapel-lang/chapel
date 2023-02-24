@@ -1,3 +1,4 @@
 testIfModuleShadowsLocal.chpl:9: In function 'foo':
 testIfModuleShadowsLocal.chpl:11: warning: module-level symbol is hiding function argument 'a'
+testIfModuleShadowsLocal.chpl:2: note:  found 'a' defined here
 1.0 + 2.0i
