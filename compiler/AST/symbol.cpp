@@ -2247,7 +2247,7 @@ const char* toString(VarSymbol* var, bool withType) {
           SymExpr* dstSe = toSymExpr(c->get(1));
           SymExpr* srcSe = toSymExpr(c->get(2));
           if (dstSe && srcSe && dstSe->symbol() == sym) {
-            sym = singleDef->symbol();
+            sym = srcSe->symbol();
             continue;
           }
         }

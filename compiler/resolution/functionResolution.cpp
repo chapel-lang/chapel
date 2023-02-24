@@ -4768,8 +4768,15 @@ static bool maybeIssueSplitInitMissingTypeError(CallInfo& info,
   // Check for uninitialized values (with type dtSplitInitType)
   bool foundUnknownTypeActual = false;
   for_actuals(actual, info.call) {
+    bool isTypeVariable = false;
+    if (SymExpr* se = toSymExpr(actual)) {
+      if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
+        isTypeVariable = true;
+    }
+
     Type* t = actual->getValType();
-    if (t == dtSplitInitType || t->symbol->hasFlag(FLAG_GENERIC)) {
+    if (t == dtSplitInitType ||
+        (!isTypeVariable && t->symbol->hasFlag(FLAG_GENERIC))) {
       foundUnknownTypeActual = true;
     }
   }
@@ -4790,8 +4797,15 @@ static bool maybeIssueSplitInitMissingTypeError(CallInfo& info,
     if (anyTypeNotEstablished) {
       bool printedError = false;
       for_actuals(actual, info.call) {
+        bool isTypeVariable = false;
+        if (SymExpr* se = toSymExpr(actual)) {
+          if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
+            isTypeVariable = true;
+        }
+
         Type* t = actual->getValType();
-        if (t == dtSplitInitType || t->symbol->hasFlag(FLAG_GENERIC)) {
+        if (t == dtSplitInitType ||
+            (!isTypeVariable && t->symbol->hasFlag(FLAG_GENERIC))) {
           if (SymExpr* se = toSymExpr(actual)) {
             CallExpr* call = userCall(info.call);
             splitInitMissingTypeError(se->symbol(), call, false);
