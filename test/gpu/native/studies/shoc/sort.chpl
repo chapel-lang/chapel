@@ -57,7 +57,6 @@ proc runSort(){
         numScanElts = numBlocks;
     } while numScanElts > 1;
 
-    /*var scanBlockSums : [0..#level+1] c_ptr(uint(32));*/
     var scanBlockSums : [0..#level+1] innerArray(uint(32));
     numLevelsAllocated = level + 1;
     numScanElts = maxNumScanElements;
@@ -67,7 +66,6 @@ proc runSort(){
                     numScanElts : real / (4 * SCAN_BLOCK_SIZE)) : int) : uint(32);
         if(numBlocks > 1) {
             // Malloc device mem for block sums
-            /*scanBlockSums[level] = c_malloc(uint(32), numBlocks);*/
             scanBlockSums[level].D = {0..#numBlocks};
             level+=1;
         }
@@ -75,7 +73,6 @@ proc runSort(){
     } while (numScanElts > 1);
     // Print the above vars to see if they match the expected values
 
-    /*scanBlockSums[level] = c_malloc(uint(32), 1);*/
     scanBlockSums[level].D = {0..0};
 
     // Allcoate device mem for sorting kernels
@@ -208,16 +205,16 @@ proc radixSortStep(nbits: uint(32), startbit: uint(32),
     // Use offsets again
     findRadixOffsets(findGlobalWorkSize, tempKeys, counters, blockOffsets, startbit, numElements, findBlocks);
 
-    scanArrayRecursive(countersSum, counters, 16*reorderBlocks, 0,
-                       scanBlockSums);
+    scanArrayRecursive(countersSum, counters, 16*reorderBlocks, 0, scanBlockSums);
 
     // reorderData Kernel here
     reorderData(reorderGlobalWorkSize, startbit, keys, values, tempKeys, tempValues,
          blockOffsets, countersSum, counters, reorderBlocks);
 }
 
-proc scanArrayRecursive(outArray : [] uint(32), inArray : [] uint(32),
-                        numElements, level, ref blockSums){
+proc scanArrayRecursive(ref outArray : [] uint(32), ref inArray : [] uint(32),
+                        numElements, level,
+                        ref blockSums: [] innerArray(uint(32))) {
     // Kernels hadle 8 elements per thread
     const numBlocks : uint(32) = max(1,ceil(numElements:real
         / (4.0:real * SCAN_BLOCK_SIZE)) : uint(32)) : uint(32);
@@ -345,10 +342,8 @@ proc radixSortBlocks(radixGlobalWorkSize, const nbits : uint(32), const startbit
         // Load keys and vals from Global memory
         var key, value : 4*uint(32);
         const base = 4*i;
-        for param j in 0..3:uint(32) do
-            key[j] = keysIn[base + j];
-        for param j in 0..3:uint(32) do
-            value[j] = valuesIn[base + j];
+        for param j in 0..3:uint(32) do key[j] = keysIn[base + j];
+        for param j in 0..3:uint(32) do value[j] = valuesIn[base + j];
 
         // For each of the 4 bits
         for shift in startbit:uint(32)..#nbits:uint(32) {
@@ -421,10 +416,8 @@ proc radixSortBlocks(radixGlobalWorkSize, const nbits : uint(32), const startbit
             __primitive("gpu syncThreads");
 
         }
-        for param j in 0..3:uint(32) do
-            keysOut[base + j] = key[j];
-        for param j in 0..3:uint(32) do
-            valuesOut[base + j] = value[j];
+        for param j in 0..3:uint(32) do keysOut[base + j] = key[j];
+        for param j in 0..3:uint(32) do valuesOut[base + j] = value[j];
     }
 }
 
@@ -586,9 +579,9 @@ proc scanLocalMem(const val : uint(32), ref s_data: c_ptr(uint(32)), in idx : ui
     return s_data[idx-1];
 }
 
-proc scanKernel(numBlocks : uint(32), g_odata: [] uint(32),
-                g_idata: [] uint(32), g_blockSums : [] uint(32),
-                const n, const fullBlock: bool, const storeSum : bool){
+proc scanKernel(numBlocks : uint(32), ref g_odata: [] uint(32), ref g_idata: [] uint(32),
+        ref g_blockSums : [] uint(32), const n,
+        const fullBlock: bool, const storeSum : bool){
 
     var globalSize : uint(32) = numBlocks * SCAN_BLOCK_SIZE;
     foreach gid in 0..<globalSize : uint(32) {
@@ -658,8 +651,8 @@ proc scanKernel(numBlocks : uint(32), g_odata: [] uint(32),
     }
 }
 
-proc vectorAddUniform4(d_vector: [] uint(32),
-                       d_uniforms : [] uint(32), const n){
+proc vectorAddUniform4(ref d_vector: [] uint(32), const ref d_uniforms : [] uint(32),
+        const n){
 
     // Math to get loop bounds:
     // CUDA Kernel Parameter: grid * thread
