@@ -108,8 +108,17 @@ accepts one argument of the same type:
 
 In order to override this compiler-generated implementation, the user must
 implement an ``init=`` method that can accept an argument of the same type.
-Other user-defined ``init=`` methods will not prevent the compiler from
-generating a default implementation for ``init=``. For example:
+
+An ``init=`` method may also specify a type other than the one being
+initialized. Such user-defined initializers will disable generation of the
+default implementation of a type's ``init=`` method, and users must provide an
+equivalent implementation.
+
+When initializing from a different type, users must also provide a cast
+implementation between their record and the other type. This requirement exists
+for consistency and completeness, as both ``init=`` and a cast create one type
+from another. For example, consider a record that can be initialized from an
+``int``.
 
 .. code-block:: chapel
 
@@ -117,12 +126,20 @@ generating a default implementation for ``init=``. For example:
     var x : int;
   }
 
+  proc R.init=(other: R) {
+    this.x = other.x;
+  }
+
   proc R.init=(other : int) {
     this.x = other;
   }
 
+  operator :(val: int, type T : R) {
+    return new R(val);
+  }
+
   var A = new R(10);   // compiler-generated initializer 
-  var B = A;           // B.init=(A) , the compiler-generated ``init=``
+  var B = A;           // B.init=(A) , user-defined ``init=``
   var C : R = 10;      // C.init=(10) , user-defined ``init=``
   // var D : R = "hello"; // D.init=("hello") , unresolved call!
 
