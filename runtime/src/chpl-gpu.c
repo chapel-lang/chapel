@@ -115,6 +115,16 @@ void* chpl_gpu_memmove(void* dst, const void* src, size_t n) {
   return ret;
 }
 
+void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n) {
+  CHPL_GPU_DEBUG("Doing GPU memset of %zu bytes from %p. Val=%d\n", n, addr,
+                 val);
+
+  void* ret = chpl_gpu_impl_memset(addr, val, n);
+
+  CHPL_GPU_DEBUG("memset successful\n");
+  return ret;
+}
+
 void chpl_gpu_copy_device_to_host(void* dst, const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(src));
 

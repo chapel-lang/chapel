@@ -87,6 +87,13 @@ module ChapelHashtable {
           c_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
         }
       }
+      when ArrayInit.gpuInit {
+        // This should match the 'these' iterator in terms of idx->task
+        extern proc chpl_gpu_memset(addr, byte, numBytes);
+        foreach slot in _allSlots(size) {
+          chpl_gpu_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+        }
+      }
       otherwise {
         halt("ArrayInit.", initMethod, " should have been made concrete");
       }

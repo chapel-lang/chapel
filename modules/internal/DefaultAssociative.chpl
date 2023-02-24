@@ -496,6 +496,11 @@ module DefaultAssociative {
               }
             }
           }
+          when ArrayInit.gpuInit {
+            // may not be too difficult, not a priority at the moment
+            halt("Associative arrays cannot be initialized on GPU locales with",
+                 " CHPL_MEM_STRATEGY=array_on_device yet.");
+          }
           otherwise {
             halt("ArrayInit.", initMethod, " heuristicInit should have been made concrete");
           }
