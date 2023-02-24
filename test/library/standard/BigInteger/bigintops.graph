@@ -5,7 +5,7 @@ ylabel: Time (seconds)
 graphtitle: BigInteger Performance (fast ops)
 
 perfkeys: Elapsed 256 addition time =, Elapsed 1024 addition time =, Elapsed 1024 pow time =
-files: bigintops.dat
+files: bigintops.dat, bigintops.dat, bigintops.dat
 graphkeys: 256 bit addition, 1024 bit addition, 1024 bit pow
 ylabel: Time (seconds)
 graphtitle: BigInteger Performance (slow ops)

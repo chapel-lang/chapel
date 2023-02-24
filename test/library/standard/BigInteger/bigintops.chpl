@@ -75,7 +75,6 @@ proc runPowTest(inputVal: bigint) {
   if perfTest then t.start();
 
   for i in 1..numOps {
-    b = 0;
     b.pow(a, 2:uint);
   }
 
