@@ -36,7 +36,7 @@
 #include <hip/hip_runtime_api.h>
 #include <hip/hip_common.h>
 
-static void chpl_gpu_cuda_check(int err, const char* file, int line) {
+static void chpl_gpu_rocm_check(int err, const char* file, int line) {
   if(err == hipErrorContextAlreadyInUse) { return; }
   if(err != hipSuccess) {
     const int msg_len = 256;
@@ -50,25 +50,25 @@ static void chpl_gpu_cuda_check(int err, const char* file, int line) {
   }
 }
 
-#define CUDA_CALL(call) do {\
-  chpl_gpu_cuda_check((int)call, __FILE__, __LINE__);\
+#define ROCM_CALL(call) do {\
+  chpl_gpu_rocm_check((int)call, __FILE__, __LINE__);\
 } while(0);
 
 static inline
 void* chpl_gpu_load_module(const char* fatbin_data) {
-  hipModule_t cuda_module;
+  hipModule_t rocm_module;
 
-  CUDA_CALL(hipModuleLoadData(&cuda_module, fatbin_data));
-  assert(cuda_module);
+  ROCM_CALL(hipModuleLoadData(&rocm_module, fatbin_data));
+  assert(rocm_module);
 
-  return (void*)cuda_module;
+  return (void*)rocm_module;
 }
 
 static inline
-void* chpl_gpu_load_function(hipModule_t cuda_module, const char* kernel_name) {
+void* chpl_gpu_load_function(hipModule_t rocm_module, const char* kernel_name) {
   hipFunction_t function;
 
-  CUDA_CALL(hipModuleGetFunction(&function, cuda_module, kernel_name));
+  ROCM_CALL(hipModuleGetFunction(&function, rocm_module, kernel_name));
   assert(function);
 
   return (void*)function;
@@ -80,21 +80,21 @@ extern const char* chpl_gpuBinary;
 static hipCtx_t *chpl_gpu_primary_ctx;
 
 // array indexed by device ID (we load the same module once for each GPU).
-static hipModule_t *chpl_gpu_cuda_modules;
+static hipModule_t *chpl_gpu_rocm_modules;
 
 static int *deviceClockRates;
 
 
 static bool chpl_gpu_has_context() {
-  hipCtx_t cuda_context = NULL;
+  hipCtx_t rocm_context = NULL;
 
-  hipError_t ret = hipCtxGetCurrent(&cuda_context);
+  hipError_t ret = hipCtxGetCurrent(&rocm_context);
 
   if (ret == hipErrorNotInitialized || ret == hipErrorDeinitialized) {
     return false;
   }
   else {
-    return cuda_context != NULL;
+    return rocm_context != NULL;
   }
 }
 
@@ -102,7 +102,7 @@ static void chpl_gpu_ensure_context() {
   hipCtx_t next_context = chpl_gpu_primary_ctx[chpl_task_getRequestedSubloc()];
 
   if (!chpl_gpu_has_context()) {
-    CUDA_CALL(hipCtxPushCurrent(next_context));
+    ROCM_CALL(hipCtxPushCurrent(next_context));
   }
   else {
     hipCtx_t cur_context = NULL;
@@ -113,8 +113,8 @@ static void chpl_gpu_ensure_context() {
 
     if (cur_context != next_context) {
       hipCtx_t popped;
-      CUDA_CALL(hipCtxPopCurrent(&popped));
-      CUDA_CALL(hipCtxPushCurrent(next_context));
+      ROCM_CALL(hipCtxPopCurrent(&popped));
+      ROCM_CALL(hipCtxPushCurrent(next_context));
     }
   }
 }
@@ -133,13 +133,13 @@ void chpl_gpu_impl_init() {
     CHPL_GPU_DEBUG("         other: unified memory\n");
   #endif
 
-  // CUDA initialization
-  CUDA_CALL(hipInit(0));
+  // ROCM initialization
+  ROCM_CALL(hipInit(0));
 
-  CUDA_CALL(hipGetDeviceCount(&num_devices));
+  ROCM_CALL(hipGetDeviceCount(&num_devices));
 
   chpl_gpu_primary_ctx = chpl_malloc(sizeof(hipCtx_t)*num_devices);
-  chpl_gpu_cuda_modules = chpl_malloc(sizeof(hipModule_t)*num_devices);
+  chpl_gpu_rocm_modules = chpl_malloc(sizeof(hipModule_t)*num_devices);
   deviceClockRates = chpl_malloc(sizeof(int)*num_devices);
 
   int i;
@@ -147,13 +147,13 @@ void chpl_gpu_impl_init() {
     hipDevice_t device;
     hipCtx_t context;
 
-    CUDA_CALL(hipDeviceGet(&device, i));
-    CUDA_CALL(hipDevicePrimaryCtxSetFlags(device, hipDeviceScheduleBlockingSync));
-    CUDA_CALL(hipDevicePrimaryCtxRetain(&context, device));
+    ROCM_CALL(hipDeviceGet(&device, i));
+    ROCM_CALL(hipDevicePrimaryCtxSetFlags(device, hipDeviceScheduleBlockingSync));
+    ROCM_CALL(hipDevicePrimaryCtxRetain(&context, device));
 
-    CUDA_CALL(hipCtxPushCurrent(context));
-    chpl_gpu_cuda_modules[i] = chpl_gpu_load_module(chpl_gpuBinary);
-    CUDA_CALL(hipCtxPopCurrent(&context));
+    ROCM_CALL(hipCtxPushCurrent(context));
+    chpl_gpu_rocm_modules[i] = chpl_gpu_load_module(chpl_gpuBinary);
+    ROCM_CALL(hipCtxPopCurrent(&context));
 
     hipDeviceGetAttribute(&deviceClockRates[i], hipDeviceAttributeClockRate, device);
 
@@ -199,7 +199,7 @@ bool chpl_gpu_impl_is_device_ptr(const void* ptr) {
       return false;
     }
     else {
-      CUDA_CALL(ret_val);
+      ROCM_CALL(ret_val);
     }
   }
 
@@ -221,7 +221,7 @@ bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
       return true;
     }
     else {
-      CUDA_CALL(ret_val);
+      ROCM_CALL(ret_val);
     }
   }
   else {
@@ -249,8 +249,8 @@ static void chpl_gpu_launch_kernel_help(int ln,
   CHPL_GPU_STOP_TIMER(context_time);
   CHPL_GPU_START_TIMER(load_time);
 
-  hipDeviceptr_t cuda_module = chpl_gpu_cuda_modules[chpl_task_getRequestedSubloc()];
-  void* function = chpl_gpu_load_function(cuda_module, name);
+  hipDeviceptr_t rocm_module = chpl_gpu_rocm_modules[chpl_task_getRequestedSubloc()];
+  void* function = chpl_gpu_load_function(rocm_module, name);
 
   CHPL_GPU_STOP_TIMER(load_time);
   CHPL_GPU_START_TIMER(prep_time);
@@ -298,7 +298,7 @@ static void chpl_gpu_launch_kernel_help(int ln,
   CHPL_GPU_STOP_TIMER(prep_time);
   CHPL_GPU_START_TIMER(kernel_time);
 
-  CUDA_CALL(hipModuleLaunchKernel((hipFunction_t)function,
+  ROCM_CALL(hipModuleLaunchKernel((hipFunction_t)function,
                            grd_dim_x, grd_dim_y, grd_dim_z,
                            blk_dim_x, blk_dim_y, blk_dim_z,
                            0,  // shared memory in bytes
@@ -308,7 +308,7 @@ static void chpl_gpu_launch_kernel_help(int ln,
 
   CHPL_GPU_DEBUG("cuLaunchKernel returned %s\n", name);
 
-  CUDA_CALL(hipDeviceSynchronize());
+  ROCM_CALL(hipDeviceSynchronize());
 
   CHPL_GPU_DEBUG("Synchronization complete %s\n", name);
   CHPL_GPU_STOP_TIMER(kernel_time);
@@ -396,19 +396,19 @@ void* chpl_gpu_impl_memmove(void* dst, const void* src, size_t n) {
 void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(src));
 
-  CUDA_CALL(hipMemcpyDtoH(dst, (hipDeviceptr_t)src, n));
+  ROCM_CALL(hipMemcpyDtoH(dst, (hipDeviceptr_t)src, n));
 }
 
 void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(dst));
 
-  CUDA_CALL(hipMemcpyHtoD((hipDeviceptr_t)dst, src, n));
+  ROCM_CALL(hipMemcpyHtoD((hipDeviceptr_t)dst, src, n));
 }
 
 void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(dst) && chpl_gpu_is_device_ptr(src));
 
-  CUDA_CALL(hipMemcpyDtoD((hipDeviceptr_t)dst, (hipDeviceptr_t)src, n));
+  ROCM_CALL(hipMemcpyDtoD((hipDeviceptr_t)dst, (hipDeviceptr_t)src, n));
 }
 
 
@@ -439,17 +439,17 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
     chpl_memhook_malloc_pre(1, size, description, lineno, filename);
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
     if (chpl_gpu_device_alloc) {
-      CUDA_CALL(hipMalloc(&ptr, size));
+      ROCM_CALL(hipMalloc(&ptr, size));
     }
     else {
-//      void* mem = chpl_mem_alloc(size, description, lineno, filename);
-//      CHPL_GPU_DEBUG("\tregistering %p\n", mem);
-//      CUDA_CALL(hipHostRegister(mem, size, hipHostRegisterPortable));
-//      CUDA_CALL(hipHostGetDevicePointer(&ptr, mem, 0));
-      return chpl_malloc(size);
+      void* mem = chpl_mem_alloc(size, description, lineno, filename);
+      CHPL_GPU_DEBUG("\tregistering %p\n", mem);
+      ROCM_CALL(hipHostRegister(mem, size, hipHostRegisterPortable));
+      ROCM_CALL(hipHostGetDevicePointer(&ptr, mem, 0));
+      return mem;
     }
 #else
-    CUDA_CALL(hipMallocManaged(&ptr, size, hipMemAttachGlobal));
+    ROCM_CALL(hipMallocManaged(&ptr, size, hipMemAttachGlobal));
 #endif
 
     chpl_memhook_malloc_post((void*)ptr, 1, size, description, lineno, filename);
@@ -469,10 +469,10 @@ void* chpl_gpu_impl_mem_alloc(size_t size) {
 
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
   void* ptr = 0;
-  CUDA_CALL(hipHostAlloc(&ptr, size, 0));
+  ROCM_CALL(hipHostAlloc(&ptr, size, 0));
 #else
   hipDeviceptr_t ptr = 0;
-  CUDA_CALL(hipMallocManaged(&ptr, size, hipMemAttachGlobal));
+  ROCM_CALL(hipMallocManaged(&ptr, size, hipMemAttachGlobal));
 #endif
   assert(ptr!=0);
 
@@ -486,11 +486,11 @@ void chpl_gpu_impl_mem_free(void* memAlloc) {
     assert(chpl_gpu_is_device_ptr(memAlloc));
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
     if (chpl_gpu_impl_is_host_ptr(memAlloc)) {
-      CUDA_CALL(hipHostFree(memAlloc));
+      ROCM_CALL(hipHostFree(memAlloc));
     }
     else {
 #endif
-    CUDA_CALL(hipFree((hipDeviceptr_t)memAlloc));
+    ROCM_CALL(hipFree((hipDeviceptr_t)memAlloc));
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
     }
 #endif
@@ -498,7 +498,7 @@ void chpl_gpu_impl_mem_free(void* memAlloc) {
 }
 
 void chpl_gpu_impl_hostmem_register(void *memAlloc, size_t size) {
-  // The CUDA driver uses DMA to transfer page-locked memory to the GPU; if
+  // The ROCM driver uses DMA to transfer page-locked memory to the GPU; if
   // memory is not page-locked it must first be transfered into a page-locked
   // buffer, which degrades performance. So in the array_on_device mode we
   // choose to page-lock such memory even if it's on the host-side.
@@ -511,7 +511,7 @@ void chpl_gpu_impl_hostmem_register(void *memAlloc, size_t size) {
 size_t chpl_gpu_impl_get_alloc_size(void* ptr) {
   hipDeviceptr_t base;
   size_t size;
-  CUDA_CALL(hipMemGetAddressRange(&base, &size, (hipDeviceptr_t)ptr));
+  ROCM_CALL(hipMemGetAddressRange(&base, &size, (hipDeviceptr_t)ptr));
 
   return size;
 }

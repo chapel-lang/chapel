@@ -86,7 +86,7 @@ __device__ static inline void chpl_gen_comm_put(void* addr, c_nodeid_t node,
   // TODO
 }
 
-__device__ __host__ static inline void chpl_gpu_write(const char *str) { printf("%s", str); }
+MAYBE_GPU static inline void chpl_gpu_write(const char *str) { printf("%s", str); }
 
 __device__ static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) { /* no op */ }
 __host__ static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) {
@@ -94,14 +94,16 @@ __host__ static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameI
 }
 
 __device__ static inline unsigned int chpl_gpu_clock(void) {
-//  return (unsigned int)clock();
-  return 0;
+  // TODO
+  chpl_gpu_write("chpl_gpu_clock not implemented for ROCM gpu runtime\n");
+  return -1;
 }
 __host__ static inline unsigned int chpl_gpu_clock(void) {
+  chpl_internal_error("chpl_gpu_clock not implemented for ROCM gpu runtime");
   return 0;
 }
 
-__device__ __host__ static inline void chpl_gpu_printTimeDelta(
+MAYBE_GPU static inline void chpl_gpu_printTimeDelta(
   const char *msg, unsigned int start, unsigned int end)
 {
   printf("%s%u\n", msg, end - start);
