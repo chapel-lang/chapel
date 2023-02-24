@@ -30,7 +30,7 @@ test_control_flow.chpl:59: error: 'continue' is not allowed in a 'coforall' stat
 test_control_flow.chpl:63: error: 'return' is not allowed in a 'forall' statement
 test_control_flow.chpl:64: error: 'break' is not allowed in a 'forall' statement
 test_control_flow.chpl:69: In function 'baz':
-test_control_flow.chpl:75: error: could not find label 'namedOuter' for 'continue' statement
-test_control_flow.chpl:72: note: stopped searching here because 'continue' statements are not allowed to jump outside a 'forall' statement
-test_control_flow.chpl:81: error: could not find label 'namedOuter' for 'continue' statement
-test_control_flow.chpl:72: note: stopped searching here because 'continue' statements are not allowed to jump outside a 'forall' statement
+test_control_flow.chpl:75: error: 'continue' to label 'namedOuter' outside of a 'forall' statement is not allowed
+test_control_flow.chpl:72: note: cannot 'continue' out of a 'forall' statement
+test_control_flow.chpl:81: error: 'continue' to label 'namedOuter' outside of a 'forall' statement is not allowed
+test_control_flow.chpl:72: note: cannot 'continue' out of a 'forall' statement

@@ -1,3 +1,2 @@
 breakOutsideOfLoop.chpl:1: In function 'main':
 breakOutsideOfLoop.chpl:2: error: 'break' is not allowed outside of a loop
-breakOutsideOfLoop.chpl:1: note: stopped searching here because 'break' statements are not allowed to jump outside a procedure
