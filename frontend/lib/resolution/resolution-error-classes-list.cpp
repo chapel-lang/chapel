@@ -34,7 +34,7 @@ namespace chpl {
 // error type. We do this by defining the DIAGNOSTIC_CLASS macro, and including
 // error-classes-list.h which invokes this macro for every error type.
 #define DIAGNOSTIC_CLASS DIAGNOSTIC_CLASS_IMPL
-#include "chpl/framework/resolution-error-classes-list.h"
+#include "chpl/resolution/resolution-error-classes-list.h"
 #undef DIAGNOSTIC_CLASS
 
 /**
