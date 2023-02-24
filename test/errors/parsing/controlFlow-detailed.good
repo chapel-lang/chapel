@@ -1,0 +1,436 @@
+─── error in controlFlow.chpl:1 [DisallowedControlFlow] ───
+  Could not find label 'someLabel' for 'break' statement.
+      |
+    1 | break someLabel;
+      | ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+
+─── error in controlFlow.chpl:2 [DisallowedControlFlow] ───
+  Could not find label 'someLabel' for 'continue' statement.
+      |
+    2 | continue someLabel;
+      | ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+
+─── error in controlFlow.chpl:5 [DisallowedControlFlow] ───
+  Could not find label 'someLabel' for 'break' statement.
+      |
+    5 |     break someLabel;
+      |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+
+─── error in controlFlow.chpl:6 [DisallowedControlFlow] ───
+  Could not find label 'someLabel' for 'continue' statement.
+      |
+    6 |     continue someLabel;
+      |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+
+─── error in controlFlow.chpl:9 [DisallowedControlFlow] ───
+  'break' is not allowed outside of a loop.
+      |
+    9 | break;
+      | ⎺⎺⎺⎺⎺⎺
+      |
+
+─── error in controlFlow.chpl:10 [DisallowedControlFlow] ───
+  'continue' is not allowed outside of a loop.
+       |
+    10 | continue;
+       | ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:11 [DisallowedControlFlow] ───
+  'return' is not allowed outside of a procedure or an iterator.
+       |
+    11 | return;
+       | ⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:12 [DisallowedControlFlow] ───
+  'yield' is not allowed outside of an iterator.
+       |
+    12 | yield 1;
+       | ⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:15 [DisallowedControlFlow] ───
+  'break' is not allowed outside of a loop.
+       |
+    15 |     break;
+       |     ⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:16 [DisallowedControlFlow] ───
+  'continue' is not allowed outside of a loop.
+       |
+    16 |     continue;
+       |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:21 [DisallowedControlFlow] ───
+  'break' is not allowed in a 'forall' statement.
+       |
+    21 |     break;
+       |     ⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:22 [DisallowedControlFlow] ───
+  Could not find label 'someLabel' for 'break' statement.
+       |
+    22 |     break someLabel;
+       |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:24 [DisallowedControlFlow] ───
+  Could not find label 'someLabel' for 'continue' statement.
+       |
+    24 |     continue someLabel;
+       |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:27 [DisallowedControlFlow] ───
+  'break' is not allowed in a 'coforall' statement.
+       |
+    27 |     break;
+       |     ⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:28 [DisallowedControlFlow] ───
+  Could not find label 'someLabel' for 'break' statement.
+       |
+    28 |     break someLabel;
+       |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:29 [DisallowedControlFlow] ───
+  'continue' is not allowed in a 'coforall' statement.
+       |
+    29 |     continue;
+       |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:30 [DisallowedControlFlow] ───
+  Could not find label 'someLabel' for 'continue' statement.
+       |
+    30 |     continue someLabel;
+       |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:33 [DisallowedControlFlow] ───
+  'break' is not allowed in an 'on' statement.
+       |
+    33 |     break;
+       |     ⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:34 [DisallowedControlFlow] ───
+  Could not find label 'someLabel' for 'break' statement.
+       |
+    34 |     break someLabel;
+       |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:35 [DisallowedControlFlow] ───
+  'continue' is not allowed in an 'on' statement.
+       |
+    35 |     continue;
+       |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:36 [DisallowedControlFlow] ───
+  Could not find label 'someLabel' for 'continue' statement.
+       |
+    36 |     continue someLabel;
+       |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:39 [DisallowedControlFlow] ───
+  'break' is not allowed in a 'begin' statement.
+       |
+    39 |     break;
+       |     ⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:40 [DisallowedControlFlow] ───
+  Could not find label 'someLabel' for 'break' statement.
+       |
+    40 |     break someLabel;
+       |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:41 [DisallowedControlFlow] ───
+  'continue' is not allowed in a 'begin' statement.
+       |
+    41 |     continue;
+       |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:42 [DisallowedControlFlow] ───
+  Could not find label 'someLabel' for 'continue' statement.
+       |
+    42 |     continue someLabel;
+       |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:45 [DisallowedControlFlow] ───
+  'break' is not allowed in a 'sync' statement.
+       |
+    45 |     break;
+       |     ⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:46 [DisallowedControlFlow] ───
+  Could not find label 'someLabel' for 'break' statement.
+       |
+    46 |     break someLabel;
+       |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:47 [DisallowedControlFlow] ───
+  'continue' is not allowed in a 'sync' statement.
+       |
+    47 |     continue;
+       |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:48 [DisallowedControlFlow] ───
+  Could not find label 'someLabel' for 'continue' statement.
+       |
+    48 |     continue someLabel;
+       |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:51 [DisallowedControlFlow] ───
+  'break' is not allowed in a 'cobegin' statement.
+       |
+    51 |     break;
+       |     ⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:52 [DisallowedControlFlow] ───
+  Could not find label 'someLabel' for 'break' statement.
+       |
+    52 |     break someLabel;
+       |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:53 [DisallowedControlFlow] ───
+  'continue' is not allowed in a 'cobegin' statement.
+       |
+    53 |     continue;
+       |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:54 [DisallowedControlFlow] ───
+  Could not find label 'someLabel' for 'continue' statement.
+       |
+    54 |     continue someLabel;
+       |     ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:59 [DisallowedControlFlow] ───
+  'break' is not allowed outside of a loop.
+       |
+    59 |         break;
+       |         ⎺⎺⎺⎺⎺⎺
+       |
+  Cannot 'break' out of a procedure.
+
+─── error in controlFlow.chpl:60 [DisallowedControlFlow] ───
+  'break' to label 'actualLabel' outside of a procedure is not allowed.
+       |
+    60 |         break actualLabel;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  Cannot 'break' out of a procedure.
+
+─── error in controlFlow.chpl:61 [DisallowedControlFlow] ───
+  'continue' is not allowed outside of a loop.
+       |
+    61 |         continue;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  Cannot 'continue' out of a procedure.
+
+─── error in controlFlow.chpl:62 [DisallowedControlFlow] ───
+  'continue' to label 'actualLabel' outside of a procedure is not allowed.
+       |
+    62 |         continue actualLabel;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  Cannot 'continue' out of a procedure.
+
+─── error in controlFlow.chpl:67 [DisallowedControlFlow] ───
+  'break' is not allowed in a 'forall' statement.
+       |
+    67 |         break;
+       |         ⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:68 [DisallowedControlFlow] ───
+  'break' to label 'actualLabel' outside of a 'forall' statement is not allowed.
+       |
+    68 |         break actualLabel;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  Cannot 'break' out of a 'forall' statement.
+
+─── error in controlFlow.chpl:70 [DisallowedControlFlow] ───
+  'continue' to label 'actualLabel' outside of a 'forall' statement is not allowed.
+       |
+    70 |         continue actualLabel;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  Cannot 'continue' out of a 'forall' statement.
+
+─── error in controlFlow.chpl:73 [DisallowedControlFlow] ───
+  'break' is not allowed in a 'coforall' statement.
+       |
+    73 |         break;
+       |         ⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:74 [DisallowedControlFlow] ───
+  'break' to label 'actualLabel' outside of a 'coforall' statement is not allowed.
+       |
+    74 |         break actualLabel;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  Cannot 'break' out of a 'coforall' statement.
+
+─── error in controlFlow.chpl:75 [DisallowedControlFlow] ───
+  'continue' is not allowed in a 'coforall' statement.
+       |
+    75 |         continue;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:76 [DisallowedControlFlow] ───
+  'continue' to label 'actualLabel' outside of a 'coforall' statement is not allowed.
+       |
+    76 |         continue actualLabel;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  Cannot 'continue' out of a 'coforall' statement.
+
+─── error in controlFlow.chpl:79 [DisallowedControlFlow] ───
+  'break' is not allowed in an 'on' statement.
+       |
+    79 |         break;
+       |         ⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:80 [DisallowedControlFlow] ───
+  'break' to label 'actualLabel' outside of an 'on' statement is not allowed.
+       |
+    80 |         break actualLabel;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  Cannot 'break' out of an 'on' statement.
+
+─── error in controlFlow.chpl:81 [DisallowedControlFlow] ───
+  'continue' is not allowed in an 'on' statement.
+       |
+    81 |         continue;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:82 [DisallowedControlFlow] ───
+  'continue' to label 'actualLabel' outside of an 'on' statement is not allowed.
+       |
+    82 |         continue actualLabel;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  Cannot 'continue' out of an 'on' statement.
+
+─── error in controlFlow.chpl:85 [DisallowedControlFlow] ───
+  'break' is not allowed in a 'begin' statement.
+       |
+    85 |         break;
+       |         ⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:86 [DisallowedControlFlow] ───
+  'break' to label 'actualLabel' outside of a 'begin' statement is not allowed.
+       |
+    86 |         break actualLabel;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  Cannot 'break' out of a 'begin' statement.
+
+─── error in controlFlow.chpl:87 [DisallowedControlFlow] ───
+  'continue' is not allowed in a 'begin' statement.
+       |
+    87 |         continue;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:88 [DisallowedControlFlow] ───
+  'continue' to label 'actualLabel' outside of a 'begin' statement is not allowed.
+       |
+    88 |         continue actualLabel;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  Cannot 'continue' out of a 'begin' statement.
+
+─── error in controlFlow.chpl:91 [DisallowedControlFlow] ───
+  'break' is not allowed in a 'sync' statement.
+       |
+    91 |         break;
+       |         ⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:92 [DisallowedControlFlow] ───
+  'break' to label 'actualLabel' outside of a 'sync' statement is not allowed.
+       |
+    92 |         break actualLabel;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  Cannot 'break' out of a 'sync' statement.
+
+─── error in controlFlow.chpl:93 [DisallowedControlFlow] ───
+  'continue' is not allowed in a 'sync' statement.
+       |
+    93 |         continue;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:94 [DisallowedControlFlow] ───
+  'continue' to label 'actualLabel' outside of a 'sync' statement is not allowed.
+       |
+    94 |         continue actualLabel;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  Cannot 'continue' out of a 'sync' statement.
+
+─── error in controlFlow.chpl:97 [DisallowedControlFlow] ───
+  'break' is not allowed in a 'cobegin' statement.
+       |
+    97 |         break;
+       |         ⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:98 [DisallowedControlFlow] ───
+  'break' to label 'actualLabel' outside of a 'cobegin' statement is not allowed.
+       |
+    98 |         break actualLabel;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  Cannot 'break' out of a 'cobegin' statement.
+
+─── error in controlFlow.chpl:99 [DisallowedControlFlow] ───
+  'continue' is not allowed in a 'cobegin' statement.
+       |
+    99 |         continue;
+       |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+
+─── error in controlFlow.chpl:100 [DisallowedControlFlow] ───
+  'continue' to label 'actualLabel' outside of a 'cobegin' statement is not allowed.
+        |
+    100 |         continue actualLabel;
+        |         ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+        |
+  Cannot 'continue' out of a 'cobegin' statement.
+
