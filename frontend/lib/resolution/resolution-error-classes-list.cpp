@@ -799,7 +799,8 @@ void ErrorUnstable::write(ErrorWriterBase& wr) const {
 // 'oneOnly' indicates that only the 1st match should be described
 //
 // if 'intro' will be emitted before the first message for a trace
-// (only relevant if start==0).
+// (only relevant if start==0). If it is not empty, it should probably
+// end with a space.
 static void describeSymbolSource(ErrorWriterBase& wr,
                                  const uast::AstNode* ast,
                                  UniqueString name,
@@ -854,7 +855,7 @@ static void describeSymbolSource(ErrorWriterBase& wr,
     if (match.numIds() == 1 || oneOnly) {
       ID firstId = match.firstId();
       if (first) {
-        wr.note(locationOnly(firstId), intro, " found '", from, "' defined here:");
+        wr.note(locationOnly(firstId), intro, "found '", from, "' defined here:");
       } else {
         wr.note(locationOnly(firstId), "found '", from, "' defined here:");
       }
@@ -863,7 +864,7 @@ static void describeSymbolSource(ErrorWriterBase& wr,
       bool firstHere = true;
       for (auto id : match) {
         if (first) {
-          wr.note(id, intro, " found '", from, "' defined here:");
+          wr.note(id, intro, "found '", from, "' defined here:");
         } if (firstHere) {
           wr.note(id, "found '", from, "' defined here:");
         } else {
