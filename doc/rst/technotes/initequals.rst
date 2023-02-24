@@ -117,8 +117,10 @@ equivalent implementation.
 When initializing from a different type, users must also provide a cast
 implementation between their record and the other type. This requirement exists
 for consistency and completeness, as both ``init=`` and a cast create one type
-from another. For example, consider a record that can be initialized from an
-``int``.
+from another.
+
+These rules can be observed in the following example, which implements a record
+that can be initialized from an ``int``.
 
 .. code-block:: chapel
 
@@ -126,6 +128,7 @@ from another. For example, consider a record that can be initialized from an
     var x : int;
   }
 
+  // Required due to the user-defined 'R.init=(int)'
   proc R.init=(other: R) {
     this.x = other.x;
   }
@@ -134,6 +137,7 @@ from another. For example, consider a record that can be initialized from an
     this.x = other;
   }
 
+  // Cast required due to the user-defined 'R.init=(R)'
   operator :(val: int, type T : R) {
     return new R(val);
   }
