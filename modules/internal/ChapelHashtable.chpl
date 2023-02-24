@@ -88,7 +88,7 @@ module ChapelHashtable {
         }
       }
       otherwise {
-        halt("ArrayInit.heuristicInit should have been made concrete");
+        halt("ArrayInit.", initMethod, " should have been made concrete");
       }
     }
 

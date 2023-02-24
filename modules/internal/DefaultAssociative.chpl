@@ -497,7 +497,7 @@ module DefaultAssociative {
             }
           }
           otherwise {
-            halt("ArrayInit.heuristicInit should have been made concrete");
+            halt("ArrayInit.", initMethod, " heuristicInit should have been made concrete");
           }
         }
       }
