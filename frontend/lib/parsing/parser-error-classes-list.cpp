@@ -394,6 +394,25 @@ void ErrorIllegalUseImport::write(ErrorWriterBase& wr) const {
   wr.note(clause, "only identifiers and 'dot' expressions are supported");
 }
 
+void ErrorUnsupportedAsIdent::write(ErrorWriterBase& wr) const {
+  auto as = std::get<const uast::As*>(info);
+  auto expectedIdentifier = std::get<const uast::AstNode*>(info);
+  wr.heading(kind_, type_, locationOnly(as),
+             "this form of 'as' is not yet supported.");
+  // determine and report which of the original or new name is invalid
+  std::string whichName;
+  if (expectedIdentifier == as->symbol()) {
+    whichName = "original";
+  } else if (expectedIdentifier == as->rename()) {
+    whichName = "new";
+  } else {
+    CHPL_ASSERT(false && "should not be reachable");
+  }
+  wr.message("'as' requires the ", whichName,
+             " name to be a simple identifier, but instead got the following:");
+  wr.code(expectedIdentifier, { expectedIdentifier });
+}
+
 void ErrorPostParseErr::write(ErrorWriterBase& wr) const {
   auto node = std::get<const uast::AstNode*>(info);
   auto errorMessage = std::get<std::string>(info);

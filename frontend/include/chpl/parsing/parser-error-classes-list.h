@@ -50,6 +50,7 @@ ERROR_CLASS(DisallowedControlFlow,
 POSTPARSE_ERROR_CLASS(MultipleManagementStrategies, const uast::New::Management,
                       const uast::New::Management)
 ERROR_CLASS(IllegalUseImport, const uast::AstNode*, const uast::AstNode*)
+ERROR_CLASS(UnsupportedAsIdent, const uast::As*, const uast::AstNode*)
 POSTPARSE_ERROR_CLASS(PostParseErr, std::string)
 POSTPARSE_WARNING_CLASS(PostParseWarn, std::string)
 /* end post-parse-checks errors */
