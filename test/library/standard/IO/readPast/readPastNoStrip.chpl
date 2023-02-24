@@ -1,10 +1,12 @@
 use IO, List;
 
+// string
 writeln(
   geneList(openreader("./genes.txt"), "ATG") ==
   geneListViaSplit(openreader("./genes.txt"), "ATG")
 );
 
+// bytes
 writeln(
   geneList(openreader("./genes.txt"), b"ATG") ==
   geneListViaSplit(openreader("./genes.txt"), b"ATG")
@@ -13,7 +15,7 @@ writeln(
 // collect a list of genes via readPast
 proc geneList(r, stopCodon: ?t) {
   var s : t,
-    l = new list(t);
+      l = new list(t);
   while r.readPast(s, stopCodon) {
     const gene = s.strip();
     if !gene.isEmpty() {

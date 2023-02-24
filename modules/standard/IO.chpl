@@ -437,7 +437,7 @@ module IO {
 import OS.POSIX.{ENOENT, ENOSYS, EINVAL, EILSEQ, EIO, ERANGE};
 import OS.POSIX.{EBADF};
 import OS.{errorCode};
-use CTypes, Regex;
+use CTypes;
 public use OS;
 
 
@@ -2726,10 +2726,12 @@ proc fileReader.advanceUpTo(separator: string) throws {
       // slow advance to multi-byte separator or EOF
       const (readError, found, relByteOffset, _) = _findSeparator(separator, -1, this._channel_internal);
       if readError then try this._ch_ioerror(readError, "in advanceUpTo(string)");
-      // if !found then try this._ch_ioerror(EEOF:errorCode, "in advanceUpTo(string)");
 
-      // advance to separator
-      err = qio_channel_advance(false, this._channel_internal, relByteOffset);
+      // advance to separator, or to EOF if not found
+      err = qio_channel_advance(
+        false, this._channel_internal,
+        relByteOffset + if found then 0 else separator.numBytes
+      );
       if err then try this._ch_ioerror(err, "in advanceUpTo(string)");
     }
   }
@@ -2757,10 +2759,12 @@ proc fileReader.advanceUpTo(separator: bytes) throws {
       // slow advance to multi-byte separator or EOF
       const (readError, found, relByteOffset) = _findSeparator(separator, -1, this._channel_internal);
       if readError then try this._ch_ioerror(readError, "in advanceUpTo(bytes)");
-      // if !found then try this._ch_ioerror(EEOF:errorCode, "in advanceUpTo(bytes)");
 
-      // advance to separator
-      err = qio_channel_advance(false, this._channel_internal, relByteOffset);
+      // advance to separator, or to EOF if not found
+      err = qio_channel_advance(
+        false, this._channel_internal,
+        relByteOffset + if found then 0 else separator.numBytes
+      );
       if err then try this._ch_ioerror(err, "in advanceUpTo(bytes)");
     }
   }
