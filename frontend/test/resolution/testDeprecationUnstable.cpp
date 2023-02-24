@@ -477,7 +477,6 @@ static void testNoUnstableWarningsForThisFormals(void) {
   // Scope-resolve the module.
   std::ignore = resolveModule(ctx, mod->id());
 
-  // TODO: Helpers to make sure the errors are correct.
   assert(guard.numErrors() == 2);
   for (auto& err : guard.errors()) {
     assert(err->type() == ErrorType::Unstable);
@@ -550,7 +549,6 @@ static void testNoWarningsForUnstableMentionsInUnstable(void) {
   const Function* mainFn = mod->stmt(4)->toFunction();
   std::ignore = resolveConcreteFunction(ctx, mainFn->id());
 
-  // TODO: Helpers to make sure the errors are correct.
   assert(guard.numErrors() == 2);
   for (auto& err : guard.errors()) {
     assert(err->type() == ErrorType::Unstable);
@@ -566,11 +564,64 @@ static void testNoWarningsForUnstableMentionsInUnstable(void) {
   assert(guard.realizeErrors());
 }
 
+static void testWarningCoverage(ErrorType expectedError) {
+  assert(expectedError == ErrorType::Unstable ||
+         expectedError == ErrorType::Deprecation);
+
+  std::string warningLabel = expectedError == ErrorType::Unstable
+        ? "@unstable"
+        : "deprecated";
+
+  Context context;
+  Context* ctx = turnOnWarnUnstable(&context);
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+
+  std::cout << path.c_str() << std::endl;
+
+  std::string contents = "\n" + warningLabel +
+    R""""( "warning message"
+    class C {}
+
+    proc foo(x: C) {}
+
+    proc main() {
+      var x = new C();
+      foo(x);
+    }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the top module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(!guard.realizeErrors());
+
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Force resolve 'main' since we may not always do that yet.
+  assert(mod->numStmts() == 3);
+  const Function* mainFn = mod->stmt(2)->toFunction();
+  std::ignore = resolveConcreteFunction(ctx, mainFn->id());
+
+  assert(guard.numErrors() == 2);
+  for (auto& err : guard.errors()) {
+    assert(err->type() == expectedError);
+  }
+
+  assert(guard.realizeErrors());
+}
+
 int main() {
   testDeprecationWarningsForTypes();
   testDeprecationWarningsForUseImport();
   testNoUnstableWarningsForThisFormals();
   testNoWarningsForUnstableMentionsInUnstable();
+  testWarningCoverage(ErrorType::Unstable);
+  testWarningCoverage(ErrorType::Deprecation);
   return 0;
 }
 

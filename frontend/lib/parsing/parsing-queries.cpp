@@ -970,17 +970,24 @@ const uast::AttributeGroup* idToAttributeGroup(Context* context, ID id) {
 
 // TODO: Might be worth figuring out how to generalize this pattern so that
 // more parts of the compiler can use it.
+static const AstNode*
+firstParentMatch(Context* context, ID id,
+                 const std::function<bool(Context*, const AstNode*)>& f) {
+  if (id.isEmpty()) return nullptr;
+  auto ast = idToAst(context, id);
+  auto p = parentAst(context, ast);
+  if (!ast || !p) return nullptr;
+  for (; p != nullptr; p = parentAst(context, p))
+    if (f(context, p))
+      return p;
+  return nullptr;
+}
+
 static bool
 anyParentMatches(Context* context, ID id,
                  const std::function<bool(Context*, const AstNode*)>& f) {
-  if (id.isEmpty()) return false;
-  auto ast = idToAst(context, id);
-  auto p = parentAst(context, ast);
-  if (!ast || !p) return false;
-  for (; p != nullptr; p = parentAst(context, p))
-    if (f(context, p))
-      return true;
-  return false;
+  auto p = firstParentMatch(context, id, f);
+  return p != nullptr;
 }
 
 static bool isAstDeprecated(Context* context, const AstNode* ast) {
@@ -1104,10 +1111,17 @@ static bool
 isMentionOfWarnedTypeInReceiver(Context* context, ID idMention,
                                 ID idTarget) {
   if (idMention.isEmpty() || idTarget.isEmpty()) return false;
-  if (!anyParentMatches(context, idMention, isAstFormal)) return false;
   auto attr = parsing::idToAttributeGroup(context, idTarget);
   if (!attr) return false;
   if (!attr->isDeprecated() && !attr->isUnstable()) return false;
+
+  auto p = firstParentMatch(context, idMention, isAstFormal);
+  if (!p) return false;
+
+  // Confirm the type is a receiver. TODO: Is this enough?
+  auto rcv = p->toFormal();
+  if (rcv->name() != USTR("this")) return false;
+
   return true;
 }
 
