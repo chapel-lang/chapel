@@ -243,10 +243,12 @@ void ParserContext::noteAttribute(YYLTYPE loc, AstNode* firstIdent,
   // do some special handling for unstable and deprecated, because they
   // existed before the changes to allow general attributes
   auto ident = firstIdent->toIdentifier();
-  if (ident->name()==UniqueString::get(context(), "unstable")) {
+  if (ident->name()==USTR("unstable")) {
     noteUnstable(loc, actuals);
-  } else if (ident->name()==UniqueString::get(context(),"deprecated")) {
+  } else if (ident->name()==USTR("deprecated")) {
     noteDeprecation(loc, actuals);
+  } else if (ident->name()==USTR("stable")) {
+    noteStable(loc, actuals);
   }
 
   // check the actual names are not duplicates
@@ -254,7 +256,7 @@ void ParserContext::noteAttribute(YYLTYPE loc, AstNode* firstIdent,
     std::set<UniqueString> duplicates;
     if (!checkNoDuplicateNamedActuals(*actuals, duplicates)) {
       for (auto& duplicate : duplicates) {
-        error(loc, "duplicate argument name \"%s\"", duplicate.c_str());
+        error(loc, "repeated argument name '%s'", duplicate.c_str());
       }
     }
   }
@@ -263,7 +265,7 @@ void ParserContext::noteAttribute(YYLTYPE loc, AstNode* firstIdent,
   auto attr = buildAttribute(loc, ident, toolspace, actuals);
   for (auto& attribute : *attrs) {
     if (attribute->toAttribute()->name() == attr->toAttribute()->name()) {
-      error(loc, "duplicate attribute \"%s\"", attr->toAttribute()->name().c_str());
+      error(loc, "repteated attribute '%s'", attr->toAttribute()->name().c_str());
     }
   }
   attrs = appendList(attrs, attr.release());
@@ -274,6 +276,9 @@ void ParserContext::noteAttribute(YYLTYPE loc, AstNode* firstIdent,
 void ParserContext::noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals) {
   hasAttributeGroupParts = true;
 
+  if (attributeGroupParts.isStable) {
+    error(loc, "cannot apply both stable and deprecated attributes to the same symbol");
+  }
   attributeGroupParts.isDeprecated = true;
   AstNode* messageStr = nullptr;
   if (actuals != nullptr && actuals->size() > 0) {
@@ -282,7 +287,7 @@ void ParserContext::noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals) 
             actual.name == UniqueString::get(context(), "notes").podUniqueString() ||
             actual.name == UniqueString::get(context(), "suggestion").podUniqueString()||
             actual.name.isEmpty())) {
-        error(loc, "deprecated attribute only accepts 'since', 'notes', and 'suggestion' arguments");
+        error(loc, "unrecognized argument name '%s'. '@deprecated' attribute only accepts 'since', 'notes', and 'suggestion' arguments", actual.name.c_str());
       }
       if (!actual.expr->isStringLiteral()) {
         error(loc, "deprecated attribute arguments must be string literals for now");
@@ -294,8 +299,6 @@ void ParserContext::noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals) 
       }
     }
   }
-
-
   if (messageStr) {
     if (auto strLit = messageStr->toStringLiteral()) {
       attributeGroupParts.deprecationMessage = strLit->value();
@@ -303,9 +306,40 @@ void ParserContext::noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals) 
   }
 }
 
+void ParserContext::noteStable(YYLTYPE loc, MaybeNamedActualList* actuals) {
+  hasAttributeGroupParts = true;
+
+  if (attributeGroupParts.isUnstable) {
+    error(loc, "cannot apply both unstable and stable attributes to the same symbol");
+  }
+  // TODO: does it make sense to deprecate something that's stable? Shouldn't
+  // the stable attribute come off when it's marked deprecated?
+  if (attributeGroupParts.isDeprecated) {
+    error(loc, "cannot apply both deprecated and stable attributes to the same symbol");
+  }
+  attributeGroupParts.isStable = true;
+  if (actuals->size() > 1) {
+    error(loc, "stable attribute only accepts one argument");
+  }
+  if (actuals != nullptr && actuals->size() > 0) {
+    for (auto& actual : *actuals) {
+      if (!(actual.name == UniqueString::get(context(), "since").podUniqueString() ||
+            actual.name.isEmpty())) {
+        error(loc, "unrecognized argument name '%s'. '@stable' attribute only accepts 'since' or unnamed argument", actual.name.c_str());
+      }
+      if (!actual.expr->isStringLiteral()) {
+        error(loc, "stable attribute arguments must be string literals for now");
+      }
+    }
+  }
+}
+
 void ParserContext::noteUnstable(YYLTYPE loc, MaybeNamedActualList* actuals) {
   hasAttributeGroupParts = true;
 
+  if (attributeGroupParts.isStable) {
+    error(loc, "cannot apply both unstable and stable attributes to the same symbol");
+  }
   attributeGroupParts.isUnstable = true;
 
   AstNode* messageStr = nullptr;
@@ -315,7 +349,7 @@ void ParserContext::noteUnstable(YYLTYPE loc, MaybeNamedActualList* actuals) {
             actual.name == UniqueString::get(context(), "issue").podUniqueString() ||
             actual.name == UniqueString::get(context(), "reason").podUniqueString()||
             actual.name.isEmpty())) {
-        error(loc, "unstable attribute only accepts 'category', 'issue', and 'reason' arguments");
+        error(loc, "unrecognized argument name '%s'. '@unstable' attribute only accepts 'category', 'issue', and 'reason' arguments", actual.name.c_str());
       }
       if (!actual.expr->isStringLiteral()) {
         error(loc, "unstable attribute arguments must be string literals for now");
@@ -338,7 +372,7 @@ void ParserContext::resetAttributeGroupPartsState() {
   if (hasAttributeGroupParts) {
     auto& pragmas = attributeGroupParts.pragmas;
     if (pragmas) delete pragmas;
-    attributeGroupParts = {nullptr, nullptr, false, false, UniqueString(), UniqueString() };
+    attributeGroupParts = {nullptr, nullptr, false, false, false, UniqueString(), UniqueString() };
     hasAttributeGroupParts = false;
   }
 
@@ -346,6 +380,7 @@ void ParserContext::resetAttributeGroupPartsState() {
   CHPL_ASSERT(attributeGroupParts.attributeList == nullptr);
   CHPL_ASSERT(!attributeGroupParts.isDeprecated);
   CHPL_ASSERT(!attributeGroupParts.isUnstable);
+  CHPL_ASSERT(!attributeGroupParts.isStable);
   CHPL_ASSERT(attributeGroupParts.deprecationMessage.isEmpty());
   CHPL_ASSERT(attributeGroupParts.unstableMessage.isEmpty());
   CHPL_ASSERT(!hasAttributeGroupParts);

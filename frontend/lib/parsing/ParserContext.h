@@ -35,6 +35,7 @@ struct AttributeGroupParts {
   std::set<PragmaTag>* pragmas;
   bool isDeprecated;
   bool isUnstable;
+  bool isStable;
   UniqueString deprecationMessage;
   UniqueString unstableMessage;
 };
@@ -101,7 +102,7 @@ struct ParserContext {
     this->varDeclKind             = Variable::VAR;
     this->isBuildingFormal        = false;
     this->isVarDeclConfig         = false;
-    this->attributeGroupParts     = {nullptr, nullptr, false, false, UniqueString(), UniqueString() };
+    this->attributeGroupParts     = {nullptr, nullptr, false, false, false, UniqueString(), UniqueString() };
     this->hasAttributeGroupParts  = false;
     this->numAttributesBuilt      = 0;
     YYLTYPE emptyLoc = {0};
@@ -141,6 +142,7 @@ struct ParserContext {
   PODUniqueString notePragma(YYLTYPE loc, AstNode* pragmaStr);
   void noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals);
   void noteUnstable(YYLTYPE loc, MaybeNamedActualList* actuals);
+  void noteStable(YYLTYPE loc, MaybeNamedActualList* actuals);
   void resetAttributeGroupPartsState();
 
   CommentsAndStmt buildPragmaStmt(YYLTYPE loc, CommentsAndStmt stmt);

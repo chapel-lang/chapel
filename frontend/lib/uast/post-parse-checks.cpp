@@ -1101,14 +1101,17 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   // then a USTR() on the attribute name will work or not work
   if (node->name() == USTR("deprecated") ||
       node->name() == USTR("unstable") ||
+      node->name() == USTR("stable") ||
       node->name() == USTR("chpldoc.nodoc")) {
       // TODO: should we only match chpldoc.nodoc or anything toolspaced with chpldoc.?
       return;
   } else if (node->fullyQualifiedAttributeName().find('.') == std::string::npos) {
     // we don't recognize the named attribute that we found (no toolspace to specify a different tool)
     error(node, "unrecognized attribute '%s'", node->name().c_str());
-    // TODO: this relies on the WARN_UNKNOWN_TOOL_SPACED_ATTRS flag that we do not yet have
-  } else if (isFlagSet(CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS)) {
+    // TODO: this relies on the WARN_UNKNOWN_TOOL_SPACED_ATTRS flag that we do
+    // not yet have so by default for now we will warn about unrecognized
+    // attributes that are toolspaced
+  } else if (isFlagSet(CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS) || true) {
     // there's a toolspaced attribute given, and the user asked us to warn them
     // about those things
     warn(node, "unrecognized attribute '%s'", node->name().c_str());
