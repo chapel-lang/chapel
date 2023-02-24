@@ -37,6 +37,8 @@ namespace chpl {
 #include "chpl/resolution/resolution-error-classes-list.h"
 #undef DIAGNOSTIC_CLASS
 
+// helper functions that apply to multiple errors
+
 /**
   Get a non-param version of the given type.
 
@@ -59,6 +61,93 @@ static const char* allowedItem(resolution::VisibilityStmtKind kind) {
 static const char* allowedItems(resolution::VisibilityStmtKind kind) {
   return kind == resolution::VIS_USE ? "modules or enums" : "modules";
 }
+
+// describe where a symbol came from
+// (in a way, it prints out a ResultVisibilityTrace)
+// 'start' indicates where in the trace to start, since sometimes
+// the first element might have already been printed.
+// 'oneOnly' indicates that only the 1st match should be described
+//
+// if 'intro' will be emitted before the first message for a trace
+// (only relevant if start==0). If it is not empty, it should probably
+// end with a space.
+static void describeSymbolSource(ErrorWriterBase& wr,
+                                 const uast::AstNode* ast,
+                                 UniqueString name,
+                                 const resolution::BorrowedIdsWithName& match,
+                                 const resolution::ResultVisibilityTrace& trace,
+                                 int start,
+                                 bool oneOnly,
+                                 const char* intro) {
+  CHPL_ASSERT(0 <= start);
+
+  bool encounteredAutoModule = false;
+  UniqueString from = name;
+  int n = trace.visibleThrough.size();
+  bool first = true; // do we still need to output the intro text?
+  for (int i = start; i < n; i++) {
+    const auto& elt = trace.visibleThrough[i];
+    if (elt.automaticModule) {
+      std::string msg;
+      if (start==0 && first) {
+        msg = intro;
+      }
+      if (from != name) {
+        msg += "'" + from.str() + "'";
+      } else {
+        msg += "it";
+      }
+      wr.note(ast, msg, " was provided by the automatically-included modules.");
+      encounteredAutoModule = true;
+      first = false;
+      break;
+    } else if (elt.fromUseImport) {
+      std::string errbegin;
+      std::string nameSuffix;
+      if (start==0 && first) {
+        errbegin = intro;
+        errbegin += "through";
+      } else {
+        errbegin = "and then through";
+      }
+      if (from != name) {
+        nameSuffix += " providing '" + from.str() + "'";
+      }
+
+      wr.note(locationOnly(elt.visibilityClauseId), errbegin, " the '", elt.visibilityStmtKind, "' statement", nameSuffix, " here:");
+      wr.code<ID,ID>(elt.visibilityClauseId, { elt.visibilityClauseId });
+      from = elt.renameFrom;
+      first = false;
+    }
+  }
+
+  if (!encounteredAutoModule) {
+    if (match.numIds() == 1 || oneOnly) {
+      ID firstId = match.firstId();
+      if (first) {
+        wr.note(locationOnly(firstId), intro, "found '", from, "' defined here:");
+      } else {
+        wr.note(locationOnly(firstId), "found '", from, "' defined here:");
+      }
+      wr.code<ID,ID>(firstId, { firstId });
+    } else {
+      bool firstHere = true;
+      for (const auto& id : match) {
+        if (first) {
+          wr.note(id, intro, "found '", from, "' defined here:");
+        } if (firstHere) {
+          wr.note(id, "found '", from, "' defined here:");
+        } else {
+          wr.note(id, "and found '", from, "' defined here:");
+        }
+        wr.code<ID,ID>(id, { id });
+        first = false;
+        firstHere = false;
+      }
+    }
+  }
+}
+
 
 //
 // Below are the implementations of 'write' for each error class, which does
@@ -85,6 +174,51 @@ void ErrorAmbiguousConfigSet::write(ErrorWriterBase& wr) const {
             "config set ambiguously via '-s", name1, "' and '-s", name2, "'");
 }
 
+void ErrorAmbiguousIdentifier::write(ErrorWriterBase& wr) const {
+  auto ident = std::get<const uast::Identifier*>(info);
+  auto moreMentions = std::get<bool>(info);
+  auto matches = std::get<std::vector<resolution::BorrowedIdsWithName>>(info);
+  auto trace = std::get<std::vector<resolution::ResultVisibilityTrace>>(info);
+
+  wr.heading(kind_, type_, ident,
+             "'", ident->name(), "' is ambiguous",
+             moreMentions?" (first mention this function)":"");
+
+  wr.code(ident, { ident });
+
+  CHPL_ASSERT(matches.size() > 0);
+  if (matches[0].numIds() > 1) {
+    describeSymbolSource(wr, ident, ident->name(), matches[0], trace[0], 0, false, "");
+  } else {
+    CHPL_ASSERT(matches.size() > 1);
+    describeSymbolSource(wr, ident, ident->name(), matches[0], trace[0], 0, true, "first, ");
+    describeSymbolSource(wr, ident, ident->name(), matches[1], trace[1], 0, true, "additionally, ");
+  }
+
+  return;
+}
+
+void ErrorAmbiguousVisibilityIdentifier::write(ErrorWriterBase& wr) const {
+  auto name = std::get<UniqueString>(info);
+  auto mentionId = std::get<ID>(info);
+  auto potentialTargetIds = std::get<std::vector<ID>>(info);
+
+  wr.heading(kind_, type_, mentionId,
+             "'", name, "' is ambiguous");
+
+  wr.code<ID, ID>(mentionId, { mentionId });
+
+  bool printedOne = false;
+  for (auto& id : potentialTargetIds) {
+    wr.note(id, printedOne ? "or ":"", "it could refer to this '", name, "'");
+    printedOne = true;
+    wr.code<ID, ID>(id, { id });
+  }
+
+  // TODO: call describeSymbolSource
+  return;
+}
+
 void ErrorAsWithUseExcept::write(ErrorWriterBase& wr) const {
   auto use = std::get<const uast::Use*>(info);
   auto as = std::get<const uast::As*>(info);
@@ -92,6 +226,24 @@ void ErrorAsWithUseExcept::write(ErrorWriterBase& wr) const {
              "cannot rename in 'except' list.");
   wr.message("The renaming occurs because of the use of 'as' here:");
   wr.code(use, { as });
+}
+
+void ErrorDeprecation::write(ErrorWriterBase& wr) const {
+  auto msg = std::get<std::string>(info);
+  auto mention = std::get<const uast::AstNode*>(info);
+  auto target = std::get<const uast::NamedDecl*>(info);
+  CHPL_ASSERT(mention && target);
+
+  wr.headingVerbatim(kind_, type_, mention, msg);
+  wr.code(mention, {mention});
+
+  /* TODO: Need to know whether the symbol is user or not:
+  wr.note(target, "declared here:");
+  wr.code(target);
+  */
+
+  std::ignore = target;
+  return;
 }
 
 void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
@@ -105,6 +257,58 @@ void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
   wr.message(
       "Dot expressions are not allowed in the 'except' or 'only' list of a "
       "'use' or 'import'.");
+}
+
+void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
+  auto formal = std::get<const uast::Formal*>(info);
+  const auto& match = std::get<resolution::BorrowedIdsWithName>(info);
+  const auto& trace = std::get<resolution::ResultVisibilityTrace>(info);
+  CHPL_ASSERT(formal && !trace.visibleThrough.empty());
+
+  // find the first visibility clause ID
+  ID firstVisibilityClauseId;
+  resolution::VisibilityStmtKind firstUseOrImport = resolution::VIS_USE;
+
+  int describeStart = 0;
+
+  int i = 0;
+  for (const auto& elt : trace.visibleThrough) {
+    if (elt.fromUseImport) {
+      firstVisibilityClauseId = elt.visibilityClauseId;
+      firstUseOrImport = elt.visibilityStmtKind;
+      describeStart = i+1; // skip this one in describeSymbolSource
+      break;
+    }
+    i++;
+  }
+
+  wr.heading(kind_, type_, firstVisibilityClauseId,
+             "module-level symbol is hiding function argument '",
+             formal->name(), "'");
+
+  wr.message("The formal argument:");
+  wr.code(formal, { formal });
+  wr.message("is shadowed by a symbol provided by the following '",
+             firstUseOrImport, "' statement:");
+  wr.code<ID, ID>(firstVisibilityClauseId, { firstVisibilityClauseId });
+
+  // print where it came from
+  describeSymbolSource(wr, formal, formal->name(), match, trace, describeStart, false, "");
+
+  return;
+}
+
+void ErrorIfVarNonClassType::write(ErrorWriterBase& wr) const {
+  auto cond = std::get<const uast::Conditional*>(info);
+  auto qtVar = std::get<types::QualifiedType>(info);
+  auto var = cond->condition()->toVariable();
+  CHPL_ASSERT(var);
+  auto ifKindStr = cond->isExpressionLevel() ? "expression" : "statement";
+  wr.heading(kind_, type_, var, "a variable declared in the condition of "
+                                "an if ", ifKindStr, " must be a class, "
+                                "but it has non-class type '",
+                                qtVar.type(), "'.");
+  wr.code(cond, {var});
 }
 
 void ErrorImplicitFileModule::write(ErrorWriterBase& wr) const {
@@ -288,7 +492,6 @@ void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
   }
 }
 
-
 void ErrorMissingInclude::write(ErrorWriterBase& wr) const {
   auto moduleInclude = std::get<const uast::Include*>(info);
   auto& filePath = std::get<std::string>(info);
@@ -381,6 +584,41 @@ void ErrorNonIterable::write(ErrorWriterBase &wr) const {
   wr.heading(kind_, type_, loop, "cannot iterate over ", decayToValue(iterandType), ".");
   wr.message("In the following loop:");
   wr.code(loop, { iterand });
+}
+
+void ErrorNotInModule::write(ErrorWriterBase& wr) const {
+  const uast::Dot* dot = std::get<0>(info);
+  //ID moduleId = std::get<1>(info);
+  UniqueString moduleName = std::get<2>(info);
+  ID renameClauseId = std::get<3>(info);
+
+  wr.heading(kind_, type_, dot,
+             "cannot find '", dot->field(), "' in module '", moduleName, "'");
+
+  wr.code(dot, { dot });
+
+  UniqueString dotModName = moduleName;
+  if (auto dotLeftPart = dot->receiver()) {
+    if (auto leftIdent = dotLeftPart->toIdentifier()) {
+      dotModName = leftIdent->name();
+    }
+  }
+
+  if (dotModName != moduleName) {
+    if (renameClauseId.isEmpty()) {
+      wr.note(dot, "module '", moduleName, "' was renamed to"
+              " '", dotModName, "' in this scope");
+    } else {
+      wr.note(locationOnly(renameClauseId),
+              "module '", moduleName, "' was renamed to"
+              " '", dotModName, "' here");
+      wr.code<ID,ID>(renameClauseId, { renameClauseId });
+    }
+  }
+
+  //wr.note(moduleId, "module '", moduleName, "' declared here");
+
+  return;
 }
 
 void ErrorPrivateToPublicInclude::write(ErrorWriterBase& wr) const {
@@ -515,19 +753,6 @@ void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {
              type->numElements(), "-tuple, '", type, "'.");
 }
 
-void ErrorIfVarNonClassType::write(ErrorWriterBase& wr) const {
-  auto cond = std::get<const uast::Conditional*>(info);
-  auto qtVar = std::get<types::QualifiedType>(info);
-  auto var = cond->condition()->toVariable();
-  CHPL_ASSERT(var);
-  auto ifKindStr = cond->isExpressionLevel() ? "expression" : "statement";
-  wr.heading(kind_, type_, var, "a variable declared in the condition of "
-                                "an if ", ifKindStr, " must be a class, "
-                                "but it has non-class type '",
-                                qtVar.type(), "'.");
-  wr.code(cond, {var});
-}
-
 void ErrorTupleDeclNotTuple::write(ErrorWriterBase& wr) const {
   auto decl = std::get<const uast::TupleDecl*>(info);
   auto type = std::get<const types::Type*>(info);
@@ -582,6 +807,37 @@ void ErrorUnknownEnumElem::write(ErrorWriterBase& wr) const {
   wr.code(enumAst->id());
 }
 
+void ErrorUnknownIdentifier::write(ErrorWriterBase& wr) const {
+  auto ident = std::get<const uast::Identifier*>(info);
+  auto mentionedMoreThanOnce = std::get<bool>(info);
+
+  wr.heading(kind_, type_, ident,
+             "'", ident->name(), "' cannot be found",
+             mentionedMoreThanOnce?" (first mention this function)":"");
+
+  wr.code(ident, { ident });
+
+  return;
+}
+
+void ErrorUnstable::write(ErrorWriterBase& wr) const {
+  auto msg = std::get<std::string>(info);
+  auto mention = std::get<const uast::AstNode*>(info);
+  auto target = std::get<const uast::NamedDecl*>(info);
+  CHPL_ASSERT(mention && target);
+
+  wr.headingVerbatim(kind_, type_, mention, msg);
+  wr.code(mention, {mention});
+
+  /* TODO: Need to know whether the symbol is user or not:
+  wr.note(target, "declared here:");
+  wr.code(target);
+  */
+
+  std::ignore = target;
+  return;
+}
+
 void ErrorUseImportMultiplyDefined::write(ErrorWriterBase& wr) const {
   auto symbolName = std::get<UniqueString>(info);
   auto firstOccurrence = std::get<1>(info);
@@ -619,24 +875,6 @@ void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
   wr.code<ID, ID>(id, { id });
   wr.message("Only ", allowedItems(useOrImport), " can be used with '",
              useOrImport, "' statements.");
-}
-
-void ErrorUseImportTransitiveRename::write(ErrorWriterBase& wr) const {
-  auto from = std::get<0>(info);
-  auto middle = std::get<1>(info);
-  auto to = std::get<2>(info);
-
-  auto firstRename = std::get<3>(info);
-  auto secondRename = std::get<4>(info);
-
-  wr.heading(kind_, type_, secondRename, "'",
-             middle, "' is repeated.");
-  wr.message("First, '", from, "' is renamed to '", middle, "'.");
-  wr.code(firstRename, {firstRename});
-  wr.message("Then, '", middle, "' is renamed to '", to, "'.");
-  wr.code(secondRename, {secondRename});
-  wr.note(firstRename, "did you mean to rename '", from, "' to '", to, "'?");
-  wr.message("You can do so by a single rename, '", from, " as ", to, "'.");
 }
 
 void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
@@ -734,6 +972,24 @@ void ErrorUseImportUnknownSym::write(ErrorWriterBase& wr) const {
   wr.code(searchedScope->id());
 }
 
+void ErrorUseImportTransitiveRename::write(ErrorWriterBase& wr) const {
+  auto from = std::get<0>(info);
+  auto middle = std::get<1>(info);
+  auto to = std::get<2>(info);
+
+  auto firstRename = std::get<3>(info);
+  auto secondRename = std::get<4>(info);
+
+  wr.heading(kind_, type_, secondRename, "'",
+             middle, "' is repeated.");
+  wr.message("First, '", from, "' is renamed to '", middle, "'.");
+  wr.code(firstRename, {firstRename});
+  wr.message("Then, '", middle, "' is renamed to '", to, "'.");
+  wr.code(secondRename, {secondRename});
+  wr.note(firstRename, "did you mean to rename '", from, "' to '", to, "'?");
+  wr.message("You can do so by a single rename, '", from, " as ", to, "'.");
+}
+
 void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
   auto stmt = std::get<const uast::AstNode*>(info);
   auto laterId = std::get<ID>(info);
@@ -756,259 +1012,6 @@ void ErrorValueUsedAsType::write(ErrorWriterBase& wr) const {
   // wr.message("Did you mean to use '.type'?");
 }
 
-void ErrorDeprecation::write(ErrorWriterBase& wr) const {
-  auto msg = std::get<std::string>(info);
-  auto mention = std::get<const uast::AstNode*>(info);
-  auto target = std::get<const uast::NamedDecl*>(info);
-  CHPL_ASSERT(mention && target);
-
-  wr.headingVerbatim(kind_, type_, mention, msg);
-  wr.code(mention, {mention});
-
-  /* TODO: Need to know whether the symbol is user or not:
-  wr.note(target, "declared here:");
-  wr.code(target);
-  */
-
-  std::ignore = target;
-  return;
-}
-
-void ErrorUnstable::write(ErrorWriterBase& wr) const {
-  auto msg = std::get<std::string>(info);
-  auto mention = std::get<const uast::AstNode*>(info);
-  auto target = std::get<const uast::NamedDecl*>(info);
-  CHPL_ASSERT(mention && target);
-
-  wr.headingVerbatim(kind_, type_, mention, msg);
-  wr.code(mention, {mention});
-
-  /* TODO: Need to know whether the symbol is user or not:
-  wr.note(target, "declared here:");
-  wr.code(target);
-  */
-
-  std::ignore = target;
-  return;
-}
-
-// describe where a symbol came from
-// (in a way, it prints out a ResultVisibilityTrace)
-// 'start' indicates where in the trace to start, since sometimes
-// the first element might have already been printed.
-// 'oneOnly' indicates that only the 1st match should be described
-//
-// if 'intro' will be emitted before the first message for a trace
-// (only relevant if start==0). If it is not empty, it should probably
-// end with a space.
-static void describeSymbolSource(ErrorWriterBase& wr,
-                                 const uast::AstNode* ast,
-                                 UniqueString name,
-                                 const resolution::BorrowedIdsWithName& match,
-                                 const resolution::ResultVisibilityTrace& trace,
-                                 int start,
-                                 bool oneOnly,
-                                 const char* intro) {
-  CHPL_ASSERT(0 <= start);
-
-  bool encounteredAutoModule = false;
-  UniqueString from = name;
-  int n = trace.visibleThrough.size();
-  bool first = true; // do we still need to output the intro text?
-  for (int i = start; i < n; i++) {
-    const auto& elt = trace.visibleThrough[i];
-    if (elt.automaticModule) {
-      std::string msg;
-      if (start==0 && first) {
-        msg = intro;
-      }
-      if (from != name) {
-        msg += "'" + from.str() + "'";
-      } else {
-        msg += "it";
-      }
-      wr.note(ast, msg, " was provided by the automatically-included modules.");
-      encounteredAutoModule = true;
-      first = false;
-      break;
-    } else if (elt.fromUseImport) {
-      std::string errbegin;
-      std::string nameSuffix;
-      if (start==0 && first) {
-        errbegin = intro;
-        errbegin += "through";
-      } else {
-        errbegin = "and then through";
-      }
-      if (from != name) {
-        nameSuffix += " providing '" + from.str() + "'";
-      }
-
-      wr.note(locationOnly(elt.visibilityClauseId), errbegin, " the '", elt.visibilityStmtKind, "' statement", nameSuffix, " here:");
-      wr.code<ID,ID>(elt.visibilityClauseId, { elt.visibilityClauseId });
-      from = elt.renameFrom;
-      first = false;
-    }
-  }
-
-  if (!encounteredAutoModule) {
-    if (match.numIds() == 1 || oneOnly) {
-      ID firstId = match.firstId();
-      if (first) {
-        wr.note(locationOnly(firstId), intro, "found '", from, "' defined here:");
-      } else {
-        wr.note(locationOnly(firstId), "found '", from, "' defined here:");
-      }
-      wr.code<ID,ID>(firstId, { firstId });
-    } else {
-      bool firstHere = true;
-      for (const auto& id : match) {
-        if (first) {
-          wr.note(id, intro, "found '", from, "' defined here:");
-        } if (firstHere) {
-          wr.note(id, "found '", from, "' defined here:");
-        } else {
-          wr.note(id, "and found '", from, "' defined here:");
-        }
-        wr.code<ID,ID>(id, { id });
-        first = false;
-        firstHere = false;
-      }
-    }
-  }
-}
-
-void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
-  auto formal = std::get<const uast::Formal*>(info);
-  const auto& match = std::get<resolution::BorrowedIdsWithName>(info);
-  const auto& trace = std::get<resolution::ResultVisibilityTrace>(info);
-  CHPL_ASSERT(formal && !trace.visibleThrough.empty());
-
-  // find the first visibility clause ID
-  ID firstVisibilityClauseId;
-  resolution::VisibilityStmtKind firstUseOrImport = resolution::VIS_USE;
-
-  int describeStart = 0;
-
-  int i = 0;
-  for (const auto& elt : trace.visibleThrough) {
-    if (elt.fromUseImport) {
-      firstVisibilityClauseId = elt.visibilityClauseId;
-      firstUseOrImport = elt.visibilityStmtKind;
-      describeStart = i+1; // skip this one in describeSymbolSource
-      break;
-    }
-    i++;
-  }
-
-  wr.heading(kind_, type_, firstVisibilityClauseId,
-             "module-level symbol is hiding function argument '",
-             formal->name(), "'");
-
-  wr.message("The formal argument:");
-  wr.code(formal, { formal });
-  wr.message("is shadowed by a symbol provided by the following '",
-             firstUseOrImport, "' statement:");
-  wr.code<ID, ID>(firstVisibilityClauseId, { firstVisibilityClauseId });
-
-  // print where it came from
-  describeSymbolSource(wr, formal, formal->name(), match, trace, describeStart, false, "");
-
-  return;
-}
-
-void ErrorAmbiguousVisibilityIdentifier::write(ErrorWriterBase& wr) const {
-  auto name = std::get<UniqueString>(info);
-  auto mentionId = std::get<ID>(info);
-  auto potentialTargetIds = std::get<std::vector<ID>>(info);
-
-  wr.heading(kind_, type_, mentionId,
-             "'", name, "' is ambiguous");
-
-  wr.code<ID, ID>(mentionId, { mentionId });
-
-  bool printedOne = false;
-  for (auto& id : potentialTargetIds) {
-    wr.note(id, printedOne ? "or ":"", "it could refer to this '", name, "'");
-    printedOne = true;
-    wr.code<ID, ID>(id, { id });
-  }
-
-  // TODO: call describeSymbolSource
-  return;
-}
-
-void ErrorUnknownIdentifier::write(ErrorWriterBase& wr) const {
-  auto ident = std::get<const uast::Identifier*>(info);
-  auto mentionedMoreThanOnce = std::get<bool>(info);
-
-  wr.heading(kind_, type_, ident,
-             "'", ident->name(), "' cannot be found",
-             mentionedMoreThanOnce?" (first mention this function)":"");
-
-  wr.code(ident, { ident });
-
-  return;
-}
-
-void ErrorAmbiguousIdentifier::write(ErrorWriterBase& wr) const {
-  auto ident = std::get<const uast::Identifier*>(info);
-  auto moreMentions = std::get<bool>(info);
-  auto matches = std::get<std::vector<resolution::BorrowedIdsWithName>>(info);
-  auto trace = std::get<std::vector<resolution::ResultVisibilityTrace>>(info);
-
-  wr.heading(kind_, type_, ident,
-             "'", ident->name(), "' is ambiguous",
-             moreMentions?" (first mention this function)":"");
-
-  wr.code(ident, { ident });
-
-  CHPL_ASSERT(matches.size() > 0);
-  if (matches[0].numIds() > 1) {
-    describeSymbolSource(wr, ident, ident->name(), matches[0], trace[0], 0, false, "");
-  } else {
-    CHPL_ASSERT(matches.size() > 1);
-    describeSymbolSource(wr, ident, ident->name(), matches[0], trace[0], 0, true, "first, ");
-    describeSymbolSource(wr, ident, ident->name(), matches[1], trace[1], 0, true, "additionally, ");
-  }
-
-  return;
-}
-
-void ErrorNotInModule::write(ErrorWriterBase& wr) const {
-  const uast::Dot* dot = std::get<0>(info);
-  //ID moduleId = std::get<1>(info);
-  UniqueString moduleName = std::get<2>(info);
-  ID renameClauseId = std::get<3>(info);
-
-  wr.heading(kind_, type_, dot,
-             "cannot find '", dot->field(), "' in module '", moduleName, "'");
-
-  wr.code(dot, { dot });
-
-  UniqueString dotModName = moduleName;
-  if (auto dotLeftPart = dot->receiver()) {
-    if (auto leftIdent = dotLeftPart->toIdentifier()) {
-      dotModName = leftIdent->name();
-    }
-  }
-
-  if (dotModName != moduleName) {
-    if (renameClauseId.isEmpty()) {
-      wr.note(dot, "module '", moduleName, "' was renamed to"
-              " '", dotModName, "' in this scope");
-    } else {
-      wr.note(locationOnly(renameClauseId),
-              "module '", moduleName, "' was renamed to"
-              " '", dotModName, "' here");
-      wr.code<ID,ID>(renameClauseId, { renameClauseId });
-    }
-  }
-
-  //wr.note(moduleId, "module '", moduleName, "' declared here");
-
-  return;
-}
 
 /* end resolution errors */
 

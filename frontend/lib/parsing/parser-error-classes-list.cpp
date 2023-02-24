@@ -44,6 +44,8 @@ namespace chpl {
 //
 //
 
+// Bison* errors are reported by the Bison parser to yyerror
+
 void ErrorBisonMemoryExhausted::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   wr.heading(kind_, type_, loc, "memory exhausted while parsing.");
@@ -71,6 +73,8 @@ void ErrorBisonUnknownError::write(ErrorWriterBase& wr) const {
   }
 }
 
+// other parser errors
+
 void ErrorCannotAttachPragmas::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto stmt = std::get<const uast::AstNode*>(info);
@@ -94,6 +98,165 @@ void ErrorCommentEOF::write(ErrorWriterBase& wr) const {
     wr.note(nestedLoc, "nested comment here:");
     wr.code(nestedLoc);
   }
+}
+
+void ErrorExceptOnlyInvalidExpr::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto limitationKind = std::get<uast::VisibilityClause::LimitationKind>(info);
+  wr.heading(kind_, type_, loc, "incorrect expression in '", limitationKind,
+             "' list, identifier expected.");
+  wr.message("In the '", limitationKind, "' list here:");
+  wr.code(loc);
+}
+
+void ErrorExternUnclosedPair::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto pairSymbol = std::get<std::string>(info);
+  wr.heading(kind_, type_, loc, "missing closing ", pairSymbol,
+             " symbol in extern block.");
+  wr.message("In this extern block:");
+  wr.code(loc);
+}
+
+void ErrorInvalidIndexExpr::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(kind_, type_, loc,
+             "only identifiers or tuples of identifiers are allowed as index "
+             "expressions.");
+  wr.message("Invalid index expression used here:");
+  wr.code(loc);
+}
+
+void ErrorInvalidNewForm::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto newExpr = std::get<const uast::AstNode*>(info);
+  wr.heading(kind_, type_, loc, "Invalid form for 'new' expression.");
+  wr.message("'new' expression used here:");
+  wr.code(loc, {newExpr});
+}
+
+void ErrorInvalidNumericLiteral::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto errMessage = std::get<std::string>(info);
+  CHPL_ASSERT(!errMessage.empty());
+  CHPL_ASSERT(errMessage.back() == '.' &&
+         "expected a period at the end of InvalidNumericLiteral message");
+  errMessage[0] = std::tolower(errMessage[0]);
+  wr.heading(kind_, type_, loc, errMessage);
+  wr.message("Numeric literal encountered here:");
+  wr.code(loc);
+}
+
+void ErrorLabelIneligibleStmt::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto maybeStmt = std::get<const uast::AstNode*>(info);
+  if (maybeStmt && maybeStmt->tag() == uast::AstTag::EmptyStmt) {
+    // this is the case where there is a semicolon following the label name
+    wr.heading(kind_, type_, loc,
+               "labels should not be terminated with semicolons.");
+  } else {
+    wr.heading(kind_, type_, loc, "cannot label this kind of statement.");
+  }
+  wr.message("Label on ineligible statement here:");
+  wr.code(loc);
+  wr.message("Only 'for', 'while', and 'do-while' statements can have labels.");
+}
+
+void ErrorMultipleExternalRenaming::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  wr.heading(
+      kind_, type_, loc,
+      "external symbol renaming can only be applied to one symbol at a time.");
+  wr.message("Multiple renaming used here:");
+  wr.code(loc);
+}
+
+void ErrorNewWithoutArgs::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto expr = std::get<const uast::AstNode*>(info);
+  wr.heading(kind_, type_, loc,
+             "'new' expression is missing its argument list.");
+  wr.message("'new' expression used here:");
+  wr.code(loc, { expr });
+  wr.message("Perhaps you intended to write 'new ", expr, "()' instead?");
+}
+
+void ErrorPreIncDecOp::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto isDoublePlus = std::get<bool>(info);
+  if (isDoublePlus) {
+    wr.heading(kind_, type_, loc, "'++' is not a pre-increment.");
+  } else {
+    wr.heading(kind_, type_, loc, "'--' is not a pre-decrement.");
+  }
+  wr.message("Used here:");
+  wr.code(loc);
+}
+
+void ErrorRecordInheritanceNotSupported::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto recordName = std::get<std::string>(info);
+  wr.heading(kind_, type_, loc,
+             "inheritance is not currently supported for records.");
+  wr.note(loc, recordName, " declared as a record here:");
+  wr.code(loc);
+  wr.message(
+      "Thoughts on what record inheritance should entail can be added to "
+      "https://github.com/chapel-lang/chapel/issues/6851.");
+}
+
+void ErrorStringLiteralEOF::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto startChar = std::get<char>(info);
+  auto startCharCount = std::get<int>(info);
+  auto startDelimiter = std::string((size_t)startCharCount, startChar);
+  wr.heading(kind_, type_, loc, "end-of-file in string literal.");
+  wr.message("Unterminated string literal here:");
+  wr.code(loc);
+  wr.message("This string literal began with ", startDelimiter,
+             " and must end with the same un-escaped delimiter.");
+}
+
+void ErrorUseImportNeedsModule::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto isImport = std::get<bool>(info);
+  std::string useOrImport = isImport ? "import" : "use";
+  wr.heading(kind_, type_, loc, "'", useOrImport,
+             "' statements must refer to module",
+             (isImport ? "" : " or 'enum'"), " symbols.");
+  wr.message("In the following '", useOrImport, "' statement:");
+  wr.code(loc);
+}
+
+// catch-alls for simple parsing errors
+
+void ErrorParseErr::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto errorMessage = std::get<std::string>(info);
+  CHPL_ASSERT(errorMessage.back() == '.' &&
+         "expected a period at the end of ErrorParseErr message");
+  wr.heading(kind_, type_, loc, errorMessage);
+  wr.code(loc);
+}
+
+void ErrorParseSyntax::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto errorMessage = std::get<std::string>(info);
+  CHPL_ASSERT(errorMessage.back() == '.' &&
+         "expected a period at the end of ErrorParseSyntax message");
+  wr.heading(kind_, type_, loc, errorMessage);
+  wr.code(loc);
+}
+
+/* begin post-parse-checks errors */
+
+void ErrorCantApplyPrivate::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info);
+  auto appliedToWhat = std::get<std::string>(info);
+  wr.heading(kind_, type_, node, "can't apply private to ", appliedToWhat,
+             " yet.");
+  wr.message("The following declaration has unsupported 'private' modifier:");
+  wr.code(node);
 }
 
 void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
@@ -210,161 +373,14 @@ void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
   }
 }
 
-void ErrorExceptOnlyInvalidExpr::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto limitationKind = std::get<uast::VisibilityClause::LimitationKind>(info);
-  wr.heading(kind_, type_, loc, "incorrect expression in '", limitationKind,
-             "' list, identifier expected.");
-  wr.message("In the '", limitationKind, "' list here:");
-  wr.code(loc);
-}
-
-void ErrorExternUnclosedPair::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto pairSymbol = std::get<std::string>(info);
-  wr.heading(kind_, type_, loc, "missing closing ", pairSymbol,
-             " symbol in extern block.");
-  wr.message("In this extern block:");
-  wr.code(loc);
-}
-
-void ErrorInvalidIndexExpr::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(kind_, type_, loc,
-             "only identifiers or tuples of identifiers are allowed as index "
-             "expressions.");
-  wr.message("Invalid index expression used here:");
-  wr.code(loc);
-}
-
-void ErrorInvalidNewForm::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto newExpr = std::get<const uast::AstNode*>(info);
-  wr.heading(kind_, type_, loc, "Invalid form for 'new' expression.");
-  wr.message("'new' expression used here:");
-  wr.code(loc, {newExpr});
-}
-
-void ErrorInvalidNumericLiteral::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto errMessage = std::get<std::string>(info);
-  CHPL_ASSERT(!errMessage.empty());
-  CHPL_ASSERT(errMessage.back() == '.' &&
-         "expected a period at the end of InvalidNumericLiteral message");
-  errMessage[0] = std::tolower(errMessage[0]);
-  wr.heading(kind_, type_, loc, errMessage);
-  wr.message("Numeric literal encountered here:");
-  wr.code(loc);
-}
-
-void ErrorLabelIneligibleStmt::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto maybeStmt = std::get<const uast::AstNode*>(info);
-  if (maybeStmt && maybeStmt->tag() == uast::AstTag::EmptyStmt) {
-    // this is the case where there is a semicolon following the label name
-    wr.heading(kind_, type_, loc,
-               "labels should not be terminated with semicolons.");
-  } else {
-    wr.heading(kind_, type_, loc, "cannot label this kind of statement.");
-  }
-  wr.message("Label on ineligible statement here:");
-  wr.code(loc);
-  wr.message("Only 'for', 'while', and 'do-while' statements can have labels.");
-}
-
-void ErrorMultipleExternalRenaming::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  wr.heading(
-      kind_, type_, loc,
-      "external symbol renaming can only be applied to one symbol at a time.");
-  wr.message("Multiple renaming used here:");
-  wr.code(loc);
-}
-
-void ErrorNewWithoutArgs::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto expr = std::get<const uast::AstNode*>(info);
-  wr.heading(kind_, type_, loc,
-             "'new' expression is missing its argument list.");
-  wr.message("'new' expression used here:");
-  wr.code(loc, { expr });
-  wr.message("Perhaps you intended to write 'new ", expr, "()' instead?");
-}
-
-void ErrorParseErr::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto errorMessage = std::get<std::string>(info);
-  CHPL_ASSERT(errorMessage.back() == '.' &&
-         "expected a period at the end of ErrorParseErr message");
-  wr.heading(kind_, type_, loc, errorMessage);
-  wr.code(loc);
-}
-
-void ErrorParseSyntax::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto errorMessage = std::get<std::string>(info);
-  CHPL_ASSERT(errorMessage.back() == '.' &&
-         "expected a period at the end of ErrorParseSyntax message");
-  wr.heading(kind_, type_, loc, errorMessage);
-  wr.code(loc);
-}
-
-void ErrorPreIncDecOp::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto isDoublePlus = std::get<bool>(info);
-  if (isDoublePlus) {
-    wr.heading(kind_, type_, loc, "'++' is not a pre-increment.");
-  } else {
-    wr.heading(kind_, type_, loc, "'--' is not a pre-decrement.");
-  }
-  wr.message("Used here:");
-  wr.code(loc);
-}
-
-void ErrorRecordInheritanceNotSupported::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto recordName = std::get<std::string>(info);
-  wr.heading(kind_, type_, loc,
-             "inheritance is not currently supported for records.");
-  wr.note(loc, recordName, " declared as a record here:");
-  wr.code(loc);
-  wr.message(
-      "Thoughts on what record inheritance should entail can be added to "
-      "https://github.com/chapel-lang/chapel/issues/6851.");
-}
-
-void ErrorStringLiteralEOF::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto startChar = std::get<char>(info);
-  auto startCharCount = std::get<int>(info);
-  auto startDelimiter = std::string((size_t)startCharCount, startChar);
-  wr.heading(kind_, type_, loc, "end-of-file in string literal.");
-  wr.message("Unterminated string literal here:");
-  wr.code(loc);
-  wr.message("This string literal began with ", startDelimiter,
-             " and must end with the same un-escaped delimiter.");
-}
-
-void ErrorUseImportNeedsModule::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto isImport = std::get<bool>(info);
-  std::string useOrImport = isImport ? "import" : "use";
-  wr.heading(kind_, type_, loc, "'", useOrImport,
-             "' statements must refer to module",
-             (isImport ? "" : " or 'enum'"), " symbols.");
-  wr.message("In the following '", useOrImport, "' statement:");
-  wr.code(loc);
-}
-
-/* begin post-parse-checks errors */
-
-void ErrorCantApplyPrivate::write(ErrorWriterBase& wr) const {
-  auto node = std::get<const uast::AstNode*>(info);
-  auto appliedToWhat = std::get<std::string>(info);
-  wr.heading(kind_, type_, node, "can't apply private to ", appliedToWhat,
-             " yet.");
-  wr.message("The following declaration has unsupported 'private' modifier:");
-  wr.code(node);
+void ErrorIllegalUseImport::write(ErrorWriterBase& wr) const {
+  auto clause = std::get<0>(info);
+  auto parent = std::get<1>(info);
+  const char* useOrImport = parent->isImport() ? "import" : "use";
+  wr.heading(kind_, type_, clause,
+             "Illegal expression in '", useOrImport, "' statement");
+  wr.code(clause);
+  wr.note(clause, "only identifiers and 'dot' expressions are supported");
 }
 
 void ErrorMultipleManagementStrategies::write(ErrorWriterBase& wr) const {
@@ -384,14 +400,22 @@ void ErrorMultipleManagementStrategies::write(ErrorWriterBase& wr) const {
   }
 }
 
-void ErrorIllegalUseImport::write(ErrorWriterBase& wr) const {
-  auto clause = std::get<0>(info);
-  auto parent = std::get<1>(info);
-  const char* useOrImport = parent->isImport() ? "import" : "use";
-  wr.heading(kind_, type_, clause,
-             "Illegal expression in '", useOrImport, "' statement");
-  wr.code(clause);
-  wr.note(clause, "only identifiers and 'dot' expressions are supported");
+void ErrorPostParseErr::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info);
+  auto errorMessage = std::get<std::string>(info);
+  CHPL_ASSERT(errorMessage.back() == '.' &&
+         "expected a period at the end of ErrorPostParseErr message");
+  wr.heading(kind_, type_, node, errorMessage);
+  wr.code(node);
+}
+
+void ErrorPostParseWarn::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info);
+  auto errorMessage = std::get<std::string>(info);
+  CHPL_ASSERT(errorMessage.back() == '.' &&
+         "expected a period at the end of ErrorPostParseWarn message");
+  wr.heading(kind_, type_, node, errorMessage);
+  wr.code(node);
 }
 
 void ErrorUnsupportedAsIdent::write(ErrorWriterBase& wr) const {
@@ -411,24 +435,6 @@ void ErrorUnsupportedAsIdent::write(ErrorWriterBase& wr) const {
   wr.message("'as' requires the ", whichName,
              " name to be a simple identifier, but instead got the following:");
   wr.code(expectedIdentifier, { expectedIdentifier });
-}
-
-void ErrorPostParseErr::write(ErrorWriterBase& wr) const {
-  auto node = std::get<const uast::AstNode*>(info);
-  auto errorMessage = std::get<std::string>(info);
-  CHPL_ASSERT(errorMessage.back() == '.' &&
-         "expected a period at the end of ErrorPostParseErr message");
-  wr.heading(kind_, type_, node, errorMessage);
-  wr.code(node);
-}
-
-void ErrorPostParseWarn::write(ErrorWriterBase& wr) const {
-  auto node = std::get<const uast::AstNode*>(info);
-  auto errorMessage = std::get<std::string>(info);
-  CHPL_ASSERT(errorMessage.back() == '.' &&
-         "expected a period at the end of ErrorPostParseWarn message");
-  wr.heading(kind_, type_, node, errorMessage);
-  wr.code(node);
 }
 
 /* end post-parse-checks errors */
