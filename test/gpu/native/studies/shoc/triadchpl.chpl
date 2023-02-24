@@ -10,12 +10,12 @@ config const output = true;
 config const perftest = false;
 
 proc main(){
+    var flopsDB = new ResultDatabase("TriadFlops", "GFLOP/s");
+    var bdwthDB = new ResultDatabase("TriadBdwth", "GB/s");
+    var triadDB = new ResultDatabase("Triad Time", "sec");
+    var kernelDB = new ResultDatabase("Kernel Time", "sec");
     startGpuDiagnostics();
     on here.gpus[0] {
-        var flopsDB = new ResultDatabase("TriadFlops", "GFLOP/s");
-        var bdwthDB = new ResultDatabase("TriadBdwth", "GB/s");
-        var triadDB = new ResultDatabase("Triad Time", "sec");
-        var kernelDB = new ResultDatabase("Kernel Time", "sec");
         var timer: stopwatch;
         var kernelTimer: stopwatch;
         // Just do the whole computation once because overhead of GPU Launches is high
@@ -117,16 +117,16 @@ proc main(){
                 assert(C[halfNumFloats+i] == C[i]);
             }
         }
-        if(output) {
-            flopsDB.printDatabaseStats();
-            bdwthDB.printDatabaseStats();
-            triadDB.printDatabaseStats();
-        }
-        if(perftest){
-            bdwthDB.printPerfStats();
-            triadDB.printPerfStats();
-        }
     }
     stopGpuDiagnostics();
     writeln(getGpuDiagnostics());
+    if(output) {
+      flopsDB.printDatabaseStats();
+      bdwthDB.printDatabaseStats();
+      triadDB.printDatabaseStats();
+    }
+    if(perftest){
+      bdwthDB.printPerfStats();
+      triadDB.printPerfStats();
+    }
 }

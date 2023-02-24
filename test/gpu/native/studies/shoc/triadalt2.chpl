@@ -22,14 +22,14 @@ proc main(){
     param numMaxFloats = 1024 * maxProblemSize / numBytes(real(32));
     param halfNumFloats = numMaxFloats/2;
     // Create an two arrays on the GPU and populate them with number
+    var flopsDB = new ResultDatabase("TriadFlops", "GFLOP/s");
+    var bdwthDB = new ResultDatabase("TriadBdwth", "GB/s");
+    var triadDB = new ResultDatabase("Triad Time", "sec");
+    var kernelDB = new ResultDatabase("Kernel Time", "sec");
 
     var hos: [0..#numMaxFloats] real(32);
     startGpuDiagnostics();
     on here.gpus[0] {
-        var flopsDB = new ResultDatabase("TriadFlops", "GFLOP/s");
-        var bdwthDB = new ResultDatabase("TriadBdwth", "GB/s");
-        var triadDB = new ResultDatabase("Triad Time", "sec");
-        var kernelDB = new ResultDatabase("Kernel Time", "sec");
         var kernelLaunches = 0;
         for pass in 0..#passes{
             if noisy then writeln("################################################################\n Pass Number ", pass);
@@ -148,18 +148,18 @@ proc main(){
                 }
             }
         }
-        if(output) {
-            flopsDB.printDatabaseStats();
-            bdwthDB.printDatabaseStats();
-            triadDB.printDatabaseStats();
-            kernelDB.printDatabaseStats();
-        }
-        if(perftest){
-            bdwthDB.printPerfStats();
-            triadDB.printPerfStats();
-            kernelDB.printPerfStats();
-        }
     }
     stopGpuDiagnostics();
     writeln(getGpuDiagnostics());
+    if(output) {
+      flopsDB.printDatabaseStats();
+      bdwthDB.printDatabaseStats();
+      triadDB.printDatabaseStats();
+      kernelDB.printDatabaseStats();
+    }
+    if(perftest){
+      bdwthDB.printPerfStats();
+      triadDB.printPerfStats();
+      kernelDB.printPerfStats();
+    }
 }
