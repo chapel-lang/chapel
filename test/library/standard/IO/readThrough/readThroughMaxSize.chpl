@@ -1,29 +1,31 @@
 use IO;
+var r;
 
-// string
-writeln(openreader("maxSizeInput.txt").readThrough("x", maxSize=5));
-writeln(openreader("maxSizeInput.txt").readThrough("x", maxSize=6));
-writeln(openreader("maxSizeInput.txt").readThrough("x", maxSize=7));
-
-writeln(openreader("maxSizeInput.txt").readThrough("x", maxSize=5, true));
-writeln(openreader("maxSizeInput.txt").readThrough("x", maxSize=6, true));
-writeln(openreader("maxSizeInput.txt").readThrough("x", maxSize=7, true));
-
-// bytes
-writeln(openreader("maxSizeInput.txt").readThrough(b"x", maxSize=5));
-writeln(openreader("maxSizeInput.txt").readThrough(b"x", maxSize=6));
-writeln(openreader("maxSizeInput.txt").readThrough(b"x", maxSize=7));
-
-writeln(openreader("maxSizeInput.txt").readThrough(b"x", maxSize=5, true));
-writeln(openreader("maxSizeInput.txt").readThrough(b"x", maxSize=6, true));
-writeln(openreader("maxSizeInput.txt").readThrough(b"x", maxSize=7, true));
-
-// confirm the pointer gets left off after 'maxSize' bytes/codepoints
-var r = openreader("maxSizeInput.txt");
-writeln(r.readThrough("x", maxSize=5));
-write(r.readAll());
-r.close();
+// ---------- string ----------
 
 r = openreader("maxSizeInput.txt");
-writeln(r.readThrough(b"x", maxSize=5));
-write(r.readAll());
+try {
+    r.readThrough("x", maxSize=6);
+} catch e {
+    writeln(e);
+    writeln(r.readAll());
+}
+r.close();
+writeln(openreader("maxSizeInput.txt").readThrough("x", maxSize=7));
+writeln(openreader("maxSizeInput.txt").readThrough("x", maxSize=8));
+writeln(openreader("maxSizeInput.txt").readThrough("x", maxSize=7, true));
+writeln(openreader("maxSizeInput.txt").readThrough("x", maxSize=8, true));
+
+// ---------- bytes----------
+r = openreader("maxSizeInput.txt");
+try {
+    r.readThrough(b"x", maxSize=6);
+} catch e {
+    writeln(e);
+    writeln(r.readAll());
+}
+r.close();
+writeln(openreader("maxSizeInput.txt").readThrough(b"x", maxSize=7));
+writeln(openreader("maxSizeInput.txt").readThrough(b"x", maxSize=8));
+writeln(openreader("maxSizeInput.txt").readThrough(b"x", maxSize=7, true));
+writeln(openreader("maxSizeInput.txt").readThrough(b"x", maxSize=8, true));
