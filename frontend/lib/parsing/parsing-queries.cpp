@@ -666,6 +666,28 @@ bool idIsParenlessFunction(Context* context, ID id) {
   return idIsParenlessFunctionQuery(context, id);
 }
 
+static const bool& idIsMethodQuery(Context* context, ID id) {
+  QUERY_BEGIN(idIsMethodQuery, context, id);
+
+  bool result = false;
+
+  AstTag tag = idToTag(context, id);
+  if (asttags::isFunction(tag)) {
+    const AstNode* ast = astForIDQuery(context, id);
+    if (ast != nullptr) {
+      if (auto fn = ast->toFunction()) {
+        result = fn->isMethod();
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool idIsMethod(Context* context, ID id) {
+  return idIsMethodQuery(context, id);
+}
+
 static const UniqueString& fieldIdToNameQuery(Context* context, ID id) {
   QUERY_BEGIN(fieldIdToNameQuery, context, id);
 
