@@ -1487,7 +1487,7 @@ void createInitStringLiterals() {
   INT_ASSERT(gChplCreateBytesWithLiteral != NULL);
 
   // initialize the strings
-  for (auto pair : literals) {
+  for (const auto& pair : literals) {
     VarSymbol* s = pair.second;
 
     // unescape the string and compute its length

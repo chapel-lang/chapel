@@ -757,7 +757,7 @@ class ResolvedVisibilityScope {
   }
   void mark(Context* context) const {
     context->markPointer(scope_);
-    for (auto sym : visibilityClauses_) {
+    for (const auto& sym : visibilityClauses_) {
       sym.mark(context);
     }
   }

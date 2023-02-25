@@ -1680,7 +1680,7 @@ void setupClang(GenInfo* info, std::string mainFile)
     //  2nd cc1 command is for the CPU
     for (auto &command : C->getJobs()) {
       bool isCC1 = false;
-      for (auto arg : command.getArguments()) {
+      for (const auto& arg : command.getArguments()) {
         if (0 == strcmp(arg, "-cc1")) {
           isCC1 = true;
           break;
@@ -1705,7 +1705,7 @@ void setupClang(GenInfo* info, std::string mainFile)
 
   if( printSystemCommands && developer ) {
     printf("<internal clang cc> ");
-    for ( auto a : job->getArguments() ) {
+    for ( const auto& a : job->getArguments() ) {
       printf("%s ", a);
     }
     printf("\n");
@@ -4675,7 +4675,7 @@ static void handlePrintAsm(std::string dotOFile) {
     }
 
     std::vector<std::string> names = gatherPrintLlvmIrCNames();
-    for (auto name : names) {
+    for (const auto& name : names) {
       printf("\n\n# Disassembling symbol %s\n\n", name.c_str());
       fflush(stdout);
       std::vector<std::string> cmd;

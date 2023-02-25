@@ -342,12 +342,12 @@ void CallInitDeinit::processDeinitsAndPropagate(VarFrame* frame,
   }
 
   if (parent != nullptr) {
-    for (auto id : frame->initedOuterVars) {
+    for (const auto& id : frame->initedOuterVars) {
       if (parent->addToInitedVars(id)) {
         recordInitializationOrder(parent, id);
       }
     }
-    for (auto id : frame->deinitedVars) {
+    for (const auto& id : frame->deinitedVars) {
       if (frame->declaredVars.count(id) == 0) {
         parent->deinitedVars.insert(id);
       }
@@ -465,7 +465,7 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
                compositeType->instantiatedFromCompositeType() != nullptr) {
       // pass generic type and param fields by the name
       auto subs = compositeType->sortedSubstitutions();
-      for (auto pair : subs) {
+      for (const auto& pair : subs) {
         const ID& id = pair.first;
         const QualifiedType& qt = pair.second;
         UniqueString fname = parsing::fieldIdToName(context, id);

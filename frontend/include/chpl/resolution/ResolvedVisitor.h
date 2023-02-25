@@ -46,7 +46,7 @@ static bool resolvedVisitorEnterFor(ResolvedVisitorImpl& v,
 
       // TODO: Should there be some kind of function the UserVisitor can
       // implement to observe a new iteration of the loop body?
-      for (auto loopBody : resolvedLoop->loopBodies()) {
+      for (const auto& loopBody : resolvedLoop->loopBodies()) {
         ResolvedVisitorImpl loopVis(v.context(), loop,
                                     v.userVisitor(), loopBody);
 
@@ -259,11 +259,11 @@ public:
   MutatingResolvedVisitor(Context* context,
            const uast::AstNode* ast,
            UV& userVisitor,
-           ResolutionResultByPostorderID& byPostorder)
+           const ResolutionResultByPostorderID& byPostorder)
     : context_(context),
       ast_(ast),
       userVisitor_(userVisitor),
-      byPostorder_(byPostorder) {
+      byPostorder_(const_cast<ResolutionResultByPostorderID&>(byPostorder)) {
   }
 
   /** Return the context used by this ResolvedVisitor */

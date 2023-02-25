@@ -2768,7 +2768,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
     std::vector<NamedScopeSet> visited;
     visited.resize(numForwards);
 
-    for (auto fci : forwardingCis) {
+    for (const auto& fci : forwardingCis) {
       size_t start = nonPoiCandidates.size();
       // consider compiler-generated candidates
       considerCompilerGeneratedCandidates(context, fci, inScope, inPoiScope,
@@ -2780,7 +2780,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
     // next, look for candidates without using POI.
     {
       int i = 0;
-      for (auto fci : forwardingCis) {
+      for (const auto& fci : forwardingCis) {
         size_t start = nonPoiCandidates.size();
         // compute the potential functions that it could resolve to
         auto v = lookupCalledExpr(context, inScope, fci, visited[i]);
@@ -2816,7 +2816,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
 
 
       int i = 0;
-      for (auto fci : forwardingCis) {
+      for (const auto& fci : forwardingCis) {
         size_t start = poiCandidates.size();
 
         // compute the potential functions that it could resolve to
@@ -2842,7 +2842,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
     // If no candidates were found and it's a method, try forwarding
     // This supports the forwarding-to-forwarding case.
     if (nonPoiCandidates.empty() && poiCandidates.empty()) {
-      for (auto fci : forwardingCis) {
+      for (const auto& fci : forwardingCis) {
         if (fci.isMethodCall() && fci.numActuals() >= 1) {
           const Type* receiverType = fci.actual(0).type().type();
           if (typeUsesForwarding(context, receiverType)) {
@@ -3145,7 +3145,7 @@ CallResolutionResult resolveTupleExpr(Context* context,
   bool anyUnknown = false;
   bool allType = true;
   bool allValue = true;
-  for (auto actual : ci.actuals()) {
+  for (const auto& actual : ci.actuals()) {
     QualifiedType q = actual.type();
     const Type* t = q.type();
     if (t == nullptr || t->isUnknownType())
@@ -3178,7 +3178,7 @@ CallResolutionResult resolveTupleExpr(Context* context,
   else if (allType)
     kind = QualifiedType::TYPE;
 
-  for (auto actual : ci.actuals()) {
+  for (const auto& actual : ci.actuals()) {
     QualifiedType q = actual.type();
     const Type* t = q.type();
     eltTypes.push_back(t);

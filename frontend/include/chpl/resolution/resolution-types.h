@@ -1263,7 +1263,7 @@ class ResolvedExpression {
     toId_.mark(context);
     mostSpecific_.mark(context);
     context->markPointer(poiScope_);
-    for (auto a : associatedActions_) {
+    for (const auto& a : associatedActions_) {
       a.mark(context);
     }
     context->markPointer(paramLoop_);
@@ -1750,7 +1750,7 @@ class ResolvedParamLoop {
     }
 
     void mark(Context* context) const {
-      for (auto postorder : loopBodies_) {
+      for (const auto& postorder : loopBodies_) {
         postorder.mark(context);
       }
       context->markPointer(loop_);

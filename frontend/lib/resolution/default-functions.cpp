@@ -76,7 +76,7 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
 
   // loop through IDs and see if any are methods on the same type
   for (auto& ids : vec) {
-    for (auto id : ids) {
+    for (const auto& id : ids) {
       auto node = parsing::idToAst(context, id);
       CHPL_ASSERT(node);
 

@@ -1404,7 +1404,7 @@ Resolver::adjustTypesForOutFormals(const CallInfo& ci,
                              actualIntents, actualFormalTypes);
 
   int actualIdx = 0;
-  for (auto actual : ci.actuals()) {
+  for (const auto& actual : ci.actuals()) {
     (void) actual; // avoid compilation error about unused variable
 
     // find an actual referring to an ID that is passed to an 'out' formal
@@ -2742,7 +2742,7 @@ void Resolver::exit(const Call* call) {
   bool skip = false;
   if (!ci.calledType().isType()) {
     int actualIdx = 0;
-    for (auto actual : ci.actuals()) {
+    for (const auto& actual : ci.actuals()) {
       ID toId; // does the actual refer directly to a particular variable?
       const AstNode* actualAst = actualAsts[actualIdx];
       if (actualAst != nullptr && byPostorder.hasAst(actualAst)) {
