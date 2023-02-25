@@ -2115,6 +2115,18 @@ doIsCandidateApplicableInitial(Context* context,
     tag = parsing::idToTag(context, candidateId);
   }
 
+  // if it's a paren-less call, only consider parenless routines
+  // (including field accessors) but not types/outer variables/
+  // calls with parens.
+  if (ci.isParenless()) {
+    if (parsing::idIsParenlessFunction(context, candidateId) ||
+        parsing::idIsField(context, candidateId)) {
+      // OK
+    } else {
+      return nullptr;
+    }
+  }
+
   if (isTypeDecl(tag)) {
     // calling a type - i.e. type construction
     const Type* t = initialTypeForTypeDecl(context, candidateId);
