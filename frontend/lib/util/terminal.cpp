@@ -55,7 +55,7 @@ std::string getColorFormat(TermColorName colorName) {
   return ret.c_str();
 }
 
-std::string clearTerminalColor() {
+std::string getClearColorFormat() {
   std::string ret = getColorFormat(CLEAR);
   return ret;
 }

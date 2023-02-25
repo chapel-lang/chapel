@@ -179,6 +179,12 @@ class Context {
     }
   }
 
+  void clearTerminalColor(std::ostream& os) {
+    if (currentTerminalSupportsColor_) {
+      os << getClearColorFormat();
+    }
+  }
+
 
 
   // The following are only used for UniqueString garbage collection
