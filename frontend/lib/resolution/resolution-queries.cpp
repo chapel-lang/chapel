@@ -2666,8 +2666,12 @@ lookupCalledExpr(Context* context,
     }
   }
 
-  const LookupConfig config =
-      LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS;
+  LookupConfig config = LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS;
+
+  // For parenless non-method calls, only find the innermost match
+  if (ci.isParenless() && !ci.isMethodCall()) {
+    config |= LOOKUP_INNERMOST;
+  }
 
   UniqueString name = ci.name();
 
