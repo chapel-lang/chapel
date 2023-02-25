@@ -86,6 +86,53 @@ __device__ static inline void chpl_gen_comm_put(void* addr, c_nodeid_t node,
   // TODO
 }
 
+MAYBE_GPU static inline void chpl_gpu_write(const char *str) { printf("%s", str); }
+
+__device__ static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) { /* no op */ }
+__host__ static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) {
+  chpl_error("assertOnGpu() failed", lineno, filenameIdx);
+}
+
+__device__ static inline unsigned int chpl_gpu_clock(void) {
+  // TODO
+  chpl_gpu_write("chpl_gpu_clock not implemented for ROCM gpu runtime\n");
+  return -1;
+}
+__host__ static inline unsigned int chpl_gpu_clock(void) {
+  chpl_internal_error("chpl_gpu_clock not implemented for ROCM gpu runtime");
+  return 0;
+}
+
+MAYBE_GPU static inline void chpl_gpu_printTimeDelta(
+  const char *msg, unsigned int start, unsigned int end)
+{
+  printf("%s%u\n", msg, end - start);
+}
+
+__device__ static inline void chpl_gpu_force_sync() {
+  __builtin_amdgcn_s_barrier();
+}
+
+__host__ static inline void chpl_gpu_force_sync() {
+  chpl_internal_error("chpl_gpu_force_sync called from host");
+}
+
+__device__ static inline uint32_t chpl_gpu_getThreadIdxX() { return __builtin_amdgcn_workitem_id_x(); }
+__device__ static inline uint32_t chpl_gpu_getThreadIdxY() { return __builtin_amdgcn_workitem_id_y(); }
+__device__ static inline uint32_t chpl_gpu_getThreadIdxZ() { return __builtin_amdgcn_workitem_id_z(); }
+
+__device__ static inline uint32_t chpl_gpu_getBlockIdxX()  { return __builtin_amdgcn_workgroup_size_x(); }
+__device__ static inline uint32_t chpl_gpu_getBlockIdxY()  { return __builtin_amdgcn_workgroup_size_y(); }
+__device__ static inline uint32_t chpl_gpu_getBlockIdxZ()  { return __builtin_amdgcn_workgroup_size_z(); }
+
+__device__ static inline uint32_t chpl_gpu_getBlockDimX()  { return __builtin_amdgcn_workgroup_id_x(); }
+__device__ static inline uint32_t chpl_gpu_getBlockDimY()  { return __builtin_amdgcn_workgroup_id_y(); }
+__device__ static inline uint32_t chpl_gpu_getBlockDimZ()  { return __builtin_amdgcn_workgroup_id_z(); }
+
+__device__ static inline uint32_t chpl_gpu_getGridDimX()   { return __builtin_amdgcn_grid_size_x(); }
+__device__ static inline uint32_t chpl_gpu_getGridDimY()   { return __builtin_amdgcn_grid_size_y(); }
+__device__ static inline uint32_t chpl_gpu_getGridDimZ()   { return __builtin_amdgcn_grid_size_z(); }
+
 #endif // HAS_GPU_LOCALE
 
 #endif // _CHPL_GPU_GEN_INCLUDES_H
