@@ -593,11 +593,11 @@
   "a1dfe432-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/global-strings.h"
   ],
-  "389486f6-ac5b-11ed-b67e-4d191cd16eac": [
-    "frontend/include/chpl/parsing/parser-error-classes-list.h"
-  ],
   "712148ae-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/stringify-functions.h"
+  ],
+  "389486f6-ac5b-11ed-b67e-4d191cd16eac": [
+    "frontend/include/chpl/parsing/parser-error-classes-list.h"
   ],
   "5d6b5c0a-945c-11ed-b9f6-7def56659a0b": [
     "frontend/include/chpl/parsing/parser-error.h"
@@ -962,6 +962,9 @@
   "495be19a-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/parsing/ParserContextImpl.h"
   ],
+  "068304b4-b57d-11ed-b67e-4d191cd16eac": [
+    "frontend/lib/parsing/parser-error-classes-list.cpp"
+  ],
   "8af2955e-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/parsing/parser-help.h"
   ],
@@ -994,6 +997,9 @@
   ],
   "ffedfa58-e3ab-11ec-a8be-cd81bce0efc4": [
     "frontend/lib/resolution/prims.cpp"
+  ],
+  "13e186e4-b57d-11ed-b67e-4d191cd16eac": [
+    "frontend/lib/resolution/resolution-error-classes-list.cpp"
   ],
   "1a2ad1ac-e3ac-11ec-a8be-cd81bce0efc4": [
     "frontend/lib/resolution/resolution-queries.cpp"
@@ -1352,6 +1358,12 @@
   "73aae312-d1c1-11e8-954d-10ddb1d4c3d5": [
     "runtime/include/comm/ugni/comm-ugni-heap-pages.h"
   ],
+  "2879db88-b57d-11ed-b67e-4d191cd16eac": [
+    "runtime/include/gpu/cuda/chpl-gpu-gen-includes.h"
+  ],
+  "302b726a-b57d-11ed-b67e-4d191cd16eac": [
+    "runtime/include/gpu/rocm/chpl-gpu-gen-includes.h"
+  ],
   "83d35d38-d6dc-11ea-8acb-843835579daa": [
     "runtime/include/mem/jemalloc/chpl-mem-impl.h"
   ],
@@ -1403,6 +1415,9 @@
   ],
   "607e4bce-3010-11ed-b71b-d7492178b4dc": [
     "runtime/src/gpu/cuda/gpu-cuda.c"
+  ],
+  "31c40b14-b57d-11ed-b67e-4d191cd16eac": [
+    "runtime/src/gpu/rocm/gpu-rocm.c"
   ],
   "e4e38696-e581-11e8-954d-10ddb1d4c3d5": [
     "runtime/src/launch/amudprun/launch-amudprun.c"
