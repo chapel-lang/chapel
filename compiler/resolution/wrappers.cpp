@@ -1347,7 +1347,7 @@ static bool isSingleResultOfTupleInit(Symbol* sym) {
 // need to treat int/bool/etc. components as if passed by in-intent:
 //   test/types/tuple/tupleDefaultIntent.chpl
 // Assumes actual->type == formal->type .
-// Skips a few cases where copying is unnessary or detrimental.
+// Skips a few cases where copying is unnecessary or detrimental.
 static bool needConversionForTupleArg(Symbol*    actualSym,
                                       ArgSymbol* formal,
                                       FnSymbol*  fn) {
@@ -1362,7 +1362,7 @@ static bool needConversionForTupleArg(Symbol*    actualSym,
       isBlankOrConstArg(actualSym)        ||
       // no need to copy a temp
       actualSym->hasFlag(FLAG_TEMP)       ||
-      // avoid potenital infinite recursion
+      // avoid potential infinite recursion
       fn->hasFlag(FLAG_TUPLE_CAST_FN)     ||
       fn->hasFlag(FLAG_INIT_COPY_FN)      ||
       fn->hasFlag(FLAG_AUTO_COPY_FN)      ||
