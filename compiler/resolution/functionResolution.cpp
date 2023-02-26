@@ -3380,7 +3380,7 @@ static bool isTypeConstructionCall(CallExpr* call) {
 }
 
 // t is the type we resolved call to return
-static void warnForPartialInstantantiationNoQ(CallExpr* call, Type* t) {
+static void warnForPartialInstantiationNoQ(CallExpr* call, Type* t) {
   // is the resulting type generic?
   if (t != nullptr) {
     CallExpr* checkCall = call;
@@ -3489,7 +3489,7 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
         again->remove();
       }
     }
-    warnForPartialInstantantiationNoQ(call, ret);
+    warnForPartialInstantiationNoQ(call, ret);
   }
 
   if (ret != NULL) {
