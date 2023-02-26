@@ -25,7 +25,7 @@
 
 /**
   "Thunk" node, used only for converting from the untyped AST to the production
-  comiler's AST. The production comiler AST node builders do some mangling of
+  compiler's AST. The production compiler AST node builders do some mangling of
   their arguments, in some cases cloning them. However, cloning breaks the
   convert-uast pass' "fixups". A "fixup" might be used to point a SymExpr
   to a Symbol that's only syntactically defined later, and thus not available
