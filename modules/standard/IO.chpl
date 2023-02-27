@@ -3116,6 +3116,7 @@ proc _channel.advance(amount:int(64)) throws {
    :throws UnexpectedEofError: if the requested `byte` could not be found.
    :throws SystemError: if another error occurred.
  */
+deprecated "`advancePastByte` is deprecated; please use `advanceThrough` instead"
 proc _channel.advancePastByte(byte:uint(8)) throws {
   var err:errorCode = 0;
   on this._home {
@@ -3124,6 +3125,157 @@ proc _channel.advancePastByte(byte:uint(8)) throws {
   }
   if err then try this._ch_ioerror(err, "in advanceToByte");
 }
+
+/*
+   Read until a separator is found, leaving the input marker just after it.
+
+   If the separator cannot be found, the input marker is at EOF and an
+   ``EofError`` is thrown.
+
+   :arg separator: The separator to match with. If this is a single-byte
+    :type:`~String.string`, a much faster implementation will be used.
+
+   :throws EofError: Thrown if the requested ``separator`` could not be found.
+   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.advanceThrough(separator: string) throws {
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    var err: errorCode = 0;
+
+    if separator.numBytes == 1 {
+      // fast advance to the single-byte separator
+      err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int);
+      if err then try this._ch_ioerror(err, "in advanceThrough(string)");
+    } else {
+      // slow advance to multi-byte separator
+      const (readError, _, relByteOffset, _) = _findSeparator(separator, -1, this._channel_internal);
+      if readError != 0 && readError != EEOF then try this._ch_ioerror(readError, "in advanceThrough(string)");
+
+      // advance past the separator
+      err = qio_channel_advance(false, this._channel_internal, relByteOffset + separator.numBytes);
+      if err then try this._ch_ioerror(err, "in advanceThrough(string)");
+    }
+  }
+}
+
+/*
+   Read until a separator is found, leaving the input marker just after it.
+
+   If the separator cannot be found, the input marker is at EOF and an
+   ``EofError`` is thrown.
+
+   :arg separator: The separator to match with. If this is a single-byte
+    :type:`~Bytes.bytes`, a much faster implementation will be used.
+
+   :throws EofError: Thrown if the requested ``separator`` could not be found.
+   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.advanceThrough(separator: bytes) throws {
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    var err: errorCode = 0;
+
+    if separator.numBytes == 1 {
+      // fast advance to the single-byte separator
+      err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int);
+      if err then try this._ch_ioerror(err, "in advanceThrough(bytes)");
+    } else {
+      // slow advance to multi-byte separator or EOF
+      const (readError, _, relByteOffset) = _findSeparator(separator, -1, this._channel_internal);
+      if readError != 0 && readError != EEOF then try this._ch_ioerror(readError, "in advanceThrough(bytes)");
+
+      // advance past the separator
+      err = qio_channel_advance(false, this._channel_internal, relByteOffset + separator.numBytes);
+      if err then try this._ch_ioerror(err, "in advanceThrough(bytes)");
+    }
+  }
+}
+
+/*
+   Read until a separator is found, leaving the input marker just before it.
+
+   If the separator cannot be found, the input marker will is at EOF and an
+   ``EofError`` is thrown.
+
+   :arg separator: The separator to match with. If this is a single-byte
+    :type:`~String.string`, a much faster implementation will be used.
+
+   :throws EofError: Thrown if the requested ``separator`` could not be found.
+   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.advanceUpTo(separator: string) throws {
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    var err: errorCode = 0;
+
+    if separator.numBytes == 1 {
+      // fast advance to the single-byte separator
+      err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int);
+      if err then try this._ch_ioerror(err, "in advanceUpTo(string)");
+
+      // revert by a single byte
+      const offset = qio_channel_offset_unlocked(this._channel_internal),
+            endOffset = qio_channel_end_offset_unlocked(this._channel_internal);
+      err = qio_channel_seek(this._channel_internal, offset-1, endOffset);
+      if err then try this._ch_ioerror(err, "in advanceUpTo(string)");
+    } else {
+      // slow advance to multi-byte separator or EOF
+      const (readError, found, relByteOffset, _) = _findSeparator(separator, -1, this._channel_internal);
+      if readError != 0 && readError != EEOF then try this._ch_ioerror(readError, "in advanceUpTo(string)");
+
+      // advance to separator, or to EOF if not found
+      err = qio_channel_advance(
+        false, this._channel_internal,
+        relByteOffset + if found then 0 else separator.numBytes
+      );
+      if err then try this._ch_ioerror(err, "in advanceUpTo(string)");
+    }
+  }
+}
+
+/*
+   Read until a separator is found, leaving the input marker just before it.
+
+   If the separator cannot be found, the input marker is at EOF and an
+   ``EofError`` is thrown.
+
+   :arg separator: The separator to match with. If this is a single-byte
+    :type:`~Bytes.bytes`, a much faster implementation will be used.
+
+   :throws EofError: Thrown if the requested ``separator`` could not be found.
+   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.advanceUpTo(separator: bytes) throws {
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    var err: errorCode = 0;
+
+    if separator.numBytes == 1 {
+      // fast advance to the single-byte separator
+      err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int);
+      if err then try this._ch_ioerror(err, "in advanceUpTo(bytes)");
+
+      // revert by a single byte
+      const offset = qio_channel_offset_unlocked(this._channel_internal),
+            endOffset = qio_channel_end_offset_unlocked(this._channel_internal);
+      err = qio_channel_seek(this._channel_internal, offset-1, endOffset);
+      if err then try this._ch_ioerror(err, "in advanceUpTo(bytes)");
+    } else {
+      // slow advance to multi-byte separator or EOF
+      const (readError, found, relByteOffset) = _findSeparator(separator, -1, this._channel_internal);
+      if readError != 0 && readError != EEOF then try this._ch_ioerror(readError, "in advanceUpTo(bytes)");
+
+      // advance to separator, or to EOF if not found
+      err = qio_channel_advance(
+        false, this._channel_internal,
+        relByteOffset + if found then 0 else separator.numBytes
+      );
+      if err then try this._ch_ioerror(err, "in advanceUpTo(bytes)");
+    }
+  }
+}
+
 
 /*
    *Mark* a channel - that is, save the current offset of the channel
