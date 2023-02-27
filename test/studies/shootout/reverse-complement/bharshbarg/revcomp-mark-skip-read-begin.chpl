@@ -29,12 +29,12 @@ proc main(args: [] string) {
       input.mark();
 
       // Scan forward until we get to the \n (end of description)
-      input.advancePastByte("\n".toByte());
+      input.advanceThrough("\n");
       seqOffset = input.offset();
 
       try {
         // Scan forward until we get to the > (end of sequence)
-        input.advancePastByte(">".toByte());
+        input.advanceThrough(">");
         nextDescOffset = input.offset();
       } catch e:EofError {
         eof = true;
