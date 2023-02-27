@@ -748,6 +748,9 @@ bool LookupHelper::doLookupInReceiverParentScopes(
       // stop if we aren't looking at parents or if we reach a module
       if (isModule(cur->tag()) && !goPastModules)
         break;
+      // stop if we reach an outer class / record
+      if (cur != rcvScope && isAggregateDecl(cur->tag()))
+        break;
       if (!checkParents)
         break;
     }
