@@ -613,12 +613,12 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
   wr.code(reference, { reference });
   wr.note(innerDecl, "the identifier is used within ", innerName, " '",
           innerDecl->name(), "', declared here:");
-  wr.code(innerDecl);
+  wr.codeForLocation(innerDecl);
   wr.note(outerDecl, "however, the identifier refers to a field of an enclosing ",
           outerName, " '", outerDecl->name(), "', declared here:");
-  wr.code(outerDecl);
+  wr.codeForLocation(outerDecl);
   wr.note(id, "field declared here:");
-  wr.code<ID, ID>(id, { id });
+  wr.codeForDef(id);
 }
 
 void ErrorNonIterable::write(ErrorWriterBase &wr) const {
@@ -626,8 +626,8 @@ void ErrorNonIterable::write(ErrorWriterBase &wr) const {
   auto iterand = std::get<1>(info);
   auto& iterandType = std::get<types::QualifiedType>(info);
   wr.heading(kind_, type_, loop, "cannot iterate over ", decayToValue(iterandType), ".");
-  wr.message("In the following loop:");
-  wr.code(loop, { iterand });
+  wr.message("Used as an iterand in a loop here:");
+  wr.code(iterand, { iterand });
 }
 
 void ErrorNotInModule::write(ErrorWriterBase& wr) const {
@@ -656,7 +656,7 @@ void ErrorNotInModule::write(ErrorWriterBase& wr) const {
       wr.note(locationOnly(renameClauseId),
               "module '", moduleName, "' was renamed to"
               " '", dotModName, "' here");
-      wr.code<ID,ID>(renameClauseId, { renameClauseId });
+      wr.code<ID>(renameClauseId, { renameClauseId });
     }
   }
 
@@ -673,7 +673,7 @@ void ErrorPrivateToPublicInclude::write(ErrorWriterBase& wr) const {
              "an include statement");
   wr.code(moduleInclude);
   wr.note(moduleDef, "module declared private here:");
-  wr.code(moduleDef);
+  wr.codeForLocation(moduleDef);
 }
 
 void ErrorProcDefExplicitAnonFormal::write(ErrorWriterBase& wr) const {
@@ -703,7 +703,7 @@ void ErrorPrototypeInclude::write(ErrorWriterBase& wr) const {
              "cannot apply prototype to module in include statement");
   wr.code(moduleInclude);
   wr.note(moduleDef, "put prototype keyword at module declaration here:");
-  wr.code(moduleDef);
+  wr.codeForLocation(moduleDef);
 }
 
 // find the first ID not from use/import, returns true and sets result
@@ -786,7 +786,7 @@ void ErrorRedefinition::write(ErrorWriterBase& wr) const {
         }
       }
 
-      wr.code<ID, ID>(matchId, { matchId });
+      wr.codeForDef(matchId);
     }
   }
 }
@@ -854,7 +854,7 @@ void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
   wr.code(use, {use});
   wr.note(mod->id(), "module '", mod->name(), "' was declared at the ",
                      "top level here:");
-  wr.code(mod);
+  wr.codeForLocation(mod);
 }
 
 void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {
@@ -919,7 +919,7 @@ void ErrorUnknownEnumElem::write(ErrorWriterBase& wr) const {
              "' has no element named '", elemName, "'.");
   wr.code(node, { node });
   wr.note(enumAst->id(), "'", enumAst->name(), "' is declared here.");
-  wr.code(enumAst->id());
+  wr.codeForLocation(enumAst->id());
 }
 
 void ErrorUnknownIdentifier::write(ErrorWriterBase& wr) const {
@@ -961,9 +961,9 @@ void ErrorUseImportMultiplyDefined::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, secondOccurrence, "'",
              symbolName, "' is multiply defined.");
   wr.message("'", symbolName, "' was first defined here:");
-  wr.code(firstOccurrence, { firstOccurrence });
+  wr.codeForDef(firstOccurrence);
   wr.message("Redefined here:");
-  wr.code(secondOccurrence, { secondOccurrence });
+  wr.codeForDef(secondOccurrence);
 }
 
 void ErrorUseImportMultiplyMentioned::write(ErrorWriterBase& wr) const {
@@ -974,9 +974,9 @@ void ErrorUseImportMultiplyMentioned::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, secondOccurrence, "'",
              symbolName, "' is repeated.");
   wr.message("'", symbolName, "' was first mentioned here:");
-  wr.code(firstOccurrence, { firstOccurrence });
+  wr.codeForDef(firstOccurrence);
   wr.message("Mentioned again here:");
-  wr.code(secondOccurrence, { secondOccurrence });
+  wr.codeForDef(secondOccurrence);
 }
 
 void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
@@ -987,7 +987,7 @@ void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, id, "cannot '", useOrImport, "' symbol '", moduleName,
              "', which is not a ", allowedItem(useOrImport), ".");
   wr.message("In the following '", useOrImport, "' statement:");
-  wr.code<ID, ID>(id, { id });
+  wr.code<ID>(id, { id });
   wr.message("Only ", allowedItems(useOrImport), " can be used with '",
              useOrImport, "' statements.");
 }
@@ -1025,7 +1025,7 @@ void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
                " named '", moduleName, "' in module '", previousPartName, "'.");
   }
   wr.message("In the following '", useOrImport, "' statement:");
-  wr.code<ID, ID>(id, { id });
+  wr.code<ID>(id, { id });
   if (!improperMatches.empty()) {
     wr.message("The following declarations are not covered by the '", useOrImport,
                "' statement but seem similar to what you meant.");
@@ -1043,7 +1043,7 @@ void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
       if (tag == uast::asttags::AstTag::Module) {
         wr.note(locationOnly(improperId),
                 "a module named '", moduleName, "' is defined here:");
-        wr.code<ID, ID>(improperId, { improperId });
+        wr.codeForDef(improperId);
         wr.note(locationOnly(improperId),
                 "however, a full path or an explicit relative ", useOrImport,
                 " is required for modules that are not at the root level.");
@@ -1051,7 +1051,7 @@ void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
       } else {
         wr.note(locationOnly(improperId), "a declaration of '", moduleName,
                 "' is here:");
-        wr.code<ID, ID>(improperId, { improperId });
+        wr.codeForDef(improperId);
         wr.note(locationOnly(improperId), "however, '", useOrImport,
                 "' statements can only be used with ",
                 allowedItems(useOrImport), " (and this '", moduleName,
@@ -1102,7 +1102,7 @@ void ErrorUseImportUnknownSym::write(ErrorWriterBase& wr) const {
   whatIsSearched[0] = std::tolower(whatIsSearched[0]);
   wr.message("Searching in the scope of ", whatIsSearched, " '",
              searchedScope->name(), "':");
-  wr.code(searchedScope->id());
+  wr.codeForLocation(searchedScope->id());
 }
 
 void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
@@ -1113,7 +1113,7 @@ void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
   wr.message("In the following statement:");
   wr.code(stmt);
   wr.message("there is a reference to a variable defined later:");
-  wr.code(laterId);
+  wr.codeForDef(laterId);
   wr.message("Variables cannot be referenced before they are defined.");
 }
 
