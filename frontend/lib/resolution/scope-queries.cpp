@@ -1082,44 +1082,47 @@ static bool lookupInScopeViz(Context* context,
                              bool isFirstPart,
                              std::vector<BorrowedIdsWithName>& result,
                              std::vector<BorrowedIdsWithName>& improperMatches) {
-  NamedScopeSet checkedScopes;
+  bool got = false;
 
-  LookupConfig config = LOOKUP_INNERMOST;
+  {
+    NamedScopeSet checkedScopes;
 
-  // e.g. A in use A.B.C or import A.B.C
-  if (isFirstPart) {
+    LookupConfig config = LOOKUP_INNERMOST;
 
-    // a top-level module name
-    config |= LOOKUP_TOPLEVEL;
+    // e.g. A in use A.B.C or import A.B.C
+    if (isFirstPart) {
 
-    // a module name in scope due to another use/import
-    config |= LOOKUP_IMPORT_AND_USE;
+      // a top-level module name
+      config |= LOOKUP_TOPLEVEL;
 
-    // a sibling module or parent module
-    config |= LOOKUP_PARENTS;
+      // a module name in scope due to another use/import
+      config |= LOOKUP_IMPORT_AND_USE;
 
-    if (useOrImport == VIS_USE) {
+      // a sibling module or parent module
+      config |= LOOKUP_PARENTS;
 
-      // a submodule of the current module
+      if (useOrImport == VIS_USE) {
+
+        // a submodule of the current module
+        config |= LOOKUP_DECLS;
+      }
+
+    } else {
+
+      // if it's not the first part, look in the scope for
+      // declarations and use/import statements.
+      config |= LOOKUP_IMPORT_AND_USE;
       config |= LOOKUP_DECLS;
     }
 
-  } else {
-
-    // if it's not the first part, look in the scope for
-    // declarations and use/import statements.
-    config |= LOOKUP_IMPORT_AND_USE;
-    config |= LOOKUP_DECLS;
+    bool foundExternBlock = false; // ignored
+    auto helper = LookupHelper(context, resolving, checkedScopes, result,
+                               foundExternBlock,
+                               /* traceCurPath */ nullptr,
+                               /* traceResult */ nullptr);
+    got = helper.doLookupInScope(scope, {}, name, config);
   }
 
-  bool foundExternBlock = false; // ignored
-
-  auto helper = LookupHelper(context, resolving, checkedScopes, result,
-                             foundExternBlock,
-                             /* traceCurPath */ nullptr,
-                             /* traceResult */ nullptr);
-
-  bool got = helper.doLookupInScope(scope, {}, name, config);
   if (!got && isFirstPart) {
     // Relax the rules a little bit and look for more potential matches.
     // They aren't valid, but they might be what the user intended to use
