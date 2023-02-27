@@ -42,12 +42,8 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
 }
 
 llvm::Optional<BorrowedIdsWithName>
-OwnedIdsWithName::borrow(bool skipPrivateVisibilities,
-                         bool onlyMethodsFields) const {
-  IdAndVis::SymbolTypeFlags filterFlags = 0;
-  if (skipPrivateVisibilities) { filterFlags |= IdAndVis::PUBLIC; }
-  if (onlyMethodsFields) { filterFlags |= IdAndVis::METHOD_OR_FIELD; }
-
+OwnedIdsWithName::borrow(IdAndVis::SymbolTypeFlags filterFlags) const {
+  // TODO: check bitwise summary
   if (BorrowedIdsWithName::isIdVisible(idv_, filterFlags)) {
     return BorrowedIdsWithName(idv_, moreIdvs_.get(), filterFlags);
   }
@@ -169,12 +165,15 @@ bool Scope::lookupInScope(UniqueString name,
                           std::vector<BorrowedIdsWithName>& result,
                           bool arePrivateIdsIgnored,
                           bool onlyMethodsFields) const {
+  IdAndVis::SymbolTypeFlags filterFlags = 0;
+  if (arePrivateIdsIgnored) { filterFlags |= IdAndVis::PUBLIC; }
+  if (onlyMethodsFields) { filterFlags |= IdAndVis::METHOD_OR_FIELD; }
+
   auto search = declared_.find(name);
   if (search != declared_.end()) {
     // There might not be any IDs that are visible to us, so borrow returns
     // an optional list.
-    auto borrowedIds = search->second.borrow(arePrivateIdsIgnored,
-                                             onlyMethodsFields);
+    auto borrowedIds = search->second.borrow(filterFlags);
     if (borrowedIds.hasValue()) {
       result.push_back(std::move(borrowedIds.getValue()));
       return true;

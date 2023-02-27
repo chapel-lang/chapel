@@ -190,8 +190,8 @@ class OwnedIdsWithName {
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
-  llvm::Optional<BorrowedIdsWithName> borrow(bool arePrivateIdsIgnored,
-                                             bool onlyMethodsFields) const;
+  llvm::Optional<BorrowedIdsWithName>
+  borrow(IdAndVis::SymbolTypeFlags filterFlags) const;
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
