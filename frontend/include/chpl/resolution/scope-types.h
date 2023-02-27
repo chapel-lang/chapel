@@ -38,23 +38,54 @@ class BorrowedIdsWithName;
 
 /** Helper type to store an ID and visibility constraints. */
 class IdAndVis {
+ public:
+  // helper types
+  enum {
+    /** Public */
+    PUBLIC = 1,
+    /** Private / not public */
+    PRIVATE = 2,
+    /** A method or field declaration */
+    METHOD_OR_FIELD = 4,
+    /** Something other than a method or field declaration */
+    NOT_METHOD_NOT_FIELD = 8
+  };
+  /** A bit-set of the flags defined in the above enum */
+  using SymbolTypeFlags = uint16_t;
+
+ private:
+  // friends
   friend class OwnedIdsWithName;
   friend class BorrowedIdsWithName;
 
+  // all fields
   ID id_;
-  uast::Decl::Visibility vis_ = uast::Decl::PUBLIC;
-  bool isMethodOrField_ = false;
+  SymbolTypeFlags flags_ = 0;
 
  public:
   IdAndVis(ID id, uast::Decl::Visibility vis, bool isMethodOrField)
-    : id_(std::move(id)), vis_(vis), isMethodOrField_(isMethodOrField)
-  {
+    : id_(std::move(id)) {
+    // setup the flags
+    SymbolTypeFlags flags = 0;
+    switch (vis) {
+      case uast::Decl::DEFAULT_VISIBILITY:
+      case uast::Decl::PUBLIC:
+        flags |= PUBLIC;
+      case uast::Decl::PRIVATE:
+        flags |= PRIVATE;
+      // no defaut for compilation error if more are added
+    }
+    if (isMethodOrField) {
+      flags |= METHOD_OR_FIELD;
+    } else {
+      flags |= NOT_METHOD_NOT_FIELD;
+    }
+    flags_ = flags;
   }
 
   bool operator==(const IdAndVis& other) const {
     return id_ == other.id_ &&
-           vis_ == other.vis_ &&
-           isMethodOrField_ == other.isMethodOrField_;
+           flags_ == other.flags_;
   }
   bool operator!=(const IdAndVis& other) const {
     return !(*this == other);
@@ -63,8 +94,7 @@ class IdAndVis {
   size_t hash() const {
     size_t ret = 0;
     ret = hash_combine(ret, chpl::hash(id_));
-    ret = hash_combine(ret, chpl::hash(vis_));
-    ret = hash_combine(ret, chpl::hash(isMethodOrField_));
+    ret = hash_combine(ret, chpl::hash(flags_));
     return ret;
   }
 
@@ -73,9 +103,15 @@ class IdAndVis {
   }
 
   const ID& id() const { return id_; }
-  uast::Decl::Visibility vis() const { return vis_; }
-  bool isPrivate() const { return vis_ == uast::Decl::PRIVATE; }
-  bool isMethodOrField() const { return isMethodOrField_; }
+  bool isPublic() const {
+    return (flags_ & PUBLIC) != 0;
+  }
+  bool isPrivate() const {
+    return !isPublic();
+  }
+  bool isMethodOrField() const {
+    return (flags_ & METHOD_OR_FIELD) != 0;
+  }
 };
 
 /**
