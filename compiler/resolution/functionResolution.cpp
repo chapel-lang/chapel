@@ -4762,14 +4762,24 @@ static bool obviousMismatch(CallExpr* call, FnSymbol* fn) {
   return (isMethodCall != isMethodFn);
 }
 
+static bool isSymExprTypeVar(Expr* e) {
+  if (SymExpr* se = toSymExpr(e)) {
+    return se->symbol()->hasFlag(FLAG_TYPE_VARIABLE);
+  }
+
+  return false;
+}
+
 // returns true if the error was issued
 static bool maybeIssueSplitInitMissingTypeError(CallInfo& info,
                                                 Vec<FnSymbol*>& visibleFns) {
   // Check for uninitialized values (with type dtSplitInitType)
   bool foundUnknownTypeActual = false;
   for_actuals(actual, info.call) {
+    bool isTypeVariable = isSymExprTypeVar(actual);
     Type* t = actual->getValType();
-    if (t == dtSplitInitType || t->symbol->hasFlag(FLAG_GENERIC)) {
+    if (t == dtSplitInitType ||
+        (!isTypeVariable && t->symbol->hasFlag(FLAG_GENERIC))) {
       foundUnknownTypeActual = true;
     }
   }
@@ -4790,8 +4800,10 @@ static bool maybeIssueSplitInitMissingTypeError(CallInfo& info,
     if (anyTypeNotEstablished) {
       bool printedError = false;
       for_actuals(actual, info.call) {
+        bool isTypeVariable = isSymExprTypeVar(actual);
         Type* t = actual->getValType();
-        if (t == dtSplitInitType || t->symbol->hasFlag(FLAG_GENERIC)) {
+        if (t == dtSplitInitType ||
+            (!isTypeVariable && t->symbol->hasFlag(FLAG_GENERIC))) {
           if (SymExpr* se = toSymExpr(actual)) {
             CallExpr* call = userCall(info.call);
             splitInitMissingTypeError(se->symbol(), call, false);
