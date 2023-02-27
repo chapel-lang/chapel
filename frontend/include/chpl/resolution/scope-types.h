@@ -71,8 +71,10 @@ class IdAndVis {
       case uast::Decl::DEFAULT_VISIBILITY:
       case uast::Decl::PUBLIC:
         flags |= PUBLIC;
+        break;
       case uast::Decl::PRIVATE:
         flags |= PRIVATE;
+        break;
       // no defaut for compilation error if more are added
     }
     if (isMethodOrField) {
@@ -854,7 +856,7 @@ enum {
 
   /**
     Lookup only methods, fields, and class/record/union declarations
-    directly nested within a class/record/union
+    directly nested within a class/record/union.
    */
   LOOKUP_ONLY_METHODS_FIELDS = 128,
 
