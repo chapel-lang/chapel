@@ -112,20 +112,33 @@ void BorrowedIdsWithName::stringify(std::ostream& ss,
 
 Scope::Scope(const uast::AstNode* ast, const Scope* parentScope,
              bool autoUsesModules) {
+  bool containsUseImport = false;
+  bool containsFunctionDecls = false;
+  bool containsExternBlock = false;
+  bool isMethodScope = false;
+
   parentScope_ = parentScope;
   tag_ = ast->tag();
-  autoUsesModules_ = autoUsesModules;
   id_ = ast->id();
   if (auto decl = ast->toNamedDecl()) {
     name_ = decl->name();
   }
   if (auto fn = ast->toFunction()) {
-    methodScope_ = fn->isMethod();
+    isMethodScope = fn->isMethod();
   }
   gatherDeclsWithin(ast, declared_,
-                    containsUseImport_,
-                    containsFunctionDecls_,
-                    containsExternBlock_);
+                    containsUseImport,
+                    containsFunctionDecls,
+                    containsExternBlock);
+
+  // compute the flags storing a few settings
+  ScopeFlags flags = 0;
+  if (containsFunctionDecls) { flags |= CONTAINS_FUNCTION_DECLS; }
+  if (containsUseImport) {     flags |= CONTAINS_USE_IMPORT; }
+  if (autoUsesModules) {       flags |= AUTO_USES_MODULES; }
+  if (isMethodScope) {         flags |= METHOD_SCOPE; }
+  if (containsExternBlock) {   flags |= CONTAINS_EXTERN_BLOCK; }
+  flags_ = flags;
 }
 
 void Scope::addBuiltin(UniqueString name) {

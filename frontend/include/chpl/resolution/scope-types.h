@@ -391,15 +391,23 @@ using DeclMap = std::unordered_map<UniqueString, OwnedIdsWithName>;
   type.
  */
 class Scope {
+ public:
+  // supporting types/enums
+  enum {
+    CONTAINS_FUNCTION_DECLS = 1,
+    CONTAINS_USE_IMPORT = 2,
+    AUTO_USES_MODULES = 4,
+    METHOD_SCOPE = 8,
+    CONTAINS_EXTERN_BLOCK = 16,
+  };
+  /** A bit-set of the flags defined in the above enum */
+  using ScopeFlags = unsigned int;
+
  private:
+  // all fields
   const Scope* parentScope_ = nullptr;
   uast::asttags::AstTag tag_ = uast::asttags::AST_TAG_UNKNOWN;
-  // TODO: better pack these to save space
-  bool containsUseImport_ = false;
-  bool containsFunctionDecls_ = false;
-  bool containsExternBlock_ = false;
-  bool autoUsesModules_ = false;
-  bool methodScope_ = false;
+  ScopeFlags flags_ = 0;
   ID id_;
   UniqueString name_;
   DeclMap declared_;
@@ -444,26 +452,32 @@ class Scope {
   /** Returns 'true' if this Scope directly contains use or import statements
       including the automatic 'use' for the standard library. */
   bool containsUseImport() const {
-    return containsUseImport_ || autoUsesModules_;
+    return (flags_ & (CONTAINS_USE_IMPORT|AUTO_USES_MODULES)) != 0;
   }
 
   /** Returns 'true' if this Scope directly contains an 'extern' block
       (with C code to supporting interoperability) */
   bool containsExternBlock() const {
-    return containsExternBlock_;
+    return (flags_ & CONTAINS_EXTERN_BLOCK) != 0;
   }
 
   /** Returns 'true' if the Scope includes the automatic 'use' for
       the standard library. */
-  bool autoUsesModules() const { return autoUsesModules_; }
+  bool autoUsesModules() const {
+    return (flags_ & AUTO_USES_MODULES) != 0;
+  }
 
   /** Returns 'true' if this Scope represents a method's scope.
       Methods have special scoping behavior to use other fields/methods
       without writing 'this.bla'. */
-  bool isMethodScope() const { return methodScope_; }
+  bool isMethodScope() const {
+    return (flags_ & METHOD_SCOPE) != 0;
+  }
 
   /** Returns 'true' if this Scope directly contains any Functions */
-  bool containsFunctionDecls() const { return containsFunctionDecls_; }
+  bool containsFunctionDecls() const {
+    return (flags_ & CONTAINS_FUNCTION_DECLS) != 0;
+  }
 
   int numDeclared() const { return declared_.size(); }
 
@@ -484,11 +498,7 @@ class Scope {
   bool operator==(const Scope& other) const {
     return parentScope_ == other.parentScope_ &&
            tag_ == other.tag_ &&
-           containsUseImport_ == other.containsUseImport_ &&
-           containsFunctionDecls_ == other.containsFunctionDecls_ &&
-           containsExternBlock_ == other.containsExternBlock_ &&
-           autoUsesModules_ == other.autoUsesModules_ &&
-           methodScope_ == other.methodScope_ &&
+           flags_ == other.flags_ &&
            id_ == other.id_ &&
            declared_ == other.declared_ &&
            name_ == other.name_;
