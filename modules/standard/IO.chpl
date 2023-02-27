@@ -3129,7 +3129,7 @@ proc _channel.advancePastByte(byte:uint(8)) throws {
 /*
    Read until a separator is found, leaving the input marker just after it.
 
-   If the separator cannot be found, the input marker is at EOF and an
+   If the separator cannot be found, the input marker is left at EOF and an
    ``EofError`` is thrown.
 
    :arg separator: The separator to match with. If this is a single-byte
@@ -3162,7 +3162,7 @@ proc fileReader.advanceThrough(separator: string) throws {
 /*
    Read until a separator is found, leaving the input marker just after it.
 
-   If the separator cannot be found, the input marker is at EOF and an
+   If the separator cannot be found, the input marker is left at EOF and an
    ``EofError`` is thrown.
 
    :arg separator: The separator to match with. If this is a single-byte
@@ -3195,7 +3195,7 @@ proc fileReader.advanceThrough(separator: bytes) throws {
 /*
    Read until a separator is found, leaving the input marker just before it.
 
-   If the separator cannot be found, the input marker will is at EOF and an
+   If the separator cannot be found, the input marker is left at EOF and an
    ``EofError`` is thrown.
 
    :arg separator: The separator to match with. If this is a single-byte
@@ -3237,7 +3237,7 @@ proc fileReader.advanceUpTo(separator: string) throws {
 /*
    Read until a separator is found, leaving the input marker just before it.
 
-   If the separator cannot be found, the input marker is at EOF and an
+   If the separator cannot be found, the input marker is left at EOF and an
    ``EofError`` is thrown.
 
    :arg separator: The separator to match with. If this is a single-byte
@@ -5692,7 +5692,7 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
 
 
 /*
-  Read until a given separator is found, returning the contents of the
+  Read until the given separator is found, returning the contents of the
   ``fileReader`` through that point.
 
   If the separator is found, the input marker is left immediately after it. If
@@ -5706,12 +5706,18 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
     ``maxSize`` specifies the maximum number of bytes.
 
   :arg separator: The separator to match with. Must be a ``string`` or ``bytes``.
-  :arg maxSize: The maximum number of codepoints or bytes to read. For the default value of ``-1``, this method will read until EOF.
-  :arg stripSeparator: Whether to strip the separator from the returned ``string`` or ``bytes``.
-  :returns: A ``string`` or ``bytes`` with the contents of the ``fileReader`` up to the separator.
+  :arg maxSize: The maximum number of codepoints or bytes to read. For the default
+    value of ``-1``, this method will read until EOF.
+  :arg stripSeparator: Whether to strip the separator from the returned
+    ``string`` or ``bytes``. If ``true``, the returned value will not include
+    the separator.
+  :returns: A ``string`` or ``bytes`` with the contents of the ``fileReader``
+    up to the separator.
 
-  :throws UnexpectedEofError: Thrown if nothing could be returned (the ``fileReader`` was already at EOF or a separator was the only thing remaining).
-  :throws BadFormatError: Thrown if the separator was not found in the next `maxSize` codepoints/bytes. The input marker is not moved.
+  :throws UnexpectedEofError: Thrown if nothing could be returned (the
+    ``fileReader`` was already at EOF or a separator was the only thing remaining).
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` codepoints/bytes. The input marker is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t throws
@@ -5724,7 +5730,7 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
 }
 
 /*
-  Read until a given separator is found, returning the contents of the
+  Read until the given separator is found, returning the contents of the
   ``fileReader`` through that point.
 
   If the separator is found, the input marker is left immediately after it. If
@@ -5733,11 +5739,15 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
 
   :arg: s: The :type:`~String.string` to read into. Contents will be overwritten.
   :arg separator: The separator to match with.
-  :arg maxSize: The maximum number of codepoints to read. For the default value of ``-1``, this method will read until EOF.
+  :arg maxSize: The maximum number of codepoints to read. For the default value
+    of ``-1``, this method will read until EOF.
   :arg stripSeparator: Whether to strip the separator from the returned ``string``.
-  :returns: ``true`` if something was read, and ``false`` otherwise (the ``fileReader`` was already at EOF or a separator was the only thing remaining).
+    If ``true``, the separator will be removed from the ``string`` before returning.
+  :returns: ``true`` if something was read, and ``false`` otherwise (the
+    ``fileReader`` was already at EOF or a separator was the only thing remaining).
 
-  :throws BadFormatError: Thrown if the separator was not found in the next `maxSize` codepoints. The input marker is not moved.
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` codepoints. The input marker is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readThrough(ref s: string, separator: string, maxSize=-1, stripSeparator=false): bool throws {
@@ -5746,7 +5756,7 @@ proc fileReader.readThrough(ref s: string, separator: string, maxSize=-1, stripS
 
     // find the byte offset to the start of the separator, 'maxSize' codepoints, or EOF (whichever comes first)
     const (searchErr, found, relByteOffset, numCodepoints) = _findSeparator(separator, maxSize, this._channel_internal);
-    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in channel.readThrough(string)");
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in fileReader.readThrough(string)");
 
     // compute the number of bytes and codeopints to read into 's'
     const bytesToRead = if found then relByteOffset + separator.numBytes else relByteOffset,
@@ -5754,7 +5764,7 @@ proc fileReader.readThrough(ref s: string, separator: string, maxSize=-1, stripS
 
     // read the given number of bytes and codepoints into 's', advanding the pointer that many bytes
     const err = readStringBytesData(s, this._channel_internal, bytesToRead, cpToRead);
-    if err then try this._ch_ioerror(err, "in channel.readThrough(string)");
+    if err then try this._ch_ioerror(err, "in fileReader.readThrough(string)");
 
     // remove the separator from the returned string if necessary
     if found && stripSeparator then s = s[0..<s.numCodepoints-separator.numCodepoints];
@@ -5763,7 +5773,7 @@ proc fileReader.readThrough(ref s: string, separator: string, maxSize=-1, stripS
 }
 
 /*
-  Read until a given separator is found, returning the contents of the
+  Read until the given separator is found, returning the contents of the
   ``fileReader`` through that point.
 
   If the separator is found, the input marker is left immediately after it. If
@@ -5772,11 +5782,15 @@ proc fileReader.readThrough(ref s: string, separator: string, maxSize=-1, stripS
 
   :arg: s: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
   :arg separator: The separator to match with.
-  :arg maxSize: The maximum number of codepoints to read. For the default value of ``-1``, this method will read until EOF.
+  :arg maxSize: The maximum number of codepoints to read. For the default value
+    of ``-1``, this method will read until EOF.
   :arg stripSeparator: Whether to strip the separator from the returned ``bytes``.
-  :returns: ``true`` if something was read, and ``false`` otherwise (the ``fileReader`` was already at EOF or a separator was the only thing remaining).
+    If ``true``, the separator will be removed from the ``bytes`` before returning.
+  :returns: ``true`` if something was read, and ``false`` otherwise (the
+    ``fileReader`` was already at EOF or a separator was the only thing remaining).
 
-  :throws BadFormatError: Thrown if the separator was not found in the next `maxSize` bytes. The input marker is not moved.
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` bytes. The input marker is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readThrough(ref b: bytes, separator: bytes, maxSize=-1, stripSeparator=false): bool throws {
@@ -5785,14 +5799,14 @@ proc fileReader.readThrough(ref b: bytes, separator: bytes, maxSize=-1, stripSep
 
     // find the byte offset to the start of the separator, 'maxSize' bytes, or EOF (whichever comes first)
     const (searchErr, found, relByteOffset) = _findSeparator(separator, maxSize, this._channel_internal);
-    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in channel.readThrough(bytes)");
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in fileReader.readThrough(bytes)");
 
     // compute the number of bytes to read into 'b'
     const bytesToRead = if found then relByteOffset + separator.numBytes else relByteOffset;
 
     // read the given number of bytes into 'b'
     const err = readStringBytesData(b, this._channel_internal, bytesToRead, 0);
-    if err then try this._ch_ioerror(err, "in channel.readThrough(bytes)");
+    if err then try this._ch_ioerror(err, "in fileReader.readThrough(bytes)");
 
     if found && stripSeparator then b = b[0..<b.numBytes-separator.numBytes];
   }
@@ -5800,7 +5814,7 @@ proc fileReader.readThrough(ref b: bytes, separator: bytes, maxSize=-1, stripSep
 }
 
 /*
-  Read until a given separator is found, returning the contents of the
+  Read until the given separator is found, returning the contents of the
   ``fileReader`` up to that point.
 
   If the separator is found, the input marker is left immediately after it. If
@@ -5814,11 +5828,15 @@ proc fileReader.readThrough(ref b: bytes, separator: bytes, maxSize=-1, stripSep
     ``maxSize`` specifies the maximum number of bytes.
 
   :arg separator: The separator to match with. Must be a ``string`` or ``bytes``.
-  :arg maxSize: The maximum number of codepoints/bytes to read. For the default value of ``-1``, this method will read until EOF.
-  :returns: A ``string`` or ``bytes`` with the contents of the channel up to the ``separator``.
+  :arg maxSize: The maximum number of codepoints/bytes to read. For the default
+    value of ``-1``, this method will read until EOF.
+  :returns: A ``string`` or ``bytes`` with the contents of the channel up to
+    the ``separator``.
 
-  :throws UnexpectedEofError: Thrown if nothing could be returned (the ``fileReader`` was already at EOF).
-  :throws BadFormatError: Thrown if the separator was not found in the next `maxSize` codepoints/bytes. The input marker is not moved.
+  :throws UnexpectedEofError: Thrown if nothing could be returned (the
+    ``fileReader`` was already at EOF).
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` codepoints/bytes. The input marker is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readUpTo(separator: ?t, maxSize=-1): t throws
@@ -5832,7 +5850,7 @@ proc fileReader.readUpTo(separator: ?t, maxSize=-1): t throws
 
 
 /*
-  Read until a given separator is found, returning the contents of the
+  Read until the given separator is found, returning the contents of the
   ``fileReader`` up to that point.
 
   If the separator is found, the input marker is left immediately after it. If
@@ -5841,10 +5859,13 @@ proc fileReader.readUpTo(separator: ?t, maxSize=-1): t throws
 
   :arg: s: The :type:`~String.string` to read into. Contents will be overwritten.
   :arg separator: The separator to match with.
-  :arg maxSize: The maximum number of codepoints to read. For the default value of ``-1``, this method will read until EOF.
-  :returns: ``true`` if something was read, and ``false`` otherwise (the ``fileReader`` was already at EOF).
+  :arg maxSize: The maximum number of codepoints to read. For the default value
+    of ``-1``, this method will read until EOF.
+  :returns: ``true`` if something was read, and ``false`` otherwise (the
+    ``fileReader`` was already at EOF).
 
-  :throws BadFormatError: Thrown if the separator was not found in the next `maxSize` codepoints. The input marker is not moved.
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` codepoints. The input marker is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readUpTo(ref s: string, separator: string, maxSize=-1): bool throws {
@@ -5853,17 +5874,17 @@ proc fileReader.readUpTo(ref s: string, separator: string, maxSize=-1): bool thr
     try this.lock(); defer { this.unlock(); }
 
     const (searchErr, _, relByteOffset, numCodepoints) = _findSeparator(separator, maxSize, this._channel_internal);
-    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in channel.readUpTo(string)");
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in fileReader.readUpTo(string)");
     didRead = relByteOffset > 0;
 
     const err = readStringBytesData(s, this._channel_internal, relByteOffset, numCodepoints);
-    if err then try this._ch_ioerror(err, "in channel.readUpTo(string)");
+    if err then try this._ch_ioerror(err, "in fileReader.readUpTo(string)");
   }
   return didRead;
 }
 
 /*
-  Read until a given separator is found, returning the contents of the
+  Read until the given separator is found, returning the contents of the
   ``fileReader`` up to that point.
 
   If the separator is found, the input marker is left immediately after it. If
@@ -5872,10 +5893,13 @@ proc fileReader.readUpTo(ref s: string, separator: string, maxSize=-1): bool thr
 
   :arg: b: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
   :arg separator: The separator to match with.
-  :arg maxSize: The maximum number of bytes to read. For the default value of ``-1``, this method will read until EOF.
-  :returns: ``true`` if something was read, and ``false`` otherwise (the ``fileReader`` was already at EOF).
+  :arg maxSize: The maximum number of bytes to read. For the default value
+    of ``-1``, this method will read until EOF.
+  :returns: ``true`` if something was read, and ``false`` otherwise (the
+    ``fileReader`` was already at EOF).
 
-  :throws BadFormatError: Thrown if the separator was not found in the next `maxSize` bytes. The input marker is not moved.
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` bytes. The input marker is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readUpTo(ref b: bytes, separator: bytes, maxSize=-1): bool throws {
@@ -5884,11 +5908,11 @@ proc fileReader.readUpTo(ref b: bytes, separator: bytes, maxSize=-1): bool throw
     try this.lock(); defer { this.unlock(); }
 
     const (searchErr, _, relByteOffset) = _findSeparator(separator, maxSize, this._channel_internal);
-    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in channel.readUpTo(bytes)");
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in fileReader.readUpTo(bytes)");
     didRead = relByteOffset > 0;
 
     const err = readStringBytesData(b, this._channel_internal, relByteOffset, 0);
-    if err then try this._ch_ioerror(err, "in channel.readUpTo(bytes)");
+    if err then try this._ch_ioerror(err, "in fileReader.readUpTo(bytes)");
   }
   return didRead;
 }
