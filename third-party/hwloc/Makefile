@@ -24,9 +24,10 @@ CHPL_HWLOC_CFG_OPTIONS += --enable-static \
                           --disable-opencl \
                           --disable-gl
 
-# PCI support is only needed for NIC selection, which currently is
-# only supported on the hpe-cray-ex platform.
-ifneq ($(CHPL_MAKE_TARGET_PLATFORM), hpe-cray-ex)
+# PCI support is needed for NIC selection, which currently is only supported
+# with the ofi comm layer
+
+ifneq ($(CHPL_MAKE_COMM), ofi)
 	CHPL_HWLOC_CFG_OPTIONS += --disable-pci
 endif
 
