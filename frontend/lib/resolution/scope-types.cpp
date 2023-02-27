@@ -44,9 +44,11 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
 llvm::Optional<BorrowedIdsWithName>
 OwnedIdsWithName::borrow(bool skipPrivateVisibilities,
                          bool onlyMethodsFields) const {
-  if (BorrowedIdsWithName::isIdVisible(idv_,
-                                       skipPrivateVisibilities,
-                                       onlyMethodsFields)) {
+  IdAndVis::SymbolTypeFlags filterFlags = 0;
+  if (skipPrivateVisibilities) { filterFlags |= IdAndVis::PUBLIC; }
+  if (onlyMethodsFields) { filterFlags |= IdAndVis::METHOD_OR_FIELD; }
+
+  if (BorrowedIdsWithName::isIdVisible(idv_, filterFlags)) {
     return BorrowedIdsWithName(idv_, moreIdvs_.get(),
                                skipPrivateVisibilities, onlyMethodsFields);
   }
@@ -56,12 +58,10 @@ OwnedIdsWithName::borrow(bool skipPrivateVisibilities,
   }
 
   for (auto& idv : *moreIdvs_) {
-    if (!BorrowedIdsWithName::isIdVisible(idv,
-                                          skipPrivateVisibilities,
-                                          onlyMethodsFields))
+    if (!BorrowedIdsWithName::isIdVisible(idv, filterFlags))
       continue;
 
-    // Found a visible ID!
+    // Found a visible ID! Return a BorrowedIds referring to the whole thing
     return BorrowedIdsWithName(idv, moreIdvs_.get(),
                                skipPrivateVisibilities, onlyMethodsFields);
   }
