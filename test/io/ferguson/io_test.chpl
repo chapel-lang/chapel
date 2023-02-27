@@ -129,7 +129,6 @@ proc main() {
   testio(1.0:imag(64));
   //testio(100:uint(8));
 
-  testio(new ioChar(97));
   testio(new ioNewline());
   testio(new ioLiteral("test"));
   

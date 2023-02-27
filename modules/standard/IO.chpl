@@ -2486,7 +2486,7 @@ record DefaultWriter {
       writer._writeOne(writer.kind, x, writer.getLocaleOfIoRequest());
     } else if t == ioLiteral {
       writer._writeLiteral(x.val);
-    } else if t == ioNewline || t == ioChar {
+    } else if t == ioNewline || t == _internalIoChar {
       writer._writeOne(writer.kind, x, writer.getLocaleOfIoRequest());
     } else if t == _nilType {
       writer._writeLiteral("nil");
@@ -2847,14 +2847,10 @@ proc _channel.withFormatter(f: ?) {
   return ret;
 }
 
-/*
-
-Represents a Unicode codepoint. I/O routines (such as :proc:`channel.read`
-and :proc:`channel.write`) can use arguments of this type in order to read or
-write a single Unicode codepoint.
-
- */
-record ioChar {
+// represents a Unicode codepoint
+// used to pass codepoints to read and write to avoid duplicating code
+pragma "no doc"
+record _internalIoChar {
   /* The codepoint value */
   var ch:int(32);
   pragma "no doc"
@@ -2865,8 +2861,18 @@ record ioChar {
   }
 }
 
+/*
+
+Represents a Unicode codepoint. I/O routines (such as :proc:`channel.read`
+and :proc:`channel.write`) can use arguments of this type in order to read or
+write a single Unicode codepoint.
+
+ */
+deprecated "ioChar type is deprecated - please use :proc:`fileReader.readCodepoint` and :proc:`fileWriter.writeCodepoint` instead"
+type ioChar = _internalIoChar;
+
 pragma "no doc"
-inline operator :(x: ioChar, type t:string) {
+inline operator :(x: _internalIoChar, type t:string) {
   var csc: c_string =  qio_encode_to_string(x.ch);
   // The caller has responsibility for freeing the returned string.
   try! {
@@ -3942,7 +3948,7 @@ proc _isIoPrimitiveType(type t) param return
 
 pragma "no doc"
  proc _isIoPrimitiveTypeOrNewline(type t) param return
-  _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar || t == _internalIoBits;
+  _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == _internalIoChar || t == _internalIoBits;
 
 // Read routines for all primitive types.
 private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
@@ -4302,7 +4308,7 @@ proc _channel._decodeOne(ref x:?t, loc:locale) throws {
                               _readWriteThisFromLocale=loc);
   defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL; }
 
-  if t == ioLiteral || t == ioNewline || t == _internalIoBits || t == ioChar {
+  if t == ioLiteral || t == ioNewline || t == _internalIoBits || t == _internalIoChar {
     reader._readOne(reader.kind, x, reader.getLocaleOfIoRequest());
     return;
   }
@@ -4374,7 +4380,7 @@ private proc _read_io_type_internal(_channel_internal:qio_channel_ptr_t,
   var e:errorCode = 0;
   if t == ioNewline {
     return qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
-  } else if t == ioChar {
+  } else if t == _internalIoChar {
     return qio_channel_read_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
     return qio_channel_scan_literal(false, _channel_internal,
@@ -4430,7 +4436,7 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   var e:errorCode = 0;
   if t == ioNewline {
     return qio_channel_write_newline(false, _channel_internal);
-  } else if t == ioChar {
+  } else if t == _internalIoChar {
     return qio_channel_write_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
     return qio_channel_print_literal(false, _channel_internal, x.val.localize().c_str(), x.val.numBytes:c_ssize_t);
@@ -5965,6 +5971,117 @@ proc fileWriter.writeBits(x: integral, numBits: int) : void throws {
   try this.write(new _internalIoBits(x:uint(64), numBits:int(8)));
 }
 
+/*
+  Writes a single Unicode codepoint to a ``fileWriter``
+
+  :arg codepoint: Unicode codepoint to write
+
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                              ``fileWriter``'s specified range.
+  :throws SystemError: Thrown if the codepoint could not be written to the ```fileWriter``.
+*/
+proc fileWriter.writeCodepoint(codepoint: int) throws {
+  try this.write(new _internalIoChar(codepoint.safeCast(int(32))));
+}
+
+/*
+  Reads a single Unicode codepoint from a ``fileReader``
+
+  :returns: Unicode codepoint read
+
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if the codepoint could not be read from the ``fileReader``.
+*/
+proc fileReader.readCodepoint(): int throws {
+  var tmp:int;
+  var ret = try this.readCodepoint(tmp);
+  if !ret then throw new UnexpectedEofError("Encountered EOF in readCodepoint");
+  return tmp;
+}
+
+/*
+  Reads a single Unicode codepoint from a ``fileReader``
+
+  :arg c: where to store the read codepoint
+  :returns: `true` if the codepoint was read without error, `false` upon EOF
+
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if the codepoint could not be read from the ``fileReader``.
+*/
+proc fileReader.readCodepoint(ref codepoint: int):bool throws {
+  var tmp:_internalIoChar;
+  var ret = try this.read(tmp);
+  codepoint = tmp.ch.safeCast(codepoint.type);
+  return ret;
+}
+
+/*
+  Writes a single byte to a ``fileWriter``
+
+  :arg byte: byte to write
+
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                              ``fileWriter``'s specified range.
+  :throws SystemError: Thrown if the byte could not be written to the ```fileWriter``.
+*/
+proc fileWriter.writeByte(byte: uint(8)) throws {
+  var err:errorCode = 0;
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    err = qio_channel_write_uint8(false, this._channel_internal, byte);
+  }
+
+  if err == EEOF {
+    throw new UnexpectedEofError("Encountered EOF in writeByte");
+  }
+  else if err {
+    try this._ch_ioerror(err, "in fileWriter.writeByte");
+  }
+}
+
+/*
+  Reads a single byte from a ``fileReader``
+
+  :returns: byte read
+
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if the byte could not be read from the ``fileReader``.
+*/
+proc fileReader.readByte(): uint(8) throws {
+  var tmp:uint(8);
+  var ret = try this.readByte(tmp);
+  if !ret then throw new UnexpectedEofError("Encountered EOF in readByte");
+  return tmp;
+}
+
+/*
+  Reads a single byte from a ``fileReader``
+
+  :arg byte: where to store the read byte
+  :returns: `true` if the byte was read without error, `false` upon EOF
+
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if the byte could not be read from the ``fileReader``.
+*/
+proc fileReader.readByte(ref byte: uint(8)): bool throws {
+  var err:errorCode = 0;
+  var x: uint(8);
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    err = qio_channel_read_uint8(false, this._channel_internal, x);
+  }
+  byte = x;
+
+  if !err {
+    return true;
+  }
+  else if err == EEOF {
+    return false;
+  } else {
+    try this._ch_ioerror(err, "in fileReader.readByte");
+  }
+  return false;
+}
 
 
 /*
@@ -8272,7 +8389,7 @@ proc _setIfPrimitive(ref lhs:?t, rhs, argi:int):errorCode where !_isIoPrimitiveT
 private inline
 proc _setIfChar(ref lhs:?t, rhs:int(32)) where t == string
 {
-  lhs = new ioChar(rhs):string;
+  lhs = new _internalIoChar(rhs):string;
 }
 private inline
 proc _setIfChar(ref lhs:?t, rhs:int(32)) where isIntegralType(t)
@@ -8935,7 +9052,7 @@ proc _channel._writefOne(fmtStr, ref arg, i: int,
         var (t,ok) = _toChar(arg);
         if ! ok {
           err = qio_format_error_arg_mismatch(i);
-        } else try _writeOne(iokind.dynamic, new ioChar(t), origLocale);
+        } else try _writeOne(iokind.dynamic, new _internalIoChar(t), origLocale);
       } when QIO_CONV_ARG_TYPE_BINARY_STRING {
         var (t,ok) = _toBytes(arg);
         if ! ok {
@@ -9247,7 +9364,7 @@ proc _channel.readf(fmtStr:?t, ref args ...?k): bool throws
               }
             } when QIO_CONV_ARG_TYPE_CHAR {
               var (t,ok) = _toChar(args(i));
-              var chr = new ioChar(t);
+              var chr = new _internalIoChar(t);
               if ! ok {
                 err = qio_format_error_arg_mismatch(i);
               } else try _readOne(iokind.dynamic, chr, origLocale);
