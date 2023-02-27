@@ -571,13 +571,15 @@ bool LookupHelper::doLookupInImportsAndUses(
         auto scopeAst = parsing::idToAst(context, is.scope()->id());
         auto visibility = scopeAst->toDecl()->visibility();
         bool isMethodOrField = false;
-        bool onlyMethodsFields = false;
+        IdAndVis::SymbolTypeFlags filterFlags = 0;
+        if (skipPrivateVisibilities) {
+          filterFlags |= IdAndVis::PUBLIC;
+        }
         auto foundIds =
           BorrowedIdsWithName::createWithSingleId(is.scope()->id(),
                                                   visibility,
                                                   isMethodOrField,
-                                                  skipPrivateVisibilities,
-                                                  onlyMethodsFields);
+                                                  filterFlags);
         if (foundIds) {
           if (trace) {
             ResultVisibilityTrace t;
@@ -767,15 +769,13 @@ bool LookupHelper::doLookupInExternBlock(const Scope* scope,
   auto ast = parsing::idToAst(context, scope->id());
   for (auto child : ast->children()) {
     if (child->isExternBlock()) {
-      bool isMethodOrField = false;
-      bool arePrivateIdsIgnored = false;
-      bool onlyMethodsFields = false;
+      bool isMethodOrField = false; // not possible in an extern block
+      IdAndVis::SymbolTypeFlags filterFlags = 0;
       auto foundIds =
         BorrowedIdsWithName::createWithSingleId(child->id(),
                                                 Decl::PUBLIC,
                                                 isMethodOrField,
-                                                arePrivateIdsIgnored,
-                                                onlyMethodsFields);
+                                                filterFlags);
       if (foundIds) {
         if (traceCurPath && traceResult) {
           ResultVisibilityTrace t;

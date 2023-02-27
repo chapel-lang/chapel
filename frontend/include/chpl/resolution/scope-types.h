@@ -316,14 +316,8 @@ class BorrowedIdsWithName {
  public:
 
   static llvm::Optional<BorrowedIdsWithName>
-  createWithSingleId(ID id, uast::Decl::Visibility vis,
-                     bool isMethodOrField,
-                     bool arePrivateIdsIgnored,
-                     bool onlyMethodsFields) {
-    IdAndVis::SymbolTypeFlags filterFlags = 0;
-    if (arePrivateIdsIgnored) { filterFlags |= IdAndVis::PUBLIC; }
-    if (onlyMethodsFields) { filterFlags |= IdAndVis::METHOD_OR_FIELD; }
-
+  createWithSingleId(ID id, uast::Decl::Visibility vis, bool isMethodOrField,
+                     IdAndVis::SymbolTypeFlags filterFlags) {
     auto idAndVis = IdAndVis(id, vis, isMethodOrField);
     if (isIdVisible(idAndVis, filterFlags)) {
       return BorrowedIdsWithName(std::move(idAndVis), filterFlags);
@@ -335,14 +329,10 @@ class BorrowedIdsWithName {
   createWithToplevelModuleId(ID id) {
     auto vis = uast::Decl::Visibility::PUBLIC;
     bool isMethodOrField = false;
-    bool arePrivateIdsIgnored = true;
-    bool onlyMethodsFields = false;
-    auto maybeIds = createWithSingleId(std::move(id),
-                                       vis,
-                                       isMethodOrField,
-                                       arePrivateIdsIgnored,
-                                       onlyMethodsFields);
-    assert(maybeIds);
+    IdAndVis::SymbolTypeFlags filterFlags = 0;
+    auto maybeIds = createWithSingleId(std::move(id), vis, isMethodOrField,
+                                       filterFlags);
+    CHPL_ASSERT(maybeIds.hasValue());
     return maybeIds.getValue();
   }
 
