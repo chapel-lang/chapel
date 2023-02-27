@@ -43,9 +43,14 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
 
 llvm::Optional<BorrowedIdsWithName>
 OwnedIdsWithName::borrow(IdAndVis::SymbolTypeFlags filterFlags) const {
-  // TODO: check bitwise summary
+  // Are all of the filter flags present in flagsOr?
+  // If not, it is not possible for this to match.
+  if ((flagsOr_ & filterFlags) != filterFlags) {
+    return llvm::None;
+  }
+
   if (BorrowedIdsWithName::isIdVisible(idv_, filterFlags)) {
-    return BorrowedIdsWithName(idv_, moreIdvs_.get(), filterFlags);
+    return BorrowedIdsWithName(*this, filterFlags);
   }
   // The first ID isn't visible; are others?
   if (moreIdvs_.get() == nullptr) {
@@ -57,19 +62,27 @@ OwnedIdsWithName::borrow(IdAndVis::SymbolTypeFlags filterFlags) const {
       continue;
 
     // Found a visible ID! Return a BorrowedIds referring to the whole thing
-    return BorrowedIdsWithName(idv, moreIdvs_.get(), filterFlags);
+    return BorrowedIdsWithName(*this, filterFlags);
   }
 
   // No ID was visible, so we can't borrow.
   return llvm::None;
 }
 
-int BorrowedIdsWithName::countVisibleIds() {
+int BorrowedIdsWithName::countVisibleIds(IdAndVis::SymbolTypeFlags flagsAnd) {
   if (moreIdvs_ == nullptr) {
     return 1;
   }
 
-  // Count all the visible IDs.
+  // if the current filter is a subset of flagsAnd, then all of the
+  // found symbols will included in this borrowedIds, so we don't have
+  // to consider them individually.
+  if ((flagsAnd & filterFlags_) == filterFlags_) {
+    // all of the found symbols will match
+    return moreIdvs_->size();
+  }
+
+  // Otherwise, consider the individual IDs to count those that are included.
   int count = 0;
   for (const auto& idv : *moreIdvs_) {
     if (isIdVisible(idv)) {

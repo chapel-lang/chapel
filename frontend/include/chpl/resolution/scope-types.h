@@ -293,16 +293,17 @@ class BorrowedIdsWithName {
 
  private:
 
-  int countVisibleIds();
+  int countVisibleIds(IdAndVis::SymbolTypeFlags flagsAnd);
 
   /** Construct a BorrowedIdsWithName referring to the same IDs
       as the passed OwnedIdsWithName.
       This BorrowedIdsWithName assumes that the OwnedIdsWithName
       will continue to exist. */
-  BorrowedIdsWithName(IdAndVis idv, const std::vector<IdAndVis>* moreIdvs,
+  BorrowedIdsWithName(const OwnedIdsWithName& ownedIds,
                       IdAndVis::SymbolTypeFlags filterFlags)
-    : filterFlags_(filterFlags), idv_(idv), moreIdvs_(moreIdvs) {
-    numVisibleIds_ = countVisibleIds();
+    : filterFlags_(filterFlags),
+      idv_(ownedIds.idv_), moreIdvs_(ownedIds.moreIdvs_.get()) {
+    numVisibleIds_ = countVisibleIds(ownedIds.flagsAnd_);
   }
 
   /** Construct a BorrowedIdsWithName referring to one ID. Requires
