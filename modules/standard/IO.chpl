@@ -5756,7 +5756,7 @@ proc fileReader.readThrough(ref s: string, separator: string, maxSize=-1, stripS
 
     // find the byte offset to the start of the separator, 'maxSize' codepoints, or EOF (whichever comes first)
     const (searchErr, found, relByteOffset, numCodepoints) = _findSeparator(separator, maxSize, this._channel_internal);
-    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in fileReader.readThrough(string)");
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readThrough(string)");
 
     // compute the number of bytes and codeopints to read into 's'
     const bytesToRead = if found then relByteOffset + separator.numBytes else relByteOffset,
@@ -5764,7 +5764,7 @@ proc fileReader.readThrough(ref s: string, separator: string, maxSize=-1, stripS
 
     // read the given number of bytes and codepoints into 's', advanding the pointer that many bytes
     const err = readStringBytesData(s, this._channel_internal, bytesToRead, cpToRead);
-    if err then try this._ch_ioerror(err, "in fileReader.readThrough(string)");
+    if err then try this._ch_ioerror(err, "in readThrough(string)");
 
     // remove the separator from the returned string if necessary
     if found && stripSeparator then s = s[0..<s.numCodepoints-separator.numCodepoints];
@@ -5799,14 +5799,14 @@ proc fileReader.readThrough(ref b: bytes, separator: bytes, maxSize=-1, stripSep
 
     // find the byte offset to the start of the separator, 'maxSize' bytes, or EOF (whichever comes first)
     const (searchErr, found, relByteOffset) = _findSeparator(separator, maxSize, this._channel_internal);
-    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in fileReader.readThrough(bytes)");
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readThrough(bytes)");
 
     // compute the number of bytes to read into 'b'
     const bytesToRead = if found then relByteOffset + separator.numBytes else relByteOffset;
 
     // read the given number of bytes into 'b'
     const err = readStringBytesData(b, this._channel_internal, bytesToRead, 0);
-    if err then try this._ch_ioerror(err, "in fileReader.readThrough(bytes)");
+    if err then try this._ch_ioerror(err, "in readThrough(bytes)");
 
     if found && stripSeparator then b = b[0..<b.numBytes-separator.numBytes];
   }
@@ -10530,10 +10530,10 @@ proc fileReader.readThrough(ref s: string, separator: regex(string), maxSize=-1,
     try this.lock(); defer { this.unlock(); }
 
     const (searchErr, found, relByteOffset, match) = _findSeparator(separator, maxSize, this);
-    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in channel.readThrough(regex(string))");
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readThrough(regex(string))");
 
     const err = readStringBytesData(s, this._channel_internal, relByteOffset, 0);
-    if err then try this._ch_ioerror(err, "in channel.readThrough(regex(string))");
+    if err then try this._ch_ioerror(err, "in readThrough(regex(string))");
     s.cachedNumCodepoints = countNumCodepoints(s);
 
     if found && stripSeparator then s = s[0..<(s.size-match.numCodepoints)];
@@ -10567,10 +10567,10 @@ proc fileReader.readThrough(ref b: bytes, separator: regex(bytes), maxSize=-1, s
     try this.lock(); defer { this.unlock(); }
 
     const (searchErr, found, relByteOffset, match) = _findSeparator(separator, maxSize, this);
-    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in channel.readThrough(regex(bytes))");
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readThrough(regex(bytes))");
 
     const err = readStringBytesData(b, this._channel_internal, relByteOffset, 0);
-    if err then try this._ch_ioerror(err, "in channel.readThrough(regex(bytes))");
+    if err then try this._ch_ioerror(err, "in readThrough(regex(bytes))");
 
     if found && stripSeparator then b = b[0..<(b.size-match.numBytes)];
   }

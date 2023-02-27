@@ -1,0 +1,15 @@
+BadFormatError: bad format (in readThrough(string) with path "maxSizeInput.txt" offset 0)
+123456xABCDEF
+
+123456x
+123456x
+123456
+123456
+
+BadFormatError: bad format (in readThrough(bytes) with path "maxSizeInput.txt" offset 0)
+123456xABCDEF
+
+123456x
+123456x
+123456
+123456
