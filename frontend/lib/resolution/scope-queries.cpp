@@ -686,7 +686,7 @@ bool LookupHelper::doLookupInReceiverScopes(
   newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
 
   bool got = false;
-  for (const auto& currentScope : receiverScopes) {
+  for (auto currentScope : receiverScopes) {
     if (trace) {
       VisibilityTraceElt elt;
       elt.methodReceiverScope = currentScope;
@@ -719,7 +719,7 @@ bool LookupHelper::doLookupInReceiverParentScopes(
 
   bool got = false;
 
-  for (const auto& rcvScope : receiverScopes) {
+  for (auto rcvScope : receiverScopes) {
     if (trace) {
       VisibilityTraceElt elt;
       elt.methodReceiverScope = rcvScope;
