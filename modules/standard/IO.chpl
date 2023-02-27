@@ -5712,7 +5712,7 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
     ``string`` or ``bytes``. If ``true``, the returned value will not include
     the separator.
   :returns: A ``string`` or ``bytes`` with the contents of the ``fileReader``
-    up to the separator.
+    up to (and possibly including) the separator.
 
   :throws UnexpectedEofError: Thrown if nothing could be returned (i.e., the
     ``fileReader`` was already at EOF or a separator was the only thing remaining).
@@ -5833,7 +5833,7 @@ proc fileReader.readThrough(ref b: bytes, separator: bytes, maxSize=-1, stripSep
   :returns: A ``string`` or ``bytes`` with the contents of the channel up to
     the ``separator``.
 
-  :throws UnexpectedEofError: Thrown if nothing could be returned (the
+  :throws UnexpectedEofError: Thrown if nothing could be returned (i.e., the
     ``fileReader`` was already at EOF).
   :throws BadFormatError: Thrown if the separator was not found in the next
     `maxSize` codepoints/bytes. The input marker is not moved.
@@ -5861,7 +5861,7 @@ proc fileReader.readUpTo(separator: ?t, maxSize=-1): t throws
   :arg separator: The separator to match with.
   :arg maxSize: The maximum number of codepoints to read. For the default value
     of ``-1``, this method will read until EOF.
-  :returns: ``true`` if something was read, and ``false`` otherwise (the
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
     ``fileReader`` was already at EOF).
 
   :throws BadFormatError: Thrown if the separator was not found in the next
@@ -5895,7 +5895,7 @@ proc fileReader.readUpTo(ref s: string, separator: string, maxSize=-1): bool thr
   :arg separator: The separator to match with.
   :arg maxSize: The maximum number of bytes to read. For the default value
     of ``-1``, this method will read until EOF.
-  :returns: ``true`` if something was read, and ``false`` otherwise (the
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
     ``fileReader`` was already at EOF).
 
   :throws BadFormatError: Thrown if the separator was not found in the next
