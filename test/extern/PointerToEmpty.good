@@ -1,0 +1,2 @@
+
+PointerToEmpty.chpl:7: error: halt reached - Can’t take a C pointer to an array with 0 elements.
