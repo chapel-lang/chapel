@@ -49,8 +49,7 @@ OwnedIdsWithName::borrow(bool skipPrivateVisibilities,
   if (onlyMethodsFields) { filterFlags |= IdAndVis::METHOD_OR_FIELD; }
 
   if (BorrowedIdsWithName::isIdVisible(idv_, filterFlags)) {
-    return BorrowedIdsWithName(idv_, moreIdvs_.get(),
-                               skipPrivateVisibilities, onlyMethodsFields);
+    return BorrowedIdsWithName(idv_, moreIdvs_.get(), filterFlags);
   }
   // The first ID isn't visible; are others?
   if (moreIdvs_.get() == nullptr) {
@@ -62,8 +61,7 @@ OwnedIdsWithName::borrow(bool skipPrivateVisibilities,
       continue;
 
     // Found a visible ID! Return a BorrowedIds referring to the whole thing
-    return BorrowedIdsWithName(idv, moreIdvs_.get(),
-                               skipPrivateVisibilities, onlyMethodsFields);
+    return BorrowedIdsWithName(idv, moreIdvs_.get(), filterFlags);
   }
 
   // No ID was visible, so we can't borrow.

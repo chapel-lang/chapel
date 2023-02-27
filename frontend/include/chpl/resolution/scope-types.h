@@ -300,12 +300,8 @@ class BorrowedIdsWithName {
       This BorrowedIdsWithName assumes that the OwnedIdsWithName
       will continue to exist. */
   BorrowedIdsWithName(IdAndVis idv, const std::vector<IdAndVis>* moreIdvs,
-                      bool arePrivateIdsIgnored, bool onlyMethodsFields)
-    : idv_(idv), moreIdvs_(moreIdvs) {
-    IdAndVis::SymbolTypeFlags filterFlags = 0;
-    if (arePrivateIdsIgnored) { filterFlags |= IdAndVis::PUBLIC; }
-    if (onlyMethodsFields) { filterFlags |= IdAndVis::METHOD_OR_FIELD; }
-    filterFlags_ = filterFlags;
+                      IdAndVis::SymbolTypeFlags filterFlags)
+    : filterFlags_(filterFlags), idv_(idv), moreIdvs_(moreIdvs) {
     numVisibleIds_ = countVisibleIds();
   }
 
@@ -313,14 +309,8 @@ class BorrowedIdsWithName {
       that the ID will not be filtered out according to the passed
       settings arePrivateIdsIgnored and onlyMethodsFields.
     */
-  BorrowedIdsWithName(IdAndVis idv,
-                      bool arePrivateIdsIgnored,
-                      bool onlyMethodsFields)
-    : numVisibleIds_(1), idv_(std::move(idv)) {
-    IdAndVis::SymbolTypeFlags filterFlags = 0;
-    if (arePrivateIdsIgnored) { filterFlags |= IdAndVis::PUBLIC; }
-    if (onlyMethodsFields) { filterFlags |= IdAndVis::METHOD_OR_FIELD; }
-    filterFlags_ = filterFlags;
+  BorrowedIdsWithName(IdAndVis idv, IdAndVis::SymbolTypeFlags filterFlags)
+    : filterFlags_(filterFlags), numVisibleIds_(1), idv_(std::move(idv)) {
     assert(isIdVisible(idv_, filterFlags_));
   }
  public:
@@ -336,9 +326,7 @@ class BorrowedIdsWithName {
 
     auto idAndVis = IdAndVis(id, vis, isMethodOrField);
     if (isIdVisible(idAndVis, filterFlags)) {
-      return BorrowedIdsWithName(std::move(idAndVis),
-                                 arePrivateIdsIgnored,
-                                 onlyMethodsFields);
+      return BorrowedIdsWithName(std::move(idAndVis), filterFlags);
     }
     return llvm::None;
   }
