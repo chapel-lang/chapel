@@ -513,8 +513,7 @@ class Scope {
       Returns true if something was appended. */
   bool lookupInScope(UniqueString name,
                      std::vector<BorrowedIdsWithName>& result,
-                     bool arePrivateIdsIgnored,
-                     bool onlyMethodsFields) const;
+                     IdAndVis::SymbolTypeFlags filterFlags) const;
 
   /** Check to see if the scope contains IDs with the provided name. */
   bool contains(UniqueString name) const;

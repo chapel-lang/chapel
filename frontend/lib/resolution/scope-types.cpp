@@ -176,12 +176,7 @@ const Scope* Scope::parentModuleScope() const {
 
 bool Scope::lookupInScope(UniqueString name,
                           std::vector<BorrowedIdsWithName>& result,
-                          bool arePrivateIdsIgnored,
-                          bool onlyMethodsFields) const {
-  IdAndVis::SymbolTypeFlags filterFlags = 0;
-  if (arePrivateIdsIgnored) { filterFlags |= IdAndVis::PUBLIC; }
-  if (onlyMethodsFields) { filterFlags |= IdAndVis::METHOD_OR_FIELD; }
-
+                          IdAndVis::SymbolTypeFlags filterFlags) const {
   auto search = declared_.find(name);
   if (search != declared_.end()) {
     // There might not be any IDs that are visible to us, so borrow returns

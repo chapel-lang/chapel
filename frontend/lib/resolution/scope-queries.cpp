@@ -867,8 +867,10 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   {
     bool got = false;
     if (checkDecls) {
-      got |= scope->lookupInScope(name, result,
-                                  skipPrivateVisibilities, onlyMethodsFields);
+      IdAndVis::SymbolTypeFlags filterFlags = 0;
+      if (skipPrivateVisibilities) { filterFlags |= IdAndVis::PUBLIC; }
+      if (onlyMethodsFields) { filterFlags |= IdAndVis::METHOD_OR_FIELD; }
+      got |= scope->lookupInScope(name, result, filterFlags);
       if (got && trace) {
         for (size_t i = startSize; i < result.size(); i++) {
           ResultVisibilityTrace t;
@@ -1976,9 +1978,8 @@ doWarnHiddenFormal(Context* context,
   // find the Formal*
   const Formal* formal = nullptr;
   std::vector<BorrowedIdsWithName> ids;
-  functionScope->lookupInScope(formalName, ids,
-                               /* ignore private */ false,
-                               /* only methods/fields */ false);
+  IdAndVis::SymbolTypeFlags filterFlags = 0;
+  functionScope->lookupInScope(formalName, ids, filterFlags);
   for (const auto& b : ids) {
     for (const auto& id : b) {
       auto formalAst = parsing::idToAst(context, id);
