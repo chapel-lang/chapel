@@ -417,6 +417,7 @@ struct LookupHelper {
   Context* context;
   const ResolvedVisibilityScope* resolving;
   NamedScopeSet& checkedScopes;
+  NamedScopeSet checkedScopesMethodsFields;
   std::vector<BorrowedIdsWithName>& result;
   bool& foundExternBlock;
   std::vector<VisibilityTraceElt>* traceCurPath;
@@ -430,6 +431,7 @@ struct LookupHelper {
                std::vector<VisibilityTraceElt>* traceCurPath,
                std::vector<ResultVisibilityTrace>* traceResult)
     : context(context), resolving(resolving), checkedScopes(checkedScopes),
+      checkedScopesMethodsFields(),
       result(result), foundExternBlock(foundExternBlock),
       traceCurPath(traceCurPath), traceResult(traceResult) {
   }
@@ -827,6 +829,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   bool skipPrivateVisibilities = (config & LOOKUP_SKIP_PRIVATE_VIS) != 0;
   bool goPastModules = (config & LOOKUP_GO_PAST_MODULES) != 0;
   bool onlyMethodsFields = (config & LOOKUP_ONLY_METHODS_FIELDS) != 0;
+  bool onlyNonMethodsNonFields = false;
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
 
@@ -840,11 +843,38 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     traceCurPathSize = traceCurPath->size();
   }
 
-  auto pair = checkedScopes.insert(std::make_pair(name, scope));
-  if (pair.second == false) {
-    // scope has already been visited by this function,
-    // so don't try it again.
-    return false;
+  // update the checkedScopes map and return early if there is nothing to do.
+  if (onlyMethodsFields == false) {
+    auto p = checkedScopes.insert(std::make_pair(name, scope));
+    if (p.second == false) {
+      // scope has already been visited by this function,
+      // so don't try it again.
+      return false;
+    }
+  } else {
+    // for onlyMethodsFields==true,
+    // don't add it to checkedScopes, but still return early if
+    // we already considered this scope.
+    if (checkedScopes.count(std::make_pair(name, scope)) > 0) {
+      return false;
+    }
+  }
+  // also check the scopes we checked for methodsFieldsOnly
+  if (onlyMethodsFields == false) {
+    // We might be visiting a scope that was visited for methods/fields
+    // but not for other kinds of symbols.
+    // We need to visit that scope but only find symbols that
+    // aren't methods/fields.
+    if (checkedScopesMethodsFields.count(std::make_pair(name, scope)) > 0) {
+      onlyNonMethodsNonFields = true;
+    }
+  } else {
+    auto p = checkedScopesMethodsFields.insert(std::make_pair(name, scope));
+    if (p.second == false) {
+      // scope has already been visited by this function,
+      // so don't try it again.
+      return false;
+    }
   }
 
   // if the scope has an extern block, note that fact.
@@ -870,6 +900,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
       IdAndVis::SymbolTypeFlags filterFlags = 0;
       if (skipPrivateVisibilities) { filterFlags |= IdAndVis::PUBLIC; }
       if (onlyMethodsFields) { filterFlags |= IdAndVis::METHOD_OR_FIELD; }
+      if (onlyNonMethodsNonFields) { filterFlags |= IdAndVis::NOT_METHOD_NOT_FIELD; }
       got |= scope->lookupInScope(name, result, filterFlags);
       if (got && trace) {
         for (size_t i = startSize; i < result.size(); i++) {
