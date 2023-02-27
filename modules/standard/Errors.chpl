@@ -117,6 +117,13 @@ module Errors {
   class IllegalArgumentError : Error {
     proc init() {}
 
+    proc init(msg: string) {
+      super.init(msg);
+    }
+
+    // This won't actually produce a deprecation message. It's here for documentation purposes only.
+    pragma "last resort"
+    deprecated "`new IllegalArgumentError(info=)` is deprecated; please use the initializer that takes a formal `msg` instead."
     proc init(info: string) {
       super.init(info);
     }
