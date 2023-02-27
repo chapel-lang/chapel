@@ -71,17 +71,82 @@ static void testIt(const char* testName,
   // check the scope resolver
   const ResolvedFunction* sr = scopeResolveFunction(context, methodId);
   assert(sr != nullptr);
-
-  assert(sr->byId(identAst->id()).toId() == fieldAst->id());
+  const auto& sre = sr->byId(identAst->id());
+  printf("scope resolved to %s\n", sre.toId().str().c_str());
+  assert(sre.toId() == fieldAst->id());
 
   // check the full resolver
   if (!scopeResolveOnly) {
     const ResolvedFunction* r = resolveConcreteFunction(context, methodId);
     assert(r != nullptr);
-
-    assert(r->byId(identAst->id()).toId() == fieldAst->id());
+    const auto& re = r->byId(identAst->id());
+    printf("full resolved to %s\n", re.toId().str().c_str());
+    assert(re.toId() == fieldAst->id());
   }
+  printf("\n");
 }
+
+// if calledFnIdStr == "", expect no match (e.g. ambiguity)
+static void testCall(const char* testName,
+                     const char* program,
+                     const char* methodIdStr,
+                     const char* callIdStr,
+                     const char* calledFnIdStr) {
+  printf("test %s\n", testName);
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, testName);
+  std::string contents = program;
+  setFileText(context, path, contents);
+  // parse it so that Context knowns about the IDs
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  for (auto m : vec) {
+    m->dump();
+  }
+
+  ID methodId = ID::fromString(context, methodIdStr);
+  ID callId = ID::fromString(context, callIdStr);
+  ID calledFnId;
+  if (calledFnIdStr[0] != '\0') {
+    calledFnId = ID::fromString(context, calledFnIdStr);
+  }
+
+  auto methodAst = parsing::idToAst(context, methodId);
+  assert(methodAst);
+  assert(methodAst->isFunction());
+  auto callAst = parsing::idToAst(context, callId);
+  assert(callAst);
+  assert(callAst->isIdentifier() || callAst->isCall());
+  const AstNode* calledFnAst = nullptr;
+  if (calledFnIdStr[0] != '\0') {
+    calledFnAst = parsing::idToAst(context, calledFnId);
+    assert(calledFnAst);
+    assert(calledFnAst->isVariable() || calledFnAst->isAggregateDecl() ||
+           calledFnAst->isFunction());
+  }
+
+  const ResolvedFunction* r = resolveConcreteFunction(context, methodId);
+
+  const ResolvedExpression& re = r->byId(callAst->id());
+  ID toIdentId = re.toId();
+  if (!toIdentId.isEmpty()) {
+    printf("full resolved fn to id %s\n", toIdentId.str().c_str());
+  }
+  ID toFnId;
+  if (auto fn = re.mostSpecific().only()) {
+    toFnId = fn->id();
+    printf("full resolved fn to %s\n", toFnId.str().c_str());
+  }
+  if (calledFnIdStr[0] != '\0') {
+    assert(toIdentId == calledFnAst->id() || toFnId == calledFnAst->id());
+  } else {
+    assert(toIdentId.isEmpty() && toFnId.isEmpty());
+  }
+  printf("\n");
+}
+
 
 static void test1r() {
   testIt("test1r.chpl",
@@ -599,6 +664,316 @@ static void test13s() {
   // TODO get the above case working with the full resolver
 }
 
+// The following series of tests is from issue #21668
+static void testExample2() {
+  testCall("example2.chpl",
+           R""""(
+              module M {
+                record R { }
+                proc R.bar(arg: real) { }
+                proc bar(arg: int) { }
+                proc R.foo() {
+                  var x = 32;
+                  bar(x); // does it refer to M.R.bar() or M.bar() ?
+                          // production compiler prefers M.R.bar().
+                }
+              }
+           )"""",
+           "M.foo",
+           "M.foo@6",
+           "M.bar" /* the selected method */);
+  // TODO: thinking that this case should prefer the 'int' version
+  // because both should participate in disambiguation
+}
+
+static void testExample3() {
+  testCall("example3.chpl",
+           R""""(
+              module M {
+                record R { }
+                proc R.bar(arg: string, arg2: real) { }
+                proc bar(arg: int) { }
+                proc R.foo() {
+                  var x = 32;
+                  bar(x); // does it refer to M.R.bar() or M.bar ?
+                          // production compiler prefers M.R.bar()
+                          // (so it fails to compile)
+                }
+              }
+           )"""",
+           "M.foo",
+           "M.foo@6",
+           "M.bar#1" /* the applicable non-method function */);
+}
+
+static void testExample4() {
+  testCall("example4.chpl",
+           R""""(
+              module M {
+                import U;
+                record R { }
+              }
+
+              module U {
+                import M.R;
+                proc R.bar(arg: string, arg2: real) { }
+              }
+
+              module N {
+                import M.R;
+
+                proc bar(arg: int) { }
+
+                proc R.foo() {
+                  var x = 32;
+                  bar(x); // does it refer to U.R.bar() or N.bar ?
+                          // production compiler tries to call this.bar(x)
+                          // (and so fails to compile)
+                }
+              }
+           )"""",
+           "N.foo",
+           "N.foo@6",
+           "N.bar" /* the applicable non-method function */);
+}
+
+static void testExample4a() {
+  testCall("example4a.chpl",
+           R""""(
+              module M {
+                public use U;
+                record R { }
+              }
+
+              module U {
+                import M.R;
+                proc R.bar(arg: int) { }
+              }
+
+              module N {
+                import M.R;
+
+                proc R.foo() {
+                  var x = 32;
+                  bar(x); // is this a legal way to call U.R.bar()?
+                          // it does work in the production compiler
+                }
+              }
+           )"""",
+           "N.foo",
+           "N.foo@6",
+           "U.bar" /* find U.R.bar through M's public use U */);
+}
+
+static void testExample5() {
+  /** TODO -- get this working
+  testCall("example5.chpl",
+           R""""(
+              // Example 5
+              module A {
+                record r { }
+                proc r.foo { }
+              }
+              module B {
+                use A;
+                var foo: int;
+
+                proc r.tertiary() {
+                  foo; // is this A.foo or B.r.foo?
+                       // production compiler calls A.r.foo
+                }
+              }
+           )"""",
+           "B.tertiary",
+           "B.tertiary@2",
+           "A.foo");
+  */
+}
+
+static void testExample5a() {
+  /*
+  testCall("example5a.chpl",
+           R""""(
+              module M {
+                record r { }
+                proc r.method() {
+                  var foo: int;
+                  proc r.foo { writeln("in A.r.foo"); }
+                  foo; // is this referring to the int or the parenless method?
+                       // production compiler refers to the local variable
+                }
+              }
+           )"""",
+           "M.method",
+           "M.method@4",
+           ""); // expecting ambiguity
+  */
+  // Seems to work but running into an assertion
+  // TODO: fixme
+}
+
+static void testExample6() {
+  /*
+  testCall("example6.chpl",
+           R""""(
+              module A {
+                record r { }
+                proc r.foo { }
+              }
+              module B {
+                import A.r;
+
+                var foo: int;
+
+                proc r.tertiary() {
+                  foo; // is this A.r.foo or B.foo?
+                       // production compiler calls A.r.foo
+                }
+              }
+           )"""",
+           "B.tertiary",
+           "B.tertiary@2",
+           "A.foo");
+           */
+  // TODO: currently getting "no matching candidates"
+}
+
+static void testExample7() {
+  testCall("example7.chpl",
+           R""""(
+              module M {
+                record recordA { }
+                record recordB { var x: int; }
+                proc recordA.method1() {
+                  var x: real;
+                  proc recordB.method2() {
+                    x; // M.recordB.x or M.recordA.method1.x ?
+                       // production compiler prefers the field
+                  }
+                  var rr: recordB;
+                  rr.method2();
+                }
+              }
+           )"""",
+           "M.method1.method2",
+           "M.method1.method2@2",
+           "M.recordB@1");
+}
+
+static void testExample8() {
+  /*
+  testCall("example8.chpl",
+           R""""(
+              module A {
+                var foo: int;
+                proc main() {
+                  record r { }
+                  proc r.foo { writeln("in A.main.r.foo"); }
+                  proc r.method() {
+                    foo; // is this A.main.r.foo or A.foo ?
+                         // production compiler calls A.main.r.foo
+                  }
+                  var x:r;
+                  x.method();
+                }
+              }
+           )"""",
+           "A.main.method",
+           "A.main.method@2",
+           "A.main.foo");
+   */
+  // TODO: running into an assertion
+}
+
+static void testExample9() {
+  /*
+  testCall("example9.chpl",
+           R""""(
+              module A {
+                proc main() {
+                  record r { }
+                  proc r.foo { writeln("in A.main.r.foo"); }
+                  var foo: int;
+                  proc r.method() {
+                    foo; // is this A.main.r.foo or A.main.foo (local var) ?
+                         // production compiler calls A.main.r.foo
+                  }
+                  var x:r;
+                  x.method();
+                }
+              }
+           )"""",
+           "A.main.method",
+           "A.main.method@2",
+           "A.main.foo");
+   */
+  // TODO: running into an assertion
+}
+
+static void testExample10() {
+  /*
+  testCall("example10.chpl",
+           R""""(
+              module A {
+                class Parent { }
+                proc Parent.foo { }
+              }
+              module B {
+                import A.Parent;
+
+                class Child : Parent { }
+              }
+
+              module C {
+                import B.Child;
+
+                var foo : int;
+
+                proc Child.tertiary() {
+                  foo; // is this A.Parent.foo or C.foo?
+                       // production compiler calls A.Parent.foo
+                }
+              }
+           )"""",
+           "C.tertiary",
+           "C.tertiary@2",
+           "A.foo");
+   */
+  // TODO: no matching candidates
+}
+
+static void testExample11() {
+  /*
+  testCall("example11.chpl",
+           R""""(
+              module A {
+                class Parent { }
+                proc Parent.foo { }
+              }
+              module B {
+                import A.Parent;
+
+                class Child : Parent { }
+              }
+
+              module C {
+                import B.Child;
+
+                override proc Child.foo { }
+
+                proc Child.tertiary() {
+                  foo; // is this A.Parent.foo or C.foo?
+                       // production compiler calls C.Child.foo
+                }
+              }
+           )"""",
+           "C.tertiary",
+           "C.tertiary@2",
+           "C.foo");
+   */
+  // TODO: no matching candidates
+}
+
 
 int main() {
   test1r();
@@ -633,6 +1008,19 @@ int main() {
 
   test13p();
   test13s();
+
+  testExample2();
+  testExample3();
+  testExample4();
+  testExample4a();
+  testExample5();
+  testExample5a();
+  testExample6();
+  testExample7();
+  testExample8();
+  testExample9();
+  testExample10();
+  testExample11();
 
   return 0;
 }
