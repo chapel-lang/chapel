@@ -23,7 +23,6 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/can-pass.h"
-#include "chpl/resolution/disambiguation.h"
 #include "chpl/resolution/intents.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
@@ -36,7 +35,6 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/SmallVector.h"
 
-#include <cstdio>
 #include <set>
 #include <string>
 #include <tuple>
@@ -2524,7 +2522,7 @@ void Resolver::exit(const Range* range) {
   // cannot handle this right now, but in the future, the below implementation
   // should be replaced with one that resolves the call.
 
-  const RecordType* rangeType = RecordType::getRangeType(context);
+  const RecordType* rangeType = CompositeType::getRangeType(context);
   auto rangeAst = parsing::idToAst(context, rangeType->id());
   if (!rangeAst) {
     // The range record is part of the standard library, but
@@ -3512,6 +3510,62 @@ void Resolver::exit(const Try* node) {
   if (initResolver && node->isTryBang() && node->numHandlers() > 0) {
     context->error(node, "Only catch-less try! statements are allowed in initializers for now");
   }
+  exitScope(node);
+}
+
+bool Resolver::enter(const Catch* node) {
+  enterScope(node);
+  if (scopeResolveOnly) {
+    return true;
+  }
+
+  if (auto errVar = node->error()) {
+    CHPL_ASSERT(errVar->initExpression() == nullptr &&
+      "catch variable should not have an init expression");
+
+    const AstNode* typeExpr = errVar->typeExpression();
+    if (typeExpr == nullptr) {
+      // default to Error placeholder
+      const ClassType* errorType = CompositeType::getErrorType(context);
+      auto qt = QualifiedType(QualifiedType::VAR, errorType);
+      ResolvedExpression& re = byPostorder.byAstExpanding(errVar);
+      re.setType(qt);
+    } else {
+      errVar->traverse(*this);
+    }
+
+    ResolvedExpression& re = byPostorder.byAst(errVar);
+
+    if (auto ct = re.type().type()->toClassType()) {
+      bool converts = false;
+      bool instantiates = false;
+      if (!ct->basicClassType()->isSubtypeOf(CompositeType::getErrorType(context)->basicClassType(), converts, instantiates)) {
+        // get the penultimate type in the chain
+        auto bct = ct->basicClassType();
+        while (!bct->parentClassType()->isObjectType()) {
+          bct = bct->parentClassType();
+        }
+        context->error(errVar, "catch variable '%s' must be a class that inherits from Error, not '%s'", errVar->name().c_str(), bct->name().c_str());
+      }
+      auto dec = ClassTypeDecorator(ClassTypeDecorator::MANAGED_NONNIL);
+      auto manager = AnyOwnedType::get(context);
+      auto ret = ClassType::get(context, ct->basicClassType(), manager, dec);
+      auto qt = QualifiedType(re.type().kind(), ret->withDecorator(context, dec));
+      re.setType(qt); // replace type
+    } else {
+      context->error(errVar, "catch variable '%s' must be a class that inherits from Error", errVar->name().c_str());
+    }
+  } // TODO: is there an else case to handle here for catchall without an error variable (e.g. catch {})?
+
+  // do traverse of body
+  if (auto body = node->body()) {
+    body->traverse(*this);
+  }
+
+  return false;
+}
+
+void Resolver::exit(const Catch* node) {
   exitScope(node);
 }
 

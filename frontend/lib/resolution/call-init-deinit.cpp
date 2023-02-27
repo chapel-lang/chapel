@@ -739,6 +739,7 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   bool splitInited = (splitInitedVars.count(ast->id()) > 0);
 
   bool handledFormal = false;
+  bool isCatchVariable = false;
 
   if (ast->isFormal() || ast->isVarArgFormal()) {
 
@@ -769,6 +770,15 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     }
   }
 
+  // Errors in Catch statements will be instantiated by the throwing function
+  // in the Try block
+  auto parent = parsing::parentAst(context, ast);
+  if (parent && parent->isCatch()) {
+    auto catchNode = parent->toCatch();
+    CHPL_ASSERT(ast == catchNode->error());
+    isCatchVariable = true;
+  }
+
   if (handledFormal) {
     // already handled above
   } else if (splitInited) {
@@ -790,7 +800,11 @@ void CallInitDeinit::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
     ID id = ast->id();
     frame->addToInitedVars(id);
     frame->localsAndDefers.push_back(id);
-
+  } else if (isCatchVariable) {
+    // initialized from the throw that activates this Catch
+    ID id = ast->id();
+    frame->addToInitedVars(id);
+    frame->localsAndDefers.push_back(id);
   } else {
     // default init it
     // not inited here and not split-inited, so default-initialize it

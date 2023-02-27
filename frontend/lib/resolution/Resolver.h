@@ -496,6 +496,9 @@ struct Resolver {
   bool enter(const uast::Try* ret);
   void exit(const uast::Try* ret);
 
+  bool enter(const uast::Catch* ret);
+  void exit(const uast::Catch* ret);
+
   bool enter(const uast::Use* node);
   void exit(const uast::Use* node);
 

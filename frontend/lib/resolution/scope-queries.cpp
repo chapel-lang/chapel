@@ -342,8 +342,7 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
     ID id = idIn;
     const uast::AstNode* ast = parsing::idToAst(context, id);
     if (ast == nullptr) {
-      if (RecordType::isMissingBundledRecordType(context, id) ||
-          BasicClassType::isMissingBundledClassType(context, id)) {
+      if (CompositeType::isMissingBundledType(context, id)) {
         // if there are no bundled modules selected,
         // to enable testing, just return the top-level scope for these
         // built-in types

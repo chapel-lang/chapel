@@ -76,16 +76,6 @@ BasicClassType::getReduceScanOpType(Context* context) {
                            SubstitutionsMap()).get();
 }
 
-bool BasicClassType::isMissingBundledClassType(Context* context, ID id) {
-  bool noLibrary = parsing::bundledModulePath(context).isEmpty();
-  if (noLibrary) {
-    auto path = id.symbolPath();
-    return path == "ChapelReduce.ReduceScanOp";
-  }
-
-  return false;
-}
-
 bool BasicClassType::isSubtypeOf(const BasicClassType* parentType,
                                  bool& converts,
                                  bool& instantiates) const {
