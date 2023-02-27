@@ -1475,8 +1475,8 @@ record ioHintSet {
   /*
     Suggests whether or not 'mmap' should be used to access the file contents.
 
-     * when the argument is ``true``, suggests that mmap should be used
-     * when the argument is ``false``, suggests that mmap should not be used
+     * when ``useMmap`` is ``true``, suggests that mmap should be used
+     * when ``useMmap`` is ``false``, suggests that mmap should not be used
 
   */
   // pragma "last resort"
@@ -1484,14 +1484,6 @@ record ioHintSet {
     return if useMmap
       then new ioHintSet(IOHINTS_MMAP)
       else new ioHintSet(IOHINTS_NOMMAP);
-  }
-
-  /* Suggests that 'mmap' should be used to access the file contents.
-  */
-  // pragma "last resort"
-  deprecated "`ioHintSet.mmap` is deprecated; please use `ioHintSet.mmap(true)` instead"
-  proc type mmap where newMmmap==false {
-    return new ioHintSet(IOHINTS_MMAP);
   }
 
   /* Suggests that 'mmap' should not be used to access the file contents.
@@ -1502,36 +1494,27 @@ record ioHintSet {
 
   pragma "no doc"
   proc type fromFlag(flag: c_int) { return new ioHintSet(flag); }
-
-  // pragma "no doc"
-  // pragma "last resort"
-  // proc this(useMmap: bool = true) {
-  //   compilerWarning("hello!");
-  //   // return if useMmap
-  //   //   then new ioHintSet(IOHINTS_MMAP)
-  //   //   else new ioHintSet(IOHINTS_NOMMAP);
-  // }
 }
 
-/* Compute the union of two ioHintSets
+/* Compute the union of two ``ioHintSet``s
 */
 operator ioHintSet.|(lhs: ioHintSet, rhs: ioHintSet) {
   return new ioHintSet(lhs._internal | rhs._internal);
 }
 
-/* Compute the intersection of two ioHintSets
+/* Compute the intersection of two ``ioHintSet``s
 */
 operator ioHintSet.&(lhs: ioHintSet, rhs: ioHintSet) {
   return new ioHintSet(lhs._internal & rhs._internal);
 }
 
-/* Compare two ioHintSets for equality
+/* Compare two ``ioHintSet``s for equality
 */
 operator ioHintSet.==(lhs: ioHintSet, rhs: ioHintSet) {
   return lhs._internal == rhs._internal;
 }
 
-/* Compare two ioHintSets for inequality
+/* Compare two ``ioHintSet``s for inequality
 */
 operator ioHintSet.!=(lhs: ioHintSet, rhs: ioHintSet) {
   return !(lhs == rhs);
