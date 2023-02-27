@@ -1114,7 +1114,7 @@ module ChapelBase {
     param needsDestroy = __primitive("needs auto destroy",
                                      __primitive("deref", oldDdata[0]));
     if needsDestroy && (oldSize > newSize) {
-      if _deinitElementsIsParallel(eltType) {
+      if _deinitElementsIsParallel(eltType, oldSize) {
         forall i in newSize..oldSize-1 do
           chpl__autoDestroy(oldDdata[i]);
       } else {

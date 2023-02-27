@@ -823,7 +823,7 @@ module DefaultAssociative {
     override proc dsiDestroyArr(deinitElts:bool) {
       if deinitElts && this.eltsNeedDeinit {
         if _elementNeedsDeinit() {
-          if _deinitElementsIsParallel(eltType) {
+          if _deinitElementsIsParallel(eltType, dom.table.tableSize) {
             forall slot in dom.table.allSlots() {
               if dom._isSlotFull(slot) {
                 _deinitElement(data[slot]);

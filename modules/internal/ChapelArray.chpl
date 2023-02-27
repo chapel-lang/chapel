@@ -1960,16 +1960,14 @@ module ChapelArray {
     _do_destroy_arr(array._unowned, array._instance, deinitElts);
   }
 
-  proc _deinitElementsIsParallel(type eltType) param {
-    // TODO: Would anything be hurt if this always returned true?
-    // one guess: arrays of arrays where all inner arrays share a domain?
-    return false;
+  proc _deinitElementsIsParallel(type eltType, size: integral) {
+    return init_elts_method(size, eltType) == ArrayInit.parallelInit;
   }
 
   proc _deinitElements(array: _array) {
     param needsDestroy = __primitive("needs auto destroy", array.eltType);
     if needsDestroy {
-      if _deinitElementsIsParallel(array.eltType) {
+      if _deinitElementsIsParallel(array.eltType, array.size) {
         forall elt in array {
           chpl__autoDestroy(elt);
         }
