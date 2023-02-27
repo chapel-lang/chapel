@@ -345,7 +345,7 @@ struct ParserContext {
   AstNode* sanitizeArrayType(YYLTYPE location, AstNode* ast);
 
   // These different overloads for building bracket loop expressions exist
-  // to maintain compatability between loops and array types. The
+  // to maintain compatibility between loops and array types. The
   // loop variants have a more normalized form e.g., '[i in 1..100] i',
   // while the array type variants may omit quite a few things in the case
   // that the type is generic, e.g., just '[]'.
