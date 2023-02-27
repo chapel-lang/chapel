@@ -2685,6 +2685,10 @@ lookupCalledExpr(Context* context,
     config |= LOOKUP_INNERMOST;
   }
 
+  if (ci.isMethodCall()) {
+    config |= LOOKUP_ONLY_METHODS_FIELDS;
+  }
+
   UniqueString name = ci.name();
 
   auto ret = lookupNameInScopeWithSet(context, scope, receiverScopes, name,

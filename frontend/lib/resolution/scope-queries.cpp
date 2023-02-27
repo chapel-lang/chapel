@@ -455,12 +455,6 @@ struct LookupHelper {
                                 UniqueString name,
                                 LookupConfig config);
 
-  bool doLookupInReceiverParentScopes(
-                                    const Scope* scope,
-                                    llvm::ArrayRef<const Scope*> receiverScopes,
-                                    UniqueString name,
-                                    LookupConfig config);
-
   bool doLookupInExternBlock(const Scope* scope, UniqueString name);
 
   bool doLookupInScope(const Scope* scope,
@@ -668,6 +662,9 @@ bool LookupHelper::doLookupInToplevelModules(const Scope* scope,
 // 1. For resolving names within a method (for the implicit 'this' feature)
 // 2. For resolving a dot expression (e.g. 'myObject.field')
 //    (note that 'field' could be a parenless secondary method)
+//
+// This method searches parents scopes (for secondary methods)
+// if LOOKUP_PARENTS is included in 'config'.
 bool LookupHelper::doLookupInReceiverScopes(
                          const Scope* scope,
                          llvm::ArrayRef<const Scope*> receiverScopes,
@@ -677,6 +674,8 @@ bool LookupHelper::doLookupInReceiverScopes(
     return false;
   }
 
+  bool checkParents = (config & LOOKUP_PARENTS) != 0;
+  bool goPastModules = (config & LOOKUP_GO_PAST_MODULES) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
 
   // create a config that doesn't search receiver scopes parent scopes
@@ -688,77 +687,50 @@ bool LookupHelper::doLookupInReceiverScopes(
   newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
 
   bool got = false;
-  for (auto currentScope : receiverScopes) {
-    if (trace) {
-      VisibilityTraceElt elt;
-      elt.methodReceiverScope = currentScope;
-      traceCurPath->push_back(std::move(elt));
-    }
-
-    got |= doLookupInScope(currentScope, {}, name, newConfig);
-
-    if (trace) {
-      traceCurPath->pop_back();
-    }
-  }
-  return got;
-}
-bool LookupHelper::doLookupInReceiverParentScopes(
-                               const Scope* scope,
-                               llvm::ArrayRef<const Scope*> receiverScopes,
-                               UniqueString name,
-                               LookupConfig config)
-{
-  bool checkParents = (config & LOOKUP_PARENTS) != 0;
-  bool goPastModules = (config & LOOKUP_GO_PAST_MODULES) != 0;
-  bool trace = (traceCurPath != nullptr && traceResult != nullptr);
-
-  // create a config that doesn't search receiver scopes parent scopes
-  // (such parent scopes are covered directly in the loop below)
-  LookupConfig newConfig = (config & ~LOOKUP_PARENTS);
-  // and only consider methods/fields
-  newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
-
-  bool got = false;
-
   for (auto rcvScope : receiverScopes) {
     if (trace) {
+      // push the receiver scope
       VisibilityTraceElt elt;
       elt.methodReceiverScope = rcvScope;
       traceCurPath->push_back(std::move(elt));
     }
 
+    got |= doLookupInScope(rcvScope, {}, name, newConfig);
 
-    for (const Scope* cur = rcvScope;
-         cur != nullptr;
-         cur = cur->parentScope()) {
+    // also check receiver parent scopes
+    if (checkParents) {
+      for (const Scope* cur = rcvScope->parentScope();
+           cur != nullptr;
+           cur = cur->parentScope()) {
+        // stop if we reach an outer class / record
+        if (isAggregateDecl(cur->tag()))
+          break;
 
-      if (trace) {
-        VisibilityTraceElt elt;
-        elt.parentScope = cur;
-        traceCurPath->push_back(std::move(elt));
+        if (trace) {
+          // push the parent scope
+          VisibilityTraceElt elt;
+          elt.parentScope = cur;
+          traceCurPath->push_back(std::move(elt));
+        }
+
+        got |= doLookupInScope(cur, {}, name, newConfig);
+
+        if (trace) {
+          // pop the parent scope
+          traceCurPath->pop_back();
+        }
+
+        // stop if we reach a module
+        if (isModule(cur->tag()) && !goPastModules)
+          break;
       }
-
-      got |= doLookupInScope(cur, {}, name, newConfig);
-
-      if (trace) {
-        traceCurPath->pop_back();
-      }
-
-      // stop if we aren't looking at parents or if we reach a module
-      if (isModule(cur->tag()) && !goPastModules)
-        break;
-      // stop if we reach an outer class / record
-      if (cur != rcvScope && isAggregateDecl(cur->tag()))
-        break;
-      if (!checkParents)
-        break;
     }
+
     if (trace) {
+      // pop the receiver scope
       traceCurPath->pop_back();
     }
   }
-
   return got;
 }
 
@@ -1072,20 +1044,6 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     if (onlyInnermost && got) return true;
   }
 
-  // consider the parent scopes of receiver scopes, if any
-  // (to find secondary methods)
-  // Note: where these are searched within this function should not matter
-  // because there is no visibility "is closer" rule for
-  // disambiguating methods.
-  // Having it after the regular search up in scopes allows
-  // for not restricting with LOOKUP_ONLY_METHODS_FIELDS in the case
-  // that the scope can be both found as a regular parent and also
-  // as a parent of a receiver scope.
-  // That is important to work with the 'checkedScopes' set.
-  if (checkParents) {
-    doLookupInReceiverParentScopes(scope, receiverScopes, name, config);
-  }
-
   // if LOOKUP_EXTERN_BLOCKS is set, and this scope has an extern block,
   // and the name matches something in the extern block,
   // return the extern block ID
@@ -1199,6 +1157,7 @@ static bool helpLookupInScope(Context* context,
                               std::vector<VisibilityTraceElt>* traceCurPath,
                               std::vector<ResultVisibilityTrace>* traceResult)
 {
+  bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
   bool foundExternBlock = false;
   NamedScopeSet savedCheckedScopes;
@@ -1213,7 +1172,16 @@ static bool helpLookupInScope(Context* context,
     savedCheckedScopes = checkedScopes;
   }
 
-  bool got = helper.doLookupInScope(scope, receiverScopes, name, config);
+  bool got = false;
+
+  got |= helper.doLookupInScope(scope, receiverScopes, name, config);
+
+  // When resolving a Dot expression like myRecord.foo, we might not be inside
+  // of a method at all, but we should still search the definition point
+  // of the relevant record.
+  if (!receiverScopes.empty() && !(got && onlyInnermost)) {
+    got |= helper.doLookupInReceiverScopes(scope, receiverScopes, name, config);
+  }
 
   // If we found any extern blocks, and there were no other symbols,
   // and extern block lookup was requested, use extern block lookup.
