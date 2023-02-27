@@ -1,4 +1,4 @@
 moduleShadowFormal.chpl:9: In function 'foo':
 moduleShadowFormal.chpl:10: warning: module-level symbol is hiding function argument 'a'
-moduleShadowFormal.chpl:2: note:  found 'a' defined here
+moduleShadowFormal.chpl:2: note: found 'a' defined here
 0
