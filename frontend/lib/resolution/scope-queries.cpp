@@ -1126,18 +1126,24 @@ static bool lookupInScopeViz(Context* context,
     // or import, so collect them and include them in the error message.
     NamedScopeSet checkedScopes;
 
-    LookupConfig newConfig = 0;
+    LookupConfig config = 0;
 
     // Search all scopes for improper matches.
-    newConfig |= LOOKUP_PARENTS;
+    config |= LOOKUP_PARENTS;
 
     // Don't stop at module boundaries (find things that are technically not
     // in scope at the point of use/import)
-    newConfig |= LOOKUP_GO_PAST_MODULES;
+    config |= LOOKUP_GO_PAST_MODULES;
 
     // check for submodules of the current module, even if we're an import
-    newConfig |= LOOKUP_DECLS;
+    config |= LOOKUP_DECLS;
 
+    bool foundExternBlock = false; // ignored
+    auto helper = LookupHelper(context, resolving, checkedScopes,
+                               improperMatches,
+                               foundExternBlock,
+                               /* traceCurPath */ nullptr,
+                               /* traceResult */ nullptr);
     helper.doLookupInScope(scope, {}, name, config);
   }
 
