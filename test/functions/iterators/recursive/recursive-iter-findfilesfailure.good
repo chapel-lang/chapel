@@ -1,5 +1,3 @@
 recursive-iter-findfilesfailure.chpl:29: In iterator 'mywalkdirs':
 recursive-iter-findfilesfailure.chpl:39: warning: module-level symbol is hiding function argument 'sort'
 $CHPL_HOME/modules/packages/Sort.chpl:466: note: found 'sort' defined here
-$CHPL_HOME/modules/packages/Sort.chpl:466: note: found 'sort' defined here
-$CHPL_HOME/modules/packages/Sort.chpl:483: note: and found 'sort' defined here
