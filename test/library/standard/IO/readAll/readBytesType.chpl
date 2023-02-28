@@ -1,6 +1,6 @@
 use IO;
 
-var ch = openreader("./jab.txt");
+var ch = openReader("./jab.txt");
 const b = ch.readAll(bytes);
 ch.close();
 

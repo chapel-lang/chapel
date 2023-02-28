@@ -2,7 +2,7 @@ use DistributedMap, IO;
 
 var m = new distributedMap(int, int);
 
-var ch = openreader("checkRead.txt");
+var ch = openReader("checkRead.txt");
 ch.read(m);
 
 writeln(m.size); // Should be 4

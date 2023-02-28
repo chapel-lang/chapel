@@ -1,6 +1,6 @@
 use IO;
 
-var f = openreader("./inputData.txt");
+var f = openReader("./inputData.txt");
 
 // check that both interfaces work:
 const first_line = f.readString(23);
