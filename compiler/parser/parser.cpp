@@ -43,6 +43,7 @@
 #endif
 
 #include <cstdlib>
+#include <fstream>
 
 chpl::ID dynoIdForLastContainingDecl = chpl::ID();
 
@@ -70,6 +71,8 @@ static const char* stdGenModulesPath;
 
 static void          countTokensInCmdLineFiles();
 
+static void          addDynoLibFiles();
+
 static void          parseInternalModules();
 
 static void          parseCommandLineFiles();
@@ -78,6 +81,8 @@ static void          parseDependentModules(bool isInternal);
 
 static ModuleSymbol* parseMod(const char* modName,
                               bool        isInternal);
+
+std::vector<UniqueString> parsedPaths;
 
 // TODO: Remove me.
 struct YYLTYPE {
@@ -172,6 +177,8 @@ static Vec<const char*> sModNameList;
 static Vec<const char*> sModDoneSet;
 static Vec<VisibilityStmt*> sModReqdByInt;
 
+static std::set<std::string> gDynoGenLibPaths;
+
 void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
   sIntModPath.add(astr(newpath));
   gDynoPrependInternalModulePaths.push_back(newpath);
@@ -180,6 +187,10 @@ void addInternalModulePath(const ArgumentDescription* desc, const char* newpath)
 void addStandardModulePath(const ArgumentDescription* desc, const char* newpath) {
   sStdModPath.add(astr(newpath));
   gDynoPrependInternalModulePaths.push_back(newpath);
+}
+
+void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
+  gDynoGenLibPaths.insert(std::string(newpath));
 }
 
 void setupModulePaths() {
@@ -306,6 +317,17 @@ static void countTokensInCmdLineFiles() {
   clean_exit(0);
 }
 
+static void addDynoLibFiles() {
+  const char* inputFileName = NULL;
+  int fileNum = 0;
+  while ((inputFileName = nthFilename(fileNum++))) {
+    if (isDynoLib(inputFileName)) {
+      auto libPath = chpl::UniqueString::get(gContext, inputFileName);
+      chpl::parsing::registerFilePathsInLibrary(gContext, libPath);
+    }
+  }
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -406,6 +428,21 @@ static void parseCommandLineFiles() {
     if (isChplSource(inputFileName))
     {
       parseChplSourceFile(inputFileName);
+    } else if (isDynoLib(inputFileName)) {
+      // Need to parse these files so that they all get converted into the
+      // old AST. This is necessary in case the 'main' module is also in a
+      // .dyno file.
+      //
+      // TODO: It's not necessarily the case that a .dyno file implies that the
+      // serialized file would have been listed on the command line. We
+      // probably to clarify what it means to be listed on the command line.
+      auto libPath = chpl::UniqueString::get(gContext, inputFileName);
+      auto lib = chpl::parsing::loadLibraryFile(gContext, libPath);
+      if (lib.isUser()) {
+        for (const auto& pair : lib.offsets()) {
+          parseFile(pair.first.c_str(), MOD_USER, true);
+        }
+      }
     }
   }
 
@@ -428,6 +465,33 @@ static void parseCommandLineFiles() {
 
   forv_Vec(ModuleSymbol, mod, allModules) {
     mod->addDefaultUses();
+  }
+
+  if (gDynoGenLibPaths.size() > 0) {
+    for (std::string path : gDynoGenLibPaths) {
+      if (path == "<standard>") {
+        std::vector<UniqueString> todo;
+        for (auto& path : parsedPaths) {
+          const auto& modulePrefix = chpl::parsing::bundledModulePath(gContext);
+          if (path.startsWith(modulePrefix)) {
+            todo.push_back(path);
+          }
+        }
+        chpl::parsing::LibraryFile::generate(gContext, todo,
+                                             "chpl_standard.dyno", false);
+      } else {
+        std::string justFile = path.substr(path.find_last_of("/") + 1);
+        auto dot = justFile.find_last_of(".");
+        std::string noExt = justFile.substr(0, dot);
+        auto ustr = chpl::UniqueString::get(gContext, path);
+        chpl::parsing::LibraryFile::generate(gContext, {ustr},
+                                             noExt + ".dyno", true);
+      }
+    }
+
+    // As .dyno files become more capable, this exit will be moved further and
+    // further into resolution.
+    exit(0);
   }
 }
 
@@ -961,32 +1025,22 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
 
   if (dynoRealizeErrors()) USR_STOP();
 
-
-  if (fDynoSerialize) {
-
-    if (strcmp(dynoBinAstDir, "") != 0) {
-      auto sfname = builderResult.serialize(dynoBinAstDir);
-      if (fVerify) {
-        // 'res' = AstList for now - eventually will be a BuilderResult
-        auto result = chpl::uast::BuilderResult::deserialize(gContext, sfname);
-
-        if (builderResult.compare(result) == false) {
-          USR_FATAL("FAILED TO (DE)SERIALIZE %s\n", builderResult.filePath().c_str());
-        }
-      }
-    } else if (fVerify) {
-      // unspecified output directory, verify only
-      std::stringstream ss;
-      builderResult.serialize(ss);
-      auto res = chpl::uast::BuilderResult::deserialize(gContext, ss);
-      if (builderResult.compare(res) == false) {
-        USR_FATAL("FAILED TO (DE)SERIALIZE %s\n", builderResult.filePath().c_str());
-      }
-    }
-  }
+  parsedPaths.push_back(path);
 
   ModuleSymbol* lastModSym = nullptr;
   int numModSyms = 0;
+
+  if (fDynoVerifySerialization) {
+    std::stringstream ss;
+    chpl::Serializer ser(ss);
+    builderResult.serialize(ser);
+
+    chpl::Deserializer des(gContext, ss, ser.stringCache());
+    auto res = chpl::uast::BuilderResult::deserialize(des);
+    if (builderResult.equals(res) == false) {
+      USR_FATAL("Failed to (de)serialize %s\n", builderResult.filePath().c_str());
+    }
+  }
 
   //
   // Cases here:
@@ -1166,6 +1220,8 @@ void parseAndConvertUast() {
   gDynoErrorHandler = dynoPrepareAndInstallErrorHandler();
 
   if (countTokens || printTokens) countTokensInCmdLineFiles();
+
+  addDynoLibFiles();
 
   parseInternalModules();
 
