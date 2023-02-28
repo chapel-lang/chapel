@@ -69,7 +69,7 @@ static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
   for_vector(SymExpr, se, ses) {
     if (VarSymbol* var = toVarSymbol(se->symbol())) {
       if (var->defPoint->parentSymbol != fn) {
-        if (!var->isParameter() && var != gVoid) {
+        if (!var->isParameter() && var != gVoid && var != gNil) {
           if (CallExpr* parent = toCallExpr(se->parentExpr)) {
             if (isFieldAccessPrimitive(parent)) {
               continue;
