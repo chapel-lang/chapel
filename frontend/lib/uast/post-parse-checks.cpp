@@ -125,7 +125,7 @@ struct Visitor {
   void checkLambdaReturnIntent(const Function* node);
   void checkProcTypeFormalsAreAnnotated(const FunctionSignature* node);
   void checkProcDefFormalsAreNamed(const Function* node);
-  void checkForUnadornedArrayType(const BracketLoop* node);
+  void checkGenericArrayTypeUsage(const BracketLoop* node);
   void checkVisibilityClauseValid(const AstNode* parentNode,
                                   const VisibilityClause* clause);
 
@@ -813,28 +813,48 @@ void Visitor::checkProcDefFormalsAreNamed(const Function* node) {
   }
 }
 
-static bool isUnadornedArrayType(const BracketLoop* node) {
-  auto block = node->body();
-  if (block->numStmts() != 0) return false;
+// While normally, a particular bracket loop could be either a runnable
+// loop or an array type (and we won't know until we have type info), in
+// this particular case the expression '[]' can only appear in array types.
+static bool isBracketLoopDomainExpressionEmpty(const BracketLoop* node) {
   auto dom = node->iterand()->toDomain();
   if (!dom || dom->numExprs() != 0) return false;
   if (dom->usedCurlyBraces()) return false;
   return true;
 }
 
+static bool isBracketLoopBodyEmpty(const BracketLoop* node) {
+  auto block = node->body();
+  return block->numStmts() == 0;
+}
+
 // TODO: Might need to do some more fine-grained pattern matching.
-void Visitor::checkForUnadornedArrayType(const BracketLoop* node) {
+void Visitor::checkGenericArrayTypeUsage(const BracketLoop* node) {
   if (!parent(0)) return;
 
-  if (!isUnadornedArrayType(node)) return;
+  // TODO: These are treated the same right now, but in the future we might
+  // like to allow things like '[]' in type expressions, while
+  // default initialized variables such as 'var x: [] bytes;' would need
+  // a domain expression. 
+  bool isDomainEmpty = isBracketLoopDomainExpressionEmpty(node);
+  bool isBodyEmpty = isBracketLoopBodyEmpty(node); 
+
+  // Expression is fully adorned, so nothing to do.
+  if (!isDomainEmpty && !isBodyEmpty) return;
 
   bool doEmitError = true;
   const AstNode* last = nullptr;
   auto decl = searchParentsForDecl(node, &last);
+  bool isInTypeExpression = false;
+  bool isField = false;
 
   // Formal type expression is OK.
-  if (auto formal = decl->toFormal()) {
-    if (last == formal->typeExpression()) doEmitError = false;
+  if (auto varLike = decl->toVarLikeDecl()) {
+    if (auto var = varLike->toVariable()) isField = var->isField();
+    if (last == varLike->typeExpression()) {
+      isInTypeExpression = true;
+      doEmitError = !varLike->isFormal();
+    }
   }
 
   // Function return type is OK.
@@ -848,7 +868,12 @@ void Visitor::checkForUnadornedArrayType(const BracketLoop* node) {
   }
 
   if (doEmitError) {
-    error(node, "generic array types are unsupported in this context");
+    if (isInTypeExpression) {
+      auto str = isField ? "fields" : "variables";
+      error(node, "%s cannot specify generic array types", str);
+    } else {
+      error(node, "generic array types are unsupported in this context");
+    }
   }
 }
 
@@ -1062,7 +1087,7 @@ void Visitor::visit(const Array* node) {
 }
 
 void Visitor::visit(const BracketLoop* node) {
-  checkForUnadornedArrayType(node);
+  checkGenericArrayTypeUsage(node);
 }
   
 void Visitor::visit(const FnCall* node) {
