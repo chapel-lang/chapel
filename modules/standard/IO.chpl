@@ -3626,6 +3626,8 @@ This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
 :throws NotADirectoryError: Thrown if part of the provided path was expected to
                             be a directory but was not
 :throws SystemError: Thrown if a writing channel could not be returned.
+:throws IllegalArgumentError: Thrown if trying to write explicitly prior to byte
+                              0.
 */
 deprecated "openwriter is deprecated - please use :proc:`openWriter` instead"
 proc openwriter(path:string,
@@ -3661,6 +3663,8 @@ This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
 :throws NotADirectoryError: Thrown if part of the provided path was expected to
                             be a directory but was not
 :throws SystemError: Thrown if a writing channel could not be returned.
+:throws IllegalArgumentError: Thrown if trying to write explicitly prior to byte
+                              0.
 */
 proc openWriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
