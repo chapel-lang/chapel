@@ -1426,8 +1426,6 @@ private const IOHINTS_PREFETCH:    c_int = QIO_HINT_CACHED;
 private const IOHINTS_MMAP:        c_int = QIO_METHOD_MMAP;
 private const IOHINTS_NOMMAP:      c_int = QIO_METHOD_PREADPWRITE;
 
-config param newMmmap = true;
-
 /* A value of the :record:`ioHintSet` type defines a set of hints about
   the I/O that the file or channel will perform.  These hints may be used
   by the implementation to select optimized versions of the I/O operations.
@@ -1475,8 +1473,8 @@ record ioHintSet {
   /*
     Suggests whether or not 'mmap' should be used to access the file contents.
 
-     * when ``useMmap`` is ``true``, suggests that mmap should be used
-     * when ``useMmap`` is ``false``, suggests that mmap should not be used
+     * when ``useMmap`` is ``true``, suggests that 'mmap' should be used
+     * when ``useMmap`` is ``false``, suggests that 'mmap' should not be used and 'pread'/'pwrite' should be used instead
 
   */
   proc type mmap(useMmap = true) where newMmmap==true {
@@ -1495,25 +1493,25 @@ record ioHintSet {
   proc type fromFlag(flag: c_int) { return new ioHintSet(flag); }
 }
 
-/* Compute the union of two ``ioHintSet`` s
+/* Compute the union of two hint sets
 */
 operator ioHintSet.|(lhs: ioHintSet, rhs: ioHintSet) {
   return new ioHintSet(lhs._internal | rhs._internal);
 }
 
-/* Compute the intersection of two ``ioHintSet`` s
+/* Compute the intersection of two hint sets
 */
 operator ioHintSet.&(lhs: ioHintSet, rhs: ioHintSet) {
   return new ioHintSet(lhs._internal & rhs._internal);
 }
 
-/* Compare two ``ioHintSet`` s for equality
+/* Compare two hint sets for equality
 */
 operator ioHintSet.==(lhs: ioHintSet, rhs: ioHintSet) {
   return lhs._internal == rhs._internal;
 }
 
-/* Compare two ``ioHintSet`` s for inequality
+/* Compare two hint sets for inequality
 */
 operator ioHintSet.!=(lhs: ioHintSet, rhs: ioHintSet) {
   return !(lhs == rhs);
