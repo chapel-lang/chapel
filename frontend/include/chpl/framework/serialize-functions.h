@@ -40,6 +40,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "llvm/ADT/DenseMap.h"
+
 
 namespace chpl {
 class Context;
@@ -245,6 +247,30 @@ template<typename T> struct deserialize<std::set<T>> {
     auto len = des.read<uint64_t>();
     for (uint64_t i = 0; i < len; i++) {
       ret.insert(des.read<T>());
+    }
+    return ret;
+  }
+};
+
+template<typename K, typename V>
+struct serialize<llvm::DenseMap<K,V>> {
+  void operator()(Serializer& ser,
+                  const llvm::DenseMap<K,V>& val) const {
+    ser.write((uint64_t)val.size());
+    for (const auto& pair : val) {
+      ser.write(pair.first);
+      ser.write(pair.second);
+    }
+  }
+};
+
+template<typename K, typename V>
+struct deserialize<llvm::DenseMap<K,V>> {
+  llvm::DenseMap<K,V> operator()(Deserializer& des) const {
+    auto len = des.read<uint64_t>();
+    llvm::DenseMap<K,V> ret(len);
+    for (uint64_t i = 0; i < len; i++) {
+      ret.insert({des.read<K>(), des.read<V>()});
     }
     return ret;
   }
