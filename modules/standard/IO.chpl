@@ -1479,7 +1479,6 @@ record ioHintSet {
      * when ``useMmap`` is ``false``, suggests that mmap should not be used
 
   */
-  // pragma "last resort"
   proc type mmap(useMmap = true) where newMmmap==true {
     return if useMmap
       then new ioHintSet(IOHINTS_MMAP)
@@ -1496,25 +1495,25 @@ record ioHintSet {
   proc type fromFlag(flag: c_int) { return new ioHintSet(flag); }
 }
 
-/* Compute the union of two ``ioHintSet``s
+/* Compute the union of two ``ioHintSet`` s
 */
 operator ioHintSet.|(lhs: ioHintSet, rhs: ioHintSet) {
   return new ioHintSet(lhs._internal | rhs._internal);
 }
 
-/* Compute the intersection of two ``ioHintSet``s
+/* Compute the intersection of two ``ioHintSet`` s
 */
 operator ioHintSet.&(lhs: ioHintSet, rhs: ioHintSet) {
   return new ioHintSet(lhs._internal & rhs._internal);
 }
 
-/* Compare two ``ioHintSet``s for equality
+/* Compare two ``ioHintSet`` s for equality
 */
 operator ioHintSet.==(lhs: ioHintSet, rhs: ioHintSet) {
   return lhs._internal == rhs._internal;
 }
 
-/* Compare two ``ioHintSet``s for inequality
+/* Compare two ``ioHintSet`` s for inequality
 */
 operator ioHintSet.!=(lhs: ioHintSet, rhs: ioHintSet) {
   return !(lhs == rhs);
