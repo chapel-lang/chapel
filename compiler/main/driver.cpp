@@ -320,6 +320,10 @@ size_t fDynoBreakOnHash = 0;
 
 bool fUseIOFormatters = false;
 
+bool fWarnUnknownAttributeToolname = false;
+
+std::vector<UniqueString> usingAttributeToolnames;
+
 std::vector<std::string> gDynoPrependInternalModulePaths;
 std::vector<std::string> gDynoPrependStandardModulePaths;
 
@@ -640,6 +644,18 @@ static void verifyStageAndSetStageNum(const ArgumentDescription* desc,
     USR_FATAL("Unknown llvm-print-ir-stage argument");
 
   llvmPrintIrStageNum = stageNum;
+}
+
+/*
+  this function is called when a toolname is passed through the command line
+  with the --using-attribute-toolname flag. It is called each time the flag is
+  found in the command line, which may be multiple. These toolnames will then
+  be treated as known to the compiler and we won't warn about them.
+*/
+static void addUsingAttributeToolname(const ArgumentDescription* desc,
+                                      const char* arg) {
+  UniqueString name = UniqueString::get(gContext, arg);
+  usingAttributeToolnames.push_back(name);
 }
 
 // In order to handle accumulating ccflags arguments, the argument
@@ -1249,8 +1265,8 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-verify-serialization", ' ', NULL, "Enable [disable] verification of serialization", "N", &fDynoVerifySerialization, NULL, NULL},
 
  {"use-io-formatters", ' ', NULL, "Enable [disable] use of experimental IO formatters", "N", &fUseIOFormatters, "CHPL_USE_IO_FORMATTERS", NULL},
-
-
+ {"warn-unknown-attribute-toolname", ' ', NULL, "Enable warnings when an unknown toolname is found in an attribute", "N", &fWarnUnknownAttributeToolname, "CHPL_WARN_UNKNOWN_ATTRIBUTE_TOOLNAME", NULL},
+ {"using-attribute-toolname", ' ', "<toolname>", "Specify additional toolnames for attributes that are expected in the source", "S", NULL, "CHPL_ATTRIBUTE_TOOLNAMES", addUsingAttributeToolname},
  DRIVER_ARG_PRINT_CHPL_HOME,
  DRIVER_ARG_LAST
 };
@@ -1816,6 +1832,10 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   chpl::parsing::setConfigSettings(gContext, gDynoParams);
   gDynoParams.clear();
 
+  // set any attribute toolnames we processed earlier and clear the local list.
+  chpl::parsing::setAttributeToolnames(gContext, usingAttributeToolnames);
+  usingAttributeToolnames.clear();
+
   chpl::parsing::setupModuleSearchPaths(gContext,
                                         CHPL_HOME,
                                         fMinimalModules,
@@ -1842,6 +1862,8 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   chpl::CompilerFlags flags;
   flags.set(chpl::CompilerFlags::WARN_UNSTABLE, fWarnUnstable);
   flags.set(chpl::CompilerFlags::WARN_ARRAY_OF_RANGE, fWarnArrayOfRange);
+  flags.set(chpl::CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS,
+            fWarnUnknownAttributeToolname);
 
   // Set the compilation flags all at once using a query.
   chpl::setCompilerFlags(gContext, flags);

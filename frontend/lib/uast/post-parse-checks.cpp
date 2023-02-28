@@ -1103,18 +1103,26 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
       node->name() == USTR("unstable") ||
       node->name() == USTR("stable") ||
       node->name() == USTR("chpldoc.nodoc")) {
-      // TODO: should we only match chpldoc.nodoc or anything toolspaced with chpldoc.?
+      // TODO: should we match chpldoc.nodoc or anything toolspaced with chpldoc.?
       return;
   } else if (node->fullyQualifiedAttributeName().find('.') == std::string::npos) {
-    // we don't recognize the named attribute that we found (no toolspace to specify a different tool)
-    error(node, "unrecognized attribute '%s'", node->name().c_str());
+    // we don't recognize the top-level attribute that we found (no toolspace)
+    error(node, "unrecognized top-level attribute '%s'", node->name().c_str());
     // TODO: this relies on the WARN_UNKNOWN_TOOL_SPACED_ATTRS flag that we do
     // not yet have so by default for now we will warn about unrecognized
     // attributes that are toolspaced
-  } else if (isFlagSet(CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS) || true) {
-    // there's a toolspaced attribute given, and the user asked us to warn them
-    // about those things
-    warn(node, "unrecognized attribute '%s'", node->name().c_str());
+  } else {
+    bool doWarn = isFlagSet(CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS);
+    auto toolnames = chpl::parsing::attributeToolnames(this->context_);
+    std::vector<UniqueString>::iterator it;
+    // we need just the toolname part of the attribute name here
+    std::size_t pos = node->fullyQualifiedAttributeName().find_last_of('.');
+    std::string toolname = node->fullyQualifiedAttributeName().substr(0, pos);
+    it = find(toolnames.begin(), toolnames.end(),
+              UniqueString::get(this->context_, toolname));
+    if (it == toolnames.end() && doWarn) {
+      error(node, "unrecognized attribute toolname '%s'", node->name().c_str());
+    }
   }
   // TODO: check for any other attribute toolspaces given from the command-line
 }
