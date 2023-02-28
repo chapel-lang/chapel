@@ -1,4 +1,4 @@
-use IO, IO.FormattedIO, Regex;
+use IO, Regex;
 
 // strings
 const url = compile("https?:\\/\\/(.*\\.)(org|com)([\\/a-zA-Z]*)?(\\.html)?");

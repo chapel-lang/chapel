@@ -6,7 +6,7 @@ testAdvanceUpTo(openreader("multiByteInput.txt"), b"<<<<123>>>>");
 proc testAdvanceUpTo(r, sep) {
   // try to read a separator that isn't in the channel (should throw 'EofError')
   try {
-    r.advaceTo(sep);
+    r.advanceTo(sep);
   } catch e {
     writeln(e);
   }
