@@ -498,7 +498,7 @@ module CTypes {
 
     if boundsChecking {
       if (arr.size == 0) then
-        halt("Can’t take a C pointer to an array with 0 elements.");
+        halt("Can't create a C pointer for an array with 0 elements.");
     }
 
     return c_pointer_return(arr[arr.domain.low]);
