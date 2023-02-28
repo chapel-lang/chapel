@@ -4,7 +4,7 @@ testAdvanceUpTo(openreader("singleByteInput.txt"), "-");
 testAdvanceUpTo(openreader("singleByteInput.txt"), b"-");
 
 proc testAdvanceUpTo(r, sep) {
-  // try to read a delimiter not in the channel
+  // try to read a separator that isn't in the channel (should throw 'EofError')
   try {
     r.advanceUpTo(sep);
   } catch e {

@@ -1,12 +1,12 @@
 use IO, List;
 
-// string
+// compare lists of strings
 writeln(
   geneList(openreader("./genes.txt"), "ATG") ==
   geneListViaSplit(openreader("./genes.txt"), "ATG")
 );
 
-// bytes
+// compare lists of bytes
 writeln(
   geneList(openreader("./genes.txt"), b"ATG") ==
   geneListViaSplit(openreader("./genes.txt"), b"ATG")

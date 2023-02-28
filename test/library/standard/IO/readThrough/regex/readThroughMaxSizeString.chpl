@@ -10,16 +10,18 @@ try {
     writeln(r.readThrough(bars, maxSize=6*nb));
 } catch e {
     writeln(e);
+    // ensure pointer was left at its starting position
     writeln(r.readAll());
 }
 r.close();
 
-// try to match when a full separator isn't present
+// try to match when a *full* separator isn't present
 r = openreader("maxSizeStringInput.txt");
 try {
     writeln(r.readThrough(bars, maxSize=6*nb+1));
 } catch e {
     writeln(e);
+    // ensure pointer was left at its starting position
     writeln(r.readAll());
 }
 r.close();

@@ -10,7 +10,7 @@ proc testAdvanceUpTo(r, sep) {
   // write the remainder of the file
   write(r.readAll());
 
-  // try to advance from EOF
+  // try to advance from EOF (should throw 'EofError')
   try {
     r.advanceUpTo(sep);
   } catch e {
