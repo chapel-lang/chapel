@@ -62,34 +62,25 @@ static const char* allowedItems(resolution::VisibilityStmtKind kind) {
   return kind == resolution::VIS_USE ? "modules or enums" : "modules";
 }
 
-// describe where a symbol came from
-// (in a way, it prints out a ResultVisibilityTrace)
-// 'start' indicates where in the trace to start, since sometimes
-// the first element might have already been printed.
-// 'oneOnly' indicates that only the 1st match should be described
-//
-// if 'intro' will be emitted before the first message for a trace
-// (only relevant if start==0). If it is not empty, it should probably
-// end with a space.
-static void describeSymbolSource(ErrorWriterBase& wr,
-                                 const uast::AstNode* ast,
-                                 UniqueString name,
-                                 const resolution::BorrowedIdsWithName& match,
-                                 const resolution::ResultVisibilityTrace& trace,
-                                 int start,
-                                 bool oneOnly,
-                                 const char* intro) {
+static void describeSymbolTrace(ErrorWriterBase& wr,
+                                ID errId,
+                                UniqueString name,
+                                const resolution::ResultVisibilityTrace& trace,
+                                int start,
+                                const char* intro,
+                                bool& encounteredAutoModule,
+                                UniqueString& from,
+                                bool& needsIntroText) {
   CHPL_ASSERT(0 <= start);
 
-  bool encounteredAutoModule = false;
-  UniqueString from = name;
+  from = name;
   int n = trace.visibleThrough.size();
-  bool first = true; // do we still need to output the intro text?
+  needsIntroText = true;
   for (int i = start; i < n; i++) {
     const auto& elt = trace.visibleThrough[i];
     if (elt.automaticModule) {
       std::string msg;
-      if (start==0 && first) {
+      if (start==0 && needsIntroText) {
         msg = intro;
       }
       if (from != name) {
@@ -97,14 +88,15 @@ static void describeSymbolSource(ErrorWriterBase& wr,
       } else {
         msg += "it";
       }
-      wr.note(ast, msg, " was provided by the automatically-included modules.");
+      wr.note(errId, msg,
+              " was provided by the automatically-included modules.");
       encounteredAutoModule = true;
-      first = false;
+      needsIntroText = false;
       break;
     } else if (elt.fromUseImport) {
       std::string errbegin;
       std::string nameSuffix;
-      if (start==0 && first) {
+      if (start==0 && needsIntroText) {
         errbegin = intro;
         errbegin += "through";
       } else {
@@ -117,14 +109,39 @@ static void describeSymbolSource(ErrorWriterBase& wr,
       wr.note(locationOnly(elt.visibilityClauseId), errbegin, " the '", elt.visibilityStmtKind, "' statement", nameSuffix, " here:");
       wr.code<ID,ID>(elt.visibilityClauseId, { elt.visibilityClauseId });
       from = elt.renameFrom;
-      first = false;
+      needsIntroText = false;
     }
   }
+}
+
+// describe where a symbol came from
+// (in a way, it prints out a ResultVisibilityTrace)
+// 'start' indicates where in the trace to start, since sometimes
+// the first element might have already been printed.
+// 'oneOnly' indicates that only the 1st match should be described
+//
+// if 'intro' will be emitted before the first message for a trace
+// (only relevant if start==0). If it is not empty, it should probably
+// end with a space.
+static void describeSymbolSource(ErrorWriterBase& wr,
+                                 ID errId,
+                                 UniqueString name,
+                                 const resolution::BorrowedIdsWithName& match,
+                                 const resolution::ResultVisibilityTrace& trace,
+                                 int start,
+                                 bool oneOnly,
+                                 const char* intro) {
+
+  bool encounteredAutoModule = false;
+  UniqueString from = name;
+  bool needsIntroText = true;
+  describeSymbolTrace(wr, errId, name, trace, start, intro,
+                      encounteredAutoModule, from, needsIntroText);
 
   if (!encounteredAutoModule) {
     if (match.numIds() == 1 || oneOnly) {
       ID firstId = match.firstId();
-      if (first) {
+      if (needsIntroText) {
         wr.note(locationOnly(firstId), intro, "found '", from, "' defined here:");
       } else {
         wr.note(locationOnly(firstId), "found '", from, "' defined here:");
@@ -133,7 +150,7 @@ static void describeSymbolSource(ErrorWriterBase& wr,
     } else {
       bool firstHere = true;
       for (const auto& id : match) {
-        if (first) {
+        if (needsIntroText) {
           wr.note(id, intro, "found '", from, "' defined here:");
         } else if (firstHere) {
           wr.note(id, "found '", from, "' defined here:");
@@ -141,7 +158,7 @@ static void describeSymbolSource(ErrorWriterBase& wr,
           wr.note(id, "and found '", from, "' defined here:");
         }
         wr.code<ID,ID>(id, { id });
-        first = false;
+        needsIntroText = false;
         firstHere = false;
       }
     }
@@ -188,11 +205,11 @@ void ErrorAmbiguousIdentifier::write(ErrorWriterBase& wr) const {
 
   CHPL_ASSERT(matches.size() > 0);
   if (matches[0].numIds() > 1) {
-    describeSymbolSource(wr, ident, ident->name(), matches[0], trace[0], 0, false, "");
+    describeSymbolSource(wr, ident->id(), ident->name(), matches[0], trace[0], 0, false, "");
   } else {
     CHPL_ASSERT(matches.size() > 1);
-    describeSymbolSource(wr, ident, ident->name(), matches[0], trace[0], 0, true, "first, ");
-    describeSymbolSource(wr, ident, ident->name(), matches[1], trace[1], 0, true, "additionally, ");
+    describeSymbolSource(wr, ident->id(), ident->name(), matches[0], trace[0], 0, true, "first, ");
+    describeSymbolSource(wr, ident->id(), ident->name(), matches[1], trace[1], 0, true, "additionally, ");
   }
 
   return;
@@ -293,7 +310,7 @@ void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
   wr.code<ID, ID>(firstVisibilityClauseId, { firstVisibilityClauseId });
 
   // print where it came from
-  describeSymbolSource(wr, formal, formal->name(), match, trace,
+  describeSymbolSource(wr, formal->id(), formal->name(), match, trace,
                        describeStart, true, "");
 
   return;
@@ -663,16 +680,72 @@ void ErrorPrototypeInclude::write(ErrorWriterBase& wr) const {
   wr.code(moduleDef);
 }
 
+// find the first ID not from use/import, returns true and sets result
+// if one is found.
+static bool firstIdFromDecls(
+    const std::vector<resolution::BorrowedIdsWithName>& matches,
+    const std::vector<resolution::ResultVisibilityTrace>& trace,
+    ID& result) {
+  int n = matches.size();
+  for (int i = 0; i < n; i++) {
+    const auto& t = trace[i];
+    if (t.visibleThrough.size() == 0) {
+      // TODO: find the first non-function ID?
+      // To do that, would use flags in BorrowedIdsWithIter
+      // to filter Idvs.
+      result = matches[i].firstId();
+      return true;
+    }
+  }
+  return false;
+}
+
 void ErrorRedefinition::write(ErrorWriterBase& wr) const {
-  auto decl = std::get<const uast::NamedDecl*>(info);
-  auto& ids = std::get<std::vector<ID>>(info);
-  wr.heading(kind_, type_, decl, "'", decl->name(), "' has multiple definitions.");
-  wr.message("The first definition is here:");
-  wr.code(decl);
-  for (const ID& id : ids) {
-    if (id != decl->id()) {
-      wr.note(id, "redefined here:");
-      wr.code<ID, ID>(id);
+  auto scopeId = std::get<ID>(info);
+  auto name = std::get<UniqueString>(info);
+  auto& matches = std::get<std::vector<resolution::BorrowedIdsWithName>>(info);
+  auto& trace = std::get<std::vector<resolution::ResultVisibilityTrace>>(info);
+
+  // compute the anchor ID for the error message
+  ID id;
+  bool anchorToDef = firstIdFromDecls(matches, trace, id);
+  if (!anchorToDef) {
+    // Use the scope's ID
+    id = scopeId;
+  }
+
+  if (anchorToDef) {
+    wr.heading(kind_, type_, id, "'", name, "' has multiple definitions.");
+  } else {
+    wr.heading(kind_, type_, id, "'", name, "' has multiple definitions in this scope.");
+  }
+
+  bool needsIntroText = true;
+  int n = matches.size();
+  for (int i = 0; i < n; i++) {
+    bool encounteredAutoModule = false;
+    UniqueString from = name;
+    const char* intro = "One definition is here ";
+    if (!anchorToDef) {
+      intro = "One definition is here ";
+    }
+    describeSymbolTrace(wr, scopeId, name, trace[i], 0, intro,
+                        encounteredAutoModule, from, needsIntroText);
+
+    // print out the other IDs
+    for (const auto& matchId : matches[i]) {
+      if (needsIntroText) {
+        if (anchorToDef) {
+          wr.message(intro);
+        } else {
+          wr.note(matches[i].firstId(), intro);
+        }
+        needsIntroText = false;
+      } else {
+        wr.note(matchId, "redefined here:");
+      }
+
+      wr.code<ID, ID>(matchId);
     }
   }
 }

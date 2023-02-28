@@ -2590,8 +2590,11 @@ emitMultipleDefinedSymbolErrorsQuery(Context* context, const Scope* scope) {
     // intent overloading).
     if (nNonFunctions > 1 || (nNonFunctions >= 1 && nFunctions >= 1)) {
       // emit a multiply-defined symbol error
-      context->error(scope->id(), "%s is multiply defined", name.c_str());
-      //           CHPL_REPORT(context, Redefinition, decl, redefinedIds);
+      std::vector<ResultVisibilityTrace> traceResult;
+      v = lookupNameInScopeTracing(context, scope, { }, name, config,
+                                   traceResult);
+
+      CHPL_REPORT(context, Redefinition, scope->id(), name, v, traceResult);
 
       result = true;
     }
