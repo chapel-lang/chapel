@@ -20,10 +20,10 @@ proc xyType.writeThis(fw) throws {
 var r = openreader("xy.txt");
 
 // read to the start of the XY input
-writeln(r.readUpTo("|"));
+writeln(r.readTo("|"));
 
 // read an xy
 writeln("xy: ", r.read(xyType));
 
 // read to the end of the file
-write(r.readUpTo("|"));
+write(r.readTo("|"));

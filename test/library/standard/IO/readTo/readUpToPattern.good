@@ -6,7 +6,7 @@ false
 string - return:
 123456789
 987654321
-UnexpectedEofError: short read or write (Encountered EOF in readUpTo(string))
+UnexpectedEofError: short read or write (Encountered EOF in readTo(string))
 
 bytes - ref:
 true 123456789
@@ -16,4 +16,4 @@ false
 bytes - return:
 123456789
 987654321
-UnexpectedEofError: short read or write (Encountered EOF in readUpTo(bytes))
+UnexpectedEofError: short read or write (Encountered EOF in readTo(bytes))

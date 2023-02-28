@@ -1,0 +1,2 @@
+EofError: end of file (in advaceTo(string) with path "multiByteInput.txt" offset 70)
+EofError: end of file (in advaceTo(bytes) with path "multiByteInput.txt" offset 70)

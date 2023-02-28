@@ -1,4 +1,0 @@
->>>>abc>>>>this
-EofError: end of file (in advanceUpTo(string) with path "multiByteInput.txt" offset 70)
->>>>abc>>>>this
-EofError: end of file (in advanceUpTo(bytes) with path "multiByteInput.txt" offset 70)

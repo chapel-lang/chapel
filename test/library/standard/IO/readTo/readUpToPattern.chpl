@@ -13,31 +13,31 @@ readComplexPattern(false, openreader("pattern.txt"), b".... . .-.. .-.. --- .-- 
 proc readComplexPattern(param refBuffer, r, pattern: ?t) where refBuffer == true {
   var s: t;
   // read to pattern
-  writeln(r.readUpTo(s, pattern), " ", s);
+  writeln(r.readTo(s, pattern), " ", s);
 
   // read pattern itself
   r.readLiteral(pattern);
 
   // read to EOF
-  writeln(r.readUpTo(s, pattern), " ", s.strip());
+  writeln(r.readTo(s, pattern), " ", s.strip());
 
   // try reading at EOF (should return 'false')
-  writeln(r.readUpTo(s, pattern), " ", s);
+  writeln(r.readTo(s, pattern), " ", s);
 }
 
 proc readComplexPattern(param refBuffer, r, pattern: ?t) where refBuffer == false {
   // read to pattern
-  writeln(r.readUpTo(pattern));
+  writeln(r.readTo(pattern));
 
   // read pattern itself
   r.readLiteral(pattern);
 
   // read to EOF
-  writeln(r.readUpTo(pattern).strip());
+  writeln(r.readTo(pattern).strip());
 
   // try reading at EOF (should throw UnexpectedEofError)
   try {
-    writeln(r.readUpTo(pattern));
+    writeln(r.readTo(pattern));
   } catch e {
     writeln(e);
   }

@@ -1,0 +1,2 @@
+EofError: end of file (in advaceTo(string) with path "singleByteInput.txt" offset 60)
+EofError: end of file (in advaceTo(bytes) with path "singleByteInput.txt" offset 60)
