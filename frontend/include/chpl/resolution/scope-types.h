@@ -173,6 +173,14 @@ class OwnedIdsWithName {
     flagsOr_ |= idv.flags_;
   }
 
+  int numIds() const {
+    if (moreIdvs_.get() == nullptr) {
+      return 1;
+    }
+
+    return moreIdvs_->size();
+  }
+
   bool operator==(const OwnedIdsWithName& other) const {
     // check the initial fields
     if (idv_ != other.idv_ ||
@@ -555,6 +563,11 @@ class Scope {
   /** Gathers all of the names of symbols declared directly within this scope */
   std::set<UniqueString> gatherNames() const;
 
+  /** Collect names that are declared directly within this scope
+      but separately collect names that have multiple definitions. */
+  void collectNames(std::set<UniqueString>& namesDefined,
+                    std::set<UniqueString>& namesDefinedMultiply) const;
+
   bool operator==(const Scope& other) const {
     return parentScope_ == other.parentScope_ &&
            tag_ == other.tag_ &&
@@ -702,7 +715,7 @@ class VisibilitySymbols {
                 shadowScopeLevel == SHADOW_SCOPE_TWO);
   }
 
-  /** Return the imported scope */
+  /** Return the used/imported scope */
   const Scope* scope() const { return scope_; }
 
   /** Return the kind of the imported symbol */
@@ -731,15 +744,11 @@ class VisibilitySymbols {
       stores the declared name in `declared`
       Returns false if `name` is not found
   */
-  bool lookupName(const UniqueString &name, UniqueString &declared) const {
-    for (const auto &p : names_) {
-      if (p.second == name) {
-        declared = p.first;
-        return true;
-      }
-    }
-    return false;
-  }
+  bool lookupName(const UniqueString &name, UniqueString &declared) const;
+
+  /** Return a vector of pairs of original name, new name here
+      for the names declared here. */
+  const std::vector<std::pair<UniqueString,UniqueString>>& names() const;
 
   bool operator==(const VisibilitySymbols &other) const {
     return scope_ == other.scope_ &&
@@ -909,6 +918,11 @@ enum {
     Skip private use/import
    */
   LOOKUP_SKIP_PRIVATE_USE_IMPORT = 512,
+
+  /**
+    Skip shadow scopes (for private use)
+   */
+  LOOKUP_SKIP_SHADOW_SCOPES = 1024,
 };
 
 /** LookupConfig is a bit-set of the LOOKUP_ flags defined above */

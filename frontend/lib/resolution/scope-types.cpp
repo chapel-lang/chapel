@@ -226,8 +226,19 @@ std::set<UniqueString> Scope::gatherNames() const {
   for (const auto& pair : declared_) {
     orderedNames.insert(pair.first);
   }
-
   return orderedNames;
+}
+
+void Scope::collectNames(std::set<UniqueString>& namesDefined,
+                         std::set<UniqueString>& namesDefinedMultiply) const {
+  for (const auto& decl : declared_) {
+    UniqueString name = decl.first;
+    auto p = namesDefined.insert(name);
+    if (p.second == false || decl.second.numIds() > 1) {
+      // it was already present or multiply defined here
+      namesDefinedMultiply.insert(name);
+    }
+  }
 }
 
 void Scope::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
@@ -237,6 +248,22 @@ void Scope::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
   id().stringify(ss, stringKind);
   ss << " numDeclared=";
   ss << std::to_string(numDeclared());
+}
+
+bool VisibilitySymbols::lookupName(const UniqueString &name,
+                                   UniqueString &declared) const {
+  for (const auto &p : names_) {
+    if (p.second == name) {
+      declared = p.first;
+      return true;
+    }
+  }
+  return false;
+}
+
+const std::vector<std::pair<UniqueString,UniqueString>>&
+VisibilitySymbols::names() const {
+  return names_;
 }
 
 void VisibilitySymbols::stringify(std::ostream& ss,

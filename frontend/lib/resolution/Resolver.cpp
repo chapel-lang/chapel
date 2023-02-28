@@ -2341,6 +2341,9 @@ bool Resolver::enter(const NamedDecl* decl) {
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
+  emitMultipleDefinedSymbolErrors(context, scope);
+
+#if 0
   // All functions can be overloaded, even parenless ones (via return
   // intent overloading).
   bool canOverload = decl->isFunction();
@@ -2372,6 +2375,7 @@ bool Resolver::enter(const NamedDecl* decl) {
       }
     }
   }
+#endif
 
   // don't visit e.g. nested functions - these will be resolved
   // when calling them.
@@ -3575,6 +3579,7 @@ bool Resolver::enter(const Use* node) {
   const Scope* scope = scopeStack.back();
   CHPL_ASSERT(scope);
   std::ignore = resolveVisibilityStmts(context, scope);
+  emitMultipleDefinedSymbolErrors(context, scope);
   return false;
 }
 
@@ -3585,6 +3590,7 @@ bool Resolver::enter(const Import* node) {
   const Scope* scope = scopeStack.back();
   CHPL_ASSERT(scope);
   std::ignore = resolveVisibilityStmts(context, scope);
+  emitMultipleDefinedSymbolErrors(context, scope);
   return false;
 }
 

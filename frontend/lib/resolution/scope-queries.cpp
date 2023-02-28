@@ -840,6 +840,8 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   bool goPastModules = (config & LOOKUP_GO_PAST_MODULES) != 0;
   bool onlyMethodsFields = (config & LOOKUP_ONLY_METHODS_FIELDS) != 0;
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
+  bool skipPrivateUseImport = (config & LOOKUP_SKIP_PRIVATE_USE_IMPORT) != 0;
+  bool skipShadowScopes = (config & LOOKUP_SKIP_SHADOW_SCOPES) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
 
   IdAndFlags::Flags curFilter = 0;
@@ -944,7 +946,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   }
 
   // now check shadow scope 1 (only relevant for 'private use')
-  if (checkUseImport) {
+  if (checkUseImport && !skipShadowScopes) {
     bool got = false;
     got |= doLookupInImportsAndUses(scope, r, name, config,
                                     curFilter, excludeFilter,
@@ -957,7 +959,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   }
 
   // now check shadow scope 2 (only relevant for 'private use')
-  if (checkUseImport) {
+  if (checkUseImport && !skipShadowScopes) {
     bool got = false;
     got = doLookupInImportsAndUses(scope, r, name, config,
                                    curFilter, excludeFilter,
@@ -2400,6 +2402,208 @@ moduleInitializationOrder(Context* context, ID entrypoint) {
   auto ret = moduleInitializationOrderImpl(context, entrypoint);
   return QUERY_END(ret);
 }
+
+// adds all elements in intersect(a,b) into the set dst
+static void doSetIntersect(const std::set<UniqueString>& a,
+                           const std::set<UniqueString>& b,
+                           std::set<UniqueString>& dst) {
+
+  std::set_intersection(a.begin(), a.end(), b.begin(), b.end(),
+                        std::inserter(dst, dst.end()),
+                        std::less<UniqueString>());
+}
+
+// adds all elements in union(a,b) into the set dst
+/*static void doSetUnion(const std::set<UniqueString>& a,
+                       const std::set<UniqueString>& b,
+                       std::set<UniqueString>& dst) {
+
+  std::set_union(a.begin(), a.end(), b.begin(), b.end(),
+                 std::inserter(dst, dst.end()),
+                 std::less<UniqueString>());
+}*/
+
+// adds all elements in (a-b) into the set dst
+static void doSetDifference(const std::set<UniqueString>& a,
+                            const std::set<UniqueString>& b,
+                            std::set<UniqueString>& dst) {
+
+  std::set_difference(a.begin(), a.end(), b.begin(), b.end(),
+                      std::inserter(dst, dst.end()),
+                      std::less<UniqueString>());
+}
+
+static void updateNameSets(const std::set<UniqueString>& newNames,
+                           std::set<UniqueString>& namesDefined,
+                           std::set<UniqueString>& namesDefinedMultiply) {
+  // add anything in intersect(newNames, namesDefined) to namesDefinedMultiply.
+  doSetIntersect(newNames, namesDefined, namesDefinedMultiply);
+
+  // append everything in newNames to namesDefined
+  namesDefined.insert(newNames.begin(), newNames.end());
+}
+
+static void updateNameSets2(const std::set<UniqueString>& newNames,
+                            const std::set<UniqueString>& newNamesMultiply,
+                            std::set<UniqueString>& namesDefined,
+                            std::set<UniqueString>& namesDefinedMultiply) {
+  // add anything in intersect(newNames, namesDefined) to namesDefinedMultiply.
+  doSetIntersect(newNames, namesDefined, namesDefinedMultiply);
+
+  // add everything in newNamesMultiply to namesDefinedMultiply
+  namesDefinedMultiply.insert(newNamesMultiply.begin(), newNamesMultiply.end());
+
+  // append everything in newNames to namesDefined
+  namesDefined.insert(newNames.begin(), newNames.end());
+}
+
+// gathers named defined in the scope and names used/imported.
+// does not currently consider shadow scopes at all
+static void collectAllNames(Context* context,
+                            const Scope* scope,
+                            bool skipPrivateVisibilities,
+                            std::set<UniqueString>& namesDefined,
+                            std::set<UniqueString>& namesDefinedMultiply,
+                            ScopeSet& checkedScopes) {
+
+  auto pair = checkedScopes.insert(scope);
+  if (pair.second == false) {
+    // scope has already been visited by this function,
+    // so don't try it again.
+    return;
+  }
+
+  // gather names declared here
+  if (scope->numDeclared() > 0) {
+    std::set<UniqueString> declaredHere;
+    std::set<UniqueString> declaredHereMultiply;
+    scope->collectNames(declaredHere, declaredHereMultiply);
+
+    updateNameSets2(declaredHere, declaredHereMultiply,
+                    namesDefined, namesDefinedMultiply);
+  }
+
+  // handle names from import / public use
+  const ResolvedVisibilityScope* r = resolveVisibilityStmts(context, scope);
+  if (r != nullptr) {
+    for (const VisibilitySymbols& is: r->visibilityClauses()) {
+      // if we should not continue transitively through private use/includes,
+      // and this is private, skip it
+      if (skipPrivateVisibilities && is.isPrivate()) {
+        continue;
+      }
+      // skip this clause if we are searching a different shadow scope level
+      if (is.shadowScopeLevel() != VisibilitySymbols::REGULAR_SCOPE) {
+        continue;
+      }
+
+      if (is.kind() == VisibilitySymbols::SYMBOL_ONLY ||
+          is.kind() == VisibilitySymbols::ONLY_CONTENTS) {
+        std::set<UniqueString> newNames;
+        for (const auto& pair : is.names()) {
+          UniqueString nameHere = pair.second;
+          newNames.insert(nameHere);
+        }
+        updateNameSets(newNames, namesDefined, namesDefinedMultiply);
+
+      } else if (is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
+        // create a set of the except names
+        std::set<UniqueString> except;
+        for (const auto& pair : is.names()) {
+          CHPL_ASSERT(pair.first == pair.second); // renaming not allowed
+          UniqueString nameHere = pair.second;
+          except.insert(nameHere);
+        }
+
+        // compute the names imported
+        std::set<UniqueString> namesThere;
+        std::set<UniqueString> namesThereMultiply;
+        collectAllNames(context, is.scope(),
+                        /* skip private */ true,
+                        namesThere, namesThereMultiply,
+                        checkedScopes);
+
+        // compute the set leaving leave out the except names
+        std::set<UniqueString> namesThereExcept;
+        std::set<UniqueString> namesThereMultiplyExcept;
+        doSetDifference(namesThere, except, namesThereExcept);
+        doSetDifference(namesThereMultiply, except, namesThereMultiplyExcept);
+
+        updateNameSets2(namesThereExcept, namesThereMultiplyExcept,
+                        namesDefined, namesDefinedMultiply);
+      } else if (is.kind() == VisibilitySymbols::ALL_CONTENTS) {
+        collectAllNames(context, is.scope(),
+                        /* skip private */ true,
+                        namesDefined, namesDefinedMultiply,
+                        checkedScopes);
+      }
+    }
+  }
+}
+
+static void
+countFunctionsAndNonFunctions(Context* context,
+                              const std::vector<BorrowedIdsWithName>& v,
+                              int& nFunctions,
+                              int& nNonFunctions) {
+  nFunctions = 0;
+  nNonFunctions = 0;
+  for (const auto& b : v) {
+    for (const auto& id : b) {
+      // TODO: track this in an IdAndVis flag so we don't have to run
+      // a query to find it.
+      auto tag = parsing::idToTag(context, id);
+      if (isFunction(tag)) {
+        nFunctions++;
+      } else {
+        nNonFunctions++;
+      }
+    }
+  }
+}
+
+static const bool&
+emitMultipleDefinedSymbolErrorsQuery(Context* context, const Scope* scope) {
+  QUERY_BEGIN(emitMultipleDefinedSymbolErrorsQuery, context, scope);
+
+  bool result = false;
+
+  std::set<UniqueString> namesDefined;
+  std::set<UniqueString> namesDefinedMultiply;
+  ScopeSet checkedScopes;
+
+  collectAllNames(context, scope, /* skip private */ false,
+                  namesDefined, namesDefinedMultiply, checkedScopes);
+
+  // Now, consider names in namesDefinedMultiply. If there are any
+  // that are not only methods, issue an error.
+  LookupConfig config = LOOKUP_DECLS |
+                        LOOKUP_IMPORT_AND_USE |
+                        LOOKUP_SKIP_SHADOW_SCOPES;
+  for (auto name : namesDefinedMultiply) {
+    std::vector<BorrowedIdsWithName> v =
+      lookupNameInScope(context, scope, { }, name, config);
+    int nFunctions = 0;
+    int nNonFunctions = 0;
+    countFunctionsAndNonFunctions(context, v, nFunctions, nNonFunctions);
+    // All functions can be overloaded, even parenless ones (via return
+    // intent overloading).
+    if (nNonFunctions > 1 || (nNonFunctions >= 1 && nFunctions >= 1)) {
+      // emit a multiply-defined symbol error
+      context->error(scope->id(), "%s is multiply defined", name.c_str());
+      //           CHPL_REPORT(context, Redefinition, decl, redefinedIds);
+
+      result = true;
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+void emitMultipleDefinedSymbolErrors(Context* context, const Scope* scope) {
+  emitMultipleDefinedSymbolErrorsQuery(context, scope);
+}
+
 
 } // end namespace resolution
 } // end namespace chpl
