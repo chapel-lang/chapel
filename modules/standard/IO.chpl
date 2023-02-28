@@ -1477,7 +1477,7 @@ record ioHintSet {
      * when ``useMmap`` is ``false``, suggests that 'mmap' should not be used and 'pread'/'pwrite' should be used instead
 
   */
-  proc type mmap(useMmap = true) where newMmmap==true {
+  proc type mmap(useMmap = true) {
     return if useMmap
       then new ioHintSet(IOHINTS_MMAP)
       else new ioHintSet(IOHINTS_NOMMAP);
