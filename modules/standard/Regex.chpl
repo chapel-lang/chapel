@@ -1366,8 +1366,8 @@ iter bytes.split(sep: regex(bytes), maxsplit: int = 0)
   Read until a match with the given separator is found, returning the contents of
   the ``fileReader`` through that point.
 
-  If a match is found, the input marker is left immidiately after it. If it isn't
-  found in the next ``maxSize`` bytes, a ``BadFormatError`` is thrown and the
+  If a match is found in the next ``maxSize`` bytes, the input marker is left
+  immidiately after it. If a match isn't found, a ``BadFormatError`` is thrown and the
   input marker is left in its original position.
 
   :arg separator: The :type:`~Regex.regex` separator to match with.
@@ -1398,8 +1398,8 @@ proc fileReader.readThrough(separator: regex(?t), maxSize=-1, stripSeparator=fal
   Read until a match with the given separator is found, returning the contents of
   the ``fileReader`` through that point.
 
-  If a match is found, the input marker is left immidiately after it. If it isn't
-  found in the next ``maxSize`` bytes, a ``BadFormatError`` is thrown and the
+  If a match is found in the next ``maxSize`` bytes, the input marker is left
+  immidiately after it. If a match isn't found, a ``BadFormatError`` is thrown and the
   input marker is left in its original position.
 
   :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
@@ -1436,8 +1436,8 @@ proc fileReader.readThrough(ref s: string, separator: regex(string), maxSize=-1,
   Read until a match with the given separator is found, returning the contents of
   the ``fileReader`` through that point.
 
-  If a match is found, the input marker is left immidiately after it. If it isn't
-  found in the next ``maxSize`` bytes, a ``BadFormatError`` is thrown and the
+  If a match is found in the next ``maxSize`` bytes, the input marker is left
+  immidiately after it. If a match isn't found, a ``BadFormatError`` is thrown and the
   input marker is left in its original position.
 
   :arg s: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.

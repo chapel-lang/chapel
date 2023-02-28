@@ -5696,12 +5696,12 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
   Read until the given separator is found, returning the contents of the
   ``fileReader`` through that point.
 
-  If the separator is found, the input marker is left immediately after it. If
-  it isn't found in the next ``maxSize`` codepoints/bytes, a ``BadFormatError``
+  If the separator is found in the next ``maxSize`` codepoints/bytes, the input
+  marker is left immediately after it. If it isn't found, a ``BadFormatError``
   is thrown and the input marker is left in its original position.
 
-  To match with a group of separators, use the versions of
-  :proc:`~Regex.fileReader.readThrough` that accept a :type:`~Regex.regex`
+  To match with more than one separator, use the version of
+  :proc:`~Regex.fileReader.readThrough` that accepts a :type:`~Regex.regex`
   separator.
 
   .. note::
@@ -5739,15 +5739,15 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
   Read until the given separator is found, returning the contents of the
   ``fileReader`` through that point.
 
-  If the separator is found, the input marker is left immediately after it. If
-  it isn't found in the next ``maxSize`` codepoints, a ``BadFormatError``
+  If the separator is found in the next ``maxSize`` codepoints, the input
+  marker is left immediately after it. If it isn't found, a ``BadFormatError``
   is thrown and the input marker is left in its original position.
 
-  To match with a group of separators, use the versions of
-  :proc:`~Regex.fileReader.readThrough` that accept a :type:`~Regex.regex`
+  To match with more than one separator, use the version of
+  :proc:`~Regex.fileReader.readThrough` that accepts a :type:`~Regex.regex`
   separator.
 
-  :arg: s: The :type:`~String.string` to read into. Contents will be overwritten.
+  :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
   :arg separator: The separator to match with.
   :arg maxSize: The maximum number of codepoints to read. For the default value
     of ``-1``, this method will read until EOF.
@@ -5786,15 +5786,15 @@ proc fileReader.readThrough(ref s: string, separator: string, maxSize=-1, stripS
   Read until the given separator is found, returning the contents of the
   ``fileReader`` through that point.
 
-  If the separator is found, the input marker is left immediately after it. If
-  it isn't found in the next ``maxSize`` bytes, a ``BadFormatError``
+  If the separator is found in the next ``maxSize`` bytes, the input
+  marker is left immediately after it. If it isn't found, a ``BadFormatError``
   is thrown and the input marker is left in its original position.
 
-  To match with a group of separators, use the versions of
-  :proc:`~Regex.fileReader.readThrough` that accept a :type:`~Regex.regex`
+  To match with more than one separator, use the version of
+  :proc:`~Regex.fileReader.readThrough` that accepts a :type:`~Regex.regex`
   separator.
 
-  :arg: s: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
+  :arg s: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
   :arg separator: The separator to match with.
   :arg maxSize: The maximum number of codepoints to read. For the default value
     of ``-1``, this method will read until EOF.
@@ -5831,8 +5831,8 @@ proc fileReader.readThrough(ref b: bytes, separator: bytes, maxSize=-1, stripSep
   Read until the given separator is found, returning the contents of the
   ``fileReader`` up to that point.
 
-  If the separator is found, the input marker is left immediately after it. If
-  it isn't found in the next ``maxSize`` codepoints/bytes, a ``BadFormatError``
+  If the separator is found in the next ``maxSize`` codepoints/bytes, the input
+  marker is left immediately before it. If it isn't found, a ``BadFormatError``
   is thrown and the input marker is left in its original position.
 
   .. note::
@@ -5868,8 +5868,8 @@ proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
   Read until the given separator is found, returning the contents of the
   ``fileReader`` up to that point.
 
-  If the separator is found, the input marker is left immediately after it. If
-  it isn't found in the next ``maxSize`` codepoints, a ``BadFormatError``
+  If the separator is found in the next ``maxSize`` codepoints, the input
+  marker is left immediately before it. If it isn't found, a ``BadFormatError``
   is thrown and the input marker is left in its original position.
 
   :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
@@ -5902,8 +5902,8 @@ proc fileReader.readTo(ref s: string, separator: string, maxSize=-1): bool throw
   Read until the given separator is found, returning the contents of the
   ``fileReader`` up to that point.
 
-  If the separator is found, the input marker is left immediately after it. If
-  it isn't found in the next ``maxSize`` codepoints, a ``BadFormatError``
+  If the separator is found in the next ``maxSize`` bytes, the input
+  marker is left immediately before it. If it isn't found, a ``BadFormatError``
   is thrown and the input marker is left in its original position.
 
   :arg b: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
