@@ -1206,7 +1206,7 @@ chapelFunctionTypeToLlvmFunctionType;
 
 bool llvmMapUnderlyingFunctionType(FunctionType* k, llvm::FunctionType* v) {
   auto it = chapelFunctionTypeToLlvmFunctionType.find(k);
-  if (it == chapelFunctionTypeToLlvmFunctionType.end()) return false;
+  if (it != chapelFunctionTypeToLlvmFunctionType.end()) return false;
   chapelFunctionTypeToLlvmFunctionType.emplace_hint(it, k, v);
   return true;
 }
