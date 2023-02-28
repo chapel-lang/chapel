@@ -92,6 +92,10 @@ void AstCount::visitPrimType(PrimitiveType* node) {
   numPrimitiveType++;
 }
 
+void AstCount::visitFunctionType(FunctionType* node) {
+  numFunctionType++;
+}
+
 void AstCount::visitConstrainedType(ConstrainedType* node) {
   numConstrainedType++;
 }

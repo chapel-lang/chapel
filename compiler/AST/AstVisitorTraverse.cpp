@@ -67,6 +67,11 @@ void AstVisitorTraverse::visitPrimType(PrimitiveType* node)
 
 }
 
+void AstVisitorTraverse::visitFunctionType(FunctionType* node)
+{
+
+}
+
 void AstVisitorTraverse::visitConstrainedType(ConstrainedType* node)
 {
 

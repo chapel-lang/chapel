@@ -171,7 +171,6 @@ void setupTypeIntentArg(ArgSymbol* arg);
 DefExpr*  buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
 DefExpr*  buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);
-FnSymbol* buildLambda(FnSymbol* fn);
 
 void setupExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr,
                                    FnSymbol* fn);

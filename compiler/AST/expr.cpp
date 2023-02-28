@@ -601,8 +601,9 @@ SymExpr* SymExpr::copyInner(SymbolMap* map) {
 }
 
 QualifiedType SymExpr::qualType(void) {
-  if (toFnSymbol(var)) {
-    return QualifiedType(dtCFnPtr);
+  if (auto fn = toFnSymbol(var)) {
+    INT_ASSERT(fn->type);
+    return QualifiedType(fn->type);
   } else {
     return var->qualType();
   }

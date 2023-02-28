@@ -53,6 +53,9 @@ void AstLogger::exitEnumType(EnumType* node) {
 void AstLogger::visitPrimType(PrimitiveType* node) {
 }
 
+void AstLogger::visitFunctionType(FunctionType* node) {
+}
+
 void AstLogger::visitConstrainedType(ConstrainedType* node) {
 }
 

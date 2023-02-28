@@ -2471,24 +2471,39 @@ struct Converter {
             name == USTR("<<="));
   }
 
-  const char* createLambdaName(void) {
+  static const char*
+  createAnonymousRoutineName(const uast::Function* node) {
+    std::ignore = node;
+
     static const int maxDigits = 100;
     static unsigned int nextId = 0;
+    static const char* prefix = "chpl_anon";
     char buf[maxDigits];
 
     if ((nextId + 1) == 0) INT_FATAL("Overflow for lambda ID number");
 
-    // Use snprintf to prevent buffer overflow if there are too many lambdas.
-    int n = snprintf(buf, (size_t)maxDigits, "chpl_lambda_%i", nextId++);
+    auto kind = astr(uast::Function::kindToString(node->kind()));
+
+    // Use sprintf to prevent buffer overflow if there are too many lambdas.
+    int n = snprintf(buf, (size_t) maxDigits, "%s_%s_%i", prefix, kind,
+                     nextId++);
     if (n > (int) maxDigits) INT_FATAL("Too many lambdas.");
 
     auto ret = astr(buf);
     return ret;
   }
 
-  const char* convertFunctionNameAndAstr(UniqueString name,
-                                         uast::Function::Kind kind) {
-    if (kind == uast::Function::LAMBDA) return createLambdaName();
+  static const char*
+  convertFunctionNameAndAstr(const uast::Function* node) {
+    auto name = node->name();
+    auto kind = node->kind();
+
+    if (node->isAnonymous()) return createAnonymousRoutineName(node);
+
+    if (name.isEmpty()) {
+      INT_ASSERT(kind == uast::Function::PROC);
+      return nullptr;
+    }
 
     const char* ret = nullptr;
     if (name == USTR("by")) {
@@ -2690,8 +2705,7 @@ struct Converter {
       }
     }
 
-    const char* convName = convertFunctionNameAndAstr(node->name(),
-                                                      node->kind());
+    const char* convName = convertFunctionNameAndAstr(node);
 
     // used to be buildFunctionSymbol
     fn->cname = fn->name = astr(convName);
@@ -2726,8 +2740,12 @@ struct Converter {
         setupTypeIntentArg(toArgSymbol(fn->_this));
       }
 
-    } else if (node->kind() == uast::Function::LAMBDA) {
+    } else if (node->isAnonymous()) {
       fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+      fn->addFlag(FLAG_ANONYMOUS_FN);
+      if (node->kind() == uast::Function::LAMBDA) {
+        fn->addFlag(FLAG_LEGACY_LAMBDA);
+      }
     }
 
     Expr* retType = nullptr;
@@ -2934,6 +2952,8 @@ struct Converter {
   Expr* visit(const uast::FunctionSignature* node) {
     FnSymbol* fn = convertFunctionSignature(node);
     fn->addFlag(FLAG_ANONYMOUS_FN);
+    fn->addFlag(FLAG_NO_FN_BODY);
+    INT_ASSERT(fn->isAnonymous() && fn->isSignature());
     auto ret = new DefExpr(fn);
     return ret;
   }

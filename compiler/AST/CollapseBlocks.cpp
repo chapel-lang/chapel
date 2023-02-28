@@ -235,6 +235,11 @@ void CollapseBlocks::visitPrimType(PrimitiveType* node)
 
 }
 
+void CollapseBlocks::visitFunctionType(FunctionType* node)
+{
+
+}
+
 void CollapseBlocks::visitConstrainedType(ConstrainedType* node)
 {
 
