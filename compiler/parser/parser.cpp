@@ -491,7 +491,7 @@ static void parseCommandLineFiles() {
 
     // As .dyno files become more capable, this exit will be moved further and
     // further into resolution.
-    exit(0);
+    clean_exit(0);
   }
 }
 
