@@ -1,1 +1,1 @@
---dyno-serialize --verify
+--dyno-verify-serialization
