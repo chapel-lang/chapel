@@ -1,4 +1,4 @@
 use IO;
 
-var ch = openreader("openreaderLimited.txt", locking=false);
+var ch = openReader("openreaderLimited.txt", locking=false);
 ch.seek(..15);
