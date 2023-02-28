@@ -57,6 +57,15 @@ OwnedIdsWithName::borrow(IdAndVis::SymbolTypeFlags filterFlags) const {
     return llvm::None;
   }
 
+  // Are all of the filter flags present in flagsAnd?
+  // If so, return the borrow
+  if ((flagsAnd_ & filterFlags) == filterFlags) {
+    // filter does not rule out anything in the OwnedIds,
+    // so we can return a match.
+    return BorrowedIdsWithName(*this, filterFlags);
+  }
+
+  // Otherwise, use a loop to decide if we can borrow
   for (auto& idv : *moreIdvs_) {
     if (!BorrowedIdsWithName::isIdVisible(idv, filterFlags))
       continue;
