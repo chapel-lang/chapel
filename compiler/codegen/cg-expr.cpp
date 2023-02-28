@@ -4044,20 +4044,24 @@ GenRet CallExpr::codegen() {
 
   if (getStmtExpr() == this) codegenStmt(this);
 
+  bool isIndirectCall = this->isIndirectCall();
+
+  INT_ASSERT(fn || primitive != nullptr || isIndirectCall);
+
   if (primitive != nullptr) {
     ret = codegenPrimitive();
 
-  } else if (fn && fn->hasFlag(FLAG_ON_BLOCK)) {
+  } else if (isIndirectCall) {
+    ret = codegenCallIndirect(this);
+
+  } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
     codegenInvokeOnFun();
 
-  } else if (fn && fn->hasFlag(FLAG_BEGIN_BLOCK)) {
+  } else if (fn->hasFlag(FLAG_BEGIN_BLOCK)) {
     codegenInvokeTaskFun("chpl_taskAddBegin");
 
-  } else if (fn && fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
+  } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
     codegenInvokeTaskFun("chpl_taskAddCoStmt");
-
-  } else if (isIndirectCall()) {
-    ret = codegenCallIndirect(this);
 
   } else {
     INT_ASSERT(fn);

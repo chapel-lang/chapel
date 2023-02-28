@@ -202,30 +202,6 @@ static FcfFormalInfo extractFormalInfo(ArgSymbol* formal) {
   return ret;
 }
 
-//
-// TODO: Looks like we just always propagate the underlying intent now.
-//
-/*
-static FcfFormalInfo extractFormalInfoWithLegacyRules(ArgSymbol* formal) {
-  FcfFormalInfo ret;
-
-  ret.type = formal->type;
-  ret.intent = intent(INTENT_BLANK, ret.type);
-  ret.name = nullptr;
-
-  // Previously we did not warn and would just let the implementation
-  // break. We _could_ potentially error, but for now emit a warning.
-  if (!isIntentSameAsDefault(formal->intent, formal->type)) {
-    USR_WARN(formal, "the default intent for formal '%s' will be "
-                     "used instead of the specified intent '%s'",
-                     formal->name,
-                     intentToString(formal->intent));
-  }
-
-  return ret;
-}
-*/
-
 static const SharedFcfSuperInfo
 buildWrapperSuperTypeAtProgram(FnSymbol* fn) {
   std::vector<FcfFormalInfo> formals;
@@ -868,18 +844,10 @@ struct OuterVariableCollector : public AstVisitorTraverse {
 
   void visitSymExpr(SymExpr* node) override {
     auto sym = node->symbol();
-
     if (!isOuterSymbol(sym) || !isSymbolOfInterest(sym)) return;
-
-    auto it = outerVariableToMentions_.find(sym);
-    if (it != outerVariableToMentions_.end()) {
-      it->second.push_back(node);
-      return;
-    }
-
-    outerVariables_.push_back(sym);
-    auto& v = outerVariableToMentions_[sym];
-    v.push_back(node);
+    auto& mentions = outerVariableToMentions_[sym];
+    if (mentions.empty()) outerVariables_.push_back(sym);
+    mentions.push_back(node);
   }
 
   bool enterFnSym(FnSymbol* node) override {
@@ -1052,7 +1020,11 @@ Type* functionClassSuperTypeForFuncConstructor(CallExpr* call) {
   Type* retType = retTail->symbol()->type;
   bool throws = false;
 
-  // Build up the formal types and intents.
+  // Build up the formal types and intents. This cannot call the helper
+  // 'extractFormalInfo' because the expressions in the list are not
+  // formals - they are type symbols. The formals of the function type that
+  // is constructed by a call to 'func()' all have the blank intent, and
+  // the function type always returns by value.
   for_alist(expr, argList) {
     if (expr == argList.tail) break;
 
@@ -1175,9 +1147,8 @@ static std::map<FnSymbol*, ClosureEnv> fnToEnv;
 const ClosureEnv& computeOuterVariables(FnSymbol* fn) {
   auto it = fnToEnv.find(fn);
   if (it != fnToEnv.end()) return it->second;
-  fnToEnv.insert(std::make_pair(fn, ClosureEnv(fn)));
-  auto& ret = fnToEnv[fn];
-  return ret;
+  auto inserted = fnToEnv.emplace_hint(it, fn, ClosureEnv(fn));
+  return inserted->second;
 }
 
 VarSymbol* errorSink(FunctionType::Kind kind) {

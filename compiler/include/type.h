@@ -430,8 +430,9 @@ class FunctionType final : public Type {
     Type* type = nullptr;
     IntentTag intent = INTENT_BLANK;
     const char* name = nullptr;
-    Formal() = default;
     bool operator==(const Formal& other) const;
+    size_t hash() const;
+    bool isGeneric() const;
   };
 
  private:

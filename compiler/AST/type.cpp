@@ -634,7 +634,9 @@ FunctionType::FunctionType(Kind kind, FormalVec formals,
                            bool isAnyFormalNamed,
                            const char* userTypeString)
     : Type(E_FunctionType, nullptr),
-      kind_(kind), formals_(formals), returnIntent_(returnIntent),
+      kind_(kind),
+      formals_(std::move(formals)),
+      returnIntent_(returnIntent),
       returnType_(returnType),
       throws_(throws),
       isAnyFormalNamed_(isAnyFormalNamed),
@@ -658,7 +660,6 @@ void FunctionType::accept(AstVisitor* visitor) {
   visitor->visitFunctionType(this);
 }
 
-// TODO: We want zero copy - is this the correct way to accomplish that?
 FunctionType* FunctionType::copyInner(SymbolMap* map) {
   INT_FATAL(this, "attempt to copy function type");
   return nullptr;
@@ -770,7 +771,8 @@ FunctionType* FunctionType::create(FunctionType::Kind kind,
                                                       returnIntent,
                                                       returnType,
                                                       throws);
-  auto ret = new FunctionType(kind, formals, returnIntent, returnType,
+  auto ret = new FunctionType(kind, std::move(formals), returnIntent,
+                              returnType,
                               throws,
                               isAnyFormalNamed,
                               cstr);
@@ -803,8 +805,8 @@ namespace {
 static FunctionTypeCache functionTypeCache;
 
 static FunctionType* cacheFunctionTypeOrReuse(FunctionType* fnType) {
-  auto got = functionTypeCache.find(fnType);
-  if (got != functionTypeCache.end()) return *got;
+  auto it = functionTypeCache.find(fnType);
+  if (it != functionTypeCache.end()) return *it;
 
   auto ts = new TypeSymbol(fnType->toString(), fnType);
   ts->cname = fnType->toStringMangledForCodegen();
@@ -812,8 +814,7 @@ static FunctionType* cacheFunctionTypeOrReuse(FunctionType* fnType) {
 
   rootModule->block->insertAtTail(new DefExpr(ts));
 
-  bool ok = functionTypeCache.insert(fnType).second;
-  INT_ASSERT(ok);
+  std::ignore = functionTypeCache.emplace_hint(it, fnType);
 
   return fnType;
 }
@@ -823,7 +824,7 @@ FunctionType* FunctionType::get(FunctionType::Kind kind,
                                 RetTag returnIntent,
                                 Type* returnType,
                                 bool throws) {
-  auto fnType = FunctionType::create(kind, formals, returnIntent,
+  auto fnType = FunctionType::create(kind, std::move(formals), returnIntent,
                                      returnType,
                                      throws);
   auto ret = cacheFunctionTypeOrReuse(fnType);
@@ -851,7 +852,7 @@ FunctionType* FunctionType::get(FnSymbol* fn) {
     formals.push_back(std::move(info));
   }
 
-  auto fnType = FunctionType::create(kind, formals, returnIntent,
+  auto fnType = FunctionType::create(kind, std::move(formals), returnIntent,
                                      returnType,
                                      throws);
   auto ret = cacheFunctionTypeOrReuse(fnType);
@@ -948,18 +949,16 @@ const char* FunctionType::toStringMangledForCodegen() const {
 }
 
 size_t FunctionType::hash() const {
-  size_t ret = ((size_t) kind_);
   std::hash<void*> hasherPtr;
-  std::hash<const char*> hasherConstCharPtr;
   std::hash<bool> hasherBool;
+
+  size_t ret = ((size_t) kind_);
 
   // I think it's fine to hash the pointers here because types don't really
   // have a meaningful way to distinguish on contents, and should be unique,
   // while the formal names are all canonical using 'astr'.
   for (auto& formal : formals_) {
-    ret = chpl::hash_combine(ret, hasherPtr(formal.type));
-    ret = chpl::hash_combine(ret, ((size_t) formal.intent));
-    ret = chpl::hash_combine(ret, hasherConstCharPtr(formal.name));
+    ret = chpl::hash_combine(ret, formal.hash());
   }
 
   ret = chpl::hash_combine(ret, ((size_t) returnIntent_));
@@ -977,6 +976,24 @@ FunctionType::Formal::operator==(const FunctionType::Formal& rhs) const {
     this->name == rhs.name;
 }
 
+size_t FunctionType::Formal::hash() const {
+  std::hash<void*> hasherPtr;
+  std::hash<const char*> hasherConstCharPtr;
+
+  size_t ret = hasherPtr(this->type);
+  ret = chpl::hash_combine(ret, ((size_t) this->intent));
+  ret = chpl::hash_combine(ret, hasherConstCharPtr(this->name));
+  return ret;
+}
+
+bool FunctionType::Formal::isGeneric() const {
+  auto t = this->type;
+  if (t == dtUnknown || t == dtAny || t->symbol->hasFlag(FLAG_GENERIC)) {
+    return true;
+  }
+  return false;
+}
+
 bool FunctionType::equals(const FunctionType* rhs) const {
   return this->kind_ == rhs->kind_ &&
     this->formals_ == rhs->formals_ &&
@@ -989,23 +1006,17 @@ bool FunctionType::equals(const FunctionType* rhs) const {
 
 bool FunctionType::isGeneric() const {
   auto rt = returnType();
-  if (rt == dtUnknown || rt == dtAny ||
-      rt->symbol->hasFlag(FLAG_GENERIC)) {
+
+  if (rt == dtUnknown || rt == dtAny || rt->symbol->hasFlag(FLAG_GENERIC)) {
     return true;
   }
 
-  for (int i = 0; i < numFormals(); i++) {
-    auto f = formal(i);
-    if (f->type == dtUnknown || f->type == dtAny ||
-        f->type->symbol->hasFlag(FLAG_GENERIC)) {
-      return true;
-    }
+  for (auto& formal : formals_) {
+    if (formal.isGeneric()) return true;
   }
 
   return false;
 }
-
-
 
 /************************************* | **************************************
 *                                                                             *

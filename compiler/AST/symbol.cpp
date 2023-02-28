@@ -1205,16 +1205,15 @@ static std::map<FunctionType*, llvm::FunctionType*>
 chapelFunctionTypeToLlvmFunctionType;
 
 bool llvmMapUnderlyingFunctionType(FunctionType* k, llvm::FunctionType* v) {
-  if (chapelFunctionTypeToLlvmFunctionType.count(k)) return false;
-  chapelFunctionTypeToLlvmFunctionType[k] = v;
+  auto it = chapelFunctionTypeToLlvmFunctionType.find(k);
+  if (it == chapelFunctionTypeToLlvmFunctionType.end()) return false;
+  chapelFunctionTypeToLlvmFunctionType.emplace_hint(it, k, v);
   return true;
 }
 
 llvm::FunctionType* llvmGetUnderlyingFunctionType(FunctionType* t) {
   auto it = chapelFunctionTypeToLlvmFunctionType.find(t);
-  if (it != chapelFunctionTypeToLlvmFunctionType.end()) {
-    return it->second;
-  }
+  if (it != chapelFunctionTypeToLlvmFunctionType.end()) return it->second;
   return nullptr;
 }
 #endif

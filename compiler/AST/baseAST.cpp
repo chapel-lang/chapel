@@ -120,7 +120,7 @@ void printStatistics(const char* pass) {
     kTemporaryConversionThunk;
   int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nShadowVarSymbol+nTypeSymbol+nFnSymbol+nInterfaceSymbol+nEnumSymbol+nLabelSymbol+nTemporaryConversionSymbol;
   int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kShadowVarSymbol+kTypeSymbol+kFnSymbol+kInterfaceSymbol+kEnumSymbol+kLabelSymbol+kTemporaryConversionSymbol;
-  int nType = nPrimitiveType+nConstrainedType+nEnumType+nAggregateType+nDecoratedClassType;
+  int nType = nPrimitiveType+nConstrainedType+nEnumType+nAggregateType+nFunctionType+nDecoratedClassType;
   int kType = kPrimitiveType+kConstrainedType+kEnumType+kAggregateType+kFunctionType+kDecoratedClassType;
 
   fprintf(stderr, "%7d asts (%6dK) %s\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType, pass);
