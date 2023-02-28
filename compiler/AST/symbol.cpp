@@ -473,7 +473,7 @@ const char* Symbol::getSanitizedMsg(std::string msg) const {
   //       show up in sanitized message).
   // TODO: Allow prefixing content with ! (and filtering it out in the sanitized message)
   // TODO: Allow prefixing content with ~ (and having it only display last component of target)
-  static const auto reStr = R"(\B\:(mod|proc|iter|data|const|var|param|type|class|record|attr)\:`([!$\w\$\.]+)`\B)";
+  static const auto reStr = R"(\B\:(mod|proc|iter|data|const|var|param|type|class|record|attr|enum)\:`([!$\w\$\.]+)`\B)";
   msg = std::regex_replace(msg, std::regex(reStr), "$2");
   return astr(msg.c_str());
 }
