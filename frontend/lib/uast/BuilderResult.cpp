@@ -312,7 +312,7 @@ BuilderResult BuilderResult::deserialize(Deserializer& des) {
   return ret;
 }
 
-bool BuilderResult::compare(const BuilderResult& other) const {
+bool BuilderResult::equals(const BuilderResult& other) const {
   if (idToParentId_ != other.idToParentId_) {
     return false;
   }

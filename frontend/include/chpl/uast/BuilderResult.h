@@ -163,7 +163,7 @@ class BuilderResult final {
   void serialize(std::ostream& os) const;
   void serialize(Serializer& ser) const;
   static BuilderResult deserialize(Deserializer& des);
-  bool compare(const BuilderResult& other) const;
+  bool equals(const BuilderResult& other) const;
 };
 
 
