@@ -87,6 +87,25 @@ public:
   }
 
   void stringify(std::ostream& os, StringifyKind stringifyKind) const;
+
+  // TODO: We could probably save some space by using a variable byte
+  // encoding.
+  void serialize(Serializer& ser) const {
+    ser.write(path_);
+    ser.write(firstLine_);
+    ser.write(firstColumn_);
+    ser.write(lastLine_);
+    ser.write(lastColumn_);
+  }
+
+  static Location deserialize(Deserializer& des) {
+    auto path = des.read<UniqueString>();
+    auto firstLine = des.read<int>();
+    auto firstCol = des.read<int>();
+    auto lastLine = des.read<int>();
+    auto lastCol = des.read<int>();
+    return Location(path, firstLine, firstCol, lastLine, lastCol);
+  }
 };
 
 /// \cond DO_NOT_DOCUMENT
