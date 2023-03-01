@@ -82,7 +82,7 @@ class LibraryFile {
   private:
     UniqueString path_;
     std::map<UniqueString, std::streamoff> offsets_;
-    std::vector<std::pair<size_t, const char*>> cache_;
+    Deserializer::stringCacheType cache_;
     bool isUser_;
 
   public:
@@ -96,8 +96,7 @@ class LibraryFile {
     return offsets_;
   }
 
-  const std::vector<std::pair<size_t, const char*>>&
-  stringCache() const { return cache_; }
+  const Deserializer::stringCacheType& stringCache() const { return cache_; }
 
   bool isUser() const { return isUser_; }
 

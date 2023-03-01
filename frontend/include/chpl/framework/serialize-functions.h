@@ -50,8 +50,12 @@ template<typename T> struct serialize;
 template<typename T> struct deserialize;
 
 class Serializer {
-private:
+public:
+  // Note: currently these char* entries are expected to support UniqueStrings,
+  // which are allocated from a Context and are null-terminated.
   using stringCacheType = std::map<const char*, std::pair<int, size_t>>;
+
+private:
   int counter_ = 0;
 
   std::ostream& os_;
@@ -88,24 +92,28 @@ public:
 };
 
 class Deserializer {
+  public:
+    // Note: currently these char* entries are expected to support
+    // UniqueStrings, which are allocated from a Context and are
+    // null-terminated.
+    using stringCacheType = std::vector<std::pair<size_t, const char*>>;
   private:
     Context* context_;
     std::istream& is_;
-    using StringCache = std::vector<std::pair<size_t, const char*>>;
-    StringCache cache_;
+    stringCacheType cache_;
 
   public:
     Deserializer(Context* context, std::istream& is)
       : context_(context), is_(is) { }
 
-    Deserializer(Context* context, std::istream& is, const StringCache& cache)
+    Deserializer(Context* context, std::istream& is, const stringCacheType& cache)
       : context_(context), is_(is), cache_(cache) { }
 
     //
     // Convenience version to convert a Serializer's form of the string cache
     //
     Deserializer(Context* context, std::istream& is,
-                 std::map<const char*, std::pair<int, size_t>> serCache)
+                 Serializer::stringCacheType serCache)
       : context_(context), is_(is) {
       cache_.resize(serCache.size());
       for (const auto& pair : serCache) {
