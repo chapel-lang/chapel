@@ -501,8 +501,8 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
     // 0) address spaces
     auto newTypeAddrSpace = newType->getPointerAddressSpace();
     auto curTypeAddrSpace = curType->getPointerAddressSpace();
-    if(newTypeAddrSpace != 0 && curTypeAddrSpace != 0 && newTypeAddrSpace !=
-      curTypeAddrSpace)
+    if(newTypeAddrSpace != 0 && curTypeAddrSpace != 0 &&
+       newTypeAddrSpace != curTypeAddrSpace)
     {
       assert( 0 && "Can't convert pointer to different address space");
     }
