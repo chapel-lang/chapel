@@ -73,6 +73,16 @@ static bool isMethodOrField(const AstNode* d, bool atFieldLevel) {
   return false;
 }
 
+static bool isParenfulFunction(const AstNode* d) {
+  if (d != nullptr) {
+    if (auto fn = d->toFunction()) {
+      return !fn->isParenless();
+    }
+  }
+
+  return false;
+}
+
 // atFieldLevel indicates that the declaration is directly within
 // a record/class/union (applies to fields, primary methods, and
 // any nested record/class/union).
@@ -87,11 +97,14 @@ static void gather(DeclMap& declared,
     declared.emplace_hint(search,
                           name,
                           OwnedIdsWithName(d->id(), visibility,
-                                           isMethodOrField(d, atFieldLevel)));
+                                           isMethodOrField(d, atFieldLevel),
+                                           isParenfulFunction(d)));
   } else {
     // found an entry, so add to it
     OwnedIdsWithName& val = search->second;
-    val.appendIdAndFlags(d->id(), visibility, isMethodOrField(d, atFieldLevel));
+    val.val.appendIdAndFlags(d->id(), visibility,
+                             isMethodOrField(d, atFieldLevel),
+                             isParenfulFunction(d));
   }
 }
 
@@ -589,15 +602,20 @@ bool LookupHelper::doLookupInImportsAndUses(
 
       if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
         // Make sure the module / enum being renamed isn't private.
-        auto visibility = uast::Decl::Visibility::PUBLIC;
-        if (is.isModulePrivate()) {
-          visibility = uast::Decl::Visibility::PRIVATE;
+        auto scopeAst = parsing::idToAst(context, is.scope()->id());
+        auto visibility = scopeAst->toDecl()->visibility();
+        bool isMethodOrField = false;
+        bool isParenfulFunction = false;
+        IdAndVis::SymbolTypeFlags filterFlags = 0;
+        if (!allowPrivateAccess) {
+          filterFlags |= IdAndVis::PUBLIC;
         }
         bool isMethodOrField = false; // target must be module/enum, not method
         auto foundIds =
           BorrowedIdsWithName::createWithSingleId(is.scope()->id(),
                                                   visibility,
                                                   isMethodOrField,
+                                                  isParenfulFunction,
                                                   filterFlags,
                                                   excludeFilter);
         if (foundIds) {
@@ -780,12 +798,14 @@ bool LookupHelper::doLookupInExternBlock(const Scope* scope,
   for (auto child : ast->children()) {
     if (child->isExternBlock()) {
       bool isMethodOrField = false; // not possible in an extern block
+      bool isParenfulFunction = false; // TODO -- it could be a regular fn
       IdAndFlags::Flags filterFlags = 0;
       IdAndFlags::Flags excludeFlags = 0;
       auto foundIds =
         BorrowedIdsWithName::createWithSingleId(child->id(),
                                                 Decl::PUBLIC,
                                                 isMethodOrField,
+                                                isParenfulFunction,
                                                 filterFlags,
                                                 excludeFlags);
       if (foundIds) {

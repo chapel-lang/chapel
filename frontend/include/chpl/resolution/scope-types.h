@@ -51,6 +51,11 @@ class IdAndFlags {
     /** Something other than (a method or field declaration) */
     NOT_METHOD_FIELD = 8,
     // note: if adding something here, also update flagsToString
+    /** A function using parens (including iterators and methods) */
+    PARENFUL_FUNCTION = 16,
+    /** A non-function or a function without parentheses */
+    NOT_PARENFUL_FUNCTION = 32,
+    // note: if adding something here, also update flagsToString
   };
   /** A bit-set of the flags defined in the above enum */
   using Flags = uint16_t;
@@ -65,7 +70,8 @@ class IdAndFlags {
   Flags flags_ = 0;
 
  public:
-  IdAndFlags(ID id, uast::Decl::Visibility vis, bool isMethodOrField)
+  IdAndFlags(ID id, uast::Decl::Visibility vis,
+             bool isMethodOrField, bool isParenfulFunction)
     : id_(std::move(id)) {
     // setup the flags
     Flags flags = 0;
@@ -83,6 +89,11 @@ class IdAndFlags {
       flags |= METHOD_FIELD;
     } else {
       flags |= NOT_METHOD_FIELD;
+    }
+    if (isParenfulFunction) {
+      flags |= PARENFUL_FUNCTION;
+    } else {
+      flags |= NOT_PARENFUL_FUNCTION;
     }
     flags_ = flags;
   }
@@ -150,14 +161,16 @@ class OwnedIdsWithName {
 
  public:
   /** Construct an OwnedIdsWithName containing one ID. */
-  OwnedIdsWithName(ID id, uast::Decl::Visibility vis, bool isMethodOrField)
-    : idv_(IdAndFlags(std::move(id), vis, isMethodOrField)),
+  OwnedIdsWithName(ID id, uast::Decl::Visibility vis,
+                   bool isMethodOrField, bool isParenfulFunction)
+    : idv_(IdAndFlags(std::move(id), vis, isMethodOrField, isParenfulFunction)),
       flagsAnd_(idv_.flags_), flagsOr_(idv_.flags_),
       moreIdvs_(nullptr)
   { }
 
   /** Append an ID to an OwnedIdsWithName. */
-  void appendIdAndFlags(ID id, uast::Decl::Visibility vis, bool isMethodOrField) {
+  void appendIdAndVis(ID id, uast::Decl::Visibility vis,
+                      bool isMethodOrField, bool isParenfulFunction) {
     if (moreIdvs_.get() == nullptr) {
       // create the vector and add the single existing id to it
       moreIdvs_ = toOwned(new std::vector<IdAndFlags>());
@@ -165,7 +178,8 @@ class OwnedIdsWithName {
       // flagsAnd_ and flagsOr_ will have already been set in constructor
       // from idv_.
     }
-    auto idv = IdAndFlags(std::move(id), vis, isMethodOrField);
+    auto idv = IdAndFlags(std::move(id), vis,
+                         isMethodOrField, isParenfulFunction);
     // add the id passed
     moreIdvs_->push_back(std::move(idv));
     // update the flags
@@ -353,10 +367,11 @@ class BorrowedIdsWithName {
  public:
 
   static llvm::Optional<BorrowedIdsWithName>
-  createWithSingleId(ID id, uast::Decl::Visibility vis, bool isMethodOrField,
+  createWithSingleId(ID id, uast::Decl::Visibility vis,
+                     bool isMethodOrField, bool isParenfulFunction,
                      IdAndFlags::Flags filterFlags,
                      IdAndFlags::Flags excludeFlags) {
-    auto idAndVis = IdAndFlags(id, vis, isMethodOrField);
+    auto idAndVis = IdAndFlags(id, vis, isMethodOrField, isParenfulFunction);
     if (isIdVisible(idAndVis, filterFlags, excludeFlags)) {
       return BorrowedIdsWithName(std::move(idAndVis),
                                  filterFlags, excludeFlags);
@@ -368,9 +383,11 @@ class BorrowedIdsWithName {
   createWithToplevelModuleId(ID id) {
     auto vis = uast::Decl::Visibility::PUBLIC;
     bool isMethodOrField = false;
+    bool isParenfulFunction = false;
     IdAndFlags::Flags filterFlags = 0;
     IdAndFlags::Flags excludeFlags = 0;
-    auto maybeIds = createWithSingleId(std::move(id), vis, isMethodOrField,
+    auto maybeIds = createWithSingleId(std::move(id), vis,
+                                       isMethodOrField, isParenfulFunction,
                                        filterFlags, excludeFlags);
     CHPL_ASSERT(maybeIds.hasValue());
     return maybeIds.getValue();
