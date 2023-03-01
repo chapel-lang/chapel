@@ -2,14 +2,14 @@ use IO, List;
 
 // compare lists of strings
 writeln(
-  geneList(openreader("./genes.txt"), "ATG") ==
-  geneListViaSplit(openreader("./genes.txt"), "ATG")
+  geneList(openReader("./genes.txt"), "ATG") ==
+  geneListViaSplit(openReader("./genes.txt"), "ATG")
 );
 
 // compare lists of bytes
 writeln(
-  geneList(openreader("./genes.txt"), b"ATG") ==
-  geneListViaSplit(openreader("./genes.txt"), b"ATG")
+  geneList(openReader("./genes.txt"), b"ATG") ==
+  geneListViaSplit(openReader("./genes.txt"), b"ATG")
 );
 
 // collect a list of genes via readThrough

@@ -1,24 +1,24 @@
 use IO, List;
 
 // string
-writeln(readIntoList(true, openreader("./listInput.txt"), ","));
-writeln(readIntoList(false, openreader("./listInput.txt"), ","));
+writeln(readIntoList(true, openReader("./listInput.txt"), ","));
+writeln(readIntoList(false, openReader("./listInput.txt"), ","));
 
-writeln(readIntoList(true, openreader("./listInputTrailing.txt"), ","));
-writeln(readIntoList(false, openreader("./listInputTrailing.txt"), ","));
+writeln(readIntoList(true, openReader("./listInputTrailing.txt"), ","));
+writeln(readIntoList(false, openReader("./listInputTrailing.txt"), ","));
 
-writeln(readIntoList(true, openreader("./listInputWeird.txt"), ",,||,,"));
-writeln(readIntoList(false, openreader("./listInputWeird.txt"), ",,||,,"));
+writeln(readIntoList(true, openReader("./listInputWeird.txt"), ",,||,,"));
+writeln(readIntoList(false, openReader("./listInputWeird.txt"), ",,||,,"));
 
 // bytes
-writeln(readIntoList(true, openreader("./listInput.txt"), b","));
-writeln(readIntoList(false, openreader("./listInput.txt"), b","));
+writeln(readIntoList(true, openReader("./listInput.txt"), b","));
+writeln(readIntoList(false, openReader("./listInput.txt"), b","));
 
-writeln(readIntoList(true, openreader("./listInputTrailing.txt"), b","));
-writeln(readIntoList(false, openreader("./listInputTrailing.txt"), b","));
+writeln(readIntoList(true, openReader("./listInputTrailing.txt"), b","));
+writeln(readIntoList(false, openReader("./listInputTrailing.txt"), b","));
 
-writeln(readIntoList(true, openreader("./listInputWeird.txt"), b",,||,,"));
-writeln(readIntoList(false, openreader("./listInputWeird.txt"), b",,||,,"));
+writeln(readIntoList(true, openReader("./listInputWeird.txt"), b",,||,,"));
+writeln(readIntoList(false, openReader("./listInputWeird.txt"), b",,||,,"));
 
 proc readIntoList(param reuseBuffer, r, separator: ?t) where reuseBuffer == true {
   var s : t,

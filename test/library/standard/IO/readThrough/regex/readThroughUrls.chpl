@@ -2,17 +2,17 @@ use IO, Regex;
 
 // strings
 const url = compile("https?:\\/\\/(.*\\.)(org|com)([\\/a-zA-Z]*)?(\\.html)?");
-urls(true, openreader("urls.txt"), url, false);
-urls(false, openreader("urls.txt"), url, false);
-urls(true, openreader("urls.txt"), url, true);
-urls(false, openreader("urls.txt"), url, true);
+urls(true, openReader("urls.txt"), url, false);
+urls(false, openReader("urls.txt"), url, false);
+urls(true, openReader("urls.txt"), url, true);
+urls(false, openReader("urls.txt"), url, true);
 
 // bytes
 const url_b = compile(b"https?:\\/\\/(.*\\.)(org|com)([\\/a-zA-Z]*)?(\\.html)?");
-urls(true, openreader("urls.txt"), url_b, false);
-urls(false, openreader("urls.txt"), url_b, false);
-urls(true, openreader("urls.txt"), url_b, true);
-urls(false, openreader("urls.txt"), url_b, true);
+urls(true, openReader("urls.txt"), url_b, false);
+urls(false, openReader("urls.txt"), url_b, false);
+urls(true, openReader("urls.txt"), url_b, true);
+urls(false, openReader("urls.txt"), url_b, true);
 
 proc urls(param reuseBuffer, r, reg: regex(?t), stripSep) where reuseBuffer==true {
   var s: t;

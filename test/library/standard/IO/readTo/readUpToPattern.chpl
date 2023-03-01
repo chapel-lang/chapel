@@ -1,14 +1,14 @@
 use IO;
 
 writeln("string - ref:");
-readComplexPattern(true, openreader("pattern.txt"), ".... . .-.. .-.. --- .-- --- .-. .-.. -.. -.-.--");
+readComplexPattern(true, openReader("pattern.txt"), ".... . .-.. .-.. --- .-- --- .-. .-.. -.. -.-.--");
 writeln("\nstring - return:");
-readComplexPattern(false, openreader("pattern.txt"), ".... . .-.. .-.. --- .-- --- .-. .-.. -.. -.-.--");
+readComplexPattern(false, openReader("pattern.txt"), ".... . .-.. .-.. --- .-- --- .-. .-.. -.. -.-.--");
 
 writeln("\nbytes - ref:");
-readComplexPattern(true, openreader("pattern.txt"), b".... . .-.. .-.. --- .-- --- .-. .-.. -.. -.-.--");
+readComplexPattern(true, openReader("pattern.txt"), b".... . .-.. .-.. --- .-- --- .-. .-.. -.. -.-.--");
 writeln("\nbytes - return:");
-readComplexPattern(false, openreader("pattern.txt"), b".... . .-.. .-.. --- .-- --- .-. .-.. -.. -.-.--");
+readComplexPattern(false, openReader("pattern.txt"), b".... . .-.. .-.. --- .-- --- .-. .-.. -.. -.-.--");
 
 proc readComplexPattern(param refBuffer, r, pattern: ?t) where refBuffer == true {
   var s: t;

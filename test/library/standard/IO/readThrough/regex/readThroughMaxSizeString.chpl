@@ -5,7 +5,7 @@ const bars = compile("\\|{2,}"),
       nb = "👉".numBytes;
 
 // try to match when a separator isn't present
-var r = openreader("maxSizeStringInput.txt");
+var r = openReader("maxSizeStringInput.txt");
 try {
     writeln(r.readThrough(bars, maxSize=6*nb));
 } catch e {
@@ -16,7 +16,7 @@ try {
 r.close();
 
 // try to match when a *full* separator isn't present
-r = openreader("maxSizeStringInput.txt");
+r = openReader("maxSizeStringInput.txt");
 try {
     writeln(r.readThrough(bars, maxSize=6*nb+1));
 } catch e {
@@ -27,11 +27,11 @@ try {
 r.close();
 
 // separator is present - don't strip
-writeln(openreader("maxSizeStringInput.txt").readThrough(bars, maxSize=6*nb+3));
-writeln(openreader("maxSizeStringInput.txt").readThrough(bars, maxSize=6*nb+3));
-writeln(openreader("maxSizeStringInput.txt").readThrough(bars, maxSize=6*nb+6));
+writeln(openReader("maxSizeStringInput.txt").readThrough(bars, maxSize=6*nb+3));
+writeln(openReader("maxSizeStringInput.txt").readThrough(bars, maxSize=6*nb+3));
+writeln(openReader("maxSizeStringInput.txt").readThrough(bars, maxSize=6*nb+6));
 
 // separator is present - do strip
-writeln(openreader("maxSizeStringInput.txt").readThrough(bars, maxSize=6*nb+3, true));
-writeln(openreader("maxSizeStringInput.txt").readThrough(bars, maxSize=6*nb+3, true));
-writeln(openreader("maxSizeStringInput.txt").readThrough(bars, maxSize=6*nb+6, true));
+writeln(openReader("maxSizeStringInput.txt").readThrough(bars, maxSize=6*nb+3, true));
+writeln(openReader("maxSizeStringInput.txt").readThrough(bars, maxSize=6*nb+3, true));
+writeln(openReader("maxSizeStringInput.txt").readThrough(bars, maxSize=6*nb+6, true));

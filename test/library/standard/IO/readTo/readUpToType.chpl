@@ -17,7 +17,7 @@ proc xyType.writeThis(fw) throws {
   fw.write("(", this.x, ", ", this.y, ")");
 }
 
-var r = openreader("xy.txt");
+var r = openReader("xy.txt");
 
 // read to the start of the XY input
 writeln(r.readTo("|"));
