@@ -1106,7 +1106,7 @@ static void test29() {
 
   const ResolvedFunction* rfn = scopeResolveFunction(context, fn->id());
   const ResolvedExpression& reY = rfn->byAst(y->initExpression());
-  assert(reY.toId() == x->id());
+  assert(reY.toId().isEmpty());
 }
 
 

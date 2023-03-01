@@ -875,6 +875,11 @@ enum {
     Lookup in extern blocks
    */
   LOOKUP_EXTERN_BLOCKS = 256,
+
+  /**
+    Skip private use/import
+   */
+  LOOKUP_SKIP_PRIVATE_USE_IMPORT = 512,
 };
 
 /** LookupConfig is a bit-set of the LOOKUP_ flags defined above */

@@ -439,6 +439,7 @@ struct LookupHelper {
                                 UniqueString name,
                                 bool onlyInnermost,
                                 bool skipPrivateVisibilities,
+                                bool skipPrivateUseImport,
                                 VisibilitySymbols::ShadowScope shadowScope);
 
   bool doLookupInAutoModules(const Scope* scope,
@@ -500,6 +501,7 @@ bool LookupHelper::doLookupInImportsAndUses(
                                    UniqueString name,
                                    bool onlyInnermost,
                                    bool skipPrivateVisibilities,
+                                   bool skipPrivateUseImport,
                                    VisibilitySymbols::ShadowScope shadowScope) {
 
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
@@ -516,8 +518,8 @@ bool LookupHelper::doLookupInImportsAndUses(
       }
 
       // if we should not continue transitively through private use/includes,
-      // and one is private, skip it
-      if (skipPrivateVisibilities && is.isPrivate()) {
+      // and this one is private, skip it
+      if (is.isPrivate() && (skipPrivateVisibilities || skipPrivateUseImport)) {
         continue;
       }
       // skip this clause if we are searching a different shadow scope level
@@ -538,6 +540,13 @@ bool LookupHelper::doLookupInImportsAndUses(
 
         if (!allowPrivateAccess) {
           newConfig |= LOOKUP_SKIP_PRIVATE_VIS;
+        } else {
+          // TODO: this disallowes nested modules from working  with
+          // a private use/import in a parent module. But, that is
+          // subject to discussion in issue #21723.
+          // See the history of this comment for an implementation that
+          // allows it.
+          newConfig |= LOOKUP_SKIP_PRIVATE_USE_IMPORT;
         }
         if (onlyInnermost) {
           newConfig |= LOOKUP_INNERMOST;
@@ -813,6 +822,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   bool goPastModules = (config & LOOKUP_GO_PAST_MODULES) != 0;
   bool onlyMethodsFields = (config & LOOKUP_ONLY_METHODS_FIELDS) != 0;
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
+  bool skipPrivateUseImport = (config & LOOKUP_SKIP_PRIVATE_USE_IMPORT) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
 
   IdAndVis::SymbolTypeFlags curFilter = 0;
@@ -895,6 +905,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     if (checkUseImport) {
       got |= doLookupInImportsAndUses(scope, r, name,
                                       onlyInnermost, skipPrivateVisibilities,
+                                      skipPrivateUseImport,
                                       VisibilitySymbols::REGULAR_SCOPE);
     }
     if (onlyInnermost && got) return true;
@@ -905,6 +916,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     bool got = false;
     got |= doLookupInImportsAndUses(scope, r, name,
                                     onlyInnermost, skipPrivateVisibilities,
+                                    skipPrivateUseImport,
                                     VisibilitySymbols::SHADOW_SCOPE_ONE);
 
     // treat the auto-used modules as if they were 'private use'd
@@ -918,6 +930,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     bool got = false;
     got = doLookupInImportsAndUses(scope, r, name,
                                    onlyInnermost, skipPrivateVisibilities,
+                                   skipPrivateUseImport,
                                    VisibilitySymbols::SHADOW_SCOPE_TWO);
     if (onlyInnermost && got) return true;
   }
