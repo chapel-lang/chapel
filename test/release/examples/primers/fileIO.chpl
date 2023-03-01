@@ -341,9 +341,9 @@ if example == 0 || example == 7 {
     var w = f.writer(kind=ionative);
 
     // Write 011 0110 011110000
-    w.writebits(0b011, 3);
-    w.writebits(0b0110, 4);
-    w.writebits(0b011110000, 9);
+    w.writeBits(0b011, 3);
+    w.writeBits(0b0110, 4);
+    w.writeBits(0b011110000, 9);
     w.close();
   }
 
@@ -352,13 +352,13 @@ if example == 0 || example == 7 {
     var r = f.reader(kind=ionative);
     var tmp:uint(64);
 
-    r.readbits(tmp, 3);
+    r.readBits(tmp, 3);
     assert(tmp == 0b011);
 
-    r.readbits(tmp, 4);
+    r.readBits(tmp, 4);
     assert(tmp == 0b0110);
 
-    r.readbits(tmp, 9);
+    r.readBits(tmp, 9);
     assert(tmp == 0b011110000);
 
     r.close();

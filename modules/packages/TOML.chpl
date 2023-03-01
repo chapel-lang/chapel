@@ -214,7 +214,7 @@ module TomlParser {
 
     proc parseTable() {
       var toke = getToken(source);
-      var tablename = brackets.sub('', toke);
+      var tablename = toke.replace(brackets, '');
       var tblD: domain(string);
       var tbl: [tblD] shared Toml?;
       if !rootTable.pathExists(tablename) {
@@ -1130,6 +1130,7 @@ module TomlReader {
  import TOML.TomlError;
 
  private use Regex;
+ private use IO;
 
  config const debugTomlReader = false;
 
@@ -1354,6 +1355,11 @@ module TomlReader {
 
     pragma "no doc"
     proc readThis(f) throws {
+      compilerError("Reading a Tokens type is not supported");
+    }
+
+    proc init(r: fileReader) {
+      this.complete();
       compilerError("Reading a Tokens type is not supported");
     }
 

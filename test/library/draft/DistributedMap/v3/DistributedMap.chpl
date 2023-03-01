@@ -13,7 +13,7 @@ module DistributedMap {
         type keyType;
         type valType;
 
-        var instance: shared distMapInternal(keyType, valType)?;
+        var instance: shared distMapInternal(keyType, valType, ?)?;
         forwarding instance!;
 
         proc init(type keyType, type valType) {

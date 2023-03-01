@@ -6,7 +6,7 @@ use Memory.Diagnostics, IO;
 config const n = 1;
 
 proc foo () {
-  var stdout = openfd(1).writer();
+  var stdout = (new file(1)).writer();
   var s = "Good bye";
   if n > 0 then
     s = "Nos vemos";

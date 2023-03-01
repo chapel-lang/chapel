@@ -117,6 +117,22 @@ __host__ static inline void chpl_gpu_force_sync() {
   chpl_internal_error("chpl_gpu_force_sync called from host");
 }
 
+__device__ static inline uint32_t chpl_gpu_getThreadIdxX() { return __nvvm_read_ptx_sreg_tid_x(); }
+__device__ static inline uint32_t chpl_gpu_getThreadIdxY() { return __nvvm_read_ptx_sreg_tid_y(); }
+__device__ static inline uint32_t chpl_gpu_getThreadIdxZ() { return __nvvm_read_ptx_sreg_tid_z(); }
+
+__device__ static inline uint32_t chpl_gpu_getBlockIdxX()  { return __nvvm_read_ptx_sreg_ctaid_x(); }
+__device__ static inline uint32_t chpl_gpu_getBlockIdxY()  { return __nvvm_read_ptx_sreg_ctaid_y(); }
+__device__ static inline uint32_t chpl_gpu_getBlockIdxZ()  { return __nvvm_read_ptx_sreg_ctaid_z(); }
+
+__device__ static inline uint32_t chpl_gpu_getBlockDimX()  { return __nvvm_read_ptx_sreg_ntid_x(); }
+__device__ static inline uint32_t chpl_gpu_getBlockDimY()  { return __nvvm_read_ptx_sreg_ntid_y(); }
+__device__ static inline uint32_t chpl_gpu_getBlockDimZ()  { return __nvvm_read_ptx_sreg_ntid_z(); }
+
+__device__ static inline uint32_t chpl_gpu_getGridDimX()   { return __nvvm_read_ptx_sreg_nctaid_x(); }
+__device__ static inline uint32_t chpl_gpu_getGridDimY()   { return __nvvm_read_ptx_sreg_nctaid_y(); }
+__device__ static inline uint32_t chpl_gpu_getGridDimZ()   { return __nvvm_read_ptx_sreg_nctaid_z(); }
+
 #endif // HAS_GPU_LOCALE
 
 #endif // _CHPL_GPU_GEN_INCLUDES_H

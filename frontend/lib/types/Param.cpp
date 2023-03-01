@@ -268,10 +268,10 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
     switch (imm.string_kind) {
       case STRING_KIND_STRING:
         return {StringParam::get(context, imm.v_string),
-                RecordType::getStringType(context)};
+                CompositeType::getStringType(context)};
       case STRING_KIND_BYTES:
         return {StringParam::get(context, imm.v_string),
-                RecordType::getBytesType(context)};
+                CompositeType::getBytesType(context)};
       case STRING_KIND_C_STRING:
         return {StringParam::get(context, imm.v_string),
                 CStringType::get(context)};

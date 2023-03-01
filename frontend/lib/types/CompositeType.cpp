@@ -19,9 +19,12 @@
 
 #include "chpl/types/CompositeType.h"
 
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/BasicClassType.h"
+#include "chpl/types/ClassType.h"
+#include "chpl/types/RecordType.h"
 #include "chpl/uast/Decl.h"
 #include "chpl/uast/NamedDecl.h"
 
@@ -43,7 +46,7 @@ CompositeType::areSubsInstantiationOf(Context* context,
   // check, for each substitution in mySubs, that it matches
   // or is an instantiation of pSubs.
 
-  for (auto mySubPair : mySubs) {
+  for (const auto& mySubPair : mySubs) {
     ID mySubId = mySubPair.first;
     QualifiedType mySubType = mySubPair.second;
 
@@ -91,7 +94,7 @@ void CompositeType::stringify(std::ostream& ss,
       emittedField = true;
     }
 
-    for (auto sub : sorted) {
+    for (const auto& sub : sorted) {
       if (emittedField) ss << ", ";
       sub.first.stringify(ss, stringKind);
       ss << ":";
@@ -101,6 +104,76 @@ void CompositeType::stringify(std::ostream& ss,
     ss << ")";
   }
 }
+
+const RecordType* CompositeType::getStringType(Context* context) {
+  auto symbolPath = UniqueString::get(context, "String._string");
+  auto name = UniqueString::get(context, "string");
+  auto id = ID(symbolPath, -1, 0);
+  return RecordType::get(context, id, name,
+                         /* instantiatedFrom */ nullptr,
+                         SubstitutionsMap());
+}
+
+const RecordType* CompositeType::getRangeType(Context* context) {
+  auto symbolPath = UniqueString::get(context, "ChapelRange.range");
+  auto name = UniqueString::get(context, "range");
+  auto id = ID(symbolPath, -1, 0);
+  return RecordType::get(context, id, name,
+                         /* instantiatedFrom */ nullptr,
+                         SubstitutionsMap());
+}
+
+const RecordType* CompositeType::getBytesType(Context* context) {
+  auto symbolPath = UniqueString::get(context, "Bytes._bytes");
+  auto name = UniqueString::get(context, "bytes");
+  auto id = ID(symbolPath, -1, 0);
+  return RecordType::get(context, id, name,
+                         /* instantiatedFrom */ nullptr,
+                         SubstitutionsMap());
+}
+
+bool CompositeType::isMissingBundledType(Context* context, ID id) {
+  return isMissingBundledClassType(context, id) ||
+         isMissingBundledRecordType(context, id);
+}
+
+bool CompositeType::isMissingBundledRecordType(Context* context, ID id) {
+  bool noLibrary = parsing::bundledModulePath(context).isEmpty();
+  if (noLibrary) {
+    auto path = id.symbolPath();
+    return path == "String._string" ||
+           path == "ChapelRange.range" ||
+           path == "Bytes._bytes";
+  }
+
+  return false;
+}
+
+bool CompositeType::isMissingBundledClassType(Context* context, ID id) {
+  bool noLibrary = parsing::bundledModulePath(context).isEmpty();
+  if (noLibrary) {
+    auto path = id.symbolPath();
+    return path == "ChapelReduce.ReduceScanOp" ||
+           path == "Errors.Error";
+  }
+
+  return false;
+}
+
+const ClassType* CompositeType::getErrorType(Context* context) {
+  auto manager = AnyManagementNonNilableType::get(context);
+  auto symbolPath = UniqueString::get(context, "Errors.Error");
+  auto name = UniqueString::get(context, "Error");
+  auto id = ID(symbolPath, -1, 0);
+  auto dec = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
+  auto bct = BasicClassType::get(context, id,
+                                name,
+                                BasicClassType::getObjectType(context),
+                                /* instantiatedFrom */ nullptr,
+                                SubstitutionsMap());
+  return ClassType::get(context, bct, manager, dec);
+}
+
 
 using SubstitutionPair = CompositeType::SubstitutionPair;
 

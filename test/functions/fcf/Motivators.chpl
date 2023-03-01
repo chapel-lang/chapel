@@ -1,98 +1,52 @@
 /***
+  This test contains tests for function types as a language feature.
+  It should be at parity with '$CHPL_HOME/test/functions/lambda',
+  which contains tests for legacy stuff.
+
+  These tests assume a non-pointer-based model.
 */
 module Motivators {
+  var globalCounter = 0;
 
-  // Test with only default intents - should achieve status quo.
-  proc testDefaultIntentProcExpr() {
-    var add = proc(x: int, y: int): int { return x + y; };
-    var sum = add(4, 4);
-    var val = add(4, 4);
-    assert(val == 8);
+  proc testSimpleProcTypeEquivalence() {
+    type T1 = proc(x: int, y: int): int;
+    type T2 = proc(x: int, y: int): int;
+    assert(T1 == T2);
   }
 
-  // Now use ref intent to prove the implementation supports intents.
-  proc testRefIntentProcExpr() {
-    var inc = proc(ref x: int): void { x += 1; };
-    var x = 0;
-    inc(x);
-    assert(x == 1);
+  // TODO: 'myAdd' -> 'add' = 'cannot capture overloaded procedure'
+  proc testProcTypeFromNamedProcedure() {
+    proc myAdd(x: int, y: int): int { return x + y; }
+    type T1 = myAdd.type;
+    type T2 = proc(x: int, y: int): int;
+    assert(T1 == T2);
   }
 
-  // Test printing function types, one with named formals and one without.
-  proc testPrintingFunctionTypes() {
-    type F1 = proc(_: int, _: int): int;
-    assert(F1:string == "proc(int, int): int");
-
-    type F2 = proc(ref _: int, ref _: int): int;
-    assert(F2:string == "proc(ref: int, ref: int): int");
-
-    type F3 = proc(const x: real, in y: complex): void;
-    assert(F3:string == "proc(x: real, in y: complex)");
-
-    // Check to make sure printing temporaries also works as expected.
-    assert(proc(ref x: real): int:string == "proc(ref x: real): int");
+  proc testEnsureProcTypeIsNotGeneric() {
+    type T1 = proc(): void;
+    assert(!isGenericType(T1));
   }
 
-  proc testFunctionTypeEqualityConsideringFormalNames() {
-    type F1 = proc(_: int, _: int): int;
-    type F2 = proc(x: int, _: int): int;
-    assert(F1 != F2);
+  proc testPassAndCallAnonProc1() {
+    const f = proc(x: int, y: int): int { return x + y; };
+    proc call(fn) { assert(fn(4, 4) == 8); }
+    call(f);
   }
 
-  proc testThrowingFunctionExpr() {
-    const f1 = proc(n: int) throws { return n*n; };
-    const f2 = proc(n: int) throws { throw new Error(n:string); return n; };
-    const n = 4;
-    try {
-      assert(f1(n) == n*n);
-      assert(f2(n) == n);
-    } catch e : Error {
-      assert(e.message() == n:string);
-    }
+  proc testPassAndCallAnonProc2() {
+    const f = proc(): void { globalCounter = 8; };
+    globalCounter = 0;
+    proc call(fn): void { f(); }
+    call(f);
+    assert(globalCounter == 8);
+    globalCounter = 0;
   }
-
-  /*
-  proc test() {
-    type F = proc(int, int): int;
-    var a: F; // Default value should be 'nil'?
-    assert(a == nil);
-    var b: F = proc(x: int, y: int): int { return x + y; };
-    var c = b;
-    assert(b.type == c.type);
-  }
-  */
-
-  /*
-  // Should be a typing error.
-  proc test() {
-    type F = proc(int, int): int;
-    var a: F = proc(x: int, y: real) { return x + y; };
-  }
-  */
-
-  /*
-  // Print a function type.
-  proc test() {
-    type F = proc(int, int): int;
-    writeln(F:string);
-    var a: F;
-    writeln(a.type:string);
-  }
-  */
-
-  /*
-  // Parsing error - procedure expressions cannot have unnamed formals.
-  proc test() {
-    var fn = proc(int, y: int, ref: int): void;
-  }
-  */
 
   proc main() {
-    testDefaultIntentProcExpr();
-    testRefIntentProcExpr();
-    testPrintingFunctionTypes();
-    testFunctionTypeEqualityConsideringFormalNames();
-    testThrowingFunctionExpr();
+    testSimpleProcTypeEquivalence();
+    testProcTypeFromNamedProcedure();
+    testEnsureProcTypeIsNotGeneric();
+    testPassAndCallAnonProc1();
+    testPassAndCallAnonProc2();
   }
 }
-

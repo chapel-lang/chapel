@@ -9,3 +9,4 @@
 -ssearchAlg=Foreach
 -ssearchAlg=For
 -ssearchAlg=MemChr
+-ssearchAlg=Find -suseNewArrayFind

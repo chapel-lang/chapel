@@ -1,4 +1,0 @@
-warning in fullUsePath.chpl:1: an implicit module named 'fullUsePath' is being introduced to contain file-scope code
-error in fullUsePath.chpl:9: cannot find module or enum 'ToLookFor' for 'use' statement
-  note in fullUsePath.chpl:1: a declaration of 'ToLookFor' is here
-  note in fullUsePath.chpl:1: however, 'use' statements can only be used with modules or enums (and this 'ToLookFor' is not a module or enum)

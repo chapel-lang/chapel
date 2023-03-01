@@ -32,6 +32,7 @@
 #include "chpl-comm.h"
 #include "chpltypes.h"
 #include "error.h"
+#include "chpl-mem-sys.h"
 
 #include <errno.h>
 #include <pthread.h>
@@ -160,6 +161,10 @@ void chpl_topo_init(void) {
   //
   CHK_ERR_ERRNO(hwloc_topology_init(&topology) == 0);
 
+  // Make sure we get everything including I/O devices.
+  int flags = HWLOC_TOPOLOGY_FLAG_WHOLE_IO | HWLOC_TOPOLOGY_FLAG_IO_BRIDGES | HWLOC_TOPOLOGY_FLAG_IO_DEVICES;
+  CHK_ERR_ERRNO(hwloc_topology_set_flags(topology, flags) == 0);
+
   //
   // Perform the topology detection.
   //
@@ -236,6 +241,7 @@ static int numCPUsPhysAcc = -1;
 static int numCPUsPhysAll = -1;
 static int numCPUsLogAcc  = -1;
 static int numCPUsLogAll  = -1;
+static int numSockets = -1;
 
 int chpl_topo_getNumCPUsPhysical(chpl_bool accessible_only) {
   okToReserveCPU = false;
@@ -259,7 +265,7 @@ int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
 
 //
 // Initializes information about CPUs (cores and PUs) and and NICs from the
-// toplogy.
+// topology.
 //
 
 static void cpuInfoInit(void) {
@@ -350,13 +356,18 @@ static void cpuInfoInit(void) {
   CHK_ERR(numCPUsPhysAll > 0);
   _DBG_P("numCPUsPhysAll = %d", numCPUsPhysAll);
 
+  numSockets = hwloc_get_nbobjs_inside_cpuset_by_type(topology,
+                      root->cpuset, HWLOC_OBJ_PACKAGE);
+  _DBG_P("numSockets = %d", numSockets);
+
   int numLocalesOnNode = chpl_get_num_locales_on_node();
   int expectedLocalesOnNode = chpl_env_rt_get_int("LOCALES_PER_NODE", 0);
+  chpl_bool useSocket = chpl_env_rt_get_bool("USE_SOCKET", false);
   int rank = chpl_get_local_rank();
   _DBG_P("numLocalesOnNode = %d", numLocalesOnNode);
   _DBG_P("expectedLocalesOnNode = %d", expectedLocalesOnNode);
   _DBG_P("rank = %d", rank);
-  if ((numLocalesOnNode > 1) || (expectedLocalesOnNode > 1)) {
+  if ((numLocalesOnNode > 1) || (expectedLocalesOnNode > 1) || useSocket) {
     if (numLocalesOnNode > 1) {
       oversubscribed = true;
     }
@@ -372,11 +383,10 @@ static void cpuInfoInit(void) {
     // to determine this accurately.
 
     if (numCPUsPhysAcc == numCPUsPhysAll) {
-      int numSockets = hwloc_get_nbobjs_inside_cpuset_by_type(topology,
-                          root->cpuset, HWLOC_OBJ_PACKAGE);
-      _DBG_P("numSockets = %d", numSockets);
       if (numLocalesOnNode <= numSockets) {
         if (rank != -1) {
+          // Use the socket whose logical index corresponds to our local rank.
+          // See getSocketNumber below if you change this.
           socket = hwloc_get_obj_inside_cpuset_by_type(topology,
                                     root->cpuset, HWLOC_OBJ_PACKAGE, rank);
           CHK_ERR(socket != NULL);
@@ -416,7 +426,7 @@ static void cpuInfoInit(void) {
   oversubscribed = chpl_env_rt_get_bool("OVERSUBSCRIBED", oversubscribed);
 
   if ((verbosity >= 2) && (chpl_nodeID == 0)) {
-    printf("overscribed = %s\n", oversubscribed ? "True" : "False");
+    printf("oversubscribed = %s\n", oversubscribed ? "True" : "False");
   }
 
   // Find the NUMA nodes.
@@ -457,6 +467,21 @@ static void cpuInfoInit(void) {
     _DBG_P("topology cpuset: %s", buf);
 
   }
+}
+
+
+// If we are running in a socket then cpuInfoInit will assign each locale to
+// the socket whose logical index is equal to the locale's local rank. This
+// function returns the socket number for the given locale. Right now it's
+// the identity mapping, but should be changed if the way cpuInfoInit does
+// the mapping is changed.
+static
+int getSocketNumber(int localRank) {
+  int result = -1;
+  if (socket != NULL) {
+    result = localRank;
+  }
+  return result;
 }
 
 void chpl_topo_post_args_init(void) {
@@ -887,7 +912,7 @@ int chpl_topo_bindCPU(int id) {
     hwloc_bitmap_free(cpuset);
     status = 0;
   }
-  _DBG_P("chpl_topo_bindCPUPhysical id: %d status: %d", id, status);
+  _DBG_P("chpl_topo_bindCPU id: %d status: %d", id, status);
   return status;
 }
 
@@ -895,6 +920,214 @@ chpl_bool chpl_topo_isOversubscribed(void) {
   _DBG_P("oversubscribed = %s", oversubscribed ? "True" : "False");
   return oversubscribed;
 }
+//
+// Information used to sort NICs and to track which ones have already
+// been assigned to a locale.
+//
+typedef struct nic_info_t {
+  int         socket;
+  hwloc_obj_t obj;
+  chpl_bool   assigned;
+} nic_info_t;
+
+//
+// Comparison function for sort. Sorts based on socket then PCI address.
+//
+static int compareNics(const void *a, const void *b)
+{
+  nic_info_t *nicA = (nic_info_t *) a;
+  nic_info_t *nicB = (nic_info_t *) b;
+
+  int result;
+
+  result = nicA->socket - nicB->socket;
+  if (result == 0) {
+    struct hwloc_pcidev_attr_s *attrA = &(nicA->obj->attr->pcidev);
+    struct hwloc_pcidev_attr_s *attrB = &(nicB->obj->attr->pcidev);
+    result = attrA->domain - attrB->domain;
+    if (result == 0) {
+      result = attrA->bus - attrB->bus;
+      if (result == 0) {
+        result = attrA->dev - attrB->dev;
+        if (result == 0) {
+          result = attrA->func - attrB->func;
+        }
+      }
+    }
+  }
+  return result;
+}
+
+//
+// Given a NIC, determines which NIC of the same type (same vendor and device)
+// is the best to use. The "best" NIC is one in the same socket as this
+// locale. If there isn't a NIC in our socket then use an "extra" NIC if some
+// sockets have more than one, otherwise use an already-assigned NIC. In
+// either case choose a NIC in a round-robin fashion from those locales that
+// do not have a NIC in their socket.
+//
+
+chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
+                                                chpl_topo_pci_addr_t *outAddr)
+{
+  hwloc_obj_t nic = NULL;
+  struct hwloc_pcidev_attr_s *nicAttr;
+  chpl_topo_pci_addr_t *result = NULL;
+  nic_info_t *nics = NULL;
+  int *assignedNics = NULL;
+
+  if (root->type != HWLOC_OBJ_PACKAGE) {
+    // We aren't running in a socket, so we don't care which NIC is used.
+    goto done;
+  }
+
+  // find the PCI object corresponding to the specified NIC
+  for (hwloc_obj_t obj = hwloc_get_next_pcidev(topology, NULL);
+       obj != NULL;
+       obj = hwloc_get_next_pcidev(topology, obj)) {
+    if (obj->type == HWLOC_OBJ_PCI_DEVICE) {
+      struct hwloc_pcidev_attr_s *attr = &(obj->attr->pcidev);
+      if ((attr->domain == inAddr->domain) && (attr->bus == inAddr->bus) &&
+          (attr->dev == inAddr->device) && (attr->func == inAddr->function)) {
+        nic = obj;
+        break;
+      }
+    }
+  }
+  if (nic == NULL) {
+    _DBG_P("Could not find NIC %04x:%02x:%02x.%x", inAddr->domain,
+           inAddr->bus, inAddr->device, inAddr->function);
+    goto done;
+  }
+
+  // Find all the NICS of the same vendor and device as the specified NIC and
+  // sort them by socket and PCI address.
+
+  nicAttr = &(nic->attr->pcidev);
+  int maxNics = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PCI_DEVICE);
+  CHK_ERR(nics = sys_calloc(maxNics, sizeof(*nics)));
+  int numNics = 0;
+
+  for (hwloc_obj_t obj = hwloc_get_next_pcidev(topology, NULL);
+       obj != NULL;
+       obj = hwloc_get_next_pcidev(topology, obj)) {
+
+    if (obj->type == HWLOC_OBJ_PCI_DEVICE) {
+      struct hwloc_pcidev_attr_s *attr = &(obj->attr->pcidev);
+      if ((attr->vendor_id == nicAttr->vendor_id) &&
+          (attr->device_id == nicAttr->device_id)) {
+        hwloc_obj_t sobj = hwloc_get_ancestor_obj_by_type(topology,
+                                                          HWLOC_OBJ_PACKAGE,
+                                                          obj);
+        if (sobj == NULL) {
+          _DBG_P("Could not find socket for NIC %04x:%02x:%02x.%x",
+                 attr->domain, attr->bus, attr->dev, attr->func);
+          goto done;
+        }
+        nics[numNics].socket = sobj->logical_index;
+        nics[numNics].obj = obj;
+        nics[numNics].assigned = false;
+        numNics++;
+      }
+    }
+  }
+  qsort(nics, numNics, sizeof(*nics), compareNics);
+
+  // Use the first NIC in our socket if there is one.
+
+  for (int i = 0; i < numNics; i++) {
+    if (nics[i].socket == root->logical_index) {
+      nic = nics[i].obj;
+      goto done;
+    }
+  }
+
+  // There isn't a NIC in our socket. Use the nth unassigned NIC, where
+  // n is our rank among the locales that don't have NICs, modulo
+  // the number of unassigned NICs. Otherwise use the nth assigned NIC.
+
+  int numLocalesOnNode = chpl_get_num_locales_on_node();
+  CHK_ERR(assignedNics = sys_calloc(numLocalesOnNode, sizeof(*assignedNics)));
+
+  for (int i = 0; i < numLocalesOnNode; i++) {
+    assignedNics[i] = -1;
+  }
+
+  // Look for extra (unassigned) NICs. Any NIC whose socket number matches
+  // a locale's socket number will be assigned above. The rest are extra.
+
+  int numAssignedNics = 0;
+  for (int lid = 0; lid < numLocalesOnNode; lid++) {
+    for (int nid = 0; nid < numNics; nid++) {
+      if (nics[nid].socket == getSocketNumber(lid)) {
+        assignedNics[lid] = nid;
+        nics[nid].assigned = true;
+        numAssignedNics++;
+        break;
+      }
+    }
+  }
+
+  // Determine our rank within the locales that do not have a NIC assigned.
+
+  int unmatchedLocales = 0;
+  int unassignedRank = -1;
+  int rank = chpl_get_local_rank();
+  for (int lid = 0; lid < numLocalesOnNode; lid++) {
+    if (lid == rank) {
+      unassignedRank = unmatchedLocales;
+      break;
+    }
+    if (assignedNics[lid] == -1) {
+      unmatchedLocales++;
+    }
+  }
+  CHK_ERR(unassignedRank != -1);
+
+  if (numAssignedNics == numNics) {
+
+    // All NICs are assigned, we'll have to share one.
+
+    nic = nics[unassignedRank % numNics].obj;
+  } else {
+
+    // Use an unassigned NIC, perhaps sharing one if necessary.
+    // Note that this can lead to unbalanced loads, but should be uncommon.
+
+    unassignedRank %= (numNics - numAssignedNics);
+
+    int count = 0;
+    for (int nid = 0; nid < numNics; nid++) {
+      if (nics[nid].assigned == false) {
+        if (unassignedRank == count) {
+          nic = nics[nid].obj;
+          goto done;
+        }
+        count++;
+      }
+    }
+  }
+
+done:
+  if (nic != NULL) {
+    nicAttr = &(nic->attr->pcidev);
+    if (outAddr != NULL) {
+      outAddr->domain = nicAttr->domain;
+      outAddr->bus = nicAttr->bus;
+      outAddr->device = nicAttr->dev;
+      outAddr->function = nicAttr->func;
+      result = outAddr;
+    }
+  }
+  if (nics != NULL) {
+    sys_free(nics);
+  }
+  if (assignedNics != NULL) {
+    sys_free(assignedNics);
+  }
+  return result;
+}
+
 
 static
 void chk_err_fn(const char* file, int lineno, const char* what) {

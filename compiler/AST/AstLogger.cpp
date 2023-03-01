@@ -21,6 +21,13 @@
 #include "AstLogger.h"
 #include "stlUtil.h"
 
+bool AstLogger::enterThunk(TemporaryConversionThunk* node) {
+  return true;
+}
+
+void AstLogger::exitThunk(TemporaryConversionThunk* node) {
+}
+
 bool AstLogger::enterAggrType(AggregateType* node) {
   return true;
 }
@@ -44,6 +51,9 @@ void AstLogger::exitEnumType(EnumType* node) {
 }
 
 void AstLogger::visitPrimType(PrimitiveType* node) {
+}
+
+void AstLogger::visitFunctionType(FunctionType* node) {
 }
 
 void AstLogger::visitConstrainedType(ConstrainedType* node) {

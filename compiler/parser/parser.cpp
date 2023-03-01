@@ -910,16 +910,27 @@ static bool dynoRealizeErrors(void) {
   INT_ASSERT(gDynoErrorHandler);
   bool hadErrors = false;
   for (auto& err : gDynoErrorHandler->errors()) {
-    hadErrors = true;
-    // skip issuing errors that have already been issued
+    const chpl::ErrorBase* e = err.get();
+
+    if (e->kind() == chpl::ErrorBase::SYNTAX ||
+        e->kind() == chpl::ErrorBase::ERROR) {
+      // make a note if we found any errors
+      hadErrors = true;
+    }
+
+    // skip emitting warnings for '--no-warnings'
+    if (ignore_warnings && e->kind() == chpl::ErrorBase::WARNING) {
+      continue;
+    }
+
     if (fDetailedErrors) {
-      chpl::Context::defaultReportError(gContext, err.get());
+      chpl::Context::defaultReportError(gContext, e);
       // Use production compiler's exit-on-error functionality for errors
       // reported via new Dyno mechanism
-      setupDynoError(err->kind());
+      setupDynoError(e->kind());
     } else {
       // Try to maintain compatibility with the old reporting mechanism
-      dynoDisplayError(gContext, err->toErrorMessage(gContext));
+      dynoDisplayError(gContext, e->toErrorMessage(gContext));
     }
   }
   gDynoErrorHandler->clear();

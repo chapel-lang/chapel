@@ -64,7 +64,7 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
                 skipCheck: bool, projectHome: string, tf="Mason.toml") throws {
 
   const tomlPath = '/'.join(projectHome, tf);
-  const openFile = openreader(tomlPath);
+  const openFile = openReader(tomlPath);
   const toml = parseToml(openFile);
   var newToml: shared Toml?;
 

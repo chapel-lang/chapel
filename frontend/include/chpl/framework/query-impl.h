@@ -135,14 +135,16 @@ void Context::queryBeginTrace(const char* traceQueryName,
       // QUERY BEGIN
       setQueryDepthColor(queryTraceDepth, std::cout);
       std::cout << queryTraceDepth
-                << " { "
-                << clearTerminalColor() << traceQueryName << " (";
+                << " { ";
+      clearTerminalColor(std::cout);
+      std::cout << traceQueryName << " (";
       queryArgsPrint(tupleOfArg);
       std::cout << ") ";
       setTerminalColor(CYAN, std::cout);
       std::cout <<"hash: 0x"
-                << std::hex << queryAndArgsHash
-                << clearTerminalColor() << std::endl;
+                << std::hex << queryAndArgsHash;
+      clearTerminalColor(std::cout);
+      std::cout << std::endl;
     }
     if (breakSet && queryAndArgsHash == breakOnHash) {
       debuggerBreakHere();
@@ -338,9 +340,9 @@ Context::queryEnd(
                    traceQueryName) == queryTraceIgnoreQueries.end()) {
     // QUERY END
     setQueryDepthColor(queryTraceDepth, std::cout);
-    std::cout << queryTraceDepth
-              << clearTerminalColor()
-              << "   " << traceQueryName
+    std::cout << queryTraceDepth;
+    clearTerminalColor(std::cout);
+    std::cout << "   " << traceQueryName
               << " ";
     if (ret->lastChanged == this->currentRevisionNumber) {
       setTerminalColor(YELLOW, std::cout);
@@ -350,9 +352,9 @@ Context::queryEnd(
       std::cout << "unchanged";
     }
     setQueryDepthColor(queryTraceDepth, std::cout);
-    std::cout << " } "
-              << clearTerminalColor()
-              << std::endl;
+    std::cout << " } ";
+    clearTerminalColor(std::cout);
+    std::cout << std::endl;
     queryTraceDepth--;
     CHPL_ASSERT(r->lastChecked == this->currentRevisionNumber);
     //for (auto dep : r->dependencies) {

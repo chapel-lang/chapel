@@ -312,7 +312,10 @@ bool UseStmt::isValid(Expr* expr) const {
 
 void UseStmt::validateList() {
   if (isPlainUse() == false) {
-    noRepeats();
+    // Dyno already issues these warnings and errors.
+    if (!fDynoCompilerLibrary) {
+      noRepeats();
+    }
 
     validateNamed();
     validateRenamed();

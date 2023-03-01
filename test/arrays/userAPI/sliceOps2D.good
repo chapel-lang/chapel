@@ -2,6 +2,7 @@ array slice
 ----------------
 eltType is: real(64)
 idxType is: int(64)
+fullIdxType is: 2*int(64)
 rank is: 2
 
 size is: 16
@@ -78,6 +79,8 @@ local subdomains:
 is empty: false
 head: 1.8
 tail: 16.8
+find last: (4, 4)
+find last again: true: (4, 4)
 equals same: true
 equals diff: false
 

@@ -266,6 +266,9 @@ module Bytes {
     proc writeThis(f) throws {
       compilerError("not implemented: writeThis");
     }
+    proc encodeTo(f) throws {
+      compilerError("not implemented: encodeTo");
+    }
     proc readThis(f) throws {
       compilerError("not implemented: readThis");
     }

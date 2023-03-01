@@ -114,6 +114,7 @@ class UntypedFnSignature {
   bool isMethod_; // in that case, formals[0] is the receiver
   bool isTypeConstructor_;
   bool isCompilerGenerated_;
+  bool throws_;
   uast::asttags::AstTag idTag_; // concrete tag for ID
   uast::Function::Kind kind_;
   std::vector<FormalDetail> formals_;
@@ -126,6 +127,7 @@ class UntypedFnSignature {
                      bool isMethod,
                      bool isTypeConstructor,
                      bool isCompilerGenerated,
+                     bool throws,
                      uast::asttags::AstTag idTag,
                      uast::Function::Kind kind,
                      std::vector<FormalDetail> formals,
@@ -135,6 +137,7 @@ class UntypedFnSignature {
       isMethod_(isMethod),
       isTypeConstructor_(isTypeConstructor),
       isCompilerGenerated_(isCompilerGenerated),
+      throws_(throws),
       idTag_(idTag),
       kind_(kind),
       formals_(std::move(formals)),
@@ -152,6 +155,7 @@ class UntypedFnSignature {
                         bool isMethod,
                         bool isTypeConstructor,
                         bool isCompilerGenerated,
+                        bool throws,
                         uast::asttags::AstTag idTag,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
@@ -164,6 +168,7 @@ class UntypedFnSignature {
                                        bool isMethod,
                                        bool isTypeConstructor,
                                        bool isCompilerGenerated,
+                                       bool throws,
                                        uast::asttags::AstTag idTag,
                                        uast::Function::Kind kind,
                                        std::vector<FormalDetail> formals,
@@ -184,6 +189,7 @@ class UntypedFnSignature {
            isMethod_ == other.isMethod_ &&
            isTypeConstructor_ == other.isTypeConstructor_ &&
            isCompilerGenerated_ == other.isCompilerGenerated_ &&
+           throws_ == other.throws_ &&
            idTag_ == other.idTag_ &&
            kind_ == other.kind_ &&
            formals_ == other.formals_ &&
@@ -261,6 +267,11 @@ class UntypedFnSignature {
   /** Returns true if this is a method */
   bool isMethod() const {
     return isMethod_;
+  }
+
+  /** Returns true if this function throws */
+  bool throws() const {
+    return throws_;
   }
 
   /** Returns the number of formals */
@@ -1118,6 +1129,7 @@ class AssociatedAction {
     DEINIT,
     ITERATE,      // aka "these"
     NEW_INIT,
+    REDUCE_SCAN,  // resolution of "generate" for a reduce/scan operation.
   };
 
  private:
@@ -1262,7 +1274,7 @@ class ResolvedExpression {
     toId_.mark(context);
     mostSpecific_.mark(context);
     context->markPointer(poiScope_);
-    for (auto a : associatedActions_) {
+    for (const auto& a : associatedActions_) {
       a.mark(context);
     }
     context->markPointer(paramLoop_);
@@ -1749,7 +1761,7 @@ class ResolvedParamLoop {
     }
 
     void mark(Context* context) const {
-      for (auto postorder : loopBodies_) {
+      for (const auto& postorder : loopBodies_) {
         postorder.mark(context);
       }
       context->markPointer(loop_);

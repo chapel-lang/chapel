@@ -45,6 +45,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "TemporaryConversionThunk.h"
 #include "TryStmt.h"
 #include "view.h"
 #include "WhileStmt.h"

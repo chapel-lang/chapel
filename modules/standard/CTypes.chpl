@@ -496,6 +496,11 @@ module CTypes {
     if (arr._value.locale != here) then
       halt("c_ptrTo() can only be applied to an array from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
 
+    if boundsChecking {
+      if (arr.size == 0) then
+        halt("Can't create a C pointer for an array with 0 elements.");
+    }
+
     return c_pointer_return(arr[arr.domain.low]);
   }
 

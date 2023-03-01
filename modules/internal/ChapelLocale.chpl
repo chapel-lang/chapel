@@ -361,6 +361,10 @@ module ChapelLocale {
       HaltWrappers.pureVirtualMethodHalt();
     }
 
+    override proc encodeTo(f) throws {
+      HaltWrappers.pureVirtualMethodHalt();
+    }
+
     proc name do return chpl_name() : string;
 
     // This many tasks are running on this locale.

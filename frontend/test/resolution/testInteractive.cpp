@@ -53,7 +53,7 @@ static const char* tagToString(const AstNode* ast) {
 }
 
 static const ResolvedExpression*
-resolvedExpressionForAst(Context* context, const AstNode* ast,
+resolvedExpressionForAstInteractive(Context* context, const AstNode* ast,
                          const ResolvedFunction* inFn,
                          bool scopeResolveOnly) {
   if (!(ast->isLoop() || ast->isBlock())) {
@@ -130,7 +130,7 @@ computeAndPrintStuff(Context* context,
 
   int beforeCount = context->numQueriesRunThisRevision();
   const ResolvedExpression* r =
-    resolvedExpressionForAst(context, ast, inFn, scopeResolveOnly);
+    resolvedExpressionForAstInteractive(context, ast, inFn, scopeResolveOnly);
   int afterCount = context->numQueriesRunThisRevision();
   if (r != nullptr) {
     for (const TypedFnSignature* sig : r->mostSpecific()) {

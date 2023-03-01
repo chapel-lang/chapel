@@ -98,7 +98,9 @@ def get_runtime_link_args(runtime_subdir):
             system.append("-lcudart")
         elif gpu_type == "rocm":
             system.append("-L" + os.path.join(sdk_path, "hip", "lib"))
+            system.append("-L" + os.path.join(sdk_path, "hsa", "lib"))
             system.append("-lamdhip64")
+            system.append("-lhsa-runtime64")
 
     # always link with the math library
     system.append("-lm")

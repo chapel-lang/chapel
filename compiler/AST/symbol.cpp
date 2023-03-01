@@ -34,6 +34,7 @@
 #include "resolveIntents.h"
 #include "resolution.h"
 #include "stringutil.h"
+#include "type.h"
 #include "wellknown.h"
 #include "chpl/uast/OpCall.h"
 
@@ -42,6 +43,7 @@
 #include <algorithm>
 #include <regex>
 #include <cstring>
+#include <map>
 
 //
 // The function that represents the compiler-generated entry point
@@ -84,6 +86,7 @@ VarSymbol *gModuleInitIndentLevel = NULL;
 VarSymbol *gInfinity = NULL;
 VarSymbol *gNan = NULL;
 VarSymbol *gUninstantiated = NULL;
+VarSymbol *gUseIOFormatters = NULL;
 
 void verifyInTree(BaseAST* ast, const char* msg) {
   if (ast != NULL && ast->inTree() == false) {
@@ -1197,6 +1200,24 @@ bool isOuterVarOfShadowVar(Expr* expr) {
 *                                                                   *
 ********************************* | ********************************/
 
+#ifdef HAVE_LLVM
+static std::map<FunctionType*, llvm::FunctionType*>
+chapelFunctionTypeToLlvmFunctionType;
+
+bool llvmMapUnderlyingFunctionType(FunctionType* k, llvm::FunctionType* v) {
+  auto it = chapelFunctionTypeToLlvmFunctionType.find(k);
+  if (it != chapelFunctionTypeToLlvmFunctionType.end()) return false;
+  chapelFunctionTypeToLlvmFunctionType.emplace_hint(it, k, v);
+  return true;
+}
+
+llvm::FunctionType* llvmGetUnderlyingFunctionType(FunctionType* t) {
+  auto it = chapelFunctionTypeToLlvmFunctionType.find(t);
+  if (it != chapelFunctionTypeToLlvmFunctionType.end()) return it->second;
+  return nullptr;
+}
+#endif
+
 TypeSymbol::TypeSymbol(const char* init_name, Type* init_type) :
   Symbol(E_TypeSymbol, init_name, init_type),
     llvmImplType(NULL),
@@ -1486,7 +1507,7 @@ void createInitStringLiterals() {
   INT_ASSERT(gChplCreateBytesWithLiteral != NULL);
 
   // initialize the strings
-  for (auto pair : literals) {
+  for (const auto& pair : literals) {
     VarSymbol* s = pair.second;
 
     // unescape the string and compute its length
@@ -2246,7 +2267,7 @@ const char* toString(VarSymbol* var, bool withType) {
           SymExpr* dstSe = toSymExpr(c->get(1));
           SymExpr* srcSe = toSymExpr(c->get(2));
           if (dstSe && srcSe && dstSe->symbol() == sym) {
-            sym = singleDef->symbol();
+            sym = srcSe->symbol();
             continue;
           }
         }

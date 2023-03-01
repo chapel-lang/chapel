@@ -2,18 +2,23 @@ use IO;
 
 var f = openTempFile();
 
-var euro = new ioChar(0x20ac); // euro sign "?";
-var got = new ioChar(0);
+var euro = 0x20ac; // euro sign "?";
+var got;
 
-writeln("Writing ", euro);
+write("Writing ");
+stdout.writeCodepoint(euro);
+writeln();
+
 var writer = f.writer();
-writer.write(euro);
+writer.writeCodepoint(euro);
 writer.close();
 
 var reader = f.reader();
-reader.read(got);
+got = reader.readCodepoint();
 reader.close();
 
-writeln("Read  ", got);
+write("Read  ");
+stdout.writeCodepoint(got);
+writeln();
 
 assert( got == euro );

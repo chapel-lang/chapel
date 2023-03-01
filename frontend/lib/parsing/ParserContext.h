@@ -169,6 +169,17 @@ struct ParserContext {
     };
   }
 
+  YYLTYPE locationFromChplLocation(AstNode* ast) {
+    auto chapelLoc = builder->getLocation(ast);
+    YYLTYPE ret = {
+      .first_line = chapelLoc.firstLine(),
+      .first_column = chapelLoc.firstColumn(),
+      .last_line = chapelLoc.lastLine(),
+      .last_column = chapelLoc.lastColumn()
+    };
+    return ret;
+  }
+
   ErroneousExpression* report(YYLTYPE loc, owned<ErrorBase> error);
   ErroneousExpression* error(YYLTYPE loc, const char* fmt, ...);
   ErroneousExpression* syntax(YYLTYPE loc, const char* fmt, ...);
@@ -327,15 +338,46 @@ struct ParserContext {
   AstNode* buildLetExpr(YYLTYPE location, ParserExprList* decls,
                         AstNode* expr);
 
-  AstNode* buildArrayTypeWithIndex(YYLTYPE location,
-                                   YYLTYPE locIndexExprs,
-                                    ParserExprList* indexExprs,
-                                    AstNode* domainExpr,
-                                    AstNode* typeExpr);
+  // In certain locations the expression '[a, b]' is interpreted as an
+  // array type and not an array literal, e.g., formal types and return
+  // types. Those are represented by a BracketLoop node, while an array
+  // literal is represented by the Array node.
+  AstNode* sanitizeArrayType(YYLTYPE location, AstNode* ast);
 
-  AstNode* buildArrayType(YYLTYPE location, YYLTYPE locDomainExprs,
-                          ParserExprList* domainExprs,
-                          AstNode* typeExpr);
+  // These different overloads for building bracket loop expressions exist
+  // to maintain compatibility between loops and array types. The
+  // loop variants have a more normalized form e.g., '[i in 1..100] i',
+  // while the array type variants may omit quite a few things in the case
+  // that the type is generic, e.g., just '[]'.
+  //
+  // .chpl: '[]'
+  AstNode* buildBracketLoopExpr(YYLTYPE location);
+
+  // .chpl: '[] int'
+  AstNode* buildBracketLoopExpr(YYLTYPE location, YYLTYPE locRightBracket,
+                                AstNode* bodyExpr);
+
+  // .chpl: '[i in 1..100] i' (multiple indices is an error in this case)
+  AstNode* buildBracketLoopExpr(YYLTYPE location,
+                                YYLTYPE locIndexExprs,
+                                ParserExprList* indexExprs,
+                                AstNode* iterandExpr,
+                                AstNode* bodyExpr);
+
+  // .chpl: '[i in 1..100] if i % 2 then i'
+  AstNode* buildBracketLoopExpr(YYLTYPE location,
+                                YYLTYPE locIndexExprs,
+                                YYLTYPE locIf,
+                                ParserExprList* indexExprs,
+                                AstNode* iterandExpr,
+                                AstNode* bodyIfCond,
+                                AstNode* bodyIfExpr);
+
+  // .chpl: '[a, b, c] int' || '[0..100] doSomething()'
+  AstNode* buildBracketLoopExpr(YYLTYPE location,
+                                YYLTYPE locIterandExprs,
+                                ParserExprList* iterandExprs,
+                                AstNode* bodyExpr);
 
   AstNode* buildTupleComponent(YYLTYPE location, PODUniqueString name);
   AstNode* buildTupleComponent(YYLTYPE location, ParserExprList* exprs);

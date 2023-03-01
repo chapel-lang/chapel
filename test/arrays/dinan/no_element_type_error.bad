@@ -1,0 +1,2 @@
+no_element_type_error.chpl:2: warning: single-element array literals without a trailing comma are deprecated; please rewrite as '[myElem, ]'
+no_element_type_error.chpl:2: error: cannot initialize [domain(1,int(64),false)] range(int(64),bounded,false) from [domain(1,int(64),false)] real(64)

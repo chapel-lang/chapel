@@ -108,12 +108,14 @@ void Type::gatherBuiltins(Context* context,
 
   gatherType(context, map, "_tuple", TupleType::getGenericTupleType(context));
 
-  auto bytesType = RecordType::getBytesType(context);
+  auto bytesType = CompositeType::getBytesType(context);
   gatherType(context, map, "bytes", bytesType);
   gatherType(context, map, "_bytes", bytesType);
-  auto stringType = RecordType::getStringType(context);
+  auto stringType = CompositeType::getStringType(context);
   gatherType(context, map, "string", stringType);
   gatherType(context, map, "_string", stringType);
+
+  gatherType(context, map, "Error", CompositeType::getErrorType(context));
 
   BuiltinType::gatherBuiltins(context, map);
 }

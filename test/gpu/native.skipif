@@ -3,9 +3,12 @@
 import os
 import shutil
 
+# Native GPU tests require nvcc/hipcc, llvm, and the gpu locale model
+if os.getenv('CHPL_GPU_CODEGEN') == 'rocm':
+  missing_gpucc = shutil.which("hipcc") is None
+else:
+  missing_gpucc = shutil.which("nvcc") is None
 
-# Native GPU tests require nvcc, llvm, and the gpu locale model
-missing_nvcc = shutil.which("nvcc") is None
 no_llvm = os.getenv('CHPL_TARGET_COMPILER') != 'llvm'
 gpu_loc = os.getenv('CHPL_LOCALE_MODEL') == 'gpu'
 
@@ -13,4 +16,4 @@ gpu_loc = os.getenv('CHPL_LOCALE_MODEL') == 'gpu'
 # compute node with GPUs, so we currently use `CHPL_TEST_GPU` as a proxy
 will_run_on_gpu = os.getenv('CHPL_TEST_GPU') == 'true'
 
-print(missing_nvcc or no_llvm or not gpu_loc or not will_run_on_gpu)
+print(missing_gpucc or no_llvm or not gpu_loc or not will_run_on_gpu)

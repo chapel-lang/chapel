@@ -42,7 +42,7 @@ void TupleType::stringify(std::ostream& ss,
   auto sorted = sortedSubstitutions();
   bool emittedField = false;
   ss << "(";
-  for (auto sub : sorted) {
+  for (const auto& sub : sorted) {
     if (emittedField) ss << ", ";
     if (sub.second.type()) {
       sub.second.type()->stringify(ss, stringKind);
@@ -165,7 +165,7 @@ TupleType::getVarArgTuple(Context* context,
                           std::vector<QualifiedType> eltTypes) {
   SubstitutionsMap subs;
   int i = 0;
-  for (auto t : eltTypes) {
+  for (const auto& t : eltTypes) {
     subs.emplace(idForTupElt(i), t);
     i++;
   }

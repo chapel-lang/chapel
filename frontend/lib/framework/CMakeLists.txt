@@ -25,8 +25,6 @@ target_sources(ChplFrontend-obj
                ErrorWriter.cpp
                ID.cpp
                Location.cpp
-               parser-error-classes-list.cpp
-               resolution-error-classes-list.cpp
                UniqueString.cpp
 
               )

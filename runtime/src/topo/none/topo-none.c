@@ -102,3 +102,9 @@ c_sublocid_t chpl_topo_getMemLocality(void* p) {
 chpl_bool chpl_topo_isOversubscribed(void) {
   return false;
 }
+
+chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
+                                            chpl_topo_pci_addr_t *outAddr) {
+  return NULL;
+}
+

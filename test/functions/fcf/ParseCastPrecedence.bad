@@ -1,0 +1,8 @@
+ParseCastPrecedence.chpl:4: error: could not find a copy initializer ('init=') for type 'shared ' from type 'shared '
+$CHPL_HOME/modules/internal/SharedObject.chpl:251: note: this candidate did not match: _shared.init=(pragma"nil from arg"in take: owned)
+ParseCastPrecedence.chpl:4: note: because actual argument #1 is a type
+$CHPL_HOME/modules/internal/SharedObject.chpl:251: note: but is passed to non-type formal 'in take: owned'
+ParseCastPrecedence.chpl:4: note: other candidates are:
+$CHPL_HOME/modules/internal/SharedObject.chpl:277: note:   _shared.init=(pragma"nil from arg"const ref src: _shared)
+$CHPL_HOME/modules/internal/SharedObject.chpl:299: note:   _shared.init=(src: borrowed)
+note: and 2 other candidates, use --print-all-candidates to see them

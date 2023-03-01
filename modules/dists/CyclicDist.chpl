@@ -160,10 +160,10 @@ domain or array.
 
     use CyclicDist;
 
-    var CyclicDom1 = newCyclicDom({1..5, 1..5});
-    var CyclicArr1 = newCyclicArr({1..5, 1..5}, real);
-    var CyclicDom2 = newCyclicDom(1..5, 1..5);
-    var CyclicArr2 = newCyclicArr(1..5, 1..5, real);
+    var CyclicDom1 = Cyclic.createDomain({1..5, 1..5});
+    var CyclicArr1 = Cyclic.createArray({1..5, 1..5}, real);
+    var CyclicDom2 = Cyclic.createDomain(1..5, 1..5);
+    var CyclicArr2 = Cyclic.createArray(1..5, 1..5, real);
 
 
 **Data-Parallel Iteration**
@@ -1254,6 +1254,24 @@ proc Cyclic.dsiTargetLocales() const ref {
   return targetLocs;
 }
 
+proc type Cyclic.createDomain(dom: domain) {
+  return dom dmapped Cyclic(startIdx=dom.lowBound);
+}
+
+proc type Cyclic.createDomain(rng: range...) {
+  return createDomain({(...rng)});
+}
+
+proc type Cyclic.createArray(dom: domain, type eltType) {
+  var D = createDomain(dom);
+  var A: [D] eltType;
+  return A;
+}
+
+proc type Cyclic.createArray(rng: range..., type eltType) {
+  return createArray({(...rng)}, eltType);
+}
+
 // Cyclic subdomains are represented as a single domain
 
 proc CyclicArr.dsiHasSingleLocalSubdomain() param do return true;
@@ -1281,20 +1299,24 @@ proc CyclicDom.dsiLocalSubdomain(loc: locale) {
   }
 }
 
+deprecated "'newCyclicDom' is deprecated - please use 'Cyclic.createDomain' instead"
 proc newCyclicDom(dom: domain) {
   return dom dmapped Cyclic(startIdx=dom.lowBound);
 }
 
+deprecated "'newCyclicArr' is deprecated - please use 'Cyclic.createArray' instead"
 proc newCyclicArr(dom: domain, type eltType) {
   var D = newCyclicDom(dom);
   var A: [D] eltType;
   return A;
 }
 
+deprecated "'newCyclicDom' is deprecated - please use 'Cyclic.createDomain' instead"
 proc newCyclicDom(rng: range...) {
   return newCyclicDom({(...rng)});
 }
 
+deprecated "'newCyclicArr' is deprecated - please use 'Cyclic.createArray' instead"
 proc newCyclicArr(rng: range..., type eltType) {
   return newCyclicArr({(...rng)}, eltType);
 }

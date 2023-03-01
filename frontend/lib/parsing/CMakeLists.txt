@@ -43,8 +43,10 @@ target_sources(ChplFrontend-obj
                parser-dependencies.h
                parser-help.h
                parser-stats.cpp
+
                # these are implementing the public interface
                Parser.cpp
+               parser-error-classes-list.cpp
                parsing-queries.cpp
               )
 

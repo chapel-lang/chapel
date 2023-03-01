@@ -1,0 +1,1 @@
+dotExprInUseImport.chpl:6: error: cannot use dot expression 'M.a' in 'except' list

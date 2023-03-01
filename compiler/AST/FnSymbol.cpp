@@ -589,6 +589,12 @@ Symbol* FnSymbol::getReturnSymbol() {
   return retval;
 }
 
+FunctionType* FnSymbol::computeAndSetType() {
+  auto ret = FunctionType::get(this);
+  this->type = ret;
+  return ret;
+}
+
 // Removes all statements from body and adds all statements from block.
 void FnSymbol::replaceBodyStmtsWithStmts(BlockStmt* block) {
   for_alist(stmt, this->body->body) {
@@ -992,6 +998,14 @@ bool FnSymbol::isResolved() const {
   return hasFlag(FLAG_RESOLVED);
 }
 
+bool FnSymbol::isSignature() const {
+  return hasFlag(FLAG_ANONYMOUS_FN) && hasFlag(FLAG_NO_FN_BODY);
+}
+
+bool FnSymbol::isAnonymous() const {
+  return hasFlag(FLAG_ANONYMOUS_FN) || hasFlag(FLAG_LEGACY_LAMBDA);
+}
+
 void FnSymbol::accept(AstVisitor* visitor) {
   if (visitor->enterFnSym(this) == true) {
 
@@ -1107,6 +1121,7 @@ bool FnSymbol::isPostInitializer() const {
 
 bool FnSymbol::isDefaultInit() const {
   return hasFlag(FLAG_COMPILER_GENERATED) &&
+         hasFlag(FLAG_DEFAULT_INIT) &&
          hasFlag(FLAG_COPY_INIT) == false &&
          isInitializer();
 }

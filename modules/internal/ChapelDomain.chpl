@@ -1105,9 +1105,23 @@ module ChapelDomain {
         return 1;
     }
 
-    /* Return the type of the indices of this domain */
+    /* Return the type used to represent the indices of this domain.
+       For a multidimensional domain, this will represent the
+       per-dimension index type. */
     proc idxType type {
       return _value.idxType;
+    }
+
+    /* Return the full type used to represent the indices of this
+       domain.  For a 1D or associative domain, this will be the same
+       as :proc:`idxType` above.  For a multidimensional domain, it
+       will be :proc:`rank` * :proc:`idxType`. */
+    proc fullIdxType type {
+      if this.isAssociative() || this.rank == 1 {
+        return this.idxType;
+      } else {
+        return this.rank * this.idxType;
+      }
     }
 
     /* The ``idxType`` as represented by an integer type.  When
@@ -2375,10 +2389,23 @@ module ChapelDomain {
     proc writeThis(f) throws {
       _value.dsiSerialWrite(f);
     }
+    pragma "no doc"
+    proc encodeTo(f) throws {
+      _value.dsiSerialWrite(f);
+    }
 
     pragma "no doc"
     proc ref readThis(f) throws {
       _value.dsiSerialRead(f);
+    }
+
+    // TODO: Can we convert this to an initializer despite the potential issues
+    // with runtime types?
+    pragma "no doc"
+    proc type decodeFrom(f) throws {
+      var ret : this;
+      ret.readThis(f);
+      return ret;
     }
 
     pragma "no doc"

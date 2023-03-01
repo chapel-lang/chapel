@@ -34,14 +34,6 @@ module Map {
   private use HaltWrappers;
   private use IO;
 
-  /* A compile-time parameter to control the behavior of map methods
-     When ``false``, the deprecated behavior is used (i.e., errors will trigger
-     a halt at execution.)
-     When ``true``, the new behavior is used (i.e., errors will cause a
-     :type:`KeyNotFoundError` to be thrown)
-  */
-  config param mapMethodsThrow = false;
-
   // Lock code lifted from modules/standard/List.chpl.
   // Maybe they should be combined into a Locks module.
   pragma "no doc"
@@ -128,6 +120,35 @@ module Map {
 
       :arg keyType: The type of the keys of this map.
       :arg valType: The type of the values of this map.
+      :arg resizeThreshold: Fractional value that specifies how full this map
+                            can be before requesting additional memory.
+      :arg initialCapacity: Integer value that specifies starting map size. The
+                            map can hold at least this many values before
+                            attempting to resize.
+    */
+    proc init(type keyType, type valType,
+              resizeThreshold=defaultHashTableResizeThreshold,
+              initialCapacity=16) {
+      _checkKeyAndValType(keyType, valType);
+      this.keyType = keyType;
+      this.valType = valType;
+      this.parSafe = false;
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
+      table = new chpl__hashtable(keyType, valType, this.resizeThreshold,
+                                  initialCapacity);
+    }
+
+    /*
+      Initializes an empty map containing keys and values of given types.
+
+      :arg keyType: The type of the keys of this map.
+      :arg valType: The type of the values of this map.
       :arg parSafe: If `true`, this map will use parallel safe operations.
       :arg resizeThreshold: Fractional value that specifies how full this map
                             can be before requesting additional memory.
@@ -135,7 +156,8 @@ module Map {
                             map can hold at least this many values before
                             attempting to resize.
     */
-    proc init(type keyType, type valType, param parSafe=false,
+    @unstable "'Map.parSafe' is unstable"
+    proc init(type keyType, type valType, param parSafe,
               resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16) {
       _checkKeyAndValType(keyType, valType);
@@ -153,7 +175,27 @@ module Map {
                                   initialCapacity);
     }
 
-    proc init(type keyType, type valType, param parSafe=false,
+    proc init(type keyType, type valType,
+              resizeThreshold=defaultHashTableResizeThreshold,
+              initialCapacity=16)
+      where isNonNilableClass(valType) {
+      _checkKeyAndValType(keyType, valType);
+      this.keyType = keyType;
+      this.valType = valType;
+      this.parSafe = false;
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
+      table = new chpl__hashtable(keyType, valType, this.resizeThreshold,
+                                  initialCapacity);
+    }
+
+    @unstable "'Map.parSafe' is unstable"
+    proc init(type keyType, type valType, param parSafe,
               resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16)
     where isNonNilableClass(valType) {
@@ -303,30 +345,6 @@ module Map {
       }
     }
 
-    deprecated "map methods that halt are deprecated, please set the config param :param:`mapMethodsThrow` to 'true' to opt in to using the new methods that throw"
-    proc update(const ref k: keyType, updater) throws
-    where !mapMethodsThrow {
-      _enter(); defer _leave();
-
-      var (isFull, slot) = table.findFullSlot(k);
-
-      // TODO: Allow `--fast` to bypass this check?
-      if !isFull then
-        boundsCheckHalt("map index " + k:string + " out of bounds");
-
-      // TODO: Use table key or argument key?
-      const ref key = table.table[slot].key;
-      ref val = table.table[slot].val;
-
-      import Reflection;
-      if !Reflection.canResolveMethod(updater, "this", key, val) then
-        compilerError('`map.update()` failed to resolve method ' +
-                      updater.type:string + '.this() for arguments (' +
-                      key.type:string + ', ' + val.type:string + ')');
-
-      return updater(key, val);
-    }
-
     /*
       Update a value in this map in a parallel safe manner via an updater
       object.
@@ -347,15 +365,15 @@ module Map {
 
       :arg updater: A class or record used to update the value at `i`
 
+      :throws: `KeyNotFoundError` if `k` not in map
+
       :return: What the updater returns
     */
-    proc update(const ref k: keyType, updater) throws
-    where mapMethodsThrow {
+    proc update(const ref k: keyType, updater) throws {
       _enter(); defer _leave();
 
       var (isFull, slot) = table.findFullSlot(k);
 
-      // TODO: Allow `--fast` to bypass this check?
       if !isFull then
         throw new KeyNotFoundError(k:string);
 
@@ -391,24 +409,7 @@ module Map {
       :returns: Reference to the value mapped to the given key.
     */
     proc ref this(k: keyType) ref throws
-    where isDefaultInitializable(valType) &&
-          mapMethodsThrow {
-      _warnForParSafeIndexing();
-
-      _enter(); defer _leave();
-
-      var (_, slot) = table.findAvailableSlot(k);
-      if !table.isSlotFull(slot) {
-        var val: valType;
-        table.fillSlot(slot, k, val);
-      }
-      return table.table[slot].val;
-    }
-
-    deprecated "map methods that halt are deprecated, please set the config param :param:`mapMethodsThrow` to 'true' to opt in to using the new methods that throw"
-    proc ref this(k: keyType) ref
-      where isDefaultInitializable(valType) &&
-            !mapMethodsThrow {
+    where isDefaultInitializable(valType) {
       _warnForParSafeIndexing();
 
       _enter(); defer _leave();
@@ -424,90 +425,37 @@ module Map {
     pragma "no doc"
     proc const this(k: keyType) const throws
       where shouldReturnRvalueByValue(valType) &&
-            !isNonNilableClass(valType) &&
-            mapMethodsThrow {
+            !isNonNilableClass(valType) {
       _warnForParSafeIndexing();
 
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
         throw new KeyNotFoundError(k:string);
-      const result = table.table[slot].val;
-      return result;
-    }
-
-    pragma "no doc"
-    deprecated "map methods that halt are deprecated, please set the config param :param:`mapMethodsThrow` to 'true' to opt in to using the new methods that throw"
-    proc const this(k: keyType) const
-      where shouldReturnRvalueByValue(valType) &&
-            !isNonNilableClass(valType) &&
-            !mapMethodsThrow {
-      _warnForParSafeIndexing();
-
-      _enter(); defer _leave();
-      var (found, slot) = table.findFullSlot(k);
-      if !found then
-        boundsCheckHalt("map index " + k:string + " out of bounds");
       const result = table.table[slot].val;
       return result;
     }
 
     pragma "no doc"
     proc const this(k: keyType) const ref throws
-      where !isNonNilableClass(valType) &&
-            mapMethodsThrow {
+      where !isNonNilableClass(valType) {
       _warnForParSafeIndexing();
 
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
         throw new KeyNotFoundError(k:string);
-      const ref result = table.table[slot].val;
-      return result;
-    }
-
-    pragma "no doc"
-    deprecated "map methods that halt are deprecated, please set the config param :param:`mapMethodsThrow` to 'true' to opt in to using the new methods that throw"
-    proc const this(k: keyType) const ref
-      where !isNonNilableClass(valType) &&
-            !mapMethodsThrow {
-      _warnForParSafeIndexing();
-
-      _enter(); defer _leave();
-      var (found, slot) = table.findFullSlot(k);
-      if !found then
-        halt("map index ", k, " out of bounds");
       const ref result = table.table[slot].val;
       return result;
     }
 
     pragma "no doc"
     proc const this(k: keyType) throws
-      where isNonNilableClass(valType) &&
-            mapMethodsThrow {
+      where isNonNilableClass(valType) {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
         throw new KeyNotFoundError(k:string);
-      try! {
-        var result = table.table[slot].val.borrow();
-        if isNonNilableClass(valType) {
-          return result!;
-        } else {
-          return result;
-        }
-      }
-    }
-
-    pragma "no doc"
-    deprecated "map methods that halt are deprecated, please set the config param :param:`mapMethodsThrow` to 'true' to opt in to using the new methods that throw"
-    proc const this(k: keyType)
-      where isNonNilableClass(valType) &&
-            !mapMethodsThrow {
-      _enter(); defer _leave();
-      var (found, slot) = table.findFullSlot(k);
-      if !found then
-        boundsCheckHalt("map index " + k:string + " out of bounds");
       try! {
         var result = table.table[slot].val.borrow();
         if isNonNilableClass(valType) {
@@ -639,6 +587,7 @@ module Map {
 
       :yields: A reference to one of the keys contained in this map.
     */
+    @unstable "'Map.these' is unstable"
     iter these() const ref {
       for key in this.keys() {
         yield key;
@@ -663,6 +612,7 @@ module Map {
       :yields: A tuple whose elements are a copy of one of the key-value
                pairs contained in this map.
     */
+    @unstable "'Map.items' is unstable"
     iter items() {
       if !isCopyableType(keyType) then
         compilerError('in map.items(): map key type ' + keyType:string +
@@ -714,6 +664,22 @@ module Map {
     */
     proc readThis(ch: fileReader) throws {
       _readWriteHelper(ch);
+    }
+
+    //
+    // TODO: rewrite to use formatter interface
+    //
+    pragma "no doc"
+    proc init(type keyType, type valType, r: fileReader) {
+      this.init(keyType, valType, parSafe);
+      readThis(r);
+    }
+
+    pragma "no doc"
+    @unstable "'Map.parSafe' is unstable"
+    proc init(type keyType, type valType, param parSafe, r: fileReader) {
+      this.init(keyType, valType, parSafe);
+      readThis(r);
     }
 
     /*

@@ -1,0 +1,1 @@
+cast-to-queried-domain.chpl:1: error: domain query expressions may currently only be used in formal argument types

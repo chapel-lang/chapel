@@ -811,7 +811,45 @@ findErrorInFnSignatureParts(ParserContext* context, YYLTYPE location,
 AstNode*
 ParserContext::buildFunctionExpr(YYLTYPE location, FunctionParts& fp) {
   if (fp.isBodyNonBlockExpression) CHPL_ASSERT(false && "Not handled!");
-  auto ret = buildLambda(location, fp);
+
+  clearComments(fp.comments);
+
+  AstNode* ret = nullptr;
+
+  if (fp.errorExpr != nullptr) {
+    ret = fp.errorExpr;
+    this->clearComments();
+    return ret;
+  }
+
+  owned<Block> body = consumeToBlock(location, fp.body);
+
+  // Own the recorded identifier to clean it up, but grab its location.
+  owned<Identifier> identName = toOwned(fp.name);
+  assert(identName.get());
+  auto identNameLoc = builder->getLocation(identName.get());
+  assert(!identNameLoc.isEmpty());
+
+  auto f = Function::build(builder, identNameLoc,
+                           toOwned(fp.attributeGroup),
+                           Decl::DEFAULT_VISIBILITY,
+                           Decl::DEFAULT_LINKAGE,
+                           /*linkageName*/ nullptr,
+                           UniqueString(),
+                           /*inline*/ false,
+                           /*override*/ false,
+                           fp.kind,
+                           /* receiver */ nullptr,
+                           fp.returnIntent,
+                           fp.throws,
+                           /*primaryMethod*/ false,
+                           /*parenless*/ false,
+                           this->consumeList(fp.formals),
+                           toOwned(fp.returnType),
+                           toOwned(fp.where),
+                           this->consumeList(fp.lifetime),
+                           std::move(body));
+  ret = f.release();
   return ret;
 }
 
@@ -1080,7 +1118,7 @@ AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
                              Decl::DEFAULT_VISIBILITY,
                              Decl::DEFAULT_LINKAGE,
                              /* linkageName */ nullptr,
-                             identName->name(),
+                             UniqueString(),
                              /* inline */ false,
                              /* override */ false,
                              Function::LAMBDA,
@@ -1112,72 +1150,152 @@ ParserContext::buildLetExpr(YYLTYPE location, ParserExprList* decls,
   return node.release();
 }
 
-// This is the weird one. I can't even parse what is happening here...
-/*
-1920 | TLSBR expr_ls TIN expr TRSBR type_level_expr
-1921     {
-1922       if ($2->argList.length != 1)
-1923         USR_FATAL($4, "invalid index expression");
-1924       $$ = new CallExpr("chpl__buildArrayRuntimeType",
-1925              new CallExpr("chpl__ensureDomainExpr", $4), $6, $2->get(1)->remove(),
-1926              new CallExpr("chpl__ensureDomainExpr", $4->copy()));
-1927     }
-*/
-AstNode*
-ParserContext::buildArrayTypeWithIndex(YYLTYPE location,
-                                       YYLTYPE locIndexExprs,
-                                       ParserExprList* indexExprs,
-                                       AstNode* domainExpr,
-                                       AstNode* typeExpr) {
-  auto index = buildLoopIndexDecl(locIndexExprs, indexExprs);
+AstNode* ParserContext::sanitizeArrayType(YYLTYPE location, AstNode* arr) {
+  if (!arr->isArray()) return arr;
 
-  // Reconstruct usable location for 'consumeToBlock()'.
-  auto locTypeExpr = builder->getLocation(typeExpr);
-  YYLTYPE yyLocTypeExpr = {
-    .first_line = locTypeExpr.firstLine(),
-    .first_column = locTypeExpr.firstColumn(),
-    .last_line = locTypeExpr.lastLine(),
-    .last_column = locTypeExpr.lastColumn()
-  };
+  auto domainBody = std::move(builder->mutableRefToChildren(arr));
+  auto domain = Domain::build(builder, convertLocation(location),
+                              /*usedCurlyBraces*/ false,
+                              std::move(domainBody));
+  auto block = consumeToBlock(location, (AstNode*) nullptr);
 
-  auto node = BracketLoop::build(builder, convertLocation(location),
-                                 std::move(index),
-                                 toOwned(domainExpr),
-                                 /*withClause*/ nullptr,
-                                 BlockStyle::IMPLICIT,
-                                 consumeToBlock(yyLocTypeExpr, typeExpr),
-                                 /*isExpressionLevel*/ true);
-
-  return node.release();
+  auto ast = BracketLoop::build(builder, convertLocation(location),
+                                /*index*/ nullptr,
+                                std::move(domain),
+                                /*withClause*/ nullptr,
+                                BlockStyle::IMPLICIT,
+                                std::move(block),
+                                /*isExpressionLevel*/ true);
+  return ast.release();
 }
 
-AstNode*
-ParserContext::buildArrayType(YYLTYPE location, YYLTYPE locDomainExprs,
-                              ParserExprList* domainExprs,
-                              AstNode* typeExpr) {
+// .chpl: '[]'
+AstNode* ParserContext::buildBracketLoopExpr(YYLTYPE location) {
 
   // In some cases the 'domainExprs' may not exist (think array formal).
-  auto domainBody = domainExprs ? consumeList(domainExprs) : AstList();
+  auto domainBody = AstList();
 
-  // TODO: What if there is only a single expr that is a domain? Do we
-  // really want to build '{{...}}'?
   const bool usedCurlyBraces = false;
-  auto domain = Domain::build(builder, convertLocation(locDomainExprs),
+  auto domain = Domain::build(builder, convertLocation(location),
                               usedCurlyBraces,
                               std::move(domainBody));
 
-  // If 'typeExpr' is null, then the resulting block is empty.
-  auto block = consumeToBlock(location, typeExpr);
+  // Block is empty since we are just '[]'.
+  auto block = consumeToBlock(location, (AstNode*) nullptr);
 
-  auto node = BracketLoop::build(builder, convertLocation(location),
-                                 /*index*/ nullptr,
-                                 std::move(domain),
+  auto ast = BracketLoop::build(builder, convertLocation(location),
+                                /*index*/ nullptr,
+                                std::move(domain),
+                                /*withClause*/ nullptr,
+                                BlockStyle::IMPLICIT,
+                                std::move(block),
+                                /*isExpressionLevel*/ true);
+  return ast.release();
+}
+
+// .chpl: '[] int'
+AstNode* ParserContext::buildBracketLoopExpr(YYLTYPE location,
+                                             YYLTYPE locRightBracket,
+                                             AstNode* bodyExpr) {
+
+  // In some cases the 'domainExprs' may not exist (think array formal).
+  auto domainBody = AstList();
+  auto locDomain = makeSpannedLocation(location, locRightBracket);
+
+  const bool usedCurlyBraces = false;
+  auto domain = Domain::build(builder, convertLocation(locDomain),
+                              usedCurlyBraces,
+                              std::move(domainBody));
+
+  auto block = consumeToBlock(location, bodyExpr);
+
+  auto ast = BracketLoop::build(builder, convertLocation(location),
+                                /*index*/ nullptr,
+                                std::move(domain),
+                                /*withClause*/ nullptr,
+                                BlockStyle::IMPLICIT,
+                                std::move(block),
+                                /*isExpressionLevel*/ true);
+  return ast.release();
+}
+
+// .chpl: '[i in 1..100] i' (multiple indices is an error in this case)
+AstNode* ParserContext::buildBracketLoopExpr(YYLTYPE location,
+                                             YYLTYPE locIndexExprs,
+                                             ParserExprList* indexExprs,
+                                             AstNode* iterandExpr,
+                                             AstNode* bodyExpr) {
+  auto index = buildLoopIndexDecl(locIndexExprs, indexExprs);
+  auto locBodyExpr = locationFromChplLocation(bodyExpr);
+
+  auto ast = BracketLoop::build(builder, convertLocation(location),
+                                 std::move(index),
+                                 toOwned(iterandExpr),
                                  /*withClause*/ nullptr,
                                  BlockStyle::IMPLICIT,
-                                 std::move(block),
+                                 consumeToBlock(locBodyExpr, bodyExpr),
+                                 /*isExpressionLevel*/ true);
+  return ast.release();
+}
+
+// .chpl: '[i in 1..100] if i % 2 then i'
+AstNode* ParserContext::buildBracketLoopExpr(YYLTYPE location,
+                                             YYLTYPE locIndexExprs,
+                                             YYLTYPE locIf,
+                                             ParserExprList* indexExprs,
+                                             AstNode* iterandExpr,
+                                             AstNode* bodyIfCond,
+                                             AstNode* bodyIfExpr) {
+
+  auto index = buildLoopIndexDecl(locIndexExprs, indexExprs);
+  auto locBodyIfExpr = locationFromChplLocation(bodyIfExpr);
+  auto locCond = makeSpannedLocation(locIf, locBodyIfExpr);
+
+  auto cond = Conditional::build(builder, convertLocation(locCond),
+                                 toOwned(bodyIfCond),
+                                 BlockStyle::IMPLICIT,
+                                 consumeToBlock(locBodyIfExpr, bodyIfExpr),
                                  /*isExpressionLevel*/ true);
 
-  return node.release();
+  auto ast = BracketLoop::build(builder, convertLocation(location),
+                                std::move(index),
+                                toOwned(iterandExpr),
+                                /*withClause*/ nullptr,
+                                BlockStyle::IMPLICIT,
+                                consumeToBlock(locCond, cond.release()),
+                                /*isExpressionLevel*/ true);
+  return ast.release();
+}
+
+// .chpl: '[a, b, c] int' || '[0..100] doSomething()'
+AstNode* ParserContext::buildBracketLoopExpr(YYLTYPE location,
+                                             YYLTYPE locIterandExprs,
+                                             ParserExprList* iterandExprs,
+                                             AstNode* bodyExpr) {
+  owned<AstNode> iterand = nullptr;
+  auto iterExprs = consumeList(iterandExprs);
+  if (iterExprs.size() > 1) {
+    iterand = Domain::build(builder, convertLocation(locIterandExprs),
+                            /*usedCurlyBraces*/ false,
+                            std::move(iterExprs));
+  } else {
+    iterand = std::move(iterExprs[0]);
+  }
+
+  CHPL_ASSERT(iterand != nullptr);
+
+  // Go from 'chpl::Location' to 'YYLTYPE' for 'consumeToBlock'.
+  auto locBodyExpr = locationFromChplLocation(bodyExpr);
+  auto bodyBlock = consumeToBlock(locBodyExpr, bodyExpr);
+
+  auto ast = BracketLoop::build(builder, convertLocation(location),
+                                /*index*/ nullptr,
+                                std::move(iterand),
+                                /*withClause*/ nullptr,
+                                BlockStyle::IMPLICIT,
+                                std::move(bodyBlock),
+                                /*isExpressionLevel*/ true);
+  return ast.release();
 }
 
 AstNode* ParserContext::

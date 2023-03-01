@@ -7,7 +7,7 @@ extern {
 
   #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 
-  static double launchKernel(){
+  static double launchKernel(double initVal) {
     hipDevice_t    device;
     hipModule_t    module;
     hipFunction_t  function;
@@ -28,34 +28,13 @@ extern {
       hipCtxCreate(&context, 0, device);
     }
 
-    /*
-    char * buffer = 0;
-    long length;
-    FILE * f = fopen (FATBIN_FILE, "rb");
-
-    if (f)
-    {
-      fseek (f, 0, SEEK_END);
-      length = ftell (f);
-      fseek (f, 0, SEEK_SET);
-      buffer = (char* )malloc (length);
-      if (buffer)
-      {
-        fread (buffer, 1, length, f);
-      }
-      fclose (f);
-    }
-    */
-
-
     hipModuleLoadData(&module, chpl_gpuBinary);
     hipModuleGetFunction(&function, module, "add_nums");
 
     hipDeviceptr_t devBufferX;
     hipMalloc(&devBufferX, sizeof(double));
 
-    srand(time(NULL));
-    X = rand() % 100;
+    X = initVal;
 
     hipMemcpyHtoD(devBufferX, &X, sizeof(double));
 
@@ -76,7 +55,6 @@ extern {
     return X;
 
   }
-
 }
 
 pragma "codegen for GPU"
@@ -86,6 +64,7 @@ export proc add_nums(dst_ptr: c_ptr(real(64))){
   dst_ptr[0] = dst_ptr[0] * dst_ptr[0] + 10;
 }
 
+config const input = 123.0;
 var output: real(64);
-output = launchKernel();
+output = launchKernel(input);
 writeln(output);

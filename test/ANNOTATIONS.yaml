@@ -521,7 +521,6 @@ all:
   01/18/23:
     - text: Improvements for iterating over unbounded enum/bool ranges (#21332)
       config: chapcs
-  01/18/23:
     - text: Avoid loading CUDA module at each kernel launch (#21346)
       config: gpu
   01/19/23:
@@ -545,6 +544,8 @@ allocation:
     - weakPointer prototype implementation (#20918)
 
 arguments:
+  03/10/17:
+    - Three way refpair (#5561)
   09/20/17:
     - Adjust string pass/return test (#7360)
 
@@ -586,10 +587,6 @@ arr-forall:
 array_iter:
   06/19/17:
     - Reduce amount of locking in associative array dsiAccess (#6244)
-
-arguments:
-  03/10/17:
-    - Three way refpair (#5561)
 
 assign.1024:
   01/22/15:
@@ -1091,6 +1088,8 @@ LCALS-raw-short: &lcals-base
     - Task intents to operate on fields of 'this' (#13840)
   09/10/19:
     - Restrict applicability of field intents (#14057)
+  02/14/23:
+    - LCALS perf back to normal (Cray/chapel-private#4228)
 LCALS-raw-medium:
   <<: *lcals-base
 LCALS-raw-long:
@@ -1463,6 +1462,10 @@ memleaksfull:
     - Clean up unmanaged classes in a test (#19695)
   09/30/22:
     - Begin the effort of improving Chapel's first-class-function support (#20554)
+  02/21/23:
+    - IO Encoders/Decoders prototype (#21586)
+  02/23/23:
+    - QIO fix Free the mark stack if it has been allocated (#21662)
 # End memleaksfull
 
 meteor:
@@ -2337,3 +2340,7 @@ arkouda-comp:
     - Add in1d and setops support for uint pdarrays (Bears-R-Us/arkouda#1085)
   03/14/22:
     - Only read necessary elements in Chapel array for Parquet (Bears-R-Us/arkouda#1204)
+
+shoc-triad-bw-lg:
+  11/10/22:
+    - Ensure we time mem transfer in SHOC Triad (#20961)

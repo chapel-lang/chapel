@@ -26,6 +26,7 @@
 #include "chpl/framework/ID.h"
 #include "chpl/resolution/resolution-types.h"
 #include "flags.h"
+#include "intents.h"
 #include "library.h"
 #include "type.h"
 
@@ -41,6 +42,7 @@ namespace llvm
 {
   class MDNode;
   class Function;
+  class FunctionType;
 }
 #endif
 
@@ -53,77 +55,7 @@ class Stmt;
 class SymExpr;
 struct InterfaceReps;
 
-const int INTENT_FLAG_IN          = 0x01;
-const int INTENT_FLAG_OUT         = 0x02;
-const int INTENT_FLAG_CONST       = 0x04;
-const int INTENT_FLAG_REF         = 0x08;
-const int INTENT_FLAG_PARAM       = 0x10;
-const int INTENT_FLAG_TYPE        = 0x20;
-const int INTENT_FLAG_BLANK       = 0x40;
-const int INTENT_FLAG_MAYBE_CONST = 0x80;
-
-// If this enum is modified, ArgSymbol::intentDescrString()
-// and intentDescrString(IntentTag) should also be updated to match
-enum IntentTag {
-  INTENT_IN              = INTENT_FLAG_IN,
-  INTENT_OUT             = INTENT_FLAG_OUT,
-  INTENT_INOUT           = INTENT_FLAG_IN          | INTENT_FLAG_OUT,
-  INTENT_CONST           = INTENT_FLAG_CONST,
-  INTENT_CONST_IN        = INTENT_FLAG_CONST       | INTENT_FLAG_IN,
-  INTENT_REF             = INTENT_FLAG_REF,
-  INTENT_CONST_REF       = INTENT_FLAG_CONST       | INTENT_FLAG_REF,
-  INTENT_REF_MAYBE_CONST = INTENT_FLAG_MAYBE_CONST | INTENT_FLAG_REF,
-  INTENT_PARAM           = INTENT_FLAG_PARAM,
-  INTENT_TYPE            = INTENT_FLAG_TYPE,
-  INTENT_BLANK           = INTENT_FLAG_BLANK
-};
-
 typedef std::bitset<NUM_FLAGS> FlagSet;
-
-/*
-enum ForallIntentTag : task- or forall-intent tags
-
-TFI_IN_PARENT
-  The compiler adds this shadow var during resolution for each TFI_IN
-  and TFI_CONST_IN. A TFI_IN_PARENT represents the task function's formal
-  that the corresponding TFI_IN or TFI_CONST_IN is to be initialized from.
-
-TFI_REDUCE
-  This shadow var replaces the uses of the outer variable in the loop body
-  in case of a 'reduce' intent. This is done in parsing and scopeResolve.
-  It is analogous to the TFI_IN shadow var for an 'in' intent.
-  A TFI_REDUCE var represents the current task's accumulation state.
-
-TFI_REDUCE_*
-  The compiler adds one each of these shadow vars during resolution
-  for each TFI_REDUCE. They represent:
-
-  TFI_REDUCE_OP        - the current task's reduction OP
-  TFI_REDUCE_PARENT_AS - the parent task's Accumulation State
-  TFI_REDUCE_PARENT_OP - the parent task's reduction OP
-
-  The *PARENT* vars, like TFI_IN_PARENT, are the task function's formals.
-
-The remaining tags should be self-explanatory.
-*/
-enum ForallIntentTag {
-  // user-specified intents
-  TFI_DEFAULT,  // aka TFI_BLANK
-  TFI_CONST,                       // ShadowVarSymbol nicknames:
-  TFI_IN,                          //   SI
-  TFI_CONST_IN,                    //   "
-  TFI_REF,                         //   SR
-  TFI_CONST_REF,                   //   "
-  TFI_REDUCE,                      //   AS    (for Accumulation State)
-  TFI_TASK_PRIVATE,                //   TPV
-  // compiler-added helpers; note isCompilerAdded()
-  TFI_IN_PARENT,                   //   INP
-  TFI_REDUCE_OP,                   //   RP    (for Reduce oP)
-  TFI_REDUCE_PARENT_AS,            //   PAS
-  TFI_REDUCE_PARENT_OP,            //   PRP
-};
-
-const char* forallIntentTagDescription(ForallIntentTag tfiTag);
 
 // for task intents and forall intents
 ArgSymbol* tiMarkForForallIntent(ShadowVarSymbol* svar);
@@ -504,6 +436,15 @@ public:
 *                                                                   *
 *                                                                   *
 ********************************* | ********************************/
+
+
+// These map from Chapel function types to LLVM function types. They
+// live here rather than in 'llvmUtil.h' because of a name conflict
+// between 'Type' and 'llvm::Type'.
+#ifdef HAVE_LLVM
+bool llvmMapUnderlyingFunctionType(FunctionType* k, llvm::FunctionType* v);
+llvm::FunctionType* llvmGetUnderlyingFunctionType(FunctionType* t);
+#endif
 
 class TypeSymbol final : public Symbol {
  public:
@@ -942,6 +883,7 @@ extern VarSymbol *gModuleInitIndentLevel;
 extern VarSymbol *gInfinity;
 extern VarSymbol *gNan;
 extern VarSymbol *gUninstantiated;
+extern VarSymbol *gUseIOFormatters;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;

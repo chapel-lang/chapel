@@ -1,1 +1,1 @@
-PermissionError: Operation not permitted (in chown with path "./usercopy/curses.h")
+PermissionError: Operation not permitted (in chown with path "./usercopy2")

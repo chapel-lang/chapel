@@ -32,7 +32,7 @@ module DistributedMap {
     type keyType;
     type valType;
     pragma "no doc"
-    var m: shared distributedMapImpl(keyType, valType)?;
+    var m: shared distributedMapImpl(keyType, valType, ?)?;
     forwarding m!;
 
     proc init(type keyType, type valType) {
@@ -45,6 +45,11 @@ module DistributedMap {
       this.keyType = keyType;
       this.valType = valType;
       m = new shared distributedMapImpl(keyType, valType, hasher);
+    }
+
+    proc init(type keyType, type valType, r: fileReader) throws {
+      this.init(keyType, valType);
+      readThis(r);
     }
 
     proc clear() {
@@ -420,6 +425,11 @@ module DistributedMap {
             yield tables[loc].table[slot].val;
         }
       }
+    }
+
+    proc init(type keyType, type valType, r: fileReader) {
+      this.init(keyType, valType);
+      readThis(r);
     }
 
     // TODO: if writeThis encodes the locale hash, this should react to it

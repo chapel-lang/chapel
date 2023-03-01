@@ -2,13 +2,16 @@ use Time;
 use Types;
 use Random;
 
-use Barriers;
 use RangeChunk;
 
 use HPCCProblemSize;
 
 param numVectors = 3;
 type elemType = real(64);
+enum BarrierType {
+  Atomic,
+  Sync
+}
 
 config const m = computeProblemSize(elemType, numVectors),
              alpha = 3.0;
@@ -35,11 +38,21 @@ proc main() {
 
   var execTime: [1..numTrials] real;
 
-  var barrier = new Barrier(numTasks, barrierType);
   for trial in 1..numTrials {
+    var count: atomic int = numTasks;
+    var sgate: sync int;
+    var agate: atomic int;
+
     const startTime = timeSinceEpoch().totalSeconds();
     coforall tid in 0..#numTasks {
-      barrier.barrier();
+      // do a basic hand-coded barrier using either syncs or atomics
+      var c = count.fetchSub(1);
+      if c == 1 {
+        if barrierType == BarrierType.Sync then sgate.writeXF(1);
+                                           else agate.write(1);
+      }
+      if barrierType == BarrierType.Sync then sgate.readFF();
+                                         else agate.waitFor(1);
       for i in chunk(1..m, numTasks, tid) {
         A[i] = B[i] + alpha * C[i];
       }

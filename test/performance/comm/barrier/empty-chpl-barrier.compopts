@@ -1,3 +1,2 @@
 -sbarrierMode=LocalAtomic
--sbarrierMode=LocalSync
 -sbarrierMode=GlobalAllLocales

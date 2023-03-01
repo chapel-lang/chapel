@@ -255,7 +255,7 @@ proc process_json(fname: string, ref Pairs)
     var sub = spawn(["gunzip", "-c", fname], stdout=pipeStyle.pipe);
     process_json(sub.stdout, fname, Pairs);
   } else {
-    var logfile = openreader(fname);
+    var logfile = openReader(fname);
     process_json(logfile, fname, Pairs);
   }
 }

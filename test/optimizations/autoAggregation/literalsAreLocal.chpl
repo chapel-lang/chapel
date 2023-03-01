@@ -2,10 +2,10 @@ writeln();
 
 use BlockDist;
 
-var dom = newBlockDom(0..10);
+var dom = Block.createDomain(0..10);
 var a: [dom] int;
 var b: [dom] int;
-var c = newBlockArr(0..10, int);
+var c = Block.createArray(0..10, int);
 
 writeln("Loop 1 -- expecting destination aggregation");
 forall i in a.domain {

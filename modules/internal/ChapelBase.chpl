@@ -55,8 +55,25 @@ module ChapelBase {
   pragma "no object"
   class _object { }
 
+  proc object.encodeTo(f) throws {
+    ref fmt = f.formatter;
+    fmt.writeTypeStart(f, object);
+    fmt.writeTypeEnd(f, object);
+  }
+
 
   enum iterKind {leader, follower, standalone};
+
+  // This is a compatability flag to maintain old behavior for applications
+  // that rely on it (e.g., Arkouda). The tests for new features will run
+  // with this set to FALSE. At a certain point the old behavior will be
+  // deprecated, and this flag will be removed.
+  // TODO: Move to a separate module if we add closure stuff to module code.
+  config param fcfsUseLegacyBehavior = true;
+
+  // This flag toggles on the new pointer-based implementation.
+  // It is unstable and experimental.
+  config param fcfsUsePointerImplementation = false;
 
   //
   // assignment on primitive types
@@ -1108,7 +1125,7 @@ module ChapelBase {
     param needsDestroy = __primitive("needs auto destroy",
                                      __primitive("deref", oldDdata[0]));
     if needsDestroy && (oldSize > newSize) {
-      if _deinitElementsIsParallel(eltType) {
+      if _deinitElementsIsParallel(eltType, oldSize) {
         forall i in newSize..oldSize-1 do
           chpl__autoDestroy(oldDdata[i]);
       } else {
@@ -2399,7 +2416,7 @@ module ChapelBase {
     const prevModule: unmanaged chpl_ModuleDeinit?; // singly-linked list / LIFO queue
     proc writeThis(ch) throws {
       try {
-      ch._writef("chpl_ModuleDeinit(%s)",createStringWithNewBuffer(moduleName));
+      ch.writef("chpl_ModuleDeinit(%s)",createStringWithNewBuffer(moduleName));
       }
       catch e: DecodeError { // let IoError propagate
         halt("Module name is not valid string!");

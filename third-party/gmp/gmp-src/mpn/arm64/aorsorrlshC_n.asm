@@ -65,14 +65,14 @@ ifdef(`DO_rsb', `
 
 ASM_START()
 PROLOGUE(func_n)
-	lsr	x18, n, #2
+	lsr	x6, n, #2
 	tbz	n, #0, L(bx0)
 
 L(bx1):	ldr	x5, [up]
 	tbnz	n, #1, L(b11)
 
 L(b01):	ldr	x11, [vp]
-	cbz	x18, L(1)
+	cbz	x6, L(1)
 	ldp	x8, x9, [vp,#8]
 	lsl	x13, x11, #LSH
 	ADDSUB(	x15, x13, x5)
@@ -94,7 +94,7 @@ L(b11):	ldr	x9, [vp]
 	ADDSUB(	x17, x13, x5)
 	str	x17, [rp],#8
 	sub	up, up, #8
-	cbz	x18, L(end)
+	cbz	x6, L(end)
 	b	L(top)
 
 L(bx0):	tbnz	n, #1, L(b10)
@@ -107,7 +107,7 @@ L(b00):	CLRRCY(	x11)
 L(b10):	CLRRCY(	x9)
 	ldp	x10, x11, [vp]
 	sub	up, up, #16
-	cbz	x18, L(end)
+	cbz	x6, L(end)
 
 	ALIGN(16)
 L(top):	ldp	x4, x5, [up,#16]
@@ -124,8 +124,8 @@ L(mid):	ldp	x4, x5, [up,#32]!
 	ADDSUBC(x16, x12, x4)
 	ADDSUBC(x17, x13, x5)
 	stp	x16, x17, [rp],#16
-	sub	x18, x18, #1
-	cbnz	x18, L(top)
+	sub	x6, x6, #1
+	cbnz	x6, L(top)
 
 L(end):	ldp	x4, x5, [up,#16]
 	extr	x12, x10, x9, #RSH

@@ -74,7 +74,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
     const projectHome = getProjectHome(cwd, tf);
     const tomlPath = projectHome + "/" + Path.relPath(tf);
     const lockPath = projectHome + "/" + Path.relPath(lf);
-    const openFile = openreader(tomlPath);
+    const openFile = openReader(tomlPath);
     const TomlFile = parseToml(openFile);
     var updated = false;
     if isFile(tomlPath) {

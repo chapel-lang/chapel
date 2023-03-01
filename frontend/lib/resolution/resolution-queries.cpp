@@ -284,13 +284,13 @@ QualifiedType typeForLiteral(Context* context, const Literal* literal) {
       typePtr = UintType::get(context, 0);
       break;
     case asttags::BytesLiteral:
-      typePtr = RecordType::getBytesType(context);
+      typePtr = CompositeType::getBytesType(context);
       break;
     case asttags::CStringLiteral:
       typePtr = CStringType::get(context);
       break;
     case asttags::StringLiteral:
-      typePtr = RecordType::getStringType(context);
+      typePtr = CompositeType::getStringType(context);
       break;
     default:
       CHPL_ASSERT(false && "case not handled");
@@ -589,14 +589,18 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
   result.setType(ct);
 
   bool isObjectType = false;
+  bool isMissingBundledType = false;
   if (auto bct = ct->toBasicClassType()) {
     isObjectType = bct->isObjectType();
+    auto id = bct->id();
+    isMissingBundledType = CompositeType::isMissingBundledType(context, id);
   }
 
-  if (isObjectType) {
+  if (isObjectType || isMissingBundledType) {
     // no need to try to resolve the fields for the object type,
     // which doesn't have a real uAST ID.
-
+    // for built-in types like Errors when we didn't parse the standard library
+    // don't try to resolve the fields
   } else {
     auto ast = parsing::idToAst(context, ct->id());
     CHPL_ASSERT(ast && ast->isAggregateDecl());
@@ -727,7 +731,7 @@ forwardingCycleCheckQuery(Context* context, const CompositeType* ct) {
   return QUERY_END(result);
 }
 
-// returns 'true' if a fowarding cycle was detected & error emitted
+// returns 'true' if a forwarding cycle was detected & error emitted
 static bool
 emitErrorForForwardingCycles(Context* context, const CompositeType* ct) {
   bool cycleFound = false;
@@ -1078,6 +1082,7 @@ typeConstructorInitialQuery(Context* context, const Type* t)
                                          /* isMethod */ false,
                                          /* isTypeConstructor */ true,
                                          /* isCompilerGenerated */ true,
+                                         /* throws */ false,
                                          idTag,
                                          Function::PROC,
                                          std::move(formals),
@@ -2768,7 +2773,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
     std::vector<NamedScopeSet> visited;
     visited.resize(numForwards);
 
-    for (auto fci : forwardingCis) {
+    for (const auto& fci : forwardingCis) {
       size_t start = nonPoiCandidates.size();
       // consider compiler-generated candidates
       considerCompilerGeneratedCandidates(context, fci, inScope, inPoiScope,
@@ -2780,7 +2785,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
     // next, look for candidates without using POI.
     {
       int i = 0;
-      for (auto fci : forwardingCis) {
+      for (const auto& fci : forwardingCis) {
         size_t start = nonPoiCandidates.size();
         // compute the potential functions that it could resolve to
         auto v = lookupCalledExpr(context, inScope, fci, visited[i]);
@@ -2816,7 +2821,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
 
 
       int i = 0;
-      for (auto fci : forwardingCis) {
+      for (const auto& fci : forwardingCis) {
         size_t start = poiCandidates.size();
 
         // compute the potential functions that it could resolve to
@@ -2842,7 +2847,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
     // If no candidates were found and it's a method, try forwarding
     // This supports the forwarding-to-forwarding case.
     if (nonPoiCandidates.empty() && poiCandidates.empty()) {
-      for (auto fci : forwardingCis) {
+      for (const auto& fci : forwardingCis) {
         if (fci.isMethodCall() && fci.numActuals() >= 1) {
           const Type* receiverType = fci.actual(0).type().type();
           if (typeUsesForwarding(context, receiverType)) {
@@ -2865,12 +2870,12 @@ gatherAndFilterCandidatesForwarding(Context* context,
 // call can be nullptr. in that event, ci.name() will be used
 // to find the call with that name.
 //
-// forwardingTo is a vector that will be empty unless forwardiing
+// forwardingTo is a vector that will be empty unless forwarding
 // is used for some candidates.
 //
 // If forwarding is used, it will have an element for each of the returned
 // candidates and will indicate the actual type that is passed
-// to the 'this' reciever formal.
+// to the 'this' receiver formal.
 static CandidatesVec
 gatherAndFilterCandidates(Context* context,
                           const Call* call,
@@ -3145,7 +3150,7 @@ CallResolutionResult resolveTupleExpr(Context* context,
   bool anyUnknown = false;
   bool allType = true;
   bool allValue = true;
-  for (auto actual : ci.actuals()) {
+  for (const auto& actual : ci.actuals()) {
     QualifiedType q = actual.type();
     const Type* t = q.type();
     if (t == nullptr || t->isUnknownType())
@@ -3178,7 +3183,7 @@ CallResolutionResult resolveTupleExpr(Context* context,
   else if (allType)
     kind = QualifiedType::TYPE;
 
-  for (auto actual : ci.actuals()) {
+  for (const auto& actual : ci.actuals()) {
     QualifiedType q = actual.type();
     const Type* t = q.type();
     eltTypes.push_back(t);

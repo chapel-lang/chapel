@@ -367,15 +367,15 @@ static void test6() {
   auto s = UniqueString::get(context, "hello");
   auto p = StringParam::get(context, s);
   auto paramString = QualifiedType(QualifiedType::PARAM,
-                                   RecordType::getStringType(context),
+                                   CompositeType::getStringType(context),
                                    p);
 
   auto stringQT = QualifiedType(QualifiedType::VAR,
-                                RecordType::getStringType(context));
+                                CompositeType::getStringType(context));
   auto cStringQT = QualifiedType(QualifiedType::VAR,
                                  CStringType::get(context));
   auto bytesQT = QualifiedType(QualifiedType::VAR,
-                               RecordType::getBytesType(context));
+                               CompositeType::getBytesType(context));
   CanPassResult r;
   r = canPass(c, paramString, stringQT); assert(passesAsIs(r));
   r = canPass(c, paramString, cStringQT); assert(passesParamNarrowing(r));

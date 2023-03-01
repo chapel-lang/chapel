@@ -338,6 +338,11 @@ Regular Expression Types and Methods
 module Regex {
   private use OS, CTypes;
 
+  // Ideally, should be a config const, but it pollutes --help output
+  // unnecessarily even though it is private
+  pragma "no doc"
+  private const initBufferSizeForSlowReplaceAndCount = 16;
+
 pragma "no doc"
 extern type qio_regex_t;
 
@@ -948,48 +953,33 @@ record regex {
   /* Perform the same operation as :proc:`regex.sub` but return a tuple
      containing the new text and the number of substitutions made.
 
+     .. warning::
+
+       This method is deprecated. Please use :proc:`string.replaceAndCount`.
+
      :arg repl: replace matches with this string or bytes
      :arg text: the text to search and replace within
      :type text: `string` or `bytes`
      :arg global: if true, replace multiple matches
      :returns: a tuple containing (new text, number of substitutions made)
    */
+  deprecated "regex.subn is deprecated. Please use string.replaceAndCount."
   proc subn(repl: exprType, text: exprType, global = true ):(exprType, int)
   {
-    var regexCopy:regex(exprType);
-    if home != here then regexCopy = this;
-    const localRegex = if home != here then regexCopy._regex else _regex;
-    // TODO -- move subn after sub for documentation clarity
-    var pos:byteIndex;
-    var endpos:byteIndex;
-
-    pos = 0;
-    endpos = pos + text.numBytes;
-
-    var ret: exprType;
-    var nreplaced:int;
-
-    var replaced:c_string;
-    var replaced_len:int(64);
-    nreplaced = qio_regex_replace(localRegex, repl.localize().c_str(),
-                                  repl.numBytes, text.localize().c_str(),
-                                  text.numBytes, pos:int, endpos:int, global,
-                                  replaced, replaced_len);
-    if exprType==string {
-      try! {
-        ret = createStringWithOwnedBuffer(replaced, replaced_len);
-      }
-    }
-    else {
-      ret = createBytesWithOwnedBuffer(replaced, replaced_len);
-    }
-
-    return (ret, nreplaced);
+    if global then
+      return text.replaceAndCount(this, repl);
+    else
+      return text.replaceAndCount(this, repl, 1);
   }
 
   /*
      Find matches to this regular expression and create a new string or bytes in
      which those matches are replaced by repl.
+
+     .. warning::
+
+       This method is deprecated. Please use :proc:`string.replace` with `regex`
+       argument.
 
      :arg repl: replace matches with this string or bytes
      :arg text: the text to search and replace within
@@ -997,10 +987,13 @@ record regex {
      :arg global: if true, replace multiple matches
      :returns: the new string or bytes
    */
+  deprecated "regex.sub is deprecated. Please use string.replace."
   proc sub(repl: exprType, text: exprType, global = true )
   {
-    var (str, count) = subn(repl, text, global);
-    return str;
+    if global then
+      return text.replace(this, repl);
+    else
+      return text.replace(this, repl, count=1);
   }
 
   // TODO this could use _serialize to get the pattern and options
@@ -1044,6 +1037,12 @@ record regex {
                                   opts,
                                   this._regex);
       }
+  }
+
+  pragma "no doc"
+  proc init(type exprType, f: fileReader) {
+    this.init(exprType);
+    readThis(f);
   }
 }
 
@@ -1134,6 +1133,181 @@ proc bytes.find(pattern: regex(bytes)):byteIndex
 {
   return (pattern.search(this)).byteOffset;
 }
+
+/* Search the receiving string for the pattern. Returns a new string where the
+   match(es) to the pattern is replaced with a replacement.
+
+   :arg pattern: the compiled regular expression to search for
+   :arg replacement: string to replace with
+   :arg count: number of maximum replacements to make, values less than zero
+               replaces all occurrences
+ */
+proc string.replace(pattern: regex(string), replacement:string,
+                    count=-1): string {
+  var (str, dummy) = doReplaceAndCount(this, pattern, replacement, count);
+  return str;
+}
+
+/* Search the receiving bytes for the pattern. Returns a new bytes where the
+   match(es) to the pattern is replaced with a replacement.
+
+   :arg pattern: the compiled regular expression to search for
+   :arg replacement: bytes to replace with
+   :arg count: number of maximum replacements to make, values less than zero
+               replaces all occurrences
+ */
+proc bytes.replace(pattern: regex(bytes), replacement:bytes, count=-1): bytes {
+  var (str, dummy) = doReplaceAndCount(this, pattern, replacement, count);
+  return str;
+}
+
+/* Search the receiving string for the pattern. Returns a new string where the
+   match(es) to the pattern is replaced with a replacement and number of
+   replacements.
+
+   :arg pattern: the compiled regular expression to search for
+   :arg replacement: string to replace with
+   :arg count: number of maximum replacements to make, values less than zero
+               replaces all occurrences
+ */
+proc string.replaceAndCount(pattern: regex(string), replacement:string,
+                            count=-1): (string, int) {
+  return doReplaceAndCount(this, pattern, replacement, count);
+}
+
+/* Search the receiving bytes for the pattern. Returns a new bytes where the
+   match(es) to the pattern is replaced with a replacement and number of
+   replacements.
+
+   :arg pattern: the compiled regular expression to search for
+   :arg replacement: bytes to replace with
+   :arg count: number of maximum replacements to make, values less than zero
+               replaces all occurrences
+ */
+proc bytes.replaceAndCount(pattern: regex(bytes), replacement:bytes,
+                           count=-1): (bytes, int) {
+  return doReplaceAndCount(this, pattern, replacement, count);
+}
+
+
+private inline proc doReplaceAndCount(x: ?t, pattern: regex(t), replacement: t,
+                                      count=-1) where (t==string || t==bytes) {
+  if count<0 || count==1 then
+    return doReplaceAndCountFast(x, pattern, replacement, global=(count!=1));
+  else
+    return doReplaceAndCountSlow(x, pattern, replacement, count);
+
+}
+
+private proc doReplaceAndCountSlow(x: ?t, pattern: regex(t), replacement: t,
+                                   count=-1) where (t==string || t==bytes) {
+  use ByteBufferHelpers;
+
+  var regexCopy:regex(t);
+  if pattern.home != here then regexCopy = pattern;
+  const localRegex = if pattern.home != here then regexCopy._regex
+                                             else pattern._regex;
+
+  const localX = x.localize();
+
+  var matchesDom = {0..#initBufferSizeForSlowReplaceAndCount};
+  var matches: [matchesDom] qio_regex_string_piece_t;
+
+  var curIdx = 0;
+  var totalBytesToRemove = 0;
+  var totalChunksToRemove = 0;
+  for i in 0..<count {
+    if i == matchesDom.size then matchesDom = {0..#matchesDom.size*2};
+
+    var got = qio_regex_match(localRegex, localX.c_str(), x.numBytes,
+                              startpos=curIdx, endpos=x.numBytes,
+                              QIO_REGEX_ANCHOR_UNANCHORED, matches[i], 1);
+    if !got then break;
+
+    curIdx = matches[i].offset + matches[i].len;
+    totalBytesToRemove += matches[i].len;
+    totalChunksToRemove += 1;
+  }
+  if totalChunksToRemove == 0 then return (x,0);
+
+  const numBytesInResult = x.numBytes-totalBytesToRemove+
+                           (totalChunksToRemove*replacement.numBytes);
+
+  var (newBuff, buffSize) = bufferAlloc(numBytesInResult+1);
+  newBuff[numBytesInResult] = 0;
+
+  const localRepl = replacement.localize();
+  var readIdx = 0;
+  var writeIdx = 0;
+  for i in 0..#totalChunksToRemove {
+    var readOffset = matches[i].offset;
+
+    // copy from the original string
+    const copyLen = readOffset-readIdx;
+    bufferMemcpyLocal(dst=newBuff, src=localX.buff, len=copyLen,
+                      dst_off=writeIdx, src_off=readIdx);
+    writeIdx += copyLen;
+
+    // copy the replacement
+    bufferMemcpyLocal(dst=newBuff, src=localRepl.buff, len=localRepl.numBytes,
+                      dst_off=writeIdx);
+    writeIdx += localRepl.numBytes;
+
+    readIdx = (readOffset+matches[i].len);
+  }
+
+  // handle the last part
+  if readIdx < localX.numBytes {
+    const copyLen = localX.numBytes-readIdx;
+    bufferMemcpyLocal(dst=newBuff, src=localX.buff, len=copyLen,
+                      dst_off=writeIdx, src_off=readIdx);
+  }
+
+  var ret: t;
+
+  if t == string then
+    ret = try! createStringWithOwnedBuffer(newBuff, length=numBytesInResult,
+                                           size=buffSize);
+  else
+    ret = createBytesWithOwnedBuffer(newBuff, length=numBytesInResult,
+                                     size=buffSize);
+
+  return (ret, totalChunksToRemove);
+}
+
+private proc doReplaceAndCountFast(x: ?t, pattern: regex(t), replacement: t,
+                                   global:bool) where (t==string || t==bytes) {
+  var regexCopy:regex(t);
+  if pattern.home != here then regexCopy = pattern;
+  const localRegex = if pattern.home != here then regexCopy._regex
+                                             else pattern._regex;
+  var pos:byteIndex;
+  var endpos:byteIndex;
+
+  pos = 0;
+  endpos = pos + x.numBytes;
+
+  var ret: t;
+  var nreplaced:int;
+
+  var replaced:c_string;
+  var replaced_len:int(64);
+  nreplaced = qio_regex_replace(localRegex, replacement.localize().c_str(),
+                                replacement.numBytes, x.localize().c_str(),
+                                x.numBytes, pos:int, endpos:int, global,
+                                replaced, replaced_len);
+  if t==string {
+    try! {
+      ret = createStringWithOwnedBuffer(replaced, replaced_len);
+    }
+  }
+  else {
+    ret = createBytesWithOwnedBuffer(replaced, replaced_len);
+  }
+
+  return (ret, nreplaced);
+}
+
 
 /* Returns true if the start of the string matches the pattern.
 

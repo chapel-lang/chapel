@@ -457,6 +457,7 @@ static const Module* const& getToplevelModuleQuery(Context* context,
   } else {
     // Check the module search path for the module.
     std::string check;
+    std::set<ID> seenModules;
 
     for (auto path : moduleSearchPath(context)) {
       check = path.str();
@@ -479,16 +480,18 @@ static const Module* const& getToplevelModuleQuery(Context* context,
         UniqueString emptyParentSymbolPath;
         const ModuleVec& v = parse(context, filePath, emptyParentSymbolPath);
         for (auto mod: v) {
+          if (seenModules.find(mod->id()) != seenModules.end()) continue;
+
           if (mod->name() == name) {
             result = mod;
             break;
           } else {
-            // TODO: is the error what we need in this case?
-            // What does the production compiler do?
+            // TODO: Production compiler does not emit this error, keep it?
             context->error(mod, "In use/imported file, module name %s "
                                 "does not match file name %s.chpl",
                                 mod->name().c_str(),
                                 name.c_str());
+            seenModules.insert(mod->id());
           }
         }
       }
@@ -628,8 +631,10 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
   const AstNode* ast = astForIDQuery(context, id);
   if (ast != nullptr) {
     result = ast->tag();
-  } else if (types::RecordType::isMissingBundledRecordType(context, id)) {
+  } else if (types::CompositeType::isMissingBundledRecordType(context, id)) {
     result = asttags::Record;
+  } else if (types::CompositeType::isMissingBundledClassType(context, id)) {
+    result = asttags::Class;
   }
 
   return QUERY_END(result);
@@ -968,17 +973,24 @@ const uast::AttributeGroup* idToAttributeGroup(Context* context, ID id) {
 
 // TODO: Might be worth figuring out how to generalize this pattern so that
 // more parts of the compiler can use it.
+static const AstNode*
+firstParentMatch(Context* context, ID id,
+                 const std::function<bool(Context*, const AstNode*)>& f) {
+  if (id.isEmpty()) return nullptr;
+  auto ast = idToAst(context, id);
+  auto p = parentAst(context, ast);
+  if (!ast || !p) return nullptr;
+  for (; p != nullptr; p = parentAst(context, p))
+    if (f(context, p))
+      return p;
+  return nullptr;
+}
+
 static bool
 anyParentMatches(Context* context, ID id,
                  const std::function<bool(Context*, const AstNode*)>& f) {
-  if (id.isEmpty()) return false;
-  auto ast = idToAst(context, id);
-  auto p = parentAst(context, ast);
-  if (!ast || !p) return false;
-  for (; p != nullptr; p = parentAst(context, p))
-    if (f(context, p))
-      return true;
-  return false;
+  auto p = firstParentMatch(context, id, f);
+  return p != nullptr;
 }
 
 static bool isAstDeprecated(Context* context, const AstNode* ast) {
@@ -1102,10 +1114,17 @@ static bool
 isMentionOfWarnedTypeInReceiver(Context* context, ID idMention,
                                 ID idTarget) {
   if (idMention.isEmpty() || idTarget.isEmpty()) return false;
-  if (!anyParentMatches(context, idMention, isAstFormal)) return false;
   auto attr = parsing::idToAttributeGroup(context, idTarget);
   if (!attr) return false;
   if (!attr->isDeprecated() && !attr->isUnstable()) return false;
+
+  auto p = firstParentMatch(context, idMention, isAstFormal);
+  if (!p) return false;
+
+  // Confirm the type is a receiver. TODO: Is this enough?
+  auto rcv = p->toFormal();
+  if (rcv->name() != USTR("this")) return false;
+
   return true;
 }
 

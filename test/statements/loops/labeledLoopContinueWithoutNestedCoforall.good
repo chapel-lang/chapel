@@ -1,0 +1,2 @@
+labeledLoopContinueWithoutNestedCoforall.chpl:10: error: 'continue' to label 'outerer' outside of a 'coforall' statement is not allowed
+labeledLoopContinueWithoutNestedCoforall.chpl:3: note: cannot 'continue' out of a 'coforall' statement

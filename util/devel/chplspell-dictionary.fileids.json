@@ -594,7 +594,7 @@
     "frontend/include/chpl/framework/global-strings.h"
   ],
   "389486f6-ac5b-11ed-b67e-4d191cd16eac": [
-    "frontend/include/chpl/framework/parser-error-classes-list.h"
+    "frontend/include/chpl/parsing/parser-error-classes-list.h"
   ],
   "712148ae-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/stringify-functions.h"

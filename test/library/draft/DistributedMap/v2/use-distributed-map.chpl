@@ -15,7 +15,7 @@ forall key in inputArr with
 
 // agg.flush(); // agg doesn't live outside the forall so can't flush here
 
-var ch = openwriter("mapOutput.txt");
+var ch = openWriter("mapOutput.txt");
 
 var first = true;
 for key in dm1.keys() { // won't be great perf but that's okay for now

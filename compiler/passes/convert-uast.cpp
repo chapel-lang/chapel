@@ -38,6 +38,7 @@
 #include "ImportStmt.h"
 #include "LoopExpr.h"
 #include "ParamForLoop.h"
+#include "TemporaryConversionThunk.h"
 #include "TryStmt.h"
 #include "WhileDoStmt.h"
 #include "build.h"
@@ -618,11 +619,11 @@ struct Converter {
     return DeferStmt::build(stmts);
   }
 
-  BlockStmt* visit(const uast::Local* node) {
+  Expr* visit(const uast::Local* node) {
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     auto condition = convertExprOrNull(node->condition());
     if (condition) {
-      return buildLocalStmt(condition, body);
+      return buildThunk(buildConditionalLocalStmt, condition, body);
     } else {
       return buildLocalStmt(body);
     }
@@ -789,9 +790,9 @@ struct Converter {
 
     UniqueString filePath;
 
-   if (builderResult != nullptr) {
-     filePath = builderResult->filePath();
-   }
+    if (builderResult != nullptr) {
+      filePath = builderResult->filePath();
+    }
 
     // convert the included module
 
@@ -816,6 +817,9 @@ struct Converter {
 
     // allow production compiler to take action now that it is parsed
     noteParsedIncludedModule(mod, astr(filePath));
+
+    // note that the converted 'module include' is the same as 'mod'
+    noteConvertedSym(node, mod);
 
     return buildChapelStmt(new DefExpr(mod));
   }
@@ -1517,7 +1521,7 @@ struct Converter {
   }
 
   // TODO: Create a common converter for all IndexableLoop if possible?
-  BlockStmt* visit(const uast::Coforall* node) {
+  Expr* visit(const uast::Coforall* node) {
     INT_ASSERT(!node->isExpressionLevel());
 
     // These are the arguments that 'buildCoforallLoopStmt' requires.
@@ -1527,8 +1531,7 @@ struct Converter {
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     bool zippered = node->iterand()->isZip();
 
-    return buildCoforallLoopStmt(indices, iterator, byref_vars, body,
-                                 zippered);
+    return buildThunk(buildCoforallLoopStmt, indices, iterator, byref_vars, body, zippered);
   }
 
   Expr* visit(const uast::For* node) {
@@ -2398,7 +2401,7 @@ struct Converter {
         // forwarding var bla;
         expr = new UnresolvedSymExpr(varName.c_str());
       } else {
-        // fowarding someExpression();
+        // forwarding someExpression();
         expr = convertExprOrNull(node->expr());
       }
     }
@@ -2468,24 +2471,39 @@ struct Converter {
             name == USTR("<<="));
   }
 
-  const char* createLambdaName(void) {
+  static const char*
+  createAnonymousRoutineName(const uast::Function* node) {
+    std::ignore = node;
+
     static const int maxDigits = 100;
     static unsigned int nextId = 0;
+    static const char* prefix = "chpl_anon";
     char buf[maxDigits];
 
     if ((nextId + 1) == 0) INT_FATAL("Overflow for lambda ID number");
 
-    // Use snprintf to prevent buffer overflow if there are too many lambdas.
-    int n = snprintf(buf, (size_t)maxDigits, "chpl_lambda_%i", nextId++);
+    auto kind = astr(uast::Function::kindToString(node->kind()));
+
+    // Use sprintf to prevent buffer overflow if there are too many lambdas.
+    int n = snprintf(buf, (size_t) maxDigits, "%s_%s_%i", prefix, kind,
+                     nextId++);
     if (n > (int) maxDigits) INT_FATAL("Too many lambdas.");
 
     auto ret = astr(buf);
     return ret;
   }
 
-  const char* convertFunctionNameAndAstr(UniqueString name,
-                                         uast::Function::Kind kind) {
-    if (kind == uast::Function::LAMBDA) return createLambdaName();
+  static const char*
+  convertFunctionNameAndAstr(const uast::Function* node) {
+    auto name = node->name();
+    auto kind = node->kind();
+
+    if (node->isAnonymous()) return createAnonymousRoutineName(node);
+
+    if (name.isEmpty()) {
+      INT_ASSERT(kind == uast::Function::PROC);
+      return nullptr;
+    }
 
     const char* ret = nullptr;
     if (name == USTR("by")) {
@@ -2687,8 +2705,7 @@ struct Converter {
       }
     }
 
-    const char* convName = convertFunctionNameAndAstr(node->name(),
-                                                      node->kind());
+    const char* convName = convertFunctionNameAndAstr(node);
 
     // used to be buildFunctionSymbol
     fn->cname = fn->name = astr(convName);
@@ -2723,8 +2740,12 @@ struct Converter {
         setupTypeIntentArg(toArgSymbol(fn->_this));
       }
 
-    } else if (node->kind() == uast::Function::LAMBDA) {
+    } else if (node->isAnonymous()) {
       fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
+      fn->addFlag(FLAG_ANONYMOUS_FN);
+      if (node->kind() == uast::Function::LAMBDA) {
+        fn->addFlag(FLAG_LEGACY_LAMBDA);
+      }
     }
 
     Expr* retType = nullptr;
@@ -2931,6 +2952,8 @@ struct Converter {
   Expr* visit(const uast::FunctionSignature* node) {
     FnSymbol* fn = convertFunctionSignature(node);
     fn->addFlag(FLAG_ANONYMOUS_FN);
+    fn->addFlag(FLAG_NO_FN_BODY);
+    INT_ASSERT(fn->isAnonymous() && fn->isSignature());
     auto ret = new DefExpr(fn);
     return ret;
   }
@@ -3274,49 +3297,63 @@ struct Converter {
     }
   }
 
+  static bool isEnsureDomainExprCall(Expr* expr) {
+    if (auto call = toCallExpr(expr)) {
+      return call->isNamed("chpl__ensureDomainExpr");
+    }
+    return false;
+  }
+
   CallExpr* convertArrayType(const uast::BracketLoop* node,
                              bool isFormalType=false) {
     astlocMarker markAstLoc(node->id());
 
     INT_ASSERT(node->isExpressionLevel());
 
+    const uast::TypeQuery* lastTypeQuery = nullptr;
+    int numTypeQueries = 0;
     Expr* domActuals = nullptr;
+    bool isEmptyDomain = false;
 
     if (auto iterand = node->iterand()) {
-      auto astForIterand = iterand;
 
+      // Most domains can be converted, but some require special attention.
       if (auto dom = iterand->toDomain()) {
 
-        // If there are no domain expressions, use 'nil'.
+        // If there are no domain expressions, use 'nil'. TODO: 'dtAny'?
         if (!dom->numExprs()) {
           domActuals = new SymExpr(gNil);
+          isEmptyDomain = true;
 
-        // Convert multiple domain expressions into a PRIM_ACTUALS_LIST.
-        } else if (dom->numExprs() > 1) {
-          CallExpr* actualsList = new CallExpr(PRIM_ACTUALS_LIST);
-          domActuals = actualsList;
-
-          for (auto expr : dom->exprs()) {
-            actualsList->insertAtTail(convertAST(expr));
-          }
-
-          domActuals = new CallExpr("chpl__ensureDomainExpr", actualsList);
-
-        // Use a single argument directly.
+        // Otherwise, check for and sanitize type queries.
         } else {
-          astForIterand = dom->expr(0);
+          for (int i = 0; i < dom->numExprs(); i++) {
+            if (auto tq = dom->expr(i)->toTypeQuery()) {
+              numTypeQueries += 1;
+              lastTypeQuery = tq;
+            }
+          }
         }
+      } else if (auto tq = iterand->toTypeQuery()) {
+        numTypeQueries = 1;
+        lastTypeQuery = tq;
       }
 
-      if (domActuals == nullptr) {
-        auto expr = astForIterand;
-        domActuals = convertAST(expr);
+      CHPL_ASSERT(numTypeQueries <= 1);
 
-        // But wrap it if it is not a type query for a formal type.
-        bool isFormalTypeQuery = isFormalType && expr->isTypeQuery();
-        if (!isFormalTypeQuery) {
-          domActuals = new CallExpr("chpl__ensureDomainExpr", domActuals);
-        }
+      // If there is a type query, extract it from the domain.
+      if (lastTypeQuery) {
+        CHPL_ASSERT(isFormalType);
+        CHPL_ASSERT(!domActuals);
+        domActuals = convertAST(lastTypeQuery);
+      }
+
+      // Make sure we have something to work with.
+      domActuals = !domActuals ? convertAST(iterand) : domActuals;
+
+      if (!isEnsureDomainExprCall(domActuals) && numTypeQueries == 0 &&
+          !isEmptyDomain) {
+        domActuals = new CallExpr("chpl__ensureDomainExpr", domActuals);
       }
     }
 
@@ -3404,6 +3441,9 @@ struct Converter {
       const uast::BracketLoop* bkt = ie->toBracketLoop();
       if (bkt && isTypeVar) {
           auto convArrayType = convertArrayType(bkt);
+
+          // Use this builder because it is performing checks for skyline
+          // arrays amongst other things (that are too arcane for me).
           initExpr = buildForallLoopExprFromArrayType(convArrayType);
         } else {
           initExpr = convertAST(ie);
@@ -4429,12 +4469,22 @@ void postConvertApplyFixups(chpl::Context* context) {
     }
   }
 
+  forv_Vec(TemporaryConversionThunk, thunk, gTemporaryConversionThunks) {
+    if (thunk->inTree()) {
+      SET_LINENO(thunk);
+      thunk->replace(thunk->force());
+    }
+  }
+
   // Ensure no SymExpr referring to TemporaryConversionSymbol is still in tree
   if (fVerify) {
     forv_Vec(SymExpr, se, gSymExprs) {
       if (isTemporaryConversionSymbol(se->symbol())) {
         INT_ASSERT(!se->inTree());
       }
+    }
+    forv_Vec(TemporaryConversionThunk, thunk, gTemporaryConversionThunks) {
+      INT_ASSERT(!thunk->inTree());
     }
   }
 

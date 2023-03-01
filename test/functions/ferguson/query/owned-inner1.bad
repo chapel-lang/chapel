@@ -1,1 +1,3 @@
-owned-inner1.chpl:1: syntax error: near '?t'
+owned-inner1.chpl:1: In function 'f':
+owned-inner1.chpl:1: error: invalid query -- queried field must be a type or parameter
+  owned-inner1.chpl:5: called as f(arg: owned MyClass)

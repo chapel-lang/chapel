@@ -68,6 +68,10 @@ class IdAndVis {
     return ret;
   }
 
+  void mark(Context* context) const {
+    id_.mark(context);
+  }
+
   const ID& id() const { return id_; }
   uast::Decl::Visibility vis() const { return vis_; }
   bool isPrivate() const { return vis_ == uast::Decl::PRIVATE; }
@@ -314,6 +318,10 @@ class BorrowedIdsWithName {
     return idv_.id_;
   }
 
+  /** Returns 'true' if the list contains only IDs that represent
+      methods or fields. */
+  bool containsOnlyMethodsOrFields() const;
+
   BorrowedIdsWithNameIter begin() const {
     return BorrowedIdsWithNameIter(this, beginIdAndVis());
   }
@@ -349,6 +357,13 @@ class BorrowedIdsWithName {
     return ret;
   }
 
+  void mark(Context* context) const {
+    idv_.mark(context);
+    for (auto const& elt : *moreIdvs_) {
+      context->markPointer(&elt.id_);
+    }
+  }
+
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   /// \cond DO_NOT_DOCUMENT
@@ -379,8 +394,10 @@ class Scope {
  private:
   const Scope* parentScope_ = nullptr;
   uast::asttags::AstTag tag_ = uast::asttags::AST_TAG_UNKNOWN;
+  // TODO: better pack these to save space
   bool containsUseImport_ = false;
   bool containsFunctionDecls_ = false;
+  bool containsExternBlock_ = false;
   bool autoUsesModules_ = false;
   bool methodScope_ = false;
   ID id_;
@@ -430,6 +447,12 @@ class Scope {
     return containsUseImport_ || autoUsesModules_;
   }
 
+  /** Returns 'true' if this Scope directly contains an 'extern' block
+      (with C code to supporting interoperability) */
+  bool containsExternBlock() const {
+    return containsExternBlock_;
+  }
+
   /** Returns 'true' if the Scope includes the automatic 'use' for
       the standard library. */
   bool autoUsesModules() const { return autoUsesModules_; }
@@ -450,26 +473,20 @@ class Scope {
   bool lookupInScope(UniqueString name,
                      std::vector<BorrowedIdsWithName>& result,
                      bool arePrivateIdsIgnored,
-                     bool onlyMethodsFields) const {
-    auto search = declared_.find(name);
-    if (search != declared_.end()) {
-      // There might not be any IDs that are visible to us, so borrow returns
-      // an optional list.
-      auto borrowedIds = search->second.borrow(arePrivateIdsIgnored,
-                                               onlyMethodsFields);
-      if (borrowedIds.hasValue()) {
-        result.push_back(std::move(borrowedIds.getValue()));
-        return true;
-      }
-    }
-    return false;
-  }
+                     bool onlyMethodsFields) const;
+
+  /** Check to see if the scope contains IDs with the provided name. */
+  bool contains(UniqueString name) const;
+
+  /** Gathers all of the names of symbols declared directly within this scope */
+  std::set<UniqueString> gatherNames() const;
 
   bool operator==(const Scope& other) const {
     return parentScope_ == other.parentScope_ &&
            tag_ == other.tag_ &&
            containsUseImport_ == other.containsUseImport_ &&
            containsFunctionDecls_ == other.containsFunctionDecls_ &&
+           containsExternBlock_ == other.containsExternBlock_ &&
            autoUsesModules_ == other.autoUsesModules_ &&
            methodScope_ == other.methodScope_ &&
            id_ == other.id_ &&
@@ -581,12 +598,15 @@ class VisibilitySymbols {
   };
 
  private:
-  const Scope* scope_; // Scope of the Module etc
+  const Scope* scope_; // Scope of the Module used/imported
                        // This could technically be an ID but basically
                        // anything we do with it needs a Scope* anyway.
   Kind kind_ = SYMBOL_ONLY;
   bool isPrivate_ = true;
   int8_t shadowScopeLevel_ = REGULAR_SCOPE;
+
+  ID visibilityClauseId_; // ID of the uAST that generated this
+                          // (this is only needed to support error messages)
 
   // the names/renames:
   //  pair.first is the name as declared
@@ -597,9 +617,11 @@ class VisibilitySymbols {
   VisibilitySymbols() { }
   VisibilitySymbols(const Scope* scope, Kind kind,
                     bool isPrivate, ShadowScope shadowScopeLevel,
+                    ID visibilityClauseId,
                     std::vector<std::pair<UniqueString,UniqueString>> names)
     : scope_(scope), kind_(kind),
       isPrivate_(isPrivate), shadowScopeLevel_(shadowScopeLevel),
+      visibilityClauseId_(visibilityClauseId),
       names_(std::move(names))
   {
     CHPL_ASSERT(shadowScopeLevel == REGULAR_SCOPE ||
@@ -621,6 +643,13 @@ class VisibilitySymbols {
     return (ShadowScope) shadowScopeLevel_;
   }
 
+  /**
+    Returns the ID of the use/import clause that this VisibilitySymbols was
+    created to represent. */
+  const ID& visibilityClauseId() const {
+    return visibilityClauseId_;
+  }
+
   /** Lookup the declared name for a given name
       Returns true if `name` is found in the list of renamed names and
       stores the declared name in `declared`
@@ -639,9 +668,10 @@ class VisibilitySymbols {
   bool operator==(const VisibilitySymbols &other) const {
     return scope_ == other.scope_ &&
            kind_ == other.kind_ &&
-           names_ == other.names_ &&
            isPrivate_ == other.isPrivate_ &&
-           shadowScopeLevel_ == other.shadowScopeLevel_;
+           shadowScopeLevel_ == other.shadowScopeLevel_ &&
+           visibilityClauseId_ == other.visibilityClauseId_ &&
+           names_ == other.names_;
   }
   bool operator!=(const VisibilitySymbols& other) const {
     return !(*this == other);
@@ -650,9 +680,10 @@ class VisibilitySymbols {
   void swap(VisibilitySymbols& other) {
     std::swap(scope_, other.scope_);
     std::swap(kind_, other.kind_);
-    names_.swap(other.names_);
     std::swap(isPrivate_, other.isPrivate_);
     std::swap(shadowScopeLevel_, other.shadowScopeLevel_);
+    names_.swap(other.names_);
+    visibilityClauseId_.swap(other.visibilityClauseId_);
   }
 
   static bool update(VisibilitySymbols& keep,
@@ -662,6 +693,7 @@ class VisibilitySymbols {
 
   void mark(Context* context) const {
     context->markPointer(scope_);
+    visibilityClauseId_.mark(context);
     for (auto p : names_) {
       p.first.mark(context);
       p.second.mark(context);
@@ -702,10 +734,12 @@ class ResolvedVisibilityScope {
   void addVisibilityClause(const Scope* scope, VisibilitySymbols::Kind kind,
                            bool isPrivate,
                            VisibilitySymbols::ShadowScope shadowScopeLevel,
+                           ID visibilityClauseId,
                            std::vector<std::pair<UniqueString,UniqueString>> n)
   {
     auto elt = VisibilitySymbols(scope, kind,
                                  isPrivate, shadowScopeLevel,
+                                 std::move(visibilityClauseId),
                                  std::move(n));
     visibilityClauses_.push_back(std::move(elt));
   }
@@ -723,7 +757,7 @@ class ResolvedVisibilityScope {
   }
   void mark(Context* context) const {
     context->markPointer(scope_);
-    for (auto sym : visibilityClauses_) {
+    for (const auto& sym : visibilityClauses_) {
       sym.mark(context);
     }
   }
@@ -787,6 +821,11 @@ enum {
     directly nested within a class/record/union
    */
   LOOKUP_ONLY_METHODS_FIELDS = 128,
+
+  /**
+    Lookup in extern blocks
+   */
+  LOOKUP_EXTERN_BLOCKS = 256,
 };
 
 /** LookupConfig is a bit-set of the LOOKUP_ flags defined above */
@@ -909,6 +948,80 @@ class InnermostMatch {
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
+};
+
+
+/** ResultVisibilityTrace stores a tracing of the name lookup process
+    which can be useful for error messages. */
+struct ResultVisibilityTrace {
+  struct VisibilityTraceElt {
+    // these contain details for a use/import
+    VisibilitySymbols::ShadowScope shadowScope =
+       VisibilitySymbols::REGULAR_SCOPE;
+    const ResolvedVisibilityScope* resolvedVisibilityScope = nullptr;
+    ID visibilityClauseId;
+    VisibilityStmtKind visibilityStmtKind = VIS_USE;
+    UniqueString renameFrom;
+    bool fromUseImport = false;
+
+    // this indicates a method receiver scope
+    const Scope* methodReceiverScope = nullptr;
+
+    // this indicates a parent scope
+    const Scope* parentScope = nullptr;
+
+    // these cover other cases
+    bool automaticModule = false;
+    bool toplevelModule = false;
+    bool externBlock = false;
+    bool rootScope = false;
+
+    bool operator==(const VisibilityTraceElt& other) const {
+      return shadowScope == other.shadowScope &&
+             resolvedVisibilityScope == other.resolvedVisibilityScope &&
+             visibilityClauseId == other.visibilityClauseId &&
+             visibilityStmtKind == other.visibilityStmtKind &&
+             renameFrom == other.renameFrom &&
+             fromUseImport == other.fromUseImport &&
+             methodReceiverScope == other.methodReceiverScope &&
+             parentScope == other.parentScope &&
+             automaticModule == other.automaticModule &&
+             toplevelModule == other.toplevelModule &&
+             externBlock == other.externBlock &&
+             rootScope == other.rootScope;
+    }
+    bool operator!=(const VisibilityTraceElt& other) const {
+      return !(*this == other);
+    }
+    void mark(Context* context) const {
+      context->markPointer(resolvedVisibilityScope);
+      renameFrom.mark(context);
+      visibilityClauseId.mark(context);
+      context->markPointer(methodReceiverScope);
+      context->markPointer(parentScope);
+    }
+  };
+
+  // the scope where it is eventually found
+  const Scope* scope = nullptr;
+
+  // how did we get to 'scope' ? this is a vector because there might
+  // have been multiple public use / public imports traversed.
+  std::vector<VisibilityTraceElt> visibleThrough;
+
+  bool operator==(const ResultVisibilityTrace& other) const {
+    return scope == other.scope &&
+           visibleThrough == other.visibleThrough;
+  }
+  bool operator!=(const ResultVisibilityTrace& other) const {
+    return !(*this == other);
+  }
+  void mark(Context* context) const {
+    context->markPointer(scope);
+    for (const auto& elt : visibleThrough) {
+      elt.mark(context);
+    }
+  }
 };
 
 

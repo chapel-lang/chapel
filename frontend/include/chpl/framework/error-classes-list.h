@@ -31,5 +31,5 @@
 // alphabetically within these groups. Groups themselves are ordered by the
 // order their compilation stages occur in.
 
-#include "parser-error-classes-list.h"
-#include "resolution-error-classes-list.h"
+#include "chpl/parsing/parser-error-classes-list.h"
+#include "chpl/resolution/resolution-error-classes-list.h"

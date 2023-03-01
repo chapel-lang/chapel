@@ -11,7 +11,7 @@ config param readSize = 65536,
              linesPerChunk = 8192;
 
 enum alg {Spin, WaitFor, SerForall, Forall, Foreach, For, MemMove, MaxLoc,
-          OptForall, MemChr};
+          OptForall, MemChr, Find};
 use alg;
 
 // shift:
@@ -61,10 +61,10 @@ param eol = '\n'.toByte(),  // end-of-line, as an integer
 var pairCmpl: [0..<join(maxChars, maxChars)] uint(16);
 
 // channels for doing efficient console I/O
-var stdinBin  = openfd(0).reader(iokind.native, locking=false,
-                           hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
-    stdoutBin = openfd(1).writer(iokind.native, locking=false,
-                           hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
+var stdinBin  = (new file(0)).reader(iokind.native, locking=false,
+                                     hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED)),
+  stdoutBin = (new file(1)).writer(iokind.native, locking=false,
+                                   hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
 
 proc main(args: [] string) {
   // set up the 'pairCmpl' map
@@ -275,6 +275,9 @@ proc findSeqStart(buff, inds, ref ltLoc) {
 
     ltLoc = ltptr - zeroptr;
     return ltptr != c_nil;
+  } else if searchAlg == Find {
+    ltLoc = buff[inds].find('>'.toByte());
+    return ltLoc != inds.low-1;
   } else {
     compilerError("Unexpected search algorithm" + searchAlg: string);
   }

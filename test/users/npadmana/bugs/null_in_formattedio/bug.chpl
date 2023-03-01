@@ -1,6 +1,6 @@
 use IO;
 
-var ff = openwriter("test.dat");
+var ff = openWriter("test.dat");
 var m,x,y,z,vx,vy,vz : real;
 m=0;
 x=0;y=0;z=0;

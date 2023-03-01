@@ -14,7 +14,7 @@ var bc_weak1;
     var bc1 = new shared basicClass(1);
     info(bc1);
 
-    bc_weak1 = new weakPointer(bc1);
+    bc_weak1 = new weak(bc1);
     weak_info(bc_weak1);
 
     var bc_weak2;
@@ -24,7 +24,7 @@ var bc_weak1;
 
         var bc2 = shared.create(bc1);
 
-        bc_weak2 = new weakPointer(bc2);
+        bc_weak2 = new weak(bc2);
 
         info(bc1);
         info(bc2);

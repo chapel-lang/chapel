@@ -40,6 +40,7 @@
 static bool debug = false;
 static bool verbose = false;
 
+// all contexts stored for later cleanup
 static std::vector<Context*> globalContexts;
 static Context* getNewContext() {
   Context* ret = new Context();
@@ -67,15 +68,13 @@ struct Collector {
   using RV = ResolvedVisitor<Collector>;
 
   std::multimap<std::string, QualifiedType> declTypes;
-  std::multimap<std::string, QualifiedType> identTypes;
 
   std::multimap<std::string, ID> declIds;
+  std::multimap<std::string, ResolvedExpression> idents;
   std::multimap<std::string, ResolvedExpression> shadowVars;
+  std::multimap<std::string, ID> shadowVarIds;
 
   Collector() { }
-
-  Collector(const Collector& other) : declTypes(other.declTypes), identTypes(other.identTypes) {
-  }
 
   bool enter(const uast::NamedDecl* decl, RV& rv) {
     if (rv.hasAst(decl)) {
@@ -85,6 +84,7 @@ struct Collector {
 
       if (decl->isTaskVar() || decl->isReduceIntent()) {
         shadowVars.emplace(name, rr);
+        shadowVarIds.emplace(name, decl->id());
       } else {
         declIds.emplace(name, decl->id());
       }
@@ -96,7 +96,7 @@ struct Collector {
   bool enter(const uast::Identifier* ident, RV& rv) {
     if (rv.hasAst(ident)) {
       const ResolvedExpression& rr = rv.byAst(ident);
-      identTypes.emplace(ident->name().str(), rr.type());
+      idents.emplace(ident->name().str(), rr);
     }
 
     return true;
@@ -143,14 +143,19 @@ struct Collector {
     return declTypes.find(name)->second;
   }
 
-  QualifiedType onlyIdent(std::string name) {
-    assert(identTypes.count(name) == 1);
-    return identTypes.find(name)->second;
+  ResolvedExpression onlyIdent(std::string name) {
+    assert(idents.count(name) == 1);
+    return idents.find(name)->second;
   }
 
   const ResolvedExpression& onlyShadow(std::string name) {
     assert(shadowVars.count(name) == 1);
     return shadowVars.find(name)->second;
+  }
+
+  ID onlyShadowId(std::string name) {
+    assert(shadowVarIds.count(name) == 1);
+    return shadowVarIds.find(name)->second;
   }
 
   ID onlyDeclId(std::string name) {
@@ -169,7 +174,7 @@ struct Collector {
       stream << "\n";
     }
     stream << "--- Idents ---\n";
-    for (auto p : identTypes) {
+    for (auto p : idents) {
       stream << p.first << ": ";
       p.second.stringify(stream, kind);
       stream << "\n";
@@ -179,24 +184,6 @@ struct Collector {
     std::cout << stream.str();
   }
 };
-
-static const char* kindToString(Qualifier kind) {
-  switch (kind) {
-    case Qualifier::REF: return "ref";
-    case Qualifier::CONST_INTENT: return "const";
-    case Qualifier::CONST_REF: return "const ref";
-    case Qualifier::IN: return "in";
-    case Qualifier::CONST_IN: return "const in";
-    case Qualifier::OUT: return "out";
-    case Qualifier::PARAM: return "param";
-    case Qualifier::TYPE: return "type";
-    case Qualifier::VAR: return "var";
-    case Qualifier::CONST_VAR: return "const";
-    case Qualifier::DEFAULT_INTENT: return "";
-    default: assert(false);
-  }
-  return "";
-}
 
 static void printErrors(const ErrorGuard& guard) {
   if (!verbose) {
@@ -208,7 +195,7 @@ static void printErrors(const ErrorGuard& guard) {
   }
 }
 
-static Collector customHelper(std::string program, Context* context, bool fail = false) {
+static Collector customHelper(std::string program, Context* context, Module* moduleOut = nullptr, bool fail = false) {
   ErrorGuard guard(context);
 
   const Module* m = parseModule(context, program.c_str());
@@ -240,91 +227,134 @@ static Collector customHelper(std::string program, Context* context, bool fail =
   return pc;
 }
 
-static void kindHelper(Qualifier kind) {
+// helper for running task intent tests
+static void kindHelper(Qualifier kind, const std::string& constructName) {
   Context* context = getNewContext();
 
   std::string program;
   program += "var x = 0;\n";
-  program += "forall i in 1..10 with (";
-  program += kindToString(kind);
+  program += constructName;
+  if (constructName == "forall" || constructName == "coforall") {
+    program += " i in 1..10";
+  }
+  program += " with (";
+  program += qualifierToString(kind);
   program += " x) {\n";
   program += "  var y = x;\n";
   program += "}\n";
 
   auto col = customHelper(program, context);
+  const auto intType = IntType::get(context, 0);
 
+  // Test shadow variable type is as expected
   {
     Qualifier useKind = kind;
+    // const task intent corresponds to const shadow variable
     if (useKind == Qualifier::CONST_INTENT) {
       useKind = Qualifier::CONST_VAR;
     }
-    QualifiedType expected = QualifiedType(useKind, IntType::get(context, 0));
-    QualifiedType shadowX = col.onlyIdent("x");
+    QualifiedType expected = QualifiedType(useKind, intType);
+    QualifiedType shadowX = col.onlyIdent("x").type();
     assert(expected == shadowX);
   }
 
+
+  // Test type of variable assigned value of shadow variable
   {
     QualifiedType yType = col.onlyDecl("y");
-    assert(yType.type() == IntType::get(context, 0));
+    assert(yType.type() == intType);
   }
 
+  // Test that the shadow variable points to the original
   {
-    // Test that the shadow variable points to the original
     auto& rr = col.onlyShadow("x");
     assert(rr.toId() == col.onlyDeclId("x"));
   }
 }
 
 static void testKinds() {
-  kindHelper(Qualifier::REF);
-  kindHelper(Qualifier::CONST_INTENT);
-  kindHelper(Qualifier::CONST_REF);
-  kindHelper(Qualifier::IN);
-  kindHelper(Qualifier::CONST_IN);
+  // all potentially-task-spawning constructs
+  static const std::string constructNames[] = {
+    "forall",
+    "coforall",
+    "cobegin",
+    "begin"
+  };
+  // all valid task intent kinds
+  static const Qualifier qualifiers[] = {
+    Qualifier::REF,
+    Qualifier::IN,
+    Qualifier::CONST_INTENT,
+    Qualifier::CONST_IN,
+    Qualifier::CONST_REF,
+    // inout and out intents disallowed due to data races
+    //Qualifier::INOUT,
+    //Qualifier::OUT,
+    // meaning of default task intent not well-defined
+    //Qualifier::DEFAULT_INTENT
+  };
+
+  // for each construct, test all intent kinds
+  for (const auto& constructName : constructNames) {
+    for (const auto& qualifier : qualifiers) {
+      kindHelper(qualifier, constructName);
+    }
+  }
+}
+
+// helper for running reduce intent tests
+static void reduceHelper(const std::string& constructName) {
+  assert(constructName == "forall" || constructName == "coforall");
+
+  Context* context = getNewContext();
+  // Very simple test focusing on scope resolution
+  std::string program;
+  program += R"""(operator +=(ref lhs: int, rhs: int) {
+  __primitive("+=", lhs, rhs);
+}
+
+var x = 0;
+)""";
+  program += constructName;
+  program += R"""( i in 1..10 with (+ reduce x) {
+  x += 1;
+})""";
+
+  auto col = customHelper(program, context);
+
+  // Test shadow variable type is as expected
+  {
+    const auto intType = IntType::get(context, 0);
+    QualifiedType expected = QualifiedType(Qualifier::VAR, intType);
+    QualifiedType shadowX = col.onlyShadow("x").type();
+    assert(expected == shadowX);
+  }
+
+  // Test that the shadow variable points to the original
+  assert(col.onlyShadow("x").toId() == col.onlyDeclId("x"));
+  // Test that inner ident points to reduce shadow
+  assert(col.onlyIdent("x").toId() == col.onlyShadowId("x"));
 }
 
 static void testReduce() {
-  Context* context = getNewContext();
-  // Very simple test focusing on scope resolution
-  std::string program = R"""(
-
-    operator +=(ref lhs: int, rhs: int) {
-      __primitive("+=", lhs, rhs);
-    }
-
-    var x = 0;
-    forall i in 1..10 with (+ reduce x) {
-      x += 1;
-    }
-    )""";
-
-  ErrorGuard guard(context);
-
-  const Module* m = parseModule(context, program.c_str());
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto decl = m->stmt(1);
-  auto forall = m->stmt(2)->toForall();
-  auto reduce = forall->withClause()->expr(0);
-  auto plusEq = forall->body()->stmt(0)->toCall();
-  auto innerX = plusEq->actual(0);
-
-  // Assert reduce points to outer decl
-  assert(rr.byAst(reduce).toId() == decl->id());
-
-  // Assert inner ident points to reduce
-  assert(rr.byAst(innerX).toId() == reduce->id());
+  // all reduce-intent supporting constructs
+  static const std::string constructNames[] = {
+      "forall",
+      "coforall",
+      // reduce intents not defined for begin and cobegin
+      // "cobegin",
+      // "begin"
+  };
+  for (const auto& constructName : constructNames) {
+    reduceHelper(constructName);
+  }
 }
-
 
 //
 // TODO:
-// - type resolution for reduce-intents
-// - type resolution for `in` task-intents
-// - test begins, cobegins, foralls
-// - const-checking
 // - implicit shadow variables (flat, nested)
+// - reduce intents for begin/cobegin, if those are implemented in future
+// - type resolve in-intents where type can change (e.g. array slices)
 //
 int main(int argc, char** argv) {
   for (int i = 1; i < argc; i++) {
@@ -335,6 +365,7 @@ int main(int argc, char** argv) {
     }
   }
 
+  // perform actual tests
   testKinds();
   testReduce();
 
