@@ -720,32 +720,47 @@ void ErrorRedefinition::write(ErrorWriterBase& wr) const {
     wr.heading(kind_, type_, id, "'", name, "' has multiple definitions in this scope.");
   }
 
-  bool needsIntroText = true;
+  bool firstGroup = true;
   int n = matches.size();
   for (int i = 0; i < n; i++) {
     bool encounteredAutoModule = false;
     UniqueString from = name;
-    const char* intro = "One definition is here ";
-    if (!anchorToDef) {
-      intro = "One definition is here ";
+    bool needsIntroText = true;
+    std::string intro;
+    if (firstGroup) {
+      intro = "it was first defined ";
+      firstGroup = false;
+    } else {
+      intro = "redefined ";
     }
-    describeSymbolTrace(wr, scopeId, name, trace[i], 0, intro,
+    describeSymbolTrace(wr, scopeId, name, trace[i], 0, intro.c_str(),
                         encounteredAutoModule, from, needsIntroText);
+    bool printedUseTrace = !needsIntroText;
 
     // print out the other IDs
+    bool firstDef = true;
     for (const auto& matchId : matches[i]) {
       if (needsIntroText) {
         if (anchorToDef) {
-          wr.message(intro);
+          wr.message("It was first defined here:");
         } else {
-          wr.note(matches[i].firstId(), intro);
+          wr.note(locationOnly(matches[i].firstId()), intro + "here:");
         }
         needsIntroText = false;
       } else {
-        wr.note(matchId, "redefined here:");
+        if (printedUseTrace) {
+          if (firstDef) {
+            wr.note(locationOnly(matchId), "leading to the definition here:");
+            firstDef = false;
+          } else {
+            wr.note(locationOnly(matchId), "and to the definition here:");
+          }
+        } else {
+          wr.note(locationOnly(matchId), "redefined here:");
+        }
       }
 
-      wr.code<ID, ID>(matchId);
+      wr.code<ID, ID>(matchId, { matchId });
     }
   }
 }
