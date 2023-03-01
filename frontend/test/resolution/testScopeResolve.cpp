@@ -601,7 +601,7 @@ static void test14() {
 
 
 // Make sure that the dot-expression handling of "this" works in addition
-// to the idenifier-expression handling of "this". Technically this is
+// to the identifier-expression handling of "this". Technically this is
 // redundant, but our goal is to issue a warning, not fail to resolve in
 // this case.
 static void test15() {
@@ -966,6 +966,150 @@ static void test25() {
   guard.clearErrors();
 }
 
+// check a more nested module example with privacy
+static void test26() {
+  printf("test26\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module M {
+        private var x : int;
+        module Sub {
+          use M;
+
+          var y = x; // access to 'x' should be OK
+        }
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+  const Variable* y = findVariable(vec, "y");
+  assert(y);
+
+  const ResolvedExpression& reY = scopeResolveIt(context, y->initExpression());
+  assert(reY.toId() == x->id());
+}
+// this version matches the privateToParent test
+static void test27() {
+  printf("test27\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module M {
+        private var x : int;
+        module Sub {
+          proc main() {
+            use M;
+            var y = x; // access to 'x' should be OK
+          }
+        }
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+  const Variable* y = findVariable(vec, "y");
+  assert(y);
+
+  ID fnId = y->id().parentSymbolId(context);
+  auto fn = idToAst(context, fnId);
+  assert(fn && fn->isFunction());
+
+  const ResolvedFunction* rfn = scopeResolveFunction(context, fn->id());
+  const ResolvedExpression& reY = rfn->byAst(y->initExpression());
+  assert(reY.toId() == x->id());
+}
+// this version has two paths to 'x' and the public-only is processed first
+static void test28() {
+  printf("test28\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module Other {
+        public use M;
+      }
+      module M {
+        private var x : int;
+        module Sub {
+          use M;
+          proc main() {
+            use Other;
+
+            var y = x; // access to 'x' should be OK
+          }
+        }
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+  const Variable* y = findVariable(vec, "y");
+  assert(y);
+
+  ID fnId = y->id().parentSymbolId(context);
+  auto fn = idToAst(context, fnId);
+  assert(fn && fn->isFunction());
+
+  const ResolvedFunction* rfn = scopeResolveFunction(context, fn->id());
+  const ResolvedExpression& reY = rfn->byAst(y->initExpression());
+  assert(reY.toId() == x->id());
+}
+// this one tests if a 'private use' is visible within a submodule
+static void test29() {
+  printf("test29\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module Other {
+        var x;
+      }
+      module M {
+        private use Other;
+        module Sub {
+          proc main() {
+            use M;
+            var y = x; // access to 'x' should be OK
+          }
+        }
+      }
+   )"""";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+
+  const Variable* x = findVariable(vec, "x");
+  assert(x);
+  const Variable* y = findVariable(vec, "y");
+  assert(y);
+
+  ID fnId = y->id().parentSymbolId(context);
+  auto fn = idToAst(context, fnId);
+  assert(fn && fn->isFunction());
+
+  const ResolvedFunction* rfn = scopeResolveFunction(context, fn->id());
+  const ResolvedExpression& reY = rfn->byAst(y->initExpression());
+  assert(reY.toId() == x->id());
+}
+
+
 int main() {
   test1();
   test2();
@@ -992,6 +1136,10 @@ int main() {
   test23();
   test24();
   test25();
+  test26();
+  test27();
+  test28();
+  test29();
 
   return 0;
 }

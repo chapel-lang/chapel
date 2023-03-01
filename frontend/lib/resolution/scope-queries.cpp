@@ -416,8 +416,7 @@ resolveVisibilityStmts(Context* context, const Scope* scope);
 struct LookupHelper {
   Context* context;
   const ResolvedVisibilityScope* resolving;
-  NamedScopeSet& checkedScopes;
-  NamedScopeSet checkedScopesMethodsFields;
+  CheckedScopes& checkedScopes;
   std::vector<BorrowedIdsWithName>& result;
   bool& foundExternBlock;
   std::vector<VisibilityTraceElt>* traceCurPath;
@@ -425,13 +424,12 @@ struct LookupHelper {
 
   LookupHelper(Context* context,
                const ResolvedVisibilityScope* resolving,
-               NamedScopeSet& checkedScopes,
+               CheckedScopes& checkedScopes,
                std::vector<BorrowedIdsWithName>& result,
                bool& foundExternBlock,
                std::vector<VisibilityTraceElt>* traceCurPath,
                std::vector<ResultVisibilityTrace>* traceResult)
     : context(context), resolving(resolving), checkedScopes(checkedScopes),
-      checkedScopesMethodsFields(),
       result(result), foundExternBlock(foundExternBlock),
       traceCurPath(traceCurPath), traceResult(traceResult) {
   }
@@ -510,8 +508,15 @@ bool LookupHelper::doLookupInImportsAndUses(
   if (cur != nullptr) {
     // check to see if it's mentioned in names/renames
     for (const VisibilitySymbols& is: cur->visibilityClauses()) {
+      bool allowPrivateAccess = false;
+      if (skipPrivateVisibilities == false) {
+        // allow a nested submodule to refer to something private
+        // in an outer module
+        allowPrivateAccess = is.scope()->id().contains(scope->id());
+      }
+
       // if we should not continue transitively through private use/includes,
-      // and this is private, skip it
+      // and one is private, skip it
       if (skipPrivateVisibilities && is.isPrivate()) {
         continue;
       }
@@ -529,8 +534,11 @@ bool LookupHelper::doLookupInImportsAndUses(
         // find it in the contents
         const Scope* symScope = is.scope();
         LookupConfig newConfig = LOOKUP_DECLS |
-                                 LOOKUP_IMPORT_AND_USE |
-                                 LOOKUP_SKIP_PRIVATE_VIS;
+                                 LOOKUP_IMPORT_AND_USE;
+
+        if (!allowPrivateAccess) {
+          newConfig |= LOOKUP_SKIP_PRIVATE_VIS;
+        }
         if (onlyInnermost) {
           newConfig |= LOOKUP_INNERMOST;
         }
@@ -568,7 +576,7 @@ bool LookupHelper::doLookupInImportsAndUses(
         auto visibility = scopeAst->toDecl()->visibility();
         bool isMethodOrField = false;
         IdAndVis::SymbolTypeFlags filterFlags = 0;
-        if (skipPrivateVisibilities) {
+        if (!allowPrivateAccess) {
           filterFlags |= IdAndVis::PUBLIC;
         }
         auto foundIds =
@@ -804,9 +812,16 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   bool skipPrivateVisibilities = (config & LOOKUP_SKIP_PRIVATE_VIS) != 0;
   bool goPastModules = (config & LOOKUP_GO_PAST_MODULES) != 0;
   bool onlyMethodsFields = (config & LOOKUP_ONLY_METHODS_FIELDS) != 0;
-  bool onlyNonMethodsNonFields = false;
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
+
+  IdAndVis::SymbolTypeFlags curFilter = 0;
+  if (skipPrivateVisibilities) {
+    curFilter |= IdAndVis::PUBLIC;
+  }
+  if (onlyMethodsFields) {
+    curFilter |= IdAndVis::METHOD_OR_FIELD;
+  }
 
   // goPastModules should imply checkParents; otherwise, why would we proceed
   // through module boundaries if we aren't traversing the scope chain?
@@ -819,37 +834,32 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   }
 
   // update the checkedScopes map and return early if there is nothing to do.
-  if (onlyMethodsFields == false) {
-    auto p = checkedScopes.insert(std::make_pair(name, scope));
-    if (p.second == false) {
-      // scope has already been visited by this function,
-      // so don't try it again.
+  auto p = checkedScopes.insert(std::make_pair(CheckedScope(name, scope),
+                                curFilter));
+  if (p.second == false) {
+    // the insert did not succeed: there was already something in the map.
+    // decide what to do about it.
+    IdAndVis::SymbolTypeFlags foundFilter = p.first->second;
+    if ((curFilter & foundFilter) == foundFilter) {
+      // if the flags we found are equal to foundFilter,
+      // or if curFilter is a superset of foundFilter
+      // (which, because these are filters, means that foundFilter is
+      //  less restricted / more general),
+      // there is no need to visit this scope further.
       return false;
     }
-  } else {
-    // for onlyMethodsFields==true,
-    // don't add it to checkedScopes, but still return early if
-    // we already considered this scope.
-    if (checkedScopes.count(std::make_pair(name, scope)) > 0) {
-      return false;
-    }
-  }
-  // also check the scopes we checked for methodsFieldsOnly
-  if (onlyMethodsFields == false) {
-    // We might be visiting a scope that was visited for methods/fields
-    // but not for other kinds of symbols.
-    // We need to visit that scope but only find symbols that
-    // aren't methods/fields.
-    if (checkedScopesMethodsFields.count(std::make_pair(name, scope)) > 0) {
-      onlyNonMethodsNonFields = true;
-    }
-  } else {
-    auto p = checkedScopesMethodsFields.insert(std::make_pair(name, scope));
-    if (p.second == false) {
-      // scope has already been visited by this function,
-      // so don't try it again.
-      return false;
-    }
+
+    // otherwise, compute the new filter to use
+    IdAndVis::SymbolTypeFlags onlyInFound = 0;
+    onlyInFound = foundFilter & ~curFilter;
+    curFilter = IdAndVis::reverseFlags(onlyInFound);
+
+    // update checkedScopes to remove filter bits that weren't present
+    // in foundFilter (because we are going to update results
+    // with matches for the now-not-filtered-out cases)
+    IdAndVis::SymbolTypeFlags combinedFilter = 0;
+    combinedFilter = foundFilter & ~onlyInFound;
+    checkedScopes[CheckedScope(name, scope)] = combinedFilter;
   }
 
   // if the scope has an extern block, note that fact.
@@ -872,11 +882,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   {
     bool got = false;
     if (checkDecls) {
-      IdAndVis::SymbolTypeFlags filterFlags = 0;
-      if (skipPrivateVisibilities) { filterFlags |= IdAndVis::PUBLIC; }
-      if (onlyMethodsFields) { filterFlags |= IdAndVis::METHOD_OR_FIELD; }
-      if (onlyNonMethodsNonFields) { filterFlags |= IdAndVis::NOT_METHOD_NOT_FIELD; }
-      got |= scope->lookupInScope(name, result, filterFlags);
+      got |= scope->lookupInScope(name, result, curFilter);
       if (got && trace) {
         for (size_t i = startSize; i < result.size(); i++) {
           ResultVisibilityTrace t;
@@ -1078,7 +1084,7 @@ static bool lookupInScopeViz(Context* context,
   bool got = false;
 
   {
-    NamedScopeSet checkedScopes;
+    CheckedScopes checkedScopes;
 
     LookupConfig config = LOOKUP_INNERMOST;
 
@@ -1120,7 +1126,7 @@ static bool lookupInScopeViz(Context* context,
     // Relax the rules a little bit and look for more potential matches.
     // They aren't valid, but they might be what the user intended to use
     // or import, so collect them and include them in the error message.
-    NamedScopeSet checkedScopes;
+    CheckedScopes checkedScopes;
 
     LookupConfig config = 0;
 
@@ -1152,7 +1158,7 @@ static bool helpLookupInScope(Context* context,
                               const ResolvedVisibilityScope* resolving,
                               UniqueString name,
                               LookupConfig config,
-                              NamedScopeSet& checkedScopes,
+                              CheckedScopes& checkedScopes,
                               std::vector<BorrowedIdsWithName>& result,
                               std::vector<VisibilityTraceElt>* traceCurPath,
                               std::vector<ResultVisibilityTrace>* traceResult)
@@ -1160,7 +1166,7 @@ static bool helpLookupInScope(Context* context,
   bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
   bool foundExternBlock = false;
-  NamedScopeSet savedCheckedScopes;
+  CheckedScopes savedCheckedScopes;
 
   auto helper = LookupHelper(context, resolving, checkedScopes, result,
                              foundExternBlock, traceCurPath, traceResult);
@@ -1202,7 +1208,7 @@ lookupNameInScope(Context* context,
                   llvm::ArrayRef<const Scope*> receiverScopes,
                   UniqueString name,
                   LookupConfig config) {
-  NamedScopeSet visited;
+  CheckedScopes visited;
   std::vector<BorrowedIdsWithName> vec;
 
   if (scope) {
@@ -1223,7 +1229,7 @@ lookupNameInScopeTracing(Context* context,
                          UniqueString name,
                          LookupConfig config,
                          std::vector<ResultVisibilityTrace>& traceResult) {
-  NamedScopeSet visited;
+  CheckedScopes visited;
   std::vector<VisibilityTraceElt> traceCurPath;
   std::vector<BorrowedIdsWithName> vec;
   if (scope) {
@@ -1244,7 +1250,7 @@ lookupNameInScopeWithSet(Context* context,
                          llvm::ArrayRef<const Scope*> receiverScopes,
                          UniqueString name,
                          LookupConfig config,
-                         NamedScopeSet& visited) {
+                         CheckedScopes& visited) {
   std::vector<BorrowedIdsWithName> vec;
 
   if (scope) {
@@ -1323,7 +1329,7 @@ static void errorIfNameNotInScope(Context* context,
                                   const VisibilityClause* clauseForError,
                                   VisibilityStmtKind useOrImport,
                                   bool isRename) {
-  NamedScopeSet checkedScopes;
+  CheckedScopes checkedScopes;
   std::vector<BorrowedIdsWithName> result;
   bool foundExternBlock = false;
   LookupConfig config = LOOKUP_INNERMOST |
@@ -2009,7 +2015,7 @@ static const bool& warnHiddenFormalsQuery(Context* context,
 
   std::set<UniqueString> formalNames = functionScope->gatherNames();
 
-  NamedScopeSet checkedScopes;
+  CheckedScopes checkedScopes;
   std::vector<BorrowedIdsWithName> matches;
 
   for (auto name : formalNames) {

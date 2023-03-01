@@ -30,6 +30,7 @@
 #include <utility>
 
 #include "llvm/ADT/Optional.h"
+#include "llvm/ADT/SmallPtrSet.h"
 
 namespace chpl {
 namespace resolution {
@@ -49,6 +50,7 @@ class IdAndVis {
     METHOD_OR_FIELD = 4,
     /** Something other than a method or field declaration */
     NOT_METHOD_NOT_FIELD = 8
+    // note: if adding something here, also update reverseFlags
   };
   /** A bit-set of the flags defined in the above enum */
   using SymbolTypeFlags = uint16_t;
@@ -114,6 +116,15 @@ class IdAndVis {
   bool isMethodOrField() const {
     return (flags_ & METHOD_OR_FIELD) != 0;
   }
+
+  /** Computes the reversal of set bits in flags. For example, if flags is
+        PRIVATE and METHOD_OR_FIELD
+      the reversal is
+        PUBLIC and NOT_METHOD_OR_FIELD
+
+      If a flags bit is not set, it will have no impact on the reversal.
+   */
+  static SymbolTypeFlags reverseFlags(SymbolTypeFlags flags);
 };
 
 /**
@@ -1062,6 +1073,36 @@ struct ResultVisibilityTrace {
   }
 };
 
+using ScopeSet = llvm::SmallPtrSet<const Scope*, 5>;
+
+/** The type to help maintain a checked scope */
+struct CheckedScope {
+  UniqueString forName;
+  const Scope* scope = nullptr;
+
+  CheckedScope(UniqueString forName,
+               const Scope* scope)
+    : forName(forName), scope(scope) {
+  }
+
+  bool operator==(const CheckedScope& other) const {
+    return forName == other.forName &&
+           scope == other.scope;
+  }
+  bool operator!=(const CheckedScope& other) const {
+    return !(*this == other);
+  }
+  size_t hash() const {
+    size_t ret = 0;
+    ret = hash_combine(ret, chpl::hash(forName));
+    ret = hash_combine(ret, chpl::hash(scope));
+    return ret;
+  }
+};
+
+using CheckedScopes = std::unordered_map<CheckedScope,
+                                         IdAndVis::SymbolTypeFlags>;
+
 
 } // end namespace resolution
 
@@ -1120,6 +1161,14 @@ struct hash<chpl::resolution::VisibilityStmtKind> {
     return (size_t)key;
   }
 };
+
+template <>
+struct hash<chpl::resolution::CheckedScope> {
+  size_t operator()(const chpl::resolution::CheckedScope& key) const {
+    return key.hash();
+  }
+};
+
 
 /// \endcond
 

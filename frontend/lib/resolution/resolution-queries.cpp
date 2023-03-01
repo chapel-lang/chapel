@@ -2661,7 +2661,7 @@ static std::vector<BorrowedIdsWithName>
 lookupCalledExpr(Context* context,
                  const Scope* scope,
                  const CallInfo& ci,
-                 NamedScopeSet& visited) {
+                 CheckedScopes& visited) {
 
   Resolver::ReceiverScopesVec receiverScopes;
 
@@ -2790,7 +2790,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
     //   equally as sources of candidates
     // * do not consider forwarding (since we are considering it now!)
 
-    std::vector<NamedScopeSet> visited;
+    std::vector<CheckedScopes> visited;
     visited.resize(numForwards);
 
     for (const auto& fci : forwardingCis) {
@@ -2905,7 +2905,7 @@ gatherAndFilterCandidates(Context* context,
                           size_t& firstPoiCandidate,
                           ForwardingInfoVec& forwardingInfo) {
   CandidatesVec candidates;
-  NamedScopeSet visited;
+  CheckedScopes visited;
   firstPoiCandidate = 0;
 
   // inject compiler-generated candidates in a manner similar to below

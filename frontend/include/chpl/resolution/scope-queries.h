@@ -23,13 +23,9 @@
 #include "chpl/resolution/scope-types.h"
 
 #include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/SmallPtrSet.h"
 
 namespace chpl {
 namespace resolution {
-
-  using ScopeSet = llvm::SmallPtrSet<const Scope*, 5>;
-  using NamedScopeSet = std::unordered_set<std::pair<UniqueString, const Scope*>>;
 
   /**
     Returns true if this AST type can create a scope.
@@ -91,7 +87,7 @@ namespace resolution {
                            const llvm::ArrayRef<const Scope*> receiverScopes,
                            UniqueString name,
                            LookupConfig config,
-                           NamedScopeSet& visited);
+                           CheckedScopes& visited);
 
   /**
     Returns true if all of checkScope is visible from fromScope

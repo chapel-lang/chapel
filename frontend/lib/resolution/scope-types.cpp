@@ -28,6 +28,18 @@ namespace chpl {
 namespace resolution {
 
 
+IdAndVis::SymbolTypeFlags IdAndVis::reverseFlags(SymbolTypeFlags flags) {
+  SymbolTypeFlags ret = 0;
+
+  if ((flags & PUBLIC) != 0)               ret |= PRIVATE;
+  if ((flags & PRIVATE) != 0)              ret |= PUBLIC;
+
+  if ((flags & METHOD_OR_FIELD) != 0)      ret |= NOT_METHOD_NOT_FIELD;
+  if ((flags & NOT_METHOD_NOT_FIELD) != 0) ret |= METHOD_OR_FIELD;
+
+  return ret;
+}
+
 void OwnedIdsWithName::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
   if (auto ptr = moreIdvs_.get()) {
