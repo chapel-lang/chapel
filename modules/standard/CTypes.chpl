@@ -116,8 +116,7 @@ module CTypes {
   pragma "no default functions"
   pragma "no wide class"
   pragma "c_ptr class"
-  pragma "no doc"
-  class _c_ptr {
+  class c_ptr {
     //   Similar to _ddata from ChapelBase, but differs
     //   from _ddata because it can never be wide.
 

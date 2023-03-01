@@ -117,10 +117,6 @@ void Type::gatherBuiltins(Context* context,
 
   gatherType(context, map, "Error", CompositeType::getErrorType(context));
 
-  auto cPtrType = BasicClassType::getCPtrType(context);
-  gatherType(context, map, "_c_ptr", cPtrType);
-  gatherType(context, map, "c_ptr", cPtrType);
-
   BuiltinType::gatherBuiltins(context, map);
 }
 

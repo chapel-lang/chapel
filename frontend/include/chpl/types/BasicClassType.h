@@ -76,8 +76,6 @@ class BasicClassType final : public CompositeType {
 
   static const BasicClassType* getObjectType(Context* context);
 
-  static const BasicClassType* getCPtrType(Context* context);
-
   static const BasicClassType* getReduceScanOpType(Context* context);
 
   /** Return the parent class type, or nullptr if this is the 'object' type. */

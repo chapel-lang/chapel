@@ -64,19 +64,6 @@ BasicClassType::getObjectType(Context* context) {
 }
 
 const BasicClassType*
-BasicClassType::getCPtrType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "CTypes._c_ptr");
-  auto name = UniqueString::get(context, "c_ptr");
-  auto id = ID(symbolPath, -1, 0);
-  auto objectType = getObjectType(context);
-
-  return getBasicClassType(context, id, name,
-                           /* parentType */ objectType,
-                           /* instantiatedFrom */ nullptr,
-                           SubstitutionsMap()).get();
-}
-
-const BasicClassType*
 BasicClassType::getReduceScanOpType(Context* context) {
   auto symbolPath = UniqueString::get(context, "ChapelReduce.ReduceScanOp");
   auto name = UniqueString::get(context, "ReduceScanOp");
