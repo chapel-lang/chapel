@@ -429,6 +429,8 @@ void chpl_gpu_impl_comm_wait(void *stream) {
 void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
                                int32_t lineno, int32_t filename) {
 
+  if(!chpl_gpu_device_alloc) { return chpl_malloc(size); }
+
   chpl_gpu_ensure_context();
 
   CHPL_GPU_DEBUG("chpl_gpu_mem_array_alloc called. Size:%d file:%s line:%d\n", size,
@@ -465,6 +467,8 @@ void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
 
 
 void* chpl_gpu_impl_mem_alloc(size_t size) {
+  if(!chpl_gpu_device_alloc) { return chpl_malloc(size); }
+
   chpl_gpu_ensure_context();
 
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
