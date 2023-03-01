@@ -1102,29 +1102,32 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   if (node->name() == USTR("deprecated") ||
       node->name() == USTR("unstable") ||
       node->name() == USTR("stable") ||
-      node->name() == USTR("chpldoc.nodoc")) {
+      node->name().startsWith(USTR("chpldoc."))) {
       // TODO: should we match chpldoc.nodoc or anything toolspaced with chpldoc.?
       return;
   } else if (node->fullyQualifiedAttributeName().find('.') == std::string::npos) {
     // we don't recognize the top-level attribute that we found (no toolspace)
-    error(node, "unrecognized top-level attribute '%s'", node->name().c_str());
+    error(node, "Unknown top-level attribute '%s'", node->name().c_str());
     // TODO: this relies on the WARN_UNKNOWN_TOOL_SPACED_ATTRS flag that we do
     // not yet have so by default for now we will warn about unrecognized
     // attributes that are toolspaced
   } else {
+    // Check for other possible toolname given from command line
     bool doWarn = isFlagSet(CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS);
     auto toolnames = chpl::parsing::attributeToolnames(this->context_);
-    std::vector<UniqueString>::iterator it;
-    // we need just the toolname part of the attribute name here
-    std::size_t pos = node->fullyQualifiedAttributeName().find_last_of('.');
-    std::string toolname = node->fullyQualifiedAttributeName().substr(0, pos);
-    it = find(toolnames.begin(), toolnames.end(),
-              UniqueString::get(this->context_, toolname));
-    if (it == toolnames.end() && doWarn) {
-      error(node, "unrecognized attribute toolname '%s'", node->name().c_str());
+    for (auto toolname : toolnames) {
+      auto nameDot = UniqueString::getConcat(this->context_, toolname.c_str(), ".");
+      if (node->name().startsWith(nameDot)) {
+        // we found a toolname that matches the attribute's
+        return;
+      }
+    }
+    if (doWarn) {
+      auto pos = node->fullyQualifiedAttributeName().find_last_of('.');
+      auto toolname = node->fullyQualifiedAttributeName().substr(0, pos);
+      warn(node, "Unknown attribute toolname '%s'", toolname.c_str());
     }
   }
-  // TODO: check for any other attribute toolspaces given from the command-line
 }
 
 void Visitor::visit(const Attribute* node) {

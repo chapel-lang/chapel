@@ -124,6 +124,16 @@ OPTIONS
     Enable [disable] the printing of compiler warnings. Defaults to printing
     warnings.
 
+**\--[no-]warn-unknown-attribute-toolname**
+
+    [Don't] warn about attribute toolnames that aren't recognized. Without this
+    warning, attributes belonging to unknown tools will be silently ignored.
+
+**\--using-attribute-toolname <**\ *toolname*\ **>**
+
+    Provide known toolnames, one per flag, to prevent being warned of unknown
+    toolnames when waring of unknown attribute toolnames is enabled.
+
 *Parallelism Control Options*
 
 **\--[no-]local**

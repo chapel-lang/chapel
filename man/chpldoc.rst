@@ -69,6 +69,16 @@ reStructuredText as an intermediate format.
     Prints the system commands that **chpldoc** executes in order to create
     the documentation.
 
+**\--[no-]warn-unknown-attribute-toolname**
+
+    [Don't] warn about attribute toolnames that aren't recognized. Without this
+    warning, attributes belonging to unknown tools will be silently ignored.
+
+**\--using-attribute-toolname <**\ *toolname*\ **>**
+
+    Provide known toolnames, one per flag, to prevent being warned of unknown
+    toolnames when waring of unknown attribute toolnames is enabled.
+
 *Information Options*
 
 **-h, \--help**

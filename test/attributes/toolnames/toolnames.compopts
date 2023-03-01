@@ -1,0 +1,3 @@
+--no-warn-unknown-attribute-toolname # toolnames.nowarn.good
+--warn-unknown-attribute-toolname # toolnames.warn.good
+--warn-unknown-attribute-toolname --using-attribute-toolname=linter # toolnames.warn.additional.good

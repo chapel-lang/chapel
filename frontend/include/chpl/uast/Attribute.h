@@ -150,7 +150,7 @@ public:
 
   /*
     Returns the full name of an attribute including its toolspace, if any.
-    ex: "deprecated" or "chpldoc.noDoc", etc.
+    ex: "deprecated" or "chpldoc.nodoc", etc.
   */
   const std::string fullyQualifiedAttributeName() const {
     return name_.str();

@@ -281,6 +281,7 @@ void ParserContext::noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals) 
   }
   attributeGroupParts.isDeprecated = true;
   AstNode* messageStr = nullptr;
+  bool allActualsNamed = true;
   if (actuals != nullptr && actuals->size() > 0) {
     for (auto& actual : *actuals) {
       if (!(actual.name == UniqueString::get(context(), "since").podUniqueString() ||
@@ -289,15 +290,23 @@ void ParserContext::noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals) 
             actual.name.isEmpty())) {
         error(loc, "unrecognized argument name '%s'. '@deprecated' attribute only accepts 'since', 'notes', and 'suggestion' arguments", actual.name.c_str());
       }
+      if (actual.name.isEmpty()) {
+        allActualsNamed = false;
+      }
       if (!actual.expr->isStringLiteral()) {
         error(loc, "deprecated attribute arguments must be string literals for now");
       }
-      // use the notes field, or assume if there's only one argument it's the message
+      // TODO: Decide how this should interaction should work, if we want to continue supporting
+      // "message" or if we should adapt that field to match the argument names here
+      // For now, use the notes field, or assume if there's only one argument it's the message
       if (actual.name == UniqueString::get(context(), "notes").podUniqueString() ||
           actuals->size() == 1) {
         messageStr = actual.expr;
       }
     }
+  }
+  if (!allActualsNamed && actuals->size() > 1) {
+    error(loc, "deprecated attribute only accepts one unnamed argument");
   }
   if (messageStr) {
     if (auto strLit = messageStr->toStringLiteral()) {
@@ -343,6 +352,7 @@ void ParserContext::noteUnstable(YYLTYPE loc, MaybeNamedActualList* actuals) {
   attributeGroupParts.isUnstable = true;
 
   AstNode* messageStr = nullptr;
+  bool allActualsNamed = true;
   if (actuals != nullptr && actuals->size() > 0) {
     for (auto& actual : *actuals) {
       if (!(actual.name == UniqueString::get(context(), "category").podUniqueString() ||
@@ -350,6 +360,9 @@ void ParserContext::noteUnstable(YYLTYPE loc, MaybeNamedActualList* actuals) {
             actual.name == UniqueString::get(context(), "reason").podUniqueString()||
             actual.name.isEmpty())) {
         error(loc, "unrecognized argument name '%s'. '@unstable' attribute only accepts 'category', 'issue', and 'reason' arguments", actual.name.c_str());
+      }
+      if (actual.name.isEmpty()) {
+        allActualsNamed = false;
       }
       if (!actual.expr->isStringLiteral()) {
         error(loc, "unstable attribute arguments must be string literals for now");
@@ -360,6 +373,9 @@ void ParserContext::noteUnstable(YYLTYPE loc, MaybeNamedActualList* actuals) {
         messageStr = actual.expr;
       }
     }
+  }
+  if (!allActualsNamed && actuals->size() > 1) {
+    error(loc, "unstable attribute only accepts one unnamed argument");
   }
   if (messageStr) {
     if (auto strLit = messageStr->toStringLiteral()) {

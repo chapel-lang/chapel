@@ -16,6 +16,13 @@ Documentation Options:
                                       Sets the documentation version to
                                       <projectversion>
       --[no-]print-commands           [Don't] print system commands
+      --[no-]warn-unknown-attribute-toolname
+                                      Enable warnings when an unknown toolname
+                                      is found in an attribute
+      --using-attribute-toolname <toolname>
+                                      Specify additional toolnames for
+                                      attributes that are expected in the
+                                      source
 
 Information Options:
   -h, --help                          Help (show this list)
