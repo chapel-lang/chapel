@@ -1,5 +1,5 @@
 use IO;
 
-var r = openreader("./advancePastByte.chpl");
+var r = openReader("./advancePastByte.chpl");
 r.advancePastByte("X".toByte());
 write(r.readAll());
