@@ -302,7 +302,10 @@ static void test7() {
     mScope = scopeForId(context, m->id());
     assert(mScope);
     assert(mScope->id() == m->id() && mScope->numDeclared() == 1);
-    assert(mScope->containsUseImport() == false);
+    // TODO: contains use/import because it auto uses modules, should
+    // this change?
+    assert(mScope->containsUseImport() == true);
+    assert(mScope->autoUsesModules() == true);
     // scope contents changed so Scope pointer should change
     assert(mScope != oldMScope);
 
@@ -343,7 +346,10 @@ static void test7() {
     mScope = scopeForId(context, m->id());
     assert(mScope);
     assert(mScope->id() == m->id() && mScope->numDeclared() == 1);
-    assert(mScope->containsUseImport() == false);
+    // TODO: contains use/import because it auto uses modules, should
+    // this change?
+    assert(mScope->containsUseImport() == true);
+    assert(mScope->autoUsesModules() == true);
     // scope contents did not change so Scope pointer should be the same
     assert(mScope == oldMScope);
 

@@ -613,6 +613,8 @@ void setupModuleSearchPaths(Context* context,
 
 bool idIsInInternalModule(Context* context, ID id) {
   UniqueString internal = internalModulePath(context);
+  if (internal.isEmpty()) return false;
+
   UniqueString filePath;
   UniqueString parentSymbolPath;
   bool found = context->filePathForId(id, filePath, parentSymbolPath);
@@ -624,6 +626,8 @@ bool idIsInInternalModule(Context* context, ID id) {
 
 bool idIsInBundledModule(Context* context, ID id) {
   UniqueString modules = bundledModulePath(context);
+  if (modules.isEmpty()) return false;
+
   UniqueString filePath;
   UniqueString parentSymbolPath;
   bool found = context->filePathForId(id, filePath, parentSymbolPath);
@@ -1208,6 +1212,30 @@ static bool isAstUnstable(Context* context, const AstNode* ast) {
   return attr && attr->isUnstable();
 }
 
+static bool isAstCompilerGenerated(Context* context, const AstNode* ast) {
+  auto attr = parsing::idToAttributeGroup(context, ast->id());
+  return attr && attr->hasPragma(PRAGMA_COMPILER_GENERATED);
+}
+
+// Skip if any parent is deprecated (we want to show deprecation messages
+// in unstable symbols, since they'll likely live a long time). Also skip
+// if we are in a compiler-generated thing.
+static bool
+shouldSkipDeprecationWarning(Context* context, const AstNode* ast) {
+  return isAstCompilerGenerated(context, ast) ||
+         isAstDeprecated(context, ast);
+}
+
+// Skip if any parent is marked deprecated or unstable. We don't want to
+// worry about throwing unstable mentions in deprecated symbols, because
+// deprecated things are likely to be removed soon.
+static bool
+shouldSkipUnstableWarning(Context* context, const AstNode* ast) {
+  return isAstCompilerGenerated(context, ast) ||
+         isAstDeprecated(context, ast)        ||
+         isAstUnstable(context, ast);
+}
+
 static bool isAstFormal(Context* context, const AstNode* ast) {
   return ast->isFormal();
 }
@@ -1343,8 +1371,9 @@ reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget) {
   // Don't warn for 'this' formals with deprecated types.
   if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
 
-  // Current policy is to skip if the mention is in a deprecated symbol.
-  if (anyParentMatches(context, idMention, isAstDeprecated)) return;
+  // See filter function for skip policy.
+  if (anyParentMatches(context, idMention, shouldSkipDeprecationWarning))
+    return;
 
   std::ignore = deprecationWarningForIdQuery(context, idMention, idTarget);
 }
@@ -1362,8 +1391,9 @@ reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
   // Don't warn for 'this' formals with unstable types.
   if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
 
-  // Current policy is to skip if the mention is in an unstable symbol.
-  if (anyParentMatches(context, idMention, isAstUnstable)) return;
+  // See filter function for skip policy.
+  if (anyParentMatches(context, idMention, shouldSkipUnstableWarning))
+    return;
 
   std::ignore = unstableWarningForIdQuery(context, idMention, idTarget);
 }

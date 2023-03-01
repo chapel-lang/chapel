@@ -288,11 +288,13 @@ void setupModuleSearchPaths(Context* context,
 
 /**
  Returns true if the ID corresponds to something in an internal module.
+ If the internal module path is empty, this function returns false.
  */
 bool idIsInInternalModule(Context* context, ID id);
 
 /**
  Returns true if the ID corresponds to something in a bundled module.
+ If the bundled module path is empty, this function returns false.
  */
 bool idIsInBundledModule(Context* context, ID id);
 
