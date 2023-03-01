@@ -86,7 +86,6 @@ module CTypes {
   }
 
   /*
-
     Represents a local C pointer for the purpose of C integration. This class
     represents the equivalent to a C language pointer. Instances of this class
     support assignment to other instances or nil, == or != comparison with a
@@ -109,35 +108,43 @@ module CTypes {
       var x: c_ptr = c_ptrTo(...);
       writeln(x); // outputs nil or e.g. 0xabc123000000
 
+    ``c_ptr`` supports the following methods:
   */
+  type c_ptr;
+  // split init as a hack to hide the internal name from the docs
+  c_ptr = _c_ptr;
 
+  // internal implementation, hidden from docs
   pragma "data class"
   pragma "no object"
   pragma "no default functions"
   pragma "no wide class"
   pragma "c_ptr class"
-  class c_ptr {
+  pragma "no doc"
+  class _c_ptr {
     //   Similar to _ddata from ChapelBase, but differs
     //   from _ddata because it can never be wide.
 
-    /* The type that this pointer points to */
+    // The type that this pointer points to
     type eltType;
-    /* Retrieve the i'th element (zero based) from a pointer to an array.
-      Does the equivalent of ptr[i] in C.
-    */
-    inline proc this(i: integral) ref {
-      return __primitive("array_get", this, i);
-    }
-    /* Get element pointed to directly by this pointer. If the pointer
-      refers to an array, this will return ptr[0].
-    */
-    inline proc deref() ref {
-      return __primitive("array_get", this, 0);
-    }
-    /* Print this pointer */
-    inline proc writeThis(ch) throws {
-      (this:c_void_ptr).writeThis(ch);
-    }
+  }
+
+  /* Retrieve the i'th element (zero based) from a pointer to an array.
+    Does the equivalent of ptr[i] in C.
+  */
+  inline proc c_ptr.this(i: integral) ref {
+    return __primitive("array_get", this, i);
+  }
+  /* Get element pointed to directly by this pointer. If the pointer
+    refers to an array, this will return ptr[0].
+  */
+  inline proc c_ptr.deref() ref {
+    return __primitive("array_get", this, 0);
+  }
+
+  pragma "no doc"
+  inline proc c_ptr.writeThis(ch) throws {
+    (this:c_void_ptr).writeThis(ch);
   }
 
   /*
