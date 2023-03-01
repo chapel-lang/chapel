@@ -13,16 +13,16 @@ readComplexPattern(false, openReader("pattern.txt"), b".... . .-.. .-.. --- .-- 
 proc readComplexPattern(param refBuffer, r, pattern: ?t) where refBuffer == true {
   var s: t;
   // read to pattern
-  writeln(r.readTo(s, pattern), " ", s);
+  writeln(r.readTo(pattern, s), " ", s);
 
   // read pattern itself
   r.readLiteral(pattern);
 
   // read to EOF
-  writeln(r.readTo(s, pattern), " ", s.strip());
+  writeln(r.readTo(pattern, s), " ", s.strip());
 
   // try reading at EOF (should return 'false')
-  writeln(r.readTo(s, pattern), " ", s);
+  writeln(r.readTo(pattern, s), " ", s);
 }
 
 proc readComplexPattern(param refBuffer, r, pattern: ?t) where refBuffer == false {

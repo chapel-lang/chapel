@@ -5853,7 +5853,7 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
   where t==string || t==bytes
 {
   var ret: t;
-  if !this.readThrough(ret, separator, maxSize, stripSeparator)
+  if !this.readThrough(separator, ret, maxSize, stripSeparator)
     then throw new UnexpectedEofError("Encountered EOF in readThrough(" + t:string + ")");
   return ret;
 }
@@ -5883,7 +5883,7 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
     `maxSize` codepoints. The input marker is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
-proc fileReader.readThrough(ref s: string, separator: string, maxSize=-1, stripSeparator=false): bool throws {
+proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripSeparator=false): bool throws {
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
@@ -5930,7 +5930,7 @@ proc fileReader.readThrough(ref s: string, separator: string, maxSize=-1, stripS
     `maxSize` bytes. The input marker is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
-proc fileReader.readThrough(ref b: bytes, separator: bytes, maxSize=-1, stripSeparator=false): bool throws {
+proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSeparator=false): bool throws {
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
@@ -5981,7 +5981,7 @@ proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
   where t==string || t==bytes
 {
   var ret: t;
-  if !this.readTo(ret, separator, maxSize)
+  if !this.readTo(separator, ret, maxSize)
     then throw new UnexpectedEofError("Encountered EOF in readTo(" + t:string + ")");
   return ret;
 }
@@ -6006,7 +6006,7 @@ proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
     `maxSize` codepoints. The input marker is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
-proc fileReader.readTo(ref s: string, separator: string, maxSize=-1): bool throws {
+proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throws {
   var didRead = false;
   on this._home {
     try this.lock(); defer { this.unlock(); }
@@ -6040,7 +6040,7 @@ proc fileReader.readTo(ref s: string, separator: string, maxSize=-1): bool throw
     `maxSize` bytes. The input marker is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
-proc fileReader.readTo(ref b: bytes, separator: bytes, maxSize=-1): bool throws {
+proc fileReader.readTo(separator: bytes, ref b: bytes, maxSize=-1): bool throws {
   var didRead = false;
   on this._home {
     try this.lock(); defer { this.unlock(); }

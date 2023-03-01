@@ -16,7 +16,7 @@ urls(false, openReader("urls.txt"), url_b, true);
 
 proc urls(param reuseBuffer, r, reg: regex(?t), stripSep) where reuseBuffer==true {
   var s: t;
-  while r.readThrough(s, reg, -1, stripSep) {
+  while r.readThrough(reg, s, -1, stripSep) {
     write(s);
   }
 }

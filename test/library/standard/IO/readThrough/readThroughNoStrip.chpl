@@ -16,7 +16,7 @@ writeln(
 proc geneList(r, stopCodon: ?t) {
   var s : t,
       l = new list(t);
-  while r.readThrough(s, stopCodon) {
+  while r.readThrough(stopCodon, s) {
     const gene = s.strip();
     if !gene.isEmpty() {
       assert(gene.endsWith(stopCodon));

@@ -19,7 +19,7 @@ writeln(readIntoList(false, openReader("../listInputTrailing.txt"), con_b));
 proc readIntoList(param reuseBuffer, r, separator: regex(?t)) where reuseBuffer == true {
   var s : t,
       l = new list(int);
-  while r.readThrough(s, separator, stripSeparator=true) {
+  while r.readThrough(separator, s, stripSeparator=true) {
     l.append(s:int);
   }
   return l;

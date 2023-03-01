@@ -1389,7 +1389,7 @@ proc fileReader.readThrough(separator: regex(?t), maxSize=-1, stripSeparator=fal
   where t==string || t==bytes
 {
   var s: t;
-  if !this.readThrough(s, separator, maxSize, stripSeparator) then
+  if !this.readThrough(separator, s, maxSize, stripSeparator) then
     throw new UnexpectedEofError("reached EOF in readThrough(" + t:string + ")");
   return s;
 }
@@ -1415,7 +1415,7 @@ proc fileReader.readThrough(separator: regex(?t), maxSize=-1, stripSeparator=fal
     bytes. The input marker is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
-proc fileReader.readThrough(ref s: string, separator: regex(string), maxSize=-1, stripSeparator=false): bool throws {
+proc fileReader.readThrough(separator: regex(string), ref s: string, maxSize=-1, stripSeparator=false): bool throws {
   import BytesStringCommon.countNumCodepoints;
   on this._home {
     try this.lock(); defer { this.unlock(); }
@@ -1453,7 +1453,7 @@ proc fileReader.readThrough(ref s: string, separator: regex(string), maxSize=-1,
     bytes. The input marker is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
-proc fileReader.readThrough(ref b: bytes, separator: regex(bytes), maxSize=-1, stripSeparator=false): bool throws {
+proc fileReader.readThrough(separator: regex(bytes), ref b: bytes, maxSize=-1, stripSeparator=false): bool throws {
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
