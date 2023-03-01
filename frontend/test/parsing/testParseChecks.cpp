@@ -553,7 +553,38 @@ static void test17(void) {
   guard.clearErrors();
 }
 
+// Limit where empty '[]' domain type expressions can appear.
+static void test18(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+  std::string text =
+    R""""(
+      var w: [] bytes;
+      var x: [] int, y, z: [] real;
+      record r { var x: [] string; }
+      type T = [] string;
+    )"""";
 
+  auto path = UniqueString::get(ctx, "test18.chpl");
+  setFileText(ctx, path, text);
+
+  parseFileToBuilderResultAndCheck(ctx, path, UniqueString());
+
+  assert(guard.numErrors() == 5);
+  displayErrors(ctx, guard);
+  assertErrorMatches(ctx, guard, 0, "test18.chpl", 2,
+                     "variables cannot specify generic array types");
+  assertErrorMatches(ctx, guard, 1, "test18.chpl", 3,
+                     "variables cannot specify generic array types");
+  assertErrorMatches(ctx, guard, 2, "test18.chpl", 3,
+                     "variables cannot specify generic array types");
+  assertErrorMatches(ctx, guard, 3, "test18.chpl", 4,
+                     "fields cannot specify generic array types");
+  assertErrorMatches(ctx, guard, 4, "test18.chpl", 5,
+                     "generic array types are unsupported in this context");
+  assert(guard.realizeErrors());
+}
 
 int main() {
   test0();
@@ -574,6 +605,7 @@ int main() {
   test15();
   test16();
   test17();
+  test18();
 
   return 0;
 }
