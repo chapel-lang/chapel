@@ -18,12 +18,12 @@
  * limitations under the License.
  */
 
-#include "firstClassFunctions.h"
+#include "fcf-support.h"
 
 #include "astutil.h"
+#include "AstVisitorTraverse.h"
 #include "buildDefaultFunctions.h"
 #include "DecoratedClassType.h"
-#include "driver.h"
 #include "passes.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -50,9 +50,11 @@
 #include <sstream>
 
 namespace {
+  using namespace fcfs;
+
   struct FcfFormalInfo {
     Type* type;
-    IntentTag concreteIntent;
+    IntentTag intent;
     const char* name;
   };
 
@@ -68,7 +70,6 @@ namespace {
     FnSymbol* thisMethod;
     const char* userTypeString;
   };
-}
 
 using SharedFcfSuperInfo = std::shared_ptr<FcfSuperInfo>;
 
@@ -77,7 +78,7 @@ static std::map<Type*, SharedFcfSuperInfo> typeToInfo;
 static std::map<FnSymbol*, FnSymbol*> payloadToSharedParentFactory;
 static std::map<FnSymbol*, bool> payloadToResolved;
 static const char* superTypePrefix = "chpl_fcf_";
-static VarSymbol* dummyFcfError = nullptr;
+
 static int uniqueFcfId = 0;
 
 /************************************* | *************************************
@@ -86,18 +87,9 @@ static int uniqueFcfId = 0;
 *                                                                            *
 ************************************** | ************************************/
 
-static bool isConcreteIntentBlank(IntentTag tag, Type* t);
-
-static VarSymbol* getDummyFcfErrorInsertedAtProgram(void);
+static bool isIntentSameAsDefault(IntentTag tag, Type* t);
 
 static Type* buildSharedWrapperType(AggregateType* super);
-
-static bool checkAndResolveFunctionSignature(FnSymbol* fn, Expr* use);
-
-static bool checkAndResolveFunction(FnSymbol* fn, Expr* use);
-
-static FnSymbol* findFunctionFromNameMaybeError(UnresolvedSymExpr* usym,
-                                                CallExpr* root);
 
 static const SharedFcfSuperInfo
 buildWrapperSuperTypeAtProgram(FnSymbol* fn);
@@ -170,24 +162,22 @@ insertSharedParentFactory(const SharedFcfSuperInfo info,
                           AggregateType* child,
                           FnSymbol* payload);
 
+static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use);
+
 /************************************* | *************************************
 *                                                                            *
 *                                                                            *
 *                                                                            *
 ************************************** | ************************************/
 
-static bool isConcreteIntentBlank(IntentTag tag, Type* t) {
+
+
+static bool isIntentSameAsDefault(IntentTag tag, Type* t) {
   auto ret = concreteIntent(INTENT_BLANK, t) == concreteIntent(tag, t);
   return ret;
 }
 
-static VarSymbol* getDummyFcfErrorInsertedAtProgram(void) {
-  if (dummyFcfError != nullptr) return dummyFcfError;
-  auto super = insertFcfWrapperSuperTypeAtProgram("_fcf_error");
-  dummyFcfError = newTemp(super);
-  theProgram->block->body.insertAtTail(new DefExpr(dummyFcfError));
-  return dummyFcfError;
-}
+
 
 static Type* buildSharedWrapperType(AggregateType* super) {
   Type* ret = NULL;
@@ -201,143 +191,17 @@ static Type* buildSharedWrapperType(AggregateType* super) {
   return ret;
 }
 
-static bool checkAndResolveFunctionSignature(FnSymbol* fn, Expr* use) {
-  resolveSignature(fn);
+static FcfFormalInfo extractFormalInfo(ArgSymbol* formal) {
+  const bool isAnonymous = formal->hasFlag(FLAG_ANONYMOUS_FORMAL);
+  FcfFormalInfo ret;
 
-  bool hasGenericFormal = false;
-  for_formals(formal, fn) {
-    hasGenericFormal |= formal->type->symbol->hasFlag(FLAG_GENERIC);
-    if (hasGenericFormal) break;
-  }
-
-  if (hasGenericFormal) {
-    USR_FATAL_CONT(use, "'%s' cannot be captured as a value because "
-                        "it is a generic function",
-                        fn->name);
-    return false;
-  }
-
-  // Now resolve the return type (and possibly the body).
-  if (fn->retType == dtUnknown) {
-    if (fn->retExprType) {
-      resolveSpecifiedReturnType(fn);
-    } else {
-      INT_ASSERT(!fn->hasFlag(FLAG_NO_FN_BODY));
-      resolveFunction(fn);
-      INT_ASSERT(fn->isResolved());
-    }
-  }
-
-  // TODO: How to make this a call to 'USR_FATAL_CONT'?
-  if (fn->hasFlag(FLAG_ITERATOR_FN)) {
-    USR_FATAL(use, "passing iterators by name is not yet supported");
-    return false;
-  }
-
-  return true;
-}
-
-static bool checkAndResolveFunction(FnSymbol* fn, Expr* use) {
-  if (payloadToResolved.find(fn) != payloadToResolved.end()) {
-    return payloadToResolved[fn];
-  }
-
-  bool ret = false;
-  if (checkAndResolveFunctionSignature(fn, use)) {
-    if (!fn->isResolved())
-      if (!fn->hasFlag(FLAG_NO_FN_BODY))
-        resolveFunction(fn);
-    ret = true;
-  }
-
-  payloadToResolved.insert(std::make_pair(fn, ret));
+  ret.type = formal->type;
+  ret.intent = formal->intent;
+  ret.name = isAnonymous ? nullptr : formal->cname;
 
   return ret;
 }
 
-static FnSymbol* findFunctionFromNameMaybeError(UnresolvedSymExpr* usym,
-                                                CallExpr* root) {
-  const char* name = usym->unresolved;
-  Vec<FnSymbol*> visibleFns;
-
-  // Recompute manually because this call may be in an instantiation.
-  recomputeVisibleFunctions();
-  getVisibleFunctions(name, root, visibleFns);
-
-  if (visibleFns.n > 1) {
-    USR_FATAL_CONT(usym, "cannot capture overloaded function '%s'", name);
-    return nullptr;
-  }
-
-  // TODO: Lambdas should always be visible here.
-  if (visibleFns.n == 0) {
-    USR_FATAL_CONT(usym, "no function with name '%s' is visible", name);
-    return nullptr;
-  }
-
-  FnSymbol* ret = visibleFns.head();
-
-  return ret;
-}
-
-Expr* fcfWrapperInstanceFromPrimCall(CallExpr *call) {
-  INT_ASSERT(call && call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL));
-
-  auto use = toUnresolvedSymExpr(call->get(1));
-  auto payload = findFunctionFromNameMaybeError(use, call);
-
-  if (!payload || !checkAndResolveFunction(payload, use)) {
-    auto dummy = getDummyFcfErrorInsertedAtProgram();
-    return new SymExpr(dummy);
-  }
-
-  // Reuse cached FCF wrapper if it already exists.
-  if (payloadToSharedParentFactory.find(payload) !=
-      payloadToSharedParentFactory.end()) {
-    auto ret = new CallExpr(payloadToSharedParentFactory[payload]);
-    return ret;
-  }
-
-  // TODO: Move me to dyno.
-  if (fWarnUnstable) {
-    USR_WARN(call, "First class functions are unstable");
-  }
-
-  auto info = buildWrapperSuperTypeAtProgram(payload);
-
-  auto child = insertChildWrapperAtPayload(info, payload);
-  std::ignore = attachChildThis(info, child, payload);
-  std::ignore = attachChildWriteThis(info, child, payload, "writeThis");
-  if (fUseIOFormatters) {
-    std::ignore = attachChildWriteThis(info, child, payload, "encodeTo");
-  }
-  std::ignore = attachChildPayloadPtrGetter(info, child, payload);
-  auto wrapper = insertSharedParentFactory(info, child, payload);
-
-  CallExpr* ret = new CallExpr(wrapper);
-
-  payloadToSharedParentFactory[payload] = wrapper;
-
-  return ret;
-}
-
-Expr* fcfRawFunctionPointerFromPrimCall(CallExpr* call) {
-  INT_ASSERT(call && call->isPrimitive(PRIM_CAPTURE_FN_FOR_C));
-
-  UnresolvedSymExpr* use = toUnresolvedSymExpr(call->get(1));
-  FnSymbol* payload = findFunctionFromNameMaybeError(use, call);
-
-  if (!payload || !checkAndResolveFunction(payload, use)) {
-    auto dummy = getDummyFcfErrorInsertedAtProgram();
-    return new SymExpr(dummy);
-  }
-
-  auto ret = new SymExpr(payload);
-
-  return ret;
-}
-
-// TODO: Do we need to ensure the function is resolved first?
 static const SharedFcfSuperInfo
 buildWrapperSuperTypeAtProgram(FnSymbol* fn) {
   std::vector<FcfFormalInfo> formals;
@@ -346,11 +210,7 @@ buildWrapperSuperTypeAtProgram(FnSymbol* fn) {
   bool throws = fn->throwsError();
 
   for_formals(formal, fn) {
-    const bool isAnonymous = formal->hasFlag(FLAG_ANONYMOUS_FORMAL);
-    FcfFormalInfo info;
-    info.type = formal->type;
-    info.concreteIntent = formal->intent;
-    info.name = isAnonymous ? nullptr : formal->cname;
+    auto info = extractFormalInfo(formal);
     formals.push_back(std::move(info));
   }
 
@@ -360,32 +220,11 @@ buildWrapperSuperTypeAtProgram(FnSymbol* fn) {
 }
 
 static const char* intentToString(IntentTag tag) {
-  switch (tag) {
-    case INTENT_IN: return "in";
-    case INTENT_OUT: return "out";
-    case INTENT_INOUT: return "inout";
-    case INTENT_CONST: return "const";
-    case INTENT_CONST_IN: return "const in";
-    case INTENT_REF: return "ref";
-    case INTENT_CONST_REF: return "const ref";
-    case INTENT_REF_MAYBE_CONST: return nullptr;
-    case INTENT_PARAM: return "param";
-    case INTENT_TYPE: return "type";
-    case INTENT_BLANK: return nullptr;
-  }
-  return nullptr;
+  return FunctionType::intentToString(tag);
 }
 
 static const char* typeToStringSpecializing(Type* t) {
-  auto vt = t->getValType();
-  if (vt == dtInt[INT_SIZE_DEFAULT]) return "int";
-  if (vt == dtUInt[INT_SIZE_DEFAULT]) return "uint";
-  if (vt == dtReal[COMPLEX_SIZE_DEFAULT]) return "real";
-  if (vt == dtBools[BOOL_SIZE_DEFAULT]) return "bool";
-  if (vt == dtComplex[COMPLEX_SIZE_DEFAULT]) return "complex";
-  if (vt == dtImag[FLOAT_SIZE_DEFAULT]) return "imag";
-  auto ret = vt->symbol->cname;
-  return ret;
+  return FunctionType::typeToString(t);
 }
 
 // TODO: Original intent or concrete intent?
@@ -399,8 +238,8 @@ buildUserFacingTypeString(const std::vector<FcfFormalInfo>& formals,
 
   for (size_t i = 0; i < formals.size(); i++) {
     auto& info = formals[i];
-    bool skip = isConcreteIntentBlank(info.concreteIntent, info.type);
-    if (!skip) oss << intentToString(info.concreteIntent);
+    bool skip = isIntentSameAsDefault(info.intent, info.type);
+    if (!skip) oss << intentToString(info.intent);
     if (!skip && info.name) oss << " ";
     if (info.name) oss << info.name;
     if ((!skip || info.name) && info.type != dtAny) oss << ": ";
@@ -446,7 +285,7 @@ buildWrapperSuperTypeAtProgram(const std::vector<FcfFormalInfo>& formals,
     std::vector<FcfFormalInfo> unnamedFormals;
 
     for (auto& f : formals) {
-      FcfFormalInfo copy = { f.type, f.concreteIntent, nullptr };
+      FcfFormalInfo copy = { f.type, f.intent, nullptr };
       unnamedFormals.push_back(std::move(copy));
     }
 
@@ -498,77 +337,12 @@ buildWrapperSuperTypeAtProgram(const std::vector<FcfFormalInfo>& formals,
   return v;
 }
 
-Expr* fcfWrapperInstanceFromFnExpr(FnSymbol* fn) {
-  INT_FATAL("Not implemented yet!");
-  return nullptr;
-}
-
-Type* fcfWrapperSuperTypeFromFuncFnCall(CallExpr* call) {
-  INT_ASSERT(call && call->isPrimitive(PRIM_CREATE_FN_TYPE));
-
-  AList& argList = call->argList;
-  SymExpr* retTail = toSymExpr(argList.tail);
-
-  // These are the pieces the are required to build the super type.
-  std::vector<FcfFormalInfo> formals;
-  RetTag retTag = RET_VALUE;
-  Type* retType = retTail->symbol()->type;
-  bool throws = false;
-
-  // Build up the formal types and intents.
-  for_alist(expr, argList) {
-    if (expr == argList.tail) break;
-
-    auto se = toSymExpr(expr);
-    INT_ASSERT(se);
-    FcfFormalInfo info;
-    info.type = se->symbol()->type;
-    info.concreteIntent = concreteIntent(INTENT_BLANK, info.type);
-    info.name = nullptr;
-    formals.push_back(std::move(info));
-  }
-
-  auto info = buildWrapperSuperTypeAtProgram(formals, retTag, retType,
-                                               throws);
-  auto ret = info->sharedType;
-  return ret;
-}
-
-Type* fcfWrapperSuperTypeFromFnType(FnSymbol* fn) {
-  INT_ASSERT(fn->hasFlag(FLAG_ANONYMOUS_FN));
-  INT_ASSERT(fn->hasFlag(FLAG_NO_FN_BODY));
-  if (!checkAndResolveFunction(fn, fn->defPoint)) return dtUnknown;
-  auto info = buildWrapperSuperTypeAtProgram(fn);
-  auto ret = info->sharedType;
-  return ret;
-}
-
 static const char* intentTagMnemonicMangled(IntentTag tag) {
-  switch (tag) {
-    case INTENT_IN: return "I";
-    case INTENT_OUT: return "O";
-    case INTENT_INOUT: return "U";
-    case INTENT_CONST: return "C";
-    case INTENT_CONST_IN: return "CI";
-    case INTENT_REF: return "R";
-    case INTENT_CONST_REF: return "CR";
-    case INTENT_REF_MAYBE_CONST: return "RMC";
-    case INTENT_PARAM: return "P";
-    case INTENT_TYPE: return "T";
-    case INTENT_BLANK: return "";
-  }
-  return nullptr;
+  return FunctionType::intentTagMnemonicMangled(tag);
 }
 
 static const char* retTagMnemonicMangled(RetTag tag) {
-  switch (tag) {
-    case RET_VALUE: return "";
-    case RET_REF: return "R";
-    case RET_CONST_REF: return "CR";
-    case RET_PARAM: return "P";
-    case RET_TYPE: return "T";
-  }
-  return nullptr;
+  return FunctionType::retTagMnemonicMangled(tag);
 }
 
 // Either a list of formals or a list of types in a tuple.
@@ -582,8 +356,8 @@ buildSuperName(const std::vector<FcfFormalInfo>& formals,
   oss << superTypePrefix;
 
   for (auto& info : formals) {
-    bool skip = isConcreteIntentBlank(info.concreteIntent, info.type);
-    if (!skip) oss << intentTagMnemonicMangled(info.concreteIntent);
+    bool skip = isIntentSameAsDefault(info.intent, info.type);
+    if (!skip) oss << intentTagMnemonicMangled(info.intent);
     oss << typeToStringSpecializing(info.type) << "_";
     if (info.name) oss << info.name;
     oss << "_";
@@ -750,7 +524,7 @@ attachSuperThis(AggregateType* super,
     std::string name;
     name += "f";
     name += std::to_string(i);
-    auto f = new ArgSymbol(info.concreteIntent,
+    auto f = new ArgSymbol(info.intent,
                            astr(name.c_str()),
                            info.type);
     ret->insertFormalAtTail(f);
@@ -767,28 +541,6 @@ attachSuperThis(AggregateType* super,
   baseModule->block->insertAtHead(new DefExpr(ret));
   normalize(ret);
   super->methods.add(ret);
-
-  return ret;
-}
-
-const char* fcfWrapperTypeToString(Type* t) {
-  INT_ASSERT(t && t->symbol->hasFlag(FLAG_FUNCTION_CLASS));
-
-  auto fcfError = getDummyFcfErrorInsertedAtProgram();
-  auto at = toAggregateType(t);
-
-  if (at == fcfError->type) return "<error>";
-
-  if (typeToInfo.find(at) == typeToInfo.end()) {
-    INT_ASSERT(at->dispatchParents.n > 0);
-    auto super = at->dispatchParents.v[0];
-    INT_ASSERT(super != dtObject);
-    at = super;
-  }
-
-  INT_ASSERT(typeToInfo.find(at) != typeToInfo.end());
-  auto info = typeToInfo[at];
-  auto ret = astr(info->userTypeString);
 
   return ret;
 }
@@ -1000,18 +752,427 @@ insertSharedParentFactory(const SharedFcfSuperInfo info,
   return ret;
 }
 
-bool fcfIsValidExternType(Type* t) {
-  if (!t || !t->symbol->hasFlag(FLAG_FUNCTION_CLASS)) return false;
-  auto info = typeToInfo[t];
-  INT_ASSERT(info.get() != nullptr);
+static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use) {
+  INT_ASSERT(fn && fn->defPoint && fn->type);
 
-  // TODO: What do we do about intents here? E.g., out intent...
-  for (auto& formal : info->formals) {
-    if (!isExternType(formal.type)) return false;
+  auto ft = toFunctionType(fn->type);
+  INT_ASSERT(ft);
+
+  INT_ASSERT(!ft->isGeneric() && ft->returnType() != dtUnknown);
+
+  checkAndResolveSignatureAndBody(fn, use);
+
+  // Reuse cached FCF wrapper if it already exists.
+  if (payloadToSharedParentFactory.find(fn) !=
+      payloadToSharedParentFactory.end()) {
+    auto ret = new CallExpr(payloadToSharedParentFactory[fn]);
+    return ret;
   }
 
-  if (!isExternType(info->retType)) return false;
+  auto info = buildWrapperSuperTypeAtProgram(fn);
+
+  auto child = insertChildWrapperAtPayload(info, fn);
+  std::ignore = attachChildThis(info, child, fn);
+
+  std::ignore = attachChildWriteThis(info, child, fn, "writeThis");
+  if (fUseIOFormatters) {
+    std::ignore = attachChildWriteThis(info, child, fn, "encodeTo");
+  }
+
+  std::ignore = attachChildPayloadPtrGetter(info, child, fn);
+  auto factory = insertSharedParentFactory(info, child, fn);
+
+  payloadToSharedParentFactory[fn] = factory;
+
+  // Return an inserted call to the wrapper that creates the instance.
+  auto ret = new CallExpr(factory);
+  return ret;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+//
+// TODO: The modern implementation stuff will go here...
+//
+
+} // end anonymous namespace
+
+namespace fcfs {
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+// This visitor will collect all the uses of outer variables in a function.
+struct OuterVariableCollector : public AstVisitorTraverse {
+  using OuterVarToMentionMap = std::map<Symbol*, std::vector<SymExpr*>>;
+
+  FnSymbol* owner_;
+  std::vector<Symbol*>& outerVariables_;
+  OuterVarToMentionMap& outerVariableToMentions_;
+  std::vector<FnSymbol*>& childFunctions_;
+
+  OuterVariableCollector(FnSymbol* owner,
+                         std::vector<Symbol*>& outerVariables,
+                         OuterVarToMentionMap& outerVariableToMentions,
+                         std::vector<FnSymbol*>& childFunctions)
+      : owner_(owner),
+        outerVariables_(outerVariables),
+        outerVariableToMentions_(outerVariableToMentions),
+        childFunctions_(childFunctions) {
+    return;
+  }
+
+ ~OuterVariableCollector() = default;
+
+  bool isOuterSymbol(Symbol* node) const {
+    auto p = node->defPoint->parentSymbol;
+    auto ret = p != owner_;
+    return ret;
+  }
+
+  bool isSymbolOfInterest(Symbol* node) const {
+    auto ret = isLcnSymbol(node) && !isGlobal(node);
+    return ret;
+  }
+
+  void visitSymExpr(SymExpr* node) override {
+    auto sym = node->symbol();
+    if (!isOuterSymbol(sym) || !isSymbolOfInterest(sym)) return;
+    auto& mentions = outerVariableToMentions_[sym];
+    if (mentions.empty()) outerVariables_.push_back(sym);
+    mentions.push_back(node);
+  }
+
+  bool enterFnSym(FnSymbol* node) override {
+    childFunctions_.push_back(node);
+    return false;
+  }
+};
+
+ClosureEnv::ClosureEnv(FnSymbol* owner) : owner_(owner) {
+  INT_ASSERT(owner);
+  auto p = owner->defPoint->parentSymbol;
+
+  INT_ASSERT(p->getModule() == owner->getModule());
+
+  // Visitor takes our fields by reference and populates them.
+  if (isFnSymbol(p) && p != owner->getModule()->initFn) {
+    auto v = OuterVariableCollector(owner_, outerVariables_,
+                                    outerVariableToMentions_,
+                                    childFunctions_);
+    owner->body->accept(&v);
+  }
+}
+
+FnSymbol* ClosureEnv::owner() const {
+  return owner_;
+}
+
+bool ClosureEnv::isEmpty() const {
+  bool ret = numOuterVariables() == 0;
+  return ret;
+}
+
+int ClosureEnv::numOuterVariables() const {
+  auto ret = ((int) outerVariables_.size());
+  return ret;
+}
+
+Symbol* ClosureEnv::outerVariable(int idx) const {
+  INT_ASSERT(0 <= idx && idx < numOuterVariables());
+  auto ret = outerVariables_[idx];
+  return ret;
+}
+
+int ClosureEnv::numMentions(Symbol* sym) const {
+  auto it = outerVariableToMentions_.find(sym);
+  if (it == outerVariableToMentions_.end()) return 0;
+  auto ret = ((int) it->second.size());
+  return ret;
+}
+
+SymExpr* ClosureEnv::firstMention(Symbol* sym) const {
+  INT_ASSERT(1 <= numMentions(sym));
+  auto ret = mention(sym, 0);
+  return ret;
+}
+
+SymExpr* ClosureEnv::mention(Symbol* sym, int idx) const {
+  auto it = outerVariableToMentions_.find(sym);
+  if (it == outerVariableToMentions_.end()) return nullptr;
+  int hi = ((int) it->second.size());
+  INT_ASSERT(0 <= idx && idx < hi);
+  auto ret = it->second[idx];
+  return ret;
+}
+
+const std::vector<FnSymbol*>& ClosureEnv::childFunctions() const {
+  return childFunctions_;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool
+readConfigParamBool(ModuleSymbol* modSym, const char* configParamName,
+                    VarSymbol*& cachedValue) {
+
+  // TODO: This is O(n) number of params, we need a better way to look
+  // things up after resolve. I think that 'dyno' can always do the
+  // elegant thing here. Just preserve the ID for 'ChapelBase', and then
+  // use it in conjunction with a lookup for the config name. You fetch
+  // the 'ResolvedExpression' and you're done.
+  if (!cachedValue) {
+    if (!modSym->initFn || !modSym->initFn->isResolved()) {
+      INT_FATAL(modSym, "Called before '%s' is resolved",
+                        modSym->name);
+    }
+
+    form_Map(SymbolMapElem, e, paramMap) {
+      auto sym = e->key;
+      if (sym->defPoint && sym->defPoint->getModule() == modSym) {
+        if (!strcmp(sym->name, configParamName)) {
+          auto vs = toVarSymbol(e->value);
+          if (!vs || (vs != gTrue && vs != gFalse)) {
+            INT_FATAL("Unexpected config param type or bad AST");
+            return false;
+          }
+          cachedValue = vs;
+          break;
+        }
+      }
+    }
+
+    // Provide a hint, just in case.
+    if (!cachedValue) {
+      INT_FATAL("Could not find '%s', is it declared in '%s'?",
+                configParamName,
+                modSym->name);
+    }
+  }
+
+  bool ret = (cachedValue == gTrue);
+  return ret;
+}
+
+bool useLegacyBehavior(void) {
+  static VarSymbol* cachedValue = nullptr;
+  return readConfigParamBool(baseModule, "fcfsUseLegacyBehavior",
+                             cachedValue);
+}
+
+bool usePointerImplementation(void) {
+  static VarSymbol* cachedValue = nullptr;
+  return readConfigParamBool(baseModule, "fcfsUsePointerImplementation",
+                             cachedValue);
+}
+
+Expr* createFunctionClassInstance(FnSymbol* fn, Expr* use) {
+  if (usePointerImplementation()) INT_FATAL(use, "Should not be called!");
+  auto ret = createLegacyClassInstance(fn, use);
+  use->replace(ret);
+  normalize(ret);
+  return ret;
+}
+
+Type* functionClassSuperTypeFromFunctionType(FunctionType* ft) {
+  std::vector<FcfFormalInfo> formals;
+  RetTag retTag = ft->returnIntent();
+  Type* retType = ft->returnType();
+  bool throws = ft->throws();
+
+  // Build up the formal types and intents.
+  for (int i = 0; i < ft->numFormals(); i++) {
+    auto formal = ft->formal(i);
+    FcfFormalInfo info;
+    info.type = formal->type;
+    info.intent = formal->intent;
+    info.name = formal->name;
+    formals.push_back(std::move(info));
+  }
+
+  auto info = buildWrapperSuperTypeAtProgram(formals, retTag, retType,
+                                             throws);
+  auto ret = info->sharedType;
+  return ret;
+
+}
+
+Type* functionClassSuperTypeForFuncConstructor(CallExpr* call) {
+  INT_ASSERT(call && call->isPrimitive(PRIM_CREATE_FN_TYPE));
+
+  AList& argList = call->argList;
+  SymExpr* retTail = toSymExpr(argList.tail);
+
+  // These are the pieces the are required to build the super type.
+  std::vector<FcfFormalInfo> formals;
+  RetTag retTag = RET_VALUE;
+  Type* retType = retTail->symbol()->type;
+  bool throws = false;
+
+  // Build up the formal types and intents. This cannot call the helper
+  // 'extractFormalInfo' because the expressions in the list are not
+  // formals - they are type symbols. The formals of the function type that
+  // is constructed by a call to 'func()' all have the blank intent, and
+  // the function type always returns by value.
+  for_alist(expr, argList) {
+    if (expr == argList.tail) break;
+
+    auto se = toSymExpr(expr);
+    INT_ASSERT(se);
+    FcfFormalInfo info;
+    info.type = se->symbol()->type;
+    info.intent = INTENT_BLANK;
+    info.name = nullptr;
+    formals.push_back(std::move(info));
+  }
+
+  auto info = buildWrapperSuperTypeAtProgram(formals, retTag, retType,
+                                             throws);
+  auto ret = info->sharedType;
+  return ret;
+}
+
+static bool isAnyErrorSinkType(Type* t) {
+  return (t == errorSink(FunctionType::PROC)->type  ||
+          t == errorSink(FunctionType::ITER)->type  ||
+          t == errorSink(FunctionType::OPERATOR)->type);
+}
+
+const char* functionClassTypeToString(Type* t) {
+  INT_ASSERT(t && t->symbol->hasFlag(FLAG_FUNCTION_CLASS));
+
+  auto at = toAggregateType(t);
+
+  if (isAnyErrorSinkType(at)) {
+    if (t == errorSink(FunctionType::PROC)->type) return "proc";
+    if (t == errorSink(FunctionType::ITER)->type) return "iter";
+    if (t == errorSink(FunctionType::OPERATOR)->type) return "operator";
+    INT_FATAL("Not possible!");
+  }
+
+  if (typeToInfo.find(at) == typeToInfo.end()) {
+    INT_ASSERT(at->dispatchParents.n > 0);
+    auto super = at->dispatchParents.v[0];
+    INT_ASSERT(super != dtObject);
+    at = super;
+  }
+
+  INT_ASSERT(typeToInfo.find(at) != typeToInfo.end());
+  auto info = typeToInfo[at];
+  auto ret = astr(info->userTypeString);
+
+  return ret;
+}
+
+bool checkAndResolveSignature(FnSymbol* fn, Expr* use) {
+  std::ignore = fn->tagIfGeneric();
+
+  if (fn->isResolved()) return false;
+
+  resolveSignature(fn);
+
+  // This just checks that the current tagging is valid.
+  INT_ASSERT(fn->isGenericIsValid());
+
+  // Now resolve the return type (and possibly the body).
+  if (fn->retType == dtUnknown) {
+    if (fn->retExprType) {
+      resolveSpecifiedReturnType(fn);
+      return false;
+
+    // Only try to resolve the body if we can succeed.
+    } else if (!fn->isResolved() && !fn->isGeneric()) {
+      INT_ASSERT(!fn->hasFlag(FLAG_NO_FN_BODY));
+      if (!fn->hasFlag(FLAG_NO_FN_BODY)) resolveFunction(fn);
+      INT_ASSERT(fn->isResolved());
+      return true;
+    }
+  }
 
   return true;
 }
 
+void checkAndResolveSignatureAndBody(FnSymbol* fn, Expr* use) {
+  if (payloadToResolved.find(fn) != payloadToResolved.end()) return;
+
+  // TODO: What is the best way to detect if resolution failed?
+  bool done = fn->isResolved() || checkAndResolveSignature(fn, use);
+
+  if (!done) {
+    INT_ASSERT(!fn->isResolved());
+    if (!fn->isGeneric() && !fn->hasFlag(FLAG_NO_FN_BODY)) {
+      resolveFunction(fn);
+      done = fn->isResolved();
+    }
+  }
+
+  payloadToResolved.insert(std::make_pair(fn, done));
+
+  return;
+}
+
+std::vector<FnSymbol*> lookupFunctions(const char* name, Expr* use) {
+  std::vector<FnSymbol*> ret;
+  Vec<FnSymbol*> visibleFns;
+
+  // Recompute manually because this call may be in an instantiation.
+  recomputeVisibleFunctions();
+
+  // Look up visible functions with a temporary call.
+  auto call = new CallExpr(name);
+  use->replace(call);
+  getVisibleFunctions(name, call, visibleFns);
+  call->replace(use);
+
+  for (int i = 0; i < visibleFns.n; i++) {
+    ret.push_back(visibleFns.v[i]);
+  }
+
+  return ret;
+}
+
+static std::map<FnSymbol*, ClosureEnv> fnToEnv;
+
+const ClosureEnv& computeOuterVariables(FnSymbol* fn) {
+  auto it = fnToEnv.find(fn);
+  if (it != fnToEnv.end()) return it->second;
+  auto inserted = fnToEnv.emplace_hint(it, fn, ClosureEnv(fn));
+  return inserted->second;
+}
+
+VarSymbol* errorSink(FunctionType::Kind kind) {
+  static VarSymbol* procError = nullptr;
+  static VarSymbol* iterError = nullptr;
+  static VarSymbol* operatorError = nullptr;
+
+  VarSymbol** create = nullptr;
+
+  switch (kind) {
+    case FunctionType::PROC: create = &procError; break;
+    case FunctionType::ITER: create = &iterError; break;
+    case FunctionType::OPERATOR: create = &operatorError; break;
+  }
+
+  if (*create) return *create;
+
+  auto name = astr("chpl_", FunctionType::kindToString(kind), "_error");
+  auto super = insertFcfWrapperSuperTypeAtProgram(name);
+  VarSymbol* ret = newTemp(super);
+  theProgram->block->body.insertAtTail(new DefExpr(ret));
+  *create = ret;
+
+  return ret;
+}
+
+} // end namespace 'fcfs'

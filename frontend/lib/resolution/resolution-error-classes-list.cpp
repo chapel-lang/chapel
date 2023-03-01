@@ -135,7 +135,7 @@ static void describeSymbolSource(ErrorWriterBase& wr,
       for (const auto& id : match) {
         if (first) {
           wr.note(id, intro, "found '", from, "' defined here:");
-        } if (firstHere) {
+        } else if (firstHere) {
           wr.note(id, "found '", from, "' defined here:");
         } else {
           wr.note(id, "and found '", from, "' defined here:");
@@ -293,7 +293,8 @@ void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
   wr.code<ID, ID>(firstVisibilityClauseId, { firstVisibilityClauseId });
 
   // print where it came from
-  describeSymbolSource(wr, formal, formal->name(), match, trace, describeStart, false, "");
+  describeSymbolSource(wr, formal, formal->name(), match, trace,
+                       describeStart, true, "");
 
   return;
 }

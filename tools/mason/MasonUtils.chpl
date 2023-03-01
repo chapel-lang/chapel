@@ -568,7 +568,7 @@ proc getDepToml(depName: string, depVersion: string) throws {
 
   if results.size > 0 {
     const brickPath = '/'.join(registries[0], 'Bricks', packages[0], versions[0]) + '.toml';
-    const openFile = openreader(brickPath);
+    const openFile = openReader(brickPath);
     const toml = parseToml(openFile);
 
     return toml;
@@ -598,7 +598,7 @@ proc findLatest(packageDir: string): VersionInfo {
     // Skip packages that are out of version bounds
     const chplVersion = getChapelVersionInfo();
 
-    const manifestReader = openreader(packageDir + '/' + manifest);
+    const manifestReader = openReader(packageDir + '/' + manifest);
     const manifestToml = parseToml(manifestReader);
     const brick = manifestToml['brick'];
     var (low, high) = parseChplVersion(brick);
@@ -722,7 +722,7 @@ proc splitNameVersion(ref package: string, original: bool) {
 
 /* Print a TOML file. Expects full path. */
 proc showToml(tomlFile : string) {
-  const openFile = openreader(tomlFile);
+  const openFile = openReader(tomlFile);
   const toml = parseToml(openFile);
   writeln(toml);
   openFile.close();

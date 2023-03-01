@@ -149,7 +149,7 @@ proc printPkgPc(args) throws {
       //
       var pcDir = "".join(getPkgVariable(pkgName, "--variable=pcfiledir").these()).strip();
       var pcFile = joinPath(pcDir, pkgName + ".pc");
-      var pc = openreader(pcFile);
+      var pc = openReader(pcFile);
       writeln("\n------- " + pkgName + ".pc -------\n");
       for line in pc.lines() {
         write(line);

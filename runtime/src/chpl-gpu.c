@@ -33,6 +33,7 @@ bool chpl_gpu_debug = false;
 #include "error.h"
 #include "chplcgfns.h"
 #include "chpl-linefile-support.h"
+#include "chpl-env-gen.h"
 
 void chpl_gpu_init(void) {
   chpl_gpu_impl_init();

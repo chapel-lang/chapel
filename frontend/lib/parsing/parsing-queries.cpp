@@ -457,6 +457,7 @@ static const Module* const& getToplevelModuleQuery(Context* context,
   } else {
     // Check the module search path for the module.
     std::string check;
+    std::set<ID> seenModules;
 
     for (auto path : moduleSearchPath(context)) {
       check = path.str();
@@ -479,16 +480,18 @@ static const Module* const& getToplevelModuleQuery(Context* context,
         UniqueString emptyParentSymbolPath;
         const ModuleVec& v = parse(context, filePath, emptyParentSymbolPath);
         for (auto mod: v) {
+          if (seenModules.find(mod->id()) != seenModules.end()) continue;
+
           if (mod->name() == name) {
             result = mod;
             break;
           } else {
-            // TODO: is the error what we need in this case?
-            // What does the production compiler do?
+            // TODO: Production compiler does not emit this error, keep it?
             context->error(mod, "In use/imported file, module name %s "
                                 "does not match file name %s.chpl",
                                 mod->name().c_str(),
                                 name.c_str());
+            seenModules.insert(mod->id());
           }
         }
       }
@@ -628,9 +631,9 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
   const AstNode* ast = astForIDQuery(context, id);
   if (ast != nullptr) {
     result = ast->tag();
-  } else if (types::RecordType::isMissingBundledRecordType(context, id)) {
+  } else if (types::CompositeType::isMissingBundledRecordType(context, id)) {
     result = asttags::Record;
-  } else if (types::BasicClassType::isMissingBundledClassType(context, id)) {
+  } else if (types::CompositeType::isMissingBundledClassType(context, id)) {
     result = asttags::Class;
   }
 

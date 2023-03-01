@@ -296,6 +296,15 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     UniqueString declName = ast->toNamedDecl()->name();
     int repeat = 0;
 
+    // For anonymous functions, just use the 'kind' as the name.
+    if (auto fn = ast->toFunction()) {
+      if (fn->isAnonymous()) {
+        assert(declName.isEmpty());
+        auto str = Function::kindToString(fn->kind());
+        declName = UniqueString::get(context_, str);
+      }
+    }
+
     auto search = duplicates.find(declName);
     if (search != duplicates.end()) {
       // it's already there, so increment the repeat counter

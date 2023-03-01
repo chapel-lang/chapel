@@ -1,7 +1,7 @@
 use IO;
 
 // the entire channel is read, and the number of bytes is counted correctly:
-var ch = openreader("./jab.txt");
+var ch = openReader("./jab.txt");
 var b = b"yep\n";
 const num_b = ch.readAll(b);
 

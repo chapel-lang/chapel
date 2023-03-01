@@ -811,7 +811,45 @@ findErrorInFnSignatureParts(ParserContext* context, YYLTYPE location,
 AstNode*
 ParserContext::buildFunctionExpr(YYLTYPE location, FunctionParts& fp) {
   if (fp.isBodyNonBlockExpression) CHPL_ASSERT(false && "Not handled!");
-  auto ret = buildLambda(location, fp);
+
+  clearComments(fp.comments);
+
+  AstNode* ret = nullptr;
+
+  if (fp.errorExpr != nullptr) {
+    ret = fp.errorExpr;
+    this->clearComments();
+    return ret;
+  }
+
+  owned<Block> body = consumeToBlock(location, fp.body);
+
+  // Own the recorded identifier to clean it up, but grab its location.
+  owned<Identifier> identName = toOwned(fp.name);
+  assert(identName.get());
+  auto identNameLoc = builder->getLocation(identName.get());
+  assert(!identNameLoc.isEmpty());
+
+  auto f = Function::build(builder, identNameLoc,
+                           toOwned(fp.attributeGroup),
+                           Decl::DEFAULT_VISIBILITY,
+                           Decl::DEFAULT_LINKAGE,
+                           /*linkageName*/ nullptr,
+                           UniqueString(),
+                           /*inline*/ false,
+                           /*override*/ false,
+                           fp.kind,
+                           /* receiver */ nullptr,
+                           fp.returnIntent,
+                           fp.throws,
+                           /*primaryMethod*/ false,
+                           /*parenless*/ false,
+                           this->consumeList(fp.formals),
+                           toOwned(fp.returnType),
+                           toOwned(fp.where),
+                           this->consumeList(fp.lifetime),
+                           std::move(body));
+  ret = f.release();
   return ret;
 }
 
@@ -1080,7 +1118,7 @@ AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
                              Decl::DEFAULT_VISIBILITY,
                              Decl::DEFAULT_LINKAGE,
                              /* linkageName */ nullptr,
-                             identName->name(),
+                             UniqueString(),
                              /* inline */ false,
                              /* override */ false,
                              Function::LAMBDA,

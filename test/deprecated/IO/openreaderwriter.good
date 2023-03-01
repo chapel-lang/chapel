@@ -1,0 +1,3 @@
+openreaderwriter.chpl:7: warning: openwriter is deprecated - please use openWriter instead
+openreaderwriter.chpl:11: warning: openreader is deprecated - please use openReader instead
+writing text

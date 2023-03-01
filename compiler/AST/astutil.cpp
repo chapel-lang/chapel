@@ -23,9 +23,9 @@
 #include "baseAST.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
+#include "fcf-support.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
-#include "firstClassFunctions.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "IfExpr.h"
@@ -534,7 +534,7 @@ int isDefAndOrUse(SymExpr* se) {
   const int USE = 2;
   const int DEF_USE = 3;
   if (CallExpr* call = toCallExpr(se->parentExpr)) {
-    bool isFirstActual = (call->get(1) == se);
+    bool isFirstActual = (call->numActuals() && call->get(1) == se);
 
     // TODO: PRIM_SET_MEMBER, PRIM_SET_SVEC_MEMBER
 
@@ -843,8 +843,7 @@ bool isExternType(Type* t) {
          ts->hasFlag(FLAG_C_PTR_CLASS) ||
          ts->hasFlag(FLAG_C_ARRAY) ||
          ts->hasFlag(FLAG_EXTERN) ||
-         ts->hasFlag(FLAG_EXPORT) || // these don't exist yet
-         fcfIsValidExternType(t);
+         ts->hasFlag(FLAG_EXPORT); // these don't exist yet
 }
 
 bool isExportableType(Type* t) {

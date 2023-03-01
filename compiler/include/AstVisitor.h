@@ -26,6 +26,7 @@ class DecoratedClassType;
 class EnumType;
 class ConstrainedType;
 class PrimitiveType;
+class FunctionType;
 
 class ArgSymbol;
 class EnumSymbol;
@@ -108,6 +109,7 @@ public:
   virtual void   exitEnumType        (EnumType*          node) = 0;
   virtual void   visitConstrainedType(ConstrainedType*   node) = 0;
   virtual void   visitPrimType       (PrimitiveType*     node) = 0;
+  virtual void   visitFunctionType   (FunctionType*      node) = 0;
 
   //
   // The sub-classes of Symbol

@@ -2340,3 +2340,7 @@ arkouda-comp:
     - Add in1d and setops support for uint pdarrays (Bears-R-Us/arkouda#1085)
   03/14/22:
     - Only read necessary elements in Chapel array for Parquet (Bears-R-Us/arkouda#1204)
+
+shoc-triad-bw-lg:
+  11/10/22:
+    - Ensure we time mem transfer in SHOC Triad (#20961)
