@@ -2823,3 +2823,17 @@ ParserContext::buildLabelStmt(YYLTYPE location, PODUniqueString name,
         CHPL_PARSER_REPORT(this, LabelIneligibleStmt, location, cs.stmt));
   }
 }
+
+
+ParserExprList*
+ParserContext::buildSingleStmtRoutineBody(CommentsAndStmt cs,
+                                          YYLTYPE* warnLoc) {
+  if (warnLoc != NULL) {
+    fprintf(stderr, "%s:%d: warning: Single-statement 'return' routines are "
+            "deprecated; please insert 'do' before the 'return' or wrap the "
+            "statement in curly brackets.\n",
+            this->filename.c_str(), warnLoc->first_line);
+  }
+  this->clearComments();
+  return this->makeList(cs);
+}
