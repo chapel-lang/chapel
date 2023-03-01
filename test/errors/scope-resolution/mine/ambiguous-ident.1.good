@@ -1,0 +1,4 @@
+ambiguous-ident.chpl:2: error: symbol x is multiply defined
+ambiguous-ident.chpl:6: note: also defined here
+ambiguous-ident.chpl:2: error: symbol x is multiply defined
+ambiguous-ident.chpl:6: note: also defined here

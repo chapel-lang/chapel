@@ -1,0 +1,2 @@
+redefinition-variables.chpl:1: warning: '--' is not a pre-decrement
+redefinition-variables.chpl:2: syntax error: near '--'

@@ -1,0 +1,13 @@
+─── warning in redefinition-variables.chpl:1 [PreIncDecOp] ───
+  '--' is not a pre-decrement.
+  Used here:
+      |
+    1 | --detailed-errors # redef-detailed.good
+      |
+
+─── syntax in redefinition-variables.chpl:2 [BisonSyntaxError] ───
+  Near '--':
+      |
+    2 | --no-detailed-errors # redef-brief.good
+      |
+
