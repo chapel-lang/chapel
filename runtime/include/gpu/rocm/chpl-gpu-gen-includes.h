@@ -25,7 +25,7 @@
 
 #include "chpltypes.h"
 #include "chpl-comm.h"
-
+#include <hip/hip_runtime.h>
 
 // General TODO
 // This file is included in the application executable only. It mirrors
@@ -94,12 +94,9 @@ __host__ static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameI
 }
 
 __device__ static inline unsigned int chpl_gpu_clock(void) {
-  // TODO
-  chpl_gpu_write("chpl_gpu_clock not implemented for ROCM gpu runtime\n");
-  return -1;
+  return (unsigned int)clock();
 }
 __host__ static inline unsigned int chpl_gpu_clock(void) {
-  chpl_internal_error("chpl_gpu_clock not implemented for ROCM gpu runtime");
   return 0;
 }
 

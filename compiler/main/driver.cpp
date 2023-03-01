@@ -114,6 +114,7 @@ const char* CHPL_TARGET_BUNDLED_LINK_ARGS = NULL;
 const char* CHPL_TARGET_SYSTEM_LINK_ARGS = NULL;
 
 const char* CHPL_CUDA_LIBDEVICE_PATH = NULL;
+const char* CHPL_ROCM_PATH = NULL;
 const char* CHPL_GPU_CODEGEN = NULL;
 const char* CHPL_GPU_ARCH = NULL;
 
@@ -1467,6 +1468,7 @@ static void setChapelEnvs() {
 
   if (usingGpuLocaleModel()) {
     CHPL_CUDA_LIBDEVICE_PATH = envMap["CHPL_CUDA_LIBDEVICE_PATH"];
+    CHPL_ROCM_PATH = envMap["CHPL_ROCM_PATH"];
     CHPL_GPU_CODEGEN = envMap["CHPL_GPU_CODEGEN"];
     CHPL_GPU_ARCH = envMap["CHPL_GPU_ARCH"];
     switch (getGpuCodegenType()) {
