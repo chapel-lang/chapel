@@ -119,7 +119,7 @@ static Parser helpMakeParser(Context* context,
 // <user/std module descriptor, std::string>
 //
 // N:<number of BuilderResult entries, uint64_t>
-//   0..N-1: <file path i, std::string><offset i, uint64_t>
+//   0..N-1: <file path i, std::string><library file offset i, uint64_t>
 //
 // M:<string cache size, uint64_t>
 //   0..M-1: <id i, int><string length, uint32_t><string, const char*>
@@ -183,6 +183,8 @@ void LibraryFile::generate(Context* context,
 
   const auto& stringCache = builderSer.stringCache();
 
+  // TODO: Can we avoid serializing the ID here if we sort the cache and
+  // write it in order, allowing the deserialization process to infer the ID?
   ser.write((uint32_t)stringCache.size());
   for (const auto& kv : stringCache) {
     const auto& pair = kv.second;
