@@ -1296,9 +1296,10 @@ class ResolvedExpression {
 class ResolutionResultByPostorderID {
  private:
   ID symbolId;
-  // TODO: replace this with a hashtable or at least
-  // something that doesn't have to start at 0
-  std::vector<ResolvedExpression> vec;
+  // This map is generally accessed with operator[] to default-construct a new
+  // ResolvedExpression if none exists for an ID. In other cases at() is used
+  // instead for const-ness.
+  std::unordered_map<int, ResolvedExpression> map;
 
  public:
   /** prepare to resolve the contents of the passed symbol */
@@ -1314,12 +1315,7 @@ class ResolutionResultByPostorderID {
     auto postorder = id.postOrderId();
     CHPL_ASSERT(id.symbolPath() == symbolId.symbolPath());
     CHPL_ASSERT(0 <= postorder);
-    if ((size_t) postorder < vec.size()) {
-      // OK
-    } else {
-      vec.resize(postorder+1);
-    }
-    return vec[postorder];
+    return map[postorder];
   }
   ResolvedExpression& byAstExpanding(const uast::AstNode* ast) {
     return byIdExpanding(ast->id());
@@ -1328,7 +1324,7 @@ class ResolutionResultByPostorderID {
   bool hasId(const ID& id) const {
     auto postorder = id.postOrderId();
     if (id.symbolPath() == symbolId.symbolPath() &&
-        0 <= postorder && (size_t) postorder < vec.size())
+        0 <= postorder && map.count(postorder))
       return true;
 
     return false;
@@ -1340,12 +1336,12 @@ class ResolutionResultByPostorderID {
   ResolvedExpression& byId(const ID& id) {
     CHPL_ASSERT(hasId(id));
     auto postorder = id.postOrderId();
-    return vec[postorder];
+    return map[postorder];
   }
   const ResolvedExpression& byId(const ID& id) const {
     CHPL_ASSERT(hasId(id));
     auto postorder = id.postOrderId();
-    return vec[postorder];
+    return map.at(postorder);
   }
   ResolvedExpression& byAst(const uast::AstNode* ast) {
     return byId(ast->id());
@@ -1356,14 +1352,14 @@ class ResolutionResultByPostorderID {
   ResolvedExpression* byIdOrNull(const ID& id) {
     if (hasId(id)) {
       auto postorder = id.postOrderId();
-      return &vec[postorder];
+      return &map[postorder];
     }
     return nullptr;
   }
   const ResolvedExpression* byIdOrNull(const ID& id) const {
     if (hasId(id)) {
       auto postorder = id.postOrderId();
-      return &vec[postorder];
+      return &map.at(postorder);
     }
     return nullptr;
   }
@@ -1376,21 +1372,22 @@ class ResolutionResultByPostorderID {
 
   bool operator==(const ResolutionResultByPostorderID& other) const {
     return symbolId == other.symbolId &&
-           vec == other.vec;
+           map == other.map;
   }
   bool operator!=(const ResolutionResultByPostorderID& other) const {
     return !(*this == other);
   }
   void swap(ResolutionResultByPostorderID& other) {
     symbolId.swap(other.symbolId);
-    vec.swap(other.vec);
+    map.swap(other.map);
   }
   static bool update(ResolutionResultByPostorderID& keep,
                      ResolutionResultByPostorderID& addin);
   void mark(Context* context) const {
     symbolId.mark(context);
-    for (auto const &elt : vec) {
-      elt.mark(context);
+    for (auto const &elt : map) {
+      // mark ResolvedExpressions
+      elt.second.mark(context);
     }
   }
 };
