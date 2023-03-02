@@ -78,37 +78,20 @@ void* chpl_gpu_load_function(hipModule_t rocm_module, const char* kernel_name) {
 // this is compiler-generated
 extern const char* chpl_gpuBinary;
 
-static hipCtx_t *chpl_gpu_primary_ctx;
-
 // array indexed by device ID (we load the same module once for each GPU).
 static hipModule_t *chpl_gpu_rocm_modules;
 
 static int *deviceClockRates;
 
 
-// hipCtx* functions are deprecated so for now we're limitting the ROCM API to
-// a single GPU.
-/*static bool chpl_gpu_has_context() {
-  hipCtx_t rocm_context = NULL;
-
-  hipError_t ret = hipCtxGetCurrent(&rocm_context);
-
-  if (ret == hipErrorNotInitialized || ret == hipErrorDeinitialized) {
-    return false;
-  }
-  else {
-    return rocm_context != NULL;
-  }
-
-  return true;
-}*/
-
-// hipCtx* functions are deprecated so for now we're limitting the ROCM API to
-// a single GPU.
 static void chpl_gpu_ensure_context() {
-  /*hipCtx_t next_context = chpl_gpu_primary_ctx[chpl_task_getRequestedSubloc()];
+  // Some hipCtx* functions are deprecated so we're using `hipSetDevice`
+  // in its place
+  hipSetDevice(chpl_task_getRequestedSubloc());
 
-  if (!chpl_gpu_has_context()) {
+  // The below is a direct "hipification" of the CUDA runtime
+  // but it's using depercated APIs
+  /*if (!chpl_gpu_has_context()) {
     ROCM_CALL(hipCtxPushCurrent(next_context));
   }
   else {
@@ -145,7 +128,6 @@ void chpl_gpu_impl_init() {
 
   ROCM_CALL(hipGetDeviceCount(&num_devices));
 
-  chpl_gpu_primary_ctx = chpl_malloc(sizeof(hipCtx_t)*num_devices);
   chpl_gpu_rocm_modules = chpl_malloc(sizeof(hipModule_t)*num_devices);
   deviceClockRates = chpl_malloc(sizeof(int)*num_devices);
   
@@ -158,15 +140,10 @@ void chpl_gpu_impl_init() {
     ROCM_CALL(hipDevicePrimaryCtxSetFlags(device, hipDeviceScheduleBlockingSync));
     ROCM_CALL(hipDevicePrimaryCtxRetain(&context, device));
 
-    // hipCtx* functions are deprecated so for now we're limitting the ROCM API to
-    // a single GPU.
-    //ROCM_CALL(hipCtxPushCurrent(context));
+    hipSetDevice(device);
     chpl_gpu_rocm_modules[i] = chpl_gpu_load_module(chpl_gpuBinary);
-    //ROCM_CALL(hipCtxPopCurrent(&context));
 
     hipDeviceGetAttribute(&deviceClockRates[i], hipDeviceAttributeClockRate, device);
-
-    //chpl_gpu_primary_ctx[i] = context;
   }
 }
 
