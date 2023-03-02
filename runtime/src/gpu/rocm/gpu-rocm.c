@@ -130,7 +130,7 @@ void chpl_gpu_impl_init() {
 
   chpl_gpu_rocm_modules = chpl_malloc(sizeof(hipModule_t)*num_devices);
   deviceClockRates = chpl_malloc(sizeof(int)*num_devices);
-  
+
   int i;
   for (i=0 ; i<num_devices ; i++) {
     hipDevice_t device;
