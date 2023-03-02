@@ -587,7 +587,7 @@ module Map {
 
       :yields: A reference to one of the keys contained in this map.
     */
-    @unstable "'Map.these' is unstable"
+    deprecated "'Map.these' is deprecated. Consider 'Map.keys' to iterate over keys or 'Map.values' to iterate over values."
     iter these() const ref {
       for key in this.keys() {
         yield key;
@@ -612,7 +612,7 @@ module Map {
       :yields: A tuple whose elements are a copy of one of the key-value
                pairs contained in this map.
     */
-    @unstable "'Map.items' is unstable"
+    deprecated "'Map.items' is deprecated. Consider 'Map.keys' to iterate over keys or 'Map.values' to iterate over values."
     iter items() {
       if !isCopyableType(keyType) then
         compilerError('in map.items(): map key type ' + keyType:string +
