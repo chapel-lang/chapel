@@ -2433,16 +2433,6 @@ static void doSetIntersect(const std::set<UniqueString>& a,
                         std::less<UniqueString>());
 }
 
-// adds all elements in union(a,b) into the set dst
-/*static void doSetUnion(const std::set<UniqueString>& a,
-                       const std::set<UniqueString>& b,
-                       std::set<UniqueString>& dst) {
-
-  std::set_union(a.begin(), a.end(), b.begin(), b.end(),
-                 std::inserter(dst, dst.end()),
-                 std::less<UniqueString>());
-}*/
-
 // adds all elements in (a-b) into the set dst
 static void doSetDifference(const std::set<UniqueString>& a,
                             const std::set<UniqueString>& b,

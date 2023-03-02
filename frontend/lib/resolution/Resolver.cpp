@@ -2343,40 +2343,6 @@ bool Resolver::enter(const NamedDecl* decl) {
 
   emitMultipleDefinedSymbolErrors(context, scope);
 
-#if 0
-  // All functions can be overloaded, even parenless ones (via return
-  // intent overloading).
-  bool canOverload = decl->isFunction();
-
-  if (canOverload == false) {
-    // check for multiple definitions
-    LookupConfig config = LOOKUP_DECLS;
-    auto vec = lookupNameInScope(context, scope,
-                                 /* receiverScopes */ {},
-                                 decl->name(), config);
-
-    if (vec.size() > 0) {
-      const BorrowedIdsWithName& m = vec[0];
-      if (m.firstId() == decl->id()) {
-        // Checks if the given ID refers to a declaration conflicting
-        // with this one. Functions don't conflict.
-        auto isConflictingId = [&](auto decl) {
-          auto ast = parsing::idToAst(context, decl);
-          return !ast->isFunction();
-        };
-
-        std::vector<ID> redefinedIds;
-        std::copy_if(m.begin(), m.end(),
-                     std::back_inserter(redefinedIds), isConflictingId);
-        if (redefinedIds.size() > 1) {
-          // The first one is the ID we're looking at itself.
-          CHPL_REPORT(context, Redefinition, decl, redefinedIds);
-        }
-      }
-    }
-  }
-#endif
-
   // don't visit e.g. nested functions - these will be resolved
   // when calling them.
   bool visitChildren = !Builder::astTagIndicatesNewIdScope(decl->tag());
