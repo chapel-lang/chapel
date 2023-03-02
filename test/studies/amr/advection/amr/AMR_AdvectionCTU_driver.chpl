@@ -100,7 +100,7 @@ class GradientFlagger: Flagger {
 
 
 
-proc main {
+private proc main {
   
   //===> Get names of input files ===>
   
