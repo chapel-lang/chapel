@@ -2562,12 +2562,14 @@ countSymbols(Context* context,
              int& nParenfulNonMethodFunctions,
              int& nParenlessMethods,
              int& nParenlessNonMethodFunctions,
-             int& nNonFunctions) {
+             int& nFields,
+             int& nOther) {
   nParenfulMethods = 0;
   nParenfulNonMethodFunctions = 0;
   nParenlessMethods = 0;
   nParenlessNonMethodFunctions = 0;
-  nNonFunctions = 0;
+  nFields = 0;
+  nOther = 0;
   for (const auto& b : v) {
     auto end = b.end();
     for (auto it = b.begin(); it != end; ++it) {
@@ -2590,7 +2592,11 @@ countSymbols(Context* context,
           }
         } else {
           // it is not a function
-          nNonFunctions++;
+          if (idv.isMethodOrField()) {
+            nFields++;
+          } else {
+            nOther++;
+          }
         }
       }
     }
@@ -2635,9 +2641,6 @@ static const bool&
 emitMultipleDefinedSymbolErrorsQuery(Context* context, const Scope* scope) {
   QUERY_BEGIN(emitMultipleDefinedSymbolErrorsQuery, context, scope);
 
-  if (scope->id().str() == "M")
-    gdbShouldBreakHere();
-
   bool result = false;
 
   std::set<UniqueString> namesDefined;
@@ -2659,11 +2662,13 @@ emitMultipleDefinedSymbolErrorsQuery(Context* context, const Scope* scope) {
     int nParenfulNonMethodFunctions = 0;
     int nParenlessMethods = 0;
     int nParenlessNonMethodFunctions = 0;
-    int nNonFunctions = 0;
+    int nFields = 0;
+    int nOther = 0;
     countSymbols(context, v,
                  nParenfulMethods, nParenfulNonMethodFunctions,
                  nParenlessMethods, nParenlessNonMethodFunctions,
-                 nNonFunctions);
+                 nFields, nOther);
+    int nNonFunctions = nFields + nOther;
     bool error = false;
     if (nParenfulNonMethodFunctions > 0 &&
         nParenlessNonMethodFunctions + nNonFunctions > 0) {
@@ -2672,10 +2677,10 @@ emitMultipleDefinedSymbolErrorsQuery(Context* context, const Scope* scope) {
     } else if (nParenlessNonMethodFunctions > 0 && nNonFunctions  > 0) {
       // mix of parenless functions and non-functions
       error = true;
-    } else if (nNonFunctions > 0) {
+    } else if (nNonFunctions > 1) {
       // multiple non-functions with the same name
       error = true;
-    } else if (nParenlessNonMethodFunctions > 0) {
+    } else if (nParenlessNonMethodFunctions > 1) {
       // multiple parenless non-method functions with the same name
       // check: is it return intent overloading?
       int nValue = 0;
