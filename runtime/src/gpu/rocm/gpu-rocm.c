@@ -28,6 +28,7 @@
 #include "error.h"
 #include "chplcgfns.h"
 #include "chpl-env-gen.h"
+#include "chpl-linefile-support.h"
 
 #include <assert.h>
 
@@ -77,31 +78,20 @@ void* chpl_gpu_load_function(hipModule_t rocm_module, const char* kernel_name) {
 // this is compiler-generated
 extern const char* chpl_gpuBinary;
 
-static hipCtx_t *chpl_gpu_primary_ctx;
-
 // array indexed by device ID (we load the same module once for each GPU).
 static hipModule_t *chpl_gpu_rocm_modules;
 
 static int *deviceClockRates;
 
 
-static bool chpl_gpu_has_context() {
-  hipCtx_t rocm_context = NULL;
-
-  hipError_t ret = hipCtxGetCurrent(&rocm_context);
-
-  if (ret == hipErrorNotInitialized || ret == hipErrorDeinitialized) {
-    return false;
-  }
-  else {
-    return rocm_context != NULL;
-  }
-}
-
 static void chpl_gpu_ensure_context() {
-  hipCtx_t next_context = chpl_gpu_primary_ctx[chpl_task_getRequestedSubloc()];
+  // Some hipCtx* functions are deprecated so we're using `hipSetDevice`
+  // in its place
+  ROCM_CALL(hipSetDevice(chpl_task_getRequestedSubloc()));
 
-  if (!chpl_gpu_has_context()) {
+  // The below is a direct "hipification" of the CUDA runtime
+  // but it's using depercated APIs
+  /*if (!chpl_gpu_has_context()) {
     ROCM_CALL(hipCtxPushCurrent(next_context));
   }
   else {
@@ -116,7 +106,7 @@ static void chpl_gpu_ensure_context() {
       ROCM_CALL(hipCtxPopCurrent(&popped));
       ROCM_CALL(hipCtxPushCurrent(next_context));
     }
-  }
+  }*/
 }
 
 
@@ -138,7 +128,6 @@ void chpl_gpu_impl_init() {
 
   ROCM_CALL(hipGetDeviceCount(&num_devices));
 
-  chpl_gpu_primary_ctx = chpl_malloc(sizeof(hipCtx_t)*num_devices);
   chpl_gpu_rocm_modules = chpl_malloc(sizeof(hipModule_t)*num_devices);
   deviceClockRates = chpl_malloc(sizeof(int)*num_devices);
 
@@ -151,13 +140,10 @@ void chpl_gpu_impl_init() {
     ROCM_CALL(hipDevicePrimaryCtxSetFlags(device, hipDeviceScheduleBlockingSync));
     ROCM_CALL(hipDevicePrimaryCtxRetain(&context, device));
 
-    ROCM_CALL(hipCtxPushCurrent(context));
+    ROCM_CALL(hipSetDevice(device));
     chpl_gpu_rocm_modules[i] = chpl_gpu_load_module(chpl_gpuBinary);
-    ROCM_CALL(hipCtxPopCurrent(&context));
 
     hipDeviceGetAttribute(&deviceClockRates[i], hipDeviceAttributeClockRate, device);
-
-    chpl_gpu_primary_ctx[i] = context;
   }
 }
 
@@ -402,7 +388,7 @@ void chpl_gpu_impl_copy_device_to_host(void* dst, const void* src, size_t n) {
 void chpl_gpu_impl_copy_host_to_device(void* dst, const void* src, size_t n) {
   assert(chpl_gpu_is_device_ptr(dst));
 
-  ROCM_CALL(hipMemcpyHtoD((hipDeviceptr_t)dst, src, n));
+  ROCM_CALL(hipMemcpyHtoD((hipDeviceptr_t)dst, (void *)src, n));
 }
 
 void chpl_gpu_impl_copy_device_to_device(void* dst, const void* src, size_t n) {
