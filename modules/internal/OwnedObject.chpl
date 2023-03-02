@@ -176,10 +176,6 @@ module OwnedObject {
       return result;
     }
 
-    inline proc type adopt(arg:nil) {
-      return nil;
-    }
-
     /*
       Empty obj of type :record:`owned` so that it manages `nil`.
       Returns the instance previously managed by this :record:`owned`.
