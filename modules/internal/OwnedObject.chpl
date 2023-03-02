@@ -190,8 +190,8 @@ module OwnedObject {
 
       obj.chpl_p = nil;
 
-      return if _to_nilable(t) == t 
-                then _to_unmanaged(oldPtr) 
+      return if _to_nilable(t) == t
+                then _to_unmanaged(oldPtr)
                 else _to_unmanaged(oldPtr!);
     }
 
