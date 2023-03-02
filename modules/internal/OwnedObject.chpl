@@ -177,8 +177,8 @@ module OwnedObject {
     }
 
     /*
-      Empty obj of type :record:`owned` so that it manages `nil`.
-      Returns the instance previously managed by this :record:`owned`.
+      Empty `obj` so that it manages `nil` and
+      return the instance previously managed by this owned object.
     */
     inline proc type release(pragma "nil from arg" ref obj: owned) {
       var oldPtr = obj.chpl_p;
