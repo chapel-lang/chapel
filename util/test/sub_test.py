@@ -1782,15 +1782,18 @@ for testname in testsrc:
 
             # find the compiler .good file to compare against. The compiler
             # .good file can be of the form testname.<configuration>.good or
-            # explicitname.<configuration>.good. It's not currently setup to
-            # handle testname.<configuration>.<compoptsnum>.good, but that
-            # would be easy to add. 
+            # explicitname.<configuration>.good or
+            # testname.<configuration>.<compoptsnum>.good.
             basename = test_filename 
             if len(clist) != 0:
                 explicitcompgoodfile = clist[0].split('#')[1].strip()
                 basename = explicitcompgoodfile.replace('.good', '')
 
-            goodfile = FindGoodFile(basename)
+            compOptNum = ['']
+            if len(compoptslist) > 1:
+                compOptNum.insert(0,'.'+str(compoptsnum))
+
+            goodfile = FindGoodFile(basename, compOptNum)
             # sys.stdout.write('default goodfile=%s\n'%(goodfile))
             error_msg = filter_compiler_errors(origoutput)
             if error_msg != '':
