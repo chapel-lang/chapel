@@ -659,11 +659,11 @@ record regex {
         err_msg = createStringWithOwnedBuffer(err_str) +
                     " when compiling regex '" + patternStr + "'";
       }
-      flameThrower(err_msg);
-    }
-
-    inline proc flameThrower(msg) throws {
-      throw new owned BadRegexError(msg);
+      // this is a workaround for a known limitation in throwing initializers
+      errorThrower(err_msg);
+      inline proc errorThrower(msg) throws {
+        throw new owned BadRegexError(msg);
+      }
     }
   }
 
