@@ -462,7 +462,7 @@ private proc retrieveGitDep(name: string, branch: string) {
 private proc getDependencies(tomlTbl: Toml) {
   var depsD: domain(1);
   var deps: list((string, shared Toml?));
-  for k in tomlTbl.A {
+  for k in tomlTbl.A.keys() {
     if k == "dependencies" {
       for (a,d) in allFields(tomlTbl[k]!) {
         deps.append((a, d));
@@ -474,7 +474,7 @@ private proc getDependencies(tomlTbl: Toml) {
 
 private proc getGitDeps(tomlTbl: Toml) {
   var gitDeps: list((string, string, shared Toml?));
-  for k in tomlTbl["dependencies"]!.A {
+  for k in tomlTbl["dependencies"]!.A.keys() {
     for (a, d) in allFields(tomlTbl["dependencies"]![k]!) {
       // name, type of field (url, branch, etc.), toml that it is set to
       gitDeps.append((k, a, d));

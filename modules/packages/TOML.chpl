@@ -696,7 +696,7 @@ used to recursively hold tables and respective values
       this.ti = root.ti;
       this.dt = root.dt;
       this.s = root.s;
-      for idx in root.A do this.A[idx] = new shared Toml(root.A[idx]!)?;
+      for idx in root.A.keys() do this.A[idx] = new shared Toml(root.A[idx]!)?;
       this.tag = root.tag;
     }
 
