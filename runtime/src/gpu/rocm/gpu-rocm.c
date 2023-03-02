@@ -87,7 +87,7 @@ static int *deviceClockRates;
 static void chpl_gpu_ensure_context() {
   // Some hipCtx* functions are deprecated so we're using `hipSetDevice`
   // in its place
-  hipSetDevice(chpl_task_getRequestedSubloc());
+  ROCM_CALL(hipSetDevice(chpl_task_getRequestedSubloc()));
 
   // The below is a direct "hipification" of the CUDA runtime
   // but it's using depercated APIs
@@ -140,7 +140,7 @@ void chpl_gpu_impl_init() {
     ROCM_CALL(hipDevicePrimaryCtxSetFlags(device, hipDeviceScheduleBlockingSync));
     ROCM_CALL(hipDevicePrimaryCtxRetain(&context, device));
 
-    hipSetDevice(device);
+    ROCM_CALL(hipSetDevice(device));
     chpl_gpu_rocm_modules[i] = chpl_gpu_load_module(chpl_gpuBinary);
 
     hipDeviceGetAttribute(&deviceClockRates[i], hipDeviceAttributeClockRate, device);
