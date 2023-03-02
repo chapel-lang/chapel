@@ -1,5 +1,5 @@
-public use BlockDist;
-public use CyclicDist;
+public use BlockDist except testFastFollowerOptimization;
+public use CyclicDist except testFastFollowerOptimization;
 public use BlockCycDist;
 public use HashedDist;
 public use StencilDist;
