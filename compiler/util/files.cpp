@@ -347,11 +347,18 @@ bool isChplSource(const char* filename) {
   return retval;
 }
 
+bool isDynoLib(const char* filename) {
+  bool retval = checkSuffix(filename, "dyno");
+  if (retval) foundChplSource = true;
+  return retval;
+}
+
 static bool isRecognizedSource(const char* filename) {
   return (isCSource(filename) ||
           isCHeader(filename) ||
           isObjFile(filename) ||
-          isChplSource(filename));
+          isChplSource(filename) ||
+          isDynoLib(filename));
 }
 
 

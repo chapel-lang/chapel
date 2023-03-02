@@ -55,6 +55,8 @@ void addInternalModulePath(const ArgumentDescription* desc,
                            const char* newpath);
 void addStandardModulePath(const ArgumentDescription* desc,
                            const char* newpath);
+void addDynoGenLib(const ArgumentDescription* desc,
+                   const char* newpath);
 
 void               setupModulePaths();
 

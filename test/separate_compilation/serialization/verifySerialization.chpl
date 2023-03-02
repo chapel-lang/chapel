@@ -1,6 +1,6 @@
 
 //
-// Note: this test expects "--dyno-serialize --verify" to serialize all of
+// Note: this test expects "--dyno-verify-serialization" to serialize all of
 // the internal/standard modules, and deserialize them to compare correctness.
 //
 
