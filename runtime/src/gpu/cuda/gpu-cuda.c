@@ -88,16 +88,6 @@ static void chpl_gpu_ensure_context() {
 void chpl_gpu_impl_init() {
   int         num_devices;
 
-  CHPL_GPU_DEBUG("Initializing GPU layer.\n");
-  CHPL_GPU_DEBUG("  Memory allocation strategy for ---\n");
-  #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-    CHPL_GPU_DEBUG("    array data: device memory\n");
-    CHPL_GPU_DEBUG("         other: page-locked host memory\n");
-  #else
-    CHPL_GPU_DEBUG("    array data: unified memory\n");
-    CHPL_GPU_DEBUG("         other: unified memory\n");
-  #endif
-
   // CUDA initialization
   CUDA_CALL(cuInit(0));
 
