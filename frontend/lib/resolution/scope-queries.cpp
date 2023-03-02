@@ -2522,7 +2522,9 @@ static void collectAllNames(Context* context,
         std::set<UniqueString> newNames;
         for (const auto& pair : is.names()) {
           UniqueString nameHere = pair.second;
-          newNames.insert(nameHere);
+          if (!nameHere.isEmpty()) {
+            newNames.insert(nameHere);
+          }
         }
         updateNameSets(newNames, namesDefined, namesDefinedMultiply);
 
@@ -2532,7 +2534,9 @@ static void collectAllNames(Context* context,
         for (const auto& pair : is.names()) {
           CHPL_ASSERT(pair.first == pair.second); // renaming not allowed
           UniqueString nameHere = pair.second;
-          except.insert(nameHere);
+          if (!nameHere.isEmpty()) {
+            except.insert(nameHere);
+          }
         }
 
         // compute the names imported

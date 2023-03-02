@@ -237,10 +237,12 @@ void Scope::collectNames(std::set<UniqueString>& namesDefined,
                          std::set<UniqueString>& namesDefinedMultiply) const {
   for (const auto& decl : declared_) {
     UniqueString name = decl.first;
-    auto p = namesDefined.insert(name);
-    if (p.second == false || decl.second.numIds() > 1) {
-      // it was already present or multiply defined here
-      namesDefinedMultiply.insert(name);
+    if (!name.isEmpty()) {
+      auto p = namesDefined.insert(name);
+      if (p.second == false || decl.second.numIds() > 1) {
+        // it was already present or multiply defined here
+        namesDefinedMultiply.insert(name);
+      }
     }
   }
 }
