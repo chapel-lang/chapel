@@ -2512,7 +2512,7 @@ static void collectAllNames(Context* context,
         std::set<UniqueString> newNames;
         for (const auto& pair : is.names()) {
           UniqueString nameHere = pair.second;
-          if (!nameHere.isEmpty()) {
+          if (!nameHere.isEmpty() && nameHere != USTR("_")) {
             newNames.insert(nameHere);
           }
         }
@@ -2524,7 +2524,7 @@ static void collectAllNames(Context* context,
         for (const auto& pair : is.names()) {
           CHPL_ASSERT(pair.first == pair.second); // renaming not allowed
           UniqueString nameHere = pair.second;
-          if (!nameHere.isEmpty()) {
+          if (!nameHere.isEmpty() && nameHere != USTR("_")) {
             except.insert(nameHere);
           }
         }
