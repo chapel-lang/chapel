@@ -41,6 +41,10 @@
 // but we can't know page size at compile time
 size_t qbytes_iobuf_size = 64*1024;
 
+// when not using mmap, writes above this size
+// can avoid buffering by calling pwrite/fwrite/write directly
+size_t qbytes_unbuffered_threshold = 8*1024;
+
 // prototypes.
 
 void qbytes_free_iobuf(qbytes_t* b);

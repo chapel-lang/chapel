@@ -2870,7 +2870,10 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
   int64_t toWrite = 0;
   int64_t remaining = len;
   qioerr err;
+  qio_method_t method = (qio_method_t) (ch->hints & QIO_METHODMASK);
   int eof = 0;
+  ssize_t num_written;
+  size_t num_written_u;
 
   // Include whatever data we got in cached_cur/cached_end
   //_qio_buffered_advance_cached(ch);
@@ -2879,38 +2882,92 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
   //if( _right_mark_start(ch) >= ch->end_pos ) return QIO_EEOF;
   if (qio_channel_offset_unlocked(ch) >= ch->end_pos) return QIO_EEOF;
 
-  while ((remaining > 0) && !eof) {
-    if ((ch->bufIoMax > 0) && (remaining > ch->bufIoMax)) {
-      toWrite = ch->bufIoMax;
-    } else {
-      toWrite = remaining;
+  // if the write is large enough, we aren't using MMAP, and buffering isn't waiting for a commit/revert:
+  // make a direct system call instead of buffering
+  if ( len > qbytes_unbuffered_threshold && (
+      method == QIO_METHOD_READWRITE ||
+      method == QIO_METHOD_PREADPWRITE ||
+      method == QIO_METHOD_FREADFWRITE) &&
+      ( ch->mark_cur == 0 || ch->mark_cur == 1) )
+  ) {
+    // check if this write will exceed EOF
+    if ( ch->end_pos < INT64_MAX && _right_mark_start(ch) + len > ch->end_pos ) {
+      eof = 1;
+      goto: error;
     }
 
-    // make sure we have buffer space. (require calls advance_cached)
-    err = _qio_channel_require_unlocked(ch, toWrite, 1);
-    eof = 0;
-    if( qio_err_to_int(err) == EEOF ) eof = 1;
-    else if( err ) goto error;
-
-    // figure out the end of the data to copy
-    start = _right_mark_start_iter(ch);
-    end = start;
-    gotlen = qbuffer_iter_num_bytes_after(&ch->buf, end);
-    if( toWrite < gotlen ) gotlen = toWrite;
-    qbuffer_iter_advance(&ch->buf, &end, gotlen);
-
-    // now copy the data in to the buffer.
-    err = qbuffer_copyin(&ch->buf, start, end, (char *) ptr + (len-remaining),
-                         gotlen);
+    // flush the write-behind portion of the buffer before attempting to write more
+    err = _qio_buffered_behind(ch, true);
     if( err ) goto error;
 
-    // now move start forward.
-    _set_right_mark_start(ch, end.offset);
+    // write from the 'ptr' using a direct system call (may require multiple iterations for write/pwrite)
+    while ( remaining > 0 ) {
+      num_written = 0;
+      switch (method) {
+        case QIO_METHOD_READWRITE:
+          err = qio_int_to_err(sys_write(ch->file->fd, ptr, remaining, &num_written));
+          break;
+        case QIO_METHOD_PREADPWRITE:
+          err = qio_int_to_err(sys_pwrite(ch->file->fd, ptr, remaining, _right_mark_start(ch), &num_written));
+          break;
+        case QIO_METHOD_FREADFWRITE:
+          if( ch->file->fp ) {
+            num_written_u = fwrite(ptr, 1, remaining, ch->file->fp);
+            err = 0;
+            if( num_written_u == 0 ) {
+              err = qio_int_to_err(ferror(ch->file->fp));
+            }
+            num_written = num_written_u;
+          } else {
+            QIO_GET_CONSTANT_ERROR(err, EINVAL, "missing file pointer");
+            num_written = 0;
+          }
+          break;
+      }
+      if( err ) {
+        *amt_written = num_written + len - remaining;
+        goto: error;
+      }
+      // move the pointer and start forward by num_written bytes
+      ptr = qio_ptr_add((void*) ptr, num_written);
+      _add_right_mark_start(ch, num_written);
+      remaining -= num_written;
+    }
+  } else {
+    // otherwise, do a buffered write
+    while ((remaining > 0) && !eof) {
+      if ((ch->bufIoMax > 0) && (remaining > ch->bufIoMax)) {
+        toWrite = ch->bufIoMax;
+      } else {
+        toWrite = remaining;
+      }
 
-    // did we get to a different part? If so, call write()
-    err = _qio_buffered_behind(ch, false);
-    if( err ) goto error;
-    remaining -= gotlen;
+      // make sure we have buffer space. (require calls advance_cached)
+      err = _qio_channel_require_unlocked(ch, toWrite, 1);
+      eof = 0;
+      if( qio_err_to_int(err) == EEOF ) eof = 1;
+      else if( err ) goto error;
+
+      // figure out the end of the data to copy
+      start = _right_mark_start_iter(ch);
+      end = start;
+      gotlen = qbuffer_iter_num_bytes_after(&ch->buf, end);
+      if( toWrite < gotlen ) gotlen = toWrite;
+      qbuffer_iter_advance(&ch->buf, &end, gotlen);
+
+      // now copy the data in to the buffer.
+      err = qbuffer_copyin(&ch->buf, start, end, (char *) ptr + (len-remaining),
+                          gotlen);
+      if( err ) goto error;
+
+      // now move start forward.
+      _set_right_mark_start(ch, end.offset);
+
+      // did we get to a different part? If so, call write()
+      err = _qio_buffered_behind(ch, false);
+      if( err ) goto error;
+      remaining -= gotlen;
+    }
   }
 
   err = 0;

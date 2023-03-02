@@ -674,7 +674,7 @@ typedef struct qio_channel_s {
    * we allocate bufferspace (appending without updating av_end)
    * and then update av_end to be the end of the buffer.
    *
-   * right_mark_start is mark_space[mark_next-1] or av_start if mark_next==0.
+   * right_mark_start is mark_space[mark_cur-1] or av_start if mark_cur==0.
    *
    * How does marking interact with cached_cur/start/end?
    *  - mark positions are always offsets from get_offset which includes cached_cur.
@@ -687,7 +687,7 @@ typedef struct qio_channel_s {
    * |             | aka available           | aka allocated          |
    *             mark_stack[0]              av_end
    *             "av_start"
-   *                  mark_stack[mark_next-1]
+   *                  mark_stack[mark_cur-1]
    *                  "right_mark_start"
    * the available section is ready for user read/write.
    * Space to the right of av_end is allocated but not yet read from disk
