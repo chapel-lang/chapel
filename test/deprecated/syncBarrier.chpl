@@ -1,3 +1,3 @@
-use Barriers;
+use Collectives;
 
-var sb = new Barrier(10, BarrierType.Sync);
+var sb = new barrier(10, BarrierType.Sync);

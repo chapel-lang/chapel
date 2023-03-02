@@ -2,7 +2,7 @@ use Random;
 use Sort;
 //use BlockDist;
 use Time;
-use Barriers;
+use Collectives;
 use PeekPoke;
 
 config const seed = SeedGenerator.oddCurrentTime;
@@ -718,7 +718,7 @@ proc parallelInPlacePartition(start_n: int, end_n: int,
   // TODO: For Block distribution
   //   - Block per-locale chunk size should be a multiple of blockSize
   //   - Need to find starting index
-  var barrier = new Barrier(nTasks);
+  var barrier = new barrier(nTasks);
 
   // Overflow block
   var overflow:[0..#blockSize] eltType;

@@ -1,4 +1,4 @@
-use Barriers;
+use Collectives;
 
 // Semi-hacky locale private var so that we don't have to wait on something
 // that lives on locale 0 since that would create an additional task. Note that
@@ -10,7 +10,7 @@ proc setDoneSpinning() { doneSpinning.write(true); }
 proc spin() { doneSpinning.waitFor(true); }
 
 proc main() {
-  var barrier = new Barrier(3);
+  var bar = new barrier(3);
 
   // show that a task moved via an on-stmt will decrement the local runningTask counter
   sync {
@@ -21,24 +21,24 @@ proc main() {
       if numLocales > 1 then while (here.runningTasks() != 2) { chpl_task_yield(); }
       writeln("\n", here.runningTasks());
       on Locales[1%numLocales] do setDoneSpinning();
-      barrier.barrier();
+      bar.barrier();
     }
     begin {
       mytask();
 
       on Locales [1%numLocales] do spin();
-      barrier.barrier();
+      bar.barrier();
     }
 
     mytask();
-    barrier.barrier();
+    bar.barrier();
   }
 
 
 
   proc mytask() {
-    barrier.barrier();
+    bar.barrier();
     writeln(here.runningTasks());
-    barrier.barrier();
+    bar.barrier();
   }
 }

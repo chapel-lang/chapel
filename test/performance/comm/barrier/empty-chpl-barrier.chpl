@@ -1,5 +1,5 @@
 use Time;
-use Barriers;
+use Collectives;
 use AllLocalesBarriers;
 
 config const numTrials = 100;
@@ -32,11 +32,11 @@ proc main() {
 }
 
 proc LocalBarrierBarrier() {
-  var barrier = new Barrier(numTasks);
+  var bar = new barrier(numTasks);
   coforall loc in Locales do on loc do
     coforall 1..numTasksPerLocale do
       for 1..numTrials do
-        barrier.barrier();
+        bar.barrier();
 }
 
 proc GlobalAllLocalesBarrierBarrier() {
