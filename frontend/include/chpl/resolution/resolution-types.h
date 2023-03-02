@@ -1311,15 +1311,15 @@ class ResolutionResultByPostorderID {
   /** prepare to resolve the body of a For loop */
   void setupForParamLoop(const uast::For* loop, ResolutionResultByPostorderID& parent);
 
-  ResolvedExpression& byIdExpanding(const ID& id) {
-    auto postorder = id.postOrderId();
-    CHPL_ASSERT(id.symbolPath() == symbolId.symbolPath());
-    CHPL_ASSERT(0 <= postorder);
-    return map[postorder];
-  }
-  ResolvedExpression& byAstExpanding(const uast::AstNode* ast) {
-    return byIdExpanding(ast->id());
-  }
+  /* ResolvedExpression& byIdExpanding(const ID& id) { */
+  /*   auto postorder = id.postOrderId(); */
+  /*   CHPL_ASSERT(id.symbolPath() == symbolId.symbolPath()); */
+  /*   CHPL_ASSERT(0 <= postorder); */
+  /*   return map[postorder]; */
+  /* } */
+  /* ResolvedExpression& byAstExpanding(const uast::AstNode* ast) { */
+  /*   return byIdExpanding(ast->id()); */
+  /* } */
 
   bool hasId(const ID& id) const {
     auto postorder = id.postOrderId();
@@ -1334,7 +1334,6 @@ class ResolutionResultByPostorderID {
   }
 
   ResolvedExpression& byId(const ID& id) {
-    CHPL_ASSERT(hasId(id));
     auto postorder = id.postOrderId();
     return map[postorder];
   }

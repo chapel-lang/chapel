@@ -144,7 +144,12 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
           int lastId = firstId + stmtId.numContainedChildren();
           for (int i = firstId; i <= lastId; i++) {
             ID exprId(stmtId.symbolPath(), i, 0);
-            result.byIdExpanding(exprId) = resolved.byId(exprId);
+            const ResolvedExpression* reToCopy = resolved.byIdOrNull(exprId);
+            if (reToCopy) {
+              result.byId(exprId) = *reToCopy;
+            } else {
+              result.byId(exprId);
+            }
           }
         }
       }
@@ -193,7 +198,12 @@ scopeResolveModule(Context* context, ID id) {
           int lastId = firstId + stmtId.numContainedChildren();
           for (int i = firstId; i <= lastId; i++) {
             ID exprId(stmtId.symbolPath(), i, 0);
-            result.byIdExpanding(exprId) = resolved.byId(exprId);
+            const ResolvedExpression* reToCopy = resolved.byIdOrNull(exprId);
+            if (reToCopy) {
+              result.byId(exprId) = *reToCopy;
+            } else {
+              result.byId(exprId);
+            }
           }
         }
       }
