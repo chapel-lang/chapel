@@ -2564,6 +2564,12 @@ countSymbols(Context* context,
              int& nParenlessNonMethodFunctions,
              int& nFields,
              int& nOther) {
+
+  // use a set to avoid reporting a multiply-defined error
+  // for a symbol available in two ways.
+  // TODO: adjust scope resolver to not create such patterns.
+  std::set<ID> countedIds;
+
   nParenfulMethods = 0;
   nParenfulNonMethodFunctions = 0;
   nParenlessMethods = 0;
@@ -2574,28 +2580,32 @@ countSymbols(Context* context,
     auto end = b.end();
     for (auto it = b.begin(); it != end; ++it) {
       const IdAndVis& idv = it.curIdAndVis();
-      if (idv.isParenfulFunction()) {
-        if (idv.isMethodOrField()) {
-          nParenfulMethods++;
-        } else {
-          nParenfulNonMethodFunctions++;
-        }
-      } else {
-        // it is parenless or a non-function, but which of the 3 categories?
-        if (parsing::idIsFunction(context, idv.id())) {
+      auto p = countedIds.insert(idv.id());
+      if (p.second) {
+        // inserted in to the map
+        if (idv.isParenfulFunction()) {
           if (idv.isMethodOrField()) {
-            // it must be a parenless method
-            nParenlessMethods++;
+            nParenfulMethods++;
           } else {
-            // it must be a parenless non-method function
-            nParenlessNonMethodFunctions++;
+            nParenfulNonMethodFunctions++;
           }
         } else {
-          // it is not a function
-          if (idv.isMethodOrField()) {
-            nFields++;
+          // it is parenless or a non-function, but which of the 3 categories?
+          if (parsing::idIsFunction(context, idv.id())) {
+            if (idv.isMethodOrField()) {
+              // it must be a parenless method
+              nParenlessMethods++;
+            } else {
+              // it must be a parenless non-method function
+              nParenlessNonMethodFunctions++;
+            }
           } else {
-            nOther++;
+            // it is not a function
+            if (idv.isMethodOrField()) {
+              nFields++;
+            } else {
+              nOther++;
+            }
           }
         }
       }
