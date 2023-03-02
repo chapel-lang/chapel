@@ -760,7 +760,7 @@ module ArgumentParser {
     // needs to be called before generating usage or help
     proc _setArguments(argStack: map(string, ArgumentHandler)) {
       _argStack = new map(string, borrowed ArgumentHandler);
-      for k in argStack.these() {
+      for k in argStack.keys() {
         _argStack.addOrSet(k,try! argStack[k] );
       }
       generateSections();

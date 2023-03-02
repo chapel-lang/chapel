@@ -200,7 +200,7 @@ module Json {
           // read out of order?
           //
           var (m, last) = helper(r);
-          for (k, v) in m.items() {
+          for (k, v) in zip(m.keys(), m.values()) {
             _names.add(k);
             _offsets[k] = v;
           }

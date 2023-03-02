@@ -505,7 +505,7 @@ private proc pullGitDeps(gitDeps, show=false) {
   // Pull git repositories so that we can have access to the
   // current revision and TOML file to get dependencies
   var baseDir = MASON_HOME +'/git/';
-  for val in gitDepMap {
+  for val in gitDepMap.keys() {
     var (srcURL, origBranch, revision) = gitDepMap[val];
 
     // Default to head if branch isn't specified

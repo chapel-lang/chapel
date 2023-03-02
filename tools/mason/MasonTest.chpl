@@ -654,7 +654,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
               testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);
   if testNames.size != 0 {
     var maxCount = -1;
-    for key in localesCountMap {
+    for key in localesCountMap.keys() {
       if maxCount < localesCountMap[key] {
         reqLocales = key;
         maxCount = localesCountMap[key];

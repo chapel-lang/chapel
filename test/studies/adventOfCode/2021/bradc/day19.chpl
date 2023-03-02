@@ -99,7 +99,7 @@ do {
   scannersToProcess = nextScanners;
 } while !scannersToProcess.isEmpty();
 var numBeacons = 0;
-for (k,v) in Landscape.items() do
+for (k,v) in zip(Landscape.keys(), Landscape.values()) do
   if v == beacon then
     numBeacons += 1;
 writeln(numBeacons);

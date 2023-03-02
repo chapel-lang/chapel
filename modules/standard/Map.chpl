@@ -823,8 +823,8 @@ module Map {
 
       var A: [0..#_size] (keyType, valType);
 
-      for (a, item) in zip(A, items()) {
-        a = item;
+      for (a, k, v) in zip(A, keys(), values()) {
+        a = (k, v);
       }
 
       return A;

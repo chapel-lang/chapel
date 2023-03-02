@@ -81,7 +81,7 @@ proc createReference() {
 
 proc verify(dm, msg) {
   assert(reference.size == dm.size);
-  for (k,v) in reference.items() do
+  for (k,v) in zip(reference.keys(), reference.values()) do
     manage dm.updateManager(k) as element do
       assert(element == v && v > 0);
   writeln(msg, " passed");
