@@ -6253,12 +6253,11 @@ proc fileWriter.writeBytes(b: bytes, size = b.size) throws {
 */
 proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
 {
-  var e:errorCode = 0,
-      numWritten:c_ssize_t;
+  var e:errorCode = 0;
   const t_size = c_sizeof(t),
         numBytesToWrite = (numBytes / t_size) * t_size;
 
-  e = try qio_channel_write(false, this._channel_internal, ptr[0], numBytesToWrite:c_ssize_t, numWritten);
+  e = try qio_channel_write_amt(false, this._channel_internal, ptr[0], numBytesToWrite:c_ssize_t);
 
   if (e != 0) {
     throw createSystemOrChplError(e);
@@ -6280,11 +6279,10 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
    :throws SystemError: Thrown if an error occurred while writing to the ``fileWriter``.
 */
 proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
-  var e:errorCode = 0,
-      numWritten:c_ssize_t;
+  var e:errorCode = 0;
 
   var byte_ptr = ptr : c_ptr(uint(8));
-  e = try qio_channel_write(false, this._channel_internal, byte_ptr[0], numBytes:c_ssize_t, numWritten);
+  e = try qio_channel_write_amt(false, this._channel_internal, byte_ptr[0], numBytes:c_ssize_t);
 
   if (e != 0) {
     throw createSystemOrChplError(e);
