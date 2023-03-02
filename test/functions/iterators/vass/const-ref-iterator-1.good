@@ -1,2 +1,36 @@
-const-ref-iterator-1.chpl:10: error: cannot yield a const 'globalVar' from a (non-const) ref iterator
-const-ref-iterator-1.chpl:11: error: cannot yield a const reference from a (non-const) ref iterator
+const-ref-iterator-1.chpl:54: In iterator 'dn_r1':
+const-ref-iterator-1.chpl:56: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:58: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:59: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:72: In iterator 'dn_r2':
+const-ref-iterator-1.chpl:74: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:76: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:77: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:90: In iterator 'dn_r3':
+const-ref-iterator-1.chpl:92: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:94: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:95: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:110: In iterator 'dy_r1':
+const-ref-iterator-1.chpl:112: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:114: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:115: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:128: In iterator 'dy_r2':
+const-ref-iterator-1.chpl:130: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:132: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:133: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:146: In iterator 'dy_r3':
+const-ref-iterator-1.chpl:148: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:150: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:151: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:166: In iterator 'df_r1':
+const-ref-iterator-1.chpl:168: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:170: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:171: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:184: In iterator 'df_r2':
+const-ref-iterator-1.chpl:186: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:188: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:189: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:202: In iterator 'df_r3':
+const-ref-iterator-1.chpl:204: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:206: error: yielding a const or a not a reference from a non-const ref iterator
+const-ref-iterator-1.chpl:207: error: yielding a const or a not a reference from a non-const ref iterator

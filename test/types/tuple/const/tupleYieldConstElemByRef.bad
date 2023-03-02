@@ -1,2 +1,2 @@
-(x = 0)
-(x = 256)
+tupleYieldConstElemByRef.chpl:7: In iterator 'yieldConstElemByRef':
+tupleYieldConstElemByRef.chpl:8: error: yielding a const or a not a reference from a non-const ref iterator
