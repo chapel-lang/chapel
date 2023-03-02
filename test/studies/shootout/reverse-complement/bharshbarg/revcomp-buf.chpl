@@ -136,9 +136,12 @@ proc main(args: [] string) {
     }
   }
 
-  const stdoutBin = (new file(1)).writer(iokind.native, locking=false,
-                                         hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
+  // const stdoutBin = (new file(1)).writer(iokind.native, locking=false,
+  //                                        hints=ioHintSet.fromFlag(QIO_CH_ALWAYS_UNBUFFERED));
   //
+
+  const stdoutBin = (new file(1)).writer(iokind.native, locking=false);
+
   // This conversion wastes memory, but correct output requires array stdout
   // specifically at the moment.
   //
