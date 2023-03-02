@@ -115,13 +115,6 @@ class DistributedMapImpl {
     return result;
   }
 
-  iter items() {
-    for loc in targetLocales do
-      for map in getPrivatizedThisOn(loc).localMaps do
-        for item in map.items() do
-          yield item;
-  }
-
   // returns a task-private aggregator
   proc createAggregator(updater) {
     return new Aggregator(getPrivatizedThis(), updater);

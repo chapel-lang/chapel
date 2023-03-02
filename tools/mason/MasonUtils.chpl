@@ -769,7 +769,7 @@ proc InitProject(dirName, packageName, vcs, show,
 /* Iterator to collect fields from a toml
    TODO custom fields returned */
 iter allFields(tomlTbl: Toml) {
-  for (k,v) in tomlTbl.A.items() {
+  for (k,v) in zip(tomlTbl.A.keys(), tomlTbl.A.values()) {
     if v!.tag == fieldtag.fieldToml then
       continue;
     else yield(k,v);

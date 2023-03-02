@@ -241,7 +241,7 @@ proc compileSrc(lockFile: borrowed Toml, binLoc: string, show: bool,
 proc genSourceList(lockFile: borrowed Toml) {
   var sourceList: list((string, string, string));
   var gitList: list((string, string, string, string));
-  for (name, package) in lockFile.A.items() {
+  for (name, package) in zip(lockFile.A.keys(), lockFile.A.values()) {
     if package!.tag == fieldtag.fieldToml {
       if name == "root" || name == "system" || name == "external" then continue;
       else {
@@ -354,7 +354,7 @@ proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
 
   if lock.pathExists('external') {
     const exDeps = lock['external']!;
-    for (name, depInfo) in exDeps.A.items() {
+    for (name, depInfo) in zip(exDeps.A.keys(), exDeps.A.values()) {
       for (k,v) in allFields(depInfo!) {
         var val = v!;
         select k {
@@ -368,7 +368,7 @@ proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
   }
   if lock.pathExists('system') {
     const pkgDeps = lock['system']!;
-    for (name, dep) in pkgDeps.A.items() {
+    for (name, dep) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
       var depInfo = dep!;
       compopts.append(depInfo["libs"]!.s);
       compopts.append("-I" + depInfo["include"]!.s);

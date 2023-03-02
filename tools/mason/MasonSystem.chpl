@@ -238,7 +238,7 @@ proc getPCDeps(exDeps: Toml) {
   var exDom: domain(string);
   var exDepTree: [exDom] shared Toml?;
 
-  for (name, vers) in exDeps.A.items() {
+  for (name, vers) in zip(exDeps.A.keys(), exDeps.A.values()) {
     try! {
       if pkgConfigExists() {
         const pkgInfo = getPkgInfo(name, vers!.s);

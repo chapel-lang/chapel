@@ -696,7 +696,7 @@ used to recursively hold tables and respective values
       this.ti = root.ti;
       this.dt = root.dt;
       this.s = root.s;
-      for idx in root.A do this.A[idx] = new shared Toml(root.A[idx]!)?;
+      for idx in root.A.keys() do this.A[idx] = new shared Toml(root.A[idx]!)?;
       this.tag = root.tag;
     }
 
@@ -898,7 +898,7 @@ used to recursively hold tables and respective values
     pragma "no doc"
     /* Flatten tables into flat associative array for writing */
     proc flatten(ref flat: map(string, shared Toml?, false), rootKey = '') : flat.type {
-      for (k, v) in this.A.items() {
+      for (k, v) in zip(this.A.keys(), this.A.values()) {
         if v!.tag == fieldToml {
           var fullKey = k;
           if rootKey != '' then fullKey = '.'.join(rootKey, k);
