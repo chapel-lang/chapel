@@ -124,6 +124,9 @@ class IdAndFlags {
   bool isMethodOrField() const {
     return (flags_ & METHOD_FIELD) != 0;
   }
+  bool isParenfulFunction() const {
+    return (flags_ & PARENFUL_FUNCTION) != 0;
+  }
 
   // consider filterFlags and excludeFlags to represent AND of set flags.
   // return true if haveFlags has all of the flags in filterFlags
@@ -333,6 +336,7 @@ class BorrowedIdsWithName {
       return *this;
     }
     inline const ID& operator*() const { return currentIdv->id_; }
+    inline const IdAndVis& curIdAndVis() const { return *currentIdv; }
   };
 
  private:

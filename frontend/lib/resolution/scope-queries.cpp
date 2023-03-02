@@ -2562,29 +2562,87 @@ static void collectAllNames(Context* context,
 }
 
 static void
-countFunctionsAndNonFunctions(Context* context,
-                              const std::vector<BorrowedIdsWithName>& v,
-                              int& nFunctions,
-                              int& nNonFunctions) {
-  nFunctions = 0;
+countSymbols(Context* context,
+             const std::vector<BorrowedIdsWithName>& v,
+             int& nParenfulMethods,
+             int& nParenfulNonMethodFunctions,
+             int& nParenlessMethods,
+             int& nParenlessNonMethodFunctions,
+             int& nNonFunctions) {
+  nParenfulMethods = 0;
+  nParenfulNonMethodFunctions = 0;
+  nParenlessMethods = 0;
+  nParenlessNonMethodFunctions = 0;
   nNonFunctions = 0;
   for (const auto& b : v) {
-    for (const auto& id : b) {
-      // TODO: track this in an IdAndVis flag so we don't have to run
-      // a query to find it.
-      auto tag = parsing::idToTag(context, id);
-      if (isFunction(tag)) {
-        nFunctions++;
+    auto end = b.end();
+    for (auto it = b.begin(); it != end; ++it) {
+      const IdAndVis& idv = it.curIdAndVis();
+      if (idv.isParenfulFunction()) {
+        if (idv.isMethodOrField()) {
+          nParenfulMethods++;
+        } else {
+          nParenfulNonMethodFunctions++;
+        }
       } else {
-        nNonFunctions++;
+        // it is parenless or a non-function, but which of the 3 categories?
+        if (parsing::idIsFunction(context, idv.id())) {
+          if (idv.isMethodOrField()) {
+            // it must be a parenless method
+            nParenlessMethods++;
+          } else {
+            // it must be a parenless non-method function
+            nParenlessNonMethodFunctions++;
+          }
+        } else {
+          // it is not a function
+          nNonFunctions++;
+        }
       }
     }
   }
 }
 
+static void countReturnIntents(Context* context,
+                               const std::vector<BorrowedIdsWithName>& v,
+                               int& nValue,
+                               int& nConstRef,
+                               int& nRef,
+                               int& nOther) {
+  nValue = 0;
+  nConstRef = 0;
+  nRef = 0;
+  nOther = 0;
+  for (const auto& b : v) {
+    for (const auto& id : b) {
+      Function::ReturnIntent reti = parsing::idToFnReturnIntent(context, id);
+      switch (reti) {
+        case Function::DEFAULT_RETURN_INTENT:
+        case Function::CONST:
+          nValue++;
+          break;
+        case Function::CONST_REF:
+          nConstRef++;
+          break;
+        case Function::REF:
+          nRef++;
+          break;
+        case Function::PARAM:
+        case Function::TYPE:
+          nOther++;
+          break;
+      }
+    }
+  }
+}
+
+
 static const bool&
 emitMultipleDefinedSymbolErrorsQuery(Context* context, const Scope* scope) {
   QUERY_BEGIN(emitMultipleDefinedSymbolErrorsQuery, context, scope);
+
+  if (scope->id().str() == "M")
+    gdbShouldBreakHere();
 
   bool result = false;
 
@@ -2596,19 +2654,48 @@ emitMultipleDefinedSymbolErrorsQuery(Context* context, const Scope* scope) {
                   namesDefined, namesDefinedMultiply, checkedScopes);
 
   // Now, consider names in namesDefinedMultiply. If there are any
-  // that are not only methods, issue an error.
+  // that are not only parenful functions, issue an error.
   LookupConfig config = LOOKUP_DECLS |
                         LOOKUP_IMPORT_AND_USE |
                         LOOKUP_SKIP_SHADOW_SCOPES;
   for (auto name : namesDefinedMultiply) {
     std::vector<BorrowedIdsWithName> v =
       lookupNameInScope(context, scope, { }, name, config);
-    int nFunctions = 0;
+    int nParenfulMethods = 0;
+    int nParenfulNonMethodFunctions = 0;
+    int nParenlessMethods = 0;
+    int nParenlessNonMethodFunctions = 0;
     int nNonFunctions = 0;
-    countFunctionsAndNonFunctions(context, v, nFunctions, nNonFunctions);
-    // All functions can be overloaded, even parenless ones (via return
-    // intent overloading).
-    if (nNonFunctions > 1 || (nNonFunctions >= 1 && nFunctions >= 1)) {
+    countSymbols(context, v,
+                 nParenfulMethods, nParenfulNonMethodFunctions,
+                 nParenlessMethods, nParenlessNonMethodFunctions,
+                 nNonFunctions);
+    bool error = false;
+    if (nParenfulNonMethodFunctions > 0 &&
+        nParenlessNonMethodFunctions + nNonFunctions > 0) {
+      // mix of parenful functions and parenless functions / non-function
+      error = true;
+    } else if (nParenlessNonMethodFunctions > 0 && nNonFunctions  > 0) {
+      // mix of parenless functions and non-functions
+      error = true;
+    } else if (nNonFunctions > 0) {
+      // multiple non-functions with the same name
+      error = true;
+    } else if (nParenlessNonMethodFunctions > 0) {
+      // multiple parenless non-method functions with the same name
+      // check: is it return intent overloading?
+      int nValue = 0;
+      int nConstRef = 0;
+      int nRef = 0;
+      int nOther = 0;
+      countReturnIntents(context, v, nValue, nConstRef, nRef, nOther);
+      if (nValue <= 1 && nConstRef <= 1 && nRef <= 1 && nOther == 0) {
+        // it is a valid return intent overload
+      } else {
+        error = true;
+      }
+    }
+    if (error) {
       // emit a multiply-defined symbol error
       std::vector<ResultVisibilityTrace> traceResult;
       v = lookupNameInScopeTracing(context, scope, { }, name, config,

@@ -875,7 +875,19 @@ static const bool& idIsParenlessFunctionQuery(Context* context, ID id) {
 }
 
 bool idIsParenlessFunction(Context* context, ID id) {
-  return idIsParenlessFunctionQuery(context, id);
+  return idIsFunction(context, id) && idIsParenlessFunctionQuery(context, id);
+}
+
+bool idIsFunction(Context* context, ID id) {
+  // Functions always have their own ID symbol scope,
+  // and if it's not a function, we can return false
+  // without doing further work.
+  if (id.postOrderId() != -1) {
+    return false;
+  }
+
+  AstTag tag = idToTag(context, id);
+  return asttags::isFunction(tag);
 }
 
 static const bool& idIsPrivateDeclQuery(Context* context, ID id) {
@@ -926,7 +938,7 @@ static const bool& idIsMethodQuery(Context* context, ID id) {
 }
 
 bool idIsMethod(Context* context, ID id) {
-  return idIsMethodQuery(context, id);
+  return idIsFunction(context, id) && idIsMethodQuery(context, id);
 }
 
 static const UniqueString& fieldIdToNameQuery(Context* context, ID id) {
