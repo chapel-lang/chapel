@@ -1799,6 +1799,10 @@ module ChapelArray {
 
     */
     proc find(val: eltType, ref idx: fullIdxType): bool {
+      proc max(type e: enum) {
+        return chpl__orderToEnum(e.size-1, e);
+      }
+      
       // For the sparse case, start by seeing if the IRV is what we're
       // looking for.  If so, iterate over the parent domain to look
       // for the value or an index not represented in the array.  This
