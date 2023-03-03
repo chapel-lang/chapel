@@ -5148,7 +5148,7 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                               _channel_internal=_channel_internal,
                               _readWriteThisFromLocale=loc);
 
-  // Set the channel pointer to NULL to make the
+  // Set the fileWriter pointer to NULL to make the
   // destruction of the local writer record safe
   // (it shouldn't release anything since it's a local copy).
   defer { writer._channel_internal = QIO_CHANNEL_PTR_NULL; }
@@ -5182,8 +5182,7 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
 }
 
 pragma "no doc"
-proc _channel.readIt(ref x) throws {
-  if writing then compilerError("read on write-only channel");
+proc fileReader.readIt(ref x) throws {
   const origLocale = this.getLocaleOfIoRequest();
 
   on this._home {
@@ -5198,8 +5197,7 @@ proc _channel.readIt(ref x) throws {
 }
 
 pragma "no doc"
-proc _channel.writeIt(const x) throws {
-  if !writing then compilerError("write on read-only channel");
+proc fileWriter.writeIt(const x) throws {
   const origLocale = this.getLocaleOfIoRequest();
 
   on this._home {
