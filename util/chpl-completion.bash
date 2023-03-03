@@ -260,6 +260,7 @@ _chpl ()
 --no-use-io-formatters \
 --no-vectorize \
 --no-verify \
+--no-warn-array-of-range \
 --no-warn-const-loops \
 --no-warn-domain-literal \
 --no-warn-int-uint \
@@ -349,6 +350,7 @@ _chpl ()
 --vectorize \
 --verify \
 --version \
+--warn-array-of-range \
 --warn-const-loops \
 --warn-domain-literal \
 --warn-int-uint \
