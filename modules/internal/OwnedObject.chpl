@@ -179,6 +179,8 @@ module OwnedObject {
     /*
       Empty `obj` so that it manages `nil` and
       return the instance previously managed by this owned object.
+
+      If the argument is `nil` it returns `nil`.
     */
     inline proc type release(pragma "nil from arg" ref obj: owned) {
       var oldPtr = obj.chpl_p;
