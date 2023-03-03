@@ -356,7 +356,7 @@ module SharedObject {
     */
     inline proc type adopt(pragma "nil from arg" in obj: owned) {
       var ptr = owned.release(obj);
-      return owned.adopt(ptr);
+      return shared.adopt(ptr);
     }
     /*
       Creates a new `shared` class reference to the argument.

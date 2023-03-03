@@ -1,10 +1,12 @@
 test adopt of unmanaged
+{x = 0, y = 0} | shared A
 test adopt of owned
-nil
+nil | owned A?
+{x = 0, y = 0} | shared A?
 test adopt ownership transfer to shared object
-{x = 2, y = 3}
-{x = 2, y = 3}
-{x = 2, y = 3}
-{x = 5, y = 3}
-{x = 5, y = 3}
-{x = 5, y = 3}
+{x = 2, y = 3} | unmanaged A
+{x = 2, y = 3} | shared A
+{x = 2, y = 3} | shared A
+{x = 5, y = 3} | unmanaged A
+{x = 5, y = 3} | shared A
+{x = 5, y = 3} | shared A
