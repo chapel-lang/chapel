@@ -225,8 +225,7 @@ module ChapelTuple {
   }
 
   pragma "no doc"
-  pragma "reference to const when const this"
-  iter _tuple.these(param tag:iterKind) ref
+  iter _tuple.these(param tag:iterKind)
       where tag == iterKind.leader
   {
 

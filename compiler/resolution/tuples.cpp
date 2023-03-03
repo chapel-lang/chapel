@@ -962,11 +962,7 @@ shouldChangeTupleType(Type* elementType)
   //
   // Hint: unless iterator records are reworked,
   // this function should return false for iterator records...
-  return !elementType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
-    // this is a temporary bandaid workaround.
-    // a better solution would be for ranges not to
-    // have blank intent being 'const ref' but 'const in' instead.
-         !elementType->symbol->hasFlag(FLAG_RANGE);
+  return !elementType->symbol->hasFlag(FLAG_ITERATOR_RECORD);
 }
 
 

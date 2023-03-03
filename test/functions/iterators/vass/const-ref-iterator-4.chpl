@@ -1,21 +1,7 @@
 /*
-This test checks that:
- `const ref` iterators are allowed to yield any storage class
- `ref` iterators are allowed to yield only ref-able things
-
-The iterators cover all combinations of the following dimensions:
- the return intent: {ref, const ref}
- the return type: {implicit, declared, declared using a type function}
- the return type: {int, concrete record, generic record}
-   for "generic record", the declared type is generic,
-   whereas the calculated type is of course concrete
-
-One dimension we can add is: {serial,standalone,leader,follower}.
-
-The reason for exercising these dimensions is for compiler code coverage.
-Certain aspects of resolution vary depending on some of these parameters.
-
-
+This is a copy of const-ref-iterator-1.chpl
+with all the lines marked "//error" removed.
+This is a basic check that all the legal combinations work.
 */
 
 record RR { }          // a concrete record
@@ -47,16 +33,12 @@ iter dn_cr1() const ref {
   yield c1;
   yield ref1();
   yield pcr1();
-  yield nonr1(); //error
 }
 for i in dn_cr1() do writeln(i);
 
 iter dn_r1() ref {
   yield v1;
-  yield c1;      //error
   yield ref1();
-  yield pcr1();  //error
-  yield nonr1(); //error
 }
 for i in dn_r1() do writeln(i);
 
@@ -65,16 +47,12 @@ iter dn_cr2() const ref {
   yield c2;
   yield ref2();
   yield pcr2();
-  yield nonr2(); //error
 }
 for i in dn_cr2() do writeln(i);
 
 iter dn_r2() ref {
   yield v2;
-  yield c2;      //error
   yield ref2();
-  yield pcr2();  //error
-  yield nonr2(); //error
 }
 for i in dn_r2() do writeln(i);
 
@@ -83,16 +61,12 @@ iter dn_cr3() const ref {
   yield c3;
   yield ref3();
   yield pcr3();
-  yield nonr3(); //error
 }
 for i in dn_cr3() do writeln(i);
 
 iter dn_r3() ref {
   yield v3;
-  yield c3;      //error
   yield ref3();
-  yield pcr3();  //error
-  yield nonr3(); //error
 }
 for i in dn_r3() do writeln(i);
 
@@ -103,16 +77,12 @@ iter dy_cr1() const ref :int {
   yield c1;
   yield ref1();
   yield pcr1();
-  yield nonr1(); //error
 }
 for i in dy_cr1() do writeln(i);
 
 iter dy_r1() ref :int {
   yield v1;
-  yield c1;      //error
   yield ref1();
-  yield pcr1();  //error
-  yield nonr1(); //error
 }
 for i in dy_r1() do writeln(i);
 
@@ -121,16 +91,12 @@ iter dy_cr2() const ref :RR {
   yield c2;
   yield ref2();
   yield pcr2();
-  yield nonr2(); //error
 }
 for i in dy_cr2() do writeln(i);
 
 iter dy_r2() ref :RR {
   yield v2;
-  yield c2;      //error
   yield ref2();
-  yield pcr2();  //error
-  yield nonr2(); //error
 }
 for i in dy_r2() do writeln(i);
 
@@ -139,16 +105,12 @@ iter dy_cr3() const ref :QQ {
   yield c3;
   yield ref3();
   yield pcr3();
-  yield nonr3(); //error
 }
 for i in dy_cr3() do writeln(i);
 
 iter dy_r3() ref :QQ {
   yield v3;
-  yield c3;      //error
   yield ref3();
-  yield pcr3();  //error
-  yield nonr3(); //error
 }
 for i in dy_r3() do writeln(i);
 
@@ -159,16 +121,12 @@ iter df_cr1() const ref :typ1() {
   yield c1;
   yield ref1();
   yield pcr1();
-  yield nonr1(); //error
 }
 for i in df_cr1() do writeln(i);
 
 iter df_r1() ref :typ1() {
   yield v1;
-  yield c1;      //error
   yield ref1();
-  yield pcr1();  //error
-  yield nonr1(); //error
 }
 for i in df_r1() do writeln(i);
 
@@ -177,16 +135,12 @@ iter df_cr2() const ref :typ2() {
   yield c2;
   yield ref2();
   yield pcr2();
-  yield nonr2(); //error
 }
 for i in df_cr2() do writeln(i);
 
 iter df_r2() ref :typ2() {
   yield v2;
-  yield c2;      //error
   yield ref2();
-  yield pcr2();  //error
-  yield nonr2(); //error
 }
 for i in df_r2() do writeln(i);
 
@@ -195,15 +149,11 @@ iter df_cr3() const ref :typ3() {
   yield c3;
   yield ref3();
   yield pcr3();
-  yield nonr3(); //error
 }
 for i in df_cr3() do writeln(i);
 
 iter df_r3() ref :typ3() {
   yield v3;
-  yield c3;      //error
   yield ref3();
-  yield pcr3();  //error
-  yield nonr3(); //error
 }
 for i in df_r3() do writeln(i);
