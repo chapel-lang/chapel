@@ -23,12 +23,15 @@ class A {
 
 {
   writeln("test adopt ownership transfer to shared object");
-  var shr1: A = new shared A(2, 3);
+  var a = new unmanaged A(2, 3);
+  var shr1: A = shared.adopt(a);
   var shr2 = shared.adopt(shr1);
-  // both should refer to the same object
+  // all should refer to the same object
+  writeln(a);
   writeln(shr1);
   writeln(shr2);
   shr2.x += shr1.y;
+  writeln(a);
   writeln(shr1);
   writeln(shr2);
 }

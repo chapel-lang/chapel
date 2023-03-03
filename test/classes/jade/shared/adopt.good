@@ -4,5 +4,7 @@ nil
 test adopt ownership transfer to shared object
 {x = 2, y = 3}
 {x = 2, y = 3}
+{x = 2, y = 3}
+{x = 5, y = 3}
 {x = 5, y = 3}
 {x = 5, y = 3}
