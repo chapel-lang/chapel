@@ -179,8 +179,45 @@ static void test3() {
   guard.realizeErrors();
 }
 
+// Same as test 3, but the un-hidden queries are invoked from other queries
+static void test4() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  // First, an error is immediately logged (nothing is hiding it)
+  assert(queryThatRunsQueryThatErrors(context) == "[I returned a value but I also reported an error]");
+  assert(guard.errors().size() == 1);
+
+  // Not logged again, we cache etc.
+  assert(queryThatRunsQueryThatErrors(context) == "[I returned a value but I also reported an error]");
+  assert(guard.errors().size() == 1);
+
+  // Okay, now run a query that tracks errors from here. It should detect errors ("errors on the second go"),
+  // and also it reports an error of its own, so the error count goes to two.
+  assert(queryThatRunsQueryThatCapturesErrors(context) == "(no errors on the first go; errors on the second go)");
+  assert(guard.errors().size() == 2);
+
+  // One more time.
+  assert(queryThatRunsQueryThatCapturesErrors(context) == "(no errors on the first go; errors on the second go)");
+  assert(guard.errors().size() == 2);
+
+  // Okay, now run a query that tracks errors emitted by the query that tracks errors...
+  // No errors should be re-emitted, and it should still detect the one error reported
+  // by queryThatCapturesErrors.
+  assert(queryThatCapturesCapturingErrors(context) == "[no errors on the first go; errors on the second go] error count: 1");
+  assert(guard.errors().size() == 2);
+
+  // One more time.
+  assert(queryThatCapturesCapturingErrors(context) == "[no errors on the first go; errors on the second go] error count: 1");
+  assert(guard.errors().size() == 2);
+
+  guard.realizeErrors();
+}
+
 int main() {
   test1();
   test2();
   test3();
+  test4();
 }
