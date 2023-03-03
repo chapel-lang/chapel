@@ -5206,18 +5206,31 @@ proc fileWriter.writeIt(const x) throws {
   }
 }
 
-  /* Explicit call for reading or writing a literal as an
-     alternative to using :type:`IO.ioLiteral`.
-   */
-  inline
-  proc _channel.readWriteLiteral(lit:string, ignoreWhiteSpace=true) throws
-  {
-    var iolit = new ioLiteral(lit:string, ignoreWhiteSpace);
-    if this.writing then
-      this.writeIt(iolit);
-    else
-      this.readIt(iolit);
-  }
+/* Explicit call for reading or writing a literal as an
+   alternative to using :type:`IO.ioLiteral`.
+*/
+inline
+proc fileReader.readWriteLiteral(lit:string, ignoreWhiteSpace=true) throws
+{
+  // This method was more interesting when it could be for either a reader or a
+  // writer channel.  However, we don't think it was used much in practice so
+  // will ultimately get deprecated
+  var iolit = new ioLiteral(lit:string, ignoreWhiteSpace);
+  this.readIt(iolit);
+}
+
+/* Explicit call for reading or writing a literal as an
+   alternative to using :type:`IO.ioLiteral`.
+*/
+inline
+proc fileWriter.readWriteLiteral(lit:string, ignoreWhiteSpace=true) throws
+{
+  // This method was more interesting when it could be for either a reader or a
+  // writer channel.  However, we don't think it was used much in practice so
+  // will ultimately get deprecated
+  var iolit = new ioLiteral(lit:string, ignoreWhiteSpace);
+  this.writeIt(iolit);
+}
 
   pragma "no doc"
   inline proc _channel._checkLiteralError(x:?t, err:errorCode,
