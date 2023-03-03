@@ -3730,12 +3730,12 @@ inline proc fileWriter._commit() {
 // TODO -- come up with better names for these
 /*
 
-   Return the current style used by a channel. This function should only be
-   called on a locked channel.
+   Return the current style used by a fileReader. This function should only be
+   called on a locked fileReader.
 
  */
-@unstable "channel._style is unstable because it returns a type that is unstable"
-proc _channel._style():iostyle {
+@unstable "fileReader._style is unstable because it returns a type that is unstable"
+proc fileReader._style():iostyle {
   var ret:iostyle;
   on this._home {
     var local_style:iostyle;
@@ -3745,10 +3745,40 @@ proc _channel._style():iostyle {
   return ret;
 }
 
-// Replacement for channel._style(), but it really shouldn't be used by users,
-// it will get replaced at some point.
+/*
+
+   Return the current style used by a fileWriter. This function should only be
+   called on a locked fileWriter.
+
+ */
+@unstable "fileWriter._style is unstable because it returns a type that is unstable"
+proc fileWriter._style():iostyle {
+  var ret:iostyle;
+  on this._home {
+    var local_style:iostyle;
+    qio_channel_get_style(_channel_internal, local_style);
+    ret = local_style;
+  }
+  return ret;
+}
+
+// Replacement for fileReader._style(), but it really shouldn't be used by
+// users, it will get replaced at some point.
 pragma "no doc"
-proc _channel._styleInternal(): iostyleInternal {
+proc fileReader._styleInternal(): iostyleInternal {
+  var ret:iostyleInternal;
+  on this._home {
+    var local_style:iostyleInternal;
+    qio_channel_get_style(_channel_internal, local_style);
+    ret = local_style;
+  }
+  return ret;
+}
+
+// Replacement for fileWriter._style(), but it really shouldn't be used by
+// users, it will get replaced at some point.
+pragma "no doc"
+proc fileWriter._styleInternal(): iostyleInternal {
   var ret:iostyleInternal;
   on this._home {
     var local_style:iostyleInternal;
@@ -3760,22 +3790,46 @@ proc _channel._styleInternal(): iostyleInternal {
 
 /*
 
-   Set the style associated with a channel. This function should only
-   be called on a locked channel.
+   Set the style associated with a fileReader. This function should only
+   be called on a locked fileReader.
 
  */
-@unstable "channel._set_style is unstable because its purpose involves an unstable type"
-proc _channel._set_style(style:iostyle) {
+@unstable "fileReader._set_style is unstable because its purpose involves an unstable type"
+proc fileReader._set_style(style:iostyle) {
   on this._home {
     var local_style:iostyle = style;
     qio_channel_set_style(_channel_internal, local_style);
   }
 }
 
-// Replacement for channel._set_style(), but it really shouldn't be used by
+/*
+
+   Set the style associated with a fileWriter. This function should only
+   be called on a locked fileWriter.
+
+ */
+@unstable "fileWriter._set_style is unstable because its purpose involves an unstable type"
+proc fileWriter._set_style(style:iostyle) {
+  on this._home {
+    var local_style:iostyle = style;
+    qio_channel_set_style(_channel_internal, local_style);
+  }
+}
+
+// Replacement for fileReader._set_style(), but it really shouldn't be used by
 // users, it will get replaced at some point.
 pragma "no doc"
-proc _channel._set_styleInternal(style: iostyleInternal) {
+proc fileReader._set_styleInternal(style: iostyleInternal) {
+  on this._home {
+    var local_style:iostyleInternal = style;
+    qio_channel_set_style(_channel_internal, local_style);
+  }
+}
+
+// Replacement for fileWriter._set_style(), but it really shouldn't be used by
+// users, it will get replaced at some point.
+pragma "no doc"
+proc fileWriter._set_styleInternal(style: iostyleInternal) {
   on this._home {
     var local_style:iostyleInternal = style;
     qio_channel_set_style(_channel_internal, local_style);
