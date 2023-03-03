@@ -517,9 +517,7 @@ static void test11p() {
          )"""",
          "M.rec.foo",
          "M.rec.foo@7",
-         "M.rec.foo@2" /* the local variable */,
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.rec.foo@2" /* the local variable */);
 }
 static void test11s() {
   testIt("test11s.chpl",
@@ -544,9 +542,7 @@ static void test11s() {
          )"""",
          "M.foo",
          "M.foo@8",
-         "M.foo@3" /* the local variable */,
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.foo@3" /* the local variable */);
 }
 
 // same as above but with a formal rather than a local variable
@@ -573,9 +569,7 @@ static void test12p() {
          )"""",
          "M.rec.foo",
          "M.rec.foo@9",
-         "M.rec.foo@2" /* the formal */,
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.rec.foo@2" /* the formal */);
 }
 static void test12s() {
   testIt("test12s.chpl",
@@ -600,9 +594,7 @@ static void test12s() {
          )"""",
          "M.foo",
          "M.foo@10",
-         "M.foo@3" /* the formal */,
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.foo@3" /* the formal */);
 }
 
 // field access vs parent module field
@@ -626,9 +618,7 @@ static void test13p() {
          )"""",
          "M.mat.foo",
          "M.mat.foo@5",
-         "M.mat@2" /* the field */,
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.mat@2" /* the field */);
 }
 static void test13s() {
   testIt("test13s.chpl",
@@ -651,9 +641,7 @@ static void test13s() {
          )"""",
          "M.foo",
          "M.foo@6",
-         "M.mat@2" /* the field */,
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.mat@2" /* the field */);
 }
 
 // The following series of tests is from issue #21668
