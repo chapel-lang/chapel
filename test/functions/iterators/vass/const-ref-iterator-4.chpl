@@ -28,141 +28,132 @@ proc nonr3() return v3;
 
 /////////// return type: not declared ///////////
 
-iter dn_cr1() const ref {  //ok
+iter dn_cr1() const ref {
   yield v1;
   yield c1;
   yield ref1();
   yield pcr1();
-  yield nonr1();
 }
 for i in dn_cr1() do writeln(i);
 
 iter dn_r1() ref {
-  yield v1;      //ok
-  yield ref1();  //ok
+  yield v1;
+  yield ref1();
 }
 for i in dn_r1() do writeln(i);
 
-iter dn_cr2() const ref {  //ok
+iter dn_cr2() const ref {
   yield v2;
   yield c2;
   yield ref2();
   yield pcr2();
-  yield nonr2();
 }
 for i in dn_cr2() do writeln(i);
 
 iter dn_r2() ref {
-  yield v2;      //ok
-  yield ref2();  //ok
+  yield v2;
+  yield ref2();
 }
 for i in dn_r2() do writeln(i);
 
-iter dn_cr3() const ref {  //ok
+iter dn_cr3() const ref {
   yield v3;
   yield c3;
   yield ref3();
   yield pcr3();
-  yield nonr3();
 }
 for i in dn_cr3() do writeln(i);
 
 iter dn_r3() ref {
-  yield v3;      //ok
-  yield ref3();  //ok
+  yield v3;
+  yield ref3();
 }
 for i in dn_r3() do writeln(i);
 
 /////////// return type: 1:int 2:RR (concrete) 3:QQ (generic) ///////////
 
-iter dy_cr1() const ref :int {  //ok
+iter dy_cr1() const ref :int {
   yield v1;
   yield c1;
   yield ref1();
   yield pcr1();
-  yield nonr1();
 }
 for i in dy_cr1() do writeln(i);
 
 iter dy_r1() ref :int {
-  yield v1;      //ok
-  yield ref1();  //ok
+  yield v1;
+  yield ref1();
 }
 for i in dy_r1() do writeln(i);
 
-iter dy_cr2() const ref :RR {  //ok
+iter dy_cr2() const ref :RR {
   yield v2;
   yield c2;
   yield ref2();
   yield pcr2();
-  yield nonr2();
 }
 for i in dy_cr2() do writeln(i);
 
 iter dy_r2() ref :RR {
-  yield v2;      //ok
-  yield ref2();  //ok
+  yield v2;
+  yield ref2();
 }
 for i in dy_r2() do writeln(i);
 
-iter dy_cr3() const ref :QQ {  //ok
+iter dy_cr3() const ref :QQ {
   yield v3;
   yield c3;
   yield ref3();
   yield pcr3();
-  yield nonr3();
 }
 for i in dy_cr3() do writeln(i);
 
 iter dy_r3() ref :QQ {
-  yield v3;      //ok
-  yield ref3();  //ok
+  yield v3;
+  yield ref3();
 }
 for i in dy_r3() do writeln(i);
 
 /////////// return type: computed with a type function ///////////
 
-iter df_cr1() const ref :typ1() {  //ok
+iter df_cr1() const ref :typ1() {
   yield v1;
   yield c1;
   yield ref1();
   yield pcr1();
-  yield nonr1();
 }
 for i in df_cr1() do writeln(i);
 
 iter df_r1() ref :typ1() {
-  yield v1;      //ok
-  yield ref1();  //ok
+  yield v1;
+  yield ref1();
 }
 for i in df_r1() do writeln(i);
 
-iter df_cr2() const ref :typ2() {  //ok
+iter df_cr2() const ref :typ2() {
   yield v2;
   yield c2;
   yield ref2();
   yield pcr2();
-  yield nonr2();
 }
 for i in df_cr2() do writeln(i);
 
 iter df_r2() ref :typ2() {
-  yield v2;      //ok
-  yield ref2();  //ok
+  yield v2;
+  yield ref2();
 }
 for i in df_r2() do writeln(i);
 
-iter df_cr3() const ref :typ3() {  //ok
+iter df_cr3() const ref :typ3() {
   yield v3;
   yield c3;
   yield ref3();
   yield pcr3();
-  yield nonr3();
 }
 for i in df_cr3() do writeln(i);
 
 iter df_r3() ref :typ3() {
-  yield v3;      //ok
-  yield ref3();  //ok
+  yield v3;
+  yield ref3();
 }
 for i in df_r3() do writeln(i);

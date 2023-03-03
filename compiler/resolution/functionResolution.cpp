@@ -8943,36 +8943,57 @@ static void moveHaltForUnacceptableTypes(CallExpr* call) {
 //
 
 // Check the 'move' into an YVV from the result of an addrOf of 'argOfAddrOf'
-// when the iterator has the 'ret' return/yield intent.
+// when the iterator has the 'ref' return/yield intent.
 // Disallow args that are not references or are const references.
 // Note that the addr-of and YVV's qual are set in normalizeYields().
 static void checkMoveAddrOfToRefYVV(CallExpr* move, Expr* argOfAddrOf) {
   Symbol* arg = toSymExpr(argOfAddrOf)->symbol();
   if (( arg->hasFlag(FLAG_TEMP)        ||
         arg->isImmediate()             ||
+        arg->hasFlag(FLAG_PARAM)       ||
         arg->hasFlag(FLAG_CONST)       ||
         // this probably cannot happen: addrOf would be preFold-ed away
         arg->hasFlag(FLAG_REF_TO_CONST) )
 // need this? && ! move->parentSymbol->hasFlag(FLAG_PROMOTION_WRAPPER)
      )
     USR_FATAL_CONT(move,
-      "yielding a const or a not a reference from a non-const ref iterator");
+      "yielding a const or not a reference from a non-const ref iterator");
+}
+
+// Ditto for the 'const ref' return/yield intent.
+static void checkMoveAddrOfToCRefYVV(CallExpr* move, Expr* argOfAddrOf) {
+  Symbol* arg = toSymExpr(argOfAddrOf)->symbol();
+  if (( arg->hasFlag(FLAG_TEMP)        ||
+        arg->isImmediate()             ||
+        arg->hasFlag(FLAG_PARAM)        )
+// need this? && ! move->parentSymbol->hasFlag(FLAG_PROMOTION_WRAPPER)
+     )
+    USR_FATAL_CONT(move,
+      "yielding a non-reference from a const ref iterator");
 }
 
 // Check the 'move' of 'arg' into an YVV
-// when the iterator has the 'ret' return/yield intent.
+// when the iterator has the 'ref' return/yield intent.
 // Disallow args that are not references or are const references.
 // Note that the addr-of inserted in normalizeYields()
 // may have been eliminated in preFoldPrimOp().
 static void checkMoveSymToRefYVV(CallExpr* move, Symbol* arg) {
   if (( arg->hasFlag(FLAG_CONST)        ||
         arg->hasFlag(FLAG_REF_TO_CONST) ||
-        arg->isImmediate()              ||
         ! arg->isRef()                   )
       && ! move->parentSymbol->hasFlag(FLAG_PROMOTION_WRAPPER)
      )
     USR_FATAL_CONT(move,
-      "yielding a const or a not a reference from a non-const ref iterator");
+      "yielding a const or not a reference from a non-const ref iterator");
+}
+
+// Ditto for the 'const ref' return/yield intent.
+static void checkMoveSymToCRefYVV(CallExpr* move, Symbol* arg) {
+  if (( ! arg->isRef()                   )
+      && ! move->parentSymbol->hasFlag(FLAG_PROMOTION_WRAPPER)
+     )
+    USR_FATAL_CONT(move,
+      "yielding a non-reference from a const ref iterator");
 }
 
 static void resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs) {
@@ -9017,8 +9038,10 @@ static void resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs) {
     USR_FATAL(call, "type alias split initialization uses different types");
   }
 
-  if (lhsSym->hasFlag(FLAG_YVV) && lhsSym->qual == QUAL_REF)
-    checkMoveSymToRefYVV(call, rhsSym);
+  if (lhsSym->hasFlag(FLAG_YVV)) {
+    if (lhsSym->qual == QUAL_REF)       checkMoveSymToRefYVV(call, rhsSym);
+    if (lhsSym->qual == QUAL_CONST_REF) checkMoveSymToCRefYVV(call, rhsSym);
+  }
 
   moveFinalize(call);
 }
@@ -9112,8 +9135,11 @@ static void resolveMoveForRhsCallExpr(CallExpr* call, Type* rhsType) {
         USR_STOP();
       }
 
-      if (lhs->hasFlag(FLAG_YVV) && lhs->qual == QUAL_REF)
-        checkMoveAddrOfToRefYVV(call, rhs->get(1));
+      if (lhs->hasFlag(FLAG_YVV)) {
+        Expr* arg = rhs->get(1);
+        if (lhs->qual == QUAL_REF)       checkMoveAddrOfToRefYVV(call, arg);
+        if (lhs->qual == QUAL_CONST_REF) checkMoveAddrOfToCRefYVV(call, arg);
+      }
     }
 
     moveFinalize(call);
