@@ -2893,15 +2893,33 @@ proc ref fileWriter.deinit() {
   }
 }
 
-// Convenience for forms like 'w.withFormatter(DefaultWriter)`
+// Convenience for forms like 'r.withFormatter(DefaultReader)`
 pragma "no doc"
-proc _channel.withFormatter(type fmtType) {
+proc fileReader.withFormatter(type fmtType) {
   var fmt : fmtType;
   return withFormatter(fmt);
 }
 
 pragma "no doc"
-proc _channel.withFormatter(f: ?) {
+proc fileReader.withFormatter(f: ?) {
+  var ret = new _channel(this.writing, this.kind, this.locking, f);
+  ret._channel_internal = this._channel_internal;
+  ret._home = _home;
+  ret._readWriteThisFromLocale = _readWriteThisFromLocale;
+  on ret._home {
+    qio_channel_retain(ret._channel_internal);
+  }
+  return ret;
+}
+// Convenience for forms like 'w.withFormatter(DefaultWriter)`
+pragma "no doc"
+proc fileWriter.withFormatter(type fmtType) {
+  var fmt : fmtType;
+  return withFormatter(fmt);
+}
+
+pragma "no doc"
+proc fileWriter.withFormatter(f: ?) {
   var ret = new _channel(this.writing, this.kind, this.locking, f);
   ret._channel_internal = this._channel_internal;
   ret._home = _home;
