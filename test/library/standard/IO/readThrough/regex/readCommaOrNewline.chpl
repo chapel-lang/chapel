@@ -1,7 +1,7 @@
 use IO, List, Regex;
 
 // string
-const con = compile("[,\\n]");
+const con = new regex("[,\\n]");
 writeln(readIntoList(true, openReader("../listInput.txt"), con));
 writeln(readIntoList(false, openReader("../listInput.txt"), con));
 
@@ -9,7 +9,7 @@ writeln(readIntoList(true, openReader("../listInputTrailing.txt"), con));
 writeln(readIntoList(false, openReader("../listInputTrailing.txt"), con));
 
 // bytes
-const con_b = compile(b"[,\\n]");
+const con_b = new regex(b"[,\\n]");
 writeln(readIntoList(true, openReader("../listInput.txt"), con_b));
 writeln(readIntoList(false, openReader("../listInput.txt"), con_b));
 

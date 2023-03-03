@@ -1,7 +1,7 @@
 use IO, Regex;
 
 // regex to read at least two '|'
-const bars = compile(b"\\|{2,}");
+const bars = new regex(b"\\|{2,}");
 
 // try to match when a separator isn't present
 var r = openReader("maxSizeBytesInput.txt");

@@ -1,7 +1,7 @@
 use IO, Regex;
 
 // regex to read at least two '|'
-const bars = compile("\\|{2,}"),
+const bars = new regex("\\|{2,}"),
       nb = "👉".numBytes;
 
 // try to match when a separator isn't present

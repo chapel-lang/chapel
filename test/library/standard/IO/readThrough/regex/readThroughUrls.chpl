@@ -1,14 +1,14 @@
 use IO, Regex;
 
 // strings
-const url = compile("https?:\\/\\/(.*\\.)(org|com)([\\/a-zA-Z]*)?(\\.html)?");
+const url = new regex("https?:\\/\\/(.*\\.)(org|com)([\\/a-zA-Z]*)?(\\.html)?");
 urls(true, openReader("urls.txt"), url, false);
 urls(false, openReader("urls.txt"), url, false);
 urls(true, openReader("urls.txt"), url, true);
 urls(false, openReader("urls.txt"), url, true);
 
 // bytes
-const url_b = compile(b"https?:\\/\\/(.*\\.)(org|com)([\\/a-zA-Z]*)?(\\.html)?");
+const url_b = new regex(b"https?:\\/\\/(.*\\.)(org|com)([\\/a-zA-Z]*)?(\\.html)?");
 urls(true, openReader("urls.txt"), url_b, false);
 urls(false, openReader("urls.txt"), url_b, false);
 urls(true, openReader("urls.txt"), url_b, true);
