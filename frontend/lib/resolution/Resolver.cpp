@@ -1779,6 +1779,13 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     return QualifiedType(QualifiedType::TYPE, t);
   }
 
+  if (asttags::isFunction(tag)) {
+    // TODO: use real function types
+    auto kind = qualifiedTypeKindForId(context, id);
+    const Type* type = nullptr;
+    return QualifiedType(kind, type);
+  }
+
   // Figure out what ID is contained within so we can use the
   // appropriate query.
   ID parentId = id.parentSymbolId(context);

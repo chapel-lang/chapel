@@ -830,8 +830,6 @@ static void testExample7() {
 }
 
 static void testExample8() {
-  // TODO: running into an internal assertion
-#if 0
   testCall("example8.chpl",
            R""""(
               module A {
@@ -849,12 +847,9 @@ static void testExample8() {
            "A.main.test",
            "A.main.test@2",
            "A.main.foo" /* the method */);
-#endif
 }
 
 static void testExample9() {
-  // TODO: running into an internal assertion
-#if 0
   testCall("example9.chpl",
            R""""(
               module A {
@@ -874,12 +869,9 @@ static void testExample9() {
            "A.main.test",
            "A.main.test@2",
            "A.main.foo" /* the method */);
-#endif
 }
 
 static void testExample10() {
-  // TODO: no matching candidates
-#if 0
   testCall("example10.chpl",
            R""""(
               module A {
@@ -905,11 +897,9 @@ static void testExample10() {
            "C.test",
            "C.test@2",
            "A.foo" /* the method */ );
-#endif
 }
 
 static void testExample11() {
-  // TODO: no matching candidates
   testCall("example11.chpl",
            R""""(
               module A {
@@ -1002,8 +992,6 @@ static void testExample14() {
 }
 
 static void testExample15() {
-  // TODO: running into an internal assertion failure
-#if 0
   testCall("example15.chpl",
            R""""(
               module M {
@@ -1021,12 +1009,9 @@ static void testExample15() {
            "M.test",
            "M.test@2",
            "" /* ambiguity error */);
-#endif
 }
 
 static void testExample16() {
-  // TODO: running into assertion failure
-#if 0
   testCall("example16.chpl",
            R""""(
               module M {
@@ -1045,7 +1030,6 @@ static void testExample16() {
            "M.main",
            "M.main@0",
            "M.main.foo" /* the innermost proc foo */);
-#endif
 }
 
 static void testExample17() {
@@ -1120,8 +1104,6 @@ static void testExample19() {
 }
 
 static void testExample20() {
-  // TODO: running into an internal assertion failure
-#if 0
   testCall("example20.chpl",
            R""""(
               module A {
@@ -1140,7 +1122,6 @@ static void testExample20() {
            "A.test",
            "A.test@2",
            "" /* ambiguity error */);
-#endif
 }
 
 
