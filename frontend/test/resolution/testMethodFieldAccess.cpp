@@ -746,8 +746,6 @@ static void testExample4a() {
 }
 
 static void testExample5() {
-  // TODO: get this working
-#if 0
   testCall("example5.chpl",
            R""""(
               // Example 5
@@ -768,7 +766,6 @@ static void testExample5() {
            "B.test",
            "B.test@2",
            "A.foo" /* call the method; don't refer to the int */);
-#endif
 }
 
 static void testExample5a() {
@@ -794,7 +791,6 @@ static void testExample5a() {
 
 static void testExample6() {
   // TODO: currently getting "no matching candidates"
-#if 0
   testCall("example6.chpl",
            R""""(
               module A {
@@ -815,7 +811,6 @@ static void testExample6() {
            "B.test",
            "B.test@2",
            "A.foo" /* the method not the int */);
-#endif
 }
 
 static void testExample7() {
@@ -919,7 +914,6 @@ static void testExample10() {
 
 static void testExample11() {
   // TODO: no matching candidates
-#if 0
   testCall("example11.chpl",
            R""""(
               module A {
@@ -946,7 +940,6 @@ static void testExample11() {
            "C.test",
            "C.test@2",
            "C.foo" /* the method Child.foo */ );
-#endif
 }
 
 static void testExample12() {
