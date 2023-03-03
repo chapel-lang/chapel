@@ -124,7 +124,7 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
 }
 
 void* chpl_gpu_memmove(void* dst, const void* src, size_t n) {
-  CHPL_GPU_DEBUG("Doing GPU memmove of %zu bytes from %p to %p.", n, src, dst);
+  CHPL_GPU_DEBUG("Doing GPU memmove of %zu bytes from %p to %p.\n", n, src, dst);
   if (chpl_gpu_is_host_ptr(src)) {
     CHPL_GPU_DEBUG("src is host ptr\n");
   }
@@ -134,17 +134,17 @@ void* chpl_gpu_memmove(void* dst, const void* src, size_t n) {
 
   void* ret = chpl_gpu_impl_memmove(dst, src, n);
 
-  CHPL_GPU_DEBUG("Memmove successful\n");
+  CHPL_GPU_DEBUG("chpl_gpu_memmove successful\n");
   return ret;
 }
 
 void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n) {
-  CHPL_GPU_DEBUG("Doing GPU memset of %zu bytes from %p. Val=%d\n", n, addr,
+  CHPL_GPU_DEBUG("Doing GPU memset of %zu bytes from %p. Val=%d\n\n", n, addr,
                  val);
 
   void* ret = chpl_gpu_impl_memset(addr, val, n);
 
-  CHPL_GPU_DEBUG("memset successful\n");
+  CHPL_GPU_DEBUG("chpl_gpu_memset successful\n");
   return ret;
 }
 

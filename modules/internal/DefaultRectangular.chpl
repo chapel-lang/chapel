@@ -1354,10 +1354,7 @@ module DefaultRectangular {
 
     inline proc dsiAccess(const in ind : rank*idxType) ref {
       // Note: bounds checking occurs in ChapelArray for this type.
-      extern proc printf(s...);
-      /*printf("here 100\n");*/
       var dataInd = getDataIndex(ind);
-      /*printf("here 200\n");*/
       return theData(dataInd);
     }
 
@@ -1370,10 +1367,7 @@ module DefaultRectangular {
 
     inline proc dsiAccess(const in ind : rank*idxType) const ref {
       // Note: bounds checking occurs in ChapelArray for this type.
-      extern proc printf(s...);
-      /*printf("dr here 1000\n");*/
       var dataInd = getDataIndex(ind);
-      /*printf("dr here 2000\n");*/
       return theData(dataInd);
     }
 

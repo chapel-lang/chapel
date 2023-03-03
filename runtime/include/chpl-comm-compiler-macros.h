@@ -51,10 +51,8 @@ static inline
 void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
                        size_t size, int32_t commID, int ln, int32_t fn)
 {
-  //printf("chpl_gen_comm_get started\n"); fflush(stdout);
   if (chpl_nodeID == node) {
     chpl_memmove(addr, raddr, size);
-    //printf("memmove finished\n");
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
     chpl_cache_comm_get(addr, node, raddr, size, commID, ln, fn);
@@ -62,7 +60,6 @@ void chpl_gen_comm_get(void *addr, c_nodeid_t node, void* raddr,
   } else {
     chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
   }
-  //printf("chpl_gen_comm_get finished\n"); fflush(stdout);
 }
 
 static inline

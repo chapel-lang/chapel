@@ -603,9 +603,6 @@ static void setWide(BaseAST* cause, SymExpr* se) {
 
 
 static void setValWide(BaseAST* cause, Symbol* sym) {
-  if (sym->id == 2259315) {
-    std::cout << "heyo\n";
-  }
   Type* valType = sym->type->getValType();
   if (!typeCanBeWide(sym)) return;
   if (!isObj(valType)) return;
@@ -931,13 +928,6 @@ static void addKnownWides() {
             widenSubAggregateTypes(fn, var->type);
           }
         }
-        //debug(var, "GPU variable used in on-statement\n");
-        //if (typeCanBeWide(var)) {
-          //setWide(fn, var);
-        //}
-        //if (isRecord(var->type) && !canWidenRecord(var)) {
-          //widenSubAggregateTypes(fn, var->type);
-        //}
       }
     }
 
@@ -2240,13 +2230,13 @@ static void fixAST() {
         makeMatch(rhs, lhs);
       }
       else if (call->isPrimitive(PRIM_GPU_KERNEL_LAUNCH_FLAT)) {
+        // currently, we don't pass wide references to GPU kernels as we don't
+        // know how to handle them. This'll change
         for_actuals (actual, call) {
           if (hasSomeWideness(actual)) {
-            //INT_ASSERT(actual->type->symbol->hasFlag(FLAG_DATA_CLASS));
             insertLocalTemp(actual);
           }
         }
-
       }
     }
   }
