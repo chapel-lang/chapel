@@ -56,7 +56,7 @@ Chapel supports both string and bytes regular expressions.
 .. code-block:: chapel
 
    use Regex;
-   var myRegex = compile("a+");   // b"a+" for matching arbitrary bytes values
+   var myRegex = new regex("a+");   // b"a+" for matching arbitrary bytes values
 
 Now you can use these methods on regular expressions: :proc:`regex.search`,
 :proc:`regex.match`, :proc:`regex.split`, :proc:`regex.matches`.
@@ -416,6 +416,12 @@ class BadRegexError : Error {
    Compile a regular expression. This routine will throw a
    class:`BadRegexError` if compilation failed.
 
+   .. warning::
+
+     This procedure is deprecated. Please use :proc:`regex.init` via ``new
+     regex()``.
+
+
    :arg pattern: the regular expression to compile. This argument can be string
                  or bytes. See :ref:`regular-expression-syntax` for details.
                  Note that you may have to escape backslashes. For example, to
@@ -455,43 +461,12 @@ class BadRegexError : Error {
                           Refer to https://github.com/google/re2/blob/master/re2/re2.h
                           for more details about error codes.
  */
+deprecated "'Regex.compile' is deprecated. Please use 'new regex()' instead."
 proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
              /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
              /*U*/ nonGreedy=false): regex(t) throws where t==string || t==bytes {
-  use ChplConfig;
-
-  if CHPL_RE2 == "none" {
-    compilerError("Cannot use Regex with CHPL_RE2=none");
-  }
-
-  var opts:qio_regex_options_t;
-  qio_regex_init_default_options(opts);
-
-  // always use UTF8 for strings.
-  // For bytes, this is set to false which means use Latin1
-  opts.utf8 = t==string;
-  opts.posix = posix;
-  opts.literal = literal;
-  opts.nocapture = noCapture;
-  opts.ignorecase = ignoreCase;
-  opts.multiline = multiLine;
-  opts.dotnl = dotAll;
-  opts.nongreedy = nonGreedy;
-
-  var ret: regex(t);
-  qio_regex_create_compile(pattern.localize().c_str(), pattern.numBytes, opts, ret._regex);
-  if !qio_regex_ok(ret._regex) {
-    const patternStr = if t==string then pattern
-                                    else pattern.decode(decodePolicy.replace);
-    var err_str = qio_regex_error(ret._regex);
-    var err_msg: string;
-    try! {
-      err_msg = createStringWithOwnedBuffer(err_str) +
-                  " when compiling regex '" + patternStr + "'";
-    }
-    throw new owned BadRegexError(err_msg);
-  }
-  return ret;
+  return new regex(pattern, posix, literal, noCapture, ignoreCase, multiLine,
+                   dotAll, nonGreedy);
 }
 
 /*  The regexMatch record records a regular expression search match
@@ -602,6 +577,95 @@ record regex {
 
   proc init(type exprType) {
     this.exprType = exprType;
+  }
+
+  /*
+     Initializer for a compiled regular expression. ``new regex()`` throws a
+     :class:`BadRegexError` if compilation failed.
+
+     :arg pattern: the regular expression to compile. This argument can be
+                   string or bytes. See :ref:`regular-expression-syntax` for
+                   details.  Note that you may have to escape backslashes. For
+                   example, to get the regular expression ``\s``, you'd have to
+                   write ``"\\s"`` because the ``\`` is the escape character
+                   within Chapel string/bytes literals. Note that, Chapel
+                   supports triple-quoted raw string/bytes literals, which do
+                   not require escaping backslashes. For example ``"""\s"""`` or
+                   ``b"""\s"""`` can be used.
+     :arg posix: (optional) set to true to disable non-POSIX regular expression
+                 syntax
+     :arg literal: (optional) set to true to treat the regular expression as a
+                   literal (ie, create a regex matching ``pattern`` as a string
+                   rather than as a regular expression).
+     :arg noCapture: (optional) set to true in order to disable all capture
+                     groups in the regular expression
+     :arg ignoreCase: (optional) set to true in order to ignore case when
+                      matching. Note that this can be set inside the regular
+                      expression with ``(?i)``.
+     :arg multiLine: (optional) set to true in order to activate multiline mode
+                     (meaning that ``^`` and ``$`` match the beginning and end
+                     of a line instead of just the beginning and end of the
+                     text.  Note that this can be set inside a regular
+                     expression with ``(?m)``.
+     :arg dotAll: (optional) set to true in order to allow ``.``
+                 to match a newline. Note that this can be set inside the
+                 regular expression with ``(?s)``.
+     :arg nonGreedy: (optional) set to true in order to prefer shorter matches
+                     for repetitions; for example, normally x* will match as
+                     many x characters as possible and x*? will match as few as
+                     possible.  This flag swaps the two, so that x* will match
+                     as few as possible and x*? will match as many as possible.
+                     Note that this flag can be set inside the regular
+                     expression with ``(?U)``.
+
+     :throws BadRegexError: If the argument 'pattern' has syntactical errors.
+                            Refer to https://github.com/google/re2/blob/master/re2/re2.h
+                            for more details about error codes.
+   */
+  proc init(pattern: ?t, posix=false, literal=false, noCapture=false,
+            /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
+            /*U*/ nonGreedy=false) throws where t==string || t==bytes {
+    use ChplConfig;
+
+    this.exprType = t;
+    this.complete();
+
+    if CHPL_RE2 == "none" {
+      compilerError("Cannot use Regex with CHPL_RE2=none");
+    }
+
+    var opts:qio_regex_options_t;
+    qio_regex_init_default_options(opts);
+
+    // always use UTF8 for strings.
+    // For bytes, this is set to false which means use Latin1
+    opts.utf8 = t==string;
+    opts.posix = posix;
+    opts.literal = literal;
+    opts.nocapture = noCapture;
+    opts.ignorecase = ignoreCase;
+    opts.multiline = multiLine;
+    opts.dotnl = dotAll;
+    opts.nongreedy = nonGreedy;
+
+    /*var ret: regex(t);*/
+    qio_regex_create_compile(pattern.localize().c_str(), pattern.numBytes, opts,
+                             this._regex);
+    if !qio_regex_ok(this._regex) {
+      const patternStr = if t==string then pattern
+                                      else pattern.decode(decodePolicy.replace);
+      var err_str = qio_regex_error(this._regex);
+      var err_msg: string;
+      try! {
+        err_msg = createStringWithOwnedBuffer(err_str) +
+                    " when compiling regex '" + patternStr + "'";
+      }
+      // this is a workaround for a known limitation in throwing initializers
+      errorThrower(err_msg);
+      inline proc errorThrower(msg) throws {
+        throw new owned BadRegexError(msg);
+      }
+    }
   }
 
   proc init=(x: regex(?)) {
@@ -1098,16 +1162,16 @@ inline operator :(x: regex(bytes), type t: bytes) {
 
 // Cast string to regex
 pragma "no doc"
-deprecated "Casting strings to regex is deprecated. Use compile(string) from the Regex module instead."
+deprecated "Casting strings to regex is deprecated. Use new regex(string) from the Regex module instead."
 inline operator :(x: string, type t: regex(string)) throws {
-  return compile(x);
+  return new regex(x);
 }
 
 // Cast bytes to regex
 pragma "no doc"
-deprecated "Casting bytes to regex is deprecated. Use compile(bytes) from the Regex module instead."
+deprecated "Casting bytes to regex is deprecated. Use new regex(bytes) from the Regex module instead."
 inline operator :(x: bytes, type t: regex(bytes)) throws {
-  return compile(x);
+  return new regex(x);
 }
 
 /* Search the receiving string for the result of a compiled regular

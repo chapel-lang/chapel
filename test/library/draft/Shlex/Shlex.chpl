@@ -413,7 +413,7 @@ module Shlex {
   }
 
   pragma "no doc"
-  var _find_unsafe = try! compile("[^\\w@%+=:,./-]");
+  var _find_unsafe = try! new regex("[^\\w@%+=:,./-]");
 
   /*
     Return a shell-escaped version of the string s. The returned value is a

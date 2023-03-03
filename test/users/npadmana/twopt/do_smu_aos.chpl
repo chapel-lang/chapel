@@ -19,7 +19,7 @@ config const pairfn = "test-DD.dat";
 param NDIM  = 3;
 const Ddim = {1.. #NDIM};
 
-config const spaces=compile("\\s+");
+config const spaces=new regex("\\s+");
 config const bufsize=10000;
 config const minpart=500;
 

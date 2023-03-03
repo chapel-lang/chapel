@@ -126,6 +126,30 @@ module ChapelUtil {
 
   }
 
+  // param s is used for error reporting
+  pragma "command line setting"
+  proc _command_line_cast(param s: c_string, type t, x:c_string) {
+    if isSyncType(t) then
+      compilerError("config variables of sync type are not supported");
+    if isSingleType(t) then
+      compilerError("config variables of single type are not supported");
+    if isAtomicType(t) then
+      compilerError("config variables of atomic type are not supported");
+
+    try! {
+      var str = createStringWithNewBuffer(x);
+      if t == string {
+        return str;
+      } else {
+        use Regex;
+        if t==regex(string) || t==regex(bytes) then
+          return new regex(str);
+        else
+          return str:t;
+      }
+    }
+  }
+
   pragma "no default functions"
   extern record chpl_main_argument {
     var argc: int(64);

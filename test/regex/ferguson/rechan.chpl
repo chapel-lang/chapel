@@ -14,7 +14,7 @@ var f = openMemFile();
 writeln("+match: One word no captures");
 {
   var r = f.reader();
-  var re = compile("^\\w+");
+  var re = new regex("^\\w+");
   var m = r.search(re);
   writeln("match ", m);
   assert(m.matched && m.byteOffset == 0);
@@ -25,7 +25,7 @@ writeln("+match: One word no captures");
 writeln("+match: nothing no captures");
 {
   var r = f.reader();
-  var re = compile("^\\d+");
+  var re = new regex("^\\d+");
   var m = r.search(re);
   writeln("match ", m);
   assert(!m.matched);
@@ -37,7 +37,7 @@ writeln("+match: one word with captures");
 {
   var r = f.reader();
   var s:string;
-  var re = compile("(^\\w+)");
+  var re = new regex("(^\\w+)");
   var m = r.search(re, s);
   writeln("match ", m);
   assert(m.matched && m.byteOffset == 0);
@@ -50,7 +50,7 @@ writeln("+match: nothing with captures");
 {
   var r = f.reader();
   var s:string;
-  var re = compile("(^\\d+)");
+  var re = new regex("(^\\d+)");
   var m = r.search(re, s);
   writeln("match ", m);
   assert(!m.matched);
@@ -63,7 +63,7 @@ writeln("+match: nothing");
 {
   var r = f.reader();
   var s:string;
-  var re = compile("^words");
+  var re = new regex("^words");
   var m = r.search(re, s);
   writeln("match ", m);
   assert(!m.matched);
@@ -76,7 +76,7 @@ writeln("+match: nothing with captures");
 {
   var r = f.reader();
   var s:string;
-  var re = compile("(^words)");
+  var re = new regex("(^words)");
   var m = r.search(re, s);
   writeln("match ", m);
   assert(!m.matched);
@@ -91,7 +91,7 @@ writeln("+match: nothing with captures");
 writeln("+search: One word no captures");
 {
   var r = f.reader();
-  var re = compile("\\w+");
+  var re = new regex("\\w+");
   var m = r.search(re);
   writeln("match ", m);
   assert(m.matched && m.byteOffset == 0);
@@ -102,7 +102,7 @@ writeln("+search: One word no captures");
 writeln("+search: nothing no captures");
 {
   var r = f.reader();
-  var re = compile("\\d+");
+  var re = new regex("\\d+");
   var m = r.search(re);
   writeln("match ", m);
   assert(!m.matched);
@@ -114,7 +114,7 @@ writeln("+search: one word with captures");
 {
   var r = f.reader();
   var s:string;
-  var re = compile("(\\w+)");
+  var re = new regex("(\\w+)");
   var m = r.search(re, s);
   writeln("match ", m);
   assert(m.matched && m.byteOffset == 0);
@@ -127,7 +127,7 @@ writeln("+search: nothing with captures");
 {
   var r = f.reader();
   var s:string;
-  var re = compile("(\\d+)");
+  var re = new regex("(\\d+)");
   var m = r.search(re, s);
   writeln("match ", m);
   assert(!m.matched);
@@ -139,7 +139,7 @@ writeln("+search: nothing with captures");
 writeln("+search: later word");
 {
   var r = f.reader();
-  var re = compile("words");
+  var re = new regex("words");
   var m = r.search(re);
   writeln("match ", m);
   assert(m.matched && m.byteOffset == 6);
@@ -151,7 +151,7 @@ writeln("+search: later word captured");
 {
   var r = f.reader();
   var s:string;
-  var re = compile("(words)");
+  var re = new regex("(words)");
   var m = r.search(re, s);
   writeln("match ", m);
   assert(m.matched && m.byteOffset == 6);
@@ -167,7 +167,7 @@ writeln("+search: later word captured");
 writeln("+matches: One word");
 {
   var r = f.reader();
-  var re = compile("\\w+");
+  var re = new regex("\\w+");
   for (m,) in r.matches(re, 0, 1) {
     writeln("offset ", r.offset());
     writeln("match ", m);
@@ -181,7 +181,7 @@ writeln("+matches: One word");
 writeln("+matches: All words");
 {
   var r = f.reader();
-  var re = compile("\\w+");
+  var re = new regex("\\w+");
   for (m,) in r.matches(re, 0) {
     writeln("offset ", r.offset());
     writeln("match ", m);
@@ -195,7 +195,7 @@ writeln("+matches: All words");
 writeln("+matches: All words capturing first letter");
 {
   var r = f.reader();
-  var re = compile("(\\w)\\w*");
+  var re = new regex("(\\w)\\w*");
   for (m,aFor) in r.matches(re, 1) {
     var a = aFor; // so we can pass 'a' to extractMatch()
     writeln("offset ", r.offset());

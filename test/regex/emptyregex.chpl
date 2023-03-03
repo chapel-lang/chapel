@@ -1,6 +1,6 @@
 use Regex;
 
-var r = compile("");
+var r = new regex("");
 var s = "one";
 assert(r.match(s).matched);
 assert(!r.fullMatch(s).matched);
@@ -16,12 +16,14 @@ for (i, (match,)) in zip(matches.domain, matches) {
 
 writeln();
 
-for x in compile("a").split("babbbba") do
+var re = new regex("a");
+for x in re.split("babbbba") do
   writef("%t\n", x);
 
 writeln();
 
-for x in compile("z").split("babbbba") do
+re = new regex("z");
+for x in re.split("babbbba") do
   writef("%t\n", x);
 
 writeln();

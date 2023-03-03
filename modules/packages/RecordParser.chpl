@@ -132,7 +132,7 @@ class RecordReader {
     // TODO: remove the following once we can throw from init() calls
     this.complete();
     try! {
-      this.matchRegex = compile(createRegex());
+      this.matchRegex = new regex(createRegex());
     }
   }
 
@@ -150,7 +150,7 @@ class RecordReader {
     // TODO: remove the following once we can throw from init() calls
     this.complete();
     try! {
-        this.matchRegex = compile(mRegex);
+        this.matchRegex = new regex(mRegex);
     }
   }
 

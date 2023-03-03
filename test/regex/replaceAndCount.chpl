@@ -2,7 +2,7 @@ use Regex;
 use IO;
 
 proc test(str, pattern, repl, count) {
-  var r = compile(pattern);
+  var r = new regex(pattern);
   writeln("%s.replaceAndCount(%s, %s)".format(str, pattern, repl));
   const base = str.replaceAndCount(r, repl);
   // these two are testing the fast path

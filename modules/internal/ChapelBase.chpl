@@ -1488,45 +1488,6 @@ module ChapelBase {
       throw new owned TaskErrors(e.errors);
   }
 
-  proc _do_command_line_cast(type t, x:c_string) throws {
-    if isSyncType(t) then
-      compilerError("config variables of sync type are not supported");
-    if isSingleType(t) then
-      compilerError("config variables of single type are not supported");
-    if isAtomicType(t) then
-      compilerError("config variables of atomic type are not supported");
-
-    var str: string;
-    try! {
-      str = createStringWithNewBuffer(x);
-    }
-    if t == string {
-      return str;
-    } else {
-      // we need to do an iteration over a range variable before casting a
-      // string to a type. Otherwise, we can't resolve chpl_debug_writeln in
-      // `range.these`
-      { var dummyRange = 1..0; for i in dummyRange {} }
-      // TODO: String comparison here is a workaround and would be better if
-      // we could use t == regex(string) - but this fails with an error that
-      // regex(type string) is not defined in this scope - adding use Regex;
-      // leads to a different error:
-      // "use of 'rootLocale' before encountering its definition, type unknown"
-      if t:string == "regex(string)" || t:string == "regex(bytes)" then
-        return compile(str);
-      else
-        return str:t;
-    }
-  }
-  // param s is used for error reporting
-  pragma "command line setting"
-  proc _command_line_cast(param s: c_string, type t, x:c_string) {
-    try! {
-      return _do_command_line_cast(t, x);
-    }
-  }
-
-
   //
   // Similar to isPrimitiveType, but excludes imaginaries because they
   // are handled within the Chapel code directly (using overloads further
