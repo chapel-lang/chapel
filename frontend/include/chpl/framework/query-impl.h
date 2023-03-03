@@ -431,17 +431,7 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
     queryMap->oldResults.push_back(std::move(result));
   }
 
-  if (errorCollectionStack.empty()) {
-    r->emittedErrors = true;
-    r->errorCollectionRoot = false;
-  } else {
-    r->emittedErrors = false;
-    const QueryMapResultBase* collectingParent =
-      errorCollectionStack.back().second;
-    bool hasParentQuery = queryStack.size() >= 2;
-    r->errorCollectionRoot = (!hasParentQuery && collectingParent == nullptr) ||
-                             (hasParentQuery && collectingParent == queryStack[queryStack.size() - 2]);
-  }
+  r->emittedErrors = errorCollectionStack.empty();
   r->lastChecked = currentRevision;
   if (changed || initialResult) {
     r->lastChanged  = currentRevision;

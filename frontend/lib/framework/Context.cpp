@@ -848,16 +848,17 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
   // changed since the last revision in which we computed this?
   // If so, compute it again.
   bool useSaved = true;
-  for (const QueryMapResultBase* dependency : resultEntry->dependencies) {
-    if (dependency->lastChanged > resultEntry->lastChanged) {
+  for (auto& dependency : resultEntry->dependencies) {
+    const QueryMapResultBase* dependencyQuery = dependency.query;
+    if (dependencyQuery->lastChanged > resultEntry->lastChanged) {
       useSaved = false;
       break;
-    } else if (this->currentRevisionNumber == dependency->lastChecked) {
+    } else if (this->currentRevisionNumber == dependencyQuery->lastChecked) {
       // No need to check the dependency again; already did, and it was OK
     } else {
-      recomputeIfNeeded(dependency);
+      recomputeIfNeeded(dependencyQuery);
       // we might have recomputed the dependency, so check its lastChanged
-      if (dependency->lastChanged > resultEntry->lastChanged) {
+      if (dependencyQuery->lastChanged > resultEntry->lastChanged) {
         useSaved = false;
         break;
       }
@@ -920,10 +921,11 @@ bool Context::queryCanUseSavedResult(
     useSaved = false;
   } else {
     useSaved = true;
-    for (const QueryMapResultBase* dependency : resultEntry->dependencies) {
-      recomputeIfNeeded(dependency);
-      CHPL_ASSERT(dependency->lastChecked == this->currentRevisionNumber);
-      if (dependency->lastChanged > resultEntry->lastChanged) {
+    for (auto& dependency: resultEntry->dependencies) {
+      const QueryMapResultBase* dependencyQuery = dependency.query;
+      recomputeIfNeeded(dependencyQuery);
+      CHPL_ASSERT(dependencyQuery->lastChecked == this->currentRevisionNumber);
+      if (dependencyQuery->lastChanged > resultEntry->lastChanged) {
         useSaved = false;
         break;
       }
@@ -966,20 +968,20 @@ void Context::emitHiddenErrorsFor(const querydetail::QueryMapResultBase* result)
     reportError(this, error.get());
   }
   result->emittedErrors = true;
-  for (auto dependency : result->dependencies) {
-    if (!dependency->emittedErrors && !dependency->errorCollectionRoot) {
-      emitHiddenErrorsFor(dependency);
+  for (auto& dependency : result->dependencies) {
+    if (!dependency.query->emittedErrors && !dependency.errorCollectionRoot) {
+      emitHiddenErrorsFor(dependency.query);
     }
   }
 }
 
 static void findDependenciesForStoringErrors(const querydetail::QueryMapResultBase* result,
-                                           std::unordered_set<const querydetail::QueryMapResultBase*>& into) {
+                                             std::unordered_set<const querydetail::QueryMapResultBase*>& into) {
   auto insertResult = into.insert(result);
   if (!insertResult.second) return;
-  for (auto dependency : result->dependencies) {
-    if (!dependency->errorCollectionRoot) {
-      findDependenciesForStoringErrors(dependency, into);
+  for (auto& dependency : result->dependencies) {
+    if (!dependency.errorCollectionRoot) {
+      findDependenciesForStoringErrors(dependency.query, into);
     }
   }
 }
@@ -1002,8 +1004,11 @@ void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
   // We haven't pushed the query beginning yet; on already popped it.
   // So, the parent query is at queryDeps.back().
   if (queryStack.size() > 0) {
-    CHPL_ASSERT(queryStack.back() != resultEntry); // should be parent query
-    queryStack.back()->dependencies.push_back(resultEntry);
+    auto parentQuery = queryStack.back();
+    CHPL_ASSERT(parentQuery != resultEntry); // should be parent query
+    bool errorCollectionRoot = !errorCollectionStack.empty() &&
+                               errorCollectionStack.back().second == parentQuery;
+    parentQuery->dependencies.push_back(QueryDependency(resultEntry, errorCollectionRoot));
   }
 
   // The resultEntry might have been a query that silences errors. However,
@@ -1094,13 +1099,11 @@ void queryArgsPrintSep() {
 QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
                    RevisionNumber lastChanged,
                    bool emittedErrors,
-                   bool errorCollectionRoot,
                    QueryMapBase* parentQueryMap)
   : lastChecked(lastChecked),
     lastChanged(lastChanged),
     dependencies(),
     emittedErrors(emittedErrors),
-    errorCollectionRoot(errorCollectionRoot),
     errors(),
     parentQueryMap(parentQueryMap) {
 }
