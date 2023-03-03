@@ -2221,7 +2221,9 @@ void Resolver::resolveIdentifier(const Identifier* ident,
     result.setType(QualifiedType());
   } else {
     // vec.size() == 1 and vec[0].numIds() <= 1
-    const ID& id = vec[0].firstId();
+    const IdAndFlags& idv = vec[0].firstIdAndFlags();
+    const ID& id = idv.id();
+    bool isMethodOrField = idv.isMethodOrField();
     QualifiedType type;
 
     // empty IDs from the scope resolution process are builtins
@@ -2264,13 +2266,21 @@ void Resolver::resolveIdentifier(const Identifier* ident,
                             /* isParenless */ true,
                             actuals);
         auto inScope = scopeStack.back();
-        auto c = resolveGeneratedCallInMethod(context, ident, ci,
-                                              inScope, poiScope,
-                                              methodReceiverType());
-
-        // save the most specific candidates in the resolution result for the id
-        ResolvedExpression& r = byPostorder.byAst(ident);
-        handleResolvedCall(r, ident, ci, c);
+        if (isMethodOrField) {
+          auto c = resolveGeneratedCallInMethod(context, ident, ci,
+                                                inScope, poiScope,
+                                                methodReceiverType());
+          // save the most specific candidates in the resolution result
+          ResolvedExpression& r = byPostorder.byAst(ident);
+          handleResolvedCall(r, ident, ci, c);
+        } else {
+          // as above, but don't consider method scopes
+          auto c = resolveGeneratedCall(context, ident, ci,
+                                        inScope, poiScope);
+          // save the most specific candidates in the resolution result
+          ResolvedExpression& r = byPostorder.byAst(ident);
+          handleResolvedCall(r, ident, ci, c);
+        }
       }
       return;
     } else if (scopeResolveOnly &&

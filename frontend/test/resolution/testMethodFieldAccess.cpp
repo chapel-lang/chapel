@@ -1058,7 +1058,7 @@ static void testExample17() {
 }
 
 static void testExample18() {
-  // TODO: running into assertion failure
+  // TODO: this is calling M.main.r.x but we desire ambiguity
 #if 0
   testCall("example18.chpl",
            R""""(
@@ -1081,8 +1081,6 @@ static void testExample18() {
 }
 
 static void testExample19() {
-  // TODO: running into an internal assertion failure
-#if 0
   testCall("example19.chpl",
            R""""(
               module A {
@@ -1100,7 +1098,6 @@ static void testExample19() {
            "A.test",
            "A.test@2",
            "A.test.foo" /* the inner parenless non-method */);
-#endif
 }
 
 static void testExample20() {
