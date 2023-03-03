@@ -4900,6 +4900,8 @@ breakflags
 projectversion
 
 FILEID: f203530c-8644-11e8-ad82-10ddb1d4c3d5
+fnbody
+retcopy
 velt
 
 FILEID: c3e70026-8645-11e8-ad82-10ddb1d4c3d5
@@ -6385,6 +6387,25 @@ FILEID: a33853a2-ac5b-11ed-b67e-4d191cd16eac
 hpechpl
 sfname
 
+FILEID: 068304b4-b57d-11ed-b67e-4d191cd16eac
+yyerror
+
+FILEID: 13e186e4-b57d-11ed-b67e-4d191cd16eac
+errbegin
+
+FILEID: 2879db88-b57d-11ed-b67e-4d191cd16eac
+ctaid
+nctaid
+ntid
+nvvm
+sreg
+
+FILEID: 302b726a-b57d-11ed-b67e-4d191cd16eac
+amdgcn
+
+FILEID: 31c40b14-b57d-11ed-b67e-4d191cd16eac
+deviceptr
+
 NATURAL:
 aarch
 abcd
@@ -7597,6 +7618,7 @@ inorder
 inout
 inoutarg
 inputfile
+insertable
 inserter
 instantiable
 instn
@@ -9161,6 +9183,7 @@ thomasvandoren
 thorat
 threadidx
 thunderx
+thunks
 thursday
 thusly
 tibetan
