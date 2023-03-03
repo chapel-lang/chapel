@@ -23,7 +23,7 @@ writeln("Test 1: stdin=bufferAll stdout=pipe with 1 task");
   // since cat will be waiting for this program to consume
   // the output - but we're not consuming the output while we
   // are in the loop writing to cat.
-  var sub = spawn(["cat", ], stdin=pipeStyle.bufferAll, stdout=pipeStyle.pipe);
+  var sub = spawn(["cat"], stdin=pipeStyle.bufferAll, stdout=pipeStyle.pipe);
   for x in test {
     sub.stdin.writeln(x);
   }
@@ -46,7 +46,7 @@ writeln("Test 1: stdin=bufferAll stdout=pipe with 1 task");
 
 writeln("Test 2: pipe stdin, stdout in 2 tasks");
 {
-  var sub = spawn(["cat", ], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);
+  var sub = spawn(["cat"], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);
   cobegin {
     {
       for x in test {

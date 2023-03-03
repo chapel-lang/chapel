@@ -52,7 +52,7 @@ proc masonTest(args: [] string, checkProj=true) throws {
   var parser = new argumentParser(helpHandler=new MasonTestHelpHandler());
 
   var runFlag = parser.addFlag(name="run",
-                               opts=["--no-run", ],
+                               opts=["--no-run"],
                                defaultValue=false);
 
   var showFlag = parser.addFlag(name="show", defaultValue=false);
@@ -422,7 +422,7 @@ proc getTestPath(fullPath: string, testPath = "") : string {
 proc getRuntimeComm() throws {
   var line: string;
   var python: string;
-  var findPython = spawn([CHPL_HOME:string+"/util/config/find-python.sh", ],
+  var findPython = spawn([CHPL_HOME:string+"/util/config/find-python.sh"],
                          stdout = pipeStyle.pipe);
   while findPython.stdout.readLine(line) {
     python = line.strip();

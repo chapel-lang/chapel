@@ -38,6 +38,7 @@ public:
   enum Name {
     UNKNOWN,
     WARN_UNSTABLE,
+    WARN_ARRAY_OF_RANGE,
     NUM_FLAGS
   };
 

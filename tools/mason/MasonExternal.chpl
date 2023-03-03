@@ -329,7 +329,7 @@ private proc spkgInfo(args: [?d] string) {
   var parser = new argumentParser(helpHandler=new MasonExternalInfoHelpHandler());
 
   var archFlag = parser.addFlag(name="architecture",
-                                opts=["--arch", ],
+                                opts=["--arch"],
                                 defaultValue=false);
   // TODO: Argument parser may need support for mutually exclusive, or
   // required if other value, or not required if other value setups

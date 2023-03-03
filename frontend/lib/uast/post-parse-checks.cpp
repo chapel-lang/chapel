@@ -104,7 +104,7 @@ struct Visitor {
   bool isNameReservedWord(const NamedDecl* node);
 
   // Checks.
-  void checkForOneElementArraysWithoutComma(const Array* node);
+  void checkForArraysOfRanges(const Array* node);
   void checkDomainTypeQueryUsage(const TypeQuery* node);
   void checkNoDuplicateNamedArguments(const FnCall* node);
   bool handleNestedDecoratorsInNew(const FnCall* node);
@@ -376,13 +376,18 @@ bool Visitor::isParentFalseBlock(int depth) const {
   return false;
 }
 
-void Visitor::checkForOneElementArraysWithoutComma(const Array* node) {
-  if (!node->hasTrailingComma() && node->numChildren() == 1) {
-    warn(node, "single-element array literals without a trailing comma are "
-         "deprecated; please rewrite as '%s'",
-         node->isAssociative() ? "[myKey => myElem, ]" : "[myElem, ]");
+void Visitor::checkForArraysOfRanges(const Array* node) {
+  if (isFlagSet(CompilerFlags::WARN_ARRAY_OF_RANGE) &&
+      node->numExprs() == 1 &&
+      !node->hasTrailingComma() &&
+      node->expr(0)->toRange()) {
+    warn(node, "please note that this is a 1-element array of ranges; if "
+         "that was your intention, add a trailing comma or recompile with "
+         "'--no-warn-array-of-range' to avoid this warning; if it wasn't, "
+         "you may want to use a range instead");
   }
 }
+
   
 void Visitor::checkDomainTypeQueryUsage(const TypeQuery* node) {
   if (!parent(0)) return;
@@ -1083,7 +1088,7 @@ void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
 }
 
 void Visitor::visit(const Array* node) {
-  checkForOneElementArraysWithoutComma(node);
+  checkForArraysOfRanges(node);
 }
 
 void Visitor::visit(const BracketLoop* node) {
