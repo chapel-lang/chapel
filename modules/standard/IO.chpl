@@ -3612,10 +3612,10 @@ proc fileWriter.seek(region: range(?)) throws where (region.hasHighBound() &&
 // a better name for them...
 
 /*
-   For a channel locked with :proc:`channel.lock`, return the offset
-   of that channel.
+   For a fileReader locked with :proc:`fileReader.lock`, return the offset
+   of that fileReader.
  */
-proc _channel._offset():int(64) {
+proc fileReader._offset():int(64) {
   var ret:int(64);
   on this._home {
     ret = qio_channel_offset_unlocked(_channel_internal);
@@ -3624,20 +3624,32 @@ proc _channel._offset():int(64) {
 }
 
 /*
-   This routine is identical to :proc:`channel.mark` except that it
-   can be called on channels with ``locking==true`` and should be
-   called only once the channel has been locked with
-   :proc:`channel.lock`.  The channel should not be unlocked with
-   :proc:`channel.unlock` until after the mark has been committed with
-   :proc:`channel._commit` or reverted with :proc:`channel._revert`.
+   For a fileWriter locked with :proc:`fileWriter.lock`, return the offset
+   of that fileWriter.
+ */
+proc fileWriter._offset():int(64) {
+  var ret:int(64);
+  on this._home {
+    ret = qio_channel_offset_unlocked(_channel_internal);
+  }
+  return ret;
+}
 
-   See :proc:`channel.mark` for details other than the locking
+/*
+   This routine is identical to :proc:`fileReader.mark` except that it
+   can be called on fileReaders with ``locking==true`` and should be
+   called only once the fileReader has been locked with
+   :proc:`fileReader.lock`.  The fileReader should not be unlocked with
+   :proc:`fileReader.unlock` until after the mark has been committed with
+   :proc:`fileReader._commit` or reverted with :proc:`fileReader._revert`.
+
+   See :proc:`fileReader.mark` for details other than the locking
    discipline.
 
   :returns: The offset that was marked
-  :throws: SystemError: if marking the channel failed
+  :throws: SystemError: if marking the fileReader failed
  */
-proc _channel._mark() throws {
+proc fileReader._mark() throws {
   const offset = this.offset();
   const err = qio_channel_mark(false, _channel_internal);
 
@@ -3648,24 +3660,70 @@ proc _channel._mark() throws {
 }
 
 /*
-   Abort an *I/O transaction*. See :proc:`channel._mark`.  This
+   This routine is identical to :proc:`fileWriter.mark` except that it
+   can be called on fileWriters with ``locking==true`` and should be
+   called only once the fileWriter has been locked with
+   :proc:`fileWriter.lock`.  The fileWriter should not be unlocked with
+   :proc:`fileWriter.unlock` until after the mark has been committed with
+   :proc:`fileWriter._commit` or reverted with :proc:`fileWriter._revert`.
+
+   See :proc:`fileWriter.mark` for details other than the locking
+   discipline.
+
+  :returns: The offset that was marked
+  :throws: SystemError: if marking the fileWriter failed
+ */
+proc fileWriter._mark() throws {
+  const offset = this.offset();
+  const err = qio_channel_mark(false, _channel_internal);
+
+  if err then
+    throw createSystemError(err);
+
+  return offset;
+}
+
+/*
+   Abort an *I/O transaction*. See :proc:`fileReader._mark`.  This
    function will pop the last element from the *mark stack* and then
-   leave the previous channel offset unchanged.  This function should
-   only be called on a channel that has already been locked and
+   leave the previous fileReader offset unchanged.  This function should
+   only be called on a fileReader that has already been locked and
    marked.
 */
-inline proc _channel._revert() {
+inline proc fileReader._revert() {
   qio_channel_revert_unlocked(_channel_internal);
 }
 
 /*
-   Commit an *I/O transaction*. See :proc:`channel._mark`.  This
+   Abort an *I/O transaction*. See :proc:`fileWriter._mark`.  This
    function will pop the last element from the *mark stack* and then
-   set the channel offset to the popped offset.  This function should
-   only be called on a channel that has already been locked and
+   leave the previous fileWriter offset unchanged.  This function should
+   only be called on a fileWriter that has already been locked and
    marked.
 */
-inline proc _channel._commit() {
+inline proc fileWriter._revert() {
+  qio_channel_revert_unlocked(_channel_internal);
+}
+
+/*
+   Commit an *I/O transaction*. See :proc:`fileReader._mark`.  This
+   function will pop the last element from the *mark stack* and then
+   set the fileReader offset to the popped offset.  This function should
+   only be called on a fileReader that has already been locked and
+   marked.
+*/
+inline proc fileReader._commit() {
+  qio_channel_commit_unlocked(_channel_internal);
+}
+
+/*
+   Commit an *I/O transaction*. See :proc:`fileWriter._mark`.  This
+   function will pop the last element from the *mark stack* and then
+   set the fileWriter offset to the popped offset.  This function should
+   only be called on a fileWriter that has already been locked and
+   marked.
+*/
+inline proc fileWriter._commit() {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
