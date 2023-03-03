@@ -1799,6 +1799,7 @@ module ChapelArray {
 
     */
     proc find(val: eltType, ref idx: fullIdxType): bool {
+      // Workaround for issue #21748
       proc max(type e: enum) {
         return chpl__orderToEnum(e.size-1, e);
       }
@@ -1824,6 +1825,8 @@ module ChapelArray {
         }
         // We didn't find it, so return false.
         return false;
+
+      // workaround for #21749:
       } else if __primitive("call and fn resolves", "max", fullIdxType) {
         var foundIt = false;
         var locIdx = max(fullIdxType);
