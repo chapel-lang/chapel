@@ -4862,10 +4862,21 @@ private proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param b
 }
 
 pragma "no doc"
-proc _channel._constructIoErrorMsg(param kind: iokind, const x:?t): string {
-  var result: string = "while ";
+proc fileReader._constructIoErrorMsg(param kind: iokind, const x:?t): string {
+  var result: string = "while reading ";
+  result += t:string;
 
-  result += if this.writing then "writing " else "reading ";
+  select t {
+    when ioNewline do result += " " + "newline";
+    when ioLiteral do result += " " + "\"" + x:string + "\"";
+  }
+
+  return result;
+}
+
+pragma "no doc"
+proc fileWriter._constructIoErrorMsg(param kind: iokind, const x:?t): string {
+  var result: string = "while writing ";
   result += t:string;
 
   select t {
