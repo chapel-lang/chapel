@@ -3430,23 +3430,44 @@ proc fileWriter.mark() throws where this.locking == false {
 }
 
 /*
-   Abort an *I/O transaction*. See :proc:`channel.mark`. This function
+   Abort an *I/O transaction*. See :proc:`fileReader.mark`. This function
    will pop the last element from the *mark stack* and then leave the
-   previous channel offset unchanged.  This function can only be
-   called on a channel with ``locking==false``.
+   previous fileReader offset unchanged.  This function can only be
+   called on a fileReader with ``locking==false``.
 */
-inline proc _channel.revert() where this.locking == false {
+inline proc fileReader.revert() where this.locking == false {
   qio_channel_revert_unlocked(_channel_internal);
 }
 
 /*
-   Commit an *I/O transaction*. See :proc:`channel.mark`.  This
+   Abort an *I/O transaction*. See :proc:`fileWriter.mark`. This function
+   will pop the last element from the *mark stack* and then leave the
+   previous fileWriter offset unchanged.  This function can only be
+   called on a fileWriter with ``locking==false``.
+*/
+inline proc fileWriter.revert() where this.locking == false {
+  qio_channel_revert_unlocked(_channel_internal);
+}
+
+/*
+   Commit an *I/O transaction*. See :proc:`fileReader.mark`.  This
    function will pop the last element from the *mark stack* and then
-   set the channel offset to the popped offset.  This function can
-   only be called on a channel with ``locking==false``.
+   set the fileReader offset to the popped offset.  This function can
+   only be called on a fileReader with ``locking==false``.
 
 */
-inline proc _channel.commit() where this.locking == false {
+inline proc fileReader.commit() where this.locking == false {
+  qio_channel_commit_unlocked(_channel_internal);
+}
+
+/*
+   Commit an *I/O transaction*. See :proc:`fileWriter.mark`.  This
+   function will pop the last element from the *mark stack* and then
+   set the fileWriter offset to the popped offset.  This function can
+   only be called on a fileWriter with ``locking==false``.
+
+*/
+inline proc fileWriter.commit() where this.locking == false {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
