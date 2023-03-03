@@ -1824,26 +1824,28 @@ module ChapelArray {
         }
         // We didn't find it, so return false.
         return false;
-      } else {
+      } else if __primitive("call and fn resolves", "max", fullIdxType) {
         var foundIt = false;
-//        writeln("Searching for ", val, " in ", this);
         var locIdx = max(fullIdxType);
-//        writeln("locIdx starts as ", locIdx);
         forall i in this.domain with (min reduce locIdx, max reduce foundIt) {
-//          writeln("Does ", this[i], " == ", val, "?");
           if this[i] == val {
-//            writeln("Yes it does!  Setting idx to ", i);
             locIdx = i;
             foundIt = true;
           }
         }
         if foundIt then
           idx = locIdx;
-/*
-        else
-          writeln("Didn't find it");
-*/
+
         return foundIt;
+      } else {
+        for i in this.domain {
+          if this[i] == val {
+            idx = i;
+            return true;
+          }
+        }
+        // We didn't find it, so return false.
+        return false;
       }
     }
 
