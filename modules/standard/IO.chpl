@@ -964,7 +964,7 @@ extern record iostyleInternal { // aka qio_style_t
   var tuple_style:uint(8) = 0;
 }
 
-@unstable "iostyle is unstable, a new way of controlling channel output is planned"
+@unstable "iostyle is unstable, a new way of controlling fileReader and fileWriter output is planned"
 type iostyle = iostyleInternal;
 
 // This class helps in implementing runtime calls.
