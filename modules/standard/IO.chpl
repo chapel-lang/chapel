@@ -3472,25 +3472,24 @@ inline proc fileWriter.commit() where this.locking == false {
 }
 
 /* Used to control the behavior of the region argument for
-   :proc:`channel.seek`.  When set to ``true``, the region argument will fully
-   specify the bounds of the seek.  When set to ``false``, the region argument
-   will exclude the high bound.  Defaults to ``false``, the original behavior.
- */
+   :proc:`fileReader.seek` or :proc:`fileWriter.seek`.  When set to ``true``,
+   the region argument will fully specify the bounds of the seek.  When set to
+   ``false``, the region argument will exclude the high bound.  Defaults to
+   ``false``, the original behavior.  */
 config param useNewSeekRegionBounds = false;
 
 /*
-   Reset a channel to point to a new part of a file.
+   Reset a fileReader to point to a new part of a file.
    This function allows one to jump to a different part of a
-   file without creating a new channel. It can only be called
-   on a channel with ``locking==false``.
+   file without creating a new fileReader. It can only be called
+   on a fileReader with ``locking==false``.
 
    The region specified must have a lower bound, but does not need to have
    a high bound for correctness.  Specifying the high bound might be
-   an important performance optimization since the channel will not
+   an important performance optimization since the fileReader will not
    try to read data outside of the region.
 
-   This function will, in most cases, discard the channel's buffer.
-   When writing, the data will be saved to the file before discarding.
+   This function will, in most cases, discard the fileReader's buffer.
 
    :arg region: the new region, measured in bytes and counting from 0
 
@@ -3500,14 +3499,65 @@ config param useNewSeekRegionBounds = false;
 
    :throws SystemError: if seeking failed. Possible reasons include
                          that the file is not seekable, or that the
-                         channel is marked.
+                         fileReader is marked.
    :throws IllegalArgumentError: if region argument did not have a lower bound
  */
-proc _channel.seek(region: range(?)) throws where (!region.hasHighBound() ||
-                                                   useNewSeekRegionBounds) {
+proc fileReader.seek(region: range(?)) throws where (!region.hasHighBound() ||
+                                                     useNewSeekRegionBounds) {
 
   if this.locking then
-    compilerError("Cannot seek on a locking channel");
+    compilerError("Cannot seek on a locking fileReader");
+
+  if (!region.hasLowBound()) {
+    throw new IllegalArgumentError("region", "must have a lower bound");
+
+  } else {
+    if (region.hasHighBound()) {
+      const err = qio_channel_seek(_channel_internal, region.low,
+                                   region.high + 1);
+
+      if err then
+        throw createSystemError(err);
+
+    } else {
+      const err = qio_channel_seek(_channel_internal, region.low, max(int(64)));
+
+      if err then
+        throw createSystemError(err);
+    }
+  }
+}
+
+/*
+   Reset a fileWriter to point to a new part of a file.
+   This function allows one to jump to a different part of a
+   file without creating a new fileWriter. It can only be called
+   on a fileWriter with ``locking==false``.
+
+   The region specified must have a lower bound, but does not need to have
+   a high bound for correctness.  Specifying the high bound might be
+   an important performance optimization since the fileWriter will not
+   try to read data outside of the region.
+
+   This function will, in most cases, discard the fileWriter's buffer.
+   The data will be saved to the file before discarding.
+
+   :arg region: the new region, measured in bytes and counting from 0
+
+   .. warning::
+
+      The region argument will ignore any specified stride other than 1.
+
+   :throws SystemError: if seeking failed. Possible reasons include
+                         that the file is not seekable, or that the
+                         fileWriter is marked.
+   :throws IllegalArgumentError: if region argument did not have a lower bound
+ */
+proc fileWriter.seek(region: range(?)) throws where (!region.hasHighBound() ||
+                                                     useNewSeekRegionBounds) {
+
+  if this.locking then
+    compilerError("Cannot seek on a locking fileWriter");
 
   if (!region.hasLowBound()) {
     throw new IllegalArgumentError("region", "must have a lower bound");
@@ -3530,8 +3580,8 @@ proc _channel.seek(region: range(?)) throws where (!region.hasHighBound() ||
 }
 
 deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewSeekRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
-proc _channel.seek(region: range(?)) throws where (region.hasHighBound() &&
-                                                   !useNewSeekRegionBounds) {
+proc fileReader.seek(region: range(?)) throws where (region.hasHighBound() &&
+                                                     !useNewSeekRegionBounds) {
   if (!region.hasLowBound()) {
     throw new IllegalArgumentError("region", "must have a lower bound");
 
@@ -3543,6 +3593,19 @@ proc _channel.seek(region: range(?)) throws where (region.hasHighBound() &&
   }
 }
 
+deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewSeekRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+proc fileWriter.seek(region: range(?)) throws where (region.hasHighBound() &&
+                                                     !useNewSeekRegionBounds) {
+  if (!region.hasLowBound()) {
+    throw new IllegalArgumentError("region", "must have a lower bound");
+
+  } else {
+    const err = qio_channel_seek(_channel_internal, region.low, region.high);
+
+    if err then
+      throw createSystemError(err);
+  }
+}
 
 // These begin with an _ to indicated that
 // you should have a lock before you use these... there is probably
