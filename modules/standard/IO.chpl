@@ -3079,7 +3079,7 @@ private inline proc EFORMAT do return chpl_macro_int_EFORMAT():c_int;
 
 
 pragma "no doc"
-proc _channel._ch_ioerror(error:errorCode, msg:string) throws {
+proc fileReader._ch_ioerror(error:errorCode, msg:string) throws {
   var path:string = "unknown";
   var offset:int(64) = -1;
   on this._home {
@@ -3101,7 +3101,51 @@ proc _channel._ch_ioerror(error:errorCode, msg:string) throws {
 }
 
 pragma "no doc"
-proc _channel._ch_ioerror(errstr:string, msg:string) throws {
+proc fileReader._ch_ioerror(errstr:string, msg:string) throws {
+  var path:string = "unknown";
+  var offset:int(64) = -1;
+  on this._home {
+    var tmp_path:c_string;
+    var tmp_offset:int(64);
+    var err:errorCode = 0;
+    err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
+    if !err {
+      // shouldn't throw
+      path = createStringWithNewBuffer(tmp_path,
+                                       policy=decodePolicy.replace);
+      chpl_free_c_string(tmp_path);
+    } else {
+      tmp_offset = qio_channel_offset_unlocked(_channel_internal);
+    }
+    offset = tmp_offset;
+  }
+  try ioerror(errstr, msg, path, offset);
+}
+
+pragma "no doc"
+proc fileWriter._ch_ioerror(error:errorCode, msg:string) throws {
+  var path:string = "unknown";
+  var offset:int(64) = -1;
+  on this._home {
+    var tmp_path:c_string;
+    var tmp_offset:int(64);
+    var err:errorCode = 0;
+    err = qio_channel_path_offset(locking, _channel_internal, tmp_path, tmp_offset);
+    if !err {
+      // shouldn't throw
+      path = createStringWithNewBuffer(tmp_path,
+                                       policy=decodePolicy.replace);
+      chpl_free_c_string(tmp_path);
+    } else {
+      tmp_offset = qio_channel_offset_unlocked(_channel_internal);
+    }
+    offset = tmp_offset;
+  }
+  try ioerror(error, msg, path, offset);
+}
+
+pragma "no doc"
+proc fileWriter._ch_ioerror(errstr:string, msg:string) throws {
   var path:string = "unknown";
   var offset:int(64) = -1;
   on this._home {
@@ -3123,15 +3167,16 @@ proc _channel._ch_ioerror(errstr:string, msg:string) throws {
 }
 
 /*
-   Acquire a channel's lock.
+   Acquire a fileReader's lock.
 
    :throws SystemError: Thrown if the lock could not be acquired.
  */
-inline proc _channel.lock() throws {
+inline proc fileReader.lock() throws {
   var err:errorCode = 0;
 
   if is_c_nil(_channel_internal) then
-    throw createSystemError(EINVAL, "Operation attempted on an invalid channel");
+    throw createSystemError(EINVAL,
+                            "Operation attempted on an invalid fileReader");
 
   if locking {
     on this._home {
@@ -3142,9 +3187,29 @@ inline proc _channel.lock() throws {
 }
 
 /*
-   Release a channel's lock.
+   Acquire a fileWriter's lock.
+
+   :throws SystemError: Thrown if the lock could not be acquired.
  */
-inline proc _channel.unlock() {
+inline proc fileWriter.lock() throws {
+  var err:errorCode = 0;
+
+  if is_c_nil(_channel_internal) then
+    throw createSystemError(EINVAL,
+                            "Operation attempted on an invalid fileWriter");
+
+  if locking {
+    on this._home {
+      err = qio_channel_lock(_channel_internal);
+    }
+  }
+  if err then try this._ch_ioerror(err, "in lock");
+}
+
+/*
+   Release a fileReader's lock.
+ */
+inline proc fileReader.unlock() {
   if locking {
     on this._home {
       qio_channel_unlock(_channel_internal);
@@ -3153,19 +3218,30 @@ inline proc _channel.unlock() {
 }
 
 /*
-   Return the current offset of a channel.
+   Release a fileWriter's lock.
+ */
+inline proc fileWriter.unlock() {
+  if locking {
+    on this._home {
+      qio_channel_unlock(_channel_internal);
+    }
+  }
+}
+
+/*
+   Return the current offset of a fileReader.
 
    .. warning::
 
-      If the channel can be used by multiple tasks, take care
-      when doing operations that rely on the channel's current offset.
-      To prevent race conditions, first lock the channel with
-      :proc:`channel.lock`, do the operations with :proc:`channel._offset`
-      instead, then unlock it with :proc:`channel.unlock`.
+      If the fileReader can be used by multiple tasks, take care
+      when doing operations that rely on the fileReader's current offset.
+      To prevent race conditions, first lock the fileReader with
+      :proc:`fileReader.lock`, do the operations with :proc:`fileReader._offset`
+      instead, then unlock it with :proc:`fileReader.unlock`.
 
-   :returns: the current offset of the channel
+   :returns: the current offset of the fileReader
  */
-proc _channel.offset():int(64) {
+proc fileReader.offset():int(64) {
   var ret:int(64);
   on this._home {
     try! this.lock();
@@ -3176,20 +3252,61 @@ proc _channel.offset():int(64) {
 }
 
 /*
-   Move a channel offset forward.
+   Return the current offset of a fileWriter.
 
-   For a reading channel, this function will consume the next ``amount``
-   bytes. If EOF is reached, the channel position may be left at the
-   EOF.
+   .. warning::
 
-   For a writing channel, this function will write ``amount`` zeros - or some
-   other data if it is stored in the channel's buffer, for example with
-   :proc:`channel._mark` and :proc:`channel._revert`.
+      If the fileWriter can be used by multiple tasks, take care
+      when doing operations that rely on the fileWriter's current offset.
+      To prevent race conditions, first lock the fileWriter with
+      :proc:`fileWriter.lock`, do the operations with :proc:`fileWriter._offset`
+      instead, then unlock it with :proc:`fileWriter.unlock`.
 
-   :throws EofError: If EOF is reached before the requested number of bytes can be consumed.
-   :throws SystemError: For other failures, for which channel offset is not moved.
+   :returns: the current offset of the fileWriter
  */
-proc _channel.advance(amount:int(64)) throws {
+proc fileWriter.offset():int(64) {
+  var ret:int(64);
+  on this._home {
+    try! this.lock();
+    ret = qio_channel_offset_unlocked(_channel_internal);
+    this.unlock();
+  }
+  return ret;
+}
+
+/*
+   Move a fileReader offset forward.
+
+   This function will consume the next ``amount`` bytes. If EOF is reached, the
+   fileReader position may be left at the EOF.
+
+   :throws EofError: If EOF is reached before the requested number of bytes can
+                     be consumed.
+   :throws SystemError: For other failures, for which fileReader offset is not
+                        moved.
+ */
+proc fileReader.advance(amount:int(64)) throws {
+  var err:errorCode = 0;
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    err = qio_channel_advance(false, _channel_internal, amount);
+  }
+  if err then try this._ch_ioerror(err, "in advance");
+}
+
+/*
+   Move a fileWriter offset forward.
+
+   This function will write ``amount`` zeros - or some other data if it is
+   stored in the fileWriter's buffer, for example with :proc:`fileWriter._mark`
+   and :proc:`fileWriter._revert`.
+
+   :throws EofError: If EOF is reached before the requested number of bytes can
+                     be consumed.
+   :throws SystemError: For other failures, for which fileWriter offset is not
+                        moved.
+ */
+proc fileWriter.advance(amount:int(64)) throws {
   var err:errorCode = 0;
   on this._home {
     try this.lock(); defer { this.unlock(); }
