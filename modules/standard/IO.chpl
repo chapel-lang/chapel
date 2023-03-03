@@ -2347,56 +2347,11 @@ private proc defaultFmtVal(param writing : bool) {
   else return new DefaultReader();
 }
 
-pragma "ignore noinit"
-pragma "no doc"
-record _channel {
-  /*
-     writing is a boolean indicating whether the channels of this type
-     support writing (when `true`) or reading (when `false`).
-   */
-  param writing:bool;
-  /*
-     kind is an enum :type:`iokind` that allows narrowing
-     this channel's I/O style for more efficient binary I/O.
-   */
-  param kind:iokind;
-  /*
-     locking is a boolean indicating whether it is safe to use this
-     channel concurrently (when `true`).
-   */
-  param locking:bool;
-
-  type fmtType = defaultFmtType(writing);
-
-  pragma "no doc"
-  var _home:locale = here;
-  pragma "no doc"
-  var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
-
-  pragma "no doc"
-  var _fmt : fmtType;
-
-  // The member variable _readWriteThisFromLocale is used to support
-  // writeThis needing to know where the I/O started. It is a member
-  // variable on channel so that calls to writeln etc within writeThis
-  // can preserve this information. Not used outside of
-  // calling writeThis/readThis. If _readWriteThisFromLocale != nil, then
-  // we are working on a channel created for running writeThis/readThis.
-  // Therefore further locking by the same task is not necessary.
-  pragma "no doc"
-  var _readWriteThisFromLocale = nilLocale;
-}
-
-pragma "no doc"
-proc _channel.formatter const ref {
-  return _fmt;
-}
-
 /*
 
 A ``fileReader`` supports sequential reading from an underlying :record:`file`
 object. It can buffer data. Read operations on it might return old data. Use
-:proc:`channel.flush` to control this buffering.
+:proc:`fileWriter.flush` to control this buffering.
 
 The :record:`fileReader` type is implementation-defined.
 A value of the :record:`fileReader` type refers to the state that is used
@@ -2410,27 +2365,55 @@ The default value of the :record:`fileReader` type is not associated
 with any file, and so cannot be used to perform I/O.
 
 The :record:`fileReader` type is generic.
-
-The :record:`fileReader` type supports 3 fields:
-
- * ``param writing: bool`` which is always ``false`` for ``fileReader``
-
- * ``param kind:iokind``:
-   kind is an enum :type:`iokind` that allows narrowing
-   this channel's I/O style for more efficient binary I/O.
-
- * ``param locking:bool``:
-   locking is a boolean indicating whether it is safe to use this
-   channel concurrently (when `true`).
 */
-type fileReader;
-fileReader = _channel(writing=false, ?);
+pragma "ignore noinit"
+record fileReader {
+  /* writing is a bool that indicates whether the fileReader is used for
+     writing. It is always ``false`` */
+  param writing:bool = false;
+  /*
+     kind is an enum :type:`iokind` that allows narrowing
+     this fileReader's I/O style for more efficient binary I/O.
+   */
+  param kind:iokind;
+  /*
+     locking is a boolean indicating whether it is safe to use this
+     fileReader concurrently (when `true`).
+   */
+  param locking:bool;
+
+  pragma "no doc"
+  type fmtType = defaultFmtType(writing);
+
+  pragma "no doc"
+  var _home:locale = here;
+  pragma "no doc"
+  var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
+
+  pragma "no doc"
+  var _fmt : fmtType;
+
+  // The member variable _readWriteThisFromLocale is used to support
+  // writeThis needing to know where the I/O started. It is a member
+  // variable on fileReader so that calls to writeln etc within writeThis
+  // can preserve this information. Not used outside of
+  // calling writeThis/readThis. If _readWriteThisFromLocale != nil, then
+  // we are working on a fileReader created for running writeThis/readThis.
+  // Therefore further locking by the same task is not necessary.
+  pragma "no doc"
+  var _readWriteThisFromLocale = nilLocale;
+}
+
+pragma "no doc"
+proc fileReader.formatter const ref {
+  return _fmt;
+}
 
 /*
 
 A ``fileWriter`` supports sequential writing to an underlying :record:`file`
 object. A ``fileWriter`` can buffer data. Write operations might not have an
-immediate effect. Use :proc:`channel.flush` to control this buffering.
+immediate effect. Use :proc:`fileWriter.flush` to control this buffering.
 
 The :record:`fileWriter` type is implementation-defined.
 A value of the :record:`fileWriter` type refers to the state that is used
@@ -2444,21 +2427,49 @@ The default value of the :record:`fileWriter` type is not associated with any
 file, and so cannot be used to perform I/O.
 
 The :record:`fileWriter` type is generic.
+*/
+pragma "ignore noinit"
+record fileWriter {
+  /* writing is a bool that indicating the fileWriter is used for writing.  It
+     is always ``true`` */
+  param writing:bool;
+  /*
+     kind is an enum :type:`iokind` that allows narrowing
+     this fileWriter's I/O style for more efficient binary I/O.
+   */
+  param kind:iokind;
+  /*
+     locking is a boolean indicating whether it is safe to use this
+     fileWriter concurrently (when `true`).
+   */
+  param locking:bool;
 
-The :record:`fileWriter` type supports 3 fields:
+  pragma "no doc"
+  type fmtType = defaultFmtType(writing);
 
- * ``param writing: bool`` which is always ``true`` for ``fileWriter``
+  pragma "no doc"
+  var _home:locale = here;
+  pragma "no doc"
+  var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
 
- * ``param kind:iokind``:
-   kind is an enum :type:`iokind` that allows narrowing
-   this channel's I/O style for more efficient binary I/O.
+  pragma "no doc"
+  var _fmt : fmtType;
 
- * ``param locking:bool``:
-   locking is a boolean indicating whether it is safe to use this
-   channel concurrently (when `true`).
- */
-type fileWriter;
-fileWriter = _channel(writing=true, ?);
+  // The member variable _readWriteThisFromLocale is used to support
+  // writeThis needing to know where the I/O started. It is a member
+  // variable on fileWriter so that calls to writeln etc within writeThis
+  // can preserve this information. Not used outside of
+  // calling writeThis/readThis. If _readWriteThisFromLocale != nil, then
+  // we are working on a fileWriter created for running writeThis/readThis.
+  // Therefore further locking by the same task is not necessary.
+  pragma "no doc"
+  var _readWriteThisFromLocale = nilLocale;
+}
+
+pragma "no doc"
+proc fileWriter.formatter const ref {
+  return _fmt;
+}
 
 //
 // Authors of FormatWriters are expected to implement the following methods:
