@@ -2948,6 +2948,8 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
       ptr = qio_ptr_add((void*) ptr, num_written);
       _add_right_mark_start(ch, num_written);
       remaining -= num_written;
+
+      _qio_buffered_setup_cached(ch);
     }
   } else {
   //   otherwise, do a buffered write

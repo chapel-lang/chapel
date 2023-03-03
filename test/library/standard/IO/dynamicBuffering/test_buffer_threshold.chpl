@@ -4,7 +4,7 @@ extern var qbytes_iobuf_size:c_size_t;
 extern var qio_write_unbuffered_threshold:c_ssize_t;
 
 config const start_write_size = 0,
-             iobuf_size = 0;
+             iobuf_size = 8;
 
 const writeThreshold = 32,
       writeSize = 64;
