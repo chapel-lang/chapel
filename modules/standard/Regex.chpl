@@ -56,7 +56,7 @@ Chapel supports both string and bytes regular expressions.
 .. code-block:: chapel
 
    use Regex;
-   var myRegex = compile("a+");   // b"a+" for matching arbitrary bytes values
+   var myRegex = new regex("a+");   // b"a+" for matching arbitrary bytes values
 
 Now you can use these methods on regular expressions: :proc:`regex.search`,
 :proc:`regex.match`, :proc:`regex.split`, :proc:`regex.matches`.
@@ -418,7 +418,8 @@ class BadRegexError : Error {
 
    .. warning::
 
-     This procedure is deprecated. Please use :proc:`regex.init`.
+     This procedure is deprecated. Please use :proc:`regex.init` via ``new
+     regex()``.
 
 
    :arg pattern: the regular expression to compile. This argument can be string
@@ -460,7 +461,7 @@ class BadRegexError : Error {
                           Refer to https://github.com/google/re2/blob/master/re2/re2.h
                           for more details about error codes.
  */
-deprecated "'Regex.compile' is deprecated. Please use 'new regex' instead."
+deprecated "'Regex.compile' is deprecated. Please use 'new regex()' instead."
 proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
              /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
              /*U*/ nonGreedy=false): regex(t) throws where t==string || t==bytes {
@@ -579,8 +580,8 @@ record regex {
   }
 
   /*
-     Initialize a compiled regular expression. This routine will throw a
-     class:`BadRegexError` if compilation failed.
+     Initializer for a compiled regular expression. ``new regex()`` throws a
+     :class:`BadRegexError` if compilation failed.
 
      :arg pattern: the regular expression to compile. This argument can be
                    string or bytes. See :ref:`regular-expression-syntax` for
