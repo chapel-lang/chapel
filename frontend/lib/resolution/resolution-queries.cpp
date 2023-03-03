@@ -2123,7 +2123,7 @@ doIsCandidateApplicableInitial(Context* context,
   }
 
   // if it's a paren-less call, only consider parenless routines
-  // (including field accessors) but not types/outer variables/
+  // (including generated field accessors) but not types/outer variables/
   // calls with parens.
   if (ci.isParenless()) {
     if (parsing::idIsParenlessFunction(context, candidateId) ||

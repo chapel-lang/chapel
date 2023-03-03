@@ -2257,7 +2257,10 @@ void Resolver::resolveIdentifier(const Identifier* ident,
                             /* isParenless */ true,
                             actuals);
         auto inScope = scopeStack.back();
-        auto c = resolveGeneratedCall(context, ident, ci, inScope, poiScope);
+        auto c = resolveGeneratedCallInMethod(context, ident, ci,
+                                              inScope, poiScope,
+                                              methodReceiverType());
+
         // save the most specific candidates in the resolution result for the id
         ResolvedExpression& r = byPostorder.byAst(ident);
         handleResolvedCall(r, ident, ci, c);
