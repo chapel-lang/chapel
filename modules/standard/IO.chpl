@@ -3316,13 +3316,13 @@ proc fileWriter.advance(amount:int(64)) throws {
 }
 
 /*
-   Reads until ``byte`` is found and then leave the channel offset
+   Reads until ``byte`` is found and then leave the fileReader offset
    just after it.
 
    :throws UnexpectedEofError: if the requested `byte` could not be found.
    :throws SystemError: if another error occurred.
  */
-proc _channel.advancePastByte(byte:uint(8)) throws {
+proc fileReader.advancePastByte(byte:uint(8)) throws {
   var err:errorCode = 0;
   on this._home {
     try this.lock(); defer { this.unlock(); }
@@ -3332,23 +3332,40 @@ proc _channel.advancePastByte(byte:uint(8)) throws {
 }
 
 /*
-   *Mark* a channel - that is, save the current offset of the channel
-   on its *mark stack*. This function can only be called on a channel
+   Reads until ``byte`` is found and then leave the fileWriter offset
+   just after it.
+
+   :throws UnexpectedEofError: if the requested `byte` could not be found.
+   :throws SystemError: if another error occurred.
+ */
+proc fileWriter.advancePastByte(byte:uint(8)) throws {
+  var err:errorCode = 0;
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    err = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int);
+  }
+  if err then try this._ch_ioerror(err, "in advanceToByte");
+}
+
+/*
+   *Mark* a fileReader - that is, save the current offset of the fileReader
+   on its *mark stack*. This function can only be called on a fileReader
    with ``locking==false``.
 
-   The *mark stack* stores several channel offsets. For any channel offset that
-   is between the minimum and maximum value in the *mark stack*, I/O operations
-   on the channel will keep that region of the file buffered in memory so that
-   those operations can be undone. As a result, it is possible to perform *I/O
-   transactions* on a channel. The basic steps for an *I/O transaction* are:
+   The *mark stack* stores several fileReader offsets. For any fileReader offset
+   that is between the minimum and maximum value in the *mark stack*, I/O
+   operations on the fileReader will keep that region of the file buffered in
+   memory so that those operations can be undone. As a result, it is possible to
+   perform *I/O transactions* on a fileReader. The basic steps for an *I/O
+   transaction* are:
 
-    * *mark* the current position with :proc:`channel.mark`
+    * *mark* the current position with :proc:`fileReader.mark`
     * do something speculative (e.g. try to read 200 bytes of anything followed
       by a 'B')
     * if the speculative operation was successful, commit the changes by
-      calling :proc:`channel.commit`
+      calling :proc:`fileReader.commit`
     * if the speculative operation was not successful, go back to the *mark* by
-      calling :proc:`channel.revert`. Subsequent I/O operations will work
+      calling :proc:`fileReader.revert`. Subsequent I/O operations will work
       as though nothing happened.
 
   .. note::
@@ -3359,9 +3376,50 @@ proc _channel.advancePastByte(byte:uint(8)) throws {
     memory space requirements.
 
   :returns: The offset that was marked
-  :throws: SystemError: if marking the channel failed
+  :throws: SystemError: if marking the fileReader failed
  */
-proc _channel.mark() throws where this.locking == false {
+proc fileReader.mark() throws where this.locking == false {
+  const offset = this.offset();
+  const err = qio_channel_mark(false, _channel_internal);
+
+  if err then
+    throw createSystemError(err);
+
+  return offset;
+}
+
+/*
+   *Mark* a fileWriter - that is, save the current offset of the fileWriter
+   on its *mark stack*. This function can only be called on a fileWriter
+   with ``locking==false``.
+
+   The *mark stack* stores several fileWriter offsets. For any fileWriter offset
+   that is between the minimum and maximum value in the *mark stack*, I/O
+   operations on the fileWriter will keep that region of the file buffered in
+   memory so that those operations can be undone. As a result, it is possible to
+   perform *I/O transactions* on a fileWriter. The basic steps for an *I/O
+   transaction* are:
+
+    * *mark* the current position with :proc:`fileWriter.mark`
+    * do something speculative (e.g. try to write 200 bytes of anything followed
+      by a 'B')
+    * if the speculative operation was successful, commit the changes by
+      calling :proc:`fileWriter.commit`
+    * if the speculative operation was not successful, go back to the *mark* by
+      calling :proc:`fileWriter.revert`. Subsequent I/O operations will work
+      as though nothing happened.
+
+  .. note::
+
+    Note that it is possible to request an entire file be buffered in memory
+    using this feature, for example by *marking* at offset=0 and then
+    advancing to the end of the file. It is important to be aware of these
+    memory space requirements.
+
+  :returns: The offset that was marked
+  :throws: SystemError: if marking the fileWriter failed
+ */
+proc fileWriter.mark() throws where this.locking == false {
   const offset = this.offset();
   const err = qio_channel_mark(false, _channel_internal);
 
