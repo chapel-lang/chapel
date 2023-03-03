@@ -767,7 +767,7 @@ module BigInteger {
 
     const a_ = a.localize();
     const b_ = b.localize();
-    
+
     mpz_add(c.mpz, a_.mpz, b_.mpz);
 
     return c;
@@ -1610,21 +1610,7 @@ module BigInteger {
   }
 
   operator bigint.**=(ref base: bigint, exp: uint) {
-    const exp_ = exp.safeCast(c_ulong);
-
-    if _local {
-      base.pow(base, exp_);
-
-    } else if base.localeId == chpl_nodeID {
-      base.pow(base, exp_);
-
-    } else {
-      const baseLoc = chpl_buildLocaleID(base.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", baseLoc) {
-        base.pow(base, exp_);
-      }
-    }
+    base.pow(base, exp);
   }
 
 
@@ -2770,7 +2756,7 @@ module BigInteger {
     var ret: c_int;
 
     ret = mpz_probab_prime_p(t_.mpz, reps_);
-    
+
     use primality;
     if ret==0 then
       return notPrime;
@@ -3338,7 +3324,7 @@ module BigInteger {
     const sb_ = startBitIdx.safeCast(c_ulong);
     var   ret: c_ulong;
 
-      ret = mpz_scan0(t_.mpz, sb_);
+    ret = mpz_scan0(t_.mpz, sb_);
 
     return ret.safeCast(uint);
   }
@@ -5060,7 +5046,7 @@ module BigInteger {
         mpz_clear(this.mpz);
     }
   }
-  
+
   inline proc bigint.localize() {
     if _local {
       const ret = new bigintWrapper(this.mpz);
