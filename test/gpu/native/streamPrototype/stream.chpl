@@ -6,6 +6,11 @@ use Time, Types /*, Random */;
 
 use GpuDiagnostics;
 
+//
+// Use shared user module for computing HPCC problem sizes
+//
+use HPCCProblemSize;
+
 proc verifyLaunches() {
   use ChplConfig;
   param expected = if CHPL_GPU_MEM_STRATEGY == "unified_memory" then 12 else 16;
@@ -14,13 +19,9 @@ proc verifyLaunches() {
          "observed ", actual, " launches instead of ", expected);
 }
 
-
-//
-// Use shared user module for computing HPCC problem sizes
-//
-use HPCCProblemSize;
-
 config param useForeach = true;
+
+config const useGpuDiags = true;
 
 //
 // The number of vectors and element type of those vectors
@@ -69,7 +70,7 @@ config const printParams = true,
 proc main() {
   printConfiguration();   // print the problem size, number of trials, etc.
 
-  startGpuDiagnostics();
+  if useGpuDiags then startGpuDiagnostics();
   on here.gpus[0] {
     //
     // ProblemSpace describes the index set for the three vectors.  It
@@ -111,8 +112,10 @@ proc main() {
     const validAnswer = verifyResults(A, B, C);        // verify...
     printResults(validAnswer, execTime);               // ...and print the results
   }
-  stopGpuDiagnostics();
-  verifyLaunches();
+  if useGpuDiags {
+    stopGpuDiagnostics();
+    verifyLaunches();
+  }
 }
 
 //
