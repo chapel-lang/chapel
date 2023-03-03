@@ -3838,25 +3838,52 @@ proc fileWriter._set_styleInternal(style: iostyleInternal) {
 
 /*
 
-   Return the locale on which an ongoing I/O was started with a channel.
-   This method will return ``nilLocale`` unless it is called on a channel that is
-   the formal argument to a `readThis` or `writeThis` method.
+   Return the locale on which an ongoing I/O was started with a fileReader.
+   This method will return ``nilLocale`` unless it is called on a fileReader
+   that is the formal argument to a `readThis` method.
 
  */
 inline
-proc _channel.readWriteThisFromLocale() {
+proc fileReader.readWriteThisFromLocale() {
+  return _readWriteThisFromLocale;
+}
+
+/*
+
+   Return the locale on which an ongoing I/O was started with a fileWriter.
+   This method will return ``nilLocale`` unless it is called on a fileWriter
+   that is the formal argument to a `writeThis` method.
+
+ */
+inline
+proc fileWriter.readWriteThisFromLocale() {
   return _readWriteThisFromLocale;
 }
 
 // Returns the original locale that the I/O started on
 // Uses readWriteThisFromLocale in order to propagate that
 // information across readThis/writeThis calls.
-// If readWriteThisFromLocale returns nil, that means the channel
+// If readWriteThisFromLocale returns nil, that means the fileReader
 // was not created to call readThis/writeThis and
 // so the original locale of the I/O is `here`.
 pragma "no doc"
 inline
-proc _channel.getLocaleOfIoRequest() {
+proc fileReader.getLocaleOfIoRequest() {
+  var ret = this.readWriteThisFromLocale();
+  if ret == nilLocale then
+    ret = here;
+  return ret;
+}
+
+// Returns the original locale that the I/O started on
+// Uses readWriteThisFromLocale in order to propagate that
+// information across readThis/writeThis calls.
+// If readWriteThisFromLocale returns nil, that means the fileWriter
+// was not created to call readThis/writeThis and
+// so the original locale of the I/O is `here`.
+pragma "no doc"
+inline
+proc fileWriter.getLocaleOfIoRequest() {
   var ret = this.readWriteThisFromLocale();
   if ret == nilLocale then
     ret = here;
@@ -3864,14 +3891,26 @@ proc _channel.getLocaleOfIoRequest() {
 }
 
 // QIO plugins don't have stable interface yet, hence no-doc
-// only works when called on locale owning channel.
+// only works when called on locale owning fileReader.
 pragma "no doc"
-proc _channel.channelPlugin() : borrowed QioPluginChannel? {
+proc fileReader.channelPlugin() : borrowed QioPluginChannel? {
   var vptr = qio_channel_get_plugin(this._channel_internal);
   return vptr:borrowed QioPluginChannel?;
 }
+// only works when called on locale owning fileWriter.
 pragma "no doc"
-proc _channel.filePlugin() : borrowed QioPluginFile? {
+proc fileWriter.channelPlugin() : borrowed QioPluginChannel? {
+  var vptr = qio_channel_get_plugin(this._channel_internal);
+  return vptr:borrowed QioPluginChannel?;
+}
+
+pragma "no doc"
+proc fileReader.filePlugin() : borrowed QioPluginFile? {
+  var vptr = qio_file_get_plugin(qio_channel_get_file(this._channel_internal));
+  return vptr:borrowed QioPluginFile?;
+}
+pragma "no doc"
+proc fileWriter.filePlugin() : borrowed QioPluginFile? {
   var vptr = qio_file_get_plugin(qio_channel_get_file(this._channel_internal));
   return vptr:borrowed QioPluginFile?;
 }
