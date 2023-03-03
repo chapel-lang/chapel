@@ -26,32 +26,26 @@ Support for a variety of kinds of input and output.
 .. note:: All Chapel programs automatically include :proc:`~ChapelIO.write`,
           :proc:`~ChapelIO.writeln` and :proc:`~ChapelIO.writef`.
 
-Input/output (I/O) facilities in Chapel include the types :record:`file` and
-:record:`channel`; the constants :record:`stdin`, :record:`stdout` and
-:record:`stderr`; the functions :proc:`open`, :proc:`file.close`,
-:proc:`file.reader`, :proc:`file.writer`, :proc:`channel.read`,
-:proc:`channel.write`, and many others.
+Input/output (I/O) facilities in Chapel include the types :record:`file`,
+:record:`fileReader` and :record:`fileWriter`; the constants :record:`stdin`,
+:record:`stdout` and :record:`stderr`; the functions :proc:`open`,
+:proc:`file.close`, :proc:`file.reader`, :proc:`file.writer`,
+:proc:`channel.read`, :proc:`channel.write`, and many others.
 
 .. warning::
   Please be aware, the IO Module documentation is under development and
   currently contains some minor inconsistencies.
-
-  For example, the :record:`channel` type has been replaced with the
-  :record:`fileWriter` and :record:`fileReader` types; however, not all
-  references to ``channel`` have been removed from the docs. As such, note that
-  writing methods on the ``channel`` type (such as :proc:`channel.writeln`) are
-  intended to be called on a ``fileWriter`` and reading methods are intended to
-  be called on a ``fileReader``.
 
 .. _about-io-overview:
 
 I/O Overview
 ------------
 
-A :record:`file` in Chapel identifies a file in the underlying operating
-system.  Reads and writes to a file are done via one or more channels
-associated with the file.  Each :record:`channel` uses a buffer to provide
-sequential read or write access to its file, optionally starting at an offset.
+A :record:`file` in Chapel identifies a file in the underlying operating system.
+Reads to a file are done via one or more fileReaders associated with the file
+and writes to a file are done via one or more fileWriters.  Each
+:record:`fileReader` or :record:`fileWriter` uses a buffer to provide sequential
+read or write access to its file, optionally starting at an offset.
 
 For example, the following program opens a file and writes an integer to it:
 
@@ -61,16 +55,16 @@ For example, the following program opens a file and writes an integer to it:
   // it does not exist yet.
   var myFile = open("test-file.txt", ioMode.cw);
 
-  // create a writing channel starting at file offset 0
+  // create a fileWriter starting at file offset 0
   // (start and end offsets can be specified when creating the
-  // channel)
-  var myWritingChannel = myFile.writer();
+  // fileWriter)
+  var myFileWriter = myFile.writer();
 
   var x: int = 17;
 
   // This function will write the human-readable text version of x;
   // binary I/O is also possible.
-  myWritingChannel.write(x);
+  myFileWriter.write(x);
 
   // Now test-file.txt contains:
   // 17
@@ -82,18 +76,18 @@ Then, the following program can be used to read the integer:
   // open the file "test-file.txt" for reading only
   var myFile = open("test-file.txt", ioMode.r);
 
-  // create a reading channel starting at file offset 0
+  // create a fileReader starting at file offset 0
   // (start and end offsets can be specified when creating the
-  // channel)
-  var myReadingChannel = myFile.reader();
+  // fileReader)
+  var myFileReader = myFile.reader();
 
   var x: int;
 
   // Now read a textual integer. Note that the
-  // channel.read function returns a bool to indicate
+  // fileReader.read function returns a bool to indicate
   // if it read something or if the end of the file
   // was reached before something could be read.
-  var readSomething = myReadingChannel.read(x);
+  var readSomething = myFileReader.read(x);
 
   writeln("Read integer ", x);
   // prints out:
@@ -121,14 +115,15 @@ a pair of variables ``x`` and ``y``.
 Design Rationale
 ----------------
 
-Since channels operate independently, concurrent I/O to the same open file is
-possible without contending for locks.  Furthermore, since the channel (and not
-the file) stores the current file offset, it is straightforward to create
-programs that access the same open file in parallel. Note that such parallel
-access is not possible in C when multiple threads are using the same ``FILE*``
-to write to different regions of a file because of the race condition between
-``fseek`` and ``fwrite``. Because of these issues, Chapel programmers wishing
-to perform I/O will need to know how to open files as well as create channels.
+Since fileReaders and fileWriters operate independently, concurrent I/O to the
+same open file is possible without contending for locks.  Furthermore, since the
+fileReader or fileWriter (and not the file) stores the current file offset, it
+is straightforward to create programs that access the same open file in
+parallel. Note that such parallel access is not possible in C when multiple
+threads are using the same ``FILE*`` to write to different regions of a file
+because of the race condition between ``fseek`` and ``fwrite``. Because of these
+issues, Chapel programmers wishing to perform I/O will need to know how to open
+files as well as create fileReaders and fileWriters.
 
 
 .. _about-io-styles:
@@ -144,13 +139,13 @@ I/O Styles
    available to control formatting.
 
 Reading and writing of Chapel's basic types is regulated by an applicable
-:record:`iostyle`.  In particular, the I/O style controls whether binary or
-text I/O should be performed. For binary I/O it specifies, for example, byte
-order and string encoding. For text I/O it specifies string representation; the
-base, field width and precision for numeric types; and so on.  Each channel has
-an associated I/O style.  It applies to all read/write operations on that
-channel, except when the program specifies explicitly an I/O style for a
-particular read or write.
+:record:`iostyle`.  In particular, the I/O style controls whether binary or text
+I/O should be performed. For binary I/O it specifies, for example, byte order
+and string encoding. For text I/O it specifies string representation; the base,
+field width and precision for numeric types; and so on.  Each fileReader or
+fileWriter has an associated I/O style.  It applies to all read/write operations
+on that fileReader or fileWriter, except when the program specifies explicitly
+an I/O style for a particular read or write.
 
 See the definition for the :record:`iostyle` type. This type represents I/O
 styles and provides details on formatting and other representation choices.
@@ -164,21 +159,27 @@ iostyle()`` will.
 The I/O style for an I/O operation can be provided through an optional
 ``style=`` argument in a variety of places:
 
- * when performing the I/O, e.g. in calls to :proc:`channel.write` or
-   :proc:`channel.read`
- * when creating the channel with :proc:`file.reader` or :proc:`file.writer`
+ * when performing the I/O, e.g. in calls to :proc:`fileWriter.write` or
+   :proc:`fileReader.read`
+ * when creating the fileReader with :proc:`file.reader`
+ * when creating the fileWriter :proc:`file.writer`
  * or when creating the file with e.g. :proc:`open`
 
 Note that :proc:`file.reader`, or :proc:`file.writer` will copy the file's I/O
 style if a ``style=`` argument is not provided. Also note that I/O functions on
-channels will by default use the I/O style stored with that channel.
+fileReaders and fileWriters will by default use the I/O style stored with that
+fileReader or fileWriter.
 
-A channel's I/O style may be retrieved using :proc:`channel._style` and set
-using :proc:`channel._set_style`. These functions should only be called while
-the channel lock is held, however. See :ref:`about-io-channel-synchronization`
-for more information on channel locks.
+A fileReader's I/O style may be retrieved using :proc:`fileReader._style` and
+set using :proc:`fileReader._set_style`. A fileWriter's I/O style may be
+retrieved using :proc:`fileWriter._style` and set using
+:proc:`fileWriter._set_style`. These functions should only be called while the
+fileReader's or fileWriter's lock is held, however. See
+:ref:`about-io-channel-synchronization` for more information on fileReader and
+fileWriter locks.
 
-As an example for specifying an I/O style, the code below specifies the minimum width for writing numbers so array elements are aligned in the output:
+As an example for specifying an I/O style, the code below specifies the minimum
+width for writing numbers so array elements are aligned in the output:
 
 .. code-block:: chapel
 
@@ -187,10 +188,10 @@ As an example for specifying an I/O style, the code below specifies the minimum 
 
 I/O facilities in Chapel also include several other ways to control I/O
 formatting. There is support for :ref:`formatted I/O <about-io-formatted-io>`
-with :proc:`FormattedIO.channel.readf` and :proc:`FormattedIO.channel.writef`.
-Also note that record or class implementations can provide custom functions
-implementing read or write operations for that type (see
-:ref:`readThis-writeThis`).
+with :proc:`FormattedIO.fileReader.readf` and
+:proc:`FormattedIO.fileWriter.writef`.  Also note that record or class
+implementations can provide custom functions implementing read or write
+operations for that type (see :ref:`readThis-writeThis`).
 
 .. _about-io-files:
 
@@ -202,17 +203,17 @@ including :proc:`open`, :proc:`openTempFile`, :proc:`openMemFile`, the
 :record:`file` initializer that takes an ``int`` argument, and the
 :record:`file` initializer that takes a :type:`~CTypes.c_FILE` argument.
 
-Once a file is open, it is necessary to create associated channel(s) - see
-:proc:`file.reader` and :proc:`file.writer` - to write to and/or read from the
-file.
+Once a file is open, it is necessary to create associated fileReader(s) and/or
+fileWriter(s) - see :proc:`file.reader` and :proc:`file.writer` - to write to
+and/or read from the file.
 
 Use the :proc:`file.fsync` function to explicitly synchronize the file to
 ensure that file data is committed to the file's underlying device for
 persistence.
 
 To release any resources associated with a file, it is necessary to first close
-any channels using that file (with :proc:`channel.close`) and then the file
-itself (with :proc:`file.close`).
+any fileReaders and fileWriters using that file (with :proc:`fileReader.close`
+or :proc:`fileWriter.close`) and then the file itself (with :proc:`file.close`).
 
  .. note::
 
@@ -220,129 +221,132 @@ itself (with :proc:`file.close`).
     where UTF-8 file names are not enforced.
 
 
-.. _about-io-channel-creation:
+.. _about-io-filereader-filewriter-creation:
 
-Functions for Channel Creation
-------------------------------
+Functions for fileReader and fileWriter Creation
+------------------------------------------------
 
-:proc:`file.writer` creates a channel for writing to a file, and
-:proc:`file.reader` create a channel for reading from a file.
+:proc:`file.writer` creates a fileWriter for writing to a file, and
+:proc:`file.reader` create a fileReader for reading from a file.
 
-.. _about-io-channel-synchronization:
+.. _about-io-filereader-filewriter-synchronization:
 
-Synchronization of Channel Data and Avoiding Data Races
--------------------------------------------------------
+Synchronization of fileReader and fileWriter Data and Avoiding Data Races
+-------------------------------------------------------------------------
 
-Channels (and files) contain locks in order to keep their operation safe for
-multiple tasks. When creating a channel, it is possible to disable the lock
+FileWriters (and files) contain locks in order to keep their operation safe for
+multiple tasks. When creating a fileWriter, it is possible to disable the lock
 (for performance reasons) by passing ``locking=false`` to e.g.  file.writer().
-Some channel methods - in particular those beginning with the underscore -
-should only be called on locked channels.  With these methods, it is possible
-to get or set the channel style, or perform I/O "transactions" (see
-:proc:`channel.mark` and :proc:`channel._mark`). To use these methods,
-first lock the channel with :proc:`channel.lock`, call the methods you need,
-then unlock the channel with :proc:`channel.unlock`.
-Note that in the future, we may move to alternative ways of calling
-these functions that guarantee that they are not called on a channel
-without the appropriate locking.
+Some fileWriter methods - in particular those beginning with the underscore -
+should only be called on locked fileWriters.  With these methods, it is possible
+to get or set the fileWriter style, or perform I/O "transactions" (see
+:proc:`fileWriter.mark` and :proc:`fileWriter._mark`, e.g.). To use these
+methods, first lock the fileWriter with :proc:`fileWriter.lock`, call the
+methods you need, then unlock the fileWriter with :proc:`fileWriter.unlock`.
+Note that in the future, we may move to alternative ways of calling these
+functions that guarantee that they are not called on a fileWriter without the
+appropriate locking.
 
-Besides data races that can occur if locking is not used in channels when it
+Besides data races that can occur if locking is not used in fileWriters when it
 should be, it is also possible for there to be data races on file data that is
-buffered simultaneously in multiple channels.  The main way to avoid such data
-races is the :proc:`channel.flush` synchronization operation.
-:proc:`channel.flush` will make all writes to the channel, if any, available to
-concurrent viewers of its associated file, such as other channels or other
-applications accessing this file concurrently. See the note below for
-more details on the situation in which this kind of data race can occur.
+buffered simultaneously in multiple fileReader/fileWriter combinations.  The
+main way to avoid such data races is the :proc:`fileWriter.flush`
+synchronization operation.  :proc:`fileWriter.flush` will make all writes to the
+fileWriter, if any, available to concurrent viewers of its associated file, such
+as other fileWriters, fileReaders or other applications accessing this file
+concurrently. See the note below for more details on the situation in which this
+kind of data race can occur.
 
 .. note::
 
-  Since channels can buffer data until :proc:`channel.flush` is called, it is
-  possible to write programs that have undefined behaviour because of race
-  conditions on channel buffers. In particular, the problem comes up for
+  Since fileWriters can buffer data until :proc:`fileWriter.flush` is called, it
+  is possible to write programs that have undefined behaviour because of race
+  conditions on fileWriter buffers. In particular, the problem comes up for
   programs that make:
 
-   * concurrent operations on multiple channels that operate on overlapping
-     regions of a file
-   * where at least one of the overlapping channels is a writing channel
+   * concurrent operations on multiple fileWriters and/or fileReaders that
+     operate on overlapping regions of a file
+   * where at least one fileWriter is used along with other fileWriters or
+     fileReaders
    * and where data could be stored in more than one of the overlapping
-     channel's buffers at the same time (i.e., write and read ordering are
-     not enforced through :proc:`channel.flush` and other means such as
+     fileWriter's buffers at the same time (i.e., write and read ordering are
+     not enforced through :proc:`fileWriter.flush` and other means such as
      sync variables).
 
   Note that it is possible in some cases to create a :record:`file` that does
-  not allow multiple channels at different offsets. Channels created on such
-  files will not change the file's position based on a ``start=`` offset
-  arguments. Instead, each read or write operation will use the file
-  descriptor's current position. Therefore, only one channel should be created
-  for files created in the following situations:
+  not allow multiple fileWriters and/or fileReaders at different
+  offsets. FileWriters created on such files will not change the file's position
+  based on a ``start=`` offset arguments. Instead, each read or write operation
+  will use the file descriptor's current position. Therefore, only one
+  fileWriter or fileReader should be created for files created in the following
+  situations:
 
     * with the file initializer that takes a :type:`~CTypes.c_FILE` argument
     * with the file initializer that takes an ``int`` argument, where the
       ``int`` represents a non-seekable system file descriptor
 
 
-Performing I/O with Channels
-----------------------------
+Performing I/O with FileReaders and FileWriters
+-----------------------------------------------
 
-Channels contain read and write methods, which are generic methods that can
-read or write anything, and can also take optional arguments such as I/O style
-or. These functions generally take any number of arguments and `throw`
-if there was an error. See:
+FileReaders contain read methods and fileWriters contain write methods, which
+are generic methods that can read or write anything, and can also take optional
+arguments such as I/O style or. These functions generally take any number of
+arguments and `throw` if there was an error. See:
 
- * :proc:`channel.write`
- * :proc:`channel.writeln`
- * :proc:`channel.writebits`
- * :proc:`FormattedIO.channel.writef` (see also :ref:`about-io-formatted-io`)
- * :proc:`channel.read`
- * :proc:`channel.readln`
- * :proc:`channel.readbits`
- * :proc:`FormattedIO.channel.readf` (see also :ref:`about-io-formatted-io`)
+ * :proc:`fileWriter.write`
+ * :proc:`fileWriter.writeln`
+ * :proc:`fileWriter.writebits`
+ * :proc:`FormattedIO.fileWriter.writef` (see also :ref:`about-io-formatted-io`)
+ * :proc:`fileReader.read`
+ * :proc:`fileReader.readln`
+ * :proc:`fileReader.readbits`
+ * :proc:`FormattedIO.fileReader.readf` (see also :ref:`about-io-formatted-io`)
 
-Sometimes it's important to flush the buffer in a channel - to do that, use the
-:proc:`channel.flush()` method. Flushing the buffer will make all writes available
-to other applications or other views of the file (e.g., it will call the OS call
-``pwrite()``).  It is also possible to close a channel, which will implicitly
-flush it and release any buffer memory used by the channel.  Note that if you
-need to ensure that data from a channel is on disk, you'll have to call
-:proc:`channel.flush` or :proc:`channel.close` and then :proc:`file.fsync` on
-the related file.
+Sometimes it's important to flush the buffer in a fileWriter - to do that, use
+the :proc:`fileWriter.flush()` method. Flushing the buffer will make all writes
+available to other applications or other views of the file (e.g., it will call
+the OS call ``pwrite()``).  It is also possible to close a fileWriter, which
+will implicitly flush it and release any buffer memory used by the fileWriter.
+Note that if you need to ensure that data from a fileWriter is on disk, you'll
+have to call :proc:`fileWriter.flush` or :proc:`fileWriter.close` and then
+:proc:`file.fsync` on the related file.
 
-.. _about-io-closing-channels:
+.. _about-io-closing-filereader-filewriter:
 
-Functions for Closing Channels
-------------------------------
+Functions for Closing FileReaders and FileWriters
+-------------------------------------------------
 
-A channel must be closed in order to free the resources allocated for it,
-to ensure that data written to it is visible to other channels,
-or to allow the associated file to be closed.
+A fileReader or fileWriter must be closed in order to free the resources
+allocated for it, to ensure that data written to it is visible to other
+fileReaders, or to allow the associated file to be closed.
 
-See :proc:`channel.close`.
+See :proc:`fileReader.close` and :proc:`fileWriter.close`.
 
-It is an error to perform any I/O operations on a channel
+It is an error to perform any I/O operations on a fileReader or fileWriter
 that has been closed.
-It is an error to close a file when it has channels that
+It is an error to close a file when it has fileReaders and/or fileWriters that
 have not been closed.
 
-Files and channels are reference counted. Each file and channel is
-closed automatically when no references to it remain. For example, if
-a local variable is the only reference to a channel, the channel will
-be closed when that variable goes out of scope.  Programs may also
-close a file or channel explicitly.
+Files, fileReaders and fileWriters are reference counted. Each file, fileReader
+and fileWriter is closed automatically when no references to it remain. For
+example, if a local variable is the only reference to a fileReader, the
+fileReader will be closed when that variable goes out of scope.  Programs may
+also close a file, fileReader or fileWriter explicitly.
 
 .. _stdin-stdout-stderr:
 
-The ``stdin``, ``stdout``, and ``stderr`` Channels
---------------------------------------------------
+The ``stdin`` fileReader, and ``stdout`` and ``stderr`` fileWriters
+-------------------------------------------------------------------
 
-Chapel provides the predefined channels :var:`stdin`, :var:`stdout`, and
-:var:`stderr` to access the corresponding operating system streams standard
-input, standard output, and standard error.
+Chapel provides the predefined fileReader :var:`stdin`, and the predefined
+fileWriters :var:`stdout`, and :var:`stderr` to access the corresponding
+operating system streams standard input, standard output, and standard error.
 
 :var:`stdin` supports reading;
 :var:`stdout` and :var:`stderr` support writing.
 
-All three channels are safe to use concurrently.
+All three are safe to use concurrently.
 Their types' ``kind`` argument is ``dynamic``.
 
 .. _about-io-error-handling:
@@ -375,7 +379,7 @@ sure that data has arrived on disk without an error. Many errors can be
 reported with a typical operation, but some errors can only be reported by the
 system during :proc:`file.close` or even :proc:`file.fsync`.
 
-When a file (or channel) is closed, data written to that file will be written
+When a file (or fileWriter) is closed, data written to that file will be written
 to disk eventually by the operating system. If an application needs to be sure
 that the data is immediately written to persistent storage, it should use
 :proc:`file.fsync` prior to closing the file.
@@ -383,19 +387,20 @@ that the data is immediately written to persistent storage, it should use
 Correspondence with C I/O
 -------------------------
 
-It is not possible to seek, read, or write to a file directly; channels must be
-created and used.
+It is not possible to seek, read, or write to a file directly; fileReaders
+and/or fileWriters must be created and used.
 
-:proc:`channel.flush` in Chapel has the same conceptual meaning as ``fflush()``
-in C.  However, ``fflush()`` is not necessarily called in :proc:`channel.flush()`,
-unlike ``fsync()``, which is actually called by :proc:`file.fsync()` in Chapel.
+:proc:`fileWriter.flush` in Chapel has the same conceptual meaning as
+``fflush()`` in C.  However, ``fflush()`` is not necessarily called in
+:proc:`fileWriter.flush()`, unlike ``fsync()``, which is actually called by
+:proc:`file.fsync()` in Chapel.
 
 IO Functions and Types
 ----------------------
 
  */
 module IO {
-/* "channel" I/O contributed by Michael Ferguson
+/* "fileReader" and "fileWriter" I/O contributed by Michael Ferguson
 
    Future Work:
     - We would like to have a 'serialization' system, including allowing
@@ -407,19 +412,20 @@ module IO {
     - The Chapel compiler does not currently allow RAII/reference counting
       to work correctly in all cases (bug report 'records containing pointers'
       and test files in test/users/ferguson/{byvalue.chpl,refcnt.chpl};
-      as a result, current code might need to close channels and files
-      explicitly and/or sharing of channels and files between variables might
-      not work correctly.
-    - Channels have a lock, and some methods on a channel only make sense
-      when the lock is held. In the future (again, once RAII makes sense),
-      we might replace this with 'get locked channel' that returns a different
-      type that has the methods that can only be used on a locked channel.
+      as a result, current code might need to close fileReaders, fileWriters,
+      and files explicitly and/or sharing of fileReaders, fileWriters and files
+      between variables might not work correctly.
+    - FileReaders and fileWriters have a lock, and some methods on a fileReader
+      or fileWriter only make sense when the lock is held. In the future (again,
+      once RAII makes sense), we might replace this with 'get locked fileWriter'
+      that returns a different type that has the methods that can only be used
+      on a locked fileWriter, e.g..
     - The error handling strategy here is a bit awkward for the library-writer
       (not so much for the user). A broader exceptions strategy would help
       quite a bit - and some of these interfaces will change when that happens.
-    - Fancy features, like adding a bytes or buffer object to a channel
-      (so that the channel just refers to it and does not copy it) are
-      implemented but not well tested.
+    - Fancy features, like adding a bytes or buffer object to a fileReader or
+      fileWriter (so that the fileReader or fileWriter just refers to it and
+      does not copy it) are implemented but not well tested.
     - It would be nice if ioBits:string printed itself in binary instead of
       decimal.
     - Cleaning up to reduce the number of exported symbols, and using enums for
@@ -429,10 +435,11 @@ module IO {
       something suitable for writing (in a straightforward manner) a
       multithreaded webserver
     - Doing something reasonable with a file that moves from one node to
-      another - namely, when a channel is created with a file that resides
-      remotely, if that same file is accessible locally (e.g. with Lustre or
-      NFS), we should open a local copy of that file and use that in the
-      channel. (not sure how to avoid opening # channels copies of these files
+      another - namely, when a fileReader or fileWriter is created with a file
+      that resides remotely, if that same file is accessible locally (e.g. with
+      Lustre or NFS), we should open a local copy of that file and use that in
+      the fileReader or fileWriter. (not sure how to avoid opening # fileReader/
+      fileWriter copies of these files
       -- seems that we'd want some way to cache that...).
 */
 
@@ -502,7 +509,8 @@ enum iomode {
 /*
 
 The :type:`iokind` type is an enum. When used as arguments to the
-:record:`channel` type, its constants have the following meaning:
+:record:`fileReader` or :record:`fileWriter` type, its constants have the
+following meaning:
 
 * ``iokind.dynamic`` means that the applicable I/O style has full effect
   and as a result the kind varies at runtime.
@@ -512,7 +520,8 @@ The :type:`iokind` type is an enum. When used as arguments to the
   to the target platform).
 
 * ``iokind.big`` means binary I/O with big-endian byte order is performed
-  when writing/reading basic types from the channel.
+  when writing basic types to the fileWriter or reading basic types from the
+  fileReader.
 
 * ``iokind.little`` means binary I/O with little-endian byte order
   (similar to ``iokind.big`` but with little-endian byte order).
@@ -552,7 +561,8 @@ param iolittle = iokind.little;
 /*
 
 The :type:`ioendian` type is an enum. When used as an argument to the
-:record:`channel` methods, its constants have the following meanings:
+:record:`fileReader` or :record:`fileWriter` methods, its constants have the
+following meanings:
 
 * ``ioendian.big`` means binary I/O is performed in big-endian byte order.
 
@@ -889,20 +899,21 @@ extern record iostyleInternal { // aka qio_style_t
   var bytes_prefix:style_char_t = 0x62; // b
 
   // numeric scanning/printing choices
-  /* When reading or writing a numeric value in a text mode channel,
-     what base should be used for the number? Default of 0 means decimal.
-     Bases 2, 8, 10, 16 are supported for integers. Bases 10 and 16
+  /* When reading or writing a numeric value in a text mode fileReader or
+     fileWriter, what base should be used for the number? Default of 0 means
+     decimal. Bases 2, 8, 10, 16 are supported for integers. Bases 10 and 16
      are supported for real values.*/
   var base:uint(8) = 0;
-  /* When reading or writing a numeric value in a text mode channel,
-     how is the integer portion separated from the fractional portion?
-     Default is ``.``. */
+  /* When reading or writing a numeric value in a text mode fileReader or
+     fileWriter, how is the integer portion separated from the fractional
+     portion? Default is ``.``. */
   var point_char:style_char_t = 0x2e; // .
-  /* When reading or writing a numeric value in a text mode channel,
-     how is the exponent written? Default is ``e``. */
+  /* When reading or writing a numeric value in a text mode fileReader or
+     fileWriter, how is the exponent written? Default is ``e``. */
   var exponent_char:style_char_t = 0x65; // e
-  /* When reading or writing a numeric value in a text mode channel,
-     when base is > 10, how is the exponent written? Default is ``p``. */
+  /* When reading or writing a numeric value in a text mode fileReader or
+     fileWriter, when base is > 10, how is the exponent written? Default is
+     ``p``. */
   var other_exponent_char:style_char_t = 0x70; // p
   /* What character denotes a positive number? Default is ``+``. */
   var positive_char:style_char_t = 0x2b; // +;
