@@ -2905,14 +2905,12 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
     err = _qio_buffered_behind(ch, true);
     if( err ) goto error;
 
-    // Make sure the buffer is empty - since we ran buffered_behind,
-    // we can just discard any allocated memory.
+    // trim any excess bytes from the current buffer part
     int64_t trim_bytes = qbuffer_end_offset(&ch->buf) -
                          qbuffer_start_offset(&ch->buf);
-
     qbuffer_trim_back(&ch->buf, trim_bytes);
 
-    // write from the 'ptr' using a direct system call (may require multiple iterations for write/pwrite)
+    // write with a direct system call (may require multiple iterations for write/pwrite)
     while ( remaining > 0 ) {
       num_written = 0;
       switch (method) {
@@ -2949,6 +2947,7 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
       _add_right_mark_start(ch, num_written);
       remaining -= num_written;
 
+      // re-setup the buffer for any future buffered writes
       _qio_buffered_setup_cached(ch);
     }
   } else {
