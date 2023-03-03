@@ -3944,10 +3944,10 @@ proc openReader(path:string,
  */
 config param useNewOpenReaderRegionBounds = false;
 
-// We can simply call channel.close() on these, since the underlying file will
-// be closed once we no longer have any references to it (which in this case,
-// since we only will have one reference, will be right after we close this
-// channel presumably).
+// We can simply call fileReader.close() on these, since the underlying file
+// will be closed once we no longer have any references to it (which in this
+// case, since we only will have one reference, will be right after we close
+// this fileReader presumably).
 
 /*
 
@@ -4206,7 +4206,7 @@ config param useNewFileReaderRegionBounds = false;
    reading from a fileReader beyond the end of the underlying file will not
    extend that file.  Reading beyond the end of the file or beyond the end
    offset of the fileReader will produce the error ``EEOF`` (and return `false`
-   in many cases such as :proc:`channel.read`) to indicate that the end was
+   in many cases such as :proc:`fileReader.read`) to indicate that the end was
    reached.
 
    :arg kind: :type:`iokind` compile-time argument to determine the
@@ -4214,23 +4214,23 @@ config param useNewFileReaderRegionBounds = false;
               to ``iokind.dynamic``, meaning that the associated
               :record:`iostyle` controls the formatting choices.
    :arg locking: compile-time argument to determine whether or not the
-                 channel should use locking; sets the
+                 fileReader should use locking; sets the
                  corresponding parameter of the :record:`fileReader` type.
                  Defaults to true, but when safe, setting it to false
                  can improve performance.
    :arg region: zero-based byte offset indicating where in the file the
-               channel should start and stop reading. Defaults to
+               fileReader should start and stop reading. Defaults to
                ``0..`` - meaning from the start of the file to no end point.
-   :arg hints: provide hints about the I/O that this channel will perform. See
-               :record:`ioHintSet`. The default value of `ioHintSet.empty`
-               will cause the channel to use the hints provided when the
+   :arg hints: provide hints about the I/O that this fileReader will perform.
+               See :record:`ioHintSet`. The default value of `ioHintSet.empty`
+               will cause the fileReader to use the hints provided when the
                file was opened.
 
    .. warning::
 
       The region argument will ignore any specified stride other than 1.
 
-   :throws SystemError: Thrown if a file reader channel could not be returned.
+   :throws SystemError: Thrown if a fileReader could not be returned.
    :throws IllegalArgumentError: Thrown if trying to read explicitly prior to
                                  byte 0.
  */
@@ -4261,7 +4261,7 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
     throw new IllegalArgumentError("region", "file region's lowest accepted bound is 0");
   }
 
-  // It is the responsibility of the caller to release the returned channel
+  // It is the responsibility of the caller to release the returned fileReader
   // if the error code is nonzero.
   // The return error code should be checked to avoid double-deletion errors.
   var ret : fileReader(kind, locking);
@@ -4454,7 +4454,7 @@ config param useNewFileWriterRegionBounds = false;
               to ``iokind.dynamic``, meaning that the associated
               :record:`iostyle` controls the formatting choices.
    :arg locking: compile-time argument to determine whether or not the
-                 channel should use locking; sets the
+                 fileWriter should use locking; sets the
                  corresponding parameter of the :record:`fileWriter` type.
                  Defaults to true, but when safe, setting it to false
                  can improve performance.
@@ -4462,8 +4462,8 @@ config param useNewFileWriterRegionBounds = false;
                fileWriter should start and stop writing. Defaults to
                ``0..`` - meaning from the start of the file to no specified end
                point.
-   :arg hints: provide hints about the I/O that this channel will perform. See
-               :record:`ioHintSet`. The default value of `ioHintSet.empty`
+   :arg hints: provide hints about the I/O that this fileWriter will perform.
+               See :record:`ioHintSet`. The default value of `ioHintSet.empty`
                will cause the fileWriter to use the hints provided when the
                file was opened.
 
@@ -4471,7 +4471,7 @@ config param useNewFileWriterRegionBounds = false;
 
       The region argument will ignore any specified stride other than 1.
 
-   :throws SystemError: Thrown if a file writer channel could not be returned.
+   :throws SystemError: Thrown if a fileWriter could not be returned.
    :throws IllegalArgumentError: Thrown if trying to write explicitly prior to
                                  byte 0.
  */
@@ -4502,7 +4502,7 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
   }
 
   // It is the responsibility of the caller to retain and release the returned
-  // channel.
+  // fileWriter.
   // If the return error code is nonzero, the ref count will be 0 not 1.
   // The error code should be checked to avoid double-deletion errors.
   var ret : fileWriter(kind, locking);
