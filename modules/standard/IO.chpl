@@ -4888,7 +4888,7 @@ proc fileWriter._constructIoErrorMsg(param kind: iokind, const x:?t): string {
 }
 
 pragma "no doc"
-proc _channel._decodeOne(type readType, loc:locale) throws {
+proc fileReader._decodeOne(type readType, loc:locale) throws {
   var reader = new fileReader(iokind.dynamic, locking=false,
                               formatter=_fmt,
                               home=here,
@@ -4920,7 +4920,7 @@ proc _channel._decodeOne(type readType, loc:locale) throws {
 }
 
 pragma "no doc"
-proc _channel._decodeOne(ref x:?t, loc:locale) throws {
+proc fileReader._decodeOne(ref x:?t, loc:locale) throws {
   // _read_one_internal
   var reader = new fileReader(iokind.dynamic, locking=false,
                               formatter=_fmt,
@@ -4938,11 +4938,11 @@ proc _channel._decodeOne(ref x:?t, loc:locale) throws {
 }
 
 //
-// The channel must be locked and running on this._home.
+// The fileReader must be locked and running on this._home.
 // The intent of x is ref (vs out) because it might contain a string literal.
 //
 pragma "no doc"
-proc _channel._readOne(param kind: iokind, ref x:?t,
+proc fileReader._readOne(param kind: iokind, ref x:?t,
                              loc:locale) throws {
   // TODO: Make _read_one_internal(s) a method instead.
   var err = try _read_one_internal(_channel_internal, kind, x, loc);
@@ -4960,14 +4960,14 @@ private proc escapedNonUTF8ErrorMessage() : string {
 }
 
 pragma "no doc"
-proc _channel._encodeOne(const x:?t, loc:locale) throws {
+proc fileWriter._encodeOne(const x:?t, loc:locale) throws {
   var writer = new fileWriter(iokind.dynamic, locking=false,
                               formatter=formatter,
                               home=here,
                               _channel_internal=_channel_internal,
                               _readWriteThisFromLocale=loc);
 
-  // Set the channel pointer to NULL to make the
+  // Set the fileWriter pointer to NULL to make the
   // destruction of the local writer record safe
   // (it shouldn't release anything since it's a local copy).
   defer { writer._channel_internal = QIO_CHANNEL_PTR_NULL; }
@@ -4978,10 +4978,10 @@ proc _channel._encodeOne(const x:?t, loc:locale) throws {
 }
 
 //
-// The channel must be locked and running on this._home.
+// The fileWriter must be locked and running on this._home.
 //
 pragma "no doc"
-proc _channel._writeOne(param kind: iokind, const x:?t, loc:locale) throws {
+proc fileWriter._writeOne(param kind: iokind, const x:?t, loc:locale) throws {
   // TODO: Make _write_one_internal(s) a method instead.
   var err = _write_one_internal(_channel_internal, kind, x, loc);
 
