@@ -5087,8 +5087,8 @@ private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                                        param kind:iokind,
                                        ref x:?t,
                                        loc:locale): errorCode throws {
-  // Create a new channel that borrows the pointer in the
-  // existing channel so we can avoid locking (because we
+  // Create a new fileReader that borrows the pointer in the
+  // existing fileReader so we can avoid locking (because we
   // already have the lock)
   var reader = new fileReader(iokind.dynamic, locking=false,
                               formatter=defaultFmtVal(false),
@@ -5096,7 +5096,7 @@ private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                               _channel_internal=_channel_internal,
                               _readWriteThisFromLocale=loc);
 
-  // Set the channel pointer to NULL to make the
+  // Set the fileReader pointer to NULL to make the
   // destruction of the local reader record safe
   // (it shouldn't release anything since it's a local copy).
   defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL; }
@@ -5139,8 +5139,8 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
                                         const x:?t,
                                         loc:locale): errorCode throws {
-  // Create a new channel that borrows the pointer in the
-  // existing channel so we can avoid locking (because we
+  // Create a new fileWriter that borrows the pointer in the
+  // existing fileWriter so we can avoid locking (because we
   // already have the lock)
   var writer = new fileWriter(iokind.dynamic, locking=false,
                               formatter=defaultFmtVal(true),
