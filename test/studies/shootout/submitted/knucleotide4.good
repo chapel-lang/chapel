@@ -4,12 +4,42 @@ knucleotide4.chpl:24: warning: channel.readline is deprecated. Use channel.readL
 knucleotide4.chpl:24: warning: channel.readline is deprecated. Use channel.readLine instead
 knucleotide4.chpl:32: warning: channel.readline is deprecated. Use channel.readLine instead
 knucleotide4.chpl:32: warning: channel.readline is deprecated. Use channel.readLine instead
-knucleotide4.chpl:52: In function 'writeFreqs':
-knucleotide4.chpl:59: warning: 'Array.sorted' is deprecated - use Sort.sort instead
+knucleotide4.chpl:75: In function 'calculate':
+knucleotide4.chpl:87: warning: 'Map.items' is deprecated. Consider 'Map.keys' to iterate over keys or 'Map.values' to iterate over values.
+  knucleotide4.chpl:53: called as calculate(data: [domain(1,int(64),false)] uint(8), param nclSize = 1) from function 'writeFreqs'
   knucleotide4.chpl:42: called as writeFreqs(data: [domain(1,int(64),false)] uint(8), param nclSize = 1) from function 'main'
 knucleotide4.chpl:52: In function 'writeFreqs':
+knucleotide4.chpl:56: warning: 'Map.items' is deprecated. Consider 'Map.keys' to iterate over keys or 'Map.values' to iterate over values.
+knucleotide4.chpl:59: warning: 'Array.sorted' is deprecated - use Sort.sort instead
+  knucleotide4.chpl:42: called as writeFreqs(data: [domain(1,int(64),false)] uint(8), param nclSize = 1) from function 'main'
+knucleotide4.chpl:75: In function 'calculate':
+knucleotide4.chpl:87: warning: 'Map.items' is deprecated. Consider 'Map.keys' to iterate over keys or 'Map.values' to iterate over values.
+  knucleotide4.chpl:53: called as calculate(data: [domain(1,int(64),false)] uint(8), param nclSize = 2) from function 'writeFreqs'
+  knucleotide4.chpl:43: called as writeFreqs(data: [domain(1,int(64),false)] uint(8), param nclSize = 2) from function 'main'
+knucleotide4.chpl:52: In function 'writeFreqs':
+knucleotide4.chpl:56: warning: 'Map.items' is deprecated. Consider 'Map.keys' to iterate over keys or 'Map.values' to iterate over values.
 knucleotide4.chpl:59: warning: 'Array.sorted' is deprecated - use Sort.sort instead
   knucleotide4.chpl:43: called as writeFreqs(data: [domain(1,int(64),false)] uint(8), param nclSize = 2) from function 'main'
+knucleotide4.chpl:75: In function 'calculate':
+knucleotide4.chpl:87: warning: 'Map.items' is deprecated. Consider 'Map.keys' to iterate over keys or 'Map.values' to iterate over values.
+  knucleotide4.chpl:68: called as calculate(data: [domain(1,int(64),false)] uint(8), param nclSize = 3) from function 'writeCount'
+  knucleotide4.chpl:44: called as writeCount(data: [domain(1,int(64),false)] uint(8), param str = "GGT") from function 'main'
+knucleotide4.chpl:75: In function 'calculate':
+knucleotide4.chpl:87: warning: 'Map.items' is deprecated. Consider 'Map.keys' to iterate over keys or 'Map.values' to iterate over values.
+  knucleotide4.chpl:68: called as calculate(data: [domain(1,int(64),false)] uint(8), param nclSize = 4) from function 'writeCount'
+  knucleotide4.chpl:45: called as writeCount(data: [domain(1,int(64),false)] uint(8), param str = "GGTA") from function 'main'
+knucleotide4.chpl:75: In function 'calculate':
+knucleotide4.chpl:87: warning: 'Map.items' is deprecated. Consider 'Map.keys' to iterate over keys or 'Map.values' to iterate over values.
+  knucleotide4.chpl:68: called as calculate(data: [domain(1,int(64),false)] uint(8), param nclSize = 6) from function 'writeCount'
+  knucleotide4.chpl:46: called as writeCount(data: [domain(1,int(64),false)] uint(8), param str = "GGTATT") from function 'main'
+knucleotide4.chpl:75: In function 'calculate':
+knucleotide4.chpl:87: warning: 'Map.items' is deprecated. Consider 'Map.keys' to iterate over keys or 'Map.values' to iterate over values.
+  knucleotide4.chpl:68: called as calculate(data: [domain(1,int(64),false)] uint(8), param nclSize = 12) from function 'writeCount'
+  knucleotide4.chpl:47: called as writeCount(data: [domain(1,int(64),false)] uint(8), param str = "GGTATTTTAATT") from function 'main'
+knucleotide4.chpl:75: In function 'calculate':
+knucleotide4.chpl:87: warning: 'Map.items' is deprecated. Consider 'Map.keys' to iterate over keys or 'Map.values' to iterate over values.
+  knucleotide4.chpl:68: called as calculate(data: [domain(1,int(64),false)] uint(8), param nclSize = 18) from function 'writeCount'
+  knucleotide4.chpl:48: called as writeCount(data: [domain(1,int(64),false)] uint(8), param str = "GGTATTTTAATTTATAGT") from function 'main'
 A 30.279
 T 30.113
 G 19.835
