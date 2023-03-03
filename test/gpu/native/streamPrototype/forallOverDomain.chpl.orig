@@ -3,7 +3,7 @@ use GpuDiagnostics;
 proc verifyLaunches() {
   use ChplConfig;
   param expected = if CHPL_GPU_MEM_STRATEGY == "unified_memory" then 8 else 10;
-  const actual = getGpuDiagnostics()[0].kernel_launch;
+  const actual = getGPUDiagnostics()[0].kernel_launch;
   assert(actual == expected,
          "observed ", actual, " launches instead of ", expected);
 }
@@ -29,5 +29,10 @@ on here.gpus[0] {
   foreach i in a.domain { b[i] += a[i]*10;    } writeln(b);
   foreach i in a.domain { b[i] += a[i]*value; } writeln(b);
 }
+<<<<<<< HEAD
 stopGpuDiagnostics();
+writeln(getGpuDiagnostics());
+=======
+stopGPUDiagnostics();
 verifyLaunches();
+>>>>>>> 87bc8d4283 (Adjust tests that were sensitive to number of kernel launches)

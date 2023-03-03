@@ -3,15 +3,6 @@ use ResultDB;
 use IO.FormattedIO;
 use GpuDiagnostics;
 
-proc verifyLaunches() {
-  use ChplConfig;
-  param expected = if CHPL_GPU_MEM_STRATEGY == "unified_memory"
-                      then 527 else 1049;
-  const actual = getGpuDiagnostics()[0].kernel_launch;
-  assert(actual == expected,
-         "observed ", actual, " launches instead of ", expected);
-}
-
 config const passes = 10;
 config const alpha = 1.75: real(32);
 config const noisy = false;
@@ -158,8 +149,12 @@ proc main(){
             }
         }
     }
+<<<<<<< HEAD
     stopGpuDiagnostics();
     writeln(getGpuDiagnostics());
+=======
+    stopGPUDiagnostics();
+    writeln(getGPUDiagnostics());
     if(output) {
       flopsDB.printDatabaseStats();
       bdwthDB.printDatabaseStats();
@@ -171,4 +166,5 @@ proc main(){
       triadDB.printPerfStats();
       kernelDB.printPerfStats();
     }
+>>>>>>> 130b3bed45 (Fix errors coming from shoc's result database)
 }

@@ -6,11 +6,12 @@ use GpuDiagnostics;
 proc verifyLaunches() {
   use ChplConfig;
   param expected = if CHPL_GPU_MEM_STRATEGY == "unified_memory"
-                      then 527 else 1049;
-  const actual = getGpuDiagnostics()[0].kernel_launch;
+                      then 523 else 547;
+  const actual = getGPUDiagnostics()[0].kernel_launch;
   assert(actual == expected,
          "observed ", actual, " launches instead of ", expected);
 }
+
 
 config const passes = 10;
 config const alpha = 1.75: real(32);
@@ -30,7 +31,7 @@ proc main(){
     param maxProblemSize = 16384;
     param numMaxFloats = 1024 * maxProblemSize / numBytes(real(32));
     param halfNumFloats = numMaxFloats/2;
-    // Create an two arrays on the GPU and populate them with number
+
     var flopsDB = new ResultDatabase("TriadFlops", "GFLOP/s");
     var bdwthDB = new ResultDatabase("TriadBdwth", "GB/s");
     var triadDB = new ResultDatabase("Triad Time", "sec");
@@ -41,7 +42,6 @@ proc main(){
     on here.gpus[0] {
         var kernelLaunches = 0;
         for pass in 0..#passes{
-            if noisy then writeln("################################################################\n Pass Number ", pass);
             for blkSize in blockSizes {
                 // Populate host with arbitrary memory
                 // The reference (CUDA) implementation of SHOC fills hos
@@ -51,52 +51,104 @@ proc main(){
                 for i in 0..#halfNumFloats {
                     hos[i] = i:int(32)%16:int(32) + 0.12:real(32);
                     hos[halfNumFloats+i] = hos[i] ;
+
                 }
-                // Calculate the real(32) that will fir in problem KB
+                // Number of floats that fit in the number of bytes denoted
+                // by problem size. Converting MB to Bytes and dividing by
+                // size of real(32)
                 var elemsInBlock = blkSize * 1024 / numBytes(real(32));
+                // Make A's
+                var A0 : [0..#elemsInBlock] real(32);
+                var A1 : [0..#elemsInBlock] real(32);
 
-                // Create the arrays in unified memory
-                var A, B, C :[0..#elemsInBlock] real(32);
+                // ... Make B's and C's..
+                var B0 : [0..#elemsInBlock] real(32);
+                var B1 : [0..#elemsInBlock] real(32);
 
-                // Pre slice all the slices of host that we will need so the needed to slice
-                // is not counted.
-
-                // Calc the number of iterations needed
-                var numIterations = maxProblemSize/ blkSize;
-                // Make array of sliceshost arrays
-                var hostArraysArray: [0..#numIterations][0..#elemsInBlock] real(32);
-                for i in 0..#numIterations {
-                    hostArraysArray[i] = hos[elemsInBlock*i..#elemsInBlock];
-                }
+                var C0 : [0..#elemsInBlock] real(32);
+                var C1 : [0..#elemsInBlock] real(32);
 
                 if noisy then
                 writeln(" >>> Executing Triad with arrays of length ", numMaxFloats,
                         " and block size of ", elemsInBlock, " elements");
-                // Checking the hostArraysArray
-                if noisy then
-                writeln("For above block size we expect ", numIterations, " sliced arrays"
-                    , " and we have ", hostArraysArray.domain);
-                if noisy then
-                writeln("Starting timer with previously elapsed : ", timer.elapsed());
+
                 timer.start();
-                // Do numIterations iterations to calcuate the whole hos array
-                for i in 0..#numIterations {
-                    A = hostArraysArray[i];
-                    B = hostArraysArray[i];
-                    kernelTimer.start();
-                    C = A * alpha + B; // Kernel
-                    kernelTimer.stop();
-                    hostArraysArray[i] = C; // Copy Back
+
+                // Do first transfer for A and B
+                A0= hos[0..#elemsInBlock];
+                B0= hos[0..#elemsInBlock];
+
+                // Do the calculation
+                kernelLaunches+=1;
+                kernelTimer.start();
+                forall i in 0..#elemsInBlock {
+                    C0[i] = A0[i] * alpha + B0[i];
                 }
-                timer.stop();
-                if noisy then
-                writeln("Finished triad with elapsed time : ", timer.elapsed());
-                kernelLaunches = numIterations;
-                // Copy hostArraysArray into hos back for error checking
-                for i in 0..#numIterations {
-                    hos[elemsInBlock*i..#elemsInBlock] = hostArraysArray[i];
+                kernelTimer.stop();
+
+                if(elemsInBlock < numMaxFloats){
+                    // Transfers for other stream
+                    // In theory these memory transfers could be
+                    // asynchronous until we get to the second kernel launch
+                    A1= hos[elemsInBlock..#elemsInBlock];
+                    B1= hos[elemsInBlock..#elemsInBlock];
                 }
 
+
+                var currentStream = true; // Representing Stream 1
+                                        // false represents stream 0
+                var currentIdx = 0;
+                // Loop corresponding to while loop in benchmark:
+                while(currentIdx < numMaxFloats) {
+                    // Copy back answer from last kernel call
+                    if(currentStream){
+                        // Stream 0 copy back
+                        hos[currentIdx..#elemsInBlock] = C0;
+                    } else {
+                        // Stream 1 copy back
+                        hos[currentIdx..#elemsInBlock] = C1;
+                    }
+
+                    currentIdx += elemsInBlock;
+
+                    if(currentIdx < numMaxFloats){
+                        kernelLaunches+=1;
+                        // We have more stuff to operate on
+                        if(currentStream){
+                            kernelTimer.start();
+                            // Launch on Stream 1
+                            forall i in 0..#elemsInBlock {
+                                C1[i] = A1[i] * alpha + B1[i];
+                            }
+                            kernelTimer.stop();
+                        } else {
+                            kernelTimer.start();
+                            // Launch on Stream 0
+                            forall i in 0..#elemsInBlock {
+                                C0[i] = A0[i] * alpha + B0[i];
+                            }
+                            kernelTimer.stop();
+                        }
+                    }
+
+                    if(currentIdx+elemsInBlock < numMaxFloats){
+                        // We have more stuff to copy over and then operate on
+                        // Copy back answer from last kernel call
+                        if(currentStream){
+                            // Stream 1 copy over
+                            A1 = hos[currentIdx+elemsInBlock..#elemsInBlock];
+                            B1 = hos[currentIdx+elemsInBlock..#elemsInBlock];
+                        } else {
+                            // Stream 0 copy over
+                            A0 = hos[currentIdx+elemsInBlock..#elemsInBlock];
+                            B0 = hos[currentIdx+elemsInBlock..#elemsInBlock];
+                        }
+                    }
+
+                    currentStream  = !currentStream;
+                }
+
+                timer.stop();
                 var timeElapsedInNanoseconds = timer.elapsed() * 1e9;
                 var triad = (numMaxFloats * 2.0) / timeElapsedInNanoseconds;
                 var bdwth = (numMaxFloats * numBytes(real(32)) * 3.0)
@@ -125,8 +177,6 @@ proc main(){
                 kernelLaunches = 0;
                 kernelTimer.clear();
                 timer.clear();
-                if noisy then
-                writeln("Elapsed time after clearing: ", timer.elapsed());
                 // Error Checking for the correct anwer
                 // Since we gave the kernel arbitrary numbers we know what the answer
                 // to the computation is
@@ -158,8 +208,14 @@ proc main(){
             }
         }
     }
+<<<<<<< HEAD
     stopGpuDiagnostics();
     writeln(getGpuDiagnostics());
+=======
+    stopGPUDiagnostics();
+    verifyLaunches();
+>>>>>>> 87bc8d4283 (Adjust tests that were sensitive to number of kernel launches)
+
     if(output) {
       flopsDB.printDatabaseStats();
       bdwthDB.printDatabaseStats();

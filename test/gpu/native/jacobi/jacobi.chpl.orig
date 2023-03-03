@@ -13,7 +13,7 @@ proc verifyLaunches() {
   */
   use ChplConfig;
   param expected = if CHPL_GPU_MEM_STRATEGY == "unified_memory" then 21 else 23;
-  const actual = getGpuDiagnostics()[0].kernel_launch;
+  const actual = getGPUDiagnostics()[0].kernel_launch;
   assert(actual == expected,
          "observed ", actual, " launches instead of ", expected);
 }
@@ -25,8 +25,13 @@ jacobi(here.gpus[0]);
 writeln("on CPU:");
 jacobi(here);
 
+<<<<<<< HEAD
 stopGpuDiagnostics();
+writeln(getGpuDiagnostics());
+=======
+stopGPUDiagnostics();
 verifyLaunches();
+>>>>>>> 87bc8d4283 (Adjust tests that were sensitive to number of kernel launches)
 
 proc jacobi(loc) {
   on loc {
