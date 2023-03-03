@@ -1437,8 +1437,8 @@ private const IOHINTS_PREFETCH:    c_int = QIO_HINT_CACHED;
 private const IOHINTS_MMAP:        c_int = QIO_METHOD_MMAP;
 private const IOHINTS_NOMMAP:      c_int = QIO_METHOD_PREADPWRITE;
 
-/* A value of the :record:`ioHintSet` type defines a set of hints about
-  the I/O that the file or channel will perform.  These hints may be used
+/* A value of the :record:`ioHintSet` type defines a set of hints about the I/O
+  that the file, fileReader or fileWriter will perform.  These hints may be used
   by the implementation to select optimized versions of the I/O operations.
 
   Most hints have POSIX equivalents associated with posix_fadvise() and
@@ -1632,8 +1632,9 @@ a C ``FILE`` object can be obtained via Chapel's
   This is an alternative way to create a :record:`file`.  The main way to do so
   is via the :proc:`open` function.
 
-Once the Chapel file is created, you will need to use a :proc:`file.reader` or
-:proc:`file.writer` to create a channel to perform I/O operations on the C file.
+Once the Chapel file is created, you will need to use a :proc:`file.reader` to
+create a fileReader or :proc:`file.writer` to create a fileWriter to perform I/O
+operations on the C file.
 
 .. note::
 
@@ -1694,8 +1695,9 @@ proc file.init(fileDescriptor: int, hints=ioHintSet.empty,
 /*
 
 Create a Chapel file that works with a system file descriptor.  Note that once
-the file is open, you will need to use a :proc:`file.reader` or
-:proc:`file.writer` to create a channel to actually perform I/O operations
+the file is open, you will need to use a :proc:`file.reader` to create a
+fileReader or :proc:`file.writer` to create a fileWriter to actually perform I/O
+operations
 
 .. note::
 
@@ -1710,9 +1712,9 @@ The system file descriptor will be closed when the Chapel file is closed.
   descriptors that do not support the ``seek`` functionality. For example, file
   descriptors that represent pipes or open socket connections have this
   property. In that case, the resulting file value should only be used with one
-  :record:`fileReader` or :record:`fileWriter` at a time.
-  The I/O system will ignore the channel offsets when reading or writing
-  to files backed by non-seekable file descriptors.
+  :record:`fileReader` or :record:`fileWriter` at a time.  The I/O system will
+  ignore the fileReader offsets when reading (or the fileWriter offsets when
+  writing) to files backed by non-seekable file descriptors.
 
 
 :arg fileDescriptor: a system file descriptor.
@@ -1790,7 +1792,8 @@ proc file.filePlugin() : QioPluginFile? {
 
 // File style cannot be modified after the file is created;
 // this prevents race conditions;
-// channel style is protected by channel lock, can be modified.
+// fileReader or fileWriter style is protected by fileReader or fileWriter lock,
+// can be modified.
 pragma "no doc"
 proc file._style:iostyleInternal throws {
   var ret:iostyleInternal;
@@ -1816,12 +1819,13 @@ proc file._style:iostyleInternal throws {
    running out of storage space or power loss. See also
    :ref:`about-io-ensuring-successful-io`.
 
-   Files are automatically closed when the file variable
-   goes out of scope and all channels using that file are closed. Programs
-   may also explicitly close a file using this method.
+   Files are automatically closed when the file variable goes out of scope and
+   all fileReaders and fileWriters using that file are closed. Programs may also
+   explicitly close a file using this method.
 
    It is an error to perform any I/O operations on a file that has been closed.
-   It is an error to close a file when it has channels that have not been closed.
+   It is an error to close a file when it has fileReaders and/or fileWriters
+   that have not been closed.
 
    :throws SystemError: Thrown if the file could not be closed.
  */
@@ -1841,8 +1845,8 @@ proc file.close() throws {
 Sync a file to disk.
 
 Commits file data to the device associated with this file.
-Data written to the file by a channel will only be guaranteed
-committed if the channel has been closed or flushed.
+Data written to the file by a fileWriter will only be guaranteed
+committed if the fileWriter has been closed or flushed.
 
 This function will typically call the ``fsync`` system call.
 
@@ -1946,7 +1950,7 @@ private proc fileRelPathHelper(f: file): string throws {
 /*
 
 Get the current size of an open file. Note that the size can always
-change if other channels, tasks or programs are writing to the file.
+change if other fileWriters, tasks or programs are writing to the file.
 
 :returns: the current file size
 
@@ -2012,7 +2016,7 @@ proc open(path:string, mode:ioMode, hints=ioHintSet.empty,
 
 Open a file on a filesystem. Note that once the
 file is open, you will need to use a :proc:`file.reader` or :proc:`file.writer`
-to create a channel to actually perform I/O operations
+to create a fileReader or fileWriter to actually perform I/O operations
 
 :arg path: which file to open (for example, "some/file.txt").
 :arg mode: specify whether to open the file for reading or writing and
@@ -2125,7 +2129,8 @@ proc openfd(fd: c_int, hints=ioHintSet.empty, style:iostyle):file throws {
 
 Create a Chapel file that works with a system file descriptor.  Note that once
 the file is open, you will need to use a :proc:`file.reader` or
-:proc:`file.writer` to create a channel to actually perform I/O operations
+:proc:`file.writer` to create a fileReader or fileWriter to actually perform I/O
+operations
 
 The system file descriptor will be closed when the Chapel file is closed.
 
@@ -2135,9 +2140,9 @@ The system file descriptor will be closed when the Chapel file is closed.
   descriptors that do not support the ``seek`` functionality. For example, file
   descriptors that represent pipes or open socket connections have this
   property. In that case, the resulting file value should only be used with one
-  :record:`fileReader` or :record:`fileWriter` at a time.
-  The I/O system will ignore the channel offsets when reading or writing
-  to files backed by non-seekable file descriptors.
+  :record:`fileReader` or :record:`fileWriter` at a time.  The I/O system will
+  ignore the fileReader or fileWriter offsets when reading or writing to files
+  backed by non-seekable file descriptors.
 
 
 :arg fd: a system file descriptor.
@@ -2185,13 +2190,15 @@ a C ``FILE`` object can be obtained via Chapel's
 :ref:`C Interoperability <primers-C-interop-using-C>` functionality.
 
 Once the Chapel file is created, you will need to use a :proc:`file.reader` or
-:proc:`file.writer` to create a channel to perform I/O operations on the C file.
+:proc:`file.writer` to create a fileReader or fileWriter to perform I/O
+operations on the C file.
 
 .. note::
 
-  The resulting file value should only be used with one :record:`channel` at a
-  time. The I/O system will ignore the channel offsets when reading or writing
-  to a file opened with :proc:`openfp`.
+  The resulting file value should only be used with one :record:`fileReader` or
+  :record:`fileWriter` at a time. The I/O system will ignore the fileReader or
+  fileWriter offsets when reading or writing to a file opened with
+  :proc:`openfp`.
 
 
 :arg fp: a pointer to a C ``FILE``. See :type:`~CTypes.c_FILE`.
@@ -2246,8 +2253,8 @@ proc opentmp(hints=ioHintSet.empty, style:iostyle):file throws {
 /*
 
 Open a temporary file. Note that once the file is open, you will need to use a
-:proc:`file.reader` or :proc:`file.writer` to create a channel to actually
-perform I/O operations.
+:proc:`file.reader` or :proc:`file.writer` to create a fileReader or fileWriter
+to actually perform I/O operations.
 
 The temporary file will be created in an OS-dependent temporary directory,
 for example "/tmp" is the typical location. The temporary file will be
@@ -2303,8 +2310,8 @@ proc openMemFile(style:iostyle):file throws {
 
 Open a file that is backed by a buffer in memory that will not persist when the
 file is closed.  Note that once the file is open, you will need to use a
-:proc:`file.reader` or :proc:`file.writer` to create a channel to actually
-perform I/O operations.
+:proc:`file.reader` or :proc:`file.writer` to create a fileReader or fileWriter
+to actually perform I/O operations.
 
 The resulting file supports both reading and writing.
 
