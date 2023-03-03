@@ -1,0 +1,11 @@
+assignment-1-error.chpl:6: In function 'test':
+assignment-1-error.chpl:7: error: cannot assign to const variable
+$CHPL_HOME/modules/internal/ChapelTuple.chpl:304: internal error: RES-TUP-LES-nnnn chpl version mmmm
+Note: This source location is a guess.
+
+Internal errors indicate a bug in the Chapel compiler,
+and we're sorry for the hassle.  We would appreciate your reporting this bug --
+please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
+the filename + line number above may be useful in working around the issue.
+
+  assignment-1-error.chpl:9: called as test(tup: (int(64),[domain(1,int(64),false)] int(64)))

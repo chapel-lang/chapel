@@ -478,7 +478,9 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
       retType     = getReturnedTupleType(fn, tupleType);
       fn->retType = retType;
 
-    } else if (fn->returnsRefOrConstRef() == true) {
+    } else if (fn->returnsRefOrConstRef() &&
+               ! retType->symbol->hasFlag(FLAG_GENERIC)) {
+      // makeRefType is no-op if retType is generic?
       makeRefType(retType);
 
       retType     = retType->refType;

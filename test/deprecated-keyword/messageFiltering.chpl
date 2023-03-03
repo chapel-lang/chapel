@@ -54,12 +54,14 @@ deprecated "Lorem ipsum :record:`test` dolor sit amet"
 var x3010 = 3010;
 deprecated "Lorem ipsum :attr:`test` dolor sit amet"
 var x3011 = 3011;
-deprecated "Lorem :mod:`abc` ipsum :proc:`def` dolor :iter:`ghi` sit :data:`jkl` amet"
+deprecated "Lorem ipsum :enum:`test` dolor sit amet"
 var x3012 = 3012;
-deprecated "Lorem :const:`abc` ipsum :var:`def` dolor :param:`ghi` sit :type:`jkl` amet"
+deprecated "Lorem :mod:`abc` ipsum :proc:`def` dolor :iter:`ghi` sit :data:`jkl` amet"
 var x3013 = 3013;
-deprecated "Lorem :class:`abc` ipsum :record:`def` dolor :attr:`ghi` sit amet"
+deprecated "Lorem :const:`abc` ipsum :var:`def` dolor :param:`ghi` sit :type:`jkl` amet"
 var x3014 = 3014;
+deprecated "Lorem :class:`abc` ipsum :record:`def` dolor :attr:`ghi` sit amet"
+var x3015 = 3015;
 
 // Test different text in ::s (all should not filter)
 deprecated "--- Test different text in ::s (all should not filter) ---"
@@ -207,6 +209,7 @@ writeln(x3011);
 writeln(x3012);
 writeln(x3013);
 writeln(x3014);
+writeln(x3015);
 
 writeln(x4000);
 writeln(x4001);

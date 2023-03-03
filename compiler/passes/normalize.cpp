@@ -1868,11 +1868,14 @@ static void normalizeYields(FnSymbol* fn) {
       // the compiler.
       VarSymbol* retval = newTemp("yret", fn->retType);
       retval->addFlag(FLAG_YVV);
+      if (fn->retTag == RET_REF)
+        retval->qual = QUAL_REF;
+      else if (fn->retTag == RET_CONST_REF)
+        retval->qual = QUAL_CONST_REF;
 
       yield->insertBefore(new DefExpr(retval));
       insertRetMove(fn, retval, yield, false);
-      yield->insertBefore(new CallExpr(PRIM_YIELD, retval));
-      yield->remove();
+      yield->insertAtTail(retval);
     }
   }
 }

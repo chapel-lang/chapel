@@ -5,8 +5,8 @@ use Regex;
 var s = "contains";
 var b = b"contains";
 
-var rcs = compile(s);
-var rcb = compile(b);
+var rcs = new regex(s);
+var rcb = new regex(b);
 
 writeln("contains regular expression".find(rcs));
 writeln(b"contains regular expression".find(rcb));

@@ -1,1 +1,1 @@
-../../math.chpl
+../../cudaOnly/math.chpl

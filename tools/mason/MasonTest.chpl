@@ -52,7 +52,7 @@ proc masonTest(args: [] string, checkProj=true) throws {
   var parser = new argumentParser(helpHandler=new MasonTestHelpHandler());
 
   var runFlag = parser.addFlag(name="run",
-                               opts=["--no-run", ],
+                               opts=["--no-run"],
                                defaultValue=false);
 
   var showFlag = parser.addFlag(name="show", defaultValue=false);
@@ -422,7 +422,7 @@ proc getTestPath(fullPath: string, testPath = "") : string {
 proc getRuntimeComm() throws {
   var line: string;
   var python: string;
-  var findPython = spawn([CHPL_HOME:string+"/util/config/find-python.sh", ],
+  var findPython = spawn([CHPL_HOME:string+"/util/config/find-python.sh"],
                          stdout = pipeStyle.pipe);
   while findPython.stdout.readLine(line) {
     python = line.strip();
@@ -654,7 +654,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
               testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);
   if testNames.size != 0 {
     var maxCount = -1;
-    for key in localesCountMap {
+    for key in localesCountMap.keys() {
       if maxCount < localesCountMap[key] {
         reqLocales = key;
         maxCount = localesCountMap[key];

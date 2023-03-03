@@ -295,7 +295,7 @@ iter allAtoms() ref {
   }
 }
 
-iter allAtoms(param tag : iterKind) ref where tag == iterKind.leader {
+iter allAtoms(param tag : iterKind) where tag == iterKind.leader {
   for follow in Boxes.these(iterKind.leader) {
     yield follow;
   }

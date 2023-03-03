@@ -44,7 +44,7 @@ proc fileGrep(toFind: string, fname: string) throws {
   }
 
   // Use regex library to compile into searchable regex
-  var regEx = compile(toFind);
+  var regEx = new regex(toFind);
   var line:string;
   var lineNum = 1;
 

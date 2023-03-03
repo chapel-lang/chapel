@@ -11,7 +11,7 @@ const table = initTable("ATCGGCTAUAMKRYWWSSYRKMVBHDDHBVNN\n\n");
 proc main(args: [] string) {
   const stdin = new file(0),
         input = stdin.reader(iokind.native, locking=false,
-                             hints=ioHintSet.mmap),
+                             hints=ioHintSet.mmap(true)),
         len = stdin.size;
   var data: [0..#len] uint(8);
 

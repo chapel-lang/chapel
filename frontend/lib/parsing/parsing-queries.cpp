@@ -34,6 +34,7 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/MultiDecl.h"
 #include "chpl/uast/TupleDecl.h"
+#include "chpl/util/version-info.h"
 
 #include "../util/filesystem_help.h"
 
@@ -45,6 +46,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <fstream>
 
 namespace chpl {
 namespace parsing {
@@ -100,25 +102,228 @@ static Parser helpMakeParser(Context* context,
   }
 }
 
+// <7F>HPECHPL
+#define LIBRARY_MAGIC (uint64_t)0x4C5048434550487F
+#define LIBRARY_VERSION_MAJOR 0
+#define LIBRARY_VERSION_MINOR 1
+
+//
+// The library file format (whitespace not significant):
+// <magic number, uint64_t>
+// <library version, major, int>
+// <library version, minor, int>
+// <chpl version, major, int>
+// <chpl version, minor, int>
+// <chpl version, update, int>
+//
+// <user/std module descriptor, std::string>
+//
+// N:<number of BuilderResult entries, uint64_t>
+//   0..N-1: <file path i, std::string><library file offset i, uint64_t>
+//
+// M:<string cache size, uint64_t>
+//   0..M-1: <id i, int><string length, uint32_t><string, const char*>
+//
+// 0..N-1: <BuilderResult for file path i, BuilderResult>
+//
+void LibraryFile::generate(Context* context,
+                           std::vector<UniqueString> paths,
+                           std::string outFileName,
+                           bool isUser) {
+  std::ofstream myFile;
+  myFile.open(outFileName, std::ios::out | std::ios::trunc | std::ios::binary);
+  chpl::Serializer ser(myFile);
+
+  ser.write(LIBRARY_MAGIC);
+  ser.write(LIBRARY_VERSION_MAJOR);
+  ser.write(LIBRARY_VERSION_MINOR);
+
+  // Write out the version of the 'chpl' compiler generating this file
+  ser.write(getMajorVersion());
+  ser.write(getMinorVersion());
+  ser.write(getUpdateVersion());
+
+  // TODO: Currently a boolean, but might be useful to represent internal
+  // or package modules separately someday.
+  if (isUser) {
+    ser.write(std::string("USER"));
+  } else {
+    // Currently assuming that this is the mode where we generate the entire
+    // standard library.
+    ser.write(std::string("STANDARD"));
+  }
+
+  // Number of files we expect to serialize in this library
+  ser.write((uint64_t)paths.size());
+
+  std::vector<std::pair<std::string, std::string>> data;
+  uint64_t offset = 0;
+
+  // Use the same serializer so that we can build up a unified cache of
+  // UniqueStrings for this library file.
+  //
+  // Store all the text in a stringstream to be written out after the cache
+  // is written.
+  std::stringstream ss;
+  chpl::Serializer builderSer(ss);
+  for (auto path : paths) {
+    UniqueString empty;
+    auto& result = parseFileToBuilderResult(context, path, empty);
+    ss.str(std::string()); // clear for this iteration
+    result.serialize(builderSer);
+
+    const auto& str = ss.str();
+    data.push_back({path.str(), str});
+
+    // write the filename and the offset for the header
+    ser.write(path.str());
+    ser.write(offset);
+    offset += str.size();
+  }
+
+  const auto& stringCache = builderSer.stringCache();
+
+  // TODO: Can we avoid serializing the ID here if we sort the cache and
+  // write it in order, allowing the deserialization process to infer the ID?
+  ser.write((uint32_t)stringCache.size());
+  for (const auto& kv : stringCache) {
+    const auto& pair = kv.second;
+    ser.write(pair.first); // unique ID in this table
+    ser.write((uint32_t)pair.second); // string size
+    if (pair.second > 0) {
+      // string data
+      ser.os().write(kv.first, pair.second);
+    }
+  }
+
+  // Finally, write the saved strings from serializing a BuilderResult
+  for (const auto& pair : data) {
+    ser.os().write(pair.second.c_str(), pair.second.size());
+  }
+}
+
+LibraryFile::LibraryFile(Context* context, UniqueString libPath)
+: path_(libPath) {
+  std::ifstream myFile;
+  myFile.open(libPath.str(), std::ios::in | std::ios::binary);
+  chpl::Deserializer des(context, myFile);
+
+  // Some basic validation
+  CHPL_ASSERT(LIBRARY_MAGIC == des.read<uint64_t>());
+  CHPL_ASSERT(LIBRARY_VERSION_MAJOR == des.read<int>());
+  CHPL_ASSERT(LIBRARY_VERSION_MINOR == des.read<int>());
+
+  // Currently no checking is done for 'chpl' version
+  std::ignore = des.read<int>(); // major version
+  std::ignore = des.read<int>(); // minor version
+  std::ignore = des.read<int>(); // update version
+
+  // Is this a user module, or a standard module?
+  const auto kind = des.read<std::string>();
+  CHPL_ASSERT(kind == "USER" || kind == "STANDARD");
+  isUser_ = (kind == "USER");
+
+  // Number of builder result entries
+  const auto num = des.read<uint64_t>();
+
+  // Read in the table of '.chpl' filenames and their offsets in the file
+  std::vector<std::pair<std::string, uint64_t>> offsetsTable;
+  for (uint64_t i = 0; i < num; i++) {
+    auto path = des.read<std::string>();
+    auto offset = des.read<uint64_t>();
+    offsetsTable.push_back({path, offset});
+  }
+
+  // Read unique strings
+  {
+    const uint64_t size = des.read<uint32_t>();
+    cache_.resize(size);
+    for (uint64_t i = 0; i < size; i++) {
+      int id = des.read<int>();
+      auto len = des.read<uint32_t>();
+      if (len > 0) {
+        // TODO: Can we save some memory allocations by doing this read while
+        // we're trying to create the unique c-string?
+        auto buf = (char*)malloc(len+1);
+        des.is().read(buf, len);
+        buf[len] = '\0';
+
+        auto unique = des.context()->uniqueCString(buf, len);
+        cache_[id] = {(size_t)len, unique};
+
+        free(buf);
+      }
+    }
+  }
+
+  // Offsets are relative to the start of the actual data, so the first entry
+  // should have an offset of 0.
+  const auto dataStart = myFile.tellg();
+
+  for (const auto& pair : offsetsTable) {
+    std::streamoff off = pair.second;
+    auto ustr = UniqueString::get(context, pair.first);
+    offsets_[ustr] = dataStart + off;
+  }
+}
+
+const LibraryFile&
+loadLibraryFile(Context* context, UniqueString libPath) {
+  QUERY_BEGIN(loadLibraryFile, context, libPath);
+
+  LibraryFile result(context, libPath);
+
+  return QUERY_END(result);
+}
+
+void registerFilePathsInLibrary(Context* context, UniqueString& libPath) {
+  const auto& lib = loadLibraryFile(context, libPath);
+  for (const auto& entry : lib.offsets()) {
+    context->setLibraryForFilePath(entry.first, libPath);
+  }
+}
+
+static BuilderResult
+loadBuilderResultFromFile(Context* context, UniqueString path,
+                          UniqueString libPath) {
+
+  const auto& lib = loadLibraryFile(context, libPath);
+
+  std::ifstream myFile;
+  myFile.open(libPath.str(), std::ios::in | std::ios::binary);
+  myFile.seekg(lib.offsets().at(path));
+
+  Deserializer des(context, myFile, lib.stringCache());
+  auto result = BuilderResult::deserialize(des);
+
+  return result;
+}
+
 const BuilderResult&
 parseFileToBuilderResult(Context* context, UniqueString path,
                          UniqueString parentSymbolPath) {
   QUERY_BEGIN(parseFileToBuilderResult, context, path, parentSymbolPath);
 
-  // Run the fileText query to get the file contents
-  const FileContents& contents = fileText(context, path);
-  const std::string& text = contents.text();
-  const ErrorBase* error = contents.error();
   BuilderResult result(path);
-
-  if (error == nullptr) {
-    // if there was no error reading the file, proceed to parse
-    auto parser = helpMakeParser(context, parentSymbolPath);
-    const char* pathc = path.c_str();
-    const char* textc = text.c_str();
-    BuilderResult tmpResult = parser.parseString(pathc, textc);
+  UniqueString libPath;
+  if (context->pathHasLibrary(path, libPath)) {
+    auto tmpResult = loadBuilderResultFromFile(context, path ,libPath);
     result.swap(tmpResult);
-    BuilderResult::updateFilePaths(context, result);
+  } else {
+    // Run the fileText query to get the file contents
+    const FileContents& contents = fileText(context, path);
+    const std::string& text = contents.text();
+    const ErrorBase* error = contents.error();
+
+    if (error == nullptr) {
+      // if there was no error reading the file, proceed to parse
+      auto parser = helpMakeParser(context, parentSymbolPath);
+      const char* pathc = path.c_str();
+      const char* textc = text.c_str();
+      BuilderResult tmpResult = parser.parseString(pathc, textc);
+      result.swap(tmpResult);
+      BuilderResult::updateFilePaths(context, result);
+    }
   }
 
   return QUERY_END(result);

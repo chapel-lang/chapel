@@ -343,6 +343,46 @@ module SharedObject {
 
     // Issue a compiler error for illegal uses.
     pragma "no doc"
+    proc type adopt(source) {
+      compilerError("cannot adopt a ", source.type:string);
+    }
+
+    /*
+      Changes the memory management strategy of the argument from `owned`
+      to `shared`, taking over the ownership of the argument.
+      The result type preserves nilability of the argument type.
+      If the argument is non-nilable, it must be recognized by the compiler
+      as an expiring value.
+    */
+    inline proc type adopt(pragma "nil from arg" in obj: owned) {
+      var ptr = owned.release(obj);
+      return owned.adopt(ptr);
+    }
+    /*
+      Creates a new `shared` class reference to the argument.
+      The result has the same type as the argument.
+    */
+    inline proc type adopt(pragma "nil from arg" in obj: shared) {
+      return obj;
+    }
+
+    /*
+      Starts managing the argument class instance `obj`
+      using the `shared` memory management strategy.
+      The result type preserves nilability of the argument type.
+
+      It is an error to directly delete the class instance
+      after passing it to `shared.adopt()`.
+    */
+    inline proc type adopt(pragma "nil from arg" in obj: unmanaged) {
+      // 'result' may have a non-nilable type
+      var result: (obj.type : shared);
+      result = new _shared(obj);
+      return result;
+    }
+
+    // Issue a compiler error for illegal uses.
+    pragma "no doc"
     proc type create(source) {
       compilerError("cannot create a 'shared' from ", source.type:string);
     }

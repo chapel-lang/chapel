@@ -16,7 +16,7 @@ if replacementCount != repeatCount {
   writeln("Warning: can't use `useGlobal` to compare performance");
 }
 
-var r = compile("1+");
+var r = new regex("1+");
 var s = ("a"*nonMatchingIntervalLen+"1"*matchingIntervalLen)*repeatCount;
 var t: stopwatch;
 

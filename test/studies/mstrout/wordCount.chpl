@@ -91,7 +91,7 @@ forall (i, file) in zip(filenames.domain, filenames) {
 
   // filter out any words that do not show up more than once
   var infrequentWords = new list(string);
-  for (word,count) in wordCount.items() {
+  for (word,count) in zip(wordCount.keys(), wordCount.values()) {
     if count<=minCount then infrequentWords.append(word);
   }
   for word in infrequentWords {

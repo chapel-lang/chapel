@@ -350,8 +350,8 @@ proc getChapelVersionInfo(): VersionInfo {
       }
 
       const semverPattern = "(\\d+\\.\\d+\\.\\d+)";
-      var master  = compile(semverPattern + " pre-release (\\([a-z0-9]+\\))");
-      var release = compile(semverPattern);
+      var master  = new regex(semverPattern + " pre-release (\\([a-z0-9]+\\))");
+      var release = new regex(semverPattern);
 
       var semver, sha : string;
       var isMaster: bool;
@@ -542,7 +542,7 @@ proc getProjectType(): string throws {
    not found, throw an error. TODO: Currently does not check
    on the version. */
 proc getDepToml(depName: string, depVersion: string) throws {
-  const pattern = compile(depName, ignoreCase=true);
+  const pattern = new regex(depName, ignoreCase=true);
 
   var packages: list(string);
   var versions: list(string);
@@ -677,9 +677,9 @@ proc checkChplVersion(chplVersion, low, high) throws {
       var ret : VersionInfo;
 
       // Finds 'x.x' or 'x.x.x' where x is a positive number
-      const pattern = "^(\\d+\\.\\d+(\\.\\d+)?)$";
+      const pattern = new regex("^(\\d+\\.\\d+(\\.\\d+)?)$");
       var semver : string;
-      if compile(pattern).match(ver, semver).matched == false {
+      if pattern.match(ver, semver).matched == false {
         throw new owned MasonError("Invalid Chapel version format: " + ver + formatMessage);
       }
       const nums = for s in semver.split(".") do s:int;
@@ -769,7 +769,7 @@ proc InitProject(dirName, packageName, vcs, show,
 /* Iterator to collect fields from a toml
    TODO custom fields returned */
 iter allFields(tomlTbl: Toml) {
-  for (k,v) in tomlTbl.A.items() {
+  for (k,v) in zip(tomlTbl.A.keys(), tomlTbl.A.values()) {
     if v!.tag == fieldtag.fieldToml then
       continue;
     else yield(k,v);

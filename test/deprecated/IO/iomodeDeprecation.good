@@ -1,4 +1,4 @@
-iomodeDeprecation.chpl:7: warning: enum iomode is deprecated - please use :enum:`ioMode` instead
-iomodeDeprecation.chpl:4: warning: enum iomode is deprecated - please use :enum:`ioMode` instead
-iomodeDeprecation.chpl:7: warning: open with an iomode argument is deprecated - please use :enum:`ioMode`
-iomodeDeprecation.chpl:11: warning: open with an iomode argument is deprecated - please use :enum:`ioMode`
+iomodeDeprecation.chpl:7: warning: enum iomode is deprecated - please use ioMode instead
+iomodeDeprecation.chpl:4: warning: enum iomode is deprecated - please use ioMode instead
+iomodeDeprecation.chpl:7: warning: open with an iomode argument is deprecated - please use ioMode
+iomodeDeprecation.chpl:11: warning: open with an iomode argument is deprecated - please use ioMode

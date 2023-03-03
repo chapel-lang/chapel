@@ -496,8 +496,14 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
 
   //Pointers
   if(newType->isPointerTy() && curType->isPointerTy()) {
-    if( newType->getPointerAddressSpace() !=
-        curType->getPointerAddressSpace() ) {
+
+    // It's safe to convert pointers between generic (0) and non generic (non
+    // 0) address spaces
+    auto newTypeAddrSpace = newType->getPointerAddressSpace();
+    auto curTypeAddrSpace = curType->getPointerAddressSpace();
+    if(newTypeAddrSpace != 0 && curTypeAddrSpace != 0 &&
+       newTypeAddrSpace != curTypeAddrSpace)
+    {
       assert( 0 && "Can't convert pointer to different address space");
     }
     return irBuilder->CreatePointerCast(value, newType);

@@ -520,7 +520,7 @@ module ProtobufProtocolSupport {
 
     proc mapAppend(val, fieldNumber: int, param protoKeyType: string,
       param protoValueType: string, ch:writingChannel) throws {
-      for (key, value) in val.items() {
+      for (key, value) in zip(val.keys(), val.values()) {
         tagAppend(fieldNumber, lengthDelimited, ch);
         var initialOffset = ch.offset();
         ch.mark();

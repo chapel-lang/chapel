@@ -1,6 +1,0 @@
-$CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:392: In function '_getIterator':
-$CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:393: warning: 'Map.these' is unstable
-  mapIterators.chpl:6: called as _getIterator(x: map(int(64),int(64),false))
-mapIterators.chpl:9: warning: 'Map.items' is unstable
-0
-0->1

@@ -388,10 +388,10 @@ module SortedMap {
     /*
       Iterates over the key-value pairs of this sortedMap.
 
-      :yields: A tuple of references to one of the key-value pairs contained in
-               this sortedMap.
+      :yields: A tuple whose elements are a copy of one of the key-value
+               pairs contained in this map.
     */
-    iter items() const ref {
+    iter items() {
       foreach kv in _set {
         yield (kv[0], kv[1]!.val);
       }
