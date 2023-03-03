@@ -37,7 +37,7 @@ proc test3() {
   const half = d.size / 2;
 
   // Clean up the slots we'll be replacing.
-  for i in d.low..<half do explicitDeinit(a[i]);
+  for i in d.low..<half do MemMove.destroy(a[i]);
 
   // Move high slots into low slots.
   moveInitializeArrayElements(a, d.low, half, half);
@@ -57,7 +57,7 @@ proc test4() {
   // TODO: Use noinit here.
   var a1: [d] r;
   writeln(a1);
-  for i in d do explicitDeinit(a1[i]);
+  for i in d do MemMove.destroy(a1[i]);
 
   var a2: [d] r = [new r(1), new r(2), new r(3), new r(4)];
   writeln(a2);
