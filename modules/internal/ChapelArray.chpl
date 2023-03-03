@@ -1806,6 +1806,9 @@ module ChapelArray {
       // Otherwise, fall through to the normal case to just search the
       // explicitly represented values.
       if this.isSparse() && val == this.IRV {
+        // This is serial, but that's reasonable because the value
+        // we're looking for is the IRV, so we'll likely bump into it
+        // very quickly if this array is truly sparse.
         for i in this.domain._value.parentDom {
           // If we find an index representing the IRV, return it; if
           // it has an explicit value, it may still be the IRV, so
@@ -1815,17 +1818,29 @@ module ChapelArray {
             return true;
           }
         }
+        // We didn't find it, so return false.
+        return false;
       } else {
-        for i in this.domain {
+        var foundIt = false;
+//        writeln("Searching for ", val, " in ", this);
+        var locIdx = max(fullIdxType);
+//        writeln("locIdx starts as ", locIdx);
+        forall i in this.domain with (min reduce locIdx, max reduce foundIt) {
+//          writeln("Does ", this[i], " == ", val, "?");
           if this[i] == val {
-            idx = i;
-            return true;
+//            writeln("Yes it does!  Setting idx to ", i);
+            locIdx = i;
+            foundIt = true;
           }
         }
+        if foundIt then
+          idx = locIdx;
+/*
+        else
+          writeln("Didn't find it");
+*/
+        return foundIt;
       }
-
-      // We didn't find it, so return false.
-      return false;
     }
 
     /*
