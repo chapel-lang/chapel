@@ -13,7 +13,7 @@ config const readSize = 16 * 1024;
 proc main(args: [] string) {
   const stdin = new file(0);
   var input = stdin.reader(iokind.native, locking=false,
-                           hints=ioHintSet.mmap);
+                           hints=ioHintSet.mmap(true));
   var len = stdin.size;
   var data : [0..#len] uint(8);
   

@@ -5,7 +5,7 @@ use RecordParser, IO;
 config const no_mmap=false;
 var hints=ioHintSet.empty;
 if no_mmap {
-  hints = ioHintSet.noMmap;
+  hints = ioHintSet.mmap(false);
 }
 
 var f = open("input1.txt", ioMode.rw);
