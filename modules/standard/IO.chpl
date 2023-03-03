@@ -2946,8 +2946,8 @@ record _internalIoChar {
 
 /*
 
-Represents a Unicode codepoint. I/O routines (such as :proc:`channel.read`
-and :proc:`channel.write`) can use arguments of this type in order to read or
+Represents a Unicode codepoint. I/O routines (such as :proc:`fileReader.read`
+and :proc:`fileWriter.write`) can use arguments of this type in order to read or
 write a single Unicode codepoint.
 
  */
@@ -2967,8 +2967,8 @@ inline operator :(x: _internalIoChar, type t:string) {
 /*
 
 Represents a newline character or character sequence (ie ``\n``). I/O routines
-(such as :proc:`channel.read` and :proc:`channel.write`) can use arguments of
-this type in order to read or write a newline. This is different from ``\n``
+(such as :proc:`fileReader.read` and :proc:`fileWriter.write`) can use arguments
+of this type in order to read or write a newline. This is different from ``\n``
 because an ioNewline always produces an actual newline, but in some cases
 writing ``\n`` will produce an escaped string (such as ``"\n"``).
 
