@@ -848,6 +848,8 @@ static void doImplicitShadowVars(ForallStmt* fs, BlockStmt* block,
     ForallIntentTag intent = TFI_DEFAULT;
     Type* type  = sym->type;
     bool  prune = false;
+    if (sym->type == dtUnknown)
+      USR_FATAL(se, "'%s' appears to be used before it is defined", sym->name);
     resolveShadowVarTypeIntent(type, intent, prune); // updates the args
 
     if (prune) {                      // do not convert to shadow var

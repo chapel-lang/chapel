@@ -1205,14 +1205,17 @@ private inline proc isZeroTuple(t) {
   return true;
 }
 
+pragma "do not unref for yields"
 iter _array.boundaries() {
   for d in _value.dsiBoundaries() do yield d;
 }
 
+pragma "do not unref for yields"
 iter _array.boundaries(param tag : iterKind) where tag == iterKind.standalone {
   forall d in _value.dsiBoundaries() do yield d;
 }
 
+pragma "do not unref for yields"
 iter AccumStencilArr.dsiBoundaries() {
   for i in dom.dist.targetLocDom {
     const LSA      = locArr[i];
@@ -1283,6 +1286,7 @@ iter AccumStencilArr.dsiBoundaries() {
 // Yields any 'fluff' boundary chunks in the AccumStencilArr along with a global coordinate of
 // where the chunk lives relative to the core.
 //
+pragma "do not unref for yields"
 iter AccumStencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standalone {
   coforall i in dom.dist.targetLocDom do on dom.dist.targetLocales(i) {
     const LSA      = locArr[i];
