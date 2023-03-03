@@ -2239,6 +2239,15 @@ static void fixAST() {
         makeMatch(lhs, rhs);
         makeMatch(rhs, lhs);
       }
+      else if (call->isPrimitive(PRIM_GPU_KERNEL_LAUNCH_FLAT)) {
+        for_actuals (actual, call) {
+          if (hasSomeWideness(actual)) {
+            //INT_ASSERT(actual->type->symbol->hasFlag(FLAG_DATA_CLASS));
+            insertLocalTemp(actual);
+          }
+        }
+
+      }
     }
   }
 }

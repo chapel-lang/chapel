@@ -494,7 +494,7 @@ GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
 void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
   fn_ = new FnSymbol("chpl_gpu_kernel");
 
-  fn_->body->blockInfoSet(new CallExpr(PRIM_BLOCK_LOCAL));
+  //fn_->body->blockInfoSet(new CallExpr(PRIM_BLOCK_LOCAL));
 
   fn_->addFlag(FLAG_RESOLVED);
   fn_->addFlag(FLAG_ALWAYS_RESOLVE);
