@@ -1771,6 +1771,14 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   }
 
   // Otherwise, use a query to try to look it up.
+
+  // Look up class/record types (used for primary method receivers)
+  auto tag = parsing::idToTag(context, id);
+  if (asttags::isAggregateDecl(tag)) {
+    const Type* t = initialTypeForTypeDecl(context, id);
+    return QualifiedType(QualifiedType::TYPE, t);
+  }
+
   // Figure out what ID is contained within so we can use the
   // appropriate query.
   ID parentId = id.parentSymbolId(context);
@@ -1782,62 +1790,62 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   if (asttags::isModule(parentTag)) {
     // If the id is contained within a module, use typeForModuleLevelSymbol.
     return typeForModuleLevelSymbol(context, id);
+  }
+
+  // If the id is contained within a class/record/union that we are resolving,
+  // get the resolved field.
+  const CompositeType* ct = nullptr;
+  if (parentId == symbol->id() && inCompositeType) {
+    ct = inCompositeType;
   } else {
-    // If the id is contained within a class/record/union, get the
-    // resolved field.
-    const CompositeType* ct = nullptr;
-    if (parentId == symbol->id() && inCompositeType) {
-      ct = inCompositeType;
-    } else {
-      if (auto rt = methodReceiverType().type()) {
-        if (auto comprt = rt->getCompositeType()) {
-          ct = comprt; // start with the receiver type
-          if (auto bct = comprt->toBasicClassType()) {
-            // if it's a class, check for parent classes to decide
-            // which type corresponds to the uAST ID parentId
-            while (bct != nullptr) {
-              if (bct->id() == parentId) {
-                // found the matching type
-                ct = bct;
-                break;
-              }
-              // otherwise, try the parent class type
-              bct = bct->parentClassType();
+    if (auto rt = methodReceiverType().type()) {
+      if (auto comprt = rt->getCompositeType()) {
+        ct = comprt; // start with the receiver type
+        if (auto bct = comprt->toBasicClassType()) {
+          // if it's a class, check for parent classes to decide
+          // which type corresponds to the uAST ID parentId
+          while (bct != nullptr) {
+            if (bct->id() == parentId) {
+              // found the matching type
+              ct = bct;
+              break;
             }
+            // otherwise, try the parent class type
+            bct = bct->parentClassType();
           }
         }
       }
     }
+  }
 
-    CHPL_ASSERT(ct); // or else, pattern not handled yet
+  CHPL_ASSERT(ct); // or else, pattern not handled yet
 
-    if (ct) {
-      auto newDefaultsPolicy = defaultsPolicy;
-      if (defaultsPolicy == DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS &&
-          ct == inCompositeType) {
-        // The USE_DEFAULTS_OTHER_FIELDS policy is supposed to make
-        // the Resolver act as if it was running with IGNORE_DEFAULTS
-        // at first, but then switch to USE_DEFAULTS for all other fields
-        // of the type being resolved. This branch implements the switch:
-        // if we're moving on to resolving another field, and if this
-        // field is from the current type, we resolve that field with
-        // USE_DEFAULTS.
-        newDefaultsPolicy = DefaultsPolicy::USE_DEFAULTS;
-      }
-      // if it is recursive within the current class/record, we can
-      // call resolveField.
-      const ResolvedFields& resolvedFields =
-        resolveFieldDecl(context, ct, id, newDefaultsPolicy);
-      // find the field that matches
-      int nFields = resolvedFields.numFields();
-      for (int i = 0; i < nFields; i++) {
-        if (resolvedFields.fieldDeclId(i) == id) {
-          return resolvedFields.fieldType(i);
-        }
-      }
-
-      CHPL_ASSERT(false && "could not find resolved field");
+  if (ct) {
+    auto newDefaultsPolicy = defaultsPolicy;
+    if (defaultsPolicy == DefaultsPolicy::USE_DEFAULTS_OTHER_FIELDS &&
+        ct == inCompositeType) {
+      // The USE_DEFAULTS_OTHER_FIELDS policy is supposed to make
+      // the Resolver act as if it was running with IGNORE_DEFAULTS
+      // at first, but then switch to USE_DEFAULTS for all other fields
+      // of the type being resolved. This branch implements the switch:
+      // if we're moving on to resolving another field, and if this
+      // field is from the current type, we resolve that field with
+      // USE_DEFAULTS.
+      newDefaultsPolicy = DefaultsPolicy::USE_DEFAULTS;
     }
+    // if it is recursive within the current class/record, we can
+    // call resolveField.
+    const ResolvedFields& resolvedFields =
+      resolveFieldDecl(context, ct, id, newDefaultsPolicy);
+    // find the field that matches
+    int nFields = resolvedFields.numFields();
+    for (int i = 0; i < nFields; i++) {
+      if (resolvedFields.fieldDeclId(i) == id) {
+        return resolvedFields.fieldType(i);
+      }
+    }
+
+    CHPL_ASSERT(false && "could not find resolved field");
   }
 
   // Otherwise it is a case not handled yet

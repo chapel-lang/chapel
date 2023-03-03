@@ -348,9 +348,7 @@ static void test6() {
          )"""",
          "M.Outer.Nested.bar",
          "M.Outer.Nested.bar@1",
-         "M.Base@1",
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.Base@1");
 }
 
 // test with an outer variable vs a parent class field
@@ -376,9 +374,7 @@ static void test7() {
          )"""",
          "M.secondary",
          "M.secondary@2",
-         "M.Base@1",
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.Base@1");
 }
 
 // test with a formal vs a parent class field
@@ -470,9 +466,7 @@ static void test10p() {
          )"""",
          "M.outerClass.foo",
          "M.outerClass.foo@1",
-         "M.outerClass.aClass" /* the nested class */,
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.outerClass.aClass" /* the nested class */);
 }
 // similar to test10, but with a secondary method
 static void test10s() {
@@ -496,9 +490,7 @@ static void test10s() {
          )"""",
          "M.foo",
          "M.foo@2",
-         "M.outerClass.aClass" /* the nested class */,
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.outerClass.aClass" /* the nested class */);
 }
 
 // test with parent scopes that should find a local not a field
