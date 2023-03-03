@@ -603,6 +603,9 @@ static void setWide(BaseAST* cause, SymExpr* se) {
 
 
 static void setValWide(BaseAST* cause, Symbol* sym) {
+  if (sym->id == 2259315) {
+    std::cout << "heyo\n";
+  }
   Type* valType = sym->type->getValType();
   if (!typeCanBeWide(sym)) return;
   if (!isObj(valType)) return;
@@ -916,6 +919,27 @@ static void addKnownWides() {
   forv_Vec(VarSymbol, var, gVarSymbols) {
     //if (!typeCanBeWide(var)) continue;
     Symbol* defParent = var->defPoint->parentSymbol;
+
+    if (usingGpuLocaleModel()) {
+      if (var->type->symbol->hasFlag(FLAG_DATA_CLASS)) {
+        if (FnSymbol* fn = usedInOn(var)) {
+          debug(var, "GPU variable used in on-statement\n");
+          if (typeCanBeWide(var)) {
+            setWide(fn, var);
+          }
+          if (isRecord(var->type) && !canWidenRecord(var)) {
+            widenSubAggregateTypes(fn, var->type);
+          }
+        }
+        //debug(var, "GPU variable used in on-statement\n");
+        //if (typeCanBeWide(var)) {
+          //setWide(fn, var);
+        //}
+        //if (isRecord(var->type) && !canWidenRecord(var)) {
+          //widenSubAggregateTypes(fn, var->type);
+        //}
+      }
+    }
 
     //
     // FLAG_LOCALE_PRIVATE variables can be used within an on-statement without

@@ -125,6 +125,12 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
 
 void* chpl_gpu_memmove(void* dst, const void* src, size_t n) {
   CHPL_GPU_DEBUG("Doing GPU memmove of %zu bytes from %p to %p.", n, src, dst);
+  if (chpl_gpu_is_host_ptr(src)) {
+    CHPL_GPU_DEBUG("src is host ptr\n");
+  }
+  if (chpl_gpu_is_host_ptr(dst)) {
+    CHPL_GPU_DEBUG("dst is host ptr\n");
+  }
 
   void* ret = chpl_gpu_impl_memmove(dst, src, n);
 

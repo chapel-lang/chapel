@@ -308,20 +308,25 @@ void* chpl_gpu_impl_memmove(void* dst, const void* src, size_t n) {
   bool dst_on_host = chpl_gpu_impl_is_host_ptr(dst);
   bool src_on_host = chpl_gpu_impl_is_host_ptr(src);
 
+  /*printf("impl_memmove 1000\n");*/
   if (!dst_on_host && !src_on_host) {
     chpl_gpu_impl_copy_device_to_device(dst, src, n);
+    /*printf("impl_memmove 2000\n");*/
     return dst;
   }
   else if (!dst_on_host) {
     chpl_gpu_impl_copy_host_to_device(dst, src, n);
+    /*printf("impl_memmove 3000\n");*/
     return dst;
   }
   else if (!src_on_host) {
     chpl_gpu_impl_copy_device_to_host(dst, src, n);
+    /*printf("impl_memmove 4000\n");*/
     return dst;
   }
   else {
     assert(dst_on_host && src_on_host);
+    /*printf("impl_memmove 5000\n");*/
     return memmove(dst, src, n);
   }
   #else

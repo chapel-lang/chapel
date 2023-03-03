@@ -1,4 +1,7 @@
 use GpuDiagnostics;
+use CTypes;
+
+extern proc chpl_gpu_copy_device_to_host(x, y, z): void;
 
 config const nSteps = 10;
 config const n = 10;
