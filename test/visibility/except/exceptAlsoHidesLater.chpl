@@ -7,7 +7,8 @@
 module A {
   public use B;
 
-  var foo = 15; // Should be hidden
+  //var foo = 15; // Should be hidden, but commented out to not conflict
+                  // with B.foo brought in by 'public use B'
 
   var wanted = 97.3; // Should be visible
 }
