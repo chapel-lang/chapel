@@ -118,7 +118,7 @@ static void testCall(const char* testName,
   assert(methodAst->isFunction());
   auto callAst = parsing::idToAst(context, callId);
   assert(callAst);
-  assert(callAst->isIdentifier() || callAst->isCall());
+  assert(callAst->isIdentifier() || callAst->isDot() || callAst->isCall());
   const AstNode* calledFnAst = nullptr;
   if (calledFnIdStr[0] != '\0') {
     calledFnAst = parsing::idToAst(context, calledFnId);
@@ -1058,8 +1058,6 @@ static void testExample17() {
 }
 
 static void testExample18() {
-  // TODO: this is calling M.main.r.x but we desire ambiguity
-#if 0
   testCall("example18.chpl",
            R""""(
               module M {
@@ -1077,7 +1075,6 @@ static void testExample18() {
            "M.main",
            "M.main@3",
            "" /* ambiguity */);
-#endif
 }
 
 static void testExample19() {
