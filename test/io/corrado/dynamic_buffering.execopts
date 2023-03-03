@@ -17,4 +17,4 @@
 --iobuffSize=128 --smallWriteSize=0
 --iobuffSize=128 --smallWriteSize=32
 --iobuffSize=128 --smallWriteSize=64
---iobuffSize=128 --smallWriteSize=106
+--iobuffSize=128 --smallWriteSize=96

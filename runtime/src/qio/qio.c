@@ -2622,9 +2622,9 @@ void _qio_buffered_setup_cached(qio_channel_t* ch)
     ch->cached_start = ch->cached_cur;
     ch->cached_start_pos = start.offset;
     ch->cached_end = qio_ptr_add(bytes->data, skip + len);
-    //printf("setup has len=%li\n", (long int) len);
+    // printf("setup has len=%li\n", (long int) len);
   }
-  //printf("setup cached start %lx %p %p\n", (long) ch->cached_start_pos, ch->cached_cur, ch->cached_end);
+  // printf("setup cached start %lx %p %p\n", (long) ch->cached_start_pos, ch->cached_cur, ch->cached_end);
 }
 
 
@@ -2661,8 +2661,8 @@ qioerr _qio_buffered_behind(qio_channel_t* ch, int flushall)
     flushall = 1;
   }
 
-  write_start = qbuffer_begin(&ch->buf);
-  write_end = _av_start_iter(ch);
+  write_start = qbuffer_begin(&ch->buf); // buffer start offset iter
+  write_end = _av_start_iter(ch); // buffer iterator to av_start
 
   if( !flushall && !qbuffer_iter_at_part_end(&ch->buf, &write_end)) {
     // Move write_end back to the start of the chunk
@@ -2730,15 +2730,15 @@ qioerr _qio_buffered_behind(qio_channel_t* ch, int flushall)
   err = 0;
 
 error:
-  //fprintf(stderr, "before trim\n");
-  //debug_print_qbuffer(&ch->buf);
+  // fprintf(stderr, "before trim\n");
+  // debug_print_qbuffer(&ch->buf);
 
   start = qbuffer_begin(&ch->buf);
   // Now remove parts we wrote. This might invalidate iterators!
   qbuffer_trim_front(&ch->buf, qbuffer_iter_num_bytes(start, write_start));
 
-  //fprintf(stderr, "after trim\n");
-  //debug_print_qbuffer(&ch->buf);
+  // fprintf(stderr, "after trim\n");
+  // debug_print_qbuffer(&ch->buf);
 
 done:
   if( !err ) {
@@ -2886,14 +2886,14 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
   //if( _right_mark_start(ch) >= ch->end_pos ) return QIO_EEOF;
   if (qio_channel_offset_unlocked(ch) >= ch->end_pos) return QIO_EEOF;
 
-  // if the write is large enough, we aren't using MMAP, and buffering isn't waiting for a commit/revert:
-  // make a direct system call instead of buffering
-  if ( len > qio_write_unbuffered_threshold && (
-      method == QIO_METHOD_READWRITE ||
-      method == QIO_METHOD_PREADPWRITE ||
-      method == QIO_METHOD_FREADFWRITE) &&
-      ( ch->mark_cur == 0 || ch->mark_cur == 1)
+  // if possible make a direct system call instead of buffering
+  if ( len > qio_write_unbuffered_threshold &&                        // the write is large enough
+       method != QIO_METHOD_MMAP && method != QIO_METHOD_MEMORY &&    // we aren't using mmap or mem
+       ( ch->mark_cur == 0 || ch->mark_cur == 1) &&                   // buffering isn't waiting for a commit/revert
+       ch->chan_info == NULL                                          // there is no IO plugin
   ) {
+    // printf("Unbuffered Write ------------------------\n");
+
     // check if this write will exceed EOF
     if ( ch->end_pos < INT64_MAX && _right_mark_start(ch) + len > ch->end_pos ) {
       eof = 1;
@@ -2902,7 +2902,7 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
     }
 
     // flush the write-behind portion of the buffer before attempting to write more
-    err = _qio_buffered_behind(ch, true);
+    err = _qio_channel_flush_qio_unlocked(ch);
     if( err ) goto error;
 
     // trim any excess bytes from the current buffer part
@@ -2942,15 +2942,23 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
         *amt_written = num_written + len - remaining;
         goto error;
       }
-      // move the pointer and start forward by num_written bytes
+      // move the ptr and right_mark_start forward by 'num_written' bytes
       ptr = qio_ptr_add((void*) ptr, num_written);
       _add_right_mark_start(ch, num_written);
       remaining -= num_written;
-
-      // re-setup the buffer for any future buffered writes
-      _qio_buffered_setup_cached(ch);
     }
+
+    // shift the buffer position 'len' bytes to the right
+    int64_t new_start = qbuffer_end_offset(&ch->buf) + len;
+    qbuffer_reposition(&ch->buf, new_start);
+    ch->av_end = new_start;
+
+    // re-setup the buffer for any future buffered writes
+    _qio_buffered_setup_cached(ch);
+
   } else {
+    // printf("Buffered Write ------------------------\n");
+
   //   otherwise, do a buffered write
     while ((remaining > 0) && !eof) {
       if ((ch->bufIoMax > 0) && (remaining > ch->bufIoMax)) {

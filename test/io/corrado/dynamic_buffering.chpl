@@ -19,7 +19,7 @@ proc testDB(s: int): bool {
     w.writeBinary(c_ptrTo(a), a.size);
   }
 
-  // do a large write operation
+  // do a "large" write operation
   var b : [0..<s] uint(8) = 2;
   w.writeBinary(c_ptrTo(b), b.size);
 
@@ -37,11 +37,16 @@ proc testDB(s: int): bool {
   var d : [0..<(s+2*smallWriteSize)] uint(8);
   r.readBinary(d);
 
-  writeln(d);
-
   return (&& reduce (d[0..<smallWriteSize] == 1)) &&
          (&& reduce (d[smallWriteSize..#s] == 2)) &&
          (&& reduce (d[s+smallWriteSize..] == 3));
+
+  r.close();
 }
 
-writeln(testDB(80));
+for size in (unbuffThreshold-1)..(2*unbuffThreshold) {
+  if !testDB(size) {
+    writeln("failed on: ", size);
+    break;
+  }
+}
