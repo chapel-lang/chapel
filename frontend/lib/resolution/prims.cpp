@@ -283,10 +283,12 @@ CallResolutionResult resolvePrimCall(Context* context,
                                    /* hasQuestionArg */ false,
                                    /* isParenless */ false,
                                    std::move(actuals));
-          auto resolvedCall = resolveGeneratedCall(context, call, callInfo,
-                                                   inScope, inPoiScope);
+          auto callResult = context->runAndTrackErrors([&](Context* context) {
+            return resolveGeneratedCall(context, call, callInfo,
+                                        inScope, inPoiScope);
+          });
           const TypedFnSignature* bestCandidate = nullptr;
-          for (auto candidate : resolvedCall.mostSpecific()) {
+          for (auto candidate : callResult.result().mostSpecific()) {
             if (candidate != nullptr) {
               bestCandidate = candidate;
               break;
@@ -294,14 +296,14 @@ CallResolutionResult resolvePrimCall(Context* context,
           }
 
           if (bestCandidate != nullptr) {
-            callAndFnResolved = true;
+            callAndFnResolved = callResult.ranWithoutErrors();
 
             if (resolveFn) {
               // We did find a candidate; resolve the function body.
-              auto result = context->runAndTrackErrors([&](Context* context) {
+              auto bodyResult = context->runAndTrackErrors([&](Context* context) {
                 return resolveFunction(context, bestCandidate, inPoiScope);
               });
-              callAndFnResolved = result.ranWithoutErrors();
+              callAndFnResolved &= bodyResult.ranWithoutErrors();
             }
           }
 
