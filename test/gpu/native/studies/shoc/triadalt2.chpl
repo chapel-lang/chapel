@@ -159,7 +159,7 @@ proc main(){
         }
     }
     stopGpuDiagnostics();
-    writeln(getGpuDiagnostics());
+    verifyLaunches();
     if(output) {
       flopsDB.printDatabaseStats();
       bdwthDB.printDatabaseStats();
