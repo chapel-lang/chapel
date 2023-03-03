@@ -1602,17 +1602,11 @@ module BigInteger {
 
   // **=
   operator bigint.**=(ref base: bigint, const ref exp: bigint) {
-    const base_ = base.localize();
-    const exp_  = exp.localize();
-
-    base = base_ ** exp_;
+    base = base ** exp;
   }
 
   operator bigint.**=(ref base: bigint, exp: int) {
-    const base_ = base.localize();
-    const exp_ = exp.localize();
-
-    base.pow(base_, exp_);
+    base.pow(base, exp);
   }
 
   operator bigint.**=(ref base: bigint, exp: uint) {
