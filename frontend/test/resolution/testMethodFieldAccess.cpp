@@ -769,8 +769,6 @@ static void testExample5() {
 }
 
 static void testExample5a() {
-  // TODO: get this working (running into internal assertion)
-#if 0
   testCall("example5a.chpl",
            R""""(
               module M {
@@ -786,11 +784,9 @@ static void testExample5a() {
            "M.test",
            "M.test@4",
            "" /* ambiguity */);
-#endif
 }
 
 static void testExample6() {
-  // TODO: currently getting "no matching candidates"
   testCall("example6.chpl",
            R""""(
               module A {

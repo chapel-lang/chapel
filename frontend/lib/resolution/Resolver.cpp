@@ -2349,18 +2349,22 @@ void Resolver::exit(const TypeQuery* tq) {
 }
 
 bool Resolver::enter(const NamedDecl* decl) {
+
+  if (decl->id().postOrderId() < 0) {
+    // It's a symbol with a different path, e.g. a Function.
+    // Don't try to resolve it now in this
+    // traversal. Instead, resolve it e.g. when the function is called.
+    return false;
+  }
+
   CHPL_ASSERT(scopeStack.size() > 0);
   const Scope* scope = scopeStack.back();
 
   emitMultipleDefinedSymbolErrors(context, scope);
 
-  // don't visit e.g. nested functions - these will be resolved
-  // when calling them.
-  bool visitChildren = !Builder::astTagIndicatesNewIdScope(decl->tag());
-
   enterScope(decl);
 
-  return visitChildren;
+  return true;
 }
 
 void Resolver::exit(const NamedDecl* decl) {
@@ -2368,10 +2372,10 @@ void Resolver::exit(const NamedDecl* decl) {
     // It's a symbol with a different path, e.g. a Function.
     // Don't try to resolve it now in this
     // traversal. Instead, resolve it e.g. when the function is called.
-
-  } else {
-    resolveNamedDecl(decl, /* useType */ nullptr);
+    return;
   }
+
+  resolveNamedDecl(decl, /* useType */ nullptr);
 
   exitScope(decl);
 }
