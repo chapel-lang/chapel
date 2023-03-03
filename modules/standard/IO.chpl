@@ -2692,57 +2692,8 @@ record DefaultReader {
   }
 }
 
-
-/*
-
-A channel supports either sequential reading or sequential writing to an
-underlying :record:`file` object. A channel can buffer data. Read operations
-on the channel might return old data. Write operations might not have an
-immediate effect. Use :proc:`channel.flush` to control this buffering.
-
-The :record:`channel` type is implementation-defined.
-A value of the :record:`channel` type refers to the state that is used
-to implement the channel operations.
-
-When a :record:`channel` formal argument has default intent, the actual is passed
-by ``const ref`` to the formal upon a function call, and the formal
-cannot be assigned within the function.
-
-The default value of the :record:`channel` type is not associated
-with any file, and so cannot be used to perform I/O.
-
-The :record:`channel` type is generic.
-
-The :record:`channel` type supports 3 fields:
-
- * ``param writing: bool``:
-   writing is a boolean indicating whether the channels of this type
-   support writing (when `true`) or reading (when `false`).
-
- * ``param kind:iokind``:
-   kind is an enum :type:`iokind` that allows narrowing
-   this channel's I/O style for more efficient binary I/O.
-
- * ``param locking:bool``:
-   locking is a boolean indicating whether it is safe to use this
-   channel concurrently (when `true`).
-
-.. note::
-
-  The ``channel`` type is deprecated. Please use ``fileReader`` or
-  ``fileWriter`` instead.
- */
-deprecated "channel type is deprecated - use fileReader or fileWriter instead"
-type channel = _channel;
-
 pragma "no doc"
-operator _channel.=(ref lhs:_channel, rhs:_channel) {
-  if lhs.writing==true && rhs.writing==false {
-    compilerError("cannot assign writing channel to reading channel");
-  } else if lhs.writing==false && rhs.writing == true {
-    compilerError("cannot assign reading channel to writing channel");
-  }
-
+operator fileReader.=(ref lhs:fileReader, rhs:fileReader) {
   // retain -- release
   on rhs._home {
     qio_channel_retain(rhs._channel_internal);
@@ -2757,15 +2708,29 @@ operator _channel.=(ref lhs:_channel, rhs:_channel) {
 }
 
 pragma "no doc"
-proc _channel.init(param writing:bool, param kind:iokind, param locking:bool, type fmtType) {
-  var default : fmtType;
-  this.init(writing, kind, locking, default);
+operator fileWriter.=(ref lhs:fileWriter, rhs:fileWriter) {
+  // retain -- release
+  on rhs._home {
+    qio_channel_retain(rhs._channel_internal);
+  }
+
+  on lhs._home {
+    qio_channel_release(lhs._channel_internal);
+  }
+
+  lhs._home = rhs._home;
+  lhs._channel_internal = rhs._channel_internal;
 }
 
+pragma "no doc"
+proc fileReader.init param kind:iokind, param locking:bool, type fmtType) {
+  var default : fmtType;
+  this.init(kind, locking, default);
+}
 
 pragma "no doc"
-proc _channel.init(param writing:bool, param kind:iokind, param locking:bool, in formatter:?) {
-  this.writing = writing;
+proc fileReader.init(param kind:iokind, param locking:bool, in formatter:?) {
+  this.writing = false;
   this.kind = kind;
   this.locking = locking;
   this.fmtType = formatter.type;
@@ -2773,31 +2738,23 @@ proc _channel.init(param writing:bool, param kind:iokind, param locking:bool, in
 }
 
 pragma "no doc"
-proc _channel.init(x: _channel) {
-  compilerWarning("new _channel(otherChannel) is deprecated");
-  this.writing = x.writing;
-  this.kind = x.kind;
-  this.locking = x.locking;
-  this.fmtType = x.fmtType;
-  this._home = x._home;
-  this._channel_internal = x._channel_internal;
-  this._fmt = x._fmt;
-  this._readWriteThisFromLocale = x._readWriteThisFromLocale;
-  this.complete();
-  on x._home {
-    qio_channel_retain(x._channel_internal);
-  }
+proc fileWriter.init(param kind:iokind, param locking:bool, type fmtType) {
+  var default : fmtType;
+  this.init(kind, locking, default);
+}
+
+
+pragma "no doc"
+proc fileWriter.init(param kind:iokind, param locking:bool, in formatter:?) {
+  this.writing = true;
+  this.kind = kind;
+  this.locking = locking;
+  this.fmtType = formatter.type;
+  this._fmt = formatter;
 }
 
 pragma "no doc"
-proc _channel.init=(x: _channel) {
-  if this.type.writing != ? {
-    if this.type.writing==true && x.writing==false {
-      compilerError("cannot init writing channel from reading channel");
-    } else if this.type.writing==false && x.writing==true {
-      compilerError("cannot init reading channel from writing channel");
-    }
-  }
+proc fileReader.init=(x: fileReader) {
   this.writing = x.writing;
 
   // allow the kind and locking fields to be modified in initialization
@@ -2818,23 +2775,44 @@ proc _channel.init=(x: _channel) {
 }
 
 pragma "no doc"
-operator :(rhs: _channel, type t: _channel) {
+proc fileWriter.init=(x: fileWriter) {
+  this.writing = x.writing;
+
+  // allow the kind and locking fields to be modified in initialization
+  this.kind = if this.type.kind != ? then this.type.kind else x.kind;
+  this.locking = if this.type.locking != ?
+                 then this.type.locking
+                 else x.locking;
+
+  this.fmtType = x.fmtType;
+  this._home = x._home;
+  this._channel_internal = x._channel_internal;
+  this._fmt = x._fmt;
+  this._readWriteThisFromLocale = x._readWriteThisFromLocale;
+  this.complete();
+  on x._home {
+    qio_channel_retain(x._channel_internal);
+  }
+}
+
+pragma "no doc"
+operator :(rhs: fileReader, type t: fileReader) {
   var tmp: t = rhs; // just run init=
   return tmp;
 }
 
-//
-// Note that this is effectively the initializer that the compiler
-// would typically provide and that, by providing the next initializer
-// below, we have to write it out manually...  A good case for having
-// a means to "opt-in" to including the compiler-provided initializer?
-//
 pragma "no doc"
-proc _channel.init(param writing:bool, param kind:iokind, param locking:bool,
-                  home: locale, _channel_internal:qio_channel_ptr_t,
-                  _readWriteThisFromLocale: locale,
-                  in formatter:?) {
-  this.writing = writing;
+operator :(rhs: fileWriter, type t: fileWriter) {
+  var tmp: t = rhs; // just run init=
+  return tmp;
+}
+
+pragma "no doc"
+proc fileReader.init(param kind:iokind, param locking:bool,
+                     home: locale, _channel_internal:qio_channel_ptr_t,
+                     _readWriteThisFromLocale: locale,
+                     in formatter:?) {
+  this.writing = false;
   this.kind = kind;
   this.locking = locking;
   this.fmtType = formatter.type;
@@ -2845,22 +2823,70 @@ proc _channel.init(param writing:bool, param kind:iokind, param locking:bool,
 }
 
 pragma "no doc"
-proc _channel.init(param writing:bool, param kind:iokind, param locking:bool, in formatter:?, f:file, out error:errorCode, hints: ioHintSet, start:int(64), end:int(64), in local_style:iostyleInternal) {
-  this.init(writing, kind, locking, formatter);
+proc fileReader.init(param kind:iokind, param locking:bool, in formatter:?,
+                     f:file, out error:errorCode, hints: ioHintSet,
+                     start:int(64), end:int(64),
+                     in local_style:iostyleInternal) {
+  this.init(kind, locking, formatter);
   on f._home {
     this._home = f._home;
     if kind != iokind.dynamic {
       local_style.binary = true;
       local_style.byteorder = kind:uint(8);
     }
-    error = qio_channel_create(this._channel_internal, f._file_internal, hints._internal, !writing, writing, start, end, local_style, 64*1024);
+    error = qio_channel_create(this._channel_internal, f._file_internal,
+                               hints._internal, !this.writing, this.writing,
+                               start, end, local_style, 64*1024);
     // On return this._channel_internal.ref_cnt == 1.
     // Failure to check the error return code may result in a double-deletion error.
   }
 }
 
 pragma "no doc"
-proc ref _channel.deinit() {
+proc fileWriter.init(param kind:iokind, param locking:bool,
+                     home: locale, _channel_internal:qio_channel_ptr_t,
+                     _readWriteThisFromLocale: locale,
+                     in formatter:?) {
+  this.writing = true;
+  this.kind = kind;
+  this.locking = locking;
+  this.fmtType = formatter.type;
+  this._home = home;
+  this._channel_internal = _channel_internal;
+  this._fmt = formatter;
+  this._readWriteThisFromLocale = _readWriteThisFromLocale;
+}
+
+pragma "no doc"
+proc fileWriter.init(param kind:iokind, param locking:bool, in formatter:?,
+                     f:file, out error:errorCode, hints: ioHintSet,
+                     start:int(64), end:int(64),
+                     in local_style:iostyleInternal) {
+  this.init(kind, locking, formatter);
+  on f._home {
+    this._home = f._home;
+    if kind != iokind.dynamic {
+      local_style.binary = true;
+      local_style.byteorder = kind:uint(8);
+    }
+    error = qio_channel_create(this._channel_internal, f._file_internal,
+                               hints._internal, !this.writing, this.writing,
+                               start, end, local_style, 64*1024);
+    // On return this._channel_internal.ref_cnt == 1.
+    // Failure to check the error return code may result in a double-deletion error.
+  }
+}
+
+pragma "no doc"
+proc ref fileReader.deinit() {
+  on this._home {
+    qio_channel_release(_channel_internal);
+    this._channel_internal = QIO_CHANNEL_PTR_NULL;
+  }
+}
+
+pragma "no doc"
+proc ref fileWriter.deinit() {
   on this._home {
     qio_channel_release(_channel_internal);
     this._channel_internal = QIO_CHANNEL_PTR_NULL;
