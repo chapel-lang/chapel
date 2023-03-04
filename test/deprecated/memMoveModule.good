@@ -12,6 +12,8 @@ memMoveModule.chpl:29: warning: The formals 'lhs' and 'rhs' are deprecated, plea
 memMoveModule.chpl:31: warning: The formals 'lhs' and 'rhs' are deprecated, please use 'dst' and 'src' instead
 memMoveModule.chpl:39: warning: 'needsDeinit' is deprecated; please use 'needsDestroy' instead
 memMoveModule.chpl:40: warning: 'explicitDeinit' is now deprecated; please use 'destroy' instead
+memMoveModule.chpl:48: warning: 'moveInitializeArrayElements' is deprecated; please use 'moveArrayElements' instead
+memMoveModule.chpl:49: warning: 'moveInitializeArrayElements' is deprecated; please use 'moveArrayElements' instead
 1 :: 9
 1
 1
