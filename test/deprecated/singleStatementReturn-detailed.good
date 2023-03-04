@@ -3,6 +3,7 @@
   For this return statement:
       |
     1 | proc foo return 42;
+      |          ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
 
 ─── warning in singleStatementReturn.chpl:2 [SingleStmtReturnDeprecated] ───
@@ -10,6 +11,7 @@
   For this return statement:
       |
     2 | proc bar() return 42;
+      |            ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
 
 ─── warning in singleStatementReturn.chpl:5 [SingleStmtReturnDeprecated] ───
@@ -17,6 +19,7 @@
   For this return statement:
       |
     5 |   return 42;
+      |   ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
 
 42

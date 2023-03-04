@@ -2829,7 +2829,7 @@ ParserExprList*
 ParserContext::buildSingleStmtRoutineBody(CommentsAndStmt cs,
                                           YYLTYPE* warnLoc) {
   if (warnLoc != NULL) {
-    CHPL_PARSER_REPORT(this, SingleStmtReturnDeprecated, *warnLoc);
+    CHPL_PARSER_REPORT(this, SingleStmtReturnDeprecated, *warnLoc, cs.stmt);
   }
   this->clearComments();
   return this->makeList(cs);
