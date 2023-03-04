@@ -1,6 +1,6 @@
-singleStatementReturn.chpl:1: warning: Single-statement 'return' routines are deprecated; please insert 'do' before the 'return' or wrap the statement in curly brackets.
-singleStatementReturn.chpl:2: warning: Single-statement 'return' routines are deprecated; please insert 'do' before the 'return' or wrap the statement in curly brackets.
-singleStatementReturn.chpl:5: warning: Single-statement 'return' routines are deprecated; please insert 'do' before the 'return' or wrap the statement in curly brackets.
+singleStatementReturn.chpl:1: warning: Single-statement 'return' routines are deprecated; please insert 'do' before the 'return' or wrap the statement in curly brackets
+singleStatementReturn.chpl:2: warning: Single-statement 'return' routines are deprecated; please insert 'do' before the 'return' or wrap the statement in curly brackets
+singleStatementReturn.chpl:5: warning: Single-statement 'return' routines are deprecated; please insert 'do' before the 'return' or wrap the statement in curly brackets
 42
 42
 42

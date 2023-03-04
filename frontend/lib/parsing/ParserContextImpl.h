@@ -2829,10 +2829,7 @@ ParserExprList*
 ParserContext::buildSingleStmtRoutineBody(CommentsAndStmt cs,
                                           YYLTYPE* warnLoc) {
   if (warnLoc != NULL) {
-    fprintf(stderr, "%s:%d: warning: Single-statement 'return' routines are "
-            "deprecated; please insert 'do' before the 'return' or wrap the "
-            "statement in curly brackets.\n",
-            this->filename.c_str(), warnLoc->first_line);
+    CHPL_PARSER_REPORT(this, SingleStmtReturnDeprecated, *warnLoc);
   }
   this->clearComments();
   return this->makeList(cs);
