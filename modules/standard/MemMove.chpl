@@ -325,6 +325,25 @@ module MemMove {
                     'rectangular arrays', 2);
   }
 
+  private proc _testArrayAlias(const dst, const dstRegion,
+                               const src, const srcRegion) throws {
+    // TODO: will not catch reindexes
+    const actualDst = chpl__getActualArray(dst);
+    const actualSrc = chpl__getActualArray(src);
+    if actualDst == actualSrc {
+      var overlap = false;
+      if isRange(dstRegion) then
+        overlap = ({dstRegion})[srcRegion].isEmpty() == false;
+      else
+        overlap = dstRegion[srcRegion].isEmpty() == false;
+
+      if overlap {
+        use IO;
+        throw new IllegalArgumentError("Arguments to 'moveArrayElements' alias the same data. Regions are '%t' and '%t'".format(dstRegion, srcRegion));
+      }
+    }
+  }
+
   //
   // Performs a number of compile-time checks for ``moveArrayElements``, and
   // also throws some errors for illegal argument conditions.
@@ -381,8 +400,7 @@ module MemMove {
     if !srcGood then
       throw new IllegalArgumentError("srcRegion", "region contains invalid indices");
 
-    // TODO:
-    // - check for aliasing arrays
+    _testArrayAlias(dst, dstRegion, src, srcRegion);
   }
 
   /*
