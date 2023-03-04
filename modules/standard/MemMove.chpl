@@ -410,7 +410,8 @@ module MemMove {
 
     This function only accepts rectangular arrays, rectangular domains, or
     ranges. The index type of the regions must also match the index type of
-    their corresponding arrays.
+    their corresponding arrays. Any range arguments must have both an upper and
+    lower bound.
 
     :arg dst: The destination array
     :arg dstRegion: A domain or range of indices in ``dst``
