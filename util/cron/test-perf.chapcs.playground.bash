@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test perf of nested call temps for an '=' living to end of block
-GITHUB_USER=mppf
-GITHUB_BRANCH=issue-21001-option-2
-SHORT_NAME=temp-assign-lifetime
-START_DATE=02/15/23
+# Test perf of yielding by value
+GITHUB_USER=vasslitvinov
+GITHUB_BRANCH=unref-yields
+SHORT_NAME=unref-yields
+START_DATE=03/03/23
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
