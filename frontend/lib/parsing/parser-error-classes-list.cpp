@@ -198,7 +198,7 @@ void ErrorSingleStmtReturnDeprecated::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, loc, "Single-statement 'return' routines are "
              "deprecated; please insert 'do' before the 'return' or wrap the "
              "statement in curly brackets.");
-}  
+}
 
 void ErrorRecordInheritanceNotSupported::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
