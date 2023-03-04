@@ -1841,14 +1841,25 @@ module ChapelArray {
 
         return foundIt;
       } else {
+        // This is a serial fallback case, currently used by idxTypes
+        // that don't support a 'max(idxType)' call (such as
+        // associative arrays with string indices).  In such cases, we
+        // need to use a serial iteration since we can't be guaranteed
+        // that the first element found will have the
+        // lexicographically earliest index.
+        var foundIt = false;
         for i in this.domain {
           if this[i] == val {
-            idx = i;
-            return true;
+            if foundIt {
+              if i < idx then
+                idx = i;
+            } else {
+              idx = i;
+              foundIt = true;
+            }
           }
         }
-        // We didn't find it, so return false.
-        return false;
+        return foundIt;
       }
     }
 
