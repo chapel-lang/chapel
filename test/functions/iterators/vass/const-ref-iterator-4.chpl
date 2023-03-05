@@ -10,21 +10,21 @@ record QQ { type t; }  // a generic record
 var   v1 = 5, v2 = new RR(), v3 = new QQ(bool);
 const c1 = 6, c2 = new RR(), c3 = new QQ(bool);
 
-proc typ1() type return int;
-proc typ2() type return RR;
-proc typ3() type return QQ;
+proc typ1() type do return int;
+proc typ2() type do return RR;
+proc typ3() type do return QQ;
 
-proc ref1() ref return v1;
-proc ref2() ref return v2;
-proc ref3() ref return v3;
+proc ref1() ref do return v1;
+proc ref2() ref do return v2;
+proc ref3() ref do return v3;
 
-proc pcr1() const ref return v1;
-proc pcr2() const ref return v2;
-proc pcr3() const ref return v3;
+proc pcr1() const ref do return v1;
+proc pcr2() const ref do return v2;
+proc pcr3() const ref do return v3;
 
-proc nonr1() return v1;
-proc nonr2() return v2;
-proc nonr3() return v3;
+proc nonr1() do return v1;
+proc nonr2() do return v2;
+proc nonr3() do return v3;
 
 /////////// return type: not declared ///////////
 
