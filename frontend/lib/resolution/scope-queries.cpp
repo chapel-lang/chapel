@@ -422,7 +422,7 @@ const Scope* scopeForId(Context* context, ID id) {
 using VisibilityTraceElt = ResultVisibilityTrace::VisibilityTraceElt;
 
 // a struct to encapsulate arguments to doLookupIn...
-// so that the calls and function signatures do not get too unweildy.
+// so that the calls and function signatures do not get too unwieldy.
 struct LookupHelper {
   Context* context;
   const ResolvedVisibilityScope* resolving;
