@@ -58,8 +58,8 @@ proc ic1rr(ref x1: ?Q1, ref y1: x1.AT)
 }
 
 real implements I1;
-proc real.AT type return bool;
-proc toString(arg): string return arg: string;
+proc real.AT type do return bool;
+proc toString(arg): string do return arg: string;
 
 var m1 = 11.22;
 var n1 = true;
@@ -116,9 +116,9 @@ proc ic12i2i1(x1: ?Q1, x2: ?Q2, x3: ?Q3, y2: x2.AT, y3: x3.AT, y1: x1.AT)
 }
 
 imag implements I1;
-proc imag.AT type return complex;
+proc imag.AT type do return complex;
 string implements I2;
-proc string.AT type return int;
+proc string.AT type do return int;
 
 ic1ii1(1.1, 1.2, false, true);                  writeln();
 ic1ii1(2.1, 2i, 2+1i, false);                   writeln();

@@ -68,7 +68,7 @@ module ChapelSyncvar {
   // working, but this does not seem to be more broadly necessary.
   //
 
-  private proc isSupported(type t) param
+  private proc isSupported(type t) param do
     return isNothingType(t)       ||
            isBoolType(t)          ||
            isIntegralType(t)      ||
@@ -124,7 +124,7 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  proc chpl__readXX(x) return x;
+  proc chpl__readXX(x) do return x;
 
   /************************************ | *************************************
   *                                                                           *
@@ -410,7 +410,7 @@ module ChapelSyncvar {
   }
 
   // Be explicit about whether syncs are auto-destroyed.
-  inline proc chpl__maybeAutoDestroyed(x : _syncvar(?t)) param return true;
+  inline proc chpl__maybeAutoDestroyed(x : _syncvar(?t)) param do return true;
 
   // This version has to be available to take precedence
   inline proc chpl__autoDestroy(x : _syncvar(?)) {
@@ -419,7 +419,7 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  proc chpl__readXX(const ref x : _syncvar(?)) return x.readXX();
+  proc chpl__readXX(const ref x : _syncvar(?)) do return x.readXX();
 
   pragma "no doc"
   operator <=>(lhs : _syncvar, ref rhs) {
@@ -964,7 +964,7 @@ module ChapelSyncvar {
   }
 
   // Be explicit about whether singles are auto-destroyed.
-  inline proc chpl__maybeAutoDestroyed(x : _singlevar(?t)) param return true;
+  inline proc chpl__maybeAutoDestroyed(x : _singlevar(?t)) param do return true;
 
   // This version has to be available to take precedence
   inline proc chpl__autoDestroy(x : _singlevar(?)) {
@@ -973,7 +973,7 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  proc chpl__readXX(const ref x : _singlevar(?)) return x.readXX();
+  proc chpl__readXX(const ref x : _singlevar(?)) do return x.readXX();
 
   /************************************ | *************************************
   *                                                                           *

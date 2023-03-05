@@ -161,7 +161,7 @@ proc _computeChunkStartEnd(nElems, nChunks, myCnk): 2*nElems.type {
 //
 // helper function for blocking index ranges
 //
-proc intCeilXDivByY(x, y) return 1 + (x - 1)/y;
+proc intCeilXDivByY(x, y) do return 1 + (x - 1)/y;
 
 proc _computeBlock(numelems, numblocks, blocknum, wayhi,
                   waylo=0:wayhi.type, lo=0:wayhi.type) {
@@ -215,7 +215,7 @@ proc _factor(param rank: int, value) {
 // type, and shape of 'dom' but for which the indices in each
 // dimension start at zero and have unit stride.
 //
-proc computeZeroBasedDomain(dom: domain)
+proc computeZeroBasedDomain(dom: domain) do
   return {(...computeZeroBasedRanges(dom.dims()))};
 
 proc computeZeroBasedRanges(ranges: _tuple) {

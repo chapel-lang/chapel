@@ -6,6 +6,6 @@ ref D1 = A.localSubdomain();
 writeln(D1);
 
 // A simplification of the above.
-proc dom() return {3..4};
+proc dom() do return {3..4};
 ref D2 = dom();
 writeln(D2);

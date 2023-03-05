@@ -32,12 +32,12 @@ module analyze_RMAT_graph_associative_array {
     //
     type nleType = (int(64), int(64));
     // Extract each component from a neighbor.
-    proc nleNID(nlElm: nleType)    return nlElm(0);
-    proc nleWeight(nlElm: nleType) return nlElm(1);
+    proc nleNID(nlElm: nleType) do    return nlElm(0);
+    proc nleWeight(nlElm: nleType) do return nlElm(1);
     // Mark a use of a neighbor as a pair.
-    proc nleAsPair(nlElm: nleType) return nlElm;
+    proc nleAsPair(nlElm: nleType) do return nlElm;
     // Produce a neighbor from components.
-    proc nleMake(nID: int(64), wt: int(64)): nleType  return (nID, wt);
+    proc nleMake(nID: int(64), wt: int(64)): nleType do  return (nID, wt);
 
     //
     // VertexData: stores the neighbor list of a vertex.
@@ -46,7 +46,7 @@ module analyze_RMAT_graph_associative_array {
       var ndom = {initialFirstAvail..initialRMATNeighborListLength};
       var neighborList: [ndom] nleType;
 
-      proc numNeighbors()  return ndom.size;
+      proc numNeighbors() do  return ndom.size;
 
       // firstAvail$ must be passed by reference
       proc addEdgeOnVertex(uArg, vArg, wArg, firstAvail$: sync int) {

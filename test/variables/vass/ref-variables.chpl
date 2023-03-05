@@ -16,7 +16,7 @@ writeln("myInt = ", myInt);
 
 ////// alias of a ref-returning function //////
 
-proc justVariable() ref  return myInt;
+proc justVariable() ref do  return myInt;
 ref refExpr = justVariable();
 refExpr = 84;
 writeln("myInt = ", myInt);

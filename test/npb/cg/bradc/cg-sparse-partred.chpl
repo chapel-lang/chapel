@@ -100,7 +100,7 @@ proc conjGrad(A: [?MatDom], X: [?VectDom]) {
     // WANT (a partial reduction):
     //    const Q = + reduce(dim=2) [(i,j) in MatDom] (A(i,j) * P(j));
     //
-    inline proc ForallExpr1.this((i,j)) return A(i,j) * P(1,j);
+    inline proc ForallExpr1.this((i,j)) do return A(i,j) * P(1,j);
     plusPRinto(W, MatDom, new ForallExpr1());
     transpose(Q, W);
 
@@ -117,7 +117,7 @@ proc conjGrad(A: [?MatDom], X: [?VectDom]) {
   // WANT (a partial reduction):
   //      R = + reduce(dim=2) [(i,j) in MatDom] (A(i,j) * Z(j));
   //
-  inline proc ForallExpr2.this((i,j)) return A(i,j) * Z(1,j);
+  inline proc ForallExpr2.this((i,j)) do return A(i,j) * Z(1,j);
   plusPRinto(W, MatDom, new ForallExpr2());
   transpose(R, W);
 

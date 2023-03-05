@@ -193,6 +193,16 @@ void ErrorPreIncDecOp::write(ErrorWriterBase& wr) const {
   wr.code(loc);
 }
 
+void ErrorSingleStmtReturnDeprecated::write(ErrorWriterBase& wr) const {
+  auto loc = std::get<const Location>(info);
+  auto ret = std::get<const uast::AstNode*>(info);
+  wr.heading(kind_, type_, loc, "Single-statement 'return' routines are "
+             "deprecated; please insert 'do' before the 'return' or wrap the "
+             "statement in curly brackets.");
+  wr.message("For this return statement:");
+  wr.code(loc, { ret });
+}
+
 void ErrorRecordInheritanceNotSupported::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto recordName = std::get<std::string>(info);

@@ -24,13 +24,13 @@ class MyOp: ReduceScanOp {
 
   var  value: Rstate(eltType);
 
-  proc identity           return new Rstate(eltType);
+  proc identity do           return new Rstate(eltType);
   proc accumulate(state)  { value.stField += state.stField; }
   proc accumulateOntoState(ref state, elm)   { state.stField += elm; }
   proc initialAccumulate(outerVar)   { accumulateOntoState(value, outerVar.outField); }
   proc combine(other)     { value.stField += other.value.stField; }
-  proc generate()         return new Routput(eltType, value.stField);
-  proc clone()            return new unmanaged MyOp(eltType=eltType);
+  proc generate() do         return new Routput(eltType, value.stField);
+  proc clone() do            return new unmanaged MyOp(eltType=eltType);
 }
 
 ///////////

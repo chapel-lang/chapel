@@ -777,7 +777,7 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
 
    .. code-block:: chapel
 
-      proc sum(x: int...3) return x(0) + x(1) + x(2);
+      proc sum(x: int...3) do return x(0) + x(1) + x(2);
 
    
 
@@ -804,7 +804,7 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
 
    .. code-block:: chapel
 
-      proc tuple(x ...) return x;
+      proc tuple(x ...) do return x;
 
    
 
@@ -976,7 +976,7 @@ during compilation and substituted for the call expression.
 
    .. code-block:: chapel
 
-      proc sumOfSquares(param a: int, param b: int) param
+      proc sumOfSquares(param a: int, param b: int) param do
         return a**2 + b**2;
 
       var x: sumOfSquares(2, 3)*int;
@@ -1094,7 +1094,7 @@ The syntax of the return statement is given by
 
    .. code-block:: chapel
 
-      proc sum(i1: int, i2: int, i3: int)
+      proc sum(i1: int, i2: int, i3: int) do
         return i1 + i2 + i3;
 
    

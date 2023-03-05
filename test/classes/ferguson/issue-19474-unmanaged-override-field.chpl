@@ -3,7 +3,7 @@ class Parent {
 }
 
 class Child : Parent {
-  override proc rank param return 2;
+  override proc rank param do return 2;
 }
 
 var x = new unmanaged Child(1);

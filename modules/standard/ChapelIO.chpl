@@ -141,8 +141,8 @@ module ChapelIO {
   // TODO -- this should probably be private
   pragma "no doc"
   proc _isNilObject(val) {
-    proc helper(o: borrowed object) return o == nil;
-    proc helper(o)                  return false;
+    proc helper(o: borrowed object) do return o == nil;
+    proc helper(o) do                  return false;
     return helper(val);
   }
 
@@ -157,11 +157,11 @@ module ChapelIO {
   private extern proc chpl_macro_int_ESHORT():c_int;
   private extern proc chpl_macro_int_EFORMAT():c_int;
   pragma "no doc"
-  private inline proc EEOF return chpl_macro_int_EEOF():c_int;
+  private inline proc EEOF do return chpl_macro_int_EEOF():c_int;
   pragma "no doc"
-  private inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
+  private inline proc ESHORT do return chpl_macro_int_ESHORT():c_int;
   pragma "no doc"
-  private inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
+  private inline proc EFORMAT do return chpl_macro_int_EFORMAT():c_int;
 
     private
     proc isIoField(x, param i) param {

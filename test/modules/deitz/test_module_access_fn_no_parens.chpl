@@ -1,5 +1,5 @@
 module M1 {
-  proc f return 3;
+  proc f do return 3;
 }
 
 module M2 {

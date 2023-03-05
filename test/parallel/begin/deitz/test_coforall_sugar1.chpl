@@ -9,7 +9,7 @@ class syncStack {
   var next: unmanaged syncStack?;
 }
 
-proc pushSyncStack(s: unmanaged syncStack?) return new unmanaged syncStack(next=s);
+proc pushSyncStack(s: unmanaged syncStack?) do return new unmanaged syncStack(next=s);
 
 var ss: unmanaged syncStack?;
 

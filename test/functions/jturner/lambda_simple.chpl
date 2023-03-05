@@ -4,4 +4,4 @@ writeln(f(10));
 var g = lambda() { return 5; };
 writeln(g());
 
-writeln((lambda() return 6;)() );
+writeln((lambda() do return 6;)() );

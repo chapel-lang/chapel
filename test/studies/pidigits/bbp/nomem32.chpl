@@ -63,7 +63,7 @@ const coeff: [1..4] int = (4, -2, -1, -1);
 const offset: [1..4] int = (1, 4, 5, 6);
 
 // n is the index of the current digit (and the last fraction).
-proc next_block(n: I1) : I2
+proc next_block(n: I1) : I2 do
   return + reduce([c in 1..4] next_block(n, offset[c]) * coeff[c]);
 
 // n is the last index of the block.

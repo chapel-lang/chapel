@@ -264,7 +264,7 @@ proc process_json(fname: string, ref Pairs)
 record Triple {
   var from: int(32);
   var to: int(32);
-  proc weight return 1:int(32);
+  proc weight do return 1:int(32);
 }
 
 

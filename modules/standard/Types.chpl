@@ -26,16 +26,16 @@ module Types {
   import HaltWrappers;
 
 pragma "no doc" // joint documentation with the next one
-proc isType(type t) param return true;
+proc isType(type t) param do return true;
 /* Returns ``true`` if the argument is a type. */
-proc isType(e) param return false;
+proc isType(e) param do return false;
 
 pragma "no doc" // joint documentation with the next one
-proc isParam(type t)  param return false;
+proc isParam(type t)  param do return false;
 pragma "no doc" // joint documentation with the next one
-proc isParam(param p) param return true;
+proc isParam(param p) param do return true;
 /* Returns ``true`` if the argument is a param. */
-proc isParam(e)       param return false;
+proc isParam(e)       param do return false;
 
 //
 // isXxxType()
@@ -43,7 +43,7 @@ proc isParam(e)       param return false;
 
 // TODO eliminate this; beware of isPrimitive()
 pragma "no doc"
-proc _isPrimitiveType(type t) param return
+proc _isPrimitiveType(type t) param do return
   isBoolType(t)  ||
   isIntegralType(t) ||
   isRealType(t)     ||
@@ -55,7 +55,7 @@ proc _isPrimitiveType(type t) param return
 Returns ``true`` if the type ``t`` is a primitive type,
 as defined by the language specification.
 */
-proc isPrimitiveType(type t) param return
+proc isPrimitiveType(type t) param do return
   isNothingType(t) || isVoidType(t) || isBoolType(t) ||
   isNumericType(t) || isStringType(t) || isBytesType(t);
 
@@ -63,14 +63,14 @@ proc isPrimitiveType(type t) param return
 Returns ``true`` if the type ``t`` is one the following types, of any width:
 ``int``, ``uint``, ``real``, ``imag``, ``complex``.
 */
-proc isNumericType(type t) param return
+proc isNumericType(type t) param do return
   isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t);
 
 /*
 Returns ``true`` if the type ``t`` is one the following types, of any width:
 ``int``, ``uint``.
 */
-proc isIntegralType(type t) param return
+proc isIntegralType(type t) param do return
   isIntType(t) || isUintType(t);
 
 /*
@@ -78,51 +78,51 @@ Returns ``true`` if the type ``t`` is one the following types, of any width:
 ``real``, ``imag``.
 */
 deprecated "isFloatType is deprecated use `isRealType(t) || isImagType(t)` instead"
-proc isFloatType(type t) param return
+proc isFloatType(type t) param do return
   isRealType(t) || isImagType(t);
 
 /* Returns ``true`` if the type ``t`` is the ``nothing`` type. */
-proc isNothingType(type t) param return t == nothing;
+proc isNothingType(type t) param do return t == nothing;
 
 /* Returns ``true`` if the type ``t`` is a ``bool`` type, of any width. */
-proc isBoolType(type t) param return
+proc isBoolType(type t) param do return
   (t == bool) || (t == bool(8)) || (t == bool(16)) || (t == bool(32)) || (t == bool(64));
 
 /* Returns ``true`` if the type ``t`` is an ``int`` type, of any width. */
-proc isIntType(type t) param return
+proc isIntType(type t) param do return
   (t == int(8)) || (t == int(16)) || (t == int(32)) || (t == int(64));
 
 /* Returns ``true`` if the type ``t`` is a ``uint`` type, of any width. */
-proc isUintType(type t) param return
+proc isUintType(type t) param do return
   (t == uint(8)) || (t == uint(16)) || (t == uint(32)) || (t == uint(64));
 
 /* Returns ``true`` if the type ``t`` is a ``real`` type, of any width. */
-proc isRealType(type t) param return
+proc isRealType(type t) param do return
   (t == real(32)) || (t == real(64));
 
 /* Returns ``true`` if the type ``t`` is an ``imag`` type, of any width. */
-proc isImagType(type t) param return
+proc isImagType(type t) param do return
   (t == imag(32)) || (t == imag(64));
 
 /* Returns ``true`` if the type ``t`` is a ``complex`` type, of any width. */
-proc isComplexType(type t) param return
+proc isComplexType(type t) param do return
   (t == complex(64)) || (t == complex(128));
 
 /* Returns ``true`` if the type ``t`` is the ``string`` type. */
-proc isStringType(type t) param return t == string;
+proc isStringType(type t) param do return t == string;
 
 /* Returns ``true`` if the type ``t`` is the ``bytes`` type. */
-proc isBytesType(type t) param return t == bytes;
+proc isBytesType(type t) param do return t == bytes;
 
 /* Returns ``true`` if the type ``t`` is an ``enum`` type. */
 proc isEnumType(type t) param {
-  proc isEnumHelp(type t: enum) param return true;
-  proc isEnumHelp(type t) param return false;
+  proc isEnumHelp(type t: enum) param do return true;
+  proc isEnumHelp(type t) param do return false;
   return isEnumHelp(t);
 }
 
 /* Return true if ``t`` is a class type. Otherwise return false. */
-proc isClassType(type t) param return __primitive("is class type", t);
+proc isClassType(type t) param do return __primitive("is class type", t);
 
 /* Return true if ``t`` is a record type. Otherwise return false. */
 proc isRecordType(type t) param {
@@ -146,10 +146,10 @@ proc isRecordType(type t) param {
 }
 
 /* Return true if ``t`` is a union type. Otherwise return false. */
-proc isUnionType(type t) param return __primitive("is union type", t);
+proc isUnionType(type t) param do return __primitive("is union type", t);
 
 /* Returns ``true`` if its argument is a tuple type.  */
-proc isTupleType(type t) param
+proc isTupleType(type t) param do
   return __primitive("is tuple type", t);
 
 /* Return true if argument ``t`` is a range type, false otherwise */
@@ -184,10 +184,10 @@ proc isSingleType(type t) param {
 }
 
 /* Returns true if ``t`` is an atomic type, false otherwise. */
-proc isAtomicType(type t) param return __primitive("is atomic type", t);
+proc isAtomicType(type t) param do return __primitive("is atomic type", t);
 
 /* Returns ``true`` if the type ``t`` is the ``void`` type. */
-proc isVoidType(type t) param return t == void;
+proc isVoidType(type t) param do return t == void;
 
 /* Returns ``true`` if the type ``t`` is an abstract ``enum`` type (one in which
    not all symbols have associated integer values). */
@@ -196,21 +196,21 @@ proc isAbstractEnumType(type t) param {
 }
 
 /* Returns ``true`` if its argument is a homogeneous tuple type. */
-proc isHomogeneousTupleType(type t) param
+proc isHomogeneousTupleType(type t) param do
   return __primitive("is star tuple type", t);
 
 /* Returns ``true`` if the type ``t`` is an extern union type. */
-proc isExternUnionType(type t) param return __primitive("is extern union type", t);
+proc isExternUnionType(type t) param do return __primitive("is extern union type", t);
 
 /* Returns ``true`` if the type ``t`` is a ref iter type. */
-proc isRefIterType(type t) param return __primitive("is ref iter type", t);
+proc isRefIterType(type t) param do return __primitive("is ref iter type", t);
 
 pragma "no doc"
-proc isOwnedClassType(type t)     param return isSubtype(t, _owned);
+proc isOwnedClassType(type t)     param do return isSubtype(t, _owned);
 pragma "no doc"
-proc isSharedClassType(type t)    param return isSubtype(t, _shared);
+proc isSharedClassType(type t)    param do return isSubtype(t, _shared);
 pragma "no doc"
-proc isUnmanagedClassType(type t) param return isSubtype(t, unmanaged);
+proc isUnmanagedClassType(type t) param do return isSubtype(t, unmanaged);
 pragma "no doc"
 proc isBorrowedClassType(type t)  param {
   return __primitive("is borrowed class type", t);
@@ -298,117 +298,117 @@ proc chpl__maxIntTypeSameSign(type t) type {
 //
 
 /* Returns ``true`` if the argument is a value of primitive type. */
-proc isPrimitiveValue(e) param  return isPrimitiveType(e.type);
+proc isPrimitiveValue(e) param do  return isPrimitiveType(e.type);
 
 /* Returns ``true`` if the argument is a value of one the following types:
 ``int``, ``uint``, ``real``, ``imag``, ``complex``. */
-proc isNumericValue(e)   param  return isNumericType(e.type);
+proc isNumericValue(e)   param do  return isNumericType(e.type);
 
 /* Returns ``true`` if the argument is a value of one the following types:
 ``int``, ``uint``. */
-proc isIntegralValue(e)  param  return isIntegralType(e.type);
+proc isIntegralValue(e)  param do  return isIntegralType(e.type);
 
 /* Returns ``true`` if the argument is a value of one the following types:
 ``real``, ``imag``. */
 deprecated "isFloatValue is deprecated use `isRealValue(e) || isImagValue(e)` instead"
-proc isFloatValue(e)     param  return isFloatType(e.type);
+proc isFloatValue(e)     param do  return isFloatType(e.type);
 
 /* Returns ``true`` if the argument is a ``nothing`` value (i.e., ``none``) */
-proc isNothingValue(e)   param return isNothingType(e.type);
+proc isNothingValue(e)   param do return isNothingType(e.type);
 
 /* Returns ``true`` if the argument is a ``bool`` value. */
-proc isBoolValue(e)      param  return isBoolType(e.type);
+proc isBoolValue(e)      param do  return isBoolType(e.type);
 
 /* Returns ``true`` if the argument is a ``int`` value. */
-proc isIntValue(e)       param  return isIntType(e.type);
+proc isIntValue(e)       param do  return isIntType(e.type);
 
 /* Returns ``true`` if the argument is a ``uint`` value. */
-proc isUintValue(e)      param  return isUintType(e.type);
+proc isUintValue(e)      param do  return isUintType(e.type);
 
 /* Returns ``true`` if the argument is a ``real`` value. */
-proc isRealValue(e)      param  return isRealType(e.type);
+proc isRealValue(e)      param do  return isRealType(e.type);
 
 /* Returns ``true`` if the argument is a ``imag`` value. */
-proc isImagValue(e)      param  return isImagType(e.type);
+proc isImagValue(e)      param do  return isImagType(e.type);
 
 /* Returns ``true`` if the argument is a ``complex`` value. */
-proc isComplexValue(e)   param  return isComplexType(e.type);
+proc isComplexValue(e)   param do  return isComplexType(e.type);
 
 /* Returns ``true`` if the argument is a ``string`` value. */
-proc isStringValue(e)    param  return isStringType(e.type);
+proc isStringValue(e)    param do  return isStringType(e.type);
 
 /* Returns ``true`` if the argument is a ``bytes`` value. */
-proc isBytesValue(e)     param  return isBytesType(e.type);
+proc isBytesValue(e)     param do  return isBytesType(e.type);
 
 /* Returns ``true`` if the argument is a ``enum`` value. */
-proc isEnumValue(e)      param  return isEnumType(e.type);
+proc isEnumValue(e)      param do  return isEnumType(e.type);
 
 /* Returns ``true`` if the argument is a class value */
-proc isClassValue(e)     param return isClassType(e.type);
+proc isClassValue(e)     param do return isClassType(e.type);
 
 /* Returns ``true`` if the argument is a record value */
-proc isRecordValue(e)    param  return isRecordType(e.type);
+proc isRecordValue(e)    param do  return isRecordType(e.type);
 
 /* Returns ``true`` if the argument is a union value */
-proc isUnionValue(e)     param  return isUnionType(e.type);
+proc isUnionValue(e)     param do  return isUnionType(e.type);
 
 /* Returns ``true`` if the argument is a tuple value */
-proc isTupleValue(x)     param return isTupleType(x.type);
+proc isTupleValue(x)     param do return isTupleType(x.type);
 
 /* Return true if argument ``r`` is a range, false otherwise */
-proc isRangeValue(r)     param return isRangeType(r.type);
+proc isRangeValue(r)     param do return isRangeType(r.type);
 
 /* Return true if ``e`` is a domain. Otherwise return false. */
-proc isDomainValue(e)    param  return isDomainType(e.type);
+proc isDomainValue(e)    param do  return isDomainType(e.type);
 
 /* Return true if ``e`` is an array. Otherwise return false. */
 pragma "fn exempt instantiation limit"
-proc isArrayValue(e)     param  return isArrayType(e.type);
+proc isArrayValue(e)     param do  return isArrayType(e.type);
 
 /* Return true if ``e`` is a domain map. Otherwise return false. */
-proc isDmapValue(e)      param  return isDmapType(e.type);
+proc isDmapValue(e)      param do  return isDmapType(e.type);
 
 /* Returns ``true`` if the argument is a sync value */
-proc isSyncValue(x)      param  return isSyncType(x.type);
+proc isSyncValue(x)      param do  return isSyncType(x.type);
 
 /* Returns ``true`` if the argument is a single value */
-proc isSingleValue(x)    param  return isSingleType(x.type);
+proc isSingleValue(x)    param do  return isSingleType(x.type);
 
 /* Returns ``true`` if the argument is an atomic value */
-proc isAtomicValue(e)    param  return isAtomicType(e.type);
+proc isAtomicValue(e)    param do  return isAtomicType(e.type);
 
 pragma "no doc"
-proc isHomogeneousTupleValue(x) param return __primitive("is star tuple type", x);
+proc isHomogeneousTupleValue(x) param do return __primitive("is star tuple type", x);
 pragma "no doc"
 pragma "no borrow convert"
-proc isOwnedClassValue(e)     param return isOwnedClassType(e.type);
+proc isOwnedClassValue(e)     param do return isOwnedClassType(e.type);
 pragma "no doc"
 pragma "no borrow convert"
-proc isSharedClassValue(e)    param return isSharedClassType(e.type);
+proc isSharedClassValue(e)    param do return isSharedClassType(e.type);
 pragma "no doc"
 pragma "no borrow convert"
-proc isUnmanagedClassValue(e) param return isUnmanagedClassType(e.type);
+proc isUnmanagedClassValue(e) param do return isUnmanagedClassType(e.type);
 pragma "no doc"
 pragma "no borrow convert"
-proc isBorrowedClassValue(e)  param return isBorrowedClassType(e.type);
+proc isBorrowedClassValue(e)  param do return isBorrowedClassType(e.type);
 pragma "no doc"
-proc isNilableClassValue(e)   param return isNilableClassType(e.type);
+proc isNilableClassValue(e)   param do return isNilableClassType(e.type);
 pragma "no doc"
-proc isNonNilableClassValue(e)   param return isNonNilableClassType(e.type);
+proc isNonNilableClassValue(e)   param do return isNonNilableClassType(e.type);
 pragma "no doc"
-proc isRefIterValue(e)   param  return isRefIterType(e.type);
+proc isRefIterValue(e)   param do  return isRefIterType(e.type);
 pragma "no doc"
-proc isPODValue(e)       param  return isPODType(e.type);
+proc isPODValue(e)       param do  return isPODType(e.type);
 pragma "no doc"
-proc isCopyableValue(e)     param  return isCopyableType(e.type);
+proc isCopyableValue(e)     param do  return isCopyableType(e.type);
 pragma "no doc"
-proc isConstCopyableValue(e)  param  return isConstCopyableType(e.type);
+proc isConstCopyableValue(e)  param do  return isConstCopyableType(e.type);
 pragma "no doc"
-proc isAssignableValue(e)   param  return isAssignableType(e.type);
+proc isAssignableValue(e)   param do  return isAssignableType(e.type);
 pragma "no doc"
-proc isConstAssignableValue(e)  param  return isConstAssignableType(e.type);
+proc isConstAssignableValue(e)  param do  return isConstAssignableType(e.type);
 pragma "no doc"
-proc isDefaultInitializableValue(e) param return isDefaultInitializableType(e.type);
+proc isDefaultInitializableValue(e) param do return isDefaultInitializableType(e.type);
 
 //
 // isXxx() - the argument can be either a type or a value
@@ -418,88 +418,88 @@ proc isDefaultInitializableValue(e) param return isDefaultInitializableType(e.ty
 // In chpldoc, isBool(e) et al. will apply to types as well.
 
 pragma "no doc"
-proc isPrimitive(type t) param  return isPrimitiveType(t);
+proc isPrimitive(type t) param do  return isPrimitiveType(t);
 pragma "no doc"
-proc isNumeric(type t)   param  return isNumericType(t);
+proc isNumeric(type t)   param do  return isNumericType(t);
 pragma "no doc"
-proc isIntegral(type t)  param  return isIntegralType(t);
+proc isIntegral(type t)  param do  return isIntegralType(t);
 pragma "no doc"
 deprecated "isFloat is deprecated use `isReal(t) || isImag(t)` instead"
-proc isFloat(type t)     param  return isFloatType(t);
+proc isFloat(type t)     param do  return isFloatType(t);
 
 pragma "no doc"
-proc isNothing(type t)  param return isNothingType(t);
+proc isNothing(type t)  param do return isNothingType(t);
 pragma "no doc"
-proc isBool(type t)      param  return isBoolType(t);
+proc isBool(type t)      param do  return isBoolType(t);
 pragma "no doc"
-proc isInt(type t)       param  return isIntType(t);
+proc isInt(type t)       param do  return isIntType(t);
 pragma "no doc"
-proc isUint(type t)      param  return isUintType(t);
+proc isUint(type t)      param do  return isUintType(t);
 pragma "no doc"
-proc isReal(type t)      param  return isRealType(t);
+proc isReal(type t)      param do  return isRealType(t);
 pragma "no doc"
-proc isImag(type t)      param  return isImagType(t);
+proc isImag(type t)      param do  return isImagType(t);
 pragma "no doc"
-proc isComplex(type t)   param  return isComplexType(t);
+proc isComplex(type t)   param do  return isComplexType(t);
 pragma "no doc"
-proc isString(type t)    param  return isStringType(t);
+proc isString(type t)    param do  return isStringType(t);
 pragma "no doc"
-proc isBytes(type t)     param  return isBytesType(t);
+proc isBytes(type t)     param do  return isBytesType(t);
 pragma "no doc"
-proc isEnum(type t)      param  return isEnumType(t);
+proc isEnum(type t)      param do  return isEnumType(t);
 pragma "no doc"
-proc isClass(type t)     param  return isClassType(t);
+proc isClass(type t)     param do  return isClassType(t);
 pragma "no doc"
-proc isRecord(type t)    param  return isRecordType(t);
+proc isRecord(type t)    param do  return isRecordType(t);
 pragma "no doc"
-proc isUnion(type t)     param  return isUnionType(t);
+proc isUnion(type t)     param do  return isUnionType(t);
 pragma "no doc"
-proc isTuple(type t)     param  return isTupleType(t);
+proc isTuple(type t)     param do  return isTupleType(t);
 pragma "no doc"
-proc isRange(type t)     param  return isRangeType(t);
+proc isRange(type t)     param do  return isRangeType(t);
 pragma "no doc"
-proc isDomain(type t)    param  return isDomainType(t);
+proc isDomain(type t)    param do  return isDomainType(t);
 pragma "no doc"
-proc isArray(type t)     param  return isArrayType(t);
+proc isArray(type t)     param do  return isArrayType(t);
 pragma "no doc"
-proc isDmap(type t)      param  return isDmapType(t);
+proc isDmap(type t)      param do  return isDmapType(t);
 pragma "no doc"
-proc isSync(type t)      param  return isSyncType(t);
+proc isSync(type t)      param do  return isSyncType(t);
 pragma "no doc"
-proc isSingle(type t)    param  return isSingleType(t);
+proc isSingle(type t)    param do  return isSingleType(t);
 pragma "no doc"
-proc isAtomic(type t)    param  return isAtomicType(t);
+proc isAtomic(type t)    param do  return isAtomicType(t);
 
 pragma "no doc"
-proc isGeneric(type t)   param  return isGenericType(t);
+proc isGeneric(type t)   param do  return isGenericType(t);
 pragma "no doc"
-proc isHomogeneousTuple(type t)  param  return isHomogeneousTupleType(t);
+proc isHomogeneousTuple(type t)  param do  return isHomogeneousTupleType(t);
 pragma "no doc"
-proc isOwnedClass(type t) param  return isOwnedClassType(t);
+proc isOwnedClass(type t) param do  return isOwnedClassType(t);
 pragma "no doc"
-proc isSharedClass(type t) param  return isSharedClassType(t);
+proc isSharedClass(type t) param do  return isSharedClassType(t);
 pragma "no doc"
-proc isUnmanagedClass(type t) param  return isUnmanagedClassType(t);
+proc isUnmanagedClass(type t) param do  return isUnmanagedClassType(t);
 pragma "no doc"
-proc isBorrowedClass(type t) param  return isBorrowedClassType(t);
+proc isBorrowedClass(type t) param do  return isBorrowedClassType(t);
 pragma "no doc"
-proc isNilableClass(type t) param  return isNilableClassType(t);
+proc isNilableClass(type t) param do  return isNilableClassType(t);
 pragma "no doc"
-proc isNonNilableClass(type t) param  return isNonNilableClassType(t);
+proc isNonNilableClass(type t) param do  return isNonNilableClassType(t);
 pragma "no doc"
-proc isRefIter(type t)   param  return isRefIterType(t);
+proc isRefIter(type t)   param do  return isRefIterType(t);
 pragma "no doc"
-proc isPOD(type t)       param  return isPODType(t);
+proc isPOD(type t)       param do  return isPODType(t);
 pragma "no doc"
-proc isCopyable(type t)      param  return isCopyableType(t);
+proc isCopyable(type t)      param do  return isCopyableType(t);
 pragma "no doc"
-proc isConstCopyable(type t)   param  return isConstCopyableType(t);
+proc isConstCopyable(type t)   param do  return isConstCopyableType(t);
 pragma "no doc"
-proc isAssignable(type t)    param  return isAssignableType(t);
+proc isAssignable(type t)    param do  return isAssignableType(t);
 pragma "no doc"
-proc isConstAssignable(type t) param  return isConstAssignableType(t);
+proc isConstAssignable(type t) param do  return isConstAssignableType(t);
 pragma "no doc"
-proc isDefaultInitializable(type t) param return isDefaultInitializableType(t);
+proc isDefaultInitializable(type t) param do return isDefaultInitializableType(t);
 
 
 // Set 2 - values.
@@ -508,94 +508,94 @@ proc isDefaultInitializable(type t) param return isDefaultInitializableType(t);
 Returns ``true`` if the argument is a primitive type,
 as defined by the language specification, or a value of a primitive type.
 */
-proc isPrimitive(e) param  return isPrimitiveValue(e);
+proc isPrimitive(e) param do  return isPrimitiveValue(e);
 /*
 Returns ``true`` if the argument is one the following types, of any width:
 ``int``, ``uint``, ``real``, ``imag``, ``complex``, or a value of such a type.
 */
-proc isNumeric(e)   param  return isNumericValue(e);
+proc isNumeric(e)   param do  return isNumericValue(e);
 /*
 Returns ``true`` if the argument is one the following types, of any width:
 ``int``, ``uint``, or a value of such a type.
 */
-proc isIntegral(e)  param  return isIntegralValue(e);
+proc isIntegral(e)  param do  return isIntegralValue(e);
 /*
 Returns ``true`` if the argument is one the following types, of any width:
 ``real``, ``imag``, or a value of such a type.
 */
 deprecated "isFloat is deprecated use `isReal(e) || isImag(e)` instead"
-proc isFloat(e)     param  return isFloatValue(e);
+proc isFloat(e)     param do  return isFloatValue(e);
 
 /* Returns ``true`` if the argument is ``none`` or the ``nothing`` type.
  as defined by the language specification.*/
-proc isNothing(e)   param return isNothingType(e.type);
+proc isNothing(e)   param do return isNothingType(e.type);
 /* Returns ``true`` if the argument is a ``bool`` type or value, of any width. */
-proc isBool(e)      param  return isBoolValue(e);
+proc isBool(e)      param do  return isBoolValue(e);
 /* Returns ``true`` if the argument is an ``int`` type or value, of any width. */
-proc isInt(e)       param  return isIntValue(e);
+proc isInt(e)       param do  return isIntValue(e);
 /* Returns ``true`` if the argument is a ``uint`` type or value, of any width. */
-proc isUint(e)      param  return isUintValue(e);
+proc isUint(e)      param do  return isUintValue(e);
 /* Returns ``true`` if the argument is a ``real`` type or value, of any width. */
-proc isReal(e)      param  return isRealValue(e);
+proc isReal(e)      param do  return isRealValue(e);
 /* Returns ``true`` if the argument is an ``imag`` type or value, of any width. */
-proc isImag(e)      param  return isImagValue(e);
+proc isImag(e)      param do  return isImagValue(e);
 /* Returns ``true`` if the argument is a ``complex`` type or value, of any width. */
-proc isComplex(e)   param  return isComplexValue(e);
+proc isComplex(e)   param do  return isComplexValue(e);
 /* Returns ``true`` if the argument is a string or the ``string`` type. */
-proc isString(e)    param  return isStringValue(e);
+proc isString(e)    param do  return isStringValue(e);
 /* Returns ``true`` if the argument is a bytes or the ``bytes`` type. */
-proc isBytes(e)     param  return isBytesValue(e);
+proc isBytes(e)     param do  return isBytesValue(e);
 /* Returns ``true`` if the argument is an ``enum`` type or value, of any width. */
-proc isEnum(e)      param  return isEnumValue(e);
+proc isEnum(e)      param do  return isEnumValue(e);
 /* Returns ``true`` if the argument is a class type or value
    that is not an ``extern`` class, or when the argument is ``nil``. */
-proc isClass(e)     param  return isClassValue(e);
+proc isClass(e)     param do  return isClassValue(e);
 /* Returns ``true`` if the argument is a record type or value. */
-proc isRecord(e)    param  return isRecordValue(e);
+proc isRecord(e)    param do  return isRecordValue(e);
 /* Returns ``true`` if the argument is a union type or value. */
-proc isUnion(e)     param  return isUnionValue(e);
+proc isUnion(e)     param do  return isUnionValue(e);
 /* Returns ``true`` if the argument is a tuple type or value. */
-proc isTuple(e)     param  return isTupleValue(e);
+proc isTuple(e)     param do  return isTupleValue(e);
 /* Returns ``true`` if the argument is a range type or value. */
-proc isRange(e)     param  return isRangeValue(e);
+proc isRange(e)     param do  return isRangeValue(e);
 /* Returns ``true`` if the argument is a domain or a domain type. */
-proc isDomain(e)    param  return isDomainValue(e);
+proc isDomain(e)    param do  return isDomainValue(e);
 /* Returns ``true`` if the argument is an array or an array type. */
-proc isArray(e)     param  return isArrayValue(e);
+proc isArray(e)     param do  return isArrayValue(e);
 /* Returns ``true`` if the argument is a domain map or a domain map type. */
-proc isDmap(e)      param  return isDmapValue(e);
+proc isDmap(e)      param do  return isDmapValue(e);
 /* Returns ``true`` if the argument is a ``sync`` type or a ``sync`` variable. */
-proc isSync(e)      param  return isSyncValue(e);
+proc isSync(e)      param do  return isSyncValue(e);
 /* Returns ``true`` if the argument is a ``single`` type or a ``single`` variable. */
-proc isSingle(e)    param  return isSingleValue(e);
+proc isSingle(e)    param do  return isSingleValue(e);
 /*Returns ``true`` if the argument is an ``atomic`` type or an ``atomic`` variable.*/
-proc isAtomic(e)    param  return isAtomicValue(e);
+proc isAtomic(e)    param do  return isAtomicValue(e);
 
 /* Returns ``true`` if the argument is a homogeneous tuple.
    The argument must be a tuple or any type. */
-proc isHomogeneousTuple(e)  param  return isHomogeneousTupleValue(e);
+proc isHomogeneousTuple(e)  param do  return isHomogeneousTupleValue(e);
 /* Returns ``true`` if the argument is a generic type, and ``false`` otherwise. */
-proc isGeneric(e)   param  return false;
+proc isGeneric(e)   param do  return false;
 /* Returns ``true`` if the argument is an ``owned`` class type. */
 pragma "no borrow convert"
-proc isOwnedClass(e)     param  return isOwnedClassValue(e);
+proc isOwnedClass(e)     param do  return isOwnedClassValue(e);
 /* Returns ``true`` if the argument is a ``shared`` class type. */
 pragma "no borrow convert"
-proc isSharedClass(e)     param  return isSharedClassValue(e);
+proc isSharedClass(e)     param do  return isSharedClassValue(e);
 /* Returns ``true`` if the argument is a ``unmanaged`` class type. */
 pragma "no borrow convert"
-proc isUnmanagedClass(e)     param  return isUnmanagedClassValue(e);
+proc isUnmanagedClass(e)     param do  return isUnmanagedClassValue(e);
 /* Returns ``true`` if the argument is a ``borrowed`` class type. */
 pragma "no borrow convert"
-proc isBorrowedClass(e)     param  return isBorrowedClassValue(e);
+proc isBorrowedClass(e)     param do  return isBorrowedClassValue(e);
 /* Returns ``true`` if the argument is a class type that can store ``nil``. */
-proc isNilableClass(e)     param  return isNilableClassValue(e);
+proc isNilableClass(e)     param do  return isNilableClassValue(e);
 /* Returns ``true`` if the argument is a class type that cannot store ``nil``. */
-proc isNonNilableClass(e)  param  return isNonNilableClassValue(e);
+proc isNonNilableClass(e)  param do  return isNonNilableClassValue(e);
 pragma "no doc"
-proc isRefIter(e)   param  return isRefIterValue(e);
+proc isRefIter(e)   param do  return isRefIterValue(e);
 pragma "no doc" // Not sure how we want to document isPOD* right now
-proc isPOD(e)       param  return isPODValue(e);
+proc isPOD(e)       param do  return isPODValue(e);
 
 /*
 
@@ -609,7 +609,7 @@ type only supports copy-initialization from mutable values.
 See also the specification section :ref:`Copy_Initialization_of_Records`.
 
 */
-proc isCopyable(e) param return isCopyableValue(e);
+proc isCopyable(e) param do return isCopyableValue(e);
 
 /*
 
@@ -622,7 +622,7 @@ for that type leaves the source argument storing ``nil``.
 See also the specification section :ref:`Copy_Initialization_of_Records`.
 
 */
-proc isConstCopyable(e) param return isConstCopyableValue(e);
+proc isConstCopyable(e) param do return isConstCopyableValue(e);
 
 /*
 
@@ -636,7 +636,7 @@ type only supports assignment from mutable values.
 See also the specification section :ref:`Record_Assignment`.
 
 */
-proc isAssignable(e) param return isCopyableValue(e);
+proc isAssignable(e) param do return isCopyableValue(e);
 
 /*
 
@@ -649,7 +649,7 @@ for that type leaves the source argument storing ``nil``.
 See also the specification section :ref:`Record_Assignment`.
 
 */
-proc isConstAssignable(e) param return isConstAssignableValue(e);
+proc isConstAssignable(e) param do return isConstAssignableValue(e);
 
 /*
 
@@ -662,12 +662,12 @@ have a default value.
 See also the specification section :ref:`Default_Values_For_Types`.
 
 */
-proc isDefaultInitializable(e) param return isDefaultInitializableValue(e);
+proc isDefaultInitializable(e) param do return isDefaultInitializableValue(e);
 
 
 // for internal use until we have a better name
 pragma "no doc"
-proc chpl_isSyncSingleAtomic(e: ?t) param return
+proc chpl_isSyncSingleAtomic(e: ?t) param do return
   isSyncType(t) ||
   isSingleType(t) ||
   isAtomicType(t);
@@ -734,41 +734,41 @@ proc numBits(type t) param where t == bool {
   compilerError("default-width 'bool' does not have a well-defined size");
 }
 pragma "no doc"
-proc numBits(type t) param where t == bool(8) return 8;
+proc numBits(type t) param where t == bool(8) do return 8;
 pragma "no doc"
-proc numBits(type t) param where t == bool(16) return 16;
+proc numBits(type t) param where t == bool(16) do return 16;
 pragma "no doc"
-proc numBits(type t) param where t == bool(32) return 32;
+proc numBits(type t) param where t == bool(32) do return 32;
 pragma "no doc"
-proc numBits(type t) param where t == bool(64) return 64;
+proc numBits(type t) param where t == bool(64) do return 64;
 pragma "no doc"
-proc numBits(type t) param where t == int(8) return 8;
+proc numBits(type t) param where t == int(8) do return 8;
 pragma "no doc"
-proc numBits(type t) param where t == int(16) return 16;
+proc numBits(type t) param where t == int(16) do return 16;
 pragma "no doc"
-proc numBits(type t) param where t == int(32) return 32;
+proc numBits(type t) param where t == int(32) do return 32;
 pragma "no doc"
-proc numBits(type t) param where t == int(64) return 64;
+proc numBits(type t) param where t == int(64) do return 64;
 pragma "no doc"
-proc numBits(type t) param where t == uint(8) return 8;
+proc numBits(type t) param where t == uint(8) do return 8;
 pragma "no doc"
-proc numBits(type t) param where t == uint(16) return 16;
+proc numBits(type t) param where t == uint(16) do return 16;
 pragma "no doc"
-proc numBits(type t) param where t == uint(32) return 32;
+proc numBits(type t) param where t == uint(32) do return 32;
 pragma "no doc"
-proc numBits(type t) param where t == uint(64) return 64;
+proc numBits(type t) param where t == uint(64) do return 64;
 pragma "no doc"
-proc numBits(type t) param where t == real(32) return 32;
+proc numBits(type t) param where t == real(32) do return 32;
 pragma "no doc"
-proc numBits(type t) param where t == real(64) return 64;
+proc numBits(type t) param where t == real(64) do return 64;
 pragma "no doc"
-proc numBits(type t) param where t == imag(32) return 32;
+proc numBits(type t) param where t == imag(32) do return 32;
 pragma "no doc"
-proc numBits(type t) param where t == imag(64) return 64;
+proc numBits(type t) param where t == imag(64) do return 64;
 pragma "no doc"
-proc numBits(type t) param where t == complex(64) return 64;
+proc numBits(type t) param where t == complex(64) do return 64;
 pragma "no doc"
-proc numBits(type t) param where t == complex(128) return 128;
+proc numBits(type t) param where t == complex(128) do return 128;
 
 //
 // numBytes(type) -- returns the number of bytes in a type
@@ -782,7 +782,7 @@ Returns the number of bytes used to store the values of type ``t``.
 This is available for all numeric types and fixed-width ``bool`` types.
 It is not available for default-width ``bool``.
 */
-proc numBytes(type t) param return numBits(t)/8;
+proc numBytes(type t) param do return numBits(t)/8;
 
 // joint documentation, for user convenience
 /*
@@ -793,22 +793,22 @@ When ``t`` is a ``bool`` type, it returns ``false``.
 When ``t`` is ``real``, ``imag``, or ``complex`` type,
 it is a non-``param`` function.
 */
-proc min(type t) param  where isBool(t)      return false: t;
+proc min(type t) param  where isBool(t) do      return false: t;
 
 pragma "no doc"
-proc min(type t) param  where t == int(8)    return 0x80: t;
+proc min(type t) param  where t == int(8) do    return 0x80: t;
 pragma "no doc"
-proc min(type t) param  where t == int(16)   return 0x8000: t;
+proc min(type t) param  where t == int(16) do   return 0x8000: t;
 pragma "no doc"
-proc min(type t) param  where t == int(32)   return 0x80000000: t;
+proc min(type t) param  where t == int(32) do   return 0x80000000: t;
 pragma "no doc"
-proc min(type t) param  where t == int(64)   return 0x8000000000000000: t;
+proc min(type t) param  where t == int(64) do   return 0x8000000000000000: t;
 
 pragma "no doc"
-proc min(type t) param  where isUint(t)      return 0: t;
+proc min(type t) param  where isUint(t) do      return 0: t;
 
 pragma "no doc"
-proc min(type t) where isRealType(t) || isImagType(t)
+proc min(type t) where isRealType(t) || isImagType(t) do
   return __primitive( "_min", t);
 
 pragma "no doc"
@@ -831,28 +831,28 @@ When ``t`` is a ``bool`` type, it returns ``true``.
 When ``t`` is a ``real``, ``imag``, or ``complex`` type,
 it is a non-``param`` function.
 */
-proc max(type t) param  where isBool(t)      return true: t;
+proc max(type t) param  where isBool(t) do      return true: t;
 
 pragma "no doc"
-proc max(type t) param  where t == int(8)    return 0x7f: t;
+proc max(type t) param  where t == int(8) do    return 0x7f: t;
 pragma "no doc"
-proc max(type t) param  where t == int(16)   return 0x7fff: t;
+proc max(type t) param  where t == int(16) do   return 0x7fff: t;
 pragma "no doc"
-proc max(type t) param  where t == int(32)   return 0x7fffffff: t;
+proc max(type t) param  where t == int(32) do   return 0x7fffffff: t;
 pragma "no doc"
-proc max(type t) param  where t == int(64)   return 0x7fffffffffffffff: t;
+proc max(type t) param  where t == int(64) do   return 0x7fffffffffffffff: t;
 
 pragma "no doc"
-proc max(type t) param  where t == uint(8)   return 0xff: t;
+proc max(type t) param  where t == uint(8) do   return 0xff: t;
 pragma "no doc"
-proc max(type t) param  where t == uint(16)  return 0xffff: t;
+proc max(type t) param  where t == uint(16) do  return 0xffff: t;
 pragma "no doc"
-proc max(type t) param  where t == uint(32)  return 0xffffffff: t;
+proc max(type t) param  where t == uint(32) do  return 0xffffffff: t;
 pragma "no doc"
-proc max(type t) param  where t == uint(64)  return 0xffffffffffffffff: t;
+proc max(type t) param  where t == uint(64) do  return 0xffffffffffffffff: t;
 
 pragma "no doc"
-proc max(type t) where isRealType(t) || isImagType(t)        return __primitive( "_max", t);
+proc max(type t) where isRealType(t) || isImagType(t) do        return __primitive( "_max", t);
 
 pragma "no doc"
 proc max(type t) where isComplexType(t) {
@@ -966,13 +966,13 @@ proc integral.safeCast(type T) {
 // identity functions (for reductions)
 //
 pragma "no doc"
-inline proc _prod_id(type t) return 1:t;
+inline proc _prod_id(type t) do return 1:t;
 pragma "no doc"
-inline proc _land_id(type t) return true;
+inline proc _land_id(type t) do return true;
 pragma "no doc"
-inline proc _lor_id(type t) return false;
+inline proc _lor_id(type t) do return false;
 pragma "no doc"
-inline proc _lxor_id(type t) return false;
+inline proc _lxor_id(type t) do return false;
 pragma "no doc"
 inline proc _band_id(type t) {
   // MPF - this doesn't really make sense for floating-point types,
@@ -1000,9 +1000,9 @@ inline proc _band_id(type t) {
     compilerError("Identity value for & over ", t:string, "is not available");
 }
 pragma "no doc"
-inline proc _bor_id(type t) return 0:t;
+inline proc _bor_id(type t) do return 0:t;
 pragma "no doc"
-inline proc _bxor_id(type t) return 0:t;
+inline proc _bxor_id(type t) do return 0:t;
 
 // the following functions (isCoercible etc) are handled directly by
 // the compiler - so their declarations are marked "docs only"

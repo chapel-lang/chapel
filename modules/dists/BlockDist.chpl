@@ -796,7 +796,7 @@ override proc BlockDom.dsiDisplayRepresentation() {
 }
 
 // stopgap to avoid accessing locDoms field (and returning an array)
-proc BlockDom.getLocDom(localeIdx) return locDoms(localeIdx);
+proc BlockDom.getLocDom(localeIdx) do return locDoms(localeIdx);
 
 //
 // Given a tuple of scalars of type t or range(t) match the shape but
@@ -884,7 +884,7 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
 // TODO: Can we just re-use the DefaultRectangularDom follower here?
 //
 iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
-  proc anyStridable(rangeTuple, param i: int = 0) param
+  proc anyStridable(rangeTuple, param i: int = 0) param do
       return if i == rangeTuple.size-1 then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
@@ -947,25 +947,25 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
 proc BlockDom.parSafe param {
   compilerError("this domain type does not support 'parSafe'");
 }
-override proc BlockDom.dsiLow           return whole.lowBound;
-override proc BlockDom.dsiHigh          return whole.highBound;
-override proc BlockDom.dsiAlignedLow    return whole.low;
-override proc BlockDom.dsiAlignedHigh   return whole.high;
-override proc BlockDom.dsiFirst         return whole.first;
-override proc BlockDom.dsiLast          return whole.last;
-override proc BlockDom.dsiStride        return whole.stride;
-override proc BlockDom.dsiAlignment     return whole.alignment;
-proc BlockDom.dsiNumIndices    return whole.sizeAs(uint);
-proc BlockDom.dsiDim(d)        return whole.dim(d);
-proc BlockDom.dsiDim(param d)  return whole.dim(d);
-proc BlockDom.dsiDims()        return whole.dims();
-proc BlockDom.dsiGetIndices()  return whole.getIndices();
-proc BlockDom.dsiMember(i)     return whole.contains(i);
-proc BlockDom.doiToString()    return whole:string;
+override proc BlockDom.dsiLow do           return whole.lowBound;
+override proc BlockDom.dsiHigh do          return whole.highBound;
+override proc BlockDom.dsiAlignedLow do    return whole.low;
+override proc BlockDom.dsiAlignedHigh do   return whole.high;
+override proc BlockDom.dsiFirst do         return whole.first;
+override proc BlockDom.dsiLast do          return whole.last;
+override proc BlockDom.dsiStride do        return whole.stride;
+override proc BlockDom.dsiAlignment do     return whole.alignment;
+proc BlockDom.dsiNumIndices do    return whole.sizeAs(uint);
+proc BlockDom.dsiDim(d) do        return whole.dim(d);
+proc BlockDom.dsiDim(param d) do  return whole.dim(d);
+proc BlockDom.dsiDims() do        return whole.dims();
+proc BlockDom.dsiGetIndices() do  return whole.getIndices();
+proc BlockDom.dsiMember(i) do     return whole.contains(i);
+proc BlockDom.doiToString() do    return whole:string;
 proc BlockDom.dsiSerialWrite(x) { x.write(whole); }
-proc BlockDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
-override proc BlockDom.dsiIndexOrder(i)              return whole.indexOrder(i);
-override proc BlockDom.dsiMyDist()                   return dist;
+proc BlockDom.dsiLocalSlice(param stridable, ranges) do return whole((...ranges));
+override proc BlockDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
+override proc BlockDom.dsiMyDist() do                   return dist;
 
 //
 // INTERFACE NOTES: Could we make dsiSetIndices() for a rectangular
@@ -1024,7 +1024,7 @@ override proc BlockDom.dsiDestroyDom() {
 //
 // Added as a performance stopgap to avoid returning a domain
 //
-proc LocBlockDom.contains(i) return myBlock.contains(i);
+proc LocBlockDom.contains(i) do return myBlock.contains(i);
 
 
 ////// BlockArr and LocBlockArr methods /////////////////////////////////////
@@ -1037,7 +1037,7 @@ override proc BlockArr.dsiDisplayRepresentation() {
   }
 }
 
-override proc BlockArr.dsiGetBaseDom() return dom;
+override proc BlockArr.dsiGetBaseDom() do return dom;
 
 override proc BlockArr.dsiIteratorYieldsLocalElements() param {
   return true;
@@ -1161,7 +1161,7 @@ proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
   return locArr(dom.dist.targetLocsIdx(i))(i);
 }
 
-proc BlockArr.dsiAccess(i: idxType...rank) ref
+proc BlockArr.dsiAccess(i: idxType...rank) ref do
   return dsiAccess(i);
 
 iter BlockArr.these() ref {
@@ -1192,7 +1192,7 @@ override proc BlockArr.dsiStaticFastFollowCheck(type leadType) param {
   }
 }
 
-proc BlockArr.dsiDynamicFastFollowCheck(lead: [])
+proc BlockArr.dsiDynamicFastFollowCheck(lead: []) do
   return this.dsiDynamicFastFollowCheck(lead.domain);
 
 proc BlockArr.dsiDynamicFastFollowCheck(lead: domain) {
@@ -1201,7 +1201,7 @@ proc BlockArr.dsiDynamicFastFollowCheck(lead: domain) {
 }
 
 iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
-  proc anyStridable(rangeTuple, param i: int = 0) param
+  proc anyStridable(rangeTuple, param i: int = 0) param do
       return if i == rangeTuple.size-1 then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
@@ -1368,7 +1368,7 @@ proc Block.init(other: Block, privateData,
   this.sparseLayoutType = sparseLayoutType;
 }
 
-override proc Block.dsiSupportsPrivatization() param return true;
+override proc Block.dsiSupportsPrivatization() param do return true;
 
 proc Block.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(),
@@ -1379,7 +1379,7 @@ proc Block.dsiPrivatize(privatizeData) {
   return new unmanaged Block(_to_unmanaged(this), privatizeData);
 }
 
-proc Block.dsiGetReprivatizeData() return boundingBox.dims();
+proc Block.dsiGetReprivatizeData() do return boundingBox.dims();
 
 proc Block.dsiReprivatize(other, reprivatizeData) {
   boundingBox = {(...reprivatizeData)};
@@ -1408,7 +1408,7 @@ proc type BlockDom.chpl__deserialize(data) {
            data);
 }
 
-override proc BlockDom.dsiSupportsPrivatization() param return true;
+override proc BlockDom.dsiSupportsPrivatization() param do return true;
 
 record BlockDomPrvData {
   var distpid;
@@ -1434,7 +1434,7 @@ proc BlockDom.dsiPrivatize(privatizeData) {
   return c;
 }
 
-proc BlockDom.dsiGetReprivatizeData() return whole.dims();
+proc BlockDom.dsiGetReprivatizeData() do return whole.dims();
 
 proc BlockDom.dsiReprivatize(other, reprivatizeData) {
   locDoms = other.locDoms;
@@ -1456,7 +1456,7 @@ proc type BlockArr.chpl__deserialize(data) {
            data);
 }
 
-override proc BlockArr.dsiSupportsPrivatization() param return true;
+override proc BlockArr.dsiSupportsPrivatization() param do return true;
 
 record BlockArrPrvData {
   var dompid;
@@ -1509,8 +1509,8 @@ proc Block.chpl__locToLocIdx(loc: locale) {
 
 // Block subdomains are continuous
 
-proc BlockArr.dsiHasSingleLocalSubdomain() param return !allowDuplicateTargetLocales;
-proc BlockDom.dsiHasSingleLocalSubdomain() param return !allowDuplicateTargetLocales;
+proc BlockArr.dsiHasSingleLocalSubdomain() param do return !allowDuplicateTargetLocales;
+proc BlockDom.dsiHasSingleLocalSubdomain() param do return !allowDuplicateTargetLocales;
 
 // returns the current locale's subdomain
 
@@ -1762,7 +1762,7 @@ where !disableBlockDistBulkTransfer {
   return true;
 }
 
-override proc BlockArr.doiCanBulkTransferRankChange() param return true;
+override proc BlockArr.doiCanBulkTransferRankChange() param do return true;
 
 config param debugBlockScan = false;
 

@@ -90,7 +90,7 @@ module ChapelRange {
     var _alignment : if stridable then chpl__idxTypeToIntIdxType(idxType) else nothing; // alignment
     var _aligned   : if stridable then bool else nothing;
 
-    proc strType type  return chpl__rangeStrideType(idxType);
+    proc strType type do  return chpl__rangeStrideType(idxType);
 
     proc chpl__promotionType() type {
       return idxType;
@@ -339,16 +339,16 @@ module ChapelRange {
     type idxType = computeParamRangeIndexType(low, high);
     return new range(idxType, low=low, high=high);
   }
-  proc chpl_build_bounded_range(low: int(?w), high: int(w))
+  proc chpl_build_bounded_range(low: int(?w), high: int(w)) do
     return new range(int(w), low=low, high=high);
-  proc chpl_build_bounded_range(low: uint(?w), high: uint(w))
+  proc chpl_build_bounded_range(low: uint(?w), high: uint(w)) do
     return new range(uint(w), low=low, high=high);
   proc chpl_build_bounded_range(low: enum, high: enum) {
     if (low.type != high.type) then
       compilerError("ranges of enums must use a single enum type");
     return new range(low.type, low=low, high=high);
   }
-  proc chpl_build_bounded_range(low: bool, high: bool)
+  proc chpl_build_bounded_range(low: bool, high: bool) do
     return new range(bool, low=low, high=high);
 
   proc chpl_build_bounded_range(low, high)
@@ -373,11 +373,11 @@ module ChapelRange {
   }
 
   // Range builders for low bounded ranges
-  proc chpl_build_low_bounded_range(low: integral)
+  proc chpl_build_low_bounded_range(low: integral) do
     return new range(low=low);
-  proc chpl_build_low_bounded_range(low: enum)
+  proc chpl_build_low_bounded_range(low: enum) do
     return new range(low=low);
-  proc chpl_build_low_bounded_range(low: bool)
+  proc chpl_build_low_bounded_range(low: bool) do
     return new range(low=low);
   proc chpl_build_low_bounded_range(low)
   where !isValidRangeIdxType(low.type) {
@@ -385,11 +385,11 @@ module ChapelRange {
   }
 
   // Range builders for high bounded ranges
-  proc chpl_build_high_bounded_range(high: integral)
+  proc chpl_build_high_bounded_range(high: integral) do
     return new range(high=high);
-  proc chpl_build_high_bounded_range(high: enum)
+  proc chpl_build_high_bounded_range(high: enum) do
     return new range(high=high);
-  proc chpl_build_high_bounded_range(high: bool)
+  proc chpl_build_high_bounded_range(high: bool) do
     return new range(high=high);
   proc chpl_build_high_bounded_range(high)
   where !isValidRangeIdxType(high.type) {
@@ -397,7 +397,7 @@ module ChapelRange {
   }
 
   // Range builder for unbounded ranges
-  proc chpl_build_unbounded_range()
+  proc chpl_build_unbounded_range() do
     return new range();
 
   /////////////////////////////////////////////////////////////////////
@@ -549,28 +549,28 @@ module ChapelRange {
 
 
   /* Returns the range's stride. */
-  inline proc range.stride where stridable  return _stride;
+  inline proc range.stride where stridable do  return _stride;
   pragma "no doc"
-  proc range.stride param where !stridable return 1 : strType;
+  proc range.stride param where !stridable do return 1 : strType;
 
   /* Returns the range's alignment. */
-  inline proc range.alignment where stridable return chpl_intToIdx(_alignment);
+  inline proc range.alignment where stridable do return chpl_intToIdx(_alignment);
   pragma "no doc"
-  proc range.alignment where !stridable && hasLowBound() return low;
+  proc range.alignment where !stridable && hasLowBound() do return low;
   pragma "no doc"
-  proc range.alignment return chpl_intToIdx(0);
+  proc range.alignment do return chpl_intToIdx(0);
 
   /* Returns ``true`` if the range's alignment is unambiguous,
      ``false`` otherwise. */
-  inline proc range.aligned where stridable return _aligned;
+  inline proc range.aligned where stridable do return _aligned;
 
   pragma "no doc"
   proc range.aligned param where !stridable &&
                                  (boundedType == BoundedRangeType.bounded ||
-                                  boundedType == BoundedRangeType.boundedLow)
+                                  boundedType == BoundedRangeType.boundedLow) do
     return true;
   pragma "no doc"
-  proc range.aligned param /* !stridable && (boundedHigh || boundedNone) */
+  proc range.aligned param do /* !stridable && (boundedHigh || boundedNone) */
     return false;
 
   //################################################################################
@@ -579,19 +579,19 @@ module ChapelRange {
 
   // isBoundedRange(r) = true if 'r' is a (fully) bounded range
   pragma "no doc"
-  proc isBoundedRange(r)           param
+  proc isBoundedRange(r)           param do
     return false;
   /* Returns ``true`` if argument ``r`` is a fully bounded range,
      ``false`` otherwise. */
-  proc isBoundedRange(r: range(?)) param
+  proc isBoundedRange(r: range(?)) param do
     return isBoundedRange(r.boundedType);
 
   pragma "no doc"
-  proc isBoundedRange(param B: BoundedRangeType) param
+  proc isBoundedRange(param B: BoundedRangeType) param do
     return B == BoundedRangeType.bounded;
 
   /* Returns ``true`` if this range is bounded, ``false`` otherwise. */
-  proc range.isBounded() param
+  proc range.isBounded() param do
     return boundedType == BoundedRangeType.bounded;
 
   /* This used to control whether or not the
@@ -602,7 +602,7 @@ module ChapelRange {
 
   /* Returns ``true`` if this range's low bound is *not* -:math:`\infty`,
      and ``false`` otherwise. */
-  proc range.hasLowBound() param
+  proc range.hasLowBound() param do
     return boundedType == BoundedRangeType.bounded ||
            boundedType == BoundedRangeType.boundedLow;
 
@@ -681,7 +681,7 @@ module ChapelRange {
 
   /* Returns ``true`` if this range's high bound is *not* :math:`\infty`,
      and ``false`` otherwise. */
-  proc range.hasHighBound() param
+  proc range.hasHighBound() param do
     return boundedType == BoundedRangeType.bounded ||
            boundedType == BoundedRangeType.boundedHigh;
 
@@ -826,11 +826,11 @@ module ChapelRange {
 
   /* Returns ``true`` if the range is ambiguously aligned, ``false``
      otherwise. */
-  proc range.isAmbiguous() param where !stridable
+  proc range.isAmbiguous() param where !stridable do
     return false;
 
   pragma "no doc"
-  proc range.isAmbiguous()       where stridable
+  proc range.isAmbiguous()       where stridable do
     return !aligned && (stride > 1 || stride < -1);
 
   private inline proc hasAmbiguousAlignmentForIter(r) param where !r.stridable || isFiniteIdxType(r.idxType) {
@@ -929,15 +929,15 @@ module ChapelRange {
      and at least partially bounded, the return value will not
      be a ``param``.
   */
-  proc range.hasFirst() param where !stridable && !hasHighBound()
+  proc range.hasFirst() param where !stridable && !hasHighBound() do
     return hasLowBound();
 
   pragma "no doc"
-  proc range.hasFirst() param where stridable && this.boundedType == BoundedRangeType.boundedNone
+  proc range.hasFirst() param where stridable && this.boundedType == BoundedRangeType.boundedNone do
   return false;
 
   pragma "no doc"
-  inline proc range.hasFirst()
+  inline proc range.hasFirst() do
     return if isAmbiguous() || isEmpty() then false else
       if stride > 0 then hasLowBound() else hasHighBound();
 
@@ -983,15 +983,15 @@ module ChapelRange {
      Note that in the event that the range is stridable and at least
      partially bounded, the return value will not be a ``param``.
   */
-  proc range.hasLast() param where !stridable && !hasLowBound()
+  proc range.hasLast() param where !stridable && !hasLowBound() do
     return hasHighBound();
 
   pragma "no doc"
-  proc range.hasLast() param where stridable && this.boundedType == BoundedRangeType.boundedNone
+  proc range.hasLast() param where stridable && this.boundedType == BoundedRangeType.boundedNone do
   return false;
 
   pragma "no doc"
-  inline proc range.hasLast()
+  inline proc range.hasLast() do
     return if isAmbiguous() || isEmpty() then false else
       if stride > 0 then hasHighBound() else hasLowBound();
 
@@ -1098,7 +1098,7 @@ module ChapelRange {
 
   pragma "no doc"
   operator ==(r1: range(?), r2: range(?)) param
-    where r1.boundedType != r2.boundedType
+    where r1.boundedType != r2.boundedType do
   return false;
 
   pragma "no doc"
@@ -1140,7 +1140,7 @@ module ChapelRange {
   }
 
   pragma "no doc"
-  operator !=(r1: range(?), r2: range(?))  return !(r1 == r2);
+  operator !=(r1: range(?), r2: range(?)) do  return !(r1 == r2);
 
   pragma "no doc"
   operator <(r1: range(?), r2: range(?))
@@ -1293,7 +1293,7 @@ operator :(r: range(?), type t: range(?)) {
   }
   /* Returns ``true`` if ``other`` is contained in this range and ``false``
      otherwise. */
-  inline proc range.boundsCheck(other: idxType)
+  inline proc range.boundsCheck(other: idxType) do
     return contains(other);
 
 
@@ -1417,7 +1417,7 @@ operator :(r: range(?), type t: range(?)) {
        0..9.translate(-1) == -1..8
        0..9.translate(-2) == -2..7
    */
-  inline proc range.translate(offset: integral)
+  inline proc range.translate(offset: integral) do
     return this + offset;
 
   pragma "no doc"
@@ -1481,10 +1481,10 @@ operator :(r: range(?), type t: range(?)) {
   // Compute the alignment of the range returned by this.interior()
   // and this.exterior(). Keep it private.
   pragma "no doc"
-  inline proc range._effAlmt()       where stridable return _alignment;
+  inline proc range._effAlmt()       where stridable do return _alignment;
 
   pragma "no doc"
-  proc range._effAlmt() where !stridable return 0;
+  proc range._effAlmt() where !stridable do return 0;
 
   // Return an interior portion of this range.
   pragma "no doc"
@@ -1657,7 +1657,7 @@ operator :(r: range(?), type t: range(?)) {
   }
 
   pragma "no doc"
-  inline operator +(i:integral, r: range(?e,?b,?s))
+  inline operator +(i:integral, r: range(?e,?b,?s)) do
     return r + i;
 
   pragma "no doc"
@@ -3026,7 +3026,7 @@ operator :(r: range(?), type t: range(?)) {
   //#
 
   pragma "no doc"
-  inline proc range.chpl__unTranslate(i)
+  inline proc range.chpl__unTranslate(i) do
     return this - i;
 
   // Determine if a strided range has a definite alignment.
@@ -3111,12 +3111,12 @@ operator :(r: range(?), type t: range(?)) {
   // Use example: low + i:intIdxType * stride.
   // Use explicit conversions, no other additional runtime work.
   proc chpl__addRangeStrides(start, stride, count): start.type {
-    proc convert(a,b) param
+    proc convert(a,b) param do
       return ( isIntType(a.type) && isUintType(b.type) ) ||
              ( isUintType(a.type) && isIntType(b.type) );
 
-    proc mul(a,b) return if convert(a,b) then a:int(64) * b:int(64) else a * b;
-    proc add(a,b) return if convert(a,b) then a:int(64) + b:int(64) else a + b;
+    proc mul(a,b) do return if convert(a,b) then a:int(64) * b:int(64) else a * b;
+    proc add(a,b) do return if convert(a,b) then a:int(64) + b:int(64) else a + b;
 
     return add(start, mul(stride, count)) :start.type;
   }
