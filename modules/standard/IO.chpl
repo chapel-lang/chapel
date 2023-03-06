@@ -7631,21 +7631,21 @@ proc fileReader.read(type t ...?numTypes) throws where numTypes > 1 {
 }
 
 /*
-   Write values to a channel. The output will be produced atomically -
-   the channel lock will be held while writing all of the passed
+   Write values to a fileWriter. The output will be produced atomically -
+   the fileWriter lock will be held while writing all of the passed
    values.
 
    :arg args: a list of arguments to write. Basic types are handled
               internally, but for other types this function will call
-              value.writeThis() with the channel as an argument.
+              value.writeThis() with the fileWriter as an argument.
 
-   :throws SystemError: Thrown if the values could not be written to the channel.
-   :throws EofError: Thrown if EOF is reached before all the arguments could be written.
+   :throws SystemError: Thrown if the values could not be written to the
+                        fileWriter.
+   :throws EofError: Thrown if EOF is reached before all the arguments could be
+                     written.
  */
 pragma "fn exempt instantiation limit"
-inline proc _channel.write(const args ...?k) throws {
-  if !writing then compilerError("write on read-only channel");
-
+inline proc fileWriter.write(const args ...?k) throws {
   const origLocale = this.getLocaleOfIoRequest();
   on this._home {
     try this.lock(); defer { this.unlock(); }
@@ -7660,14 +7660,13 @@ inline proc _channel.write(const args ...?k) throws {
 }
 
 @unstable "write with a style argument is unstable"
-proc _channel.write(const args ...?k, style:iostyle) throws {
+proc fileWriter.write(const args ...?k, style:iostyle) throws {
   this.writeHelper((...args), style: iostyleInternal);
 }
 
 // helper function for iostyle deprecation
 pragma "no doc"
-proc _channel.writeHelper(const args ...?k, style:iostyleInternal) throws {
-  if !writing then compilerError("write on read-only channel");
+proc fileWriter.writeHelper(const args ...?k, style:iostyleInternal) throws {
   const origLocale = this.getLocaleOfIoRequest();
 
   on this._home {
@@ -7691,54 +7690,57 @@ proc _channel.writeHelper(const args ...?k, style:iostyleInternal) throws {
 
 // documented in varargs version
 pragma "no doc"
-proc _channel.writeln() throws {
+proc fileWriter.writeln() throws {
   try this.write(new ioNewline());
 }
 
 /*
 
-   Write values to a channel followed by a newline.  The output will be
-   produced atomically - the channel lock will be held while writing all of the
-   passed values.
+   Write values to a fileWriter followed by a newline.  The output will be
+   produced atomically - the fileWriter lock will be held while writing all of
+   the passed values.
 
    :arg args: a variable number of arguments to write. This method can be
               called with zero or more arguments. Basic types are handled
               internally, but for other types this function will call
-              value.writeThis() with the channel as an argument.
+              value.writeThis() with the fileWriter as an argument.
 
-   :throws SystemError: Thrown if the values could not be written to the channel.
-   :throws UnexpectedEofError: Thrown if EOF is reached before all the arguments could be written.
+   :throws SystemError: Thrown if the values could not be written to the
+                        fileWriter.
+   :throws UnexpectedEofError: Thrown if EOF is reached before all the arguments
+                               could be written.
  */
-proc _channel.writeln(const args ...?k) throws {
+proc fileWriter.writeln(const args ...?k) throws {
   try this.write((...args), new ioNewline());
 }
 
 @unstable "writeln with a style argument is unstable"
-proc _channel.writeln(const args ...?k, style:iostyle) throws {
+proc fileWriter.writeln(const args ...?k, style:iostyle) throws {
   try this.writeHelper((...args), new ioNewline(), style=style);
 }
 
 /*
 
-  Makes all writes to the channel, if any, available to concurrent viewers
-  of its associated file, such as other channels or other applications
-  accessing this file concurrently.
+  Makes all writes to the fileWriter, if any, available to concurrent viewers of
+  its associated file, such as other fileWriters/fileReader or other
+  applications accessing this file concurrently.
+
   Unlike :proc:`file.fsync`, this does not commit the written data
   to the file's device.
 
   :throws SystemError: Thrown if the flush fails.
 */
-proc _channel.flush() throws {
+proc fileWriter.flush() throws {
   var err:errorCode = 0;
   on this._home {
     err = qio_channel_flush(locking, _channel_internal);
   }
-  if err then try this._ch_ioerror(err, "in channel.flush");
+  if err then try this._ch_ioerror(err, "in fileWriter.flush");
 }
 
 // documented in throws version
 pragma "no doc"
-proc _channel.flush(out error:errorCode) {
+proc fileWriter.flush(out error:errorCode) {
   error = 0;
   try {
     this.flush();
