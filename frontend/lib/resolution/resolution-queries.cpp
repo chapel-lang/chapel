@@ -2115,6 +2115,18 @@ doIsCandidateApplicableInitial(Context* context,
     tag = parsing::idToTag(context, candidateId);
   }
 
+  // if it's a paren-less call, only consider parenless routines
+  // (including field accessors) but not types/outer variables/
+  // calls with parens.
+  if (ci.isParenless()) {
+    if (parsing::idIsParenlessFunction(context, candidateId) ||
+        parsing::idIsField(context, candidateId)) {
+      // OK
+    } else {
+      return nullptr;
+    }
+  }
+
   if (isTypeDecl(tag)) {
     // calling a type - i.e. type construction
     const Type* t = initialTypeForTypeDecl(context, candidateId);
@@ -2649,7 +2661,7 @@ static std::vector<BorrowedIdsWithName>
 lookupCalledExpr(Context* context,
                  const Scope* scope,
                  const CallInfo& ci,
-                 NamedScopeSet& visited) {
+                 CheckedScopes& visited) {
 
   Resolver::ReceiverScopesVec receiverScopes;
 
@@ -2666,8 +2678,16 @@ lookupCalledExpr(Context* context,
     }
   }
 
-  const LookupConfig config =
-      LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS;
+  LookupConfig config = LOOKUP_DECLS | LOOKUP_IMPORT_AND_USE | LOOKUP_PARENTS;
+
+  // For parenless non-method calls, only find the innermost match
+  if (ci.isParenless() && !ci.isMethodCall()) {
+    config |= LOOKUP_INNERMOST;
+  }
+
+  if (ci.isMethodCall()) {
+    config |= LOOKUP_ONLY_METHODS_FIELDS;
+  }
 
   UniqueString name = ci.name();
 
@@ -2770,7 +2790,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
     //   equally as sources of candidates
     // * do not consider forwarding (since we are considering it now!)
 
-    std::vector<NamedScopeSet> visited;
+    std::vector<CheckedScopes> visited;
     visited.resize(numForwards);
 
     for (const auto& fci : forwardingCis) {
@@ -2885,7 +2905,7 @@ gatherAndFilterCandidates(Context* context,
                           size_t& firstPoiCandidate,
                           ForwardingInfoVec& forwardingInfo) {
   CandidatesVec candidates;
-  NamedScopeSet visited;
+  CheckedScopes visited;
   firstPoiCandidate = 0;
 
   // inject compiler-generated candidates in a manner similar to below

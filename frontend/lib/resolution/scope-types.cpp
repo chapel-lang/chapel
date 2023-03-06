@@ -28,6 +28,18 @@ namespace chpl {
 namespace resolution {
 
 
+IdAndVis::SymbolTypeFlags IdAndVis::reverseFlags(SymbolTypeFlags flags) {
+  SymbolTypeFlags ret = 0;
+
+  if ((flags & PUBLIC) != 0)               ret |= PRIVATE;
+  if ((flags & PRIVATE) != 0)              ret |= PUBLIC;
+
+  if ((flags & METHOD_OR_FIELD) != 0)      ret |= NOT_METHOD_NOT_FIELD;
+  if ((flags & NOT_METHOD_NOT_FIELD) != 0) ret |= METHOD_OR_FIELD;
+
+  return ret;
+}
+
 void OwnedIdsWithName::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
   if (auto ptr = moreIdvs_.get()) {
@@ -42,40 +54,56 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
 }
 
 llvm::Optional<BorrowedIdsWithName>
-OwnedIdsWithName::borrow(bool skipPrivateVisibilities,
-                         bool onlyMethodsFields) const {
-  if (BorrowedIdsWithName::isIdVisible(idv_,
-                                       skipPrivateVisibilities,
-                                       onlyMethodsFields)) {
-    return BorrowedIdsWithName(idv_, moreIdvs_.get(),
-                               skipPrivateVisibilities, onlyMethodsFields);
+OwnedIdsWithName::borrow(IdAndVis::SymbolTypeFlags filterFlags) const {
+  // Are all of the filter flags present in flagsOr?
+  // If not, it is not possible for this to match.
+  if ((flagsOr_ & filterFlags) != filterFlags) {
+    return llvm::None;
+  }
+
+  if (BorrowedIdsWithName::isIdVisible(idv_, filterFlags)) {
+    return BorrowedIdsWithName(*this, idv_, filterFlags);
   }
   // The first ID isn't visible; are others?
   if (moreIdvs_.get() == nullptr) {
     return llvm::None;
   }
 
+  // Are all of the filter flags present in flagsAnd?
+  // If so, return the borrow
+  if ((flagsAnd_ & filterFlags) == filterFlags) {
+    // filter does not rule out anything in the OwnedIds,
+    // so we can return a match.
+    return BorrowedIdsWithName(*this, idv_, filterFlags);
+  }
+
+  // Otherwise, use a loop to decide if we can borrow
   for (auto& idv : *moreIdvs_) {
-    if (!BorrowedIdsWithName::isIdVisible(idv,
-                                          skipPrivateVisibilities,
-                                          onlyMethodsFields))
+    if (!BorrowedIdsWithName::isIdVisible(idv, filterFlags))
       continue;
 
-    // Found a visible ID!
-    return BorrowedIdsWithName(idv, moreIdvs_.get(),
-                               skipPrivateVisibilities, onlyMethodsFields);
+    // Found a visible ID! Return a BorrowedIds referring to the whole thing
+    return BorrowedIdsWithName(*this, idv, filterFlags);
   }
 
   // No ID was visible, so we can't borrow.
   return llvm::None;
 }
 
-int BorrowedIdsWithName::countVisibleIds() {
+int BorrowedIdsWithName::countVisibleIds(IdAndVis::SymbolTypeFlags flagsAnd) {
   if (moreIdvs_ == nullptr) {
     return 1;
   }
 
-  // Count all the visible IDs.
+  // if the current filter is a subset of flagsAnd, then all of the
+  // found symbols will included in this borrowedIds, so we don't have
+  // to consider them individually.
+  if ((flagsAnd & filterFlags_) == filterFlags_) {
+    // all of the found symbols will match
+    return moreIdvs_->size();
+  }
+
+  // Otherwise, consider the individual IDs to count those that are included.
   int count = 0;
   for (const auto& idv : *moreIdvs_) {
     if (isIdVisible(idv)) {
@@ -112,20 +140,33 @@ void BorrowedIdsWithName::stringify(std::ostream& ss,
 
 Scope::Scope(const uast::AstNode* ast, const Scope* parentScope,
              bool autoUsesModules) {
+  bool containsUseImport = false;
+  bool containsFunctionDecls = false;
+  bool containsExternBlock = false;
+  bool isMethodScope = false;
+
   parentScope_ = parentScope;
   tag_ = ast->tag();
-  autoUsesModules_ = autoUsesModules;
   id_ = ast->id();
   if (auto decl = ast->toNamedDecl()) {
     name_ = decl->name();
   }
   if (auto fn = ast->toFunction()) {
-    methodScope_ = fn->isMethod();
+    isMethodScope = fn->isMethod();
   }
   gatherDeclsWithin(ast, declared_,
-                    containsUseImport_,
-                    containsFunctionDecls_,
-                    containsExternBlock_);
+                    containsUseImport,
+                    containsFunctionDecls,
+                    containsExternBlock);
+
+  // compute the flags storing a few settings
+  ScopeFlags flags = 0;
+  if (containsFunctionDecls) { flags |= CONTAINS_FUNCTION_DECLS; }
+  if (containsUseImport) {     flags |= CONTAINS_USE_IMPORT; }
+  if (autoUsesModules) {       flags |= AUTO_USES_MODULES; }
+  if (isMethodScope) {         flags |= METHOD_SCOPE; }
+  if (containsExternBlock) {   flags |= CONTAINS_EXTERN_BLOCK; }
+  flags_ = flags;
 }
 
 void Scope::addBuiltin(UniqueString name) {
@@ -156,14 +197,12 @@ const Scope* Scope::parentModuleScope() const {
 
 bool Scope::lookupInScope(UniqueString name,
                           std::vector<BorrowedIdsWithName>& result,
-                          bool arePrivateIdsIgnored,
-                          bool onlyMethodsFields) const {
+                          IdAndVis::SymbolTypeFlags filterFlags) const {
   auto search = declared_.find(name);
   if (search != declared_.end()) {
     // There might not be any IDs that are visible to us, so borrow returns
     // an optional list.
-    auto borrowedIds = search->second.borrow(arePrivateIdsIgnored,
-                                             onlyMethodsFields);
+    auto borrowedIds = search->second.borrow(filterFlags);
     if (borrowedIds.hasValue()) {
       result.push_back(std::move(borrowedIds.getValue()));
       return true;
