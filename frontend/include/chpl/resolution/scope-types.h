@@ -111,7 +111,7 @@ class IdAndVis {
     return (flags_ & PUBLIC) != 0;
   }
   bool isPrivate() const {
-    return !isPublic();
+    return (flags_ & PRIVATE) != 0;
   }
   bool isMethodOrField() const {
     return (flags_ & METHOD_OR_FIELD) != 0;
