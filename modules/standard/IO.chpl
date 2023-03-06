@@ -7928,22 +7928,22 @@ proc readline(ref arg: ?t): bool throws where t==string || t==bytes {
   return stdin.readline(arg);
 }
 
-/* Equivalent to ``stdin.readLine``.  See :proc:`channel.readLine` */
+/* Equivalent to ``stdin.readLine``.  See :proc:`fileReader.readLine` */
 proc readLine(ref s: string, maxSize=-1, stripNewline=false): bool throws{
   return stdin.readLine(s, maxSize, stripNewline);
 }
 
-/* Equivalent to ``stdin.readLine``.  See :proc:`channel.readLine` */
+/* Equivalent to ``stdin.readLine``.  See :proc:`fileReader.readLine` */
 proc readLine(ref b: bytes, maxSize=-1, stripNewline=false): bool throws{
   return stdin.readLine(b, maxSize, stripNewline);
 }
 
-/* Equivalent to ``stdin.readLine``.  See :proc:`channel.readLine` */
+/* Equivalent to ``stdin.readLine``.  See :proc:`fileReader.readLine` */
 proc readLine(type t=string, maxSize=-1, stripNewline=false): t throws where t==string || t==bytes {
   return stdin.readLine(t, maxSize, stripNewline);
 }
 
-/* Equivalent to ``stdin.readln``. See :proc:`channel.readln` */
+/* Equivalent to ``stdin.readln``. See :proc:`fileReader.readln` */
 proc readln(ref args ...?n):bool throws {
   return stdin.readln((...args));
 }
@@ -7953,7 +7953,7 @@ proc readln():bool throws {
   return stdin.readln();
 }
 
-/* Equivalent to ``stdin.readln``. See :proc:`channel.readln` for types */
+/* Equivalent to ``stdin.readln``. See :proc:`fileReader.readln` for types */
 proc readln(type t ...?numTypes) throws {
   return stdin.readln((...t));
 }
