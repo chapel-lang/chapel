@@ -1799,6 +1799,11 @@ module ChapelArray {
 
     */
     proc find(val: eltType, ref idx: fullIdxType): bool {
+      // Workaround for issue #21748
+      proc max(type e: enum) {
+        return chpl__orderToEnum(e.size-1, e);
+      }
+
       // For the sparse case, start by seeing if the IRV is what we're
       // looking for.  If so, iterate over the parent domain to look
       // for the value or an index not represented in the array.  This
@@ -1806,6 +1811,9 @@ module ChapelArray {
       // Otherwise, fall through to the normal case to just search the
       // explicitly represented values.
       if this.isSparse() && val == this.IRV {
+        // This is serial, but that's reasonable because the value
+        // we're looking for is the IRV, so we'll likely bump into it
+        // very quickly if this array is truly sparse.
         for i in this.domain._value.parentDom {
           // If we find an index representing the IRV, return it; if
           // it has an explicit value, it may still be the IRV, so
@@ -1815,17 +1823,44 @@ module ChapelArray {
             return true;
           }
         }
-      } else {
-        for i in this.domain {
-          if this[i] == val {
-            idx = i;
-            return true;
+        // We didn't find it, so return false.
+        return false;
+
+      // workaround for #21749:
+      } else if __primitive("call and fn resolves", "max", fullIdxType) {
+        var foundIt = false;
+        var locIdx = max(fullIdxType);
+        forall i in this.domain with (min reduce locIdx, max reduce foundIt) {
+          if this[i] == val && (!foundIt || i < locIdx) {
+            locIdx = i;
+            foundIt = true;
           }
         }
-      }
+        if foundIt then
+          idx = locIdx;
 
-      // We didn't find it, so return false.
-      return false;
+        return foundIt;
+      } else {
+        // This is a serial fallback case, currently used by idxTypes
+        // that don't support a 'max(idxType)' call (such as
+        // associative arrays with string indices).  In such cases, we
+        // need to use a serial iteration since we can't be guaranteed
+        // that the first element found will have the
+        // lexicographically earliest index.
+        var foundIt = false;
+        for i in this.domain {
+          if this[i] == val {
+            if foundIt {
+              if i < idx then
+                idx = i;
+            } else {
+              idx = i;
+              foundIt = true;
+            }
+          }
+        }
+        return foundIt;
+      }
     }
 
     /*
