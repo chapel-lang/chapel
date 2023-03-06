@@ -53,7 +53,7 @@ jobs:
         run: |
              git rebase origin/main 
              head_sha=$(git rev-parse origin/main)
-             diff=$(git --no-pager diff --name-status --diff-filter=ACDMRT $head_sha ${{github.sha}})
+             diff=$(git --no-pager diff --name-status --diff-filter=ACDMRT ${{github.event.pull_request.base.sha}} ${{github.event.pull_request.head.sha}})
              echo "$diff" 
              echo 'DIFF<<EOF' >> $GITHUB_ENV
              echo "$diff" >> $GITHUB_ENV
