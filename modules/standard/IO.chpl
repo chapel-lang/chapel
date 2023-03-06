@@ -9729,13 +9729,13 @@ proc fileReader._read_complex(width:uint(32), out t:complex, i:int)
 // arguments from writef. This way, we can use the same code for an `arg` type
 // for which we have already created and instantiation of this.
 pragma "no doc"
-proc _channel._writefOne(fmtStr, ref arg, i: int,
-                        ref cur: c_size_t, ref j: int,
-                        ref r: unmanaged _channel_regex_info?,
-                        argType: c_ptr(c_int), argTypeLen: int,
-                        ref conv: qio_conv_t, ref gotConv: bool,
-                        ref style: iostyleInternal, ref err: errorCode,
-                        origLocale: locale, len: c_size_t) throws {
+proc fileWriter._writefOne(fmtStr, ref arg, i: int,
+                           ref cur: c_size_t, ref j: int,
+                           ref r: unmanaged _channel_regex_info?,
+                           argType: c_ptr(c_int), argTypeLen: int,
+                           ref conv: qio_conv_t, ref gotConv: bool,
+                           ref style: iostyleInternal, ref err: errorCode,
+                           origLocale: locale, len: c_size_t) throws {
   if boundsChecking {
     if i >= argTypeLen {
       halt("Index ", i, " is accessed on argType of length ", argTypeLen);
@@ -9851,10 +9851,9 @@ proc _channel._writefOne(fmtStr, ref arg, i: int,
    :throws IllegalArgumentError: if an unsupported argument type is encountered.
    :throws SystemError: if the arguments could not be written.
  */
-proc _channel.writef(fmtStr: ?t, const args ...?k) throws
+proc fileWriter.writef(fmtStr: ?t, const args ...?k) throws
   where isStringType(t) || isBytesType(t)
 {
-  if !writing then compilerError("writef on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
   var err: errorCode = 0;
   on this._home {
@@ -9905,14 +9904,13 @@ proc _channel.writef(fmtStr: ?t, const args ...?k) throws
     }
   }
 
-  if err then try this._ch_ioerror(err, "in channel.writef(fmt:string)");
+  if err then try this._ch_ioerror(err, "in fileWriter.writef(fmt:string)");
 }
 
 // documented in varargs version
-proc _channel.writef(fmtStr:?t) throws
+proc fileWriter.writef(fmtStr:?t) throws
   where isStringType(t) || isBytesType(t)
 {
-  if !writing then compilerError("writef on read-only channel");
   var err:errorCode = 0;
   on this._home {
     try this.lock(); defer { this.unlock(); }
@@ -9952,7 +9950,7 @@ proc _channel.writef(fmtStr:?t) throws
     this._set_styleInternal(save_style);
   }
 
-  if err then try this._ch_ioerror(err, "in channel.writef(fmt:string, ...)");
+  if err then try this._ch_ioerror(err, "in fileWriter.writef(fmt:string, ...)");
   return true;
 }
 
@@ -9976,10 +9974,9 @@ proc _channel.writef(fmtStr:?t) throws
    :throws UnexpectedEofError: Thrown if EOF was encountered before data could be read.
    :throws SystemError: Thrown if the arguments could not be read.
  */
-proc _channel.readf(fmtStr:?t, ref args ...?k): bool throws
+proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
     where isStringType(t) || isBytesType(t) {
 
-  if writing then compilerError("readf on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
 
   var err:errorCode = 0;
@@ -10246,7 +10243,7 @@ proc _channel.readf(fmtStr:?t, ref args ...?k): bool throws
   } else if err == EEOF {
     return false;
   } else {
-    try this._ch_ioerror(err, "in channel.readf(fmt:string, ...)");
+    try this._ch_ioerror(err, "in fileReader.readf(fmt:string, ...)");
   }
 
   return false;
@@ -10254,10 +10251,9 @@ proc _channel.readf(fmtStr:?t, ref args ...?k): bool throws
 
 // documented in varargs version
 pragma "no doc"
-proc _channel.readf(fmtStr:?t) throws
+proc fileReader.readf(fmtStr:?t) throws
     where isStringType(t) || isBytesType(t) {
 
-  if writing then compilerError("readf on write-only channel");
   var err:errorCode = 0;
   on this._home {
     try this.lock(); defer { this.unlock(); }
@@ -10305,12 +10301,12 @@ proc _channel.readf(fmtStr:?t) throws
   } else if err == EEOF {
     return false;
   } else {
-    try this._ch_ioerror(err, "in channel.readf(fmt:string)");
+    try this._ch_ioerror(err, "in fileReader.readf(fmt:string)");
     return false;
   }
 }
 
-/* Call ``stdin.readf``; see :proc:`channel.readf`. */
+/* Call ``stdin.readf``; see :proc:`fileReader.readf`. */
 proc readf(fmt:string, ref args ...?k):bool throws {
   return try stdin.readf(fmt, (...args));
 }
