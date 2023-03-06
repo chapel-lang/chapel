@@ -9362,7 +9362,7 @@ proc fileReader._format_reader(
 }
 
 pragma "no doc"
-proc _channel._conv_helper(
+private proc _conv_helper(
     ref error:errorCode,
     ref conv:qio_conv_t, ref gotConv:bool,
     ref j:int,
