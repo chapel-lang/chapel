@@ -63,9 +63,9 @@ module MemMove {
     class would see this function return ``true``, whereas passing an
     ``unmanaged`` class would result in ``false``.
 
-    A ``shared`` class would also result in ``true`` because the individual
-    managed instance would be destroyed, but not necessarily the actual object
-    being managed.
+    A ``shared`` class would also result in ``true`` because the compiler
+    destroys ``shared`` variables to decrement the reference count (and
+    possibly the object being managed, as well).
 
     :arg t: A type to check
     :type t: `type`
@@ -100,6 +100,9 @@ module MemMove {
     Explicitly destroy a variable as the compiler would when its lifetime ends.
     The variable referred to by ``obj`` should be considered unusable after a
     call to this function, and its particular state is undefined.
+
+    This function has no effect if :proc:`needsDestroy` returns ``false`` for
+    the argument's type.
 
     .. warning::
 
