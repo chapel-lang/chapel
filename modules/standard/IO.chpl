@@ -5860,22 +5860,30 @@ proc _channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lo
 /*
   Read a line into a Chapel array of bytes. Reads until a ``\n`` is reached.
   This function always does a binary read (i.e. it is not aware of UTF-8 etc)
-  and is similar in some ways to `readLine(bytes)` but works with an array directly.
-  However, it does not resize the array but rather stores up to first
+  and is similar in some ways to `readLine(bytes)` but works with an array
+  directly.  However, it does not resize the array but rather stores up to first
   'size' bytes in to it. The exact number of bytes in the array set will depend
-  on the line length (and on stripNewline since the newline will be counted if it is
-  stored in the array).
+  on the line length (and on stripNewline since the newline will be counted if
+  it is stored in the array).
 
-  :arg a: A 1D DefaultRectangular non-strided array storing int(8) or uint(8) which must have at least 1 element.
-  :arg maxSize: The maximum number of bytes to store into the ``a`` array. Defaults to the size of the array.
+  :arg a: A 1D DefaultRectangular non-strided array storing int(8) or uint(8)
+          which must have at least 1 element.
+  :arg maxSize: The maximum number of bytes to store into the ``a`` array.
+                Defaults to the size of the array.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
-  :returns: Returns `0` if EOF is reached and no data is read. Otherwise, returns the number of array elements that were set by this call.
+  :returns: Returns `0` if EOF is reached and no data is read. Otherwise,
+            returns the number of array elements that were set by this call.
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading line.
-  :throws SystemError: Thrown if data could not be read from the channel for another reason.
-  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading
+                              line.
+  :throws SystemError: Thrown if data could not be read from the fileReader for
+                       another reason.
+  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves
+                          the input marker at the beginning of the offending
+                          line.
  */
-proc _channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
+proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
+                         stripNewline=false): int throws
       where (t == uint(8) || t == int(8)) && a.rank == 1 && a.isRectangular() && !a.stridable {
   if a.size == 0 || maxSize == 0 ||
   ( a.domain.lowBound + maxSize - 1 > a.domain.highBound) then return 0;
@@ -5899,7 +5907,7 @@ proc _channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int th
         // encountered an error so throw
         this._revert();
         var err:errorCode = -got;
-        try this._ch_ioerror(err, "in channel.readLine(a : [] uint(8))");
+        try this._ch_ioerror(err, "in fileReader.readLine(a : [] uint(8))");
       }
       if got == newLineChar {
         foundNewline = true;
@@ -5910,7 +5918,7 @@ proc _channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int th
         } else {
           // The line is longer than was specified so we throw an error
           this._revert();
-          try this._ch_ioerror(EFORMAT:errorCode, "line longer than maxSize in channel.readLine(a : [] uint(8))");
+          try this._ch_ioerror(EFORMAT:errorCode, "line longer than maxSize in fileReader.readLine(a : [] uint(8))");
         }
       }
       if !(foundNewline && stripNewline) {
@@ -5928,7 +5936,7 @@ proc _channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int th
   } else if err == EEOF {
     return 0;
   } else {
-    try this._ch_ioerror(err, "in channel.readLine(a : [] uint(8))");
+    try this._ch_ioerror(err, "in fileReader.readLine(a : [] uint(8))");
   }
   return 0;
 
@@ -5936,7 +5944,8 @@ proc _channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int th
 
 pragma "no doc"
 pragma "last resort"
-inline proc _channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws {
+inline proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
+                                stripNewline=false): int throws {
   compilerError("'readLine()' is currently only supported for non-strided 1D rectangular arrays");
 }
 
