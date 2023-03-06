@@ -8058,9 +8058,10 @@ Overview of Format Strings
 ++++++++++++++++++++++++++
 
 In a manner similar to C's 'printf' and 'scanf', the IO package includes
-:proc:`channel.writef` and :proc:`channel.readf` functions. These functions take
-in a format string and some arguments. The :proc:`string.format` method is also
-available and is loosely equivalent to C's 'sprintf'. For example, one might do:
+:proc:`fileWriter.writef` and :proc:`fileReader.readf` functions. These
+functions take in a format string and some arguments. The :proc:`string.format`
+method is also available and is loosely equivalent to C's 'sprintf'. For
+example, one might do:
 
 .. code-block:: chapel
 
@@ -8083,8 +8084,9 @@ In this file, we use "integral" to refer to the Chapel types int or uint and
 .. warning::
 
    Binary conversions are now deprecated. Binary numeric conversions have been
-   replaced by :proc:`IO.channel.readBinary` and :proc:`IO.channel.writeBinary`.
-   Replacements for binary string conversions are under development.
+   replaced by :proc:`IO.fileReader.readBinary` and
+   :proc:`IO.fileWriter.writeBinary`.  Replacements for binary string
+   conversions are under development.
 
 Formatted I/O for C Programmers
 +++++++++++++++++++++++++++++++
@@ -9191,8 +9193,10 @@ class _channel_regex_info {
 }
 
 pragma "no doc"
-proc _channel._match_regex_if_needed(cur:c_size_t, len:c_size_t, ref error:errorCode,
-    ref style:iostyleInternal, r:unmanaged _channel_regex_info)
+proc fileReader._match_regex_if_needed(cur:c_size_t, len:c_size_t,
+                                       ref error:errorCode,
+                                       ref style:iostyleInternal,
+                                       r:unmanaged _channel_regex_info)
 {
   if qio_regex_ok(r.theRegex) {
     if r.matchedRegex then return;
@@ -9230,7 +9234,7 @@ proc _channel._match_regex_if_needed(cur:c_size_t, len:c_size_t, ref error:error
         _extractMatch(m, r.capArr[j], error);
         if error then break;
       }
-      // And, advance the channel to the end of the match.
+      // And, advance the fileReader to the end of the match.
       var cur = qio_channel_offset_unlocked(_channel_internal);
       var target = (r.matches[0].offset + r.matches[0].len):int;
       error = qio_channel_advance(false, _channel_internal, target - cur);
@@ -9239,7 +9243,7 @@ proc _channel._match_regex_if_needed(cur:c_size_t, len:c_size_t, ref error:error
       for j in 0..#ncaps {
         r.capArr[j] = b"";
       }
-      // ... and put the channel before the match.
+      // ... and put the fileReader before the match.
       var cur = qio_channel_offset_unlocked(_channel_internal);
       qio_channel_advance(false, _channel_internal, before_match - cur);
       // EFORMAT means the pattern did not match.
@@ -9252,10 +9256,10 @@ proc _channel._match_regex_if_needed(cur:c_size_t, len:c_size_t, ref error:error
 // Reads the next format string that will require argument handling.
 // Handles literals and regexes itself; everything else will
 // be returned in conv and with gotConv = true.
-// Assumes, for a reading channel, that we are within a mark/revert/commit
+// Assumes, for a fileReader, that we are within a mark/revert/commit
 //  in readf. (used in the regex handling here).
 pragma "no doc"
-proc _channel._format_reader(
+proc fileReader._format_reader(
     fmtStr:?fmtType, ref cur:c_size_t, len:c_size_t, ref error:errorCode,
     ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyleInternal,
     ref r:unmanaged _channel_regex_info?,
