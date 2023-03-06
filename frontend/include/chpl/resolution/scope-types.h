@@ -161,9 +161,8 @@ class OwnedIdsWithName {
       // create the vector and add the single existing id to it
       moreIdvs_ = toOwned(new std::vector<IdAndVis>());
       moreIdvs_->push_back(idv_);
-      // set bitwise & and | of the flags to the initial idv
-      flagsAnd_ = idv_.flags_;
-      flagsOr_ = idv_.flags_;
+      // flagsAnd_ and flagsOr_ will have already been set in constructor
+      // from idv_.
     }
     auto idv = IdAndVis(std::move(id), vis, isMethodOrField);
     // add the id passed
@@ -317,6 +316,7 @@ class BorrowedIdsWithName {
     : filterFlags_(filterFlags),
       idv_(ownedIds.idv_), moreIdvs_(ownedIds.moreIdvs_.get()) {
     numVisibleIds_ = countVisibleIds(ownedIds.flagsAnd_);
+    CHPL_ASSERT(isIdVisible(idv_, filterFlags));
   }
 
   /** Construct a BorrowedIdsWithName referring to one ID. Requires
@@ -325,7 +325,7 @@ class BorrowedIdsWithName {
     */
   BorrowedIdsWithName(IdAndVis idv, IdAndVis::SymbolTypeFlags filterFlags)
     : filterFlags_(filterFlags), numVisibleIds_(1), idv_(std::move(idv)) {
-    assert(isIdVisible(idv_, filterFlags_));
+    CHPL_ASSERT(isIdVisible(idv_, filterFlags));
   }
  public:
 
