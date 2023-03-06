@@ -1066,8 +1066,6 @@ qioerr qio_channel_write_amt(const int threadsafe, qio_channel_t* restrict ch, c
     }
   }
 
-  fprintf(stderr, "writing amt!");
-
   // Is there room in our fast path buffer?
   if( qio_space_in_ptr_diff(len, ch->cached_end, ch->cached_cur) ) {
     qio_memcpy( ch->cached_cur, ptr, len );

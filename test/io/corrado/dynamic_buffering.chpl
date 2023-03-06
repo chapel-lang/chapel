@@ -1,4 +1,4 @@
-use IO, CTypes;
+use IO, CTypes, FileSystem;
 
 config const unbuffThreshold = 64,
              iobuffSize = 64,
@@ -11,7 +11,7 @@ qio_write_unbuffered_threshold = unbuffThreshold:c_ssize_t;
 qbytes_iobuf_size = iobuffSize:c_size_t;
 
 proc testDB(s: int): bool {
-  const w = openWriter("./db.bin", hints = ioHintSet.noMmap);
+  const w = openWriter("./db.bin", locking=false, hints = ioHintSet.noMmap);
 
   // put something small in the buffer to start with
   if smallWriteSize > 0 {
@@ -50,3 +50,5 @@ for size in (unbuffThreshold-1)..(2*unbuffThreshold) {
     break;
   }
 }
+
+remove("db.bin");
