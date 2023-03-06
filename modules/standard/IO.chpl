@@ -9262,8 +9262,7 @@ pragma "no doc"
 proc fileReader._format_reader(
     fmtStr:?fmtType, ref cur:c_size_t, len:c_size_t, ref error:errorCode,
     ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyleInternal,
-    ref r:unmanaged _channel_regex_info?,
-    isReadf:bool)
+    ref r:unmanaged _channel_regex_info?)
 {
   if r != nil then r!.hasRegex = false;
   if !error {
@@ -9280,77 +9279,107 @@ proc fileReader._format_reader(
       if conv.argType == QIO_CONV_ARG_TYPE_NONE_LITERAL {
         // Print whitespace or I/O literal.
         // literal string in conv
-        if isReadf {
-          // Scan whitespace or I/O literal.
-          // literal string in conv
-          if conv.literal_is_whitespace == 2 {
-            // Handle a \n newline in the format string.
-            // Other space.
-            var offsetA = qio_channel_offset_unlocked(_channel_internal);
-            error = qio_channel_skip_past_newline(false, _channel_internal, true);
-            var offsetB = qio_channel_offset_unlocked(_channel_internal);
-            if (!error) && offsetA == offsetB {
-              // didn't really read newline.
-              error = EFORMAT;
-            }
-          } else if conv.literal_is_whitespace == 1 {
-            // Other space.
-            var offsetA = qio_channel_offset_unlocked(_channel_internal);
-            error = qio_channel_scan_literal_2(false, _channel_internal, conv.literal, 0, 1);
-            var offsetB = qio_channel_offset_unlocked(_channel_internal);
-            if (!error) && offsetA == offsetB {
-              // didn't really read whitespace.
-              error = EFORMAT;
-            }
-          } else {
-            error = qio_channel_scan_literal_2(false, _channel_internal, conv.literal, conv.literal_length:c_ssize_t, 0);
+        // Scan whitespace or I/O literal.
+        // literal string in conv
+        if conv.literal_is_whitespace == 2 {
+          // Handle a \n newline in the format string.
+          // Other space.
+          var offsetA = qio_channel_offset_unlocked(_channel_internal);
+          error = qio_channel_skip_past_newline(false, _channel_internal, true);
+          var offsetB = qio_channel_offset_unlocked(_channel_internal);
+          if (!error) && offsetA == offsetB {
+            // didn't really read newline.
+            error = EFORMAT;
+          }
+        } else if conv.literal_is_whitespace == 1 {
+          // Other space.
+          var offsetA = qio_channel_offset_unlocked(_channel_internal);
+          error = qio_channel_scan_literal_2(false, _channel_internal, conv.literal, 0, 1);
+          var offsetB = qio_channel_offset_unlocked(_channel_internal);
+          if (!error) && offsetA == offsetB {
+            // didn't really read whitespace.
+            error = EFORMAT;
           }
         } else {
-          // when printing we don't care if it's just whitespace.
-          error = qio_channel_print_literal_2(false, _channel_internal, conv.literal, conv.literal_length:c_ssize_t);
+          error = qio_channel_scan_literal_2(false, _channel_internal, conv.literal, conv.literal_length:c_ssize_t, 0);
         }
       } else if conv.argType == QIO_CONV_ARG_TYPE_NONE_REGEX_LITERAL {
-        if ! isReadf {
-          // It's not so clear what to do when printing
-          // a regex. So we just don't handle it.
-          error = qio_format_error_write_regex();
-        } else {
-          // allocate regex info if needed
-          if r == nil then r = new unmanaged _channel_regex_info();
-          const rnn = r!;  // indicate that it is non-nil
-          // clear out old data, if there is any.
-          rnn.clear();
-          // Compile a regex from the format string
-          var errstr:string;
-          // build a regex out of regex and regex_flags
-          qio_regex_create_compile_flags_2(conv.regex, conv.regex_length,
-                                            conv.regex_flags,
-                                            conv.regex_flags_length,
-                                            /* utf8? */ fmtType==string,
-                                            rnn.theRegex);
-          rnn.releaseRegex = true;
-          if qio_regex_ok(rnn.theRegex) {
-            rnn.hasRegex = true;
-            rnn.ncaptures = qio_regex_get_ncaptures(rnn.theRegex);
-            // If there are no captures, and we don't have arguments
-            // to consume, go ahead and match the regex.
-            if rnn.ncaptures > 0 ||
-               conv.preArg1 != QIO_CONV_UNK ||
-               conv.preArg2 != QIO_CONV_UNK ||
-               conv.preArg3 != QIO_CONV_UNK
+        // allocate regex info if needed
+        if r == nil then r = new unmanaged _channel_regex_info();
+        const rnn = r!;  // indicate that it is non-nil
+        // clear out old data, if there is any.
+        rnn.clear();
+        // Compile a regex from the format string
+        var errstr:string;
+        // build a regex out of regex and regex_flags
+        qio_regex_create_compile_flags_2(conv.regex, conv.regex_length,
+                                         conv.regex_flags,
+                                         conv.regex_flags_length,
+                                         /* utf8? */ fmtType==string,
+                                         rnn.theRegex);
+        rnn.releaseRegex = true;
+        if qio_regex_ok(rnn.theRegex) {
+          rnn.hasRegex = true;
+          rnn.ncaptures = qio_regex_get_ncaptures(rnn.theRegex);
+          // If there are no captures, and we don't have arguments
+          // to consume, go ahead and match the regex.
+          if rnn.ncaptures > 0 ||
+             conv.preArg1 != QIO_CONV_UNK ||
+             conv.preArg2 != QIO_CONV_UNK ||
+             conv.preArg3 != QIO_CONV_UNK
             {
-              // We need to consume args as part of matching this regex.
-              gotConv = true;
-              break;
-            } else {
-              // No args will be consumed.
-              _match_regex_if_needed(cur, len, error, style, rnn);
-            }
+             // We need to consume args as part of matching this regex.
+             gotConv = true;
+             break;
           } else {
-            error = qio_format_error_bad_regex();
-            //if dieOnError then assert(!error, errstr);
+            // No args will be consumed.
+            _match_regex_if_needed(cur, len, error, style, rnn);
           }
+        } else {
+          error = qio_format_error_bad_regex();
+          //if dieOnError then assert(!error, errstr);
         }
+      } else {
+        // Some other kind of format specifier... we
+        // will return to handle.
+        gotConv = true;
+        break;
+      }
+    }
+  }
+}
+
+// Reads the next format string that will require argument handling.
+// Handles literals and regexes itself; everything else will
+// be returned in conv and with gotConv = true.
+// (used in the regex handling here).
+pragma "no doc"
+proc fileWriter._format_reader(
+    fmtStr:?fmtType, ref cur:c_size_t, len:c_size_t, ref error:errorCode,
+    ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyleInternal,
+    ref r:unmanaged _channel_regex_info?)
+{
+  if r != nil then r!.hasRegex = false;
+  if !error {
+    var fmt = fmtStr.localize().c_str();
+    while cur < len {
+      gotConv = false;
+      if error then break;
+      var end:uint(64);
+      error = qio_conv_parse(fmt, cur, end, isReadf, conv, style);
+      if error {
+      }
+      cur = end:c_size_t;
+      if error then break;
+      if conv.argType == QIO_CONV_ARG_TYPE_NONE_LITERAL {
+        // Print whitespace or I/O literal.
+        // literal string in conv
+        // when printing we don't care if it's just whitespace.
+        error = qio_channel_print_literal_2(false, _channel_internal, conv.literal, conv.literal_length:c_ssize_t);
+      } else if conv.argType == QIO_CONV_ARG_TYPE_NONE_REGEX_LITERAL {
+        // It's not so clear what to do when printing
+        // a regex. So we just don't handle it.
+        error = qio_format_error_write_regex();
       } else {
         // Some other kind of format specifier... we
         // will return to handle.
@@ -9716,8 +9745,7 @@ proc _channel._writefOne(fmtStr, ref arg, i: int,
 
   if j <= i {
     _format_reader(fmtStr, cur, len, err,
-                   conv, gotConv, style, r,
-                   false);
+                   conv, gotConv, style, r);
   }
 
   _conv_helper(err, conv, gotConv, j, argType, argTypeLen);
@@ -9867,8 +9895,7 @@ proc _channel.writef(fmtStr: ?t, const args ...?k) throws
       if cur < len {
         var dummy:c_int;
         _format_reader(fmtStr, cur, len, err,
-                       conv, gotConv, style, r,
-                       false);
+                       conv, gotConv, style, r);
       }
 
       if cur < len {
@@ -9907,8 +9934,7 @@ proc _channel.writef(fmtStr:?t) throws
     }
 
     _format_reader(fmtStr, cur, len, err,
-                   conv, gotConv, style, r,
-                   false);
+                   conv, gotConv, style, r);
 
     if ! err {
       if gotConv {
@@ -9997,8 +10023,7 @@ proc _channel.readf(fmtStr:?t, ref args ...?k): bool throws
         // get generic argument handling.
         if j <= i {
           _format_reader(fmtStr, cur, len, err,
-                         conv, gotConv, style, r,
-                         true);
+                         conv, gotConv, style, r);
 
           if r != nil {
            const rnn = r!;  // indicate that it is non-nil
@@ -10193,8 +10218,7 @@ proc _channel.readf(fmtStr:?t, ref args ...?k): bool throws
         if cur < len {
           var dummy:c_int;
           _format_reader(fmtStr, cur, len, err,
-                         conv, gotConv, style, r,
-                         true);
+                         conv, gotConv, style, r);
         }
       }
 
@@ -10257,8 +10281,7 @@ proc _channel.readf(fmtStr:?t) throws
     err = qio_channel_mark(false, _channel_internal);
     if !err {
       _format_reader(fmtStr, cur, len, err,
-                     conv, gotConv, style, r,
-                     true);
+                     conv, gotConv, style, r);
       if gotConv {
         err = qio_format_error_too_few_args();
       }
