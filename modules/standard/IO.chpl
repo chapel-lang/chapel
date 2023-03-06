@@ -7834,24 +7834,24 @@ proc fileWriter.isClosed() : bool {
 // in the type of the argument will only be caught by a type mismatch
 // in the call to qio_channel_read_amt.
 pragma "no doc"
-proc _channel._readBytes(x, len:c_ssize_t) throws {
+proc fileReader._readBytes(x, len:c_ssize_t) throws {
   if here != this._home then
-    throw new owned IllegalArgumentError("bad remote channel._readBytes");
+    throw new owned IllegalArgumentError("bad remote fileReader._readBytes");
   var err = qio_channel_read_amt(false, _channel_internal, x, len);
-  if err then try this._ch_ioerror(err, "in channel._readBytes");
+  if err then try this._ch_ioerror(err, "in fileReader._readBytes");
 }
 
 pragma "no doc"
 record itemReaderInternal {
   /* What type do we read and yield? */
   type ItemType;
-  /* the kind field for our channel */
+  /* the kind field for our fileReader */
   param kind:iokind;
-  /* the locking field for our channel */
+  /* the locking field for our fileReader */
   param locking:bool;
-  /* the decoder for this channel */
+  /* the decoder for this fileReader */
   type fmtType;
-  /* our channel */
+  /* our fileReader */
   var ch:fileReader(kind,locking,fmtType);
 
   /* read a single item, throwing on error */
@@ -7859,7 +7859,7 @@ record itemReaderInternal {
     return ch.read(arg);
   }
 
-  /* iterate through all items of that type read from the channel */
+  /* iterate through all items of that type read from the fileReader */
   iter these() { // TODO: this should be throws
     while true {
       var x:ItemType;
@@ -7892,16 +7892,16 @@ extern proc chpl_cstderr():c_FILE;
 const stderr:fileWriter(iokind.dynamic, true);
 stderr = try! (new file(chpl_cstderr())).writer();
 
-/* Equivalent to ``stdin.read``. See :proc:`channel.read` */
+/* Equivalent to ``stdin.read``. See :proc:`fileReader.read` */
 proc read(ref args ...?n):bool throws {
   return stdin.read((...args));
 }
-/* Equivalent to ``stdin.read``. See :proc:`channel.read` for types */
+/* Equivalent to ``stdin.read``. See :proc:`fileReader.read` for types */
 proc read(type t ...?numTypes) throws {
   return stdin.read((...t));
 }
 
-/* Equivalent to ``stdin.readLine``.  See :proc:`channel.readLine` */
+/* Equivalent to ``stdin.readLine``.  See :proc:`fileReader.readLine` */
 proc readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
       where (t == uint(8) || t == int(8)) && a.rank == 1 && a.isRectangular() && ! a.stridable {
   return stdin.readLine(a, maxSize, stripNewline);
