@@ -5990,7 +5990,7 @@ proc _channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
 // bytes was read.
 // Does not validate that the string has valid encoding -- the call
 // site should do that.
-// Assumes we are already on the locale with the channel and that
+// Assumes we are already on the locale with the fileReader and that
 // it is already locked.
 private proc readStringBytesData(ref s /*: string or bytes*/,
                                  _channel_internal:qio_channel_ptr_t,
@@ -6000,7 +6000,7 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
 
   BytesStringCommon.resizeBuffer(s, nBytes);
 
-  // TODO: if the channel is working with non-UTF-8 data
+  // TODO: if the fileReader is working with non-UTF-8 data
   // (which is a feature not yet implemented at all)
   // this would need to call a read than can do character set conversion
   // in the event that s.type == string.
@@ -6028,18 +6028,21 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
   Read a line into a Chapel string. Reads until a ``\n`` is reached.
 
   :arg s: a string to receive the line
-  :arg maxSize: The maximum number of codepoints to store into ``s``. The default of -1 means to read an unlimited number of codepoints.
+  :arg maxSize: The maximum number of codepoints to store into ``s``. The
+                default of -1 means to read an unlimited number of codepoints.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: `true` if a line was read without error, `false` upon EOF
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
-  :throws SystemError: Thrown if data could not be read from the channel.
-  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
+                              reading.
+  :throws SystemError: Thrown if data could not be read from the fileReader.
+  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves
+                          the input marker at the beginning of the offending
+                          line.
 */
-proc _channel.readLine(ref s: string,
-                      maxSize=-1,
-                      stripNewline=false): bool throws {
-  if writing then compilerError("read on write-only channel");
+proc fileReader.readLine(ref s: string,
+                         maxSize=-1,
+                         stripNewline=false): bool throws {
   const origLocale = this.getLocaleOfIoRequest();
   var ret: bool = false;
 
@@ -6051,7 +6054,7 @@ proc _channel.readLine(ref s: string,
     var chr : int(32);
     var err: errorCode = 0;
     var foundNewline = false;
-    // use the channel's buffering to compute how many bytes/codepoints
+    // use the fileReader's buffering to compute how many bytes/codepoints
     // we are reading
     this._mark();
     while !foundNewline {
@@ -6063,7 +6066,7 @@ proc _channel.readLine(ref s: string,
       } else if err {
         // encountered an error so throw
         this._revert();
-        try this._ch_ioerror(err, "in channel.readLine(ref s: string)");
+        try this._ch_ioerror(err, "in fileReader.readLine(ref s: string)");
       }
       nCodepoints += 1;
       if chr == newLineChar {
@@ -6076,7 +6079,7 @@ proc _channel.readLine(ref s: string,
           // The line is longer than was specified so we throw an error
           this._revert();
           try this._ch_ioerror(EFORMAT:errorCode,
-               "line longer than maxSize in channel.readLine(ref s: string)");
+               "line longer than maxSize in fileReader.readLine(ref s: string)");
         }
       }
     }
@@ -6091,7 +6094,7 @@ proc _channel.readLine(ref s: string,
     }
 
     // now read the data into the string
-    // readStringBytesData will advance the channel by exactly `nBytes`.
+    // readStringBytesData will advance the fileReader by exactly `nBytes`.
     // This may consume or leave the newline based on the logic above.
     err = readStringBytesData(s, this._channel_internal, nBytes, nCodepoints);
     if foundNewline && stripNewline && !err {
@@ -6100,7 +6103,7 @@ proc _channel.readLine(ref s: string,
     }
 
     if err != 0 && err != EEOF {
-      try this._ch_ioerror(err, "in channel.readLine(ref s: string)");
+      try this._ch_ioerror(err, "in fileReader.readLine(ref s: string)");
     }
 
     // return 'true' if we read anything
@@ -6114,18 +6117,21 @@ proc _channel.readLine(ref s: string,
   Read a line into Chapel bytes. Reads until a ``\n`` is reached.
 
   :arg b: bytes to receive the line
-  :arg maxSize: The maximum number of bytes to store into ``b``. The default of -1 means to read an unlimited number of bytes.
+  :arg maxSize: The maximum number of bytes to store into ``b``. The default of
+                -1 means to read an unlimited number of bytes.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: `true` if a line was read without error, `false` upon EOF
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
-  :throws SystemError: Thrown if data could not be read from the channel.
-  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
+                              reading.
+  :throws SystemError: Thrown if data could not be read from the fileReader.
+  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves
+                          the input marker at the beginning of the offending
+                          line.
 */
-proc _channel.readLine(ref b: bytes,
-                      maxSize=-1,
-                      stripNewline=false): bool throws {
-  if writing then compilerError("read on write-only channel");
+proc fileReader.readLine(ref b: bytes,
+                         maxSize=-1,
+                         stripNewline=false): bool throws {
   const origLocale = this.getLocaleOfIoRequest();
   var ret: bool = false;
 
@@ -6134,7 +6140,7 @@ proc _channel.readLine(ref b: bytes,
     param newLineChar = 0x0A; // ascii newline.
     var maxBytes = if maxSize < 0 then max(int) else maxSize;
     var nBytes: int = 0;
-    // use the channel's buffering to compute how many bytes we are reading
+    // use the fileReader's buffering to compute how many bytes we are reading
     this._mark();
     var got : int;
     var err: errorCode = 0;
@@ -6149,7 +6155,7 @@ proc _channel.readLine(ref b: bytes,
         // encountered an error so throw
         this._revert();
         err = -got;
-        try this._ch_ioerror(err, "in channel.readLine(ref b: bytes)");
+        try this._ch_ioerror(err, "in fileReader.readLine(ref b: bytes)");
         break;
       }
       nBytes += 1;
@@ -6163,7 +6169,7 @@ proc _channel.readLine(ref b: bytes,
           // The line is longer than was specified so we throw an error
           this._revert();
           try this._ch_ioerror(EFORMAT:errorCode,
-                   "line longer than maxSize in channel.readLine(ref b: bytes)");
+                   "line longer than maxSize in fileReader.readLine(ref b: bytes)");
         }
       }
     }
@@ -6175,7 +6181,7 @@ proc _channel.readLine(ref b: bytes,
     }
 
     // now read the data into the bytes
-    // readStringBytesData will advance the channel by exactly `nBytes`.
+    // readStringBytesData will advance the fileReader by exactly `nBytes`.
     // This may consume or leave the newline based on the logic above.
     err = readStringBytesData(b, this._channel_internal, nBytes,
                               nCodepoints=-1);
@@ -6188,7 +6194,7 @@ proc _channel.readLine(ref b: bytes,
     }
 
     if err != 0 && err != EEOF {
-      try this._ch_ioerror(err, "in channel.readLine(ref s: string)");
+      try this._ch_ioerror(err, "in fileReader.readLine(ref s: string)");
     }
 
     // return 'true' if we read anything
@@ -6201,16 +6207,21 @@ proc _channel.readLine(ref b: bytes,
 /*
   Read a line. Reads until a ``\n`` is reached.
 
-  :arg t: the type of data to read, which must be ``string`` or ``bytes``. Defaults to ``string`` if not specified.
-  :arg maxSize: The maximum number of codepoints to read. The default of -1 means to read an unlimited number of codepoints.
+  :arg t: the type of data to read, which must be ``string`` or ``bytes``.
+          Defaults to ``string`` if not specified.
+  :arg maxSize: The maximum number of codepoints to read. The default of -1
+                means to read an unlimited number of codepoints.
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: The data that was read.
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
-  :throws SystemError: Thrown if data could not be read from the channel.
-  :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
+                              reading.
+  :throws SystemError: Thrown if data could not be read from the fileReader.
+  :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the
+                   input marker at the beginning of the offending line.
 */
-proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws where t==string || t==bytes {
+proc fileReader.readLine(type t=string, maxSize=-1,
+                         stripNewline=false): t throws where t==string || t==bytes {
   var retval: t;
   this.readLine(retval, maxSize, stripNewline);
   return retval;
