@@ -85,10 +85,17 @@ catch e: PermissionError {
 }
 writeln();
 
+
 writeln("chmod'ing the file");
-chmod(filename2.c_str(), 0o644:mode_t);
-writeln("chmod works: ", getMode(filename2) == 0o644);
-chmod(filename2.c_str(), mode:mode_t); // change it back
+// change the "others" permissions
+var newMode = mode ^ 0o7;
+var err = chmod(filename2.encode(policy=encodePolicy.unescape).c_str(),
+                newMode:mode_t);
+if err != 0 then halt("Error in chmod call: ", strerror(errno));
+writeln("chmod works: ", getMode(filename2) == newMode);
+err = chmod(filename2.encode(policy=encodePolicy.unescape).c_str(),
+            mode:mode_t); // change it back
+if err != 0 then halt("Error in chmod call: ", strerror(errno));
 writeln();
 
 
