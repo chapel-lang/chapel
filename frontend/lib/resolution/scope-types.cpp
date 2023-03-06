@@ -62,7 +62,7 @@ OwnedIdsWithName::borrow(IdAndVis::SymbolTypeFlags filterFlags) const {
   }
 
   if (BorrowedIdsWithName::isIdVisible(idv_, filterFlags)) {
-    return BorrowedIdsWithName(*this, filterFlags);
+    return BorrowedIdsWithName(*this, idv_, filterFlags);
   }
   // The first ID isn't visible; are others?
   if (moreIdvs_.get() == nullptr) {
@@ -74,7 +74,7 @@ OwnedIdsWithName::borrow(IdAndVis::SymbolTypeFlags filterFlags) const {
   if ((flagsAnd_ & filterFlags) == filterFlags) {
     // filter does not rule out anything in the OwnedIds,
     // so we can return a match.
-    return BorrowedIdsWithName(*this, filterFlags);
+    return BorrowedIdsWithName(*this, idv_, filterFlags);
   }
 
   // Otherwise, use a loop to decide if we can borrow
@@ -83,7 +83,7 @@ OwnedIdsWithName::borrow(IdAndVis::SymbolTypeFlags filterFlags) const {
       continue;
 
     // Found a visible ID! Return a BorrowedIds referring to the whole thing
-    return BorrowedIdsWithName(*this, filterFlags);
+    return BorrowedIdsWithName(*this, idv, filterFlags);
   }
 
   // No ID was visible, so we can't borrow.

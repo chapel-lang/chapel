@@ -312,9 +312,10 @@ class BorrowedIdsWithName {
       This BorrowedIdsWithName assumes that the OwnedIdsWithName
       will continue to exist. */
   BorrowedIdsWithName(const OwnedIdsWithName& ownedIds,
+                      const IdAndVis& firstMatch,
                       IdAndVis::SymbolTypeFlags filterFlags)
     : filterFlags_(filterFlags),
-      idv_(ownedIds.idv_), moreIdvs_(ownedIds.moreIdvs_.get()) {
+      idv_(firstMatch), moreIdvs_(ownedIds.moreIdvs_.get()) {
     numVisibleIds_ = countVisibleIds(ownedIds.flagsAnd_);
     CHPL_ASSERT(isIdVisible(idv_, filterFlags));
   }
