@@ -832,6 +832,9 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   if (onlyMethodsFields) {
     curFilter |= IdAndVis::METHOD_OR_FIELD;
   }
+  // Note: curFilter can only represent combinations of positive flags;
+  // if it extended, it might no longer be possible to rerepresent
+  // the combinedFilter below as a single bitset.
 
   // goPastModules should imply checkParents; otherwise, why would we proceed
   // through module boundaries if we aren't traversing the scope chain?
@@ -864,13 +867,23 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     }
 
     // otherwise, compute the new filter to use
-    IdAndVis::SymbolTypeFlags onlyInFound = foundFilter & ~curFilter;
-    curFilter = IdAndVis::reverseFlags(onlyInFound);
+    IdAndVis::SymbolTypeFlags origCurFilter = curFilter;
+    IdAndVis::SymbolTypeFlags onlyInFound = foundFilter & ~origCurFilter;
+    curFilter = IdAndVis::reverseFlags(onlyInFound) |
+                (origCurFilter & ~foundFilter);
 
     // update checkedScopes to remove filter bits that weren't present
     // in foundFilter (because we are going to update results
     // with matches for the now-not-filtered-out cases)
-    IdAndVis::SymbolTypeFlags combinedFilter = foundFilter & ~onlyInFound;
+    IdAndVis::SymbolTypeFlags combinedFilter = foundFilter & origCurFilter;
+
+    // since we are storing only a single bit set, we cannot represent
+    // all combinations, e.g.:
+    //   if we had input foundFilter={PUBLIC} and curFilter={METHODS_OR_FIELDS},
+    //   we will search now for {PRIVATE,METHODS_OR_FIELDS},
+    //   but then we will have no way of recording that we have
+    //   searched {PUBLIC} U {PRIVATE,METHODS_OR_FIELDS}, which means
+    //   that a future search for {PRIVATE,NOT_METHODS_OR_FIELDS} won't work.
     flagsInMap = combinedFilter;
   }
 
