@@ -7751,29 +7751,24 @@ proc fileWriter.flush(out error:errorCode) {
   }
 }
 
-/* Assert that a channel has reached end-of-file and that there was no error
+/* Assert that a fileReader has reached end-of-file and that there was no error
    doing the read.
  */
-proc _channel.assertEOF(errStr: string = "- Not at EOF") {
+proc fileReader.assertEOF(errStr: string = "- Not at EOF") {
   var isEOF = try! this.atEOF();
   if !isEOF then
     try! this._ch_ioerror("assert failed", errStr);
 }
 
-/* Returns true if a channel has reached end-of-file, false if not.
-   Throws an error if this is a writing channel, or if there was
-   an error doing the read.
+/* Returns true if a fileReader has reached end-of-file, false if not.  Throws
+   an error if there was an error doing the read.
 
    Inherently racy for channels, hence no doc.
  */
 pragma "no doc"
-proc _channel.atEOF(): bool throws {
-  if writing {
-    try this._ch_ioerror(EINVAL, "assertEOF on writing channel");
-  } else {
-    var tmp:uint(8);
-    return !(try this.read(tmp));
-  }
+proc fileReader.atEOF(): bool throws {
+  var tmp:uint(8);
+  return !(try this.read(tmp));
 }
 
 /*
