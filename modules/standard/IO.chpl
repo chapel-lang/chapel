@@ -7772,27 +7772,44 @@ proc fileReader.atEOF(): bool throws {
 }
 
 /*
-  Close a channel. Implicitly performs the :proc:`channel.flush` operation
-  (see :ref:`about-io-channel-synchronization`).
+  Close a fileReader
 
-  :throws SystemError: Thrown if the channel is not successfully closed.
+  :throws SystemError: Thrown if the fileReader is not successfully closed.
 */
-proc _channel.close() throws {
+proc fileReader.close() throws {
   var err:errorCode = 0;
 
   if is_c_nil(_channel_internal) then
-    throw createSystemOrChplError(EINVAL, "cannot close invalid channel");
+    throw createSystemOrChplError(EINVAL, "cannot close invalid fileReader");
 
   on this._home {
     err = qio_channel_close(locking, _channel_internal);
   }
-  if err then try this._ch_ioerror(err, "in channel.close");
+  if err then try this._ch_ioerror(err, "in fileReader.close");
 }
 
 /*
-   Return `true` if a channel is currently closed.
+  Close a fileWriter. Implicitly performs the :proc:`fileWriter.flush` operation
+  (see :ref:`about-io-channel-synchronization`).
+
+  :throws SystemError: Thrown if the fileWriter is not successfully closed.
+*/
+proc fileWriter.close() throws {
+  var err:errorCode = 0;
+
+  if is_c_nil(_channel_internal) then
+    throw createSystemOrChplError(EINVAL, "cannot close invalid fileWriter");
+
+  on this._home {
+    err = qio_channel_close(locking, _channel_internal);
+  }
+  if err then try this._ch_ioerror(err, "in fileWriter.close");
+}
+
+/*
+   Return ``true`` if a fileReader is currently closed.
  */
-proc _channel.isClosed() : bool {
+proc fileReader.isClosed() : bool {
   var ret:bool;
   on this._home {
     ret = qio_channel_isclosed(locking, _channel_internal);
@@ -7800,6 +7817,16 @@ proc _channel.isClosed() : bool {
   return ret;
 }
 
+/*
+   Return ``true`` if a fileWriter is currently closed.
+ */
+proc fileWriter.isClosed() : bool {
+  var ret:bool;
+  on this._home {
+    ret = qio_channel_isclosed(locking, _channel_internal);
+  }
+  return ret;
+}
 
 
 // TODO -- we should probably have separate c_ptr ddata and ref versions
