@@ -48,19 +48,14 @@ jobs:
               echo 'MERGE<<EOF' >> $GITHUB_ENV
               echo "$merge_log" >> $GITHUB_ENV
               echo 'EOF' >> $GITHUB_ENV
-
-              diff=$(git --no-pager diff --name-status --diff-filter=ACDMRT ${{github.event.pull_request.base.sha}} ${{github.sha}})
-              echo "$diff" 
-              echo 'DIFF<<EOF' >> $GITHUB_ENV
-              echo "$diff" >> $GITHUB_ENV
-              echo 'EOF' >> $GITHUB_ENV                   
+                 
       - name: get main-head
         run: | 
              git checkout main
              git remote add upstream https://github.com/chapel-lang/chapel
              git fetch upstream main 
              head_sha=$(git rev-parse upstream/main)
-             diff=$(git --no-pager diff --name-status --diff-filter=ACDMRT ${{github.event.pull_request.base.sha}} ${{github.sha}})
+             diff=$(git --no-pager diff --name-status --diff-filter=ACDMRT $head_sha ${{github.sha}})
              echo "$diff" 
              echo 'DIFF<<EOF' >> $GITHUB_ENV
              echo "$diff" >> $GITHUB_ENV
