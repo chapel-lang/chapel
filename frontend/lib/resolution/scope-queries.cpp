@@ -860,15 +860,13 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     }
 
     // otherwise, compute the new filter to use
-    IdAndVis::SymbolTypeFlags onlyInFound = 0;
-    onlyInFound = foundFilter & ~curFilter;
+    IdAndVis::SymbolTypeFlags onlyInFound = foundFilter & ~curFilter;
     curFilter = IdAndVis::reverseFlags(onlyInFound);
 
     // update checkedScopes to remove filter bits that weren't present
     // in foundFilter (because we are going to update results
     // with matches for the now-not-filtered-out cases)
-    IdAndVis::SymbolTypeFlags combinedFilter = 0;
-    combinedFilter = foundFilter & ~onlyInFound;
+    IdAndVis::SymbolTypeFlags combinedFilter = foundFilter & ~onlyInFound;
     checkedScopes[CheckedScope(name, scope)] = combinedFilter;
   }
 
