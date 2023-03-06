@@ -51,7 +51,29 @@ module MemMove {
     :return: ``true`` if ``t`` needs to be deinitialized
     :rtype: param bool
   */
+  pragma "no doc"
+  deprecated "'needsDeinit' is deprecated; please use 'needsDestroy' instead"
   proc needsDeinit(type t) param {
+    return __primitive("needs auto destroy", t);
+  }
+
+  /*
+    Check to see if a given type would normally be destroyed automatically
+    by the compiler when its lifetime ends. For example, passing an ``owned``
+    class would see this function return ``true``, whereas passing an
+    ``unmanaged`` class would result in ``false``.
+
+    A ``shared`` class would also result in ``true`` because the compiler
+    destroys ``shared`` variables to decrement the reference count (and
+    possibly the object being managed, as well).
+
+    :arg t: A type to check
+    :type t: `type`
+
+    :return: ``true`` if ``t`` needs to be automatically destroyed
+    :rtype: param bool
+  */
+  proc needsDestroy(type t) param : bool {
     return __primitive("needs auto destroy", t);
   }
 
@@ -67,9 +89,32 @@ module MemMove {
 
     :arg: A variable to deinitialize
   */
+  pragma "no doc"
+  deprecated "'explicitDeinit' is now deprecated; please use 'destroy' instead"
   proc explicitDeinit(ref arg: ?t) {
     if needsDeinit(t) then
       chpl__autoDestroy(arg);
+  }
+
+  /*
+    Explicitly destroy a variable as the compiler would when its lifetime ends.
+    The variable referred to by ``obj`` should be considered unusable after a
+    call to this function, and its particular state is undefined.
+
+    This function has no effect if :proc:`needsDestroy` returns ``false`` for
+    the argument's type.
+
+    .. warning::
+
+      At present the compiler does not account for manual destruction performed
+      upon a call to :proc:`destroy()`. It should only be called when automatic
+      destruction would not occur otherwise.
+
+    :arg obj: A variable to deinitialize
+  */
+  proc destroy(ref obj: ?t) {
+    if needsDestroy(t) then
+      chpl__autoDestroy(obj);
   }
 
   /*
@@ -110,7 +155,7 @@ module MemMove {
 
       If ``dst`` references an already initialized variable, it will be
       overwritten by the contents of ``src`` without being deinitialized
-      first. Call :proc:`explicitDeinit()` to deinitialize ``dst`` if
+      first. Call :proc:`destroy()` to deinitialize ``dst`` if
       necessary.
 
     .. warning::
