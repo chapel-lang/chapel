@@ -5572,25 +5572,45 @@ inline proc fileWriter.readWriteNewline() throws
   this.writeIt(ionl);
 }
 
-  /* Returns `true` if this channel is configured for binary I/O.
-   */
-  proc _channel.binary():bool {
-    var ret:uint(8);
-    on this._home {
-      ret = qio_channel_binary(_channel_internal);
-    }
-    return ret != 0;
+/* Returns `true` if this fileReader is configured for binary I/O.
+ */
+proc fileReader.binary():bool {
+  var ret:uint(8);
+  on this._home {
+    ret = qio_channel_binary(_channel_internal);
   }
+  return ret != 0;
+}
 
-  /* return other style elements. */
-  pragma "no doc"
-  proc _channel.styleElement(element:int):int {
-    var ret:int = 0;
-    on this._home {
-      ret = qio_channel_style_element(_channel_internal, element);
-    }
-    return ret;
+/* Returns `true` if this fileWriter is configured for binary I/O.
+ */
+proc fileWriter.binary():bool {
+  var ret:uint(8);
+  on this._home {
+    ret = qio_channel_binary(_channel_internal);
   }
+  return ret != 0;
+}
+
+/* return other style elements. */
+pragma "no doc"
+proc fileReader.styleElement(element:int):int {
+  var ret:int = 0;
+  on this._home {
+    ret = qio_channel_style_element(_channel_internal, element);
+  }
+  return ret;
+}
+
+/* return other style elements. */
+pragma "no doc"
+proc fileWriter.styleElement(element:int):int {
+  var ret:int = 0;
+  on this._home {
+    ret = qio_channel_style_element(_channel_internal, element);
+  }
+  return ret;
+}
 
   /*
      Write a sequence of bytes.
