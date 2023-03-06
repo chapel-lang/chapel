@@ -53,7 +53,7 @@ proc writeFreqs(data, param nclSize) {
   const freqs = calculate(data, nclSize);
 
   // create an array of (frequency, sequence) tuples
-  var arr = for (s,f) in zip(freqs.keys(), freqs.values()) do (f,s.val);
+  var arr = for (s,f) in freqs.items() do (f,s.val);
 
   // print the array, sorted by decreasing frequency
   for (f, s) in arr.sorted(reverseComparator) do
@@ -84,7 +84,7 @@ proc calculate(data, param nclSize) {
       myFreqs[hash(data, i, nclSize)] += 1;
 
     lock.readFE();      // acquire lock
-    for (k,v) in zip(myFreqs.keys(), myFreqs.values()) do
+    for (k,v) in myFreqs.items() do
       freqs[k] += v;
     lock.writeEF(true); // release lock
   }
