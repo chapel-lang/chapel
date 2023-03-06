@@ -10323,7 +10323,7 @@ proc readf(fmt:string):bool throws {
    formats, it may not be possible in general to know when a field ends.
 
    The field skipped includes a field name and value but not a following
-   separator. For example, for a JSON format channel, given the input:
+   separator. For example, for a JSON format fileReader, given the input:
 
    ::
 
@@ -10335,7 +10335,7 @@ proc readf(fmt:string):bool throws {
    :throws UnexpectedEofError: Thrown if EOF encountered skipping field.
    :throws SystemError: Thrown if the field could not be skipped.
  */
-proc _channel.skipField() throws {
+proc fileReader.skipField() throws {
   var err:errorCode = 0;
   on this._home {
     try this.lock(); defer { this.unlock(); }
