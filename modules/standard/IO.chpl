@@ -5282,228 +5282,220 @@ inline proc fileWriter._checkLiteralError(x:?t, err:errorCode, action:string,
   }
 }
 
-  pragma "no doc"
-  inline proc _channel._readLiteralCommon(x:?t, ignore:bool,
+pragma "no doc"
+inline proc fileReader._readLiteralCommon(x:?t, ignore:bool,
                                           param isMatch:bool) throws {
-    if t != string && t != bytes then
-      compilerError("expecting string or bytes");
+  if t != string && t != bytes then
+    compilerError("expecting string or bytes");
 
-    if writing {
-      param name = if isMatch then "matchLiteral" else "readLiteral";
-      param depth = if isMatch then 3 else 2;
-      compilerError(name + " on write-only channel", depth);
-    }
+  on this._home {
+    try! this.lock(); defer { this.unlock(); }
+    const cstr = x.localize().c_str();
+    const err = qio_channel_scan_literal(false, _channel_internal,
+                                         cstr, x.numBytes:c_ssize_t,
+                                         ignore);
 
-    on this._home {
-      try! this.lock(); defer { this.unlock(); }
-      const cstr = x.localize().c_str();
-      const err = qio_channel_scan_literal(false, _channel_internal,
-                                           cstr, x.numBytes:c_ssize_t,
-                                           ignore);
-
-      const action = if isMatch then "matching" else "reading";
-      try _checkLiteralError(x, err, action, isLiteral=true);
-    }
+    const action = if isMatch then "matching" else "reading";
+    try _checkLiteralError(x, err, action, isLiteral=true);
   }
+}
 
-  // non-unstable version we can use internally
-  pragma "no doc"
-  inline
-  proc _channel._readLiteral(literal:string,
+// non-unstable version we can use internally
+pragma "no doc"
+inline
+proc fileReader._readLiteral(literal:string,
+                             ignoreWhitespace=true) : void throws {
+  var iolit = new ioLiteral(literal, ignoreWhitespace);
+  this.readIt(iolit);
+}
+
+/*
+  Advances the position of a fileReader by reading the exact text of the given
+  string ``literal`` from the fileReader.
+
+  If the string is not matched exactly, then the fileReader's position is
+  unchanged. In such cases a :class:`OS.BadFormatError` will be thrown, unless
+  the end of the fileReader is encountered in which case an :class:`OS.EofError`
+  will be thrown. By default this method will ignore leading whitespace when
+  attempting to read a literal.
+
+  :arg literal: the string to be matched.
+  :arg ignoreWhitespace: determines whether leading whitespace is ignored.
+
+  :throws BadFormatError: Thrown if literal could not be matched.
+  :throws EofError: Thrown if end of fileReader is encountered.
+
+*/
+@unstable "fileReader.readLiteral is unstable and subject to change."
+inline
+proc fileReader.readLiteral(literal:string,
                             ignoreWhitespace=true) : void throws {
-    var iolit = new ioLiteral(literal, ignoreWhitespace);
-    this.readIt(iolit);
-  }
+  _readLiteralCommon(literal, ignoreWhitespace, isMatch=false);
+}
 
-  /*
-    Advances the position of a channel by reading the exact text of the given
-    string ``literal`` from the channel.
+/*
+  Advances the position of a fileReader by reading the exact bytes of the given
+  ``literal`` from the channel.
 
-    If the string is not matched exactly, then the channel's position is
-    unchanged. In such cases a :class:`OS.BadFormatError` will be thrown, unless the end of
-    the channel is encountered in which case an :class:`OS.EofError` will be thrown. By
-    default this method will ignore leading whitespace when attempting to read
-    a literal.
+  If the bytes are not matched exactly, then the fileReader's position is
+  unchanged. In such cases a :class:`OS.BadFormatError` will be thrown, unless
+  the end of the fileReader is encountered in which case an :class:`OS.EofError`
+  will be thrown. By default this method will ignore leading whitespace when
+  attempting to read a literal.
 
-    :arg literal: the string to be matched.
-    :arg ignoreWhitespace: determines whether leading whitespace is ignored.
+  :arg literal: the bytes to be matched.
+  :arg ignoreWhitespace: determines whether leading whitespace is ignored.
 
-    :throws BadFormatError: Thrown if literal could not be matched.
-    :throws EofError: Thrown if end of channel is encountered.
+  :throws BadFormatError: Thrown if literal could not be matched.
+  :throws EofError: Thrown if end of fileReader is encountered.
 
-  */
-  @unstable "channel.readLiteral is unstable and subject to change."
-  inline
-  proc _channel.readLiteral(literal:string,
-                           ignoreWhitespace=true) : void throws {
-    _readLiteralCommon(literal, ignoreWhitespace, isMatch=false);
-  }
-
-  /*
-    Advances the position of a channel by reading the exact bytes of the given
-    ``literal`` from the channel.
-
-    If the bytes are not matched exactly, then the channel's position is
-    unchanged. In such cases a :class:`OS.BadFormatError` will be thrown, unless the end of
-    the channel is encountered in which case an :class:`OS.EofError` will be thrown. By
-    default this method will ignore leading whitespace when attempting to read
-    a literal.
-
-    :arg literal: the bytes to be matched.
-    :arg ignoreWhitespace: determines whether leading whitespace is ignored.
-
-    :throws BadFormatError: Thrown if literal could not be matched.
-    :throws EofError: Thrown if end of channel is encountered.
-
-  */
-  @unstable "channel.readLiteral is unstable and subject to change."
-  inline
-  proc _channel.readLiteral(literal:bytes,
+*/
+@unstable "fileReader.readLiteral is unstable and subject to change."
+inline
+proc fileReader.readLiteral(literal:bytes,
                             ignoreWhitespace=true) : void throws {
-    _readLiteralCommon(literal, ignoreWhitespace, isMatch=false);
+  _readLiteralCommon(literal, ignoreWhitespace, isMatch=false);
+}
+
+// TODO: Don't we need an option to ignore whitespace or not?
+// Note: We don't want to allow skipping over non-whitespace.
+//
+// Note: We can add an 'ignoreWhitespace' optional argument that defaults
+// to 'true' without changing behavior in existing programs.
+pragma "no doc"
+inline
+proc fileReader._readNewlineCommon(param isMatch:bool) throws {
+  on this._home {
+    try! this.lock(); defer { this.unlock(); }
+    const err = qio_channel_skip_past_newline(false, _channel_internal,
+                                              /*skipWhitespaceOnly=*/ true);
+
+    const action = if isMatch then "matching" else "reading";
+    try _checkLiteralError("", err, action, isLiteral=false);
+  }
+}
+
+// non-unstable version we can use internally
+pragma "no doc"
+inline proc fileReader._readNewline() : void throws {
+  var ionl = new ioNewline(true);
+  this.readIt(ionl);
+}
+
+// TODO: How does this differ from readln() ?
+/*
+  Advances the position of the fileReader by reading a newline.
+
+  If a newline is not matched exactly, then the fileReader's position is
+  unchanged. In such cases a :class:`OS.BadFormatError` will be thrown, unless
+  the end of the fileReader is encountered in which case an :class:`OS.EofError`
+  will be thrown. By default this method will ignore leading whitespace when
+  attempting to read a newline.
+
+  :throws BadFormatError: Thrown if a newline could not be matched.
+  :throws EofError: Thrown if end of fileReader is encountered.
+
+*/
+@unstable "fileReader.readNewline is unstable and subject to change."
+inline
+proc fileReader.readNewline() : void throws {
+  _readNewlineCommon(isMatch=false);
+}
+
+pragma "no doc"
+inline
+proc fileReader._matchLiteralCommon(literal, ignore : bool) : bool throws {
+  try {
+    _readLiteralCommon(literal, ignore, isMatch=true);
+  } catch e : BadFormatError {
+    return false;
+  } catch e : EofError {
+    return false;
   }
 
-  // TODO: Don't we need an option to ignore whitespace or not?
-  // Note: We don't want to allow skipping over non-whitespace.
-  //
-  // Note: We can add an 'ignoreWhitespace' optional argument that defaults
-  // to 'true' without changing behavior in existing programs.
-  pragma "no doc"
-  inline
-  proc _channel._readNewlineCommon(param isMatch:bool) throws {
-    if writing {
-      param name = if isMatch then "matchNewline" else "readNewline";
-      compilerError(name + " on write-only channel", 2);
-    }
+  return true;
+}
 
-    on this._home {
-      try! this.lock(); defer { this.unlock(); }
-      const err = qio_channel_skip_past_newline(false, _channel_internal,
-                                                /*skipWhitespaceOnly=*/ true);
+/*
+  Advances the position of a fileReader by reading the exact text of the given
+  string ``literal`` from the fileReader.
 
-      const action = if isMatch then "matching" else "reading";
-      try _checkLiteralError("", err, action, isLiteral=false);
-    }
+  If the string is not matched exactly, then the fileReader's position is
+  unchanged and this method will return ``false``. In other words, this
+  fileeReader will return ``false`` in the cases where
+  :proc:`channel.readLiteral` would throw a :class:`OS.BadFormatError` or an
+  :class:`OS.EofError`.
+
+  By default this method will ignore leading whitespace when attempting to
+  read a literal.
+
+  :arg literal: the string to be matched.
+  :arg ignoreWhitespace: determines whether leading whitespace is ignored.
+
+  :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
+  the literal could not be matched.
+*/
+@unstable "fileReader.matchLiteral is unstable and subject to change."
+inline
+proc fileReader.matchLiteral(literal:string,
+                             ignoreWhitespace=true) : bool throws {
+  return _matchLiteralCommon(literal, ignoreWhitespace);
+}
+
+/*
+  Advances the position of a fileReader by reading the exact bytes of the given
+  ``literal`` from the fileReader.
+
+  If the bytes are not matched exactly, then the fileReader's position is
+  unchanged and this method will return ``false``. In other words, this
+  fileReader will return ``false`` in the cases where
+  :proc:`channel.readLiteral` would throw a :class:`OS.BadFormatError` or an
+  :class:`OS.EofError`.
+
+  By default this method will ignore leading whitespace when attempting to
+  read a literal.
+
+  :arg literal: the bytes to be matched.
+  :arg ignoreWhitespace: determines whether leading whitespace is ignored.
+
+  :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
+  the literal could not be matched.
+*/
+@unstable "fileReader.matchLiteral is unstable and subject to change."
+inline
+proc fileReader.matchLiteral(literal:bytes,
+                             ignoreWhitespace=true) : bool throws {
+  return _matchLiteralCommon(literal, ignoreWhitespace);
+}
+
+/*
+  Advances the position of the fileReader by reading a newline.
+
+  If a newline is not matched exactly, then the fileReader's position is
+  unchanged and this method will return ``false``. In other words, this
+  fileReader will return ``false`` in the cases where
+  :proc:`channel.readNewline` would throw a :class:`OS.BadFormatError` or an
+  :class:`OS.EofError`.
+
+  By default this method will ignore leading whitespace when attempting to
+  read a newline.
+
+  :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
+  the newline could not be matched.
+*/
+@unstable "fileReader.matchNewline is unstable and subject to change."
+inline
+proc fileReader.matchNewline() : bool throws {
+  try {
+    _readNewlineCommon(isMatch=true);
+  } catch e : BadFormatError {
+    return false;
+  } catch e : EofError {
+    return false;
   }
 
-  // non-unstable version we can use internally
-  pragma "no doc"
-  inline proc _channel._readNewline() : void throws {
-    var ionl = new ioNewline(true);
-    this.readIt(ionl);
-  }
-
-  // TODO: How does this differ from readln() ?
-  /*
-    Advances the position of the channel by reading a newline.
-
-    If a newline is not matched exactly, then the channel's position is
-    unchanged. In such cases a :class:`OS.BadFormatError` will be thrown, unless the end of
-    the channel is encountered in which case an :class:`OS.EofError` will be thrown. By
-    default this method will ignore leading whitespace when attempting to read
-    a newline.
-
-    :throws BadFormatError: Thrown if a newline could not be matched.
-    :throws EofError: Thrown if end of channel is encountered.
-
-  */
-  @unstable "channel.readNewline is unstable and subject to change."
-  inline
-  proc _channel.readNewline() : void throws {
-    _readNewlineCommon(isMatch=false);
-  }
-
-  pragma "no doc"
-  inline
-  proc _channel._matchLiteralCommon(literal, ignore : bool) : bool throws {
-    try {
-      _readLiteralCommon(literal, ignore, isMatch=true);
-    } catch e : BadFormatError {
-      return false;
-    } catch e : EofError {
-      return false;
-    }
-
-    return true;
-  }
-
-  /*
-    Advances the position of a channel by reading the exact text of the given
-    string ``literal`` from the channel.
-
-    If the string is not matched exactly, then the channel's position is
-    unchanged and this method will return ``false``. In other words, this
-    channel will return ``false`` in the cases where :proc:`channel.readLiteral`
-    would throw a :class:`OS.BadFormatError` or an :class:`OS.EofError`.
-
-    By default this method will ignore leading whitespace when attempting to
-    read a literal.
-
-    :arg literal: the string to be matched.
-    :arg ignoreWhitespace: determines whether leading whitespace is ignored.
-
-    :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
-      the literal could not be matched.
-  */
-  @unstable "channel.matchLiteral is unstable and subject to change."
-  inline
-  proc _channel.matchLiteral(literal:string,
-                            ignoreWhitespace=true) : bool throws {
-    return _matchLiteralCommon(literal, ignoreWhitespace);
-  }
-
-  /*
-    Advances the position of a channel by reading the exact bytes of the given
-    ``literal`` from the channel.
-
-    If the bytes are not matched exactly, then the channel's position is
-    unchanged and this method will return ``false``. In other words, this
-    channel will return ``false`` in the cases where :proc:`channel.readLiteral`
-    would throw a :class:`OS.BadFormatError` or an :class:`OS.EofError`.
-
-    By default this method will ignore leading whitespace when attempting to
-    read a literal.
-
-    :arg literal: the bytes to be matched.
-    :arg ignoreWhitespace: determines whether leading whitespace is ignored.
-
-    :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
-      the literal could not be matched.
-  */
-  @unstable "channel.matchLiteral is unstable and subject to change."
-  inline
-  proc _channel.matchLiteral(literal:bytes,
-                            ignoreWhitespace=true) : bool throws {
-    return _matchLiteralCommon(literal, ignoreWhitespace);
-  }
-
-  /*
-    Advances the position of the channel by reading a newline.
-
-    If a newline is not matched exactly, then the channel's position is
-    unchanged and this method will return ``false``. In other words, this
-    channel will return ``false`` in the cases where :proc:`channel.readNewline`
-    would throw a :class:`OS.BadFormatError` or an :class:`OS.EofError`.
-
-    By default this method will ignore leading whitespace when attempting to
-    read a newline.
-
-    :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
-      the newline could not be matched.
-  */
-  @unstable "channel.matchNewline is unstable and subject to change."
-  inline
-  proc _channel.matchNewline() : bool throws {
-    try {
-      _readNewlineCommon(isMatch=true);
-    } catch e : BadFormatError {
-      return false;
-    } catch e : EofError {
-      return false;
-    }
-
-    return true;
-  }
+  return true;
+}
 
   pragma "no doc"
   inline
