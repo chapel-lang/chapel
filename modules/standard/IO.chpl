@@ -9409,7 +9409,7 @@ private proc _conv_helper(
 }
 
 pragma "no doc"
-proc _channel._conv_sethandler(
+proc fileWriter._conv_sethandler(
     ref error:errorCode,
     argtypei:c_int,
     ref style:iostyleInternal,
@@ -9501,7 +9501,7 @@ proc _channel._conv_sethandler(
 }
 
 pragma "no doc"
-proc _channel._write_signed(width:uint(32), t:int, i:int):errorCode
+proc fileWriter._write_signed(width:uint(32), t:int, i:int):errorCode
 {
   var err:errorCode;
   var byteorder = qio_channel_byteorder(_channel_internal);
@@ -9524,7 +9524,7 @@ proc _channel._write_signed(width:uint(32), t:int, i:int):errorCode
 }
 
 pragma "no doc"
-proc _channel._read_signed(width:uint(32), out t:int, i:int):errorCode
+proc fileReader._read_signed(width:uint(32), out t:int, i:int):errorCode
 {
   var err:errorCode;
   var byteorder = qio_channel_byteorder(_channel_internal);
@@ -9551,7 +9551,7 @@ proc _channel._read_signed(width:uint(32), out t:int, i:int):errorCode
 }
 
 pragma "no doc"
-proc _channel._write_unsigned(width:uint(32), t:uint, i:int)
+proc fileWriter._write_unsigned(width:uint(32), t:uint, i:int)
 {
   var err:errorCode;
   var byteorder = qio_channel_byteorder(_channel_internal);
@@ -9573,7 +9573,7 @@ proc _channel._write_unsigned(width:uint(32), t:uint, i:int)
   return err;
 }
 pragma "no doc"
-proc _channel._read_unsigned(width:uint(32), out t:uint, i:int)
+proc fileReader._read_unsigned(width:uint(32), out t:uint, i:int)
 {
   var err:errorCode;
   var byteorder = qio_channel_byteorder(_channel_internal);
@@ -9601,7 +9601,7 @@ proc _channel._read_unsigned(width:uint(32), out t:uint, i:int)
 
 
 pragma "no doc"
-proc _channel._write_real(width:uint(32), t:real, i:int)
+proc fileWriter._write_real(width:uint(32), t:real, i:int)
 {
   var err:errorCode;
   var byteorder = qio_channel_byteorder(_channel_internal);
@@ -9617,7 +9617,7 @@ proc _channel._write_real(width:uint(32), t:real, i:int)
   return err;
 }
 pragma "no doc"
-proc _channel._read_real(width:uint(32), out t:real, i:int)
+proc fileReader._read_real(width:uint(32), out t:real, i:int)
 {
   var err:errorCode;
   var byteorder = qio_channel_byteorder(_channel_internal);
@@ -9637,7 +9637,7 @@ proc _channel._read_real(width:uint(32), out t:real, i:int)
 
 
 pragma "no doc"
-proc _channel._write_complex(width:uint(32), t:complex, i:int)
+proc fileWriter._write_complex(width:uint(32), t:complex, i:int)
 {
   var err:errorCode = 0;
   var byteorder = qio_channel_byteorder(_channel_internal);
@@ -9664,7 +9664,7 @@ proc _channel._write_complex(width:uint(32), t:complex, i:int)
 }
 
 pragma "no doc"
-proc _channel._read_complex(width:uint(32), out t:complex, i:int)
+proc fileReader._read_complex(width:uint(32), out t:complex, i:int)
 {
   var err:errorCode = 0;
   var byteorder = qio_channel_byteorder(_channel_internal);
