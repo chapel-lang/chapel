@@ -208,6 +208,7 @@ module BigInteger {
   record bigint {
     // The underlying GMP C structure
     pragma "no doc"
+    pragma "no init"
     var mpz      : mpz_t;              // A dynamic-vector of C integers
 
     pragma "no doc"
