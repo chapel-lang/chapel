@@ -95,7 +95,7 @@ module ChapelHashtable {
         }
       }
       otherwise {
-        halt("ArrayInit.", initMethod, " should have been made concrete");
+        halt("ArrayInit.", initMethod, " should have been implemented");
       }
     }
 

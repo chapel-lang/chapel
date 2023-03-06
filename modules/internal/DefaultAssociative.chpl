@@ -502,7 +502,8 @@ module DefaultAssociative {
                  " CHPL_MEM_STRATEGY=array_on_device yet.");
           }
           otherwise {
-            halt("ArrayInit.", initMethod, " heuristicInit should have been made concrete");
+            halt("ArrayInit.", initMethod,
+                 " heuristicInit should have been implemented");
           }
         }
       }
