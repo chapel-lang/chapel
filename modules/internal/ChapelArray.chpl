@@ -1831,7 +1831,7 @@ module ChapelArray {
         var foundIt = false;
         var locIdx = max(fullIdxType);
         forall i in this.domain with (min reduce locIdx, max reduce foundIt) {
-          if this[i] == val {
+          if this[i] == val && (!foundIt || i < locIdx) {
             locIdx = i;
             foundIt = true;
           }
