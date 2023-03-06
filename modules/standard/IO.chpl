@@ -6372,20 +6372,22 @@ proc fileReader.readAll(ref a: [?d] ?t): int throws
   return (i - d.low);
 }
 
-/* read a given number of bytes from a channel
+/* read a given number of bytes from a fileReader
 
    :arg str_out: The string to be read into
-   :arg len: Read up to len bytes from the channel, up until EOF
+   :arg len: Read up to len bytes from the fileReader, up until EOF
              (or some kind of I/O error). If the default value of -1
-             is provided, read until EOF starting from the channel's
+             is provided, read until EOF starting from the fileReader's
              current offset.
    :returns: `true` if we read something, `false` upon EOF
 
-   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
-   :throws SystemError: Thrown if the bytes could not be read from the channel.
+   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
+                               reading.
+   :throws SystemError: Thrown if the bytes could not be read from the
+                        fileReader.
  */
 deprecated "'readstring' is deprecated; please use 'readString' instead"
-proc _channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
+proc fileReader.readstring(ref str_out:string, len:int(64) = -1):bool throws {
   var (err, _) = readBytesOrString(this, str_out, len);
 
   if !err {
@@ -6393,7 +6395,7 @@ proc _channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
   } else if err == EEOF {
     return false;
   } else {
-    try this._ch_ioerror(err, "in channel.readstring(ref str_out:string, len:int(64))");
+    try this._ch_ioerror(err, "in fileReader.readstring(ref str_out:string, len:int(64))");
   }
   return false;
 }
@@ -6442,19 +6444,19 @@ proc fileReader.readString(ref s: string, maxSize: int): bool throws {
   return lenRead > 0;
 }
 
-/* read a given number of bytes from a channel
+/* read a given number of bytes from a fileReader
 
    :arg bytes_out: The bytes to be read into
-   :arg len: Read up to len bytes from the channel, up until EOF
+   :arg len: Read up to len bytes from the fileReader, up until EOF
              (or some kind of I/O error). If the default value of -1
-             is provided, read until EOF starting from the channel's
+             is provided, read until EOF starting from the fileReader's
              current offset.
    :returns: `true` if we read something, `false` upon EOF
 
-  :throws SystemError: Thrown if data could not be read from the channel.
+  :throws SystemError: Thrown if data could not be read from the fileReader.
  */
 deprecated "'readbytes' is deprecated; please use 'readBytes' instead"
-proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
+proc fileReader.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
   var (err, _) = readBytesOrString(this, bytes_out, len);
 
   if !err {
@@ -6462,7 +6464,7 @@ proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
   } else if err == EEOF {
     return false;
   } else {
-    try this._ch_ioerror(err, "in channel.readbytes(ref str_out:bytes, len:int(64))");
+    try this._ch_ioerror(err, "in fileReader.readbytes(ref str_out:bytes, len:int(64))");
   }
   return false;
 }
@@ -6575,8 +6577,8 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
 
 }
 
-deprecated "channel.readbits is deprecated - please use :proc:`fileReader.readBits` instead"
-proc _channel.readbits(ref v:integral, nbits:integral):bool throws {
+deprecated "fileReader.readbits is deprecated - please use :proc:`fileReader.readBits` instead"
+proc fileReader.readbits(ref v:integral, nbits:integral):bool throws {
     return this.readBits(v, nbits:int);
 }
 
@@ -6589,7 +6591,8 @@ proc _channel.readbits(ref v:integral, nbits:integral):bool throws {
    :returns: `true` if the bits were read without error, `false` upon EOF
 
    :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
-   :throws SystemError: Thrown if the bits could not be read from the channel.
+   :throws SystemError: Thrown if the bits could not be read from the
+                        fileReader.
  */
 proc fileReader.readBits(ref x:integral, numBits:int):bool throws {
   if castChecking {
@@ -6614,10 +6617,13 @@ proc fileReader.readBits(ref x:integral, numBits:int):bool throws {
 
     :arg resultType: type of the value returned
     :arg numBits: how many bits to read
-    :returns: bits read. This value will have its *numBits* least-significant bits set
+    :returns: bits read. This value will have its *numBits* least-significant
+              bits set
 
-    :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
-    :throws SystemError: Thrown if the bits could not be read from the channel.
+    :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
+                                reading.
+    :throws SystemError: Thrown if the bits could not be read from the
+                         fileReader.
 */
 proc fileReader.readBits(type resultType, numBits:int):resultType throws {
   var tmp:resultType;
