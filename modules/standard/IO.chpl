@@ -5497,66 +5497,62 @@ proc fileReader.matchNewline() : bool throws {
   return true;
 }
 
-  pragma "no doc"
-  inline
-  proc _channel._writeLiteralCommon(x:?t) : void throws {
-    if t != string && t != bytes then
-      compilerError("expecting string or bytes");
+pragma "no doc"
+inline
+proc fileWriter._writeLiteralCommon(x:?t) : void throws {
+  if t != string && t != bytes then
+    compilerError("expecting string or bytes");
 
-    if !writing then compilerError("writeLiteral on read-only channel", 2);
-
-    on this._home {
-      try! this.lock(); defer { this.unlock(); }
-      const cstr = x.localize().c_str();
-      const err = qio_channel_print_literal(false, _channel_internal, cstr,
-                                            x.numBytes:c_ssize_t);
-      try _checkLiteralError(x, err, "writing", isLiteral=true);
-    }
+  on this._home {
+    try! this.lock(); defer { this.unlock(); }
+    const cstr = x.localize().c_str();
+    const err = qio_channel_print_literal(false, _channel_internal, cstr,
+                                          x.numBytes:c_ssize_t);
+    try _checkLiteralError(x, err, "writing", isLiteral=true);
   }
+}
 
-  pragma "no doc"
-  inline
-  proc _channel._writeLiteral(literal:string) : void throws {
-    var iolit = new ioLiteral(literal);
-    this.writeIt(iolit);
+pragma "no doc"
+inline
+proc fileWriter._writeLiteral(literal:string) : void throws {
+  var iolit = new ioLiteral(literal);
+  this.writeIt(iolit);
+}
+
+/*
+  Writes a string to the fileWriter, ignoring any formatting configured for
+  this fileWriter.
+*/
+@unstable "fileWriter.writeLiteral is unstable and subject to change."
+inline
+proc fileWriter.writeLiteral(literal:string) : void throws {
+  _writeLiteralCommon(literal);
+}
+
+/*
+  Writes bytes to the fileWriter, ignoring any formatting configured for this
+  fileWriter.
+*/
+@unstable "fileWriter.writeLiteral is unstable and subject to change."
+inline
+proc fileWriter.writeLiteral(literal:bytes) : void throws {
+  _writeLiteralCommon(literal);
+}
+
+// TODO: How does this differ from writeln() ?
+/*
+  Writes a newline to the fileWriter, ignoring any formatting configured for
+  this fileWriter.
+*/
+@unstable "fileWriter.writeNewline is unstable and subject to change."
+inline
+proc fileWriter.writeNewline() : void throws {
+  on this._home {
+    try! this.lock(); defer { this.unlock(); }
+    const err = qio_channel_write_newline(false, _channel_internal);
+    try _checkLiteralError("", err, "writing", isLiteral=false);
   }
-
-  /*
-    Writes a string to the channel, ignoring any formatting configured for
-    this channel.
-  */
-  @unstable "channel.writeLiteral is unstable and subject to change."
-  inline
-  proc _channel.writeLiteral(literal:string) : void throws {
-    _writeLiteralCommon(literal);
-  }
-
-  /*
-    Writes bytes to the channel, ignoring any formatting configured for this
-    channel.
-  */
-  @unstable "channel.writeLiteral is unstable and subject to change."
-  inline
-  proc _channel.writeLiteral(literal:bytes) : void throws {
-    _writeLiteralCommon(literal);
-  }
-
-  // TODO: How does this differ from writeln() ?
-  /*
-    Writes a newline to the channel, ignoring any formatting configured for
-    this channel.
-  */
-  @unstable "channel.writeNewline is unstable and subject to change."
-  inline
-  proc _channel.writeNewline() : void throws {
-    if !writing then compilerError("writeNewline on read-only channel");
-
-    on this._home {
-      try! this.lock(); defer { this.unlock(); }
-      const err = qio_channel_write_newline(false, _channel_internal);
-      try _checkLiteralError("", err, "writing", isLiteral=false);
-    }
-  }
+}
 
   /* Explicit call for reading or writing a newline as an
      alternative to using :type:`IO.ioNewline`.
