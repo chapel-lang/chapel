@@ -3447,5 +3447,7 @@ bool isTypeDefaultInitializable(Context* context, const Type* t) {
   return isTypeDefaultInitializableQuery(context, t);
 }
 
+
+
 } // end namespace resolution
 } // end namespace chpl

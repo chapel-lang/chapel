@@ -3574,7 +3574,7 @@ void Resolver::exit(const Catch* node) {
 bool Resolver::enter(const Use* node) {
   const Scope* scope = scopeStack.back();
   CHPL_ASSERT(scope);
-  resolveUsesAndImportsInScope(context, scope);
+  std::ignore = resolveVisibilityStmts(context, scope);
   return false;
 }
 
@@ -3584,7 +3584,7 @@ void Resolver::exit(const Use* node) {}
 bool Resolver::enter(const Import* node) {
   const Scope* scope = scopeStack.back();
   CHPL_ASSERT(scope);
-  resolveUsesAndImportsInScope(context, scope);
+  std::ignore = resolveVisibilityStmts(context, scope);
   return false;
 }
 
