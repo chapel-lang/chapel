@@ -51,7 +51,7 @@ jobs:
                  
       - name: get main-head
         run: |
-             git rebase main 
+             git rebase origin/main 
              head_sha=$(git rev-parse origin/main)
              diff=$(git --no-pager diff --name-status --diff-filter=ACDMRT $head_sha ${{github.sha}})
              echo "$diff" 
