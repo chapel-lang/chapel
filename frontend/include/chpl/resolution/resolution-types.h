@@ -1297,8 +1297,8 @@ class ResolutionResultByPostorderID {
  private:
   ID symbolId;
   // This map is generally accessed with operator[] to default-construct a new
-  // ResolvedExpression if none exists for an ID. In other cases at() is used
-  // instead for const-ness.
+  // ResolvedExpression if none exists for an ID. at() is used instead only
+  // when const-ness is required.
   std::unordered_map<int, ResolvedExpression> map;
 
  public:
@@ -1311,16 +1311,7 @@ class ResolutionResultByPostorderID {
   /** prepare to resolve the body of a For loop */
   void setupForParamLoop(const uast::For* loop, ResolutionResultByPostorderID& parent);
 
-  /* ResolvedExpression& byIdExpanding(const ID& id) { */
-  /*   auto postorder = id.postOrderId(); */
-  /*   CHPL_ASSERT(id.symbolPath() == symbolId.symbolPath()); */
-  /*   CHPL_ASSERT(0 <= postorder); */
-  /*   return map[postorder]; */
-  /* } */
-  /* ResolvedExpression& byAstExpanding(const uast::AstNode* ast) { */
-  /*   return byIdExpanding(ast->id()); */
-  /* } */
-
+  /* ID query functions */
   bool hasId(const ID& id) const {
     auto postorder = id.postOrderId();
     if (id.symbolPath() == symbolId.symbolPath() &&
@@ -1329,10 +1320,6 @@ class ResolutionResultByPostorderID {
 
     return false;
   }
-  bool hasAst(const uast::AstNode* ast) const {
-    return ast != nullptr && hasId(ast->id());
-  }
-
   ResolvedExpression& byId(const ID& id) {
     auto postorder = id.postOrderId();
     return map[postorder];
@@ -1342,19 +1329,6 @@ class ResolutionResultByPostorderID {
     auto postorder = id.postOrderId();
     return map.at(postorder);
   }
-  ResolvedExpression& byAst(const uast::AstNode* ast) {
-    return byId(ast->id());
-  }
-  const ResolvedExpression& byAst(const uast::AstNode* ast) const {
-    return byId(ast->id());
-  }
-  ResolvedExpression* byIdOrNull(const ID& id) {
-    if (hasId(id)) {
-      auto postorder = id.postOrderId();
-      return &map[postorder];
-    }
-    return nullptr;
-  }
   const ResolvedExpression* byIdOrNull(const ID& id) const {
     if (hasId(id)) {
       auto postorder = id.postOrderId();
@@ -1362,8 +1336,16 @@ class ResolutionResultByPostorderID {
     }
     return nullptr;
   }
-  ResolvedExpression* byAstOrNull(const uast::AstNode* ast) {
-    return byIdOrNull(ast->id());
+
+  /* AST query functions */
+  bool hasAst(const uast::AstNode* ast) const {
+    return ast != nullptr && hasId(ast->id());
+  }
+  ResolvedExpression& byAst(const uast::AstNode* ast) {
+    return byId(ast->id());
+  }
+  const ResolvedExpression& byAst(const uast::AstNode* ast) const {
+    return byId(ast->id());
   }
   const ResolvedExpression* byAstOrNull(const uast::AstNode* ast) const {
     return byIdOrNull(ast->id());

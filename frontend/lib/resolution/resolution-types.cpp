@@ -392,26 +392,14 @@ CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
 
 void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
   CHPL_ASSERT(Builder::astTagIndicatesNewIdScope(ast->tag()));
-  /* vec.resize(ast->id().numContainedChildren()); */
 
   symbolId = ast->id();
 }
 void ResolutionResultByPostorderID::setupForSignature(const Function* func) {
-  /* int maxPostorderId = 0; */
-  /* if (func && func->numChildren() > 0) */
-  /*   maxPostorderId = func->child(func->numChildren() - 1)->id().postOrderId(); */
-  /* CHPL_ASSERT(0 <= maxPostorderId); */
-  /* vec.resize(maxPostorderId + 1); */
-
   symbolId = func->id();
 }
-void ResolutionResultByPostorderID::setupForParamLoop(const For* loop, ResolutionResultByPostorderID& parent) {
-  /* int bodyPostorder = 0; */
-  /* if (loop && loop->body()) */
-  /*   bodyPostorder = loop->body()->id().postOrderId(); */
-  /* CHPL_ASSERT(0 <= bodyPostorder); */
-  /* vec.resize(bodyPostorder); */
-
+void ResolutionResultByPostorderID::setupForParamLoop(
+    const For* loop, ResolutionResultByPostorderID& parent) {
   this->symbolId = parent.symbolId;
 }
 void ResolutionResultByPostorderID::setupForFunction(const Function* func) {
