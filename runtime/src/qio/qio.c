@@ -96,9 +96,9 @@ ssize_t qio_mmap_chunk_iobufs = 128; // mmap 128 iobufs at a time (8M)
 // Future - possibly set this based on ulimit?
 ssize_t qio_initial_mmap_max = 8*1024*1024;
 
-// when not using mmap, writes above this size
+// when not using mmap, writes larger than this size
 // can avoid buffering by calling pwrite/fwrite/write directly
-ssize_t qio_write_unbuffered_threshold = 8*1024;
+ssize_t qio_write_unbuffered_threshold = 16;
 
 #ifdef _chplrt_H_
 qioerr qio_lock(qio_lock_t* x) {
@@ -2892,7 +2892,8 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
        ( ch->mark_cur == 0 || ch->mark_cur == 1) &&                   // buffering isn't waiting for a commit/revert
        ch->chan_info == NULL                                          // there is no IO plugin
   ) {
-    // printf("Unbuffered Write ------------------------\n");
+    fprintf(stderr, "Unbuffered Write ------------------------\n");
+    // fflush(stderr);
 
     // check if this write will exceed EOF
     if ( ch->end_pos < INT64_MAX && _right_mark_start(ch) + len > ch->end_pos ) {
@@ -2957,7 +2958,8 @@ qioerr _qio_buffered_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssiz
     _qio_buffered_setup_cached(ch);
 
   } else {
-    // printf("Buffered Write ------------------------\n");
+    fprintf(stderr, "Buffered Write ------------------------\n");
+    // fflush(stderr);
 
   //   otherwise, do a buffered write
     while ((remaining > 0) && !eof) {
@@ -3266,6 +3268,8 @@ qioerr _qio_slow_write(qio_channel_t* ch, const void* ptr, ssize_t len, ssize_t*
   if( ! (ch->flags & QIO_FDFLAG_WRITEABLE ) ) {
     QIO_RETURN_CONSTANT_ERROR(EBADF, "not writeable");
   }
+
+  printf("wtf???");
 
   if( _use_buffered(ch, len) ) {
     return _qio_buffered_write(ch, ptr, len, amt_written);
