@@ -2723,7 +2723,7 @@ operator fileWriter.=(ref lhs:fileWriter, rhs:fileWriter) {
 }
 
 pragma "no doc"
-proc fileReader.init param kind:iokind, param locking:bool, type fmtType) {
+proc fileReader.init(param kind:iokind, param locking:bool, type fmtType) {
   var default : fmtType;
   this.init(kind, locking, default);
 }
@@ -2902,7 +2902,7 @@ proc fileReader.withFormatter(type fmtType) {
 
 pragma "no doc"
 proc fileReader.withFormatter(f: ?) {
-  var ret = new _channel(this.writing, this.kind, this.locking, f);
+  var ret = new fileReader(this.kind, this.locking, f);
   ret._channel_internal = this._channel_internal;
   ret._home = _home;
   ret._readWriteThisFromLocale = _readWriteThisFromLocale;
@@ -2920,7 +2920,7 @@ proc fileWriter.withFormatter(type fmtType) {
 
 pragma "no doc"
 proc fileWriter.withFormatter(f: ?) {
-  var ret = new _channel(this.writing, this.kind, this.locking, f);
+  var ret = new fileWriter(this.kind, this.locking, f);
   ret._channel_internal = this._channel_internal;
   ret._home = _home;
   ret._readWriteThisFromLocale = _readWriteThisFromLocale;
@@ -9271,7 +9271,7 @@ proc fileReader._format_reader(
       gotConv = false;
       if error then break;
       var end:uint(64);
-      error = qio_conv_parse(fmt, cur, end, isReadf, conv, style);
+      error = qio_conv_parse(fmt, cur, end, true, conv, style);
       if error {
       }
       cur = end:c_size_t;
@@ -9366,7 +9366,7 @@ proc fileWriter._format_reader(
       gotConv = false;
       if error then break;
       var end:uint(64);
-      error = qio_conv_parse(fmt, cur, end, isReadf, conv, style);
+      error = qio_conv_parse(fmt, cur, end, false, conv, style);
       if error {
       }
       cur = end:c_size_t;
