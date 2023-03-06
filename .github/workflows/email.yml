@@ -55,7 +55,7 @@ jobs:
              git remote add upstream https://github.com/chapel-lang/chapel
              git fetch upstream main 
              git rebase upstream/main
-             head_sha=$(git rev-parse upstream/main)
+             head_sha=$(git rev-parse origin/main)
              diff=$(git --no-pager diff --name-status --diff-filter=ACDMRT $head_sha ${{github.sha}})
              echo "$diff" 
              echo 'DIFF<<EOF' >> $GITHUB_ENV
