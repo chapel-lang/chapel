@@ -4,7 +4,7 @@ Release Changes List
 version 1.30.0
 ==============
 
-released March 24, 2023
+released March 23, 2023
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
