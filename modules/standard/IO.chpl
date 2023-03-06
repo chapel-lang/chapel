@@ -5635,8 +5635,8 @@ proc fileWriter._writeBytes(x, len:c_ssize_t) throws {
 }
 
 /*
-  Iterate over all of the lines ending in ``\n`` in a channel - the channel
-  lock will be held while iterating over the lines.
+  Iterate over all of the lines ending in ``\n`` in a fileReader - the
+  fileReader lock will be held while iterating over the lines.
 
   Only serial iteration is supported.
 
@@ -5644,11 +5644,11 @@ proc fileWriter._writeBytes(x, len:c_ssize_t) throws {
 
     This iterator executes on the current locale. This may impact multilocale
     performance if the current locale is not the same locale on which the
-    channel was created.
+    fileReader was created.
 
-  :yields: lines ending in ``\n`` in channel
+  :yields: lines ending in ``\n`` in fileReader
  */
-iter _channel.lines() {
+iter fileReader.lines() {
 
   try! this.lock();
 
@@ -5735,8 +5735,7 @@ private proc _args_to_proto(const args ...?k, preArg:string) {
 }
 
 pragma "no doc"
-inline proc _channel._readInner(ref args ...?k):void throws {
-  if writing then compilerError("read on write-only channel");
+inline proc fileReader._readInner(ref args ...?k):void throws {
   const origLocale = this.getLocaleOfIoRequest();
 
   on this._home {
@@ -5753,8 +5752,8 @@ inline proc _channel._readInner(ref args ...?k):void throws {
 
 /*
 
-   Read values from a channel. The input will be consumed atomically - the
-   channel lock will be held while reading all of the passed values.
+   Read values from a fileReader. The input will be consumed atomically - the
+   fileReader lock will be held while reading all of the passed values.
 
    :arg args: a list of arguments to read. Basic types are handled
               internally, but for other types this function will call
@@ -5763,9 +5762,9 @@ inline proc _channel._readInner(ref args ...?k):void throws {
    :returns: `true` if the read succeeded, and `false` on end of file.
 
    :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
-   :throws SystemError: Thrown if the channel could not be read.
+   :throws SystemError: Thrown if the fileReader could not be read.
  */
-inline proc _channel.read(ref args ...?k):bool throws {
+inline proc fileReader.read(ref args ...?k):bool throws {
   try {
     this._readInner((...args));
   } catch err: EofError {
@@ -5776,13 +5775,12 @@ inline proc _channel.read(ref args ...?k):bool throws {
 }
 
 @unstable "read with a style argument is unstable"
-proc _channel.read(ref args ...?k, style:iostyle):bool throws {
+proc fileReader.read(ref args ...?k, style:iostyle):bool throws {
   return this.readHelper((...args), style: iostyleInternal);
 }
 
 pragma "no doc"
-proc _channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
-  if writing then compilerError("read on write-only channel");
+proc fileReader.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
   const origLocale = this.getLocaleOfIoRequest();
 
   try {
