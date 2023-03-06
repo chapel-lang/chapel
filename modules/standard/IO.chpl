@@ -6633,8 +6633,8 @@ proc fileReader.readBits(type resultType, numBits:int):resultType throws {
 }
 
 
-deprecated "channel.writebits is deprecated - please use :proc:`fileWriter.writeBits` instead"
-proc _channel.writebits(v:integral, nbits:integral) throws {
+deprecated "fileWriter.writebits is deprecated - please use :proc:`fileWriter.writeBits` instead"
+proc fileWriter.writebits(v:integral, nbits:integral) throws {
   this.writeBits(v, nbits:int);
 }
 
@@ -6869,17 +6869,20 @@ proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
 }
 
 /*
-   Write a binary number to the channel
+   Write a binary number to the fileWriter
 
    :arg arg: number to be written
-   :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
-              to write the number. Defaults to ``ioendian.native``.
+   :arg endian: :type:`ioendian` compile-time argument that specifies the byte
+                order in which to write the number. Defaults to
+                ``ioendian.native``.
 
    :throws UnexpectedEofError: Thrown if the write operation exceeds the
                                ``fileWriter``'s specified range.
-   :throws SystemError: Thrown if the number could not be written to the channel.
+   :throws SystemError: Thrown if the number could not be written to the
+                        fileWriter.
  */
-proc _channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) throws {
+proc fileWriter.writeBinary(arg:numeric,
+                            param endian:ioendian = ioendian.native) throws {
   var e:errorCode = 0;
 
   select (endian) {
@@ -6899,7 +6902,7 @@ proc _channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) 
 }
 
 /*
-   Write a binary number to the channel
+   Write a binary number to the fileWriter
 
    :arg arg: number to be written
    :arg endian: :type:`ioendian` specifies the byte order in which
@@ -6907,9 +6910,10 @@ proc _channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) 
 
    :throws UnexpectedEofError: Thrown if the write operation exceeds the
                                ``fileWriter``'s specified range.
-   :throws SystemError: Thrown if the number could not be written to the channel.
- */
-proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
+   :throws SystemError: Thrown if the number could not be written to the
+                        fileWriter.
+*/
+proc fileWriter.writeBinary(arg:numeric, endian:ioendian) throws {
   select (endian) {
     when ioendian.native {
       this.writeBinary(arg, ioendian.native);
