@@ -6228,19 +6228,21 @@ proc fileReader.readLine(type t=string, maxSize=-1,
 }
 
 /*
-  Read the remaining contents of the channel into an instance of the specified type
+  Read the remaining contents of the fileReader into an instance of the
+  specified type
 
-  :arg t: the type to read into; must be ``string`` or ``bytes``. Defaults to ``bytes`` if not specified.
+  :arg t: the type to read into; must be ``string`` or ``bytes``. Defaults to
+          ``bytes`` if not specified.
   :returns: the contents of the channel as a ``t``
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
-  :throws SystemError: Thrown if data could not be read from the channel for another reason.
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
+                              reading.
+  :throws SystemError: Thrown if data could not be read from the fileReader for
+                       another reason.
 */
-proc _channel.readAll(type t=bytes): t throws
+proc fileReader.readAll(type t=bytes): t throws
   where t==string || t==bytes
 {
-  if this.writing then compilerError("attempt to read on write-only channel");
-
   var out_var : t;
 
   if t == bytes {
@@ -6255,7 +6257,7 @@ proc _channel.readAll(type t=bytes): t throws
 }
 
 /*
-  Read the remaining contents of the channel into a ``string``.
+  Read the remaining contents of the fileReader into a ``string``.
 
   Note that any existing contents of the ``string`` are overwritten.
 
@@ -6263,23 +6265,23 @@ proc _channel.readAll(type t=bytes): t throws
   :returns: the number of codepoints that were stored in ``s``
   :rtype: int
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
-  :throws SystemError: Thrown if data could not be read from the channel for another reason.
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
+                              reading.
+  :throws SystemError: Thrown if data could not be read from the fileReader for
+                       another reason.
 */
-proc _channel.readAll(ref s: string): int throws {
-  if this.writing then compilerError("attempt to read on write-only channel");
-
+proc fileReader.readAll(ref s: string): int throws {
   const (err, lenread) = readBytesOrString(this, s, -1);
 
   if err != 0 && err != EEOF {
-    try this._ch_ioerror(err, "in channel.readAll(ref s: string)");
+    try this._ch_ioerror(err, "in fileReader.readAll(ref s: string)");
   }
 
   return lenread;
 }
 
 /*
-  Read the remaining contents of the channel into a ``bytes``.
+  Read the remaining contents of the fileReader into a ``bytes``.
 
   Note that any existing contents of the ``bytes`` are overwritten.
 
@@ -6287,26 +6289,26 @@ proc _channel.readAll(ref s: string): int throws {
   :returns: the number of bytes that were stored in ``b``
   :rtype: int
 
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
-  :throws SystemError: Thrown if data could not be read from the channel for another reason.
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
+                              reading.
+  :throws SystemError: Thrown if data could not be read from the fileReader for
+                       another reason.
 */
-proc _channel.readAll(ref b: bytes): int throws {
-  if this.writing then compilerError("attempt to read on write-only channel");
-
+proc fileReader.readAll(ref b: bytes): int throws {
   const (err, lenread) = readBytesOrString(this, b, -1);
 
   if err != 0 && err != EEOF {
-    try this._ch_ioerror(err, "in channel.readAll(ref b: bytes)");
+    try this._ch_ioerror(err, "in fileReader.readAll(ref b: bytes)");
   }
 
   return lenread;
 }
 
 /*
-  Read the remaining contents of the channel into a an array of bytes.
+  Read the remaining contents of the fileReader into a an array of bytes.
 
   Note that this routine currently requires a 1D rectangular non-strided array.
-  Additionally, If the remaining contents of the channel exceed the size of
+  Additionally, If the remaining contents of the fileReader exceed the size of
   ``a``, the first ``a.size`` bytes will be read into ``a``, and then an
   ``InsufficientCapacityError`` will be thrown.
 
@@ -6314,14 +6316,16 @@ proc _channel.readAll(ref b: bytes): int throws {
   :returns: the number of bytes that were stored in ``a``
   :rtype: int
 
-  :throws InsufficientCapacityError: Thrown if the channel's contents do not fit into ``a``.
-  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
-  :throws SystemError: Thrown if data could not be read from the channel for another reason.
+  :throws InsufficientCapacityError: Thrown if the fileReader's contents do not
+                                     fit into ``a``.
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
+                              reading.
+  :throws SystemError: Thrown if data could not be read from the fileReader for
+                       another reason.
 */
-proc _channel.readAll(ref a: [?d] ?t): int throws
+proc fileReader.readAll(ref a: [?d] ?t): int throws
   where (t == uint(8) || t == int(8)) && d.rank == 1 && d.stridable == false
 {
-  if this.writing then compilerError("attempt to read on write-only channel");
   var i = d.low;
 
   on this._home {
@@ -6337,7 +6341,8 @@ proc _channel.readAll(ref a: [?d] ?t): int throws
         break;
       } else if got < 0 {
         // hit an IO error, throw
-        try this._ch_ioerror((-got):errorCode, "in channel.readAll(ref a: [])");
+        try this._ch_ioerror((-got):errorCode,
+                             "in fileReader.readAll(ref a: [])");
       } else {
         // got a byte, store it
         a[i] = got:t;
@@ -6356,7 +6361,7 @@ proc _channel.readAll(ref a: [?d] ?t): int throws
 
       if has_more {
         const sz = qio_channel_get_size(this._channel_internal);
-        const err_msg = "Channel's contents" + (if sz == -1 then " " else " (" + sz:string + " bytes) ") +
+        const err_msg = "FileReader's contents" + (if sz == -1 then " " else " (" + sz:string + " bytes) ") +
           "exceeded capacity of array argument (" + a.size:string + " bytes) in 'readAll'";
 
         throw new owned InsufficientCapacityError(err_msg);
