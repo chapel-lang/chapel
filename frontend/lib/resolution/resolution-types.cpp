@@ -212,8 +212,11 @@ void CallInfo::prepareActuals(Context* context,
         // Keep questionArg pointing at the first question argument we found
       }
     } else {
-      const ResolvedExpression& r = byPostorder.byAst(actual);
-      QualifiedType actualType = r.type();
+      QualifiedType actualType;
+      // replace default value with resolved if available
+      if (const ResolvedExpression* r = byPostorder.byAstOrNull(actual)) {
+        actualType = r->type();
+      }
       UniqueString byName;
       if (fnCall && fnCall->isNamedActual(i)) {
         byName = fnCall->actualName(i);
