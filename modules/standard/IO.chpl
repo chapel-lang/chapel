@@ -5554,17 +5554,23 @@ proc fileWriter.writeNewline() : void throws {
   }
 }
 
-  /* Explicit call for reading or writing a newline as an
-     alternative to using :type:`IO.ioNewline`.
-   */
-  inline proc _channel.readWriteNewline() throws
-  {
-    var ionl = new ioNewline();
-    if this.writing then
-      this.writeIt(ionl);
-    else
-      this.readIt(ionl);
-  }
+/* Explicit call for reading or writing a newline as an
+   alternative to using :type:`IO.ioNewline`.
+*/
+inline proc fileReader.readWriteNewline() throws
+{
+  var ionl = new ioNewline();
+  this.readIt(ionl);
+}
+
+/* Explicit call for reading or writing a newline as an
+   alternative to using :type:`IO.ioNewline`.
+*/
+inline proc fileWriter.readWriteNewline() throws
+{
+  var ionl = new ioNewline();
+  this.writeIt(ionl);
+}
 
   /* Returns `true` if this channel is configured for binary I/O.
    */
