@@ -7079,17 +7079,20 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, endian:ioendian) throws
 }
 
 /*
-   Read a binary number from the channel
+   Read a binary number from the fileReader
 
    :arg arg: number to be read
-   :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
-              to read the number. Defaults to ``ioendian.native``.
+   :arg endian: :type:`ioendian` compile-time argument that specifies the byte
+                order in which to read the number. Defaults to
+                ``ioendian.native``.
    :returns: `true` if the number was read, `false` otherwise
 
-   :throws UnexpectedEofError: Thrown if EOF was encountered before data could be read.
-   :throws SystemError: Thrown if an error occurred reading the number for another reason.
+   :throws UnexpectedEofError: Thrown if EOF was encountered before data could
+                               be read.
+   :throws SystemError: Thrown if an error occurred reading the number for
+                        another reason.
  */
-proc _channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native):bool throws {
+proc fileReader.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native):bool throws {
   var e:errorCode = 0;
 
   select (endian) {
@@ -7112,17 +7115,19 @@ proc _channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.nativ
 }
 
 /*
-   Read a binary number from the channel
+   Read a binary number from the fileReader
 
    :arg arg: number to be read
    :arg endian: :type:`ioendian` specifies the byte order in which
-              to read the number.
+                to read the number.
    :returns: `true` if the number was read, `false` otherwise
 
-   :throws UnexpectedEofError: Thrown if EOF was encountered before data could be read.
-   :throws SystemError: Thrown if an error occurred reading the number for another reason.
+   :throws UnexpectedEofError: Thrown if EOF was encountered before data could
+                               be read.
+   :throws SystemError: Thrown if an error occurred reading the number for
+                        another reason.
  */
-proc _channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
+proc fileReader.readBinary(ref arg:numeric, endian: ioendian):bool throws {
   var rv: bool = false;
 
   select (endian) {
@@ -7489,16 +7494,16 @@ proc fileReader.readBinary(ptr: c_void_ptr, maxBytes: int): int throws {
 
 // Documented in the varargs version
 pragma "no doc"
-proc _channel.readln():bool throws {
+proc fileReader.readln():bool throws {
   var nl = new ioNewline();
   return try this.read(nl);
 }
 
 /*
 
-   Read values from a channel and then consume any bytes until
+   Read values from a fileReader and then consume any bytes until
    newline is reached. The input will be consumed atomically - the
-   channel lock will be held while reading all of the passed values.
+   fileReader lock will be held while reading all of the passed values.
 
    :arg args: a list of arguments to read. This routine can be called
               with zero or more such arguments. Basic types are handled
@@ -7507,22 +7512,23 @@ proc _channel.readln():bool throws {
               in :ref:`readThis-writeThis`.
    :returns: `true` if the read succeeded, and `false` upon end of file.
 
-   :throws UnexpectedEofError: Thrown if EOF was encountered before data could be read.
-   :throws SystemError: Thrown if a line could not be read from the channel.
+   :throws UnexpectedEofError: Thrown if EOF was encountered before data could
+                               be read.
+   :throws SystemError: Thrown if a line could not be read from the fileReader.
  */
-proc _channel.readln(ref args ...?k):bool throws {
+proc fileReader.readln(ref args ...?k):bool throws {
   var nl = new ioNewline();
   return try this.read((...args), nl);
 }
 
 @unstable "readln with a style argument is unstable"
-proc _channel.readln(ref args ...?k,
-                     style:iostyle):bool throws {
+proc fileReader.readln(ref args ...?k,
+                       style:iostyle):bool throws {
   return this.readlnHelper((...args), style: iostyleInternal);
 }
 
 pragma "no doc"
-proc _channel.readlnHelper(ref args ...?k,
+proc fileReader.readlnHelper(ref args ...?k,
                           style:iostyleInternal):bool throws {
   var nl = new ioNewline();
   return try this.readHelper((...args), nl, style=style);
@@ -7542,11 +7548,12 @@ proc _channel.readlnHelper(ref args ...?k,
    :arg t: the type to read
    :returns: the value read
 
-   :throws UnexpectedEofError: Thrown if EOF was encountered before data could be read.
-   :throws SystemError: Thrown if the type could not be read from the channel.
+   :throws UnexpectedEofError: Thrown if EOF was encountered before data could
+                               be read.
+   :throws SystemError: Thrown if the type could not be read from the
+                        fileReader.
  */
-proc _channel.read(type t) throws {
-  if writing then compilerError("read on write-only channel");
+proc fileReader.read(type t) throws {
   const origLocale = this.getLocaleOfIoRequest();
 
   pragma "no init"
@@ -7574,10 +7581,12 @@ proc _channel.read(type t) throws {
    :arg t: the type to read
    :returns: the value read
 
-   :throws UnexpectedEofError: Thrown if EOF was encountered before data could be read.
-   :throws SystemError: Thrown if the type could not be read from the channel.
+   :throws UnexpectedEofError: Thrown if EOF was encountered before data could
+                               be read.
+   :throws SystemError: Thrown if the type could not be read from the
+                        fileReader.
  */
-proc _channel.readln(type t) throws {
+proc fileReader.readln(type t) throws {
   var tmp:t;
   var nl = new ioNewline();
   this._readInner(tmp, nl);
@@ -7591,10 +7600,12 @@ proc _channel.readln(type t) throws {
    :arg t: more than one type to read
    :returns: a tuple of the read values
 
-   :throws UnexpectedEofError: Thrown if EOF was encountered before data could be read.
-   :throws SystemError: Thrown if the types could not be read from the channel.
+   :throws UnexpectedEofError: Thrown if EOF was encountered before data could
+                               be read.
+   :throws SystemError: Thrown if the types could not be read from the
+                        fileReader.
  */
-proc _channel.readln(type t ...?numTypes) throws where numTypes > 1 {
+proc fileReader.readln(type t ...?numTypes) throws where numTypes > 1 {
   var tupleVal: t;
   var nl = new ioNewline();
   this._readInner((...tupleVal), nl);
@@ -7607,10 +7618,12 @@ proc _channel.readln(type t ...?numTypes) throws where numTypes > 1 {
    :arg t: more than one type to read
    :returns: a tuple of the read values
 
-   :throws SystemError: Thrown if the types could not be read from the channel.
-   :throws UnexpectedEofError: Thrown if EOF was encountered while more data was expected.
+   :throws SystemError: Thrown if the types could not be read from the
+                        fileReader.
+   :throws UnexpectedEofError: Thrown if EOF was encountered while more data was
+                               expected.
  */
-proc _channel.read(type t ...?numTypes) throws where numTypes > 1 {
+proc fileReader.read(type t ...?numTypes) throws where numTypes > 1 {
   // TODO: better IO-specific error message if type is an array or tuple...
   var tupleVal: t;
   this._readInner((...tupleVal));
