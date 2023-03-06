@@ -74,6 +74,7 @@ MODULES_TO_DOCUMENT = \
 	standard/BitOps.chpl \
 	standard/ChapelIO.chpl \
 	standard/ChplConfig.chpl \
+	standard/Collectives.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/Communication.chpl \
 	standard/GPUDiagnostics.chpl \

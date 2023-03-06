@@ -11,8 +11,6 @@ class badClass {
   }
 }
 
-var c: badClass = new badClass(); // Should fail
-// Can't distinguish between the two initializer styles.
+// 'proc badClass' is a regular method, not a constructor
+var c: badClass = new badClass();
 writeln(c);
-// Variation on oldAndNew.chpl with constructor taking a different argument list
-// than the initializer
