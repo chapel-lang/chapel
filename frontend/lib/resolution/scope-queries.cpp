@@ -847,9 +847,13 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   auto p = checkedScopes.insert(std::make_pair(CheckedScope(name, scope),
                                 curFilter));
   if (p.second == false) {
+    // insertion did not occur because there was already an entry.
+    // Set flagsInMap to refer to the flags of the existing element
+    IdAndVis::SymbolTypeFlags& flagsInMap = p.first->second;
+
     // the insert did not succeed: there was already something in the map.
     // decide what to do about it.
-    IdAndVis::SymbolTypeFlags foundFilter = p.first->second;
+    IdAndVis::SymbolTypeFlags foundFilter = flagsInMap;
     if ((curFilter & foundFilter) == foundFilter) {
       // if the flags we found are equal to foundFilter,
       // or if curFilter is a superset of foundFilter
@@ -867,7 +871,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     // in foundFilter (because we are going to update results
     // with matches for the now-not-filtered-out cases)
     IdAndVis::SymbolTypeFlags combinedFilter = foundFilter & ~onlyInFound;
-    checkedScopes[CheckedScope(name, scope)] = combinedFilter;
+    flagsInMap = combinedFilter;
   }
 
   // if the scope has an extern block, note that fact.
