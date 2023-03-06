@@ -5232,36 +5232,55 @@ proc fileWriter.readWriteLiteral(lit:string, ignoreWhiteSpace=true) throws
   this.writeIt(iolit);
 }
 
-  pragma "no doc"
-  inline proc _channel._checkLiteralError(x:?t, err:errorCode,
-                                          action:string,
-                                          isLiteral:bool) : void throws {
-    // Error message construction is handled here so that messages are
-    // consistent across the cross product of:
-    //   {read,write,match} x {literal,newline} x {string, bytes}
-    //
-    // Note that newlines do not involve strings or bytes
+private proc literalErrorHelper(x: ?t, action: string,
+                                isLiteral: bool): string {
+  // Error message construction is handled here so that messages are
+  // consistent across the cross product of:
+  //   {read,write,match} x {literal,newline} x {string, bytes}
+  //
+  // Note that newlines do not involve strings or bytes
 
-    if err != 0 {
-      var msg: string = "while " + action + " ";
+  var msg: string = "while " + action + " ";
 
-      if isLiteral {
-        if t == string then
-          msg += "string literal \"" + x + "\"";
-        else
-          msg += "bytes literal";
-      } else {
-        msg += "newline";
-      }
-
-      if err == EILSEQ {
-        // TODO: Is this error tested?
-        msg = escapedNonUTF8ErrorMessage() + "Error: " + msg;
-      }
-
-      try _ch_ioerror(err, msg);
-    }
+  if isLiteral {
+    if t == string then
+      msg += "string literal \"" + x + "\"";
+    else
+      msg += "bytes literal";
+  } else {
+    msg += "newline";
   }
+
+  return msg;
+}
+
+pragma "no doc"
+inline proc fileReader._checkLiteralError(x:?t, err:errorCode, action:string,
+                                          isLiteral:bool) : void throws {
+  if err != 0 {
+    var msg: string = literalErrorHelper(x, action, isLiteral);
+    if (err == EILSEQ) {
+      // TODO: Is this error tested?
+      msg = escapedNonUTF8ErrorMessage() + "Error: " + msg;
+    }
+
+    try _ch_ioerror(err, msg);
+  }
+}
+
+pragma "no doc"
+inline proc fileWriter._checkLiteralError(x:?t, err:errorCode, action:string,
+                                          isLiteral:bool) : void throws {
+  if err != 0 {
+    var msg: string = literalErrorHelper(x, action, isLiteral);
+    if (err == EILSEQ) {
+      // TODO: Is this error tested?
+      msg = escapedNonUTF8ErrorMessage() + "Error: " + msg;
+    }
+
+    try _ch_ioerror(err, msg);
+  }
+}
 
   pragma "no doc"
   inline proc _channel._readLiteralCommon(x:?t, ignore:bool,
