@@ -10478,13 +10478,15 @@ use Regex;
 private extern proc qio_regex_channel_match(const ref re:qio_regex_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regex_string_piece_t), nsubmatch:int(64)):errorCode;
 
 pragma "no doc"
-proc _channel._extractMatch(m:regexMatch, ref arg:regexMatch, ref error:errorCode) {
+proc fileReader._extractMatch(m:regexMatch, ref arg:regexMatch,
+                              ref error:errorCode) {
   // If the argument is a match record, just return it.
   arg = m;
 }
 
 pragma "no doc"
-proc _channel._extractMatch(m:regexMatch, ref arg:bytes, ref error:errorCode) {
+proc fileReader._extractMatch(m:regexMatch, ref arg:bytes,
+                              ref error:errorCode) {
   var cur:int(64);
   var target = m.byteOffset:int;
   var len = m.numBytes;
@@ -10531,7 +10533,7 @@ proc _channel._extractMatch(m:regexMatch, ref arg:bytes, ref error:errorCode) {
 }
 
 pragma "no doc"
-proc _channel._extractMatch(m:regexMatch, ref arg:?t, ref error:errorCode)
+proc fileReader._extractMatch(m:regexMatch, ref arg:?t, ref error:errorCode)
       where t != regexMatch && t != bytes {
   // If there was no match, return the default value of the type
   if !m.matched {
@@ -10568,8 +10570,8 @@ proc _channel._extractMatch(m:regexMatch, ref arg:?t, ref error:errorCode)
 
 /*  Sets arg to the string of a match.
 
-    Assumes that the channel has been marked before where
-    the captures are being returned. Will change the channel
+    Assumes that the fileReader has been marked before where
+    the captures are being returned. Will change the fileReader
     position to just after the match. Will not do anything
     if error is set.
 
@@ -10579,24 +10581,24 @@ proc _channel._extractMatch(m:regexMatch, ref arg:?t, ref error:errorCode)
 
     :throws SystemError: Thrown if a match could not be extracted.
  */
-proc _channel.extractMatch(m:regexMatch, ref arg) throws {
+proc fileReader.extractMatch(m:regexMatch, ref arg) throws {
   var err:errorCode = 0;
   on this._home {
     try this.lock(); defer { this.unlock(); }
     _extractMatch(m, arg, err);
   }
   if err {
-    try this._ch_ioerror(err, "in channel.extractMatch(m:regexMatch, ref " +
+    try this._ch_ioerror(err, "in fileReader.extractMatch(m:regexMatch, ref " +
                               arg.type:string + ")");
   }
 }
 
-// Assumes that the channel has been marked where the search began
+// Assumes that the fileReader has been marked where the search began
 // (or at least before the capture groups if discarding)
 pragma "no doc"
-proc _channel._ch_handle_captures(matches:_ddata(qio_regex_string_piece_t),
-                                 nmatches:int,
-                                 ref captures, ref error:errorCode) {
+proc fileReader._ch_handle_captures(matches:_ddata(qio_regex_string_piece_t),
+                                    nmatches:int,
+                                    ref captures, ref error:errorCode) {
   assert(nmatches >= captures.size);
   for param i in 0..captures.size-1 {
     var m = _to_regexMatch(matches[i]);
@@ -10604,10 +10606,10 @@ proc _channel._ch_handle_captures(matches:_ddata(qio_regex_string_piece_t),
   }
 }
 
-// Private implementation helper for _channel.search(re:regex(?))
+// Private implementation helper for fileReader.search(re:regex(?))
 // Todo: inline it into its single callsite.
 pragma "no doc"
-proc _channel._searchHelp(re:regex(?), ref error:errorCode):regexMatch
+proc fileReader._searchHelp(re:regex(?), ref error:errorCode):regexMatch
 {
   var m:regexMatch;
   on this._home {
@@ -10635,7 +10637,7 @@ proc _channel._searchHelp(re:regex(?), ref error:errorCode):regexMatch
         var target = m.byteOffset:int;
         error = qio_channel_advance(false, _channel_internal, target - cur);
       } else {
-        // If we didn't match... leave the channel position at EOF
+        // If we didn't match... leave the fileReader position at EOF
         qio_channel_commit_unlocked(_channel_internal);
       }
     }
@@ -10647,19 +10649,19 @@ proc _channel._searchHelp(re:regex(?), ref error:errorCode):regexMatch
 
 // documented in the version with captures
 pragma "no doc"
-proc _channel.search(re:regex(?)):regexMatch throws
+proc fileReader.search(re:regex(?)):regexMatch throws
 {
   var e:errorCode = 0;
   var ret = this._searchHelp(re, error=e);
-  if e then try this._ch_ioerror(e, "in channel.search");
+  if e then try this._ch_ioerror(e, "in fileReader.search");
   return ret;
 }
 
-/*  Search for an offset in the channel matching the
+/*  Search for an offset in the fileReader matching the
     passed regular expression, possibly pulling out capture groups.
-    If there is a match, leaves the channel position at the
-    match. If there is no match, the channel position will be
-    advanced to the end of the channel (or end of the file).
+    If there is a match, leaves the fileReader position at the
+    match. If there is no match, the fileReader position will be
+    advanced to the end of the fileReader (or end of the file).
 
     Throws a SystemError if an error occurs.
 
@@ -10668,9 +10670,9 @@ proc _channel.search(re:regex(?)):regexMatch throws
     :arg captures: an optional variable number of arguments in which to
                    store the regions of the file matching the capture groups
                    in the regular expression.
-    :returns: the region of the channel that matched
+    :returns: the region of the fileReader that matched
  */
-proc _channel.search(re:regex(?), ref captures ...?k): regexMatch throws
+proc fileReader.search(re:regex(?), ref captures ...?k): regexMatch throws
 {
   var m:regexMatch;
   var err:errorCode = 0;
@@ -10701,14 +10703,14 @@ proc _channel.search(re:regex(?), ref captures ...?k): regexMatch throws
         var target = m.byteOffset:int;
         err = qio_channel_advance(false, _channel_internal, target - cur);
       } else {
-        // If we didn't match... leave the channel position at EOF
+        // If we didn't match... leave the fileReader position at EOF
         qio_channel_commit_unlocked(_channel_internal);
       }
     }
     _ddata_free(matches, nm);
   }
 
-  if err then try this._ch_ioerror(err, "in channel.search");
+  if err then try this._ch_ioerror(err, "in fileReader.search");
   return m;
 }
 
@@ -10717,19 +10719,19 @@ proc _channel.search(re:regex(?), ref captures ...?k): regexMatch throws
    Yields tuples of :record:`Regex.regexMatch` objects, the 1st is always
    the match for the whole pattern.
 
-   At the time each match is returned, the channel position is
-   at the start of that match. Note though that you would have
-   to use :proc:`IO.channel.advance` to get to the position of a capture group.
+   At the time each match is returned, the fileReader position is at the start
+   of that match. Note though that you would have to use
+   :proc:`IO.fileReader.advance` to get to the position of a capture group.
 
    After returning each match, advances to just after that
    match and looks for another match. Thus, it will not return
    overlapping matches.
 
-   In the end, leaves the channel position at the end of the
+   In the end, leaves the fileReader position at the end of the
    last reported match (if we ran out of maxmatches)
-   or at the end of the channel (if we no longer matched)
+   or at the end of the fileReader (if we no longer matched)
 
-   Holds the channel lock for the duration of the search.
+   Holds the fileReader lock for the duration of the search.
 
    :arg re: a :record:`Regex.regex` record representing a compiled
             regular expression.
@@ -10739,7 +10741,8 @@ proc _channel.search(re:regex(?), ref captures ...?k): regexMatch throws
    :yields: tuples of :record:`Regex.regexMatch` objects, where the first element
             is the whole pattern.  The tuples will have 1+captures elements.
  */
-iter _channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
+iter fileReader.matches(re:regex(?), param captures=0,
+                        maxmatches:int = max(int))
 // TODO: should be throws
 {
   var go = true;
@@ -10807,7 +10810,7 @@ iter _channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
   // Don't report didn't find or end-of-file errors.
   if error == EFORMAT || error == EEOF then error = 0;
   // TODO should be try not try!
-  if error then try! this._ch_ioerror(error, "in channel.matches");
+  if error then try! this._ch_ioerror(error, "in fileReader.matches");
 }
 
 } /* end of FormattedIO module */
