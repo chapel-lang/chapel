@@ -798,7 +798,7 @@ module BigInteger {
     if a >= 0 {
       const a_ = a.safeCast(c_ulong);
 
-      mpz_add_ui(c.mpz, b.mpz,  a_);
+      mpz_add_ui(c.mpz, b_.mpz,  a_);
 
     } else {
       const a_ = (0 - a).safeCast(c_ulong);
@@ -5025,7 +5025,9 @@ module BigInteger {
     }
   }
 
+  pragma "no doc"
   record bigintWrapper {
+    pragma "no init"
     var mpz: mpz_t;
     var isOwned: bool;
     proc init(a: mpz_t) {
@@ -5047,6 +5049,7 @@ module BigInteger {
     }
   }
 
+  pragma "no doc"
   inline proc bigint.localize() {
     if _local {
       const ret = new bigintWrapper(this.mpz);
