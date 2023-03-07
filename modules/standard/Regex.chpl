@@ -1692,13 +1692,13 @@ private extern proc chpl_macro_int_EFORMAT():c_int;
    opening quote. (Chapel specific)
   */
 pragma "no doc"
-private inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
+private inline proc EFORMAT do return chpl_macro_int_EFORMAT():c_int;
 
 private extern proc chpl_macro_int_EEOF():c_int;
 /* An error code indicating the end of file has been reached (Chapel specific)
  */
 pragma "no doc"
-private inline proc EEOF return chpl_macro_int_EEOF():c_int;
+private inline proc EEOF do return chpl_macro_int_EEOF():c_int;
 
 private extern proc qio_regex_channel_match(const ref re:qio_regex_t, threadsafe:c_int, ch:qio_channel_ptr_t, maxlen:int(64), anchor:c_int, can_discard:bool, keep_unmatched:bool, keep_whole_pattern:bool, submatch:_ddata(qio_regex_string_piece_t), nsubmatch:int(64)):errorCode;
 
