@@ -725,16 +725,15 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   }
 
   // Compiler flags for each deliverable.
+  fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = ");
   if (fLibraryCompile && !fMultiLocaleInterop && dyn) {
-    fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = %s %s %s\n",
-            "$(SHARED_LIB_CFLAGS)",
-            includedirs.c_str(),
-            ccflags.c_str());
-  } else {
-    fprintf(makefile.fptr, "COMP_GEN_USER_CFLAGS = %s %s\n",
-            includedirs.c_str(),
-            ccflags.c_str());
+    fprintf(makefile.fptr, "$(SHARED_LIB_CFLAGS) ");
   }
+  fprintf(makefile.fptr, "%s %s%s\n",
+          includedirs.c_str(),
+          ccflags.c_str(),
+          // We only need to compute and store dependencies if --savec is used
+          (saveCDir[0] ? " $(DEPEND_CFLAGS)" : ""));
 
   // Linker flags for each deliverable.
   const char* lmode = "";
@@ -847,6 +846,12 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   }
 
   fprintf(makefile.fptr, "%s\n\n", incpath.c_str());
+
+  // We only need to compute and store dependencies if --savec is used
+  if (saveCDir[0]) {
+    fprintf(makefile.fptr, "DEPENDS = output/*.d\n\n");
+    fprintf(makefile.fptr, "-include $(DEPENDS)\n");
+  }
 
   genCFileBuildRules(makefile.fptr);
   closeCFile(&makefile, false);
