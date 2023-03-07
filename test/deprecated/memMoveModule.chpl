@@ -43,4 +43,9 @@ proc main() {
       MemMove.destroy(b);
     }
   }
+  {
+    var A, B : [1..10] int;
+    MemMove.moveInitializeArrayElements(A, 1, 6, 5);
+    MemMove.moveInitializeArrayElements(A, 1, B, 1, 10);
+  }
 }

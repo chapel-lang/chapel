@@ -7,7 +7,7 @@ proc test1() {
   var d = {0..3};
   var a: [d] int = [0, 0, 3, 4];
   writeln(a);
-  moveInitializeArrayElements(a, d.low, 2, 2);
+  moveArrayElements(a, d.low..#2, a, 2..#2);
   writeln(a);
 }
 test1();
@@ -20,7 +20,7 @@ proc test2() {
   var a2: [d] int = [1, 2, 3, 4];
   writeln(a1);
   writeln(a2);
-  moveInitializeArrayElements(a1, d.low, a2, d.low, a1.size); 
+  moveArrayElements(a1, a2);
   writeln(a1);
   writeln(a2);
 }
@@ -40,7 +40,7 @@ proc test3() {
   for i in d.low..<half do MemMove.destroy(a[i]);
 
   // Move high slots into low slots.
-  moveInitializeArrayElements(a, d.low, half, half);
+  moveArrayElements(a, d.low..#half, a, half..#half);
 
   // Replace high slots that were moved.
   for i in half..d.high do moveInitialize(a[i], new r());
@@ -63,7 +63,7 @@ proc test4() {
   writeln(a2);
 
   // This consumes the elements in a2.
-  moveInitializeArrayElements(a1, d.low, a2, d.low, a1.size);
+  moveArrayElements(a1, a2);
 
   writeln(a1);
 
