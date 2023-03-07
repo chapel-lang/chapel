@@ -383,7 +383,7 @@
 %token <uniqueStr> TBEGIN TBREAK TBOOL TBORROWED TBY TBYTES
 %token <uniqueStr> TCATCH TCLASS TCOBEGIN TCOFORALL TCOMPLEX
 %token <uniqueStr> TCONFIG TCONST TCONTINUE
-%token <uniqueStr> TDEFER TDELETE TDEPRECATED TDMAPPED TDO TDOMAIN
+%token <uniqueStr> TDEFER TDELETE TDMAPPED TDO TDOMAIN
 %token <uniqueStr> TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token <uniqueStr> TFALSE TFOR TFORALL TFOREACH TFORWARDING
 %token <uniqueStr> TIF TIMAG TIMPORT TIN TINCLUDE
@@ -886,12 +886,6 @@ attribute_decl_begin:
     auto ident = context->buildIdent(@2, $2);
     $$ = ident;
   }
-  | TATMARK TDEPRECATED {
-    $$ = context->buildIdent(@2, $2);
-  }
-  | TDEPRECATED {
-    $$ = context->buildIdent(@1, $1);
-  }
 ;
 
 opt_attribute_decl_toolspace:
@@ -914,13 +908,6 @@ opt_attribute_actuals:
   | TLP attribute_actuals_ls TRP
   {
     $$ = $2;
-  }
-  // this allows us to maintain @unstable "message" without requiring parens
-  | STRINGLITERAL
-  {
-    auto lst = new MaybeNamedActualList();
-    lst->push_back(makeMaybeNamedActual($1));
-    $$ = lst;
   }
 ;
 
