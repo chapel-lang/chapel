@@ -21,36 +21,40 @@
 
 #include "chpl/resolution/scope-types.h"
 
-// test IdAndVis::matchFilter
+const IdAndFlags::SymbolTypeFlags pub = IdAndFlags::PUBLIC;
+const IdAndFlags::SymbolTypeFlags not_pub = IdAndFlags::NOT_PUBLIC;
+const IdAndFlags::SymbolTypeFlags method = IdAndFlags::METHOD_OR_FIELD;
+const IdAndFlags::SymbolTypeFlags not_method = IdAndFlags::NOT_METHOD_OR_FIELD;
+
+// test IdAndFlags::matchFilter
 static void testMatchFilter() {
   // no filter provided -> it matches
-  assert(IdAndVis::matchFilter(IdAndVis::PUBLIC, 0, 0));
-  assert(IdAndVis::matchFilter(IdAndVis::NOT_PUBLIC, 0, 0));
+  assert(IdAndFlags::matchFilter(pub, 0, 0));
+  assert(IdAndFlags::matchFilter(not_pub, 0, 0));
 
   // same filter as what we have -> it matches
-  assert(IdAndVis::matchFilter(IdAndVis::PUBLIC, IdAndVis::PUBLIC, 0));
-  assert(IdAndVis::matchFilter(IdAndVis::NOT_PUBLIC, IdAndVis::NOT_PUBLIC, 0));
+  assert(IdAndFlags::matchFilter(pub, pub, 0));
+  assert(IdAndFlags::matchFilter(not_pub, not_pub, 0));
 
   // no filter provided but it is excluded -> it does not match
-  assert(!IdAndVis::matchFilter(IdAndVis::PUBLIC, 0, IdAndVis::PUBLIC));
-  assert(!IdAndVis::matchFilter(IdAndVis::NOT_PUBLIC, 0, IdAndVis::NOT_PUBLIC));
+  assert(!IdAndFlags::matchFilter(pub, 0, pub));
+  assert(!IdAndFlags::matchFilter(not_pub, 0, not_pub));
 
   // test some multi-bit situations
-  IdAndVis::SymbolTypeFlags pm = IdAndVis::PUBLIC | IdAndVis::METHOD_OR_FIELD;
-  IdAndVis::SymbolTypeFlags pf = IdAndVis::PUBLIC |
-                                 IdAndVis::NOT_METHOD_OR_FIELD;
+  IdAndFlags::SymbolTypeFlags pm = pub | method;
+  IdAndFlags::SymbolTypeFlags pf = pub | not_method;
 
-  assert(IdAndVis::matchFilter(pm, 0, 0));
-  assert(IdAndVis::matchFilter(pm, IdAndVis::PUBLIC, 0));
-  assert(IdAndVis::matchFilter(pm, IdAndVis::METHOD_OR_FIELD, 0));
+  assert(IdAndFlags::matchFilter(pm, 0, 0));
+  assert(IdAndFlags::matchFilter(pm, pub, 0));
+  assert(IdAndFlags::matchFilter(pm, method, 0));
 
-  assert(!IdAndVis::matchFilter(pm, IdAndVis::NOT_PUBLIC, 0));
-  assert(!IdAndVis::matchFilter(pm, IdAndVis::NOT_METHOD_OR_FIELD, 0));
-  assert(!IdAndVis::matchFilter(pm, pm, pm));
-  assert(!IdAndVis::matchFilter(pm, pm, IdAndVis::PUBLIC));
-  assert(!IdAndVis::matchFilter(pm, pm, IdAndVis::METHOD_OR_FIELD));
+  assert(!IdAndFlags::matchFilter(pm, not_pub, 0));
+  assert(!IdAndFlags::matchFilter(pm, not_method, 0));
+  assert(!IdAndFlags::matchFilter(pm, pm, pm));
+  assert(!IdAndFlags::matchFilter(pm, pm, pub));
+  assert(!IdAndFlags::matchFilter(pm, pm, method));
 
-  assert(IdAndVis::matchFilter(pm, pm, pf));
+  assert(IdAndFlags::matchFilter(pm, pm, pf));
 }
 
 // test OwnedIdsWithName::borrow
@@ -80,16 +84,16 @@ static void testBorrowIds() {
   {
     // check one id with filtering
     OwnedIdsWithName ids(x, Decl::PRIVATE, /* method */ false);
-    IdAndVis::SymbolTypeFlags f = IdAndVis::PUBLIC;
-    IdAndVis::SymbolTypeFlags e = 0;
+    IdAndFlags::SymbolTypeFlags f = pub;
+    IdAndFlags::SymbolTypeFlags e = 0;
     auto foundIds = ids.borrow(f, e);
     assert(!foundIds.hasValue());
   }
   {
     // check one id with filtering
     OwnedIdsWithName ids(x, Decl::PRIVATE, /* method */ false);
-    IdAndVis::SymbolTypeFlags f = 0;
-    IdAndVis::SymbolTypeFlags e = IdAndVis::NOT_METHOD_OR_FIELD;
+    IdAndFlags::SymbolTypeFlags f = 0;
+    IdAndFlags::SymbolTypeFlags e = not_method;
     auto foundIds = ids.borrow(f, e);
     assert(!foundIds.hasValue());
   }
@@ -97,9 +101,9 @@ static void testBorrowIds() {
   {
     // check two ids with filtering out the 1st
     OwnedIdsWithName ids(x, Decl::PRIVATE, /* method */ false);
-    ids.appendIdAndVis(y, Decl::PUBLIC, /* method */ true);
-    IdAndVis::SymbolTypeFlags f = IdAndVis::PUBLIC;
-    IdAndVis::SymbolTypeFlags e = 0;
+    ids.appendIdAndFlags(y, Decl::PUBLIC, /* method */ true);
+    IdAndFlags::SymbolTypeFlags f = pub;
+    IdAndFlags::SymbolTypeFlags e = 0;
     auto foundIds = ids.borrow(f, e);
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
@@ -116,9 +120,9 @@ static void testBorrowIds() {
   {
     // check two ids with filtering out the 2nd
     OwnedIdsWithName ids(y, Decl::PUBLIC, /* method */ true);
-    ids.appendIdAndVis(x, Decl::PRIVATE, /* method */ false);
-    IdAndVis::SymbolTypeFlags f = IdAndVis::PUBLIC;
-    IdAndVis::SymbolTypeFlags e = 0;
+    ids.appendIdAndFlags(x, Decl::PRIVATE, /* method */ false);
+    IdAndFlags::SymbolTypeFlags f = IdAndFlags::PUBLIC;
+    IdAndFlags::SymbolTypeFlags e = 0;
     auto foundIds = ids.borrow(f, e);
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
@@ -135,9 +139,9 @@ static void testBorrowIds() {
   {
     // check two ids with filtering out neither
     OwnedIdsWithName ids(y, Decl::PUBLIC, /* method */ true);
-    ids.appendIdAndVis(x, Decl::PRIVATE, /* method */ false);
-    IdAndVis::SymbolTypeFlags f = 0;
-    IdAndVis::SymbolTypeFlags e = 0;
+    ids.appendIdAndFlags(x, Decl::PRIVATE, /* method */ false);
+    IdAndFlags::SymbolTypeFlags f = 0;
+    IdAndFlags::SymbolTypeFlags e = 0;
     auto foundIds = ids.borrow(f, e);
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();

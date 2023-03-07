@@ -28,7 +28,7 @@ namespace chpl {
 namespace resolution {
 
 /*
-IdAndVis::SymbolTypeFlags IdAndVis::reverseFlags(SymbolTypeFlags flags) {
+IdAndFlags::SymbolTypeFlags IdAndFlags::reverseFlags(SymbolTypeFlags flags) {
   SymbolTypeFlags ret = 0;
 
   if ((flags & PUBLIC) != 0)              ret |= NOT_PUBLIC;
@@ -40,7 +40,7 @@ IdAndVis::SymbolTypeFlags IdAndVis::reverseFlags(SymbolTypeFlags flags) {
   return ret;
 }*/
 
-std::string IdAndVis::flagsToString(SymbolTypeFlags flags) {
+std::string IdAndFlags::flagsToString(SymbolTypeFlags flags) {
   std::string ret;
   if ((flags & PUBLIC) != 0)               ret += "public ";
   if ((flags & NOT_PUBLIC) != 0)           ret += "!public ";
@@ -65,8 +65,8 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
 }
 
 llvm::Optional<BorrowedIdsWithName>
-OwnedIdsWithName::borrow(IdAndVis::SymbolTypeFlags filterFlags,
-                         IdAndVis::SymbolTypeFlags excludeFlags) const {
+OwnedIdsWithName::borrow(IdAndFlags::SymbolTypeFlags filterFlags,
+                         IdAndFlags::SymbolTypeFlags excludeFlags) const {
   // Are all of the filter flags present in flagsOr?
   // If not, it is not possible for this to match.
   if ((flagsOr_ & filterFlags) != filterFlags) {
@@ -102,7 +102,7 @@ OwnedIdsWithName::borrow(IdAndVis::SymbolTypeFlags filterFlags,
   return llvm::None;
 }
 
-int BorrowedIdsWithName::countVisibleIds(IdAndVis::SymbolTypeFlags flagsAnd) {
+int BorrowedIdsWithName::countVisibleIds(IdAndFlags::SymbolTypeFlags flagsAnd) {
   if (moreIdvs_ == nullptr) {
     return 1;
   }
@@ -209,8 +209,8 @@ const Scope* Scope::parentModuleScope() const {
 
 bool Scope::lookupInScope(UniqueString name,
                           std::vector<BorrowedIdsWithName>& result,
-                          IdAndVis::SymbolTypeFlags filterFlags,
-                          IdAndVis::SymbolTypeFlags excludeFlags) const {
+                          IdAndFlags::SymbolTypeFlags filterFlags,
+                          IdAndFlags::SymbolTypeFlags excludeFlags) const {
   auto search = declared_.find(name);
   if (search != declared_.end()) {
     // There might not be any IDs that are visible to us, so borrow returns

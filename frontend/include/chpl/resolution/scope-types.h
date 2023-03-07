@@ -38,7 +38,7 @@ namespace resolution {
 class BorrowedIdsWithName;
 
 /** Helper type to store an ID and visibility constraints. */
-class IdAndVis {
+class IdAndFlags {
  public:
   // helper types
   enum {
@@ -65,7 +65,7 @@ class IdAndVis {
   SymbolTypeFlags flags_ = 0;
 
  public:
-  IdAndVis(ID id, uast::Decl::Visibility vis, bool isMethodOrField)
+  IdAndFlags(ID id, uast::Decl::Visibility vis, bool isMethodOrField)
     : id_(std::move(id)) {
     // setup the flags
     SymbolTypeFlags flags = 0;
@@ -87,11 +87,11 @@ class IdAndVis {
     flags_ = flags;
   }
 
-  bool operator==(const IdAndVis& other) const {
+  bool operator==(const IdAndFlags& other) const {
     return id_ == other.id_ &&
            flags_ == other.flags_;
   }
-  bool operator!=(const IdAndVis& other) const {
+  bool operator!=(const IdAndFlags& other) const {
     return !(*this == other);
   }
 
@@ -147,34 +147,34 @@ class OwnedIdsWithName {
  private:
   // If there is just one ID with this name, it is stored here,
   // and moreIds == nullptr.
-  IdAndVis idv_;
+  IdAndFlags idv_;
   // the result of bitwise and (&) of flags of all of the symbols
-  IdAndVis::SymbolTypeFlags flagsAnd_;
+  IdAndFlags::SymbolTypeFlags flagsAnd_;
   // the result of bitwise or (|) of flags of all of the symbols
-  IdAndVis::SymbolTypeFlags flagsOr_;
+  IdAndFlags::SymbolTypeFlags flagsOr_;
   // If there is more than one, all are stored in here,
   // and id redundantly stores the first one.
   // This field is 'owned' in order to allow reuse of pointers to it.
-  owned<std::vector<IdAndVis>> moreIdvs_;
+  owned<std::vector<IdAndFlags>> moreIdvs_;
 
  public:
   /** Construct an OwnedIdsWithName containing one ID. */
   OwnedIdsWithName(ID id, uast::Decl::Visibility vis, bool isMethodOrField)
-    : idv_(IdAndVis(std::move(id), vis, isMethodOrField)),
+    : idv_(IdAndFlags(std::move(id), vis, isMethodOrField)),
       flagsAnd_(idv_.flags_), flagsOr_(idv_.flags_),
       moreIdvs_(nullptr)
   { }
 
   /** Append an ID to an OwnedIdsWithName. */
-  void appendIdAndVis(ID id, uast::Decl::Visibility vis, bool isMethodOrField) {
+  void appendIdAndFlags(ID id, uast::Decl::Visibility vis, bool isMethodOrField) {
     if (moreIdvs_.get() == nullptr) {
       // create the vector and add the single existing id to it
-      moreIdvs_ = toOwned(new std::vector<IdAndVis>());
+      moreIdvs_ = toOwned(new std::vector<IdAndFlags>());
       moreIdvs_->push_back(idv_);
       // flagsAnd_ and flagsOr_ will have already been set in constructor
       // from idv_.
     }
-    auto idv = IdAndVis(std::move(id), vis, isMethodOrField);
+    auto idv = IdAndFlags(std::move(id), vis, isMethodOrField);
     // add the id passed
     moreIdvs_->push_back(std::move(idv));
     // update the flags
@@ -213,8 +213,8 @@ class OwnedIdsWithName {
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   llvm::Optional<BorrowedIdsWithName>
-  borrow(IdAndVis::SymbolTypeFlags filterFlags,
-         IdAndVis::SymbolTypeFlags excludeFlags) const;
+  borrow(IdAndFlags::SymbolTypeFlags filterFlags,
+         IdAndFlags::SymbolTypeFlags excludeFlags) const;
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
@@ -233,46 +233,46 @@ class BorrowedIdsWithName {
   /**
     Filter to symbols where all of the flags set here are also set.
     E.g.:
-      * just IdAndVis::PUBLIC -- only public symbols
-      * just IdAndVis::METHOD_OR_FIELD -- only methods/fields
-      * IdAndVis::PUBLIC | IdAndVis::METHOD_OR_FIELD --
+      * just IdAndFlags::PUBLIC -- only public symbols
+      * just IdAndFlags::METHOD_OR_FIELD -- only methods/fields
+      * IdAndFlags::PUBLIC | IdAndFlags::METHOD_OR_FIELD --
         only public symbols that are methods/fields
    */
-  IdAndVis::SymbolTypeFlags filterFlags_ = 0;
+  IdAndFlags::SymbolTypeFlags filterFlags_ = 0;
   /**
     Exclude this combination of flags.
    */
-  IdAndVis::SymbolTypeFlags excludeFlags_ = 0;
+  IdAndFlags::SymbolTypeFlags excludeFlags_ = 0;
 
   /** How many IDs are visible in this list. */
   int numVisibleIds_ = 0;
 
   // TODO: consider storing a variant of ID here
   // with symbolPath, postOrderId, and tag
-  IdAndVis idv_;
-  const std::vector<IdAndVis>* moreIdvs_ = nullptr;
+  IdAndFlags idv_;
+  const std::vector<IdAndFlags>* moreIdvs_ = nullptr;
 
-  static inline bool isIdVisible(const IdAndVis& idv,
-                                 IdAndVis::SymbolTypeFlags filterFlags,
-                                 IdAndVis::SymbolTypeFlags excludeFlags) {
+  static inline bool isIdVisible(const IdAndFlags& idv,
+                                 IdAndFlags::SymbolTypeFlags filterFlags,
+                                 IdAndFlags::SymbolTypeFlags excludeFlags) {
     // check that all flags set in filterFlags are also set in idv.flags_
-    return IdAndVis::matchFilter(idv.flags_, filterFlags, excludeFlags);
+    return IdAndFlags::matchFilter(idv.flags_, filterFlags, excludeFlags);
   }
 
-  bool isIdVisible(const IdAndVis& idv) const {
+  bool isIdVisible(const IdAndFlags& idv) const {
     return isIdVisible(idv, filterFlags_, excludeFlags_);
   }
 
   /** Returns an iterator referring to the first element stored. */
-  const IdAndVis* beginIdAndVis() const {
+  const IdAndFlags* beginIdAndFlags() const {
     if (moreIdvs_ == nullptr) {
       return &idv_;
     }
     return &(*moreIdvs_)[0];
   }
   /** Returns an iterator referring just past the last element stored. */
-  const IdAndVis* endIdAndVis() const {
-    const IdAndVis* last = nullptr;
+  const IdAndFlags* endIdAndFlags() const {
+    const IdAndFlags* last = nullptr;
     if (moreIdvs_ == nullptr) {
       last = &idv_;
     } else {
@@ -292,17 +292,17 @@ class BorrowedIdsWithName {
     /** The borrowed IDs over which we are iterating. */
     const BorrowedIdsWithName* ids;
     /** The ID this iterator is pointing too. */
-    const IdAndVis* currentIdv;
+    const IdAndFlags* currentIdv;
 
     BorrowedIdsWithNameIter(const BorrowedIdsWithName* ids,
-                            const IdAndVis* currentIdv)
+                            const IdAndFlags* currentIdv)
       : ids(ids), currentIdv(currentIdv) {
       fastForward();
     }
 
     /** Skip over symbols deemed invisible by the BorrowedIdsWithName. **/
     void fastForward() {
-      while (currentIdv != ids->endIdAndVis() &&
+      while (currentIdv != ids->endIdAndFlags() &&
              !ids->isIdVisible(*currentIdv)) {
         currentIdv++;
       }
@@ -322,16 +322,16 @@ class BorrowedIdsWithName {
 
  private:
 
-  int countVisibleIds(IdAndVis::SymbolTypeFlags flagsAnd);
+  int countVisibleIds(IdAndFlags::SymbolTypeFlags flagsAnd);
 
   /** Construct a BorrowedIdsWithName referring to the same IDs
       as the passed OwnedIdsWithName.
       This BorrowedIdsWithName assumes that the OwnedIdsWithName
       will continue to exist. */
   BorrowedIdsWithName(const OwnedIdsWithName& ownedIds,
-                      const IdAndVis& firstMatch,
-                      IdAndVis::SymbolTypeFlags filterFlags,
-                      IdAndVis::SymbolTypeFlags excludeFlags)
+                      const IdAndFlags& firstMatch,
+                      IdAndFlags::SymbolTypeFlags filterFlags,
+                      IdAndFlags::SymbolTypeFlags excludeFlags)
     : filterFlags_(filterFlags), excludeFlags_(excludeFlags),
       idv_(firstMatch), moreIdvs_(ownedIds.moreIdvs_.get()) {
     numVisibleIds_ = countVisibleIds(ownedIds.flagsAnd_);
@@ -342,9 +342,9 @@ class BorrowedIdsWithName {
       that the ID will not be filtered out according to the passed
       settings arePrivateIdsIgnored and onlyMethodsFields.
     */
-  BorrowedIdsWithName(IdAndVis idv,
-                      IdAndVis::SymbolTypeFlags filterFlags,
-                      IdAndVis::SymbolTypeFlags excludeFlags)
+  BorrowedIdsWithName(IdAndFlags idv,
+                      IdAndFlags::SymbolTypeFlags filterFlags,
+                      IdAndFlags::SymbolTypeFlags excludeFlags)
     : filterFlags_(filterFlags), excludeFlags_(excludeFlags),
       numVisibleIds_(1), idv_(std::move(idv)) {
     CHPL_ASSERT(isIdVisible(idv_, filterFlags, excludeFlags));
@@ -353,9 +353,9 @@ class BorrowedIdsWithName {
 
   static llvm::Optional<BorrowedIdsWithName>
   createWithSingleId(ID id, uast::Decl::Visibility vis, bool isMethodOrField,
-                     IdAndVis::SymbolTypeFlags filterFlags,
-                     IdAndVis::SymbolTypeFlags excludeFlags) {
-    auto idAndVis = IdAndVis(id, vis, isMethodOrField);
+                     IdAndFlags::SymbolTypeFlags filterFlags,
+                     IdAndFlags::SymbolTypeFlags excludeFlags) {
+    auto idAndVis = IdAndFlags(id, vis, isMethodOrField);
     if (isIdVisible(idAndVis, filterFlags, excludeFlags)) {
       return BorrowedIdsWithName(std::move(idAndVis),
                                  filterFlags, excludeFlags);
@@ -367,8 +367,8 @@ class BorrowedIdsWithName {
   createWithToplevelModuleId(ID id) {
     auto vis = uast::Decl::Visibility::PUBLIC;
     bool isMethodOrField = false;
-    IdAndVis::SymbolTypeFlags filterFlags = 0;
-    IdAndVis::SymbolTypeFlags excludeFlags = 0;
+    IdAndFlags::SymbolTypeFlags filterFlags = 0;
+    IdAndFlags::SymbolTypeFlags excludeFlags = 0;
     auto maybeIds = createWithSingleId(std::move(id), vis, isMethodOrField,
                                        filterFlags, excludeFlags);
     CHPL_ASSERT(maybeIds.hasValue());
@@ -390,11 +390,11 @@ class BorrowedIdsWithName {
   bool containsOnlyMethodsOrFields() const;
 
   BorrowedIdsWithNameIter begin() const {
-    return BorrowedIdsWithNameIter(this, beginIdAndVis());
+    return BorrowedIdsWithNameIter(this, beginIdAndFlags());
   }
 
   BorrowedIdsWithNameIter end() const {
-    return BorrowedIdsWithNameIter(this, endIdAndVis());
+    return BorrowedIdsWithNameIter(this, endIdAndFlags());
   }
 
   bool operator==(const BorrowedIdsWithName& other) const {
@@ -553,8 +553,8 @@ class Scope {
       Returns true if something was appended. */
   bool lookupInScope(UniqueString name,
                      std::vector<BorrowedIdsWithName>& result,
-                     IdAndVis::SymbolTypeFlags filterFlags,
-                     IdAndVis::SymbolTypeFlags excludeFlags) const;
+                     IdAndFlags::SymbolTypeFlags filterFlags,
+                     IdAndFlags::SymbolTypeFlags excludeFlags) const;
 
   /** Check to see if the scope contains IDs with the provided name. */
   bool contains(UniqueString name) const;
@@ -1142,7 +1142,7 @@ struct CheckedScope {
 };
 
 using CheckedScopes = std::unordered_map<CheckedScope,
-                                         IdAndVis::SymbolTypeFlags>;
+                                         IdAndFlags::SymbolTypeFlags>;
 
 
 } // end namespace resolution
@@ -1182,9 +1182,9 @@ struct mark<resolution::VisibilityStmtKind> {
 namespace std {
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct hash<chpl::resolution::IdAndVis>
+template<> struct hash<chpl::resolution::IdAndFlags>
 {
-  size_t operator()(const chpl::resolution::IdAndVis& key) const {
+  size_t operator()(const chpl::resolution::IdAndFlags& key) const {
     return key.hash();
   }
 };

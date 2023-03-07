@@ -91,7 +91,7 @@ static void gather(DeclMap& declared,
   } else {
     // found an entry, so add to it
     OwnedIdsWithName& val = search->second;
-    val.appendIdAndVis(d->id(), visibility, isMethodOrField(d, atFieldLevel));
+    val.appendIdAndFlags(d->id(), visibility, isMethodOrField(d, atFieldLevel));
   }
 }
 
@@ -438,8 +438,8 @@ struct LookupHelper {
                                 const ResolvedVisibilityScope* cur,
                                 UniqueString name,
                                 LookupConfig config,
-                                IdAndVis::SymbolTypeFlags filterFlags,
-                                IdAndVis::SymbolTypeFlags excludeFilter,
+                                IdAndFlags::SymbolTypeFlags filterFlags,
+                                IdAndFlags::SymbolTypeFlags excludeFilter,
                                 VisibilitySymbols::ShadowScope shadowScope);
 
   bool doLookupInAutoModules(const Scope* scope,
@@ -502,8 +502,8 @@ bool LookupHelper::doLookupInImportsAndUses(
                                    const ResolvedVisibilityScope* cur,
                                    UniqueString name,
                                    LookupConfig config,
-                                   IdAndVis::SymbolTypeFlags filterFlags,
-                                   IdAndVis::SymbolTypeFlags excludeFilter,
+                                   IdAndFlags::SymbolTypeFlags filterFlags,
+                                   IdAndFlags::SymbolTypeFlags excludeFilter,
                                    VisibilitySymbols::ShadowScope shadowScope) {
   bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
   bool skipPrivateVisibilities = (config & LOOKUP_SKIP_PRIVATE_VIS) != 0;
@@ -780,8 +780,8 @@ bool LookupHelper::doLookupInExternBlock(const Scope* scope,
   for (auto child : ast->children()) {
     if (child->isExternBlock()) {
       bool isMethodOrField = false; // not possible in an extern block
-      IdAndVis::SymbolTypeFlags filterFlags = 0;
-      IdAndVis::SymbolTypeFlags excludeFlags = 0;
+      IdAndFlags::SymbolTypeFlags filterFlags = 0;
+      IdAndFlags::SymbolTypeFlags excludeFlags = 0;
       auto foundIds =
         BorrowedIdsWithName::createWithSingleId(child->id(),
                                                 Decl::PUBLIC,
@@ -842,13 +842,13 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
 
-  IdAndVis::SymbolTypeFlags curFilter = 0;
-  IdAndVis::SymbolTypeFlags excludeFilter = 0;
+  IdAndFlags::SymbolTypeFlags curFilter = 0;
+  IdAndFlags::SymbolTypeFlags excludeFilter = 0;
   if (skipPrivateVisibilities) {
-    curFilter |= IdAndVis::PUBLIC;
+    curFilter |= IdAndFlags::PUBLIC;
   }
   if (onlyMethodsFields) {
-    curFilter |= IdAndVis::METHOD_OR_FIELD;
+    curFilter |= IdAndFlags::METHOD_OR_FIELD;
   }
   // Note: curFilter can only represent combinations of positive flags;
   // if it extended, it might no longer be possible to rerepresent
@@ -870,11 +870,11 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   if (p.second == false) {
     // insertion did not occur because there was already an entry.
     // Set flagsInMap to refer to the flags of the existing element
-    IdAndVis::SymbolTypeFlags& flagsInMap = p.first->second;
+    IdAndFlags::SymbolTypeFlags& flagsInMap = p.first->second;
 
     // the insert did not succeed: there was already something in the map.
     // decide what to do about it.
-    IdAndVis::SymbolTypeFlags foundFilter = flagsInMap;
+    IdAndFlags::SymbolTypeFlags foundFilter = flagsInMap;
     if ((curFilter & foundFilter) == foundFilter) {
       // if the flags we found are equal to foundFilter,
       // or if curFilter is a superset of foundFilter
@@ -898,16 +898,16 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     //   but then we will have no way of recording that we have
     //   searched {PUBLIC} U {PRIVATE,METHODS_OR_FIELDS}, which means
     //   that a future search for {PRIVATE,NOT_METHODS_OR_FIELDS} won't work.
-    IdAndVis::SymbolTypeFlags combinedFilter = foundFilter & curFilter;
+    IdAndFlags::SymbolTypeFlags combinedFilter = foundFilter & curFilter;
 
     flagsInMap = combinedFilter;
 
     /*
     printf("In lookup %s in %s with filter %s found existing flags %s and creating new combined flags for map %s\n",
            name.c_str(), scope->id().str().c_str(),
-           IdAndVis::flagsToString(curFilter).c_str(),
-           IdAndVis::flagsToString(foundFilter).c_str(),
-           IdAndVis::flagsToString(combinedFilter).c_str());*/
+           IdAndFlags::flagsToString(curFilter).c_str(),
+           IdAndFlags::flagsToString(foundFilter).c_str(),
+           IdAndFlags::flagsToString(combinedFilter).c_str());*/
   }
 
   // if the scope has an extern block, note that fact.
@@ -932,8 +932,8 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     if (checkDecls) {
       /*printf("Lookup %s in %s with filter %s exclude %s\n",
              name.c_str(), scope->id().str().c_str(),
-             IdAndVis::flagsToString(curFilter).c_str(),
-             IdAndVis::flagsToString(excludeFilter).c_str());*/
+             IdAndFlags::flagsToString(curFilter).c_str(),
+             IdAndFlags::flagsToString(excludeFilter).c_str());*/
       got |= scope->lookupInScope(name, result, curFilter, excludeFilter);
       if (got && trace) {
         for (size_t i = startSize; i < result.size(); i++) {
@@ -2054,8 +2054,8 @@ doWarnHiddenFormal(Context* context,
   // find the Formal*
   const Formal* formal = nullptr;
   std::vector<BorrowedIdsWithName> ids;
-  IdAndVis::SymbolTypeFlags filterFlags = 0;
-  IdAndVis::SymbolTypeFlags excludeFlags = 0;
+  IdAndFlags::SymbolTypeFlags filterFlags = 0;
+  IdAndFlags::SymbolTypeFlags excludeFlags = 0;
   functionScope->lookupInScope(formalName, ids, filterFlags, excludeFlags);
   for (const auto& b : ids) {
     for (const auto& id : b) {
