@@ -327,6 +327,11 @@ uast::AstTag idToTag(Context* context, ID id);
 bool idIsParenlessFunction(Context* context, ID id);
 
 /**
+ Returns true if the ID refers to a private declaration.
+ */
+bool idIsPrivateDecl(Context* context, ID id);
+
+/**
  Returns true if the ID is a method.
  */
 bool idIsMethod(Context* context, ID id);
