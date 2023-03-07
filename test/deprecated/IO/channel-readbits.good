@@ -1,1 +1,1 @@
-channel-readbits.chpl:10: warning: channel.readbits is deprecated - please use fileReader.readBits instead
+channel-readbits.chpl:10: warning: fileReader.readbits is deprecated - please use fileReader.readBits instead
