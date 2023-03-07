@@ -7,6 +7,16 @@ const b = new bigint("123456789012345678901234567891");
 const c = new bigint("246913578024691357802469135780");
 const d = new bigint("-246913578024691357802469135780");
 
+var aa = "315135":bigint;
+var bb = "12412":bigint;
+var cc = "3426495623485904783478347":bigint;
+var dd = "-1398984130":bigint;
+var ff = "2413804710837418037418307081437315263635345357386985747464":bigint;
+var gg = "-1":bigint;
+
+var la = "315135":bigint;
+var lb = "12412":bigint;
+
 on Locales[min(Locales.domain.high, executeLocale)] {
   assert((a+1) == b);
   assert((a+(1:bigint)) == b);
@@ -138,13 +148,6 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   assert((1:uint(32))*a == a);
   assert((1:uint(64))*a == a);
 
-  var aa = "315135":bigint;
-  var bb = "12412":bigint;
-  var cc = "3426495623485904783478347":bigint;
-  var dd = "-1398984130":bigint;
-  var ff = "2413804710837418037418307081437315263635345357386985747464":bigint;
-  var gg = "-1":bigint;
-
   assert(aa + bb == 327547);
   assert(aa + bb + cc == "3426495623485904783805894":bigint);
   assert(aa + bb + cc + dd == "3426495623485903384821764":bigint);
@@ -186,9 +189,6 @@ on Locales[min(Locales.domain.high, executeLocale)] {
 
   ret.fac(40);
   assert(ret == "815915283247897734345611269596115894272000000000":bigint);
-
-  var la = "315135":bigint;
-  var lb = "12412":bigint;
 
   ret.xor(la,lb);
   assert(ret == 327299);
