@@ -2467,7 +2467,7 @@ static void updateNameSets2(const std::set<UniqueString>& newNames,
   namesDefined.insert(newNames.begin(), newNames.end());
 }
 
-// gathers named defined in the scope and names used/imported.
+// gathers names defined in the scope and names used/imported.
 // does not currently consider shadow scopes at all
 static void collectAllNames(Context* context,
                             const Scope* scope,
@@ -2661,7 +2661,7 @@ emitMultipleDefinedSymbolErrorsQuery(Context* context, const Scope* scope) {
                   namesDefined, namesDefinedMultiply, checkedScopes);
 
   // Now, consider names in namesDefinedMultiply. If there are any
-  // that are not only parenful functions, issue an error.
+  // that are not potentially overloaded functions, issue an error.
   LookupConfig config = LOOKUP_DECLS |
                         LOOKUP_IMPORT_AND_USE |
                         LOOKUP_SKIP_SHADOW_SCOPES;

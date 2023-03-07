@@ -62,6 +62,17 @@ static const char* allowedItems(resolution::VisibilityStmtKind kind) {
   return kind == resolution::VIS_USE ? "modules or enums" : "modules";
 }
 
+// describe where a symbol came from
+// (in a way, it prints out a ResultVisibilityTrace)
+// 'start' indicates where in the trace to start, since sometimes
+// the first element might have already been printed.
+// 'oneOnly' indicates that only the 1st match should be described
+//
+// if 'intro' will be emitted before the first message for a trace
+// (only relevant if start==0). If it is not empty, it should probably
+// end with a space.
+//
+// TODO: fix the docs here more
 static void describeSymbolTrace(ErrorWriterBase& wr,
                                 ID errId,
                                 UniqueString name,
