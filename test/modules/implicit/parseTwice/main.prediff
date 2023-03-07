@@ -5,7 +5,6 @@ Strip excess '././' from file names in error messages.
 """
 
 import os.path as path
-import shutil
 import sys
 
 fname = sys.argv[2]
