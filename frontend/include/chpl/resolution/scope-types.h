@@ -655,6 +655,7 @@ class VisibilitySymbols {
                        // anything we do with it needs a Scope* anyway.
   Kind kind_ = SYMBOL_ONLY;
   bool isPrivate_ = true;
+  bool isModulePrivate_ = false;
   int8_t shadowScopeLevel_ = REGULAR_SCOPE;
 
   ID visibilityClauseId_; // ID of the uAST that generated this
@@ -668,11 +669,13 @@ class VisibilitySymbols {
  public:
   VisibilitySymbols() { }
   VisibilitySymbols(const Scope* scope, Kind kind,
-                    bool isPrivate, ShadowScope shadowScopeLevel,
+                    bool isPrivate, bool isModulePrivate,
+                    ShadowScope shadowScopeLevel,
                     ID visibilityClauseId,
                     std::vector<std::pair<UniqueString,UniqueString>> names)
     : scope_(scope), kind_(kind),
-      isPrivate_(isPrivate), shadowScopeLevel_(shadowScopeLevel),
+      isPrivate_(isPrivate), isModulePrivate_(isModulePrivate),
+      shadowScopeLevel_(shadowScopeLevel),
       visibilityClauseId_(visibilityClauseId),
       names_(std::move(names))
   {
@@ -689,6 +692,9 @@ class VisibilitySymbols {
 
   /** Return whether or not the imported symbol is private */
   bool isPrivate() const { return isPrivate_; }
+
+  /** Returns whether or not the used/imported module (or enum) is private */
+  bool isModulePrivate() const { return isModulePrivate_; }
 
   /** Returns the shadow scope level of the symbols here */
   ShadowScope shadowScopeLevel() const {
@@ -721,6 +727,7 @@ class VisibilitySymbols {
     return scope_ == other.scope_ &&
            kind_ == other.kind_ &&
            isPrivate_ == other.isPrivate_ &&
+           isModulePrivate_ == other.isModulePrivate_ &&
            shadowScopeLevel_ == other.shadowScopeLevel_ &&
            visibilityClauseId_ == other.visibilityClauseId_ &&
            names_ == other.names_;
@@ -733,6 +740,7 @@ class VisibilitySymbols {
     std::swap(scope_, other.scope_);
     std::swap(kind_, other.kind_);
     std::swap(isPrivate_, other.isPrivate_);
+    std::swap(isModulePrivate_, other.isModulePrivate_);
     std::swap(shadowScopeLevel_, other.shadowScopeLevel_);
     names_.swap(other.names_);
     visibilityClauseId_.swap(other.visibilityClauseId_);
@@ -784,13 +792,13 @@ class ResolvedVisibilityScope {
 
   /** Add a visibility clause */
   void addVisibilityClause(const Scope* scope, VisibilitySymbols::Kind kind,
-                           bool isPrivate,
+                           bool isPrivate, bool isModulePrivate,
                            VisibilitySymbols::ShadowScope shadowScopeLevel,
                            ID visibilityClauseId,
                            std::vector<std::pair<UniqueString,UniqueString>> n)
   {
     auto elt = VisibilitySymbols(scope, kind,
-                                 isPrivate, shadowScopeLevel,
+                                 isPrivate, isModulePrivate, shadowScopeLevel,
                                  std::move(visibilityClauseId),
                                  std::move(n));
     visibilityClauses_.push_back(std::move(elt));

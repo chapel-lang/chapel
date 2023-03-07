@@ -581,13 +581,11 @@ bool LookupHelper::doLookupInImportsAndUses(
 
       if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
         // Make sure the module / enum being renamed isn't private.
-        auto scopeAst = parsing::idToAst(context, is.scope()->id());
-        auto visibility = scopeAst->toDecl()->visibility();
-        bool isMethodOrField = false;
-        IdAndVis::SymbolTypeFlags filterFlags = 0;
-        if (!allowPrivateAccess) {
-          filterFlags |= IdAndVis::PUBLIC;
+        auto visibility = uast::Decl::Visibility::PUBLIC;
+        if (is.isModulePrivate()) {
+          visibility = uast::Decl::Visibility::PRIVATE;
         }
+        bool isMethodOrField = false; // target must be module/enum, not method
         auto foundIds =
           BorrowedIdsWithName::createWithSingleId(is.scope()->id(),
                                                   visibility,
@@ -1735,6 +1733,9 @@ doResolveUseStmt(Context* context, const Use* use,
         moduleSymShadowScopeLevel = VisibilitySymbols::SHADOW_SCOPE_TWO;
       }
 
+      // compute if the module/enum used/imported is itself private
+      bool isModPrivate = parsing::idIsPrivateDecl(context, foundScope->id());
+
       if (newName == USTR("_")) {
         // e.g. 'use M as _'. Do not introduce the name at all.
       } else if (newName.isEmpty()) {
@@ -1745,14 +1746,16 @@ doResolveUseStmt(Context* context, const Use* use,
         } else {
           // 'private use' brings in the module name (in a shadow scope)
           r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
-                                 isPrivate, moduleSymShadowScopeLevel,
+                                 isPrivate, isModPrivate,
+                                 moduleSymShadowScopeLevel,
                                  clause->id(),
                                  convertOneName(oldName));
         }
       } else {
         // there is an 'as' involved, so the name will always be brought in
         r->addVisibilityClause(foundScope, VisibilitySymbols::SYMBOL_ONLY,
-                               isPrivate, moduleSymShadowScopeLevel,
+                               isPrivate, isModPrivate,
+                               moduleSymShadowScopeLevel,
                                clause->id(),
                                convertOneRename(oldName, newName));
       }
@@ -1773,7 +1776,8 @@ doResolveUseStmt(Context* context, const Use* use,
 
           // add the visibility clause for only/except
           r->addVisibilityClause(foundScope, kind,
-                                 isPrivate, moduleContentsShadowScopeLevel,
+                                 isPrivate, isModPrivate,
+                                 moduleContentsShadowScopeLevel,
                                  clause->id(),
                                  convertLimitations(context, clause));
           break;
@@ -1784,14 +1788,16 @@ doResolveUseStmt(Context* context, const Use* use,
                                          r, VIS_USE);
           // add the visibility clause for only/except
           r->addVisibilityClause(foundScope, kind,
-                                 isPrivate, moduleContentsShadowScopeLevel,
+                                 isPrivate, isModPrivate,
+                                 moduleContentsShadowScopeLevel,
                                  clause->id(),
                                  convertLimitations(context, clause));
           break;
         case VisibilityClause::NONE:
           kind = VisibilitySymbols::ALL_CONTENTS;
           r->addVisibilityClause(foundScope, kind,
-                                 isPrivate, moduleContentsShadowScopeLevel,
+                                 isPrivate, isModPrivate,
+                                 moduleContentsShadowScopeLevel,
                                  clause->id(),
                                  emptyNames());
           break;
@@ -1852,6 +1858,9 @@ doResolveImportStmt(Context* context, const Import* imp,
       // 'import' never uses a shadow scope.
       auto importShadowScopeLevel = VisibilitySymbols::REGULAR_SCOPE;
 
+      // compute if the module/enum used/imported is itself private
+      bool isModPrivate = parsing::idIsPrivateDecl(context, foundScope->id());
+
       maybeEmitWarningsForId(context, expr->id(), foundScope->id());
 
       if (!dotName.isEmpty()) {
@@ -1871,13 +1880,15 @@ doResolveImportStmt(Context* context, const Import* imp,
             if (newName.isEmpty()) {
               // e.g. 'import M.f'
               r->addVisibilityClause(foundScope, kind,
-                                     isPrivate, importShadowScopeLevel,
+                                     isPrivate, isModPrivate,
+                                     importShadowScopeLevel,
                                      clause->id(),
                                      convertOneName(dotName));
             } else {
               // e.g. 'import M.f as g'
               r->addVisibilityClause(foundScope, kind,
-                                     isPrivate, importShadowScopeLevel,
+                                     isPrivate, isModPrivate,
+                                     importShadowScopeLevel,
                                      clause->id(),
                                      convertOneRename(dotName, newName));
             }
@@ -1900,7 +1911,8 @@ doResolveImportStmt(Context* context, const Import* imp,
             if (newName.isEmpty()) {
               // e.g. 'import OtherModule'
               r->addVisibilityClause(foundScope, kind,
-                                     isPrivate, importShadowScopeLevel,
+                                     isPrivate, isModPrivate,
+                                     importShadowScopeLevel,
                                      clause->id(),
                                      convertOneName(oldName));
             } if (newName == USTR("_")) {
@@ -1908,7 +1920,8 @@ doResolveImportStmt(Context* context, const Import* imp,
             } else {
               // e.g. 'import OtherModule as Foo'
               r->addVisibilityClause(foundScope, kind,
-                                     isPrivate, importShadowScopeLevel,
+                                     isPrivate, isModPrivate,
+                                     importShadowScopeLevel,
                                      clause->id(),
                                      convertOneRename(oldName, newName));
             }
@@ -1922,7 +1935,8 @@ doResolveImportStmt(Context* context, const Import* imp,
 
             // add the visibility clause with the named symbols
             r->addVisibilityClause(foundScope, kind,
-                                   isPrivate, importShadowScopeLevel,
+                                   isPrivate, isModPrivate,
+                                   importShadowScopeLevel,
                                    clause->id(),
                                    convertLimitations(context, clause));
             break;
