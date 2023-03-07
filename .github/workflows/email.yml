@@ -46,12 +46,17 @@ jobs:
               echo 'MERGE<<EOF' >> $GITHUB_ENV
               echo "$merge_log" >> $GITHUB_ENV
               echo 'EOF' >> $GITHUB_ENV
-
-              diff=$(git --no-pager diff --name-status --diff-filter=ACDMRT ${{github.event.pull_request.base.sha}} ${{github.sha}})
-              echo "$diff" 
-              echo 'DIFF<<EOF' >> $GITHUB_ENV
-              echo "$diff" >> $GITHUB_ENV
-              echo 'EOF' >> $GITHUB_ENV                   
+      # Calculate git diff by using base_sha and the merge_sha 1. Rebase the PR branch with origin main, this will make sure the PR branch is upto date with main. 
+      # 2. get the base sha from which the PR is branched off using git rev-parse origin/main        
+      - name: get main-head
+        run: |
+             git rebase origin/main 
+             base_sha=$(git rev-parse origin/main)
+             diff=$(git --no-pager diff --name-status --diff-filter=ACDMRT $base_sha ${{github.sha}})
+             echo "$diff" 
+             echo 'DIFF<<EOF' >> $GITHUB_ENV
+             echo "$diff" >> $GITHUB_ENV
+             echo 'EOF' >> $GITHUB_ENV                                
       
       - name: Send mail  
         uses: dawidd6/action-send-mail@v3
