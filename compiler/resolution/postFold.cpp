@@ -691,11 +691,20 @@ static Expr* postFoldPrimop(CallExpr* call) {
   } else if (call->isPrimitive(PRIM_REAL64_AS_UINT64)) {
     Expr* realArg = call->get(1);
     Immediate* realVal = getSymbolImmediate(toSymExpr(realArg)->symbol());
-    Immediate uintVal;
-    uintVal.const_kind = NUM_KIND_UINT;
-    uintVal.num_index = INT_SIZE_64;
-    memcpy(&(uintVal.v_uint64), &(realVal->v_float64), 8);
-    retval = new SymExpr(new_ImmediateSymbol(&uintVal));
+    double f = realVal->v_float64;
+    uint64_t ui;
+    INT_ASSERT(sizeof(f) == sizeof(ui));
+    memcpy(&ui, &f, sizeof(f));
+    retval = new SymExpr(new_UIntSymbol(ui, INT_SIZE_64));
+    call->replace(retval);
+  } else if (call->isPrimitive(PRIM_REAL32_AS_UINT32)) {
+    Expr* realArg = call->get(1);
+    Immediate* realVal = getSymbolImmediate(toSymExpr(realArg)->symbol());
+    float f = realVal->v_float32;
+    uint32_t ui;
+    INT_ASSERT(sizeof(f) == sizeof(ui));
+    memcpy(&ui, &f, sizeof(f));
+    retval = new SymExpr(new_UIntSymbol(ui, INT_SIZE_32));
     call->replace(retval);
   }
 
