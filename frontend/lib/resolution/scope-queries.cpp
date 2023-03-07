@@ -903,13 +903,6 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     IdAndFlags::Flags combinedFilter = foundFilter & curFilter;
 
     flagsInMap = combinedFilter;
-
-    /*
-    printf("In lookup %s in %s with filter %s found existing flags %s and creating new combined flags for map %s\n",
-           name.c_str(), scope->id().str().c_str(),
-           IdAndFlags::flagsToString(curFilter).c_str(),
-           IdAndFlags::flagsToString(foundFilter).c_str(),
-           IdAndFlags::flagsToString(combinedFilter).c_str());*/
   }
 
   // if the scope has an extern block, note that fact.
@@ -932,10 +925,6 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   {
     bool got = false;
     if (checkDecls) {
-      /*printf("Lookup %s in %s with filter %s exclude %s\n",
-             name.c_str(), scope->id().str().c_str(),
-             IdAndFlags::flagsToString(curFilter).c_str(),
-             IdAndFlags::flagsToString(excludeFilter).c_str());*/
       got |= scope->lookupInScope(name, result, curFilter, excludeFilter);
       if (got && trace) {
         for (size_t i = startSize; i < result.size(); i++) {
