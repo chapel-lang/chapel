@@ -350,7 +350,7 @@ module MemMove {
   //
   private proc _checkArgs(const dst, const dstRegion, const src, const srcRegion) throws {
 
-    proc _isRectangular(arg, param name : string) {
+    proc _checkIsRectangular(arg, param name : string) {
       if !arg.isRectangular() then
         compilerError("The '" + name + "' for 'moveArrayElements' must be rectangular", 3);
     }
@@ -359,14 +359,14 @@ module MemMove {
       return isDomain(arg) || isRange(arg);
     }
 
-    _isRectangular(dst, "dst");
-    _isRectangular(src, "src");
+    _checkIsRectangular(dst, "dst");
+    _checkIsRectangular(src, "src");
 
     if !_isDomOrRange(dstRegion) || !_isDomOrRange(srcRegion) {
       compilerError("Region arguments to 'moveArrayElements' must be ranges or rectangular domains", 2);
     }
-    if isDomain(dstRegion) then _isRectangular(dstRegion, "dstRegion");
-    if isDomain(srcRegion) then _isRectangular(srcRegion, "srcRegion");
+    if isDomain(dstRegion) then _checkIsRectangular(dstRegion, "dstRegion");
+    if isDomain(srcRegion) then _checkIsRectangular(srcRegion, "srcRegion");
 
     if (isRange(dstRegion) && dst.rank > 1) ||
        (isRange(srcRegion) && src.rank > 1) then
