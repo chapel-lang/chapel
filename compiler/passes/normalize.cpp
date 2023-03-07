@@ -2310,7 +2310,7 @@ static void applyGetterTransform(CallExpr* call) {
         modToken = call->get(1)->remove();
       }
     }
- 
+
     if (SymExpr* symExpr = toSymExpr(call->get(2))) {
       symExpr->remove();
 
