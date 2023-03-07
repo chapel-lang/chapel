@@ -1,0 +1,2 @@
+warning in toolnames.doc.chpl:1: Unknown attribute toolname 'sometool'
+warning in toolnames.doc.chpl:4: Unknown attribute toolname 'linter'

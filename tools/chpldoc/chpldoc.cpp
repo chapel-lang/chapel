@@ -73,7 +73,7 @@ bool fPrintEnvHelp = false;
 bool fPrintSettingsHelp = false;
 bool fPrintChplHome = false;
 bool fPrintVersion = false;
-bool fWarnUnknownAttributeToolname = false;
+bool fWarnUnknownAttributeToolname = true;
 
 std::vector<UniqueString> usingAttributeToolnames;
 std::vector<std::string> usingAttributeToolnamesStr;
