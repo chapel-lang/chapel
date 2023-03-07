@@ -27,6 +27,7 @@
 namespace chpl {
 namespace resolution {
 
+/*
 IdAndVis::SymbolTypeFlags IdAndVis::reverseFlags(SymbolTypeFlags flags) {
   SymbolTypeFlags ret = 0;
 
@@ -37,7 +38,7 @@ IdAndVis::SymbolTypeFlags IdAndVis::reverseFlags(SymbolTypeFlags flags) {
   if ((flags & NOT_METHOD_OR_FIELD) != 0) ret |= METHOD_OR_FIELD;
 
   return ret;
-}
+}*/
 
 std::string IdAndVis::flagsToString(SymbolTypeFlags flags) {
   std::string ret;

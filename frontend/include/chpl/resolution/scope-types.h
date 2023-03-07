@@ -132,7 +132,7 @@ class IdAndVis {
 
       If a flags bit is not set, it will have no impact on the reversal.
    */
-  static SymbolTypeFlags reverseFlags(SymbolTypeFlags flags);
+  //static SymbolTypeFlags reverseFlags(SymbolTypeFlags flags);
 
   static std::string flagsToString(SymbolTypeFlags flags);
 };
