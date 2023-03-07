@@ -437,9 +437,8 @@ struct LookupHelper {
   bool doLookupInImportsAndUses(const Scope* scope,
                                 const ResolvedVisibilityScope* cur,
                                 UniqueString name,
-                                bool onlyInnermost,
-                                bool skipPrivateVisibilities,
-                                bool skipPrivateUseImport,
+                                LookupConfig config,
+                                IdAndVis::SymbolTypeFlags filterFlags,
                                 VisibilitySymbols::ShadowScope shadowScope);
 
   bool doLookupInAutoModules(const Scope* scope,
@@ -495,15 +494,19 @@ getKindForVisibilityClauseId(Context* context, ID visibilityClauseId) {
   return VIS_USE;
 }
 
+// config has settings for this part of the search
+// filterFlags has the filter used when considering the module name itself
 bool LookupHelper::doLookupInImportsAndUses(
                                    const Scope* scope,
                                    const ResolvedVisibilityScope* cur,
                                    UniqueString name,
-                                   bool onlyInnermost,
-                                   bool skipPrivateVisibilities,
-                                   bool skipPrivateUseImport,
+                                   LookupConfig config,
+                                   IdAndVis::SymbolTypeFlags filterFlags,
                                    VisibilitySymbols::ShadowScope shadowScope) {
-
+  bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
+  bool skipPrivateVisibilities = (config & LOOKUP_SKIP_PRIVATE_VIS) != 0;
+  bool onlyMethodsFields = (config & LOOKUP_ONLY_METHODS_FIELDS) != 0;
+  bool skipPrivateUseImport = (config & LOOKUP_SKIP_PRIVATE_USE_IMPORT) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
   bool found = false;
 
@@ -550,6 +553,9 @@ bool LookupHelper::doLookupInImportsAndUses(
         }
         if (onlyInnermost) {
           newConfig |= LOOKUP_INNERMOST;
+        }
+        if (onlyMethodsFields) {
+          newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
         }
 
         // If the whole module is being renamed, still search for the original
@@ -721,6 +727,15 @@ bool LookupHelper::doLookupInReceiverScopes(
         if (isAggregateDecl(cur->tag()))
           break;
 
+        LookupConfig useConfig = newConfig;
+        if (cur->id().contains(scope->id())) {
+          // if the parent scope also contains the original scope,
+          // private methods can be accessed.
+        } else {
+          // otherwise, only lookup public methods
+          useConfig |= LOOKUP_SKIP_PRIVATE_VIS;
+        }
+
         if (trace) {
           // push the parent scope
           VisibilityTraceElt elt;
@@ -728,7 +743,7 @@ bool LookupHelper::doLookupInReceiverScopes(
           traceCurPath->push_back(std::move(elt));
         }
 
-        got |= doLookupInScope(cur, {}, name, newConfig);
+        got |= doLookupInScope(cur, {}, name, useConfig);
 
         if (trace) {
           // pop the parent scope
@@ -820,7 +835,6 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   bool goPastModules = (config & LOOKUP_GO_PAST_MODULES) != 0;
   bool onlyMethodsFields = (config & LOOKUP_ONLY_METHODS_FIELDS) != 0;
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
-  bool skipPrivateUseImport = (config & LOOKUP_SKIP_PRIVATE_USE_IMPORT) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
 
   IdAndVis::SymbolTypeFlags curFilter = 0;
@@ -864,11 +878,20 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
       return false;
     }
 
+    printf("In lookup %s in %s with filter %s found existing flags %s\n",
+           name.c_str(), scope->id().str().c_str(),
+           IdAndVis::flagsToString(curFilter).c_str(),
+           IdAndVis::flagsToString(foundFilter).c_str());
+
     // otherwise, compute the new filter to use
     IdAndVis::SymbolTypeFlags origCurFilter = curFilter;
     IdAndVis::SymbolTypeFlags onlyInFound = foundFilter & ~origCurFilter;
-    curFilter = IdAndVis::reverseFlags(onlyInFound) |
-                (origCurFilter & ~foundFilter);
+    curFilter = IdAndVis::reverseFlags(onlyInFound) | origCurFilter;
+    printf("onlyInFound %s reverseFlags %s new curFilter %s\n",
+           IdAndVis::flagsToString(onlyInFound).c_str(),
+           IdAndVis::flagsToString(IdAndVis::reverseFlags(onlyInFound)).c_str(),
+           IdAndVis::flagsToString(curFilter).c_str());
+
 
     // update checkedScopes to remove filter bits that weren't present
     // in foundFilter (because we are going to update results
@@ -905,6 +928,9 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   {
     bool got = false;
     if (checkDecls) {
+      printf("Lookup %s in %s with filter %s\n",
+             name.c_str(), scope->id().str().c_str(),
+             IdAndVis::flagsToString(curFilter).c_str());
       got |= scope->lookupInScope(name, result, curFilter);
       if (got && trace) {
         for (size_t i = startSize; i < result.size(); i++) {
@@ -916,9 +942,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
       }
     }
     if (checkUseImport) {
-      got |= doLookupInImportsAndUses(scope, r, name,
-                                      onlyInnermost, skipPrivateVisibilities,
-                                      skipPrivateUseImport,
+      got |= doLookupInImportsAndUses(scope, r, name, config, curFilter,
                                       VisibilitySymbols::REGULAR_SCOPE);
     }
     if (onlyInnermost && got) return true;
@@ -927,9 +951,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   // now check shadow scope 1 (only relevant for 'private use')
   if (checkUseImport) {
     bool got = false;
-    got |= doLookupInImportsAndUses(scope, r, name,
-                                    onlyInnermost, skipPrivateVisibilities,
-                                    skipPrivateUseImport,
+    got |= doLookupInImportsAndUses(scope, r, name, config, curFilter,
                                     VisibilitySymbols::SHADOW_SCOPE_ONE);
 
     // treat the auto-used modules as if they were 'private use'd
@@ -941,9 +963,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   // now check shadow scope 2 (only relevant for 'private use')
   if (checkUseImport) {
     bool got = false;
-    got = doLookupInImportsAndUses(scope, r, name,
-                                   onlyInnermost, skipPrivateVisibilities,
-                                   skipPrivateUseImport,
+    got = doLookupInImportsAndUses(scope, r, name, config, curFilter,
                                    VisibilitySymbols::SHADOW_SCOPE_TWO);
     if (onlyInnermost && got) return true;
   }
