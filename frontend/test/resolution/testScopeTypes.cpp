@@ -23,8 +23,8 @@
 
 const IdAndFlags::Flags pub = IdAndFlags::PUBLIC;
 const IdAndFlags::Flags not_pub = IdAndFlags::NOT_PUBLIC;
-const IdAndFlags::Flags method = IdAndFlags::METHOD_OR_FIELD;
-const IdAndFlags::Flags not_method = IdAndFlags::NOT_METHOD_OR_FIELD;
+const IdAndFlags::Flags method = IdAndFlags::METHOD_FIELD;
+const IdAndFlags::Flags not_method = IdAndFlags::NOT_METHOD_FIELD;
 
 // test IdAndFlags::matchFilter
 static void testMatchFilter() {

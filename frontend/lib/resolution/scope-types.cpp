@@ -42,11 +42,11 @@ IdAndFlags::Flags IdAndFlags::reverseFlags(Flags flags) {
 
 std::string IdAndFlags::flagsToString(Flags flags) {
   std::string ret;
-  if ((flags & PUBLIC) != 0)               ret += "public ";
-  if ((flags & NOT_PUBLIC) != 0)           ret += "!public ";
+  if ((flags & PUBLIC) != 0)            ret += "public ";
+  if ((flags & NOT_PUBLIC) != 0)        ret += "!public ";
 
-  if ((flags & METHOD_OR_FIELD) != 0)      ret += "method/field ";
-  if ((flags & NOT_METHOD_OR_FIELD) != 0)  ret += "!method/field ";
+  if ((flags & METHOD_FIELD) != 0)      ret += "method/field ";
+  if ((flags & NOT_METHOD_FIELD) != 0)  ret += "!method/field ";
 
   return ret;
 }

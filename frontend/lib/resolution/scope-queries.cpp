@@ -848,7 +848,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     curFilter |= IdAndFlags::PUBLIC;
   }
   if (onlyMethodsFields) {
-    curFilter |= IdAndFlags::METHOD_OR_FIELD;
+    curFilter |= IdAndFlags::METHOD_FIELD;
   }
   // Note: curFilter can only represent combinations of positive flags;
   // if it extended, it might no longer be possible to rerepresent

@@ -47,9 +47,9 @@ class IdAndFlags {
     /** Not public (aka private) */
     NOT_PUBLIC = 2,
     /** A method or field declaration */
-    METHOD_OR_FIELD = 4,
+    METHOD_FIELD = 4,
     /** Something other than (a method or field declaration) */
-    NOT_METHOD_OR_FIELD = 8,
+    NOT_METHOD_FIELD = 8,
     // note: if adding something here, also update flagsToString
   };
   /** A bit-set of the flags defined in the above enum */
@@ -80,9 +80,9 @@ class IdAndFlags {
       // no defaut for compilation error if more are added
     }
     if (isMethodOrField) {
-      flags |= METHOD_OR_FIELD;
+      flags |= METHOD_FIELD;
     } else {
-      flags |= NOT_METHOD_OR_FIELD;
+      flags |= NOT_METHOD_FIELD;
     }
     flags_ = flags;
   }
@@ -111,7 +111,7 @@ class IdAndFlags {
     return (flags_ & PUBLIC) != 0;
   }
   bool isMethodOrField() const {
-    return (flags_ & METHOD_OR_FIELD) != 0;
+    return (flags_ & METHOD_FIELD) != 0;
   }
 
   // consider filterFlags and excludeFlags to represent AND of set flags.
@@ -233,14 +233,14 @@ class BorrowedIdsWithName {
     Filter to symbols where all of the flags set here are also set.
     E.g.:
       * just IdAndFlags::PUBLIC -- only public symbols
-      * just IdAndFlags::METHOD_OR_FIELD -- only methods/fields
-      * IdAndFlags::PUBLIC | IdAndFlags::METHOD_OR_FIELD --
+      * just IdAndFlags::METHOD_FIELD -- only methods/fields
+      * IdAndFlags::PUBLIC | IdAndFlags::METHOD_FIELD --
         only public symbols that are methods/fields
    */
   IdAndFlags::Flags filterFlags_ = 0;
   /**
     Exclude this combination of flags; for example, if it is
-    IdAndFlags::PUBLIC | IdAndFlags::METHOD_OR_FIELD,
+    IdAndFlags::PUBLIC | IdAndFlags::METHOD_FIELD,
     it would exclude public methods/fields,
     but allow public non-methods or private methods/fields.
    */
