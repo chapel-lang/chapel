@@ -2301,8 +2301,17 @@ static void applyGetterTransform(CallExpr* call) {
   if (call->isNamedAstr(astrSdot)) {
     SET_LINENO(call);
 
+    // if there is a module token argument, pull it out
+    Expr* modToken = nullptr;
+    Expr* modArg = nullptr;
+    if (SymExpr* symExpr = toSymExpr(call->get(1))) {
+      if (symExpr->symbol() == gModuleToken) {
+        modArg = call->get(2)->remove();
+        modToken = call->get(1)->remove();
+      }
+    }
+ 
     if (SymExpr* symExpr = toSymExpr(call->get(2))) {
-
       symExpr->remove();
 
       if (VarSymbol* var = toVarSymbol(symExpr->symbol())) {
@@ -2314,7 +2323,7 @@ static void applyGetterTransform(CallExpr* call) {
           call->insertAtHead(gMethodToken);
 
         } else {
-          INT_FATAL(call, "unexpected case");
+          USR_FATAL(call, "cannot apply '.' to this expression");
         }
 
       } else if (TypeSymbol* type = toTypeSymbol(symExpr->symbol())) {
@@ -2339,6 +2348,12 @@ static void applyGetterTransform(CallExpr* call) {
       if (parent->baseExpr == call) {
         call->partialTag = true;
       }
+    }
+
+    // if there was a module token, put it back in
+    if (modToken) {
+      call->insertAtHead(modArg);
+      call->insertAtHead(modToken);
     }
   }
 }
