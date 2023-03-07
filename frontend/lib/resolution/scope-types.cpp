@@ -82,8 +82,10 @@ OwnedIdsWithName::borrow(IdAndFlags::SymbolTypeFlags filterFlags,
   }
 
   // Are all of the filter flags present in flagsAnd?
+  // And, if excludeFlags is present, some flag in it is not present in flagsOr?
   // If so, return the borrow
-  if ((flagsAnd_ & filterFlags) == filterFlags && excludeFlags == 0) {
+  if ((flagsAnd_ & filterFlags) == filterFlags &&
+      (excludeFlags == 0 || (flagsOr_ & excludeFlags) != excludeFlags)) {
     // filter does not rule out anything in the OwnedIds,
     // so we can return a match.
     return BorrowedIdsWithName(*this, idv_, filterFlags, excludeFlags);
