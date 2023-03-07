@@ -1087,7 +1087,7 @@ module BigInteger {
     } else {
       const b_ = (0 - b).safeCast(mp_bitcnt_t);
 
-      mpz_tdiv_q_2exp(c.mpz, a_.mpz, b_);
+      mpz_fdiv_q_2exp(c.mpz, a_.mpz, b_);
     }
 
     return c;
@@ -1113,7 +1113,7 @@ module BigInteger {
     if b >= 0 {
       const b_ = b.safeCast(mp_bitcnt_t);
 
-      mpz_tdiv_q_2exp(c.mpz, a_.mpz, b_);
+      mpz_fdiv_q_2exp(c.mpz, a_.mpz, b_);
 
     } else {
       const b_ = (0 - b).safeCast(mp_bitcnt_t);
@@ -1129,7 +1129,7 @@ module BigInteger {
     const b_ = b.safeCast(mp_bitcnt_t);
     var   c  = new bigint();
 
-    mpz_tdiv_q_2exp(c.mpz, a_.mpz, b_);
+    mpz_fdiv_q_2exp(c.mpz, a_.mpz, b_);
 
     return c;
   }
@@ -1765,16 +1765,16 @@ module BigInteger {
       const b_ = (0 - b).safeCast(mp_bitcnt_t);
 
       if _local {
-        mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+        mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
 
       } else if a.localeId == chpl_nodeID {
-        mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+        mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
 
       } else {
         const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
         on __primitive("chpl_on_locale_num", aLoc) {
-          mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+          mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
         }
       }
     }
@@ -1806,10 +1806,10 @@ module BigInteger {
       const b_ = b.safeCast(mp_bitcnt_t);
 
       if _local {
-        mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+        mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
 
       } else if a.localeId == chpl_nodeID {
-        mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+        mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
 
       } else {
         const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
@@ -1842,16 +1842,16 @@ module BigInteger {
     const b_ = b.safeCast(mp_bitcnt_t);
 
     if _local {
-      mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+      mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
 
     } else if a.localeId == chpl_nodeID {
-      mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+      mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
 
     } else {
       const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", aLoc) {
-        mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+        mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
       }
     }
   }
