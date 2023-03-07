@@ -8,7 +8,7 @@ const b = new bigint("123456789012345678901234567891");
 const c = new bigint("246913578024691357802469135780");
 const d = new bigint("-246913578024691357802469135780");
 
-on Locales[min(Locales.size-1, executeLocale)] {
+on Locales[min(Locales.domain.high, executeLocale)] {
   assert((a+1) == b);
   assert((a+(1:bigint)) == b, getLineNumber());
   assert(b == (a+1));
