@@ -92,7 +92,7 @@ proc pkgSearch(args) throws {
     exit(0);
   }
 
-  const pattern = compile(pkgName, ignoreCase=true);
+  const pattern = new regex(pkgName, ignoreCase=true);
   const command = "pkg-config --list-all";
   const cmd = command.split();
   var sub = spawn(cmd, stdout=pipeStyle.pipe);
