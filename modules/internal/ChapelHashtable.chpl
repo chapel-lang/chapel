@@ -88,10 +88,15 @@ module ChapelHashtable {
         }
       }
       when ArrayInit.gpuInit {
-        // This should match the 'these' iterator in terms of idx->task
-        extern proc chpl_gpu_memset(addr, byte, numBytes);
-        foreach slot in _allSlots(size) {
-          chpl_gpu_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+        use ChplConfig;
+        if CHPL_LOCALE_MODEL=="gpu" {
+          extern proc chpl_gpu_memset(addr, byte, numBytes);
+          foreach slot in _allSlots(size) {
+            chpl_gpu_memset(ptrTo(ret[slot]), 0:uint(8), sizeofElement);
+          }
+        }
+        else {
+          halt("ArrayInit.gpuInit should not have been selected");
         }
       }
       otherwise {
