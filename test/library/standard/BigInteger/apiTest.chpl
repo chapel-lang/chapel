@@ -46,33 +46,33 @@ on Locales[min(Locales.size-1, executeLocale)] {
 
   // Addition
 
-  assert(a+(1:int(8)) == b);
+  assert(a+(1:int(8))  == b);
   assert(a+(1:int(16)) == b);
   assert(a+(1:int(32)) == b);
   assert(a+(1:int(64)) == b);
 
-  assert((1:int(8))+a == b);
+  assert((1:int(8))+a  == b);
   assert((1:int(16))+a == b);
   assert((1:int(32))+a == b);
   assert((1:int(64))+a == b);
 
-  assert((-1:int(8))+b == a);
+  assert((-1:int(8))+b  == a);
   assert((-1:int(16))+b == a);
   assert((-1:int(32))+b == a);
   assert((-1:int(64))+b == a);
 
-  assert(b+(-1:int(8)) == a);
+  assert(b+(-1:int(8))  == a);
   assert(b+(-1:int(16)) == a);
   assert(b+(-1:int(32)) == a);
   assert(b+(-1:int(64)) == a);
 
   assert(a+(true) == b);
-  assert(a+(1:uint(8)) == b);
+  assert(a+(1:uint(8))  == b);
   assert(a+(1:uint(16)) == b);
   assert(a+(1:uint(32)) == b);
   assert(a+(1:uint(64)) == b);
 
-  assert((1:uint(8))+a == b);
+  assert((1:uint(8))+a  == b);
   assert((1:uint(16))+a == b);
   assert((1:uint(32))+a == b);
   assert((1:uint(64))+a == b);
@@ -97,7 +97,7 @@ on Locales[min(Locales.size-1, executeLocale)] {
   assert(b-(true) == a);
   assert((true)-b == -a);
 
-  assert(b-(1:uint(8)) == a);
+  assert(b-(1:uint(8))  == a);
   assert(b-(1:uint(16)) == a);
   assert(b-(1:uint(32)) == a);
   assert(b-(1:uint(64)) == a);
@@ -140,10 +140,10 @@ on Locales[min(Locales.size-1, executeLocale)] {
   assert((1:uint(64))*a == a);
 
   // Bit shifts
-  assert(5:bigint  << 3  == 40);
-  assert(5:bigint  >> 1  == 2);
-  assert(-5:bigint << 3  == -40);
-  assert(-5:bigint >> 1  == -3);
+  assert(5:bigint  << 3   == 40);
+  assert(5:bigint  >> 1   == 2);
+  assert(-5:bigint << 3   == -40);
+  assert(-5:bigint >> 1   == -3);
   assert(5:bigint  >> -3  == 40);
   assert(5:bigint  << -1  == 2);
   assert(-5:bigint >> -3  == -40);
