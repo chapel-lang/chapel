@@ -111,11 +111,18 @@ module CTypes {
 
   */
 
+  /*
+  .. type:: c_ptr
+
+    Some information about c_ptr here...
+  */
+
   pragma "data class"
   pragma "no object"
   pragma "no default functions"
   pragma "no wide class"
   pragma "c_ptr class"
+  pragma "no doc"
   class c_ptr {
     //   Similar to _ddata from ChapelBase, but differs
     //   from _ddata because it can never be wide.
