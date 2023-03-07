@@ -40,6 +40,17 @@ IdAndVis::SymbolTypeFlags IdAndVis::reverseFlags(SymbolTypeFlags flags) {
   return ret;
 }
 
+std::string IdAndVis::flagsToString(SymbolTypeFlags flags) {
+  std::string ret;
+  if ((flags & PUBLIC) != 0)               ret += "public ";
+  if ((flags & PRIVATE) != 0)              ret += "private ";
+
+  if ((flags & METHOD_OR_FIELD) != 0)      ret += "method/field ";
+  if ((flags & NOT_METHOD_NOT_FIELD) != 0) ret += "not method/field";
+
+  return ret;
+}
+
 void OwnedIdsWithName::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
   if (auto ptr = moreIdvs_.get()) {
