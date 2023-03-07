@@ -98,7 +98,7 @@ ssize_t qio_initial_mmap_max = 8*1024*1024;
 
 // when not using mmap, writes larger than this size
 // can avoid buffering by calling pwrite/fwrite/write directly
-ssize_t qio_write_unbuffered_threshold = 512*1024;
+ssize_t qio_write_unbuffered_threshold = 32*1024;
 
 #ifdef _chplrt_H_
 qioerr qio_lock(qio_lock_t* x) {
