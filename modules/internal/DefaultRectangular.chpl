@@ -1352,20 +1352,20 @@ module DefaultRectangular {
     where rank == 1 do
       return dsiAccess(ind);
 
-    inline proc dsiAccess(const ref ind : rank*idxType) ref {
+    inline proc dsiAccess(const in ind : rank*idxType) ref {
       // Note: bounds checking occurs in ChapelArray for this type.
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
     }
 
-    inline proc dsiAccess(const ref ind : rank*idxType)
+    inline proc dsiAccess(const in ind : rank*idxType)
     where shouldReturnRvalueByValue(eltType) {
       // Note: bounds checking occurs in ChapelArray for this type.
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
     }
 
-    inline proc dsiAccess(const ref ind : rank*idxType) const ref {
+    inline proc dsiAccess(const in ind : rank*idxType) const ref {
       // Note: bounds checking occurs in ChapelArray for this type.
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
