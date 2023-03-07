@@ -123,6 +123,10 @@ else
 	CMAKE_FLAGS += -DCMAKE_MESSAGE_LOG_LEVEL=STATUS
 endif
 
+ifdef NIGHTLY
+	CMAKE_FLAGS += -DCMAKE_VERBOSE_MAKEFILE=ON
+endif
+
 ifeq ($(shell test -e $(CHPL_MAKE_HOME)/configured-prefix; echo "$$?"), 0)
 	CMAKE_FLAGS += -DINSTALLATION_MODE=prefix -DCMAKE_INSTALL_PREFIX=$(shell cat $(CHPL_MAKE_HOME)/configured-prefix)
 else ifeq ($(shell test -e $(CHPL_MAKE_HOME)/configured-chpl-home; echo "$$?"), 0)
