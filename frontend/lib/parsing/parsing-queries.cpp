@@ -832,6 +832,9 @@ const AstNode* idToAst(Context* context, ID id) {
   return astForIDQuery(context, id);
 }
 
+// TODO: could many of these get-property-of-ID queries
+// be combined to save space?
+
 static const AstTag& idToTagQuery(Context* context, ID id) {
   QUERY_BEGIN(idToTagQuery, context, id);
 
@@ -873,6 +876,35 @@ static const bool& idIsParenlessFunctionQuery(Context* context, ID id) {
 
 bool idIsParenlessFunction(Context* context, ID id) {
   return idIsParenlessFunctionQuery(context, id);
+}
+
+static const bool& idIsPrivateDeclQuery(Context* context, ID id) {
+  QUERY_BEGIN(idIsPrivateDeclQuery, context, id);
+
+  bool result = false;
+
+  if (!id.isEmpty()) {
+    if (auto ast = parsing::idToAst(context, id)) {
+      if (auto decl = ast->toDecl()) {
+        auto visibility = decl->visibility();
+        switch (visibility) {
+          case Decl::DEFAULT_VISIBILITY:
+          case Decl::PUBLIC:
+            result = false;
+            break;
+          case Decl::PRIVATE:
+            result = true;
+            break;
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool idIsPrivateDecl(Context* context, ID id) {
+  return idIsPrivateDeclQuery(context, id);
 }
 
 static const bool& idIsMethodQuery(Context* context, ID id) {
