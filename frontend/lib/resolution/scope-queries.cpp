@@ -853,6 +853,8 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   // Note: curFilter can only represent combinations of positive flags;
   // if it extended, it might no longer be possible to rerepresent
   // the combinedFilter below as a single bitset.
+  // Also note: setting excludeFilter in some way other than the
+  // handling below with checkedScopes will require other adjustments.
 
   // goPastModules should imply checkParents; otherwise, why would we proceed
   // through module boundaries if we aren't traversing the scope chain?
