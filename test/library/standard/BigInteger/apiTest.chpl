@@ -9,27 +9,27 @@ const c = new bigint("246913578024691357802469135780");
 const d = new bigint("-246913578024691357802469135780");
 
 on Locales[min(Locales.size-1, executeLocale)] {
-  writeIfFalse((a+1) == b, getLineNumber());
-  writeIfFalse((a+(1:bigint)) == b, getLineNumber());
-  writeIfFalse(b == (a+1), getLineNumber());
-  writeIfFalse(b != a, getLineNumber());
-  writeIfFalse(b > a, getLineNumber());
-  writeIfFalse(b >= a, getLineNumber());
-  writeIfFalse(!(b < a), getLineNumber());
-  writeIfFalse(!(b <= a), getLineNumber());
+  assert((a+1) == b);
+  assert((a+(1:bigint)) == b, getLineNumber());
+  assert(b == (a+1));
+  assert(b != a);
+  assert(b > a);
+  assert(b >= a);
+  assert(!(b < a));
+  assert(!(b <= a));
 
-  writeIfFalse((a*2) == c, getLineNumber());
-  writeIfFalse((c-a) == a, getLineNumber());
-  writeIfFalse(c == (a + a), getLineNumber());
-  writeIfFalse((c+1) == (a+b), getLineNumber());
-  writeIfFalse(d == -c, getLineNumber());
+  assert((a*2) == c);
+  assert((c-a) == a);
+  assert(c == (a + a));
+  assert((c+1) == (a+b));
+  assert(d == -c);
 
   forall i in -10..10 do
     for j in -10..10 do
       if j != 0 {
-        writeIfFalse(div(i:bigint, j:bigint) == div(i,j), getLineNumber());
-        writeIfFalse(mod(i:bigint, j:bigint) == mod(i,j), getLineNumber());
-        writeIfFalse(mul(i:bigint, j:bigint) == mul(i,j), getLineNumber());
+        assert(div(i:bigint, j:bigint) == div(i,j));
+        assert(mod(i:bigint, j:bigint) == mod(i,j));
+        assert(mul(i:bigint, j:bigint) == mul(i,j));
       }
 
   proc div(a, b) {
@@ -46,157 +46,157 @@ on Locales[min(Locales.size-1, executeLocale)] {
 
   // Addition
 
-  writeIfFalse(a+(1:int(8)) == b, getLineNumber());
-  writeIfFalse(a+(1:int(16)) == b, getLineNumber());
-  writeIfFalse(a+(1:int(32)) == b, getLineNumber());
-  writeIfFalse(a+(1:int(64)) == b, getLineNumber());
+  assert(a+(1:int(8)) == b);
+  assert(a+(1:int(16)) == b);
+  assert(a+(1:int(32)) == b);
+  assert(a+(1:int(64)) == b);
 
-  writeIfFalse((1:int(8))+a == b, getLineNumber());
-  writeIfFalse((1:int(16))+a == b, getLineNumber());
-  writeIfFalse((1:int(32))+a == b, getLineNumber());
-  writeIfFalse((1:int(64))+a == b, getLineNumber());
+  assert((1:int(8))+a == b);
+  assert((1:int(16))+a == b);
+  assert((1:int(32))+a == b);
+  assert((1:int(64))+a == b);
 
-  writeIfFalse((-1:int(8))+b == a, getLineNumber());
-  writeIfFalse((-1:int(16))+b == a, getLineNumber());
-  writeIfFalse((-1:int(32))+b == a, getLineNumber());
-  writeIfFalse((-1:int(64))+b == a, getLineNumber());
+  assert((-1:int(8))+b == a);
+  assert((-1:int(16))+b == a);
+  assert((-1:int(32))+b == a);
+  assert((-1:int(64))+b == a);
 
-  writeIfFalse(b+(-1:int(8)) == a, getLineNumber());
-  writeIfFalse(b+(-1:int(16)) == a, getLineNumber());
-  writeIfFalse(b+(-1:int(32)) == a, getLineNumber());
-  writeIfFalse(b+(-1:int(64)) == a, getLineNumber());
+  assert(b+(-1:int(8)) == a);
+  assert(b+(-1:int(16)) == a);
+  assert(b+(-1:int(32)) == a);
+  assert(b+(-1:int(64)) == a);
 
-  writeIfFalse(a+(true) == b, getLineNumber());
-  writeIfFalse(a+(1:uint(8)) == b, getLineNumber());
-  writeIfFalse(a+(1:uint(16)) == b, getLineNumber());
-  writeIfFalse(a+(1:uint(32)) == b, getLineNumber());
-  writeIfFalse(a+(1:uint(64)) == b, getLineNumber());
+  assert(a+(true) == b);
+  assert(a+(1:uint(8)) == b);
+  assert(a+(1:uint(16)) == b);
+  assert(a+(1:uint(32)) == b);
+  assert(a+(1:uint(64)) == b);
 
-  writeIfFalse((1:uint(8))+a == b, getLineNumber());
-  writeIfFalse((1:uint(16))+a == b, getLineNumber());
-  writeIfFalse((1:uint(32))+a == b, getLineNumber());
-  writeIfFalse((1:uint(64))+a == b, getLineNumber());
+  assert((1:uint(8))+a == b);
+  assert((1:uint(16))+a == b);
+  assert((1:uint(32))+a == b);
+  assert((1:uint(64))+a == b);
 
   // Subtraction
 
-  writeIfFalse(b-(1:int(8))  == a, getLineNumber());
-  writeIfFalse(b-(1:int(16)) == a, getLineNumber());
-  writeIfFalse(b-(1:int(32)) == a, getLineNumber());
-  writeIfFalse(b-(1:int(64)) == a, getLineNumber());
+  assert(b-(1:int(8))  == a);
+  assert(b-(1:int(16)) == a);
+  assert(b-(1:int(32)) == a);
+  assert(b-(1:int(64)) == a);
 
-  writeIfFalse((1:int(8))-b  == -a, getLineNumber());
-  writeIfFalse((1:int(16))-b == -a, getLineNumber());
-  writeIfFalse((1:int(32))-b == -a, getLineNumber());
-  writeIfFalse((1:int(64))-b == -a, getLineNumber());
+  assert((1:int(8))-b  == -a);
+  assert((1:int(16))-b == -a);
+  assert((1:int(32))-b == -a);
+  assert((1:int(64))-b == -a);
 
-  writeIfFalse(a-(-1:int(8))  == b, getLineNumber());
-  writeIfFalse(a-(-1:int(16)) == b, getLineNumber());
-  writeIfFalse(a-(-1:int(32)) == b, getLineNumber());
-  writeIfFalse(a-(-1:int(64)) == b, getLineNumber());
+  assert(a-(-1:int(8))  == b);
+  assert(a-(-1:int(16)) == b);
+  assert(a-(-1:int(32)) == b);
+  assert(a-(-1:int(64)) == b);
 
-  writeIfFalse(b-(true) == a, getLineNumber());
-  writeIfFalse((true)-b == -a, getLineNumber());
+  assert(b-(true) == a);
+  assert((true)-b == -a);
 
-  writeIfFalse(b-(1:uint(8)) == a, getLineNumber());
-  writeIfFalse(b-(1:uint(16)) == a, getLineNumber());
-  writeIfFalse(b-(1:uint(32)) == a, getLineNumber());
-  writeIfFalse(b-(1:uint(64)) == a, getLineNumber());
+  assert(b-(1:uint(8)) == a);
+  assert(b-(1:uint(16)) == a);
+  assert(b-(1:uint(32)) == a);
+  assert(b-(1:uint(64)) == a);
 
-  writeIfFalse((1:uint(8))-b  == -a, getLineNumber());
-  writeIfFalse((1:uint(16))-b == -a, getLineNumber());
-  writeIfFalse((1:uint(32))-b == -a, getLineNumber());
-  writeIfFalse((1:uint(64))-b == -a, getLineNumber());
+  assert((1:uint(8))-b  == -a);
+  assert((1:uint(16))-b == -a);
+  assert((1:uint(32))-b == -a);
+  assert((1:uint(64))-b == -a);
 
   // Multiplication
-  writeIfFalse(a*(1:int(8))  == a, getLineNumber());
-  writeIfFalse(a*(1:int(16)) == a, getLineNumber());
-  writeIfFalse(a*(1:int(32)) == a, getLineNumber());
-  writeIfFalse(a*(1:int(64)) == a, getLineNumber());
+  assert(a*(1:int(8))  == a);
+  assert(a*(1:int(16)) == a);
+  assert(a*(1:int(32)) == a);
+  assert(a*(1:int(64)) == a);
 
-  writeIfFalse((1:int(8))*a  == a, getLineNumber());
-  writeIfFalse((1:int(16))*a == a, getLineNumber());
-  writeIfFalse((1:int(32))*a == a, getLineNumber());
-  writeIfFalse((1:int(64))*a == a, getLineNumber());
+  assert((1:int(8))*a  == a);
+  assert((1:int(16))*a == a);
+  assert((1:int(32))*a == a);
+  assert((1:int(64))*a == a);
 
-  writeIfFalse((-1:int(8))*a  == -a, getLineNumber());
-  writeIfFalse((-1:int(16))*a == -a, getLineNumber());
-  writeIfFalse((-1:int(32))*a == -a, getLineNumber());
-  writeIfFalse((-1:int(64))*a == -a, getLineNumber());
+  assert((-1:int(8))*a  == -a);
+  assert((-1:int(16))*a == -a);
+  assert((-1:int(32))*a == -a);
+  assert((-1:int(64))*a == -a);
 
-  writeIfFalse(a*(-1:int(8))  == -a, getLineNumber());
-  writeIfFalse(a*(-1:int(16)) == -a, getLineNumber());
-  writeIfFalse(a*(-1:int(32)) == -a, getLineNumber());
-  writeIfFalse(a*(-1:int(64)) == -a, getLineNumber());
+  assert(a*(-1:int(8))  == -a);
+  assert(a*(-1:int(16)) == -a);
+  assert(a*(-1:int(32)) == -a);
+  assert(a*(-1:int(64)) == -a);
 
-  writeIfFalse(a*(true) == a, getLineNumber());
-  writeIfFalse(a*(1:uint(8))  == a, getLineNumber());
-  writeIfFalse(a*(1:uint(16)) == a, getLineNumber());
-  writeIfFalse(a*(1:uint(32)) == a, getLineNumber());
-  writeIfFalse(a*(1:uint(64)) == a, getLineNumber());
+  assert(a*(true) == a);
+  assert(a*(1:uint(8))  == a);
+  assert(a*(1:uint(16)) == a);
+  assert(a*(1:uint(32)) == a);
+  assert(a*(1:uint(64)) == a);
 
-  writeIfFalse((1:uint(8))*a  == a, getLineNumber());
-  writeIfFalse((1:uint(16))*a == a, getLineNumber());
-  writeIfFalse((1:uint(32))*a == a, getLineNumber());
-  writeIfFalse((1:uint(64))*a == a, getLineNumber());
+  assert((1:uint(8))*a  == a);
+  assert((1:uint(16))*a == a);
+  assert((1:uint(32))*a == a);
+  assert((1:uint(64))*a == a);
 
   // Bit shifts
-  writeIfFalse(5:bigint  << 3  == 40, getLineNumber());
-  writeIfFalse(5:bigint  >> 1  == 2, getLineNumber());
-  writeIfFalse(-5:bigint << 3  == -40, getLineNumber());
-  writeIfFalse(-5:bigint >> 1  == -3, getLineNumber());
-  writeIfFalse(5:bigint  >> -3  == 40, getLineNumber());
-  writeIfFalse(5:bigint  << -1  == 2, getLineNumber());
-  writeIfFalse(-5:bigint >> -3  == -40, getLineNumber());
-  writeIfFalse(-5:bigint << -1  == -3, getLineNumber());
+  assert(5:bigint  << 3  == 40);
+  assert(5:bigint  >> 1  == 2);
+  assert(-5:bigint << 3  == -40);
+  assert(-5:bigint >> 1  == -3);
+  assert(5:bigint  >> -3  == 40);
+  assert(5:bigint  << -1  == 2);
+  assert(-5:bigint >> -3  == -40);
+  assert(-5:bigint << -1  == -3);
 
-  writeIfFalse(5:bigint  << 3:uint  == 40, getLineNumber());
-  writeIfFalse(5:bigint  >> 1:uint  == 2, getLineNumber());
-  writeIfFalse(-5:bigint << 3:uint  == -40, getLineNumber());
-  writeIfFalse(-5:bigint >> 1:uint  == -3, getLineNumber());
+  assert(5:bigint  << 3:uint  == 40);
+  assert(5:bigint  >> 1:uint  == 2);
+  assert(-5:bigint << 3:uint  == -40);
+  assert(-5:bigint >> 1:uint  == -3);
 
   // Boolean ops
-  writeIfFalse(~123:bigint == -124, getLineNumber());
-  writeIfFalse(123:bigint & 234:bigint == 106, getLineNumber());
-  writeIfFalse(123:bigint | 234:bigint == 251, getLineNumber());
+  assert(~123:bigint == -124);
+  assert(123:bigint & 234:bigint == 106);
+  assert(123:bigint | 234:bigint == 251);
 
   var ret:bigint;
   ret.gcd(48:bigint, 180:bigint);
-  writeIfFalse(ret == 12, getLineNumber());
+  assert(ret == 12);
   ret.lcm(48:bigint, 180:bigint);
-  writeIfFalse(ret == 720, getLineNumber());
+  assert(ret == 720);
 
   ret.fac(40);
-  writeIfFalse(ret == "815915283247897734345611269596115894272000000000":bigint, getLineNumber());
+  assert(ret == "815915283247897734345611269596115894272000000000":bigint);
 
   var la = "315135":bigint;
   var lb = "12412":bigint;
 
   ret.xor(la,lb);
-  writeIfFalse(ret == 327299, getLineNumber());
-  writeIfFalse(la & lb == 124, getLineNumber());
-  writeIfFalse(la | lb == 327423, getLineNumber());
+  assert(ret == 327299);
+  assert(la & lb == 124);
+  assert(la | lb == 327423);
 
-  writeIfFalse((90:bigint).sizeInBase(10) == 3, getLineNumber());
-  writeIfFalse((99:bigint).sizeInBase(10) == 3, getLineNumber());
+  assert((90:bigint).sizeInBase(10) == 3);
+  assert((99:bigint).sizeInBase(10) == 3);
 
   ret.sqrt(4:bigint);
-  writeIfFalse(ret == 2, getLineNumber());
+  assert(ret == 2);
   ret.sqrt(5:bigint);
-  writeIfFalse(ret == 2, getLineNumber());
+  assert(ret == 2);
 
-  writeIfFalse((6:bigint)%(5:bigint) == 6%5, getLineNumber());
+  assert((6:bigint)%(5:bigint) == 6%5);
 
   // Conversions
   use Random;
   var randStream = new RandomStream(int);
   var randVal = randStream.getNext();
-  writeIfFalse(randVal:bigint == randVal, getLineNumber());
+  assert(randVal:bigint == randVal);
 
   var uRandStream = new RandomStream(uint);
   var uRandVal = uRandStream.getNext();
-  writeIfFalse(uRandVal:bigint == uRandVal, getLineNumber());
+  assert(uRandVal:bigint == uRandVal);
 
-  writeIfFalse(a.cmp(b) == -1, getLineNumber());
-  writeIfFalse(b.cmp(a) == 1, getLineNumber());
-  writeIfFalse(a.cmp(a) == 0, getLineNumber());
+  assert(a.cmp(b) == -1);
+  assert(b.cmp(a) == 1);
+  assert(a.cmp(a) == 0);
 }
