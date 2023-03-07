@@ -48,7 +48,7 @@ class IdAndVis {
     NOT_PUBLIC = 2,
     /** A method or field declaration */
     METHOD_OR_FIELD = 4,
-    /** Something other than a method or field declaration */
+    /** Something other than (a method or field declaration) */
     NOT_METHOD_OR_FIELD = 8,
     // note: if adding something here, also update flagsToString
   };
