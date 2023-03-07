@@ -125,15 +125,6 @@ class IdAndFlags {
            (excludeFlags == 0 || (haveFlags & excludeFlags) != excludeFlags);
   }
 
-  /** Computes the reversal of set bits in flags. For example, if flags is
-        NOT_PUBLIC and METHOD_OR_FIELD
-      the reversal is
-        PUBLIC and NOT_METHOD_OR_FIELD
-
-      If a flags bit is not set, it will have no impact on the reversal.
-   */
-  //static Flags reverseFlags(Flags flags);
-
   static std::string flagsToString(Flags flags);
 };
 

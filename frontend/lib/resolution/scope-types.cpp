@@ -27,18 +27,6 @@
 namespace chpl {
 namespace resolution {
 
-/*
-IdAndFlags::Flags IdAndFlags::reverseFlags(Flags flags) {
-  Flags ret = 0;
-
-  if ((flags & PUBLIC) != 0)              ret |= NOT_PUBLIC;
-  if ((flags & NOT_PUBLIC) != 0)          ret |= PUBLIC;
-
-  if ((flags & METHOD_OR_FIELD) != 0)     ret |= NOT_METHOD_OR_FIELD;
-  if ((flags & NOT_METHOD_OR_FIELD) != 0) ret |= METHOD_OR_FIELD;
-
-  return ret;
-}*/
 
 std::string IdAndFlags::flagsToString(Flags flags) {
   std::string ret;
