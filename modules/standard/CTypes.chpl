@@ -125,16 +125,9 @@ module CTypes {
     //   Similar to _ddata from ChapelBase, but differs
     //   from _ddata because it can never be wide.
 
-    /* The type that this pointer points to */
+    // The type that this pointer points to
     type eltType;
-
-    inline proc writeThis(ch) throws {
-      (this:c_void_ptr).writeThis(ch);
-    }
-
   }
-
-  // documented secondary methods for c_ptr
 
   /* Retrieve the i'th element (zero based) from a pointer to an array.
     Does the equivalent of ptr[i] in C.
@@ -149,6 +142,11 @@ module CTypes {
     return __primitive("array_get", this, 0);
   }
 
+  pragma "no doc"
+  inline proc c_ptr.writeThis(ch) throws {
+    (this:c_void_ptr).writeThis(ch);
+  }
+
   /*
   This class represents a C array with fixed size.  A variable of type c_array
   can coerce to a c_ptr with the same element type.  In that event, the
@@ -159,17 +157,10 @@ module CTypes {
   elements in the function's stack. Assigning or copy initializing will result
   in copying the elements (vs resulting in two pointers that refer to the same
   elements).  A `nil` c_array is not representable in Chapel.
-
-    ``c_array`` supports the following methods:
   */
-
-  type c_array;
-  // split init as a hack to hide the internal name from the docs
-  c_array = _c_array;
   pragma "c_array record"
   pragma "default intent is ref if modified"
-  pragma "no doc"
-  record _c_array {
+  record c_array {
     /* The array element type */
     type eltType;
     /* The fixed number of elements */
@@ -201,6 +192,19 @@ module CTypes {
       }
     }
 
+    /* Retrieve the i'th element (zero based) from the array.
+       Does the equivalent of arr[i] in C.
+       Includes bounds checking when such checks are enabled.
+    */
+    inline proc ref this(i: integral) ref : eltType {
+      if boundsChecking then
+        if i < 0 || i >= size then
+          HaltWrappers.boundsCheckHalt("c array index out of bounds " + i:string +
+                                       "(indices are 0.." + (size-1):string + ")");
+
+      return __primitive("array_get", this, i);
+    }
+    pragma "no doc"
     inline proc const ref this(i: integral) const ref : eltType {
       if boundsChecking then
         if i < 0 || i >= size then
@@ -210,6 +214,17 @@ module CTypes {
       return __primitive("array_get", this, i);
     }
 
+    /* As with the previous function, returns the i'th element (zero based)
+        from the array. This one emits a compilation error if i is out of bounds.
+    */
+    inline proc ref this(param i: integral) ref : eltType {
+      if i < 0 || i >= size then
+        compilerError("c array index out of bounds " + i:string +
+                      "(indices are 0.." + (size-1):string + ")");
+
+      return __primitive("array_get", this, i);
+    }
+    pragma "no doc"
     inline proc const ref this(param i: integral) const ref : eltType {
       if i < 0 || i >= size then
         compilerError("c array index out of bounds " + i:string +
@@ -246,32 +261,6 @@ module CTypes {
     }
   }
 
-  // documented secondary methods for c_array
-
-  /* Retrieve the i'th element (zero based) from the array.
-     Does the equivalent of arr[i] in C.
-     Includes bounds checking when such checks are enabled.
-  */
-  inline proc ref c_array.this(i: integral) ref : this.eltType {
-    if boundsChecking then
-      if i < 0 || i >= this.size then
-        HaltWrappers.boundsCheckHalt("c array index out of bounds " + i:string +
-                                     "(indices are 0.." + (this.size-1):string + ")");
-
-    return __primitive("array_get", this, i);
-  }
-
-  /* As with the previous function, returns the i'th element (zero based)
-      from the array. This one emits a compilation error if i is out of bounds.
-  */
-  inline proc ref c_array.this(param i: integral) ref : this.eltType {
-    if i < 0 || i >= this.size then
-      compilerError("c array index out of bounds " + i:string +
-                    "(indices are 0.." + (this.size-1):string + ")");
-
-    return __primitive("array_get", this, i);
-  }
-
   /* Copy the elements from one c_array to another.
      Raises an error at compile time if the array sizes or
      element types do not match. */
@@ -285,8 +274,6 @@ module CTypes {
       lhs[i] = rhs[i];
     }
   }
-
-  /* Sets a c_ptr to point to the first element of a c_array */
   operator =(ref lhs:c_ptr, ref rhs:c_array) {
     if lhs.eltType != rhs.eltType then
       compilerError("element type mismatch in c_array assignment");
