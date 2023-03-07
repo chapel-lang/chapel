@@ -1,2 +1,3 @@
-redefinition-variables.chpl:1: warning: '--' is not a pre-decrement
-redefinition-variables.chpl:2: syntax error: near '--'
+redefinition-variables.chpl:1: error: 'x' has multiple definitions
+redefinition-variables.chpl:3: note: redefined here
+redefinition-variables.chpl:4: note: redefined here

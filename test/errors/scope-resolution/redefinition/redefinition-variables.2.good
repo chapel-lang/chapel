@@ -1,13 +1,20 @@
-─── warning in redefinition-variables.chpl:1 [PreIncDecOp] ───
-  '--' is not a pre-decrement.
-  Used here:
+─── error in redefinition-variables.chpl:1 [Redefinition] ───
+  'x' has multiple definitions.
+  It was first defined here:
       |
-    1 | --detailed-errors # redef-detailed.good
+    1 | var x =
+      |     ⎺⎺⎺⎺
+    2 |         1;
+      | ⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-
-─── syntax in redefinition-variables.chpl:2 [BisonSyntaxError] ───
-  Near '--':
+  Redefined here:
       |
-    2 | --no-detailed-errors # redef-brief.good
+    3 | var x = 2;
+      |     ⎺⎺⎺⎺⎺
+      |
+  Redefined here:
+      |
+    4 | var x = 3;
+      |     ⎺⎺⎺⎺⎺
       |
 
