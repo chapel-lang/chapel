@@ -52,7 +52,7 @@ module MemMove {
     :rtype: param bool
   */
   pragma "no doc"
-  deprecated "'needsDeinit' is deprecated; please use 'needsDestroy' instead"
+  @deprecated(notes="'needsDeinit' is deprecated; please use 'needsDestroy' instead")
   proc needsDeinit(type t) param {
     return __primitive("needs auto destroy", t);
   }
@@ -90,7 +90,7 @@ module MemMove {
     :arg: A variable to deinitialize
   */
   pragma "no doc"
-  deprecated "'explicitDeinit' is now deprecated; please use 'destroy' instead"
+  @deprecated(notes="'explicitDeinit' is now deprecated; please use 'destroy' instead")
   proc explicitDeinit(ref arg: ?t) {
     if needsDeinit(t) then
       chpl__autoDestroy(arg);
@@ -135,7 +135,7 @@ module MemMove {
   */
   pragma "last resort"
   pragma "no doc"
-  deprecated "The formals 'lhs' and 'rhs' are deprecated, please use 'dst' and 'src' instead"
+  @deprecated(notes="The formals 'lhs' and 'rhs' are deprecated, please use 'dst' and 'src' instead")
   proc moveInitialize(ref lhs,
                       pragma "no auto destroy"
                       pragma "error on copy" in rhs) {
@@ -201,7 +201,7 @@ module MemMove {
     :return: The contents of ``arg`` moved into a new value
   */
   pragma "no doc"
-  deprecated "'moveToValue' is deprecated; please use 'moveFrom' instead"
+  @deprecated(notes="'moveToValue' is deprecated; please use 'moveFrom' instead")
   proc moveToValue(const ref arg: ?t) {
     if t == nothing {
       return none;
@@ -255,7 +255,7 @@ module MemMove {
   */
   pragma "last resort"
   pragma "no doc"
-  deprecated "the formals 'lhs' and 'rhs' are deprecated, please use 'x' and 'y' instead"
+  @deprecated(notes="the formals 'lhs' and 'rhs' are deprecated, please use 'x' and 'y' instead")
   proc moveSwap(ref lhs: ?t, ref rhs: t) {
     moveSwap(x=lhs, y=rhs);
   }
@@ -427,7 +427,7 @@ module MemMove {
                                   if ``src`` and ``dst`` are determined to be
                                   aliases and the regions overlap.
   */
-  @unstable "'moveArrayElements' is unstable and subject to change in the future"
+  @unstable("'moveArrayElements' is unstable and subject to change in the future")
   proc moveArrayElements(ref dst:[] ?eltType, const dstRegion,
                          const ref src:[] eltType, const srcRegion) : void throws {
     _checkArgs(dst, dstRegion, src, srcRegion);
@@ -451,7 +451,7 @@ module MemMove {
                                   if ``src`` and ``dst`` are determined to be
                                   aliases and overlap.
   */
-  @unstable "'moveArrayElements' is unstable and subject to change in the future"
+  @unstable("'moveArrayElements' is unstable and subject to change in the future")
   proc moveArrayElements(ref dst:[] ?eltType, const ref src:[] eltType) : void throws {
     // Run the checks here so we get better line numbers for errors.
     _checkArgs(dst, dst.domain, src, src.domain);
@@ -487,7 +487,7 @@ module MemMove {
     :type numElements: int
   */
   pragma "no doc"
-  deprecated "'moveInitializeArrayElements' is deprecated; please use 'moveArrayElements' instead"
+  @deprecated("'moveInitializeArrayElements' is deprecated; please use 'moveArrayElements' instead")
   proc moveInitializeArrayElements(ref a: [?d], dstStartIndex: a.idxType,
                                    srcStartIndex: a.idxType,
                                    numElements: int) {
@@ -549,7 +549,7 @@ module MemMove {
     :type numElements: int
   */
   pragma "no doc"
-  deprecated "'moveInitializeArrayElements' is deprecated; please use 'moveArrayElements' instead"
+  @deprecated("'moveInitializeArrayElements' is deprecated; please use 'moveArrayElements' instead")
   proc moveInitializeArrayElements(ref dstA: [] ?t,
                                    dstStartIndex: dstA.idxType,
                                    srcA: [] t,

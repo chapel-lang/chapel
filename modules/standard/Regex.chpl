@@ -461,7 +461,7 @@ class BadRegexError : Error {
                           Refer to https://github.com/google/re2/blob/master/re2/re2.h
                           for more details about error codes.
  */
-deprecated "'Regex.compile' is deprecated. Please use 'new regex()' instead."
+@deprecated(notes="'Regex.compile' is deprecated. Please use 'new regex()' instead.")
 proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
              /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
              /*U*/ nonGreedy=false): regex(t) throws where t==string || t==bytes {
@@ -1006,7 +1006,7 @@ record regex {
   }
 
   pragma "last resort"
-  deprecated "regex.matches arguments 'captures' and 'maxmatches' are deprecated. Use 'numCaptures' and/or 'maxMatches instead."
+  @deprecated(notes="regex.matches arguments 'captures' and 'maxmatches' are deprecated. Use 'numCaptures' and/or 'maxMatches instead.")
   iter matches(text: exprType, param captures=0, maxmatches: int = max(int))
   {
     for m in matches(text, numCaptures=captures, maxMatches=maxmatches) {
@@ -1027,7 +1027,7 @@ record regex {
      :arg global: if true, replace multiple matches
      :returns: a tuple containing (new text, number of substitutions made)
    */
-  deprecated "regex.subn is deprecated. Please use string.replaceAndCount."
+  @deprecated(notes="regex.subn is deprecated. Please use string.replaceAndCount.")
   proc subn(repl: exprType, text: exprType, global = true ):(exprType, int)
   {
     if global then
@@ -1051,7 +1051,7 @@ record regex {
      :arg global: if true, replace multiple matches
      :returns: the new string or bytes
    */
-  deprecated "regex.sub is deprecated. Please use string.replace."
+  @deprecated(notes="regex.sub is deprecated. Please use string.replace.")
   proc sub(repl: exprType, text: exprType, global = true )
   {
     if global then
@@ -1162,14 +1162,14 @@ inline operator :(x: regex(bytes), type t: bytes) {
 
 // Cast string to regex
 pragma "no doc"
-deprecated "Casting strings to regex is deprecated. Use new regex(string) from the Regex module instead."
+@deprecated(notes="Casting strings to regex is deprecated. Use new regex(string) from the Regex module instead.")
 inline operator :(x: string, type t: regex(string)) throws {
   return new regex(x);
 }
 
 // Cast bytes to regex
 pragma "no doc"
-deprecated "Casting bytes to regex is deprecated. Use new regex(bytes) from the Regex module instead."
+@deprecated(notes="Casting bytes to regex is deprecated. Use new regex(bytes) from the Regex module instead.")
 inline operator :(x: bytes, type t: regex(bytes)) throws {
   return new regex(x);
 }

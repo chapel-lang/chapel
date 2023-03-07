@@ -876,7 +876,7 @@ static void testAttributeAndUnstable(Parser* parser) {
  ErrorGuard guard(parser->context());
  auto parseResult = parser->parseString("testAttributeOnClass.chpl",
                                         R""""(
-                                         @unstable "we're not sure about this"
+                                         @unstable("we're not sure about this")
                                          @attribute(true)
                                          class MyClass { })"""");
  assert(!guard.realizeErrors());
@@ -961,7 +961,7 @@ static void testAttributeAndDeprecatedLast(Parser* parser) {
   auto parseResult = parser->parseString("testAttributeOnClass.chpl",
                                          R""""(
                                          @attribute("word")
-                                         deprecated
+                                         @deprecated
                                          class MyClass { })"""");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -990,7 +990,7 @@ static void testAttributeAndDeprecatedMessage(Parser* parser) {
   auto parseResult = parser->parseString("testAttributeOnClass.chpl",
                                          R""""(
                                          @attribute("word")
-                                         deprecated "try using something else"
+                                         @deprecated(notes="try using something else")
                                          class MyClass { })"""");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();

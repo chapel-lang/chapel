@@ -139,11 +139,11 @@ static std::string genAggregateAttributesTest(asttags::AstTag aggKind,
   }
 
   if (isDeprecated) {
-    ret += "deprecated";
+    ret += "@deprecated";
 
     if (hasDeprecationMsg) {
       ret += " ";
-      ret += "\"This thing is deprecated\"";
+      ret += "(\"This thing is deprecated\")";
     }
 
     ret += "\n";
@@ -294,7 +294,7 @@ static void test3(Parser* parser) {
   ErrorGuard guard(parser->context());
   auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
       "pragma \"no doc\"\n"
-      "deprecated \"Thingy is deprecated\"\n"
+      "@deprecated(\"Thingy is deprecated\")\n"
       "var x = 0;\n");
   assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
@@ -317,10 +317,10 @@ static void test4(Parser* parser) {
   ErrorGuard guard(parser->context());
   auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
       "pragma \"no doc\"\n"
-      "deprecated \"Module is deprecated\"\n"
+      "@deprecated(notes=\"Module is deprecated\")\n"
       "module Foo {\n"
       "  var x = 0;\n"
-      "  deprecated \"Enum is deprecated\"\n"
+      "  @deprecated(\"Enum is deprecated\")\n"
       "  enum Y { a, b, c }\n"
       "  pragma \"ref\"\n"
       "  var y = 0;\n"
@@ -341,20 +341,20 @@ static void test5(Parser* parser) {
   ErrorGuard guard(parser->context());
   auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
       "pragma \"no doc\"\n"
-      "deprecated \"P1 is deprecated\"\n"
+      "@deprecated(\"P1 is deprecated\")\n"
       "proc p1() {}\n"
       "proc p2() {}\n"
       "pragma \"ref\"\n"
       "proc p3() {\n"
       "  proc n1() {}\n"
       "  pragma \"no init\"\n"
-      "  deprecated \"N2 is deprecated\"\n"
+      "  @deprecated(\"N2 is deprecated\")\n"
       "  proc n2() {}\n"
       "}\n"
       "pragma \"no doc\"\n"
-      "deprecated \"P4 is deprecated\"\n"
+      "@deprecated(\"P4 is deprecated\")\n"
       "proc p4(pragma \"no init\" x, y) {}\n"
-      "deprecated \"P5 is deprecated\"\n"
+      "@deprecated(\"P5 is deprecated\")\n"
       "proc p5(x, pragma \"no init\" y) {}\n"
       "pragma \"no doc\"\n"
       "proc p6() { var x = 0; }\n");
@@ -449,10 +449,10 @@ static void test6(Parser* parser) {
   ErrorGuard guard(parser->context());
   auto parseResult = parseStringAndReportErrors(parser, "test6.chpl",
       "pragma \"no doc\"\n"
-      "deprecated \"Enum is deprecated\"\n"
+      "@deprecated(\"Enum is deprecated\")\n"
       "enum Foo {\n"
       "  a,\n"
-      "  deprecated \"Element b is deprecated\"\n"
+      "  @deprecated(\"Element b is deprecated\")\n"
       "  b = 0,\n"
       "  c,\n"
       "}\n");

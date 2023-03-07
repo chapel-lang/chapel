@@ -31,7 +31,7 @@
     For the most up-to-date information about GPU support see the
     :ref:`technical note <readme-gpu>` about it.
 */
-@unstable "The GpuDiagnostics module is unstable and its interface is subject to change in the future."
+@unstable("The GpuDiagnostics module is unstable and its interface is subject to change in the future.")
 module GpuDiagnostics
 {
 

@@ -28,7 +28,7 @@
    authority on system error codes.
  */
 
-deprecated "The SysBasic module has been deprecated; most symbols have been moved to IO or OS as appropriate"
+@deprecated(notes="The SysBasic module has been deprecated; most symbols have been moved to IO or OS as appropriate")
 module SysBasic {
 
 /* BASIC TYPES */
@@ -38,7 +38,7 @@ use CTypes;
    clearer if you use qio_err_t to indicate arguments, variables, and return types
    that are system error codes.
  */
-deprecated "'qio_err_t' has been deprecated; please use a 'CTypes.c_int' instead."
+@deprecated(notes="'qio_err_t' has been deprecated; please use a 'CTypes.c_int' instead.")
 extern type qio_err_t = c_int;
 
 /* A system file descriptor. This is really just a `c_int`, but code is
@@ -56,7 +56,7 @@ private extern proc chpl_macro_int_EEOF():c_int;
 /* An error code indicating the end of file has been reached (Chapel specific)
  */
 pragma "last resort"
-deprecated "'SysBasic.EEOF' has been deprecated"
+@deprecated(notes="'SysBasic.EEOF' has been deprecated")
 inline proc EEOF do return chpl_macro_int_EEOF():c_int;
 
 private extern proc chpl_macro_int_ESHORT():c_int;
@@ -66,7 +66,7 @@ private extern proc chpl_macro_int_ESHORT():c_int;
    (Chapel specific)
   */
 pragma "last resort"
-deprecated "'SysBasic.ESHORT' has been deprecated"
+@deprecated(notes="'SysBasic.ESHORT' has been deprecated")
 inline proc ESHORT do return chpl_macro_int_ESHORT():c_int;
 
 private extern proc chpl_macro_int_EFORMAT():c_int;
@@ -76,7 +76,7 @@ private extern proc chpl_macro_int_EFORMAT():c_int;
    opening quote. (Chapel specific)
   */
 pragma "last resort"
-deprecated "'SysBasic.EFORMAT' has been deprecated"
+@deprecated(notes="'SysBasic.EFORMAT' has been deprecated")
 inline proc EFORMAT do return chpl_macro_int_EFORMAT():c_int;
 
 // system error numbers

@@ -491,7 +491,7 @@ enum ioMode {
   cwr = 4,
 }
 
-deprecated "enum iomode is deprecated - please use :enum:`ioMode` instead"
+@deprecated(notes="enum iomode is deprecated - please use :enum:`ioMode` instead")
 enum iomode {
   r = 1,
   cw = 2,
@@ -601,8 +601,7 @@ via the ``str_style`` field in :record:`iostyle`.
   bytes should be read or written.
 
 */
-@unstable
-"iostringstyle is unstable and will eventually be replaced"
+@unstable("iostringstyle is unstable and will eventually be replaced")
 enum iostringstyle {
   len1b_data = -1,
   len2b_data = -2,
@@ -645,7 +644,7 @@ via the ``string_format`` field in :record:`iostyle`.
     end of file
 */
 @unstable
-"iostringformat is unstable and will eventually be replaced"
+(reason="iostringformat is unstable and will eventually be replaced")
 enum iostringformat {
   word = 0,
   basic = 1,
@@ -679,7 +678,7 @@ enum iostringformatInternal {
             to store in iostyle.str_style.
  */
 @unstable
-"stringStyleTerminated is unstable because it supports the unstable type 'iostyle'"
+(reason="stringStyleTerminated is unstable because it supports the unstable type 'iostyle'")
 proc stringStyleTerminated(terminator:uint(8)) {
   return -(terminator - iostringstyleInternal.data_null:int(64));
 }
@@ -691,7 +690,7 @@ proc stringStyleTerminated(terminator:uint(8)) {
  */
 
 @unstable
-"stringStyleNullTerminated is unstable because it supports the unstable type 'iostyle'"
+(reason="stringStyleNullTerminated is unstable because it supports the unstable type 'iostyle'")
 proc stringStyleNullTerminated() {
   return iostringstyleInternal.data_null;
 }
@@ -702,7 +701,7 @@ proc stringStyleNullTerminated() {
  */
 pragma "no doc"
 @unstable
-"stringStyleExactLen is unstable because it supports the unstable type 'iostyle'"
+(reason="stringStyleExactLen is unstable because it supports the unstable type 'iostyle'")
 proc stringStyleExactLen(len:int(64)) {
   return len;
 }
@@ -714,7 +713,7 @@ proc stringStyleExactLen(len:int(64)) {
  */
 pragma "no doc"
 @unstable
-"stringStyleWithVariableLength is unstable because it supports the unstable type 'iostyle'"
+(reason="stringStyleWithVariableLength is unstable because it supports the unstable type 'iostyle'")
 proc stringStyleWithVariableLength() {
   return iostringstyleInternal.lenVb_data: int(64);
 }
@@ -728,7 +727,7 @@ proc stringStyleWithVariableLength() {
   :throws SystemError: Thrown for an unsupported value of `lengthBytes`.
  */
 @unstable
-"stringStyleWithLength is unstable because it supports the unstable type 'iostyle'"
+(reason="stringStyleWithLength is unstable because it supports the unstable type 'iostyle'")
 proc stringStyleWithLength(lengthBytes:int) throws {
   return stringStyleWithLengthInternal(lengthBytes);
 }
@@ -953,7 +952,7 @@ extern record iostyleInternal { // aka qio_style_t
   var tuple_style:uint(8) = 0;
 }
 
-@unstable "iostyle is unstable, a new way of controlling channel output is planned"
+@unstable("iostyle is unstable, a new way of controlling channel output is planned")
 type iostyle = iostyleInternal;
 
 // This class helps in implementing runtime calls.
@@ -1346,7 +1345,7 @@ private extern proc qio_format_error_write_regex():errorCode;
 
  */
 @unstable
-"defaultIOStyle is unstable due to returning an unstable type"
+(reason="defaultIOStyle is unstable due to returning an unstable type")
 proc defaultIOStyle():iostyle {
   return defaultIOStyleInternal() : iostyle;
 }
@@ -1486,7 +1485,7 @@ record ioHintSet {
   /* Suggests that 'mmap' should not be used to access the file contents.
   Instead, pread/pwrite are used.
   */
-  deprecated "`ioHintSet.noMmap` is deprecated; please use `ioHintset.mmap(false)` instead"
+  @deprecated(notes="`ioHintSet.noMmap` is deprecated; please use `ioHintset.mmap(false)` instead")
   proc type noMmap { return new ioHintSet(IOHINTS_NOMMAP); }
 
   pragma "no doc"
@@ -1603,7 +1602,7 @@ private proc initHelper(ref f: file, fp: c_FILE, hints=ioHintSet.empty,
   }
 }
 
-@unstable "initializing a file with a style argument is unstable"
+@unstable("initializing a file with a style argument is unstable")
   proc file.init(fp: c_FILE, hints=ioHintSet.empty, style:iostyle,
                  own=false) throws {
   this.init();
@@ -1672,7 +1671,7 @@ private proc initHelper2(ref f: file, fd: c_int, hints = ioHintSet.empty,
   }
 }
 
-@unstable "initializing a file with a style argument is unstable"
+@unstable("initializing a file with a style argument is unstable")
 proc file.init(fileDescriptor: int, hints=ioHintSet.empty,
                style:iostyle, own=false) throws {
   this.init();
@@ -1730,7 +1729,7 @@ proc file.checkAssumingLocal() throws {
 
    :throws SystemError: Indicates that `this` does not represent an OS file.
 */
- deprecated "'file.check()' is deprecated, please use :proc:`file.isOpen` instead"
+ @deprecated(notes="'file.check()' is deprecated, please use :proc:`file.isOpen` instead")
 proc file.check() throws {
   on this._home {
     this.checkAssumingLocal(); // Remove this function, too?
@@ -1856,7 +1855,7 @@ proc file.fsync() throws {
 */
 config param filePathAbsolute = false;
 
-deprecated "The variant of `file.path` that can return a relative path is deprecated; please compile with `-sfilePathAbsolute=true` to use the strictly absolute variant"
+@deprecated(notes="The variant of `file.path` that can return a relative path is deprecated; please compile with `-sfilePathAbsolute=true` to use the strictly absolute variant")
 proc file.path: string throws where !filePathAbsolute {
   return fileRelPathHelper(this);
 }
@@ -1985,13 +1984,13 @@ proc convertIoMode(mode:iomode):ioMode {
 }
 
 pragma "last resort"
-deprecated "open with an iomode argument is deprecated - please use :enum:`ioMode`"
+@deprecated(notes="open with an iomode argument is deprecated - please use :enum:`ioMode`")
 proc open(path:string, mode:iomode, hints=ioHintSet.empty,
           style:iostyle): file throws {
   return open(path, convertIoMode(mode), hints, style);
 }
 
-@unstable "open with a style argument is unstable"
+@unstable("open with a style argument is unstable")
 proc open(path:string, mode:ioMode, hints=ioHintSet.empty,
           style:iostyle): file throws {
   return openHelper(path, mode, hints, style:iostyleInternal);
@@ -2023,7 +2022,7 @@ proc open(path:string, mode:ioMode, hints=ioHintSet.empty): file throws {
 }
 
 pragma "last resort"
-deprecated "open with an iomode argument is deprecated - please use :enum:`ioMode`"
+@deprecated(notes="open with an iomode argument is deprecated - please use :enum:`ioMode`")
 proc open(path:string, mode:iomode, hints=ioHintSet.empty): file throws {
   return open(path, convertIoMode(mode), hints);
 }
@@ -2105,7 +2104,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:ioMode,
   return ret;
 }
 
-deprecated "openfd is deprecated, please use the file initializer with a 'c_int' argument instead"
+@deprecated(notes="openfd is deprecated, please use the file initializer with a 'c_int' argument instead")
 proc openfd(fd: c_int, hints=ioHintSet.empty, style:iostyle):file throws {
   return openfdHelper(fd, hints, style: iostyleInternal);
 }
@@ -2136,7 +2135,7 @@ The system file descriptor will be closed when the Chapel file is closed.
 
 :throws SystemError: Thrown if the file descriptor could not be retrieved.
 */
-deprecated "openfd is deprecated, please use the file initializer with a 'c_int' argument instead"
+@deprecated(notes="openfd is deprecated, please use the file initializer with a 'c_int' argument instead")
 proc openfd(fd: c_int, hints = ioHintSet.empty):file throws {
   return openfdHelper(fd, hints);
 }
@@ -2162,7 +2161,7 @@ private proc openfdHelper(fd: c_int, hints = ioHintSet.empty,
   return ret;
 }
 
-deprecated "openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead"
+@deprecated(notes="openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead")
 proc openfp(fp: c_FILE, hints=ioHintSet.empty, style:iostyle):file throws {
   return openfpHelper(fp, hints, style: iostyleInternal);
 }
@@ -2190,13 +2189,13 @@ Once the Chapel file is created, you will need to use a :proc:`file.reader` or
 
 :throws SystemError: Thrown if the C file could not be retrieved.
  */
-deprecated "openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead"
+@deprecated(notes="openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead")
 proc openfp(fp: c_FILE, hints=ioHintSet.empty):file throws {
   return openfpHelper(fp, hints);
 }
 
 pragma "last resort"
-deprecated "'_file' is deprecated; use the file initializer that takes a 'c_FILE' instead"
+@deprecated(notes="'_file' is deprecated; use the file initializer that takes a 'c_FILE' instead")
 proc openfp(fp: _file, hints=ioHintSet.empty):file throws {
   return openfpHelper(fp, hints);
 }
@@ -2222,12 +2221,12 @@ private proc openfpHelper(fp: c_FILE, hints=ioHintSet.empty,
   return ret;
 }
 
-@unstable "openTempFile with a style argument is unstable"
+@unstable("openTempFile with a style argument is unstable")
 proc openTempFile(hints=ioHintSet.empty, style:iostyle):file throws {
   return opentmpHelper(hints, style: iostyleInternal);
 }
 
-deprecated "opentmp is deprecated, please use :proc:`openTempFile` instead"
+@deprecated(notes="opentmp is deprecated, please use :proc:`openTempFile` instead")
 proc opentmp(hints=ioHintSet.empty, style:iostyle):file throws {
   return opentmpHelper(hints, style: iostyleInternal);
 }
@@ -2257,7 +2256,7 @@ proc openTempFile(hints=ioHintSet.empty):file throws {
   return opentmpHelper(hints);
 }
 
-deprecated "opentmp is deprecated, please use :proc:`openTempFile` instead"
+@deprecated(notes="opentmp is deprecated, please use :proc:`openTempFile` instead")
 proc opentmp(hints=ioHintSet.empty):file throws {
   return opentmpHelper(hints);
 }
@@ -2274,17 +2273,17 @@ private proc opentmpHelper(hints=ioHintSet.empty,
   return ret;
 }
 
-deprecated "openmem is deprecated - please use :proc:`openMemFile` instead"
+@deprecated(notes="openmem is deprecated - please use :proc:`openMemFile` instead")
 proc openmem(style:iostyle):file throws {
   return openMemFile(style);
 }
 
-deprecated "openmem is deprecated - please use :proc:`openMemFile` instead"
+@deprecated(notes="openmem is deprecated - please use :proc:`openMemFile` instead")
 proc openmem():file throws {
   return openMemFile();
 }
 
-@unstable "openMemFile with a style argument is unstable"
+@unstable("openMemFile with a style argument is unstable")
 proc openMemFile(style:iostyle):file throws {
   return openMemFileHelper(style: iostyleInternal);
 }
@@ -2703,7 +2702,7 @@ The :record:`channel` type supports 3 fields:
   The ``channel`` type is deprecated. Please use ``fileReader`` or
   ``fileWriter`` instead.
  */
-deprecated "channel type is deprecated - use fileReader or fileWriter instead"
+@deprecated(notes="channel type is deprecated - use fileReader or fileWriter instead")
 type channel = _channel;
 
 pragma "no doc"
@@ -2878,7 +2877,7 @@ and :proc:`channel.write`) can use arguments of this type in order to read or
 write a single Unicode codepoint.
 
  */
-deprecated "ioChar type is deprecated - please use :proc:`fileReader.readCodepoint` and :proc:`fileWriter.writeCodepoint` instead"
+@deprecated(notes="ioChar type is deprecated - please use :proc:`fileReader.readCodepoint` and :proc:`fileWriter.writeCodepoint` instead")
 type ioChar = _internalIoChar;
 
 pragma "no doc"
@@ -2969,7 +2968,7 @@ record _internalIoBits {
   proc nbits:numBits.type {return numBits;}
 }
 
-deprecated "ioBits type is deprecated - please use :proc:`fileReader.readBits` and :proc:`fileWriter.writeBits` instead"
+@deprecated(notes="ioBits type is deprecated - please use :proc:`fileReader.readBits` and :proc:`fileWriter.writeBits` instead")
 type ioBits = _internalIoBits;
 
 pragma "no doc"
@@ -3260,7 +3259,7 @@ proc _channel.seek(region: range(?)) throws where (!region.hasHighBound() ||
   }
 }
 
-deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewSeekRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewSeekRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
 proc _channel.seek(region: range(?)) throws where (region.hasHighBound() &&
                                                    !useNewSeekRegionBounds) {
   if (!region.hasLowBound()) {
@@ -3344,7 +3343,7 @@ inline proc _channel._commit() {
    called on a locked channel.
 
  */
-@unstable "channel._style is unstable because it returns a type that is unstable"
+@unstable("channel._style is unstable because it returns a type that is unstable")
 proc _channel._style():iostyle {
   var ret:iostyle;
   on this._home {
@@ -3374,7 +3373,7 @@ proc _channel._styleInternal(): iostyleInternal {
    be called on a locked channel.
 
  */
-@unstable "channel._set_style is unstable because its purpose involves an unstable type"
+@unstable("channel._set_style is unstable because its purpose involves an unstable type")
 proc _channel._set_style(style:iostyle) {
   on this._home {
     var local_style:iostyle = style;
@@ -3432,7 +3431,7 @@ proc _channel.filePlugin() : borrowed QioPluginFile? {
   return vptr:borrowed QioPluginFile?;
 }
 
-deprecated "openreader is deprecated - please use :proc:`openReader` instead"
+@deprecated(notes="openreader is deprecated - please use :proc:`openReader` instead")
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
@@ -3443,7 +3442,7 @@ proc openreader(path:string,
 }
 
 
-@unstable "openReader with a style argument is unstable"
+@unstable("openReader with a style argument is unstable")
 proc openReader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
@@ -3503,7 +3502,7 @@ This function is equivalent to calling :proc:`open` and then
 :throws IllegalArgumentError: Thrown if trying to read explicitly prior to byte
                               0.
  */
-deprecated "openreader is deprecated - please use :proc:`openReader` instead"
+@deprecated(notes="openreader is deprecated - please use :proc:`openReader` instead")
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
@@ -3558,7 +3557,7 @@ proc openReader(path:string,
   return openReaderHelper(path, kind, locking, region, hints);
 }
 
-deprecated "openreader is deprecated - please use :proc:`openReader` instead"
+@deprecated(notes="openreader is deprecated - please use :proc:`openReader` instead")
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
@@ -3567,7 +3566,7 @@ proc openreader(path:string,
   return openReader(path, kind, locking, region, hints);
 }
 
-deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewOpenReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewOpenReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
 proc openReader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
@@ -3588,7 +3587,7 @@ private proc openReaderHelper(path:string,
                              fromOpenReader=true);
 }
 
-deprecated "openwriter is deprecated - please use :proc:`openWriter` instead"
+@deprecated(notes="openwriter is deprecated - please use :proc:`openWriter` instead")
 proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
@@ -3598,7 +3597,7 @@ proc openwriter(path:string,
   return openWriter(path, kind, locking, start, end, hints, style);
 }
 
-@unstable "openWriter with a style argument is unstable"
+@unstable("openWriter with a style argument is unstable")
 proc openWriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
@@ -3639,7 +3638,7 @@ This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
 :throws IllegalArgumentError: Thrown if trying to write explicitly prior to byte
                               0.
 */
-deprecated "openwriter is deprecated - please use :proc:`openWriter` instead"
+@deprecated(notes="openwriter is deprecated - please use :proc:`openWriter` instead")
 proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 hints = ioHintSet.empty)
@@ -3694,7 +3693,7 @@ private proc openWriterHelper(path:string,
   return try fl.writerHelper(kind, locking, start..end, hints, style);
 }
 
-@unstable "reader with a style argument is unstable"
+@unstable("reader with a style argument is unstable")
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints=ioHintSet.empty,
@@ -3758,7 +3757,7 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
   return this.readerHelper(kind, locking, region, hints);
 }
 
-deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty)
   : fileReader(kind, locking) throws where (region.hasHighBound() &&
@@ -3842,7 +3841,7 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
   return ret;
 }
 
-@unstable "lines with a local_style argument is unstable"
+@unstable("lines with a local_style argument is unstable")
 proc file.lines(param locking:bool = true, start:int(64) = 0,
                 end:int(64) = max(int(64)), hints=ioHintSet.empty,
                 in local_style:iostyle) throws {
@@ -3863,14 +3862,14 @@ config param useNewLinesRegionBounds = false;
 
    :throws SystemError: Thrown if an object could not be returned.
  */
-deprecated "`file.lines` is deprecated; please use `file.reader().lines` instead"
+@deprecated(notes="`file.lines` is deprecated; please use `file.reader().lines` instead")
 proc file.lines(param locking:bool = true, region: range(?) = 0..,
                 hints = ioHintSet.empty) throws where (!region.hasHighBound() ||
                                                        useNewLinesRegionBounds) {
   return this.linesHelper(locking, region, hints);
 }
 
-deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewLinesRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewLinesRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
 proc file.lines(param locking:bool = true, region: range(?) = 0..,
                 hints = ioHintSet.empty) throws where (region.hasHighBound() &&
                                                        !useNewLinesRegionBounds) {
@@ -3929,7 +3928,7 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
   return ret;
 }
 
-@unstable "writer with a style argument is unstable"
+@unstable("writer with a style argument is unstable")
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  hints=ioHintSet.empty, style:iostyle):
@@ -3999,7 +3998,7 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
   return this.writerHelper(kind, locking, region, hints);
 }
 
-deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileWriterRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileWriterRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty):
                  fileWriter(kind,locking) throws where (region.hasHighBound() &&
@@ -4808,7 +4807,7 @@ proc _channel.writeIt(const x) throws {
     :throws EofError: Thrown if end of channel is encountered.
 
   */
-  @unstable "channel.readLiteral is unstable and subject to change."
+  @unstable("channel.readLiteral is unstable and subject to change.")
   inline
   proc _channel.readLiteral(literal:string,
                            ignoreWhitespace=true) : void throws {
@@ -4832,7 +4831,7 @@ proc _channel.writeIt(const x) throws {
     :throws EofError: Thrown if end of channel is encountered.
 
   */
-  @unstable "channel.readLiteral is unstable and subject to change."
+  @unstable("channel.readLiteral is unstable and subject to change.")
   inline
   proc _channel.readLiteral(literal:bytes,
                             ignoreWhitespace=true) : void throws {
@@ -4883,7 +4882,7 @@ proc _channel.writeIt(const x) throws {
     :throws EofError: Thrown if end of channel is encountered.
 
   */
-  @unstable "channel.readNewline is unstable and subject to change."
+  @unstable("channel.readNewline is unstable and subject to change.")
   inline
   proc _channel.readNewline() : void throws {
     _readNewlineCommon(isMatch=false);
@@ -4921,7 +4920,7 @@ proc _channel.writeIt(const x) throws {
     :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
       the literal could not be matched.
   */
-  @unstable "channel.matchLiteral is unstable and subject to change."
+  @unstable("channel.matchLiteral is unstable and subject to change.")
   inline
   proc _channel.matchLiteral(literal:string,
                             ignoreWhitespace=true) : bool throws {
@@ -4946,7 +4945,7 @@ proc _channel.writeIt(const x) throws {
     :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
       the literal could not be matched.
   */
-  @unstable "channel.matchLiteral is unstable and subject to change."
+  @unstable("channel.matchLiteral is unstable and subject to change.")
   inline
   proc _channel.matchLiteral(literal:bytes,
                             ignoreWhitespace=true) : bool throws {
@@ -4967,7 +4966,7 @@ proc _channel.writeIt(const x) throws {
     :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
       the newline could not be matched.
   */
-  @unstable "channel.matchNewline is unstable and subject to change."
+  @unstable("channel.matchNewline is unstable and subject to change.")
   inline
   proc _channel.matchNewline() : bool throws {
     try {
@@ -5009,7 +5008,7 @@ proc _channel.writeIt(const x) throws {
     Writes a string to the channel, ignoring any formatting configured for
     this channel.
   */
-  @unstable "channel.writeLiteral is unstable and subject to change."
+  @unstable("channel.writeLiteral is unstable and subject to change.")
   inline
   proc _channel.writeLiteral(literal:string) : void throws {
     _writeLiteralCommon(literal);
@@ -5019,7 +5018,7 @@ proc _channel.writeIt(const x) throws {
     Writes bytes to the channel, ignoring any formatting configured for this
     channel.
   */
-  @unstable "channel.writeLiteral is unstable and subject to change."
+  @unstable("channel.writeLiteral is unstable and subject to change.")
   inline
   proc _channel.writeLiteral(literal:bytes) : void throws {
     _writeLiteralCommon(literal);
@@ -5030,7 +5029,7 @@ proc _channel.writeIt(const x) throws {
     Writes a newline to the channel, ignoring any formatting configured for
     this channel.
   */
-  @unstable "channel.writeNewline is unstable and subject to change."
+  @unstable("channel.writeNewline is unstable and subject to change.")
   inline
   proc _channel.writeNewline() : void throws {
     if !writing then compilerError("writeNewline on read-only channel");
@@ -5081,7 +5080,7 @@ proc _channel.writeIt(const x) throws {
      :throws SystemError: Thrown if the byte sequence could not be written for another reason.
   */
   pragma "last resort"
-  deprecated "'writeBytes' with a generic pointer argument is deprecated; please use the variant that takes a 'bytes' object"
+  @deprecated(notes="'writeBytes' with a generic pointer argument is deprecated; please use the variant that takes a 'bytes' object")
   proc _channel.writeBytes(x, len:c_ssize_t) throws {
     try this._writeBytes(x, len);
   }
@@ -5237,7 +5236,7 @@ inline proc _channel.read(ref args ...?k):bool throws {
   return true;
 }
 
-@unstable "read with a style argument is unstable"
+@unstable("read with a style argument is unstable")
 proc _channel.read(ref args ...?k, style:iostyle):bool throws {
   return this.readHelper((...args), style: iostyleInternal);
 }
@@ -5286,7 +5285,7 @@ proc _channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
   :arg amount: The maximum amount of bytes to read.
   :returns: true if the bytes were read without error.
 */
-deprecated "channel.readline is deprecated. Use :proc:`channel.readLine` instead"
+@deprecated(notes="channel.readline is deprecated. Use :proc:`channel.readLine` instead")
 proc _channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
                       amount = arg.domain.highBound - start + 1) : bool throws
                       where arg.rank == 1 && arg.isRectangular() {
@@ -5414,7 +5413,7 @@ inline proc _channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false):
   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if data could not be read from the channel.
 */
-deprecated "channel.readline is deprecated. Use :proc:`channel.readLine` instead"
+@deprecated(notes="channel.readline is deprecated. Use :proc:`channel.readLine` instead")
 proc _channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
@@ -5823,7 +5822,7 @@ proc _channel.readAll(ref a: [?d] ?t): int throws
    :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
    :throws SystemError: Thrown if the bytes could not be read from the channel.
  */
-deprecated "'readstring' is deprecated; please use 'readString' instead"
+@deprecated(notes="'readstring' is deprecated; please use 'readString' instead")
 proc _channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
   var (err, _) = readBytesOrString(this, str_out, len);
 
@@ -5892,7 +5891,7 @@ proc fileReader.readString(ref s: string, maxSize: int): bool throws {
 
   :throws SystemError: Thrown if data could not be read from the channel.
  */
-deprecated "'readbytes' is deprecated; please use 'readBytes' instead"
+@deprecated(notes="'readbytes' is deprecated; please use 'readBytes' instead")
 proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
   var (err, _) = readBytesOrString(this, bytes_out, len);
 
@@ -6014,7 +6013,7 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
 
 }
 
-deprecated "channel.readbits is deprecated - please use :proc:`fileReader.readBits` instead"
+@deprecated(notes="channel.readbits is deprecated - please use :proc:`fileReader.readBits` instead")
 proc _channel.readbits(ref v:integral, nbits:integral):bool throws {
     return this.readBits(v, nbits:int);
 }
@@ -6066,7 +6065,7 @@ proc fileReader.readBits(type resultType, numBits:int):resultType throws {
 }
 
 
-deprecated "channel.writebits is deprecated - please use :proc:`fileWriter.writeBits` instead"
+@deprecated(notes="channel.writebits is deprecated - please use :proc:`fileWriter.writeBits` instead")
 proc _channel.writebits(v:integral, nbits:integral) throws {
   this.writeBits(v, nbits:int);
 }
@@ -6687,7 +6686,7 @@ config param ReadBinaryArrayReturnInt = false;
    :throws SystemError: Thrown if an error occurred while reading from the fileReader
    :throws UnexpectedEofError: Thrown if EOF is encountered before ``data.size`` values are read
 */
-deprecated "The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant"
+@deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
 proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): bool throws
   where ReadBinaryArrayReturnInt == false && (d.rank == 1 && d.stridable == false) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
@@ -6799,7 +6798,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
    :throws SystemError: Thrown if an error occurred while reading the from fileReader.
    :throws UnexpectedEofError: Thrown if EOF is encountered before ``data.size`` values are read.
 */
-deprecated "The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant"
+@deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
 proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
   where ReadBinaryArrayReturnInt == false && (d.rank == 1 && d.stridable == false) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
@@ -6944,7 +6943,7 @@ proc _channel.readln(ref args ...?k):bool throws {
   return try this.read((...args), nl);
 }
 
-@unstable "readln with a style argument is unstable"
+@unstable("readln with a style argument is unstable")
 proc _channel.readln(ref args ...?k,
                      style:iostyle):bool throws {
   return this.readlnHelper((...args), style: iostyleInternal);
@@ -7075,7 +7074,7 @@ inline proc _channel.write(const args ...?k) throws {
   }
 }
 
-@unstable "write with a style argument is unstable"
+@unstable("write with a style argument is unstable")
 proc _channel.write(const args ...?k, style:iostyle) throws {
   this.writeHelper((...args), style: iostyleInternal);
 }
@@ -7129,7 +7128,7 @@ proc _channel.writeln(const args ...?k) throws {
   try this.write((...args), new ioNewline());
 }
 
-@unstable "writeln with a style argument is unstable"
+@unstable("writeln with a style argument is unstable")
 proc _channel.writeln(const args ...?k, style:iostyle) throws {
   try this.writeHelper((...args), new ioNewline(), style=style);
 }
@@ -7307,7 +7306,7 @@ proc readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
 }
 
 /* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
-deprecated "readline is deprecated. Use :proc:`readLine` instead"
+@deprecated(notes="readline is deprecated. Use :proc:`readLine` instead")
 proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
               amount = arg.domain.highBound - start + 1) : bool throws
                 where arg.rank == 1 && arg.isRectangular() {
@@ -7315,7 +7314,7 @@ proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
 }
 
 /* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
-deprecated "readline is deprecated. Use :proc:`readLine` instead"
+@deprecated(notes="readline is deprecated. Use :proc:`readLine` instead")
 proc readline(ref arg: ?t): bool throws where t==string || t==bytes {
   return stdin.readline(arg);
 }
@@ -7353,7 +7352,7 @@ proc readln(type t ...?numTypes) throws {
 /*
    :returns: `true` if this version of the Chapel runtime supports UTF-8 output.
  */
-deprecated "unicodeSupported is deprecated due to always returning true"
+@deprecated(notes="unicodeSupported is deprecated due to always returning true")
 proc unicodeSupported():bool {
   return true;
 }
@@ -7388,7 +7387,7 @@ proc file.fstype():int throws {
    :returns: a set of locales that are best for working with this region
    :rtype: domain(locale)
  */
- deprecated "file.localesForRegion is deprecated"
+ @deprecated(notes="file.localesForRegion is deprecated")
 proc file.localesForRegion(start:int(64), end:int(64)) {
 
   proc findloc(loc:string, locs:c_ptr(c_string), end:int) {
