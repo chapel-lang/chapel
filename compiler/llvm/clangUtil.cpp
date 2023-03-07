@@ -3836,16 +3836,16 @@ static void linkBitCodeFile(const char *bitCodeFilePath) {
 
   // load into new module
   llvm::SMDiagnostic err;
-  auto libdevice = llvm::parseIRFile(bitCodeFilePath, err,
-                                     info->llvmContext);
+  auto bcLib = llvm::parseIRFile(bitCodeFilePath, err,
+                                 info->llvmContext);
   
   // adjust it
   const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
-  libdevice->setTargetTriple(Triple.getTriple());
-  libdevice->setDataLayout(info->clangInfo->asmTargetLayoutStr);
+  bcLib->setTargetTriple(Triple.getTriple());
+  bcLib->setDataLayout(info->clangInfo->asmTargetLayoutStr);
 
   // link
-  llvm::Linker::linkModules(*info->module, std::move(libdevice),
+  llvm::Linker::linkModules(*info->module, std::move(bcLib),
                             llvm::Linker::Flags::LinkOnlyNeeded);
 }
 
@@ -3865,7 +3865,7 @@ static std::string determineOclcVersionLib(std::string libPath) {
   // Ensure file exists (and can be opened)
   std::ifstream file(result);
   if(!file.good()) {
-    USR_FATAL(("Unable to find or open ROCM device library file " + result).c_str());
+    USR_FATAL("Unable to find or open ROCM device library file %s", result);
   }
 
   return result;
@@ -3886,6 +3886,8 @@ static void linkGpuDeviceLibraries() {
   if (getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA) {
     linkBitCodeFile(CHPL_CUDA_LIBDEVICE_PATH);
   } else {
+    // See <https://github.com/RadeonOpenCompute/ROCm-Device-Libs> for details
+    // on what these various libraries are.
     auto libPath = CHPL_ROCM_PATH + std::string("/amdgcn/bitcode");
     linkBitCodeFile((libPath + "/hip.bc").c_str());
     linkBitCodeFile((libPath + "/ocml.bc").c_str());
