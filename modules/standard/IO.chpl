@@ -9436,7 +9436,7 @@ private proc _conv_helper(
 }
 
 pragma "no doc"
-proc fileWriter._conv_sethandler(
+private proc _conv_sethandler(
     ref error:errorCode,
     argtypei:c_int,
     ref style:iostyleInternal,
