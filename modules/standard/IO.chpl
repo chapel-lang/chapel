@@ -5833,7 +5833,7 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
   marker is left immediately after it. If it isn't found, a ``BadFormatError``
   is thrown and the input marker is left in its original position.
 
-  To match with more than one separator, use the version of
+  To match with more than one separator, use the overload of
   :proc:`~Regex.fileReader.readThrough` that accepts a :type:`~Regex.regex`
   separator.
 
@@ -5876,12 +5876,12 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
   marker is left immediately after it. If it isn't found, a ``BadFormatError``
   is thrown and the input marker is left in its original position.
 
-  To match with more than one separator, use the version of
+  To match with more than one separator, use the overload of
   :proc:`~Regex.fileReader.readThrough` that accepts a :type:`~Regex.regex`
   separator.
 
-  :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
   :arg separator: The separator to match with.
+  :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
   :arg maxSize: The maximum number of codepoints to read. For the default value
     of ``-1``, this method will read until EOF.
   :arg stripSeparator: Whether to strip the separator from the returned ``string``.
@@ -5923,12 +5923,12 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
   marker is left immediately after it. If it isn't found, a ``BadFormatError``
   is thrown and the input marker is left in its original position.
 
-  To match with more than one separator, use the version of
+  To match with more than one separator, use the overload of
   :proc:`~Regex.fileReader.readThrough` that accepts a :type:`~Regex.regex`
   separator.
 
-  :arg s: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
   :arg separator: The separator to match with.
+  :arg s: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
   :arg maxSize: The maximum number of codepoints to read. For the default value
     of ``-1``, this method will read until EOF.
   :arg stripSeparator: Whether to strip the separator from the returned ``bytes``.
@@ -5968,6 +5968,10 @@ proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSep
   marker is left immediately before it. If it isn't found, a ``BadFormatError``
   is thrown and the input marker is left in its original position.
 
+  To match with more than one separator, use the overload of
+  :proc:`~Regex.fileReader.readTo` that accepts a :type:`~Regex.regex`
+  separator.
+
   .. note::
 
     If the separator is a :type:`~String.string`, then ``maxSize`` specifies the
@@ -6005,8 +6009,12 @@ proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
   marker is left immediately before it. If it isn't found, a ``BadFormatError``
   is thrown and the input marker is left in its original position.
 
-  :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
+  To match with more than one separator, use the overload of
+  :proc:`~Regex.fileReader.readTo` that accepts a :type:`~Regex.regex`
+  separator.
+
   :arg separator: The separator to match with.
+  :arg s: The :type:`~String.string` to read into. Contents will be overwritten.ß
   :arg maxSize: The maximum number of codepoints to read. For the default value
     of ``-1``, this method will read until EOF.
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
@@ -6039,8 +6047,12 @@ proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throw
   marker is left immediately before it. If it isn't found, a ``BadFormatError``
   is thrown and the input marker is left in its original position.
 
-  :arg b: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
+  To match with more than one separator, use the overload of
+  :proc:`~Regex.fileReader.readTo` that accepts a :type:`~Regex.regex`
+  separator.
+
   :arg separator: The separator to match with.
+  :arg b: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
   :arg maxSize: The maximum number of bytes to read. For the default value
     of ``-1``, this method will read until EOF.
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the

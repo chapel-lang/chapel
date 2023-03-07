@@ -1466,8 +1466,8 @@ proc fileReader.readThrough(separator: regex(?t), maxSize=-1, stripSeparator=fal
   immidiately after it. If a match isn't found, a ``BadFormatError`` is thrown and the
   input marker is left in its original position.
 
-  :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
   :arg separator: The :type:`~Regex.regex` separator to match with.
+  :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
   :arg maxSize: The maximum number of bytes to read. For the default value of
     ``-1``, this method will read until EOF.
   :arg stripSeparator: Whether to strip the separator from the returned
@@ -1504,8 +1504,8 @@ proc fileReader.readThrough(separator: regex(string), ref s: string, maxSize=-1,
   immidiately after it. If a match isn't found, a ``BadFormatError`` is thrown and the
   input marker is left in its original position.
 
-  :arg s: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
   :arg separator: The :type:`~Regex.regex` separator to match with.
+  :arg s: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
   :arg maxSize: The maximum number of bytes to read. For the default value of
     ``-1``, this method will read until EOF.
   :arg stripSeparator: Whether to strip the separator from the returned
@@ -1528,6 +1528,104 @@ proc fileReader.readThrough(separator: regex(bytes), ref b: bytes, maxSize=-1, s
     if err then try this._ch_ioerror(err, "in readThrough(regex(bytes))");
 
     if found && stripSeparator then b = b[0..<(b.size-match.numBytes)];
+  }
+  return b.size > 0;
+}
+
+/*
+  Read until a match with the given separator is found, returning the
+  contents of the ``fileReader`` up to that point.
+
+  If the separator is found in the next ``maxSize`` bytes, the input marker
+  is left immediately before it. If it isn't found, a ``BadFormatError``
+  is thrown and the input marker is left in its original position.
+
+  :arg separator: The separator to match with. Must be a :type:`~String.string`
+    or :type:`~Bytes.bytes`.
+  :arg maxSize: The maximum number of bytes to read. For the default
+    value of ``-1``, this method will read until EOF.
+  :returns: A ``string`` or ``bytes`` with the contents of the channel up to
+    the ``separator``.
+
+  :throws UnexpectedEofError: Thrown if nothing could be returned (i.e., the
+    ``fileReader`` was already at EOF).
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` bytes. The input marker is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readTo(separator: regex(?t), maxSize=-1): t throws
+  where t == string || t == bytes
+{
+  var s: t;
+  if !this.readTo(separator, s, maxSize) then
+    throw new UnexpectedEofError("reached EOF in readTo(" + t:string + ")");
+  return s;
+}
+
+/*
+  Read until a match with the given separator is found, returning the
+  contents of the ``fileReader`` up to that point.
+
+  If the separator is found in the next ``maxSize`` bytes, the input
+  marker is left immediately before it. If it isn't found, a ``BadFormatError``
+  is thrown and the input marker is left in its original position.
+
+  :arg separator: The :type:`~Regex.regex` separator to match with.
+  :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
+  :arg maxSize: The maximum number of bytes to read. For the default value
+    of ``-1``, this method will read until EOF.
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
+    ``fileReader`` was already at EOF).
+
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` bytes. The input marker is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readTo(separator: regex(string), ref s: string, maxSize=-1): bool throws {
+  import BytesStringCommon.countNumCodepoints;
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    const (searchErr, found, relByteOffset, match) = _findSeparator(separator, maxSize, this);
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readTo(regex(string))");
+
+    const numBytesToRead = relByteOffset - if found then match.numBytes else 0;
+    const err = IO.readStringBytesData(s, this._channel_internal, numBytesToRead, 0);
+    if err then try this._ch_ioerror(err, "in readTo(regex(string))");
+    s.cachedNumCodepoints = countNumCodepoints(s);
+  }
+  return s.size > 0;
+}
+
+/*
+  Read until a match with the given separator is found, returning the
+  contents of the ``fileReader`` up to that point.
+
+  If the separator is found in the next ``maxSize`` bytes, the input
+  marker is left immediately before it. If it isn't found, a ``BadFormatError``
+  is thrown and the input marker is left in its original position.
+
+  :arg separator: The :type:`~Regex.regex` separator to match with.
+  :arg b: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
+  :arg maxSize: The maximum number of bytes to read. For the default value
+    of ``-1``, this method will read until EOF.
+  :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
+    ``fileReader`` was already at EOF).
+
+  :throws BadFormatError: Thrown if the separator was not found in the next
+    `maxSize` bytes. The input marker is not moved.
+  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+*/
+proc fileReader.readTo(separator: regex(bytes), ref b: bytes, maxSize=-1): bool throws {
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    const (searchErr, found, relByteOffset, match) = _findSeparator(separator, maxSize, this);
+    if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readTo(regex(bytes))");
+
+    const numBytesToRead = relByteOffset - if found then match.numBytes else 0;
+    const err = IO.readStringBytesData(b, this._channel_internal, numBytesToRead, 0);
+    if err then try this._ch_ioerror(err, "in readTo(regex(bytes))");
   }
   return b.size > 0;
 }
