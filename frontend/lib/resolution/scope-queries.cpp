@@ -408,9 +408,6 @@ const Scope* scopeForId(Context* context, ID id) {
 
 using VisibilityTraceElt = ResultVisibilityTrace::VisibilityTraceElt;
 
-static const ResolvedVisibilityScope*
-resolveVisibilityStmts(Context* context, const Scope* scope);
-
 // a struct to encapsulate arguments to doLookupIn...
 // so that the calls and function signatures do not get too unweildy.
 struct LookupHelper {
@@ -463,9 +460,8 @@ struct LookupHelper {
 
 };
 
-// Returns the scope for the automatically included standard module
-static const Scope* const& scopeForAutoModule(Context* context) {
-  QUERY_BEGIN(scopeForAutoModule, context);
+static const Scope* const& scopeForAutoModuleQuery(Context* context) {
+  QUERY_BEGIN(scopeForAutoModuleQuery, context);
 
   auto name = UniqueString::get(context, "ChapelStandard");
   const Module* mod = parsing::getToplevelModule(context, name);
@@ -475,6 +471,10 @@ static const Scope* const& scopeForAutoModule(Context* context) {
   }
 
   return QUERY_END(result);
+}
+
+const Scope* scopeForAutoModule(Context* context) {
+  return scopeForAutoModuleQuery(context);
 }
 
 static VisibilityStmtKind
@@ -2265,17 +2265,141 @@ std::vector<ID> findUsedImportedModules(Context* context,
   auto result = resolveVisibilityStmts(context, scope);
   std::vector<ID> ids;
 
+  if (result == nullptr) return ids;
+
   for (const auto& r : result->visibilityClauses()) {
     ids.push_back(r.scope()->id());
   }
   return ids;
 }
 
-void resolveUsesAndImportsInScope(Context* context, const Scope* scope) {
-  std::ignore = resolveVisibilityStmts(context, scope);
-  return;
+static const std::map<ID, ID>&
+findAllModulesUsedImportedInTreeQuery(Context* context, ID id);
+
+// Pre-order depth first traveral of the entire module to gather use/import.
+// Key is ID of use/import, value is target module ID. We use a map here
+// because the C++ standard map maintains ordering, which should sort all
+// the use/import by their lexical order (via ID ordering).
+static void findAllModulesUsedImportedInTreeImpl(Context* context,
+                                                 std::map<ID, ID>& ret,
+                                                 ID id) {
+  if (id.isEmpty()) return;
+
+  auto ast = parsing::idToAst(context, id);
+
+  if (auto scope = scopeForId(context, id)) {
+    if (auto rvs = resolveVisibilityStmts(context, scope)) {
+      for (auto& vc : rvs->visibilityClauses()) {
+        auto& k = vc.visibilityClauseId();
+        auto& v = vc.scope()->id();
+        ret.insert(std::make_pair(k, v));
+      }
+    }
+  }
+
+  // Recurse, but skip modules, since we do not consider their use/imports.
+  for (auto child : ast->children()) {
+    if (child->isModule()) continue;
+    findAllModulesUsedImportedInTreeImpl(context, ret, child->id());
+  }
 }
 
+static const std::map<ID, ID>&
+findAllModulesUsedImportedInTreeQuery(Context* context, ID id) {
+  QUERY_BEGIN(findAllModulesUsedImportedInTreeQuery, context, id);
+  std::map<ID, ID> ret;
+  findAllModulesUsedImportedInTreeImpl(context, ret, id);
+  return QUERY_END(ret);
+}
+
+static void moduleInitVisitModules(Context* context, ID idMod,
+                                   std::set<ID>& seen,
+                                   const ID* idTrigger,
+                                   std::vector<std::pair<ID, ID>>& out) {
+  CHPL_ASSERT(!idMod.isEmpty());
+
+  // Avoid a cycle walking modules we've seen before.
+  if (seen.find(idMod) != seen.end()) return;
+
+  // We are at least visiting ourselves.
+  seen.insert(idMod);
+
+  // Visit all the modules that are my lexical parents.
+  // TODO: Do we really still have to collect lexical parents? The language
+  // rules might now guarantee that there are uses for them. However, if we
+  // want to preserve the current init ordering, we may need to do this
+  // still.
+  auto idParentMod = parsing::idToParentModule(context, idMod);
+  while (!idParentMod.isEmpty()) {
+    auto id = idParentMod;
+    idParentMod = parsing::idToParentModule(context, idParentMod);
+    if (seen.find(id) == seen.end()) {
+      moduleInitVisitModules(context, id, seen, &idMod, out);
+    }
+  }
+
+  auto& m = findAllModulesUsedImportedInTreeQuery(context, idMod);
+
+  // Visit all the modules I use in a depth first order.
+  for (auto pair : m) {
+    auto id = pair.second;
+    if (id.isEmpty() || seen.find(id) != seen.end()) continue;
+    auto ast = parsing::idToAst(context, id);
+    if (!ast->isModule()) continue;
+    moduleInitVisitModules(context, id, seen, &idMod, out);
+  }
+
+  // This ID is the ID that triggered us to be initialized.
+  auto idBy = idTrigger ? *idTrigger : ID();
+
+  // Everything I need has been initialized, so initialize me.
+  out.push_back(std::make_pair(idMod, idBy));
+}
+
+// TODO: See 'resolveUseImportStmts' or the body of 'findUseImports'
+static std::vector<std::pair<ID, ID>>
+moduleInitializationOrderImpl(Context* context, ID entrypoint) {
+  CHPL_ASSERT(!entrypoint.isEmpty());
+
+  auto ast = parsing::idToAst(context, entrypoint);
+  CHPL_ASSERT(ast->isModule());
+
+  std::vector<std::pair<ID, ID>> ret;
+  const ID* idTrigger = nullptr;
+  std::set<ID> seen;
+
+  // Frontload the contents of the 'ChapelStandard' module first.
+  if (auto scope = scopeForId(context, entrypoint)) {
+    if (scope->autoUsesModules()) {
+      if (auto autoModScope = scopeForAutoModule(context)) {
+        auto id = autoModScope->id();
+        moduleInitVisitModules(context, id, seen, idTrigger, ret);
+      }
+    }
+  }
+
+  // Now queue our own modules.
+  moduleInitVisitModules(context, entrypoint, seen, idTrigger, ret);
+
+  return ret;
+}
+
+/**
+  TODO: Modules can be elided if their initializer body is trivial. If a
+  module 'M' is elided, then all the modules that it uses have to be lifted
+  into the set of modules required by modules that use 'M'. This can
+  change which modules trigger initialization.
+
+  TODO: Modules can also be elided if they are not live - that is, no
+  mentions of a module are found in any code starting from the 'entrypoint'
+  module, transitively across modules.
+*/
+const std::vector<std::pair<ID, ID>>&
+moduleInitializationOrder(Context* context, ID entrypoint) {
+  QUERY_BEGIN(moduleInitializationOrder, context, entrypoint);
+  auto ret = moduleInitializationOrderImpl(context, entrypoint);
+  return QUERY_END(ret);
+}
 
 } // end namespace resolution
 } // end namespace chpl

@@ -127,8 +127,28 @@ namespace resolution {
   /**
     Resolve the uses and imports in a given scope.
   */
-  void resolveUsesAndImportsInScope(Context* context, const Scope* scope);
+  const ResolvedVisibilityScope*
+  resolveVisibilityStmts(Context* context, const Scope* scope);
 
+  /**
+    Return the scope for the automatically included 'ChapelStandard' module,
+    or nullptr if it could not be found.
+  */
+  const Scope* scopeForAutoModule(Context* context);
+
+  /**
+    Given the ID for a module 'entrypoint', compute the order in which
+    modules should be initialized. Note that this ordering does not consider
+    liveliness, and modules that are never used or have no module level
+    statements will currently still be listed in the result.
+
+    The result is list of ID pairs. The first ID in a pair is the module
+    to be initialized, and the second ID is the module that first triggered
+    initialization. The second ID may be empty if the first ID is the
+    entrypoint module or if initialization was triggered implicitly.
+  */
+  const std::vector<std::pair<ID, ID>>&
+  moduleInitializationOrder(Context* context, ID entrypoint);
 
 } // end namespace resolution
 } // end namespace chpl
