@@ -48,7 +48,7 @@ extern type qio_err_t = c_int;
 extern type fd_t = c_int;
 
 /* The error code indicating that no error occurred (Chapel specific) */
-inline proc ENOERR return 0:c_int;
+inline proc ENOERR do return 0:c_int;
 
 // end of file
 private extern proc chpl_macro_int_EEOF():c_int;
@@ -57,7 +57,7 @@ private extern proc chpl_macro_int_EEOF():c_int;
  */
 pragma "last resort"
 deprecated "'SysBasic.EEOF' has been deprecated"
-inline proc EEOF return chpl_macro_int_EEOF():c_int;
+inline proc EEOF do return chpl_macro_int_EEOF():c_int;
 
 private extern proc chpl_macro_int_ESHORT():c_int;
 
@@ -67,7 +67,7 @@ private extern proc chpl_macro_int_ESHORT():c_int;
   */
 pragma "last resort"
 deprecated "'SysBasic.ESHORT' has been deprecated"
-inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
+inline proc ESHORT do return chpl_macro_int_ESHORT():c_int;
 
 private extern proc chpl_macro_int_EFORMAT():c_int;
 
@@ -77,7 +77,7 @@ private extern proc chpl_macro_int_EFORMAT():c_int;
   */
 pragma "last resort"
 deprecated "'SysBasic.EFORMAT' has been deprecated"
-inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
+inline proc EFORMAT do return chpl_macro_int_EFORMAT():c_int;
 
 // system error numbers
 

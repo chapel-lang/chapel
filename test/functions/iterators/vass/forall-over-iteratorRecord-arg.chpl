@@ -14,7 +14,7 @@ iter myIterator(n:int, param tag, followThis) {
   yield n;
 }
 
-proc myPlusOp(x:int,y:int) return x+y+7;
+proc myPlusOp(x:int,y:int) do return x+y+7;
 
 var A,B: [-1..1] int;
 

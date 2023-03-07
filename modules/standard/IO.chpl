@@ -2986,7 +2986,7 @@ private extern proc chpl_macro_int_EEOF():c_int;
 /* An error code indicating the end of file has been reached (Chapel specific)
  */
 pragma "no doc"
-private inline proc EEOF return chpl_macro_int_EEOF():c_int;
+private inline proc EEOF do return chpl_macro_int_EEOF():c_int;
 
 private extern proc chpl_macro_int_ESHORT():c_int;
 /* An error code indicating that the end of file or the end of the
@@ -2994,7 +2994,7 @@ private extern proc chpl_macro_int_ESHORT():c_int;
    (Chapel specific)
   */
 pragma "no doc"
-private inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
+private inline proc ESHORT do return chpl_macro_int_ESHORT():c_int;
 
 private extern proc chpl_macro_int_EFORMAT():c_int;
 /* An error code indicating a format error; for example when reading a quoted
@@ -3002,7 +3002,7 @@ private extern proc chpl_macro_int_EFORMAT():c_int;
    opening quote. (Chapel specific)
   */
 pragma "no doc"
-private inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
+private inline proc EFORMAT do return chpl_macro_int_EFORMAT():c_int;
 
 
 pragma "no doc"
@@ -4218,15 +4218,15 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
 }
 
 pragma "no doc"
-proc _isSimpleIoType(type t) param return
+proc _isSimpleIoType(type t) param do return
   isBoolType(t) || isNumericType(t) || isEnumType(t);
 
 pragma "no doc"
-proc _isIoPrimitiveType(type t) param return
+proc _isIoPrimitiveType(type t) param do return
   _isSimpleIoType(t) || (t == string) || (t == bytes);
 
 pragma "no doc"
- proc _isIoPrimitiveTypeOrNewline(type t) param return
+ proc _isIoPrimitiveTypeOrNewline(type t) param do return
   _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == _internalIoChar || t == _internalIoBits;
 
 // Read routines for all primitive types.

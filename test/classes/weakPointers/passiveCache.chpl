@@ -3,7 +3,7 @@ import Map.map;
 import ChapelLocks;
 import Random;
 use WeakPointer;
-use Barriers;
+use Collectives;
 
 class PassiveCache {
     type dataType; // assuming this type has a an initializer that takes an int
@@ -76,7 +76,7 @@ proc main() {
 
         // concurrently construct or upgrade the 'basicClass' associated with each 'tid'
         //  and ensure that the strong count is correct
-        var b = new Barrier(num_task_ids);
+        var b = new barrier(num_task_ids);
         coforall tid in task_ids {
             var shared_tid : shared basicClass = pc.getOrBuild(tid:int);
             correct.write(correct.read() && shared_tid.x == tid);

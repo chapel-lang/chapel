@@ -1,7 +1,7 @@
 var A, B: [1..4] int;
 var s$: sync bool;
 
-proc f(i)
+proc f(i) do
   return i;
 
 begin {

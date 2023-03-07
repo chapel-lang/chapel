@@ -1,4 +1,4 @@
-use Barriers;
+use Collectives;
 use DistributedBag;
 use DistributedDeque;
 
@@ -151,10 +151,10 @@ var c = (
 c.add(_defaultOf(boardType));
 
 // Begin concurrent NQueens...
-var barrier = new Barrier(here.maxTaskPar * numLocales);
+var bar = new barrier(here.maxTaskPar * numLocales);
 coforall loc in Locales do on loc {
   coforall tid in 0 .. #here.maxTaskPar {
-    barrier.barrier();
+    bar.barrier();
     var nSpins : int;
     while found.read() < totalSolutions {
       var (exists, myBoard) = c.remove();

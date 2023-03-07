@@ -161,7 +161,7 @@ proc _computeChunkStartEnd(nElems, nChunks, myCnk): 2*nElems.type {
 //
 // helper function for blocking index ranges
 //
-proc intCeilXDivByY(x, y) return 1 + (x - 1)/y;
+proc intCeilXDivByY(x, y) do return 1 + (x - 1)/y;
 
 proc _computeBlock(numelems, numblocks, blocknum, wayhi,
                   waylo=0:wayhi.type, lo=0:wayhi.type) {
@@ -215,7 +215,7 @@ proc _factor(param rank: int, value) {
 // type, and shape of 'dom' but for which the indices in each
 // dimension start at zero and have unit stride.
 //
-proc computeZeroBasedDomain(dom: domain)
+proc computeZeroBasedDomain(dom: domain) do
   return {(...computeZeroBasedRanges(dom.dims()))};
 
 proc computeZeroBasedRanges(ranges: _tuple) {
@@ -446,6 +446,48 @@ proc _undensEnsureBounded(arg) {
 
 proc _undensCheck(param cond, type argtypes, param errlevel = 2) {
   if !cond then compilerError("unDensify() is defined only on matching domains, ranges, and quasi-homogeneous tuples of ranges, but is invoked on ", argtypes:string, errlevel);
+}
+
+
+//
+// allStridesArePositive avoids run-time checks as much as possible
+// args can be: array, domain, or their DSI classes; must be rectangular
+//
+// todo: when we switch from range.stridable to an enum,
+// return param false when 1+ args have compile-time negative stride(s)
+//
+
+proc chpl_allStridesArePositive(arg1, arg2, arg3, arg4) param
+  where asapP1(arg1) && asapP1(arg2) && asapP1(arg3) && asapP1(arg4)
+  do return true;
+
+proc chpl_allStridesArePositive(arg1, arg2, arg3, arg4)
+  do return asap1(arg1) && asap1(arg2) && asap1(arg3) && asap1(arg4);
+
+// helpers
+
+// asap1 = All Strides Are Positive - 1 arg
+// returns a param when possible
+private proc asap1(arg) param where asapP1(arg) {
+  return true;
+}
+private proc asap1(arg) {
+  if isSubtype(arg.type, _domain) then return asapTuple(arg.dims());
+  if isSubtype(arg.type, _array)  then return asapTuple(arg.dims());
+  if isSubtype(arg.type, BaseDom) then return asapTuple(arg.dsiDims());
+  if isSubtype(arg.type, BaseArr) then return asapTuple(arg.dom.dsiDims());
+  compilerError("asap1: unsupported argument type ", arg.type:string);
+}
+
+// asapP1 = All Strides Are Positive - Param - 1 arg
+// returns true if all strides are known to be positive at compile time
+private proc asapP1(arg) param {
+  return !arg.stridable;
+}
+
+private proc asapTuple(dims: _tuple) {
+  for d in dims do if ! d.chpl_hasPositiveStride() then return false;
+  return true;
 }
 
 

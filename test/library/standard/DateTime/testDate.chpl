@@ -225,8 +225,8 @@ proc test_date_strftime() {
 }
 
 proc test_date_resolution_info() {
-  proc istype(type t, d: t) param return true;
-  proc isdate(type t, d) param return false;
+  proc istype(type t, d: t) param do return true;
+  proc isdate(type t, d) param do return false;
   assert(istype(date, date.min));
   assert(istype(date, date.max));
   assert(istype(timedelta, date.resolution));

@@ -17,7 +17,7 @@ class C {
     yield z;
   }
 
-  proc chpl__promotionType() type return int;
+  proc chpl__promotionType() type do return int;
 }
 
 var myC = (new owned C()).borrow();

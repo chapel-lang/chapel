@@ -26,9 +26,9 @@ interface IFC {
 
 implements IFC(string);
 
-proc reqSelf(arg1: string): int return 5;
-proc reqInt(arg2: string): string return "hi";
-proc dfltSelf(arg3: string): int return 6;
-proc dfltInt(arg4: string): string return "hii";
-proc implicitSelf(arg5: string): int return 7;
-proc implicitInt(arg6: string): string return "hiii";
+proc reqSelf(arg1: string): int do return 5;
+proc reqInt(arg2: string): string do return "hi";
+proc dfltSelf(arg3: string): int do return 6;
+proc dfltInt(arg4: string): string do return "hii";
+proc implicitSelf(arg5: string): int do return 7;
+proc implicitInt(arg6: string): string do return "hiii";

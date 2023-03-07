@@ -621,7 +621,7 @@ Parameter constants and expressions cannot be aliased.
       writeln("myInt = ", myInt);
 
       var myArr: [1..3] int = 51;
-      proc arrayElement(i) ref  return myArr[i];
+      proc arrayElement(i) ref do  return myArr[i];
       ref refToExpr = arrayElement(3);      // alias to lvalue returned by a function
       myArr[3] = 62;
       writeln("refToExpr = ", refToExpr);

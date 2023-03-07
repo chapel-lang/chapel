@@ -51,9 +51,9 @@ proc icOuter(valSelf: ?RR, inout inoutSelf: RR,    out outSelf: RR,
 }
 
 string implements IFC;
-proc string.AT type return string;
-proc computeSelf(arg: string): string return "self+" + arg;
-proc computeAT(arg: string): string return "at+" + arg;
+proc string.AT type do return string;
+proc computeSelf(arg: string): string do return "self+" + arg;
+proc computeAT(arg: string): string do return "at+" + arg;
 
 proc main {
   var inout1 = "inout1";

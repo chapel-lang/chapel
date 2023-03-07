@@ -165,7 +165,7 @@ module ChapelDomain {
   //
   // Note the domain of a subdomain is not yet part of the runtime type
   //
-  proc chpl__buildSubDomainType(dom: domain) type
+  proc chpl__buildSubDomainType(dom: domain) type do
     return chpl__convertValueToRuntimeType(dom);
 
   //
@@ -288,9 +288,9 @@ module ChapelDomain {
     return _getDomain(dom._value);
   }
 
-  proc chpl_isAssociativeDomClass(dc: BaseAssociativeDom) param return true;
+  proc chpl_isAssociativeDomClass(dc: BaseAssociativeDom) param do return true;
   pragma "last resort"
-  proc chpl_isAssociativeDomClass(dc) param return false;
+  proc chpl_isAssociativeDomClass(dc) param do return false;
 
   private proc errorIfNotRectangular(dom: domain, param op, param arrays="") {
     if dom.isAssociative() || dom.isSparse() then
@@ -327,7 +327,8 @@ module ChapelDomain {
     var ranges = dom.dims();
     for param i in 0..dom.rank-1 do
       ranges(i) = ranges(i) # counts(i);
-    return dom[(...ranges)];
+
+    return new _domain(dom.dist, dom.rank, dom.idxType, dom.stridable, ranges);
   }
 
   pragma "no doc"
@@ -524,7 +525,7 @@ module ChapelDomain {
   }
 
   // check this before comparing two domains with == or !=
-  proc chpl_sameDomainKind(d1: domain, d2: domain) param
+  proc chpl_sameDomainKind(d1: domain, d2: domain) param do
     return (d1.isRectangular() && d2.isRectangular()) ||
            (d1.isAssociative() && d2.isAssociative()) ||
            (d1.isSparse()      && d2.isSparse()     );
@@ -721,7 +722,7 @@ module ChapelDomain {
                else
                  isRange(first) && isRange(rest(0));
       }
-      proc peelArgs(first) param return isRange(first);
+      proc peelArgs(first) param do return isRange(first);
 
       return if !isTuple(a) then false else peelArgs((...a));
     }
@@ -1095,7 +1096,7 @@ module ChapelDomain {
 
     /* Return the domain map that implements this domain */
     pragma "return not owned"
-    proc dist return _getDistribution(_value.dist);
+    proc dist do return _getDistribution(_value.dist);
 
     /* Return the number of dimensions in this domain */
     proc rank param {
@@ -1201,9 +1202,10 @@ module ChapelDomain {
       var r: rank*range(_value.idxType,
                         BoundedRangeType.bounded,
                         stridable);
+      const myDims = dims();
 
       for param i in 0..rank-1 {
-        r(i) = _value.dsiDim(i)(ranges(i));
+        r(i) = myDims(i)[ranges(i)];
       }
       return new _domain(dist, rank, _value.idxType, stridable, r);
     }
@@ -1282,7 +1284,7 @@ module ChapelDomain {
        Return a tuple of ranges describing the bounds of a rectangular domain.
        For a sparse domain, return the bounds of the parent domain.
      */
-    proc dims() return _value.dsiDims();
+    proc dims() do return _value.dsiDims();
 
     /*
        Return a range representing the boundary of this
@@ -1346,7 +1348,7 @@ module ChapelDomain {
         compilerWarning("creating an array with element type " +
                         eltType:string);
         if isClassType(eltType) && !isGenericType(eltType:borrowed) {
-          compilerWarning("which now means class type with generic management");
+          compilerWarning("which is a class type with generic management");
         }
         compilerError("array element type cannot currently be generic");
         // In the future we might support it if the array is not default-inited
@@ -1479,7 +1481,7 @@ module ChapelDomain {
       /*
         Returns ``true`` if this manager has runtime safety checks enabled.
       */
-      inline proc checks param return _checks;
+      inline proc checks param do return _checks;
 
       // Called by implementation code.
       pragma "no doc"
@@ -2013,20 +2015,20 @@ module ChapelDomain {
       compilerError("associative domains do not support '.high'");
     }
     /* Return the stride of the indices in this domain */
-    proc stride return _value.dsiStride;
+    proc stride do return _value.dsiStride;
     /* Return the alignment of the indices in this domain */
-    proc alignment return _value.dsiAlignment;
+    proc alignment do return _value.dsiAlignment;
     /* Return the first index in this domain */
-    proc first return _value.dsiFirst;
+    proc first do return _value.dsiFirst;
     /* Return the last index in this domain */
-    proc last return _value.dsiLast;
+    proc last do return _value.dsiLast;
 
     /* Return the low index in this domain factoring in alignment */
     deprecated "'.alignedLow' is deprecated; please use '.low' instead"
-    proc alignedLow return _value.dsiAlignedLow;
+    proc alignedLow do return _value.dsiAlignedLow;
     /* Return the high index in this domain factoring in alignment */
     deprecated "'.alignedHigh' is deprecated; please use '.high' instead"
-    proc alignedHigh return _value.dsiAlignedHigh;
+    proc alignedHigh do return _value.dsiAlignedHigh;
 
     /* This error overload is here because without it, the domain's
        indices tend to be promoted across the `.indices` calls of
@@ -2085,7 +2087,7 @@ module ChapelDomain {
 
     // 1/5/10: do we want to support order() and position()?
     pragma "no doc"
-    proc indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i, "index"));
+    proc indexOrder(i) do return _value.dsiIndexOrder(_makeIndexTuple(rank, i, "index"));
 
     /*
       Returns the `ith` index in the domain counting from 0.
@@ -2173,7 +2175,7 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc expand(off: integral ...rank) return expand(off);
+    proc expand(off: integral ...rank) do return expand(off);
 
     /* Return a new domain that is the current domain expanded by
        ``off(d)`` in dimension ``d`` if ``off(d)`` is positive or
@@ -2221,7 +2223,7 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc exterior(off: integral ...rank) return exterior(off);
+    proc exterior(off: integral ...rank) do return exterior(off);
 
     /* Return a new domain that is the exterior portion of the
        current domain with ``off(d)`` indices for each dimension ``d``.
@@ -2268,7 +2270,7 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc interior(off: integral ...rank) return interior(off);
+    proc interior(off: integral ...rank) do return interior(off);
 
     /* Return a new domain that is the interior portion of the
        current domain with ``off(d)`` indices for each dimension
@@ -2327,7 +2329,7 @@ module ChapelDomain {
     // index type.  This is handled in the range.translate().
     //
     pragma "no doc"
-    proc translate(off: integral ...rank) return translate(off);
+    proc translate(off: integral ...rank) do return translate(off);
 
     /* Return a new domain that is the current domain translated by
        ``off(d)`` in each dimension ``d``.
@@ -2365,7 +2367,7 @@ module ChapelDomain {
     //
     // intended for internal use only:
     //
-    proc chpl__unTranslate(off: integral ...rank) return chpl__unTranslate(off);
+    proc chpl__unTranslate(off: integral ...rank) do return chpl__unTranslate(off);
     proc chpl__unTranslate(off: rank*intIdxType) {
       var ranges = dims();
       for i in 0..rank-1 do
@@ -2382,7 +2384,7 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc getIndices()
+    proc getIndices() do
       return _value.dsiGetIndices();
 
     pragma "no doc"

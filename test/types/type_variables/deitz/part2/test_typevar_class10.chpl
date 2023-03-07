@@ -1,7 +1,7 @@
 class bar {
   type t;
   var y : t;
-  proc clone()
+  proc clone() do
     return new unmanaged bar(t, y);
 }
 

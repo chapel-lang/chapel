@@ -1226,7 +1226,7 @@ Example: A Generic Stack
           return oldItem;
         }
 
-        proc isEmpty return top == nil;
+        proc isEmpty do return top == nil;
       }
 
    

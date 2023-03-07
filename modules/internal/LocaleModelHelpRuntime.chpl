@@ -73,18 +73,18 @@ module LocaleModelHelpRuntime {
   // Compiler (and module code) interface for manipulating global locale IDs..
   pragma "insert line file info"
   pragma "always resolve function"
-  proc chpl_buildLocaleID(node: chpl_nodeID_t, subloc: chpl_sublocID_t)
+  proc chpl_buildLocaleID(node: chpl_nodeID_t, subloc: chpl_sublocID_t) do
     return chpl_rt_buildLocaleID(node, subloc);
 
   pragma "insert line file info"
   pragma "always resolve function"
   pragma "codegen for CPU and GPU"
-  proc chpl_nodeFromLocaleID(in loc: chpl_localeID_t)
+  proc chpl_nodeFromLocaleID(in loc: chpl_localeID_t) do
     return chpl_rt_nodeFromLocaleID(loc);
 
   pragma "insert line file info"
   pragma "always resolve function"
-  proc chpl_sublocFromLocaleID(in loc: chpl_localeID_t)
+  proc chpl_sublocFromLocaleID(in loc: chpl_localeID_t) do
     return chpl_rt_sublocFromLocaleID(loc);
 
   //////////////////////////////////////////

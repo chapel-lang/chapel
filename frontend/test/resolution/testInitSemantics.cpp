@@ -43,7 +43,7 @@ static void testFieldUseBeforeInit1(void) {
     record r {
       var x: int;
     }
-    proc foo(x) return;
+    proc foo(x) do return;
     proc r.init() {
       foo(x);
       var doNotFold: bool;
@@ -87,7 +87,7 @@ static void testInitReturnVoid(void) {
     record r {
       var x: int;
     }
-    proc foo(x) return;
+    proc foo(x) do return;
     proc r.init() {
       this.x = 5;
       return 1;
@@ -125,7 +125,7 @@ static void testInitReturnEarly(void) {
     record r {
       var x: int;
     }
-    proc foo(x) return;
+    proc foo(x) do return;
     proc r.init() {
       return;
       this.x = 5;
@@ -163,7 +163,7 @@ static void testInitThrow(void) {
     record r {
       var x: int;
     }
-    proc foo(x) return;
+    proc foo(x) do return;
     proc r.init() {
       this.x = 5;
       throw "test!"; // TODO: Fix this once error handling comes online
@@ -201,7 +201,7 @@ static void testInitTryBang(void) {
     record r {
       var x: int;
     }
-    proc foo(x) return;
+    proc foo(x) do return;
     proc r.init() {
       this.x = 5;
       try! { foo(x); }
@@ -259,7 +259,7 @@ static void testInitInsideLoops(void) {
       record r {
         var x: int;
       }
-      proc foo(x) return;
+      proc foo(x) do return;
       proc r.init() {
       )"""" + loop + R""""(
       }

@@ -6,7 +6,7 @@ class A {
 }
 
 // A simpler way to expose the issue.
-proc fnSimple(arg) return 5;
+proc fnSimple(arg) do return 5;
 
 proc main() {
   var a = (new owned A()).borrow();

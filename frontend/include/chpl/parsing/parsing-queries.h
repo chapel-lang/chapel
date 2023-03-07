@@ -288,11 +288,13 @@ void setupModuleSearchPaths(Context* context,
 
 /**
  Returns true if the ID corresponds to something in an internal module.
+ If the internal module path is empty, this function returns false.
  */
 bool idIsInInternalModule(Context* context, ID id);
 
 /**
  Returns true if the ID corresponds to something in a bundled module.
+ If the bundled module path is empty, this function returns false.
  */
 bool idIsInBundledModule(Context* context, ID id);
 
@@ -323,6 +325,16 @@ uast::AstTag idToTag(Context* context, ID id);
  Returns true if the ID is a parenless function.
  */
 bool idIsParenlessFunction(Context* context, ID id);
+
+/**
+ Returns true if the ID refers to a private declaration.
+ */
+bool idIsPrivateDecl(Context* context, ID id);
+
+/**
+ Returns true if the ID is a method.
+ */
+bool idIsMethod(Context* context, ID id);
 
 /**
  If the ID represents a field in a record/class/union, returns

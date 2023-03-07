@@ -1,6 +1,13 @@
 use Memory.Initialization as Old;
 import MemMove;
 
+record R {
+  var x : int;
+  proc deinit() {
+    writeln("R.deinit: ", x);
+  }
+}
+
 proc main() {
   {
     var a = 1, b = 9;
@@ -23,5 +30,17 @@ proc main() {
     var c : int;
     MemMove.moveInitialize(lhs=c, b);
     writeln(c);
+  }
+  {
+    pragma "no auto destroy"
+    var a = new R(5);
+    pragma "no auto destroy"
+    var b = new R(10);
+    if MemMove.needsDeinit(a.type) {
+      MemMove.explicitDeinit(a);
+    }
+    if MemMove.needsDestroy(b.type) {
+      MemMove.destroy(b);
+    }
   }
 }

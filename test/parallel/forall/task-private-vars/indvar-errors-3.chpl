@@ -1,5 +1,5 @@
 
-proc useit(ARG1, ARG2) return ARG2;
+proc useit(ARG1, ARG2) do return ARG2;
 
 proc main {
   forall (idx1, (idx2, idx3)) in myIter() with (

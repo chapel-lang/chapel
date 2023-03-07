@@ -22,8 +22,8 @@ record localInfo {
 
   var A, B: [domAlloc] elType;
 
-  proc Acompute return A[domCompute];
-  proc Bcompute return B[domCompute];
+  proc Acompute do return A[domCompute];
+  proc Bcompute do return B[domCompute];
 
   var localDelta: elType;
 }

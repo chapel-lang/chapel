@@ -11,13 +11,15 @@ class A {
   writeln("test adopt of unmanaged");
   var aHeapObj = new unmanaged A();
   var a = shared.adopt(aHeapObj);
+  writeln(a, " | ", a.type:string);
 }
 
 {
   writeln("test adopt of owned");
   var own: A? = new A();
   var a = shared.adopt(own);
-  writeln(own);
+  writeln(own, " | ", own.type:string);
+  writeln(a, " | ", a.type:string);
 }
 
 
@@ -27,11 +29,11 @@ class A {
   var shr1: A = shared.adopt(a);
   var shr2 = shared.adopt(shr1);
   // all should refer to the same object
-  writeln(a);
-  writeln(shr1);
-  writeln(shr2);
+  writeln(a, " | ", a.type:string);
+  writeln(shr1, " | ", shr1.type:string);
+  writeln(shr2, " | ", shr2.type:string);
   shr2.x += shr1.y;
-  writeln(a);
-  writeln(shr1);
-  writeln(shr2);
+  writeln(a, " | ", a.type:string);
+  writeln(shr1, " | ", shr1.type:string);
+  writeln(shr2, " | ", shr2.type:string);
 }

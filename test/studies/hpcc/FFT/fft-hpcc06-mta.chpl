@@ -298,9 +298,9 @@ proc cftmd21(span, A, W) {
 }
 
 
-proc interpIm(a, b)
+proc interpIm(a, b) do
   return (a.re - 2*b.im*a.im, 2*b.im*a.re - a.im):complex;
 
 
-proc interpRe(a, b) 
+proc interpRe(a, b) do
   return (a.re - 2*b.re*a.im, 2*b.re*a.re - a.im):complex;

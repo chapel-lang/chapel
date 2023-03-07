@@ -2823,3 +2823,14 @@ ParserContext::buildLabelStmt(YYLTYPE location, PODUniqueString name,
         CHPL_PARSER_REPORT(this, LabelIneligibleStmt, location, cs.stmt));
   }
 }
+
+
+ParserExprList*
+ParserContext::buildSingleStmtRoutineBody(CommentsAndStmt cs,
+                                          YYLTYPE* warnLoc) {
+  if (warnLoc != NULL) {
+    CHPL_PARSER_REPORT(this, SingleStmtReturnDeprecated, *warnLoc, cs.stmt);
+  }
+  this->clearComments();
+  return this->makeList(cs);
+}

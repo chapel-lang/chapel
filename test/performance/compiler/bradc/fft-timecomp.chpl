@@ -164,7 +164,7 @@ proc butterfly(wk1, wk2, wk3, inout A:[?D]) {
 }
 
 
-proc log4(x) return logBasePow2(x, 2);
+proc log4(x) do return logBasePow2(x, 2);
 
 
 proc verifyResults(z, Z, Twiddles) {

@@ -5,7 +5,7 @@ class MyDist : BaseDist {
     return new unmanaged MyDom();
   }
 
-  proc dsiClone() return new unmanaged MyDist();
+  proc dsiClone() do return new unmanaged MyDist();
 }
 
 class MyDom : BaseAssociativeDom {

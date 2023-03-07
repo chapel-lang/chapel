@@ -87,6 +87,7 @@ Parallelism/Distributed Computing
    :maxdepth: 1
 
    Barriers <standard/Barriers>
+   Collectives <standard/Collectives>
    Communication <standard/Communication>
    DynamicIters <standard/DynamicIters>
    GPU <standard/GPU>

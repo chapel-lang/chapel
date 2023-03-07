@@ -56,7 +56,7 @@ module Map {
     if isGenericType(K) {
       compilerWarning('creating a map with key type ', K:string, 2);
       if isClassType(K) && !isGenericType(K:borrowed) {
-        compilerWarning('which now means class type with generic ',
+        compilerWarning('which is a class type with generic ',
                         'management', 2);
       }
       compilerError('map key type cannot currently be generic', 2);
@@ -64,7 +64,7 @@ module Map {
     if isGenericType(V) {
       compilerWarning('creating a map with value type ', V:string, 2);
       if isClassType(V) && !isGenericType(V:borrowed) {
-        compilerWarning('which now means class type with generic ',
+        compilerWarning('which is a class type with generic ',
                         'management', 2);
       }
       compilerError('map value type cannot currently be generic', 2);

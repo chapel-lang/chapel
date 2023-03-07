@@ -6,14 +6,14 @@ record Foo {
   proc this(x: int) {
     return (x:real)/3.1415926;
   }
-  proc retType type return real;
+  proc retType type do return real;
 }
 
 record Bar {
   proc this(x: real) {
     return x / 2;
   }
-  proc retType type return real;
+  proc retType type do return real;
 }
 
 const foo: Foo;

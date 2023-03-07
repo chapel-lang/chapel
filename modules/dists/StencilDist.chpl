@@ -710,7 +710,7 @@ override proc StencilDom.dsiDisplayRepresentation() {
 }
 
 // stopgap to avoid accessing locDoms field (and returning an array)
-proc StencilDom.getLocDom(localeIdx) return locDoms(localeIdx);
+proc StencilDom.getLocDom(localeIdx) do return locDoms(localeIdx);
 
 
 //
@@ -767,14 +767,17 @@ iter StencilDom.these(param tag: iterKind) where tag == iterKind.leader {
       else ignoreRunning;
     // Use the internal function for untranslate to avoid having to do
     // extra work to negate the offset
-    type strType = chpl__signedType(idxType);
-    const tmpStencil = locDom.myBlock.chpl__unTranslate(wholeLow);
+    const tmpBlock = locDom.myBlock.chpl__unTranslate(wholeLow);
     var locOffset: rank*idxType;
-    for param i in 0..tmpStencil.rank-1 do
-      locOffset(i) = tmpStencil.dim(i).first/tmpStencil.dim(i).stride:strType;
+    for param i in 0..tmpBlock.rank-1 {
+      const dim = tmpBlock.dim(i);
+      const aStr = if dim.chpl_hasPositiveStride()
+                   then dim.stride else -dim.stride;
+      locOffset(i) = dim.low / aStr:idxType;
+    }
     // Forward to defaultRectangular
-    for followThis in tmpStencil.these(iterKind.leader, maxTasks,
-                                       myIgnoreRunning, minSize, locOffset) do
+    for followThis in tmpBlock.these(iterKind.leader, maxTasks,
+                                     myIgnoreRunning, minSize, locOffset) do
       yield followThis;
   }
 }
@@ -792,7 +795,7 @@ iter StencilDom.these(param tag: iterKind) where tag == iterKind.leader {
 // stencil communication will be done on a per-locale basis.
 //
 iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
-  proc anyStridable(rangeTuple, param i: int = 0) param
+  proc anyStridable(rangeTuple, param i: int = 0) param do
       return if i == rangeTuple.size-1 then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
@@ -800,13 +803,14 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
     chpl__testPar("Stencil domain follower invoked on ", followThis);
 
   var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
-  type strType = chpl__signedType(idxType);
   for param i in 0..rank-1 {
-    var stride = whole.dim(i).stride: strType;
-    // not checking here whether the new low and high fit into idxType
-    var low = (stride * followThis(i).lowBound:strType):idxType;
-    var high = (stride * followThis(i).highBound:strType):idxType;
-    t(i) = ((low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType).safeCast(t(i).type);
+    const wholeDim  = whole.dim(i);
+    const followDim = followThis(i);
+    var low  = wholeDim.orderToIndex(followDim.low);
+    var high = wholeDim.orderToIndex(followDim.high);
+    if ! wholeDim.chpl_hasPositiveStride() then low <=> high;
+    t(i) = ( low..high by (wholeDim.stride*followDim.stride)
+           ).safeCast(t(i).type);
   }
   for i in {(...t)} {
     yield i;
@@ -850,25 +854,25 @@ proc StencilDom.dsiBuildArray(type eltType, param initElts:bool) {
 }
 
 // common redirects
-override proc StencilDom.dsiLow           return whole.lowBound;
-override proc StencilDom.dsiHigh          return whole.highBound;
-override proc StencilDom.dsiAlignedLow    return whole.low;
-override proc StencilDom.dsiAlignedHigh   return whole.high;
-override proc StencilDom.dsiFirst         return whole.first;
-override proc StencilDom.dsiLast          return whole.last;
-override proc StencilDom.dsiStride        return whole.stride;
-override proc StencilDom.dsiAlignment     return whole.alignment;
-proc StencilDom.dsiNumIndices    return whole.sizeAs(uint);
-proc StencilDom.dsiDim(d)        return whole.dim(d);
-proc StencilDom.dsiDim(param d)  return whole.dim(d);
-proc StencilDom.dsiDims()        return whole.dims();
-proc StencilDom.dsiGetIndices()  return whole.getIndices();
-//proc StencilDom.dsiMember(i)     return whole.contains(i);
-proc StencilDom.doiToString()    return whole:string;
+override proc StencilDom.dsiLow do           return whole.lowBound;
+override proc StencilDom.dsiHigh do          return whole.highBound;
+override proc StencilDom.dsiAlignedLow do    return whole.low;
+override proc StencilDom.dsiAlignedHigh do   return whole.high;
+override proc StencilDom.dsiFirst do         return whole.first;
+override proc StencilDom.dsiLast do          return whole.last;
+override proc StencilDom.dsiStride do        return whole.stride;
+override proc StencilDom.dsiAlignment do     return whole.alignment;
+proc StencilDom.dsiNumIndices do    return whole.sizeAs(uint);
+proc StencilDom.dsiDim(d) do        return whole.dim(d);
+proc StencilDom.dsiDim(param d) do  return whole.dim(d);
+proc StencilDom.dsiDims() do        return whole.dims();
+proc StencilDom.dsiGetIndices() do  return whole.getIndices();
+//proc StencilDom.dsiMember(i) do     return whole.contains(i);
+proc StencilDom.doiToString() do    return whole:string;
 proc StencilDom.dsiSerialWrite(x) { x.write(whole); }
-proc StencilDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
-override proc StencilDom.dsiIndexOrder(i)              return whole.indexOrder(i);
-override proc StencilDom.dsiMyDist()                   return dist;
+proc StencilDom.dsiLocalSlice(param stridable, ranges) do return whole((...ranges));
+override proc StencilDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
+override proc StencilDom.dsiMyDist() do                   return dist;
 
 //
 // INTERFACE NOTES: Could we make dsiSetIndices() for a rectangular
@@ -1084,7 +1088,7 @@ proc StencilDom.dsiMember(i) {
 //
 // Added as a performance stopgap to avoid returning a domain
 //
-proc LocStencilDom.contains(i) return myBlock.contains(i);
+proc LocStencilDom.contains(i) do return myBlock.contains(i);
 
 override proc StencilArr.dsiDisplayRepresentation() {
   for tli in dom.dist.targetLocDom {
@@ -1094,7 +1098,7 @@ override proc StencilArr.dsiDisplayRepresentation() {
   }
 }
 
-override proc StencilArr.dsiGetBaseDom() return dom;
+override proc StencilArr.dsiGetBaseDom() do return dom;
 
 //
 // NOTE: Each locale's myElems array must be initialized prior to setting up
@@ -1248,14 +1252,14 @@ inline proc StencilArr.dsiAccess(i: rank*idxType) const ref {
 
 
 // ref version
-inline proc StencilArr.dsiAccess(i: idxType...rank) ref
+inline proc StencilArr.dsiAccess(i: idxType...rank) ref do
   return dsiAccess(i);
 // value version for POD types
 inline proc StencilArr.dsiAccess(i: idxType...rank)
-where shouldReturnRvalueByValue(eltType)
+where shouldReturnRvalueByValue(eltType) do
   return dsiAccess(i);
 // const ref version for types with copy-ctor
-inline proc StencilArr.dsiAccess(i: idxType...rank) const ref
+inline proc StencilArr.dsiAccess(i: idxType...rank) const ref do
   return dsiAccess(i);
 
 inline proc StencilArr.dsiBoundsCheck(i: rank*idxType) {
@@ -1286,7 +1290,7 @@ override proc StencilArr.dsiStaticFastFollowCheck(type leadType) param {
   }
 }
 
-proc StencilArr.dsiDynamicFastFollowCheck(lead: [])
+proc StencilArr.dsiDynamicFastFollowCheck(lead: []) do
   return this.dsiDynamicFastFollowCheck(lead.domain);
 
 proc StencilArr.dsiDynamicFastFollowCheck(lead: domain) {
@@ -1294,7 +1298,7 @@ proc StencilArr.dsiDynamicFastFollowCheck(lead: domain) {
 }
 
 iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
-  proc anyStridable(rangeTuple, param i: int = 0) param
+  proc anyStridable(rangeTuple, param i: int = 0) param do
       return if i == rangeTuple.size-1 then rangeTuple(i).stridable
              else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
@@ -1312,7 +1316,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
   var lowIdx: rank*idxType;
 
   for param i in 0..rank-1 {
-    var stride = dom.whole.dim(i).stride;
+    const stride = dom.whole.dim(i).stride;
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).lowBound * abs(stride):idxType;
     var high = followThis(i).highBound * abs(stride):idxType;
@@ -1340,7 +1344,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
     local {
       use CTypes; // Needed to cast from c_void_ptr in the next line
       const narrowArrSection =
-        __primitive("_wide_get_addr", arrSection):(arrSection.type?);
+        __primitive("_wide_get_addr", arrSection):arrSection.type?;
       ref myElems = _to_nonnil(narrowArrSection).myElems;
       foreach i in myFollowThisDom do yield myElems[i];
     }
@@ -1758,7 +1762,7 @@ proc Stencil.init(other: Stencil, privateData,
   dataParMinGranularity = privateData(4);
 }
 
-override proc Stencil.dsiSupportsPrivatization() param return true;
+override proc Stencil.dsiSupportsPrivatization() param do return true;
 
 proc Stencil.dsiGetPrivatizeData() {
   return (boundingBox.dims(), targetLocDom.dims(),
@@ -1770,7 +1774,7 @@ proc Stencil.dsiPrivatize(privatizeData) {
   return new unmanaged Stencil(_to_unmanaged(this), privatizeData);
 }
 
-proc Stencil.dsiGetReprivatizeData() return boundingBox.dims();
+proc Stencil.dsiGetReprivatizeData() do return boundingBox.dims();
 
 proc Stencil.dsiReprivatize(other, reprivatizeData) {
   boundingBox = {(...reprivatizeData)};
@@ -1782,9 +1786,9 @@ proc Stencil.dsiReprivatize(other, reprivatizeData) {
   dataParMinGranularity = other.dataParMinGranularity;
 }
 
-override proc StencilDom.dsiSupportsPrivatization() param return true;
+override proc StencilDom.dsiSupportsPrivatization() param do return true;
 
-proc StencilDom.dsiGetPrivatizeData() return (dist.pid, whole.dims());
+proc StencilDom.dsiGetPrivatizeData() do return (dist.pid, whole.dims());
 
 proc StencilDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, privatizeData(0));
@@ -1807,7 +1811,7 @@ proc StencilDom.dsiPrivatize(privatizeData) {
   return c;
 }
 
-proc StencilDom.dsiGetReprivatizeData() return whole.dims();
+proc StencilDom.dsiGetReprivatizeData() do return whole.dims();
 
 proc StencilDom.dsiReprivatize(other, reprivatizeData) {
   locDoms = other.locDoms;
@@ -1853,9 +1857,9 @@ proc type StencilArr.chpl__deserialize(data) {
            data);
 }
 
-override proc StencilArr.dsiSupportsPrivatization() param return true;
+override proc StencilArr.dsiSupportsPrivatization() param do return true;
 
-proc StencilArr.dsiGetPrivatizeData() return dom.pid;
+proc StencilArr.dsiGetPrivatizeData() do return dom.pid;
 
 proc StencilArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, privatizeData);
@@ -1897,8 +1901,8 @@ proc Stencil.chpl__locToLocIdx(loc: locale) {
 
 // Stencil subdomains are continuous
 
-proc StencilArr.dsiHasSingleLocalSubdomain() param return true;
-proc StencilDom.dsiHasSingleLocalSubdomain() param return true;
+proc StencilArr.dsiHasSingleLocalSubdomain() param do return true;
+proc StencilDom.dsiHasSingleLocalSubdomain() param do return true;
 
 // returns the current locale's subdomain
 
@@ -1958,17 +1962,17 @@ private proc canDoAnyToStencil(Dest, destDom, Src, srcDom) param : bool {
 
 proc StencilArr.doiBulkTransferToKnown(srcDom, destClass:StencilArr, destDom) : bool
 where !disableStencilDistBulkTransfer {
-  _doSimpleStencilTransfer(destClass, destDom, this, srcDom);
-  return true;
+  return _doSimpleStencilTransfer(destClass, destDom, this, srcDom);
 }
 
 proc StencilArr.doiBulkTransferFromKnown(destDom, srcClass:StencilArr, srcDom) : bool
 where !disableStencilDistBulkTransfer {
-  _doSimpleStencilTransfer(this, destDom, srcClass, srcDom);
-  return true;
+  return _doSimpleStencilTransfer(this, destDom, srcClass, srcDom);
 }
 
 private proc _doSimpleStencilTransfer(Dest, destDom, Src, srcDom) {
+  if !chpl_allStridesArePositive(Dest, destDom, Src, srcDom) then return false;
+
   if debugStencilDistBulkTransfer then
     writeln("In Stencil=Stencil Bulk Transfer: Dest[", destDom, "] = Src[", srcDom, "]");
 
@@ -2008,12 +2012,14 @@ private proc _doSimpleStencilTransfer(Dest, destDom, Src, srcDom) {
       }
     }
   }
+  return true;
 }
 
 // Overload for any transfer *to* Stencil, if the RHS supports transfers to a
 // DefaultRectangular
 proc StencilArr.doiBulkTransferFromAny(destDom, Src, srcDom) : bool
 where canDoAnyToStencil(this, destDom, Src, srcDom) {
+  if !chpl_allStridesArePositive(this, destDom, Src, srcDom) then return false;
 
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiBulkTransferFromAny");
@@ -2038,6 +2044,8 @@ where canDoAnyToStencil(this, destDom, Src, srcDom) {
 // For assignments of the form: DefaultRectangular = Stencil
 proc StencilArr.doiBulkTransferToKnown(srcDom, Dest:DefaultRectangularArr, destDom) : bool
 where !disableStencilDistBulkTransfer {
+  if !chpl_allStridesArePositive(this, srcDom, Dest, destDom) then return false;
+
 
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiBulkTransferToKnown(DefaultRectangular)");
@@ -2063,6 +2071,8 @@ where !disableStencilDistBulkTransfer {
 // For assignments of the form: Stencil = DefaultRectangular
 proc StencilArr.doiBulkTransferFromKnown(destDom, Src:DefaultRectangularArr, srcDom) : bool
 where !disableStencilDistBulkTransfer {
+  if !chpl_allStridesArePositive(this, destDom, Src, srcDom) then return false;
+
   if debugStencilDistBulkTransfer then
     writeln("In StencilArr.doiBulkTransferFromKnown(DefaultRectangular)");
 
@@ -2086,4 +2096,4 @@ where !disableStencilDistBulkTransfer {
   return true;
 }
 
-override proc StencilArr.doiCanBulkTransferRankChange() param return true;
+override proc StencilArr.doiCanBulkTransferRankChange() param do return true;

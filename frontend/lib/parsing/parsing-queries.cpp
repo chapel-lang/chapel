@@ -613,6 +613,8 @@ void setupModuleSearchPaths(Context* context,
 
 bool idIsInInternalModule(Context* context, ID id) {
   UniqueString internal = internalModulePath(context);
+  if (internal.isEmpty()) return false;
+
   UniqueString filePath;
   UniqueString parentSymbolPath;
   bool found = context->filePathForId(id, filePath, parentSymbolPath);
@@ -624,6 +626,8 @@ bool idIsInInternalModule(Context* context, ID id) {
 
 bool idIsInBundledModule(Context* context, ID id) {
   UniqueString modules = bundledModulePath(context);
+  if (modules.isEmpty()) return false;
+
   UniqueString filePath;
   UniqueString parentSymbolPath;
   bool found = context->filePathForId(id, filePath, parentSymbolPath);
@@ -828,6 +832,9 @@ const AstNode* idToAst(Context* context, ID id) {
   return astForIDQuery(context, id);
 }
 
+// TODO: could many of these get-property-of-ID queries
+// be combined to save space?
+
 static const AstTag& idToTagQuery(Context* context, ID id) {
   QUERY_BEGIN(idToTagQuery, context, id);
 
@@ -869,6 +876,57 @@ static const bool& idIsParenlessFunctionQuery(Context* context, ID id) {
 
 bool idIsParenlessFunction(Context* context, ID id) {
   return idIsParenlessFunctionQuery(context, id);
+}
+
+static const bool& idIsPrivateDeclQuery(Context* context, ID id) {
+  QUERY_BEGIN(idIsPrivateDeclQuery, context, id);
+
+  bool result = false;
+
+  if (!id.isEmpty()) {
+    if (auto ast = parsing::idToAst(context, id)) {
+      if (auto decl = ast->toDecl()) {
+        auto visibility = decl->visibility();
+        switch (visibility) {
+          case Decl::DEFAULT_VISIBILITY:
+          case Decl::PUBLIC:
+            result = false;
+            break;
+          case Decl::PRIVATE:
+            result = true;
+            break;
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool idIsPrivateDecl(Context* context, ID id) {
+  return idIsPrivateDeclQuery(context, id);
+}
+
+static const bool& idIsMethodQuery(Context* context, ID id) {
+  QUERY_BEGIN(idIsMethodQuery, context, id);
+
+  bool result = false;
+
+  AstTag tag = idToTag(context, id);
+  if (asttags::isFunction(tag)) {
+    const AstNode* ast = astForIDQuery(context, id);
+    if (ast != nullptr) {
+      if (auto fn = ast->toFunction()) {
+        result = fn->isMethod();
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool idIsMethod(Context* context, ID id) {
+  return idIsMethodQuery(context, id);
 }
 
 static const UniqueString& fieldIdToNameQuery(Context* context, ID id) {
@@ -1208,6 +1266,30 @@ static bool isAstUnstable(Context* context, const AstNode* ast) {
   return attr && attr->isUnstable();
 }
 
+static bool isAstCompilerGenerated(Context* context, const AstNode* ast) {
+  auto attr = parsing::idToAttributeGroup(context, ast->id());
+  return attr && attr->hasPragma(PRAGMA_COMPILER_GENERATED);
+}
+
+// Skip if any parent is deprecated (we want to show deprecation messages
+// in unstable symbols, since they'll likely live a long time). Also skip
+// if we are in a compiler-generated thing.
+static bool
+shouldSkipDeprecationWarning(Context* context, const AstNode* ast) {
+  return isAstCompilerGenerated(context, ast) ||
+         isAstDeprecated(context, ast);
+}
+
+// Skip if any parent is marked deprecated or unstable. We don't want to
+// worry about throwing unstable mentions in deprecated symbols, because
+// deprecated things are likely to be removed soon.
+static bool
+shouldSkipUnstableWarning(Context* context, const AstNode* ast) {
+  return isAstCompilerGenerated(context, ast) ||
+         isAstDeprecated(context, ast)        ||
+         isAstUnstable(context, ast);
+}
+
 static bool isAstFormal(Context* context, const AstNode* ast) {
   return ast->isFormal();
 }
@@ -1343,8 +1425,9 @@ reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget) {
   // Don't warn for 'this' formals with deprecated types.
   if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
 
-  // Current policy is to skip if the mention is in a deprecated symbol.
-  if (anyParentMatches(context, idMention, isAstDeprecated)) return;
+  // See filter function for skip policy.
+  if (anyParentMatches(context, idMention, shouldSkipDeprecationWarning))
+    return;
 
   std::ignore = deprecationWarningForIdQuery(context, idMention, idTarget);
 }
@@ -1362,8 +1445,9 @@ reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
   // Don't warn for 'this' formals with unstable types.
   if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
 
-  // Current policy is to skip if the mention is in an unstable symbol.
-  if (anyParentMatches(context, idMention, isAstUnstable)) return;
+  // See filter function for skip policy.
+  if (anyParentMatches(context, idMention, shouldSkipUnstableWarning))
+    return;
 
   std::ignore = unstableWarningForIdQuery(context, idMention, idTarget);
 }

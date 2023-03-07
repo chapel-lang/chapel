@@ -324,12 +324,17 @@ writeln(r[allEvens] == evensBetween1and10);  // true
 //
 // Either or both of the ranges in a range slicing operation can be
 // strided and/or unbounded
+// When the slicing range has a negative stride, the direction of
+// the original range is reversed.
+// As of Chapel Release 1.30, this feature requires compiling
+// with ``-snewSliceRule``. In a subsequent release this behavior
+// will be standard and the option ``-snewSliceRule`` will be removed.
 //
 const rs = 1..20 by 3;
 writeln("A slice of ", rs, " with ", 1..20 by 2);
 writeRange(rs[1..20 by 2]);  // 1, 7, 13, 19
 writeln("A slice of ", rs, " with ", 1..20 by -2);
-writeRange(rs[1..20 by -2]); // 4, 10, 16
+writeRange(rs[1..20 by -2]); // 16, 10, 4
 writeln();
 
 writeln("A slice of ", r, " with ", 5..);

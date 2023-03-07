@@ -120,64 +120,64 @@ module String {
 
   // Helper routines in support of being able to use ranges of indices
   pragma "no doc"
-  proc chpl_build_bounded_range(low: byteIndex, high: byteIndex)
+  proc chpl_build_bounded_range(low: byteIndex, high: byteIndex) do
     return new range(byteIndex, low=low, high=high);
   pragma "no doc"
-  proc chpl_build_bounded_range(low: codepointIndex, high: codepointIndex)
+  proc chpl_build_bounded_range(low: codepointIndex, high: codepointIndex) do
     return new range(codepointIndex, low=low, high=high);
 
   pragma "no doc"
-  proc chpl_build_low_bounded_range(low: byteIndex)
+  proc chpl_build_low_bounded_range(low: byteIndex) do
     return new range(low=low);
   pragma "no doc"
-  proc chpl_build_low_bounded_range(low: codepointIndex)
+  proc chpl_build_low_bounded_range(low: codepointIndex) do
     return new range(low=low);
 
   pragma "no doc"
-  proc chpl_build_high_bounded_range(high: byteIndex)
+  proc chpl_build_high_bounded_range(high: byteIndex) do
     return new range(high=high);
   pragma "no doc"
-  proc chpl_build_high_bounded_range(high: codepointIndex)
+  proc chpl_build_high_bounded_range(high: codepointIndex) do
     return new range(high=high);
 
 
   pragma "no doc"
-  proc chpl__rangeStrideType(type idxType: byteIndex) type
+  proc chpl__rangeStrideType(type idxType: byteIndex) type do
     return int;
 
   pragma "no doc"
-  proc chpl__rangeStrideType(type idxType: codepointIndex) type
+  proc chpl__rangeStrideType(type idxType: codepointIndex) type do
     return int;
 
   pragma "no doc"
-  proc chpl__rangeUnsignedType(type idxType: byteIndex) type
+  proc chpl__rangeUnsignedType(type idxType: byteIndex) type do
     return uint;
 
   pragma "no doc"
-  proc chpl__rangeUnsignedType(type idxType: codepointIndex) type
+  proc chpl__rangeUnsignedType(type idxType: codepointIndex) type do
     return uint;
 
   pragma "no doc"
-  inline proc chpl__idxToInt(i: byteIndex)
+  inline proc chpl__idxToInt(i: byteIndex) do
     return i:int;
   pragma "no doc"
-  inline proc chpl__idxToInt(i: codepointIndex)
+  inline proc chpl__idxToInt(i: codepointIndex) do
     return i:int;
 
   pragma "no doc"
-  inline proc chpl__intToIdx(type idxType: byteIndex, i: int)
+  inline proc chpl__intToIdx(type idxType: byteIndex, i: int) do
     return i: byteIndex;
 
   pragma "no doc"
-  inline proc chpl__intToIdx(type idxType: codepointIndex, i: int)
+  inline proc chpl__intToIdx(type idxType: codepointIndex, i: int) do
     return i: codepointIndex;
 
   pragma "no doc"
-  proc chpl__idxTypeToIntIdxType(type idxType: byteIndex) type
+  proc chpl__idxTypeToIntIdxType(type idxType: byteIndex) type do
     return int;
 
   pragma "no doc"
-  proc chpl__idxTypeToIntIdxType(type idxType: codepointIndex) type
+  proc chpl__idxTypeToIntIdxType(type idxType: codepointIndex) type do
     return int;
 
   pragma "no doc" inline operator byteIndex.>(x: byteIndex, y: byteIndex) {
@@ -192,12 +192,12 @@ module String {
     return x: int > y;
   }
   pragma "no doc"
-  inline operator codepointIndex.>(x: codepointIndex, y: int) return x: int > y;
+  inline operator codepointIndex.>(x: codepointIndex, y: int) do return x: int > y;
 
   pragma "no doc"
-  inline operator byteIndex.>(x: int, y: byteIndex) return x > y: int;
+  inline operator byteIndex.>(x: int, y: byteIndex) do return x > y: int;
   pragma "no doc"
-  inline operator codepointIndex.>(x: int, y: codepointIndex) return x > y: int;
+  inline operator codepointIndex.>(x: int, y: codepointIndex) do return x > y: int;
   // End range helper support
 
   // Index arithmetic support
@@ -220,7 +220,7 @@ module String {
     return (x + y: int): codepointIndex;
   }
 
-  pragma "no doc" inline operator +(x: bufferType, y: byteIndex) return x+(y:int);
+  pragma "no doc" inline operator +(x: bufferType, y: byteIndex) do return x+(y:int);
 
   // index - int --> index
   pragma "no doc" inline operator byteIndex.-(x: byteIndex, y: int) {
@@ -361,13 +361,13 @@ module String {
     return x != (y:int);
   }
 
-  pragma "no doc" inline operator byteIndex.!(x: byteIndex) return !(x:int);
+  pragma "no doc" inline operator byteIndex.!(x: byteIndex) do return !(x:int);
   pragma "no doc" inline operator codepointIndex.!(x: codepointIndex) {
     return !(x:int);
   }
 
-  pragma "no doc" inline proc _cond_test(x: byteIndex)      return x != 0;
-  pragma "no doc" inline proc _cond_test(x: codepointIndex) return x != 0;
+  pragma "no doc" inline proc _cond_test(x: byteIndex) do      return x != 0;
+  pragma "no doc" inline proc _cond_test(x: codepointIndex) do return x != 0;
   // End index arithmetic support
 
   private proc validateEncoding(buf, len): int throws {
@@ -736,7 +736,7 @@ module String {
       return this.numCodepoints==this.numBytes;
     }
 
-    inline proc byteIndices return 0..<this.numBytes;
+    inline proc byteIndices do return 0..<this.numBytes;
 
     inline proc param c_str() param : c_string {
       return this:c_string; // folded out in resolution
@@ -1062,18 +1062,18 @@ module String {
   /*
     :returns: The number of codepoints in the string.
   */
-  inline proc const string.size : int return numCodepoints;
+  inline proc const string.size : int do return numCodepoints;
 
   /*
     :returns: The indices that can be used to index into the string
               (i.e., the range ``0..<this.size``)
   */
-  inline proc string.indices : range return 0..<size;
+  inline proc string.indices : range do return 0..<size;
 
   /*
     :returns: The number of bytes in the string.
   */
-  inline proc string.numBytes : int return buffLen;
+  inline proc string.numBytes : int do return buffLen;
 
   /*
     :returns: The number of codepoints in the string, assuming the
@@ -2140,7 +2140,7 @@ module String {
   }
 
   pragma "no doc"
-  inline operator string.+(param a: string, param b: string) param
+  inline operator string.+(param a: string, param b: string) param do
     return __primitive("string_concat", a, b);
 
   pragma "no doc"
@@ -2172,19 +2172,19 @@ module String {
   }
 
   pragma "no doc"
-  inline proc param string.numBytes param
+  inline proc param string.numBytes param do
     return __primitive("string_length_bytes", this);
 
   pragma "no doc"
-  inline proc param string.numCodepoints param
+  inline proc param string.numCodepoints param do
     return __primitive("string_length_codepoints", this);
 
   pragma "no doc"
-  inline proc param string.size param
+  inline proc param string.size param do
     return this.numCodepoints;
 
   pragma "no doc"
-  inline proc _string_contains(param a: string, param b: string) param
+  inline proc _string_contains(param a: string, param b: string) param do
     return __primitive("string_contains", a, b);
 
 

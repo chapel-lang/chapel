@@ -31,7 +31,7 @@ module Graph {
       param nid = 1;
       param weight = 2;
 
-      proc numNeighbors()  return ndom.size;
+      proc numNeighbors() do  return ndom.size;
 /*
       var firstAvailNeighbor$: [vertex_domain] sync int = initialFirstAvail;
 

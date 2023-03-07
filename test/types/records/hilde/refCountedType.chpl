@@ -52,8 +52,8 @@ record Handle
   }
 
 // Accessors
-  proc value return _impl!.value;
-  proc freed return _impl!.freed;
+  proc value do return _impl!.value;
+  proc freed do return _impl!.freed;
 }
 
 // Assignment

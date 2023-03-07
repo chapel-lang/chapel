@@ -13,6 +13,6 @@ iter randomPoints(n: int, seed: uint = 31415926) {
   }
 }
 
-proc d2((x,y)) return x**2 + y**2;
+proc d2((x,y)) do return x**2 + y**2;
 
 writeln((+ reduce (d2(randomPoints(n)) < 1.0)) * 4 / n:real);
