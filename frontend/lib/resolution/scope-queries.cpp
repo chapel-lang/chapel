@@ -439,6 +439,7 @@ struct LookupHelper {
                                 UniqueString name,
                                 LookupConfig config,
                                 IdAndVis::SymbolTypeFlags filterFlags,
+                                IdAndVis::SymbolTypeFlags excludeFilter,
                                 VisibilitySymbols::ShadowScope shadowScope);
 
   bool doLookupInAutoModules(const Scope* scope,
@@ -502,6 +503,7 @@ bool LookupHelper::doLookupInImportsAndUses(
                                    UniqueString name,
                                    LookupConfig config,
                                    IdAndVis::SymbolTypeFlags filterFlags,
+                                   IdAndVis::SymbolTypeFlags excludeFilter,
                                    VisibilitySymbols::ShadowScope shadowScope) {
   bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
   bool skipPrivateVisibilities = (config & LOOKUP_SKIP_PRIVATE_VIS) != 0;
@@ -596,7 +598,8 @@ bool LookupHelper::doLookupInImportsAndUses(
           BorrowedIdsWithName::createWithSingleId(is.scope()->id(),
                                                   visibility,
                                                   isMethodOrField,
-                                                  filterFlags);
+                                                  filterFlags,
+                                                  excludeFilter);
         if (foundIds) {
           if (trace) {
             ResultVisibilityTrace t;
@@ -778,11 +781,13 @@ bool LookupHelper::doLookupInExternBlock(const Scope* scope,
     if (child->isExternBlock()) {
       bool isMethodOrField = false; // not possible in an extern block
       IdAndVis::SymbolTypeFlags filterFlags = 0;
+      IdAndVis::SymbolTypeFlags excludeFlags = 0;
       auto foundIds =
         BorrowedIdsWithName::createWithSingleId(child->id(),
                                                 Decl::PUBLIC,
                                                 isMethodOrField,
-                                                filterFlags);
+                                                filterFlags,
+                                                excludeFlags);
       if (foundIds) {
         if (traceCurPath && traceResult) {
           ResultVisibilityTrace t;
@@ -838,6 +843,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
 
   IdAndVis::SymbolTypeFlags curFilter = 0;
+  IdAndVis::SymbolTypeFlags excludeFilter = 0;
   if (skipPrivateVisibilities) {
     curFilter |= IdAndVis::PUBLIC;
   }
@@ -860,7 +866,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
 
   // update the checkedScopes map and return early if there is nothing to do.
   auto p = checkedScopes.insert(std::make_pair(CheckedScope(name, scope),
-                                curFilter));
+                                               curFilter));
   if (p.second == false) {
     // insertion did not occur because there was already an entry.
     // Set flagsInMap to refer to the flags of the existing element
@@ -878,34 +884,30 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
       return false;
     }
 
-    printf("In lookup %s in %s with filter %s found existing flags %s\n",
-           name.c_str(), scope->id().str().c_str(),
-           IdAndVis::flagsToString(curFilter).c_str(),
-           IdAndVis::flagsToString(foundFilter).c_str());
+    // ok, we can search for curFilter but exclude what was already found
+    excludeFilter = foundFilter;
 
-    // otherwise, compute the new filter to use
-    IdAndVis::SymbolTypeFlags origCurFilter = curFilter;
-    IdAndVis::SymbolTypeFlags onlyInFound = foundFilter & ~origCurFilter;
-    curFilter = IdAndVis::reverseFlags(onlyInFound) | origCurFilter;
-    printf("onlyInFound %s reverseFlags %s new curFilter %s\n",
-           IdAndVis::flagsToString(onlyInFound).c_str(),
-           IdAndVis::flagsToString(IdAndVis::reverseFlags(onlyInFound)).c_str(),
-           IdAndVis::flagsToString(curFilter).c_str());
-
-
-    // update checkedScopes to remove filter bits that weren't present
+    // Update checkedScopes to remove filter bits that weren't present
     // in foundFilter (because we are going to update results
-    // with matches for the now-not-filtered-out cases)
-    IdAndVis::SymbolTypeFlags combinedFilter = foundFilter & origCurFilter;
-
-    // since we are storing only a single bit set, we cannot represent
+    // with matches for the now-not-filtered-out cases).
+    // This is an approximation.
+    // Since we are storing only a single bit set, we cannot represent
     // all combinations, e.g.:
     //   if we had input foundFilter={PUBLIC} and curFilter={METHODS_OR_FIELDS},
     //   we will search now for {PRIVATE,METHODS_OR_FIELDS},
     //   but then we will have no way of recording that we have
     //   searched {PUBLIC} U {PRIVATE,METHODS_OR_FIELDS}, which means
     //   that a future search for {PRIVATE,NOT_METHODS_OR_FIELDS} won't work.
+    IdAndVis::SymbolTypeFlags combinedFilter = foundFilter & curFilter;
+
     flagsInMap = combinedFilter;
+
+    /*
+    printf("In lookup %s in %s with filter %s found existing flags %s and creating new combined flags for map %s\n",
+           name.c_str(), scope->id().str().c_str(),
+           IdAndVis::flagsToString(curFilter).c_str(),
+           IdAndVis::flagsToString(foundFilter).c_str(),
+           IdAndVis::flagsToString(combinedFilter).c_str());*/
   }
 
   // if the scope has an extern block, note that fact.
@@ -928,10 +930,11 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   {
     bool got = false;
     if (checkDecls) {
-      printf("Lookup %s in %s with filter %s\n",
+      /*printf("Lookup %s in %s with filter %s exclude %s\n",
              name.c_str(), scope->id().str().c_str(),
-             IdAndVis::flagsToString(curFilter).c_str());
-      got |= scope->lookupInScope(name, result, curFilter);
+             IdAndVis::flagsToString(curFilter).c_str(),
+             IdAndVis::flagsToString(excludeFilter).c_str());*/
+      got |= scope->lookupInScope(name, result, curFilter, excludeFilter);
       if (got && trace) {
         for (size_t i = startSize; i < result.size(); i++) {
           ResultVisibilityTrace t;
@@ -942,7 +945,8 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
       }
     }
     if (checkUseImport) {
-      got |= doLookupInImportsAndUses(scope, r, name, config, curFilter,
+      got |= doLookupInImportsAndUses(scope, r, name, config,
+                                      curFilter, excludeFilter,
                                       VisibilitySymbols::REGULAR_SCOPE);
     }
     if (onlyInnermost && got) return true;
@@ -951,7 +955,8 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   // now check shadow scope 1 (only relevant for 'private use')
   if (checkUseImport) {
     bool got = false;
-    got |= doLookupInImportsAndUses(scope, r, name, config, curFilter,
+    got |= doLookupInImportsAndUses(scope, r, name, config,
+                                    curFilter, excludeFilter,
                                     VisibilitySymbols::SHADOW_SCOPE_ONE);
 
     // treat the auto-used modules as if they were 'private use'd
@@ -963,7 +968,8 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   // now check shadow scope 2 (only relevant for 'private use')
   if (checkUseImport) {
     bool got = false;
-    got = doLookupInImportsAndUses(scope, r, name, config, curFilter,
+    got = doLookupInImportsAndUses(scope, r, name, config,
+                                   curFilter, excludeFilter,
                                    VisibilitySymbols::SHADOW_SCOPE_TWO);
     if (onlyInnermost && got) return true;
   }
@@ -2049,7 +2055,8 @@ doWarnHiddenFormal(Context* context,
   const Formal* formal = nullptr;
   std::vector<BorrowedIdsWithName> ids;
   IdAndVis::SymbolTypeFlags filterFlags = 0;
-  functionScope->lookupInScope(formalName, ids, filterFlags);
+  IdAndVis::SymbolTypeFlags excludeFlags = 0;
+  functionScope->lookupInScope(formalName, ids, filterFlags, excludeFlags);
   for (const auto& b : ids) {
     for (const auto& id : b) {
       auto formalAst = parsing::idToAst(context, id);
