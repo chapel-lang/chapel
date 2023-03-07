@@ -2368,9 +2368,6 @@ The :record:`fileReader` type is generic.
 */
 pragma "ignore noinit"
 record fileReader {
-  /* writing is a bool that indicates whether the fileReader is used for
-     writing. It is always ``false`` */
-  param writing:bool = false;
   /*
      kind is an enum :type:`iokind` that allows narrowing
      this fileReader's I/O style for more efficient binary I/O.
@@ -2383,7 +2380,7 @@ record fileReader {
   param locking:bool;
 
   pragma "no doc"
-  type fmtType = defaultFmtType(writing);
+  type fmtType = defaultFmtType(/* writing= */ false);
 
   pragma "no doc"
   var _home:locale = here;
@@ -2402,6 +2399,12 @@ record fileReader {
   // Therefore further locking by the same task is not necessary.
   pragma "no doc"
   var _readWriteThisFromLocale = nilLocale;
+}
+
+/* Returns a bool indicating whether the fileReader is used for writing.  It is
+   always ``false`` */
+proc fileReader.writing param: bool {
+  return false;
 }
 
 pragma "no doc"
@@ -2430,9 +2433,6 @@ The :record:`fileWriter` type is generic.
 */
 pragma "ignore noinit"
 record fileWriter {
-  /* writing is a bool that indicating the fileWriter is used for writing.  It
-     is always ``true`` */
-  param writing:bool;
   /*
      kind is an enum :type:`iokind` that allows narrowing
      this fileWriter's I/O style for more efficient binary I/O.
@@ -2445,7 +2445,7 @@ record fileWriter {
   param locking:bool;
 
   pragma "no doc"
-  type fmtType = defaultFmtType(writing);
+  type fmtType = defaultFmtType(/* writing */ true);
 
   pragma "no doc"
   var _home:locale = here;
@@ -2465,6 +2465,13 @@ record fileWriter {
   pragma "no doc"
   var _readWriteThisFromLocale = nilLocale;
 }
+
+/* Returns a bool indicating whether the fileWriter is used for writing.  It is
+   always ``true`` */
+proc fileWriter.writing param: bool {
+  return true;
+}
+
 
 pragma "no doc"
 proc fileWriter.formatter const ref {
@@ -2730,7 +2737,6 @@ proc fileReader.init(param kind:iokind, param locking:bool, type fmtType) {
 
 pragma "no doc"
 proc fileReader.init(param kind:iokind, param locking:bool, in formatter:?) {
-  this.writing = false;
   this.kind = kind;
   this.locking = locking;
   this.fmtType = formatter.type;
@@ -2746,7 +2752,6 @@ proc fileWriter.init(param kind:iokind, param locking:bool, type fmtType) {
 
 pragma "no doc"
 proc fileWriter.init(param kind:iokind, param locking:bool, in formatter:?) {
-  this.writing = true;
   this.kind = kind;
   this.locking = locking;
   this.fmtType = formatter.type;
@@ -2755,8 +2760,6 @@ proc fileWriter.init(param kind:iokind, param locking:bool, in formatter:?) {
 
 pragma "no doc"
 proc fileReader.init=(x: fileReader) {
-  this.writing = x.writing;
-
   // allow the kind and locking fields to be modified in initialization
   this.kind = if this.type.kind != ? then this.type.kind else x.kind;
   this.locking = if this.type.locking != ?
@@ -2776,8 +2779,6 @@ proc fileReader.init=(x: fileReader) {
 
 pragma "no doc"
 proc fileWriter.init=(x: fileWriter) {
-  this.writing = x.writing;
-
   // allow the kind and locking fields to be modified in initialization
   this.kind = if this.type.kind != ? then this.type.kind else x.kind;
   this.locking = if this.type.locking != ?
@@ -2812,7 +2813,6 @@ proc fileReader.init(param kind:iokind, param locking:bool,
                      home: locale, _channel_internal:qio_channel_ptr_t,
                      _readWriteThisFromLocale: locale,
                      in formatter:?) {
-  this.writing = false;
   this.kind = kind;
   this.locking = locking;
   this.fmtType = formatter.type;
@@ -2847,7 +2847,6 @@ proc fileWriter.init(param kind:iokind, param locking:bool,
                      home: locale, _channel_internal:qio_channel_ptr_t,
                      _readWriteThisFromLocale: locale,
                      in formatter:?) {
-  this.writing = true;
   this.kind = kind;
   this.locking = locking;
   this.fmtType = formatter.type;
