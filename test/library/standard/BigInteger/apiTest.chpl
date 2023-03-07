@@ -139,6 +139,26 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   assert((1:uint(32))*a == a);
   assert((1:uint(64))*a == a);
 
+  var aa = "315135":bigint;
+  var bb = "12412":bigint;
+  var cc = "3426495623485904783478347":bigint;
+  var dd = "-1398984130":bigint;
+  var ff = "2413804710837418037418307081437315263635345357386985747464":bigint;
+  var gg = "-1":bigint;
+
+  assert(aa + bb == 327547);
+  assert(aa + bb + cc == "3426495623485904783805894":bigint);
+  assert(aa + bb + cc + dd == "3426495623485903384821764":bigint);
+  assert(aa + bb + cc + dd + ff == "2413804710837418037418307081437318690130968843290370569228":bigint);
+  assert(aa + bb + cc + dd + ff + gg == "2413804710837418037418307081437318690130968843290370569227":bigint);
+
+  assert(aa * bb == "3911455620":bigint);
+  assert(aa * bb * cc == "13402585563389346256121263521460140":bigint);
+  assert(aa * bb * cc * dd == "-18750004504148804423388563022070650287578200":bigint);
+  assert(aa * bb * cc * dd * ff == "-45258849200337190631492857400003938881995610529251881450243326128168934937055005474972396281351684800":bigint);
+  assert(aa * bb * cc * dd * ff * gg == "45258849200337190631492857400003938881995610529251881450243326128168934937055005474972396281351684800":bigint);
+  
+
   // Bit shifts
   assert(5:bigint  << 3   == 40);
   assert(5:bigint  >> 1   == 2);
