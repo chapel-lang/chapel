@@ -1,6 +1,0 @@
-apiTest.chpl:6: warning: bigint initializers that halt are deprecated, please set the config param bigintInitThrows to 'true' to opt in to using the new initializer that throws
-apiTest.chpl:7: warning: bigint initializers that halt are deprecated, please set the config param bigintInitThrows to 'true' to opt in to using the new initializer that throws
-apiTest.chpl:8: warning: bigint initializers that halt are deprecated, please set the config param bigintInitThrows to 'true' to opt in to using the new initializer that throws
-apiTest.chpl:9: warning: bigint initializers that halt are deprecated, please set the config param bigintInitThrows to 'true' to opt in to using the new initializer that throws
-$CHPL_HOME/modules/standard/BigInteger.chpl:582: In function ':':
-$CHPL_HOME/modules/standard/BigInteger.chpl:583: warning: bigint initializers that halt are deprecated, please set the config param bigintInitThrows to 'true' to opt in to using the new initializer that throws

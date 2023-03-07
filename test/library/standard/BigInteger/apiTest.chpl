@@ -1,5 +1,4 @@
 use BigInteger;
-use Reflection;
 
 config const executeLocale = 0;
 
@@ -10,7 +9,7 @@ const d = new bigint("-246913578024691357802469135780");
 
 on Locales[min(Locales.domain.high, executeLocale)] {
   assert((a+1) == b);
-  assert((a+(1:bigint)) == b, getLineNumber());
+  assert((a+(1:bigint)) == b);
   assert(b == (a+1));
   assert(b != a);
   assert(b > a);
