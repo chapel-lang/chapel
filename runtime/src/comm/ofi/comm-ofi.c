@@ -1607,10 +1607,11 @@ chpl_bool canBindTxCtxs(struct fi_info* info) {
   // we'll use bound tx contexts with this provider.
   //
   const struct fi_domain_attr* dom_attr = info->domain_attr;
+  int epCount = chpl_env_rt_get_int("COMM_OFI_EP_COUNT", dom_attr->ep_cnt);
   int numWorkerTxCtxs = ((envPreferScalableTxEp
                           && dom_attr->max_ep_tx_ctx > 1)
                          ? dom_attr->max_ep_tx_ctx
-                         : dom_attr->ep_cnt)
+                         : epCount)
                         - 1
                         - numAmHandlers;
   if (envCommConcurrency > 0 && envCommConcurrency < numWorkerTxCtxs) {
