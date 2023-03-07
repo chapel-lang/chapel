@@ -154,6 +154,54 @@ static void testBorrowIds() {
     }
     assert(count == 2);
   }
+
+  {
+    // check two excluding one of them
+    OwnedIdsWithName ids(y, Decl::PUBLIC, /* method */ true);
+    ids.appendIdAndFlags(x, Decl::PRIVATE, /* method */ false);
+    IdAndFlags::SymbolTypeFlags f = 0;
+    IdAndFlags::SymbolTypeFlags e = pub | method;
+    auto foundIds = ids.borrow(f, e);
+    assert(foundIds.hasValue());
+    auto b = foundIds.getValue();
+    assert(b.firstId() == x);
+    assert(b.numIds() == 1);
+    int count = 0;
+    for (auto id : b) {
+      assert(id == x);
+      count++;
+    }
+    assert(count == 1);
+  }
+
+  {
+    // check two different ones excluding one of them
+    OwnedIdsWithName ids(y, Decl::PUBLIC, /* method */ true);
+    ids.appendIdAndFlags(x, Decl::PUBLIC, /* method */ false);
+    IdAndFlags::SymbolTypeFlags f = 0;
+    IdAndFlags::SymbolTypeFlags e = pub | method;
+    auto foundIds = ids.borrow(f, e);
+    assert(foundIds.hasValue());
+    auto b = foundIds.getValue();
+    assert(b.firstId() == x);
+    assert(b.numIds() == 1);
+    int count = 0;
+    for (auto id : b) {
+      assert(id == x);
+      count++;
+    }
+    assert(count == 1);
+  }
+
+  {
+    // check two excluding both
+    OwnedIdsWithName ids(y, Decl::PUBLIC, /* method */ true);
+    ids.appendIdAndFlags(x, Decl::PUBLIC, /* method */ false);
+    IdAndFlags::SymbolTypeFlags f = 0;
+    IdAndFlags::SymbolTypeFlags e = pub;
+    auto foundIds = ids.borrow(f, e);
+    assert(!foundIds.hasValue());
+  }
 }
 
 

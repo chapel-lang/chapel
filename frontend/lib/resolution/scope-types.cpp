@@ -104,7 +104,8 @@ OwnedIdsWithName::borrow(IdAndFlags::SymbolTypeFlags filterFlags,
   return llvm::None;
 }
 
-int BorrowedIdsWithName::countVisibleIds(IdAndFlags::SymbolTypeFlags flagsAnd) {
+int BorrowedIdsWithName::countVisibleIds(IdAndFlags::SymbolTypeFlags flagsAnd,
+                                         IdAndFlags::SymbolTypeFlags flagsOr) {
   if (moreIdvs_ == nullptr) {
     return 1;
   }
@@ -112,7 +113,8 @@ int BorrowedIdsWithName::countVisibleIds(IdAndFlags::SymbolTypeFlags flagsAnd) {
   // if the current filter is a subset of flagsAnd, then all of the
   // found symbols will included in this borrowedIds, so we don't have
   // to consider them individually.
-  if ((flagsAnd & filterFlags_) == filterFlags_) {
+  if ((flagsAnd & filterFlags_) == filterFlags_ &&
+      (excludeFlags_ == 0 || (flagsOr & excludeFlags_) != excludeFlags_)) {
     // all of the found symbols will match
     return moreIdvs_->size();
   }

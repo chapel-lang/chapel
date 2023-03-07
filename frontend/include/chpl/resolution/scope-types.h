@@ -322,7 +322,8 @@ class BorrowedIdsWithName {
 
  private:
 
-  int countVisibleIds(IdAndFlags::SymbolTypeFlags flagsAnd);
+  int countVisibleIds(IdAndFlags::SymbolTypeFlags flagsAnd,
+                      IdAndFlags::SymbolTypeFlags flagsOr);
 
   /** Construct a BorrowedIdsWithName referring to the same IDs
       as the passed OwnedIdsWithName.
@@ -334,7 +335,7 @@ class BorrowedIdsWithName {
                       IdAndFlags::SymbolTypeFlags excludeFlags)
     : filterFlags_(filterFlags), excludeFlags_(excludeFlags),
       idv_(firstMatch), moreIdvs_(ownedIds.moreIdvs_.get()) {
-    numVisibleIds_ = countVisibleIds(ownedIds.flagsAnd_);
+    numVisibleIds_ = countVisibleIds(ownedIds.flagsAnd_, ownedIds.flagsOr_);
     CHPL_ASSERT(isIdVisible(idv_, filterFlags, excludeFlags));
   }
 
