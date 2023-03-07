@@ -21,10 +21,10 @@
 
 #include "chpl/resolution/scope-types.h"
 
-const IdAndFlags::SymbolTypeFlags pub = IdAndFlags::PUBLIC;
-const IdAndFlags::SymbolTypeFlags not_pub = IdAndFlags::NOT_PUBLIC;
-const IdAndFlags::SymbolTypeFlags method = IdAndFlags::METHOD_OR_FIELD;
-const IdAndFlags::SymbolTypeFlags not_method = IdAndFlags::NOT_METHOD_OR_FIELD;
+const IdAndFlags::Flags pub = IdAndFlags::PUBLIC;
+const IdAndFlags::Flags not_pub = IdAndFlags::NOT_PUBLIC;
+const IdAndFlags::Flags method = IdAndFlags::METHOD_OR_FIELD;
+const IdAndFlags::Flags not_method = IdAndFlags::NOT_METHOD_OR_FIELD;
 
 // test IdAndFlags::matchFilter
 static void testMatchFilter() {
@@ -41,8 +41,8 @@ static void testMatchFilter() {
   assert(!IdAndFlags::matchFilter(not_pub, 0, not_pub));
 
   // test some multi-bit situations
-  IdAndFlags::SymbolTypeFlags pm = pub | method;
-  IdAndFlags::SymbolTypeFlags pf = pub | not_method;
+  IdAndFlags::Flags pm = pub | method;
+  IdAndFlags::Flags pf = pub | not_method;
 
   assert(IdAndFlags::matchFilter(pm, 0, 0));
   assert(IdAndFlags::matchFilter(pm, pub, 0));
@@ -84,16 +84,16 @@ static void testBorrowIds() {
   {
     // check one id with filtering
     OwnedIdsWithName ids(x, Decl::PRIVATE, /* method */ false);
-    IdAndFlags::SymbolTypeFlags f = pub;
-    IdAndFlags::SymbolTypeFlags e = 0;
+    IdAndFlags::Flags f = pub;
+    IdAndFlags::Flags e = 0;
     auto foundIds = ids.borrow(f, e);
     assert(!foundIds.hasValue());
   }
   {
     // check one id with filtering
     OwnedIdsWithName ids(x, Decl::PRIVATE, /* method */ false);
-    IdAndFlags::SymbolTypeFlags f = 0;
-    IdAndFlags::SymbolTypeFlags e = not_method;
+    IdAndFlags::Flags f = 0;
+    IdAndFlags::Flags e = not_method;
     auto foundIds = ids.borrow(f, e);
     assert(!foundIds.hasValue());
   }
@@ -102,8 +102,8 @@ static void testBorrowIds() {
     // check two ids with filtering out the 1st
     OwnedIdsWithName ids(x, Decl::PRIVATE, /* method */ false);
     ids.appendIdAndFlags(y, Decl::PUBLIC, /* method */ true);
-    IdAndFlags::SymbolTypeFlags f = pub;
-    IdAndFlags::SymbolTypeFlags e = 0;
+    IdAndFlags::Flags f = pub;
+    IdAndFlags::Flags e = 0;
     auto foundIds = ids.borrow(f, e);
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
@@ -121,8 +121,8 @@ static void testBorrowIds() {
     // check two ids with filtering out the 2nd
     OwnedIdsWithName ids(y, Decl::PUBLIC, /* method */ true);
     ids.appendIdAndFlags(x, Decl::PRIVATE, /* method */ false);
-    IdAndFlags::SymbolTypeFlags f = IdAndFlags::PUBLIC;
-    IdAndFlags::SymbolTypeFlags e = 0;
+    IdAndFlags::Flags f = IdAndFlags::PUBLIC;
+    IdAndFlags::Flags e = 0;
     auto foundIds = ids.borrow(f, e);
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
@@ -140,8 +140,8 @@ static void testBorrowIds() {
     // check two ids with filtering out neither
     OwnedIdsWithName ids(y, Decl::PUBLIC, /* method */ true);
     ids.appendIdAndFlags(x, Decl::PRIVATE, /* method */ false);
-    IdAndFlags::SymbolTypeFlags f = 0;
-    IdAndFlags::SymbolTypeFlags e = 0;
+    IdAndFlags::Flags f = 0;
+    IdAndFlags::Flags e = 0;
     auto foundIds = ids.borrow(f, e);
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
@@ -159,8 +159,8 @@ static void testBorrowIds() {
     // check two excluding one of them
     OwnedIdsWithName ids(y, Decl::PUBLIC, /* method */ true);
     ids.appendIdAndFlags(x, Decl::PRIVATE, /* method */ false);
-    IdAndFlags::SymbolTypeFlags f = 0;
-    IdAndFlags::SymbolTypeFlags e = pub | method;
+    IdAndFlags::Flags f = 0;
+    IdAndFlags::Flags e = pub | method;
     auto foundIds = ids.borrow(f, e);
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
@@ -178,8 +178,8 @@ static void testBorrowIds() {
     // check two different ones excluding one of them
     OwnedIdsWithName ids(y, Decl::PUBLIC, /* method */ true);
     ids.appendIdAndFlags(x, Decl::PUBLIC, /* method */ false);
-    IdAndFlags::SymbolTypeFlags f = 0;
-    IdAndFlags::SymbolTypeFlags e = pub | method;
+    IdAndFlags::Flags f = 0;
+    IdAndFlags::Flags e = pub | method;
     auto foundIds = ids.borrow(f, e);
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
@@ -197,8 +197,8 @@ static void testBorrowIds() {
     // check two excluding both
     OwnedIdsWithName ids(y, Decl::PUBLIC, /* method */ true);
     ids.appendIdAndFlags(x, Decl::PUBLIC, /* method */ false);
-    IdAndFlags::SymbolTypeFlags f = 0;
-    IdAndFlags::SymbolTypeFlags e = pub;
+    IdAndFlags::Flags f = 0;
+    IdAndFlags::Flags e = pub;
     auto foundIds = ids.borrow(f, e);
     assert(!foundIds.hasValue());
   }

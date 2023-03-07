@@ -438,8 +438,8 @@ struct LookupHelper {
                                 const ResolvedVisibilityScope* cur,
                                 UniqueString name,
                                 LookupConfig config,
-                                IdAndFlags::SymbolTypeFlags filterFlags,
-                                IdAndFlags::SymbolTypeFlags excludeFilter,
+                                IdAndFlags::Flags filterFlags,
+                                IdAndFlags::Flags excludeFilter,
                                 VisibilitySymbols::ShadowScope shadowScope);
 
   bool doLookupInAutoModules(const Scope* scope,
@@ -502,8 +502,8 @@ bool LookupHelper::doLookupInImportsAndUses(
                                    const ResolvedVisibilityScope* cur,
                                    UniqueString name,
                                    LookupConfig config,
-                                   IdAndFlags::SymbolTypeFlags filterFlags,
-                                   IdAndFlags::SymbolTypeFlags excludeFilter,
+                                   IdAndFlags::Flags filterFlags,
+                                   IdAndFlags::Flags excludeFilter,
                                    VisibilitySymbols::ShadowScope shadowScope) {
   bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
   bool skipPrivateVisibilities = (config & LOOKUP_SKIP_PRIVATE_VIS) != 0;
@@ -780,8 +780,8 @@ bool LookupHelper::doLookupInExternBlock(const Scope* scope,
   for (auto child : ast->children()) {
     if (child->isExternBlock()) {
       bool isMethodOrField = false; // not possible in an extern block
-      IdAndFlags::SymbolTypeFlags filterFlags = 0;
-      IdAndFlags::SymbolTypeFlags excludeFlags = 0;
+      IdAndFlags::Flags filterFlags = 0;
+      IdAndFlags::Flags excludeFlags = 0;
       auto foundIds =
         BorrowedIdsWithName::createWithSingleId(child->id(),
                                                 Decl::PUBLIC,
@@ -842,8 +842,8 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
 
-  IdAndFlags::SymbolTypeFlags curFilter = 0;
-  IdAndFlags::SymbolTypeFlags excludeFilter = 0;
+  IdAndFlags::Flags curFilter = 0;
+  IdAndFlags::Flags excludeFilter = 0;
   if (skipPrivateVisibilities) {
     curFilter |= IdAndFlags::PUBLIC;
   }
@@ -872,11 +872,11 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   if (p.second == false) {
     // insertion did not occur because there was already an entry.
     // Set flagsInMap to refer to the flags of the existing element
-    IdAndFlags::SymbolTypeFlags& flagsInMap = p.first->second;
+    IdAndFlags::Flags& flagsInMap = p.first->second;
 
     // the insert did not succeed: there was already something in the map.
     // decide what to do about it.
-    IdAndFlags::SymbolTypeFlags foundFilter = flagsInMap;
+    IdAndFlags::Flags foundFilter = flagsInMap;
     if ((curFilter & foundFilter) == foundFilter) {
       // if the flags we found are equal to foundFilter,
       // or if curFilter is a superset of foundFilter
@@ -900,7 +900,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     //   but then we will have no way of recording that we have
     //   searched {PUBLIC} U {PRIVATE,METHODS_OR_FIELDS}, which means
     //   that a future search for {PRIVATE,NOT_METHODS_OR_FIELDS} won't work.
-    IdAndFlags::SymbolTypeFlags combinedFilter = foundFilter & curFilter;
+    IdAndFlags::Flags combinedFilter = foundFilter & curFilter;
 
     flagsInMap = combinedFilter;
 
@@ -2056,8 +2056,8 @@ doWarnHiddenFormal(Context* context,
   // find the Formal*
   const Formal* formal = nullptr;
   std::vector<BorrowedIdsWithName> ids;
-  IdAndFlags::SymbolTypeFlags filterFlags = 0;
-  IdAndFlags::SymbolTypeFlags excludeFlags = 0;
+  IdAndFlags::Flags filterFlags = 0;
+  IdAndFlags::Flags excludeFlags = 0;
   functionScope->lookupInScope(formalName, ids, filterFlags, excludeFlags);
   for (const auto& b : ids) {
     for (const auto& id : b) {

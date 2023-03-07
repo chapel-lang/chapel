@@ -28,8 +28,8 @@ namespace chpl {
 namespace resolution {
 
 /*
-IdAndFlags::SymbolTypeFlags IdAndFlags::reverseFlags(SymbolTypeFlags flags) {
-  SymbolTypeFlags ret = 0;
+IdAndFlags::Flags IdAndFlags::reverseFlags(Flags flags) {
+  Flags ret = 0;
 
   if ((flags & PUBLIC) != 0)              ret |= NOT_PUBLIC;
   if ((flags & NOT_PUBLIC) != 0)          ret |= PUBLIC;
@@ -40,7 +40,7 @@ IdAndFlags::SymbolTypeFlags IdAndFlags::reverseFlags(SymbolTypeFlags flags) {
   return ret;
 }*/
 
-std::string IdAndFlags::flagsToString(SymbolTypeFlags flags) {
+std::string IdAndFlags::flagsToString(Flags flags) {
   std::string ret;
   if ((flags & PUBLIC) != 0)               ret += "public ";
   if ((flags & NOT_PUBLIC) != 0)           ret += "!public ";
@@ -65,8 +65,8 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
 }
 
 llvm::Optional<BorrowedIdsWithName>
-OwnedIdsWithName::borrow(IdAndFlags::SymbolTypeFlags filterFlags,
-                         IdAndFlags::SymbolTypeFlags excludeFlags) const {
+OwnedIdsWithName::borrow(IdAndFlags::Flags filterFlags,
+                         IdAndFlags::Flags excludeFlags) const {
   // Are all of the filter flags present in flagsOr?
   // If not, it is not possible for this to match.
   if ((flagsOr_ & filterFlags) != filterFlags) {
@@ -104,8 +104,8 @@ OwnedIdsWithName::borrow(IdAndFlags::SymbolTypeFlags filterFlags,
   return llvm::None;
 }
 
-int BorrowedIdsWithName::countVisibleIds(IdAndFlags::SymbolTypeFlags flagsAnd,
-                                         IdAndFlags::SymbolTypeFlags flagsOr) {
+int BorrowedIdsWithName::countVisibleIds(IdAndFlags::Flags flagsAnd,
+                                         IdAndFlags::Flags flagsOr) {
   if (moreIdvs_ == nullptr) {
     return 1;
   }
@@ -213,8 +213,8 @@ const Scope* Scope::parentModuleScope() const {
 
 bool Scope::lookupInScope(UniqueString name,
                           std::vector<BorrowedIdsWithName>& result,
-                          IdAndFlags::SymbolTypeFlags filterFlags,
-                          IdAndFlags::SymbolTypeFlags excludeFlags) const {
+                          IdAndFlags::Flags filterFlags,
+                          IdAndFlags::Flags excludeFlags) const {
   auto search = declared_.find(name);
   if (search != declared_.end()) {
     // There might not be any IDs that are visible to us, so borrow returns
