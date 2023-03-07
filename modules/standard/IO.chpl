@@ -5814,7 +5814,7 @@ proc fileReader.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
 
   Note that this routine currently requires a 1D rectangular non-strided array.
 
-  Throws a SystemError if a line could not be read from the channel.
+  Throws a SystemError if a line could not be read from the fileReader.
 
   :arg arg: A 1D DefaultRectangular array which must have at least 1 element.
   :arg numRead: The number of bytes read.
@@ -5822,8 +5822,8 @@ proc fileReader.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
   :arg amount: The maximum amount of bytes to read.
   :returns: true if the bytes were read without error.
 */
-deprecated "channel.readline is deprecated. Use :proc:`channel.readLine` instead"
-proc _channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
+deprecated "fileReader.readline is deprecated. Use :proc:`fileReader.readLine` instead"
+proc fileReader.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
                       amount = arg.domain.highBound - start + 1) : bool throws
                       where arg.rank == 1 && arg.isRectangular() {
   if arg.size == 0 || !arg.domain.contains(start) ||
@@ -5852,7 +5852,7 @@ proc _channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lo
   } else if err == EEOF {
     return false;
   } else {
-    try this._ch_ioerror(err, "in channel.readline(arg : [] uint(8))");
+    try this._ch_ioerror(err, "in fileReader.readline(arg : [] uint(8))");
   }
   return false;
 }
@@ -5957,11 +5957,10 @@ inline proc fileReader.readLine(ref a: [] ?t, maxSize=a.size,
   :returns: `true` if a line was read without error, `false` upon EOF
 
   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
-  :throws SystemError: Thrown if data could not be read from the channel.
+  :throws SystemError: Thrown if data could not be read from the fileReader.
 */
-deprecated "channel.readline is deprecated. Use :proc:`channel.readLine` instead"
-proc _channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
-  if writing then compilerError("read on write-only channel");
+deprecated "fileReader.readline is deprecated. Use :proc:`fileReader.readLine` instead"
+proc fileReader.readline(ref arg: ?t): bool throws where t==string || t==bytes {
   const origLocale = this.getLocaleOfIoRequest();
 
   try {
@@ -7914,7 +7913,7 @@ proc readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
   compilerError("'readLine()' is currently only supported for non-strided 1D rectangular arrays");
 }
 
-/* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
+/* Equivalent to ``stdin.readline``.  See :proc:`fileReader.readline` */
 deprecated "readline is deprecated. Use :proc:`readLine` instead"
 proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
               amount = arg.domain.highBound - start + 1) : bool throws
@@ -7922,7 +7921,7 @@ proc readline(arg: [] uint(8), out numRead : int, start = arg.domain.lowBound,
   return stdin.readline(arg, numRead, start, amount);
 }
 
-/* Equivalent to ``stdin.readline``.  See :proc:`channel.readline` */
+/* Equivalent to ``stdin.readline``.  See :proc:`fileReader.readline` */
 deprecated "readline is deprecated. Use :proc:`readLine` instead"
 proc readline(ref arg: ?t): bool throws where t==string || t==bytes {
   return stdin.readline(arg);
