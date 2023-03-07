@@ -179,6 +179,9 @@ section; many of them will be addressed in upcoming editions.
 * For loops to be considered eligible for execution on a GPU they
   must fulfill the requirements discussed in the `Overview`_ section.
 
+* Associative arrays cannot be used on GPU sublocales with
+  ``CHPL_GPU_MEM_STRAGETY=array_on_device``.
+
 GPU Support Features
 --------------------
 
