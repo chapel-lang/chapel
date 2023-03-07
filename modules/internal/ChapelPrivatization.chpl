@@ -29,7 +29,7 @@ module ChapelPrivatization {
   }
 
   pragma "no doc"
-  extern var chpl_privateObjects:_c_ptr(chpl_privateObject_t);
+  extern var chpl_privateObjects:c_ptr(chpl_privateObject_t);
 
   pragma "no doc"
   pragma "fn returns infinite lifetime"
