@@ -3865,7 +3865,7 @@ static std::string determineOclcVersionLib(std::string libPath) {
   // Ensure file exists (and can be opened)
   std::ifstream file(result);
   if(!file.good()) {
-    USR_FATAL("Unable to find or open ROCM device library file %s", result);
+    USR_FATAL("Unable to find or open ROCM device library file %s", result.c_str());
   }
 
   return result;
