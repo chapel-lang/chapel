@@ -36,22 +36,10 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   forall i in -10..10 do
     for j in -10..10 do
       if j != 0 {
-        assert(div(i:bigint, j:bigint) == div(i,j));
-        assert(mod(i:bigint, j:bigint) == mod(i,j));
-        assert(mul(i:bigint, j:bigint) == mul(i,j));
+        assert(i:bigint/j:bigint == i/j);
+        assert(i:bigint%j:bigint == i%j);
+        assert(i:bigint*j:bigint == i*j);
       }
-
-  proc div(a, b) {
-    return a/b;
-  }
-
-  proc mod(a, b) {
-    return a%b;
-  }
-
-  proc mul(a, b) {
-    return a*b;
-  }
 
   // Addition
 
