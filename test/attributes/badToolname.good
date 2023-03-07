@@ -1,0 +1,2 @@
+badToolname.chpl:2: In function 'foo':
+badToolname.chpl:1: warning: Unknown attribute toolname 'chpledoc'

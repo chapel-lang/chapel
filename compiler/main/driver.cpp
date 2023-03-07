@@ -320,7 +320,7 @@ size_t fDynoBreakOnHash = 0;
 
 bool fUseIOFormatters = false;
 
-bool fWarnUnknownAttributeToolname = false;
+bool fWarnUnknownAttributeToolname = true;
 
 std::vector<UniqueString> usingAttributeToolnames;
 
