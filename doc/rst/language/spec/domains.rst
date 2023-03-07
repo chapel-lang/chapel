@@ -883,9 +883,9 @@ Count Operator
 
 The ``#`` operator can be applied to dense rectangular domains with a
 tuple argument whose size matches the rank of the domain (or optionally
-an integer in the case of a 1D domain). The operator is equivalent to
-applying the ``#`` operator to the component ranges of the domain and
-then using them to slice the domain as in Section :ref:`Range_Based_Slicing`.
+an integer in the case of a 1D domain). The operator produces a new domain
+obtained by applying the ``#`` operator to each of the component ranges
+of the argument domain, with the same domain map as the argument.
 
 .. _Adding_and_Removing_Domain_Indices:
 

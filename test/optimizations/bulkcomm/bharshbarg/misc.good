@@ -1,2 +1,5 @@
+FAILURE: bulk transfer did not happen!
+FAILURE for {2..6 by -2} = {2..6 by -2}
+	incorrect value in destination
 misc.chpl:80: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (2..6 by -2)
 misc.chpl:80: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (2..6 by -2)

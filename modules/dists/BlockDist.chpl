@@ -673,6 +673,12 @@ proc Block.getChunk(inds, locid) {
   //
   // TODO: Does using David's detupling trick work here?
   //
+  // Vass 2023-03: the chunk should really be computed as:
+  //   const chunk = inds[locDist(locid).myChunk];
+  // because we are looking for a subset of 'inds'.
+  // I did not make this change because it slightly bumps comm counts in:
+  //   distributions/robust/arithmetic/performance/multilocale/assignReindex
+  //
   const chunk = locDist(locid).myChunk((...inds.getIndices()));
   if sanityCheckDistribution then
     if chunk.sizeAs(int) > 0 {
@@ -706,8 +712,8 @@ proc Block.targetLocsIdx(ind: rank*idxType) {
 // TODO: This will not trigger the bounded-coforall optimization
 iter Block.activeTargetLocales(const space : domain = boundingBox) {
   const locSpace = {(...space.dims())}; // make a local domain in case 'space' is distributed
-  const low = chpl__tuplify(targetLocsIdx(locSpace.first));
-  const high = chpl__tuplify(targetLocsIdx(locSpace.last));
+  const low  = chpl__tuplify(targetLocsIdx(locSpace.low));
+  const high = chpl__tuplify(targetLocsIdx(locSpace.high));
   var dims : rank*range(low(0).type);
   for param i in 0..rank-1 {
     dims(i) = low(i)..high(i);
@@ -852,15 +858,13 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
       else ignoreRunning;
     // Use the internal function for untranslate to avoid having to do
     // extra work to negate the offset
-    type strType = chpl__signedType(idxType);
     const tmpBlock = locDom.myBlock.chpl__unTranslate(wholeLow);
     var locOffset: rank*idxType;
     for param i in 0..tmpBlock.rank-1 {
-      const stride = tmpBlock.dim(i).stride;
-      if stride < 0 && strType != idxType then
-        halt("negative stride not supported with unsigned idxType");
-        // (since locOffset is unsigned in that case)
-      locOffset(i) = tmpBlock.dim(i).first / stride:idxType;
+      const dim = tmpBlock.dim(i);
+      const aStr = if dim.chpl_hasPositiveStride()
+                   then dim.stride else -dim.stride;
+      locOffset(i) = dim.low / aStr:idxType;
     }
     // Forward to defaultRectangular
     for followThis in tmpBlock.these(iterKind.leader, maxTasks,
@@ -881,6 +885,10 @@ iter BlockDom.these(param tag: iterKind) where tag == iterKind.leader {
 // natural composition and might help with my fears about how
 // stencil communication will be done on a per-locale basis.
 //
+// TODO: rewrite the index transformations in this and similar
+// leaders+followers to use un/densify, which were created for that.
+// If un/densify add overhead, need to eliminate it.
+//
 // TODO: Can we just re-use the DefaultRectangularDom follower here?
 //
 iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
@@ -892,13 +900,14 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
     chpl__testParWriteln("Block domain follower invoked on ", followThis);
 
   var t: rank*range(idxType, stridable=stridable||anyStridable(followThis));
-  type strType = chpl__signedType(idxType);
   for param i in 0..rank-1 {
-    var stride = whole.dim(i).stride: strType;
-    // not checking here whether the new low and high fit into idxType
-    var low = (stride * followThis(i).lowBound:strType):idxType;
-    var high = (stride * followThis(i).highBound:strType):idxType;
-    t(i) = ((low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType).safeCast(t(i).type);
+    const wholeDim  = whole.dim(i);
+    const followDim = followThis(i);
+    var low  = wholeDim.orderToIndex(followDim.low);
+    var high = wholeDim.orderToIndex(followDim.high);
+    if ! wholeDim.chpl_hasPositiveStride() then low <=> high;
+    t(i) = ( low..high by (wholeDim.stride*followDim.stride)
+           ).safeCast(t(i).type);
   }
   for i in {(...t)} {
     yield i;
@@ -1219,7 +1228,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
   var lowIdx: rank*idxType;
 
   for param i in 0..rank-1 {
-    var stride = dom.whole.dim(i).stride;
+    const stride = dom.whole.dim(i).stride;
     // NOTE: Not bothering to check to see if these can fit into idxType
     var low = followThis(i).lowBound * abs(stride):idxType;
     var high = followThis(i).highBound * abs(stride):idxType;
@@ -1246,7 +1255,8 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
 
     local {
       use CTypes; // Needed to cast from c_void_ptr in the next line
-      const narrowArrSection = __primitive("_wide_get_addr", arrSection):arrSection.type?;
+      const narrowArrSection =
+        __primitive("_wide_get_addr", arrSection):arrSection.type?;
       ref myElems = _to_nonnil(narrowArrSection).myElems;
       foreach i in myFollowThisDom do yield myElems[i];
     }
@@ -1572,8 +1582,7 @@ proc BlockArr.doiBulkTransferToKnown(srcDom, destClass:BlockArr, destDom) : bool
 where this.sparseLayoutType == unmanaged DefaultDist &&
       destClass.sparseLayoutType == unmanaged DefaultDist &&
       !disableBlockDistBulkTransfer {
-  _doSimpleBlockTransfer(destClass, destDom, this, srcDom);
-  return true;
+  return _doSimpleBlockTransfer(destClass, destDom, this, srcDom);
 }
 
 // this = Block
@@ -1581,8 +1590,7 @@ proc BlockArr.doiBulkTransferFromKnown(destDom, srcClass:BlockArr, srcDom) : boo
 where this.sparseLayoutType == unmanaged DefaultDist &&
       srcClass.sparseLayoutType == unmanaged DefaultDist &&
       !disableBlockDistBulkTransfer {
-  _doSimpleBlockTransfer(this, destDom, srcClass, srcDom);
-  return true;
+  return _doSimpleBlockTransfer(this, destDom, srcClass, srcDom);
 }
 
 proc BlockArr.canDoOptimizedSwap(other) {
@@ -1650,6 +1658,8 @@ proc BlockArr.doiOptimizedSwap(other) where debugOptimizedSwap {
 }
 
 private proc _doSimpleBlockTransfer(Dest, destDom, Src, srcDom) {
+  if !chpl_allStridesArePositive(Dest, destDom, Src, srcDom) then return false;
+
   if debugBlockDistBulkTransfer then
     writeln("In Block=Block Bulk Transfer: Dest[", destDom, "] = Src[", srcDom, "]");
 
@@ -1684,12 +1694,15 @@ private proc _doSimpleBlockTransfer(Dest, destDom, Src, srcDom) {
       }
     }
   }
+
+  return true;
 }
 
 // Overload for any transfer *to* Block, if the RHS supports transfers to a
 // DefaultRectangular
 proc BlockArr.doiBulkTransferFromAny(destDom, Src, srcDom) : bool
 where canDoAnyToBlock(this, destDom, Src, srcDom) {
+  if !chpl_allStridesArePositive(this, destDom, Src, srcDom) then return false;
 
   if debugBlockDistBulkTransfer then
     writeln("In BlockDist.doiBulkTransferFromAny");
@@ -1714,6 +1727,7 @@ where canDoAnyToBlock(this, destDom, Src, srcDom) {
 // For assignments of the form: DefaultRectangular = Block
 proc BlockArr.doiBulkTransferToKnown(srcDom, Dest:DefaultRectangularArr, destDom) : bool
 where !disableBlockDistBulkTransfer {
+  if !chpl_allStridesArePositive(this, srcDom, Dest, destDom) then return false;
 
   if debugBlockDistBulkTransfer then
     writeln("In BlockDist.doiBulkTransferToKnown(DefaultRectangular)");
@@ -1739,6 +1753,8 @@ where !disableBlockDistBulkTransfer {
 // For assignments of the form: Block = DefaultRectangular
 proc BlockArr.doiBulkTransferFromKnown(destDom, Src:DefaultRectangularArr, srcDom) : bool
 where !disableBlockDistBulkTransfer {
+  if !chpl_allStridesArePositive(this, destDom, Src, srcDom) then return false;
+
   if debugBlockDistBulkTransfer then
     writeln("In BlockArr.doiBulkTransferFromKnown(DefaultRectangular)");
 

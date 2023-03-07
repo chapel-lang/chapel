@@ -1868,8 +1868,11 @@ module DefaultRectangular {
     return true;
   }
 
+  // optimization opportunity: if negative strides cancel out themselves,
+  // return true and invoke complexTransferComm(), switching neg. to positive
   private proc _canDoComplexTransfer(A, aView, B, bView) {
-    return useBulkTransferStride;
+    return useBulkTransferStride &&
+           chpl_allStridesArePositive(A, aView, B, bView);
   }
 
   override proc DefaultRectangularArr.doiCanBulkTransferRankChange() param do return true;
@@ -2019,6 +2022,8 @@ module DefaultRectangular {
   might be different if this is a transfer involving an Array View.
 
   Assumes row-major ordering.
+  Assumes positive strides for both the source and the destination,
+  because complexTransferComm() seems to require that.
 
   Depends on adjustBlkOffStrForNewDomain having been called in ChapelArray
   before entering this function.
