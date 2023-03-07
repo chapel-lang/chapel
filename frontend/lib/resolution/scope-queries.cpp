@@ -2211,12 +2211,12 @@ findAllModulesUsedImportedInTreeQuery(Context* context, ID id);
 // Key is ID of use/import, value is target module ID. We use a map here
 // because the C++ standard map maintains ordering, which should sort all
 // the use/import by their lexical order (via ID ordering).
-static std::map<ID, ID>
-findAllModulesUsedImportedInTreeImpl(Context* context, ID id) {
-  if (id.isEmpty()) return {};
+static void findAllModulesUsedImportedInTreeImpl(Context* context,
+                                                 std::map<ID, ID>& ret,
+                                                 ID id) {
+  if (id.isEmpty()) return;
 
   auto ast = parsing::idToAst(context, id);
-  std::map<ID, ID> ret;
 
   if (auto scope = scopeForId(context, id)) {
     if (auto rvs = resolveVisibilityStmts(context, scope)) {
@@ -2228,22 +2228,18 @@ findAllModulesUsedImportedInTreeImpl(Context* context, ID id) {
     }
   }
 
-  // Recurse, but only use a query if the child is a module.
+  // Recurse, but skip modules, since we do not consider their use/imports.
   for (auto child : ast->children()) {
-    auto cid = child->id();
-    auto cm = child->isModule()
-      ? findAllModulesUsedImportedInTreeQuery(context, cid)
-      : findAllModulesUsedImportedInTreeImpl(context, cid);
-    ret.insert(cm.begin(), cm.end());
+    if (child->isModule()) continue;
+    findAllModulesUsedImportedInTreeImpl(context, ret, child->id());
   }
-
-  return ret;
 }
 
 static const std::map<ID, ID>&
 findAllModulesUsedImportedInTreeQuery(Context* context, ID id) {
   QUERY_BEGIN(findAllModulesUsedImportedInTreeQuery, context, id);
-  auto ret = findAllModulesUsedImportedInTreeImpl(context, id);
+  std::map<ID, ID> ret;
+  findAllModulesUsedImportedInTreeImpl(context, ret, id);
   return QUERY_END(ret);
 }
 
@@ -2308,7 +2304,6 @@ moduleInitializationOrderImpl(Context* context, ID entrypoint) {
     if (scope->autoUsesModules()) {
       if (auto autoModScope = scopeForAutoModule(context)) {
         auto id = autoModScope->id();
-
         moduleInitVisitModules(context, id, seen, idTrigger, ret);
       }
     }
@@ -2320,6 +2315,16 @@ moduleInitializationOrderImpl(Context* context, ID entrypoint) {
   return ret;
 }
 
+/**
+  TODO: Modules can be elided if their initializer body is trivial. If a
+  module 'M' is elided, then all the modules that it uses have to be lifted
+  into the set of modules required by modules that use 'M'. This can
+  change which modules trigger initialization.
+
+  TODO: Modules can also be elided if they are not live - that is, no
+  mentions of a module are found in any code starting from the 'entrypoint'
+  module, transitively across modules.
+*/
 const std::vector<std::pair<ID, ID>>&
 moduleInitializationOrder(Context* context, ID entrypoint) {
   QUERY_BEGIN(moduleInitializationOrder, context, entrypoint);
