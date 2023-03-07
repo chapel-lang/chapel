@@ -399,6 +399,7 @@ class BorrowedIdsWithName {
 
   bool operator==(const BorrowedIdsWithName& other) const {
     return filterFlags_ == other.filterFlags_ &&
+           excludeFlags_ == other.excludeFlags_ &&
            numVisibleIds_ == other.numVisibleIds_ &&
            idv_ == other.idv_ &&
            moreIdvs_ == other.moreIdvs_;
@@ -410,6 +411,7 @@ class BorrowedIdsWithName {
   size_t hash() const {
     size_t ret = 0;
     ret = hash_combine(ret, chpl::hash(filterFlags_));
+    ret = hash_combine(ret, chpl::hash(excludeFlags_));
     ret = hash_combine(ret, chpl::hash(numVisibleIds_));
     ret = hash_combine(ret, chpl::hash(moreIdvs_));
     if (moreIdvs_ == nullptr) {
