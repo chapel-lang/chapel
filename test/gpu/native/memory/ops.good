@@ -1,0 +1,6 @@
+warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
+
+Start testing chpl_gpu_memset
+1 1 1 
+End testing chpl_gpu_memset
+
