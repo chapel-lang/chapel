@@ -36,6 +36,42 @@ other languages).
 
 .. include:: ChapelSysCTypes.rst
 
+.. type:: c_ptr
+
+   Represents a local C pointer for the purpose of C integration. This class
+   represents the equivalent to a C language pointer. Instances of this class
+   support assignment to other instances or nil, == or != comparison with a
+   ``c_void_ptr`` or with ``nil``, and casting to another ``c_ptr`` type or to
+   the ``c_void_ptr`` type.
+
+   As with a Chapel class, a ``c_ptr`` can be tested non-nil simply
+   by including it in an if statement conditional, like so:
+
+   .. code-block:: chapel
+
+     var x: c_ptr = c_ptrTo(...);
+     if x then do writeln("x is not nil");
+     if !x then do writeln("x is nil");
+
+   Additionally, a ``c_ptr`` can be output like so:
+
+   .. code-block:: chapel
+
+     var x: c_ptr = c_ptrTo(...);
+     writeln(x); // outputs nil or e.g. 0xabc123000000
+
+.. type:: c_array
+
+   Represents a C array with fixed size.  A variable of type c_array
+   can coerce to a c_ptr with the same element type.  In that event, the
+   pointer will be equivalent to `c_ptrTo(array[0])`.  A c_array behaves
+   similarly to a homogeneous tuple except that its indices start at 0 and it is
+   guaranteed to be stored in contiguous memory.  A c_array variable has value
+   semantics. Declaring one as a function local variable will create the array
+   elements in the function's stack. Assigning or copy initializing will result
+   in copying the elements (vs resulting in two pointers that refer to the same
+   elements).  A `nil` c_array is not representable in Chapel.
+
 */
 
 module CTypes {
@@ -85,38 +121,6 @@ module CTypes {
     return __primitive("cast", c_void_ptr, x) == c_nil;
   }
 
-  /*
-
-    Represents a local C pointer for the purpose of C integration. This class
-    represents the equivalent to a C language pointer. Instances of this class
-    support assignment to other instances or nil, == or != comparison with a
-    ``c_void_ptr`` or with ``nil``, and casting to another ``c_ptr`` type or to
-    the ``c_void_ptr`` type.
-
-    As with a Chapel class, a ``c_ptr`` can be tested non-nil simply
-    by including it in an if statement conditional, like so:
-
-    .. code-block:: chapel
-
-      var x: c_ptr = c_ptrTo(...);
-      if x then do writeln("x is not nil");
-      if !x then do writeln("x is nil");
-
-    Additionally, a ``c_ptr`` can be output like so:
-
-    .. code-block:: chapel
-
-      var x: c_ptr = c_ptrTo(...);
-      writeln(x); // outputs nil or e.g. 0xabc123000000
-
-  */
-
-  /*
-  .. type:: c_ptr
-
-    Some information about c_ptr here...
-  */
-
   pragma "data class"
   pragma "no object"
   pragma "no default functions"
@@ -129,59 +133,33 @@ module CTypes {
 
     /* The type that this pointer points to */
     type eltType;
-    /* Retrieve the i'th element (zero based) from a pointer to an array.
-      Does the equivalent of ptr[i] in C.
-    */
-    inline proc this(i: integral) ref {
-      return __primitive("array_get", this, i);
-    }
-    /* Get element pointed to directly by this pointer. If the pointer
-      refers to an array, this will return ptr[0].
-    */
-    inline proc deref() ref {
-      return __primitive("array_get", this, 0);
-    }
     /* Print this pointer */
     inline proc writeThis(ch) throws {
       (this:c_void_ptr).writeThis(ch);
     }
   }
 
-  /*
-  This class represents a C array with fixed size.  A variable of type c_array
-  can coerce to a c_ptr with the same element type.  In that event, the
-  pointer will be equivalent to `c_ptrTo(array[0])`.  A c_array behaves
-  similarly to a homogeneous tuple except that its indices start at 0 and it is
-  guaranteed to be stored in contiguous memory.  A c_array variable has value
-  semantics. Declaring one as a function local variable will create the array
-  elements in the function's stack. Assigning or copy initializing will result
-  in copying the elements (vs resulting in two pointers that refer to the same
-  elements).  A `nil` c_array is not representable in Chapel.
+  /* Retrieve the i'th element (zero based) from a pointer to an array.
+    Does the equivalent of ptr[i] in C.
   */
+  inline proc c_ptr.this(i: integral) ref {
+    return __primitive("array_get", this, i);
+  }
+  /* Get element pointed to directly by this pointer. If the pointer
+    refers to an array, this will return ptr[0].
+  */
+  inline proc c_ptr.deref() ref {
+    return __primitive("array_get", this, 0);
+  }
+
   pragma "c_array record"
   pragma "default intent is ref if modified"
+  pragma "no doc"
   record c_array {
     /* The array element type */
     type eltType;
     /* The fixed number of elements */
     param size;
-
-    proc init(type eltType, param size) {
-      this.eltType = eltType;
-      this.size = size;
-      this.complete();
-      var i = 0;
-      while i < size {
-        // create a default value we'll transfer into the element
-        pragma "no auto destroy"
-        var default: eltType;
-        // this use of primitive works around an order-of-resolution issue.
-        ref eltRef = __primitive("array_get", this, i);
-        // this is a move, transferring ownership
-        __primitive("=", eltRef, default);
-        i += 1;
-      }
-    }
 
     proc deinit() {
       var i = 0;
@@ -192,35 +170,12 @@ module CTypes {
       }
     }
 
-    /* Retrieve the i'th element (zero based) from the array.
-       Does the equivalent of arr[i] in C.
-       Includes bounds checking when such checks are enabled.
-    */
-    inline proc ref this(i: integral) ref : eltType {
-      if boundsChecking then
-        if i < 0 || i >= size then
-          HaltWrappers.boundsCheckHalt("c array index out of bounds " + i:string +
-                                       "(indices are 0.." + (size-1):string + ")");
-
-      return __primitive("array_get", this, i);
-    }
     pragma "no doc"
     inline proc const ref this(i: integral) const ref : eltType {
       if boundsChecking then
         if i < 0 || i >= size then
           HaltWrappers.boundsCheckHalt("c array index out of bounds " + i:string +
                                        "(indices are 0.." + (size-1):string + ")");
-
-      return __primitive("array_get", this, i);
-    }
-
-    /* As with the previous function, returns the i'th element (zero based)
-        from the array. This one emits a compilation error if i is out of bounds.
-    */
-    inline proc ref this(param i: integral) ref : eltType {
-      if i < 0 || i >= size then
-        compilerError("c array index out of bounds " + i:string +
-                      "(indices are 0.." + (size-1):string + ")");
 
       return __primitive("array_get", this, i);
     }
@@ -248,16 +203,58 @@ module CTypes {
       ch.readWriteLiteral("]");
     }
 
-    proc init=(other: c_array) {
-      this.eltType = other.eltType;
-      this.size = other.size;
-      this.complete();
-      for i in 0..#size {
-        pragma "no auto destroy"
-        var value: eltType = other[i];
-        // this is a move, transferring ownership
-        __primitive("=", this(i), value);
-      }
+  }
+
+  proc c_array.init(type eltType, param size) {
+    this.eltType = eltType;
+    this.size = size;
+    this.complete();
+    var i = 0;
+    while i < size {
+      // create a default value we'll transfer into the element
+      pragma "no auto destroy"
+      var default: eltType;
+      // this use of primitive works around an order-of-resolution issue.
+      ref eltRef = __primitive("array_get", this, i);
+      // this is a move, transferring ownership
+      __primitive("=", eltRef, default);
+      i += 1;
+    }
+  }
+
+  /* Retrieve the i'th element (zero based) from the array.
+     Does the equivalent of arr[i] in C.
+     Includes bounds checking when such checks are enabled.
+  */
+  inline proc ref c_array.this(i: integral) ref : eltType {
+    if boundsChecking then
+      if i < 0 || i >= size then
+        HaltWrappers.boundsCheckHalt("c array index out of bounds " + i:string +
+                                     "(indices are 0.." + (size-1):string + ")");
+
+    return __primitive("array_get", this, i);
+  }
+
+  /* As with the previous function, returns the i'th element (zero based)
+      from the array. This one emits a compilation error if i is out of bounds.
+  */
+  inline proc ref c_array.this(param i: integral) ref : eltType {
+    if i < 0 || i >= size then
+      compilerError("c array index out of bounds " + i:string +
+                    "(indices are 0.." + (size-1):string + ")");
+
+    return __primitive("array_get", this, i);
+  }
+
+  proc c_array.init=(other: c_array) {
+    this.eltType = other.eltType;
+    this.size = other.size;
+    this.complete();
+    for i in 0..#size {
+      pragma "no auto destroy"
+      var value: eltType = other[i];
+      // this is a move, transferring ownership
+      __primitive("=", this(i), value);
     }
   }
 
