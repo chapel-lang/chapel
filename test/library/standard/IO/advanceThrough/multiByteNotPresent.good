@@ -1,2 +1,2 @@
-EofError: end of file (in advanceThrough(string) with path "multiByteInput.txt" offset 70)
-EofError: end of file (in advanceThrough(bytes) with path "multiByteInput.txt" offset 70)
+UnexpectedEofError: short read or write (separator not found in advanceThrough(string))
+UnexpectedEofError: short read or write (separator not found in advanceThrough(bytes))

@@ -1175,7 +1175,7 @@ private extern proc qio_channel_write_byte(threadsafe:c_int, ch:qio_channel_ptr_
 
 private extern proc qio_channel_offset_unlocked(ch:qio_channel_ptr_t):int(64);
 private extern proc qio_channel_advance(threadsafe:c_int, ch:qio_channel_ptr_t, nbytes:int(64)):errorCode;
-private extern proc qio_channel_advance_past_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:c_int):errorCode;
+private extern proc qio_channel_advance_past_byte(threadsafe:c_int, ch:qio_channel_ptr_t, byte:c_int, consume:bool):errorCode;
 
 private extern proc qio_channel_mark(threadsafe:c_int, ch:qio_channel_ptr_t):errorCode;
 private extern proc qio_channel_revert_unlocked(ch:qio_channel_ptr_t);
@@ -3137,21 +3137,22 @@ proc _channel.advancePastByte(byte:uint(8)) throws {
   var err:errorCode = 0;
   on this._home {
     try this.lock(); defer { this.unlock(); }
-    err = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int);
+    err = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int, true);
   }
   if err then try this._ch_ioerror(err, "in advanceToByte");
 }
 
 /*
-   Read until a separator is found, leaving the input marker just after it.
+   Read until a separator is found, leaving the fileReader position just after it.
 
-   If the separator cannot be found, the input marker is left at EOF and an
+   If the separator cannot be found, the fileReader position is left at EOF and an
    ``EofError`` is thrown.
 
    :arg separator: The separator to match with. If this is a single-byte
     :type:`~String.string`, a much faster implementation will be used.
 
-   :throws EofError: Thrown if the requested ``separator`` could not be found.
+   :throws EofError: Thrown if the fileReader position is at EOF.
+   :throws UnexpectedEofError: Thrown if the requested ``separator`` could not be found.
    :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.advanceThrough(separator: string) throws {
@@ -3161,24 +3162,33 @@ proc fileReader.advanceThrough(separator: string) throws {
 
     if separator.numBytes == 1 {
       // fast advance to the single-byte separator
-      err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int);
+      err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int, true);
       if err then try this._ch_ioerror(err, "in advanceThrough(string)");
     } else {
       // slow advance to multi-byte separator
-      const (readError, _, relByteOffset, _) = _findSeparator(separator, -1, this._channel_internal);
+      const (readError, found, relByteOffset, _) = _findSeparator(separator, -1, this._channel_internal);
+      // handle system errors
       if readError != 0 && readError != EEOF then try this._ch_ioerror(readError, "in advanceThrough(string)");
 
       // advance past the separator
       err = qio_channel_advance(false, this._channel_internal, relByteOffset + separator.numBytes);
-      if err then try this._ch_ioerror(err, "in advanceThrough(string)");
+      // handle system errors
+      if err != 0 && err != EEOF then try this._ch_ioerror(err, "in advanceThrough(string)");
+
+      // didn't read anything
+      if err == EEOF && relByteOffset == 0
+        then try this._ch_ioerror(err, "in advanceThrough(string)");
+      // separator not found
+      else if err == EEOF && !found
+        then throw new UnexpectedEofError("separator not found in advanceThrough(string)");
     }
   }
 }
 
 /*
-   Read until a separator is found, leaving the input marker just after it.
+   Read until a separator is found, leaving the fileReader position just after it.
 
-   If the separator cannot be found, the input marker is left at EOF and an
+   If the separator cannot be found, the fileReader position is left at EOF and an
    ``EofError`` is thrown.
 
    :arg separator: The separator to match with. If this is a single-byte
@@ -3194,24 +3204,32 @@ proc fileReader.advanceThrough(separator: bytes) throws {
 
     if separator.numBytes == 1 {
       // fast advance to the single-byte separator
-      err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int);
+      err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int, true);
       if err then try this._ch_ioerror(err, "in advanceThrough(bytes)");
     } else {
       // slow advance to multi-byte separator or EOF
-      const (readError, _, relByteOffset) = _findSeparator(separator, -1, this._channel_internal);
+      const (readError, found, relByteOffset) = _findSeparator(separator, -1, this._channel_internal);
       if readError != 0 && readError != EEOF then try this._ch_ioerror(readError, "in advanceThrough(bytes)");
 
       // advance past the separator
       err = qio_channel_advance(false, this._channel_internal, relByteOffset + separator.numBytes);
-      if err then try this._ch_ioerror(err, "in advanceThrough(bytes)");
+      // handle system errors
+      if err != 0 && err != EEOF then try this._ch_ioerror(err, "in advanceThrough(bytes)");
+
+      // didn't read anything
+      if err == EEOF && relByteOffset == 0
+        then try this._ch_ioerror(err, "in advanceThrough(bytes)");
+      // separator not found
+      else if err == EEOF && !found
+        then throw new UnexpectedEofError("separator not found in advanceThrough(bytes)");
     }
   }
 }
 
 /*
-   Read until a separator is found, leaving the input marker just before it.
+   Read until a separator is found, leaving the fileReader position just before it.
 
-   If the separator cannot be found, the input marker is left at EOF and an
+   If the separator cannot be found, the fileReader position is left at EOF and an
    ``EofError`` is thrown.
 
    :arg separator: The separator to match with. If this is a single-byte
@@ -3227,14 +3245,14 @@ proc fileReader.advanceTo(separator: string) throws {
 
     if separator.numBytes == 1 {
       // fast advance to the single-byte separator
-      err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int);
+      err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int, false);
       if err then try this._ch_ioerror(err, "in advanceTo(string)");
 
-      // revert by a single byte
-      const offset = qio_channel_offset_unlocked(this._channel_internal),
-            endOffset = qio_channel_end_offset_unlocked(this._channel_internal);
-      err = qio_channel_seek(this._channel_internal, offset-1, endOffset);
-      if err then try this._ch_ioerror(err, "in advanceTo(string)");
+      // // revert by a single byte
+      // const offset = qio_channel_offset_unlocked(this._channel_internal),
+      //       endOffset = qio_channel_end_offset_unlocked(this._channel_internal);
+      // err = qio_channel_seek(this._channel_internal, offset-1, endOffset);
+      // if err then try this._ch_ioerror(err, "in advanceTo(string)");
     } else {
       // slow advance to multi-byte separator or EOF
       const (readError, found, relByteOffset, _) = _findSeparator(separator, -1, this._channel_internal);
@@ -3251,9 +3269,9 @@ proc fileReader.advanceTo(separator: string) throws {
 }
 
 /*
-   Read until a separator is found, leaving the input marker just before it.
+   Read until a separator is found, leaving the fileReader position just before it.
 
-   If the separator cannot be found, the input marker is left at EOF and an
+   If the separator cannot be found, the fileReader position is left at EOF and an
    ``EofError`` is thrown.
 
    :arg separator: The separator to match with. If this is a single-byte
@@ -3269,14 +3287,14 @@ proc fileReader.advanceTo(separator: bytes) throws {
 
     if separator.numBytes == 1 {
       // fast advance to the single-byte separator
-      err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int);
+      err = qio_channel_advance_past_byte(false, this._channel_internal, separator.toByte():c_int, false);
       if err then try this._ch_ioerror(err, "in advanceTo(bytes)");
 
-      // revert by a single byte
-      const offset = qio_channel_offset_unlocked(this._channel_internal),
-            endOffset = qio_channel_end_offset_unlocked(this._channel_internal);
-      err = qio_channel_seek(this._channel_internal, offset-1, endOffset);
-      if err then try this._ch_ioerror(err, "in advanceTo(bytes)");
+      // // revert by a single byte
+      // const offset = qio_channel_offset_unlocked(this._channel_internal),
+      //       endOffset = qio_channel_end_offset_unlocked(this._channel_internal);
+      // err = qio_channel_seek(this._channel_internal, offset-1, endOffset);
+      // if err then try this._ch_ioerror(err, "in advanceTo(bytes)");
     } else {
       // slow advance to multi-byte separator or EOF
       const (readError, found, relByteOffset) = _findSeparator(separator, -1, this._channel_internal);
@@ -5489,7 +5507,7 @@ proc _channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lo
 
   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading line.
   :throws SystemError: Thrown if data could not be read from the channel for another reason.
-  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the fileReader position at the beginning of the offending line.
  */
 proc _channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
       where (t == uint(8) || t == int(8)) && a.rank == 1 && a.isRectangular() && !a.stridable {
@@ -5642,7 +5660,7 @@ proc readStringBytesData(ref s /*: string or bytes*/,
 
   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if data could not be read from the channel.
-  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the fileReader position at the beginning of the offending line.
 */
 proc _channel.readLine(ref s: string,
                       maxSize=-1,
@@ -5728,7 +5746,7 @@ proc _channel.readLine(ref s: string,
 
   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if data could not be read from the channel.
-  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the fileReader position at the beginning of the offending line.
 */
 proc _channel.readLine(ref b: bytes,
                       maxSize=-1,
@@ -5816,7 +5834,7 @@ proc _channel.readLine(ref b: bytes,
 
   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if data could not be read from the channel.
-  :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the fileReader position at the beginning of the offending line.
 */
 proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws where t==string || t==bytes {
   var retval: t;
@@ -5831,7 +5849,7 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
 
   If the separator is found in the next ``maxSize`` codepoints/bytes, the input
   marker is left immediately after it. If it isn't found, a ``BadFormatError``
-  is thrown and the input marker is left in its original position.
+  is thrown and the fileReader position is left in its original position.
 
   To match with more than one separator, use the overload of
   :proc:`~Regex.fileReader.readThrough` that accepts a :type:`~Regex.regex`
@@ -5856,7 +5874,7 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
   :throws UnexpectedEofError: Thrown if nothing could be returned (i.e., the
     ``fileReader`` was already at EOF or a separator was the only thing remaining).
   :throws BadFormatError: Thrown if the separator was not found in the next
-    `maxSize` codepoints/bytes. The input marker is not moved.
+    `maxSize` codepoints/bytes. The fileReader position is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t throws
@@ -5874,7 +5892,7 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
 
   If the separator is found in the next ``maxSize`` codepoints, the input
   marker is left immediately after it. If it isn't found, a ``BadFormatError``
-  is thrown and the input marker is left in its original position.
+  is thrown and the fileReader position is left in its original position.
 
   To match with more than one separator, use the overload of
   :proc:`~Regex.fileReader.readThrough` that accepts a :type:`~Regex.regex`
@@ -5890,7 +5908,7 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
     ``fileReader`` was already at EOF or a separator was the only thing remaining).
 
   :throws BadFormatError: Thrown if the separator was not found in the next
-    `maxSize` codepoints. The input marker is not moved.
+    `maxSize` codepoints. The fileReader position is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripSeparator=false): bool throws {
@@ -5921,7 +5939,7 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
 
   If the separator is found in the next ``maxSize`` bytes, the input
   marker is left immediately after it. If it isn't found, a ``BadFormatError``
-  is thrown and the input marker is left in its original position.
+  is thrown and the fileReader position is left in its original position.
 
   To match with more than one separator, use the overload of
   :proc:`~Regex.fileReader.readThrough` that accepts a :type:`~Regex.regex`
@@ -5937,7 +5955,7 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
     ``fileReader`` was already at EOF or a separator was the only thing remaining).
 
   :throws BadFormatError: Thrown if the separator was not found in the next
-    `maxSize` bytes. The input marker is not moved.
+    `maxSize` bytes. The fileReader position is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSeparator=false): bool throws {
@@ -5966,7 +5984,7 @@ proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSep
 
   If the separator is found in the next ``maxSize`` codepoints/bytes, the input
   marker is left immediately before it. If it isn't found, a ``BadFormatError``
-  is thrown and the input marker is left in its original position.
+  is thrown and the fileReader position is left in its original position.
 
   To match with more than one separator, use the overload of
   :proc:`~Regex.fileReader.readTo` that accepts a :type:`~Regex.regex`
@@ -5988,7 +6006,7 @@ proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSep
   :throws UnexpectedEofError: Thrown if nothing could be returned (i.e., the
     ``fileReader`` was already at EOF).
   :throws BadFormatError: Thrown if the separator was not found in the next
-    `maxSize` codepoints/bytes. The input marker is not moved.
+    `maxSize` codepoints/bytes. The fileReader position is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
@@ -6007,7 +6025,7 @@ proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
 
   If the separator is found in the next ``maxSize`` codepoints, the input
   marker is left immediately before it. If it isn't found, a ``BadFormatError``
-  is thrown and the input marker is left in its original position.
+  is thrown and the fileReader position is left in its original position.
 
   To match with more than one separator, use the overload of
   :proc:`~Regex.fileReader.readTo` that accepts a :type:`~Regex.regex`
@@ -6021,7 +6039,7 @@ proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
     ``fileReader`` was already at EOF).
 
   :throws BadFormatError: Thrown if the separator was not found in the next
-    `maxSize` codepoints. The input marker is not moved.
+    `maxSize` codepoints. The fileReader position is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throws {
@@ -6045,7 +6063,7 @@ proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throw
 
   If the separator is found in the next ``maxSize`` bytes, the input
   marker is left immediately before it. If it isn't found, a ``BadFormatError``
-  is thrown and the input marker is left in its original position.
+  is thrown and the fileReader position is left in its original position.
 
   To match with more than one separator, use the overload of
   :proc:`~Regex.fileReader.readTo` that accepts a :type:`~Regex.regex`
@@ -6059,7 +6077,7 @@ proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throw
     ``fileReader`` was already at EOF).
 
   :throws BadFormatError: Thrown if the separator was not found in the next
-    `maxSize` bytes. The input marker is not moved.
+    `maxSize` bytes. The fileReader position is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readTo(separator: bytes, ref b: bytes, maxSize=-1): bool throws {

@@ -3609,7 +3609,7 @@ error:
   return err;
 }
 
-qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, int byte)
+qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, int byte, bool consume_byte)
 {
   qioerr err=0;
 
@@ -3627,7 +3627,7 @@ qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, in
       void* found = memchr(ch->cached_cur, byte, len);
       if (found != NULL) {
         ssize_t off = qio_ptr_diff(found, ch->cached_cur);
-        off += 1;
+        if ( consume_byte ) off += 1;
         ch->cached_cur = qio_ptr_add(ch->cached_cur, off);
         break;
       } else {
@@ -3636,13 +3636,20 @@ qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, in
       }
     } else {
       // There's not enough data in the buffer, apparently. Try it the slow way.
+      qio_channel_mark(false, ch);
       ssize_t amt_read;
       uint8_t tmp;
       err = _qio_slow_read(ch, &tmp, 1, &amt_read);
       if( err == 0 ) {
-        if (tmp == byte) break;
+        if (tmp == byte) {
+          if ( consume_byte ) qio_channel_commit_unlocked(ch);
+          else qio_channel_revert_unlocked(ch);
+          break;
+        }
         if (amt_read != 1) err = QIO_ESHORT;
       }
+      // advance 1 byte
+      qio_channel_revert_unlocked(ch);
     }
   }
 
