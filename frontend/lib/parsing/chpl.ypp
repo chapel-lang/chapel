@@ -662,6 +662,8 @@ pragma_ls:
 ;
 
 stmt:
+  // attribute group is handled via context->noteAttribute(), it's just here
+  // to allow for parsing
   attribute_group attribute_receiver
   {
     $$ = $2;
@@ -2146,8 +2148,7 @@ enum_ls:
     $$ = context->makeList($1);
     context->resetAttributeGroupPartsState();
   }
-|
-  enum_ls TCOMMA
+| enum_ls TCOMMA
   {
     $$ = $1;
     context->clearCommentsBefore(@2);
@@ -2163,8 +2164,7 @@ enum_ls:
     context->appendList($1, $4);
     context->resetAttributeGroupPartsState();
   }
-|
-  attribute_decl_stmt_ls enum_item
+| attribute_decl_stmt_ls enum_item
   {
     $$ = context->makeList($2);
     context->resetAttributeGroupPartsState();
