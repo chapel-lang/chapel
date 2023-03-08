@@ -1,4 +1,4 @@
-fileLines.chpl:5: warning: `file.lines` is deprecated; please use `fileReader.lines` instead
+fileLines.chpl:5: warning: `file.lines` is deprecated; please use `fileReader.lines` by calling `.reader().lines() on your `file`
 use IO;
 
 var f = open("fileLines.chpl", ioMode.r);
