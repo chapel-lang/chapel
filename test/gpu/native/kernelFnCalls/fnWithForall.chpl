@@ -1,5 +1,5 @@
 /* This is a complicated test. See comments next to foreaches */
-use GPUDiagnostics;
+use GpuDiagnostics;
 config const n = 10;
 
 proc foo(n) {
@@ -15,7 +15,7 @@ proc foo(n) {
 }
 
 
-startVerboseGPU();
+startVerboseGpu();
 on here.gpus[0] {
   var A: [0..#n] real;
 
@@ -30,6 +30,6 @@ on here.gpus[0] {
 }
 
 var x2 = foo(n);  // This should not cause any kernel launch
-stopVerboseGPU();
+stopVerboseGpu();
 
 writeln(x2);
