@@ -5849,13 +5849,16 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
   Read until the given separator is found, returning the contents of the
   ``fileReader`` through that point.
 
-  If the separator is found in the next ``maxSize`` codepoints/bytes, the input
-  marker is left immediately after it. If it isn't found, a ``BadFormatError``
-  is thrown and the fileReader position is left in its original position.
+  If the separator is found, the ``fileReader`` position is left immediately
+  after it. If the separator could not be found in the next ``maxSize``
+  codepoints/bytes, a ``BadFormatError`` is thrown and the ``fileReader``'s
+  position is not changed. If EOF is reached before finding the separator,
+  the remainder of the ``fileReader``'s contents are returned and the position
+  is left at EOF.
 
-  To match with more than one separator, use the overload of
-  :proc:`~Regex.fileReader.readThrough` that accepts a :type:`~Regex.regex`
-  separator.
+  To match with multiple separators, or a more complex separator, use the
+  overload of :proc:`~Regex.fileReader.readThrough` that accepts a
+  :type:`~Regex.regex` separator.
 
   .. note::
 
@@ -5874,9 +5877,7 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
     up to (and possibly including) the separator.
 
   :throws EofError: Thrown if nothing could be returned (i.e., the
-    ``fileReader`` was already at EOF or a separator was the only thing remaining).
-  :throws UnexpectedEofError: Thrown if EOF was reached before the separator
-    could be found. The fileReader position is not moved.
+    ``fileReader`` was already at EOF or a separator was the only sequence remaining).
   :throws BadFormatError: Thrown if the separator was not found in the next
     `maxSize` codepoints/bytes. The fileReader position is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
@@ -5894,13 +5895,8 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
   Read until the given separator is found, returning the contents of the
   ``fileReader`` through that point.
 
-  If the separator is found in the next ``maxSize`` codepoints, the input
-  marker is left immediately after it. If it isn't found, a ``BadFormatError``
-  is thrown and the fileReader position is left in its original position.
-
-  To match with more than one separator, use the overload of
-  :proc:`~Regex.fileReader.readThrough` that accepts a :type:`~Regex.regex`
-  separator.
+  See the above :proc:`overload <fileReader.readThrough>` of this method for
+  more details.
 
   :arg separator: The separator to match with.
   :arg s: The :type:`~String.string` to read into. Contents will be overwritten.
@@ -5909,10 +5905,8 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
   :arg stripSeparator: Whether to strip the separator from the returned ``string``.
     If ``true``, the separator will not be included in ``s``.
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
-    ``fileReader`` was already at EOF or a separator was the only thing remaining).
+    ``fileReader`` was already at EOF or a separator was the only sequence remaining).
 
-  :throws UnexpectedEofError: Thrown if EOF was reached before the separator
-    could be found. The fileReader position is not moved.
   :throws BadFormatError: Thrown if the separator was not found in the next
     `maxSize` codepoints. The fileReader position is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
@@ -5925,8 +5919,6 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
     const (searchErr, found, relByteOffset, numCodepoints) = _findSeparator(separator, maxSize, this._channel_internal);
     // handle system error
     if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readThrough(string)");
-    if searchErr == EEOF && relByteOffset > 0 then
-      throw new UnexpectedEofError("separator not found in readThrough(string)");
 
     // compute the number of bytes and codeopints to read into 's'
     const bytesToRead = if found then relByteOffset + separator.numBytes else relByteOffset,
@@ -5946,13 +5938,8 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
   Read until the given separator is found, returning the contents of the
   ``fileReader`` through that point.
 
-  If the separator is found in the next ``maxSize`` bytes, the input
-  marker is left immediately after it. If it isn't found, a ``BadFormatError``
-  is thrown and the fileReader position is left in its original position.
-
-  To match with more than one separator, use the overload of
-  :proc:`~Regex.fileReader.readThrough` that accepts a :type:`~Regex.regex`
-  separator.
+  See the above :proc:`overload <fileReader.readThrough>` of this method for
+  more details.
 
   :arg separator: The separator to match with.
   :arg s: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
@@ -5961,10 +5948,8 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
   :arg stripSeparator: Whether to strip the separator from the returned ``bytes``.
     If ``true``, the separator will not be included in ``b``.
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
-    ``fileReader`` was already at EOF or a separator was the only thing remaining).
+    ``fileReader`` was already at EOF or a separator was the only sequence remaining).
 
-  :throws UnexpectedEofError: Thrown if EOF was reached before the separator
-    could be found. The fileReader position is not moved.
   :throws BadFormatError: Thrown if the separator was not found in the next
     `maxSize` bytes. The fileReader position is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
@@ -5976,8 +5961,6 @@ proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSep
     // find the byte offset to the start of the separator, 'maxSize' bytes, or EOF (whichever comes first)
     const (searchErr, found, relByteOffset) = _findSeparator(separator, maxSize, this._channel_internal);
     if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readThrough(bytes)");
-    if searchErr == EEOF && relByteOffset > 0 then
-      throw new UnexpectedEofError("separator not found in readThrough(bytes)");
 
     // compute the number of bytes to read into 'b'
     const bytesToRead = if found then relByteOffset + separator.numBytes else relByteOffset;
@@ -5995,13 +5978,16 @@ proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSep
   Read until the given separator is found, returning the contents of the
   ``fileReader`` up to that point.
 
-  If the separator is found in the next ``maxSize`` codepoints/bytes, the input
-  marker is left immediately before it. If it isn't found, a ``BadFormatError``
-  is thrown and the fileReader position is left in its original position.
+  If the separator is found, the ``fileReader`` position is left immediately
+  after it. If the separator could not be found in the next ``maxSize``
+  codepoints/bytes, a ``BadFormatError`` is thrown and the ``fileReader``'s
+  position is not changed. If EOF is reached before finding the separator,
+  the remainder of the ``fileReader``'s contents are returned and the position
+  is left at EOF.
 
-  To match with more than one separator, use the overload of
-  :proc:`~Regex.fileReader.readTo` that accepts a :type:`~Regex.regex`
-  separator.
+  To match with multiple separators, or a more complex separator, use the
+  overload of :proc:`~Regex.fileReader.readTo` that accepts a
+  :type:`~Regex.regex` separator.
 
   .. note::
 
@@ -6016,7 +6002,7 @@ proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSep
   :returns: A ``string`` or ``bytes`` with the contents of the channel up to
     the ``separator``.
 
-  :throws UnexpectedEofError: Thrown if nothing could be returned (i.e., the
+  :throws EofError: Thrown if nothing could be returned (i.e., the
     ``fileReader`` was already at EOF).
   :throws BadFormatError: Thrown if the separator was not found in the next
     `maxSize` codepoints/bytes. The fileReader position is not moved.
@@ -6027,7 +6013,7 @@ proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
 {
   var ret: t;
   if !this.readTo(separator, ret, maxSize)
-    then throw new UnexpectedEofError("Encountered EOF in readTo(" + t:string + ")");
+    then throw new EofError("Encountered EOF in readTo(" + t:string + ")");
   return ret;
 }
 
@@ -6036,13 +6022,8 @@ proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
   Read until the given separator is found, returning the contents of the
   ``fileReader`` up to that point.
 
-  If the separator is found in the next ``maxSize`` codepoints, the input
-  marker is left immediately before it. If it isn't found, a ``BadFormatError``
-  is thrown and the fileReader position is left in its original position.
-
-  To match with more than one separator, use the overload of
-  :proc:`~Regex.fileReader.readTo` that accepts a :type:`~Regex.regex`
-  separator.
+  See the above :proc:`overload <fileReader.readTo>` of this method for
+  more details.
 
   :arg separator: The separator to match with.
   :arg s: The :type:`~String.string` to read into. Contents will be overwritten.ß
@@ -6056,31 +6037,26 @@ proc fileReader.readTo(separator: ?t, maxSize=-1): t throws
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throws {
-  var didRead = false;
+  var atEof = false;
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
     const (searchErr, _, relByteOffset, numCodepoints) = _findSeparator(separator, maxSize, this._channel_internal);
     if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in fileReader.readTo(string)");
-    didRead = relByteOffset > 0;
+    atEof = searchErr == EEOF && relByteOffset == 0;
 
     const err = readStringBytesData(s, this._channel_internal, relByteOffset, numCodepoints);
     if err then try this._ch_ioerror(err, "in fileReader.readTo(string)");
   }
-  return didRead;
+  return !atEof;
 }
 
 /*
   Read until the given separator is found, returning the contents of the
   ``fileReader`` up to that point.
 
-  If the separator is found in the next ``maxSize`` bytes, the input
-  marker is left immediately before it. If it isn't found, a ``BadFormatError``
-  is thrown and the fileReader position is left in its original position.
-
-  To match with more than one separator, use the overload of
-  :proc:`~Regex.fileReader.readTo` that accepts a :type:`~Regex.regex`
-  separator.
+  See the above :proc:`overload <fileReader.readTo>` of this method for
+  more details.
 
   :arg separator: The separator to match with.
   :arg b: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
@@ -6094,18 +6070,18 @@ proc fileReader.readTo(separator: string, ref s: string, maxSize=-1): bool throw
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readTo(separator: bytes, ref b: bytes, maxSize=-1): bool throws {
-  var didRead = false;
+  var atEof = false;
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
     const (searchErr, _, relByteOffset) = _findSeparator(separator, maxSize, this._channel_internal);
     if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in fileReader.readTo(bytes)");
-    didRead = relByteOffset > 0;
+    atEof = searchErr == EEOF && relByteOffset == 0;
 
     const err = readStringBytesData(b, this._channel_internal, relByteOffset, 0);
     if err then try this._ch_ioerror(err, "in fileReader.readTo(bytes)");
   }
-  return didRead;
+  return !atEof;
 }
 
 

@@ -35,7 +35,7 @@ proc readComplexPattern(param refBuffer, r, pattern: ?t) where refBuffer == fals
   // read to EOF
   writeln(r.readTo(pattern).strip());
 
-  // try reading at EOF (should throw UnexpectedEofError)
+  // try reading at EOF (should throw EofError)
   try {
     writeln(r.readTo(pattern));
   } catch e {
