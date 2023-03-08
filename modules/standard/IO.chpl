@@ -234,18 +234,19 @@ Functions for fileReader and fileWriter Creation
 Synchronization of fileReader and fileWriter Data and Avoiding Data Races
 -------------------------------------------------------------------------
 
-FileWriters (and files) contain locks in order to keep their operation safe for
-multiple tasks. When creating a fileWriter, it is possible to disable the lock
-(for performance reasons) by passing ``locking=false`` to e.g.  file.writer().
-Some fileWriter methods - in particular those beginning with the underscore -
-should only be called on locked fileWriters.  With these methods, it is possible
-to get or set the fileWriter style, or perform I/O "transactions" (see
-:proc:`fileWriter.mark` and :proc:`fileWriter._mark`, e.g.). To use these
-methods, first lock the fileWriter with :proc:`fileWriter.lock`, call the
+FileReaders and fileWriters (and files) contain locks in order to keep their
+operation safe for multiple tasks. When creating a fileReader or fileWriter, it
+is possible to disable the lock (for performance reasons) by passing
+``locking=false`` to e.g.  file.writer().  Some fileReader and fileWriter
+methods - in particular those beginning with the underscore - should only be
+called on locked fileReaders or fileWriters.  With these methods, it is possible
+to get or set the fileReader or fileWriter style, or perform I/O "transactions"
+(see :proc:`fileWriter.mark` and :proc:`fileWriter._mark`, e.g.). To use these
+methods, e.g., first lock the fileWriter with :proc:`fileWriter.lock`, call the
 methods you need, then unlock the fileWriter with :proc:`fileWriter.unlock`.
 Note that in the future, we may move to alternative ways of calling these
-functions that guarantee that they are not called on a fileWriter without the
-appropriate locking.
+functions that guarantee that they are not called on a fileReader or fileWriter
+without the appropriate locking.
 
 Besides data races that can occur if locking is not used in fileWriters when it
 should be, it is also possible for there to be data races on file data that is
@@ -291,7 +292,7 @@ Performing I/O with FileReaders and FileWriters
 
 FileReaders contain read methods and fileWriters contain write methods, which
 are generic methods that can read or write anything, and can also take optional
-arguments such as I/O style or. These functions generally take any number of
+arguments such as I/O style. These functions generally take any number of
 arguments and `throw` if there was an error. See:
 
  * :proc:`fileWriter.write`
@@ -2014,9 +2015,9 @@ proc open(path:string, mode:ioMode, hints=ioHintSet.empty,
 
 /*
 
-Open a file on a filesystem. Note that once the
-file is open, you will need to use a :proc:`file.reader` or :proc:`file.writer`
-to create a fileReader or fileWriter to actually perform I/O operations
+Open a file on a filesystem. Note that once the file is open, you will need to
+use a :proc:`file.reader` to create a fileReader or :proc:`file.writer` to
+create a fileWriter to actually perform I/O operations
 
 :arg path: which file to open (for example, "some/file.txt").
 :arg mode: specify whether to open the file for reading or writing and
@@ -2128,8 +2129,8 @@ proc openfd(fd: c_int, hints=ioHintSet.empty, style:iostyle):file throws {
 /*
 
 Create a Chapel file that works with a system file descriptor.  Note that once
-the file is open, you will need to use a :proc:`file.reader` or
-:proc:`file.writer` to create a fileReader or fileWriter to actually perform I/O
+the file is open, you will need to use a :proc:`file.reader` to create a
+fileReader or :proc:`file.writer` to create a fileWriter to actually perform I/O
 operations
 
 The system file descriptor will be closed when the Chapel file is closed.
@@ -2189,8 +2190,8 @@ Create a Chapel :record:`file` that wraps around an open C file. A pointer to
 a C ``FILE`` object can be obtained via Chapel's
 :ref:`C Interoperability <primers-C-interop-using-C>` functionality.
 
-Once the Chapel file is created, you will need to use a :proc:`file.reader` or
-:proc:`file.writer` to create a fileReader or fileWriter to perform I/O
+Once the Chapel file is created, you will need to use a :proc:`file.reader` to
+create a fileReader or :proc:`file.writer` to create a fileWriter to perform I/O
 operations on the C file.
 
 .. note::
@@ -2253,8 +2254,8 @@ proc opentmp(hints=ioHintSet.empty, style:iostyle):file throws {
 /*
 
 Open a temporary file. Note that once the file is open, you will need to use a
-:proc:`file.reader` or :proc:`file.writer` to create a fileReader or fileWriter
-to actually perform I/O operations.
+:proc:`file.reader` to create a fileReader or :proc:`file.writer` to create a
+fileWriter to actually perform I/O operations.
 
 The temporary file will be created in an OS-dependent temporary directory,
 for example "/tmp" is the typical location. The temporary file will be
@@ -2310,8 +2311,8 @@ proc openMemFile(style:iostyle):file throws {
 
 Open a file that is backed by a buffer in memory that will not persist when the
 file is closed.  Note that once the file is open, you will need to use a
-:proc:`file.reader` or :proc:`file.writer` to create a fileReader or fileWriter
-to actually perform I/O operations.
+:proc:`file.reader` to create a fileReader or :proc:`file.writer` to create a
+fileWriter to actually perform I/O operations.
 
 The resulting file supports both reading and writing.
 
