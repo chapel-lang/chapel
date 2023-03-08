@@ -597,11 +597,11 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
   result.setType(ct);
 
   bool isObjectType = false;
-  bool isMissingBundledType = false;
   if (auto bct = ct->toBasicClassType()) {
     isObjectType = bct->isObjectType();
   }
-  isMissingBundledType = CompositeType::isMissingBundledType(context, ct->id());
+  bool isMissingBundledType =
+    CompositeType::isMissingBundledType(context, ct->id());
 
   if (isObjectType || isMissingBundledType) {
     // no need to try to resolve the fields for the object type,
