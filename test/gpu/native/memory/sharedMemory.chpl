@@ -1,4 +1,5 @@
 use CTypes;
+use GPU only syncThreads;
 
 config param N=16;
 config param BLOCK_SIZE;
@@ -14,7 +15,7 @@ on here.gpus[0] {
     // After the sync the array in shared memory will be:
     //   [100, 200, 300, 400, ...]
     dst_ptr_casted[i] = ((i+1) * 100) : uint;
-    __primitive("gpu syncThreads");
+    syncThreads();
 
     // Grab value in shared memory assigned by neighbor to your right and add
     // your id

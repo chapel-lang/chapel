@@ -35,7 +35,7 @@ export proc transposeMatrix(odata: c_ptr(dataType), idata: c_ptr(dataType), widt
   }
 
   // synchronize the threads
-  __primitive("gpu syncThreads");
+  syncThreads();
 
   // Swap coordinates and write back out
   idxX = blockIdxY * blockSize + threadIdxX;

@@ -10,6 +10,7 @@ use List;
 use CTypes;
 use ResultDB;
 use GpuDiagnostics;
+use GPU only syncThreads;
 
 config const noisy = false;
 config const gpuDiags = false;
@@ -273,7 +274,7 @@ proc scanLSB(const val:uint(32), ref s_data : c_ptr(uint(32)), threadId: uint(32
     // Shared memory is 256 uints long, set first half to 0's
     var idx = threadId;
     s_data[idx] = 0 : uint(32);
-    __primitive("gpu syncThreads");
+    syncThreads();
 
     // Set second half to thread local sum i.e.
     // the sum of the 4 elems from global mem
@@ -281,21 +282,21 @@ proc scanLSB(const val:uint(32), ref s_data : c_ptr(uint(32)), threadId: uint(32
 
     // Unrolled scan in local memory
     var t : uint(32);
-    s_data[idx] = val;     __primitive("gpu syncThreads");
-    t = s_data[idx -  1];  __primitive("gpu syncThreads");
-    s_data[idx] += t;      __primitive("gpu syncThreads");
-    t = s_data[idx -  2];  __primitive("gpu syncThreads");
-    s_data[idx] += t;      __primitive("gpu syncThreads");
-    t = s_data[idx -  4];  __primitive("gpu syncThreads");
-    s_data[idx] += t;      __primitive("gpu syncThreads");
-    t = s_data[idx -  8];  __primitive("gpu syncThreads");
-    s_data[idx] += t;      __primitive("gpu syncThreads");
-    t = s_data[idx - 16];  __primitive("gpu syncThreads");
-    s_data[idx] += t;      __primitive("gpu syncThreads");
-    t = s_data[idx - 32];  __primitive("gpu syncThreads");
-    s_data[idx] += t;      __primitive("gpu syncThreads");
-    t = s_data[idx - 64];  __primitive("gpu syncThreads");
-    s_data[idx] += t;      __primitive("gpu syncThreads");
+    s_data[idx] = val;     syncThreads();
+    t = s_data[idx -  1];  syncThreads();
+    s_data[idx] += t;      syncThreads();
+    t = s_data[idx -  2];  syncThreads();
+    s_data[idx] += t;      syncThreads();
+    t = s_data[idx -  4];  syncThreads();
+    s_data[idx] += t;      syncThreads();
+    t = s_data[idx -  8];  syncThreads();
+    s_data[idx] += t;      syncThreads();
+    t = s_data[idx - 16];  syncThreads();
+    s_data[idx] += t;      syncThreads();
+    t = s_data[idx - 32];  syncThreads();
+    s_data[idx] += t;      syncThreads();
+    t = s_data[idx - 64];  syncThreads();
+    s_data[idx] += t;      syncThreads();
 
     return s_data[idx] - val;  // convert inclusive -> exclusive
 }
@@ -375,7 +376,7 @@ proc radixSortBlocks(radixGlobalWorkSize, const nbits : uint(32), const startbit
                 numtrue[0] = address[3] + lsb[3];
             }
 
-            __primitive("gpu syncThreads");
+            syncThreads();
 
             // Determine the rank -- position in the block
             // If you are 0 --> your position is the scan of 0's
@@ -393,7 +394,7 @@ proc radixSortBlocks(radixGlobalWorkSize, const nbits : uint(32), const startbit
             sMem[(rank[2] & 3) * localSize + (rank[2] >> 2)] = key[2];
             sMem[(rank[3] & 3) * localSize + (rank[3] >> 2)] = key[3];
 
-            __primitive("gpu syncThreads");
+            syncThreads();
 
             // Read keys out of local mem into register, in prep for
             // write out to global mem
@@ -401,7 +402,7 @@ proc radixSortBlocks(radixGlobalWorkSize, const nbits : uint(32), const startbit
             key[1] = sMem[tid +     localSize];
             key[2] = sMem[tid + 2 * localSize];
             key[3] = sMem[tid + 3 * localSize];
-            __primitive("gpu syncThreads");
+            syncThreads();
 
             // Scatter values into local mem
             sMem[(rank[0] & 3) * localSize + (rank[0] >> 2)] = value[0];
@@ -409,7 +410,7 @@ proc radixSortBlocks(radixGlobalWorkSize, const nbits : uint(32), const startbit
             sMem[(rank[2] & 3) * localSize + (rank[2] >> 2)] = value[2];
             sMem[(rank[3] & 3) * localSize + (rank[3] >> 2)] = value[3];
 
-            __primitive("gpu syncThreads");
+            syncThreads();
 
             // Read keys out of local mem into register, in prep for
             // write out to global mem
@@ -417,7 +418,7 @@ proc radixSortBlocks(radixGlobalWorkSize, const nbits : uint(32), const startbit
             value[1] = sMem[tid + 1 * localSize];
             value[2] = sMem[tid + 2 * localSize];
             value[3] = sMem[tid + 3 * localSize];
-            __primitive("gpu syncThreads");
+            syncThreads();
 
         }
         for param j in 0..3:uint(32) do keysOut[base + j] = key[j];
@@ -453,7 +454,7 @@ proc findRadixOffsets(findGlobalWorkSize, ref keys : [] uint(32), ref counters :
         // index for each radix.
         if localId < 16 then sStartPointers[localId] = 0;
 
-        __primitive("gpu syncThreads");
+        syncThreads();
 
         if (localId > 0) && (sRadix1[localId] != sRadix1[localId - 1]) then
             sStartPointers[sRadix1[localId]] = localId;
@@ -461,12 +462,12 @@ proc findRadixOffsets(findGlobalWorkSize, ref keys : [] uint(32), ref counters :
         if sRadix1[localId + groupSize] != sRadix1[localId + groupSize - 1] then
             sStartPointers[sRadix1[localId + groupSize]] = localId + groupSize;
 
-        __primitive("gpu syncThreads");
+        syncThreads();
 
         if localId < 16 then
             blockOffsets[groupId*16 + localId] = sStartPointers[localId];
 
-        __primitive("gpu syncThreads");
+        syncThreads();
 
         // Compute the size of each block
         if (localId > 0) && (sRadix1[localId] != sRadix1[localId - 1]) then
@@ -483,7 +484,7 @@ proc findRadixOffsets(findGlobalWorkSize, ref keys : [] uint(32), ref counters :
             sStartPointers[sRadix1[2 * groupSize - 1]] =
                 2 * groupSize - sStartPointers[sRadix1[2 * groupSize - 1]];
 
-        __primitive("gpu syncThreads");
+        syncThreads();
 
         if localId < 16 then
             counters[localId * totalBlocks + groupId] = sStartPointers[localId];
@@ -536,7 +537,7 @@ proc reorderData (reorderGlobalWorkSize, startbit: uint(32),
             sBlockOffsets[threadId] = blockOffsets[blockId * 16 + threadId];
         }
 
-        __primitive("gpu syncThreads");
+        syncThreads();
 
         var radix : uint(32) = (sKeys2[threadId] >> startbit) & 0xF;
         var globalOffset : uint(32) = sOffsets[radix] + threadId - sBlockOffsets[radix];
@@ -556,29 +557,29 @@ proc scanLocalMem(const val : uint(32), ref s_data: c_ptr(uint(32)), in idx : ui
 
     // Shared mem is 512 uints long, set first half to 0
     s_data[idx] = 0 : uint(32);
-    __primitive("gpu syncThreads");
+    syncThreads();
 
     // Set 2nd half to thread local sum (sum of the 4 elems from global mem)
     idx += SCAN_BLOCK_SIZE : uint(32); // += 256
 
     var t : uint(32);
-    s_data[idx] = val;     __primitive("gpu syncThreads");
-    t = s_data[idx -  1];  __primitive("gpu syncThreads");
-    s_data[idx] += t;      __primitive("gpu syncThreads");
-    t = s_data[idx -  2];  __primitive("gpu syncThreads");
-    s_data[idx] += t;      __primitive("gpu syncThreads");
-    t = s_data[idx -  4];  __primitive("gpu syncThreads");
-    s_data[idx] += t;      __primitive("gpu syncThreads");
-    t = s_data[idx -  8];  __primitive("gpu syncThreads");
-    s_data[idx] += t;      __primitive("gpu syncThreads");
-    t = s_data[idx - 16];  __primitive("gpu syncThreads");
-    s_data[idx] += t;      __primitive("gpu syncThreads");
-    t = s_data[idx - 32];  __primitive("gpu syncThreads");
-    s_data[idx] += t;      __primitive("gpu syncThreads");
-    t = s_data[idx - 64];  __primitive("gpu syncThreads");
-    s_data[idx] += t;      __primitive("gpu syncThreads");
-    t = s_data[idx - 128]; __primitive("gpu syncThreads");
-    s_data[idx] += t;      __primitive("gpu syncThreads");
+    s_data[idx] = val;     syncThreads();
+    t = s_data[idx -  1];  syncThreads();
+    s_data[idx] += t;      syncThreads();
+    t = s_data[idx -  2];  syncThreads();
+    s_data[idx] += t;      syncThreads();
+    t = s_data[idx -  4];  syncThreads();
+    s_data[idx] += t;      syncThreads();
+    t = s_data[idx -  8];  syncThreads();
+    s_data[idx] += t;      syncThreads();
+    t = s_data[idx - 16];  syncThreads();
+    s_data[idx] += t;      syncThreads();
+    t = s_data[idx - 32];  syncThreads();
+    s_data[idx] += t;      syncThreads();
+    t = s_data[idx - 64];  syncThreads();
+    s_data[idx] += t;      syncThreads();
+    t = s_data[idx - 128]; syncThreads();
+    s_data[idx] += t;      syncThreads();
 
     return s_data[idx-1];
 }
@@ -627,7 +628,7 @@ proc scanKernel(numBlocks : uint(32), ref g_odata: [] uint(32), ref g_idata: [] 
         }
 
         res = scanLocalMem(res, s_data, tid);
-        __primitive("gpu syncThreads");
+        syncThreads();
 
         // If we have to store the sum for the block, have the last work item
         // in the block write it out
@@ -677,7 +678,7 @@ proc vectorAddUniform4(ref d_vector: [] uint(32), const ref d_uniforms : [] uint
 
         var address : uint(32) = threadId + (blockId * SCAN_BLOCK_SIZE * 4) : uint(32);
 
-        __primitive("gpu syncThreads");
+        syncThreads();
 
         // 4 elems per thread
         for idx in 0..3:uint(32) {

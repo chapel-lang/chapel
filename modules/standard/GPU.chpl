@@ -170,4 +170,13 @@ module GPU
 
     chpl_gpu_comm_wait(gpuHandle);
   }
+
+  /*
+     Synchronize threads within a block using the underlying GPU's
+     synchronization primitive.
+   */
+  pragma "no doc"
+  inline proc syncThreads() {
+    __primitive("gpu syncThreads");
+  }
 }
