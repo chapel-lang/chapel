@@ -10,7 +10,7 @@ use List;
 use CTypes;
 use ResultDB;
 use GpuDiagnostics;
-use GPU only syncThreads;
+use GPU only syncThreads, createSharedArray;
 
 config const noisy = false;
 config const gpuDiags = false;
@@ -331,8 +331,7 @@ proc radixSortBlocks(radixGlobalWorkSize, const nbits : uint(32), const startbit
 
         __primitive("gpu set blockSize", SORT_BLOCK_SIZE);
 
-        var smVoidPtr : c_void_ptr = __primitive("gpu allocShared", 512*numBytes(uint(32)));
-        var sMem = smVoidPtr : c_ptr(uint(32));
+        var sMem = createSharedArray(uint(32), 512);
 
         // This does not work. Gives us an internal error
         // var tid = __primitive("gpu threadIdx x");
@@ -367,8 +366,7 @@ proc radixSortBlocks(radixGlobalWorkSize, const nbits : uint(32), const startbit
             // issues with the compiler causing no kernels to be launched
             var address : 4*uint(32) = scan4(lsb, sMem, tid);
 
-            var numTrueVoidPtr = __primitive("gpu allocShared", numBytes(uint(32)));
-            var numtrue = numTrueVoidPtr : c_ptr(uint(32));
+            var numtrue = createSharedArray(uint(32), 1);
 
             // Store the total number of elems with an LSB of 0
             // to shared mem
@@ -433,11 +431,8 @@ proc findRadixOffsets(findGlobalWorkSize, ref keys : [] uint(32), ref counters :
 
         __primitive("gpu set blockSize", SCAN_BLOCK_SIZE);
 
-        var startVoidPtr = __primitive("gpu allocShared", 16*numBytes(uint(32)));
-        var sStartPointers = startVoidPtr : c_ptr(uint(32));
-
-        var sRadixVoidPtr = __primitive("gpu allocShared", 2*SCAN_BLOCK_SIZE*numBytes(uint(32)));
-        var sRadix1 = sRadixVoidPtr : c_ptr(uint(32));
+        var sStartPointers = createSharedArray(uint(32), 16);
+        var sRadix1 = createSharedArray(uint(32), 2*SCAN_BLOCK_SIZE);
 
         const groupId = i / SCAN_BLOCK_SIZE : uint(32);
         const localId = i % SCAN_BLOCK_SIZE: uint(32);
@@ -506,18 +501,14 @@ proc reorderData (reorderGlobalWorkSize, startbit: uint(32),
         // sKeys2 in the CUDA version is an array of 256 uint2's (256*2 = 512)
         // Since we cannot allocate space for uint2 in Chapel we make a flat
         // array of size 512 and use the proper offsets to mimic the CUDA version
-        var sKeys2VoidPtr = __primitive("gpu allocShared", 512*numBytes(uint(32)));
-        var sKeys2 = sKeys2VoidPtr : c_ptr(uint(32));
+        var sKeys2 = createSharedArray(uint(32), 512);
 
         // Same deal with sValues2 as with sKeys2
-        var sValues2VoidPtr = __primitive("gpu allocShared", 512*numBytes(uint(32)));
-        var sValues2 = sValues2VoidPtr : c_ptr(uint(32));
+        var sValues2 = createSharedArray(uint(32), 512);
 
-        var sOffsetsVoidPtr = __primitive("gpu allocShared", 16*numBytes(uint(32)));
-        var sOffsets = sOffsetsVoidPtr : c_ptr(uint(32));
+        var sOffsets = createSharedArray(uint(32), 16);
 
-        var sBlockOffsetsVoidPtr = __primitive("gpu allocShared", 16*numBytes(uint(32)));
-        var sBlockOffsets = sBlockOffsetsVoidPtr : c_ptr(uint(32));
+        var sBlockOffsets = createSharedArray(uint(32), 16);
 
         // I do not port sKeys1 and sValues1 because of the way I handle sKeys2 and sValues2
         // sKeys1 and sValues1 are the flat versions of sKeys2 and sValues2, but since in
@@ -594,8 +585,7 @@ proc scanKernel(numBlocks : uint(32), ref g_odata: [] uint(32), ref g_idata: [] 
         __primitive("gpu set blockSize", SCAN_BLOCK_SIZE);
 
 
-        var s_dataVoidPtr = __primitive("gpu allocShared", 512*numBytes(uint(32)));
-        var s_data = s_dataVoidPtr : c_ptr(uint(32));
+        var s_data = createSharedArray(uint(32), 512);
 
         //Load data insto shared mem
         var tempData : 4*uint(32);
@@ -671,8 +661,7 @@ proc vectorAddUniform4(ref d_vector: [] uint(32), const ref d_uniforms : [] uint
         const blockId = i / SCAN_BLOCK_SIZE : uint(32);
         const threadId = i % SCAN_BLOCK_SIZE : uint(32);
 
-        var uniVoidPtr = __primitive("gpu allocShared", numBytes(uint(32)));
-        var uni = uniVoidPtr : c_ptr(uint(32));
+        var uni = createSharedArray(uint(32), 1);
 
         if(threadId == 0) then uni[0] = d_uniforms[blockId];
 

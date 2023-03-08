@@ -179,4 +179,16 @@ module GPU
   inline proc syncThreads() {
     __primitive("gpu syncThreads");
   }
+
+  /*
+    Allocate block shared memory, enough to allocate `size` elements of
+    `eltType`. Returns a `c_ptr` to the allocated array. Note that although
+    every thread in a block calls this procedure, the same shared array is
+    returned to all of them.
+   */
+  pragma "no doc"
+  inline proc createSharedArray(type eltType, param size): c_ptr(eltType) {
+    const voidPtr = __primitive("gpu allocShared", numBytes(eltType)*size);
+    return voidPtr : c_ptr(eltType);
+  }
 }
