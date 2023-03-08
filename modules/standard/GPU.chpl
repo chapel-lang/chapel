@@ -175,18 +175,20 @@ module GPU
      Synchronize threads within a block using the underlying GPU's
      synchronization primitive.
    */
-  pragma "no doc"
   inline proc syncThreads() {
     __primitive("gpu syncThreads");
   }
 
   /*
-    Allocate block shared memory, enough to allocate `size` elements of
-    `eltType`. Returns a `c_ptr` to the allocated array. Note that although
-    every thread in a block calls this procedure, the same shared array is
-    returned to all of them.
+    Allocate block shared memory, enough to store ``size`` elements of
+    ``eltType``. Returns a :type:`CTypes.c_ptr` to the allocated array. Note that
+    although every thread in a block calls this procedure, the same shared array
+    is returned to all of them.
+
+    :arg eltType: the type of elements to allocate the array for.
+
+    :arg size: the number of elements to allocate the array for.
    */
-  pragma "no doc"
   inline proc createSharedArray(type eltType, param size): c_ptr(eltType) {
     const voidPtr = __primitive("gpu allocShared", numBytes(eltType)*size);
     return voidPtr : c_ptr(eltType);
