@@ -5,15 +5,14 @@
 GPU Programming
 ===============
 
-Chapel includes preliminary work to target NVidia GPUs by generating and
-packing PTX assembly and linking against and using the CUDA driver API at
-runtime. This work is under active development and has not yet been tested
-under a wide variety of environments. We have tested it on systems with NVidia
-Tesla P100s using CUDA 11.0 and on a system with NVidia Ampere A100 with CUDA
-11.6. The current implementation will generate CUDA kernel code (PTX assembly)
-for certain ``forall`` and ``foreach`` loops and these kernels will be launched
-onto a GPU when the current locale (e.g. ``here``) is assigned to a special
-(sub)locale representing the GPU.
+Chapel includes preliminary work to target NVIDIA and AMD GPUs.  This work is
+under active development and has not yet been tested under a wide variety of
+environments although we have tested it with NVIDIA Tesla P100, V100, and RTX
+A2000 GPUs; for AMD we have tested it with MI60 and MI100 GPUs.
+
+The current implementation will generate GPU kernels for certain ``forall`` and
+``foreach`` loops and launch these onto a GPU when the current locale (e.g.
+``here``) is assigned to a special (sub)locale representing a GPU.
 
 For more information about what loops are eligible for GPU execution see the
 `Overview`_ section.  For more information about what is supported see the
@@ -39,8 +38,8 @@ default, be allocated into unified memory and be accessible on the GPU (see the
 `Memory Strategies`_ subsection for more information about alternate memory
 strategies).
 
-Chapel will launch CUDA kernels for all eligible loops that are encountered by
-tasks executing on a GPU sublocale.  Loops are eligible when:
+Chapel will launch kernels for all eligible loops that are encountered by tasks
+executing on a GPU sublocale.  Loops are eligible when:
 
 * They are order-independent (e.g., ``forall`` or ``foreach``).
 * They only make use of known compiler primitives that are fast and local. Here
@@ -117,26 +116,31 @@ Setup and Compilation
 ---------------------
 
 To enable GPU support set the environment variable ``CHPL_LOCALE_MODEL=gpu``
-before building Chapel. Chapel's build system will automatically try and deduce
-where your installation of CUDA exists. If the build system fails to do this,
-or you would like to use a different CUDA installation, you can set
-``CHPL_CUDA_PATH`` environment variable to the CUDA installation root.
+before building Chapel. 
+
+Chapel's build system will automatically try and deduce what type of GPU you
+have and where your installation of relevant runtime (e.g. CUDA or ROCM) are.
+If the type of GPU is not detected you may set ``CHPL_GPU_CODEGEN`` manually to
+either ``cuda`` (for NVIDIA GPUs) or ``rocm`` (for AMD GPUs). If the relevant
+runtime path is not automatically detected (or you would like to use a
+different installation) you may set ``CHPL_CUDA_PATH`` and/or
+``CHPL_ROCM_PATH``.
+
+You may also have to set the ``CHPL_GPU_ARCH`` environment variable.  When
+``CHPL_GPU_CODEGEN`` is set to ``cuda`` by default we target compute capability
+6.0 (``--cuda-gpu-arch=sm_60`` in clang).  When ``CHPL_GPU_CODEGEN`` is set to
+``rocm`` we assign ``CHPL_GPU_ARCH`` to ``gfx906`` by default.  You may modify
+this by changing  ``CHPL_GPU_ARCH`` or by passing it to ``chpl`` via
+``--gpu-arch``.
 
 We also suggest setting ``CHPL_RT_NUM_THREADS_PER_LOCALE=1`` (this is necessary
 if using CUDA 10).
 
-To compile a program simply execute ``chpl`` as normal. By default the generated
-code will target compute capability 6.0 (specifically by passing
-``--cuda-gpu-arch=sm_60`` when invoking clang). If you would like to target a
-different compute capability (necessary for example, when targeting Tesla K20
-GPUs) you can pass ``--gpu-arch`` to ``chpl`` and specify a different value
-there.  This may also be set using the ``CHPL_GPU_ARCH`` environment variable.
-
-If you would like to view debugging information you can pass ``--verbose`` to
-your generated executable. This output will show the invocation of CUDA kernel
-calls along with various other interactions with the GPU such as memory
-operations.  You may also use the :mod:`GpuDiagnostics` module to gather
-similar information.
+To compile a program simply execute ``chpl`` as normal.  If you would like to
+view debugging information you can pass ``--verbose`` to your generated
+executable. This output will show the invocation of CUDA kernel calls along
+with various other interactions with the GPU such as memory operations.  You
+may also use the :mod:`GPUDiagnostics` module to gather similar information.
 
 Requirements and Limitations
 ----------------------------
@@ -145,12 +149,15 @@ Because of the early nature of the GPU support project there are a number of
 limitations. We provide a (non exhaustive) list of these limitations in this
 section; many of them will be addressed in upcoming editions.
 
-* We currently only target NVIDIA GPUs (although we are working on adding
-  support for AMD GPUs; see the section under `Prototypical AMD GPU Support`_).
+* We currently support NVIDIA and AMD GPUs
 
 * ``LLVM`` must be used as Chapel's backend compiler (i.e.
   ``CHPL_LLVM`` must be set to ``system`` or ``bundled``). For more information
   about these settings see :ref:`Optional Settings <readme-chplenv>`.
+
+* If using a ``system`` LLVM it must have been built with support for the
+  relevant target of GPU you wish to generate code for (e.g.  NVPTX to target
+  NVIDIA GPUs and AMDGPU to target AMD GPUs).
 
 * If using a system install of ``LLVM`` we expect this to be the same
   version as the bundled version (currently 14). Older versions may
@@ -175,6 +182,12 @@ section; many of them will be addressed in upcoming editions.
 
 * Runtime checks such as bounds checks and nil-dereference checks are
   automatically disabled for CHPL_LOCALE_MODEL=gpu.
+
+* For AMD GPUs:
+
+    * Multiple locales are not supported
+
+    * Certain 64-bit math functions are unsupported
 
 * For loops to be considered eligible for execution on a GPU they
   must fulfill the requirements discussed in the `Overview`_ section.
@@ -220,7 +233,8 @@ Multi-Locale Support
 
 As of Chapel 1.27.0 the GPU locale model may be used alongside communication
 layers (values of ``CHPL_COMM``) other than ``none``. This enables programs to
-use GPUs across nodes.
+use GPUs across nodes.  We have only tested multi-locale support with NVIDIA
+GPUs although we intend to support it with AMD GPUs in a future release.
 
 In this mode, normal remote access is supported outside of loops that are
 offloaded to the GPU; however, remote access within a kernel is not supported.
@@ -246,10 +260,10 @@ For more examples see the tests under |multi_locale_dir|_ available from our `pu
 Memory Strategies
 ~~~~~~~~~~~~~~~~~
 
-Currently by default Chapel uses NVIDIA's unified memory feature to store data
-that is allocated on a GPU sublocale (i.e. ``here.gpus[0]``).  Under unified
-memory the CUDA driver implicitly manages the migration of data to and from the
-GPU as necessary.
+Currently by default Chapel uses unified memory feature to store data that is
+allocated on a GPU sublocale (i.e. ``here.gpus[0]``).  Under unified memory the
+CUDA driver implicitly manages the migration of data to and from the GPU as
+necessary.
 
 We provide an alternate memory allocation strategy that stores array data
 directly on the device and store other data on the host.  There are multiple
@@ -262,9 +276,9 @@ relatively new addition it hasn't been as thoroughly tested as our
 unified-memory based approach.
 
 To use this new strategy set the environment variable ``CHPL_GPU_MEM_STRATEGY``
-to ``array_on_device``.  For more examples that work with this strategy see
-the tests under |page_lock_mem_dir|_  available from our `public Github
-repository <https://github.com/chapel-lang/chapel>`_.
+to ``array_on_device``.  For more examples that work with this strategy see the
+tests under |page_lock_mem_dir|_  available from our `public Github repository
+<https://github.com/chapel-lang/chapel>`_.
 
 .. |page_lock_mem_dir| replace:: ``test/gpu/native/page-locked-mem/``
 .. _page_lock_mem_dir: https://github.com/chapel-lang/chapel/tree/main/test/gpu/native/page-locked-mem
@@ -277,26 +291,3 @@ reads or writes from the host into individual elements of array data allocated
 on the GPU (e.g.  ``use(A[i])`` or ``A[i] = ...``). Array data accessed "as a
 whole" (e.g. ``writeln(A)``) will work, however.
 
-Prototypical AMD GPU Support
-----------------------------
-
-We are working on adding AMD GPU support. A very early stage prototype
-is currently available in the compiler. It works in a similar manner to
-the NVidia GPU implementation: the Chapel compiler generates AMD HSA binary files and bundles
-them into the resulting executable. Currently, there is no runtime implementation
-that executes the generated kernels; however, ``extern C``
-code can be used to invoke the HIP API and manually launch a kernel. Furthermore,
-only procedures marked with ``pragma "codegen for GPU"`` are converted into
-kernels. See |extern_kernel_launch|_ for an example this in action.
-
-.. |extern_kernel_launch| replace:: ``test/gpu/native/amd/extern_kernel_launch.chpl``
-.. _extern_kernel_launch: https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/amd/extern_kernel_launch.chpl
-
-To try the AMD GPU support prototype, the process is generally the same as that
-found in `Setup and Compilation`_. Instead of configuring the path to the CUDA
-SDK, you will need to set the ``CHPL_ROCM_PATH`` to the location of the ROCm SDK
-on your system. Furthermore, you will need to adjust the ``CHPL_GPU_CODEGEN``
-environment variable to ``rocm``. The ``CHPL_GPU_ARCH`` environment variable
-(or the ``--gpu-arch`` compiler flag) can be used to select the GPU architecture;
-the table in `LLVM's AMD documentation <https://llvm.org/docs/AMDGPUUsage.html#processors>`_
-is useful to map GPUs to their architecture.
