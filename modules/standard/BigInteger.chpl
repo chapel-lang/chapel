@@ -1815,7 +1815,7 @@ module BigInteger {
         const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
         on __primitive("chpl_on_locale_num", aLoc) {
-          mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+          mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
         }
       }
 
