@@ -1,0 +1,2 @@
+--dyno --no-detailed-errors
+--dyno --detailed-errors

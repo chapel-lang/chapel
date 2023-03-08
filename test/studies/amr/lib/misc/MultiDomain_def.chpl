@@ -2,7 +2,7 @@
 public use BasicDataStructures;
 
 
-proc main {
+private proc main {
   
       
   const mD = new unmanaged MultiDomain( 2, false );

@@ -332,6 +332,11 @@ bool idIsParenlessFunction(Context* context, ID id);
 bool idIsPrivateDecl(Context* context, ID id);
 
 /**
+ Returns true if the ID is a function.
+ */
+bool idIsFunction(Context* context, ID id);
+
+/**
  Returns true if the ID is a method.
  */
 bool idIsMethod(Context* context, ID id);

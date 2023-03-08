@@ -285,9 +285,7 @@ module MainModule {
        error. */
     {
       import ModToUse.bar;
-      var bar = 4.0;
-
-      // writeln(bar); // multiple definition error
+      // var bar = 4.0; multiple definition error
     }
 
     /* If a symbol cannot be resolved directly within the local scope, then

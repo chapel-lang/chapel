@@ -150,6 +150,13 @@ namespace resolution {
   const std::vector<std::pair<ID, ID>>&
   moduleInitializationOrder(Context* context, ID entrypoint);
 
+  /**
+    Check for symbol names with multiple definitions within a scope.
+    This query only exists to emit errors.
+   */
+  void emitMultipleDefinedSymbolErrors(Context* context, const Scope* scope);
+
+
 } // end namespace resolution
 } // end namespace chpl
 #endif

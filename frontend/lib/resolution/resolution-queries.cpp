@@ -117,6 +117,10 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
 
   if (ast != nullptr) {
     if (const Module* mod = ast->toModule()) {
+      // check for multiply-defined symbols within the module
+      auto modScope = scopeForId(context, mod->id());
+      emitMultipleDefinedSymbolErrors(context, modScope);
+
       result.setupForSymbol(mod);
       for (auto child: mod->children()) {
         if (child->isComment() ||
@@ -161,6 +165,10 @@ scopeResolveModule(Context* context, ID id) {
 
   if (ast != nullptr) {
     if (const Module* mod = ast->toModule()) {
+      // check for multiply-defined symbols within the module
+      auto modScope = scopeForId(context, mod->id());
+      emitMultipleDefinedSymbolErrors(context, modScope);
+
       result.setupForSymbol(mod);
       for (auto child: mod->children()) {
         if (child->isComment() ||
