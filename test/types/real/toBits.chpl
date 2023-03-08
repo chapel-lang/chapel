@@ -7,6 +7,8 @@ param u32 = r32.toBits();
 var rv = r,
     rv32 = r32;
 
+writeln(r32.type:string);
+
 var uv = rv.toBits(),
     uv32 = rv32.toBits();
 
@@ -26,26 +28,32 @@ proc print(u, r) {
 }
 
 proc param (real(64)).toBits() param : uint {
-  param ui: uint(64) = __primitive("real64 as uint64", pi);
+  param ui: uint(64) = __primitive("real64 as uint64", this);
   return ui;
 }
 
 proc param (real(32)).toBits() param : uint(32) {
-  param ui: uint(32) = __primitive("real32 as uint32", pi);
+  param ui: uint(32) = __primitive("real32 as uint32", this);
   return ui;
 }
 
 inline proc (real(?w)).toBits(): uint(w) {
   use CTypes;
+  writeln("Converting real(",w,") to uint(",w,")");
   var src = this, dst:uint(w);
+  writeln("src is ", src);
+  writeln("its type is ", src.type:string);
+  
+  extern proc memcpy(dst, src, sz: c_size_t);
 
-  c_memcpy(c_ptrTo(dst), c_ptrTo(src), c_sizeof(src.type));
+  memcpy(c_ptrTo(dst), c_ptrTo(src), w/8);
+//  c_memcpy(c_ptrTo(dst), c_ptrTo(src), w/8);
   return dst;
 }
 
 // convert the IEEE 754 encoding inside a uint(w) to a real(w)
 
-inline proc type (real(?w)).asReal(x: uint(?k)): real(w) {
+inline proc type (uint(?w)).asReal(x: uint(?k)): real(w) {
   use CTypes;
   var src = x, dst:real(w);
 
