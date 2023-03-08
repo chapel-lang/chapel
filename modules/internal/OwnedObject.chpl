@@ -197,7 +197,8 @@ module OwnedObject {
       If the argument is `nil` it returns `nil`.
 
       .. note::
-         This is part of an new interface that will replace :proc:`owned.clear`.However, `release` is not as widely used as `clear` yet, so there may
+         This is part of an new interface that will replace :proc:`owned.clear`.
+         However, `release` is not as widely used as `clear` yet, so there may
          be some bugs we have not found yet. If you discover any bugs with
          `release`, please report them to us and fall back on `clear`.
     */
