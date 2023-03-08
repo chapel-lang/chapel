@@ -4,7 +4,7 @@ import glob
 import chpl_locale_model
 import chpl_llvm
 import shutil
-from utils import error, memoize, run_command
+from utils import error, memoize, run_command, which
 
 # Format:
 #   SDK path environment variable
@@ -17,14 +17,17 @@ GPU_TYPES = {
 }
 
 def determineGpuType():
-  nvccPath = shutil.which("nvcc")
-  hipccPath = shutil.which("hipcc")
-  if nvccPath and not hipccPath:
-    return('cuda')
-  if not nvccPath and hipccPath:
-    return('rocm')
-  error("Unable to determine GPU type, assign 'CHPL_GPU_CODEGEN' to one of {}".
-    format(GPU_TYPES.keys()))
+    gpuTypesFound = 0
+    typeFound = None
+    for gpuType in GPU_TYPES.keys():
+        if which(GPU_TYPES[gpuType][1]):
+            typeFound = gpuType
+            gpuTypesFound += 1
+
+    if gpuTypesFound != 1:
+        error("Unable to determine GPU type, assign 'CHPL_GPU_CODEGEN' to one of {}".
+            format(GPU_TYPES.keys()))
+    return typeFound
 
 @memoize
 def get():
@@ -125,5 +128,20 @@ def get_runtime():
             return chpl_gpu_runtime
     return get()
 
+def validateLlvmBuiltForRocm():
+    exists, returncode, my_stdout, my_stderr = utils.try_run_command(
+        [chpl_llvm.get_llvm_config(), "--targets-built"])
+
+    if not exists or returncode != 0:
+        return False
+
+    targets = my_stdout.strip().split(" ")
+    return "AMDGPU" in targets
+
+
+@memoize
 def validate(chplLocaleModel, chplComm):
-    pass
+    if get() == 'rocm':
+        if not validateLlvmBuiltForRocm():
+            error("LLVM not built for AMDGPU Consider setting CHPL_LLVM to 'bundled'")
+    return True
