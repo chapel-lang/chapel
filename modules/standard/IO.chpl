@@ -6443,9 +6443,10 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
 
   on this._home {
     try this.lock(); defer { this.unlock(); }
+    const tSize = c_sizeof(t) : c_ssize_t;
 
     if endian == ioendian.native {
-      e = try qio_channel_write_amt(false, this._channel_internal, data[0], data.size:c_ssize_t);
+      e = try qio_channel_write_amt(false, this._channel_internal, data[0], data.size:c_ssize_t * tSize);
 
       if e == EEOF {
         throw new owned UnexpectedEofError("Unable to write entire array of values in 'writeBinary'");

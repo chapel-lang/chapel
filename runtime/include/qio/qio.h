@@ -676,7 +676,7 @@ typedef struct qio_channel_s {
    * we allocate bufferspace (appending without updating av_end)
    * and then update av_end to be the end of the buffer.
    *
-   * right_mark_start is mark_space[mark_cur-1] or av_start if mark_cur==0.
+   * right_mark_start is mark_space[mark_cur] or av_start if mark_cur==0.
    *
    * How does marking interact with cached_cur/start/end?
    *  - mark positions are always offsets from get_offset which includes cached_cur.
