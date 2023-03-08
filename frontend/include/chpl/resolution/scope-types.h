@@ -407,7 +407,7 @@ class BorrowedIdsWithName {
     return idv_.id_;
   }
 
-  /** Returns the first IdAndVis in this list. */
+  /** Returns the first IdAndFlags in this list. */
   const IdAndFlags& firstIdAndFlags() const {
     return idv_;
   }
