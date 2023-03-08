@@ -1630,7 +1630,7 @@ proc fileReader.readTo(separator: regex(bytes), ref b: bytes, maxSize=-1): bool 
   return b.size > 0;
 }
 
-/* helper for: readThrough(regex) (and eventually regex versions of readTo, andvanceUpTo, advanceThrough)
+/* helper for: readThrough(regex), readTo(regex) (and eventually andvanceTo, advanceThrough)
 
   looks for a regex match in the next 'maxBytes' bytes in the channel
 
@@ -1652,7 +1652,7 @@ private proc _findSeparator(separator: regex(?t), maxBytes=-1, ch) : (errorCode,
   err = qio_regex_channel_match(separator._regex,
                                 false, ch._channel_internal, maxNumBytes,
                                 QIO_REGEX_ANCHOR_UNANCHORED,
-                                /* can_discard */ true,
+                                /* can_discard */ false,
                                 /* keep_unmatched */ false,
                                 /* keep_whole_pattern */ true,
                                 matches, nm);
