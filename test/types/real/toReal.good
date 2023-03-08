@@ -1,0 +1,4 @@
+param 2.07508e-322: real(64) == 42:uint(64).toReal()
+param 5.88545e-44: real(32) == 42:uint(32).toReal()
+2.07508e-322: real(64) == 42:uint(64).toReal()
+5.88545e-44: real(32) == 42:uint(32).toReal()
