@@ -30,7 +30,7 @@ Input/output (I/O) facilities in Chapel include the types :record:`file`,
 :record:`fileReader` and :record:`fileWriter`; the constants :record:`stdin`,
 :record:`stdout` and :record:`stderr`; the functions :proc:`open`,
 :proc:`file.close`, :proc:`file.reader`, :proc:`file.writer`,
-:proc:`channel.read`, :proc:`channel.write`, and many others.
+:proc:`fileReader.read`, :proc:`fileWriter.write`, and many others.
 
 .. warning::
   Please be aware, the IO Module documentation is under development and
@@ -175,8 +175,8 @@ set using :proc:`fileReader._set_style`. A fileWriter's I/O style may be
 retrieved using :proc:`fileWriter._style` and set using
 :proc:`fileWriter._set_style`. These functions should only be called while the
 fileReader's or fileWriter's lock is held, however. See
-:ref:`about-io-channel-synchronization` for more information on fileReader and
-fileWriter locks.
+:ref:`about-io-filereader-filewriter-synchronization` for more information on
+fileReader and fileWriter locks.
 
 As an example for specifying an I/O style, the code below specifies the minimum
 width for writing numbers so array elements are aligned in the output:
@@ -5422,7 +5422,7 @@ proc fileReader._matchLiteralCommon(literal, ignore : bool) : bool throws {
   If the string is not matched exactly, then the fileReader's position is
   unchanged and this method will return ``false``. In other words, this
   fileeReader will return ``false`` in the cases where
-  :proc:`channel.readLiteral` would throw a :class:`OS.BadFormatError` or an
+  :proc:`fileReader.readLiteral` would throw a :class:`OS.BadFormatError` or an
   :class:`OS.EofError`.
 
   By default this method will ignore leading whitespace when attempting to
@@ -5432,7 +5432,7 @@ proc fileReader._matchLiteralCommon(literal, ignore : bool) : bool throws {
   :arg ignoreWhitespace: determines whether leading whitespace is ignored.
 
   :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
-  the literal could not be matched.
+            the literal could not be matched.
 */
 @unstable "fileReader.matchLiteral is unstable and subject to change."
 inline
@@ -5448,7 +5448,7 @@ proc fileReader.matchLiteral(literal:string,
   If the bytes are not matched exactly, then the fileReader's position is
   unchanged and this method will return ``false``. In other words, this
   fileReader will return ``false`` in the cases where
-  :proc:`channel.readLiteral` would throw a :class:`OS.BadFormatError` or an
+  :proc:`fileReader.readLiteral` would throw a :class:`OS.BadFormatError` or an
   :class:`OS.EofError`.
 
   By default this method will ignore leading whitespace when attempting to
@@ -5458,7 +5458,7 @@ proc fileReader.matchLiteral(literal:string,
   :arg ignoreWhitespace: determines whether leading whitespace is ignored.
 
   :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
-  the literal could not be matched.
+            the literal could not be matched.
 */
 @unstable "fileReader.matchLiteral is unstable and subject to change."
 inline
@@ -5473,14 +5473,14 @@ proc fileReader.matchLiteral(literal:bytes,
   If a newline is not matched exactly, then the fileReader's position is
   unchanged and this method will return ``false``. In other words, this
   fileReader will return ``false`` in the cases where
-  :proc:`channel.readNewline` would throw a :class:`OS.BadFormatError` or an
+  :proc:`fileReader.readNewline` would throw a :class:`OS.BadFormatError` or an
   :class:`OS.EofError`.
 
   By default this method will ignore leading whitespace when attempting to
   read a newline.
 
   :returns: ``true`` if the read succeeded, and ``false`` on end of file or if
-  the newline could not be matched.
+            the newline could not be matched.
 */
 @unstable "fileReader.matchNewline is unstable and subject to change."
 inline
@@ -7788,7 +7788,7 @@ proc fileReader.close() throws {
 
 /*
   Close a fileWriter. Implicitly performs the :proc:`fileWriter.flush` operation
-  (see :ref:`about-io-channel-synchronization`).
+  (see :ref:`about-io-filereader-filewriter-synchronization`).
 
   :throws SystemError: Thrown if the fileWriter is not successfully closed.
 */
