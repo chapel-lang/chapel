@@ -204,16 +204,18 @@ including :proc:`open`, :proc:`openTempFile`, :proc:`openMemFile`, the
 :record:`file` initializer that takes a :type:`~CTypes.c_FILE` argument.
 
 Once a file is open, it is necessary to create associated fileReader(s) and/or
-fileWriter(s) - see :proc:`file.reader` and :proc:`file.writer` - to write to
-and/or read from the file.
+fileWriter(s) - see :proc:`file.reader` and :proc:`file.writer` - to read from
+and/or write to the file.
 
 Use the :proc:`file.fsync` function to explicitly synchronize the file to
 ensure that file data is committed to the file's underlying device for
 persistence.
 
-To release any resources associated with a file, it is necessary to first close
-any fileReaders and fileWriters using that file (with :proc:`fileReader.close`
-or :proc:`fileWriter.close`) and then the file itself (with :proc:`file.close`).
+Files, fileReaders, and fileWriters will be kept alive while there are variables
+referring to them and closed when all variables referring to them have gone out
+of scope.  However, each can be closed explicitly with ``close`` methods.  Note
+that :proc:`file.close` will not work if the file has open fileReaders and/or
+fileWriters.
 
  .. note::
 
