@@ -3863,7 +3863,7 @@ config param useNewLinesRegionBounds = false;
 
    :throws SystemError: Thrown if an object could not be returned.
  */
-deprecated "`file.lines` is deprecated; please use `fileReader.lines` instead"
+deprecated "`file.lines` is deprecated; please use `file.reader().lines` instead"
 proc file.lines(param locking:bool = true, region: range(?) = 0..,
                 hints = ioHintSet.empty) throws where (!region.hasHighBound() ||
                                                        useNewLinesRegionBounds) {
