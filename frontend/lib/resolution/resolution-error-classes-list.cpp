@@ -64,15 +64,30 @@ static const char* allowedItems(resolution::VisibilityStmtKind kind) {
 
 // describe where a symbol came from
 // (in a way, it prints out a ResultVisibilityTrace)
+//
+// 'errId' is an ID to anchor output if we have no better location
+//
+// 'name' is the name of the symbol that was looked up
+//
+// 'trace' stores the details of how this symbol was found
+//
 // 'start' indicates where in the trace to start, since sometimes
 // the first element might have already been printed.
 // 'oneOnly' indicates that only the 1st match should be described
 //
-// if 'intro' will be emitted before the first message for a trace
+// 'intro' will be emitted before the first message for a trace
 // (only relevant if start==0). If it is not empty, it should probably
 // end with a space.
 //
-// TODO: fix the docs here more
+// 'encounteredAutoModule' is set to 'false' at the start of this function
+// but will be set to 'true' if the symbol came from an automaticly use'd
+// module
+//
+// 'from' is set to 'name' at the start of this function and will be
+// set to the source name if the symbol was renamed with 'as'
+//
+// 'needsIntoText' is set to 'true' at the start of this function and
+// will be set to 'false' if 'intro' was emitted
 static void describeSymbolTrace(ErrorWriterBase& wr,
                                 ID errId,
                                 UniqueString name,
@@ -85,6 +100,7 @@ static void describeSymbolTrace(ErrorWriterBase& wr,
   CHPL_ASSERT(0 <= start);
 
   from = name;
+  encounteredAutoModule = false;
   int n = trace.visibleThrough.size();
   needsIntroText = true;
   for (int i = start; i < n; i++) {
@@ -125,28 +141,43 @@ static void describeSymbolTrace(ErrorWriterBase& wr,
   }
 }
 
-// describe where a symbol came from
-// (in a way, it prints out a ResultVisibilityTrace)
-// 'start' indicates where in the trace to start, since sometimes
-// the first element might have already been printed.
-// 'oneOnly' indicates that only the 1st match should be described
-//
-// if 'intro' will be emitted before the first message for a trace
-// (only relevant if start==0). If it is not empty, it should probably
-// end with a space.
-static void describeSymbolSource(ErrorWriterBase& wr,
-                                 ID errId,
-                                 UniqueString name,
-                                 const resolution::BorrowedIdsWithName& match,
-                                 const resolution::ResultVisibilityTrace& trace,
-                                 int start,
-                                 bool oneOnly,
-                                 const char* intro) {
 
+//
+// Below are the implementations of 'write' for each error class, which does
+// the specialized work.
+//
+
+/* begin resolution errors */
+void ErrorAmbiguousConfigName::write(ErrorWriterBase& wr) const {
+  auto& name = std::get<std::string>(info);
+  auto variable = std::get<const uast::Variable*>(info);
+  auto otherId = std::get<ID>(info);
+  wr.heading(kind_, type_, locationOnly(variable), "ambiguous config name (", name, ").");
+  wr.code(variable);
+  wr.note(locationOnly(otherId), "also defined here:");
+  wr.code(otherId);
+  wr.note(locationOnly(otherId), "(disambiguate using -s<modulename>.", name, "...)");
+}
+
+void ErrorAmbiguousConfigSet::write(ErrorWriterBase& wr) const {
+  auto& name1 = std::get<1>(info);
+  auto& name2 = std::get<2>(info);
+  auto variable = std::get<const uast::Variable*>(info);
+  wr.heading(kind_, type_, locationOnly(variable),
+            "config set ambiguously via '-s", name1, "' and '-s", name2, "'");
+}
+
+static
+void describeAmbiguousMatch(ErrorWriterBase& wr,
+                            const uast::Identifier* ident,
+                            const resolution::BorrowedIdsWithName& match,
+                            const resolution::ResultVisibilityTrace& trace,
+                            bool oneOnly,
+                            const char* intro) {
   bool encounteredAutoModule = false;
-  UniqueString from = name;
+  UniqueString from = ident->name();
   bool needsIntroText = true;
-  describeSymbolTrace(wr, errId, name, trace, start, intro,
+  describeSymbolTrace(wr, ident->id(), ident->name(), trace, 0, intro,
                       encounteredAutoModule, from, needsIntroText);
 
   if (!encounteredAutoModule) {
@@ -176,32 +207,6 @@ static void describeSymbolSource(ErrorWriterBase& wr,
   }
 }
 
-
-//
-// Below are the implementations of 'write' for each error class, which does
-// the specialized work.
-//
-
-/* begin resolution errors */
-void ErrorAmbiguousConfigName::write(ErrorWriterBase& wr) const {
-  auto& name = std::get<std::string>(info);
-  auto variable = std::get<const uast::Variable*>(info);
-  auto otherId = std::get<ID>(info);
-  wr.heading(kind_, type_, locationOnly(variable), "ambiguous config name (", name, ").");
-  wr.code(variable);
-  wr.note(locationOnly(otherId), "also defined here:");
-  wr.code(otherId);
-  wr.note(locationOnly(otherId), "(disambiguate using -s<modulename>.", name, "...)");
-}
-
-void ErrorAmbiguousConfigSet::write(ErrorWriterBase& wr) const {
-  auto& name1 = std::get<1>(info);
-  auto& name2 = std::get<2>(info);
-  auto variable = std::get<const uast::Variable*>(info);
-  wr.heading(kind_, type_, locationOnly(variable),
-            "config set ambiguously via '-s", name1, "' and '-s", name2, "'");
-}
-
 void ErrorAmbiguousIdentifier::write(ErrorWriterBase& wr) const {
   auto ident = std::get<const uast::Identifier*>(info);
   auto moreMentions = std::get<bool>(info);
@@ -216,11 +221,14 @@ void ErrorAmbiguousIdentifier::write(ErrorWriterBase& wr) const {
 
   CHPL_ASSERT(matches.size() > 0);
   if (matches[0].numIds() > 1) {
-    describeSymbolSource(wr, ident->id(), ident->name(), matches[0], trace[0], 0, false, "");
+    describeAmbiguousMatch(wr, ident, matches[0], trace[0],
+                           /* one only */ false, /* intro */ "");
   } else {
     CHPL_ASSERT(matches.size() > 1);
-    describeSymbolSource(wr, ident->id(), ident->name(), matches[0], trace[0], 0, true, "first, ");
-    describeSymbolSource(wr, ident->id(), ident->name(), matches[1], trace[1], 0, true, "additionally, ");
+    describeAmbiguousMatch(wr, ident, matches[0], trace[0],
+                           /* one only */ true, /* intro */ "first, ");
+    describeAmbiguousMatch(wr, ident, matches[1], trace[1],
+                           /* one only */ true, /* intro */ "additionally, ");
   }
 
   return;
@@ -243,7 +251,7 @@ void ErrorAmbiguousVisibilityIdentifier::write(ErrorWriterBase& wr) const {
     wr.code<ID, ID>(id, { id });
   }
 
-  // TODO: call describeSymbolSource
+  // TODO: call describeSymbolTrace
   return;
 }
 
@@ -297,14 +305,14 @@ void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
   ID firstVisibilityClauseId;
   resolution::VisibilityStmtKind firstUseOrImport = resolution::VIS_USE;
 
-  int describeStart = 0;
+  int start = 0;
 
   int i = 0;
   for (const auto& elt : trace.visibleThrough) {
     if (elt.fromUseImport) {
       firstVisibilityClauseId = elt.visibilityClauseId;
       firstUseOrImport = elt.visibilityStmtKind;
-      describeStart = i+1; // skip this one in describeSymbolSource
+      start = i+1; // skip this one in describeSymbolTrace
       break;
     }
     i++;
@@ -321,10 +329,17 @@ void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
   wr.code<ID, ID>(firstVisibilityClauseId, { firstVisibilityClauseId });
 
   // print where it came from
-  describeSymbolSource(wr, formal->id(), formal->name(), match, trace,
-                       describeStart, true, "");
+  bool encounteredAutoModule = false;
+  UniqueString from;
+  bool needsIntroText = true;
+  describeSymbolTrace(wr, formal->id(), formal->name(), trace, start, "",
+                      encounteredAutoModule, from, needsIntroText);
 
-  return;
+  if (!encounteredAutoModule) {
+    ID firstId = match.firstId();
+    wr.note(locationOnly(firstId), "found '", from, "' defined here:");
+    wr.code<ID,ID>(firstId, { firstId });
+  }
 }
 
 void ErrorIfVarNonClassType::write(ErrorWriterBase& wr) const {
@@ -735,7 +750,7 @@ void ErrorRedefinition::write(ErrorWriterBase& wr) const {
   int n = matches.size();
   for (int i = 0; i < n; i++) {
     bool encounteredAutoModule = false;
-    UniqueString from = name;
+    UniqueString from;
     bool needsIntroText = true;
     std::string intro;
     if (firstGroup) {
