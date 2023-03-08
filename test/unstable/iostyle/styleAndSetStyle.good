@@ -1,2 +1,2 @@
-styleAndSetStyle.chpl:5: warning: channel._style is unstable because it returns a type that is unstable
-styleAndSetStyle.chpl:6: warning: channel._set_style is unstable because its purpose involves an unstable type
+styleAndSetStyle.chpl:5: warning: fileWriter._style is unstable because it returns a type that is unstable
+styleAndSetStyle.chpl:6: warning: fileWriter._set_style is unstable because its purpose involves an unstable type
