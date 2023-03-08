@@ -1831,7 +1831,7 @@ module ChapelArray {
         return false;
 
       // workaround for #21749:
-      } else if __primitive("call and fn resolves", "max", fullIdxType) {
+      } else if this.idxType != bool && __primitive("call and fn resolves", "max", fullIdxType) {
         var foundIt = false;
         var locIdx = max(fullIdxType);
         forall i in this.domain with (min reduce locIdx, max reduce foundIt) {
