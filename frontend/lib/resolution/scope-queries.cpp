@@ -2423,6 +2423,7 @@ moduleInitializationOrder(Context* context, ID entrypoint) {
   return QUERY_END(ret);
 }
 
+// TODO: should these helper routines move to a utility file?
 // adds all elements in intersect(a,b) into the set dst
 static void doSetIntersect(const std::set<UniqueString>& a,
                            const std::set<UniqueString>& b,
@@ -2444,19 +2445,9 @@ static void doSetDifference(const std::set<UniqueString>& a,
 }
 
 static void updateNameSets(const std::set<UniqueString>& newNames,
+                           const std::set<UniqueString>& newNamesMultiply,
                            std::set<UniqueString>& namesDefined,
                            std::set<UniqueString>& namesDefinedMultiply) {
-  // add anything in intersect(newNames, namesDefined) to namesDefinedMultiply.
-  doSetIntersect(newNames, namesDefined, namesDefinedMultiply);
-
-  // append everything in newNames to namesDefined
-  namesDefined.insert(newNames.begin(), newNames.end());
-}
-
-static void updateNameSets2(const std::set<UniqueString>& newNames,
-                            const std::set<UniqueString>& newNamesMultiply,
-                            std::set<UniqueString>& namesDefined,
-                            std::set<UniqueString>& namesDefinedMultiply) {
   // add anything in intersect(newNames, namesDefined) to namesDefinedMultiply.
   doSetIntersect(newNames, namesDefined, namesDefinedMultiply);
 
@@ -2489,8 +2480,8 @@ static void collectAllNames(Context* context,
     std::set<UniqueString> declaredHereMultiply;
     scope->collectNames(declaredHere, declaredHereMultiply);
 
-    updateNameSets2(declaredHere, declaredHereMultiply,
-                    namesDefined, namesDefinedMultiply);
+    updateNameSets(declaredHere, declaredHereMultiply,
+                   namesDefined, namesDefinedMultiply);
   }
 
   // handle names from import / public use
@@ -2516,7 +2507,9 @@ static void collectAllNames(Context* context,
             newNames.insert(nameHere);
           }
         }
-        updateNameSets(newNames, namesDefined, namesDefinedMultiply);
+        std::set<UniqueString> emptyNewMultiply;
+        updateNameSets(newNames, emptyNewMultiply,
+                       namesDefined, namesDefinedMultiply);
 
       } else if (is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
         // create a set of the except names
@@ -2543,8 +2536,8 @@ static void collectAllNames(Context* context,
         doSetDifference(namesThere, except, namesThereExcept);
         doSetDifference(namesThereMultiply, except, namesThereMultiplyExcept);
 
-        updateNameSets2(namesThereExcept, namesThereMultiplyExcept,
-                        namesDefined, namesDefinedMultiply);
+        updateNameSets(namesThereExcept, namesThereMultiplyExcept,
+                       namesDefined, namesDefinedMultiply);
       } else if (is.kind() == VisibilitySymbols::ALL_CONTENTS) {
         collectAllNames(context, is.scope(),
                         /* skip private */ true,
