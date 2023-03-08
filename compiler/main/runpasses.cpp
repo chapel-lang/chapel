@@ -155,9 +155,8 @@ static const size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
 
 static void runPass(PhaseTracker& tracker, size_t passIndex);
 
-// verify that user-specified pass to stop after exists and does not conflict
-// with other flags
-static void validateStopAfterPass() {
+// Set up and validate flags-specified pass to stop after.
+static void setupStopAfterPass() {
   // --parse-only conflicts with otherwise specified pass to stop after
   if (fParseOnly) {
     if (stopAfterPass[0]) {
@@ -190,7 +189,7 @@ void runPasses(PhaseTracker& tracker) {
     tracker.ReportPass();
   }
 
-  validateStopAfterPass();
+  setupStopAfterPass();
 
   for (size_t i = 0; i < passListSize; i++) {
     runPass(tracker, i);
