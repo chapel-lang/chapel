@@ -3,7 +3,6 @@ import os
 import glob
 import chpl_locale_model
 import chpl_llvm
-import shutil
 from utils import error, memoize, run_command, which
 
 # Format:
@@ -141,7 +140,11 @@ def validateLlvmBuiltForRocm():
 
 @memoize
 def validate(chplLocaleModel, chplComm):
+    if chplLocaleModel != "gpu":
+        return True
+
     if get() == 'rocm':
         if not validateLlvmBuiltForRocm():
             error("LLVM not built for AMDGPU Consider setting CHPL_LLVM to 'bundled'")
+
     return True
