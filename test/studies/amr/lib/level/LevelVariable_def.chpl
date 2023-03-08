@@ -254,7 +254,7 @@ proc LevelVariable.clawOutput (
 proc LevelVariable.writeData (
   AMR_level:        int,
   base_grid_number: int,
-  outfile:          channel)
+  outfile:          fileWriter)
 {
 
   var grid_number = base_grid_number;

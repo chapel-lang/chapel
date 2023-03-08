@@ -951,7 +951,7 @@ proc AMRHierarchy.clawOutput(frame_number: int)
 // Proceeds down the indexed_levels, calling the LevelVariable.write
 // method on each corresponding LevelVariable.
 //----------------------------------------------------------------
-proc AMRHierarchy.writeData(outfile: channel){
+proc AMRHierarchy.writeData(outfile: fileWriter){
 
   var base_grid_number = 1;
 
