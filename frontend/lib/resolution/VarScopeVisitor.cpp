@@ -301,16 +301,33 @@ void VarScopeVisitor::exitAst(const uast::AstNode* ast) {
   inAstStack.pop_back();
 }
 
-bool VarScopeVisitor::enter(const VarLikeDecl* ast, RV& rv) {
+bool VarScopeVisitor::enter(const NamedDecl* ast, RV& rv) {
+
+  if (ast->id().postOrderId() < 0) {
+    // It's a symbol with a different path, e.g. a Function.
+    // Don't try to resolve it now in this
+    // traversal. Instead, resolve it e.g. when the function is called.
+    return false;
+  }
+
   enterAst(ast);
   enterScope(ast, rv);
 
   return true;
 }
-void VarScopeVisitor::exit(const VarLikeDecl* ast, RV& rv) {
+void VarScopeVisitor::exit(const NamedDecl* ast, RV& rv) {
+  if (ast->id().postOrderId() < 0) {
+    // It's a symbol with a different path, e.g. a Function.
+    // Don't try to resolve it now in this
+    // traversal. Instead, resolve it e.g. when the function is called.
+    return;
+  }
+
   CHPL_ASSERT(!scopeStack.empty());
   if (!scopeStack.empty()) {
-    handleDeclaration(ast, rv);
+    if (auto vld = ast->toVarLikeDecl()) {
+      handleDeclaration(vld, rv);
+    }
   }
 
   exitScope(ast, rv);

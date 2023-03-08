@@ -407,6 +407,11 @@ class BorrowedIdsWithName {
     return idv_.id_;
   }
 
+  /** Returns the first IdAndFlags in this list. */
+  const IdAndFlags& firstIdAndFlags() const {
+    return idv_;
+  }
+
   /** Returns 'true' if the list contains only IDs that represent
       methods or fields. */
   bool containsOnlyMethodsOrFields() const;
