@@ -1,1 +1,1 @@
---parse-only
+--print-passes --parse-only
