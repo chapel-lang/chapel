@@ -1233,16 +1233,16 @@ ConfigSettingsList& configSettings(Context* context) {
   return QUERY_END(result);
 }
 
-void setAttributeToolnames(Context* context, AttributeToolnamesList toolnames) {
-  QUERY_STORE_INPUT_RESULT(attributeToolnames, context, toolnames);
+void setAttributeToolNames(Context* context, AttributeToolNamesList toolNames) {
+  QUERY_STORE_INPUT_RESULT(AttributeToolNames, context, toolNames);
 }
 
-const AttributeToolnamesList& attributeToolnames(Context *context) {
-  QUERY_BEGIN_INPUT(attributeToolnames, context);
+const AttributeToolNamesList& AttributeToolNames(Context *context) {
+  QUERY_BEGIN_INPUT(AttributeToolNames, context);
 
   // return empty AttributeToolNamesList if not already set
 
-  AttributeToolnamesList result;
+  AttributeToolNamesList result;
   return QUERY_END(result);
 }
 

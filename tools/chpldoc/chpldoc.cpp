@@ -75,8 +75,8 @@ bool fPrintChplHome = false;
 bool fPrintVersion = false;
 bool fWarnUnknownAttributeToolname = true;
 
-std::vector<UniqueString> usingAttributeToolnames;
-std::vector<std::string> usingAttributeToolnamesStr;
+std::vector<UniqueString> usingAttributeToolNames;
+std::vector<std::string> usingAttributeToolNamesStr;
 
 Context* gContext;
 
@@ -120,12 +120,12 @@ void setHome(const ArgumentDescription* desc, const char* arg) {
   temporarily store the names as strings during arg processing and then promote
   them to unique strings here.
 */
-static void promoteAttributeToolnameStrToUniqueString() {
-  for (auto toolname : usingAttributeToolnamesStr) {
-    UniqueString name = UniqueString::get(gContext, toolname);
-    usingAttributeToolnames.push_back(name);
+static void promoteAttributeToolNameStrToUniqueString() {
+  for (auto toolName : usingAttributeToolNamesStr) {
+    UniqueString name = UniqueString::get(gContext, toolName);
+    usingAttributeToolNames.push_back(name);
   }
-  usingAttributeToolnamesStr.clear();
+  usingAttributeToolNamesStr.clear();
 }
 
 /*
@@ -136,10 +136,10 @@ static void promoteAttributeToolnameStrToUniqueString() {
   them as strings temporarily because the context is not setup prior to argument
   processing.
 */
-static void addUsingAttributeToolnameStr(const ArgumentDescription* desc,
+static void addUsingAttributeToolNameStr(const ArgumentDescription* desc,
                                          const char* arg) {
   std::string name = std::string(arg);
-  usingAttributeToolnamesStr.push_back(name);
+  usingAttributeToolNamesStr.push_back(name);
 }
 
 #define DRIVER_ARG_COPYRIGHT \
@@ -187,7 +187,7 @@ ArgumentDescription docs_arg_desc[] = {
 
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
  {"warn-unknown-attribute-toolname", ' ', NULL, "Enable warnings when an unknown toolname is found in an attribute", "N", &fWarnUnknownAttributeToolname, "CHPL_WARN_UNKNOWN_ATTRIBUTE_TOOLNAME", NULL},
- {"using-attribute-toolname", ' ', "<toolname>", "Specify additional toolnames for attributes that are expected in the source", "S", NULL, "CHPL_ATTRIBUTE_TOOLNAMES", addUsingAttributeToolnameStr},
+ {"using-attribute-toolname", ' ', "<toolname>", "Specify additional toolnames for attributes that are expected in the source", "S", NULL, "CHPL_ATTRIBUTE_TOOLNAMES", addUsingAttributeToolNameStr},
  {"", ' ', NULL, "Information Options", NULL, NULL, NULL, NULL},
 
  DRIVER_ARG_HELP,
@@ -2193,9 +2193,9 @@ int main(int argc, char** argv) {
   auto chplEnv = gContext->getChplEnv();
   assert(!chplEnv.getError() && "not handling chplenv errors yet");
   // set any attribute toolnames we processed earlier and clear the local list.
-  promoteAttributeToolnameStrToUniqueString();
-  chpl::parsing::setAttributeToolnames(gContext, usingAttributeToolnames);
-  usingAttributeToolnames.clear();
+  promoteAttributeToolNameStrToUniqueString();
+  chpl::parsing::setAttributeToolNames(gContext, usingAttributeToolNames);
+  usingAttributeToolNames.clear();
   chpl::CompilerFlags flags;
   flags.set(chpl::CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS,
             fWarnUnknownAttributeToolname);

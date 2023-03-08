@@ -36,7 +36,7 @@ namespace chpl {
 namespace parsing {
 
 using ConfigSettingsList = std::vector<std::pair<std::string, std::string>>;
-using AttributeToolnamesList = std::vector<UniqueString>;
+using AttributeToolNamesList = std::vector<UniqueString>;
 /**
  This query returns the contents of a file as the string field in the
  FileContents.
@@ -419,9 +419,9 @@ const
 ConfigSettingsList& configSettings(Context* context);
 
 
-void setAttributeToolnames(Context* context, AttributeToolnamesList keys);
+void setAttributeToolNames(Context* context, AttributeToolNamesList keys);
 
-const AttributeToolnamesList& attributeToolnames(Context* context);
+const AttributeToolNamesList& AttributeToolNames(Context* context);
 
 /**
   Given an ID, returns the attributes associated with the ID. Only

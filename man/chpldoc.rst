@@ -71,13 +71,14 @@ reStructuredText as an intermediate format.
 
 **\--[no-]warn-unknown-attribute-toolname**
 
-    [Don't] warn about attribute toolnames that aren't recognized. Without this
+    [Don't] warn about attribute tool names that aren't recognized. Without this
     warning, attributes belonging to unknown tools will be silently ignored.
 
 **\--using-attribute-toolname <**\ *toolname*\ **>**
 
-    Provide known toolnames, one per flag, to prevent being warned of unknown
-    toolnames when waring of unknown attribute toolnames is enabled.
+    Provide a tool name whose use in an attribute will not trigger an
+    "unknown tool name" warning. To provide multiple tool names, use one
+    **\--using-attribute-toolname** flag per name.
 
 *Information Options*
 

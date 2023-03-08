@@ -236,7 +236,7 @@ void ParserContext::noteAttribute(YYLTYPE loc, AstNode* firstIdent,
 
   // initialize the list if it wasn't already
   auto& attrs = attributeGroupParts.attributeList;
-  if (attributeGroupParts.attributeList == nullptr) {
+  if (attrs == nullptr) {
     attrs = makeList();
   }
 
@@ -296,9 +296,11 @@ void ParserContext::noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals) 
       if (!actual.expr->isStringLiteral()) {
         error(loc, "deprecated attribute arguments must be string literals for now");
       }
-      // TODO: Decide how this should interaction should work, if we want to continue supporting
-      // "message" or if we should adapt that field to match the argument names here
-      // For now, use the notes field, or assume if there's only one argument it's the message
+      // TODO: Decide how this interaction should work, if we want to continue
+      // supporting "message" or if we should adapt that field to match the
+      // argument names here
+      // For now, use the notes field, or assume if there's only one argument
+      // then it's the message
       if (actual.name == UniqueString::get(context(), "notes").podUniqueString() ||
           actuals->size() == 1) {
         messageStr = actual.expr;

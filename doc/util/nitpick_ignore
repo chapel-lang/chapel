@@ -59,6 +59,8 @@ cpp:identifier ZERO
 cpp:identifier SYMBOL_ONLY
 cpp:identifier uast::asttags::NUM_AST_TAGS
 cpp:identifier uast::Function::DEFAULT_RETURN_INTENT
+cpp:identifier VisibilitySymbols::REGULAR_SCOPE
+cpp:identifier VIS_USE
 # Common symbols used as template typenames.
 cpp:identifier T
 cpp:identifier Deserializer

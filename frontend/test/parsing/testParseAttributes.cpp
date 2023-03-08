@@ -811,14 +811,14 @@ static void test14(Parser* parser) {
     proc Foo(bar) {  }
   )"""";
   toggleCompilerFlag(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS, true);
-  std::vector<UniqueString> toolnames = {UniqueString::get(ctx,"linter")};
+  std::vector<UniqueString> toolNames = {UniqueString::get(ctx,"linter")};
   assert(chpl::isCompilerFlagSet(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS));
-  parsing::setAttributeToolnames(ctx, toolnames);
+  parsing::setAttributeToolNames(ctx, toolNames);
   auto parseResult = parseStringAndReportErrors(parser, "test14.chpl",
                                                 program.c_str());
 
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->message() == "Unknown attribute toolname 'othertool'");
+  assert(guard.error(0)->message() == "Unknown attribute tool name 'othertool'");
   assert(guard.error(0)->kind() == ErrorBase::Kind::WARNING);
   assert(guard.realizeErrors());
   toggleCompilerFlag(ctx, CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS, false);

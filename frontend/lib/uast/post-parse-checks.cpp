@@ -1112,20 +1112,20 @@ void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
     // not yet have so by default for now we will warn about unrecognized
     // attributes that are toolspaced
   } else {
-    // Check for other possible toolname given from command line
+    // Check for other possible tool name given from command line
     bool doWarn = isFlagSet(CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS);
-    auto toolnames = chpl::parsing::attributeToolnames(this->context_);
-    for (auto toolname : toolnames) {
-      auto nameDot = UniqueString::getConcat(this->context_, toolname.c_str(), ".");
+    auto toolNames = chpl::parsing::AttributeToolNames(this->context_);
+    for (auto toolName : toolNames) {
+      auto nameDot = UniqueString::getConcat(this->context_, toolName.c_str(), ".");
       if (node->name().startsWith(nameDot)) {
-        // we found a toolname that matches the attribute's
+        // we found a tool name that matches the attribute's
         return;
       }
     }
     if (doWarn) {
       auto pos = node->fullyQualifiedAttributeName().find_last_of('.');
-      auto toolname = node->fullyQualifiedAttributeName().substr(0, pos);
-      warn(node, "Unknown attribute toolname '%s'", toolname.c_str());
+      auto toolName = node->fullyQualifiedAttributeName().substr(0, pos);
+      warn(node, "Unknown attribute tool name '%s'", toolName.c_str());
     }
   }
 }

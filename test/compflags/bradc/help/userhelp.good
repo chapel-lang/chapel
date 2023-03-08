@@ -17,7 +17,7 @@ Warning and Language Control Options:
       --[no-]warnings                 Enable [disable] output of warnings
       --[no-]warn-unknown-attribute-toolname
                                       Enable [disable] warnings when an
-                                      unknown toolname is found in an
+                                      unknown tool name is found in an
                                       attribute
       --using-attribute-toolname <toolname>
                                       Specify additional toolnames for

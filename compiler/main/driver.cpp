@@ -322,7 +322,7 @@ bool fUseIOFormatters = false;
 
 bool fWarnUnknownAttributeToolname = true;
 
-std::vector<UniqueString> usingAttributeToolnames;
+std::vector<UniqueString> usingAttributeToolNames;
 
 std::vector<std::string> gDynoPrependInternalModulePaths;
 std::vector<std::string> gDynoPrependStandardModulePaths;
@@ -647,15 +647,15 @@ static void verifyStageAndSetStageNum(const ArgumentDescription* desc,
 }
 
 /*
-  this function is called when a toolname is passed through the command line
+  this function is called when a tool name is passed through the command line
   with the --using-attribute-toolname flag. It is called each time the flag is
-  found in the command line, which may be multiple. These toolnames will then
+  found in the command line, which may be multiple. These tool names will then
   be treated as known to the compiler and we won't warn about them.
 */
 static void addUsingAttributeToolname(const ArgumentDescription* desc,
                                       const char* arg) {
   UniqueString name = UniqueString::get(gContext, arg);
-  usingAttributeToolnames.push_back(name);
+  usingAttributeToolNames.push_back(name);
 }
 
 // In order to handle accumulating ccflags arguments, the argument
@@ -1020,8 +1020,8 @@ static ArgumentDescription arg_desc[] = {
  {"permit-unhandled-module-errors", ' ', NULL, "Permit unhandled errors in explicit modules; such errors halt at runtime", "N", &fPermitUnhandledModuleErrors, "CHPL_PERMIT_UNHANDLED_MODULE_ERRORS", NULL},
  {"warn-unstable", ' ', NULL, "Enable [disable] warnings for uses of language features that are in flux", "N", &fWarnUnstable, "CHPL_WARN_UNSTABLE", NULL},
  {"warnings", ' ', NULL, "Enable [disable] output of warnings", "n", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
- {"warn-unknown-attribute-toolname", ' ', NULL, "Enable [disable] warnings when an unknown toolname is found in an attribute", "N", &fWarnUnknownAttributeToolname, "CHPL_WARN_UNKNOWN_ATTRIBUTE_TOOLNAME", NULL},
- {"using-attribute-toolname", ' ', "<toolname>", "Specify additional toolnames for attributes that are expected in the source", "S", NULL, "CHPL_ATTRIBUTE_TOOLNAMES", addUsingAttributeToolname},
+ {"warn-unknown-attribute-toolname", ' ', NULL, "Enable [disable] warnings when an unknown tool name is found in an attribute", "N", &fWarnUnknownAttributeToolname, "CHPL_WARN_UNKNOWN_ATTRIBUTE_TOOLNAME", NULL},
+ {"using-attribute-toolname", ' ', "<toolname>", "Specify additional tool names for attributes that are expected in the source", "S", NULL, "CHPL_ATTRIBUTE_TOOLNAMES", addUsingAttributeToolname},
 
  {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
  {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", setLocal},
@@ -1833,9 +1833,9 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   chpl::parsing::setConfigSettings(gContext, gDynoParams);
   gDynoParams.clear();
 
-  // set any attribute toolnames we processed earlier and clear the local list.
-  chpl::parsing::setAttributeToolnames(gContext, usingAttributeToolnames);
-  usingAttributeToolnames.clear();
+  // set any attribute tool names we processed earlier and clear the local list.
+  chpl::parsing::setAttributeToolNames(gContext, usingAttributeToolNames);
+  usingAttributeToolNames.clear();
 
   chpl::parsing::setupModuleSearchPaths(gContext,
                                         CHPL_HOME,

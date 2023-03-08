@@ -57,7 +57,7 @@ class Coforall final : public IndexableLoop {
                     blockStyle,
                     loopBodyChildNum,
                     /*isExpressionLevel*/ false,
-                    NO_CHILD /*attributeGroup*/) {
+                    /*attributeGroup*/ NO_CHILD) {
   }
 
   Coforall(Deserializer& des) : IndexableLoop(asttags::Coforall, des) { }
