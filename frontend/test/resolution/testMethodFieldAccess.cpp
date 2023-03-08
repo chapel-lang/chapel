@@ -662,8 +662,9 @@ static void testExample2() {
            "M.test",
            "M.test@6",
            "M.bar" /* the selected method */);
-  // TODO: thinking that this case should prefer the 'int' version
-  // because both should participate in disambiguation
+  // TODO: perhaps this case should prefer the 'int' version
+  // because both should participate in disambiguation.
+  // See issue #21668.
 }
 
 static void testExample3() {
