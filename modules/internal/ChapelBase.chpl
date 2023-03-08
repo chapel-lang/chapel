@@ -1517,17 +1517,20 @@ module ChapelBase {
 
   // Routines for re-interpreting reals as uints and vice-versa, at
   // the bit level
-  //  
+  //
+  @unstable "This routine may change names / signatures"
   proc param (real(64)).toBits() param : uint {
     param ui: uint(64) = __primitive("real64 as uint64", this);
     return ui;
   }
 
+  @unstable "This routine may change names / signatures"
   proc param (real(32)).toBits() param : uint(32) {
     param ui: uint(32) = __primitive("real32 as uint32", this);
     return ui;
   }
 
+  @unstable "This routine may change names / signatures"
   inline proc (real(?w)).toBits(): uint(w) {
     use CTypes;
     var src = this, dst:uint(w);
@@ -1536,16 +1539,19 @@ module ChapelBase {
     return dst;
   }
 
+  @unstable "This routine may change names / signatures"
   proc param (uint(64)).toReal() param : real(64) {
     param r: real(64) = __primitive("uint64 as real64", this);
     return r;
   }
 
+  @unstable "This routine may change names / signatures"
   proc param (uint(32)).toReal() param : real(32) {
     param r: real(32) = __primitive("uint32 as real32", this);
     return r;
   }
 
+  @unstable "This routine may change names / signatures"
   inline proc (uint(?w)).toReal(): real(w) where w == 32 || w == 64 {
     use CTypes;
     var src = this, dst:real(w);
