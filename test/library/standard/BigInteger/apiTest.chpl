@@ -164,6 +164,14 @@ on Locales[min(Locales.domain.high, executeLocale)] {
   assert(-5:bigint << 3:uint  == -40);
   assert(-5:bigint >> 1:uint  == -3);
 
+  // right shifting a negative value over its size will always result in -1,
+  // not 0
+  var neg = -5:bigint;
+  neg >>= 64;
+  assert(neg == -1);
+  neg = -5; 
+  assert(neg >> 64 == -1);
+
   // Boolean ops
   assert(~123:bigint == -124);
   assert(123:bigint & 234:bigint == 106);
