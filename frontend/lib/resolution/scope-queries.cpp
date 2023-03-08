@@ -102,9 +102,9 @@ static void gather(DeclMap& declared,
   } else {
     // found an entry, so add to it
     OwnedIdsWithName& val = search->second;
-    val.val.appendIdAndFlags(d->id(), visibility,
-                             isMethodOrField(d, atFieldLevel),
-                             isParenfulFunction(d));
+    val.appendIdAndFlags(d->id(), visibility,
+                         isMethodOrField(d, atFieldLevel),
+                         isParenfulFunction(d));
   }
 }
 

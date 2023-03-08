@@ -172,8 +172,8 @@ class OwnedIdsWithName {
   { }
 
   /** Append an ID to an OwnedIdsWithName. */
-  void appendIdAndVis(ID id, uast::Decl::Visibility vis,
-                      bool isMethodOrField, bool isParenfulFunction) {
+  void appendIdAndFlags(ID id, uast::Decl::Visibility vis,
+                        bool isMethodOrField, bool isParenfulFunction) {
     if (moreIdvs_.get() == nullptr) {
       // create the vector and add the single existing id to it
       moreIdvs_ = toOwned(new std::vector<IdAndFlags>());
