@@ -32,7 +32,7 @@ module DistributedMap {
     type keyType;
     type valType;
     pragma "no doc"
-    var m: shared distributedMapImpl(keyType, valType)?;
+    var m: shared distributedMapImpl(keyType, valType, ?)?;
     forwarding m!;
 
     proc init(type keyType, type valType) {
@@ -45,6 +45,11 @@ module DistributedMap {
       this.keyType = keyType;
       this.valType = valType;
       m = new shared distributedMapImpl(keyType, valType, hasher);
+    }
+
+    proc init(type keyType, type valType, r: fileReader) throws {
+      this.init(keyType, valType);
+      readThis(r);
     }
 
     proc clear() {
@@ -286,9 +291,6 @@ module DistributedMap {
       }
     }
 
-    // TODO: getBorrowed, or maybe merge getBorrowed and getValue into single
-    // method called `get` if possible
-
     /* Get a copy of the element stored at position `k`.
 
       :arg k: The key to lookup in the map
@@ -297,7 +299,7 @@ module DistributedMap {
 
       :returns: A copy of the value at position `k`
      */
-    proc getValue(k: keyType) const throws {
+    proc this(k: keyType) const throws {
       var loc: int = this.getLocaleForKey(k);
 
       var result: valType;
@@ -335,33 +337,6 @@ module DistributedMap {
       return result;
     }
 
-    /* Remove the element at position `k` from the map and return its value
-     */
-    proc getAndRemove(k: keyType): valType {
-      var loc: int = this.getLocaleForKey(k);
-
-      var result: valType;
-
-      on loc {
-        locks[loc].lock();
-
-        var (found, slot) = tables[loc].findFullSlot(k);
-
-        if !found then
-          boundsCheckHalt("map index " + k:string + " out of bounds");
-
-        try! {
-          var key: keyType;
-          tables[loc].clearSlot(slot, key, result);
-          tables[loc].maybeShrinkAfterRemove();
-        }
-
-        locks[loc].unlock();
-      }
-
-      return result;
-    }
-
     // WARNING: This method is unlocked and for performance purposes.  It should
     // only be used when you know you control the accesses to the map and will
     // be managing race conditions yourself
@@ -387,8 +362,6 @@ module DistributedMap {
       return result;
     }
 
-    // TODO: these?
-
     // NOTE: doesn't return a `const ref` like its counterpart on serial maps,
     // the reference could get invalidated
     /*
@@ -410,31 +383,6 @@ module DistributedMap {
     }
 
     /*
-      Iterates over the key-value pairs of this map.
-
-      :yields: A tuple whose elements are a copy of one of the key-value
-               pairs contained in this map.
-    */
-    iter items() {
-      if !isCopyableType(keyType) then
-        compilerError('in distributedMap.items(): map key type ' +
-                      keyType:string + ' is not copyable');
-
-      if !isCopyableType(valType) then
-        compilerError('in distributedMap.items(): map value type ' +
-                      valType:string + ' is not copyable');
-
-      foreach loc in locDom {
-        for slot in tables[loc].allSlots() {
-          if tables[loc].isSlotFull(slot) {
-            ref tabEntry = tables[loc].table[slot];
-            yield (tabEntry.key, tabEntry.val);
-          }
-        }
-      }
-    }
-
-    /*
       Iterates over the values of this map.
 
       :yields: A reference to one of the values contained in this map.
@@ -450,6 +398,11 @@ module DistributedMap {
             yield tables[loc].table[slot].val;
         }
       }
+    }
+
+    proc init(type keyType, type valType, r: fileReader) {
+      this.init(keyType, valType);
+      readThis(r);
     }
 
     // TODO: if writeThis encodes the locale hash, this should react to it
@@ -614,7 +567,7 @@ module DistributedMap {
                `false` otherwise.
      :rtype: bool
     */
-    proc set(k: keyType, in v: valType): bool {
+    proc replace(k: keyType, in v: valType): bool {
       var loc: int = this.getLocaleForKey(k);
 
       var res: bool;

@@ -121,12 +121,12 @@ var tmp: borrowed C = (new owned C(1, 10)).borrow();
 // One way to do that is by calling the ``borrow()`` method directly:
 
 var b1 = own.borrow();
-// now b1 and own refer to the same instance
+// now ``b1`` and ``own`` refer to the same instance
 // it is illegal to:
 //
-//  * use the borrow after whatever it is borrowed from goes out of scope
+//  * use the ``borrow`` after whatever it is borrowed from goes out of scope
 //
-//  * use the borrow after the instance is deleted (for example if own is assigned to)
+//  * use the ``borrow`` after the instance is deleted (for example if ``own`` is assigned to)
 //
 
 // A class type without a decorator, such as ``C``, has generic management.

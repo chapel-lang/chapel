@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2299,7 +2299,7 @@ module TwoArrayPartitioning {
     type bucketizerType;
 
     var numLocales:int;
-    var perLocale = newBlockArr(0..#numLocales,
+    var perLocale = Block.createArray(0..#numLocales,
         TwoArrayDistributedBucketizerStatePerLocale(bucketizerType));
 
     const baseCaseSize:int;
@@ -2797,7 +2797,7 @@ module TwoArrayPartitioning {
                                startbit,
                                0, state1.numLocales-1);
     var nextDistTaskElts: list(TwoArrayDistSortPerBucketTask, parSafe=true);
-    var smallTasksPerLocale = newBlockArr(0..#numLocales,
+    var smallTasksPerLocale = Block.createArray(0..#numLocales,
                                           list(TwoArraySortTask, parSafe=true));
 
     assert(!distTask.isEmpty());
@@ -3117,7 +3117,7 @@ module TwoArrayPartitioning {
 
     // Always use state 1 for small subproblems...
     ref state = state1;
-    coforall (loc,tid) in zip(A.targetLocales(),0:idxType..) with (ref state) do
+    coforall (loc,tid) in zip(A.targetLocales(),0..) with (ref state) do
     on loc {
       // Get the tasks to sort here
 

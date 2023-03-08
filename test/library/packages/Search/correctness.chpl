@@ -18,7 +18,7 @@ proc main() {
      revAbsA = [ -4, 3, 2, -1],
         strA = ['Brad', 'anthony', 'ben', 'david'],
     strideA : [strideD] int = [-4, -1, 2, 3],
-    revStrideA : [revStrideD] int = [-4, -1, 2, 3];
+    revStrideA : [revStrideD] int = [-4, -1, 2, 3];  // neg-stride revStrideA[10]=3 etc.
 
   // Comparators
   const absKey = new AbsKeyCmp(),
@@ -49,22 +49,10 @@ proc main() {
   checkSearch(result, (true, 30), strideA, 'binarySearch');
 
   result = linearSearch(revStrideA, 2);
-  checkSearch(result, (true, 30), revStrideA, 'linearSearch');
+  checkSearch(result, (true, 20), revStrideA, 'linearSearch');
 
   result = binarySearch(revStrideA, 2);
-  checkSearch(result, (true, 30), revStrideA, 'binarySearch');
-
-  result = linearSearch(strideA, 5);
-  checkSearch(result, (false, strideD.highBound+strideD.stride), strideA, 'linearSearch');
-
-  result = binarySearch(strideA, 5);
-  checkSearch(result, (false, strideD.highBound+strideD.stride), strideA, 'binarySearch');
-
-  result = linearSearch(revStrideA, 5);
-  checkSearch(result, (false, revStrideD.highBound+abs(revStrideD.stride)), revStrideA, 'linearSearch');
-
-  result = binarySearch(revStrideA, 5);
-  checkSearch(result, (false, revStrideD.highBound+abs(revStrideD.stride)), revStrideA, 'binarySearch');
+  checkSearch(result, (true, 20), revStrideA, 'binarySearch');
 
   /* Comparators */
 
@@ -78,6 +66,18 @@ proc main() {
   checkSearch(result, (true, 1), absA, 'search');
 
   /* Not Found */
+
+  result = linearSearch(strideA, 5);
+  checkSearch(result, (false, strideD.highBound+strideD.stride), strideA, 'linearSearch');
+
+  result = binarySearch(strideA, 5);
+  checkSearch(result, (false, strideD.highBound+strideD.stride), strideA, 'binarySearch');
+
+  result = linearSearch(revStrideA, 5);
+  checkSearch(result, (false, revStrideD.highBound+abs(revStrideD.stride)), revStrideA, 'linearSearch');
+
+  result = binarySearch(revStrideA, 5);
+  checkSearch(result, (false, revStrideD.highBound+abs(revStrideD.stride)), revStrideA, 'binarySearch');
 
   result = search(A, 5, sorted=true);
   checkSearch(result, (false, A.domain.highBound+1), A, 'search');

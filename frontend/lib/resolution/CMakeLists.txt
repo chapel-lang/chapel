@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -15,23 +15,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-target_sources(libdyno-obj
+target_sources(ChplFrontend-obj
                PRIVATE
 
+               InitResolver.cpp
                Resolver.cpp
+               VarScopeVisitor.cpp
                call-init-deinit.cpp
                can-pass.cpp
                copy-elision.cpp
                default-functions.cpp
                disambiguation.cpp
-               InitResolver.cpp
                intents.cpp
+               maybe-const.cpp
                prims.cpp
+               resolution-error-classes-list.cpp
                resolution-queries.cpp
                resolution-types.cpp
+               return-type-inference.cpp
                scope-queries.cpp
                scope-types.cpp
+               signature-checks.cpp
                split-init.cpp
-               VarScopeVisitor.cpp
 
               )

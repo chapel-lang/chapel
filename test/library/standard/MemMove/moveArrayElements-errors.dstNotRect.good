@@ -1,0 +1,2 @@
+moveArrayElements-errors.chpl:nnnn: In function 'main':
+moveArrayElements-errors.chpl:nnnn: error: The 'dst' for 'moveArrayElements' must be rectangular

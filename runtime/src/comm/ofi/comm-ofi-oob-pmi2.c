@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -58,7 +58,8 @@ extern int PMI2_KVS_Get(const char* jobid, int src_pmi_id,
                         const char key[], char value[],
                         int maxvalue, int* vallen)
            __attribute__((weak));
-extern int PMI_Get_clique_size(int* size)
+extern int PMI_Get_numpes_on_smp(int* size) __attribute__((weak));
+extern int PMI_Get_pes_on_smp(int *ranks, int length)
     __attribute__((weak));
 
 #define PMI2_CHK(expr) CHK_EQ_TYPED(expr, PMI2_SUCCESS, int, "d")
@@ -105,8 +106,9 @@ void chpl_comm_ofi_oob_init(void) {
     chpl_numNodes = (int32_t) size;
   }
 
-  DBG_PRINTF(DBG_OOB, "OOB init: node %" PRI_c_nodeid_t " of %" PRId32,
-             chpl_nodeID, chpl_numNodes);
+  chpl_comm_oob = "PMI/PMI2";
+  DBG_PRINTF(DBG_OOB, "OOB %s init: node %" PRI_c_nodeid_t " of %" PRId32,
+             chpl_comm_oob, chpl_nodeID, chpl_numNodes);
 }
 
 
@@ -290,14 +292,34 @@ void decode_kvs(char* raw, const char* enc, size_t size) {
   }
 }
 
-int chpl_comm_ofi_oob_locales_on_node(void) {
+typedef struct locale_info_t {
+  uint64_t  hash;     // hash of the locale's hostname
+  int       nodeID;   // locale's ID
+} locale_info_t;
+
+int chpl_comm_ofi_oob_locales_on_node(int *rank) {
   int count = 0;
-  if (PMI_Get_clique_size != NULL) {
-    PMI_CHK(PMI_Get_clique_size(&count));
-    DBG_PRINTF(DBG_OOB, "PMI_Get_clique_size returned %d", count);
+  if (PMI_Get_numpes_on_smp && PMI_Get_pes_on_smp) {
+    // Use PMI.
+    PMI_CHK(PMI_Get_numpes_on_smp(&count));
+    if (rank) {
+      int *ranks;
+      int myrank = 0;
+      CHK_SYS_CALLOC(ranks, count);
+      PMI_CHK(PMI_Get_pes_on_smp(ranks, count));
+      for (int i = 0; i < count; i++) {
+        if (ranks[i] < chpl_nodeID) {
+          myrank++;
+        }
+      }
+      *rank = myrank;
+      sys_free(ranks);
+    }
+    DBG_PRINTF(DBG_OOB, "got rank info from PMI");
   } else {
-    // do an allgather of hostname hashes to determine the locales on the same node as us
-    // assumes each hostname has a unique hash
+
+    // Do an allgather of hostname hashes to determine the locales on the same
+    // node as us assumes each hostname has a unique hash
 
     char hostname[HOST_NAME_MAX+1];
     int rc = gethostname(hostname, sizeof(hostname));
@@ -324,19 +346,30 @@ int chpl_comm_ofi_oob_locales_on_node(void) {
 
     // get the hashes for all locales
 
-    uint64_t *hashes = NULL;
-    CHK_SYS_CALLOC(hashes, chpl_numNodes);
-    chpl_comm_ofi_oob_allgather(&hash, hashes, sizeof(*hashes));
+    locale_info_t info;
+    info.hash = hash;
+    DBG_PRINTF(DBG_OOB, "PMI2 OOB chpl_nodeID %d", chpl_nodeID);
+    info.nodeID = chpl_nodeID;
+    locale_info_t *infos = NULL;
+    CHK_SYS_CALLOC(infos, chpl_numNodes);
+    chpl_comm_ofi_oob_allgather(&info, infos, sizeof(*infos));
 
     // count the number of hashes that match ours
 
     for (int i = 0; i < chpl_numNodes; i++) {
-      if (hashes[i] == hash) {
+      if (infos[i].hash == hash) {
+        if ((rank != NULL) && (infos[i].nodeID == chpl_nodeID)) {
+          // record our rank among the locales on the same node
+          *rank = count;
+        }
         count++;
       }
     }
-    CHK_SYS_FREE(hashes);
+    CHK_SYS_FREE(infos);
   }
-  DBG_PRINTF(DBG_OOB, "OOB locales on node: %d", count);
+  DBG_PRINTF(DBG_OOB, "PMI2 OOB locales on node: %d", count);
+  if (rank != NULL) {
+    DBG_PRINTF(DBG_OOB, "PMI2 OOB local rank: %d", *rank);
+  }
   return count;
 }

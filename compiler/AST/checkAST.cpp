@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -294,11 +294,12 @@ void checkPrimitives()
      case PRIM_BROADCAST_GLOBAL_VARS:
      case PRIM_PRIVATE_BROADCAST:
      case PRIM_INT_ERROR:
-     case PRIM_CAPTURE_FN_FOR_CHPL:
-     case PRIM_CAPTURE_FN_FOR_C:
+     case PRIM_CAPTURE_FN:
+     case PRIM_CAPTURE_FN_TO_CLASS:
      case PRIM_CREATE_FN_TYPE:
      case PRIM_STRING_COPY:
      case PRIM_CAST_TO_VOID_STAR:       // Cast the object argument to void*.
+     case PRIM_CAST_TO_TYPE:
      case PRIM_RT_ERROR:
      case PRIM_RT_WARNING:
      case PRIM_NEW_PRIV_CLASS:

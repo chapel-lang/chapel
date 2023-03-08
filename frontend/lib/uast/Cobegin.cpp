@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,12 +25,24 @@ namespace chpl {
 namespace uast {
 
 
+std::string Cobegin::dumpChildLabelInner(int i) const {
+  if (i == withClauseChildNum_) {
+    return "with";
+  } else if (i > bodyChildNum_) {
+    std::string ret = "task-body ";
+    ret += std::to_string(i - bodyChildNum_);
+    return ret;
+  }
+
+  return "";
+}
+
 owned<Cobegin> Cobegin::build(Builder* builder,
                               Location loc,
                               owned<WithClause> withClause,
                               AstList taskBodies) {
   AstList lst;
-  int8_t withClauseChildNum = -1;
+  int8_t withClauseChildNum = NO_CHILD;
 
   if (withClause.get() != nullptr) {
     withClauseChildNum = lst.size();

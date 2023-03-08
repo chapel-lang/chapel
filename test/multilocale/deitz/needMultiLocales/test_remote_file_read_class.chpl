@@ -5,7 +5,7 @@ class C {
   var y: real;
 }
 
-var w = open("test_remote_file_read_class.txt", iomode.cw).writer();
+var w = open("test_remote_file_read_class.txt", ioMode.cw).writer();
 
 var c = new unmanaged C(x=1,y=2.3);
 
@@ -14,7 +14,7 @@ writeln(c);
 w.writeln(c);
 w.close();
 
-var r = open("test_remote_file_read_class.txt", iomode.r).reader();
+var r = open("test_remote_file_read_class.txt", ioMode.r).reader();
 
 var d = new unmanaged C();
 

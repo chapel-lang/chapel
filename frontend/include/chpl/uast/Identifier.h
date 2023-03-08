@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -50,6 +50,12 @@ class Identifier final : public AstNode {
     CHPL_ASSERT(!name.isEmpty());
   }
 
+  Identifier(Deserializer& des)
+    : AstNode(asttags::Identifier, des) {
+    name_ = des.read<UniqueString>();
+  }
+
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Identifier* lhs = this;
     const Identifier* rhs = (const Identifier*) other;
@@ -59,10 +65,19 @@ class Identifier final : public AstNode {
     this->name_.mark(context);
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
  public:
   ~Identifier() override = default;
   static owned<Identifier> build(Builder* builder, Location loc, UniqueString name);
   UniqueString name() const { return name_; }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(name_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Identifier);
 };
 
 /*

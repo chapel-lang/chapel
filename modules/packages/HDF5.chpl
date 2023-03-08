@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -3928,8 +3928,8 @@ module HDF5 {
       extern proc H5Pset_dxpl_mpio(xferPlist: C_HDF5.hid_t,
                                    flag: C_HDF5.H5FD_mpio_xfer_t): C_HDF5.herr_t;
 
-      proc isBlock(D: Block) param return true;
-      proc isBlock(D) param return false;
+      proc isBlock(D: Block) param do return true;
+      proc isBlock(D) param do return false;
 
       if !isBlock(A.dom.dist) {
         use Reflection;
@@ -4052,10 +4052,10 @@ module HDF5 {
       // A11, A12, B11, B12
       // A21, A22, B21, B22
       use BlockDist, CyclicDist, super.C_HDF5;
-      proc isBlock(D: Block) param return true;
-      proc isBlock(D) param return false;
-      proc isCyclic(D: Cyclic) param return true;
-      proc isCyclic(D) param return false;
+      proc isBlock(D: Block) param do return true;
+      proc isBlock(D) param do return false;
+      proc isCyclic(D: Cyclic) param do return true;
+      proc isCyclic(D) param do return false;
       if !(isBlock(A.dom.dist) || isCyclic(A.dom.dist)) then
         compilerError("hdf5ReadDistributedArray currently only supports block or cyclic distributed arrays");
 

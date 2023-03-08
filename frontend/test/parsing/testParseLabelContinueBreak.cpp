@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -35,7 +35,8 @@
 #include <iostream>
 
 static void test0(Parser* parser) {
-  auto parseResult = parser->parseString("test0.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
     "/*c1*/\n"
     "var thing = 0;\n"
     "label outer for i in myRange1 {\n"
@@ -45,7 +46,7 @@ static void test0(Parser* parser) {
     "  /*c3*/\n"
     "}\n"
     "/*c12*/\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 4);
@@ -77,7 +78,8 @@ static void test0(Parser* parser) {
 }
 
 static void test1(Parser* parser) {
-  auto parseResult = parser->parseString("test1.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
     "/*c1*/\n"
     "label outer for i in myRange {\n"
     "  if i%2 then /*c2*/ continue /*c3*/ outer /*c4*/;\n"
@@ -85,7 +87,7 @@ static void test1(Parser* parser) {
     "  /*c5*/\n"
     "}\n"
     "/*c6*/\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);

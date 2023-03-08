@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -117,7 +117,7 @@ class MemberExprsCallback : public MatchFinder::MatchCallback {
           it, method,
           filterIntoSet<FieldDeclSet>(filterFields_, record->fields()));
       // Capture info on all fields in our set
-      for (auto field : it->second)
+      for (const auto& field : it->second)
         recordField(sm, field);
     }
     auto& fieldsNotUsedYet = it->second;
@@ -199,7 +199,7 @@ static size_t runMemberExprsMatcher(clang::tooling::ToolExecutor* ex,
 
   size_t errCount = 0;
 
-  for (auto it : useMap) {
+  for (const auto& it : useMap) {
     const PrintInfo& methodInfo = infoMap.at(it.first);
 
     for (const void* fieldNotUsed : it.second) {

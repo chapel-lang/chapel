@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,21 +26,21 @@ namespace uast {
 
 
 owned<Record> Record::build(Builder* builder, Location loc,
-                            owned<Attributes> attributes,
+                            owned<AttributeGroup> attributeGroup,
                             Decl::Visibility vis,
                             Decl::Linkage linkage,
                             owned<AstNode> linkageName,
                             UniqueString name,
                             AstList contents) {
   AstList lst;
-  int attributesChildNum = -1;
-  int elementsChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
+  int elementsChildNum = NO_CHILD;
   int numElements = contents.size();
-  int linkageNameChildNum = -1;
+  int linkageNameChildNum = NO_CHILD;
 
-  if (attributes.get()) {
-    attributesChildNum = lst.size();
-    lst.push_back(std::move(attributes));
+  if (attributeGroup.get()) {
+    attributeGroupChildNum = lst.size();
+    lst.push_back(std::move(attributeGroup));
   }
 
   if (linkageName.get()) {
@@ -53,7 +53,7 @@ owned<Record> Record::build(Builder* builder, Location loc,
     lst.push_back(std::move(ast));
   }
 
-  Record* ret = new Record(std::move(lst), attributesChildNum, vis,
+  Record* ret = new Record(std::move(lst), attributeGroupChildNum, vis,
                            linkage,
                            linkageNameChildNum,
                            name,

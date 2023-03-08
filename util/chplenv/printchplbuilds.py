@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # Parses a build path and outputs the values of the environment variables
-# that correspond to that path. 
+# that correspond to that path.
 
 import os
 import utils
@@ -20,7 +20,7 @@ from collections import defaultdict
 # determines the current environment variable being parsed for those that
 # do not have a prefix. The state is State.PREFIX for those that do. This
 # state is exited when a component is encountered that doesn't have a
-# prefix. 
+# prefix.
 
 @unique
 class State(Enum):
@@ -106,24 +106,28 @@ def Parse(path):
         nextState = nextStates[state]
         j = i + 1
         if state == State.PREFIX and '-' in component:
-            fields = component.split('-', 1)
-            (prefix, value) = fields[0:2]
-            var = prefixes[prefix]
-            config[var] = value
-            used.add(var)
+            fields = component.split('-')
+            var = prefixes[fields[0]]
+            value = '-'.join(fields[1:])
             if var == 'CHPL_COMM':
 
-                if value != "none":
-                    # The value of CHPL_COMM_DEBUG is determined by a suffix of the component name.
-                    # It's a bit odd in that the build is based on whether or not it is set, 
-                    # not its value. "+" denotes that is it set, "-" that it is not set.
+                # The value of CHPL_COMM_DEBUG is determined by a suffix of
+                # the component name. It's a bit odd in that the build is
+                # based on whether or not it is set, not its value. "+"
+                # denotes that is it set, "-" that it is not set.
 
-                    config['CHPL_COMM_DEBUG'] = "+" if fields[-1] == 'debug' else "-"
-                    used.add('CHPL_COMM_DEBUG')
+                if fields[-1] == 'debug':
+                    config['CHPL_COMM_DEBUG'] = "+"
+                    value = '-'.join(fields[1:-1]) # drop the suffix
+                else:
+                    config['CHPL_COMM_DEBUG'] = "-"
+                used.add('CHPL_COMM_DEBUG')
                 if value == 'ofi':
                     nextState = State.LIBFABRIC
                 elif value == 'gasnet':
                     nextState = State.COMM_SUBSTRATE
+            config[var] = value
+            used.add(var)
         else:
             # Component doesn't have a prefix. If we were expecting a prefix then go to the
             # next state and reprocess the current component. Components without prefixes

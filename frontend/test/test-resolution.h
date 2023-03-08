@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,6 +22,7 @@
 
 #include "test-parsing.h"
 
+#include "chpl/resolution/resolution-types.h"
 #include "chpl/types/QualifiedType.h"
 
 // forward declare classes and namespaces
@@ -45,5 +46,10 @@ QualifiedType resolveTypeOfXInit(Context* context,
 QualifiedType resolveQualifiedTypeOfX(Context* context, std::string program);
 
 const Type* resolveTypeOfX(Context* context, std::string program);
+
+const ResolvedExpression*
+resolvedExpressionForAst(Context* context, const AstNode* ast,
+                         const ResolvedFunction* inFn,
+                         bool scopeResolveOnly);
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,6 +32,7 @@
 #include "chpl-comm.h"
 #include "chpltypes.h"
 #include "error.h"
+#include "chpl-mem-sys.h"
 
 #include <errno.h>
 #include <pthread.h>
@@ -57,8 +58,10 @@
           printf("%s:%d: " f "\n", __FILE__, __LINE__, ## __VA_ARGS__); \
         } while (0)
 #endif
+static chpl_bool debug = true;
 #else
 #define _DBG_P(f, ...)
+static chpl_bool debug = false;
 #endif
 
 static chpl_bool haveTopology = false;
@@ -70,20 +73,31 @@ static chpl_bool do_set_area_membind;
 
 static int topoDepth;
 
-static int numaLevel;
 static int numNumaDomains;
 
 // A note on core and PU numbering. As per the hwloc documentation, a cpuset
-// contains OS indices of PUs, which are guaranteed to be unique across the
-// machine. In order to use a cpuset to represent a collection of cores and
-// not break this invariant, we represent a core in a cpuset with the smallest
-// OS index of its PUs. For example, the physAccSet contains the OS indices of
-// the smallest PU for each accessible core.
+// contains OS indices of PUs. In order to use a cpuset to represent a
+// collection of cores and not break this invariant, we represent a core in a
+// cpuset with the smallest OS index of its PUs. For example, the physAccSet
+// contains the OS indices of the smallest PU for each accessible core.
 
 // Accessible cores and PUs.
 static hwloc_cpuset_t physAccSet = NULL;
 static hwloc_cpuset_t physReservedSet = NULL;
 static hwloc_cpuset_t logAccSet = NULL;
+
+static void cpuInfoInit(void);
+
+// Accessible NUMA nodes
+
+static hwloc_nodeset_t numaSet = NULL;
+
+// Our root within the overall topology.
+static hwloc_obj_t root = NULL;
+
+// Our socket, if applicable.
+static hwloc_obj_t socket = NULL;
+
 
 static hwloc_obj_t getNumaObj(c_sublocid_t);
 static void alignAddrSize(void*, size_t, chpl_bool,
@@ -94,6 +108,8 @@ static void chpl_topo_setMemLocalityByPages(unsigned char*, size_t,
 // CPU reservation must happen before CPU information is returned to other
 // layers.
 static chpl_bool okToReserveCPU = true;
+
+static chpl_bool oversubscribed = false;
 
 //
 // Error reporting.
@@ -145,6 +161,10 @@ void chpl_topo_init(void) {
   //
   CHK_ERR_ERRNO(hwloc_topology_init(&topology) == 0);
 
+  // Make sure we get everything including I/O devices.
+  int flags = HWLOC_TOPOLOGY_FLAG_WHOLE_IO | HWLOC_TOPOLOGY_FLAG_IO_BRIDGES | HWLOC_TOPOLOGY_FLAG_IO_DEVICES;
+  CHK_ERR_ERRNO(hwloc_topology_set_flags(topology, flags) == 0);
+
   //
   // Perform the topology detection.
   //
@@ -176,43 +196,12 @@ void chpl_topo_init(void) {
   topoDepth = hwloc_topology_get_depth(topology);
 
   //
-  // How many NUMA domains do we have?
+  // By default our root is the root of the topology.
   //
-  {
-    int level;
 
-    //
-    // Note: If there are multiple levels with NUMA nodes, this finds
-    //       only the uppermost.
-    //
-    for (level = 0, numaLevel = -1;
-         level < topoDepth && numaLevel == -1;
-         level++) {
-      if (hwloc_get_depth_type(topology, level) == HWLOC_OBJ_NUMANODE) {
-        numaLevel = level;
-      }
-    }
-  }
+  root = hwloc_get_root_obj(topology);
 
-  //
-  // Find the NUMA nodes, that is, the objects at numaLevel that also
-  // have CPUs.  This is as opposed to things like Xeon Phi HBM, which
-  // is memory-only, no CPUs.  Allow for overriding this through the
-  // environment.
-  //
-  if (strcmp(CHPL_LOCALE_MODEL, "flat") != 0) {
-    //
-    // The number of NUMA domains only matters for locale models other
-    // than 'flat'.
-    //
-    numNumaDomains = (int) chpl_env_rt_get_uint("NUM_NUMA_DOMAINS", 0);
-  }
-
-  if (numNumaDomains == 0) {
-    const hwloc_cpuset_t cpusetAll = hwloc_get_root_obj(topology)->cpuset;
-    numNumaDomains =
-      hwloc_get_nbobjs_inside_cpuset_by_depth(topology, cpusetAll, numaLevel);
-  }
+  cpuInfoInit();
 }
 
 
@@ -233,6 +222,10 @@ void chpl_topo_exit(void) {
     hwloc_bitmap_free(logAccSet);
     logAccSet = NULL;
   }
+  if (numaSet != NULL) {
+    hwloc_bitmap_free(numaSet);
+    numaSet = NULL;
+  }
   hwloc_topology_destroy(topology);
 }
 
@@ -244,31 +237,39 @@ void* chpl_topo_getHwlocTopology(void) {
 //
 // How many CPUs (cores or PUs) are there?
 //
-static pthread_once_t numCPUs_ctrl = PTHREAD_ONCE_INIT;
-static void getCPUInfo(void);
 static int numCPUsPhysAcc = -1;
 static int numCPUsPhysAll = -1;
 static int numCPUsLogAcc  = -1;
 static int numCPUsLogAll  = -1;
+static int numSockets = -1;
 
 int chpl_topo_getNumCPUsPhysical(chpl_bool accessible_only) {
-  CHK_ERR(pthread_once(&numCPUs_ctrl, getCPUInfo) == 0);
-  okToReserveCPU = true;
-  return (accessible_only) ? numCPUsPhysAcc : numCPUsPhysAll;
+  okToReserveCPU = false;
+  int cpus = (accessible_only) ? numCPUsPhysAcc : numCPUsPhysAll;
+  if (cpus == -1) {
+    chpl_error("number of cpus is uninitialized", 0, 0);
+  }
+  return cpus;
 }
 
 
 int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
-  CHK_ERR(pthread_once(&numCPUs_ctrl, getCPUInfo) == 0);
   okToReserveCPU = false;
-  return (accessible_only) ? numCPUsLogAcc : numCPUsLogAll;
+  int cpus = (accessible_only) ? numCPUsLogAcc : numCPUsLogAll;
+  if (cpus == -1) {
+    chpl_error("number of cpus is uninitialized", 0, 0);
+  }
+  return cpus;
 }
 
+
 //
-// Gets information about CPUs (cores and PUs) from the toplogy.
+// Initializes information about CPUs (cores and PUs) and and NICs from the
+// topology.
 //
-static
-void getCPUInfo(void) {
+
+static void cpuInfoInit(void) {
+  _DBG_P("cpuInfoInit");
   //
   // accessible cores and PUs
   //
@@ -276,32 +277,49 @@ void getCPUInfo(void) {
   CHK_ERR_ERRNO((physReservedSet = hwloc_bitmap_alloc()) != NULL);
   CHK_ERR_ERRNO((logAccSet = hwloc_bitmap_alloc()) != NULL);
 
+  // accessible NUMA nodes
+
+  CHK_ERR_ERRNO((numaSet = hwloc_bitmap_alloc()) != NULL);
+
   //
   // Hwloc can't tell us the number of accessible cores directly, so
   // get that by counting the parent cores of the accessible PUs.
   //
+
+  // accessible PUs
 
   //
   // We could seemingly use hwloc_topology_get_allowed_cpuset() to get
   // the set of accessible PUs here.  But that seems not to reflect the
   // schedaffinity settings, so use hwloc_get_proc_cpubind() instead.
   //
-  if (hwloc_get_proc_cpubind(topology, getpid(), logAccSet, 0) != 0) {
-#ifdef __APPLE__
-    const int errRecoverable = (errno == ENOSYS); // no cpubind on macOS
-#else
-    const int errRecoverable = 0;
-#endif
-    if (errRecoverable) {
-      hwloc_bitmap_fill(logAccSet);
-    } else {
-      REPORT_ERR_ERRNO(hwloc_get_proc_cpubind(topology, getpid(), logAccSet, 0)
-                       == 0);
-    }
+  if (topoSupport->cpubind->get_proc_cpubind) {
+    int rc = hwloc_get_proc_cpubind(topology, getpid(), logAccSet, 0);
+    CHK_ERR_ERRNO(rc == 0);
+  } else {
+    // assume all PUs are accessible
+    hwloc_bitmap_fill(logAccSet);
   }
   hwloc_bitmap_and(logAccSet, logAccSet,
                    hwloc_topology_get_online_cpuset(topology));
+  numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
+  CHK_ERR(numCPUsLogAcc > 0);
+  _DBG_P("numCPUsLogAcc = %d", numCPUsLogAcc);
 
+  //
+  // all PUs. The online set doesn't include PUs that cannot be
+  // used, e.g., if hyperthreading is turned off
+  //
+  hwloc_const_cpuset_t onlineSet = hwloc_topology_get_online_cpuset(
+                                                              topology);
+  numCPUsLogAll = hwloc_bitmap_weight(onlineSet);
+  CHK_ERR(numCPUsLogAll > 0);
+  _DBG_P("numCPUsLogAll = %d", numCPUsLogAll);
+
+
+  // accessible cores
+
+  int pusPerCore = 0;
 #define NEXT_PU(pu)                                                \
   hwloc_get_next_obj_inside_cpuset_by_type(topology, logAccSet,    \
                                            HWLOC_OBJ_PU, pu)
@@ -311,6 +329,9 @@ void getCPUInfo(void) {
     CHK_ERR_ERRNO(core = hwloc_get_ancestor_obj_by_type(topology,
                                                          HWLOC_OBJ_CORE,
                                                          pu));
+    int numPus = hwloc_bitmap_weight(core->cpuset);
+    CHK_ERR((pusPerCore == 0) || (pusPerCore == numPus));
+    pusPerCore = numPus;
     // Use the smallest PU to represent the core.
     int smallest = hwloc_bitmap_first(core->cpuset);
     CHK_ERR(smallest != -1);
@@ -320,26 +341,154 @@ void getCPUInfo(void) {
 #undef NEXT_PU
 
   numCPUsPhysAcc = hwloc_bitmap_weight(physAccSet);
-
   CHK_ERR(numCPUsPhysAcc > 0);
+  _DBG_P("numCPUsPhysAcc = %d", numCPUsPhysAcc);
 
   //
   // all cores
   //
-  numCPUsPhysAll = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_CORE);
+  // Note: hwloc_get_nbobjs_inside_cpuset_by_type cannot be called on
+  // onlineSet because inaccessible PUs and their cores do not have
+  // objects in the topology. pusPerCore might vary by core, but that is
+  // checked above.
+
+  numCPUsPhysAll = numCPUsLogAll / pusPerCore;
   CHK_ERR(numCPUsPhysAll > 0);
+  _DBG_P("numCPUsPhysAll = %d", numCPUsPhysAll);
 
-  //
-  // accessible PUs
-  //
-  numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
-  CHK_ERR(numCPUsLogAcc > 0);
+  numSockets = hwloc_get_nbobjs_inside_cpuset_by_type(topology,
+                      root->cpuset, HWLOC_OBJ_PACKAGE);
+  _DBG_P("numSockets = %d", numSockets);
 
-  //
-  // all PUs
-  //
-  numCPUsLogAll = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PU);
-  CHK_ERR(numCPUsLogAll > 0);
+  int numLocalesOnNode = chpl_get_num_locales_on_node();
+  int expectedLocalesOnNode = chpl_env_rt_get_int("LOCALES_PER_NODE", 0);
+  chpl_bool useSocket = chpl_env_rt_get_bool("USE_SOCKET", false);
+  int rank = chpl_get_local_rank();
+  _DBG_P("numLocalesOnNode = %d", numLocalesOnNode);
+  _DBG_P("expectedLocalesOnNode = %d", expectedLocalesOnNode);
+  _DBG_P("rank = %d", rank);
+  if ((numLocalesOnNode > 1) || (expectedLocalesOnNode > 1) || useSocket) {
+    if (numLocalesOnNode > 1) {
+      oversubscribed = true;
+    }
+
+    // We get our own socket if all cores are accessible, we know our local
+    // rank, and the number of locales on the node is less than or equal to
+    // the number of sockets. It is an error if the number of locales on the
+    // node is greater than the number of sockets and CHPL_RT_LOCALES_PER_NODE
+    // is set, otherwise we are oversubscribed.
+
+    // TODO: The oversubscription determination is incorrect. A node is only
+    // oversubscribed if locales are sharing cores. Need to figure out how
+    // to determine this accurately.
+
+    if (numCPUsPhysAcc == numCPUsPhysAll) {
+      if (numLocalesOnNode <= numSockets) {
+        if (rank != -1) {
+          // Use the socket whose logical index corresponds to our local rank.
+          // See getSocketNumber below if you change this.
+          socket = hwloc_get_obj_inside_cpuset_by_type(topology,
+                                    root->cpuset, HWLOC_OBJ_PACKAGE, rank);
+          CHK_ERR(socket != NULL);
+
+          // Limit the accessible cores and PUs to those in our socket.
+
+          hwloc_bitmap_and(logAccSet, logAccSet, socket->cpuset);
+          numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
+          CHK_ERR(numCPUsLogAcc > 0);
+
+          hwloc_bitmap_and(physAccSet, physAccSet, socket->cpuset);
+          numCPUsPhysAcc = hwloc_bitmap_weight(physAccSet);
+          CHK_ERR(numCPUsPhysAcc > 0);
+
+          if (debug) {
+            char buf[1024];
+            hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
+            _DBG_P("numCPUsLogAcc: %d logAccSet: %s", numCPUsLogAcc, buf);
+            hwloc_bitmap_list_snprintf(buf, sizeof(buf), physAccSet);
+            _DBG_P("numCPUsPhysAcc: %d physAccSet: %s", numCPUsPhysAcc, buf);
+          }
+          root = socket;
+          oversubscribed = false;
+        }
+      } else if (expectedLocalesOnNode > 0) {
+        char msg[100];
+        snprintf(msg, sizeof(msg), "The number of locales on the node is "
+                 "greater than the number of sockets (%d > %d).",
+                 numLocalesOnNode, numSockets);
+        chpl_error(msg, 0, 0);
+      }
+    }
+  }
+
+  // CHPL_RT_OVERSUBSCRIBED overrides oversubscription determination
+
+  oversubscribed = chpl_env_rt_get_bool("OVERSUBSCRIBED", oversubscribed);
+
+  if ((verbosity >= 2) && (chpl_nodeID == 0)) {
+    printf("oversubscribed = %s\n", oversubscribed ? "True" : "False");
+  }
+
+  // Find the NUMA nodes.
+
+  hwloc_cpuset_to_nodeset(topology, logAccSet, numaSet);
+  numNumaDomains = hwloc_bitmap_weight(numaSet);
+  _DBG_P("numNumaDomains %d", numNumaDomains);
+  if (debug) {
+    char buf[1024];
+    _DBG_P("numCPUsLogAll: %d", numCPUsLogAll);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
+    _DBG_P("numCPUsLogAcc: %d logAccSet: %s", numCPUsLogAcc,
+           buf);
+
+    _DBG_P("numCPUsPhysAll: %d", numCPUsPhysAll);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), physAccSet);
+    _DBG_P("numCPUsPhysAcc: %d physAccSet: %s", numCPUsPhysAcc,
+           buf);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), numaSet);
+    _DBG_P("numaSet: %s", buf);
+
+    hwloc_const_cpuset_t set;
+
+    set = hwloc_topology_get_allowed_cpuset(topology);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
+    _DBG_P("allowed cpuset: %s", buf);
+
+    set = hwloc_topology_get_complete_cpuset(topology);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
+    _DBG_P("complete cpuset: %s", buf);
+
+    set = hwloc_topology_get_online_cpuset(topology);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
+    _DBG_P("online cpuset: %s", buf);
+
+    set = hwloc_topology_get_topology_cpuset(topology);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
+    _DBG_P("topology cpuset: %s", buf);
+
+  }
+}
+
+
+// If we are running in a socket then cpuInfoInit will assign each locale to
+// the socket whose logical index is equal to the locale's local rank. This
+// function returns the socket number for the given locale. Right now it's
+// the identity mapping, but should be changed if the way cpuInfoInit does
+// the mapping is changed.
+static
+int getSocketNumber(int localRank) {
+  int result = -1;
+  if (socket != NULL) {
+    result = localRank;
+  }
+  return result;
+}
+
+void chpl_topo_post_args_init(void) {
+  if ((verbosity >= 2) && (socket != NULL)) {
+    printf("%d: using socket %d\n", chpl_nodeID,
+           socket->logical_index);
+  }
 }
 
 //
@@ -368,7 +517,6 @@ int getCPUs(hwloc_cpuset_t cpuset, int *cpus, int size) {
 //
 int chpl_topo_getCPUs(chpl_bool physical, int *cpus, int count) {
   // Initializes CPU information.
-  CHK_ERR(pthread_once(&numCPUs_ctrl, getCPUInfo) == 0);
   okToReserveCPU = false;
   return getCPUs(physical ? physAccSet : logAccSet, cpus, count);
 }
@@ -397,9 +545,17 @@ void chpl_topo_setThreadLocality(c_sublocid_t subloc) {
   hwloc_cpuset_from_nodeset(topology, cpuset,
                             getNumaObj(subloc)->allowed_nodeset);
 
+  // Only use accessible CPUs.
+
+  hwloc_bitmap_and(cpuset, cpuset, logAccSet);
+
   flags = HWLOC_CPUBIND_THREAD | HWLOC_CPUBIND_STRICT;
   CHK_ERR_ERRNO(hwloc_set_cpubind(topology, cpuset, flags) == 0);
-
+  if (debug) {
+    char buf[1024];
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), cpuset);
+    _DBG_P("chpl_topo_setThreadLocality(%d): %s", (int) subloc, buf);
+  }
   hwloc_bitmap_free(cpuset);
 }
 
@@ -547,12 +703,15 @@ void chpl_topo_touchMemFromSubloc(void* p, size_t size, chpl_bool onlyInside,
 
 static inline
 hwloc_obj_t getNumaObj(c_sublocid_t subloc) {
-  // could easily imagine this being a bit slow, but it's okay for now
-  return
-    hwloc_get_obj_inside_cpuset_by_depth(topology,
-                                         hwloc_get_root_obj(topology)->cpuset,
-                                         numaLevel,
-                                         subloc);
+  int id;
+  int count = 0;
+  hwloc_bitmap_foreach_begin(id, numaSet) {
+    if (count == subloc) {
+      break;
+    }
+    count++;
+  } hwloc_bitmap_foreach_end();
+  return hwloc_get_numanode_obj_by_os_index(topology, id);
 }
 
 
@@ -596,9 +755,7 @@ void chpl_topo_interleaveMemLocality(void* p, size_t size) {
   }
 
   hwloc_bitmap_t set;
-  hwloc_obj_t obj;
-  obj = hwloc_get_root_obj(topology);
-  set = hwloc_bitmap_dup(obj->cpuset);
+  set = hwloc_bitmap_dup(root->cpuset);
 
   flags = 0;
   CHK_ERR_ERRNO(hwloc_set_area_membind(topology, p, size, set, HWLOC_MEMBIND_INTERLEAVE, flags) == 0);
@@ -678,20 +835,23 @@ c_sublocid_t chpl_topo_getMemLocality(void* p) {
 int
 chpl_topo_reserveCPUPhysical(void) {
   int id = -1;
-  CHK_ERR(pthread_once(&numCPUs_ctrl, getCPUInfo) == 0);
+  _DBG_P("topoSupport->cpubind->set_thisthread_cpubind: %d",
+         topoSupport->cpubind->set_thisthread_cpubind);
+  _DBG_P("numCPUsPhysAcc: %d", numCPUsPhysAcc);
   if (okToReserveCPU) {
-    if (topoSupport->cpubind->set_thisthread_cpubind && (numCPUsPhysAcc > 1)) {
+    if ((topoSupport->cpubind->set_thisthread_cpubind) &&
+        (numCPUsPhysAcc > 1)) {
 
-#ifdef DEBUG
-      char buf[1024];
-      _DBG_P("chpl_topo_reserveCPUPhysical before");
-      hwloc_bitmap_list_snprintf(buf, sizeof(buf), physAccSet);
-      _DBG_P("physAccSet: %s", buf);
-      hwloc_bitmap_list_snprintf(buf, sizeof(buf), physReservedSet);
-      _DBG_P("physReservedSet: %s", buf);
-      hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
-      _DBG_P("logAccSet: %s", buf);
-#endif
+      if (debug) {
+        char buf[1024];
+        _DBG_P("chpl_topo_reserveCPUPhysical before");
+        hwloc_bitmap_list_snprintf(buf, sizeof(buf), physAccSet);
+        _DBG_P("physAccSet: %s", buf);
+        hwloc_bitmap_list_snprintf(buf, sizeof(buf), physReservedSet);
+        _DBG_P("physReservedSet: %s", buf);
+        hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
+        _DBG_P("logAccSet: %s", buf);
+      }
       // Reserve the highest-numbered core.
       id = hwloc_bitmap_last(physAccSet);
       if (id >= 0) {
@@ -720,16 +880,16 @@ chpl_topo_reserveCPUPhysical(void) {
     _DBG_P("okToReserveCPU is false");
   }
 
-#ifdef DEBUG
-  char buf[1024];
-  _DBG_P("chpl_topo_reserveCPUPhysical %d", id);
-  hwloc_bitmap_list_snprintf(buf, sizeof(buf), physAccSet);
-  _DBG_P("physAccSet: %s", buf);
-  hwloc_bitmap_list_snprintf(buf, sizeof(buf), physReservedSet);
-  _DBG_P("physReservedSet: %s", buf);
-  hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
-  _DBG_P("logAccSet: %s", buf);
-#endif
+  if (debug) {
+    char buf[1024];
+    _DBG_P("chpl_topo_reserveCPUPhysical %d", id);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), physAccSet);
+    _DBG_P("physAccSet: %s", buf);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), physReservedSet);
+    _DBG_P("physReservedSet: %s", buf);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
+    _DBG_P("logAccSet: %s", buf);
+  }
   return id;
 }
 
@@ -742,8 +902,8 @@ chpl_topo_reserveCPUPhysical(void) {
 //
 int chpl_topo_bindCPU(int id) {
   int status = 1;
-  CHK_ERR(pthread_once(&numCPUs_ctrl, getCPUInfo) == 0);
-  if (hwloc_bitmap_isset(physReservedSet, id)) {
+  if (hwloc_bitmap_isset(physReservedSet, id) &&
+      (topoSupport->cpubind->set_thisthread_cpubind)) {
     int flags = HWLOC_CPUBIND_THREAD | HWLOC_CPUBIND_STRICT;
     hwloc_cpuset_t cpuset;
     CHK_ERR_ERRNO((cpuset = hwloc_bitmap_alloc()) != NULL);
@@ -752,8 +912,220 @@ int chpl_topo_bindCPU(int id) {
     hwloc_bitmap_free(cpuset);
     status = 0;
   }
-  _DBG_P("chpl_topo_bindCPUPhysical id: %d status: %d", id, status);
+  _DBG_P("chpl_topo_bindCPU id: %d status: %d", id, status);
   return status;
+}
+
+chpl_bool chpl_topo_isOversubscribed(void) {
+  _DBG_P("oversubscribed = %s", oversubscribed ? "True" : "False");
+  return oversubscribed;
+}
+//
+// Information used to sort NICs and to track which ones have already
+// been assigned to a locale.
+//
+typedef struct nic_info_t {
+  int         socket;
+  hwloc_obj_t obj;
+  chpl_bool   assigned;
+} nic_info_t;
+
+//
+// Comparison function for sort. Sorts based on socket then PCI address.
+//
+static int compareNics(const void *a, const void *b)
+{
+  nic_info_t *nicA = (nic_info_t *) a;
+  nic_info_t *nicB = (nic_info_t *) b;
+
+  int result;
+
+  result = nicA->socket - nicB->socket;
+  if (result == 0) {
+    struct hwloc_pcidev_attr_s *attrA = &(nicA->obj->attr->pcidev);
+    struct hwloc_pcidev_attr_s *attrB = &(nicB->obj->attr->pcidev);
+    result = attrA->domain - attrB->domain;
+    if (result == 0) {
+      result = attrA->bus - attrB->bus;
+      if (result == 0) {
+        result = attrA->dev - attrB->dev;
+        if (result == 0) {
+          result = attrA->func - attrB->func;
+        }
+      }
+    }
+  }
+  return result;
+}
+
+//
+// Given a NIC, determines which NIC of the same type (same vendor and device)
+// is the best to use. The "best" NIC is one in the same socket as this
+// locale. If there isn't a NIC in our socket then use an "extra" NIC if some
+// sockets have more than one, otherwise use an already-assigned NIC. In
+// either case choose a NIC in a round-robin fashion from those locales that
+// do not have a NIC in their socket.
+//
+
+chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
+                                                chpl_topo_pci_addr_t *outAddr)
+{
+  hwloc_obj_t nic = NULL;
+  struct hwloc_pcidev_attr_s *nicAttr;
+  chpl_topo_pci_addr_t *result = NULL;
+  nic_info_t *nics = NULL;
+  int *assignedNics = NULL;
+
+  if (root->type != HWLOC_OBJ_PACKAGE) {
+    // We aren't running in a socket, so we don't care which NIC is used.
+    goto done;
+  }
+
+  // find the PCI object corresponding to the specified NIC
+  for (hwloc_obj_t obj = hwloc_get_next_pcidev(topology, NULL);
+       obj != NULL;
+       obj = hwloc_get_next_pcidev(topology, obj)) {
+    if (obj->type == HWLOC_OBJ_PCI_DEVICE) {
+      struct hwloc_pcidev_attr_s *attr = &(obj->attr->pcidev);
+      if ((attr->domain == inAddr->domain) && (attr->bus == inAddr->bus) &&
+          (attr->dev == inAddr->device) && (attr->func == inAddr->function)) {
+        nic = obj;
+        break;
+      }
+    }
+  }
+  if (nic == NULL) {
+    _DBG_P("Could not find NIC %04x:%02x:%02x.%x", inAddr->domain,
+           inAddr->bus, inAddr->device, inAddr->function);
+    goto done;
+  }
+
+  // Find all the NICS of the same vendor and device as the specified NIC and
+  // sort them by socket and PCI address.
+
+  nicAttr = &(nic->attr->pcidev);
+  int maxNics = hwloc_get_nbobjs_by_type(topology, HWLOC_OBJ_PCI_DEVICE);
+  CHK_ERR(nics = sys_calloc(maxNics, sizeof(*nics)));
+  int numNics = 0;
+
+  for (hwloc_obj_t obj = hwloc_get_next_pcidev(topology, NULL);
+       obj != NULL;
+       obj = hwloc_get_next_pcidev(topology, obj)) {
+
+    if (obj->type == HWLOC_OBJ_PCI_DEVICE) {
+      struct hwloc_pcidev_attr_s *attr = &(obj->attr->pcidev);
+      if ((attr->vendor_id == nicAttr->vendor_id) &&
+          (attr->device_id == nicAttr->device_id)) {
+        hwloc_obj_t sobj = hwloc_get_ancestor_obj_by_type(topology,
+                                                          HWLOC_OBJ_PACKAGE,
+                                                          obj);
+        if (sobj == NULL) {
+          _DBG_P("Could not find socket for NIC %04x:%02x:%02x.%x",
+                 attr->domain, attr->bus, attr->dev, attr->func);
+          goto done;
+        }
+        nics[numNics].socket = sobj->logical_index;
+        nics[numNics].obj = obj;
+        nics[numNics].assigned = false;
+        numNics++;
+      }
+    }
+  }
+  qsort(nics, numNics, sizeof(*nics), compareNics);
+
+  // Use the first NIC in our socket if there is one.
+
+  for (int i = 0; i < numNics; i++) {
+    if (nics[i].socket == root->logical_index) {
+      nic = nics[i].obj;
+      goto done;
+    }
+  }
+
+  // There isn't a NIC in our socket. Use the nth unassigned NIC, where
+  // n is our rank among the locales that don't have NICs, modulo
+  // the number of unassigned NICs. Otherwise use the nth assigned NIC.
+
+  int numLocalesOnNode = chpl_get_num_locales_on_node();
+  CHK_ERR(assignedNics = sys_calloc(numLocalesOnNode, sizeof(*assignedNics)));
+
+  for (int i = 0; i < numLocalesOnNode; i++) {
+    assignedNics[i] = -1;
+  }
+
+  // Look for extra (unassigned) NICs. Any NIC whose socket number matches
+  // a locale's socket number will be assigned above. The rest are extra.
+
+  int numAssignedNics = 0;
+  for (int lid = 0; lid < numLocalesOnNode; lid++) {
+    for (int nid = 0; nid < numNics; nid++) {
+      if (nics[nid].socket == getSocketNumber(lid)) {
+        assignedNics[lid] = nid;
+        nics[nid].assigned = true;
+        numAssignedNics++;
+        break;
+      }
+    }
+  }
+
+  // Determine our rank within the locales that do not have a NIC assigned.
+
+  int unmatchedLocales = 0;
+  int unassignedRank = -1;
+  int rank = chpl_get_local_rank();
+  for (int lid = 0; lid < numLocalesOnNode; lid++) {
+    if (lid == rank) {
+      unassignedRank = unmatchedLocales;
+      break;
+    }
+    if (assignedNics[lid] == -1) {
+      unmatchedLocales++;
+    }
+  }
+  CHK_ERR(unassignedRank != -1);
+
+  if (numAssignedNics == numNics) {
+
+    // All NICs are assigned, we'll have to share one.
+
+    nic = nics[unassignedRank % numNics].obj;
+  } else {
+
+    // Use an unassigned NIC, perhaps sharing one if necessary.
+    // Note that this can lead to unbalanced loads, but should be uncommon.
+
+    unassignedRank %= (numNics - numAssignedNics);
+
+    int count = 0;
+    for (int nid = 0; nid < numNics; nid++) {
+      if (nics[nid].assigned == false) {
+        if (unassignedRank == count) {
+          nic = nics[nid].obj;
+          goto done;
+        }
+        count++;
+      }
+    }
+  }
+
+done:
+  if (nic != NULL) {
+    nicAttr = &(nic->attr->pcidev);
+    if (outAddr != NULL) {
+      outAddr->domain = nicAttr->domain;
+      outAddr->bus = nicAttr->bus;
+      outAddr->device = nicAttr->dev;
+      outAddr->function = nicAttr->func;
+      result = outAddr;
+    }
+  }
+  if (nics != NULL) {
+    sys_free(nics);
+  }
+  if (assignedNics != NULL) {
+    sys_free(assignedNics);
+  }
+  return result;
 }
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -48,6 +48,11 @@ class Break : public AstNode {
     CHPL_ASSERT(numChildren() <= 1);
   }
 
+  Break(Deserializer& des)
+   : AstNode(asttags::Break, des) {
+    targetChildNum_ = des.read<int8_t>();
+    }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Break* lhs = this;
     const Break* rhs = other->toBreak();
@@ -60,6 +65,8 @@ class Break : public AstNode {
 
   void markUniqueStringsInner(Context* context) const override {
   }
+
+  std::string dumpChildLabelInner(int i) const override;
 
   int8_t targetChildNum_;
 
@@ -81,6 +88,13 @@ class Break : public AstNode {
     CHPL_ASSERT(ret->isIdentifier());
     return (const Identifier*)ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(targetChildNum_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Break);
 
 };
 

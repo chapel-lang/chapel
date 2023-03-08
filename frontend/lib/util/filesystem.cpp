@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -206,6 +206,10 @@ std::error_code makeDir(std::string dirpath, bool makeParents) {
 std::string getExecutablePath(const char* argv0, void* MainExecAddr) {
   using namespace llvm::sys::fs;
   return getMainExecutable(argv0, MainExecAddr);
+}
+
+bool isSameFile(const char* path1, const char* path2) {
+  return llvm::sys::fs::equivalent(path1, path2);
 }
 
 

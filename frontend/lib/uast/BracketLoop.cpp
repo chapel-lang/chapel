@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,9 +37,9 @@ owned<BracketLoop> BracketLoop::build(Builder* builder, Location loc,
   CHPL_ASSERT(body.get() != nullptr);
 
   AstList lst;
-  int8_t indexChildNum = -1;
-  int8_t iterandChildNum = -1;
-  int8_t withClauseChildNum = -1;
+  int8_t indexChildNum = NO_CHILD;
+  int8_t iterandChildNum = NO_CHILD;
+  int8_t withClauseChildNum = NO_CHILD;
 
   if (index.get() != nullptr) {
     indexChildNum = lst.size();

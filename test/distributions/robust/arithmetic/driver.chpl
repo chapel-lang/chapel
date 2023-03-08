@@ -1,4 +1,6 @@
-public use BlockDist, CyclicDist, BlockCycDist, ReplicatedDist, StencilDist;
+public use BlockDist except testFastFollowerOptimization;
+public use CyclicDist except testFastFollowerOptimization;
+public use BlockCycDist, ReplicatedDist, StencilDist;
 
 enum DistType { default, block, cyclic, blockcyclic, replicated, stencil };
 
@@ -113,6 +115,6 @@ proc next() { next_i += 1; return next_i; }
 //  testing purposes)
 //
 inline
-proc dist_eq(a, b) return __primitive("ptr_eq", a._value:object, b._value:object);
+proc dist_eq(a, b) do return __primitive("ptr_eq", a._value:object, b._value:object);
 inline
-proc dist_neq(a, b) return __primitive("ptr_neq", a._value:object, b._value:object);
+proc dist_neq(a, b) do return __primitive("ptr_neq", a._value:object, b._value:object);

@@ -6,7 +6,7 @@ record Foo {
   }
 }
 
-proc ident(x: Foo) return x;
+proc ident(x: Foo) do return x;
 
 var foo1 = new Foo(13);
 var foo2 = ident(foo1);

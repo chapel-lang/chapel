@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,6 +20,13 @@
 
 #include "AstLogger.h"
 #include "stlUtil.h"
+
+bool AstLogger::enterThunk(TemporaryConversionThunk* node) {
+  return true;
+}
+
+void AstLogger::exitThunk(TemporaryConversionThunk* node) {
+}
 
 bool AstLogger::enterAggrType(AggregateType* node) {
   return true;
@@ -44,6 +51,9 @@ void AstLogger::exitEnumType(EnumType* node) {
 }
 
 void AstLogger::visitPrimType(PrimitiveType* node) {
+}
+
+void AstLogger::visitFunctionType(FunctionType* node) {
 }
 
 void AstLogger::visitConstrainedType(ConstrainedType* node) {

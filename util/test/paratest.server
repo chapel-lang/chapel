@@ -39,7 +39,7 @@ $client_script = "$pwd/../util/test/paratest.client";
 $venv_check = "$pwd/../util/test/run-in-test-venv.bash python3 -c 'print(\"OK\")'";
 $summary_len = 2;
 $sleep_time = 1;                       # polling time (sec) to distribute work
-$futures_mode = 0;
+$futures_mode = 1;
 $filedist = 0;
 $dirs = "";
 $node_para = 1;                        # the number of tasks to run on each node
@@ -51,6 +51,7 @@ $show_all_errors = 0;
 $junit_xml = 0;
 $junit_xml_file = "";
 $junit_remove_prefix = "";
+$timing_file = "";
 # Once a node has timed out, we don't send it any more work, so this timeout
 # should be set higher than the time needed to process the largest directory.
 # -1 means "never time out".
@@ -164,6 +165,11 @@ sub collect_logs {
 
     systemd ("cat $fin_log.summary >> $fin_log");
 
+    # generate subtest/dir timings
+    if ($timing_file ne "" &&  int($failures) < 10) {
+        systemd ("grep -a '^\\[Finished subtest' $fin_log > $timing_file");
+    }
+
     print "\n[Summary: #Successes = $successes | #Failures = $failures | #Futures = $futures]\n";
 
 }
@@ -220,7 +226,6 @@ sub feed_nodes {
       print $activate_venv_output;
       systemd ("echo '$activate_venv_output' >> $fin_logfile");
     } else {
-      @testdir_list = sort @testdir_list;
       print $nodeCount; print " worker(s) (@node_list)\n";
       print "timeout = $timeout\n" if $debug > 0;
       my $startCount = $#testdir_list + 1;
@@ -510,19 +515,20 @@ sub find_files {
 
 
 sub print_help {
-    print "Usage: paratest.server [-compopts s] [-dirfile d] [-dirs d] [-env s] [-execopts s] [-filedist] [-futures] [-futures-only] [-logfile l] [-memleaks] [-memleakslog f] [-multilocale-only] [-nodefile n] [-nodepara m] [-valgrind[exe]] [-help|-h] [-timeout t]\n";
+    print "Usage: paratest.server [-compopts s] [-dirfile d] [-dirs d] [-env s] [-execopts s] [-filedist] [-futures] [-futures-only] [-logfile l] [-memleaks] [-memleakslog f] [-multilocale-only] [-no-futures] [-nodefile n] [-nodepara m] [-valgrind[exe]] [-help|-h] [-timeout t]\n";
     print "    -compopts s: s is a string that is passed with -compopts to start_test.\n";
     print "    -dirfile  d: d is a file listing directories to test. Default is the current diretory.\n";
     print "    -dirs     d: d is a space separated list of directories to recursively search for directories to test\n";
     print "    -env s     : s is a string of space separated env vars forwarded to each client\n";
     print "    -execopts s: s is a string that is passed with -execopts to start_test.\n";
     print "    -filedist  : distribute work at the granularity of files (directory granurality is the default).\n";
-    print "    -futures   : include .future tests (default is none).\n";
+    print "    -futures   : include .future tests (the default behavior).\n";
     print "    -futures-only : only run .future tests, not regular ones.\n";
     print "    -logfile  l: l is the output log file. Default is \"user\".\"platform\".log. in the Logs subdirectory.\n";
     print "    -memleaks  : pass -memleaks to start_test. \n";
     print "    -memleakslog f: pass -memleakslog to start_test; aggregate all output.\n";
     print "    -multilocale-only: pass -multilocale-only to start_test if comm!=none\n";
+    print "    -no-futures: skip over .future tests (default is '-futures').\n";
     print "    -nodefile n: n is a file listing nodes to run on. Default is current node.\n";
     print "    -nodepara m: Run m paratest.client tasks on each node.\n";
     print "    -valgrind[exe]  : pass -valgrind or -valgrindexe to start_test.\n";
@@ -601,6 +607,8 @@ sub main {
             $futures_mode = 2;
         } elsif (/^-futures$/) {
             $futures_mode = 1;
+        } elsif (/^-no-futures$/) {
+            $futures_mode = 0;
         } elsif (/^-logfile$/) {
             shift @ARGV;
             if ($#ARGV >= 0) {
@@ -784,6 +792,11 @@ sub main {
         } else {
             print "[Collecting test directories in $cwd]\n";
             @testdir_list = find_subdirs (".", 0);
+            $comm = `$ENV{CHPL_HOME}/util/chplenv/chpl_comm.py`; chomp $comm;
+            $timing_dir = "$ENV{HOME}/.chpl/paratest_times";
+            systemd ("mkdir -p $timing_dir");
+            $timing_file = "$timing_dir/comm-$comm-dir-times";
+            @testdir_list = split(' ', `$ENV{CHPL_HOME}/util/test/find_slow_tests.py --directory --timefile $timing_file --sort-list @testdir_list`);
         }
     }
 

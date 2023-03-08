@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -52,6 +52,10 @@ class PrimCall final : public Call {
            /* hasCalledExpression */ false),
       prim_(prim) {
   }
+  PrimCall(Deserializer& des)
+    : Call(asttags::PrimCall, des) {
+    prim_ = des.read<PrimitiveTag>();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const PrimCall* lhs = this;
@@ -69,6 +73,8 @@ class PrimCall final : public Call {
     callMarkUniqueStringsInner(context);
   }
 
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
  public:
   ~PrimCall() override = default;
   static owned<PrimCall> build(Builder* builder,
@@ -78,6 +84,13 @@ class PrimCall final : public Call {
 
   /** Returns the enum value of the primitive called */
   PrimitiveTag prim() const { return prim_; }
+
+  void serialize(Serializer& ser) const override {
+    Call::serialize(ser);
+    ser.write(prim_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(PrimCall);
 };
 
 

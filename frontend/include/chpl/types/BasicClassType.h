@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -75,6 +75,8 @@ class BasicClassType final : public CompositeType {
       CompositeType::SubstitutionsMap subs);
 
   static const BasicClassType* getObjectType(Context* context);
+
+  static const BasicClassType* getReduceScanOpType(Context* context);
 
   /** Return the parent class type, or nullptr if this is the 'object' type. */
   const BasicClassType* parentClassType() const {

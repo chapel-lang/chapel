@@ -3,11 +3,11 @@
 
 use Regex, IO;
 
-var f = openmem();
+var f = openMemFile();
 
 proc testEmpty(re:string) {
   var fr = f.reader();
-  writeln("[", re, "]  ", fr.matches(compile(re), 0, 6), " ", fr.offset());
+  writeln("[", re, "]  ", fr.matches(new regex(re), 0, 6), " ", fr.offset());
 }
 
 // each of the following matches exactly once at offset 0, given an empty file
@@ -23,7 +23,7 @@ writeln();
 
 proc testXY(re:string) {
   var fr1 = f.reader();
-  for mm in fr1.matches(compile(re), 0, 6) {
+  for mm in fr1.matches(new regex(re), 0, 6) {
     var ss: string;
     fr1.extractMatch(mm(0), ss);
     writeln("[", re, "]  ", mm, " <", ss, "> ", fr1.offset());
@@ -46,7 +46,7 @@ writeln();
 
 proc testSearch(re:string) {
   var fr = f.reader();
-  writeln("[", re, "]   ", fr.search(compile(re)), " ", fr.offset());
+  writeln("[", re, "]   ", fr.search(new regex(re)), " ", fr.offset());
 }
 
 testSearch("");
@@ -62,5 +62,5 @@ writeln();
 var frx = f.reader();
 const rex = "^$";
 // how should the offset progress here? see also testSearch("^$") above
-writeln("[", rex, "]   ", frx.search(compile(rex)), " ", frx.offset());
-writeln("[", rex, "]   ", frx.search(compile(rex)), " ", frx.offset());
+writeln("[", rex, "]   ", frx.search(new regex(rex)), " ", frx.offset());
+writeln("[", rex, "]   ", frx.search(new regex(rex)), " ", frx.offset());

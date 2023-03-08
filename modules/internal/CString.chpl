@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -184,9 +184,9 @@ module CString {
   // primitive c_string functions and methods
   //
 
-  inline proc c_string.size return __primitive("string_length_bytes", this);
+  inline proc c_string.size do return __primitive("string_length_bytes", this);
 
-  inline proc c_string.substring(i: int)
+  inline proc c_string.substring(i: int) do
     return __primitive("string_index", this, i);
 
   inline proc c_string.substring(r: range(?)) {
@@ -200,13 +200,13 @@ module CString {
     return __primitive("string_length_bytes", this);
   }
   pragma "last resort" // avoids param string to c_string coercion
-  inline proc _string_contains(param a: c_string, param b: c_string) param
+  inline proc _string_contains(param a: c_string, param b: c_string) param do
     return __primitive("string_contains", a, b);
 
   /* Returns the index of the first occurrence of a substring within a string,
      or 0 if the substring is not in the string.
   */
-  inline proc c_string.indexOf(substring:c_string):int
+  inline proc c_string.indexOf(substring:c_string):int do
     return string_index_of(this, substring);
 
   pragma "fn synchronization free"

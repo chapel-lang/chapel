@@ -8,7 +8,7 @@
 //
 
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -142,7 +142,7 @@ static void profile_print(void)
 // Startup and shutdown control.  The mutex is used just for the side
 // effect of its (very portable) memory fence.
 //
-volatile int chpl_qthread_done_initializing;
+volatile int chpl_qthread_initialized;
 static aligned_t canexit = 0;
 static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -300,7 +300,7 @@ static void *initializer(void *junk)
     qthread_initialize();
     qthread_purge(&canexit);
     (void) pthread_mutex_lock(&init_mutex);
-    chpl_qthread_done_initializing = 1;
+    chpl_qthread_initialized = 1;
     (void) pthread_mutex_unlock(&init_mutex);
 
     qthread_readFF(NULL, &canexit);
@@ -445,6 +445,7 @@ static int32_t chpl_qt_getenv_num_workers(void) {
 static void setupAvailableParallelism(int32_t maxThreads) {
     int32_t   numThreadsPerLocale;
     int32_t   qtEnvThreads;
+    chpl_bool noMultithread;
     int32_t   hwpar;
     char      newenv_workers[QT_ENV_S] = { 0 };
 
@@ -454,6 +455,7 @@ static void setupAvailableParallelism(int32_t maxThreads) {
     // vars, we override the default.
     numThreadsPerLocale = chpl_task_getenvNumThreadsPerLocale();
     qtEnvThreads = chpl_qt_getenv_num_workers();
+    noMultithread = chpl_env_rt_get_bool("NO_MULTITHREAD", false);
     hwpar = 0;
 
     // User set chapel level env var (CHPL_RT_NUM_THREADS_PER_LOCALE)
@@ -463,7 +465,11 @@ static void setupAvailableParallelism(int32_t maxThreads) {
 
         hwpar = numThreadsPerLocale;
 
-        numPUsPerLocale = chpl_topo_getNumCPUsLogical(true);
+        if (noMultithread) {
+            numPUsPerLocale = chpl_topo_getNumCPUsPhysical(true);
+        } else {
+            numPUsPerLocale = chpl_topo_getNumCPUsLogical(true);
+        }
         if (0 < numPUsPerLocale && numPUsPerLocale < hwpar) {
             char msg[256];
             snprintf(msg, sizeof(msg),
@@ -664,7 +670,7 @@ static void setupWorkStealing(void) {
 
 static void setupSpinWaiting(void) {
   const char *crayPlatform = "cray-x";
-  if (chpl_get_oversubscribed()) {
+  if (chpl_topo_isOversubscribed()) {
     chpl_qt_setenv("SPINCOUNT", "300", 0);
   } else if (strncmp(crayPlatform, CHPL_TARGET_PLATFORM, strlen(crayPlatform)) == 0) {
     chpl_qt_setenv("SPINCOUNT", "3000000", 0);
@@ -672,7 +678,7 @@ static void setupSpinWaiting(void) {
 }
 
 static void setupAffinity(void) {
-  if (chpl_get_oversubscribed()) {
+  if (chpl_topo_isOversubscribed()) {
     chpl_qt_setenv("AFFINITY", "no", 0);
   }
 
@@ -683,6 +689,7 @@ static void setupAffinity(void) {
     int numCpus;
     chpl_bool physical;
     char *unit = chpl_qt_getenv_str("WORKER_UNIT");
+    _DBG_P("QT_WORKER_UNIT: %s", unit);
     if ((unit != NULL) && !strcmp(unit, "pu")) {
         physical = false;
         numCpus = chpl_topo_getNumCPUsLogical(true);
@@ -714,6 +721,7 @@ static void setupAffinity(void) {
           buf[offset-1] = '\0';
       }
       // tell binders which PUs to use
+      _DBG_P("QT_CPUBIND: %s (%d)", buf, numCpus);
       chpl_qt_setenv("CPUBIND", buf, 1);
       chpl_free(buf);
     }
@@ -739,11 +747,16 @@ void chpl_task_init(void)
     setupSpinWaiting();
     setupAffinity();
 
-    if (verbosity >= 2) { chpl_qt_setenv("INFO", "1", 0); }
+    if (verbosity >= 2) {
+        chpl_qt_setenv("INFO", "1", 0);
+        if (chpl_nodeID == 0) {
+            printf("oversubscribed = %s\n", chpl_topo_isOversubscribed() ? "True" : "False");
+        }
+    }
 
     // Initialize qthreads
     pthread_create(&initer, NULL, initializer, NULL);
-    while (chpl_qthread_done_initializing == 0)
+    while (chpl_qthread_initialized == 0)
         sched_yield();
 
     // Now that Qthreads is up and running, do a sanity check and make sure
@@ -763,7 +776,10 @@ void chpl_task_exit(void)
     if (qthread_shep() == NO_SHEPHERD) {
         /* sometimes, tasking is told to shutdown even though it hasn't been
          * told to start yet */
-        if (chpl_qthread_done_initializing == 1) {
+        if (chpl_qthread_initialized == 1) {
+            (void) pthread_mutex_lock(&init_mutex);
+            chpl_qthread_initialized = 0;
+            (void) pthread_mutex_unlock(&init_mutex);
             qthread_fill(&canexit);
             pthread_join(initer, NULL);
         }
@@ -821,6 +837,7 @@ static void *comm_task_wrapper(void *arg)
                      "binding comm task to CPU %d failed", rarg->cpu);
             chpl_warning(msg, 0, 0);
         }
+        _DBG_P("comm task bound to CPU %d", rarg->cpu);
     }
     (*(chpl_fn_p)(rarg->fn))(rarg->arg);
     return 0;
@@ -1078,7 +1095,7 @@ chpl_bool chpl_task_guardPagesInUse(void)
 // Threads
 
 uint32_t chpl_task_impl_getFixedNumThreads(void) {
-    assert(chpl_qthread_done_initializing);
+    assert(chpl_qthread_initialized);
     return (uint32_t)qthread_num_workers();
 }
 

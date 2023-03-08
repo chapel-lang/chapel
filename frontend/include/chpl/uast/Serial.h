@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -59,6 +59,11 @@ class Serial final : public SimpleBlockLike {
       condChildNum_(condChildNum) {
   }
 
+  Serial(Deserializer& des)
+    : SimpleBlockLike(asttags::Serial, des) {
+      condChildNum_ = des.read<int8_t>();
+    }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Serial* lhs = this;
     const Serial* rhs = (const Serial*) other;
@@ -75,6 +80,8 @@ class Serial final : public SimpleBlockLike {
   void markUniqueStringsInner(Context* context) const override {
     simpleBlockLikeMarkUniqueStringsInner(context);
   }
+
+  std::string dumpChildLabelInner(int i) const override;
 
   int8_t condChildNum_;
 
@@ -104,6 +111,13 @@ class Serial final : public SimpleBlockLike {
   const AstNode* condition() const {
     return condChildNum_ < 0 ? nullptr : child(condChildNum_);
   }
+
+  void serialize(Serializer& ser) const override {
+    SimpleBlockLike::serialize(ser);
+    ser.write(condChildNum_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Serial);
 
 };
 

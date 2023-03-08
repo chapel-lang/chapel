@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -39,9 +39,9 @@ struct PassInfo {
   char        logTag;
 };
 
-// These entries should be kept in the same order as the entries in passlist.h.
-#define LOG_parse                              'p'
-#define LOG_checkParsed                        LOG_NEVER
+// These entries should be kept in the same order as those in the pass list
+#define LOG_parseAndConvertUast                'p'
+#define LOG_checkUast                          LOG_NEVER
 #define LOG_readExternC                        LOG_NO_SHORT
 #define LOG_cleanup                            LOG_NO_SHORT
 #define LOG_scopeResolve                       's'
@@ -89,8 +89,8 @@ struct PassInfo {
 //
 static PassInfo sPassList[] = {
   // Chapel to AST
-  RUN(parse),                   // parse files and create AST
-  RUN(checkParsed),             // checks semantics of parsed AST
+  RUN(parseAndConvertUast),     // parse files and create AST
+  RUN(checkUast),               // checks semantics of parsed AST
 
   // Read in runtime and included C header file types/prototypes
   RUN(readExternC),
@@ -160,6 +160,21 @@ void runPasses(PhaseTracker& tracker) {
 
   if (printPasses == true || printPassesFile != 0) {
     tracker.ReportPass();
+  }
+
+  // verify that user-specified pass to stop after actually exists
+  if (stopAfterPass[0]) {
+    bool stopAfterPassValid = false;
+    for (size_t i = 0; i < passListSize; i++) {
+      if (strcmp(sPassList[i].name, stopAfterPass) == 0) {
+        stopAfterPassValid = true;
+        break;
+      }
+    }
+    if (!stopAfterPassValid) {
+      USR_FATAL("Requested to stop after pass '%s', but no such pass exists",
+                stopAfterPass);
+    }
   }
 
   for (size_t i = 0; i < passListSize; i++) {

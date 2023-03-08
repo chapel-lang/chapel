@@ -1,0 +1,3 @@
+testGetRemove.chpl:11: warning: 'Map.getAndRemove' is deprecated. Consider 'Map.get' and 'Map.remove' instead?
+{i = 1}
+{two: {i = 2}}

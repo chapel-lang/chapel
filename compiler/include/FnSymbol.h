@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,20 +21,13 @@
 #ifndef _FN_SYMBOL_H_
 #define _FN_SYMBOL_H_
 
+#include "intents.h"
 #include "library.h"
 #include "symbol.h"
 
 class IteratorGroup;     // see iterator.h
 class GenericsCacheInfo; // see caches.h
 void cleanupCacheInfo(FnSymbol* fn);
-
-enum RetTag {
-  RET_VALUE,
-  RET_REF,
-  RET_CONST_REF,
-  RET_PARAM,
-  RET_TYPE
-};
 
 enum TagGenericResult {
   TGR_ALREADY_TAGGED,
@@ -207,6 +200,9 @@ public:
   // the return-by-ref transformation has been applied, it returns gVoid.
   Symbol*                    getReturnSymbol();
 
+  // Compute the type based on the current signature. Does not resolve.
+  FunctionType*             computeAndSetType();
+
   // Removes all statements from body and adds all statements from block.
   void                       replaceBodyStmtsWithStmts(BlockStmt* block);
   // Removes all statements from body and adds the passed statement.
@@ -237,6 +233,8 @@ public:
   bool                       isMethodOnClass()                           const;
   bool                       isMethodOnRecord()                          const;
   bool                       isTypeMethod()                              const;
+  bool                       isSignature()                               const;
+  bool                       isAnonymous()                               const;
 
   void                       setMethod(bool value);
 
@@ -259,6 +257,8 @@ public:
   void                       addInterfaceConstraint(IfcConstraint* icon);
 
   Type*                      getReceiverType()                           const;
+
+  FunctionType*              getType()                                   const;
 
   bool                       isIterator()                                const;
 

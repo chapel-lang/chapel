@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,7 +28,7 @@ namespace uast {
 owned<Return> Return::build(Builder* builder, Location loc,
                             owned<AstNode> value) {
   AstList lst;
-  int8_t valueChildNum = -1;
+  int8_t valueChildNum = NO_CHILD;
 
   if (value.get() != nullptr) {
     valueChildNum = lst.size();

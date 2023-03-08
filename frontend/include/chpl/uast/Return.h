@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -48,6 +48,10 @@ class Return final : public AstNode {
       valueChildNum_(valueChildNum) {
     CHPL_ASSERT(valueChildNum_ <= 0);
   }
+  Return(Deserializer& des)
+    : AstNode(asttags::Return, des) {
+    valueChildNum_ = des.read<int8_t>();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Return* lhs = this;
@@ -83,6 +87,13 @@ class Return final : public AstNode {
     auto ret = child(valueChildNum_);
     return ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(valueChildNum_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Return);
 
 };
 

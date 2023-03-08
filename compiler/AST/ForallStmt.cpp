@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -634,8 +634,6 @@ static void checkIndicesForall(BaseAST* indices) {
 BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator, CallExpr* intents,
                              BlockStmt* body, bool zippered, bool serialOK)
 {
-  checkControlFlow(body, "forall statement");
-
   if (!indices)
     indices = new UnresolvedSymExpr("chpl__elidedIdx");
   checkIndicesForall(indices);

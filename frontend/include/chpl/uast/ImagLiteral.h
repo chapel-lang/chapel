@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -36,6 +36,10 @@ class ImagLiteral final : public NumericLiteral<double, types::RealParam> {
     : NumericLiteral(asttags::ImagLiteral, value, text)
   { }
 
+  ImagLiteral(Deserializer& des)
+    : NumericLiteral(asttags::ImagLiteral, des)
+  { }
+
   // contentsMatchInner / markUniqueStringsInner are in NumericLiteral
   // and would need to be defined here if any fields are added.
 
@@ -44,6 +48,12 @@ class ImagLiteral final : public NumericLiteral<double, types::RealParam> {
 
   static owned<ImagLiteral> build(Builder* builder, Location loc,
                                   double value, UniqueString text);
+
+  void serialize(Serializer& ser) const override {
+    NumericLiteral::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(ImagLiteral);
 };
 
 

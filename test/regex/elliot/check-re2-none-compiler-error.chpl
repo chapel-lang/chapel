@@ -1,2 +1,2 @@
 use Regex;
-var myRegex = compile("a+");
+var myRegex = new regex("a+");

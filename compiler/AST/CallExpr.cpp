@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -487,6 +487,10 @@ QualifiedType CallExpr::qualType(void) {
         // a ``uint(64)`` unless there are zero arguments
         retType = se->typeInfo();
       }
+    }
+
+    if (auto fnType = toFunctionType(se->symbol()->type)) {
+      retType = fnType->returnType();
     }
 
     retval = QualifiedType(QUAL_UNKNOWN, retType);

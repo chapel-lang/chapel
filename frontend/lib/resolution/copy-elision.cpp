@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,8 +20,10 @@
 #include "chpl/resolution/copy-elision.h"
 
 #include "chpl/resolution/ResolvedVisitor.h"
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/types/ClassType.h"
 #include "chpl/uast/all-uast.h"
 
 #include "VarScopeVisitor.h"
@@ -36,16 +38,35 @@ using namespace types;
 struct FindElidedCopies : VarScopeVisitor {
   // inputs
   const std::set<ID>& allSplitInitedVars;
+  const PoiScope* poiScope = nullptr; // used for checking init= calls
+  const Block* fnBody = nullptr; // used for handling implicit return
+
+  // internal variables
+  std::set<ID> outOrInoutFormals;
 
   // result of the process
   std::set<ID> allElidedCopyFromIds;
 
   // methods
-  FindElidedCopies(Context* context, const std::set<ID>& allSplitInitedVars)
-    : VarScopeVisitor(context), allSplitInitedVars(allSplitInitedVars) { }
+  FindElidedCopies(Context* context,
+                   const PoiScope* poiScope,
+                   const Block* fnBody,
+                   const std::set<ID>& allSplitInitedVars,
+                   QualifiedType fnReturnType)
+    : VarScopeVisitor(context, std::move(fnReturnType)),
+      allSplitInitedVars(allSplitInitedVars),
+      poiScope(poiScope),
+      fnBody(fnBody) {
+  }
 
-  static bool copyElisionAllowedForTypes(const QualifiedType& lhsType,
-                                         const QualifiedType& rhsType);
+  bool hasCrossTypeInitAssignWithIn(const QualifiedType& lhsType,
+                                    const QualifiedType& rhsType,
+                                    const AstNode* ast,
+                                    RV& rv);
+  bool copyElisionAllowedForTypes(const QualifiedType& lhsType,
+                                  const QualifiedType& rhsType,
+                                  const AstNode* ast,
+                                  RV& rv);
   static bool lastMentionIsCopy(VarFrame* frame, ID varId);
   static void gatherLastMentionIsCopyVars(VarFrame* frame, std::set<ID>& vars);
   static void addDeclaration(VarFrame* frame, const VarLikeDecl* ast);
@@ -58,6 +79,8 @@ struct FindElidedCopies : VarScopeVisitor {
   void saveLocalVarElidedCopies(VarFrame* frame);
 
   bool isEligibleVarInAnyFrame(ID varId);
+
+  void noteMentionsForOutFormals(VarFrame* frame);
 
   // overrides
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
@@ -73,28 +96,86 @@ struct FindElidedCopies : VarScopeVisitor {
                          const QualifiedType& formalType,
                          RV& rv) override;
 
-  void handleReturnOrThrow(const uast::AstNode* ast, RV& rv) override;
-  void handleConditional(const Conditional* cond) override;
-  void handleTry(const Try* t) override;
-  void handleScope(const AstNode* ast) override;
+  void handleReturn(const uast::Return* ast, RV& rv) override;
+  void handleThrow(const uast::Throw* ast, RV& rv) override;
+  void handleYield(const uast::Yield* ast, RV& rv) override;
+  void handleConditional(const Conditional* cond, RV& rv) override;
+  void handleTry(const Try* t, RV& rv) override;
+  void handleScope(const AstNode* ast, RV& rv) override;
 };
 
-static bool kindAllowsCopyElision(IntentList kind) {
-  return (kind == IntentList::VAR ||
-          kind == IntentList::CONST_VAR ||
-          kind == IntentList::IN ||
-          kind == IntentList::CONST_IN ||
-          kind == IntentList::OUT ||
-          kind == IntentList::INOUT);
+static bool kindAllowsCopyElision(Qualifier kind) {
+  return (kind == Qualifier::VAR ||
+          kind == Qualifier::CONST_VAR ||
+          kind == Qualifier::IN ||
+          kind == Qualifier::CONST_IN ||
+          kind == Qualifier::OUT ||
+          kind == Qualifier::INOUT);
+}
+
+// if this ends up representing any significant overhead,
+// we can cache the result in the ResolvedExpression,
+// or try to build up a map from type to type indicating convertibility.
+bool FindElidedCopies::hasCrossTypeInitAssignWithIn(
+                                           const QualifiedType& lhsType,
+                                           const QualifiedType& rhsType,
+                                           const AstNode* ast,
+                                           RV& rv) {
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back(CallInfoActual(lhsType, USTR("this")));
+  actuals.push_back(CallInfoActual(rhsType, UniqueString()));
+  auto ci = CallInfo (/* name */ USTR("init="),
+                      /* calledType */ QualifiedType(),
+                      /* isMethodCall */ true,
+                      /* hasQuestionArg */ false,
+                      /* isParenless */ false,
+                      actuals);
+  const Scope* scope = scopeForId(context, ast->id());
+  auto c = resolveGeneratedCall(context, ast, ci, scope, poiScope);
+  const MostSpecificCandidates& fns = c.mostSpecific();
+  // return intent overloading should not be possible with an init=
+  CHPL_ASSERT(fns.numBest() <= 1);
+  if (const TypedFnSignature* fn = fns.only()) {
+    // check for 'in' intent on the 'other' formal
+    if (fn->numFormals() >= 2) {
+      auto intent = fn->formalType(1).kind();
+      if (isInQualifier(intent)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+static bool isRecordLike(const Type* t) {
+  if (auto ct = t->toClassType()) {
+    auto decorator = ct->decorator();
+    if (! (decorator.isBorrowed() || decorator.isUnmanaged())) {
+      return true;
+    }
+  } else if (t->isRecordType() || t->isUnionType()) {
+    return true;
+  }
+  // TODO: tuples?
+
+  return false;
 }
 
 bool
 FindElidedCopies::copyElisionAllowedForTypes(const QualifiedType& lhsType,
-                                             const QualifiedType& rhsType) {
+                                             const QualifiedType& rhsType,
+                                             const AstNode* ast,
+                                             RV& rv) {
   if (kindAllowsCopyElision(lhsType.kind()) &&
       kindAllowsCopyElision(rhsType.kind())) {
     if (lhsType.type() == rhsType.type()) {
       return true;
+    } else if (isRecordLike(lhsType.type())) {
+      // check to see if an there is an init= to initialize
+      // lhsType from rhsType but that uses the 'in' intent on the
+      // formal.
+      return hasCrossTypeInitAssignWithIn(lhsType, rhsType, ast, rv);
     }
   }
 
@@ -112,7 +193,7 @@ bool FindElidedCopies::lastMentionIsCopy(VarFrame* frame, ID varId) {
 }
 void FindElidedCopies::gatherLastMentionIsCopyVars(VarFrame* frame,
                                                    std::set<ID>& vars) {
-  for (auto pair : frame->copyElisionState) {
+  for (const auto& pair : frame->copyElisionState) {
     if (pair.second.lastIsCopy) {
       vars.insert(pair.first);
     }
@@ -148,7 +229,7 @@ void FindElidedCopies::addMention(VarFrame* frame, ID varId) {
 }
 
 void FindElidedCopies::saveElidedCopies(VarFrame* frame) {
-  for (auto pair : frame->copyElisionState) {
+  for (const auto& pair : frame->copyElisionState) {
     const CopyElisionState& state = pair.second;
     if (state.lastIsCopy) {
       allElidedCopyFromIds.insert(state.points.begin(), state.points.end());
@@ -157,7 +238,7 @@ void FindElidedCopies::saveElidedCopies(VarFrame* frame) {
 }
 
 void FindElidedCopies::saveLocalVarElidedCopies(VarFrame* frame) {
-  for (auto id : frame->eligibleVars) {
+  for (const auto& id : frame->eligibleVars) {
     CHPL_ASSERT(frame->declaredVars.count(id) > 0);
     if (lastMentionIsCopy(frame, id)) {
       const CopyElisionState& state = frame->copyElisionState[id];
@@ -179,6 +260,14 @@ bool FindElidedCopies::isEligibleVarInAnyFrame(ID varId) {
   return false;
 }
 
+void FindElidedCopies::noteMentionsForOutFormals(VarFrame* frame) {
+  // consider all 'out' or 'inout' variables to be mentioned by a 'return'
+  // (since they will be communicated back to the call site)
+  for (const auto& id : outOrInoutFormals) {
+    addMention(frame, id);
+  }
+}
+
 void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
   addDeclaration(currentFrame(), ast);
   processDeclarationInit(ast, rv);
@@ -192,10 +281,17 @@ void FindElidedCopies::handleDeclaration(const VarLikeDecl* ast, RV& rv) {
       if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
         QualifiedType lhsType = rv.byId(lhsVarId).type();
         QualifiedType rhsType = rv.byId(rhsVarId).type();
-        if (copyElisionAllowedForTypes(lhsType, rhsType)) {
+        if (copyElisionAllowedForTypes(lhsType, rhsType, ast, rv)) {
           addCopyInit(frame, rhsVarId, ast->id());
         }
       }
+    }
+  }
+
+  if (ast->isFormal() || ast->isVarArgFormal()) {
+    if (ast->storageKind() == Qualifier::OUT ||
+        ast->storageKind() == Qualifier::INOUT) {
+      outOrInoutFormals.insert(ast->id());
     }
   }
 }
@@ -219,7 +315,7 @@ void FindElidedCopies::handleAssign(const OpCall* ast, RV& rv) {
       if (rv.hasId(lhsVarId) && rv.hasId(rhsVarId)) {
         QualifiedType lhsType = rv.byId(lhsVarId).type();
         QualifiedType rhsType = rv.byId(rhsVarId).type();
-        if (copyElisionAllowedForTypes(lhsType, rhsType)) {
+        if (copyElisionAllowedForTypes(lhsType, rhsType, ast, rv)) {
           addCopyInit(frame, rhsVarId, ast->id());
         }
       }
@@ -250,7 +346,7 @@ void FindElidedCopies::handleInFormal(const FnCall* ast, const AstNode* actual,
     // check that the types are the same
     if (rv.hasId(actualToId)) {
       QualifiedType actualType = rv.byId(actualToId).type();
-      if (copyElisionAllowedForTypes(formalType, actualType)) {
+      if (copyElisionAllowedForTypes(formalType, actualType, actual, rv)) {
         elide = true;
       }
     }
@@ -270,17 +366,52 @@ void FindElidedCopies::handleInoutFormal(const FnCall* ast,
   processMentions(actual, rv);
 }
 
-void FindElidedCopies::handleReturnOrThrow(const uast::AstNode* ast, RV& rv) {
+void FindElidedCopies::handleReturn(const uast::Return* ast, RV& rv) {
+  VarFrame* frame = currentFrame();
+
+  noteMentionsForOutFormals(frame);
+  saveElidedCopies(frame);
+}
+
+void FindElidedCopies::handleThrow(const uast::Throw* ast, RV& rv) {
   VarFrame* frame = currentFrame();
   saveElidedCopies(frame);
 }
 
-void FindElidedCopies::handleConditional(const Conditional* cond) {
+void FindElidedCopies::handleYield(const uast::Yield* ast, RV& rv) {
+  // if a variable is yielded by value & the variable is not used again,
+  // the copy can be elided
+  VarFrame* frame = currentFrame();
+  ID yieldedToId = refersToId(ast->value(), rv);
+  bool elide = false;
+  if (!yieldedToId.isEmpty() && isEligibleVarInAnyFrame(yieldedToId)) {
+    // check that the types are the same
+    if (rv.hasId(yieldedToId)) {
+      QualifiedType actualType = rv.byId(yieldedToId).type();
+      const QualifiedType& yieldType = returnOrYieldType();
+      if (copyElisionAllowedForTypes(yieldType, actualType, ast, rv)) {
+        elide = true;
+      }
+    }
+  }
+
+  if (elide) {
+    addCopyInit(frame, yieldedToId, ast->id());
+  } else {
+    processMentions(ast, rv);
+  }
+
+}
+
+void FindElidedCopies::handleConditional(const Conditional* cond, RV& rv) {
   VarFrame* frame = currentFrame();
   VarFrame* thenFrame = currentThenFrame();
   VarFrame* elseFrame = currentElseFrame();
 
-  bool thenReturnsThrows = thenFrame->returnsOrThrows;
+  bool thenReturnsThrows = false;
+  if (thenFrame != nullptr) {
+    thenReturnsThrows = thenFrame->returnsOrThrows;
+  }
   bool elseReturnsThrows = false;
   if (elseFrame != nullptr) {
     elseReturnsThrows = elseFrame->returnsOrThrows;
@@ -296,12 +427,24 @@ void FindElidedCopies::handleConditional(const Conditional* cond) {
   } else if (elseFrame == nullptr && thenReturnsThrows) {
     // then returns, no else block, so then copy elisions
     // have already been saved and nothing else to do
-  } else if (elseFrame == nullptr && !thenReturnsThrows) {
+  } else if (elseFrame == nullptr && !thenReturnsThrows && thenFrame != nullptr) {
     // then does not return, no else block.
     // allow copy elision only for local variables
     // outer variables aren't eligible because they wouldn't
     // aways be copy elided.
     saveLocalVarElidedCopies(thenFrame);
+  } else if (thenFrame == nullptr && elseReturnsThrows) {
+    // else returns, then block not considered due to param false, so then
+    // copy elisions have already been saved and nothing else to do
+  } else if (thenFrame == nullptr && !elseReturnsThrows && elseFrame != nullptr) {
+    // else does not return, then block not considered due to param false.
+    // allow copy elision only for local variables
+    // outer variables aren't eligible because they wouldn't
+    // aways be copy elided.
+    saveLocalVarElidedCopies(elseFrame);
+  } else if (thenFrame == nullptr && elseFrame == nullptr) {
+    // no else block, then block ignored due to param false.
+    // Nothing to do.
   } else if (!thenReturnsThrows && !elseReturnsThrows) {
     // Both then and else blocks exist.
     // Neither if nor else block returns. Promote elision points from
@@ -315,7 +458,7 @@ void FindElidedCopies::handleConditional(const Conditional* cond) {
     saveLocalVarElidedCopies(elseFrame);
 
     // promote only vars that can be copy elided in both branches
-    for (auto thenPair : thenFrame->copyElisionState) {
+    for (const auto& thenPair : thenFrame->copyElisionState) {
       const CopyElisionState& thenState = thenPair.second;
       if (thenState.lastIsCopy) {
         ID id = thenPair.first;
@@ -341,7 +484,7 @@ void FindElidedCopies::handleConditional(const Conditional* cond) {
     saveLocalVarElidedCopies(branch);
 
     // promote other vars in the branch not returning
-    for (auto pair : branch->copyElisionState) {
+    for (const auto& pair : branch->copyElisionState) {
       const CopyElisionState& branchState = pair.second;
       if (branchState.lastIsCopy) {
         ID id = pair.first;
@@ -356,18 +499,20 @@ void FindElidedCopies::handleConditional(const Conditional* cond) {
   }
 
   // propagate inited variables from the then/else scopes
-  frame->initedVars.insert(thenFrame->initedVars.begin(),
-                           thenFrame->initedVars.end());
+  if (thenFrame) {
+    frame->initedVars.insert(thenFrame->initedVars.begin(),
+                             thenFrame->initedVars.end());
+  }
   if (elseFrame) {
     frame->initedVars.insert(elseFrame->initedVars.begin(),
                              elseFrame->initedVars.end());
   }
 
   // now that the current frame is updated, propagate to the parent
-  handleScope(cond);
+  handleScope(cond, rv);
 }
 
-void FindElidedCopies::handleTry(const Try* t) {
+void FindElidedCopies::handleTry(const Try* t, RV& rv) {
 
   VarFrame* tryFrame = currentFrame();
 
@@ -375,7 +520,7 @@ void FindElidedCopies::handleTry(const Try* t) {
   // if there are no catch clauses, treat it like any other scope
   if (nCatchFrames == 0) {
     // will handle variables local to the try
-    handleScope(t);
+    handleScope(t, rv);
     return;
   }
 
@@ -397,13 +542,13 @@ void FindElidedCopies::handleTry(const Try* t) {
     if (!catchFrame->returnsOrThrows) {
       allThrowOrReturn = false;
     }
-    for (auto pair : catchFrame->copyElisionState) {
+    for (const auto& pair : catchFrame->copyElisionState) {
       catchMentions.insert(pair.first);
     }
   }
 
   if (allThrowOrReturn) {
-    for (auto pair : tryFrame->copyElisionState) {
+    for (const auto& pair : tryFrame->copyElisionState) {
       const CopyElisionState& tryState = pair.second;
       if (tryState.lastIsCopy) {
         ID id = pair.first;
@@ -420,7 +565,7 @@ void FindElidedCopies::handleTry(const Try* t) {
 
   tryFrame->copyElisionState.swap(updatedState);
 
-  handleScope(t);
+  handleScope(t, rv);
 }
 
 static bool allowsCopyElision(const AstNode* ast) {
@@ -431,9 +576,15 @@ static bool allowsCopyElision(const AstNode* ast) {
          ast->isTry();
 }
 
-void FindElidedCopies::handleScope(const AstNode* ast) {
+void FindElidedCopies::handleScope(const AstNode* ast, RV& rv) {
   VarFrame* frame = currentFrame();
   VarFrame* parent = currentParentFrame();
+
+  // if it's the function's body block, consider out/inout formals mentioned
+  // (since they will be used by the implicit return)
+  if (frame->scopeAst == fnBody) {
+    noteMentionsForOutFormals(frame);
+  }
 
   // handle any local variables
   saveLocalVarElidedCopies(frame);
@@ -441,7 +592,7 @@ void FindElidedCopies::handleScope(const AstNode* ast) {
   if (parent != nullptr) {
     // propagate any non-local variables
     if (allowsCopyElision(ast) && parent != nullptr) {
-      for (auto pair : frame->copyElisionState) {
+      for (const auto& pair : frame->copyElisionState) {
         ID id = pair.first;
         const CopyElisionState& state = pair.second;
         if (state.lastIsCopy && frame->eligibleVars.count(id) == 0) {
@@ -462,16 +613,23 @@ std::set<ID>
 computeElidedCopies(Context* context,
                     const uast::AstNode* symbol,
                     const ResolutionResultByPostorderID& byPostorder,
-                    const std::set<ID>& allSplitInitedVars) {
+                    const PoiScope* poiScope,
+                    const std::set<ID>& allSplitInitedVars,
+                    QualifiedType fnYieldedType) {
   std::set<ID> elidedCopyFromIds;
 
-  if (!symbol->isFunction()) {
+  auto fn = symbol->toFunction();
+
+  if (fn == nullptr) {
+    // assume this is running on a Module
+
     // module-scope variables can't be copy elided, so don't run
     // the analysis on them.
     return elidedCopyFromIds;
   }
 
-  FindElidedCopies uv(context, allSplitInitedVars);
+  FindElidedCopies uv(context, poiScope, fn->body(), allSplitInitedVars,
+                      std::move(fnYieldedType));
 
   uv.process(symbol,
              // cast here allows VarScopeVisitor to be simple

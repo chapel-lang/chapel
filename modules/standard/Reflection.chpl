@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -53,7 +53,7 @@ private proc checkQueryT(type t) type {
 /* Return the number of fields in a class or record as a param.
    The count of fields includes types and param fields.
  */
-proc numFields(type t) param : int
+proc numFields(type t) param : int do
   return __primitive("num fields", checkQueryT(t));
 
 /* Get the name of the field at `idx` in a class or record.
@@ -63,7 +63,7 @@ proc numFields(type t) param : int
    :arg idx: which field to get the name of
    :returns: the name of the field, as a param string
  */
-proc getFieldName(type t, param idx:int) param : string
+proc getFieldName(type t, param idx:int) param : string do
   return __primitive("field num to name", checkQueryT(t), idx+1);
 
 /* Get the name of the field at `i` in a class or record.
@@ -75,7 +75,7 @@ proc getFieldName(type t, param idx:int) param : string
  */
 pragma "last resort"
 deprecated "Formal 'i' is deprecated, please use 'idx' instead"
-proc getFieldName(type t, param i:int) param : string
+proc getFieldName(type t, param i:int) param : string do
   return getFieldName(t, i);
 
 // Note, since this version has a where clause, it is preferred
@@ -151,7 +151,7 @@ proc getField(const ref x:?t, param i: int) type
    :returns: an rvalue referring to that field.
  */
 pragma "unsafe"
-inline proc getField(const ref obj:?t, param idx:int) const ref
+inline proc getField(const ref obj:?t, param idx:int) const ref do
   return __primitive("field by num", obj, idx+1);
 
 /* Get the ith field in a class or record.
@@ -164,7 +164,7 @@ inline proc getField(const ref obj:?t, param idx:int) const ref
 pragma "last resort"
 pragma "unsafe"
 deprecated "The formals 'x' and 'i' are deprecated, please use 'obj' and 'idx' instead"
-inline proc getField(const ref x:?t, param i:int) const ref
+inline proc getField(const ref x:?t, param i:int) const ref do
   return getField(x, i);
 
 /* Get a field in a class or record by name. When the named
@@ -269,24 +269,24 @@ inline proc getField(const ref x:?t, param s:string) const ref {
 */
 
 pragma "no doc"
-proc isImplementedWithRecords(type t) param
+proc isImplementedWithRecords(type t) param do
   return isRangeType(t) || isStringType(t);
 
 pragma "no doc"
 proc numImplementationFields(type t) param : int
-  where isImplementedWithRecords(t)
+  where isImplementedWithRecords(t) do
   return __primitive("num fields", t);
 
 pragma "no doc"
 proc getImplementationField(const ref x:?t, param i: int) type
   where isImplementedWithRecords(t) &&
-        isType(__primitive("field by num", x, i))
+        isType(__primitive("field by num", x, i)) do
   return __primitive("field by num", x, i);
 
 pragma "no doc"
 proc getImplementationField(const ref x:?t, param i: int) param
   where isImplementedWithRecords(t) &&
-        isParam(__primitive("field by num", x, i))
+        isParam(__primitive("field by num", x, i)) do
   return __primitive("field by num", x, i);
 
 pragma "no doc"
@@ -308,7 +308,7 @@ proc getImplementationField(const ref x:?t, param i:int) const ref {
  */
 pragma "unsafe"
 inline
-proc getFieldRef(ref x:?t, param i:int) ref
+proc getFieldRef(ref x:?t, param i:int) ref do
   return __primitive("field by num", x, i+1);
 
 /* Get a mutable ref to a field in a class or record by name.
@@ -335,7 +335,7 @@ proc getFieldRef(ref x:?t, param s:string) ref {
    :returns: an index usable in :proc:`getField`, or ``-1`` if the field
              was not found.
  */
-proc getFieldIndex(type t, param name:string) param : int
+proc getFieldIndex(type t, param name:string) param : int do
   return __primitive("field name to num", checkQueryT(t), name)-1;
 
 /* Get a field index in a class or record, or ``-1`` if
@@ -348,7 +348,7 @@ proc getFieldIndex(type t, param name:string) param : int
  */
 pragma "last resort"
 deprecated "The formal 's' is deprecated, please use 'name' instead"
-proc getFieldIndex(type t, param s:string) param : int
+proc getFieldIndex(type t, param s:string) param : int do
   return getFieldIndex(t, s);
 
 /* Returns ``true`` if a class or record has a field named `name`,
@@ -358,7 +358,7 @@ proc getFieldIndex(type t, param s:string) param : int
    :arg name: the name of a field
    :returns: ``true`` if the field is present.
  */
-proc hasField(type t, param name:string) param : bool
+proc hasField(type t, param name:string) param : bool do
   return getFieldIndex(t, name) >= 0;
 
 /* Returns ``true`` if a class or record has a field named `s`,
@@ -370,7 +370,7 @@ proc hasField(type t, param name:string) param : bool
  */
 pragma "last resort"
 deprecated "The formal 's' is deprecated, please use 'name' instead"
-proc hasField(type t, param s:string) param : bool
+proc hasField(type t, param s:string) param : bool do
   return hasField(t, s);
 
 /* Returns ``true`` if the field at `idx` has been instantiated in a given
@@ -425,13 +425,13 @@ proc isFieldBound(type t, param s : string) param : bool {
 /* Returns ``true`` if a function named `fname` taking no arguments
    could be called in the current scope.
    */
-proc canResolve(param fname : string) param : bool
+proc canResolve(param fname : string) param : bool do
   return __primitive("call and fn resolves", fname);
 
 /* Returns ``true`` if a function named `fname` taking the arguments in
    `args` could be called in the current scope.
    */
-proc canResolve(param fname : string, args ...) param : bool
+proc canResolve(param fname : string, args ...) param : bool do
   return __primitive("call and fn resolves", fname, (...args));
 
 // TODO -- how can this work with by-name argument passing?
@@ -439,25 +439,25 @@ proc canResolve(param fname : string, args ...) param : bool
 /* Returns ``true`` if a method named `fname` taking no arguments
    could be called on `obj` in the current scope.
    */
-proc canResolveMethod(obj, param fname : string) param : bool
+proc canResolveMethod(obj, param fname : string) param : bool do
   return __primitive("method call and fn resolves", obj, fname);
 
 /* Returns ``true`` if a method named `fname` taking the arguments in
    `args` could be called on `obj` in the current scope.
    */
-proc canResolveMethod(obj, param fname : string, args ...) param : bool
+proc canResolveMethod(obj, param fname : string, args ...) param : bool do
   return __primitive("method call and fn resolves", obj, fname, (...args));
 
 /* Returns ``true`` if a type method named `fname` taking no
    arguments could be called on type `t` in the current scope.
    */
-proc canResolveTypeMethod(type t, param fname : string) param : bool
+proc canResolveTypeMethod(type t, param fname : string) param : bool do
   return __primitive("method call and fn resolves", t, fname);
 
 /* Returns ``true`` if a type method named `fname` taking the
    arguments in `args` could be called on type `t` in the current scope.
    */
-proc canResolveTypeMethod(type t, param fname : string, args ...) param : bool
+proc canResolveTypeMethod(type t, param fname : string, args ...) param : bool do
   return __primitive("method call and fn resolves", t, fname, (...args));
 
 // TODO -- do we need a different version of can resolve with ref this?

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -103,7 +103,7 @@ proc main(args: [] string) throws {
   var usedCmd:string;
   var cmdList:list(string);
   // identify which, if any, subcommand was used and collect its arguments
-  for (cmd, arg) in subCmds.items() {
+  for (cmd, arg) in zip(subCmds.keys(), subCmds.values()) {
     if arg.hasValue() {
       usedCmd = cmd;
       cmdList = new list(arg.values());

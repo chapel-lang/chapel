@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -105,7 +105,7 @@ Here is a full program enabling verbose output from Curl while downloading:
   Curl.setopt(reader, CURLOPT_VERBOSE, true);
 
   // now read into the bytes
-  reader.readbytes(str);
+  reader.readAll(str);
   writeln(str);
   reader.close();
 
@@ -164,6 +164,11 @@ module Curl {
   require "curl/curl.h";
   require "-lcurl";
 
+
+  /*
+   Local copy of IO.EEOF as it is being phased out and is private in IO
+   */
+  private extern proc chpl_macro_int_EEOF():c_int;
 
   /* Returns the ``CURL`` handle connected to a channel opened with
      :proc:`URL.openUrlReader` or :proc:`URL.openUrlWriter`.
@@ -980,7 +985,7 @@ module Curl {
       // Return EEOF if the connection is no longer running
       space = qio_channel_nbytes_available_unlocked(ch);
       if cc.running_handles == 0 && space < amt then
-        return EEOF;
+        return chpl_macro_int_EEOF():errorCode;
 
       return 0;
     }
@@ -1122,15 +1127,15 @@ module Curl {
       // Return EEOF if the connection is no longer running
       space = qio_channel_nbytes_write_behind_unlocked(ch);
       if cc.running_handles == 0 && space > target_space {
-        writeln("RETURNING EOF");
-        return EEOF;
+        writeln("RETURNING EEOF");
+        return chpl_macro_int_EEOF():errorCode;
       }
 
       return 0;
     }
 
     proc openCurlFile(url:string,
-                     mode:iomode = iomode.r,
+                     mode:ioMode = ioMode.r,
                      style:iostyleInternal = defaultIOStyleInternal()) throws {
 
       var err_out: errorCode = 0;
@@ -1154,7 +1159,7 @@ module Curl {
       // Read the header in order to get the length of the thing we are reading
       // If we are writing, we can't really get this information (even if we try
       // to do a 0 length read).
-      if (mode == iomode.cw || mode == iomode.cwr) {
+      if (mode == ioMode.cw || mode == ioMode.cwr) {
         fl.length = -1;
         fl.seekable = false;
       } else {

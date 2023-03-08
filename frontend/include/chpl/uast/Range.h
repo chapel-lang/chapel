@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -59,6 +59,13 @@ class Range final : public AstNode {
     }
   }
 
+  Range(Deserializer& des)
+    : AstNode(asttags::Range, des) {
+    opKind_ = des.read<OpKind>();
+    lowerBoundChildNum_ = des.read<int8_t>();
+    upperBoundChildNum_ = des.read<int8_t>();
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Range* rhs = other->toRange();
     return this->opKind_ == rhs->opKind_ &&
@@ -68,6 +75,9 @@ class Range final : public AstNode {
 
   void markUniqueStringsInner(Context* context) const override {
   }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
 
   OpKind opKind_;
   int8_t lowerBoundChildNum_;
@@ -109,10 +119,27 @@ class Range final : public AstNode {
     return ret;
   }
 
+  /**
+    Returns a string describing the passed OpKind
+    */
+  static const char* opKindToString(OpKind kind);
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(opKind_);
+    ser.write(lowerBoundChildNum_);
+    ser.write(upperBoundChildNum_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Range);
+
 };
 
 
 } // end namespace uast
+
+DECLARE_SERDE_ENUM(uast::Range::OpKind, uint8_t);
+
 } // end namespace chpl
 
 #endif

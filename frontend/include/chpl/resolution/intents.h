@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,13 +33,16 @@ namespace resolution {
     The argument 'isThis' indicates if the formal argument is
     the 'this' method receiver argument.
 
+    The argument 'isInit' indicates if the function being resolved
+    is an 'init' or 'init=' function.
+
     The generic and resolved intents are all represented as QualifiedType::Kind.
 
     If the type is not known or only partially known, this function
     can return a generic intent.
  */
 types::QualifiedType::Kind resolveIntent(const types::QualifiedType& t,
-                                         bool isThis);
+                                         bool isThis, bool isInit);
 
 
 } // end namespace resolution

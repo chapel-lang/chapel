@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -161,6 +161,9 @@ class Param {
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
+  virtual void serialize(Serializer& ser) const;
+  static const Param* deserialize(Deserializer& des);
+
   static uint64_t binStr2uint64(const char* str, size_t len, std::string& err);
   static uint64_t octStr2uint64(const char* str, size_t len, std::string& err);
   static uint64_t decStr2uint64(const char* str, size_t len, std::string& err);
@@ -231,6 +234,14 @@ class Param {
     VALTYPE value() const { \
       return value_; \
     } \
+    void serialize(Serializer& ser) const override { \
+      Param::serialize(ser); \
+      ser.write(value_); \
+    } \
+    static const NAME* deserialize(Deserializer& des) { \
+      VALTYPE val = des.read<VALTYPE>(); \
+      return NAME::get(des.context(), val); \
+    } \
   };
 /// \endcond
 
@@ -258,6 +269,34 @@ template<> struct stringify<chpl::types::Param::NoneValue> {
     streamOut << "types::Param::NoneValue is not stringified";
   }
 };
+
+template<> struct serialize<types::Param::ComplexDouble> {
+  void operator()(Serializer& ser, types::Param::ComplexDouble val) const {
+    ser.write(val.re);
+    ser.write(val.im);
+  }
+};
+
+template<> struct deserialize<types::Param::ComplexDouble> {
+  types::Param::ComplexDouble operator()(Deserializer& des) {
+    double re = des.read<double>();
+    double im = des.read<double>();
+    return types::Param::ComplexDouble(re, im);
+  }
+};
+
+template<> struct serialize<types::Param::NoneValue> {
+  void operator()(Serializer& ser, types::Param::NoneValue val) const {
+    // noop
+  }
+};
+
+template<> struct deserialize<types::Param::NoneValue> {
+  types::Param::NoneValue operator()(Deserializer& des) {
+    return types::Param::NoneValue();
+  }
+};
+
 /// \endcond DO_NOT_DOCUMENT
 } // end namespace chpl
 

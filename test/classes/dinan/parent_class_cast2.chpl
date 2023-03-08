@@ -1,10 +1,10 @@
 class P {
-    proc f() return "";
+    proc f() do return "";
 }
 
 class C: P {
     var n: int;
-    override proc f() return "D";
+    override proc f() do return "D";
 }
 
 class D {

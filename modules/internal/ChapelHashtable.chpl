@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -263,8 +263,8 @@ module ChapelHashtable {
       // Go through the full slots in the current table and run
       // chpl__autoDestroy on the index
       if _typeNeedsDeinit(keyType) || _typeNeedsDeinit(valType) {
-        if _deinitElementsIsParallel(keyType) &&
-           _deinitElementsIsParallel(valType) {
+        if (!_typeNeedsDeinit(keyType) || _deinitElementsIsParallel(keyType, tableSize)) &&
+           (!_typeNeedsDeinit(valType) || _deinitElementsIsParallel(valType, tableSize)) {
           forall slot in _allSlots(tableSize) {
             ref aSlot = table[slot];
             if _isSlotFull(aSlot) {

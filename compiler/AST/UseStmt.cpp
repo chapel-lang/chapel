@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -217,14 +217,15 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
         USR_FATAL(this, "'use' of non-module/enum symbol");
       }
 
-      if (symAndName.first->hasFlag(FLAG_DEPRECATED)) {
-        symAndName.first->generateDeprecationWarning(this);
-      }
+      if (!fDynoCompilerLibrary) {
+        if (symAndName.first->hasFlag(FLAG_DEPRECATED)) {
+          symAndName.first->generateDeprecationWarning(this);
+        }
 
-      if (symAndName.first->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
-        symAndName.first->generateUnstableWarning(this);
+        if (symAndName.first->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
+          symAndName.first->generateUnstableWarning(this);
+        }
       }
-
     }
 
   } else {
@@ -311,7 +312,10 @@ bool UseStmt::isValid(Expr* expr) const {
 
 void UseStmt::validateList() {
   if (isPlainUse() == false) {
-    noRepeats();
+    // Dyno already issues these warnings and errors.
+    if (!fDynoCompilerLibrary) {
+      noRepeats();
+    }
 
     validateNamed();
     validateRenamed();
@@ -381,14 +385,16 @@ void UseStmt::validateNamed() {
                            (except == true) ? "except" : "only",
                            name);
           }
-          if (sym->hasFlag(FLAG_DEPRECATED)) {
-            sym->generateDeprecationWarning(this);
-          }
 
-          if (sym->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
-            sym->generateUnstableWarning(this);
-          }
+          if (!fDynoCompilerLibrary) {
+            if (sym->hasFlag(FLAG_DEPRECATED)) {
+              sym->generateDeprecationWarning(this);
+            }
 
+            if (sym->hasFlag(FLAG_UNSTABLE)) {
+              if (fWarnUnstable) sym->generateUnstableWarning(this);
+            }
+          }
         }
       }
     }

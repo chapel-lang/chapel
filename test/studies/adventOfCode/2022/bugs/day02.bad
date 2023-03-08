@@ -1,0 +1,4 @@
+B
+uncaught BadFormatError: bad format: missing expected literal (while reading entryR with path "day02.stdin" offset 1)
+  day02.chpl:11: thrown here
+  day02.chpl:11: uncaught here

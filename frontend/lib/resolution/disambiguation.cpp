@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -36,13 +36,15 @@ using namespace types;
 
 struct DisambiguationCandidate {
   const TypedFnSignature* fn = nullptr;
+  QualifiedType forwardingTo; // actual passed to receiver when forwarding
   FormalActualMap formalActualMap;
   int idx = 0;
 
   DisambiguationCandidate(const TypedFnSignature* fn,
+                          QualifiedType forwardingTo,
                           const CallInfo& call,
                           int idx)
-    : fn(fn), formalActualMap(fn, call), idx(idx)
+    : fn(fn), forwardingTo(forwardingTo), formalActualMap(fn, call), idx(idx)
   {
   }
 };
@@ -132,6 +134,7 @@ static void testArgMapping(const DisambiguationContext& dctx,
 
 static void testArgMapHelper(const DisambiguationContext& dctx,
                              const FormalActual& fa,
+                             const QualifiedType& forwardingTo,
                              bool* formalPromotes, bool* formalNarrows,
                              DisambiguationState& ds,
                              int fnNum);
@@ -390,11 +393,12 @@ computeMostSpecificCandidatesWithVecs(const DisambiguationContext& dctx,
 static const MostSpecificCandidates&
 findMostSpecificCandidatesQuery(Context* context,
                                 std::vector<const TypedFnSignature*> lst,
+                                std::vector<QualifiedType> forwardingInfo,
                                 CallInfo call,
                                 const Scope* callInScope,
                                 const PoiScope* callInPoiScope) {
   QUERY_BEGIN(findMostSpecificCandidatesQuery, context,
-              lst, call, callInScope, callInPoiScope);
+              lst, forwardingInfo, call, callInScope, callInPoiScope);
 
   // Construct the DisambiguationContext
   bool explain = true;
@@ -407,7 +411,12 @@ findMostSpecificCandidatesQuery(Context* context,
   {
     int n = lst.size();
     for (int i = 0; i < n; i++) {
-      candidates.push_back(new DisambiguationCandidate(lst[i], call, i));
+      QualifiedType forwardingTo;
+      if (!forwardingInfo.empty()) {
+        forwardingTo = forwardingInfo[i];
+      }
+      candidates.push_back(
+          new DisambiguationCandidate(lst[i], forwardingTo, call, i));
     }
   }
 
@@ -426,6 +435,7 @@ findMostSpecificCandidatesQuery(Context* context,
 MostSpecificCandidates
 findMostSpecificCandidates(Context* context,
                            const std::vector<const TypedFnSignature*>& lst,
+                           const std::vector<QualifiedType>& forwardingInfo,
                            const CallInfo& call,
                            const Scope* callInScope,
                            const PoiScope* callInPoiScope) {
@@ -443,7 +453,8 @@ findMostSpecificCandidates(Context* context,
   // run the query to handle the more complex case
   // TODO: is it worth storing this in a query? Or should
   // we recompute it each time?
-  return findMostSpecificCandidatesQuery(context, lst, call,
+  return findMostSpecificCandidatesQuery(context, lst, forwardingInfo,
+                                         call,
                                          callInScope, callInPoiScope);
 }
 
@@ -713,7 +724,7 @@ computeIsMoreVisible(Context* context,
        curScope = curScope->parentScope()) {
 
     auto decls = lookupNameInScope(context, curScope,
-                                   /* receiver scope */ nullptr,
+                                   /* receiver scopes */ {},
                                    callName, onlyDecls);
     auto declVis = checkVisibilityInVec(context, decls, fn1Id, fn2Id);
     if (declVis != MoreVisibleResult::FOUND_NEITHER) {
@@ -727,7 +738,7 @@ computeIsMoreVisible(Context* context,
       // within the used module.
       // see issue #19219
       auto more = lookupNameInScope(context, curScope,
-                                    /* receiver scope */ nullptr,
+                                    /* receiver scopes */ {},
                                     callName, importAndUse);
       auto importUseVis = checkVisibilityInVec(context, more, fn1Id, fn2Id);
       if (importUseVis != MoreVisibleResult::FOUND_NEITHER) {
@@ -778,6 +789,12 @@ moreVisible(const DisambiguationContext& dctx,
   UniqueString callName = dctx.call->name();
   ID fn1Id = candidate1.fn->id();
   ID fn2Id = candidate2.fn->id();
+
+  // ignore more-visible for methods
+  if (candidate1.fn->untyped()->isMethod() &&
+      candidate2.fn->untyped()->isMethod()) {
+    return FOUND_BOTH;
+  }
 
   return moreVisibleQuery(dctx.context, callName,
                           dctx.callInScope, dctx.callInPoiScope,
@@ -891,9 +908,11 @@ static void testArgMapping(const DisambiguationContext& dctx,
     EXPLAIN(" (default)");
   EXPLAIN("\n");
 
-  testArgMapHelper(dctx, *fa1, &formal1Promotes, &formal1Narrows, ds, 1);
+  testArgMapHelper(dctx, *fa1, candidate1.forwardingTo,
+                   &formal1Promotes, &formal1Narrows, ds, 1);
 
-  testArgMapHelper(dctx, *fa2, &formal2Promotes, &formal2Narrows, ds, 2);
+  testArgMapHelper(dctx, *fa2, candidate2.forwardingTo,
+                   &formal2Promotes, &formal2Narrows, ds, 2);
 
   // Figure out scalar type for candidate matching
   if (formal1Promotes || formal2Promotes) {
@@ -1044,6 +1063,7 @@ static void testArgMapping(const DisambiguationContext& dctx,
 
 static void testArgMapHelper(const DisambiguationContext& dctx,
                              const FormalActual& fa,
+                             const QualifiedType& forwardingTo,
                              bool* formalPromotes, bool* formalNarrows,
                              DisambiguationState& ds,
                              int fnNum) {
@@ -1057,6 +1077,9 @@ static void testArgMapHelper(const DisambiguationContext& dctx,
   // But, here we want to check if it narrows or promotes
   // since that affects the disambiguation.
 
+  if (forwardingTo.type() != nullptr) {
+    actualType = forwardingTo;
+  }
   CanPassResult result = canPass(dctx.context, actualType, formalType);
   CHPL_ASSERT(result.passes());
   *formalPromotes = result.promotes();

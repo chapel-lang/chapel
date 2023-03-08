@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,7 +37,7 @@
 //       (for types and params)
 // - [ ] "cannot take a reference to 'this' before this.complete()"
 // - [ ] "cannot initialize a variable from 'this' before this.complete()"
-// - [ ] "cannot pass 'this' to a funciton before calling super.init() "
+// - [ ] "cannot pass 'this' to a function before calling super.init() "
 //       "or this.init()"
 // - [ ] "cannot pass a record to a function before this.complete()"
 //
@@ -72,6 +72,12 @@ InitResolver::create(Context* ctx, Resolver& visitor, const Function* fn) {
   return ret;
 }
 
+owned<InitResolver> InitResolver::fork() {
+  auto ret = toOwned(new InitResolver(ctx_, initResolver_, fn_, currentRecvType_));
+  ret->copyState(*this);
+  return ret;
+}
+
 // TODO: More general function to fetch the parent type/fields later.
 bool InitResolver::isCallToSuperInitRequired(void) {
   if (auto cls = initialRecvType_->toClassType())
@@ -89,7 +95,7 @@ void InitResolver::doSetupInitialState(void) {
                                        : PHASE_NEED_COMPLETE;
 
   auto ct = typeToCompType(initialRecvType_);
-  auto& rf = fieldsForTypeDecl(ctx_, ct, USE_DEFAULTS);
+  auto& rf = fieldsForTypeDecl(ctx_, ct, DefaultsPolicy::USE_DEFAULTS);
 
   // Populate the fields with initial values.
   for (int i = 0; i < rf.numFields(); i++) {
@@ -101,9 +107,104 @@ void InitResolver::doSetupInitialState(void) {
   }
 }
 
+void InitResolver::copyState(InitResolver& other) {
+  phase_ = other.phase_;
+  fieldToInitState_ = other.fieldToInitState_;
+  fieldIdsByOrdinal_ = other.fieldIdsByOrdinal_;
+  currentFieldIndex_ = other.currentFieldIndex_;
+  thisCompleteIds_ = other.thisCompleteIds_;
+  isDescendingIntoAssignment_ = other.isDescendingIntoAssignment_;
+  currentRecvType_ = other.currentRecvType_;
+}
+
+InitResolver::Phase InitResolver::getMaxPhase(Phase A, Phase B) {
+  if (A == PHASE_COMPLETE || B == PHASE_COMPLETE) {
+    return PHASE_COMPLETE;
+  }
+  if (A == PHASE_NEED_COMPLETE || B == PHASE_NEED_COMPLETE) {
+    return PHASE_NEED_COMPLETE;
+  }
+  return PHASE_NEED_SUPER_INIT;
+}
+
+// TODO: store multiple init points for each field
+// BHARSH TODO: I think we need something more like a list of
+// field-initialization information, to account for multiple branches, and so
+// that such information can be separate from the current state of what is or
+// is not initialized.
+void InitResolver::merge(owned<InitResolver>& A, owned<InitResolver>& B) {
+  assert(A != nullptr);
+
+  if (B == nullptr) {
+    // TODO: Create information to indicate we need to generate code to match
+    // the 'then' branch in the case of an absent 'else' branch.
+    copyState(*A);
+  } else {
+    phase_ = getMaxPhase(A->phase_, B->phase_);
+    assert(currentFieldIndex_ <= A->currentFieldIndex_);
+    assert(currentFieldIndex_ <= B->currentFieldIndex_);
+
+    // Collect any *new* occurrences of 'this.complete'
+    for (auto i = thisCompleteIds_.size(); i < A->thisCompleteIds_.size(); i++) {
+      thisCompleteIds_.push_back(A->thisCompleteIds_[i]);
+    }
+    for (auto i = thisCompleteIds_.size(); i < B->thisCompleteIds_.size(); i++) {
+      thisCompleteIds_.push_back(B->thisCompleteIds_[i]);
+    }
+
+    auto curMax = std::max(A->currentFieldIndex_, B->currentFieldIndex_);
+
+    // If one branch has proceeded further than the other, we need to
+    // implicitly resolve fields in the branch that is behind.
+    InitResolver& behind = A->currentFieldIndex_ < B->currentFieldIndex_ ? *A : *B;
+    for (auto i = behind.currentFieldIndex_; i < curMax; i++) {
+      auto& id = behind.fieldIdsByOrdinal_[i];
+      std::ignore = behind.implicitlyResolveFieldType(id);
+    }
+
+    // Update field states
+    for (auto i = currentFieldIndex_; i < curMax; i++) {
+      auto& id = fieldIdsByOrdinal_[i];
+      auto state = fieldStateFromId(id);
+      auto stateA = A->fieldStateFromId(id);
+      auto stateB = B->fieldStateFromId(id);
+
+      assert(stateA->isInitialized && stateB->isInitialized);
+      state->isInitialized = true;
+
+      assert(stateA->qt.type() == stateB->qt.type());
+      state->qt = stateA->qt;
+
+      // TODO: need to keep track of these in a different way so we can
+      // preserve both init points if needed.
+      if (!stateA->initPointId.isEmpty()) {
+        state->initPointId = stateA->initPointId;
+      } else if (!stateB->initPointId.isEmpty()) {
+        state->initPointId = stateB->initPointId;
+      }
+    }
+
+    currentFieldIndex_ = curMax;
+
+    // Error if the computed types are different, otherwise update the receiver
+    // type going forward.
+    //
+    // TODO: improve error message text
+    // - point out different types, and where they are initialized
+    if (A->currentRecvType_ != B->currentRecvType_) {
+      ctx_->error(fn_, "Initializer must compute the same type in each branch");
+    }
+
+    // TODO: How should we allow the compiler to make progress if two branches
+    // have computed different types?
+    updateResolverVisibleReceiverType();
+  }
+}
+
 bool InitResolver::isFinalReceiverStateValid(void) {
   auto ctInitial = typeToCompType(initialRecvType_);
-  auto& rfInitial = fieldsForTypeDecl(ctx_, ctInitial, USE_DEFAULTS);
+  auto& rfInitial = fieldsForTypeDecl(ctx_, ctInitial,
+                                      DefaultsPolicy::USE_DEFAULTS);
   bool ret = true;
 
   for (int i = 0; i < rfInitial.numFields(); i++) {
@@ -134,7 +235,8 @@ bool InitResolver::isFinalReceiverStateValid(void) {
 
 const Type* InitResolver::computeReceiverTypeConsideringState(void) {
   auto ctInitial = typeToCompType(initialRecvType_);
-  auto& rfInitial = fieldsForTypeDecl(ctx_, ctInitial, USE_DEFAULTS);
+  auto& rfInitial = fieldsForTypeDecl(ctx_, ctInitial,
+                                      DefaultsPolicy::USE_DEFAULTS);
   CompositeType::SubstitutionsMap subs;
 
   if (!rfInitial.isGeneric()) return currentRecvType_;
@@ -148,6 +250,8 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
     if (isInitiallyConcrete) continue;
 
     // TODO: Will need to relax this as we go.
+    // TODO: 'isGenericOrUnknown' isn't the right test here - e.g. if we have
+    // a type field set to 'string'
     if (state->qt.isType() || state->qt.isParam())
       if (!state->qt.isGenericOrUnknown())
         subs.insert({id, state->qt});
@@ -217,14 +321,14 @@ InitResolver::computeTypedSignature(const Type* newRecvType) {
 
   ret = TypedFnSignature::get(ctx_, ufs, formalTypes,
                               tfs->whereClauseResult(),
-                              false,
+                              /* needsInstantiation */ false,
                               tfs->instantiatedFrom(),
                               tfs->parentFn(),
                               formalsInstantiated);
   return ret;
 }
 
-// TODO: Identifiy cases where we don't need to do anything.
+// TODO: Identify cases where we don't need to do anything.
 const TypedFnSignature* InitResolver::finalize(void) {
   if (fn_ == nullptr) CHPL_ASSERT(false && "Not handled yet!");
 
@@ -269,7 +373,7 @@ bool InitResolver::implicitlyResolveFieldType(ID id) {
     CHPL_ASSERT(0 == "Not handled yet!");
   } else {
     auto ct = typeToCompType(currentRecvType_);
-    auto& rf = resolveFieldDecl(ctx_, ct, id, USE_DEFAULTS);
+    auto& rf = resolveFieldDecl(ctx_, ct, id, DefaultsPolicy::USE_DEFAULTS);
     for (int i = 0; i < rf.numFields(); i++) {
       auto id = rf.fieldDeclId(i);
       auto state = fieldStateFromId(id);
@@ -373,11 +477,11 @@ bool InitResolver::handleCallToThisComplete(const FnCall* node) {
   if (!isCompleteCall) return false;
 
   // TODO: Better/more appropriate user facing error message for this?
-  if (!idForCompleteCall_.isEmpty()) {
+  if (thisCompleteIds_.size() > 0) {
     CHPL_ASSERT(phase_ == PHASE_COMPLETE);
     ctx_->error(node, "use of this.complete() call in phase 2");
   } else {
-    idForCompleteCall_ = node->id();
+    thisCompleteIds_.push_back(node->id());
     phase_ = PHASE_COMPLETE;
   }
 
@@ -412,6 +516,7 @@ static void checkInsideBadTag(Context* context,
 }
 
 bool InitResolver::handleAssignmentToField(const OpCall* node) {
+  if (phase_ == PHASE_COMPLETE) return false;
   if (node->op() != USTR("=")) return false;
   CHPL_ASSERT(node->numActuals() == 2);
   auto lhs = node->actual(0);
@@ -429,37 +534,33 @@ bool InitResolver::handleAssignmentToField(const OpCall* node) {
 
   checkInsideBadTag(ctx_, initResolver_, node);
 
-  // Implicitly initialize any fields between the current index and this.
-  int old = currentFieldIndex_;
-  currentFieldIndex_ = state->ordinalPos + 1;
-  for (int i = old + 1; i < state->ordinalPos; i++) {
-      auto id = fieldIdsByOrdinal_[i];
+  if (!isOutOfOrder) {
+    // Implicitly initialize any fields between the current index and this.
+    int old = currentFieldIndex_;
+    currentFieldIndex_ = state->ordinalPos + 1;
+    for (int i = old; i < state->ordinalPos; i++) {
+        auto id = fieldIdsByOrdinal_[i];
 
-      // TODO: Anything to do if this doesn't hold?
-      std::ignore = implicitlyResolveFieldType(id);
-  }
-
-  // TODO: Anything to do if the opposite is true?
-  if (!isAlreadyInitialized) {
-    auto& reRhs = initResolver_.byPostorder.byAst(rhs);
-    state->qt = reRhs.type();
-    state->initPointId = node->id();
-    state->isInitialized = true;
-
-    // How often do we need to recompute this? More often?
-    if (state->qt.isType() || state->qt.isParam()) {
-      updateResolverVisibleReceiverType();
+        // TODO: Anything to do if this doesn't hold?
+        std::ignore = implicitlyResolveFieldType(id);
     }
 
-    if ((size_t)currentFieldIndex_ == fieldIdsByOrdinal_.size()) {
-      phase_ = PHASE_COMPLETE;
+    // TODO: Anything to do if the opposite is true?
+    if (!isAlreadyInitialized) {
+      auto& reRhs = initResolver_.byPostorder.byAst(rhs);
+      state->qt = reRhs.type();
+      state->initPointId = node->id();
+      state->isInitialized = true;
+
+      // How often do we need to recompute this? More often?
+      if (state->qt.isType() || state->qt.isParam()) {
+        updateResolverVisibleReceiverType();
+      }
+
+    } else {
+      CHPL_ASSERT(0 == "Not handled yet!");
     }
-
-  } else {
-    CHPL_ASSERT(0 == "Not handled yet!");
-  }
-
-  if (isOutOfOrder) {
+  } else if (!isAlreadyInitialized) {
     auto name = state->name;
     ctx_->error(node, "Field \"%s\" initialized out of order",
                       name.c_str());
@@ -522,7 +623,7 @@ ID InitResolver::solveNameConflictByIgnoringField(const NameVec& vec) {
 }
 
 bool InitResolver::handleResolvingFieldAccess(const Identifier* node) {
-  auto scope = initResolver_.methodReceiverScope();
+  auto scope = initResolver_.methodReceiverScopes();
   auto vec = initResolver_.lookupIdentifier(node, scope);
 
   // Handle and exit early if there were no ambiguities.
@@ -576,7 +677,12 @@ bool InitResolver::handleResolvingFieldAccess(const Dot* node) {
 }
 
 void InitResolver::checkEarlyReturn(const Return* ret) {
-  if (phase_ != PHASE_COMPLETE) {
+  // Something like:
+  //   this.z = 5;
+  //   return;
+  // where 'z' is the last field shouldn't be an error.
+  if (phase_ != PHASE_COMPLETE &&
+      (size_t)currentFieldIndex_ < fieldIdsByOrdinal_.size()) {
     ctx_->error(ret, "cannot return from initializer before initialization is complete");
   }
 }

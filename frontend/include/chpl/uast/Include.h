@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -58,6 +58,14 @@ class Include final : public AstNode {
     CHPL_ASSERT(!name_.isEmpty());
   }
 
+  Include(Deserializer& des)
+    : AstNode(asttags::Include, des) {
+      visibility_ = des.read<Decl::Visibility>();
+      isPrototype_ = des.read<bool>();
+      name_ = des.read<UniqueString>();
+    }
+
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Include* lhs = this;
     const Include* rhs = other->toInclude();
@@ -69,6 +77,8 @@ class Include final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
     name_.mark(context);
   }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
 
  public:
 
@@ -100,6 +110,16 @@ class Include final : public AstNode {
   UniqueString name() const {
     return name_;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(visibility_);
+    ser.write(isPrototype_);
+    ser.write(name_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Include);
+
 };
 
 

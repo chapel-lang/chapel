@@ -1,0 +1,23 @@
+─── error in redefinition-public-use-as.chpl:9 [Redefinition] ───
+  'a' has multiple definitions in this scope.
+  It was first defined through the 'use' statement here:
+       |
+    10 |   public use Lib1;
+       |              ⎺⎺⎺⎺
+       |
+  Leading to the definition here:
+      |
+    2 |   var a: int;
+      |       ⎺⎺⎺⎺⎺⎺⎺
+      |
+  Redefined through the 'use' statement here:
+       |
+    11 |   public use Lib2 only b as a;
+       |              ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+       |
+  Leading to the definition here:
+      |
+    6 |   var b: real;
+      |       ⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+

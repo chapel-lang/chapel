@@ -6,8 +6,8 @@ const empty = ioHintSet.empty;
 const seq = ioHintSet.sequential;
 const rand = ioHintSet.random;
 const pref = ioHintSet.prefetch;
-const mmap = ioHintSet.mmap;
-const nommap = ioHintSet.noMmap;
+const mmap = ioHintSet.mmap(true);
+const nommap = ioHintSet.mmap(false);
 
 // equality and inequality
 writeln(seq != rand);

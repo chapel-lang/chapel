@@ -1,0 +1,7 @@
+overloadbools4.chpl:6: warning: 'bool(w)' is deprecated, please use 'bool' instead
+overloadbools4.chpl:7: warning: 'bool(w)' is deprecated, please use 'bool' instead
+overloadbools4.chpl:1: In function 'foo':
+overloadbools4.chpl:1: warning: 'bool(w)' is deprecated, please use 'bool' instead
+In 32-bit bool
+In 32-bit bool
+In 32-bit bool

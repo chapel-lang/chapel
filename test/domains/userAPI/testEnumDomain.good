@@ -3,6 +3,7 @@
 {orange..green, yellow..blue}
 rank             = 2
 idxType          = color
+fullIdxType      = 2*color
 stridable        = false
 size             = 9
 isEmpty()        = false
@@ -65,6 +66,7 @@ strided 2D enum domain
 {orange..green by 2, yellow..blue by 2}
 rank             = 2
 idxType          = color
+fullIdxType      = 2*color
 stridable        = true
 size             = 4
 isEmpty()        = false

@@ -16,7 +16,7 @@ config param useLiteral = true;
 config param useAction = action.read;
 
 proc main() {
-  var f = openmem();
+  var f = openMemFile();
   param lit = if useStrings then "x" else b"x";
   var ch = if useAction == action.write then f.reader() else f.writer();
 

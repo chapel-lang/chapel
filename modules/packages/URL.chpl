@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -92,7 +92,7 @@ module URL {
 
     use Curl;
     use CurlQioIntegration;
-    var f = openCurlFile(url, iomode.r, style);
+    var f = openCurlFile(url, ioMode.r, style);
     // TODO: change this back to f.reader when the fromOpenUrlReader arg is
     // removed
     return f.readerHelper(kind=kind, locking=locking,
@@ -148,7 +148,7 @@ module URL {
 
     use Curl;
     use CurlQioIntegration;
-    var f = openCurlFile(url, iomode.cw, style);
+    var f = openCurlFile(url, ioMode.cw, style);
     // TODO: change this back to f.writer when the fromOpenUrlWriter arg is
     // removed
     return f.writerHelper(kind=kind, locking=locking,

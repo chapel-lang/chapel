@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -37,6 +37,7 @@ extern "C" {
 // initialize the topology support
 //
 void chpl_topo_init(void);
+void chpl_topo_post_args_init(void);
 void chpl_topo_exit(void);
 
 //
@@ -144,6 +145,20 @@ void chpl_topo_touchMemFromSubloc(void*, size_t, chpl_bool, c_sublocid_t);
 //   address
 //
 c_sublocid_t chpl_topo_getMemLocality(void*);
+
+typedef struct chpl_topo_pci_addr {
+    uint16_t domain;
+    uint8_t bus;
+    uint8_t device;
+    uint8_t function;
+} chpl_topo_pci_addr_t;
+
+chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
+                                                chpl_topo_pci_addr_t *outAddr);
+//
+// Returns True if the node is oversubscribed (locales are sharing
+// cores).
+chpl_bool chpl_topo_isOversubscribed(void);
 
 
 #ifdef __cplusplus

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,6 +45,10 @@ class OpCall final : public Call {
            /* hasCalledExpression */ false),
       op_(op) {
   }
+  OpCall(Deserializer& des)
+    : Call(asttags::OpCall, des) {
+    op_ = des.read<UniqueString>();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const OpCall* lhs = this;
@@ -62,6 +66,8 @@ class OpCall final : public Call {
     callMarkUniqueStringsInner(context);
     op_.mark(context);
   }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
 
  public:
   ~OpCall() override = default;
@@ -81,6 +87,13 @@ class OpCall final : public Call {
   bool isBinaryOp() const { return children_.size() == 2; }
   /** Returns true if this is a unary operator */
   bool isUnaryOp() const { return children_.size() == 1; }
+
+  void serialize(Serializer& ser) const override {
+    Call::serialize(ser);
+    ser.write(op_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(OpCall);
 };
 
 // Returns true if the given string is an operator name

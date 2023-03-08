@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -59,6 +59,8 @@ class Coforall final : public IndexableLoop {
                     /*isExpressionLevel*/ false) {
   }
 
+  Coforall(Deserializer& des) : IndexableLoop(asttags::Coforall, des) { }
+
   bool contentsMatchInner(const AstNode* other) const override {
     return indexableLoopContentsMatchInner(other->toIndexableLoop());
   }
@@ -80,6 +82,11 @@ class Coforall final : public IndexableLoop {
                                BlockStyle blockStyle,
                                owned<Block> body);
 
+  void serialize(Serializer& ser) const override {
+    IndexableLoop::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Coforall);
 
 };
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -292,27 +292,16 @@ static void cleanup(ModuleSymbol* module) {
 static void normalizeNestedFunctionExpressions(FnSymbol* fn) {
   DefExpr* def = fn->defPoint;
 
+  // Replace with a 'SymExpr', not a 'UnresolvedSymExpr', here. We know
+  // exactly what definition this name refers to - we have it on hand!
   if (TypeSymbol* ts = toTypeSymbol(def->parentSymbol)) {
     AggregateType* ct = toAggregateType(ts->type);
-
     INT_ASSERT(ct);
-
-    def->replace(new UnresolvedSymExpr(fn->name));
-
+    def->replace(new SymExpr(fn));
     ct->addDeclarations(def);
-
-  } else if (isArgSymbol(def->parentSymbol)) {
-    Expr* stmt = def->getStmtExpr();
-
-    def->replace(new UnresolvedSymExpr(fn->name));
-
-    stmt->insertBefore(def);
-
   } else {
     Expr* stmt = def->getStmtExpr();
-
-    def->replace(new UnresolvedSymExpr(fn->name));
-
+    def->replace(new SymExpr(fn));
     stmt->insertBefore(def);
   }
 }

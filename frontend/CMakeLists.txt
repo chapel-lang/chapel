@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -15,9 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.13.4)
-
-project(dyno VERSION 0.1)
 
 # CHPL_HOME may have been defined by an upstream CMakeLists.txt, so check if
 # it doesn't exist before trying to create it.
@@ -51,7 +48,7 @@ endif()
 
 if (NOT DEFINED CHPL_LLVM_COMP_ARGS)
   # TODO: See if we can use these directly, I am not sure we can because
-  # the way to concat strings requires an output variable
+  # the CMake way to concat strings requires an output variable
   string(CONCAT CHPL_LLVM_COMP_ARGS ${CHPL_HOST_BUNDLED_COMPILE_ARGS} " " ${CHPL_HOST_SYSTEM_COMPILE_ARGS})
   # remove whitespace or you'll get complaints about an error
   # according to policy CMP0004
@@ -129,19 +126,14 @@ if( DYNO_ENABLE_ASSERTIONS )
   endif()
 endif()
 
-# set include directories for -I
-#include_directories(include)
-
-# lib/CMakeLists.txt defines the target libdyno
+# lib/CMakeLists.txt defines the target ChplFrontend
 add_subdirectory(lib)
-# also make sure headers are included in the target
-add_subdirectory(include/chpl)
 # Support for documentation of AST header
 add_subdirectory(doc)
 # Utils like C++ linters for this codebase
 add_subdirectory(util)
 
-# Check if the directory is there, because in release tarballs, it shouldn't be
+# check for test directory and add tests if it exists (won't exist in release tarball)
 if (IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test")
   # Support for C++ compiler unit tests
   # Needs to happen in this file for ctest to work in this dir

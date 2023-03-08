@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -62,7 +62,9 @@ static QualifiedType::Kind constIntentForType(const Type* t) {
   return QualifiedType::CONST_INTENT; // leave the intent generic
 }
 
-static QualifiedType::Kind defaultIntentForType(const Type* t) {
+static QualifiedType::Kind defaultIntentForType(const Type* t,
+                                                bool isThis,
+                                                bool isInit) {
 
   // anything we don't know the type of has to have unknown intent
   if (t == nullptr || t->isUnknownType() || t->isErroneousType())
@@ -75,8 +77,16 @@ static QualifiedType::Kind defaultIntentForType(const Type* t) {
     return QualifiedType::CONST_IN;
 
   if (t->isStringType() || t->isBytesType() ||
-      t->isRecordType() || t->isUnionType() || t->isTupleType())
-    return QualifiedType::CONST_REF;
+      t->isRecordType() || t->isUnionType() || t->isTupleType()) {
+    if (isThis) {
+      if (isInit)
+        return QualifiedType::REF;
+      else
+        return QualifiedType::REF_MAYBE_CONST;
+    } else {
+      return QualifiedType::CONST_REF;
+    }
+  }
 
   if (auto ct = t->toClassType()) {
     if (ct->decorator().isUnknownManagement())
@@ -93,12 +103,11 @@ static QualifiedType::Kind defaultIntentForType(const Type* t) {
   return QualifiedType::DEFAULT_INTENT; // leave the intent generic
 }
 
-QualifiedType::Kind resolveIntent(const QualifiedType& t, bool isThis) {
+QualifiedType::Kind resolveIntent(const QualifiedType& t,
+                                  bool isThis,
+                                  bool isInit) {
   auto kind = t.kind();
   auto type = t.type();
-
-  // TODO: take into account isThis
-  // TODO: REF_MAYBE_CONST or equivalent for arrays, record this
 
   switch (kind) {
     case QualifiedType::UNKNOWN:
@@ -109,6 +118,10 @@ QualifiedType::Kind resolveIntent(const QualifiedType& t, bool isThis) {
     case QualifiedType::MODULE:
       // these don't really have an intent
       return QualifiedType::UNKNOWN;
+
+    case QualifiedType::REF_MAYBE_CONST:
+      // it's already resolved as much as it wil be here
+      return kind;
 
     case QualifiedType::CONST_REF:
     case QualifiedType::REF:
@@ -130,7 +143,7 @@ QualifiedType::Kind resolveIntent(const QualifiedType& t, bool isThis) {
 
     case QualifiedType::DEFAULT_INTENT:
       // compute the default intent if needed
-      return defaultIntentForType(type);
+      return defaultIntentForType(type, isThis, isInit);
 
     // compute the const intent if needed
     case QualifiedType::CONST_INTENT:

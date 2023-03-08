@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -46,84 +46,6 @@
 #include <utility>
 
 static BlockStmt* findStmtWithTag(PrimitiveTag tag, BlockStmt* blockStmt);
-
-void checkControlFlow(Expr* expr, const char* context) {
-  Vec<const char*> labelSet; // all labels in expr argument
-  Vec<BaseAST*> loopSet;     // all asts in a loop in expr argument
-  Vec<BaseAST*> innerFnSet;  // all asts in a function in expr argument
-  std::vector<BaseAST*> asts;
-  collect_asts(expr, asts);
-
-  //
-  // compute labelSet and loopSet
-  //
-  for_vector(BaseAST, ast, asts) {
-    if (DefExpr* def = toDefExpr(ast)) {
-      if (LabelSymbol* ls = toLabelSymbol(def->sym))
-        labelSet.set_add(ls->name);
-      else if (FnSymbol* fn = toFnSymbol(def->sym)) {
-        if (!innerFnSet.set_in(fn)) {
-          std::vector<BaseAST*> innerAsts;
-          collect_asts(fn, innerAsts);
-          for_vector(BaseAST, ast, innerAsts) {
-            innerFnSet.set_add(ast);
-          }
-        }
-      }
-    } else if (BlockStmt* block = toBlockStmt(ast)) {
-      if (block->isLoopStmt() && !loopSet.set_in(block)) {
-        if (block->userLabel != NULL) {
-          labelSet.set_add(block->userLabel);
-        }
-        std::vector<BaseAST*> loopAsts;
-        collect_asts(block, loopAsts);
-        for_vector(BaseAST, ast, loopAsts) {
-          loopSet.set_add(ast);
-        }
-      }
-    }
-  }
-
-  //
-  // check for illegal control flow
-  //
-  for_vector(BaseAST, ast1, asts) {
-    if (CallExpr* call = toCallExpr(ast1)) {
-      if (innerFnSet.set_in(call))
-        continue; // yield or return is in nested function/iterator
-      if (call->isPrimitive(PRIM_RETURN)) {
-        USR_FATAL_CONT(call, "return is not allowed in %s", context);
-      } else if (call->isPrimitive(PRIM_YIELD)) {
-        if (!strcmp(context, "begin statement"))
-          USR_FATAL_CONT(call, "yield is not allowed in %s", context);
-      }
-    } else if (GotoStmt* gs = toGotoStmt(ast1)) {
-      if (labelSet.set_in(gs->getName()))
-        continue; // break or continue target is in scope
-      if (toSymExpr(gs->label) && toSymExpr(gs->label)->symbol() == gNil && loopSet.set_in(gs))
-        continue; // break or continue loop is in scope
-      if (!strcmp(context, "on statement")) {
-        USR_PRINT(gs, "the following error is a current limitation");
-      }
-      if (gs->gotoTag == GOTO_BREAK) {
-        USR_FATAL_CONT(gs, "break is not allowed in %s", context);
-      } else if (gs->gotoTag == GOTO_CONTINUE) {
-        // see also resolveGotoLabels() -> handleForallGoto()
-        if (!strcmp(context, "forall statement")) {
-          if (!strcmp(gs->getName(), "nil"))
-            ; // plain 'continue' is OK in a forall
-          else
-            USR_FATAL_CONT(gs, "continue to a named loop outside of a forall is not allowed from inside the forall");
-        } else {
-          USR_FATAL_CONT(gs, "continue is not allowed in %s", context);
-        }
-      } else {
-        USR_FATAL_CONT(gs, "illegal 'goto' usage; goto is deprecated anyway");
-      }
-    }
-  }
-}
-
 
 static void addPragmaFlags(Symbol* sym, Vec<const char*>* pragmas) {
   forv_Vec(const char, str, *pragmas) {
@@ -1215,7 +1137,6 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
                                  bool zippered)
 {
   removeWrappingBlock(body); // may update 'body'
-  checkControlFlow(body, "coforall statement");
 
   // insert temporary index when elided by user
   if (!indices) {
@@ -1797,32 +1718,6 @@ destructureTupleGroupedArgs(FnSymbol* fn, BlockStmt* tuple, Expr* base) {
   }
 }
 
-FnSymbol* buildLambda(FnSymbol *fn) {
-  static unsigned int nextId = 0;
-  char buffer[100];
-
-  /*
-   * The snprintf function is used to prevent a buffer overflow from occurring.
-   * Technically, an overflow can only occur if Chapel is compiled on a machine
-   * where an unsigned integer can represent numbers larger than 10^86, but it
-   * is better to guard against this behavior then leaving someone wondering
-   * why we didn't.
-   */
-  if (snprintf(buffer, 100, "chpl_lambda_%i", nextId++) >= 100) {
-    INT_FATAL("Too many lambdas.");
-  }
-
-  if (!fn) {
-    fn = new FnSymbol(astr(buffer));
-  } else {
-    fn->name = astr(buffer);
-    fn->cname = fn->name;
-  }
-
-  fn->addFlag(FLAG_COMPILER_NESTED_FUNCTION);
-  return fn;
-}
-
 void setupExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr,
                                    FnSymbol* fn) {
   const char* cname = "";
@@ -1940,41 +1835,19 @@ void applyPrivateToBlock(BlockStmt* block) {
   }
 }
 
-static
-DefExpr* buildForwardingExprFnDef(Expr* expr) {
-  // Put expr into a method and return the DefExpr for that method.
-  // This way, we can work with the rest of the compiler that
-  // assumes that 'this' is an ArgSymbol.
-  static int delegate_counter = 0;
-  const char* name = astr("chpl_forwarding_expr", istr(++delegate_counter));
-  if (UnresolvedSymExpr* usex = toUnresolvedSymExpr(expr))
-    name = astr(name, "_", usex->unresolved);
-  FnSymbol* fn = new FnSymbol(name);
-
-  fn->addFlag(FLAG_INLINE);
-  fn->addFlag(FLAG_MAYBE_REF);
-  fn->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
-  fn->addFlag(FLAG_COMPILER_GENERATED);
-
-  fn->body->insertAtTail(new CallExpr(PRIM_RETURN, expr));
-
-  DefExpr* def = new DefExpr(fn);
-
-  return def;
-}
-
-
 // handle syntax like
 //    var instance:someType;
 //    forwarding instance;
-BlockStmt* buildForwardingStmt(Expr* expr) {
-  return buildChapelStmt(new ForwardingStmt(buildForwardingExprFnDef(expr)));
+ForwardingStmt* buildForwardingStmt(DefExpr* fnDef) {
+  return new ForwardingStmt(fnDef);
 }
 
 // handle syntax like
 //    var instance:someType;
 //    forwarding instance only foo;
-BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names, bool except) {
+ForwardingStmt* buildForwardingStmt(DefExpr* fnDef,
+                                    std::vector<PotentialRename*>* names,
+                                    bool except) {
   std::set<const char*> namesSet;
   std::map<const char*, const char*> renameMap;
 
@@ -2004,45 +1877,15 @@ BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names,
         }
         break;
     }
-
   }
 
-  DefExpr* fnDef = buildForwardingExprFnDef(expr);
   ForwardingStmt* ret = new ForwardingStmt(fnDef,
-                                       &namesSet,
-                                       except,
-                                       &renameMap);
-  return buildChapelStmt(ret);
+                                           &namesSet,
+                                           except,
+                                           &renameMap);
+  return ret;
 }
 
-
-// handle syntax like
-//    forwarding var instance:someType;
-// by translating it into
-//    var instance:someType;
-//    forwarding instance;
-BlockStmt* buildForwardingDeclStmt(BlockStmt* stmts) {
-  for_alist(stmt, stmts->body) {
-    if (DefExpr* defExpr = toDefExpr(stmt)) {
-      if (VarSymbol* var = toVarSymbol(defExpr->sym)) {
-        // Append a ForwardingStmt
-        BlockStmt* toAppend = buildForwardingStmt(new UnresolvedSymExpr(var->name));
-
-        // Remove the END_OF_STATEMENT marker, not used for fields
-        Expr* last = stmts->body.last();
-        if (last && isEndOfStatementMarker(stmts->body.last()))
-          last->remove();
-
-        for_alist(tmp, toAppend->body) {
-          stmts->insertAtTail(tmp->remove());
-        }
-      } else {
-        INT_FATAL("case not handled in buildForwardingDeclStmt");
-      }
-    }
-  }
-  return stmts;
-}
 
 FnSymbol*
 buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
@@ -2067,7 +1910,7 @@ buildFunctionFormal(FnSymbol* fn, DefExpr* def) {
 
 // builds a local statement with a conditional, where the `then` block
 // is local and `else` block is not
-BlockStmt* buildLocalStmt(Expr* condExpr, Expr *stmt) {
+BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr *stmt) {
   return buildIfStmt(new CallExpr("_cond_test", condExpr),
       buildLocalStmt(stmt->copy()), stmt);
 }
@@ -2321,8 +2164,6 @@ static Expr* extractLocaleID(Expr* expr) {
 
 BlockStmt*
 buildOnStmt(Expr* expr, Expr* stmt) {
-  checkControlFlow(stmt, "on statement");
-
   CallExpr* onExpr = new CallExpr(PRIM_DEREF, extractLocaleID(expr));
 
   BlockStmt* body = toBlockStmt(stmt);
@@ -2375,8 +2216,6 @@ buildOnStmt(Expr* expr, Expr* stmt) {
 
 BlockStmt*
 buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
-  checkControlFlow(stmt, "begin statement");
-
   BlockStmt* body = toBlockStmt(stmt);
 
   //
@@ -2411,7 +2250,6 @@ buildBeginStmt(CallExpr* byref_vars, Expr* stmt) {
 
 BlockStmt*
 buildSyncStmt(Expr* stmt) {
-  checkControlFlow(stmt, "sync statement");
   BlockStmt* block = new BlockStmt();
   VarSymbol* endCountSave = newTempConst("_endCountSave");
   endCountSave->addFlag(FLAG_END_COUNT);
@@ -2476,8 +2314,6 @@ buildSyncStmt(Expr* stmt) {
 BlockStmt*
 buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
   BlockStmt* outer = block;
-
-  checkControlFlow(block, "cobegin statement");
 
   if (block->blockTag == BLOCK_SCOPELESS) {
     block = toBlockStmt(block->body.only());

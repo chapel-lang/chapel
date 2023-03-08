@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,6 +37,7 @@ static void testRange(Parser* parser, const char* testName,
                       const char* intervalStr,
                       bool hasLowerBound,
                       bool hasUpperBound) {
+  ErrorGuard guard(parser->context());
   const char* lowerStr = hasLowerBound ? "0" : "";
   const char* upperStr = hasUpperBound ? "8" : "";
 
@@ -46,9 +47,9 @@ static void testRange(Parser* parser, const char* testName,
   test += upperStr;
   test += ";\n";
 
-  auto parseResult = parser->parseString(testName, test.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, testName, test.c_str());
 
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -78,7 +79,6 @@ static void testRange(Parser* parser, const char* testName,
   }
 }
 
-// TODO: Check for trailing comma?
 static void testArrayDomain(Parser* parser, const char* testName,
                             bool isArray,
                             int numElements,
@@ -86,6 +86,7 @@ static void testArrayDomain(Parser* parser, const char* testName,
   // These initializers must have at least one element.
   assert(numElements > 0);
 
+  ErrorGuard guard(parser->context());
   std::string test = isArray ? "var a = " : "var d = ";
   test += isArray ? "[" : "{";
 
@@ -102,9 +103,9 @@ static void testArrayDomain(Parser* parser, const char* testName,
   test += isArray ? "]" : "}";
   test += ";\n";
 
-  auto parseResult = parser->parseString(testName, test.c_str());
+  auto parseResult = parseStringAndReportErrors(parser, testName, test.c_str());
 
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -121,6 +122,7 @@ static void testArrayDomain(Parser* parser, const char* testName,
       assert(a->expr(i)->isIntLiteral());
       assert(a->expr(i)->toIntLiteral()->value() == i);
     }
+    assert(a->hasTrailingComma() == hasTrailingComma);
   } else if (const Domain* d = var->initExpression()->toDomain()) {
     assert(!isArray);
     assert(d->numExprs() == numElements);

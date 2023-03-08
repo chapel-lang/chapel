@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -57,6 +57,9 @@ class Defer final : public SimpleBlockLike {
     CHPL_ASSERT(bodyChildNum_ >= 0);
   }
 
+  Defer(Deserializer& des)
+  : SimpleBlockLike(asttags::Defer, des) {}
+
   bool contentsMatchInner(const AstNode* other) const override {
     return simpleBlockLikeContentsMatchInner(other);
   }
@@ -74,6 +77,12 @@ class Defer final : public SimpleBlockLike {
   static owned<Defer> build(Builder* builder, Location loc,
                             BlockStyle blockStyle,
                             AstList stmts);
+
+  void serialize(Serializer& ser) const override {
+    SimpleBlockLike::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Defer);
 
 };
 

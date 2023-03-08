@@ -1,0 +1,5 @@
+redefinition-private-import.chpl:9: error: 'a' has multiple definitions in this scope
+redefinition-private-import.chpl:10: note: it was first defined through the 'import' statement here
+redefinition-private-import.chpl:2: note: leading to the definition here
+redefinition-private-import.chpl:10: note: redefined through the 'import' statement here
+redefinition-private-import.chpl:6: note: leading to the definition here

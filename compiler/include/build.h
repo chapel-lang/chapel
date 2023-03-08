@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,6 +34,7 @@ class CallExpr;
 class DefExpr;
 class Expr;
 class FnSymbol;
+class ForwardingStmt;
 class ImportStmt;
 class ModuleSymbol;
 class Type;
@@ -115,7 +116,6 @@ CallExpr* buildPrimitiveExpr(CallExpr* exprs);
 FnSymbol* buildIfExpr(Expr* e, Expr* e1, Expr* e2 = NULL);
 CallExpr* buildLetExpr(BlockStmt* decls, Expr* expr);
 BlockStmt* buildSerialStmt(Expr* cond, BlockStmt* body);
-void       checkControlFlow(Expr* expr, const char* context);
 void       checkIndices(BaseAST* indices);
 void       destructureIndices(BlockStmt* block,
                               BaseAST*   indices,
@@ -171,7 +171,6 @@ void setupTypeIntentArg(ArgSymbol* arg);
 DefExpr*  buildArgDefExpr(IntentTag tag, const char* ident, Expr* type, Expr* init, Expr* variable);
 DefExpr*  buildTupleArgDefExpr(IntentTag tag, BlockStmt* tuple, Expr* type, Expr* init);
 FnSymbol* buildFunctionFormal(FnSymbol* fn, DefExpr* def);
-FnSymbol* buildLambda(FnSymbol* fn);
 
 void setupExternExportFunctionDecl(Flag externOrExport, Expr* paramCNameExpr,
                                    FnSymbol* fn);
@@ -194,10 +193,11 @@ BlockStmt* buildFunctionDecl(FnSymbol*   fn,
                              Expr*       optLifetimeConstraints,
                              BlockStmt*  optFnBody);
 void applyPrivateToBlock(BlockStmt* block);
-BlockStmt* buildForwardingStmt(Expr* expr);
-BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names, bool except);
-BlockStmt* buildForwardingDeclStmt(BlockStmt*);
-BlockStmt* buildLocalStmt(Expr* condExpr, Expr* stmt);
+ForwardingStmt* buildForwardingStmt(DefExpr* fnDef);
+ForwardingStmt* buildForwardingStmt(DefExpr* fnDef,
+                                    std::vector<PotentialRename*>* names,
+                                    bool except);
+BlockStmt* buildConditionalLocalStmt(Expr* condExpr, Expr* stmt);
 BlockStmt* buildLocalStmt(Expr* stmt);
 BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
                              const char* resourceName);

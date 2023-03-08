@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,12 +24,36 @@
 namespace chpl {
 namespace uast {
 
+const char* TupleDecl::intentOrKindToString(IntentOrKind kind) {
+  return qualifierToString((Qualifier)kind);
+}
+
+void TupleDecl::dumpFieldsInner(const DumpSettings& s) const {
+  const char* intentStr = intentOrKindToString(intentOrKind_);
+  if (intentStr[0] != '\0') {
+    s.out << " " << intentStr;
+  }
+  Decl::dumpFieldsInner(s);
+}
+
+std::string TupleDecl::dumpChildLabelInner(int i) const {
+  if (declChildNum() <= i && i < declChildNum() + numElements_) {
+    return "decl " + std::to_string(i - declChildNum());
+  } else if (i == typeExpressionChildNum_) {
+    return "type";
+  } else if (i == initExpressionChildNum_) {
+    return "init";
+  }
+
+  return Decl::dumpChildLabelInner(i);
+}
+
 bool TupleDecl::assertAcceptableTupleDecl() {
   asttags::AstTag firstNonTupleTag = asttags::AST_TAG_UNKNOWN;;
   int i = 0;
 
   for (const auto& elt: children_) {
-    if (elt.get() == attributes()) {
+    if (elt.get() == attributeGroup()) {
       // TODO: Make sure it is equivalent to components?
     } else if (i == typeExpressionChildNum_) {
       // no checking needed
@@ -58,7 +82,7 @@ bool TupleDecl::assertAcceptableTupleDecl() {
 }
 
 owned<TupleDecl> TupleDecl::build(Builder* builder, Location loc,
-                                  owned<Attributes> attributes,
+                                  owned<AttributeGroup> attributeGroup,
                                   Decl::Visibility vis,
                                   Decl::Linkage linkage,
                                   TupleDecl::IntentOrKind intentOrKind,
@@ -66,14 +90,14 @@ owned<TupleDecl> TupleDecl::build(Builder* builder, Location loc,
                                   owned<AstNode> typeExpression,
                                   owned<AstNode> initExpression) {
   AstList list;
-  int attributesChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
   int numElements = 0;
-  int typeExpressionChildNum = -1;
-  int initExpressionChildNum = -1;
+  int typeExpressionChildNum = NO_CHILD;
+  int initExpressionChildNum = NO_CHILD;
 
-  if (attributes.get() != nullptr) {
-    attributesChildNum = list.size();
-    list.push_back(std::move(attributes));
+  if (attributeGroup.get() != nullptr) {
+    attributeGroupChildNum = list.size();
+    list.push_back(std::move(attributeGroup));
   }
 
   numElements = elements.size();
@@ -93,7 +117,7 @@ owned<TupleDecl> TupleDecl::build(Builder* builder, Location loc,
     list.push_back(std::move(initExpression));
   }
 
-  TupleDecl* ret = new TupleDecl(std::move(list), attributesChildNum,
+  TupleDecl* ret = new TupleDecl(std::move(list), attributeGroupChildNum,
                                  vis,
                                  linkage,
                                  intentOrKind,

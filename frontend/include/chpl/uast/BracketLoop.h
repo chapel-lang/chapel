@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -58,6 +58,9 @@ class BracketLoop final : public IndexableLoop {
                     isExpressionLevel) {
   }
 
+  BracketLoop(Deserializer& des)
+    : IndexableLoop(asttags::BracketLoop, des) { }
+
   bool contentsMatchInner(const AstNode* other) const override {
     return indexableLoopContentsMatchInner(other->toIndexableLoop());
   }
@@ -84,6 +87,12 @@ class BracketLoop final : public IndexableLoop {
    * Check if this bracket loop is actually an array type
    */
   bool isMaybeArrayType() const;
+
+  void serialize(Serializer& ser) const override {
+    IndexableLoop::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(BracketLoop);
 
 };
 

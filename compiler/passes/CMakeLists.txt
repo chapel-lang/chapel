@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -14,33 +14,33 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-target_sources(chpl
-               PRIVATE
-               addInitGuards.cpp
-               buildDefaultFunctions.cpp
-               checkNormalized.cpp
-               checkParsed.cpp
-               checkResolved.cpp
-               cleanup.cpp
-               convert-uast.cpp
-               createTaskFunctions.cpp
-               denormalize.cpp
-               errorHandling.cpp
-               expandExternArrayCalls.cpp
-               externCResolve.cpp
-               flattenClasses.cpp
-               flattenFunctions.cpp
-               initializerRules.cpp
-               InitNormalize.cpp
-               insertLineNumbers.cpp
-               insertWideReferences.cpp
-               normalize.cpp
-               normalizeErrors.cpp
-               parallel.cpp
-               resolveIntents.cpp
-               ResolveScope.cpp
-               returnStarTuplesByRefArgs.cpp
-               scopeResolve.cpp
-               splitInit.cpp
-              )
+set(SRCS
+    addInitGuards.cpp
+    buildDefaultFunctions.cpp
+    checkNormalized.cpp
+    checkResolved.cpp
+    checkUast.cpp
+    cleanup.cpp
+    convert-uast.cpp
+    createTaskFunctions.cpp
+    denormalize.cpp
+    errorHandling.cpp
+    expandExternArrayCalls.cpp
+    externCResolve.cpp
+    flattenClasses.cpp
+    flattenFunctions.cpp
+    InitErrorHandling.cpp
+    initializerRules.cpp
+    InitNormalize.cpp
+    insertLineNumbers.cpp
+    insertWideReferences.cpp
+    normalize.cpp
+    normalizeErrors.cpp
+    parallel.cpp
+    resolveIntents.cpp
+    ResolveScope.cpp
+    returnStarTuplesByRefArgs.cpp
+    scopeResolve.cpp
+    splitInit.cpp
+   )
+add_compiler_sources("${SRCS}" "${CMAKE_CURRENT_SOURCE_DIR}")

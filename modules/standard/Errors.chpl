@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -117,6 +117,13 @@ module Errors {
   class IllegalArgumentError : Error {
     proc init() {}
 
+    proc init(msg: string) {
+      super.init(msg);
+    }
+
+    // This won't actually produce a deprecation message. It's here for documentation purposes only.
+    pragma "last resort"
+    deprecated "`new IllegalArgumentError(info=)` is deprecated; please use the initializer that takes a formal `msg` instead."
     proc init(info: string) {
       super.init(info);
     }
@@ -297,6 +304,7 @@ module Errors {
     }
 
     /* Returns the first non-nil error contained in this TaskErrors group */
+    @unstable "`TaskErrors.first` is unstable; expect this method to change in the future."
     proc first() ref : owned Error? {
       var first = 0;
       for i in 0..#nErrors {
@@ -613,7 +621,7 @@ module Errors {
   */
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc assert(test: bool, args ...?numArgs) {
+  proc assert(test: bool, args...) {
     if !test {
       var tmpstring = "assert failed - " + chpl_stringify_wrapper((...args));
       __primitive("chpl_error", tmpstring.c_str());
@@ -634,7 +642,7 @@ module Errors {
      :arg errorDepth: controls the depth of the error stack trace
   */
   pragma "no doc"
-  proc compilerError(param msg: string ...?n, param errorDepth: int) {
+  proc compilerError(param msg: string..., param errorDepth: int) {
     __primitive("error");
   }
 
@@ -642,7 +650,7 @@ module Errors {
      Generate a compile-time error.
      The error text is a concatenation of the arguments.
   */
-  proc compilerError(param msg: string ...?n) {
+  proc compilerError(param msg: string...) {
     __primitive("error");
   }
 
@@ -653,7 +661,7 @@ module Errors {
      :arg errorDepth: controls the depth of the error stack trace
   */
   pragma "no doc"
-  proc compilerWarning(param msg: string ...?n, param errorDepth: int) {
+  proc compilerWarning(param msg: string..., param errorDepth: int) {
     __primitive("warning");
   }
 
@@ -661,7 +669,7 @@ module Errors {
      Generate a compile-time warning.
      The warning text is a concatenation of the arguments.
   */
-  proc compilerWarning(param msg: string ...?n) {
+  proc compilerWarning(param msg: string...) {
     __primitive("warning");
   }
 
@@ -686,7 +694,7 @@ module Errors {
      Generate a compile-time error if the `test` argument is false.
      The warning text is a concatenation of the string arguments.
   */
-  proc compilerAssert(param test: bool, param msg: string ...?n) {
+  proc compilerAssert(param test: bool, param msg: string...) {
     if !test then compilerError("assert failed - ", (...msg));
   }
 
@@ -697,7 +705,7 @@ module Errors {
      :arg errorDepth: controls the depth of the error stack trace
   */
   pragma "no doc"
-  proc compilerAssert(param test: bool, param msg: string ...?n,
+  proc compilerAssert(param test: bool, param msg: string...,
                       param errorDepth: int) {
     if !test then compilerError("assert failed - ", (...msg), errorDepth + 1);
   }
@@ -749,7 +757,7 @@ module Errors {
    */
   pragma "function terminates program"
   pragma "always propagate line file info"
-  proc halt(args ...?numArgs) {
+  proc halt(args...) {
     var tmpstring = "halt reached - " + chpl_stringify_wrapper((...args));
     __primitive("chpl_error", tmpstring.c_str());
   }
@@ -768,7 +776,7 @@ module Errors {
     in the Chapel source, followed by the argument(s) to the call.
   */
   pragma "always propagate line file info"
-  proc warning(args ...?numArgs) {
+  proc warning(args...) {
     var tmpstring = chpl_stringify_wrapper((...args));
     warning(tmpstring);
   }

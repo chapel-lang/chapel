@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -58,14 +58,7 @@ class RecordType final : public CompositeType {
   static const RecordType* get(Context* context, ID id, UniqueString name,
                                const RecordType* instantiatedFrom,
                                CompositeType::SubstitutionsMap subs);
-  /** Get the range type */
-  static const RecordType* getRangeType(Context* context);
 
-  /** Get the string type */
-  static const RecordType* getStringType(Context* context);
-
-  /** Get the bytes type */
-  static const RecordType* getBytesType(Context* context);
 
   ~RecordType() = default;
 

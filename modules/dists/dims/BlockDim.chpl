@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -72,7 +72,7 @@ record BlockDim {
   const bbStart: idxType;
   const bbLength: idxType;
 
-  proc boundingBox return bbStart .. (bbStart + bbLength - 1);
+  proc boundingBox do return bbStart .. (bbStart + bbLength - 1);
 }
 
 record Block1dom {
@@ -80,7 +80,7 @@ record Block1dom {
   param stridable: bool;
 
   // convenience
-  proc rangeT type  return range(idxType, BoundedRangeType.bounded, stridable);
+  proc rangeT type do  return range(idxType, BoundedRangeType.bounded, stridable);
 
   // our range
   var wholeR: range(idxType, BoundedRangeType.bounded, stridable);
@@ -88,7 +88,7 @@ record Block1dom {
   // privatized distribution descriptor
   const pdist;
 
-  proc dsiSetIndicesUnimplementedCase param return false;
+  proc dsiSetIndicesUnimplementedCase param do return false;
 }
 
 record Block1locdom {
@@ -128,7 +128,7 @@ proc BlockDim.init(privatizeData, type idxType) {
   bbLength = privatizeData(2);
 }
 
-proc BlockDim.dsiUsesLocalLocID1d() param return false;
+proc BlockDim.dsiUsesLocalLocID1d() param do return false;
 
 proc Block1dom.dsiGetPrivatizeData1d() {
   return (wholeR,);
@@ -150,9 +150,9 @@ proc Block1dom.dsiReprivatize1d(reprivatizeData) {
   this.wholeR = reprivatizeData(0);
 }
 
-proc Block1dom.dsiUsesLocalLocID1d() param return false;
+proc Block1dom.dsiUsesLocalLocID1d() param do return false;
 
-proc Block1dom.dsiLocalDescUsesPrivatizedGlobalDesc1d() param return false;
+proc Block1dom.dsiLocalDescUsesPrivatizedGlobalDesc1d() param do return false;
 
 /////////// privatization - end
 
@@ -169,7 +169,7 @@ proc BlockDim.init(numLocales, boundingBoxLow, boundingBoxHigh, type idxType = b
   assert(this.bbLength > 0);
 }
 
-proc BlockDim.toString()
+proc BlockDim.toString() do
   return "BlockDim(" + numLocales:string + ", " + boundingBox:string + ")";
 
 proc BlockDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
@@ -183,7 +183,7 @@ proc BlockDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
   return new Block1dom(idxType = idxType, stridable = stridable, pdist = this);
 }
 
-proc Block1dom.dsiIsReplicated1d() param return false;
+proc Block1dom.dsiIsReplicated1d() param do return false;
 
 proc Block1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
   var defaultVal: range(stoIndexT, stridable=this.stridable);
@@ -243,7 +243,7 @@ proc Block1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT) {
 
 /////////////////////////////////
 
-proc Block1dom.dsiStorageUsesUserIndices() param return true;
+proc Block1dom.dsiStorageUsesUserIndices() param do return true;
 
 proc Block1dom.dsiAccess1d(indexx: idxType): (locIdT, idxType) {
   return (pdist.dsiIndexToLocale1d(indexx), indexx);
@@ -254,7 +254,7 @@ iter Block1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
   yield locRange: range(globDD.idxType);
 }
 
-proc Block1dom.dsiSingleTaskPerLocaleOnly1d() param return false;
+proc Block1dom.dsiSingleTaskPerLocaleOnly1d() param do return false;
 
 proc Block1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:int) {
   const locRange = densify(myRange, globDD.wholeR, userErrors=false);
@@ -267,7 +267,7 @@ proc Block1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTasks:in
   return lo..hi;
 }
 
-proc Block1locdom.dsiMyDensifiedRangeType1d(globDD) type
+proc Block1locdom.dsiMyDensifiedRangeType1d(globDD) type do
   return range(globDD.idxType);
 
 iter Block1dom.dsiSerialArrayIterator1d() {

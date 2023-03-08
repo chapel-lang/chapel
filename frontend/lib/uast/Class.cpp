@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,21 +25,29 @@ namespace chpl {
 namespace uast {
 
 
+std::string Class::dumpChildLabelInner(int i) const {
+  if (i == parentClassChildNum_) {
+    return "parent-class";
+  }
+
+  return "";
+}
+
 owned<Class> Class::build(Builder* builder, Location loc,
-                          owned<Attributes> attributes,
+                          owned<AttributeGroup> attributeGroup,
                           Decl::Visibility vis,
                           UniqueString name,
                           owned<AstNode> parentClass,
                           AstList contents) {
   AstList lst;
-  int attributesChildNum = -1;
-  int parentClassChildNum = -1;
-  int elementsChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
+  int parentClassChildNum = NO_CHILD;
+  int elementsChildNum = NO_CHILD;
   int numElements = 0;
 
-  if (attributes.get() != nullptr) {
-    attributesChildNum = lst.size();
-    lst.push_back(std::move(attributes));
+  if (attributeGroup.get() != nullptr) {
+    attributeGroupChildNum = lst.size();
+    lst.push_back(std::move(attributeGroup));
   }
 
   if (parentClass.get() != nullptr) {
@@ -54,7 +62,7 @@ owned<Class> Class::build(Builder* builder, Location loc,
     }
   }
 
-  Class* ret = new Class(std::move(lst), attributesChildNum, vis, name,
+  Class* ret = new Class(std::move(lst), attributeGroupChildNum, vis, name,
                          elementsChildNum,
                          numElements,
                          parentClassChildNum);

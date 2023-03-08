@@ -11,6 +11,12 @@ class A {
 
 class B {
   var x:int;
+  proc init(x: int = 0) { this.x = x; }
+  proc init(r: fileReader) {
+    var loc = r.readWriteThisFromLocale();
+    writeln("in B.readThis loc= ", loc.id);
+    this.x = r.readln(int);
+  }
   proc readThis(writer) throws {
     var loc = writer.readWriteThisFromLocale();
     writeln("in B.readThis loc= ", loc.id);
@@ -20,6 +26,12 @@ class B {
 
 class C {
   var x:int;
+  proc init(x: int = 0) { this.x = x; }
+  proc init(r: fileReader) {
+    var loc = r.readWriteThisFromLocale();
+    writeln("in C.readWriteHelper loc= ", loc.id);
+    this.x = r.read(int);
+  }
 
   proc readThis(r) throws {
     readWriteHelper(r);
@@ -44,7 +56,7 @@ var a = new unmanaged A(1);
 var b = new unmanaged B(1);
 var c = new unmanaged C(1);
 
-var f = openmem();
+var f = openMemFile();
 var w = f.writer();
 
 writeln("Writes from Locale 1");

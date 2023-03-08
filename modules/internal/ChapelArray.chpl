@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -79,7 +79,7 @@ module ChapelArray {
   pragma "no doc"
   config param logAllArrEltAccess = false;
 
-  proc _isPrivatized(value) param
+  proc _isPrivatized(value) param do
     return !_local && ((_privatization && value!.dsiSupportsPrivatization()) ||
                        value!.dsiRequiresPrivatization());
     // Note - _local=true means --local / single locale
@@ -254,6 +254,14 @@ module ChapelArray {
   config param arrayLiteralLowBound = defaultLowBound;
   pragma "no doc"
   config param capturedIteratorLowBound = defaultLowBound;
+
+  /* The traditional one-argument form of :proc:`.find()` on arrays
+     has been deprecated in favor of a new interface.  Compiling with
+     this set to `true` will opt into that new interface.  Note that
+     there is also a new two-argument form that is available
+     regardless of this setting. */
+  config param useNewArrayFind = false;
+
 
   pragma "ignore transfer errors"
   proc chpl__buildArrayExpr( pragma "no auto destroy" in elems ...?k ) {
@@ -605,10 +613,10 @@ module ChapelArray {
     return rank*idxType;
   }
 
-  proc chpl__buildIndexType(param rank: int) type
+  proc chpl__buildIndexType(param rank: int) type do
     return chpl__buildIndexType(rank, int);
 
-  proc chpl__buildIndexType(d: domain) type
+  proc chpl__buildIndexType(d: domain) type do
     return chpl__buildIndexType(d.rank, d._value.idxType);
 
   // Helper function used to ensure a returned array matches the declared
@@ -782,13 +790,25 @@ module ChapelArray {
       return x;
     }
 
-    proc idxToLocale(ind) return _value.dsiIndexToLocale(ind);
+    proc idxToLocale(ind) do return _value.dsiIndexToLocale(ind);
 
     proc readThis(f) throws {
       f.read(_value);
     }
 
+    // TODO: Can't this be an initializer?
+    pragma "no doc"
+    proc type decodeFrom(f) throws {
+      var ret : this;
+      ret.readThis(f);
+      return ret;
+    }
+
     proc writeThis(f) throws {
+      f.write(_value);
+    }
+    pragma "no doc"
+    proc encodeTo(f) throws {
       f.write(_value);
     }
 
@@ -879,18 +899,26 @@ module ChapelArray {
     }
 
     /* The type of elements contained in the array */
-    proc eltType type return _value.eltType;
+    proc eltType type do return _value.eltType;
 
-    /* The type of indices used in the array's domain */
-    proc idxType type return _value.idxType;
-    proc intIdxType type return chpl__idxTypeToIntIdxType(_value.idxType);
+    /* The type used to represent the array's indices.  For a
+       multidimensional array, this is the per-dimension type used. */
+    proc idxType type do return _value.idxType;
+
+    /* The type used to represent the array's indices.  For a
+       1-dimensional or associative array, this will be the same as
+       :proc:`idxType` above.  For a multidimensional array, it will be
+       :proc:`rank` * :proc:`idxType`. */
+    proc fullIdxType type do return this.domain.fullIdxType;
+
+    proc intIdxType type do return chpl__idxTypeToIntIdxType(_value.idxType);
 
     pragma "no copy return"
     pragma "return not owned"
-    proc _dom return _getDomain(_value.dom);
+    proc _dom do return _getDomain(_value.dom);
 
     /* The number of dimensions in the array */
-    proc rank param return this.domain.rank;
+    proc rank param do return this.domain.rank;
 
     /*
       Return a dense rectangular array's indices as a default domain.
@@ -1069,18 +1097,18 @@ module ChapelArray {
     pragma "reference to const when const this"
     pragma "removable array access"
     pragma "alias scope from this"
-    inline proc ref this(i: _value.dom.idxType ...rank) ref
+    inline proc ref this(i: _value.dom.idxType ...rank) ref do
       return this(i);
 
     pragma "no doc" // value version, for POD types
     pragma "alias scope from this"
     inline proc const this(i: _value.dom.idxType ...rank)
-    where shouldReturnRvalueByValue(_value.eltType)
+    where shouldReturnRvalueByValue(_value.eltType) do
       return this(i);
 
     pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
-    inline proc const this(i: _value.dom.idxType ...rank) const ref
+    inline proc const this(i: _value.dom.idxType ...rank) const ref do
       return this(i);
 
 
@@ -1150,18 +1178,18 @@ module ChapelArray {
     pragma "no doc" // ref version
     pragma "reference to const when const this"
     pragma "alias scope from this"
-    inline proc ref localAccess(i: _value.dom.idxType ...rank) ref
+    inline proc ref localAccess(i: _value.dom.idxType ...rank) ref do
       return localAccess(i);
 
     pragma "no doc" // value version, for POD types
     pragma "alias scope from this"
     inline proc const localAccess(i: _value.dom.idxType ...rank)
-    where shouldReturnRvalueByValue(_value.eltType)
+    where shouldReturnRvalueByValue(_value.eltType) do
       return localAccess(i);
 
     pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
-    inline proc const localAccess(i: _value.dom.idxType ...rank) const ref
+    inline proc const localAccess(i: _value.dom.idxType ...rank) const ref do
       return localAccess(i);
 
 
@@ -1284,7 +1312,7 @@ module ChapelArray {
        Return a tuple of ranges describing the bounds of a rectangular domain.
        For a sparse domain, return the bounds of the parent domain.
      */
-    proc dims() return this.domain.dims();
+    proc dims() do return this.domain.dims();
 
     /*
        Return a range representing the boundary of this
@@ -1389,10 +1417,10 @@ module ChapelArray {
     }
 
     /* Return the number of elements in the array */
-    proc size: int return _dom.size;
+    proc size: int do return _dom.size;
 
     /* Return the number of elements in the array as the specified type. */
-    proc sizeAs(type t: integral): t return _dom.sizeAs(t);
+    proc sizeAs(type t: integral): t do return _dom.sizeAs(t);
 
     //
     // This routine determines whether an actual array argument
@@ -1469,7 +1497,7 @@ module ChapelArray {
     */
     pragma "fn returns aliasing array"
     inline proc reindex(newDomain: domain)
-      where this.domain.isRectangular() && newDomain.isRectangular()
+      where this.domain.isRectangular() && newDomain.isRectangular() do
     return reindex((...newDomain.dims()));
 
     // The reason `newDims` arg is untyped is that it needs to allow
@@ -1501,21 +1529,25 @@ module ChapelArray {
         compilerError("rank mismatch: cannot reindex() from " + this.rank:string +
                       " dimension(s) to " + newDims.size:string);
 
-      for param i in 0..rank-1 do
-        if newDims(i).sizeAs(uint) != _value.dom.dsiDim(i).sizeAs(uint) then
-          halt("extent in dimension ", i, " does not match actual");
+      const dom = this._value.dom;
+      const origDims = dom.dsiDims();
 
-      const thisDomClass = this._value.dom;
-      const (dom, dompid) = (thisDomClass, thisDomClass.pid);
+      for param i in 0..rank-1 {
+        if newDims(i).sizeAs(uint) != origDims(i).sizeAs(uint) then
+          halt("extent mismatch in dimension ", i+1, ": cannot reindex() from ",
+               origDims(i), " to ", newDims(i));
+        if ! noNegativeStrideWarnings && origDims(i).chpl_hasPositiveStride()
+           && ! newDims(i).chpl_hasPositiveStride() then
+          warning("arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; in reindex() from ", origDims, " to ", newDims);
+      }
 
       pragma "no auto destroy"
       const updom = {(...newDims)};
 
-
       const redist = new unmanaged ArrayViewReindexDist(downDistPid = this.domain.dist._pid,
                                               downDistInst=this.domain.dist._instance,
                                               updom = updom._value,
-                                              downdomPid = dompid,
+                                              downdomPid = dom.pid,
                                               downdomInst = dom);
       const redistRec = new _distribution(redist);
       // redist._free_when_no_doms = true;
@@ -1562,6 +1594,15 @@ module ChapelArray {
       _value.dsiSerialWrite(f);
     }
 
+    // Note: This 'encodeTo' is required at the moment because the compiler
+    // generated 'encodeTo', like 'writeThis' is considered to be a last
+    // resort. Without this method we would incur promotion when trying
+    // to print arrays.
+    pragma "no doc"
+    proc encodeTo(f) throws {
+      writeThis(f);
+    }
+
     pragma "no doc"
     proc readThis(f) throws {
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
@@ -1571,6 +1612,15 @@ module ChapelArray {
       }
 
       _value.dsiSerialRead(f);
+    }
+
+    // TODO: Can we convert this to an initializer despite the potential issues
+    // with runtime types?
+    pragma "no doc"
+    proc type decodeFrom(f) throws {
+      var ret : this;
+      ret.readThis(f);
+      return ret;
     }
 
     // sparse array interface
@@ -1733,13 +1783,122 @@ module ChapelArray {
        instance of ``val`` in the array, or if ``val`` is not found, a
        tuple containing ``false`` and an unspecified value is returned.
      */
-     @unstable "'Array.find' is unstable"
-     proc find(val: this.eltType): (bool, index(this.domain)) {
+     deprecated "The tuple-returning version of '.find()' on arrays is deprecated; to opt into the new index-returning version, recompile with '-suseNewArrayFind'.  Also, note that there is a new two-argument '.find()' that may be preferable in some situations, and it requires no compiler flag to use."
+     proc find(val: this.eltType): (bool, index(this.domain)) where !useNewArrayFind {
       for i in this.domain {
         if this[i] == val then return (true, i);
       }
       var arbInd: index(this.domain);
       return (false, arbInd);
+    }
+
+
+    /*
+
+      Search an array for ``val``, returning whether or not it is
+      found.  If the value is found, the index storing it is returned
+      in ``idx``.  If multiple copies of it are found, the
+      lexicographically earliest index will be returned.  If it is not
+      found, the resulting value of ``idx`` is unspecified.
+
+    */
+    proc find(val: eltType, ref idx: fullIdxType): bool {
+      // Workaround for issue #21748
+      proc max(type e: enum) {
+        return chpl__orderToEnum(e.size-1, e);
+      }
+
+      // For the sparse case, start by seeing if the IRV is what we're
+      // looking for.  If so, iterate over the parent domain to look
+      // for the value or an index not represented in the array.  This
+      // assumes that we're likely to find a case of the IRV fast.
+      // Otherwise, fall through to the normal case to just search the
+      // explicitly represented values.
+      if this.isSparse() && val == this.IRV {
+        // This is serial, but that's reasonable because the value
+        // we're looking for is the IRV, so we'll likely bump into it
+        // very quickly if this array is truly sparse.
+        for i in this.domain._value.parentDom {
+          // If we find an index representing the IRV, return it; if
+          // it has an explicit value, it may still be the IRV, so
+          // check it.
+          if !this.domain.contains(i) || this[i] == val {
+            idx = i;
+            return true;
+          }
+        }
+        // We didn't find it, so return false.
+        return false;
+
+      // Should we run the parallel version of the algorithm?
+      // - if idxType is bool, then no b/c there's unlikely to be
+      //   enough data to warrant a parallel loop and because of
+      //   issue #21791
+      // - if there's no max() for our 'fullIdxType' then 'no' b/c
+      //   we rely on the max() value in the current parallel
+      //   implementation.  Note that this calls the primitive to
+      //   check the resolution directly rather than Reflection
+      //   as a workaround for issue #21749
+      } else if this.idxType != bool && __primitive("call and fn resolves", "max", fullIdxType) {
+        var foundIt = false;
+        var locIdx = max(fullIdxType);
+        forall i in this.domain with (min reduce locIdx, max reduce foundIt) {
+          if this[i] == val && (!foundIt || i < locIdx) {
+            locIdx = i;
+            foundIt = true;
+          }
+        }
+        if foundIt then
+          idx = locIdx;
+
+        return foundIt;
+      } else {
+        // This is a serial fallback case, currently used by idxTypes
+        // that don't support a 'max(idxType)' call (such as
+        // associative arrays with string indices).  In such cases, we
+        // need to use a serial iteration since we can't be guaranteed
+        // that the first element found will have the
+        // lexicographically earliest index.
+        var foundIt = false;
+        for i in this.domain {
+          if this[i] == val {
+            if foundIt {
+              if i < idx then
+                idx = i;
+            } else {
+              idx = i;
+              foundIt = true;
+            }
+          }
+        }
+        return foundIt;
+      }
+    }
+
+    /*
+
+      Search a rectangular array with integral indices for ``val``,
+      returning the index where it is found.  If the array contains
+      multiple copies of ``val``, the lexicographically earliest index
+      will be returned.  If ``val`` is not found,
+      ``domain.lowBound-1`` will be returned instead.
+
+      Note that for arrays with ``idxType=int(?w)`` (signed ``int``
+      indices), if the low bound in a dimension is ``min(int(w))``,
+      the result will not be well-defined.
+
+    */
+    proc find(val: eltType): fullIdxType {
+      if !(this.isRectangular() || this.isSparse()) ||
+         !isIntegralType(this.idxType) then
+        compilerError("This array type does not currently support the 1-argument '.find()' method; try using the 2-argument version'");
+
+      var idx: fullIdxType;
+      if find(val, idx) then
+        return idx;
+      else
+        // The following relies on tuple promotion for multidimensional arrays.
+        return this.domain.lowBound - 1;
     }
 
     /* Return the number of times ``val`` occurs in the array. */
@@ -1784,19 +1943,19 @@ module ChapelArray {
 
     /* Return true if the argument ``a`` is an array with a rectangular
        domain.  Otherwise return false. */
-    proc isRectangular() param return this.domain.isRectangular();
+    proc isRectangular() param do return this.domain.isRectangular();
 
     /* Return true if ``a`` is an array with an irregular domain; e.g. not
        rectangular. Otherwise return false. */
-    proc isIrregular() param return this.domain.isIrregular();
+    proc isIrregular() param do return this.domain.isIrregular();
 
     /* Return true if ``a`` is an array with an associative domain. Otherwise
        return false. */
-    proc isAssociative() param return this.domain.isAssociative();
+    proc isAssociative() param do return this.domain.isAssociative();
 
     /* Return true if ``a`` is an array with a sparse domain. Otherwise
        return false. */
-    proc isSparse() param return this.domain.isSparse();
+    proc isSparse() param do return this.domain.isSparse();
   }  // record _array
 
   // _instance is a subclass of BaseArr.  LYDIA NOTE: moved this from
@@ -1848,16 +2007,14 @@ module ChapelArray {
     _do_destroy_arr(array._unowned, array._instance, deinitElts);
   }
 
-  proc _deinitElementsIsParallel(type eltType) param {
-    // TODO: Would anything be hurt if this always returned true?
-    // one guess: arrays of arrays where all inner arrays share a domain?
-    return false;
+  proc _deinitElementsIsParallel(type eltType, size: integral) {
+    return init_elts_method(size, eltType) == ArrayInit.parallelInit;
   }
 
   proc _deinitElements(array: _array) {
     param needsDestroy = __primitive("needs auto destroy", array.eltType);
     if needsDestroy {
-      if _deinitElementsIsParallel(array.eltType) {
+      if _deinitElementsIsParallel(array.eltType, array.size) {
         forall elt in array {
           chpl__autoDestroy(elt);
         }
@@ -1957,9 +2114,9 @@ module ChapelArray {
   //
 
   pragma "no doc"
-  proc isCollapsedDimension(r: range(?e,?b,?s,?a)) param return false;
+  proc isCollapsedDimension(r: range(?e,?b,?s,?a)) param do return false;
   pragma "no doc"
-  proc isCollapsedDimension(r) param return true;
+  proc isCollapsedDimension(r) param do return true;
 
   // computes || reduction over stridable of ranges
   proc chpl__anyStridable(ranges) param {
@@ -1993,10 +2150,10 @@ module ChapelArray {
   // integers and ranges; that is, it is a valid argument list for rank
   // change
   proc _validRankChangeArgs(args, type idxType) param {
-    proc _validRankChangeArg(type idxType, r: range(?)) param return true;
-    proc _validRankChangeArg(type idxType, i: idxType) param return true;
+    proc _validRankChangeArg(type idxType, r: range(?)) param do return true;
+    proc _validRankChangeArg(type idxType, i: idxType) param do return true;
     pragma "last resort"
-    proc _validRankChangeArg(type idxType, x) param return false;
+    proc _validRankChangeArg(type idxType, x) param do return false;
 
     /*
     proc help(param dim: int) param {
@@ -2114,18 +2271,18 @@ module ChapelArray {
   }
 
   // TODO: should this be returning true for atomic types?
-  proc chpl__supportedDataTypeForBulkTransfer(x: string) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: bytes) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: sync) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: single) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return true;
-  proc chpl__supportedDataTypeForBulkTransfer(x: locale) param return true;
-  proc chpl__supportedDataTypeForBulkTransfer(x: chpl_anycomplex) param return true;
+  proc chpl__supportedDataTypeForBulkTransfer(x: string) param do return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: bytes) param do return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: sync) param do return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: single) param do return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: domain) param do return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: []) param do return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param do return true;
+  proc chpl__supportedDataTypeForBulkTransfer(x: locale) param do return true;
+  proc chpl__supportedDataTypeForBulkTransfer(x: chpl_anycomplex) param do return true;
   // TODO -- why is the below line here?
-  proc chpl__supportedDataTypeForBulkTransfer(x: borrowed object) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
+  proc chpl__supportedDataTypeForBulkTransfer(x: borrowed object) param do return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x) param do return true;
 
   pragma "no doc"
   proc checkArrayShapesUponAssignment(a: [], b: [], forSwap = false) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -105,6 +105,33 @@ __device__ __host__ static inline void chpl_gpu_printTimeDelta(
 {
   printf("%s%u\n", msg, end - start);
 }
+
+__device__ static inline void chpl_gpu_force_sync() {
+  // Using __syncThreads() directly causes issues when compiling programs with
+  // --fast.  It's likely due to an issue with clang discussed here:
+  // https://github.com/llvm/llvm-project/issues/58626
+  asm volatile("bar.sync 0;" : : : "memory");
+}
+
+__host__ static inline void chpl_gpu_force_sync() {
+  chpl_internal_error("chpl_gpu_force_sync called from host");
+}
+
+__device__ static inline uint32_t chpl_gpu_getThreadIdxX() { return __nvvm_read_ptx_sreg_tid_x(); }
+__device__ static inline uint32_t chpl_gpu_getThreadIdxY() { return __nvvm_read_ptx_sreg_tid_y(); }
+__device__ static inline uint32_t chpl_gpu_getThreadIdxZ() { return __nvvm_read_ptx_sreg_tid_z(); }
+
+__device__ static inline uint32_t chpl_gpu_getBlockIdxX()  { return __nvvm_read_ptx_sreg_ctaid_x(); }
+__device__ static inline uint32_t chpl_gpu_getBlockIdxY()  { return __nvvm_read_ptx_sreg_ctaid_y(); }
+__device__ static inline uint32_t chpl_gpu_getBlockIdxZ()  { return __nvvm_read_ptx_sreg_ctaid_z(); }
+
+__device__ static inline uint32_t chpl_gpu_getBlockDimX()  { return __nvvm_read_ptx_sreg_ntid_x(); }
+__device__ static inline uint32_t chpl_gpu_getBlockDimY()  { return __nvvm_read_ptx_sreg_ntid_y(); }
+__device__ static inline uint32_t chpl_gpu_getBlockDimZ()  { return __nvvm_read_ptx_sreg_ntid_z(); }
+
+__device__ static inline uint32_t chpl_gpu_getGridDimX()   { return __nvvm_read_ptx_sreg_nctaid_x(); }
+__device__ static inline uint32_t chpl_gpu_getGridDimY()   { return __nvvm_read_ptx_sreg_nctaid_y(); }
+__device__ static inline uint32_t chpl_gpu_getGridDimZ()   { return __nvvm_read_ptx_sreg_nctaid_z(); }
 
 #endif // HAS_GPU_LOCALE
 

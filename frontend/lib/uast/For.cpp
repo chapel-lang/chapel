@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +25,13 @@ namespace chpl {
 namespace uast {
 
 
+void For::dumpFieldsInner(const DumpSettings& s) const {
+  IndexableLoop::dumpFieldsInner(s);
+  if (isParam_) {
+    s.out << " param";
+  }
+}
+
 owned<For> For::build(Builder* builder,
                       Location loc,
                       owned<Decl> index,
@@ -38,8 +45,8 @@ owned<For> For::build(Builder* builder,
   if (isParam) CHPL_ASSERT(!isExpressionLevel);
 
   AstList lst;
-  int8_t indexChildNum = -1;
-  int8_t iterandChildNum = -1;
+  int8_t indexChildNum = NO_CHILD;
+  int8_t iterandChildNum = NO_CHILD;
 
   if (index.get() != nullptr) {
     indexChildNum = lst.size();

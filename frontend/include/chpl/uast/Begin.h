@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -56,6 +56,11 @@ class Begin final : public SimpleBlockLike {
       withClauseChildNum_(withClauseChildNum) {
   }
 
+    Begin(Deserializer& des)
+    : SimpleBlockLike(asttags::Begin, des) {
+      withClauseChildNum_ = des.read<int8_t>();
+    }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Begin* lhs = this;
     const Begin* rhs = (const Begin*) other;
@@ -72,6 +77,8 @@ class Begin final : public SimpleBlockLike {
   void markUniqueStringsInner(Context* context) const override {
     simpleBlockLikeMarkUniqueStringsInner(context);
   }
+
+  std::string dumpChildLabelInner(int i) const override;
 
   int8_t withClauseChildNum_;
 
@@ -95,6 +102,13 @@ class Begin final : public SimpleBlockLike {
     CHPL_ASSERT(ret->isWithClause());
     return (const WithClause*)ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    SimpleBlockLike::serialize(ser);
+    ser.write(withClauseChildNum_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Begin);
 
 };
 

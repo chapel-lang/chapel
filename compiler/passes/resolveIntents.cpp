@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -37,6 +37,7 @@ IntentTag constIntentForType(Type* t) {
       is_enum_type(t) ||
       isClass(t) ||
       isDecoratedClassType(t) ||
+      isFunctionType(t) ||
       t == dtOpaque ||
       t == dtTaskID ||
       t == dtNil ||
@@ -148,6 +149,7 @@ IntentTag blankIntentForType(Type* t) {
              isClass(t)                              ||
              isDecoratedClassType(t)                 ||
              isRecord(t)                             ||
+             isFunctionType(t)                       ||
              // Note: isRecord(t) includes range (FLAG_RANGE)
              isUnion(t)                              ||
              isConstrainedType(t)                    ||

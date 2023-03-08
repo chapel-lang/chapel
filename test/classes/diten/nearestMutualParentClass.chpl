@@ -1,4 +1,4 @@
-proc object.myName: string return "object";
+proc object.myName: string do return "object";
 proc object.ddName(): string { return "object"; }
 
 class A {

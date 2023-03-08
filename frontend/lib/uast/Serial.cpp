@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,13 +25,21 @@ namespace chpl {
 namespace uast {
 
 
+std::string Serial::dumpChildLabelInner(int i) const {
+  if (i == condChildNum_) {
+    return "cond";
+  }
+
+  return SimpleBlockLike::dumpChildLabelInner(i);
+}
+
 owned<Serial> Serial::build(Builder* builder,
                           Location loc,
                           BlockStyle blockStyle,
                           AstList stmts) {
 
   AstList lst;
-  int8_t condChildNum = -1;
+  int8_t condChildNum = NO_CHILD;
 
   const int bodyChildNum = lst.size();
   const int numBodyStmts = stmts.size();
@@ -55,7 +63,7 @@ owned<Serial> Serial::build(Builder* builder,
   CHPL_ASSERT(condition.get() != nullptr);
 
   AstList lst;
-  int8_t condChildNum = -1;
+  int8_t condChildNum = NO_CHILD;
 
   if (condition.get() != nullptr) {
     condChildNum = lst.size();

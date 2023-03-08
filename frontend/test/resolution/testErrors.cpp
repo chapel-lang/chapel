@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "test-resolution.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/resolution/resolution-queries.h"
@@ -30,56 +31,11 @@
 #undef NDEBUG
 #endif
 
-#include <cassert>
 
 using namespace chpl;
 using namespace parsing;
 using namespace resolution;
 using namespace uast;
-
-static const ResolvedExpression*
-resolvedExpressionForAst(Context* context, const AstNode* ast,
-                         const ResolvedFunction* inFn,
-                         bool scopeResolveOnly) {
-  if (!(ast->isLoop() || ast->isBlock())) {
-    // compute the parent module or function
-    int postorder = ast->id().postOrderId();
-    if (postorder >= 0) {
-      ID parentId = ast->id().parentSymbolId(context);
-      auto parentAst = idToAst(context, parentId);
-      if (parentAst != nullptr) {
-        if (parentAst->isModule()) {
-          if (scopeResolveOnly) {
-            const auto& byId = scopeResolveModule(context, parentAst->id());
-            return &byId.byAst(ast);
-          } else {
-            const auto& byId = resolveModule(context, parentAst->id());
-            return &byId.byAst(ast);
-          }
-        } else if (auto parentFn = parentAst->toFunction()) {
-          auto untyped = UntypedFnSignature::get(context, parentFn);
-          // use inFn if it matches
-          if (inFn && inFn->signature()->untyped() == untyped) {
-            return &inFn->resolutionById().byAst(ast);
-          } else {
-            if (scopeResolveOnly) {
-              auto rFn = scopeResolveFunction(context, parentFn->id());
-              return &rFn->resolutionById().byAst(ast);
-            } else {
-              auto typed = typedSignatureInitial(context, untyped);
-              if (!typed->needsInstantiation()) {
-                auto rFn = resolveFunction(context, typed, nullptr);
-                return &rFn->resolutionById().byAst(ast);
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-
-  return nullptr;
-}
 
 static void
 computeAndPrintStuff(Context* context,

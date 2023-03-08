@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -226,6 +226,20 @@ static void test1() {
   UniqueString empty;
   assert(empty == UniqueString::get(ctx, ""));
 
+  // check that strings with null bytes are uniqued differently
+  UniqueString h_plus = UniqueString::get(ctx, "hello\0plus", 10);
+  assert(h_plus != h1);
+  assert(h_plus.length() == 10);
+  assert(!h_plus.isEmpty());
+  UniqueString h_p = UniqueString::get(ctx, "hello\0p", 7);
+  assert(h_p != h_plus && h_p != h1);
+  assert(h_p.length() == 7);
+  assert(!h_p.isEmpty());
+  UniqueString z_boo = UniqueString::get(ctx, "\0boo", 4);
+  assert(z_boo.length() == 4);
+  assert(z_boo != empty);
+  assert(!z_boo.isEmpty());
+
   // check that truncation works for short strings and long ones
   assert(h1 == UniqueString::get(ctx, "hello____", strlen("hello")));
   assert(t1 == UniqueString::get(ctx, TEST1STRING "_____",
@@ -343,6 +357,26 @@ static void test2() {
   // UniqueString s7 = USTR("algin");
 }
 
+static void test3() {
+  Context context;
+  Context* ctx = &context;
+
+  UniqueString s0 = UniqueString();
+  assert(s0.endsWith(UniqueString()));
+  assert(!s0.endsWith(UniqueString::get(ctx, "g")));
+
+  UniqueString s1 = UniqueString::get(ctx, "foobarbaz");
+  assert(s1.endsWith(UniqueString::get(ctx, "baz")));
+  assert(s1.endsWith(UniqueString::get(ctx, "foobarbaz")));
+  assert(s1.endsWith(UniqueString::get(ctx, "barbaz")));
+  assert(s1.endsWith(UniqueString::get(ctx, "z")));
+  assert(s1.endsWith(UniqueString()));
+
+  assert(!s1.endsWith(UniqueString::get(ctx, "foobarbazd")));
+  assert(!s1.endsWith(UniqueString::get(ctx, "ding")));
+  assert(!s1.endsWith(UniqueString::get(ctx, "foo")));
+}
+
 int main(int argc, char** argv) {
   const char* inputFile = "moby.txt";
   std::string timingArg = "--timing";
@@ -357,6 +391,7 @@ int main(int argc, char** argv) {
   test0();
   test1();
   test2();
+  test3();
 
   Context context;
   Context* ctx = &context;

@@ -111,7 +111,7 @@ proc wrapOO(in z5s: ?Q5, in z5a: Q5.AT, out x5: Q5, out y5: Q5.AT)
 }
 
 int implements IFC;
-proc int.AT type return string;
+proc int.AT type do return string;
 
 { var str1: string;
   wrapDO(111, str1, "  wrapDO done");

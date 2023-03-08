@@ -90,18 +90,18 @@ proc main() {
           "%{###############.#}"];
   
   testio(smallintformats, [true, false]);
-  testio(smallintformats, [100:uint(8)]);
-  testio(smallintformats, [100:int(8)]);
-  testio(smallintformats, [-100:int(8)]);
-  testio(smallintformats, [1000:uint(16)]);
-  testio(smallintformats, [1000:int(16)]);
-  testio(smallintformats, [-1000:int(16)]);
-  testio(smallintformats, [100000:uint(32)]);
-  testio(smallintformats, [100000:int(32)]);
-  testio(smallintformats, [-100000:int(32)]);
-  testio(bigintformats, [12884901888:uint(64)]);
-  testio(bigintformats, [12884901888:int(64)]);
-  testio(bigintformats, [-12884901888:int(64)]);
+  testio(smallintformats, [100:uint(8), ]);
+  testio(smallintformats, [100:int(8), ]);
+  testio(smallintformats, [-100:int(8), ]);
+  testio(smallintformats, [1000:uint(16), ]);
+  testio(smallintformats, [1000:int(16), ]);
+  testio(smallintformats, [-1000:int(16), ]);
+  testio(smallintformats, [100000:uint(32), ]);
+  testio(smallintformats, [100000:int(32), ]);
+  testio(smallintformats, [-100000:int(32), ]);
+  testio(bigintformats, [12884901888:uint(64), ]);
+  testio(bigintformats, [12884901888:int(64), ]);
+  testio(bigintformats, [-12884901888:int(64), ]);
 
   var fformats =
          ["%t", "%n", "%jt", "%ht",
@@ -153,12 +153,12 @@ proc main() {
  
   testio(zformats, [997.89+200.124i, -997.89-200.124i,
                     0.0+1.0i, 1.0+0.0i, 0.0-1.0i, -1.0+0.0i]);
-  testio(zformats, [1.0:imag(32)]);
-  testio(zformats, [1.0:imag(64)]);
+  testio(zformats, [1.0:imag(32), ]);
+  testio(zformats, [1.0:imag(64), ]);
 
 
-  testio(["%c"], [33, 42]);
-  testio(["%c"], ["x", "a"]);
+  testio(["%c", ], [33, 42]);
+  testio(["%c", ], ["x", "a"]);
 
   testio(["%s", "%10s", "%-10s"], ["a", "test"]);
 

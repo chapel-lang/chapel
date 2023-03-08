@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,6 +19,8 @@
 
 #ifndef CHPL_UAST_PRIM_OP_H
 #define CHPL_UAST_PRIM_OP_H
+
+#include "chpl/framework/serialize-functions.h"
 
 namespace chpl {
 namespace uast {
@@ -47,6 +49,9 @@ PrimitiveTag primNameToTag(const char* name);
 using namespace primtags;
 
 } // end namespace uast
+
+DECLARE_SERDE_ENUM(uast::PrimitiveTag, uint16_t);
+
 } // end namespace chpl
 
 #endif

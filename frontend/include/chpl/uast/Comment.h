@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -49,6 +49,12 @@ class Comment final : public AstNode {
     : AstNode(asttags::Comment), comment_(std::move(s)) {
   }
 
+  Comment(Deserializer& des)
+    : AstNode(asttags::Comment, des) {
+    comment_ = des.read<std::string>();
+    commentId_ = des.read<CommentID>();
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Comment* lhs = this;
     const Comment* rhs = (const Comment*) other;
@@ -56,6 +62,8 @@ class Comment final : public AstNode {
   }
   void markUniqueStringsInner(Context* context) const override {
   }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
 
  public:
   ~Comment() override = default;
@@ -77,6 +85,14 @@ class Comment final : public AstNode {
      its BuilderResult
   */
   CommentID commentId() const { return commentId_; }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(comment_);
+    ser.write(commentId_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Comment);
 
  protected:
   /**

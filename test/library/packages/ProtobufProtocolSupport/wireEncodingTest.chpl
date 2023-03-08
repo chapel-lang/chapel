@@ -1,7 +1,7 @@
 use ProtobufProtocolSupport.WireEncoding;
 use IO;
 
-var f = openmem();
+var f = openMemFile();
 
 // tests for unsignedVarint
 unsignedVarintAppend(0, f.writer(kind=iokind.little, locking=false));

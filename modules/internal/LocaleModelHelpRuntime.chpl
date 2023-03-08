@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -73,18 +73,18 @@ module LocaleModelHelpRuntime {
   // Compiler (and module code) interface for manipulating global locale IDs..
   pragma "insert line file info"
   pragma "always resolve function"
-  proc chpl_buildLocaleID(node: chpl_nodeID_t, subloc: chpl_sublocID_t)
+  proc chpl_buildLocaleID(node: chpl_nodeID_t, subloc: chpl_sublocID_t) do
     return chpl_rt_buildLocaleID(node, subloc);
 
   pragma "insert line file info"
   pragma "always resolve function"
   pragma "codegen for CPU and GPU"
-  proc chpl_nodeFromLocaleID(in loc: chpl_localeID_t)
+  proc chpl_nodeFromLocaleID(in loc: chpl_localeID_t) do
     return chpl_rt_nodeFromLocaleID(loc);
 
   pragma "insert line file info"
   pragma "always resolve function"
-  proc chpl_sublocFromLocaleID(in loc: chpl_localeID_t)
+  proc chpl_sublocFromLocaleID(in loc: chpl_localeID_t) do
     return chpl_rt_sublocFromLocaleID(loc);
 
   //////////////////////////////////////////

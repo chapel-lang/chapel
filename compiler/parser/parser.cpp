@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,7 +34,6 @@
 #include "misc.h"
 
 #include "chpl/parsing/parsing-queries.h"
-#include "llvm/ADT/SmallPtrSet.h"
 
 // Turn this on to dump AST/uAST when using --dyno.
 #define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
@@ -44,6 +43,9 @@
 #endif
 
 #include <cstdlib>
+#include <fstream>
+
+chpl::ID dynoIdForLastContainingDecl = chpl::ID();
 
 BlockStmt*           yyblock                       = NULL;
 const char*          yyfilename                    = NULL;
@@ -69,6 +71,8 @@ static const char* stdGenModulesPath;
 
 static void          countTokensInCmdLineFiles();
 
+static void          addDynoLibFiles();
+
 static void          parseInternalModules();
 
 static void          parseCommandLineFiles();
@@ -77,6 +81,8 @@ static void          parseDependentModules(bool isInternal);
 
 static ModuleSymbol* parseMod(const char* modName,
                               bool        isInternal);
+
+std::vector<UniqueString> parsedPaths;
 
 // TODO: Remove me.
 struct YYLTYPE {
@@ -101,18 +107,18 @@ static ModuleSymbol* parseFile(const char* fileName,
 static void maybePrintModuleFile(ModTag modTag, const char* path);
 
 class DynoErrorHandler : public chpl::Context::ErrorHandler {
-  std::vector<const chpl::ErrorBase*> errors_;
+  std::vector<chpl::owned<chpl::ErrorBase>> errors_;
  public:
   DynoErrorHandler() = default;
   ~DynoErrorHandler() = default;
 
-  const std::vector<const chpl::ErrorBase*>& errors() const {
+  const std::vector<chpl::owned<chpl::ErrorBase>>& errors() const {
     return errors_;
   }
 
   virtual void
   report(chpl::Context* context, const chpl::ErrorBase* err) override {
-    errors_.push_back(err);
+    errors_.push_back(err->clone());
   }
 
   inline void clear() { errors_.clear(); }
@@ -171,18 +177,20 @@ static Vec<const char*> sModNameList;
 static Vec<const char*> sModDoneSet;
 static Vec<VisibilityStmt*> sModReqdByInt;
 
+static std::set<std::string> gDynoGenLibPaths;
+
 void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
   sIntModPath.add(astr(newpath));
-  if (fDynoCompilerLibrary) {
-    gDynoPrependInternalModulePaths.push_back(newpath);
-  }
+  gDynoPrependInternalModulePaths.push_back(newpath);
 }
 
 void addStandardModulePath(const ArgumentDescription* desc, const char* newpath) {
   sStdModPath.add(astr(newpath));
-  if (fDynoCompilerLibrary) {
-    gDynoPrependInternalModulePaths.push_back(newpath);
-  }
+  gDynoPrependInternalModulePaths.push_back(newpath);
+}
+
+void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
+  gDynoGenLibPaths.insert(std::string(newpath));
 }
 
 void setupModulePaths() {
@@ -309,6 +317,17 @@ static void countTokensInCmdLineFiles() {
   clean_exit(0);
 }
 
+static void addDynoLibFiles() {
+  const char* inputFileName = NULL;
+  int fileNum = 0;
+  while ((inputFileName = nthFilename(fileNum++))) {
+    if (isDynoLib(inputFileName)) {
+      auto libPath = chpl::UniqueString::get(gContext, inputFileName);
+      chpl::parsing::registerFilePathsInLibrary(gContext, libPath);
+    }
+  }
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -409,6 +428,21 @@ static void parseCommandLineFiles() {
     if (isChplSource(inputFileName))
     {
       parseChplSourceFile(inputFileName);
+    } else if (isDynoLib(inputFileName)) {
+      // Need to parse these files so that they all get converted into the
+      // old AST. This is necessary in case the 'main' module is also in a
+      // .dyno file.
+      //
+      // TODO: It's not necessarily the case that a .dyno file implies that the
+      // serialized file would have been listed on the command line. We
+      // probably to clarify what it means to be listed on the command line.
+      auto libPath = chpl::UniqueString::get(gContext, inputFileName);
+      auto lib = chpl::parsing::loadLibraryFile(gContext, libPath);
+      if (lib.isUser()) {
+        for (const auto& pair : lib.offsets()) {
+          parseFile(pair.first.c_str(), MOD_USER, true);
+        }
+      }
     }
   }
 
@@ -431,6 +465,33 @@ static void parseCommandLineFiles() {
 
   forv_Vec(ModuleSymbol, mod, allModules) {
     mod->addDefaultUses();
+  }
+
+  if (gDynoGenLibPaths.size() > 0) {
+    for (std::string path : gDynoGenLibPaths) {
+      if (path == "<standard>") {
+        std::vector<UniqueString> todo;
+        for (auto& path : parsedPaths) {
+          const auto& modulePrefix = chpl::parsing::bundledModulePath(gContext);
+          if (path.startsWith(modulePrefix)) {
+            todo.push_back(path);
+          }
+        }
+        chpl::parsing::LibraryFile::generate(gContext, todo,
+                                             "chpl_standard.dyno", false);
+      } else {
+        std::string justFile = path.substr(path.find_last_of("/") + 1);
+        auto dot = justFile.find_last_of(".");
+        std::string noExt = justFile.substr(0, dot);
+        auto ustr = chpl::UniqueString::get(gContext, path);
+        chpl::parsing::LibraryFile::generate(gContext, {ustr},
+                                             noExt + ".dyno", true);
+      }
+    }
+
+    // As .dyno files become more capable, this exit will be moved further and
+    // further into resolution.
+    clean_exit(0);
   }
 }
 
@@ -772,13 +833,10 @@ static const char* labelForContainingDeclFromId(chpl::ID id) {
       preface = "method";
     }
   } else if (auto mod = ast->toModule()) {
-    if (mod->kind() == chpl::uast::Module::IMPLICIT) return nullptr;
-
     name = astr(mod->name());
     preface = "module";
   }
 
-  // TODO: Why is this thing always 'astr'?
   const char* ret = (doUseName && name)
       ? astr(preface, " '", name, "'")
       : astr(preface);
@@ -786,16 +844,42 @@ static const char* labelForContainingDeclFromId(chpl::ID id) {
   return ret;
 }
 
+static bool shouldPrintHeaderForDecl(chpl::ID declId) {
+  if (declId.isEmpty() || declId == dynoIdForLastContainingDecl) {
+    return false;
+  }
+
+  // Always print new headers in developer mode.
+  if (developer) return true;
+
+  bool ret = true;
+  auto ast = chpl::parsing::idToAst(gContext, declId);
+  INT_ASSERT(ast);
+
+  // TODO: Could we just simplify this logic down to 'if it's an implicit
+  // module, don't print the module? Or just always print the header?
+  // Would save a bit of pain.
+  if (auto mod = ast->toModule()) {
+    UniqueString path;
+    UniqueString parentSymbolPath;
+    if (gContext->filePathForId(mod->id(), path, parentSymbolPath)) {
+      auto name = chpl::uast::Builder::filenameToModulename(path.c_str());
+      if (name == mod->name().c_str()) ret = false;
+    }
+  }
+
+  return ret;
+}
+
 // Print out 'in function/module/initializer' etc...
 static void maybePrintErrorHeader(chpl::ID id) {
-  static chpl::ID idForLastContainingDecl = chpl::ID();
 
   // No ID associated with this error, so no UAST information.
   if (id.isEmpty()) return;
 
   auto declId = findIdForContainingDecl(id);
 
-  if (!declId.isEmpty() && declId != idForLastContainingDecl) {
+  if (shouldPrintHeaderForDecl(declId)) {
     auto declLabelStr = labelForContainingDeclFromId(declId);
 
     // No label was created, so we have nothing to print.
@@ -808,7 +892,7 @@ static void maybePrintErrorHeader(chpl::ID id) {
     fprintf(stderr, "%s:%d: In %s:\n", path.c_str(), line, declLabelStr);
 
     // Set so that we don't print out the same header over and over.
-    idForLastContainingDecl = declId;
+    dynoIdForLastContainingDecl = declId;
   }
 }
 
@@ -888,20 +972,29 @@ static DynoErrorHandler* gDynoErrorHandler = nullptr;
 
 static bool dynoRealizeErrors(void) {
   INT_ASSERT(gDynoErrorHandler);
-  bool hadErrors;
-  llvm::SmallPtrSet<const chpl::ErrorBase*, 10> issuedErrors;
-  for (auto err : gDynoErrorHandler->errors()) {
-    hadErrors = true;
-    // skip issuing errors that have already been issued
-    if (!issuedErrors.insert(err).second) continue;
+  bool hadErrors = false;
+  for (auto& err : gDynoErrorHandler->errors()) {
+    const chpl::ErrorBase* e = err.get();
+
+    if (e->kind() == chpl::ErrorBase::SYNTAX ||
+        e->kind() == chpl::ErrorBase::ERROR) {
+      // make a note if we found any errors
+      hadErrors = true;
+    }
+
+    // skip emitting warnings for '--no-warnings'
+    if (ignore_warnings && e->kind() == chpl::ErrorBase::WARNING) {
+      continue;
+    }
+
     if (fDetailedErrors) {
-      chpl::Context::defaultReportError(gContext, err);
+      chpl::Context::defaultReportError(gContext, e);
       // Use production compiler's exit-on-error functionality for errors
       // reported via new Dyno mechanism
-      setupDynoError(err->kind());
+      setupDynoError(e->kind());
     } else {
       // Try to maintain compatibility with the old reporting mechanism
-      dynoDisplayError(gContext, err->toErrorMessage(gContext));
+      dynoDisplayError(gContext, e->toErrorMessage(gContext));
     }
   }
   gDynoErrorHandler->clear();
@@ -926,16 +1019,28 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   // see if there were any parse errors.
   chpl::UniqueString emptySymbolPath;
   auto& builderResult =
-    chpl::parsing::parseFileToBuilderResult(gContext, path, emptySymbolPath);
+    chpl::parsing::parseFileToBuilderResultAndCheck(gContext, path,
+                                                    emptySymbolPath);
   gFilenameLookup.push_back(path.c_str());
-
-  // Manually report any parsing errors collected by the builder.
-  for (auto e : builderResult.errors()) gContext->report(e);
 
   if (dynoRealizeErrors()) USR_STOP();
 
+  parsedPaths.push_back(path);
+
   ModuleSymbol* lastModSym = nullptr;
   int numModSyms = 0;
+
+  if (fDynoVerifySerialization) {
+    std::stringstream ss;
+    chpl::Serializer ser(ss);
+    builderResult.serialize(ser);
+
+    chpl::Deserializer des(gContext, ss, ser.stringCache());
+    auto res = chpl::uast::BuilderResult::deserialize(des);
+    if (builderResult.equals(res) == false) {
+      USR_FATAL("Failed to (de)serialize %s\n", builderResult.filePath().c_str());
+    }
+  }
 
   //
   // Cases here:
@@ -1105,7 +1210,7 @@ static const char* searchThePath(const char*      modName,
   return retval;
 }
 
-void parse() {
+void parseAndConvertUast() {
 
   // TODO: Runtime configuration of debug level for dyno parser.
   if (debugParserLevel) {
@@ -1115,6 +1220,8 @@ void parse() {
   gDynoErrorHandler = dynoPrepareAndInstallErrorHandler();
 
   if (countTokens || printTokens) countTokensInCmdLineFiles();
+
+  addDynoLibFiles();
 
   parseInternalModules();
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,7 +19,7 @@
  */
 
 /* Version as of Chapel 1.25 - to be updated each release */
-const spackVersion = new VersionInfo('0.15.4');
+const spackVersion = new VersionInfo('0.19.0');
 const major = spackVersion.major:string;
 const minor = spackVersion.minor:string;
 const spackBranch = 'releases/v' + '.'.join(major, minor);
@@ -118,7 +118,7 @@ proc masonExternal(args: [] string) {
       var usedCmd:string;
       var cmdList:list(string);
       // identify which, if any, subcommand was used and collect its arguments
-      for (cmd, arg) in subCmds.items() {
+      for (cmd, arg) in zip(subCmds.keys(), subCmds.values()) {
         if arg.hasValue() {
           usedCmd = cmd;
           cmdList = new list(arg.values());
@@ -244,7 +244,7 @@ private proc generateYAML() {
   }
   const reposOverride = 'repos:\n'+
                         '  - ' + MASON_HOME + '/spack-registry/var/spack/repos/builtin \n';
-  var yamlFile = open(yamlFilePath,iomode.cw);
+  var yamlFile = open(yamlFilePath,ioMode.cw);
   var yamlWriter = yamlFile.writer();
   yamlWriter.write(reposOverride);
   yamlWriter.close();
@@ -261,10 +261,10 @@ proc getSpackVersion : VersionInfo {
   const command = "spack --version";
   const tmpVersion = getSpackResult(command,true).strip();
   // on systems with their own spack, spack --version can provide
-  // a version string like x.x.x-xxxx-hash
+  // a version string like x.x.x.xxxx (hash)
   // partitioning the string allows us to separate the major.minor.bug
   // from the remaining values
-  const version = tmpVersion.partition("-");
+  const version = tmpVersion.partition(" ");
   return new VersionInfo(version[0]);
 }
 
@@ -417,7 +417,7 @@ proc getExternalPackages(exDeps: Toml) /* [domain(string)] shared Toml? */ {
   var exDom: domain(string);
   var exDepTree: [exDom] shared Toml?;
 
-  for (name, spc) in exDeps.A.items() {
+  for (name, spc) in zip(exDeps.A.keys(), exDeps.A.values()) {
     try! {
       var spec = spc!;
       select spec.tag {

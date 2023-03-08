@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,20 +24,26 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include "chpl-env-gen.h"
 
 #include "cuda-utils.h"
 
 static inline
-void* chpl_gpu_getKernel(const char* fatbinData, const char* kernelName) {
+void* chpl_gpu_load_module(const char* fatbin_data) {
+  CUmodule cuda_module;
 
-  CUmodule    cudaModule;
-  CUfunction  function;
+  CUDA_CALL(cuModuleLoadData(&cuda_module, fatbin_data));
+  assert(cuda_module);
 
-  // Create module for object
-  CUDA_CALL(cuModuleLoadData(&cudaModule, fatbinData));
+  return (void*)cuda_module;
+}
 
-  // Get kernel function
-  CUDA_CALL(cuModuleGetFunction(&function, cudaModule, kernelName));
+static inline
+void* chpl_gpu_load_function(CUmodule cuda_module, const char* kernel_name) {
+  CUfunction function;
+
+  CUDA_CALL(cuModuleGetFunction(&function, cuda_module, kernel_name));
+  assert(function);
 
   return (void*)function;
 }

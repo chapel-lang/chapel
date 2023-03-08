@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -70,29 +70,7 @@ void QualifiedType::mark(Context* context) const {
 }
 
 const char* QualifiedType::kindToString(QualifiedType::Kind kind) {
-  switch (kind) {
-    case QualifiedType::UNKNOWN:            return "unknown";
-    case QualifiedType::DEFAULT_INTENT:     return "default intent";
-    case QualifiedType::CONST_INTENT:       return "const intent";
-    case QualifiedType::VAR:                return "var";
-    case QualifiedType::CONST_VAR:          return "const";
-    case QualifiedType::CONST_REF:          return "const ref";
-    case QualifiedType::REF:                return "ref";
-    case QualifiedType::IN:                 return "in";
-    case QualifiedType::CONST_IN:           return "const in";
-    case QualifiedType::OUT:                return "out";
-    case QualifiedType::INOUT:              return "inout";
-    case QualifiedType::PARAM:              return "param";
-    case QualifiedType::TYPE:               return "type";
-    case QualifiedType::INDEX:              return "index";
-    case QualifiedType::TYPE_QUERY:         return "type query";
-    case QualifiedType::FUNCTION:           return "function";
-    case QualifiedType::PARENLESS_FUNCTION: return "parenless function";
-    case QualifiedType::MODULE:             return "module";
-  }
-
-  CHPL_ASSERT(false && "should not be reachable");
-  return "unknown";
+  return uast::qualifierToString(kind);
 }
 
 void QualifiedType::stringify(std::ostream& ss,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -68,6 +68,11 @@ class New : public AstNode {
     : AstNode(asttags::New, std::move(children)),
       management_(management) {}
 
+  New(Deserializer& des)
+    : AstNode(asttags::New, des) {
+        management_ = des.read<Management>();
+      }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const New* lhs = this;
     const New* rhs = (const New*) other;
@@ -79,6 +84,8 @@ class New : public AstNode {
   }
   void markUniqueStringsInner(Context* context) const override {
   }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
 
   Management management_;
 
@@ -107,10 +114,50 @@ class New : public AstNode {
     return management_;
   }
 
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(management_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(New);
+
 };
 
 
+
 } // end namespace uast
+
+/// \cond DO_NOT_DOCUMENT
+
+template <>
+struct mark<uast::New::Management> {
+  void operator()(Context* context, uast::New::Management t) {
+    // No need to mark enums
+  }
+};
+template <>
+struct stringify<uast::New::Management> {
+  void operator()(std::ostream& os, StringifyKind stringKind,
+                  uast::New::Management k) {
+    os << uast::New::managementToString(k);
+  }
+};
+
+/// \endcond
+
+DECLARE_SERDE_ENUM(uast::New::Management, uint8_t);
+
 } // end namespace chpl
+
+namespace std {
+
+template <>
+struct hash<chpl::uast::New::Management> {
+  size_t operator()(const chpl::uast::New::Management& key) const {
+    return (size_t)key;
+  }
+};
+
+}  // end namespace std
 
 #endif

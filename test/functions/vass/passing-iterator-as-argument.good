@@ -1,1 +1,4 @@
 passing-iterator-as-argument.chpl:7: error: passing iterators by name is not yet supported
+passing-iterator-as-argument.chpl:1: In function 'ti':
+passing-iterator-as-argument.chpl:2: error: illegal access of iterator
+  passing-iterator-as-argument.chpl:7: called as ti(it: iter)

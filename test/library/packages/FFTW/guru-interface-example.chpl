@@ -24,7 +24,7 @@ var a1,b1,a2,b2: [D]complex;
 
 
 fillRandom(a1); // Original array
-a2 = reshape(a1, D by -1);
+a2 = reshape(a1, D by -1);   // neg-stride temp array created by reshape()
 
 if verbose {
   writeln("The original array :");

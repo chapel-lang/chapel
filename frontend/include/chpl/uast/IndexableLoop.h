@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -51,6 +51,14 @@ class IndexableLoop : public Loop {
     CHPL_ASSERT(iterandChildNum >= 0);
   }
 
+  IndexableLoop(AstTag tag, Deserializer& des)
+    : Loop(tag, des) {
+    indexChildNum_ = des.read<int8_t>();
+    iterandChildNum_ = des.read<int8_t>();
+    withClauseChildNum_ = des.read<int8_t>();
+    isExpressionLevel_ = des.read<bool>();
+  }
+
   bool indexableLoopContentsMatchInner(const IndexableLoop* other) const {
     const IndexableLoop* lhs = this;
     const IndexableLoop* rhs = other;
@@ -76,6 +84,9 @@ class IndexableLoop : public Loop {
   void indexableLoopMarkUniqueStringsInner(Context* context) const {
     loopMarkUniqueStringsInner(context);
   }
+
+  virtual void dumpFieldsInner(const DumpSettings& s) const override;
+  virtual std::string dumpChildLabelInner(int i) const override;
 
   int8_t indexChildNum_;
   int8_t iterandChildNum_;
@@ -121,6 +132,14 @@ class IndexableLoop : public Loop {
   */
   bool isExpressionLevel() const {
     return isExpressionLevel_;
+  }
+
+  void serialize(Serializer& ser) const override {
+    Loop::serialize(ser);
+    ser.write(indexChildNum_);
+    ser.write(iterandChildNum_);
+    ser.write(withClauseChildNum_);
+    ser.write(isExpressionLevel_);
   }
 
 };

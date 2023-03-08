@@ -1,0 +1,1 @@
+ioChar.chpl:3: warning: ioChar type is deprecated - please use fileReader.readCodepoint and fileWriter.writeCodepoint instead

@@ -52,7 +52,7 @@ proc calculate(data : [] uint(8), size : int) {
       curMap[hash(data, i, sizeRange)] += 1;
     }
     lock.readFE(); // acquire lock
-    for (k,v) in curMap.items() do freqs[k] += v;
+    for (k,v) in zip(curMap.keys(), curMap.values()) do freqs[k] += v;
     lock.writeEF(true); // free lock
   }
 
@@ -65,7 +65,7 @@ proc write_frequencies(data : [] uint(8), size : int) {
 
   // sort by frequencies
   var arr : [1..freqs.size] (int, uint);
-  for (a, (k, v)) in zip(arr, freqs.items()) do
+  for (a, k, v) in zip(arr, freqs.keys(), freqs.values()) do
     a = (v,k);
   sort(arr, comparator=reverseComparator);
 
@@ -91,7 +91,7 @@ inline proc startsWithThree(data : []) {
 
 proc main(args: [] string) {
   // Open stdin and a binary reader channel
-  const inFile = openfd(0);
+  const inFile = new file(0);
   const fileLen = inFile.size;
   var myin = inFile.reader(kind=ionative,locking=false);
 

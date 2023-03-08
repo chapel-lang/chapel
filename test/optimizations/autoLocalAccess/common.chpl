@@ -1,5 +1,5 @@
-public use BlockDist;
-public use CyclicDist;
+public use BlockDist except testFastFollowerOptimization;
+public use CyclicDist except testFastFollowerOptimization;
 public use BlockCycDist;
 public use HashedDist;
 public use StencilDist;
@@ -12,10 +12,10 @@ proc createDom(space) {
   }
 
   if distType == Block {
-    return newBlockDom(space);
+    return Block.createDomain(space);
   }
   else if distType == Cyclic {
-    return newCyclicDom(space);
+    return Cyclic.createDomain(space);
   }
   else if distType == BlockCyclic {
     if space.rank == 1 {

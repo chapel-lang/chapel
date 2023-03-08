@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,13 +25,21 @@ namespace chpl {
 namespace uast {
 
 
+std::string Begin::dumpChildLabelInner(int i) const {
+  if (withClauseChildNum_ >= 0 && i == withClauseChildNum_) {
+    return "with";
+  }
+
+  return "";
+}
+
 owned<Begin> Begin::build(Builder* builder,
                           Location loc,
                           owned<WithClause> withClause,
                           BlockStyle blockStyle,
                           AstList stmts) {
   AstList lst;
-  int8_t withClauseChildNum = -1;
+  int8_t withClauseChildNum = NO_CHILD;
 
   if (withClause.get() != nullptr) {
     withClauseChildNum = lst.size();

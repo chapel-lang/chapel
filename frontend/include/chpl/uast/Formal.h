@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,7 +22,7 @@
 
 #include "chpl/framework/global-strings.h"
 #include "chpl/framework/Location.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/uast/VarLikeDecl.h"
 
 namespace chpl {
@@ -44,33 +44,36 @@ namespace uast {
 class Formal final : public VarLikeDecl {
  public:
   enum Intent {
-    // Use IntentList here for consistent enum values.
-    DEFAULT_INTENT    = (int) IntentList::DEFAULT_INTENT,
-    CONST             = (int) IntentList::CONST_INTENT,
-    CONST_REF         = (int) IntentList::CONST_REF,
-    REF               = (int) IntentList::REF,
-    IN                = (int) IntentList::IN,
-    CONST_IN          = (int) IntentList::CONST_IN,
-    OUT               = (int) IntentList::OUT,
-    INOUT             = (int) IntentList::INOUT,
-    PARAM             = (int) IntentList::PARAM,
-    TYPE              = (int) IntentList::TYPE
+    // Use Qualifier here for consistent enum values.
+    DEFAULT_INTENT    = (int) Qualifier::DEFAULT_INTENT,
+    CONST             = (int) Qualifier::CONST_INTENT,
+    CONST_REF         = (int) Qualifier::CONST_REF,
+    REF               = (int) Qualifier::REF,
+    IN                = (int) Qualifier::IN,
+    CONST_IN          = (int) Qualifier::CONST_IN,
+    OUT               = (int) Qualifier::OUT,
+    INOUT             = (int) Qualifier::INOUT,
+    PARAM             = (int) Qualifier::PARAM,
+    TYPE              = (int) Qualifier::TYPE
   };
 
  private:
-  Formal(AstList children, int attributesChildNum, UniqueString name,
+  Formal(AstList children, int attributeGroupChildNum, UniqueString name,
          Formal::Intent intent,
          int8_t typeExpressionChildNum,
          int8_t initExpressionChildNum)
     : VarLikeDecl(asttags::Formal, std::move(children),
-                  attributesChildNum,
+                  attributeGroupChildNum,
                   Decl::DEFAULT_VISIBILITY,
                   Decl::DEFAULT_LINKAGE,
-                  /*linkageNameChildNum*/ -1,
+                  /*linkageNameChildNum*/ NO_CHILD,
                   name,
-                  (IntentList)((int)intent),
+                  (Qualifier)((int)intent),
                   typeExpressionChildNum,
                   initExpressionChildNum) {
+  }
+  Formal(Deserializer& des)
+    : VarLikeDecl(asttags::Formal, des) {
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -87,7 +90,7 @@ class Formal final : public VarLikeDecl {
   ~Formal() override = default;
 
   static owned<Formal> build(Builder* builder, Location loc,
-                             owned<Attributes> attributes,
+                             owned<AttributeGroup> attributeGroup,
                              UniqueString name,
                              Intent intent,
                              owned<AstNode> typeExpression,
@@ -99,7 +102,7 @@ class Formal final : public VarLikeDecl {
    */
   Intent intent() const { return (Intent)((int)storageKind()); }
 
-  static std::string intentToString(Intent intent);
+  static const char* intentToString(Intent intent);
 
   /**
     If `true`, then this formal's name is '_', as in `proc(_: int)`. This is
@@ -110,6 +113,12 @@ class Formal final : public VarLikeDecl {
   inline bool isExplicitlyAnonymous() const {
     return name() == USTR("_");
   }
+
+  void serialize(Serializer& ser) const override {
+    VarLikeDecl::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Formal);
 
 };
 

@@ -19,7 +19,7 @@ config const pairfn = "test-DD.dat";
 param NDIM  = 3;
 const Ddim = {1.. #NDIM};
 
-config const spaces=compile("\\s+");
+config const spaces=new regex("\\s+");
 config const bufsize=10000;
 config const minpart=500;
 
@@ -54,21 +54,21 @@ proc generateRandom(pp : []WeightedParticle3D) {
 
 
 proc countLines(fn : string) : int {
-  var ff = open(fn, iomode.r);
+  var fr = openReader(fn);
   var ipart = 0;
-  for iff in ff.lines() do ipart +=1;
-  ff.close();
+  for iff in fr.lines() do ipart +=1;
+  fr.close();
   return ipart;
 }
 
 proc readFile(fn : string, pp : []WeightedParticle3D)  {
   const maxcols=25;
 
-  var ff = open(fn, iomode.r);
+  var fr = openReader(fn);
   var cols : [1.. #maxcols] real;
   var icol=1;
   var ipart = 0;
-  for iff in ff.lines() {
+  for iff in fr.lines() {
    icol = 1; 
    for col1 in iff.split(spaces) {
      if (col1.size==0) then continue;
@@ -298,7 +298,7 @@ proc doPairs() {
     smuAccumulate(hh, soa1,soa2, soa1.Dpart, soa2.Dpart, 1.0);
     tt.stop();
     writef("Time to brute force paircount : %r \n", tt.elapsed());
-    var ff1 = openwriter("%s.brute".format(pairfn));
+    var ff1 = openWriter("%s.brute".format(pairfn));
     writeHist(ff1,hh);
     ff1.close();
   }
@@ -312,7 +312,7 @@ proc doPairs() {
   if (!isTest) {
     writef("Time to tree paircount : %r \n", tt.elapsed());
     if !isPerf {
-      var ff = openwriter("%s.tree".format(pairfn));
+      var ff = openWriter("%s.tree".format(pairfn));
       writeHist(ff,hh);
       ff.close();
     }
@@ -321,4 +321,3 @@ proc doPairs() {
     writeHist(stdout,hh,"%20.5er ");
   }
 }
-

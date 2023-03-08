@@ -2,12 +2,12 @@
 
 use Regex, IO;
 
-var f = openmem();
+var f = openMemFile();
 { var w = f.writer(); w.write("xy"); }
 
 proc testXY(re:string) {
   var fr = f.reader();
-  for mm in fr.matches(compile(re), 0, 6) {
+  for mm in fr.matches(new regex(re), 0, 6) {
     var ss: string;
     fr.extractMatch(mm(0), ss);
     writeln("[", re, "]  ", mm, " <", ss, "> ", fr.offset());
@@ -25,4 +25,5 @@ writeln();
 
 // This should match once at the end of the string, with byteOffset = 2.
 // When this is fixed, merge it into empty-string-matches.chpl
-writeln(compile("$").matches("xy"));
+var re = new regex("$");
+writeln(re.matches("xy"));

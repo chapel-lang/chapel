@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,20 +25,28 @@ namespace chpl {
 namespace uast {
 
 
+std::string VarArgFormal::dumpChildLabelInner(int i) const {
+  if (i == countChildNum_) {
+    return "count";
+  }
+
+  return VarLikeDecl::dumpChildLabelInner(i);
+}
+
 owned<VarArgFormal> VarArgFormal::build(Builder* builder, Location loc,
-                                        owned<Attributes> attributes,
+                                        owned<AttributeGroup> attributeGroup,
                                         UniqueString name,
                                         Formal::Intent intent,
                                         owned<AstNode> typeExpression,
                                         owned<AstNode> count) {
   AstList lst;
-  int attributesChildNum = -1;
-  int8_t typeExpressionChildNum = -1;
-  int8_t countChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
+  int8_t typeExpressionChildNum = NO_CHILD;
+  int8_t countChildNum = NO_CHILD;
 
-  if (attributes.get() != nullptr) {
-    attributesChildNum = lst.size();
-    lst.push_back(std::move(attributes));
+  if (attributeGroup.get() != nullptr) {
+    attributeGroupChildNum = lst.size();
+    lst.push_back(std::move(attributeGroup));
   }
 
   if (typeExpression.get() != nullptr) {
@@ -51,7 +59,7 @@ owned<VarArgFormal> VarArgFormal::build(Builder* builder, Location loc,
     lst.push_back(std::move(count));
   }
 
-  VarArgFormal* ret = new VarArgFormal(std::move(lst), attributesChildNum,
+  VarArgFormal* ret = new VarArgFormal(std::move(lst), attributeGroupChildNum,
                                        name,
                                        intent,
                                        typeExpressionChildNum,

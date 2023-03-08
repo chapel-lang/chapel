@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -57,6 +57,14 @@ class SimpleBlockLike : public AstNode {
 
   }
 
+  SimpleBlockLike(AstTag tag, Deserializer& des)
+    : AstNode(tag, des) {
+    blockStyle_ = des.read<BlockStyle>();
+    bodyChildNum_ = (int)des.read<int32_t>();
+    numBodyStmts_ = (int)des.read<int32_t>();
+  }
+
+
   bool simpleBlockLikeContentsMatchInner(const AstNode* other) const {
     const SimpleBlockLike* lhs = this;
     const SimpleBlockLike* rhs = other->toSimpleBlockLike();
@@ -113,6 +121,13 @@ class SimpleBlockLike : public AstNode {
   */
   BlockStyle blockStyle() const {
     return blockStyle_;
+  }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(blockStyle_);
+    ser.write<int32_t>(bodyChildNum_);
+    ser.write<int32_t>(numBodyStmts_);
   }
 
 };

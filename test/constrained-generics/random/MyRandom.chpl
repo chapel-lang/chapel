@@ -91,7 +91,7 @@ module MyRandom {
   //
 
   private
-  proc isSupportedNumericType(type t) param
+  proc isSupportedNumericType(type t) param do
     return isNumericType(t) || isBoolType(t);
 
   /*
@@ -713,23 +713,23 @@ module MyRandom {
     record SeedGenerator {
       /*
         Generate a seed based on the current time in microseconds as
-        reported by :proc:`Time.getCurrentTime`. This seed is not
+        reported by :proc:`Time.timeSinceEpoch`. This seed is not
         suitable for the NPB RNG since that requires an odd seed.
       */
       proc type currentTime: int(64) {
         use Time;
-        const seed = getCurrentTime(unit=TimeUnits.microseconds):int(64);
+        const seed = (timeSinceEpoch().totalSeconds()*1_000_000):int(64);
         return seed;
 
       }
       /*
         Generate an odd seed based on the current time in microseconds as
-        reported by :proc:`Time.getCurrentTime`. This seed is suitable
+        reported by :proc:`Time.timeSinceEpoch`. This seed is suitable
         for the NPB RNG.
       */
       proc type oddCurrentTime: int(64) {
         use Time;
-        const seed = getCurrentTime(unit=TimeUnits.microseconds):int(64);
+        const seed = (timeSinceEpoch().totalSeconds()*1_000_000):int(64);
         const oddseed = if seed % 2 == 0 then seed + 1 else seed;
         return oddseed;
       }
@@ -2391,10 +2391,10 @@ module MyRandom {
        This function arranges for that to be the case given any input.
      */
     inline
-    proc pcg_getvalid_inc(initseq:uint(64)):uint(64) return (initseq<<1) | 1;
+    proc pcg_getvalid_inc(initseq:uint(64)):uint(64) do return (initseq<<1) | 1;
     pragma "no doc" // documented in the not param version
     inline
-    proc pcg_getvalid_inc(param initseq:uint(64)) param return (initseq<<1) | 1;
+    proc pcg_getvalid_inc(param initseq:uint(64)) param do return (initseq<<1) | 1;
 
 
     // pcg_advance_lcg_8/16/32/64

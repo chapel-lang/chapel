@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -14,28 +14,27 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-target_sources(chpl
-               PRIVATE
-               bulkCopyRecords.cpp
-               copyPropagation.cpp
-               deadCodeElimination.cpp
-               forallOptimizations.cpp
-               gpuTransforms.cpp
-               inferConstRefs.cpp
-               inlineFunctions.cpp
-               liveVariableAnalysis.cpp
-               localizeGlobals.cpp
-               loopInvariantCodeMotion.cpp
-               noAliasSets.cpp
-               optimizeForallUnorderedOps.cpp
-               optimizeOnClauses.cpp
-               propagateDomainConstness.cpp
-               refPropagation.cpp
-               remoteValueForwarding.cpp
-               removeEmptyRecords.cpp
-               removeUnnecessaryAutoCopyCalls.cpp
-               removeUnnecessaryGotos.cpp
-               replaceArrayAccessesWithRefTemps.cpp
-               scalarReplace.cpp
-              )
+set(SRCS
+    bulkCopyRecords.cpp
+    copyPropagation.cpp
+    deadCodeElimination.cpp
+    forallOptimizations.cpp
+    gpuTransforms.cpp
+    inferConstRefs.cpp
+    inlineFunctions.cpp
+    liveVariableAnalysis.cpp
+    localizeGlobals.cpp
+    loopInvariantCodeMotion.cpp
+    noAliasSets.cpp
+    optimizeForallUnorderedOps.cpp
+    optimizeOnClauses.cpp
+    propagateDomainConstness.cpp
+    refPropagation.cpp
+    remoteValueForwarding.cpp
+    removeEmptyRecords.cpp
+    removeUnnecessaryAutoCopyCalls.cpp
+    removeUnnecessaryGotos.cpp
+    replaceArrayAccessesWithRefTemps.cpp
+    scalarReplace.cpp
+   )
+add_compiler_sources("${SRCS}" "${CMAKE_CURRENT_SOURCE_DIR}")

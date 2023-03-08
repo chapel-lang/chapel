@@ -117,6 +117,452 @@
   "de897ffc-9315-11e9-a422-10ddb1d4c3d5": [
     "compiler/codegen/mli.cpp"
   ],
+  "a4a99de4-f560-11eb-bb15-35b7469d4b43": [
+    "compiler/include/ResolutionCandidate.h"
+  ],
+  "82c1d8e6-e581-11e8-954d-10ddb1d4c3d5": [
+    "compiler/include/baseAST.h"
+  ],
+  "081f50fc-91e8-11e7-b3f1-10ddb1d4c3d5": [
+    "compiler/include/clangBuiltinsWrappedSet.h",
+    "runtime/include/llvm/chapel_libc_wrapper.h",
+    "runtime/include/llvm/clang_builtins_wrapper.h"
+  ],
+  "57076cb0-1d7f-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/include/codegen.h"
+  ],
+  "22756090-12c1-11ed-a8be-cd81bce0efc4": [
+    "compiler/include/driver.h"
+  ],
+  "dbbd3434-ca86-11e7-8b8c-10ddb1d4c3d5": [
+    "compiler/include/expr.h"
+  ],
+  "9de1a12a-8644-11e8-ad82-10ddb1d4c3d5": [
+    "compiler/include/files.h"
+  ],
+  "b9f0367c-1d7f-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/include/list.h"
+  ],
+  "59041530-69c5-11e6-90f0-10ddb1d4c3d5": [
+    "compiler/include/llvmDebug.h"
+  ],
+  "de79f068-ca86-11e7-8b8c-10ddb1d4c3d5": [
+    "compiler/include/llvmVer.h"
+  ],
+  "dab54cf8-1d7f-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/include/log.h"
+  ],
+  "e4db0dbc-1d7f-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/include/map.h"
+  ],
+  "8e2d4094-e581-11e8-954d-10ddb1d4c3d5": [
+    "compiler/include/misc.h"
+  ],
+  "0eb4f01e-3f83-11ec-81f0-3de99c714400": [
+    "compiler/include/mysystem.h"
+  ],
+  "ed3f86d6-1d7f-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/include/parser.h"
+  ],
+  "26485862-12c1-11ed-a8be-cd81bce0efc4": [
+    "compiler/include/pass-manager-passes.h"
+  ],
+  "a8be55e8-7b38-11eb-91c9-15da80cfac4b": [
+    "compiler/include/resolution.h"
+  ],
+  "7e01f6c6-4110-11e8-af7e-10ddb1d4c3d5": [
+    "compiler/include/symbol.h"
+  ],
+  "9ae97fd6-f560-11eb-bb15-35b7469d4b43": [
+    "compiler/include/tmpdirname.h"
+  ],
+  "34addaee-9f76-11ec-866d-111c8d7a1817": [
+    "compiler/include/vec.h"
+  ],
+  "f765ca54-d1a9-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/clangUtil.cpp"
+  ],
+  "27d3b052-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/llvmAggregateGlobalOps.cpp"
+  ],
+  "2c837c22-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/llvmDebug.cpp"
+  ],
+  "1de0f71c-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/llvmGlobalToWide.cpp"
+  ],
+  "253a6d0e-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/llvm/llvmUtil.cpp"
+  ],
+  "5a669f74-1d80-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/main/arg.cpp"
+  ],
+  "613bf236-1d80-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/main/commonFlags.cpp",
+    "compiler/main/commonFlags.h",
+    "compiler/main/driver.cpp"
+  ],
+  "a52d3b2e-8644-11e8-ad82-10ddb1d4c3d5": [
+    "compiler/main/docsDriver.cpp"
+  ],
+  "4171383e-1d81-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/optimizations/copyPropagation.cpp"
+  ],
+  "7356b18e-62e2-11eb-a43d-6f93f4244f4b": [
+    "compiler/optimizations/forallOptimizations.cpp"
+  ],
+  "e72aeca4-45ab-11ec-a187-336475c959d4": [
+    "compiler/optimizations/gpuTransforms.cpp"
+  ],
+  "fcd32732-b78b-11e6-9740-843835579daa": [
+    "compiler/optimizations/inferConstRefs.cpp"
+  ],
+  "753d1002-1d81-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/optimizations/liveVariableAnalysis.cpp"
+  ],
+  "86988e94-1d81-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/optimizations/loopInvariantCodeMotion.cpp"
+  ],
+  "eb10d276-d1a9-11e8-954d-10ddb1d4c3d5": [
+    "compiler/optimizations/noAliasSets.cpp"
+  ],
+  "ec0917b4-f560-11eb-bb15-35b7469d4b43": [
+    "compiler/optimizations/optimizeOnClauses.cpp"
+  ],
+  "26cda7c8-69e9-11e7-88ba-10ddb1d4c3d5": [
+    "compiler/optimizations/refPropagation.cpp"
+  ],
+  "93e7af94-1d81-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/optimizations/remoteValueForwarding.cpp"
+  ],
+  "965c5d6a-1d81-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/optimizations/removeUnnecessaryAutoCopyCalls.cpp"
+  ],
+  "2b3e60a0-7ee3-11e6-ab60-00a0cc3ee663": [
+    "compiler/optimizations/replaceArrayAccessesWithRefTemps.cpp"
+  ],
+  "2d19bb3e-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/parser/parser.cpp"
+  ],
+  "1c3aed2e-ac5b-11ed-b67e-4d191cd16eac": [
+    "compiler/passes/InitErrorHandling.cpp"
+  ],
+  "6379ee24-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/addInitGuards.cpp"
+  ],
+  "4bd54270-d6dc-11ea-8acb-843835579daa": [
+    "compiler/passes/checkResolved.cpp"
+  ],
+  "732b6fa0-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/cleanup.cpp"
+  ],
+  "e818580e-f560-11eb-bb15-35b7469d4b43": [
+    "compiler/passes/convert-uast.cpp"
+  ],
+  "98c778e4-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/docs.cpp"
+  ],
+  "9c85c382-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/expandExternArrayCalls.cpp"
+  ],
+  "a4542298-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/externCResolve.cpp"
+  ],
+  "2c37162c-1a84-11e7-980e-10ddb1d4c3d5": [
+    "compiler/passes/initializerRules.cpp"
+  ],
+  "66fb22e4-a729-11ec-866d-111c8d7a1817": [
+    "compiler/passes/insertLineNumbers.cpp"
+  ],
+  "e5dbc400-1d83-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/normalize.cpp"
+  ],
+  "0fdc1a0c-1d84-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/passes/scopeResolve.cpp"
+  ],
+  "56f705f2-5f64-11ea-b972-843835579daa": [
+    "compiler/passes/splitInit.cpp"
+  ],
+  "0b4871a8-5b7a-11e8-af7e-10ddb1d4c3d5": [
+    "compiler/resolution/AutoDestroyScope.cpp"
+  ],
+  "a4c82866-83ce-11e7-ad1f-10ddb1d4c3d5": [
+    "compiler/resolution/ResolutionCandidate.cpp"
+  ],
+  "7e73d6b2-1d84-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/resolution/callDestructors.cpp"
+  ],
+  "208f1cd2-0c12-11e7-980e-10ddb1d4c3d5": [
+    "compiler/resolution/cullOverReferences.cpp"
+  ],
+  "d7761e16-36bd-11e7-96a7-10ddb1d4c3d5": [
+    "compiler/resolution/expandVarArgs.cpp"
+  ],
+  "c50323ec-5a60-11ed-baec-ef9f14c5b529": [
+    "compiler/resolution/firstClassFunctions.cpp"
+  ],
+  "04f188f0-d205-11e9-a3be-843835579daa": [
+    "compiler/resolution/fixupExports.cpp"
+  ],
+  "8983f3ac-1d84-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/resolution/functionResolution.cpp"
+  ],
+  "4f065520-1d85-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/resolution/implementForallIntents.cpp"
+  ],
+  "d5351900-d1c0-11e8-954d-10ddb1d4c3d5": [
+    "compiler/resolution/initializerResolution.cpp"
+  ],
+  "94331c44-62e2-11eb-a43d-6f93f4244f4b": [
+    "compiler/resolution/interfaceResolution.cpp"
+  ],
+  "1873381c-2cbe-11e8-aa67-10ddb1d4c3d5": [
+    "compiler/resolution/lifetime.cpp"
+  ],
+  "9fb5188e-4110-11e8-af7e-10ddb1d4c3d5": [
+    "compiler/resolution/lowerForalls.cpp"
+  ],
+  "803ee256-1d85-11e6-a3a6-10ddb1d4c3d5": [
+    "compiler/resolution/lowerIterators.cpp"
+  ],
+  "3bdbc4ea-d1aa-11e8-954d-10ddb1d4c3d5": [
+    "compiler/resolution/nilChecking.cpp"
+  ],
+  "e44e8ee8-2015-11e7-980e-10ddb1d4c3d5": [
+    "compiler/resolution/postFold.cpp"
+  ],
+  "ebe3ea10-ca86-11e7-8b8c-10ddb1d4c3d5": [
+    "compiler/resolution/preFold.cpp"
+  ],
+  "f203530c-8644-11e8-ad82-10ddb1d4c3d5": [
+    "compiler/resolution/tuples.cpp"
+  ],
+  "e95fef8a-2015-11e7-980e-10ddb1d4c3d5": [
+    "compiler/resolution/virtualDispatch.cpp"
+  ],
+  "01f4f6a8-2016-11e7-980e-10ddb1d4c3d5": [
+    "compiler/resolution/visibleFunctions.cpp"
+  ],
+  "c6d25ce8-a183-11e6-91b8-10ddb1d4c3d5": [
+    "compiler/resolution/wrappers.cpp"
+  ],
+  "390fbcc4-4e3c-11e6-907f-843835579daa": [
+    "compiler/util/files.cpp"
+  ],
+  "61835ab6-5f64-11ea-b972-843835579daa": [
+    "compiler/util/misc.cpp"
+  ],
+  "f2f5a59e-3f82-11ec-81f0-3de99c714400": [
+    "compiler/util/mysystem.cpp"
+  ],
+  "9627af8c-e581-11e8-954d-10ddb1d4c3d5": [
+    "compiler/util/stringutil.cpp"
+  ],
+  "bfdd8b4e-f55f-11eb-bb15-35b7469d4b43": [
+    "compiler/util/tmpdirname.cpp"
+  ],
+  "97641a68-1e44-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/bestPractices/CompilerDebugging.rst"
+  ],
+  "21b197c2-1e45-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/bestPractices/ContributorInfo.rst"
+  ],
+  "f50f46a0-2e9e-11eb-adc5-acbc32c4f96b": [
+    "doc/rst/developer/bestPractices/DCO.rst"
+  ],
+  "5118f158-e3ac-11ec-a8be-cd81bce0efc4": [
+    "doc/rst/developer/bestPractices/Deprecation.rst"
+  ],
+  "b1eb2c32-1e44-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/bestPractices/Potpourri.rst"
+  ],
+  "53b60e8e-d6dc-11ea-8acb-843835579daa": [
+    "doc/rst/developer/bestPractices/Sanitizers.rst"
+  ],
+  "b557a264-8ab5-11e6-b915-843835579daa": [
+    "doc/rst/developer/bestPractices/SpellChecking.rst"
+  ],
+  "a0e68d14-3a21-11e8-af7e-10ddb1d4c3d5": [
+    "doc/rst/developer/bestPractices/TestSystem.rst"
+  ],
+  "6f3fc5b8-3f87-11ec-81f0-3de99c714400": [
+    "doc/rst/developer/bestPractices/buildingdocs.rst"
+  ],
+  "c05642c4-62e2-11eb-a43d-6f93f4244f4b": [
+    "doc/rst/developer/bestPractices/git.rst"
+  ],
+  "7b9a1e46-8ab8-11e6-b915-843835579daa": [
+    "doc/rst/developer/bestPractices/index.rst"
+  ],
+  "72774460-69c5-11e6-90f0-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/15.rst"
+  ],
+  "0cdb833a-fd7e-11e6-980e-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/17.rst"
+  ],
+  "c16e02ce-36bc-11e7-96a7-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/19.rst"
+  ],
+  "dde58592-2ac6-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/2.rst"
+  ],
+  "554af092-652a-11e7-88ba-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/22.rst"
+  ],
+  "8ac11bda-2ac4-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/inactive/11.rst"
+  ],
+  "fdcdfd40-2e9e-11eb-adc5-acbc32c4f96b": [
+    "doc/rst/developer/chips/inactive/18.rst"
+  ],
+  "45fe4b8e-62e1-11e7-88ba-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/inactive/21.rst"
+  ],
+  "1a4b12ba-2ac5-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/inactive/3.rst"
+  ],
+  "2ae96310-2ac5-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/inactive/4.rst"
+  ],
+  "5ee74a88-2ac5-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/inactive/5.rst"
+  ],
+  "e13e71b8-2ac6-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/inactive/9.rst"
+  ],
+  "396f9ef0-1e44-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/contributorAgreements/README.md"
+  ],
+  "63b96a22-1e46-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/hdfs_and_chapel/API.tex",
+    "doc/rst/developer/hdfs_and_chapel/examples.tex"
+  ],
+  "d819ca0c-1e45-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/hdfs_and_chapel/intro.tex"
+  ],
+  "69462c94-f561-11eb-bb15-35b7469d4b43": [
+    "doc/rst/developer/implementation/Interfaces-new.md"
+  ],
+  "324bcc62-f561-11eb-bb15-35b7469d4b43": [
+    "doc/rst/developer/implementation/Interfaces.md"
+  ],
+  "80a8005e-f563-11eb-bb15-35b7469d4b43": [
+    "doc/rst/developer/implementation/compilerOverview/compiler.tex"
+  ],
+  "5dfff152-2952-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/language/spec/README"
+  ],
+  "7c62caa8-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/arrays.rst"
+  ],
+  "4d4f76a8-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/domains.rst"
+  ],
+  "836b6940-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/expressions.rst"
+  ],
+  "7717bf22-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/interoperability.rst"
+  ],
+  "117a9e8c-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/modules.rst"
+  ],
+  "61e57b76-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/procedures.rst"
+  ],
+  "1c00d998-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/ranges.rst"
+  ],
+  "1beb4f5e-9f77-11ec-866d-111c8d7a1817": [
+    "doc/rst/language/spec/records.rst"
+  ],
+  "1381859c-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/statements.rst"
+  ],
+  "466a4d0e-253d-11ea-948f-10ddb1d4c3d5": [
+    "doc/rst/language/spec/tuples.rst"
+  ],
+  "58f7ebce-12c1-11ed-a8be-cd81bce0efc4": [
+    "doc/rst/mason-packages/guide/externaldependencies.rst"
+  ],
+  "ddf8ff20-12c1-11ed-a8be-cd81bce0efc4": [
+    "doc/rst/mason-packages/guide/gitdependencies.rst"
+  ],
+  "d8e2a70c-12c1-11ed-a8be-cd81bce0efc4": [
+    "doc/rst/mason-packages/guide/submitting.rst"
+  ],
+  "e1a9c8a2-12c1-11ed-a8be-cd81bce0efc4": [
+    "doc/rst/mason-packages/index.rst"
+  ],
+  "3916e364-dfc3-11e6-93be-10ddb1d4c3d5": [
+    "doc/rst/platforms/aws.rst"
+  ],
+  "b89daf54-62e2-11eb-a43d-6f93f4244f4b": [
+    "doc/rst/platforms/cray.rst"
+  ],
+  "e72b8a7e-1e47-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/technotes/dsi.rst"
+  ],
+  "8a9f313e-1e47-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/technotes/extern.rst"
+  ],
+  "f824f208-a3e4-11ea-8acb-843835579daa": [
+    "doc/rst/technotes/globalvars.rst"
+  ],
+  "70eb8f46-a729-11ec-866d-111c8d7a1817": [
+    "doc/rst/technotes/gpu.rst"
+  ],
+  "22cf2998-09c4-11eb-b2e8-10ddb1d4c3d5": [
+    "doc/rst/technotes/index.rst"
+  ],
+  "5f5c9598-1e47-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/technotes/libraries.rst"
+  ],
+  "e8ed417a-624d-11e9-b712-843835579daa": [
+    "doc/rst/technotes/lifetimeChecking.rst"
+  ],
+  "2393b51a-feca-11ea-b2e8-10ddb1d4c3d5": [
+    "doc/rst/technotes/protoGenCodeGuide.rst"
+  ],
+  "cd80a742-ad6d-11e7-a204-10ddb1d4c3d5": [
+    "doc/rst/technotes/reduceIntents.rst"
+  ],
+  "d45846e8-a1b9-11e7-a204-10ddb1d4c3d5": [
+    "doc/rst/tools/c2chapel/c2chapel.rst"
+  ],
+  "a892ed32-1e49-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/tools/chpldoc/chpldoc.rst"
+  ],
+  "cba19b84-5a60-11ed-baec-ef9f14c5b529": [
+    "doc/rst/tools/mason/guide/externaldependencies.rst"
+  ],
+  "e4fe6468-5a60-11ed-baec-ef9f14c5b529": [
+    "doc/rst/tools/mason/guide/submitting.rst"
+  ],
+  "f81d91a2-8aba-11e7-b3f1-10ddb1d4c3d5": [
+    "doc/rst/tools/mason/mason.rst"
+  ],
+  "50034a8e-feca-11ea-b2e8-10ddb1d4c3d5": [
+    "doc/rst/tools/protoc-gen-chpl/protoc-gen-chpl.rst"
+  ],
+  "7ada2798-4027-11e6-907f-843835579daa": [
+    "doc/rst/users-guide/base/forloops.rst"
+  ],
+  "7e15c372-4027-11e6-907f-843835579daa": [
+    "doc/rst/users-guide/index.rst"
+  ],
+  "55c3384c-1e48-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/usingchapel/executing.rst"
+  ],
+  "f235c39e-3f89-11ec-81f0-3de99c714400": [
+    "doc/rst/usingchapel/launcher.rst"
+  ],
+  "c32754ea-8068-11e6-ab60-00a0cc3ee663": [
+    "doc/rst/usingchapel/multilocale.rst"
+  ],
+  "cd28f34a-a1b9-11e7-a204-10ddb1d4c3d5": [
+    "doc/rst/usingchapel/prereqs.rst"
+  ],
   "a7eb801c-f560-11eb-bb15-35b7469d4b43": [
     "frontend/README"
   ],
@@ -126,8 +572,14 @@
   "7bff0162-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/Context.h"
   ],
+  "331f0602-5a61-11ed-baec-ef9f14c5b529": [
+    "frontend/include/chpl/framework/ErrorBase.h"
+  ],
   "8cade56e-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/ErrorMessage.h"
+  ],
+  "59352e34-5a61-11ed-baec-ef9f14c5b529": [
+    "frontend/include/chpl/framework/ErrorWriter.h"
   ],
   "7a8e3a00-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/UniqueString.h"
@@ -135,14 +587,26 @@
   "9a17c742-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/all-global-strings.h"
   ],
+  "645372f0-945c-11ed-b9f6-7def56659a0b": [
+    "frontend/include/chpl/framework/error-classes-list.h"
+  ],
   "a1dfe432-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/global-strings.h"
   ],
   "712148ae-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/stringify-functions.h"
   ],
+  "389486f6-ac5b-11ed-b67e-4d191cd16eac": [
+    "frontend/include/chpl/parsing/parser-error-classes-list.h"
+  ],
+  "5d6b5c0a-945c-11ed-b9f6-7def56659a0b": [
+    "frontend/include/chpl/parsing/parser-error.h"
+  ],
   "b6b773fa-e3ab-11ec-a8be-cd81bce0efc4": [
     "frontend/include/chpl/parsing/parser-stats.h"
+  ],
+  "5ccb9c1c-ac5b-11ed-b67e-4d191cd16eac": [
+    "frontend/include/chpl/resolution/scope-types.h"
   ],
   "7fabd8d0-9f70-11ec-866d-111c8d7a1817": [
     "frontend/include/chpl/types/AnyType.h"
@@ -474,8 +938,17 @@
   "f8771086-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/lib/framework/Context.cpp"
   ],
+  "68737932-5a61-11ed-baec-ef9f14c5b529": [
+    "frontend/lib/framework/ErrorBase.cpp"
+  ],
   "ffd515bc-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/lib/framework/ErrorMessage.cpp"
+  ],
+  "6e4d0562-5a61-11ed-baec-ef9f14c5b529": [
+    "frontend/lib/framework/ErrorWriter.cpp"
+  ],
+  "7003a24e-5a61-11ed-baec-ef9f14c5b529": [
+    "frontend/lib/framework/error-classes-list.cpp"
   ],
   "360f852e-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/immediates/num.cpp"
@@ -488,6 +961,9 @@
   ],
   "495be19a-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/parsing/ParserContextImpl.h"
+  ],
+  "068304b4-b57d-11ed-b67e-4d191cd16eac": [
+    "frontend/lib/parsing/parser-error-classes-list.cpp"
   ],
   "8af2955e-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/parsing/parser-help.h"
@@ -504,8 +980,14 @@
   "45947086-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/parsing/parsing-queries.cpp"
   ],
+  "8d09636e-ac5b-11ed-b67e-4d191cd16eac": [
+    "frontend/lib/resolution/Resolver.cpp"
+  ],
   "0cc92926-9f75-11ec-866d-111c8d7a1817": [
     "frontend/lib/resolution/Resolver.h"
+  ],
+  "a1123384-945c-11ed-b9f6-7def56659a0b": [
+    "frontend/lib/resolution/VarScopeVisitor.h"
   ],
   "fcb9430e-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/resolution/can-pass.cpp"
@@ -516,8 +998,17 @@
   "ffedfa58-e3ab-11ec-a8be-cd81bce0efc4": [
     "frontend/lib/resolution/prims.cpp"
   ],
+  "13e186e4-b57d-11ed-b67e-4d191cd16eac": [
+    "frontend/lib/resolution/resolution-error-classes-list.cpp"
+  ],
   "1a2ad1ac-e3ac-11ec-a8be-cd81bce0efc4": [
     "frontend/lib/resolution/resolution-queries.cpp"
+  ],
+  "8eccc1ce-5a61-11ed-baec-ef9f14c5b529": [
+    "frontend/lib/resolution/scope-queries.cpp"
+  ],
+  "806baa5e-ac5b-11ed-b67e-4d191cd16eac": [
+    "frontend/lib/resolution/scope-types.cpp"
   ],
   "c662e13e-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/types/ClassType.cpp"
@@ -531,6 +1022,9 @@
   "202a65c2-e3ac-11ec-a8be-cd81bce0efc4": [
     "frontend/lib/uast/Builder.cpp"
   ],
+  "a33853a2-ac5b-11ed-b67e-4d191cd16eac": [
+    "frontend/lib/uast/BuilderResult.cpp"
+  ],
   "82e3c60c-9f75-11ec-866d-111c8d7a1817": [
     "frontend/lib/uast/Pragma.cpp"
   ],
@@ -539,6 +1033,9 @@
   ],
   "079d1948-12c1-11ed-a8be-cd81bce0efc4": [
     "frontend/lib/uast/post-parse-checks.cpp"
+  ],
+  "689a30e2-945c-11ed-b9f6-7def56659a0b": [
+    "frontend/lib/util/chplenv.cpp"
   ],
   "b4d7b308-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/lib/util/filesystem.cpp"
@@ -557,440 +1054,6 @@
   ],
   "5e93026e-9f6f-11ec-866d-111c8d7a1817": [
     "frontend/util/linters/fieldsUsed.cpp"
-  ],
-  "a4a99de4-f560-11eb-bb15-35b7469d4b43": [
-    "compiler/include/ResolutionCandidate.h"
-  ],
-  "82c1d8e6-e581-11e8-954d-10ddb1d4c3d5": [
-    "compiler/include/baseAST.h"
-  ],
-  "081f50fc-91e8-11e7-b3f1-10ddb1d4c3d5": [
-    "compiler/include/clangBuiltinsWrappedSet.h",
-    "runtime/include/llvm/chapel_libc_wrapper.h",
-    "runtime/include/llvm/clang_builtins_wrapper.h"
-  ],
-  "57076cb0-1d7f-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/include/codegen.h"
-  ],
-  "22756090-12c1-11ed-a8be-cd81bce0efc4": [
-    "compiler/include/driver.h"
-  ],
-  "dbbd3434-ca86-11e7-8b8c-10ddb1d4c3d5": [
-    "compiler/include/expr.h"
-  ],
-  "9de1a12a-8644-11e8-ad82-10ddb1d4c3d5": [
-    "compiler/include/files.h"
-  ],
-  "b9f0367c-1d7f-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/include/list.h"
-  ],
-  "59041530-69c5-11e6-90f0-10ddb1d4c3d5": [
-    "compiler/include/llvmDebug.h"
-  ],
-  "de79f068-ca86-11e7-8b8c-10ddb1d4c3d5": [
-    "compiler/include/llvmVer.h"
-  ],
-  "dab54cf8-1d7f-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/include/log.h"
-  ],
-  "e4db0dbc-1d7f-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/include/map.h"
-  ],
-  "8e2d4094-e581-11e8-954d-10ddb1d4c3d5": [
-    "compiler/include/misc.h"
-  ],
-  "0eb4f01e-3f83-11ec-81f0-3de99c714400": [
-    "compiler/include/mysystem.h"
-  ],
-  "ed3f86d6-1d7f-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/include/parser.h"
-  ],
-  "26485862-12c1-11ed-a8be-cd81bce0efc4": [
-    "compiler/include/pass-manager-passes.h"
-  ],
-  "a8be55e8-7b38-11eb-91c9-15da80cfac4b": [
-    "compiler/include/resolution.h"
-  ],
-  "7e01f6c6-4110-11e8-af7e-10ddb1d4c3d5": [
-    "compiler/include/symbol.h"
-  ],
-  "9ae97fd6-f560-11eb-bb15-35b7469d4b43": [
-    "compiler/include/tmpdirname.h"
-  ],
-  "34addaee-9f76-11ec-866d-111c8d7a1817": [
-    "compiler/include/vec.h"
-  ],
-  "f765ca54-d1a9-11e8-954d-10ddb1d4c3d5": [
-    "compiler/llvm/clangUtil.cpp"
-  ],
-  "27d3b052-d1aa-11e8-954d-10ddb1d4c3d5": [
-    "compiler/llvm/llvmAggregateGlobalOps.cpp"
-  ],
-  "2c837c22-d1aa-11e8-954d-10ddb1d4c3d5": [
-    "compiler/llvm/llvmDebug.cpp"
-  ],
-  "1de0f71c-d1aa-11e8-954d-10ddb1d4c3d5": [
-    "compiler/llvm/llvmGlobalToWide.cpp"
-  ],
-  "253a6d0e-d1aa-11e8-954d-10ddb1d4c3d5": [
-    "compiler/llvm/llvmUtil.cpp"
-  ],
-  "5a669f74-1d80-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/main/arg.cpp"
-  ],
-  "613bf236-1d80-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/main/commonFlags.cpp",
-    "compiler/main/commonFlags.h",
-    "compiler/main/driver.cpp"
-  ],
-  "a52d3b2e-8644-11e8-ad82-10ddb1d4c3d5": [
-    "compiler/main/docsDriver.cpp"
-  ],
-  "4171383e-1d81-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/optimizations/copyPropagation.cpp"
-  ],
-  "7356b18e-62e2-11eb-a43d-6f93f4244f4b": [
-    "compiler/optimizations/forallOptimizations.cpp"
-  ],
-  "e72aeca4-45ab-11ec-a187-336475c959d4": [
-    "compiler/optimizations/gpuTransforms.cpp"
-  ],
-  "fcd32732-b78b-11e6-9740-843835579daa": [
-    "compiler/optimizations/inferConstRefs.cpp"
-  ],
-  "753d1002-1d81-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/optimizations/liveVariableAnalysis.cpp"
-  ],
-  "86988e94-1d81-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/optimizations/loopInvariantCodeMotion.cpp"
-  ],
-  "eb10d276-d1a9-11e8-954d-10ddb1d4c3d5": [
-    "compiler/optimizations/noAliasSets.cpp"
-  ],
-  "ec0917b4-f560-11eb-bb15-35b7469d4b43": [
-    "compiler/optimizations/optimizeOnClauses.cpp"
-  ],
-  "26cda7c8-69e9-11e7-88ba-10ddb1d4c3d5": [
-    "compiler/optimizations/refPropagation.cpp"
-  ],
-  "93e7af94-1d81-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/optimizations/remoteValueForwarding.cpp"
-  ],
-  "965c5d6a-1d81-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/optimizations/removeUnnecessaryAutoCopyCalls.cpp"
-  ],
-  "2b3e60a0-7ee3-11e6-ab60-00a0cc3ee663": [
-    "compiler/optimizations/replaceArrayAccessesWithRefTemps.cpp"
-  ],
-  "2d19bb3e-1d83-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/parser/parser.cpp"
-  ],
-  "6379ee24-1d83-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/passes/addInitGuards.cpp"
-  ],
-  "4bd54270-d6dc-11ea-8acb-843835579daa": [
-    "compiler/passes/checkResolved.cpp"
-  ],
-  "732b6fa0-1d83-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/passes/cleanup.cpp"
-  ],
-  "e818580e-f560-11eb-bb15-35b7469d4b43": [
-    "compiler/passes/convert-uast.cpp"
-  ],
-  "98c778e4-1d83-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/passes/docs.cpp"
-  ],
-  "9c85c382-1d83-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/passes/expandExternArrayCalls.cpp"
-  ],
-  "a4542298-1d83-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/passes/externCResolve.cpp"
-  ],
-  "2c37162c-1a84-11e7-980e-10ddb1d4c3d5": [
-    "compiler/passes/initializerRules.cpp"
-  ],
-  "66fb22e4-a729-11ec-866d-111c8d7a1817": [
-    "compiler/passes/insertLineNumbers.cpp"
-  ],
-  "e5dbc400-1d83-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/passes/normalize.cpp"
-  ],
-  "0fdc1a0c-1d84-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/passes/scopeResolve.cpp"
-  ],
-  "56f705f2-5f64-11ea-b972-843835579daa": [
-    "compiler/passes/splitInit.cpp"
-  ],
-  "0b4871a8-5b7a-11e8-af7e-10ddb1d4c3d5": [
-    "compiler/resolution/AutoDestroyScope.cpp"
-  ],
-  "a4c82866-83ce-11e7-ad1f-10ddb1d4c3d5": [
-    "compiler/resolution/ResolutionCandidate.cpp"
-  ],
-  "7e73d6b2-1d84-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/resolution/callDestructors.cpp"
-  ],
-  "208f1cd2-0c12-11e7-980e-10ddb1d4c3d5": [
-    "compiler/resolution/cullOverReferences.cpp"
-  ],
-  "d7761e16-36bd-11e7-96a7-10ddb1d4c3d5": [
-    "compiler/resolution/expandVarArgs.cpp"
-  ],
-  "04f188f0-d205-11e9-a3be-843835579daa": [
-    "compiler/resolution/fixupExports.cpp"
-  ],
-  "8983f3ac-1d84-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/resolution/functionResolution.cpp"
-  ],
-  "4f065520-1d85-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/resolution/implementForallIntents.cpp"
-  ],
-  "d5351900-d1c0-11e8-954d-10ddb1d4c3d5": [
-    "compiler/resolution/initializerResolution.cpp"
-  ],
-  "94331c44-62e2-11eb-a43d-6f93f4244f4b": [
-    "compiler/resolution/interfaceResolution.cpp"
-  ],
-  "1873381c-2cbe-11e8-aa67-10ddb1d4c3d5": [
-    "compiler/resolution/lifetime.cpp"
-  ],
-  "9fb5188e-4110-11e8-af7e-10ddb1d4c3d5": [
-    "compiler/resolution/lowerForalls.cpp"
-  ],
-  "803ee256-1d85-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/resolution/lowerIterators.cpp"
-  ],
-  "3bdbc4ea-d1aa-11e8-954d-10ddb1d4c3d5": [
-    "compiler/resolution/nilChecking.cpp"
-  ],
-  "e44e8ee8-2015-11e7-980e-10ddb1d4c3d5": [
-    "compiler/resolution/postFold.cpp"
-  ],
-  "ebe3ea10-ca86-11e7-8b8c-10ddb1d4c3d5": [
-    "compiler/resolution/preFold.cpp"
-  ],
-  "f203530c-8644-11e8-ad82-10ddb1d4c3d5": [
-    "compiler/resolution/tuples.cpp"
-  ],
-  "e95fef8a-2015-11e7-980e-10ddb1d4c3d5": [
-    "compiler/resolution/virtualDispatch.cpp"
-  ],
-  "01f4f6a8-2016-11e7-980e-10ddb1d4c3d5": [
-    "compiler/resolution/visibleFunctions.cpp"
-  ],
-  "c6d25ce8-a183-11e6-91b8-10ddb1d4c3d5": [
-    "compiler/resolution/wrappers.cpp"
-  ],
-  "390fbcc4-4e3c-11e6-907f-843835579daa": [
-    "compiler/util/files.cpp"
-  ],
-  "61835ab6-5f64-11ea-b972-843835579daa": [
-    "compiler/util/misc.cpp"
-  ],
-  "f2f5a59e-3f82-11ec-81f0-3de99c714400": [
-    "compiler/util/mysystem.cpp"
-  ],
-  "9627af8c-e581-11e8-954d-10ddb1d4c3d5": [
-    "compiler/util/stringutil.cpp"
-  ],
-  "bfdd8b4e-f55f-11eb-bb15-35b7469d4b43": [
-    "compiler/util/tmpdirname.cpp"
-  ],
-  "97641a68-1e44-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/bestPractices/CompilerDebugging.rst"
-  ],
-  "21b197c2-1e45-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/bestPractices/ContributorInfo.rst"
-  ],
-  "f50f46a0-2e9e-11eb-adc5-acbc32c4f96b": [
-    "doc/rst/developer/bestPractices/DCO.rst"
-  ],
-  "5118f158-e3ac-11ec-a8be-cd81bce0efc4": [
-    "doc/rst/developer/bestPractices/Deprecation.rst"
-  ],
-  "b1eb2c32-1e44-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/bestPractices/Potpourri.rst"
-  ],
-  "53b60e8e-d6dc-11ea-8acb-843835579daa": [
-    "doc/rst/developer/bestPractices/Sanitizers.rst"
-  ],
-  "b557a264-8ab5-11e6-b915-843835579daa": [
-    "doc/rst/developer/bestPractices/SpellChecking.rst"
-  ],
-  "a0e68d14-3a21-11e8-af7e-10ddb1d4c3d5": [
-    "doc/rst/developer/bestPractices/TestSystem.rst"
-  ],
-  "6f3fc5b8-3f87-11ec-81f0-3de99c714400": [
-    "doc/rst/developer/bestPractices/buildingdocs.rst"
-  ],
-  "c05642c4-62e2-11eb-a43d-6f93f4244f4b": [
-    "doc/rst/developer/bestPractices/git.rst"
-  ],
-  "7b9a1e46-8ab8-11e6-b915-843835579daa": [
-    "doc/rst/developer/bestPractices/index.rst"
-  ],
-  "72774460-69c5-11e6-90f0-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/15.rst"
-  ],
-  "0cdb833a-fd7e-11e6-980e-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/17.rst"
-  ],
-  "c16e02ce-36bc-11e7-96a7-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/19.rst"
-  ],
-  "dde58592-2ac6-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/2.rst"
-  ],
-  "554af092-652a-11e7-88ba-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/22.rst"
-  ],
-  "8ac11bda-2ac4-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/inactive/11.rst"
-  ],
-  "fdcdfd40-2e9e-11eb-adc5-acbc32c4f96b": [
-    "doc/rst/developer/chips/inactive/18.rst"
-  ],
-  "45fe4b8e-62e1-11e7-88ba-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/inactive/21.rst"
-  ],
-  "1a4b12ba-2ac5-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/inactive/3.rst"
-  ],
-  "2ae96310-2ac5-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/inactive/4.rst"
-  ],
-  "5ee74a88-2ac5-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/inactive/5.rst"
-  ],
-  "e13e71b8-2ac6-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/inactive/9.rst"
-  ],
-  "396f9ef0-1e44-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/contributorAgreements/README.md"
-  ],
-  "63b96a22-1e46-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/hdfs_and_chapel/API.tex",
-    "doc/rst/developer/hdfs_and_chapel/examples.tex"
-  ],
-  "d819ca0c-1e45-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/hdfs_and_chapel/intro.tex"
-  ],
-  "69462c94-f561-11eb-bb15-35b7469d4b43": [
-    "doc/rst/developer/implementation/Interfaces-new.md"
-  ],
-  "324bcc62-f561-11eb-bb15-35b7469d4b43": [
-    "doc/rst/developer/implementation/Interfaces.md"
-  ],
-  "80a8005e-f563-11eb-bb15-35b7469d4b43": [
-    "doc/rst/developer/implementation/compilerOverview/compiler.tex"
-  ],
-  "5dfff152-2952-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/language/spec/README"
-  ],
-  "7c62caa8-253d-11ea-948f-10ddb1d4c3d5": [
-    "doc/rst/language/spec/arrays.rst"
-  ],
-  "4d4f76a8-253d-11ea-948f-10ddb1d4c3d5": [
-    "doc/rst/language/spec/domains.rst"
-  ],
-  "836b6940-253d-11ea-948f-10ddb1d4c3d5": [
-    "doc/rst/language/spec/expressions.rst"
-  ],
-  "7717bf22-253d-11ea-948f-10ddb1d4c3d5": [
-    "doc/rst/language/spec/interoperability.rst"
-  ],
-  "117a9e8c-253d-11ea-948f-10ddb1d4c3d5": [
-    "doc/rst/language/spec/modules.rst"
-  ],
-  "61e57b76-253d-11ea-948f-10ddb1d4c3d5": [
-    "doc/rst/language/spec/procedures.rst"
-  ],
-  "1c00d998-253d-11ea-948f-10ddb1d4c3d5": [
-    "doc/rst/language/spec/ranges.rst"
-  ],
-  "1beb4f5e-9f77-11ec-866d-111c8d7a1817": [
-    "doc/rst/language/spec/records.rst"
-  ],
-  "1381859c-253d-11ea-948f-10ddb1d4c3d5": [
-    "doc/rst/language/spec/statements.rst"
-  ],
-  "466a4d0e-253d-11ea-948f-10ddb1d4c3d5": [
-    "doc/rst/language/spec/tuples.rst"
-  ],
-  "58f7ebce-12c1-11ed-a8be-cd81bce0efc4": [
-    "doc/rst/mason-packages/guide/externaldependencies.rst"
-  ],
-  "ddf8ff20-12c1-11ed-a8be-cd81bce0efc4": [
-    "doc/rst/mason-packages/guide/gitdependencies.rst"
-  ],
-  "d8e2a70c-12c1-11ed-a8be-cd81bce0efc4": [
-    "doc/rst/mason-packages/guide/submitting.rst"
-  ],
-  "e1a9c8a2-12c1-11ed-a8be-cd81bce0efc4": [
-    "doc/rst/mason-packages/index.rst"
-  ],
-  "3916e364-dfc3-11e6-93be-10ddb1d4c3d5": [
-    "doc/rst/platforms/aws.rst"
-  ],
-  "b89daf54-62e2-11eb-a43d-6f93f4244f4b": [
-    "doc/rst/platforms/cray.rst"
-  ],
-  "e72b8a7e-1e47-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/technotes/dsi.rst"
-  ],
-  "8a9f313e-1e47-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/technotes/extern.rst"
-  ],
-  "f824f208-a3e4-11ea-8acb-843835579daa": [
-    "doc/rst/technotes/globalvars.rst"
-  ],
-  "70eb8f46-a729-11ec-866d-111c8d7a1817": [
-    "doc/rst/technotes/gpu.rst"
-  ],
-  "22cf2998-09c4-11eb-b2e8-10ddb1d4c3d5": [
-    "doc/rst/technotes/index.rst"
-  ],
-  "5f5c9598-1e47-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/technotes/libraries.rst"
-  ],
-  "e8ed417a-624d-11e9-b712-843835579daa": [
-    "doc/rst/technotes/lifetimeChecking.rst"
-  ],
-  "2393b51a-feca-11ea-b2e8-10ddb1d4c3d5": [
-    "doc/rst/technotes/protoGenCodeGuide.rst"
-  ],
-  "cd80a742-ad6d-11e7-a204-10ddb1d4c3d5": [
-    "doc/rst/technotes/reduceIntents.rst"
-  ],
-  "d45846e8-a1b9-11e7-a204-10ddb1d4c3d5": [
-    "doc/rst/tools/c2chapel/c2chapel.rst"
-  ],
-  "a892ed32-1e49-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/tools/chpldoc/chpldoc.rst"
-  ],
-  "f81d91a2-8aba-11e7-b3f1-10ddb1d4c3d5": [
-    "doc/rst/tools/mason/mason.rst"
-  ],
-  "50034a8e-feca-11ea-b2e8-10ddb1d4c3d5": [
-    "doc/rst/tools/protoc-gen-chpl/protoc-gen-chpl.rst"
-  ],
-  "7ada2798-4027-11e6-907f-843835579daa": [
-    "doc/rst/users-guide/base/forloops.rst"
-  ],
-  "7e15c372-4027-11e6-907f-843835579daa": [
-    "doc/rst/users-guide/index.rst"
-  ],
-  "55c3384c-1e48-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/usingchapel/executing.rst"
-  ],
-  "f235c39e-3f89-11ec-81f0-3de99c714400": [
-    "doc/rst/usingchapel/launcher.rst"
-  ],
-  "c32754ea-8068-11e6-ab60-00a0cc3ee663": [
-    "doc/rst/usingchapel/multilocale.rst"
-  ],
-  "cd28f34a-a1b9-11e7-a204-10ddb1d4c3d5": [
-    "doc/rst/usingchapel/prereqs.rst"
   ],
   "d741a952-4110-11e8-af7e-10ddb1d4c3d5": [
     "man/chpl.rst"
@@ -1259,6 +1322,9 @@
   "e9347814-1f30-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/Types.chpl"
   ],
+  "a89bd786-945c-11ed-b9f6-7def56659a0b": [
+    "modules/standard/Version.chpl"
+  ],
   "d0707fc2-f562-11eb-bb15-35b7469d4b43": [
     "runtime/etc/src/mli/chpl-mli-common-runtime.c"
   ],
@@ -1291,6 +1357,12 @@
   ],
   "73aae312-d1c1-11e8-954d-10ddb1d4c3d5": [
     "runtime/include/comm/ugni/comm-ugni-heap-pages.h"
+  ],
+  "2879db88-b57d-11ed-b67e-4d191cd16eac": [
+    "runtime/include/gpu/cuda/chpl-gpu-gen-includes.h"
+  ],
+  "302b726a-b57d-11ed-b67e-4d191cd16eac": [
+    "runtime/include/gpu/rocm/chpl-gpu-gen-includes.h"
   ],
   "83d35d38-d6dc-11ea-8acb-843835579daa": [
     "runtime/include/mem/jemalloc/chpl-mem-impl.h"
@@ -1343,6 +1415,9 @@
   ],
   "607e4bce-3010-11ed-b71b-d7492178b4dc": [
     "runtime/src/gpu/cuda/gpu-cuda.c"
+  ],
+  "31c40b14-b57d-11ed-b67e-4d191cd16eac": [
+    "runtime/src/gpu/rocm/gpu-rocm.c"
   ],
   "e4e38696-e581-11e8-954d-10ddb1d4c3d5": [
     "runtime/src/launch/amudprun/launch-amudprun.c"

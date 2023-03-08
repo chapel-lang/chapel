@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,11 +21,11 @@
 #define CHPL_UAST_ASTNODE_H
 
 #include "chpl/framework/ID.h"
+#include "chpl/framework/stringify-functions.h"
 #include "chpl/uast/AstList.h"
 #include "chpl/uast/AstTag.h"
-#include "chpl/uast/ASTTypes.h"
+#include "chpl/uast/forward-declare-uast.h"
 #include "chpl/util/memory.h"
-#include "chpl/framework/stringify-functions.h"
 
 #include <functional>
 
@@ -56,7 +56,9 @@ class AstNode {
 
  private:
   AstTag tag_;
+  int attributeGroupChildNum_;
   ID id_;
+
 
  protected:
   AstList children_;
@@ -77,16 +79,60 @@ class AstNode {
    */
   virtual void markUniqueStringsInner(Context* context) const = 0;
 
+  struct DumpSettings {
+    chpl::StringifyKind kind = StringifyKind::DEBUG_DETAIL;
+    bool printId = true;
+    int idWidth = 0;
+    std::ostream& out;
+    DumpSettings(std::ostream& out) : out(out) { }
+  };
+
+  /**
+    This function can be defined by subclasses to include fields
+    in the uAST dump just after the tag. It should print a " "
+    before any fields printed. It is not expected
+    to print a newline.
+   */
+  virtual void dumpFieldsInner(const DumpSettings& s) const;
+
+  /**
+    This function can be defined by subclasses to emit a label for child 'i',
+    for example to indicate which Block is the Then part of a Conditional.
+   */
+  virtual std::string dumpChildLabelInner(int i) const;
+
+  static void dumpHelper(const DumpSettings& s,
+                         const AstNode* ast,
+                         int indent,
+                         const AstNode* parent,
+                         int parentIdx);
+
  protected:
-  AstNode(AstTag tag)
-    : tag_(tag), id_(), children_() {
-  }
-  AstNode(AstTag tag, AstList children)
-    : tag_(tag), id_(), children_(std::move(children)) {
-  }
+
+
 
   // Magic constant to indicate no such child exists.
   static const int NO_CHILD = -1;
+
+  AstNode(AstTag tag)
+    : tag_(tag), attributeGroupChildNum_(NO_CHILD), id_(), children_() {
+  }
+  AstNode(AstTag tag, AstList children)
+    : tag_(tag), attributeGroupChildNum_(NO_CHILD), id_(),
+      children_(std::move(children)) {
+  }
+  AstNode(AstTag tag, AstList children, int attributeGroupChildNum)
+    : tag_(tag), attributeGroupChildNum_(attributeGroupChildNum), id_(),
+      children_(std::move(children)) {
+    CHPL_ASSERT(NO_CHILD <= attributeGroupChildNum_ &&
+                attributeGroupChildNum_ < (ssize_t)children_.size());
+
+    if (attributeGroupChildNum_ >= 0) {
+      CHPL_ASSERT(child(attributeGroupChildNum_)->isAttributeGroup());
+    }
+  }
+
+  AstNode(AstTag tag, Deserializer& des);
 
   // Quick way to return an already exhausted iterator.
   template <typename T>
@@ -161,6 +207,25 @@ class AstNode {
   }
 
   /**
+    Returns the index into children of the attributeGroup child node,
+    or AstNode::NO_CHILD if no attributeGroup exists on this node.
+   */
+  int attributeGroupChildNum() const {
+    return attributeGroupChildNum_;
+  }
+
+  /**
+    Return the attributeGroup associated with this AstNode, or nullptr
+    if none exists.
+   */
+  const AttributeGroup* attributeGroup() const {
+    if (attributeGroupChildNum_ < 0) return nullptr;
+    auto ret = child(attributeGroupChildNum_);
+    CHPL_ASSERT(ret->isAttributeGroup());
+    return (const AttributeGroup*)ret;
+  }
+
+  /**
     Returns 'true' if this symbol contains another AST node.
     This is an operation on the IDs.
    */
@@ -173,6 +238,12 @@ class AstNode {
     transitively.
    */
   static bool mayContainStatements(AstTag tag);
+
+  /**
+    Returns 'true' if this uAST node is a inherently a statement.
+    Note that anything contained directly in a Block is also a statement.
+   */
+  bool isInherentlyStatement() const;
 
   bool shallowMatch(const AstNode* other) const;
   bool completeMatch(const AstNode* other) const;
@@ -188,6 +259,13 @@ class AstNode {
   void mark(Context* context) const;
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+
+  // compute the maximum width of all of the IDs
+  int computeMaxIdStringWidth() const;
+
+  virtual void serialize(Serializer& os) const;
+
+  static owned<AstNode> deserialize(Deserializer& des);
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
@@ -438,6 +516,26 @@ class AstNode {
   }
 };
 } // end namespace uast
+
+template<> struct serialize<uast::AstList> {
+  void operator()(Serializer& ser, const uast::AstList& list) {
+    ser.write((uint64_t)list.size());
+    for (const auto& node : list) {
+      node->serialize(ser);
+    }
+  }
+};
+
+template<> struct deserialize<uast::AstList> {
+  uast::AstList operator()(Deserializer& des) {
+    uast::AstList ret;
+    auto len = des.read<uint64_t>();
+    for (uint64_t i = 0; i < len; i++) {
+      ret.push_back(uast::AstNode::deserialize(des));
+    }
+    return ret;
+  }
+};
 } // end namespace chpl
 
 /// \cond DO_NOT_DOCUMENT
@@ -475,6 +573,10 @@ AST_LESS(AstNode)
 #undef AST_LESS
 /// \endcond
 
+#define DECLARE_STATIC_DESERIALIZE(NAME) \
+static owned<NAME> deserialize(Deserializer& des) { \
+  return owned<NAME>(new NAME(des)); \
+}
 
 } // end namespace std
 

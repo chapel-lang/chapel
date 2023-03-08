@@ -105,7 +105,7 @@ private proc PCGcursorType type {
   return PCGstream.startCursor(D).type;
 }
 
-proc PCGRandomStream.cursorType type
+proc PCGRandomStream.cursorType type do
   return PCGcursorType;
 
 /////////////////////////////////
@@ -114,7 +114,7 @@ interface StdOps(Val) {
   proc chpl__initCopy(arg: Val, definedConst: bool): Val;
   operator =(ref lhs: Val, rhs: Val): void;
   operator ==(lhs: Val, rhs: Val): bool;
-  operator !=(lhs: Val, rhs: Val): bool return !(lhs == rhs);
+  operator !=(lhs: Val, rhs: Val): bool do return !(lhs == rhs);
   proc write(arg: Val): void;
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -92,7 +92,7 @@ proc pkgSearch(args) throws {
     exit(0);
   }
 
-  const pattern = compile(pkgName, ignoreCase=true);
+  const pattern = new regex(pkgName, ignoreCase=true);
   const command = "pkg-config --list-all";
   const cmd = command.split();
   var sub = spawn(cmd, stdout=pipeStyle.pipe);
@@ -149,7 +149,7 @@ proc printPkgPc(args) throws {
       //
       var pcDir = "".join(getPkgVariable(pkgName, "--variable=pcfiledir").these()).strip();
       var pcFile = joinPath(pcDir, pkgName + ".pc");
-      var pc = open(pcFile, iomode.r);
+      var pc = openReader(pcFile);
       writeln("\n------- " + pkgName + ".pc -------\n");
       for line in pc.lines() {
         write(line);
@@ -238,7 +238,7 @@ proc getPCDeps(exDeps: Toml) {
   var exDom: domain(string);
   var exDepTree: [exDom] shared Toml?;
 
-  for (name, vers) in exDeps.A.items() {
+  for (name, vers) in zip(exDeps.A.keys(), exDeps.A.values()) {
     try! {
       if pkgConfigExists() {
         const pkgInfo = getPkgInfo(name, vers!.s);

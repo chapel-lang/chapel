@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -46,6 +46,15 @@ static void updateLocation(YYLTYPE* loc, int nLines, int nCols) {
   loc->last_column = startColumn + nCols;
 }
 
+static YYLTYPE getLocation(yyscan_t scanner, int nLines, int nCols,
+                        bool moveToEnd = false) {
+  ParserContext* pContext = yyget_extra(scanner);
+  YYLTYPE loc = *yyget_lloc(scanner);
+  updateLocation(&loc, nLines, nCols);
+  if (moveToEnd) loc = pContext->makeLocationAtLast(loc);
+  return loc;
+}
+
 int processNewline(yyscan_t scanner) {
   YYLTYPE* loc = yyget_lloc(scanner);
   updateLocation(loc, 1, 0);
@@ -53,6 +62,18 @@ int processNewline(yyscan_t scanner) {
   if (context->parseStats)
     context->parseStats->countNewline();
   return YYLEX_NEWLINE;
+}
+
+static void syntax(yyscan_t scanner, int nLines, int nCols,
+                   const char* fmt, ...) {
+  ParserContext* pContext = yychpl_get_extra(scanner);
+  YYLTYPE flexLoc = getLocation(scanner, nLines, nCols);
+  Location loc = pContext->convertLocation(flexLoc);
+  va_list args;
+  va_start(args, fmt);
+  auto error = GeneralError::vbuild(ErrorBase::SYNTAX, loc, fmt, args);
+  pContext->report(flexLoc, std::move(error));
+  va_end(args);
 }
 
 /************************************ | *************************************
@@ -260,8 +281,7 @@ static std::string eatStringLiteral(yyscan_t scanner,
     if (c == '\n') {
       // TODO: string literals with newline after backslash
       // are not documented in the spec
-      CHPL_LEXER_REPORT_SYNTAX(
-          scanner, nLines, nCols,
+      syntax(scanner, nLines, nCols,
           "end-of-line in a string literal without a preceding backslash.");
       isErroneousOut = true;
       s += c;
@@ -309,16 +329,16 @@ static std::string eatStringLiteral(yyscan_t scanner,
                "overflow/underflow shouldn't be possible in the allowed number "
                "of digits");
         if (!foundHex) {
-          CHPL_LEXER_REPORT_SYNTAX(scanner, nLines, nCols,
-                                   "non-hexadecimal character follows \\x.");
+          syntax(scanner, nLines, nCols,
+                 "non-hexadecimal character follows \\x.");
           isErroneousOut = true;
         } else if (0 <= hexChar && hexChar <= 255) {
           // append the character
           char cc = (char)hexChar;
           s += cc;
         } else {
-          CHPL_LEXER_REPORT_SYNTAX(scanner, nLines, nCols,
-                                   "unknown problem while reading \\x escape.");
+          syntax(scanner, nLines, nCols,
+                 "unknown problem while reading \\x escape.");
           isErroneousOut = true;
         }
 
@@ -326,15 +346,13 @@ static std::string eatStringLiteral(yyscan_t scanner,
           continue; // need to process c as the next character
 
       } else if (c == 'u' || c == 'U') {
-        CHPL_LEXER_REPORT_SYNTAX(
-            scanner, nLines, nCols,
-            "universal character name not yet supported in string literal.");
+        syntax(scanner, nLines, nCols,
+               "universal character name not yet supported in string literal.");
         s += "\\u"; // this is a dummy value
         isErroneousOut = true;
       } else if ('0' <= c && c <= '7' ) {
-        CHPL_LEXER_REPORT_SYNTAX(
-            scanner, nLines, nCols,
-            "octal escape not supported in string literal.");
+        syntax(scanner, nLines, nCols,
+               "octal escape not supported in string literal.");
         s += "\\";
         s += c; // a dummy value
         isErroneousOut = true;
@@ -343,9 +361,8 @@ static std::string eatStringLiteral(yyscan_t scanner,
         s += "\\";
         break; // EOF reached, so stop
       } else {
-        CHPL_LEXER_REPORT_SYNTAX(
-            scanner, nLines, nCols,
-            std::string("unexpected string escape: '\\") + (char)c + "'.");
+        syntax(scanner, nLines, nCols,
+               "unexpected string escape: '\\%c'.", (char) c);
         isErroneousOut = true;
       }
     } else {
@@ -526,8 +543,8 @@ static SizedStr eatExternCode(yyscan_t scanner) {
           break;
 
         case in_single_line_comment:
-          CHPL_LEXER_REPORT_SYNTAX(scanner, nLines, nCols,
-                            "missing newline after // comment in extern block.");
+          syntax(scanner, nLines, nCols,
+                 "missing newline after // comment in extern block.");
           break;
 
         case in_multi_line_comment:
@@ -786,8 +803,7 @@ static int processBlockComment(yyscan_t scanner) {
 
 static void processInvalidToken(yyscan_t scanner) {
   std::string pch = std::string(yyget_text(scanner));
-  CHPL_LEXER_REPORT_SYNTAX(scanner, 0, pch.length(),
-                           "invalid token: " + pch + ".");
+  syntax(scanner, 0, pch.length(), "invalid token: %s.", pch.c_str());
 }
 
 static int getNextYYChar(yyscan_t scanner) {

@@ -108,7 +108,7 @@ proc main() {
       myBuckets = new unmanaged Buckets();
     }
   }
-  const startTime = getCurrentTime();              // capture the start time
+  const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 
   //
   // The main computation: Iterate over the set of updates and the
@@ -150,7 +150,7 @@ proc main() {
   }
 */
 
-  const execTime = getCurrentTime() - startTime;   // capture the elapsed time
+  const execTime = timeSinceEpoch().totalSeconds() - startTime;   // capture the elapsed time
 
   const validAnswer = verifyResults();             // verify the updates
   printResults(validAnswer, execTime);             // print the results

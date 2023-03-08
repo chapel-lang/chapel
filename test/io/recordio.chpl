@@ -18,7 +18,7 @@ config const fileName = "test.txt";
 config const debug = true;
 
 // Open up a file to work with.
-var f = open(fileName, iomode.cwr);
+var f = open(fileName, ioMode.cwr);
 
 
 // Let's create a few records and store them in an array.
@@ -115,6 +115,16 @@ proc MyRecord.readWriteHelper(f) throws {
   if f.writing then f.write(s); else s = f.read(string);
 
   rwLiteral("\n");
+}
+proc MyRecord.init(i: int = 0, r: real = 0.0, s: string = "") {
+  this.i = i;
+  this.r = r;
+  this.s = s;
+}
+
+proc MyRecord.init(r: fileReader) throws {
+  this.init();
+  readThis(r);
 }
 
 {

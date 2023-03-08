@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,9 +25,19 @@ namespace chpl {
 namespace uast {
 
 
+void Variable::dumpFieldsInner(const DumpSettings& s) const {
+  if (isConfig_) {
+    s.out << " config";
+  }
+  if (isField_) {
+    s.out << " field";
+  }
+  VarLikeDecl::dumpFieldsInner(s);
+}
+
 owned<Variable>
 Variable::build(Builder* builder, Location loc,
-                owned<Attributes> attributes,
+                owned<AttributeGroup> attributeGroup,
                 Decl::Visibility vis,
                 Decl::Linkage linkage,
                 owned<AstNode> linkageName,
@@ -38,14 +48,14 @@ Variable::build(Builder* builder, Location loc,
                 owned<AstNode> typeExpression,
                 owned<AstNode> initExpression) {
   AstList lst;
-  int attributesChildNum = -1;
-  int linkageNameChildNum = -1;
-  int8_t typeExpressionChildNum = -1;
-  int8_t initExpressionChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
+  int linkageNameChildNum = NO_CHILD;
+  int8_t typeExpressionChildNum = NO_CHILD;
+  int8_t initExpressionChildNum = NO_CHILD;
 
-  if (attributes.get() != nullptr) {
-    attributesChildNum = lst.size();
-    lst.push_back(std::move(attributes));
+  if (attributeGroup.get() != nullptr) {
+    attributeGroupChildNum = lst.size();
+    lst.push_back(std::move(attributeGroup));
   }
 
   if (linkageName.get() != nullptr) {
@@ -63,7 +73,7 @@ Variable::build(Builder* builder, Location loc,
     lst.push_back(std::move(initExpression));
   }
 
-  Variable* ret = new Variable(std::move(lst), attributesChildNum,
+  Variable* ret = new Variable(std::move(lst), attributeGroupChildNum,
                                vis,
                                linkage,
                                linkageNameChildNum,
@@ -78,14 +88,15 @@ Variable::build(Builder* builder, Location loc,
 }
 
 void Variable::setInitExprForConfig(owned<AstNode> ie) {
-  if (this->initExpressionChildNum_ > -1) {
+  if (this->initExpressionChildNum_ > NO_CHILD) {
     // have an existing initExpr, swap it
     this->children_[this->initExpressionChildNum_].swap(ie);
   } else {
     // no initExpr and no typeExpr nor attribute
     initExpressionChildNum_ = children_.size();
     children_.push_back(std::move(ie));
-    if (this->typeExpressionChildNum_ > -1 || this->attributesChildNum() > -1) {
+    if (this->typeExpressionChildNum_ > NO_CHILD ||
+        this->attributeGroupChildNum() > NO_CHILD) {
       CHPL_ASSERT(numChildren() > 1);
     } else {
       CHPL_ASSERT(numChildren() == 1);

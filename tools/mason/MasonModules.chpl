@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -62,7 +62,7 @@ proc masonModules(args: [] string) throws {
   const lockName = configNames[1];
 
   const cwd = here.cwd();
-  const toParse = open(cwd + "/" + lockName, iomode.r);
+  const toParse = open(cwd + "/" + lockName, ioMode.r);
   var lockFile = parseToml(toParse);
 
   // generate list of dependencies and get src code

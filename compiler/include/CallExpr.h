@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -108,6 +108,11 @@ public:
   void            setResolvedFunction(FnSymbol* fn);
   FnSymbol*       resolvedOrVirtualFunction()                            const;
 
+  // An indirect call is _only_ one in which the base expression of the call
+  // is a value with a function type. That is, the type of the function is
+  // known, but not exactly which function the call refers to.
+  bool            isIndirectCall()                                       const;
+
   FnSymbol*       theFnSymbol()                                          const;
 
   bool            isNamed(const char*)                                   const;
@@ -138,6 +143,7 @@ private:
 
   GenRet          codegenBasicPrimitiveExpr()                            const;
 
+public:
   bool            isRefExternStarTuple(Symbol* formal, Expr* actual)     const;
 };
 
@@ -192,6 +198,14 @@ inline bool CallExpr::isPrimitive(PrimitiveTag primitiveTag) const {
 
 inline bool CallExpr::isPrimitive(const char* primitiveName) const {
   return primitive && !strcmp(primitive->name, primitiveName);
+}
+
+inline bool CallExpr::isIndirectCall() const {
+  if (!baseExpr) return false;
+  if (resolvedFunction()) return false;
+  if (isPrimitive()) return false;
+  if (isFunctionType(baseExpr->qualType().type())) return true;
+  return false;
 }
 
 inline int CallExpr::numActuals() const {

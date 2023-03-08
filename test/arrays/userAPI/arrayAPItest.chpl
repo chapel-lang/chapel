@@ -3,7 +3,7 @@ config param testError = 0, testDisplayRepresentation = false;
 proc readArray(X) {
   use IO;
 
-  open("realValues.txt", iomode.r).reader().read(X);
+  open("realValues.txt", ioMode.r).reader().read(X);
 }
 
 proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
@@ -13,6 +13,7 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
   // Test generic aspects of arrays
   writeln("eltType is: ", X.eltType: string);
   writeln("idxType is: ", X.idxType: string);
+  writeln("fullIdxType is: ", X.idxType: string);
   writeln("rank is: ", X.rank);
   writeln();
   // Test simple queries
@@ -78,6 +79,9 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
   writeln("is empty: ", X.isEmpty());
   writeln("head: ", X.head());
   writeln("tail: ", X.tail());
+  writeln("find last: ", X.find(X[X.domain.high]));
+  var idx: X.fullIdxType;
+  writeln("find last again: ", X.find(X[X.domain.high],idx), ": ", idx);
   var Y = X;
   writeln("equals same: ", X.equals(Y));
   var Z = X + 0.1;
@@ -101,6 +105,7 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
   // Test generic aspects of arrays
   writeln("eltType is: ", X.eltType: string);
   writeln("idxType is: ", X.idxType: string);
+  writeln("fullIdxType is: ", X.fullIdxType: string);
   writeln("rank is: ", X.rank);
   writeln();
 
@@ -193,6 +198,10 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
   writeln("is empty: ", X.isEmpty());
   writeln("head: ", X.head());
   writeln("tail: ", X.tail());
+  if isIntegral(X.idxType) then
+    writeln("find last: ", X.find(X[X.domain.high]));
+  var idx: X.fullIdxType;
+  writeln("find last again: ", X.find(X[X.domain.high],idx), ": ", idx);
   var Y = X;
   writeln("equals same: ", X.equals(Y));
   var Z = X + 0.1;

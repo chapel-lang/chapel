@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -154,7 +154,7 @@
     bool isBodyNonBlockExpression;
     std::vector<ParserComment>* comments;
     ErroneousExpression* errorExpr; // only used for parser error
-    Attributes* attributes;
+    AttributeGroup* attributeGroup;
     Decl::Visibility visibility;
     Decl::Linkage linkage;
     AstNode* linkageNameExpr;
@@ -176,7 +176,7 @@
   // A struct to thread along some pieces of a module before it is built.
   struct ModuleParts {
     std::vector<ParserComment>* comments;
-    Attributes* attributes;
+    AttributeGroup* attributeGroup;
     Decl::Visibility visibility;
     Module::Kind kind;
     PODUniqueString name;
@@ -188,7 +188,7 @@
     Decl::Visibility visibility;
     Decl::Linkage linkage;
     AstNode* linkageName;
-    Attributes* attributes;
+    AttributeGroup* attributeGroup;
     PODUniqueString name;
     asttags::AstTag tag;
   };
@@ -252,7 +252,7 @@
     Variable::Kind variableKind;
 
     // simple pointer values
-    Attributes* attribute;
+    AttributeGroup* attributeGroup;
     Block* block;
     Call* call;
     Function* function;
@@ -475,9 +475,10 @@
 %left TCOLON
 
 %right TBORROWED TOWNED TUNMANAGED TSHARED
+%left TLCBR TRSBR
 %left TQUESTION TBANG
 %right TNEW
-%left TDOT TLP TRSBR TLCBR
+%left TDOT TLP
 %nonassoc TPRAGMA TALIAS
 
 %type <throwsTag> opt_throws_error
@@ -540,7 +541,7 @@
 %type <commentsAndStmt> class_level_stmt
 %type <commentsAndStmt> inner_class_level_stmt
 %type <commentsAndStmt> forwarding_decl_stmt
-%type <attribute> forwarding_decl_start
+%type <attributeGroup> forwarding_decl_start
 %type <commentsAndStmt> extern_export_decl_stmt
 %type <commentsAndStmt> extern_block_stmt
 %type <commentsAndStmt> return_stmt
@@ -571,10 +572,9 @@
 %type <commentsAndStmt> when_stmt
 %type <exprList> when_stmt_ls
 
-%type <expr> array_type
-%type <expr> opt_type opt_ret_type ret_array_type ret_type colon_ret_type
+%type <expr> opt_type opt_ret_type ret_type colon_ret_type
 %type <expr> opt_fn_type_ret_type
-%type <expr> opt_colon_formal_type formal_array_type opt_formal_array_elt_type
+%type <expr> opt_colon_formal_type
 %type <expr> colon_formal_type
 %type <expr> formal_type
 %type <functionParts> lambda_decl_start
@@ -591,11 +591,13 @@
 %type <expr> parenthesized_expr expr
 %type <maybeNamedActual> actual_expr
 %type <expr> bool_literal str_bytes_literal literal_expr
-%type <expr> stmt_level_expr sub_type_level_expr type_level_expr scalar_type
+%type <expr> stmt_level_expr sub_type_level_expr scalar_type
+%type <expr> formal_or_ret_type_expr
 %type <exprList> lifetime_components_expr
 %type <expr> lifetime_expr lifetime_ident
 %type <lifetimeAndWhere> opt_lifetime_where
 %type <expr> ident_expr for_expr cond_expr nil_expr new_expr
+%type <expr> bracket_loop_expr
 %type <expr> let_expr ifvar
 %type <uniqueStr> reduce_scan_op_expr
 %type <expr> reduce_expr scan_expr opt_init_expr
@@ -607,7 +609,7 @@
 %type <expr> query_expr ifc_constraint
 
 %type <newManagement> new_maybe_decorated
-%type <exprList> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
+%type <exprList> opt_inherit expr_ls assoc_expr_ls tuple_expr_ls
 %type <maybeNamedActualList> opt_actual_ls actual_ls
 %type <exprList> task_intent_ls
 %type <exprList> forall_intent_ls
@@ -758,7 +760,7 @@ tryable_stmt:
     CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(ret);
   }
-| TDELETE simple_expr_ls TSEMI
+| TDELETE expr_ls TSEMI
   {
     auto comments = context->gatherComments(@1);
     auto exprs = context->consumeList($2);
@@ -891,7 +893,7 @@ module_decl_start:
 
       ModuleParts parts = {
         .comments=context->gatherComments(loc),
-        .attributes=context->buildAttributes(@$).release(),
+        .attributeGroup=context->buildAttributeGroup(@$).release(),
         .visibility=$1,
         .kind=$2,
         .name=$4
@@ -911,7 +913,7 @@ module_decl_stmt:
       ModuleParts parts = $1;
       ParserExprList* body = context->makeList();
       context->appendList(body, context->gatherComments(@3));
-      auto mod = Module::build(BUILDER, LOC(@1), toOwned(parts.attributes),
+      auto mod = Module::build(BUILDER, LOC(@1), toOwned(parts.attributeGroup),
                                parts.visibility,
                                parts.name,
                                parts.kind,
@@ -926,7 +928,7 @@ module_decl_stmt:
       ModuleParts parts = $1;
       ParserExprList* body = $3;
       context->appendList(body, context->gatherComments(@4));
-      auto mod = Module::build(BUILDER, LOC(@1), toOwned(parts.attributes),
+      auto mod = Module::build(BUILDER, LOC(@1), toOwned(parts.attributeGroup),
                                parts.visibility,
                                parts.name,
                                parts.kind,
@@ -939,7 +941,7 @@ module_decl_stmt:
       ModuleParts parts = $1;
       auto err = ErroneousExpression::build(BUILDER, LOC(@3));
       ParserExprList* body = context->makeList(std::move(err));
-      auto mod = Module::build(BUILDER, LOC(@1), toOwned(parts.attributes),
+      auto mod = Module::build(BUILDER, LOC(@1), toOwned(parts.attributeGroup),
                                parts.visibility,
                                parts.name,
                                parts.kind,
@@ -1438,8 +1440,8 @@ forwarding_decl_stmt:
 forwarding_decl_start:
   TFORWARDING
   {
-    $$ = context->buildAttributes(@$).release();
-    context->resetAttributePartsState();
+    $$ = context->buildAttributeGroup(@$).release();
+    context->resetAttributeGroupPartsState();
   }
 ;
 
@@ -1777,7 +1779,7 @@ ifvar:
   TVAR   ident_def TASSIGN expr
   {
     auto varDecl = Variable::build(BUILDER, LOC(@$),
-                                   /*attributes*/ nullptr,
+                                   /*attributeGroup*/ nullptr,
                                    Decl::DEFAULT_VISIBILITY,
                                    Decl::DEFAULT_LINKAGE,
                                    /*linkageName*/ nullptr,
@@ -1792,7 +1794,7 @@ ifvar:
 | TCONST ident_def TASSIGN expr
   {
     auto varDecl = Variable::build(BUILDER, LOC(@$),
-                                   /*attributes*/ nullptr,
+                                   /*attributeGroup*/ nullptr,
                                    Decl::DEFAULT_VISIBILITY,
                                    Decl::DEFAULT_LINKAGE,
                                    /*linkageName*/ nullptr,
@@ -1843,8 +1845,7 @@ implements_type_ident:
 | TVOID
 | implements_type_error_ident
   {
-    CHPL_PARSER_REPORT_SYNTAX(
-        context, @$, "type '" + $1.str() + "' cannot implement an interface.");
+    context->syntax(@$, "type '%s' cannot implement an interface.", $1.c_str());
     $$ = $1;
   }
 ;
@@ -1939,7 +1940,7 @@ catch_expr:
 catch_expr_inner:
   ident_def
   {
-    $$ = Variable::build(BUILDER, LOC(@$), /*attributes*/ nullptr,
+    $$ = Variable::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
                          Decl::DEFAULT_VISIBILITY,
                          Decl::DEFAULT_LINKAGE,
                          /*linkageName*/ nullptr,
@@ -1952,7 +1953,7 @@ catch_expr_inner:
   }
 | ident_def TCOLON expr
   {
-    $$ = Variable::build(BUILDER, LOC(@$), /*attributes*/ nullptr,
+    $$ = Variable::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
                          Decl::DEFAULT_VISIBILITY,
                          Decl::DEFAULT_LINKAGE,
                          /*linkageName*/ nullptr,
@@ -2103,7 +2104,7 @@ enum_decl_stmt:
       // get any comments after the last element but before the closing brace
       context->appendList(list, context->gatherComments(@3));
 
-      auto decl = Enum::build(BUILDER, LOC(@$), toOwned(parts.attributes),
+      auto decl = Enum::build(BUILDER, LOC(@$), toOwned(parts.attributeGroup),
                               parts.visibility,
                               parts.name,
                               context->consumeList(list));
@@ -2136,39 +2137,39 @@ enum_ls:
   deprecated_enum_item
   {
     $$ = context->makeList($1);
-    context->resetAttributePartsState();
+    context->resetAttributeGroupPartsState();
   }
 | enum_ls TCOMMA
   {
     $$ = $1;
     context->clearCommentsBefore(@2);
-    context->resetAttributePartsState();
+    context->resetAttributeGroupPartsState();
   }
 | enum_ls TCOMMA
   {
     context->clearCommentsBefore(@2);
-    context->resetAttributePartsState();
+    context->resetAttributeGroupPartsState();
   }
   deprecated_enum_item
   {
     context->appendList($1, $4);
-    context->resetAttributePartsState();
+    context->resetAttributeGroupPartsState();
   }
 |
   unstable_enum_item
   {
     $$ = context->makeList($1);
-    context->resetAttributePartsState();
+    context->resetAttributeGroupPartsState();
   }
 | enum_ls TCOMMA
   {
     context->clearCommentsBefore(@2);
-    context->resetAttributePartsState();
+    context->resetAttributeGroupPartsState();
   }
   unstable_enum_item
   {
     context->appendList($1, $4);
-    context->resetAttributePartsState();
+    context->resetAttributeGroupPartsState();
   }
 
 ;
@@ -2216,14 +2217,14 @@ enum_item:
   ident_def
     {
       auto decl = EnumElement::build(BUILDER, LOC(@$),
-                                     context->buildAttributes(@$),
+                                     context->buildAttributeGroup(@$),
                                      $1);
       $$ = STMT(@$, decl.release());
     }
 | ident_def TASSIGN expr
     {
       auto decl = EnumElement::build(BUILDER, LOC(@$),
-                                     context->buildAttributes(@$),
+                                     context->buildAttributeGroup(@$),
                                      $1,
                                      toOwned($3));
       $$ = STMT(@$, decl.release());
@@ -2238,9 +2239,9 @@ lambda_decl_start:
       context->noteDeclStartLoc(@1);
       auto loc = context->declStartLoc(@$);
       fp.comments = context->gatherComments(loc);
-      fp.attributes = context->buildAttributes(@$).release();
+      fp.attributeGroup = context->buildAttributeGroup(@$).release();
       fp.visibility = context->visibility;
-      context->resetAttributePartsState();
+      context->resetAttributeGroupPartsState();
       fp.kind = Function::PROC;
       $$ = fp;
     }
@@ -2306,11 +2307,9 @@ fn_type_formal:
   { $$ = context->buildAnonFormal(@$, $1); }
 ;
 
-// TODO: We would like to replace the alternate with 'ret_type', but that
-// leads to some reduce/reduce conflicts.
 opt_fn_type_ret_type:
-  %prec TNOELSE   { $$ = nullptr; }
-| TCOLON expr     { $$ = $2; }
+  %prec TNOELSE                   { $$ = nullptr; }
+| TCOLON formal_or_ret_type_expr  { $$ = $2; }
 ;
 
 //
@@ -2319,7 +2318,6 @@ opt_fn_type_ret_type:
 // around 'fn_decl_receiver_expr', e.g., consider:
 // 'proc (borrowed class?).hash()'
 // -> Can we revert to TPROC TLP and then use precedence to fix this?
-// TODO: We need the return expression to be 'ret_type', not 'expr'.
 //
 fn_type:
   TPROCLP opt_fn_type_formal_ls TRP opt_ret_tag opt_fn_type_ret_type
@@ -2334,13 +2332,12 @@ fn_type:
     fp.throws = ($6 == ThrowsTag_THROWS);
     fp.body = nullptr;
     fp.comments = nullptr;
-    fp.attributes = nullptr;
+    fp.attributeGroup = nullptr;
     fp.visibility = context->visibility;
     $$ = fp;
   }
 ;
 
-// TODO: This needs to use the old style formal list instead.
 fn_expr:
   fn_type
   {
@@ -2436,7 +2433,7 @@ fn_decl_stmt_inner:
     {
       FunctionParts fp = $1;
       fp.thisIntent = $2;
-      fp.receiver = Formal::build(BUILDER, LOC(@3), /*attributes*/ nullptr,
+      fp.receiver = Formal::build(BUILDER, LOC(@3), /*attributeGroup*/ nullptr,
                                   STR("this"), $2, toOwned($3),
                                   nullptr).release();
       fp.name = context->buildIdent(@5, $5);
@@ -2447,7 +2444,7 @@ fn_decl_stmt_inner:
     {
       FunctionParts fp = $1;
       fp.thisIntent = $2;
-      fp.receiver = Formal::build(BUILDER, LOC(@3), /*attributes*/ nullptr,
+      fp.receiver = Formal::build(BUILDER, LOC(@3), /*attributeGroup*/ nullptr,
                                   STR("this"), $2, toOwned($3),
                                   nullptr).release();
       fp.name = context->buildIdent(@5, $5);
@@ -2469,9 +2466,9 @@ fn_decl_stmt_start:
       context->noteDeclStartLoc(@2);
       auto loc = context->declStartLoc(@$);
       fp.comments = context->gatherComments(loc);
-      fp.attributes = context->buildAttributes(@$).release();
+      fp.attributeGroup = context->buildAttributeGroup(@$).release();
       fp.visibility = context->visibility;
-      context->resetAttributePartsState();
+      context->resetAttributeGroupPartsState();
       fp.kind = $2;
       $$ = fp;
     }
@@ -2545,7 +2542,6 @@ all_op_name:
 formal_var_arg_expr:
   TDOTDOTDOT             { $$ = nullptr; }
 | TDOTDOTDOT expr        { $$ = $2; }
-| TDOTDOTDOT query_expr  { $$ = $2; }
 ;
 
 opt_formal_ls:
@@ -2605,8 +2601,7 @@ named_formal:
 | opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP
   opt_colon_formal_type formal_var_arg_expr
   {
-    $$ = CHPL_PARSER_REPORT_SYNTAX(
-        context, @$, "variable-length argument may not be grouped in a tuple.");
+    $$ = context->syntax(@$, "variable-length argument may not be grouped in a tuple.");
   }
 ;
 
@@ -2669,7 +2664,8 @@ opt_function_body_stmt:
 
 function_body_stmt:
   block_stmt_body   { $$ = $1; }
-| return_stmt       { context->clearComments(); $$ = context->makeList($1); }
+| TDO toplevel_stmt { $$ = context->buildSingleStmtRoutineBody($2); }
+| return_stmt       { $$ = context->buildSingleStmtRoutineBody($1, &(@1)); }
 ;
 
 query_expr:
@@ -2755,7 +2751,7 @@ type_alias_decl_stmt_inner:
   {
     // TODO (dlongnecke-cray): Add a helper to build this and var_decl_stmt.
     auto node = Variable::build(BUILDER, LOC(@$),
-                                context->buildAttributes(@$),
+                                context->buildAttributeGroup(@$),
                                 context->visibility,
                                 context->linkage,
                                 context->consumeVarDeclLinkageName(),
@@ -2773,13 +2769,8 @@ type_alias_decl_stmt_inner:
 
 opt_init_type:
   { $$ = nullptr; }
-| TASSIGN type_level_expr
+| TASSIGN expr
   { $$ = $2; }
-| TASSIGN array_type
-  {
-    // Cannot be a type_level_expr as expr inherits from type_level_expr.
-    $$ = $2;
-  }
 ;
 
 var_decl_type:
@@ -2822,7 +2813,7 @@ var_decl_stmt_inner:
   ident_def opt_type opt_init_expr
     {
       auto varDecl = Variable::build(BUILDER, LOC(@$),
-                                     context->buildAttributes(@$),
+                                     context->buildAttributeGroup(@$),
                                      context->visibility,
                                      context->linkage,
                                      context->consumeVarDeclLinkageName(),
@@ -2839,7 +2830,7 @@ var_decl_stmt_inner:
     {
       auto intentOrKind = (TupleDecl::IntentOrKind) context->varDeclKind;
       auto tupleDecl = TupleDecl::build(BUILDER, LOC(@$),
-                                        context->buildAttributes(@$),
+                                        context->buildAttributeGroup(@$),
                                         context->visibility,
                                         context->linkage,
                                         intentOrKind,
@@ -2883,48 +2874,19 @@ opt_init_expr:
 | TASSIGN opt_try_expr  { $$ = $2; }
 ;
 
-ret_array_type:
-  TLSBR TRSBR type_level_expr
-  {
-    $$ = context->buildArrayType(@$, @1, /*domainExprs*/ nullptr, $3);
-  }
-| TLSBR TRSBR
-  {
-    $$ = context->buildArrayType(@$, @1, nullptr, nullptr);
-  }
-| TLSBR expr_ls TRSBR type_level_expr
-  {
-    $$ = context->buildArrayType(@$, @2, $2, $4);
-  }
-| TLSBR expr_ls TRSBR
-  {
-    $$ = context->buildArrayType(@$, @2, $2, /*typeExpr*/ nullptr);
-  }
-| TLSBR TRSBR ret_array_type
-  {
-    $$ = context->buildArrayType(@$, @1, /*domainExprs*/ nullptr, $3);
-  }
-| TLSBR expr_ls TRSBR ret_array_type
-  {
-    $$ = context->buildArrayType(@$, @2, $2, $4);
-  }
-| TLSBR error TRSBR
-  {
-    $$ = CHPL_PARSER_REPORT_SYNTAX(
-        context, @$, "invalid expression for domain of array return type.");
-  }
+formal_or_ret_type_expr:
+  expr %prec TNOELSE    { $$ = context->sanitizeArrayType(@$, $1); }
 ;
 
 ret_type:
-  type_level_expr         { $$ = $1; }
-| ret_array_type          { $$ = $1; }
+  formal_or_ret_type_expr { $$ = $1; }
 | reserved_type_ident_use { $$ = context->buildIdent(@1, $1); }
 | error                   { $$ = ErroneousExpression::build(BUILDER, LOC(@1)).release(); }
 ;
 
 colon_ret_type:
   TCOLON ret_type { $$ = $2; }
-| error                          { $$ = ErroneousExpression::build(BUILDER, LOC(@1)).release(); }
+| error           { $$ = ErroneousExpression::build(BUILDER, LOC(@1)).release(); }
 ;
 
 opt_ret_type:
@@ -2934,87 +2896,14 @@ opt_ret_type:
 
 opt_type:
                                  { $$ = nullptr; }
-| TCOLON type_level_expr         { $$ = $2; }
-| TCOLON array_type              { $$ = $2; }
+| TCOLON expr                    { $$ = $2; }
 | TCOLON reserved_type_ident_use { $$ = context->buildIdent(@2, $2); }
 | error                          { $$ = ErroneousExpression::build(BUILDER, LOC(@1)).release(); }
 ;
 
-/* NOTE: Some things about the following rule concern me (blc), but I
-   don't have the time to fix them now, so am noting them for the
-   future when someone runs into them:
-
-   (1) there are 3 cases rather than the 4 I would expect based on symmetry
-       ('in' vs. not x 'type_level_expr' vs. 'array_type')
-
-   (2) it seems strange to me that the thing being iterated over is an
-       'expr_ls' in the first two cases, but an 'expr' in the third
-
-   (3) it also seems strange that the stuff preceding TIN would be an
-       'expr_ls' rather than something simpler, like a nested
-       parenthesization of identifiers; perhaps this is to support the
-       establishment of an explicit type declaration, though I thought we
-       didn't support that yet
-*/
-array_type:
-  TLSBR expr_ls TRSBR type_level_expr
-  {
-    $$ = context->buildArrayType(@$, @2, $2, $4);
-  }
-| TLSBR expr_ls TRSBR array_type
-  {
-    $$ = context->buildArrayType(@$, @2, $2, $4);
-  }
-| TLSBR expr_ls TIN expr TRSBR type_level_expr
-  {
-    $$ = context->buildArrayTypeWithIndex(@$, @2, $2, $4, $6);
-  }
-| TLSBR error TRSBR
-  {
-    $$ = ErroneousExpression::build(BUILDER, LOC(@2)).release();
-  }
-;
-
-opt_formal_array_elt_type:
-                        { $$ = nullptr; }
-| type_level_expr       { $$ = $1; }
-| query_expr            { $$ = $1; }
-;
-
-formal_array_type:
-  TLSBR TRSBR opt_formal_array_elt_type
-  {
-    auto domainLoc = context->makeSpannedLocation(@1, @2);
-    $$ = context->buildArrayType(@$, domainLoc, /*domainExprs*/ nullptr, $3);
-  }
-| TLSBR expr_ls TRSBR opt_formal_array_elt_type
-  {
-    $$ = context->buildArrayType(@$, @2, $2, $4);
-  }
-
-// Johnk: Unclear to me what the type should be when [<range>][] <type> is encountered.
-//        At present buildArrayRuntimeType is undefined when gNil is passed and
-//        the second argument is a formal_array_type.
-| TLSBR TRSBR formal_array_type
-  {
-    auto domainLoc = context->makeSpannedLocation(@1, @2);
-    $$ = context->buildArrayType(@$, domainLoc, /*domainExprs*/ nullptr, $3);
-  }
-| TLSBR expr_ls TRSBR formal_array_type
-  {
-    $$ = context->buildArrayType(@$, @2, $2, $4);
-  }
-| TLSBR expr_ls TIN expr TRSBR opt_formal_array_elt_type
-  {
-    $$ = context->buildArrayTypeWithIndex(@$, @2, $2, $4, $6);
-  }
-;
-
 formal_type:
-  type_level_expr
-| query_expr
+  formal_or_ret_type_expr   { $$ = $1; }
 | reserved_type_ident_use   { $$ = context->buildIdent(@1, $1); }
-| formal_array_type
 ;
 
 colon_formal_type:
@@ -3030,20 +2919,12 @@ opt_colon_formal_type:
 
 expr_ls:
   expr                       { $$ = context->makeList($1); }
-| query_expr                 { $$ = context->makeList($1); }
 | expr_ls TCOMMA expr        { $$ = context->appendList($1, $3); }
-| expr_ls TCOMMA query_expr  { $$ = context->appendList($1, $3); }
-;
-
-simple_expr_ls:
-  expr                             { $$ = context->makeList($1); }
-| simple_expr_ls TCOMMA expr       { $$ = context->appendList($1, $3); }
 ;
 
 tuple_component:
   TUNDERSCORE   { $$ = context->buildIdent(@1, $1); }
 | opt_try_expr  { $$ = $1; }
-| query_expr    { $$ = $1; }
 ;
 
 tuple_expr_ls:
@@ -3077,9 +2958,7 @@ actual_ls:
 ;
 
 actual_expr:
-  ident_use TASSIGN query_expr   { $$ = makeMaybeNamedActual($3, $1); }
-| ident_use TASSIGN opt_try_expr { $$ = makeMaybeNamedActual($3, $1); }
-| query_expr                     { $$ = makeMaybeNamedActual($1); }
+  ident_use TASSIGN opt_try_expr { $$ = makeMaybeNamedActual($3, $1); }
 | opt_try_expr                   { $$ = makeMaybeNamedActual($1); }
 ;
 
@@ -3088,24 +2967,7 @@ ident_expr:
 | scalar_type    { $$ = $1; }
 ;
 
-/* Expressions which represent types.  type_level_exprs can appear within formal
- * function parameter specifications as well as part of variable declarations.
-
-   NOTE: Array type expressions do not appear in this production as array type
-   specifications are different for formal array parameters and variable arrays.
-   As such, array type expressions are individually defined for formal array
-   parameters and variables. */
-type_level_expr:
-  sub_type_level_expr %prec TNOELSE
-  { $$ = $1; }
-| sub_type_level_expr TQUESTION %prec TQUESTION
-  { $$ = context->buildUnaryOp(@$, $2, $1); }
-| TQUESTION
-  { $$ = context->buildIdent(@$, $1); }
-| fn_type
-  { $$ = context->buildFunctionType(@$, $1); }
-;
-
+// TODO: Think of a better name for this category, or can we collapse it?
 // TODO: It would be nice if '?' could be an `expr`, but then 'borrowed?'
 // would not work.
 sub_type_level_expr:
@@ -3292,70 +3154,36 @@ for_expr:
                        context->consumeToBlock(ifLoc, ifExpr.release()),
                        /*isExpressionLevel*/ true).release();
   }
+;
+
+bracket_loop_expr:
+  TLSBR TRSBR
+  {
+    $$ = context->buildBracketLoopExpr(@$);
+  }
+| TLSBR TRSBR expr %prec TFOR
+  {
+    $$ = context->buildBracketLoopExpr(@$, @2, $3);
+  }
 | TLSBR expr_ls TRSBR expr %prec TFOR
   {
-    owned<AstNode> iterand = nullptr;
-    auto iterExprs = context->consumeList($2);
-    if (iterExprs.size() > 1) {
-      iterand = Domain::build(BUILDER, LOC(@2), false, std::move(iterExprs));
-    } else {
-      iterand = std::move(iterExprs[0]);
-    }
-    CHPL_ASSERT(iterand != nullptr);
-    $$ = BracketLoop::build(BUILDER, LOC(@$), /*index*/ nullptr,
-                            std::move(iterand),
-                            /*withClause*/ nullptr,
-                            BlockStyle::IMPLICIT,
-                            context->consumeToBlock(@4, $4),
-                            /*isExpressionLevel*/ true).release();
+    $$ = context->buildBracketLoopExpr(@$, @2, $2, $4);
   }
 | TLSBR expr_ls TIN expr TRSBR expr %prec TFOR
   {
-    auto index = context->buildLoopIndexDecl(@2, $2);
-    $$ = BracketLoop::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
-                            /*withClause*/ nullptr,
-                            BlockStyle::IMPLICIT,
-                            context->consumeToBlock(@6, $6),
-                            /*isExpressionLevel*/ true).release();
+    $$ = context->buildBracketLoopExpr(@$, @2, $2, $4, $6);
   }
 | TLSBR expr_ls TIN zippered_iterator TRSBR expr %prec TFOR
   {
-    auto index = context->buildLoopIndexDecl(@2, $2);
-    $$ = BracketLoop::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
-                            /*withClause*/ nullptr,
-                            BlockStyle::IMPLICIT,
-                            context->consumeToBlock(@6, $6),
-                            /*isExpressionLevel*/ true).release();
+    $$ = context->buildBracketLoopExpr(@$, @2, $2, $4, $6);
   }
 | TLSBR expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
   {
-    auto index = context->buildLoopIndexDecl(@2, $2);
-    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
-                                     BlockStyle::IMPLICIT,
-                                     context->consumeToBlock(@9, $9),
-                                     /*isExpressionLevel*/ true);
-    auto ifLoc = context->makeSpannedLocation(@6, @9);
-    $$ = BracketLoop::build(BUILDER, LOC(@$), std::move(index),
-                            toOwned($4),
-                            /*withClause*/ nullptr,
-                            BlockStyle::IMPLICIT,
-                            context->consumeToBlock(ifLoc, ifExpr.release()),
-                            /*isExpressionLevel*/ true).release();
+    $$ = context->buildBracketLoopExpr(@$, @2, @6, $2, $4, $7, $9);
   }
 | TLSBR expr_ls TIN zippered_iterator TRSBR TIF expr TTHEN expr %prec TNOELSE
   {
-    auto index = context->buildLoopIndexDecl(@2, $2);
-    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
-                                     BlockStyle::IMPLICIT,
-                                     context->consumeToBlock(@9, $9),
-                                     /*isExpressionLevel*/ true);
-    auto ifLoc = context->makeSpannedLocation(@6, @9);
-    $$ = BracketLoop::build(BUILDER, LOC(@$), std::move(index),
-                            toOwned($4),
-                            /*withClause*/ nullptr,
-                            BlockStyle::IMPLICIT,
-                            context->consumeToBlock(ifLoc, ifExpr.release()),
-                            /*isExpressionLevel*/ true).release();
+    $$ = context->buildBracketLoopExpr(@$, @2, @6, $2, $4, $7, $9);
   }
 ;
 
@@ -3433,15 +3261,14 @@ intent_expr:
   {
     if (auto ident = $2->toIdentifier()) {
       auto name = ident->name();
-      auto node = TaskVar::build(BUILDER, LOC(@$), /*attributes*/ nullptr,
+      auto node = TaskVar::build(BUILDER, LOC(@$), /*attributeGroup*/ nullptr,
                                  name,
                                  /*intent*/ $1,
                                  toOwned($3),
                                  toOwned($4));
       $$ = node.release();
     } else {
-      $$ = CHPL_PARSER_REPORT_SYNTAX(
-          context, @$, "expected identifier for task variable name.");
+      $$ = context->syntax(@$, "expected identifier for task variable name.");
     }
   }
 | reduce_scan_op_expr TREDUCE ident_expr
@@ -3622,9 +3449,19 @@ super_expr:
 ;
 
 expr:
-  literal_expr
-| for_expr
-| type_level_expr
+  for_expr
+/** -- 'type_level_expr' -- **/
+| sub_type_level_expr %prec TNOELSE
+| sub_type_level_expr TQUESTION %prec TQUESTION
+  { $$ = context->buildUnaryOp(@$, $2, $1); }
+| TQUESTION
+  { $$ = context->buildIdent(@$, $1); }
+| bracket_loop_expr
+| query_expr
+| literal_expr
+| fn_type
+  { $$ = context->buildFunctionType(@$, $1); }
+/** -- 'type_level_expr' -- **/
 | reduce_expr
 | scan_expr
 | lambda_decl_expr
@@ -3777,17 +3614,15 @@ literal_expr:
   }
 | TLSBR expr_ls TCOMMA TRSBR
   {
-    // TODO (dlongnecke): Record trailing comma?
-    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2), true).release();
   }
 | TLSBR assoc_expr_ls TRSBR
   {
-    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2), false, true).release();
   }
 | TLSBR assoc_expr_ls TCOMMA TRSBR
   {
-    // TODO (dlongnecke): Record trailing comma?
-    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2), true, true).release();
   }
 
 ;

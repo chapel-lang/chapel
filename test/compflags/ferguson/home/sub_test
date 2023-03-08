@@ -26,6 +26,7 @@ $HOME2BIN = "$TMP/chplhome2/bin/$BINSUBDIR";
 $HOME3BIN = "$TMP/chplhome3/bin/$BINSUBDIR";
 $HOMELINK = "$TMP/linktohome";
 $HOMELINKBIN = "$TMP/linktohome/bin/$BINSUBDIR";
+$HOMELINKLIB = "$TMP/linktohome/lib";
 $BIN = "$TMP/bin";
 $BINLINK = "$TMP/linktobin";
 $TMPOUT = "$TMP/cmdout";
@@ -44,6 +45,9 @@ mkpath($BIN);
 0 == system("cp -R $ORIG_CHPL_HOME/util $HOME2") or die "could not cp -R $ORIG_CHPL_HOME/util $HOME2";
 symlink("$ORIG_CHPL_HOME/make", "$HOME/make");
 symlink("$ORIG_CHPL_HOME/make", "$HOME2/make");
+symlink("$ORIG_CHPL_HOME/lib", "$HOME/lib");
+symlink("$ORIG_CHPL_HOME/lib", "$HOME2/lib");
+symlink("$ORIG_CHPL_HOME/lib", "$HOME3/lib");
 symlink("$ORIG_CHPL_HOME/third-party", "$HOME/third-party");
 symlink("$ORIG_CHPL_HOME/third-party", "$HOME2/third-party");
 
@@ -72,24 +76,14 @@ check("1a", $HOME, $HOME2BIN, "chpl", $HOME, "$HOME2BIN/chpl", "mismatch");
 # 2 CHPL_HOME is not really a CHPL_HOME
 check("2a", $HOME3, $HOME3BIN, "chpl", "", "", "not a");
 
-# 3 CHPL_HOME set but PATH_TO_BIN doesn't help
-check("3a", $HOME, $BIN, "chpl", $HOME, "$BIN/chpl", "");
-check("3b", $HOMELINK, $BIN, "chpl", $HOMELINK, "$BIN/chpl", "");
-check("3c", $HOME, $BINLINK, "chpl", $HOME, "$BIN/chpl", "");
-
 # 4 no CHPL_HOME set but can figure it out from PATH_TO_BIN
-check("4a", "", $HOMEBIN, "chpl", $HOME, "$HOMEBIN/chpl", "");
-check("4b", "", $HOME2BIN, "chpl", $HOME2, "$HOME2BIN/chpl", "");
-check("4c", "", $HOMELINKBIN, "chpl", $HOME, "$HOMEBIN/chpl", "");
-check("4d", "", $HOMEBIN, "$HOMEBIN/chpl", $HOME, "$HOMEBIN/chpl", "");
+check("3a", "", $HOMEBIN, "chpl", $HOME, "$HOMEBIN/chpl", "");
+check("3b", "", $HOME2BIN, "chpl", $HOME2, "$HOME2BIN/chpl", "");
+check("3c", "", $HOMELINKBIN, "chpl", $HOME, "$HOMEBIN/chpl", "");
+check("3d", "", $HOMEBIN, "$HOMEBIN/chpl", $HOME, "$HOMEBIN/chpl", "");
 chdir $HOMEBIN;
-check("4e", "", "", "./chpl", $HOME, "$HOMEBIN/chpl", "");
+check("3e", "", "", "./chpl", $HOME, "$HOMEBIN/chpl", "");
 chdir $ORIG_CWD;
-
-
-# 5 no CHPL_HOME set and we can't figure it out from PATH_TO_BIN
-check("5a", "", $BIN, "chpl", "", "", "CHPL_HOME must be set");
-check("5b", "", $BINLINK, "chpl", "", "", "CHPL_HOME must be set");
 
 
 sub check {
@@ -116,11 +110,11 @@ sub check {
   #print "RUNNING $exe --print-chpl-home\n";
   $got = `$exe --print-chpl-home 2>&1`;
   #print "GOT IS $got\n";
- 
+
   my @lines = split('\n', $got);
   my $prefix_line = "configured prefix";
   my ($gothome, $gotexe) = ("", "") ;
-  #If we configured with a prefix, the --print-chpl-home output includes an extra line. 
+  #If we configured with a prefix, the --print-chpl-home output includes an extra line.
   if (index($lines[-1] , $prefix_line) != -1) { #configured with prefix
     ($gothome, $gotexe) = split('\t', $lines[-2]);
   } else { #not configured with prefix
@@ -144,7 +138,7 @@ sub check {
   if ($expecterror ne "") {
     if( $got =~ /$expecterror/i ) {
       print "[Success matching compflags/ferguson/home --print-chpl-home errs $name]\n";
-      # OK 
+      # OK
     } else {
       my $errs = $got;
       $errs =~ tr/\n/ /;

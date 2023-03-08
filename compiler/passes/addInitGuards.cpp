@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -235,11 +235,23 @@ void AddModuleInitBlocks::process(ModuleSymbol* mod) {
   INT_ASSERT(fn); // precondition from shouldProcess
 
   SET_LINENO(mod);
-  if (mod->deinitFn)
-    // This needs to go after initBlock: we want addModule(mod)
-    // to be called *after* addModule on modules used by mod.
-    fn->insertAtHead(new CallExpr(gAddModuleFn, buildCStringLiteral(mod->name),
-                                  mod->deinitFn));
+
+  // This needs to go after initBlock: we want addModule(mod)
+  // to be called *after* addModule on modules used by mod.
+  if (auto deinitFn = mod->deinitFn) {
+
+    // Compute the type now since it may not have been set yet.
+    deinitFn->computeAndSetType();
+
+    // Manually cast to 'dtCFnPtr' since we are post-resolution.
+    auto cast = new CallExpr(PRIM_CAST_TO_TYPE,
+                             new SymExpr(mod->deinitFn),
+                             new SymExpr(dtCFnPtr->symbol));
+
+    fn->insertAtHead(new CallExpr(gAddModuleFn,
+                                  buildCStringLiteral(mod->name),
+                                  cast));
+  }
 
   BlockStmt* initBlock = new BlockStmt();
 

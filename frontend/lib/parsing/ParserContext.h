@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,7 +30,8 @@ struct ParserComment {
 };
 
 // To store the different attributes of a symbol as they are built.
-struct AttributeParts {
+struct AttributeGroupParts {
+  ParserExprList* attributeGroup; // this is where the attributes are accumulated
   std::set<PragmaTag>* pragmas;
   bool isDeprecated;
   bool isUnstable;
@@ -45,7 +46,6 @@ struct ParserContext {
   parsing::ParserStats* parseStats;
 
   ParserExprList* topLevelStatements;
-  std::vector<const ErrorBase*> errors;
 
   // TODO: this should just hash on the pointer; the void* is a hack to do that
   std::unordered_map<void*, YYLTYPE> commentLocations;
@@ -66,8 +66,8 @@ struct ParserContext {
   Variable::Kind varDeclKind;
   bool isVarDeclConfig;
   bool isBuildingFormal;
-  AttributeParts attributeParts;
-  bool hasAttributeParts;
+  AttributeGroupParts attributeGroupParts;
+  bool hasAttributeGroupParts;
   int numAttributesBuilt;
   YYLTYPE declStartLocation;
 
@@ -101,8 +101,8 @@ struct ParserContext {
     this->varDeclKind             = Variable::VAR;
     this->isBuildingFormal        = false;
     this->isVarDeclConfig         = false;
-    this->attributeParts          = { nullptr, false, false, UniqueString(), UniqueString() };
-    this->hasAttributeParts       = false;
+    this->attributeGroupParts     = {nullptr, nullptr, false, false, UniqueString(), UniqueString() };
+    this->hasAttributeGroupParts  = false;
     this->numAttributesBuilt      = 0;
     YYLTYPE emptyLoc = {0};
     this->declStartLocation       = emptyLoc;
@@ -130,11 +130,11 @@ struct ParserContext {
   owned<AstNode> consumeVarDeclLinkageName(void);
 
   // If attributes do not exist yet, returns nullptr.
-  owned<Attributes> buildAttributes(YYLTYPE locationOfDecl);
+  owned<AttributeGroup> buildAttributeGroup(YYLTYPE locationOfDecl);
   PODUniqueString notePragma(YYLTYPE loc, AstNode* pragmaStr);
   void noteDeprecation(YYLTYPE loc, AstNode* messageStr);
   void noteUnstable(YYLTYPE loc, AstNode* messageStr);
-  void resetAttributePartsState();
+  void resetAttributeGroupPartsState();
 
   CommentsAndStmt buildPragmaStmt(YYLTYPE loc, CommentsAndStmt stmt);
 
@@ -169,7 +169,20 @@ struct ParserContext {
     };
   }
 
-  void saveError(const ErrorBase* error) { errors.push_back(error); }
+  YYLTYPE locationFromChplLocation(AstNode* ast) {
+    auto chapelLoc = builder->getLocation(ast);
+    YYLTYPE ret = {
+      .first_line = chapelLoc.firstLine(),
+      .first_column = chapelLoc.firstColumn(),
+      .last_line = chapelLoc.lastLine(),
+      .last_column = chapelLoc.lastColumn()
+    };
+    return ret;
+  }
+
+  ErroneousExpression* report(YYLTYPE loc, owned<ErrorBase> error);
+  ErroneousExpression* error(YYLTYPE loc, const char* fmt, ...);
+  ErroneousExpression* syntax(YYLTYPE loc, const char* fmt, ...);
 
   void noteComment(YYLTYPE loc, const char* data, long size);
   std::vector<ParserComment>* gatherComments(YYLTYPE location);
@@ -277,14 +290,14 @@ struct ParserContext {
               PODUniqueString name,
               AstNode* typeExpr,
               AstNode* initExpr,
-              bool consumeAttributes=false);
+              bool consumeAttributeGroup=false);
 
   AstNode*
   buildVarArgFormal(YYLTYPE location, Formal::Intent intent,
                     PODUniqueString name,
                     AstNode* typeExpr,
                     AstNode* initExpr,
-                    bool consumeAttributes=false);
+                    bool consumeAttributeGroup=false);
 
   AstNode*
   buildTupleFormal(YYLTYPE location, Formal::Intent intent,
@@ -325,15 +338,46 @@ struct ParserContext {
   AstNode* buildLetExpr(YYLTYPE location, ParserExprList* decls,
                         AstNode* expr);
 
-  AstNode* buildArrayTypeWithIndex(YYLTYPE location,
-                                   YYLTYPE locIndexExprs,
-                                    ParserExprList* indexExprs,
-                                    AstNode* domainExpr,
-                                    AstNode* typeExpr);
+  // In certain locations the expression '[a, b]' is interpreted as an
+  // array type and not an array literal, e.g., formal types and return
+  // types. Those are represented by a BracketLoop node, while an array
+  // literal is represented by the Array node.
+  AstNode* sanitizeArrayType(YYLTYPE location, AstNode* ast);
 
-  AstNode* buildArrayType(YYLTYPE location, YYLTYPE locDomainExprs,
-                          ParserExprList* domainExprs,
-                          AstNode* typeExpr);
+  // These different overloads for building bracket loop expressions exist
+  // to maintain compatibility between loops and array types. The
+  // loop variants have a more normalized form e.g., '[i in 1..100] i',
+  // while the array type variants may omit quite a few things in the case
+  // that the type is generic, e.g., just '[]'.
+  //
+  // .chpl: '[]'
+  AstNode* buildBracketLoopExpr(YYLTYPE location);
+
+  // .chpl: '[] int'
+  AstNode* buildBracketLoopExpr(YYLTYPE location, YYLTYPE locRightBracket,
+                                AstNode* bodyExpr);
+
+  // .chpl: '[i in 1..100] i' (multiple indices is an error in this case)
+  AstNode* buildBracketLoopExpr(YYLTYPE location,
+                                YYLTYPE locIndexExprs,
+                                ParserExprList* indexExprs,
+                                AstNode* iterandExpr,
+                                AstNode* bodyExpr);
+
+  // .chpl: '[i in 1..100] if i % 2 then i'
+  AstNode* buildBracketLoopExpr(YYLTYPE location,
+                                YYLTYPE locIndexExprs,
+                                YYLTYPE locIf,
+                                ParserExprList* indexExprs,
+                                AstNode* iterandExpr,
+                                AstNode* bodyIfCond,
+                                AstNode* bodyIfExpr);
+
+  // .chpl: '[a, b, c] int' || '[0..100] doSomething()'
+  AstNode* buildBracketLoopExpr(YYLTYPE location,
+                                YYLTYPE locIterandExprs,
+                                ParserExprList* iterandExprs,
+                                AstNode* bodyExpr);
 
   AstNode* buildTupleComponent(YYLTYPE location, PODUniqueString name);
   AstNode* buildTupleComponent(YYLTYPE location, ParserExprList* exprs);
@@ -577,13 +621,13 @@ struct ParserContext {
                                   ParserExprList* whenStmts);
 
   CommentsAndStmt
-  buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
+  buildForwardingDecl(YYLTYPE location, owned<AttributeGroup> attributeGroup,
                       owned<AstNode> expr,
                       VisibilityClause::LimitationKind limitationKind,
                       ParserExprList* limitations);
 
   CommentsAndStmt
-  buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
+  buildForwardingDecl(YYLTYPE location, owned<AttributeGroup> attributeGroup,
                       CommentsAndStmt cs);
 
   AstNode* buildInterfaceFormal(YYLTYPE location, PODUniqueString name);
@@ -624,4 +668,7 @@ struct ParserContext {
 
   CommentsAndStmt buildLabelStmt(YYLTYPE location, PODUniqueString name,
                                  CommentsAndStmt cs);
+
+  ParserExprList* buildSingleStmtRoutineBody(CommentsAndStmt cs,
+                                             YYLTYPE* warnLoc = NULL);
 };

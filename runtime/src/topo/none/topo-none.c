@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,6 +33,7 @@
 
 void chpl_topo_init(void) { }
 
+void chpl_topo_post_args_init(void) { }
 
 void chpl_topo_exit(void) { }
 
@@ -97,3 +98,13 @@ void chpl_topo_touchMemFromSubloc(void* p, size_t size, chpl_bool onlyInside,
 c_sublocid_t chpl_topo_getMemLocality(void* p) {
   return c_sublocid_any;
 }
+
+chpl_bool chpl_topo_isOversubscribed(void) {
+  return false;
+}
+
+chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
+                                            chpl_topo_pci_addr_t *outAddr) {
+  return NULL;
+}
+

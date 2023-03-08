@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -65,6 +65,10 @@ class Use final : public AstNode {
     #endif
   }
 
+  Use(Deserializer& des) : AstNode(asttags::Use, des) {
+    visibility_ = des.read<Decl::Visibility>();
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Use* rhs = other->toUse();
     return this->visibility_ == rhs->visibility_;
@@ -72,6 +76,8 @@ class Use final : public AstNode {
 
   void markUniqueStringsInner(Context* context) const override {
   }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
 
   Decl::Visibility visibility_;
 
@@ -114,6 +120,13 @@ class Use final : public AstNode {
     CHPL_ASSERT(ret->isVisibilityClause());
     return (const VisibilityClause*)ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(visibility_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Use);
 
 };
 

@@ -59,6 +59,9 @@ In addition, several optional components have additional requirements:
 
   * ``pkg-config`` is required for the ``mason system`` subcommands
 
+  * ``cmake`` 3.16 or newer is required to install ``chpl`` when choosing an
+    installation with ``./configure --chpl-home=/path/to/install``
+
 
 .. _readme-prereqs-installation:
 

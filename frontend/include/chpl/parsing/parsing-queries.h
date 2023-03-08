@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -76,11 +76,58 @@ void setFileText(Context* context, UniqueString path, std::string text);
 bool hasFileText(Context* context, const std::string& path);
 
 /**
-  This query reads a file (with the fileText query) and then parses it.
+ This unstable, experimental type provides basic support for '.dyno' files.
+ */
+class LibraryFile {
+  private:
+    UniqueString path_;
+    std::map<UniqueString, std::streamoff> offsets_;
+    Deserializer::stringCacheType cache_;
+    bool isUser_;
 
-  Errors encountered are stored in the returned 'BuilderResult' and are
-  not reported to the Context. They must be handled manually, or they
-  can be reported by calling the 'parse' query instead.
+  public:
+  LibraryFile() {}
+
+  LibraryFile(Context*, UniqueString);
+
+  UniqueString path() const { return path_; }
+
+  const std::map<UniqueString, std::streamoff>& offsets() const {
+    return offsets_;
+  }
+
+  const Deserializer::stringCacheType& stringCache() const { return cache_; }
+
+  bool isUser() const { return isUser_; }
+
+  static void generate(Context* context,
+                       std::vector<UniqueString> paths,
+                       std::string outFileName,
+                       bool isUser);
+
+  void mark(Context* context) const { }
+
+  static bool update(LibraryFile& keep, LibraryFile& addin) {
+    bool changed = false;
+    changed |= defaultUpdate(keep.path_, addin.path_);
+    changed |= defaultUpdate(keep.offsets_, addin.offsets_);
+    changed |= defaultUpdate(keep.cache_, addin.cache_);
+    changed |= defaultUpdateBasic(keep.isUser_, addin.isUser_);
+    return changed;
+  }
+
+};
+
+/**
+  This query reads the file from the given path and produces a LibraryFile,
+  which contains useful information about the library's contents.
+ */
+const LibraryFile& loadLibraryFile(Context* context, UniqueString libPath);
+
+void registerFilePathsInLibrary(Context* context, UniqueString& libPath);
+
+/**
+  This query reads a file (with the fileText query) and then parses it.
 
   The 'parentSymbolPath' is relevant for submodules that are in separate files
   with 'module include'. When parsing the included module for a 'module
@@ -92,6 +139,14 @@ bool hasFileText(Context* context, const std::string& path);
 const uast::BuilderResult&
 parseFileToBuilderResult(Context* context, UniqueString path,
                          UniqueString parentSymbolPath);
+
+/**
+  Like parseFileToBuilderResult but also runs post-parse checks on the resulting
+  builder result.
+ */
+const uast::BuilderResult&
+parseFileToBuilderResultAndCheck(Context* context, UniqueString path,
+                                 UniqueString parentSymbolPath);
 
 /**
   Like parseFileToBuilderResult but parses whatever file contained 'id'.
@@ -233,11 +288,13 @@ void setupModuleSearchPaths(Context* context,
 
 /**
  Returns true if the ID corresponds to something in an internal module.
+ If the internal module path is empty, this function returns false.
  */
 bool idIsInInternalModule(Context* context, ID id);
 
 /**
  Returns true if the ID corresponds to something in a bundled module.
+ If the bundled module path is empty, this function returns false.
  */
 bool idIsInBundledModule(Context* context, ID id);
 
@@ -268,6 +325,27 @@ uast::AstTag idToTag(Context* context, ID id);
  Returns true if the ID is a parenless function.
  */
 bool idIsParenlessFunction(Context* context, ID id);
+
+/**
+ Returns true if the ID refers to a private declaration.
+ */
+bool idIsPrivateDecl(Context* context, ID id);
+
+/**
+ Returns true if the ID is a function.
+ */
+bool idIsFunction(Context* context, ID id);
+
+/**
+ Returns true if the ID is a method.
+ */
+bool idIsMethod(Context* context, ID id);
+
+/**
+ If the ID represents a field in a record/class/union, returns
+ the name of that field. Otherwise, returns the empty string.
+ */
+UniqueString fieldIdToName(Context* context, ID id);
 
 /**
  Returns true if the ID is a field in a record/class/union.
@@ -322,6 +400,12 @@ bool idContainsFieldWithName(Context* context, ID typeDeclId,
 ID fieldIdWithName(Context* context, ID typeDeclId,
                    UniqueString fieldName);
 
+/**
+  Given an ID for a Record/Union/Class Decl, returns 'true'
+  if that Record/Union/Class Decl directly contains one or more
+  'forwarding' declarations.
+ */
+bool aggregateUsesForwarding(Context* context, ID typeDeclId);
 
 /**
  * Store config settings that were set from the command line using -s flags
@@ -334,6 +418,45 @@ void setConfigSettings(Context* context, ConfigSettingsList keys);
 const
 ConfigSettingsList& configSettings(Context* context);
 
+/**
+  Given an ID, returns the attributes associated with the ID. Only
+  declarations can have associated attributes.
+ */
+const uast::AttributeGroup* idToAttributeGroup(Context* context, ID id);
+
+/**
+  Given an ID 'idMention' representing a mention of a symbol, and an
+  ID 'idTarget' representing the symbol, determine if a deprecation
+  warning should be produced for 'idTarget' at 'idMention'. If so,
+  the warning will be reported to the context.
+
+  A warning will be reported to the context only once per revision.
+  It may not be reported if the context or compiler is configured
+  to suppress deprecation warnings.
+
+  The 'idMention' may refer to any AST but will most often be an
+  Identifier. The 'idTarget' should refer to a NamedDecl. If it does
+  not, then nothing is reported.
+*/
+void reportDeprecationWarningForId(Context* context, ID idMention,
+                                   ID idTarget);
+
+/**
+  Given an ID 'idMention' representing a mention of a symbol, and an
+  ID 'idTarget' representing the symbol, determine if an unstable
+  warning should be produced for 'idTarget' at 'idMention'. If so,
+  the warning will be reported to the context.
+
+  A warning will be reported to the context only once per revision.
+  It may not be reported if the context or compiler is configured
+  to suppress unstable warnings.
+
+  The 'idMention' may refer to any AST but will most often be an
+  Identifier. The 'idTarget' should refer to a NamedDecl. If it does
+  not, then nothing is reported.
+*/
+void reportUnstableWarningForId(Context* context, ID idMention,
+                                ID idTarget);
 
 } // end namespace parsing
 } // end namespace chpl

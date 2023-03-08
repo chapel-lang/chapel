@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -64,7 +64,7 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
                 skipCheck: bool, projectHome: string, tf="Mason.toml") throws {
 
   const tomlPath = '/'.join(projectHome, tf);
-  const openFile = openreader(tomlPath);
+  const openFile = openReader(tomlPath);
   const toml = parseToml(openFile);
   var newToml: shared Toml?;
 
@@ -257,7 +257,7 @@ private proc masonExternalRemove(toml: shared Toml, toRm: string) throws {
 
 /* Generate the modified Mason.toml */
 proc generateToml(toml: borrowed Toml, tomlPath: string) {
-  const tomlFile = open(tomlPath, iomode.cw);
+  const tomlFile = open(tomlPath, ioMode.cw);
   const tomlWriter = tomlFile.writer();
   tomlWriter.writeln(toml);
   tomlWriter.close();
@@ -267,7 +267,7 @@ proc generateToml(toml: borrowed Toml, tomlPath: string) {
 proc checkVersion(version: string) throws {
 
 //  const pattern = compile("([0-9].[0-9].[0-9][a-zA-Z]?)");
-  const pattern = compile("""^((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)$""");
+  const pattern = new regex("""^((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)$""");
   if !pattern.match(version) {
     throw new owned MasonError("Version formatting incorrect. ex. 1.2.3");
   }

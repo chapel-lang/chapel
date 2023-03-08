@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -106,7 +106,7 @@ proc masonInit(args: [] string) throws {
                                  "`mason init` to initialize a new project.");
     } else if isDir(path + '/src/') {
       throw new owned MasonError("/src/ directory already exists for current project. " +
-                                 "Remove or rename the /src/ direcotry and rerun " +
+                                 "Remove or rename the /src/ directory and rerun " +
                                  "`mason init` to initialize a new project. " +
                                  "Alternatively, run `mason new --light` to add only a " +
                                  "manifest file.");

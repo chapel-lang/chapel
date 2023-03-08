@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -55,10 +55,10 @@ module OS {
     */
     extern type blkcnt_t;
     pragma "no doc"
-    inline operator :(x:blkcnt_t, type t:c_int)
+    inline operator :(x:blkcnt_t, type t:c_int) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:c_int, type t:blkcnt_t)
+    inline operator :(x:c_int, type t:blkcnt_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -67,10 +67,10 @@ module OS {
     */
     extern type blksize_t;
     pragma "no doc"
-    inline operator :(x:blksize_t, type t:c_int)
+    inline operator :(x:blksize_t, type t:c_int) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:c_int, type t:blksize_t)
+    inline operator :(x:c_int, type t:blksize_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -79,10 +79,10 @@ module OS {
     */
     extern type dev_t;
     pragma "no doc"
-    inline operator :(x:dev_t, type t:c_int)
+    inline operator :(x:dev_t, type t:c_int) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:c_int, type t:dev_t)
+    inline operator :(x:c_int, type t:dev_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -91,10 +91,10 @@ module OS {
     */
     extern type gid_t;
     pragma "no doc"
-    inline operator :(x:gid_t, type t:c_int)
+    inline operator :(x:gid_t, type t:c_int) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:c_int, type t:gid_t)
+    inline operator :(x:c_int, type t:gid_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -103,10 +103,10 @@ module OS {
     */
     extern type ino_t;
     pragma "no doc"
-    inline operator :(x:ino_t, type t:c_uint)
+    inline operator :(x:ino_t, type t:c_uint) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:c_uint, type t:ino_t)
+    inline operator :(x:c_uint, type t:ino_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -117,16 +117,16 @@ module OS {
     */
     extern type mode_t;
     pragma "no doc"
-    inline operator &(a: mode_t, b: mode_t)
+    inline operator &(a: mode_t, b: mode_t) do
       return (a:c_int & b:c_int):mode_t;
     pragma "no doc"
-    inline operator |(a: mode_t, b: mode_t)
+    inline operator |(a: mode_t, b: mode_t) do
       return (a:c_int | b:c_int):mode_t;
     pragma "no doc"
-    inline operator :(x:mode_t, type t:c_int)
+    inline operator :(x:mode_t, type t:c_int) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:c_int, type t:mode_t)
+    inline operator :(x:c_int, type t:mode_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -135,10 +135,10 @@ module OS {
     */
     extern type nlink_t;
     pragma "no doc"
-    inline operator :(x:nlink_t, type t:c_int)
+    inline operator :(x:nlink_t, type t:c_int) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:c_int, type t:nlink_t)
+    inline operator :(x:c_int, type t:nlink_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -147,16 +147,16 @@ module OS {
     */
     extern type off_t;
     pragma "no doc"
-    inline operator :(x:off_t, type t:c_int)
+    inline operator :(x:off_t, type t:c_int) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:c_int, type t:off_t)
+    inline operator :(x:c_int, type t:off_t) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:off_t, type t:integral)
+    inline operator :(x:off_t, type t:integral) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:integral, type t:off_t)
+    inline operator :(x:integral, type t:off_t) do
       return __primitive("cast", t, x);
 
 
@@ -166,10 +166,10 @@ module OS {
     */
     extern type suseconds_t;
     pragma "no doc"
-    inline operator :(x:integral, type t:suseconds_t)
+    inline operator :(x:integral, type t:suseconds_t) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:suseconds_t, type t:integral)
+    inline operator :(x:suseconds_t, type t:integral) do
       return __primitive("cast", t, x);
 
     /*
@@ -178,10 +178,10 @@ module OS {
     */
     extern type time_t;
     pragma "no doc"
-    inline operator :(x:integral, type t:time_t)
+    inline operator :(x:integral, type t:time_t) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:time_t, type t:integral)
+    inline operator :(x:time_t, type t:integral) do
       return __primitive("cast", t, x);
 
     /*
@@ -190,10 +190,10 @@ module OS {
     */
     extern type uid_t;
     pragma "no doc"
-    inline operator :(x:uid_t, type t:c_int)
+    inline operator :(x:uid_t, type t:c_int) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:c_int, type t:uid_t)
+    inline operator :(x:c_int, type t:uid_t) do
       return __primitive("cast", t, x);
 
     //
@@ -986,39 +986,39 @@ module OS {
     return (qio_err_eq(a,b) != 0:c_int);
   }
   pragma "no doc"
-  inline operator errorCode.==(a: errorCode, b: int(32))
+  inline operator errorCode.==(a: errorCode, b: int(32)) do
     return (qio_err_to_int(a) == b:int(32));
   pragma "no doc"
-  inline operator errorCode.==(a: errorCode, b: int(64))
+  inline operator errorCode.==(a: errorCode, b: int(64)) do
     return (qio_err_to_int(a) == b:int(32));
   pragma "no doc"
-  inline operator errorCode.==(a: int(32), b: errorCode)
+  inline operator errorCode.==(a: int(32), b: errorCode) do
     return (a:int(32) == qio_err_to_int(b));
   pragma "no doc"
-  inline operator errorCode.==(a: int(64), b: errorCode)
+  inline operator errorCode.==(a: int(64), b: errorCode) do
     return (a:int(32) == qio_err_to_int(b));
   pragma "no doc"
-  inline operator errorCode.!=(a: errorCode, b: errorCode) return !(a == b);
+  inline operator errorCode.!=(a: errorCode, b: errorCode) do return !(a == b);
   pragma "no doc"
-  inline operator errorCode.!=(a: errorCode, b: int(32)) return !(a == b);
+  inline operator errorCode.!=(a: errorCode, b: int(32)) do return !(a == b);
   pragma "no doc"
-  inline operator errorCode.!=(a: errorCode, b: int(64)) return !(a == b);
+  inline operator errorCode.!=(a: errorCode, b: int(64)) do return !(a == b);
   pragma "no doc"
-  inline operator errorCode.!=(a: int(32), b: errorCode) return !(a == b);
+  inline operator errorCode.!=(a: int(32), b: errorCode) do return !(a == b);
   pragma "no doc"
-  inline operator errorCode.!=(a: int(64), b: errorCode) return !(a == b);
+  inline operator errorCode.!=(a: int(64), b: errorCode) do return !(a == b);
   pragma "no doc"
-  inline operator errorCode.!(a: errorCode) return (qio_err_iserr(a) == 0:c_int);
+  inline operator errorCode.!(a: errorCode) do return (qio_err_iserr(a) == 0:c_int);
   pragma "no doc"
-  inline proc errorCode.chpl_cond_test_method() return (qio_err_iserr(this) != 0:c_int);
+  inline proc errorCode.chpl_cond_test_method() do return (qio_err_iserr(this) != 0:c_int);
   pragma "no doc"
-  inline operator :(x: errorCode, type t: int(32)) return qio_err_to_int(x);
+  inline operator :(x: errorCode, type t: int(32)) do return qio_err_to_int(x);
   pragma "no doc"
-  inline operator :(x: errorCode, type t: int(64)) return qio_err_to_int(x):int(64);
+  inline operator :(x: errorCode, type t: int(64)) do return qio_err_to_int(x):int(64);
   pragma "no doc"
-  inline operator :(x: int(32), type t: errorCode) return qio_int_to_err(x);
+  inline operator :(x: int(32), type t: errorCode) do return qio_int_to_err(x);
   pragma "no doc"
-  inline operator :(x: int(64), type t: errorCode) return qio_int_to_err(x:int(32));
+  inline operator :(x: int(64), type t: errorCode) do return qio_int_to_err(x:int(32));
   pragma "no doc"
   inline operator errorCode.=(ref ret:errorCode, x:errorCode) { __primitive("=", ret, x); }
   pragma "no doc"
@@ -1043,9 +1043,9 @@ module OS {
   private extern proc chpl_macro_int_EEOF():c_int;
   private extern proc chpl_macro_int_ESHORT():c_int;
   private extern proc chpl_macro_int_EFORMAT():c_int;
-  private inline proc EEOF return chpl_macro_int_EEOF():c_int;
-  private inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
-  private inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
+  private inline proc EEOF do return chpl_macro_int_EEOF():c_int;
+  private inline proc ESHORT do return chpl_macro_int_ESHORT():c_int;
+  private inline proc EFORMAT do return chpl_macro_int_EFORMAT():c_int;
 
   /*
      :class:`SystemError` is a base class for :class:`Errors.Error` s
@@ -1082,6 +1082,42 @@ module OS {
   }
 
   /*
+    Gets the corresponding Chapel-specific IO error class for the given
+    ``errorCode``, or simply the matching :class:`SystemError` subtype if this
+    is not a Chapel-specific IO error.
+  */
+  pragma "no doc"
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc createSystemOrChplError(err: errorCode, details: string = ""): Error {
+    // extract qioerr pointer error message, if present
+    var strerror_err: c_int = 0;
+    var errstr = sys_strerror_syserr_str(err, strerror_err);
+    var err_msg: string;
+    try! {
+      err_msg = createStringWithOwnedBuffer(errstr);
+    }
+
+    // return appropriate error
+    select err {
+      when EEOF do return new owned EofError(details, err_msg);
+      when ESHORT do return new owned UnexpectedEofError(details, err_msg);
+      when EFORMAT do return new owned BadFormatError(details, err_msg);
+      otherwise do return createSystemError(err, details);
+    }
+  }
+
+  /*
+    Version of createSystemOrChplError accepting an integer error code.
+  */
+  pragma "no doc"
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc createSystemOrChplError(err: int, details: string = ""): Error {
+    return createSystemOrChplError(err:errorCode, details);
+  }
+
+  /*
     Return the matching :class:`SystemError` subtype for a given ``errorCode``,
     with an optional string containing extra details.
 
@@ -1090,7 +1126,7 @@ module OS {
   */
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc createSystemError(err: errorCode, details: string = "") {
+  proc createSystemError(err: errorCode, details: string = ""): SystemError {
     if err == EAGAIN || err == EALREADY || err == EWOULDBLOCK || err == EINPROGRESS {
       return new owned BlockingIoError(details, err);
     } else if err == ECHILD {
@@ -1119,12 +1155,6 @@ module OS {
       return new owned ProcessLookupError(details, err);
     } else if err == ETIMEDOUT {
       return new owned TimeoutError(details, err);
-    } else if err == EEOF {
-      return new owned EofError(details, err);
-    } else if err == ESHORT {
-      return new owned UnexpectedEofError(details, err);
-    } else if err == EFORMAT {
-      return new owned BadFormatError(details, err);
     } else if err == EIO {
       return new owned IoError(err, details);
     }
@@ -1298,44 +1328,128 @@ module OS {
   }
 
   /*
-     :class:`IoError` is the subclass of :class:`SystemError` that serves as the
-     base class for all errors regarding inputs and their formatting.
-     They are typically not directly generated by the OS, but they are
-     used and emitted by the IO module.
+     :class:`IoError` is the subclass of :class:`SystemError` corresponding to
+     EIO.
   */
   class IoError : SystemError {
-    proc init(err: errorCode, details: string = "") {
+    proc init(err: errorCode = EIO, details: string = "") {
       super.init(err, details);
     }
   }
 
   /*
-     :class:`EofError` is the subclass of :class:`IoError` corresponding to
-     :const:`IO.EEOF`.
+     :class:`EofError` is the the Chapel-specific error corresponding to
+     encountering end-of-file.
   */
-  class EofError : IoError {
-    proc init(details: string = "", err: errorCode = EEOF:errorCode) {
-      super.init(err, details);
+  class EofError : Error {
+    var details: string;
+
+    proc init(details: string = "", err_msg: string = "") {
+      this.details = details;
+      this._msg = err_msg;
+    }
+
+    override proc message() {
+      var generatedMsg: string;
+
+      if !_msg.isEmpty() {
+        generatedMsg += _msg;
+      } else {
+        // use default error message based on error code
+        var err:errorCode = EEOF;
+        var strerror_err_ignore: c_int = 0;
+        var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
+        var errorcode_msg: string;
+        try! {
+          errorcode_msg = createStringWithOwnedBuffer(errstr);
+        }
+        generatedMsg += errorcode_msg;
+      }
+
+      // add details if present
+      if !details.isEmpty() then
+        generatedMsg += " (" + details + ")";
+
+      return generatedMsg;
     }
   }
 
   /*
-     :class:`UnexpectedEofError` is the subclass of :class:`IoError`
-     corresponding to :const:`IO.ESHORT`.
+     :class:`UnexpectedEofError` is the Chapel-specific error
+     corresponding to encountering end-of-file before the requested amount of
+     input could be read.
+
+     This error can also occur on some writing operations when a
+     :record:~IO.fileWriter's range has been specified, and the write exceeds
+     the valid range.
   */
-  class UnexpectedEofError : IoError {
-    proc init(details: string = "", err: errorCode = ESHORT:errorCode) {
-      super.init(err, details);
+  class UnexpectedEofError : Error {
+    var details: string;
+
+    proc init(details: string = "", err_msg: string = "") {
+      this.details = details;
+      this._msg = err_msg;
+    }
+
+    override proc message() {
+      var generatedMsg: string;
+
+      if !_msg.isEmpty() {
+        generatedMsg += _msg;
+      } else {
+        // use default error message based on error code
+        var err:errorCode = ESHORT;
+        var strerror_err_ignore: c_int = 0;
+        var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
+        var errorcode_msg: string;
+        try! {
+          errorcode_msg = createStringWithOwnedBuffer(errstr);
+        }
+        generatedMsg += errorcode_msg;
+      }
+
+      // add details if present
+      if !details.isEmpty() then
+        generatedMsg += " (" + details + ")";
+
+      return generatedMsg;
     }
   }
 
   /*
-     :class:`BadFormatError` is the subclass of :class:`IoError` corresponding
-     to :const:`IO.EFORMAT`.
+     :class:`BadFormatError` is the Chapel-specific error corresponding
+     to incorrectly-formatted input.
   */
-  class BadFormatError : IoError {
-    proc init(details: string = "", err: errorCode = EFORMAT:errorCode) {
-      super.init(err, details);
+  class BadFormatError : Error {
+    var details: string;
+
+    proc init(details: string = "", err_msg: string = "") {
+      this.details = details;
+      this._msg = err_msg;
+    }
+
+    override proc message() {
+      var generatedMsg: string;
+
+      if !_msg.isEmpty() {
+        generatedMsg += _msg;
+      } else {
+        // use default error message based on error code
+        var err:errorCode = EFORMAT;
+        var strerror_err_ignore: c_int = 0;
+        var errstr = sys_strerror_syserr_str(err, strerror_err_ignore);
+        var errorcode_msg: string;
+        try! {
+          errorcode_msg = createStringWithOwnedBuffer(errstr);
+        }
+        generatedMsg += errorcode_msg;
+      }
+
+      // add details if present
+      if !details.isEmpty() then
+        generatedMsg += " (" + details + ")";
+
+      return generatedMsg;
     }
   }
 
@@ -1343,7 +1457,7 @@ module OS {
     :class:`InsufficientCapacityError` is a subclass of :class:`IoError`
     indicating that an IO operation required more storage than was provided
   */
-  class InsufficientCapacityError: IoError {
+  class InsufficientCapacityError : IoError {
     proc init(details: string = "") {
       super.init(ERANGE: errorCode, details);
     }
@@ -1358,7 +1472,11 @@ module OS {
   }
 
   // here's what we need from Sys
-  private extern proc sys_strerror_syserr_str(error:errorCode, out err_in_strerror:c_int):c_string;
+  private extern proc
+  sys_strerror_syserr_str(error
+                          : errorCode, out err_in_strerror
+                          : c_int)
+      : c_string;
 
   /* This function takes in a string and returns it in double-quotes,
      with internal double-quotes escaped with backslash.
@@ -1384,8 +1502,8 @@ module OS {
     }
 }
 
-  /* Create and throw a :class:`SystemError` if an error occurred, formatting a
-     useful message based on the provided arguments. Do nothing if the error
+  /* Create and throw an :class:`Errors.Error` if an error occurred, formatting
+     a useful message based on the provided arguments. Do nothing if the error
      argument does not indicate an error occurred.
 
      :arg error: the error code
@@ -1393,7 +1511,7 @@ module OS {
      :arg path: optionally, a path to include in the thrown error
      :arg offset: optionally, an offset to include in the thrown error
 
-     :throws SystemError: A subtype is thrown when the error argument
+     :throws Error: A subtype is thrown when the error argument
                           indicates an error occurred
  */
   pragma "insert line file info"
@@ -1404,7 +1522,7 @@ module OS {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
       var   details    = msg + " with path " + quotedpath +
                          " offset " + offset:string;
-      throw createSystemError(error, details);
+      throw createSystemOrChplError(error, details);
     }
   }
 
@@ -1416,7 +1534,7 @@ module OS {
     if error {
       const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
       var   details    = msg + " with path " + quotedpath;
-      throw createSystemError(error, details);
+      throw createSystemOrChplError(error, details);
     }
   }
 
@@ -1425,7 +1543,7 @@ module OS {
   pragma "always propagate line file info"
   proc ioerror(error:errorCode, msg:string) throws
   {
-    if error then throw createSystemError(error, msg);
+    if error then throw createSystemOrChplError(error, msg);
   }
 
   /* Create and throw an :class:`IoError` and include a formatted message
@@ -1445,7 +1563,7 @@ module OS {
     const quotedpath = quote_string(path, path.numBytes:c_ssize_t);
     const details    = errstr + " " + msg + " with path " + quotedpath +
                        " offset " + offset:string;
-    throw createSystemError(EIO:errorCode, details);
+    throw createSystemOrChplError(EIO:errorCode, details);
   }
 
   /* Convert a errorCode code to a human-readable string describing the error.

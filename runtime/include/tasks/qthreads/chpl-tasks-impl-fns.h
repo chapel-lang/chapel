@@ -6,7 +6,7 @@
 **************************************************************************/
 
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -50,7 +50,7 @@ extern
 #ifdef __cplusplus
 "C"
 #endif
-volatile int chpl_qthread_done_initializing;
+volatile int chpl_qthread_initialized;
 
 #define CHPL_TASK_STD_MODULES_INITIALIZED chpl_task_stdModulesInitialized
 void chpl_task_stdModulesInitialized(void);
@@ -86,7 +86,7 @@ static inline chpl_qthread_tls_t* chpl_qthread_get_tasklocal(void)
 {
     chpl_qthread_tls_t* tls;
 
-    if (chpl_qthread_done_initializing) {
+    if (chpl_qthread_initialized) {
         tls = (chpl_qthread_tls_t*)
                qthread_get_tasklocal(sizeof(chpl_qthread_tls_t));
         if (tls == NULL) {

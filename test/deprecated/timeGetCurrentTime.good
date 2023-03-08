@@ -1,0 +1,1 @@
+timeGetCurrentTime.chpl:3: warning: 'getCurrentTime()' is deprecated please use 'timeSinceEpoch()' instead

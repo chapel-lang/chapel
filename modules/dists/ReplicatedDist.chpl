@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -146,7 +146,7 @@ override proc Replicated.dsiDestroyDist() {
 
 // privatization
 
-override proc Replicated.dsiSupportsPrivatization() param return true;
+override proc Replicated.dsiSupportsPrivatization() param do return true;
 
 proc Replicated.dsiGetPrivatizeData() {
   if traceReplicatedDist then writeln("Replicated.dsiGetPrivatizeData");
@@ -192,7 +192,7 @@ class ReplicatedDom : BaseRectangularDom {
   // NOTE: if they ever change after the initializer - Reprivatize them
   var localDoms: [dist.targetLocDom] unmanaged LocReplicatedDom(rank, idxType, stridable)?;
 
-  proc numReplicands return localDoms.sizeAs(int);
+  proc numReplicands do return localDoms.sizeAs(int);
 
   //
   // helper function to get the local domain safely
@@ -227,7 +227,7 @@ class LocReplicatedDom {
 
 // privatization
 
-override proc ReplicatedDom.dsiSupportsPrivatization() param return true;
+override proc ReplicatedDom.dsiSupportsPrivatization() param do return true;
 
 record ReplicatedDomPrvData {
   var distpid;
@@ -302,25 +302,25 @@ proc Replicated.dsiIndexToLocale(indexx): locale {
 }
 
 // common redirects
-override proc ReplicatedDom.dsiLow           return whole.lowBound;
-override proc ReplicatedDom.dsiHigh          return whole.highBound;
-override proc ReplicatedDom.dsiAlignedLow    return whole.low;
-override proc ReplicatedDom.dsiAlignedHigh   return whole.high;
-override proc ReplicatedDom.dsiFirst         return whole.first;
-override proc ReplicatedDom.dsiLast          return whole.last;
-override proc ReplicatedDom.dsiStride        return whole.stride;
-override proc ReplicatedDom.dsiAlignment     return whole.alignment;
-proc ReplicatedDom.dsiNumIndices    return whole.sizeAs(uint);
-proc ReplicatedDom.dsiDim(d)        return whole.dim(d);
-proc ReplicatedDom.dsiDim(param d)  return whole.dim(d);
-proc ReplicatedDom.dsiDims()        return whole.dims();
-//proc ReplicatedDom.dsiGetIndices()  return whole.getIndices();
-proc ReplicatedDom.dsiMember(i)     return whole.contains(i);
-proc ReplicatedDom.doiToString()    return whole:string;
+override proc ReplicatedDom.dsiLow do           return whole.lowBound;
+override proc ReplicatedDom.dsiHigh do          return whole.highBound;
+override proc ReplicatedDom.dsiAlignedLow do    return whole.low;
+override proc ReplicatedDom.dsiAlignedHigh do   return whole.high;
+override proc ReplicatedDom.dsiFirst do         return whole.first;
+override proc ReplicatedDom.dsiLast do          return whole.last;
+override proc ReplicatedDom.dsiStride do        return whole.stride;
+override proc ReplicatedDom.dsiAlignment do     return whole.alignment;
+proc ReplicatedDom.dsiNumIndices do    return whole.sizeAs(uint);
+proc ReplicatedDom.dsiDim(d) do        return whole.dim(d);
+proc ReplicatedDom.dsiDim(param d) do  return whole.dim(d);
+proc ReplicatedDom.dsiDims() do        return whole.dims();
+//proc ReplicatedDom.dsiGetIndices() do  return whole.getIndices();
+proc ReplicatedDom.dsiMember(i) do     return whole.contains(i);
+proc ReplicatedDom.doiToString() do    return whole:string;
 proc ReplicatedDom.dsiSerialWrite(x) { x.write(whole); }
-proc ReplicatedDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
-override proc ReplicatedDom.dsiIndexOrder(i)              return whole.indexOrder(i);
-override proc ReplicatedDom.dsiMyDist()                   return dist;
+proc ReplicatedDom.dsiLocalSlice(param stridable, ranges) do return whole((...ranges));
+override proc ReplicatedDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
+override proc ReplicatedDom.dsiMyDist() do                   return dist;
 
 // Call 'setIndices' in order to leverage DefaultRectangular's handling of
 // assignments from unstrided domains to strided domains.
@@ -499,12 +499,12 @@ proc ReplicatedArr.rank param {
 }
 
 // The same across all domain maps
-override proc ReplicatedArr.dsiGetBaseDom() return dom;
+override proc ReplicatedArr.dsiGetBaseDom() do return dom;
 
 
 // privatization
 
-override proc ReplicatedArr.dsiSupportsPrivatization() param return true;
+override proc ReplicatedArr.dsiSupportsPrivatization() param do return true;
 
 record ReplicatedArrPrvData {
   var dompid;
@@ -671,8 +671,8 @@ proc ReplicatedArr.dsiTargetLocales() const ref {
   return dom.dist.targetLocales;
 }
 
-proc ReplicatedDom.dsiHasSingleLocalSubdomain() param  return true;
-proc ReplicatedArr.dsiHasSingleLocalSubdomain() param  return true;
+proc ReplicatedDom.dsiHasSingleLocalSubdomain() param do  return true;
+proc ReplicatedArr.dsiHasSingleLocalSubdomain() param do  return true;
 
 proc ReplicatedDom.dsiLocalSubdomain(loc: locale) {
   if localDoms.domain.contains(loc.id) then

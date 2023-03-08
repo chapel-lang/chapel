@@ -36,7 +36,7 @@ proc fileGrep(toFind: string, fname: string) throws {
 
   var toRead: file;
   try! {
-    toRead = open(fname, iomode.r);
+    toRead = open(fname, ioMode.r);
   }
   var r = toRead.reader();
   defer {
@@ -44,7 +44,7 @@ proc fileGrep(toFind: string, fname: string) throws {
   }
 
   // Use regex library to compile into searchable regex
-  var regEx = compile(toFind);
+  var regEx = new regex(toFind);
   var line:string;
   var lineNum = 1;
 

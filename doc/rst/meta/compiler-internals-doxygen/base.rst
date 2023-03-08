@@ -55,6 +55,10 @@ namespace. The entries may not be exhaustive.
    :members:
    :undoc-members:
 
+.. doxygenclass:: chpl::IdOrLocation
+   :members:
+   :undoc-members:
+
 .. doxygenclass:: chpl::UniqueString
    :members:
    :undoc-members:
@@ -70,3 +74,11 @@ namespace. The entries may not be exhaustive.
 .. doxygentypedef:: chpl::owned
 
 .. doxygenenum:: chpl::StringifyKind
+
+.. doxygenclass:: chpl::Serializer
+   :members:
+   :undoc-members:
+
+.. doxygenclass:: chpl::Deserializer
+   :members:
+   :undoc-members:

@@ -1,0 +1,9 @@
+overloadbools3.chpl:10: warning: 'bool(w)' is deprecated, please use 'bool' instead
+overloadbools3.chpl:11: warning: 'bool(w)' is deprecated, please use 'bool' instead
+overloadbools3.chpl:1: In function 'foo':
+overloadbools3.chpl:1: warning: 'bool(w)' is deprecated, please use 'bool' instead
+overloadbools3.chpl:5: In function 'foo':
+overloadbools3.chpl:5: warning: 'bool(w)' is deprecated, please use 'bool' instead
+overloadbools3.chpl:13: error: ambiguous call 'foo(bool)'
+overloadbools3.chpl:1: note: candidates are: foo(x: bool(32))
+overloadbools3.chpl:5: note:                 foo(x: bool(64))

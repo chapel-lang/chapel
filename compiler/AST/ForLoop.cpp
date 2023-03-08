@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -415,6 +415,8 @@ ForLoop* ForLoop::copyInner(SymbolMap* map)
   // MPF 2020-01-21: It seems it should also copy mLoweredForall,
   // but doing so causes problems in lowerIterators.
   retval->mIsForExpr        = mIsForExpr;
+
+  retval->userLabel         = userLabel;
 
   for_alist(expr, body)
     retval->insertAtTail(expr->copy(map, true));

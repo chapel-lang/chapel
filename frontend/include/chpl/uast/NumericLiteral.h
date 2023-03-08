@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -41,6 +41,11 @@ class NumericLiteral : public Literal {
       text_(text)
   { }
 
+  NumericLiteral(AstTag tag, Deserializer& des)
+    : Literal(tag, des) {
+    text_ = des.read<UniqueString>();
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     auto lhs = this;
     auto* rhs = (const NumericLiteral<ValueT, ParamT>*) other;
@@ -50,6 +55,9 @@ class NumericLiteral : public Literal {
   void markUniqueStringsInner(Context* context) const override {
     literalMarkUniqueStringsInner(context);
     text_.mark(context);
+  }
+  void dumpFieldsInner(const DumpSettings& s) const override {
+    s.out << " " << value();
   }
 
  public:
@@ -61,6 +69,11 @@ class NumericLiteral : public Literal {
   ValueT value() const {
     const ParamT* p = (const ParamT*) value_;
     return p->value();
+  }
+
+  void serialize(Serializer& ser) const override {
+    Literal::serialize(ser);
+    ser.write(text_);
   }
 
   /**

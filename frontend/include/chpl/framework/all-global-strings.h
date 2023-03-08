@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,6 +39,7 @@ X(complete       , "complete")
 X(deinit         , "deinit")
 X(dmapped        , "dmapped")
 X(domain         , "domain")
+X(generate       , "generate")
 X(imag_          , "imag")
 X(index          , "index")
 X(init           , "init")
@@ -76,6 +77,7 @@ X(uint_          , "uint")
 X(unmanaged      , "unmanaged")
 X(void_          , "void")
 
+X(atMark         , "@")
 X(equals         , "=")
 X(question       , "?")
 X(tripleDot      , "...")

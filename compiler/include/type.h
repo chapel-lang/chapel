@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,12 +25,17 @@
 
 #include "alist.h"
 #include "genret.h"
+#include "intents.h"
 
 #include "../../frontend/lib/immediates/num.h"
+
+#include "chpl/util/hash.h"
 
 #include <cstdio>
 #include <map>
 #include <set>
+#include <sstream>
+#include <string>
 #include <vector>
 
 /*
@@ -410,6 +415,99 @@ public:
   static ConstrainedType* buildType(const char* name, ConstrainedTypeUse use);
 };
 
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+class FunctionType final : public Type {
+ public:
+  enum Kind { PROC, ITER, OPERATOR };
+
+  struct Formal {
+    Type* type = nullptr;
+    IntentTag intent = INTENT_BLANK;
+    const char* name = nullptr;
+    bool operator==(const Formal& other) const;
+    size_t hash() const;
+    bool isGeneric() const;
+  };
+
+ private:
+  Kind kind_;
+  std::vector<Formal> formals_;
+  RetTag returnIntent_;
+  Type* returnType_;
+  bool throws_;
+  bool isAnyFormalNamed_;
+  const char* userTypeString_;
+
+  static const char*
+  buildUserFacingTypeString(Kind kind,
+                            const std::vector<Formal>& formals,
+                            RetTag returnIntent,
+                            Type* returntType,
+                            bool throws);
+
+  FunctionType(Kind kind, std::vector<Formal> formals,
+               RetTag returnIntent,
+               Type* returnType,
+               bool throws,
+               bool isAnyFormalNamed,
+               const char* userTypeString);
+
+  static FunctionType* create(Kind kind, std::vector<Formal> formals,
+                              RetTag returnIntent,
+                              Type* returnType,
+                              bool throws);
+
+ public:
+  void verify() override;
+  void accept(AstVisitor* visitor) override;
+  DECLARE_COPY(FunctionType);
+  FunctionType* copyInner(SymbolMap* map) override;
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
+  void codegenDef() override;
+
+  /*** Result is shared by functions of the same type. */
+  static FunctionType* get(Kind kind, std::vector<Formal> formals,
+                           RetTag returnIntent,
+                           Type* returnType,
+                           bool throws);
+
+  /*** Result is shared by functions of the same type. Does not resolve. */
+  static FunctionType* get(FnSymbol* fn);
+
+  Kind kind() const;
+  int numFormals() const;
+  const Formal* formal(int idx) const;
+  RetTag returnIntent() const;
+  Type* returnType() const;
+  bool throws() const;
+  bool isAnyFormalNamed() const;
+  bool isGeneric() const;
+  const char* toString() const;
+  const char* toStringMangledForCodegen() const;
+  size_t hash() const;
+  bool equals(const FunctionType* rhs) const;
+
+  static FunctionType::Kind determineKind(FnSymbol* fn);
+  static bool isIntentSameAsDefault(IntentTag intent, Type* t);
+
+  // Prints things in a 'user facing' fashion, no mangling.
+  static const char* kindToString(Kind kind);
+  static const char* intentToString(IntentTag intent);
+  static const char* typeToString(Type* t);
+  static const char* returnIntentToString(RetTag intent);
+
+  // Intended for codegen.
+  static const char* intentTagMnemonicMangled(IntentTag tag);
+  static const char* retTagMnemonicMangled(RetTag tag);
+
+
+};
 
 /************************************* | **************************************
 *                                                                             *

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -51,6 +51,9 @@ class On final : public SimpleBlockLike {
                       numBodyStmts) {
   }
 
+  On(Deserializer& des)
+    : SimpleBlockLike(asttags::On, des) { }
+
   bool contentsMatchInner(const AstNode* other) const override {
     return simpleBlockLikeContentsMatchInner(other);
   }
@@ -58,6 +61,8 @@ class On final : public SimpleBlockLike {
   void markUniqueStringsInner(Context* context) const override {
     simpleBlockLikeMarkUniqueStringsInner(context);
   }
+
+  std::string dumpChildLabelInner(int i) const override;
 
   static const int8_t destChildNum_ = 0;
 
@@ -78,6 +83,12 @@ class On final : public SimpleBlockLike {
     auto ret = child(destChildNum_);
     return ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    SimpleBlockLike::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(On);
 
 };
 

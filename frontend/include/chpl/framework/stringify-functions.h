@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -410,7 +410,8 @@ template<typename... ArgTs> struct stringify<std::tuple<ArgTs...>> {
     dump(DEBUG_DETAIL); \
   } \
   void T::dump(chpl::StringifyKind debug_level) const { \
-    stringify(std::cerr, debug_level); \
+    stringify(std::cout, debug_level); \
+    std::cout << std::endl; \
   }
 
 

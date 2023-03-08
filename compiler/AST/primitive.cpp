@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -481,6 +481,21 @@ returnInfoToUnmanaged(CallExpr* call) {
   return QualifiedType(t, QUAL_VAL);
 }
 
+static QualifiedType returnInfoSecondActualTypeSymbol(CallExpr* call) {
+  auto ret = QualifiedType(dtUnknown, QUAL_VAL);
+
+  if (call->numActuals() >= 2) {
+    if (SymExpr* se = toSymExpr(call->get(2))) {
+      if (auto ts = toTypeSymbol(se->symbol())) {
+        Type* t = ts->type;
+        ret = QualifiedType(t, QUAL_VAL);
+      }
+    }
+  }
+
+  return ret;
+}
+
 static QualifiedType
 returnInfoToBorrowed(CallExpr* call) {
   Type* t = call->get(1)->getValType();
@@ -707,6 +722,9 @@ initPrimitive() {
   //
   // if the optional type is provided, it should match PRIM_INIT_VAR_SPLIT_DECL.
   prim_def(PRIM_INIT_VAR_SPLIT_INIT, "init var split init",   returnInfoVoid);
+
+  // indicates the body of the initializer is now in Phase 2
+  prim_def(PRIM_INIT_DONE, "init done", returnInfoVoid);
 
   prim_def(PRIM_REF_TO_STRING, "ref to string", returnInfoStringC);
   prim_def(PRIM_RETURN, "return", returnInfoFirst, true);
@@ -1054,8 +1072,8 @@ initPrimitive() {
 
   prim_def(PRIM_INT_ERROR, "_internal_error", returnInfoVoid, true);
 
-  prim_def(PRIM_CAPTURE_FN_FOR_CHPL, "capture fn for chpl", returnInfoVoid);
-  prim_def(PRIM_CAPTURE_FN_FOR_C, "capture fn for C", returnInfoVoid);
+  prim_def(PRIM_CAPTURE_FN, "capture fn", returnInfoVoid);
+  prim_def(PRIM_CAPTURE_FN_TO_CLASS, "capture fn to class", returnInfoVoid);
   prim_def(PRIM_CREATE_FN_TYPE, "create fn type", returnInfoVoid);
 
   prim_def(PRIM_STRING_COMPARE, "string_compare", returnInfoDefaultInt, true);
@@ -1070,6 +1088,8 @@ initPrimitive() {
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
   // Cast the object argument to void*.
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoCVoidPtr, true, false);
+  // Cast to the second argument at codegen time.
+  prim_def(PRIM_CAST_TO_TYPE, "cast_to_type", returnInfoSecondActualTypeSymbol, true, false);
   prim_def(PRIM_STRING_SELECT, "string_select", returnInfoStringC, true, true);
   prim_def(PRIM_SLEEP, "sleep", returnInfoVoid, true);
   prim_def(PRIM_REAL_TO_INT, "real2int", returnInfoDefaultInt);

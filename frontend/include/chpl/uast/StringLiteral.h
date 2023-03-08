@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -38,6 +38,10 @@ class StringLiteral final : public StringLikeLiteral {
     : StringLikeLiteral(asttags::StringLiteral, value, quotes)
   { }
 
+  StringLiteral(Deserializer& des)
+    : StringLikeLiteral(asttags::StringLiteral, des)
+  { }
+
   // contentsMatchInner / markUniqueStringsInner are in StringLikeLiteral
   // and would need to be defined here if any fields are added.
 
@@ -48,15 +52,11 @@ class StringLiteral final : public StringLikeLiteral {
                                     const std::string& value,
                                     StringLikeLiteral::QuoteStyle quotes);
 
-  /**
-    Returns the value of this string literal as a UniqueString
-    which does not include the quotes.
-   */
-  UniqueString str() const {
-    CHPL_ASSERT(value_->isStringParam());
-    const types::StringParam* p = (const types::StringParam*) value_;
-    return p->value();
+  void serialize(Serializer& ser) const override {
+    StringLikeLiteral::serialize(ser);
   }
+
+  DECLARE_STATIC_DESERIALIZE(StringLiteral);
 };
 
 

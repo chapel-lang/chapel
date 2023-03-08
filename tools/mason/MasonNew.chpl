@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -272,7 +272,7 @@ proc gitInit(dirName: string, show: bool) {
 /* Adds .gitignore to library project */
 proc addGitIgnore(dirName: string) {
   var toIgnore = "target/\nMason.lock\n";
-  var gitIgnore = open(dirName+"/.gitignore", iomode.cw);
+  var gitIgnore = open(dirName+"/.gitignore", ioMode.cw);
   var GIwriter = gitIgnore.writer();
   GIwriter.write(toIgnore);
   GIwriter.close();
@@ -307,7 +307,7 @@ proc makeBasicToml(dirName: string, path: string, version: string,
     then defaultLicense = license;
   const baseToml = getBaseTomlString(dirName, defaultVersion, defaultChplVersion,
                                      defaultLicense, packageType);
-  var tomlFile = open(path+"/Mason.toml", iomode.cw);
+  var tomlFile = open(path+"/Mason.toml", ioMode.cw);
   var tomlWriter = tomlFile.writer();
   tomlWriter.write(baseToml);
   tomlWriter.close();
@@ -328,7 +328,7 @@ proc makeModule(path:string, fileName:string, packageType="application") {
     libTemplate = '/* Documentation for ' + fileName +
       ' */\nmodule '+ fileName + ' {\n  // Your library here\n}';
   }
-  var lib = open(path+'/src/'+fileName+'.chpl', iomode.cw);
+  var lib = open(path+'/src/'+fileName+'.chpl', ioMode.cw);
   var libWriter = lib.writer();
   libWriter.write(libTemplate + '\n');
   libWriter.close();

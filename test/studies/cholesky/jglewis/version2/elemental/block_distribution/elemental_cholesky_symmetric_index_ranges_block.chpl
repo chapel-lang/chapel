@@ -56,7 +56,7 @@ module elemental_cholesky_symmetric_index_ranges_block {
   // via its native task parallelism constructs.  The lack of a standard way
   // to replicate data and computation across tasks requires this emulation of
   // the SPMD style.  We expect that later versions will fit the native Chapel
-  // execution model more closely.  Barriers are implemented in the Barriers
+  // execution model more closely.  Barriers are implemented in the Collectives
   // standard module for synchronization beyond the specific functionality of
   // coforall and sync statements.
   // =========================================================================
@@ -70,7 +70,7 @@ module elemental_cholesky_symmetric_index_ranges_block {
   // the implementation of such local declarations.
   // =========================================================================
 
-  use BlockDist, Barriers;
+  use BlockDist, Collectives;
 
   use elemental_schur_complement, 
       locality_info, 
@@ -103,7 +103,7 @@ module elemental_cholesky_symmetric_index_ranges_block {
     assert ( A (A.domain.low).locale.id == 0 );
 	     
     // initialize a tasking barrier
-    var bar = new Barrier(n_processors);
+    var bar = new barrier(n_processors);
  
     // ------------------------------------------------
     // SPMD -- launch a separate task on each processor

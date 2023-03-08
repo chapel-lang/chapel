@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -51,6 +51,11 @@ class Let final : public AstNode {
     CHPL_ASSERT(1 <= numDecls && (numDecls == numChildren() - 1));
   }
 
+  Let(Deserializer& des)
+    : AstNode(asttags::Let, des) {
+      numDecls_ = des.read<int>();
+    }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Let* lhs = this;
     const Let* rhs = other->toLet();
@@ -59,6 +64,8 @@ class Let final : public AstNode {
 
   void markUniqueStringsInner(Context* context) const override {
   }
+
+  std::string dumpChildLabelInner(int i) const override;
 
  public:
   ~Let() override = default;
@@ -104,6 +111,13 @@ class Let final : public AstNode {
     CHPL_ASSERT(ret);
     return ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(numDecls_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Let);
 
 };
 

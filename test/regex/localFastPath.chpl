@@ -13,7 +13,7 @@ proc searchL() {
   var a:t;
   var b:t;
   var s = "aaabb":t;
-  var r = compile("(a+)(b+)":t);
+  var r = new regex("(a+)(b+)":t);
   var match = r.search(s, a, b);
   writeln("searchL");
   writeln(match);
@@ -26,7 +26,7 @@ proc searchR(param rvf=true) {
   var a:t;
   var b:t;
   var s = "aaabb":t;
-  var r = compile("(a+)(b+)":t);
+  var r = new regex("(a+)(b+)":t);
   on locales1 {
     if !rvf then preventRvf(r);
     var match = r.search(s, a, b);
@@ -40,7 +40,7 @@ proc searchR(param rvf=true) {
 
 proc splitL() {
   var s = "abaabaaab":t;
-  var r = compile("(a+)":t);
+  var r = new regex("(a+)":t);
   writeln("splitL");
   for match in r.split(s) do
     writeln(match);
@@ -49,7 +49,7 @@ proc splitL() {
 
 proc splitR(param rvf=true) {
   var s = "abaabaaab":t;
-  var r = compile("(a+)":t);
+  var r = new regex("(a+)":t);
   on locales1 {
     if !rvf then preventRvf(r);
     writef("splitR(rvf=%t)\n", rvf);
@@ -61,7 +61,7 @@ proc splitR(param rvf=true) {
 
 proc matchesL() {
   var s = "abaabaaab":t;
-  var r = compile("(a+)(b)":t);
+  var r = new regex("(a+)(b)":t);
   writeln("matchesL");
   for match in r.matches(s, numCaptures=2) do
     writeln(match);
@@ -70,7 +70,7 @@ proc matchesL() {
 
 proc matchesR(param rvf=true) {
   var s = "abaabaaab":t;
-  var r = compile("(a+)(b)":t);
+  var r = new regex("(a+)(b)":t);
   on locales1 {
     if !rvf then preventRvf(r);
     writef("matchesR(rvf=%t)\n", rvf);
@@ -82,19 +82,19 @@ proc matchesR(param rvf=true) {
 
 proc subL() {
   var s = "abaabaaab":t;
-  var r = compile("a+":t);
+  var r = new regex("a+":t);
   writeln("subL");
-  writeln(r.sub("A":t, s));
+  writeln(s.replace(r, "A":t));
   writeln();
 }
 
 proc subR(param rvf=true) {
   var s = "abaabaaab":t;
-  var r = compile("a+":t);
+  var r = new regex("a+":t);
   on locales1 {
     if !rvf then preventRvf(r);
     writef("subR(rvf=%t)\n", rvf);
-    writeln(r.sub("A":t, s));
+    writeln(s.replace(r, "A":t));
     writeln();
   }
 }

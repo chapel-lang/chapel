@@ -105,7 +105,7 @@ proc main() {
   initVectors(Twiddles, z);            // initialize twiddles and input vector z
 
   startVdebug("FFTvis");
-  const startTime = getCurrentTime();  // capture the start time
+  const startTime = timeSinceEpoch().totalSeconds();  // capture the start time
 
   [(a,b) in zip(Zblk, z)] a = conjg(b);      // store the conjugate of z in Zblk
   bitReverseShuffle(Zblk);                // permute Zblk
@@ -120,7 +120,7 @@ proc main() {
   forall (b, c) in zip(Zblk, Zcyc) do        // copy vector back to Block storage
     b = c;
 
-  const execTime = getCurrentTime() - startTime;     // store the elapsed time
+  const execTime = timeSinceEpoch().totalSeconds() - startTime;     // store the elapsed time
   stopVdebug();
 
   const validAnswer = verifyResults(z, Zblk, Zcyc, Twiddles); // validate answer
@@ -313,7 +313,7 @@ proc bitReverse(val: ?valType, revBits = 64) {
 //
 // Compute the log base 4 of x
 //
-proc log4(x) return logBasePow2(x, 2);
+proc log4(x) do return logBasePow2(x, 2);
 
 //
 // verify that the results are correct by reapplying the dfft and then

@@ -26,7 +26,7 @@ record distributedMap {
   const pid = -1;
   // privatized class
   forwarding _value;
-  inline proc _value return chpl_getPrivatizedCopy(
+  inline proc _value do return chpl_getPrivatizedCopy(
                        unmanaged DistributedMapImpl(keyType, valType), pid);
 
   proc init(impl: DistributedMapImpl) {
@@ -77,11 +77,11 @@ class DistributedMapImpl {
   }
 
   // privatization helpers
-  proc dsiGetPrivatizeData()
+  proc dsiGetPrivatizeData() do
     return (targetLocales, numLocalMaps, pid);
-  proc dsiPrivatize(pdata)
+  proc dsiPrivatize(pdata) do
     return new unmanaged DistributedMapImpl(this, pdata(0), pdata(1), pdata(2));
-  inline proc getPrivatizedThis()  // todo: manually forward pid?
+  inline proc getPrivatizedThis() do  // todo: manually forward pid?
     return chpl_getPrivatizedCopy(this.type, pid);
   proc getPrivatizedThisOn(loc: locale) {
     var result: (this.type: class?);
@@ -113,13 +113,6 @@ class DistributedMapImpl {
     on targetLocales[locIdx] do
       result = getPrivatizedThis().localMaps[mapIdx].contains(k);
     return result;
-  }
-
-  iter items() {
-    for loc in targetLocales do
-      for map in getPrivatizedThisOn(loc).localMaps do
-        for item in map.items() do
-          yield item;
   }
 
   // returns a task-private aggregator
@@ -189,7 +182,7 @@ record _mapIdxSingletonFilter { //private
 }
 
 record _mapIdxTrivalFilter { //private
-  proc skip(key) return false;
+  proc skip(key) do return false;
 }
 
 // produced by distributedMap.updateManager()

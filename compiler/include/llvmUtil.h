@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,11 +23,10 @@
 
 #ifdef HAVE_LLVM
 
-#include <utility>
-
 #include "llvmVer.h"
-
 #include "llvm/IR/IRBuilder.h"
+
+#include <utility>
 
 struct PromotedPair {
   llvm::Value* a;
@@ -73,6 +72,14 @@ void print_llvm(llvm::Value* v);
 void print_llvm(llvm::Module* m);
 // print_clang is also available in another file
 
-#endif //HAVE_LLVM
+llvm::AttrBuilder llvmPrepareAttrBuilder(llvm::LLVMContext& ctx);
 
+void llvmAddAttr(llvm::LLVMContext& ctx, llvm::AttributeList& attrs,
+                 size_t idx,
+                 llvm::AttrBuilder& b);
+
+void llvmAttachStructRetAttr(llvm::AttrBuilder& b, llvm::Type* returnTy,
+                             unsigned int addrSpace);
+
+#endif //HAVE_LLVM
 #endif //LLVMUTIL_H

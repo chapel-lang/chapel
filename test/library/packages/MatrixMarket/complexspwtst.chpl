@@ -6,6 +6,5 @@ var o = mmreadsp(complex, filename);
 
 mmwrite("complextest.mtx", o);
 
-var fd = open("complextest.mtx", iomode.r);
-for l in fd.lines() { writeln(l); }
-
+var r = openReader("complextest.mtx");
+for l in r.lines() { writeln(l); }

@@ -23,10 +23,10 @@ writeln(A);
 
 mmwrite("dense-4x3-write.mtx", A);
 
-var fd = open("dense-4x3-write.mtx", iomode.r);
+var r = openReader("dense-4x3-write.mtx");
 var lines = new list(string);
 var i=1;
-for l in fd.lines() {
+for l in r.lines() {
   // the first two lines are header, not for sorting
   if i <= 2 then
     write(l);

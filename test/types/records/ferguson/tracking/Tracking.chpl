@@ -8,11 +8,11 @@ proc mapXor(a: map(?keyType, ?valueType, ?),
   
   try! {
     for k in a.keys() do
-      if !b.contains(k) then newMap.add(k, a.getValue(k));
+      if !b.contains(k) then newMap.add(k, a[k]);
   }
   try! {
-    for k in b do
-      if !a.contains(k) then newMap.add(k, b.getValue(k));
+    for k in b.keys() do
+      if !a.contains(k) then newMap.add(k, b[k]);
   }
   return newMap;
 }
@@ -24,7 +24,7 @@ proc mapSubtract(a: map(?keyType, ?valueType, ?),
   try! {
     for ak in a.keys() {
       if !b.contains(ak) then
-        newMap.add(ak, a.getValue(ak));
+        newMap.add(ak, a[ak]);
     }
   }
   
@@ -38,7 +38,7 @@ proc mapAnd(a: map(?keyType, ?valueType, ?),
   try! {
     for k in a.keys() do
       if b.contains(k) then
-        newMap.add(k, a.getValue(k));
+        newMap.add(k, a[k]);
   }
 
   return newMap;
@@ -93,7 +93,7 @@ proc checkAllocations() {
 
   proc printthem(arr)
   {
-    for id in sorted(arr.valuesToArray()) {
+    for id in sorted(arr.keysToArray()) {
       write("(id=", id, " x=", to_x[id], ") ");
     }
   }
@@ -120,7 +120,7 @@ proc checkAllocations() {
   }
 
   // check order of each id. Each id should be freed after being allocated.
-  for id in allocated {
+  for id in allocated.keys() {
     // same as ids in freed_byid by this point.
     if allocated[id] < freed[id] {
       // OK
@@ -131,4 +131,3 @@ proc checkAllocations() {
   }
   return true;
 }
-

@@ -1,2 +1,1 @@
 returnConstrainedArray.chpl:1: syntax error: near ':'
-returnConstrainedArray.chpl:1: syntax error: invalid expression for domain of array return type

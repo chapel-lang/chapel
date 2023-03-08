@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,7 +22,7 @@
 
 #include "chpl/framework/Location.h"
 #include "chpl/uast/NamedDecl.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 
 namespace chpl {
 namespace uast {
@@ -34,19 +34,19 @@ namespace uast {
  */
 class VarLikeDecl : public NamedDecl {
  protected:
-  IntentList storageKind_;
+  Qualifier storageKind_;
   int8_t typeExpressionChildNum_;
   int8_t initExpressionChildNum_;
 
-  VarLikeDecl(AstTag tag, AstList children, int attributesChildNum,
+  VarLikeDecl(AstTag tag, AstList children, int attributeGroupChildNum,
               Decl::Visibility vis,
               Decl::Linkage linkage,
               int linkageNameChildNum,
               UniqueString name,
-              IntentList storageKind,
+              Qualifier storageKind,
               int8_t typeExpressionChildNum,
               int8_t initExpressionChildNum)
-    : NamedDecl(tag, std::move(children), attributesChildNum, vis,
+    : NamedDecl(tag, std::move(children), attributeGroupChildNum, vis,
                 linkage,
                 linkageNameChildNum,
                 name),
@@ -64,6 +64,14 @@ class VarLikeDecl : public NamedDecl {
     }
   }
 
+  VarLikeDecl(AstTag tag, Deserializer& des)
+    : NamedDecl(tag, des) {
+    storageKind_ = des.read<Qualifier>();
+    typeExpressionChildNum_ = des.read<int8_t>();
+    initExpressionChildNum_ = des.read<int8_t>();
+  }
+
+
   bool varLikeDeclContentsMatchInner(const AstNode* other) const {
     const VarLikeDecl* lhs = this;
     const VarLikeDecl* rhs = (const VarLikeDecl*) other;
@@ -77,6 +85,9 @@ class VarLikeDecl : public NamedDecl {
     namedDeclMarkUniqueStringsInner(context);
   }
 
+  virtual void dumpFieldsInner(const DumpSettings& s) const override;
+  virtual std::string dumpChildLabelInner(int i) const override;
+
  public:
   ~VarLikeDecl() = 0; // this is an abstract base class
 
@@ -85,7 +96,7 @@ class VarLikeDecl : public NamedDecl {
     Subclasses have more specific functions that return the
     subset appropriate for that subclass.
    */
-  IntentList storageKind() const {
+  Qualifier storageKind() const {
     return storageKind_;
   }
 
@@ -114,10 +125,18 @@ class VarLikeDecl : public NamedDecl {
       return nullptr;
     }
   }
+
+  void serialize(Serializer& ser) const override {
+    NamedDecl::serialize(ser);
+    ser.write(storageKind_);
+    ser.write(typeExpressionChildNum_);
+    ser.write(initExpressionChildNum_);
+  }
 };
 
 
 } // end namespace uast
+
 } // end namespace chpl
 
 #endif

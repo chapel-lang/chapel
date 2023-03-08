@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,6 +32,17 @@ Input/output (I/O) facilities in Chapel include the types :record:`file` and
 :proc:`file.reader`, :proc:`file.writer`, :proc:`channel.read`,
 :proc:`channel.write`, and many others.
 
+.. warning::
+  Please be aware, the IO Module documentation is under development and
+  currently contains some minor inconsistencies.
+
+  For example, the :record:`channel` type has been replaced with the
+  :record:`fileWriter` and :record:`fileReader` types; however, not all
+  references to ``channel`` have been removed from the docs. As such, note that
+  writing methods on the ``channel`` type (such as :proc:`channel.writeln`) are
+  intended to be called on a ``fileWriter`` and reading methods are intended to
+  be called on a ``fileReader``.
+
 .. _about-io-overview:
 
 I/O Overview
@@ -48,7 +59,7 @@ For example, the following program opens a file and writes an integer to it:
 
   // open the file "test-file.txt" for writing, creating it if
   // it does not exist yet.
-  var myFile = open("test-file.txt", iomode.cw);
+  var myFile = open("test-file.txt", ioMode.cw);
 
   // create a writing channel starting at file offset 0
   // (start and end offsets can be specified when creating the
@@ -69,7 +80,7 @@ Then, the following program can be used to read the integer:
 .. code-block:: chapel
 
   // open the file "test-file.txt" for reading only
-  var myFile = open("test-file.txt", iomode.r);
+  var myFile = open("test-file.txt", ioMode.r);
 
   // create a reading channel starting at file offset 0
   // (start and end offsets can be specified when creating the
@@ -187,8 +198,9 @@ Files
 -----
 
 There are several functions that open a file and return a :record:`file`
-including :proc:`open`, :proc:`openTempFile`, :proc:`openmem`, :proc:`openfd`,
-and :proc:`openfp`.
+including :proc:`open`, :proc:`openTempFile`, :proc:`openMemFile`, the
+:record:`file` initializer that takes an ``int`` argument, and the
+:record:`file` initializer that takes a :type:`~CTypes.c_FILE` argument.
 
 Once a file is open, it is necessary to create associated channel(s) - see
 :proc:`file.reader` and :proc:`file.writer` - to write to and/or read from the
@@ -265,8 +277,9 @@ more details on the situation in which this kind of data race can occur.
   descriptor's current position. Therefore, only one channel should be created
   for files created in the following situations:
 
-    * with :proc:`openfp`
-    * with :proc:`openfd` when provided a non-seekable system file descriptor
+    * with the file initializer that takes a :type:`~CTypes.c_FILE` argument
+    * with the file initializer that takes an ``int`` argument, where the
+      ``int`` represents a non-seekable system file descriptor
 
 
 Performing I/O with Channels
@@ -340,12 +353,12 @@ Error Handling
 Most I/O routines throw a :class:`OS.SystemError`, and can be handled
 appropriately with ``try`` and ``catch``.
 
-Some of these subclasses commonly used within the I/O implementation include:
+Additionally, some subclasses of :class:`Errors.Error` are commonly used within
+the I/O implementation. These are:
 
  * :class:`OS.EofError` - the end of file was reached
  * :class:`OS.UnexpectedEofError` - a read or write only returned part of the requested data
  * :class:`OS.BadFormatError` - data read did not adhere to the requested format
- * :class:`OS.InsufficientCapacityError` - a read or write operation required more storage than was available
 
 An error code can be converted to a string using the function
 :proc:`OS.errorToString()`.
@@ -428,50 +441,57 @@ import OS.POSIX.{EBADF};
 import OS.{errorCode};
 use CTypes;
 public use OS;
-
+use Reflection;
 
 /*
 
-The :type:`iomode` type is an enum. When used as arguments when opening files, its
+The :type:`ioMode` type is an enum. When used as arguments when opening files, its
 constants have the same meaning as the following strings passed to ``fopen()`` in C:
 
 .. list-table::
    :widths: 8 8 64
    :header-rows: 1
 
-   * - :type:`iomode`
+   * - :type:`ioMode`
      - ``fopen()`` argument
      - Description
-   * - ``iomode.r``
+   * - ``ioMode.r``
      - ``"r"``
      - open an existing file for reading.
-   * - ``iomode.rw``
+   * - ``ioMode.rw``
      - ``"r+"``
      - open an existing file for reading and writing.
-   * - ``iomode.cw``
+   * - ``ioMode.cw``
      - ``"w"``
      - create a new file for writing. If the file already exists, its contents are truncated.
-   * - ``iomode.cwr``
+   * - ``ioMode.cwr``
      - ``"w+"``
-     - same as ``iomode.cw``, but reading from the file is also allowed.
+     - same as ``ioMode.cw``, but reading from the file is also allowed.
 
 .. TODO: Support append / create-exclusive modes:
-   * - ``iomode.a``
+   * - ``ioMode.a``
      - ``"a"``
      - open a file for appending, creating it if it does not exist.
-   * - ``iomode.ar``
+   * - ``ioMode.ar``
      - ``"a+"``
-     - same as ``iomode.a``, but reading from the file is also allowed.
-   * - ``iomode.cwx``
+     - same as ``ioMode.a``, but reading from the file is also allowed.
+   * - ``ioMode.cwx``
      - ``"wx"``
      - open a file for writing, throwing an error if it already exists. (The test for file's existence and the file's creation are atomic on POSIX.)
-   * - ``iomode.cwrx``
+   * - ``ioMode.cwrx``
      - ``"w+x"``
-     - same as ``iomode.cwx``, but reading from the file is also allowed.
+     - same as ``ioMode.cwx``, but reading from the file is also allowed.
 
 However, :proc:`open()` in Chapel does not necessarily invoke ``fopen()`` in C.
 */
+enum ioMode {
+  r = 1,
+  cw = 2,
+  rw = 3,
+  cwr = 4,
+}
 
+deprecated "enum iomode is deprecated - please use :enum:`ioMode` instead"
 enum iomode {
   r = 1,
   cw = 2,
@@ -1418,12 +1438,12 @@ private const IOHINTS_NOMMAP:      c_int = QIO_METHOD_PREADPWRITE;
     use IO;
 
     // define a set of hints using a union operation
-    var hints = ioHintSet::sequential | ioHintSet::prefetch;
+    var hints = ioHintSet.sequential | ioHintSet.prefetch;
 
     // open a file using the hints
     var f: file;
     try! {
-      f = open("path/to/my/file.txt", iomode.r, hints=hints);
+      f = open("path/to/my/file.txt", ioMode.r, hints=hints);
     }
 */
 record ioHintSet {
@@ -1450,42 +1470,54 @@ record ioHintSet {
   */
   proc type prefetch { return new ioHintSet(IOHINTS_PREFETCH); }
 
-  /* Suggests that 'mmap' should be used to access the file contents
+  /*
+    Suggests whether or not 'mmap' should be used to access the file contents.
+
+     * when ``useMmap`` is ``true``, suggests that 'mmap' should be used
+     * when ``useMmap`` is ``false``, suggests that 'mmap' should not be used and 'pread'/'pwrite' should be used instead
+
   */
-  proc type mmap { return new ioHintSet(IOHINTS_MMAP); }
+  proc type mmap(useMmap = true) {
+    return if useMmap
+      then new ioHintSet(IOHINTS_MMAP)
+      else new ioHintSet(IOHINTS_NOMMAP);
+  }
 
   /* Suggests that 'mmap' should not be used to access the file contents.
   Instead, pread/pwrite are used.
   */
+  deprecated "`ioHintSet.noMmap` is deprecated; please use `ioHintset.mmap(false)` instead"
   proc type noMmap { return new ioHintSet(IOHINTS_NOMMAP); }
 
   pragma "no doc"
   proc type fromFlag(flag: c_int) { return new ioHintSet(flag); }
 }
 
-/* Compute the union of two ioHintSets
+/* Compute the union of two hint sets
 */
 operator ioHintSet.|(lhs: ioHintSet, rhs: ioHintSet) {
   return new ioHintSet(lhs._internal | rhs._internal);
 }
 
-/* Compute the intersection of two ioHintSets
+/* Compute the intersection of two hint sets
 */
 operator ioHintSet.&(lhs: ioHintSet, rhs: ioHintSet) {
   return new ioHintSet(lhs._internal & rhs._internal);
 }
 
-/* Compare two ioHintSets for equality
+/* Compare two hint sets for equality
 */
 operator ioHintSet.==(lhs: ioHintSet, rhs: ioHintSet) {
   return lhs._internal == rhs._internal;
 }
 
-/* Compare two ioHintSets for inequality
+/* Compare two hint sets for inequality
 */
 operator ioHintSet.!=(lhs: ioHintSet, rhs: ioHintSet) {
   return !(lhs == rhs);
 }
+
+
 
 /*
 The :record:`file` type is implementation-defined.  A value of the
@@ -1546,6 +1578,146 @@ operator file.=(ref ret:file, x:file) {
   ret._file_internal = x._file_internal;
 }
 
+private proc initHelper(ref f: file, fp: c_FILE, hints=ioHintSet.empty,
+                        style:iostyleInternal = defaultIOStyleInternal(),
+                        own=false) throws {
+  var local_style = style;
+  f._home = here;
+  var internalHints = hints._internal;
+  if (own) {
+    internalHints |= QIO_HINT_OWNED;
+  }
+  var err = qio_file_init(f._file_internal, fp, -1, internalHints, local_style,
+                          1);
+
+  // On exit either f._file_internal.ref_cnt == 1, or f._file_internal is NULL.
+  // error should be nonzero in the latter case.
+  if err {
+    var path_cs:c_string;
+    var path_err = qio_file_path_for_fp(fp, path_cs);
+    var path = if path_err then "unknown"
+                           else createStringWithNewBuffer(path_cs,
+                                                          policy=decodePolicy.replace);
+    chpl_free_c_string(path_cs);
+    try ioerror(err, "in init", path);
+  }
+}
+
+@unstable "initializing a file with a style argument is unstable"
+  proc file.init(fp: c_FILE, hints=ioHintSet.empty, style:iostyle,
+                 own=false) throws {
+  this.init();
+
+  initHelper(this, fp, hints, style: iostyleInternal, own);
+}
+
+/*
+Create a Chapel :record:`file` that wraps around an open C file. A pointer to
+a C ``FILE`` object can be obtained via Chapel's
+:ref:`C Interoperability <primers-C-interop-using-C>` functionality.
+
+.. note::
+
+  This is an alternative way to create a :record:`file`.  The main way to do so
+  is via the :proc:`open` function.
+
+Once the Chapel file is created, you will need to use a :proc:`file.reader` or
+:proc:`file.writer` to create a channel to perform I/O operations on the C file.
+
+.. note::
+
+  The resulting file value should only be used with one :record:`fileReader` or
+  :record:`fileWriter` at a time. The I/O system will ignore the offsets when
+  reading or writing to a file opened using this initializer.
+
+
+:arg fp: a pointer to a C ``FILE``. See :type:`~CTypes.c_FILE`.
+:arg hints: optional argument to specify any hints to the I/O system about
+            this file. See :record:`ioHintSet`.
+:arg own: set to indicate if the :type:`~CTypes.c_FILE` provided should be
+          cleaned up when the ``file`` is closed.  Defaults to ``false``
+
+:throws SystemError: Thrown if the C file could not be retrieved.
+*/
+proc file.init(fp: c_FILE, hints=ioHintSet.empty, own=false) throws {
+  this.init();
+
+  initHelper(this, fp, hints, own=own);
+}
+
+private proc initHelper2(ref f: file, fd: c_int, hints = ioHintSet.empty,
+                         style:iostyleInternal = defaultIOStyleInternal(),
+                         own=false) throws {
+
+  var local_style = style;
+  f._home = here;
+  extern proc chpl_cnullfile():c_FILE;
+  var internalHints = hints._internal;
+  if (own) {
+    internalHints |= QIO_HINT_OWNED;
+  }
+  var err = qio_file_init(f._file_internal, chpl_cnullfile(), fd, internalHints,
+                          local_style, 0);
+
+  // On return, either f._file_internal.ref_cnt == 1, or f._file_internal is
+  // NULL.
+  // err should be nonzero in the latter case.
+  if err {
+    var path_cs:c_string;
+    var path_err = qio_file_path_for_fd(fd, path_cs);
+    var path = if path_err then "unknown"
+                           else createStringWithNewBuffer(path_cs,
+                                                          policy=decodePolicy.replace);
+    try ioerror(err, "in file.init", path);
+  }
+}
+
+@unstable "initializing a file with a style argument is unstable"
+proc file.init(fileDescriptor: int, hints=ioHintSet.empty,
+               style:iostyle, own=false) throws {
+  this.init();
+
+  initHelper2(this, fileDescriptor.safeCast(c_int), hints, style, own);
+}
+
+/*
+
+Create a Chapel file that works with a system file descriptor.  Note that once
+the file is open, you will need to use a :proc:`file.reader` or
+:proc:`file.writer` to create a channel to actually perform I/O operations
+
+.. note::
+
+  This is an alternative way to create a :record:`file`.  The main way to do so
+  is via the :proc:`open` function.
+
+The system file descriptor will be closed when the Chapel file is closed.
+
+.. note::
+
+  This function can be used to create Chapel files that refer to system file
+  descriptors that do not support the ``seek`` functionality. For example, file
+  descriptors that represent pipes or open socket connections have this
+  property. In that case, the resulting file value should only be used with one
+  :record:`fileReader` or :record:`fileWriter` at a time.
+  The I/O system will ignore the channel offsets when reading or writing
+  to files backed by non-seekable file descriptors.
+
+
+:arg fileDescriptor: a system file descriptor.
+:arg hints: optional argument to specify any hints to the I/O system about
+            this file. See :record:`ioHintSet`.
+:arg own: set to indicate if the `fileDescriptor` provided should be cleaned up
+          when the ``file`` is closed.  Defaults to ``false``
+
+:throws SystemError: Thrown if the file descriptor could not be retrieved.
+*/
+proc file.init(fileDescriptor: int, hints=ioHintSet.empty, own=false) throws {
+  this.init();
+
+  initHelper2(this, fileDescriptor.safeCast(c_int), hints, own=own);
+}
+
 pragma "no doc"
 proc file.checkAssumingLocal() throws {
   if is_c_nil(_file_internal) then
@@ -1558,9 +1730,21 @@ proc file.checkAssumingLocal() throws {
 
    :throws SystemError: Indicates that `this` does not represent an OS file.
 */
+ deprecated "'file.check()' is deprecated, please use :proc:`file.isOpen` instead"
 proc file.check() throws {
   on this._home {
-    this.checkAssumingLocal();
+    this.checkAssumingLocal(); // Remove this function, too?
+  }
+}
+
+/* Indicates if the file is currently open.  Will return ``false`` for both
+   closed and invalid files
+*/
+proc file.isOpen(): bool {
+  if (is_c_nil(_file_internal)) {
+    return false;
+  } else {
+    return qio_file_isopen(_file_internal);
   }
 }
 
@@ -1681,7 +1865,7 @@ proc file.path: string throws where !filePathAbsolute {
 
 Get the absolute path to an open file.
 
-Note that not all files have a path (e.g. files opened with :proc:`openmem`),
+Note that not all files have a path (e.g. files opened with :proc:`openMemFile`),
 and that this function may not work on all operating systems.
 
 The function :proc:`Path.realPath` is an alternative way
@@ -1716,7 +1900,7 @@ proc file._abspath: string throws {
 }
 
 // internal version of 'file.path' used to generate error messages in other IO methods
-// produces a relative path when avilible
+// produces a relative path when available
 pragma "no doc"
 proc file._tryGetPath() : string {
   try {
@@ -1776,19 +1960,39 @@ private param _cw = "w";
 private param _cwr = "w+";
 
 pragma "no doc"
-proc _modestring(mode:iomode) {
+proc _modestring(mode:ioMode) {
   import HaltWrappers;
   select mode {
-    when iomode.r do return _r;
-    when iomode.rw do return _rw;
-    when iomode.cw do return _cw;
-    when iomode.cwr do return _cwr;
+    when ioMode.r do return _r;
+    when ioMode.rw do return _rw;
+    when ioMode.cw do return _cw;
+    when ioMode.cwr do return _cwr;
+    otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid ioMode");
+  }
+}
+
+pragma "no doc"
+pragma "compiler generated"
+proc convertIoMode(mode:iomode):ioMode {
+  import HaltWrappers;
+  select mode {
+    when iomode.r do return ioMode.r;
+    when iomode.rw do return ioMode.rw;
+    when iomode.cw do return ioMode.cw;
+    when iomode.cwr do return ioMode.cwr;
     otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid iomode");
   }
 }
 
-@unstable "open with a style argument is unstable"
+pragma "last resort"
+deprecated "open with an iomode argument is deprecated - please use :enum:`ioMode`"
 proc open(path:string, mode:iomode, hints=ioHintSet.empty,
+          style:iostyle): file throws {
+  return open(path, convertIoMode(mode), hints, style);
+}
+
+@unstable "open with a style argument is unstable"
+proc open(path:string, mode:ioMode, hints=ioHintSet.empty,
           style:iostyle): file throws {
   return openHelper(path, mode, hints, style:iostyleInternal);
 }
@@ -1802,7 +2006,7 @@ to create a channel to actually perform I/O operations
 :arg path: which file to open (for example, "some/file.txt").
 :arg mode: specify whether to open the file for reading or writing and
              whether or not to create the file if it doesn't exist.
-             See :type:`iomode`.
+             See :type:`ioMode`.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
 :returns: an open file to the requested resource.
@@ -1814,11 +2018,17 @@ to create a channel to actually perform I/O operations
                             be a directory but was not
 :throws SystemError: Thrown if the file could not be opened.
 */
-proc open(path:string, mode:iomode, hints=ioHintSet.empty): file throws {
+proc open(path:string, mode:ioMode, hints=ioHintSet.empty): file throws {
   return openHelper(path, mode, hints);
 }
 
-private proc openHelper(path:string, mode:iomode, hints=ioHintSet.empty,
+pragma "last resort"
+deprecated "open with an iomode argument is deprecated - please use :enum:`ioMode`"
+proc open(path:string, mode:iomode, hints=ioHintSet.empty): file throws {
+  return open(path, convertIoMode(mode), hints);
+}
+
+private proc openHelper(path:string, mode:ioMode, hints=ioHintSet.empty,
                         style:iostyleInternal = defaultIOStyleInternal()): file throws {
 
   var local_style = style;
@@ -1839,7 +2049,7 @@ private proc openHelper(path:string, mode:iomode, hints=ioHintSet.empty,
 }
 
 pragma "no doc"
-proc openplugin(pluginFile: QioPluginFile, mode:iomode,
+proc openplugin(pluginFile: QioPluginFile, mode:ioMode,
                 seekable:bool, style:iostyleInternal) throws {
   import HaltWrappers;
 
@@ -1853,21 +2063,21 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
 
   var flags:c_int = 0;
   select mode {
-    when iomode.r {
+    when ioMode.r {
       flags |= QIO_FDFLAG_READABLE;
     }
-    when iomode.rw {
-      flags |= QIO_FDFLAG_READABLE;
-      flags |= QIO_FDFLAG_WRITEABLE;
-    }
-    when iomode.cw {
-      flags |= QIO_FDFLAG_WRITEABLE;
-    }
-    when iomode.cwr {
+    when ioMode.rw {
       flags |= QIO_FDFLAG_READABLE;
       flags |= QIO_FDFLAG_WRITEABLE;
     }
-    otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid iomode");
+    when ioMode.cw {
+      flags |= QIO_FDFLAG_WRITEABLE;
+    }
+    when ioMode.cwr {
+      flags |= QIO_FDFLAG_READABLE;
+      flags |= QIO_FDFLAG_WRITEABLE;
+    }
+    otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid ioMode");
   }
 
   if seekable then
@@ -1895,7 +2105,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
   return ret;
 }
 
-@unstable "openfd with a style argument is unstable"
+deprecated "openfd is deprecated, please use the file initializer with a 'c_int' argument instead"
 proc openfd(fd: c_int, hints=ioHintSet.empty, style:iostyle):file throws {
   return openfdHelper(fd, hints, style: iostyleInternal);
 }
@@ -1914,7 +2124,7 @@ The system file descriptor will be closed when the Chapel file is closed.
   descriptors that do not support the ``seek`` functionality. For example, file
   descriptors that represent pipes or open socket connections have this
   property. In that case, the resulting file value should only be used with one
-  :record:`channel` at a time.
+  :record:`fileReader` or :record:`fileWriter` at a time.
   The I/O system will ignore the channel offsets when reading or writing
   to files backed by non-seekable file descriptors.
 
@@ -1926,6 +2136,7 @@ The system file descriptor will be closed when the Chapel file is closed.
 
 :throws SystemError: Thrown if the file descriptor could not be retrieved.
 */
+deprecated "openfd is deprecated, please use the file initializer with a 'c_int' argument instead"
 proc openfd(fd: c_int, hints = ioHintSet.empty):file throws {
   return openfdHelper(fd, hints);
 }
@@ -1951,7 +2162,7 @@ private proc openfdHelper(fd: c_int, hints = ioHintSet.empty,
   return ret;
 }
 
-@unstable "openfp with a style argument is unstable"
+deprecated "openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead"
 proc openfp(fp: c_FILE, hints=ioHintSet.empty, style:iostyle):file throws {
   return openfpHelper(fp, hints, style: iostyleInternal);
 }
@@ -1979,12 +2190,13 @@ Once the Chapel file is created, you will need to use a :proc:`file.reader` or
 
 :throws SystemError: Thrown if the C file could not be retrieved.
  */
+deprecated "openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead"
 proc openfp(fp: c_FILE, hints=ioHintSet.empty):file throws {
   return openfpHelper(fp, hints);
 }
 
 pragma "last resort"
-deprecated "'_file' is deprecated; use the variant of 'openfp' that takes a 'c_FILE' instead"
+deprecated "'_file' is deprecated; use the file initializer that takes a 'c_FILE' instead"
 proc openfp(fp: _file, hints=ioHintSet.empty):file throws {
   return openfpHelper(fp, hints);
 }
@@ -2030,7 +2242,7 @@ The temporary file will be created in an OS-dependent temporary directory,
 for example "/tmp" is the typical location. The temporary file will be
 deleted upon closing.
 
-Temporary files are opened with :type:`iomode` ``iomode.cwr``; that is, a new
+Temporary files are opened with :type:`ioMode` ``ioMode.cwr``; that is, a new
 file is created that supports both writing and reading.  When possible, it may
 be opened using OS support for temporary files in order to make sure that a new
 file is created only for use by the current application.
@@ -2062,9 +2274,19 @@ private proc opentmpHelper(hints=ioHintSet.empty,
   return ret;
 }
 
-@unstable "openmem with a style argument is unstable"
+deprecated "openmem is deprecated - please use :proc:`openMemFile` instead"
 proc openmem(style:iostyle):file throws {
-  return openmemHelper(style: iostyleInternal);
+  return openMemFile(style);
+}
+
+deprecated "openmem is deprecated - please use :proc:`openMemFile` instead"
+proc openmem():file throws {
+  return openMemFile();
+}
+
+@unstable "openMemFile with a style argument is unstable"
+proc openMemFile(style:iostyle):file throws {
+  return openMemFileHelper(style: iostyleInternal);
 }
 /*
 
@@ -2079,20 +2301,32 @@ The resulting file supports both reading and writing.
 
 :throws SystemError: Thrown if the memory buffered file could not be opened.
 */
-proc openmem():file throws {
-  return openmemHelper();
+proc openMemFile():file throws {
+  return openMemFileHelper();
 }
 
 private
-proc openmemHelper(style:iostyleInternal = defaultIOStyleInternal()):file throws {
+proc openMemFileHelper(style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
   ret._home = here;
 
   // On return ret._file_internal.ref_cnt == 1.
   var err = qio_file_open_mem(ret._file_internal, QBUFFER_PTR_NULL, local_style);
-  if err then try ioerror(err, "in openmem");
+  if err then try ioerror(err, "in openMemFile");
   return ret;
+}
+
+private proc defaultFmtType(param writing : bool) type {
+  if !chpl_useIOFormatters then return nothing;
+  if writing then return DefaultWriter;
+  else return DefaultReader;
+}
+
+private proc defaultFmtVal(param writing : bool) {
+  if !chpl_useIOFormatters then return none;
+  if writing then return new DefaultWriter();
+  else return new DefaultReader();
 }
 
 pragma "ignore noinit"
@@ -2114,10 +2348,15 @@ record _channel {
    */
   param locking:bool;
 
+  type fmtType = defaultFmtType(writing);
+
   pragma "no doc"
   var _home:locale = here;
   pragma "no doc"
   var _channel_internal:qio_channel_ptr_t = QIO_CHANNEL_PTR_NULL;
+
+  pragma "no doc"
+  var _fmt : fmtType;
 
   // The member variable _readWriteThisFromLocale is used to support
   // writeThis needing to know where the I/O started. It is a member
@@ -2128,6 +2367,11 @@ record _channel {
   // Therefore further locking by the same task is not necessary.
   pragma "no doc"
   var _readWriteThisFromLocale = nilLocale;
+}
+
+pragma "no doc"
+proc _channel.formatter const ref {
+  return _fmt;
 }
 
 /*
@@ -2198,6 +2442,228 @@ The :record:`fileWriter` type supports 3 fields:
 type fileWriter;
 fileWriter = _channel(writing=true, ?);
 
+//
+// Authors of FormatWriters are expected to implement the following methods:
+//
+// proc encode(writer: fileWriter, const x: ?) : void throws
+//
+// proc writeField(writer: fileWriter, name: string, const x: ?) : void throws
+//
+// proc writeTypeStart(writer: fileWriter, type T) throws
+//
+// proc writeTypeEnd(writer: fileWriter, type T) throws
+//
+// At this time, the formal names are unspecified.
+//
+// FormatWriters that can be default-initialized can be used with the version
+// of ``fileWriter.withFormatter`` method that accepts a type, rather than a
+// value.
+//
+// FormatWriters have the option of calling the ``encodeTo`` method on a type
+// in order to support user-defined writing of a given type:
+//
+//   proc MyType.encodeTo(writer: fileWriter) : void throws
+//
+// The compiler is expected to generate a default implementation of encodeTo
+// methods for records and classes.
+//
+pragma "no doc"
+record DefaultWriter {
+  var firstField = true;
+  var _wroteStart, _wroteEnd : bool;
+  var _inheritLevel = 0;
+
+  proc _encodeClassOrPtr(writer:fileWriter, x: ?t) : void throws {
+    if x == nil {
+      writer._writeLiteral("nil");
+    } else if isClassType(t) {
+      x!.encodeTo(writer.withFormatter(new DefaultWriter()));
+    } else {
+      x.encodeTo(writer.withFormatter(new DefaultWriter()));
+    }
+  }
+
+  // TODO: Add formatter support for unions. For now, forward to old
+  // implementation.
+  proc _encodeUnion(writer:fileWriter, x: ?t) : void throws {
+    x.writeThis(writer);
+  }
+
+  // Writes value 'x' in the Default IO format
+  proc encode(writer:fileWriter, const x: ?t) : void throws {
+    if isNumericType(t) || isBoolType(t) || isEnumType(t) ||
+       t == string || t == bytes {
+      writer._writeOne(writer.kind, x, writer.getLocaleOfIoRequest());
+    } else if t == ioLiteral {
+      writer._writeLiteral(x.val);
+    } else if t == ioNewline || t == _internalIoChar {
+      writer._writeOne(writer.kind, x, writer.getLocaleOfIoRequest());
+    } else if t == _nilType {
+      writer._writeLiteral("nil");
+    } else if isClassType(t) || isAnyCPtr(t) {
+      _encodeClassOrPtr(writer, x);
+    } else if isUnionType(t) {
+      _encodeUnion(writer, x);
+    } else {
+      x.encodeTo(writer.withFormatter(new DefaultWriter()));
+    }
+  }
+
+  //
+  // Writes a field name, followed by the literal string " = ", then writes
+  // the value of 'x'.
+  //
+  proc writeField(writer:fileWriter, name: string, const x: ?) : void throws {
+    if !firstField then
+      writer._writeLiteral(", ");
+
+    if !name.isEmpty() {
+      writer._writeLiteral(name);
+      writer._writeLiteral(" = ");
+    }
+
+    writer.write(x);
+    firstField = false;
+  }
+
+  proc writeTypeStart(w: fileWriter, type T) throws {
+
+    // TODO: Arrays, and array-like things (e.g. lists)
+    if _inheritLevel == 0 {
+      if isClassType(T) then
+        w._writeLiteral("{");
+      else if isRecordType(T) || isTupleType(T) then
+        w._writeLiteral("(");
+      else
+        throw new Error("unhandled type in writeTypeStart");
+    }
+
+    _inheritLevel += 1;
+  }
+
+  proc writeTypeEnd(w: fileWriter, type T) throws {
+
+    if _inheritLevel == 1 {
+      if isClassType(T) then
+        w._writeLiteral("}");
+      else if isRecordType(T) then
+        w._writeLiteral(")");
+      else if isTupleType(T) {
+        if T.size == 1 then w._writeLiteral(",)");
+        else w._writeLiteral(")");
+      } else
+        throw new Error("unhandled type in writeTypeEnd");
+    }
+
+    _inheritLevel -= 1;
+  }
+}
+
+
+//
+// Authors of FormatReaders are expected to implement the following methods:
+//
+// proc decode(reader: fileReader, type readType) : readType throws
+//
+// proc readField(reader: fileReader, name: string, type T) : void throws
+//
+// proc readTypeStart(reader: fileReader, type T) throws
+//
+// proc readTypeEnd(reader: fileReader, type T) throws
+//
+// At this time, the formal names are unspecified.
+//
+// FormatReaders that can be default-initialized can be used with the version
+// of ``fileReader.withFormatter`` method that accepts a type, rather than a
+// value.
+//
+// FormatReaders have the option of initializing a type with a "reader
+// initializer", which accepts a ``fileReader`` as an argument. These
+// reader initializers might be user-defined, or might be generated by the
+// compiler. Generic types will have type and param arguments for the reader
+// initializer that precede the ``fileReader`` argument in the initializer
+// signature. The compiler is expected to generate these reader-initializers
+// for records and classes, provided that none of the fields are fully or
+// partially generic (e.g. "var x;", or "var x : integral;").
+//
+// FormatReaders may also attempt to invoke the type method 'decodeFrom',
+// which allows user-defined types to initialize a type in some other way
+// that might not involve an initializer (e.g. for extern types). 'decodeFrom'
+// is not generated by the compiler by default. The 'decodeFrom' type method
+// may be invoked with a ``fileReader``:
+//
+//   proc type MyType.decodeFrom(reader: fileReader) throws
+//
+pragma "no doc"
+record DefaultReader {
+  var firstField = true;
+  var _inheritLevel = 0;
+  var _readStart, _readEnd : bool;
+
+  proc decode(reader:fileReader, type readType) : readType throws {
+    if isNilableClassType(readType) {
+      if reader.matchLiteral("nil") {
+        return nil:readType;
+      }
+    }
+
+    if isNumericType(readType) || isBoolType(readType) || isEnumType(readType) ||
+       readType == string || readType == bytes {
+      var x : readType;
+      reader._readOne(reader.kind, x, here);
+      return x;
+    } else if canResolveTypeMethod(readType, "decodeFrom", reader) {
+      return readType.decodeFrom(reader.withFormatter(new DefaultReader()));
+    } else {
+      return new readType(reader.withFormatter(new DefaultReader()));
+    }
+  }
+
+  proc readField(r:fileReader, key: string, type T) throws {
+    if !key.isEmpty() {
+      r.readLiteral(key);
+      r.readLiteral("=");
+    }
+
+    var ret = r.read(T);
+    r.matchLiteral(",");
+    return ret;
+  }
+
+  proc readTypeStart(r: fileReader, type T) throws {
+    if _inheritLevel == 0 {
+      if isClassType(T) then
+        r.readLiteral("{");
+      else if isRecordType(T) then
+        r.readLiteral("(");
+      else if isTupleType(T) {
+        r.readLiteral("(");
+      } else
+        throw new Error("unhandled type in readTypeStart");
+    }
+    _inheritLevel += 1;
+  }
+
+  proc readTypeEnd(r: fileReader, type T) throws {
+    // This format doesn't do any special nesting for super classes
+    if _inheritLevel == 1 {
+      if isClassType(T) then
+        r.readLiteral("}");
+      else if isRecordType(T) then
+        r.readLiteral(")");
+      else if isTupleType(T) {
+        // Currently we always try to 'matchLiteral' against ',', so no
+        // need to special case 1-tuples
+        r.readLiteral(")");
+      } else
+        throw new Error("unhandled type in readTypeEnd");
+    }
+
+    _inheritLevel -= 1;
+  }
+}
+
+
 /*
 
 A channel supports either sequential reading or sequential writing to an
@@ -2262,10 +2728,19 @@ operator _channel.=(ref lhs:_channel, rhs:_channel) {
 }
 
 pragma "no doc"
-proc _channel.init(param writing:bool, param kind:iokind, param locking:bool) {
+proc _channel.init(param writing:bool, param kind:iokind, param locking:bool, type fmtType) {
+  var default : fmtType;
+  this.init(writing, kind, locking, default);
+}
+
+
+pragma "no doc"
+proc _channel.init(param writing:bool, param kind:iokind, param locking:bool, in formatter:?) {
   this.writing = writing;
   this.kind = kind;
   this.locking = locking;
+  this.fmtType = formatter.type;
+  this._fmt = formatter;
 }
 
 pragma "no doc"
@@ -2274,8 +2749,10 @@ proc _channel.init(x: _channel) {
   this.writing = x.writing;
   this.kind = x.kind;
   this.locking = x.locking;
+  this.fmtType = x.fmtType;
   this._home = x._home;
   this._channel_internal = x._channel_internal;
+  this._fmt = x._fmt;
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
   this.complete();
   on x._home {
@@ -2300,8 +2777,10 @@ proc _channel.init=(x: _channel) {
                  then this.type.locking
                  else x.locking;
 
+  this.fmtType = x.fmtType;
   this._home = x._home;
   this._channel_internal = x._channel_internal;
+  this._fmt = x._fmt;
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
   this.complete();
   on x._home {
@@ -2324,18 +2803,21 @@ operator :(rhs: _channel, type t: _channel) {
 pragma "no doc"
 proc _channel.init(param writing:bool, param kind:iokind, param locking:bool,
                   home: locale, _channel_internal:qio_channel_ptr_t,
-                  _readWriteThisFromLocale: locale) {
+                  _readWriteThisFromLocale: locale,
+                  in formatter:?) {
   this.writing = writing;
   this.kind = kind;
   this.locking = locking;
+  this.fmtType = formatter.type;
   this._home = home;
   this._channel_internal = _channel_internal;
+  this._fmt = formatter;
   this._readWriteThisFromLocale = _readWriteThisFromLocale;
 }
 
 pragma "no doc"
-proc _channel.init(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:errorCode, hints: ioHintSet, start:int(64), end:int(64), in local_style:iostyleInternal) {
-  this.init(writing, kind, locking);
+proc _channel.init(param writing:bool, param kind:iokind, param locking:bool, in formatter:?, f:file, out error:errorCode, hints: ioHintSet, start:int(64), end:int(64), in local_style:iostyleInternal) {
+  this.init(writing, kind, locking, formatter);
   on f._home {
     this._home = f._home;
     if kind != iokind.dynamic {
@@ -2356,14 +2838,29 @@ proc ref _channel.deinit() {
   }
 }
 
-/*
+// Convenience for forms like 'w.withFormatter(DefaultWriter)`
+pragma "no doc"
+proc _channel.withFormatter(type fmtType) {
+  var fmt : fmtType;
+  return withFormatter(fmt);
+}
 
-Represents a Unicode codepoint. I/O routines (such as :proc:`channel.read`
-and :proc:`channel.write`) can use arguments of this type in order to read or
-write a single Unicode codepoint.
+pragma "no doc"
+proc _channel.withFormatter(f: ?) {
+  var ret = new _channel(this.writing, this.kind, this.locking, f);
+  ret._channel_internal = this._channel_internal;
+  ret._home = _home;
+  ret._readWriteThisFromLocale = _readWriteThisFromLocale;
+  on ret._home {
+    qio_channel_retain(ret._channel_internal);
+  }
+  return ret;
+}
 
- */
-record ioChar {
+// represents a Unicode codepoint
+// used to pass codepoints to read and write to avoid duplicating code
+pragma "no doc"
+record _internalIoChar {
   /* The codepoint value */
   var ch:int(32);
   pragma "no doc"
@@ -2374,8 +2871,18 @@ record ioChar {
   }
 }
 
+/*
+
+Represents a Unicode codepoint. I/O routines (such as :proc:`channel.read`
+and :proc:`channel.write`) can use arguments of this type in order to read or
+write a single Unicode codepoint.
+
+ */
+deprecated "ioChar type is deprecated - please use :proc:`fileReader.readCodepoint` and :proc:`fileWriter.writeCodepoint` instead"
+type ioChar = _internalIoChar;
+
 pragma "no doc"
-inline operator :(x: ioChar, type t:string) {
+inline operator :(x: _internalIoChar, type t:string) {
   var csc: c_string =  qio_encode_to_string(x.ch);
   // The caller has responsibility for freeing the returned string.
   try! {
@@ -2409,6 +2916,11 @@ record ioNewline {
     // Normally this is handled explicitly in read/write.
     f.write("\n");
   }
+
+  pragma "no doc"
+  proc encodeTo(w) throws {
+    w.writeNewline();
+  }
 }
 
 pragma "no doc"
@@ -2424,7 +2936,7 @@ Used to represent a constant string we want to read or write.
 When writing, the ``ioLiteral`` is output without any quoting or escaping.
 
 When reading, the ``ioLiteral`` must be matched exactly - or else the read call
-will return an error with code :data:`EFORMAT`.
+will return an error for incorrectly formatted input
 
 */
 record ioLiteral {
@@ -2445,52 +2957,52 @@ inline operator :(x: ioLiteral, type t:string) {
   return x.val;
 }
 
-/*
+pragma "no doc"
+record _internalIoBits {
+  /* The bottom ``numBits`` of x will be read or written */
+  var x:uint(64);
+  /* How many of the low-order bits of ``x`` should we read or write? */
+  var numBits:int(8);
 
-Represents a value with a particular bit length that we want to read or write.
-The I/O will always be done in binary mode.
-
-*/
-record ioBits {
-  /* The bottom ``nbits`` of v will be read or written */
-  var v:uint(64);
-  /* How many of the low-order bits of ``v`` should we read or write? */
-  var nbits:int(8);
-  pragma "no doc"
-  proc writeThis(f) throws {
-    // Normally this is handled explicitly in read/write.
-    f.write(v);
-  }
+  // keep the old names for compatibility with old ioBits
+  proc v: x.type {return x;}
+  proc nbits:numBits.type {return numBits;}
 }
 
+deprecated "ioBits type is deprecated - please use :proc:`fileReader.readBits` and :proc:`fileWriter.writeBits` instead"
+type ioBits = _internalIoBits;
+
 pragma "no doc"
-inline operator :(x: ioBits, type t:string) {
+inline operator :(x: _internalIoBits, type t:string) {
   const ret = "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
   return ret;
 }
 
 /*
- EEOF, ESHORT, and EFORMAT are Chapel-specific IO error codes.
+ EEOF, ESHORT, and EFORMAT are internal, Chapel-specific IO error codes.
  */
 
 private extern proc chpl_macro_int_EEOF():c_int;
 /* An error code indicating the end of file has been reached (Chapel specific)
  */
-inline proc EEOF return chpl_macro_int_EEOF():c_int;
+pragma "no doc"
+private inline proc EEOF do return chpl_macro_int_EEOF():c_int;
 
 private extern proc chpl_macro_int_ESHORT():c_int;
 /* An error code indicating that the end of file or the end of the
    input was reached before the requested amount of data could be read.
    (Chapel specific)
   */
-inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
+pragma "no doc"
+private inline proc ESHORT do return chpl_macro_int_ESHORT():c_int;
 
 private extern proc chpl_macro_int_EFORMAT():c_int;
 /* An error code indicating a format error; for example when reading a quoted
    string literal, this would be returned if we never encountered the
    opening quote. (Chapel specific)
   */
-inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
+pragma "no doc"
+private inline proc EFORMAT do return chpl_macro_int_EFORMAT():c_int;
 
 
 pragma "no doc"
@@ -2601,7 +3113,8 @@ proc _channel.offset():int(64) {
    other data if it is stored in the channel's buffer, for example with
    :proc:`channel._mark` and :proc:`channel._revert`.
 
-   :throws SystemError: Throws if the channel offset was not moved.
+   :throws EofError: If EOF is reached before the requested number of bytes can be consumed.
+   :throws SystemError: For other failures, for which channel offset is not moved.
  */
 proc _channel.advance(amount:int(64)) throws {
   var err:errorCode = 0;
@@ -2616,7 +3129,7 @@ proc _channel.advance(amount:int(64)) throws {
    Reads until ``byte`` is found and then leave the channel offset
    just after it.
 
-   :throws EofError: if the requested `byte` could not be found.
+   :throws UnexpectedEofError: if the requested `byte` could not be found.
    :throws SystemError: if another error occurred.
  */
 proc _channel.advancePastByte(byte:uint(8)) throws {
@@ -2919,18 +3432,29 @@ proc _channel.filePlugin() : borrowed QioPluginFile? {
   return vptr:borrowed QioPluginFile?;
 }
 
-@unstable "openreader with a style argument is unstable"
+deprecated "openreader is deprecated - please use :proc:`openReader` instead"
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints=ioHintSet.empty,
                 style:iostyle)
     : fileReader(kind, locking) throws {
-  return openreaderHelper(path, kind, locking, start..end, hints,
+  return openReader(path, kind, locking, start, end, hints, style);
+}
+
+
+@unstable "openReader with a style argument is unstable"
+proc openReader(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                start:int(64) = 0, end:int(64) = max(int(64)),
+                hints=ioHintSet.empty,
+                style:iostyle)
+    : fileReader(kind, locking) throws {
+  return openReaderHelper(path, kind, locking, start..end, hints,
                           style: iostyleInternal);
 }
 
-/* Used to control the behavior of the region argument for :proc:`openreader`.
+/* Used to control the behavior of the region argument for :proc:`openReader`.
    When set to ``true``, the region argument will fully specify the bounds of
    the :type:`fileReader`.  When set to ``false``, the region argument will
    exclude the high bound.  Defaults to ``false``, the original behavior.
@@ -2944,27 +3468,27 @@ config param useNewOpenReaderRegionBounds = false;
 
 /*
 
-Open a file at a particular path and return a reading channel for it.
+Open a file at a particular path and return a :record:`fileReader` for it.
 This function is equivalent to calling :proc:`open` and then
 :proc:`file.reader` on the resulting file.
 
 :arg path: which file to open (for example, "some/file.txt").
 :arg kind: :type:`iokind` compile-time argument to determine the
-            corresponding parameter of the :record:`channel` type. Defaults
+            corresponding parameter of the :record:`fileReader` type. Defaults
             to ``iokind.dynamic``, meaning that the associated
             :record:`iostyle` controls the formatting choices.
 :arg locking: compile-time argument to determine whether or not the
-              channel should use locking; sets the
-              corresponding parameter of the :record:`channel` type.
+              fileReader should use locking; sets the
+              corresponding parameter of the :record:`fileReader` type.
               Defaults to true, but when safe, setting it to false
               can improve performance.
 :arg region: zero-based byte offset indicating where in the file the
-            channel should start and stop reading. Defaults to
+            fileReader should start and stop reading. Defaults to
             ``0..``, meaning from the start of the file to no specified end
             point.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
-:returns: an open reading channel to the requested resource.
+:returns: an open fileReader to the requested resource.
 
 .. warning::
 
@@ -2975,92 +3499,198 @@ This function is equivalent to calling :proc:`open` and then
                          permissions
 :throws NotADirectoryError: Thrown if part of the provided path was expected to
                             be a directory but was not
-:throws SystemError: Thrown if a reading channel could not be returned.
+:throws SystemError: Thrown if a fileReader could not be returned.
 :throws IllegalArgumentError: Thrown if trying to read explicitly prior to byte
                               0.
  */
+deprecated "openreader is deprecated - please use :proc:`openReader` instead"
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty)
     : fileReader(kind, locking) throws where (!region.hasHighBound() ||
                                               useNewOpenReaderRegionBounds) {
-  return openreaderHelper(path, kind, locking, region, hints);
+  return openReader(path, kind, locking, region, hints);
 }
 
-deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewOpenReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
-proc openreader(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking) throws where (region.hasHighBound() &&
-                                              !useNewOpenReaderRegionBounds) {
-  return openreaderHelper(path, kind, locking, region, hints);
-}
-
-private proc openreaderHelper(path:string,
-                              param kind=iokind.dynamic, param locking=true,
-                              region: range(?) = 0..,
-                              hints=ioHintSet.empty,
-                              style:iostyleInternal = defaultIOStyleInternal())
-  : fileReader(kind, locking) throws {
-
-  var fl:file = try open(path, iomode.r);
-  return try fl.readerHelper(kind, locking, region, hints, style,
-                             fromOpenReader=true);
-}
-
-@unstable "openwriter with a style argument is unstable"
-proc openwriter(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints=ioHintSet.empty,
-                style:iostyle)
-    : fileWriter(kind, locking) throws {
-  return openwriterHelper(path, kind, locking, start, end, hints,
-                    style: iostyleInternal);
-}
 
 /*
 
-Open a file at a particular path and return a writing channel for it.
-This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
-:proc:`file.writer` on the resulting file.
+Open a file at a particular path and return a :record:`fileReader` for it.
+This function is equivalent to calling :proc:`open` and then
+:proc:`file.reader` on the resulting file.
 
 :arg path: which file to open (for example, "some/file.txt").
 :arg kind: :type:`iokind` compile-time argument to determine the
-           corresponding parameter of the :record:`channel` type. Defaults
-           to ``iokind.dynamic``, meaning that the associated
-           :record:`iostyle` controls the formatting choices.
+            corresponding parameter of the :record:`fileReader` type. Defaults
+            to ``iokind.dynamic``, meaning that the associated
+            :record:`iostyle` controls the formatting choices.
 :arg locking: compile-time argument to determine whether or not the
-              channel should use locking; sets the
-              corresponding parameter of the :record:`channel` type.
+              fileReader should use locking; sets the
+              corresponding parameter of the :record:`fileReader` type.
               Defaults to true, but when safe, setting it to false
               can improve performance.
+:arg region: zero-based byte offset indicating where in the file the
+            fileReader should start and stop reading. Defaults to
+            ``0..``, meaning from the start of the file to no specified end
+            point.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
-:returns: an open writing channel to the requested resource.
+:returns: an open fileReader to the requested resource.
+
+.. warning::
+
+   The region argument will ignore any specified stride other than 1.
 
 :throws FileNotFoundError: Thrown if part of the provided path did not exist
 :throws PermissionError: Thrown if part of the provided path had inappropriate
                          permissions
 :throws NotADirectoryError: Thrown if part of the provided path was expected to
                             be a directory but was not
-:throws SystemError: Thrown if a writing channel could not be returned.
+:throws SystemError: Thrown if a fileReader could not be returned.
+:throws IllegalArgumentError: Thrown if trying to read explicitly prior to byte
+                              0.
+ */
+proc openReader(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                region: range(?) = 0.., hints=ioHintSet.empty)
+    : fileReader(kind, locking) throws where (!region.hasHighBound() ||
+                                              useNewOpenReaderRegionBounds) {
+  return openReaderHelper(path, kind, locking, region, hints);
+}
+
+deprecated "openreader is deprecated - please use :proc:`openReader` instead"
+proc openreader(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                region: range(?) = 0.., hints=ioHintSet.empty)
+    : fileReader(kind, locking) throws where (region.hasHighBound() &&
+                                              !useNewOpenReaderRegionBounds) {
+  return openReader(path, kind, locking, region, hints);
+}
+
+deprecated "Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewOpenReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive."
+proc openReader(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                region: range(?) = 0.., hints=ioHintSet.empty)
+    : fileReader(kind, locking) throws where (region.hasHighBound() &&
+                                              !useNewOpenReaderRegionBounds) {
+  return openReaderHelper(path, kind, locking, region, hints);
+}
+
+private proc openReaderHelper(path:string,
+                              param kind=iokind.dynamic, param locking=true,
+                              region: range(?) = 0..,
+                              hints=ioHintSet.empty,
+                              style:iostyleInternal = defaultIOStyleInternal())
+  : fileReader(kind, locking) throws {
+
+  var fl:file = try open(path, ioMode.r);
+  return try fl.readerHelper(kind, locking, region, hints, style,
+                             fromOpenReader=true);
+}
+
+deprecated "openwriter is deprecated - please use :proc:`openWriter` instead"
+proc openwriter(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                start:int(64) = 0, end:int(64) = max(int(64)),
+                hints=ioHintSet.empty,
+                style:iostyle)
+    : fileWriter(kind, locking) throws {
+  return openWriter(path, kind, locking, start, end, hints, style);
+}
+
+@unstable "openWriter with a style argument is unstable"
+proc openWriter(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                start:int(64) = 0, end:int(64) = max(int(64)),
+                hints=ioHintSet.empty,
+                style:iostyle)
+    : fileWriter(kind, locking) throws {
+  return openWriterHelper(path, kind, locking, start, end, hints,
+                    style: iostyleInternal);
+}
+
+
+/*
+
+Open a file at a particular path and return a :record:`fileWriter` for it.
+This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
+:proc:`file.writer` on the resulting file.
+
+:arg path: which file to open (for example, "some/file.txt").
+:arg kind: :type:`iokind` compile-time argument to determine the
+           corresponding parameter of the :record:`fileWriter` type. Defaults
+           to ``iokind.dynamic``, meaning that the associated
+           :record:`iostyle` controls the formatting choices.
+:arg locking: compile-time argument to determine whether or not the
+              fileWriter should use locking; sets the
+              corresponding parameter of the :record:`fileWriter` type.
+              Defaults to true, but when safe, setting it to false
+              can improve performance.
+:arg hints: optional argument to specify any hints to the I/O system about
+            this file. See :record:`ioHintSet`.
+:returns: an open fileWriter to the requested resource.
+
+:throws FileNotFoundError: Thrown if part of the provided path did not exist
+:throws PermissionError: Thrown if part of the provided path had inappropriate
+                         permissions
+:throws NotADirectoryError: Thrown if part of the provided path was expected to
+                            be a directory but was not
+:throws SystemError: Thrown if a fileWriter could not be returned.
+:throws IllegalArgumentError: Thrown if trying to write explicitly prior to byte
+                              0.
 */
+deprecated "openwriter is deprecated - please use :proc:`openWriter` instead"
 proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 hints = ioHintSet.empty)
     : fileWriter(kind, locking) throws {
-  return openwriterHelper(path, kind, locking, hints=hints);
+  return openWriter(path, kind, locking, hints);
 }
 
-private proc openwriterHelper(path:string,
+/*
+
+Open a file at a particular path and return a :record:`fileWriter` for it.
+This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
+:proc:`file.writer` on the resulting file.
+
+:arg path: which file to open (for example, "some/file.txt").
+:arg kind: :type:`iokind` compile-time argument to determine the
+           corresponding parameter of the :record:`fileWriter` type. Defaults
+           to ``iokind.dynamic``, meaning that the associated
+           :record:`iostyle` controls the formatting choices.
+:arg locking: compile-time argument to determine whether or not the
+              fileWriter should use locking; sets the
+              corresponding parameter of the :record:`fileWriter` type.
+              Defaults to true, but when safe, setting it to false
+              can improve performance.
+:arg hints: optional argument to specify any hints to the I/O system about
+            this file. See :record:`ioHintSet`.
+:returns: an open fileWriter to the requested resource.
+
+:throws FileNotFoundError: Thrown if part of the provided path did not exist
+:throws PermissionError: Thrown if part of the provided path had inappropriate
+                         permissions
+:throws NotADirectoryError: Thrown if part of the provided path was expected to
+                            be a directory but was not
+:throws SystemError: Thrown if a fileWriter could not be returned.
+:throws IllegalArgumentError: Thrown if trying to write explicitly prior to byte
+                              0.
+*/
+proc openWriter(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                hints = ioHintSet.empty)
+    : fileWriter(kind, locking) throws {
+  return openWriterHelper(path, kind, locking, hints=hints);
+}
+
+private proc openWriterHelper(path:string,
                               param kind=iokind.dynamic, param locking=true,
                               start:int(64) = 0, end:int(64) = max(int(64)),
                               hints = ioHintSet.empty,
                               style:iostyleInternal = defaultIOStyleInternal())
   : fileWriter(kind, locking) throws {
 
-  var fl:file = try open(path, iomode.cw);
+  var fl:file = try open(path, ioMode.cw);
   return try fl.writerHelper(kind, locking, start..end, hints, style);
 }
 
@@ -3151,56 +3781,61 @@ proc file.readerHelper(param kind=iokind.dynamic, param locking=true,
   // It is the responsibility of the caller to release the returned channel
   // if the error code is nonzero.
   // The return error code should be checked to avoid double-deletion errors.
-  var ret:fileReader(kind, locking);
+  var ret : fileReader(kind, locking);
   var err:errorCode = 0;
   on this._home {
+    var start : region.idxType;
+    var end : region.idxType;
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
       // This is to ensure the user sees consistent behavior and can control it.
       // - All calls from `openUrlReader` should use the new behavior.
-      // - Only calls from `openreader` that are compiled with the flag that
+      // - Only calls from `openReader` that are compiled with the flag that
       //   controls its region argument should affect its behavior.
       // - Only calls from `file.reader` that are compiled with the flag that
       //   controls its region argument should affect its behavior.
-      // Calls from `openreader` should not be impacted by `file.reader`'s flag
+      // Calls from `openReader` should not be impacted by `file.reader`'s flag
       // and vice versa.
       if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
           fromOpenUrlReader ||
           (!fromOpenReader && useNewFileReaderRegionBounds)) {
-        ret = new fileReader(kind, locking, this, err, hints, region.low,
-                             region.high + 1, style);
+        start = region.low;
+        end = region.high + 1;
       } else {
-        ret = new fileReader(kind, locking, this, err, hints, region.low,
-                             region.high, style);
+        start = region.low;
+        end = region.high;
       }
 
     } else if (region.hasLowBound()) {
-      ret = new fileReader(kind, locking, this, err, hints, region.low,
-                           max(int(64)), style);
+      start = region.low;
+      end = max(region.idxType);
 
     } else if (region.hasHighBound()) {
       // This is to ensure the user sees consistent behavior and can control it.
       // - All calls from `openUrlReader` should use the new behavior.
-      // - Only calls from `openreader` that are compiled with the flag that
+      // - Only calls from `openReader` that are compiled with the flag that
       //   controls its region argument should affect its behavior.
       // - Only calls from `file.reader` that are compiled with the flag that
       //   controls its region argument should affect its behavior.
-      // Calls from `openreader` should not be impacted by `file.reader`'s flag
+      // Calls from `openReader` should not be impacted by `file.reader`'s flag
       // and vice versa.
       if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
           fromOpenUrlReader ||
           (!fromOpenReader && useNewFileReaderRegionBounds)) {
-        ret = new fileReader(kind, locking, this, err, hints, 0,
-                             region.high + 1, style);
+        start = 0;
+        end = region.high + 1;
       } else {
-        ret = new fileReader(kind, locking, this, err, hints, 0, region.high,
-                             style);
+        start = 0;
+        end = region.high;
       }
 
     } else {
-      ret = new fileReader(kind, locking, this, err, hints, 0, max(int(64)),
-                           style);
+      start = 0;
+      end = max(region.idxType);
     }
+
+    ret = new fileReader(kind, locking, defaultFmtVal(false), this, err, hints,
+                        start, end, style);
   }
   if err then try ioerror(err, "in file.reader", this._tryGetPath());
 
@@ -3228,6 +3863,7 @@ config param useNewLinesRegionBounds = false;
 
    :throws SystemError: Thrown if an object could not be returned.
  */
+deprecated "`file.lines` is deprecated; please use `file.reader().lines` instead"
 proc file.lines(param locking:bool = true, region: range(?) = 0..,
                 hints = ioHintSet.empty) throws where (!region.hasHighBound() ||
                                                        useNewLinesRegionBounds) {
@@ -3250,40 +3886,43 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
   local_style.string_end = 0x0a; // '\n'
   param kind = iokind.dynamic;
 
-  var ret:itemReaderInternal(string, kind, locking);
+  var ret:itemReaderInternal(string, kind, locking, defaultFmtType(false));
   var err:errorCode = 0;
   on this._home {
+    var start : region.idxType;
+    var end : region.idxType;
     try this.checkAssumingLocal();
-    var ch: fileReader;
     if (region.hasLowBound() && region.hasHighBound()) {
       if (useNewLinesRegionBounds) {
-        ch = new fileReader(kind, locking, this, err, hints, region.low,
-                            region.high + 1, local_style);
+        start = region.low;
+        end = region.high + 1;
 
       } else {
-        ch = new fileReader(kind, locking, this, err, hints, region.low,
-                            region.high, local_style);
+        start = region.low;
+        end = region.high;
       }
 
     } else if (region.hasLowBound()) {
-      ch = new fileReader(kind, locking, this, err, hints, region.low,
-                          max(int(64)), local_style);
+      start = region.low;
+      end = max(region.idxType);
 
     } else if (region.hasHighBound()) {
       if (useNewLinesRegionBounds) {
-        ch = new fileReader(kind, locking, this, err, hints, 0, region.high + 1,
-                            local_style);
+        start = 0;
+        end = region.high + 1;
 
       } else {
-        ch = new fileReader(kind, locking, this, err, hints, 0, region.high,
-                            local_style);
+        start = 0;
+        end = region.high;
       }
 
     } else {
-      ch = new fileReader(kind, locking, this, err, hints, 0, max(int(64)),
-                          local_style);
+      start = 0;
+      end = max(region.idxType);
     }
-    ret = new itemReaderInternal(string, kind, locking, ch);
+    var ch = new fileReader(kind, locking, defaultFmtVal(false), this, err,
+                            hints, start, end, local_style);
+    ret = new itemReaderInternal(string, kind, locking, defaultFmtType(false), ch);
   }
   if err then try ioerror(err, "in file.lines", this._tryGetPath());
 
@@ -3383,38 +4022,43 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
   // channel.
   // If the return error code is nonzero, the ref count will be 0 not 1.
   // The error code should be checked to avoid double-deletion errors.
-  var ret:fileWriter(kind, locking);
+  var ret : fileWriter(kind, locking);
   var err:errorCode = 0;
   on this._home {
+    var start : region.idxType;
+    var end : region.idxType;
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
       // TODO: remove the fromOpenUrlWriter arg when the deprecated version is
       // removed
       if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
-        ret = new fileWriter(kind, locking, this, err, hints, region.low,
-                             region.high + 1, style);
+        start = region.low;
+        end = region.high + 1;
       } else {
-        ret = new fileWriter(kind, locking, this, err, hints, region.low,
-                             region.high, style);
+        start = region.low;
+        end = region.high;
       }
 
     } else if (region.hasLowBound()) {
-      ret = new fileWriter(kind, locking, this, err, hints, region.low,
-                           max(int(64)), style);
+      start = region.low;
+      end = max(region.idxType);
 
     } else if (region.hasHighBound()) {
       if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
-        ret = new fileWriter(kind, locking, this, err, hints, 0,
-                             region.high + 1, style);
+        start = 0;
+        end = region.high + 1;
       } else {
-        ret = new fileWriter(kind, locking, this, err, hints, 0, region.high,
-                             style);
+        start = 0;
+        end = region.high;
       }
 
     } else {
-      ret = new fileWriter(kind, locking, this, err, hints, 0, max(int(64)),
-                           style);
+      start = 0;
+      end = max(region.idxType);
     }
+
+    ret = new fileWriter(kind, locking, defaultFmtVal(true), this, err, hints,
+                         start, end, style);
   }
   if err then try ioerror(err, "in file.writer", this._tryGetPath());
 
@@ -3422,16 +4066,16 @@ proc file.writerHelper(param kind=iokind.dynamic, param locking=true,
 }
 
 pragma "no doc"
-proc _isSimpleIoType(type t) param return
+proc _isSimpleIoType(type t) param do return
   isBoolType(t) || isNumericType(t) || isEnumType(t);
 
 pragma "no doc"
-proc _isIoPrimitiveType(type t) param return
+proc _isIoPrimitiveType(type t) param do return
   _isSimpleIoType(t) || (t == string) || (t == bytes);
 
 pragma "no doc"
- proc _isIoPrimitiveTypeOrNewline(type t) param return
-  _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == ioChar || t == ioBits;
+ proc _isIoPrimitiveTypeOrNewline(type t) param do return
+  _isIoPrimitiveType(t) || t == ioNewline || t == ioLiteral || t == _internalIoChar || t == _internalIoBits;
 
 // Read routines for all primitive types.
 private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
@@ -3749,6 +4393,56 @@ proc _channel._constructIoErrorMsg(param kind: iokind, const x:?t): string {
   return result;
 }
 
+pragma "no doc"
+proc _channel._decodeOne(type readType, loc:locale) throws {
+  var reader = new fileReader(iokind.dynamic, locking=false,
+                              formatter=_fmt,
+                              home=here,
+                              _channel_internal=_channel_internal,
+                              _readWriteThisFromLocale=loc);
+  defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL; }
+
+  if isGenericType(readType) then
+    compilerError("reading generic types is not supported: '" + readType:string + "'");
+
+  if isClassType(readType) {
+    // Save formatter authors from having to reason about 'owned' and
+    // 'shared' by converting the type to unmanaged.
+    var tmp = reader.formatter.decode(reader, _to_unmanaged(readType));
+
+    // TODO: We may also want to support user-defined management types at
+    // some point.
+    // TODO: Implement support for reading a 'borrowed' class
+    if isOwnedClassType(readType) {
+      return new _owned(tmp);
+    } else if isSharedClassType(readType) {
+      return new _shared(tmp);
+    } else {
+      return tmp;
+    }
+  } else {
+    return reader.formatter.decode(reader, readType);
+  }
+}
+
+pragma "no doc"
+proc _channel._decodeOne(ref x:?t, loc:locale) throws {
+  // _read_one_internal
+  var reader = new fileReader(iokind.dynamic, locking=false,
+                              formatter=_fmt,
+                              home=here,
+                              _channel_internal=_channel_internal,
+                              _readWriteThisFromLocale=loc);
+  defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL; }
+
+  if t == ioLiteral || t == ioNewline || t == _internalIoBits || t == _internalIoChar {
+    reader._readOne(reader.kind, x, reader.getLocaleOfIoRequest());
+    return;
+  }
+
+  x = _decodeOne(t, loc);
+}
+
 //
 // The channel must be locked and running on this._home.
 // The intent of x is ref (vs out) because it might contain a string literal.
@@ -3769,6 +4463,24 @@ private proc escapedNonUTF8ErrorMessage() : string {
   const ret = "Strings with escaped non-UTF8 bytes cannot be used with I/O. " +
         "Try using string.encode(encodePolicy.unescape) first.\n";
   return ret;
+}
+
+pragma "no doc"
+proc _channel._encodeOne(const x:?t, loc:locale) throws {
+  var writer = new fileWriter(iokind.dynamic, locking=false,
+                              formatter=formatter,
+                              home=here,
+                              _channel_internal=_channel_internal,
+                              _readWriteThisFromLocale=loc);
+
+  // Set the channel pointer to NULL to make the
+  // destruction of the local writer record safe
+  // (it shouldn't release anything since it's a local copy).
+  defer { writer._channel_internal = QIO_CHANNEL_PTR_NULL; }
+
+  // TODO: Should this pass an unmanaged or borrowed version, to reduce
+  // the number of instantiations for a type?
+  try writer.formatter.encode(writer, x);
 }
 
 //
@@ -3795,14 +4507,14 @@ private proc _read_io_type_internal(_channel_internal:qio_channel_ptr_t,
   var e:errorCode = 0;
   if t == ioNewline {
     return qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
-  } else if t == ioChar {
+  } else if t == _internalIoChar {
     return qio_channel_read_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
     return qio_channel_scan_literal(false, _channel_internal,
                                     x.val.localize().c_str(),
                                     x.val.numBytes: c_ssize_t, x.ignoreWhiteSpace);
-  } else if t == ioBits {
-    return qio_channel_read_bits(false, _channel_internal, x.v, x.nbits);
+  } else if t == _internalIoBits {
+    return qio_channel_read_bits(false, _channel_internal, x.x, x.numBits);
   } else if kind == iokind.dynamic {
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
@@ -3851,12 +4563,12 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   var e:errorCode = 0;
   if t == ioNewline {
     return qio_channel_write_newline(false, _channel_internal);
-  } else if t == ioChar {
+  } else if t == _internalIoChar {
     return qio_channel_write_char(false, _channel_internal, x.ch);
   } else if t == ioLiteral {
     return qio_channel_print_literal(false, _channel_internal, x.val.localize().c_str(), x.val.numBytes:c_ssize_t);
-  } else if t == ioBits {
-    return qio_channel_write_bits(false, _channel_internal, x.v, x.nbits);
+  } else if t == _internalIoBits {
+    return qio_channel_write_bits(false, _channel_internal, x.x, x.numBits);
   } else if kind == iokind.dynamic {
     var binary:uint(8) = qio_channel_binary(_channel_internal);
     var byteorder:uint(8) = qio_channel_byteorder(_channel_internal);
@@ -3885,6 +4597,7 @@ private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
   // existing channel so we can avoid locking (because we
   // already have the lock)
   var reader = new fileReader(iokind.dynamic, locking=false,
+                              formatter=defaultFmtVal(false),
                               home=here,
                               _channel_internal=_channel_internal,
                               _readWriteThisFromLocale=loc);
@@ -3936,6 +4649,7 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   // existing channel so we can avoid locking (because we
   // already have the lock)
   var writer = new fileWriter(iokind.dynamic, locking=false,
+                              formatter=defaultFmtVal(true),
                               home=here,
                               _channel_internal=_channel_internal,
                               _readWriteThisFromLocale=loc);
@@ -3980,7 +4694,12 @@ proc _channel.readIt(ref x) throws {
 
   on this._home {
     try! this.lock(); defer { this.unlock(); }
-    try _readOne(kind, x, origLocale);
+
+    if chpl_useIOFormatters {
+      _decodeOne(x, origLocale);
+    } else {
+      _readOne(kind, x, origLocale);
+    }
   }
 }
 
@@ -4358,9 +5077,17 @@ proc _channel.writeIt(const x) throws {
   /*
      Write a sequence of bytes.
 
-     :throws SystemError: Thrown if the byte sequence could not be written.
+     :throws UnexpectedEofError: Thrown if EOF encountered before all bytes could be written.
+     :throws SystemError: Thrown if the byte sequence could not be written for another reason.
   */
+  pragma "last resort"
+  deprecated "'writeBytes' with a generic pointer argument is deprecated; please use the variant that takes a 'bytes' object"
   proc _channel.writeBytes(x, len:c_ssize_t) throws {
+    try this._writeBytes(x, len);
+  }
+
+  pragma "no doc"
+  proc _channel._writeBytes(x, len:c_ssize_t) throws {
     var err:errorCode = 0;
     on this._home {
       try this.lock(); defer { this.unlock(); }
@@ -4397,7 +5124,7 @@ iter _channel.lines() {
   this._set_styleInternal(newline_style);
 
   // Iterate over lines
-  var itemReader = new itemReaderInternal(string, kind, locking, this);
+  var itemReader = new itemReaderInternal(string, kind, locking, fmtType, this);
   for line in itemReader {
     yield line;
   }
@@ -4426,7 +5153,7 @@ proc stringify(const args ...?k):string {
     // otherwise, write it using the I/O system.
     try! {
       // Open a memory buffer to store the result
-      var f = openmem();
+      var f = openMemFile();
       defer try! f.close();
 
       var w = f.writer(locking=false);
@@ -4441,7 +5168,7 @@ proc stringify(const args ...?k):string {
       var r = f.reader(locking=false);
       defer try! r.close();
 
-      r.readBytes(buf, offset:c_ssize_t);
+      r._readBytes(buf, offset:c_ssize_t);
       // Add the terminating NULL byte to make C string conversion easy.
       buf[offset] = 0;
 
@@ -4477,7 +5204,11 @@ inline proc _channel._readInner(ref args ...?k):void throws {
   on this._home {
     try this.lock(); defer { this.unlock(); }
     for param i in 0..k-1 {
-      _readOne(kind, args[i], origLocale);
+      if chpl_useIOFormatters {
+        _decodeOne(args[i], origLocale);
+      } else {
+        _readOne(kind, args[i], origLocale);
+      }
     }
   }
 }
@@ -4493,13 +5224,13 @@ inline proc _channel._readInner(ref args ...?k):void throws {
               in :ref:`readThis-writeThis`.
    :returns: `true` if the read succeeded, and `false` on end of file.
 
+   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
    :throws SystemError: Thrown if the channel could not be read.
  */
 inline proc _channel.read(ref args ...?k):bool throws {
   try {
     this._readInner((...args));
-  } catch err: SystemError {
-    if err.err != EEOF then throw err;
+  } catch err: EofError {
     return false;
   }
 
@@ -4527,11 +5258,14 @@ proc _channel.readHelper(ref args ...?k, style:iostyleInternal):bool throws {
       this._set_styleInternal(style);
 
       for param i in 0..k-1 {
-        _readOne(kind, args[i], origLocale);
+        if chpl_useIOFormatters {
+          _decodeOne(args[i], origLocale);
+        } else {
+          _readOne(kind, args[i], origLocale);
+        }
       }
     }
-  } catch err: SystemError {
-    if err.err != EEOF then throw err;
+  } catch err: EofError {
     return false;
   }
 
@@ -4601,8 +5335,9 @@ proc _channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.lo
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: Returns `0` if EOF is reached and no data is read. Otherwise, returns the number of array elements that were set by this call.
 
-  :throws SystemError: Thrown if data could not be read from the channel.
-  :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading line.
+  :throws SystemError: Thrown if data could not be read from the channel for another reason.
+  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
  */
 proc _channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int throws
       where (t == uint(8) || t == int(8)) && a.rank == 1 && a.isRectangular() && !a.stridable {
@@ -4628,7 +5363,7 @@ proc _channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false): int th
         // encountered an error so throw
         this._revert();
         var err:errorCode = -got;
-        try this._ch_ioerror(EFORMAT:errorCode, "in channel.readLine(a : [] uint(8))");
+        try this._ch_ioerror(err, "in channel.readLine(a : [] uint(8))");
       }
       if got == newLineChar {
         foundNewline = true;
@@ -4676,6 +5411,7 @@ inline proc _channel.readLine(ref a: [] ?t, maxSize=a.size, stripNewline=false):
   :arg arg: a string or bytes to receive the line
   :returns: `true` if a line was read without error, `false` upon EOF
 
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if data could not be read from the channel.
 */
 deprecated "channel.readline is deprecated. Use :proc:`channel.readLine` instead"
@@ -4696,8 +5432,7 @@ proc _channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
       this._set_styleInternal(myStyle);
       try _readOne(iokind.dynamic, arg, origLocale);
     }
-  } catch err: SystemError {
-    if err.err != EEOF then throw err;
+  } catch err: EofError {
     return false;
   }
 
@@ -4729,6 +5464,7 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
   var err = qio_channel_read_amt(false, _channel_internal, s.buff, len);
   if !err {
     s.buffLen = nBytes;
+    if nBytes != 0 then s.buff[nBytes] = 0; // include null-byte
     if s.type == string {
       s.cachedNumCodepoints = nCodepoints;
       s.hasEscapes = false;
@@ -4751,8 +5487,9 @@ private proc readStringBytesData(ref s /*: string or bytes*/,
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: `true` if a line was read without error, `false` upon EOF
 
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if data could not be read from the channel.
-  :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
 proc _channel.readLine(ref s: string,
                       maxSize=-1,
@@ -4836,8 +5573,9 @@ proc _channel.readLine(ref s: string,
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: `true` if a line was read without error, `false` upon EOF
 
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if data could not be read from the channel.
-  :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
+  :throws BadFormatError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
 proc _channel.readLine(ref b: bytes,
                       maxSize=-1,
@@ -4923,6 +5661,7 @@ proc _channel.readLine(ref b: bytes,
   :arg stripNewline: Whether to strip the trailing ``\n`` from the line.
   :returns: The data that was read.
 
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
   :throws SystemError: Thrown if data could not be read from the channel.
   :throws IoError: Thrown if the line is longer than `maxSize`. It leaves the input marker at the beginning of the offending line.
 */
@@ -4938,7 +5677,8 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
   :arg t: the type to read into; must be ``string`` or ``bytes``. Defaults to ``bytes`` if not specified.
   :returns: the contents of the channel as a ``t``
 
-  :throws SystemError: Thrown if data could not be read from the channel
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if data could not be read from the channel for another reason.
 */
 proc _channel.readAll(type t=bytes): t throws
   where t==string || t==bytes
@@ -4967,7 +5707,8 @@ proc _channel.readAll(type t=bytes): t throws
   :returns: the number of codepoints that were stored in ``s``
   :rtype: int
 
-  :throws SystemError: Thrown if data could not be read from the channel
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if data could not be read from the channel for another reason.
 */
 proc _channel.readAll(ref s: string): int throws {
   if this.writing then compilerError("attempt to read on write-only channel");
@@ -4990,7 +5731,8 @@ proc _channel.readAll(ref s: string): int throws {
   :returns: the number of bytes that were stored in ``b``
   :rtype: int
 
-  :throws SystemError: Thrown if data could not be read from the channel
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if data could not be read from the channel for another reason.
 */
 proc _channel.readAll(ref b: bytes): int throws {
   if this.writing then compilerError("attempt to read on write-only channel");
@@ -5016,8 +5758,9 @@ proc _channel.readAll(ref b: bytes): int throws {
   :returns: the number of bytes that were stored in ``a``
   :rtype: int
 
-  :throws InsufficientCapacityError: Thrown if the channel's contents do not fit into ``a``
-  :throws SystemError: Thrown if data could not be read from the channel
+  :throws InsufficientCapacityError: Thrown if the channel's contents do not fit into ``a``.
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if data could not be read from the channel for another reason.
 */
 proc _channel.readAll(ref a: [?d] ?t): int throws
   where (t == uint(8) || t == int(8)) && d.rank == 1 && d.stridable == false
@@ -5077,8 +5820,10 @@ proc _channel.readAll(ref a: [?d] ?t): int throws
              current offset.
    :returns: `true` if we read something, `false` upon EOF
 
+   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
    :throws SystemError: Thrown if the bytes could not be read from the channel.
  */
+deprecated "'readstring' is deprecated; please use 'readString' instead"
 proc _channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
   var (err, _) = readBytesOrString(this, str_out, len);
 
@@ -5092,6 +5837,50 @@ proc _channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
   return false;
 }
 
+/*
+  Read a given number of codepoints from a ``fileReader``, returning a new
+  :type:`~String.string`.
+
+  The ``string``'s length may be less than ``maxSize`` if EOF is reached while
+  reading. If nothing is read, the empty string (``""``) will be returned.
+
+  :arg maxSize: the maximum number of codepoints to read from the ``fileReader``
+  :returns: a new ``string`` containing up to the next ``maxSize`` codepoints
+              from the ``fileReader``
+
+  :throws SystemError: Thrown if a ``string`` could not be read from the ``fileReader``.
+*/
+proc fileReader.readString(maxSize: int): string throws {
+  var ret: string = "";
+  var (e, _) = readBytesOrString(this, ret, maxSize);
+
+  if e != 0 && e != EEOF then throw createSystemError(e);
+
+  return ret;
+}
+
+/*
+  Read a given number of codepoints from a ``fileReader`` into a
+  :type:`~String.string`.
+
+  The updated ``string``'s length may be less than ``maxSize`` if EOF is
+  reached while reading. If nothing is read, it will be set to the empty
+  string (``""``).
+
+  :arg s: the ``string`` to read into — contents will be overwritten
+  :arg maxSize: the maximum number of codepoints to read from the ``fileReader``
+  :returns: ``false`` if nothing could be read, or ``true`` if something was read.
+
+  :throws SystemError: Thrown if a ``string`` could not be read from the ``fileReader``.
+*/
+proc fileReader.readString(ref s: string, maxSize: int): bool throws {
+  var (e, lenRead) = readBytesOrString(this, s, maxSize);
+
+  if e != 0 && e != EEOF then throw createSystemError(e);
+
+  return lenRead > 0;
+}
+
 /* read a given number of bytes from a channel
 
    :arg bytes_out: The bytes to be read into
@@ -5101,8 +5890,9 @@ proc _channel.readstring(ref str_out:string, len:int(64) = -1):bool throws {
              current offset.
    :returns: `true` if we read something, `false` upon EOF
 
-   :throws SystemError: Thrown if the bytes could not be read from the channel.
+  :throws SystemError: Thrown if data could not be read from the channel.
  */
+deprecated "'readbytes' is deprecated; please use 'readBytes' instead"
 proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
   var (err, _) = readBytesOrString(this, bytes_out, len);
 
@@ -5114,6 +5904,52 @@ proc _channel.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
     try this._ch_ioerror(err, "in channel.readbytes(ref str_out:bytes, len:int(64))");
   }
   return false;
+}
+
+/*
+  Read a given number of bytes from a ``fileReader``, returning a new
+  :type:`~Bytes.bytes`.
+
+  The ``bytes``'s length may be less than ``maxSize`` if EOF is reached while
+  reading. If nothing is read, the empty bytes (``b""``) will be returned.
+
+  :arg maxSize: the maximum number of bytes to read from the ``fileReader``
+  :returns: a new ``bytes`` containing up to the next ``maxSize`` bytes
+              from the ``fileReader``
+
+  :throws SystemError: Thrown if a ``bytes`` could not be read from the ``fileReader``
+                       for another reason.
+*/
+proc fileReader.readBytes(maxSize: int): bytes throws {
+  var ret: bytes = b"";
+  var (e, _) = readBytesOrString(this, ret, maxSize);
+
+  if e != 0 && e != EEOF then throw createSystemError(e);
+
+  return ret;
+}
+
+/*
+  Read a given number of bytes from a ``fileReader`` into a
+  :type:`~Bytes.bytes`.
+
+  The updated ``bytes``'s length may be less than ``maxSize`` if EOF is
+  reached while reading. If nothing is read, it will be set to the empty
+  bytes (``b""``).
+
+  :arg b: the ``bytes`` to read into — contents will be overwritten
+  :arg maxSize: the maximum number of bytes to read from the ``fileReader``
+  :returns: ``false`` if nothing could be read, or ``true`` if something was read.
+
+  :throws SystemError: Thrown if a ``bytes`` could not be read from the ``fileReader``
+                       for another reason.
+*/
+proc fileReader.readBytes(ref b: bytes, maxSize: int): bool throws {
+  var (e, lenRead) = readBytesOrString(this, b, maxSize);
+
+  if e != 0 && e != EEOF then throw createSystemError(e);
+
+  return lenRead > 0;
 }
 
 private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : (errorCode, int(64))
@@ -5178,55 +6014,233 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
 
 }
 
+deprecated "channel.readbits is deprecated - please use :proc:`fileReader.readBits` instead"
+proc _channel.readbits(ref v:integral, nbits:integral):bool throws {
+    return this.readBits(v, nbits:int);
+}
+
 /*
    Read bits with binary I/O
 
-   :arg v: where to store the read bits. This value will have its *nbits*
+   :arg x: where to store the read bits. This value will have its *numBits*
            least-significant bits set.
-   :arg nbits: how many bits to read
+   :arg numBits: how many bits to read
    :returns: `true` if the bits were read without error, `false` upon EOF
 
+   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
    :throws SystemError: Thrown if the bits could not be read from the channel.
  */
-proc _channel.readbits(ref v:integral, nbits:integral):bool throws {
+proc fileReader.readBits(ref x:integral, numBits:int):bool throws {
   if castChecking {
-    // Error if reading more bits than fit into v
-    if numBits(v.type) < nbits then
-      throw new owned IllegalArgumentError("v, nbits", "readbits nbits=" + nbits:string +
-                                                 " > bits in v:" + v.type:string);
+    // Error if reading more bits than fit into x
+    if Types.numBits(x.type) < numBits then
+      throw new owned IllegalArgumentError("x, numBits", "readBits numBits=" + numBits:string +
+                                                 " > bits in x:" + x.type:string);
     // Error if reading negative number of bits
-    if isIntType(nbits.type) && nbits < 0 then
-      throw new owned IllegalArgumentError("nbits", "readbits nbits=" + nbits:string + " < 0");
+    if isIntType(numBits.type) && numBits < 0 then
+      throw new owned IllegalArgumentError("numBits", "readBits numBits=" + numBits:string + " < 0");
   }
 
-  var tmp:ioBits;
-  tmp.nbits = nbits:int(8);
+  var tmp:_internalIoBits;
+  tmp.numBits = numBits:int(8);
   var ret = try this.read(tmp);
-  v = tmp.v:v.type;
+  x = tmp.x:x.type;
   return ret;
 }
 
 /*
-   Write bits with binary I/O
+    Read bits with binary I/O
 
-   :arg v: a value containing *nbits* bits to write the least-significant bits
-   :arg nbits: how many bits to write
+    :arg resultType: type of the value returned
+    :arg numBits: how many bits to read
+    :returns: bits read. This value will have its *numBits* least-significant bits set
 
-   :throws IllegalArgumentError: Thrown if writing more bits than fit into `v`.
-   :throws SystemError: Thrown if the bits could not be written to the channel.
- */
+    :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+    :throws SystemError: Thrown if the bits could not be read from the channel.
+*/
+proc fileReader.readBits(type resultType, numBits:int):resultType throws {
+  var tmp:resultType;
+  var ret = try this.readBits(tmp, numBits);
+  if !ret then throw new UnexpectedEofError("Encountered EOF in readBits");
+  return tmp;
+}
+
+
+deprecated "channel.writebits is deprecated - please use :proc:`fileWriter.writeBits` instead"
 proc _channel.writebits(v:integral, nbits:integral) throws {
+  this.writeBits(v, nbits:int);
+}
+
+/*
+  Write bits with binary I/O
+
+  :arg x: a value containing *numBits* bits to write the least-significant bits
+  :arg numBits: how many bits to write
+
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                              ``fileWriter``'s specified range.
+  :throws IllegalArgumentError: Thrown if writing more bits than fit into `x`.
+  :throws SystemError: Thrown if the bits could not be written to the ```fileWriter``.
+*/
+proc fileWriter.writeBits(x: integral, numBits: int) : void throws {
   if castChecking {
-    // Error if writing more bits than fit into v
-    if numBits(v.type) < nbits then
-      throw new owned IllegalArgumentError("v, nbits", "writebits nbits=" + nbits:string +
-                                                 " > bits in v:" + v.type:string);
+    // Error if writing more bits than fit into x
+    if Types.numBits(x.type) < numBits then
+      throw new owned IllegalArgumentError("x, numBits",
+              "writeBits numBits=" + numBits:string +
+               " > bits in x:" + x.type:string);
     // Error if writing negative number of bits
-    if isIntType(nbits.type) && nbits < 0 then
-      throw new owned IllegalArgumentError("nbits", "writebits nbits=" + nbits:string + " < 0");
+    if isIntType(numBits.type) && numBits < 0 then
+      throw new owned IllegalArgumentError("numBits",
+              "writeBits numBits=" + numBits:string + " < 0");
   }
 
-  try this.write(new ioBits(v:uint(64), nbits:int(8)));
+  try this.write(new _internalIoBits(x:uint(64), numBits:int(8)));
+}
+
+/*
+  Writes a single Unicode codepoint to a ``fileWriter``
+
+  :arg codepoint: Unicode codepoint to write
+
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                              ``fileWriter``'s specified range.
+  :throws SystemError: Thrown if the codepoint could not be written to the ```fileWriter``.
+*/
+proc fileWriter.writeCodepoint(codepoint: int) throws {
+  try this.write(new _internalIoChar(codepoint.safeCast(int(32))));
+}
+
+/*
+  Reads a single Unicode codepoint from a ``fileReader``
+
+  :returns: Unicode codepoint read
+
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if the codepoint could not be read from the ``fileReader``.
+*/
+proc fileReader.readCodepoint(): int throws {
+  var tmp:int;
+  var ret = try this.readCodepoint(tmp);
+  if !ret then throw new UnexpectedEofError("Encountered EOF in readCodepoint");
+  return tmp;
+}
+
+/*
+  Reads a single Unicode codepoint from a ``fileReader``
+
+  :arg c: where to store the read codepoint
+  :returns: `true` if the codepoint was read without error, `false` upon EOF
+
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if the codepoint could not be read from the ``fileReader``.
+*/
+proc fileReader.readCodepoint(ref codepoint: int):bool throws {
+  var tmp:_internalIoChar;
+  var ret = try this.read(tmp);
+  codepoint = tmp.ch.safeCast(codepoint.type);
+  return ret;
+}
+
+/*
+  Writes a single byte to a ``fileWriter``
+
+  :arg byte: byte to write
+
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                              ``fileWriter``'s specified range.
+  :throws SystemError: Thrown if the byte could not be written to the ```fileWriter``.
+*/
+proc fileWriter.writeByte(byte: uint(8)) throws {
+  var err:errorCode = 0;
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    err = qio_channel_write_uint8(false, this._channel_internal, byte);
+  }
+
+  if err == EEOF {
+    throw new UnexpectedEofError("Encountered EOF in writeByte");
+  }
+  else if err {
+    try this._ch_ioerror(err, "in fileWriter.writeByte");
+  }
+}
+
+/*
+  Reads a single byte from a ``fileReader``
+
+  :returns: byte read
+
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if the byte could not be read from the ``fileReader``.
+*/
+proc fileReader.readByte(): uint(8) throws {
+  var tmp:uint(8);
+  var ret = try this.readByte(tmp);
+  if !ret then throw new UnexpectedEofError("Encountered EOF in readByte");
+  return tmp;
+}
+
+/*
+  Reads a single byte from a ``fileReader``
+
+  :arg byte: where to store the read byte
+  :returns: `true` if the byte was read without error, `false` upon EOF
+
+  :throws UnexpectedEofError: Thrown if unexpected EOF encountered while reading.
+  :throws SystemError: Thrown if the byte could not be read from the ``fileReader``.
+*/
+proc fileReader.readByte(ref byte: uint(8)): bool throws {
+  var err:errorCode = 0;
+  var x: uint(8);
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+    err = qio_channel_read_uint8(false, this._channel_internal, x);
+  }
+  byte = x;
+
+  if !err {
+    return true;
+  }
+  else if err == EEOF {
+    return false;
+  } else {
+    try this._ch_ioerror(err, "in fileReader.readByte");
+  }
+  return false;
+}
+
+
+/*
+  Write ``size`` codepoints from a :type:`~String.string` to a ``fileWriter``
+
+  :arg s: the ``string`` to write
+  :arg size: the number of codepoints to write from the ``string``
+
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                              ``fileWriter``'s specified range.
+  :throws SystemError: Thrown if the string could not be written to the fileWriter.
+  :throws IllegalArgumentError: Thrown if ``size`` is larger than ``s.size``
+*/
+proc fileWriter.writeString(s: string, size = s.size) throws {
+  // TODO: use a separate implementation when `fileWriter`s start supporting
+  //        non UTF-8 character encodings
+  try this.writeBinary(s, size);
+}
+
+/*
+  Write ``size`` bytes from a :type:`~Bytes.bytes` to a ``fileWriter``
+
+  :arg b: the ``bytes`` to write
+  :arg size: the number of bytes to write from the ``bytes``
+
+  :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                              ``fileWriter``'s specified range.
+  :throws SystemError: Thrown if the bytes could not be written to the fileWriter.
+  :throws IllegalArgumentError: Thrown if ``size`` is larger than ``b.size``
+*/
+proc fileWriter.writeBytes(b: bytes, size = b.size) throws {
+  try this.writeBinary(b, size);
 }
 
 /*
@@ -5244,7 +6258,8 @@ proc _channel.writebits(v:integral, nbits:integral) throws {
    :arg ptr: a :class:`~CTypes.c_ptr` to some valid memory
    :arg numBytes: the number of bytes to write
 
-   :throws SystemError: Thrown if an error occured while writing to the ``fileWriter``
+   :throws UnexpectedEofError: Thrown if the write operation exceeds the ``fileWriter``'s specified range.
+   :throws SystemError: Thrown if an error occurred while writing to the ``fileWriter``.
 */
 proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
 {
@@ -5256,7 +6271,7 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
   e = try qio_channel_write(false, this._channel_internal, ptr[0], numBytesToWrite:c_ssize_t, numWritten);
 
   if (e != 0) {
-    throw createSystemError(e);
+    throw createSystemOrChplError(e);
   }
 }
 
@@ -5271,7 +6286,8 @@ proc fileWriter.writeBinary(ptr: c_ptr(?t), numBytes: int) throws
    :arg ptr: a typeless :type:`~CTypes.c_void_ptr` to some valid memory
    :arg numBytes: the number of bytes to write
 
-   :throws SystemError: Thrown if an error occured while writing to the ``fileWriter``
+   :throws UnexpectedEofError: Thrown if the write operation exceeds the ``fileWriter``'s specified range.
+   :throws SystemError: Thrown if an error occurred while writing to the ``fileWriter``.
 */
 proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
   var e:errorCode = 0,
@@ -5281,7 +6297,7 @@ proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
   e = try qio_channel_write(false, this._channel_internal, byte_ptr[0], numBytes:c_ssize_t, numWritten);
 
   if (e != 0) {
-    throw createSystemError(e);
+    throw createSystemOrChplError(e);
   }
 }
 
@@ -5292,6 +6308,8 @@ proc fileWriter.writeBinary(ptr: c_void_ptr, numBytes: int) throws {
    :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
               to write the number. Defaults to ``ioendian.native``.
 
+   :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                               ``fileWriter``'s specified range.
    :throws SystemError: Thrown if the number could not be written to the channel.
  */
 proc _channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) throws {
@@ -5309,7 +6327,7 @@ proc _channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) 
     }
   }
   if (e != 0) {
-    throw createSystemError(e);
+    throw createSystemOrChplError(e);
   }
 }
 
@@ -5320,6 +6338,8 @@ proc _channel.writeBinary(arg:numeric, param endian:ioendian = ioendian.native) 
    :arg endian: :type:`ioendian` specifies the byte order in which
               to write the number.
 
+   :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                               ``fileWriter``'s specified range.
    :throws SystemError: Thrown if the number could not be written to the channel.
  */
 proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
@@ -5342,6 +6362,8 @@ proc _channel.writeBinary(arg:numeric, endian:ioendian) throws {
    :arg s: the ``string`` to write
    :arg size: the number of codepoints to write from the ``string``
 
+   :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                               ``fileWriter``'s specified range.
    :throws SystemError: Thrown if the string could not be written to the fileWriter.
    :throws IllegalArgumentError: Thrown if ``size`` is larger than ``s.size``
 */
@@ -5350,7 +6372,7 @@ proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
   if size > s.size then
     throw new owned IllegalArgumentError("size", "cannot exceed length of provided string");
   if s.hasEscapes then
-    throw createSystemError(EILSEQ, "illegal use of escaped string characters in 'writeBinary'");
+    throw createSystemOrChplError(EILSEQ, "illegal use of escaped string characters in 'writeBinary'");
 
   on this._home {
     // count the number of bytes to write
@@ -5376,7 +6398,7 @@ proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
     );
 
     if e != 0 then
-      throw createSystemError(e);
+      throw createSystemOrChplError(e);
   }
 }
 
@@ -5386,6 +6408,8 @@ proc fileWriter.writeBinary(s: string, size: int = s.size) throws {
    :arg b: the ``bytes`` to write
    :arg size: the number of bytes to write from the ``bytes``
 
+   :throws UnexpectedEofError: Thrown if the write operation exceeds the
+                               ``fileWriter``'s specified range.
    :throws SystemError: Thrown if the bytes could not be written to the fileWriter.
    :throws IllegalArgumentError: Thrown if ``size`` is larger than ``b.size``
 */
@@ -5407,7 +6431,7 @@ proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
     );
 
     if e != 0 then
-      throw createSystemError(e);
+      throw createSystemOrChplError(e);
   }
 }
 
@@ -5448,7 +6472,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
       if e == EEOF {
         throw new owned UnexpectedEofError("Unable to write entire array of values in 'writeBinary'");
       } else if e != 0 {
-        throw createSystemError(e);
+        throw createSystemOrChplError(e);
       }
     }
   }
@@ -5491,7 +6515,8 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, endian:ioendian) throws
               to read the number. Defaults to ``ioendian.native``.
    :returns: `true` if the number was read, `false` otherwise
 
-   :throws SystemError: Thrown if an error occurred reading the number.
+   :throws UnexpectedEofError: Thrown if EOF was encountered before data could be read.
+   :throws SystemError: Thrown if an error occurred reading the number for another reason.
  */
 proc _channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native):bool throws {
   var e:errorCode = 0;
@@ -5510,7 +6535,7 @@ proc _channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.nativ
   if (e == EEOF) {
     return false;
   } else if (e != 0) {
-    throw createSystemError(e);
+    throw createSystemOrChplError(e);
   }
   return true;
 }
@@ -5523,7 +6548,8 @@ proc _channel.readBinary(ref arg:numeric, param endian:ioendian = ioendian.nativ
               to read the number.
    :returns: `true` if the number was read, `false` otherwise
 
-   :throws SystemError: Thrown if an error occurred reading the number.
+   :throws UnexpectedEofError: Thrown if EOF was encountered before data could be read.
+   :throws SystemError: Thrown if an error occurred reading the number for another reason.
  */
 proc _channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
   var rv: bool = false;
@@ -5559,6 +6585,7 @@ proc _channel.readBinary(ref arg:numeric, endian: ioendian):bool throws {
    :arg maxSize: the number of codepoints to read from the fileReader
    :returns: `false` if EOF is reached before reading anything, `true` otherwise
 
+   :throws UnexpectedEofError: Thrown if EOF was encountered before data could be read.
    :throws SystemError: Thrown if an error occurred while reading from the fileReader.
 */
 proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
@@ -5580,7 +6607,7 @@ proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
   if e == EEOF {
     return didRead;
   } else if e != 0 {
-    throw createSystemError(e);
+    throw createSystemOrChplError(e);
   }
   return true;
 }
@@ -5597,6 +6624,7 @@ proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
    :arg maxSize: the number of bytes to read from the fileReader
    :returns: `false` if EOF is reached before reading anything, `true` otherwise
 
+   :throws UnexpectedEofError: Thrown if EOF was encountered before data could be read.
    :throws SystemError: Thrown if an error occurred while reading from the fileReader.
 */
 proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
@@ -5618,10 +6646,28 @@ proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
   if e == EEOF {
     return didRead;
   } else if e != 0 {
-    throw createSystemError(e);
+    throw createSystemOrChplError(e);
   }
   return true;
 }
+
+
+/*
+  Controls the return type of the ``readBinary`` overloads that take an
+  array argument. Those are:
+
+  ``fileReader.readBinary(ref data: [], param endian = ioendian.native)``
+  ``fileReader.readBinary(ref data: [], endian: ioendian)``
+
+  * when ``false``: the deprecated methods are called. These return a ``bool``
+    indicating whether any values were read. These variants will also throw
+    if EOF is reached before filling the array.
+  * when ``true``: the new methods are called. These return an ``int`` with the
+    number of values that were read.
+
+  This ``param`` can be set to true by compiling your program with ``-sReadBinaryArrayReturnInt=true``
+*/
+config param ReadBinaryArrayReturnInt = false;
 
 /*
    Read an array of binary numbers from a fileReader
@@ -5641,8 +6687,9 @@ proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
    :throws SystemError: Thrown if an error occurred while reading from the fileReader
    :throws UnexpectedEofError: Thrown if EOF is encountered before ``data.size`` values are read
 */
+deprecated "The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant"
 proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): bool throws
-  where (d.rank == 1 && d.stridable == false) && (
+  where ReadBinaryArrayReturnInt == false && (d.rank == 1 && d.stridable == false) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
   var e : errorCode = 0,
@@ -5671,7 +6718,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): b
           throw new owned UnexpectedEofError("Unable to read entire array of values in 'readBinary'");
         }
       } else if e != 0 {
-        throw createSystemError(e);
+        throw createSystemOrChplError(e);
       } else {
         readSomething = true;
       }
@@ -5679,6 +6726,59 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): b
   }
 
   return readSomething;
+}
+
+/*
+   Read an array of binary numbers from a fileReader
+
+   Binary values of the type ``data.eltType`` are consumed from the fileReader
+   until ``data`` is full or EOF is reached.
+
+   Note that this routine currently requires a 1D rectangular non-strided array.
+
+   :arg data: an array to read into – existing values are overwritten.
+   :arg endian: :type:`ioendian` compile-time argument that specifies the byte order in which
+              to read the numbers. Defaults to ``ioendian.native``.
+   :returns: the number of values that were read into the array. This can be
+              less than ``data.size`` if EOF was reached, or an error occurred,
+              before filling the array.
+
+   :throws SystemError: Thrown if an error occurred while reading from the fileReader
+*/
+proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): int throws
+  where ReadBinaryArrayReturnInt == true && (d.rank == 1 && d.stridable == false) && (
+          isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
+{
+  var e : errorCode = 0,
+      numRead = 0;
+
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    for (i, b) in zip(data.domain, data) {
+      select (endian) {
+        when ioendian.native {
+          e = try _read_binary_internal(this._channel_internal, iokind.native, b);
+        }
+        when ioendian.big {
+          e = try _read_binary_internal(this._channel_internal, iokind.big,    b);
+        }
+        when ioendian.little {
+          e = try _read_binary_internal(this._channel_internal, iokind.little, b);
+        }
+      }
+
+      if e == EEOF {
+        break;
+      } else if e != 0 {
+        throw createSystemOrChplError(e);
+      } else {
+        numRead += 1;
+      }
+    }
+  }
+
+  return numRead;
 }
 
 /*
@@ -5696,11 +6796,12 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): b
    :returns: `false` if EOF is encountered before reading anything,
               `true` otherwise
 
-   :throws SystemError: Thrown if an error occurred while reading the from fileReader
-   :throws UnexpectedEofError: Thrown if EOF is encountered before ``data.size`` values are read
+   :throws SystemError: Thrown if an error occurred while reading the from fileReader.
+   :throws UnexpectedEofError: Thrown if EOF is encountered before ``data.size`` values are read.
 */
+deprecated "The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant"
 proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
-  where (d.rank == 1 && d.stridable == false) && (
+  where ReadBinaryArrayReturnInt == false && (d.rank == 1 && d.stridable == false) && (
           isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
 {
   var rv: bool = false;
@@ -5721,6 +6822,44 @@ proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
 }
 
 /*
+   Read an array of binary numbers from a fileReader
+
+   Binary values of the type ``data.eltType`` are consumed from the fileReader
+   until ``data`` is full or EOF is reached.
+
+   Note that this routine currently requires a 1D rectangular non-strided array.
+
+   :arg data: an array to read into – existing values are overwritten.
+   :arg endian: :type:`ioendian` specifies the byte order in which
+              to read the number.
+   :returns: the number of values that were read into the array. This can be
+              less than ``data.size`` if EOF was reached, or an error occurred,
+              before filling the array.
+
+   :throws SystemError: Thrown if an error occurred while reading the from fileReader
+*/
+proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):int throws
+  where ReadBinaryArrayReturnInt == true && (d.rank == 1 && d.stridable == false) && (
+          isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t))
+{
+  var nr: int = 0;
+
+  select (endian) {
+    when ioendian.native {
+      nr = this.readBinary(data, ioendian.native);
+    }
+    when ioendian.big {
+      nr = this.readBinary(data, ioendian.big);
+    }
+    when ioendian.little {
+      nr = this.readBinary(data, ioendian.little);
+    }
+  }
+
+  return nr;
+}
+
+/*
    Read up to ``maxBytes`` bytes from a ``fileReader`` into a :class:`~CTypes.c_ptr`
 
    Note that native endianness is always used.
@@ -5736,7 +6875,8 @@ proc fileReader.readBinary(ref data: [?d] ?t, endian: ioendian):bool throws
               number of bytes, or if ``maxBytes`` is not evenly divisible by
               the size of ``t``
 
-   :throws SystemError: Thrown if an error occurred while reading from the ``fileReader``
+   :throws UnexpectedEofError: Thrown if EOF was encountered before data could be read.
+   :throws SystemError: Thrown if an error occurred while reading from the ``fileReader``.
 */
 proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
   var e: errorCode = 0,
@@ -5746,7 +6886,7 @@ proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
 
   e = qio_channel_read(false, this._channel_internal, ptr[0], numBytesToRead: c_ssize_t, numRead);
 
-  if e != 0 && e != EEOF then throw createSystemError(e);
+  if e != 0 && e != EEOF then throw createSystemOrChplError(e);
   return numRead;
 }
 
@@ -5761,6 +6901,7 @@ proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
    :returns: the number of bytes that were read. this can be less than ``maxBytes``
               if EOF was reached before reading the specified number of bytes
 
+   :throws UnexpectedEofError: Thrown if EOF was encountered before data could be read.
    :throws SystemError: Thrown if an error occurred while reading from the ``fileReader``
 */
 proc fileReader.readBinary(ptr: c_void_ptr, maxBytes: int): int throws {
@@ -5770,7 +6911,7 @@ proc fileReader.readBinary(ptr: c_void_ptr, maxBytes: int): int throws {
 
   e = qio_channel_read(false, this._channel_internal, bytes_ptr[0], maxBytes: c_ssize_t, numRead);
 
-  if e != 0 && e != EEOF then throw createSystemError(e);
+  if e != 0 && e != EEOF then throw createSystemOrChplError(e);
   return numRead;
 }
 
@@ -5795,6 +6936,7 @@ proc _channel.readln():bool throws {
               in :ref:`readThis-writeThis`.
    :returns: `true` if the read succeeded, and `false` upon end of file.
 
+   :throws UnexpectedEofError: Thrown if EOF was encountered before data could be read.
    :throws SystemError: Thrown if a line could not be read from the channel.
  */
 proc _channel.readln(ref args ...?k):bool throws {
@@ -5829,12 +6971,30 @@ proc _channel.readlnHelper(ref args ...?k,
    :arg t: the type to read
    :returns: the value read
 
+   :throws UnexpectedEofError: Thrown if EOF was encountered before data could be read.
    :throws SystemError: Thrown if the type could not be read from the channel.
  */
 proc _channel.read(type t) throws {
-  var tmp:t;
-  this._readInner(tmp);
-  return tmp;
+  if writing then compilerError("read on write-only channel");
+  const origLocale = this.getLocaleOfIoRequest();
+
+  pragma "no init"
+  var ret : t;
+
+  on this._home {
+    try this.lock(); defer { this.unlock(); }
+
+    if chpl_useIOFormatters {
+      __primitive("move", ret, _decodeOne(t, origLocale));
+    } else {
+      pragma "no auto destroy"
+      var tmp : t;
+      _readOne(kind, tmp, origLocale);
+      __primitive("=", ret, tmp);
+    }
+  }
+
+  return ret;
 }
 
 /*
@@ -5843,6 +7003,7 @@ proc _channel.read(type t) throws {
    :arg t: the type to read
    :returns: the value read
 
+   :throws UnexpectedEofError: Thrown if EOF was encountered before data could be read.
    :throws SystemError: Thrown if the type could not be read from the channel.
  */
 proc _channel.readln(type t) throws {
@@ -5859,6 +7020,7 @@ proc _channel.readln(type t) throws {
    :arg t: more than one type to read
    :returns: a tuple of the read values
 
+   :throws UnexpectedEofError: Thrown if EOF was encountered before data could be read.
    :throws SystemError: Thrown if the types could not be read from the channel.
  */
 proc _channel.readln(type t ...?numTypes) throws where numTypes > 1 {
@@ -5875,8 +7037,10 @@ proc _channel.readln(type t ...?numTypes) throws where numTypes > 1 {
    :returns: a tuple of the read values
 
    :throws SystemError: Thrown if the types could not be read from the channel.
+   :throws UnexpectedEofError: Thrown if EOF was encountered while more data was expected.
  */
 proc _channel.read(type t ...?numTypes) throws where numTypes > 1 {
+  // TODO: better IO-specific error message if type is an array or tuple...
   var tupleVal: t;
   this._readInner((...tupleVal));
   return tupleVal;
@@ -5892,8 +7056,7 @@ proc _channel.read(type t ...?numTypes) throws where numTypes > 1 {
               value.writeThis() with the channel as an argument.
 
    :throws SystemError: Thrown if the values could not be written to the channel.
-   :throws EofError: Thrown if EOF is reached before all the arguments
-                      could be written.
+   :throws EofError: Thrown if EOF is reached before all the arguments could be written.
  */
 pragma "fn exempt instantiation limit"
 inline proc _channel.write(const args ...?k) throws {
@@ -5903,7 +7066,11 @@ inline proc _channel.write(const args ...?k) throws {
   on this._home {
     try this.lock(); defer { this.unlock(); }
     for param i in 0..k-1 {
-      try _writeOne(kind, args(i), origLocale);
+      if chpl_useIOFormatters {
+        this._encodeOne(args(i), origLocale);
+      } else {
+        try _writeOne(kind, args(i), origLocale);
+      }
     }
   }
 }
@@ -5929,7 +7096,11 @@ proc _channel.writeHelper(const args ...?k, style:iostyleInternal) throws {
     }
 
     for param i in 0..k-1 {
-      try _writeOne(iokind.dynamic, args(i), origLocale);
+      if chpl_useIOFormatters {
+        this._encodeOne(args(i), origLocale);
+      } else {
+        try _writeOne(iokind.dynamic, args(i), origLocale);
+      }
     }
   }
 }
@@ -5952,8 +7123,7 @@ proc _channel.writeln() throws {
               value.writeThis() with the channel as an argument.
 
    :throws SystemError: Thrown if the values could not be written to the channel.
-   :throws EofError: Thrown if EOF is reached before all the arguments
-                      could be written.
+   :throws UnexpectedEofError: Thrown if EOF is reached before all the arguments could be written.
  */
 proc _channel.writeln(const args ...?k) throws {
   try this.write((...args), new ioNewline());
@@ -6030,7 +7200,7 @@ proc _channel.close() throws {
   var err:errorCode = 0;
 
   if is_c_nil(_channel_internal) then
-    throw createSystemError(EINVAL, "cannot close invalid channel");
+    throw createSystemOrChplError(EINVAL, "cannot close invalid channel");
 
   on this._home {
     err = qio_channel_close(locking, _channel_internal);
@@ -6050,22 +7220,17 @@ proc _channel.isClosed() : bool {
 }
 
 
-deprecated "channel.isclosed is deprecated. Please use channel.isClosed instead"
-proc _channel.isclosed() : bool {
-  return this.isClosed();
-}
-
 
 // TODO -- we should probably have separate c_ptr ddata and ref versions
 // in this function for it to become user-facing. Right now, errors
 // in the type of the argument will only be caught by a type mismatch
 // in the call to qio_channel_read_amt.
 pragma "no doc"
-proc _channel.readBytes(x, len:c_ssize_t) throws {
+proc _channel._readBytes(x, len:c_ssize_t) throws {
   if here != this._home then
-    throw new owned IllegalArgumentError("bad remote channel.readBytes");
+    throw new owned IllegalArgumentError("bad remote channel._readBytes");
   var err = qio_channel_read_amt(false, _channel_internal, x, len);
-  if err then try this._ch_ioerror(err, "in channel.readBytes");
+  if err then try this._ch_ioerror(err, "in channel._readBytes");
 }
 
 pragma "no doc"
@@ -6076,8 +7241,11 @@ record itemReaderInternal {
   param kind:iokind;
   /* the locking field for our channel */
   param locking:bool;
+  /* the decoder for this channel */
+  type fmtType;
   /* our channel */
-  var ch:fileReader(kind,locking);
+  var ch:fileReader(kind,locking,fmtType);
+
   /* read a single item, throwing on error */
   proc read(out arg:ItemType):bool throws {
     return ch.read(arg);
@@ -6101,19 +7269,21 @@ record itemReaderInternal {
 
 /* standard input, otherwise known as file descriptor 0 */
 const stdin:fileReader(iokind.dynamic, true);
-stdin = try! openfd(0).reader();
+stdin = try! (new file(0)).reader();
 
 pragma "no doc"
 extern proc chpl_cstdout():c_FILE;
 /* standard output, otherwise known as file descriptor 1 */
 const stdout:fileWriter(iokind.dynamic, true);
-stdout = try! openfp(chpl_cstdout()).writer();
+stdout = try! (new file(chpl_cstdout())).writer();
+
 
 pragma "no doc"
 extern proc chpl_cstderr():c_FILE;
 /* standard error, otherwise known as file descriptor 2 */
 const stderr:fileWriter(iokind.dynamic, true);
-stderr = try! openfp(chpl_cstderr()).writer();
+stderr = try! (new file(chpl_cstderr())).writer();
+
 /* Equivalent to ``stdin.read``. See :proc:`channel.read` */
 proc read(ref args ...?n):bool throws {
   return stdin.read((...args));
@@ -6162,7 +7332,7 @@ proc readLine(ref b: bytes, maxSize=-1, stripNewline=false): bool throws{
 
 /* Equivalent to ``stdin.readLine``.  See :proc:`channel.readLine` */
 proc readLine(type t=string, maxSize=-1, stripNewline=false): t throws where t==string || t==bytes {
-  return stdin.readline(t, maxSize, stripNewline);
+  return stdin.readLine(t, maxSize, stripNewline);
 }
 
 /* Equivalent to ``stdin.readln``. See :proc:`channel.readln` */
@@ -6183,7 +7353,7 @@ proc readln(type t ...?numTypes) throws {
 /*
    :returns: `true` if this version of the Chapel runtime supports UTF-8 output.
  */
-deprecated "unicodeSupported is deprecated"
+deprecated "unicodeSupported is deprecated due to always returning true"
 proc unicodeSupported():bool {
   return true;
 }
@@ -7341,7 +8511,7 @@ proc _setIfPrimitive(ref lhs:?t, rhs, argi:int):errorCode where !_isIoPrimitiveT
 private inline
 proc _setIfChar(ref lhs:?t, rhs:int(32)) where t == string
 {
-  lhs = new ioChar(rhs):string;
+  lhs = new _internalIoChar(rhs):string;
 }
 private inline
 proc _setIfChar(ref lhs:?t, rhs:int(32)) where isIntegralType(t)
@@ -7406,6 +8576,9 @@ class _channel_regex_info {
     f.write(", releaseRegex = " + releaseRegex: string);
     f.write(", ... capturei = " + capturei: string);
     f.write(", ncaptures = " + ncaptures: string + "}");
+  }
+  override proc encodeTo(f) throws {
+    writeThis(f);
   }
 }
 
@@ -8001,7 +9174,7 @@ proc _channel._writefOne(fmtStr, ref arg, i: int,
         var (t,ok) = _toChar(arg);
         if ! ok {
           err = qio_format_error_arg_mismatch(i);
-        } else try _writeOne(iokind.dynamic, new ioChar(t), origLocale);
+        } else try _writeOne(iokind.dynamic, new _internalIoChar(t), origLocale);
       } when QIO_CONV_ARG_TYPE_BINARY_STRING {
         var (t,ok) = _toBytes(arg);
         if ! ok {
@@ -8162,6 +9335,7 @@ proc _channel.writef(fmtStr:?t) throws
    :returns: true if all arguments were read according to the format string,
              false on EOF.
 
+   :throws UnexpectedEofError: Thrown if EOF was encountered before data could be read.
    :throws SystemError: Thrown if the arguments could not be read.
  */
 proc _channel.readf(fmtStr:?t, ref args ...?k): bool throws
@@ -8312,7 +9486,7 @@ proc _channel.readf(fmtStr:?t, ref args ...?k): bool throws
               }
             } when QIO_CONV_ARG_TYPE_CHAR {
               var (t,ok) = _toChar(args(i));
-              var chr = new ioChar(t);
+              var chr = new _internalIoChar(t);
               if ! ok {
                 err = qio_format_error_arg_mismatch(i);
               } else try _readOne(iokind.dynamic, chr, origLocale);
@@ -8426,8 +9600,7 @@ proc _channel.readf(fmtStr:?t, ref args ...?k): bool throws
         // revert
         qio_channel_revert_unlocked(_channel_internal);
       }
-    } catch thrownError: SystemError {
-      if thrownError.err != EEOF then throw thrownError;
+    } catch thrownError: EofError {
       err = EEOF;
     }
   }
@@ -8528,6 +9701,7 @@ proc readf(fmt:string):bool throws {
    this function will skip to (but leave unread) the comma after
    the first field value.
 
+   :throws UnexpectedEofError: Thrown if EOF encountered skipping field.
    :throws SystemError: Thrown if the field could not be skipped.
  */
 proc _channel.skipField() throws {
@@ -8553,12 +9727,21 @@ proc _channel.skipField() throws {
   :arg args: the arguments to format
   :returns: the resulting string
 
-  :throws SystemError: Thrown if the string could not be formatted.
+  :throws UnexpectedEofError: The size of the temporary buffer was exceeded
+                              while writing the string.
+  :throws BadFormatError: Improperly formatted values.
+  :throws SystemError: Thrown if the string could not be formatted for another reason.
  */
 proc string.format(args ...?k): string throws {
   try {
     return chpl_do_format(this, (...args));
   } catch e: IllegalArgumentError {
+    throw e;
+  } catch e: EofError {
+    throw e;
+  } catch e: UnexpectedEofError {
+    throw e;
+  } catch e: BadFormatError {
     throw e;
   } catch e: SystemError {
     try ioerror(e.err, "in string.format");
@@ -8579,11 +9762,20 @@ proc string.format(args ...?k): string throws {
   :arg args: the arguments to format
   :returns: the resulting bytes
 
-  :throws SystemError: Thrown if the bytes could not be formatted.
+  :throws UnexpectedEofError: The size of the temporary buffer was exceeded
+                              while writing the bytes.
+  :throws BadFormatError: Improperly formatted values.
+  :throws SystemError: Thrown if the bytes could not be formatted for another reason.
  */
 proc bytes.format(args ...?k): bytes throws {
   try {
     return chpl_do_format(this, (...args));
+  } catch e: EofError {
+    throw e;
+  } catch e: UnexpectedEofError {
+    throw e;
+  } catch e: BadFormatError {
+    throw e;
   } catch e: SystemError {
     try ioerror(e.err, "in bytes.format");
   } catch {
@@ -8596,7 +9788,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
     where isStringType(t) || isBytesType(t) {
 
   // Open a memory buffer to store the result
-  var f = try openmem();
+  var f = try openMemFile();
   defer {
     try {
       f.close();
@@ -8626,7 +9818,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
     } catch { /* ignore deferred close error */ }
   }
 
-  try r.readBytes(buf, offset:c_ssize_t);
+  try r._readBytes(buf, offset:c_ssize_t);
 
   // close errors are thrown instead of ignored
   try r.close();

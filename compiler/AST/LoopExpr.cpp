@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -401,6 +401,7 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
 {
   FnSymbol* sifn = new FnSymbol(iteratorName);
   sifn->addFlag(FLAG_ITERATOR_FN);
+  sifn->addFlag(FLAG_DONT_UNREF_FOR_YIELDS);
   sifn->setGeneric(true);
 
   ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
@@ -484,6 +485,7 @@ static FnSymbol* buildFollowerIteratorFn(const char* iteratorName,
 {
   FnSymbol* fifn = new FnSymbol(iteratorName);
   fifn->addFlag(FLAG_ITERATOR_FN);
+  fifn->addFlag(FLAG_DONT_UNREF_FOR_YIELDS);
   fifn->setGeneric(true);
 
   Expr* tag = new SymExpr(gFollowerTag);
@@ -577,6 +579,11 @@ static bool considerForOuter(Symbol* sym) {
   if (isTypeSymbol(sym->defPoint->parentSymbol)) {
     // Fields are considered 'outer'
     return true;
+  }
+
+  if (isModuleSymbol(sym)) {
+    // Modules are not considered for outer.
+    return false;
   }
 
   if (sym->hasFlag(FLAG_TYPE_VARIABLE) ||

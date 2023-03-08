@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,12 +29,13 @@
 #include "chpl/uast/Module.h"
 
 static void test0(Parser* parser) {
-  auto parseResult = parser->parseString("test0.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       "/* comment 1 */\n"
       "defer /* comment 2 */\n"
       "  foo();\n"
       "/* comment 3 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -64,7 +65,8 @@ static void test0(Parser* parser) {
 }
 
 static void test1(Parser* parser) {
-  auto parseResult = parser->parseString("test1.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
       "/* comment 1 */\n"
       "defer /* comment 2 */ {\n"
       "  /* comment 3 */\n"
@@ -72,7 +74,7 @@ static void test1(Parser* parser) {
       "  /* comment 4 */\n"
       "}\n"
       "/* comment 5 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);

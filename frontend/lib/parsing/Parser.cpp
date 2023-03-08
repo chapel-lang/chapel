@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -74,11 +74,6 @@ static void updateParseResult(ParserContext* parserContext) {
     }
     delete parserContext->comments;
   }
-
-  // Save the parse errors to the builder
-  for (const auto* error : parserContext->errors) {
-    builder->addError(error);
-  }
 }
 
 
@@ -94,8 +89,7 @@ BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
 
   FILE* fp = openfile(path, "r", fileError);
   if (fp == NULL) {
-    builder->addError(ErrorParseErr::get(
-        this->context(), std::make_tuple(Location(), fileError)));
+    context_->report(GeneralError::error(Location(), fileError));
     return builder->result();
   }
 
@@ -166,8 +160,7 @@ BuilderResult Parser::parseFile(const char* path, ParserStats* parseStats) {
   yychpl_lex_destroy(parserContext.scanner);
 
   if (closefile(fp, path, fileError)) {
-    builder->addError(ErrorParseErr::get(
-        this->context(), std::make_tuple(Location(), fileError)));
+    context_->report(GeneralError::error(Location(), fileError));
   }
 
   updateParseResult(&parserContext);

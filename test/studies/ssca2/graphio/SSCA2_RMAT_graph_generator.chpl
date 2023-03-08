@@ -33,7 +33,7 @@ record directed_vertex_pair {
 }
 
 operator directed_vertex_pair.+(l: directed_vertex_pair,
-                                r: directed_vertex_pair)
+                                r: directed_vertex_pair) do
     return new directed_vertex_pair (l.start + r.start, l.end + r.end);
 
 
@@ -334,14 +334,14 @@ proc reportProgress() {
 
 ///////// graph helpers /////////
 
-proc graphTotalEdges(G)  return + reduce [v in G.vertices] G.n_Neighbors(v);
-proc graphNumVertices(G) return G.vertices.size;
+proc graphTotalEdges(G) do  return + reduce [v in G.vertices] G.n_Neighbors(v);
+proc graphNumVertices(G) do return G.vertices.size;
 
 ///////// I/O helpers /////////
 
 proc createGraphChannel(prefix:string, suffix:string, param forWriting:bool) {
   const f = open(prefix+suffix,
-                 if forWriting then iomode.cw else iomode.r,
+                 if forWriting then ioMode.cw else ioMode.r,
                  ioHintSet.sequential);
   const chan = if forWriting
     then f.writer(iokind.big, false)
@@ -351,18 +351,22 @@ proc createGraphChannel(prefix:string, suffix:string, param forWriting:bool) {
 
 proc ensureEOFofDataFile(chan, snapshot_prefix, file_suffix): void {
   var temp:IONumType;
+  var dataRemains:bool = false;
   try! {
-    chan.read(temp);
+    dataRemains = chan.read(temp);
   } catch e: SystemError {
     // temp==0 is a workaround for unending large files
-    if e.err != EEOF && temp != 0 then
+    if temp != 0 then
+      dataRemains = true;
+  }
+  if (dataRemains) {
       myerror("did not reach EOF in '", snapshot_prefix, file_suffix,
               "'  the next value is ", temp);
   }
 }
 
 proc writeNum(ch, num): void { ch.write(num:IONumType); }
-proc readNum(ch): IONumType  return ch.read(IONumType);
+proc readNum(ch): IONumType do  return ch.read(IONumType);
 
 ///////// misc /////////
 

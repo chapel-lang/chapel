@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -46,7 +46,7 @@
   AST_NODE(AnonFormal)                 //
   AST_NODE(As)                         //
   AST_NODE(Array)                      //
-  AST_LEAF(Attributes)                 //
+  AST_LEAF(AttributeGroup)             //
   //AST_NODE(AssociativeArray)         //
   AST_NODE(Break)                      // old AST: GotoStmt
   AST_NODE(Catch)                      // old AST: CatchStmt
@@ -72,7 +72,6 @@
   AST_NODE(Require)                    //
   AST_NODE(Return)                     //
   AST_NODE(Select)                     //
-  AST_NODE(Sync)                       //
   AST_NODE(Throw)                      //
   AST_NODE(Try)                        // old AST: TryStmt
   AST_NODE(TypeQuery)                  //
@@ -89,6 +88,7 @@
     AST_NODE(Manage)                   //
     AST_NODE(On)                       //
     AST_NODE(Serial)                   //
+    AST_NODE(Sync)                     //
     AST_NODE(When)                     //
   AST_END_SUBCLASSES(SimpleBlockLike)
 

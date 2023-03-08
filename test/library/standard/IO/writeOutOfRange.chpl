@@ -1,7 +1,7 @@
 use IO;
 
 var filename = "outOfRange.txt";
-var f = open(filename, iomode.cw);
+var f = open(filename, ioMode.cw);
 
 var writeCh = f.writer(region=0..3);
 try {

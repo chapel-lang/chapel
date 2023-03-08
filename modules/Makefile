@@ -1,4 +1,4 @@
-# Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -74,6 +74,7 @@ MODULES_TO_DOCUMENT = \
 	standard/BitOps.chpl \
 	standard/ChapelIO.chpl \
 	standard/ChplConfig.chpl \
+	standard/Collectives.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/Communication.chpl \
 	standard/GPUDiagnostics.chpl \

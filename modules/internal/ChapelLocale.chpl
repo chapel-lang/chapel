@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,7 +51,7 @@ module ChapelLocale {
   extern const c_sublocid_all: chpl_sublocID_t;
 
   pragma "no doc"
-  inline proc chpl_isActualSublocID(subloc: chpl_sublocID_t)
+  inline proc chpl_isActualSublocID(subloc: chpl_sublocID_t) do
     return (subloc != c_sublocid_none
             && subloc != c_sublocid_any
             && subloc != c_sublocid_all);
@@ -332,7 +332,7 @@ module ChapelLocale {
     pragma "no doc" var nPUsPhysAll: int;    // HW cores, all
 
     inline
-    proc numPUs(logical: bool = false, accessible: bool = true)
+    proc numPUs(logical: bool = false, accessible: bool = true) do
       return if logical
              then if accessible then nPUsLogAcc else nPUsLogAll
              else if accessible then nPUsPhysAcc else nPUsPhysAll;
@@ -341,10 +341,10 @@ module ChapelLocale {
 
     var callStackSize: c_size_t;
 
-    proc id : int return chpl_nodeFromLocaleID(__primitive("_wide_get_locale", this));
+    proc id : int do return chpl_nodeFromLocaleID(__primitive("_wide_get_locale", this));
 
     pragma "no doc"
-    proc localeid : chpl_localeID_t return __primitive("_wide_get_locale", this);
+    proc localeid : chpl_localeID_t do return __primitive("_wide_get_locale", this);
 
     proc hostname: string {
       extern proc chpl_nodeName(): c_string;
@@ -361,7 +361,11 @@ module ChapelLocale {
       HaltWrappers.pureVirtualMethodHalt();
     }
 
-    proc name return chpl_name() : string;
+    override proc encodeTo(f) throws {
+      HaltWrappers.pureVirtualMethodHalt();
+    }
+
+    proc name do return chpl_name() : string;
 
     // This many tasks are running on this locale.
     //

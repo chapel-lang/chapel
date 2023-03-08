@@ -6,7 +6,7 @@ record G {
   param q;
 }
 
-type GT = G(p=true);
+type GT = G(p=true, ?);
 
 record R {
   param q;

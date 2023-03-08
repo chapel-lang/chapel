@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -56,6 +56,11 @@ class DoWhile final : public Loop {
     CHPL_ASSERT(condition());
   }
 
+  DoWhile(Deserializer& des)
+    : Loop(asttags::DoWhile, des) {
+      conditionChildNum_ = des.read<int>();
+    }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const DoWhile* lhs = this;
     const DoWhile* rhs = (const DoWhile*) other;
@@ -72,6 +77,8 @@ class DoWhile final : public Loop {
   void markUniqueStringsInner(Context* context) const override {
     loopMarkUniqueStringsInner(context);
   }
+
+  std::string dumpChildLabelInner(int i) const override;
 
   int conditionChildNum_;
 
@@ -94,6 +101,13 @@ class DoWhile final : public Loop {
     auto ret = child(conditionChildNum_);
     return ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    Loop::serialize(ser);
+    ser.write(conditionChildNum_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(DoWhile);
 
 };
 

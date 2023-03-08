@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -198,6 +198,26 @@ std::ostream& operator<<(std::ostream& os, const chpl::UniqueString& uStr) {
   // write obj to stream
   os << uStr.c_str();
   return os;
+}
+
+//
+// Represent UniqueString occurrences as integer IDs in a table that the
+// Serializer builds up while serializing various entities. This reduces
+// the file size of generated serialized AST and helps with performance.
+//
+void UniqueString::serialize(Serializer& ser) const {
+  auto id = ser.cacheString(c_str(), length());
+  ser.write(id);
+}
+
+//
+// Deserialize a UniqueString by reading the integer ID and fetching the
+// relevant pointer and length from the Deserializer.
+//
+UniqueString UniqueString::deserialize(Deserializer& des) {
+  int uid = des.read<int>();
+  const auto& strlen = des.getString(uid);
+  return get(des.context(), strlen.second, strlen.first);
 }
 
 } // end namespace chpl

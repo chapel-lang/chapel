@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -45,6 +45,12 @@ class Loop: public AstNode {
     CHPL_ASSERT(children_[loopBodyChildNum_]->isBlock());
   }
 
+  Loop(AstTag tag, Deserializer& des)
+    : AstNode(tag, des) {
+    blockStyle_ = des.read<BlockStyle>();
+    loopBodyChildNum_ = des.read<int>();
+  }
+
   bool loopContentsMatchInner(const Loop* other) const {
     const Loop* lhs = this;
     const Loop* rhs = other;
@@ -60,6 +66,8 @@ class Loop: public AstNode {
 
   void loopMarkUniqueStringsInner(Context* context) const {
   }
+
+  virtual std::string dumpChildLabelInner(int i) const override;
 
   BlockStyle blockStyle_;
   int loopBodyChildNum_;
@@ -101,6 +109,12 @@ class Loop: public AstNode {
   */
   BlockStyle blockStyle() const {
     return blockStyle_;
+  }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(blockStyle_);
+    ser.write(loopBodyChildNum_);
   }
 };
 

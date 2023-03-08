@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,31 +26,31 @@ namespace uast {
 
 
 owned<EnumElement> EnumElement::build(Builder* builder, Location loc,
-                                      owned<Attributes> attributes,
+                                      owned<AttributeGroup> attributeGroup,
                                       UniqueString name,
                                       owned<AstNode> initExpression) {
   AstList lst;
-  int attributesChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
 
-  if (attributes.get() != nullptr) {
-    attributesChildNum = lst.size();
-    lst.push_back(std::move(attributes));
+  if (attributeGroup.get() != nullptr) {
+    attributeGroupChildNum = lst.size();
+    lst.push_back(std::move(attributeGroup));
   }
 
   if (initExpression.get() != nullptr) {
     lst.push_back(std::move(initExpression));
   }
 
-  EnumElement* ret = new EnumElement(std::move(lst), attributesChildNum,
+  EnumElement* ret = new EnumElement(std::move(lst), attributeGroupChildNum,
                                      name);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
 
 owned<EnumElement> EnumElement::build(Builder* builder, Location loc,
-                                      owned<Attributes> attributes,
+                                      owned<AttributeGroup> attributeGroup,
                                       UniqueString name) {
-  return EnumElement::build(builder, loc, std::move(attributes),
+  return EnumElement::build(builder, loc, std::move(attributeGroup),
                             name,
                             /*initExpression*/ nullptr);
 }

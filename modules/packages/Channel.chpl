@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -276,8 +276,8 @@ module Channel {
     var recvIdx = 0;
     var count = 0;
     var closed = false;
-    var sendWaiters : WaiterQueue;
-    var recvWaiters : WaiterQueue;
+    var sendWaiters : owned WaiterQueue;
+    var recvWaiters : owned WaiterQueue;
     var lock$ = new _LockWrapper();
 
     proc init(type elt, size = 0) {

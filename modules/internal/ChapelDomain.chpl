@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,7 +23,7 @@
 module ChapelDomain {
 
   public use ChapelBase;
-  use ArrayViewRankChange;
+  use ArrayViewRankChange, ChapelTuple;
 
   /*
      Fractional value that specifies how full this domain can be
@@ -39,6 +39,10 @@ module ChapelDomain {
      data structures, such as `set` and `map`.
   */
   config const defaultHashTableResizeThreshold = 0.5;
+
+  /* Compile with ``-snoNegativeStrideWarnings``
+     to suppress the warning about arrays and slices with negative strides. */
+  config param noNegativeStrideWarnings = false;
 
   pragma "no copy return"
   pragma "return not owned"
@@ -161,7 +165,7 @@ module ChapelDomain {
   //
   // Note the domain of a subdomain is not yet part of the runtime type
   //
-  proc chpl__buildSubDomainType(dom: domain) type
+  proc chpl__buildSubDomainType(dom: domain) type do
     return chpl__convertValueToRuntimeType(dom);
 
   //
@@ -284,9 +288,9 @@ module ChapelDomain {
     return _getDomain(dom._value);
   }
 
-  proc chpl_isAssociativeDomClass(dc: BaseAssociativeDom) param return true;
+  proc chpl_isAssociativeDomClass(dc: BaseAssociativeDom) param do return true;
   pragma "last resort"
-  proc chpl_isAssociativeDomClass(dc) param return false;
+  proc chpl_isAssociativeDomClass(dc) param do return false;
 
   private proc errorIfNotRectangular(dom: domain, param op, param arrays="") {
     if dom.isAssociative() || dom.isSparse() then
@@ -323,7 +327,8 @@ module ChapelDomain {
     var ranges = dom.dims();
     for param i in 0..dom.rank-1 do
       ranges(i) = ranges(i) # counts(i);
-    return dom[(...ranges)];
+
+    return new _domain(dom.dist, dom.rank, dom.idxType, dom.stridable, ranges);
   }
 
   pragma "no doc"
@@ -520,7 +525,7 @@ module ChapelDomain {
   }
 
   // check this before comparing two domains with == or !=
-  proc chpl_sameDomainKind(d1: domain, d2: domain) param
+  proc chpl_sameDomainKind(d1: domain, d2: domain) param do
     return (d1.isRectangular() && d2.isRectangular()) ||
            (d1.isAssociative() && d2.isAssociative()) ||
            (d1.isSparse()      && d2.isSparse()     );
@@ -717,7 +722,7 @@ module ChapelDomain {
                else
                  isRange(first) && isRange(rest(0));
       }
-      proc peelArgs(first) param return isRange(first);
+      proc peelArgs(first) param do return isRange(first);
 
       return if !isTuple(a) then false else peelArgs((...a));
     }
@@ -1091,7 +1096,7 @@ module ChapelDomain {
 
     /* Return the domain map that implements this domain */
     pragma "return not owned"
-    proc dist return _getDistribution(_value.dist);
+    proc dist do return _getDistribution(_value.dist);
 
     /* Return the number of dimensions in this domain */
     proc rank param {
@@ -1101,9 +1106,23 @@ module ChapelDomain {
         return 1;
     }
 
-    /* Return the type of the indices of this domain */
+    /* Return the type used to represent the indices of this domain.
+       For a multidimensional domain, this will represent the
+       per-dimension index type. */
     proc idxType type {
       return _value.idxType;
+    }
+
+    /* Return the full type used to represent the indices of this
+       domain.  For a 1D or associative domain, this will be the same
+       as :proc:`idxType` above.  For a multidimensional domain, it
+       will be :proc:`rank` * :proc:`idxType`. */
+    proc fullIdxType type {
+      if this.isAssociative() || this.rank == 1 {
+        return this.idxType;
+      } else {
+        return this.rank * this.idxType;
+      }
     }
 
     /* The ``idxType`` as represented by an integer type.  When
@@ -1183,9 +1202,10 @@ module ChapelDomain {
       var r: rank*range(_value.idxType,
                         BoundedRangeType.bounded,
                         stridable);
+      const myDims = dims();
 
       for param i in 0..rank-1 {
-        r(i) = _value.dsiDim(i)(ranges(i));
+        r(i) = myDims(i)[ranges(i)];
       }
       return new _domain(dist, rank, _value.idxType, stridable, r);
     }
@@ -1264,7 +1284,7 @@ module ChapelDomain {
        Return a tuple of ranges describing the bounds of a rectangular domain.
        For a sparse domain, return the bounds of the parent domain.
      */
-    proc dims() return _value.dsiDims();
+    proc dims() do return _value.dsiDims();
 
     /*
        Return a range representing the boundary of this
@@ -1320,17 +1340,15 @@ module ChapelDomain {
       compilerError(".shape not supported on this domain");
     }
 
-    pragma "no doc"
-    pragma "no copy return"
-    proc buildArray(type eltType, param initElts:bool) {
+    proc chpl_checkEltType(type eltType) /*private*/ {
       if eltType == void {
         compilerError("array element type cannot be void");
       }
       if isGenericType(eltType) {
         compilerWarning("creating an array with element type " +
                         eltType:string);
-        if isClassType(eltType) && !isGenericType(borrowed eltType) {
-          compilerWarning("which now means class type with generic management");
+        if isClassType(eltType) && !isGenericType(eltType:borrowed) {
+          compilerWarning("which is a class type with generic management");
         }
         compilerError("array element type cannot currently be generic");
         // In the future we might support it if the array is not default-inited
@@ -1341,17 +1359,25 @@ module ChapelDomain {
           compilerError("sparse arrays of non-default-initializable types are not currently supported");
         }
       }
+    }
 
-      if chpl_warnUnstable then
-        if this.isRectangular() && this.stridable then
-          if rank == 1 {
-            if this.stride < 0 then
-              warning("arrays with negatively strided dimensions are not particularly stable");
-          } else {
-            for s in this.stride do
-              if s < 0 then
-                warning("arrays with negatively strided dimensions are not particularly stable");
+    proc chpl_checkNegativeStride() /*private*/ {
+      if noNegativeStrideWarnings then return;
+      // todo: add compile-time checks for neg. strides once ranges allow that
+      if this.isRectangular() && this.stridable {
+        for s in chpl__tuplify(this.stride) do
+          if s < 0 {
+            warning("arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: ", this.dsiDims());
+            break;
           }
+      }
+    }
+
+    pragma "no doc"
+    pragma "no copy return"
+    proc buildArray(type eltType, param initElts:bool) {
+      chpl_checkEltType(eltType);
+      chpl_checkNegativeStride();
 
       var x = _value.dsiBuildArray(eltType, initElts);
       pragma "dont disable remote value forwarding"
@@ -1455,7 +1481,7 @@ module ChapelDomain {
       /*
         Returns ``true`` if this manager has runtime safety checks enabled.
       */
-      inline proc checks param return _checks;
+      inline proc checks param do return _checks;
 
       // Called by implementation code.
       pragma "no doc"
@@ -1497,8 +1523,8 @@ module ChapelDomain {
 
       pragma "no doc"
       proc _isBaseArrClassElementNil(baseArr: BaseArr, idx) {
-        var idxTup = if isTuple(idx) then idx else (idx,);
-        return baseArr.chpl_unsafeAssignIsClassElementNil(this, idxTup);
+        return baseArr.chpl_unsafeAssignIsClassElementNil(this,
+                                             chpl__tuplify(idx));
       }
 
       /*
@@ -1989,20 +2015,20 @@ module ChapelDomain {
       compilerError("associative domains do not support '.high'");
     }
     /* Return the stride of the indices in this domain */
-    proc stride return _value.dsiStride;
+    proc stride do return _value.dsiStride;
     /* Return the alignment of the indices in this domain */
-    proc alignment return _value.dsiAlignment;
+    proc alignment do return _value.dsiAlignment;
     /* Return the first index in this domain */
-    proc first return _value.dsiFirst;
+    proc first do return _value.dsiFirst;
     /* Return the last index in this domain */
-    proc last return _value.dsiLast;
+    proc last do return _value.dsiLast;
 
     /* Return the low index in this domain factoring in alignment */
     deprecated "'.alignedLow' is deprecated; please use '.low' instead"
-    proc alignedLow return _value.dsiAlignedLow;
+    proc alignedLow do return _value.dsiAlignedLow;
     /* Return the high index in this domain factoring in alignment */
     deprecated "'.alignedHigh' is deprecated; please use '.high' instead"
-    proc alignedHigh return _value.dsiAlignedHigh;
+    proc alignedHigh do return _value.dsiAlignedHigh;
 
     /* This error overload is here because without it, the domain's
        indices tend to be promoted across the `.indices` calls of
@@ -2061,7 +2087,7 @@ module ChapelDomain {
 
     // 1/5/10: do we want to support order() and position()?
     pragma "no doc"
-    proc indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i, "index"));
+    proc indexOrder(i) do return _value.dsiIndexOrder(_makeIndexTuple(rank, i, "index"));
 
     /*
       Returns the `ith` index in the domain counting from 0.
@@ -2149,7 +2175,7 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc expand(off: integral ...rank) return expand(off);
+    proc expand(off: integral ...rank) do return expand(off);
 
     /* Return a new domain that is the current domain expanded by
        ``off(d)`` in dimension ``d`` if ``off(d)`` is positive or
@@ -2197,7 +2223,7 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc exterior(off: integral ...rank) return exterior(off);
+    proc exterior(off: integral ...rank) do return exterior(off);
 
     /* Return a new domain that is the exterior portion of the
        current domain with ``off(d)`` indices for each dimension ``d``.
@@ -2244,7 +2270,7 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc interior(off: integral ...rank) return interior(off);
+    proc interior(off: integral ...rank) do return interior(off);
 
     /* Return a new domain that is the interior portion of the
        current domain with ``off(d)`` indices for each dimension
@@ -2303,7 +2329,7 @@ module ChapelDomain {
     // index type.  This is handled in the range.translate().
     //
     pragma "no doc"
-    proc translate(off: integral ...rank) return translate(off);
+    proc translate(off: integral ...rank) do return translate(off);
 
     /* Return a new domain that is the current domain translated by
        ``off(d)`` in each dimension ``d``.
@@ -2341,7 +2367,7 @@ module ChapelDomain {
     //
     // intended for internal use only:
     //
-    proc chpl__unTranslate(off: integral ...rank) return chpl__unTranslate(off);
+    proc chpl__unTranslate(off: integral ...rank) do return chpl__unTranslate(off);
     proc chpl__unTranslate(off: rank*intIdxType) {
       var ranges = dims();
       for i in 0..rank-1 do
@@ -2358,17 +2384,30 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    proc getIndices()
+    proc getIndices() do
       return _value.dsiGetIndices();
 
     pragma "no doc"
     proc writeThis(f) throws {
       _value.dsiSerialWrite(f);
     }
+    pragma "no doc"
+    proc encodeTo(f) throws {
+      _value.dsiSerialWrite(f);
+    }
 
     pragma "no doc"
     proc ref readThis(f) throws {
       _value.dsiSerialRead(f);
+    }
+
+    // TODO: Can we convert this to an initializer despite the potential issues
+    // with runtime types?
+    pragma "no doc"
+    proc type decodeFrom(f) throws {
+      var ret : this;
+      ret.readThis(f);
+      return ret;
     }
 
     pragma "no doc"

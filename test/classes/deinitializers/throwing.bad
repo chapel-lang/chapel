@@ -1,0 +1,3 @@
+throwing.chpl:8: error: conflicting throws for 'Bar.deinit()'
+error: non-throwing function 'object.deinit()'
+throwing.chpl:8: error: overridden by throwing function 'Bar.deinit()'

@@ -1,5 +1,5 @@
  /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -52,7 +52,7 @@ public:
   static CatchStmt* build(const char* name, BlockStmt* body);
   static CatchStmt* build(BlockStmt* body);
 
-   CatchStmt(const char* name, Expr* type, BlockStmt* body);
+   CatchStmt(const char* name, Expr* type, BlockStmt* body, bool createdErr = false);
   ~CatchStmt() override = default;
 
   const char* name() const;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -74,6 +74,14 @@ class Try final : public AstNode {
     }
   }
 
+  Try(Deserializer& des)
+    : AstNode(asttags::Try, des) {
+      numHandlers_ = des.read<int>();
+      containsBlock_ = des.read<bool>();
+      isExpressionLevel_ = des.read<bool>();
+      isTryBang_ = des.read<bool>();
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Try* rhs = other->toTry();
     return this->numHandlers_ == rhs->numHandlers_ &&
@@ -84,6 +92,9 @@ class Try final : public AstNode {
 
   void markUniqueStringsInner(Context* context) const override {
   }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
 
   // body position is always the same
   static const int8_t bodyChildNum_ = 0;
@@ -206,6 +217,16 @@ class Try final : public AstNode {
   bool isTryBang() const {
     return isTryBang_;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(numHandlers_);
+    ser.write(containsBlock_);
+    ser.write(isExpressionLevel_);
+    ser.write(isTryBang_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Try);
 
 };
 

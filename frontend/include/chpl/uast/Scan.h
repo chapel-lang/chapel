@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -50,6 +50,9 @@ class Scan final : public Call {
     CHPL_ASSERT(numChildren() == 2);
   }
 
+  Scan(Deserializer& des)
+    : Call(asttags::Scan, des) { }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Scan* rhs = other->toScan();
     return this->callContentsMatchInner(rhs);
@@ -58,6 +61,8 @@ class Scan final : public Call {
   void markUniqueStringsInner(Context* context) const override {
     callMarkUniqueStringsInner(context);
   }
+
+  std::string dumpChildLabelInner(int i) const override;
 
  public:
   ~Scan() override = default;
@@ -82,6 +87,12 @@ class Scan final : public Call {
   const AstNode* iterand() const {
     return this->child(iterandChildNum_);
   }
+
+  void serialize(Serializer& ser) const override {
+    Call::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Scan);
 
 };
 

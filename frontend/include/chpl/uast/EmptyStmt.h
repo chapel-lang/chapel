@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,6 +47,8 @@ private:
     : AstNode(asttags::EmptyStmt) {
     CHPL_ASSERT(numChildren() == 0);
   }
+  EmptyStmt(Deserializer& des)
+    : AstNode(asttags::EmptyStmt, des) { }
 
     bool contentsMatchInner(const AstNode* other) const override {
     const EmptyStmt* rhs = other->toEmptyStmt();
@@ -64,6 +66,11 @@ public:
   */
   static owned<EmptyStmt> build(Builder* builder, Location loc);
 
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(EmptyStmt);
 
 }; // end EmptyStmt
 

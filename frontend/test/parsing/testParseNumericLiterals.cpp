@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -32,11 +32,12 @@ static void testIntLiteral(Parser* parser,
                            const char* testname,
                            const char* lit,
                            int64_t expectValue) {
+  ErrorGuard guard(parser->context());
   std::string toparse = "var x = ";
   toparse += lit;
   toparse += ";\n";
-  auto parseResult = parser->parseString(testname, toparse.c_str());
-  assert(!parseResult.numErrors());
+  auto parseResult = parseStringAndReportErrors(parser, testname, toparse.c_str());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -51,11 +52,12 @@ static void testUintLiteral(Parser* parser,
                             const char* testname,
                             const char* lit,
                             uint64_t expectValue) {
+  ErrorGuard guard(parser->context());
   std::string toparse = "var x = ";
   toparse += lit;
   toparse += ";\n";
-  auto parseResult = parser->parseString(testname, toparse.c_str());
-  assert(!parseResult.numErrors());
+  auto parseResult = parseStringAndReportErrors(parser, testname, toparse.c_str());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -70,11 +72,12 @@ static void testRealLiteral(Parser* parser,
                             const char* testname,
                             const char* lit,
                             double expectValue) {
+  ErrorGuard guard(parser->context());
   std::string toparse = "var x = ";
   toparse += lit;
   toparse += ";\n";
-  auto parseResult = parser->parseString(testname, toparse.c_str());
-  assert(!parseResult.numErrors());
+  auto parseResult = parseStringAndReportErrors(parser, testname, toparse.c_str());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -89,11 +92,12 @@ static void testImagLiteral(Parser* parser,
                             const char* testname,
                             const char* lit,
                             double expectValue) {
+  ErrorGuard guard(parser->context());
   std::string toparse = "var x = ";
   toparse += lit;
   toparse += ";\n";
-  auto parseResult = parser->parseString(testname, toparse.c_str());
-  assert(!parseResult.numErrors());
+  auto parseResult = parseStringAndReportErrors(parser, testname, toparse.c_str());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -109,11 +113,12 @@ static void testImagLiteral(Parser* parser,
 static void testBadLiteral(Parser* parser,
                            const char* testname,
                            const char* lit) {
+  ErrorGuard guard(parser->context());
   std::string toparse = "var x = ";
   toparse += lit;
   toparse += ";\n";
-  auto parseResult = parser->parseString(testname, toparse.c_str());
-  assert(parseResult.numErrors() >= 1);
+  auto parseResult = parseStringAndReportErrors(parser, testname, toparse.c_str());
+  assert(guard.realizeErrors() >= 1);
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);

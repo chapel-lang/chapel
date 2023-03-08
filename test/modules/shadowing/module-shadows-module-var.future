@@ -1,0 +1,11 @@
+bug: module shadows var of same name within it within for expressions
+#16043
+
+Calling the proc from within a for statement works,
+
+  for i in 1..10 do writeln(foo(i));
+
+But the module shadows the proc when calling it from within
+a for expression, in e.g.,
+
+  var val = for i in 1..10 do foo(i);

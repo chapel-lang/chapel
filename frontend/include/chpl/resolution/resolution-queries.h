@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -123,9 +123,20 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
                                         DefaultsPolicy defaultsPolicy);
 
 /**
-  Return true if 'name' is the name of a field for type 't'
+  If 'name' is the name of a field for type 't', returns a non-null pointer;
+  Otherwise, returns 'nullptr'.
+
+  The returned pointer will point to the type containing the field.
+  For records and unions, that will just be 't'.
+  For classes, it won't necessarily be 't', since a field
+  might come from a superclass. If the field comes from a superclass,
+  this function will return the BasicClass type for the superclass
+  that contains the field directly.
+
 */
-bool isNameOfField(Context* context, UniqueString name, const types::Type* t);
+const types::CompositeType* isNameOfField(Context* context,
+                                          UniqueString name,
+                                          const types::Type* t);
 
 /**
   Computes the version of a type assuming that defaults for generics
@@ -253,6 +264,34 @@ const types::QualifiedType& returnType(Context* context,
                                        const TypedFnSignature* sig,
                                        const PoiScope* poiScope);
 
+/**
+  Compute the types for any generic 'out' formal types after instantiation
+  of any other generic arguments.
+
+  'out' formals with concrete type will already have their types
+  represented in the 'sig' passed here (through typedSignatureInitial and
+  potentially instantiateSignature).
+
+  For the generic 'out' formals, their types are inferred from the
+  body of the function.
+
+  The returned TypedFnSignature* will have the inferred out formal types.
+ */
+const TypedFnSignature* inferOutFormals(Context* context,
+                                        const TypedFnSignature* sig,
+                                        const PoiScope* poiScope);
+
+/**
+  Try to compute the TypedFnSignature with REF_MAYBE_CONST formals computed
+  as 'ref' or 'const ref'. If the TypedFnSignature is currently being resolved,
+  instead of returning a new TypedFnSignature, this function returns
+  'nullptr'. In that case, the caller is responsible for attempting this
+  again later once the current set of recursive functions is resolved.
+ */
+const TypedFnSignature* inferRefMaybeConstFormals(Context* context,
+                                                  const TypedFnSignature* sig,
+                                                  const PoiScope* poiScope);
+
 /////// call resolution
 
 /**
@@ -286,12 +325,30 @@ filterCandidatesInstantiating(Context* context,
   scope of that call, and a PoiScope representing the point-of-instantiation
   scope of that call, find the most specific candidates as well
   as the point-of-instantiation scopes that were used when resolving them.
+
+  'resolveCallInMethod' should be used instead when resolving a non-method call
+  within a method.
  */
 CallResolutionResult resolveCall(Context* context,
                                  const uast::Call* call,
                                  const CallInfo& ci,
                                  const Scope* inScope,
                                  const PoiScope* inPoiScope);
+
+/**
+  Similar to resolveCall, but handles the implicit scope provided by a method.
+
+  When a resolving a call within a method, the implicitReceiver should be
+  set to the 'this' type of the method.
+
+  If implicitReceiver.type() == nullptr, it will be ignored.
+ */
+CallResolutionResult resolveCallInMethod(Context* context,
+                                         const uast::Call* call,
+                                         const CallInfo& ci,
+                                         const Scope* inScope,
+                                         const PoiScope* inPoiScope,
+                                         types::QualifiedType implicitReceiver);
 
 /**
   Given a CallInfo representing a call, a Scope representing the
@@ -304,6 +361,32 @@ CallResolutionResult resolveGeneratedCall(Context* context,
                                           const CallInfo& ci,
                                           const Scope* inScope,
                                           const PoiScope* inPoiScope);
+
+/**
+  Similar to resolveGeneratedCall but handles the implicit scope
+  provided by a method.
+
+  When a resolving a call within a method, the implicitReceiver should be
+  set to the 'this' type of the method.
+
+  If implicitReceiver.type() == nullptr, it will be ignored.
+ */
+CallResolutionResult
+resolveGeneratedCallInMethod(Context* context,
+                             const uast::AstNode* astForErr,
+                             const CallInfo& ci,
+                             const Scope* inScope,
+                             const PoiScope* inPoiScope,
+                             types::QualifiedType implicitReceiver);
+
+
+/**
+  Given a type 't', compute whether or not 't' is default initializable.
+  If 't' is a generic type, it is considered non-default-initializable.
+  Considers the fields and substitutions of composite types.
+*/
+bool isTypeDefaultInitializable(Context* context, const types::Type* t);
+
 
 
 } // end namespace resolution

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -96,11 +96,11 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
   chpl_memhook_malloc_post(p, nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
                            lineno, filename);
 #ifdef HAS_GPU_LOCALE
+  chpl_gpu_hostmem_register(p, size);
   }
 #endif
   return p;
 }
-
 
 static inline
 void chpl_mem_array_postAlloc(void* p, size_t nmemb, size_t eltSize,

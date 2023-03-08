@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -375,51 +375,51 @@ module CTypes {
 
   // casts from c pointer to c_intptr / c_uintptr
   pragma "no doc"
-  inline operator :(x:c_void_ptr, type t:c_intptr)
+  inline operator :(x:c_void_ptr, type t:c_intptr) do
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline operator :(x:c_void_ptr, type t:c_uintptr)
+  inline operator :(x:c_void_ptr, type t:c_uintptr) do
     return __primitive("cast", t, x);
 
   pragma "no doc"
-  inline operator :(x:c_ptr, type t:c_intptr)
+  inline operator :(x:c_ptr, type t:c_intptr) do
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline operator :(x:c_ptr, type t:c_uintptr)
+  inline operator :(x:c_ptr, type t:c_uintptr) do
     return __primitive("cast", t, x);
 
 
   // casts from c pointer to int / uint
   // note that these are only used if c_intptr != int / c_uintptr != uint
   pragma "no doc"
-  inline operator c_void_ptr.:(x:c_void_ptr, type t:int) where c_uintptr != int
+  inline operator c_void_ptr.:(x:c_void_ptr, type t:int) where c_uintptr != int do
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline operator c_void_ptr.:(x:c_void_ptr, type t:uint) where c_uintptr != uint
+  inline operator c_void_ptr.:(x:c_void_ptr, type t:uint) where c_uintptr != uint do
     return __primitive("cast", t, x);
 
   pragma "no doc"
-  inline operator c_ptr.:(x:c_ptr, type t:int) where c_intptr != int
+  inline operator c_ptr.:(x:c_ptr, type t:int) where c_intptr != int do
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline operator c_ptr.:(x:c_ptr, type t:uint) where c_uintptr != uint
+  inline operator c_ptr.:(x:c_ptr, type t:uint) where c_uintptr != uint do
     return __primitive("cast", t, x);
 
   // casts from c_intptr / c_uintptr to c_void_ptr
   pragma "no doc"
-  inline operator :(x:c_intptr, type t:c_void_ptr)
+  inline operator :(x:c_intptr, type t:c_void_ptr) do
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline operator :(x:c_uintptr, type t:c_void_ptr)
+  inline operator :(x:c_uintptr, type t:c_void_ptr) do
     return __primitive("cast", t, x);
 
   // casts from int / uint to c_void_ptr
   // note that these are only used if c_intptr != int / c_uintptr != uint
   pragma "no doc"
-  inline operator c_void_ptr.:(x:int, type t:c_void_ptr) where c_intptr != int
+  inline operator c_void_ptr.:(x:int, type t:c_void_ptr) where c_intptr != int do
     return __primitive("cast", t, x);
   pragma "no doc"
-  inline operator c_void_ptr.:(x:uint, type t:c_void_ptr) where c_uintptr != uint
+  inline operator c_void_ptr.:(x:uint, type t:c_void_ptr) where c_uintptr != uint do
     return __primitive("cast", t, x);
 
 
@@ -453,13 +453,13 @@ module CTypes {
   }
 
   pragma "no doc"
-  inline operator c_ptr.!(x: c_ptr) return x == c_nil;
+  inline operator c_ptr.!(x: c_ptr) do return x == c_nil;
 
   pragma "no doc"
-  inline operator c_ptr.+(a: c_ptr, b: integral) return __primitive("+", a, b);
+  inline operator c_ptr.+(a: c_ptr, b: integral) do return __primitive("+", a, b);
 
   pragma "no doc"
-  inline operator c_ptr.-(a: c_ptr, b: integral) return __primitive("-", a, b);
+  inline operator c_ptr.-(a: c_ptr, b: integral) do return __primitive("-", a, b);
 
   pragma "no doc"
   inline operator c_ptr.-(a: c_ptr(?t), b: c_ptr(t)):c_ptrdiff {
@@ -495,6 +495,11 @@ module CTypes {
 
     if (arr._value.locale != here) then
       halt("c_ptrTo() can only be applied to an array from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
+
+    if boundsChecking {
+      if (arr.size == 0) then
+        halt("Can't create a C pointer for an array with 0 elements.");
+    }
 
     return c_pointer_return(arr[arr.domain.low]);
   }
@@ -533,6 +538,12 @@ module CTypes {
     return CHPL_RT_MD_ARRAY_ELEMENTS - chpl_memhook_md_num();
   }
 
+  pragma "last resort"
+  deprecated "c_sizeof with argument name 'x' is deprecated; please use c_sizeof(type t) instead"
+  inline proc c_sizeof(type x): c_size_t {
+    return c_sizeof(x);
+  }
+
   /*
     Return the size in bytes of a type, as with the C ``sizeof`` built-in.
 
@@ -546,10 +557,10 @@ module CTypes {
          * Behavior of ``c_sizeof`` with Chapel types may change
          * Behavior given a Chapel class type is not well-defined
    */
-  inline proc c_sizeof(type x): c_size_t {
+  inline proc c_sizeof(type t): c_size_t {
     pragma "fn synchronization free"
-    extern proc sizeof(type x): c_size_t;
-    return sizeof(x);
+    extern proc sizeof(type t): c_size_t;
+    return sizeof(t);
   }
 
   /*
@@ -659,11 +670,11 @@ module CTypes {
 
   /* Returns true if t is a c_ptr type or c_void_ptr.
    */
-  proc isAnyCPtr(type t:c_ptr) param return true;
+  proc isAnyCPtr(type t:c_ptr) param do return true;
   pragma "no doc"
-  proc isAnyCPtr(type t:c_void_ptr) param return true;
+  proc isAnyCPtr(type t:c_void_ptr) param do return true;
   pragma "no doc"
-  proc isAnyCPtr(type t) param return false;
+  proc isAnyCPtr(type t) param do return false;
 
   /*
     Copies n potentially overlapping bytes from memory area src to memory

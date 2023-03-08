@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -226,8 +226,10 @@ void chpl_rt_init(int argc, char* argv[]) {
   parseArgs(false, parse_dash_E, &argc, argv);
 
   chpl_error_init();  // This does local-only initialization
+  chpl_comm_pre_topo_init();
   chpl_topo_init();
   chpl_comm_init(&argc, &argv);
+  chpl_comm_pre_mem_init();
   chpl_mem_init();
   chpl_comm_post_mem_init();
 
@@ -240,6 +242,8 @@ void chpl_rt_init(int argc, char* argv[]) {
   chpl_gen_main_arg.return_value = 0;
   parseArgs(false, parse_normally, &argc, argv);
   recordExecutionCommand(argc, argv);
+
+  chpl_topo_post_args_init();
 
   //
   // If the user specified a number of locales, have the comm layer

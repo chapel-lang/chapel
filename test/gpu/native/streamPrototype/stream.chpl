@@ -11,6 +11,8 @@ use GPUDiagnostics;
 //
 use HPCCProblemSize;
 
+config param useForeach = true;
+
 //
 // The number of vectors and element type of those vectors
 //
@@ -79,7 +81,7 @@ proc main() {
     var execTime: [1..numTrials] real;                 // an array of timings
 
     for trial in 1..numTrials {                        // loop over the trials
-      const startTime = getCurrentTime();              // capture the start time
+      const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 
       //
       // The main loop: Iterate over the vectors A, B, and C in a
@@ -87,10 +89,14 @@ proc main() {
       // Compute the multiply-add on b and c, storing the result to a.
       //
       // This forall loop will be offloaded onto the GPU.
-      forall (a, b, c) in zip(A, B, C) do
-        a = b + alpha * c;
+      if useForeach then
+        foreach (a, b, c) in zip(A, B, C) do
+          a = b + alpha * c;
+      else
+        forall (a, b, c) in zip(A, B, C) do
+          a = b + alpha * c;
 
-      execTime(trial) = getCurrentTime() - startTime;  // store the elapsed time
+      execTime(trial) = timeSinceEpoch().totalSeconds() - startTime;  // store the elapsed time
     }
 
     const validAnswer = verifyResults(A, B, C);        // verify...

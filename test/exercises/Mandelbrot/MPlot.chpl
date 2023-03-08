@@ -52,7 +52,7 @@ proc plot(NumSteps:[]) where NumSteps.rank == 2 {
   // to it.
   //
   const outfilename = filename + "." + format;
-  const outfile = open(outfilename, iomode.cw).writer();
+  const outfile = open(outfilename, ioMode.cw).writer();
 
   //
   // Plot the image to the file (could also pass stdout in as the file...)
@@ -197,15 +197,15 @@ const header_size = 14;
         var nbits = 0;
         for j in Dom.dim(1) {
           var bit = (if NumSteps[i,j] then 255 else 0):uint;
-          outfile.writebits(bit, 8);
-          outfile.writebits(bit, 8);
-          outfile.writebits(bit, 8);
+          outfile.writeBits(bit, 8);
+          outfile.writeBits(bit, 8);
+          outfile.writeBits(bit, 8);
           nbits += 24;
         }
         // write the padding.
         // The padding is only rounding up to 4 bytes so
-        // can be written in a single writebits call.
-        outfile.writebits(0:uint, (row_size_bits-nbits):int(8));
+        // can be written in a single writeBits call.
+        outfile.writeBits(0:uint, (row_size_bits-nbits):int(8));
       }
     }
 
@@ -215,15 +215,15 @@ const header_size = 14;
         for j in Dom.dim(1) {
           var grey = ((255*NumSteps[i,j])/maxSteps):uint;
           // write 24-bit color value by repeating grey
-          outfile.writebits(grey, 8);
-          outfile.writebits(grey, 8);
-          outfile.writebits(grey, 8);
+          outfile.writeBits(grey, 8);
+          outfile.writeBits(grey, 8);
+          outfile.writeBits(grey, 8);
           nbits += 24;
         }
         // write the padding.
         // The padding is only rounding up to 4 bytes so
-        // can be written in a single writebits call.
-        outfile.writebits(0:uint, (row_size_bits-nbits):int(8));
+        // can be written in a single writeBits call.
+        outfile.writeBits(0:uint, (row_size_bits-nbits):int(8));
       }
     }
 
@@ -235,15 +235,15 @@ const header_size = 14;
           var blue:uint = 0;
           var red = ((255*NumSteps[i,j])/maxSteps):uint;
           // write 24-bit color value
-          outfile.writebits(blue, 8);
-          outfile.writebits(green, 8);
-          outfile.writebits(red, 8);
+          outfile.writeBits(blue, 8);
+          outfile.writeBits(green, 8);
+          outfile.writeBits(red, 8);
           nbits += 24;
         }
         // write the padding.
         // The padding is only rounding up to 4 bytes so
-        // can be written in a single writebits call.
-        outfile.writebits(0:uint, (row_size_bits-nbits):int(8));
+        // can be written in a single writeBits call.
+        outfile.writeBits(0:uint, (row_size_bits-nbits):int(8));
       }
     }
   }

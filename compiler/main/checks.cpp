@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -72,12 +72,12 @@ static void checkFormalActualTypesMatch();
 // Implementations.
 //
 
-void check_parse()
+void check_parseAndConvertUast()
 {
   check_afterEveryPass();
 }
 
-void check_checkParsed()
+void check_checkUast()
 {
   // checkIsIterator() will crash if there were certain USR_FATAL_CONT()
   // e.g. functions/vass/proc-iter/error-yield-in-proc-*
@@ -601,7 +601,7 @@ static void checkIsIterator() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_YIELD)) {
       FnSymbol* fn = toFnSymbol(call->parentSymbol);
-      // Violations should have caused USR_FATAL_CONT in checkParsed().
+      // Violations should have caused USR_FATAL_CONT in checkUast().
       INT_ASSERT(fn && fn->isIterator());
     }
   }

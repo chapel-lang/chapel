@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -100,9 +100,7 @@ class Context {
     = toOwned<ErrorHandler>(new DefaultErrorHandler());
 
   // Report an error to the current handler.
-  void reportError(Context* context, const ErrorBase* err) {
-    handler_->report(context, err);
-  }
+  void reportError(Context* context, const ErrorBase* err);
 
   // The CHPL_HOME variable
   const std::string chplHome_;
@@ -178,6 +176,12 @@ class Context {
   void setTerminalColor(TermColorName colorName, std::ostream& os) {
     if (currentTerminalSupportsColor_) {
       os << getColorFormat(colorName);
+    }
+  }
+
+  void clearTerminalColor(std::ostream& os) {
+    if (currentTerminalSupportsColor_) {
+      os << getClearColorFormat();
     }
   }
 
@@ -478,6 +482,19 @@ class Context {
   void setFilePathForModuleId(ID moduleID, UniqueString path);
 
   /**
+    Return 'true' if the given file path can be handled by a library file
+    (experimental).
+
+    Returns the library's path by setting 'pathOut'.
+   */
+  bool pathHasLibrary(const UniqueString& filePath, UniqueString& pathOut);
+
+  /**
+    Sets the library path for the given file path.
+   */
+  void setLibraryForFilePath(const UniqueString& filePath, const UniqueString& libPath);
+
+  /**
     This function increments the current revision number stored
     in the context. After it is called, the setters below can
     be used to provide the input at that revision.
@@ -510,9 +527,8 @@ class Context {
 
     If no query is currently running, it just reports the error.
 
-    Returns the passed-in error for convenience.
    */
-  const ErrorBase* report(const ErrorBase* error);
+  void report(owned<ErrorBase> error);
 
   /**
     Note an error for the currently running query.

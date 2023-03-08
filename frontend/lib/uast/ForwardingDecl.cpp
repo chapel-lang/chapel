@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,27 +26,27 @@ namespace uast {
 
 
 owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
-                                            owned<Attributes> attributes,
+                                            owned<AttributeGroup> attributeGroup,
                                             owned<AstNode> expr) {
   CHPL_ASSERT(expr.get() != nullptr);
 
-  return ForwardingDecl::build(builder, loc, std::move(attributes),
+  return ForwardingDecl::build(builder, loc, std::move(attributeGroup),
                                std::move(expr),
                                Decl::DEFAULT_VISIBILITY);
 }
 
 owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
-                                            owned<Attributes> attributes,
+                                            owned<AttributeGroup> attributeGroup,
                                             owned<AstNode> expr,
                                             Decl::Visibility visibility) {
   CHPL_ASSERT(expr.get() != nullptr);
-  int attributesChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
   AstList lst;
 
-  // store the attributes and the location of the attributes node if one exists
-  if (attributes.get() != nullptr) {
-    attributesChildNum = lst.size();
-    lst.push_back(std::move(attributes));
+  // store the attributeGroup and the location of the attributeGroup node
+  if (attributeGroup.get() != nullptr) {
+    attributeGroupChildNum = lst.size();
+    lst.push_back(std::move(attributeGroup));
   }
 
   // store the child node
@@ -54,7 +54,7 @@ owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
 
   ForwardingDecl* ret = new ForwardingDecl(std::move(lst),
                                            visibility,
-                                           attributesChildNum);
+                                           attributeGroupChildNum);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -977,6 +977,12 @@ static void init_bar(void);
 
 static void init_broadcast_private(void);
 
+////////////////////////////////////////
+//
+// Misc.
+//
+
+const char *chpl_comm_oob = "unknown";
 
 //
 // forward decls
@@ -985,14 +991,21 @@ static chpl_bool mrGetKey(uint64_t*, uint64_t*, int, void*, size_t);
 static chpl_bool mrGetLocalKey(void*, size_t);
 static chpl_bool mrGetDesc(void**, void*, size_t);
 
-void chpl_comm_init(int *argc_p, char ***argv_p) {
+void chpl_comm_pre_topo_init(void) {
   chpl_comm_ofi_abort_on_error =
     (chpl_env_rt_get("COMM_OFI_ABORT_ON_ERROR", NULL) != NULL);
   time_init();
   chpl_comm_ofi_oob_init();
   DBG_INIT();
-  int32_t count = chpl_comm_ofi_oob_locales_on_node();
+  int32_t rank;
+  int32_t count = chpl_comm_ofi_oob_locales_on_node(&rank);
   chpl_set_num_locales_on_node(count);
+  if (rank != -1) {
+    chpl_set_local_rank(rank);
+  }
+}
+
+void chpl_comm_init(int *argc_p, char ***argv_p) {
   //
   // Gather run-invariant environment info as early as possible.
   //
@@ -1033,20 +1046,22 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
     }
   }
 
+  pthread_that_inited = pthread_self();
+}
+
+
+void chpl_comm_pre_mem_init(void) {
   //
-  // Reserve cores for the AM handlers. This has to be done early before
-  // calling other routines that use information about the cores, such as
-  // pinning the heap.
+  // Reserve cores for the AM handlers. This is done here because it has to
+  // happen after chpl_topo_init has been called, but before other functions
+  // access information about the cores, such as pinning the heap.
   //
   init_ofiReserveCores();
-
-  pthread_that_inited = pthread_self();
 }
 
 
 void chpl_comm_post_mem_init(void) {
   DBG_PRINTF(DBG_IFACE_SETUP, "%s()", __func__);
-
   chpl_comm_init_prv_bcast_tab();
   init_broadcast_private();
 
@@ -1091,8 +1106,8 @@ void chpl_comm_post_task_init(void) {
 
 static
 void init_ofi(void) {
-  if (verbosity >= 2) {
-    if (chpl_nodeID == 0) {
+  if (verbosity >= 2 || DBG_TEST_MASK(DBG_PROV)) {
+    if ((chpl_nodeID == 0) || DBG_TEST_MASK(DBG_PROV)) {
       void* start;
       size_t size;
       chpl_comm_regMemHeapInfo(&start, &size);
@@ -1405,6 +1420,10 @@ struct fi_info* findProvInList(struct fi_info* info,
                                chpl_bool accept_RxM_provs,
                                chpl_bool accept_sockets_provs) {
 
+  chpl_topo_pci_addr_t pciAddr;
+  chpl_topo_pci_addr_t *addr = NULL;
+  struct fi_info *best = NULL;
+
   for (; info != NULL; info = info->next) {
     // break out of the loop when we find one that meets all of our criteria
     if (!accept_ungood_provs && !isGoodCoreProvider(info)) {
@@ -1422,14 +1441,58 @@ struct fi_info* findProvInList(struct fi_info* info,
     if (!isUseableProvider(info)) {
       continue;
     }
+    // If we get here the provider is usable, but if the machine has multiple
+    // NICs there will be multiple instances of this type of provider. Ask
+    // the topology layer which NIC we should use, e.g., if we are running in
+    // a socket then we should use a NIC associated with that socket.
+    // If it returns NULL then the topology layer doesn't care and we
+    // can just use this provider, otherwise we have to look for the same type
+    // of provider for the specified NIC.
+
+    if (addr == NULL) {
+      if ((info->nic != NULL) && (info->nic->bus_attr != NULL)) {
+        chpl_topo_pci_addr_t inAddr;
+        struct fi_pci_attr *pci = &info->nic->bus_attr->attr.pci;
+        inAddr.domain = pci->domain_id;
+        inAddr.bus = pci->bus_id;
+        inAddr.device = pci->device_id;
+        inAddr.function = pci->function_id;
+        addr = chpl_topo_selectNicByType(&inAddr, &pciAddr);
+        // Remember this NIC in case the NIC suggested by the topology layer
+        // isn't in the list of infos, in which case we'll use this one.
+        best = info;
+      }
+    }
+    if (addr != NULL) {
+      // Only use this provider if the PCI address of its NIC matches that
+      // returned by the topology layer.
+      if ((info->nic != NULL) && (info->nic->bus_attr != NULL) &&
+          (info->nic->bus_attr->bus_type == FI_BUS_PCI)) {
+        struct fi_pci_attr *pci = &info->nic->bus_attr->attr.pci;
+        if ((pci->domain_id != addr->domain) ||
+            (pci->bus_id != addr->bus) ||
+            (pci->device_id != addr->device) ||
+            (pci->function_id != addr->function)) {
+          // don't use this one
+          continue;
+        }
+      }
+    }
     // got one
+    best = info;
     break;
   }
-  if (info && (isInProvider("sockets", info))) {
+  if (best && (isInProvider("sockets", best))) {
     chpl_warning("sockets provider is deprecated", 0, 0);
   }
 
-  return (info == NULL) ? NULL : fi_dupinfo(info);
+  // some providers incorrectly report that they supports FI_ORDER_ATOMIC_RAW
+  // and FI_ORDER_ATOMIC_WAR
+  if (best && (isInProvider("cxi", best))) {
+    best->tx_attr->msg_order &= ~(FI_ORDER_ATOMIC_RAW | FI_ORDER_ATOMIC_WAR);
+    best->rx_attr->msg_order &= ~(FI_ORDER_ATOMIC_RAW | FI_ORDER_ATOMIC_WAR);
+  }
+  return (best == NULL) ? NULL : fi_dupinfo(best);
 }
 
 
@@ -1544,10 +1607,11 @@ chpl_bool canBindTxCtxs(struct fi_info* info) {
   // we'll use bound tx contexts with this provider.
   //
   const struct fi_domain_attr* dom_attr = info->domain_attr;
+  int epCount = chpl_env_rt_get_int("COMM_OFI_EP_COUNT", dom_attr->ep_cnt);
   int numWorkerTxCtxs = ((envPreferScalableTxEp
                           && dom_attr->max_ep_tx_ctx > 1)
                          ? dom_attr->max_ep_tx_ctx
-                         : dom_attr->ep_cnt)
+                         : epCount)
                         - 1
                         - numAmHandlers;
   if (envCommConcurrency > 0 && envCommConcurrency < numWorkerTxCtxs) {
@@ -1611,9 +1675,12 @@ static
 struct fi_info* setCheckMsgOrderFenceProv(struct fi_info* info,
                                           chpl_bool set) {
   uint64_t need_caps = FI_ATOMIC | FI_FENCE;
-  uint64_t need_msg_orders = FI_ORDER_ATOMIC_RAW
-                             | FI_ORDER_ATOMIC_WAR
-                             | FI_ORDER_ATOMIC_WAW
+  //
+  // Note: we don't ask for FI_ORDER_ATOMIC_RAW because the some providers
+  // doesn't support it.  FI_ORDER_ATOMIC_WAR ordering is enforced by the
+  // MCM.
+  //
+  uint64_t need_msg_orders =   FI_ORDER_ATOMIC_WAW
                              | FI_ORDER_SAS;
   if (set) {
     // Only use this mode if the tasking layer has a fixed number of threads.
@@ -2317,6 +2384,7 @@ void init_ofiEp(void) {
   numRxCtxs = numAmHandlers;
 
   tciTabLen = numTxCtxs;
+  CHK_TRUE(tciTabLen > 0);
   CHPL_CALLOC(tciTab, tciTabLen);
 
   // Use "hybrid" MR mode for the cxi provider if it's available
@@ -5575,6 +5643,8 @@ struct perTxCtxInfo_t* findFreeTciTabEntry(chpl_bool bindToAmHandler) {
   const int numWorkerTxCtxs = tciTabLen - numAmHandlers;
   struct perTxCtxInfo_t* tcip;
 
+  CHK_TRUE(numWorkerTxCtxs > 0);
+
   if (bindToAmHandler) {
     //
     // AM handlers use tciTab[numWorkerTxCtxs .. tciTabLen - 1].  For
@@ -6664,7 +6734,18 @@ chpl_comm_nb_handle_t amoFn_msgOrdFence(struct amoBundle_t *ab,
       //
       // General case.
       //
-      (void) wrap_fi_atomicmsg(ab, 0, tcip);
+      uint64_t flags = 0;
+
+      //
+      // If it's a fetching AMO (read) and the provider doesn't support
+      // FI_ORDER_ATOMIC_RAW, then we must do a fenced AMO to force any
+      // outstanding non-fetching AMOs (writes) to complete before this AMO.
+      //
+      if ((ab->iovRes.addr != NULL) &&
+        (ofi_info->tx_attr->msg_order & FI_ORDER_ATOMIC_RAW) == 0) {
+        flags = FI_FENCE;
+      }
+      (void) wrap_fi_atomicmsg(ab, flags, tcip);
     }
 
     if (ab->iovRes.addr != NULL) {
@@ -6786,15 +6867,19 @@ ssize_t wrap_fi_inject_atomic(struct amoBundle_t* ab,
 static inline
 ssize_t wrap_fi_atomicmsg(struct amoBundle_t* ab, uint64_t flags,
                           struct perTxCtxInfo_t* tcip) {
+#ifdef CHPL_COMM_DEBUG
+  char flagBuf[256];
+#endif
   if (ab->iovRes.addr == NULL) {
     // Non-fetching.
     DBG_PRINTF(DBG_AMO,
                "tx AMO (msg): obj %d:%#" PRIx64 ", opnd <%s>, "
-               "op %s, typ %s, sz %zd, ctx %p, flags %#" PRIx64,
+               "op %s, typ %s, sz %zd, ctx %p, flags <%s> (%#" PRIx64 ")",
                (int) ab->node, ab->iovObj.addr,
                DBG_VAL(ab->iovOpnd.addr, ab->m.datatype),
                amo_opName(ab->m.op), amo_typeName(ab->m.datatype), ab->size,
-               ab->m.context, flags);
+               ab->m.context, fi_tostr_r(flagBuf, sizeof(flagBuf), &flags,
+                                         FI_TYPE_OP_FLAGS), flags);
     OFI_RIDE_OUT_EAGAIN(tcip, fi_atomicmsg(tcip->txCtx, &ab->m, flags));
   } else {
     // Fetching.
@@ -6802,35 +6887,44 @@ ssize_t wrap_fi_atomicmsg(struct amoBundle_t* ab, uint64_t flags,
       // CSWAP, operand + comparand.
       DBG_PRINTF(DBG_AMO,
                  "tx AMO (msg): obj %d:%#" PRIx64 ", opnd <%s>, cmpr <%s>, "
-                 "op %s, typ %s, res %p, sz %zd, ctx %p, flags %#" PRIx64,
+                 "op %s, typ %s, res %p, sz %zd, ctx %p, flags <%s> (%#"
+                 PRIx64 ")",
                  (int) ab->node, ab->iovObj.addr,
                  DBG_VAL(ab->iovOpnd.addr, ab->m.datatype),
                  DBG_VAL(ab->iovCmpr.addr, ab->m.datatype),
                  amo_opName(ab->m.op), amo_typeName(ab->m.datatype),
-                 ab->iovRes.addr, ab->size, ab->m.context, flags);
+                 ab->iovRes.addr, ab->size, ab->m.context,
+                 fi_tostr_r(flagBuf, sizeof(flagBuf), &flags,
+                                         FI_TYPE_OP_FLAGS),flags);
       OFI_RIDE_OUT_EAGAIN(tcip, fi_compare_atomicmsg(tcip->txCtx, &ab->m,
                                    &ab->iovCmpr, &ab->mrDescCmpr, 1,
-                                   &ab->iovRes, &ab->mrDescRes, 1, 0));
+                                   &ab->iovRes, &ab->mrDescRes, 1, flags));
     } else {
       // Fetching, but no comparand.
       if (ab->m.op == FI_ATOMIC_READ) {
         DBG_PRINTF(DBG_AMO_READ,
                    "tx AMO (msg): obj %d:%#" PRIx64 ", "
-                   "op %s, typ %s, res %p, sz %zd, ctx %p, flags %#" PRIx64,
+                   "op %s, typ %s, res %p, sz %zd, ctx %p, flags <%s> (%#"
+                    PRIx64 ")",
                    (int) ab->node, ab->iovObj.addr,
                    amo_opName(ab->m.op), amo_typeName(ab->m.datatype),
-                   ab->iovRes.addr, ab->size, ab->m.context, flags);
+                   ab->iovRes.addr, ab->size, ab->m.context,
+                   fi_tostr_r(flagBuf, sizeof(flagBuf), &flags,
+                              FI_TYPE_OP_FLAGS),flags);
       } else {
         DBG_PRINTF(DBG_AMO,
                    "tx AMO (msg): obj %d:%#" PRIx64 ", opnd <%s>, "
-                   "op %s, typ %s, res %p, sz %zd, ctx %p, flags %#" PRIx64,
+                   "op %s, typ %s, res %p, sz %zd, ctx %p, flags <%s> (%#"
+                   PRIx64 ")",
                    (int) ab->node, ab->iovObj.addr,
                    DBG_VAL(ab->iovOpnd.addr, ab->m.datatype),
                    amo_opName(ab->m.op), amo_typeName(ab->m.datatype),
-                   ab->iovRes.addr, ab->size, ab->m.context, flags);
+                   ab->iovRes.addr, ab->size, ab->m.context,
+                   fi_tostr_r(flagBuf, sizeof(flagBuf), &flags,
+                              FI_TYPE_OP_FLAGS), flags);
       }
       OFI_RIDE_OUT_EAGAIN(tcip, fi_fetch_atomicmsg(tcip->txCtx, &ab->m,
-                                 &ab->iovRes, &ab->mrDescRes, 1, 0));
+                                 &ab->iovRes, &ab->mrDescRes, 1, flags));
     }
   }
 

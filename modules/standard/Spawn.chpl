@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,7 +26,7 @@ Support launching and interacting with other programs (deprecated).
     This module has been deprecated - please use :mod:`Subprocess` instead.
  */
 
-deprecated "The Spawn module is deprecated. Please use Subprocess instead."
+deprecated "The Spawn module is deprecated. Please use Subprocess instead"
 module Spawn {
   public use Subprocess;
 }

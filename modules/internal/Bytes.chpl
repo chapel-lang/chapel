@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,9 +31,6 @@ module Bytes {
 
   public use BytesCasts;
   public use BytesStringCommon only decodePolicy;  // expose decodePolicy
-
-  pragma "no doc"
-  type idxType = int;
 
   //
   // createBytes* functions
@@ -269,6 +266,9 @@ module Bytes {
     proc writeThis(f) throws {
       compilerError("not implemented: writeThis");
     }
+    proc encodeTo(f) throws {
+      compilerError("not implemented: encodeTo");
+    }
     proc readThis(f) throws {
       compilerError("not implemented: readThis");
     }
@@ -289,12 +289,12 @@ module Bytes {
       initWithNewBuffer(this, b: bufferType, length=length, size=length+1);
     }
 
-    inline proc byteIndices return 0..<size;
+    inline proc byteIndices do return 0..<size;
 
-    inline proc param size param
+    inline proc param size param do
       return __primitive("string_length_bytes", this);
 
-    inline proc param numBytes param
+    inline proc param numBytes param do
       return __primitive("string_length_bytes", this);
 
     inline proc param c_str() param : c_string {
@@ -356,18 +356,18 @@ module Bytes {
   /*
     :returns: The number of bytes in the :type:`bytes`.
     */
-  inline proc bytes.size : int return buffLen;
+  inline proc bytes.size : int do return buffLen;
 
   /*
     :returns: The indices that can be used to index into the bytes
               (i.e., the range ``0..<this.size``)
   */
-  proc bytes.indices : range return 0..<size;
+  proc bytes.indices : range do return 0..<size;
 
   /*
     :returns: The number of bytes in the :type:`bytes`.
     */
-  inline proc bytes.numBytes : int return buffLen;
+  inline proc bytes.numBytes : int do return buffLen;
 
   /*
      Gets a version of the :type:`bytes` that is on the currently
@@ -560,8 +560,8 @@ module Bytes {
               :type:`bytes`.
    */
   inline proc bytes.find(pattern: bytes,
-                         indices: range(?) = this.indices) : idxType {
-    return doSearchNoEnc(this, pattern, indices, count=false): idxType;
+                         indices: range(?) = this.indices) : int {
+    return doSearchNoEnc(this, pattern, indices, count=false);
   }
 
   /*
@@ -578,9 +578,9 @@ module Bytes {
               :type:`bytes`.
    */
   inline proc bytes.rfind(pattern: bytes,
-                          indices: range(?) = this.indices) : idxType {
+                          indices: range(?) = this.indices) : int {
     return doSearchNoEnc(this, pattern, indices, count=false,
-                         fromLeft=false): idxType;
+                         fromLeft=false);
   }
 
   /*
@@ -1094,7 +1094,7 @@ module Bytes {
   }
 
   pragma "no doc"
-  inline operator bytes.+(param s0: bytes, param s1: bytes) param
+  inline operator bytes.+(param s0: bytes, param s1: bytes) param do
     return __primitive("string_concat", s0, s1);
 
   /*

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -81,7 +81,6 @@ class BuilderResult final {
  private:
   UniqueString filePath_;
   AstList topLevelExpressions_;
-  std::vector<const ErrorBase*> errors_;
 
   // Given an ID, what is the AstNode?
   llvm::DenseMap<ID, const AstNode*> idToAst_;
@@ -133,26 +132,6 @@ class BuilderResult final {
     return nullptr;
   }
 
-  /** return the number of errors */
-  int numErrors() const {
-    return errors_.size();
-  }
-
-  /** return the i'th error */
-  const ErrorBase* error(int i) const {
-    return errors_[i];
-  }
-
-  // An iterable over the errors of this.
-  using ErrorIterable = Iterable<std::vector<const ErrorBase*>>;
-
-  /**
-    Iterate over the errors.
-  */
-  ErrorIterable errors() const {
-    return ErrorIterable(errors_);
-  }
-
   /** Find the AstNode* corresponding to a particular ID, or return
       nullptr if there is not one in this result. */
   const AstNode* idToAst(ID id) const;
@@ -180,7 +159,11 @@ class BuilderResult final {
 
   // these two should only be called by the parser
   static void updateFilePaths(Context* context, const BuilderResult& keep);
-  static void appendError(BuilderResult& keep, const ErrorBase* error);
+
+  void serialize(std::ostream& os) const;
+  void serialize(Serializer& ser) const;
+  static BuilderResult deserialize(Deserializer& des);
+  bool equals(const BuilderResult& other) const;
 };
 
 

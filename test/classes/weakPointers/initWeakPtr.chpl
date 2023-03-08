@@ -14,7 +14,7 @@ var bc_weak1;
     var bc1 = new shared basicClass(1);
     info(bc1);
 
-    bc_weak1 = new weakPointer(bc1);
+    bc_weak1 = new weak(bc1);
     weak_info(bc_weak1);
 
     var bc_weak2;
@@ -24,7 +24,7 @@ var bc_weak1;
 
         var bc2 = shared.create(bc1);
 
-        bc_weak2 = new weakPointer(bc2);
+        bc_weak2 = new weak(bc2);
 
         info(bc1);
         info(bc2);
@@ -58,19 +58,13 @@ var bc_weak1;
                 // copy init weak pointer
                 bc_weak4 = bc_weak2;
 
-                // // create shared via upgrading
-                // var bc4_nilable = bc_weak1 : shared basicClass?;
-                // var bc4 = bc4_nilable: shared basicClass;
-
-                // var bc4;
-                // try {
-                //     bc4 = bc_weak1 : shared basicClass;
-                // } catch e {
-                //     writeln(e);
-                // }
-
-                var bc4_nilable = bc_weak1.upgrade();
-                var bc4 = bc4_nilable: shared basicClass;
+                // create a shared by casting directly to a non-nilable class
+                var bc4 = new shared basicClass();
+                try {
+                    bc4 = bc_weak1 : shared basicClass;
+                } catch e {
+                    writeln(e);
+                }
 
                 info(bc1);
                 info(bc2);

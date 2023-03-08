@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -92,7 +92,7 @@ extern bool fReportOptimizeForallUnordered;
 extern bool report_inlining;
 
 // Chapel Envs
-bool useDefaultEnv(std::string key);
+bool useDefaultEnv(std::string key, bool isCrayPrgEnv);
 
 extern std::map<std::string, const char*> envMap;
 
@@ -145,6 +145,7 @@ extern const char* CHPL_TARGET_BUNDLED_LINK_ARGS;
 extern const char* CHPL_TARGET_SYSTEM_LINK_ARGS;
 
 extern const char* CHPL_CUDA_LIBDEVICE_PATH;
+extern const char* CHPL_ROCM_PATH;
 extern const char* CHPL_GPU_CODEGEN;
 extern const char* CHPL_GPU_ARCH;
 
@@ -259,6 +260,7 @@ extern int breakOnRemoveID;
 
 extern int fGPUBlockSize;
 extern char fGpuArch[16];
+extern bool fGpuPtxasEnforceOpt;
 extern const char* gGpuSdkPath;
 
 extern char stopAfterPass[128];
@@ -289,8 +291,11 @@ extern bool fDynoCompilerLibrary;
 extern bool fDynoScopeProduction;
 extern bool fDynoScopeBundled;
 extern bool fDynoDebugTrace;
+extern bool fDynoVerifySerialization;
 
 extern size_t fDynoBreakOnHash;
+
+extern bool fUseIOFormatters;
 
 namespace chpl {
   class Context;

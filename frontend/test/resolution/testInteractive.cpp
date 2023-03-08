@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,7 @@
 #include "test-resolution.h"
 
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
@@ -27,30 +28,32 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 
-static UniqueString nameForAst(const AstNode* ast) {
-  UniqueString empty;
+#include <iomanip>
 
+static std::string nameForAst(const AstNode* ast) {
   if (ast == nullptr) {
-    return empty;
+    return "";
   } else if (auto ident = ast->toIdentifier()) {
-    return ident->name();
+    return ident->name().str();
   } else if (auto decl = ast->toNamedDecl()) {
-    return decl->name();
+    return decl->name().str();
   } else if (auto call = ast->toCall()) {
     return nameForAst(call->calledExpression());
   }
 
-  return empty;
+  return "";
 }
 
-static void printId(const AstNode* ast) {
-  std::ostringstream ss;
-  ast->id().stringify(ss, chpl::StringifyKind::DEBUG_SUMMARY);
-  printf("%-16s %-8s", ss.str().c_str(), nameForAst(ast).c_str());
+static const char* tagToString(const AstNode* ast) {
+  if (ast == nullptr) {
+    return "null";
+  } else {
+    return asttags::tagToString(ast->tag());
+  }
 }
 
 static const ResolvedExpression*
-resolvedExpressionForAst(Context* context, const AstNode* ast,
+resolvedExpressionForAstInteractive(Context* context, const AstNode* ast,
                          const ResolvedFunction* inFn,
                          bool scopeResolveOnly) {
   if (!(ast->isLoop() || ast->isBlock())) {
@@ -90,6 +93,17 @@ resolvedExpressionForAst(Context* context, const AstNode* ast,
     }
   }
 
+  if (ast->id().postOrderId() < 0) {
+    // It's a symbol with a different path, e.g. a nested Function.
+    // Don't try to resolve it now in this
+    // traversal. Instead, resolve it separately.
+    return nullptr;
+  }
+
+  if (inFn != nullptr && inFn->id() != ast->id() &&
+      inFn->id().contains(ast->id())) {
+    return &inFn->byAst(ast);
+  }
   return nullptr;
 }
 
@@ -98,8 +112,8 @@ computeAndPrintStuff(Context* context,
                      const AstNode* ast,
                      const ResolvedFunction* inFn,
                      std::set<const ResolvedFunction*>& calledFns,
-                     bool scopeResolveOnly) {
-
+                     bool scopeResolveOnly,
+                     int maxIdWidth) {
   // Scope resolve / resolve concrete functions before printing
   if (auto fn = ast->toFunction()) {
     if (scopeResolveOnly) {
@@ -114,49 +128,16 @@ computeAndPrintStuff(Context* context,
   }
 
   for (const AstNode* child : ast->children()) {
-    computeAndPrintStuff(context, child, inFn, calledFns, scopeResolveOnly);
+    computeAndPrintStuff(context, child, inFn, calledFns,
+                         scopeResolveOnly, maxIdWidth);
+    if (child->isModule() || child->isFunction()) {
+      std::cout << "\n";
+    }
   }
-
-  /*
-  if (auto ident = ast->toIdentifier()) {
-    const Scope* scope = scopeForId(context, ast->id());
-    assert(scope != nullptr);
-
-    auto name = ident->name();
-    const auto& m = findInnermostDecl(context, scope, name);
-
-    auto status = context->queryStatus(findInnermostDecl,
-                                       std::make_tuple(scope, name));
-
-    printId(ast);
-    printf(" refers to: ");
-
-    if (m.found == InnermostMatch::ZERO) {
-      printf("%-32s ", "no such name found");
-    } else if (m.found == InnermostMatch::ONE && m.id.isEmpty()) {
-      printf("%-32s ", "builtin");
-    } else if (m.found == InnermostMatch::ONE) {
-      std::ostringstream ss;
-      m.id.stringify(ss, chpl::StringifyKind::DEBUG_SUMMARY);
-      printf("%-32s ", ss.str().c_str());
-    } else {
-      printf("%-32s ", "ambiguity");
-    }
-
-    if (status == Context::NOT_CHECKED_NOT_CHANGED) {
-      printf("(not checked)");
-    } else if (status == Context::REUSED) {
-      printf("(reused)");
-    } else if (status == Context::CHANGED) {
-      printf("(changed)");
-    }
-
-    printf("\n");
-  }*/
 
   int beforeCount = context->numQueriesRunThisRevision();
   const ResolvedExpression* r =
-    resolvedExpressionForAst(context, ast, inFn, scopeResolveOnly);
+    resolvedExpressionForAstInteractive(context, ast, inFn, scopeResolveOnly);
   int afterCount = context->numQueriesRunThisRevision();
   if (r != nullptr) {
     for (const TypedFnSignature* sig : r->mostSpecific()) {
@@ -167,41 +148,41 @@ computeAndPrintStuff(Context* context,
         }
       }
     }
+    for (auto a : r->associatedActions()) {
+      auto sig = a.fn();
+      if (sig != nullptr) {
+        if (sig->untyped()->idIsFunction()) {
+          auto fn = resolveFunction(context, sig, r->poiScope());
+          calledFns.insert(fn);
+        }
+      }
+    }
 
-    printId(ast);
-    std::ostringstream ss;
-    r->stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
-    // TODO: Surely we can format when we stringify?
-    printf("%-35s ", ss.str().c_str());
+    std::string idStr = ast->id().str();
+    std::string tagStr = tagToString(ast);
+    std::string nameStr = nameForAst(ast);
+
+    // output the ID
+    std::cout << std::setw(maxIdWidth) << std::left << idStr;
+    // restore format to default
+    std::cout.copyfmt(std::ios(NULL));
+
+    // output the tag and name (if any name)
+    std::string tagNameStr = " " + tagStr;
+    if (!nameStr.empty()) {
+      tagNameStr += " " + nameStr;
+    }
+    std::cout << std::setw(16) << tagNameStr << std::setw(0);
+
+    // output the resolution result
+    r->stringify(std::cout, chpl::StringifyKind::CHPL_SYNTAX);
+
     if (afterCount > beforeCount) {
-      printf(" (ran %i queries)", afterCount - beforeCount);
+      std::cout << " (ran " << (afterCount - beforeCount) << " queries)";
     }
-    printf("\n");
+    std::cout << "\n";
+
   }
-
-  // check the type
-  /*
-  if (!(ast->isLoop() || ast->isBlock())) {
-    const auto& t = typeForModuleLevelSymbol(context, ast->id());
-
-    printId(ast);
-    printf(" has type:  ");
-    std::ostringstream ss;
-    t.stringify(ss, chpl::StringifyKind::DEBUG_SUMMARY);
-    printf("%-32s ", ss.str().c_str());
-
-    auto status = context->queryStatus(typeForModuleLevelSymbol,
-                                       std::make_tuple(ast->id()));
-
-    if (status == Context::NOT_CHECKED_NOT_CHANGED) {
-      printf("(not checked)");
-    } else if (status == Context::REUSED) {
-      printf("(reused)");
-    } else if (status == Context::CHANGED) {
-      printf("(changed)");
-    }
-    printf("\n");
-  }*/
 }
 
 static void usage(int argc, char** argv) {
@@ -210,7 +191,8 @@ static void usage(int argc, char** argv) {
          "  --scope only performs scope resolution\n"
          "  --trace enables query tracing\n"
          "  --time <outputFile> outputs query timing information to outputFile\n"
-         "  --searchPath <path> adds to the module search path\n",
+         "  --searchPath <path> adds to the module search path\n"
+         "  --warn-unstable turns on unstable warnings\n",
          argv[0]);
 }
 
@@ -237,6 +219,7 @@ int main(int argc, char** argv) {
   std::vector<std::string> cmdLinePaths;
   std::vector<std::string> files;
   bool enableStdLib = false;
+  bool warnUnstable = false;
   const char* timing = nullptr;
   for (int i = 1; i < argc; i++) {
     if (0 == strcmp(argv[i], "--std")) {
@@ -261,6 +244,8 @@ int main(int argc, char** argv) {
       i++;
     } else if (0 == strcmp(argv[i], "--brief")) {
       brief = true;
+    } else if (0 == strcmp(argv[i], "--warn-unstable")) {
+      warnUnstable = true;
     } else {
       files.push_back(argv[i]);
     }
@@ -294,6 +279,10 @@ int main(int argc, char** argv) {
     ctx->setDebugTraceFlag(trace);
     if (timing) ctx->beginQueryTimingTrace(timing);
 
+    CompilerFlags flags;
+    flags.set(CompilerFlags::WARN_UNSTABLE, warnUnstable);
+    setCompilerFlags(ctx, std::move(flags));
+
     setupSearchPaths(ctx, enableStdLib, cmdLinePaths, files);
 
     std::set<const ResolvedFunction*> calledFns;
@@ -306,7 +295,9 @@ int main(int argc, char** argv) {
         mod->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
         printf("\n");
 
-        computeAndPrintStuff(ctx, mod, nullptr, calledFns, scopeResolveOnly);
+        int maxIdWidth = mod->computeMaxIdStringWidth();
+        computeAndPrintStuff(ctx, mod, nullptr, calledFns,
+                             scopeResolveOnly, maxIdWidth);
         printf("\n");
       }
     }
@@ -338,8 +329,9 @@ int main(int argc, char** argv) {
             printf("Instantiation is ");
             sig->stringify(std::cout, chpl::StringifyKind::CHPL_SYNTAX);
             printf("\n");
+            int maxIdWidth = ast->computeMaxIdStringWidth();
             computeAndPrintStuff(ctx, ast, calledFn, calledFns,
-                                 scopeResolveOnly);
+                                 scopeResolveOnly, maxIdWidth);
             printf("\n");
           }
         }

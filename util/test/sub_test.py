@@ -1535,9 +1535,12 @@ for testname in testsrc:
     clist = list()
     curFileTestStart = time.time()
 
+    redirectin_original_value = redirectin
+
     # For all compopts + execopts combos..
     compoptsnum = 0
     for compopts in compoptslist:
+        redirectin = redirectin_original_value
         sys.stdout.flush()
         del clist
         # use the remaining portion as a .good file for executing tests
@@ -1779,15 +1782,18 @@ for testname in testsrc:
 
             # find the compiler .good file to compare against. The compiler
             # .good file can be of the form testname.<configuration>.good or
-            # explicitname.<configuration>.good. It's not currently setup to
-            # handle testname.<configuration>.<compoptsnum>.good, but that
-            # would be easy to add. 
+            # explicitname.<configuration>.good or
+            # testname.<configuration>.<compoptsnum>.good.
             basename = test_filename 
             if len(clist) != 0:
                 explicitcompgoodfile = clist[0].split('#')[1].strip()
                 basename = explicitcompgoodfile.replace('.good', '')
 
-            goodfile = FindGoodFile(basename)
+            compOptNum = ['']
+            if len(compoptslist) > 1:
+                compOptNum.insert(0,'.'+str(compoptsnum))
+
+            goodfile = FindGoodFile(basename, compOptNum)
             # sys.stdout.write('default goodfile=%s\n'%(goodfile))
             error_msg = filter_compiler_errors(origoutput)
             if error_msg != '':
@@ -1954,7 +1960,6 @@ for testname in testsrc:
             if len(clist[0].split('#')) > 1:
                 explicitcompgoodfile = clist[0].split('#')[1].strip()
         redirectin_set_in_loop = False
-        redirectin_original_value = redirectin
         for texecopts in execoptslist:
             sys.stdout.flush()
 

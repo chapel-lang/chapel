@@ -61,8 +61,10 @@ _chpl ()
 --dyno \
 --dyno-break-on-hash \
 --dyno-debug-trace \
+--dyno-gen-lib \
 --dyno-scope-bundled \
 --dyno-scope-production \
+--dyno-verify-serialization \
 --early-deinit \
 --explain-call \
 --explain-call-id \
@@ -78,6 +80,7 @@ _chpl ()
 --gmp \
 --gpu-arch \
 --gpu-block-size \
+--gpu-ptxas-enforce-optimization \
 --hdr-search-path \
 --help \
 --help-env \
@@ -177,6 +180,7 @@ _chpl ()
 --no-dyno-debug-trace \
 --no-dyno-scope-bundled \
 --no-dyno-scope-production \
+--no-dyno-verify-serialization \
 --no-early-deinit \
 --no-explain-verbose \
 --no-fast-followers \
@@ -253,8 +257,10 @@ _chpl ()
 --no-task-tracking \
 --no-tuple-copy-opt \
 --no-use-color-terminal \
+--no-use-io-formatters \
 --no-vectorize \
 --no-verify \
+--no-warn-array-of-range \
 --no-warn-const-loops \
 --no-warn-domain-literal \
 --no-warn-int-uint \
@@ -340,9 +346,11 @@ _chpl ()
 --tuple-copy-limit \
 --tuple-copy-opt \
 --use-color-terminal \
+--use-io-formatters \
 --vectorize \
 --verify \
 --version \
+--warn-array-of-range \
 --warn-const-loops \
 --warn-domain-literal \
 --warn-int-uint \

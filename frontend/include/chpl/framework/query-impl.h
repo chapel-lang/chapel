@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -135,14 +135,16 @@ void Context::queryBeginTrace(const char* traceQueryName,
       // QUERY BEGIN
       setQueryDepthColor(queryTraceDepth, std::cout);
       std::cout << queryTraceDepth
-                << " { "
-                << clearTerminalColor() << traceQueryName << " (";
+                << " { ";
+      clearTerminalColor(std::cout);
+      std::cout << traceQueryName << " (";
       queryArgsPrint(tupleOfArg);
       std::cout << ") ";
       setTerminalColor(CYAN, std::cout);
       std::cout <<"hash: 0x"
-                << std::hex << queryAndArgsHash
-                << clearTerminalColor() << std::endl;
+                << std::hex << queryAndArgsHash;
+      clearTerminalColor(std::cout);
+      std::cout << std::endl;
     }
     if (breakSet && queryAndArgsHash == breakOnHash) {
       debuggerBreakHere();
@@ -299,7 +301,7 @@ Context::QueryStatus Context::queryStatus(
   // found an entry for this query
   QueryMapBase* base = search->second.get();
   auto queryMap = (QueryMap<ResultType, ArgTs...>*)base;
-  auto key = QueryMapResult<ResultType, ArgTs...>(queryMap, tupleOfArgs);
+  QueryMapResult<ResultType, ArgTs...> key(queryMap, tupleOfArgs);
   auto search2 = queryMap->map.find(key);
   if (search2 == queryMap->map.end()) {
     return NOT_CHECKED_NOT_CHANGED;
@@ -338,9 +340,9 @@ Context::queryEnd(
                    traceQueryName) == queryTraceIgnoreQueries.end()) {
     // QUERY END
     setQueryDepthColor(queryTraceDepth, std::cout);
-    std::cout << queryTraceDepth
-              << clearTerminalColor()
-              << "   " << traceQueryName
+    std::cout << queryTraceDepth;
+    clearTerminalColor(std::cout);
+    std::cout << "   " << traceQueryName
               << " ";
     if (ret->lastChanged == this->currentRevisionNumber) {
       setTerminalColor(YELLOW, std::cout);
@@ -350,9 +352,9 @@ Context::queryEnd(
       std::cout << "unchanged";
     }
     setQueryDepthColor(queryTraceDepth, std::cout);
-    std::cout << " } "
-              << clearTerminalColor()
-              << std::endl;
+    std::cout << " } ";
+    clearTerminalColor(std::cout);
+    std::cout << std::endl;
     queryTraceDepth--;
     CHPL_ASSERT(r->lastChecked == this->currentRevisionNumber);
     //for (auto dep : r->dependencies) {
@@ -481,7 +483,7 @@ Context::hasCurrentResultForQuery(
   // found an entry for this query
   QueryMapBase* base = search->second.get();
   auto queryMap = (QueryMap<ResultType, ArgTs...>*)base;
-  auto key = QueryMapResult<ResultType, ArgTs...>(queryMap, tupleOfArgs);
+  QueryMapResult<ResultType, ArgTs...> key(queryMap, tupleOfArgs);
   auto search2 = queryMap->map.find(key);
   if (search2 == queryMap->map.end()) {
     return false;
@@ -507,7 +509,7 @@ Context::isQueryRunning(
   // found an entry for this query
   QueryMapBase* base = search->second.get();
   auto queryMap = (QueryMap<ResultType, ArgTs...>*)base;
-  auto key = QueryMapResult<ResultType, ArgTs...>(queryMap, tupleOfArgs);
+  QueryMapResult<ResultType, ArgTs...> key(queryMap, tupleOfArgs);
   auto search2 = queryMap->map.find(key);
   if (search2 == queryMap->map.end()) {
     return false;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -64,10 +64,12 @@ PRAGMA(ALWAYS_RVF, ypr,
        "always RVF",
        "attach to a type to force RVF for objects of that type")
 PRAGMA(ANONYMOUS_FN, npr, "anonymous fn", ncm)
+PRAGMA(LEGACY_LAMBDA, npr, "legacy lambda", ncm)
 PRAGMA(ANONYMOUS_FORMAL, npr, "anonymous formal", ncm)
 PRAGMA(DEAD_END_OF_BLOCK, ypr, "dead at end of block", ncm)
 PRAGMA(DEAD_LAST_MENTION, ypr, "dead after last mention", ncm)
 PRAGMA(DONT_ALLOW_REF, ypr, "do not allow ref", ncm)
+PRAGMA(DONT_UNREF_FOR_YIELDS, ypr, "do not unref for yields", ncm)
 PRAGMA(ARG_THIS, npr, "arg this", "the hidden object argument")
 PRAGMA(ARRAY, ypr, "array", ncm)
 PRAGMA(ARRAY_OF_BORROWS, npr, "array of borrows", "array of borrows")
@@ -178,6 +180,7 @@ PRAGMA(DEFAULT_INTENT_IS_REF_MAYBE_CONST, ypr,
        "ref otherwise")
 
 PRAGMA(COPY_INIT, npr, "copy initializer", ncm)
+PRAGMA(DEFAULT_INIT, npr, "default initializer", ncm)
 PRAGMA(DESTRUCTOR, npr,
        "destructor",
        "applied to functions that are destructors")
@@ -246,7 +249,7 @@ PRAGMA(FORMAL_TEMP, npr,
 PRAGMA(FORMAL_TEMP_OUT, npr, "formal temp out", "a formal temp to back an out argument")
 PRAGMA(FORMAL_TEMP_OUT_CALLSITE, npr, "formal temp out callsite", "a formal temp to handle out/inout writeback at the callsite")
 PRAGMA(FORWARDING_FN, npr, "forwarding function", ncm)
-PRAGMA(FUNCTION_CLASS, npr, "function class", "first-class function class representation")
+PRAGMA(FUNCTION_CLASS, npr, "function class", "function class representation")
 PRAGMA(FUNCTION_TERMINATES_PROGRAM, ypr, "function terminates program", "function that causes the program to exit")
 PRAGMA(GENERATE_SIGNATURE, ypr, "generate signature", "compiler should codegen a function signature")
 // When applied to an argument, this flag means that the arg accepts a value

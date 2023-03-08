@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -34,13 +34,14 @@
 #include <iostream>
 
 static void test0(Parser* parser) {
-  auto parseResult = parser->parseString("test0.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       "/* comment 1 */\n"
       "[x in foo]\n"
       "  /* comment 2 */\n"
       "  foo();\n"
       "/* comment 3 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -63,7 +64,8 @@ static void test0(Parser* parser) {
 }
 
 static void test1(Parser* parser) {
-  auto parseResult = parser->parseString("test1.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
       "/* comment 1 */\n"
       "[x in foo with (ref thing)] {\n"
       "  /* comment 2 */\n"
@@ -71,7 +73,7 @@ static void test1(Parser* parser) {
       "  /* comment 3 */\n"
       "}\n"
       "/* comment 4 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -101,13 +103,14 @@ static void test1(Parser* parser) {
 }
 
 static void test2(Parser* parser) {
-  auto parseResult = parser->parseString("test2.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
       "/* comment 1 */\n"
       "[x in zip(a, b)] {\n"
       "  foo();\n"
       "}\n"
       "/* comment 4 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -131,14 +134,15 @@ static void test2(Parser* parser) {
 }
 
 static void test3(Parser* parser) {
-  auto parseResult = parser->parseString("test3.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
       "/* comment 1 */\n"
       "[x in zip(a, b, foo()) with (const ref thing1, in thing2=d)] {\n"
       "  writeln(thing1);\n"
       "  thing2 = thing3;\n"
       "}\n"
       "/* comment 4 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -178,13 +182,14 @@ static void test3(Parser* parser) {
 }
 
 static void test4(Parser* parser) {
-  auto parseResult = parser->parseString("test4.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
       "/* comment 1 */\n"
       "[foo()]\n"
       "  /* comment 2 */\n"
       "  bar();\n"
       "/* comment 3 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -206,13 +211,14 @@ static void test4(Parser* parser) {
 }
 
 static void test5(Parser* parser) {
-  auto parseResult = parser->parseString("test5.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
       "/* comment 1 */\n"
       "[zip(a, b) with (var r=thing1)] {\n"
       "  writeln(r);\n"
       "}\n"
       "/* comment 4 */\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);

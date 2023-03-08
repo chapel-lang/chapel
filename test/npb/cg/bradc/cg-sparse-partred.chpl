@@ -51,7 +51,7 @@ proc main() {
   for trial in 1..numTrials {
     X = 1.0;
 
-    const startTime = getCurrentTime();
+    const startTime = timeSinceEpoch().totalSeconds();
 
     for it in 1..niter {
       const (Z, rnorm) = conjGrad(A, X);
@@ -63,7 +63,7 @@ proc main() {
       X = (1.0 / sqrt(+ reduce(Z*Z))) * Z;
     }
 
-    const runtime = getCurrentTime() - startTime;
+    const runtime = timeSinceEpoch().totalSeconds() - startTime;
 
     if printTiming then writeln("Execution time = ", runtime);
 
@@ -100,7 +100,7 @@ proc conjGrad(A: [?MatDom], X: [?VectDom]) {
     // WANT (a partial reduction):
     //    const Q = + reduce(dim=2) [(i,j) in MatDom] (A(i,j) * P(j));
     //
-    inline proc ForallExpr1.this((i,j)) return A(i,j) * P(1,j);
+    inline proc ForallExpr1.this((i,j)) do return A(i,j) * P(1,j);
     plusPRinto(W, MatDom, new ForallExpr1());
     transpose(Q, W);
 
@@ -117,7 +117,7 @@ proc conjGrad(A: [?MatDom], X: [?VectDom]) {
   // WANT (a partial reduction):
   //      R = + reduce(dim=2) [(i,j) in MatDom] (A(i,j) * Z(j));
   //
-  inline proc ForallExpr2.this((i,j)) return A(i,j) * Z(1,j);
+  inline proc ForallExpr2.this((i,j)) do return A(i,j) * Z(1,j);
   plusPRinto(W, MatDom, new ForallExpr2());
   transpose(R, W);
 

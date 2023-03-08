@@ -1,7 +1,7 @@
 use HDFS;
 
 var hdfs = hdfs_chapel_connect("default", 0);
-var ff = hdfs.hdfs_chapel_open("/tmp/writef_test.txt", iomode.cw);
+var ff = hdfs.hdfs_chapel_open("/tmp/writef_test.txt", ioMode.cw);
 var ch = ff.writer();
 
 ch.writeln("Part 1");
@@ -95,7 +95,7 @@ ch.writef("%.3'S\n", "abcd");
 
 ch.close();
 ff.close();
-var r = hdfs.hdfs_chapel_open("/tmp/writef_test.txt", iomode.r);
+var r = hdfs.hdfs_chapel_open("/tmp/writef_test.txt", ioMode.r);
 var rr = r.reader();
 
 var str:  string;

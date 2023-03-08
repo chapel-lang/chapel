@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -91,13 +91,13 @@ private proc readSpec(spec: string): list(string) {
         emptyArch = "([A-Za-z0-9\\-\\_]+\\=)";
 
   var tokenList: list(string);
-  const pattern = compile("|".join(pkgVersion,
-                                   compilerVersion,
-                                   variantInclude,
-                                   variantExclude,
-                                   dependency,
-                                   emptyArch,
-                                   arch));
+  const pattern = new regex("|".join(pkgVersion,
+                                     compilerVersion,
+                                     variantInclude,
+                                     variantExclude,
+                                     dependency,
+                                     emptyArch,
+                                     arch));
 
 
   if debugSpecParser then writeln(spec);
@@ -116,7 +116,7 @@ private proc readSpec(spec: string): list(string) {
 
 private proc parseSpec(ref tokenList: list(string)): 4*string throws {
 
-  const reCompilerVersion = compile("(\\%[A-Za-z0-9\\_\\@\\.\\-]+)");
+  const reCompilerVersion = new regex("(\\%[A-Za-z0-9\\_\\@\\.\\-]+)");
 
   // required fields
   //   - package name

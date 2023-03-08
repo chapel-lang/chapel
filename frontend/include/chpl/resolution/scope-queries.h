@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,13 +21,11 @@
 #define CHPL_RESOLUTION_SCOPE_QUERIES_H
 
 #include "chpl/resolution/scope-types.h"
-#include "llvm/ADT/SmallPtrSet.h"
+
+#include "llvm/ADT/ArrayRef.h"
 
 namespace chpl {
 namespace resolution {
-
-  using ScopeSet = llvm::SmallPtrSet<const Scope*, 5>;
-  using NamedScopeSet = std::unordered_set<std::pair<UniqueString, const Scope*>>;
 
   /**
     Returns true if this AST type can create a scope.
@@ -45,37 +43,40 @@ namespace resolution {
    */
   const Scope* scopeForModule(Context* context, ID moduleId);
 
- /**
+  /**
     Find what a name might refer to.
 
     'scope' is the context in which the name occurs (e.g. as an Identifier)
 
-    'receiverScope' is the scope of a type containing the name, in the case
-    of method calls, field accesses, and resolving a name within a method.
-    It is a Scope representing the record/class/union itself for the
-    receiver. If provided, the receiverScope will be consulted before
-    'scope' and its parents.
+    'receiverScopes' is the scope of a type containing the name, in the case of
+    method calls, field accesses, and resolving a name within a method.  It is a
+    Scope representing the record/class/union itself for the receiver. If
+    provided, the receiverScopes will be consulted after declarations within
+    'scope' but before its parents. It accepts multiple scopes in order to
+    handle classes with inheritance.
 
-    The config argument is a group of or-ed together bit flags
-    that adjusts the behavior of the lookup:
-
-    * If LOOKUP_DECLS is set, looks for symbols declared in 'scope'
-      and 'receiverScope'.
-    * If LOOKUP_IMPORT_AND_USE is set, looks for symbols from use/import
-      statements in this 'scope' and 'receiverScope'.
-    * If LOOKUP_PARENTS is set, looks for symbols from parent scopes (but not
-      parent modules of a module) including looking for declarations and
-      handling imports, and including finding declarations in the root module.
-    * If LOOKUP_TOPLEVEL is set, checks for a toplevel module with this name.
-    * If LOOKUP_INNERMOST is true, limits search to the innermost scope with a
-      match.
+    The config argument is a group of or-ed together bit flags that adjusts the
+    behavior of the lookup. Please see 'LookupConfig' and the related constants
+    such as 'LOOKUP_DECLS' for further details.
    */
   std::vector<BorrowedIdsWithName>
   lookupNameInScope(Context* context,
                     const Scope* scope,
-                    const Scope* receiverScope,
+                    llvm::ArrayRef<const Scope*> receiverScopes,
                     UniqueString name,
                     LookupConfig config);
+
+  /**
+    Same as lookupNameInScope but traces how each symbol was found,
+    for error messages.
+   */
+  std::vector<BorrowedIdsWithName>
+  lookupNameInScopeTracing(Context* context,
+                           const Scope* scope,
+                           llvm::ArrayRef<const Scope*> receiverScopes,
+                           UniqueString name,
+                           LookupConfig config,
+                           std::vector<ResultVisibilityTrace>& traceResult);
 
   /**
     Same as lookupNameInScope but includes a set tracking visited scopes.
@@ -83,10 +84,10 @@ namespace resolution {
   std::vector<BorrowedIdsWithName>
   lookupNameInScopeWithSet(Context* context,
                            const Scope* scope,
-                           const Scope* receiverScope,
+                           const llvm::ArrayRef<const Scope*> receiverScopes,
                            UniqueString name,
                            LookupConfig config,
-                           NamedScopeSet& visited);
+                           CheckedScopes& visited);
 
   /**
     Returns true if all of checkScope is visible from fromScope
@@ -120,9 +121,41 @@ namespace resolution {
    * used or imported in that scope. May return an empty vector if no modules
    * were used or imported in the scope.
    */
-  const
-  std::vector<ID> findUsedImportedModules(Context* context,
-                                           const Scope* scope);
+  const std::vector<ID> findUsedImportedModules(Context* context,
+                                                const Scope* scope);
+
+  /**
+    Resolve the uses and imports in a given scope.
+  */
+  const ResolvedVisibilityScope*
+  resolveVisibilityStmts(Context* context, const Scope* scope);
+
+  /**
+    Return the scope for the automatically included 'ChapelStandard' module,
+    or nullptr if it could not be found.
+  */
+  const Scope* scopeForAutoModule(Context* context);
+
+  /**
+    Given the ID for a module 'entrypoint', compute the order in which
+    modules should be initialized. Note that this ordering does not consider
+    liveliness, and modules that are never used or have no module level
+    statements will currently still be listed in the result.
+
+    The result is list of ID pairs. The first ID in a pair is the module
+    to be initialized, and the second ID is the module that first triggered
+    initialization. The second ID may be empty if the first ID is the
+    entrypoint module or if initialization was triggered implicitly.
+  */
+  const std::vector<std::pair<ID, ID>>&
+  moduleInitializationOrder(Context* context, ID entrypoint);
+
+  /**
+    Check for symbol names with multiple definitions within a scope.
+    This query only exists to emit errors.
+   */
+  void emitMultipleDefinedSymbolErrors(Context* context, const Scope* scope);
+
 
 } // end namespace resolution
 } // end namespace chpl

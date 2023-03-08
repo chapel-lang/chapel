@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -3004,8 +3004,8 @@ module Sparse {
     //                   - Write a scan to compute idxPtr in O(log(n))
 
     /* Aliases for readability */
-    proc _array.indPtr ref return this.dom.startIdx;
-    proc _array.ind ref return this.dom.idx;
+    proc _array.indPtr ref do return this.dom.startIdx;
+    proc _array.ind ref do return this.dom.idx;
 
     const row_range = ADom.dim(0);
     const inner_Arange = ADom.dim(1);
@@ -3049,8 +3049,8 @@ module Sparse {
     // TODO: Parallelize - next, sums -> task-private stacks
 
     /* Aliases for readability */
-    proc _array.indPtr ref return this.dom.startIdx;
-    proc _array.ind ref return this.dom.idx;
+    proc _array.indPtr ref do return this.dom.startIdx;
+    proc _array.ind ref do return this.dom.idx;
 
     type idxType = ADom.idxType;
 
@@ -3120,8 +3120,8 @@ module Sparse {
 
     const rowRange = Dom.dim(0);
 
-    proc _array.indPtr ref return this.dom.startIdx;
-    proc _array.ind return this.dom.idx;
+    proc _array.indPtr ref do return this.dom.startIdx;
+    proc _array.ind do return this.dom.idx;
     type idxType = A.ind.eltType;
 
     var temp: [0..#A.ind.size] (idxType, eltType);

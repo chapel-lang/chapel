@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -35,11 +35,12 @@
 #include <iostream>
 
 static void test0(Parser* parser) {
-  auto parseResult = parser->parseString("test0.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
       "/*c1*/\n"
       "import /*c2*/ Foo as X /*c3*/;\n"
       "/*c4*/\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -61,11 +62,12 @@ static void test0(Parser* parser) {
 }
 
 static void test1(Parser* parser) {
-  auto parseResult = parser->parseString("test1.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
       "/*c1*/\n"
       "public import /*c2*/ A as X, /*c3*/ B.SM1 as Y, /*c4*/ C as Z;\n"
       "/*c5*/\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -128,11 +130,12 @@ static void test1(Parser* parser) {
 }
 
 static void test2(Parser* parser) {
-  auto parseResult = parser->parseString("test2.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
       "/*c1*/\n"
       "private import /*c2*/ A as X, B.{Y, Z};\n"
       "/*c7*/\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -184,11 +187,12 @@ static void test2(Parser* parser) {
 }
 
 static void test3(Parser* parser) {
-  auto parseResult = parser->parseString("test3.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
       "/*c1*/\n"
       "private import /*c2*/ B.{Y};\n"
       "/*c7*/\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -205,11 +209,12 @@ static void test3(Parser* parser) {
 }
 
 static void test4(Parser* parser) {
-  auto parseResult = parser->parseString("test4.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
       "/*c1*/\n"
       "import /*c2*/ B.{Y as Z};\n"
       "/*c7*/\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -231,11 +236,12 @@ static void test4(Parser* parser) {
 }
 
 static void test5(Parser* parser) {
-  auto parseResult = parser->parseString("test5.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test5.chpl",
       "/*c1*/\n"
       "import /*c2*/ 1+1;\n"
       "/*c7*/\n");
-  assert(parseResult.numErrors() >= 1);
+  assert(guard.realizeErrors() >= 1);
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);
@@ -245,11 +251,12 @@ static void test5(Parser* parser) {
 }
 
 static void test6(Parser* parser) {
-  auto parseResult = parser->parseString("test6.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test6.chpl",
       "/*c1*/\n"
       "private import /*c2*/ B.{+};\n"
       "/*c7*/\n");
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 3);

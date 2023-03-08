@@ -10,13 +10,13 @@ proc main() {
   var nEdges: int;  // represents first line in file -- the number of entries
   var nNodes: int;
 
-  var fin = open(input_file, iomode.r).reader();
-  var fout = open("RtsGraph_out.txt", iomode.cw).writer();
-  var fin2 = open(gen_file, iomode.r).reader();
-  var fin3 = open(load_file, iomode.r).reader();
+  var fin = open(input_file, ioMode.r).reader();
+  var fout = open("RtsGraph_out.txt", ioMode.cw).writer();
+  var fin2 = open(gen_file, ioMode.r).reader();
+  var fin3 = open(load_file, ioMode.r).reader();
 
   var init_tm: real;
-  const init_t0 = getCurrentTime();
+  const init_t0 = timeSinceEpoch().totalSeconds();
 
   fin.readln(nEdges);
 
@@ -74,7 +74,7 @@ proc main() {
   }
   fin3.close();
 
-  init_tm = getCurrentTime() - init_t0;
+  init_tm = timeSinceEpoch().totalSeconds() - init_t0;
 //  writeln("Initialization time: ", init_tm);
 
   displayGraph(Nodes, nNodes);
@@ -85,14 +85,14 @@ proc main() {
   writeln("Dijkstra Algorithm: Source to All");
 
   var dijkstra_tm: real;
-  const dijkstra_t0 = getCurrentTime();
+  const dijkstra_t0 = timeSinceEpoch().totalSeconds();
 
   var D4 = {0..(nNodes-1)};
   forall i in D4 {
     dijkstra(i, nEdges, nNodes, Edges, Nodes);   // All-pairs
   }
 
-  dijkstra_tm = getCurrentTime() - dijkstra_t0;
+  dijkstra_tm = timeSinceEpoch().totalSeconds() - dijkstra_t0;
 //  writeln("Compute time: ", dijkstra_tm);
 
   for i in D1 {

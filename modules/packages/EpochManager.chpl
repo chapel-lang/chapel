@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -412,6 +412,7 @@ module EpochManager {
 
   pragma "no doc"
   module VectorModule {
+    private use IO;
     /**
      * Obtained from https://github.com/pnnl/chgl/blob/master/src/Vectors.chpl
      */
@@ -493,7 +494,7 @@ module EpochManager {
         forall a in this.arr[0..#sz] do yield a;
       }
 
-      proc size: int return sz;
+      proc size: int do return sz;
 
       proc clear() {
         this.sz = 0;
@@ -513,6 +514,11 @@ module EpochManager {
 
       pragma "no doc"
       proc readThis(f) throws {
+        compilerError("Reading a Vector is not supported");
+      }
+
+      proc init(type eltType, r: fileReader) {
+        this.init(eltType);
         compilerError("Reading a Vector is not supported");
       }
 

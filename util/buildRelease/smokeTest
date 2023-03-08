@@ -105,10 +105,9 @@ echo ""
 if [ $LINT -eq 1 ]; then
     # Check for tabs.
     echo "Checking for tabs"
-    output=$($CHPL_HOME/util/devel/lookForTabs)
+    $CHPL_HOME/util/devel/lookForTabs
     if [ $? -ne 0 ] ; then
         echo "Found tabs :-("
-        echo $output
         exit 1
     fi
 
@@ -116,10 +115,9 @@ if [ $LINT -eq 1 ]; then
     # Need to clean up all of the trailing spaces before adding this
     # Check for trailing spaces
     echo "Checking for trailing spaces"
-    output=$($CHPL_HOME/util/devel/lookForTrailingSpaces)
+    $CHPL_HOME/util/devel/lookForTrailingSpaces
     if [ $? -ne 0 ] ; then
        echo "Found trailing spaces :-("
-        echo $output
        exit 1
     fi
 
@@ -165,7 +163,9 @@ if [ "$GITHUB_ACTIONS" != "true" ]; then
 fi
 
 # Disable GMP and re2 to speed up build.
-export CHPL_GMP=none
+if [ "$ARKOUDA_SMOKE_TEST" != "true" ]; then
+    export CHPL_GMP=none
+fi
 
 # mason currently requires CHPL_COMM=none -- https://github.com/chapel-lang/chapel/issues/12626
 COMM=`$CHPL_HOME/util/chplenv/chpl_comm.py`
@@ -223,7 +223,7 @@ if [ $DOCS -eq 1 ]; then
     # Build chpldoc, make sure the chpldoc primer runs, and the docs build.
     make -j${num_procs} $chpl_make_args chpldoc && \
         make $chpl_make_args check-chpldoc && \
-        make docs || exit 2
+        make $chpl_make_args docs || exit 2
 fi
 
 if [ $MASON -eq 1 ]; then

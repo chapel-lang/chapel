@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,16 +27,18 @@
 #include "astutil.h"
 #include "AstVisitor.h"
 #include "build.h"
+#include "fcf-support.h"
 #include "DecoratedClassType.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
-#include "firstClassFunctions.h"
+#include "intents.h"
 #include "intlimits.h"
 #include "iterator.h"
 #include "misc.h"
 #include "passes.h"
 #include "resolution.h"
+#include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -186,6 +188,8 @@ const char* toString(Type* type, bool decorateAllClasses) {
     retval = "<type unknown>";
   } else if (type == dtAny) {
     retval = "<any type>";
+  } else if (auto fnType = toFunctionType(type)) {
+    retval = fnType->toString();
   } else {
     Type* vt = type->getValType();
 
@@ -212,7 +216,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
         retval = astr("domain", at->symbol->name + drDomNameLen);
 
       } else if (at->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
-        retval = fcfWrapperTypeToString(at);
+        retval = fcfs::functionClassTypeToString(at);
 
       } else if (isRecordWrappedType(at) == true) {
         Symbol* instanceField = at->getField("_instance", false);
@@ -619,6 +623,407 @@ void EnumType::accept(AstVisitor* visitor) {
 *                                                                             *
 ************************************** | *************************************/
 
+namespace {
+  using FormalVec = std::vector<FunctionType::Formal>;
+}
+
+FunctionType::FunctionType(Kind kind, FormalVec formals,
+                           RetTag returnIntent,
+                           Type* returnType,
+                           bool throws,
+                           bool isAnyFormalNamed,
+                           const char* userTypeString)
+    : Type(E_FunctionType, nullptr),
+      kind_(kind),
+      formals_(std::move(formals)),
+      returnIntent_(returnIntent),
+      returnType_(returnType),
+      throws_(throws),
+      isAnyFormalNamed_(isAnyFormalNamed),
+      userTypeString_(userTypeString) {
+}
+
+void FunctionType::verify() {
+  bool isAnyFormalNamed = false;
+
+  for (auto& formal : formals_) {
+    if (formal.name != nullptr) {
+      isAnyFormalNamed = true;
+      break;
+    }
+  }
+
+  INT_ASSERT(isAnyFormalNamed == this->isAnyFormalNamed_);
+}
+
+void FunctionType::accept(AstVisitor* visitor) {
+  visitor->visitFunctionType(this);
+}
+
+FunctionType* FunctionType::copyInner(SymbolMap* map) {
+  INT_FATAL(this, "attempt to copy function type");
+  return nullptr;
+}
+
+void
+FunctionType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  INT_FATAL(this, "unexpected case in 'FunctionType::%s'", __FUNCTION__);
+}
+
+const char*
+FunctionType::buildUserFacingTypeString(FunctionType::Kind kind,
+                                        const FormalVec& formals,
+                                        RetTag returnIntent,
+                                        Type* returnType,
+                                        bool throws) {
+  std::ostringstream oss;
+  oss << FunctionType::kindToString(kind) << "(";
+
+  for (size_t i = 0; i < formals.size(); i++) {
+    auto& info = formals[i];
+    bool skip = isIntentSameAsDefault(info.intent, info.type);
+    if (!skip) oss << intentToString(info.intent);
+    if (!skip && info.name) oss << " ";
+    if (info.name) oss << info.name;
+    if ((!skip || info.name) && info.type != dtAny) oss << ": ";
+    if (info.type != dtAny) oss << typeToString(info.type);
+    if ((i+1) != formals.size()) oss << ", ";
+  }
+
+  oss << ")";
+
+  if (returnIntent != RET_VALUE) {
+    oss << " " << returnIntentToString(returnIntent);
+  }
+
+  if (returnType != dtVoid) {
+    oss << ": " << typeToString(returnType);
+  }
+
+  auto str = oss.str();
+  auto ret = astr(str.c_str());
+  return ret;
+}
+
+const char* FunctionType::kindToString(FunctionType::Kind kind) {
+  switch (kind) {
+    case PROC: return "proc";
+    case ITER: return "iter";
+    case OPERATOR: return "operator";
+  }
+  return nullptr;
+}
+
+const char* FunctionType::intentToString(IntentTag intent) {
+  switch (intent) {
+    case INTENT_IN: return "in";
+    case INTENT_OUT: return "out";
+    case INTENT_INOUT: return "inout";
+    case INTENT_CONST: return "const";
+    case INTENT_CONST_IN: return "const in";
+    case INTENT_REF: return "ref";
+    case INTENT_CONST_REF: return "const ref";
+    case INTENT_REF_MAYBE_CONST: return nullptr;
+    case INTENT_PARAM: return "param";
+    case INTENT_TYPE: return "type";
+    case INTENT_BLANK: return nullptr;
+  }
+  return nullptr;
+}
+
+const char* FunctionType::typeToString(Type* t) {
+  auto vt = t->getValType();
+  if (vt == dtInt[INT_SIZE_DEFAULT]) return "int";
+  if (vt == dtUInt[INT_SIZE_DEFAULT]) return "uint";
+  if (vt == dtReal[COMPLEX_SIZE_DEFAULT]) return "real";
+  if (vt == dtBools[BOOL_SIZE_DEFAULT]) return "bool";
+  if (vt == dtComplex[COMPLEX_SIZE_DEFAULT]) return "complex";
+  if (vt == dtImag[FLOAT_SIZE_DEFAULT]) return "imag";
+  auto ret = vt->symbol->cname;
+  return ret;
+}
+
+const char* FunctionType::returnIntentToString(RetTag intent) {
+  return retTagDescrString(intent);
+}
+
+// For the 'any' type, arbitrarily choose that only the default intent
+// is the same as the default intent (what else makes sense?).
+bool FunctionType::isIntentSameAsDefault(IntentTag intent, Type* t) {
+  if (t == dtAny) return intent == INTENT_BLANK;
+  auto ret = concreteIntent(INTENT_BLANK, t) == concreteIntent(intent, t);
+  return ret;
+}
+
+FunctionType* FunctionType::create(FunctionType::Kind kind,
+                                   FormalVec formals,
+                                   RetTag returnIntent,
+                                   Type* returnType,
+                                   bool throws) {
+  bool isAnyFormalNamed = false;
+
+  for (auto& formal : formals) {
+    isAnyFormalNamed |= formal.name != nullptr;
+    formal.name = astr(formal.name);
+  }
+
+  auto cstr = FunctionType::buildUserFacingTypeString(kind, formals,
+                                                      returnIntent,
+                                                      returnType,
+                                                      throws);
+  auto ret = new FunctionType(kind, std::move(formals), returnIntent,
+                              returnType,
+                              throws,
+                              isAnyFormalNamed,
+                              cstr);
+  return ret;
+}
+
+namespace {
+
+  // Used to hash by value instead of doing pointer comparison.
+  struct FunctionTypePtrHash {
+    size_t operator()(const FunctionType* x) const {
+      return x->hash();
+    }
+  };
+
+  // Used to compare by value instead of doing pointer comparison.
+  struct FunctionTypePtrEq {
+    bool operator()(const FunctionType* lhs,
+                    const FunctionType* rhs) const {
+      return lhs->equals(rhs);
+    }
+  };
+
+  using FunctionTypeCache =
+    std::unordered_set<FunctionType*, FunctionTypePtrHash,
+                       FunctionTypePtrEq>;
+}
+
+// Cache to make sure that we don't produce duplicate function types.
+static FunctionTypeCache functionTypeCache;
+
+static FunctionType* cacheFunctionTypeOrReuse(FunctionType* fnType) {
+  auto it = functionTypeCache.find(fnType);
+  if (it != functionTypeCache.end()) return *it;
+
+  auto ts = new TypeSymbol(fnType->toString(), fnType);
+  ts->cname = fnType->toStringMangledForCodegen();
+  fnType->symbol = ts;
+
+  rootModule->block->insertAtTail(new DefExpr(ts));
+
+  std::ignore = functionTypeCache.emplace_hint(it, fnType);
+
+  return fnType;
+}
+
+FunctionType* FunctionType::get(FunctionType::Kind kind,
+                                FormalVec formals,
+                                RetTag returnIntent,
+                                Type* returnType,
+                                bool throws) {
+  auto fnType = FunctionType::create(kind, std::move(formals), returnIntent,
+                                     returnType,
+                                     throws);
+  auto ret = cacheFunctionTypeOrReuse(fnType);
+  return ret;
+}
+
+FunctionType::Kind FunctionType::determineKind(FnSymbol* fn) {
+  if (fn->hasFlag(FLAG_ITERATOR_FN)) return FunctionType::ITER;
+  if (fn->hasFlag(FLAG_OPERATOR)) return FunctionType::OPERATOR;
+  return FunctionType::PROC;
+}
+
+FunctionType* FunctionType::get(FnSymbol* fn) {
+  FunctionType::Kind kind = determineKind(fn);
+  std::vector<FunctionType::Formal> formals;
+  RetTag returnIntent = fn->retTag;
+  Type* returnType = fn->retType;
+  bool throws = fn->throwsError();
+
+  for_formals(f, fn) {
+    FunctionType::Formal info;
+    info.type = f->type;
+    info.intent = f->intent;
+    info.name = f->name;
+    formals.push_back(std::move(info));
+  }
+
+  auto fnType = FunctionType::create(kind, std::move(formals), returnIntent,
+                                     returnType,
+                                     throws);
+  auto ret = cacheFunctionTypeOrReuse(fnType);
+  return ret;
+}
+
+FunctionType::Kind FunctionType::kind() const {
+  return this->kind_;
+}
+
+int FunctionType::numFormals() const {
+  auto ret = (int) this->formals_.size();
+  return ret;
+}
+
+const FunctionType::Formal* FunctionType::formal(int idx) const {
+  INT_ASSERT(0 <= idx && idx < numFormals());
+  auto ret = &formals_[idx];
+  return ret;
+}
+
+RetTag FunctionType::returnIntent() const {
+  return this->returnIntent_;
+}
+
+Type* FunctionType::returnType() const {
+  return this->returnType_;
+}
+
+bool FunctionType::throws() const {
+  return this->throws_;
+}
+
+bool FunctionType::isAnyFormalNamed() const {
+  return this->isAnyFormalNamed_;
+}
+
+const char* FunctionType::toString() const {
+  return this->userTypeString_;
+}
+
+const char* FunctionType::intentTagMnemonicMangled(IntentTag tag) {
+  switch (tag) {
+    case INTENT_IN: return "I";
+    case INTENT_OUT: return "O";
+    case INTENT_INOUT: return "U";
+    case INTENT_CONST: return "C";
+    case INTENT_CONST_IN: return "CI";
+    case INTENT_REF: return "R";
+    case INTENT_CONST_REF: return "CR";
+    case INTENT_REF_MAYBE_CONST: return "RMC";
+    case INTENT_PARAM: return "P";
+    case INTENT_TYPE: return "T";
+    case INTENT_BLANK: return "";
+  }
+  return nullptr;
+}
+
+const char* FunctionType::retTagMnemonicMangled(RetTag tag) {
+  switch (tag) {
+    case RET_VALUE: return "";
+    case RET_REF: return "R";
+    case RET_CONST_REF: return "CR";
+    case RET_PARAM: return "P";
+    case RET_TYPE: return "T";
+  }
+  return nullptr;
+}
+
+const char* FunctionType::toStringMangledForCodegen() const {
+  std::ostringstream oss;
+
+  oss << "chpl_" << kindToString(kind_) << "_";
+
+  for (int i = 0; i < numFormals(); i++) {
+    auto f = this->formal(i);
+    bool skip = isIntentSameAsDefault(f->intent, f->type);
+    if (!skip) oss << intentTagMnemonicMangled(f->intent);
+    oss << typeToString(f->type) << "_";
+    if (f->name) oss << f->name;
+    oss << "_";
+  }
+
+  oss << "_";
+  if (returnIntent_ != RET_VALUE) {
+    oss << retTagMnemonicMangled(returnIntent_) << "_";
+  }
+
+  oss << typeToString(returnType_);
+  if (throws_) oss << "_throws";
+
+  auto ret = astr(oss.str());
+  return ret;
+}
+
+size_t FunctionType::hash() const {
+  std::hash<void*> hasherPtr;
+  std::hash<bool> hasherBool;
+
+  size_t ret = ((size_t) kind_);
+
+  // I think it's fine to hash the pointers here because types don't really
+  // have a meaningful way to distinguish on contents, and should be unique,
+  // while the formal names are all canonical using 'astr'.
+  for (auto& formal : formals_) {
+    ret = chpl::hash_combine(ret, formal.hash());
+  }
+
+  ret = chpl::hash_combine(ret, ((size_t) returnIntent_));
+  ret = chpl::hash_combine(ret, hasherPtr(returnType_));
+  ret = chpl::hash_combine(ret, hasherBool(throws_));
+  ret = chpl::hash_combine(ret, hasherBool(isAnyFormalNamed_));
+
+  return ret;
+}
+
+bool
+FunctionType::Formal::operator==(const FunctionType::Formal& rhs) const {
+  return this->type == rhs.type &&
+    this->intent == rhs.intent &&
+    this->name == rhs.name;
+}
+
+size_t FunctionType::Formal::hash() const {
+  std::hash<void*> hasherPtr;
+  std::hash<const char*> hasherConstCharPtr;
+
+  size_t ret = hasherPtr(this->type);
+  ret = chpl::hash_combine(ret, ((size_t) this->intent));
+  ret = chpl::hash_combine(ret, hasherConstCharPtr(this->name));
+  return ret;
+}
+
+bool FunctionType::Formal::isGeneric() const {
+  auto t = this->type;
+  if (t == dtUnknown || t == dtAny || t->symbol->hasFlag(FLAG_GENERIC)) {
+    return true;
+  }
+  return false;
+}
+
+bool FunctionType::equals(const FunctionType* rhs) const {
+  return this->kind_ == rhs->kind_ &&
+    this->formals_ == rhs->formals_ &&
+    this->returnIntent_ == rhs->returnIntent_ &&
+    this->returnType_ == rhs->returnType_ &&
+    this->throws_ == rhs->throws_ &&
+    this->isAnyFormalNamed_ == rhs->isAnyFormalNamed_ &&
+    this->userTypeString_ == rhs->userTypeString_;
+}
+
+bool FunctionType::isGeneric() const {
+  auto rt = returnType();
+
+  if (rt == dtUnknown || rt == dtAny || rt->symbol->hasFlag(FLAG_GENERIC)) {
+    return true;
+  }
+
+  for (auto& formal : formals_) {
+    if (formal.isGeneric()) return true;
+  }
+
+  return false;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static PrimitiveType* createPrimitiveType(const char* name, const char* cname);
 static PrimitiveType* createInternalType (const char* name, const char* cname);
 
@@ -1017,6 +1422,10 @@ void initCompilerGlobals() {
   gNodeID = new VarSymbol("chpl_nodeID", dtInt[INT_SIZE_32]);
   gNodeID->addFlag(FLAG_EXTERN);
   rootModule->block->insertAtTail(new DefExpr(gNodeID));
+
+  gUseIOFormatters = new VarSymbol("chpl_useIOFormatters", dtBool);
+  gUseIOFormatters->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gUseIOFormatters, fUseIOFormatters);
 
   initForTaskIntents();
 }

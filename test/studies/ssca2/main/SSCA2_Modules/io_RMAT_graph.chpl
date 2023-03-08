@@ -310,10 +310,10 @@ iter graphReaderReal(GRow, uxIDs, type VType, vCount, eCount, repfiles,
   ref GRowLocal = GRow.localSlice(myIDs);
 
   // Returns the offset of edgeStart[v] in staf, 1 <= v <= numVertices+2.
-  proc staOffsetForVID(v: int) return (v-1) * numBytes(IONumType);
+  proc staOffsetForVID(v: int) do return (v-1) * numBytes(IONumType);
   // Returns the offset of startVertex/endVertex/weight[e] in
   //  svf, evf, wwf, resp; 1 <= e <= numEdges.
-  proc svOffsetForEID(e: int) return (e-1) * numBytes(IONumType);
+  proc svOffsetForEID(e: int) do return (e-1) * numBytes(IONumType);
 
   // We need to read edgeStart(v1) and edgeStart(v2) (in the terminology
   // of the commit message for r19646) - to determine the span of
@@ -482,8 +482,8 @@ proc reportProgress() {
 
 ///////// graph helpers /////////
 
-proc graphTotalEdges(G)  return + reduce [v in G.Row] v.numNeighbors();
-proc graphNumVertices(G) return G.vertices.size;
+proc graphTotalEdges(G) do  return + reduce [v in G.Row] v.numNeighbors();
+proc graphNumVertices(G) do return G.vertices.size;
 
 ///////// I/O helpers /////////
 
@@ -497,21 +497,25 @@ proc createGraphChannel(prefix:string, suffix:string, param forWriting:bool) {
 
 proc createGraphFile(prefix:string, suffix:string, param forWriting:bool) {
   return open(prefix+suffix,
-              if forWriting then iomode.cw else iomode.r,
+              if forWriting then ioMode.cw else ioMode.r,
               ioHintSet.sequential);
 }
 
 proc ensureEOFofDataFile(chan, snapshot_prefix, file_suffix): void {
   var temp:IONumType;
+  var dataRemains:bool = false;
   try! {
-    chan.read(temp);
+    dataRemains = chan.read(temp);
   } catch e: SystemError {
     // temp==0 is a workaround for unending large files
-    if e.err != EEOF && temp != 0 then
+    if temp != 0 then
+      dataRemains = true;
+  }
+  if (dataRemains) {
       myerror("did not reach EOF in '", snapshot_prefix, file_suffix,
               "'  the next value is ", temp);
   }
 }
 
 proc writeNum(ch, num): void { ch.write(num:IONumType); }
-proc readNum(ch): IONumType  return ch.read(IONumType);
+proc readNum(ch): IONumType do  return ch.read(IONumType);

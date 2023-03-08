@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,7 +24,6 @@
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
-#include "./ErrorGuard.h"
 
 // assumes the last statement is a variable declaration for x
 // with an initialization expression.
@@ -125,6 +124,9 @@ static void test9() {
   QualifiedType qt = resolveTypeOfXInit(context,
                                       "var x = true && y;");
   assert(qt.isUnknown());
+
+  assert(guard.numErrors() > 0);
+  guard.realizeErrors();
 }
 
 static void test10() {
@@ -136,6 +138,9 @@ static void test10() {
   QualifiedType qt = resolveTypeOfXInit(context,
                                       "var x = false || y;");
   assert(qt.isUnknown());
+
+  assert(guard.numErrors() > 0);
+  guard.realizeErrors();
 }
 
 int main() {

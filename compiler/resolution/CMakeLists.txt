@@ -1,4 +1,4 @@
-# Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -14,37 +14,36 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-target_sources(chpl
-               PRIVATE
-               addAutoDestroyCalls.cpp
-               AutoDestroyScope.cpp
-               caches.cpp
-               callDestructors.cpp
-               callInfo.cpp
-               cleanups.cpp
-               cullOverReferences.cpp
-               expandVarArgs.cpp
-               firstClassFunctions.cpp
-               fixupExports.cpp
-               functionResolution.cpp
-               generics.cpp
-               implementForallIntents.cpp
-               initializerResolution.cpp
-               interfaceResolution.cpp
-               lateConstCheck.cpp
-               lifetime.cpp
-               loopDetails.cpp
-               lowerForalls.cpp
-               lowerIterators.cpp
-               nilChecking.cpp
-               postFold.cpp
-               preFold.cpp
-               ResolutionCandidate.cpp
-               resolveFunction.cpp
-               tuples.cpp
-               typeSpecifier.cpp
-               virtualDispatch.cpp
-               visibleFunctions.cpp
-               wrappers.cpp
-              )
+set(SRCS
+    addAutoDestroyCalls.cpp
+    AutoDestroyScope.cpp
+    caches.cpp
+    callDestructors.cpp
+    callInfo.cpp
+    cleanups.cpp
+    cullOverReferences.cpp
+    expandVarArgs.cpp
+    fcf-support.cpp
+    fixupExports.cpp
+    functionResolution.cpp
+    generics.cpp
+    implementForallIntents.cpp
+    initializerResolution.cpp
+    interfaceResolution.cpp
+    lateConstCheck.cpp
+    lifetime.cpp
+    loopDetails.cpp
+    lowerForalls.cpp
+    lowerIterators.cpp
+    nilChecking.cpp
+    postFold.cpp
+    preFold.cpp
+    ResolutionCandidate.cpp
+    resolveFunction.cpp
+    tuples.cpp
+    typeSpecifier.cpp
+    virtualDispatch.cpp
+    visibleFunctions.cpp
+    wrappers.cpp
+   )
+add_compiler_sources("${SRCS}" "${CMAKE_CURRENT_SOURCE_DIR}")

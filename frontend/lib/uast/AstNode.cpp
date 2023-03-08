@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,13 +17,16 @@
  * limitations under the License.
  */
 
+#include "chpl/uast/all-uast.h"
 #include "chpl/uast/AstNode.h"
 
 
-#include "chpl/uast/AstNode.h"
 #include "chpl/uast/Comment.h"
+#include "chpl/uast/Conditional.h"
 #include "chpl/uast/Identifier.h"
+#include "chpl/uast/IndexableLoop.h"
 #include "chpl/uast/NamedDecl.h"
+#include "chpl/uast/Try.h"
 #include "chpl/uast/chpl-syntax-printer.h"
 
 #include <iomanip>
@@ -31,6 +34,17 @@
 namespace chpl {
 namespace uast {
 
+
+void AstNode::dumpFieldsInner(const DumpSettings& s) const {
+}
+
+std::string AstNode::dumpChildLabelInner(int i) const {
+  if (i == attributeGroupChildNum_) {
+    return "attributeGroup";
+  }
+
+  return "";
+}
 
 AstNode::~AstNode() {
 }
@@ -68,7 +82,7 @@ bool AstNode::mayContainStatements(AstTag tag) {
     case asttags::AnonFormal:
     case asttags::As:
     case asttags::Array:
-    case asttags::Attributes:
+    case asttags::AttributeGroup:
     case asttags::Break:
     case asttags::Comment:
     case asttags::Continue:
@@ -186,12 +200,146 @@ bool AstNode::mayContainStatements(AstTag tag) {
   return true;
 }
 
+bool AstNode::isInherentlyStatement() const {
+  switch (tag_) {
+    // cannot contain Chapel statements
+    case asttags::AnonFormal:
+    case asttags::As:
+    case asttags::Array:
+    case asttags::AttributeGroup:
+    case asttags::Break:
+    case asttags::Comment:
+    case asttags::Continue:
+    case asttags::Delete:
+    case asttags::Domain:
+    case asttags::Dot:
+    case asttags::EmptyStmt:
+    case asttags::ErroneousExpression:
+    case asttags::ExternBlock:
+    case asttags::FunctionSignature:
+    case asttags::Identifier:
+    case asttags::Import:
+    case asttags::Include:
+    case asttags::Let:
+    case asttags::New:
+    case asttags::Range:
+    case asttags::Require:
+    case asttags::Return:
+    case asttags::Throw:
+    case asttags::TypeQuery:
+    case asttags::Use:
+    case asttags::VisibilityClause:
+    case asttags::WithClause:
+    case asttags::Yield:
+    case asttags::START_Literal:
+    case asttags::BoolLiteral:
+    case asttags::ImagLiteral:
+    case asttags::IntLiteral:
+    case asttags::RealLiteral:
+    case asttags::UintLiteral:
+    case asttags::START_StringLikeLiteral:
+    case asttags::BytesLiteral:
+    case asttags::CStringLiteral:
+    case asttags::StringLiteral:
+    case asttags::END_StringLikeLiteral:
+    case asttags::END_Literal:
+    case asttags::START_Call:
+    case asttags::FnCall:
+    case asttags::OpCall:
+    case asttags::PrimCall:
+    case asttags::Reduce:
+    case asttags::ReduceIntent:
+    case asttags::Scan:
+    case asttags::Tuple:
+    case asttags::Zip:
+    case asttags::END_Call:
+    case asttags::MultiDecl:
+    case asttags::TupleDecl:
+    case asttags::ForwardingDecl:
+    case asttags::EnumElement:
+    case asttags::START_VarLikeDecl:
+    case asttags::Formal:
+    case asttags::TaskVar:
+    case asttags::VarArgFormal:
+    case asttags::Variable:
+    case asttags::END_VarLikeDecl:
+    case asttags::Enum:
+      return false;
+
+    // might be a statement and might be an expr
+    case asttags::Conditional:
+      return !toConditional()->isExpressionLevel();
+
+    case asttags::Try:
+      return !toTry()->isExpressionLevel();
+
+    case asttags::START_IndexableLoop:
+    case asttags::BracketLoop:
+    case asttags::Coforall:
+    case asttags::For:
+    case asttags::Forall:
+    case asttags::Foreach:
+    case asttags::END_IndexableLoop:
+      return toIndexableLoop()->isExpressionLevel();
+
+    // is a statement
+    case asttags::Catch:
+    case asttags::Cobegin:
+    case asttags::Implements:
+    case asttags::Label: // contains a loop
+    case asttags::Select:
+    case asttags::Sync:
+    case asttags::START_SimpleBlockLike:
+    case asttags::Begin:
+    case asttags::Block:
+    case asttags::Defer:
+    case asttags::Local:
+    case asttags::Manage:
+    case asttags::On:
+    case asttags::Serial:
+    case asttags::When:
+    case asttags::END_SimpleBlockLike:
+    case asttags::START_Loop:
+    case asttags::DoWhile:
+    case asttags::While:
+    case asttags::END_Loop:
+    case asttags::START_Decl:
+    case asttags::START_NamedDecl:
+    case asttags::START_TypeDecl:
+    case asttags::Function:
+    case asttags::Interface:
+    case asttags::Module:
+    case asttags::START_AggregateDecl:
+    case asttags::Class:
+    case asttags::Record:
+    case asttags::Union:
+    case asttags::END_AggregateDecl:
+    case asttags::END_Decl:
+    case asttags::END_NamedDecl:
+    case asttags::END_TypeDecl:
+      return true;
+
+    // implementation details
+    case asttags::NUM_AST_TAGS:
+    case asttags::AST_TAG_UNKNOWN:
+      return true;
+
+    // no default to get compiler warning if any are added
+  }
+
+  CHPL_ASSERT(false && "should not be reachable");
+  return true;
+}
+
+
 bool AstNode::shallowMatch(const AstNode* other) const {
   const AstNode* lhs = this;
   const AstNode* rhs = other;
   if (lhs->tag() != rhs->tag())
     return false;
   if (lhs->id().symbolPath() != rhs->id().symbolPath())
+    return false;
+  if (lhs->attributeGroupChildNum() != rhs->attributeGroupChildNum())
     return false;
   if (!lhs->contentsMatchInner(rhs))
     return false;
@@ -208,7 +356,8 @@ bool AstNode::completeMatch(const AstNode* other) const {
     return false;
   }
 
-  // check the numeric elements of the id and the number of children
+  // check the numeric elements of the id and the number of children and
+  // the attributeGroupChildNum
   if (lhs->id().postOrderId() != rhs->id().postOrderId() ||
       lhs->id().numContainedChildren() != rhs->id().numContainedChildren() ||
       lhs->children_.size() != rhs->children_.size()) {
@@ -221,6 +370,13 @@ bool AstNode::completeMatch(const AstNode* other) const {
   for (size_t i = 0; i < nChildren; i++) {
     const AstNode* lhsChild = lhs->children_[i].get();
     const AstNode* rhsChild = rhs->children_[i].get();
+
+    // TODO: This should only be possible while we're implementing
+    // serialization...
+    if (lhsChild == nullptr || rhsChild == nullptr) {
+      return false;
+    }
+
     bool childMatch = lhsChild->completeMatch(rhsChild);
     if (!childMatch) {
       allMatch = false;
@@ -275,16 +431,11 @@ void AstNode::mark(Context* context) const {
 }
 
 static std::string getIdStr(const AstNode* ast) {
-  std::string idStr;
   if (ast == nullptr || ast->id().isEmpty()) {
-    idStr = "<no id>";
+    return "<no id>";
   } else {
-    std::ostringstream ss;
-    ast->id().stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
-    idStr = ss.str();
+    return ast->id().str();
   }
-
-  return idStr;
 }
 
 static void dumpMaxIdLen(const AstNode* ast, int& maxIdLen) {
@@ -299,62 +450,163 @@ static void dumpMaxIdLen(const AstNode* ast, int& maxIdLen) {
   }
 }
 
-static void dumpHelper(std::ostream& ss,
-                       const AstNode* ast,
-                       int maxIdLen,
-                       int depth,
-                       StringifyKind stringKind) {
-  std::string idStr = getIdStr(ast);
-  ss << std::setw(maxIdLen) << idStr;
+int AstNode::computeMaxIdStringWidth() const {
+  int maxIdLen = 0;
+  dumpMaxIdLen(this, maxIdLen);
+  return maxIdLen;
+}
 
+void AstNode::dumpHelper(const DumpSettings& s,
+                         const AstNode* ast,
+                         int indent,
+                         const AstNode* parent,
+                         int parentIdx) {
 
-  if (depth == 0) {
-    ss << " ";
-  }
-  for (int i = 0; i < depth; i++) {
-    ss << "  ";
-  }
-
-  if (ast == nullptr) {
-    ss << "nullptr\n";
-    return;
-  }
-
-  ss << asttags::tagToString(ast->tag()) << " ";
-
-  if (const NamedDecl* named = ast->toNamedDecl()) {
-    ss << named->name().str() << " ";
-  } else if (const Identifier* ident = ast->toIdentifier()) {
-    ss << ident->name().str() << " ";
-  } else if (const Comment* comment = ast->toComment()) {
-    ss << comment->str() << " ";
-  } else if (const Dot* dot = ast->toDot()) {
-    ss << "." << dot->field() << " ";
-  } else if (const OpCall* op = ast->toOpCall()) {
-    ss << op->op().str() << " ";
+  // output the id if desired
+  if (s.printId) {
+    std::string idStr = getIdStr(ast);
+    // save the stream format state
+    std::ios state(nullptr);
+    state.copyfmt(s.out);
+    // output ID left justified and padded
+    s.out << std::setw(s.idWidth) << std::left << idStr;
+    // restore the stream format state
+    s.out.copyfmt(state);
   }
 
-  //printf("(containing %i) ", ast->id().numContainedChildren());
-  //printf("%p", ast);
-  if (stringKind == StringifyKind::DEBUG_DETAIL)
-    ss << "\n";
+  if (s.kind == StringifyKind::DEBUG_DETAIL) {
+    // add spacing according to depth
+    // (includes one space to separate id from the rest)
+    for (int i = 0; i <= indent; i++) {
+      s.out << "  ";
+    }
+  }
 
+  // output the label if there is one
+  if (parent != nullptr) {
+    std::string label = parent->dumpChildLabelInner(parentIdx);
+    if (!label.empty()) {
+      s.out << label << " ";
+    }
+  }
+
+  // output the tag
+  s.out << asttags::tagToString(ast->tag());
+
+  // output the fields
+  ast->dumpFieldsInner(s);
+
+  if (s.kind == StringifyKind::DEBUG_DETAIL) {
+    s.out << "\n";
+  }
+
+  // output the child nodes
+  int i = 0;
   for (const AstNode* child : ast->children()) {
-    dumpHelper(ss, child, maxIdLen, depth+1, stringKind);
+    if (child != nullptr) {
+      dumpHelper(s, child, indent+1, ast, i);
+    } else {
+      s.out << "nullptr";
+    }
+    i++;
   }
+
+  return;
 }
 
 void AstNode::stringify(std::ostream& ss,
                         StringifyKind stringKind) const {
 
-  if (stringKind == StringifyKind::CHPL_SYNTAX) {
-    printChapelSyntax(ss, this);
-  } else {
-    int maxIdLen = 0;
-    int leadingSpaces = 0;
-    dumpMaxIdLen(this, maxIdLen);
-    dumpHelper(ss, this, maxIdLen, leadingSpaces, stringKind);
+  switch (stringKind) {
+    case StringifyKind::CHPL_SYNTAX:
+      // use the Chapel Syntax printer
+      printChapelSyntax(ss, this);
+      break;
+    case StringifyKind::DEBUG_SUMMARY:
+      // just print the ID
+      this->id().stringify(ss, stringKind);
+      break;
+    case StringifyKind::DEBUG_DETAIL:
+      {
+        auto s = DumpSettings(ss);
+        s.kind = stringKind;
+        s.printId = true;
+        // compute the maximum id width so it's a nice column
+        int maxIdLen = computeMaxIdStringWidth();
+        s.idWidth = maxIdLen;
+        dumpHelper(s, this, 0, /*parent*/ nullptr, /*parentIdx*/NO_CHILD);
+      }
+      break;
   }
+}
+
+void AstNode::serialize(Serializer& ser) const {
+  ser.write(tag_);
+  ser.write(attributeGroupChildNum_);
+  ser.write(id_);
+  ser.write(children_);
+}
+
+AstNode::AstNode(AstTag tag, Deserializer& des)
+  : tag_(tag) {
+  // Note: Assumes that the tag was already serialized in order to invoke
+  // the correct class' deserializer.
+  attributeGroupChildNum_ = (int)des.read<int32_t>();
+  id_ = des.read<ID>();
+  children_ = des.read<AstList>();
+}
+
+owned<AstNode> AstNode::deserialize(Deserializer& des) {
+  AstTag tag = des.read<AstTag>();
+
+  switch (tag) {
+    #define CASE_LEAF(NAME) \
+      case asttags::NAME: \
+      { \
+        return NAME::deserialize(des); \
+        break; \
+      }
+
+    #define CASE_NODE(NAME) \
+      case asttags::NAME: \
+      { \
+        return NAME::deserialize(des); \
+        break; \
+      }
+
+    #define CASE_OTHER(NAME) \
+      case asttags::NAME: \
+      { \
+        assert(false && "this code should never be run"); \
+        break; \
+      }
+
+    #define AST_NODE(NAME) CASE_NODE(NAME)
+    #define AST_LEAF(NAME) CASE_LEAF(NAME)
+    #define AST_BEGIN_SUBCLASSES(NAME) CASE_OTHER(START_##NAME)
+    #define AST_END_SUBCLASSES(NAME) CASE_OTHER(END_##NAME)
+
+    // Apply the above macros to uast-classes-list.h
+    // to fill in the cases
+    #include "chpl/uast/uast-classes-list.h"
+    // and also for NUM_AST_TAGS
+    CASE_OTHER(NUM_AST_TAGS)
+    CASE_OTHER(AST_TAG_UNKNOWN)
+
+    // clear the macros
+    #undef AST_NODE
+    #undef AST_LEAF
+    #undef AST_BEGIN_SUBCLASSES
+    #undef AST_END_SUBCLASSES
+    #undef CASE_LEAF
+    #undef CASE_NODE
+    #undef CASE_OTHER
+  }
+
+  assert(false && "this code should never be run"); \
+
+  owned<AstNode> ret = nullptr;
+  return ret;
 }
 
 IMPLEMENT_DUMP(AstNode);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -59,6 +59,9 @@ inline Location locate(Context* context, const uast::AstNode* node) {
 }
 inline Location locate(Context* context, const Location& loc) {
   return loc;
+}
+inline Location locate(Context* context, const IdOrLocation& idOrLoc) {
+  return idOrLoc.computeLocation(context);
 }
 
 /// \cond DO_NOT_DOCUMENT
@@ -208,9 +211,8 @@ class ErrorWriterBase {
     The location given to this function and its overloads is considered
     the error's main location.
    */
-  virtual void writeHeading(ErrorBase::Kind kind, ErrorType type, Location loc, const std::string& message) = 0;
-  virtual void writeHeading(ErrorBase::Kind kind, ErrorType type, const ID& id, const std::string& message);
-  virtual void writeHeading(ErrorBase::Kind kind, ErrorType type, const uast::AstNode* ast, const std::string& message);
+  virtual void writeHeading(ErrorBase::Kind kind, ErrorType type, IdOrLocation idOrLoc, const std::string& message) = 0;
+  void writeHeading(ErrorBase::Kind kind, ErrorType type, const uast::AstNode* ast, const std::string& message);
   template <typename T>
   void writeHeading(ErrorBase::Kind kind, ErrorType type, errordetail::LocationOnly<T> t, const std::string& message) {
     writeHeading(kind, type, errordetail::locate(context, t.t), message);
@@ -229,9 +231,8 @@ class ErrorWriterBase {
     that is useful "in all cases" (e.g., the location of a duplicate
     definition).
    */
-  virtual void writeNote(Location loc, const std::string& message) = 0;
-  virtual void writeNote(const ID& id, const std::string& message);
-  virtual void writeNote(const uast::AstNode* ast, const std::string& message);
+  virtual void writeNote(IdOrLocation loc, const std::string& message) = 0;
+  void writeNote(const uast::AstNode* ast, const std::string& message);
   template <typename T>
   void writeNote(errordetail::LocationOnly<T> t, const std::string& message) {
     writeNote(errordetail::locate(context, t.t), message);
@@ -274,6 +275,15 @@ class ErrorWriterBase {
   }
 
   /**
+    Same as ErrorWriter::heading, but doesn't tweak the resulting error message
+    to remove punctuation.
+   */
+  template <typename LocationType, typename ... Ts>
+  void headingVerbatim(ErrorBase::Kind kind, ErrorType type, LocationType loc, Ts ... ts) {
+    writeHeading(kind, type, loc, toString(std::forward<Ts>(ts)...));
+  }
+
+  /**
     Write a note about the error. Unlike messages, notes are printed
     even in brief mode. Thus, notes can be used to provide information
     that is useful "in all cases" (e.g., the location of a duplicate
@@ -301,6 +311,15 @@ class ErrorWriterBase {
     auto str = toString(std::forward<Ts>(ts)...);
     tweakErrorString(str);
     writeNote(loc, str);
+  }
+
+  /**
+    Same as ErrorWriter::note, but doesn't tweak the resulting error message
+    to remove punctuation.
+   */
+  template <typename LocationType, typename ... Ts>
+  void noteVerbatim(ErrorBase::Kind kind, ErrorType type, LocationType loc, Ts ... ts) {
+    writeNote(kind, type, loc, toString(std::forward<Ts>(ts)...));
   }
 
   /**
@@ -336,7 +355,7 @@ class ErrorWriter : public ErrorWriterBase {
 
   void setColor(TermColorName color);
 
-  void writeHeading(ErrorBase::Kind kind, ErrorType type, Location loc,
+  void writeHeading(ErrorBase::Kind kind, ErrorType type, IdOrLocation idOrLoc,
                     const std::string& message) override;
   void writeMessage(const std::string& message) override {
     if (outputFormat_ == DETAILED) {
@@ -345,7 +364,7 @@ class ErrorWriter : public ErrorWriterBase {
       oss_ << message << std::endl;
     }
   }
-  void writeNote(Location loc, const std::string& message) override;
+  void writeNote(IdOrLocation idOrLoc, const std::string& message) override;
   void writeCode(const Location& place,
                  const std::vector<Location>& toHighlight = {}) override;
  public:

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -141,12 +141,27 @@ module ChapelIO {
   // TODO -- this should probably be private
   pragma "no doc"
   proc _isNilObject(val) {
-    proc helper(o: borrowed object) return o == nil;
-    proc helper(o)                  return false;
+    proc helper(o: borrowed object) do return o == nil;
+    proc helper(o) do                  return false;
     return helper(val);
   }
 
   use IO;
+  import CTypes.{c_int};
+
+  /*
+   Local copies of IO.{EEOF,ESHORT,EFORMAT} as these are being phased out
+   and are now private in IO
+   */
+  private extern proc chpl_macro_int_EEOF():c_int;
+  private extern proc chpl_macro_int_ESHORT():c_int;
+  private extern proc chpl_macro_int_EFORMAT():c_int;
+  pragma "no doc"
+  private inline proc EEOF do return chpl_macro_int_EEOF():c_int;
+  pragma "no doc"
+  private inline proc ESHORT do return chpl_macro_int_ESHORT():c_int;
+  pragma "no doc"
+  private inline proc EFORMAT do return chpl_macro_int_EFORMAT():c_int;
 
     private
     proc isIoField(x, param i) param {
@@ -246,9 +261,11 @@ module ChapelIO {
     // calls writeThisDefaultImpl.
     pragma "no doc"
     proc writeThisDefaultImpl(writer, x:?t) throws {
+      const st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+      const isJson = st == QIO_AGGREGATE_FORMAT_JSON;
+
       if !writer.binary() {
-        const st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-        const start = if st == QIO_AGGREGATE_FORMAT_JSON then "{"
+        const start = if isJson then "{"
                       else if st == QIO_AGGREGATE_FORMAT_CHPL
                       then "new " + t:string + "("
                       else if isClassType(t) then "{"
@@ -261,13 +278,49 @@ module ChapelIO {
       writeThisFieldsDefaultImpl(writer, x, first);
 
       if !writer.binary() {
-        const st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-        const end = if st == QIO_AGGREGATE_FORMAT_JSON then "}"
+        const end = if isJson then "}"
                     else if st == QIO_AGGREGATE_FORMAT_CHPL then ")"
                     else if isClassType(t) then "}"
                     else ")";
         writer._writeLiteral(end);
       }
+    }
+
+    //
+    // Called by the compiler to implement the default behavior for
+    // the compiler-generated 'encodeTo' method.
+    //
+    // TODO: would any formats want to print type or param fields?
+    //
+    proc encodeToDefaultImpl(writer:fileWriter, const x:?t) throws {
+      writer.formatter.writeTypeStart(writer, t);
+
+      if isClassType(t) && _to_borrowed(t) != borrowed object {
+        encodeToDefaultImpl(writer, x.super);
+      }
+
+      param num_fields = __primitive("num fields", t);
+      for param i in 1..num_fields {
+        if isIoField(x, i) {
+          param name : string = __primitive("field num to name", x, i);
+          writer.formatter.writeField(writer, name,
+                                      __primitive("field by num", x, i));
+        }
+      }
+
+      writer.formatter.writeTypeEnd(writer, t);
+    }
+
+    //
+    // Used by the compiler to support the compiler-generated initializers that
+    // accept a 'fileReader'. The type 'fileReader' may not be readily
+    // available, but the ChapelIO module generally is available and so
+    // we place the check here. For example:
+    //
+    //   proc R.init(r) where chpl__isFileReader(r.type) { ... }
+    //
+    proc chpl__isFileReader(type T) param : bool {
+      return isSubtype(T, fileReader(?));
     }
 
     private
@@ -377,6 +430,7 @@ module ChapelIO {
           var isSkipUnknown = reader.styleElement(qioSkipUnknown) != 0;
 
           var hasReadFieldName = false;
+          const isJson = st == QIO_AGGREGATE_FORMAT_JSON;
 
           for param i in 1..numFields {
             if !isIoField(x, i) || hasReadFieldName || readField[i-1] then
@@ -385,16 +439,17 @@ module ChapelIO {
             try {
               const fieldName = ioFieldNameLiteral(reader, t, i);
               reader._readLiteral(fieldName);
-            } catch err: SystemError {
+            } catch e : BadFormatError {
               // Try reading again with a different union element.
-              if err.err == EFORMAT || err.err == EEOF then continue;
-              throw err;
+              continue;
+            } catch e : EofError {
+              continue;
             }
 
             hasReadFieldName = true;
             needsComma = true;
 
-            const equalSign = if st == QIO_AGGREGATE_FORMAT_JSON then ":"
+            const equalSign = if isJson then ":"
                               else "=";
 
             try reader._readLiteral(equalSign, true);
@@ -404,7 +459,6 @@ module ChapelIO {
             numRead += 1;
           }
 
-          const isJson = st == QIO_AGGREGATE_FORMAT_JSON;
 
           // Try skipping fields if we're JSON and allowed to do so.
           if !hasReadFieldName then
@@ -458,17 +512,18 @@ module ChapelIO {
           try {
             const fieldName = ioFieldNameLiteral(reader, t, i);
             reader._readLiteral(fieldName);
-          } catch err: SystemError {
-
+          } catch e : BadFormatError {
             // Try reading again with a different union element.
-            if err.err == EFORMAT || err.err == EEOF then continue;
-            throw err;
+            continue;
+          } catch e : EofError {
+            continue;
           }
 
           hasFoundAtLeastOneField = true;
 
           const st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
-          const eq = if st == QIO_AGGREGATE_FORMAT_JSON then ":"
+          const isJson = st == QIO_AGGREGATE_FORMAT_JSON;
+          const eq = if isJson then ":"
                      else "=";
 
           try reader._readLiteral(eq, true);
@@ -519,11 +574,12 @@ module ChapelIO {
     pragma "no doc"
     proc readThisDefaultImpl(reader, ref x:?t) throws where !isClassType(t) {
       const st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+      const isJson = st ==  QIO_AGGREGATE_FORMAT_JSON;
 
       if !reader.binary() {
         const start = if st ==  QIO_AGGREGATE_FORMAT_CHPL
                       then "new " + t:string + "("
-                      else if st ==  QIO_AGGREGATE_FORMAT_JSON then "{"
+                      else if isJson then "{"
                       else "(";
 
         try reader._readLiteral(start);
@@ -535,7 +591,7 @@ module ChapelIO {
       try skipFieldsAtEnd(reader, needsComma);
 
       if !reader.binary() {
-        const end = if st == QIO_AGGREGATE_FORMAT_JSON then "}"
+        const end = if isJson then "}"
                     else ")";
 
         try reader._readLiteral(end);
@@ -555,9 +611,14 @@ module ChapelIO {
   }
 
   pragma "no doc"
+  proc _ddata.encodeTo(f) throws { writeThis(f); }
+
+  pragma "no doc"
   proc chpl_taskID_t.writeThis(f) throws {
     f.write(this : uint(64));
   }
+  pragma "no doc"
+  proc chpl_taskID_t.encodeTo(f) throws { writeThis(f); }
 
   pragma "no doc"
   proc chpl_taskID_t.readThis(f) throws {
@@ -565,7 +626,16 @@ module ChapelIO {
   }
 
   pragma "no doc"
+  proc type chpl_taskID_t.decodeFrom(f) throws {
+    var ret : chpl_taskID_t;
+    ret.readThis(f);
+    return ret;
+  }
+
+  pragma "no doc"
   proc nothing.writeThis(f) {}
+  pragma "no doc"
+  proc nothing.encodeTo(f) {}
 
   pragma "no doc"
   proc _tuple.readThis(f) throws {
@@ -581,6 +651,7 @@ module ChapelIO {
   pragma "no doc"
   proc _tuple._readWriteHelper(f) throws {
     const st = f.styleElement(QIO_STYLE_ELEMENT_TUPLE);
+    const isJson = st == QIO_TUPLE_FORMAT_JSON;
     const binary = f.binary();
 
     // Returns a 4-tuple containing strings representing:
@@ -591,7 +662,7 @@ module ChapelIO {
     proc getLiterals() : 4*string {
       if st == QIO_TUPLE_FORMAT_SPACE {
         return ("", " ", "", "");
-      } else if st == QIO_TUPLE_FORMAT_JSON {
+      } else if isJson {
         return ("[", ", ", "", "]");
       } else {
         return ("(", ", ", ",", ")");
@@ -630,6 +701,31 @@ module ChapelIO {
     }
   }
 
+  proc type _tuple.decodeFrom(f) throws {
+    ref fmt = f.formatter;
+    pragma "no init"
+    var ret : this;
+    fmt.readTypeStart(f, this);
+    for param i in 0..<this.size {
+      pragma "no auto destroy"
+      var elt = fmt.readField(f, "", this(i));
+      __primitive("=", ret(i), elt);
+    }
+    fmt.readTypeEnd(f, this);
+    return ret;
+  }
+
+  proc const _tuple.encodeTo(w) throws {
+    ref fmt = w.formatter;
+    fmt.writeTypeStart(w, this.type);
+    for param i in 0..<size {
+      const ref elt = this(i);
+      // TODO: should probably have something like 'writeElement'
+      fmt.writeField(w, "", elt);
+    }
+    fmt.writeTypeEnd(w, this.type);
+  }
+
   // Moved here to avoid circular dependencies in ChapelRange
   // Write implementation for ranges
   pragma "no doc"
@@ -642,10 +738,12 @@ module ChapelIO {
       alignCheckRange.normalizeAlignment();
     }
 
-    if hasLowBound() then
+    if (boundedType == BoundedRangeType.bounded ||
+        boundedType == BoundedRangeType.boundedLow) then
       f.write(lowBound);
     f._writeLiteral("..");
-    if hasHighBound() {
+    if (boundedType == BoundedRangeType.bounded ||
+        boundedType == BoundedRangeType.boundedHigh) {
       if (chpl__singleValIdxType(this.idxType) && this._low != this._high) {
         f._writeLiteral("<");
         f.write(lowBound);
@@ -676,7 +774,7 @@ module ChapelIO {
 
     if stride != 1 {
       f._readLiteral(" by ");
-      stride = f.read(stride.type);
+      _stride = f.read(stride.type);
     }
 
     try {
@@ -690,6 +788,46 @@ module ChapelIO {
       }
     } catch err: BadFormatError {
       // Range is naturally aligned.
+    }
+  }
+
+  proc range.init(type idxType = int,
+                  param boundedType : BoundedRangeType = BoundedRangeType.bounded,
+                  param stridable : bool = false,
+                  reader: fileReader(?)) {
+    this.init(idxType, boundedType, stridable);
+
+    // TODO:
+    // The alignment logic here is pretty tricky, so fall back on the
+    // actual operators for the time being...
+
+    // TODO: experiment with using throwing initializers in this case.
+    try! {
+      if hasLowBound() then _low = reader.read(_low.type);
+      reader._readLiteral("..");
+      if hasHighBound() then _high = reader.read(_high.type);
+
+      if stridable {
+        if reader.matchLiteral(" by ") {
+          //_stride = reader.read(stride.type);
+          this = this by reader.read(stride.type);
+        }
+      }
+    }
+
+    try! {
+      try {
+        if reader.matchLiteral(" align ") {
+          if stridable {
+            //_alignment = reader.read(intIdxType);
+            this = this align reader.read(intIdxType);
+          }
+        } else {
+          // TODO: throw error if not stridable
+        }
+      } catch err: BadFormatError {
+        // Range is naturally aligned.
+      }
     }
   }
 

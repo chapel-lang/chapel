@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -124,19 +124,19 @@ module AutoMath {
 
      :rtype: The type of `i`.
   */
-  inline proc abs(i : int(?w)) return if i < 0 then -i else i;
+  inline proc abs(i : int(?w)) do return if i < 0 then -i else i;
 
   /* Returns the absolute value of the unsigned integer argument.
 
      :rtype: The type of `i`.
   */
-  inline proc abs(i : uint(?w)) return i;
+  inline proc abs(i : uint(?w)) do return i;
 
   /* Returns the absolute value of the integer param argument `i`. */
-  proc abs(param i : integral) param return if i < 0 then -i else i;
+  proc abs(param i : integral) param do return if i < 0 then -i else i;
 
   /* Returns the magnitude of the real argument `r`. */
-  inline proc abs(r : real(64)):real(64) return fabs(r);
+  inline proc abs(r : real(64)):real(64) do return fabs(r);
 
   /* Returns the magnitude of the real argument `x`. */
   inline proc abs(x : real(32)): real(32) {
@@ -147,7 +147,7 @@ module AutoMath {
   }
 
   /* Returns the real magnitude of the imaginary argument `im`. */
-  inline proc abs(im : imag(64)): real(64) return fabs(_i2r(im));
+  inline proc abs(im : imag(64)): real(64) do return fabs(_i2r(im));
 
   /* Returns the real magnitude of the imaginary argument `im`. */
   inline proc abs(im: imag(32)): real(32) {
@@ -565,7 +565,7 @@ module AutoMath {
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divceil(param m: integral, param n: integral) param return
+  proc divceil(param m: integral, param n: integral) param do return
     if isNonnegative(m) then
       if isNonnegative(n) then (m + n - 1) / n
       else                     m / n
@@ -579,7 +579,7 @@ module AutoMath {
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divceil(m: integral, n: integral) return
+  proc divceil(m: integral, n: integral) do return
     if isNonnegative(m) then
       if isNonnegative(n) then (m + n - 1) / n
       else                     m / n
@@ -605,7 +605,7 @@ module AutoMath {
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divfloor(param m: integral, param n: integral) param return
+  proc divfloor(param m: integral, param n: integral) param do return
     if isNonnegative(m) then
       if isNonnegative(n) then m / n
       else                     (m - n - 1) / n
@@ -619,7 +619,7 @@ module AutoMath {
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divfloor(m: integral, n: integral) return
+  proc divfloor(m: integral, n: integral) do return
     if isNonnegative(m) then
       if isNonnegative(n) then m / n
       else                     (m - n - 1) / n
@@ -746,34 +746,34 @@ module AutoMath {
 
 
   /* Returns a value for which :proc:`isinf` will return `true`. */
-  inline proc INFINITY param : real(64) return chpl_INFINITY;
+  inline proc INFINITY param : real(64) do return chpl_INFINITY;
 
 
   /* Returns `true` if the argument `x` is a representation of a finite value;
      `false` otherwise. */
-  inline proc isfinite(x: real(64)): bool return chpl_macro_double_isfinite(x):bool;
+  inline proc isfinite(x: real(64)): bool do return chpl_macro_double_isfinite(x):bool;
 
   /* Returns `true` if the argument `x` is a representation of a finite value;
      `false` otherwise. */
-  inline proc isfinite(x: real(32)): bool return chpl_macro_float_isfinite(x):bool;
+  inline proc isfinite(x: real(32)): bool do return chpl_macro_float_isfinite(x):bool;
 
 
   /* Returns `true` if the argument `x` is a representation of *infinity*;
      `false` otherwise. */
-  inline proc isinf(x: real(64)): bool return chpl_macro_double_isinf(x):bool;
+  inline proc isinf(x: real(64)): bool do return chpl_macro_double_isinf(x):bool;
 
   /* Returns `true` if the argument `x` is a representation of *infinity*;
      `false` otherwise. */
-  inline proc isinf(x: real(32)): bool return chpl_macro_float_isinf(x):bool;
+  inline proc isinf(x: real(32)): bool do return chpl_macro_float_isinf(x):bool;
 
 
   /* Returns `true` if the argument `x` does not represent a valid number;
      `false` otherwise. */
-  inline proc isnan(x: real(64)): bool return chpl_macro_double_isnan(x):bool;
+  inline proc isnan(x: real(64)): bool do return chpl_macro_double_isnan(x):bool;
 
   /* Returns `true` if the argument `x` does not represent a valid number;
      `false` otherwise. */
-  inline proc isnan(x: real(32)): bool return chpl_macro_float_isnan(x):bool;
+  inline proc isnan(x: real(32)): bool do return chpl_macro_float_isnan(x):bool;
 
   /* Multiply by an integer power of 2.
      Returns x * 2**n.
@@ -993,15 +993,15 @@ module AutoMath {
   //
 
   pragma "no doc"
-  inline proc max(x: int(?w), y: int(w)) return if x > y then x else y;
+  inline proc max(x: int(?w), y: int(w)) do return if x > y then x else y;
   pragma "no doc"
-  inline proc max(x: uint(?w), y: uint(w)) return if x > y then x else y;
+  inline proc max(x: uint(?w), y: uint(w)) do return if x > y then x else y;
   pragma "no doc"
-  inline proc max(x: real(?w), y: real(w)) return if (x > y) | isnan(x) then x else y;
+  inline proc max(x: real(?w), y: real(w)) do return if (x > y) | isnan(x) then x else y;
   pragma "no doc"
-  inline proc max(x: int(?w), y: uint(w)) return if x > y then x:uint(w) else y;
+  inline proc max(x: int(?w), y: uint(w)) do return if x > y then x:uint(w) else y;
   pragma "no doc"
-  inline proc max(x: uint(?w), y: int(w)) return if x > y then x else y:uint(w);
+  inline proc max(x: uint(?w), y: int(w)) do return if x > y then x else y:uint(w);
 
   pragma "last resort"
   pragma "no doc"
@@ -1022,7 +1022,7 @@ module AutoMath {
   }
   /* Returns the maximum value of 3 or more arguments using the above call.
    */
-  inline proc max(x, y, z...?k) return max(max(x, y), (...z));
+  inline proc max(x, y, z...?k) do return max(max(x, y), (...z));
   /* Returns the maximum of 2 param ``int``, ``uint``, ``real``, or ``imag``
      values as a param.
    */
@@ -1032,15 +1032,15 @@ module AutoMath {
   }
 
   pragma "no doc"
-  inline proc min(x: int(?w), y: int(w)) return if x < y then x else y;
+  inline proc min(x: int(?w), y: int(w)) do return if x < y then x else y;
   pragma "no doc"
-  inline proc min(x: uint(?w), y: uint(w)) return if x < y then x else y;
+  inline proc min(x: uint(?w), y: uint(w)) do return if x < y then x else y;
   pragma "no doc"
-  inline proc min(x: real(?w), y: real(w)) return if (x < y) | isnan(x) then x else y;
+  inline proc min(x: real(?w), y: real(w)) do return if (x < y) | isnan(x) then x else y;
   pragma "no doc"
-  inline proc min(x: int(?w), y: uint(w)) return if x < y then x else y:int(w);
+  inline proc min(x: int(?w), y: uint(w)) do return if x < y then x else y:int(w);
   pragma "no doc"
-  inline proc min(x: uint(?w), y: int(w)) return if x < y then x:int(w) else y;
+  inline proc min(x: uint(?w), y: int(w)) do return if x < y then x:int(w) else y;
 
   pragma "last resort"
   pragma "no doc"
@@ -1063,7 +1063,7 @@ module AutoMath {
   }
   /* Returns the minimum value of 3 or more arguments using the above call.
    */
-  inline proc min(x, y, z...?k) return min(min(x, y), (...z));
+  inline proc min(x, y, z...?k) do return min(min(x, y), (...z));
   /* Returns the minimum of 2 param ``int``, ``uint``, ``real``, or ``imag``
      values as a param.
    */
@@ -1128,7 +1128,7 @@ module AutoMath {
 
 
   /* Returns a value for which :proc:`isnan` will return `true`. */
-  inline proc NAN param : real(64) return chpl_NAN;
+  inline proc NAN param : real(64) do return chpl_NAN;
 
 
   /* Returns the rounded integral value of the argument `x` determined by the
@@ -1190,25 +1190,25 @@ module AutoMath {
   /* Returns the signum function of the integer argument `i`:
      1 if positive, -1 if negative, 0 if zero.
   */
-  inline proc sgn(i : int(?w)): int(8)
+  inline proc sgn(i : int(?w)): int(8) do
     return ((i > 0) : int(8) - (i < 0) : int(8)) : int(8);
 
   /* Returns the signum function of the unsigned integer argument `i`:
      1 if positive, -1 if negative, 0 if zero.
   */
-  inline proc sgn(i : uint(?w)): uint(8)
+  inline proc sgn(i : uint(?w)): uint(8) do
     return (i > 0) : uint(8);
 
   /* Returns the signum function of the integer param argument `i`:
      1 if positive, -1 if negative, 0 if zero.
   */
-  proc sgn(param i : integral) param
+  proc sgn(param i : integral) param do
     return if i > 0 then 1 else if i == 0 then 0 else -1;
 
   /* Returns the signum function of the real argument `x`:
      1 if positive, -1 if negative, 0 if zero.
   */
-  inline proc sgn(x : real(?w)): int(8)
+  inline proc sgn(x : real(?w)): int(8) do
     return ((x > 0.0) : int(8) - (x < 0.0) : int(8)) : int(8);
 
 

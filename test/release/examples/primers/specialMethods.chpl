@@ -160,7 +160,7 @@ proc R.writeThis(ch: fileWriter) throws {
 {
   // Open the file in a new block so that deinitializers
   // will close it at the end of the block
-  var f = open(filename, iomode.cw);
+  var f = open(filename, ioMode.cw);
   var ch = f.writer();
   ch.writeln(r);
 }
@@ -176,7 +176,7 @@ proc R.readThis(ch: fileReader) throws {
 }
 
 {
-  var f = open(filename, iomode.r);
+  var f = open(filename, ioMode.r);
   var ch = f.reader();
   var r2 = new R();
   ch.readln(r2);
@@ -184,13 +184,13 @@ proc R.readThis(ch: fileReader) throws {
 }
 
 {
-  var chW = openwriter(filename);
+  var chW = openWriter(filename);
   chW.writeln(r);
   chW.flush();
 
   writeln(r);
   var r2 = new R();
-  var chR = openreader(filename);
+  var chR = openReader(filename);
   chR.readln(r2);
   assert(r == r2);
 }

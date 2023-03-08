@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -55,6 +55,10 @@ class Dot final : public AstNode {
       fieldName_(fieldName) {
     CHPL_ASSERT(children_.size() == 1);
   }
+  Dot(Deserializer& des)
+    : AstNode(asttags::Dot, des) {
+    fieldName_ = des.read<UniqueString>();
+  }
   bool contentsMatchInner(const AstNode* other) const override {
     const Dot* lhs = this;
     const Dot* rhs = (const Dot*) other;
@@ -67,6 +71,8 @@ class Dot final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
     fieldName_.mark(context);
   }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
 
  public:
   ~Dot() override = default;
@@ -84,6 +90,13 @@ class Dot final : public AstNode {
   UniqueString field() const {
     return fieldName_;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(fieldName_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Dot);
 };
 
 

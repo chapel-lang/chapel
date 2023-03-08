@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,7 +30,8 @@
 #include "chpl/uast/Cobegin.h"
 
 static void test0(Parser* parser) {
-  auto parseResult = parser->parseString("test0.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test0.chpl",
         "hi();\n"
          ";\n"
          ";\n"
@@ -40,7 +41,7 @@ static void test0(Parser* parser) {
          ";\n"
          "bye();\n");
 
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 8);
@@ -83,11 +84,12 @@ static void test0(Parser* parser) {
 }
 
 static void test1(Parser* parser) {
-  auto parseResult = parser->parseString("test1.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test1.chpl",
         "while true do\n"
          ";\n");
 
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -111,10 +113,11 @@ static void test1(Parser* parser) {
 }
 
 static void test2(Parser* parser) {
-  auto parseResult = parser->parseString("test2.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test2.chpl",
         "cobegin { ; writeln['']; }\n");
 
-  assert(!parseResult.numErrors());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -139,13 +142,14 @@ static void test3(Parser* parser) {
   // error in both the production and dyno compilers"
   // It originated from test/users/thom/topLevelCode.chpl and causes some
   // discrepancy in the test result between dyno and production
-  auto parseResult = parser->parseString("test3.chpl",
+  ErrorGuard guard(parser->context());
+  auto parseResult = parseStringAndReportErrors(parser, "test3.chpl",
         "proc myProc();\n"
         "{\n //comment;\n"
         "}");
 
   // Now has error: "non-extern functions must have a body"!
-  assert(parseResult.numErrors() == 1);
+  assert(guard.realizeErrors() == 1);
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 2);

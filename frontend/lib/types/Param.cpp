@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -268,10 +268,10 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
     switch (imm.string_kind) {
       case STRING_KIND_STRING:
         return {StringParam::get(context, imm.v_string),
-                RecordType::getStringType(context)};
+                CompositeType::getStringType(context)};
       case STRING_KIND_BYTES:
         return {StringParam::get(context, imm.v_string),
-                RecordType::getBytesType(context)};
+                CompositeType::getBytesType(context)};
       case STRING_KIND_C_STRING:
         return {StringParam::get(context, imm.v_string),
                 CStringType::get(context)};
@@ -344,7 +344,7 @@ QualifiedType Param::fold(Context* context,
 
   // convert from Immediate
   std::pair<const Param*, const Type*> pair = immediateToParam(context, result);
-  return QualifiedType(IntentList::PARAM, pair.second, pair.first);
+  return QualifiedType(Qualifier::PARAM, pair.second, pair.first);
 }
 
 void Param::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
@@ -364,6 +364,27 @@ void Param::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
 #undef PARAM_NODE
   }
 
+}
+
+void Param::serialize(Serializer& ser) const {
+  ser.write(tag_);
+}
+
+const Param* Param::deserialize(Deserializer& des) {
+  ParamTag tag = des.read<ParamTag>();
+
+  switch (tag) {
+#define PARAM_NODE(NAME, VALTYPE) \
+    case paramtags::NAME: { \
+      return NAME::deserialize(des); \
+      break; \
+    }
+#include "chpl/types/param-classes-list.h"
+#undef PARAM_NODE
+  }
+
+  assert(false);
+  return nullptr;
 }
 
 uint64_t Param::binStr2uint64(const char* str, size_t len, std::string& err) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -44,6 +44,11 @@ class When final : public SimpleBlockLike {
       numCaseExprs_(numCaseExprs) {
   }
 
+  When(Deserializer& des)
+    : SimpleBlockLike(asttags::When, des) {
+      numCaseExprs_ = des.read<int>();
+    }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const When* rhs = other->toWhen();
     return this->numCaseExprs_ == rhs->numCaseExprs_ &&
@@ -53,6 +58,8 @@ class When final : public SimpleBlockLike {
   void markUniqueStringsInner(Context* context) const override {
     simpleBlockLikeMarkUniqueStringsInner(context);
   }
+  
+  void dumpFieldsInner(const DumpSettings& s) const override;
 
   // The position of this never changes.
   static const int8_t caseExprChildNum_ = 0;
@@ -102,6 +109,13 @@ class When final : public SimpleBlockLike {
   bool isOtherwise() const {
     return numCaseExprs_ == 0;
   }
+
+  void serialize(Serializer& ser) const override {
+    SimpleBlockLike::serialize(ser);
+    ser.write(numCaseExprs_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(When);
 
 };
 

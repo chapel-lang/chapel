@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -36,16 +36,16 @@ bool MultiDecl::isAcceptableMultiDecl() {
 }
 
 owned<MultiDecl> MultiDecl::build(Builder* builder, Location loc,
-                                  owned<Attributes> attributes,
+                                  owned<AttributeGroup> attributeGroup,
                                   Decl::Visibility vis,
                                   Decl::Linkage linkage,
                                   AstList varDecls) {
   AstList lst;
-  int attributesChildNum = -1;
+  int attributeGroupChildNum = NO_CHILD;
 
-  if (attributes.get() != nullptr) {
-    attributesChildNum = lst.size();
-    lst.push_back(std::move(attributes));
+  if (attributeGroup.get() != nullptr) {
+    attributeGroupChildNum = lst.size();
+    lst.push_back(std::move(attributeGroup));
   }
 
   for (auto& ast : varDecls) {
@@ -53,7 +53,7 @@ owned<MultiDecl> MultiDecl::build(Builder* builder, Location loc,
   }
 
 
-  MultiDecl* ret = new MultiDecl(std::move(lst), attributesChildNum,
+  MultiDecl* ret = new MultiDecl(std::move(lst), attributeGroupChildNum,
                                  vis,
                                  linkage);
   builder->noteLocation(ret, loc);

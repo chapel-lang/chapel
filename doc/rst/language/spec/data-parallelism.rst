@@ -515,7 +515,7 @@ iterator         0-based one-dimensional domain
 
    .. code-block:: chapel
    
-      proc square(x: int) return x**2;
+      proc square(x: int) do return x**2;
 
    then the call ``square(A)`` results in the promotion of the
    ``square`` function over the values in the array ``A``. The result is
@@ -746,7 +746,7 @@ reduction applied to all of the elements in the aggregate up to that
 expression. Chapel provides a number of predefined reduction and scan
 operators, and also supports a mechanism for the user to define
 additional reductions and scans
-(Chapter `[User_Defined_Reductions_and_Scans] <#User_Defined_Reductions_and_Scans>`__).
+(:ref:`Chapter-User_Defined_Reductions_and_Scans`).
 
 .. _reduce:
 
@@ -818,7 +818,7 @@ the second argument component.
       config const n = 10;
       const D = {1..n};
       var A: [D] int = [i in D] i % 7;
-      proc foo(x) return x % 7;
+      proc foo(x) do return x % 7;
 
    
 

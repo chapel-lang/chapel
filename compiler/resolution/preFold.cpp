@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,10 +22,10 @@
 
 #include "astutil.h"
 #include "buildDefaultFunctions.h"
+#include "fcf-support.h"
 #include "DecoratedClassType.h"
 #include "DeferStmt.h"
 #include "driver.h"
-#include "firstClassFunctions.h"
 #include "forallOptimizations.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
@@ -46,6 +46,8 @@
 #include "wellknown.h"
 
 #include "global-ast-vecs.h"
+
+#include "chpl/util/version-info.h"
 
 #ifndef __STDC_FORMAT_MACROS
 #define __STDC_FORMAT_MACROS
@@ -112,12 +114,13 @@ Expr* preFold(CallExpr* call) {
     } else {
       if (symExpr->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
           symExpr->getValType()->symbol->hasFlag(FLAG_TUPLE) == false) {
-        // Type constructor calls OK
-      } else if (isLcnSymbol(symExpr->symbol()) == true) {
-        baseExpr->replace(new UnresolvedSymExpr("this"));
 
-        call->insertAtHead(baseExpr);
-        call->insertAtHead(gMethodToken);
+      } else if (isLcnSymbol(symExpr->symbol())) {
+        if (!isFunctionType(symExpr->symbol()->type)) {
+          baseExpr->replace(new UnresolvedSymExpr("this"));
+          call->insertAtHead(baseExpr);
+          call->insertAtHead(gMethodToken);
+        }
       }
 
       if (Expr* tmp = preFoldNamed(call)) {
@@ -785,14 +788,17 @@ static Expr* preFoldPrimOp(CallExpr* call) {
               if (tagResult == TGR_TAGGING_ABORTED ||
                   (tagResult == TGR_NEWLY_TAGGED && fn->isGeneric()))
                 continue;
-              if(isSubtypeOrInstantiation(fn->getFormal(1)->type, testType,call)) {
-                totalTest++;
-                CallExpr* newCall = new CallExpr(PRIM_CAPTURE_FN_FOR_CHPL, new UnresolvedSymExpr(name));
-                fn->defPoint->getStmtExpr()->insertAfter(newCall);
-                auto val = fcfWrapperInstanceFromPrimCall(newCall);
+              if (isSubtypeOrInstantiation(fn->getFormal(1)->type,
+                                          testType,
+                                          call)) {
+                // TODO: Replace me with a function pointer.
+                auto capture = new CallExpr(PRIM_CAPTURE_FN_TO_CLASS,
+                                            new SymExpr(fn));
+                fn->defPoint->getStmtExpr()->insertAfter(capture);
+                Expr* val = resolveExpr(capture);
                 testCaptureVector.push_back(val);
-                newCall->remove();
-                testNameIndex[name] = totalTest;
+                val->remove();
+                testNameIndex[name] = ++totalTest;
               }
             }
           }
@@ -961,23 +967,6 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     break;
   } // PRIM_CALL_RESOLVES, PRIM_METHOD_CALL_RESOLVES
-
-  case PRIM_CAPTURE_FN_FOR_CHPL: {
-    retval = fcfWrapperInstanceFromPrimCall(call);
-    call->replace(retval);
-    break;
-  }
-  case PRIM_CAPTURE_FN_FOR_C: {
-    retval = fcfRawFunctionPointerFromPrimCall(call);
-    call->replace(retval);
-    break;
-  }
-  case PRIM_CREATE_FN_TYPE: {
-    Type* t = fcfWrapperSuperTypeFromFuncFnCall(call);
-    retval = new SymExpr(t->symbol);
-    call->replace(retval);
-    break;
-  }
 
   case PRIM_DEREF: {
     // remove deref if arg is already a value
@@ -2085,7 +2074,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_VERSION_SHA: {
     retval = (get_is_official_release() ?
               new SymExpr(new_StringSymbol("")) :
-              new SymExpr(new_StringSymbol(get_build_version())));
+              new SymExpr(new_StringSymbol(chpl::getCommitHash())));
     call->replace(retval);
     break;
   }

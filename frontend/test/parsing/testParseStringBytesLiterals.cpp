@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,11 +31,12 @@ static uast::BuilderResult parseExprAsVarInit(Parser* parser,
                                               const std::string& testname,
                                               const std::string& init,
                                               const AstNode*& exprOut) {
+  ErrorGuard guard(parser->context());
   std::string toparse = "var x = ";
   toparse += init;
   toparse += ";\n";
-  auto parseResult = parser->parseString(testname.c_str(), toparse.c_str());
-  assert(!parseResult.numErrors());
+  auto parseResult = parseStringAndReportErrors(parser, testname.c_str(), toparse.c_str());
+  assert(!guard.realizeErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
@@ -55,7 +56,7 @@ static void testStringLiteral(Parser* parser,
   auto strLit = initExpr->toStringLiteral();
   assert(strLit);
   assert(strLit->quoteStyle() == expectQuoteStyle);
-  assert(strLit->str().str() == expectValue);
+  assert(strLit->value().str() == expectValue);
 }
 static void testBytesLiteral(Parser* parser,
                              const std::string& testname,
@@ -67,7 +68,7 @@ static void testBytesLiteral(Parser* parser,
   auto bytesLit = initExpr->toBytesLiteral();
   assert(bytesLit);
   assert(bytesLit->quoteStyle() == expectQuoteStyle);
-  assert(bytesLit->str().str() == expectValue);
+  assert(bytesLit->value().str() == expectValue);
 }
 static void testCStringLiteral(Parser* parser,
                                const std::string& testname,
@@ -79,7 +80,7 @@ static void testCStringLiteral(Parser* parser,
   auto strLit = initExpr->toCStringLiteral();
   assert(strLit);
   assert(strLit->quoteStyle() == expectQuoteStyle);
-  assert(strLit->str().str() == expectValue);
+  assert(strLit->value().str() == expectValue);
 }
 
 static void testTripleLiteral(Parser* parser,
@@ -141,11 +142,12 @@ static void testSingleLiteral(Parser* parser,
 static void testBadLiteral(Parser* parser,
                            const char* testname,
                            const char* str) {
+  ErrorGuard guard(parser->context());
   std::string toparse = "var x = ";
   toparse += str;
   toparse += ";\n";
-  auto parseResult = parser->parseString(testname, toparse.c_str());
-  assert(parseResult.numErrors() > 0);
+  auto parseResult = parseStringAndReportErrors(parser, testname, toparse.c_str());
+  assert(guard.realizeErrors() > 0);
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);

@@ -1,6 +1,6 @@
 use BlockDist;
 
-var a = newBlockArr(0..10, int);
+var a = Block.createArray(0..10, int);
 
 forall i in a.domain {
   var d: 11*int;

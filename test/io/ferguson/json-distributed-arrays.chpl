@@ -5,7 +5,7 @@ use IO;
 
 var expect = "[1, 2, 3, 4, 5]";
 
-var expectfile = openmem();
+var expectfile = openMemFile();
 {
   expectfile.writer().write(expect);
   // temporary writer flushed and closed at this curly
@@ -29,7 +29,7 @@ var expectfile = openmem();
 
 {
   writeln("Testing block array");
-  var A = newBlockArr({1..5}, int);
+  var A = Block.createArray({1..5}, int);
   A = 1..5;
 
   writef("%jt\n", A);
@@ -45,7 +45,7 @@ var expectfile = openmem();
 
 {
   writeln("Testing cyclic array");
-  var A = newCyclicArr({1..5}, int);
+  var A = Cyclic.createArray({1..5}, int);
   A = 1..5;
 
   writef("%jt\n", A);

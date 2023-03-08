@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -93,17 +93,17 @@ module LocaleModel {
     }
 
     // top-level locale (node) number
-    override proc chpl_id() return _node_id;
+    override proc chpl_id() do return _node_id;
 
     override proc chpl_localeid() {
       return chpl_buildLocaleID(_node_id:chpl_nodeID_t, c_sublocid_any);
     }
-    override proc chpl_name() return local_name;
+    override proc chpl_name() do return local_name;
 
-    proc getChildSpace() return chpl_emptyLocaleSpace;
+    proc getChildSpace() do return chpl_emptyLocaleSpace;
 
-    override proc getChildCount() return 0;
-    override proc _getChildCount() return 0;
+    override proc getChildCount() do return 0;
+    override proc _getChildCount() do return 0;
 
     iter getChildIndices() : int {
       for idx in chpl_emptyLocaleSpace do
@@ -175,37 +175,37 @@ module LocaleModel {
     // We return numLocales for now, since we expect nodes to be
     // numbered less than this.
     // -1 is used in the abstract locale class to specify an invalid node ID.
-    override proc chpl_id() return numLocales;
+    override proc chpl_id() do return numLocales;
     override proc chpl_localeid() {
       return chpl_buildLocaleID(numLocales:chpl_nodeID_t, c_sublocid_none);
     }
-    override proc chpl_name() return local_name();
-    proc local_name() return "rootLocale";
+    override proc chpl_name() do return local_name();
+    proc local_name() do return "rootLocale";
 
     override proc writeThis(f) throws {
       f.write(name);
     }
 
-    override proc getChildCount() return this.myLocaleSpace.size;
-    override proc _getChildCount() return this.myLocaleSpace.size;
+    override proc getChildCount() do return this.myLocaleSpace.size;
+    override proc _getChildCount() do return this.myLocaleSpace.size;
 
-    proc getChildSpace() return this.myLocaleSpace;
+    proc getChildSpace() do return this.myLocaleSpace;
 
     iter getChildIndices() : int {
       for idx in this.myLocaleSpace do
         yield idx;
     }
 
-    override proc getChild(idx:int) return this.myLocales[idx];
-    override proc _getChild(idx:int) return this.myLocales[idx];
+    override proc getChild(idx:int) do return this.myLocales[idx];
+    override proc _getChild(idx:int) do return this.myLocales[idx];
 
     iter getChildren() : locale  {
       for loc in this.myLocales do
         yield loc;
     }
 
-    override proc getDefaultLocaleSpace() const ref return this.myLocaleSpace;
-    override proc getDefaultLocaleArray() const ref return myLocales;
+    override proc getDefaultLocaleSpace() const ref do return this.myLocaleSpace;
+    override proc getDefaultLocaleArray() const ref do return myLocales;
 
     override proc localeIDtoLocale(id : chpl_localeID_t) {
       // In the default architecture, there are only nodes and no sublocales.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -282,6 +282,7 @@ void ResolveScope::addBuiltIns() {
   extend(gLocal);
   extend(gWarnUnstable);
   extend(gNodeID);
+  extend(gUseIOFormatters);
 
   extend(gInfinity);
   extend(gNan);
@@ -830,12 +831,14 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
 
     outerMod = toModuleSymbol(retval);
 
-    if (outerMod->hasFlag(FLAG_DEPRECATED)) {
-      outerMod->generateDeprecationWarning(call);
-    }
+    if (!fDynoCompilerLibrary) {
+      if (outerMod->hasFlag(FLAG_DEPRECATED)) {
+        outerMod->generateDeprecationWarning(call);
+      }
 
-    if (outerMod->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
-      outerMod->generateUnstableWarning(call);
+      if (outerMod->hasFlag(FLAG_UNSTABLE) && (fWarnUnstable)) {
+        outerMod->generateUnstableWarning(call);
+      }
     }
 
     const char* rhsName = getNameFrom(call->get(2));

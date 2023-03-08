@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,6 +37,9 @@ class Zip final : public Call {
            /*hasCalledExpression*/ false) {
   }
 
+  Zip(Deserializer& des)
+    : Call(asttags::Zip, des) { }
+
   bool contentsMatchInner(const AstNode* other) const override {
     return callContentsMatchInner(other->toCall());
   }
@@ -52,6 +55,12 @@ class Zip final : public Call {
     Create and return a zip expression.
   */
   static owned<Zip> build(Builder* builder, Location loc, AstList actuals);
+
+  void serialize(Serializer& ser) const override {
+    Call::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Zip);
 
 };
 

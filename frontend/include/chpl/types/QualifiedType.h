@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,7 +21,7 @@
 #define CHPL_TYPES_QUALIFIEDTYPE_H
 
 #include "chpl/framework/update-functions.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/util/hash.h"
 #include "chpl/framework/stringify-functions.h"
 #include "chpl/types/Type.h"
@@ -44,28 +44,29 @@ class Type;
  */
 class QualifiedType final {
  public:
-  using Kind = uast::IntentList;
+  using Kind = uast::Qualifier;
 
   // instead of the below,
-  // could use 'using enum uast::IntentList' in C++20
-  static const Kind UNKNOWN = uast::IntentList::UNKNOWN;
-  static const Kind DEFAULT_INTENT = uast::IntentList::DEFAULT_INTENT;
-  static const Kind CONST_INTENT = uast::IntentList::CONST_INTENT;
-  static const Kind VAR = uast::IntentList::VAR;
-  static const Kind CONST_VAR = uast::IntentList::CONST_VAR;
-  static const Kind CONST_REF = uast::IntentList::CONST_REF;
-  static const Kind REF = uast::IntentList::REF;
-  static const Kind IN = uast::IntentList::IN;
-  static const Kind CONST_IN = uast::IntentList::CONST_IN;
-  static const Kind OUT = uast::IntentList::OUT;
-  static const Kind INOUT = uast::IntentList::INOUT;
-  static const Kind PARAM = uast::IntentList::PARAM;
-  static const Kind TYPE = uast::IntentList::TYPE;
-  static const Kind TYPE_QUERY = uast::IntentList::TYPE_QUERY;
-  static const Kind INDEX = uast::IntentList::INDEX;
-  static const Kind FUNCTION = uast::IntentList::FUNCTION;
-  static const Kind PARENLESS_FUNCTION = uast::IntentList::PARENLESS_FUNCTION;
-  static const Kind MODULE = uast::IntentList::MODULE;
+  // could use 'using enum uast::Qualifier' in C++20
+  static const Kind UNKNOWN = uast::Qualifier::UNKNOWN;
+  static const Kind DEFAULT_INTENT = uast::Qualifier::DEFAULT_INTENT;
+  static const Kind CONST_INTENT = uast::Qualifier::CONST_INTENT;
+  static const Kind REF_MAYBE_CONST = uast::Qualifier::REF_MAYBE_CONST;
+  static const Kind VAR = uast::Qualifier::VAR;
+  static const Kind CONST_VAR = uast::Qualifier::CONST_VAR;
+  static const Kind CONST_REF = uast::Qualifier::CONST_REF;
+  static const Kind REF = uast::Qualifier::REF;
+  static const Kind IN = uast::Qualifier::IN;
+  static const Kind CONST_IN = uast::Qualifier::CONST_IN;
+  static const Kind OUT = uast::Qualifier::OUT;
+  static const Kind INOUT = uast::Qualifier::INOUT;
+  static const Kind PARAM = uast::Qualifier::PARAM;
+  static const Kind TYPE = uast::Qualifier::TYPE;
+  static const Kind TYPE_QUERY = uast::Qualifier::TYPE_QUERY;
+  static const Kind INDEX = uast::Qualifier::INDEX;
+  static const Kind FUNCTION = uast::Qualifier::FUNCTION;
+  static const Kind PARENLESS_FUNCTION = uast::Qualifier::PARENLESS_FUNCTION;
+  static const Kind MODULE = uast::Qualifier::MODULE;
 
   static const char* kindToString(Kind k);
 
@@ -179,24 +180,20 @@ class QualifiedType final {
     In particular, returns true for all kinds other than REF and VALUE.
    */
   bool isConst() const {
-    return kind_ == Kind::CONST_INTENT ||
-           kind_ == Kind::CONST_VAR ||
-           kind_ == Kind::CONST_REF ||
-           kind_ == Kind::CONST_IN ||
-           kind_ == Kind::PARAM ||
-           kind_ == Kind::TYPE ||
-           kind_ == Kind::FUNCTION ||
-           kind_ == Kind::MODULE;
+    return uast::isConstQualifier(kind_);
   }
   /** Returns true if the type refers to something immutable
       (that cannot be modified by any task / other reference to it). */
   bool isImmutable() const {
-    return kind_ == Kind::CONST_VAR ||
-           kind_ == Kind::CONST_IN ||
-           kind_ == Kind::PARAM ||
-           kind_ == Kind::TYPE ||
-           kind_ == Kind::FUNCTION ||
-           kind_ == Kind::MODULE;
+    return uast::isImmutableQualifier(kind_);
+  }
+
+  /**
+    Returns true if the kind is one of the non-concrete intents
+    (unknown, default intent, or const intent) and false otherwise.
+   */
+  bool isNonConcreteIntent() const {
+    return uast::isGenericQualifier(kind_);
   }
 
   bool operator==(const QualifiedType& other) const {

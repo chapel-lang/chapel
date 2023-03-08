@@ -1,0 +1,4 @@
+regexSubSubn.chpl:6: warning: regex.sub is deprecated. Please use string.replace.
+regexSubSubn.chpl:7: warning: regex.subn is deprecated. Please use string.replaceAndCount.
+x
+(x, 0)

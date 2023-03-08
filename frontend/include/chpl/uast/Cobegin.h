@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -55,6 +55,12 @@ class Cobegin final : public AstNode {
       numTaskBodies_(numTaskBodies) {
   }
 
+  Cobegin(Deserializer& des) : AstNode(asttags::Cobegin, des) {
+    withClauseChildNum_ = des.read<int8_t>();
+    bodyChildNum_ = des.read<int>();
+    numTaskBodies_ = des.read<int>();
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Cobegin* lhs = this;
     const Cobegin* rhs = (const Cobegin*) other;
@@ -73,6 +79,8 @@ class Cobegin final : public AstNode {
 
   void markUniqueStringsInner(Context* context) const override {
   }
+
+  std::string dumpChildLabelInner(int i) const override;
 
   int8_t withClauseChildNum_;
   int bodyChildNum_;
@@ -122,6 +130,15 @@ class Cobegin final : public AstNode {
     const AstNode* ast = this->child(i + bodyChildNum_);
     return ast;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(withClauseChildNum_ );
+    ser.write(bodyChildNum_);
+    ser.write(numTaskBodies_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Cobegin);
 
 };
 

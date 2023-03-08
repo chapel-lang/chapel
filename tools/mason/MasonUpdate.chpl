@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -74,7 +74,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
     const projectHome = getProjectHome(cwd, tf);
     const tomlPath = projectHome + "/" + Path.relPath(tf);
     const lockPath = projectHome + "/" + Path.relPath(lf);
-    const openFile = openreader(tomlPath);
+    const openFile = openReader(tomlPath);
     const TomlFile = parseToml(openFile);
     var updated = false;
     if isFile(tomlPath) {
@@ -119,7 +119,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
 
 /* Writes out the lock file */
 proc genLock(lock: borrowed Toml, lf: string) {
-  const lockFile = open(lf, iomode.cw);
+  const lockFile = open(lf, ioMode.cw);
   const tomlWriter = lockFile.writer();
   tomlWriter.writeln(lock);
   tomlWriter.close();
@@ -422,7 +422,7 @@ private proc retrieveDep(name: string, version: string) {
   for cached in MASON_CACHED_REGISTRY {
     const tomlPath = cached + "/Bricks/"+name+"/"+version+".toml";
     if isFile(tomlPath) {
-      var tomlFile = open(tomlPath, iomode.r);
+      var tomlFile = open(tomlPath, ioMode.r);
       var depToml = parseToml(tomlFile);
       return depToml;
     }
@@ -448,7 +448,7 @@ private proc retrieveGitDep(name: string, branch: string) {
   var baseDir = MASON_HOME +'/git/';
   const tomlPath = baseDir + "/"+name+"-"+branch+"/Mason.toml";
   if isFile(tomlPath) {
-    var tomlFile = open(tomlPath, iomode.r);
+    var tomlFile = open(tomlPath, ioMode.r);
     var depToml = parseToml(tomlFile);
     return depToml;
   }
@@ -462,7 +462,7 @@ private proc retrieveGitDep(name: string, branch: string) {
 private proc getDependencies(tomlTbl: Toml) {
   var depsD: domain(1);
   var deps: list((string, shared Toml?));
-  for k in tomlTbl.A {
+  for k in tomlTbl.A.keys() {
     if k == "dependencies" {
       for (a,d) in allFields(tomlTbl[k]!) {
         deps.append((a, d));
@@ -474,7 +474,7 @@ private proc getDependencies(tomlTbl: Toml) {
 
 private proc getGitDeps(tomlTbl: Toml) {
   var gitDeps: list((string, string, shared Toml?));
-  for k in tomlTbl["dependencies"]!.A {
+  for k in tomlTbl["dependencies"]!.A.keys() {
     for (a, d) in allFields(tomlTbl["dependencies"]![k]!) {
       // name, type of field (url, branch, etc.), toml that it is set to
       gitDeps.append((k, a, d));
@@ -505,7 +505,7 @@ private proc pullGitDeps(gitDeps, show=false) {
   // Pull git repositories so that we can have access to the
   // current revision and TOML file to get dependencies
   var baseDir = MASON_HOME +'/git/';
-  for val in gitDepMap {
+  for val in gitDepMap.keys() {
     var (srcURL, origBranch, revision) = gitDepMap[val];
 
     // Default to head if branch isn't specified

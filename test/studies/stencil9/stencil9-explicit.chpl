@@ -1,4 +1,4 @@
-use BlockDist, Barriers;
+use BlockDist, Collectives;
 
 config const n = 10;
 
@@ -80,7 +80,7 @@ var LocalDomArrs: [LocaleGridDom] unmanaged DomArr?;
 var numIters: atomic int;
 
 
-var b = new Barrier(LocaleGridDom.size);
+var b = new barrier(LocaleGridDom.size);
 
 coforall (lr,lc) in LocaleGridDom {
   on LocaleGrid[lr,lc] {

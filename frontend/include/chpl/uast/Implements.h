@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -78,6 +78,11 @@ class Implements final : public AstNode {
            interfaceExpr()->isFnCall());
   }
 
+  Implements(Deserializer& des)
+    : AstNode(asttags::Implements, des) {
+      typeIdentChildNum_ = des.read<int8_t>();
+      isExpressionLevel_ = des.read<bool>();
+    }
   bool contentsMatchInner(const AstNode* other) const override {
     const Implements* lhs = this;
     const Implements* rhs = (const Implements*) other;
@@ -86,6 +91,9 @@ class Implements final : public AstNode {
   }
 
   void markUniqueStringsInner(Context* context) const override {}
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
 
  public:
   ~Implements() override = default;
@@ -164,6 +172,15 @@ class Implements final : public AstNode {
                                  owned<Identifier> typeIdent,
                                  owned<AstNode> interfaceExpr,
                                  bool isExpressionLevel);
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(typeIdentChildNum_);
+    ser.write(isExpressionLevel_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Implements);
+
 };
 
 

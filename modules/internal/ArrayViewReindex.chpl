@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -72,7 +72,7 @@ module ArrayViewReindex {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    override proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param do
       return downDistInst.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -272,7 +272,7 @@ module ArrayViewReindex {
       return downdom.dsiTargetLocales();
     }
 
-    proc dsiHasSingleLocalSubdomain() param
+    proc dsiHasSingleLocalSubdomain() param do
       return downdom.dsiHasSingleLocalSubdomain();
 
     proc dsiLocalSubdomain(loc: locale) {
@@ -304,21 +304,21 @@ module ArrayViewReindex {
     // These would be forwarded to 'updom' automatically,
     // except the "last resort" overloads BaseDom take precedence
     // over forwarding. So, define these explicitly.
-    proc parSafe param return updom.parSafe;
-    override proc dsiLow return updom.dsiLow;
-    override proc dsiHigh return updom.dsiHigh;
-    override proc dsiStride return updom.dsiStride;
-    override proc dsiAlignment return updom.dsiAlignment;
-    override proc dsiFirst return updom.dsiFirst;
-    override proc dsiLast return updom.dsiLast;
-    override proc dsiAlignedLow return updom.dsiAlignedLow;
-    override proc dsiAlignedHigh return updom.dsiAlignedHigh;
-    override proc dsiIndexOrder(i) return updom.dsiIndexOrder(i);
-    override proc dsiCreateIndexBuffer(size) return updom.dsiCreateIndexBuffer(size);
+    proc parSafe param do return updom.parSafe;
+    override proc dsiLow do return updom.dsiLow;
+    override proc dsiHigh do return updom.dsiHigh;
+    override proc dsiStride do return updom.dsiStride;
+    override proc dsiAlignment do return updom.dsiAlignment;
+    override proc dsiFirst do return updom.dsiFirst;
+    override proc dsiLast do return updom.dsiLast;
+    override proc dsiAlignedLow do return updom.dsiAlignedLow;
+    override proc dsiAlignedHigh do return updom.dsiAlignedHigh;
+    override proc dsiIndexOrder(i) do return updom.dsiIndexOrder(i);
+    override proc dsiCreateIndexBuffer(size) do return updom.dsiCreateIndexBuffer(size);
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    override proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param do
       return downdomInst.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -430,15 +430,15 @@ module ArrayViewReindex {
 
     // these could be fields, but indirecting works just as well and
     // makes the class less generic.
-    proc idxType type return dom.idxType;
-    proc rank param return dom.rank;
+    proc idxType type do return dom.idxType;
+    proc rank param do return dom.rank;
 
     // The following seems like it ought to work, but it causes an
     // error in the compiler for non-devel mode...  presumably due to
     // a direct query of eltType in the compiler(?).  As a TODO we
     // might want to hunt this down in the future...
     //
-    //  proc eltType type return arr.eltType;
+    //  proc eltType type do return arr.eltType;
 
 
     //
@@ -562,14 +562,14 @@ module ArrayViewReindex {
       }
     }
 
-    inline proc dsiLocalAccess(i) ref
+    inline proc dsiLocalAccess(i) ref do
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
 
     inline proc dsiLocalAccess(i)
-      where shouldReturnRvalueByValue(eltType)
+      where shouldReturnRvalueByValue(eltType) do
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
 
-    inline proc dsiLocalAccess(i) const ref
+    inline proc dsiLocalAccess(i) const ref do
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
 
     inline proc dsiBoundsCheck(i) {
@@ -580,7 +580,7 @@ module ArrayViewReindex {
     // locality-oriented queries
     //
 
-    proc dsiHasSingleLocalSubdomain() param
+    proc dsiHasSingleLocalSubdomain() param do
       return privDom.dsiHasSingleLocalSubdomain();
 
     proc dsiLocalSubdomain(loc: locale) {
@@ -593,7 +593,7 @@ module ArrayViewReindex {
 
     // Don't want to privatize a DefaultRectangular, so pass the query on to
     // the wrapped array
-    override proc dsiSupportsPrivatization() param
+    override proc dsiSupportsPrivatization() param do
       return _ArrInstance.dsiSupportsPrivatization();
 
     proc dsiGetPrivatizeData() {
@@ -696,7 +696,7 @@ module ArrayViewReindex {
       }
     }
 
-    override proc doiCanBulkTransferRankChange() param
+    override proc doiCanBulkTransferRankChange() param do
       return arr.doiCanBulkTransferRankChange();
 
     proc doiBulkTransferFromKnown(destDom, srcClass, srcDom) : bool {

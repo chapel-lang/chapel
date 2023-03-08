@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -49,6 +49,7 @@ PRIMITIVE_R(INIT_FIELD, "init field")
 PRIMITIVE_R(INIT_VAR, "init var")
 PRIMITIVE_R(INIT_VAR_SPLIT_DECL, "init var split decl")
 PRIMITIVE_R(INIT_VAR_SPLIT_INIT, "init var split init")
+PRIMITIVE_R(INIT_DONE, "init done")
 
 PRIMITIVE_G(REF_TO_STRING, "ref to string")
 PRIMITIVE_G(RETURN, "return")
@@ -249,8 +250,8 @@ PRIMITIVE_G(PRIVATE_BROADCAST, "_private_broadcast")
 
 PRIMITIVE_G(INT_ERROR, "_internal_error")
 
-PRIMITIVE_R(CAPTURE_FN_FOR_CHPL, "capture fn for chpl")
-PRIMITIVE_R(CAPTURE_FN_FOR_C, "capture fn for C")
+PRIMITIVE_R(CAPTURE_FN, "capture fn")
+PRIMITIVE_R(CAPTURE_FN_TO_CLASS, "capture fn to class")
 PRIMITIVE_R(CREATE_FN_TYPE, "create fn type")
 
 PRIMITIVE_G(STRING_COMPARE, "string_compare")
@@ -266,6 +267,7 @@ PRIMITIVE_G(STRING_COPY, "string_copy")
 PRIMITIVE_G(STRING_SELECT, "string_select")
 
 PRIMITIVE_G(CAST_TO_VOID_STAR, "cast_to_void_star")
+PRIMITIVE_G(CAST_TO_TYPE, "cast_to_type")
 
 PRIMITIVE_G(SLEEP, "sleep")
 PRIMITIVE_G(REAL_TO_INT, "real2int")

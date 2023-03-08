@@ -10,7 +10,7 @@ class PlusReduceOp: ReduceScanOp {
   var value: eltType;
 
   /* identity w.r.t. the reduction operation */
-  proc identity         return 0: eltType;
+  proc identity do         return 0: eltType;
 
   /* accumulate a single element onto the accumulator */
   proc accumulate(elm)  { value = value + elm; }
@@ -32,10 +32,10 @@ class PlusReduceOp: ReduceScanOp {
 
   /* Convert the accumulation into the value of the reduction
      that is reported to the user. This is trivial in our case. */
-  proc generate()       return value;
+  proc generate() do       return value;
 
   /* produce a new instance of this class */
-  proc clone()          return new unmanaged PlusReduceOp(eltType=eltType);
+  proc clone() do          return new unmanaged PlusReduceOp(eltType=eltType);
 }
 
 {

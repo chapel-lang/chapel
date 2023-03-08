@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -42,9 +42,18 @@ namespace uast {
  */
 class Array final : public AstNode {
  private:
-  // TODO: Record if initializer list has trailing comma?
-  Array(AstList children)
+
+  bool trailingComma_,
+       associative_;
+  
+  Array(AstList children, bool trailingComma, bool associative)
     : AstNode(asttags::Array, std::move(children)) {
+    trailingComma_ = trailingComma;
+    associative_ = associative;
+  }
+
+  Array(Deserializer& des)
+    : AstNode(asttags::Array, des) {
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -54,6 +63,8 @@ class Array final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
   }
 
+  void dumpInner(const DumpSettings& s) const;
+
  public:
   ~Array() override = default;
 
@@ -61,8 +72,12 @@ class Array final : public AstNode {
    Create and return an Array expression.
    */
   static owned<Array> build(Builder* builder, Location loc,
-                            AstList exprs);
+                            AstList exprs, bool trailingComma=false,
+                            bool associative=false);
 
+  bool hasTrailingComma() const { return this->trailingComma_; }
+  bool isAssociative() const { return this->associative_; }
+  
   /**
     Return a way to iterate over the expressions of this array.
   */
@@ -85,6 +100,12 @@ class Array final : public AstNode {
     const AstNode* ast = this->child(i);
     return ast;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Array);
 
 };
 

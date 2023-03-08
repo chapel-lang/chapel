@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,6 +37,11 @@ class BoolLiteral final : public Literal {
     : Literal(asttags::BoolLiteral, value) {
   }
 
+  BoolLiteral(Deserializer& des)
+    : Literal(asttags::BoolLiteral, des) {
+    assert(value_->isBoolParam());
+  }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const BoolLiteral* rhs = (const BoolLiteral*) other;
     return literalContentsMatchInner(rhs);
@@ -45,6 +50,8 @@ class BoolLiteral final : public Literal {
   void markUniqueStringsInner(Context* context) const override {
     literalMarkUniqueStringsInner(context);
   }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
 
  public:
   ~BoolLiteral() override = default;
@@ -62,6 +69,13 @@ class BoolLiteral final : public Literal {
     auto p = (const types::BoolParam*) value_;
     return p->value() != 0;
   }
+
+  void serialize(Serializer& ser) const override {
+    Literal::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(BoolLiteral);
+
 };
 
 

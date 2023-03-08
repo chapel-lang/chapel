@@ -1,5 +1,5 @@
-proc mytuple return (1,2,3);
-proc f(arg:int) return arg;
+proc mytuple do return (1,2,3);
+proc f(arg:int) do return arg;
 
 class NotDomainString {
   type t;
@@ -23,4 +23,4 @@ class CC {
   proc this(idx: int):owned RR { return new owned RR(); }
 }
 
-proc f(arg: CC): RR return arg;
+proc f(arg: CC): RR do return arg;

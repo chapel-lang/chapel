@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -350,8 +350,8 @@ proc getChapelVersionInfo(): VersionInfo {
       }
 
       const semverPattern = "(\\d+\\.\\d+\\.\\d+)";
-      var master  = compile(semverPattern + " pre-release (\\([a-z0-9]+\\))");
-      var release = compile(semverPattern);
+      var master  = new regex(semverPattern + " pre-release (\\([a-z0-9]+\\))");
+      var release = new regex(semverPattern);
 
       var semver, sha : string;
       var isMaster: bool;
@@ -530,7 +530,7 @@ proc depExists(dependency: string, repo='/src/') {
 proc getProjectType(): string throws {
   const cwd = here.cwd();
   const projectHome = getProjectHome(cwd);
-  const toParse = open(projectHome + "/Mason.toml", iomode.r);
+  const toParse = open(projectHome + "/Mason.toml", ioMode.r);
   const tomlFile = parseToml(toParse);
   if !tomlFile.pathExists("brick.type") then
     throw new owned MasonError('Type not found in TOML file; please add a type="application" key');
@@ -542,7 +542,7 @@ proc getProjectType(): string throws {
    not found, throw an error. TODO: Currently does not check
    on the version. */
 proc getDepToml(depName: string, depVersion: string) throws {
-  const pattern = compile(depName, ignoreCase=true);
+  const pattern = new regex(depName, ignoreCase=true);
 
   var packages: list(string);
   var versions: list(string);
@@ -568,7 +568,7 @@ proc getDepToml(depName: string, depVersion: string) throws {
 
   if results.size > 0 {
     const brickPath = '/'.join(registries[0], 'Bricks', packages[0], versions[0]) + '.toml';
-    const openFile = openreader(brickPath);
+    const openFile = openReader(brickPath);
     const toml = parseToml(openFile);
 
     return toml;
@@ -598,7 +598,7 @@ proc findLatest(packageDir: string): VersionInfo {
     // Skip packages that are out of version bounds
     const chplVersion = getChapelVersionInfo();
 
-    const manifestReader = openreader(packageDir + '/' + manifest);
+    const manifestReader = openReader(packageDir + '/' + manifest);
     const manifestToml = parseToml(manifestReader);
     const brick = manifestToml['brick'];
     var (low, high) = parseChplVersion(brick);
@@ -677,9 +677,9 @@ proc checkChplVersion(chplVersion, low, high) throws {
       var ret : VersionInfo;
 
       // Finds 'x.x' or 'x.x.x' where x is a positive number
-      const pattern = "^(\\d+\\.\\d+(\\.\\d+)?)$";
+      const pattern = new regex("^(\\d+\\.\\d+(\\.\\d+)?)$");
       var semver : string;
-      if compile(pattern).match(ver, semver).matched == false {
+      if pattern.match(ver, semver).matched == false {
         throw new owned MasonError("Invalid Chapel version format: " + ver + formatMessage);
       }
       const nums = for s in semver.split(".") do s:int;
@@ -722,7 +722,7 @@ proc splitNameVersion(ref package: string, original: bool) {
 
 /* Print a TOML file. Expects full path. */
 proc showToml(tomlFile : string) {
-  const openFile = openreader(tomlFile);
+  const openFile = openReader(tomlFile);
   const toml = parseToml(openFile);
   writeln(toml);
   openFile.close();
@@ -769,7 +769,7 @@ proc InitProject(dirName, packageName, vcs, show,
 /* Iterator to collect fields from a toml
    TODO custom fields returned */
 iter allFields(tomlTbl: Toml) {
-  for (k,v) in tomlTbl.A.items() {
+  for (k,v) in zip(tomlTbl.A.keys(), tomlTbl.A.values()) {
     if v!.tag == fieldtag.fieldToml then
       continue;
     else yield(k,v);

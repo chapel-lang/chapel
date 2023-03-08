@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -347,11 +347,18 @@ bool isChplSource(const char* filename) {
   return retval;
 }
 
+bool isDynoLib(const char* filename) {
+  bool retval = checkSuffix(filename, "dyno");
+  if (retval) foundChplSource = true;
+  return retval;
+}
+
 static bool isRecognizedSource(const char* filename) {
   return (isCSource(filename) ||
           isCHeader(filename) ||
           isObjFile(filename) ||
-          isChplSource(filename));
+          isChplSource(filename) ||
+          isDynoLib(filename));
 }
 
 

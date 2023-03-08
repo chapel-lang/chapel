@@ -652,7 +652,7 @@ type:
     | non-managed classes     | ``const in``         | ``const in``            |                                                      |
     |                         |                      |                         |                                                      |
     | (``borrowed``,          |                      |                         |                                                      |
-    | ``umanaged``)           |                      |                         |                                                      |
+    | ``unmanaged``)          |                      |                         |                                                      |
     +-------------------------+----------------------+-------------------------+------------------------------------------------------+
     | tuples                  | per-element          | per-element             | see :ref:`Tuple_Argument_Intents`                    |
     +-------------------------+----------------------+-------------------------+------------------------------------------------------+
@@ -777,7 +777,7 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
 
    .. code-block:: chapel
 
-      proc sum(x: int...3) return x(0) + x(1) + x(2);
+      proc sum(x: int...3) do return x(0) + x(1) + x(2);
 
    
 
@@ -804,7 +804,7 @@ homogeneous tuple, otherwise it will be a heterogeneous tuple.
 
    .. code-block:: chapel
 
-      proc tuple(x ...) return x;
+      proc tuple(x ...) do return x;
 
    
 
@@ -976,7 +976,7 @@ during compilation and substituted for the call expression.
 
    .. code-block:: chapel
 
-      proc sumOfSquares(param a: int, param b: int) param
+      proc sumOfSquares(param a: int, param b: int) param do
         return a**2 + b**2;
 
       var x: sumOfSquares(2, 3)*int;
@@ -1068,11 +1068,12 @@ A procedure can return a value by executing a return statement that
 includes an expression. If it does, that expression’s value becomes the
 value of the invoking call expression.
 
-A return statement in a procedure of a non-\ ``void`` return type
-(:ref:`Return_Types`) must include an expression. A return
-statement in a procedure of a ``void`` return type or in an iterator
-must not include an expression. A return statement of a variable
-procedure must contain an lvalue expression.
+A return statement in a procedure of a ``void`` return type
+(:ref:`Return_Types`) or in an iterator must not include an
+expression.  A return statement in a procedure of a non-\ ``void``
+return type must include an expression.  For procedures with ``ref``
+or ``const ref`` return intent, the expression must have storage
+associated with it that will outlive the procedure itself.
 
 The statements following a return statement in the same block
 are ignored by the compiler because they cannot be executed.
@@ -1093,7 +1094,7 @@ The syntax of the return statement is given by
 
    .. code-block:: chapel
 
-      proc sum(i1: int, i2: int, i3: int)
+      proc sum(i1: int, i2: int, i3: int) do
         return i1 + i2 + i3;
 
    
@@ -1485,8 +1486,9 @@ mapping:
 1. If one of the formals requires promotion and the other does not, the
    formal not requiring promotion is better
 
-2. If one of the formals is less generic than the other formal, the
-   less-generic formal is better
+2. If both of the formals have the same type after instantiation and one
+   of the formals is less generic than the other formal, the less-generic
+   formal is better
 
 3. If one of the formals is ``param`` and the other is not, the ``param``
    formal is better

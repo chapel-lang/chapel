@@ -5,7 +5,7 @@ const NUMBYTES = 1032;
 
 // array is larger than necessary to fit the whole file...
 var a : [0..<1100] uint(8) = 0;
-var ch = openreader("./jab.txt");
+var ch = openReader("./jab.txt");
 const num_b = ch.readAll(a);
 ch.close();
 

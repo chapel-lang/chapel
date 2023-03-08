@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -38,6 +38,10 @@ class UintLiteral final : public NumericLiteral<uint64_t, types::UintParam> {
     : NumericLiteral(asttags::UintLiteral, value, text)
   { }
 
+  UintLiteral(Deserializer& des)
+    : NumericLiteral(asttags::UintLiteral, des)
+  { }
+
   // contentsMatchInner / markUniqueStringsInner are in NumericLiteral
   // and would need to be defined here if any fields are added.
 
@@ -46,6 +50,12 @@ class UintLiteral final : public NumericLiteral<uint64_t, types::UintParam> {
 
   static owned<UintLiteral> build(Builder* builder, Location loc,
                                   uint64_t value, UniqueString text);
+
+  void serialize(Serializer& ser) const override {
+    NumericLiteral::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(UintLiteral);
 };
 
 

@@ -34,13 +34,13 @@ proc main() {
 
   initVectors(Twiddles, z);
 
-  const startTime = getCurrentTime();
+  const startTime = timeSinceEpoch().totalSeconds();
 
   Z = conjg(z);
   bitReverseShuffle(Z);
   dfft(Z, Twiddles);
 
-  const execTime = getCurrentTime() - startTime;
+  const execTime = timeSinceEpoch().totalSeconds() - startTime;
 
   const validAnswer = verifyResults(z, Z, Twiddles);
   printResults(validAnswer, execTime);
@@ -164,7 +164,7 @@ proc butterfly(wk1, wk2, wk3, inout A:[?D]) {
 }
 
 
-proc log4(x) return logBasePow2(x, 2);
+proc log4(x) do return logBasePow2(x, 2);
 
 
 proc verifyResults(z, Z, Twiddles) {

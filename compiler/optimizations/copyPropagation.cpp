@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -193,13 +193,12 @@ static bool needsKilling(SymExpr* se, std::set<Symbol*>& liveRefs)
 
   CallExpr* call = toCallExpr(se->parentExpr);
 
+  // Skip the "base" symbol.
+  if (call && se == call->baseExpr) return false;
+
   if (FnSymbol* fn = call->resolvedFunction())
   {
-    // Skip the "base" symbol.
-    if (se->symbol() == fn)
-    {
-      return false;
-    }
+    INT_ASSERT(se->symbol() != fn);
 
     ArgSymbol* arg = actual_to_formal(se);
 
@@ -365,9 +364,8 @@ static bool isUse(SymExpr* se)
     if (arg->intent == INTENT_OUT ||
         (arg->intent & INTENT_FLAG_REF))
       return false;
-
   }
-  else
+  else if (call->primitive)
   {
     INT_ASSERT(call->primitive);
     const bool isFirstActual = call->get(1) == se;
@@ -465,6 +463,26 @@ static bool isUse(SymExpr* se)
 
       return true;
     }
+  }
+  else if (auto ft = toFunctionType(call->baseExpr->qualType().type()))
+  {
+
+    // Not a use according to note #2.
+    if (se == call->baseExpr) return false;
+
+    // Mimick the implementation of 'formal_to_actual'.
+    int idx = 0;
+    for_actuals(actual, call) {
+      if (actual == se) break;
+      idx++;
+    }
+
+    INT_ASSERT(0 <= idx && idx < ft->numFormals());
+    auto intent = ft->formal(idx)->intent;
+
+    if (intent == INTENT_OUT || (intent & INTENT_FLAG_REF)) return false;
+  } else {
+    INT_FATAL(se, "unhandled");
   }
 
   return true;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -66,7 +66,6 @@ static void codegenAssign(GenRet to_ptr, GenRet from);
 static GenRet codegenCast(Type* t, GenRet value, bool Cparens = true);
 static GenRet codegenCastToVoidStar(GenRet value);
 static bool codegenIsSpecialPrimitive(BaseAST* target, Expr* e, GenRet& ret);
-#define createTempRef(t) createTempVar(t)
 
 // These functions operate on wide pointers. There are several different
 // kinds of wide pointers:
@@ -101,6 +100,8 @@ typedef void* ClangFunctionDeclPtr;
  * be added to the list of statements.
  */
 
+static GenRet codegenCallExprInner(GenRet genFn, std::vector<GenRet>& args,
+                                   FunctionType* chplFnType);
 static GenRet codegenCallExprInner(GenRet function, std::vector<GenRet> & args,
                                    FnSymbol* fn, ClangFunctionDeclPtr FD,
                                    bool defaultToValues);
@@ -1453,7 +1454,7 @@ GenRet createTempVarWith(GenRet v)
   GenInfo* info = gGenInfo;
   Type* t = v.chplType;
   INT_ASSERT(t);
-  GenRet ret = createTempRef(t);
+  GenRet ret = createTempVar(t);
   ret.isUnsigned = v.isUnsigned;
   // now store into the temp var the value we have.
   if( info->cfile ) {
@@ -1488,7 +1489,7 @@ GenRet codegenValue(GenRet r)
     // Emit a temporary.
     // Assign from wide pointer value into temporary
     // Return local pointer to temporary
-    ret = createTempRef(r.chplType);
+    ret = createTempVar(r.chplType);
     codegenAssign(ret, r);
     return codegenValue(ret);
   }
@@ -2166,11 +2167,8 @@ GenRet codegenTernary(GenRet cond, GenRet ifTrue, GenRet ifFalse)
 
     func->getBasicBlockList().push_back(blockEnd);
     info->irBuilder->SetInsertPoint(blockEnd);
-#if HAVE_LLVM_VER >= 130
-    ret.val = info->irBuilder->CreateLoad(tmp->getType()->getPointerElementType(), tmp);
-#else
-    ret.val = info->irBuilder->CreateLoad(tmp);
-#endif
+    ret.val = info->irBuilder->CreateLoad(ifTrue.chplType->symbol->getLLVMStructureType(), tmp);
+
     ret.isUnsigned = !values.isSigned;
 #endif
   }
@@ -2380,17 +2378,157 @@ GenRet codegenArgForFormal(GenRet arg,
   return arg;
 }
 
+// TODO: See the version of this for calls to static addresses for hints
+// about what to do for ABI stuff.
+static GenRet codegenCallExprInner(GenRet genFn, std::vector<GenRet>& args,
+                                   FunctionType* chplFnType) {
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+
+  // As a first step, adjust the formals to have the proper types.
+  for (size_t i = 0; i < args.size(); i++) {
+    const bool defaultToValues = false;
+    const bool isExternOrExport = false;
+    ArgSymbol* noFormal = nullptr;
+    args[i] = codegenArgForFormal(args[i], noFormal, defaultToValues,
+                                  isExternOrExport);
+  }
+
+  // C
+  if (info->cfile) {
+    ret.c = genFn.c;
+    ret.c += '(';
+    bool first_actual = true;
+    for (size_t i = 0; i < args.size(); i++) {
+      if (first_actual) {
+        first_actual = false;
+      } else {
+        ret.c += ", ";
+      }
+      ret.c += args[i].c;
+    }
+    ret.c += ')';
+
+  // LLVM
+  } else {
+    #ifdef HAVE_LLVM
+    // See clang CodeGenFunction::EmitCall
+    // See Swift irgen::emitForeignParameter
+    llvm::IRBuilder<>* irBuilder = info->irBuilder;
+    const llvm::DataLayout& layout = info->module->getDataLayout();
+    llvm::LLVMContext &ctx = info->llvmContext;
+    unsigned int addrSpace = layout.getAllocaAddrSpace();
+    const clang::CodeGen::CGFunctionInfo* CGI = nullptr;
+
+    // TODO: Figure out how to get any CGI info from the type.
+    std::ignore = irBuilder;
+    std::ignore = addrSpace;
+    std::ignore = CGI;
+
+    // Dereference the alloca for the function pointer if necessary,
+    // and also fetch the underlying function type (in LLVM16+, all
+    // pointers are opaque, so we have to be able to fetch the LLVM
+    // function type from the Chapel type by some other means).
+    GenRet base = genFn;
+    GenRet baseToVal = codegenValue(base);
+    llvm::Value* val = baseToVal.val;
+    llvm::FunctionType* fnType = llvmGetUnderlyingFunctionType(chplFnType);
+
+    INT_ASSERT(val && fnType);
+    INT_ASSERT(val->getType()->isPointerTy());
+
+    std::vector<llvm::Value *> llArgs;
+    llvm::AllocaInst* sret = nullptr;
+    llvm::Type* chapelRetTy = nullptr;
+    bool chapelRetTySigned = false;
+    llvm::MaybeAlign retAlignment;
+
+    auto chplFnRetType = chplFnType->returnType();
+    if (chplFnRetType == dtNothing || chplFnRetType == dtVoid) {
+      chapelRetTy = llvm::Type::getVoidTy(ctx);
+    } else {
+
+      // TODO: What about indirect calls (e.g. our struct return opt)?
+      chapelRetTy = chplFnRetType->codegen().type;
+      chapelRetTySigned = is_signed(chplFnRetType);
+      retAlignment = getAlignment(chplFnRetType);
+    }
+
+    // TODO: Consult what is done for calls to static addresses.
+    if (CGI) {
+      INT_FATAL("Not handled yet!");
+    }
+
+    Type* chplFormalType = chplFnType->numFormals()
+        ? chplFnType->formal(0)->type
+        : nullptr;
+    std::ignore = chplFormalType;
+
+    for (size_t i = 0; i < args.size(); i++) {
+      const clang::CodeGen::ABIArgInfo* argInfo = nullptr;
+      if (CGI) {
+        INT_FATAL("Not handled yet!");
+        argInfo = getCGArgInfo(CGI, i);
+      } else if (args[i].isLVPtr == GEN_VAL &&
+                 useDarwinArmFix(args[i].chplType)) {
+        argInfo = getSingleCGArgInfo(args[i].chplType);
+      }
+
+      if (argInfo) {
+        INT_FATAL("Not handled yet!");
+      } else {
+        llvm::Value* val = nullptr;
+
+        if (llArgs.size() < fnType->getNumParams()) {
+          bool isSigned = !args[i].isUnsigned ||
+                          (args[i].chplType && is_signed(args[i].chplType));
+
+          llvm::Type* targetType = nullptr;
+          targetType = fnType->getParamType(llArgs.size());
+          val = convertValueToType(args[i].val, targetType, isSigned, false);
+          INT_ASSERT(val != nullptr);
+        } else {
+          val = args[i].val;
+        }
+
+        llArgs.push_back(val);
+      }
+    }
+
+    // Emit the indirect call.
+    llvm::CallInst* c = nullptr;
+    #if HAVE_LLVM_VER >= 90
+    c = info->irBuilder->CreateCall(fnType, val, llArgs);
+    #else
+    c = info->irBuilder->CreateCall(val, llArgs);
+    #endif
+
+    ret.val = c;
+
+    if (sret) {
+      ret.val = codegenLoadLLVM(sret, chplFnType->returnType());
+    }
+
+    if (chapelRetTy && ret.val->getType() != chapelRetTy) {
+      ret.val = convertValueToType(ret.val, chapelRetTy,
+                                   chapelRetTySigned,
+                                   true);
+    }
+    #endif
+  }
+
+  return ret;
+}
+
 // if fn is non-NULL, we use that to decide what to dereference.
 // Otherwise, if defaultToValues=true, we will codegenValue() the arguments,
 //            and if it is false, they will pass by reference if they
 //            are references.
-static
-GenRet codegenCallExprInner(GenRet function,
+static GenRet codegenCallExprInner(GenRet function,
                             std::vector<GenRet> & args,
                             FnSymbol* fn,
                             ClangFunctionDeclPtr FD,
-                            bool defaultToValues)
-{
+                            bool defaultToValues) {
   GenInfo* info = gGenInfo;
   GenRet ret;
 
@@ -2417,24 +2555,25 @@ GenRet codegenCallExprInner(GenRet function,
     }
   }
 
-  if( info->cfile ) {
+  if (info->cfile) {
     ret.c = function.c;
     ret.c += '(';
     bool first_actual = true;
-    for( size_t i = 0; i < args.size(); i++ ) {
-      if (first_actual)
+    for (size_t i = 0; i < args.size(); i++) {
+      if (first_actual) {
         first_actual = false;
-      else
+      } else {
         ret.c += ", ";
+      }
       ret.c += args[i].c;
     }
     ret.c += ')';
+
+  // LLVM
   } else {
 #ifdef HAVE_LLVM
-
     // See clang CodeGenFunction::EmitCall
     // See Swift irgen::emitForeignParameter
-
     llvm::IRBuilder<>* irBuilder = info->irBuilder;
     const llvm::DataLayout& layout = info->module->getDataLayout();
     llvm::LLVMContext &ctx = info->llvmContext;
@@ -2453,10 +2592,11 @@ GenRet codegenCallExprInner(GenRet function,
     }
 
     INT_ASSERT(function.val);
-    llvm::Value *val = function.val;
+    llvm::Value* val = function.val;
     // Maybe function is bit-cast to a pointer?
-    llvm::Function *func = llvm::dyn_cast<llvm::Function>(val);
-    llvm::FunctionType *fnType;
+    llvm::Function* func = llvm::dyn_cast<llvm::Function>(val);
+    llvm::FunctionType* fnType = nullptr;
+
     if (func) {
       fnType = func->getFunctionType();
     } else {
@@ -2682,7 +2822,6 @@ GenRet codegenCallExprInner(GenRet function,
         if (llArgs.size() < fnType->getNumParams()) {
           bool isSigned = !args[i].isUnsigned ||
                           (args[i].chplType && is_signed(args[i].chplType));
-
           llvm::Type* targetType = NULL;
           targetType = fnType->getParamType(llArgs.size());
           val = convertValueToType(args[i].val, targetType, isSigned, false);
@@ -3227,13 +3366,17 @@ void codegenCopy(GenRet dest, GenRet src, Type* chplType=NULL)
       // Consider using memcpy instead of stack allocating a possibly
       // large structure.
 
-      llvm::Type* ptrTy = src.val->getType();
-      llvm::Type* eltTy = ptrTy->getPointerElementType();
+      llvm::Type* eltTy = nullptr;
+
+      if (chplType) {
+        eltTy = chplType->codegen().type;
+      }
 
       if( chplType && chplType->symbol->hasFlag(FLAG_STAR_TUPLE) ) {
         // Always use memcpy for star tuples.
         useMemcpy = true;
-      } else if( isTypeSizeSmallerThan(info->module->getDataLayout(), eltTy,
+      } else if( eltTy && isTypeSizeSmallerThan(info->module->getDataLayout(),
+                                       eltTy,
                                        256 /* max bytes to load/store */)) {
         // OK
       } else {
@@ -3689,6 +3832,188 @@ static GenRet codegen_prim_get_real(GenRet arg, Type* type, bool real) {
   return ret;
 }
 
+static void codegenEmbedChapelAstMetadata(GenRet& gr, BaseAST* ast) {
+  #ifdef HAVE_LLVM
+  if (gGenInfo->cfile == nullptr && gr.val && fGenIDS) {
+    if (auto insn = llvm::dyn_cast<llvm::Instruction>(gr.val)) {
+      llvm::LLVMContext& ctx = gGenInfo->llvmContext;
+      llvm::Type *int64Ty = llvm::Type::getInt64Ty(ctx);
+      llvm::Constant* c = llvm::ConstantInt::get(int64Ty, ast->id);
+      llvm::ConstantAsMetadata* aid = llvm::ConstantAsMetadata::get(c);
+      llvm::MDNode* node = llvm::MDNode::get(ctx, aid);
+      insn->setMetadata("chpl.ast.id", node);
+    }
+  }
+  #else
+  std::ignore = gr;
+  std::ignore = ast;
+  #endif
+}
+
+static GenRet codegenCallIndirect(CallExpr* call) {
+  std::vector<GenRet> args(call->numActuals());
+  GenRet base = call->baseExpr->codegen();
+  GenRet ret;
+
+  auto chplFnType = toFunctionType(call->baseExpr->qualType().type());
+  INT_ASSERT(chplFnType);
+
+  // TODO: Relax this when we are able.
+  INT_ASSERT(call->numActuals() == chplFnType->numFormals());
+
+  int idx = 0;
+  for_actuals(actual, call) {
+    auto tyFormal = chplFnType->formal(idx)->type;
+    auto tyActual = actual->qualType().type();
+    auto se = toSymExpr(actual);
+    GenRet arg = actual;
+
+    // TODO: Handle extern stuff in a more general way - how?
+    // TODO: Handle passing strings to externs.
+    std::ignore = tyActual;
+    std::ignore = se;
+
+    if (tyFormal == dtCFnPtr) {
+      arg = codegenCast("c_fn_ptr", arg);
+    }
+
+    // May modify 'arg'.
+    ArgSymbol* noFormal = nullptr;
+    std::ignore = codegenIsSpecialPrimitive(noFormal, actual, arg);
+
+    // TODO: What if the actual is a wide-ref and the formal is narrow?
+    // Should that be handled back in IWR?
+    if (arg.chplType->symbol->isRefOrWideRef() &&
+        !tyFormal->isRefOrWideRef()) {
+      arg = codegenValue(codegenDeref(arg));
+    }
+
+    args[idx++] = arg;
+  }
+
+  // C
+  if (gGenInfo->cfile) {
+    INT_FATAL("The C backend is not supported yet!");
+    ret = codegenCallExprInner(base, args, chplFnType);
+
+  // LLVM
+  } else {
+    ret = codegenCallExprInner(base, args, chplFnType);
+  }
+
+  return ret;
+}
+
+static GenRet codegenCallStaticAddress(CallExpr* call) {
+  FnSymbol* fn = call->resolvedFunction();
+  INT_ASSERT(fn);
+
+  GenRet ret;
+  std::vector<GenRet> args(call->numActuals());
+  GenRet base = call->baseExpr->codegen();
+  int i = 0;
+
+  for_formals_actuals(formal, actual, call) {
+    SymExpr* se = toSymExpr(actual);
+    GenRet   arg = actual;
+
+    if (se && isFnSymbol(se->symbol())) {
+      if (call->theFnSymbol()->hasFlag(FLAG_EXTERN) ||
+          formal->type == dtCFnPtr) {
+        arg = codegenCast("c_fn_ptr", arg);
+      }
+
+      // TODO (DavidL): Is this ever needed?
+      // If some code that we generate expects this type (e.g., for
+      // the runtime hooks) then how do we make sure it gets
+      // generated correctly? Obviously we can't just blindly cast
+      // to this type all the time, anymore.
+      /*
+      else {
+        arg = codegenCast("chpl_fn_p", arg);
+      }
+      */
+    }
+
+    // If actual is special primitive arg will be modified
+    // Otherwise, arg is untouched
+    std::ignore = codegenIsSpecialPrimitive(formal, actual, arg);
+
+    // Handle passing strings to externs
+    //should this be else if?
+    if (fn && fn->hasFlag(FLAG_EXTERN)) {
+      if (actual->isWideRef() || arg.isLVPtr == GEN_WIDE_PTR) {
+        arg = codegenValue(arg);
+
+      } else if (call->isRefExternStarTuple(formal, actual)) {
+        // In C, a fixed-size-array lvalue is already a pointer,
+        // so we deref here. But for LLVM, if we deref we will
+        // end up passing the tuple by value, which is not right.
+        if (gGenInfo->cfile != NULL) arg = codegenDeref(arg);
+      }
+    }
+
+    // TODO: What if the actual is a wide-ref and the formal is a narrow ref?
+    // Should that be handled back in IWR?
+    if (arg.chplType->symbol->isRefOrWideRef() && !formal->isRefOrWideRef()) {
+      arg = codegenValue(codegenDeref(arg));
+    }
+
+    args[i] = arg;
+    i       = i + 1;
+  }
+
+  // C
+  if (gGenInfo->cfile != NULL) {
+    ret = codegenCallExprInner(base, args, fn, nullptr, true);
+
+    if (call->getStmtExpr() == call) {
+      gGenInfo->cStatements.push_back(ret.c + ";\n");
+    }
+
+  // LLVM
+  } else {
+    // handle any special cases for which
+    // bool isBuiltinExternCFunction(const char* cname) returns true.
+    //
+    // special case: for CallExpr sizeof(..)
+    if (fn->hasFlag(FLAG_EXTERN) && strcmp(fn->name, "sizeof") == 0) {
+
+      #ifdef HAVE_LLVM
+      if (args[0].type) {
+        return codegenSizeof(args[0].type);
+      } else {
+        return codegenSizeof(codegenValue(args[0]).val->getType());
+      }
+      #endif
+    }
+
+    ret = codegenCallExprWithArgs(base, args, fn->cname, fn, nullptr, true);
+
+    #ifdef HAVE_LLVM
+    // Handle setting LLVM invariant on const records after
+    // they are initialized
+    if (fn && (fn->isInitializer() || fn->isCopyInit())) {
+      if (typeNeedsCopyInitDeinit(call->get(1)->typeInfo())) {
+        if (SymExpr* initedSe = toSymExpr(call->get(1))) {
+          if (initedSe->symbol()->isConstValWillNotChange()) {
+            GenRet genSe = args[0];
+            llvm::Value* ptr = genSe.val;
+            INT_ASSERT(ptr);
+            llvm::Type* ptrTy = ptr->getType();
+            INT_ASSERT(ptrTy && ptrTy->isPointerTy());
+            llvm::Type* eltTy = ptrTy->getPointerElementType();
+            codegenInvariantStart(eltTy, ptr);
+          }
+        }
+      }
+    }
+    #endif
+  }
+
+  return ret;
+}
+
 /* Notes about code generation:
  *  Intermediate expressions are returned from Expr::codegen
  *  Local variables, array elements, tuple elements, and fields
@@ -3712,138 +4037,42 @@ GenRet CallExpr::codegen() {
   SET_LINENO(this);
 
   FnSymbol* fn = resolvedFunction();
-  GenRet    ret;
+  GenRet ret;
 
   // Note (for debugging), function name is in parentSymbol->cname.
-  if (id == breakOnCodegenID)
-    gdbShouldBreakHere();
+  if (id == breakOnCodegenID) gdbShouldBreakHere();
 
-  if (getStmtExpr() && getStmtExpr() == this)
-    codegenStmt(this);
+  if (getStmtExpr() == this) codegenStmt(this);
 
-  if (primitive                                          != NULL)  {
+  bool isIndirectCall = this->isIndirectCall();
+
+  INT_ASSERT(fn || primitive != nullptr || isIndirectCall);
+
+  if (primitive != nullptr) {
     ret = codegenPrimitive();
 
-  } else if (fn->hasFlag(FLAG_ON_BLOCK)                  == true)  {
+  } else if (isIndirectCall) {
+    ret = codegenCallIndirect(this);
+
+  } else if (fn->hasFlag(FLAG_ON_BLOCK)) {
     codegenInvokeOnFun();
 
-  } else if (fn->hasFlag(FLAG_BEGIN_BLOCK)               == true)  {
+  } else if (fn->hasFlag(FLAG_BEGIN_BLOCK)) {
     codegenInvokeTaskFun("chpl_taskAddBegin");
 
-  } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) == true)  {
+  } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
     codegenInvokeTaskFun("chpl_taskAddCoStmt");
 
-  } else if (fn->hasFlag(FLAG_NO_CODEGEN)                == false) {
-    std::vector<GenRet> args(numActuals());
-    GenRet              base = baseExpr->codegen();
-    int                 i    = 0;
-
-    for_formals_actuals(formal, actual, this) {
-      SymExpr* se         = toSymExpr(actual);
-      GenRet   arg        = actual;
-
-      if (se && isFnSymbol(se->symbol())) {
-        if(this->theFnSymbol()->hasFlag(FLAG_EXTERN) ||
-           formal->type == dtCFnPtr) {
-          arg = codegenCast("c_fn_ptr", arg);
-        }
-        else {
-          arg = codegenCast("chpl_fn_p", arg);
-        }
-      }
-
-      // If actual is special primitive arg will be modified
-      // Otherwise, arg is untouched
-      codegenIsSpecialPrimitive(formal, actual, arg);
-      // Handle passing strings to externs
-      //should this be else if?
-      if (fn->hasFlag(FLAG_EXTERN)) {
-        if (actual->isWideRef() == true ||
-            arg.isLVPtr         == GEN_WIDE_PTR) {
-          arg = codegenValue(arg);
-
-        } else if (isRefExternStarTuple(formal, actual) == true) {
-          // In C, a fixed-size-array lvalue is already a pointer,
-          // so we deref here. But for LLVM, if we deref we will
-          // end up passing the tuple by value, which is not right.
-          if (gGenInfo->cfile != NULL)
-            arg = codegenDeref(arg);
-        }
-      }
-
-      // TODO: What if the actual is a wide-ref and the formal is a narrow ref?
-      // Should that be handled back in IWR?
-      if (arg.chplType->symbol->isRefOrWideRef() && !formal->isRefOrWideRef()) {
-        arg = codegenValue(codegenDeref(arg));
-      }
-
-      args[i] = arg;
-      i       = i + 1;
-    }
-
-    if (gGenInfo->cfile != NULL) {
-      ret = codegenCallExprInner(base, args, fn, nullptr, true);
-
-      if (getStmtExpr() && getStmtExpr() == this)
-        gGenInfo->cStatements.push_back(ret.c + ";\n");
-
-    } else {
-      // handle any special cases for which
-      // bool isBuiltinExternCFunction(const char* cname) returns true.
-      //
-      // special case: for CallExpr sizeof(..)
-      if (fn->hasFlag(FLAG_EXTERN)   == true &&
-          strcmp(fn->name, "sizeof") == 0) {
-#ifdef HAVE_LLVM
-        if (args[0].type)
-          return codegenSizeof(args[0].type);
-        else
-          return codegenSizeof(codegenValue(args[0]).val->getType());
-#endif
-      }
-
-      ret = codegenCallExprWithArgs(base, args, fn->cname, fn, nullptr, true);
-
-#ifdef HAVE_LLVM
-      // Handle setting LLVM invariant on const records after
-      // they are initialized
-      if (fn->isInitializer() || fn->isCopyInit()) {
-        if (typeNeedsCopyInitDeinit(get(1)->typeInfo())) {
-          if (SymExpr* initedSe = toSymExpr(get(1))) {
-            if (initedSe->symbol()->isConstValWillNotChange()) {
-              GenRet genSe = args[0];
-              llvm::Value* ptr = genSe.val;
-              INT_ASSERT(ptr);
-              llvm::Type* ptrTy = ptr->getType();
-              INT_ASSERT(ptrTy && ptrTy->isPointerTy());
-              llvm::Type* eltTy = ptrTy->getPointerElementType();
-              codegenInvariantStart(eltTy, ptr);
-            }
-          }
-        }
-      }
-
-#endif
+  } else {
+    INT_ASSERT(fn);
+    if (!fn->hasFlag(FLAG_NO_CODEGEN)) {
+      ret = codegenCallStaticAddress(this);
     }
   }
 
   // When generating LLVM value, if --gen-ids is on,
   // add metadata nodes that have the Chapel AST ids
-#ifdef HAVE_LLVM
-  if (gGenInfo->cfile == NULL && ret.val && fGenIDS) {
-    if (llvm::Instruction* insn = llvm::dyn_cast<llvm::Instruction>(ret.val)) {
-      llvm::LLVMContext& ctx = gGenInfo->llvmContext;
-
-      llvm::Type *int64Ty = llvm::Type::getInt64Ty(ctx);
-      llvm::Constant* c = llvm::ConstantInt::get(int64Ty, this->id);
-      llvm::ConstantAsMetadata* aid = llvm::ConstantAsMetadata::get(c);
-
-      llvm::MDNode* node = llvm::MDNode::get(ctx, aid);
-
-      insn->setMetadata("chpl.ast.id", node);
-    }
-  }
-#endif
+  codegenEmbedChapelAstMetadata(ret, this);
 
   return ret;
 }
@@ -4872,15 +5101,6 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   args.push_back(new_IntSymbol(call->astloc.lineno()));
   args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
 
-  // We will emit the gpu code into a global variable named chpl_gpuBinary. Pass
-  // this variable to the launch call.
-  #ifdef HAVE_LLVM  // Needed to suppress warning; should always be true in code path for GPU codegen
-    GenInfo* info = gGenInfo;
-    args.push_back(info->lvt->getValue("chpl_gpuBinary"));
-  #else
-    INT_FATAL("Unexpected code path: gpu code generation without LLVM as target");
-  #endif
-
   // "Copy" arguments from primitive call to runtime library function call.
   int curArg = 1;
   for_actuals(actual, call) {
@@ -4938,61 +5158,39 @@ DEFINE_PRIM(GPU_KERNEL_LAUNCH) {
   ret = codegenGPUKernelLaunch(call, /* is3d= */ true);
 }
 
-
-static GenRet codegenCallToPtxTgtIntrinsic(const char *fcnName) {
-  GenRet ret;
-
-#ifdef HAVE_LLVM
-  llvm::Type *llvmReturnType = llvm::Type::getInt32Ty(gGenInfo->llvmContext);
-  Type *chplReturnType = dtInt[INT_SIZE_32];
-
-  llvm::Function* fun = gGenInfo->module->getFunction(fcnName);
-  if(!fun) {
-    llvm::FunctionType *fun_type = llvm::FunctionType::get(llvmReturnType, false);
-    fun = llvm::Function::Create(fun_type, llvm::GlobalValue::ExternalLinkage, fcnName, gGenInfo->module);
-    INT_ASSERT(fun);
-  }
-
-  ret.val = gGenInfo->irBuilder->CreateCall(fun);
-  ret.isLVPtr = GEN_VAL;
-  ret.chplType = chplReturnType;
-#endif
-
-  return ret;
-}
-
-DEFINE_PRIM(GPU_THREADIDX_X) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.x"); }
-DEFINE_PRIM(GPU_THREADIDX_Y) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.y"); }
-DEFINE_PRIM(GPU_THREADIDX_Z) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.z"); }
-DEFINE_PRIM(GPU_BLOCKIDX_X)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.x"); }
-DEFINE_PRIM(GPU_BLOCKIDX_Y)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.y"); }
-DEFINE_PRIM(GPU_BLOCKIDX_Z)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.z"); }
-DEFINE_PRIM(GPU_BLOCKDIM_X)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.x"); }
-DEFINE_PRIM(GPU_BLOCKDIM_Y)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.y"); }
-DEFINE_PRIM(GPU_BLOCKDIM_Z)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.z"); }
-DEFINE_PRIM(GPU_GRIDDIM_X)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.x"); }
-DEFINE_PRIM(GPU_GRIDDIM_Y)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.y"); }
-DEFINE_PRIM(GPU_GRIDDIM_Z)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.z"); }
+DEFINE_PRIM(GPU_THREADIDX_X) { ret = codegenCallExpr("chpl_gpu_getThreadIdxX"); }
+DEFINE_PRIM(GPU_THREADIDX_Y) { ret = codegenCallExpr("chpl_gpu_getThreadIdxY"); }
+DEFINE_PRIM(GPU_THREADIDX_Z) { ret = codegenCallExpr("chpl_gpu_getThreadIdxZ"); }
+DEFINE_PRIM(GPU_BLOCKIDX_X)  { ret = codegenCallExpr("chpl_gpu_getBlockIdxX"); }
+DEFINE_PRIM(GPU_BLOCKIDX_Y)  { ret = codegenCallExpr("chpl_gpu_getBlockIdxY"); }
+DEFINE_PRIM(GPU_BLOCKIDX_Z)  { ret = codegenCallExpr("chpl_gpu_getBlockIdxZ"); }
+DEFINE_PRIM(GPU_BLOCKDIM_X)  { ret = codegenCallExpr("chpl_gpu_getBlockDimX"); }
+DEFINE_PRIM(GPU_BLOCKDIM_Y)  { ret = codegenCallExpr("chpl_gpu_getBlockDimY"); }
+DEFINE_PRIM(GPU_BLOCKDIM_Z)  { ret = codegenCallExpr("chpl_gpu_getBlockDimZ"); }
+DEFINE_PRIM(GPU_GRIDDIM_X)   { ret = codegenCallExpr("chpl_gpu_getGridDimX"); }
+DEFINE_PRIM(GPU_GRIDDIM_Y)   { ret = codegenCallExpr("chpl_gpu_getGridDimY"); }
+DEFINE_PRIM(GPU_GRIDDIM_Z)   { ret = codegenCallExpr("chpl_gpu_getGridDimZ"); }
 
 DEFINE_PRIM(GPU_ALLOC_SHARED) {
 #ifdef HAVE_LLVM
-  int bytesToAlloc =
-    toVarSymbol(toSymExpr(call->get(1))->symbol())->immediate->int_value();
-
   GenInfo* info = gGenInfo;
-  llvm::ArrayType* arrayTy = llvm::ArrayType::get(
-    llvm::IntegerType::get(gGenInfo->llvmContext, 8), bytesToAlloc);
-  // Allocate global variable in "shared memory space" (3)
-  llvm::GlobalVariable* glob = new llvm::GlobalVariable(
-    *info->module, arrayTy, false, llvm::GlobalValue::InternalLinkage,
-    llvm::Constant::getNullValue(arrayTy),
-    "gpuSharedMemory", nullptr, llvm::GlobalValue::NotThreadLocal, 3, false);
-  llvm::Type* pointerToArrayTy = arrayTy->getPointerTo();
-  //We want to return a void* in the "generic" address space to we need to cast
-  llvm::Value* castedValue = gGenInfo->irBuilder->CreateAddrSpaceCast(
-    glob, pointerToArrayTy, "gpuSharedMemoryCasted");
+  int bytesToAlloc = toVarSymbol(toSymExpr(call->get(1))->symbol())->immediate->int_value();
 
-  ret.val = castedValue;
+  // Create a type for the shared array.
+  llvm::Type* elementType = llvm::Type::getInt8Ty(info->llvmContext);
+  auto* arrayType = llvm::ArrayType::get(elementType, bytesToAlloc);
+
+  // Allocate the shared array in GPU shared memory.
+  llvm::GlobalVariable* sharedArray = new llvm::GlobalVariable(
+      *info->module, arrayType, false, llvm::GlobalValue::InternalLinkage,
+      llvm::UndefValue::get(arrayType), "gpuSharedMemory", nullptr,
+      llvm::GlobalValue::NotThreadLocal, 3, false);
+
+  // Get a void* pointer to the shared array.
+  llvm::Type* voidPtrType = llvm::Type::getInt8PtrTy(info->llvmContext, 3);
+  llvm::Value* sharedArrayPtr = gGenInfo->irBuilder->CreateBitCast(sharedArray, voidPtrType, "sharedArrayPtr");
+
+  ret.val = sharedArrayPtr;
   ret.isLVPtr = GEN_VAL;
   ret.chplType = dtCVoidPtr;
 #endif
@@ -5003,12 +5201,25 @@ DEFINE_PRIM(GPU_SYNC_THREADS) {
     return;
   }
 #ifdef HAVE_LLVM
+  /* One approach to generating the barrier to call the
+   llvm intrinsic function for it, however
+   this approach ended up causing issues for us likely due this bug
+   reported here:
+
+    https://github.com/llvm/llvm-project/issues/58626
+
+   So instead we call a function in our runtime that includes inline
+   assembly to make the barrier call. If the llvm issue is resolved
+   we may want to change this back:
+
   Type *chplReturnType = dtVoid;
   llvm::Function *fun = llvm::Intrinsic::getDeclaration(gGenInfo->module,
     llvm::Intrinsic::nvvm_barrier0);
   ret.val = gGenInfo->irBuilder->CreateCall(fun);
   ret.isLVPtr = GEN_VAL;
-  ret.chplType = chplReturnType;
+  ret.chplType = chplReturnType;*/
+
+  ret = codegenCallExpr("chpl_gpu_force_sync");
 #endif
 }
 
@@ -5513,26 +5724,47 @@ DEFINE_PRIM(STRING_COPY) {
       ret = call->codegenBasicPrimitiveExpr();
 }
 
+static GenRet maybeConvertToLocalPointer(Expr* expr, GenRet& act) {
+  GenRet ret;
+
+  bool isRefToWide = false;
+  if (expr->isRef() &&
+      act.chplType->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+    isRefToWide = true;
+  }
+
+  if (act.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) ||
+      isRefToWide) {
+    // Get the local address.
+    // Assume that we have already tested to ensure that this wide pointer
+    // is local.  That is, caller should have called chpl_check_local.
+    if (isRefToWide) act = codegenDeref(act);
+    ret = codegenRaddr(act);
+  } else {
+    ret = codegenValue(expr);
+  }
+
+  return ret;
+}
+
 DEFINE_PRIM(CAST_TO_VOID_STAR) {
-    GenRet act = call->get(1);
-    GenRet ptr;
+  GenRet act = call->get(1);
+  GenRet ptr = maybeConvertToLocalPointer(call->get(1), act);
+  ret = codegenCastToVoidStar(ptr);
+}
 
-    const bool refToWide = call->get(1)->isRef() && act.chplType->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS);
+DEFINE_PRIM(CAST_TO_TYPE) {
+  INT_ASSERT(call->numActuals() == 2);
+  GenRet act = call->get(1);
+  GenRet ptr = maybeConvertToLocalPointer(call->get(1), act);
 
-    if (act.chplType->symbol->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) ||
-        refToWide) {
-      // Get the local address.
-      // Assume that we have already tested to ensure that this wide pointer
-      // is local.  That is, caller should have called chpl_check_local.
-      if (refToWide) {
-        act = codegenDeref(act);
-      }
-      ptr = codegenRaddr(act);
-    }
-    else
-      ptr = codegenValue(call->get(1));
+  auto se = toSymExpr(call->get(2));
+  INT_ASSERT(se);
+  auto ts = toTypeSymbol(se->symbol());
+  INT_ASSERT(ts);
+  auto name = ts->cname;
 
-    ret = codegenCastToVoidStar(ptr);
+  ret = codegenCast(name, ptr);
 }
 
 DEFINE_BASIC_PRIM(RT_ERROR)

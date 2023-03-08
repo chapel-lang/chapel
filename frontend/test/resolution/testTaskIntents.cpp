@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,14 +25,13 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
-#include "chpl/uast/Identifier.h"
-#include "chpl/uast/IntentList.h"
 #include "chpl/uast/For.h"
+#include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/While.h"
-#include "./ErrorGuard.h"
 
 #include <algorithm>
 #include <sstream>
@@ -41,6 +40,7 @@
 static bool debug = false;
 static bool verbose = false;
 
+// all contexts stored for later cleanup
 static std::vector<Context*> globalContexts;
 static Context* getNewContext() {
   Context* ret = new Context();
@@ -68,15 +68,13 @@ struct Collector {
   using RV = ResolvedVisitor<Collector>;
 
   std::multimap<std::string, QualifiedType> declTypes;
-  std::multimap<std::string, QualifiedType> identTypes;
 
   std::multimap<std::string, ID> declIds;
+  std::multimap<std::string, ResolvedExpression> idents;
   std::multimap<std::string, ResolvedExpression> shadowVars;
+  std::multimap<std::string, ID> shadowVarIds;
 
   Collector() { }
-
-  Collector(const Collector& other) : declTypes(other.declTypes), identTypes(other.identTypes) {
-  }
 
   bool enter(const uast::NamedDecl* decl, RV& rv) {
     if (rv.hasAst(decl)) {
@@ -86,6 +84,7 @@ struct Collector {
 
       if (decl->isTaskVar() || decl->isReduceIntent()) {
         shadowVars.emplace(name, rr);
+        shadowVarIds.emplace(name, decl->id());
       } else {
         declIds.emplace(name, decl->id());
       }
@@ -97,7 +96,7 @@ struct Collector {
   bool enter(const uast::Identifier* ident, RV& rv) {
     if (rv.hasAst(ident)) {
       const ResolvedExpression& rr = rv.byAst(ident);
-      identTypes.emplace(ident->name().str(), rr.type());
+      idents.emplace(ident->name().str(), rr);
     }
 
     return true;
@@ -144,14 +143,19 @@ struct Collector {
     return declTypes.find(name)->second;
   }
 
-  QualifiedType onlyIdent(std::string name) {
-    assert(identTypes.count(name) == 1);
-    return identTypes.find(name)->second;
+  ResolvedExpression onlyIdent(std::string name) {
+    assert(idents.count(name) == 1);
+    return idents.find(name)->second;
   }
 
   const ResolvedExpression& onlyShadow(std::string name) {
     assert(shadowVars.count(name) == 1);
     return shadowVars.find(name)->second;
+  }
+
+  ID onlyShadowId(std::string name) {
+    assert(shadowVarIds.count(name) == 1);
+    return shadowVarIds.find(name)->second;
   }
 
   ID onlyDeclId(std::string name) {
@@ -170,7 +174,7 @@ struct Collector {
       stream << "\n";
     }
     stream << "--- Idents ---\n";
-    for (auto p : identTypes) {
+    for (auto p : idents) {
       stream << p.first << ": ";
       p.second.stringify(stream, kind);
       stream << "\n";
@@ -181,38 +185,17 @@ struct Collector {
   }
 };
 
-static const char* kindToString(IntentList kind) {
-  switch (kind) {
-    case IntentList::REF: return "ref";
-    case IntentList::CONST_INTENT: return "const";
-    case IntentList::CONST_REF: return "const ref";
-    case IntentList::IN: return "in";
-    case IntentList::CONST_IN: return "const in";
-    case IntentList::OUT: return "out";
-    case IntentList::PARAM: return "param";
-    case IntentList::TYPE: return "type";
-    case IntentList::VAR: return "var";
-    case IntentList::CONST_VAR: return "const";
-    case IntentList::DEFAULT_INTENT: return "";
-    default: assert(false);
-  }
-  return "";
-}
-
 static void printErrors(const ErrorGuard& guard) {
   if (!verbose) {
     printf("Found %lu errors.\n\n", guard.errors().size());
   } else {
     printf("======== Errors ========\n");
-    ErrorWriter ew(guard.context(), std::cout, ErrorWriter::DETAILED, false);
-    for (auto& err : guard.errors()) {
-      err->write(ew);
-    }
+    guard.printErrors();
     printf("========================\n\n");
   }
 }
 
-static Collector customHelper(std::string program, Context* context, bool fail = false) {
+static Collector customHelper(std::string program, Context* context, Module* moduleOut = nullptr, bool fail = false) {
   ErrorGuard guard(context);
 
   const Module* m = parseModule(context, program.c_str());
@@ -244,91 +227,134 @@ static Collector customHelper(std::string program, Context* context, bool fail =
   return pc;
 }
 
-static void kindHelper(IntentList kind) {
+// helper for running task intent tests
+static void kindHelper(Qualifier kind, const std::string& constructName) {
   Context* context = getNewContext();
 
   std::string program;
   program += "var x = 0;\n";
-  program += "forall i in 1..10 with (";
-  program += kindToString(kind);
+  program += constructName;
+  if (constructName == "forall" || constructName == "coforall") {
+    program += " i in 1..10";
+  }
+  program += " with (";
+  program += qualifierToString(kind);
   program += " x) {\n";
   program += "  var y = x;\n";
   program += "}\n";
 
   auto col = customHelper(program, context);
+  const auto intType = IntType::get(context, 0);
 
+  // Test shadow variable type is as expected
   {
-    IntentList useKind = kind;
-    if (useKind == IntentList::CONST_INTENT) {
-      useKind = IntentList::CONST_VAR;
+    Qualifier useKind = kind;
+    // const task intent corresponds to const shadow variable
+    if (useKind == Qualifier::CONST_INTENT) {
+      useKind = Qualifier::CONST_VAR;
     }
-    QualifiedType expected = QualifiedType(useKind, IntType::get(context, 0));
-    QualifiedType shadowX = col.onlyIdent("x");
+    QualifiedType expected = QualifiedType(useKind, intType);
+    QualifiedType shadowX = col.onlyIdent("x").type();
     assert(expected == shadowX);
   }
 
+
+  // Test type of variable assigned value of shadow variable
   {
     QualifiedType yType = col.onlyDecl("y");
-    assert(yType.type() == IntType::get(context, 0));
+    assert(yType.type() == intType);
   }
 
+  // Test that the shadow variable points to the original
   {
-    // Test that the shadow variable points to the original
     auto& rr = col.onlyShadow("x");
     assert(rr.toId() == col.onlyDeclId("x"));
   }
 }
 
 static void testKinds() {
-  kindHelper(IntentList::REF);
-  kindHelper(IntentList::CONST_INTENT);
-  kindHelper(IntentList::CONST_REF);
-  kindHelper(IntentList::IN);
-  kindHelper(IntentList::CONST_IN);
+  // all potentially-task-spawning constructs
+  static const std::string constructNames[] = {
+    "forall",
+    "coforall",
+    "cobegin",
+    "begin"
+  };
+  // all valid task intent kinds
+  static const Qualifier qualifiers[] = {
+    Qualifier::REF,
+    Qualifier::IN,
+    Qualifier::CONST_INTENT,
+    Qualifier::CONST_IN,
+    Qualifier::CONST_REF,
+    // inout and out intents disallowed due to data races
+    //Qualifier::INOUT,
+    //Qualifier::OUT,
+    // meaning of default task intent not well-defined
+    //Qualifier::DEFAULT_INTENT
+  };
+
+  // for each construct, test all intent kinds
+  for (const auto& constructName : constructNames) {
+    for (const auto& qualifier : qualifiers) {
+      kindHelper(qualifier, constructName);
+    }
+  }
+}
+
+// helper for running reduce intent tests
+static void reduceHelper(const std::string& constructName) {
+  assert(constructName == "forall" || constructName == "coforall");
+
+  Context* context = getNewContext();
+  // Very simple test focusing on scope resolution
+  std::string program;
+  program += R"""(operator +=(ref lhs: int, rhs: int) {
+  __primitive("+=", lhs, rhs);
+}
+
+var x = 0;
+)""";
+  program += constructName;
+  program += R"""( i in 1..10 with (+ reduce x) {
+  x += 1;
+})""";
+
+  auto col = customHelper(program, context);
+
+  // Test shadow variable type is as expected
+  {
+    const auto intType = IntType::get(context, 0);
+    QualifiedType expected = QualifiedType(Qualifier::VAR, intType);
+    QualifiedType shadowX = col.onlyShadow("x").type();
+    assert(expected == shadowX);
+  }
+
+  // Test that the shadow variable points to the original
+  assert(col.onlyShadow("x").toId() == col.onlyDeclId("x"));
+  // Test that inner ident points to reduce shadow
+  assert(col.onlyIdent("x").toId() == col.onlyShadowId("x"));
 }
 
 static void testReduce() {
-  Context* context = getNewContext();
-  // Very simple test focusing on scope resolution
-  std::string program = R"""(
-
-    operator +=(ref lhs: int, rhs: int) {
-      __primitive("+=", lhs, rhs);
-    }
-
-    var x = 0;
-    forall i in 1..10 with (+ reduce x) {
-      x += 1;
-    }
-    )""";
-
-  ErrorGuard guard(context);
-
-  const Module* m = parseModule(context, program.c_str());
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto decl = m->stmt(1);
-  auto forall = m->stmt(2)->toForall();
-  auto reduce = forall->withClause()->expr(0);
-  auto plusEq = forall->body()->stmt(0)->toCall();
-  auto innerX = plusEq->actual(0);
-
-  // Assert reduce points to outer decl
-  assert(rr.byAst(reduce).toId() == decl->id());
-
-  // Assert inner ident points to reduce
-  assert(rr.byAst(innerX).toId() == reduce->id());
+  // all reduce-intent supporting constructs
+  static const std::string constructNames[] = {
+      "forall",
+      "coforall",
+      // reduce intents not defined for begin and cobegin
+      // "cobegin",
+      // "begin"
+  };
+  for (const auto& constructName : constructNames) {
+    reduceHelper(constructName);
+  }
 }
-
 
 //
 // TODO:
-// - type resolution for reduce-intents
-// - type resolution for `in` task-intents
-// - test begins, cobegins, foralls
-// - const-checking
 // - implicit shadow variables (flat, nested)
+// - reduce intents for begin/cobegin, if those are implemented in future
+// - type resolve in-intents where type can change (e.g. array slices)
 //
 int main(int argc, char** argv) {
   for (int i = 1; i < argc; i++) {
@@ -339,6 +365,7 @@ int main(int argc, char** argv) {
     }
   }
 
+  // perform actual tests
   testKinds();
   testReduce();
 

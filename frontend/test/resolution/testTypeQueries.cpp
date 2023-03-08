@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -75,6 +75,8 @@ static void test2() {
   auto t = resolveTypeOfX(context,
                 R""""(
                   record R { type tt; }
+                  proc R.init=(other: R) { this.tt = other.tt; }
+
                   proc f(arg: ?) { return arg; }
                   var a: R(int);
                   var x = f(a);
@@ -96,6 +98,8 @@ static void test3() {
   auto t = resolveTypeOfX(context,
                 R""""(
                   record R { type tt; }
+                  proc R.init=(other: R) { this.tt = other.tt; }
+
                   proc f(arg: R(?)) { return arg; }
                   var a: R(int);
                   var x = f(a);
@@ -117,6 +121,8 @@ static void test4() {
   auto t = resolveTypeOfX(context,
                 R""""(
                   record R { type tt; }
+                  proc R.init=(other: R) { this.tt = other.tt; }
+
                   proc f(arg: R(?t)) { return arg; }
                   var a: R(int);
                   var x = f(a);
@@ -138,6 +144,8 @@ static void test5() {
   auto t = resolveTypeOfX(context,
                 R""""(
                   record R { type tt; }
+                  proc R.init=(other: R) { this.tt = other.tt; }
+
                   proc f(arg: R(?t)) { var ret: t; return ret; }
                   var a: R(int);
                   var x = f(a);
@@ -155,6 +163,8 @@ static void test6() {
                 R""""(
                   record RR { type ttt; }
                   record R { type tt; }
+                  proc R.init=(other: R) { this.tt = other.tt; }
+
                   proc f(arg: R(RR(?t))) { var ret: t; return ret; }
                   var a: R(RR(int));
                   var x = f(a);
@@ -272,7 +282,7 @@ static void test10() {
     assert(fn->numFormals() == 1);
     assert(fn->formalName(0) == "arg");
     assert(fn->formalType(0).kind() == QualifiedType::CONST_REF);
-    assert(fn->formalType(0).type() == RecordType::getStringType(context));
+    assert(fn->formalType(0).type() == CompositeType::getStringType(context));
   }
 }
 
@@ -304,6 +314,11 @@ static void test12a() {
   auto t = resolveTypeOfX(context,
                 R""""(
                   record R { type t1; type t2; }
+                  proc R.init=(other: R) {
+                    this.t1 = other.t1;
+                    this.t2 = other.t2;
+                  }
+
                   proc f(a: R(?t, t)) {
                     return a;
                   }
@@ -328,6 +343,11 @@ static void test12b() {
   auto t = resolveTypeOfX(context,
                 R""""(
                   record R { param p1: int; param p2: int; }
+                  proc R.init=(other: R) {
+                    this.p1 = other.p1;
+                    this.p2 = other.p2;
+                  }
+
                   proc f(a: R(?i, i)) {
                     return a;
                   }
@@ -349,13 +369,18 @@ static void test12b() {
 }
 
 static void test13a() {
-  printf("test13\n");
+  printf("test13a\n");
   Context ctx;
   Context* context = &ctx;
 
   auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { type t1; type t2; }
+                  proc R.init=(other: R) {
+                    this.t1 = other.t1;
+                    this.t2 = other.t2;
+                  }
+
                   proc f(a: R(?t, t)) {
                     return a;
                   }
@@ -366,13 +391,18 @@ static void test13a() {
 }
 
 static void test13b() {
-  printf("test13\n");
+  printf("test13b\n");
   Context ctx;
   Context* context = &ctx;
 
   auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { param p1: int; param p2: int; }
+                  proc R.init=(other: R) {
+                    this.p1 = other.p1;
+                    this.p2 = other.p2;
+                  }
+
                   proc f(a: R(?t, t)) {
                     return a;
                   }
@@ -390,6 +420,11 @@ static void test14() {
   auto t = resolveTypeOfX(context,
                 R""""(
                   record R { type t1; type t2; }
+                  proc R.init=(other: R) {
+                    this.t1 = other.t1;
+                    this.t2 = other.t2;
+                  }
+
                   proc f(a: R(?t, if t == bool then string else int)) {
                     return a;
                   }
@@ -414,6 +449,15 @@ static void test15() {
   auto qt = resolveTypeOfXInit(context,
                 R""""(
                   record R { type t1; type t2; }
+                  proc R.init(type t1, type t2) {
+                    this.t1 = t1;
+                    this.t2 = t2;
+                  }
+                  proc R.init=(other: R) {
+                    this.t1 = other.t1;
+                    this.t2 = other.t2;
+                  }
+
                   proc f(a: R(?t, if t == bool then string else int)) {
                     return a;
                   }
@@ -431,6 +475,10 @@ static void test16() {
   std::string setup =
                 R""""(
                   record R { type t1; type t2; }
+                  proc R.init(type t1, type t2) {
+                    this.t1 = t1;
+                    this.t2 = t2;
+                  }
                   proc f(a: R(?t, if t == bool then string else int)...) type {
                     return t;
                   }
@@ -471,6 +519,10 @@ static void test17() {
   std::string setup =
                 R""""(
                   record R { type t1; type t2; }
+                  proc R.init(type t1, type t2) {
+                    this.t1 = t1;
+                    this.t2 = t2;
+                  }
                   proc f(a: R(?t, if t == bool then string else int)...) type {
                     return t;
                   }

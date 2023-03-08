@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -36,27 +36,32 @@
  * account alias analysis.
  */
 bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e, Expr* exprToMove) {
-  if(safeExprCache.count(e) > 0) {
-    return safeExprCache[e];
-  }
-  if(CallExpr* ce = toCallExpr(e)) {
-    if(!ce->isPrimitive()) {
-      FnSymbol* fnSym = ce->theFnSymbol();
-      const bool cachedSafeFn = safeFnCache.count(fnSym);
-      if(!cachedSafeFn) {
-        const bool retval = fnHasNoSideEffects(fnSym);
-        safeFnCache[fnSym] = retval;
-        return retval;
+  if (safeExprCache.count(e)) return safeExprCache[e];
+
+  if (CallExpr* ce = toCallExpr(e)) {
+    if (!ce->isPrimitive()) {
+      if (FnSymbol* fnSym = ce->theFnSymbol()) {
+        const bool cachedSafeFn = safeFnCache.count(fnSym);
+        if (!cachedSafeFn) {
+          const bool retval = fnHasNoSideEffects(fnSym);
+          safeFnCache[fnSym] = retval;
+          return retval;
+        }
+        return safeFnCache[fnSym];
+
+      // Call to some sort of function type that is not -> function symbol.
+      // Since it's an indirect call, we have to assume it side effects.
+      } else if (isFunctionType(e->qualType().type())) {
+        if (e != ce->baseExpr) {
+          safeExprCache[e] = false;
+          return false;
+        }
       }
-      return safeFnCache[fnSym];
-    }
-    else {
-      //primitive
-      if(! isSafePrimitive(ce)){
+    } else {
+      if(!isSafePrimitive(ce)) {
         safeExprCache[e] = false;
         return false;
-      }
-      else if (exprToMove != NULL) {
+      } else if (exprToMove != NULL) {
         //
         // Exposed by AST pattern like this:
         //          |---|------- `exprToMove`
@@ -75,14 +80,17 @@ bool SafeExprAnalysis::exprHasNoSideEffects(Expr* e, Expr* exprToMove) {
           INT_ASSERT(isSymExpr(ce->get(1)));
           std::vector<SymExpr*> syms;
           collectSymExprsFor(exprToMove, toSymExpr(ce->get(1))->symbol(), syms);
+
+          // DavidL: Is this loop correct? We exit after one iteration?
           for_vector(SymExpr, s, syms) {
-              safeExprCache[s] = false;
-              return false;
+            safeExprCache[s] = false;
+            return false;
           }
         }
       }
     }
   }
+
   safeExprCache[e] = true;
   return true;
 }
@@ -199,6 +207,7 @@ bool SafeExprAnalysis::fnHasNoSideEffects(FnSymbol* fnSym) {
     case PRIM_USED_MODULES_LIST:
     case PRIM_STRING_COPY:
     case PRIM_CAST_TO_VOID_STAR:
+    case PRIM_CAST_TO_TYPE:
     case PRIM_GET_USER_LINE:
     case PRIM_GET_USER_FILE:
     case PRIM_IS_TUPLE_TYPE:
@@ -283,8 +292,8 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_WIDE_GET_ADDR:
     case PRIM_GET_REQUESTED_SUBLOC:
     case PRIM_IS_WIDE_PTR:
-    case PRIM_CAPTURE_FN_FOR_CHPL:
-    case PRIM_CAPTURE_FN_FOR_C:
+    case PRIM_CAPTURE_FN:
+    case PRIM_CAPTURE_FN_TO_CLASS:
     case PRIM_GET_SVEC_MEMBER:
     case PRIM_GET_SVEC_MEMBER_VALUE:
     case PRIM_STACK_ALLOCATE_CLASS:
@@ -299,10 +308,8 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_REAL_TO_INT:
       return true;
     default:
-      // handle all primitives not handled here, including PRIM_UNKNOWN
-      std::cout << "Unknown primitive : " << prim->name << std::endl;
-      INT_ASSERT(false); // should not be getting those
-      // that are !isEssential and not listed above
+      INT_FATAL("Unhandled primitive: '%s'", prim->name);
+      break;
   }
   return false;
 }

@@ -37,7 +37,7 @@ use Random;
 
 {
   var D = {2..8 by -2},
-        A : [D] int;
+        A : [D] int;     // neg-stride
 
   for i in D {
     A[i] = i;

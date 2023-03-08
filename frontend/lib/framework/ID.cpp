@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -158,6 +158,8 @@ int ID::compare(const ID& other) const {
 
   // if that wasn't different, compare the id
   return this->postOrderId() - other.postOrderId();
+
+  // numChildIds_ is intentionally not compared
 }
 
 std::vector<std::pair<UniqueString,int>>
@@ -263,5 +265,29 @@ std::string ID::str() const {
   stringify(ss, chpl::StringifyKind::DEBUG_SUMMARY);
   return ss.str();
 }
+
+ID ID::fromString(Context* context, const char* idStr) {
+  if (idStr == nullptr || idStr[0] == '\0') {
+    return ID();
+  }
+
+  int atPos = 0;
+  for (atPos = 0; idStr[atPos]; atPos++) {
+    if (idStr[atPos] == '@')
+      break;
+  }
+
+  // compute the path part (not counting the '@' part)
+  auto symPath = UniqueString::get(context, idStr, atPos);
+
+  int postorder = -1;
+
+  if (idStr[atPos] == '@') {
+    postorder = std::stoi(&idStr[atPos+1]);
+  }
+
+  return ID(symPath, postorder, /* num child IDs */ -1);
+}
+
 
 } // end namespace chpl

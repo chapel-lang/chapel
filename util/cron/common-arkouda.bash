@@ -11,6 +11,7 @@ fi
 
 # Perf configuration
 export CHPL_TEST_ARKOUDA_PERF=${CHPL_TEST_ARKOUDA_PERF:-true}
+export CHPL_TEST_GEN_ARKOUDA_GRAPHS=${CHPL_TEST_GEN_ARKOUDA_GRAPHS:-true}
 if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ]; then
   source $CWD/common-perf.bash
   ARKOUDA_PERF_DIR=${ARKOUDA_PERF_DIR:-$COMMON_DIR/NightlyPerformance/arkouda}
@@ -57,7 +58,7 @@ function test_release() {
   export CHPL_TEST_PERF_DESCRIPTION=release
   export CHPL_TEST_PERF_CONFIGS="release:v,nightly"
   currentSha=`git rev-parse HEAD`
-  git checkout 1.27.0
+  git checkout 1.29.0
   git checkout $currentSha -- $CHPL_HOME/test/
   git checkout $currentSha -- $CHPL_HOME/util/cron/
   git checkout $currentSha -- $CHPL_HOME/util/test/perf/

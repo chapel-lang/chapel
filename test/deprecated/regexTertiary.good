@@ -1,5 +1,5 @@
-regexTertiary.chpl:8: warning: Casting strings to regex is deprecated. Use compile(string) from the Regex module instead.
-regexTertiary.chpl:9: warning: Casting bytes to regex is deprecated. Use compile(bytes) from the Regex module instead.
+regexTertiary.chpl:8: warning: Casting strings to regex is deprecated. Use new regex(string) from the Regex module instead.
+regexTertiary.chpl:9: warning: Casting bytes to regex is deprecated. Use new regex(bytes) from the Regex module instead.
 Search
 (matched = true, byteOffset = 0, numBytes = 8)
 (matched = true, byteOffset = 0, numBytes = 8)

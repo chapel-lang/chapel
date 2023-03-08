@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -64,6 +64,13 @@ bool AstCount::enterDecoratedClassType(DecoratedClassType* node) {
 void AstCount::exitDecoratedClassType(DecoratedClassType* node) {
 }
 
+bool AstCount::enterThunk(TemporaryConversionThunk* node) {
+  return true;
+}
+
+void AstCount::exitThunk(TemporaryConversionThunk* node) {
+}
+
 
 bool AstCount::enterAggrType(AggregateType* node) {
   numAggregateType++;
@@ -83,6 +90,10 @@ void AstCount::exitEnumType(EnumType* node) {
 
 void AstCount::visitPrimType(PrimitiveType* node) {
   numPrimitiveType++;
+}
+
+void AstCount::visitFunctionType(FunctionType* node) {
+  numFunctionType++;
 }
 
 void AstCount::visitConstrainedType(ConstrainedType* node) {

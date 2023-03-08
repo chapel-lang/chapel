@@ -12,7 +12,7 @@ use GridSolution_AdvectionCTU;
 use GridBC_AdvectionCTU;
 
 
-proc main {
+private proc main {
 
   //==== Output times ====
   write("Reading output times...");

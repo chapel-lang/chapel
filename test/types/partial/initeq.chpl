@@ -35,7 +35,7 @@ proc helper(type T, val) {
 
 proc main() {
   {
-    var r : R(string) = "hi";
+    var r : R(string, ?) = "hi";
     writeln(r.type:string);
     writeln(r.p);
   }

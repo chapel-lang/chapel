@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -183,13 +183,13 @@ class Hashed : BaseDist {
   }
 
 
-  override proc dsiSupportsPrivatization() param return true;
-  proc dsiGetPrivatizeData() return this.mapper;
+  override proc dsiSupportsPrivatization() param do return true;
+  proc dsiGetPrivatizeData() do return this.mapper;
 
   proc dsiPrivatize(privatizeData) {
     return new unmanaged Hashed(idxType, privatizeData, _to_unmanaged(this));
   }
-  proc dsiGetReprivatizeData() return 0;
+  proc dsiGetReprivatizeData() do return 0;
 
   proc dsiReprivatize(other, reprivatizeData) {
     this.mapper = other.mapper;
@@ -528,7 +528,7 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   }
 
-  proc dsiHasSingleLocalSubdomain() param return false;
+  proc dsiHasSingleLocalSubdomain() param do return false;
 
   iter dsiLocalSubdomains(loc: locale) {
     foreach (idx,l) in zip(dist.targetLocDom, dist.targetLocales) {
@@ -540,9 +540,9 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   override proc dsiSupportsAutoLocalAccess() param { return true; }
 
-  override proc dsiSupportsPrivatization() param return true;
-  proc dsiGetPrivatizeData() return dist.pid;
-  proc dsiGetReprivatizeData() return 0;
+  override proc dsiSupportsPrivatization() param do return true;
+  proc dsiGetPrivatizeData() do return dist.pid;
+  proc dsiGetReprivatizeData() do return 0;
   proc dsiPrivatize(privatizeData) {
     var privateDist = chpl_getPrivatizedCopy(dist.type, privatizeData);
     var c = new unmanaged UserMapAssocDom(idxType=idxType, mapperType=mapperType, dist=privateDist);
@@ -693,7 +693,7 @@ class UserMapAssocArr: AbsBaseArr {
   //var locAssocDoms: domain(BaseAssociativeDom);
   //var locArrsByAssoc: [locAssocDoms] LocUserMapAssocArr(idxType, mapperType, eltType);
 
-  override proc dsiGetBaseDom() return dom;
+  override proc dsiGetBaseDom() do return dom;
 
   override proc dsiIteratorYieldsLocalElements() param {
     return true;
@@ -745,8 +745,8 @@ class UserMapAssocArr: AbsBaseArr {
     }
   }
 
-  override proc dsiSupportsPrivatization() param return true;
-  proc dsiGetPrivatizeData() return 0;
+  override proc dsiSupportsPrivatization() param do return true;
+  proc dsiGetPrivatizeData() do return 0;
   proc dsiPrivatize(privatizeData) {
     var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
     var c = new unmanaged UserMapAssocArr(idxType=idxType, mapperType=mapperType, eltType=eltType, dom=privdom);
@@ -834,7 +834,7 @@ class UserMapAssocArr: AbsBaseArr {
     return dom.dist.targetLocales;
   }
 
-  proc dsiHasSingleLocalSubdomain() param return false;
+  proc dsiHasSingleLocalSubdomain() param do return false;
 
   iter dsiLocalSubdomains(loc: locale) {
     foreach locdom in dom.dsiLocalSubdomains(loc) do

@@ -1,15 +1,21 @@
 memMoveModule.chpl:1: warning: The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead
-memMoveModule.chpl:4: In function 'main':
-memMoveModule.chpl:7: warning: The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead
-memMoveModule.chpl:9: warning: The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead
-memMoveModule.chpl:15: warning: The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead
+memMoveModule.chpl:11: In function 'main':
+memMoveModule.chpl:14: warning: The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead
+memMoveModule.chpl:16: warning: The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead
 memMoveModule.chpl:22: warning: The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead
-memMoveModule.chpl:7: warning: the formals 'lhs' and 'rhs' are deprecated, please use 'x' and 'y' instead
-memMoveModule.chpl:8: warning: the formals 'lhs' and 'rhs' are deprecated, please use 'x' and 'y' instead
-memMoveModule.chpl:15: warning: 'moveToValue' is deprecated; please use 'moveFrom' instead
-memMoveModule.chpl:16: warning: 'moveToValue' is deprecated; please use 'moveFrom' instead
-memMoveModule.chpl:22: warning: The formals 'lhs' and 'rhs' are deprecated, please use 'dst' and 'src' instead
-memMoveModule.chpl:24: warning: The formals 'lhs' and 'rhs' are deprecated, please use 'dst' and 'src' instead
+memMoveModule.chpl:29: warning: The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead
+memMoveModule.chpl:14: warning: the formals 'lhs' and 'rhs' are deprecated, please use 'x' and 'y' instead
+memMoveModule.chpl:15: warning: the formals 'lhs' and 'rhs' are deprecated, please use 'x' and 'y' instead
+memMoveModule.chpl:22: warning: 'moveToValue' is deprecated; please use 'moveFrom' instead
+memMoveModule.chpl:23: warning: 'moveToValue' is deprecated; please use 'moveFrom' instead
+memMoveModule.chpl:29: warning: The formals 'lhs' and 'rhs' are deprecated, please use 'dst' and 'src' instead
+memMoveModule.chpl:31: warning: The formals 'lhs' and 'rhs' are deprecated, please use 'dst' and 'src' instead
+memMoveModule.chpl:39: warning: 'needsDeinit' is deprecated; please use 'needsDestroy' instead
+memMoveModule.chpl:40: warning: 'explicitDeinit' is now deprecated; please use 'destroy' instead
+memMoveModule.chpl:48: warning: 'moveInitializeArrayElements' is deprecated; please use 'moveArrayElements' instead
+memMoveModule.chpl:49: warning: 'moveInitializeArrayElements' is deprecated; please use 'moveArrayElements' instead
 1 :: 9
 1
 1
+R.deinit: 5
+R.deinit: 10

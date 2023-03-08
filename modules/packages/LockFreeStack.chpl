@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -132,7 +132,7 @@ module LockFreeStack {
     var _top : AtomicObject(unmanaged Node(objType)?, hasGlobalSupport=true, hasABASupport=false);
     var _manager = new owned LocalEpochManager();
 
-    proc objTypeOpt type return toNilableIfClassType(objType);
+    proc objTypeOpt type do return toNilableIfClassType(objType);
 
     proc init(type objType) {
       this.objType = objType;

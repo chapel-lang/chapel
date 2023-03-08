@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -190,6 +190,16 @@ bool CollapseBlocks::enterCondStmt(CondStmt* node)
 *                                                                           *
 ************************************* | ************************************/
 
+bool CollapseBlocks::enterThunk(TemporaryConversionThunk* node)
+{
+  return false;
+}
+
+void CollapseBlocks::exitThunk(TemporaryConversionThunk* node)
+{
+
+}
+
 bool CollapseBlocks::enterAggrType(AggregateType* node)
 {
   return false;
@@ -221,6 +231,11 @@ void CollapseBlocks::exitEnumType(EnumType* node)
 }
 
 void CollapseBlocks::visitPrimType(PrimitiveType* node)
+{
+
+}
+
+void CollapseBlocks::visitFunctionType(FunctionType* node)
 {
 
 }

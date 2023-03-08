@@ -1,0 +1,8 @@
+6
+5
+4
+3
+2
+1
+sliceNegativeStride.chpl:2: warning: arrays and array slices with negatively-strided dimensions are currently unsupported and may lead to unexpected behavior; compile with -snoNegativeStrideWarnings to suppress this warning; the dimension(s) are: (1..6 by -1)
+sliceNegativeStride.chpl:3: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing 1..6 by -1 with 1..6 by -1

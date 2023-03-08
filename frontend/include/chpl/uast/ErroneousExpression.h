@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -35,6 +35,11 @@ class ErroneousExpression final : public AstNode {
   ErroneousExpression()
     : AstNode(asttags::ErroneousExpression) {
   }
+
+  ErroneousExpression(Deserializer& des)
+    : AstNode(asttags::ErroneousExpression, des) {}
+
+
   bool contentsMatchInner(const AstNode* other) const override {
     return true;
   }
@@ -44,6 +49,13 @@ class ErroneousExpression final : public AstNode {
  public:
   ~ErroneousExpression() = default;
   static owned<ErroneousExpression> build(Builder* builder, Location loc);
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(ErroneousExpression);
+
 };
 
 

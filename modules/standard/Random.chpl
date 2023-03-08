@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -99,7 +99,7 @@ module Random {
   //
 
   private
-  proc isSupportedNumericType(type t) param
+  proc isSupportedNumericType(type t) param do
     return isNumericType(t) || isBoolType(t);
 
   /*
@@ -307,7 +307,7 @@ module Random {
       } else if isDomainType(sizeType) {
         if size.size <= 0 then
           throw new owned IllegalArgumentError('choice() size domain can not be empty');
-        if !replace && size.size > X.sizeAs(idxType) then
+        if !replace && size.size > X.sizeAs(X.idxType) then
           throw new owned IllegalArgumentError('choice() size must be smaller than x.size when replace=false');
       } else {
         compilerError('choice() size must be integral or domain');
@@ -331,7 +331,7 @@ module Random {
 
     if isNothingType(sizeType) {
       // Return 1 sample
-      var randVal = stream.getNext(resultType=int, 0, X.sizeAs(idxType)-1);
+      var randVal = stream.getNext(resultType=int, 0, X.sizeAs(X.idxType)-1);
       var randIdx = X.dim(0).orderToIndex(randVal);
       return randIdx;
     } else {
@@ -350,16 +350,16 @@ module Random {
 
       if replace {
         for sample in samples {
-          var randVal = stream.getNext(resultType=int, 0, X.sizeAs(idxType)-1);
+          var randVal = stream.getNext(resultType=int, 0, X.sizeAs(X.idxType)-1);
           var randIdx = X.dim(0).orderToIndex(randVal);
           sample = randIdx;
         }
       } else {
-        if numElements < log2(X.sizeAs(idxType)) {
+        if numElements < log2(X.sizeAs(X.idxType)) {
           var indices: set(int);
           var i: int = 0;
           while i < numElements {
-            var randVal = stream.getNext(resultType=int, 0, X.sizeAs(idxType)-1);
+            var randVal = stream.getNext(resultType=int, 0, X.sizeAs(X.idxType)-1);
             if !indices.contains(randVal) {
               var randIdx = X.dim(0).orderToIndex(randVal);
               samples[i] = randIdx;
@@ -390,7 +390,7 @@ module Random {
     import Search;
     import Sort;
 
-    if prob.size != X.sizeAs(idxType) {
+    if prob.size != X.sizeAs(X.idxType) {
       throw new owned IllegalArgumentError('choice() x.size must be equal to prob.size');
     }
 
@@ -399,7 +399,7 @@ module Random {
 
     const low = X.low,
           stride = abs(X.stride);
-    ref P = prob.reindex(0..<X.sizeAs(idxType));
+    ref P = prob.reindex(0..<X.sizeAs(X.idxType));
 
     // Construct cumulative sum array
     var cumulativeArr = (+ scan P): real;
@@ -754,23 +754,23 @@ module Random {
     record SeedGenerator {
       /*
         Generate a seed based on the current time in microseconds as
-        reported by :proc:`Time.getCurrentTime`. This seed is not
+        reported by :proc:`Time.timeSinceEpoch`. This seed is not
         suitable for the NPB RNG since that requires an odd seed.
       */
       proc type currentTime: int(64) {
         use Time;
-        const seed = getCurrentTime(unit=TimeUnits.microseconds):int(64);
+        const seed = (timeSinceEpoch().totalSeconds()*1_000_000):int(64);
         return seed;
 
       }
       /*
         Generate an odd seed based on the current time in microseconds as
-        reported by :proc:`Time.getCurrentTime`. This seed is suitable
+        reported by :proc:`Time.timeSinceEpoch`. This seed is suitable
         for the NPB RNG.
       */
       proc type oddCurrentTime: int(64) {
         use Time;
-        const seed = getCurrentTime(unit=TimeUnits.microseconds):int(64);
+        const seed = (timeSinceEpoch().totalSeconds()*1_000_000): int;
         const oddseed = if seed % 2 == 0 then seed + 1 else seed;
         return oddseed;
       }
@@ -2534,10 +2534,10 @@ module Random {
        This function arranges for that to be the case given any input.
      */
     inline
-    proc pcg_getvalid_inc(initseq:uint(64)):uint(64) return (initseq<<1) | 1;
+    proc pcg_getvalid_inc(initseq:uint(64)):uint(64) do return (initseq<<1) | 1;
     pragma "no doc" // documented in the not param version
     inline
-    proc pcg_getvalid_inc(param initseq:uint(64)) param return (initseq<<1) | 1;
+    proc pcg_getvalid_inc(param initseq:uint(64)) param do return (initseq<<1) | 1;
 
 
     // pcg_advance_lcg_8/16/32/64

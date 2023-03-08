@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +24,9 @@
 #include "chpl/uast/all-uast.h"
 #include "InitResolver.h"
 
+#include "llvm/ADT/ArrayRef.h"
+#include "llvm/ADT/SmallVector.h"
+
 namespace chpl {
 namespace resolution {
 
@@ -38,6 +41,9 @@ namespace resolution {
    QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(CONTEXT)))
 
 struct Resolver {
+  // types used below
+  using ReceiverScopesVec = llvm::SmallVector<const Scope*, 3>;
+
   // inputs to the resolution process
   Context* context = nullptr;
   const uast::AstNode* symbol = nullptr;
@@ -61,10 +67,10 @@ struct Resolver {
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
   std::set<ID> splitInitTypeInferredVariables;
+  std::set<UniqueString> namesWithErrorsEmitted;
   const uast::Call* inLeafCall = nullptr;
-  bool receiverScopeComputed = false;
-  const Scope* savedReceiverScope = nullptr;
-  const types::CompositeType* savedReceiverType = nullptr;
+  bool receiverScopesComputed = false;
+  ReceiverScopesVec savedReceiverScopes;
   Resolver* parentResolver = nullptr;
   owned<InitResolver> initResolver = nullptr;
 
@@ -72,10 +78,14 @@ struct Resolver {
 
   // the resolution results for the contained AstNodes
   ResolutionResultByPostorderID& byPostorder;
+
   // the set of POI scopes from which POI functions were used --
   // these are gathered here during resolution in order to
   // allow accurate caching and reuse of instantiations
   PoiInfo poiInfo;
+
+  // the return type of the function (inferred or not)
+  types::QualifiedType returnType;
 
   static PoiInfo makePoiInfo(const PoiScope* poiScope) {
     if (poiScope == nullptr)
@@ -186,6 +196,12 @@ struct Resolver {
                        const PoiScope* poiScope,
                        ResolutionResultByPostorderID& byPostorder);
 
+  // set up Resolver to scope resolve a parent class type expression
+  static Resolver
+  createForParentClassScopeResolve(Context* context,
+                                   const uast::AggregateDecl* decl,
+                                   ResolutionResultByPostorderID& byPostorder);
+
   // set up Resolver to resolve a param for loop body
   static Resolver paramLoopResolver(Resolver& parent,
                                     const uast::For* loop,
@@ -200,14 +216,25 @@ struct Resolver {
    */
   types::QualifiedType typeErr(const uast::AstNode* ast, const char* msg);
 
-  /* Compute the receiver scope (when resolving a method)
-     and return nullptr if it is not applicable.
+  /* Gather scopes for a given receiver decl and all its parents */
+  static ReceiverScopesVec
+  gatherReceiverAndParentScopesForDeclId(Context* context,
+                                         ID aggregateDeclId);
+  /* Gather scopes for a given receiver type and all its parents */
+  static ReceiverScopesVec
+  gatherReceiverAndParentScopesForType(Context* context,
+                                       const types::Type* thisType);
+
+
+  /* Compute the receiver scopes (when resolving a method)
+     and return an empty vector if it is not applicable.
    */
-  const Scope* methodReceiverScope(bool recompute = false);
-  /* Compute the receiver scope (when resolving a method)
-     and return nullptr if it is not applicable.
+  ReceiverScopesVec methodReceiverScopes(bool recompute = false);
+
+  /* Compute the receiver type (when resolving a method)
+     and return a type containing nullptr if it is not applicable.
    */
-  const types::CompositeType* methodReceiverType();
+  types::QualifiedType methodReceiverType();
 
   /* When resolving a generic record or a generic function,
      there might be generic types that we don't know yet.
@@ -253,6 +280,12 @@ struct Resolver {
                          types::QualifiedType declaredType,
                          types::QualifiedType initExprType);
 
+  // helper for getTypeForDecl
+  // tries to resolve an init= that initializes one type from another
+  const types::Type* tryResolveCrossTypeInitEq(const uast::AstNode* ast,
+                                               types::QualifiedType lhsType,
+                                               types::QualifiedType rhsType);
+
   // Helper to figure out what type to use for a declaration
   // that can have both a declared type and an init expression.
   // If both are provided, checks that they are compatible.
@@ -274,6 +307,9 @@ struct Resolver {
                                          const CallInfo& ci,
                                          const CallResolutionResult& c);
 
+  // issue error for M.x where x is not found in a module M
+  void issueErrorForFailedModuleDot(const uast::Dot* dot, ID moduleId);
+
   // handle the result of one of the functions to resolve a call. Handles:
   //  * r.setMostSpecific
   //  * r.setPoiScope
@@ -288,7 +324,9 @@ struct Resolver {
   void handleResolvedAssociatedCall(ResolvedExpression& r,
                                     const uast::AstNode* astForErr,
                                     const CallInfo& ci,
-                                    const CallResolutionResult& c);
+                                    const CallResolutionResult& c,
+                                    AssociatedAction::Action action,
+                                    ID id);
 
   // If the variable with the passed ID has unknown or generic type,
   // and it has not yet been initialized, set its type to rhsType.
@@ -326,6 +364,10 @@ struct Resolver {
   void resolveTupleDecl(const uast::TupleDecl* td,
                         const types::Type* useType);
 
+  void validateAndSetToId(ResolvedExpression& r,
+                          const uast::AstNode* exr,
+                          const ID& id);
+
   // e.g. new shared C(a, 0)
   // also resolves initializer call as a side effect
   bool resolveSpecialNewCall(const uast::Call* call);
@@ -341,10 +383,22 @@ struct Resolver {
                                            const types::QualifiedType& left,
                                            const types::QualifiedType& right);
 
+  // find the element, if any, that a name refers to.
+  // Sets outAmbiguous to true if multiple elements of the same name are found,
+  // and to false otherwise.
+  ID scopeResolveEnumElement(const uast::Enum* enumAst,
+                             UniqueString elementName,
+                             const uast::AstNode* nodeForErr,
+                             bool& outAmbiguous);
+  // Given the results of looking up an enum element, construct a QualifiedType.
+  types::QualifiedType
+  typeForScopeResolvedEnumElement(const types::EnumType* enumType,
+                                            const ID& refersToId,
+                                            bool ambiguous);
+  // Given a particular enum type, determine the type of a particular element.
   types::QualifiedType typeForEnumElement(const types::EnumType* type,
                                           UniqueString elemName,
-                                          const uast::AstNode* astForErr,
-                                          ID& outElemId);
+                                          const uast::AstNode* astForErr);
 
   // helper to resolve a special call
   // returns 'true' if the call was a special call handled here, false
@@ -368,20 +422,14 @@ struct Resolver {
   // prepare a CallInfo by inspecting the called expression and actuals
   CallInfo prepareCallInfoNormalCall(const uast::Call* call);
 
-  // resolve 'new R' for a given record type 'R'
-  void resolveNewForRecord(const uast::New* node,
-                           const types::RecordType* recordType);
-
-  // resolve 'new C' for a given class type 'C', including management
-  void resolveNewForClass(const uast::New* node,
-                          const types::ClassType* classType);
+  bool identHasMoreMentions(const uast::Identifier* ident);
 
   std::vector<BorrowedIdsWithName>
   lookupIdentifier(const uast::Identifier* ident,
-                   const Scope* receiverScope);
+                   llvm::ArrayRef<const Scope*> receiverScopes);
 
-  bool resolveIdentifier(const uast::Identifier* ident,
-                         const Scope* receiverScope);
+  void resolveIdentifier(const uast::Identifier* ident,
+                         llvm::ArrayRef<const Scope*> receiverScopes);
 
   /* Resolver keeps a stack of scopes and a stack of decls.
      enterScope and exitScope update those stacks. */
@@ -433,6 +481,9 @@ struct Resolver {
   bool enter(const uast::ReduceIntent* reduce);
   void exit(const uast::ReduceIntent* reduce);
 
+  bool enter(const uast::Reduce* reduce);
+  void exit(const uast::Reduce* reduce);
+
   bool enter(const uast::TaskVar* taskVar);
   void exit(const uast::TaskVar* taskVar);
 
@@ -444,6 +495,15 @@ struct Resolver {
 
   bool enter(const uast::Try* ret);
   void exit(const uast::Try* ret);
+
+  bool enter(const uast::Catch* ret);
+  void exit(const uast::Catch* ret);
+
+  bool enter(const uast::Use* node);
+  void exit(const uast::Use* node);
+
+  bool enter(const uast::Import* node);
+  void exit(const uast::Import* node);
 
   // if none of the above is called, fall back on this one
   bool enter(const uast::AstNode* ast);

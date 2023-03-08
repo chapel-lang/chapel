@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -160,10 +160,10 @@ domain or array.
 
     use CyclicDist;
 
-    var CyclicDom1 = newCyclicDom({1..5, 1..5});
-    var CyclicArr1 = newCyclicArr({1..5, 1..5}, real);
-    var CyclicDom2 = newCyclicDom(1..5, 1..5);
-    var CyclicArr2 = newCyclicArr(1..5, 1..5, real);
+    var CyclicDom1 = Cyclic.createDomain({1..5, 1..5});
+    var CyclicArr1 = Cyclic.createArray({1..5, 1..5}, real);
+    var CyclicDom2 = Cyclic.createDomain(1..5, 1..5);
+    var CyclicArr2 = Cyclic.createArray(1..5, 1..5, real);
 
 
 **Data-Parallel Iteration**
@@ -326,9 +326,9 @@ proc Cyclic.init(other: Cyclic, privateData,
   dataParMinGranularity = privateData[4];
 }
 
-override proc Cyclic.dsiSupportsPrivatization() param return true;
+override proc Cyclic.dsiSupportsPrivatization() param do return true;
 
-proc Cyclic.dsiGetPrivatizeData() return (startIdx,
+proc Cyclic.dsiGetPrivatizeData() do return (startIdx,
                                           targetLocDom.dims(),
                                           dataParTasksPerLocale,
                                           dataParIgnoreRunningTasks,
@@ -338,7 +338,7 @@ proc Cyclic.dsiPrivatize(privatizeData) {
   return new unmanaged Cyclic(_to_unmanaged(this), privatizeData);
 }
 
-proc Cyclic.dsiGetReprivatizeData() return 0;
+proc Cyclic.dsiGetReprivatizeData() do return 0;
 
 proc Cyclic.dsiReprivatize(other, reprivatizeData) {
   targetLocDom = other.targetLocDom;
@@ -555,27 +555,27 @@ override proc CyclicDom.dsiDisplayRepresentation() {
 proc CyclicDom.parSafe param {
   compilerError("this domain type does not support 'parSafe'");
 }
-override proc CyclicDom.dsiLow           return whole.lowBound;
-override proc CyclicDom.dsiHigh          return whole.highBound;
-override proc CyclicDom.dsiAlignedLow    return whole.low;
-override proc CyclicDom.dsiAlignedHigh   return whole.high;
-override proc CyclicDom.dsiFirst         return whole.first;
-override proc CyclicDom.dsiLast          return whole.last;
-override proc CyclicDom.dsiStride        return whole.stride;
-override proc CyclicDom.dsiAlignment     return whole.alignment;
-proc CyclicDom.dsiNumIndices    return whole.sizeAs(uint);
-proc CyclicDom.dsiDim(d)        return whole.dim(d);
-proc CyclicDom.dsiDim(param d)  return whole.dim(d);
-proc CyclicDom.dsiDims()        return whole.dims();
-proc CyclicDom.dsiGetIndices()  return whole.getIndices();
-proc CyclicDom.dsiMember(i)     return whole.contains(i);
-proc CyclicDom.doiToString()    return whole:string;
+override proc CyclicDom.dsiLow do           return whole.lowBound;
+override proc CyclicDom.dsiHigh do          return whole.highBound;
+override proc CyclicDom.dsiAlignedLow do    return whole.low;
+override proc CyclicDom.dsiAlignedHigh do   return whole.high;
+override proc CyclicDom.dsiFirst do         return whole.first;
+override proc CyclicDom.dsiLast do          return whole.last;
+override proc CyclicDom.dsiStride do        return whole.stride;
+override proc CyclicDom.dsiAlignment do     return whole.alignment;
+proc CyclicDom.dsiNumIndices do    return whole.sizeAs(uint);
+proc CyclicDom.dsiDim(d) do        return whole.dim(d);
+proc CyclicDom.dsiDim(param d) do  return whole.dim(d);
+proc CyclicDom.dsiDims() do        return whole.dims();
+proc CyclicDom.dsiGetIndices() do  return whole.getIndices();
+proc CyclicDom.dsiMember(i) do     return whole.contains(i);
+proc CyclicDom.doiToString() do    return whole:string;
 //proc CyclicDom.dsiSerialWrite(x) { x.write(whole); }
-proc CyclicDom.dsiLocalSlice(param stridable, ranges) return whole((...ranges));
-override proc CyclicDom.dsiIndexOrder(i)              return whole.indexOrder(i);
-override proc CyclicDom.dsiMyDist()                   return dist;
+proc CyclicDom.dsiLocalSlice(param stridable, ranges) do return whole((...ranges));
+override proc CyclicDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
+override proc CyclicDom.dsiMyDist() do                   return dist;
 
-proc CyclicDom.getLocDom(localeIdx) return locDoms(localeIdx);
+proc CyclicDom.getLocDom(localeIdx) do return locDoms(localeIdx);
 
 proc CyclicDom.dsiSetIndices(x: domain) {
   whole = x;
@@ -697,9 +697,9 @@ proc type CyclicDom.chpl__deserialize(data) {
                                 data);
 }
 
-override proc CyclicDom.dsiSupportsPrivatization() param return true;
+override proc CyclicDom.dsiSupportsPrivatization() param do return true;
 
-proc CyclicDom.dsiGetPrivatizeData() return 0;
+proc CyclicDom.dsiGetPrivatizeData() do return 0;
 
 proc CyclicDom.dsiPrivatize(privatizeData) {
   var privdist = chpl_getPrivatizedCopy(dist.type, dist.pid);
@@ -707,7 +707,7 @@ proc CyclicDom.dsiPrivatize(privatizeData) {
                                  privdist, locDoms, whole);
 }
 
-proc CyclicDom.dsiGetReprivatizeData() return 0;
+proc CyclicDom.dsiGetReprivatizeData() do return 0;
 
 proc CyclicDom.dsiReprivatize(other, reprivatizeData) {
   locDoms = other.locDoms;
@@ -727,7 +727,7 @@ class LocCyclicDom {
 //
 // Added as a performance stopgap to avoid returning a domain
 //
-proc LocCyclicDom.contains(i) return myBlock.contains(i);
+proc LocCyclicDom.contains(i) do return myBlock.contains(i);
 
 
 class CyclicArr: BaseRectangularArr {
@@ -758,7 +758,7 @@ override proc CyclicArr.dsiDisplayRepresentation() {
   dom.dsiDisplayRepresentation();
 }
 
-override proc CyclicArr.dsiGetBaseDom() return dom;
+override proc CyclicArr.dsiGetBaseDom() do return dom;
 
 override proc CyclicArr.dsiIteratorYieldsLocalElements() param {
   return true;
@@ -836,9 +836,9 @@ proc type CyclicArr.chpl__deserialize(data) {
                                 data);
 }
 
-override proc CyclicArr.dsiSupportsPrivatization() param return true;
+override proc CyclicArr.dsiSupportsPrivatization() param do return true;
 
-proc CyclicArr.dsiGetPrivatizeData() return 0;
+proc CyclicArr.dsiGetPrivatizeData() do return 0;
 
 proc CyclicArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
@@ -927,7 +927,7 @@ proc CyclicArr.dsiAccess(i:rank*idxType) ref {
   return locArr(dom.dist.targetLocsIdx(i))(i);
 }
 
-proc CyclicArr.dsiAccess(i: idxType...rank) ref
+proc CyclicArr.dsiAccess(i: idxType...rank) ref do
   return dsiAccess(i);
 
 proc CyclicArr.dsiBoundsCheck(i: rank*idxType) {
@@ -953,7 +953,7 @@ override proc CyclicArr.dsiStaticFastFollowCheck(type leadType) param {
   }
 }
 
-proc CyclicArr.dsiDynamicFastFollowCheck(lead: [])
+proc CyclicArr.dsiDynamicFastFollowCheck(lead: []) do
   return this.dsiDynamicFastFollowCheck(lead.domain);
 
 proc CyclicArr.dsiDynamicFastFollowCheck(lead: domain) {
@@ -1125,6 +1125,8 @@ private proc canDoAnyToCyclic(A, aView, B, bView) param : bool {
 // DefaultRectangular
 proc CyclicArr.doiBulkTransferFromAny(destDom, Src, srcDom) : bool
 where canDoAnyToCyclic(this, destDom, Src, srcDom) {
+  if !chpl_allStridesArePositive(this, destDom, Src, srcDom) then return false;
+
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicDist.doiBulkTransferFromAny");
 
@@ -1164,6 +1166,7 @@ where canDoAnyToCyclic(this, destDom, Src, srcDom) {
 // For assignments of the form: DefaultRectangular = Cyclic
 proc CyclicArr.doiBulkTransferToKnown(srcDom, Dest:DefaultRectangularArr, destDom) : bool
 where useBulkTransferDist {
+  if !chpl_allStridesArePositive(this, srcDom, Dest, destDom) then return false;
 
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicDist.doiBulkTransferToKnown(DefaultRectangular)");
@@ -1207,6 +1210,7 @@ where useBulkTransferDist {
 // For assignments of the form: Cyclic = DefaultRectangular
 proc CyclicArr.doiBulkTransferFromKnown(destDom, Src:DefaultRectangularArr, srcDom) : bool
 where useBulkTransferDist {
+  if !chpl_allStridesArePositive(this, destDom, Src, srcDom) then return false;
 
   if debugCyclicDistBulkTransfer then
     writeln("In CyclicArr.doiBulkTransferFromKnown(DefaultRectangular)");
@@ -1254,10 +1258,28 @@ proc Cyclic.dsiTargetLocales() const ref {
   return targetLocs;
 }
 
+proc type Cyclic.createDomain(dom: domain) {
+  return dom dmapped Cyclic(startIdx=dom.lowBound);
+}
+
+proc type Cyclic.createDomain(rng: range...) {
+  return createDomain({(...rng)});
+}
+
+proc type Cyclic.createArray(dom: domain, type eltType) {
+  var D = createDomain(dom);
+  var A: [D] eltType;
+  return A;
+}
+
+proc type Cyclic.createArray(rng: range..., type eltType) {
+  return createArray({(...rng)}, eltType);
+}
+
 // Cyclic subdomains are represented as a single domain
 
-proc CyclicArr.dsiHasSingleLocalSubdomain() param return true;
-proc CyclicDom.dsiHasSingleLocalSubdomain() param return true;
+proc CyclicArr.dsiHasSingleLocalSubdomain() param do return true;
+proc CyclicDom.dsiHasSingleLocalSubdomain() param do return true;
 
 proc CyclicArr.dsiLocalSubdomain(loc: locale) {
   if (loc == here) {
@@ -1281,20 +1303,24 @@ proc CyclicDom.dsiLocalSubdomain(loc: locale) {
   }
 }
 
+deprecated "'newCyclicDom' is deprecated - please use 'Cyclic.createDomain' instead"
 proc newCyclicDom(dom: domain) {
   return dom dmapped Cyclic(startIdx=dom.lowBound);
 }
 
+deprecated "'newCyclicArr' is deprecated - please use 'Cyclic.createArray' instead"
 proc newCyclicArr(dom: domain, type eltType) {
   var D = newCyclicDom(dom);
   var A: [D] eltType;
   return A;
 }
 
+deprecated "'newCyclicDom' is deprecated - please use 'Cyclic.createDomain' instead"
 proc newCyclicDom(rng: range...) {
   return newCyclicDom({(...rng)});
 }
 
+deprecated "'newCyclicArr' is deprecated - please use 'Cyclic.createArray' instead"
 proc newCyclicArr(rng: range..., type eltType) {
   return newCyclicArr({(...rng)}, eltType);
 }

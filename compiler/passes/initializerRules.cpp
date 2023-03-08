@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -282,10 +282,7 @@ static InitNormalize preNormalize(AggregateType* at,
 static void preNormalizeInit(FnSymbol* fn) {
   AggregateType* at = toAggregateType(fn->_this->type);
 
-  if (fn->throwsError() == true) {
-    USR_FATAL(fn, "initializers are not yet allowed to throw errors");
-
-  } else if (at->isRecord() == true || at->isUnion()) {
+  if (at->isRecord() == true || at->isUnion()) {
     preNormalizeInitRecordUnion(fn);
 
   } else if (at->isClass()  == true) {
@@ -526,7 +523,7 @@ static InitNormalize preNormalize(AggregateType* at,
         checkInvalidInit(state, callExpr);
         state.completePhase1(callExpr);
 
-        stmt->remove();
+        stmt->replace(new CallExpr(PRIM_INIT_DONE));
 
         stmt = next;
 
@@ -1421,6 +1418,9 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
 
   forv_Vec(FnSymbol, method, at->methods) {
     if (method->isPostInitializer()) {
+      if (method->throwsError() == true) {
+        USR_FATAL_CONT(method, "postinit cannot be declared as throws yet");
+      }
       if (method->where == NULL) {
         found = true;
       }

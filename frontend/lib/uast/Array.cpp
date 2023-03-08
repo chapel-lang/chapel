@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,8 +26,9 @@ namespace uast {
 
 
 owned<Array> Array::build(Builder* builder, Location loc,
-                          AstList exprs) {
-  Array* ret = new Array(std::move(exprs));
+                          AstList exprs, bool trailingComma,
+                          bool associative) {
+  Array* ret = new Array(std::move(exprs), trailingComma, associative);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

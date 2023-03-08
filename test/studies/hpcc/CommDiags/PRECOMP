@@ -17,7 +17,7 @@
 
 import sys, shutil
 
-timerstr = 'getCurrentTime()'
+timerstr = 'timeSinceEpoch()'
 testname = sys.argv[1][0:sys.argv[1].find('_commDiags')]
 
 #

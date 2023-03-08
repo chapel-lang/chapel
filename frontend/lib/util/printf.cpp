@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,6 +20,14 @@
 #include "chpl/util/assertions.h"
 
 namespace chpl {
+
+std::string vprintToString(const char* format, ...) {
+  va_list vl;
+  va_start(vl, format);
+  std::string result = vprintToString(format, vl);
+  va_end(vl);
+  return result;
+}
 
 std::string vprintToString(const char* format, va_list vl) {
   // using an argument list after va_end is undefined

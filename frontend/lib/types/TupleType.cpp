@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -42,7 +42,7 @@ void TupleType::stringify(std::ostream& ss,
   auto sorted = sortedSubstitutions();
   bool emittedField = false;
   ss << "(";
-  for (auto sub : sorted) {
+  for (const auto& sub : sorted) {
     if (emittedField) ss << ", ";
     if (sub.second.type()) {
       sub.second.type()->stringify(ss, stringKind);
@@ -131,7 +131,7 @@ TupleType::getReferentialTuple(Context* context,
   for (auto t : eltTypes) {
     // is the default intent for this type a variation of ref?
     QualifiedType testFormal = QualifiedType(QualifiedType::DEFAULT_INTENT, t);
-    auto kind = resolution::resolveIntent(testFormal, false);
+    auto kind = resolution::resolveIntent(testFormal, false, false);
     bool defaultIntentRef = (kind == QualifiedType::CONST_REF ||
                              kind == QualifiedType::REF);
     if (defaultIntentRef) {
@@ -165,7 +165,7 @@ TupleType::getVarArgTuple(Context* context,
                           std::vector<QualifiedType> eltTypes) {
   SubstitutionsMap subs;
   int i = 0;
-  for (auto t : eltTypes) {
+  for (const auto& t : eltTypes) {
     subs.emplace(idForTupElt(i), t);
     i++;
   }

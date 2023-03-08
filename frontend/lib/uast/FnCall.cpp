@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,12 +25,28 @@ namespace chpl {
 namespace uast {
 
 
-  owned<FnCall> FnCall::build(Builder* builder,
-                              Location loc,
-                              owned<AstNode> calledExpression,
-                              AstList actuals,
-                              std::vector<UniqueString> actualNames,
-                              bool callUsedSquareBrackets) {
+void FnCall::dumpFieldsInner(const DumpSettings& s) const {
+  Call::dumpFieldsInner(s);
+
+  if (callUsedSquareBrackets_) {
+    s.out << "[]";
+  }
+
+  int i = 0;
+  for (auto name : actualNames_) {
+    if (!name.isEmpty()) {
+      s.out << " actual " << i << " name= " << name.str();
+    }
+    i++;
+  }
+}
+
+owned<FnCall> FnCall::build(Builder* builder,
+                            Location loc,
+                            owned<AstNode> calledExpression,
+                            AstList actuals,
+                            std::vector<UniqueString> actualNames,
+                            bool callUsedSquareBrackets) {
   AstList lst;
 
   lst.push_back(std::move(calledExpression));
@@ -44,6 +60,7 @@ namespace uast {
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
+
 owned<FnCall> FnCall::build(Builder* builder,
                             Location loc,
                             owned<AstNode> calledExpression,
@@ -57,6 +74,7 @@ owned<FnCall> FnCall::build(Builder* builder,
                        std::move(emptyActualNames),
                        callUsedSquareBrackets);
 }
+
 owned<FnCall> FnCall::build(Builder* builder,
                             Location loc,
                             owned<AstNode> calledExpression,

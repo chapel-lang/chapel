@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -63,6 +63,10 @@ module MemConsistency {
       ch.write("memory_order_seq_cst");
     else
       ch.write("memory_order_unknown");
+  }
+
+  proc memory_order.encodeTo(ch) throws {
+    writeThis(ch);
   }
 
   extern const memory_order_relaxed:memory_order;

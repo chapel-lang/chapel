@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -260,14 +260,44 @@ proc chown(name: string, uid: int, gid: int) throws {
    :arg metadata: This argument indicates whether to copy metadata associated
                   with the source file.  It is set to `false` by default.
    :type metadata: `bool`
+   :arg permissions: This argument indicates whether to copy file permissions
+                     from the source file. It is set to `true` by default.
+   :type permissions: `bool`
 
    :throws IsADirectoryError: when `dest` is directory.
    :throws SystemError: thrown to describe another error if it occurs.
 */
-proc copy(src: string, dest: string, metadata: bool = false) throws {
+proc copy(src: string, dest: string, metadata: bool = false, permissions: bool = true) throws {
   var destFile = dest;
 
   proc copyMode(src: string, dest: string) throws {
+    proc getMode(name: string): int throws {
+      extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): errorCode;
+
+      var ret:c_int;
+      var err = chpl_fs_viewmode(ret, unescape(name).c_str());
+      if err then try ioerror(err, "in getMode", name);
+      return ret;
+    }
+
+    proc chmod(name: string, mode: int) throws {
+      extern proc chpl_fs_chmod(name: c_string, mode: int): errorCode;
+
+      var err = chpl_fs_chmod(unescape(name).c_str(), mode);
+      if err then try ioerror(err, "in chmod", name);
+    }
+
+    try {
+      // Gets the mode from the source file.
+      var srcMode = getMode(src);
+      // Sets the mode of the destination to the source's mode.
+      chmod(dest, srcMode);
+    } catch e: SystemError {
+      // Hide implementation details.
+      try ioerror(e.err, "in copyMode " + src, dest);
+    }
+
+/*
     use OS.POSIX;
     var statStruct: struct_stat;
     const statRet = stat(src.c_str(), c_ptrTo(statStruct));
@@ -275,6 +305,7 @@ proc copy(src: string, dest: string, metadata: bool = false) throws {
     if statRet != 0 then try ioerror(statRet:errorCode, "in copy's stat");;
     const chmodRet = chmod(dest.c_str(), statStruct.st_mode);
     if chmodRet != 0 then try ioerror(chmodRet:errorCode, "in copy's chmod");;
+*/
   }
 
   try {
@@ -291,8 +322,11 @@ proc copy(src: string, dest: string, metadata: bool = false) throws {
     // Destination didn't exist before, and we're overwriting it anyways.
   }
 
-  try copyFile(src, destFile);
-  try copyMode(src, destFile);
+  try copyFileImpl(src, destFile);
+
+  if permissions {
+    try copyMode(src, destFile);
+  }
 
   if (metadata) {
     extern proc chpl_fs_copy_metadata(source: c_string, dest: c_string): errorCode;
@@ -328,7 +362,7 @@ proc copy(src: string, dest: string, metadata: bool = false) throws {
                         when `dest` is not writable,
                         or to describe another error if it occurs.
 */
-proc copyFile(src: string, dest: string) throws {
+private proc copyFileImpl(src: string, dest: string) throws {
   // This implementation is based off of the python implementation for copyfile,
   // with some slight differences.  That implementation was found at:
   // https://bitbucket.org/mirror/cpython/src/c8ce5bca0fcda4307f7ac5d69103ce128a562705/Lib/shutil.py?at=default
@@ -356,14 +390,14 @@ proc copyFile(src: string, dest: string) throws {
   }
 
   // Open src for reading, open dest for writing
-  var srcFile = try open(src, iomode.r);
+  var srcFile = try open(src, ioMode.r);
   defer {
     try {
       srcFile.close();
     } catch { /* ignore errors */ }
   }
 
-  var destFile = try open(dest, iomode.cw);
+  var destFile = try open(dest, ioMode.cw);
   defer {
     try {
       destFile.close();
@@ -389,7 +423,7 @@ proc copyFile(src: string, dest: string) throws {
   var numRead: int = 0;
   // If increasing the read size, make sure there's a test in
   // test/library/standard/FileSystem that copies a file larger than one buffer.
-  while (try srcChnl.readbytes(buf, len=4096)) {
+  while (try srcChnl.readBytes(buf, maxSize=4096)) {
     try destChnl.write(buf);
     // From mppf:
     // If you want it to be faster, we can make it only buffer once (sharing
@@ -410,6 +444,11 @@ proc copyFile(src: string, dest: string) throws {
   try srcChnl.close();
   try destFile.close();
   try srcFile.close();
+}
+
+deprecated "'FileSystem.copyFile' is deprecated. Please use 'FileSystem.copy' instead"
+proc copyFile(src: string, dest: string) throws {
+  copyFileImpl(src, dest);
 }
 
 /* Copies the permissions of the file indicated by `src` to the file indicated
@@ -453,11 +492,11 @@ proc copyMode(out error: errorCode, src: string, dest: string) {
 
 /* Will recursively copy the tree which lives under `src` into `dst`,
    including all contents and permissions. Metadata such as file creation and
-   modification times, uid, and gid will not be preserved.  `dst` must not
-   previously exist, this function assumes it can create it and any missing
-   parent directories. If `copySymbolically` is `true`, symlinks will be
-   copied as symlinks, otherwise their contents and metadata will be copied
-   instead.
+   modification times, uid, and gid will be preserved if `metadata` is true.
+   `dst` must not previously exist, this function assumes it can create it and
+   any missing parent directories. If `copySymbolically` is `true`, symlinks
+   will be copied as symlinks, otherwise their contents and metadata will be
+   copied instead.
 
    :arg src: The root of the source tree to be copied.
    :type src: `string`
@@ -469,12 +508,15 @@ proc copyMode(out error: errorCode, src: string, dest: string) {
                           symlinks in the source directory.  It is set to
                           `false` by default
    :type copySymbolically: `bool`
+   :arg metadata: This argument is used to indicate whether to copy file metadata.
+                  It is set to `false` by default.
+   :type metadata: `bool`
 
    :throws FileExistsError: when the `dest` already exists.
    :throws NotADirectoryError: when `src` is not a directory.
    :throws SystemError: thrown to describe another error if it occurs.
 */
-proc copyTree(src: string, dest: string, copySymbolically: bool=false) throws {
+proc copyTree(src: string, dest: string, copySymbolically: bool=false, metadata: bool=false) throws {
   var expectedErrorCases = try exists(dest);
   if (expectedErrorCases) then
     // dest exists.  That's not ideal.
@@ -485,10 +527,10 @@ proc copyTree(src: string, dest: string, copySymbolically: bool=false) throws {
     try ioerror(ENOTDIR:errorCode, "in copyTree(" + src + ", " + dest + ")");
 
   var srcPath = try realPath(src);
-  try copyTreeHelper(srcPath, dest, copySymbolically);
+  try copyTreeHelper(srcPath, dest, copySymbolically, metadata);
 }
 
-private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=false) throws {
+private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=false, metadata: bool=false) throws {
   extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): errorCode;
 
   // Create dest
@@ -497,6 +539,15 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
   if err then try ioerror(err, "in copyTreeHelper", src);
 
   try mkdir(dest, mode=oldMode, parents=true);
+
+  if metadata {
+    try {
+      var uid = getUid(src),
+          gid = getGid(src);
+      chown(dest, uid, gid);
+    }
+  }
+
 
   for filename in listDir(path=src, dirs=false, files=true, listlinks=true) {
     // Take care of files in src
@@ -509,7 +560,7 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
     } else {
       // Either we didn't find a link, or copy symbolically is false, which
       // means we want the contents of the linked file, not a link itself.
-      try copy(fileSrcName, fileDestName, metadata=false);
+      try copy(fileSrcName, fileDestName, metadata=metadata);
     }
   }
 
@@ -1323,14 +1374,16 @@ proc sameFile(file1: string, file2: string): bool throws {
 
    :throws SystemError: Thrown to describe an error if one occurs.
 */
+deprecated "'sameFile(file, file)' is deprecated. Please use 'sameFile(string, string)' instead"
 proc sameFile(file1: file, file2: file): bool throws {
   extern proc chpl_fs_samefile(ref ret: c_int, file1: qio_file_ptr_t,
                                file2: qio_file_ptr_t): errorCode;
 
-  // If one of the files references a null file, propagate to avoid a segfault.
-  try {
-    file1.check();
-    file2.check();
+  // If one of the files references a null or closed file, throw to avoid a
+  // segfault.
+  if (!file1.isOpen() || !file2.isOpen()) {
+    throw createSystemError(EBADF,
+                            "Operation attempted on a file that is not open");
   }
 
   var ret:c_int;

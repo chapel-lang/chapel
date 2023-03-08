@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -108,12 +108,14 @@ void Type::gatherBuiltins(Context* context,
 
   gatherType(context, map, "_tuple", TupleType::getGenericTupleType(context));
 
-  auto bytesType = RecordType::getBytesType(context);
+  auto bytesType = CompositeType::getBytesType(context);
   gatherType(context, map, "bytes", bytesType);
   gatherType(context, map, "_bytes", bytesType);
-  auto stringType = RecordType::getStringType(context);
+  auto stringType = CompositeType::getStringType(context);
   gatherType(context, map, "string", stringType);
   gatherType(context, map, "_string", stringType);
+
+  gatherType(context, map, "Error", CompositeType::getErrorType(context));
 
   BuiltinType::gatherBuiltins(context, map);
 }

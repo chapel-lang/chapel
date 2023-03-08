@@ -285,9 +285,9 @@ proc main() {
   initLulesh();
 
   var st: real;
-  if doTiming then st = getCurrentTime();
+  if doTiming then st = timeSinceEpoch().totalSeconds();
   while (time < stoptime && cycle < maxcycles) {
-    const iterTime = if showProgress then getCurrentTime() else 0.0;
+    const iterTime = if showProgress then timeSinceEpoch().totalSeconds() else 0.0;
 
     TimeIncrement();
 
@@ -300,14 +300,14 @@ proc main() {
     }
     if showProgress then
       writef("time = %er, dt=%er, %s", time, deltatime,
-             if doTiming then ", elapsed = " + (getCurrentTime()-iterTime):string +"\n"
+             if doTiming then ", elapsed = " + (timeSinceEpoch().totalSeconds()-iterTime):string +"\n"
                          else "\n");
   }
   if (cycle == maxcycles) {
     writeln("Stopped early due to reaching maxnumsteps");
   }
   if doTiming {
-    const et = getCurrentTime();
+    const et = timeSinceEpoch().totalSeconds();
     writeln("Total Time: ", et-st);
     writeln("Time/Cycle: ", (et-st)/cycle);
   }
@@ -317,7 +317,7 @@ proc main() {
 
   if printCoords {
     var writer = if coordsStdout then stdout
-                                 else open("coords.out", iomode.cw).writer();
+                                 else open("coords.out", ioMode.cw).writer();
     var fmtstr = if debug then "%1.9re %1.9er %1.9er\n" 
                           else "%1.4er %1.4er %1.4er\n";
     for i in Nodes do

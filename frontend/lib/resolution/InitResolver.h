@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -61,7 +61,7 @@ class InitResolver {
   std::vector<ID> fieldIdsByOrdinal_;
   Phase phase_ = PHASE_NEED_SUPER_INIT;
   int currentFieldIndex_ = 0;
-  ID idForCompleteCall_ = ID();
+  std::vector<ID> thisCompleteIds_;
   bool isDescendingIntoAssignment_ = false;
   const types::Type* currentRecvType_ = initialRecvType_;
 
@@ -104,10 +104,17 @@ class InitResolver {
   bool handleAssignmentToField(const uast::OpCall* node);
   ID solveNameConflictByIgnoringField(const NameVec& vec);
 
+  static Phase getMaxPhase(Phase A, Phase B);
+  void copyState(InitResolver& other);
+
 public:
 
   static owned<InitResolver>
   create(Context* context, Resolver& visitor, const uast::Function* fn);
+
+  owned<InitResolver> fork();
+
+  void merge(owned<InitResolver>& A, owned<InitResolver>& B);
 
   // Called on entry for calls.
   void doDetectPossibleAssignmentToField(const uast::OpCall* node);

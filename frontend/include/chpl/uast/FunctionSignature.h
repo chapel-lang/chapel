@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,8 +23,8 @@
 #include "chpl/framework/Location.h"
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/Function.h"
-#include "chpl/uast/IntentList.h"
 #include "chpl/uast/NamedDecl.h"
+#include "chpl/uast/Qualifier.h"
 
 namespace chpl {
 namespace uast {
@@ -76,15 +76,27 @@ class FunctionSignature final : public AstNode {
       throws_(throws),
       isParenless_(isParenless) {
 
-    CHPL_ASSERT(-1 <= formalsChildNum_ &&
+    CHPL_ASSERT(NO_CHILD <= formalsChildNum_ &&
                  formalsChildNum_ < (ssize_t)children_.size());
-    CHPL_ASSERT(-1 <= thisFormalChildNum_ &&
+    CHPL_ASSERT(NO_CHILD <= thisFormalChildNum_ &&
                  thisFormalChildNum_ < (ssize_t)children_.size());
     CHPL_ASSERT(0 <= numFormals_ &&
                 numFormals_ <= (ssize_t)children_.size());
-    CHPL_ASSERT(-1 <= returnTypeChildNum_ &&
+    CHPL_ASSERT(NO_CHILD <= returnTypeChildNum_ &&
                  returnTypeChildNum_ < (ssize_t)children_.size());
   }
+
+  FunctionSignature(Deserializer& des)
+    : AstNode(asttags::FunctionSignature, des) {
+      kind_ = des.read<Kind>();
+      returnIntent_ = des.read<ReturnIntent>();
+      formalsChildNum_ = des.read<int>();
+      thisFormalChildNum_ = des.read<int>();
+      numFormals_= des.read<int>();
+      returnTypeChildNum_ = des.read<int>();
+      throws_ = des.read<bool>();
+      isParenless_ = des.read<bool>();
+    }
 
   bool contentsMatchInner(const AstNode* other) const override {
     auto lhs = this;
@@ -99,7 +111,10 @@ class FunctionSignature final : public AstNode {
            lhs->returnTypeChildNum_ == rhs->returnTypeChildNum_;
   }
 
-  void markUniqueStringsInner(Context* context) const override {}
+  void markUniqueStringsInner(Context* context) const override { }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
 
  public:
   ~FunctionSignature() override = default;
@@ -159,6 +174,20 @@ class FunctionSignature final : public AstNode {
     const AstNode* ret = this->child(returnTypeChildNum_);
     return ret;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(kind_);
+    ser.write(returnIntent_);
+    ser.write(formalsChildNum_);
+    ser.write(thisFormalChildNum_);
+    ser.write(numFormals_);
+    ser.write(returnTypeChildNum_);
+    ser.write(throws_);
+    ser.write(isParenless_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(FunctionSignature);
 
 };
 

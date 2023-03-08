@@ -123,7 +123,7 @@ described in :ref:`Variable_Declarations_in_a_Tuple`.
 .. _Split_Initialization:
 
 Split Initialization
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 Split initialization is a feature that allows an initialization
 expression for a variable to be in a statement after the variable
@@ -234,18 +234,28 @@ Split initialization does not apply:
  * when an applicable assignment statement setting the variable could not
    be identified
  * when an applicable assignment statement is in one branch of a
-   conditional but not in the other, and when the other branch
-   does not always return or throw. This rule prevents
-   split-initialization when the applicable assignment statement is
-   in a conditional that has no ``else`` branch.
+   conditional but not in the other, unless:
+
+     * the variable is not an ``out`` intent formal, and
+     * the other branch always returns or throws.
+
+   This rule prevents split-initialization when the applicable assignment
+   statement is in a conditional that has no ``else`` branch and the
+   ``if`` branch does not return or throw.
+
  * when an applicable assignment statement is in a ``try`` or ``try!``
    block which has ``catch`` clauses that mention the variable
-   or which has ``catch`` clauses that do not always throw or return.
 
-In the case that the variable is declared without a ``type-part`` and
-where multiple applicable assignment statements are identified, all of
-the assignment statements need to contain an initialization expression of
-the same type.
+ * when an applicable assignment statement is in a ``try`` or ``try!``
+   with ``catch`` clauses unless:
+
+     * the variable is not an ``out`` intent formal, and
+     * all catch clauses return or throw
+
+In the case that the variable is declared with no ``type-part`` or with a
+generic declared type, and where multiple applicable assignment
+statements are identified, all of the assignment statements need to
+contain an initialization expression of the same type.
 
 Any variables declared in a particular scope that are initialized with
 split init in both the ``then`` and ``else`` branches of a conditional
@@ -255,7 +265,7 @@ branches.
 .. _Default_Values_For_Types:
 
 Default Initialization
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
 If a variable declaration has no initialization expression, a variable
 is initialized to the default value of its type. The default values are
@@ -285,7 +295,7 @@ atomic      base default value
 .. _Local_Type_Inference:
 
 Local Type Inference
-~~~~~~~~~~~~~~~~~~~~
+--------------------
 
 If the type is omitted from a variable declaration, the type of the
 variable is defined to be the type of the initialization expression.
@@ -308,7 +318,7 @@ the type of ``v`` is the base type of ``e``.
 .. _Multiple_Variable_Declarations:
 
 Multiple Variable Declarations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------------
 
 All variables defined in the same ``identifier-list`` are defined such
 that they have the same type and value, and so that the type and
@@ -611,7 +621,7 @@ Parameter constants and expressions cannot be aliased.
       writeln("myInt = ", myInt);
 
       var myArr: [1..3] int = 51;
-      proc arrayElement(i) ref  return myArr[i];
+      proc arrayElement(i) ref do  return myArr[i];
       ref refToExpr = arrayElement(3);      // alias to lvalue returned by a function
       myArr[3] = 62;
       writeln("refToExpr = ", refToExpr);
@@ -673,7 +683,8 @@ Variable Lifetimes
 ------------------
 
 A variable only exists during its lifetime. The lifetime of a variable
-begins when the variable is initialized.
+begins when the variable is initialized (whether at the declaration or
+at a later point with :ref:`Split_Initialization`).
 
 A variable's lifetime ends:
 
@@ -885,8 +896,8 @@ local var mentioned again
   means a use of a function-local variable which is mentioned again
 
 outer/ref
-  means a use of a module-scope variable, an outer scope variable, or a
-  reference variable or argument
+  means a use of a module-scope variable, a variable in an outer
+  function, or reference variable or argument
 
 
 .. _Copy_Elision:

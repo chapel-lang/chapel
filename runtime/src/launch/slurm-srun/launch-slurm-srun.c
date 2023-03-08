@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,6 +26,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include "chpllaunch.h"
+#include "chpl-env.h"
 #include "chpl-mem.h"
 #include "chpltypes.h"
 #include "error.h"
@@ -38,6 +39,8 @@
 #define CHPL_PARTITION_FLAG "--partition"
 #define CHPL_EXCLUDE_FLAG "--exclude"
 
+#define CHPL_LPN_VAR "LOCALES_PER_NODE"
+
 static char* debug = NULL;
 static char* walltime = NULL;
 static int generate_sbatch_script = 0;
@@ -47,8 +50,6 @@ static char* exclude = NULL;
 
 char slurmFilename[FILENAME_MAX];
 
-/* copies of binary to run per node */
-#define procsPerNode 1
 
 typedef enum {
   slurmpro,
@@ -98,9 +99,11 @@ static int nomultithread(int batch) {
   return 0;
 }
 
+
 // Get the number of locales from the environment variable or if that is not
-// set just use sinfo to get the number of cpus.
-static int getCoresPerLocale(int nomultithread) {
+// set just use sinfo to get the number of cpus and divide by the number
+// of locales per node.
+static int getCoresPerLocale(int nomultithread, int32_t localesPerNode) {
   int numCores = -1;
   int threadsPerCore = -1;
   const int buflen = 1024;
@@ -144,10 +147,14 @@ static int getCoresPerLocale(int nomultithread) {
     chpl_error("unable to determine number of cores per locale; "
                "please set CHPL_LAUNCHER_CORES_PER_LOCALE", 0, 0);
 
-  if (nomultithread)
-    numCores /= threadsPerCore;
-
-  return numCores;
+  if (nomultithread) {
+    if (localesPerNode == 1) {
+      numCores /= threadsPerCore;
+    } else {
+      chpl_env_set("CHPL_RT_NO_MULTITHREAD", "true", 0);
+    }
+  }
+  return numCores / localesPerNode;
 }
 #define MAX_COM_LEN (FILENAME_MAX + 128)
 // create the command that will actually launch the program and
@@ -170,6 +177,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* basenamePtr = strrchr(argv[0], '/');
   pid_t mypid;
   char  jobName[128];
+  int localesPerNode = 1;
 
   // For programs with large amounts of output, a lot of time can be
   // spent syncing the stdout buffer to the output file. This can cause
@@ -240,6 +248,20 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     memStr = memEnv;
   }
 
+  localesPerNode = chpl_env_rt_get_int(CHPL_LPN_VAR, 1);
+  if (localesPerNode <= 0) {
+    char msg[100];
+    snprintf(msg, sizeof(msg), "%s must be > 0.", "CHPL_RT_" CHPL_LPN_VAR);
+    chpl_warning(msg, 0, 0);
+    localesPerNode = 1;
+  }
+
+  // Note: if localesPerNode > numLocales then some cores will go unused. This
+  // is by design, as it allows for scalability testing by increasing the
+  // number of locales per node. If the user wants a single locale to use all
+  // of the cores they should set CHPL_RT_LOCALES_PER_NODE to 1 or not set it
+  // at all.
+
   if (basenamePtr == NULL) {
     basenamePtr = argv[0];
   } else {
@@ -278,13 +300,17 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // suppress informational messages, will still display errors
     fprintf(slurmFile, "#SBATCH --quiet\n");
 
-    // request the number of locales, with 1 task per node, and number of cores
-    // cpus-per-task. We probably don't need --nodes and --ntasks specified
-    // since 1 task-per-node with n --tasks implies -n nodes
-    fprintf(slurmFile, "#SBATCH --nodes=%d\n", numLocales);
+    int32_t numNodes = (numLocales + localesPerNode - 1) / localesPerNode;
+
+    fprintf(slurmFile, "#SBATCH --nodes=%d\n", numNodes);
     fprintf(slurmFile, "#SBATCH --ntasks=%d\n", numLocales);
-    fprintf(slurmFile, "#SBATCH --ntasks-per-node=%d\n", procsPerNode);
-    fprintf(slurmFile, "#SBATCH --cpus-per-task=%d\n", getCoresPerLocale(nomultithread(true)));
+    int localesOnNode = (numLocales < localesPerNode) ?
+                        numLocales : localesPerNode;
+    int cpusPerTask = getCoresPerLocale(nomultithread(true), localesOnNode);
+    fprintf(slurmFile, "#SBATCH --cpus-per-task=%d\n", cpusPerTask);
+    if (localesPerNode > 1) {
+      fprintf(slurmFile, "#SBATCH --cpu-bind=none\n");
+    }
 
     // request specified node access
     if (nodeAccessStr != NULL)
@@ -401,11 +427,19 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // request the number of locales, with 1 task per node, and number of cores
     // cpus-per-task. We probably don't need --nodes and --ntasks specified
     // since 1 task-per-node with n --tasks implies -n nodes
-    len += snprintf(iCom+len, sizeof(iCom)-len, "--nodes=%d ",numLocales);
+    int32_t numNodes = (numLocales + localesPerNode - 1) / localesPerNode;
+
+    len += snprintf(iCom+len, sizeof(iCom)-len, "--nodes=%d ",numNodes);
     len += snprintf(iCom+len, sizeof(iCom)-len, "--ntasks=%d ", numLocales);
-    len += snprintf(iCom+len, sizeof(iCom)-len, "--ntasks-per-node=%d ", procsPerNode);
+    int localesOnNode = (numLocales < localesPerNode) ?
+                        numLocales : localesPerNode;
+    int cpusPerTask = getCoresPerLocale(nomultithread(false), localesOnNode);
     len += snprintf(iCom+len, sizeof(iCom)-len, "--cpus-per-task=%d ",
-                    getCoresPerLocale(nomultithread(false)));
+                    cpusPerTask);
+
+    if (localesPerNode > 1) {
+      len += snprintf(iCom+len, sizeof(iCom)-len, "--cpu-bind=none ");
+    }
 
     // request specified node access
     if (nodeAccessStr != NULL)
@@ -516,8 +550,8 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
   }
   // otherwise generate the batch file or srun command and execute it
   else {
-    retcode = chpl_launch_using_system(chpl_launch_create_command(argc, argv,
-          numLocales), argv[0]);
+    char *cmd = chpl_launch_create_command(argc, argv, numLocales);
+    retcode = chpl_launch_using_system(cmd, argv[0]);
 
     chpl_launch_cleanup();
   }

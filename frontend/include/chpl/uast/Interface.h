@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,7 +23,7 @@
 #include "chpl/framework/Location.h"
 #include "chpl/uast/Decl.h"
 #include "chpl/uast/Formal.h"
-#include "chpl/uast/IntentList.h"
+#include "chpl/uast/Qualifier.h"
 #include "chpl/uast/VarLikeDecl.h"
 
 namespace chpl {
@@ -50,10 +50,11 @@ class Interface final : public NamedDecl {
   int interfaceFormalsChildNum_;
   int numInterfaceFormals_;
   int bodyChildNum_;
-  int numBodyStmts_;
+  int numBodyStmts_; // TODO is this field necessary?
+                     // isn't the body always the last thing here?
   bool isFormalListExplicit_;
 
-  Interface(AstList children, int attributesChildNum,
+  Interface(AstList children, int attributeGroupChildNum,
             Visibility visibility,
             UniqueString name,
             int interfaceFormalsChildNum,
@@ -62,7 +63,7 @@ class Interface final : public NamedDecl {
             int numBodyStmts,
             bool isFormalListExplicit)
       : NamedDecl(asttags::Interface, std::move(children),
-                  attributesChildNum,
+                  attributeGroupChildNum,
                   visibility,
                   Decl::DEFAULT_LINKAGE,
                   /*linkageNameChildNum*/ AstNode::NO_CHILD,
@@ -74,6 +75,15 @@ class Interface final : public NamedDecl {
         isFormalListExplicit_(isFormalListExplicit) {
     // TODO: Some assertions here...
   }
+
+  Interface(Deserializer& des)
+    : NamedDecl(asttags::Interface, des) {
+      interfaceFormalsChildNum_ = des.read<int>();
+      numInterfaceFormals_ = des.read<int>();
+      bodyChildNum_ = des.read<int>();
+      numBodyStmts_ = des.read<int>();
+      isFormalListExplicit_ = des.read<bool>();
+    }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Interface* lhs = this;
@@ -89,6 +99,9 @@ class Interface final : public NamedDecl {
   void markUniqueStringsInner(Context* context) const override {
     namedDeclMarkUniqueStringsInner(context);
   }
+
+  void dumpFieldsInner(const DumpSettings& s) const override;
+  std::string dumpChildLabelInner(int i) const override;
 
  public:
   ~Interface() override = default;
@@ -177,12 +190,24 @@ class Interface final : public NamedDecl {
   }
 
   static owned<Interface> build(Builder* builder, Location loc,
-                                owned<Attributes> attributes,
+                                owned<AttributeGroup> attributeGroup,
                                 Decl::Visibility visibility,
                                 UniqueString name,
                                 bool isFormalListExplicit,
                                 AstList formals,
                                 AstList body);
+
+  void serialize(Serializer& ser) const override {
+    NamedDecl::serialize(ser);
+    ser.write(interfaceFormalsChildNum_);
+    ser.write(numInterfaceFormals_);
+    ser.write(bodyChildNum_);
+    ser.write(numBodyStmts_);
+    ser.write(isFormalListExplicit_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Interface);
+
 };
 
 

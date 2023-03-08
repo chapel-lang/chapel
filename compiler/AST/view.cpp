@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -42,6 +42,7 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "TemporaryConversionThunk.h"
 #include "TryStmt.h"
 #include "virtualDispatch.h"
 #include "WhileStmt.h"

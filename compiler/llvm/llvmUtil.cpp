@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -283,6 +283,12 @@ PromotedPair convertValuesToLarger(
   //Pointers
   if(type1->isPointerTy() && type2->isPointerTy()) {
     llvm::Type *castTy;
+
+#if HAVE_LLVM_VER >= 150
+    // pointers are opaque, so equivalent to always being a void pointer;
+    // the below logic is moot
+    castTy = type1;
+#else
     llvm::Type* int8_type = llvm::Type::getInt8Ty(value1->getContext());
     bool t1isVoidStar = (type1->getPointerElementType() == int8_type);
     bool t2isVoidStar = (type2->getPointerElementType() == int8_type);
@@ -296,6 +302,7 @@ PromotedPair convertValuesToLarger(
     } else {
       castTy = type1;
     }
+#endif
 
     return PromotedPair(irBuilder->CreatePointerCast(value1, castTy),
                         irBuilder->CreatePointerCast(value2, castTy),
@@ -489,8 +496,14 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
 
   //Pointers
   if(newType->isPointerTy() && curType->isPointerTy()) {
-    if( newType->getPointerAddressSpace() !=
-        curType->getPointerAddressSpace() ) {
+
+    // It's safe to convert pointers between generic (0) and non generic (non
+    // 0) address spaces
+    auto newTypeAddrSpace = newType->getPointerAddressSpace();
+    auto curTypeAddrSpace = curType->getPointerAddressSpace();
+    if(newTypeAddrSpace != 0 && curTypeAddrSpace != 0 &&
+       newTypeAddrSpace != curTypeAddrSpace)
+    {
       assert( 0 && "Can't convert pointer to different address space");
     }
     return irBuilder->CreatePointerCast(value, newType);
@@ -521,7 +534,9 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
       llvm::Value* tmp_cur = irBuilder->CreatePointerCast(tmp_alloc, curPtrType);
       llvm::Value* tmp_new = irBuilder->CreatePointerCast(tmp_alloc, newPtrType);
       irBuilder->CreateStore(value, tmp_cur);
-#if HAVE_LLVM_VER >= 130
+#if HAVE_LLVM_VER >= 150
+      return irBuilder->CreateLoad(newType, tmp_new);
+#elif HAVE_LLVM_VER >= 130
       return irBuilder->CreateLoad(tmp_new->getType()->getPointerElementType(), tmp_new);
 #else
       return irBuilder->CreateLoad(tmp_new);
@@ -582,7 +597,36 @@ void print_llvm(llvm::Module* m)
   fprintf(stderr, "\n");
 }
 
+llvm::AttrBuilder llvmPrepareAttrBuilder(llvm::LLVMContext& ctx) {
+  #if HAVE_LLVM_VER >= 140
+  llvm::AttrBuilder ret(ctx);
+  #else
+  llvm::AttrBuilder ret;
+  std::ignore = ctx;
+  #endif
+  return ret;
+}
 
+void llvmAddAttr(llvm::LLVMContext& ctx, llvm::AttributeList& attrs,
+            size_t idx,
+            llvm::AttrBuilder& b) {
+  #if HAVE_LLVM_VER >= 140
+  attrs = attrs.addAttributesAtIndex(ctx, idx, b);
+  #else
+  attrs = attrs.addAttributes(ctx, idx, b);
+  #endif
+}
+
+void llvmAttachStructRetAttr(llvm::AttrBuilder& b, llvm::Type* returnTy,
+                             unsigned int addrSpace) {
+  #if HAVE_LLVM_VER >= 130
+  b.addStructRetAttr(llvm::PointerType::get(returnTy, addrSpace));
+  #else
+  b.addAttribute(llvm::Attribute::StructRet);
+  std::ignore = returnTy;
+  std::ignore = addrSpace;
+  #endif
+}
 
 #endif
 

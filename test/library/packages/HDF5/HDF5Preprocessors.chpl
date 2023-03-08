@@ -15,7 +15,7 @@ module HDF5Preprocessors {
     const script: string;
 
     override proc preprocess(A: []) {
-      use FileSystem, Path, Subprocess;
+      use FileSystem, OS.POSIX, Path, Subprocess;
 
       try! {
         // openTempFile() doesn't seem to give me a file I can get the name of :(
@@ -23,7 +23,7 @@ module HDF5Preprocessors {
         //const scriptName = f.realPath();
 
         const scriptName = "./hdf5TempScript.bash";
-        var f = open(scriptName, iomode.cw);
+        var f = open(scriptName, ioMode.cw);
 
         // write the script to a file
         {
@@ -35,7 +35,7 @@ module HDF5Preprocessors {
         f.close();
 
         // give the file executable permission
-        chmod(scriptName, 0o755);
+        chmod(scriptName.c_str(), 0o755:mode_t);
 
         // spawn the script, connect stdin and stdout
         var sub = spawn([scriptName], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);

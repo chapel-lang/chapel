@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2022 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -50,6 +50,11 @@ class Label final : public AstNode {
     CHPL_ASSERT(numChildren() == 1);
   }
 
+  Label(Deserializer& des)
+    : AstNode(asttags::Label, des) {
+      name_ = des.read<UniqueString>();
+    }
+
   bool contentsMatchInner(const AstNode* other) const override {
     const Label* lhs = this;
     const Label* rhs = other->toLabel();
@@ -64,6 +69,8 @@ class Label final : public AstNode {
   void markUniqueStringsInner(Context* context) const override {
     name_.mark(context);
   }
+  void dumpFieldsInner(const DumpSettings& s) const override;
+
   // This always exists and its position can never change.
   static const int8_t loopChildNum_ = 0;
 
@@ -94,6 +101,14 @@ class Label final : public AstNode {
   UniqueString name() const {
     return name_;
   }
+
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(name_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Label);
+
 
 };
 
