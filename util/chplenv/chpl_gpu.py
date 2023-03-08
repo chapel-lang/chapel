@@ -145,6 +145,6 @@ def validate(chplLocaleModel, chplComm):
 
     if get() == 'rocm':
         if not validateLlvmBuiltForRocm():
-            error("LLVM not built for AMDGPU Consider setting CHPL_LLVM to 'bundled'")
+            error("LLVM not built for AMDGPU, consider setting CHPL_LLVM to 'bundled'")
 
     return True
