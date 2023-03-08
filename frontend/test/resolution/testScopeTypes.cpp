@@ -69,6 +69,7 @@ static void testBorrowIds() {
     // check one id with no filtering
     OwnedIdsWithName ids(x, Decl::PRIVATE,
                          /* method */ false, /* parenful */ false);
+    assert(ids.numIds() == 1);
     auto foundIds = ids.borrow(0, 0);
     assert(foundIds.hasValue());
     auto b = foundIds.getValue();
@@ -107,6 +108,7 @@ static void testBorrowIds() {
                          /* method */ false, /* parenful */ false);
     ids.appendIdAndFlags(y, Decl::PUBLIC,
                          /* method */ true, /* parenful */ false);
+    assert(ids.numIds() == 2);
     IdAndFlags::Flags f = pub;
     IdAndFlags::Flags e = 0;
     auto foundIds = ids.borrow(f, e);
