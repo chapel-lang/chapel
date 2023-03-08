@@ -74,6 +74,13 @@ run-frontend-linters: FORCE
 
 run-dyno-linters: run-frontend-linters FORCE
 
+checkwhitespace:
+	@if [ `./util/devel/lookForTrailingSpaces | wc -l` -gt 0 ]; then \
+		echo "Found lines with trailing spaces :-("; \
+		./util/devel/lookForTrailingSpaces; \
+		exit 1; \
+	fi
+
 SPECTEST_DIR = ./test/release/examples/spec
 spectests: FORCE
 	rm -rf $(SPECTEST_DIR)
