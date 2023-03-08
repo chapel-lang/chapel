@@ -604,13 +604,8 @@ bool LookupHelper::doLookupInImportsAndUses(
         // Make sure the module / enum being renamed isn't private.
         auto scopeAst = parsing::idToAst(context, is.scope()->id());
         auto visibility = scopeAst->toDecl()->visibility();
-        bool isMethodOrField = false;
-        bool isParenfulFunction = false;
-        IdAndVis::SymbolTypeFlags filterFlags = 0;
-        if (!allowPrivateAccess) {
-          filterFlags |= IdAndVis::PUBLIC;
-        }
         bool isMethodOrField = false; // target must be module/enum, not method
+        bool isParenfulFunction = false;
         auto foundIds =
           BorrowedIdsWithName::createWithSingleId(is.scope()->id(),
                                                   visibility,
@@ -860,7 +855,6 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   bool goPastModules = (config & LOOKUP_GO_PAST_MODULES) != 0;
   bool onlyMethodsFields = (config & LOOKUP_ONLY_METHODS_FIELDS) != 0;
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
-  bool skipPrivateUseImport = (config & LOOKUP_SKIP_PRIVATE_USE_IMPORT) != 0;
   bool skipShadowScopes = (config & LOOKUP_SKIP_SHADOW_SCOPES) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
 
@@ -2572,7 +2566,7 @@ countSymbols(Context* context,
   for (const auto& b : v) {
     auto end = b.end();
     for (auto it = b.begin(); it != end; ++it) {
-      const IdAndVis& idv = it.curIdAndVis();
+      const IdAndFlags& idv = it.curIdAndFlags();
       auto p = countedIds.insert(idv.id());
       if (p.second) {
         // inserted in to the map

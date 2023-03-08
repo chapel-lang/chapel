@@ -336,7 +336,7 @@ class BorrowedIdsWithName {
       return *this;
     }
     inline const ID& operator*() const { return currentIdv->id_; }
-    inline const IdAndVis& curIdAndVis() const { return *currentIdv; }
+    inline const IdAndFlags& curIdAndFlags() const { return *currentIdv; }
   };
 
  private:
