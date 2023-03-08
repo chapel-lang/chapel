@@ -1481,16 +1481,14 @@ proc fileReader.readThrough(separator: regex(?t), maxSize=-1, stripSeparator=fal
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readThrough(separator: regex(string), ref s: string, maxSize=-1, stripSeparator=false): bool throws {
-  import BytesStringCommon.countNumCodepoints;
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
     const (searchErr, found, relByteOffset, match) = _findSeparator(separator, maxSize, this);
     if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readThrough(regex(string))");
 
-    const err = IO.readStringBytesData(s, this._channel_internal, relByteOffset, 0);
+    const err = IO.readStringBytesData(s, this._channel_internal, relByteOffset, -1);
     if err then try this._ch_ioerror(err, "in readThrough(regex(string))");
-    s.cachedNumCodepoints = countNumCodepoints(s);
 
     if found && stripSeparator then s = s[0..<(s.size-match.numCodepoints)];
   }
@@ -1583,7 +1581,6 @@ proc fileReader.readTo(separator: regex(?t), maxSize=-1): t throws
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
 */
 proc fileReader.readTo(separator: regex(string), ref s: string, maxSize=-1): bool throws {
-  import BytesStringCommon.countNumCodepoints;
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
@@ -1591,9 +1588,8 @@ proc fileReader.readTo(separator: regex(string), ref s: string, maxSize=-1): boo
     if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readTo(regex(string))");
 
     const numBytesToRead = relByteOffset - if found then match.numBytes else 0;
-    const err = IO.readStringBytesData(s, this._channel_internal, numBytesToRead, 0);
+    const err = IO.readStringBytesData(s, this._channel_internal, numBytesToRead, -1);
     if err then try this._ch_ioerror(err, "in readTo(regex(string))");
-    s.cachedNumCodepoints = countNumCodepoints(s);
   }
   return s.size > 0;
 }

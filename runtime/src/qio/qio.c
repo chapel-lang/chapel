@@ -3609,7 +3609,7 @@ error:
   return err;
 }
 
-qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, int byte, bool consume_byte)
+qioerr qio_channel_advance_past_byte(const int threadsafe, qio_channel_t* ch, int byte, const int consume_byte)
 {
   qioerr err=0;
 

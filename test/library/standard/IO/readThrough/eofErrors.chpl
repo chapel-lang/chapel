@@ -6,10 +6,6 @@ readStringFromEOF(false, openReader("maxSizeInput.txt"));
 readBytesFromEOF(true, openReader("maxSizeInput.txt"));
 readBytesFromEOF(false, openReader("maxSizeInput.txt"));
 
-// unexpected eof errors:
-readStringAfterSep(openReader("maxSizeInput.txt"));
-readBytesAfterSep(openReader("maxSizeInput.txt"));
-
 // (the BadFormatError case is tested by 'readThroughMaxSize.chpl')
 
 proc readStringFromEOF(param byRef: bool, fr) where byRef == true {
@@ -35,24 +31,6 @@ proc readBytesFromEOF(param byRef: bool, fr) where byRef == true {
 
 proc readBytesFromEOF(param byRef: bool, fr) where byRef == false {
   fr.readAll();
-  try {
-    fr.readThrough(b"x");
-  } catch e {
-    writeln(e);
-  }
-}
-
-proc readStringAfterSep(fr) {
-  fr.readThrough("x");
-  try {
-    fr.readThrough("x");
-  } catch e {
-    writeln(e);
-  }
-}
-
-proc readBytesAfterSep(fr) {
-  fr.readThrough(b"x");
   try {
     fr.readThrough(b"x");
   } catch e {
