@@ -1,10 +1,10 @@
 readMatchLiteral.chpl:4: In function 'main':
-readMatchLiteral.chpl:9: warning: channel.writeLiteral is unstable and subject to change.
-readMatchLiteral.chpl:10: warning: channel.writeLiteral is unstable and subject to change.
-readMatchLiteral.chpl:11: warning: channel.writeNewline is unstable and subject to change.
-readMatchLiteral.chpl:17: warning: channel.readLiteral is unstable and subject to change.
-readMatchLiteral.chpl:18: warning: channel.readLiteral is unstable and subject to change.
-readMatchLiteral.chpl:19: warning: channel.readNewline is unstable and subject to change.
-readMatchLiteral.chpl:21: warning: channel.matchLiteral is unstable and subject to change.
-readMatchLiteral.chpl:22: warning: channel.matchLiteral is unstable and subject to change.
-readMatchLiteral.chpl:23: warning: channel.matchNewline is unstable and subject to change.
+readMatchLiteral.chpl:9: warning: fileWriter.writeLiteral is unstable and subject to change.
+readMatchLiteral.chpl:10: warning: fileWriter.writeLiteral is unstable and subject to change.
+readMatchLiteral.chpl:11: warning: fileWriter.writeNewline is unstable and subject to change.
+readMatchLiteral.chpl:17: warning: fileReader.readLiteral is unstable and subject to change.
+readMatchLiteral.chpl:18: warning: fileReader.readLiteral is unstable and subject to change.
+readMatchLiteral.chpl:19: warning: fileReader.readNewline is unstable and subject to change.
+readMatchLiteral.chpl:21: warning: fileReader.matchLiteral is unstable and subject to change.
+readMatchLiteral.chpl:22: warning: fileReader.matchLiteral is unstable and subject to change.
+readMatchLiteral.chpl:23: warning: fileReader.matchNewline is unstable and subject to change.
