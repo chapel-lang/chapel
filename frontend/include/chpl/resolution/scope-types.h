@@ -182,7 +182,7 @@ class OwnedIdsWithName {
       // from idv_.
     }
     auto idv = IdAndFlags(std::move(id), vis,
-                         isMethodOrField, isParenfulFunction);
+                          isMethodOrField, isParenfulFunction);
     // add the id passed
     moreIdvs_->push_back(std::move(idv));
     // update the flags
@@ -767,7 +767,7 @@ class VisibilitySymbols {
   */
   bool lookupName(const UniqueString &name, UniqueString &declared) const;
 
-  /** Return a vector of pairs of original name, new name here
+  /** Return a vector of pairs of (original name, new name here)
       for the names declared here. */
   const std::vector<std::pair<UniqueString,UniqueString>>& names() const;
 
