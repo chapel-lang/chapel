@@ -5873,8 +5873,10 @@ proc _channel.readLine(type t=string, maxSize=-1, stripNewline=false): t throws 
   :returns: A ``string`` or ``bytes`` with the contents of the ``fileReader``
     up to (and possibly including) the separator.
 
-  :throws UnexpectedEofError: Thrown if nothing could be returned (i.e., the
+  :throws EofError: Thrown if nothing could be returned (i.e., the
     ``fileReader`` was already at EOF or a separator was the only thing remaining).
+  :throws UnexpectedEofError: Thrown if EOF was reached before the separator
+    could be found. The fileReader position is not moved.
   :throws BadFormatError: Thrown if the separator was not found in the next
     `maxSize` codepoints/bytes. The fileReader position is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
@@ -5884,7 +5886,7 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
 {
   var ret: t;
   if !this.readThrough(separator, ret, maxSize, stripSeparator)
-    then throw new UnexpectedEofError("Encountered EOF in readThrough(" + t:string + ")");
+    then throw new EofError("Encountered EOF in readThrough(" + t:string + ")");
   return ret;
 }
 
@@ -5909,6 +5911,8 @@ proc fileReader.readThrough(separator: ?t, maxSize=-1, stripSeparator=false): t 
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
     ``fileReader`` was already at EOF or a separator was the only thing remaining).
 
+  :throws UnexpectedEofError: Thrown if EOF was reached before the separator
+    could be found. The fileReader position is not moved.
   :throws BadFormatError: Thrown if the separator was not found in the next
     `maxSize` codepoints. The fileReader position is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
@@ -5919,7 +5923,10 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
 
     // find the byte offset to the start of the separator, 'maxSize' codepoints, or EOF (whichever comes first)
     const (searchErr, found, relByteOffset, numCodepoints) = _findSeparator(separator, maxSize, this._channel_internal);
+    // handle system error
     if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readThrough(string)");
+    if searchErr == EEOF && relByteOffset > 0 then
+      throw new UnexpectedEofError("separator not found in readThrough(string)");
 
     // compute the number of bytes and codeopints to read into 's'
     const bytesToRead = if found then relByteOffset + separator.numBytes else relByteOffset,
@@ -5956,6 +5963,8 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
     ``fileReader`` was already at EOF or a separator was the only thing remaining).
 
+  :throws UnexpectedEofError: Thrown if EOF was reached before the separator
+    could be found. The fileReader position is not moved.
   :throws BadFormatError: Thrown if the separator was not found in the next
     `maxSize` bytes. The fileReader position is not moved.
   :throws SystemError: Thrown if data could not be read from the ``fileReader``.
@@ -5967,6 +5976,8 @@ proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSep
     // find the byte offset to the start of the separator, 'maxSize' bytes, or EOF (whichever comes first)
     const (searchErr, found, relByteOffset) = _findSeparator(separator, maxSize, this._channel_internal);
     if searchErr != 0 && searchErr != EEOF then try this._ch_ioerror(searchErr, "in readThrough(bytes)");
+    if searchErr == EEOF && relByteOffset > 0 then
+      throw new UnexpectedEofError("separator not found in readThrough(bytes)");
 
     // compute the number of bytes to read into 'b'
     const bytesToRead = if found then relByteOffset + separator.numBytes else relByteOffset;
@@ -6107,10 +6118,13 @@ proc fileReader.readTo(separator: bytes, ref b: bytes, maxSize=-1): bool throws 
 
  returns: (0, true, relative_byte_offset, num_codepoints) if found
           (EFORMAT, false, bytes_to_maxSize, maxSize) if not found
+          (EFORMAT, false, 0) if separator == ""
           (EEOF, false, bytes_to_eof, codepoints_to_eof) if EOF
           (error_code, _, _, _) system error
 */
 private proc _findSeparator(separator: string, maxSize=-1, _channel_internal): (errorCode, bool, int, int) {
+  if separator.isEmpty() then return (EFORMAT:errorCode, false, 0, 0);
+
   const maxNumCodepoints = if maxSize < 0 then max(int) else maxSize,
         sepLocal = separator.localize(),
         numSepCodepoints = sepLocal.numCodepoints,
@@ -6182,10 +6196,13 @@ private proc _findSeparator(separator: string, maxSize=-1, _channel_internal): (
 
  returns: (0, true, relative_byte_offset) if found
           (EFORMAT, false, maxSize) if not found
+          (EFORMAT, false, 0) if separator == b""
           (EEOF, false, bytes_to_eof) if EOF
           (error_code, _, _) system error
 */
 private proc _findSeparator(separator: bytes, maxSize=-1, _channel_internal): (errorCode, bool, int) {
+  if separator.isEmpty() then return (EFORMAT:errorCode, false, 0);
+
   const maxNumBytes = if maxSize < 0 then max(int) else maxSize,
         sepLocal = separator.localize(),
         numSepBytes = sepLocal.numBytes;

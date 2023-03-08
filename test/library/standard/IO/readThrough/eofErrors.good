@@ -1,0 +1,6 @@
+false
+EofError: end of file (Encountered EOF in readThrough(string))
+false
+EofError: end of file (Encountered EOF in readThrough(bytes))
+UnexpectedEofError: short read or write (separator not found in readThrough(string))
+UnexpectedEofError: short read or write (separator not found in readThrough(bytes))

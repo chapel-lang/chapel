@@ -12,7 +12,6 @@ try {
     // ensure pointer was left at its starting position
     writeln(r.readAll());
 }
-r.close();
 
 // separator is present
 writeln(openReader("maxSizeInput.txt").readThrough("x", maxSize=7));
@@ -31,7 +30,6 @@ try {
     // ensure pointer was left at its starting position
     writeln(r.readAll());
 }
-r.close();
 
 // separator is present
 writeln(openReader("maxSizeInput.txt").readThrough(b"x", maxSize=7));
