@@ -1,17 +1,16 @@
-BootStrap: library
+BootStrap: docker
 From: ubuntu:focal
 
 %files
     ../../provision-scripts/* /provision-scripts/
 
 %post
-    # add universe package so LLVM 12 versions are available
+    # add universe package (to help with time zone issue?)
     apt-get update
     apt-get install -y software-properties-common
     add-apt-repository universe
     apt-get update
     /provision-scripts/apt-get-deps.sh
-    /provision-scripts/apt-get-llvm-12.sh
 
 %runscript
     ../../provision-scripts/run.sh

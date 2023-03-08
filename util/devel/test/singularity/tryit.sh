@@ -22,7 +22,7 @@ i=0
 maxlen=0
 for name in current/*
 do
-  if [ -f $name/singularity.def ]
+  if [ -f $name/apptainer.def ]
   then
     if (( ${#name} > $maxlen ))
     then
@@ -33,19 +33,19 @@ done
 
 for name in current/*
 do
-  if [ -f $name/singularity.def ]
+  if [ -f $name/apptainer.def ]
   then
     cd $name
     display=`printf "%${maxlen}s" $name`
     NAME[$i]=$display
     echo
     echo "     ---- $display ---- " | tee -a "$DIR"/log
-    if [ ! -e singularity.sif ]
+    if [ ! -e apptainer.sif ]
     then
-      echo $name/singularity.sif not present so building image
-      ( singularity build --fakeroot singularity.sif singularity.def 2>&1 && echo >&3 ok || echo >&3 error exit $? ) 3> "$DIR"/log2 | tee -a "$DIR"/log
+      echo $name/apptainer.sif not present so building image
+      ( apptainer build --fakeroot apptainer.sif apptainer.def 2>&1 && echo >&3 ok || echo >&3 error exit $? ) 3> "$DIR"/log2 | tee -a "$DIR"/log
     fi
-    ( singularity exec singularity.sif "$@" 2>&1 && echo >&3 ok || echo >&3 error exit $? ) 3> "$DIR"/log2 | tee -a "$DIR"/log
+    ( apptainer exec apptainer.sif "$@" 2>&1 && echo >&3 ok || echo >&3 error exit $? ) 3> "$DIR"/log2 | tee -a "$DIR"/log
     case "$(tail -n 1 "$DIR"/log2)" in
     ( ok )
       echo
@@ -59,7 +59,7 @@ do
       echo "     You might want to run:"
       echo
       echo "     cd" $name
-      echo "     singularity shell singularity.sif"
+      echo "     apptainer shell apptainer.sif"
       echo "     " $*
       echo
       echo
@@ -82,7 +82,7 @@ echo "     -------- SUMMARY --------"
 i=0
 for name in current/*
 do
-  if [ -f $name/singularity.def ]
+  if [ -f $name/apptainer.def ]
   then
     echo "${NAME[$i]}:${RESULT[$i]}"
 

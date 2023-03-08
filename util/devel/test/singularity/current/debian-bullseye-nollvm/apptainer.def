@@ -1,12 +1,11 @@
-BootStrap: library
-From: alpine:3.15
+BootStrap: docker
+From: debian:bullseye
 
 %files
     ../../provision-scripts/* /provision-scripts/
 
 %post
-    /provision-scripts/apk-deps.sh
-    /provision-scripts/apk-llvm.sh
+    /provision-scripts/apt-get-deps.sh
 
 %runscript
     ../../provision-scripts/run.sh

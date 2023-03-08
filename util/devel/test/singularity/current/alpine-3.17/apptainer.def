@@ -1,12 +1,12 @@
-BootStrap: library
-From: almalinux:8
+BootStrap: docker
+From: alpine:3.17
 
 %files
     ../../provision-scripts/* /provision-scripts/
 
 %post
-    /provision-scripts/dnf-deps.sh
-    /provision-scripts/dnf-llvm.sh
+    /provision-scripts/apk-deps.sh
+    /provision-scripts/apk-llvm.sh
 
 %runscript
     ../../provision-scripts/run.sh

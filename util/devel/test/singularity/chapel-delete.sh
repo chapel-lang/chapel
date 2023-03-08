@@ -4,7 +4,7 @@
 
 for name in current/*
 do
-  if [ -f $name/singularity.def ]
+  if [ -f $name/apptainer.def ]
   then
     echo "cd $name && rm -Rf chapel"
     ( cd $name && rm -Rf chapel )

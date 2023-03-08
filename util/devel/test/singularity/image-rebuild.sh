@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Rebuilds the singularity image in each current subdirectory
+# Rebuilds the apptainer image in each current subdirectory
 
 for name in current/*
 do
-  if [ -f $name/singularity.def ]
+  if [ -f $name/apptainer.def ]
   then
-    echo "cd $name && singularity build --force --fakeroot singularity.sif singularity.def"
-    ( cd $name && singularity build --force --fakeroot singularity.sif singularity.def )
+    echo "cd $name && apptainer build --force --fakeroot apptainer.sif apptainer.def"
+    ( cd $name && apptainer build --force --fakeroot apptainer.sif apptainer.def )
   fi
 done

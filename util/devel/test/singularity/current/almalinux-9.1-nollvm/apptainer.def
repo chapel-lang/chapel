@@ -1,5 +1,5 @@
-BootStrap: library
-From: almalinux:8
+BootStrap: docker
+From: almalinux:9.1
 
 %files
     ../../provision-scripts/* /provision-scripts/

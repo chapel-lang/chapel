@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Deletes the singularity image in each current subdirectory
+# Deletes the apptainer image in each current subdirectory
 
 for name in current/*
 do
-  if [ -f $name/singularity.def ]
+  if [ -f $name/apptainer.def ]
   then
-    echo "cd $name && rm -Rf singularity.sif"
-    ( cd $name && rm -Rf singularity.sif )
+    echo "cd $name && rm -Rf apptainer.sif"
+    ( cd $name && rm -Rf apptainer.sif )
   fi
 done

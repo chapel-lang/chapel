@@ -1,12 +1,13 @@
-BootStrap: library
-From: debian:buster
+BootStrap: docker
+From: debian:bookworm
 
 %files
     ../../provision-scripts/* /provision-scripts/
 
 %post
     /provision-scripts/apt-get-deps.sh
-    /provision-scripts/apt-get-llvm-11.sh
+    # installs LLVM 11 and llvm-11-tools
+    /provision-scripts/apt-get-llvm.sh
 
 %runscript
     ../../provision-scripts/run.sh

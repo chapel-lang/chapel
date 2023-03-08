@@ -1,19 +1,12 @@
-# Getting started with singularity
+# Getting started with apptainer
 
-See https://docs.sylabs.io/guides/latest/user-guide/
+See http://apptainer.org/docs/user/latest/
 
 # Where to find images
 
-* You can use 'singularity search' to look for containers;
-  and see default library is https://cloud.sylabs.io/library/library/
-  e.g. https://cloud.sylabs.io/library/library/default/debian
 * You can find docker containers on https://hub.docker.com
 
 # Notes on writing .def files
-
-## Example using a singularity library image
-BootStrap: library
-From: ubuntu:16.04
 
 ## Example using a docker image
 BootStrap: docker
@@ -30,26 +23,26 @@ From: quay.io/centos/centos:stream9
 # Commands to run
 
 ## to construct the image
-singularity build --fakeroot singularity.sif singularity.def
+apptainer build --fakeroot apptainer.sif apptainer.def
 
 #To create an image for experimenting with where you can install
 # more packages etc, use this:
-#   sudo singularity build --sandbox singularity.sif singularity.def
+#   sudo apptainer build --sandbox apptainer.sif apptainer.def
 #
 #   # to explore as root
-#   sudo singularity shell --writable singularity.sif
+#   sudo apptainer shell --writable apptainer.sif
 #
 #   # to explore not as root
-#   singularity shell --writable singularity.sif
+#   apptainer shell --writable apptainer.sif
 
 
 ## to run the runscript
-singularity run singularity.sif
+apptainer run apptainer.sif
 
 ## to run a shell within the image
-singularity shell singularity.sif
+apptainer shell apptainer.sif
 
 By default, environment is included in run commands.
 Also the directory stays the same (so e.g. a chapel directory
-will appear next to singularity.sif if it is created from
+will appear next to apptainer.sif if it is created from
 within the image)

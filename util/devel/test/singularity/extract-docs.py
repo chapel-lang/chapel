@@ -12,6 +12,10 @@ def gather_provision_script_cmds(path):
             line = line.strip()
             if line.startswith("#!"):
                 pass # ignore shebang line
+            elif (line.startswith("alias unsudo") or
+                  line.startswith("alias hide") or
+                  line.startswith("hide")):
+                pass # ignore these hidden details
             elif line:
                 cmds.append(line)
     return cmds
@@ -139,7 +143,7 @@ tocmds = { }
 for subpath in subdirs:
     cmds = [ ]
     if os.path.isdir(subpath):
-        sdef = os.path.join(subpath, "singularity.def")
+        sdef = os.path.join(subpath, "apptainer.def")
         vfile = os.path.join(subpath, "Vagrantfile")
         if os.path.exists(sdef):
             cmds = extract_sdef_commands(sdef)
@@ -155,6 +159,12 @@ for subpath in subdirs:
         else:
             words = cmd.split()
             adj = [ ]
+            sudo = True
+            if words[0] == "unsudo":
+                sudo = False
+                words.pop(0)
+            if words[0] == "cd":
+                sudo = False
             for word in words:
                 if word == "-y" or word == "--yes" or word == "--noconfirm":
                     pass # filter these out
@@ -162,7 +172,10 @@ for subpath in subdirs:
                     adj.append("~/.bashrc")
                 else:
                     adj.append(word)
-            result.append("sudo " + " ".join(adj))
+            if sudo:
+                result.append("sudo " + " ".join(adj))
+            else:
+                result.append(" ".join(adj))
 
     tocmds[subpath] = result
 
