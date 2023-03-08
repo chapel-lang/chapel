@@ -1830,7 +1830,15 @@ module ChapelArray {
         // We didn't find it, so return false.
         return false;
 
-      // workaround for #21749:
+      // Should we run the parallel version of the algorithm?
+      // - if idxType is bool, then no b/c there's unlikely to be
+      //   enough data to warrant a parallel loop and because of
+      //   issue #21791
+      // - if there's no max() for our 'fullIdxType' then 'no' b/c
+      //   we rely on the max() value in the current parallel
+      //   implementation.  Note that this calls the primitive to
+      //   check the resolution directly rather than Reflection
+      //   as a workaround for issue #21749
       } else if this.idxType != bool && __primitive("call and fn resolves", "max", fullIdxType) {
         var foundIt = false;
         var locIdx = max(fullIdxType);
