@@ -322,7 +322,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
      1 <= `day` <= the number of days in the given month and year
   */
-  proc date.init(year, month, day) {
+  proc date.init(year: int, month: int, day: int) {
     if year < MINYEAR-1 || year > MAXYEAR+1 then
       HaltWrappers.initHalt("year is out of the valid range");
     if month < 1 || month > 12 then
@@ -647,7 +647,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
      `microsecond`, and `timezone`.  All arguments are optional
    */
   @unstable "tz is unstable; its type may change in the future"
-  proc time.init(hour=0, minute=0, second=0, microsecond=0,
+  proc time.init(hour:int=0, minute:int=0, second:int=0, microsecond:int=0,
                  in tz: shared Timezone?) {
     if hour < 0 || hour >= 24 then
       HaltWrappers.initHalt("hour out of range");
@@ -667,7 +667,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Initialize a new `time` value from the given `hour`, `minute`, `second`,
      `microsecond`.  All arguments are optional
    */
-  proc time.init(hour=0, minute=0, second=0, microsecond=0) {
+  proc time.init(hour:int=0, minute:int=0, second:int=0, microsecond:int=0) {
     if hour < 0 || hour >= 24 then
       HaltWrappers.initHalt("hour out of range");
     if minute < 0 || minute >= 60 then
@@ -1058,8 +1058,8 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
      `month`, and `day` arguments are required, the rest are optional.
    */
   @unstable "tz is unstable; its type may change in the future"
-  proc datetime.init(year, month, day,
-                     hour=0, minute=0, second=0, microsecond=0,
+  proc datetime.init(year:int, month:int, day:int,
+                     hour:int=0, minute:int=0, second:int=0, microsecond:int=0,
                      in tz) {
     chpl_date = new date(year, month, day);
     chpl_time = new time(hour, minute, second, microsecond, tz);
@@ -1069,8 +1069,8 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
      `hour`, `minute`, `second`, `microsecond` and timezone.  The `year`,
      `month`, and `day` arguments are required, the rest are optional.
    */
-  proc datetime.init(year, month, day,
-                     hour=0, minute=0, second=0, microsecond=0) {
+  proc datetime.init(year:int, month:int, day:int,
+                     hour:int=0, minute:int=0, second:int=0, microsecond:int=0) {
     chpl_date = new date(year, month, day);
     chpl_time = new time(hour, minute, second, microsecond);
   }
@@ -1717,8 +1717,8 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
      default to 0. Since only `days`, `seconds` and `microseconds` are
      stored, the other arguments are converted to days, seconds
      and microseconds. */
-  proc timedelta.init(days=0, seconds=0, microseconds=0,
-                      milliseconds=0, minutes=0, hours=0, weeks=0) {
+  proc timedelta.init(days:int=0, seconds:int=0, microseconds:int=0,
+                      milliseconds:int=0, minutes:int=0, hours:int=0, weeks:int=0) {
     param usps = 1000000,  // microseconds per second
           uspms = 1000,    // microseconds per millisecond
           spd = 24*60*60; // seconds per day
@@ -1934,7 +1934,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
    :rtype:   `real(64)`
  */
 deprecated "'getCurrentTime()' is deprecated please use 'timeSinceEpoch()' instead"
-proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64)
+proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64) do
   return _convert_microseconds(unit, chpl_now_time());
 
 /*

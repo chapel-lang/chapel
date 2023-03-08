@@ -1,0 +1,4 @@
+parSafe.chpl:4: warning: 'Map.parSafe' is unstable
+parSafe.chpl:5: warning: 'Map.parSafe' is unstable
+parSafe.chpl:12: warning: 'Map.parSafe' is unstable
+parSafe.chpl:13: warning: 'Map.parSafe' is unstable

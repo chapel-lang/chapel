@@ -118,7 +118,7 @@ proc masonExternal(args: [] string) {
       var usedCmd:string;
       var cmdList:list(string);
       // identify which, if any, subcommand was used and collect its arguments
-      for (cmd, arg) in subCmds.items() {
+      for (cmd, arg) in zip(subCmds.keys(), subCmds.values()) {
         if arg.hasValue() {
           usedCmd = cmd;
           cmdList = new list(arg.values());
@@ -329,7 +329,7 @@ private proc spkgInfo(args: [?d] string) {
   var parser = new argumentParser(helpHandler=new MasonExternalInfoHelpHandler());
 
   var archFlag = parser.addFlag(name="architecture",
-                                opts=["--arch", ],
+                                opts=["--arch"],
                                 defaultValue=false);
   // TODO: Argument parser may need support for mutually exclusive, or
   // required if other value, or not required if other value setups
@@ -417,7 +417,7 @@ proc getExternalPackages(exDeps: Toml) /* [domain(string)] shared Toml? */ {
   var exDom: domain(string);
   var exDepTree: [exDom] shared Toml?;
 
-  for (name, spc) in exDeps.A.items() {
+  for (name, spc) in zip(exDeps.A.keys(), exDeps.A.values()) {
     try! {
       var spec = spc!;
       select spec.tag {

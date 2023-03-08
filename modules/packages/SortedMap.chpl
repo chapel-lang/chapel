@@ -57,7 +57,7 @@ module SortedMap {
       compilerWarning("creating a sortedMap with key type " +
                       keyType:string);
       if isClassType(keyType) && !isGenericType(keyType:borrowed) {
-        compilerWarning("which now means class type with generic management");
+        compilerWarning("which is a class type with generic management");
       }
       compilerError("sortedMap key type cannot currently be generic");
     }
@@ -69,7 +69,7 @@ module SortedMap {
       compilerWarning("creating a sortedMap with value type " +
                       valType:string);
       if isClassType(valType) && !isGenericType(valType:borrowed) {
-        compilerWarning("which now means class type with generic management");
+        compilerWarning("which is a class type with generic management");
       }
       compilerError("sortedMap value type cannot currently be generic");
     }
@@ -388,10 +388,10 @@ module SortedMap {
     /*
       Iterates over the key-value pairs of this sortedMap.
 
-      :yields: A tuple of references to one of the key-value pairs contained in
-               this sortedMap.
+      :yields: A tuple whose elements are a copy of one of the key-value
+               pairs contained in this map.
     */
-    iter items() const ref {
+    iter items() {
       foreach kv in _set {
         yield (kv[0], kv[1]!.val);
       }

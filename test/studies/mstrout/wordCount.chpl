@@ -63,7 +63,7 @@ for f in findFiles(inputDir) {
     filenamesList.append(f);
 }
 // Create an array blocked into pieces per locale.
-var filenames = newBlockArr(0..#filenamesList.size, string);
+var filenames = Block.createArray(0..#filenamesList.size, string);
 filenames = filenamesList;
 
 // Execute using distributed parallelism across locales if executing
@@ -91,7 +91,7 @@ forall (i, file) in zip(filenames.domain, filenames) {
 
   // filter out any words that do not show up more than once
   var infrequentWords = new list(string);
-  for (word,count) in wordCount.items() {
+  for (word,count) in zip(wordCount.keys(), wordCount.values()) {
     if count<=minCount then infrequentWords.append(word);
   }
   for word in infrequentWords {

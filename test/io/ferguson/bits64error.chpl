@@ -8,7 +8,7 @@ config const fname = "error.data";
   var myfile = open(fname, ioMode.cw).writer();
   for i in 0..#n {
     var x:uint = i:uint;
-    myfile.writebits(x, 63);
+    myfile.writeBits(x, 63);
   }
   myfile.close();
 }

@@ -142,6 +142,59 @@ module OwnedObject {
       this.chpl_p = src.release();
     }
 
+
+
+
+    pragma "no doc"
+    proc type adopt(source) {
+      compilerError("cannot adopt a ", source.type:string);
+    }
+
+
+    /*
+      Creates a new `owned` class reference, taking over the ownership
+      of the argument. The result has the same type as the argument.
+      If the argument is non-nilable, it must be recognized by the compiler
+      as an expiring value.
+    */
+    inline proc type adopt(pragma "nil from arg" in obj : owned) {
+      return obj;
+    }
+
+    /*
+      Starts managing the argument class instance `obj`
+      using the `owned` memory management strategy.
+      The result type preserves nilability of the argument type.
+
+      It is an error to directly delete the class instance
+      after passing it to `owned.adopt()`.
+    */
+    inline proc type adopt(pragma "nil from arg" in obj: unmanaged) {
+      // 'result' may have a non-nilable type
+      var result: (obj.type : owned);
+      result = new _owned(obj);
+      return result;
+    }
+
+    /*
+      Empty `obj` so that it manages `nil` and
+      return the instance previously managed by this owned object.
+
+      If the argument is `nil` it returns `nil`.
+    */
+    inline proc type release(pragma "nil from arg" ref obj: owned) {
+      var oldPtr = obj.chpl_p;
+      type t = obj.chpl_t;
+
+      obj.chpl_p = nil;
+
+      return if _to_nilable(t) == t
+                then _to_unmanaged(oldPtr)
+                else _to_unmanaged(oldPtr!);
+    }
+
+
+
     // Issue a compiler error for illegal uses.
     pragma "no doc"
     proc type create(source) {

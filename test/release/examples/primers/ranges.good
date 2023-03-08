@@ -109,7 +109,7 @@ true
 A slice of 1..20 by 3 with 1..20 by 2
 Range 1..20 by 6 = 1, 7, 13, 19
 A slice of 1..20 by 3 with 1..20 by -2
-Range 1..20 by 6 align 4 = 4, 10, 16
+Range 1..20 by -6 align 4 = 16, 10, 4
 
 A slice of 1..10 with 5..
 Range 5..10 = 5, 6, 7, 8, 9, 10

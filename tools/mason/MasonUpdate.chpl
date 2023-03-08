@@ -74,7 +74,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock", show=true) {
     const projectHome = getProjectHome(cwd, tf);
     const tomlPath = projectHome + "/" + Path.relPath(tf);
     const lockPath = projectHome + "/" + Path.relPath(lf);
-    const openFile = openreader(tomlPath);
+    const openFile = openReader(tomlPath);
     const TomlFile = parseToml(openFile);
     var updated = false;
     if isFile(tomlPath) {
@@ -462,7 +462,7 @@ private proc retrieveGitDep(name: string, branch: string) {
 private proc getDependencies(tomlTbl: Toml) {
   var depsD: domain(1);
   var deps: list((string, shared Toml?));
-  for k in tomlTbl.A {
+  for k in tomlTbl.A.keys() {
     if k == "dependencies" {
       for (a,d) in allFields(tomlTbl[k]!) {
         deps.append((a, d));
@@ -474,7 +474,7 @@ private proc getDependencies(tomlTbl: Toml) {
 
 private proc getGitDeps(tomlTbl: Toml) {
   var gitDeps: list((string, string, shared Toml?));
-  for k in tomlTbl["dependencies"]!.A {
+  for k in tomlTbl["dependencies"]!.A.keys() {
     for (a, d) in allFields(tomlTbl["dependencies"]![k]!) {
       // name, type of field (url, branch, etc.), toml that it is set to
       gitDeps.append((k, a, d));
@@ -505,7 +505,7 @@ private proc pullGitDeps(gitDeps, show=false) {
   // Pull git repositories so that we can have access to the
   // current revision and TOML file to get dependencies
   var baseDir = MASON_HOME +'/git/';
-  for val in gitDepMap {
+  for val in gitDepMap.keys() {
     var (srcURL, origBranch, revision) = gitDepMap[val];
 
     // Default to head if branch isn't specified

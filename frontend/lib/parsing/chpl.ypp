@@ -2664,7 +2664,8 @@ opt_function_body_stmt:
 
 function_body_stmt:
   block_stmt_body   { $$ = $1; }
-| return_stmt       { context->clearComments(); $$ = context->makeList($1); }
+| TDO toplevel_stmt { $$ = context->buildSingleStmtRoutineBody($2); }
+| return_stmt       { $$ = context->buildSingleStmtRoutineBody($1, &(@1)); }
 ;
 
 query_expr:

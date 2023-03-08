@@ -158,19 +158,19 @@ module TomlParser {
       bracket = '\\[|\\]',
       digit = "\\d+",
       keys = "^\\w+";
-    const Str = compile(doubleQuotes + '|' + singleQuotes),
-      kv = compile('|'.join(doubleQuotes, singleQuotes, digit, keys)),
-      dt = compile('^\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}:\\d{2}$'),
-      realNum = compile("\\+\\d*\\.\\d+|\\-\\d*\\.\\d+|\\d*\\.\\d+"),
-      ld = compile('^\\d{4}-\\d{2}-\\d{2}$'),
-      ti = compile('^\\d{2}:\\d{2}:\\d{2}(.\\d{6,})?$'),
-      ints = compile("(\\d+|\\+\\d+|\\-\\d+)"),
-      inBrackets = compile("(\\[.*?\\])"),
-      corner = compile("(\\[.+\\])"),
-      brackets = compile('\\[|\\]'),
-      whitespace = compile("\\s"),
-      comment = compile("(\\#)"),
-      comma = compile("(\\,)");
+    const Str = new regex(doubleQuotes + '|' + singleQuotes),
+      kv = new regex('|'.join(doubleQuotes, singleQuotes, digit, keys)),
+      dt = new regex('^\\d{4}-\\d{2}-\\d{2}[ T]\\d{2}:\\d{2}:\\d{2}$'),
+      realNum = new regex("\\+\\d*\\.\\d+|\\-\\d*\\.\\d+|\\d*\\.\\d+"),
+      ld = new regex('^\\d{4}-\\d{2}-\\d{2}$'),
+      ti = new regex('^\\d{2}:\\d{2}:\\d{2}(.\\d{6,})?$'),
+      ints = new regex("(\\d+|\\+\\d+|\\-\\d+)"),
+      inBrackets = new regex("(\\[.*?\\])"),
+      corner = new regex("(\\[.+\\])"),
+      brackets = new regex('\\[|\\]'),
+      whitespace = new regex("\\s"),
+      comment = new regex("(\\#)"),
+      comma = new regex("(\\,)");
 
     var debugCounter = 1;
 
@@ -214,7 +214,7 @@ module TomlParser {
 
     proc parseTable() {
       var toke = getToken(source);
-      var tablename = brackets.sub('', toke);
+      var tablename = toke.replace(brackets, '');
       var tblD: domain(string);
       var tbl: [tblD] shared Toml?;
       if !rootTable.pathExists(tablename) {
@@ -696,7 +696,7 @@ used to recursively hold tables and respective values
       this.ti = root.ti;
       this.dt = root.dt;
       this.s = root.s;
-      for idx in root.A do this.A[idx] = new shared Toml(root.A[idx]!)?;
+      for idx in root.A.keys() do this.A[idx] = new shared Toml(root.A[idx]!)?;
       this.tag = root.tag;
     }
 
@@ -898,7 +898,7 @@ used to recursively hold tables and respective values
     pragma "no doc"
     /* Flatten tables into flat associative array for writing */
     proc flatten(ref flat: map(string, shared Toml?, false), rootKey = '') : flat.type {
-      for (k, v) in this.A.items() {
+      for (k, v) in zip(this.A.keys(), this.A.values()) {
         if v!.tag == fieldToml {
           var fullKey = k;
           if rootKey != '' then fullKey = '.'.join(rootKey, k);
@@ -1224,16 +1224,16 @@ module TomlReader {
             ld = "^\\d{4}-\\d{2}-\\d{2}",
             ti = "^\\d{2}:\\d{2}:\\d{2}(.\\d{6,})?";
 
-      const pattern = compile('|'.join(doubleQuotes,
-                                       singleQuotes,
-                                       bracketContents,
-                                       brackets,
-                                       commas,
-                                       curly,
-                                       equals,
-                                       dt,
-                                       ti,
-                                       ld));
+      const pattern = new regex('|'.join(doubleQuotes,
+                                         singleQuotes,
+                                         bracketContents,
+                                         brackets,
+                                         commas,
+                                         curly,
+                                         equals,
+                                         dt,
+                                         ti,
+                                         ld));
 
       for token in pattern.split(line) {
         idx += 1;
@@ -1245,11 +1245,11 @@ module TomlReader {
           nonEmptyChar = true;
           // check for date/time in a line and avoid comment
           const toke = strippedToken;
-          const isWhiteSpace = compile("\\s");
+          const isWhiteSpace = new regex("\\s");
           var dateTimeToken = isWhiteSpace.split(toke);
-          if (compile('|'.join(dt,ti,ld))).match(strippedToken).matched then
+          if (new regex('|'.join(dt,ti,ld))).match(strippedToken).matched then
             strippedToken = dateTimeToken[0];
-          var isComment = (compile(comments)).match(strippedToken);
+          var isComment = (new regex(comments)).match(strippedToken);
           if isComment.matched && idx <= 1 {
             linetokens.append(strippedToken);
           } else if !isComment.matched {

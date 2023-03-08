@@ -179,6 +179,12 @@ class Context {
     }
   }
 
+  void clearTerminalColor(std::ostream& os) {
+    if (currentTerminalSupportsColor_) {
+      os << getClearColorFormat();
+    }
+  }
+
 
 
   // The following are only used for UniqueString garbage collection
@@ -474,6 +480,19 @@ class Context {
     is suitable to call from a parse query.
    */
   void setFilePathForModuleId(ID moduleID, UniqueString path);
+
+  /**
+    Return 'true' if the given file path can be handled by a library file
+    (experimental).
+
+    Returns the library's path by setting 'pathOut'.
+   */
+  bool pathHasLibrary(const UniqueString& filePath, UniqueString& pathOut);
+
+  /**
+    Sets the library path for the given file path.
+   */
+  void setLibraryForFilePath(const UniqueString& filePath, const UniqueString& libPath);
 
   /**
     This function increments the current revision number stored

@@ -1,22 +1,23 @@
-gpu/native/studies/shoc/bandwidth2.graph
+gpu/native/studies/shoc/shoc-triad-bw-sm.graph
 gpu/native/studies/shoc/triad.graph
 gpu/native/studies/shoc/kernel.graph
-gpu/native/studies/shoc/kernel2.graph
+gpu/native/studies/shoc/shoc-triad-bw-lg.graph
 gpu/native/studies/shoc/triad2.graph
-gpu/native/studies/shoc/bandwidth.graph
-gpu/native/studies/shoc/sort.graph
-
-gpu/native/streamPrototype/gpuStream.graph
-
-gpu/native/studies/compiler-performance/transform.graph
-gpu/native/studies/compiler-performance/end-to-end.graph
-
-gpu/native/studies/kernelLaunch/emptyKernelLaunch.graph
-
-gpu/native/studies/chop/chplGPU.graph
+gpu/native/studies/shoc/kernel2.graph
 
 gpu/native/array_on_device/studies/shoc/triadAodBw1.graph
 gpu/native/array_on_device/studies/shoc/triadAodBw2.graph
 
+gpu/native/studies/shoc/sort.graph
+
+gpu/native/streamPrototype/gpuStream.graph
+
+gpu/native/studies/kernelLaunch/emptyKernelLaunch.graph
+
 gpu/native/studies/transpose/transpose-throughput.graph
 gpu/native/studies/transpose/transpose-time.graph
+
+gpu/native/studies/chop/chplGPU.graph
+
+gpu/native/studies/compiler-performance/transform.graph
+gpu/native/studies/compiler-performance/end-to-end.graph

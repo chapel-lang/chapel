@@ -32,7 +32,8 @@ namespace resolution {
 void gatherDeclsWithin(const uast::AstNode* ast,
                        DeclMap& declared,
                        bool& containsUseImport,
-                       bool& containsFunctionDecls);
+                       bool& containsFunctionDecls,
+                       bool& containsExternBlock);
 
 
 } // end namespace resolution

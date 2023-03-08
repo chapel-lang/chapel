@@ -481,6 +481,42 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
   #endif
 }
 
+static
+const UniqueString& pathHasLibraryQuery(Context* context,
+                                        UniqueString filePath) {
+  QUERY_BEGIN(pathHasLibraryQuery, context, filePath);
+
+  UniqueString result;
+
+  return QUERY_END(result);
+}
+
+bool Context::pathHasLibrary(const UniqueString& filePath,
+                             UniqueString& pathOut) {
+  auto tupleOfArgs = std::make_tuple(filePath);
+
+  bool got = hasCurrentResultForQuery(pathHasLibraryQuery,
+                                      tupleOfArgs);
+
+  if (got) {
+    pathOut = pathHasLibraryQuery(this, filePath);
+    return true;
+  }
+
+  pathOut = UniqueString::get(this, "<unknown library path>");
+  return false;
+}
+
+void Context::setLibraryForFilePath(const UniqueString& filePath, const UniqueString& libPath) {
+  auto tupleOfArgs = std::make_tuple(filePath);
+
+  updateResultForQuery(pathHasLibraryQuery,
+                       tupleOfArgs, libPath,
+                       "pathHasLibraryQuery",
+                       /* isInputQuery */ false,
+                       /* forSetter */ true);
+}
+
 void Context::advanceToNextRevision(bool prepareToGC) {
   this->currentRevisionNumber++;
   this->numQueriesRunThisRevision_ = 0;

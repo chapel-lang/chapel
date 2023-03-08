@@ -19,7 +19,8 @@ $HADOOP_HOME/bin/hdfs namenode -format test
 #start hdfs
 $HADOOP_HOME/sbin/start-dfs.sh
 $HADOOP_HOME/bin/hdfs dfsadmin -safemode leave
-
+# make sure files are owned by the user
+$HADOOP_HOME/bin/hdfs dfs -chown -R $USER /
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="networking-packages"
 export CHPL_NIGHTLY_TEST_DIRS="library/packages/Curl library/packages/HDFS"

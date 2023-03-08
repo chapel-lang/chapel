@@ -3767,17 +3767,17 @@ module HDF5 {
           const readCount = min(dims[0]:int-inOffset, chunkShape.size);
           var A: [0..#readCount] eltType;
 
-          var inOffsetArr = [inOffset: C_HDF5.hsize_t, ],
-              inCountArr  = [readCount: C_HDF5.hsize_t, ];
+          var inOffsetArr = [inOffset: C_HDF5.hsize_t],
+              inCountArr  = [readCount: C_HDF5.hsize_t];
 
           C_HDF5.H5Sselect_hyperslab(dataspace,
                                      C_HDF5.H5S_SELECT_SET,
                                      c_ptrTo(inOffsetArr), nil,
                                      c_ptrTo(inCountArr), nil);
 
-          var outDims   = [readCount: C_HDF5.hsize_t, ],
-              outOffset = [0: C_HDF5.hsize_t, ],
-              outCount  = [readCount: C_HDF5.hsize_t, ];
+          var outDims   = [readCount: C_HDF5.hsize_t],
+              outOffset = [0: C_HDF5.hsize_t],
+              outCount  = [readCount: C_HDF5.hsize_t];
 
           var memspace = C_HDF5.H5Screate_simple(1, c_ptrTo(outDims), nil);
 
@@ -3928,8 +3928,8 @@ module HDF5 {
       extern proc H5Pset_dxpl_mpio(xferPlist: C_HDF5.hid_t,
                                    flag: C_HDF5.H5FD_mpio_xfer_t): C_HDF5.herr_t;
 
-      proc isBlock(D: Block) param return true;
-      proc isBlock(D) param return false;
+      proc isBlock(D: Block) param do return true;
+      proc isBlock(D) param do return false;
 
       if !isBlock(A.dom.dist) {
         use Reflection;
@@ -4052,10 +4052,10 @@ module HDF5 {
       // A11, A12, B11, B12
       // A21, A22, B21, B22
       use BlockDist, CyclicDist, super.C_HDF5;
-      proc isBlock(D: Block) param return true;
-      proc isBlock(D) param return false;
-      proc isCyclic(D: Cyclic) param return true;
-      proc isCyclic(D) param return false;
+      proc isBlock(D: Block) param do return true;
+      proc isBlock(D) param do return false;
+      proc isCyclic(D: Cyclic) param do return true;
+      proc isCyclic(D) param do return false;
       if !(isBlock(A.dom.dist) || isCyclic(A.dom.dist)) then
         compilerError("hdf5ReadDistributedArray currently only supports block or cyclic distributed arrays");
 

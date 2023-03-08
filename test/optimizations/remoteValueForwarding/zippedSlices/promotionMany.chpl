@@ -6,12 +6,12 @@ config const n = 10;
 
 proc main() {
 
-  var A = newBlockArr(1..n, int);
-  var B = newBlockArr(1..n, int);
-  var C = newBlockArr(1..n, int);
-  var D = newBlockArr(1..n, int);
-  var E = newBlockArr(1..n, int);
-  var F = newBlockArr(1..n, int);
+  var A = Block.createArray(1..n, int);
+  var B = Block.createArray(1..n, int);
+  var C = Block.createArray(1..n, int);
+  var D = Block.createArray(1..n, int);
+  var E = Block.createArray(1..n, int);
+  var F = Block.createArray(1..n, int);
 
   var alpha = 2;
 

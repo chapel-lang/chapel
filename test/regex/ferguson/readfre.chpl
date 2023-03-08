@@ -48,13 +48,13 @@ writeln(r.offset(), " ", ok, ":", str);
 // and vice versa
 writeln("#6 passes x, should match");
 {
-  var re = compile("x":t);
+  var re = new regex("x":t);
   ok = r.readf("%/*/", re);
   writeln(r.offset(), " ", ok);
 }
 writeln("#7 captures zz, should match");
 {
-  var re = compile("(z+)":t);
+  var re = new regex("(z+)":t);
   ok = r.readf(b"%/*/", re, str);
   writeln(r.offset(), " ", ok, ":", str);
 }

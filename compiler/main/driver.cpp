@@ -114,6 +114,7 @@ const char* CHPL_TARGET_BUNDLED_LINK_ARGS = NULL;
 const char* CHPL_TARGET_SYSTEM_LINK_ARGS = NULL;
 
 const char* CHPL_CUDA_LIBDEVICE_PATH = NULL;
+const char* CHPL_ROCM_PATH = NULL;
 const char* CHPL_GPU_CODEGEN = NULL;
 const char* CHPL_GPU_ARCH = NULL;
 
@@ -189,6 +190,7 @@ FILE* printPassesFile = NULL;
 // flag for llvmWideOpt
 bool fLLVMWideOpt = false;
 
+bool fWarnArrayOfRange = true;
 bool fWarnConstLoops = true;
 bool fWarnIntUint = false;
 bool fWarnUnstable = false;
@@ -313,9 +315,8 @@ bool fDynoCompilerLibrary = false;
 bool fDynoScopeProduction = true;
 bool fDynoScopeBundled = false;
 bool fDynoDebugTrace = false;
+bool fDynoVerifySerialization = false;
 size_t fDynoBreakOnHash = 0;
-bool fDynoSerialize = false;
-char dynoBinAstDir[FILENAME_MAX + 1] = "";
 
 bool fUseIOFormatters = false;
 
@@ -922,10 +923,6 @@ static void setLogDir(const ArgumentDescription* desc, const char* arg) {
   fLogDir = true;
 }
 
-static void setDynoSerialize(const ArgumentDescription* desc, const char* arg) {
-  fDynoSerialize = true;
-}
-
 static void setLogPass(const ArgumentDescription* desc, const char* arg) {
   logSelectPass(arg);
 }
@@ -1234,6 +1231,7 @@ static ArgumentDescription arg_desc[] = {
  {"print-additional-errors", ' ', NULL, "Print additional errors", "F", &fPrintAdditionalErrors, NULL,NULL},
  {"stop-after-pass", ' ', "<passname>", "Stop compilation after reaching this pass", "S128", &stopAfterPass, "CHPL_STOP_AFTER_PASS", NULL},
  {"force-vectorize", ' ', NULL, "Ignore vectorization hazards when vectorizing loops", "N", &fForceVectorize, NULL, NULL},
+ {"warn-array-of-range", ' ', NULL, "Enable [disable] warnings about arrays of range literals", "N", &fWarnArrayOfRange, "CHPL_WARN_ARRAY_OF_RANGE", NULL},
  {"warn-const-loops", ' ', NULL, "Enable [disable] warnings for some 'while' loops with constant conditions", "N", &fWarnConstLoops, "CHPL_WARN_CONST_LOOPS", NULL},
  {"warn-domain-literal", ' ', NULL, "Enable [disable] old domain literal syntax warnings", "n", &fNoWarnDomainLiteral, "CHPL_WARN_DOMAIN_LITERAL", setWarnDomainLiteral},
  {"warn-int-uint", ' ', NULL, "Enable [disable] warnings for potentially negative 'int' values implicitly converted to 'uint'", "N", &fWarnIntUint, "CHPL_WARN_INT_UINT", NULL},
@@ -1247,8 +1245,9 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-scope-bundled", ' ', NULL, "Enable [disable] using dyno to scope resolve bundled modules", "N", &fDynoScopeBundled, "CHPL_DYNO_SCOPE_BUNDLED", NULL},
  {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
  {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "X", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
- {"dyno-serialize", ' ', NULL, "Serialize AST to binary files in a directory", "N", &fDynoSerialize, "CHPL_DYNO_COMPILER_LIBRARY", NULL},
- {"dyno-serialize-dir", ' ', "<path>", "Specify directory for binary .dyno.ast files", "P", dynoBinAstDir, "CHPL_DYNO_SERIALIZE_DIR", setDynoSerialize},
+ {"dyno-gen-lib", ' ', "<path>", "Specify file to be generated as a .dyno library", "P", NULL, NULL, addDynoGenLib},
+ {"dyno-verify-serialization", ' ', NULL, "Enable [disable] verification of serialization", "N", &fDynoVerifySerialization, NULL, NULL},
+
  {"use-io-formatters", ' ', NULL, "Enable [disable] use of experimental IO formatters", "N", &fUseIOFormatters, "CHPL_USE_IO_FORMATTERS", NULL},
 
 
@@ -1411,7 +1410,7 @@ static void populateEnvMap() {
     }
   }
 
-  for (auto kvPair : chplEnvResult.get()){
+  for (const auto& kvPair : chplEnvResult.get()){
     if (envMap.find(kvPair.first) == envMap.end()) {
       envMap[kvPair.first] = strdup(kvPair.second.c_str());
     } else if (useDefaultEnv(kvPair.first, isCrayPrgEnv)) {
@@ -1471,6 +1470,7 @@ static void setChapelEnvs() {
 
   if (usingGpuLocaleModel()) {
     CHPL_CUDA_LIBDEVICE_PATH = envMap["CHPL_CUDA_LIBDEVICE_PATH"];
+    CHPL_ROCM_PATH = envMap["CHPL_ROCM_PATH"];
     CHPL_GPU_CODEGEN = envMap["CHPL_GPU_CODEGEN"];
     CHPL_GPU_ARCH = envMap["CHPL_GPU_ARCH"];
     switch (getGpuCodegenType()) {
@@ -1841,6 +1841,7 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   // Configure compilation flags for the context.
   chpl::CompilerFlags flags;
   flags.set(chpl::CompilerFlags::WARN_UNSTABLE, fWarnUnstable);
+  flags.set(chpl::CompilerFlags::WARN_ARRAY_OF_RANGE, fWarnArrayOfRange);
 
   // Set the compilation flags all at once using a query.
   chpl::setCompilerFlags(gContext, flags);

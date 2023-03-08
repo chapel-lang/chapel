@@ -45,7 +45,7 @@ const _columnComparator: _ColumnComparator;
 // Necessary since `t == CS` does not support classes with param fields
 //
 pragma "no doc"
-proc isCSType(type t) param return isSubtype(_to_borrowed(t), CS);
+proc isCSType(type t) param do return isSubtype(_to_borrowed(t), CS);
 
 /*
 This CS layout provides a Compressed Sparse Row (CSR) and Compressed Sparse
@@ -156,7 +156,7 @@ class CSDom: BaseSparseDomImpl {
   override proc getNNZ(): int {
     return _nnz;
   }
-  override proc dsiMyDist() return dist;
+  override proc dsiMyDist() do return dist;
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
     if _to_borrowed(rhs._instance.type) == this.type &&

@@ -792,7 +792,7 @@ proc testCheck(projectHome: string) {
 /* Returns the mason env
  */
 private proc returnMasonEnv() {
-  const fakeArgs = ['env', ];
+  const fakeArgs = ['env'];
   masonEnv(fakeArgs);
 }
 

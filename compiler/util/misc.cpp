@@ -759,12 +759,15 @@ static void printErrorFooter(int guess) {
   // Apologize for our internal errors to the end-user
   //
   if (!developer && !err_user) {
-    print_error("\n\n"
-      "Internal errors indicate a bug in the Chapel compiler (\"It's us, not you\"),\n"
-      "and we're sorry for the hassle.  We would appreciate your reporting this bug --\n"
-      "please see %s for instructions.%s\n\n", help_url,
-      (guess == -1) ? "" : "  In the meantime,\n"
-      "the filename + line number above may be useful in working around the issue.");
+    print_error(
+        "\n\n"
+        "Internal errors indicate a bug in the Chapel compiler,\nand we're "
+        "sorry for the hassle.  We would appreciate your reporting this bug "
+        "--\nplease see %s for instructions.%s\n\n",
+        help_url,
+        (guess == -1) ? ""
+                      : "  In the meantime,\nthe filename + line number above "
+                        "may be useful in working around the issue.");
 
     //
     // and exit if it's fatal (isn't it always?)

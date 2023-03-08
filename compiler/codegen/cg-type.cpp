@@ -45,7 +45,6 @@
 #include "llvm/IR/DataLayout.h"
 #endif
 
-
 GenRet Type::codegen() {
   if (this == dtUnknown) {
     INT_FATAL(this, "Cannot generate unknown type");
@@ -65,6 +64,65 @@ void PrimitiveType::codegenDef() {
 }
 
 void ConstrainedType::codegenDef() {
+}
+
+// TODO: See 'codegenFunctionTypeLLVM' for hints about what ABI stuff to
+// do when code generating extern/export stuff. It's a mess in there!
+void FunctionType::codegenDef() {
+  auto info = gGenInfo;
+  auto outfile = info->cfile;
+
+  if (outfile) {
+    INT_FATAL("The C backend is not supported yet!");
+  } else {
+    #ifdef HAVE_LLVM
+    llvm::Type* returnTy = this->returnType()->symbol->getLLVMType();
+    std::vector<llvm::Type*> argTys;
+    auto& ctx = info->llvmContext;
+
+    // Handle the void type specifically.
+    if (this->returnType() == dtVoid || this->returnType() == dtNothing) {
+      returnTy = llvm::Type::getVoidTy(ctx);
+    }
+
+    INT_ASSERT(returnTy);
+
+    for (int i = 0; i < numFormals(); i++) {
+      auto formal = this->formal(i);
+      llvm::Type* llvmTy = formal->type->symbol->getLLVMType();
+      INT_ASSERT(llvmTy);
+      argTys.push_back(llvmTy);
+    }
+
+    // Get the base type for the function. It is not a pointer.
+    const bool isVarArgs = false;
+    auto baseType = llvm::FunctionType::get(returnTy, argTys, isVarArgs);
+
+    // TODO: With the new 'opaque pointer' strategy that LLVM is adopting,
+    // it would be impossible to get the underlying type unless we carry
+    // it around or have access to the Chapel FunctionType in contexts
+    // where that information is important...
+    // But this complicates the generator, because the type of a static
+    // function (FnSymbol*) is a pointer to a function type, and the type
+    // of a Chapel function type is the underlying function type.
+    // For now, my workaround is just going to be to use a static map from
+    // the pointer type to the function type. That way the LLVM type for a
+    // Chapel FunctionType can still be a pointer, and everything lines up
+    // nicely in the generator.
+    bool ok = llvmMapUnderlyingFunctionType(this, baseType);
+    INT_ASSERT(ok);
+
+    // The final type is a pointer to the underlying function type.
+    auto& layout = info->module->getDataLayout();
+    auto addrSpace = layout.getAllocaAddrSpace();
+    auto type = llvm::PointerType::get(baseType, addrSpace);
+
+    if (!this->symbol->getLLVMType()) {
+      info->lvt->addGlobalType(this->symbol->cname, type, false);
+      this->symbol->llvmImplType = type;
+    }
+    #endif
+  }
 }
 
 void EnumType::codegenDef() {

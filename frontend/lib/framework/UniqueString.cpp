@@ -200,19 +200,24 @@ std::ostream& operator<<(std::ostream& os, const chpl::UniqueString& uStr) {
   return os;
 }
 
+//
+// Represent UniqueString occurrences as integer IDs in a table that the
+// Serializer builds up while serializing various entities. This reduces
+// the file size of generated serialized AST and helps with performance.
+//
+void UniqueString::serialize(Serializer& ser) const {
+  auto id = ser.cacheString(c_str(), length());
+  ser.write(id);
+}
 
+//
+// Deserialize a UniqueString by reading the integer ID and fetching the
+// relevant pointer and length from the Deserializer.
+//
 UniqueString UniqueString::deserialize(Deserializer& des) {
-  auto len = des.read<uint64_t>();
-  if (len > 0) {
-    auto buf = (char*)malloc(len+1);
-    des.is().read(buf, len);
-    buf[len] = '\0';
-    auto unique = des.context()->uniqueCString(buf, len);
-    free(buf);
-    return UniqueString::get(des.context(), unique, len);
-  } else {
-    return UniqueString();
-  }
+  int uid = des.read<int>();
+  const auto& strlen = des.getString(uid);
+  return get(des.context(), strlen.second, strlen.first);
 }
 
 } // end namespace chpl

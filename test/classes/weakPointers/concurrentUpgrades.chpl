@@ -1,6 +1,6 @@
 
 use WeakPointer;
-use Barriers;
+use Collectives;
 
 class basicClass {
     var x :int;
@@ -9,10 +9,10 @@ class basicClass {
 config const n = 20;
 
 proc concurrentlyUpgrade(s) {
-    const wp = new weakPointer(s);
+    const wp = new weak(s);
     var correct: atomic bool = true;
 
-    var b = new Barrier(n);
+    var b = new barrier(n);
 
     coforall tid in 0..<n {
         var my_weak = wp;

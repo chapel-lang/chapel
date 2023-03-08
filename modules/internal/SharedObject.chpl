@@ -34,13 +34,13 @@ module SharedObject {
   class ReferenceCount {
     // the number of 'shared' class variables that point to the allocated data
     var strongCount: atomic int;
-    // the number of 'shared' class variables or 'weakPointer's that point to the data
+    // the number of 'shared' class variables or 'weak' references that point to the data
     var totalCount: atomic int; // weakCount + strongCount
 
     // ---------------- 'shared' interface ----------------
 
     // a 'ReferenceCount' should only ever be initialized during 'shared' initialization
-    // 'weakPointer's should only get a non-nil 'ReferenceCount' by copying from a 'shared'
+    // 'weak' references should only get a non-nil 'ReferenceCount' by copying from a 'shared'
     proc init() {
       this.complete();
       strongCount.write(1);
@@ -60,7 +60,7 @@ module SharedObject {
     }
 
 
-    // ---------------- 'weakPointer' interface ----------------
+    // ---------------- 'weak' interface ----------------
 
     /* attempt to atomically increment the strong reference count
 
@@ -69,7 +69,7 @@ module SharedObject {
      - if they do match, the strong-count is incremented, the total-count is
        incremented, and 'true' is returned.
 
-     This method is used to safely upgrade a 'weakPointer' to a 'shared'
+     This method is used to safely upgrade a 'weak' to a 'shared'
      reference. This is done by calling the method in a while-loop that can
      either fail if the expected value drops to zero (i.e., the last 'shared'
      was dropped by someone else during the upgrade attempt), or loop until
@@ -343,6 +343,46 @@ module SharedObject {
 
     // Issue a compiler error for illegal uses.
     pragma "no doc"
+    proc type adopt(source) {
+      compilerError("cannot adopt a ", source.type:string);
+    }
+
+    /*
+      Changes the memory management strategy of the argument from `owned`
+      to `shared`, taking over the ownership of the argument.
+      The result type preserves nilability of the argument type.
+      If the argument is non-nilable, it must be recognized by the compiler
+      as an expiring value.
+    */
+    inline proc type adopt(pragma "nil from arg" in obj: owned) {
+      var ptr = owned.release(obj);
+      return shared.adopt(ptr);
+    }
+    /*
+      Creates a new `shared` class reference to the argument.
+      The result has the same type as the argument.
+    */
+    inline proc type adopt(pragma "nil from arg" in obj: shared) {
+      return obj;
+    }
+
+    /*
+      Starts managing the argument class instance `obj`
+      using the `shared` memory management strategy.
+      The result type preserves nilability of the argument type.
+
+      It is an error to directly delete the class instance
+      after passing it to `shared.adopt()`.
+    */
+    inline proc type adopt(pragma "nil from arg" in obj: unmanaged) {
+      // 'result' may have a non-nilable type
+      var result: (obj.type : shared);
+      result = new _shared(obj);
+      return result;
+    }
+
+    // Issue a compiler error for illegal uses.
+    pragma "no doc"
     proc type create(source) {
       compilerError("cannot create a 'shared' from ", source.type:string);
     }
@@ -438,11 +478,11 @@ module SharedObject {
     }
 
     /*
-      Create a :record:`~WeakPointer.weakPointer` to this object
+      Create a :record:`~WeakPointer.weak` reference to this object
     */
-    @unstable "the 'weakPointer' interface is experimental - this method is likely to change in the future"
+    @unstable "The `weak` type is experimental; expect this method to change in the future."
     proc downgrade() {
-      return new WeakPointer.weakPointer(this);
+      return new WeakPointer.weak(this);
     }
 
     // = should call retain-release
@@ -667,31 +707,31 @@ module SharedObject {
 }
 
 /*
-The ``weakPointer`` type is a special smart pointer type designed to be used in
+The ``weak`` type is a special smart pointer type designed to be used in
 tandem with :record:`~SharedObject.shared` objects.
 
-A ``weakPointer`` provides a reference to a ``shared`` class object without
+A ``weak`` provides a reference to a ``shared`` class object without
 requiring it to stay allocated. Such a pattern is useful for implementing graph
 or tree structures with bidirectional references, or for implementing cache-like
 data structures that maintain a list of objects but don't require them to stay
 allocated.
 
 A "strong" shared reference to the relevant class object can be obtained via
-the :proc:`~WeakPointer.weakPointer.upgrade` method, or by casting the
-weakPointer to a ``shared t`` or a ``shared t?``. If the underlying object is
+the :proc:`~WeakPointer.weak.upgrade` method, or by casting the
+``weak`` to a ``shared t`` or a ``shared t?``. If the underlying object is
 not valid (i.e., its shared reference count has already dropped to zero
 causing it to be de-initialized) the upgrade attempt will fail.
 
 Weak pointers are implemented using task-safe reference counting.
 
 .. Warning::
-  The ``weakPointer`` type is experimental, please use this feature with caution.
+  The `weak` type is experimental; expect this API to change in the future
 
 */
 module WeakPointer {
   use Errors, Atomics, ChapelBase;
 
-  record weakPointer {
+  record weak {
     /* The shared class type referenced by this pointer */
     type classType;
 
@@ -709,7 +749,7 @@ module WeakPointer {
     proc init(c : unmanaged) {
       this.classType = c.type;
       compilerError(
-        "cannot initialize a weakPointer from an unmanaged class: '" + c.type:string + "'"
+        "cannot initialize a `weak` from an unmanaged class: '" + c.type:string + "'"
       );
     }
 
@@ -717,7 +757,7 @@ module WeakPointer {
     proc init(c : owned) {
       this.classType = c.type;
       compilerError(
-        "cannot initialize a weakPointer from an owned class: '" + c.type:string + "'"
+        "cannot initialize a `weak` from an owned class: '" + c.type:string + "'"
       );
     }
 
@@ -725,7 +765,7 @@ module WeakPointer {
     proc init(c : borrowed) {
       this.classType = c.type;
       compilerError(
-        "cannot initialize a weakPointer from a borrowed class: '" + c.type:string + "'"
+        "cannot initialize a `weak` from a borrowed class: '" + c.type:string + "'"
       );
     }
 
@@ -733,13 +773,13 @@ module WeakPointer {
     pragma "no doc"
     proc init(c) {
       this.classType = c.type;
-      compilerError("cannot initialize a weakPointer from: '" + c.type:string + "'");
+      compilerError("cannot initialize a `weak` from: '" + c.type:string + "'");
     }
 
     /*
-        Create a new weak pointer to a shared class instance 'c'
+        Create a new weak reference to a shared class instance 'c'
     */
-    @unstable "The 'weakPointer' type is experimental and is likely to change in the future"
+    @unstable "The `weak` type is experimental; expect this API to change in the future."
     proc init(c : shared) {
         var ptr = c.chpl_p: _to_nilable(_to_unmanaged(c.chpl_t));
         var count = c.chpl_pn;
@@ -755,11 +795,11 @@ module WeakPointer {
     }
 
     /*
-        Copy-initialize a new ``weakPointer`` from an existing ``weakPointer``.
+        Copy-initialize a new ``weak`` from an existing ``weak``.
 
         Increments the weak-reference count.
     */
-    proc init=(pragma "nil from arg" const ref src: weakPointer) {
+    proc init=(pragma "nil from arg" const ref src: weak) {
       this.classType = src.classType;
 
       if src.chpl_p!= nil {
@@ -776,7 +816,7 @@ module WeakPointer {
     pragma "no doc"
     proc init(type classType: shared) {
       if !isClass(classType) then
-        compilerError("'weakPointer' only works with shared classes");
+        compilerError("a `weak` can only be initialized from a shared class");
       this.classType = classType;
       this.chpl_p = nil;
       this.chpl_pn = nil;
@@ -785,13 +825,13 @@ module WeakPointer {
     // ---------------- Other ----------------
 
     /*
-      Attempt to recover a shared object from this `weakPointer`
+      Attempt to recover a shared object from this ``weak``
 
-      If the pointer is valid (i.e., at least one `shared` reference
+      If the pointer is valid (i.e., at least one ``shared`` reference
       to the data exists), a nilable `shared` object will be returned.
 
-      If the pointer is invalid (or the object itself is `nil`) then a
-      `nil` value will be returned.
+      If the pointer is invalid (or the object itself is ``nil``) then a
+      ``nil`` value will be returned.
     */
     proc upgrade(): this.classType? {
       if this.chpl_p != nil {
@@ -815,7 +855,7 @@ module WeakPointer {
     }
 
     /*
-      When a ``weakPointer`` is deinitialized, the weak reference count is
+      When a ``weak`` is deinitialized, the weak reference count is
       decremented.
 
       If there are no other references (weak or strong), the backing pointer
@@ -836,7 +876,7 @@ module WeakPointer {
     }
 
     /*
-      Get the number of ``weakPointers`` currently pointing at the same
+      Get the number of ``weak`` variables currently pointing at the same
       ``shared`` class as this one.
     */
     proc getWeakCount(): int {
@@ -847,7 +887,7 @@ module WeakPointer {
 
     /*
       Get the number of ``shared`` variables currently pointing at the same
-      ``shared`` class as this ``weakPointer``
+      ``shared`` class as this ``weak``.
 
       .. Warning
         this value should not be used to predict whether this pointer
@@ -877,7 +917,7 @@ module WeakPointer {
       Otherwise it will return a nilable :record:`~SharedObject.shared`
       ``t``.
   */
-  inline operator :(const ref x: weakPointer, type t: shared class?)
+  inline operator :(const ref x: weak, type t: shared class?)
     where isSubtype(_to_nonnil(x.classType), _to_nonnil(t.chpl_t))
   {
     if x.chpl_p != nil {
@@ -913,7 +953,7 @@ module WeakPointer {
 
       Otherwise it will return a :record:`~SharedObject.shared` ``t``.
   */
-  inline operator :(const ref x: weakPointer, type t: shared class) throws
+  inline operator :(const ref x: weak, type t: shared class) throws
     where isSubtype(_to_nonnil(x.classType), t.chpl_t)
   {
     if x.chpl_p != nil {
@@ -941,15 +981,15 @@ module WeakPointer {
   // ---------------- Other Operators ----------------
 
   /*
-      Assign one existing ``weakPointer`` to an other.
+      Assign one existing ``weak`` to an other.
 
       Decrements the weak-reference count of the ``lhs`` pointer.
 
       This will result in the deinitialization of the ``lhs``'s backing
-      pointer if it is the last ``weakPointer`` or ``shared`` that points
+      pointer if it is the last ``weak`` or ``shared`` that points
       to its object.
   */
-  inline operator =(ref lhs: weakPointer, rhs: weakPointer)
+  inline operator =(ref lhs: weak, rhs: weak)
     where !(isNonNilableClass(lhs) && isNilableClass(rhs))
   {
     if rhs.chpl_pn != nil then rhs.chpl_pn!.incrementWeak();
@@ -961,7 +1001,7 @@ module WeakPointer {
     lhs.chpl_pn = chpl_pn_tmp;
   }
 
-  proc weakPointer.writeThis(ch) throws {
+  proc weak.writeThis(ch) throws {
     if const ptr = this.chpl_p {
       if this.chpl_pn!.strongCount.read() > 0 {
         // ptr could be invalidated between /\ and \/ (not worrying about that for now).

@@ -33,7 +33,7 @@ record directed_vertex_pair {
 }
 
 operator directed_vertex_pair.+(l: directed_vertex_pair,
-                                r: directed_vertex_pair)
+                                r: directed_vertex_pair) do
     return new directed_vertex_pair (l.start + r.start, l.end + r.end);
 
 
@@ -334,8 +334,8 @@ proc reportProgress() {
 
 ///////// graph helpers /////////
 
-proc graphTotalEdges(G)  return + reduce [v in G.vertices] G.n_Neighbors(v);
-proc graphNumVertices(G) return G.vertices.size;
+proc graphTotalEdges(G) do  return + reduce [v in G.vertices] G.n_Neighbors(v);
+proc graphNumVertices(G) do return G.vertices.size;
 
 ///////// I/O helpers /////////
 
@@ -366,7 +366,7 @@ proc ensureEOFofDataFile(chan, snapshot_prefix, file_suffix): void {
 }
 
 proc writeNum(ch, num): void { ch.write(num:IONumType); }
-proc readNum(ch): IONumType  return ch.read(IONumType);
+proc readNum(ch): IONumType do  return ch.read(IONumType);
 
 ///////// misc /////////
 

@@ -61,24 +61,24 @@ writeln("globalIntIdVar ", globalIntIdVar);
 class PlusReduceOpConst: ReduceScanOp {
   type eltType;
   var  value: eltType;
-  proc identity const ref where eltType == int return globalIntIdConst;
-  proc identity const ref where eltType != int return globalArrIdConst;
+  proc identity const ref where eltType == int do return globalIntIdConst;
+  proc identity const ref where eltType != int do return globalArrIdConst;
   proc accumulate(elm)  { value = value + elm; }
   proc accumulateOntoState(ref state, elm) { state = state + elm; }
   proc combine(other)   { value = value + other.value; }
-  proc generate()       return value;
-  proc clone()          return new unmanaged PlusReduceOpConst(eltType=eltType);
+  proc generate()       do return value;
+  proc clone()          do return new unmanaged PlusReduceOpConst(eltType=eltType);
 }
 
 // uses *Var identity values
 class PlusReduceOpVar: ReduceScanOp {
   type eltType;
   var  value: eltType;
-  proc identity ref where eltType == int return globalIntIdVar;
-  proc identity ref where eltType != int return globalArrIdVar;
+  proc identity ref where eltType == int do return globalIntIdVar;
+  proc identity ref where eltType != int do return globalArrIdVar;
   proc accumulate(elm)  { value = value + elm; }
   proc accumulateOntoState(ref state, elm) { state = state + elm; }
   proc combine(other)   { value = value + other.value; }
-  proc generate()       return value;
-  proc clone()          return new unmanaged PlusReduceOpVar(eltType=eltType);
+  proc generate() do       return value;
+  proc clone() do          return new unmanaged PlusReduceOpVar(eltType=eltType);
 }

@@ -70,8 +70,6 @@ static bool        includesParameterizedPrimitive(FnSymbol* fn);
 static void        replaceFunctionWithInstantiationsOfPrimitive(FnSymbol* fn);
 static void        fixupQueryFormals(FnSymbol* fn);
 
-static bool        isConstructor(FnSymbol* fn);
-
 static void        updateInitMethod (FnSymbol* fn);
 
 static void        checkUseBeforeDefs();
@@ -119,8 +117,6 @@ static void        updateVariableAutoDestroy(DefExpr* defExpr);
 
 static TypeSymbol* expandTypeAlias(SymExpr* se);
 
-static bool        firstConstructorWarning = true;
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -165,15 +161,7 @@ void normalize() {
     } else {
       fixupQueryFormals(fn);
 
-      if (isConstructor(fn) == true) {
-        Type* ct = fn->_this->getValType();
-        if (firstConstructorWarning) {
-          USR_PRINT(fn, "Constructors have been deprecated as of Chapel 1.18. Please use initializers instead.");
-          firstConstructorWarning = false;
-        }
-        USR_FATAL_CONT(fn, "Type '%s' defines a constructor here", ct->symbol->name);
-
-      } else if (fn->isInitializer() || fn->isCopyInit()) {
+      if (fn->isInitializer() || fn->isCopyInit()) {
         updateInitMethod(fn);
       }
     }
@@ -768,9 +756,9 @@ void checkUseBeforeDefs(FnSymbol* fn) {
         CallExpr* call = toCallExpr(use->parentExpr);
 
         if (call == NULL ||
-            (call->baseExpr                              != use   &&
-             call->isPrimitive(PRIM_CAPTURE_FN_FOR_CHPL) == false &&
-             call->isPrimitive(PRIM_CAPTURE_FN_FOR_C)    == false)) {
+            (call->baseExpr != use &&
+             !call->isPrimitive(PRIM_CAPTURE_FN) &&
+             !call->isPrimitive(PRIM_CAPTURE_FN_TO_CLASS))) {
           if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
             const char* name = use->unresolved;
 
@@ -1563,8 +1551,9 @@ Expr* partOfNonNormalizableExpr(Expr* expr) {
   // Anything contained in a non-normalizable expr is non-normalizable.
   for (Expr* node = expr; node; node = node->parentExpr) {
     if (CallExpr* call = toCallExpr(node)) {
-      const bool isResolvePrim = call->isPrimitive(PRIM_RESOLVES);
-      if (isResolvePrim) return node;
+      Expr* root = nullptr;
+      if (call->isPrimitive(PRIM_RESOLVES)) root = call;
+      if (root) return root;
     }
   }
 
@@ -1867,11 +1856,14 @@ static void normalizeYields(FnSymbol* fn) {
       // the compiler.
       VarSymbol* retval = newTemp("yret", fn->retType);
       retval->addFlag(FLAG_YVV);
+      if (fn->retTag == RET_REF)
+        retval->qual = QUAL_REF;
+      else if (fn->retTag == RET_CONST_REF)
+        retval->qual = QUAL_CONST_REF;
 
       yield->insertBefore(new DefExpr(retval));
       insertRetMove(fn, retval, yield, false);
-      yield->insertBefore(new CallExpr(PRIM_YIELD, retval));
-      yield->remove();
+      yield->insertAtTail(retval);
     }
   }
 }
@@ -4530,18 +4522,6 @@ static void addToWhereClause(FnSymbol*  fn,
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
-
-static bool isConstructor(FnSymbol* fn) {
-  bool retval = false;
-
-  if (fn->numFormals()       >= 2 &&
-      fn->getFormal(1)->type == dtMethodToken) {
-
-    retval = strcmp(fn->name, fn->getFormal(2)->type->symbol->name) == 0;
-  }
-
-  return retval;
-}
 
 static void updateInitMethod(FnSymbol* fn) {
   Type* thisType = fn->_this->type;

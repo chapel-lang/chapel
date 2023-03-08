@@ -149,14 +149,14 @@ proc writeImageBMP(outfile, pixels) {
       var bluev = (p >> colorOffset(blue)) & colorMask;
 
       // write 24-bit color value
-      outfile.writebits(bluev, bitsPerColor);
-      outfile.writebits(greenv, bitsPerColor);
-      outfile.writebits(redv, bitsPerColor);
+      outfile.writeBits(bluev, bitsPerColor);
+      outfile.writeBits(greenv, bitsPerColor);
+      outfile.writeBits(redv, bitsPerColor);
       nbits += numColors * bitsPerColor;
     }
     // write the padding.
     // The padding is only rounding up to 4 bytes so
-    // can be written in a single writebits call.
-    outfile.writebits(0:uint, (rowSizeBits-nbits):int(8));
+    // can be written in a single writeBits call.
+    outfile.writeBits(0:uint, (rowSizeBits-nbits):int(8));
   }
 }

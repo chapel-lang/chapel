@@ -55,10 +55,10 @@ module OS {
     */
     extern type blkcnt_t;
     pragma "no doc"
-    inline operator :(x:blkcnt_t, type t:c_int)
+    inline operator :(x:blkcnt_t, type t:c_int) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:c_int, type t:blkcnt_t)
+    inline operator :(x:c_int, type t:blkcnt_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -67,10 +67,10 @@ module OS {
     */
     extern type blksize_t;
     pragma "no doc"
-    inline operator :(x:blksize_t, type t:c_int)
+    inline operator :(x:blksize_t, type t:c_int) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:c_int, type t:blksize_t)
+    inline operator :(x:c_int, type t:blksize_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -79,10 +79,10 @@ module OS {
     */
     extern type dev_t;
     pragma "no doc"
-    inline operator :(x:dev_t, type t:c_int)
+    inline operator :(x:dev_t, type t:c_int) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:c_int, type t:dev_t)
+    inline operator :(x:c_int, type t:dev_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -91,10 +91,10 @@ module OS {
     */
     extern type gid_t;
     pragma "no doc"
-    inline operator :(x:gid_t, type t:c_int)
+    inline operator :(x:gid_t, type t:c_int) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:c_int, type t:gid_t)
+    inline operator :(x:c_int, type t:gid_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -103,10 +103,10 @@ module OS {
     */
     extern type ino_t;
     pragma "no doc"
-    inline operator :(x:ino_t, type t:c_uint)
+    inline operator :(x:ino_t, type t:c_uint) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:c_uint, type t:ino_t)
+    inline operator :(x:c_uint, type t:ino_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -117,16 +117,16 @@ module OS {
     */
     extern type mode_t;
     pragma "no doc"
-    inline operator &(a: mode_t, b: mode_t)
+    inline operator &(a: mode_t, b: mode_t) do
       return (a:c_int & b:c_int):mode_t;
     pragma "no doc"
-    inline operator |(a: mode_t, b: mode_t)
+    inline operator |(a: mode_t, b: mode_t) do
       return (a:c_int | b:c_int):mode_t;
     pragma "no doc"
-    inline operator :(x:mode_t, type t:c_int)
+    inline operator :(x:mode_t, type t:c_int) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:c_int, type t:mode_t)
+    inline operator :(x:c_int, type t:mode_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -135,10 +135,10 @@ module OS {
     */
     extern type nlink_t;
     pragma "no doc"
-    inline operator :(x:nlink_t, type t:c_int)
+    inline operator :(x:nlink_t, type t:c_int) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:c_int, type t:nlink_t)
+    inline operator :(x:c_int, type t:nlink_t) do
       return __primitive("cast", t, x);
 
     /*
@@ -147,16 +147,16 @@ module OS {
     */
     extern type off_t;
     pragma "no doc"
-    inline operator :(x:off_t, type t:c_int)
+    inline operator :(x:off_t, type t:c_int) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:c_int, type t:off_t)
+    inline operator :(x:c_int, type t:off_t) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:off_t, type t:integral)
+    inline operator :(x:off_t, type t:integral) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:integral, type t:off_t)
+    inline operator :(x:integral, type t:off_t) do
       return __primitive("cast", t, x);
 
 
@@ -166,10 +166,10 @@ module OS {
     */
     extern type suseconds_t;
     pragma "no doc"
-    inline operator :(x:integral, type t:suseconds_t)
+    inline operator :(x:integral, type t:suseconds_t) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:suseconds_t, type t:integral)
+    inline operator :(x:suseconds_t, type t:integral) do
       return __primitive("cast", t, x);
 
     /*
@@ -178,10 +178,10 @@ module OS {
     */
     extern type time_t;
     pragma "no doc"
-    inline operator :(x:integral, type t:time_t)
+    inline operator :(x:integral, type t:time_t) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:time_t, type t:integral)
+    inline operator :(x:time_t, type t:integral) do
       return __primitive("cast", t, x);
 
     /*
@@ -190,10 +190,10 @@ module OS {
     */
     extern type uid_t;
     pragma "no doc"
-    inline operator :(x:uid_t, type t:c_int)
+    inline operator :(x:uid_t, type t:c_int) do
       return __primitive("cast", t, x);
     pragma "no doc"
-    inline operator :(x:c_int, type t:uid_t)
+    inline operator :(x:c_int, type t:uid_t) do
       return __primitive("cast", t, x);
 
     //
@@ -986,39 +986,39 @@ module OS {
     return (qio_err_eq(a,b) != 0:c_int);
   }
   pragma "no doc"
-  inline operator errorCode.==(a: errorCode, b: int(32))
+  inline operator errorCode.==(a: errorCode, b: int(32)) do
     return (qio_err_to_int(a) == b:int(32));
   pragma "no doc"
-  inline operator errorCode.==(a: errorCode, b: int(64))
+  inline operator errorCode.==(a: errorCode, b: int(64)) do
     return (qio_err_to_int(a) == b:int(32));
   pragma "no doc"
-  inline operator errorCode.==(a: int(32), b: errorCode)
+  inline operator errorCode.==(a: int(32), b: errorCode) do
     return (a:int(32) == qio_err_to_int(b));
   pragma "no doc"
-  inline operator errorCode.==(a: int(64), b: errorCode)
+  inline operator errorCode.==(a: int(64), b: errorCode) do
     return (a:int(32) == qio_err_to_int(b));
   pragma "no doc"
-  inline operator errorCode.!=(a: errorCode, b: errorCode) return !(a == b);
+  inline operator errorCode.!=(a: errorCode, b: errorCode) do return !(a == b);
   pragma "no doc"
-  inline operator errorCode.!=(a: errorCode, b: int(32)) return !(a == b);
+  inline operator errorCode.!=(a: errorCode, b: int(32)) do return !(a == b);
   pragma "no doc"
-  inline operator errorCode.!=(a: errorCode, b: int(64)) return !(a == b);
+  inline operator errorCode.!=(a: errorCode, b: int(64)) do return !(a == b);
   pragma "no doc"
-  inline operator errorCode.!=(a: int(32), b: errorCode) return !(a == b);
+  inline operator errorCode.!=(a: int(32), b: errorCode) do return !(a == b);
   pragma "no doc"
-  inline operator errorCode.!=(a: int(64), b: errorCode) return !(a == b);
+  inline operator errorCode.!=(a: int(64), b: errorCode) do return !(a == b);
   pragma "no doc"
-  inline operator errorCode.!(a: errorCode) return (qio_err_iserr(a) == 0:c_int);
+  inline operator errorCode.!(a: errorCode) do return (qio_err_iserr(a) == 0:c_int);
   pragma "no doc"
-  inline proc errorCode.chpl_cond_test_method() return (qio_err_iserr(this) != 0:c_int);
+  inline proc errorCode.chpl_cond_test_method() do return (qio_err_iserr(this) != 0:c_int);
   pragma "no doc"
-  inline operator :(x: errorCode, type t: int(32)) return qio_err_to_int(x);
+  inline operator :(x: errorCode, type t: int(32)) do return qio_err_to_int(x);
   pragma "no doc"
-  inline operator :(x: errorCode, type t: int(64)) return qio_err_to_int(x):int(64);
+  inline operator :(x: errorCode, type t: int(64)) do return qio_err_to_int(x):int(64);
   pragma "no doc"
-  inline operator :(x: int(32), type t: errorCode) return qio_int_to_err(x);
+  inline operator :(x: int(32), type t: errorCode) do return qio_int_to_err(x);
   pragma "no doc"
-  inline operator :(x: int(64), type t: errorCode) return qio_int_to_err(x:int(32));
+  inline operator :(x: int(64), type t: errorCode) do return qio_int_to_err(x:int(32));
   pragma "no doc"
   inline operator errorCode.=(ref ret:errorCode, x:errorCode) { __primitive("=", ret, x); }
   pragma "no doc"
@@ -1043,9 +1043,9 @@ module OS {
   private extern proc chpl_macro_int_EEOF():c_int;
   private extern proc chpl_macro_int_ESHORT():c_int;
   private extern proc chpl_macro_int_EFORMAT():c_int;
-  private inline proc EEOF return chpl_macro_int_EEOF():c_int;
-  private inline proc ESHORT return chpl_macro_int_ESHORT():c_int;
-  private inline proc EFORMAT return chpl_macro_int_EFORMAT():c_int;
+  private inline proc EEOF do return chpl_macro_int_EEOF():c_int;
+  private inline proc ESHORT do return chpl_macro_int_ESHORT():c_int;
+  private inline proc EFORMAT do return chpl_macro_int_EFORMAT():c_int;
 
   /*
      :class:`SystemError` is a base class for :class:`Errors.Error` s

@@ -3,7 +3,7 @@
 
 use Regex, IO;
 
-var ch = openreader("readfinf.chpl");
+var ch = openReader("readfinf.chpl");
 
 for i in 1..4 {
   const ok = ch.readf("%//");

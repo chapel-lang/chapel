@@ -282,7 +282,7 @@ static void test10() {
     assert(fn->numFormals() == 1);
     assert(fn->formalName(0) == "arg");
     assert(fn->formalType(0).kind() == QualifiedType::CONST_REF);
-    assert(fn->formalType(0).type() == RecordType::getStringType(context));
+    assert(fn->formalType(0).type() == CompositeType::getStringType(context));
   }
 }
 

@@ -11,4 +11,4 @@ interface IFC {
 }
 
 int implements IFC;  // error: reqFun is not implemented
-proc int.AT type return int;
+proc int.AT type do return int;

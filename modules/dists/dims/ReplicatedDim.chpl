@@ -67,7 +67,7 @@ record Replicated1dom {
   param stridable: bool;
 
   // convenience
-  proc rangeT type  return range(idxType, BoundedRangeType.bounded, stridable);
+  proc rangeT type do  return range(idxType, BoundedRangeType.bounded, stridable);
 //todo-remove?  proc domainT type return domain(1, idxType, stridable);
 
   // our range
@@ -78,7 +78,7 @@ record Replicated1dom {
   var localLocIDlegit = false;
 
   // REQ return false if unused
-  proc dsiSetIndicesUnimplementedCase param return false;
+  proc dsiSetIndicesUnimplementedCase param do return false;
 }
 
 record Replicated1locdom {
@@ -103,7 +103,7 @@ proc type ReplicatedDim.dsiPrivatize1d(privatizeData) {
 
 // REQ does this class need -- and provide -- the localLocID?
 // dsiStoreLocalLocID1d() will be invoked on privatized copies
-proc ReplicatedDim.dsiUsesLocalLocID1d() param return true;
+proc ReplicatedDim.dsiUsesLocalLocID1d() param do return true;
 
 // REQ if dsiUsesLocalLocID1d: store the localLocID
 // If 'legit' is false, this is a privatized copy on a locale
@@ -158,7 +158,7 @@ proc Replicated1dom.dsiReprivatize1d(reprivatizeData) {
 
 // REQ does this class need the localLocID?
 // (See also ReplicatedDim.dsiUsesLocalLocID1d.)
-proc Replicated1dom.dsiUsesLocalLocID1d() param return true;
+proc Replicated1dom.dsiUsesLocalLocID1d() param do return true;
 
 // REQ if dsiUsesLocalLocID1d: store the localLocID
 // This is invoked when a DimensionalDom is created, including
@@ -178,7 +178,7 @@ proc Replicated1dom.dsiGetLocalLocID1d(): (locIdT, bool) {
 
 // REQ does a local domain descriptor use a pointer
 // to the privatized global domain descriptor?
-proc Replicated1dom.dsiLocalDescUsesPrivatizedGlobalDesc1d() param return false;
+proc Replicated1dom.dsiLocalDescUsesPrivatizedGlobalDesc1d() param do return false;
 
 // REQ if dsiLocalDescUsesPrivatizedGlobalDesc1d: store the pointer to
 // the privatized copy of the global descriptor that is on Replicated1locdom's locale.
@@ -208,11 +208,11 @@ proc ReplicatedDim.dsiNewRectangularDom1d(type idxType, param stridable: bool,
 
 // A nicety: produce a string showing the parameters.
 // This might get renamed in the future.
-proc ReplicatedDim.toString()
+proc ReplicatedDim.toString() do
   return "ReplicatedDim(" + numLocales:string + ")";
 
 // REQ is this a replicated distribution?
-proc Replicated1dom.dsiIsReplicated1d() param return true;
+proc Replicated1dom.dsiIsReplicated1d() param do return true;
 
 // REQ produce a local domain descriptor for our dimension
 // on a locale for the given locale index locId, for dsiNewRectangularDom().
@@ -262,7 +262,7 @@ proc Replicated1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT) {
 // REQ indicate whether "storage indices" returned by dsiSetLocalIndices1d()
 // correspond to "user indices". (In which case dsiAccess1d() returns
 // (as a part of a tuple) its argument without modification.)
-proc Replicated1dom.dsiStorageUsesUserIndices() param return true;
+proc Replicated1dom.dsiStorageUsesUserIndices() param do return true;
 
 // REQ given one dimension of the array index, return
 // (locale id, storage index on that locale) for that index.
@@ -283,7 +283,7 @@ iter Replicated1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD)
 }
 
 // REQ whether this distribution can handle only a single task per locale.
-proc Replicated1dom.dsiSingleTaskPerLocaleOnly1d() param return false;
+proc Replicated1dom.dsiSingleTaskPerLocaleOnly1d() param do return false;
 
 // REQ unless dsiSingleTaskPerLocaleOnly1d() is true.
 // Yield the densified range to be used in the leader iterator
@@ -299,7 +299,7 @@ proc Replicated1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTas
 
 // REQ the range type returned/yielded by dsiMyDensifiedRangeForSingleTask1d()
 // and (if applicable) by dsiMyDensifiedRangeForTaskID1d().
-proc Replicated1locdom.dsiMyDensifiedRangeType1d(globDD) type
+proc Replicated1locdom.dsiMyDensifiedRangeType1d(globDD) type do
   return range(globDD.idxType);
 
 // REQ-2 if !dsiStorageUsesUserIndices

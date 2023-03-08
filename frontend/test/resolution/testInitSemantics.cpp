@@ -43,7 +43,7 @@ static void testFieldUseBeforeInit1(void) {
     record r {
       var x: int;
     }
-    proc foo(x) return;
+    proc foo(x) do return;
     proc r.init() {
       foo(x);
       var doNotFold: bool;
@@ -87,7 +87,7 @@ static void testInitReturnVoid(void) {
     record r {
       var x: int;
     }
-    proc foo(x) return;
+    proc foo(x) do return;
     proc r.init() {
       this.x = 5;
       return 1;
@@ -125,7 +125,7 @@ static void testInitReturnEarly(void) {
     record r {
       var x: int;
     }
-    proc foo(x) return;
+    proc foo(x) do return;
     proc r.init() {
       return;
       this.x = 5;
@@ -163,7 +163,7 @@ static void testInitThrow(void) {
     record r {
       var x: int;
     }
-    proc foo(x) return;
+    proc foo(x) do return;
     proc r.init() {
       this.x = 5;
       throw "test!"; // TODO: Fix this once error handling comes online
@@ -201,7 +201,7 @@ static void testInitTryBang(void) {
     record r {
       var x: int;
     }
-    proc foo(x) return;
+    proc foo(x) do return;
     proc r.init() {
       this.x = 5;
       try! { foo(x); }
@@ -259,7 +259,7 @@ static void testInitInsideLoops(void) {
       record r {
         var x: int;
       }
-      proc foo(x) return;
+      proc foo(x) do return;
       proc r.init() {
       )"""" + loop + R""""(
       }
@@ -287,6 +287,360 @@ static void testInitInsideLoops(void) {
   }
 }
 
+static void testThisComplete(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::string contents = opEquals + R""""(
+    record r {
+      var x: int;
+      var y : int;
+      var z : int;
+    }
+    proc r.init() {
+      this.y = 5;
+      this.complete();
+      this.x = 10;
+    }
+    var obj = new r();
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Resolve the module.
+  std::ignore = resolveModule(ctx, mod->id());
+
+  assert(guard.errors().size() == 0);
+}
+
+static void testSecondAssign(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::string contents = opEquals + R""""(
+    record r {
+      var x: int;
+    }
+    proc r.init() {
+      this.x = 10;
+      this.x = 5;
+    }
+    var obj = new r();
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Resolve the module.
+  std::ignore = resolveModule(ctx, mod->id());
+
+  assert(guard.errors().size() == 0);
+}
+
+static void testOutOfOrder(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::string contents = opEquals + R""""(
+    record r {
+      var x, y, z: int;
+    }
+    proc r.init() {
+      this.z = 10;
+      this.x = 5;
+    }
+    var obj = new r();
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Resolve the module.
+  std::ignore = resolveModule(ctx, mod->id());
+
+  assert(guard.errors().size() == 1);
+
+  auto& msg = guard.errors()[0];
+  assert(msg->message() == "Field \"x\" initialized out of order");
+  assert(msg->location(ctx).firstLine() == 11);
+  assert(guard.realizeErrors());
+}
+
+static void testInitCondBasic(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::string contents = opEquals + R""""(
+    record r {
+      var x: int;
+      var y : int;
+      var z : int;
+    }
+    proc r.init(cond: bool) {
+      if cond {
+        this.y = 5;
+      } else {
+        this.x = 10;
+      }
+    }
+    var obj = new r(false);
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Resolve the module.
+  std::ignore = resolveModule(ctx, mod->id());
+
+  assert(guard.errors().size() == 0);
+
+  // TODO: verify resolution knows which fields need to be initialized
+  // in which branches. How to make that info accessible?
+}
+
+static void testInitCondBadOrder(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::string contents = opEquals + R""""(
+    record r {
+      var x: int;
+      var y : int;
+      var z : int;
+    }
+    proc r.init(cond: bool) {
+      this.z = 5;
+      if cond {
+        this.x = 10;
+      } else {
+        this.y = 42;
+      }
+    }
+    var obj = new r(false);
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Resolve the module.
+  std::ignore = resolveModule(ctx, mod->id());
+
+  assert(guard.errors().size() == 2);
+
+  {
+    auto& msg = guard.errors()[0];
+    assert(msg->message() == "Field \"x\" initialized out of order");
+    assert(msg->location(ctx).firstLine() == 14);
+  }
+  {
+    auto& msg = guard.errors()[1];
+    assert(msg->message() == "Field \"y\" initialized out of order");
+    assert(msg->location(ctx).firstLine() == 16);
+  }
+  assert(guard.realizeErrors());
+}
+
+static void testInitCondGenericDiff(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::string contents = opEquals + R""""(
+    operator >(const lhs : int, const rhs : int) {
+      return __primitive(">", lhs, rhs);
+    }
+
+    record R {
+      type T;
+      param P : int;
+
+      proc init(type T, val : int) {
+	if val > 5 {
+	  this.T = T;
+	  this.P = 11;
+	} else {
+	  this.T = T;
+	  this.P = 5;
+	}
+      }
+
+      proc deinit() { }
+    }
+    var r = new R(int, 11);
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Resolve the module.
+  std::ignore = resolveModule(ctx, mod->id());
+
+  assert(guard.errors().size() == 1);
+
+  // Check the first error to see if it lines up.
+  auto& msg = guard.errors()[0];
+  assert(msg->message() == "Initializer must compute the same type in each branch");
+  assert(msg->location(ctx).firstLine() == 14);
+  assert(guard.realizeErrors());
+}
+
+static void testInitCondGeneric(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::string contents = opEquals + R""""(
+    operator >(const lhs : int, const rhs : int) {
+      return __primitive(">", lhs, rhs);
+    }
+
+    record R {
+      type T;
+      param P : int;
+
+      proc init(type T, val : int) {
+	if val > 5 {
+	  this.T = T;
+	  this.P = 5;
+	} else {
+	  this.T = T;
+	  this.P = 5;
+	}
+      }
+
+      proc deinit() { }
+    }
+    var r = new R(int, 11);
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Resolve the module.
+  std::ignore = resolveModule(ctx, mod->id());
+
+  assert(guard.errors().size() == 0);
+}
+
+static void testInitParamCondGeneric(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = UniqueString::get(ctx, "mod");
+  std::string contents = opEquals + R""""(
+    operator >(const lhs : int, const rhs : int) {
+      return __primitive(">", lhs, rhs);
+    }
+
+    record R {
+      type T;
+      param P : int;
+
+      proc init(param cond : bool) {
+	if cond {
+	  this.T = real;
+	  this.P = 42;
+	} else {
+	  this.T = int;
+	  this.P = 5;
+	}
+      }
+
+      proc deinit() { }
+    }
+    var t = new R(true);
+    var f = new R(false);
+
+    type X = R(real, 42);
+    type Y = R(int, 5);
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Resolve the module.
+  const ResolutionResultByPostorderID& rr = resolveModule(ctx, mod->id());
+
+  assert(guard.errors().size() == 0);
+
+  {
+    auto t = mod->stmt(3)->toVariable();
+    auto tType = rr.byAst(t).type();
+    auto X = mod->stmt(5)->toVariable();
+    auto XType = rr.byAst(X).type();
+    assert(tType.type() == XType.type());
+  }
+  {
+    auto f = mod->stmt(4)->toVariable();
+    auto fType = rr.byAst(f).type();
+    auto Y = mod->stmt(6)->toVariable();
+    auto YType = rr.byAst(Y).type();
+    assert(fType.type() == YType.type());
+  }
+}
+
+// TODO:
+// - test using defaults for types and params
+//   - also in conditionals
+// - test this.init in branches
+// - test super.init in branches
+// - test this.complete in branches
+// - test then-only case (must know to insert 'else' branch eventually)
+
 int main() {
   testFieldUseBeforeInit1();
   testInitReturnVoid();
@@ -294,6 +648,15 @@ int main() {
   testInitThrow();
   testInitTryBang();
   testInitInsideLoops();
+  testThisComplete();
+  testSecondAssign();
+  testOutOfOrder();
+
+  testInitCondBasic();
+  testInitCondBadOrder();
+  testInitCondGenericDiff();
+  testInitCondGeneric();
+  testInitParamCondGeneric();
 
   return 0;
 }

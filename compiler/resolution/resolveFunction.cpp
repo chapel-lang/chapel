@@ -45,6 +45,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "TemporaryConversionThunk.h"
 #include "TryStmt.h"
 #include "view.h"
 #include "WhileStmt.h"
@@ -477,7 +478,9 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
       retType     = getReturnedTupleType(fn, tupleType);
       fn->retType = retType;
 
-    } else if (fn->returnsRefOrConstRef() == true) {
+    } else if (fn->returnsRefOrConstRef() &&
+               ! retType->symbol->hasFlag(FLAG_GENERIC)) {
+      // makeRefType is no-op if retType is generic?
       makeRefType(retType);
 
       retType     = retType->refType;
@@ -1018,8 +1021,14 @@ bool isParallelIterator(FnSymbol* fn) {
 
 static bool doNotUnaliasArray(FnSymbol* fn);
 static CallExpr* findSetShape(CallExpr* setRet, Symbol* ret);
+static void insertUnrefForTupleYields(FnSymbol* fn);
 
 static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
+  if (fn->isIterator()) {
+    insertUnrefForTupleYields(fn);
+    return;
+  }
+
   bool skipArray = doNotUnaliasArray(fn);
   bool skipTuple = doNotChangeTupleTypeRefLevel(fn, true);
 
@@ -1028,6 +1037,12 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_NO_FN_BODY)) return;
 
   Symbol* ret = fn->getReturnSymbol();
+
+  // surely returning neither tuple nor array, so return
+  if (ret->type != dtUnknown                   &&
+      ! ret->type->symbol->hasFlag(FLAG_TUPLE) &&
+      ! ret->type->symbol->hasFlag(FLAG_ARRAY) &&
+      ! ret->type->symbol->hasFlag(FLAG_DOMAIN) ) return;
 
   for_SymbolSymExprs(se, ret) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
@@ -1153,6 +1168,51 @@ static CallExpr* findSetShape(CallExpr* setRet, Symbol* ret) {
       }
   // not found
   return NULL;
+}
+
+static void insertUnrefForTupleYields(FnSymbol* fn) {
+  // do not unref:
+  if (fn->retTag == RET_TYPE       ||  // could iterators yield types?
+      fn->retTag == RET_REF        ||  // if yielding refs
+      fn->retTag == RET_CONST_REF  ||
+      fn->hasFlag(FLAG_DONT_UNREF_FOR_YIELDS) ) // if opted out
+    return;
+
+  // todo: return also if fn->retType or fn->iteratorInfo->yieldedType
+  // is meaningful, i.e., not dtUnknown and not an iterator record,
+  // and is not a tuple: not yielding tuples ==> no need to convert
+
+  std::vector<CallExpr*> callExprs;
+  collectCallExprs(fn->body, callExprs);
+  for_vector(CallExpr, call, callExprs) {
+    if (call->isPrimitive(PRIM_YIELD)) {
+      Symbol* yieldSym  = toSymExpr(call->get(1))->symbol();
+      Type*   yieldType = yieldSym->type;
+      if (! yieldType->symbol->hasFlag(FLAG_TUPLE)   ||
+          yieldSym->hasFlag(FLAG_NO_COPY)            ||
+          ! isTupleContainingAnyReferences(yieldType) )
+        continue;
+
+      // follow insertUnrefForArrayOrTupleReturn()
+      // yield rhs; --> move(tmp, initCopyFn(rhs)); yield tmp;
+      SET_LINENO(call);
+      Expr*     rhs        = call->get(1)->remove();
+      FnSymbol* initCopyFn = getInitCopyDuringResolution(yieldType);
+      VarSymbol* tmp       = newTemp("copy_yield_tmp", initCopyFn->retType);
+      Symbol* definedConst = gFalse;
+      CallExpr*  unrefCall = new CallExpr(initCopyFn, rhs, definedConst);
+      yieldSym->removeFlag(FLAG_YVV);
+      tmp->addFlag(FLAG_YVV);
+
+      call->insertBefore(new DefExpr(tmp));
+      call->insertBefore(new CallExpr(PRIM_MOVE, tmp, unrefCall));
+      call->insertAtHead(tmp); // yield this temp
+
+    } else if (FnSymbol* callee = call->resolvedFunction()) {
+      if (isTaskFun(callee))
+        insertUnrefForTupleYields(callee);
+    }
+  }
 }
 
 class SplitInitVisitor final : public AstVisitorTraverse {

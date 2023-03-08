@@ -31,6 +31,7 @@
 #include <cstdio>
 #include <sstream>
 #include <fstream>
+#include <regex>
 
 #ifdef HAVE_LLVM
 #include "clang/AST/GlobalDecl.h"
@@ -1680,7 +1681,7 @@ void setupClang(GenInfo* info, std::string mainFile)
     //  2nd cc1 command is for the CPU
     for (auto &command : C->getJobs()) {
       bool isCC1 = false;
-      for (auto arg : command.getArguments()) {
+      for (const auto& arg : command.getArguments()) {
         if (0 == strcmp(arg, "-cc1")) {
           isCC1 = true;
           break;
@@ -1705,7 +1706,7 @@ void setupClang(GenInfo* info, std::string mainFile)
 
   if( printSystemCommands && developer ) {
     printf("<internal clang cc> ");
-    for ( auto a : job->getArguments() ) {
+    for ( const auto& a : job->getArguments() ) {
       printf("%s ", a);
     }
     printf("\n");
@@ -3830,9 +3831,48 @@ void addDumpIrPass(const PassManagerBuilder &Builder,
   PM.add(createDumpIrPass(llvmPrintIrStageNum));
 }
 
-static void linkLibDevice() {
-  // We follow the directions in https://llvm.org/docs/NVPTXUsage.html#libdevice
+static void linkBitCodeFile(const char *bitCodeFilePath) {
+  GenInfo* info = gGenInfo;
 
+  // load into new module
+  llvm::SMDiagnostic err;
+  auto bcLib = llvm::parseIRFile(bitCodeFilePath, err,
+                                 info->llvmContext);
+
+  // adjust it
+  const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
+  bcLib->setTargetTriple(Triple.getTriple());
+  bcLib->setDataLayout(info->clangInfo->asmTargetLayoutStr);
+
+  // link
+  llvm::Linker::linkModules(*info->module, std::move(bcLib),
+                            llvm::Linker::Flags::LinkOnlyNeeded);
+}
+
+static std::string determineOclcVersionLib(std::string libPath) {
+  std::string result;
+
+  // Extract version number from CHPL_GPU_ARCH string (e.g. extract
+  // the 908 from "gfx908")
+  std::regex pattern("gfx(\\d+)");
+  std::cmatch match;
+  if (std::regex_search(CHPL_GPU_ARCH, match, pattern)) {
+    result = libPath + "/oclc_isa_version_" + std::string(match[1]) + ".bc";
+  } else {
+    USR_FATAL("Unable to determine oclc version from CHPL_GPU_ARCH");
+  }
+
+  // Ensure file exists (and can be opened)
+  std::ifstream file(result);
+  if(!file.good()) {
+    USR_FATAL("Unable to find or open ROCM device library file %s", result.c_str());
+  }
+
+  return result;
+}
+
+// See the directions in https://llvm.org/docs/NVPTXUsage.html#libdevice
+static void linkGpuDeviceLibraries() {
   GenInfo* info = gGenInfo;
 
   // save external functions
@@ -3843,21 +3883,21 @@ static void linkLibDevice() {
     }
   }
 
-  // libdevice is a CUDA-specific thing
   if (getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA) {
-    // load libdevice as a new module
-    llvm::SMDiagnostic err;
-    auto libdevice = llvm::parseIRFile(CHPL_CUDA_LIBDEVICE_PATH, err,
-                                       info->llvmContext);
-    //
-    // adjust it
-    const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();
-    libdevice->setTargetTriple(Triple.getTriple());
-    libdevice->setDataLayout(info->clangInfo->asmTargetLayoutStr);
-
-    // link
-    llvm::Linker::linkModules(*info->module, std::move(libdevice),
-                              llvm::Linker::Flags::LinkOnlyNeeded);
+    linkBitCodeFile(CHPL_CUDA_LIBDEVICE_PATH);
+  } else {
+    // See <https://github.com/RadeonOpenCompute/ROCm-Device-Libs> for details
+    // on what these various libraries are.
+    auto libPath = CHPL_ROCM_PATH + std::string("/amdgcn/bitcode");
+    linkBitCodeFile((libPath + "/hip.bc").c_str());
+    linkBitCodeFile((libPath + "/ocml.bc").c_str());
+    linkBitCodeFile((libPath + "/ockl.bc").c_str());
+    linkBitCodeFile((libPath + "/oclc_daz_opt_off.bc").c_str());
+    linkBitCodeFile((libPath + "/oclc_unsafe_math_off.bc").c_str());
+    linkBitCodeFile((libPath + "/oclc_finite_only_off.bc").c_str());
+    linkBitCodeFile((libPath + "/oclc_correctly_rounded_sqrt_on.bc").c_str());
+    linkBitCodeFile((libPath + "/oclc_wavefrontsize64_on.bc").c_str());
+    linkBitCodeFile(determineOclcVersionLib(libPath).c_str());
   }
 
   // internalize all functions that are not in `externals`
@@ -4443,7 +4483,7 @@ void makeBinaryLLVM(void) {
 
       auto artifactFileType = getCodeGenFileType();
 
-      linkLibDevice();
+      linkGpuDeviceLibraries();
 
       llvm::raw_fd_ostream outputArtifactFile(artifactFilename, error, flags);
 
@@ -4675,7 +4715,7 @@ static void handlePrintAsm(std::string dotOFile) {
     }
 
     std::vector<std::string> names = gatherPrintLlvmIrCNames();
-    for (auto name : names) {
+    for (const auto& name : names) {
       printf("\n\n# Disassembling symbol %s\n\n", name.c_str());
       fflush(stdout);
       std::vector<std::string> cmd;

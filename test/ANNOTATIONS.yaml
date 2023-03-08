@@ -529,8 +529,9 @@ all:
   01/26/23:
     - text: Fix topo/comm initialization sequence (#21427)
       config: 16-node-xc, 16-node-cs-hdr
-
-
+  02/24/23:
+    - text:  Fix default and const argument intents on tuples (#21665)
+      config: chapcs, 1-node-xc
 # End all
 
 allocate:
@@ -542,12 +543,18 @@ allocate:
 allocation:
   11/10/22:
     - weakPointer prototype implementation (#20918)
+  02/28/23:
+    - Parallelize array deinitialization (#21670)
 
 arguments:
   03/10/17:
     - Three way refpair (#5561)
   09/20/17:
     - Adjust string pass/return test (#7360)
+
+arrayInitDeinitPerf:
+  02/28/23:
+    - Parallelize array deinitialization (#21670)
 
 arrayPerformance-1d:
   03/19/15:
@@ -732,7 +739,6 @@ create-views:
   10/02/20:
     - Only reference count a distribution's domains (#16528)
 
-
 cs-resize:
   03/05/19:
     - Add radix sort to Sort package module (#12452)
@@ -798,13 +804,10 @@ domainAssignment-similar: &domainAssign-base
 domainAssignment-dissimilar:
   <<: *domainAssign-base
 
-dgemm.128:
-  09/06/13:
-    - LICM bug fixes
+domEqualityPerf:
+  02/02/23:
+    - Deprecate Time.getCurrentTime (#21467)
 
-dgemm.64:
-  09/06/13:
-    - LICM bug fixes
 
 ep: &ep-base
   11/18/14:
@@ -1088,6 +1091,8 @@ LCALS-raw-short: &lcals-base
     - Task intents to operate on fields of 'this' (#13840)
   09/10/19:
     - Restrict applicability of field intents (#14057)
+  02/14/23:
+    - LCALS perf back to normal (Cray/chapel-private#4228)
 LCALS-raw-medium:
   <<: *lcals-base
 LCALS-raw-long:
@@ -1460,6 +1465,10 @@ memleaksfull:
     - Clean up unmanaged classes in a test (#19695)
   09/30/22:
     - Begin the effort of improving Chapel's first-class-function support (#20554)
+  02/21/23:
+    - IO Encoders/Decoders prototype (#21586)
+  02/23/23:
+    - QIO fix Free the mark stack if it has been allocated (#21662)
 # End memleaksfull
 
 meteor:
@@ -1978,6 +1987,8 @@ testSerialReductions:
     - Merge ExternArr and friends into DefaultRectangular (#11893)
   07/15/20:
     - Enable parallel array init for all types (#16070)
+  02/28/23:
+    - Parallelize array deinitialization (#21670)
 
 thread-ring:
   03/19/15:
@@ -2334,3 +2345,7 @@ arkouda-comp:
     - Add in1d and setops support for uint pdarrays (Bears-R-Us/arkouda#1085)
   03/14/22:
     - Only read necessary elements in Chapel array for Parquet (Bears-R-Us/arkouda#1204)
+
+shoc-triad-bw-lg:
+  11/10/22:
+    - Ensure we time mem transfer in SHOC Triad (#20961)

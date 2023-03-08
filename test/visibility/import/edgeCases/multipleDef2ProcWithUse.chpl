@@ -9,8 +9,8 @@ module B {
   }
 }
 module C {
-  public use A;
-  public use B;
+  public use A as A;
+  public use B as B;
 }
 module D {
   use C;

@@ -39,8 +39,8 @@ module DefaultSparse {
     pragma "local field"
     var _indices: [nnzDom] index(rank, idxType);
 
-    override proc linksDistribution() param return false;
-    override proc dsiLinksDistribution() return false;
+    override proc linksDistribution() param do return false;
+    override proc dsiLinksDistribution() do return false;
 
     proc init(param rank, type idxType, dist: unmanaged DefaultDist,
         parentDom: domain) {
@@ -396,7 +396,7 @@ module DefaultSparse {
       return chpl_getSingletonLocaleArray(this.locale);
     }
 
-    proc dsiHasSingleLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param do return true;
 
     proc dsiLocalSubdomain(loc: locale) {
       if this.locale == loc {
@@ -558,7 +558,7 @@ module DefaultSparse {
       return chpl_getSingletonLocaleArray(this.locale);
     }
 
-    proc dsiHasSingleLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param do return true;
 
     proc dsiLocalSubdomain(loc: locale) {
       if this.locale == loc {

@@ -197,7 +197,8 @@ static void assertIsDeprecated(const ErrorGuard& guard,
                               isMentionInUseImport);
 }
 
-static void testDeprecationWarningsForTypes(void) {
+// Test deprecation warning coverage across different symbol types.
+static void test0(void) {
   Context context;
   Context* ctx = &context;
   ErrorGuard guard(ctx);
@@ -336,7 +337,8 @@ static void testDeprecationWarningsForTypes(void) {
   std::cout << std::endl;
 }
 
-static void testDeprecationWarningsForUseImport(void) {
+// Test deprecation coverage within use/import statements.
+static void test1(void) {
   Context context;
   Context* ctx = &context;
   ErrorGuard guard(ctx);
@@ -426,7 +428,8 @@ static void testDeprecationWarningsForUseImport(void) {
   std::cout << std::endl;
 }
 
-static void testNoUnstableWarningsForThisFormals(void) {
+// Warnings should not be emitted for method receivers.
+static void test2(void) {
   Context context;
   Context* ctx = turnOnWarnUnstable(&context);
   ErrorGuard guard(ctx);
@@ -477,7 +480,6 @@ static void testNoUnstableWarningsForThisFormals(void) {
   // Scope-resolve the module.
   std::ignore = resolveModule(ctx, mod->id());
 
-  // TODO: Helpers to make sure the errors are correct.
   assert(guard.numErrors() == 2);
   for (auto& err : guard.errors()) {
     assert(err->type() == ErrorType::Unstable);
@@ -488,7 +490,8 @@ static void testNoUnstableWarningsForThisFormals(void) {
   assert(guard.realizeErrors());
 }
 
-static void testNoWarningsForUnstableMentionsInUnstable(void) {
+// Nested unstable warnings should not occur.
+static void test3(void) {
   Context context;
   Context* ctx = turnOnWarnUnstable(&context);
   ErrorGuard guard(ctx);
@@ -550,7 +553,6 @@ static void testNoWarningsForUnstableMentionsInUnstable(void) {
   const Function* mainFn = mod->stmt(4)->toFunction();
   std::ignore = resolveConcreteFunction(ctx, mainFn->id());
 
-  // TODO: Helpers to make sure the errors are correct.
   assert(guard.numErrors() == 2);
   for (auto& err : guard.errors()) {
     assert(err->type() == ErrorType::Unstable);
@@ -566,11 +568,132 @@ static void testNoWarningsForUnstableMentionsInUnstable(void) {
   assert(guard.realizeErrors());
 }
 
+// Make sure that formal types are covered as well.
+static void test4(ErrorType expectedError) {
+  assert(expectedError == ErrorType::Unstable ||
+         expectedError == ErrorType::Deprecation);
+
+  std::string warningLabel = expectedError == ErrorType::Unstable
+        ? "@unstable"
+        : "deprecated";
+
+  Context context;
+  Context* ctx = turnOnWarnUnstable(&context);
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+
+  std::cout << path.c_str() << std::endl;
+
+  std::string contents = "\n" + warningLabel +
+    R""""( "warning message"
+    class C {}
+
+    proc foo(x: C) {}
+
+    proc main() {
+      var x = new C();
+      foo(x);
+    }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the top module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(!guard.realizeErrors());
+
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Force resolve 'main' since we may not always do that yet.
+  assert(mod->numStmts() == 3);
+  const Function* mainFn = mod->stmt(2)->toFunction();
+  std::ignore = resolveConcreteFunction(ctx, mainFn->id());
+
+  assert(guard.numErrors() == 2);
+  for (auto& err : guard.errors()) {
+    assert(err->type() == expectedError);
+  }
+
+  assert(guard.realizeErrors());
+}
+
+// Unstable warnings are not emitted if the parent is compiler-generated,
+// deprecated, or unstable. Deprecation warnings are not emitted if the
+// parent is deprecated or compiler-generated (but are emitted in unstable
+// things, since those will stick around longer).
+static void test5(void) {
+  Context context;
+  Context* ctx = turnOnWarnUnstable(&context);
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  std::string contents =
+    R""""(
+    deprecated
+    var x = 0;
+    @unstable
+    var y = 0;
+
+    proc foo(x) {}
+
+    // No mention for either.
+    pragma "compiler generated"
+    proc f1() {
+      foo(x);
+      foo(y);
+    }
+
+    // Unstable warning is not mentioned. Deprecation warning is.
+    @unstable
+    proc f2() {
+      foo(x);
+      foo(y);
+    }
+
+    // Neither unstable or deprecated is mentioned.
+    deprecated
+    proc f3() {
+      foo(x);
+      foo(y);
+    }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the top module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Force resolve 'main' since we may not always do that yet.
+  assert(mod->numStmts() == 9);
+  const Function* f1 = mod->stmt(4)->toFunction();
+  std::ignore = resolveConcreteFunction(ctx, f1->id());
+  const Function* f2 = mod->stmt(6)->toFunction();
+  std::ignore = resolveConcreteFunction(ctx, f2->id());
+  const Function* f3 = mod->stmt(8)->toFunction();
+  std::ignore = resolveConcreteFunction(ctx, f3->id());
+
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == ErrorType::Deprecation);
+  assert(guard.realizeErrors());
+}
+
 int main() {
-  testDeprecationWarningsForTypes();
-  testDeprecationWarningsForUseImport();
-  testNoUnstableWarningsForThisFormals();
-  testNoWarningsForUnstableMentionsInUnstable();
+  test0();
+  test1();
+  test2();
+  test3();
+  test4(ErrorType::Unstable);
+  test4(ErrorType::Deprecation);
+  test5();
   return 0;
 }
 

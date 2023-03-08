@@ -28,6 +28,20 @@ namespace chpl {
 namespace resolution {
 
 
+std::string IdAndFlags::flagsToString(Flags flags) {
+  std::string ret;
+  if ((flags & PUBLIC) != 0)                ret += "public ";
+  if ((flags & NOT_PUBLIC) != 0)            ret += "!public ";
+
+  if ((flags & METHOD_FIELD) != 0)          ret += "method/field ";
+  if ((flags & NOT_METHOD_FIELD) != 0)      ret += "!method/field ";
+
+  if ((flags & PARENFUL_FUNCTION) != 0)     ret += "parenful-fn ";
+  if ((flags & NOT_PARENFUL_FUNCTION) != 0) ret += "!parenful-fn ";
+
+  return ret;
+}
+
 void OwnedIdsWithName::stringify(std::ostream& ss,
                                  chpl::StringifyKind stringKind) const {
   if (auto ptr = moreIdvs_.get()) {
@@ -42,40 +56,61 @@ void OwnedIdsWithName::stringify(std::ostream& ss,
 }
 
 llvm::Optional<BorrowedIdsWithName>
-OwnedIdsWithName::borrow(bool skipPrivateVisibilities,
-                         bool onlyMethodsFields) const {
-  if (BorrowedIdsWithName::isIdVisible(idv_,
-                                       skipPrivateVisibilities,
-                                       onlyMethodsFields)) {
-    return BorrowedIdsWithName(idv_, moreIdvs_.get(),
-                               skipPrivateVisibilities, onlyMethodsFields);
+OwnedIdsWithName::borrow(IdAndFlags::Flags filterFlags,
+                         IdAndFlags::Flags excludeFlags) const {
+  // Are all of the filter flags present in flagsOr?
+  // If not, it is not possible for this to match.
+  if ((flagsOr_ & filterFlags) != filterFlags) {
+    return llvm::None;
+  }
+
+  if (BorrowedIdsWithName::isIdVisible(idv_, filterFlags, excludeFlags)) {
+    return BorrowedIdsWithName(*this, idv_, filterFlags, excludeFlags);
   }
   // The first ID isn't visible; are others?
   if (moreIdvs_.get() == nullptr) {
     return llvm::None;
   }
 
+  // Are all of the filter flags present in flagsAnd?
+  // And, if excludeFlags is present, some flag in it is not present in flagsOr?
+  // If so, return the borrow
+  if ((flagsAnd_ & filterFlags) == filterFlags &&
+      (excludeFlags == 0 || (flagsOr_ & excludeFlags) != excludeFlags)) {
+    // filter does not rule out anything in the OwnedIds,
+    // so we can return a match.
+    return BorrowedIdsWithName(*this, idv_, filterFlags, excludeFlags);
+  }
+
+  // Otherwise, use a loop to decide if we can borrow
   for (auto& idv : *moreIdvs_) {
-    if (!BorrowedIdsWithName::isIdVisible(idv,
-                                          skipPrivateVisibilities,
-                                          onlyMethodsFields))
+    if (!BorrowedIdsWithName::isIdVisible(idv, filterFlags, excludeFlags))
       continue;
 
-    // Found a visible ID!
-    return BorrowedIdsWithName(idv, moreIdvs_.get(),
-                               skipPrivateVisibilities, onlyMethodsFields);
+    // Found a visible ID! Return a BorrowedIds referring to the whole thing
+    return BorrowedIdsWithName(*this, idv, filterFlags, excludeFlags);
   }
 
   // No ID was visible, so we can't borrow.
   return llvm::None;
 }
 
-int BorrowedIdsWithName::countVisibleIds() {
+int BorrowedIdsWithName::countVisibleIds(IdAndFlags::Flags flagsAnd,
+                                         IdAndFlags::Flags flagsOr) {
   if (moreIdvs_ == nullptr) {
     return 1;
   }
 
-  // Count all the visible IDs.
+  // if the current filter is a subset of flagsAnd, then all of the
+  // found symbols will included in this borrowedIds, so we don't have
+  // to consider them individually.
+  if ((flagsAnd & filterFlags_) == filterFlags_ &&
+      (excludeFlags_ == 0 || (flagsOr & excludeFlags_) != excludeFlags_)) {
+    // all of the found symbols will match
+    return moreIdvs_->size();
+  }
+
+  // Otherwise, consider the individual IDs to count those that are included.
   int count = 0;
   for (const auto& idv : *moreIdvs_) {
     if (isIdVisible(idv)) {
@@ -112,17 +147,33 @@ void BorrowedIdsWithName::stringify(std::ostream& ss,
 
 Scope::Scope(const uast::AstNode* ast, const Scope* parentScope,
              bool autoUsesModules) {
+  bool containsUseImport = false;
+  bool containsFunctionDecls = false;
+  bool containsExternBlock = false;
+  bool isMethodScope = false;
+
   parentScope_ = parentScope;
   tag_ = ast->tag();
-  autoUsesModules_ = autoUsesModules;
   id_ = ast->id();
   if (auto decl = ast->toNamedDecl()) {
     name_ = decl->name();
   }
   if (auto fn = ast->toFunction()) {
-    methodScope_ = fn->isMethod();
+    isMethodScope = fn->isMethod();
   }
-  gatherDeclsWithin(ast, declared_, containsUseImport_, containsFunctionDecls_);
+  gatherDeclsWithin(ast, declared_,
+                    containsUseImport,
+                    containsFunctionDecls,
+                    containsExternBlock);
+
+  // compute the flags storing a few settings
+  ScopeFlags flags = 0;
+  if (containsFunctionDecls) { flags |= CONTAINS_FUNCTION_DECLS; }
+  if (containsUseImport) {     flags |= CONTAINS_USE_IMPORT; }
+  if (autoUsesModules) {       flags |= AUTO_USES_MODULES; }
+  if (isMethodScope) {         flags |= METHOD_SCOPE; }
+  if (containsExternBlock) {   flags |= CONTAINS_EXTERN_BLOCK; }
+  flags_ = flags;
 }
 
 void Scope::addBuiltin(UniqueString name) {
@@ -132,7 +183,8 @@ void Scope::addBuiltin(UniqueString name) {
   declared_.emplace(name,
                     OwnedIdsWithName(ID(),
                                      uast::Decl::PUBLIC,
-                                     /*isMethodOrField*/ false));
+                                     /*isMethodOrField*/ false,
+                                     /*isParenfulFunction*/ false));
 }
 
 const Scope* Scope::moduleScope() const {
@@ -153,14 +205,13 @@ const Scope* Scope::parentModuleScope() const {
 
 bool Scope::lookupInScope(UniqueString name,
                           std::vector<BorrowedIdsWithName>& result,
-                          bool arePrivateIdsIgnored,
-                          bool onlyMethodsFields) const {
+                          IdAndFlags::Flags filterFlags,
+                          IdAndFlags::Flags excludeFlags) const {
   auto search = declared_.find(name);
   if (search != declared_.end()) {
     // There might not be any IDs that are visible to us, so borrow returns
     // an optional list.
-    auto borrowedIds = search->second.borrow(arePrivateIdsIgnored,
-                                             onlyMethodsFields);
+    auto borrowedIds = search->second.borrow(filterFlags, excludeFlags);
     if (borrowedIds.hasValue()) {
       result.push_back(std::move(borrowedIds.getValue()));
       return true;
@@ -179,8 +230,21 @@ std::set<UniqueString> Scope::gatherNames() const {
   for (const auto& pair : declared_) {
     orderedNames.insert(pair.first);
   }
-
   return orderedNames;
+}
+
+void Scope::collectNames(std::set<UniqueString>& namesDefined,
+                         std::set<UniqueString>& namesDefinedMultiply) const {
+  for (const auto& decl : declared_) {
+    UniqueString name = decl.first;
+    if (!name.isEmpty() && name != USTR("_")) {
+      auto p = namesDefined.insert(name);
+      if (p.second == false || decl.second.numIds() > 1) {
+        // it was already present or multiply defined here
+        namesDefinedMultiply.insert(name);
+      }
+    }
+  }
 }
 
 void Scope::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
@@ -190,6 +254,22 @@ void Scope::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
   id().stringify(ss, stringKind);
   ss << " numDeclared=";
   ss << std::to_string(numDeclared());
+}
+
+bool VisibilitySymbols::lookupName(const UniqueString &name,
+                                   UniqueString &declared) const {
+  for (const auto &p : names_) {
+    if (p.second == name) {
+      declared = p.first;
+      return true;
+    }
+  }
+  return false;
+}
+
+const std::vector<std::pair<UniqueString,UniqueString>>&
+VisibilitySymbols::names() const {
+  return names_;
 }
 
 void VisibilitySymbols::stringify(std::ostream& ss,
@@ -258,7 +338,7 @@ void ResolvedVisibilityScope::stringify(std::ostream& ss,
   }
 
   int i = 0;
-  for (auto clause : visibilityClauses_) {
+  for (const auto& clause : visibilityClauses_) {
     ss << "  clause " << i << "(";
     clause.stringify(ss, stringKind);
     ss << ")";

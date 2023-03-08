@@ -69,7 +69,7 @@ static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
   for_vector(SymExpr, se, ses) {
     if (VarSymbol* var = toVarSymbol(se->symbol())) {
       if (var->defPoint->parentSymbol != fn) {
-        if (!var->isParameter() && var != gVoid) {
+        if (!var->isParameter() && var != gVoid && var != gNil) {
           if (CallExpr* parent = toCallExpr(se->parentExpr)) {
             if (isFieldAccessPrimitive(parent)) {
               continue;
@@ -484,8 +484,8 @@ GpuKernel::GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint)
   , blockSize_(nullptr)
 {
   buildStubOutlinedFunction(insertionPoint);
-  populateBody(gpuLoop.loop(), fn_);
   normalizeOutlinedFunction();
+  populateBody(gpuLoop.loop(), fn_);
   if(!lateGpuizationFailure_) {
     finalize();
   }
@@ -635,7 +635,7 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
       DefExpr* newDef = def->copy();
       this->copyMap_.put(def->sym, newDef->sym);
 
-      outlinedFunction->insertAtTail(newDef);
+      outlinedFunction->insertBeforeEpilogue(newDef);
     }
     else {
       // We also need to copy any defs that appear in blocks.
@@ -644,7 +644,7 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
       for_vector(DefExpr, def, defExprsInBody) {
         DefExpr* newDef = def->copy();
         this->copyMap_.put(def->sym, newDef->sym);
-        outlinedFunction->insertAtTail(newDef);
+        outlinedFunction->insertBeforeEpilogue(newDef);
       }
 
       for_vector(SymExpr, symExpr, symExprsInBody) {
@@ -717,7 +717,7 @@ void GpuKernel::populateBody(CForLoop *loop, FnSymbol *outlinedFunction) {
     }
 
     if (copyNode) {
-      outlinedFunction->insertAtTail(node->copy());
+      outlinedFunction->insertBeforeEpilogue(node->copy());
     }
   }
 
@@ -911,13 +911,6 @@ static void logGpuizableLoops() {
 }
 
 void gpuTransforms() {
-  if (usingGpuLocaleModel() && getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP) {
-    // TODO: the AMD GPU prototype is not currently in a state
-    // where gpuTransforms can be applied. Do not apply them
-    // for the time being.
-    return;
-  }
-
   if (debugPrintGPUChecks) {
     logGpuizableLoops();
   }

@@ -30,7 +30,7 @@ AC_DEFUN([QTHREAD_CHECK_HWLOC], [
   AC_CHECK_HEADERS([hwloc.h],[],
   				   [qt_allgoodsofar=no])
   AS_IF([test "x$qt_allgoodsofar" = xyes],
-	    [AC_SEARCH_LIBS([${with_hwloc_symbol_prefix}topology_init], [hwloc "hwloc -lnuma"], [],
+	    [AC_SEARCH_LIBS([${with_hwloc_symbol_prefix}topology_init], [hwloc "hwloc -lnuma" "hwloc -lnuma -lpciaccess" "hwloc -lpciaccess"], [],
 		                [qt_allgoodsofar=no])])
   AS_IF([test "x$qt_allgoodsofar" = xyes],
         [AC_MSG_CHECKING([for distance support in hwloc])

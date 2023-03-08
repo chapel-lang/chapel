@@ -142,7 +142,7 @@ static void profile_print(void)
 // Startup and shutdown control.  The mutex is used just for the side
 // effect of its (very portable) memory fence.
 //
-volatile int chpl_qthread_done_initializing;
+volatile int chpl_qthread_initialized;
 static aligned_t canexit = 0;
 static pthread_mutex_t init_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -300,7 +300,7 @@ static void *initializer(void *junk)
     qthread_initialize();
     qthread_purge(&canexit);
     (void) pthread_mutex_lock(&init_mutex);
-    chpl_qthread_done_initializing = 1;
+    chpl_qthread_initialized = 1;
     (void) pthread_mutex_unlock(&init_mutex);
 
     qthread_readFF(NULL, &canexit);
@@ -756,7 +756,7 @@ void chpl_task_init(void)
 
     // Initialize qthreads
     pthread_create(&initer, NULL, initializer, NULL);
-    while (chpl_qthread_done_initializing == 0)
+    while (chpl_qthread_initialized == 0)
         sched_yield();
 
     // Now that Qthreads is up and running, do a sanity check and make sure
@@ -776,7 +776,10 @@ void chpl_task_exit(void)
     if (qthread_shep() == NO_SHEPHERD) {
         /* sometimes, tasking is told to shutdown even though it hasn't been
          * told to start yet */
-        if (chpl_qthread_done_initializing == 1) {
+        if (chpl_qthread_initialized == 1) {
+            (void) pthread_mutex_lock(&init_mutex);
+            chpl_qthread_initialized = 0;
+            (void) pthread_mutex_unlock(&init_mutex);
             qthread_fill(&canexit);
             pthread_join(initer, NULL);
         }
@@ -1092,7 +1095,7 @@ chpl_bool chpl_task_guardPagesInUse(void)
 // Threads
 
 uint32_t chpl_task_impl_getFixedNumThreads(void) {
-    assert(chpl_qthread_done_initializing);
+    assert(chpl_qthread_initialized);
     return (uint32_t)qthread_num_workers();
 }
 

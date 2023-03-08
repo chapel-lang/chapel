@@ -1,10 +1,10 @@
 use IO;
 use CTypes;
 
-readCptrTest(openreader("./c_ptr_input/cptr8.bin"), 8);
-readCptrTest(openreader("./c_ptr_input/cptr16.bin"), 16);
-readCptrTest(openreader("./c_ptr_input/cptr32.bin"), 32);
-readCptrTest(openreader("./c_ptr_input/cptr64.bin"), 64);
+readCptrTest(openReader("./c_ptr_input/cptr8.bin"), 8);
+readCptrTest(openReader("./c_ptr_input/cptr16.bin"), 16);
+readCptrTest(openReader("./c_ptr_input/cptr32.bin"), 32);
+readCptrTest(openReader("./c_ptr_input/cptr64.bin"), 64);
 
 // read 0..9 from the given file, expecting the given integer size,
 //  and ensure that the correct values were read
@@ -18,10 +18,10 @@ proc readCptrTest(reader, param isize: int) {
 }
 
 
-readCptrTestTooMany(openreader("./c_ptr_input/cptr8.bin"), 8);
-readCptrTestTooMany(openreader("./c_ptr_input/cptr16.bin"), 16);
-readCptrTestTooMany(openreader("./c_ptr_input/cptr32.bin"), 32);
-readCptrTestTooMany(openreader("./c_ptr_input/cptr64.bin"), 64);
+readCptrTestTooMany(openReader("./c_ptr_input/cptr8.bin"), 8);
+readCptrTestTooMany(openReader("./c_ptr_input/cptr16.bin"), 16);
+readCptrTestTooMany(openReader("./c_ptr_input/cptr32.bin"), 32);
+readCptrTestTooMany(openReader("./c_ptr_input/cptr64.bin"), 64);
 
 // try expecting a larger number of values than are present in the file.
 //  ensure that the first 10 values were read correctly, and that 'num_read' is correct

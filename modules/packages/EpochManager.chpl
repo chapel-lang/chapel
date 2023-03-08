@@ -412,6 +412,7 @@ module EpochManager {
 
   pragma "no doc"
   module VectorModule {
+    private use IO;
     /**
      * Obtained from https://github.com/pnnl/chgl/blob/master/src/Vectors.chpl
      */
@@ -493,7 +494,7 @@ module EpochManager {
         forall a in this.arr[0..#sz] do yield a;
       }
 
-      proc size: int return sz;
+      proc size: int do return sz;
 
       proc clear() {
         this.sz = 0;

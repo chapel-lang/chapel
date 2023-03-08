@@ -249,7 +249,7 @@ module ZMQ {
   use OS.POSIX;
 
   private extern proc chpl_macro_int_errno():c_int;
-  private inline proc errno return chpl_macro_int_errno():c_int;
+  private inline proc errno do return chpl_macro_int_errno():c_int;
 
   // Types
   pragma "no doc"

@@ -341,9 +341,9 @@ if example == 0 || example == 7 {
     var w = f.writer(kind=ionative);
 
     // Write 011 0110 011110000
-    w.writebits(0b011, 3);
-    w.writebits(0b0110, 4);
-    w.writebits(0b011110000, 9);
+    w.writeBits(0b011, 3);
+    w.writeBits(0b0110, 4);
+    w.writeBits(0b011110000, 9);
     w.close();
   }
 

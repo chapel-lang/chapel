@@ -1,7 +1,7 @@
 pragma "safe"
 module refescapes {
 
-proc ref_identity(ref x:int) ref return x;
+proc ref_identity(ref x:int) ref do return x;
 
 proc bad() ref {
   var x:int;

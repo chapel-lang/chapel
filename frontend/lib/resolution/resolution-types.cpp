@@ -45,18 +45,19 @@ UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           bool isMethod,
                                           bool isTypeConstructor,
                                           bool isCompilerGenerated,
+                                          bool throws,
                                           asttags::AstTag idTag,
                                           uast::Function::Kind kind,
                                           std::vector<FormalDetail> formals,
                                           const AstNode* whereClause) {
   QUERY_BEGIN(getUntypedFnSignature, context,
               id, name, isMethod, isTypeConstructor, isCompilerGenerated,
-              idTag, kind, formals, whereClause);
+               throws, idTag, kind, formals, whereClause);
 
   owned<UntypedFnSignature> result =
     toOwned(new UntypedFnSignature(id, name,
                                    isMethod, isTypeConstructor,
-                                   isCompilerGenerated, idTag, kind,
+                                   isCompilerGenerated, throws, idTag, kind,
                                    std::move(formals), whereClause));
 
   return QUERY_END(result);
@@ -68,13 +69,14 @@ UntypedFnSignature::get(Context* context, ID id,
                         bool isMethod,
                         bool isTypeConstructor,
                         bool isCompilerGenerated,
+                        bool throws,
                         asttags::AstTag idTag,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
                         const uast::AstNode* whereClause) {
   return getUntypedFnSignature(context, id, name,
                                isMethod, isTypeConstructor,
-                               isCompilerGenerated, idTag, kind,
+                               isCompilerGenerated, throws, idTag, kind,
                                std::move(formals), whereClause).get();
 }
 
@@ -110,6 +112,7 @@ getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
                                      fn->isMethod(),
                                      /* isTypeConstructor */ false,
                                      /* isCompilerGenerated */ false,
+                                     /* throws */ fn->throws(),
                                      /* idTag */ asttags::Function,
                                      fn->kind(),
                                      std::move(formals), fn->whereClause());
@@ -645,7 +648,7 @@ void ResolvedFields::finalizeFields(Context* context) {
   ignore.insert(type_);
 
   // look at the fields and compute the summary information
-  for (auto field : fields_) {
+  for (const auto& field : fields_) {
     auto g = getTypeGenericityIgnoring(context, field.type, ignore);
     if (g != Type::CONCRETE) {
       if (!field.hasDefaultValue) {
@@ -776,7 +779,7 @@ void CallInfo::stringify(std::ostream& ss,
   }
   ss << "(";
   bool first = true;
-  for (auto actual: actuals()) {
+  for (const auto& actual: actuals()) {
     if (first) {
       first = false;
     } else {

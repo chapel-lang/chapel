@@ -20,7 +20,7 @@ record stack {
   }
 }
 
-proc stack.empty
+proc stack.empty do
   return top == nil;
 
 proc stack.push(v : eltType) {

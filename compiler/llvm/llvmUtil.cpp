@@ -496,8 +496,14 @@ llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
 
   //Pointers
   if(newType->isPointerTy() && curType->isPointerTy()) {
-    if( newType->getPointerAddressSpace() !=
-        curType->getPointerAddressSpace() ) {
+
+    // It's safe to convert pointers between generic (0) and non generic (non
+    // 0) address spaces
+    auto newTypeAddrSpace = newType->getPointerAddressSpace();
+    auto curTypeAddrSpace = curType->getPointerAddressSpace();
+    if(newTypeAddrSpace != 0 && curTypeAddrSpace != 0 &&
+       newTypeAddrSpace != curTypeAddrSpace)
+    {
       assert( 0 && "Can't convert pointer to different address space");
     }
     return irBuilder->CreatePointerCast(value, newType);
@@ -591,7 +597,36 @@ void print_llvm(llvm::Module* m)
   fprintf(stderr, "\n");
 }
 
+llvm::AttrBuilder llvmPrepareAttrBuilder(llvm::LLVMContext& ctx) {
+  #if HAVE_LLVM_VER >= 140
+  llvm::AttrBuilder ret(ctx);
+  #else
+  llvm::AttrBuilder ret;
+  std::ignore = ctx;
+  #endif
+  return ret;
+}
 
+void llvmAddAttr(llvm::LLVMContext& ctx, llvm::AttributeList& attrs,
+            size_t idx,
+            llvm::AttrBuilder& b) {
+  #if HAVE_LLVM_VER >= 140
+  attrs = attrs.addAttributesAtIndex(ctx, idx, b);
+  #else
+  attrs = attrs.addAttributes(ctx, idx, b);
+  #endif
+}
+
+void llvmAttachStructRetAttr(llvm::AttrBuilder& b, llvm::Type* returnTy,
+                             unsigned int addrSpace) {
+  #if HAVE_LLVM_VER >= 130
+  b.addStructRetAttr(llvm::PointerType::get(returnTy, addrSpace));
+  #else
+  b.addAttribute(llvm::Attribute::StructRet);
+  std::ignore = returnTy;
+  std::ignore = addrSpace;
+  #endif
+}
 
 #endif
 

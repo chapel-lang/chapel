@@ -24,8 +24,8 @@ interface IFC {
 }
 
 int implements IFC;
-proc fparam() param return 5;
-proc ftype() type return string;
-proc fref() return 5;
-proc fconstref() return 5;
-proc fdefault() const ref return numLocales;
+proc fparam() param do return 5;
+proc ftype() type do return string;
+proc fref() do return 5;
+proc fconstref() do return 5;
+proc fdefault() const ref do return numLocales;

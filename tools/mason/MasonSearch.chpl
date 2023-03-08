@@ -72,7 +72,7 @@ proc masonSearch(ref args: list(string)) {
   updateRegistry(skipUpdate);
 
   const query = queryArg.value().toLower();
-  const pattern = compile(query, ignoreCase=true);
+  const pattern = new regex(query, ignoreCase=true);
   var results: list(string);
   var packages: list(string);
   var versions: list(string);

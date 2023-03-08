@@ -3,16 +3,16 @@ import Map.map;
 import ChapelLocks;
 import Random;
 use WeakPointer;
-use Barriers;
+use Collectives;
 
 class PassiveCache {
     type dataType; // assuming this type has a an initializer that takes an int
-    var items: map(int, weakPointer(shared dataType));
+    var items: map(int, weak(shared dataType));
     var lock$: ChapelLocks.chpl_LocalSpinlock;
 
     proc init(type dt) {
         this.dataType = dt;
-        this.items = new map(int, weakPointer(shared dt), parSafe=true);
+        this.items = new map(int, weak(shared dt));
     }
 
     inline proc lock() {
@@ -45,7 +45,7 @@ class PassiveCache {
 
     proc buildAndSave(key: int) : shared dataType {
         const item = new shared dataType(key);
-        const weak_ptr = new weakPointer(item);
+        const weak_ptr = new weak(item);
         this.items.addOrSet(key, weak_ptr);
         return item;
     }
@@ -76,7 +76,7 @@ proc main() {
 
         // concurrently construct or upgrade the 'basicClass' associated with each 'tid'
         //  and ensure that the strong count is correct
-        var b = new Barrier(num_task_ids);
+        var b = new barrier(num_task_ids);
         coforall tid in task_ids {
             var shared_tid : shared basicClass = pc.getOrBuild(tid:int);
             correct.write(correct.read() && shared_tid.x == tid);

@@ -13,7 +13,7 @@ use GridBC_DiffusionBE;
 
 
 
-proc main {
+private proc main {
 
   //==== Output times ====
   var output_times = setOutputTimes("time.txt");

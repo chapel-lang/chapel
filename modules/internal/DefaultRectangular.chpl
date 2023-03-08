@@ -103,32 +103,32 @@ module DefaultRectangular {
       return dom;
     }
 
-    override proc dsiNewAssociativeDom(type idxType, param parSafe: bool)
+    override proc dsiNewAssociativeDom(type idxType, param parSafe: bool) do
       return new unmanaged DefaultAssociativeDom(idxType, parSafe, _to_unmanaged(this));
 
-    override proc dsiNewSparseDom(param rank: int, type idxType, dom: domain)
+    override proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) do
       return new unmanaged DefaultSparseDom(rank, idxType, _to_unmanaged(this), dom);
 
-    proc dsiTargetLocales() const ref
+    proc dsiTargetLocales() const ref do
       return chpl_getSingletonLocaleArray(this.locale);
 
-    proc dsiIndexToLocale(ind) return this.locale;
+    proc dsiIndexToLocale(ind) do return this.locale;
 
     // Right now, the default distribution acts like a singleton.
     // So we don't have to copy it when a clone is requested.
-    proc dsiClone() return _to_unmanaged(this);
+    proc dsiClone() do return _to_unmanaged(this);
 
     proc dsiAssign(other: unmanaged this.type) { }
 
-    proc dsiEqualDMaps(d:unmanaged DefaultDist) param return true;
-    proc dsiEqualDMaps(d) param return false;
+    proc dsiEqualDMaps(d:unmanaged DefaultDist) param do return true;
+    proc dsiEqualDMaps(d) param do return false;
 
-    proc trackDomains() param return false;
-    override proc dsiTrackDomains()    return false;
+    proc trackDomains() param do return false;
+    override proc dsiTrackDomains() do    return false;
 
-    override proc singleton() param return true;
+    override proc singleton() param do return true;
 
-    override proc dsiIsLayout() param return true;
+    override proc dsiIsLayout() param do return true;
   }
 
   //
@@ -156,11 +156,11 @@ module DefaultRectangular {
     var dist: unmanaged DefaultDist;
     var ranges : rank*range(idxType,BoundedRangeType.bounded,stridable);
 
-    override proc linksDistribution() param return false;
-    override proc dsiLinksDistribution()     return false;
+    override proc linksDistribution() param do return false;
+    override proc dsiLinksDistribution() do     return false;
 
-    override proc type isDefaultRectangular() param return true;
-    override proc isDefaultRectangular() param return true;
+    override proc type isDefaultRectangular() param do return true;
+    override proc isDefaultRectangular() param do return true;
 
     proc init(param rank, type idxType, param stridable, dist) {
       super.init(rank, idxType, stridable);
@@ -201,7 +201,7 @@ module DefaultRectangular {
     }
 
     // function and iterator versions, also for setIndices
-    proc dsiGetIndices() return ranges;
+    proc dsiGetIndices() do return ranges;
 
     proc dsiSetIndices(x) {
       ranges = x;
@@ -494,7 +494,7 @@ module DefaultRectangular {
                       followThis.size:string + "D expression with a " +
                       this.rank:string + "D domain)");
 
-      proc anyStridable(rangeTuple, param i: int = 0) param
+      proc anyStridable(rangeTuple, param i: int = 0) param do
         return if i == rangeTuple.size-1 then rangeTuple(i).stridable
                else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
 
@@ -566,15 +566,15 @@ module DefaultRectangular {
       return totOrder;
     }
 
-    proc dsiDims()
+    proc dsiDims() do
       return ranges;
 
-    proc dsiDim(d : int)
+    proc dsiDim(d : int) do
       return ranges(d);
 
     // optional, is this necessary? probably not now that
     // homogeneous tuples are implemented as C vectors.
-    proc dsiDim(param d : int)
+    proc dsiDim(param d : int) do
       return ranges(d);
 
     proc dsiNumIndices {
@@ -707,7 +707,7 @@ module DefaultRectangular {
       return chpl_getSingletonLocaleArray(this.locale);
     }
 
-    proc dsiHasSingleLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param do return true;
 
     proc dsiLocalSubdomain(loc: locale) {
       if (this.locale == loc) {
@@ -782,7 +782,7 @@ module DefaultRectangular {
       return data(i);
     }
 
-    inline proc shiftedDataElem(i) ref
+    inline proc shiftedDataElem(i) ref do
       return shiftedData(i);
   }
 
@@ -850,11 +850,11 @@ module DefaultRectangular {
     }
   }
 
-  proc _remoteAccessData.strideAlignUp(lo, r)
+  proc _remoteAccessData.strideAlignUp(lo, r) do
     return r.lowBound + (lo - r.lowBound + abs(r.stride):idxType - 1)
            / abs(r.stride):idxType * abs(r.stride):idxType;
 
-  proc _remoteAccessData.strideAlignDown(hi, r)
+  proc _remoteAccessData.strideAlignDown(hi, r) do
     return hi - (hi - r.lowBound) % abs(r.stride):idxType;
 
   proc _remoteAccessData.initDataFrom(other : _remoteAccessData) {
@@ -1066,7 +1066,7 @@ module DefaultRectangular {
     }
 
     // can the compiler create this automatically?
-    override proc dsiGetBaseDom() return dom;
+    override proc dsiGetBaseDom() do return dom;
 
     override proc dsiElementInitializationComplete() {
       const size = if storageOrder == ArrayStorageOrder.RMO
@@ -1122,7 +1122,7 @@ module DefaultRectangular {
                                            __primitive("deref", data[0]));
 
           if needsDestroy {
-            if _deinitElementsIsParallel(eltType) {
+            if _deinitElementsIsParallel(eltType, numElts) {
               forall i in 0..#numElts {
                 chpl__autoDestroy(data[i]);
               }
@@ -1287,7 +1287,7 @@ module DefaultRectangular {
 
     inline proc getDataIndex(ind: idxType ...1,
                              param getShifted = true)
-      where rank == 1
+      where rank == 1 do
       return getDataIndex(ind, getShifted=getShifted);
 
     inline proc getDataIndex(ind: rank*idxType,
@@ -1341,31 +1341,31 @@ module DefaultRectangular {
     // only need second version (ind : rank*idxType)
     // because wrapper record can pass a 1-tuple
     inline proc dsiAccess(ind: idxType ...1) ref
-    where rank == 1
+    where rank == 1 do
       return dsiAccess(ind);
 
     inline proc dsiAccess(ind: idxType ...1)
-    where rank == 1 && shouldReturnRvalueByValue(eltType)
+    where rank == 1 && shouldReturnRvalueByValue(eltType) do
       return dsiAccess(ind);
 
     inline proc dsiAccess(ind: idxType ...1) const ref
-    where rank == 1
+    where rank == 1 do
       return dsiAccess(ind);
 
-    inline proc dsiAccess(ind : rank*idxType) ref {
+    inline proc dsiAccess(const in ind : rank*idxType) ref {
       // Note: bounds checking occurs in ChapelArray for this type.
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
     }
 
-    inline proc dsiAccess(ind : rank*idxType)
+    inline proc dsiAccess(const in ind : rank*idxType)
     where shouldReturnRvalueByValue(eltType) {
       // Note: bounds checking occurs in ChapelArray for this type.
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
     }
 
-    inline proc dsiAccess(ind : rank*idxType) const ref {
+    inline proc dsiAccess(const in ind : rank*idxType) const ref {
       // Note: bounds checking occurs in ChapelArray for this type.
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
@@ -1506,7 +1506,7 @@ module DefaultRectangular {
           param needsDestroy = __primitive("needs auto destroy", eltType);
           if needsDestroy {
             if reallocD.size < dom.dsiNumIndices {
-              if _deinitElementsIsParallel(eltType) {
+              if _deinitElementsIsParallel(eltType, dom.dsiNumIndices) {
                 forall i in dom {
                   if !keep.contains(i) {
                     chpl__autoDestroy(dsiAccess(i));
@@ -1571,7 +1571,7 @@ module DefaultRectangular {
       return chpl_getSingletonLocaleArray(this.locale);
     }
 
-    proc dsiHasSingleLocalSubdomain() param return true;
+    proc dsiHasSingleLocalSubdomain() param do return true;
 
     proc dsiLocalSubdomain(loc: locale) {
       if this.data.locale == loc {
@@ -1868,11 +1868,14 @@ module DefaultRectangular {
     return true;
   }
 
+  // optimization opportunity: if negative strides cancel out themselves,
+  // return true and invoke complexTransferComm(), switching neg. to positive
   private proc _canDoComplexTransfer(A, aView, B, bView) {
-    return useBulkTransferStride;
+    return useBulkTransferStride &&
+           chpl_allStridesArePositive(A, aView, B, bView);
   }
 
-  override proc DefaultRectangularArr.doiCanBulkTransferRankChange() param return true;
+  override proc DefaultRectangularArr.doiCanBulkTransferRankChange() param do return true;
 
   proc DefaultRectangularArr.doiBulkTransferToKnown(srcDom, destClass:DefaultRectangularArr, destDom) : bool {
     return transferHelper(destClass, destDom, this, srcDom);
@@ -2019,6 +2022,8 @@ module DefaultRectangular {
   might be different if this is a transfer involving an Array View.
 
   Assumes row-major ordering.
+  Assumes positive strides for both the source and the destination,
+  because complexTransferComm() seems to require that.
 
   Depends on adjustBlkOffStrForNewDomain having been called in ChapelArray
   before entering this function.
@@ -2229,8 +2234,8 @@ module DefaultRectangular {
     }
   }
 
-  override proc DefaultRectangularArr.isDefaultRectangular() param return true;
-  proc type DefaultRectangularArr.isDefaultRectangular() param return true;
+  override proc DefaultRectangularArr.isDefaultRectangular() param do return true;
+  proc type DefaultRectangularArr.isDefaultRectangular() param do return true;
 
   config param debugDRScan = false;
 

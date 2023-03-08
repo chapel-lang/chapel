@@ -1,6 +1,6 @@
 use BlockDist;
 
-var arr = newBlockArr(1..10, int);
+var arr = Block.createArray(1..10, int);
 
 ref localSlice = arr[{3..8}];
 

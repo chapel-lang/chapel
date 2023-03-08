@@ -7,9 +7,9 @@
 // declared type of the object.
 //
 class Base {
-  proc field return "Base";
-  proc sbName return "static Base";
-  proc dbName() return "dyanmic Base";
+  proc field do return "Base";
+  proc sbName do return "static Base";
+  proc dbName() do return "dyanmic Base";
 }
 
 class Derived : Base {
@@ -19,8 +19,8 @@ class Derived : Base {
     field = "Derived " + arg;
   }
 
-  proc sbName return "static Derived";
-  override proc dbName() return "dynamic Derived";
+  proc sbName do return "static Derived";
+  override proc dbName() do return "dynamic Derived";
 }
 
 var b:borrowed Base = (new owned Base()).borrow();

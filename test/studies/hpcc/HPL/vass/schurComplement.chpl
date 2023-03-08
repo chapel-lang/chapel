@@ -243,7 +243,7 @@ proc replicateB(abIx) {
               replB._value.localAdescs[fromLocId1,lid2].myStorageArr;
 }
 
-proc targetLocalesIndexForAbIndex(param dim, abIx)
+proc targetLocalesIndexForAbIndex(param dim, abIx) do
   return (divceilpos(abIx, blkSize) - 1) % (if dim == 1 then tl1 else tl2);
 
 

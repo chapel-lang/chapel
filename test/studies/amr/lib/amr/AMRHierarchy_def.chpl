@@ -974,7 +974,7 @@ proc AMRHierarchy.writeData(outfile: channel){
 
 
 
-proc main {
+private proc main {
   
   //===> Flagger definition ===>
   class GradientFlagger: Flagger {

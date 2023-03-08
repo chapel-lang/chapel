@@ -76,6 +76,57 @@ void setFileText(Context* context, UniqueString path, std::string text);
 bool hasFileText(Context* context, const std::string& path);
 
 /**
+ This unstable, experimental type provides basic support for '.dyno' files.
+ */
+class LibraryFile {
+  private:
+    UniqueString path_;
+    std::map<UniqueString, std::streamoff> offsets_;
+    Deserializer::stringCacheType cache_;
+    bool isUser_;
+
+  public:
+  LibraryFile() {}
+
+  LibraryFile(Context*, UniqueString);
+
+  UniqueString path() const { return path_; }
+
+  const std::map<UniqueString, std::streamoff>& offsets() const {
+    return offsets_;
+  }
+
+  const Deserializer::stringCacheType& stringCache() const { return cache_; }
+
+  bool isUser() const { return isUser_; }
+
+  static void generate(Context* context,
+                       std::vector<UniqueString> paths,
+                       std::string outFileName,
+                       bool isUser);
+
+  void mark(Context* context) const { }
+
+  static bool update(LibraryFile& keep, LibraryFile& addin) {
+    bool changed = false;
+    changed |= defaultUpdate(keep.path_, addin.path_);
+    changed |= defaultUpdate(keep.offsets_, addin.offsets_);
+    changed |= defaultUpdate(keep.cache_, addin.cache_);
+    changed |= defaultUpdateBasic(keep.isUser_, addin.isUser_);
+    return changed;
+  }
+
+};
+
+/**
+  This query reads the file from the given path and produces a LibraryFile,
+  which contains useful information about the library's contents.
+ */
+const LibraryFile& loadLibraryFile(Context* context, UniqueString libPath);
+
+void registerFilePathsInLibrary(Context* context, UniqueString& libPath);
+
+/**
   This query reads a file (with the fileText query) and then parses it.
 
   The 'parentSymbolPath' is relevant for submodules that are in separate files
@@ -237,11 +288,13 @@ void setupModuleSearchPaths(Context* context,
 
 /**
  Returns true if the ID corresponds to something in an internal module.
+ If the internal module path is empty, this function returns false.
  */
 bool idIsInInternalModule(Context* context, ID id);
 
 /**
  Returns true if the ID corresponds to something in a bundled module.
+ If the bundled module path is empty, this function returns false.
  */
 bool idIsInBundledModule(Context* context, ID id);
 
@@ -272,6 +325,21 @@ uast::AstTag idToTag(Context* context, ID id);
  Returns true if the ID is a parenless function.
  */
 bool idIsParenlessFunction(Context* context, ID id);
+
+/**
+ Returns true if the ID refers to a private declaration.
+ */
+bool idIsPrivateDecl(Context* context, ID id);
+
+/**
+ Returns true if the ID is a function.
+ */
+bool idIsFunction(Context* context, ID id);
+
+/**
+ Returns true if the ID is a method.
+ */
+bool idIsMethod(Context* context, ID id);
 
 /**
  If the ID represents a field in a record/class/union, returns

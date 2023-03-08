@@ -61,10 +61,10 @@ _chpl ()
 --dyno \
 --dyno-break-on-hash \
 --dyno-debug-trace \
+--dyno-gen-lib \
 --dyno-scope-bundled \
 --dyno-scope-production \
---dyno-serialize \
---dyno-serialize-dir \
+--dyno-verify-serialization \
 --early-deinit \
 --explain-call \
 --explain-call-id \
@@ -180,7 +180,7 @@ _chpl ()
 --no-dyno-debug-trace \
 --no-dyno-scope-bundled \
 --no-dyno-scope-production \
---no-dyno-serialize \
+--no-dyno-verify-serialization \
 --no-early-deinit \
 --no-explain-verbose \
 --no-fast-followers \
@@ -260,6 +260,7 @@ _chpl ()
 --no-use-io-formatters \
 --no-vectorize \
 --no-verify \
+--no-warn-array-of-range \
 --no-warn-const-loops \
 --no-warn-domain-literal \
 --no-warn-int-uint \
@@ -349,6 +350,7 @@ _chpl ()
 --vectorize \
 --verify \
 --version \
+--warn-array-of-range \
 --warn-const-loops \
 --warn-domain-literal \
 --warn-int-uint \

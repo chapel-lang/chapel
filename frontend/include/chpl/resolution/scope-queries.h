@@ -23,13 +23,9 @@
 #include "chpl/resolution/scope-types.h"
 
 #include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/SmallPtrSet.h"
 
 namespace chpl {
 namespace resolution {
-
-  using ScopeSet = llvm::SmallPtrSet<const Scope*, 5>;
-  using NamedScopeSet = std::unordered_set<std::pair<UniqueString, const Scope*>>;
 
   /**
     Returns true if this AST type can create a scope.
@@ -71,6 +67,18 @@ namespace resolution {
                     LookupConfig config);
 
   /**
+    Same as lookupNameInScope but traces how each symbol was found,
+    for error messages.
+   */
+  std::vector<BorrowedIdsWithName>
+  lookupNameInScopeTracing(Context* context,
+                           const Scope* scope,
+                           llvm::ArrayRef<const Scope*> receiverScopes,
+                           UniqueString name,
+                           LookupConfig config,
+                           std::vector<ResultVisibilityTrace>& traceResult);
+
+  /**
     Same as lookupNameInScope but includes a set tracking visited scopes.
    */
   std::vector<BorrowedIdsWithName>
@@ -79,7 +87,7 @@ namespace resolution {
                            const llvm::ArrayRef<const Scope*> receiverScopes,
                            UniqueString name,
                            LookupConfig config,
-                           NamedScopeSet& visited);
+                           CheckedScopes& visited);
 
   /**
     Returns true if all of checkScope is visible from fromScope
@@ -119,7 +127,34 @@ namespace resolution {
   /**
     Resolve the uses and imports in a given scope.
   */
-  void resolveUsesAndImportsInScope(Context* context, const Scope* scope);
+  const ResolvedVisibilityScope*
+  resolveVisibilityStmts(Context* context, const Scope* scope);
+
+  /**
+    Return the scope for the automatically included 'ChapelStandard' module,
+    or nullptr if it could not be found.
+  */
+  const Scope* scopeForAutoModule(Context* context);
+
+  /**
+    Given the ID for a module 'entrypoint', compute the order in which
+    modules should be initialized. Note that this ordering does not consider
+    liveliness, and modules that are never used or have no module level
+    statements will currently still be listed in the result.
+
+    The result is list of ID pairs. The first ID in a pair is the module
+    to be initialized, and the second ID is the module that first triggered
+    initialization. The second ID may be empty if the first ID is the
+    entrypoint module or if initialization was triggered implicitly.
+  */
+  const std::vector<std::pair<ID, ID>>&
+  moduleInitializationOrder(Context* context, ID entrypoint);
+
+  /**
+    Check for symbol names with multiple definitions within a scope.
+    This query only exists to emit errors.
+   */
+  void emitMultipleDefinedSymbolErrors(Context* context, const Scope* scope);
 
 
 } // end namespace resolution

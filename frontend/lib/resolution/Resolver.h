@@ -67,6 +67,7 @@ struct Resolver {
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
   std::set<ID> splitInitTypeInferredVariables;
+  std::set<UniqueString> namesWithErrorsEmitted;
   const uast::Call* inLeafCall = nullptr;
   bool receiverScopesComputed = false;
   ReceiverScopesVec savedReceiverScopes;
@@ -306,6 +307,9 @@ struct Resolver {
                                          const CallInfo& ci,
                                          const CallResolutionResult& c);
 
+  // issue error for M.x where x is not found in a module M
+  void issueErrorForFailedModuleDot(const uast::Dot* dot, ID moduleId);
+
   // handle the result of one of the functions to resolve a call. Handles:
   //  * r.setMostSpecific
   //  * r.setPoiScope
@@ -418,11 +422,13 @@ struct Resolver {
   // prepare a CallInfo by inspecting the called expression and actuals
   CallInfo prepareCallInfoNormalCall(const uast::Call* call);
 
+  bool identHasMoreMentions(const uast::Identifier* ident);
+
   std::vector<BorrowedIdsWithName>
   lookupIdentifier(const uast::Identifier* ident,
                    llvm::ArrayRef<const Scope*> receiverScopes);
 
-  bool resolveIdentifier(const uast::Identifier* ident,
+  void resolveIdentifier(const uast::Identifier* ident,
                          llvm::ArrayRef<const Scope*> receiverScopes);
 
   /* Resolver keeps a stack of scopes and a stack of decls.
@@ -489,6 +495,9 @@ struct Resolver {
 
   bool enter(const uast::Try* ret);
   void exit(const uast::Try* ret);
+
+  bool enter(const uast::Catch* ret);
+  void exit(const uast::Catch* ret);
 
   bool enter(const uast::Use* node);
   void exit(const uast::Use* node);

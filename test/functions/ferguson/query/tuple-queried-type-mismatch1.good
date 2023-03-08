@@ -1,0 +1,3 @@
+tuple-queried-type-mismatch1.chpl:7: error: unresolved call 'f((string,int(64)))'
+tuple-queried-type-mismatch1.chpl:1: note: this candidate did not match: f(tuple: 2*?t)
+tuple-queried-type-mismatch1.chpl:1: note: because an argument was incompatible
