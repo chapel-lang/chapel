@@ -3,6 +3,7 @@ import os
 import glob
 import chpl_locale_model
 import chpl_llvm
+import shutil
 from utils import error, memoize, run_command
 
 # Format:
@@ -14,6 +15,16 @@ GPU_TYPES = {
     "cuda": ("CHPL_CUDA_PATH", "nvcc", 2, "sm_60"),
     "rocm": ("CHPL_ROCM_PATH", "hipcc", 3,"gfx906")
 }
+
+def determineGpuType():
+  nvccPath = shutil.which("nvcc")
+  hipccPath = shutil.which("hipcc")
+  if nvccPath and not hipccPath:
+    return('cuda')
+  if not nvccPath and hipccPath:
+    return('rocm')
+  error("Unable to determine GPU type, assign 'CHPL_GPU_CODEGEN' to one of {}".
+    format(GPU_TYPES.keys()))
 
 @memoize
 def get():
@@ -27,7 +38,7 @@ def get():
         else:
             return chpl_gpu_codegen
     else:
-        return 'cuda'
+        return determineGpuType();
 
 @memoize
 def get_arch():
