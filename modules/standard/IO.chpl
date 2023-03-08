@@ -5979,7 +5979,7 @@ proc fileReader.readThrough(separator: bytes, ref b: bytes, maxSize=-1, stripSep
   ``fileReader`` up to that point.
 
   If the separator is found, the ``fileReader`` position is left immediately
-  after it. If the separator could not be found in the next ``maxSize``
+  before it. If the separator could not be found in the next ``maxSize``
   codepoints/bytes, a ``BadFormatError`` is thrown and the ``fileReader``'s
   position is not changed. If EOF is reached before finding the separator,
   the remainder of the ``fileReader``'s contents are returned and the position
