@@ -1765,70 +1765,12 @@ VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size) {
   return s;
 }
 
-static VarSymbol* new_FloatSymbol(Immediate imm, IF1_num_kind kind, Type* type,
-                                  char* n = NULL) {
-  const char* normalized = NULL;
-  VarSymbol *s = uniqueConstantsHash.get(&imm);
-  if (s) {
-    return s;
-  }
-  s = new VarSymbol(astr("_literal_", istr(literal_id++)), type);
-  rootModule->block->insertAtTail(new DefExpr(s));
-
-  if (n) {
-    // Normalize the number for C99
-    if (!strchr(n, '.') && !strchr(n, 'e') && !strchr(n, 'E') &&
-        !strchr(n, 'p') && !strchr(n, 'P') ) {
-      // Add .0 for floating point literals without a decimal point
-      // or exponent.
-      normalized = astr(n, ".0");
-    } else if( n[0] == '0' && (n[1] == 'x' || n[1] == 'X') &&
-               !strchr(n, 'p') && !strchr(n, 'P') ) {
-      // Add p0 for hex floating point literals without an exponent
-      // since C99 requires it (because f needs to be a suffix for
-      // floating point numbers)
-      normalized = astr(n, "p0");
-    } else {
-      normalized = astr(n);
-    }
-  } else {
-    normalized = astr("Uhh...");
-  }
-
-  // Use the normalized number when code-genning the literal
-  s->cname = normalized;
-
-  s->immediate = new Immediate;
-  *s->immediate = imm;
-  uniqueConstantsHash.put(s->immediate, s);
-  free(n);
-  return s;
-}
-
-static VarSymbol* new_FloatSymbol(float val, IF1_num_kind kind, Type* type,
-                                  char* n = NULL) {
-  Immediate imm;
-  imm.v_float32 = val;
-  imm.const_kind = kind;
-  imm.num_index = FLOAT_SIZE_32;
-  return new_FloatSymbol(imm, kind, type, n);
-}
-
-static VarSymbol* new_FloatSymbol(double val, IF1_num_kind kind, Type* type,
-                                  char* n = NULL) {
-  Immediate imm;
-  imm.v_float64 = val;
-  imm.const_kind = kind;
-  imm.num_index = FLOAT_SIZE_64;
-  return new_FloatSymbol(imm, kind, type, n);
-}
-
-
 static VarSymbol* new_FloatSymbol(const char* num,
                                   IF1_float_type size, IF1_num_kind kind,
                                   Type* type) {
   Immediate imm;
   int len = strlen(num);
+  const char* normalized = NULL;
   char* n = (char*)malloc(len+1);
 
   /* Remove '_' separators from the number */
@@ -1843,15 +1785,48 @@ static VarSymbol* new_FloatSymbol(const char* num,
 
   switch (size) {
     case FLOAT_SIZE_32:
-      return new_FloatSymbol(strtof(n, NULL), kind, type);
+      imm.v_float32  = strtof(n, NULL);
       break;
     case FLOAT_SIZE_64:
-      return new_FloatSymbol(strtod(n, NULL), kind, type);
+      imm.v_float64  = strtod(n, NULL);
       break;
     default:
       INT_FATAL( "unknown FLOAT_SIZE");
-      return NULL;
   }
+  imm.const_kind = kind;
+  imm.num_index = size;
+
+  VarSymbol *s = uniqueConstantsHash.get(&imm);
+  if (s) {
+    return s;
+  }
+  s = new VarSymbol(astr("_literal_", istr(literal_id++)), type);
+  rootModule->block->insertAtTail(new DefExpr(s));
+
+  // Normalize the number for C99
+  if (!strchr(n, '.') && !strchr(n, 'e') && !strchr(n, 'E') &&
+      !strchr(n, 'p') && !strchr(n, 'P') ) {
+    // Add .0 for floating point literals without a decimal point
+    // or exponent.
+    normalized = astr(n, ".0");
+  } else if( n[0] == '0' && (n[1] == 'x' || n[1] == 'X') &&
+             !strchr(n, 'p') && !strchr(n, 'P') ) {
+    // Add p0 for hex floating point literals without an exponent
+    // since C99 requires it (because f needs to be a suffix for
+    // floating point numbers)
+    normalized = astr(n, "p0");
+  } else {
+    normalized = astr(n);
+  }
+
+  // Use the normalized number when code-genning the literal
+  s->cname = normalized;
+
+  s->immediate = new Immediate;
+  *s->immediate = imm;
+  uniqueConstantsHash.put(s->immediate, s);
+  free(n);
+  return s;
 }
 
 VarSymbol *new_RealSymbol(const char *n, IF1_float_type size) {
