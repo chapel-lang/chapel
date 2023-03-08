@@ -50,14 +50,3 @@ inline proc (real(?w)).toBits(): uint(w) {
 //  c_memcpy(c_ptrTo(dst), c_ptrTo(src), w/8);
   return dst;
 }
-
-// convert the IEEE 754 encoding inside a uint(w) to a real(w)
-
-inline proc type (uint(?w)).asReal(x: uint(?k)): real(w) {
-  use CTypes;
-  var src = x, dst:real(w);
-
-  compilerAssert(w == k);
-  c_memcpy(c_ptrTo(dst), c_ptrTo(src), c_sizeof(src.type));
-  return dst;
-}

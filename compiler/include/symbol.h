@@ -803,6 +803,13 @@ VarSymbol *new_UIntSymbol(uint64_t b, IF1_int_type size=INT_SIZE_64);
 VarSymbol *new_RealSymbol(const char *n,
                           IF1_float_type size=FLOAT_SIZE_64);
 
+// Creates a new real literal with the given value, where the
+// bit-width will be taken as 32 for the 'float' case and 64 for the
+// 'double' case.  The resulting symbol will have a cname equal to a
+// normalized version of 'val'.
+VarSymbol* new_RealSymbol(float val);
+VarSymbol* new_RealSymbol(double val);
+
 // Creates a new imaginary literal with the given value and bit-width.
 // n should be a string argument containing a Chapel decimal or hexadecimal
 // floating point literal. It will be copied and the floating point
