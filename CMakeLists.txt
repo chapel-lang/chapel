@@ -27,23 +27,6 @@ if (CMAKE_VERSION VERSION_LESS 3.20)
                   release. You have ${CMAKE_VERSION}")
 endif()
 
-###### ENV VARIABLES TO CHANGE CMAKE BEHAVIOR #####
-# CMAKE_VERBOSE_MAKEFILE          turn verbose makefiles on to see compiler flags
-#######
-
-### BEGIN Debug options ###
-
-# Turns on verbose output from Makefile builds. Having it ON displays each
-# command line as it is launched.
-# https://cmake.org/cmake/help/latest/variable/CMAKE_VERBOSE_MAKEFILE.html
-if (DEFINED ENV{CMAKE_VERBOSE_MAKEFILE})
-  set(CMAKE_VERBOSE_MAKEFILE $ENV{CMAKE_VERBOSE_MAKEFILE})
-else()
-  set(CMAKE_VERBOSE_MAKEFILE OFF)
-endif()
-### END Debug options ###
-
-
 ### BEGIN config.h value setting ###
 # Handle all (most?) the versioning information in one place
 # These values will be written to <build_dir>/frontend/include/chpl/config/config.h
