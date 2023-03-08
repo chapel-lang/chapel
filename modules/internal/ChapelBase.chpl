@@ -1515,6 +1515,45 @@ module ChapelBase {
     }
   }
 
+  // Routines for re-interpreting reals as uints and vice-versa, at
+  // the bit level
+  //  
+  proc param (real(64)).toBits() param : uint {
+    param ui: uint(64) = __primitive("real64 as uint64", this);
+    return ui;
+  }
+
+  proc param (real(32)).toBits() param : uint(32) {
+    param ui: uint(32) = __primitive("real32 as uint32", this);
+    return ui;
+  }
+
+  inline proc (real(?w)).toBits(): uint(w) {
+    use CTypes;
+    var src = this, dst:uint(w);
+
+    c_memcpy(c_ptrTo(dst), c_ptrTo(src), w/8);
+    return dst;
+  }
+
+  proc param (uint(64)).toReal() param : real(64) {
+    param r: real(64) = __primitive("uint64 as real64", this);
+    return r;
+  }
+
+  proc param (uint(32)).toReal() param : real(32) {
+    param r: real(32) = __primitive("uint32 as real32", this);
+    return r;
+  }
+
+  inline proc (uint(?w)).toReal(): real(w) where w == 32 || w == 64 {
+    use CTypes;
+    var src = this, dst:real(w);
+
+    c_memcpy(c_ptrTo(dst), c_ptrTo(src), w/8);
+    return dst;
+  }
+
 
   //
   // Similar to isPrimitiveType, but excludes imaginaries because they
