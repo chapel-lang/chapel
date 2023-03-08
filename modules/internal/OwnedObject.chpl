@@ -157,7 +157,10 @@ module OwnedObject {
       If the argument is non-nilable, it must be recognized by the compiler
       as an expiring value.
 
-      Note: This is an experimental interface
+      .. note::
+
+         This is part of an experimental interface, users should prefer
+         :proc:`owned.create`/:proc:`owned.retain`/:proc:`owned.clear` for now.
     */
     inline proc type adopt(pragma "nil from arg" in obj : owned) {
       return obj;
@@ -171,7 +174,10 @@ module OwnedObject {
       It is an error to directly delete the class instance
       after passing it to `owned.adopt()`.
 
-      Note: This is an experimental interface
+      .. note::
+
+         This is part of an experimental interface, users should prefer
+         :proc:`owned.create`/:proc:`owned.retain`/:proc:`owned.clear` for now.
     */
     inline proc type adopt(pragma "nil from arg" in obj: unmanaged) {
       // 'result' may have a non-nilable type
@@ -186,7 +192,10 @@ module OwnedObject {
 
       If the argument is `nil` it returns `nil`.
 
-      Note: This is an experimental interface
+      .. note::
+
+         This is part of an experimental interface, users should prefer
+         :proc:`owned.create`/:proc:`owned.retain`/:proc:`owned.clear` for now.
     */
     inline proc type release(pragma "nil from arg" ref obj: owned) {
       var oldPtr = obj.chpl_p;
