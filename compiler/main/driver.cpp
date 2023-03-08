@@ -297,7 +297,7 @@ bool fNoMemoryFrees = false;
 int numGlobalsOnHeap = 0;
 bool preserveInlinedLineNumbers = false;
 
-char stopAfterPass[128];
+char stopAfterPass[128] = "";
 
 const char* compileCommand = NULL;
 char compileVersion[64];
