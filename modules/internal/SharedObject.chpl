@@ -187,7 +187,7 @@ module SharedObject {
        :arg take: the owned value to take ownership from
      */
     proc init(pragma "nil from arg" in take:owned) {
-      var p = take.release();
+      var p = owned.release(take);
       this.chpl_t = if this.type.chpl_t == ? then _to_borrowed(p.type) else this.type.chpl_t;
 
       if !isClass(p) then
@@ -249,7 +249,7 @@ module SharedObject {
     pragma "no doc"
     @deprecated(notes="assigning owned class to shared class is deprecated.")
     proc init=(pragma "nil from arg" in take: owned) {
-      var p = take.release();
+      var p = owned.release(take);
 
       this.chpl_t = if this.type.chpl_t != ?
                     then this.type.chpl_t
@@ -541,7 +541,7 @@ module SharedObject {
   operator =(ref lhs:_shared, in rhs:owned)
     where ! (isNonNilableClass(lhs) && isNilableClass(rhs))
   {
-    lhs.retain(rhs.release());
+    lhs.retain(owned.release(rhs));
   }
 
   pragma "no doc"
@@ -698,7 +698,7 @@ module SharedObject {
       compilerError("Cannot change class type in conversion from '",
                     x.type:string, "' to '", t:string, "'");
 
-    var p = x.release();
+    var p = owned.release(x);
     var rc: unmanaged ReferenceCount? = nil;
     if p != nil then
       rc = new unmanaged ReferenceCount();
