@@ -1,1 +1,1 @@
--snewSliceRule
+-snewSliceRule -snoNegativeStrideWarnings
