@@ -118,7 +118,7 @@ static void testCall(const char* testName,
   assert(methodAst->isFunction());
   auto callAst = parsing::idToAst(context, callId);
   assert(callAst);
-  assert(callAst->isIdentifier() || callAst->isCall());
+  assert(callAst->isIdentifier() || callAst->isDot() || callAst->isCall());
   const AstNode* calledFnAst = nullptr;
   if (calledFnIdStr[0] != '\0') {
     calledFnAst = parsing::idToAst(context, calledFnId);
@@ -348,9 +348,7 @@ static void test6() {
          )"""",
          "M.Outer.Nested.bar",
          "M.Outer.Nested.bar@1",
-         "M.Base@1",
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.Base@1");
 }
 
 // test with an outer variable vs a parent class field
@@ -376,9 +374,7 @@ static void test7() {
          )"""",
          "M.secondary",
          "M.secondary@2",
-         "M.Base@1",
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.Base@1");
 }
 
 // test with a formal vs a parent class field
@@ -470,9 +466,7 @@ static void test10p() {
          )"""",
          "M.outerClass.foo",
          "M.outerClass.foo@1",
-         "M.outerClass.aClass" /* the nested class */,
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.outerClass.aClass" /* the nested class */);
 }
 // similar to test10, but with a secondary method
 static void test10s() {
@@ -496,9 +490,7 @@ static void test10s() {
          )"""",
          "M.foo",
          "M.foo@2",
-         "M.outerClass.aClass" /* the nested class */,
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.outerClass.aClass" /* the nested class */);
 }
 
 // test with parent scopes that should find a local not a field
@@ -525,9 +517,7 @@ static void test11p() {
          )"""",
          "M.rec.foo",
          "M.rec.foo@7",
-         "M.rec.foo@2" /* the local variable */,
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.rec.foo@2" /* the local variable */);
 }
 static void test11s() {
   testIt("test11s.chpl",
@@ -552,9 +542,7 @@ static void test11s() {
          )"""",
          "M.foo",
          "M.foo@8",
-         "M.foo@3" /* the local variable */,
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.foo@3" /* the local variable */);
 }
 
 // same as above but with a formal rather than a local variable
@@ -581,9 +569,7 @@ static void test12p() {
          )"""",
          "M.rec.foo",
          "M.rec.foo@9",
-         "M.rec.foo@2" /* the formal */,
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.rec.foo@2" /* the formal */);
 }
 static void test12s() {
   testIt("test12s.chpl",
@@ -608,9 +594,7 @@ static void test12s() {
          )"""",
          "M.foo",
          "M.foo@10",
-         "M.foo@3" /* the formal */,
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.foo@3" /* the formal */);
 }
 
 // field access vs parent module field
@@ -634,9 +618,7 @@ static void test13p() {
          )"""",
          "M.mat.foo",
          "M.mat.foo@5",
-         "M.mat@2" /* the field */,
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.mat@2" /* the field */);
 }
 static void test13s() {
   testIt("test13s.chpl",
@@ -659,9 +641,7 @@ static void test13s() {
          )"""",
          "M.foo",
          "M.foo@6",
-         "M.mat@2" /* the field */,
-         /* scope resolve only to avoid errors today */ true);
-  // TODO get the above case working with the full resolver
+         "M.mat@2" /* the field */);
 }
 
 // The following series of tests is from issue #21668
@@ -682,8 +662,9 @@ static void testExample2() {
            "M.test",
            "M.test@6",
            "M.bar" /* the selected method */);
-  // TODO: thinking that this case should prefer the 'int' version
-  // because both should participate in disambiguation
+  // TODO: perhaps this case should prefer the 'int' version
+  // because both should participate in disambiguation.
+  // See issue #21668.
 }
 
 static void testExample3() {
@@ -766,8 +747,6 @@ static void testExample4a() {
 }
 
 static void testExample5() {
-  // TODO: get this working
-#if 0
   testCall("example5.chpl",
            R""""(
               // Example 5
@@ -788,12 +767,9 @@ static void testExample5() {
            "B.test",
            "B.test@2",
            "A.foo" /* call the method; don't refer to the int */);
-#endif
 }
 
 static void testExample5a() {
-  // TODO: get this working (running into internal assertion)
-#if 0
   testCall("example5a.chpl",
            R""""(
               module M {
@@ -809,12 +785,9 @@ static void testExample5a() {
            "M.test",
            "M.test@4",
            "" /* ambiguity */);
-#endif
 }
 
 static void testExample6() {
-  // TODO: currently getting "no matching candidates"
-#if 0
   testCall("example6.chpl",
            R""""(
               module A {
@@ -835,7 +808,6 @@ static void testExample6() {
            "B.test",
            "B.test@2",
            "A.foo" /* the method not the int */);
-#endif
 }
 
 static void testExample7() {
@@ -859,8 +831,6 @@ static void testExample7() {
 }
 
 static void testExample8() {
-  // TODO: running into an internal assertion
-#if 0
   testCall("example8.chpl",
            R""""(
               module A {
@@ -878,12 +848,9 @@ static void testExample8() {
            "A.main.test",
            "A.main.test@2",
            "A.main.foo" /* the method */);
-#endif
 }
 
 static void testExample9() {
-  // TODO: running into an internal assertion
-#if 0
   testCall("example9.chpl",
            R""""(
               module A {
@@ -903,12 +870,9 @@ static void testExample9() {
            "A.main.test",
            "A.main.test@2",
            "A.main.foo" /* the method */);
-#endif
 }
 
 static void testExample10() {
-  // TODO: no matching candidates
-#if 0
   testCall("example10.chpl",
            R""""(
               module A {
@@ -934,12 +898,9 @@ static void testExample10() {
            "C.test",
            "C.test@2",
            "A.foo" /* the method */ );
-#endif
 }
 
 static void testExample11() {
-  // TODO: no matching candidates
-#if 0
   testCall("example11.chpl",
            R""""(
               module A {
@@ -966,7 +927,6 @@ static void testExample11() {
            "C.test",
            "C.test@2",
            "C.foo" /* the method Child.foo */ );
-#endif
 }
 
 static void testExample12() {
@@ -1033,8 +993,6 @@ static void testExample14() {
 }
 
 static void testExample15() {
-  // TODO: running into an internal assertion failure
-#if 0
   testCall("example15.chpl",
            R""""(
               module M {
@@ -1052,12 +1010,9 @@ static void testExample15() {
            "M.test",
            "M.test@2",
            "" /* ambiguity error */);
-#endif
 }
 
 static void testExample16() {
-  // TODO: running into assertion failure
-#if 0
   testCall("example16.chpl",
            R""""(
               module M {
@@ -1076,7 +1031,6 @@ static void testExample16() {
            "M.main",
            "M.main@0",
            "M.main.foo" /* the innermost proc foo */);
-#endif
 }
 
 static void testExample17() {
@@ -1105,8 +1059,6 @@ static void testExample17() {
 }
 
 static void testExample18() {
-  // TODO: running into assertion failure
-#if 0
   testCall("example18.chpl",
            R""""(
               module M {
@@ -1124,12 +1076,9 @@ static void testExample18() {
            "M.main",
            "M.main@3",
            "" /* ambiguity */);
-#endif
 }
 
 static void testExample19() {
-  // TODO: running into an internal assertion failure
-#if 0
   testCall("example19.chpl",
            R""""(
               module A {
@@ -1147,12 +1096,9 @@ static void testExample19() {
            "A.test",
            "A.test@2",
            "A.test.foo" /* the inner parenless non-method */);
-#endif
 }
 
 static void testExample20() {
-  // TODO: running into an internal assertion failure
-#if 0
   testCall("example20.chpl",
            R""""(
               module A {
@@ -1171,7 +1117,6 @@ static void testExample20() {
            "A.test",
            "A.test@2",
            "" /* ambiguity error */);
-#endif
 }
 
 

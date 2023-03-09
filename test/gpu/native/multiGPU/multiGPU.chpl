@@ -1,4 +1,4 @@
-use GPUDiagnostics;
+use GpuDiagnostics;
 
 config const n = 10;
 
@@ -7,7 +7,7 @@ config const alpha = 10;
 config const writeArrays = false;
 
 
-startGPUDiagnostics();
+startGpuDiagnostics();
 for gpu in here.gpus do on gpu {
   var A: [1..n] int;
   var B: [1..n] int;
@@ -19,9 +19,9 @@ for gpu in here.gpus do on gpu {
   C = 3;                            assertElemVal(C, 3);
   A = B + alpha * C;                assertElemVal(A, 2+alpha*3);
 }
-stopGPUDiagnostics();
+stopGpuDiagnostics();
 
-const nLaunch = getGPUDiagnostics().kernel_launch;
+const nLaunch = getGpuDiagnostics().kernel_launch;
 
 assert(nLaunch == here.gpus.size*4);
 

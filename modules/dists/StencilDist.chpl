@@ -1440,22 +1440,25 @@ private inline proc isZeroTuple(t) {
   return true;
 }
 
+pragma "do not unref for yields"
 iter _array.boundaries() {
   for d in _value.dsiBoundaries() do yield d;
 }
 
+pragma "do not unref for yields"
 iter _array.boundaries(param tag : iterKind) where tag == iterKind.standalone {
   forall d in _value.dsiBoundaries() do yield d;
 }
 
+pragma "do not unref for yields"
 iter StencilArr.dsiBoundaries() {
   for i in dom.dist.targetLocDom {
     var LSA = locArr[i];
     ref myLocDom = LSA.locDom;
     for (D, N, L) in zip(myLocDom.recvDest, myLocDom.Neighs, myLocDom.NeighDom) {
-      const target = i + L;
-      const low = dom.dist.targetLocDom.lowBound;
-      const high = dom.dist.targetLocDom.highBound;
+      const target = chpl__tuplify(i + L);
+      const low    = chpl__tuplify(dom.dist.targetLocDom.lowBound);
+      const high   = chpl__tuplify(dom.dist.targetLocDom.highBound);
 
       if (!dom.dist.targetLocDom.contains(target)) {
         var translated : target.type;
@@ -1479,15 +1482,16 @@ iter StencilArr.dsiBoundaries() {
 // Yields any 'fluff' boundary chunks in the StencilArr along with a global coordinate of
 // where the chunk lives relative to the core.
 //
+pragma "do not unref for yields"
 iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standalone {
   coforall i in dom.dist.targetLocDom {
     on dom.dist.targetLocales(i) {
       var LSA = locArr[i];
       ref myLocDom = LSA.locDom;
       forall (D, N, L) in zip(myLocDom.recvDest, myLocDom.Neighs, myLocDom.NeighDom) {
-        const target = i + L;
-        const low = dom.dist.targetLocDom.lowBound;
-        const high = dom.dist.targetLocDom.highBound;
+        const target = chpl__tuplify(i + L);
+        const low    = chpl__tuplify(dom.dist.targetLocDom.lowBound);
+        const high   = chpl__tuplify(dom.dist.targetLocDom.highBound);
         //
         // if `LSA` has a cache section of the outermost fluff/boundary,
         // then we should yield that so it is updated correctly. To do

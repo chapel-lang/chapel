@@ -82,6 +82,7 @@ bool AstNode::mayContainStatements(AstTag tag) {
     case asttags::AnonFormal:
     case asttags::As:
     case asttags::Array:
+    case asttags::Attribute:
     case asttags::AttributeGroup:
     case asttags::Break:
     case asttags::Comment:
@@ -206,6 +207,7 @@ bool AstNode::isInherentlyStatement() const {
     case asttags::AnonFormal:
     case asttags::As:
     case asttags::Array:
+    case asttags::Attribute:
     case asttags::AttributeGroup:
     case asttags::Break:
     case asttags::Comment:

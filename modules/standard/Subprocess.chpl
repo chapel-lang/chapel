@@ -358,19 +358,19 @@ module Subprocess {
     else return -1;
   }
 
-  deprecated "'FORWARD' is deprecated, please use 'pipeStyle.forward' instead"
+  @deprecated(notes="'FORWARD' is deprecated, please use 'pipeStyle.forward' instead")
   const FORWARD = QIO_FD_FORWARD;
 
-  deprecated "'CLOSE' is deprecated, please use 'pipeStyle.close' instead"
+  @deprecated(notes="'CLOSE' is deprecated, please use 'pipeStyle.close' instead")
   const CLOSE = QIO_FD_CLOSE;
 
-  deprecated "'PIPE' is deprecated, please use 'pipeStyle.pipe' instead"
+  @deprecated(notes="'PIPE' is deprecated, please use 'pipeStyle.pipe' instead")
   const PIPE = QIO_FD_PIPE;
 
-  deprecated "'STDOUT' is deprecated, please use 'pipeStyle.stdout' instead"
+  @deprecated(notes="'STDOUT' is deprecated, please use 'pipeStyle.stdout' instead")
   const STDOUT = QIO_FD_TO_STDOUT;
 
-  deprecated "'BUFFERED_PIPE' is deprecated, please use 'pipeStyle.bufferAll' instead"
+  @deprecated(notes="'BUFFERED_PIPE' is deprecated, please use 'pipeStyle.bufferAll' instead")
   const BUFFERED_PIPE = QIO_FD_BUFFERED_PIPE;
 
   private const empty_env:[1..0] string;
@@ -983,98 +983,98 @@ module Subprocess {
   // See note below about signals intentionally not included.
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGABRT' is deprecated. Use 'OS.POSIX.SIGABRT' instead."
+  @deprecated(notes="'Subprocess.SIGABRT' is deprecated. Use 'OS.POSIX.SIGABRT' instead.")
   extern const SIGABRT: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGALRM' is deprecated. Use 'OS.POSIX.SIGALRM' instead."
+  @deprecated(notes="'Subprocess.SIGALRM' is deprecated. Use 'OS.POSIX.SIGALRM' instead.")
   extern const SIGALRM: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGBUS' is deprecated. Use 'OS.POSIX.SIGBUS' instead."
+  @deprecated(notes="'Subprocess.SIGBUS' is deprecated. Use 'OS.POSIX.SIGBUS' instead.")
   extern const SIGBUS: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGCHLD' is deprecated. Use 'SOS.POSIX.SIGCHLD' instead."
+  @deprecated(notes="'Subprocess.SIGCHLD' is deprecated. Use 'SOS.POSIX.SIGCHLD' instead.")
   extern const SIGCHLD: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGCONT' is deprecated. Use 'OS.POSIX.SIGCONT' instead."
+  @deprecated(notes="'Subprocess.SIGCONT' is deprecated. Use 'OS.POSIX.SIGCONT' instead.")
   extern const SIGCONT: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGFPE' is deprecated. Use 'OS.POSIX.SIGFPE' instead."
+  @deprecated(notes="'Subprocess.SIGFPE' is deprecated. Use 'OS.POSIX.SIGFPE' instead.")
   extern const SIGFPE: c_int;
   pragma "no doc"
-  deprecated "'Subprocess.SIGHUP' is deprecated. Use 'OS.POSIX.SIGHUP' instead."
+  @deprecated(notes="'Subprocess.SIGHUP' is deprecated. Use 'OS.POSIX.SIGHUP' instead.")
   extern const SIGHUP: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGILL' is deprecated. Use 'OS.POSIX.SIGILL' instead."
+  @deprecated(notes="'Subprocess.SIGILL' is deprecated. Use 'OS.POSIX.SIGILL' instead.")
   extern const SIGILL: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGINT' is deprecated. Use 'OS.POSIX.SIGINT' instead."
+  @deprecated(notes="'Subprocess.SIGINT' is deprecated. Use 'OS.POSIX.SIGINT' instead.")
   extern const SIGINT: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGKILL' is deprecated. Use 'OS.POSIX.SIGKILL' instead."
+  @deprecated(notes="'Subprocess.SIGKILL' is deprecated. Use 'OS.POSIX.SIGKILL' instead.")
   extern const SIGKILL: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGPIPE' is deprecated. Use 'OS.POSIX.SIGPIPE' instead."
+  @deprecated(notes="'Subprocess.SIGPIPE' is deprecated. Use 'OS.POSIX.SIGPIPE' instead.")
   extern const SIGPIPE: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGQUIT' is deprecated. Use 'OS.POSIX.SIGQUIT' instead."
+  @deprecated(notes="'Subprocess.SIGQUIT' is deprecated. Use 'OS.POSIX.SIGQUIT' instead.")
   extern const SIGQUIT: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGSEGV' is deprecated. Use 'OS.POSIX.SIGSEGV' instead."
+  @deprecated(notes="'Subprocess.SIGSEGV' is deprecated. Use 'OS.POSIX.SIGSEGV' instead.")
   extern const SIGSEGV: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGSTOP' is deprecated. Use 'OS.POSIX.SIGSTOP' instead."
+  @deprecated(notes="'Subprocess.SIGSTOP' is deprecated. Use 'OS.POSIX.SIGSTOP' instead.")
   extern const SIGSTOP: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGTERM' is deprecated. Use 'OS.POSIX.SIGTERM' instead."
+  @deprecated(notes="'Subprocess.SIGTERM' is deprecated. Use 'OS.POSIX.SIGTERM' instead.")
   extern const SIGTERM: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGTRAP' is deprecated. Use 'OS.POSIX.SIGTRAP' instead."
+  @deprecated(notes="'Subprocess.SIGTRAP' is deprecated. Use 'OS.POSIX.SIGTRAP' instead.")
   extern const SIGTRAP: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGTSTP' is deprecated. Use 'OS.POSIX.SIGTSTP' instead."
+  @deprecated(notes="'Subprocess.SIGTSTP' is deprecated. Use 'OS.POSIX.SIGTSTP' instead.")
   extern const SIGTSTP: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGTTIN' is deprecated. Use 'OS.POSIX.SIGTTIN' instead."
+  @deprecated(notes="'Subprocess.SIGTTIN' is deprecated. Use 'OS.POSIX.SIGTTIN' instead.")
   extern const SIGTTIN: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGTTOU' is deprecated. Use 'OS.POSIX.SIGTTOU' instead."
+  @deprecated(notes="'Subprocess.SIGTTOU' is deprecated. Use 'OS.POSIX.SIGTTOU' instead.")
   extern const SIGTTOU: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGURG' is deprecated. Use 'OS.POSIX.SIGURG' instead."
+  @deprecated(notes="'Subprocess.SIGURG' is deprecated. Use 'OS.POSIX.SIGURG' instead.")
   extern const SIGURG: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGUSR1' is deprecated. Use 'OS.POSIX.SIGUSR1' instead."
+  @deprecated(notes="'Subprocess.SIGUSR1' is deprecated. Use 'OS.POSIX.SIGUSR1' instead.")
   extern const SIGUSR1: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGUSR2' is deprecated. Use 'OS.POSIX.SIGUSR2' instead."
+  @deprecated(notes="'Subprocess.SIGUSR2' is deprecated. Use 'OS.POSIX.SIGUSR2' instead.")
   extern const SIGUSR2: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGXCPU' is deprecated. Use 'OS.POSIX.SIGXCPU' instead."
+  @deprecated(notes="'Subprocess.SIGXCPU' is deprecated. Use 'OS.POSIX.SIGXCPU' instead.")
   extern const SIGXCPU: c_int;
   pragma "no doc"
   pragma "last resort"
-  deprecated "'Subprocess.SIGXFSZ' is deprecated. Use 'OS.POSIX.SIGXFSZ' instead."
+  @deprecated(notes="'Subprocess.SIGXFSZ' is deprecated. Use 'OS.POSIX.SIGXFSZ' instead.")
   extern const SIGXFSZ: c_int;
 
   // These signals are not strictly required by POSIX.1.2008 2013 edition
@@ -1087,7 +1087,7 @@ module Subprocess {
 
   private extern proc qio_send_signal(pid: int(64), sig: c_int): errorCode;
 
-  deprecated "'send_signal' is deprecated, please use 'sendPosixSignal' instead"
+  @deprecated(notes="'send_signal' is deprecated, please use 'sendPosixSignal' instead")
   proc subprocess.send_signal(signal:int) throws {
     sendPosixSignal(signal);
   }

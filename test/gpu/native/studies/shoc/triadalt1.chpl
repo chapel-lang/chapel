@@ -1,7 +1,7 @@
 use Time;
 use ResultDB;
 use IO.FormattedIO;
-use GPUDiagnostics;
+use GpuDiagnostics;
 
 config const passes = 10;
 config const alpha = 1.75: real(32);
@@ -23,7 +23,7 @@ proc main(){
     param halfNumFloats = numMaxFloats/2;
 
     var hos: [0..#numMaxFloats] real(32);
-    startGPUDiagnostics();
+    startGpuDiagnostics();
     on here.gpus[0] {
         var flopsDB = new ResultDatabase("TriadFlops", "GFLOP/s");
         var bdwthDB = new ResultDatabase("TriadBdwth", "GB/s");
@@ -208,6 +208,6 @@ proc main(){
             kernelDB.printPerfStats();
         }
     }
-    stopGPUDiagnostics();
-    writeln(getGPUDiagnostics());
+    stopGpuDiagnostics();
+    writeln(getGpuDiagnostics());
 }

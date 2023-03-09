@@ -501,7 +501,7 @@ proc readLevel(file_name: string){
 
 
 
-// proc main {
+// private proc main {
 // 
 //   var level = readLevel("input_level.txt");
 // 

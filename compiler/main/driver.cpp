@@ -114,6 +114,7 @@ const char* CHPL_TARGET_BUNDLED_LINK_ARGS = NULL;
 const char* CHPL_TARGET_SYSTEM_LINK_ARGS = NULL;
 
 const char* CHPL_CUDA_LIBDEVICE_PATH = NULL;
+const char* CHPL_ROCM_PATH = NULL;
 const char* CHPL_GPU_CODEGEN = NULL;
 const char* CHPL_GPU_ARCH = NULL;
 
@@ -296,7 +297,7 @@ bool fNoMemoryFrees = false;
 int numGlobalsOnHeap = 0;
 bool preserveInlinedLineNumbers = false;
 
-char stopAfterPass[128];
+char stopAfterPass[128] = "";
 
 const char* compileCommand = NULL;
 char compileVersion[64];
@@ -318,6 +319,10 @@ bool fDynoVerifySerialization = false;
 size_t fDynoBreakOnHash = 0;
 
 bool fUseIOFormatters = false;
+
+bool fWarnUnknownAttributeToolname = true;
+
+std::vector<UniqueString> usingAttributeToolNames;
 
 std::vector<std::string> gDynoPrependInternalModulePaths;
 std::vector<std::string> gDynoPrependStandardModulePaths;
@@ -639,6 +644,18 @@ static void verifyStageAndSetStageNum(const ArgumentDescription* desc,
     USR_FATAL("Unknown llvm-print-ir-stage argument");
 
   llvmPrintIrStageNum = stageNum;
+}
+
+/*
+  this function is called when a tool name is passed through the command line
+  with the --using-attribute-toolname flag. It is called each time the flag is
+  found in the command line, which may be multiple. These tool names will then
+  be treated as known to the compiler and we won't warn about them.
+*/
+static void addUsingAttributeToolname(const ArgumentDescription* desc,
+                                      const char* arg) {
+  UniqueString name = UniqueString::get(gContext, arg);
+  usingAttributeToolNames.push_back(name);
 }
 
 // In order to handle accumulating ccflags arguments, the argument
@@ -1003,6 +1020,8 @@ static ArgumentDescription arg_desc[] = {
  {"permit-unhandled-module-errors", ' ', NULL, "Permit unhandled errors in explicit modules; such errors halt at runtime", "N", &fPermitUnhandledModuleErrors, "CHPL_PERMIT_UNHANDLED_MODULE_ERRORS", NULL},
  {"warn-unstable", ' ', NULL, "Enable [disable] warnings for uses of language features that are in flux", "N", &fWarnUnstable, "CHPL_WARN_UNSTABLE", NULL},
  {"warnings", ' ', NULL, "Enable [disable] output of warnings", "n", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
+ {"warn-unknown-attribute-toolname", ' ', NULL, "Enable [disable] warnings when an unknown tool name is found in an attribute", "N", &fWarnUnknownAttributeToolname, "CHPL_WARN_UNKNOWN_ATTRIBUTE_TOOLNAME", NULL},
+ {"using-attribute-toolname", ' ', "<toolname>", "Specify additional tool names for attributes that are expected in the source", "S", NULL, "CHPL_ATTRIBUTE_TOOLNAMES", addUsingAttributeToolname},
 
  {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
  {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", setLocal},
@@ -1249,7 +1268,6 @@ static ArgumentDescription arg_desc[] = {
 
  {"use-io-formatters", ' ', NULL, "Enable [disable] use of experimental IO formatters", "N", &fUseIOFormatters, "CHPL_USE_IO_FORMATTERS", NULL},
 
-
  DRIVER_ARG_PRINT_CHPL_HOME,
  DRIVER_ARG_LAST
 };
@@ -1469,6 +1487,7 @@ static void setChapelEnvs() {
 
   if (usingGpuLocaleModel()) {
     CHPL_CUDA_LIBDEVICE_PATH = envMap["CHPL_CUDA_LIBDEVICE_PATH"];
+    CHPL_ROCM_PATH = envMap["CHPL_ROCM_PATH"];
     CHPL_GPU_CODEGEN = envMap["CHPL_GPU_CODEGEN"];
     CHPL_GPU_ARCH = envMap["CHPL_GPU_ARCH"];
     switch (getGpuCodegenType()) {
@@ -1814,6 +1833,10 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   chpl::parsing::setConfigSettings(gContext, gDynoParams);
   gDynoParams.clear();
 
+  // set any attribute tool names we processed earlier and clear the local list.
+  chpl::parsing::setAttributeToolNames(gContext, usingAttributeToolNames);
+  usingAttributeToolNames.clear();
+
   chpl::parsing::setupModuleSearchPaths(gContext,
                                         CHPL_HOME,
                                         fMinimalModules,
@@ -1840,6 +1863,8 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   chpl::CompilerFlags flags;
   flags.set(chpl::CompilerFlags::WARN_UNSTABLE, fWarnUnstable);
   flags.set(chpl::CompilerFlags::WARN_ARRAY_OF_RANGE, fWarnArrayOfRange);
+  flags.set(chpl::CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS,
+            fWarnUnknownAttributeToolname);
 
   // Set the compilation flags all at once using a query.
   chpl::setCompilerFlags(gContext, flags);

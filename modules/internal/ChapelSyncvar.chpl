@@ -173,7 +173,7 @@ module ChapelSyncvar {
       this.isOwned = false;
     }
 
-    deprecated "Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side"
+    @deprecated(notes="Initializing a type-inferred variable from a 'sync' is deprecated; apply a 'read??()' method to the right-hand side")
     proc init=(const ref other: _syncvar(?)) {
       // Allow initialization from compatible sync variables, e.g.:
       //   var x : sync int = 5;
@@ -311,7 +311,7 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  deprecated "Casting sync variables is deprecated"
+  @deprecated(notes="Casting sync variables is deprecated")
   inline operator :(from: _syncvar, type toType:_syncvar) {
     // TODO: this doesn't seem right - it doesn't use toType
     return new _syncvar(from);
@@ -396,7 +396,7 @@ module ChapelSyncvar {
   }
 
   pragma "init copy fn"
-  deprecated "Initializing a type-inferred variable from a 'sync' is deprecated; apply a '.read??()' method to the right-hand side"
+  @deprecated(notes="Initializing a type-inferred variable from a 'sync' is deprecated; apply a '.read??()' method to the right-hand side")
   proc chpl__initCopy(ref sv : _syncvar(?t), definedConst: bool) {
     return sv.readFE();
   }
@@ -933,7 +933,7 @@ module ChapelSyncvar {
   }
 
   pragma "no doc"
-  deprecated "Casting single variables is deprecated"
+  @deprecated(notes="Casting single variables is deprecated")
   inline operator :(from: _singlevar, type toType:_singlevar) {
     // TODO: this doesn't seem right - it doesn't use toType
     return new _singlevar(from);

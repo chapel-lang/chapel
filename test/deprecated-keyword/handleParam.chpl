@@ -1,4 +1,4 @@
-deprecated "don't use x, use y" param x: int = 3;
+@deprecated(notes="don't use x, use y") param x: int = 3;
 param y: int = 3;
 
 proc main() {

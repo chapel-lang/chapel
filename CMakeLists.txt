@@ -27,12 +27,6 @@ if (CMAKE_VERSION VERSION_LESS 3.20)
                   release. You have ${CMAKE_VERSION}")
 endif()
 
-###### ENV VARIABLES TO CHANGE CMAKE BEHAVIOR #####
-# CMAKE_VERBOSE_MAKEFILE          turn verbose makefiles on to see compiler flags
-# CHPL_CMAKE_PRINTCHPLENV_RESULTS hide or display output from printchplenv
-#######
-
-
 ### BEGIN config.h value setting ###
 # Handle all (most?) the versioning information in one place
 # These values will be written to <build_dir>/frontend/include/chpl/config/config.h
@@ -61,26 +55,6 @@ message(STATUS "Configuring Chapel version: ${CMAKE_PROJECT_VERSION}")
 # cmake_print_variables(MY_VARIABLE)
 include(CMakePrintHelpers)
 
-### BEGIN Debug options ###
-
-# Turns on verbose output from Makefile builds. Having it ON displays each
-# command line as it is launched.
-# https://cmake.org/cmake/help/latest/variable/CMAKE_VERBOSE_MAKEFILE.html
-if (DEFINED ENV{CMAKE_VERBOSE_MAKEFILE})
-  set(CMAKE_VERBOSE_MAKEFILE $ENV{CMAKE_VERBOSE_MAKEFILE})
-else()
-  set(CMAKE_VERBOSE_MAKEFILE OFF)
-endif()
-
-# Turn this OFF to stop seeing the results of printchplenv everytime it's called
-# from the cmake configure step
-if (DEFINED ENV{CHPL_CMAKE_PRINTCHPLENV_RESULTS})
-  SET(PRINTCHPLENV_RESULTS $ENV{CHPL_CMAKE_PRINTCHPLENV_RESULTS})
-else()
-  SET(PRINTCHPLENV_RESULTS ON)
-endif()
-
-### END Debug options ###
 
 ### BEGIN handling installation mode from ./configure - prefix or home are allowed ###
 if (NOT DEFINED INSTALLATION_MODE)
@@ -94,24 +68,24 @@ endif()
 # a new one if they don't match.
 set(CONFIGURED_PREFIX_CONTENTS " ")
 if(NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/CONFIGURED_PREFIX)
-  message(STATUS "CONFIGURED_PREFIX not found: Writing CONFIGURED_PREFIX file")
+  message(VERBOSE "CONFIGURED_PREFIX not found: Writing CONFIGURED_PREFIX file")
   file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/CONFIGURED_PREFIX" "\"${CMAKE_INSTALL_PREFIX}\"")
 else()
-  message(STATUS "Reading CONFIGURED_PREFIX")
+  message(VERBOSE "Reading CONFIGURED_PREFIX")
   file(STRINGS "${CMAKE_BINARY_DIR}/CONFIGURED_PREFIX" CONFIGURED_PREFIX_CONTENTS)
-  message(STATUS "previously configured to install to ${CONFIGURED_PREFIX_CONTENTS}")
+  message(VERBOSE "previously configured to install to ${CONFIGURED_PREFIX_CONTENTS}")
 endif()
 
 # TODO: eventually remove the quotes from the file(WRITE) call below and we can be free of them!
 # TODO: Do we still need the CONFIGURED_PREFIX file for anything if we are writing it to config.h?
 string(COMPARE NOTEQUAL "\"${CMAKE_INSTALL_PREFIX}\"" ${CONFIGURED_PREFIX_CONTENTS} DO_UPDATE_PREFIX)
 if(${DO_UPDATE_PREFIX})
-    message(STATUS "CMAKE_INSTALL_PREFIX updated to ${CMAKE_INSTALL_PREFIX}: Writing CONFIGURED_PREFIX file")
+    message(VERBOSE "CMAKE_INSTALL_PREFIX updated to ${CMAKE_INSTALL_PREFIX}: Writing CONFIGURED_PREFIX file")
     file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/CONFIGURED_PREFIX" "\"${CMAKE_INSTALL_PREFIX}\"")
 else()
   message(STATUS "CMAKE_INSTALL_PREFIX is ${CMAKE_INSTALL_PREFIX}")
 endif()
-message(STATUS "Installation Mode: ${INSTALLATION_MODE}")
+message(VERBOSE "Installation Mode: ${INSTALLATION_MODE}")
 
 ### END handling installation mode - CMAKE_INSTALL_PREFIX will be written to config.h ###
 
@@ -309,9 +283,8 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E env
                 OUTPUT_VARIABLE CHPLENV_OUTPUT
                 OUTPUT_STRIP_TRAILING_WHITESPACE
                 )
-if (${PRINTCHPLENV_RESULTS})
-  message(NOTICE "Updating build configuration with results from printchplenv:\n${CHPLENV_OUTPUT}")
-endif()
+
+message(VERBOSE "Updating build configuration with results from printchplenv:\n${CHPLENV_OUTPUT}")
 
 # This is a workaround for CMake not having any in-built way to
 # split a string into a list.  It's not perfect, but it works for this purpose
@@ -323,9 +296,7 @@ foreach (CHPLENV_LINE IN LISTS CHPLENV_OUTPUT)
   # Split the line into the parts we want, variable name and value
   string(FIND "${CHPLENV_LINE}" " " SPLIT_POS)
   if (SPLIT_POS LESS 1)
-    if (NOT ${PRINTCHPLENV_RESULTS})
-      message(NOTICE "${CHPLENV_LINE} did not contain a value - unsetting")
-    endif()
+    message(VERBOSE "${CHPLENV_LINE} did not contain a value - unsetting")
     unset(${CHPLENV_LINE} CACHE)
     continue()
   endif()

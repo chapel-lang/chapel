@@ -1,0 +1,23 @@
+─── error in redefinition-public-import.chpl:9 [Redefinition] ───
+  'a' has multiple definitions in this scope.
+  It was first defined through the 'import' statement here:
+       |
+    10 |   public import Lib1.a, Lib2.a;
+       |                 ⎺⎺⎺⎺⎺⎺
+       |
+  Leading to the definition here:
+      |
+    2 |   var a: int;
+      |       ⎺⎺⎺⎺⎺⎺⎺
+      |
+  Redefined through the 'import' statement here:
+       |
+    10 |   public import Lib1.a, Lib2.a;
+       |                         ⎺⎺⎺⎺⎺⎺
+       |
+  Leading to the definition here:
+      |
+    6 |   var a: real;
+      |       ⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+

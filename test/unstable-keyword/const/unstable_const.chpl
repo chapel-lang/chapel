@@ -1,4 +1,4 @@
-@unstable "use y" const x: bool = false;
+@unstable("use y") const x: bool = false;
 const y: bool = false;
 
 proc main() {

@@ -1922,24 +1922,24 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
 ////// Factory functions ////////////////////////////////////////////////////
 
-deprecated "'newBlockDom' is deprecated - please use 'Block.createDomain' instead"
+@deprecated(notes="'newBlockDom' is deprecated - please use 'Block.createDomain' instead")
 proc newBlockDom(dom: domain) {
   return dom dmapped Block(dom);
 }
 
-deprecated "'newBlockArr' is deprecated - please use 'Block.createArray' instead"
+@deprecated(notes="'newBlockArr' is deprecated - please use 'Block.createArray' instead")
 proc newBlockArr(dom: domain, type eltType) {
   var D = newBlockDom(dom);
   var A: [D] eltType;
   return A;
 }
 
-deprecated "'newBlockDom' is deprecated - please use 'Block.createDomain' instead"
+@deprecated(notes="'newBlockDom' is deprecated - please use 'Block.createDomain' instead")
 proc newBlockDom(rng: range...) {
   return newBlockDom({(...rng)});
 }
 
-deprecated "'newBlockArr' is deprecated - please use 'Block.createArray' instead"
+@deprecated(notes="'newBlockArr' is deprecated - please use 'Block.createArray' instead")
 proc newBlockArr(rng: range..., type eltType) {
   return newBlockArr({(...rng)}, eltType);
 }

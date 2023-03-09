@@ -151,18 +151,21 @@ static PassInfo sPassList[] = {
   RUN(makeBinary)               // invoke underlying C compiler
 };
 
+static const size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
+
 static void runPass(PhaseTracker& tracker, size_t passIndex);
 
-void runPasses(PhaseTracker& tracker) {
-  size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
-
-  setupLogfiles();
-
-  if (printPasses == true || printPassesFile != 0) {
-    tracker.ReportPass();
+// Set up and validate flags-specified pass to stop after.
+static void setupStopAfterPass() {
+  // --parse-only conflicts with otherwise specified pass to stop after
+  if (fParseOnly) {
+    if (stopAfterPass[0]) {
+      USR_FATAL("cannot provide both parse-only and stop after pass flags");
+    }
+    strcpy(stopAfterPass, "checkUast");
   }
 
-  // verify that user-specified pass to stop after actually exists
+  // ensure pass to stop after exists
   if (stopAfterPass[0]) {
     bool stopAfterPassValid = false;
     for (size_t i = 0; i < passListSize; i++) {
@@ -176,6 +179,17 @@ void runPasses(PhaseTracker& tracker) {
                 stopAfterPass);
     }
   }
+}
+
+void runPasses(PhaseTracker& tracker) {
+
+  setupLogfiles();
+
+  if (printPasses == true || printPassesFile != 0) {
+    tracker.ReportPass();
+  }
+
+  setupStopAfterPass();
 
   for (size_t i = 0; i < passListSize; i++) {
     runPass(tracker, i);
@@ -251,8 +265,6 @@ static void runPass(PhaseTracker& tracker, size_t passIndex) {
 // This routine also verifies that each non-NUL flag is unique.
 
 void initPassesForLogging() {
-  size_t passListSize = sizeof(sPassList) / sizeof(sPassList[0]);
-
   for (size_t i = 0; i < passListSize; i++) {
     PassInfo* pass = &sPassList[i];
 

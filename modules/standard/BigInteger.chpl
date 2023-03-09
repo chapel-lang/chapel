@@ -163,7 +163,7 @@ module BigInteger {
 
        The enum Round is deprecated, please use the enum round instead
   */
-  deprecated "The enum Round is deprecated, please use the enum round instead"
+  @deprecated(notes="The enum Round is deprecated, please use the enum round instead")
   enum Round {
     DOWN = -1,
     ZERO =  0,
@@ -258,7 +258,7 @@ module BigInteger {
       this.init(num);
     }
 
-    deprecated "bigint initializers that halt are deprecated, please set the config param :param:`bigintInitThrows` to 'true' to opt in to using the new initializer that throws"
+    @deprecated(notes="bigint initializers that halt are deprecated, please set the config param :param:`bigintInitThrows` to 'true' to opt in to using the new initializer that throws")
     proc init(str: string, base: int = 0) where bigintInitThrows == false {
       this.complete();
       const str_  = str.localize().c_str();
@@ -273,7 +273,7 @@ module BigInteger {
       this.localeId = chpl_nodeID;
     }
 
-    deprecated "bigint initializers that return the errorCode type via an 'out' argument are deprecated, please remove the argument and ensure the config param :param:`bigintInitThrows` is set to 'true' to opt in to using the new initializer that throws"
+    @deprecated(notes="bigint initializers that return the errorCode type via an 'out' argument are deprecated, please remove the argument and ensure the config param :param:`bigintInitThrows` is set to 'true' to opt in to using the new initializer that throws")
     proc init(str: string, base: int = 0, out error: errorCode) {
 
       this.complete();
@@ -340,9 +340,9 @@ module BigInteger {
     /*
       .. warning::
 
-         bigint.size() is deprecated
+         bigint.size() is @deprecated
     */
-    deprecated "bigint.size() is deprecated"
+    @deprecated(notes="bigint.size() is deprecated")
     proc size() : c_size_t {
       var ret: c_size_t;
 
@@ -368,8 +368,8 @@ module BigInteger {
 
          bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead
     */
-    deprecated
-    "bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead"
+    @deprecated
+    ("bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead")
     proc sizeinbase(base: int) : uint {
       return sizeInBase(base).safeCast(uint);
     }
@@ -409,12 +409,12 @@ module BigInteger {
       return ret.safeCast(int);
     }
 
-    deprecated "This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_nlimbs` on the mpz field instead"
+    @deprecated(notes="This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_nlimbs` on the mpz field instead")
     proc numLimbs : uint {
       return chpl_gmp_mpz_nlimbs(this.mpz);
     }
 
-    deprecated "This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_getlimbn` on the mpz field instead"
+    @deprecated(notes="This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_getlimbn` on the mpz field instead")
     proc get_limbn(n: integral) : uint {
       var   ret: uint;
 
@@ -435,7 +435,7 @@ module BigInteger {
       return ret;
     }
 
-    deprecated "mpzStruct is deprecated, please use :proc:`getImpl` instead"
+    @deprecated(notes="mpzStruct is deprecated, please use :proc:`getImpl` instead")
     proc mpzStruct() : __mpz_struct {
       return getImpl();
     }
@@ -466,7 +466,7 @@ module BigInteger {
       return ret;
     }
 
-    deprecated "get_d_2exp is deprecated in favor of :proc:`bigint.getD2Exp`, which returns (d, exp) instead of (exp, d).  Please use that method instead"
+    @deprecated(notes="get_d_2exp is deprecated in favor of :proc:`bigint.getD2Exp`, which returns (d, exp) instead of (exp, d).  Please use that method instead")
     proc get_d_2exp() : (uint(32), real) {
       var (dbl, exp) = getD2Exp();
       return (exp, dbl);
@@ -1087,7 +1087,7 @@ module BigInteger {
     } else {
       const b_ = (0 - b).safeCast(mp_bitcnt_t);
 
-      mpz_tdiv_q_2exp(c.mpz, a_.mpz, b_);
+      mpz_fdiv_q_2exp(c.mpz, a_.mpz, b_);
     }
 
     return c;
@@ -1113,7 +1113,7 @@ module BigInteger {
     if b >= 0 {
       const b_ = b.safeCast(mp_bitcnt_t);
 
-      mpz_tdiv_q_2exp(c.mpz, a_.mpz, b_);
+      mpz_fdiv_q_2exp(c.mpz, a_.mpz, b_);
 
     } else {
       const b_ = (0 - b).safeCast(mp_bitcnt_t);
@@ -1129,7 +1129,7 @@ module BigInteger {
     const b_ = b.safeCast(mp_bitcnt_t);
     var   c  = new bigint();
 
-    mpz_tdiv_q_2exp(c.mpz, a_.mpz, b_);
+    mpz_fdiv_q_2exp(c.mpz, a_.mpz, b_);
 
     return c;
   }
@@ -1765,16 +1765,16 @@ module BigInteger {
       const b_ = (0 - b).safeCast(mp_bitcnt_t);
 
       if _local {
-        mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+        mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
 
       } else if a.localeId == chpl_nodeID {
-        mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+        mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
 
       } else {
         const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
         on __primitive("chpl_on_locale_num", aLoc) {
-          mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+          mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
         }
       }
     }
@@ -1806,16 +1806,16 @@ module BigInteger {
       const b_ = b.safeCast(mp_bitcnt_t);
 
       if _local {
-        mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+        mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
 
       } else if a.localeId == chpl_nodeID {
-        mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+        mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
 
       } else {
         const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
         on __primitive("chpl_on_locale_num", aLoc) {
-          mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+          mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
         }
       }
 
@@ -1842,16 +1842,16 @@ module BigInteger {
     const b_ = b.safeCast(mp_bitcnt_t);
 
     if _local {
-      mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+      mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
 
     } else if a.localeId == chpl_nodeID {
-      mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+      mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
 
     } else {
       const aLoc = chpl_buildLocaleID(a.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", aLoc) {
-        mpz_tdiv_q_2exp(a.mpz, a.mpz, b_);
+        mpz_fdiv_q_2exp(a.mpz, a.mpz, b_);
       }
     }
   }
@@ -1980,8 +1980,8 @@ module BigInteger {
        n and d are deprecated - please use numer and denom respectively
   */
   pragma "last resort"
-  deprecated
-  "n and d are deprecated - please use numer and denom respectively"
+  @deprecated
+  ("n and d are deprecated - please use numer and denom respectively")
   proc bigint.divexact(const ref n: bigint, const ref d: bigint) {
     this.divexact(numer=n, denom=d);
   }
@@ -1991,8 +1991,8 @@ module BigInteger {
        n and d are deprecated - please use numer and denom respectively
   */
   pragma "last resort"
-  deprecated
-  "n and d are deprecated - please use numer and denom respectively"
+  @deprecated
+  ("n and d are deprecated - please use numer and denom respectively")
   proc bigint.divexact(const ref n: bigint, d: integral) {
     this.divexact(numer=n,denom=new bigint(d));
   }
@@ -2051,8 +2051,8 @@ module BigInteger {
 
        bigint.divisible_p is deprecated, use bigint.isDivisible instead
   */
-  deprecated
-  "bigint.divisible_p is deprecated, use bigint.isDivisible instead"
+  @deprecated
+  ("bigint.divisible_p is deprecated, use bigint.isDivisible instead")
   proc bigint.divisible_p(const ref d: bigint) : int {
     return this.isDivisible(d);
   }
@@ -2061,8 +2061,8 @@ module BigInteger {
 
        bigint.divisible_p is deprecated, use bigint.isDivisible instead
   */
-  deprecated
-  "bigint.divisible_p is deprecated, use bigint.isDivisible instead"
+  @deprecated
+  ("bigint.divisible_p is deprecated, use bigint.isDivisible instead")
   proc bigint.divisible_p(d: int) : int {
     return this.isDivisible(d);
   }
@@ -2071,8 +2071,8 @@ module BigInteger {
 
        bigint.divisible_p is deprecated, use bigint.isDivisible instead
   */
-  deprecated
-  "bigint.divisible_p is deprecated, use bigint.isDivisible instead"
+  @deprecated
+  ("bigint.divisible_p is deprecated, use bigint.isDivisible instead")
   proc bigint.divisible_p(d: uint) : int {
     return this.isDivisible(d);
   }
@@ -2142,8 +2142,8 @@ module BigInteger {
 
        bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleBy2Pow instead
   */
-  deprecated
-  "bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleBy2Pow instead"
+  @deprecated
+  ("bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleBy2Pow instead")
   proc bigint.divisible_2exp_p(b: integral) : int {
     return this.isDivisibleBy2Pow(b);
   }
@@ -2179,8 +2179,8 @@ module BigInteger {
 
        bigint.congruent_p is deprecated, use bigint.isCongruent instead
   */
-  deprecated
-  "bigint.congruent_p is deprecated, use bigint.isCongruent instead"
+  @deprecated
+  ("bigint.congruent_p is deprecated, use bigint.isCongruent instead")
   proc bigint.congruent_p(const ref c: bigint, const ref d: bigint) : int {
     return this.isCongruent(c,d);
   }
@@ -2189,8 +2189,8 @@ module BigInteger {
 
        bigint.congruent_p is deprecated, use bigint.isCongruent instead
   */
-  deprecated
-  "bigint.congruent_p is deprecated, use bigint.isCongruent instead"
+  @deprecated
+  ("bigint.congruent_p is deprecated, use bigint.isCongruent instead")
   proc bigint.congruent_p(c: integral, d: integral) : int {
     return this.isCongruent(c,d);
   }
@@ -2248,8 +2248,8 @@ module BigInteger {
 
        bigint.congruent_2exp_p is deprecated, use bigint.isCongruentBy2Pow instead
   */
-  deprecated
-  "bigint.congruent_2exp_p is deprecated, use bigint.isCongruentBy2Pow instead"
+  @deprecated
+  ("bigint.congruent_2exp_p is deprecated, use bigint.isCongruentBy2Pow instead")
   proc bigint.congruent_2exp_p(const ref c: bigint, b: integral) : int {
     return this.isCongruentBy2Pow(c,b);
   }
@@ -2290,8 +2290,8 @@ module BigInteger {
 
        bigint.powm is deprecated, use bigint.powMod instead
   */
-  deprecated
-  "bigint.powm is deprecated, use bigint.powMod instead"
+  @deprecated
+  ("bigint.powm is deprecated, use bigint.powMod instead")
   proc bigint.powm(const ref base: bigint,
                    const ref exp:  bigint,
                    const ref mod:  bigint) {
@@ -2303,8 +2303,8 @@ module BigInteger {
 
        bigint.powm is deprecated, use bigint.powMod instead
   */
-  deprecated
-  "bigint.powm is deprecated, use bigint.powMod instead"
+  @deprecated
+  ("bigint.powm is deprecated, use bigint.powMod instead")
   proc bigint.powm(const ref base: bigint,
                              exp:  int,
                    const ref mod:  bigint) {
@@ -2316,8 +2316,8 @@ module BigInteger {
 
        bigint.powm is deprecated, use bigint.powMod instead
   */
-  deprecated
-  "bigint.powm is deprecated, use bigint.powMod instead"
+  @deprecated
+  ("bigint.powm is deprecated, use bigint.powMod instead")
   proc bigint.powm(const ref base: bigint,
                              exp:  uint,
                    const ref mod:  bigint) {
@@ -2644,8 +2644,8 @@ module BigInteger {
 
        bigint.perfect_power_p is deprecated, use bigint.isPerfectPower instead
   */
-  deprecated
-  "bigint.perfect_power_p is deprecated, use bigint.isPerfectPower instead"
+  @deprecated
+  ("bigint.perfect_power_p is deprecated, use bigint.isPerfectPower instead")
   proc bigint.perfect_power_p() : int {
     return this.isPerfectPower();
   }
@@ -2676,8 +2676,8 @@ module BigInteger {
 
        bigint.perfect_square_p is deprecated, use bigint.isPerfectSquare instead
   */
-  deprecated
-  "bigint.perfect_square_p is deprecated, use bigint.isPerfectSquare instead"
+  @deprecated
+  ("bigint.perfect_square_p is deprecated, use bigint.isPerfectSquare instead")
   proc bigint.perfect_square_p() : int {
     return this.isPerfectSquare();
   }
@@ -2711,8 +2711,8 @@ module BigInteger {
 
        bigint.probab_prime_p is deprecated, use bigint.probablyPrime instead
   */
-  deprecated
-  "bigint.probab_prime_p is deprecated, use bigint.probablyPrime instead"
+  @deprecated
+  ("bigint.probab_prime_p is deprecated, use bigint.probablyPrime instead")
   proc bigint.probab_prime_p(reps: int) : int {
     var ret = this.probablyPrime(reps):int;
     return ret;
@@ -2892,7 +2892,7 @@ module BigInteger {
 
   // sets this to gcd(a,b)
   // set s and t to to coefficients satisfying a*s + b*t == g
-  deprecated "gcdext is deprecated, please use the new overload of :proc:`bigint.gcd` with s and t arguments instead"
+  @deprecated(notes="gcdext is deprecated, please use the new overload of :proc:`bigint.gcd` with s and t arguments instead")
   proc bigint.gcdext(ref s: bigint,
                      ref t: bigint,
                      const ref a: bigint,
@@ -2988,7 +2988,7 @@ module BigInteger {
   */
   config param InvertReturnInt = true;
 
-  deprecated "The int-returning overload of bigint.invert() is deprecated - please use the non-returning version by setting `InvertReturnInt` to false"
+  @deprecated(notes="The int-returning overload of bigint.invert() is deprecated - please use the non-returning version by setting `InvertReturnInt` to false")
   proc bigint.invert(const ref a: bigint, const ref b: bigint) : int throws where InvertReturnInt == true {
     var ret: c_int;
 
@@ -3068,8 +3068,8 @@ module BigInteger {
 
        bigint.remove is deprecated, use bigint.removeFactor instead
   */
-  deprecated
-  "bigint.remove is deprecated, use bigint.removeFactor instead"
+  @deprecated
+  ("bigint.remove is deprecated, use bigint.removeFactor instead")
   proc bigint.remove(const ref a: bigint, const ref f: bigint) : uint {
     return this.removeFactor(a,f);
   }
@@ -3301,7 +3301,7 @@ module BigInteger {
   }
 
   pragma "last resort"
-  deprecated "The 'starting_bit' argument is deprecated, please use 'startBitIdx' instead"
+  @deprecated(notes="The 'starting_bit' argument is deprecated, please use 'startBitIdx' instead")
   proc bigint.scan0(starting_bit: integral) : uint {
     return this.scan0(startBitIdx = starting_bit);
   }
@@ -3331,7 +3331,7 @@ module BigInteger {
   }
 
   pragma "last resort"
-  deprecated "The 'starting_bit' argument is deprecated, please use 'startBitIdx' instead"
+  @deprecated(notes="The 'starting_bit' argument is deprecated, please use 'startBitIdx' instead")
   proc bigint.scan1(starting_bit: integral) : uint {
     return this.scan1(startBitIdx = starting_bit);
   }
@@ -3461,7 +3461,7 @@ module BigInteger {
     return fits_into(t_.mpz, t);
   }
 
-  deprecated "`fits_ulong_p` is deprecated -  please use `bigint.fitsInto(c_ulong)` instead"
+  @deprecated(notes="`fits_ulong_p` is deprecated -  please use `bigint.fitsInto(c_ulong)` instead")
   proc bigint.fits_ulong_p() : int {
     var t_ = this.localize();
     var ret: c_int;
@@ -3470,7 +3470,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  deprecated "`fits_slong_p` is deprecated -  please use `bigint.fitsInto(c_long)` instead"
+  @deprecated(notes="`fits_slong_p` is deprecated -  please use `bigint.fitsInto(c_long)` instead")
   proc bigint.fits_slong_p() : int {
     var t_ = this.localize();
     var ret: c_int;
@@ -3479,7 +3479,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  deprecated "`fits_uint_p` is deprecated -  please use `bigint.fitsInto(c_uint)` instead"
+  @deprecated(notes="`fits_uint_p` is deprecated -  please use `bigint.fitsInto(c_uint)` instead")
   proc bigint.fits_uint_p() : int {
     var t_ = this.localize();
     var ret: c_int;
@@ -3489,7 +3489,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  deprecated "`fits_sint_p` is deprecated -  please use `bigint.fitsInto(c_int)` instead"
+  @deprecated(notes="`fits_sint_p` is deprecated -  please use `bigint.fitsInto(c_int)` instead")
   proc bigint.fits_sint_p() : int {
     var t_ = this.localize();
     var ret: c_int;
@@ -3498,7 +3498,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  deprecated "`fits_ushort_p` is deprecated -  please use `bigint.fitsInto(c_ushort)` instead"
+  @deprecated(notes="`fits_ushort_p` is deprecated -  please use `bigint.fitsInto(c_ushort)` instead")
   proc bigint.fits_ushort_p() : int {
     var t_ = this.localize();
     var ret: c_int;
@@ -3507,7 +3507,7 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  deprecated "`fits_sshort_p` is deprecated -  please use `bigint.fitsInto(c_short)` instead"
+  @deprecated(notes="`fits_sshort_p` is deprecated -  please use `bigint.fitsInto(c_short)` instead")
   proc bigint.fits_sshort_p() : int {
     var t_ = this.localize();
     var ret: c_int;
@@ -3521,8 +3521,8 @@ module BigInteger {
 
        bigint.even_p is deprecated, use bigint.isEven instead
   */
-  deprecated
-  "bigint.even_p is deprecated, use bigint.isEven instead"
+  @deprecated
+  ("bigint.even_p is deprecated, use bigint.isEven instead")
   proc bigint.even_p() : int {
     return this.isEven();
   }
@@ -3547,8 +3547,8 @@ module BigInteger {
 
        bigint.odd_p is deprecated, use bigint.isOdd instead
   */
-  deprecated
-  "bigint.odd_p is deprecated, use bigint.isOdd instead"
+  @deprecated
+  ("bigint.odd_p is deprecated, use bigint.isOdd instead")
   proc bigint.odd_p() : int {
     return this.isOdd();
   }
@@ -4084,8 +4084,8 @@ module BigInteger {
        bigint.div_q using Round is deprecated, use bigint.divQ with round
        instead
   */
-  deprecated
-  "bigint.div_q using Round is deprecated, use bigint.divQ with round instead"
+  @deprecated
+  ("bigint.div_q using Round is deprecated, use bigint.divQ with round instead")
   proc bigint.div_q(const ref n: bigint,
                     const ref d: bigint,
                     param     rounding = Round.ZERO) {
@@ -4105,8 +4105,8 @@ module BigInteger {
        bigint.div_q using Round is deprecated, use bigint.divQ with round
        instead
   */
-  deprecated
-  "bigint.div_q using Round is deprecated, use bigint.divQ with round instead"
+  @deprecated
+  ("bigint.div_q using Round is deprecated, use bigint.divQ with round instead")
   proc bigint.div_q(const ref n: bigint,
                               d: integral,
                     param     rounding = Round.ZERO) {
@@ -4191,8 +4191,8 @@ module BigInteger {
        bigint.div_r using Round is deprecated, use bigint.divR with round
        instead
   */
-  deprecated
-  "bigint.div_r using Round is deprecated, use bigint.divR with round instead"
+  @deprecated
+  ("bigint.div_r using Round is deprecated, use bigint.divR with round instead")
   proc bigint.div_r(const ref n: bigint,
                     const ref d: bigint,
                     param     rounding = Round.ZERO) {
@@ -4213,8 +4213,8 @@ module BigInteger {
        bigint.div_r using Round is deprecated, use bigint.divR with round
        instead
   */
-  deprecated
-  "bigint.div_r using Round is deprecated, use bigint.divR with round instead"
+  @deprecated
+  ("bigint.div_r using Round is deprecated, use bigint.divR with round instead")
   proc bigint.div_r(const ref n: bigint,
                               d: integral,
                     param     rounding = Round.ZERO) {
@@ -4298,8 +4298,8 @@ module BigInteger {
        bigint.div_qr using Round is deprecated, use bigint.divQR with round
        instead
   */
-  deprecated
-  "bigint.div_qr using Round is deprecated, use bigint.divQR with round instead"
+  @deprecated
+  ("bigint.div_qr using Round is deprecated, use bigint.divQR with round instead")
   proc bigint.div_qr(ref       r:        bigint,
                      const ref n:        bigint,
                      const ref d:        bigint,
@@ -4320,8 +4320,8 @@ module BigInteger {
        bigint.div_qr using Round is deprecated, use bigint.divQR with round
        instead
   */
-  deprecated
-  "bigint.div_qr using Round is deprecated, use bigint.divQR with round instead"
+  @deprecated
+  ("bigint.div_qr using Round is deprecated, use bigint.divQR with round instead")
   proc bigint.div_qr(ref       r: bigint,
                      const ref n: bigint,
                                d: integral,
@@ -4431,8 +4431,8 @@ module BigInteger {
        bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with
        round instead
   */
-  deprecated
-  "bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with round instead"
+  @deprecated
+  ("bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with round instead")
   proc bigint.div_q_2exp(const ref n: bigint,
                                    b: integral,
                          param     rounding = Round.ZERO) {
@@ -4502,8 +4502,8 @@ module BigInteger {
        bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with
        round instead
   */
-  deprecated
-  "bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with round instead"
+  @deprecated
+  ("bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with round instead")
   proc bigint.div_r_2exp(const ref n: bigint,
                                    b: integral,
                          param     rounding = Round.ZERO) {
