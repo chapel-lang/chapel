@@ -1,10 +1,10 @@
 // Do a kernel launch on all GPUS across all locales
 
-use GPUDiagnostics;
+use GpuDiagnostics;
 
 config param debug = false;
 
-startGPUDiagnostics();
+startGpuDiagnostics();
 coforall loc in Locales do on loc {
   coforall subloc in here.gpus do on subloc {
     var A : [0..10] int;
@@ -21,7 +21,7 @@ coforall loc in Locales do on loc {
     if debug then writeln("** on ", here, " A = ", A);
   }
 }
-stopGPUDiagnostics();
+stopGpuDiagnostics();
 
 // Some test conditions to verify that we had the number of kernel launches we
 // expected:
@@ -31,7 +31,7 @@ stopGPUDiagnostics();
 writeln("here.gpus.size > 1:  ", here.gpus.size > 1);
 
 // Should match the number of locales specified by NUMLOCALES file
-var numLaunches = getGPUDiagnostics().kernel_launch;
+var numLaunches = getGpuDiagnostics().kernel_launch;
 writeln("numLaunches.size:   ", numLaunches.size);
 
 // We expect the first locale to have 1 more launch than all subsequent locales

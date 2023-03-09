@@ -73,6 +73,16 @@ static bool isMethodOrField(const AstNode* d, bool atFieldLevel) {
   return false;
 }
 
+static bool isParenfulFunction(const AstNode* d) {
+  if (d != nullptr) {
+    if (auto fn = d->toFunction()) {
+      return !fn->isParenless();
+    }
+  }
+
+  return false;
+}
+
 // atFieldLevel indicates that the declaration is directly within
 // a record/class/union (applies to fields, primary methods, and
 // any nested record/class/union).
@@ -87,11 +97,14 @@ static void gather(DeclMap& declared,
     declared.emplace_hint(search,
                           name,
                           OwnedIdsWithName(d->id(), visibility,
-                                           isMethodOrField(d, atFieldLevel)));
+                                           isMethodOrField(d, atFieldLevel),
+                                           isParenfulFunction(d)));
   } else {
     // found an entry, so add to it
     OwnedIdsWithName& val = search->second;
-    val.appendIdAndFlags(d->id(), visibility, isMethodOrField(d, atFieldLevel));
+    val.appendIdAndFlags(d->id(), visibility,
+                         isMethodOrField(d, atFieldLevel),
+                         isParenfulFunction(d));
   }
 }
 
@@ -589,15 +602,15 @@ bool LookupHelper::doLookupInImportsAndUses(
 
       if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
         // Make sure the module / enum being renamed isn't private.
-        auto visibility = uast::Decl::Visibility::PUBLIC;
-        if (is.isModulePrivate()) {
-          visibility = uast::Decl::Visibility::PRIVATE;
-        }
+        auto scopeAst = parsing::idToAst(context, is.scope()->id());
+        auto visibility = scopeAst->toDecl()->visibility();
         bool isMethodOrField = false; // target must be module/enum, not method
+        bool isParenfulFunction = false;
         auto foundIds =
           BorrowedIdsWithName::createWithSingleId(is.scope()->id(),
                                                   visibility,
                                                   isMethodOrField,
+                                                  isParenfulFunction,
                                                   filterFlags,
                                                   excludeFilter);
         if (foundIds) {
@@ -780,12 +793,14 @@ bool LookupHelper::doLookupInExternBlock(const Scope* scope,
   for (auto child : ast->children()) {
     if (child->isExternBlock()) {
       bool isMethodOrField = false; // not possible in an extern block
+      bool isParenfulFunction = false; // TODO -- it could be a regular fn
       IdAndFlags::Flags filterFlags = 0;
       IdAndFlags::Flags excludeFlags = 0;
       auto foundIds =
         BorrowedIdsWithName::createWithSingleId(child->id(),
                                                 Decl::PUBLIC,
                                                 isMethodOrField,
+                                                isParenfulFunction,
                                                 filterFlags,
                                                 excludeFlags);
       if (foundIds) {
@@ -840,6 +855,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   bool goPastModules = (config & LOOKUP_GO_PAST_MODULES) != 0;
   bool onlyMethodsFields = (config & LOOKUP_ONLY_METHODS_FIELDS) != 0;
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
+  bool skipShadowScopes = (config & LOOKUP_SKIP_SHADOW_SCOPES) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
 
   IdAndFlags::Flags curFilter = 0;
@@ -944,7 +960,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   }
 
   // now check shadow scope 1 (only relevant for 'private use')
-  if (checkUseImport) {
+  if (checkUseImport && !skipShadowScopes) {
     bool got = false;
     got |= doLookupInImportsAndUses(scope, r, name, config,
                                     curFilter, excludeFilter,
@@ -957,7 +973,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   }
 
   // now check shadow scope 2 (only relevant for 'private use')
-  if (checkUseImport) {
+  if (checkUseImport && !skipShadowScopes) {
     bool got = false;
     got = doLookupInImportsAndUses(scope, r, name, config,
                                    curFilter, excludeFilter,
@@ -2400,6 +2416,300 @@ moduleInitializationOrder(Context* context, ID entrypoint) {
   auto ret = moduleInitializationOrderImpl(context, entrypoint);
   return QUERY_END(ret);
 }
+
+// TODO: should these helper routines move to a utility file?
+// adds all elements in intersect(a,b) into the set dst
+static void doSetIntersect(const std::set<UniqueString>& a,
+                           const std::set<UniqueString>& b,
+                           std::set<UniqueString>& dst) {
+
+  std::set_intersection(a.begin(), a.end(), b.begin(), b.end(),
+                        std::inserter(dst, dst.end()),
+                        std::less<UniqueString>());
+}
+
+// adds all elements in (a-b) into the set dst
+static void doSetDifference(const std::set<UniqueString>& a,
+                            const std::set<UniqueString>& b,
+                            std::set<UniqueString>& dst) {
+
+  std::set_difference(a.begin(), a.end(), b.begin(), b.end(),
+                      std::inserter(dst, dst.end()),
+                      std::less<UniqueString>());
+}
+
+static void updateNameSets(const std::set<UniqueString>& newNames,
+                           const std::set<UniqueString>& newNamesMultiply,
+                           std::set<UniqueString>& namesDefined,
+                           std::set<UniqueString>& namesDefinedMultiply) {
+  // add anything in intersect(newNames, namesDefined) to namesDefinedMultiply.
+  doSetIntersect(newNames, namesDefined, namesDefinedMultiply);
+
+  // add everything in newNamesMultiply to namesDefinedMultiply
+  namesDefinedMultiply.insert(newNamesMultiply.begin(), newNamesMultiply.end());
+
+  // append everything in newNames to namesDefined
+  namesDefined.insert(newNames.begin(), newNames.end());
+}
+
+// gathers names defined in the scope and names used/imported.
+// does not currently consider shadow scopes at all
+static void collectAllNames(Context* context,
+                            const Scope* scope,
+                            bool skipPrivateVisibilities,
+                            std::set<UniqueString>& namesDefined,
+                            std::set<UniqueString>& namesDefinedMultiply,
+                            ScopeSet& checkedScopes) {
+
+  auto pair = checkedScopes.insert(scope);
+  if (pair.second == false) {
+    // scope has already been visited by this function,
+    // so don't try it again.
+    return;
+  }
+
+  // gather names declared here
+  if (scope->numDeclared() > 0) {
+    std::set<UniqueString> declaredHere;
+    std::set<UniqueString> declaredHereMultiply;
+    scope->collectNames(declaredHere, declaredHereMultiply);
+
+    updateNameSets(declaredHere, declaredHereMultiply,
+                   namesDefined, namesDefinedMultiply);
+  }
+
+  // handle names from import / public use
+  const ResolvedVisibilityScope* r = resolveVisibilityStmts(context, scope);
+  if (r != nullptr) {
+    for (const VisibilitySymbols& is: r->visibilityClauses()) {
+      // if we should not continue transitively through private use/includes,
+      // and this is private, skip it
+      if (skipPrivateVisibilities && is.isPrivate()) {
+        continue;
+      }
+      // skip this clause if we are searching a different shadow scope level
+      if (is.shadowScopeLevel() != VisibilitySymbols::REGULAR_SCOPE) {
+        continue;
+      }
+
+      if (is.kind() == VisibilitySymbols::SYMBOL_ONLY ||
+          is.kind() == VisibilitySymbols::ONLY_CONTENTS) {
+        std::set<UniqueString> newNames;
+        for (const auto& pair : is.names()) {
+          UniqueString nameHere = pair.second;
+          if (!nameHere.isEmpty() && nameHere != USTR("_")) {
+            newNames.insert(nameHere);
+          }
+        }
+        std::set<UniqueString> emptyNewMultiply;
+        updateNameSets(newNames, emptyNewMultiply,
+                       namesDefined, namesDefinedMultiply);
+
+      } else if (is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
+        // create a set of the except names
+        std::set<UniqueString> except;
+        for (const auto& pair : is.names()) {
+          CHPL_ASSERT(pair.first == pair.second); // renaming not allowed
+          UniqueString nameHere = pair.second;
+          if (!nameHere.isEmpty() && nameHere != USTR("_")) {
+            except.insert(nameHere);
+          }
+        }
+
+        // compute the names imported
+        std::set<UniqueString> namesThere;
+        std::set<UniqueString> namesThereMultiply;
+        collectAllNames(context, is.scope(),
+                        /* skip private */ true,
+                        namesThere, namesThereMultiply,
+                        checkedScopes);
+
+        // compute the set leaving leave out the except names
+        std::set<UniqueString> namesThereExcept;
+        std::set<UniqueString> namesThereMultiplyExcept;
+        doSetDifference(namesThere, except, namesThereExcept);
+        doSetDifference(namesThereMultiply, except, namesThereMultiplyExcept);
+
+        updateNameSets(namesThereExcept, namesThereMultiplyExcept,
+                       namesDefined, namesDefinedMultiply);
+      } else if (is.kind() == VisibilitySymbols::ALL_CONTENTS) {
+        collectAllNames(context, is.scope(),
+                        /* skip private */ true,
+                        namesDefined, namesDefinedMultiply,
+                        checkedScopes);
+      }
+    }
+  }
+}
+
+static void
+countSymbols(Context* context,
+             const std::vector<BorrowedIdsWithName>& v,
+             int& nParenfulMethods,
+             int& nParenfulNonMethodFunctions,
+             int& nParenlessMethods,
+             int& nParenlessNonMethodFunctions,
+             int& nFields,
+             int& nOther) {
+
+  // use a set to avoid reporting a multiply-defined error
+  // for a symbol available in two ways.
+  // TODO: adjust scope resolver to not create such patterns.
+  std::set<ID> countedIds;
+
+  nParenfulMethods = 0;
+  nParenfulNonMethodFunctions = 0;
+  nParenlessMethods = 0;
+  nParenlessNonMethodFunctions = 0;
+  nFields = 0;
+  nOther = 0;
+  for (const auto& b : v) {
+    auto end = b.end();
+    for (auto it = b.begin(); it != end; ++it) {
+      const IdAndFlags& idv = it.curIdAndFlags();
+      auto p = countedIds.insert(idv.id());
+      if (p.second) {
+        // inserted in to the map
+        if (idv.isParenfulFunction()) {
+          if (idv.isMethodOrField()) {
+            nParenfulMethods++;
+          } else {
+            nParenfulNonMethodFunctions++;
+          }
+        } else {
+          // it is parenless or a non-function, but which of the 3 categories?
+          if (parsing::idIsFunction(context, idv.id())) {
+            if (idv.isMethodOrField()) {
+              // it must be a parenless method
+              nParenlessMethods++;
+            } else {
+              // it must be a parenless non-method function
+              nParenlessNonMethodFunctions++;
+            }
+          } else {
+            // it is not a function
+            if (idv.isMethodOrField()) {
+              nFields++;
+            } else {
+              nOther++;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+static void countReturnIntents(Context* context,
+                               const std::vector<BorrowedIdsWithName>& v,
+                               int& nValue,
+                               int& nConstRef,
+                               int& nRef,
+                               int& nOther) {
+  nValue = 0;
+  nConstRef = 0;
+  nRef = 0;
+  nOther = 0;
+  for (const auto& b : v) {
+    for (const auto& id : b) {
+      Function::ReturnIntent reti = parsing::idToFnReturnIntent(context, id);
+      switch (reti) {
+        case Function::DEFAULT_RETURN_INTENT:
+        case Function::CONST:
+          nValue++;
+          break;
+        case Function::CONST_REF:
+          nConstRef++;
+          break;
+        case Function::REF:
+          nRef++;
+          break;
+        case Function::PARAM:
+        case Function::TYPE:
+          nOther++;
+          break;
+      }
+    }
+  }
+}
+
+
+static const bool&
+emitMultipleDefinedSymbolErrorsQuery(Context* context, const Scope* scope) {
+  QUERY_BEGIN(emitMultipleDefinedSymbolErrorsQuery, context, scope);
+
+  bool result = false;
+
+  std::set<UniqueString> namesDefined;
+  std::set<UniqueString> namesDefinedMultiply;
+  ScopeSet checkedScopes;
+
+  collectAllNames(context, scope, /* skip private */ false,
+                  namesDefined, namesDefinedMultiply, checkedScopes);
+
+  // Now, consider names in namesDefinedMultiply. If there are any
+  // that are not potentially overloaded functions, issue an error.
+  LookupConfig config = LOOKUP_DECLS |
+                        LOOKUP_IMPORT_AND_USE |
+                        LOOKUP_SKIP_SHADOW_SCOPES;
+  for (auto name : namesDefinedMultiply) {
+    std::vector<BorrowedIdsWithName> v =
+      lookupNameInScope(context, scope, { }, name, config);
+    int nParenfulMethods = 0;
+    int nParenfulNonMethodFunctions = 0;
+    int nParenlessMethods = 0;
+    int nParenlessNonMethodFunctions = 0;
+    int nFields = 0;
+    int nOther = 0;
+    countSymbols(context, v,
+                 nParenfulMethods, nParenfulNonMethodFunctions,
+                 nParenlessMethods, nParenlessNonMethodFunctions,
+                 nFields, nOther);
+    int nNonFunctions = nFields + nOther;
+    bool error = false;
+    if (nParenfulNonMethodFunctions > 0 &&
+        nParenlessNonMethodFunctions + nNonFunctions > 0) {
+      // mix of parenful functions and parenless functions / non-function
+      error = true;
+    } else if (nParenlessNonMethodFunctions > 0 && nNonFunctions  > 0) {
+      // mix of parenless functions and non-functions
+      error = true;
+    } else if (nNonFunctions > 1) {
+      // multiple non-functions with the same name
+      error = true;
+    } else if (nParenlessNonMethodFunctions > 1) {
+      // multiple parenless non-method functions with the same name
+      // check: is it return intent overloading?
+      int nValue = 0;
+      int nConstRef = 0;
+      int nRef = 0;
+      int nOther = 0;
+      countReturnIntents(context, v, nValue, nConstRef, nRef, nOther);
+      if (nValue <= 1 && nConstRef <= 1 && nRef <= 1 && nOther == 0) {
+        // it is a valid return intent overload
+      } else {
+        error = true;
+      }
+    }
+    if (error) {
+      // emit a multiply-defined symbol error
+      std::vector<ResultVisibilityTrace> traceResult;
+      v = lookupNameInScopeTracing(context, scope, { }, name, config,
+                                   traceResult);
+
+      CHPL_REPORT(context, Redefinition, scope->id(), name, v, traceResult);
+
+      result = true;
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+void emitMultipleDefinedSymbolErrors(Context* context, const Scope* scope) {
+  emitMultipleDefinedSymbolErrorsQuery(context, scope);
+}
+
 
 } // end namespace resolution
 } // end namespace chpl

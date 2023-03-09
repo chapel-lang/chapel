@@ -1,6 +1,6 @@
-use GPUDiagnostics;
+use GpuDiagnostics;
 
-startGPUDiagnostics();
+startGpuDiagnostics();
 on here.gpus[0] {
   var A = [1,2,3,4,5];
   var outerVar = 10;
@@ -75,9 +75,9 @@ on here.gpus[0] {
   writeArr(A);
 }
 
-stopGPUDiagnostics();
+stopGpuDiagnostics();
 
-writeln(getGPUDiagnostics());
+writeln(getGpuDiagnostics());
 
 proc writeArr(A) {
   write("Array: ");

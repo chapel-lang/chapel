@@ -1,9 +1,9 @@
-use GPUDiagnostics;
+use GpuDiagnostics;
 use GPU;
 
 config const low = 0, high = -1;
 
-startGPUDiagnostics();
+startGpuDiagnostics();
 on here.gpus[0] {
   var A: [1..10, 1..10] int;
   foreach a in A {
@@ -24,5 +24,5 @@ on here.gpus[0] {
   //   assertOnGpu();
   // }
 }
-stopGPUDiagnostics();
-writeln(getGPUDiagnostics());
+stopGpuDiagnostics();
+writeln(getGpuDiagnostics());

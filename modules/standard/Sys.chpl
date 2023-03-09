@@ -42,7 +42,7 @@
    will be returned through the final ``ret_out`` argument.
 
  */
-deprecated "The 'Sys' module has been deprecated; please find replacement symbols in the 'OS' and  'Socket' modules"
+@deprecated(notes="The 'Sys' module has been deprecated; please find replacement symbols in the 'OS' and  'Socket' modules")
 module Sys {
   private use CTypes;
   private use OS;
@@ -69,76 +69,76 @@ module Sys {
   // See note below about signals intentionally not included
 
   pragma "last resort"
-  deprecated "'Sys.SIGABRT' is deprecated; please use 'OS.POSIX.SIGABRT' instead"
+  @deprecated(notes="'Sys.SIGABRT' is deprecated; please use 'OS.POSIX.SIGABRT' instead")
   extern const SIGABRT: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGALRM' is deprecated; please use 'OS.POSIX.SIGALRM' instead"
+  @deprecated(notes="'Sys.SIGALRM' is deprecated; please use 'OS.POSIX.SIGALRM' instead")
   extern const SIGALRM: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGBUS' is deprecated; please use 'OS.POSIX.SIGBUS' instead"
+  @deprecated(notes="'Sys.SIGBUS' is deprecated; please use 'OS.POSIX.SIGBUS' instead")
   extern const SIGBUS: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGCHLD' is deprecated; please use 'OS.POSIX.SIGCHLD' instead"
+  @deprecated(notes="'Sys.SIGCHLD' is deprecated; please use 'OS.POSIX.SIGCHLD' instead")
   extern const SIGCHLD: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGCONT' is deprecated; please use 'OS.POSIX.SIGCONT' instead"
+  @deprecated(notes="'Sys.SIGCONT' is deprecated; please use 'OS.POSIX.SIGCONT' instead")
   extern const SIGCONT: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGFPE' is deprecated; please use 'OS.POSIX.SIGFPE' instead"
+  @deprecated(notes="'Sys.SIGFPE' is deprecated; please use 'OS.POSIX.SIGFPE' instead")
   extern const SIGFPE: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGHUP' is deprecated; please use 'OS.POSIX.SIGHUP' instead"
+  @deprecated(notes="'Sys.SIGHUP' is deprecated; please use 'OS.POSIX.SIGHUP' instead")
   extern const SIGHUP: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGILL' is deprecated; please use 'OS.POSIX.SIGILL' instead"
+  @deprecated(notes="'Sys.SIGILL' is deprecated; please use 'OS.POSIX.SIGILL' instead")
   extern const SIGILL: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGINT' is deprecated; please use 'OS.POSIX.SIGINT' instead"
+  @deprecated(notes="'Sys.SIGINT' is deprecated; please use 'OS.POSIX.SIGINT' instead")
   extern const SIGINT: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGKILL' is deprecated; please use 'OS.POSIX.SIGKILL' instead"
+  @deprecated(notes="'Sys.SIGKILL' is deprecated; please use 'OS.POSIX.SIGKILL' instead")
   extern const SIGKILL: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGPIPE' is deprecated; please use 'OS.POSIX.SIGPIPE' instead"
+  @deprecated(notes="'Sys.SIGPIPE' is deprecated; please use 'OS.POSIX.SIGPIPE' instead")
   extern const SIGPIPE: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGQUIT' is deprecated; please use 'OS.POSIX.SIGQUIT' instead"
+  @deprecated(notes="'Sys.SIGQUIT' is deprecated; please use 'OS.POSIX.SIGQUIT' instead")
   extern const SIGQUIT: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGSEGV' is deprecated; please use 'OS.POSIX.SIGSEGV' instead"
+  @deprecated(notes="'Sys.SIGSEGV' is deprecated; please use 'OS.POSIX.SIGSEGV' instead")
   extern const SIGSEGV: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGSTOP' is deprecated; please use 'OS.POSIX.SIGSTOP' instead"
+  @deprecated(notes="'Sys.SIGSTOP' is deprecated; please use 'OS.POSIX.SIGSTOP' instead")
   extern const SIGSTOP: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGTERM' is deprecated; please use 'OS.POSIX.SIGTERM' instead"
+  @deprecated(notes="'Sys.SIGTERM' is deprecated; please use 'OS.POSIX.SIGTERM' instead")
   extern const SIGTERM: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGTRAP' is deprecated; please use 'OS.POSIX.SIGTRAP' instead"
+  @deprecated(notes="'Sys.SIGTRAP' is deprecated; please use 'OS.POSIX.SIGTRAP' instead")
   extern const SIGTRAP: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGTSTP' is deprecated; please use 'OS.POSIX.SIGTSTP' instead"
+  @deprecated(notes="'Sys.SIGTSTP' is deprecated; please use 'OS.POSIX.SIGTSTP' instead")
   extern const SIGTSTP: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGTTIN' is deprecated; please use 'OS.POSIX.SIGTTIN' instead"
+  @deprecated(notes="'Sys.SIGTTIN' is deprecated; please use 'OS.POSIX.SIGTTIN' instead")
   extern const SIGTTIN: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGTTOU' is deprecated; please use 'OS.POSIX.SIGTTOU' instead"
+  @deprecated(notes="'Sys.SIGTTOU' is deprecated; please use 'OS.POSIX.SIGTTOU' instead")
   extern const SIGTTOU: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGURG' is deprecated; please use 'OS.POSIX.SIGURG' instead"
+  @deprecated(notes="'Sys.SIGURG' is deprecated; please use 'OS.POSIX.SIGURG' instead")
   extern const SIGURG: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGUSR1' is deprecated; please use 'OS.POSIX.SIGUSR1' instead"
+  @deprecated(notes="'Sys.SIGUSR1' is deprecated; please use 'OS.POSIX.SIGUSR1' instead")
   extern const SIGUSR1: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGUSR2' is deprecated; please use 'OS.POSIX.SIGUSR2' instead"
+  @deprecated(notes="'Sys.SIGUSR2' is deprecated; please use 'OS.POSIX.SIGUSR2' instead")
   extern const SIGUSR2: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGXCPU' is deprecated; please use 'OS.POSIX.SIGXCPU' instead"
+  @deprecated(notes="'Sys.SIGXCPU' is deprecated; please use 'OS.POSIX.SIGXCPU' instead")
   extern const SIGXCPU: c_int;
   pragma "last resort"
-  deprecated "'Sys.SIGXFSZ' is deprecated; please use 'OS.POSIX.SIGXFSZ' instead"
+  @deprecated(notes="'Sys.SIGXFSZ' is deprecated; please use 'OS.POSIX.SIGXFSZ' instead")
   extern const SIGXFSZ: c_int;
 
   // These signals are not strictly required by POSIX.1.2008 2013 edition
@@ -189,10 +189,10 @@ module Sys {
 
   // --- deprecated and moved to Socket ---
   pragma "last resort"
-  deprecated "'Sys.AF_INET' is deprecated; please use 'Socket.AF_INET' instead"
+  @deprecated(notes="'Sys.AF_INET' is deprecated; please use 'Socket.AF_INET' instead")
   extern const AF_INET:c_int;
   pragma "last resort"
-  deprecated "'Sys.AF_INET6' is deprecated; please use 'Socket.AF_INET6' instead"
+  @deprecated(notes="'Sys.AF_INET6' is deprecated; please use 'Socket.AF_INET6' instead")
   extern const AF_INET6:c_int;
 
   // socket types
@@ -242,43 +242,43 @@ module Sys {
   // socket options
   // --- deprecated and moved to Socket ---
   pragma "last resort"
-  deprecated "'Sys.SO_ACCEPTCONN' is deprecated; please use 'Socket.SO_ACCEPTCONN' instead"
+  @deprecated(notes="'Sys.SO_ACCEPTCONN' is deprecated; please use 'Socket.SO_ACCEPTCONN' instead")
   extern const SO_ACCEPTCONN:c_int;
   pragma "last resort"
-  deprecated "'Sys.SO_BROADCAST' is deprecated; please use 'Socket.SO_BROADCAST' instead"
+  @deprecated(notes="'Sys.SO_BROADCAST' is deprecated; please use 'Socket.SO_BROADCAST' instead")
   extern const SO_BROADCAST:c_int;
   pragma "last resort"
-  deprecated "'Sys.SO_DEBUG' is deprecated; please use 'Socket.SO_DEBUG' instead"
+  @deprecated(notes="'Sys.SO_DEBUG' is deprecated; please use 'Socket.SO_DEBUG' instead")
   extern const SO_DEBUG:c_int;
   pragma "last resort"
-  deprecated "'Sys.SO_ERROR' is deprecated; please use 'Socket.SO_ERROR' instead"
+  @deprecated(notes="'Sys.SO_ERROR' is deprecated; please use 'Socket.SO_ERROR' instead")
   extern const SO_ERROR:c_int;
   pragma "last resort"
-  deprecated "'Sys.SO_KEEPALIVE' is deprecated; please use 'Socket.SO_KEEPALIVE' instead"
+  @deprecated(notes="'Sys.SO_KEEPALIVE' is deprecated; please use 'Socket.SO_KEEPALIVE' instead")
   extern const SO_KEEPALIVE:c_int;
   pragma "last resort"
-  deprecated "'Sys.SO_LINGER' is deprecated; please use 'Socket.SO_LINGER' instead"
+  @deprecated(notes="'Sys.SO_LINGER' is deprecated; please use 'Socket.SO_LINGER' instead")
   extern const SO_LINGER:c_int;
   pragma "last resort"
-  deprecated "'Sys.SO_OOBINLINE' is deprecated; please use 'Socket.SO_OOBINLINE' instead"
+  @deprecated(notes="'Sys.SO_OOBINLINE' is deprecated; please use 'Socket.SO_OOBINLINE' instead")
   extern const SO_OOBINLINE:c_int;
   pragma "last resort"
-  deprecated "'Sys.SO_RCVBUF' is deprecated; please use 'Socket.SO_RCVBUF' instead"
+  @deprecated(notes="'Sys.SO_RCVBUF' is deprecated; please use 'Socket.SO_RCVBUF' instead")
   extern const SO_RCVBUF:c_int;
   pragma "last resort"
-  deprecated "'Sys.SO_RCVTIMEO' is deprecated; please use 'Socket.SO_RCVTIMEO' instead"
+  @deprecated(notes="'Sys.SO_RCVTIMEO' is deprecated; please use 'Socket.SO_RCVTIMEO' instead")
   extern const SO_RCVTIMEO:c_int;
   pragma "last resort"
-  deprecated "'Sys.SO_REUSEADDR' is deprecated; please use 'Socket.SO_REUSEADDR' instead"
+  @deprecated(notes="'Sys.SO_REUSEADDR' is deprecated; please use 'Socket.SO_REUSEADDR' instead")
   extern const SO_REUSEADDR:c_int;
   pragma "last resort"
-  deprecated "'Sys.SO_SNDBUF' is deprecated; please use 'Socket.SO_SNDBUF' instead"
+  @deprecated(notes="'Sys.SO_SNDBUF' is deprecated; please use 'Socket.SO_SNDBUF' instead")
   extern const SO_SNDBUF:c_int;
   pragma "last resort"
-  deprecated "'Sys.SO_SNDTIMEO' is deprecated; please use 'Socket.SO_SNDTIMEO' instead"
+  @deprecated(notes="'Sys.SO_SNDTIMEO' is deprecated; please use 'Socket.SO_SNDTIMEO' instead")
   extern const SO_SNDTIMEO:c_int;
   pragma "last resort"
-  deprecated "'Sys.SO_SECINFO' is deprecated; please use 'Socket.SO_SECINFO' instead"
+  @deprecated(notes="'Sys.SO_SECINFO' is deprecated; please use 'Socket.SO_SECINFO' instead")
   extern const SO_SECINFO:c_int;
 
   // IP socket options
@@ -351,22 +351,22 @@ module Sys {
   // standard ipv4 addresses
   // --- deprecated and moved to Socket ---
   pragma "last resort"
-  deprecated "'Sys.INADDR_ANY' is deprecated; please use 'Socket.INADDR_ANY' instead"
+  @deprecated(notes="'Sys.INADDR_ANY' is deprecated; please use 'Socket.INADDR_ANY' instead")
   extern const INADDR_ANY:sys_in_addr_t;
   pragma "last resort"
-  deprecated "'Sys.INADDR_BROADCAST' is deprecated; please use 'Socket.INADDR_BROADCAST' instead"
+  @deprecated(notes="'Sys.INADDR_BROADCAST' is deprecated; please use 'Socket.INADDR_BROADCAST' instead")
   extern const INADDR_BROADCAST:sys_in_addr_t;
   pragma "last resort"
-  deprecated "'Sys.INADDR_LOOPBACK' is deprecated; please use 'Socket.INADDR_LOOPBACK' instead"
+  @deprecated(notes="'Sys.INADDR_LOOPBACK' is deprecated; please use 'Socket.INADDR_LOOPBACK' instead")
   extern const INADDR_LOOPBACK:sys_in_addr_t;
 
   // standard ipv6 addresses
   // --- deprecated and moved to Socket ---
   pragma "last resort"
-  deprecated "'Sys.in6addr_any' is deprecated; please use 'Socket.in6addr_any' instead"
+  @deprecated(notes="'Sys.in6addr_any' is deprecated; please use 'Socket.in6addr_any' instead")
   extern const in6addr_any:sys_in6_addr_t;
   pragma "last resort"
-  deprecated "'Sys.in6addr_loopback' is deprecated; please use 'Socket.in6addr_loopback' instead"
+  @deprecated(notes="'Sys.in6addr_loopback' is deprecated; please use 'Socket.in6addr_loopback' instead")
   extern const in6addr_loopback:sys_in6_addr_t;
 
   // UDP socket options
@@ -376,10 +376,10 @@ module Sys {
   /* SOCKET STRUCTURE TYPES */
   // --- deprecated and moved to Socket ---
   pragma "last resort"
-  deprecated "'Sys.sys_in_addr_t' is deprecated; please use 'Socket.sys_in_addr_t' instead"
+  @deprecated(notes="'Sys.sys_in_addr_t' is deprecated; please use 'Socket.sys_in_addr_t' instead")
   extern type sys_in_addr_t;
   pragma "last resort"
-  deprecated "'Sys.sys_in6_addr_t' is deprecated; please use 'Socket.sys_in6_addr_t' instead"
+  @deprecated(notes="'Sys.sys_in6_addr_t' is deprecated; please use 'Socket.sys_in6_addr_t' instead")
   extern type sys_in6_addr_t;
 
   // --- deprecated and moved to Socket ---
@@ -554,7 +554,7 @@ module Sys {
     :returns: 1 if ``name`` is defined and 0 if not
     :rtype: `c_int`
    */
-  deprecated "'Sys.sys_getenv' is deprecated; please use 'OS.sys_getenv' instead"
+  @deprecated(notes="'Sys.sys_getenv' is deprecated; please use 'OS.sys_getenv' instead")
   extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
 
   /* The type corresponding to C's mode_t */

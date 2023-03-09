@@ -539,7 +539,7 @@ module CTypes {
   }
 
   pragma "last resort"
-  deprecated "c_sizeof with argument name 'x' is deprecated; please use c_sizeof(type t) instead"
+  @deprecated(notes="c_sizeof with argument name 'x' is deprecated; please use c_sizeof(type t) instead")
   inline proc c_sizeof(type x): c_size_t {
     return c_sizeof(x);
   }

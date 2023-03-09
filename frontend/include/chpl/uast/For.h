@@ -49,14 +49,16 @@ class For final : public IndexableLoop {
       BlockStyle blockStyle,
       int loopBodyChildNum,
       bool isExpressionLevel,
-      bool isParam)
+      bool isParam,
+      int attributeGroupChildNum)
     : IndexableLoop(asttags::For, std::move(children),
                     indexChildNum,
                     iterandChildNum,
                     /*withClauseChildNum*/ NO_CHILD,
                     blockStyle,
                     loopBodyChildNum,
-                    isExpressionLevel),
+                    isExpressionLevel,
+                    attributeGroupChildNum),
       isParam_(isParam) {
 
     CHPL_ASSERT(withClause() == nullptr);
@@ -100,7 +102,8 @@ class For final : public IndexableLoop {
                           BlockStyle blockStyle,
                           owned<Block> body,
                           bool isExpressionLevel,
-                          bool isParam);
+                          bool isParam,
+                          owned<AttributeGroup> attributeGroup);
 
   /**
     Returns true if this for loop is param.

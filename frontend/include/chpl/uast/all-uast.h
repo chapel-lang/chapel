@@ -21,6 +21,7 @@
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Array.h"
 #include "chpl/uast/As.h"
+#include "chpl/uast/Attribute.h"
 #include "chpl/uast/AttributeGroup.h"
 #include "chpl/uast/Begin.h"
 #include "chpl/uast/Block.h"

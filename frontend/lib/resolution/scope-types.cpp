@@ -30,11 +30,14 @@ namespace resolution {
 
 std::string IdAndFlags::flagsToString(Flags flags) {
   std::string ret;
-  if ((flags & PUBLIC) != 0)            ret += "public ";
-  if ((flags & NOT_PUBLIC) != 0)        ret += "!public ";
+  if ((flags & PUBLIC) != 0)                ret += "public ";
+  if ((flags & NOT_PUBLIC) != 0)            ret += "!public ";
 
-  if ((flags & METHOD_FIELD) != 0)      ret += "method/field ";
-  if ((flags & NOT_METHOD_FIELD) != 0)  ret += "!method/field ";
+  if ((flags & METHOD_FIELD) != 0)          ret += "method/field ";
+  if ((flags & NOT_METHOD_FIELD) != 0)      ret += "!method/field ";
+
+  if ((flags & PARENFUL_FUNCTION) != 0)     ret += "parenful-fn ";
+  if ((flags & NOT_PARENFUL_FUNCTION) != 0) ret += "!parenful-fn ";
 
   return ret;
 }
@@ -180,7 +183,8 @@ void Scope::addBuiltin(UniqueString name) {
   declared_.emplace(name,
                     OwnedIdsWithName(ID(),
                                      uast::Decl::PUBLIC,
-                                     /*isMethodOrField*/ false));
+                                     /*isMethodOrField*/ false,
+                                     /*isParenfulFunction*/ false));
 }
 
 const Scope* Scope::moduleScope() const {
@@ -226,8 +230,21 @@ std::set<UniqueString> Scope::gatherNames() const {
   for (const auto& pair : declared_) {
     orderedNames.insert(pair.first);
   }
-
   return orderedNames;
+}
+
+void Scope::collectNames(std::set<UniqueString>& namesDefined,
+                         std::set<UniqueString>& namesDefinedMultiply) const {
+  for (const auto& decl : declared_) {
+    UniqueString name = decl.first;
+    if (!name.isEmpty() && name != USTR("_")) {
+      auto p = namesDefined.insert(name);
+      if (p.second == false || decl.second.numIds() > 1) {
+        // it was already present or multiply defined here
+        namesDefinedMultiply.insert(name);
+      }
+    }
+  }
 }
 
 void Scope::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
@@ -237,6 +254,22 @@ void Scope::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
   id().stringify(ss, stringKind);
   ss << " numDeclared=";
   ss << std::to_string(numDeclared());
+}
+
+bool VisibilitySymbols::lookupName(const UniqueString &name,
+                                   UniqueString &declared) const {
+  for (const auto &p : names_) {
+    if (p.second == name) {
+      declared = p.first;
+      return true;
+    }
+  }
+  return false;
+}
+
+const std::vector<std::pair<UniqueString,UniqueString>>&
+VisibilitySymbols::names() const {
+  return names_;
 }
 
 void VisibilitySymbols::stringify(std::ostream& ss,

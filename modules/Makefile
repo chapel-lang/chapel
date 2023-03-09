@@ -77,7 +77,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Collectives.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/Communication.chpl \
-	standard/GPUDiagnostics.chpl \
+	standard/GpuDiagnostics.chpl \
 	standard/GPU.chpl \
 	standard/CTypes.chpl \
 	standard/DynamicIters.chpl \

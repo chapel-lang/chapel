@@ -1303,24 +1303,24 @@ proc CyclicDom.dsiLocalSubdomain(loc: locale) {
   }
 }
 
-deprecated "'newCyclicDom' is deprecated - please use 'Cyclic.createDomain' instead"
+@deprecated(notes="'newCyclicDom' is deprecated - please use 'Cyclic.createDomain' instead")
 proc newCyclicDom(dom: domain) {
   return dom dmapped Cyclic(startIdx=dom.lowBound);
 }
 
-deprecated "'newCyclicArr' is deprecated - please use 'Cyclic.createArray' instead"
+@deprecated(notes="'newCyclicArr' is deprecated - please use 'Cyclic.createArray' instead")
 proc newCyclicArr(dom: domain, type eltType) {
   var D = newCyclicDom(dom);
   var A: [D] eltType;
   return A;
 }
 
-deprecated "'newCyclicDom' is deprecated - please use 'Cyclic.createDomain' instead"
+@deprecated(notes="'newCyclicDom' is deprecated - please use 'Cyclic.createDomain' instead")
 proc newCyclicDom(rng: range...) {
   return newCyclicDom({(...rng)});
 }
 
-deprecated "'newCyclicArr' is deprecated - please use 'Cyclic.createArray' instead"
+@deprecated(notes="'newCyclicArr' is deprecated - please use 'Cyclic.createArray' instead")
 proc newCyclicArr(rng: range..., type eltType) {
   return newCyclicArr({(...rng)}, eltType);
 }

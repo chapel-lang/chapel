@@ -1,5 +1,5 @@
 use Math;
-use GPUDiagnostics;
+use GpuDiagnostics;
 
 config const verbose = false;
 config param excludeForRocm;
@@ -37,7 +37,7 @@ proc main() {
     const r = 0..0;
 
     proc check(A, s) {
-      if getGPUDiagnostics()[0].kernel_launch !=1 then
+      if getGpuDiagnostics()[0].kernel_launch !=1 then
         writeln(s + " didn't result in kernel launch");
       else if verbose then
         writeln(s + " resulted in kernel launch");
@@ -48,10 +48,10 @@ proc main() {
       else if verbose then
         writeln(s + " computed right result. ("+A[0]:string+", "+A[1]:string+")");
 
-      resetGPUDiagnostics();
+      resetGpuDiagnostics();
     }
 
-    startGPUDiagnostics();
+    startGpuDiagnostics();
 
 // foreach loops should result in a kernel launch that sets the 0th index of the array, the
 // following statement is outside the foreach, so wll execute on the host. We check whether they
@@ -331,6 +331,6 @@ foreach i in r do  R[0] =  y1(r64);   R[1] =  y1(r64);  check(R,"y1(r64)");
 foreach i in r do  R[0] =  yn(2,r32);   R[1] =  yn(2,r32);  check(R,"yn(2,r32)");
 foreach i in r do  R[0] =  yn(2,r64);   R[1] =  yn(2,r64);  check(R,"yn(2,r64)");
 
-    stopGPUDiagnostics();
+    stopGpuDiagnostics();
   }
 }

@@ -271,7 +271,7 @@ module HDFS {
     }
 
     pragma "last resort"
-    deprecated "open with an iomode argument is deprecated - please use :enum:`~IO.ioMode`"
+    @deprecated(notes="open with an iomode argument is deprecated - please use :enum:`~IO.ioMode`")
     proc open(path:string, mode:iomode,
               style:iostyle,
               in flags:c_int = 0, // default to based on mode
@@ -283,7 +283,7 @@ module HDFS {
                 replication, blockSize);
     }
 
-    @unstable "open with a style argument is unstable"
+    @unstable("open with a style argument is unstable")
     proc open(path:string, mode:ioMode,
               style:iostyle,
               in flags:c_int = 0, // default to based on mode
@@ -318,7 +318,7 @@ module HDFS {
     }
 
     pragma "last resort"
-    deprecated "open with an iomode argument is deprecated - please use :enum:`~IO.ioMode`"
+    @deprecated(notes="open with an iomode argument is deprecated - please use :enum:`~IO.ioMode`")
     proc open(path:string, mode:iomode,
               in flags:c_int = 0, // default to based on mode
               bufferSize:c_int = 0,    // 0 -> use hdfs default value

@@ -1,0 +1,3 @@
+toolnames.chpl:2: In function 'foo':
+toolnames.chpl:1: warning: Unknown attribute tool name 'sometool'
+toolnames.chpl:4: warning: Unknown attribute tool name 'linter'

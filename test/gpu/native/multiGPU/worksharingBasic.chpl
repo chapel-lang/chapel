@@ -1,4 +1,4 @@
-use GPUDiagnostics;
+use GpuDiagnostics;
 
 config const n = 32;
 
@@ -11,7 +11,7 @@ const gpuSize = (n/2)/numGPUs;
 assert(n%2 == 0);
 assert((n/2)%numGPUs == 0);
 
-startGPUDiagnostics();
+startGpuDiagnostics();
 
 cobegin {
   A[0..#cpuSize] += 1;
@@ -25,11 +25,11 @@ cobegin {
   }
 }
 
-stopGPUDiagnostics();
+stopGpuDiagnostics();
 
 writeln(A);
 
-const nLaunch = getGPUDiagnostics().kernel_launch;
+const nLaunch = getGpuDiagnostics().kernel_launch;
 
 assert(nLaunch == here.gpus.size);
 assert((+ reduce A) == n);

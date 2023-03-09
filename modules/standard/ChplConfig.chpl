@@ -39,7 +39,7 @@ module ChplConfig {
   CHPL_HOME = __primitive("get compiler variable", "CHPL_HOME");
 
   /* Deprecated */
-  deprecated "CHPL_AUX_FILESYS is deprecated, please let us know if this is a problem"
+  @deprecated(notes="CHPL_AUX_FILESYS is deprecated, please let us know if this is a problem")
   proc CHPL_AUX_FILESYS param :string {
     // use a proc here because the split initialization caused an
     // additional deprecation warning

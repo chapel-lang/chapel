@@ -1,7 +1,7 @@
 class ReplaceVarConcrete {
   var newName: int;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName ref: int {
     return this.newName;
   }
@@ -10,7 +10,7 @@ class ReplaceVarConcrete {
 record ReplaceVarConcrete2 {
   var newName: int;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName ref: int {
     return this.newName;
   }
@@ -19,7 +19,7 @@ record ReplaceVarConcrete2 {
 class ReplaceType {
   type newName;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName type {
     return this.newName;
   }
@@ -28,7 +28,7 @@ class ReplaceType {
 record ReplaceType2 {
   type newName;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName type {
     return this.newName;
   }
@@ -37,7 +37,7 @@ record ReplaceType2 {
 class ReplaceParam {
   param newName;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName param {
     return this.newName;
   }
@@ -46,7 +46,7 @@ class ReplaceParam {
 record ReplaceParam2 {
   param newName;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName param {
     return this.newName;
   }
@@ -55,7 +55,7 @@ record ReplaceParam2 {
 class ReplaceConstConcrete {
   const newName: int;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName: int {
     return this.newName;
   }
@@ -64,7 +64,7 @@ class ReplaceConstConcrete {
 record ReplaceConstConcrete2 {
   const newName: int;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName: int {
     return this.newName;
   }
@@ -73,7 +73,7 @@ record ReplaceConstConcrete2 {
 class ReplaceVarGeneric {
   var newName;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName ref {
     return this.newName;
   }
@@ -82,7 +82,7 @@ class ReplaceVarGeneric {
 record ReplaceVarGeneric2 {
   var newName;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName ref{
     return this.newName;
   }
@@ -91,7 +91,7 @@ record ReplaceVarGeneric2 {
 class ReplaceConstGeneric {
   const newName;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName {
     return this.newName;
   }
@@ -100,7 +100,7 @@ class ReplaceConstGeneric {
 record ReplaceConstGeneric2 {
   const newName;
 
-  deprecated "The field 'oldName' is deprecated, please use 'newName'"
+  @deprecated(notes="The field 'oldName' is deprecated, please use 'newName'")
   proc oldName {
     return this.newName;
   }

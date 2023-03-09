@@ -1,5 +1,5 @@
 module TestUnstableModule {
-  @unstable "x is unstable, use y instead" var x: int = 0;
+  @unstable("x is unstable, use y instead") var x: int = 0;
   var y: int = 1;
 
   @unstable module TestUnstableModule2 {

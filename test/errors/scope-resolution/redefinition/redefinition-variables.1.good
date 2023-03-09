@@ -1,0 +1,3 @@
+redefinition-variables.chpl:1: error: 'x' has multiple definitions
+redefinition-variables.chpl:3: note: redefined here
+redefinition-variables.chpl:4: note: redefined here

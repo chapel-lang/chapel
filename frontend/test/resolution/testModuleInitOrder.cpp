@@ -52,7 +52,7 @@ checkModuleInitOrder(Context* ctx, bool isCheckForOrigin, ID idMod, ...) {
 
     auto ast = !id.isEmpty() ? parsing::idToAst(ctx, id) : nullptr;
     auto mod = ast ? ast->toModule() : nullptr;
-    assert(isCheckForOrigin || ast && mod);
+    assert(isCheckForOrigin || (ast && mod));
 
     std::string expect = va_arg(args, const char*);
     std::string got = id.isEmpty() ? "<>" : mod->name().c_str();

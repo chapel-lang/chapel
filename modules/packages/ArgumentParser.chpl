@@ -241,7 +241,7 @@
 
  */
 
-@unstable "ArgumentParser is unstable."
+@unstable("ArgumentParser is unstable.")
 module ArgumentParser {
   use List;
   use Map;

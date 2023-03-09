@@ -9,7 +9,7 @@ use Time;
 use List;
 use CTypes;
 use ResultDB;
-use GPUDiagnostics;
+use GpuDiagnostics;
 
 config const noisy = false;
 config const gpuDiags = false;
@@ -175,11 +175,11 @@ proc runSort(){
     }
 }
 
-if gpuDiags then startGPUDiagnostics();
+if gpuDiags then startGpuDiagnostics();
 runSort();
 if gpuDiags {
-  stopGPUDiagnostics();
-  writeln(getGPUDiagnostics());
+  stopGpuDiagnostics();
+  writeln(getGpuDiagnostics());
 }
 
 

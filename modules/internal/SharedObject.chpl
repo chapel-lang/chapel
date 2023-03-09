@@ -247,7 +247,7 @@ module SharedObject {
     // Initialize generic 'shared' var-decl from owned:
     //   var s : shared = ownedThing;
     pragma "no doc"
-    deprecated "assigning owned class to shared class is deprecated."
+    @deprecated(notes="assigning owned class to shared class is deprecated.")
     proc init=(pragma "nil from arg" in take: owned) {
       var p = take.release();
 
@@ -353,6 +353,13 @@ module SharedObject {
       The result type preserves nilability of the argument type.
       If the argument is non-nilable, it must be recognized by the compiler
       as an expiring value.
+
+      .. note::
+         This is part of an new interface that will replace :proc:`shared.create`
+         and :proc:`shared.retain`. However, `adopt` is not as widely used as
+         `create` and `retain` yet, so there may be some bugs we have not
+         found yet. If you discover any bugs with `adopt`, please report them
+         to us and fall back on `create` and `retain`.
     */
     inline proc type adopt(pragma "nil from arg" in obj: owned) {
       var ptr = owned.release(obj);
@@ -361,6 +368,13 @@ module SharedObject {
     /*
       Creates a new `shared` class reference to the argument.
       The result has the same type as the argument.
+
+      .. note::
+         This is part of an new interface that will replace :proc:`shared.create`
+         and :proc:`shared.retain`. However, `adopt` is not as widely used as
+         `create` and `retain` yet, so there may be some bugs we have not
+         found yet. If you discover any bugs with `adopt`, please report them
+         to us and fall back on `create` and `retain`.
     */
     inline proc type adopt(pragma "nil from arg" in obj: shared) {
       return obj;
@@ -373,6 +387,13 @@ module SharedObject {
 
       It is an error to directly delete the class instance
       after passing it to `shared.adopt()`.
+
+      .. note::
+         This is part of an new interface that will replace :proc:`shared.create`
+         and :proc:`shared.retain`. However, `adopt` is not as widely used as
+         `create` and `retain` yet, so there may be some bugs we have not
+         found yet. If you discover any bugs with `adopt`, please report them
+         to us and fall back on `create` and `retain`.
     */
     inline proc type adopt(pragma "nil from arg" in obj: unmanaged) {
       // 'result' may have a non-nilable type
@@ -480,7 +501,7 @@ module SharedObject {
     /*
       Create a :record:`~WeakPointer.weak` reference to this object
     */
-    @unstable "The `weak` type is experimental; expect this method to change in the future."
+    @unstable("The `weak` type is experimental; expect this method to change in the future.")
     proc downgrade() {
       return new WeakPointer.weak(this);
     }
@@ -516,7 +537,7 @@ module SharedObject {
      On return, ``lhs`` will refer to the object previously
      managed by ``rhs``, and ``rhs`` will refer to `nil`.
    */
-  deprecated "assignment from an owned class to a shared class is deprecated"
+  @deprecated(notes="assignment from an owned class to a shared class is deprecated")
   operator =(ref lhs:_shared, in rhs:owned)
     where ! (isNonNilableClass(lhs) && isNilableClass(rhs))
   {
@@ -779,7 +800,7 @@ module WeakPointer {
     /*
         Create a new weak reference to a shared class instance 'c'
     */
-    @unstable "The `weak` type is experimental; expect this API to change in the future."
+    @unstable("The `weak` type is experimental; expect this API to change in the future.")
     proc init(c : shared) {
         var ptr = c.chpl_p: _to_nilable(_to_unmanaged(c.chpl_t));
         var count = c.chpl_pn;

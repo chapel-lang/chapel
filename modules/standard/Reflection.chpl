@@ -74,7 +74,7 @@ proc getFieldName(type t, param idx:int) param : string do
    :returns: the name of the field, as a param string
  */
 pragma "last resort"
-deprecated "Formal 'i' is deprecated, please use 'idx' instead"
+@deprecated(notes="Formal 'i' is deprecated, please use 'idx' instead")
 proc getFieldName(type t, param i:int) param : string do
   return getFieldName(t, i);
 
@@ -104,7 +104,7 @@ proc getField(const ref obj:?t, param idx: int) param
    :returns: the `param` that field represents
 */
 pragma "last resort"
-deprecated "The formals 'x' and 'i' are deprecated, please use 'obj' and 'idx' instead"
+@deprecated(notes="The formals 'x' and 'i' are deprecated, please use 'obj' and 'idx' instead")
 proc getField(const ref x:?t, param i: int) param
   where i >= 0 && i < numFields(t) &&
         isParam(__primitive("field by num", x, i+1)) {
@@ -136,7 +136,7 @@ proc getField(const ref obj:?t, param idx: int) type
    :returns: the type that field represents
 */
 pragma "last resort"
-deprecated "The formals 'x' and 'i' are deprecated, please use 'obj' and 'idx' instead"
+@deprecated(notes="The formals 'x' and 'i' are deprecated, please use 'obj' and 'idx' instead")
 proc getField(const ref x:?t, param i: int) type
   where i >= 0 && i < numFields(t) &&
         isType(__primitive("field by num", x, i+1)) {
@@ -163,7 +163,7 @@ inline proc getField(const ref obj:?t, param idx:int) const ref do
  */
 pragma "last resort"
 pragma "unsafe"
-deprecated "The formals 'x' and 'i' are deprecated, please use 'obj' and 'idx' instead"
+@deprecated(notes="The formals 'x' and 'i' are deprecated, please use 'obj' and 'idx' instead")
 inline proc getField(const ref x:?t, param i:int) const ref do
   return getField(x, i);
 
@@ -192,7 +192,7 @@ where getFieldIndex(t, name) != -1 &&
    :returns: the `param` that field represents
  */
 pragma "last resort"
-deprecated "The formals 'x' and 's' are deprecated, please use 'obj' and 'name' instead"
+@deprecated(notes="The formals 'x' and 's' are deprecated, please use 'obj' and 'name' instead")
 proc getField(const ref x:?t, param s: string) param
   where getFieldIndex(t, s) != -1 && isParam(getField(x, getFieldIndex(t, s))) {
   return getField(x, s);
@@ -223,7 +223,7 @@ proc getField(const ref obj:?t, param name: string) type
    :returns: the type that field represents
  */
 pragma "last resort"
-deprecated "The formals 'x' and 's' are deprecated, please use 'obj' and 'name' instead"
+@deprecated(notes="The formals 'x' and 's' are deprecated, please use 'obj' and 'name' instead")
 proc getField(const ref x:?t, param s: string) type
   where getFieldIndex(t, s) != -1 && isType(getField(x, getFieldIndex(t, s))) {
   return getField(x, s);
@@ -255,7 +255,7 @@ inline proc getField(const ref obj:?t, param name:string) const ref {
  */
 pragma "unsafe"
 pragma "last resort"
-deprecated "The formals 'x' and 's' are deprecated, please use 'obj' and 'name' instead"
+@deprecated(notes="The formals 'x' and 's' are deprecated, please use 'obj' and 'name' instead")
 inline proc getField(const ref x:?t, param s:string) const ref {
   return getField(x, s);
 }
@@ -347,7 +347,7 @@ proc getFieldIndex(type t, param name:string) param : int do
              was not found.
  */
 pragma "last resort"
-deprecated "The formal 's' is deprecated, please use 'name' instead"
+@deprecated(notes="The formal 's' is deprecated, please use 'name' instead")
 proc getFieldIndex(type t, param s:string) param : int do
   return getFieldIndex(t, s);
 
@@ -369,7 +369,7 @@ proc hasField(type t, param name:string) param : bool do
    :returns: ``true`` if the field is present.
  */
 pragma "last resort"
-deprecated "The formal 's' is deprecated, please use 'name' instead"
+@deprecated(notes="The formal 's' is deprecated, please use 'name' instead")
 proc hasField(type t, param s:string) param : bool do
   return hasField(t, s);
 
@@ -393,7 +393,7 @@ proc isFieldBound(type t, param idx: int) param : bool {
    :returns: ``true`` if the field is instantiated
 */
 pragma "last resort"
-deprecated "The formal 'i' is deprecated, please use 'idx' instead"
+@deprecated(notes="The formal 'i' is deprecated, please use 'idx' instead")
 proc isFieldBound(type t, param i: int) param : bool {
   return isFieldBound(t, i);
 }
@@ -417,7 +417,7 @@ proc isFieldBound(type t, param name : string) param : bool {
    :returns: ``true`` if the field is instantiated
 */
 pragma "last resort"
-deprecated "The formal 's' is deprecated, please use 'name' instead"
+@deprecated(notes="The formal 's' is deprecated, please use 'name' instead")
 proc isFieldBound(type t, param s : string) param : bool {
   return isFieldBound(t, s);
 }
