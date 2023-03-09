@@ -1,14 +1,14 @@
 config param r: real = pi,
        r32: real(32) = r;
 
-param u: uint = r.toBits();
-param u32 = r32.toBits();
+param u: uint = r.transmute(uint);
+param u32 = r32.transmute(uint(32));
 
 var rv = r,
     rv32 = r32;
 
-var uv = rv.toBits(),
-    uv32 = rv32.toBits();
+var uv = rv.transmute(uint),
+    uv32 = rv32.transmute(uint(32));
 
 print(u,r);
 print(u32,r32);
@@ -22,5 +22,5 @@ proc print(param u, param r) {
 }
 
 proc print(u, r) {
-  writeln(u, ": ", u.type:string, " == ", r, ":", r.type:string, ".toBits()");
+  writeln(u, ": ", u.type:string, " == ", r, ":", r.type:string, ".transmute(uint(?))");
 }

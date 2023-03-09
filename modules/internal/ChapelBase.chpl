@@ -1492,19 +1492,21 @@ module ChapelBase {
   // the bit level
   //
   @unstable "This routine may change names / signatures"
-  proc param (real(64)).toBits() param : uint {
+  proc param (real(64)).transmute(type t: uint) param : uint {
     param ui: uint(64) = __primitive("real64 as uint64", this);
     return ui;
   }
 
   @unstable "This routine may change names / signatures"
-  proc param (real(32)).toBits() param : uint(32) {
+  proc param (real(32)).transmute(type t: uint(32)) param : uint(32)
+    where t == uint(32) {
     param ui: uint(32) = __primitive("real32 as uint32", this);
     return ui;
   }
 
   @unstable "This routine may change names / signatures"
-  inline proc (real(?w)).toBits(): uint(w) {
+  inline proc (real(?w)).transmute(type t: uint(w)): uint(w)
+    where t == uint(w) {
     use CTypes;
     var src = this, dst:uint(w);
 
@@ -1513,23 +1515,35 @@ module ChapelBase {
   }
 
   @unstable "This routine may change names / signatures"
-  proc param (uint(64)).toReal() param : real(64) {
+  proc param (uint(64)).transmute(type t: real(64)) param : real(64) {
     param r: real(64) = __primitive("uint64 as real64", this);
     return r;
   }
 
   @unstable "This routine may change names / signatures"
-  proc param (uint(32)).toReal() param : real(32) {
+  proc param (uint(32)).transmute(type t: real(32)) param : real(32)
+    where t == real(32) {
     param r: real(32) = __primitive("uint32 as real32", this);
     return r;
   }
 
   @unstable "This routine may change names / signatures"
-  inline proc (uint(?w)).toReal(): real(w) where w == 32 || w == 64 {
+  inline proc (uint(32)).transmute(type t: real(32)): real(32)
+    where t == real(32) {
     use CTypes;
-    var src = this, dst:real(w);
+    var src = this, dst:real(32);
 
-    c_memcpy(c_ptrTo(dst), c_ptrTo(src), w/8);
+    c_memcpy(c_ptrTo(dst), c_ptrTo(src), 4);
+    return dst;
+  }
+
+  @unstable "This routine may change names / signatures"
+  inline proc (uint(64)).transmute(type t: real(64)): real(64)
+    where t == real(64) {
+    use CTypes;
+    var src = this, dst:real(64);
+
+    c_memcpy(c_ptrTo(dst), c_ptrTo(src), 8);
     return dst;
   }
 
