@@ -2127,7 +2127,9 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
   auto scope = scopeForId(context, id);
   auto parentId = scope->id();
   auto parentTag = parsing::idToTag(context, parentId);
-  if (asttags::isAggregateDecl(parentTag) && parentId.contains(node->id())) {
+  if (asttags::isAggregateDecl(parentTag) &&
+      parentId.contains(node->id()) &&
+      parentId != id /* It's okay to refer to the record itself */) {
     // Referring to a field of a class that's surrounding the current node.
     // Loop upwards looking for a composite type.
     auto searchId = parsing::idToParentId(context, node->id());
