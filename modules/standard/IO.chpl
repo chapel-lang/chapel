@@ -53,18 +53,18 @@ For example, the following program opens a file and writes an integer to it:
 
   // open the file "test-file.txt" for writing, creating it if
   // it does not exist yet.
-  var myFile = open("test-file.txt", ioMode.cw);
+  var myFile = try! open("test-file.txt", ioMode.cw);
 
   // create a fileWriter starting at file offset 0
   // (start and end offsets can be specified when creating the
   // fileWriter)
-  var myFileWriter = myFile.writer();
+  var myFileWriter = try! myFile.writer();
 
   var x: int = 17;
 
   // This function will write the human-readable text version of x;
   // binary I/O is also possible.
-  myFileWriter.write(x);
+  try! myFileWriter.write(x);
 
   // Now test-file.txt contains:
   // 17
@@ -74,12 +74,12 @@ Then, the following program can be used to read the integer:
 .. code-block:: chapel
 
   // open the file "test-file.txt" for reading only
-  var myFile = open("test-file.txt", ioMode.r);
+  var myFile = try! open("test-file.txt", ioMode.r);
 
   // create a fileReader starting at file offset 0
   // (start and end offsets can be specified when creating the
   // fileReader)
-  var myFileReader = myFile.reader();
+  var myFileReader = try! myFile.reader();
 
   var x: int;
 
@@ -87,11 +87,11 @@ Then, the following program can be used to read the integer:
   // fileReader.read function returns a bool to indicate
   // if it read something or if the end of the file
   // was reached before something could be read.
-  var readSomething = myFileReader.read(x);
+  var readSomething = try! myFileReader.read(x);
 
   writeln("Read integer ", x);
   // prints out:
-  // 17
+  // Read integer 17
 
 The :proc:`~IO.read` functions allow one to read values into variables as
 the following example demonstrates. It shows three ways to read values into
