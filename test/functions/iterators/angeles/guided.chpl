@@ -26,7 +26,7 @@ forall i in 0..#nTasks do {
 t.stop();
 if !quiet then {
   writeln();
-  writeln("Time to initialize pool ", t.elapsed(TimeUnits.microseconds), " microseconds");
+  writeln("Time to initialize pool ", t.elapsed()*1_000_000, " microseconds");
   writeln();
  }
 
@@ -66,14 +66,14 @@ proc CheckCorrectness(grainsize:string)
 	writeln();
 	t.start();
 	forall c in guided(r,nTasks) do {
-	  sleep(delay, TimeUnits.microseconds);
+	  sleep(delay / 1_000_000.0);
 	  A[c]=A[c]+1;
 	}
 	t.stop();
 	if !quiet then {
 	  writeln();
-	  writeln("Total time ", grainsize, " ", t.elapsed(TimeUnits.milliseconds), " milliseconds");
-//	  writeln("Average time per it. ", t.elapsed(TimeUnits.milliseconds)/(n), " milliseconds");
+	  writeln("Total time ", grainsize, " ", t.elapsed()*1_000, " milliseconds");
+//	  writeln("Average time per it. ", (t.elapsed()*1_000)/(n), " milliseconds");
 	  writeln();
 	}
 	for i in r do {
@@ -101,14 +101,14 @@ proc CheckCorrectness(grainsize:string)
 	writeln();
 	t.start();
 	forall c in guided(r,nTasks) do {
-	  sleep(delay, TimeUnits.microseconds);
+	  sleep(delay / 1_000_000.0);
 	  B[c]=B[c]+1;
 	}
 	t.stop();
 	if !quiet then {
 	  writeln();
-	  writeln("Total time ", grainsize, " ", t.elapsed(TimeUnits.milliseconds), " milliseconds");
-//	  writeln("Average time per it. ", t.elapsed(TimeUnits.milliseconds)/(n), " milliseconds");
+	  writeln("Total time ", grainsize, " ", t.elapsed()*1_000, " milliseconds");
+//	  writeln("Average time per it. ", (t.elapsed()*1_000)/(n), " milliseconds");
 	  writeln();
 	}
 	for i in r do {
@@ -140,15 +140,15 @@ proc CheckCorrectness(grainsize:string)
       t.start();
       forall c in guided(r,nTasks) do {
 	for j in c..n do{
-	  sleep(delay, TimeUnits.microseconds);
+	  sleep(delay / 1_000_000.0);
 	  C[c,j]=C[c,j]+1;
 	}
       }
       t.stop();
       if !quiet then {
 	writeln();
-	writeln("Total time ", grainsize, " ", t.elapsed(TimeUnits.milliseconds), " milliseconds");
-//	writeln("Average time per it. ", t.elapsed(TimeUnits.milliseconds)/(n*m), " milliseconds");
+	writeln("Total time ", grainsize, " ", t.elapsed()*1_000, " milliseconds");
+//	writeln("Average time per it. ", (t.elapsed()*1_000)/(n*m), " milliseconds");
 	writeln();
       }
       for i in r do {
@@ -192,14 +192,14 @@ proc CheckCorrectness(grainsize:string)
   
       t.start();
       forall c in guided(r,nTasks) do {
-	sleep(delayran(c), TimeUnits.microseconds);
+	sleep(delayran(c) / 1_000_000.0);
 	D[c]=D[c]+1;
       }
       t.stop();
       if !quiet then {
 	writeln();
-	writeln("Total time ", grainsize, " ", t.elapsed(TimeUnits.milliseconds), " milliseconds");
-//	writeln("Average time per it. ", t.elapsed(TimeUnits.milliseconds)/(n), " milliseconds");
+	writeln("Total time ", grainsize, " ", t.elapsed()*1_000, " milliseconds");
+//	writeln("Average time per it. ", (t.elapsed()*1_000)/(n), " milliseconds");
 	writeln();
       }
 	for i in r do {

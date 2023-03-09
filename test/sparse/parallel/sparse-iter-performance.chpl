@@ -30,7 +30,7 @@ proc test(param dim:int, d: domain(dim)) {
   }
   proc fi(msg) {
     tm.stop();
-    var ms = tm.elapsed(TimeUnits.milliseconds);
+    var ms = tm.elapsed() * 1000.0;
     writeln(msg, " : ", ms, " ms");
   }
 

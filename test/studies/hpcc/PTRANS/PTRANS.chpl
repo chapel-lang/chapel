@@ -154,7 +154,7 @@ module HPCC_PTRANS {
     }
 
     if (printStats) {
-      elapsed_time = PTRANS_time.elapsed (TimeUnits.seconds);
+      elapsed_time = PTRANS_time.elapsed ();
     
       if ( elapsed_time  > zero ) then
         GB_sec = ( n_rows * n_cols * 8 ) / ( 1.0e9 * elapsed_time );

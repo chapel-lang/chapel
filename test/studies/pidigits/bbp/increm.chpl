@@ -54,7 +54,7 @@ proc main
   if perfTest then
   {
     t.stop();
-    writeln("Elapsed time = ", t.elapsed(TimeUnits.seconds));
+    writeln("Elapsed time = ", t.elapsed());
   }
 
   write_out();

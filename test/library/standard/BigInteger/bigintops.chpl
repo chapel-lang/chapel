@@ -41,7 +41,7 @@ proc runOpTest(inputVal: bigint) {
 
   if perfTest {
     t.stop();
-    writeln("Elapsed ", inputVal.sizeInBase(2), " addition time = ", t.elapsed(TimeUnits.seconds));
+    writeln("Elapsed ", inputVal.sizeInBase(2), " addition time = ", t.elapsed());
   } else {
     writeln("Result: ", c);
   }
@@ -60,7 +60,7 @@ proc runAddAssignTest(inputVal: bigint) {
 
   if perfTest {
     t.stop();
-    writeln("Elapsed ", inputVal.sizeInBase(2), " add assign time = ", t.elapsed(TimeUnits.seconds));
+    writeln("Elapsed ", inputVal.sizeInBase(2), " add assign time = ", t.elapsed());
   } else {
     writeln("Result: ", b);
   }
@@ -80,7 +80,7 @@ proc runPowTest(inputVal: bigint) {
 
   if perfTest {
     t.stop();
-    writeln("Elapsed ", inputVal.sizeInBase(2), " pow time = ", t.elapsed(TimeUnits.seconds));
+    writeln("Elapsed ", inputVal.sizeInBase(2), " pow time = ", t.elapsed());
   } else {
     writeln("Result: ", b);
   }
