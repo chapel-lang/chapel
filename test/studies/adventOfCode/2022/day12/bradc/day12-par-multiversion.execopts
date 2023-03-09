@@ -1,6 +1,4 @@
-< day12.in0              # day12.good
---version=1 < day12.in0  # day12.good
---version=2 < day12.in0  # day12.good
-< day12.in               # day12-real.good
-< day12.in               # day12-real.good
---version=2 < day12.in   # day12-real.good
+< day12.stdin              # day12.good
+--version=1 < day12.stdin  # day12.good
+--version=2 < day12.stdin  # day12.good
+--version=3 < day12.stdin  # day12.good
