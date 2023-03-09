@@ -212,6 +212,8 @@ def find_system_llvm_config():
         paths.append("llvm-config-" + vers)
         # this format used by freebsd
         paths.append("llvm-config" + vers)
+        # this format is used by Alpine Linux
+        paths.append("llvm" + vers + "-config")
         if homebrew_prefix:
             # look for homebrew install of LLVM
             paths.append(homebrew_prefix +
@@ -372,18 +374,26 @@ def get_system_llvm_clang(lang):
         clang = os.path.join(bindir, clang_name)
 
         if not os.path.exists(clang):
-            # also try /usr/bin/clang since some OSes use that
-            # for the clang package
-            usr_bin = "/usr/bin"
-            clang2 = os.path.join(usr_bin, clang_name);
-            if os.path.exists(clang2):
-                llvm_config = find_system_llvm_config()
-                # check that clang --version matches llvm-config --version
-                clangv = run_command([clang2, '--version']).strip()
-                llvmv = run_command([llvm_config, '--version']).strip()
+            # try /usr/bin/clang-<version> or /usr/bin/clang
+            # since some OSes use that for the clang package
+            paths = [ ]
 
-                if llvmv in clangv:
-                    clang = clang2
+            usr_bin = "/usr/bin"
+            llvm_config = find_system_llvm_config()
+            llvm_version, ignored_err = check_llvm_config(llvm_config)
+
+            paths.append(os.path.join(usr_bin, clang_name + "-" + llvm_version))
+            paths.append(os.path.join(usr_bin, clang_name))
+
+            for clang2 in paths:
+                if os.path.exists(clang2):
+                    # check that clang --version matches llvm-config --version
+                    clangv = run_command([clang2, '--version']).strip()
+                    llvmv = run_command([llvm_config, '--version']).strip()
+
+                    if llvmv in clangv:
+                        clang = clang2
+                        break
 
     return clang
 
