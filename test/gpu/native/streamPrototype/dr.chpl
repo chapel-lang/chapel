@@ -1,8 +1,8 @@
-use GPUDiagnostics;
+use GpuDiagnostics;
 
 config const n = 10;
 
-startGPUDiagnostics();
+startGpuDiagnostics();
 on here.gpus[0] {
   var a, b: [0..n] int;
   var value = 20;
@@ -19,5 +19,5 @@ on here.gpus[0] {
   foreach i in 0..n { b[i] += a[i]*10;    } writeln(b);
   foreach i in 0..n { b[i] += a[i]*value; } writeln(b);
 }
-stopGPUDiagnostics();
-writeln(getGPUDiagnostics());
+stopGpuDiagnostics();
+writeln(getGpuDiagnostics());

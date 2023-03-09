@@ -1,10 +1,10 @@
-use GPUDiagnostics;
+use GpuDiagnostics;
 
 config const n = 10;
 
 config const alpha = 10;
 
-startGPUDiagnostics();
+startGpuDiagnostics();
 on here.gpus[0] {
   var A: [1..n] int;
   var B: [1..n] int;
@@ -20,8 +20,8 @@ on here.gpus[0] {
   A = foo(A);                       writeln(A);
 
 }
-stopGPUDiagnostics();
-assert(getGPUDiagnostics()[0].kernel_launch == 7);
+stopGpuDiagnostics();
+assert(getGpuDiagnostics()[0].kernel_launch == 7);
 
 proc foo(a: int) {
   return a+1;

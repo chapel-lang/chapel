@@ -30,7 +30,7 @@ extern "C" {
 #endif
 
 // We need to declare this variable outside of the commented out HAS_GPU_LOCALE
-// section due to the fact that GPUDiagnostics module accesses it (and this
+// section due to the fact that GpuDiagnostics module accesses it (and this
 // module can be used despite what locale model you're using).
 extern bool chpl_gpu_debug;
 

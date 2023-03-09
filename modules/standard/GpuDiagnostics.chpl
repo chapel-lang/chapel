@@ -31,8 +31,8 @@
     For the most up-to-date information about GPU support see the
     :ref:`technical note <readme-gpu>` about it.
 */
-@unstable "The GPUDiagnostics module is unstable and its interface is subject to change in the future."
-module GPUDiagnostics
+@unstable "The GpuDiagnostics module is unstable and its interface is subject to change in the future."
+module GpuDiagnostics
 {
 
   // TODO can we even do this?
@@ -82,35 +82,35 @@ module GPUDiagnostics
   /*
     Start on-the-fly reporting of GPU operations initiated on any locale.
    */
-  proc startVerboseGPU() {
+  proc startVerboseGpu() {
     chpl_gpu_startVerbose(gpuDiagsStacktrace, gpuDiagsPrintUnstable);
   }
 
   /*
     Stop on-the-fly reporting of GPU operations initiated on any locale.
    */
-  proc stopVerboseGPU() { chpl_gpu_stopVerbose(); }
+  proc stopVerboseGpu() { chpl_gpu_stopVerbose(); }
 
   /*
     Start counting GPU operations across the whole program.
    */
-  proc startGPUDiagnostics() {
+  proc startGpuDiagnostics() {
     chpl_gpu_startDiagnostics(gpuDiagsPrintUnstable);
   }
 
   /*
     Stop counting GPU operations across the whole program.
    */
-  proc stopGPUDiagnostics() {
+  proc stopGpuDiagnostics() {
     chpl_gpu_stopDiagnostics();
   }
 
   /*
     Reset aggregate GPU operation counts across the whole program.
    */
-  proc resetGPUDiagnostics() {
+  proc resetGpuDiagnostics() {
     for loc in Locales do on loc do
-      resetGPUDiagnosticsHere();
+      resetGpuDiagnosticsHere();
   }
 
   /*
@@ -119,10 +119,10 @@ module GPUDiagnostics
     :returns: array of counts of GPU ops initiated on each locale
     :rtype: `[LocaleSpace] gpuDiagnostics`
    */
-  proc getGPUDiagnostics() {
+  proc getGpuDiagnostics() {
     var D: [LocaleSpace] gpuDiagnostics;
     for loc in Locales do on loc {
-      D(loc.id) = getGPUDiagnosticsHere();
+      D(loc.id) = getGpuDiagnosticsHere();
     }
     return D;
   }
@@ -133,7 +133,7 @@ module GPUDiagnostics
     :returns: counts of GPU ops initiated on this locale
     :rtype: `gpuDiagnostics`
    */
-  private proc getGPUDiagnosticsHere() {
+  private proc getGpuDiagnosticsHere() {
     var cd: gpuDiagnostics;
     chpl_gpu_getDiagnosticsHere(cd);
     return cd;
@@ -142,7 +142,7 @@ module GPUDiagnostics
   /*
     Reset aggregate GPU operation counts on the calling locale.
    */
-  private inline proc resetGPUDiagnosticsHere() {
+  private inline proc resetGpuDiagnosticsHere() {
     chpl_gpu_resetDiagnosticsHere();
   }
 }
