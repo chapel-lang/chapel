@@ -178,6 +178,82 @@ static QualifiedType primFieldNametoNum(Context* context, const CallInfo& ci) {
   return type;
 }
 
+static QualifiedType primFieldByNum(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() != 2) return QualifiedType();
+
+  auto firstActual = ci.actual(0).type();
+  auto secondActual = ci.actual(1).type();
+  auto fields = toCompositeTypeActualFields(context,
+                                            firstActual,
+                                            /* shouldBeType */ false);
+  if (!fields) return QualifiedType();
+  int64_t fieldNum = 0;
+  if (!toParamIntActual(secondActual, fieldNum)) return QualifiedType();
+
+  // Fields in these primitives are 1-indexed.
+  if (fieldNum > fields->numFields() || fieldNum < 1) return QualifiedType();
+  return fields->fieldType(fieldNum - 1);;
+}
+
+static QualifiedType primCallResolves(Context* context, const CallInfo &ci,
+                                      bool forMethod, bool resolveFn,
+                                      const PrimCall* call,
+                                      const Scope* inScope,
+                                      const PoiScope* inPoiScope) {
+  if ((forMethod && ci.numActuals() < 2) ||
+      (!forMethod && ci.numActuals() < 1)) {
+    return QualifiedType();
+  }
+
+  size_t fnNameActual = forMethod ? 1 : 0;
+  UniqueString fnName;
+  if (!toParamStringActual(ci.actual(fnNameActual).type(), fnName)) {
+    return QualifiedType();
+  }
+
+  bool callAndFnResolved = false;
+  std::vector<CallInfoActual> actuals;
+  if (forMethod) {
+    actuals.push_back(CallInfoActual(ci.actual(0).type(), USTR("this")));
+  }
+  for (size_t i = fnNameActual + 1; i < ci.numActuals(); i++) {
+    actuals.push_back(ci.actual(i));
+  }
+  auto callInfo = CallInfo(fnName,
+                           /* calledType */ QualifiedType(),
+                           /* isMethodCall */ forMethod,
+                           /* hasQuestionArg */ false,
+                           /* isParenless */ false,
+                           std::move(actuals));
+  auto callResult = context->runAndTrackErrors([&](Context* context) {
+    return resolveGeneratedCall(context, call, callInfo,
+                                inScope, inPoiScope);
+  });
+  const TypedFnSignature* bestCandidate = nullptr;
+  for (auto candidate : callResult.result().mostSpecific()) {
+    if (candidate != nullptr) {
+      bestCandidate = candidate;
+      break;
+    }
+  }
+
+  if (bestCandidate != nullptr) {
+    callAndFnResolved = callResult.ranWithoutErrors();
+
+    if (resolveFn) {
+      // We did find a candidate; resolve the function body.
+      auto bodyResult = context->runAndTrackErrors([&](Context* context) {
+        return resolveFunction(context, bestCandidate, inPoiScope);
+      });
+      callAndFnResolved &= bodyResult.ranWithoutErrors();
+    }
+  }
+
+  return QualifiedType(QualifiedType::PARAM,
+                       BoolType::get(context, 0),
+                       BoolParam::get(context, callAndFnResolved));
+}
+
 CallResolutionResult resolvePrimCall(Context* context,
                                      const PrimCall* call,
                                      const CallInfo& ci,
@@ -236,22 +312,7 @@ CallResolutionResult resolvePrimCall(Context* context,
       break;
 
     case PRIM_FIELD_BY_NUM:
-      if (ci.numActuals() == 2) {
-        auto firstActual = ci.actual(0).type();
-        auto secondActual = ci.actual(1).type();
-
-        auto fields = toCompositeTypeActualFields(context,
-                                                  firstActual,
-                                                  /* shouldBeType */ false);
-        if (fields) {
-          int64_t fieldNum = 0;
-          if (toParamIntActual(secondActual, fieldNum)) {
-            // Fields in these primitives are 1-indexed.
-            if (fieldNum > fields->numFields() || fieldNum < 1) break;
-            type = fields->fieldType(fieldNum - 1);
-          }
-        }
-      }
+      type = primFieldByNum(context, ci);
       break;
 
     case PRIM_CLASS_NAME_BY_ID:
@@ -285,56 +346,8 @@ CallResolutionResult resolvePrimCall(Context* context,
         bool resolveFn = prim == PRIM_CALL_AND_FN_RESOLVES ||
                          prim == PRIM_METHOD_CALL_AND_FN_RESOLVES;
 
-        if ((forMethod && ci.numActuals() < 2) ||
-            (!forMethod && ci.numActuals() < 1)) break;
-
-        size_t fnNameActual = forMethod ? 1 : 0;
-
-        UniqueString fnName;
-        if (toParamStringActual(ci.actual(fnNameActual).type(), fnName)) {
-          bool callAndFnResolved = false;
-
-          std::vector<CallInfoActual> actuals;
-          if (forMethod) {
-            actuals.push_back(CallInfoActual(ci.actual(0).type(), USTR("this")));
-          }
-          for (size_t i = fnNameActual + 1; i < ci.numActuals(); i++) {
-            actuals.push_back(ci.actual(i));
-          }
-          auto callInfo = CallInfo(fnName,
-                                   /* calledType */ QualifiedType(),
-                                   /* isMethodCall */ forMethod,
-                                   /* hasQuestionArg */ false,
-                                   /* isParenless */ false,
-                                   std::move(actuals));
-          auto callResult = context->runAndTrackErrors([&](Context* context) {
-            return resolveGeneratedCall(context, call, callInfo,
-                                        inScope, inPoiScope);
-          });
-          const TypedFnSignature* bestCandidate = nullptr;
-          for (auto candidate : callResult.result().mostSpecific()) {
-            if (candidate != nullptr) {
-              bestCandidate = candidate;
-              break;
-            }
-          }
-
-          if (bestCandidate != nullptr) {
-            callAndFnResolved = callResult.ranWithoutErrors();
-
-            if (resolveFn) {
-              // We did find a candidate; resolve the function body.
-              auto bodyResult = context->runAndTrackErrors([&](Context* context) {
-                return resolveFunction(context, bestCandidate, inPoiScope);
-              });
-              callAndFnResolved &= bodyResult.ranWithoutErrors();
-            }
-          }
-
-          type = QualifiedType(QualifiedType::PARAM,
-                               BoolType::get(context, 0),
-                               BoolParam::get(context, callAndFnResolved));
-        }
+        type = primCallResolves(context, ci, forMethod, resolveFn, call,
+                                inScope, inPoiScope);
       }
       break;
 
