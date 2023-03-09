@@ -1,6 +1,6 @@
 module Main {
   module Foo {
-    deprecated "x is deprecated" var x: int;
+    @deprecated(notes="x is deprecated") var x: int;
     var y: bool;
   }
 

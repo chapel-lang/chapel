@@ -77,8 +77,6 @@ class Decl : public AstNode {
 
     CHPL_ASSERT(NO_CHILD <= linkageNameChildNum_ &&
                  linkageNameChildNum_ < (ssize_t)children_.size());
-    CHPL_ASSERT(NO_CHILD <= linkageNameChildNum_ &&
-                 linkageNameChildNum_ < (ssize_t)children_.size());
   }
 
   Decl(AstTag tag, Deserializer& des)

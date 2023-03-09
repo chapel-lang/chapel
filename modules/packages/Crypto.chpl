@@ -801,7 +801,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
        well. The deprecated Blowfish support here does not function with OpenSSL
        3.
   */
-  deprecated "Blowfish is deprecated, please use another algorithm"
+  @deprecated(notes="Blowfish is deprecated, please use another algorithm")
   class Blowfish {
     pragma "no doc"
     var cipher: CONST_EVP_CIPHER_PTR;

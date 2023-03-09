@@ -1233,6 +1233,19 @@ ConfigSettingsList& configSettings(Context* context) {
   return QUERY_END(result);
 }
 
+void setAttributeToolNames(Context* context, AttributeToolNamesList toolNames) {
+  QUERY_STORE_INPUT_RESULT(AttributeToolNames, context, toolNames);
+}
+
+const AttributeToolNamesList& AttributeToolNames(Context *context) {
+  QUERY_BEGIN_INPUT(AttributeToolNames, context);
+
+  // return empty AttributeToolNamesList if not already set
+
+  AttributeToolNamesList result;
+  return QUERY_END(result);
+}
+
 const uast::AttributeGroup* idToAttributeGroup(Context* context, ID id) {
   const uast::AttributeGroup* ret = nullptr;
   if (id.isEmpty()) return ret;

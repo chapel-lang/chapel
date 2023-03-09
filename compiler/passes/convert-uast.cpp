@@ -273,6 +273,11 @@ struct Converter {
     return nullptr;
   }
 
+  Expr* visit(const uast::Attribute* node) {
+    INT_FATAL("Should not be called directly!");
+    return nullptr;
+  }
+
   Flag convertPragmaToFlag(chpl::uast::PragmaTag pragma) {
     Flag ret = FLAG_UNKNOWN;
     switch (pragma) {

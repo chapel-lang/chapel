@@ -1733,7 +1733,7 @@ module String {
 
       :returns: A new `string` with indentation removed.
   */
-  @unstable "string.dedent is subject to change in the future."
+  @unstable("string.dedent is subject to change in the future.")
   proc string.dedent(columns=0, ignoreFirst=true) : string {
     return doDedent(this, columns, ignoreFirst);
   }

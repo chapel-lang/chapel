@@ -1,7 +1,7 @@
 class TestUnstableMethod {
   var v1 = 3;
 
-  @unstable "this method is unstable, use stablemethod"
+  @unstable("this method is unstable, use stablemethod")
   proc unstablemethod() {
     stablemethod();
   }

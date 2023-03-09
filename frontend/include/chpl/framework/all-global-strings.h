@@ -65,6 +65,7 @@ X(scan           , "scan")
 X(shared         , "shared")
 X(single         , "single")
 X(sparse         , "sparse")
+X(stable         , "stable")
 X(string         , "string")
 X(subdomain      , "subdomain")
 X(super_         , "super")
@@ -128,6 +129,9 @@ X(rangeCount     , "#")
 X(swap           , "<=>")
 X(chplBy         , "chpl_by")
 X(chplAlign      , "chpl_align")
+X(chpldocDot     , "chpldoc.")
+X(deprecated     , "deprecated")
+X(unstable       , "unstable")
 
 /* A string too long is checked at compile time */
 /* X(somethingtoolong      , "somethingtoolongforthemacro") */

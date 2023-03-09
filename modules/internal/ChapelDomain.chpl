@@ -1836,7 +1836,7 @@ module ChapelDomain {
     }
 
     pragma "no doc"
-    @unstable "bulkAdd() is subject to change in the future."
+    @unstable("bulkAdd() is subject to change in the future.")
     proc ref bulkAdd(inds: [] _value.idxType, dataSorted=false,
         isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank==1 {
@@ -1845,7 +1845,7 @@ module ChapelDomain {
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
     }
 
-    deprecated "makeIndexBuffer has been renamed to createIndexBuffer"
+    @deprecated(notes="makeIndexBuffer has been renamed to createIndexBuffer")
     inline proc makeIndexBuffer(size: int) { return createIndexBuffer(size); }
 
     /*
@@ -1876,7 +1876,7 @@ module ChapelDomain {
      :arg size: Size of the buffer in number of indices.
      :type size: int
     */
-    @unstable "createIndexBuffer() is subject to change in the future."
+    @unstable("createIndexBuffer() is subject to change in the future.")
     inline proc createIndexBuffer(size: int) {
       return _value.dsiCreateIndexBuffer(size);
     }
@@ -1924,7 +1924,7 @@ module ChapelDomain {
        :returns: Number of indices added to the domain
        :rtype: int
     */
-    @unstable "bulkAdd() is subject to change in the future."
+    @unstable("bulkAdd() is subject to change in the future.")
     proc ref bulkAdd(inds: [] _value.rank*_value.idxType,
         dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale)
         where this.isSparse() && _value.rank>1 {
@@ -2024,10 +2024,10 @@ module ChapelDomain {
     proc last do return _value.dsiLast;
 
     /* Return the low index in this domain factoring in alignment */
-    deprecated "'.alignedLow' is deprecated; please use '.low' instead"
+    @deprecated(notes="'.alignedLow' is deprecated; please use '.low' instead")
     proc alignedLow do return _value.dsiAlignedLow;
     /* Return the high index in this domain factoring in alignment */
-    deprecated "'.alignedHigh' is deprecated; please use '.high' instead"
+    @deprecated(notes="'.alignedHigh' is deprecated; please use '.high' instead")
     proc alignedHigh do return _value.dsiAlignedHigh;
 
     /* This error overload is here because without it, the domain's

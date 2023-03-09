@@ -383,7 +383,7 @@
 %token <uniqueStr> TBEGIN TBREAK TBOOL TBORROWED TBY TBYTES
 %token <uniqueStr> TCATCH TCLASS TCOBEGIN TCOFORALL TCOMPLEX
 %token <uniqueStr> TCONFIG TCONST TCONTINUE
-%token <uniqueStr> TDEFER TDELETE TDEPRECATED TDMAPPED TDO TDOMAIN
+%token <uniqueStr> TDEFER TDELETE TDMAPPED TDO TDOMAIN
 %token <uniqueStr> TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token <uniqueStr> TFALSE TFOR TFORALL TFOREACH TFORWARDING
 %token <uniqueStr> TIF TIMAG TIMPORT TIN TINCLUDE
@@ -399,7 +399,7 @@
 %token <uniqueStr> TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE
 %token <uniqueStr> TSTRING TSUBDOMAIN TSYNC
 %token <uniqueStr> TTHEN TTHIS TTHROW TTHROWS TTRUE TTRY TTRYBANG TTYPE
-%token <uniqueStr> TUINT TUNDERSCORE TUNION TUNMANAGED TUNSTABLE TUSE
+%token <uniqueStr> TUINT TUNDERSCORE TUNION TUNMANAGED TUSE
 %token <uniqueStr> TVAR TVOID
 %token <uniqueStr> TWHEN TWHERE TWHILE TWITH
 %token <uniqueStr> TYIELD
@@ -415,6 +415,7 @@
 %token <uniqueStr> TASSIGNLAND TASSIGNLOR TASSIGNMINUS TASSIGNMOD
 %token <uniqueStr> TASSIGNMULTIPLY TASSIGNPLUS TASSIGNREDUCE
 %token <uniqueStr> TASSIGNSL TASSIGNSR
+%token <uniqueStr> TATMARK
 %token <uniqueStr> TBANG TBAND TBNOT TBOR TBXOR
 %token <uniqueStr> TCOLON TCOMMA
 %token <uniqueStr> TDIVIDE TDOT TDOTDOT TDOTDOTDOT
@@ -481,6 +482,13 @@
 %left TDOT TLP
 %nonassoc TPRAGMA TALIAS
 
+%type <expr>  attribute_decl_begin
+%type <exprList>  attribute_decl_stmt_ls
+%type <exprList> opt_attribute_decl_toolspace attribute_group attribute_decl_stmt
+
+%type <maybeNamedActual> attribute_actual
+%type <maybeNamedActualList> attribute_actuals_ls opt_attribute_actuals
+
 %type <throwsTag> opt_throws_error
 %type <moduleKind> opt_prototype
 %type <visibilityTag> opt_access_control
@@ -495,13 +503,6 @@
 %type <uniqueStr> implements_type_ident implements_type_error_ident
 
 %type <commentsAndStmt> decl_base
-%type <commentsAndStmt> deprecated_decl_stmt
-%type <commentsAndStmt> deprecated_enum_item
-%type <commentsAndStmt> deprecated_class_level_stmt
-
-%type <commentsAndStmt> unstable_decl_stmt
-%type <commentsAndStmt> unstable_enum_item
-%type <commentsAndStmt> unstable_class_level_stmt
 
 // statement lists
 %type <exprList> program
@@ -528,7 +529,7 @@
 
 %type <exprList> class_level_stmt_ls
 
-%type <commentsAndStmt> stmt tryable_stmt
+%type <commentsAndStmt> stmt tryable_stmt stmt_base attribute_receiver
 %type <blockOrDo> do_stmt
 %type <commentsAndStmt> if_stmt loop_stmt
 %type <commentsAndStmt> select_stmt
@@ -661,9 +662,22 @@ pragma_ls:
 ;
 
 stmt:
+  // attribute group is handled via context->noteAttribute(), it's just here
+  // to allow for parsing
+  attribute_group attribute_receiver
+  {
+    $$ = $2;
+  }
+  |
+  stmt_base
+  {
+    $$ = $1;
+  }
+;
+
+stmt_base:
   tryable_stmt      // (no '->finishStmt()' required b/c 'tryable_stmt' did it)
-| deprecated_decl_stmt      { $$ = context->finishStmt($1); }
-| unstable_decl_stmt        { $$ = context->finishStmt($1); }
+| decl_base                 { $$ = context->finishStmt($1); }
 | include_module_stmt       { $$ = context->finishStmt($1); }
 | block_stmt                { $$ = context->finishStmt($1); }
 | use_stmt                  { $$ = context->finishStmt($1); }
@@ -841,48 +855,80 @@ tryable_stmt:
   }
 ;
 
-deprecated_decl_stmt:
-  decl_base
-| TDEPRECATED STRINGLITERAL
-  {
-    context->noteDeprecation(@$, $2);
-  }
-  decl_base
-  {
-    $$ = $4;
-  }
-| TDEPRECATED
-  {
-    context->noteDeprecation(@$, nullptr);
-  }
-  decl_base
-  {
-    $$ = $3;
-  }
-;
-
 decl_base:
   module_decl_stmt
 | class_level_stmt
 ;
 
-unstable_decl_stmt:
-  TUNSTABLE STRINGLITERAL
+attribute_receiver:
+  loop_stmt
+  | decl_base
+  | block_stmt
+;
+
+attribute_group:
+  attribute_decl_stmt_ls
+;
+
+attribute_decl_stmt_ls:
+  attribute_decl_stmt
+| attribute_decl_stmt_ls attribute_decl_stmt
+;
+
+attribute_decl_stmt:
+ attribute_decl_begin opt_attribute_decl_toolspace opt_attribute_actuals
+ {
+  context->noteAttribute(@1, $1, $2, $3);
+ }
+;
+
+attribute_decl_begin:
+  TATMARK TIDENT
   {
-    context->noteUnstable(@$, $2);
+    auto ident = context->buildIdent(@2, $2);
+    $$ = ident;
   }
-  decl_base
+;
+
+opt_attribute_decl_toolspace:
   {
-    $$ = $4;
+    $$=context->makeList();
   }
-| TUNSTABLE
+  | TDOT TIDENT opt_attribute_decl_toolspace
   {
-    context->noteUnstable(@$, nullptr);
+    // had to create this as a list first, otherwise they get inserted in the
+    // wrong order.
+    auto lst = context->makeList(context->buildIdent(@2, $2));
+    $$ = context->appendList(lst, $3);
   }
-  decl_base
+;
+
+opt_attribute_actuals:
+  { $$=new MaybeNamedActualList(); }
+  | TLP TRP
+  { $$=new MaybeNamedActualList(); }
+  | TLP attribute_actuals_ls TRP
   {
-    $$ = $3;
+    $$ = $2;
   }
+;
+
+attribute_actuals_ls:
+  attribute_actual
+  { auto lst = new MaybeNamedActualList();
+    lst->push_back($1);
+    $$ = lst;
+  }
+  | attribute_actuals_ls TCOMMA attribute_actual
+  {
+      MaybeNamedActualList* lst = $1;
+      lst->push_back($3);
+      $$ = lst;
+  }
+;
+
+attribute_actual:
+  actual_expr
 ;
 
 module_decl_start:
@@ -1341,45 +1387,6 @@ return_stmt:
   }
 ;
 
-deprecated_class_level_stmt:
-  class_level_stmt
-| TDEPRECATED STRINGLITERAL
-  {
-    context->noteDeprecation(@$, $2);
-  }
-  class_level_stmt
-  {
-    $$ = $4;
-  }
-| TDEPRECATED
-  {
-    context->noteDeprecation(@$, nullptr);
-  }
-  class_level_stmt
-  {
-    $$ = $3;
-  }
-;
-
-unstable_class_level_stmt:
-  TUNSTABLE STRINGLITERAL
-  {
-    context->noteUnstable(@$, $2);
-  }
-  class_level_stmt
-  {
-    $$ = $4;
-  }
-| TUNSTABLE
-  {
-    context->noteUnstable(@$, nullptr);
-  }
-  class_level_stmt
-  {
-    $$ = $3;
-  }
-;
-
 class_level_stmt:
   TSEMI
     {
@@ -1607,8 +1614,10 @@ loop_stmt:
                            blockStyle,
                            std::move(body),
                            /*isExpressionLevel*/ false,
-                           /*isParam*/ true);
+                           /*isParam*/ true,
+                           context->buildAttributeGroup(@$));
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    context->resetAttributeGroupPartsState();
     $$ = context->finishStmt(cs);
   }
 | TFORALL expr TIN expr                                   do_stmt
@@ -2078,21 +2087,21 @@ class_level_stmt_ls:
     /* nothing */
     $$ = context->makeList();
   }
-| class_level_stmt_ls deprecated_class_level_stmt
+ | class_level_stmt_ls class_level_stmt
   {
     context->appendList($1, $2);
   }
-| class_level_stmt_ls unstable_class_level_stmt
+| class_level_stmt_ls attribute_decl_stmt_ls class_level_stmt
   {
-    context->appendList($1, $2);
+    context->appendList($1, $3);
   }
-| class_level_stmt_ls pragma_ls deprecated_class_level_stmt
+| class_level_stmt_ls pragma_ls class_level_stmt
   {
     context->appendList($1, context->buildPragmaStmt(@3, $3));
   }
-| class_level_stmt_ls pragma_ls unstable_class_level_stmt
+| class_level_stmt_ls pragma_ls attribute_decl_stmt_ls class_level_stmt
   {
-    context->appendList($1, context->buildPragmaStmt(@3, $3));
+    context->appendList($1, context->buildPragmaStmt(@4, $4));
   }
 ;
 
@@ -2134,7 +2143,7 @@ enum_header_lcbr:
 ;
 
 enum_ls:
-  deprecated_enum_item
+  enum_item
   {
     $$ = context->makeList($1);
     context->resetAttributeGroupPartsState();
@@ -2150,15 +2159,14 @@ enum_ls:
     context->clearCommentsBefore(@2);
     context->resetAttributeGroupPartsState();
   }
-  deprecated_enum_item
+  enum_item
   {
     context->appendList($1, $4);
     context->resetAttributeGroupPartsState();
   }
-|
-  unstable_enum_item
+| attribute_decl_stmt_ls enum_item
   {
-    $$ = context->makeList($1);
+    $$ = context->makeList($2);
     context->resetAttributeGroupPartsState();
   }
 | enum_ls TCOMMA
@@ -2166,52 +2174,14 @@ enum_ls:
     context->clearCommentsBefore(@2);
     context->resetAttributeGroupPartsState();
   }
-  unstable_enum_item
+  attribute_decl_stmt_ls enum_item
   {
-    context->appendList($1, $4);
+    context->appendList($1, $5);
     context->resetAttributeGroupPartsState();
   }
 
 ;
 
-deprecated_enum_item:
-  enum_item
-| TDEPRECATED STRINGLITERAL
-  {
-    context->noteDeprecation(@$, $2);
-  }
-  enum_item
-  {
-    $$ = $4;
-  }
-| TDEPRECATED
-  {
-    context->noteDeprecation(@$, nullptr);
-  }
-  enum_item
-  {
-    $$ = $3;
-  }
-;
-
-unstable_enum_item:
-  TUNSTABLE STRINGLITERAL
-  {
-    context->noteUnstable(@$, $2);
-  }
-  enum_item
-  {
-    $$ = $4;
-  }
-| TUNSTABLE
-  {
-    context->noteUnstable(@$, nullptr);
-  }
-  enum_item
-  {
-    $$ = $3;
-  }
-;
 
 enum_item:
   ident_def
@@ -3025,7 +2995,9 @@ for_expr:
                     BlockStyle::IMPLICIT,
                     context->consumeToBlock(@6, $6),
                     /*isExpressionLevel*/ true,
-                    /*isParam*/ false).release();
+                    /*isParam*/ false,
+                    context->buildAttributeGroup(@$)).release();
+    context->resetAttributeGroupPartsState();
   }
 | TFOR expr TIN zippered_iterator TDO expr %prec TFOR
   {
@@ -3034,7 +3006,9 @@ for_expr:
                     BlockStyle::IMPLICIT,
                     context->consumeToBlock(@6, $6),
                     /*isExpressionLevel*/ true,
-                    /*isParam*/ false).release();
+                    /*isParam*/ false,
+                    context->buildAttributeGroup(@$)).release();
+                    context->resetAttributeGroupPartsState();
   }
 | TFOR expr TDO expr %prec TFOR
   {
@@ -3042,7 +3016,9 @@ for_expr:
                     BlockStyle::IMPLICIT,
                     context->consumeToBlock(@4, $4),
                     /*isExpressionLevel*/ true,
-                    /*isParam*/ false).release();
+                    /*isParam*/ false,
+                    context->buildAttributeGroup(@$)).release();
+                    context->resetAttributeGroupPartsState();
   }
 | TFOR expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
   {
@@ -3056,7 +3032,9 @@ for_expr:
                     BlockStyle::IMPLICIT,
                     context->consumeToBlock(ifLoc, ifExpr.release()),
                     /*isExpressionLevel*/ true,
-                    /*isParam*/ false).release();
+                    /*isParam*/ false,
+                    context->buildAttributeGroup(@$)).release();
+                    context->resetAttributeGroupPartsState();
   }
 | TFOR expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
   {
@@ -3070,7 +3048,9 @@ for_expr:
                     BlockStyle::IMPLICIT,
                     context->consumeToBlock(ifLoc, ifExpr.release()),
                     /*isExpressionLevel*/ true,
-                    /*isParam*/ false).release();
+                    /*isParam*/ false,
+                    context->buildAttributeGroup(@$)).release();
+                    context->resetAttributeGroupPartsState();
   }
 | TFOR expr TDO TIF expr TTHEN expr %prec TNOELSE
   {
@@ -3084,7 +3064,9 @@ for_expr:
                     BlockStyle::IMPLICIT,
                     context->consumeToBlock(ifLoc, ifExpr.release()),
                     /*isExpressionLevel*/ true,
-                    /*isParam*/ false).release();
+                    /*isParam*/ false,
+                    context->buildAttributeGroup(@$)).release();
+                    context->resetAttributeGroupPartsState();
   }
 | TFORALL expr TIN expr TDO expr %prec TFOR
   {
