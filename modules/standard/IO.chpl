@@ -2353,8 +2353,7 @@ private proc defaultFmtVal(param writing : bool) {
 /*
 
 A ``fileReader`` supports sequential reading from an underlying :record:`file`
-object. It can buffer data. Read operations on it might return old data. Use
-:proc:`fileWriter.flush` to control this buffering.
+object. It can buffer data. Read operations on it might return old data.
 
 The :record:`fileReader` type is implementation-defined.
 A value of the :record:`fileReader` type refers to the state that is used
