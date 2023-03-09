@@ -3322,11 +3322,12 @@ proc fileWriter.advance(amount:int(64)) throws {
    :throws UnexpectedEofError: if the requested `byte` could not be found.
    :throws SystemError: if another error occurred.
  */
+@deprecated(notes="`advancePastByte` is deprecated; please use `advanceThrough` instead")
 proc fileReader.advancePastByte(byte:uint(8)) throws {
   var err:errorCode = 0;
   on this._home {
     try this.lock(); defer { this.unlock(); }
-    err = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int);
+    err = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int, true);
   }
   if err then try this._ch_ioerror(err, "in advanceToByte");
 }
