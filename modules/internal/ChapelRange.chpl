@@ -601,12 +601,6 @@ module ChapelRange {
   proc range.isBounded() param do
     return boundedType == BoundedRangeType.bounded;
 
-  /* This used to control whether or not the
-     :proc:`range.low`/:proc:`range.high` queries returned aligned
-     values by default. */
-  @deprecated(notes="``alignedBoundsByDefault`` is deprecated and no longer has any effect")
-  config param alignedBoundsByDefault = true;
-
   /* Returns ``true`` if this range's low bound is *not* -:math:`\infty`,
      and ``false`` otherwise. */
   proc range.hasLowBound() param do
