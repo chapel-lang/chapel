@@ -241,7 +241,7 @@ module Errors {
         cur!._next = nil; // remove from any lists
         var asTaskErr: unmanaged TaskErrors? = cur: unmanaged TaskErrors?;
         if asTaskErr == nil {
-          errorsArray[idx].retain(cur!);
+          errorsArray[idx] = owned.adopt(cur!);
           idx += 1;
         } else {
           for e in asTaskErr!.these() {
@@ -263,7 +263,7 @@ module Errors {
       errorsArray = c_calloc(owned Error?, 1);
       this.complete();
       err._next = nil;
-      errorsArray[0].retain(err);
+      errorsArray[0] = owned.adopt(err);
     }
 
     /* Create a :class:`TaskErrors` not containing any errors */
@@ -275,7 +275,7 @@ module Errors {
     proc deinit() {
       if errorsArray {
         for i in 0..#nErrors {
-          errorsArray[i].clear();
+          delete owned.release(errorsArray[i]);
         }
         c_free(errorsArray);
       }
@@ -450,7 +450,7 @@ module Errors {
   pragma "always propagate line file info"
   pragma "ignore in global analysis"
   proc chpl_fix_thrown_error(in err: owned Error?): unmanaged Error {
-    return chpl_do_fix_thrown_error(err.release());
+    return chpl_do_fix_thrown_error(owned.release(err));
   }
 
   pragma "no doc"
@@ -459,7 +459,7 @@ module Errors {
   pragma "ignore transfer errors"
   pragma "ignore in global analysis"
   proc chpl_fix_thrown_error(in err: owned Error): unmanaged Error {
-    return chpl_do_fix_thrown_error(err.release());
+    return chpl_do_fix_thrown_error(owned.release(err));
   }
 
   pragma "no doc"
