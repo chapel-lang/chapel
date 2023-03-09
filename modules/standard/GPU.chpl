@@ -172,8 +172,7 @@ module GPU
   }
 
   /*
-     Synchronize threads within a block using the underlying GPU's
-     synchronization primitive.
+     Synchronize threads within a GPU block.
    */
   inline proc syncThreads() {
     __primitive("gpu syncThreads");
@@ -187,7 +186,7 @@ module GPU
 
     :arg eltType: the type of elements to allocate the array for.
 
-    :arg size: the number of elements to allocate the array for.
+    :arg size: the number of elements in each GPU thread block's copy of the array.
    */
   inline proc createSharedArray(type eltType, param size): c_ptr(eltType) {
     const voidPtr = __primitive("gpu allocShared", numBytes(eltType)*size);
