@@ -1,0 +1,5 @@
+TimeUnitsArgs.chpl:5: warning: The 'TimeUnits' type is deprecated. Please specify times in seconds in this module.
+TimeUnitsArgs.chpl:6: warning: The 'TimeUnits' type is deprecated. Please specify times in seconds in this module.
+TimeUnitsArgs.chpl:5: warning: 'stopwatch.elapsed' with a 'TimeUnits' argument is deprecated. Please call 'stopwatch.elapsed' without an argument and assume it returns a time in seconds.
+TimeUnitsArgs.chpl:6: warning: 'sleep' with a 'TimeUnits' argument is deprecated. Please use 'sleep' with a time in seconds
+0.0

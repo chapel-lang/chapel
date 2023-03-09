@@ -29,7 +29,7 @@ proc main
   if perfTest then t.stop();
 
   if perfTest then
-    writeln("Elapsed time = ", t.elapsed(TimeUnits.seconds));
+    writeln("Elapsed time = ", t.elapsed());
 }
 
 proc pidigits

@@ -70,6 +70,7 @@ private extern proc chpl_timevalue_parts(t:           _timevalue,
                                          out isdst:   int(32));
 
 /* Specifies the units to be used when certain functions return a time */
+deprecated "The 'TimeUnits' type is deprecated. Please specify times in seconds in this module."
 enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours }
 
 /* Specifies the day of the week */
@@ -1978,7 +1979,8 @@ proc getCurrentDayOfWeek() : Day {
    :arg  unit: The units for the duration
    :type unit: :type:`TimeUnits`
 */
-inline proc sleep(t: real, unit: TimeUnits = TimeUnits.seconds) : void {
+deprecated "'sleep' with a 'TimeUnits' argument is deprecated. Please use 'sleep' with a time in seconds"
+inline proc sleep(t: real, unit: TimeUnits) : void {
   use CTypes;
   extern proc chpl_task_sleep(s:c_double) : void;
 
@@ -1987,6 +1989,25 @@ inline proc sleep(t: real, unit: TimeUnits = TimeUnits.seconds) : void {
     return;
   }
   chpl_task_sleep(_convert_to_seconds(unit, t:real):c_double);
+}
+
+/*
+   Delay a task for a duration specified in seconds. This function
+   will return without sleeping and emit a warning if the duration is
+   negative.
+
+   :arg  t: The duration for the time to sleep
+   :type t: `real`
+*/
+inline proc sleep(t: real) : void {
+  use CTypes;
+  extern proc chpl_task_sleep(s:c_double) : void;
+
+  if t < 0 {
+    warning("sleep() called with negative time parameter: '", t, "'");
+    return;
+  }
+  chpl_task_sleep(t:c_double);
 }
 
 /*
@@ -2069,13 +2090,34 @@ record stopwatch {
      :returns: The elapsed time in the units specified
      :rtype:   `real(64)`
   */
-  proc elapsed(unit: TimeUnits = TimeUnits.seconds) : real {
+  deprecated "'stopwatch.elapsed' with a 'TimeUnits' argument is deprecated. Please call 'stopwatch.elapsed' without an argument and assume it returns a time in seconds."
+  proc elapsed(unit: TimeUnits) : real {
     if running {
       var time2: _timevalue = chpl_now_timevalue();
 
       return _convert_microseconds(unit, accumulated + _diff_time(time2, time));
     } else {
       return _convert_microseconds(unit, accumulated);
+    }
+  }
+
+  /*
+     Returns the cumulative elapsed time, in seconds, between
+     all pairs of calls to :proc:`start` and :proc:`stop`
+     since the timer was created or the last call to :proc:`clear`.
+     If the timer is running, the elapsed time since the last call to
+     :proc:`start` is added to the return value.
+
+     :returns: The elapsed time in seconds
+     :rtype:   `real(64)`
+  */
+  proc elapsed() : real {
+    if running {
+      var time2: _timevalue = chpl_now_timevalue();
+
+      return (accumulated + _diff_time(time2, time)) / 1.0e+6;
+    } else {
+      return accumulated / 1.0e+6;
     }
   }
 }
@@ -2138,6 +2180,7 @@ record Timer {
      :returns: The elapsed time in the units specified
      :rtype:   `real(64)`
   */
+  deprecated "'Timer.elapsed' with a 'TimeUnits' argument is deprecated. Please call 'stopwatch.elapsed' without an argument and assume it returns a time in seconds."
   proc elapsed(unit: TimeUnits = TimeUnits.seconds) : real {
     if running {
       var time2: _timevalue = chpl_now_timevalue();
@@ -2164,6 +2207,7 @@ private inline proc _diff_time(t1: _timevalue, t2: _timevalue) {
 }
 
 // converts a time specified by unit into seconds
+deprecated "'_convert_to_seconds' is deprecated without replacement"
 private proc _convert_to_seconds(unit: TimeUnits, us: real) {
   select unit {
     when TimeUnits.microseconds do return us *    1.0e-6;
@@ -2178,6 +2222,7 @@ private proc _convert_to_seconds(unit: TimeUnits, us: real) {
 }
 
 // converts microseconds to another unit
+deprecated "'_convert_microseconds' is deprecated without replacement"
 private proc _convert_microseconds(unit: TimeUnits, us: real) {
   select unit {
     when TimeUnits.microseconds do return us;

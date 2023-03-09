@@ -145,7 +145,7 @@ proc run(ref todo:LinkedList(string), ref Pairs) {
   create_and_analyze_graph(Pairs);
 
   t.stop();
-  var days = t.elapsed(TimeUnits.hours) / 24.0;
+  var days = t.elapsed() / (60.0 * 60.0 * 24.0);
   var m = 1000000.0;
   if timing {
     writeln("processed ", nlines, " lines in ", t.elapsed(), " s ");
