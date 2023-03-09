@@ -3,6 +3,7 @@ use IO, Regex;
 var r = openReader("test.txt");
 const bars = new regex("\\|{3,}");
 
+// separator doesn't appear in first 6 codepoints, should throw.
 try {
   r.readTo(bars, maxSize=6);
 } catch e {
