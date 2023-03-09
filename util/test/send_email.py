@@ -15,7 +15,6 @@ import smtplib
 import socket
 import sys
 import smtplib
-import socks
 
 try:
     basestring
