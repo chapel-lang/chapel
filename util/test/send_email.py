@@ -14,7 +14,6 @@ import os
 import smtplib
 import socket
 import sys
-import smtplib
 
 try:
     basestring
