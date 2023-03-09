@@ -126,6 +126,13 @@ def get_runtime():
     return get()
 
 def validateLlvmBuiltForTgt(expectedTgt):
+    # If we're using the bundled LLVM, llvm-config may not have been built
+    # before we call chplenv. It seems safe to assume the bundled LLVM has been
+    # built with whatever requirements we have for Chapel so we just return
+    # that it's been validated.
+    if chpl_llvm.get() == 'bundled':
+        return True
+
     exists, returncode, my_stdout, my_stderr = utils.try_run_command(
         [chpl_llvm.get_llvm_config(), "--targets-built"])
 
