@@ -2,7 +2,7 @@
 LLVM for Chapel release
 =======================
 
-This copy of LLVM 14.0.0 is being released with Chapel for
+This copy of LLVM 14.0.6 is being released with Chapel for
 convenience and was obtained from
 
 https://www.llvm.org/
@@ -69,7 +69,7 @@ follows, assuming CWD is $CHPL_HOME/third-party/llvm/:
 6.  rm -r llvm-src/test llvm-src/tools/clang/test
 7.  git add --force llvm-src cmake
     ('--force' is needed to ensure git adds all files in the subdirectory)
-8.  update the util/chplenv/chpl_llvm.py preferred_versions function
+8.  update the util/chplenv/chpl_llvm.py llvm_versions function
     to record that the new version is available.
 9.  update $CHPL_HOME/doc/rst/usingchapel/prereqs.rst for the new LLVM version
 10. update this README file
