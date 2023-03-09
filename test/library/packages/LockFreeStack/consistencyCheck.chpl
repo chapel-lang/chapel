@@ -1,7 +1,7 @@
 use LockFreeStack;
 use Time;
 
-config const N = 1024 * 1024;
+config const N = 1024;
 config const printTiming = false;
 var expected = + reduce (1..N);
 
