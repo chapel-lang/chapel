@@ -8,7 +8,7 @@ From: amazonlinux:2
 %post
     /provision-scripts/yum-deps-amazonlinux-2.sh
     # this installs clang 11 / llvm 11
-    #yum -y install llvm-devel clang clang-devel
+    yum -y install llvm-devel clang clang-devel
 
 %runscript
     ../../provision-scripts/run.sh
