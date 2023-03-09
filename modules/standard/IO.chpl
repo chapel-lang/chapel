@@ -3131,7 +3131,7 @@ proc _channel.advance(amount:int(64)) throws {
    :throws UnexpectedEofError: if the requested `byte` could not be found.
    :throws SystemError: if another error occurred.
  */
-deprecated "`advancePastByte` is deprecated; please use `advanceThrough` instead"
+@deprecated(notes="`advancePastByte` is deprecated; please use `advanceThrough` instead")
 proc _channel.advancePastByte(byte:uint(8)) throws {
   var err:errorCode = 0;
   on this._home {
