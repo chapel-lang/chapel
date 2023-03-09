@@ -73,14 +73,6 @@ Returns ``true`` if the type ``t`` is one the following types, of any width:
 proc isIntegralType(type t) param do return
   isIntType(t) || isUintType(t);
 
-/*
-Returns ``true`` if the type ``t`` is one the following types, of any width:
-``real``, ``imag``.
-*/
-@deprecated(notes="isFloatType is deprecated use `isRealType(t) || isImagType(t)` instead")
-proc isFloatType(type t) param do return
-  isRealType(t) || isImagType(t);
-
 /* Returns ``true`` if the type ``t`` is the ``nothing`` type. */
 proc isNothingType(type t) param do return t == nothing;
 
@@ -308,11 +300,6 @@ proc isNumericValue(e)   param do  return isNumericType(e.type);
 ``int``, ``uint``. */
 proc isIntegralValue(e)  param do  return isIntegralType(e.type);
 
-/* Returns ``true`` if the argument is a value of one the following types:
-``real``, ``imag``. */
-@deprecated(notes="isFloatValue is deprecated use `isRealValue(e) || isImagValue(e)` instead")
-proc isFloatValue(e)     param do  return isFloatType(e.type);
-
 /* Returns ``true`` if the argument is a ``nothing`` value (i.e., ``none``) */
 proc isNothingValue(e)   param do return isNothingType(e.type);
 
@@ -423,9 +410,6 @@ pragma "no doc"
 proc isNumeric(type t)   param do  return isNumericType(t);
 pragma "no doc"
 proc isIntegral(type t)  param do  return isIntegralType(t);
-pragma "no doc"
-@deprecated(notes="isFloat is deprecated use `isReal(t) || isImag(t)` instead")
-proc isFloat(type t)     param do  return isFloatType(t);
 
 pragma "no doc"
 proc isNothing(type t)  param do return isNothingType(t);
@@ -519,12 +503,6 @@ Returns ``true`` if the argument is one the following types, of any width:
 ``int``, ``uint``, or a value of such a type.
 */
 proc isIntegral(e)  param do  return isIntegralValue(e);
-/*
-Returns ``true`` if the argument is one the following types, of any width:
-``real``, ``imag``, or a value of such a type.
-*/
-@deprecated(notes="isFloat is deprecated use `isReal(e) || isImag(e)` instead")
-proc isFloat(e)     param do  return isFloatValue(e);
 
 /* Returns ``true`` if the argument is ``none`` or the ``nothing`` type.
  as defined by the language specification.*/

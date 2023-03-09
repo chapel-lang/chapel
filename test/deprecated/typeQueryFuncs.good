@@ -1,7 +1,3 @@
-typeQueryFuncs.chpl:38: warning: isFloat is deprecated use `isReal(e) || isImag(e)` instead
-typeQueryFuncs.chpl:39: warning: isFloat is deprecated use `isReal(t) || isImag(t)` instead
-typeQueryFuncs.chpl:40: warning: isFloatType is deprecated use `isRealType(t) || isImagType(t)` instead
-typeQueryFuncs.chpl:41: warning: isFloatValue is deprecated use `isRealValue(e) || isImagValue(e)` instead
 typeQueryFuncs.chpl:46: warning: type comparison operators are deprecated; use isSubtype/isProperSubtype instead
 typeQueryFuncs.chpl:47: warning: type comparison operators are deprecated; use isSubtype/isProperSubtype instead
 typeQueryFuncs.chpl:48: warning: type comparison operators are deprecated; use isSubtype/isProperSubtype instead
@@ -14,10 +10,6 @@ typeQueryFuncs.chpl:61: warning: type comparison operators are deprecated; use i
 typeQueryFuncs.chpl:62: warning: type comparison operators are deprecated; use isSubtype/isProperSubtype instead
 typeQueryFuncs.chpl:63: warning: type comparison operators are deprecated; use isSubtype/isProperSubtype instead
 typeQueryFuncs.chpl:64: warning: type comparison operators are deprecated; use isSubtype/isProperSubtype instead
-isFloat(1.2) returns true
-isFloat(real) returns true
-isFloatType(real) returns true
-isFloatValue(1.2) returns true
 Compare 1.type op int
 op <= returns true
 op <  returns false
