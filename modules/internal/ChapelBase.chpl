@@ -32,7 +32,7 @@ module ChapelBase {
   use ChplConfig;
 
   pragma "no doc"
-  deprecated "the '_file' type is deprecated; please use 'CTypes.c_FILE' instead"
+  @deprecated(notes="the '_file' type is deprecated; please use 'CTypes.c_FILE' instead")
   type _file = c_FILE;
 
   config param enablePostfixBangChecks = false;
@@ -1595,7 +1595,7 @@ module ChapelBase {
   inline operator :(x:chpl_anyreal, type t:chpl_anyreal) do
     return __primitive("cast", t, x);
 
-  @unstable "enum-to-bool casts are likely to be deprecated in the future"
+  @unstable("enum-to-bool casts are likely to be deprecated in the future")
   inline operator :(x:enum, type t:chpl_anybool) throws {
     return x: int: bool;
   }
@@ -1604,7 +1604,7 @@ module ChapelBase {
   inline operator :(x: enum, type t:enum) where x.type == t do
     return x;
 
-  @unstable "enum-to-float casts are likely to be deprecated in the future"
+  @unstable("enum-to-float casts are likely to be deprecated in the future")
   inline operator :(x: enum, type t:chpl_anyreal) throws {
     return x: int: real;
   }
@@ -1752,7 +1752,7 @@ module ChapelBase {
   inline operator :(x: chpl_anycomplex, type t:chpl_anycomplex) do
     return (x.re, x.im):t;
 
-  @unstable "enum-to-float casts are likely to be deprecated in the future"
+  @unstable("enum-to-float casts are likely to be deprecated in the future")
   inline operator :(x: enum, type t:chpl_anycomplex) throws do
     return (x:real, 0):t;
 
@@ -1774,7 +1774,7 @@ module ChapelBase {
   inline operator :(x: chpl_anycomplex, type t:chpl_anyimag) do
     return __primitive("cast", t, x.im);
 
-  @unstable "enum-to-float casts are likely to be deprecated in the future"
+  @unstable("enum-to-float casts are likely to be deprecated in the future")
   inline operator :(x: enum, type t:chpl_anyimag)  throws do
     return x:real:imag;
 
@@ -2066,7 +2066,7 @@ module ChapelBase {
         halt("Attempt to compute a modulus by zero");
     __primitive("%=", lhs, rhs);
   }
-  deprecated "'%=' is deprecated for 'real' values for the time being because it does not work"
+  @deprecated(notes="'%=' is deprecated for 'real' values for the time being because it does not work")
   inline operator %=(ref lhs:real(?w), rhs:real(w)) {
     __primitive("%=", lhs, rhs);
   }

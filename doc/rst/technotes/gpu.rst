@@ -135,7 +135,7 @@ there.  This may also be set using the ``CHPL_GPU_ARCH`` environment variable.
 If you would like to view debugging information you can pass ``--verbose`` to
 your generated executable. This output will show the invocation of CUDA kernel
 calls along with various other interactions with the GPU such as memory
-operations.  You may also use the :mod:`GPUDiagnostics` module to gather
+operations.  You may also use the :mod:`GpuDiagnostics` module to gather
 similar information.
 
 Requirements and Limitations
@@ -190,19 +190,19 @@ GPU supports that are relatively new or otherwise noteworthy.
 Diagnostics and Utilities
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :mod:`GPUDiagnostics` module contains functions to help users count and
+The :mod:`GpuDiagnostics` module contains functions to help users count and
 track kernel launches.
 
 To count the number of kernel launches that occur in a section of code,
-surround that code with calls to :proc:`~GPUDiagnostics.startGPUDiagnostics`
-and :proc:`~GPUDiagnostics.stopGPUDiagnostics` and then call
-:proc:`~GPUDiagnostics.getGPUDiagnostics`.  If called in a multi-locale
-environment :proc:`~GPUDiagnostics.getGPUDiagnostics` will return an array of
+surround that code with calls to :proc:`~GpuDiagnostics.startGpuDiagnostics`
+and :proc:`~GpuDiagnostics.stopGpuDiagnostics` and then call
+:proc:`~GpuDiagnostics.getGpuDiagnostics`.  If called in a multi-locale
+environment :proc:`~GpuDiagnostics.getGpuDiagnostics` will return an array of
 counts of launches on a per-locale basis.
 
 To get verbose output (indicating the location of each kernel launch) surround
-the code with calls to :proc:`~GPUDiagnostics.startVerboseGPU` and
-:proc:`~GPUDiagnostics.stopVerboseGPU`. This output will directed to
+the code with calls to :proc:`~GpuDiagnostics.startVerboseGpu` and
+:proc:`~GpuDiagnostics.stopVerboseGpu`. This output will directed to
 ``stdout``.
 
 The :mod:`GPU` module contains additional utility functions. One particularly

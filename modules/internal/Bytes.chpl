@@ -750,7 +750,7 @@ module Bytes {
 
       :returns: A new :type:`bytes` with indentation removed.
   */
-  @unstable "bytes.dedent is subject to change in the future."
+  @unstable("bytes.dedent is subject to change in the future.")
   proc bytes.dedent(columns=0, ignoreFirst=true): bytes {
     return doDedent(this, columns, ignoreFirst);
   }

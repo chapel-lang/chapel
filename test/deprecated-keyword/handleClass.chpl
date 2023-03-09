@@ -1,4 +1,4 @@
-deprecated "Class C is deprecated, please use D"
+@deprecated(notes="Class C is deprecated, please use D")
 class C {
   var x: int;
 

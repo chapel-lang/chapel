@@ -1,10 +1,10 @@
 // Everything is initiated on the GPU(s)
-use GPUDiagnostics;
+use GpuDiagnostics;
 
 config const n = 10;
 config const alpha = 5;
 
-startGPUDiagnostics();
+startGpuDiagnostics();
 coforall l in Locales do on l {
   coforall g in here.gpus do on g {
     var A, B, C: [1..n] int;
@@ -14,9 +14,9 @@ coforall l in Locales do on l {
     A = B + alpha  * C;
   }
 }
-stopGPUDiagnostics();
+stopGpuDiagnostics();
 
 // validation
 param nLaunch=3;
 for l in Locales do
-  assert(getGPUDiagnostics()[l.id].kernel_launch == nLaunch*l.gpus.size);
+  assert(getGpuDiagnostics()[l.id].kernel_launch == nLaunch*l.gpus.size);

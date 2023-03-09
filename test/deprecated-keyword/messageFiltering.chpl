@@ -2,179 +2,179 @@
 // and: https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#paragraph-level-markup
 
 // No filtering should be applied:
-deprecated "--- No filtering should be applied: ---"
+@deprecated(notes="--- No filtering should be applied: ---")
 var x1000 = 1000;
-deprecated "sample_message"
+@deprecated(notes="sample_message")
 var x1001 = 1001;
-deprecated "Lorem ipsum dolor sit amet"
+@deprecated(notes="Lorem ipsum dolor sit amet")
 var x1002 = 1002;
-deprecated "Lorem_ipsum_dolor_sit_amet"
+@deprecated(notes="Lorem_ipsum_dolor_sit_amet")
 var x1003 = 1003;
-deprecated "mod proc iter data const var param type class record"
+@deprecated(notes="mod proc iter data const var param type class record")
 var x1004 = 1004;
-deprecated ":mod proc:`abc` :iter data:`def` :const var:`ghi`"
+@deprecated(notes=":mod proc:`abc` :iter data:`def` :const var:`ghi`")
 var x1005 = 1005;
-deprecated ":param type:`jkl` :class record:`mno`"
+@deprecated(notes=":param type:`jkl` :class record:`mno`")
 var x1006 = 1006;
 
 // Test filtering at start, middle, and end of msg
-deprecated "--- Test filtering at start, middle, and end of msg (with and without content): ---"
+@deprecated(notes="--- Test filtering at start, middle, and end of msg (with and without content): ---")
 var x2000 = 2000;
-deprecated ":proc:`abc` Lorem ipsum dolor sit amet"
+@deprecated(notes=":proc:`abc` Lorem ipsum dolor sit amet")
 var x2001 = 2001;
-deprecated "Lorem ipsum :proc:`abc` dolor sit amet"
+@deprecated(notes="Lorem ipsum :proc:`abc` dolor sit amet")
 var x2002 = 2002;
-deprecated "Lorem ipsum dolor sit amet :proc:`abc`"
+@deprecated(notes="Lorem ipsum dolor sit amet :proc:`abc`")
 var x2003 = 2003;
-deprecated ":proc:`abc` Lorem :proc:`def` ipsum dolor sit amet :proc:`ghi`"
+@deprecated(notes=":proc:`abc` Lorem :proc:`def` ipsum dolor sit amet :proc:`ghi`")
 var x2004 = 2004;
 
 // Test different text in ::s (all should filter)
-deprecated "--- Test different text in ::s (all should filter) ---"
+@deprecated(notes="--- Test different text in ::s (all should filter) ---")
 var x3000 = 3000;
-deprecated "Lorem ipsum :mod:`test` dolor sit amet"
+@deprecated(notes="Lorem ipsum :mod:`test` dolor sit amet")
 var x3001 = 3001;
-deprecated "Lorem ipsum :proc:`test` dolor sit amet"
+@deprecated(notes="Lorem ipsum :proc:`test` dolor sit amet")
 var x3002 = 3002;
-deprecated "Lorem ipsum :iter:`test` dolor sit amet"
+@deprecated(notes="Lorem ipsum :iter:`test` dolor sit amet")
 var x3003 = 3003;
-deprecated "Lorem ipsum :data:`test` dolor sit amet"
+@deprecated(notes="Lorem ipsum :data:`test` dolor sit amet")
 var x3004 = 3004;
-deprecated "Lorem ipsum :const:`test` dolor sit amet"
+@deprecated(notes="Lorem ipsum :const:`test` dolor sit amet")
 var x3005 = 3005;
-deprecated "Lorem ipsum :var:`test` dolor sit amet"
+@deprecated(notes="Lorem ipsum :var:`test` dolor sit amet")
 var x3006 = 3006;
-deprecated "Lorem ipsum :param:`test` dolor sit amet"
+@deprecated(notes="Lorem ipsum :param:`test` dolor sit amet")
 var x3007 = 3007;
-deprecated "Lorem ipsum :type:`test` dolor sit amet"
+@deprecated(notes="Lorem ipsum :type:`test` dolor sit amet")
 var x3008 = 3008;
-deprecated "Lorem ipsum :class:`test` dolor sit amet"
+@deprecated(notes="Lorem ipsum :class:`test` dolor sit amet")
 var x3009 = 3009;
-deprecated "Lorem ipsum :record:`test` dolor sit amet"
+@deprecated(notes="Lorem ipsum :record:`test` dolor sit amet")
 var x3010 = 3010;
-deprecated "Lorem ipsum :attr:`test` dolor sit amet"
+@deprecated(notes="Lorem ipsum :attr:`test` dolor sit amet")
 var x3011 = 3011;
-deprecated "Lorem ipsum :enum:`test` dolor sit amet"
+@deprecated(notes="Lorem ipsum :enum:`test` dolor sit amet")
 var x3012 = 3012;
-deprecated "Lorem :mod:`abc` ipsum :proc:`def` dolor :iter:`ghi` sit :data:`jkl` amet"
+@deprecated(notes="Lorem :mod:`abc` ipsum :proc:`def` dolor :iter:`ghi` sit :data:`jkl` amet")
 var x3013 = 3013;
-deprecated "Lorem :const:`abc` ipsum :var:`def` dolor :param:`ghi` sit :type:`jkl` amet"
+@deprecated(notes="Lorem :const:`abc` ipsum :var:`def` dolor :param:`ghi` sit :type:`jkl` amet")
 var x3014 = 3014;
-deprecated "Lorem :class:`abc` ipsum :record:`def` dolor :attr:`ghi` sit amet"
+@deprecated(notes="Lorem :class:`abc` ipsum :record:`def` dolor :attr:`ghi` sit amet")
 var x3015 = 3015;
 
 // Test different text in ::s (all should not filter)
-deprecated "--- Test different text in ::s (all should not filter) ---"
+@deprecated(notes="--- Test different text in ::s (all should not filter) ---")
 var x4000 = 4000;
-deprecated "Lorem ipsum ::`abc` dolor sit amet"
+@deprecated(notes="Lorem ipsum ::`abc` dolor sit amet")
 var x4001 = 4001;
-deprecated "Lorem ipsum :a:`abc` dolor sit amet"
+@deprecated(notes="Lorem ipsum :a:`abc` dolor sit amet")
 var x4002 = 4002;
-deprecated "Lorem ipsum :abc123def:`abc` dolor sit amet"
+@deprecated(notes="Lorem ipsum :abc123def:`abc` dolor sit amet")
 var x4003 = 4003;
-deprecated "Lorem ipsum :123abc123def:`abc` dolor sit amet"
+@deprecated(notes="Lorem ipsum :123abc123def:`abc` dolor sit amet")
 var x4004 = 4004;
-deprecated "Lorem ipsum :abc123def123:`abc` dolor sit amet"
+@deprecated(notes="Lorem ipsum :abc123def123:`abc` dolor sit amet")
 var x4005 = 4005;
-deprecated "Lorem ipsum :123abc123def123:`abc` dolor sit amet"
+@deprecated(notes="Lorem ipsum :123abc123def123:`abc` dolor sit amet")
 var x4006 = 4006;
-deprecated "Lorem ipsum :abc_123_def:`abc` dolor sit amet"
+@deprecated(notes="Lorem ipsum :abc_123_def:`abc` dolor sit amet")
 var x4007 = 4007;
 
 // Test different text in ``s
-deprecated "--- Test different text in ``s ---"
+@deprecated(notes="--- Test different text in ``s ---")
 var x5000 = 5000;
-deprecated "Lorem ipsum :proc:`` dolor sit amet (should not filter)"
+@deprecated(notes="Lorem ipsum :proc:`` dolor sit amet (should not filter)")
 var x5001 = 5001;
-deprecated "Lorem ipsum :proc:`a` dolor sit amet"
+@deprecated(notes="Lorem ipsum :proc:`a` dolor sit amet")
 var x5002 = 5002;
-deprecated "Lorem ipsum :proc:`abc123def` dolor sit amet"
+@deprecated(notes="Lorem ipsum :proc:`abc123def` dolor sit amet")
 var x5003 = 5003;
-deprecated "Lorem ipsum :proc:`abc_123_def` dolor sit amet"
+@deprecated(notes="Lorem ipsum :proc:`abc_123_def` dolor sit amet")
 var x5004 = 5004;
-deprecated "Lorem ipsum :proc:`123abc_123_def` dolor sit amet"
+@deprecated(notes="Lorem ipsum :proc:`123abc_123_def` dolor sit amet")
 var x5005 = 5005;
-deprecated "Lorem ipsum :proc:`abc_123_def123` dolor sit amet"
+@deprecated(notes="Lorem ipsum :proc:`abc_123_def123` dolor sit amet")
 var x5006 = 5006;
-deprecated "Lorem ipsum :proc:`123abc_123_def123` dolor sit amet"
+@deprecated(notes="Lorem ipsum :proc:`123abc_123_def123` dolor sit amet")
 var x5007 = 5007;
-deprecated "Lorem ipsum :proc:`_abc_123_def_` dolor sit amet"
+@deprecated(notes="Lorem ipsum :proc:`_abc_123_def_` dolor sit amet")
 var x5008 = 5008;
-deprecated "Lorem ipsum :proc:`abc:def` dolor sit amet (should not filter)"
+@deprecated(notes="Lorem ipsum :proc:`abc:def` dolor sit amet (should not filter)")
 var x5009 = 5009;
-deprecated "Lorem ipsum :proc:`proc` dolor sit amet"
+@deprecated(notes="Lorem ipsum :proc:`proc` dolor sit amet")
 var x5010 = 5010;
-deprecated "Lorem ipsum :proc:`:proc:` dolor sit amet (should not filter)"
+@deprecated(notes="Lorem ipsum :proc:`:proc:` dolor sit amet (should not filter)")
 var x5011 = 5011;
-deprecated "Lorem ipsum :proc:`:proc:abc` dolor sit amet (should not filter)"
+@deprecated(notes="Lorem ipsum :proc:`:proc:abc` dolor sit amet (should not filter)")
 var x5012 = 5012;
-deprecated "Lorem ipsum :proc:`title target` dolor sit amet (should not filter)"
+@deprecated(notes="Lorem ipsum :proc:`title target` dolor sit amet (should not filter)")
 var x5013 = 5013;
-deprecated "Lorem ipsum :proc:`abc.def` dolor sit amet"
+@deprecated(notes="Lorem ipsum :proc:`abc.def` dolor sit amet")
 var x5014 = 5014;
 
 // Other :s in message:
-deprecated "--- Other :s in message: ---"
+@deprecated(notes="--- Other :s in message: ---")
 var x6000 = 6000;
-deprecated "Instead of using foo(a: int, b: string) use :proc:`bar`."
+@deprecated(notes="Instead of using foo(a: int, b: string) use :proc:`bar`.")
 var x6001 = 6001;
-deprecated "Instead of using foo(a:int,b:string) use :proc:`bar`."
+@deprecated(notes="Instead of using foo(a:int,b:string) use :proc:`bar`.")
 var x6002 = 6002;
-deprecated "Instead of using foo(a:int):int use :proc:`bar`."
+@deprecated(notes="Instead of using foo(a:int):int use :proc:`bar`.")
 var x6003 = 6003;
-deprecated "Instead of using foo(proc: int, proc: string) use :proc:`bar`."
+@deprecated(notes="Instead of using foo(proc: int, proc: string) use :proc:`bar`.")
 var x6004 = 6004;
-deprecated "Instead of using foo(proc:int,proc:string) use :proc:`bar`."
+@deprecated(notes="Instead of using foo(proc:int,proc:string) use :proc:`bar`.")
 var x6005 = 6005;
-deprecated "Instead of using foo(proc:int):proc use :proc:`bar`."
+@deprecated(notes="Instead of using foo(proc:int):proc use :proc:`bar`.")
 var x6006 = 6006;
-deprecated "proc foo(x: int) is deprecated, use proc foo(x: real) instead"
+@deprecated(notes="proc foo(x: int) is deprecated, use proc foo(x: real) instead")
 var x6007 = 6007;
 
 // Word boundaries (should filter)
-deprecated "--- Word boundaries (should filter) ---"
+@deprecated(notes="--- Word boundaries (should filter) ---")
 var x7000 = 7000;
-deprecated "First (:proc:`middle`) end"
+@deprecated(notes="First (:proc:`middle`) end")
 var x7001 = 7001;
-deprecated "First, :proc:`middle`, end"
+@deprecated(notes="First, :proc:`middle`, end")
 var x7002 = 7002;
-deprecated "First,:proc:`middle`,end"
+@deprecated(notes="First,:proc:`middle`,end")
 var x7003 = 7003;
 
 // Word boundaries (should not filter)
-deprecated "--- Word boundaries (should not filter) ---"
+@deprecated(notes="--- Word boundaries (should not filter) ---")
 var x8000 = 8000;
-deprecated "First:proc:`middle` end"
+@deprecated(notes="First:proc:`middle` end")
 var x8001 = 8001;
-deprecated "First :proc:`middle`end"
+@deprecated(notes="First :proc:`middle`end")
 var x8002 = 8002;
-deprecated "First:proc:`middle`end"
+@deprecated(notes="First:proc:`middle`end")
 var x8003 = 8003;
-deprecated "First:proc:`middle`:end"
+@deprecated(notes="First:proc:`middle`:end")
 var x8004 = 8004;
 
 // Dollars in identifier (should filter)
-deprecated "--- Dollars in identifier (should filter) ---"
+@deprecated(notes="--- Dollars in identifier (should filter) ---")
 var x9000 = 9000;
-deprecated "Lorem ipsum :proc:`abc$` dolor sit amet"
+@deprecated(notes="Lorem ipsum :proc:`abc$` dolor sit amet")
 var x9001 = 9001;
-deprecated "Lorem ipsum :proc:`abc$def` dolor sit amet"
+@deprecated(notes="Lorem ipsum :proc:`abc$def` dolor sit amet")
 var x9002 = 9002;
-deprecated "Lorem ipsum :proc:`abc$def$` dolor sit amet"
+@deprecated(notes="Lorem ipsum :proc:`abc$def$` dolor sit amet")
 var x9003 = 9003;
-deprecated "Lorem ipsum :proc:`abc$def$ghi` dolor sit amet"
+@deprecated(notes="Lorem ipsum :proc:`abc$def$ghi` dolor sit amet")
 var x9004 = 9004;
 
 // Proc lead with ! (should filter)
-deprecated "--- Identifier is led with ! (should filter) ---"
+@deprecated(notes="--- Identifier is led with ! (should filter) ---")
 var x1101 = 1101;
-deprecated "Lorem ipsum :proc:`!abc` dolor sit amet"
+@deprecated(notes="Lorem ipsum :proc:`!abc` dolor sit amet")
 var x1102 = 1102;
 
 // Currently filters, but ideally wouldn't (see #18549):
-deprecated "--- Currently filters, but ideally wouldn't (see #18549) ---"
+@deprecated(notes="--- Currently filters, but ideally wouldn't (see #18549) ---")
 var x1200 = 1200;
-deprecated "Lorem ipsum :proc:`~abc.def` dolor sit amet"
+@deprecated(notes="Lorem ipsum :proc:`~abc.def` dolor sit amet")
 var x1201 = 1201;
 
 // I purposefully access each variable on a separate line so the produced warning messages

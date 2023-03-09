@@ -348,7 +348,7 @@ static void test9(Parser* parser) {
   ErrorGuard guard(parser->context());
   const std::string myCircle =
         "record MyCircle {\n"
-          "deprecated \"don't use this anymore\"\n"
+          "@deprecated(\"don't use this anymore\")\n"
           "forwarding var impl: MyCircleImpl;\n"
         "}\n";
 

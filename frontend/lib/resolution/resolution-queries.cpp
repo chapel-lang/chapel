@@ -597,12 +597,11 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
   result.setType(ct);
 
   bool isObjectType = false;
-  bool isMissingBundledType = false;
   if (auto bct = ct->toBasicClassType()) {
     isObjectType = bct->isObjectType();
-    auto id = bct->id();
-    isMissingBundledType = CompositeType::isMissingBundledType(context, id);
   }
+  bool isMissingBundledType =
+    CompositeType::isMissingBundledType(context, ct->id());
 
   if (isObjectType || isMissingBundledType) {
     // no need to try to resolve the fields for the object type,
@@ -2124,7 +2123,7 @@ doIsCandidateApplicableInitial(Context* context,
   }
 
   // if it's a paren-less call, only consider parenless routines
-  // (including field accessors) but not types/outer variables/
+  // (including generated field accessors) but not types/outer variables/
   // calls with parens.
   if (ci.isParenless()) {
     if (parsing::idIsParenlessFunction(context, candidateId) ||

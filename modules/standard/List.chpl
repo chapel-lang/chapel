@@ -900,17 +900,17 @@ module List {
       return result;
     }
 
-    deprecated "list.extend is deprecated, please use list.append"
+    @deprecated(notes="list.extend is deprecated, please use list.append")
     proc ref extend(other: list(eltType, ?p)) lifetime this < other {
       append(other);
     }
 
-    deprecated "list.extend is deprecated, please use list.append"
+    @deprecated(notes="list.extend is deprecated, please use list.append")
     proc ref extend(other: [?d] eltType) lifetime this < other {
       append(other);
     }
 
-    deprecated "list.extend is deprecated, please use list.append"
+    @deprecated(notes="list.extend is deprecated, please use list.append")
     proc ref extend(other: range(eltType, ?b, ?d)) lifetime this < other {
       append(other);
     }

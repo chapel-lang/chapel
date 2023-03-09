@@ -107,10 +107,6 @@ class AstNode {
                          const AstNode* parent,
                          int parentIdx);
 
- protected:
-
-
-
   // Magic constant to indicate no such child exists.
   static const int NO_CHILD = -1;
 

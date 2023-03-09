@@ -1,7 +1,7 @@
 class Foo {
   var v1 = 3;
 
-  deprecated "bar is deprecated, use baz instead"
+  @deprecated(notes="bar is deprecated, use baz instead")
   proc bar() {
     baz();
   }

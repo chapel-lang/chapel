@@ -1635,7 +1635,7 @@ module ChapelArray {
     }
 
     /* Yield the array elements in sorted order. */
-    deprecated "'Array.sorted' is deprecated - use Sort.sort instead"
+    @deprecated(notes="'Array.sorted' is deprecated - use Sort.sort instead")
     iter sorted(comparator:?t = chpl_defaultComparator()) {
       if Reflection.canResolveMethod(_value, "dsiSorted", comparator) {
         for i in _value.dsiSorted(comparator) {
@@ -1767,7 +1767,7 @@ module ChapelArray {
     }
 
     /* Reverse the order of the values in the array. */
-    deprecated "'Array.reverse' is deprecated"
+    @deprecated(notes="'Array.reverse' is deprecated")
     proc reverse() {
       if (!chpl__isDense1DArray()) then
         compilerError("reverse() is only supported on dense 1D arrays");
@@ -1783,7 +1783,7 @@ module ChapelArray {
        instance of ``val`` in the array, or if ``val`` is not found, a
        tuple containing ``false`` and an unspecified value is returned.
      */
-     deprecated "The tuple-returning version of '.find()' on arrays is deprecated; to opt into the new index-returning version, recompile with '-suseNewArrayFind'.  Also, note that there is a new two-argument '.find()' that may be preferable in some situations, and it requires no compiler flag to use."
+     @deprecated(notes="The tuple-returning version of '.find()' on arrays is deprecated; to opt into the new index-returning version, recompile with '-suseNewArrayFind'.  Also, note that there is a new two-argument '.find()' that may be preferable in some situations, and it requires no compiler flag to use.")
      proc find(val: this.eltType): (bool, index(this.domain)) where !useNewArrayFind {
       for i in this.domain {
         if this[i] == val then return (true, i);
@@ -1902,7 +1902,7 @@ module ChapelArray {
     }
 
     /* Return the number of times ``val`` occurs in the array. */
-    @unstable "'Array.count' is unstable"
+    @unstable("'Array.count' is unstable")
     proc count(val: this.eltType): int {
       return + reduce (this == val);
     }
@@ -2035,7 +2035,7 @@ module ChapelArray {
      as argument ``that`` and all elements of this array are
      equal to the corresponding element in ``that``. Otherwise
      return false. */
-  @unstable "the 'Array.equals()' method is unstable"
+  @unstable("the 'Array.equals()' method is unstable")
   proc _array.equals(that: _array): bool {
     //
     // quick path for identical arrays

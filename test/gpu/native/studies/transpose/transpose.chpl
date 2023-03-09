@@ -1,5 +1,5 @@
 use CTypes;
-use GPUDiagnostics;
+use GpuDiagnostics;
 use GPU;
 use Time;
 

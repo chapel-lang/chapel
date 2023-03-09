@@ -1,4 +1,4 @@
-enum foo { deprecated "a is deprecated" a, b, c };
+enum foo { @deprecated(notes="a is deprecated") a, b, c };
 
 proc main() {
   var a1 = foo.a; // Should trigger the warning

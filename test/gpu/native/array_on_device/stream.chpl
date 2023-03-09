@@ -4,7 +4,7 @@
 //
 use Time, Types /*, Random */;
 
-use GPUDiagnostics;
+use GpuDiagnostics;
 
 //
 // Use shared user module for computing HPCC problem sizes
@@ -60,7 +60,7 @@ proc main() {
 
   var execTime: [1..numTrials] real;                 // an array of timings
 
-  startGPUDiagnostics();
+  startGpuDiagnostics();
   on here.gpus[0] {
     //
     // ProblemSpace describes the index set for the three vectors.  It
@@ -98,8 +98,8 @@ proc main() {
     const validAnswer = true;
     printResults(validAnswer, execTime);               // ...and print the results
   }
-  stopGPUDiagnostics();
-  writeln(getGPUDiagnostics());
+  stopGpuDiagnostics();
+  writeln(getGpuDiagnostics());
 }
 
 //

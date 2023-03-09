@@ -149,7 +149,7 @@ module ChapelLocale {
       return this._value._getChildCount();
     }
 
-    deprecated "'locale.getChildCount' is deprecated"
+    @deprecated(notes="'locale.getChildCount' is deprecated")
     inline proc getChildCount() {
       return this._value.getChildCount();
     }
@@ -265,7 +265,7 @@ module ChapelLocale {
     running programs within Cray batch jobs that have been set up
     with limited processor resources.
   */
-  @unstable "'locale.numPUs' is unstable"
+  @unstable("'locale.numPUs' is unstable")
   inline proc locale.numPUs(logical: bool = false, accessible: bool = true): int {
     return this._value.numPUs(logical, accessible);
   }
@@ -276,7 +276,7 @@ module ChapelLocale {
     stack for any task on the current locale, including the
     caller.
   */
-  deprecated "'locale.callStackSize' is deprecated."
+  @deprecated(notes="'locale.callStackSize' is deprecated.")
   inline proc locale.callStackSize { return this._value.callStackSize; }
 
   /*
@@ -440,7 +440,7 @@ module ChapelLocale {
     }
 
     pragma "no doc"
-    deprecated "'locale.getChildCount' is deprecated"
+    @deprecated(notes="'locale.getChildCount' is deprecated")
     proc getChildCount() : int {
       HaltWrappers.pureVirtualMethodHalt();
       return 0;
@@ -465,7 +465,7 @@ module ChapelLocale {
     }
 
     pragma "no doc"
-    deprecated "'locale.getChild' is deprecated"
+    @deprecated(notes="'locale.getChild' is deprecated")
     proc getChild(idx:int) : locale {
       HaltWrappers.pureVirtualMethodHalt();
     }

@@ -604,7 +604,7 @@ module ChapelRange {
   /* This used to control whether or not the
      :proc:`range.low`/:proc:`range.high` queries returned aligned
      values by default. */
-  deprecated "``alignedBoundsByDefault`` is deprecated and no longer has any effect"
+  @deprecated(notes="``alignedBoundsByDefault`` is deprecated and no longer has any effect")
   config param alignedBoundsByDefault = true;
 
   /* Returns ``true`` if this range's low bound is *not* -:math:`\infty`,
@@ -663,7 +663,7 @@ module ChapelRange {
   /* Return the range's aligned low bound.  Note that this is a
      synonym for :proc:`range.low`.
   */
-  deprecated "'.alignedLow' is deprecated; please use '.low' instead"
+  @deprecated(notes="'.alignedLow' is deprecated; please use '.low' instead")
   inline proc range.alignedLow: idxType {
     if !hasLowBound() {
       compilerError("can't query the low bound of a range without one");
@@ -761,7 +761,7 @@ module ChapelRange {
   /* Return the range's aligned high bound.  Note that this is a
      synonym for :proc:`range.high`.
   */
-  deprecated "'.alignedHigh' is deprecated; please use '.high' instead"
+  @deprecated(notes="'.alignedHigh' is deprecated; please use '.high' instead")
   inline proc range.alignedHigh: idxType {
     if !hasHighBound() {
       compilerError("can't query the high bound of a range without one");
@@ -1207,7 +1207,7 @@ module ChapelRange {
 
   // If the parameters don't match, then the two ranges cannot be identical.
   pragma "no doc"
-  deprecated "ident() on ranges is deprecated; please let us know if this is problematic for you"
+  @deprecated(notes="ident() on ranges is deprecated; please let us know if this is problematic for you")
   proc ident(r1: range(?), r2: range(?)) param {
     return false;
   }
