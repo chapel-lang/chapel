@@ -192,4 +192,11 @@ module GPU
     const voidPtr = __primitive("gpu allocShared", numBytes(eltType)*size);
     return voidPtr : c_ptr(eltType);
   }
+
+  /*
+    Set the block size for kernels launched on the GPU.
+   */
+  inline proc setBlockSize(blockSize: int) {
+    __primitive("gpu set blockSize", blockSize);
+  }
 }
