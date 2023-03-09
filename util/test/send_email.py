@@ -14,8 +14,6 @@ import os
 import smtplib
 import socket
 import sys
-import smtplib
-import socks
 
 try:
     basestring
@@ -27,12 +25,6 @@ def main():
     args = _parse_args()
     _setup_logging(args.verbose)
     body = sys.stdin.read()
-   # set proxy for macs in houston lab
-    if sys.platform.startswith('darwin'):
-        #socks.setdefaultproxy(TYPE, ADDR, PORT)
-        socks.setdefaultproxy(socks.HTTP, 'http://web-proxy.houston.hpecorp.net', 8080)
-        socks.setdefaultproxy(socks.HTTPS, 'http://web-proxy.houston.hpecorp.net', 8080)
-        socks.wrapmodule(smtplib)
     # Send the email!
     send_email(args.recipients, body, args.subject, args.header, args.sender, args.smtp_host,
         args.smtp_user, args.smtp_password, args.smtp_password_file)
