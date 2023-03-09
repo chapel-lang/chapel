@@ -373,7 +373,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Return a filled record matching the C `struct tm` type for the given date */
-@unstable("'date.timetuple' is unstable")
+  @unstable("'date.timetuple' is unstable")
   proc date.timetuple() {
     var timeStruct: tm;
 
@@ -1235,7 +1235,7 @@ enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Return a filled record matching the C `struct tm` type for the given
      `datetime` */
-@unstable("'datetime.timetuple' is unstable")
+  @unstable("'datetime.timetuple' is unstable")
   proc datetime.timetuple() {
     var timeStruct: tm;
     timeStruct.tm_sec = second: int(32);
